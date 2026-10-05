@@ -8,7 +8,7 @@
 
 La série ICT (cf [README ICT-Series](../../MyIA.AI.Notebooks/IIT/ICT-Series/README.md)) est partie chercher un *scalaire universel* — une grandeur unique qui mesurerait, à travers tous les substrats, l'intégration, l'irréversibilité, ce qu'on ose appeler conscience. Elle a rapporté sans fard qu'un tel scalaire **n'existe pas** : sur la synthèse cross-substrat, deux proxys se suivent quand un troisième diverge. Ce constat — et non le nombre manquant — est le résultat.
 
-Le document companion [« La mer qui monte »](../grothendieckian-lens.md) (issue [#7299](https://github.com/jsboige/CoursIA/issues/7299)) lit cette falsification comme un **candidat à une obstruction de type cohomologique** au recollement : on était parti chercher une section globale, et l'on tient, en `H¹ ≠ 0`, un *candidat* de classe d'obstruction — lecture proposée (grade C), à démontrer une fois le complexe de Čech expérimental construit (cf *Ce que ce document n'est* ci-dessous). Cette grille en tire trois régiments de lecture, distincts et complémentaires, que chaque substrat déjà instrumenté (tri auto-organisé, réaction-diffusion, Axelrod, grokking, Jeu de la Vie) peut traverser l'un après l'autre.
+Le document companion [« La mer qui monte »](../cadrage/grothendieckian-lens.md) (issue [#7299](https://github.com/jsboige/CoursIA/issues/7299)) lit cette falsification comme un **candidat à une obstruction de type cohomologique** au recollement : on était parti chercher une section globale, et l'on tient, en `H¹ ≠ 0`, un *candidat* de classe d'obstruction — lecture proposée (grade C), à démontrer une fois le complexe de Čech expérimental construit (cf *Ce que ce document n'est* ci-dessous). Cette grille en tire trois régiments de lecture, distincts et complémentaires, que chaque substrat déjà instrumenté (tri auto-organisé, réaction-diffusion, Axelrod, grokking, Jeu de la Vie) peut traverser l'un après l'autre.
 
 La grille ne remplace pas les mesures. Elle dit, pour une même trajectoire, *quelle question on est en train de poser* à la mesure — et donc quel verdict on en attend, et quel piège on évite en la surinterprétant.
 
@@ -44,7 +44,7 @@ Une dissociation n'est pas un bruit de mesure : c'est le moment où deux proxys,
 
 > **Question.** *Qu'est-ce qui empêche les sections locales de se raccorder en une section globale — et cette impossibilité est-elle stable cross-substrat ?*
 
-L'obstruction n'est pas un échec de méthode : c'est une **structure**. Quand des données locales, chacune cohérente sur son ouvert, refusent de se recoller en un tout global, ce refus est une propriété du réel, et Grothendieck lui a donné nom et mesure : la cohomologie. Au premier cran, ce qui se recolle (`H⁰`) ; au cran suivant, la *classe de l'obstruction* (`H¹`) — nulle quand tout se raccorde, non nulle exactement à la hauteur de ce qui résiste. Le dépôt formalise ce geste (cf [« Quand le recollement échoue »](../grothendieckian-lens.md), grade A sur le langage).
+L'obstruction n'est pas un échec de méthode : c'est une **structure**. Quand des données locales, chacune cohérente sur son ouvert, refusent de se recoller en un tout global, ce refus est une propriété du réel, et Grothendieck lui a donné nom et mesure : la cohomologie. Au premier cran, ce qui se recolle (`H⁰`) ; au cran suivant, la *classe de l'obstruction* (`H¹`) — nulle quand tout se raccorde, non nulle exactement à la hauteur de ce qui résiste. Le dépôt formalise ce geste (cf [« Quand le recollement échoue »](../cadrage/grothendieckian-lens.md), grade A sur le langage).
 
 **Cas concrets instrumentés.**
 
@@ -140,14 +140,14 @@ Cette synthèse ne lance aucun nouveau dispatch. Elle éclaire deux chantiers d�
 
 ## Ce que ce document n'est pas
 
-- **Pas un théorème.** Grade C-documentaire : la grille est une *direction de lecture*, vérifiable sur des cas concrets, mais la lecture qui fait des divergences ICT des classes de cohomologie est, à ce jour, *proposée*, pas démontrée (cf [« La mer qui monte »](../grothendieckian-lens.md), qui le dit sans fard). Seul le langage cohomologique est au grade A (formalisé, 0 `sorry` de production).
+- **Pas un théorème.** Grade C-documentaire : la grille est une *direction de lecture*, vérifiable sur des cas concrets, mais la lecture qui fait des divergences ICT des classes de cohomologie est, à ce jour, *proposée*, pas démontrée (cf [« La mer qui monte »](../cadrage/grothendieckian-lens.md), qui le dit sans fard). Seul le langage cohomologique est au grade A (formalisé, 0 `sorry` de production).
 - **Pas une unification.** La grille décrit une famille de phénomènes ; elle ne force pas une théorie unique. Trois régimes distincts, pas un méta-proxy.
 - **Pas un nouveau dispatch.** Aucune nouvelle dépendance expérimentale n'est créée ici. Les chantiers N1/N2 existent par ailleurs ; ce document les éclaire, ne les déclenche pas.
 
 ## Repères vérifiables
 
 - Série ICT : [`MyIA.AI.Notebooks/IIT/ICT-Series/`](../../MyIA.AI.Notebooks/IIT/ICT-Series/) ([Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)) — strate 5 « scalaire universel falsifié ».
-- Doc companion obstruction/recollement : [`docs/grothendieckian-lens.md`](../grothendieckian-lens.md) ([#7299](https://github.com/jsboige/CoursIA/issues/7299)).
+- Doc companion obstruction/recollement : [`docs/cadrage/grothendieckian-lens.md`](../cadrage/grothendieckian-lens.md) ([#7299](https://github.com/jsboige/CoursIA/issues/7299)).
 - Langage cohomologique formalisé : [`grothendieck_lean/Grothendieck/SheafCohomology/`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean) (0 `sorry` de production).
 - Dissociations instrumentées : [ICT-15b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity-Python.ipynb) ([#7288](https://github.com/jsboige/CoursIA/issues/7288)), [ICT-18b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) ([#7287](https://github.com/jsboige/CoursIA/issues/7287)).
 - Obstructions érigées en impossibilité : [`social_choice_lean`](../../MyIA.AI.Notebooks/GameTheory/social_choice_lean/) (Arrow), [#7290](https://github.com/jsboige/CoursIA/issues/7290) (Kochen-Specker).

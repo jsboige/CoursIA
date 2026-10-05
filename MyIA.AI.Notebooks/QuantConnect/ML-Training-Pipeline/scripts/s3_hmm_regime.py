@@ -38,6 +38,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+import strategy_metrics
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = SCRIPT_DIR / "results" / "s3_hmm_regime"
 
@@ -348,18 +350,18 @@ def _jitter_regime_boundaries(labels: np.ndarray, seed: int, max_jitter: int = 5
 
 
 def _sharpe(returns: np.ndarray) -> float:
-    """Annualized Sharpe ratio."""
-    if len(returns) < 2 or np.std(returns) < 1e-10:
+    """Annualized Sharpe (``strategy_metrics.sharpe``: ddof=1, risk-free 0, 252 days).
+
+    Returns 0.0 for fewer than 2 returns or a standard deviation below 1e-10.
+    """
+    if len(returns) < 2 or np.std(returns, ddof=1) < 1e-10:
         return 0.0
-    return float(np.mean(returns) / np.std(returns) * np.sqrt(252))
+    return float(strategy_metrics.sharpe(returns))
 
 
 def _max_drawdown(returns: np.ndarray) -> float:
-    """Maximum drawdown from cumulative return series."""
-    cum = np.cumprod(1 + returns)
-    running_max = np.maximum.accumulate(cum)
-    dd = (cum - running_max) / running_max
-    return float(dd.min())
+    """Max drawdown, starting capital as first peak (``strategy_metrics.max_drawdown``)."""
+    return strategy_metrics.max_drawdown(returns)
 
 
 def _regime_durations(labels: np.ndarray) -> dict:

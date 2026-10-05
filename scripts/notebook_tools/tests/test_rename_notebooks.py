@@ -385,6 +385,253 @@ class TestPapermillMetadataRewritten(unittest.TestCase):
                              "/abs/old/S-01-Alpha-Python.ipynb")
 
 
+class TestRelativeLinkDirChangeRefused(unittest.TestCase):
+    """#19154 : le prefixe d'un lien relatif n'est PAS recalcule au renommage.
+    Quand le renommage change de dossier, reecrire le seul basename fabrique un
+    chemin dont le prefixe ne mene plus nulle part (mesure : Search-09d ->
+    Discrepancy-02, lien ../../Search/Part1-Foundations/... -> 404 silencieux).
+    Refus fail-closed, miroir de I2/I3 : le porteur est liste, jamais reecrit."""
+
+    OLD_X = "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-Komlos.ipynb"
+    NEW_X = "MyIA.AI.Notebooks/Discrepancy/Discrepancy-02-Komlos-Lean.ipynb"
+
+    def _forms_x(self):
+        return [rn.ref_forms(self.OLD_X, self.NEW_X)]
+
+    def _repo(self, repo, extra_writes):
+        _init_repo(repo)
+        _write_nb(repo, self.OLD_X, _nb([_md("Cible du renommage.")]))
+        for rel, body in extra_writes:
+            if rel.endswith(".ipynb"):
+                _write_nb(repo, rel, body)
+            else:
+                _write(repo, rel, body)
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "carriers")
+
+    def test_relative_link_dir_change_is_refused(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part2-Structures/notes.md"
+            link = "[Komlos](../../Search/Part1-Foundations/Search-09d-Komlos.ipynb)"
+            self._repo(repo, [(rel, f"Voir {link} puis conclure.\n")])
+
+            plan = rn.scan_referents(self._forms_x(), repo)
+
+            self.assertIn((rel, "Search-09d-Komlos.ipynb"), plan.path_refused)
+            self.assertNotIn(rel, plan.rewrites)
+            # Rien n'est ecrit : l'ancien lien survit au scan (passage manuel).
+            self.assertIn("../../Search/Part1-Foundations/Search-09d-Komlos.ipynb",
+                          (repo / rel).read_text(encoding="utf-8"))
+
+    def test_relative_link_in_notebook_markdown_is_refused(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part2-Structures/Search-10-Zeta.ipynb"
+            nb = _nb([_md("Voir [Komlos](../../Search/Part1-Foundations/"
+                          "Search-09d-Komlos.ipynb).")])
+            self._repo(repo, [(rel, nb)])
+
+            plan = rn.scan_referents(self._forms_x(), repo)
+
+            self.assertIn((rel, "Search-09d-Komlos.ipynb"), plan.path_refused)
+            self.assertNotIn(rel, plan.rewrites)
+            self.assertNotIn(rel, plan.mixed_refused)
+
+    def test_full_repo_root_path_still_rewritten(self):
+        """La forme COMPLETE (chemin depuis la racine) embarque son prefixe :
+        remplacee en bloc, elle reste juste -- ce n'est pas un hit."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/README.md"
+            self._repo(repo, [(rel, f"chapitres:\n  - {self.OLD_X}\n")])
+
+            plan = rn.scan_referents(self._forms_x(), repo)
+
+            self.assertIn(rel, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+            rn.rewrite_file(repo / rel, self._forms_x())
+            self.assertIn(self.NEW_X, (repo / rel).read_text(encoding="utf-8"))
+
+    def test_same_directory_rename_keeps_relative_links_rewritable(self):
+        """Regression : meme dossier -> le prefixe relatif reste valide, la
+        garde ne doit pas tirer (comportement inchange depuis l'origine)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/S/notes.md"
+            _init_repo(repo)
+            _write(repo, rel, "[alpha](S/S-01-Alpha.ipynb) voisin.\n")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "same-dir carrier")
+
+            plan = rn.scan_referents(_forms(), repo)
+
+            self.assertIn(rel, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+
+    def test_bare_prose_mention_still_rewritten_under_dir_change(self):
+        """Frontiere de la garde : une mention de PROSE (nom non precede de
+        `/`, porteur HORS du dossier d'origine) reste reecrite -- c'est le nom
+        qui change, pas un chemin."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part2-Structures/notes.md"
+            self._repo(repo, [(rel, "Le carnet Search-09d-Komlos.ipynb "
+                                    "introduisait la borne.\n")])
+
+            plan = rn.scan_referents(self._forms_x(), repo)
+
+            self.assertIn(rel, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+
+    def test_same_dir_neighbor_bare_link_is_refused(self):
+        """Signature (b) : un voisin du dossier d'origine lie le nom NU --
+        `(Search-09d-Komlos.ipynb)` resolu contre ce dossier. Apres
+        deplacement, la reecriture du basename fabrique un 404 dans le dossier
+        d'origine lui-meme (mesure : Search-12a cite Search-11d en nu)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-Tau.ipynb"
+            nb = _nb([_md("Precedent : [Komlos](Search-09d-Komlos.ipynb).")])
+            self._repo(repo, [(rel, nb)])
+
+            plan = rn.scan_referents(self._forms_x(), repo)
+
+            self.assertIn((rel, "Search-09d-Komlos.ipynb"), plan.path_refused)
+            self.assertNotIn(rel, plan.rewrites)
+
+    def test_renamed_file_itself_still_rewritten(self):
+        """Le fichier renomme est EXCLU de la signature (b) : ses
+        auto-mentions (metadata.papermill, prose) ne sont pas des liens de
+        navigation -- les refuser bloquerait la tolerance #1 pour rien."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            nb = _nb([_md("Ce carnet Search-09d-Komlos.ipynb etend la borne.")])
+            nb["metadata"]["papermill"] = {
+                "input_path": "/abs/old/Search-09d-Komlos.ipynb"}
+            self._repo(repo, [(self.OLD_X, nb)])
+
+            plan = rn.scan_referents(self._forms_x(), repo)
+
+            self.assertIn(self.OLD_X, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+
+
+class TestSameNameDirChangeDetected(unittest.TestCase):
+    """#19173 (reserve Hermes sur la review de #19154) : renommage qui change
+    de dossier SANS changer de nom. La paire filename y est un no-op,
+    eliminee de build_patterns : les citations du nom nu donnaient
+    raw_total = 0 et le porteur etait saute AVANT la garde -- ni reecrit, ni
+    refuse, 404 silencieux apres le deplacement. Les motifs de detection
+    restaurent le refus fail-closed sans fabriquer de reecriture identique :
+    un hit de detection seul n'entre jamais dans rewrites ni mixed_refused."""
+
+    OLD = "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11d-Alpha.ipynb"
+    NEW = "MyIA.AI.Notebooks/Search/Part2-Structures/Search-11d-Alpha.ipynb"
+
+    def _forms(self):
+        return [rn.ref_forms(self.OLD, self.NEW)]
+
+    def _repo(self, repo, extra_writes):
+        _init_repo(repo)
+        _write_nb(repo, self.OLD, _nb([_md("Cible du deplacement.")]))
+        for rel, body in extra_writes:
+            if rel.endswith(".ipynb"):
+                _write_nb(repo, rel, body)
+            else:
+                _write(repo, rel, body)
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "carriers")
+
+    def test_neighbor_bare_link_is_refused_not_skipped(self):
+        """Le cas mesure par Hermes : un voisin du dossier d'origine lie le
+        nom NU -- resolu contre ce dossier, faux apres deplacement. Avant le
+        fix, ce porteur n'apparaissait nulle part dans le plan."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12-Beta.ipynb"
+            nb = _nb([_md("Precedent : [Alpha](Search-11d-Alpha.ipynb).")])
+            self._repo(repo, [(rel, nb)])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn((rel, "Search-11d-Alpha.ipynb"), plan.path_refused)
+            self.assertNotIn(rel, plan.rewrites)
+
+    def test_neighbor_code_cell_citation_is_refused(self):
+        """Cellule de code du dossier d'origine citant le nom nu : la
+        detection l'allume aussi -- refus et passage manuel plutot qu'un
+        open() qui 404 au prochain passage kernel."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12-Beta.ipynb"
+            nb = _nb([_code('cible = "Search-11d-Alpha.ipynb"')])
+            self._repo(repo, [(rel, nb)])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn((rel, "Search-11d-Alpha.ipynb"), plan.path_refused)
+            self.assertNotIn(rel, plan.rewrites)
+            self.assertNotIn(rel, plan.mixed_refused)
+
+    def test_relative_prefix_link_far_away_is_refused(self):
+        """Signature (a) sous meme-nom : le lien `../Part1-Foundations/...`
+        depuis un tiers dossier -- le prefixe devient faux, refus."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part3-Applications/notes.md"
+            link = "[Alpha](../Part1-Foundations/Search-11d-Alpha.ipynb)"
+            self._repo(repo, [(rel, f"Voir {link}.\n")])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn((rel, "Search-11d-Alpha.ipynb"), plan.path_refused)
+            self.assertNotIn(rel, plan.rewrites)
+
+    def test_full_repo_root_path_still_rewritten(self):
+        """La forme COMPLETE embarque son prefixe : remplacee en bloc (le
+        dossier change), elle reste juste -- pas un hit, une reecriture."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/README.md"
+            self._repo(repo, [(rel, f"chapitres:\n  - {self.OLD}\n")])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn(rel, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+            rn.rewrite_file(repo / rel, self._forms())
+            self.assertIn(self.NEW, (repo / rel).read_text(encoding="utf-8"))
+
+    def test_bare_prose_mention_far_away_is_not_touched(self):
+        """Frontiere de la detection : prose hors contexte de chemin, porteur
+        hors du dossier d'origine -- le nom ne change pas, la mention reste
+        vraie. Ni reecriture identique, ni sur-refus."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part3-Applications/notes.md"
+            self._repo(repo, [(rel, "Le carnet Search-11d-Alpha.ipynb "
+                                    "introduisait la borne.\n")])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertNotIn(rel, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+
+    def test_renamed_file_itself_is_not_self_refused(self):
+        """Le fichier deplace reste exclu des signatures : ses auto-mentions
+        ne sont pas des liens de navigation."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            nb = _nb([_md("Ce carnet Search-11d-Alpha.ipynb demenage.")])
+            self._repo(repo, [(self.OLD, nb)])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertEqual(plan.path_refused, [])
+            self.assertNotIn(self.OLD, plan.mixed_refused)
+
+
 class TestTwoCommitDiscipline(unittest.TestCase):
     """Invariant I6 : commit 1 = git mv purs (R100), commit 2 = referents.
     Le registre est ecrit ; les organes tournent en fin de passe (stubbes ici :
@@ -807,6 +1054,214 @@ class TestConflictingTargetsCaseOnly(unittest.TestCase):
             _write_nb(repo, tgt_rel, _nb([_md("etranger")]))
             self.assertEqual(rn.conflicting_targets([(src_rel, tgt_rel)], repo),
                              [tgt_rel])
+
+
+class TestCaseOnlyRenameCommits(unittest.TestCase):
+    """Defaut 9 (#19159) : un renommage de casse seule ne se committait pas.
+
+    Le `git mv` reussissait et la vague restait a MOITIE appliquee : le commit 1
+    nommait ses deux chemins, et git refuse un pathspec des que l'index porte une
+    variante de casse du chemin nomme (`will not add file alias`), meme quand
+    l'index porte deja la bonne casse. Trois proprietes sont verifiees ici, et
+    la premiere vaut sur toute plateforme : l'index doit finir sur la casse
+    CIBLE, `--apply` doit produire un commit, et la garde d'index etranger doit
+    survivre a la disparition du pathspec.
+    """
+
+    OLD_CASE = "MyIA.AI.Notebooks/S/S-03-Reasoning-Csharp.ipynb"
+    NEW_CASE = "MyIA.AI.Notebooks/S/S-03-Reasoning-CSharp.ipynb"
+
+    def _repo_casse(self, repo: Path) -> str:
+        """Depot temporaire avec un notebook dont le suffixe est en casse basse."""
+        _git(repo, "init", "-q")
+        _git(repo, "config", "user.email", "test@example.invalid")
+        _git(repo, "config", "user.name", "test")
+        _git(repo, "config", "core.ignorecase", "true")
+        _write_nb(repo, self.OLD_CASE, _nb([_md("Base.")]))
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "base")
+        return _git(repo, "rev-parse", "HEAD").strip()
+
+    def test_move_records_the_target_case_in_the_index(self):
+        """L'index doit porter la casse CIBLE : c'est ce que le `git mv` direct
+        ne faisait pas, et ce qui faisait echouer le commit."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            self._repo_casse(repo)
+            rn.move_file(repo, self.OLD_CASE, self.NEW_CASE)
+            suivis = _git(repo, "ls-files")
+            self.assertIn(self.NEW_CASE, suivis)
+            self.assertNotIn(self.OLD_CASE, suivis)
+            self.assertTrue((repo / self.NEW_CASE).is_file())
+
+    def test_apply_commits_a_case_only_rename(self):
+        """Le cas fondateur : `--apply` doit rendre 0 et committer la casse cible.
+
+        Le notebook se cite lui-meme et un README le cite : le commit 2 (referents)
+        touche donc AUSSI le chemin renomme, ce qui eprouve les deux commits sur
+        la casse seule, pas seulement le premier.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = self._repo_casse(repo)
+            nom = self.OLD_CASE.rsplit("/", 1)[-1]
+            _write_nb(repo, self.OLD_CASE, _nb([_md(f"Voir {nom}.")]))
+            _write(repo, "MyIA.AI.Notebooks/S/README.md", f"Serie : [{nom}]({nom}).")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "referents")
+            base = _git(repo, "rev-parse", "HEAD").strip()
+            tsv = Path(str(repo) + ".table.tsv")
+            tsv.write_text(f"{self.OLD_CASE}\t{self.NEW_CASE}\n", encoding="utf-8")
+
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                with mock.patch.object(rn, "run_organs", return_value=0):
+                    rc = rn.main(["--mapping", str(tsv), "--apply",
+                                  "--lane", "test-lane"])
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(rc, 0)
+
+            c1 = _git(repo, "diff", "--name-status", base, "HEAD~1")
+            self.assertIn(self.NEW_CASE, c1)
+            head = _git(repo, "ls-tree", "-r", "--name-only", "HEAD")
+            self.assertIn(self.NEW_CASE, head)
+            self.assertNotIn(self.OLD_CASE, head)
+            self.assertEqual(_git(repo, "status", "--porcelain").strip(), "")
+            # le commit 2 a bien emporte le referent, et le notebook deplace
+            c2 = _git(repo, "diff", "--name-status", "HEAD~1", "HEAD")
+            self.assertIn("MyIA.AI.Notebooks/S/README.md", c2)
+
+    def test_commit_moves_refuses_a_foreign_staged_path(self):
+        """La garde que portait le pathspec doit survivre a son retrait : un
+        chemin etranger dans l'index fait refuser la passe, sans rien committer."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = self._repo_casse(repo)
+            rn.move_file(repo, self.OLD_CASE, self.NEW_CASE)
+            _write(repo, "Intrus.md", "x\n")
+            _git(repo, "add", "Intrus.md")
+
+            rc = rn.commit_moves(repo, {self.OLD_CASE, self.NEW_CASE}, "c1")
+            self.assertEqual(rc, 1)
+            self.assertEqual(_git(repo, "rev-parse", "HEAD").strip(), base)
+
+
+class Test19157IdempotenceEtNoyauEnTete(unittest.TestCase):
+    """#19157 defauts 1 et 2 : `canonical_target` n'etait pas idempotent sur un
+    nom deja en `-Lean-Python`, et un mot de noyau EN TETE de titre passait sous
+    le radar de `target_violation`.
+
+    Les tests ci-dessous fabriquent le defaut et pincent le verdict. La
+    contre-epreuve d'ensemble est le diff de `--propose` sur tout l'arbre, cite
+    dans le body de la PR (critere 5 de l'issue) : 5 cibles mortes qui
+    redeviennent CONFORME, 44 cibles qui repetent le noyau qui tombent en
+    A TRANCHER.
+    """
+
+    SIX_TWEETY = (
+        "Tweety-02d-FOL-Lab-Lean-Python.ipynb",
+        "Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python.ipynb",
+        "Tweety-02f-Modal-Zoo-Lean-Python.ipynb",
+        "Tweety-03b-Modal-Lab-Lean-Python.ipynb",
+        "Tweety-05d-Stable-Synthesis-Lean-Python.ipynb",
+        "Tweety-05e-Propositional-Lab-Lean-Python.ipynb",
+    )
+
+    def test_1_idempotence_sur_tout_l_arbre(self):
+        """Critere 1 : `canonical_target(canonical_target(x, k), k) ==
+        canonical_target(x, k)` sur tout `MyIA.AI.Notebooks`.
+
+        Les quatre suffixes sont eprouves, pas seulement le noyau detecte : la
+        propriete doit tenir pour tout appel, y compris ceux qu'un appelant
+        ferait avec un autre noyau.
+        """
+        root = Path(__file__).resolve().parents[3] / "MyIA.AI.Notebooks"
+        noms = sorted({p.name for p in root.rglob("*.ipynb")})
+        self.assertGreater(len(noms), 1000, f"arbre de notebooks absent sous {root}")
+        for nom in noms:
+            for noyau in ("python", "csharp", "lean", "lean-python"):
+                une_fois = rn.canonical_target(nom, noyau)
+                with self.subTest(notebook=nom, noyau=noyau):
+                    self.assertEqual(rn.canonical_target(une_fois, noyau), une_fois)
+
+    def test_1b_idempotence_hors_grammaire(self):
+        """Le retour anticipe (nom hors grammaire de serie) empilait lui aussi :
+        `Diagnostic-Medical` -> `-Python` -> `-Python-Python`."""
+        for nom, noyau, cible in (
+            ("Diagnostic-Medical.ipynb", "python", "Diagnostic-Medical-Python.ipynb"),
+            ("Diagnostic-Medical-Python.ipynb", "python", "Diagnostic-Medical-Python.ipynb"),
+            ("SmartGrid-Energy-Lean.ipynb", "lean", "SmartGrid-Energy-Lean.ipynb"),
+        ):
+            with self.subTest(notebook=nom):
+                self.assertEqual(rn.canonical_target(nom, noyau), cible)
+
+    def test_2_les_six_noms_tweety_sortent_conformes(self):
+        """Critere 2 : les six cibles de la serie Tweety sont deja canoniques."""
+        for nom in self.SIX_TWEETY:
+            with self.subTest(notebook=nom):
+                self.assertEqual(rn.canonical_target(nom, "lean-python"), nom)
+                self.assertIsNone(rn.target_violation(nom))
+
+    def test_3_noyau_en_tete_de_titre_detecte(self):
+        """Critere 3 : un mot de noyau en tete de titre est un infixe comme un
+        autre -- `_KERNEL_INFIX_RE` exigeait un separateur AVANT le mot."""
+        self.assertEqual(
+            rn.target_violation("Tweety-05b-Lean-Argumentation-Lean.ipynb"),
+            "mot de noyau en infixe du titre",
+        )
+        # Le nom d'avant #19150 produit exactement cette cible : le meme verdict
+        # doit tomber sur le nom reellement present dans l'arbre au moment du
+        # --propose.
+        self.assertEqual(
+            rn.canonical_target("Tweety-5b-Lean-Argumentation.ipynb", "lean"),
+            "Tweety-05b-Lean-Argumentation-Lean.ipynb",
+        )
+
+    def test_3b_pas_de_faux_positif_sur_un_mot_qui_contient_le_noyau(self):
+        """Le mot doit etre ENTIER : `Pythonic` et `Lean4` ne sont pas des mots
+        de noyau, et un titre qui commence par autre chose reste conforme."""
+        for nom in ("GameTheory-02-NormalForm-Python.ipynb",
+                    "X-01-Pythonic-Intro-Python.ipynb",
+                    "X-01-Lean4-Intro-Lean.ipynb",
+                    "Tweety-02d-FOL-Lab-Lean-Python.ipynb"):
+            with self.subTest(notebook=nom):
+                self.assertIsNone(rn.target_violation(nom))
+
+    def test_4_lean_python_sans_preuve_ne_devient_pas_python(self):
+        """Le retrait en point fixe ne doit pas EFFACER une revendication Lean :
+        un nom en `-Lean-Python` sous noyau python SANS preuve citee tombe en
+        A TRANCHER, comme la queue `-Lean` (#17801 point 2) -- jamais un
+        `-Python` silencieux."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            _write_nb(repo, "MyIA.AI.Notebooks/S/S-01-Swaps-Lean-Python.ipynb",
+                      _nb([_md("swaps"), _code("print('aucun appel lake')")]))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "serie")
+            table = rn.propose("MyIA.AI.Notebooks/S", repo)
+            self.assertIn("A TRANCHER", table)
+            self.assertIn("sans preuve", table)
+            self.assertNotIn("S-01-Swaps-Python.ipynb", table)
+
+    def test_4b_la_preuve_citee_rend_le_suffixe_lean_python_stable(self):
+        """Controle symetrique : AVEC la preuve, la cible garde `-Lean-Python`
+        et n'est plus empilee -- c'est le cas des six Tweety."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            _write_nb(repo, "MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean-Python.ipynb",
+                      _nb([_md("lab"),
+                           _code('run_wsl(f"cd {to_wsl(LAKE_DIR)} && '
+                                 'lake build FormalLogic.FolBridge")')]))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "serie")
+            table = rn.propose("MyIA.AI.Notebooks/S", repo)
+            self.assertIn("`MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean-Python.ipynb` | "
+                          "`MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean-Python.ipynb`", table)
+            self.assertIn("CONFORME", table)
 
 
 if __name__ == "__main__":

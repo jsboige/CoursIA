@@ -464,6 +464,44 @@ def test_belt_report_metrics_computes_max_gap():
     assert max_gap is not None and max_gap > 0
 
 
+# #15069 sous le tapis : l'urne `delivered` est presente dans le defaut de
+# `--urns`. La voie ponderee la retire pour une lane worker via
+# `apply_delivered_urn_gate` ; le tapis doit recevoir ces urnes EFFECTIVES,
+# pas relire `args.urns` brut (sinon le mode par defaut de /continue sert
+# des fermetures a des lanes qui ne ferment rien).
+
+
+def test_belt_filter_honours_delivered_gate_for_worker_lane():
+    pool = [
+        _make_item(70, age_days=90, idle=30, klass="delivered"),
+        _make_item(71, age_days=80, idle=20, klass="grain"),
+        _make_item(72, age_days=70, idle=10, klass="umbrella"),
+    ]
+    args = _FakeArgs()
+    selected = {v.casefold() for v in pig._csv_values([args.urns])}
+    urns, notice = pig.apply_delivered_urn_gate(
+        "myia-po-2023:CoursIA", args.urns, "grain,umbrella,delivered",
+        selected)
+    assert notice is not None
+    kept = {it["number"] for it in pig.belt_filter(pool, args, urns=urns)}
+    assert kept == {71, 72}
+
+
+def test_belt_filter_keeps_delivered_for_coordinator_lane():
+    pool = [
+        _make_item(70, age_days=90, idle=30, klass="delivered"),
+        _make_item(71, age_days=80, idle=20, klass="grain"),
+    ]
+    args = _FakeArgs()
+    selected = {v.casefold() for v in pig._csv_values([args.urns])}
+    urns, notice = pig.apply_delivered_urn_gate(
+        "myia-ai-01:CoursIA", args.urns, "grain,umbrella,delivered",
+        selected)
+    assert notice is None
+    kept = {it["number"] for it in pig.belt_filter(pool, args, urns=urns)}
+    assert kept == {70, 71}
+
+
 # ==================================================================
 # Tests #18866 : mode --belt --json = un seul document JSON.
 # La cle `repair` fusionne le rappel rouge/WIP qui etait sinon imprime
@@ -504,6 +542,8 @@ def _patch_belt_network(monkeypatch, prs, red_state):
     monkeypatch.setattr(pig, "check_claims",
                         lambda nums, lane: {n: (pig.CLAIM_CODE_FREE, "libre")
                                             for n in nums})
+    # Le tapis lit aussi les claims comme visites : jamais de reseau en test.
+    monkeypatch.setattr(pig, "latest_claim_stamp", lambda n: None)
 
 
 def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
@@ -590,3 +630,222 @@ def test_non_belt_json_red_still_emits_standalone_repair(monkeypatch, capsys):
     # Le mode reste `repair`, pas `belt` : la volee ponderee est inchangee.
     assert payload["mode"] == "repair"
     assert payload["grain"]["number"] == 18844
+
+
+# Le tapis avance au claim, pas au merge (mandat user 2026-10-04).
+# Mesure fondatrice : l'EPIC #7265 servie le matin par une sous-issue
+# reservee (#19088) est restee en tete de file, et une seconde lane l'a
+# tiree le soir.
+
+
+def test_belt_visit_stamp_is_latest_of_merge_claim_child():
+    it = _make_item(1, age_days=90, idle=1, last="2026-08-01T00:00:00Z")
+    assert pig.belt_visit_stamp(it) == "2026-08-01T00:00:00Z"
+    it["last_claim_stamp"] = "2026-10-04T19:49:00Z"
+    it["last_child_stamp"] = "2026-10-04T09:50:00Z"
+    assert pig.belt_visit_stamp(it) == "2026-10-04T19:49:00Z"
+    never = _make_item(2, age_days=90, idle=1, last=None)
+    assert pig.belt_visit_stamp(never) is None
+
+
+def test_belt_claim_moves_issue_behind_unvisited_ones():
+    """Une issue reservee depuis son dernier merge passe derriere une issue
+    plus recente jamais visitee, sans attendre de merge."""
+    old = _make_item(10, age_days=90, idle=1, last="2026-08-01T00:00:00Z",
+                     created="2026-07-01T00:00:00Z")
+    newer = _make_item(11, age_days=30, idle=1, last=None,
+                       created="2026-09-01T00:00:00Z")
+    pool = [old, newer]
+    claims = {10: "2026-10-04T19:49:00Z"}
+    probed = pig.settle_belt_head(pool, need=2, probe=claims.get, max_probes=10)
+    assert [it["number"] for it in pool] == [11, 10]
+    assert probed == {10, 11}
+    assert old["last_claim_stamp"] == "2026-10-04T19:49:00Z"
+
+
+def test_belt_claim_older_than_merge_changes_nothing():
+    it = _make_item(12, age_days=90, idle=1, last="2026-09-20T00:00:00Z",
+                    created="2026-07-01T00:00:00Z")
+    other = _make_item(13, age_days=30, idle=1, last="2026-09-25T00:00:00Z",
+                       created="2026-09-01T00:00:00Z")
+    pool = [other, it]
+    pig.settle_belt_head(pool, need=2, probe={12: "2026-09-01T00:00:00Z"}.get,
+                         max_probes=10)
+    assert [x["number"] for x in pool] == [12, 13]
+
+
+def test_belt_settle_reads_the_freed_slot_until_head_is_stable():
+    """Toute la tete est reservee : chaque place liberee est lue a son tour,
+    et la premiere issue non reservee finit en tete."""
+    pool = [_make_item(20 + k, age_days=90, idle=1, last=None,
+                       created=f"2026-07-0{k + 1}T00:00:00Z") for k in range(5)]
+    claims = {20: "2026-10-04T10:00:00Z", 21: "2026-10-04T11:00:00Z",
+              22: "2026-10-04T12:00:00Z"}
+    probed = pig.settle_belt_head(pool, need=2, probe=claims.get, max_probes=10)
+    assert [it["number"] for it in pool][:2] == [23, 24]
+    assert {20, 21, 22, 23, 24} <= probed
+
+
+def test_belt_settle_is_bounded_by_max_probes():
+    pool = [_make_item(40 + k, age_days=90, idle=1, last=None,
+                       created=f"2026-07-{k + 1:02d}T00:00:00Z") for k in range(20)]
+    calls = []
+
+    def probe(n):
+        calls.append(n)
+        return f"2026-10-04T{len(calls):02d}:00:00Z"
+
+    pig.settle_belt_head(pool, need=3, probe=probe, max_probes=7)
+    assert len(calls) == 7
+
+
+def test_belt_child_issue_visits_its_parent_7265_scenario():
+    """Cas fondateur : la sous-issue #19088 (titre ``[#7265 ...``) creee a
+    09:50Z fait passer l'EPIC #7265 derriere une issue d'aout jamais servie."""
+    epic = _make_item(7265, age_days=78, idle=0, klass="umbrella",
+                      last="2026-08-13T00:00:00Z",
+                      created="2026-07-18T00:00:00Z")
+    august = _make_item(14000, age_days=40, idle=3, last=None,
+                        created="2026-08-25T00:00:00Z")
+    child = _make_item(19088, age_days=0, idle=0, last=None,
+                       created="2026-10-04T09:50:00Z")
+    child["title"] = "[#7265 · pépite A3] Object explorer metadata-driven"
+    child["body"] = "Pepite A3 de l'EPIC #7265."
+    belt_pool = [epic, august]
+    latest = pig.apply_child_visits([epic, august, child], belt_pool)
+    assert latest[7265] == "2026-10-04T09:50:00Z"
+    assert epic["last_child_stamp"] == "2026-10-04T09:50:00Z"
+    belt_pool.sort(key=pig.belt_sort_key)
+    assert [it["number"] for it in belt_pool] == [14000, 7265]
+
+
+def test_parent_refs_reads_part_of_and_title_prefix_not_self():
+    it = _make_item(500, age_days=1, idle=0)
+    it["title"] = "[#16231] renommer ICT-45"
+    it["body"] = "Part of #4362. See #9999.\nPart of #500 (soi-meme)"
+    assert pig.parent_refs(it) == {16231, 4362}
+    plain = _make_item(501, age_days=1, idle=0)
+    plain["body"] = "See #4362 et Refs #12"
+    assert pig.parent_refs(plain) == set()
+
+
+def _claim(at: str, body: str) -> dict:
+    return {"createdAt": at, "body": body, "author": {"login": "jsboige"}}
+
+
+def test_claim_visit_stamp_reads_decorated_markers_like_the_organ():
+    """Reserve tierce #19147, point 1 : la grammaire est celle de
+    ``check_lane_claim.py`` (#10906, #12711), pas une regex propre au tapis."""
+    for body in (
+        "**[CLAIMED] lane myia-po-2027:CoursIA -- T1**",
+        "## [CLAIMED] lane myia-po-2027:CoursIA -- T1",
+        "- [CLAIMED] lane myia-po-2027:CoursIA -- T1",
+        "> [CLAIMED] lane myia-po-2027:CoursIA -- T1",
+        "→[CLAIMED] lane myia-po-2027:CoursIA -- T1",
+        "[claimed] lane myia-po-2027:CoursIA -- T1",
+    ):
+        assert pig.claim_visit_stamp(
+            [_claim("2026-10-04T09:50:12Z", body)]) == "2026-10-04T09:50:12Z", body
+
+
+def test_claim_visit_stamp_ignores_quoted_and_midline_mentions():
+    """Une citation en bloc fence, une mention en milieu de ligne, un marqueur
+    sans lane ne sont la visite de personne."""
+    fenced = ("Le gabarit est :\n```\n[CLAIMED] lane myia-po-2027:CoursIA"
+              " -- T1\n```\n")
+    comments = [
+        _claim("2026-10-04T09:00:00Z", fenced),
+        _claim("2026-10-04T10:00:00Z",
+               "T1 livree. Le [CLAIMED] du matin reste valable."),
+        _claim("2026-10-04T11:00:00Z", "> [CLAIMED] cite sans lane"),
+    ]
+    assert pig.claim_visit_stamp(comments) is None
+
+
+def test_claim_visit_stamp_closures_advance_the_visit():
+    """Point 2 de la reserve : une cloture est lue, et c'est une visite.
+    Elle AVANCE la date au lieu de la laisser figee sur la prise."""
+    claim = _claim("2026-10-04T09:50:12Z",
+                   "[CLAIMED] lane myia-po-2027:CoursIA -- T1")
+    for close in ("RELEASED", "DONE", "ABANDONED", "CANCELLED", "DELIVERED"):
+        assert pig.claim_visit_stamp([
+            claim,
+            _claim("2026-10-04T12:00:00Z",
+                   f"[{close}] lane myia-po-2027:CoursIA -- PR #19999"),
+        ]) == "2026-10-04T12:00:00Z", close
+
+
+def test_claim_visit_stamp_counts_every_lane():
+    """Toutes lanes : la plus recente marque, quelle que soit la lane."""
+    comments = [
+        _claim("2026-10-04T08:00:00Z",
+               "[CLAIMED] lane myia-po-2024:CoursIA -- B"),
+        _claim("2026-10-04T09:00:00Z",
+               "[CLAIMED] lane myia-po-2027:CoursIA -- A"),
+        _claim("2026-10-04T07:00:00Z",
+               "[RELEASED] lane myia-po-2023:CoursIA -- ancien"),
+    ]
+    assert pig.claim_visit_stamp(comments) == "2026-10-04T09:00:00Z"
+
+
+def test_belt_released_issue_stays_behind_7742_scenario():
+    """Bout en bout, cas mesure #7742 : prise le 31/08, rendue le 19/09 apres
+    deux tranches mergees. Lue a la prise seule, elle repassait devant une
+    issue visitee le 10/09 ; lue a sa cloture, elle reste derriere."""
+    claim = _claim("2026-08-31T01:31:34Z",
+                   "[CLAIMED] lane myia-po-2024:CoursIA -- paths: a.ipynb")
+    release = _claim("2026-09-19T14:46:38Z",
+                     "[RELEASED] lane myia-po-2024:CoursIA -- tranches "
+                     "livrees, le claim rend la main")
+
+    def order(comments):
+        pool = [
+            _make_item(7742, age_days=75, idle=0, last=None,
+                       created="2026-07-21T16:31:50Z"),
+            _make_item(200, age_days=30, idle=0,
+                       last="2026-09-10T00:00:00Z",
+                       created="2026-09-01T00:00:00Z"),
+        ]
+        pig.settle_belt_head(
+            pool, need=2,
+            probe=lambda n: pig.claim_visit_stamp(comments)
+            if n == 7742 else None,
+            max_probes=4)
+        return [it["number"] for it in pool]
+
+    assert order([]) == [7742, 200]                 # jamais servie : en tete
+    assert order([claim]) == [7742, 200]            # prise le 31/08 < 10/09
+    assert order([claim, release]) == [200, 7742]   # rendue le 19/09 : derriere
+
+
+def test_latest_claim_stamp_reads_claims_of_any_lane(monkeypatch):
+    payload = {"comments": [
+        _claim("2026-10-04T09:50:12Z",
+               "[CLAIMED] lane myia-po-2027:CoursIA -- T1"),
+        _claim("2026-10-04T10:50:00Z",
+               "[CLAIMED-AMEND] lane myia-po-2027:CoursIA -- paths: a/**"),
+        _claim("2026-10-04T12:00:00Z",
+               "T1 livree. Le [CLAIMED] du matin reste valable."),
+    ]}
+
+    class _R:
+        stdout = json.dumps(payload)
+
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **k: _R())
+    assert pig.latest_claim_stamp(19088) == "2026-10-04T10:50:00Z"
+
+
+def test_latest_claim_stamp_read_failure_is_none(monkeypatch):
+    def boom(*a, **k):
+        raise OSError("gh absent")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    assert pig.latest_claim_stamp(1) is None
+
+
+def test_belt_merge_only_flag_is_accepted(monkeypatch, capsys):
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt",
+                   "--belt-merge-only", "--json"])
+    assert rc == 0
+    assert json.loads(capsys.readouterr().out)["mode"] == "belt"

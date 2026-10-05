@@ -119,9 +119,21 @@ jobs:
             {
               echo "## Census morts de job -- AUCUN RAPPORT PRODUIT"
               echo
-              echo "L'instrument n'a pas rendu de rapport : lire le log de"
-              echo "l'etape precedente. Une absence de rapport n'est pas un"
-              echo "census vide -- c'est un census qui n'a pas eu lieu."
+              echo "L'instrument n'a pas rendu de rapport. Son stderr complet"
+              echo "(l'exception qui l'a tué) suit s'il a été capturé :"
+              echo
+              if [ -s census-warn.txt ]; then
+                echo '```'
+                cat census-warn.txt
+                echo '```'
+              else
+                echo "(census-warn.txt vide ou absent : mort avant la"
+                echo "redirection, ou sans message. Lire le log de l'étape"
+                echo "précédente.)"
+              fi
+              echo
+              echo "Une absence de rapport n'est pas un census vide -- c'est un"
+              echo "census qui n'a pas eu lieu."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
@@ -149,6 +161,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: job-deaths-census
-          path: census.md
+          # census-warn.txt voyage TOUJOURS : c'est le seul trace de l'exception
+          # quand le rapport n'a pas ete ecrit (#19095) -- un artefact qui
+          # n'embarque que les succes cache exactement ce qu'on vient lire.
+          path: |
+            census.md
+            census-warn.txt
           if-no-files-found: ignore
           retention-days: 30

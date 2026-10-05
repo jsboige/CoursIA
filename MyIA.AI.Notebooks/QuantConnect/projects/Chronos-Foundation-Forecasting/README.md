@@ -15,12 +15,14 @@ Ensemble GradientBoosting + Ridge (sklearn) sur features de prix (lag returns, v
 
 ## Backtest Metrics
 
+> **Deux versions, l'ID Cloud ne reproduit plus le dépôt (#19018, sondage du 2026-10-03).** Le projet Cloud 29443479 porte désormais **v2b** (modifié 2026-03-29 : GBM n_estimators 80 / lr 0.03 / min_samples_leaf 8, fin étendue à 2026-03-01, rebalancement **hebdomadaire**), tandis que le `main.py` commité ici est **v2** (n_estimators 50 / lr 0.05 / min_samples_leaf 5, fin 2026-01-01, rebalancement **bimensuel**). Un backtest lancé sur 29443479 aujourd'hui mesure v2b, pas le fichier de ce dépôt ; les chiffres ci-dessous décrivent une exécution du code v2 (version dépôt).
+
 | Metric | Value |
 |--------|-------|
 | Model | Ensemble GB + Ridge |
 | Universe | 8 ETFs |
-| Rebalance | Biweekly |
-| Sharpe Ratio (v2) | 0.253 |
+| Rebalance | Biweekly (v2, dépôt) — v2b Cloud : weekly |
+| Sharpe Ratio (v2, code dépôt) | 0.253 (fenêtre 2015-01-01 → 2026-01-01) |
 
 ## Files
 

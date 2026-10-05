@@ -19,6 +19,9 @@
   <ItemGroup>
     <PackageReference Include="Flee" Version="2.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- System.CodeDom : port A3 T1 (filtres metadata-driven, #19088). Les expressions
+         CodeDom de IDescriptor vivent dans ce package sur net9 (plus dans le framework partage). -->
+    <PackageReference Include="System.CodeDom" Version="8.0.0" />
   </ItemGroup>
 
   <!-- References externes patrimoine Aricie (a recuperer via #7265) :

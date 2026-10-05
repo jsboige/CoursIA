@@ -158,6 +158,113 @@ def test_is_waived_lit_le_label():
     ) is False
 
 
+# --- #19069 : un run cancelled ne masque pas le verdict de main --------------
+
+def _runs_fetch(runs, default_branch="main"):
+    """fetch factice : sert la branche par defaut, puis les runs donnes."""
+    def fetch(path):
+        if path == "repos/o/r":
+            return {"default_branch": default_branch}
+        return {"workflow_runs": runs}
+    return fetch
+
+
+#: Reproduit une fenetre REELLE de main rouge masquee par des cancelled
+#: (issue #19069). Sur `main`, le run 37225392464 (`failure`, 18:41:19Z,
+#: conclu 18:51:54Z) est suivi de deux runs `cancelled` (18:42:18Z,
+#: 18:42:36Z) nes de la concurrence du workflow en passe de merge en rafale.
+#: `per_page=1` rendait en tete un `cancelled` sans verdict -- la derogation
+#: restait fermee alors que main etait rouge ; le correctif saute les runs
+#: sans verdict et ouvre sur 37225392464. (L'API rend les runs du plus
+#: recent au plus ancien : cancelled d'abord, le rouge ensuite.)
+_CANCELLED_THEN_RED = [
+    {"id": 37225475490, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "cancelled", "created_at": "2026-10-04T18:42:36Z",
+     "html_url": "https://github.com/o/r/actions/runs/37225475490"},
+    {"id": 37225454684, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "cancelled", "created_at": "2026-10-04T18:42:18Z",
+     "html_url": "https://github.com/o/r/actions/runs/37225454684"},
+    {"id": 37225392464, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "failure", "created_at": "2026-10-04T18:41:19Z",
+     "html_url": "https://github.com/o/r/actions/runs/37225392464"},
+]
+
+
+def test_19069_deux_cancelled_puis_failure_la_derogation_souvre():
+    motif = merge_dwell._main_red_motif(
+        "o/r", fetch=_runs_fetch(_CANCELLED_THEN_RED)
+    )
+    assert motif is not None
+    assert "37225392464" in motif
+
+
+def test_19069_dernier_run_conclu_vert_ferme_la_derogation():
+    runs = _CANCELLED_THEN_RED[:2] + [
+        dict(_CANCELLED_THEN_RED[2], conclusion="success")
+    ]
+    assert merge_dwell._main_red_motif("o/r", fetch=_runs_fetch(runs)) is None
+
+
+def test_19069_runs_tous_sans_verdict_ferme_la_derogation():
+    # Fail-closed : une couleur illisible ne vaut PAS rouge (pas de preuve,
+    # pas de derogation) -- le plancher NORMAL continue de mesurer.
+    assert merge_dwell._main_red_motif(
+        "o/r", fetch=_runs_fetch(_CANCELLED_THEN_RED[:2])
+    ) is None
+
+
+# --- #19180 : un run timed_out sur main est un rouge, pas un run sans verdict -
+
+#: Fenetre de l'issue #19180 : le run le plus recent a epuise son temps
+#: (`timed_out`), le precedent etait vert. Avant le correctif, le filtre
+#: `success`/`failure` sautait le `timed_out` comme un `cancelled` et
+#: remontait jusqu'au vert : main etait declare vert alors qu'il ne l'etait pas.
+_TIMED_OUT_THEN_GREEN = [
+    {"id": 2002, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "timed_out", "created_at": "2026-10-05T00:40:00Z",
+     "html_url": "https://github.com/o/r/actions/runs/2002"},
+    {"id": 2001, "name": "Scripts & Notebook-Tools Tests",
+     "conclusion": "success", "created_at": "2026-10-05T00:10:00Z",
+     "html_url": "https://github.com/o/r/actions/runs/2001"},
+]
+
+
+def test_19180_timed_out_puis_success_la_derogation_souvre():
+    motif = merge_dwell._main_red_motif(
+        "o/r", fetch=_runs_fetch(_TIMED_OUT_THEN_GREEN)
+    )
+    assert motif is not None
+    assert "2002" in motif
+    assert "timed_out" in motif
+
+
+def test_19180_startup_failure_compte_aussi_rouge():
+    runs = [dict(_TIMED_OUT_THEN_GREEN[0], conclusion="startup_failure"),
+            _TIMED_OUT_THEN_GREEN[1]]
+    motif = merge_dwell._main_red_motif("o/r", fetch=_runs_fetch(runs))
+    assert motif is not None
+    assert "startup_failure" in motif
+
+
+def test_19180_controle_negatif_cancelled_puis_success_reste_vert():
+    # Le comportement #19069 ne change pas : un `cancelled` n'a pas de
+    # verdict, il se saute, et le vert qui le precede ferme la derogation.
+    runs = [dict(_TIMED_OUT_THEN_GREEN[0], conclusion="cancelled"),
+            _TIMED_OUT_THEN_GREEN[1]]
+    assert merge_dwell._main_red_motif("o/r", fetch=_runs_fetch(runs)) is None
+
+
+def test_19180_motif_failure_inchange():
+    # Le message d'un `failure` ordinaire garde sa forme d'avant #19180.
+    motif = merge_dwell._main_red_motif(
+        "o/r", fetch=_runs_fetch(_CANCELLED_THEN_RED)
+    )
+    assert motif == (
+        "main rouge: workflow `Scripts & Notebook-Tools Tests` en echec "
+        "sur main (run 37225392464)"
+    )
+
+
 def test_head_committed_at_leve_sans_date():
     with pytest.raises(merge_dwell.DwellError):
         merge_dwell.head_committed_at(
@@ -911,7 +1018,7 @@ def _pr_with_label_fetch(workflow_runs=None, red_read_fails=False,
         for yml, runs in by_yml.items():
             expected = (
                 "repos/o/r/actions/workflows/{}/runs"
-                "?branch=main&event=push&status=completed&per_page=1"
+                "?branch=main&event=push&status=completed&per_page=10"
             ).format(yml)
             if path == expected:
                 if red_read_fails:
@@ -991,10 +1098,10 @@ def test_18790_latest_wins_parmi_runs_PR_gate_multiples():
     run Scripts Tests rouge recent est pris en compte ; un vert anterieur
     est ignore.
 
-    Note : avec l'API workflow-directe (per_page=1) le serveur rend lui-meme
-    le run le plus recent -- le pli latest-wins defense-en-profondeur contre
-    une eventuelle divergence de tri. On passe ici le `failure` recent en
-    tete de liste pour exercer le chemin 'run rouge -> lever la derogation'."""
+    Note : avec l'API workflow-directe (per_page=10) le serveur rend lui-meme
+    les runs les plus recents du workflow -- le pli latest-wins reste une
+    defense-en-profondeur contre une eventuelle divergence de tri. Depuis
+    #19069, les runs `cancelled`/`skipped` sont sautes cote client."""
     ok, msg = merge_dwell.check(
         "o/r", "abc", 42, 120.0, now=NOW,
         fetch=_pr_with_label_fetch(workflow_runs=[
@@ -1087,8 +1194,8 @@ def test_18796_workflow_direct_indépendant_de_la_fenetre_globale():
     `actions/runs?branch=main&per_page=100` rendait `None`).
 
     L'API workflow-directe `actions/workflows/scripts-tests.yml/runs
-    ?per_page=1` n'a pas cette borne -- elle rend le DERNIER run du
-    workflow, quelle que soit son anciennete. Le test exerce cette voie
+    ?per_page=10` n'a pas cette borne -- elle rend les DERNIERS runs du
+    workflow, quelle que soit leur anciennete. Le test exerce cette voie
     en passant un run `failure` vieux de 2h, et verifie que la
     derogation leve bien, et que le motif releve reste lisible."""
     import datetime as _dt
@@ -1139,7 +1246,7 @@ def test_18796_workflow_direct_run_success_ne_leve_pas():
             return {"default_branch": "main"}
         if path == (
             "repos/o/r/actions/workflows/scripts-tests.yml/runs"
-            "?branch=main&event=push&status=completed&per_page=1"
+            "?branch=main&event=push&status=completed&per_page=10"
         ):
             return {"workflow_runs": [
                 {"name": "Scripts & Notebook-Tools Tests",

@@ -279,6 +279,62 @@ def test_failing_advisory_is_not_a_red():
     assert pig.blocking_causes(state) == []
 
 
+def test_native_changes_requested_is_a_cause_without_an_organ_verdict():
+    """Controle POSITIF du couple #18829 : sans verdict d'organe, l'etat natif
+    reste une cause.
+
+    Sans ce controle, le correctif pourrait « passer » en supprimant purement la
+    cause -- la lane ne verrait plus jamais une reserve non levee. Le drapeau
+    doit etre le discriminant, pas un decor.
+    """
+    state = _state(reviews=[("CHANGES_REQUESTED", "clusterManager-Myia")])
+    expected = ["CHANGES_REQUESTED non leve (clusterManager-Myia)"]
+    assert pig.blocking_causes(state) == expected
+    assert pig.blocking_causes(state, review_points_clear=False) == expected
+
+
+def test_changes_requested_lifted_by_a_third_party_is_not_a_cause():
+    """#18829, mesure : CR Hermes du 02/10 10:29Z, leve par ai-01 le 04/10 02:35Z.
+
+    GitHub conserve la derniere review PAR AUTEUR : l'etat natif reste
+    `CHANGES_REQUESTED` a jamais. L'organe B.0, lui, lit la levee et rend rc=0.
+    Le picker ouvrait pourtant une file de reparation sur cette PR -- premier
+    geste de la lane, sur un travail deja fait et deja approuve.
+    """
+    state = _state(reviews=[("CHANGES_REQUESTED", "clusterManager-Myia")])
+    assert pig.blocking_causes(state, review_points_clear=True) == []
+
+
+def test_unaddressed_review_points_records_evaluated_clear_as_zero(monkeypatch):
+    """« Evaluee et claire » doit etre DISTINCT de « jamais evaluee ».
+
+    Le `0` est l'information qui autorise `blocking_causes` a ignorer un
+    `CHANGES_REQUESTED` natif ; son absence signifie « non evaluee » et la cause
+    est alors conservee. Sans cette distinction, le correctif #18829 serait
+    fail-OPEN sur toute panne par-PR.
+    """
+    import check_unaddressed_nits
+    monkeypatch.setattr(check_unaddressed_nits, "analyse_pr",
+                        lambda n: {"blocked": False, "blocking": []})
+    assert pig.unaddressed_review_points([18829]) == {18829: 0}
+
+
+def test_unaddressed_review_points_leaves_an_unreadable_pr_absent(monkeypatch):
+    """Controle negatif du precedent : une PR illisible reste ABSENTE du dict.
+
+    L'appelant lit `== 0`, donc absent ne vaut pas clair : la cause est
+    conservee (fail-closed). Une exception avalee ne doit jamais produire
+    l'equivalent d'un acquittement.
+    """
+    import check_unaddressed_nits
+
+    def _boom(n):
+        raise RuntimeError("reseau")
+
+    monkeypatch.setattr(check_unaddressed_nits, "analyse_pr", _boom)
+    assert pig.unaddressed_review_points([18829]) == {}
+
+
 def test_failing_required_check_is_a_red_and_names_the_advisory_as_diagnostic():
     state = _state(checks=[
         ("PR gate", "FAILURE", True),

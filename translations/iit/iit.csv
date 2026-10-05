@@ -29431,10 +29431,10 @@ nb_name = ""ICT-35-HumorCausalProbe-Pilot-Python""
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,acquis-renvoi,markdown,fr,c89100c5ce4d2c32,"> **Acquis et parenté** : strate 5 (ICT-21 → ICT-25 prolongée par ICT-35 → ICT-39 — le LLM comme substrat). Étage 0 du programme HumorCausalProbe ([#5635](https://github.com/jsboige/CoursIA/issues/5635), [#8236](https://github.com/jsboige/CoursIA/issues/8236)) : la baseline de shortcuts lexicaux se mesure **avant** toute phase SAE, les phases suivantes restant aval.
 ",,,,,,,,c89100c5ce4d2c32,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,frontmatter,markdown,fr,7d43f9e2ef4f28c1,"## ICT-35 -- HumorCausalProbe-Pilot : substrat HLS, sans GPU, sans confusion explication/mecanisme
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,frontmatter,markdown,fr,fd09fb5bb702ea2d,"## ICT-35 -- HumorCausalProbe-Pilot : substrat HLS, sans GPU, sans confusion explication/mecanisme
 
 > **Serie ICT** (*Integrated Causal Trajectories*, EPIC #4588) -- strate 5 : *extraction GPU-free*.
-> Issue : **#14035**. prerequis livre : **GT-28b** banc humour dur (120 instances annotees, #12785 MERGED 2026-08-27).
+> Issue : **#14035**. prerequis livre : banc humour dur **consolide dans GT-18c** (120 instances annotees, #12785 puis absorption #14032).
 > Aval : #5635 (Gate 24 workspace), #8236 (multi-echelle), #5105 (Inoculation).
 
 ## Étage 0 -- baseline de shortcuts lexicaux (PAS Phase 1 SAE)
@@ -29488,7 +29488,7 @@ L'etage 0 ne discrimine **que** la couche 1 (jeu sonore / repetition + incongrui
 
 ## Sources
 
-- `MyIA.AI.Notebooks/GameTheory/GameTheory-18d-Humour-Banc-Dur-Python.ipynb` : CORPUS_DUR 120 instances (cell[10]), labellisation manuelle par heuristique Argumentum (cf note methodo de l'acceptance).
+- `MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb` : CORPUS_DUR 120 instances (cell[33], section echelle consolidee #14032), labellisation manuelle par heuristique Argumentum (cf note methodo de l'acceptance).
 - `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Computational Humor\` : sources HLS (Attardo/Raskin GTVH + Mihalcea/Pulido humor stylometry), **prevues comme reference** pour la taxonomie -- la mise en archive effective est a faire dans le scope de #14033, pas de ce notebook.
 
 
@@ -29504,8 +29504,8 @@ Le protocole c.927 (po-2025 DM msg-20260903T164919-gtux5n) bascule l'unité de m
 
 3. **frontmatter prose**. v5 affirmait `StratifiedGroupKFold` la ou le code execute `StratifiedKFold(n_splits=3)` sur 36 unites group-level (la confusion venait de c.920 -- `StratifiedGroupKFold` sur 60 instances aurait ete coherent, mais c.927 a bascule sur `StratifiedKFold` quand l'unite est devenue le groupe H). La v6 aligne la prose sur le code.
 
-Le verdict `INCONCLUSIVE borne` tient structurellement sur ce sous-corpus (36 unites), ce qui etait la conclusion v4/v5 reformulee en termes de mesure plus robuste (p fini + IC95 + verdict logic corrigee).",,,,,,,,7d43f9e2ef4f28c1,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,setup,code,fr,b72c831b1215f7c8,"# -*- coding: utf-8 -*-
+Le verdict `INCONCLUSIVE borne` tient structurellement sur ce sous-corpus (36 unites), ce qui etait la conclusion v4/v5 reformulee en termes de mesure plus robuste (p fini + IC95 + verdict logic corrigee).",,,,,,,,fd09fb5bb702ea2d,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,setup,code,fr,f9598ee12ebf2247,"# -*- coding: utf-8 -*-
 # Setup. Pas de service externe ; pas de GPU. CPU-only, sklearn, json, random.
 import json
 import random
@@ -29528,19 +29528,20 @@ SEED = 13306
 random.seed(SEED)
 np.random.seed(SEED)
 
-GT28B = Path(""MyIA.AI.Notebooks/GameTheory/GameTheory-18d-Humour-Banc-Dur-Python.ipynb"")
-assert GT28B.exists(), f""GT-28b manquant : {GT28B.resolve()}""
-print(f""[setup] GT-28b present : {GT28B}"")
+GT28B = Path(""MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb"")  # consolide #14032
+assert GT28B.exists(), f""banc humour 18c manquant : {GT28B.resolve()}""
+print(f""[setup] banc humour 18c (consolide #14032) present : {GT28B}"")
 print(f""[setup] seed = {SEED}"")
 print(f""[setup] sklearn LogisticRegression baseline (CPU)"")
-",,,,,,,,b72c831b1215f7c8,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,extract-corpus,code,fr,0bd9530de5adfac4,"# Re-execute cell[1]..cell[10] de GT-28b pour obtenir CORPUS_DUR.
+",,,,,,,,f9598ee12ebf2247,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,extract-corpus,code,fr,dba15f7cd945bcc4,"# Re-execute la section passage-a-l'echelle (cell[26..33]) du banc humour
+# consolide (18c, ex-GT-28b absorbe par #14032) pour obtenir CORPUS_DUR.
 # C'est une REPRODUCTION : on n'edite pas le notebook source, on importe
-# ses cellules et on les execute ici. Source de verite = GT-28b.ipynb.
+# ses cellules et on les execute ici. Source de verite = 18c consolide.
 nb_src = json.loads(GT28B.read_text(encoding=""utf-8""))
 code_cells = [(i, ''.join(c['source'])) for i, c in enumerate(nb_src['cells'])
-               if c['cell_type'] == 'code' and i <= 10]
-print(f""[extract] {len(code_cells)} cellules code GT-28b[0..10] a executer"")
+               if c['cell_type'] == 'code' and 26 <= i <= 33]
+print(f""[extract] {len(code_cells)} cellules code 18c[26..33] a executer"")
 
 ns = {}
 for i, src in code_cells:
@@ -29550,8 +29551,8 @@ CORPUS_DUR = ns['CORPUS_DUR']
 print(f""[extract] CORPUS_DUR : {len(CORPUS_DUR)} instances"")
 print(f""[extract] distribution par label : {dict(Counter(i['label'] for i in CORPUS_DUR))}"")
 print(f""[extract] distribution par source : {dict(Counter(i['source'] for i in CORPUS_DUR))}"")
-",,,,,,,,0bd9530de5adfac4,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,stratify,code,fr,c36e0546332f3f23,"# Stratification : 6 humour_reussi (cell[17] de GT-28b), tous les non-humour disponibles.
+",,,,,,,,dba15f7cd945bcc4,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,stratify,code,fr,544cb16815238426,"# Stratification : 6 humour_reussi (cell[42] du banc consolide), tous les non-humour disponibles.
 # 6 humour_reussi (le label 'humour_reussi') vs ~72 non-humour (4 autres labels).
 # Le ratio 1:12 maximise la variete des non-humour pour la diversite des negatifs.
 # ATTENTION (c.920, fixe en c.927) : la strategie d'echantillonnage est maintenant **par
@@ -29580,7 +29581,7 @@ for label in ['rire_sans_recadrage', 'recadrage_sans_rire', 'rien', 'offensif_co
 print(f""[stratify] humour_reussi = {len(H_REUSSI)} instances"")
 print(f""[stratify] non-humour    = {len(NON_HUMOUR)} instances (toutes disponibles)"")
 print(f""[stratify] ratio H:N     = 1:{len(NON_HUMOUR)//len(H_REUSSI)}"")
-",,,,,,,,c36e0546332f3f23,,,,,,,,
+",,,,,,,,544cb16815238426,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,match-pairs,code,fr,f84efbe6a0fb4e61,"# Appariement par longueur (token count approximatif, +/-20 %).
 # On definit la longueur d'une instance par le nombre de mots de son texte.
 def text_length(inst):
@@ -30041,17 +30042,17 @@ print()
 print(""[P2] Etages superieurs gates par #5635 (GPU Gate 24 workspace) et #14033 (substrat"")
 print(""     taxonomique). Aucune action GPU ou embeddings n est prise par ce notebook."")
 ",,,,,,,,e64a47aa645159d8,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,navlinks,markdown,fr,3f5d4e91165b18e8,"## Voir aussi
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,navlinks,markdown,fr,3e54066960fc4f0c,"## Voir aussi
 
 - **#14035** -- issue de reference, protocole falsifiable, acceptance (cible haute).
 - **#14032** -- consolidation de la methode de labellisation (GT-28 / GT-28b).
 - **#14033** -- substrat taxonomique croissant (corpus apparie + 3 labels + taxonomie sourcee).
-- **`MyIA.AI.Notebooks/GameTheory/GameTheory-18d-Humour-Banc-Dur-Python.ipynb`** -- CORPUS_DUR 120 instances, source de verite.
+- **`MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb`** -- banc humour consolide (#14032) : CORPUS_DUR 120 instances, source de verite.
 - **`MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21-SAETrajectories.ipynb`** -- substrat S4 (SAE Qwen3.5-9B), aval + tard.
 - **`MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb`** -- Gate 24, gated etages superieurs (GPU).
 - **#5635, #8236, #5105, #4588** -- aval ICT-Series.
 
-- **Note :** ICT-35 -- *HumorCausalProbe-Pilot*, sub-grain exploratoire de #14035, **etage 0 lexical baseline**, GPU-free. Verdict INCONCLUSIVE borne sur 30 appariements exploratoires (6 positifs uniques x 5 + 30 negatifs uniques). Mesure StratifiedKFold(n_splits=3) sur 36 unites group-level (fix c.920 fuite de groupe via unification par moyenne H + c.927 bascule unite-de-mesure). L'etape d'apres est #14033 (substrat taxonomique), pas Phase 2 SAE. Si le verdict devient FEATURE_CANDIDATE apres elargissement (>100 textes positifs uniques) ou changement d'etage, ce notebook sera promu en ICT-35 numerote definitif ; sinon il restera un -Pilot archive pour tracabilite.",,,,,,,,3f5d4e91165b18e8,,,,,,,,
+- **Note :** ICT-35 -- *HumorCausalProbe-Pilot*, sub-grain exploratoire de #14035, **etage 0 lexical baseline**, GPU-free. Verdict INCONCLUSIVE borne sur 30 appariements exploratoires (6 positifs uniques x 5 + 30 negatifs uniques). Mesure StratifiedKFold(n_splits=3) sur 36 unites group-level (fix c.920 fuite de groupe via unification par moyenne H + c.927 bascule unite-de-mesure). L'etape d'apres est #14033 (substrat taxonomique), pas Phase 2 SAE. Si le verdict devient FEATURE_CANDIDATE apres elargissement (>100 textes positifs uniques) ou changement d'etage, ce notebook sera promu en ICT-35 numerote definitif ; sinon il restera un -Pilot archive pour tracabilite.",,,,,,,,3e54066960fc4f0c,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35b-HumorCausalPairs-SAE-Python.ipynb,9f5dffbc,code,fr,5b5b5c243286a86f,"# Parameters
 nb_name = ""ICT-35b-HumorCausalPairs-SAE-Python""",,,,,,,,5b5b5c243286a86f,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35b-HumorCausalPairs-SAE-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
@@ -34763,21 +34764,21 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41-SAE-GeometrieFeatures-Python.ipynb,5514f
 - Harnais : Epic #10355 (traces npz commitees), organe `ict/scale_free.py`,
   organe `ict/sae_dictionary.py`.
 ",,,,,,,,4d95484c97929c1a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,226c0ff6,markdown,fr,24282410ed5d6cae,"# ICT-42 — Crosscoder : diffuser deux modèles, distilled reasoning vs base
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,226c0ff6,markdown,fr,cbb1644fe905b64e,"# ICT-41b — Crosscoder : diffuser deux modèles, distilled reasoning vs base
 
 > **Arc A2 — géométrie du latent** (Epic #16741), suite directe d'ICT-41, SAE mono-modèle (issue #16747, en cours d'intégration via la PR #16859). Paper source : **R05** — Baek & Tegmark, *Towards Understanding Distilled Reasoning Models: A Representational Approach* ([arXiv:2503.03730](https://arxiv.org/2503.03730)).
 
 ICT-41 isolait la géométrie d'UN modèle avec un SAE. Ici on met **deux modèles côte à côte** dans un même dictionnaire de features : le modèle distillé `DeepSeek-R1-Distill-Qwen-1.5B` (qui a « appris à raisonner » par distillation de traces DeepSeek-R1) et sa base `Qwen2.5-Math-1.5B` (avant distillation). L'outil est le **crosscoder** : chaque feature possède un décodeur **par modèle**, et le rapport des normes des décodeurs — le **NRN** — dit si une feature est *partagée* (les deux modèles l'utilisent pareil), *distillée-only* (le distillé l'a acquise pendant la distillation) ou *base-only*.
 
-La question causale du papier : les features distillées-only portent-elles le comportement « over-thinking » du raisonnement long ? On la teste à échelle mini — et on verra que **certaines réponses du papier ne se reproduisent pas à cette échelle** : c'est précisément l'intérêt méthodologique.",,,,,,,,24282410ed5d6cae,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,934895f9,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,528ea9db,markdown,fr,92aad3db608c582c,"## Prérequis & avertissement d'exécution
+La question causale du papier : les features distillées-only portent-elles le comportement « over-thinking » du raisonnement long ? On la teste à échelle mini — et on verra que **certaines réponses du papier ne se reproduisent pas à cette échelle** : c'est précisément l'intérêt méthodologique.",,,,,,,,cbb1644fe905b64e,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,934895f9,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,528ea9db,markdown,fr,92aad3db608c582c,"## Prérequis & avertissement d'exécution
 
 - **GPU requis** (~4 Go de VRAM libres) — deux modèles 1.5B chargés **séquentiellement** en bf16, puis en lockstep CPU+GPU pour l'ablation causale. Environnement : `coursia-ml-training` (torch 2.6 + transformers 5.2 + datasets 5.0).
 - **Durée totale ~20-25 min** : capture d'activations (~8 min), entraînement du crosscoder (~6 min), analyses, ablation lockstep (~4 min).
 - Les poids Hugging Face (7 Go au total) sont attendus dans le cache HF local ; sinon le premier téléchargement les récupère. On fixe `HF_HOME` vers le cache provisionné de la machine si absent.
 - **Échelle mini assumée** : 307 200 tokens capturés vs 200 M dans le papier, dictionnaire K=4096 vs 32768. Chaque section signale honnêtement ce que l'échelle permet et ne permet pas de conclure.",,,,,,,,92aad3db608c582c,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,a0caf98c,code,fr,07050a0992d381b4,"import json, os, time
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,a0caf98c,code,fr,07050a0992d381b4,"import json, os, time
 import numpy as np
 
 os.environ.setdefault(""HF_HOME"", ""D:/hf-cache-crosscoder"")
@@ -34799,7 +34800,7 @@ SEED = 0
 torch.manual_seed(SEED)
 np.random.seed(SEED)
 print(""cuda:"", torch.cuda.is_available(), ""| work:"", WORK)",,,,,,,,07050a0992d381b4,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,eefc126d,markdown,fr,0a4e29d1f4033769,"## 1. Le crosscoder en cinq équations (R05 §3)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,eefc126d,markdown,fr,0a4e29d1f4033769,"## 1. Le crosscoder en cinq équations (R05 §3)
 
 Notation : $i \in \{A, B\}$ avec $A$ = base, $B$ = distillé ; $a^{(i)}(x_j)$ = activation du residual stream **en entrée de la couche mi-profondeur** (couche 14 sur 28 pour nos deux modèles) au token $x_j$.
 
@@ -34816,19 +34817,19 @@ Le tri des features se fait sur le rapport des normes L1 des décodeurs :
 $$\mathrm{RDN}_k = \frac{\lVert W_{\mathrm{dec}}^{(B),k}\rVert_1}{\lVert W_{\mathrm{dec}}^{(A),k}\rVert_1} \qquad \mathrm{NRN}_k = \frac{\mathrm{RDN}_k}{1+\mathrm{RDN}_k} \tag{6-7}$$
 
 **Lecture du NRN** : $0{,}5$ = partagé ; $\to 1$ = distillée-only ; $\to 0$ = base-only. C'est l'axe qui trie tout le notebook.",,,,,,,,0a4e29d1f4033769,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,f9bb276d,code,fr,1a457bb969096fe2,"N_TRACES, MAX_TOK = 800, 384      # corpus mini : 307 200 tokens
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,f9bb276d,code,fr,1a457bb969096fe2,"N_TRACES, MAX_TOK = 800, 384      # corpus mini : 307 200 tokens
 K_FEATURES, STEPS, LAM, LR, BS = 4096, 8000, 2e-3, 1e-3, 2048
 THRESH_SURGICAL, THRESH_WIDE = 0.6, 0.5
 PAIR = [(""distilled"", ""deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B""),
         (""base"", ""Qwen/Qwen2.5-Math-1.5B"")]
 print(f""corpus {N_TRACES} traces x {MAX_TOK} tok max, K={K_FEATURES}, ""
       f""steps={STEPS}, lambda={LAM}"")",,,,,,,,1a457bb969096fe2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,2e9948ed,markdown,fr,6b5321a7d6d32e6b,"## 2. Corpus : les traces OpenThoughts, pas les énoncés
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,2e9948ed,markdown,fr,6b5321a7d6d32e6b,"## 2. Corpus : les traces OpenThoughts, pas les énoncés
 
 R05 entraîne son crosscoder sur 200 M de tokens d'`open-thoughts/OpenThoughts-114k` — des **traces de raisonnement générées par DeepSeek-R1**. Détail de schéma qui a son importance : le dataset est au format **ShareGPT** (`conversations` : tours `user`/`assistant`), pas un champ `problem`.
 
 On capture donc **énoncé + début de trace** (384 tokens) : c'est dans la trace que vivent les marqueurs « Wait », « Therefore », « Alternatively », « But » qui serviront à l'annotation. On filtre le boilerplate TACO (des dizaines d'énoncés identiques « Generate an executable Python function... ») et les doublons.",,,,,,,,6b5321a7d6d32e6b,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,f57a4b68,code,fr,b2296c496ad2922e,"from datasets import load_dataset
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,f57a4b68,code,fr,b2296c496ad2922e,"from datasets import load_dataset
 
 TACO = ""Generate an executable Python function""
 ds = load_dataset(""open-thoughts/OpenThoughts-114k"", split=""train"", streaming=True)
@@ -34848,12 +34849,12 @@ assert len(texts) >= N_TRACES // 2
 json.dump(texts, open(os.path.join(WORK, ""texts.json""), ""w"", encoding=""utf-8""),
           ensure_ascii=False)
 print(""traces retenues:"", len(texts))",,,,,,,,b2296c496ad2922e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,4a79a7f4,markdown,fr,569bae07249a4169,"### Exercice 1 — un sélecteur mono-domaine
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,4a79a7f4,markdown,fr,569bae07249a4169,"### Exercice 1 — un sélecteur mono-domaine
 
 Le corpus ci-dessus mélange maths, code, sciences. Pour cibler les features de raisonnement *mathématique*, écrire `select_math(texts)` qui ne garde que les traces dont l'énoncé contient au moins un indice mathématique (par ex. `$`, `\(`, `equation`, `integer`, `triangle`...), puis relancer la capture sur ce sous-corpus et comparer la distribution NRN.
 
 *Indice : inspecter `texts[:20]` pour voir à quoi ressemblent les énoncés ; la comparaison NRN se fait avec la cellule histogramme de la section 4.*",,,,,,,,569bae07249a4169,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,568d8457,code,fr,f457e47d2e5c9625,"def select_math(texts, min_len=40):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,568d8457,code,fr,f457e47d2e5c9625,"def select_math(texts, min_len=40):
     # TODO etudiant : retourner la sous-liste des traces mathematiques
     # Etape 1 : definir une liste de mots-indices (equation, integer, triangle, ...)
     # Etape 2 : ne garder que texts contenant au moins un indice
@@ -34863,10 +34864,10 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,568
 
 sel = select_math(texts)
 print(""Exercice a completer - select_math renvoie:"", sel)",,,,,,,,f457e47d2e5c9625,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,4e143441,markdown,fr,6b2cd21982b2a114,"## 3. Capture du residual stream, couche mi-profondeur
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,4e143441,markdown,fr,6b2cd21982b2a114,"## 3. Capture du residual stream, couche mi-profondeur
 
 Les deux modèles **partagent la même famille de tokenizer** (Qwen2.5) : sur nos 4 prompts de fumée, les ids étaient **identiques token à token** — condition nécessaire pour aligner les positions des deux modèles dans le crosscoder. On capture `hidden_states[mid]` = l'entrée de la couche 14 (sur 28), en bf16 GPU, séquentiellement.",,,,,,,,6b2cd21982b2a114,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b5bdb154,code,fr,33e494d333c2a5b2,"from transformers import AutoModelForCausalLM, AutoTokenizer
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,b5bdb154,code,fr,33e494d333c2a5b2,"from transformers import AutoModelForCausalLM, AutoTokenizer
 
 def capture(role, repo, texts):
     tok = AutoTokenizer.from_pretrained(repo)
@@ -34895,11 +34896,11 @@ acts = {}
 for role, repo in PAIR:
     acts[role] = capture(role, repo, texts)
 print(f""capture en {time.time()-t0:.0f}s"")",,,,,,,,33e494d333c2a5b2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,cf5e3380,markdown,fr,ec2c786bef0adbd9,"**Lecture (ancrée sur cette exécution).** VRAM pic : **3 734 MiB** (distillé) puis **3 288 MiB** (base) — la cohabitation avec le serveur d'embeddings résident est juste, d'où le chargement **séquentiel** et le `empty_cache()` entre les deux ; capture totale ~2,5 min. Les 800 tronçons de 384 tokens donnent exactement 307 200 positions par modèle. L'alignement des tokenizers a été vérifié en amont (ids égaux sur prompts témoins) : la position $j$ désigne le **même token** pour $A$ et $B$.",,,,,,,,ec2c786bef0adbd9,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,41fad215,markdown,fr,649ae09ee6ac0a7d,"## 4. Le mini-crosscoder (Eq 3-5)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,cf5e3380,markdown,fr,ec2c786bef0adbd9,"**Lecture (ancrée sur cette exécution).** VRAM pic : **3 734 MiB** (distillé) puis **3 288 MiB** (base) — la cohabitation avec le serveur d'embeddings résident est juste, d'où le chargement **séquentiel** et le `empty_cache()` entre les deux ; capture totale ~2,5 min. Les 800 tronçons de 384 tokens donnent exactement 307 200 positions par modèle. L'alignement des tokenizers a été vérifié en amont (ids égaux sur prompts témoins) : la position $j$ désigne le **même token** pour $A$ et $B$.",,,,,,,,ec2c786bef0adbd9,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,41fad215,markdown,fr,649ae09ee6ac0a7d,"## 4. Le mini-crosscoder (Eq 3-5)
 
 Implémentation littérale : encodeurs $W_{\mathrm{enc}}^{(A)}, W_{\mathrm{enc}}^{(B)}$ (le ReLU agit sur la **somme** des deux projections), décodeurs $W_{\mathrm{dec}}^{(A)}, W_{\mathrm{dec}}^{(B)}$, pénalité de parcimonie = normes L2 des colonnes décodeur pondérées par $f_k$. Adam + cosine, 8000 pas, lots de 2048 positions.",,,,,,,,649ae09ee6ac0a7d,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,3d510b82,code,fr,d92b3e85a12f999a,"d = acts[""base""].shape[1]
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,3d510b82,code,fr,d92b3e85a12f999a,"d = acts[""base""].shape[1]
 a_b = torch.from_numpy(acts[""base""]).float().cuda()
 a_d = torch.from_numpy(acts[""distilled""]).float().cuda()
 n = a_b.shape[0]
@@ -34929,7 +34930,7 @@ for step in range(STEPS):
         dens = (torch.relu(a_b[:8192] @ W_eb.T + a_d[:8192] @ W_ed.T + b_e) > 0).float().mean().item()
         hist.append((step+1, loss.item(), dens))
         print(f""step {step+1}/{STEPS} loss={loss.item():.5f} act>0={dens:.3f}"")",,,,,,,,d92b3e85a12f999a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,d3571e91,code,fr,9abe39eb32df6de8,"with torch.no_grad():
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,d3571e91,code,fr,9abe39eb32df6de8,"with torch.no_grad():
     num = torch.zeros(2, device=""cuda""); den = torch.zeros(2, device=""cuda"")
     fmax = torch.zeros(K_FEATURES, device=""cuda"")
     CH = 65536
@@ -34946,22 +34947,22 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,d35
 print(f""EV base={ev_b:.3f} distilled={ev_d:.3f} dead={dead:.3f}"")
 print(f""NRN: median={np.median(nrn):.3f} frac>0.55={float((nrn>0.55).mean()):.3f} ""
       f""frac<0.45={float((nrn<0.45).mean()):.3f}"")",,,,,,,,9abe39eb32df6de8,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,47344923,code,fr,62b67b4cb1a54113,"import matplotlib.pyplot as plt
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,47344923,code,fr,62b67b4cb1a54113,"import matplotlib.pyplot as plt
 fig, ax = plt.subplots(figsize=(7, 3.2))
 ax.hist(nrn[nrn > 0], bins=80, color=""#3b6ea5"")
 ax.axvline(0.5, color=""k"", ls=""--"", lw=1, label=""NRN = 0.5 (partage)"")
 ax.set_xlabel(""NRN""); ax.set_ylabel(""features""); ax.legend()
 ax.set_title(f""Distribution NRN - {K_FEATURES} features (median {np.median(nrn):.3f})"")
 plt.tight_layout(); plt.show()",,,,,,,,62b67b4cb1a54113,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,854bccd1,markdown,fr,c2f3802e06a41ddf,"**Lecture (ancrée sur cette exécution).** Trois chiffres à retenir du run : EV **0,988 base / 0,976 distillé** (le crosscoder reconstruit presque tout le stream), **17,8 % de features mortes**, densité d'activation ~2,8 % en fin d'entraînement. La distribution NRN est **piquée à 0,498** — comme la Fig. 1 du papier : la grande majorité des features sont partagées, avec une queue fine de chaque côté (**0,9 % au-dessus de 0,55**, 2,1 % en dessous de 0,45).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,854bccd1,markdown,fr,c2f3802e06a41ddf,"**Lecture (ancrée sur cette exécution).** Trois chiffres à retenir du run : EV **0,988 base / 0,976 distillé** (le crosscoder reconstruit presque tout le stream), **17,8 % de features mortes**, densité d'activation ~2,8 % en fin d'entraînement. La distribution NRN est **piquée à 0,498** — comme la Fig. 1 du papier : la grande majorité des features sont partagées, avec une queue fine de chaque côté (**0,9 % au-dessus de 0,55**, 2,1 % en dessous de 0,45).
 
 **Leçon d'échelle (vérifiée en amont)** : avec 64k tokens et $\lambda = 3\cdot10^{-4}$, la queue distilled-only est **vide** (0 feature > 0,55) — il a fallu monter à ~300k tokens **et** $\lambda = 2\cdot10^{-3}$ pour la voir émerger, au prix d'un léger recul de l'EV. La spécialisation des décodeurs n'est pas gratuite : c'est la parcimonie qui la force.",,,,,,,,c2f3802e06a41ddf,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,5f548bcf,markdown,fr,1fbd90bf1c30a4e3,"### Exercice 2 — NRN en normes L2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,5f548bcf,markdown,fr,1fbd90bf1c30a4e3,"### Exercice 2 — NRN en normes L2
 
 L'Eq 6 utilise les normes **L1** des décodeurs. Recalculer le NRN avec les normes **L2** (`W_dd.norm(dim=0)` au lieu de `W_dd.abs().sum(0)`) et comparer : le classement des 10 features distilled-only change-t-il ? Quelques features passent-elles le seuil 0,55 dans un sens ou l'autre ?
 
 *Indice : `np.argsort` sur les deux versions ; comparer les ensembles avec `np.intersect1d`.*",,,,,,,,1fbd90bf1c30a4e3,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,16d7bccc,code,fr,156322483b2fa71d,"def nrn_with(norm_fn):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,16d7bccc,code,fr,156322483b2fa71d,"def nrn_with(norm_fn):
     # TODO etudiant : renvoyer le vecteur NRN (Eq 7) avec la norme demandee
     # Etape 1 : rdn = norm_fn(W_dd) / norm_fn(W_db)  (colonnes decoder)
     # Etape 2 : nrn = rdn / (1 + rdn)
@@ -34970,10 +34971,10 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,16d
 
 nrn_l2 = nrn_with(lambda W: W.norm(dim=0))
 print(""Exercice a completer - nrn_l2 ="", None if nrn_l2 is None else nrn_l2.shape)",,,,,,,,156322483b2fa71d,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,0d8afc88,markdown,fr,b2305a7afcbbe815,"## 5. Annotation : où les features distilled-only s'activent-elles ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,0d8afc88,markdown,fr,b2305a7afcbbe815,"## 5. Annotation : où les features distilled-only s'activent-elles ?
 
 Deux jambes d'annotation : (i) la **fenêtre d'activation maximale** de chaque top-feature (à la Table 1 du papier), (ii) un test quantitatif d'**enrichissement** — les positions des marqueurs « Wait / Therefore / Alternatively / But » sont-elles plus activées que les autres sur les features distilled-only ?",,,,,,,,b2305a7afcbbe815,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,de68ab5f,code,fr,c114b2f716b6a10e,"from transformers import AutoTokenizer
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,de68ab5f,code,fr,c114b2f716b6a10e,"from transformers import AutoTokenizer
 tok = AutoTokenizer.from_pretrained(PAIR[1][1])
 MARKERS = {""Wait"": [], ""Therefore"": [], ""Alternatively"": [], ""But"": []}
 off = 0
@@ -34987,7 +34988,7 @@ for t, L in zip(texts, np.load(os.path.join(WORK, ""seg_base.npy""))):
     off += int(L)
 for mk, v in MARKERS.items():
     print(f""marqueur {mk}: {len(v)} positions"")",,,,,,,,c114b2f716b6a10e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b9676b2f,code,fr,cb7861f9ce9afe56,"sel = torch.from_numpy(nrn).float().cuda() > 0.55
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,b9676b2f,code,fr,cb7861f9ce9afe56,"sel = torch.from_numpy(nrn).float().cuda() > 0.55
 print(""features distilled-only (NRN>0.55):"", int(sel.sum()))
 W_eb_s, W_ed_s, b_s = W_eb[sel].detach(), W_ed[sel].detach(), b_e[sel].detach()
 msum = torch.zeros(n, device=""cuda"")
@@ -35003,10 +35004,10 @@ for mk, pos in MARKERS.items():
     pos = np.asarray(pos)
     on, off_ = ms[pos].mean(), np.delete(ms, pos).mean()
     print(f""{mk}: n={len(pos)} act_ON={on:.3f} act_OFF={off_:.3f} ratio={on/max(off_,1e-9):.2f}"")",,,,,,,,cb7861f9ce9afe56,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,7a615e61,markdown,fr,9d16123ae2e3c6f0,"**Lecture — un résultat MIXTE, affiché tel quel (ancré sur cette exécution).** Sur nos 36 features distilled-only, le ratio d'enrichissement vaut **Therefore 1,68 · But 0,95 · Alternatively 0,71 · Wait 0,54** : un seul marqueur sur quatre (**Therefore**, $n = 103$ positions) est réellement enrichi, les trois autres sont neutres ou déplétés. Là où le crosscoder 32768-features/200M-tokens du papier trouve des features « self-reflection » qui tirent les « Wait », le nôtre n'offre qu'un signal **partiel et fragile** : l'enrichissement Therefore repose sur peu de positions, et le marqueur le plus iconique du R1 (« Wait ») est au contraire **déplété** (0,54).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,7a615e61,markdown,fr,9d16123ae2e3c6f0,"**Lecture — un résultat MIXTE, affiché tel quel (ancré sur cette exécution).** Sur nos 36 features distilled-only, le ratio d'enrichissement vaut **Therefore 1,68 · But 0,95 · Alternatively 0,71 · Wait 0,54** : un seul marqueur sur quatre (**Therefore**, $n = 103$ positions) est réellement enrichi, les trois autres sont neutres ou déplétés. Là où le crosscoder 32768-features/200M-tokens du papier trouve des features « self-reflection » qui tirent les « Wait », le nôtre n'offre qu'un signal **partiel et fragile** : l'enrichissement Therefore repose sur peu de positions, et le marqueur le plus iconique du R1 (« Wait ») est au contraire **déplété** (0,54).
 
 C'est la jambe 2 de la leçon méthodo (section 8) : **une fenêtre d'activation suggère, un test quantitatif décide** — et ici il décide « signal partiel, pas la lecture sémantique du papier ». Afficher « les features distilled-only capturent le raisonnement » sur la seule base de Therefore aurait été de la complaisance ; afficher les quatre ratios est la mesure honnête.",,,,,,,,9d16123ae2e3c6f0,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,1f4f32be,code,fr,07663878046f0f23,"order = np.argsort(-nrn)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,1f4f32be,code,fr,07663878046f0f23,"order = np.argsort(-nrn)
 picks = list(order[:6])
 offs, all_ids = [], []
 o = 0
@@ -35027,15 +35028,15 @@ for j, k in enumerate(picks):
     win = tok.decode(all_ids[ti][lo:hi]).replace(""\n"", "" "")
     print(f""[k={k}] NRN={nrn[k]:.3f} actmax={float(f_pick[pos, j]):.1f}"")
     print(f""    ...{win}..."")",,,,,,,,07663878046f0f23,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b5a69c35,markdown,fr,4bd5ebf96b1fd5ba,"**Lecture des fenêtres (cette exécution).** Les top-features distilled-only (NRN 0,62-0,67) s'ancrent sur des **énoncés mathématiques structurés** : instruction de format `\boxed{}` (k=3697), extremum $3f(x)^2+2g(x)$ (k=131), coloration vert/jaune de lettres (k=3561), jeu de partages « who can't split a pile anymore… first player guarantee a win » (k=1062), identité trigonométrique (k=1894), hypoténuse et altitude (k=3282). La spécialisation distillée s'est donc portée sur la **structure des problèmes**, pas sur les marqueurs Wait/Therefore purs que la Table 1 du papier isole à 200M tokens — cohérent avec l'enrichissement partiel mesuré juste avant.",,,,,,,,4bd5ebf96b1fd5ba,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,e6941011,markdown,fr,a48bf0cadee28c1a,"## 6. Ablation causale lockstep — « What is 5 - 1? »
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,b5a69c35,markdown,fr,4bd5ebf96b1fd5ba,"**Lecture des fenêtres (cette exécution).** Les top-features distilled-only (NRN 0,62-0,67) s'ancrent sur des **énoncés mathématiques structurés** : instruction de format `\boxed{}` (k=3697), extremum $3f(x)^2+2g(x)$ (k=131), coloration vert/jaune de lettres (k=3561), jeu de partages « who can't split a pile anymore… first player guarantee a win » (k=1062), identité trigonométrique (k=1894), hypoténuse et altitude (k=3282). La spécialisation distillée s'est donc portée sur la **structure des problèmes**, pas sur les marqueurs Wait/Therefore purs que la Table 1 du papier isole à 200M tokens — cohérent avec l'enrichissement partiel mesuré juste avant.",,,,,,,,4bd5ebf96b1fd5ba,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,e6941011,markdown,fr,a48bf0cadee28c1a,"## 6. Ablation causale lockstep — « What is 5 - 1? »
 
 La jambe causale : pendant la **génération** du modèle distillé, on retire du residual stream (entrée couche 14) la contribution des features ablatées :
 
 $$h' = h - \sum_{k \, \mathrm{ablatées}} f_k \cdot W_{\mathrm{dec}}^{(B),k}$$
 
 Intervention **delta chirurgicale** — on ne remplace pas le stream par la reconstruction, on ne soustrait que les features ciblées. Le crosscoder exige les activations des **deux** modèles : le base tourne sur CPU en lockstep (la VRAM est déjà occupée). Deux seuils : **chirurgical** (NRN > 0,6, 11 features) et **large** (NRN > 0,5, seuil du papier, 1 665 features ≈ 41 % du dictionnaire).",,,,,,,,a48bf0cadee28c1a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,6aed86c6,code,fr,65a6d626e2571eb7,"bas_cpu = AutoModelForCausalLM.from_pretrained(PAIR[1][1], dtype=torch.float32,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,6aed86c6,code,fr,65a6d626e2571eb7,"bas_cpu = AutoModelForCausalLM.from_pretrained(PAIR[1][1], dtype=torch.float32,
                                                device_map=""cpu"").eval()
 dis = AutoModelForCausalLM.from_pretrained(PAIR[0][1], dtype=torch.bfloat16,
                                            device_map=""cuda"").eval()
@@ -35098,7 +35099,7 @@ for label, th in [(""baseline (aucune)"", None), (""chirurgical NRN>0.6"", THRES
     print(f""--- {label}: {ntok} tokens ---"")
     print(txt[:400].replace(""\n"", "" | ""))
 hdl.remove()",,,,,,,,65a6d626e2571eb7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b6f512c8,markdown,fr,72be0e04c07d4cbc,"**Lecture (ancrée sur cette exécution).** Trois régimes nettement séparés :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,b6f512c8,markdown,fr,72be0e04c07d4cbc,"**Lecture (ancrée sur cette exécution).** Trois régimes nettement séparés :
 
 | Régime | Features ablatées | Durée | Tokens générés | Comportement |
 |---|---|---|---|---|
@@ -35107,10 +35108,10 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b6f
 | large NRN > 0,5 | 1665 | ≈3 min | **150 (plafond)** | dégénérescence en boucle : « 5 minus 1 is is 4? Wait, no… » répété, pas d'EOS |
 
 Deux enseignements honnêtes : (1) **ce checkpoint 1.5B ne sur-réfléchit pas** sur « What is 5 - 1? » en décodage glouton — la baseline fait 79 tokens, il n'y a rien à « raccourcir », le terrain du papier (over-thinking visible) n'est pas reproduit ici ; (2) l'ablation au seuil large du papier, appliquée à un crosscoder mini, **détruit** la génération (boucle de répétition) au lieu de l'épurer — la revendication causale du papier repose sur un crosscoder entraîné sur 600× plus de tokens. La jambe causale **réfute la transposition naïve** : c'est exactement pourquoi on la montre.",,,,,,,,72be0e04c07d4cbc,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b81be4a1,markdown,fr,aa482437a42a9de7,"## 7. Parallelogram loss — la géométrie sémantique (exercice CPU)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,b81be4a1,markdown,fr,aa482437a42a9de7,"## 7. Parallelogram loss — la géométrie sémantique (exercice CPU)
 
 Dernière mesure du papier (Fig. 4) : sur des quadruples d'analogies $(a, b, c, d)$ (genre : man:woman :: king:queen), on PCA les activations puis on mesure $\lVert E_a - E_b + E_c - E_d \rVert$ — un parallélogramme parfait l'annule. Le papier constate que le distillé 14B **bat** sa base : des représentations plus structurées. Version mini : mots mono-token, activations mi-couche, PCA sur les mots du quadruple.",,,,,,,,aa482437a42a9de7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,f3cdbfe5,code,fr,1306abfe21ad0798,"QUADS = [(""man"", ""woman"", ""king"", ""queen""),
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,f3cdbfe5,code,fr,1306abfe21ad0798,"QUADS = [(""man"", ""woman"", ""king"", ""queen""),
           (""paris"", ""france"", ""berlin"", ""germany""),
           (""rome"", ""italy"", ""madrid"", ""spain""),
           (""walk"", ""walked"", ""swim"", ""swam""),
@@ -35136,7 +35137,7 @@ words = sorted({w for q in ok_quads for w in q})
 acts_w = {role: word_act(repo, words) for role, repo in PAIR}
 for role in acts_w:
     print(role, ""captures"")",,,,,,,,1306abfe21ad0798,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,b8ce792b,code,fr,255f3b43f6eeb52e,"def parallelogram_loss(act_dict, quad):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,b8ce792b,code,fr,255f3b43f6eeb52e,"def parallelogram_loss(act_dict, quad):
     # PCA sur les 4 mots du quadruple (a 4 points, PCA -> 3 dims utiles)
     E = np.stack([act_dict[w] for w in quad])
     E = E - E.mean(0)
@@ -35149,12 +35150,12 @@ GENRE = (""man"", ""woman"", ""king"", ""queen"")
 for role in acts_w:
     if all(w in acts_w[role] for w in GENRE):
         print(f""{role}: parallelogram genre = {parallelogram_loss(acts_w[role], GENRE):.4f}"")",,,,,,,,255f3b43f6eeb52e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,7d0ccef9,markdown,fr,83749bbb67b62364,"### Exercice 3 — parallelogram loss sur la classe capitale-pays
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,7d0ccef9,markdown,fr,83749bbb67b62364,"### Exercice 3 — parallelogram loss sur la classe capitale-pays
 
 La cellule précédente calcule la perte du parallélogramme pour la classe **genre** : **distillé 1,0832 vs base 1,0694** — à cette échelle la base est (très légèrement) plus structurée, l'inverse du constat 14B du papier : un seul quadruple, verdict illustratif. À vous pour la classe **capitale-pays** (le quadruple `paris|france|berlin|germany` est le seul mono-token de cette classe dans notre vocabulaire — cf. la liste `ok_quads` imprimée) : (1) calculer la perte pour ce quadruple et chaque modèle avec `parallelogram_loss`, (2) comparer au verdict genre, (3) dire ce qu'un seul quadruple permet — et ne permet pas — de conclure.
 
 *Indice : réutiliser `acts_w[role]` ; pour aller plus loin, construire d'autres quadruples capitale-pays mono-token et étendre la classe avant de comparer les moyennes.*",,,,,,,,83749bbb67b62364,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,a1056bad,code,fr,c0cf48434f4ee2c9,"def parallelogram_class_summary(role, quad_list):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,a1056bad,code,fr,c0cf48434f4ee2c9,"def parallelogram_class_summary(role, quad_list):
     # TODO etudiant : renvoyer (moyenne, ecart-type) des parallelogram losses
     # Etape 1 : boucler sur quad_list avec parallelogram_loss(acts_w[role], q)
     # Etape 2 : moyenne et ecart-type (np.mean / np.std)
@@ -35163,7 +35164,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,a10
 
 CAPS = [q for q in ok_quads if q[0] in (""paris"", ""rome"")]
 print(""Exercice a completer - CAPS ="", CAPS)",,,,,,,,c0cf48434f4ee2c9,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,8e6317c8,markdown,fr,a59d163e5c01d574,"## 8. Leçon méthodo : les trois jambes de preuve
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,8e6317c8,markdown,fr,a59d163e5c01d574,"## 8. Leçon méthodo : les trois jambes de preuve
 
 Ce notebook a délibérément croisé trois façons de répondre à « cette feature porte-t-elle le raisonnement distillé ? » :
 
@@ -35172,7 +35173,7 @@ Ce notebook a délibérément croisé trois façons de répondre à « cette fea
 3. **Causale** (ablation pendant la génération) : la seule qui établisse un rôle — et qui ici **réfute la transposition** du seuil papier à un crosscoder mini (chirurgical 11 features inoffensif, large 1665 features destructeur).
 
 **La conclusion honnête de la version mini** : le crosscoder 1.5B/307k tokens reproduit la *statistique* du papier (pic NRN à 0,5, queues fines) mais pas encore sa *lecture sémantique* (features self-reflection) ni son *intervention causale*. Les trois jambes s'accordent sur la même frontière : entre 307k et 200M tokens, ce n'est pas la même science.",,,,,,,,a59d163e5c01d574,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,72ae4afd,markdown,fr,7bd6fac7eeff01ce,"## Limites assumées
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,72ae4afd,markdown,fr,7bd6fac7eeff01ce,"## Limites assumées
 
 - **307 200 tokens vs 200 M** (facteur ~650) ; K=4096 vs 32768 ; une seule couche (mi-profondeur) ; une seule paire (1.5B) contre 1.5B/7B/14B dans le papier.
 - Corpus 100 % OpenThoughts — le papier mêlait aussi RedPajama (texte général) : sans cette seconde source, la pression à spécialiser les features « raisonnement » est différente.
@@ -35180,12 +35181,12 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,72a
 - Génération gloutonne (do_sample=False) pour la reproductibilité ; le papier échantillonne — les longueurs absolues ne se comparent pas directement.
 - Parallelogram : 4/6 quadruples mono-token seulement, verdict genre **non reproducteur** du papier à 1.5B (base 1,0694 légèrement sous distillé 1,0832) sur UN quadruple — illustratif, l'exercice 3 commence la mesure par classe.
 - Déterminisme strict (`use_deterministic_algorithms`, cuBLAS workspace fixe, TF32 off) : chaque ré-exécution redonne les mêmes chiffres — les lectures de ce notebook sont ancrées sur ces sorties-là.",,,,,,,,7bd6fac7eeff01ce,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb,19592f65,markdown,fr,ec96cf2278f506bb,"## Références
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb,19592f65,markdown,fr,f3b4810f063531bc,"## Références
 
 - Baek, J. & Tegmark, M. (2025). *Towards Understanding Distilled Reasoning Models: A Representational Approach*. [arXiv:2503.03730](https://arxiv.org/abs/2503.03730) — Eq 3-7 (§3), Table 1 & Fig 1 (§4), ablation/steering (§5), parallelogram (Fig 4).
 - Dataset : [open-thoughts/OpenThoughts-114k](https://huggingface.co/datasets/open-thoughts/OpenThoughts-114k).
 - Modèles : [DeepSeek-R1-Distill-Qwen-1.5B](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B), [Qwen2.5-Math-1.5B](https://huggingface.co/Qwen/Qwen2.5-Math-1.5B).
-- Précédent série : ICT-41-SAE-GeometrieFeatures-Python, SAE mono-modèle (issue #16747, PR #16859 en cours d'intégration) ; cadre général [README de la série](README.md).",,,,,,,,ec96cf2278f506bb,,,,,,,,
+- Précédent série : ICT-41-SAE-GeometrieFeatures-Python, SAE mono-modèle (issue #16747, PR #16859 en cours d'intégration) ; cadre général [README de la série](README.md).",,,,,,,,f3b4810f063531bc,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-InoculationBifurcation-Pilot-Python.ipynb,1ec2e165,markdown,fr,2d0ccb49373b045d,"# ICT-42 — Inoculation et bifurcation représentationnelle (pilote multi-échelle)
 
 **Navigation** : [Index](README.md) | [<< ICT-21b Calibration](ICT-21b-SAECalibration-Python.ipynb) | [Tete-a-tete SAE<->J-space >>](ICT-SAE-JLens-TeteATete.ipynb)
@@ -35860,14 +35861,14 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-43-Calibration-MultiEchelle-Python.ipynb,ic
 5. **Inventaire daté** : mesuré au Hub tel qu'il existe au moment de l'exécution — le dépôt `W32K-L0_100` du 30B-A3B est ainsi absent de l'énumération des 14 dépôts (jamais publié ou retiré), son `W32K-L0_50` restant la ligne 3 de la table. Toute re-exécution re-mesure.
 
 *Suite (Phase 1) : fit J-lens par taille à `couche_ancre`, report qualité de sonde (accuracy/AUC `control` vs `trained`). See #8236.*",,,,,,,,55e1003f2faec4e5,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,782a8370,markdown,fr,ad76d588f4ac609d,"# ICT-44 — La géométrie de la vérité : une direction dans l'espace latent ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,782a8370,markdown,fr,83923ccd52661082,"# ICT-44 — La géométrie de la vérité : une direction dans l'espace latent ?
 **Navigation** : [Index](README.md) | [43 — Calibration multi-échelle](ICT-43-Calibration-MultiEchelle-Python.ipynb) | [45 — Inoculation & bifurcation 9B](ICT-45-InoculationBifurcation-9B-Python.ipynb)
 
-> **Arc cartes blanches** (Epic #16741) — scoping #16760, grain #16890. Suite directe d'ICT-41 (issue #16747 — géométrie SAE mono-modèle) et d'ICT-42 (issue #16749 — crosscoder de distillation). Paper source : **Marks & Tegmark, « The Geometry of Truth »** (COLM 2024, [arXiv:2310.06824](https://arxiv.org/2310.06824)) — cité à la fois par notre paper R05 (crosscoder) et par R11 §2.2.2, qui fait de la **connaissance du vrai tout en affirmant le faux** sa définition de la malhonnêteté.
+> **Arc cartes blanches** (Epic #16741) — scoping #16760, grain #16890. Suite directe d'ICT-41 (issue #16747 — géométrie SAE mono-modèle) et d'ICT-41b (issue #16749 — crosscoder de distillation). Paper source : **Marks & Tegmark, « The Geometry of Truth »** (COLM 2024, [arXiv:2310.06824](https://arxiv.org/2310.06824)) — cité à la fois par notre paper R05 (crosscoder) et par R11 §2.2.2, qui fait de la **connaissance du vrai tout en affirmant le faux** sa définition de la malhonnêteté.
 
 **La question.** Un LLM « croit-il » ce qu'il dit ? Peut-on lire la vérité d'un énoncé *dans ses activations*, sans lire sa sortie ? La piste : une **direction linéaire** — le residual stream contiendrait, quelque part, un axe vrai/faux. Le papier l'établit à l'échelle LLaMA-2 (7B/13B/70B) par une chaîne à trois jambes : localiser (patching), mesurer (PCA + sondes), **trancher (interventions causales)**. Nous répliquons la chaîne complète à échelle mini — paire Qwen 1.5B (base Math vs distillée R1) + un regard 7B — avec les datasets officiels du papier.
 
-**Avertissement d'échelle (honnête, G.2).** Le papier montre que la structure linéaire **émerge avec l'échelle** : à 7B les PC captent la surface (« eighty »), à 13B les axes s'opposent, à 70B ils s'alignent. À 1.5B, attendez-vous à un signal **partiel** — ce notebook documente ce que font nos modèles, pas ce que fait un 70B.",,,,,,,,ad76d588f4ac609d,,,,,,,,
+**Avertissement d'échelle (honnête, G.2).** Le papier montre que la structure linéaire **émerge avec l'échelle** : à 7B les PC captent la surface (« eighty »), à 13B les axes s'opposent, à 70B ils s'alignent. À 1.5B, attendez-vous à un signal **partiel** — ce notebook documente ce que font nos modèles, pas ce que fait un 70B.",,,,,,,,83923ccd52661082,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,674194b7,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,3e0d9c49,markdown,fr,30150dae38dba5da,"## Le débat que ce papier tranche (en surface)
 
@@ -36196,9 +36197,9 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,3bc365e0,co
 # copier interv_run avec fin = fin - 1, mesurer NIE f->t de la sonde MM cities+neg_cities
 result = None  # TODO etudiant
 print(""Exercice a completer"")",,,,,,,,b9bfb476c665e1c7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,85846e73,markdown,fr,ad726ce9bcf2150e,"## 5. Notre pont : la direction de vérité survit-elle à la distillation ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,85846e73,markdown,fr,278c29e9b5c9af3e,"## 5. Notre pont : la direction de vérité survit-elle à la distillation ?
 
-Question **hors papier**, née de notre arc : ICT-42 a montré qu'un crosscoder sépare features partagées et features distilled-only (NRN). La direction de vérité mass-mean de `cities` — $\theta_{mm}^{base}$ et $\theta_{mm}^{dist}$ dans le **même espace** (les deux modèles ont d = 1536, tokenizers alignés) — se ressemblent-elles ? cos(θ_base, θ_dist) par couche : proche de 1, la vérité est un axe hérité ; proche de 0, la distillation l'a réécrite ailleurs.",,,,,,,,ad726ce9bcf2150e,,,,,,,,
+Question **hors papier**, née de notre arc : ICT-41b a montré qu'un crosscoder sépare features partagées et features distilled-only (NRN). La direction de vérité mass-mean de `cities` — $\theta_{mm}^{base}$ et $\theta_{mm}^{dist}$ dans le **même espace** (les deux modèles ont d = 1536, tokenizers alignés) — se ressemblent-elles ? cos(θ_base, θ_dist) par couche : proche de 1, la vérité est un axe hérité ; proche de 0, la distillation l'a réécrite ailleurs.",,,,,,,,278c29e9b5c9af3e,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,476f1a1a,code,fr,58f665572a2dc915,"del model; torch.cuda.empty_cache()
 model, tok = load_model(""dist15"")   # acts_for lit les globaux tok/model
 ACTS_D = {}
@@ -40967,11 +40968,11 @@ def plancher_echantillonnage(n_tokens, n_factors, seed):
 # for nt in N_TOKENS_GRID: ...   # decommenter une fois implemente
 print(""Exercice 3 a completer : plancher d'echantillonnage de NC@95."")
 ",,,,,,,,2f0cd66bbdbd943e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,557db768,markdown,fr,8b77d88037f51a6b,"## Lecture 1 -- Le sous-corpus : 120 instances, un label a 48
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,557db768,markdown,fr,327b7a46bdc3ea83,"## Lecture 1 -- Le sous-corpus : 120 instances, un label a 48
 
-La sortie de l'extraction (5 cellules de GT-28b re-executees, aucune edition du notebook source) fixe le terrain : CORPUS_DUR = 120 instances, 5 categories ({'rire_sans_recadrage': 14, 'recadrage_sans_rire': 13, 'rien': 38, 'humour_reussi': 48, 'offensif_compris_non_partage': 7}) et 4 sources ({'ArgumentumGames/Argumentum': 60, 'blague-manuelle': 30, 'declaration-factuelle': 20, 'edge-case-curated': 10}).
+La sortie de l'extraction (cellules du banc 18c re-executees, aucune edition du notebook source) fixe le terrain : CORPUS_DUR = 120 instances, 5 categories ({'rire_sans_recadrage': 14, 'recadrage_sans_rire': 13, 'rien': 38, 'humour_reussi': 48, 'offensif_compris_non_partage': 7}) et 4 sources ({'ArgumentumGames/Argumentum': 60, 'blague-manuelle': 30, 'declaration-factuelle': 20, 'edge-case-curated': 10}).
 
-Le label positif `humour_reussi` est la categorie la plus fournie du corpus brut (48 sur 120, soit 40 %) : la difficulte ne vient pas de sa rarete mais de la stratification du protocole, qui n'en retient que 6 (cellule suivante). C'est la premiere instance du motif « sous-corpus appauvri » du frontmatter : le protocole borne sa propre puissance statistique avant meme la premiere feature.",,,,,,,,8b77d88037f51a6b,,,,,,,,
+Le label positif `humour_reussi` est la categorie la plus fournie du corpus brut (48 sur 120, soit 40 %) : la difficulte ne vient pas de sa rarete mais de la stratification du protocole, qui n'en retient que 6 (cellule suivante). C'est la premiere instance du motif « sous-corpus appauvri » du frontmatter : le protocole borne sa propre puissance statistique avant meme la premiere feature.",,,,,,,,327b7a46bdc3ea83,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb,a09b12e5,markdown,fr,ee22a9f0961619a0,"## Lecture 2 -- Appariement par longueur : 6 + 24, deltas nuls
 
 La cellule d'appariement produit deux choses. D'abord 6 paires par longueur **exactement egales** (delta = 0 pour les 6 : longueurs [10, 14, 19, 20, 23, 23] cote humour, apparies a des non-humour de memes longueurs au mot pres). Ensuite 24 paires supplementaires en round-robin sur les non-humour restants (4 par humour_reussi), jusqu'a epuisement — total : 30 appariements exploratoires, 30 negatifs uniques, 6 textes positifs sources.

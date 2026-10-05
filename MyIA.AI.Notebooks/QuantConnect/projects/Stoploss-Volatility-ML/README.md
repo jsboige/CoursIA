@@ -23,6 +23,19 @@ Lasso regression stop-loss volatility prediction. Predicts next-day realized vol
 | Universe | KO (Coca-Cola) |
 | Rebalance | Daily |
 
+## Mode référence 06/08/01 (`mode=fixed`, #18960)
+
+Le paramètre `mode` (`'ml'` par défaut, inchangé) ajoute la variante de
+référence du livre : achat 100 % KO à l'entrée hebdomadaire, puis stop
+market à `round(prix × stop_loss_percent, 2)`. Au paramètre publié (0,95),
+dans les conditions du livre (2018-12-31 → 2024-04-01, 100 k, frais IBKR,
+édition de déploiement du projet cloud) : **Sharpe 0,266** — le buy-and-hold
+KO du livre publie 0,263 — CAGR 7,57 %, pire baisse 22,5 %, 809 ordres,
+PSR 2,0 % (backtest `a7433eb7aad818f0ffb53d4588c19361`). Écart assumé et
+écrit : liquidation de fin de semaine conservée (le benchmark du livre
+liquide à l'ouverture suivante) pour isoler le stop dans la comparaison à
+trois. Détail et verdict : `BOOK_MAPPING.md` ligne 08/01.
+
 ## Files
 
 - main.py - Strategy (v1.0, ML vol-adjusted stops)
