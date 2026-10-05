@@ -281,7 +281,6 @@ from series_saturation import (  # noqa: E402
     DELIVERY_EMPTY_CORPUS,
     DELIVERY_NONE_IN_WINDOW,
     DELIVERY_UNAVAILABLE,
-    MERGED_FETCH_LIMIT,
     enrich_parent_families,
     EXPANSION,
     NEUTRAL,

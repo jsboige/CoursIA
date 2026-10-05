@@ -665,6 +665,23 @@ def test_delivery_window_effective_and_truncation():
     assert sig2["truncated"] is True
 
 
+def test_delivery_truncated_requires_an_explicit_fetch_limit():
+    """Greffe #19212 sur #19213 : le corpus honnete post-#19209 (~9650 PRs
+    sur 90 j) rendait `len(prs) >= fetch_limit` (defaut 400) toujours vrai --
+    chaque tirage imprimait « TRONQUEE par la limite de fetch » sur un corpus
+    COMPLET. La troncature ne se deduit plus que d'un plafond EXPLICITEMENT
+    passe par un appelant qui fetch encore sous limite."""
+    corpus = [_delivery_pr(n, "2026-09-09T10:00:00Z") for n in range(401)]
+    sig = ss.measure_delivery(corpus, [1101], now=_NOW, days=14)
+    assert sig["truncated"] is False, (
+        "un corpus de 401 PRs sans plafond explicite n'est pas tronque "
+        "post-#19209 (fetch decoupe : la saturation LEVE, elle ne tronque pas)"
+    )
+    sig2 = ss.measure_delivery(corpus, [1101], now=_NOW, days=14,
+                               fetch_limit=400)
+    assert sig2["truncated"] is True
+
+
 def test_delivery_factor_graduation():
     """Livraison toute recente = 1.0 ; age croissant vers le plafond quand
     la derniere livraison vieillit jusqu'a l'horizon ; absence valide =

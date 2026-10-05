@@ -82,12 +82,6 @@ SERIES_SCALE_DEFAULT = 2.0
 # pedagogique reel fait des milliers de lignes, un fichier de config non.
 NEW_NB_MIN_ADDITIONS = 200
 
-# Plafond du `gh pr list` de la fenetre mergee : l'atteindre tronque le
-# corpus, et `measure_delivery` doit pouvoir le signaler. Depuis #19209 ce
-# plafond ne s'applique plus au FETCH (qui est decoupe par tranches de dates) :
-# il reste la borne de reference publiee dans le verdict.
-MERGED_FETCH_LIMIT = 400
-
 # Champs demandes aux PRs mergees. `files` est necessaire au tapis
 # (`family_of` en derive la zone d'atterrissage) et c'est le champ le plus
 # cher : il est demande une fois, pas par tranche supplementaire.
@@ -309,7 +303,7 @@ def last_delivery_per_issue(prs, issue_numbers):
     Coût : zero appel reseau supplementaire -- c'est un regroupement du meme
     corpus `delivery_prs` deja fetché pour `measure_delivery`. Le balayage est
     O(N*M) sur N PRs * M issues, sans hash, parce que le pool fait < 1k
-    issues et la fenetre plafonne à `MERGED_FETCH_LIMIT` PRs.
+    issues et la fenetre de 90 j fait ~9650 PRs mergees (mesure #19209).
 
     Convention : `cited_issues(pr)` est la seule definition de "declare servir
     une issue" (voir `#13435`). Le label `candidate-delivered` n'entre pas
@@ -350,12 +344,20 @@ def delivery_factor(state, age_days, window_days, boost_max):
 
 
 def measure_delivery(prs, umbrella_numbers, *, now, days,
-                     fetch_error=None, fetch_limit=MERGED_FETCH_LIMIT,
+                     fetch_error=None, fetch_limit=None,
                      calibration_max=0.5):
     """Mesure l'age de derniere livraison reelle pour chaque umbrella.
 
     Rend un dict stable (JSON-ready) : fenetre demandee vs effective,
     troncature par la limite de fetch, et par umbrella l'etat, la date/l'age,
+
+    `fetch_limit` n'a plus de defaut (greffe #19212 sur #19213) : depuis
+    #19209 le fetch est decoupe par tranches de dates -- une fenetre sature
+    LEVE au lieu de tronquer -- donc le corpus rendu est honnete (~9650 PRs
+    sur 90 j) et `len(prs) >= 400` etait TOUJOURS vrai : chaque tirage
+    imprimait « TRONQUEE par la limite de fetch » sur un corpus complet. Le
+    drapeau ne se deduit plus que d'un plafond EXPLICITEMENT passe par un
+    appelant qui fetch encore sous limite.
     le nombre de livraisons, le facteur theorique au plafond de calibration
     et la route coordinateur quand le body est suspect de peremption.
 
@@ -367,7 +369,8 @@ def measure_delivery(prs, umbrella_numbers, *, now, days,
     sig = {
         "window_days_requested": days,
         "window_days_effective": days,
-        "truncated": bool(prs) and len(prs) >= fetch_limit,
+        "truncated": (fetch_limit is not None and bool(prs)
+              and len(prs) >= fetch_limit),
         "corpus_size": len(prs or []),
         "corpus_error": fetch_error,
         "items": {},
