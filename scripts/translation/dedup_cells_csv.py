@@ -2,10 +2,16 @@
 """Deduplique les lignes d'un CSV de cellules translations (notebook, cell_id).
 
 Contexte (#19023) : `translations/iit/iit.csv` portait une duplication
-systemique preexistante (~1164 cles (notebook, cell_id) en double, toutes
-byte-identiques). La regen integrale (T1 --full) reecrit 85k lignes a cause
-du reordonnancement lexicographique ; ce outil deduplique SANS reordonner :
-premiere occurrence conservee, lignes suivantes supprimees.
+systemique preexistante (1164 cles (notebook, cell_id) en double, toutes
+byte-identiques). Mesure (#19230, blob SHAs) : 3739 -> 2575 lignes
+(-1164), 4 540 097 -> 3 103 067 octets. Ce outil deduplique SANS
+reordonner : premiere occurrence conservee, lignes suivantes supprimees.
+
+Nuance : « sans reordonner » est vrai en LIGNES du CSV deduplique (l'outil
+n'ecrit que par suppression). La regen integrale (T1 --full) qui alimente
+le chantier n'est PAS garantie sans reordonnancement lexicographique --
+elle reecrit le fichier entier, d'ou un volume de regen sans rapport avec
+le delta de ce dedup (les « 85k lignes » cites au depart venaient de la).
 
 Invariants verifies par l'outil (echec = rc 1, fichier inchange) :
 - les lignes dupliquees sont byte-identiques (toute divergence = refus,
