@@ -20,12 +20,18 @@ avec SA base et SON body -- c'est l'option 1 de #19101.
 - **`changeType` n'existe pas dans `gh pr list --json files`** (mesure gh
   2.83.2 : cette forme ne rend que `{additions, deletions, path}`). Le
   classifieur ADDED/DELETED/RENAMED se nourrit donc de **GraphQL**
-  (`pullRequest.files.nodes { path changeType previousFilename }`), pagine au
-  curseur. Un carnet supprime (#19040 a supprime GameTheory-18d) fait sinon
-  planter le balayage en `FileNotFoundError` : le repli « tout MODIFIED » de la
-  premiere version classait tout en modifie. `previousFilename` (#19251) donne
-  le chemin de base d'un RENAMED : quand il est present, le renommage est
-  **mesure** comme un MODIFIED ; quand il manque, il reste nomme NON MESURE.
+  (`pullRequest.files.nodes { path changeType }`), pagine au curseur. Un
+  carnet supprime (#19040 a supprime GameTheory-18d) fait sinon planter le
+  balayage en `FileNotFoundError` : le repli « tout MODIFIED » de la premiere
+  version classait tout en modifie.
+- **le chemin de base d'un RENAMED n'existe PAS cote GraphQL** (#19251,
+  mesure : le serveur repond `Field 'previousFilename' doesn't exist on type
+  'PullRequestChangedFile'` ; ses champs sont `additions, changeType,
+  deletions, path, viewerViewedState`). Il vit cote **REST**, champ
+  `previous_filename` de `pulls/{n}/files` -- lu par `_previous_filenames`,
+  et **seulement** quand la PR porte un renommage. Avec ce chemin, le
+  renommage est **mesure** comme un MODIFIED ; sans lui, il reste nomme NON
+  MESURE.
 - **le cote « apres » est la tete de la PR, pas l'arbre de travail** :
   `check_notebooks` recoit `head_ref=headRefOid`, et le commit est amene
   localement s'il manque (PR squash-mergee : l'objet n'est pas dans `main`).
@@ -80,7 +86,7 @@ GRAPHQL_FILES = """query($owner: String!, $name: String!, $num: Int!, $cursor: S
   repository(owner: $owner, name: $name) {
     pullRequest(number: $num) {
       files(first: 100, after: $cursor) {
-        nodes { path changeType previousFilename }
+        nodes { path changeType }
         pageInfo { hasNextPage endCursor }
       }
     }
@@ -131,6 +137,38 @@ def merged_prs(repo: str, since: dt.datetime, run=_gh_json) -> list[dict]:
     return rows
 
 
+def _previous_filenames(repo: str, number: int, run=_gh_json) -> dict[str, str]:
+    """`{chemin_de_tete: chemin_de_base}` des renommages, par REST.
+
+    `previousFilename` n'existe **pas** sur le type GraphQL
+    `PullRequestChangedFile` (#19251, mesure : le serveur repond `Field
+    'previousFilename' doesn't exist on type 'PullRequestChangedFile'` ; ses
+    champs sont `additions, changeType, deletions, path, viewerViewedState`).
+    Le chemin de base d'un renommage vit cote REST, champ `previous_filename`
+    de `pulls/{n}/files` -- d'ou cette seconde source, appelee **seulement**
+    quand la PR porte un renommage. Pagement explicite (`per_page`/`page`) :
+    `per_page` en `-f` ferait basculer `gh api` en POST.
+    """
+    owner, name = repo.split("/", 1)
+    out: dict[str, str] = {}
+    page = 1
+    while True:
+        payload = run([
+            "api", (f"repos/{owner}/{name}/pulls/{number}/files"
+                    f"?per_page=100&page={page}"),
+        ])
+        if not isinstance(payload, list) or not payload:
+            return out
+        for f in payload:
+            head = f.get("filename") or ""
+            prev = f.get("previous_filename") or ""
+            if head and prev:
+                out[head] = prev
+        if len(payload) < 100:
+            return out
+        page += 1
+
+
 def pr_files(repo: str, number: int, run=_gh_json) -> list[dict]:
     """Fichiers de la PR avec `changeType`, par GraphQL, pagine au curseur.
 
@@ -138,6 +176,13 @@ def pr_files(repo: str, number: int, run=_gh_json) -> list[dict]:
     du changement n'existe que cote GraphQL. Pages de 100, boucle sur
     `pageInfo.endCursor` -- une PR de carnet peut deplacer plus de 100 fichiers
     (mesure : #19040 en deplace 2876+214 lignes sur plusieurs carnets).
+
+    #19251 -- le chemin de base d'un `RENAMED` n'est pas dans GraphQL : quand la
+    PR porte au moins un renommage, une seconde passe REST (`_previous_filenames`)
+    remplit `previousFilename` sur ces seuls noeuds, pour que le renommage soit
+    mesurable. Si cette passe echoue, les renommages restent sans chemin de base
+    (`""`) et seront nommes NON MESURES par `sweep` -- jamais mesures contre le
+    mauvais chemin.
     """
     owner, name = repo.split("/", 1)
     nodes: list[dict] = []
@@ -153,8 +198,17 @@ def pr_files(repo: str, number: int, run=_gh_json) -> list[dict]:
         nodes.extend(conn.get("nodes") or [])
         page = conn.get("pageInfo") or {}
         if not page.get("hasNextPage"):
-            return nodes
+            break
         cursor = page.get("endCursor")
+    if any(n.get("changeType") == "RENAMED" for n in nodes):
+        try:
+            previous = _previous_filenames(repo, number, run)
+        except RuntimeError:
+            previous = {}
+        for node in nodes:
+            if node.get("changeType") == "RENAMED":
+                node["previousFilename"] = previous.get(node.get("path") or "", "")
+    return nodes
 
 
 def _ipynb_by_change(
@@ -172,16 +226,16 @@ def _ipynb_by_change(
         (supprime par #19040) ;
       - `ADDED` : neuf, donc **rien a perdre** par construction ;
       - `RENAMED` : la version de base existe **sous un autre chemin**. Depuis
-        #19251 ce chemin est demande au jeu GraphQL (`previousFilename`) :
-        quand il est present, le renommage est **mesurable** et rendu comme la
-        paire `(chemin_de_tete, chemin_de_base)`, pour que le diff credite soit
-        calcule entre `base:previous` et `head:path` -- un `git mv` suivi d'une
-        edition peut perdre des exemples comme un `MODIFIED`.
+        #19251 ce chemin est rempli par `pr_files` (passe REST,
+        `previous_filename`) : quand il est present, le renommage est
+        **mesurable** et rendu comme la paire `(chemin_de_tete, chemin_de_base)`,
+        pour que le diff credite soit calcule entre `base:previous` et
+        `head:path` -- un `git mv` suivi d'une edition peut perdre des exemples
+        comme un `MODIFIED`.
 
-    `previousFilename` peut manquer (renommage detecte par git sous un seuil de
-    similarite, ou reponse d'API degradee) : ces renommages-la restent
-    **non mesurables** et sont rendus a part, pour etre **nommes** NON MESURES
-    plutot que comptes comme zero perte.
+    `previousFilename` peut manquer (passe REST en echec, ou renommage hors du
+    champ REST) : ces renommages-la restent **non mesurables** et sont rendus a
+    part, pour etre **nommes** NON MESURES plutot que comptes comme zero perte.
 
     Pourquoi separer plutot que compter en erreur : `credited_diff_errors > 0`
     **bloque** la pose du label (#18761). Une erreur structurelle sur un carnet

@@ -170,6 +170,62 @@ class TestGhFormIsNotTheFilesSource:
         assert "cursor=CUR1" not in calls[0]
 
 
+class TestTheRenameBasePathComesFromRest:
+    """#19251 : `previousFilename` n'existe PAS cote GraphQL.
+
+    Mesure : le serveur repond `Field 'previousFilename' doesn't exist on type
+    'PullRequestChangedFile'` (ses champs : additions, changeType, deletions,
+    path, viewerViewedState). Le chemin de base d'un renommage est lu par une
+    seconde passe REST (`pulls/{n}/files`, champ `previous_filename`), et
+    SEULEMENT quand la PR porte un renommage.
+    """
+
+    @staticmethod
+    def _graphql(nodes):
+        return {"data": {"repository": {"pullRequest": {"files": {
+            "nodes": nodes, "pageInfo": {"hasNextPage": False}}}}}}
+
+    def test_a_renamed_node_gets_its_base_path_from_rest(self):
+        calls = []
+
+        def run(argv):
+            calls.append(list(argv))
+            if "graphql" in argv:
+                return self._graphql(
+                    [{"path": "new.ipynb", "changeType": "RENAMED"}])
+            return [{"filename": "new.ipynb", "previous_filename": "old.ipynb",
+                     "status": "renamed"}]
+
+        nodes = _mod.pr_files("o/r", 7, run=run)
+        assert nodes[0]["previousFilename"] == "old.ipynb"
+        assert any("pulls/7/files" in arg for arg in calls[-1]), \
+            f"la passe REST doit viser pulls/<n>/files : {calls[-1]}"
+
+    def test_the_rest_pass_is_skipped_when_no_file_is_renamed(self):
+        calls = []
+
+        def run(argv):
+            calls.append(list(argv))
+            return self._graphql([{"path": "x.ipynb", "changeType": "MODIFIED"}])
+
+        nodes = _mod.pr_files("o/r", 7, run=run)
+        assert nodes[0].get("previousFilename", "") == ""
+        assert len(calls) == 1, "sans renommage, une seule source est interrogee"
+
+    def test_a_failing_rest_pass_leaves_the_rename_unmeasured_not_wrong(self):
+        """L'echec de la passe REST ne doit ni planter, ni faire mesurer le
+        renommage contre le mauvais chemin : sans chemin de base, il reste NON
+        MESURE (rendu `""`, que `_ipynb_by_change` range a part)."""
+        def run(argv):
+            if "graphql" in argv:
+                return self._graphql(
+                    [{"path": "new.ipynb", "changeType": "RENAMED"}])
+            raise RuntimeError("gh failed (1): rate limited")
+
+        nodes = _mod.pr_files("o/r", 7, run=run)
+        assert nodes[0]["previousFilename"] == ""
+
+
 class TestFiltering:
     def test_only_ipynb_paths_are_kept(self):
         assert _mod.ipynb_paths([_nb(IPY), _nb(MD)]) == [IPY]
