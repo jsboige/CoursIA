@@ -147,7 +147,7 @@ Problèmes du monde réel adaptés de projets étudiants. Chaque application est
 | 12 (C#) | [App-19-ProceduralGeneration-WFC-CSharp](Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
 | 13 | [App-20-SudokuBenchmark-Python](Applications/CSP/App-20-SudokuBenchmark-Python.html) | ~50 min | Benchmark 4 solveurs Sudoku (backtracking naïf → optimisé → contraintes) sur banc Easy/Medium/Hard : dénombrement du travail | Synthèse série |
 | 13 (C#) | [App-20b-SudokuBenchmark-CSharp](Applications/CSP/App-20b-SudokuBenchmark-CSharp.html) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
-| 16 | [Research-05-CoveringArrays-Guarantee-Audit-Python](Applications/Research/Research-05-CoveringArrays-Guarantee-Audit-Python.html) | ~55 min | Covering Arrays : oracle constraint-aware, set cover CP-SAT exact, bornes et baselines IPOG/AETG-like — distillation PrCon H4 (Valérian Pichot) | Projet étudiant (PrCon PR #58) |
+| 16 | [Frontieres-05-CoveringArrays-Guarantee-Audit-Python](Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-Python.html) | ~55 min | Covering Arrays : oracle constraint-aware, set cover CP-SAT exact, bornes et baselines IPOG/AETG-like — distillation PrCon H4 (Valérian Pichot) | Projet étudiant (PrCon PR #58) |
 
 Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseScheduling, JobShop, Timetabling, Minesweeper, Wordle, MiniZinc, Picross, SportsScheduling) suivent le même principe : ré-implémentation .NET du notebook Python de référence, solveurs from-scratch ou OR-Tools natif selon le sujet (marathon #4956).
 
@@ -209,7 +209,7 @@ CSP-8  Temporal            ───> Temporal Planning, STP
 
 ## Parité .NET ⇄ Python
 
-Cette série est née **Python d'abord** pour son cœur pédagogique (recherche, CSP, applications), avec la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) comme territoire .NET natif (au-dessus de MetaGeneticSharp). Le **marathon parité [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956)** (juin–juillet 2026) a ensuite généralisé le binôme `Python ⇄ C#` à l'ensemble du cœur curriculaire : jumeaux C# des fondements (Part 1), de la programmation par contraintes (Part 2), de la recherche heuristique avancée et de 20 cas d'application. Depuis, des compagnons et audits App-21 à App-33 ont enrichi le dossier Applications — la galerie pédagogique (App-21 à App-27) et la sous-série de recherche ([`Research/`](Applications/README.md#applications-research-research), audits de garanties et distillations de preprints) ; le tableau distingue donc le cœur en binômes de l'inventaire actuel, dont les volumes sont portés par le catalogue (`CATALOG-STATUS`).
+Cette série est née **Python d'abord** pour son cœur pédagogique (recherche, CSP, applications), avec la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) comme territoire .NET natif (au-dessus de MetaGeneticSharp). Le **marathon parité [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956)** (juin–juillet 2026) a ensuite généralisé le binôme `Python ⇄ C#` à l'ensemble du cœur curriculaire : jumeaux C# des fondements (Part 1), de la programmation par contraintes (Part 2), de la recherche heuristique avancée et de 20 cas d'application. Depuis, des compagnons et audits App-21 à App-33 ont enrichi le dossier Applications — la galerie pédagogique (App-21 à App-27) et les audits de garanties devenus la [Partie 5 — frontières](Part5-Frontieres/README.md) ; le tableau distingue donc le cœur en binômes de l'inventaire actuel, dont les volumes sont portés par le catalogue (`CATALOG-STATUS`).
 
 ### Couverture actuelle
 
@@ -218,7 +218,8 @@ Cette série est née **Python d'abord** pour son cœur pédagogique (recherche,
 | [Part1-Foundations](Part1-Foundations/) | 24 (Search-1 à Search-11, Search-2b, Search-2c, Search-03b à Search-03e, Search-09b à Search-09d, Search-11c, Search-11d, Search-12a, Search-13a) | Python (22) + Lean (Search-09d) + C# natif (Search-2c QuikGraph) | **15 jumeaux C#** (Search-1 à 11, 2b, 03b/03c/03d) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET | **9 binômes complets** — marathon achevé, voir [bilan final](#marathon-epic-4956) |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 35 (25 à la racine + 10 dans `MGS-vs-mealpy/`) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
-| [Applications](Applications/) | 20 cas cœur (App-1 à App-20) + galerie App-21–27 + sous-série Research (audits de garanties, volumes au catalogue) | Python + .NET | **20 binômes complets** + compagnons et audits App-21 à App-33 |
+| [Applications](Applications/) | 20 cas cœur (App-1 à App-20) + galerie App-21–27 (volumes au catalogue) | Python + .NET | **20 binômes complets** + compagnons App-21 à App-33 |
+| [Part5-Frontieres](Part5-Frontieres/) | Audits de garanties et distillations de preprints (volumes au catalogue) | Python | prolonge Part1/Part2/Part4 et les projets étudiants PrCon |
 | Racine | 0 | — | (aucun — voir [_archive/](_archive/) pour les anciens notebooks racine) |
 
 La série a atteint la **parité `Python ⇄ C#` complète** en juillet 2026 : le marathon [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956) a livré les jumeaux des trois parties curriculaires et des 20 applications, tous mergés sur `main`. Seule la [Partie 4](Part4-Metaheuristics/) reste mono-langage — par conception, puisqu'elle démontre l'ingénierie .NET native au-dessus de GeneticSharp.
@@ -384,7 +385,7 @@ Search/
 │   │   ├── App-20b-SudokuBenchmark-CSharp.ipynb
 │   │   └── (+ autres notebooks et jumeaux C# App-1b/2b/3b/4b/7b/11b/15b et App-5/8-CSharp, marathon #4956)
 │   │
-│   ├── Hybrid/                            # Métaheuristiques (sélection ci-dessous, Python + jumeaux C#)
+│   └── Hybrid/                            # Métaheuristiques (sélection ci-dessous, Python + jumeaux C#)
 │       ├── App-9-EdgeDetection.ipynb
 │       ├── App-9b-EdgeDetection-CSharp.ipynb
 │       ├── App-10-Portfolio.ipynb
@@ -399,7 +400,8 @@ Search/
 │       ├── App-18b-HyperparameterTuning-Python.ipynb
 │       └── App-22-AlgorithmSelection-Python.ipynb  # Sélection empirique : 3 jeux, 13 familles / 14 étiquettes, Pareto + préférences (PR IS #42)
 │
-│   └── Research/                          # Recherche : audits de garanties et distillations de preprints (numérotation propre Research-01..NN, modèle Discrepancy/, arbitrage #17802)
+│
+├── Part5-Frontieres/                     # Partie 5 — frontières : audits de garanties et distillations de preprints (Frontieres-01..10, carte #19253)
 │
 ├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
 ├── Part4-Metaheuristics/                  # Partie 4 (35 notebooks C# .NET 9 : 25 à la racine + 10 sous MGS-vs-mealpy/) ; consomme le sous-module MetaGeneticSharp

@@ -257,11 +257,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-18d-Humour-Banc-Dur-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
@@ -1222,11 +1217,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Research/Research-02-Factorio-Balancer-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Research"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
     },
@@ -1267,28 +1257,8 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Research/Research-03-MAPF-Guarantee-Audit-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Research"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Research/Research-06-LearningToBranch-Generalization-Audit-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Research/Research-08-OrbitalAssembly-Certificate-Audit-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Research/Research-11-NeuralDiving-Coloration-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Research"
     },
     {
       "kind": "orphan_entry",
@@ -1302,8 +1272,8 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Research/Research-10-Szpiro-Pasten-2026-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Research"
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Applications/Search"
     },
     {
       "kind": "orphan_entry",
@@ -1444,6 +1414,31 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-31-Synthese-Croisee.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-02-Factorio-Balancer-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-03-MAPF-Guarantee-Audit-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-06-LearningToBranch-Generalization-Audit-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-08-OrbitalAssembly-Certificate-Audit-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-10-NeuralDiving-Coloration-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
     },
     {
       "kind": "orphan_entry",
