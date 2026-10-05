@@ -5,7 +5,7 @@ Criteres (cf docs/reference/finition-de-serie.md, valide mainteneur 2026-10-05) 
 1. **Objectifs de serie** : le README de la serie a une section `## Objectifs d'apprentissage`
    (ou `## Competences`, en titre strict -- pas une phrase en prose).
 2. **Blocs de fin de carnet** : chaque carnet du chemin principal a 3 blocs markdown
-   en TITRE de niveau 2 (H2) :
+   en TITRE de niveau 2 ou 3 (H2/H3) :
    - `## A retenir`
    - `## Verifiez votre comprehension`
    - `## Pour aller plus loin`
@@ -31,7 +31,6 @@ import json
 import os
 import re
 import sys
-import unicodedata
 
 
 SERIES_ROOT = "MyIA.AI.Notebooks"
@@ -95,11 +94,6 @@ README_CAPSTONE_NONE = re.compile(
 )
 
 
-def _norm(t: str) -> str:
-    """Normalise unicode vers ASCII lowercase pour la recherche tolérante."""
-    return unicodedata.normalize("NFKD", t).encode("ascii", "ignore").decode().lower()
-
-
 def list_series_notebooks(series: str) -> list[str]:
     """Liste les .ipynb du chemin principal d'une série.
 
@@ -125,7 +119,7 @@ def list_series_notebooks(series: str) -> list[str]:
 
 
 def check_notebook_blocks(path: str) -> dict:
-    """Verifie la presence des 3 blocs H2 dans un carnet (markdown cells uniquement).
+    """Verifie la presence des 3 blocs H2/H3 dans un carnet (markdown cells uniquement).
 
     Retourne :
     - "canonique" : dict {bloc: bool} -- titres du tableau de la doc
