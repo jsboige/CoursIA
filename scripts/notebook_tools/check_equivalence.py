@@ -120,9 +120,16 @@ def notebook_to_page_url(notebook_path: str, base_url: str) -> str:
     Donc : `MyIA.AI.Notebooks/Series/file.ipynb` -> `<base>/MyIA.AI.Notebooks/Series/file.html`
     (leçon revue coord 05/10, c.5994810325 : le retrait du prefixe causait MISSING_PAGE
     sur tout le corpus reel).
+
+    Si le path est absolu (ex. Windows `D:/CoursIA-2/MyIA.AI.Notebooks/...`), on
+    extrait la partie relative au prefixe `MyIA.AI.Notebooks/` pour eviter que
+    le `D:/` ne se retrouve dans l'URL.
     """
     p = Path(notebook_path)
     rel = str(p).replace("\\", "/")
+    if "MyIA.AI.Notebooks/" in rel:
+        idx = rel.index("MyIA.AI.Notebooks/")
+        rel = rel[idx:]
     if rel.endswith(".ipynb"):
         rel = rel[:-len(".ipynb")] + ".html"
     return f"{base_url.rstrip('/')}/{rel}"
