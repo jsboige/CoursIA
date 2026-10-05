@@ -50,3 +50,27 @@ lean_lib «PetersTour» where
 @[default_target]
 lean_lib «ApprovalDefs» where
   globs := #[`ApprovalDefs, `ApprovalDefs_en]
+
+/-
+  Tranche 2 du plan #17988 — définition du core d'approbation et lemmes
+  d'identité (`StrictlyImproves`, `InCore`).
+
+  `ApprovalCore` (FR) et `ApprovalCore_en` (EN) forment une paire i18n #4980
+  (sibling byte-identical hors commentaires). Le glob EN est explicite pour
+  éviter l'orphan-trap #6749. Voir `scripts/lean/check_i18n_siblings.py`.
+-/
+@[default_target]
+lean_lib «ApprovalCore» where
+  globs := #[`ApprovalCore, `ApprovalCore_en]
+
+/-
+  Tranche 3 (résultat intermédiaire) du plan #17988 — le core implique
+  l'optimalité de Pareto (`ParetoDominates`).
+
+  `ApprovalPareto` (FR) et `ApprovalPareto_en` (EN) forment une paire i18n
+  #4980 (sibling byte-identical hors commentaires). Le glob EN est explicite
+  pour éviter l'orphan-trap #6749. Voir `scripts/lean/check_i18n_siblings.py`.
+-/
+@[default_target]
+lean_lib «ApprovalPareto» where
+  globs := #[`ApprovalPareto, `ApprovalPareto_en]

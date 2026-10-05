@@ -5,37 +5,39 @@ from sklearn.linear_model import Lasso
 # endregion
 
 
-class StoplossVolatilityMLAlgorithm(QCAlgorithm):
+class StoplossPutHedgeAlgorithm(QCAlgorithm):
     """
-    ML-Based Stop Loss Using Historical Volatility and Drawdown Recovery.
+    ML Put Option Hedge (book 06/08/03).
 
     Reference: Hands-On AI Trading with Python, QuantConnect, and AWS
-    Chapter 06 - Applied Machine Learning, Example 08
+    Chapter 06 - Applied Machine Learning, Example 08, Part 3.
 
-    Uses Lasso regression with 3 volatility factors to predict the
-    weekly low return of KO, placing a stop-market order below the
-    predicted low price.
+    Buys 100% of KO at the weekly entry, then hedges the position by
+    buying a weekly put instead of placing a stop-market order. The
+    same Lasso regression as 06/08/02 predicts the return from the
+    week's open to the week's low; the predicted low price selects the
+    put (highest strike below predicted_low_price + ask). If the put
+    is exercised it closes the underlying; otherwise both the put and
+    the shares are liquidated at the following week's open.
 
-    Reference mode (06/08/01, parameter mode='fixed'): buys 100% of KO
-    at the weekly entry and places a stop-market order at
-    round(price * stop_loss_percent, 2), the book's fixed-percentage
-    benchmark. It is the reference the learned stop is judged against;
-    the default behaviour (mode='ml') is unchanged. Book delta: the
-    benchmark liquidates at the next week's open, this project keeps
-    its week-end liquidation so the comparison isolates the stop.
+    Cloud adaptation (same choice as 06/08/02): CBOE VIX data is not
+    served on QC Cloud, so SPY realized volatility stands in for the
+    VIX factor. The ATR and StdDev factors are unchanged.
 
-    Cloud adaptation: CBOE VIX data is not available on QC Cloud,
-    so SPY realized volatility is used as a proxy for market-wide
-    implied volatility. The original book code uses CBOE directly
-    with local LEAN engine.
+    Book deltas, written: IBKR fees come from the brokerage model (the
+    book sets InteractiveBrokersFeeModel through a security
+    initializer); the factors live in plain lists instead of the book's
+    DataFrame; when no traded put qualifies below the predicted low
+    (empty selection), the week is logged and the shares are held
+    unhedged instead of crashing on sorted()[-1].
 
     Factors: SPY realized vol, ATR, StdDev of returns.
     Label: Return from week-open to weekly-low price.
     """
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2026, 3, 1)
+        self.set_start_date(2018, 12, 31)
+        self.set_end_date(2024, 4, 1)
         self.set_cash(100_000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
@@ -48,15 +50,13 @@ class StoplossVolatilityMLAlgorithm(QCAlgorithm):
             "SPY", data_normalization_mode=DataNormalizationMode.RAW
         ).symbol
 
-        self._stop_loss_buffer = float(self.get_parameter(
-            'stop_loss_buffer', 0.01
-        ))
-
-        # 06/08/01 reference mode: 'ml' (default, unchanged) or 'fixed'.
-        self._mode = self.get_parameter('mode', 'ml')
-        self._stop_loss_percent = float(self.get_parameter(
-            'stop_loss_percent', 0.99
-        ))
+        # Book filter: weekly puts, up to 20 strikes below spot,
+        # expiring within the next 7 days.
+        option = self.add_option(self._symbol)
+        option.set_filter(
+            lambda universe: universe.include_weeklys().puts_only()
+                .strikes(-20, 0).expiration(0, 7)
+        )
 
         self._factor_rows = []
         self._max_rows = 800
@@ -79,9 +79,9 @@ class StoplossVolatilityMLAlgorithm(QCAlgorithm):
             self._enter
         )
         self.schedule.on(
-            self.date_rules.week_end(self._symbol),
-            self.time_rules.before_market_close(self._symbol, 5),
-            self.liquidate
+            date_rule,
+            self.time_rules.after_market_open(self._symbol, -30),
+            self._liquidate_if_possible
         )
 
         alpha = 10 ** (-int(self.get_parameter('alpha_exponent', 4)))
@@ -183,19 +183,14 @@ class StoplossVolatilityMLAlgorithm(QCAlgorithm):
         y = np.array([r['weekly_low_return'] for r in rows])
         return X, y
 
-    def _enter(self):
-        # 06/08/01 reference: fixed-percentage stop, no learning. The
-        # book places it at round(price * stop_loss_percent, 2) on the
-        # weekly entry; the published parameter value is 0.95.
-        if self._mode == 'fixed':
-            quantity = self.calculate_order_quantity(self._symbol, 1)
-            self.market_order(self._symbol, quantity)
-            self.stop_market_order(
-                self._symbol, -quantity,
-                round(self._security.price * self._stop_loss_percent, 2)
-            )
-            return
+    def _liquidate_if_possible(self):
+        self.liquidate(self._symbol)
+        for symbol, security_holding in self.portfolio.items():
+            if (security_holding.type == SecurityType.OPTION and
+                    not list(self.transactions.get_open_order_tickets(symbol))):
+                self.liquidate(symbol)
 
+    def _enter(self):
         X, y = self._get_training_data()
         if X is None:
             return
@@ -212,10 +207,25 @@ class StoplossVolatilityMLAlgorithm(QCAlgorithm):
         predicted_low_price = self._security.open * (1 + prediction)
         self.plot("Stop Loss", "Distance", 1 + prediction)
 
-        quantity = self.calculate_order_quantity(self._symbol, 1)
-        self.market_order(self._symbol, quantity)
+        for chain in self.current_slice.option_chains.values():
+            # Buy the underlying Equity.
+            quantity = self.calculate_order_quantity(self._symbol, 1)
+            self.market_order(self._symbol, quantity)
 
-        stop_price = round(
-            predicted_low_price - self._stop_loss_buffer, 2
-        )
-        self.stop_market_order(self._symbol, -quantity, stop_price)
+            # Select the put: highest strike below the predicted low.
+            puts = [
+                contract
+                for contract in chain
+                if contract.strike < predicted_low_price + contract.ask_price
+            ]
+            if not puts:
+                self.log(
+                    f"{self.time}: no put below predicted low "
+                    f"{round(predicted_low_price, 2)} -- week held unhedged"
+                )
+                continue
+            contract = sorted(puts, key=lambda contract: contract.strike)[-1]
+
+            # Buy the put Contract.
+            tag = f"Predicted weekly low price: {round(predicted_low_price, 2)}"
+            self.market_order(contract.symbol, quantity // 100, tag=tag)
