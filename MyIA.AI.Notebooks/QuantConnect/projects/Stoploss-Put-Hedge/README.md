@@ -39,9 +39,24 @@ facteur de volatilité de marché. Les facteurs ATR et StdDev sont inchangés.
 
 ## Métriques
 
-À compléter par la comparaison à trois (stop fixe 06/08/01 · stop appris
-06/08/02 · couverture par put 06/08/03) sur la même période, frais inclus —
-voir `BOOK_MAPPING.md` lignes 08/01 à 08/03.
+Backtest QC Cloud « 06-08-03 put hedge book conditions » (`8a888b7e86262a8b763a07162c89f978`,
+projet 37363274, conditions du livre 2018-12-31 → 2024-04-01, 100 k, frais IBKR) :
+
+| Métrique | Valeur |
+|---|---|
+| Sharpe | 0,033 |
+| CAGR | 2,52 % |
+| Pire baisse | 23,5 % |
+| Profit net | 14,0 % |
+| Ordres | 1091 |
+| Frais | 8 208 $ |
+| PSR | 0,4 % |
+
+La comparaison à trois (stop fixe 06/08/01 · stop appris 06/08/02 · couverture
+par put 06/08/03) se lit dans `BOOK_MAPPING.md` lignes 08/01 à 08/03 — les
+métriques 08/01 rejoignent la table avec le backtest du mode `fixed`. Le PSR
+rappelle qu'un Sharpe faiblement positif sur cinq ans n'est pas un avantage
+établi.
 
 ## Références
 
