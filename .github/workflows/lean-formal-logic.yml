@@ -34,6 +34,11 @@ name: Lean proof-integrity (formal_logic_lean)
 # ce PR clot l'etat 1 et fait basculer formal_logic_lean vers l'etat 3 (gate
 # cable, declenche, vert sur main) -- les futures PRs touchant le lake
 # heriteront d'un filet automatise.
+#
+# IMPORTANT : ce workflow est place a la RACINE de `.github/workflows/` --
+# un fichier sous le lake (MyIA.AI.Notebooks/.../formal_logic_lean/.github/
+# workflows/proof-integrity.yml) n'aurait JAMAIS ete execute par GitHub
+# Actions (revue coordinateur 2026-10-05, cf PR #19296).
 
 on:
   push:
@@ -43,12 +48,17 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lake-manifest.json'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/.github/workflows/proof-integrity.yml'
-      # Le gate lui-meme : un changement de proof-integrity.yml doit re-executer
-      # le gate (cf. lean-conway.yml, lean-knot.yml memes precautions).
+      # Le gate lui-meme : un changement de lean-formal-logic.yml doit
+      # re-executer le gate (cf. lean-conway.yml, lean-galois.yml memes
+      # precautions).
+      - '.github/workflows/lean-formal-logic.yml'
       - '.github/workflows/lean-axiom.yml'
-      - 'scripts/lean/check_target_coverage.py'
+      - '.github/workflows/lean-build.yml'
+      # L'axiom step est un programme Python (`from lean_server import
+      # LeanVerifier`) ; lean_server.py + lean_utils.py SONT des entrees du
+      # gate (cf #8722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   pull_request:
     types: [opened, synchronize, edited, reopened]
     paths:
@@ -56,10 +66,13 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lake-manifest.json'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/.github/workflows/proof-integrity.yml'
+      # Le gate doit tourner sur la PR qui l'introduit ou le modifie
+      # (cf #8712). lean-formal-logic.yml est dans la liste.
+      - '.github/workflows/lean-formal-logic.yml'
       - '.github/workflows/lean-axiom.yml'
-      - 'scripts/lean/check_target_coverage.py'
+      - '.github/workflows/lean-build.yml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   workflow_dispatch:
 
 permissions:
@@ -134,6 +147,6 @@ jobs:
         run: |
           python3 scripts/lean/check_target_coverage.py \
             --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean \
-            --from-workflow MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/.github/workflows/proof-integrity.yml \
+            --from-workflow .github/workflows/lean-formal-logic.yml \
             --lib-root FormalLogic \
             --name formal_logic_lean
