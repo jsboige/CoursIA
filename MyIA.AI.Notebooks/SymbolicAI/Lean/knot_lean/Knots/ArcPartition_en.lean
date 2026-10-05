@@ -13,12 +13,12 @@
   Origin: Conway.lean l.65-979 (915 lines), reference commit origin/main
   71514d576. No reformatting, no tactic modified. -/
 
-import Knots.Basic
-import Knots.ConwayPD
+import Knots.Basic_en
+import Knots.ConwayPD_en
 
 import Mathlib.Algebra.Polynomial.Basic
 
-namespace Knots
+namespace Knots_en
 
 def mergePair (P : List (List Nat)) (x y : Nat) : List (List Nat) :=
   let keep := P.filter (fun C => !C.contains x && !C.contains y)
