@@ -75,37 +75,54 @@ NEUTRAL_RESOURCE_GATE = {
     "LEAN_EXEC_MIN_FREE_GB": "0",
 }
 
-# Skip motive par latence d'admission (#19382) : les 5 tests suivants
-# dependent d'une admission complete sous 30 s, ce qui exige que
-# ``scan_native_population()`` (tasklist /FO CSV /NH) reponde en moins de
-# ~4 s sur le runner. Mesure ai-01 (2026-10-06) : 2.65 s. Sur les runners
-# po-2026 wsl-2/wsl-5, le meme appel prend > 15 s, et l'admission
-# complete (>6 s sur ai-01, peut-etre >30 s sur po-2026) timeout les
-# ``_wait_for(condition, timeout_s=30.0)`` du test -- pas un defaut
-# d'admission, un defaut de runner. Le skip est explicite et motive
-# (pytest.skip rend un 's' visible dans le rapport), la famille reste
-# declenchee (cf. acceptance #19382), et le controleur CI voit le skip.
-_ADMISSION_LATENCY_SKIP_THRESHOLD_S = 4.0
+# Skip motive par POPULATION NATIVE d'admission (#19382, durci c.184) :
+# les 5 tests suivants dependent d'une admission qui ne partage pas le
+# cap machine avec des lean etrangers. La porte du cap (`lean_exec.py:1628`,
+# `if native_pop + budget > cap`) refuse le test si un job voisin (autre
+# runner sur la meme machine po-2026 wsl-2 a wsl-5, cf job 111974793791
+# rouge de #19373) detient deja 1+ lean dans la population native.
+#
+# Le skip vise maintenant la bonne condition (population native > 0), pas
+# la latence du scan (la latence 15 s du body etait rapportee, pas
+# mesuree dans un log -- un scan de 3 lean prends ~300 ms, le skip sur
+# latence ne protege rien). Le monkey-patch `neutralized_native_pop`
+# simule la population native = 0 dans la session pytest, comme
+# `LEAN_EXEC_WSL=off` neutralise deja la population WSL dans le
+# sous-processus. Fallback skip : si le patch echoue, on skip avec le
+# compte mesure dans le motif.
+_ADMISSION_NATIVE_POP_SKIP_THRESHOLD = 0
+
+
+@pytest.fixture
+def neutralized_native_pop(monkeypatch):
+    """Neutralise la population native (lean/lake vivants de l'hote) pour
+    les tests d'admission qui dependent d'un cap machine deterministe.
+    Idem `LEAN_EXEC_WSL=off` pour la population WSL (cf lean_exec.py:265).
+    Le monkey-patch evite le cap refuse par les lean etrangers (jobs
+    voisins sur la meme machine po-2026 wsl-2 a wsl-5, job 111974793791
+    fondateur)."""
+    monkeypatch.setattr(
+        le, "scan_native_population",
+        lambda: (0, "neutralized: test (monkeypatch)"),
+    )
 
 
 @pytest.fixture(scope="module")
-def admission_latency_s() -> float:
-    """Cout d'un ``scan_native_population()`` isole, mesure une fois par
-    module pytest (les workers xdist partagent le module)."""
-    t0 = time.monotonic()
-    le.scan_native_population()
-    return time.monotonic() - t0
+def native_pop_count() -> int:
+    """Compte la population native reelle du runner (pour le motif de skip
+    fallback). Mesure une fois par module pytest."""
+    n, _src = le.scan_native_population()
+    return n
 
 
-def _skip_if_admission_too_slow(latency_s: float) -> None:
-    if latency_s > _ADMISSION_LATENCY_SKIP_THRESHOLD_S:
+def _skip_if_native_pop_nonempty(n: int) -> None:
+    if n > _ADMISSION_NATIVE_POP_SKIP_THRESHOLD:
         pytest.skip(
-            f"admission trop lente sur ce runner : scan_native_population "
-            f"a pris {latency_s:.2f}s (seuil "
-            f"{_ADMISSION_LATENCY_SKIP_THRESHOLD_S:.1f}s, mesure ai-01 "
-            f"2026-10-06 2.65s). Le test depend d'une admission complete "
-            f"sous 30 s -- voir #19382. Famille reste declenchee, skip "
-            f"motive pour runners lents."
+            f"runner porte {n} lean/lake etrangers dans la population "
+            f"native (seuil {_ADMISSION_NATIVE_POP_SKIP_THRESHOLD}) : "
+            f"le cap machine `native_pop + budget > cap` refuse "
+            f"l'admission partagee. Mesure ai-01 (2026-10-06) = 0. "
+            f"Famille reste declenchee, skip motive -- voir #19382."
         )
 
 
@@ -182,8 +199,9 @@ def test_bound_command_inserts_kjobs():
 # Admission machine-wide — deux worktrees concurrents
 # ---------------------------------------------------------------------------
 
-def test_admission_cap_machine_wide_two_worktrees(admission_latency_s):
-    _skip_if_admission_too_slow(admission_latency_s)
+def test_admission_cap_machine_wide_two_worktrees(
+        neutralized_native_pop, native_pop_count):
+    _skip_if_native_pop_nonempty(native_pop_count)
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         w1, w2, w3 = (Path(td) / n for n in ("w1", "w2", "w3"))
@@ -571,9 +589,10 @@ def _find_toolchain() -> str | None:
     return None
 
 
-def test_positive_control_real_lake(admission_latency_s):
+def test_positive_control_real_lake(
+        neutralized_native_pop, native_pop_count):
     """Une compilation ciblee REELLE passe sous le budget et publie ses metriques."""
-    _skip_if_admission_too_slow(admission_latency_s)
+    _skip_if_native_pop_nonempty(native_pop_count)
     # Reserve 3 (arbitrage #15666) : un print+return rend « passed » sans
     # rien controler -- pire que pas de controle. pytest.skip rend un « s »
     # visible dans le rapport.
@@ -968,10 +987,11 @@ def _wait_for(condition, timeout_s: float = 30.0, what: str = "condition"):
     assert condition(), f"{what} non atteinte sous {timeout_s} s"
 
 
-def test_queue_wait_admits_after_release(admission_latency_s):
+def test_queue_wait_admits_after_release(
+        neutralized_native_pop, native_pop_count):
     """--wait : le demandeur attend en file, est admis quand le cap se
     libere, et publie son temps d'attente."""
-    _skip_if_admission_too_slow(admission_latency_s)
+    _skip_if_native_pop_nonempty(native_pop_count)
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         cap = dict(LEAN_EXEC_CAP=1, LEAN_EXEC_BUDGET=1)
@@ -993,10 +1013,11 @@ def test_queue_wait_admits_after_release(admission_latency_s):
         assert res.get("queue_wait_s", 0.0) >= 0.5, res
 
 
-def test_queue_timeout_refuses(admission_latency_s):
+def test_queue_timeout_refuses(
+        neutralized_native_pop, native_pop_count):
     """Delai de file depasse = refus explicite 'wait timeout' (jamais
     d'attente infinie)."""
-    _skip_if_admission_too_slow(admission_latency_s)
+    _skip_if_native_pop_nonempty(native_pop_count)
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         cap = dict(LEAN_EXEC_CAP=1, LEAN_EXEC_BUDGET=1)
@@ -1018,10 +1039,11 @@ def test_queue_timeout_refuses(admission_latency_s):
         assert first.wait(timeout=60) == le.EXIT_TIMEOUT
 
 
-def test_queue_full_refuses(admission_latency_s):
+def test_queue_full_refuses(
+        neutralized_native_pop, native_pop_count):
     """File bornee : queue_max atteint = refus explicite du 3e demandeur,
     jamais de croissance silencieuse de la file."""
-    _skip_if_admission_too_slow(admission_latency_s)
+    _skip_if_native_pop_nonempty(native_pop_count)
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         cap = dict(LEAN_EXEC_CAP=1, LEAN_EXEC_BUDGET=1,
