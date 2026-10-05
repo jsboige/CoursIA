@@ -54,6 +54,7 @@ on:
       - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/research_l4_decision_transformer.ipynb'
       - 'MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb'
       - 'MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/10-empilements-borne-lp-cohn-elkies.ipynb'
   schedule:
     - cron: '47 03 * * *'
   workflow_dispatch:
