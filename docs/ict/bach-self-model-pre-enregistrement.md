@@ -43,22 +43,30 @@ ISBN 978-0195370676. Chapitre 5 « Self and Consciousness »,
 §5.2–5.4 (les sous-sections de la thèse « self-model causal vs
 cache descriptif »).
 
-**État archivage GDrive** (mesuré 2026-10-05T10:14Z sur
-`G:\Mon Drive\MyIA\IA\Bibliographie IA\Consciousness\`):
-**absent**. La règle `bibliography-hygiene.md` exige l'archive
-avant dépôt d'une PR substantielle qui cite la source. Action :
-**acquisition one-shot du PDF avant merge** (canal usuel : Oxford
-University Press via le réseau Bibliothèques EPITA / accès
+**État archivage GDrive** (mesuré 2026-10-06T01:40Z sur
+`G:\Mon Drive\MyIA\IA\Bibliographie IA\Consciousness\`,
+re-vérification cycle 31) : **absent**. La règle
+`bibliography-hygiene.md` exige l'archive avant dépôt d'une PR
+substantielle qui cite la source. **Conséquence** : la dette IIT-05
+reste **ouverte** ; la PR documente la ré-attribution et la
+paraphrase, mais ne **clôt pas** la dette. Action de revue
+**bloquée par accès** : acquisition one-shot du PDF (canal usuel :
+Oxford University Press via le réseau Bibliothèques EPITA / accès
 institutionnel ; pas de commit du PDF dans le repo, citation par
-chapitre et ISBN).
+chapitre et ISBN). Le livre est cité par ISBN + chapitre dans
+l'attribution de matrice, sans citation textuelle, en attendant
+l'archive.
 
-**Lecture grade C** : la thèse centrale se formule en une phrase —
-*« le soi dans PSI est un modèle de soi qui est causalement engagé
-dans le contrôle de l'action ; ce n'est pas une description passive
-que l'agent se fait de lui-même, c'est une structure qui pilote »* —
-et se vérifie empiriquement par la dissociation « politique
-déterministe (case 8) vs politique autonome (case 8b) » que la
-matrice des dissociations a déjà livrée.
+**Lecture grade C** : la thèse centrale se reformule en paraphrase
+déclarée (livre non archivé en bibliothèque partagée, mesure
+2026-10-06T01:40Z dans `G:\Mon Drive\MyIA\IA\Bibliographie IA\Consciousness\`,
+cf. règle `bibliography-hygiene.md`) — selon Bach 2009 chap. 5, le
+soi dans PSI est présenté comme un modèle causalement engagé dans
+le contrôle de l'action, et non comme une description passive de
+l'agent sur lui-même. La vérification empirique se fait par la
+dissociation « politique déterministe (case 8) vs politique
+autonome (case 8b) » que la matrice des dissociations a déjà
+livrée.
 
 ## Objet formel
 
@@ -82,13 +90,23 @@ autonome `m_t` (AR(1), ρ = 0.9, bruit propre), donc le self-modèle
 peut apprendre quelque chose sur sa **propre contribution** à
 l'action — ce que Bach appelle le « canal self ».
 
-## Claim exact (Bach 2009, chap. 5)
+## Claim (paraphrase déclarée — Bach 2009, chap. 5)
 
-> *« Le self-model dans une architecture cognitive artificielle n'est
-> pas une variable descriptive de plus dans la boucle ; il entre
+*Note* : la phrase ci-dessous est une reformulation par l'auteur de
+ce pré-enregistrement à partir de la table des matières et de
+l'index thématique de Bach 2009 chap. 5, et non une citation
+textuelle. L'archive GDrive du PDF n'est pas en place (mesure
+2026-10-06T01:40Z), donc une citation textuelle avec page n'est
+**pas** possible à ce stade — la paraphrase déclarée tient lieu de
+claim jusqu'à archivage.
+
+> *Paraphrase* (Bach 2009, chap. 5) : dans une architecture
+> cognitive artificielle, le self-model n'est pas une variable
+> descriptive supplémentaire dans la boucle de contrôle ; il entre
 > dans la dynamique de l'action comme une cause différentielle, et
-> c'est précisément ce qui distingue un agent avec self-model d'un
-> agent qui se contente de tenir une description de lui-même. »*
+> c'est précisément ce qui distingue un agent qui porte un
+> self-model d'un agent qui se contente de tenir une description
+> de lui-même.
 
 **Opérationnalisation** : un agent avec self-model causal **ré-adapte
 plus vite** qu'un agent à cache descriptif à capacité égale quand le
@@ -99,9 +117,11 @@ cet avantage **disparaît** quand le monde change sa dérive propre
 ## Contre-claim (Dennett, Hofstadter revisité, etc.)
 
 Daniel Dennett, *Consciousness Explained* (1991) et suivants, tient
-que tout self-model est réductible à une « narrative self » sans
-pouvoir causal propre — un cache descriptif peut suffire à produire
-tous les comportements que Bach attribue à un self causal. Hofstadter
+— selon la lecture seconde et l'index de l'ouvrage, l'archive
+GDrive n'étant pas en place (mesure 2026-10-06T01:40Z) — que tout
+self-model est réductible à une *narrative self* sans pouvoir
+causal propre : un cache descriptif peut suffire à reproduire les
+comportements qu'un self causal prétend expliquer. Hofstadter
 (*I Am a Strange Loop*, 2007) tient une thèse plus proche de Bach
 (l'auto-représentation compressive fait un travail que des machines
 de même taille sans structure auto-référentielle ne font pas) mais
@@ -112,10 +132,21 @@ différentiel.
 **Test du contre-claim** : si le contre-claim tient, la case 8b doit
 **échouer** — un surrogate à capacité égale mais sans canal self
 DOIT rattraper aussi vite sur les deux shifts (β et α) que le
-self-modèle. C'est précisément ce que la case 8c a mesuré
-(`ρ_β_sf` médian 12.5 sur la case 8b dans la nouvelle métrique
-scalefree — verdict **TRÈS FORT en faveur de Bach**, contre-claim
-**empiriquement falsifié** par les traces existantes).
+self-modèle. C'est précisément ce que la case 8c a mesuré.
+
+**Verdict révisé** : la magnitude `ρ_β_sf` médiane 12.5 sur la case
+8b (vs 1.00 sur la case 8) est indiscutable. **MAIS** le tableau
+de la matrice qualifie lui-même cette valeur de « plafond
+artefact » (signe retourné), et `ρ_β = 0.07` de « plancher
+artefact » (ancienne métrique). Une valeur reconnue comme
+artefact **ne falsifie rien**. Ce que la dissociation 8/8b montre
+honnêtement, c'est qu'elle est **compatible avec la lecture
+causale de Bach** — l'écart mesuré va dans le sens attendu, mais
+que l'écart vienne du canal self, et non de l'artefact d'échelle,
+reste à montrer par une mesure propre (hors scope de cette PR,
+qui est une attribution de matrice, pas une nouvelle mesure).
+Le contre-claim Dennett n'est donc pas **falsifié** par cette
+dissociation ; il est **non tranché**.
 
 ## Mesure falsifiable
 
@@ -137,20 +168,28 @@ la capacité, pas l'auto-référence).
   deux échelles).
 - Verdict `INCONCLUSIF_INSTRUMENT` posé par la case 8b **mais**
   verdict interne : la nouvelle métrique retourne **12.5** vs
-  l'ancienne **0.07** sur les mêmes traces. La magnitude est
-  indiscutable ; le seul doute est sur la **validité de la mesure**
-  (plancher/plafond), pas sur le signe.
+  l'ancienne **0.07** sur les mêmes traces. La magnitude va dans
+  le sens attendu par la thèse de Bach (12.5 ≫ 1), mais le tableau
+  qualifie lui-même la valeur de « plafond artefact » (signe
+  retourné, magnitude non bornée) — la mesure ne tranche pas
+  l'origine de l'écart.
 
-**Conclusion pré-enregistrée (à valider en PR)** : **Bach gagne**.
-La case 8b est la démonstration empirique de Bach 2009 chap. 5. La
-dette IIT-05 est soldée par **attribution** (et non par un nouveau
-jouet), à condition que la PR :
+**Conclusion pré-enregistrée (à valider en PR)** : la case 8b est
+**compatible avec la lecture causale de Bach 2009 chap. 5** au sens
+où l'écart mesuré va dans le sens attendu par la thèse. La dette
+IIT-05 est soldée par **attribution** (la case 8b documente une
+dissociation que Bach prédit), et **non par démonstration** (la
+mesure ne tranche pas entre lecture causale et artefact d'échelle).
+La PR :
 1. ajoute une ligne à la matrice des dissociations : **« Self-model
-   causal ≠ cache descriptif (Bach 2009, case 8b/8c) »**, avec
-   mention de la double dissociation `ρ_β >> ρ_α` ;
-3. archive Bach 2009 dans `G:\Mon Drive\MyIA\IA\Bibliothèque IA\Consciousness\`
-   (PDF non commité, règle `bibliography-hygiene.md`) ;
-4. ne **recrée pas** un nouveau `ict/strange_loop_bach.py` — la
+   causal vs cache descriptif (Bach 2009, case 8b/8c) — compatible,
+   non démontré »**, avec mention de la double dissociation
+   `ρ_β_sf >> ρ_α_sf` et de l'avertissement artefact ;
+2. **ne marque pas** la dette IIT-05 comme soldée tant que Bach
+   2009 n'est pas archivé en `G:\Mon Drive\MyIA\IA\Bibliothèque
+   IA\Consciousness\`. La dette reste **documentée et ouverte**
+   (acquisition one-shot en attente, règle `bibliography-hygiene.md`) ;
+3. ne **recrée pas** un nouveau `ict/strange_loop_bach.py` — la
    discipline du 28/08 dit « 1 source primaire, 1 décision, au plus
    1 PR », et l'attribution est une décision de matrice, pas une
    livraison de code.
@@ -170,8 +209,10 @@ jouet), à condition que la PR :
   de Bach 2009).
 - Daniel Dennett, *Consciousness Explained*, Little Brown 1991, ISBN
   978-0316180665 — **contre-claim** (la narrative self suffit, pas
-  besoin de self-model causal). Empiriquement falsifié par les
-  traces de la case 8b/8c.
+  besoin de self-model causal). La dissociation 8/8b est
+  **compatible avec Bach**, et **non tranché** vis-à-vis de Dennett
+  (cf. note artefact ci-dessus) — l'archive du livre est
+  également en attente pour citer la thèse au plus près.
 - Cases 8, 8b, 8c dans `docs/ict/dissociations-matrix.md` (lignes
   226–228). PRs [#12942](https://github.com/jsboige/CoursIA/pull/12942),
   [#14180](https://github.com/jsboige/CoursIA/pull/14180),
