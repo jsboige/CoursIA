@@ -11,8 +11,11 @@ written, and the limitations are stated.
 from __future__ import annotations
 
 import importlib.util
+import io
+import json
 import sys
 import unittest
+from contextlib import redirect_stderr
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -221,6 +224,161 @@ class TestEpicRecognition(unittest.TestCase):
         over the issue list, not a union of two lists)."""
         d = {"title": "[EPIC] double convention", "labels": [{"name": "EPIC"}]}
         self.assertTrue(_mod.is_epic(d))
+
+
+# --- #19211 : le 404 du PATCH, et une panne d'ecriture qui se voit -------------
+#
+# Le rapport n'etait plus publie depuis 35 jours sous un run quotidien VERT.
+# Cause mesuree : `gh issue view --json comments` rend l'id de NOEUD GraphQL,
+# alors que `repos/{repo}/issues/comments/{id}` attend l'id NUMERIQUE. Le
+# commentaire de #13653 porte `created_at == updated_at`, donc le PATCH n'avait
+# jamais abouti. Les controles ci-dessous epinglent (1) la FORME de l'id lu,
+# (2) la pagination, (3) le fait qu'une panne PERSISTANTE rougit.
+
+_REAL_RUN = _mod.subprocess.run
+_REAL_NOW = _mod._now
+_REAL_EPICS = _mod.list_open_epics
+_REAL_MERGED = _mod.list_recent_merged_prs
+_NODE_ID = "IC_kwDOH2Odns8AAAABRmTerA"
+_DB_ID = 5475983020
+_MARKER_BODY = f"{_mod.SWEEP_MARKER_START}\nrapport\n{_mod.SWEEP_MARKER_END}"
+_AGED = datetime(2026, 9, 1, 8, 47, 16, tzinfo=timezone.utc)
+_FIXED_NOW = datetime(2026, 10, 5, 12, 0, tzinfo=timezone.utc)
+
+
+class _Completed:
+    def __init__(self, payload, rc=0, err=""):
+        self.stdout = payload if isinstance(payload, str) else json.dumps(payload)
+        self.stderr = err
+        self.returncode = rc
+
+
+def _comment(updated_at=None, body=_MARKER_BODY, cid=_DB_ID):
+    row = {"id": cid, "body": body}
+    if updated_at is not None:
+        row["updated_at"] = updated_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return row
+
+
+class _FakeGh:
+    """`subprocess.run` remplace : dispatch sur la commande, journalise les argv."""
+
+    def __init__(self, page, *, patch_rc=0, patch_err=""):
+        self.page = page
+        self.patch_rc = patch_rc
+        self.patch_err = patch_err
+        self.calls: list[list[str]] = []
+
+    def __call__(self, cmd, **kw):
+        self.calls.append(list(cmd))
+        if "--method" in cmd:
+            return _Completed({"id": _DB_ID}, rc=self.patch_rc, err=self.patch_err)
+        return _Completed(self.page)
+
+    def write_urls(self) -> list[str]:
+        return [
+            a for c in self.calls if "--method" in c
+            for a in c if a.startswith("repos/")
+        ]
+
+
+class TestFindSweepCommentUsesRestIds(unittest.TestCase):
+    """#19211 : l'id qui part dans l'URL doit etre NUMERIQUE."""
+
+    def _install(self, fake):
+        _mod.subprocess.run = fake
+        self.addCleanup(setattr, _mod.subprocess, "run", _REAL_RUN)
+
+    def test_lookup_asks_the_rest_endpoint_not_the_graphql_one(self):
+        fake = _FakeGh([[_comment(_AGED)]])
+        self._install(fake)
+        _mod._find_sweep_comment("o/r", 13653)
+        self.assertEqual(len(fake.calls), 1, fake.calls)
+        argv = fake.calls[0]
+        self.assertIn("api", argv)
+        self.assertIn("repos/o/r/issues/13653/comments?per_page=100", argv)
+        # Controle NEGATIF : la forme d'avant, qui rendait un id de noeud.
+        joined = " ".join(argv)
+        self.assertNotIn("issue view", joined)
+        self.assertNotIn("--json comments", joined)
+
+    def test_found_id_is_numeric_not_the_graphql_node_id(self):
+        self._install(_FakeGh([[_comment(_AGED)]]))
+        found = _mod._find_sweep_comment("o/r", 13653)
+        self.assertIsNotNone(found)
+        self.assertEqual(str(found["id"]), str(_DB_ID))
+        self.assertNotEqual(str(found["id"]), _NODE_ID)
+
+    def test_marker_on_a_later_page_is_still_found(self):
+        """Sinon l'organe conclut « absent » et POSTE un doublon a chaque tir."""
+        self._install(_FakeGh([[{"id": 1, "body": "bruit"}], [_comment(_AGED)]]))
+        found = _mod._find_sweep_comment("o/r", 13653)
+        self.assertIsNotNone(found)
+        self.assertEqual(str(found["id"]), str(_DB_ID))
+
+    def test_patch_url_carries_the_numeric_id(self):
+        """Le temoin du 404 : c'est l'URL qui repondait `Not Found`."""
+        fake = _FakeGh([[_comment(_AGED)]])
+        self._install(fake)
+        _mod.upsert_sweep_comment("o/r", 13653, "nouveau rapport")
+        self.assertEqual(fake.write_urls(), [f"repos/o/r/issues/comments/{_DB_ID}"])
+
+    def test_a_body_without_marker_takes_the_post_branch(self):
+        """Controle de bord : pas de marqueur -> POST, jamais un PATCH a vide."""
+        fake = _FakeGh([[{"id": 9, "body": "un autre commentaire"}]])
+        self._install(fake)
+        _mod.upsert_sweep_comment("o/r", 13653, "rapport")
+        self.assertEqual(fake.write_urls(), [])
+
+
+class TestPersistentWriteFailureIsVisible(unittest.TestCase):
+    """#19211 acceptance 3 : une panne d'ecriture PERSISTANTE n'est plus
+    indistinguishable d'un run sain."""
+
+    def _install(self, fake):
+        _mod.subprocess.run = fake
+        self.addCleanup(setattr, _mod.subprocess, "run", _REAL_RUN)
+
+    def _stderr(self, fn):
+        buf = io.StringIO()
+        with redirect_stderr(buf):
+            rc = fn()
+        return rc, buf.getvalue()
+
+    def test_persistent_failure_reds_and_names_the_breakage(self):
+        aged = _FIXED_NOW - timedelta(days=34)  # #13653 : 35 jours de silence
+        self._install(_FakeGh([[_comment(aged)]]))
+        rc, err = self._stderr(
+            lambda: _mod.write_failure_exit_code("o/r", 13653, _FIXED_NOW))
+        self.assertEqual(rc, 2, err)
+        self.assertIn("::error::", err)
+        self.assertIn("13653", err)
+
+    def test_transient_failure_stays_green_and_warns(self):
+        fresh = _FIXED_NOW - timedelta(hours=1)
+        self._install(_FakeGh([[_comment(fresh)]]))
+        rc, err = self._stderr(
+            lambda: _mod.write_failure_exit_code("o/r", 13653, _FIXED_NOW))
+        self.assertEqual(rc, 0, err)
+        self.assertIn("::warning::", err)
+        self.assertNotIn("::error::", err)
+
+    def test_cli_exits_2_when_a_persistent_write_failure_occurred(self):
+        """De bout en bout : le PATCH echoue et le rendez-vous est fige."""
+        aged = _FIXED_NOW - timedelta(days=34)
+        fake = _FakeGh([[_comment(aged)]], patch_rc=1,
+                       patch_err="gh: Not Found (HTTP 404)")
+        self._install(fake)
+        _mod.list_open_epics = lambda repo: []
+        _mod.list_recent_merged_prs = lambda repo, limit: []
+        _mod._now = lambda: _FIXED_NOW
+        self.addCleanup(setattr, _mod, "_now", _REAL_NOW)
+        self.addCleanup(setattr, _mod, "list_open_epics", _REAL_EPICS)
+        self.addCleanup(setattr, _mod, "list_recent_merged_prs", _REAL_MERGED)
+        rc, err = self._stderr(
+            lambda: _mod._cli(["--repo", "o/r", "--apply-comment", "13653"]))
+        self.assertEqual(rc, 2, err)
+        self.assertIn("::error::", err)
 
 
 if __name__ == "__main__":
