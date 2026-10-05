@@ -781,6 +781,59 @@ jobs:
                   if m:
                       rerun_ids.append(m.group(1))
 
+              # #19050 -- jambe rouge dont le `details_url` n'identifie pas de
+              # couple run+job : il n'y a RIEN a relancer pour elle. Le remede
+              # de ce sweep (relancer la jambe DANS SA SUITE) exige ce couple,
+              # et relancer le run homonyme trouve par nom+evenement est INERTE
+              # ici : une jambe neuve atterrit dans sa propre suite et l'AND de
+              # GitHub sur un nom requis garde la rouge (cf. l'en-tete).
+              #
+              # Sous-cas mesure sur #18985 (2026-10-04) : jambe `PR gate` rouge
+              # hebergee par une execution `dynamic` -- `details_url` =
+              # `https://github.com/jsboige/CoursIA/runs/111294508181`, forme
+              # NUE (l'id est celui du check-run, pas d'un run de workflow),
+              # quand les jambes saines portent `/actions/runs/<run>/job/<job>`.
+              #
+              # On NOMME et on EXCLUT : un candidat qu'aucune passe ne peut
+              # lever ne doit ni consommer un creneau ni se lire comme servi.
+              # Le geste qui marche est une NOUVELLE TETE (`gh pr update-branch`),
+              # qui recree les suites ; elle perime le dossier de prevalidation.
+              #
+              # Garde : l'exclusion ne s'applique PAS quand `rerun_ids` est
+              # non vide. La est le piege -- une PR dont la jambe de gate est
+              # nue peut encore se reparer par ses CONSTITUANTS annules (#15775),
+              # et la passe suivante re-lay le gate : exclure ici tuerait ce
+              # chemin. Le filtre ne vise que la PR sans AUCUN chemin.
+              #
+              # Borne declaree : si une jambe rouge SAINE portait un jour cette
+              # forme nue, elle sortirait du sweep par ce filtre. La classe est
+              # nommee pour que ce cas se voie dans le rapport au lieu de se
+              # deviner -- meme exigence que les exclusions nommees (#11808).
+              # La garde `(details_url or "").strip()` n'est pas cosmetique :
+              # une URL ABSENTE est une DONNEE MANQUANTE, pas une jambe
+              # structurellement non relancable. Sans elle, ce filtre vidait le
+              # sweep sur les jeux ou la collecte ne rend pas d'URL (mesure :
+              # 42 tests du selecteur passaient de vert a rouge), et surtout il
+              # aurait exclu des PRs que le re-run du gate repare -- un repli
+              # plus PERMISSIF que le gate, exactement ce que #15775 interdit.
+              _RUNJOB_RE = re.compile(r"/runs/(\d+)/job/(\d+)")
+              unrerunnable = [
+                  c for c in gate_legs
+                  if (c.get("conclusion") or "") in RED
+                  and (c.get("details_url") or "").strip()
+                  and not _RUNJOB_RE.search(c.get("details_url") or "")
+              ]
+              if unrerunnable and not rerun_ids:
+                  _diag(p, "SUITE_UNRERUNNABLE (jambe rouge sans run relancable)",
+                        [f'{c.get("completed_at") or "?"} '
+                         f'{c.get("details_url") or "(sans details_url)"}'
+                         for c in unrerunnable])
+                  print(f'[stale-sweep] #{p["number"]}: geste = nouvelle tete '
+                        '(`gh pr update-branch`) -- le dossier de prevalidation '
+                        'devient perime (aucune passe de ce sweep ne peut lever '
+                        'cette jambe)', file=sys.stderr)
+                  continue
+
               # Tier: 0 = mature (verdict older than the dwell floor -> the
               # re-run converts to a merge), 1 = immature (the re-run can only
               # re-render the same dwell FAIL). The newest RED gate leg
@@ -897,6 +950,10 @@ jobs:
 
           m=0
           i=0
+          # #19050 -- refus STRUCTURELS de relance (run termine, non
+          # relancable) : comptes a part des `served`, parce qu'ils ne sont
+          # PAS repares et qu'un rouge compte comme repare est un mensonge.
+          structural=0
           while read -r NUM SHA FORK RANK TARGET; do
             [ -z "${NUM:-}" ] && continue
             # Capped rows of one tier must not stop the loop: the sort puts
@@ -987,16 +1044,45 @@ jobs:
               # read and rerun): the route sees a fresh in-flight run and
               # skips. The harness is concurrency-grouped per PR, so repeated
               # refusals cannot stampede.
+              #
+              # #19050 -- il y a DEUX causes de refus, et elles n'ont pas le
+              # meme geste. Le classement porte sur le CHAMP `status` du run,
+              # deja lu juste au-dessus : jamais sur la prose du refus, que le
+              # depot ne consigne pas pour la cause #17680 (une correspondance
+              # de texte serait devinee, donc fausse un jour sans prevenir).
               if ! gh run rerun "$RUN_ID" --repo "$REPO"; then
-                echo "[stale-sweep] re-run refused for #$NUM (run $RUN_ID not completed) -- dispatching PR gate (re-aggregate) to revive it (#17680)"
-                gh workflow run pr-gate-rerun.yml --repo "$REPO" \
-                  -f pr_number="$NUM" -f head_sha="$SHA" \
-                  || echo "[stale-sweep] revive dispatch refused for #$NUM (non-fatal)"
+                RUN_STATUS=$(printf '%s' "${RUN:-}" | jq -r '.status // empty' 2>/dev/null)
+                if [ "${RUN_STATUS:-}" = "completed" ]; then
+                  # Un run TERMINE qui refuse la relance ne l'accordera jamais :
+                  # sous-cas mesure sur #18985, ou la jambe rouge `PR gate` vit
+                  # dans la suite d'une analyse CodeQL en `default setup`
+                  # (evenement `dynamic`) -- `gh run rerun 37144908600` rend
+                  # "cannot be rerun; This workflow run cannot be retried". Le
+                  # remede de ce sweep (relancer la jambe DANS SA SUITE) est
+                  # alors IMPOSSIBLE, et une jambe neuve ne la remplace pas :
+                  # l'AND de GitHub sur un nom requis garde la rouge (cf.
+                  # l'en-tete de ce fichier). On le NOMME, on ne le compte pas
+                  # comme repare, et on dit le geste qui marche -- une NOUVELLE
+                  # TETE (`gh pr update-branch`), qui recree les suites ; elle
+                  # perime le dossier de prevalidation de la PR.
+                  echo "[stale-sweep] #$NUM ($SHA): SUITE_UNRERUNNABLE -- run $RUN_ID completed et non relancable (suite d'une execution dynamique) ; NON compte comme repare. Geste : nouvelle tete (\`gh pr update-branch\`), le dossier de prevalidation devient perime."
+                  structural=$((structural + 1))
+                else
+                  echo "[stale-sweep] re-run refused for #$NUM (run $RUN_ID not completed) -- dispatching PR gate (re-aggregate) to revive it (#17680)"
+                  gh workflow run pr-gate-rerun.yml --repo "$REPO" \
+                    -f pr_number="$NUM" -f head_sha="$SHA" \
+                    || echo "[stale-sweep] revive dispatch refused for #$NUM (non-fatal)"
+                fi
               fi
             fi
             if [ "${RANK:-1}" = "0" ]; then m=$((m + 1)); else i=$((i + 1)); fi
           done < /tmp/candidates.txt
           echo "[stale-sweep] served: mature $m/$MATURE_N (cap $MAX_MATURE), immature $i/$IMMATURE_N (cap $MAX_IMMATURE) -- waiting for the next sweep: $((MATURE_N - m)) mature, $((IMMATURE_N - i)) immature"
+          # #19050 -- le rapport separe ce qui a ete SERVI de ce qui a ete
+          # REPARE : un refus structurel consomme un creneau mais ne leve rien,
+          # et le taire ferait lire « waiting for the next sweep: N » sur des PR
+          # qu'aucune passe ne debloquera.
+          echo "[stale-sweep] dont $structural refus structurel(s) de relance (run completed non relancable) : NON repares -- geste : nouvelle tete (\`gh pr update-branch\`)"
 
           # Advisory organ: it acts, it never blocks.
           exit 0

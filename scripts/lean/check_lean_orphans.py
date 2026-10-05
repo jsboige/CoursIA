@@ -38,8 +38,8 @@ excluded by the path scope).
 Usage::
 
     python scripts/lean/check_lean_orphans.py \
-        --project-path MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters \
-        --lakefile  MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.lean
+        --project-path MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters \
+        --lakefile  MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lakefile.lean
         [--strict] [--exclude REL_PATH]...
 
 Default is advisory: orphans are reported but exit is 0. ``--strict`` turns
