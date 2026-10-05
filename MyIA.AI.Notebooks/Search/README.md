@@ -289,6 +289,7 @@ Au-delà de la Partie 2, le même marathon a livré les jumeaux C# de la **Parti
 ### Livres de référence
 
 - [AIMA - Russell & Norvig (4th ed.)](http://aima.cs.berkeley.edu/) - Chapitres 3-6
+- [Heuristic Search: Theory and Applications - Edelkamp & Schrödl (Morgan Kaufmann, 2012)](https://www.elsevier.com/books/heuristic-search-theory-and-applications/edelkamp/978-0-12-372512-7) - Chapitre 8 (*Combining Heuristic Functions*) pose le partage de coûts (cost partitioning) qui sous-tend la PDB additive. Ancrage page exact *à vérifier* sur le PDF archivé (non lisible sur la machine worker).
 - [Constraint Processing - Rina Dechter (2003)](https://www.cambridge.org/core/books/constraint-processing/)
 - [Handbook of Constraint Programming (2006)](https://www.elsevier.com/books/handbook-of-constraint-programming/)
 - [The CP-SAT Primer (2023)](https://pganalyze.com/blog/cp-sat-primer) - Guide pratique OR-Tools
