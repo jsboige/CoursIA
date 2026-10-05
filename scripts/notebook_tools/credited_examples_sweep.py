@@ -15,7 +15,7 @@ Ce balayage le reveille **sans reintroduire `pull_request`** sur ce workflow
 coup : il liste les PRs MERGEES de la fenetre et rejoue, pour chacune, le diff
 avec SA base et SON body -- c'est l'option 1 de #19101.
 
-## Deux sources de verite, chacune du bon cote (review 04:53Z)
+## Trois sources de verite, chacune du bon cote (review 04:53Z, #19251)
 
 - **`changeType` n'existe pas dans `gh pr list --json files`** (mesure gh
   2.83.2 : cette forme ne rend que `{additions, deletions, path}`). Le
