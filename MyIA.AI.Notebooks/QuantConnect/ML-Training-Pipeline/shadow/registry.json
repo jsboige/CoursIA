@@ -1,0 +1,14 @@
+{
+  "candidates": [
+    {
+      "id": "mhm676",
+      "kind": "qc",
+      "sha": "bb7d7b61c5a48158d314693253c33b94a300cd35",
+      "frozen_on": "2026-10-05",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/MultiHorizonMomentum676:37379584",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
+      "fingerprint": "a8f44f3e52fc28d2"
+    }
+  ]
+}
