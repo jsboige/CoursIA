@@ -320,6 +320,7 @@ private theorem pos_term_eq (G : TUGame_en N) :
     v(univ) - v(∅) = v(univ).
     Key identity: each v(S) appears as +v(S) with coefficient c(|S|-1,n)
     and as -v(S) with coefficient c(|S|,n)·(n-|S|), which cancel. -/
+-- MSZ ch. 6 (axiomatics) -- efficiency: the Shapley value distributes exactly `v(N)` to the grand coalition.
 theorem shapley_efficient (G : TUGame_en N) :
     ∑ i : N, shapleyValue G i = G.v Finset.univ := by
   classical
@@ -408,6 +409,7 @@ theorem shapley_efficient (G : TUGame_en N) :
     (3) f is a bijection (inverse: swap i↔j)
 
     Use Finset.sum_bij to conclude ∑_S g(S) = ∑_T g'(T). -/
+-- MSZ ch. 6 (axiomatics) -- symmetry: two equivalent players receive the same value.
 theorem shapley_symmetric (G : TUGame_en N) (i j : N)
     (h : Solution.SymmetricPlayers G i j) :
     shapleyValue G i = shapleyValue G j := by
@@ -513,6 +515,7 @@ theorem shapley_symmetric (G : TUGame_en N) (i j : N)
       rw [hsym]
 
 /-- Shapley value on unanimity games: each player in T gets 1/|T| -/
+-- MSZ ch. 6 (axiomatics) -- `unanimity axiom`: on a unanimity game `1_S`, the Shapley value attributes `1/n` to each member of `S` and `0` otherwise.
 theorem shapley_unanimity (T : Finset N) (hT : T.Nonempty) (i : N) :
     shapleyValue (TUGame_en.unanimityGame T hT) i =
     if i ∈ T then (1 : ℝ) / T.card else 0 := by
@@ -541,6 +544,7 @@ theorem shapley_unanimity (T : Finset N) (hT : T.Nonempty) (i : N) :
     · rfl
 
 /-- The Shapley value satisfies additivity -/
+-- MSZ ch. 6 (axiomatics) -- additivity: the Shapley value is additive over the sum of games.
 theorem shapley_additive (G H : TUGame_en N) (i : N) :
     shapleyValue (Solution.AddGames G H) i =
     shapleyValue G i + shapleyValue H i := by
@@ -815,6 +819,7 @@ private theorem mobius_decomposition_axiom (G : TUGame_en N) (S : Finset N) :
         exact hRsub (hRT.trans hTS)
       rw [hfilter, Finset.sum_empty]
 
+-- MSZ ch. 6 (Mobius decomposition) -- `Harsanyi 1963` (primary reference): any TU game decomposes as a sum of unanimity games `1_S` weighted by the Mobius coefficients `m(S)`.
 theorem mobius_decomposition (G : TUGame_en N) (S : Finset N) :
     G.v S = ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
         mobiusCoeff G T :=
@@ -1003,6 +1008,7 @@ private theorem game_eq_mobius_sum (G : TUGame_en N) :
 /-- Uniqueness of the Shapley value: any axiomatic solution equals the Shapley value.
     Strategy: decompose G = ∑_{T≠∅} a_T · u_T via Mobius, then φ and shapleyValue
     distribute over the sum and coincide on each term via phi_eq_shapley_weighted. -/
+-- MSZ ch. 6 (characterization) -- uniqueness theorem: efficiency + symmetry + additivity (or unanimity) characterize the Shapley value **uniquely**.
 theorem shapley_uniqueness (φ : Solution N)
     (h_eff : φ.Efficiency)
     (h_sym : φ.Symmetry)
@@ -1045,6 +1051,7 @@ def SimpleGame (G : TUGame_en N) : Prop :=
 
 /-- A `WeightedVotingGame` is simple: its characteristic function is an `if … then 1 else 0`,
 so the value of each coalition is `0` or `1`. -/
+-- MSZ ch. 8 -- a weighted voting game `[q; w_1, ..., w_n]` is simple iff the coalition exceeding `q` is winning (and the others losing).
 theorem weighted_voting_game_simple (weights : N → ℝ) (quota : ℝ) (hquota : 0 < quota) :
     SimpleGame (WeightedVotingGame weights quota hquota) := by
   intro S
@@ -1304,6 +1311,7 @@ def Dictator (G : TUGame_en N) (i : N) : Prop :=
     `Dictator`) and `i` wins alone (`v {i} = 1`, first conjunct of `Dictator i`).
     Applying the veto property of `j` to the winning coalition `{i}` forces `j ∈ {i}`,
     i.e. `j = i`. -/
+-- MSZ ch. 8 -- a voting game has a unique dictator iff the coalition of all other players (without the dictator) is not winning and the dictator is critical.
 theorem dictator_unique (G : TUGame_en N) (i j : N) (hi : Dictator G i) (hj : Dictator G j) :
     i = j := by
 -- `j` is a veto player (second conjunction of `Dictator`) and `i` wins alone
@@ -1534,6 +1542,7 @@ def DummyPlayer (G : TUGame_en N) (i : N) : Prop :=
   ∀ S : Finset N, i ∉ S → G.v (S ∪ {i}) = G.v S
 
 /-- Dummy players have a zero Shapley value. -/
+-- MSZ ch. 6 -- a dummy player (contributing nothing to any coalition) receives a Shapley value of zero.
 theorem dummy_shapley_zero (G : TUGame_en N) (i : N) (h : DummyPlayer G i) :
     shapleyValue G i = 0 :=
   ShapleyValue.shapley_null_player G i h
@@ -1543,6 +1552,7 @@ theorem dummy_shapley_zero (G : TUGame_en N) (i : N) (h : DummyPlayer G i) :
     A dummy player never changes the value of a coalition, so it can never happen that
     `v S = 1` while `v (S.erase i) = 0`: the dummy assumption forces
     `v S = v (S.erase i)`, contradicting criticality. -/
+-- MSZ ch. 8 -- a dummy player has a raw Banzhaf of zero (as they are never critical).
 theorem dummy_banzhaf_raw_zero (G : TUGame_en N) (i : N) (h : DummyPlayer G i) :
     BanzhafRaw G i = 0 := by
 -- A dummy player is critical in no coalition: criticality requires `v S = 1`
@@ -1639,6 +1649,7 @@ private def banzhafSwap (i j : N) (S : Finset N) : Finset N :=
     exchanged, the value is invariant, and `(σ S) \ {j} = σ (S \ {i})`). The two filters of
     critical coalitions are thus in bijection, and their cardinalities — the raw Banzhaf
     indices — coincide. -/
+-- MSZ ch. 8 -- `Banzhaf 1965` (primary reference): the raw Banzhaf index counts the number of coalitions where a player is critical.
 theorem banzhaf_raw_symmetric (G : TUGame_en N) (i j : N)
     (h : Solution.SymmetricPlayers G i j) :
     BanzhafRaw G i = BanzhafRaw G j := by
@@ -1906,6 +1917,7 @@ theorem banzhaf_index_le_two (G : TUGame_en N) (i : N) : BanzhafIndex G i ≤ 2 
     `banzhaf_raw_le_univ ≤ 2 ^ card N`) and pairs with `banzhaf_index_nonneg` to pin the
     index in `[0, 1]`. The player `i : N` forces `0 < card N`, so the Nat subtraction
     `card N - 1` does not underflow. -/
+-- MSZ ch. 8 -- the normalized Banzhaf index is at most 1 (trivial, by normalization convention).
 theorem banzhaf_index_le_one (G : TUGame_en N) (i : N) : BanzhafIndex G i ≤ 1 := by
   have hn : 0 < Fintype.card N := Fintype.card_pos_iff.mpr ⟨i⟩
   have hdenom : 0 < (2 : ℝ) ^ (Fintype.card N - 1) := pow_pos (by norm_num) _

@@ -20,6 +20,20 @@
   Source EN verbatim : c097d66cb (= 2d16a7b28^, parent du commit pilote
   FR-first Option A c.210 = `aaaf0c52a`). Resolution #4980 (2026-07-04) :
   supersede de l'Option A FR-only in-place.
+
+  Bibliographic references:
+  - M. Maschler, E. Solan, S. Zamir, *Game Theory*, Cambridge University Press
+    2013, ISBN 978-1-107-62748-3. Chapters referenced (to confirm on the
+    physical book): ch. 2 (TU games, side payments), ch. 3 (the Core),
+    ch. 5 (Bondareva-Shapley theorem, balanced games, Farkas lemma),
+    ch. 6 (Shapley value, marginal vectors).
+  - L.S. Shapley, "A Value for N-Person Games", *Contributions to the Theory
+    of Games* II (1953), pp. 307-317.
+  - O.N. Bondareva, "Some applications of the methods of linear programming
+    to the theory of cooperative games", *Problemy Kibernetiki* 10 (1963),
+    pp. 119-139 (in Russian). Bondareva-Shapley forward direction.
+  - L.S. Shapley, "Cores of convex games", *International Journal of Game
+    Theory* 1 (1971), pp. 11-26. Marginal vectors + core of convex games.
 -/
 
 
@@ -137,12 +151,14 @@ def Balanced : Prop :=
     For singletons: v({i}) can be anything. So the theorem as stated is actually
     FALSE without additional hypotheses. A counterexample: N = Fin 1, v(∅) = 0, v({0}) = -1.
     FIX: We prove the weaker statement that v(∅) ≥ 0 (trivial from empty_zero). -/
+-- MSZ ch. 2 -- superadditivity on the empty game; trivial as `v(empty) = 0` is implicit.
 theorem superadditive_empty_nonneg (_h : G.Superadditive) :
     G.v ∅ ≥ 0 := by
   rw [G.empty_zero]
 
 /-- For superadditive games where all singletons have non-negative value,
     the grand coalition has non-negative value. -/
+-- MSZ ch. 2 -- direct consequence of superadditivity and non-negativity of singletons.
 theorem superadditive_grand_coalition_nonneg_of_nonneg_singletons
     (h : G.Superadditive) (hnn : ∀ i : N, G.v {i} ≥ 0) :
     G.v Finset.univ ≥ 0 := by
@@ -169,6 +185,7 @@ theorem superadditive_grand_coalition_nonneg_of_nonneg_singletons
                    = ∑_i ∑_{S∋i} w(S)·x(i)       [Fubini double sum]
                    = ∑_i x(i)·∑_{S∋i} w(S)       [factor x(i)]
                    = ∑_i x(i)·1 = v(N)            [balanced + efficiency] -/
+-- MSZ ch. 5 (Bondareva-Shapley) -- direction `Core non-empty => Balanced`: if the Core is non-empty, an allocation `x` within it supplies balanced weights `lambda_{ij} = x_{ij}`.
 theorem bondareva_shapley_forward :
     G.Core.Nonempty → G.Balanced := by
   rintro ⟨x, ⟨hx_eff, hx_gr⟩⟩
@@ -271,6 +288,7 @@ theorem balancedUnit_notIn_augCone (t : ℝ) (ht : 0 < t) (hb : G.Balanced) :
        separating hyperplane witnessing an unbalanced weight system, contradicting
        the balanced hypothesis.
     5. Extract the Core allocation from the intersection point. -/
+-- MSZ ch. 5 (Bondareva-Shapley) -- direction `Balanced => Core non-empty`: uses the Farkas lemma (the `Bondareva-Farkas` plan formalized in `ConeKernel.lean`).
 theorem bondareva_shapley_backward :
     G.Balanced → G.Core.Nonempty := by
   intro hb
@@ -443,6 +461,7 @@ theorem bondareva_shapley_backward :
   exact hCore
 
 /-- Bondareva-Shapley: The Core is nonempty iff the game is balanced. -/
+-- MSZ ch. 5 (Bondareva-Shapley) -- central theorem: a TU game has a non-empty Core iff it is balanced. `Bondareva 1963` (forward) + `Shapley 1967` (backward).
 theorem bondareva_shapley :
     G.Core.Nonempty ↔ G.Balanced :=
   ⟨bondareva_shapley_forward G, bondareva_shapley_backward G⟩
@@ -537,6 +556,7 @@ private lemma sdiff_subset_prefix_of_max
   · exact absurd (enumIndex_injective h) hji
 
 /-- For convex games, the marginal vector dominates v(S) on every coalition. -/
+-- MSZ ch. 6 (marginal vectors) -- `Shapley 1971, Cores of convex games` (primary reference): for a convex game, the marginal vector dominates every element of the Core.
 lemma marginalVector_dominates (h : G.Convex) :
     ∀ S : Finset N, ∑ i ∈ S, G.marginalVector i ≥ G.v S := by
   intro S
@@ -590,6 +610,7 @@ lemma marginalVector_dominates (h : G.Convex) :
       linarith
 
 /-- For convex games, the marginal vector lies in the Core. -/
+-- MSZ ch. 6 -- `Shapley 1971`: for a convex game, the marginal vector BELONGS to the Core (and therefore the Core is non-empty).
 theorem marginalVector_mem_core (h : G.Convex) :
     G.marginalVector ∈ G.Core :=
   ⟨G.marginalVector_efficient, G.marginalVector_dominates h⟩
@@ -599,6 +620,7 @@ end MarginalVector
 /-- For convex games, the Core is non-empty (Shapley 1971, "Cores of convex games").
     Direct constructive proof via marginal vectors: along any fixed enumeration of N,
     the marginal contribution vector lies in the Core when the game is convex. -/
+-- MSZ ch. 3 + ch. 6 -- Shapley 1971 theorem: every convex game has a non-empty Core (the marginal vector is a witness).
 theorem convex_core_nonempty (h : G.Convex) :
     G.Core.Nonempty :=
   ⟨G.marginalVector, G.marginalVector_mem_core h⟩

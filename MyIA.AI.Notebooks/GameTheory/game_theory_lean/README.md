@@ -390,3 +390,30 @@ sans couplage d'imports Mathlib).
   des jeux combinatoires (PGame, surréels, nimbers via Mathlib).
 - **Configuration du kernel Lean** : [`scripts/README.md`](../scripts/README.md)
   et [`.claude/rules/wsl-kernels.md`](../../../.claude/rules/wsl-kernels.md).
+
+## Bibliographie partagée (CooperativeGames)
+
+Cette section liste les **références canoniques** citées par les fichiers
+`CooperativeGames/Basic.lean`, `ConeKernel.lean`, `Shapley.lean` et leurs
+jumeaux `_en`. Les PDF ne sont **pas** versionnés dans le dépôt — voir
+[`.claude/rules/bibliography-hygiene.md`](../../../.claude/rules/bibliography-hygiene.md)
+et le gisement partagé `G:\Mon Drive\MyIA\IA\Bibliographie IA` pour
+l'archivage hors-Git.
+
+| Référence | Chapitres / sections cités | Fichiers Lean |
+|---|---|---|
+| **Maschler, Solan, Zamir — *Game Theory*, CUP 2013** (ISBN 978-1-107-62748-3) | ch. 2 (TU, side payments) · ch. 3 (Core) · ch. 5 (Bondareva-Shapley, Farkas, jeux balancés) · ch. 6 (valeur de Shapley, Möbius, vecteurs marginaux) · ch. 8 (Banzhaf, jeux de vote pondérés, veto) | `Basic.lean` (header, `Core`, `Balanced`, `bondareva_shapley`, `convex_core_nonempty`) ; `ConeKernel.lean` (header, `phiAugLinear`, `augCone`, `balancedUnit`, `separatingFunctional_none_neg`) ; `Shapley.lean` (header, `shapleyCoef`, `shapleyValue`, axiomes ch. 6, `mobius_decomposition`, `banzhaf_raw_symmetric`) |
+| **Lloyd S. Shapley — « A Value for N-Person Games », 1953** | formule de la valeur, axiomes | `Shapley.lean` (`shapleyCoef`, `shapleyValue`, axiomes ch. 6) |
+| **O. N. Bondareva — *Problemy Kibernetiki* 10, 1963** | direction forward de Bondareva-Shapley | `Basic.lean` (`bondareva_shapley_forward`) ; `ConeKernel.lean` (`balancedUnit`) |
+| **Lloyd S. Shapley — « Cores of convex games », *IJGT* 1, 1971** | vecteurs marginaux + Core des jeux convexes | `Basic.lean` (`marginalVector_dominates`, `marginalVector_mem_core`, `convex_core_nonempty`) |
+| **John C. Harsanyi — *Management Science* 9(2), 1963** | décomposition de Möbius (dividendes) | `Shapley.lean` (`mobius_decomposition`, `mobiusCoeff`) |
+| **John F. Banzhaf — « Weighted voting doesn't work », *Rutgers Law Review* 19, 1965** | indice de pouvoir Banzhaf brut | `Shapley.lean` (`banzhaf_raw_symmetric`) |
+
+**Note d'acquisition (issue #19275) :** le volume Maschler-Solan-Zamir 2013
+n'est **pas** encore disponible localement. Les références `MSZ ch. N` dans
+les docstrings sont données au chapitre près d'après l'index usuel de
+l'ouvrage (ch. 2 TU, ch. 3 Core, ch. 5 Bondareva-Shapley, ch. 6 Shapley
+value, ch. 8 power indices) ; **à confirmer sur l'ouvrage physique** dès
+acquisition. Aucune référence `ch. N` n'est citée en aval d'une vérification
+préalable. Le présent README et les en-têtes des fichiers `.lean` portent
+la même note, pour traçabilité.
