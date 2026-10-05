@@ -23,6 +23,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 3 | 18 / 18b / 19 / 19b | asymétrie qui s'inverse entre paires | **LU** (strand 3, 2026-09-19) |
 | 4 | ICT-25 | tri des négatifs, désordre de sections établi | **LU** (tranche 1, 2026-08-24) |
 | 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU 3/3 tranches** (lectures du 2026-09-19 ; posées au ledger par #16814, #16821, #16827 — rang complet, 100 % des strands) |
+| 6 | **Fondations 01 → 04** (extension #11690) | `ICT-01` à `ICT-04` — racine de la numérotation, génèse du moule | **LU** (tranche 1 de l'extension, 2026-10-05) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -399,3 +400,56 @@ Lecture complète (contenu ET `outputs`) des sept non-numérotés restants, 2026
 4. **Matrice : 3 rangées dédiées, toutes cohérentes** (SaillancePregnance, Argumentation, p̂ — cette dernière au chiffre près : κ 0.080 / biais +0.027 / 5 graines) ; **4 notebooks sans rangée** (Annexe, Greffe2, Greffe4, Synthese) — la Synthese re-mesure le banc des rangées existantes plutôt que de claimer la sienne ; trois candidats d'ajout mineurs (contextualité du zoo, élargissement contractant, manipulation basculante).
 5. **Entrées #7260 complètes pour le rang 5** : renumeroter en priorité Synthese + Argumentation + JLens ; statuer le régime des Dissociations/Greffes/Annexe (noms fonctionnels stables vs numérotation — leur nature annexale est assumée dans les titres) ; Greffe5 reste post-rework (#16762).
 6. **Le ledger est COMPLET** : rangs 1-4 + rang 5 en 3 tranches = tous les strands du chemin critique user (arbitrage 19/09) consignés. Les inputs d'arbitrage sont prêts : chaque strand porte ses findings transverses, le tableau d'avancement est fermé.
+
+---
+
+## Strand 6 — Fondations 01 → 04 (extension du ledger, tranche 1)
+
+Lecture complète (contenu ET `outputs`) des quatre notebooks, 2026-10-05, par `myia-po-2025:CoursIA-2`. Le tableau d'avancement, fermé au chemin critique le 2026-09-19, est **rouvert par l'extension du 2026-10-05** (arbitrage ai-01 : étendre le ledger aux notebooks non couverts par les strands 1-5, claim #11690 c.5993797520). La tranche 1 couvre la racine de la numérotation : le passage IIT→ICT (01), le modèle minimal (02), sa quantification (03) et son négatif disséqué (04).
+
+### `ICT-01-PhiTrajectories-Python.ipynb` — 26 cellules (16 md, 10 code, 10/10 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | L'entrée numérotée de la série (Epic #4588, cadrage `ICT-0-Framing.md`, fondations IIT-01) : prolonger IIT — qui mesure Φ **par état** — en **trajectoires** : Φ le long du temps, contraste substrat intégré (XOR) vs modulaire (AND/OR), et comportement sous perturbation. |
+| **Contenu réel** | Réseau 3 nœuds AND/OR vs XOR sous PyPhi ; paysage `phi_landscape` (Φ sur les 8 états, les deux réseaux) ; visualisation ; trajectoires depuis états initiaux avec attracteurs ; film de Φ le long d'une trajectoire ; perturbation 1-bit puis retour à l'attracteur. 3 exercices stubs C.1 (`phi_amplitude`, `mean_phi_on_attractor`, `count_phi_pulses`). |
+| **Résultat** | L'écart intégration/modularité **est dans la sortie** : état (0,0,0) — AND/OR Φ = 0,1875 vs XOR Φ = 1,8750 (×10) ; trajectoire depuis (0,0,0) → attracteur fixe [(0,0,0)], film Φ [0,188, 0,188] ; la perturbation 1-bit montre le retour à l'attracteur. Exercices : chacun exécuté avec sa sortie de rappel (C.1 propre). |
+| **Critique** | (1) L'exemple vedette de trajectoire est court : depuis (0,0,0) sur AND/OR, l'attracteur fixe livre un film Φ à deux images — le contraste dynamique repose sur le **paysage**, pas sur la trajectoire. (2) Aucune batterie multi-graines ni gate : réseaux et états initiaux fixes — le carnet fonde la série et **précède** le standard SEEDS [0,1,7,42,99] des strands 2-4. |
+| **Verdict + action** | **SOLIDE**. La fondation tient : écart ×10 mesuré + perturbation-récupération montrée. Action : aucune propre — l'arrimage au moule (gates, multi-graines) relève d'un enrichissement de série, pas d'un défaut du carnet. |
+
+### `ICT-02-SelfSortingMorphogenesis-Python.ipynb` — 27 cellules (18 md, 9 code, 9/9 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Poser le **modèle minimal** : le tri d'un tableau comme morphogenèse — chaque cellule applique localement sa règle (algotypes bubble/insertion), et la question est ce qui émerge : tri complet, impasses, récupération après lésion. Le passage d'IIT (état) à ICT (trajectoire) incarné sur un objet jouet. |
+| **Contenu réel** | `SelfSortingArray` via le package `ict/` ; tri homogène bubble (perm 16) ; trajectoire de tri (inversions 61 → 0, épisodes de non-monotonie comptés) ; robustesse passive vs obstacle — sweep gélation `fracs` [0,0 … 0,5] × **15 graines par point** ; lésion puis récupération (sortedness 1,000 → 0,726 → tri en 341 pas) ; tableau chimérique alterné (tri ? False, sortedness 0,784, 4 impasses). 3 exercices (`cout_moyen`, distribution `temps_recuperation`, `sortedness_finale` par agencement). |
+| **Résultat** | Les trois régimes mesurés : gélation 0 % → passive 1,000 / obstacle 1,000 ; 10 % → 0,865 / 0,691 ; 50 % → 0,616 / 0,519 (l'obstacle coûte plus cher que le passif à chaque niveau) ; lésion récupérée (0,726 → tri, 341 pas) ; **chimère non triée** (0,784, 4 impasses résiduelles) — le négatif assumé qui fonde ICT-04. Exercices exécutés (exec 7-9) mais **silencieux** : 0 output. |
+| **Critique** | (1) Les trois stubs d'exercices n'émettent aucune sortie de rappel — C.1 conforme (aucune erreur volontaire), mais le pattern maison (`print("Exercice a completer")`, suivi par ICT-01 et ICT-03) manque : micro-incohérence de moule. (2) Rien d'autre mesuré : le sweep de gélation est déjà multi-graines (15/point) dans l'exemple guidé. |
+| **Verdict + action** | **SOLIDE** — le modèle minimal est posé avec ses régimes mesurés, y compris le négatif chimérique. Action (optionnelle, LIGHT) : aligner les 3 stubs sur le pattern de sortie de rappel à l'occasion d'une prochaine édition du carnet — jamais un grain dédié. |
+
+### `ICT-03-RobustnessDelayedGratification-Python.ipynb` — 28 cellules (17 md, 11 code, 11/11 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | L'étude quantitative du modèle ICT-2 : **robustesse** (dégâts croissants, récupération après lésion) et **délai de gratification** (la monotonie locale peut reculer pendant que le tri progresse) — la batterie expérimentale de la série appliquée au substrat de tri. |
+| **Contenu réel** | Sweep `DAMAGE_LEVELS` [0,0 … 0,5] × `SEEDS` [0, 1, 7, 42, 99] (**batterie canonique 5 graines**) : sortedness finale passive vs obstacle par algotype + figure 2 panneaux ; `one_recovery` sur 24 lésions par algotype + histogramme des temps ; `dg_profile` (épisodes de recul local de la monotonie) par algotype ; trace témoin monotonie vs sortedness. 3 exercices stubs C.1 avec sortie de rappel (`residual_distance`, `median_recovery_for_amplitude`, `mean_dg_for_size`). |
+| **Résultat** | Récupération **complète pour les deux algotypes** : bubble 24/24, médiane 1050 pas (min 411, max 1712, 0 échec) ; insertion 24/24, médiane 1204 (min 838, max 1694, 0 échec). DG : bubble 91,4 épisodes en moyenne (85-98), insertion 89,8 (81-99). Sweep de dégât : bubble passive 1,00 → 0,59 sur 0-50 %. Exercices stubs propres. |
+| **Critique** | (1) Le sweep principal (cellule 7) rend les **moyennes sur 5 graines sans dispersion** (pas de min/max dans la sortie texte) — la dispersion n'apparaît que côté récupération (cellule 11) ; une ligne d'écart par point lèverait l'objection. (2) Rien d'autre mesuré : la batterie canonique est complète, les deux algotypes partout. |
+| **Verdict + action** | **SOLIDE** — c'est la **genèse méthodologique du moule** : le standard SEEDS [0,1,7,42,99] que les strands 2-4 tiennent pour acquis est déjà appliqué ici, avant eux. Action : aucune propre. |
+
+### `ICT-04-ChimericArraysKinAggregation-Python.ipynb` — 28 cellules (18 md, 10 code, 10/10 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Prolonger ICT-2 sur les **tableaux chimériques** (algotypes alternés) : l'impasse constatée devient l'objet d'étude — caractérisation systématique, réparation bidirectionnelle (kin désactivé), puis **agrégation kin** émergente (les cellules de même famille se rapprochent — ségrégation à la Schelling) comme moteur de tri supplémentaire. |
+| **Contenu réel** | Modèle minimal ICT-2 rejoué sur **40 graines** alternées ; graphe trajectoires sortedness + agrégation (régime alterné vs témoin — graine 0 : sortedness 0,53 → 0,62 en plateau, agrégation finale −0,500) ; réparation bidirectionnelle sur 40 graines ; agrégation kin isolée (tableau trié, 26 pas, seuls les mouvements kin) ; tri ET agrégation depuis une chimère mélangée (seed 3, kin ON vs OFF) ; balayage de la liberté disponible (taille des classes : copies 1 → n). 3 exercices (`agregation_sur_valeurs_distinctes`, `cout_kin`, `trois_regimes` — repulsion Schelling). |
+| **Résultat** | Contraste mesuré chiffre à chiffre : alternance **40/40 non triés** vs réparation bidirectionnelle **0/40** (l'impasse est guérie) ; depuis la chimère seed 3 : kin ON trie ET agrège (+0,143 d'agrégation) là où OFF reste en dessous ; sweep de liberté : copies = 1 → kin ON +0,017 = OFF +0,017 (aucun effet), copies = 2 → kin ON +0,223 quand OFF devient négatif — **le degré de liberté est la condition de l'émergence, isolé expérimentalement**. Exercices exécutés (exec 8-10), 0 output. |
+| **Critique** | (1) Même écart de moule qu'ICT-02 : stubs silencieux (C.1 conforme, sortie de rappel absente). (2) `KinSortingArray` vit dans le package `ict/` — organ-first respecté (aucune re-dérivation), dépendance de série assumée. |
+| **Verdict + action** | **SOLIDE** — le négatif d'ICT-2 devient un régime **caractérisé (40 graines), réparé (0/40) et expliqué (le sweep de liberté)**. Action (optionnelle, LIGHT) : même alignement de stubs qu'ICT-02, même occasion. |
+
+### Findings transverses du strand 6 (pour l'arbitrage user)
+
+1. **La racine numérotée est saine et la généalogie méthodologique continue** : 01 pose l'écart Φ ×10 (0,1875 vs 1,8750) avec perturbation-récupération ; 02 pose le modèle minimal et affiche son négatif ; 03 applique la **batterie canonique SEEDS [0,1,7,42,99] avant le moule des strands 2-4** — le standard multi-graines de la série naît dans la fondation, pas après coup.
+2. **Le négatif comme livrable, dès 02** : l'impasse chimérique constatée sur un exemple (0,784, 4 impasses) devient l'objet d'ICT-04 — systématisée (40/40), réparée (0/40), puis **condition d'émergence isolée** (sweep copies : aucun effet à 1, +0,223 vs négatif à 2). Le découpage 02→04 est un arc constat → dissection → réparation complet.
+3. **Pattern des stubs** : ICT-01 et ICT-03 émettent la sortie de rappel, ICT-02 et ICT-04 sont silencieux (exécutés, 0 output) — micro-dette d'homogénéité C.1-style, à aligner à l'occasion d'une prochaine édition des deux carnets (LIGHT, jamais un grain dédié).
+4. **Entrées #7260 : aucun candidat** — la numérotation 01→04 porte le sens (IIT→ICT, modèle minimal, robustesse quantitative, chimères + kin), les quatre sont numérotés proprement, aucun candidat à la fusion ni à la renumérotation. Le problème des non-numérotés-porteurs-de-contenu (strands 1 et 5) ne se pose pas dans cette tranche. Dépendance assumée au package `ict/` pour 02-04 (`SelfSortingArray`, `KinSortingArray` — organ-first, pas de re-dérivation).
