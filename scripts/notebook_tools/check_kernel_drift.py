@@ -238,6 +238,13 @@ def diff_kernel(base_info, head_info):
 #     ``3.10 -> 3.11`` reste couverte, et la convergence future
 #     ``3.11 -> 3.13`` aussi, plus le saut direct ``3.10 -> 3.13``
 #     (cas fondateur de #19181, PR #19163 : 3.10.11 -> 3.13.3).
+#     Le saut ``3.12 -> 3.13`` est couvert : ICT-47 (PainAxisDistillation)
+#     sur main est a ``language_info.version = 3.12.13`` (mesure directe
+#     sur le carnet, 2026-10-05), et la flotte le rejeu en 3.13 --
+#     sans cette entree, le carnet rougirait systematiquement. Le saut
+#     ``3.11 -> 3.12`` reste lui aussi implicite (3.12 = release
+#     courante de plusieurs carnets), mais n'est pas ajoute en
+#     l'absence d'un carnet de reference qui le pratique.
 #     Les sauts ``3.8 -> 3.13`` et ``3.9 -> 3.13`` sont **exclus** : la
 #     serie ICT (#5635, ICT-24) reste sur ``requires-python >=3.9,<3.10``
 #     (contrainte ``pyphi==1.2.0``, mesure #19160), et le cliquet n'a
@@ -246,8 +253,8 @@ def diff_kernel(base_info, head_info):
 #     Hermes PRR_kwDOH2Odns8AAAABQnPfEQ, 2026-10-05). Les 2 rescapes
 #     ``3.8.10`` et ``3.9.0`` (1 carnet chacun, mesure body) sont
 #     traites au cas par cas.
-# La transition inverse (3.13 -> 3.11, 3.11 -> 3.10, 3.13 -> 3.10)
-# reste rouge.
+# La transition inverse (3.13 -> 3.12, 3.13 -> 3.11, 3.11 -> 3.10,
+# 3.13 -> 3.10) reste rouge.
 CANONICAL_LANGUAGE_TRANSITIONS = {
     (".net-csharp", "12.0", "13.0"):
         "C# 12.0 -> 13.0 : convergence vers le canon C# 13.0 (#17679)",
@@ -257,6 +264,8 @@ CANONICAL_LANGUAGE_TRANSITIONS = {
         "Python 3.11 -> 3.13 : convergence vers le canon d'execution 3.13 (#19181)",
     ("python3", "3.10", "3.13"):
         "Python 3.10 -> 3.13 : convergence directe vers le canon d'execution 3.13 (#19181, cas fondateur)",
+    ("python3", "3.12", "3.13"):
+        "Python 3.12 -> 3.13 : convergence vers le canon d'execution 3.13 (#19181, ICT-47 a 3.12.13 sur main)",
 }
 
 

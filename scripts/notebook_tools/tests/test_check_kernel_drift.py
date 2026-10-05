@@ -402,6 +402,27 @@ def test_canonical_transition_python_313_to_38_refused():
     assert ckd.accepted_canonical_transition(a, b) is False
 
 
+def test_canonical_transition_python_31213_to_3133_accepted():
+    # Positif : la transition 3.12 -> 3.13 est couverte. ICT-47
+    # (PainAxisDistillation) sur main est a language_info.version=3.12.13
+    # (mesure directe, 2026-10-05) ; la flotte le rejeu en 3.13, donc
+    # la transition est reelle. Ajout a la demande du coordinateur
+    # (commentaire 5988053521, 2026-10-05T04:22Z), oubli du dispatch
+    # initial qui ne listait pas 3.12 dans les couverts.
+    a = {"language_version": "3.12.13", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is True
+
+
+def test_canonical_transition_python_313_to_312_refused():
+    # Negatif : la direction inverse 3.13 -> 3.12 reste rouge (n'a pas
+    # ete ajoutee a la table ; convention : la table n'accepte que les
+    # convergences vers le canon, pas la descente).
+    a = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    b = {"language_version": "3.12.13", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
 def test_canonical_transition_python_kernelspec_change_refused():
     # Negatif 4 : un changement de kernelspec.name reste rouge, meme avec
     # des versions couvertes par la table.
