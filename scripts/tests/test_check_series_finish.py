@@ -69,10 +69,11 @@ class TestCheckNotebookBlocks:
             "## Pour aller plus loin",
         ])
         result = mod.check_notebook_blocks(str(nb))
-        assert result["blocks"]["a_retenir"] is True
-        assert result["blocks"]["verifiez"] is True
-        assert result["blocks"]["aller_plus_loin"] is True
+        assert result["canonique"]["a_retenir"] is True
+        assert result["canonique"]["verifiez"] is True
+        assert result["canonique"]["aller_plus_loin"] is True
         assert result["missing"] == []
+        assert result["renommer"] == []
 
     def test_missing_one_block(self, tmp_path):
         nb = tmp_path / "ML-2-Python.ipynb"
@@ -81,9 +82,9 @@ class TestCheckNotebookBlocks:
             "## Pour aller plus loin",
         ])
         result = mod.check_notebook_blocks(str(nb))
-        assert result["blocks"]["a_retenir"] is True
-        assert result["blocks"]["verifiez"] is False
-        assert result["blocks"]["aller_plus_loin"] is True
+        assert result["canonique"]["a_retenir"] is True
+        assert result["canonique"]["verifiez"] is False
+        assert result["canonique"]["aller_plus_loin"] is True
         assert result["missing"] == ["verifiez"]
 
     def test_all_missing(self, tmp_path):
@@ -104,7 +105,7 @@ class TestCheckNotebookBlocks:
             "## Pour aller plus loin",
         ])
         result = mod.check_notebook_blocks(str(nb))
-        assert result["blocks"]["a_retenir"] is False
+        assert result["canonique"]["a_retenir"] is False
         assert result["missing"] == ["a_retenir"]
 
     def test_h3_counts(self, tmp_path):
@@ -128,8 +129,8 @@ class TestCheckNotebookBlocks:
             "## Pour aller plus loin",
         ])
         result = mod.check_notebook_blocks(str(nb))
-        # La phrase en prose ne doit pas etre prise pour un bloc
-        assert result["blocks"]["a_retenir"] is False
+        # La phrase en prose ne doit pas etre prise pour un bloc canonique
+        assert result["canonique"]["a_retenir"] is False
         assert result["missing"] == ["a_retenir"]
 
     def test_accent_tolerance(self, tmp_path):
@@ -142,6 +143,53 @@ class TestCheckNotebookBlocks:
         ])
         result = mod.check_notebook_blocks(str(nb))
         assert result["missing"] == []
+
+    def test_variante_a_renommer(self, tmp_path):
+        """Un titre voisin (variante) doit etre signale dans `renommer`, pas dans `missing`."""
+        nb = tmp_path / "ML-8-Python.ipynb"
+        _make_notebook(nb, [
+            "## Points cles à retenir",       # variante a_retenir (accepte accent)
+            "## Verifiez votre comprehension",
+            "## Pour aller plus loin",
+        ])
+        result = mod.check_notebook_blocks(str(nb))
+        # canonique absent pour a_retenir, mais variante le couvre
+        assert result["canonique"]["a_retenir"] is False
+        assert result["variante"]["a_retenir"] is True
+        assert result["missing"] == ["a_retenir"]  # la finition exige canonique
+        assert result["renommer"] == ["a_retenir"]  # il y a un voisin reconnu
+
+    def test_variante_summary(self, tmp_path):
+        """Titres anglais voisins reconnus comme variantes (3 blocs)."""
+        nb = tmp_path / "ML-9-Python.ipynb"
+        _make_notebook(nb, [
+            "## Summary",            # variante a_retenir (anglais)
+            "## Quiz",               # variante verifiez (anglais)
+            "## Bibliographie",      # variante aller_plus_loin (francais)
+        ])
+        result = mod.check_notebook_blocks(str(nb))
+        # Variante anglaise reconnue sur les 3 blocs
+        assert result["variante"]["a_retenir"] is True
+        assert result["variante"]["verifiez"] is True
+        assert result["variante"]["aller_plus_loin"] is True
+        assert result["renommer"] == ["a_retenir", "verifiez", "aller_plus_loin"]
+        assert result["missing"] == ["a_retenir", "verifiez", "aller_plus_loin"]
+
+    def test_canonique_check_your_understanding(self, tmp_path):
+        """'Check your understanding' et 'Further reading' sont canoniques (anglais)."""
+        nb = tmp_path / "ML-10-Python.ipynb"
+        _make_notebook(nb, [
+            "## Key takeaways",
+            "## Check your understanding",
+            "## Further reading",
+        ])
+        result = mod.check_notebook_blocks(str(nb))
+        # 'Key takeaways', 'Check your understanding', 'Further reading' sont TOUS canoniques
+        assert result["canonique"]["a_retenir"] is True   # 'Key takeaways' est canonique
+        assert result["canonique"]["verifiez"] is True    # 'Check your understanding' est canonique
+        assert result["canonique"]["aller_plus_loin"] is True  # 'Further reading' est canonique
+        assert result["missing"] == []
+        assert result["renommer"] == []
 
     def test_json_malformed(self, tmp_path):
         """Un carnet invalide doit retourner un signal d'erreur, pas crasher."""
@@ -166,7 +214,7 @@ class TestCheckNotebookBlocks:
         nb = tmp_path / "ML-8-Python.ipynb"
         nb.write_text(json.dumps(nb_json, ensure_ascii=False), encoding="utf-8")
         result = mod.check_notebook_blocks(str(nb))
-        assert result["blocks"]["a_retenir"] is False
+        assert result["canonique"]["a_retenir"] is False
         assert result["missing"] == ["a_retenir"]
 
 
@@ -241,6 +289,59 @@ class TestCheckReadme:
             result = mod.check_readme("NoReadme")
             assert result["exists"] is False
             assert result["objectifs"] is False
+        finally:
+            mod.SERIES_ROOT = original
+
+    def test_capstone_n_slash_a_comme_mot(self, tmp_path):
+        """`n/a` en mot autonome doit etre detecte comme 'pas de capstone'."""
+        original = mod.SERIES_ROOT
+        try:
+            mod.SERIES_ROOT = str(tmp_path)
+            (tmp_path / "SerieNA").mkdir()
+            (tmp_path / "SerieNA" / "README.md").write_text(
+                "## Objectifs\nblah\n\nCapstone : N/A.\n", encoding="utf-8"
+            )
+            result = mod.check_readme("SerieNA")
+            assert result["objectifs"] is True
+            assert result["capstone_phrase"] is not None
+        finally:
+            mod.SERIES_ROOT = original
+
+    def test_capstone_pas_de_match_dans_analyse(self, tmp_path):
+        """`n/?a` sans word boundary matchait 'na' dans 'analyse' : le fix doit l'eviter.
+
+        Leçon revue coord 05/10 : sans \b, le pattern attrapait le 'na' de 'analyse'.
+        On construit un README qui mentionne 'analyse' mais sans 'n/a' ou 'N/A' comme mot.
+        """
+        original = mod.SERIES_ROOT
+        try:
+            mod.SERIES_ROOT = str(tmp_path)
+            (tmp_path / "SerieAnalyse").mkdir()
+            (tmp_path / "SerieAnalyse" / "README.md").write_text(
+                "## Objectifs\nblah\n\n"
+                "Cette serie propose une analyse approfondie.\n"
+                "D'autres series analysent le sujet.\n",
+                encoding="utf-8",
+            )
+            result = mod.check_readme("SerieAnalyse")
+            assert result["objectifs"] is True
+            # Le mot 'analyse' ne doit pas etre pris pour 'n/a'
+            assert result["capstone_phrase"] is None
+        finally:
+            mod.SERIES_ROOT = original
+
+    def test_capstone_n_a_phrase_isolee(self, tmp_path):
+        """`N/A` isole en debut de phrase est OK (capstone phrase)."""
+        original = mod.SERIES_ROOT
+        try:
+            mod.SERIES_ROOT = str(tmp_path)
+            (tmp_path / "SerieNA2").mkdir()
+            (tmp_path / "SerieNA2" / "README.md").write_text(
+                "## Objectifs\nblah\n\n## Capstone\n\nN/A - aucun probleme synthese.\n",
+                encoding="utf-8",
+            )
+            result = mod.check_readme("SerieNA2")
+            assert result["capstone_phrase"] is not None
         finally:
             mod.SERIES_ROOT = original
 
@@ -361,6 +462,36 @@ class TestRunCheck:
             result = mod.run_check("SerieFiltr")
             assert result["carnet_total"] == 1
             assert result["carnet_finis"] == 1
+            assert result["finished"] is True
+        finally:
+            mod.SERIES_ROOT = original
+
+    def test_serie_mesure_recursive(self, tmp_path):
+        """Les carnets en sous-dossiers (depth >= 2) comptent dans la mesure (leçon #19297)."""
+        original = mod.SERIES_ROOT
+        try:
+            mod.SERIES_ROOT = str(tmp_path)
+            serie = tmp_path / "SerieDeep"
+            serie.mkdir()
+            (serie / "README.md").write_text(
+                "## Objectifs\nblah\n", encoding="utf-8"
+            )
+            # Carnet a la racine
+            _make_notebook(
+                serie / "Top.ipynb",
+                ["## A retenir", "## Verifiez votre comprehension", "## Pour aller plus loin"],
+            )
+            # Carnet en sous-serie (depth >= 2)
+            sub = serie / "SousSerie"
+            sub.mkdir()
+            _make_notebook(
+                sub / "Deep.ipynb",
+                ["## A retenir", "## Verifiez votre comprehension", "## Pour aller plus loin"],
+            )
+            result = mod.run_check("SerieDeep")
+            # Les deux carnets comptent
+            assert result["carnet_total"] == 2
+            assert result["carnet_finis"] == 2
             assert result["finished"] is True
         finally:
             mod.SERIES_ROOT = original
