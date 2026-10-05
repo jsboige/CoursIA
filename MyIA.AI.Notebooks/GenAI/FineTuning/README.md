@@ -208,10 +208,10 @@ Si le modèle merge (FT-05) perd en qualité par rapport aux adaptateurs individ
 | Série | Connection | Détails |
 |-------|------------|---------|
 | **[GenAI/PostTraining](../PostTraining/README.md)** | Profondeur méthodologique | Série sœur : la math du loss derrière SFT/DPO + GRPO/RLVR. FineTuning = recettes, PostTraining = pourquoi ça marche. |
-| **[RL — RL-05 MDP/Q-Learning](../../RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb)** | Fondations policy/value | Socle Bellman/Q réutilisé par tout post-training. |
-| **[RL — RL-06c PPO from scratch](../../RL/RL-06c-PPO-Depuis-Zero-Python.ipynb)** | PPO from scratch | L'optimiseur derrière PPO-RLHF, implémenté pas à pas. |
-| **[RL — RL-09 offline RL](../../RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb)** | SFT = Behavior Cloning | DPO comme preference learning offline ; contrainte de support = KL. |
-| **[RL — RL-10 reward shaping](../../RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb)** | Reward model = shaping appris | Reward shaping (Ng 1999) et reward hacking, préfiguration tabulaire du reward model RLHF. |
+| **[RL — RL-05 MDP/Q-Learning](../../RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.html)** | Fondations policy/value | Socle Bellman/Q réutilisé par tout post-training. |
+| **[RL — RL-06c PPO from scratch](../../RL/RL-06c-PPO-Depuis-Zero-Python.html)** | PPO from scratch | L'optimiseur derrière PPO-RLHF, implémenté pas à pas. |
+| **[RL — RL-09 offline RL](../../RL/RL-09-RL-Offline-Behavior-Cloning-Python.html)** | SFT = Behavior Cloning | DPO comme preference learning offline ; contrainte de support = KL. |
+| **[RL — RL-10 reward shaping](../../RL/RL-10-Reward-Shaping-Curriculum-Python.html)** | Reward model = shaping appris | Reward shaping (Ng 1999) et reward hacking, préfiguration tabulaire du reward model RLHF. |
 
 ## Références
 
