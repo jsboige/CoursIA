@@ -406,12 +406,17 @@ def test_canonical_transition_python_313_to_38_refused():
 
 
 def test_canonical_transition_python_31213_to_3133_accepted():
-    # Positif : la transition 3.12 -> 3.13 est couverte. ICT-47
-    # (PainAxisDistillation) sur main est a language_info.version=3.12.13
-    # (mesure directe, 2026-10-05) ; la flotte le rejeu en 3.13, donc
-    # la transition est reelle. Ajout a la demande du coordinateur
-    # (commentaire 5988053521, 2026-10-05T04:22Z), oubli du dispatch
-    # initial qui ne listait pas 3.12 dans les couverts.
+    # Positif : la transition 3.12 -> 3.13 est couverte. Anticipation :
+    # aucun carnet main n'exerce aujourd'hui le tuple (`python3`, `3.12`,
+    # `3.13`) — le seul carnet a 3.12 mesure est ICT-47
+    # (PainAxisDistillation), dont le kernelspec est `py310-gpu` (distinct
+    # de `python3`), donc hors scope de ce tuple (le cliquet exige le meme
+    # nom de kernel entre base et tete). L'entree est ajoutee pour
+    # preparer la convergence d'un futur carnet `python3` a 3.12.x. Le
+    # temoin effectif du test est le tuple synthetique ci-dessous, pas
+    # ICT-47. Ajout a la demande du coordinateur (commentaire 5988053521,
+    # 2026-10-05T04:22Z), oubli du dispatch initial qui ne listait pas
+    # 3.12 dans les couverts.
     a = {"language_version": "3.12.13", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
     assert ckd.accepted_canonical_transition(a, b) is True
