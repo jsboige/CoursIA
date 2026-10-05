@@ -735,8 +735,12 @@ def _agrege_multi_seed(brut: list) -> dict:
 # la valeur a la position finale. Chaque pas de chaine = mise a jour de position
 # ADJACENTE depuis la derniere position emise + une instruction a position fixe
 # -- une operation locale a 2 couches, sans binding valeur->position. Mesure v5
-# (4 graines, 300 pas) : toujours pas de separation positive ; a K=3 l'ecart est
-# significatif EN DEFAVEUR du CoT (DM p ~ 0.005). Le volet se clot.
+# (4 graines, 300 pas) : toujours pas de separation positive. K=2 : edge -0.11
+# sigma, DM p 0.7317 ; K=3 : edge +0.74 sigma, DM p 0.6093 -- deux verdicts
+# CLOTURE. Un pilote au scratchpad sous vocabulaire resserre donnait a K=3 un
+# ecart significatif EN DEFAVEUR du CoT (DM p ~ 0.005) ; il n'est PAS replique
+# sous le vocabulaire de l'organe, et la mesure de reference reste celle du
+# carnet. Le volet se clot.
 
 
 def instructions_marche(vocab: Vocab) -> tuple[int, int, int]:
