@@ -290,8 +290,10 @@ def plan_qc(repo: Path, candidate: dict, pass_date: str, out_dir: Path) -> dict:
     clash = sorted(set(candidate["params"]) & set(QC_RESERVED_PARAMS))
     if clash:
         raise ValueError(f"{candidate['id']}: params {clash} are reserved for the replay dates")
-    names = [n for n in _git(repo, "ls-tree", "-r", "--name-only", candidate["sha"], "--",
-                             project_dir).splitlines() if n.endswith(".py")]
+    # --full-tree : le chemin du point d'entree est relatif a la racine du depot, meme quand
+    # `repo` est un sous-dossier (la commande se lance depuis ML-Training-Pipeline/).
+    names = [n for n in _git(repo, "ls-tree", "-r", "--full-tree", "--name-only", candidate["sha"],
+                             "--", project_dir).splitlines() if n.endswith(".py")]
     if not names:
         raise ValueError(f"{candidate['id']}: no .py file under {project_dir} at {candidate['sha'][:10]}")
     target = out_dir / candidate["id"]

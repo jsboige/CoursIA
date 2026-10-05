@@ -36,7 +36,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 2 | HighBookToMarketFScore-QC | ML | Equities | ~~2.09~~ → **0.41** ✓post-#2801 | 14.5 | 60.4 | 0.24 | **historique** (downgraded: real fees, MaxDD -60%) |
 | 3 | PuppiesOfTheDow-QC | IND | Equities | ~~1.99~~ → **0.30** ✓post-#2801 | 9.6 | 28.8 | 0.33 | **historique** (downgraded: real fees) |
 | 4 | LeveragedETFMomentum-QC | IND | Equities (lev ETF) | ~~1.80~~ → **1.78** ✓post-#2801 | 126.4 | 53.3 | 2.37 | robuste (confirmed, leveraged — MaxDD -53% expected) |
-| 5 | Positive-Negative-Splits-ML | ML | Equities | ~~1.74~~ → **1.51** ✓post-#2801 | 75.7 | 37.6 | 2.01 | robuste (confirmed, PSR 82.3%, top ML leader) |
+| 5 | Positive-Negative-Splits-ML | ML | Equities | ~~1.74~~ → **1.51** ✓post-#2801 | 75.7 | 37.6 | 2.01 | **non robuste** (revu par #19242 : reproduction 2018 → 2024-04 Sharpe 1,16 / PSR 43,6 %, 89 % du résultat en 2023-2024, capacité estimée par QC 3 000 dollars ; 2018 → 2026-09 : ruine en vente à découvert, variante long seul `NO BEATS`) |
 | 6 | DynamicVIXSpyRegime-QC | ML | Equities/VIX | ~~1.72~~ → **1.00** ✓post-#2801 | 17.9 | 16.5 | 1.09 | robuste (confirmed, **PSR 69.4%** — catalog 1.72 was 1Y-OOS, full decade -42%) |
 | 7 | MacroFactorRotation-QC | ML | Multi-asset | ~~1.23~~ → **0.73** ✓post-#2801 | 22.6 | 42.0 | 0.54 | robuste (revised Sharpe -40%, real fees) |
 | 8 | Framework_Composite_TrendWeather | COMP | Equities | ~~1.16~~ → **1.14** ✓post-#2801 | 27.1 | 27.7 | 0.98 | robuste (confirmed, PSR 77.9%) |
@@ -84,7 +84,7 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | HighBookToMarketFScore | 32732820 | 2.09 | **0.41** | -80% | **historique** (was robuste) |
 | PuppiesOfTheDow | 32732704 | 1.99 | **0.30** | -85% | **historique** (was robuste) |
 | LeveragedETFMomentum | 32732756 | 1.80 | **1.78** | -1% | robuste (confirmed, leveraged) |
-| Positive-Negative-Splits-ML | 30317350 | 1.74 | **1.51** | -13% | robuste (confirmed, **PSR 82.3%**, top ML leader) |
+| Positive-Negative-Splits-ML | 30317350 | 1.74 | **1.51** | -13% | **non robuste** (revu par #19242 : reproduction 2018 → 2024-04 Sharpe 1,16 / PSR 43,6 %, 89 % du résultat en 2023-2024, capacité estimée par QC 3 000 dollars ; 2018 → 2026-09 : ruine en vente à découvert, variante long seul `NO BEATS`) |
 | MacroFactorRotation | 32730301 | 1.23 | **0.73** | -40% | robuste (revised Sharpe) |
 | Framework_Composite_TrendWeather | 28825740 | 1.16 | **1.14** | -2% | robuste (confirmed, **PSR 77.9%**) |
 | Trend-Following | 28797562 | 1.07 | **0.41** | -62% | **historique** (was robuste) |
@@ -133,7 +133,7 @@ over against that fee. Four regimes now observed:
   (-40%) is the milder case in this family. **These catalog rankings are not reliable.**
 
 - **Structured ML & regime composites HOLD** (-2% to -14%): Positive-Negative-Splits-ML (1.51,
-  **PSR 82.3%**), Framework_Composite_TrendWeather (1.14, **PSR 77.9%**), and Multi-Layer-EMA
+  **PSR 82.3%**, statut revu par #19242 : non robuste), Framework_Composite_TrendWeather (1.14, **PSR 77.9%**), and Multi-Layer-EMA
   (0.80, PSR 23.9%) confirm. Contrast with MomentumRegime (0.185) and now Crypto-MultiCanal —
   only the *structured* ML/regime-aware designs survive real fees. **These are real alpha.**
 
@@ -186,7 +186,7 @@ and MomentumStrategy (0.50, PSR 9.3%) — both non-significant PSR, technically 
 
 **True leaders post-#2801, ranked by statistical significance (PSR > 50%)** :
 
-1. Positive-Negative-Splits-ML — 1.51, PSR 82.3% (structured ML, top leader, replaces collapsed value entries)
+1. Positive-Negative-Splits-ML — 1.51, PSR 82.3% (structured ML, top leader, replaces collapsed value entries) — **statut retiré par #19242** : la mesure ne se reproduit pas (Sharpe 1,16, PSR 43,6 % sur 2018 → 2024-04) et la règle se ruine en vente à découvert en décembre 2025
 2. LeveragedETFMomentum — 1.78, PSR 79.8% (leveraged, extreme profile)
 3. Framework_Composite_TrendWeather — 1.14, PSR 77.9% (regime-aware composite)
 4. EMA-Cross-Stocks — 0.99, PSR 49.7% (high-turnover US equity, near-significance, near-immune)

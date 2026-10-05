@@ -73,13 +73,20 @@ SLICE_DAYS = 3
 
 DEFAULT_DAYS = 21
 
+# Champs demandes par defaut. Les appelants qui n'ont besoin que du corps et de
+# la date gardent ce jeu : `files` est le champ le plus cher de l'API (il porte
+# la liste des fichiers touches), et le demander pour rien paie le cout sans la
+# donnee. Un appelant qui a besoin des fichiers (le tapis, via `family_of`)
+# passe `fields=` explicitement.
+DEFAULT_FIELDS = "number,body,mergedAt"
+
 
 def since_date(days: int) -> str:
     """Return the ISO cutoff ``today - days``."""
     return (date.today() - timedelta(days=days)).isoformat()
 
 
-def run_gh(since: str, until: str) -> list[dict]:
+def run_gh(since: str, until: str, fields: str = DEFAULT_FIELDS) -> list[dict]:
     """One date slice of merged PRs, ``[since, until)`` on MERGE time.
 
     Uses only flags `gh pr list` actually has -- `--search` and `--limit`.
@@ -93,23 +100,28 @@ def run_gh(since: str, until: str) -> list[dict]:
             "--state", "merged",
             "--search", f"merged:>={since} merged:<{until}",
             "--limit", str(SEARCH_RESULT_CAP),
-            "--json", "number,body,mergedAt",
+            "--json", fields,
         ],
         capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     )
     return json.loads(out.stdout)
 
 
-def fetch(since: str, run=run_gh, slice_days: int = SLICE_DAYS,
-          today: date | None = None) -> list[dict]:
+def fetch(since: str, run=None, slice_days: int = SLICE_DAYS,
+          today: date | None = None, fields: str = DEFAULT_FIELDS) -> list[dict]:
     """Walk ``[since, tomorrow)`` in date slices and merge them into one list.
 
-    ``run`` is dependency-injected for tests. A slice that returns exactly
-    ``SEARCH_RESULT_CAP`` items was truncated by the search API: it is halved
-    and retried, and a one-day slice still at the cap raises -- returning it
-    would silently drop merges and hand the guard a partial sequence that looks
-    complete.
+    ``run`` is dependency-injected for tests -- a two-argument callable
+    ``(since, until) -> list[dict]``. When it is omitted, the real fetch is
+    bound to ``fields`` (so an injected fake keeps its two-argument contract).
+
+    A slice that returns exactly ``SEARCH_RESULT_CAP`` items was truncated by
+    the search API: it is halved and retried, and a one-day slice still at the
+    cap raises -- returning it would silently drop merges and hand the caller a
+    partial sequence that looks complete.
     """
+    if run is None:
+        run = lambda s, u: run_gh(s, u, fields)  # noqa: E731
     start = date.fromisoformat(since)
     end = (today or date.today()) + timedelta(days=1)
     acc: list[dict] = []
