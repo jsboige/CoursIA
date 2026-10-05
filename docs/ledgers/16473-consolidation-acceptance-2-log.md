@@ -51,14 +51,39 @@ date_cycle | #issue | chaperon | axe | statut | preuve | note
 2026-10-05T06:10Z | PR#19232 | — | B | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Ledger de suivi acceptance 2 lot 1 (axe B) — ouvert par ma lane pour matérialiser la stratégie sans commentaires nominatifs. À reviewer par l'adjoint (po-2025:CoursIA) et le coordinateur (ai-01) avant émission des commentaires sur les sous-grains à claim tiers.
 ```
 
-### Lots 2-5 — axes A, C, D, E, F
+### Lot 3 — axe A (renum/parcours notebooks), 74 orphelines
 
-À servir aux cycles suivants, dans l'ordre dedie par l'adversaire/coordinateur après livraison du lot 1.
+Mesure 2026-10-05T07:1xZ (offline, `--suggest-rattachement`) : **74 orphelines** sur l'axe A. Toutes reçoivent la suggestion `#5081` (chaperon canon renum/parcours). Les cibles qui matchent aussi un autre axe reçoivent un multi-suggest `#5081 #13737` (axe A+B) ou plus (4 axes possibles sur les EPICs transverses comme #18706, #18601, #18397, #18205, #18197, #17969, #17544, #17151, #16589, etc.).
+
+**Catégories principales** (74 orphelines) :
+- **Renommages purs** : #19245, #19154, #19170, #18851
+- **Re-exécutions / kernels** : #19178, #18471
+- **Audits partitions Hermes / NanoClaw** : #17083, #17211, #17222, #17239, #17251, #17357, #17369, #17391, #17419, #17518, #17529, #17601, #17659, #17700, #17714, #17926, #17983, #17984, #18197, #18207, #18244, #18256, #18334, #18355, #18390, #18394, #18406, #18408, #18420, #18430, #18545, #18556, #18578, #18608, #18703, #18718, #18732, #18889, #19002
+- **Organes / outils** : #15204, #16472, #16589
+- **Catalogues / parcours** : #16457, #17601, #17659
+- **EPICs transverses** : #16620, #16760, #16774, #17465, #17540, #17544, #17969, #18601, #18706, #18205, #18397
+- **ICT/ML/Doc** : #16225, #17975, #18064, #18144, #18767
+
+**Stratégie de commentaire** : **identique au lot 1** — pas d'immixtion dans le périmètre des lanes tierces. Les orphelines portant des claims tiers (Hermès / NanoClaw / lanes multiples) ne reçoivent PAS de commentaire `Part of #5081` direct depuis ma lane. Validation par l'adversaire (po-2025:CoursIA adjoint) et le coordinateur (ai-01) requise.
+
+**Décision** : pour ce cycle, **pas de commentaire nominatif direct** sur les 74 orphelines axe A. Dossier de proposition à trancher par coordination. Les commentaires nominatifs seront posés **après validation de l'adversaire/coordinateur**, ou par les porteurs eux-mêmes.
+
+#### Statut émission commentaires nominatifs
+
+```text
+date_cycle | #issue | chaperon | axe | statut | preuve | note
+2026-10-05T07:1xZ | #16473 | #16473 | A | PROPOSÉ | audit --suggest-rattachement au 2026-10-05T07:1xZ → 74 orphelines axe A, toutes suggérées #5081. Aucune émission commentaire nominatif (immixtion). Dossier de proposition préparé pour coordination.
+2026-10-05T07:1xZ | PR#19232 | — | A | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lot 1 → lots 1+3 (axe B + axe A). Ledger étendu append-only avec section axe A. Rebase + force-push ce cycle.
+```
+
+### Lots 2, 4, 5 — axes C, D, E, F (à servir)
+
+À servir aux cycles suivants, dans l'ordre dedie par l'adversaire/coordinateur après livraison des lots 1+3.
 
 ## Suites à donner
 
-1. **Cycle prochain** : créer un sous-grain concret dans `scripts/audit_consolidation_orphans.py` (extension `--suggest-rattachement` qui propose automatiquement un chaperon par heuristique : mots-clés `lean|mathlib` → #4362, `renum|nommage|kernel` → #5081, `doublon|twin|duplicate|collision` → #13737, `arch|ménage|nettoyage` → #9535, `consolidation|parapluie|entropie` → #16473). PR séparée.
-2. **Après cette PR** : commentaires nominatifs émis par les porteurs eux-mêmes, ou par l'adversaire après validation — pas par ma lane en mode worker.
+1. **Livré cycle 3** : extension `--suggest-rattachement` dans `scripts/audit_consolidation_orphans.py` (PR #19239, OPEN 2026-10-05). Mapping `AXIS_TO_CHAPERON` codifié en dur (A→#5081, B→#13737, C→#4362, D→#9535, E→#13737, F→#16473), 16/16 tests verts.
+2. **À faire après validation adjoint+coord** : commentaires nominatifs émis par les porteurs eux-mêmes, ou par l'adversaire après validation — pas par ma lane en mode worker.
 3. **Liaison #13906** : tracker l'organe `scripts/epic_body_staleness.py` ; réécrire ce ledger à chaque livraison de l'organe (cf EPIC #16473 §F).
 
 ## Références
@@ -66,8 +91,10 @@ date_cycle | #issue | chaperon | axe | statut | preuve | note
 - EPIC #16473 — body chapeau : https://github.com/jsboige/CoursIA/issues/16473
 - Claim initial : c.5988917609 (1320 chars)
 - Claim suivi : c.5988930369 (2579 chars)
-- PR organe : #16504 (MERGED 2026-09-17)
-- Audit dernier : `python scripts/audit_consolidation_orphans.py --fetch` au 2026-10-05T05:4xZ → 399/29/370
+- PR organe : #16504 (MERGED 2026-09-17) — acceptance 1
+- PR extension organe : #19239 (OPEN 2026-10-05) — `--suggest-rattachement` acceptance 2 lot 2
+- PR ledger : #19232 (OPEN 2026-10-05) — acceptance 2 lots 1+3
+- Audit dernier : `python scripts/audit_consolidation_orphans.py --fetch --suggest-rattachement` au 2026-10-05T07:1xZ → 399/37/362 (régression 29→37 rattachées depuis cycle 2, à monitorer)
 
 ---
 
