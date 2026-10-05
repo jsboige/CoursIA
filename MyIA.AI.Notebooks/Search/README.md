@@ -218,7 +218,7 @@ Cette série est née **Python d'abord** pour son cœur pédagogique (recherche,
 | [Part1-Foundations](Part1-Foundations/) | 24 (Search-1 à Search-11, Search-2b, Search-2c, Search-03b à Search-03e, Search-09b à Search-09d, Search-11c, Search-11d, Search-12a, Search-13a) | Python (22) + Lean (Search-09d) + C# natif (Search-2c QuikGraph) | **15 jumeaux C#** (Search-1 à 11, 2b, 03b/03c/03d) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET | **9 binômes complets** — marathon achevé, voir [bilan final](#marathon-epic-4956) |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 35 (25 à la racine + 10 dans `MGS-vs-mealpy/`) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
-| [Applications](Applications/) | 20 cas cœur (App-1 à App-20) + galerie App-21–27 + sous-série Research (11 audits de garanties, volumes au catalogue) | Python + .NET | **20 binômes complets** + compagnons et audits App-21 à App-33 |
+| [Applications](Applications/) | 20 cas cœur (App-1 à App-20) + galerie App-21–27 + sous-série Research (audits de garanties, volumes au catalogue) | Python + .NET | **20 binômes complets** + compagnons et audits App-21 à App-33 |
 | Racine | 0 | — | (aucun — voir [_archive/](_archive/) pour les anciens notebooks racine) |
 
 La série a atteint la **parité `Python ⇄ C#` complète** en juillet 2026 : le marathon [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956) a livré les jumeaux des trois parties curriculaires et des 20 applications, tous mergés sur `main`. Seule la [Partie 4](Part4-Metaheuristics/) reste mono-langage — par conception, puisqu'elle démontre l'ingénierie .NET native au-dessus de GeneticSharp.
@@ -364,7 +364,7 @@ Search/
 │   │   ├── App-14-ConnectFour-Adversarial.ipynb
 │   │   └── App-14-ConnectFour-Adversarial-CSharp.ipynb
 │   │
-│   ├── CSP/                               # Applications CSP (28 notebooks : sélection ci-dessous, 15 Python + 13 C#)
+│   ├── CSP/                               # Applications CSP (sélection ci-dessous, Python + jumeaux C#)
 │   │   ├── App-1-NQueens.ipynb
 │   │   ├── App-2-GraphColoring.ipynb
 │   │   ├── App-3-NurseScheduling.ipynb
@@ -384,7 +384,7 @@ Search/
 │   │   ├── App-20b-SudokuBenchmark-CSharp.ipynb
 │   │   └── (+ autres notebooks et jumeaux C# App-1b/2b/3b/4b/7b/11b/15b et App-5/8-CSharp, marathon #4956)
 │   │
-│   ├── Hybrid/                            # Métaheuristiques (16 notebooks : sélection ci-dessous, 11 Python + 5 C#)
+│   ├── Hybrid/                            # Métaheuristiques (sélection ci-dessous, Python + jumeaux C#)
 │       ├── App-9-EdgeDetection.ipynb
 │       ├── App-9b-EdgeDetection-CSharp.ipynb
 │       ├── App-10-Portfolio.ipynb
@@ -399,7 +399,7 @@ Search/
 │       ├── App-18b-HyperparameterTuning-Python.ipynb
 │       └── App-22-AlgorithmSelection-Python.ipynb  # Sélection empirique : 3 jeux, 13 familles / 14 étiquettes, Pareto + préférences (PR IS #42)
 │
-│   └── Research/                          # Recherche : audits de garanties et distillations de preprints (11 notebooks Research-01..11, numérotation propre modèle Discrepancy/, arbitrage #17802)
+│   └── Research/                          # Recherche : audits de garanties et distillations de preprints (numérotation propre Research-01..NN, modèle Discrepancy/, arbitrage #17802)
 │
 ├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
 ├── Part4-Metaheuristics/                  # Partie 4 (35 notebooks C# .NET 9 : 25 à la racine + 10 sous MGS-vs-mealpy/) ; consomme le sous-module MetaGeneticSharp
