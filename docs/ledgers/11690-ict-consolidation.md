@@ -24,7 +24,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 4 | ICT-25 | tri des négatifs, désordre de sections établi | **LU** (tranche 1, 2026-08-24) |
 | 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU 3/3 tranches** (lectures du 2026-09-19 ; posées au ledger par #16814, #16821, #16827 — rang complet, 100 % des strands) |
 | 6 | **Fondations 01 → 09** (extension #11690) | `ICT-01` à `ICT-09` — racine de la numérotation, les deux piliers + strate dynamique | **LU** (tranche A de l'extension, 2026-10-05) |
-| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS 22/25** (strand 7, ouvert 2026-10-05 — jusqu'à `ICT-15l`) |
+| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS 23/25** (strand 7, ouvert 2026-10-05 — jusqu'à `ICT-16`) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -731,3 +731,13 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Résultat | R0 0,0000 · R1 0,3507 ± 0,0654 · R2 0,4096 ± 0,2109 · **R3 0,3522 ± 0,0903** → **VERDICT = CONFONDU_AVEC_LA_DIMENSION**. Le relief accompagne la **stochasticité de population finie** (turnover/dimension), pas l'apparition de comportements nouveaux. La réplication sur deux générateurs distincts aurait suggéré une robustesse — le contrôle négatif la vide. |
 | Critique | (1) L'exo 2 (« le relief croît-il avec le taux de turnover ? ») est exactement le prolongement expérimental du finding — silencieux, la démonstration du confond reste binaire là où une courbe relief(μ) la rendrait graduée. (2) R2 à σ=0,21 sur 3 graines (0,19-0,70) : la dispersion inter-graines du générateur B n'est pas commentée alors qu'elle dépasse celle de tous les autres régimes. (3) 3 graines seulement. |
 | Verdict | **SOLIDE** — le carnet d'audit modèle : verdict pré-enregistré puis **calculé** (jamais écrit à la main), contrôle négatif construit pour être indiscernable du vrai générateur (prouvé bit à bit), appariement déclaré régime par régime. Le relief b1 est invalidé comme discriminant de nouveauté — la leçon est méthodologique et elle est livrée. |
+
+### `ICT-16-MDLTwoPartCode` — 29 cellules (17 md, 12 code, 12/12 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| Intention | #5099 (strate 5) : le **code en deux parties** (MDL) — la sélection de modèle par MDL est-elle honnête ? Le proxy de compression interne est-il validé par un compresseur indépendant et par la **NLL hors-échantillon** ? Et la **bosse complexité-entropie** (le pic de Schmidhuber) est-elle mesurable sur le banc ? |
+| Contenu réel | `model_bits` par structure (uniforme −23,36 · sparse −42,38 · diagonale asym. …) ; cycle vs iid 4-cat (residual/n 0,0836 vs 513,2) ; entropie par blocs sur iid (H/k : 1,9986 → 1,8930 quand le bloc grandit) ; **sweep de 24 lignes** en H_taux ∈ [0,333 ; 2,991] avec pic de bosse **H\*=1,987, C\*=38,343 bits** et rendu graphique matplotlib ; validation croisée **MDL ↔ zlib** (Kendall tau = **+0,786, p=0,006**, attendu ≥0,5) ; table de trajectoires det/mk/iid (k_gain 0,90 → 0,003) ; **test décisif NLL hors-échantillon sur deux scénarios** (A peaky, B i.i.d.) ; 3 exos silencieux. |
+| Résultat | Scénario A : Spearman(MDL, NLL) = **+1,000**, argmin MDL = argmin NLL = k2, réduction NLL +2 443 bits ; Scénario B (i.i.d., structure absente) : Spearman **+1,000**, argmin = k0 des deux côtés, réduction **0 bit** — MDL sélectionne correctement **quand la structure existe et quand elle n'existe pas**. La bosse est mesurée avec un vrai pic, et le proxy interne est corroboré par un compresseur externe (tau +0,786). |
+| Critique | (1) La corrélation MDL↔zlib porte sur **8 trajectoires** (p=0,006 sur n=8) — significative mais étroite ; (2) les deux scénarios NLL sont **construits** (A/B synthétiques), pas des substrats ICT réels — le raccord au reste de la série n'est pas mesuré ; (3) 3 exos silencieux. |
+| Verdict | **SOLIDE** — la paire de contrôles est le geste fort : MDL validé **et** falsifié au bon endroit (scénario sans structure → k0, 0 bit gagné), proxy corrélé à un instrument indépendant, bosse tracée avec son pic chiffré. Banc MDL honnête et complet. |
