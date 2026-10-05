@@ -76,9 +76,36 @@ date_cycle | #issue | chaperon | axe | statut | preuve | note
 2026-10-05T07:1xZ | PR#19232 | — | A | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lot 1 → lots 1+3 (axe B + axe A). Ledger étendu append-only avec section axe A. Rebase + force-push ce cycle.
 ```
 
-### Lots 2, 4, 5 — axes C, D, E, F (à servir)
+### Lot 4 — axe C (lakes Lean), 47 orphelines
 
-À servir aux cycles suivants, dans l'ordre dedie par l'adversaire/coordinateur après livraison des lots 1+3.
+Mesure 2026-10-05T08:0xZ (offline, `--suggest-rattachement`) : **47 orphelines** sur l'axe C. Toutes reçoivent la suggestion `#4362` (chaperon Lean lakes) ; 9 cibles transverses reçoivent en plus `#16473` (parapluie anti-entropie) ou `#5081`/`#13737`.
+
+**Catégories principales** (47 orphelines) :
+- **Lean kernel/env** : #18511, #15666, #15698, #15652, #15629, #17616
+- **Lean prover / sorry** : #18611, #18397, #18445, #18432, #17666
+- **CI Lean / proof-integrity** : #18038, #18056, #14910, #18185, #18309, #17397
+- **Audits partitions Hermes / NanoClaw** : #17357, #17550, #17601, #17239, #17151
+- **EPICs transverses** : #18706, #18605, #18601, #18205, #17969, #17544, #17465, #16753, #15397, #15066
+- **Séries mathématiques** : #18286 (Borcherds), #17988 (SocialChoice), #16753 (Annexe MUH), #17845 (Karingula-Lovett)
+- **Retweets / Tweety** : #15694, #17601
+- **Hygiene / compteur** : #18493, #17550, #17472, #14955
+- **Organe canonique / budgets** : #15666, #14910, #16589, #15573
+
+**Stratégie de commentaire** : **identique aux lots 1+3** — pas d'immixtion dans le périmètre des lanes tierces. Les orphelines portant des claims tiers (Hermès / NanoClaw / lanes multiples / équipe Lean po-2024/po-2023) ne reçoivent PAS de commentaire `Part of #4362` direct depuis ma lane. Validation par l'adversaire (po-2025:CoursIA adjoint) et le coordinateur (ai-01) requise.
+
+**Décision** : pour ce cycle, **pas de commentaire nominatif direct** sur les 47 orphelines axe C. Dossier de proposition à trancher par coordination. Les commentaires nominatifs seront posés **après validation de l'adversaire/coordinateur**, ou par les porteurs eux-mêmes.
+
+#### Statut émission commentaires nominatifs
+
+```text
+date_cycle | #issue | chaperon | axe | statut | preuve | note
+2026-10-05T08:0xZ | #16473 | #16473 | C | PROPOSÉ | audit --suggest-rattachement au 2026-10-05T08:0xZ → 47 orphelines axe C, toutes suggérées #4362. Aucune émission commentaire nominatif (immixtion). Dossier de proposition préparé pour coordination.
+2026-10-05T08:0xZ | PR#19232 | — | C | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lots 1+3 → lots 1+3+4 (axes B, A, C). Ledger étendu append-only avec section axe C. Rebase + force-push ce cycle.
+```
+
+### Lots 2, 5 — axes D, E, F (à servir)
+
+À servir aux cycles suivants, dans l'ordre dedie par l'adversaire/coordinateur après livraison des lots 1+3+4.
 
 ## Suites à donner
 
@@ -93,8 +120,8 @@ date_cycle | #issue | chaperon | axe | statut | preuve | note
 - Claim suivi : c.5988930369 (2579 chars)
 - PR organe : #16504 (MERGED 2026-09-17) — acceptance 1
 - PR extension organe : #19239 (OPEN 2026-10-05) — `--suggest-rattachement` acceptance 2 lot 2
-- PR ledger : #19232 (OPEN 2026-10-05) — acceptance 2 lots 1+3
-- Audit dernier : `python scripts/audit_consolidation_orphans.py --fetch --suggest-rattachement` au 2026-10-05T07:1xZ → 399/37/362 (régression 29→37 rattachées depuis cycle 2, à monitorer)
+- PR ledger : #19232 (OPEN 2026-10-05) — acceptance 2 lots 1+3+4
+- Audit dernier : `python scripts/audit_consolidation_orphans.py --fetch --suggest-rattachement` au 2026-10-05T08:0xZ → 399/37/362 (régression 29→37 rattachées depuis cycle 2, à monitorer)
 
 ---
 
