@@ -129,7 +129,7 @@ theorem supportContained_biUnion {d : ℕ} {P : (Fin d → ℤ) → ℝ}
 
 /-- **Ré-indexation par translation sous contention** : si `S` contient le
 support de `P` et de `P ∘ (· + v)`, alors `∑ x ∈ S, P (x + v) = ∑ x ∈ S, P x`
-(both equal the mass of `P`). C'est le remplacement satisfiable de
+(les deux sommes valent la masse de `P`). C'est le remplacement satisfiable de
 `sum_translate_image` (k1.2) : les trois sommes — sur l'image translatée, sur
 l'intersection et sur `S` — coïncident parce que les termes hors support
 s'annulent. -/
