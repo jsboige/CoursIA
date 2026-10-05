@@ -24,6 +24,11 @@ exemption dans la garde.
 Sortie de rouge : nom de fichier + commande de reparation
 ``git add --renormalize <fichier>``.
 
+Architecture testable : la matrice pure vit dans `_classify(i_attr, attr)`
+et le parsing de la ligne `git ls-files --eol` dans `_parse_ls_files_line`.
+Les tests `scripts/tests/test_check_eol_blobs.py` couvrent les 7 cas
+de la matrice (cf. revue 5421649286 du coordinateur).
+
 Critere d'acceptance #19374 :
 - rougit sur le blob mixte de #19287 (controle positif)
 - vert sur main apres #19373 et sur une PR ordinaire
@@ -33,8 +38,37 @@ Critere d'acceptance #19374 :
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
+
+
+# Indices `i_eol` qui signalent un blob non-stable (git renormalisera le
+# worktree sans reecrire le blob -> "modifie apres chaque checkout").
+BAD_INDEX = ("crlf", "mixed")
+
+# Attributs `.gitattributes` qui declarent le fichier comme "text" sans
+# proteger le blob CRLF. Un fichier declare `-text` est binaire et n'est
+# PAS renormalise -- la garde ne le rougit pas. Un attribut vide
+# (aucune entree `.gitattributes`) laisse le defaut `text`, qui
+# renormalise egalement ; mais sans declaration explicite, l'auteur n'a
+# pas CLAIM le format CRLF, le cas est "non declare" et reste hors du
+# filet (cf `_classify` et `test_decision_*`).
+LF_ATTRS = ("text", "lf")
+
+# Format de la sortie `git ls-files --eol` :
+#   <i_eol> <w_eol> <attr> eol=<X> \t<path>
+# `attr` est vide si le fichier n'a aucune entree `.gitattributes` (vu
+# comme `attr/ ` avec un espace final). `eol=` est absent si aucun
+# attribut EOL n'est pose (uniquement l'attribut text). On capture
+# l'attribut brut ; la decision le `.strip()` avant test d'appartenance.
+EOL_LINE_RE = re.compile(
+    r"(?P<i_eol>i/(?P<i_attr>\w+))\s+"
+    r"w/(?P<w_attr>\w+)\s+"
+    r"attr/(?P<attr>[^\t]*?)\s+"
+    r"eol=(?P<eol_attr>\S+)"
+    r"\s+(?P<path>.+)"
+)
 
 
 def _run(cmd: list[str], cwd: str | None = None) -> subprocess.CompletedProcess:
@@ -42,6 +76,27 @@ def _run(cmd: list[str], cwd: str | None = None) -> subprocess.CompletedProcess:
         cmd, capture_output=True, text=True, encoding="utf-8",
         errors="replace", cwd=cwd,
     )
+
+
+def _classify(i_attr: str, attr: str) -> bool:
+    """Matrice de decision (pure, testable hors subprocess).
+
+    Le strip() de `attr` couvre l'attribut vide (sortie `git ls-files
+    --eol` avec `attr/ ` espace final). La garde rougit UNIQUEMENT les
+    cas declares `text` ou `eol=lf` -- un blob CRLF sans declaration
+    `.gitattributes` (attribut vide) reste hors du filet, l'auteur n'a
+    pas CLAIM le format et la renormalisation depend de la config
+    locale (core.autocrlf), pas d'un contrat commite."""
+    return i_attr in BAD_INDEX and attr.strip() in LF_ATTRS
+
+
+def _parse_ls_files_line(line: str) -> tuple[str, str, str] | None:
+    """Parse une ligne `git ls-files --eol` -> (i_attr, attr, path).
+    None si la ligne n'est pas au format attendu."""
+    m = EOL_LINE_RE.match(line)
+    if m is None:
+        return None
+    return m.group("i_attr"), m.group("attr"), m.group("path")
 
 
 def main() -> int:
@@ -74,14 +129,12 @@ def main() -> int:
     for line in eol_proc.stdout.splitlines():
         if not line.strip():
             continue
-        # Format : "<i_eol> <w_eol> <attr> eol=<X> \t<path>"
-        parts = line.split(None, 4)
-        if len(parts) < 5:
+        parsed = _parse_ls_files_line(line)
+        if parsed is None:
             continue
-        i_eol, _w_eol, _attr, eol_attr, path = parts
-        if (i_eol in ("i/crlf", "i/mixed")) and eol_attr.startswith("eol=") \
-                and eol_attr != "eol=crlf":
-            bad.append((i_eol, path))
+        i_attr, attr, path = parsed
+        if _classify(i_attr, attr):
+            bad.append((i_attr, path))
 
     if not bad:
         return 0
@@ -92,8 +145,8 @@ def main() -> int:
         "chaque checkout :",
         file=sys.stderr,
     )
-    for i_eol, path in bad:
-        print(f"  {i_eol}  {path}", file=sys.stderr)
+    for i_attr, path in bad:
+        print(f"  i/{i_attr}  {path}", file=sys.stderr)
         print(
             f"    -> git add --renormalize {path}",
             file=sys.stderr,
