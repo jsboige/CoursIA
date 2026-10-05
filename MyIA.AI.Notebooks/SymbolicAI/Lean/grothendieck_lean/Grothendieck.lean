@@ -226,7 +226,7 @@ Substance réelle :
   `C⁰F`, l'itération du pas aux degrés suivants et l'**acyclicité**
   `H^n(C⁰F) = 0` restent la frontière nommée de la Partie 90.
 - `Grothendieck.GodementExactness` (Partie 90) : le **complexe au-delà du
-  degré 0 et la réduction de l'exactitude**. La différentielle de degré 1
+  degré 0 et le mono catégorique de l'unité**. La différentielle de degré 1
   `godementCanonicalDOne = godementStep d⁰ : C¹F ⟶ C²F` est posée, et la
   null-composition `d⁰ ≫ d¹ = 0`
   (`godementCanonicalDZero_comp_godementCanonicalDOne`) est une **instance
@@ -238,9 +238,13 @@ Substance réelle :
   — l'exactitude de `0 → F → C⁰F` en F dans le langage des complexes.
   L'**énoncé de réduction** de l'exactitude en `C⁰F` au mono de l'unité du
   conoyau (`exact_toGodement_godementCanonicalDZero_of_mono`, [God58] II.4.1)
-  est posé, avec sa **preuve différée** (réconciliation defeq des `X₂`,
-  instance `IsIso` non inférée) — la **séparéité du conoyau** par recollement
-  sur faisceau, qui ferme la boucle, est la frontière nommée de la Partie 91.
+  est **retiré de cette Partie** et reporté à la Partie 91 : le draft r65
+  portait un `sorry` tactique sur sa preuve (réconciliation defeq des `X₂`,
+  instance `IsIso` non inférée) que le gate `proof-integrity` du caller
+  workflow élève en `sorryAx` transitif à l'import — classe `forbidden`
+  (pr-review-discipline §B). La **séparéité du conoyau** par recollement sur
+  faisceau, qui ferme la boucle, est la frontière nommée de la Partie 91,
+  qui posera l'énoncé ET sa preuve.
 
 Tous les `sorry`s ne sont pas comblés — la plupart sont des échafaudages
 intentionnels pour le prouveur multi-agent (cf. Epic #1453).
@@ -375,7 +379,7 @@ Substance (English):
   `C⁰F`, iteration of the step at higher degrees, and **acyclicity**
   `H^n(C⁰F) = 0` remain the named frontier of Part 91.
 - `Grothendieck.GodementExactness` (Part 90) : the **complex beyond degree 0
-  and the reduction of exactness**. The degree-1 differential
+  and the categorical mono of the unit**. The degree-1 differential
   `godementCanonicalDOne = godementStep d⁰ : C¹F ⟶ C²F` is posed, and the
   null-composition `d⁰ ≫ d¹ = 0`
   (`godementCanonicalDZero_comp_godementCanonicalDOne`) is a **direct instance
@@ -387,10 +391,13 @@ Substance (English):
   in the language of complexes. The **reduction statement** of exactness at
   `C⁰F` to the mono of the cokernel's unit
   (`exact_toGodement_godementCanonicalDZero_of_mono`, [God58] II.4.1) is
-  posed, with its **proof deferred** (defeq reconciliation of the two
-  `X₂`, the `IsIso` instance not inferred) — the **separatedness of the
-  cokernel** by gluing on sheaves, which closes the loop, is the named
-  frontier of Part 91.
+  **withdrawn from this Part** and deferred to Part 91 : the r65 draft
+  carried a `sorry` tactical proof (defeq reconciliation of the two `X₂`,
+  the `IsIso` instance not inferred) which the `proof-integrity` gate of the
+  caller workflow elevates to a `sorryAx` transitive at import — `forbidden`
+  class (pr-review-discipline §B). The **separatedness of the cokernel** by
+  gluing on sheaves, which closes the loop, is the named frontier of Part
+  91, which will pose the statement AND its proof.
 
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).

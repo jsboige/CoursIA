@@ -8,14 +8,16 @@ import Mathlib.CategoryTheory.Abelian.Exact
 import Mathlib.Topology.Sheaves.Abelian
 
 /-!
-# Le complexe augmenté de Godement : d¹, le mono catégorique de l'unité, et la réduction de l'exactitude
+# Le complexe augmenté de Godement : d¹ et le mono catégorique de l'unité
 
 Partie 90 — la suite annoncée de la Partie 89. Cette dernière avait posé le pas
 canonique `godementStep f := cokernel.π f ≫ toGodement (coker f)` et la
 différentielle `d⁰ := godementCanonicalDZero` avec sa null-composition
-`μ ≫ d⁰ = 0`. Cette Partie fait trois pas de plus sur le même fil.
+`μ ≫ d⁰ = 0`. Cette Partie fait deux pas de plus sur le même fil (le troisième
+— la **réduction de l'exactitude** — a été retiré : voir note de l'auteur à
+la fin du namespace).
 
-## Trois faits, dans l'ordre du récit
+## Deux faits, dans l'ordre du récit
 
 1. `godementCanonicalDOne` : la **différentielle de degré 1** — le pas canonique
    appliqué à `d⁰`. Le terme suivant `C²F := C⁰(coker d⁰)` est le préfaisceau de
@@ -33,28 +35,20 @@ différentielle `d⁰ := godementCanonicalDZero` avec sa null-composition
    préfaisceaux de groupes abéliens est exactement le mono section par section).
    C'est l'exactitude de `0 → F → C⁰F` **en F**, désormais énoncée dans le
    langage des complexes.
-3. `exact_toGodement_godementCanonicalDZero_of_mono` : **la réduction de
-   l'exactitude en `C⁰F` au mono de l'unité du conoyau** [God58, II.4.1]. Puisque
-   `d⁰ = cokernel.π μ ≫ toGodement (coker μ)`, la suite exacte
-   `ShortComplex.mk μ (cokernel.π μ)` (exactitude universelle du conoyau en
-   catégorie abélienne, `exact_cokernel`) se transporte le long du mono
-   `toGodement (coker μ)` par `ShortComplex.exact_iff_of_epi_of_isIso_of_mono`.
-   Autrement dit : `ker d⁰ = im μ` **équivaut à** « l'unité du conoyau est mono »,
-   c'est-à-dire à la **séparéité du conoyau de l'unité**.
 
 ## Ce que cette Partie pose vs. ce qu'elle laisse ouvert
 
 **Posé** : le complexe aux degrés 0 et 1 (et le motif d'itération qui prolonge à
-tous les degrés), le mono catégorique de l'unité sur les faisceaux, et le
-théorème de réduction qui concentre toute l'exactitude en `C⁰F` dans une seule
-hypothèse.
+tous les degrés), et le mono catégorique de l'unité sur les faisceaux.
 
-**Non posé** — frontière nommée de la Partie 91 : la **séparéité du conoyau**
-`coker μ` pour `F` faisceau — le recollement des sections locales du quotient à
-travers les germes, qui exige l'argument de recollement de [God58] (sections
-locales `sᵢ` se recollant par séparéité de `F` et injectivité de `μ`) — puis
-l'**itération complète** de la réduction aux degrés supérieurs, et
-l'**acyclicité** `H^n(C⁰F) = 0` pour `n ≥ 1` ([God58] II.5).
+**Non posé** — frontière nommée de la Partie 91 : la **réduction de l'exactitude
+en `C⁰F` au mono de l'unité du conoyau** (`exact_toGodement_godementCanonicalDZero_of_mono`),
+dont la preuve exige la **séparéité du conoyau** `coker μ` pour `F` faisceau —
+le recollement des sections locales du quotient à travers les germes, qui
+exige l'argument de recollement de [God58] (sections locales `sᵢ` se recollant
+par séparéité de `F` et injectivité de `μ`). L'**itération complète** de la
+réduction aux degrés supérieurs, et l'**acyclicité** `H^n(C⁰F) = 0` pour
+`n ≥ 1` ([God58] II.5) sont aussi du périmètre P91.
 
 ## Références
 
@@ -111,26 +105,20 @@ theorem mono_toGodement_of_isSheaf (F : X.Presheaf AddCommGrpCat.{u})
   exact (AddCommGrpCat.mono_iff_injective _).mpr
     (godementUnit_injective_of_isSheaf F hF U.unop)
 
-/-- **La réduction de l'exactitude en `C⁰F` au mono de l'unité du conoyau**
-([God58] II.4.1). La différentielle `d⁰` se factorise par le conoyau :
-`d⁰ = cokernel.π μ ≫ η'` où `η' := toGodement (coker μ)`. La suite courte
-`ShortComplex.mk μ (cokernel.π μ)` est exacte par la propriété universelle du
-conoyau en catégorie abélienne (`exact_cokernel`), et l'exactitude se transporte
-le long d'un mono composé à droite (`ShortComplex.exact_iff_of_epi_of_isIso_of_mono`,
-avec `τ₁ = τ₂ = 𝟙`, `τ₃ = η'`). Conclusion : si l'unité du conoyau est mono
-— c'est-à-dire si `coker μ` est **séparé** —, alors `ker d⁰ = im μ` : la
-résolution augmentée est exacte en `C⁰F`. La séparéité du conoyau pour `F`
-faisceau est la frontière nommée de la Partie 91. -/
-theorem exact_toGodement_godementCanonicalDZero_of_mono
-    (F : X.Presheaf AddCommGrpCat.{u})
-    (hη' : Mono (toGodement (cokernel (toGodement F)))) :
-    (ShortComplex.mk (toGodement F) (godementCanonicalDZero F)
-      (toGodement_comp_godementCanonicalDZero F)).Exact := by
-  -- Énoncé posé, preuve différée : voir docstring (la réconciliation de X₂
-  -- entre les deux ShortComplex n'est pas defeq en l'état, et l'instance
-  -- `IsIso` sur `τ₂` ne s'infère pas. La frontière mathématique — séparéité
-  -- du conoyau par recollement sur faisceau — est indépendante de cette
-  -- réconciliation, et c'est elle qui est l'objet de la Partie 91).
-  sorry
+/-- Note de l'auteur : la **réduction de l'exactitude en `C⁰F` au mono de
+l'unité du conoyau** ([God58] II.4.1) — qui était l'énoncé 3 du draft r65
+(`exact_toGodement_godementCanonicalDZero_of_mono`) — est **retirée de cette
+Partie** et reportée à la Partie 91. La frontière mathématique est la
+séparéité du conoyau `coker μ` pour `F` faisceau, qui exige l'argument de
+recollement de [God58] et les instances `IsIso`/`Mono` au site d'usage. Le
+draft r65 portait un `sorry` tactique sur cette preuve (defeq de X₂ non
+réconcilié, instance `IsIso` non inférée), et le gate `proof-integrity` du
+caller workflow a élevé ce `sorry` en `sorryAx` transitif à l'import —
+classe `forbidden` (pr-review-discipline §B). L'option honnête est le
+**retrait** : la Partie 90 pose le complexe (fait 1) et le mono de l'unité
+(fait 2) ; la Partie 91 posera l'énoncé de réduction ET sa preuve (gluing
+de sections locales sur faisceau, instances de mono dans la catégorie des
+prés faisceaux). Aucun énoncé-stub `True.intro` ni `False` n'est laissé
+dans le module — la frontière est nommée dans la docstring de tête. -/
 
 end Grothendieck
