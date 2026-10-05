@@ -86,6 +86,13 @@ from typing import Iterable
 SWEEP_MARKER_START = "<!-- EPIC-NEGLECT-SWEEP:START -->"
 SWEEP_MARKER_END = "<!-- EPIC-NEGLECT-SWEEP:END -->"
 
+# #19211 -- au-dela de ce nombre de jours sans publication, la panne du chemin
+# d'ecriture n'est plus une malchance : le balayage est quotidien, donc deux
+# jours de retard signifient deux tirs de suite sans rapport publie. Un
+# advisory peut rester non-bloquant sur son VERDICT ; il ne peut pas rester
+# muet sur sa PROPRE panne (35 jours de vert sans rapport, #19211).
+PERSISTENT_FAILURE_DAYS = 2
+
 EPIC_LABEL = "EPIC"
 
 
@@ -298,20 +305,48 @@ def list_recent_merged_prs(repo: str, limit: int) -> list[MergedPr]:
     return [MergedPr.from_gh_dict(d) for d in raw]
 
 
+def _find_sweep_comment(repo: str, issue_number: int) -> dict | None:
+    """Le commentaire marqueur, par l'API **REST** (#19211).
+
+    L'id d'un commentaire a deux formes, et elles ne sont PAS interchangeables :
+
+      - `gh issue view --json comments` rend l'id de **noeud GraphQL**
+        (`IC_kwDOH2Odns8AAAABRmTerA`) ;
+      - l'endpoint REST `repos/{repo}/issues/comments/{id}` attend l'id
+        **numerique** (`5475983020`).
+
+    Le 404 du PATCH venait de la : mesure du 2026-10-05, sur le meme
+    commentaire, le GET rend `{"message":"Not Found","status":"404"}` avec
+    l'id de noeud et `200` avec l'id numerique. Le commentaire de #13653
+    porte `created_at == updated_at == 2026-08-31T08:47:16Z` : cree le jour
+    de la pose, jamais reecrit depuis -- le PATCH n'avait donc **jamais**
+    abouti, pas « cesse d'aboutir ».
+
+    Lecture paginee : `--paginate --slurp` rend UN document JSON (la liste
+    des pages) au lieu des pages concatenees, donc `json.loads` suffit et
+    un marqueur au-dela de la premiere page reste trouve (sinon l'organe
+    conclurait « absent » et **posterait un doublon** a chaque tir).
+    """
+    pages = _gh_json([
+        "api", "--paginate", "--slurp",
+        f"repos/{repo}/issues/{issue_number}/comments?per_page=100",
+    ]) or []
+    rows = [c for page in pages if isinstance(page, list) for c in page]
+    return next(
+        (c for c in rows if SWEEP_MARKER_START in (c.get("body") or "")),
+        None,
+    )
+
+
 def upsert_sweep_comment(repo: str, issue_number: int, body: str) -> None:
     """One marker-guarded comment per issue, updated in place (never a flood).
 
-    Writes are checked: a failed fetch/POST/PATCH raises (the caller logs and
-    the run stays green -- but a silent no-op is never mistaken for a post).
+    Writes are checked: a failed fetch/POST/PATCH raises (the caller decides
+    what a failure costs -- see `_write_failure_exit_code`; a silent no-op is
+    never mistaken for a post).
     """
-    comments = _gh_json([
-        "issue", "view", str(issue_number), "--repo", repo, "--json", "comments",
-    ]) or {}
-    cid = next(
-        (str(c["id"]) for c in (comments.get("comments") or [])
-         if SWEEP_MARKER_START in (c.get("body") or "")),
-        None,
-    )
+    found = _find_sweep_comment(repo, issue_number)
+    cid = str(found["id"]) if found else None
     if cid is not None:
         proc = subprocess.run(
             ["gh", "api", "--method", "PATCH",
@@ -329,6 +364,63 @@ def upsert_sweep_comment(repo: str, issue_number: int, body: str) -> None:
         )
         if proc.returncode != 0:
             raise RuntimeError(f"POST comment failed: {proc.stderr.strip()}")
+
+
+def publish_age_days(repo: str, issue_number: int, now: datetime) -> float | None:
+    """Jours ecoules depuis la derniere publication reussie, ou None.
+
+    L'age du commentaire de rendez-vous est lisible **meme quand le PATCH
+    echoue** -- et c'est precisement la mesure qui manquait : 35 jours de run
+    vert pendant lesquels `updated_at` restait au 2026-08-31.
+
+    La lecture peut elle-meme echouer (reseau) : on rend None, et l'appelant
+    traite l'absence de preuve comme une panne NON persistante (fail-open sur
+    le rouge, jamais sur le silence : le `::warning::` est tout de meme emis).
+    """
+    try:
+        found = _find_sweep_comment(repo, issue_number)
+    except RuntimeError:
+        return None
+    if not found:
+        return None
+    try:
+        return (now - _parse_iso(found.get("updated_at") or "")).total_seconds() / 86400.0
+    except ValueError:
+        return None
+
+
+def write_failure_exit_code(repo: str, issue_number: int, now: datetime) -> int:
+    """Ce que coute un echec du chemin d'ecriture : 2 si la panne persiste.
+
+    Sans etat persistant (le runner est ephemere), la DUREE se lit dans la
+    seule surface qui reste fiable quand l'ecriture casse : la date de
+    derniere publication, qui est une LECTURE. En dessous du seuil, la panne
+    peut etre transitoire et le prochain tir la resoudra -- on nomme sans
+    rougir. Au-dela, l'organe est casse et son voyant vert est un mensonge :
+    on rougit, avec l'annotation qui dit quoi regarder.
+
+    Rougir ici ne bloque aucun merge, et c'est mesure : `merge_dwell` ne
+    surveille que `scripts-tests.yml` en `event=push` (#19211, PR), et ce
+    balayage ne tourne qu'en `schedule`/`dispatch`.
+    """
+    age = publish_age_days(repo, issue_number, now)
+    if age is not None and age >= PERSISTENT_FAILURE_DAYS:
+        print(
+            "::error::epic-neglect-sweep : le rapport n'a pas ete publie sur "
+            f"#{issue_number} depuis {age:.1f} jours alors que le balayage "
+            "tourne quotidiennement -- le chemin d'ecriture est casse, pas "
+            "seulement ce tir.",
+            file=sys.stderr,
+        )
+        return 2
+    detail = "inconnu" if age is None else f"{age:.1f} jours"
+    print(
+        "::warning::epic-neglect-sweep : publication impossible ce tir "
+        f"(derniere publication il y a {detail}) -- sous le seuil de "
+        f"{PERSISTENT_FAILURE_DAYS} jours, le prochain tir devrait republier.",
+        file=sys.stderr,
+    )
+    return 0
 
 
 def _self_test() -> int:
@@ -452,8 +544,13 @@ def _cli(argv: list[str] | None = None) -> int:
         print(f"upserted marker-guarded comment on #{args.apply_comment}",
               file=sys.stderr)
     except RuntimeError as e:
+        # #19211 -- le contrat « ADVISORY, never blocking » couvre le VERDICT,
+        # pas la capacite de l'organe a publier. Avant ce correctif, ce
+        # `return 0` a laisse un run vert pendant 35 jours sans rapport
+        # publie : la panne etait permanente et le voyant mentait.
         print(f"WARN: upsert failed, nothing posted: {e}", file=sys.stderr)
-    return 0  # advisory: always green
+        return write_failure_exit_code(repo, args.apply_comment, now)
+    return 0  # advisory: the verdict never blocks
 
 
 if __name__ == "__main__":
