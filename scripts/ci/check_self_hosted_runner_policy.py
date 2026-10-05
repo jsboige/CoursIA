@@ -137,6 +137,12 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   choice/build (merite un pool a cache Mathlib chaud, cf #14337),
     #   notebook-execution-required/golden-set-execute (execution lourde).
     "bash-syntax-advisory.yml",
+    # #10643 item 3 (owner myia-po-2024:CoursIA, 2026-10-05) : garde
+    #   pure-Python de couverture compagnons bi-OS (.ps1 -> .sh, README
+    #   croise, carnets Setup). Trigger pull_request paths + garde same-repo
+    #   au niveau job + runs-on STATIQUE -- meme profil que ses voisins 3c.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "bios-companion-coverage.yml",
     "lean-social-choice.yml",
     "notebook-execution-required.yml",
     "secret-scan.yml",

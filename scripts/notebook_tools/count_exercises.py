@@ -353,8 +353,14 @@ STUB_PATTERNS = [
     # under-counted by this blind spot (rl_8_model_based_dyna_q Ex2
     # prioritized-sweeping skeleton, PT_11a Ex1, Search-03c Ex1, Planners-1
     # Ex2, SL-12 Ex3), each -1 real exercise, 0 false positives.
+    # The ``a completer`` tail accepts the accented francophone spellings
+    # (``à compléter``, ``a compléter``, ``à completer``) exactly like the
+    # comment-marker and sentinel patterns below: the corpus is francophone
+    # and the unaccented-only form under-counted real skeleton cells whose
+    # print was the sole stub marker (#18741 -- PT_09, 3 accented skeletons
+    # read as solutions, 1/3).
     re.compile(
-        r'print\(["\']Exercice[s]?\s*\d*\s*a completer', re.IGNORECASE
+        r'print\(["\']Exercice[s]?\s*\d*\s*[aà][ \t]+compl[eé]ter', re.IGNORECASE
     ),
     re.compile(r"^\s*pass\s*$", re.MULTILINE),
     re.compile(r"\breturn\s+None\b"),
@@ -959,6 +965,18 @@ def _is_stub_code(source: str) -> bool:
         for pat in EMPTY_RETURN_PATTERNS:
             if pat.search(code_lines[-1]):
                 return True
+    # A PURE import cell (``import re``, ``from typing import Optional``,
+    # ``using System;``) is not a student stub: its only effective lines are
+    # imports -- stripped from code_lines above -- so ``0 <= 1`` read it as a
+    # stub and the backward header pairing (#18146) absorbed it in place of
+    # the real stub below the header. PT_11c: the Exercice 1 header absorbed
+    # the preceding import block, its real stub counted standalone, and
+    # headers 2/3 paired nothing -- 2 hits for 3 exercises, then 4 once the
+    # accented-print fix unmasked the Ex 2/3 stubs (#18741). An import block
+    # carries no write-space for the student. Only the all-imports shape is
+    # guarded: an import line beside real code keeps the historical verdict.
+    if lines and not code_lines:
+        return False
     return len(code_lines) <= 1
 
 
