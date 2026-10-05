@@ -685,8 +685,8 @@ class ResidCapture:
 
     def __call__(self, module, inputs, output):
         out = output[0] if isinstance(output, tuple) else output   # [B, T, d]
-        self.hidden = out.detach()[0].to(torch.float32).cpu()      # [T, d]
         if not self.clamp_ids:
+            self.hidden = out.detach()[0].to(torch.float32).cpu()  # [T, d]
             return output
         # Clamp causal : h' = h - alpha * somme_i acts_i * W_dec[i]. alpha=1
         # annule exactement les features visees (comportement Gate 24
@@ -700,7 +700,15 @@ class ResidCapture:
         b_enc = self.sae["b_enc"][self.clamp_ids]                  # [C]
         acts = torch.relu(h32 @ w_enc.T + b_enc)                   # [B, T, C]
         delta = acts @ self.sae["W_dec"][self.clamp_ids]           # [B, T, d]
-        h_new = (h32 - self.clamp_scale * delta).to(out.dtype).to(out.device)
+        h_clamped = h32 - self.clamp_scale * delta                 # [B, T, d] fp32
+        # Capture APRES le clamp : la trace enregistree est celle du modele
+        # ablate. Capturer l'etat anterieur (avant clamp sur la meme couche)
+        # rendait le clamp invisible dans la trace -- les traces "clampees"
+        # sortaient byte-identiques aux intactes (mesure Gate 24 #5635 :
+        # 0/134950 valeurs differentes). La trace d'ablation doit refleter
+        # l'intervention, sinon Gates 22-23 mesurent le modele intact.
+        self.hidden = h_clamped[0]                                 # [T, d]
+        h_new = h_clamped.to(out.dtype).to(out.device)
         if isinstance(output, tuple):
             return (h_new,) + tuple(output[1:])
         return h_new
