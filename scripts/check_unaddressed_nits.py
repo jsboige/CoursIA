@@ -3559,6 +3559,23 @@ _SHA_CITED = re.compile(r"\b[0-9a-f]{7,40}\b")
 # saute).
 _HOST_QUALIFIED = re.compile(r"\bhost\s*:?\s*$")
 
+# #19132 : un token hex immediatement qualifie comme id de CELLULE
+# (« cellule 6f32f63e », « cell_id: 6f32f63e », « la cellule `6f32f63e` »)
+# est un id `nbformat` >= 4.5 (8 hex, au moins une lettre et un chiffre),
+# pas une empreinte Git -- meme mecanique que _HOST_QUALIFIED : seul le
+# token qualifie saute, un SHA cite librement reste lu (#13639 intacte).
+# L'encage est tolere parce qu'un id de cellule s'ecrit le plus souvent
+# entre backticks ; c'est la forme la plus precise pour designer une
+# cellule, et l'organe ne doit pas apprendre a l'auteur a l'eviter.
+# `id` SEUL est deliberement absent de l'alternation (review ai-01 du
+# 2026-10-05, mesuree avec cet organe) : « corrige au commit id 1a2b3c4d »,
+# « commit-id: 1a2b3c4d », « pushed as id 0abc1234ef » sont des citations de
+# COMMIT courantes. Les laisser sauter rouvrirait exactement le trou de #13639
+# -- une levee qui cite un SHA inexistant doit tomber. Le qualifiant doit
+# nommer la CELLULE, pas un identifiant quelconque : `cellule`, `cell`,
+# `cell_id` suffisent au cas vise.
+_CELL_QUALIFIED = re.compile(r"\b(?:cellule|cell_id|cell)\b\s*:?\s*[`'«]?\s*$")
+
 
 def _cited_shas(body: str) -> set[str]:
     """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre ET AU
@@ -3581,6 +3598,14 @@ def _cited_shas(body: str) -> set[str]:
     pris pour la preuve citee par la levee alors que la review etait
     attachee au commit_id exact 31ac6b89 -- l'organe gardait la reserve
     ouverte sur un SHA de machine inexistant.
+
+    #19132 : le token suit immediatement un qualifiant de CELLULE
+    (`cellule`, `cell`, `cell_id`, `id`, deux-points et encage
+    optionnels) -> exclu. Sur #18893, la levee la plus precise possible
+    (« traitee dans la cellule 6f32f63e ») etait refusee : l'id nbformat
+    satisfait le motif hexa et, absent des commits, faisait tomber toute
+    la levee -- l'auteur a du repasser en prose (« la cellule d'ouverture
+    du Dojo »). Un organe ne doit pas rendre la prose moins precise.
     """
     out: set[str] = set()
     low = (body or "").lower()
@@ -3588,7 +3613,8 @@ def _cited_shas(body: str) -> set[str]:
         tok = m.group(0)
         if (any(ch in "abcdef" for ch in tok)
                 and any(ch.isdigit() for ch in tok)
-                and not _HOST_QUALIFIED.search(low[:m.start()])):
+                and not _HOST_QUALIFIED.search(low[:m.start()])
+                and not _CELL_QUALIFIED.search(low[:m.start()])):
             out.add(tok)
     return out
 
