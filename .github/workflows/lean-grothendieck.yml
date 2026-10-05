@@ -22,6 +22,20 @@ name: Lean Grothendieck CI
 # Real-mode baseline = 0 (firsthand counted 2026-07-12 with the exact CI awk on
 # origin/main across all 25 own .lean files: grothendieck_lean is FULLY PROVEN,
 # zero tactic `sorry`). Mirrors the knot_lean switch in #6186.
+#
+# Baseline promotion 0 -> 1 (2026-10-05, PR #19195 Partie 90) :
+# `exact_toGodement_godementCanonicalDZero_of_mono` (Grothendieck.GodementExactness)
+# carries a documented `sorry` : the theorem is the reduction of exactness at
+# C^0 F to the mono of the cokernel's unit [God58 II.4.1], and the proof requires
+# the separatedness of the cokernel (gluing of local sections on sheaves), which
+# is the named frontier of Partie 91. The defeq reconciliation of the two
+# `ShortComplex.X_2` is the lean-side obstacle (IsIso instance on tau_2 not
+# inferred at the call site in Lean 4 / backward) ; the math-side obstacle
+# (separatedness of the cokernel) is independent and is the substance of P91.
+# The body of #19195 names the frontier and the discharge path ; the `sorry`
+# count is bumped to 1 by this same commit, on the same branch, in the same
+# PR (anti-regression §D : raise sorry-baseline WITH a documented justification
+# in the PR body, per the gate's own recommendation).
 
 on:
   push:
@@ -77,7 +91,7 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean
       display-name: grothendieck_lean
-      sorry-baseline: "0"
+      sorry-baseline: "1"
       sorry-filter-mode: real
 
   # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
