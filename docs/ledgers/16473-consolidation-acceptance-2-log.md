@@ -103,9 +103,32 @@ date_cycle | #issue | chaperon | axe | statut | preuve | note
 2026-10-05T08:0xZ | PR#19232 | — | C | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lots 1+3 → lots 1+3+4 (axes B, A, C). Ledger étendu append-only avec section axe C. Rebase + force-push ce cycle.
 ```
 
-### Lots 2, 5 — axes D, E, F (à servir)
+### Lot 5 — axe D (scripts sprawl & doublons CLI), 4 orphelines
 
-À servir aux cycles suivants, dans l'ordre dedie par l'adversaire/coordinateur après livraison des lots 1+3+4.
+Mesure 2026-10-05T08:3xZ (offline, `--suggest-rattachement`) : **4 orphelines** sur l'axe D. C'est le plus petit des 6 axes — la ménaxe scripts est déjà bien engagée.
+
+**Catégories** (4 orphelines) :
+- **Cellules print() verbatim** : #18874
+- **Infrastructure fleet** : #16886 (Reboot Matrix V1 — SecretStorage provider)
+- **EPICs transverses** : #15397 (Thom — langage, agents, singularités), #15066 (Formalized Formal Logic — Tweety + Lean)
+
+**Singularité #15066** : cet EPIC-pipeline (Tweety+Lean) est **déjà livré** (`c.5987974623` en bilan cycle 2, action admin requise pour la fermeture). Le `Part of #9535` que suggérerait l'audit n'est qu'une **vue** — la fermeture effective de l'EPIC reste au coordinateur ou à l'adjoint.
+
+**Stratégie de commentaire** : **identique aux lots 1+3+4** — pas d'immixtion dans le périmètre des lanes tierces. #15066 = claim admin en attente (pas une orpheline de lane worker). #18874, #16886, #15397 portent des claims tiers et ne reçoivent PAS de commentaire `Part of #9535` direct depuis ma lane. Validation par l'adversaire (po-2025:CoursIA adjoint) et le coordinateur (ai-01) requise.
+
+**Décision** : pour ce cycle, **pas de commentaire nominatif direct** sur les 4 orphelines axe D. Dossier de proposition à trancher par coordination. Les commentaires nominatifs seront posés **après validation de l'adversaire/coordinateur**, ou par les porteurs eux-mêmes.
+
+#### Statut émission commentaires nominatifs
+
+```text
+date_cycle | #issue | chaperon | axe | statut | preuve | note
+2026-10-05T08:3xZ | #16473 | #16473 | D | PROPOSÉ | audit --suggest-rattachement au 2026-10-05T08:3xZ → 4 orphelines axe D. #15066 = déjà livré (c.5987974623), action admin requise. #18874, #16886, #15397 = pas d'émission (immixtion). Dossier de proposition préparé.
+2026-10-05T08:3xZ | PR#19232 | — | D | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lots 1+3+4 → lots 1+3+4+5 (axes B, A, C, D). Ledger étendu append-only avec section axe D. Rebase + force-push ce cycle.
+```
+
+### Lots restants — axes E, F (à servir)
+
+À servir aux cycles suivants, dans l'ordre dedie par l'adversaire/coordinateur après livraison des lots 1+3+4+5.
 
 ## Suites à donner
 
@@ -120,8 +143,8 @@ date_cycle | #issue | chaperon | axe | statut | preuve | note
 - Claim suivi : c.5988930369 (2579 chars)
 - PR organe : #16504 (MERGED 2026-09-17) — acceptance 1
 - PR extension organe : #19239 (OPEN 2026-10-05) — `--suggest-rattachement` acceptance 2 lot 2
-- PR ledger : #19232 (OPEN 2026-10-05) — acceptance 2 lots 1+3+4
-- Audit dernier : `python scripts/audit_consolidation_orphans.py --fetch --suggest-rattachement` au 2026-10-05T08:0xZ → 399/37/362 (régression 29→37 rattachées depuis cycle 2, à monitorer)
+- PR ledger : #19232 (OPEN 2026-10-05) — acceptance 2 lots 1+3+4+5
+- Audit dernier : `python scripts/audit_consolidation_orphans.py --fetch --suggest-rattachement` au 2026-10-05T08:3xZ → 399/37/362 (régression 29→37 rattachées depuis cycle 2, à monitorer)
 
 ---
 
