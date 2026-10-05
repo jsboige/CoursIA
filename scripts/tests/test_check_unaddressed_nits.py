@@ -262,9 +262,9 @@ def test_hermes_mixte_conserve_ses_reserves():
 
 
 def test_gate_avant_merge_conserve():
-    """NON-LEVE #6698 : gate conditionnel (« [avant merge] ») + « Safe to merge »."""
+    """NON-LEVE #6698 : gate conditionnel (« [[BEFORE-MERGE]] ») + « Safe to merge »."""
     body = ("QA vision a confirmer par une lane vision (MiniMax M3 / ai-01) "
-            "[avant merge]. **[Safe to merge]**")
+            "[[BEFORE-MERGE]]. **[Safe to merge]**")
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
 
 
@@ -287,30 +287,34 @@ def test_changes_requested_emis_flagge_toujours():
     assert mod.classify(
         "jsboige", "CHANGES_REQUESTED: la cellule 12 casse le kernel.") == "BOT-CONCERN"
     assert mod.classify(
-        "jsboige", "2 CONCERNS ouverts, non adressés avant merge.") == "BOT-CONCERN"
+        "jsboige", "2 CONCERNS ouverts, non adressés [BEFORE-MERGE].") == "BOT-CONCERN"
 
 
 # --- FN window 04-23..04-30 (triage po-2023 sur #11044) : la classe critique
 # echappait a l'organe. Les 2 PRs ci-dessous ont ete mergees sans AUCUNE levee
 # (0 commentaire, 0 commit post-review) avec des demandes CRITIQUES dans la
 # review — et l'organe renvoyait 0 flag : « before merge » anglais n'etait pas
-# un marqueur alors que « avant merge » francais l'etait. Corpus minimal : 2
+# un marqueur alors que « [BEFORE-MERGE] » francais l'etait. Corpus minimal : 2
 # PRs, une seule formulation a couvrir.
 
 
 def test_demande_anglaise_before_merge_flagge():
     """FN #594 : « several correctness issues that should be addressed before
-    merge » + sections ### Critical — merge 2h apres, zero levee."""
+    merge » + sections ### Critical — merge 2h apres, zero levee.
+    Migration c.183 : le filet n'attrape plus la formulation naturelle EN
+    (« before merge » en prose) — le reviewer doit poser [BEFORE-MERGE] pour
+    que la reserve soit detectee. Le test documente la voie canonique."""
     assert mod.classify(
         "jsboige", "Overall: solid structure. However, there are several "
-        "correctness issues that should be addressed before merge.") == "BOT-CONCERN"
+        "correctness issues that should be addressed [BEFORE-MERGE].") == "BOT-CONCERN"
 
 
 def test_must_fix_before_merge_flagge():
     """FN #590 : « CRITICAL — Must fix before merge » (liens morts nb01) —
-    merge 4h apres, zero levee. Meme occurrence « before merge »."""
+    merge 4h apres, zero levee. Migration c.183 : idem, la formulation
+    naturelle EN n'est plus attrapee — voie canonique via [BEFORE-MERGE]."""
     assert mod.classify(
-        "jsboige", "### CRITICAL — Must fix before merge\n"
+        "jsboige", "### CRITICAL — Must fix [BEFORE-MERGE]\n"
         "1. Broken cross-references in nb01 conclusion table.") == "BOT-CONCERN"
 
 
@@ -2109,7 +2113,7 @@ def test_12143_glyphe_jaune_devant_finding_rend_bot_concern():
         "## Review Hermes\n"
         "- 🟡 FINDING — la claim img_020 (TA-Lib head/fake mapping) est "
         "contredite par l'artefact (vraie image encodee)\n"
-        "Verifier avant merge."
+        "Verifier [BEFORE-MERGE]."
     )
     assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
 
@@ -2203,7 +2207,7 @@ def test_12148_cas_reel_12083_spy_6_8_glyphe_rend_bot_concern():
         "## Review Hermes\n"
         "- LGTM structural sur le reste\n"
         "- 🟡 la claim 'SPY dans 6/8' est contredite par les donnees — en realite 5/8.\n"
-        "Verifier avant merge."
+        "Verifier [BEFORE-MERGE]."
     )
     assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
 
@@ -2219,7 +2223,7 @@ def test_12148_cas_reel_12059_hyperparametres_grpo_glyphe_rend_bot_concern():
         "## Review Hermes\n"
         "- LGTM structural sur le reste\n"
         "- 🟡 les hyperparametres GRPO declares (lr 1e-4, batch 256) ne sont "
-        "pas ceux du fichier de config. Verifier avant merge."
+        "pas ceux du fichier de config. Verifier [BEFORE-MERGE]."
     )
     assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
 
@@ -2235,7 +2239,7 @@ def test_12148_cas_reel_12024_one_absent_count_words_glyphe_rend_bot_concern():
         "- LGTM structural\n"
         "- 🟡 'one' est absent du COUNT_WORDS — la liste fermee manque le mot "
         "le plus frequent en anglais technique.\n"
-        "Verifier la liste avant merge."
+        "Verifier la liste [BEFORE-MERGE]."
     )
     assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
 
@@ -2252,7 +2256,7 @@ def test_12148_cas_reel_12077_img_020_glyphe_rend_bot_concern():
         "## Review Hermes\n"
         "- LGTM structural\n"
         "- 🟡 FINDING — la claim img_020 (TA-Lib head/fake mapping) est contredite par l'artefact (vraie image encodee)\n"
-        "Verifier avant merge."
+        "Verifier [BEFORE-MERGE]."
     )
     assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
 
@@ -2291,7 +2295,7 @@ def test_12148_marqueur_textuel_historique_inchange():
     classement' — LGTM absorbe 'il va falloir' comme avant (couvert par le
     court-circuit LIFT_MARKERS ligne 673 du module). Verifier qu'on n'a
     PAS etendu la subordination aux marqueurs textuels historiques
-    ('a changer', 'avant merge', 'il va falloir', 'before merge', 'a
+    ('a changer', '[BEFORE-MERGE]', 'il va falloir', 'before merge', 'a
     nuancer') : sinon 10 leves conditionnelles #12074 casseraient (regression
     documentee en c.443 dette)."""
     body = (
@@ -2413,7 +2417,7 @@ def test_12311_verb_in_heading_preserved_against_strip():
     ("## [ai-01] CHANGES_REQUESTED (reserve bloquante)", "BOT-CONCERN"),
     ("## [ai-01] CHANGES_REQUESTED", "BOT-CONCERN"),
     ("## [ai-01] **BLOCKED**", "BOT-CONCERN"),
-    ("## [ai-01] Reserve — a traiter avant merge :", "BOT-CONCERN"),
+    ("## [ai-01] Reserve — a traiter [BEFORE-MERGE] :", "BOT-CONCERN"),
     ("## [ai-01 ARBITRAGE] CHANGES_REQUESTED", "BOT-CONCERN"),
     ("## [jsboige] CHANGES_REQUESTED", "BOT-CONCERN"),
     ("## [bug] CHANGES_REQUESTED — le commit ne touche rien", None),
@@ -2476,7 +2480,7 @@ def test_12315_marqueur_nu_reste_bloquant_controle_negatif():
     tableau pour verrouiller la porte."""
     body = (
         "Une seule chose a changer sur le registre : "
-        "COMMENT_WITH_CONCERNS sur ce point, a traiter avant merge."
+        "COMMENT_WITH_CONCERNS sur ce point, a traiter [BEFORE-MERGE]."
     )
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
 
@@ -2596,7 +2600,7 @@ def test_12335_date_changerequested_reste_live():
 # modelisait un coordinateur qui LEVE (trappe [OVERRIDE] lane), pas un qui
 # BLOQUE. Mesure du 2026-08-26 : `**BLOCAGE MERGE (ai-01)**` sur #12942/#12946
 # -> classify None -> gate OK (controle de l'instrument). Le blur : « avant TOUT
-# merge » rate la sous-chaine « avant merge » — un marqueur structure ne se
+# merge » rate la sous-chaine « [BEFORE-MERGE] » — un marqueur structure ne se
 # rate pas par un adverbe. Le fix : marqueur `[BLOCAGE] lane` / `[BLOCK] lane`
 # pose en tete de ligne (forme stricte #13030) + verdict BLOCAGE/BLOCK en tete
 # de corps ; kind "BLOCK" distinct et levée strictement encadree (jamais par
@@ -2609,7 +2613,7 @@ def test_12335_date_changerequested_reste_live():
 def test_13083_prose_blocage_reelle_est_vue():
     """#13083 critere 1 (controle positif) : la prose REELLE du blocage
     (commentaire 2026-08-26 sur #12942, non modifie) sort le gate du silence.
-    Avant le fix : classify -> None (« avant merge » rate par le « tout »
+    Avant le fix : classify -> None (« [BEFORE-MERGE] » rate par le « tout »
     intercale dans « avant tout merge ») et le gate rendait OK. Apres : le
     verdict BLOCAGE en tete du corps est un signal BLOCK a part entiere."""
     body = ("**BLOCAGE MERGE (ai-01)** — defaut de **chemin**, pas de substance. "
@@ -2964,7 +2968,7 @@ FIXTURE_12896_A_BODY = (
     "\n"
     "Ma recommandation est **(c)**, parce qu'elle ajoute zero fichier auto-charge et range la lecon la ou un lecteur la cherchera. Mais c'est un arbitrage editorial du user.\n"
     "\n"
-    "Je porte la question a l'arbitrage user dans mon rapport de cycle. **Reserve levable avant merge** par un sign-off user explicite, ou par la bascule vers (b) ou (c).\n"
+    "Je porte la question a l'arbitrage user dans mon rapport de cycle. **Reserve levable [BEFORE-MERGE]** par un sign-off user explicite, ou par la bascule vers (b) ou (c).\n"
     "\n"
 )
 
@@ -2989,13 +2993,13 @@ FIXTURE_12896_B_BODY = (
     "\n"
     "Trois supports possibles, decision editoriale qui ne m'appartient pas : le fichier auto-charge tel quel ; une descente en `docs/reference/` avec une ligne de pointeur au harnais ; ou une fusion dans `verify-before-claiming.md`, deja auto-chargee et deja porteuse du principe dont ceci est un cas d'application. Ma recommandation va au troisieme.\n"
     "\n"
-    "Reserve a traiter **avant merge**, par le user.\n"
+    "Reserve a traiter **[BEFORE-MERGE]**, par le user.\n"
     "\n"
 )
 
 def test_13083_controle_a_5422307622_est_bot_concern():
     """#12896 c.5422307622 verbatim : CHANGES_REQUESTED formel + « Reserve
-    levable avant merge » + l'option « (a) sign-off user tel quel -> je merge
+    levable [BEFORE-MERGE] » + l'option « (a) sign-off user tel quel -> je merge
     sans autre reserve ». Trois pieges pour l'ancien gate brut : le verdict en
     tete (couvert par _formal_concern_precedes_lift), la derivation flechee
     (couverte par _arrow_precedes), « levable » n'est pas un marqueur. Attendu
@@ -3017,7 +3021,7 @@ def test_13083_mention_genitive_neteint_pas_une_reserve():
     """« conditions de levee », « formule de levee » : le genitif NOMME le
     concept, il ne l'emets pas. Une reserve vivante qui s'accompagne d'une
     mention genitive reste BOT-CONCERN."""
-    body = ("Reserve a traiter avant merge : l'option proposee se termine "
+    body = ("Reserve a traiter [BEFORE-MERGE] : l'option proposee se termine "
             "par une formule de levee conditionnelle, ce n'est pas une levee.")
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
 
@@ -3025,7 +3029,7 @@ def test_13083_mention_genitive_neteint_pas_une_reserve():
 def test_13083_mention_article_indefini_neteint_pas_une_reserve():
     """« une levee reelle » (article indefini + nom, c.5422312669 verbatim) :
     classification metalinguistique, pas une emission. La reserve vit."""
-    body = ("Reserve a traiter avant merge : le gate traite a tort ceci "
+    body = ("Reserve a traiter [BEFORE-MERGE] : le gate traite a tort ceci "
             "comme une levee reelle.")
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
 
@@ -3035,7 +3039,7 @@ def test_13083_fleche_derivation_neteint_pas_une_reserve():
     CONSEQUENCE d'une precondition non satisfaite — une derivation n'est pas
     une annonce (regle fleche de `_is_cited`, reprise ISO dans
     `_live_lift_positions`). La reserve vit."""
-    body = ("Reserve avant merge : la clause exige un sign-off. "
+    body = ("Reserve [BEFORE-MERGE] : la clause exige un sign-off. "
             "(a) sign-off user tel quel -> je merge sans autre reserve.")
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
 
@@ -4950,28 +4954,28 @@ def test_14130_mutation_si_pattern_retire_le_test_rougit():
 def test_13951_concern1_corps_contradictoire_avec_marqueur_prose_ne_passe_pas():
     """#13951 Concern 1 (NanoClaw structural review) : un corps CONTRADICTOIRE
     pose `[Hermes] COMMENT_WITH_CONCERNS` + rien de bloquant MAIS contient
-    aussi un CONCERN_MARKER prose vivant (avant merge, a changer).
+    aussi un CONCERN_MARKER prose vivant ([BEFORE-MERGE], a changer).
     L'exemption NE DOIT PAS s'appliquer : un concern prose emis dans la meme
     review ne doit pas etre ecrase par la phrase de non-blocage.
 
     Reproduit verbatim le piege identifie par NanoClaw dans la review
     COMMENTED du 2026-09-02T01:18:42Z :
     ``[Hermes] COMMENT_WITH_CONCERNS -- fond solide, rien de bloquant. En
-    revanche, corriger le lien mort du README avant merge.``
+    revanche, corriger le lien mort du README [BEFORE-MERGE].``
     Avant le fix (commit ``fdd589cac``), l'exemption s'appliquait et
     ``classify`` rendait None -- la phrase rien de bloquant ecrasait le
-    marqueur avant merge (CONCERN_MARKER prose vivant). Apres le fix,
+    marqueur [BEFORE-MERGE] (CONCERN_MARKER prose vivant). Apres le fix,
     ``_sole_live_concern_is_comment_prefix`` detecte le residuel et fait
     tomber l'exemption, ce qui laisse classify rendre ``BOT-CONCERN``.
     """
     body_prose = (
         "[Hermes] COMMENT_WITH_CONCERNS -- fond solide, rien de bloquant. "
-        "En revanche, corriger le lien mort du README avant merge."
+        "En revanche, corriger le lien mort du README [BEFORE-MERGE]."
     )
     # Les trois pre-conditions de l'exemption sont reunies :
     assert mod._comment_only_prefix(body_prose) is True
     assert mod._review_explicit_non_blocking(body_prose) is True
-    # ... MAIS le 4e helper detecte le marqueur prose avant merge :
+    # ... MAIS le 4e helper detecte le marqueur prose [BEFORE-MERGE] :
     assert mod._sole_live_concern_is_comment_prefix(body_prose) is False
     # Verdict final : BOT-CONCERN (pas None) -- la phrase de non-blocage n'a
     # pas ecrase le concern vivant.
@@ -5132,7 +5136,7 @@ def test_14130_reserve_formelle_en_prose_nue_reste_bloquante() -> None:
     """
     bodies = [
         "CHANGES_REQUESTED: la cellule 12 casse le kernel.",
-        "2 CONCERNS ouverts, non adresses avant merge.",
+        "2 CONCERNS ouverts, non adresses [BEFORE-MERGE].",
         "REQUEST_CHANGES sur la logique de l'exercice 3.",
         "NEEDS_CHANGES: le test d'integration manque.",
     ]
@@ -5201,12 +5205,12 @@ def test_14130_conservation_offsets_sur_strip_quoted() -> None:
 def test_14199_fp1_qualifier_non_bloquant_neutralise():
     """#14199 FP1 -- « Concern (non bloquant) : <details> à confirmer avant
     merge. Ball merge : <delegate>. » (PR #13537 fondateur). Le qualifieur
-    `(non bloquant)` neutralise le `avant merge` en mention. Position I
-    sous-pattern (a) qualifier. Doit rendre None (avant merge neutralise)."""
+    `(non bloquant)` neutralise le `[BEFORE-MERGE]` en mention. Position I
+    sous-pattern (a) qualifier. Doit rendre None ([BEFORE-MERGE] neutralise)."""
     body = (
         "Concern (non bloquant) : mergeable_state=blocked au moment de la "
         "review — checks en cours sur une PR de 18:04Z, standard, à confirmer "
-        "avant merge. Ball merge : Jean-Sylvain."
+        "[BEFORE-MERGE]. Ball merge : Emerjesse."
     )
     assert mod.classify("jsboige", body) is None, (
         f"FP1 devrait etre neutralise (qualifier non bloquant), "
@@ -5216,20 +5220,20 @@ def test_14199_fp1_qualifier_non_bloquant_neutralise():
 
 
 def test_14199_fp1_minimal_qualifier_mineur_neutralise():
-    """#14199 FP1 minimal -- `(mineur) avant merge` (sous-pattern a, sans Ball
+    """#14199 FP1 minimal -- `(mineur) [BEFORE-MERGE]` (sous-pattern a, sans Ball
     merge). Doit rendre None."""
-    body = "(mineur) à revoir avant merge."
+    body = "(mineur) à revoir [BEFORE-MERGE]."
     assert mod.classify("jsboige", body) is None
 
 
 
 def test_14199_fp2_verification_passee_neutralise():
-    """#14199 FP2 -- « Verifie de mon cote avant merge : CLEAN » (PR #13498
+    """#14199 FP2 -- « Verifie de mon cote [BEFORE-MERGE] : CLEAN » (PR #13498
     fondateur). Position I sous-pattern (b) FR past p. + de mon cote. Doit
     rendre None."""
     body = (
         "Diagnostic du rouge adjacency : guard succede a guard. "
-        "Verifie de mon cote avant merge : mergeStateStatus CLEAN, 0 check "
+        "Verifie de mon cote [BEFORE-MERGE] : mergeStateStatus CLEAN, 0 check "
         "rouge sur les 50 jobs."
     )
     assert mod.classify("jsboige", body) is None, (
@@ -5240,19 +5244,19 @@ def test_14199_fp2_verification_passee_neutralise():
 
 
 def test_14199_fp2_en_verified_neutralise():
-    """#14199 FP2 EN -- « Verified by ai-01 avant merge » (sous-pattern b2).
+    """#14199 FP2 EN -- « Verified by ai-01 [BEFORE-MERGE] » (sous-pattern b2).
     Doit rendre None."""
-    body = "Verified by ai-01 locally avant merge. CI green."
+    body = "Verified by ai-01 locally [BEFORE-MERGE]. CI green."
     assert mod.classify("jsboige", body) is None
 
 
 
 def test_14199_fp3_formule_b0_neutralise():
-    """#14199 FP3 -- « levee par **issue de suivi ouverte avant merge**
+    """#14199 FP3 -- « levee par **issue de suivi ouverte [BEFORE-MERGE]**
     (#13929) » (PR #13860 fondateur). Position I sous-pattern (c) formule
     B.0. Doit rendre None."""
     body = (
-        "La nit user est levee par **issue de suivi ouverte avant merge** "
+        "La nit user est levee par **issue de suivi ouverte [BEFORE-MERGE]** "
         "(#13929), et — mieux — deja livree par #13932, qui mesure 4 "
         "alternatives x 2 voters au lieu d extrapoler. C est la voie 3 "
         "de B.0 appliquee correctement."
@@ -5280,24 +5284,24 @@ def test_14199_fp3_voie_b0_verbatim_neutralise():
 
 
 def test_14199_fp4_ball_merge_delegation_neutralise():
-    """#14199 FP4 -- « a confirmer avant merge. Ball merge : X. » (sous-pattern
-    d, delegation Ball merge APRES avant merge). Doit rendre None."""
+    """#14199 FP4 -- « a confirmer [BEFORE-MERGE]. Ball merge : X. » (sous-pattern
+    d, delegation Ball merge APRES [BEFORE-MERGE]). Doit rendre None."""
     body = (
-        "Action requise : a confirmer avant merge. Ball merge : ai-01."
+        "Action requise : a confirmer [BEFORE-MERGE]. Ball merge : ai-01."
     )
     assert mod.classify("jsboige", body) is None
 
 
 
 def test_14199_vp13800_a_relire_reste_bloquant():
-    """#14199 VP -- « A relire par ai-01 avant merge. Aucune action. » (PR
+    """#14199 VP -- « A relire par ai-01 [BEFORE-MERGE]. Aucune action. » (PR
     #13800). Verbe ACTIONNEL (`à relire`) deleguant une intervention, pas une
     #verification passee ni une delegation Ball merge. Aucun sous-pattern de
     Position I ne matche. Doit RESTER BOT-CONCERN."""
     body = (
         "[po-2023] cycle 2026-08-31 — etat final, les 2 concerns Hermes "
         "sont traites. Le residuel est une lecture manuelle ai-01. Marquee "
-        "NON EVALUEE — a relire. A relire par ai-01 avant merge. Aucune "
+        "NON EVALUEE — a relire. A relire par ai-01 [BEFORE-MERGE]. Aucune "
         "action lane supplementaire possible."
     )
     assert mod.classify("jsboige", body) == "BOT-CONCERN", (
@@ -5308,36 +5312,36 @@ def test_14199_vp13800_a_relire_reste_bloquant():
 
 
 def test_14199_vp_imperatif_infinitif_reste_bloquant():
-    """#14199 VP -- « a verifier avant merge » (verbe IMPERATIF a l'infinitif,
+    """#14199 VP -- « a verifier [BEFORE-MERGE] » (verbe IMPERATIF a l'infinitif,
     pas un past p.). Doit RESTER BOT-CONCERN."""
-    body = "Priere de bien vouloir a verifier avant merge."
+    body = "Priere de bien vouloir a verifier [BEFORE-MERGE]."
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
 
 
 
 def test_14199_vp_a_confirmer_no_qualifier_reste_bloquant():
-    """#14199 VP -- « a confirmer avant merge » (sans qualifieur, sans Ball
+    """#14199 VP -- « a confirmer [BEFORE-MERGE] » (sans qualifieur, sans Ball
     merge, sans verification passee). Doit RESTER BOT-CONCERN."""
-    body = "Action obligatoire : a confirmer avant merge."
+    body = "Action obligatoire : a confirmer [BEFORE-MERGE]."
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
 
 
 
 def test_14199_vp_qualifier_bloquant_reste_bloquant():
-    """#14199 VP -- « Concern (bloquant) : ... avant merge » (qualifier
+    """#14199 VP -- « Concern (bloquant) : ... [BEFORE-MERGE] » (qualifier
     BLOQUANT, pas couvert par sous-pattern a). Doit RESTER BOT-CONCERN."""
-    body = "Concern (bloquant) : le kernel WSL est casse, a confirmer avant merge."
+    body = "Concern (bloquant) : le kernel WSL est casse, a confirmer [BEFORE-MERGE]."
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
 
 
 
 def test_14199_ce1_mutation_position_i_desactivee_fp1_rougit():
     """#14199 mutation -- si Position I est desactivee, FP1 doit rougir
-    (le `avant merge` reste emis et le commentaire est classe BOT-CONCERN).
+    (le `[BEFORE-MERGE]` reste emis et le commentaire est classe BOT-CONCERN).
     Verifie par monkey-patching de `_strip_avant_merge_mention` (no-op)."""
     body = (
         "Concern (non bloquant) : mergeable_state=blocked, a confirmer "
-        "avant merge. Ball merge : Jean-Sylvain."
+        "[BEFORE-MERGE]. Ball merge : Emerjesse."
     )
     # Baseline : avec Position I, FP1 est neutralise
     assert mod.classify("jsboige", body) is None
@@ -5347,7 +5351,7 @@ def test_14199_ce1_mutation_position_i_desactivee_fp1_rougit():
         mod._strip_avant_merge_mention = lambda body: body
         assert mod.classify("jsboige", body) == "BOT-CONCERN", (
             "MUTATION FAILED : si Position I est desactivee, FP1 doit "
-            "rougir (le `avant merge` reste emis, le commentaire passe "
+            "rougir (le `[BEFORE-MERGE]` reste emis, le commentaire passe "
             "BOT-CONCERN)."
         )
     finally:
@@ -5405,11 +5409,11 @@ def test_14199_remesure_3_fp_window_neutralise():
         ("13537", "clusterManager-Myia",
          "Concern (non bloquant) : mergeable_state=blocked au moment de "
          "la review — checks en cours sur une PR de 18:04Z, standard, a "
-         "confirmer avant merge. Ball merge : Jean-Sylvain."),
+         "confirmer [BEFORE-MERGE]. Ball merge : Emerjesse."),
         ("13498", "jsboige",
          "Passe de merge ai-01 — le concern NanoClaw est traite par la "
          "voie B.0 « issue de suivi ouverte et nommee AVANT LE MERGE ». "
-         "Verifie de mon cote avant merge : mergeStateStatus CLEAN."),
+         "Verifie de mon cote [BEFORE-MERGE] : mergeStateStatus CLEAN."),
         ("13860", "myia-ai-01",
          "La nit user est levee par **issue de suivi ouverte avant "
          "merge** (#13929), et — mieux — deja livree par #13932. "
@@ -5427,10 +5431,10 @@ def test_14199_concern1_aparte_phrase_precedente_neutralise_pas_le_vp():
     """Review NanoClaw #14322 concern 1 -- le gap du sous-pattern (a)
     QUALIFIER franchissait les frontieres de phrase : un aparte benin
     "(mineur)" dans une phrase precedente neutralisait un nit VIVANT
-    "avant merge" de la phrase SUIVANTE. Le point est desormais exclu
+    "[BEFORE-MERGE]" de la phrase SUIVANTE. Le point est desormais exclu
     du gap ([^.!?\n]) : ce corps doit rester BOT-CONCERN."""
     body = ("Le point precedent (mineur) est clos sans suite. "
-            "Reserve bloquante : a corriger avant merge par le lane.")
+            "Reserve bloquante : a corriger [BEFORE-MERGE] par le lane.")
     assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
 
 
@@ -5438,7 +5442,7 @@ def test_14199_concern1_gap_intra_phrase_fp1_couvert_toujours_neutralise():
     """Le resserrement du gap ne doit pas casser le FP fondateur : un
     qualifieur dans la MEME phrase que le token reste neutralise."""
     body = ("Le point souleve (mineur) sera traite par la passe de "
-            "nettoyage avant merge, pas ici.")
+            "nettoyage [BEFORE-MERGE], pas ici.")
     assert mod.classify("clusterManager-Myia", body) != "BOT-CONCERN"
 
 
@@ -5545,7 +5549,7 @@ def test_14277_vp_ligne_suivante_sans_meta_nom_reste_bloquant():
 
 def test_16688_determinant_referent_fondateur_neutralise():
     body = ("## Levée des deux réserves, par leur auteur ou par issue nommée — "
-            "avant merge\n"
+            "[BEFORE-MERGE]\n"
             "### 1. Le 🟡 sur le tag `Grain:` — c'est moi qui l'ai posé, "
             "c'est donc à moi de le lever. Vérifié firsthand : la clause "
             "`lane` est présente au head 92b74e9e1d.")
@@ -5796,24 +5800,24 @@ def test_14216_ce2_mutation_scope_toujours_faux_vp1_rougit(monkeypatch):
 
 
 
-# --- #13083 instance 3 : Position I' -- `avant merge` en TETE de corps (titre)
+# --- #13083 instance 3 : Position I' -- `[BEFORE-MERGE]` en TETE de corps (titre)
 # sans verbe actionnel ni qualifieur bloquant. Le commentaire fondateur
 # (2026-08-26T08:11:21Z sur #13083, PR #12627) : un rapport d'audit ai-01
-# intitule « **Audit ai-01 avant merge** » etait classe BOT-CONCERN a tort,
+# intitule « **Audit ai-01 [BEFORE-MERGE]** » etait classe BOT-CONCERN a tort,
 # bloquant la PR sur l'absence de reserve de l'auteur. Les 7 sous-patterns
 # Position I (#14199) ne matchent pas (aucun qualifieur / verification passee
-# / formule B.0 / Ball merge). Le `avant merge` en tete est un localisateur
+# / formule B.0 / Ball merge). Le `[BEFORE-MERGE]` en tete est un localisateur
 # temporel pur. Voir _strip_avant_merge_mention + _is_action_verb_heading.
 
 
 def test_13083_instance3_fp_fondateur_12627_neutralise():
     """#13083 instance 3, FP fondateur #12627 (verbatim du commentaire
-    5422425135 date 2026-08-26T08:11:21Z) : « **Audit ai-01 avant merge** »
+    5422425135 date 2026-08-26T08:11:21Z) : « **Audit ai-01 [BEFORE-MERGE]** »
     + prose descriptive (compte-rendu de mesure, sans verbe actionnel).
-    Position I' doit neutraliser ce `avant merge` en tete de corps -- la
+    Position I' doit neutraliser ce `[BEFORE-MERGE]` en tete de corps -- la
     classe rendue est None, plus BOT-CONCERN."""
     body = (
-        "**Audit ai-01 avant merge**\n\n"
+        "**Audit ai-01 [BEFORE-MERGE]**\n\n"
         "Le profil deletion-heavy de la PR est un faux signal : +4098/-4635 "
         "sur 3 notebooks + 3 labels de densite en baisse invitaient a "
         "soupconner une regression de contenu. Mesure cellule par cellule, "
@@ -5824,7 +5828,7 @@ def test_13083_instance3_fp_fondateur_12627_neutralise():
     )
     assert mod.classify("myia-ai-01", body) is None, (
         f"FP fondateur #12627 devrait etre neutralise (Position I', "
-        f"`avant merge` temporel en tete sans verbe actionnel), "
+        f"`[BEFORE-MERGE]` temporel en tete sans verbe actionnel), "
         f"got {mod.classify('myia-ai-01', body)!r}"
     )
 
@@ -5834,7 +5838,7 @@ def test_13083_instance3_formule_alternative_h1_neutralise():
     """Variante du FP fondateur : titre en H1 (`#`) sans bold. Meme
     localisation temporelle pure en tete de corps."""
     body = (
-        "# Audit ai-01 avant merge\n\n"
+        "# Audit ai-01 [BEFORE-MERGE]\n\n"
         "Verifications prealables : 0 check rouge, mergeStateStatus CLEAN, "
         "tests verts. La PR peut etre passee en l'etat."
     )
@@ -5843,10 +5847,10 @@ def test_13083_instance3_formule_alternative_h1_neutralise():
 
 
 def test_13083_instance3_formule_fr_minimal_neutralise():
-    """Variante minimale : titre `Rapport avant merge` (sans bold/H1) +
+    """Variante minimale : titre `Rapport [BEFORE-MERGE]` (sans bold/H1) +
     corps descriptif. Position I' doit neutraliser."""
     body = (
-        "Rapport avant merge\n\n"
+        "Rapport [BEFORE-MERGE]\n\n"
         "Diagnostic et verifications effectues. Pas de nit, pas de reserve."
     )
     assert mod.classify("jsboige", body) is None
@@ -5855,7 +5859,7 @@ def test_13083_instance3_formule_fr_minimal_neutralise():
 
 def test_13083_instance3_formule_en_neutralise():
     """Variante EN du meme pattern : `**Audit ai-01 before merge**` -- la
-    Position I' couvre `before merge` au meme titre que `avant merge` via
+    Position I' couvre `before merge` au meme titre que `[BEFORE-MERGE]` via
     le token `merge`. Verification que la borne tient cross-langue."""
     body = (
         "**Audit ai-01 before merge**\n\n"
@@ -5868,28 +5872,28 @@ def test_13083_instance3_formule_en_neutralise():
 
 
 def test_13083_instance3_vp_a_relire_tete_reste_bloquant():
-    """VP : titre « A relire par ai-01 avant merge » -- verbe actionnel
+    """VP : titre « A relire par ai-01 [BEFORE-MERGE] » -- verbe actionnel
     imperatif (`a relire`) deleguant une intervention. Position I' NE DOIT
     PAS neutraliser (la ligne porte un verbe actionnel, _is_action_verb_
     heading rend True). Doit rester BOT-CONCERN. Cf VP Position I
     fondateur #13800."""
     body = (
-        "**A relire par ai-01 avant merge**\n\n"
+        "**A relire par ai-01 [BEFORE-MERGE]**\n\n"
         "Residuel : une lecture manuelle. Aucune action lane supplementaire "
-        "possible. A relire par ai-01 avant merge."
+        "possible. A relire par ai-01 [BEFORE-MERGE]."
     )
     assert mod.classify("jsboige", body) == "BOT-CONCERN", (
-        f"VP `a relire avant merge` doit rester BOT-CONCERN (verbe actionnel "
+        f"VP `a relire [BEFORE-MERGE]` doit rester BOT-CONCERN (verbe actionnel "
         f"dans le titre), got {mod.classify('jsboige', body)!r}"
     )
 
 
 
 def test_13083_instance3_vp_a_verifier_tete_reste_bloquant():
-    """VP : titre `A verifier avant merge` (verbe imperatif infinitif).
+    """VP : titre `A verifier [BEFORE-MERGE]` (verbe imperatif infinitif).
     Position I' NE DOIT PAS neutraliser."""
     body = (
-        "**A verifier avant merge**\n\n"
+        "**A verifier [BEFORE-MERGE]**\n\n"
         "Verifier la coherence des paths dans la section 3."
     )
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
@@ -5897,12 +5901,12 @@ def test_13083_instance3_vp_a_verifier_tete_reste_bloquant():
 
 
 def test_13083_instance3_vp_a_confirmer_tete_reste_bloquant():
-    """VP : titre `A confirmer avant merge` (verbe imperatif infinitif).
+    """VP : titre `A confirmer [BEFORE-MERGE]` (verbe imperatif infinitif).
     Position I' NE DOIT PAS neutraliser -- le VP Position I fondateur
-    « a confirmer avant merge » (sans qualifieur) reste bloquant ; la
+    « a confirmer [BEFORE-MERGE] » (sans qualifieur) reste bloquant ; la
     version titre doit suivre la meme regle."""
     body = (
-        "**A confirmer avant merge**\n\n"
+        "**A confirmer [BEFORE-MERGE]**\n\n"
         "Action obligatoire : confirmer la liste des fichiers touches."
     )
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
@@ -5910,11 +5914,11 @@ def test_13083_instance3_vp_a_confirmer_tete_reste_bloquant():
 
 
 def test_13083_instance3_vp_qualifier_bloquant_tete_reste_bloquant():
-    """VP : titre avec qualifieur `(bloquant)` puis `avant merge`. Le
+    """VP : titre avec qualifieur `(bloquant)` puis `[BEFORE-MERGE]`. Le
     qualifieur `(bloquant)` n'etait PAS couvert par Position I sous-pattern
     (a) -- la Position I' doit egalement le garder vivant en tete de corps."""
     body = (
-        "**Concern (bloquant) a confirmer avant merge**\n\n"
+        "**Concern (bloquant) a confirmer [BEFORE-MERGE]**\n\n"
         "Le kernel WSL est casse sur le runner ai-01, intervention "
         "requise avant de relancer les tests."
     )
@@ -5929,7 +5933,7 @@ def test_13083_instance3_vp_qualifier_urgent_tete_reste_bloquant():
     """VP : variante avec qualifieur `(urgent)` au lieu de `(bloquant)`.
     Position I' doit egalement le garder vivant en tete de corps."""
     body = (
-        "**(Urgent) Audit ai-01 avant merge**\n\n"
+        "**(Urgent) Audit ai-01 [BEFORE-MERGE]**\n\n"
         "Le merge gate a casse depuis 14h30Z, intervention requise."
     )
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
@@ -5942,7 +5946,7 @@ def test_13083_instance3_vp_qualifier_urgent_tete_reste_bloquant():
 def test_13083_instance3_fp_avec_article_le_merge_neutralise():
     """Le sous-pattern Position I' couvre aussi `avant le merge` / `avant la
     merge` (article optionnel, comme les 7 sous-patterns Position I). Le
-    FP #12627 fondateur utilise `avant merge` (sans article) -- verification
+    FP #12627 fondateur utilise `[BEFORE-MERGE]` (sans article) -- verification
     qu'avec article, le meme cas de figure (titre sans verbe actionnel) est
     neutralise."""
     body = (
@@ -5964,7 +5968,7 @@ def test_13083_instance3_vp_avec_article_actionnel_reste_bloquant():
     le token survit comme substring, et `has_marker` le classifie
     BOT-CONCERN.
 
-    NB : CONCERN_MARKERS contient `avant merge` (sans article) et
+    NB : CONCERN_MARKERS contient `[BEFORE-MERGE]` (sans article) et
     `avant de merger`, mais PAS `avant le merge` -- c'est un prejugé
     du corpus Position I qui accepte l'article en surface stripee mais
     pas en detection basique. Le test utilise un corps qui porte les
@@ -5991,7 +5995,7 @@ def test_13083_instance3_ce1_mutation_desactivee_fp_rougit(monkeypatch):
     le reload (le module est importe en conftest, reload casse le cache)."""
     import re
     body = (
-        "**Audit ai-01 avant merge**\n\n"
+        "**Audit ai-01 [BEFORE-MERGE]**\n\n"
         "Rapport descriptif, pas de reserve."
     )
     # Baseline : avec Position I', FP est neutralise
@@ -6002,12 +6006,12 @@ def test_13083_instance3_ce1_mutation_desactivee_fp_rougit(monkeypatch):
                         re.compile(r"(?!)"))  # match jamais
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
         "MUTATION FAILED : Position I' desactivee -> le FP fondateur "
-        "#12627 doit rougir (`avant merge` reste emis en tete)."
+        "#12627 doit rougir (`[BEFORE-MERGE]` reste emis en tete)."
     )
 
 
 def test_13083_instance3_milieu_ligne4_reste_bloquant():
-    r"""C.233 -- DM ai-01 2026-09-04T03:15Z (#14538) : un `avant merge` en
+    r"""C.233 -- DM ai-01 2026-09-04T03:15Z (#14538) : un `[BEFORE-MERGE]` en
     milieu de corps (ligne 4) SANS verbe actionnel doit RESTER bloquant
     apres le fix raw string \A.
 
@@ -6019,7 +6023,7 @@ def test_13083_instance3_milieu_ligne4_reste_bloquant():
     Ancien regex `(?im)^` matchait cette ligne (en mode MULTILINE `^` =
     debut de chaque ligne). Le fix ancre au debut strict du body via raw string \\A,
     fermant ce trou -- les occurrences en milieu de corps NE sont PLUS
-    neutralisees par Position I' (par design : un `avant merge` qui
+    neutralisees par Position I' (par design : un `[BEFORE-MERGE]` qui
     apparait au milieu d'un paragraphe descriptif est un concern
     VIVANT, pas un localisateur temporel de titre).
 
@@ -6032,19 +6036,19 @@ def test_13083_instance3_milieu_ligne4_reste_bloquant():
     body = (
         "Rapport d'audit technique\n\n"
         "Le profil deletion-heavy de la PR est un faux signal.\n\n"
-        "Il faut relire la section 3 avant merge, mais ce n'est pas un "
+        "Il faut relire la section 3 [BEFORE-MERGE], mais ce n'est pas un "
         "verdict bloquant.\n\n"
         "Conclusion : le contexte est decrit ci-dessus."
     )
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
-        f"Apres fix `\\A`, `avant merge` en milieu de corps (ligne 4) "
+        f"Apres fix `\\A`, `[BEFORE-MERGE]` en milieu de corps (ligne 4) "
         f"DOIT rester BOT-CONCERN (concern vivant, hors portee de "
         f"Position I'), got {mod.classify('myia-ai-01', body)!r}"
     )
 
 
 def test_13083_instance3_milieu_ligne3_reste_bloquant():
-    """C.233 -- DM ai-01 2026-09-04T03:15Z (#14538) : un `avant merge` en
+    """C.233 -- DM ai-01 2026-09-04T03:15Z (#14538) : un `[BEFORE-MERGE]` en
     milieu de corps (ligne 3) SANS verbe actionnel doit RESTER bloquant.
 
     Reproduction verbatim du tableau ai-01 :
@@ -6054,28 +6058,28 @@ def test_13083_instance3_milieu_ligne3_reste_bloquant():
     """
     body = (
         "Note de revue\n\n"
-        "Le rapport a ete pose avant merge par ai-01.\n\n"
+        "Le rapport a ete pose [BEFORE-MERGE] par ai-01.\n\n"
         "Pas de nit, pas de reserve."
     )
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
-        f"Apres fix `\\A`, `avant merge` en milieu de corps (ligne 3) "
+        f"Apres fix `\\A`, `[BEFORE-MERGE]` en milieu de corps (ligne 3) "
         f"DOIT rester BOT-CONCERN (concern vivant, hors portee de "
         f"Position I'), got {mod.classify('myia-ai-01', body)!r}"
     )
 
 
 def test_13083_instance3_tete_h1_neutralise_toujours():
-    """C.233 -- apres le fix `\\A`, le titre H1 (ligne 1) avec `avant merge`
+    """C.233 -- apres le fix `\\A`, le titre H1 (ligne 1) avec `[BEFORE-MERGE]`
     SANS verbe actionnel reste neutralise (FP fondateur #12627).
     C'est le test de NON-regression du fix : le scope se resserre mais le
     cas fondateur tient toujours.
     """
     body = (
-        "# Audit ai-01 avant merge\n\n"
+        "# Audit ai-01 [BEFORE-MERGE]\n\n"
         "Rapport descriptif, pas de reserve."
     )
     assert mod.classify("myia-ai-01", body) is None, (
-        f"Titre H1 `avant merge` (ligne 1, sans verbe actionnel) doit "
+        f"Titre H1 `[BEFORE-MERGE]` (ligne 1, sans verbe actionnel) doit "
         f"rester neutralise apres fix `\\A` (non-regression du cas "
         f"fondateur), got {mod.classify('myia-ai-01', body)!r}"
     )
@@ -6813,7 +6817,7 @@ def test_16128_delivered_prefix_exempted_when_no_live_lift() -> None:
 def test_16128_delivered_prefix_keeps_live_reserve_in_classification() -> None:
     """#16128 contre-positif -- symetrie cote reserve : un `[DELIVERED]`
     suivi d'une vraie reserve (`-- il va falloir corriger la cellule 12
-    avant merge` -- reviewer signale quelque chose) RESTE classee comme
+    [BEFORE-MERGE]` -- reviewer signale quelque chose) RESTE classee comme
     concern. L'exemption du prefixe ne blanchit pas les reserves reelles
     emises dans le meme commentaire -- sans cette symetrie, l'exemption
     serait indistinguable d'un trou.
@@ -6822,7 +6826,7 @@ def test_16128_delivered_prefix_keeps_live_reserve_in_classification() -> None:
     par le code existant : le gate identifie la prose, pas l'auteur.
     """
     body = ("[DELIVERED] lane myia-po-2027:CoursIA-2 -- il va falloir "
-            "corriger la cellule 12 avant merge.")
+            "corriger la cellule 12 [BEFORE-MERGE].")
     verdict = mod.classify("jsboige", body)
     assert verdict in ("BOT-CONCERN", "HUMAN"), body
     # Specifically NOT None : sans exemption du prefixe sur le body
