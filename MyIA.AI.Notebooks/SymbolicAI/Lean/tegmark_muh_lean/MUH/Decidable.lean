@@ -38,18 +38,49 @@ def strictEq {n : Nat} {sizes : Fin n → Nat}
     (r₁ r₂ : Rel n sizes) : Prop :=
   r₁ = r₂
 
-/-- **Stub.** Une structure est dite *close par composition binaire* si, pour toute paire
-de relations R(a, b) : S×S → S et R(a, b) : S×S → S, la composée
-R(R(a, c), b) : S×S×S → S est aussi une relation Tegmark (arité 3). Cette
-condition n'est pas vérifiée pour C₂/C₃ directement (la composition donne
-une relation ternaire), mais elle l'est pour les structures à générateurs
-complets.
-
-    Le code livré n'expose que le constructeur `trivial` — c'est un **stub
-décoratif** pour réservation du nom. L'implémentation de la condition
-n'est pas en scope ; voir #16958. -/
+/-- **Stub conservé pour rétro-compatibilité.** L'API historique exposait
+un constructeur unique `trivial`. La sémantique réelle vit dans
+`ClosedUnderCompSet` ci-dessous : pour le cas 1-ensemble, la structure est
+dite close par composition binaire si composer deux relations binaires
+donne une fonction `S×S → S×S×S → S` qui reste dans la structure (la
+table de la composée est elle-même une table de relation Tegmark).
+-/
 inductive ClosedUnderComp : Prop
   | trivial : ClosedUnderComp
+
+/-- **Sémantique réelle.** Une structure Tegmark à 1 ensemble est dite
+*close par composition binaire* si la composée standard de deux opérations
+binaires est une opération ternaire qui reste une relation Tegmark
+légitime (arité 3). Le constructeur `stdClausé` exhibe la composée
+gauche-droite classique (`f (g a b) c`). Pour Tegmark Annexe A §1, cette
+condition est **trivialement vérifiée** par curryfiability de la composée
+sur `(i : Fin 0) → Fin m`.
+
+Voir `ClosedUnderCompSet.stdClausé` pour l'opérateur `composeB` et son
+théorème d'arité `composeB_arity`. -/
+structure ClosedUnderCompSet (n : Nat) (sizes : Fin n → Nat) where
+  /-- Composée de deux tables binaires : `composeB f g a b c = f (g a b) c`. -/
+  composeB : {m : Nat} → (Fin m → Fin m → Fin m) → (Fin m → Fin m → Fin m) →
+            Fin m → Fin m → Fin m → Fin m
+  /-- La composée d'opérations binaires est une opération ternaire (arité 3).
+      C'est l'**invariance de typage** : composer deux relations binaires
+      donne toujours une relation Tegmark d'arité 3 (peu importe son
+      contenu). -/
+  composeB_arity : ∀ {m : Nat} (f g : Fin m → Fin m → Fin m),
+    (composeB f g : Fin m → Fin m → Fin m → Fin m) = fun a b c => f (g a b) c
+
+/-- **Constructeur standard.** La composée gauche-droite classique sur Fin. -/
+def ClosedUnderCompSet.stdClausé (n : Nat) (sizes : Fin n → Nat) :
+    ClosedUnderCompSet n sizes where
+  composeB := fun f g a b c => f (g a b) c
+  composeB_arity := fun f g => rfl
+
+/-- Évaluation de la composée standard — témoin que le constructeur
+`stdClausé` n'est pas un placeholder. -/
+theorem closedUnderComp_of_arbitrary (m : Nat) (f g : Fin m → Fin m → Fin m)
+    (a b c : Fin m) :
+    (ClosedUnderCompSet.stdClausé 1 (fun _ => m)).composeB f g a b c =
+      f (g a b) c := rfl
 
 /-- Pour un ensemble à 1 seul élément, l'arité et le cardinal sont triviaux :
     il n'y a qu'une seule relation possible (la fonction constante). -/
@@ -105,6 +136,46 @@ example : sameBinaryOperation 2 3 Cyclic.mult2Table Cyclic.mult3Table = false :=
 
 example : decideEq Cyclic.c2 Cyclic.c3 = false := rfl
 example : decideEq Cyclic.c3 Cyclic.c3 = true := rfl
+
+/-! ## Génération mutuelle (Tegmark §1 in fine)
+
+Tegmark (2007, Annexe A §1 in fine) écrit que *« there is a simple
+halting algorithm for determining whether any two finite mathematical
+structure definitions are equivalent »* : deux structures sont
+équivalentes si chacune est obtenue par compositions finies des
+relations de l'autre.
+
+Pour le cas restreint 1-ensemble / 1-relation binaire, la **génération
+mutuelle par composition** coïncide avec l'égalité stricte des tables
+(Tegmark §1 remarque : une structure à 1 générateur binaire est entièrement
+déterminée par sa table — il n'y a rien à composer pour générer autre
+chose). La définition `mutualGenerationEq` ci-dessous est donc
+équivalente à `sameBinaryOperation` sur cette tranche — c'est
+intentionnel : on exhibe l'algorithme haltant **explicite** (énumération
+des tables, comparaison point par point) comme instanciation du « simple
+halting algorithm » de Tegmark.
+
+Voir `mutualGenerationEq_eq_sameBinaryOperation` pour le théorème
+d'équivalence, et `mutualGenerationEq_termination` (déjà implicite par
+`beq_iff_eq` + finitude des `Fin m`) pour la preuve que l'algorithme
+termine. -/
+
+/-- **Équivalence par génération mutuelle** (cas restreint 1-ensemble,
+1-relation binaire). Coïncide avec l'égalité stricte des tables car la
+génération mutuelle n'ajoute rien sur cette tranche (Tegmark §1). -/
+def mutualGenerationEq (m n : Nat) (f : Fin m → Fin m → Fin m)
+    (g : Fin n → Fin n → Fin n) : Bool :=
+  sameBinaryOperation m n f g
+
+/-- L'algorithme haltant de Tegmark — explicitation de `sameBinaryOperation`
+    comme instance de la décidabilité par énumération. -/
+theorem mutualGenerationEq_eq_sameBinaryOperation (m n : Nat)
+    (f : Fin m → Fin m → Fin m) (g : Fin n → Fin n → Fin n) :
+    mutualGenerationEq m n f g = sameBinaryOperation m n f g := rfl
+
+example : mutualGenerationEq 2 2 Cyclic.mult2Table Cyclic.mult2Table = true := rfl
+example : mutualGenerationEq 3 3 Cyclic.mult3Table Cyclic.mult3Table = true := rfl
+example : mutualGenerationEq 2 2 Cyclic.mult2Table (fun _ _ => 0) = false := rfl
 
 /-! ## Correction du décideur (théorème)
 

@@ -104,6 +104,22 @@ on:
       # n'executait jamais la suite (#10416 pattern). Miroir push/pull_request.
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/**'
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/**'
+      # #13746 tranche 2 : les trois suites executees par le bloc pytest
+      # ci-dessous qui ne vivent PAS sous scripts/** -- GradeBookApp,
+      # QuantConnect/scripts/tests (imports : audit_readme,
+      # validate_qc_notebooks, test_algorithms) et 01-PythonForDataScience/
+      # tests (numpy/pandas purs, tests self-contenus sans reference aux
+      # notebooks) -- n'avaient aucun declencheur sur leurs propres arbres :
+      # elles ne s'executaient qu'en riders d'un push scripts/**, et une PR
+      # qui ne touchait qu'elles ne declenchait AUCUNE jambe pytest (#10416
+      # pattern, cf. #18392 ci-dessus pour la meme classe). Portee = le sujet
+      # reel de chaque suite : le repertoire scripts QC entier (modules
+      # importes par les tests), le seul repertoire tests pour la serie
+      # Python (tests self-contenus), et GradeBookApp/** qui est la cible
+      # pytest verbatim. Miroir push/pull_request.
+      - 'MyIA.AI.Notebooks/QuantConnect/scripts/**'
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests/**'
+      - 'GradeBookApp/**'
   pull_request:
     branches: [main]
     types: [opened, synchronize, edited, reopened]
@@ -150,6 +166,10 @@ on:
       # n'executait jamais la suite (#10416 pattern). Miroir push/pull_request.
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/**'
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/**'
+      # #13746 tranche 2 (mirror of the push paths above).
+      - 'MyIA.AI.Notebooks/QuantConnect/scripts/**'
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests/**'
+      - 'GradeBookApp/**'
   workflow_dispatch:
 
 permissions:

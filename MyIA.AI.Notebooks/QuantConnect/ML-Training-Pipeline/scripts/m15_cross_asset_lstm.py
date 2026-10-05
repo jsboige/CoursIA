@@ -48,6 +48,7 @@ from m11g_fee_aware_kelly import (  # noqa: E402
     _net_at_fee,
 )
 from m11c_sharpe_test import ledoit_wolf_sharpe_diff_se  # noqa: E402
+import strategy_metrics  # noqa: E402
 
 warnings.filterwarnings("ignore")
 
@@ -371,11 +372,13 @@ def walk_forward_lstm(
 # -- Evaluation ----------------------------------------------------------------
 
 def _sharpe_ann(returns: np.ndarray) -> float:
-    if len(returns) < 10:
+    """Annualized Sharpe (``strategy_metrics.sharpe``: ddof=1, risk-free 0, 252 days).
+
+    Returns nan for fewer than 10 returns or a standard deviation <= 1e-12.
+    """
+    if len(returns) < 10 or float(np.std(returns, ddof=1)) <= 1e-12:
         return float("nan")
-    mu = float(np.mean(returns))
-    sigma = float(np.std(returns, ddof=1))
-    return (mu / sigma) * np.sqrt(252) if sigma > 1e-12 else float("nan")
+    return float(strategy_metrics.sharpe(returns, periods_per_year=252))
 
 
 def evaluate_one_combo(

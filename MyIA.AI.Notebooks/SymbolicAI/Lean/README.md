@@ -513,7 +513,7 @@ Lean/
 │   ├── 05-table-de-caracteres.ipynb
 │   ├── 06-bulles-minkowski.ipynb
 │   ├── 07-zeros-fonctions-l-gaps-gue.ipynb
-│   ├── 08-serre-dans-mathlib.ipynb
+│   ├── 08-serre-dans-mathlib-Lean.ipynb
 │   ├── 09-congruences-tau-lacunarite-delta.ipynb
 │   ├── serre100_lean/             # Lake Serre 100 (Hasse, MZV, Yoneda, caractères — modules FR + jumeaux _en)
 │   └── README.md
