@@ -832,3 +832,179 @@ def test_fetch_merged_no_longer_calls_gh_in_a_single_capped_request(monkeypatch)
     monkeypatch.setattr(ss, "fetch_merged_window", lambda **kw: [])
     prs, err = ss.fetch_merged(90, now=_NOW_19209)
     assert err is None and prs == []
+
+
+# --- Cache par tranche de dates (#19236) -----------------------------------
+#
+# Le defaut de cout : le corpus entier (90 j, ~30 tranches, champ `files`)
+# vivait sous UNE entree de cache a TTL 1 h. A chaque expiration, les ~30
+# tranches etaient re-telechargees -- 7 min 25 s a froid, toutes les heures
+# et par lane (mesure ai-01 du 05/10). Les tranches closes sont immuables ;
+# seule la tranche vive qui contient aujourd'hui doit repartir en reseau.
+
+_NOW_19236 = dt.datetime(2026, 10, 5, 12, 0, tzinfo=dt.timezone.utc)
+# Grille ancree sur SLICE_ANCHOR (#19236) : 2026-09-26 est aligne, donc
+# [26-29), [29-02), [02-05) sont closes et [05-06) est la tranche vive.
+_LIVE_SLICE_19236 = ("2026-10-05", "2026-10-06")
+_CLOSED_SLICES_19236 = [("2026-09-26", "2026-09-29"),
+                        ("2026-09-29", "2026-10-02"),
+                        ("2026-10-02", "2026-10-05")]
+
+
+class _SliceNetwork:
+    """Faux reseau par tranche : compte les appels, paie par tranche.
+
+    Le payload d'une tranche est DETERMINISTE en fonction de ses bornes (et
+    non de l'ordre des appels) : c'est ce qui permet de comparer le corpus a
+    chaud et a froid -- un corpus qui ne differe que par les numeros de PR
+    fabriques par l'ordre d'appel ne prouverait rien.
+    """
+
+    def __init__(self):
+        self.calls: list[tuple[str, str]] = []
+
+    def __call__(self, since, until, fields=None):
+        self.calls.append((since, until))
+        num = int(since.replace("-", "")) % 100000
+        return [{"number": num, "mergedAt": since + "T00:00:00Z",
+                 "title": "", "body": "", "files": []}]
+
+
+def _cached_19236(tmp_path, clock):
+    from gh_payload_cache import PayloadCache
+    return PayloadCache(tmp_path, clock=clock)
+
+
+def test_only_the_live_slice_is_refetched_when_the_outer_cache_expires(tmp_path, monkeypatch):
+    """Acceptance #19236 : a chaud, le tapis paie UNE requete (la vive).
+
+    Le cache global expire au bout d'une heure ; les trois tranches closes
+    restent servies depuis leur entree. C'est le mecanisme qui ramene le
+    tapis de ~30 requetes a une seule.
+    """
+    net = _SliceNetwork()
+    monkeypatch.setattr(ss, "fetch_slice_raw", net)
+    now_clock = [1_800_000_000.0]
+    cache = _cached_19236(tmp_path, lambda: now_clock[0])
+
+    first, err1 = ss.fetch_merged(9, now=_NOW_19236, cache=cache,
+                                  cache_mode="auto", cache_ttl_seconds=3600)
+    assert err1 is None, err1
+    assert sorted(net.calls) == sorted(_CLOSED_SLICES_19236 + [_LIVE_SLICE_19236]), net.calls
+
+    now_clock[0] += 2 * 3600  # le cache global (1 h) a expire
+    second, err2 = ss.fetch_merged(9, now=_NOW_19236, cache=cache,
+                                   cache_mode="auto", cache_ttl_seconds=3600)
+    assert err2 is None, err2
+    closed_after = [c for c in net.calls if c in _CLOSED_SLICES_19236]
+    assert closed_after == _CLOSED_SLICES_19236, (
+        "une tranche close a ete re-telechargee : {}".format(net.calls))
+    assert net.calls[-1] == _LIVE_SLICE_19236, (
+        "la tranche vive doit, elle, repartir en reseau a l'expiration : "
+        "{}".format(net.calls))
+    assert len(net.calls) == 5, net.calls
+    import json as _json
+    assert (_json.dumps(second, sort_keys=True) == _json.dumps(first, sort_keys=True)), (
+        "le corpus a chaud doit etre IDENTIQUE au corpus a froid")
+
+
+def test_a_closed_slice_survives_within_its_long_ttl(tmp_path, monkeypatch):
+    """Une tranche close n'est pas re-telechargee tant que sa TTL longue court.
+
+    Controle du sens inverse : sans TTL longue, la deuxieme passe repaierait
+    les trois tranches closes.
+    """
+    net = _SliceNetwork()
+    monkeypatch.setattr(ss, "fetch_slice_raw", net)
+    now_clock = [1_800_000_000.0]
+    cache = _cached_19236(tmp_path, lambda: now_clock[0])
+    ss.fetch_merged(9, now=_NOW_19236, cache=cache, cache_mode="auto",
+                    cache_ttl_seconds=3600)
+    now_clock[0] += 29 * 24 * 3600  # dans la TTL longue (30 j)
+    ss.fetch_merged(9, now=_NOW_19236, cache=cache, cache_mode="auto",
+                    cache_ttl_seconds=3600)
+    assert [c for c in net.calls if c in _CLOSED_SLICES_19236] == _CLOSED_SLICES_19236, (
+        "a 29 j, une tranche close ne doit toujours pas etre re-telechargee : "
+        "{}".format(net.calls))
+
+
+def test_the_slice_summary_is_reported_apart_from_cache_status(tmp_path, monkeypatch):
+    """Observabilite : tranches servies vs telechargees, HORS `cache_status`.
+
+    `cache_status` est le contrat `nom -> verdict de cache` : tous ses
+    consommateurs lisent `entry["status"]` (cf `cache_notice_lines` et les
+    tests de `pick_idle_grain_cache`). Un compteur de tranches s'y lirait
+    comme un verdict de plus -- il passe donc par son propre canal.
+    """
+    net = _SliceNetwork()
+    monkeypatch.setattr(ss, "fetch_slice_raw", net)
+    now_clock = [1_800_000_000.0]
+    cache = _cached_19236(tmp_path, lambda: now_clock[0])
+    stats, status = {}, {}
+    ss.fetch_merged(9, now=_NOW_19236, cache=cache, cache_mode="auto",
+                    cache_ttl_seconds=3600, cache_status=status, slice_stats=stats)
+    assert stats["slices"] == 4 and stats["fetches"] == 4, stats
+    assert "series-slices" not in status, (
+        "le resume de tranches ne doit pas polluer le contrat cache_status")
+
+    now_clock[0] += 2 * 3600
+    stats2, status2 = {}, {}
+    ss.fetch_merged(9, now=_NOW_19236, cache=cache, cache_mode="auto",
+                    cache_ttl_seconds=3600, cache_status=status2, slice_stats=stats2)
+    assert stats2["hits"] == 3 and stats2["fetches"] == 1, stats2
+
+
+def test_a_slice_at_the_search_cap_still_raises(tmp_path, monkeypatch):
+    """#19209 : une tranche indecoupable LEVE -- la saturation est inchangee.
+
+    Le cache par tranche ne doit pas absorber ce comportement : un corpus
+    tronque qui aurait l'air complet resterait le pire des etats. Le test
+    passe par le VRAI walker (mode `off`, donc chaque tranche part en
+    reseau) -- patcher `fetch_slice_raw` en direct court-circuiterait le
+    decoupage qu'on veut eprouver.
+    """
+    monkeypatch.setattr(ss, "fetch_slice_raw",
+                        lambda s, u, fields=None: [{"number": i} for i in range(1000)])
+    cache = _cached_19236(tmp_path, lambda: 1_800_000_000.0)
+    prs, err = ss.fetch_merged(3, now=_NOW_19236, cache=cache, cache_mode="off")
+    assert prs == [], prs
+    assert err is not None and "search cap" in err, err
+
+
+def test_a_stale_slice_raises_instead_of_composing_a_mixed_corpus(tmp_path, monkeypatch):
+    """Une tranche servie en `stale` ne se mele pas a des tranches fraiches.
+
+    Sinon le corpus compose -- frais sur la tranche vive, vieux de 30 j sur
+    une close -- serait recache comme neuf au niveau global : provenance
+    illisible. L'erreur est NOMMEE, et le corpus precedent n'est pas
+    ecrase.
+    """
+    net = _SliceNetwork()
+    monkeypatch.setattr(ss, "fetch_slice_raw", net)
+    now_clock = [1_800_000_000.0]
+    cache = _cached_19236(tmp_path, lambda: now_clock[0])
+    first, err = ss.fetch_merged(9, now=_NOW_19236, cache=cache,
+                                 cache_mode="auto", cache_ttl_seconds=3600)
+    assert err is None and len(first) == 4
+
+    # La tranche close [29-02) devient injoignable, et sa TTL longue expire.
+    def failing(since, until, fields=None):
+        if (since, until) == ("2026-09-29", "2026-10-02"):
+            raise RuntimeError("gh down")
+        return net(since, until, fields)
+
+    monkeypatch.setattr(ss, "fetch_slice_raw", failing)
+    now_clock[0] += 31 * 24 * 3600
+    prs, err = ss.fetch_merged(9, now=_NOW_19236, cache=cache,
+                               cache_mode="auto", cache_ttl_seconds=3600)
+    assert err is not None and "stale" in err and "09-29" in err, err
+
+    # L'invariant qui compte : le melange n'a PAS ete recache comme neuf au
+    # niveau global. Si le corpus compose (tranches fraiches + une close de
+    # 30 j) avait ete ecrit avec un fetched_at neuf, l'appel suivant le
+    # servirait sans erreur -- ici il re-tente et re-echoue, en nommant la
+    # meme panne.
+    prs2, err2 = ss.fetch_merged(9, now=_NOW_19236, cache=cache,
+                                 cache_mode="auto", cache_ttl_seconds=3600)
+    assert err2 is not None and "stale" in err2, (
+        "un melange a ete servi comme neuf par le cache global : {}".format(err2))
