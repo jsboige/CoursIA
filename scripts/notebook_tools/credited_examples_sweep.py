@@ -7,13 +7,28 @@ r"""credited_examples_sweep.py -- pose POST-MORTEM du label `credited-examples-l
 #18761, mais **dormante** : elle exige `--base` ET `--pr-body-file`. Sous
 `schedule` -- le seul declencheur qui subsiste apres la tranche 1 de #12817 --
 il n'y a pas de contexte PR, donc pas de body, donc pas de `--base` : le diff
-des exemples credites n'etait **jamais** mesure et le label ne pouvait pas
-etre pose.
+des exemples credites n'etait **jamais** mesure et le label ne pouvait pas etre
+pose.
 
 Ce balayage le reveille **sans reintroduire `pull_request`** sur ce workflow
 (interdit : le clone par PR etait la motivation de #12817). Il tourne apres
 coup : il liste les PRs MERGEES de la fenetre et rejoue, pour chacune, le diff
 avec SA base et SON body -- c'est l'option 1 de #19101.
+
+## Deux sources de verite, chacune du bon cote (review 04:53Z)
+
+- **`changeType` n'existe pas dans `gh pr list --json files`** (mesure gh
+  2.83.2 : cette forme ne rend que `{additions, deletions, path}`). Le
+  classifieur ADDED/DELETED/RENAMED se nourrit donc de **GraphQL**
+  (`pullRequest.files.nodes { path changeType }`), pagine au curseur. Un
+  carnet supprime (#19040 a supprime GameTheory-18d) fait sinon planter le
+  balayage en `FileNotFoundError` : le repli « tout MODIFIED » de la premiere
+  version classait tout en modifie.
+- **le cote « apres » est la tete de la PR, pas l'arbre de travail** :
+  `check_notebooks` recoit `head_ref=headRefOid`, et le commit est amene
+  localement s'il manque (PR squash-mergee : l'objet n'est pas dans `main`).
+  Un commit de tete inatteignable est **nomme**, jamais remplace par l'etat
+  du jour.
 
 ## Portee honnete
 
@@ -21,16 +36,9 @@ Post-mortem : il detecte les pertes **passees**, il ne protege pas le merge.
 C'est le compromis assume de l'option 1 ; l'option 2 (un declencheur PR leger)
 reste ouverte et n'est pas traitee ici.
 
-Deux limites de la mesure, nommees plutot que tues :
-
-  - la version HEAD est lue dans l'**arbre de travail** (defaut de
-    `check_notebooks`), donc une PR dont un carnet a ete re-touche par une PR
-    ulterieure est mesuree contre l'etat courant, pas contre son propre head.
-    Le chiffre reste une borne basse exploitable ; il n'est pas presente comme
-    « exactement l'apport de cette PR ».
-  - quand `headRefOid` n'est plus atteignable (ref supprimee au merge), le
-    merge-base est indisponible : la PR est alors mesuree **contre sa base
-    declaree** et le repli est imprime en `[WARN]`, jamais silencieux.
+Quand `headRefOid` n'est plus atteignable (ref supprimee au merge), le
+merge-base est indisponible : la PR est alors mesuree **contre sa base
+declaree** et le repli est imprime en `[WARN]`, jamais silencieux.
 
 ## Usage
 
@@ -63,6 +71,20 @@ LABEL_CREDITED_LOST = "credited-examples-lost"
 # complet.
 SEARCH_RESULT_CAP = 1000
 
+# La liste des fichiers d'une PR AVEC leur nature de changement. Cette
+# information n'existe pas dans `gh pr list --json files` (review 04:53Z,
+# mesure gh 2.83.2) : elle est lue par GraphQL, page par 100.
+GRAPHQL_FILES = """query($owner: String!, $name: String!, $num: Int!, $cursor: String) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $num) {
+      files(first: 100, after: $cursor) {
+        nodes { path changeType }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  }
+}"""
+
 
 def _run(argv: list[str], **kw) -> subprocess.CompletedProcess:
     return subprocess.run(
@@ -84,18 +106,19 @@ def _gh_json(argv: list[str]) -> object:
 
 
 def merged_prs(repo: str, since: dt.datetime, run=_gh_json) -> list[dict]:
-    """PRs mergees depuis `since`, avec leurs fichiers et leurs deux refs.
+    """PRs mergees depuis `since`, avec leurs deux refs -- PAS leurs fichiers.
 
-    Leve si le lot atteint le plafond de l'API de recherche : un corpus
-    tronque se lirait comme un corpus complet, et les PRs perdues sont les
-    plus anciennes de la fenetre.
+    La forme `gh pr list --json files` ne rend pas `changeType` : les fichiers
+    (et leur nature) sont lus par `pr_files`, par PR, en GraphQL. Leve si le
+    lot atteint le plafond de l'API de recherche : un corpus tronque se
+    lirait comme un corpus complet.
     """
     stamp = since.strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = run([
         "pr", "list", "--repo", repo, "--state", "merged",
         "--limit", str(SEARCH_RESULT_CAP),
         "--search", f"merged:>={stamp}",
-        "--json", "number,baseRefOid,headRefOid,files,mergedAt",
+        "--json", "number,baseRefOid,headRefOid,mergedAt",
     ]) or []
     if len(rows) >= SEARCH_RESULT_CAP:
         raise RuntimeError(
@@ -106,23 +129,48 @@ def merged_prs(repo: str, since: dt.datetime, run=_gh_json) -> list[dict]:
     return rows
 
 
-def _ipynb_by_change(pr: dict) -> tuple[list[str], list[str], list[str]]:
+def pr_files(repo: str, number: int, run=_gh_json) -> list[dict]:
+    """Fichiers de la PR avec `changeType`, par GraphQL, pagine au curseur.
+
+    `gh pr view --json files` (REST/CLI) ne rend que des decomptes : la nature
+    du changement n'existe que cote GraphQL. Pages de 100, boucle sur
+    `pageInfo.endCursor` -- une PR de carnet peut deplacer plus de 100 fichiers
+    (mesure : #19040 en deplace 2876+214 lignes sur plusieurs carnets).
+    """
+    owner, name = repo.split("/", 1)
+    nodes: list[dict] = []
+    cursor = None
+    while True:
+        payload = run([
+            "api", "graphql", "-f", f"query={GRAPHQL_FILES}",
+            "-F", f"owner={owner}", "-F", f"name={name}",
+            "-F", f"num={number}",
+        ] + (["-f", f"cursor={cursor}"] if cursor else []))
+        conn = (payload or {}).get("data", {}).get("repository", {}) \
+                               .get("pullRequest", {}).get("files", {})
+        nodes.extend(conn.get("nodes") or [])
+        page = conn.get("pageInfo") or {}
+        if not page.get("hasNextPage"):
+            return nodes
+        cursor = page.get("endCursor")
+
+
+def _ipynb_by_change(files: list[dict]) -> tuple[list[str], list[str], list[str]]:
     """`(modifies, ajoutes, renommes)` parmi les `.ipynb` de la PR.
 
-    Deux exclusions et une separation, toutes structurelles. Toutes viennent
-    d'un `git show <base>:<chemin>` qui sort en **128** parce que le carnet
-    n'est pas a ce chemin dans la base -- ce qui n'est PAS une erreur de
-    mesure, mais ne veut pas dire la meme chose selon le cas :
+    Deux exclusions et une separation, toutes structurelles, toutes lues de
+    `changeType` (GraphQL) :
 
       - `DELETED` : supprime, plus rien a compter (meme regle que le
-        `--diff-filter=d` du workflow) ;
-      - `ADDED` : neuf, donc **rien a perdre** par construction. Mesure du
-        2026-10-05 : 6 des 6 « erreurs de diff » du corpus de 24 h venaient de
-        la (#18968, #19037, #19020, #19007, #18986) ;
+        `--diff-filter=d` du workflow). C'est le cas qui FAIT PLANTER le
+        balayage quand on le croit modifie : `git show <base>:<chemin>` puis
+        l'ouverture du carnet levait `FileNotFoundError` sur GameTheory-18d
+        (supprime par #19040) ;
+      - `ADDED` : neuf, donc **rien a perdre** par construction ;
       - `RENAMED` : la version de base existe **sous un autre chemin**, que
-        `gh pr view --json files` n'expose pas ici (`previousFilename` absent).
-        On ne peut donc pas la comparer -- et contrairement a `ADDED`, un
-        renommage **peut** perdre des exemples. On le declare NON MESURE.
+        cette source n'expose pas (`previousFilename` absent du jeu GraphQL
+        demande ici). On ne peut donc pas la comparer -- et contrairement a
+        `ADDED`, un renommage **peut** perdre des exemples. NON MESURE.
 
     Pourquoi separer plutot que compter en erreur : `credited_diff_errors > 0`
     **bloque** la pose du label (#18761). Une erreur structurelle sur un carnet
@@ -130,7 +178,7 @@ def _ipynb_by_change(pr: dict) -> tuple[list[str], list[str], list[str]]:
     faux positif d'erreur produisait un faux zero de pertes.
     """
     modified, added, renamed = [], [], []
-    for f in (pr.get("files") or []):
+    for f in (files or []):
         path = f.get("path") or ""
         if not path.endswith(".ipynb"):
             continue
@@ -146,15 +194,15 @@ def _ipynb_by_change(pr: dict) -> tuple[list[str], list[str], list[str]]:
     return modified, added, renamed
 
 
-def ipynb_paths(pr: dict) -> list[str]:
+def ipynb_paths(files: list[dict]) -> list[str]:
     """Chemins `.ipynb` **modifies** par la PR (cf. `_ipynb_by_change`)."""
-    return _ipynb_by_change(pr)[0]
+    return _ipynb_by_change(files)[0]
 
 
 def merge_base(repo_dir: Path, base_ref: str, head_ref: str) -> str | None:
     """`git merge-base` des deux refs, ou None si l'une n'est pas atteignable.
 
-    Pour une PR deja mergee et squash-mergee, `headRefOid` peut avoir disparu
+    Pour une PR deja mergeee et squash-mergee, `headRefOid` peut avoir disparu
     du depot (ref supprimee). On rend None et l'appelant NOMME le repli --
     jamais un diff silencieusement mesure contre la mauvaise base.
     """
@@ -164,14 +212,31 @@ def merge_base(repo_dir: Path, base_ref: str, head_ref: str) -> str | None:
     return proc.stdout.strip() or None
 
 
+def ensure_commit(repo_dir: Path, sha: str, run=_run) -> bool:
+    """Ameine localement le commit de tete s'il manque, puis confirme.
+
+    Une PR squash-mergee n'est pas un ancetre de `main` : son `headRefOid`
+    n'est pas dans un clone frais. GitHub autorise le fetch d'un SHA atteignable
+    depuis une ref de PR (`git fetch origin <sha>`). Rend False si le commit
+    reste inatteignable -- l'appelant NOMME l'echec, il ne mesure pas contre
+    un autre arbre.
+    """
+    probe = ["git", "-C", str(repo_dir), "cat-file", "-e", f"{sha}^{{commit}}"]
+    if run(probe).returncode == 0:
+        return True
+    run(["git", "-C", str(repo_dir), "fetch", "--quiet", "origin", sha])
+    return run(probe).returncode == 0
+
+
 def pr_body(repo: str, number: int, run=_gh_json) -> str:
     payload = run(["pr", "view", str(number), "--repo", repo, "--json", "body"])
     return ((payload or {}).get("body") or "") if isinstance(payload, dict) else ""
 
 
 def sweep(repo: str, repo_dir: Path, hours: int, now: dt.datetime,
-          *, fetch_merged=merged_prs, fetch_body=pr_body,
-          base_of=merge_base, check=check_notebooks) -> tuple[list[dict], list[str]]:
+          *, fetch_merged=merged_prs, fetch_files=pr_files,
+          fetch_body=pr_body, base_of=merge_base, ensure=ensure_commit,
+          check=check_notebooks) -> tuple[list[dict], list[str]]:
     """Rejoue le diff des exemples credites pour chaque PR mergee de la fenetre.
 
     Rend `(lignes, erreurs)`. Une ligne porte, par PR : le nombre de pertes non
@@ -183,7 +248,12 @@ def sweep(repo: str, repo_dir: Path, hours: int, now: dt.datetime,
     errors: list[str] = []
     for pr in fetch_merged(repo, since):
         number = pr.get("number")
-        paths, added, renamed = _ipynb_by_change(pr)
+        try:
+            files = fetch_files(repo, number)
+        except RuntimeError as exc:
+            errors.append(f"#{number}: fichiers illisibles ({exc})")
+            continue
+        paths, added, renamed = _ipynb_by_change(files)
         if not paths and not added and not renamed:
             continue
         if not paths:
@@ -203,7 +273,16 @@ def sweep(repo: str, repo_dir: Path, hours: int, now: dt.datetime,
             continue
         base_ref = pr.get("baseRefOid") or ""
         head_ref = pr.get("headRefOid") or ""
-        base = base_of(repo_dir, base_ref, head_ref) if base_ref and head_ref else None
+        if not base_ref or not head_ref:
+            errors.append(f"#{number}: refs absentes (base={base_ref!r}, head={head_ref!r})")
+            continue
+        if not ensure(repo_dir, head_ref):
+            errors.append(
+                f"#{number}: commit de tete {head_ref[:8]} inatteignable -- "
+                "PR ecartee, pas mesuree contre l'arbre du jour"
+            )
+            continue
+        base = base_of(repo_dir, base_ref, head_ref)
         if base is None:
             # Repli nomme : on mesure contre la ref de base declaree, sans
             # merge-base. Le chiffre reste exploitable, sa provenance est dite.
@@ -217,7 +296,8 @@ def sweep(repo: str, repo_dir: Path, hours: int, now: dt.datetime,
         except RuntimeError as exc:
             errors.append(f"#{number}: body illisible ({exc})")
             continue
-        result = check([Path(p) for p in paths], base_ref=base, pr_body=body)
+        result = check([Path(p) for p in paths], base_ref=base,
+                       head_ref=head_ref, pr_body=body)
         summary = result.as_payload().get("summary", {})
         lost = int(summary.get("credited_lost_unexempted", 0) or 0)
         diff_errors = int(summary.get("credited_diff_errors", 0) or 0)

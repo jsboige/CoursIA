@@ -269,9 +269,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          set -uo pipefail
-          # Advisory : un balayage qui echoue NOMME sa panne et ne rougit pas
-          # le run (le contrat de cet organe porte sur le verdict). Le repli et
-          # les erreurs de diff sont imprimes, jamais tus (#18761).
+          set -euo pipefail
+          # Le masque `|| echo "::warning::..."` est RETIRE (review #19215,
+          # point 3) : un plantage permanent laissait le run vert chaque nuit
+          # -- exactement la classe de defaut de #19214 (35 jours verts sans
+          # rapport). Le contrat de l'organe reste : ses pannes ATTENDUES
+          # (refs absentes, body illisible, plafond atteint) sont nommees en
+          # [WARN] et le script sort 0 ; ce qui ROUGIT ici est l'imprevu
+          # (traceback, crash) -- jamais masque. Sans effet merge : la mesure
+          # du body de #19214 vaut aussi pour ce workflow (schedule/dispatch
+          # seulement, hors du perimetre `merge_dwell`).
           python scripts/notebook_tools/credited_examples_sweep.py \
-            --hours 24 --apply || echo "::warning::credited sweep failed -- nothing labelled"
+            --hours 24 --apply
