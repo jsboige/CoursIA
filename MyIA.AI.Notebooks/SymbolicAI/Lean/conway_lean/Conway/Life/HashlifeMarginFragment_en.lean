@@ -2402,6 +2402,42 @@ theorem evolve_union_mem (t : Nat) (g₁ g₂ : Grid)
   simp only [← isAlive_true_iff_mem]
   rw [evolve_union t g₁ g₂ hsep q, Bool.or_eq_true]
 
+/-- **Slice 14b, link 1 — hull box of the union trajectory.**
+    Under strict separation `2·T < d` of the initial supports (hence of every
+    time `s ≤ T` by monotonicity), if each part trajectory lives in its box
+    (`h₁`, `h₂` — componentwise conjunction form, the corridor language),
+    the union trajectory lives in the hull box: lower bounds at the `min`,
+    upper bounds at the `max`, component by component. This is the first
+    link of the capture transfer announced in the docstring of
+    `evolve_union_mem`: the adherence of the union reads off those of the
+    parts (`evolve_union_mem` at every time `s ≤ T`); link 2 — the
+    level/window geometry of the union reconstruction, connecting this hull
+    to the `jumpCapturedF` predicate via `jumpCapturedF_of_dilation` —
+    remains to be established. -/
+theorem evolve_union_hull_box (T : Nat) (g₁ g₂ : Grid)
+    (a₁ b₁ a₂ b₂ : Int × Int)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 2 * T < chebDist p r)
+    (h₁ : ∀ s ≤ T, ∀ p, isAlive (evolve s g₁) p = true →
+      a₁.1 ≤ p.1 ∧ p.1 < b₁.1 ∧ a₁.2 ≤ p.2 ∧ p.2 < b₁.2)
+    (h₂ : ∀ s ≤ T, ∀ p, isAlive (evolve s g₂) p = true →
+      a₂.1 ≤ p.1 ∧ p.1 < b₂.1 ∧ a₂.2 ≤ p.2 ∧ p.2 < b₂.2)
+    (s : Nat) (hs : s ≤ T) (p : Int × Int)
+    (hp : isAlive (evolve s (g₁ ++ g₂)) p = true) :
+    min a₁.1 a₂.1 ≤ p.1 ∧ p.1 < max b₁.1 b₂.1 ∧
+      min a₁.2 a₂.2 ≤ p.2 ∧ p.2 < max b₁.2 b₂.2 := by
+  have hseps : ∀ q ∈ g₁, ∀ r ∈ g₂, 2 * s < chebDist q r := by
+    intro q hq r hr
+    have hb := hsep q hq r hr
+    omega
+  obtain hA | hB := (evolve_union_mem s g₁ g₂ hseps p).mp
+    ((isAlive_true_iff_mem _ p).mp hp)
+  · obtain ⟨c1, c2, c3, c4⟩ := h₁ s hs p ((isAlive_true_iff_mem _ p).mpr hA)
+    exact ⟨(min_le_left _ _).trans c1, c2.trans_le (le_max_left _ _),
+      (min_le_left _ _).trans c3, c4.trans_le (le_max_left _ _)⟩
+  · obtain ⟨c1, c2, c3, c4⟩ := h₂ s hs p ((isAlive_true_iff_mem _ p).mpr hB)
+    exact ⟨(min_le_right _ _).trans c1, c2.trans_le (le_max_right _ _),
+      (min_le_right _ _).trans c3, c4.trans_le (le_max_right _ _)⟩
+
 /-! ## Synthesis — the fragment is non-empty and the framework statement is honest
 
 `supportInMargin` is decidable and witnessed on the bestiary (above). The framework
