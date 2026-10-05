@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# CI-CHECK: --check-env
+#   ^ `--check-env` prints the kernel/toolchain inventory and exits 0 -- it
+#     runs no notebook. Declared for the CI advisory guard (#10643).
 # H.7 P3 Notebook Runner — unified kernel dispatch
 # Detects kernel type from notebook metadata and delegates to appropriate executor.
 #
