@@ -4,7 +4,7 @@
 >
 > **Acceptance 2 (verbatim)** : « chaque sous-grain listé en §A-F reçoit, dans les 14 jours suivant la création de cette Epic, soit (a) un `Part of #<chapeau>` + une inscription dans le body chapeau, soit (b) un refus motivé par écrit. Aucune issue A-F ne reste orpheline sans justification écrite. »
 >
-> **Origine** : `scripts/audit_consolidation_orphans.py --fetch` (organe livré par PR #16504, MERGED 2026-09-17). **Mesure live 2026-10-05** : 399 scannées / 29 rattachées / 370 orphelines.
+> **Origine** : `scripts/audit_consolidation_orphans.py --fetch` (organe livré par PR #16504, MERGED 2026-09-17). **Mesure live 2026-10-05** : 200 scannées (limitée, hors `--deep`) / 12 rattachées / 188 orphelines ; axes A=36, B=32, C=23, D=1, E=60, F=47, UNCLASSIFIED=68.
 >
 > **Lane d'origine** : **myia-po-2024:CoursIA-2** — claim initial `c.5988917609` (1320 chars) + claim suivi `c.5988930369` (2579 chars), tous deux OK longueur/PAYLOAD-TRAP.
 
@@ -126,9 +126,46 @@ date_cycle | #issue | chaperon | axe | statut | preuve | note
 2026-10-05T08:3xZ | PR#19232 | — | D | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lots 1+3+4 → lots 1+3+4+5 (axes B, A, C, D). Ledger étendu append-only avec section axe D. Rebase + force-push ce cycle.
 ```
 
-### Lots restants — axes E, F (à servir)
+### Lot 6 — axe E (doc sprawl & catalogue), 60 orphelines (mesure 2026-10-05T11:2xZ)
 
-À servir aux cycles suivants, dans l'ordre dedie par l'adversaire/coordinateur après livraison des lots 1+3+4+5.
+Mesure 2026-10-05T11:2xZ (offline, audit offline `--format json --limit 200`) : **60 orphelines** sur l'axe E. C'est le **deuxième plus gros** des 6 axes après A (74). Aucune des 4 cibles verbatim (#206, #52, #9, #14623) n'a été re-ouverte par l'audit (3 sont CLOSED depuis longtemps, #14623 reste OPEN). Les 60 orphelines sont **un signal neuf** : beaucoup sont des audits readme transverses ou des EPICs marquées (`audit(readme)`, `[Audit #17073]`, `[QC][livre]`, `Site Pages`, `Distillation`).
+
+**Chaperon canon axe E** : le body verbatim de #16473 cite #14623 → **#13737** (consolidation structurelle 30 périmètres) ou #9535 (nettoyage) selon la cible. Le mapping statique de #19239 utilise `#13737` pour axe E.
+
+**Catégories principales** (60 orphelines) :
+- **Audits readme transverses** : #18062 (GenAI 24 README), #18063 (QuantConnect 52 README), #18064 (Autres séries 33 README)
+- **Sites Pages** : #18422 (docs/*.md servis brut), #18423 (263 notebooks hors NOTEBOOK_SUBTREES), #18911 (1740 liens README -> .ipynb brut)
+- **Audits partitions Hermes / NanoClaw** : #18244, #18545, #18578, #18684
+- **EPICs transverses** : #17969, #18205, #18601, #18703, #18706
+- **Catalogues / parcours** : #17883, #17926, #17978, #17982, #18732, #19144
+- **QC livre / distillations** : #18898, #18902, #18903, #18990, #19174, #19242, #19272
+- **QC docs** : #18982, #19018
+- **Argumentation docs / notebooks** : #18390, #18393, #18408, #18434, #18873
+- **Lean docs** : #18286, #18430, #18624
+- **Lean / docs** : #18671 (docs README manquant), #18763, #18770
+- **Biblio Holistique** : #19267, #19268, #19269, #19274, #19275, #19276, #19277, #19278, #19279
+- **Sites / Sub-pages** : #18258, #18328, #18671, #18917, #19217, #19254, #19263
+
+**Singularités** :
+- **#14623** = verbatim body #16473 §E, OPEN, 5721 chars — chaperon canon = #13737.
+- **#18258** = audit(Q67) relire 205 merges faits sans approbation du coordinateur — point de gouvernance, hors périmètre d'une lane worker.
+- **#18763** = runner-variance-guard #15574 (suivi 24 h) — claim ai-01, hors lane.
+
+**Stratégie de commentaire** : **identique aux lots 1+3+4+5** — pas d'immixtion dans le périmètre des lanes tierces. La plupart des 60 orphelines portent des claims tiers actifs (Hermès / NanoClaw / lanes multiples / équipe QC, Lean, Argumentation). Aucune ne reçoit un commentaire `Part of #13737` direct depuis ma lane. Validation par l'adversaire (po-2025:CoursIA adjoint) et le coordinateur (ai-01) requise.
+
+**Décision** : pour ce cycle, **pas de commentaire nominatif direct** sur les 60 orphelines axe E. Dossier de proposition à trancher par coordination. Les commentaires nominatifs seront posés **après validation de l'adversaire/coordinateur**, ou par les porteurs eux-mêmes.
+
+#### Statut émission commentaires nominatifs
+
+```text
+date_cycle | #issue | chaperon | axe | statut | preuve | note
+2026-10-05T11:2xZ | #16473 | #16473 | E | PROPOSÉ | audit --fetch au 2026-10-05T11:2xZ → 60 orphelines axe E. Mapping statique #13737 (cf #19239). #14623 = verbatim body #16473 §E, OPEN. Pas d'émission commentaire nominatif (immixtion). Dossier de proposition préparé.
+2026-10-05T11:2xZ | PR#19232 | — | E | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Extension lots 1+3+4+5 → lots 1+3+4+5+6 (axes B, A, C, D, E). Ledger étendu append-only avec section axe E. Rebase + force-push ce cycle.
+```
+
+### Lot 7 — axe F (à servir)
+
+À servir aux cycles suivants, dans l'ordre dedie par l'adversaire/coordinateur après livraison des lots 1+3+4+5+6. Axe F = 47 orphelines (corps du registre `e_class=EPIC_STALE_BODY` — re-cadrage via l'organe `scripts/epic_body_staleness.py` du tracker #13906).
 
 ## Suites à donner
 
@@ -143,8 +180,8 @@ date_cycle | #issue | chaperon | axe | statut | preuve | note
 - Claim suivi : c.5988930369 (2579 chars)
 - PR organe : #16504 (MERGED 2026-09-17) — acceptance 1
 - PR extension organe : #19239 (OPEN 2026-10-05) — `--suggest-rattachement` acceptance 2 lot 2
-- PR ledger : #19232 (OPEN 2026-10-05) — acceptance 2 lots 1+3+4+5
-- Audit dernier : `python scripts/audit_consolidation_orphans.py --fetch --suggest-rattachement` au 2026-10-05T08:3xZ → 399/37/362 (régression 29→37 rattachées depuis cycle 2, à monitorer)
+- PR ledger : #19232 (OPEN 2026-10-05) — acceptance 2 lots 1+3+4+5+6
+- Audit dernier : `python scripts/audit_consolidation_orphans.py --fetch --format json --limit 200` au 2026-10-05T11:2xZ → 200/12/188 ; axes : A=36, B=32, C=23, D=1, E=60, F=47, UNCLASSIFIED=68. Détail hors `--deep` : 188 orphelines bodies seulement.
 
 ---
 
