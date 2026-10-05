@@ -207,6 +207,42 @@ def test_a_corrupt_data_member_is_unjudgeable_not_a_crash(tmp_path):
     assert "archive illisible" in report.verdicts[0].detail
 
 
+def _write_npz_with_corrupt_arm_only_member(path, meta):
+    """Zip valide, ``__meta__`` lisible, membre EXTRA du bras pourri.
+
+    Volet bras-seul de la corruption : le membre pourri n'existe PAS dans la
+    reference, c'est donc la seconde boucle de ``differing_values`` (tableaux
+    presents seulement dans le bras) qui le rencontre. Sous numpy 2.x,
+    ``np.load`` rend des bytes bruts sans lever a l'acces, et ``.size`` levait
+    un AttributeError que le tuple du juge n'attrape pas -- l'audit entier
+    mourait en traceback au lieu de declarer ce bras ILLISIBLE (reproduction
+    independante de l'adjoint 2026-10-05 : ``extra__topk_ids.npy`` corrompu
+    uniquement dans le bras).
+    """
+    import zipfile
+    _write(path, meta)
+    tmp = path.with_suffix(".tmp.npz")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w") as zout:
+        for item in zin.infolist():
+            zout.writestr(item.filename, zin.read(item.filename))
+        zout.writestr("extra__topk_ids.npy",
+                      b"corruption volontaire : pas un membre .npy")
+    tmp.replace(path)
+    return path
+
+
+def test_a_corrupt_arm_only_member_is_unjudgeable_not_a_crash(tmp_path):
+    """Miroir bras-seul : un membre EXTRA du bras corrompu rend le bras
+    ILLISIBLE (echec declare), et l'audit poursuit -- jamais un AttributeError
+    qui tuerait le jugement des autres bras."""
+    _write(tmp_path / "ref.npz", _meta(clamp_ids=[], scale=1.0))
+    _write_npz_with_corrupt_arm_only_member(tmp_path / "arm.npz", _meta(scale=1.0))
+    report = _run(tmp_path)
+    assert [v.status for v in report.verdicts] == ["ILLISIBLE"]
+    assert report.failures, "un bras illisible doit faire echouer le controle"
+    assert "archive illisible" in report.verdicts[0].detail
+
+
 def test_a_fully_corrupt_archive_is_without_metadata_not_a_crash(tmp_path):
     """Un .npz corrompu des l'ouverture (pas un zip) est declare sans
     metadonnee : l'audit juge les autres bras au lieu d'avorter en traceback."""

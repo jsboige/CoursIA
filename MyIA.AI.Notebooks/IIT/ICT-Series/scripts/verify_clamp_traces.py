@@ -230,9 +230,19 @@ def differing_values(a: Path, b: Path) -> tuple[int, int]:
             diff += int(np.count_nonzero(x != y))
         # Tableaux presents seulement dans le bras : ils manquent a la reference.
         for key in zb.files:
-            if key != "__meta__" and key not in za.files:
-                diff += int(zb[key].size)
-                total += int(zb[key].size)
+            if key == "__meta__" or key in za.files:
+                continue
+            y = zb[key]
+            if not isinstance(y, np.ndarray):
+                # Meme garde que la premiere boucle : un membre pourri arrive en
+                # bytes bruts sous numpy 2.x (sans lever a l'acces), et ``.size``
+                # y leverait un AttributeError que le tuple du juge n'attrape
+                # pas -- un traceback qui tuerait l'audit des autres bras
+                # (#19249, reproduction independante de l'adjoint 2026-10-05 :
+                # membre extra corrompu present dans le bras seul).
+                raise ValueError(f"membre {key!r} illisible dans {b.name}")
+            diff += int(y.size)
+            total += int(y.size)
     return diff, total
 
 
