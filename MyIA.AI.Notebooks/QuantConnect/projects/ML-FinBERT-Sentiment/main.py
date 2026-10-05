@@ -42,6 +42,20 @@ from transformers import (
 #      (annee ~0,15, semestre ~0,29) et les fenetres de 1-2 mois
 #      completent l'integralite du pipeline, transition du 1er fevrier
 #      incluse. 2 mois est la plus longue fenetre mesuree qui complete.
+# n5 - Convention d'indices de FinBERT, CONSERVEE telle quelle. Le modele
+#      expose id2label = {0: 'positive', 1: 'negative', 2: 'neutral'}
+#      (mesure sur le noeud ; le notebook committe l'imprime en sortie de
+#      cellule). Le livre compare `scores[2] > scores[0]` et etiquete ses
+#      trois plot Negative/Neutral/Positive sur les indices 0/1/2 : la
+#      comparaison porte donc sur **neutre > positif**, et les etiquettes
+#      sont decalees d'un cran par rapport au contenu qu'elles nomment.
+#      La prose du livre dit pourtant "sentiment is more positive than
+#      negative" (main.py du livre, l. 19) : la discordance est EN AMONT,
+#      entre sa phrase et son code. Ce portage la reproduit verbatim --
+#      la fidelite au livre est le livrable, et corriger la comparaison
+#      changerait le comportement de la strategie (donc exigerait un
+#      nouveau backtest, et ferait diverger le portage de sa reference).
+#      L'ecart est documente, pas corrige.
 
 
 class FinbertBaseModelAlgorithm(QCAlgorithm):
@@ -53,15 +67,22 @@ class FinbertBaseModelAlgorithm(QCAlgorithm):
     les 10 actifs les plus liquides et n'en retient que le plus volatil
     (ecart-type des rendements quotidiens sur 365 jours). Au
     rebalancement, le sentiment des articles Tiingo des 10 derniers
-    jours est agrege avec des poids exponentiels : long 100 % si le
-    positif depasse le negatif, sinon short 25 %. Toujours investi.
+    jours est agrege avec des poids exponentiels, et l'algorithme reste
+    toujours investi : long 100 % si ``scores[2] > scores[0]``, sinon
+    short 25 %. Lu sous l'``id2label`` reel du modele -- mesure sur le
+    noeud, ``{0: 'positive', 1: 'negative', 2: 'neutral'}`` -- cette
+    comparaison porte sur **neutre > positif**, et les trois ``plot``
+    nomment ``Negative``/``Neutral``/``Positive`` les indices 0/1/2 :
+    les etiquettes sont decalees d'un cran. C'est le code du livre a la
+    lettre, ecart d'indices compris (cf. note n5).
 
     Ecarts documentes du portage : (1) blindage par etape (adaptation
     d'execution, cf. note n1 en tete de fichier) ; (2) PyTorch au lieu de
     TensorFlow pour l'inference (meme modele, meme tokenizer, memes poids ;
     TF importe aussi sur les noeuds -- sonde probe2, mask 31) ;
     (3) abonnement SPY explicite en fin d'initialize ; (4) cash 1M ;
-    (5) fenetre 2 mois (cf. note n4).
+    (5) fenetre 2 mois (cf. note n4) ; (6) convention d'indices de
+    FinBERT conservee telle quelle (cf. note n5).
     """
 
     def _fail(self, stage, exc):
