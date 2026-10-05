@@ -130,6 +130,12 @@ on:
       - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/**.lean'
       - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lean-toolchain'
+      # geometry_lean (herite du wrapper lean-geometry.yml supprime, #13751 :
+      # 0 sorry verifie de naissance, axiom target-modules "*" + allow-axioms vide,
+      # fail-on-sorry true par defaut -- parametres reportes au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lean-toolchain'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
@@ -248,6 +254,12 @@ on:
       - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/**.lean'
       - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lean-toolchain'
+      # geometry_lean (herite du wrapper lean-geometry.yml supprime, #13751 :
+      # 0 sorry verifie de naissance, axiom target-modules "*" + allow-axioms vide,
+      # fail-on-sorry true par defaut -- parametres reportes au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lean-toolchain'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'

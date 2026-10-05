@@ -2769,3 +2769,57 @@ class TestExternalWriteSpace:
             "the generic drop rule is unchanged for headers without "
             "external evidence (got %d)" % result.count
         )
+
+
+# ---------------------------------------------------------------------------
+# #18741 Declarations -- declared statuses transcribed from the ledger
+# ---------------------------------------------------------------------------
+
+
+class TestDeclaredStatuses:
+    """Ledger #10/#13/#15 -- individually declared budgets.
+
+    Declared notebooks stay IN the corpus (they are course material) but
+    carry their declared kind and a zero budget, mirroring the setup/Lean
+    exception rows; the generated artifact leaves the corpus entirely.
+    """
+
+    def test_declared_mono_exercise_carries_zero_budget(self):
+        kind, threshold = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb")
+        )
+        assert kind == "declared-mono-exercise"
+        assert threshold == 0
+
+    def test_declared_ablation_companion_carries_zero_budget(self):
+        kind, threshold = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/PostTraining/PT_18_laya_ablation_distillation.ipynb")
+        )
+        assert kind == "declared-ablation-companion"
+        assert threshold == 0
+
+    def test_declared_demo_carries_zero_budget(self):
+        kind, threshold = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-03-Internalisation-CoT.ipynb")
+        )
+        assert kind == "declared-demo"
+        assert threshold == 0
+
+    def test_declared_kinds_stay_in_corpus(self):
+        for kind in ("declared-mono-exercise", "declared-ablation-companion", "declared-demo"):
+            assert kind not in OUT_OF_CORPUS_KINDS
+
+    def test_generated_artifact_notebook_is_out_of_corpus(self):
+        kind, threshold = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/SemanticKernel/Notebook-Generated.ipynb")
+        )
+        assert kind == "artifact"
+        assert threshold is None
+
+    def test_archive_shadows_declared_status(self):
+        # A declared stem moved under an underscore directory is archive
+        # first: structural kinds are consulted before DECLARED_STATUSES.
+        kind, _ = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/_archives/TV-03-Internalisation-CoT.ipynb")
+        )
+        assert kind == "archive"

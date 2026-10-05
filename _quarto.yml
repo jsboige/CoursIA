@@ -1910,6 +1910,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-09-SK-Multi-Agents-Lean-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-10-LeanDojo.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-10b-LeanDojo-v2-Pantograph-Lean-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11-TorchLean.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11b-TorchLean-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb"
