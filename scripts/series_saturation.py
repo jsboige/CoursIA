@@ -38,9 +38,20 @@ import json
 import re
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any
 
 from gh_payload_cache import PayloadCache, cache_key
+
+# Le fetcher par **tranches de dates** (`ci/`, meme depot). Ce module
+# reproduisait a la main la classe de defaut que ce fichier resout : un
+# `--search` unique passe par l'API de recherche, qui plafonne le jeu de
+# resultats, et la troncature emporte les plus **anciennes** -- exactement les
+# livraisons qu'une fenetre longue existe pour voir (#19209). Le helper
+# retrecit une tranche saturee et **leve** plutot que de rendre un corpus
+# tronque. Import par chemin de dossier, comme `variation_adjacency_guard.py`.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "ci"))
+from fetch_merged_prs_since import fetch as fetch_merged_window  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 
@@ -58,9 +69,9 @@ DEFAULT_WINDOW_DAYS = 14
 # fenetre doit etre nettement plus longue qu'un tour complet de la file :
 # avec ~100 grains/jour et ~500 issues ouvertes, un tour fait ~5 j, et
 # une lane a regime lent (10-20 grains/jour) complete un tour en 25-50 j.
-# 90 j couvrent les deux regimes. Le plafond `MERGED_FETCH_LIMIT = 400`
-# borne le corpus de toute facon -- si la fenetre depasse 400 PRs, le
-# tapis sert avec ce qui rentre, comme la volee ponderee aujourd'hui.
+# 90 j couvrent les deux regimes. Le corpus n'est PAS borne par la fenetre :
+# il est ramene par tranches de dates (#19209), donc une fenetre longue rend
+# bien tout ce qui a ete merge dessus.
 BELT_WINDOW_DAYS = 90
 
 # Amortissement plus mordant que celui par issue : une zone qui a deja recu
@@ -72,8 +83,15 @@ SERIES_SCALE_DEFAULT = 2.0
 NEW_NB_MIN_ADDITIONS = 200
 
 # Plafond du `gh pr list` de la fenetre mergee : l'atteindre tronque le
-# corpus, et `measure_delivery` doit pouvoir le signaler.
+# corpus, et `measure_delivery` doit pouvoir le signaler. Depuis #19209 ce
+# plafond ne s'applique plus au FETCH (qui est decoupe par tranches de dates) :
+# il reste la borne de reference publiee dans le verdict.
 MERGED_FETCH_LIMIT = 400
+
+# Champs demandes aux PRs mergees. `files` est necessaire au tapis
+# (`family_of` en derive la zone d'atterrissage) et c'est le champ le plus
+# cher : il est demande une fois, pas par tranche supplementaire.
+MERGED_FIELDS = "number,title,body,files,mergedAt"
 
 _PARENT_RE = re.compile(
     r"(?:enfant\s+de|fille\s+de|sous-t\w+\s+de|part\s+of"
@@ -195,25 +213,25 @@ def fetch_merged(
     filtre est un faux silencieux.
     """
     now = now or dt.datetime.now(dt.timezone.utc)
-    stamp = (now - dt.timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S+00:00")
-    command = [
-        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
-        "--limit", str(MERGED_FETCH_LIMIT), "--search", "merged:>=" + stamp,
-        "--json", "number,title,body,files,mergedAt",
-    ]
+    start = (now - dt.timedelta(days=days)).date()
+    # Cle de cache : elle DOIT changer avec la methode de fetch. Les payloads
+    # deja en cache ont ete ramenes par l'appel unique plafonne ; les rejouer
+    # rendrait le corpus tronque que ce changement supprime (#19209).
     identity = [
         "gh", "pr", "list", "--repo", REPO, "--state", "merged",
-        "--limit", str(MERGED_FETCH_LIMIT), "--window-days", str(days),
-        "--json", "number,title,body,files,mergedAt",
+        "--sliced-days", str(days),
+        "--json", MERGED_FIELDS,
     ]
 
     def fetch_raw() -> list[dict]:
-        raw = subprocess.run(
-            command,
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            check=True, timeout=300,
-        ).stdout
-        return json.loads(raw)
+        # Tranches de dates plutot qu'un `--search` unique : le corpus rendu
+        # atteint le cutoff au lieu de s'arreter au plafond de l'API de
+        # recherche, qui emportait les livraisons les plus anciennes (#19209).
+        # Une tranche indecoupable LEVE -- jamais un corpus partiel qui aurait
+        # l'air complet.
+        return fetch_merged_window(
+            since=start.isoformat(), fields=MERGED_FIELDS, today=now.date(),
+        )
 
     try:
         cache_err = None
@@ -245,7 +263,11 @@ def fetch_merged(
             ]
         return prs, cache_err
     except (subprocess.CalledProcessError, json.JSONDecodeError,
-            subprocess.TimeoutExpired, OSError) as exc:
+            subprocess.TimeoutExpired, OSError, RuntimeError) as exc:
+        # `RuntimeError` vient du fetcher par tranches : une tranche
+        # indecoupable refuse de rendre un corpus partiel. On rend l'ERREUR
+        # (corpus vide + message), jamais un corpus tronque qui aurait l'air
+        # complet -- c'est l'acceptance 3 de #19209.
         return [], "{}: {}".format(type(exc).__name__, exc)
 
 

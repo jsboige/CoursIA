@@ -289,6 +289,7 @@ from series_saturation import (  # noqa: E402
     cited_issues,
     delivery_factor,
     fetch_merged,
+    fetch_merged_window,
     fetch_series_visits,
     last_delivery_per_issue,
     measure_delivery,
@@ -865,6 +866,12 @@ def fetch_pool(
 # en 3 jours : #11601 a recu 22 PRs reparties sur 8 cellules (lane x jour), et
 # 6 de ces 8 cellules etaient DANS les clous. Aucun garde ne pouvait le voir.
 VISITS_WINDOW_DAYS = 1
+
+# Champs demandes pour compter les visites : `cited_issues` ne lit que le corps
+# et le titre, le tri ne lit que `mergedAt`. `files` n'est PAS demande ici --
+# c'est le champ le plus cher, et le compteur de visites n'en fait rien (#19209,
+# ou le jeu de champs est mesure : 111 s pour le corpus de 90 j sans `files`).
+VISITS_FIELDS = "number,title,body,mergedAt"
 # Echelle de l'amortissement. Diviseur = 1 + log2(1 + vus / VISITS_SCALE) :
 # 0 vu -> intact, 4 vus -> poids /2, 10 vus -> /2.6, 22 vus -> /3.1. Doux a 1
 # vu (/1.3 : une PR du jour sur un sujet est du travail normal, pas une veine),
@@ -921,12 +928,6 @@ def fetch_visits(
     pechees. Cle de tri != cle de filtre est un faux silencieux.
     """
     cutoff = NOW - dt.timedelta(days=days)
-    stamp = cutoff.strftime("%Y-%m-%dT%H:%M:%S+00:00")
-    command = [
-        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
-        "--limit", "400", "--search", f"merged:>={stamp}",
-        "--json", "number,title,body,mergedAt",
-    ]
     identity = [
         "gh", "pr", "list", "--repo", REPO, "--state", "merged",
         "--limit", "400", "--window-days", str(days),
@@ -934,12 +935,16 @@ def fetch_visits(
     ]
 
     def fetch_raw() -> list[dict]:
-        raw = subprocess.run(
-            command,
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            check=True, timeout=60,
-        ).stdout
-        return json.loads(raw)
+        # Tranches de dates, comme `series_saturation.fetch_merged` (#19209) :
+        # l'unique `--search` plafonne, et la troncature emporte les livraisons
+        # les plus ANCIENNES -- donc les visites qu'une fenetre de 30 j existe
+        # pour compter. Une tranche indecoupable LEVE : jamais un compteur
+        # partiel presente comme complet.
+        return fetch_merged_window(
+            since=cutoff.date().isoformat(),
+            fields=VISITS_FIELDS,
+            today=NOW.date(),
+        )
 
     try:
         prs = _cached_payload(
@@ -952,7 +957,11 @@ def fetch_visits(
             cache_status=cache_status,
         )
     except (subprocess.CalledProcessError, json.JSONDecodeError,
-            subprocess.TimeoutExpired, OSError) as exc:
+            subprocess.TimeoutExpired, OSError, RuntimeError) as exc:
+        # `RuntimeError` : une tranche indecoupable refuse de rendre un corpus
+        # partiel. On rend un compteur VIDE + l'erreur -- l'appelant doit dire
+        # que l'affluence n'a pas ete mesuree, jamais laisser un zero de mesure
+        # se lire comme un zero d'affluence (#19209).
         return {}, f"{type(exc).__name__}: {exc}"
 
     cache_entry = (cache_status or {}).get(cache_name) or {}
