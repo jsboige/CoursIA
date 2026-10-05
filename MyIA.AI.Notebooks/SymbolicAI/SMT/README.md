@@ -76,6 +76,42 @@ Le saut **SAT → SMT** : plutôt que d'encoder un problème en variables boolé
 - [Z3 Prover (upstream)](https://github.com/Z3Prover/z3) — le solveur SMT lui-même
 - [Z3.Linq (endjin)](https://github.com/endjin/Z3.Linq) — le binding C# déclaratif
 
+## Fondements bibliographiques
+
+Cette série ne se réduit pas à Z3 : elle s'appuie sur un **arc de recherche autour des automates symboliques** (SFA) et de la résolution de contraintes regex étendues, dont Z3 (via la théorie des chaînes et le SMT-LIB regex) est un point d'application. L'arc est constitué en grande partie par Margus Veanes et collaborateurs (Microsoft Research) entre 2010 et 2025, et alimente deux sous-séries de ce répertoire : [`Automata/`](Automata/) (la **lib vendored en source** par Microsoft Research, point d'arrivée opérationnel de l'arc sur le binding .NET) et [`Resharp/`](Resharp/) (l'arrivée 2025 RE-sharp, en cours d'intégration ; coquille de dépôt en attendant la décision d'accueil — voir ci-dessous).
+
+### Arc de recherche (chemins GDrive, jamais copiés dans le dépôt)
+
+| Année | Papier | Statut lecture worker | Ancre typique dans le dépôt |
+|-------|--------|----------------------|-----------------------------|
+| 2010 | Veanes, Bjørner, de Moura, *Symbolic Automata Constraint Solving* (CAV) | lisible PyMuPDF 2026-10-05, 15 pages | fondement théorique de `Automata/` ; `Search-10` |
+| 2010 | Veanes, de Halleux, Tillmann, *Rex — Symbolic Regular Expression Explorer* (ICST) | fichier absent de la biblio (cf `ls "G:\Mon Drive\MyIA\IA\Bibliographie IA\Automata\"`) | `Search-10` (exploration interactive) |
+| 2013 | Veanes, *Applications of Symbolic Finite Automata* (CIAA) | lisible 2026-10-05, 8 pages | panorama applications, `Sudoku-13` |
+| 2020 | Turonova, Holik, Lengal, Saarikivi, Veanes, Vojnar, *Regex Matching with Counting-Set Automata* (OOPSLA) | PDF corrompu (taille disque non-nulle, 0 page extractible) | `Automata/` (Counting-Set automata) |
+| 2021 | D'Antoni, Veanes, *Automata Modulo Theories* (CACM) | PDF corrompu | théorie générale, `Automata/` |
+| 2021 | Stanford, Veanes, Bjørner, *Symbolic Boolean Derivatives for Extended Regex Constraints* (PLDI) | lisible 2026-10-05, 16 pages | `Lean-14`, `Lean-14b` (dérivées booléennes) |
+| 2024 | Zhuchko, Veanes, Ebner, *Lean Formalization of Extended Regex Matching with Lookarounds* (CPP) | PDF corrompu | pont direct `Lean-14b` / `Automata/` (formalisation Lean) |
+| 2025 | Veanes et al, *RE-sharp — High-Performance Derivative-Based Regex Matching* (POPL) | PDF corrompu | `Resharp/` (point d'arrivée 2025) |
+| 2025 | Veanes, Ball, Ebner, Zhuchko, *Symbolic Automata: ω-Regularity Modulo Theories* (POPL) | lisible 2026-10-05, 32 pages | `Automata/`, perspective ω-régularité |
+
+Socle théorique en amont : Mohri 1997 (*Finite-State Transducers in Language and Speech Processing*, PDF corrompu) et le collectif Tree Automata 2008 (*TATA*, théorie générale).
+
+**Avertissement — défaut biblio au 2026-10-05** : 4 des 9 papiers Veanes de l'arc ont un PDF structurellement corrompu sur la machine worker po-2026 (taille disque non-nulle, 0 page extractible par PyMuPDF). Le fichier Rex 2010 (ICST) est absent de la biblio. Les ancres qui dépendent de ces papiers sont marquées `a_confirmer` dans le dépôt tant qu'une copie lisible n'est pas réacquise sur le disque GDrive. Issue de suivi à ouvrir par le mainteneur (hors périmètre worker — c'est un geste bibliothèque, pas un geste de code). Les ancres vérifiées firsthand (4/9 : Bjørner 2010, Veanes 2013, Stanford 2021, Veanes 2025) sont les seules affirmées sans réserve dans les cellules `## References` ajoutées par cette PR.
+
+### Cross-références curriculaires
+
+L'arc SFA est mis en œuvre dans le dépôt sous **trois angles complémentaires**, qui se répondent :
+
+- **Exploration** — `Search/Part1-Foundations/Search-10-SymbolicAutomata{-CSharp}.ipynb` : exploration interactive d'un automate symbolique (papier Rex 2010, à confirmer).
+- **Solve** — `Sudoku/Sudoku-13-SymbolicAutomata-{CSharp,Python}.ipynb` : utilisation d'un SFA pour résoudre un cas pédagogique (Veanes 2013 *Applications*, vérifié).
+- **Witness generation** — `SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb` : génération de témoins à partir d'un automate (lien avec `Automata/`).
+
+Le pont **théorie ↔ exécution certifiée** passe par `SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb` et `Lean-14b-Finiteness-Lean-Companion.ipynb`, qui rejouent les dérivées booléennes de Stanford/Veanes/Bjørner 2021 (PLDI, vérifié) et le pont vers la formalisation Lean 4 de Zhuchko/Veanes/Ebner 2024 (CPP, à confirmer).
+
+### Décision sur `Resharp/`
+
+Le dossier `Resharp/` porte un **package compilé** RE-sharp (3 DLLs : `Resharp.dll`, `Resharp.Runtime.dll`, `FSharp.Core.dll`) référencé par 8 fichiers du dépôt (Config/Settings.cs, Config/SkiaUtils.cs, Sudoku/Sudoku-13-SymbolicAutomata-{CSharp,Python}.ipynb, etc.). RE-sharp (POPL 2025, Veanes et al) est le point d'arrivée opérationnel de l'arc SFA et mérite un notebook d'accueil dédié ; le PDF n'étant pas lisible sur la machine worker au 2026-10-05 (corrompu), la **décision** consignée dans cette PR est : **garder `Resharp/` en place, ajouter un README narratif** (voir [`Resharp/README.md`](Resharp/README.md)) qui documente l'état en attente, l'action à ouvrir par le mainteneur (réacquisition PDF + notebook d'accueil), et la raison pour laquelle un retrait brutal est impossible (anti-régression §D : les DLLs sont consommées par 8 fichiers).
+
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
