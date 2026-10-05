@@ -164,6 +164,48 @@ def test_capture_hook_ne_modifie_pas_la_sortie():
     assert torch.allclose(cap.hidden, out[0])
 
 
+# --- ResidCapture : capture du residu ABLATE quand le clamp est actif --------
+
+def test_resid_capture_sans_clamp_capture_le_residu_entrant():
+    # Sans clamp, le contrat est inchange : le residu enregistre est l'entree.
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    cap = mod.ResidCapture(sae=_fake_sae(), clamp_ids=[], clamp_scale=1.0)
+    out = torch.randn(1, 6, 8)
+    ret = cap(None, None, out)
+    assert ret is out
+    assert torch.allclose(cap.hidden, out[0].to(torch.float32), atol=1e-6)
+
+
+def test_resid_capture_avec_clamp_capture_le_residu_ablate():
+    # Le residu enregistre est celui du modele ablate (h - alpha*delta), pas
+    # l'etat entrant. Capturer avant le clamp rendait le clamp same-layer
+    # invisible dans la trace -- les traces "clampees" sortaient
+    # byte-identiques aux intactes (mesure Gate 24 #5635 : 0/134950 valeurs
+    # differentes), donc Gates 22-23 mesuraient le modele intact.
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    sae = _fake_sae(seed=5)
+    ids = [1, 4, 7]
+    cap = mod.ResidCapture(sae=sae, clamp_ids=ids, clamp_scale=1.0)
+    out = torch.randn(1, 9, 8)
+    ret = cap(None, None, out)
+    h = out[0].to(torch.float32)
+    expected = _expected_clamp(h, sae, ids, 1.0)
+    assert not torch.allclose(cap.hidden, h, atol=1e-6)     # le clamp est visible
+    assert torch.allclose(cap.hidden, expected, atol=1e-5)  # et exact
+    assert torch.allclose(ret[0].to(torch.float32), expected, atol=1e-5)
+
+
+def test_resid_capture_clamp_exige_w_dec():
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    sae = _fake_sae()
+    sae["W_dec"] = None
+    with pytest.raises(SystemExit):
+        mod.ResidCapture(sae=sae, clamp_ids=[1], clamp_scale=1.0)
+
+
 # --- random_panel_control : controle permute du panel (phase 6) -------------
 
 def test_random_panel_meme_taille_hors_panel():
