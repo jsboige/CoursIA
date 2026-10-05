@@ -216,7 +216,6 @@ Cette série est née **Python d'abord** pour son cœur pédagogique (recherche,
 | Sous-série | Cœur pédagogique | Langage | Correspondance dans l'autre langage |
 |-----------|-----------|---------|-------------------------------------|
 | [Part1-Foundations](Part1-Foundations/) | 23 (Search-1 à Search-11, Search-2b, Search-2c, Search-03b à Search-03e, Search-09b à Search-09c, Search-11c, Search-11d, Search-12a, Search-13a) | Python (22) + C# natif (Search-2c QuikGraph) | **15 jumeaux C#** (Search-1 à 11, 2b, 03b/03c/03d) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
-| [Discrepancy](Discrepancy/) | 2 (Discrepancy-01 Beck–Fiala, Discrepancy-02 Komlós) | Python + Lean 4 (kernel `lean4-wsl`) | Compagnons formels du lake [`discrepancy_lean`](discrepancy_lean/README.md) |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET | **9 binômes complets** — marathon achevé, voir [bilan final](#marathon-epic-4956) |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 35 (25 à la racine + 10 dans `MGS-vs-mealpy/`) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
 | [Applications](Applications/) | 20 cas cœur (App-1 à App-20) + galerie de compagnons (volumes au catalogue) | Python + .NET | **20 binômes complets** + compagnons et audits |
@@ -337,6 +336,8 @@ Search/
 │   ├── Search-09-LinearProgramming.ipynb
 │   ├── Search-09b-SpuriousMinima.ipynb
 │   ├── Search-09c-CombinatorialDiscrepancy.ipynb
+│   ├── Search-09d-BeckFiala-Lean-Python.ipynb   # Beck–Fiala : pont Python vers le lake, sans Lean au runtime
+│   ├── Search-09e-Komlos-Lean.ipynb             # Compagnon formel : lake discrepancy_lean via kernel lean4-wsl (#13868)
 │   ├── Search-10-SymbolicAutomata.ipynb
 │   ├── Search-11-Metaheuristics.ipynb
 │   ├── Search-11c-Empirical-Algorithm-Selection.ipynb
@@ -346,9 +347,6 @@ Search/
 │   ├── Search-03d-WeightedAstar.ipynb
 │   ├── Search-12a-Composer-Regards.ipynb       # Composer des regards : play forward x coplay backward, corridor optimal f*=g+d (op 12 #12204)
 │   └── Search-13a-Traverser-Murs-Certifies.ipynb   # Traverser un mur : chemin minimal certifié (potentiels, 0-1 BFS, flot max/coupure min) sur pavage hexagonal (op 13 #12204)
-├── Discrepancy/                           # Sous-série formelle (ouverte par #17816, arbitrage Search #17802) : compagnons Lean du lake discrepancy_lean
-│   ├── Search-09d-BeckFiala-Lean-Python.ipynb   # Beck–Fiala : pont Python vers le lake, sans Lean au runtime
-│   └── Search-09e-Komlos-Lean.ipynb             # Compagnon formel : lake discrepancy_lean via kernel lean4-wsl (#13868)
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (18 notebooks : 9 Python + 9 jumeaux C#)
 │   ├── CSP-1-Fundamentals.ipynb
