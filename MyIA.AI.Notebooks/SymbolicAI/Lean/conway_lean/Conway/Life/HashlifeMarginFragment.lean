@@ -2402,6 +2402,42 @@ theorem evolve_union_mem (t : Nat) (g₁ g₂ : Grid)
   simp only [← isAlive_true_iff_mem]
   rw [evolve_union t g₁ g₂ hsep q, Bool.or_eq_true]
 
+/-- **Tranche 14b, maillon 1 — boîte-coque de la trajectoire de l'union.**
+    Sous séparation stricte `2·T < d` des supports initiaux (donc de tout
+    instant `s ≤ T` par monotonie), si chaque trajectoire de partie vit dans
+    sa boîte (`h₁`, `h₂` — forme conjonction composante, le langage du
+    corridor), la trajectoire de l'union vit dans la boîte-coque : bornes
+    inférieures au `min`, bornes supérieures au `max`, composante par
+    composante. C'est le premier maillon du transfert de capture annoncé par
+    la docstring de `evolve_union_mem` : l'adhérence de l'union se lit sur
+    celles des parties (`evolve_union_mem` à chaque instant `s ≤ T`) ; le
+    maillon 2 — la géométrie niveau/fenêtre de la reconstruction de l'union,
+    qui reliera cette coque au prédicat `jumpCapturedF` via
+    `jumpCapturedF_of_dilation` — reste à établir. -/
+theorem evolve_union_hull_box (T : Nat) (g₁ g₂ : Grid)
+    (a₁ b₁ a₂ b₂ : Int × Int)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 2 * T < chebDist p r)
+    (h₁ : ∀ s ≤ T, ∀ p, isAlive (evolve s g₁) p = true →
+      a₁.1 ≤ p.1 ∧ p.1 < b₁.1 ∧ a₁.2 ≤ p.2 ∧ p.2 < b₁.2)
+    (h₂ : ∀ s ≤ T, ∀ p, isAlive (evolve s g₂) p = true →
+      a₂.1 ≤ p.1 ∧ p.1 < b₂.1 ∧ a₂.2 ≤ p.2 ∧ p.2 < b₂.2)
+    (s : Nat) (hs : s ≤ T) (p : Int × Int)
+    (hp : isAlive (evolve s (g₁ ++ g₂)) p = true) :
+    min a₁.1 a₂.1 ≤ p.1 ∧ p.1 < max b₁.1 b₂.1 ∧
+      min a₁.2 a₂.2 ≤ p.2 ∧ p.2 < max b₁.2 b₂.2 := by
+  have hseps : ∀ q ∈ g₁, ∀ r ∈ g₂, 2 * s < chebDist q r := by
+    intro q hq r hr
+    have hb := hsep q hq r hr
+    omega
+  obtain hA | hB := (evolve_union_mem s g₁ g₂ hseps p).mp
+    ((isAlive_true_iff_mem _ p).mp hp)
+  · obtain ⟨c1, c2, c3, c4⟩ := h₁ s hs p ((isAlive_true_iff_mem _ p).mpr hA)
+    exact ⟨(min_le_left _ _).trans c1, c2.trans_le (le_max_left _ _),
+      (min_le_left _ _).trans c3, c4.trans_le (le_max_left _ _)⟩
+  · obtain ⟨c1, c2, c3, c4⟩ := h₂ s hs p ((isAlive_true_iff_mem _ p).mpr hB)
+    exact ⟨(min_le_right _ _).trans c1, c2.trans_le (le_max_right _ _),
+      (min_le_right _ _).trans c3, c4.trans_le (le_max_right _ _)⟩
+
 /-! ## Synthèse — le fragment est non vide et l'énoncé-cadre est honnête
 
 `supportInMargin` est décidable et témoigné sur le bestiaire (ci-dessus). L'énoncé-cadre
