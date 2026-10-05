@@ -843,6 +843,75 @@ def test_latest_claim_stamp_read_failure_is_none(monkeypatch):
     assert pig.latest_claim_stamp(1) is None
 
 
+def test_delivered_info_stamp_matches_the_three_marker_forms():
+    """#19295 : les trois formes employees par les lanes (mesure #17263
+    c.754) sont chacune une visite -- la plus recente gagne."""
+    comments = [
+        _claim("2026-09-13T09:17:03Z",
+               "[INFO] candidate-delivered #13112 -- substance deja livree"),
+        _claim("2026-10-02T12:57:29Z",
+               "[INFO candidate-delivered] lane myia-po-2026:CoursIA-2"),
+        _claim("2026-10-05T06:58:26Z",
+               "[INFO] lane myia-po-2026:CoursIA-2 -- 2026-10-05 -- "
+               "candidate-delivered, preuve firsthand"),
+    ]
+    assert pig.delivered_info_stamp(comments) == "2026-10-05T06:58:26Z"
+
+
+def test_delivered_info_stamp_ignores_discursive_mentions():
+    """Une mention du mecanisme, ancre au milieu d'une phrase, n'est pas
+    l'en-tete d'un marqueur (garde anti-FP de `_DELIVERED_MARKER_RE`)."""
+    comments = [
+        _claim("2026-10-05T00:00:00Z",
+               "sans [INFO] candidate-delivered dans ce fil, rien ne compte"),
+        _claim("2026-10-05T01:00:00Z",
+               "Le [INFO] absent : aucune livraison a signaler ici."),
+    ]
+    assert pig.delivered_info_stamp(comments) is None
+
+
+def test_latest_claim_stamp_takes_max_of_claim_and_delivered(monkeypatch):
+    """Le probe de tete lit claim ET livraison dans la meme charge de
+    commentaires : une seule requete (#19295, cout borne), le max gagne."""
+    payload = {"comments": [
+        _claim("2026-10-01T00:00:00Z",
+               "[CLAIMED] lane myia-po-2026:CoursIA -- #13107"),
+        _claim("2026-10-05T06:58:26Z",
+               "[INFO] candidate-delivered -- #13112 merged 2026-08-26"),
+    ]}
+    calls = []
+
+    class _R:
+        stdout = json.dumps(payload)
+
+    def fake_run(*a, **k):
+        calls.append(a)
+        return _R()
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    assert pig.latest_claim_stamp(13107) == "2026-10-05T06:58:26Z"
+    assert len(calls) == 1
+
+
+def test_belt_delivered_info_moves_served_issue_behind_13107_scenario():
+    """Acceptance #19295 en bout en bout : #13107 servie par un
+    `[INFO] candidate-delivered` recule derriere une issue jamais servie,
+    au meme titre qu'un claim -- le tapis cesse de la reservir comme
+    grain neuf."""
+    palomar = _make_item(13107, age_days=90, idle=1,
+                         last="2026-08-26T19:38:55Z",
+                         created="2026-08-26T12:17:31Z")
+    fresh = _make_item(19088, age_days=30, idle=1, last=None,
+                       created="2026-09-10T00:00:00Z")
+    pool = [palomar, fresh]
+    pig.settle_belt_head(
+        pool, need=2,
+        probe={13107: "2026-10-05T06:58:26Z"}.get,
+        max_probes=10)
+    assert [it["number"] for it in pool][0] == 19088
+    assert palomar["last_claim_stamp"] == "2026-10-05T06:58:26Z"
+
+
 def test_belt_merge_only_flag_is_accepted(monkeypatch, capsys):
     _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
     rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt",
