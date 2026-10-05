@@ -2,16 +2,16 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory-SocialChoice
-pedagogical_count: 10
-breakdown: SocialChoice=10
-maturity: BETA=8, ALPHA=2
+pedagogical_count: 11
+breakdown: SocialChoice=11
+maturity: BETA=9, ALPHA=2
 -->
 
 La théorie du choix social étudie comment agréger des préférences individuelles en une décision collective. Ses résultats les plus célèbres sont des **théorèmes d'impossibilité** : le théorème d'Arrow (1951) montre qu'aucune règle de vote ne peut satisfaire simultanément des axiomes "raisonnables" (Pareto, IIA, non-dictature) dès que 3 alternatives ou plus sont en jeu ; le théorème de Sen (1970) démontre un conflit fondamental entre liberté individuelle et efficacité collective.
 
-Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats sous sept angles complémentaires : la simulation Python des axiomes, la formalisation en Lean 4 (preuve formelle), les méthodes de vote concrète, l'encodage SAT/Z3 pour la vérification mécanique, la manipulation stratégique comme témoin (Gibbard-Satterthwaite), l'agrégation coopérative par la décomposition de Möbius — dividendes de Harsanyi, poids contre pouvoir (SC-06) — et les élections de comité par approbation, où le core existe toujours (quotas Hare/Droop, certificats de paiement, SC-07).
+Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats sous huit angles complémentaires : la simulation Python des axiomes, la formalisation en Lean 4 (preuve formelle), les méthodes de vote concrète, l'encodage SAT/Z3 pour la vérification mécanique, la manipulation stratégique comme témoin (Gibbard-Satterthwaite), l'agrégation coopérative par la décomposition de Möbius — dividendes de Harsanyi, poids contre pouvoir (SC-06), les élections de comité par approbation, où le core existe toujours (quotas Hare/Droop, certificats de paiement, SC-07), et les trois règles NP-dures (Kemeny, ranked pairs, Dodgson) confrontées à l'optimisation Z3 (SC-08).
 
-**À qui s'adresse cette série** : étudiants en économie, informatique, sciences politiques et mathématiques appliquées. Les notebooks 01, 03, 06 et 07 ne nécessitent que Python (le 06 se contente de la bibliothèque standard). Les notebooks 02 (Lean) et 04 (SAT/Z3) requièrent des installations supplémentaires décrites dans le [README parent](../README.md). Aucun prérequis en théorie du choix social : les concepts sont introduits progressivement.
+**À qui s'adresse cette série** : étudiants en économie, informatique, sciences politiques et mathématiques appliquées. Les notebooks 01, 03, 06, 07 et 08 ne nécessitent que Python (le 06 se contente de la bibliothèque standard). Les notebooks 02 (Lean), 04 et 08 (SAT/Z3) requièrent des installations supplémentaires décrites dans le [README parent](../README.md). Aucun prérequis en théorie du choix social : les concepts sont introduits progressivement.
 
 > **Hommage — Richard E. Stearns (1936-2026).** Le tout premier article publié par Richard E.
 > Stearns — alors étudiant à Carleton College — portait sur le **paradoxe d'Arrow** (*The American
@@ -38,8 +38,9 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-05 | [05-Gibbard-Satterthwaite](05-Gibbard-Satterthwaite.ipynb) | Gibbard-Satterthwaite sans mystère : la manipulation comme témoin (ex-GT-22, re-slot #12375) | 30 min | COMPLET |
 | SC-06 | [06-Mobius-Aggregation-Pouvoir-Manipulation](06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Möbius sur le treillis des coalitions : dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée (See #12204) | 40 min | COMPLET |
 | SC-07 | [07-Committees-Core](07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas Hare/Droop, certificats de paiement et règle de l'entropie harmonique (arXiv 2609.11912, See #16848) | 40 min | COMPLET |
+| SC-08 | [08-Kemeny-RankedPairs-Dodgson](08-Kemeny-RankedPairs-Dodgson.ipynb) | Kemeny, Ranked Pairs et Dodgson : les trois règles NP-dures du choix social, formulation Z3 du Kemeny winner comme optimisation SMT (Handbook of Computational Social Choice ch. 2 §2.4, ch. 4 §4.1-4.2, ch. 5 §5.3, See #19263) | 35 min | COMPLET |
 
-**Durée totale** : ~5h15
+**Durée totale** : ~5h50
 
 > **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) et [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ces trois jumeaux C# sont comptés dans le `pedagogical_count` de la sous-série mais arborent le statut `PARITÉ` dans le tableau ci-dessus pour les distinguer des sept notebooks d'origine dont ils sont les retranscriptions .NET.
 
@@ -65,6 +66,7 @@ flowchart TD
     Result -.- Relax["Cartographie des relaxations<br/>électeur médian (Downs) · Split Cycle<br/>chaque paire d'axiomes réalisable"]
     Result -.- Coop["Face coopérative (SC-06)<br/>Möbius · dividendes de Harsanyi<br/>v = Σ m(T)·u_T · poids ≠ pouvoir"]
     Coop -.- Comm["Comités par approbation (SC-07)<br/>core toujours non vide<br/>quotas Hare/Droop · certificats"]
+    Comm -.- NP["Règles NP-dures (SC-08)<br/>Kemeny · Ranked Pairs · Dodgson<br/>Z3 Optimize · Kemeny score m! permutations"]
 ```
 
 ### Étape 1 : Le théorème d'Arrow par la simulation (SC-01, 45 min)
@@ -129,10 +131,14 @@ Le notebook SC-06 ouvre la face coopérative de l'agrégation : ce que l'on agr�
 
 Le notebook SC-07 change d'objet une seconde fois : on n'élit plus un gagnant unique mais un **comité** de k sièges, sur des bulletins d'approbation. La notion de stabilité s'y transfère sous la forme du **core** : un comité W est dans le core si aucun groupe de votants (suffisamment gros au regard du **quota Hare**, confronté au **quota Droop**) ne peut lui opposer un ensemble de candidats qu'il approuverait unanimement. Le résultat central distillé — le théorème d'existence de Becker, Greger & Peters (arXiv 2609.11912) — est mis en machine sur le fil rouge n=4 votants, k=2 sièges : le comité favori des majoritaires n'est PAS dans le core (coalition bloquante exhibée), le comité proportionnel l'est, et un **certificat de paiement** (paiements + réserve) l'atteste. Trois règles concrètes — AV, PAV, règle de l'entropie harmonique — sont ensuite comparées sur 25 instances : leur taux de retour dans le core distingue ce qu'une règle simple garantit de ce qu'exige la stabilité.
 
+### Étape 8 : Kemeny, Ranked Pairs et Dodgson — les règles NP-dures (SC-08, 35 min)
+
+Le notebook SC-08 complète la ferme des règles de vote présentée dans SC-03 par les **trois règles canoniques où la détermination du gagnant est NP-dure** : Kemeny (Kemeny 1959, caractérisation Young-Levenglick 1978), Ranked Pairs (Tideman 1987, polynomial, Condorcet-cohérent) et Dodgson (Dodgson 1876, NP-dur Caragiannis-Hemaspaandra 2020). La **section Z3** transpose l'encodage SAT/Z3 de SC-04 à l'optimisation Kemeny : `z3.Optimize` + variables entières de rang + `Sum(score_terms)` résout l'optimum Kemeny en quelques millisecondes, ce que l'énumération brute-force `m!` ne peut pas faire au-delà de m=8. C'est le **problème non trivial** de l'axe 2 (#3801) : la structure NP-dure du winner determination appelle le solveur et fait valoir sa capacité distinctive.
+
 ## Prerequisites
 
-- Python 3.10+ avec numpy, matplotlib, networkx (notebooks 01, 03, 04, 05, 07 — le 07 ajoute scipy) ; bibliothèque standard suffisante pour le 06
-- pysat et z3-solver pour le notebook 04
+- Python 3.10+ avec numpy, matplotlib, networkx (notebooks 01, 03, 04, 05, 07, 08 — le 07 ajoute scipy) ; bibliothèque standard suffisante pour le 06
+- pysat et z3-solver pour les notebooks 04 et 08
 - Lean 4 + kernel WSL pour le notebook 02 (cf [README parent](../README.md))
 
 ## Installation
@@ -171,6 +177,9 @@ Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; D
 | **Split Cycle** | Règle de vote la plus fine satisfaisant Condorcet + acyclicité |
 | **Core d'une élection de comité** | Comité qu'aucune coalition (au quota Hare/Droop) ne peut bloquer par un ensemble unanimement approuvé — toujours non vide (SC-07) |
 | **Certificat de paiement** | Preuve constructive d'appartenance au core : paiements aux votants + réserve, budget égal au coût du comité (SC-07) |
+| **Kemeny score** | Pour un classement σ, nombre d'accords pairwise avec le profil P (le Kemeny winner maximise ce score) — détermination du winner **NP-dure** par énumération des m! permutations (SC-08) |
+| **Ranked Pairs** | Règle de Tideman 1987 : trier les duels pairwise par marge décroissante, verrouiller les paires tant qu'on ne crée pas de cycle — polynomial, Condorcet-cohérent (SC-08) |
+| **Dodgson score** | Pour un candidat x, nombre minimal d'inversions de paires adjacentes dans les bulletins individuels pour faire de x le vainqueur de Condorcet — winner determination **NP-dur** (Caragiannis-Hemaspaandra 2020, SC-08) |
 
 > Les six figures de cette sous-série sont intégrées ci-dessus dans le **Parcours d'apprentissage**, chacune adjacente à l'étape qui traite le concept qu'elle illustre (Arrow en Étape 1 ; Condorcet, Sen, électeur médian et Downs en Étape 2 ; agrégation SAT/Z3 en Étape 4). Provenance, dimensions et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
@@ -195,15 +204,16 @@ Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; D
 | Gibbard (1973) / Satterthwaite (1975) | Théorème de manipulabilité (SC-05) |
 | Harsanyi (1959) ; Curiel, *Cooperative Game Theory and Applications* (1997) | Dividendes de coalition, jeux de vote pondérés (SC-06) |
 | Becker, Greger & Peters, "Existence of the Core in Approval-Based Committee Elections" (arXiv 2609.11912) | Core non vide, quotas Hare/Droop, certificats (SC-07) |
+| Brandt, Conitzer, Endriss, Lang, Procaccia, *Handbook of Computational Social Choice* (2016, ISBN 978-1-107-06043-2) | Kemeny, ranked pairs, Dodgson, NP-dureté winner determination (SC-08) |
 
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
 
-Cette sous-série vous a fait saisir pourquoi le **choix social** est l'un des résultats intellectuels les plus troublants de la théorie de la décision : il existe des limites *mathématiquement prouvées* à ce qu'une collectivité peut décider de manière cohérente. L'arc pédagogique repose sur **sept angles complémentaires** — cinq braqués sur les mêmes résultats d'impossibilité, les deux derniers changeant d'objet : la face coopérative puis l'élection de comité :
+Cette sous-série vous a fait saisir pourquoi le **choix social** est l'un des résultats intellectuels les plus troublants de la théorie de la décision : il existe des limites *mathématiquement prouvées* à ce qu'une collectivité peut décider de manière cohérente. L'arc pédagogique repose sur **huit angles complémentaires** — cinq braqués sur les mêmes résultats d'impossibilité, les trois derniers changeant d'objet : la face coopérative, l'élection de comité, puis la **complexité NP-dure** de la détermination du winner :
 
 - **Le résultat fondateur** — le théorème d'Arrow (1951) : aucune règle d'agrégation ne peut, simultanément et dès que 3 alternatives sont en jeu, satisfaire Pareto, l'indépendance vis-à-vis des alternatives non pertinentes (IIA) et la non-dictature. Le théorème de Sen (1970) étend le constat : liberté minimale et efficacité parétienne sont incompatibles. Ces théorèmes ne disent pas « la démocratie est impossible » ; ils délimitent précisément *quels compromis* toute règle de vote doit accepter.
-- **La quadruple convergence, délibérément juxtaposée** — un même énoncé est attaqué par cinq méthodes, chacune révélant une facette différente. La **simulation Python** (SC-01) teste les axiomes sur des règles concrètes et suit la preuve de Geanakoplos (lemme extrémal, pivot, dictateur partiel) ; la **preuve formelle Lean 4** (SC-02) couvre l'infinité des cas que la simulation ne peut qu'échantillonner, avec 0 sorry sur Arrow et Sen ; les **méthodes de vote** (SC-03) incarnent les paradoxes dans des règles réelles (Condorcet, Borda, Copeland, électeur médian de Downs) ; la **vérification mécanique SAT/Z3** (SC-04) fait émerger l'impossibilité comme un résultat UNSAT des solveurs ; la **manipulation stratégique** (SC-05) exhibe le témoin d'exploitation que Gibbard-Satterthwaite promet. Le sixième angle change d'objet : la **décomposition de Möbius** (SC-06) agrège des valeurs de coalition — dividendes de Harsanyi, poids contre pouvoir — et réatteste la loi manipulation sur un électorat pondéré. Le septième change d'échelle : les **élections de comité** (SC-07) élisent k sièges sur bulletins d'approbation, et là où aucune règle unique n'est stable, le **core** existe toujours — quoté Hare/Droop, certifié par paiements. Comprendre les sept, c'est comprendre qu'une *même vérité* se laisse approcher par l'expérience, la déduction formelle, la pratique électorale, la recherche combinatoire, le comportement stratégique, la coopération décomposée et la représentation proportionnelle.
+- **La quadruple convergence, délibérément juxtaposée** — un même énoncé est attaqué par cinq méthodes, chacune révélant une facette différente. La **simulation Python** (SC-01) teste les axiomes sur des règles concrètes et suit la preuve de Geanakoplos (lemme extrémal, pivot, dictateur partiel) ; la **preuve formelle Lean 4** (SC-02) couvre l'infinité des cas que la simulation ne peut qu'échantillonner, avec 0 sorry sur Arrow et Sen ; les **méthodes de vote** (SC-03) incarnent les paradoxes dans des règles réelles (Condorcet, Borda, Copeland, électeur médian de Downs) ; la **vérification mécanique SAT/Z3** (SC-04) fait émerger l'impossibilité comme un résultat UNSAT des solveurs ; la **manipulation stratégique** (SC-05) exhibe le témoin d'exploitation que Gibbard-Satterthwaite promet. Le sixième angle change d'objet : la **décomposition de Möbius** (SC-06) agrège des valeurs de coalition — dividendes de Harsanyi, poids contre pouvoir — et réatteste la loi manipulation sur un électorat pondéré. Le septième change d'échelle : les **élections de comité** (SC-07) élisent k sièges sur bulletins d'approbation, et là où aucune règle unique n'est stable, le **core** existe toujours — quoté Hare/Droop, certifié par paiements. Comprendre les huit, c'est comprendre qu'une *même vérité* se laisse approcher par l'expérience, la déduction formelle, la pratique électorale, la recherche combinatoire, le comportement stratégique, la coopération décomposée, la représentation proportionnelle et l'analyse de complexité.
 - **L'instrument** — les outils qui opérationnalisent chaque angle : numpy/matplotlib pour la simulation, Lean 4 + la librairie SocialChoiceLean de Peters (12 règles de vote, Gibbard-Satterthwaite, Split Cycle, Duggan-Schwartz) pour la preuve, PySAT (clauses CNF) et Z3 (rangs entiers SMT) pour la vérification mécanique. Chaque outil éclaire un aspect que les autres laissent dans l'ombre : la simulation donne l'intuition, Lean donne la certitude, SAT/Z3 donnent la vérification automatique.
 - **La finesse** — qu'un théorème d'impossibilité n'est pas une impasse mais une **cartographie des relaxations possibles**. SC-04 montre que chaque *paire* d'axiomes d'Arrow est réalisable ; Split Cycle (Holliday & Pacuit) satisfait Condorcet sans tomber dans l'acyclicité totale ; le théorème de l'électeur médian (Downs) restaure l'existence d'un vainqueur sous l'hypothèse d'unimodalité. La leçon pratique : on ne contourne pas Arrow, on *choisit* quel axiome relâcher selon le contexte.
 
