@@ -82,7 +82,6 @@ SERIES_SCALE_DEFAULT = 2.0
 # pedagogique reel fait des milliers de lignes, un fichier de config non.
 NEW_NB_MIN_ADDITIONS = 200
 
-
 # Champs demandes aux PRs mergees. `files` est necessaire au tapis
 # (`family_of` en derive la zone d'atterrissage) et c'est le champ le plus
 # cher : il est demande une fois, pas par tranche supplementaire.
