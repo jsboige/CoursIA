@@ -12,7 +12,8 @@ repository by default).
     python -m paper_harness.ibkr_cycle --send
 
 Exit codes: 0 cycle done, 2 refused (not a paper account / inconsistent
-configuration), 3 connection failed.
+configuration), 3 connection failed, 4 an order was never acknowledged (the
+cycle stopped there; fills booked before it stay in the ledger).
 """
 from __future__ import annotations
 
@@ -28,6 +29,7 @@ from .ibkr_broker import (
     UCITS_LINES,
     IBKRBroker,
     LedgerError,
+    OrderNotAcknowledgedError,
     SleeveLedger,
     us_signal_closes,
 )
@@ -98,6 +100,9 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as exc:
             print(f"refused: {exc}")
             return 2
+        except OrderNotAcknowledgedError as exc:
+            print(f"order failed: {exc}")
+            return 4
 
         print(f"{'DRY RUN' if report.dry_run else 'SENT'}  sleeve={args.sleeve}  gate={report.gate}")
         print(f"sleeve equity {report.equity:,.2f} {ledger.currency}  cash {ledger.cash:,.2f}")
