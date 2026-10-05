@@ -361,18 +361,23 @@ def test_canonical_transition_python_31011_to_3133_accepted():
     assert ckd.accepted_canonical_transition(a, b) is True
 
 
-def test_canonical_transition_python_38_to_313_accepted():
-    # Positif 4 : 3.8 -> 3.13 (le saut le plus large) est couvert.
+def test_canonical_transition_python_38_to_313_refused():
+    # Negatif 5 : 3.8 -> 3.13 reste rouge par construction. Le saut 3.8
+    # n'est pas couvert par la table (serie ICT pinnée <3.10, pyphi==1.2.0,
+    # mesure #19160 ; sans scope par chemin/série, ajouter la transition
+    # ferait passer vert un carnet ICT rejoue par erreur -- reserve Hermes
+    # PRR_kwDOH2Odns8AAAABQnPfEQ, 2026-10-05). Les 2 rescapes 3.8.10/3.9.0
+    # sont traites au cas par cas.
     a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
-    assert ckd.accepted_canonical_transition(a, b) is True
+    assert ckd.accepted_canonical_transition(a, b) is False
 
 
-def test_canonical_transition_python_39_to_313_accepted():
-    # Positif 5 : 3.9 -> 3.13 est couvert.
+def test_canonical_transition_python_39_to_313_refused():
+    # Negatif 6 : 3.9 -> 3.13 reste rouge (meme raison que 3.8).
     a = {"language_version": "3.9.0", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
-    assert ckd.accepted_canonical_transition(a, b) is True
+    assert ckd.accepted_canonical_transition(a, b) is False
 
 
 def test_canonical_transition_python_313_to_311_refused():
