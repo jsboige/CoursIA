@@ -476,6 +476,40 @@ def build_patterns(forms_list: list[RefForms]) -> list[tuple[RefForms, re.Patter
     return out
 
 
+def _same_name_detection(
+        forms_list: list[RefForms]) -> list[tuple[re.Pattern[str], str]]:
+    """Motifs de DETECTION des citations du nom nu pour les renommages qui
+    changent de dossier SANS changer de nom (#19173, reserve Hermes sur la
+    review de #19154).
+
+    Sur une telle paire, la paire filename est un no-op (``o == n``, eliminee
+    de build_patterns) : aucune reecriture du nom n'est possible ni
+    necessaire. Mais ces citations sont des segments de chemin dont le
+    prefixe devient faux apres le deplacement, et sans motif le scan les
+    comptait a zero -- le porteur etait saute AVANT la garde
+    ``_path_context_hits`` : ni reecrit, ni refuse, 404 silencieux (mesure :
+    un deplacement Part1-Foundations -> Part2-structures a nom conserve).
+
+    Ces motifs n'allument QUE le refus (signatures (a) et (b) de la garde) :
+    un hit de detection seul n'entre jamais dans ``rewrites`` ni dans
+    ``mixed_refused`` -- le nom ne change pas, il n'y a rien a ecrire. Meme
+    litteraux que la garde : filename et forme urlencodee -- le stem nu
+    n'est jamais un segment de chemin.
+    """
+    out: list[tuple[re.Pattern[str], str]] = []
+    for f in forms_list:
+        old_dir = f.old_rel.rsplit("/", 1)[0] if "/" in f.old_rel else ""
+        new_dir = f.new_rel.rsplit("/", 1)[0] if "/" in f.new_rel else ""
+        if old_dir == new_dir:
+            continue  # meme dossier : aucun prefixe ne devient faux
+        if f.filename != _new_stem(f) + ".ipynb":
+            continue  # le nom change : les motifs de reecriture le couvrent
+        for literal in {f.filename, f.urlencoded}:
+            out.append((re.compile(r"(?<![\w-])" + re.escape(literal)
+                                   + r"(?![\w-])"), literal))
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Scan des referents
 # ---------------------------------------------------------------------------
@@ -556,14 +590,22 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
     dir_change = [f for f in forms_list
                   if (f.old_rel.rsplit("/", 1)[0] if "/" in f.old_rel else "")
                   != (f.new_rel.rsplit("/", 1)[0] if "/" in f.new_rel else "")]
+    # #19173 : motifs de detection des citations du nom nu pour les paires
+    # meme-nom changeant de dossier -- sans eux, raw_total = 0 sur ces
+    # porteurs et la garde ci-dessous ne les voyait jamais.
+    det_pats = _same_name_detection(forms_list)
     # Prefiltre combine : une alternation des litteraux, SANS frontieres. Tout
     # match d'un pattern individuel (litteral + frontieres) contient le
     # litteral, donc ce filtre ne peut jamais exclure un fichier porteurl --
     # il ne fait qu'epargner les ~200 scans par cellule sur les fichiers sans
     # aucune occurrence (mesure : dry-run GameTheory, 11 759 fichiers tracks,
-    # >70 min a 100 % CPU sur le chemin non prefiltre).
-    _pre = re.compile("|".join(sorted({re.escape(old) for _, _, old, _ in pats},
-                                      key=len, reverse=True)))
+    # >70 min a 100 % CPU sur le chemin non prefiltre). Les litteraux de
+    # detection y entrent aussi : sinon le prefiltre exclurait exactement les
+    # porteurs que la detection doit allumer.
+    _pre = re.compile("|".join(sorted(
+        {re.escape(old) for _, _, old, _ in pats}
+        | {re.escape(lit) for _, lit in det_pats},
+        key=len, reverse=True)))
     ls = subprocess.run(["git", "ls-files"], cwd=repo, capture_output=True,
                         text=True, encoding="utf-8", errors="replace", check=True)
     for line in ls.stdout.splitlines():
@@ -584,8 +626,13 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
             raw = p.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
+        pre_hit = _pre.search(raw) is not None
         raw_total = (sum(len(pat.findall(raw)) for _, pat, _, _ in pats)
-                     if _pre.search(raw) else 0)
+                     if pre_hit else 0)
+        # #19173 : hits de detection (nom nu d'un renommage meme-nom changeant
+        # de dossier) -- ils ne reecrivent rien, ils allument la garde.
+        det_total = (sum(len(pat.findall(raw)) for pat, _ in det_pats)
+                     if det_pats and pre_hit else 0)
 
         # #19154 : un referent en CONTEXTE DE CHEMIN ne peut pas etre reecrit
         # sans recalculer son prefixe -- chose que l'organe ne fait pas. Deux
@@ -596,8 +643,11 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
         # Search-11d en nu). Refus fail-closed, passage manuel. Le fichier
         # RENOMME lui-meme est exclu de (b) : ses auto-mentions (prose,
         # metadata.papermill) ne sont pas des liens de navigation.
+        # #19173 : la garde s'allume aussi sur un hit de DETECTION seul --
+        # c'est le seul canal par lequel un citateur du nom nu d'un renommage
+        # meme-nom changeant de dossier est vu.
         path_hits = (_path_context_hits(raw, dir_change, rel)
-                     if raw_total else [])
+                     if raw_total or det_total else [])
         cdir = rel.rsplit("/", 1)[0] if "/" in rel else ""
         same_dir = [f for f in dir_change
                     if rel != f.old_rel
@@ -605,7 +655,7 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
                                  if "/" in f.old_rel else "")]
 
         if not rel.endswith(".ipynb"):
-            if raw_total and (path_hits or same_dir):
+            if (raw_total or det_total) and (path_hits or same_dir):
                 plan.path_refused.append(
                     (rel, path_hits[0] if path_hits else same_dir[0].filename))
             elif raw_total:
@@ -635,7 +685,7 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
                             for _, pat, _, _ in pats)
             if blob_hits < joined_hits:
                 plan.fragmented.append((rel, i))
-        if not raw_total:
+        if not raw_total and not det_total:
             continue
 
         # Comptage par surface : markdown + metadata top-niveau = REESCRIRE ;
@@ -657,9 +707,12 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
             # Fail-closed I2/I3 : le fichier melange surfaces reescrivables et
             # protegees, ou porte une occurrence hors zones connues.
             plan.mixed_refused.append(rel)
-        elif allowed and (path_hits or same_dir):
+        elif (allowed or det_total) and (path_hits or same_dir):
             # #19154 : surfaces saines mais lien relatif dont le prefixe
             # deviendrait faux -- refuser plutot que committer un 404.
+            # #19173 : un hit de detection seul suffit -- les citations du nom
+            # nu d'un renommage meme-nom changeant de dossier ne donnent aucun
+            # coup de reecriture (allowed = 0), le refus est pourtant du.
             plan.path_refused.append(
                 (rel, path_hits[0] if path_hits else same_dir[0].filename))
         elif allowed:

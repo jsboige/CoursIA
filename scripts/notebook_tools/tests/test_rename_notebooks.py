@@ -517,6 +517,121 @@ class TestRelativeLinkDirChangeRefused(unittest.TestCase):
             self.assertEqual(plan.path_refused, [])
 
 
+class TestSameNameDirChangeDetected(unittest.TestCase):
+    """#19173 (reserve Hermes sur la review de #19154) : renommage qui change
+    de dossier SANS changer de nom. La paire filename y est un no-op,
+    eliminee de build_patterns : les citations du nom nu donnaient
+    raw_total = 0 et le porteur etait saute AVANT la garde -- ni reecrit, ni
+    refuse, 404 silencieux apres le deplacement. Les motifs de detection
+    restaurent le refus fail-closed sans fabriquer de reecriture identique :
+    un hit de detection seul n'entre jamais dans rewrites ni mixed_refused."""
+
+    OLD = "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11d-Alpha.ipynb"
+    NEW = "MyIA.AI.Notebooks/Search/Part2-Structures/Search-11d-Alpha.ipynb"
+
+    def _forms(self):
+        return [rn.ref_forms(self.OLD, self.NEW)]
+
+    def _repo(self, repo, extra_writes):
+        _init_repo(repo)
+        _write_nb(repo, self.OLD, _nb([_md("Cible du deplacement.")]))
+        for rel, body in extra_writes:
+            if rel.endswith(".ipynb"):
+                _write_nb(repo, rel, body)
+            else:
+                _write(repo, rel, body)
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "carriers")
+
+    def test_neighbor_bare_link_is_refused_not_skipped(self):
+        """Le cas mesure par Hermes : un voisin du dossier d'origine lie le
+        nom NU -- resolu contre ce dossier, faux apres deplacement. Avant le
+        fix, ce porteur n'apparaissait nulle part dans le plan."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12-Beta.ipynb"
+            nb = _nb([_md("Precedent : [Alpha](Search-11d-Alpha.ipynb).")])
+            self._repo(repo, [(rel, nb)])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn((rel, "Search-11d-Alpha.ipynb"), plan.path_refused)
+            self.assertNotIn(rel, plan.rewrites)
+
+    def test_neighbor_code_cell_citation_is_refused(self):
+        """Cellule de code du dossier d'origine citant le nom nu : la
+        detection l'allume aussi -- refus et passage manuel plutot qu'un
+        open() qui 404 au prochain passage kernel."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12-Beta.ipynb"
+            nb = _nb([_code('cible = "Search-11d-Alpha.ipynb"')])
+            self._repo(repo, [(rel, nb)])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn((rel, "Search-11d-Alpha.ipynb"), plan.path_refused)
+            self.assertNotIn(rel, plan.rewrites)
+            self.assertNotIn(rel, plan.mixed_refused)
+
+    def test_relative_prefix_link_far_away_is_refused(self):
+        """Signature (a) sous meme-nom : le lien `../Part1-Foundations/...`
+        depuis un tiers dossier -- le prefixe devient faux, refus."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part3-Applications/notes.md"
+            link = "[Alpha](../Part1-Foundations/Search-11d-Alpha.ipynb)"
+            self._repo(repo, [(rel, f"Voir {link}.\n")])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn((rel, "Search-11d-Alpha.ipynb"), plan.path_refused)
+            self.assertNotIn(rel, plan.rewrites)
+
+    def test_full_repo_root_path_still_rewritten(self):
+        """La forme COMPLETE embarque son prefixe : remplacee en bloc (le
+        dossier change), elle reste juste -- pas un hit, une reecriture."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/README.md"
+            self._repo(repo, [(rel, f"chapitres:\n  - {self.OLD}\n")])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn(rel, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+            rn.rewrite_file(repo / rel, self._forms())
+            self.assertIn(self.NEW, (repo / rel).read_text(encoding="utf-8"))
+
+    def test_bare_prose_mention_far_away_is_not_touched(self):
+        """Frontiere de la detection : prose hors contexte de chemin, porteur
+        hors du dossier d'origine -- le nom ne change pas, la mention reste
+        vraie. Ni reecriture identique, ni sur-refus."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            rel = "MyIA.AI.Notebooks/Search/Part3-Applications/notes.md"
+            self._repo(repo, [(rel, "Le carnet Search-11d-Alpha.ipynb "
+                                    "introduisait la borne.\n")])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertNotIn(rel, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+
+    def test_renamed_file_itself_is_not_self_refused(self):
+        """Le fichier deplace reste exclu des signatures : ses auto-mentions
+        ne sont pas des liens de navigation."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            nb = _nb([_md("Ce carnet Search-11d-Alpha.ipynb demenage.")])
+            self._repo(repo, [(self.OLD, nb)])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertEqual(plan.path_refused, [])
+            self.assertNotIn(self.OLD, plan.mixed_refused)
+
+
 class TestTwoCommitDiscipline(unittest.TestCase):
     """Invariant I6 : commit 1 = git mv purs (R100), commit 2 = referents.
     Le registre est ecrit ; les organes tournent en fin de passe (stubbes ici :
