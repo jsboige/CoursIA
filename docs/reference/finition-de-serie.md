@@ -35,6 +35,10 @@ Comptage de départ (2026-10-05, 1492 carnets hors `_archive` et `_output`, sur 
 
 Une section d'objectifs manque dans 5 READMEs de série sur 14 : Complexity, Compression, NLP, RL, SymbolicAI.
 
+Ce comptage de départ inclut les titres voisins : « Points clés à retenir », « Ce qu'il faut retenir », et les titres numérotés comme « ## 7. Pour aller plus loin ». Ce sont les formes les plus fréquentes du dépôt. Une série n'est **finie** qu'avec les titres du tableau ci-dessus. La mesure distingue donc un bloc **présent sous un titre voisin**, qu'il suffit de renommer, d'un bloc **absent**, qu'il faut écrire. Ce partage sert à répartir le travail.
+
+Le chemin principal d'une série est l'ensemble de ses carnets, sous-dossiers compris. En sont exclus `_archive`, `_output`, ainsi que les dossiers que le README de la série écarte nommément. Il ne se définit pas par une profondeur de dossier.
+
 La mesure par série est portée par un script dédié (à écrire, cf #19297), qui permet de déclarer une série finie sans recompter à la main.
 
 ## Ordre de passage
