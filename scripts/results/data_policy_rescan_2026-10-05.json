@@ -1,0 +1,96 @@
+{
+  "rescan_date": "2026-10-05",
+  "issue": "#13742",
+  "lane": "myia-po-2023:CoursIA-2",
+  "objet": "Re-mesure first-hand des 7 cas 'à re-vérifier' du ticket #13742 (corps initial daté 2026-08-31, mesures agent non vérifiées). La passe croise chaque cas avec la politique 4 catégories §1 + critère §2 de docs/data-policy.md (livrée #14321 par po-2024, c.868).",
+  "method": "git cat-file -s origin/main:<path> + git ls-tree -r origin/main --name-only (mesure exacte des blobs commités). Croisement avec docs/notebook-metadata/DATASET_REGISTRY.md (SHA256 vérifié c.798) et .gitignore (racine + .gitignore locaux). Lecture cellule-par-cellule des 5 notebooks ICT consommateurs de traces/.",
+  "covered_source": "origin/main @ HEAD (47ebded6d), docs/data-policy.md (livrée #14321), docs/notebook-metadata/DATASET_REGISTRY.md, scripts/datasets/README.md",
+  "totals": {
+    "cas_mesures": 7,
+    "taille_originelle_rapportee_Mo": 528.8,
+    "taille_reelle_Mo": 48.79,
+    "facteur_surestimation_median": 6.0,
+    "cas_pretendant_git_rm": 0,
+    "cas_exception_native_documented": 3,
+    "cas_curated_keep": 1,
+    "cas_submodule_hors_data_policy": 1,
+    "cas_clos_obsolete": 1,
+    "cas_exception_documentation_a_completer": 2,
+    "cas_traces_exception_documentation_a_rediger": 1
+  },
+  "cas": [
+    {
+      "id": "libs_native_EProver",
+      "chemin_original": "SymbolicAI/libs/native/ + ext_tools/EProver/",
+      "taille_rapportee": "~47 Mo",
+      "taille_reelle_bytes": 22713819,
+      "taille_reelle_MiB": 21.66,
+      "categorie": "EXCEPTION NATIVE — KEEP (§2.5)",
+      "verdict": "Aucune action de retrait. Negations gitignore déjà en place (lignes 552 et 566). Dédup ArgA fantôme — vérifié: pas de fichier dupliqué, 6 fichiers racine seulement.",
+      "ticket_dedie_requis": false
+    },
+    {
+      "id": "z3linq_submodule",
+      "chemin_original": "SymbolicAI/SMT/Z3.Linq/",
+      "taille_rapportee": "33 Mo",
+      "taille_reelle_bytes": null,
+      "taille_reelle_MiB": null,
+      "categorie": "Sous-module vendored (submodule-maintenance R7)",
+      "verdict": "Pas une ligne data-policy. Suivi coordinateur via submodule-maintenance R7 (cf docs/reference/submodule-maintenance-detail.md).",
+      "ticket_dedie_requis": false
+    },
+    {
+      "id": "qc_python_pt",
+      "chemin_original": "QuantConnect/Python/*.pt",
+      "taille_rapportee": "~25 Mo",
+      "taille_reelle_bytes": null,
+      "taille_reelle_MiB": null,
+      "categorie": "CHECKPOINT — LFS EXISTANT",
+      "verdict": "5 fichiers whitelistés individuellement (racine .gitignore l.938-942 : transformer_checkpoint, transformer_multiasset_model, best_ppo_model, best_dqn_model, lstm_attention_sp50). Aucun cas non-whitelisté.",
+      "ticket_dedie_requis": false
+    },
+    {
+      "id": "qc_datasets",
+      "chemin_original": "QuantConnect/datasets/{forex,panier,crypto,binance,yfinance_cache}",
+      "taille_rapportee": "157 Mo / 11 trackés",
+      "taille_reelle_bytes": 11315445,
+      "taille_reelle_MiB": 10.79,
+      "categorie": "CURÉE — KEEP (§1)",
+      "verdict": "14 fichiers en réalité (corps initial sous-comptait). Tous SHA256 vérifiés c.798 + CC-BY-4.0 dans DATASET_REGISTRY.md. Pattern gitignore déjà en place (QuantConnect/.gitignore:97 !datasets/yfinance/crypto_panier/). Fetch scripts déjà sur main (stitch_crypto, download_yfinance, etc.). Aucune action de retrait.",
+      "ticket_dedie_requis": false
+    },
+    {
+      "id": "ict_traces",
+      "chemin_original": "IIT/ICT-Series/traces/",
+      "taille_rapportee": "5.9 Mo (17 .npz)",
+      "taille_reelle_bytes": 25996487,
+      "taille_reelle_MiB": 24.79,
+      "categorie": "TRACE — KEEP avec exception §2.3 (perte prive un notebook d'exécution)",
+      "verdict": "88 fichiers .npz + 2 PNG, consommés par 5 notebooks (ICT-21, ICT-22, ICT-45, ICT-Synthese + helpers Python). Pas de cellule de régénération tenant en ≤200 lignes (modèles 9B-70B, GPU-2 uniquement). Le seul geste dû = documentation d'exception : créer IIT/ICT-Series/traces/README.md qui nomme les 5 consommateurs et la politique §2.3.",
+      "ticket_dedie_requis": true,
+      "ticket_dedie_sujet": "IIT/ICT-Series/traces/README.md — documentation de l'exception §2.3 (5 consommateurs, pas de régénération GPU-2 en ≤200 lignes, garde upstream #5101/#5643)"
+    },
+    {
+      "id": "galois_lean_M23Lean4Web",
+      "chemin_original": "galois_lean/M23Lean4Web.lean",
+      "taille_rapportee": "320 Ko",
+      "taille_reelle_bytes": 319438,
+      "taille_reelle_MiB": 0.305,
+      "categorie": "SOURCE — KEEP (§1 curée / §2.5 vendored)",
+      "verdict": "Chemin exact: MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/Galois/M23Lean4Web.lean (corps original obsolète). 8115 lignes = bundle Lean4Web M22+M23 (card_M23 = 10200960, IsSimpleGroup M23). Apache-2.0, vendored 2026-08-11 (upstream KitaKen1/finite-simple-groups-lean), gate po-2026 c.1039 sous v4.32.1. Aucune action de retrait. Le ticket doit corriger son chemin obsolète.",
+      "ticket_dedie_requis": false
+    },
+    {
+      "id": "partner_course_lean_workspace",
+      "chemin_original": "partner-course-quant-trading/lean-workspace/data",
+      "taille_rapportée": "242 Mo",
+      "taille_reelle_bytes": 0,
+      "taille_reelle_MiB": 0,
+      "categorie": "(N/A)",
+      "verdict": "Aucun fichier tracké dans MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/lean-workspace/ (git ls-tree vide). obj/ et bin/ déjà gitignorés (racine .gitignore l.773-774 + 777-778). La ligne est close obsolète.",
+      "ticket_dedie_requis": false
+    }
+  ],
+  "verdict_global": "7 cas sur 7 clos first-hand par la mesure. 0 cas requérant git rm unilateral. Le seul geste de cohérence sortant de cette passe est (a) corriger le corps de #13742 (PR en cours via cette section §3.3 de docs/data-policy.md), (b) PR dédiée pour traces/README.md (cas ict_traces). Toutes les autres lignes sont closes obsolètes ou déjà arbitrées.",
+  "limite": "La mesure lit origin/main (commit 47ebded6d). Les artefacts locaux non commités (sorties de run, datasets téléchargés manquant, cache .cache_temoins) ne sont pas comptés — c'est le contrat de la politique §1: 'fichier versionné'. Les lecteurs qui veulent comparer leur working tree à cette mesure doivent lancer `git cat-file -s HEAD:<path>` (mode indexée) sur les mêmes chemins."
+}
