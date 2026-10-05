@@ -46,6 +46,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -127,7 +128,8 @@ class Verdict:
 
     @property
     def failed(self) -> bool:
-        return self.status in {"MUET", "NO-OP-ACTIF", "SANS-REFERENCE", "AMBIGU"}
+        return self.status in {"MUET", "NO-OP-ACTIF", "SANS-REFERENCE",
+                               "AMBIGU", "ILLISIBLE"}
 
     def line(self) -> str:
         ref = self.reference.name if self.reference else "-"
@@ -173,7 +175,7 @@ class Report:
         n_muet = sum(1 for v in self.verdicts if v.status == "MUET")
         n_noop = sum(1 for v in self.verdicts if v.status == "NO-OP-ACTIF")
         n_bad = sum(1 for v in self.verdicts
-                    if v.status in {"SANS-REFERENCE", "AMBIGU"})
+                    if v.status in {"SANS-REFERENCE", "AMBIGU", "ILLISIBLE"})
         return (f"{len(self.verdicts)} bras juges : "
                 f"{len(self.verdicts) - len(self.failures)} conformes, "
                 f"{n_muet} muets (clamp invisible), {n_noop} actifs a alpha=0, "
@@ -187,7 +189,12 @@ def read_meta(path: Path) -> dict | None:
             if "__meta__" not in z.files:
                 return None
             return json.loads(str(z["__meta__"]))
-    except (OSError, ValueError, KeyError, json.JSONDecodeError):
+    # Un .npz corrompu ou tronque leve zipfile.BadZipFile ou EOFError, qui ne
+    # derivent d'aucune des quatre premieres : sans elles, un seul fichier
+    # abime ferait avorter l'audit entier au lieu d'etre declare sans
+    # metadonnee et de laisser les autres bras juges.
+    except (OSError, ValueError, KeyError, json.JSONDecodeError,
+            zipfile.BadZipFile, EOFError):
         return None
 
 
@@ -205,16 +212,23 @@ def differing_values(a: Path, b: Path) -> tuple[int, int]:
         diff = total = 0
         for key in keys:
             x = za[key]
+            if not isinstance(x, np.ndarray):
+                # Un membre pourri arrive en bytes bruts sous numpy 2.x (sans
+                # lever a l'acces) : ce ne sont pas des valeurs comparables.
+                raise ValueError(f"membre {key!r} illisible dans {a.name}")
             total += int(x.size)
             if key not in zb.files:
+                # Tableau present seulement dans la reference : il manque au bras.
                 diff += int(x.size)
                 continue
             y = zb[key]
+            if not isinstance(y, np.ndarray):
+                raise ValueError(f"membre {key!r} illisible dans {b.name}")
             if x.shape != y.shape:
                 diff += int(x.size)
                 continue
             diff += int(np.count_nonzero(x != y))
-        # Tableaux presents seulement dans la reference : ils manquent au bras.
+        # Tableaux presents seulement dans le bras : ils manquent a la reference.
         for key in zb.files:
             if key != "__meta__" and key not in za.files:
                 diff += int(zb[key].size)
@@ -244,7 +258,14 @@ def judge(trace: Trace, corpus: list[Trace],
                               "(model/sae_repo/layer/variant/seed/prompt_sets/"
                               "n_tokens_total)")
     ref = candidates[0]
-    diff, total = differing_values(ref.path, trace.path)
+    try:
+        diff, total = differing_values(ref.path, trace.path)
+    except (OSError, ValueError, zipfile.BadZipFile, EOFError) as exc:
+        # Archive presente mais membre illisible : le bras n'est pas jugeable,
+        # et c'est un echec declare -- jamais un traceback qui tuerait l'audit
+        # des autres bras.
+        return Verdict(trace, ref, status="ILLISIBLE",
+                       detail=f"archive illisible : {type(exc).__name__}")
     frac = (diff / total) if total else 0.0
     if trace.scale == 0.0:
         # No-op annonce : le hook sort avant de modifier le residual stream.
@@ -282,7 +303,7 @@ def main(argv: list[str] | None = None) -> int:
                    help=f"repertoire des traces (defaut : {DEFAULT_TRACES_DIR})")
     p.add_argument("--json", action="store_true", help="sortie JSON")
     p.add_argument("--noise-floor-frac", type=float, default=NOISE_FLOOR_FRAC,
-                   help="part de valeurs tolerée comme bruit flottant "
+                   help="part de valeurs toleree comme bruit flottant "
                         f"(defaut {NOISE_FLOOR_FRAC})")
     args = p.parse_args(argv)
 

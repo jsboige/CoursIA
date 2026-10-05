@@ -173,3 +173,46 @@ def test_the_cli_exits_zero_on_a_healthy_corpus(tmp_path):
 
 def test_a_missing_directory_is_a_named_failure(tmp_path):
     assert vct.main(["--traces-dir", str(tmp_path / "absent")]) == 2
+
+
+def _write_npz_with_corrupt_member(path, meta):
+    """Zip valide, ``__meta__`` lisible, membre de donnees pourri.
+
+    C'est l'exposition reelle de ``differing_values`` : ``np.load`` ouvre
+    l'archive (le zip est sain) et ``read_meta`` passe (``__meta__`` se lit),
+    mais l'acces du membre de donnees echoue au parse ``.npy``. On part donc
+    d'un npz valide et on corrompt le membre de donnees dans le zip.
+    """
+    import zipfile
+    _write(path, meta)
+    tmp = path.with_suffix(".tmp.npz")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w") as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename != "__meta__.npy":
+                data = b"corruption volontaire : pas un membre .npy"
+            zout.writestr(item.filename, data)
+    tmp.replace(path)
+    return path
+
+
+def test_a_corrupt_data_member_is_unjudgeable_not_a_crash(tmp_path):
+    """Un membre illisible rend le bras ILLISIBLE (echec declare), et l'audit
+    poursuit -- jamais un traceback qui tuerait le jugement des autres bras."""
+    _write(tmp_path / "ref.npz", _meta(clamp_ids=[], scale=1.0))
+    _write_npz_with_corrupt_member(tmp_path / "arm.npz", _meta(scale=1.0))
+    report = _run(tmp_path)
+    assert [v.status for v in report.verdicts] == ["ILLISIBLE"]
+    assert report.failures, "un bras illisible doit faire echouer le controle"
+    assert "archive illisible" in report.verdicts[0].detail
+
+
+def test_a_fully_corrupt_archive_is_without_metadata_not_a_crash(tmp_path):
+    """Un .npz corrompu des l'ouverture (pas un zip) est declare sans
+    metadonnee : l'audit juge les autres bras au lieu d'avorter en traceback."""
+    (tmp_path / "pourri.npz").write_bytes(b"pas un zip du tout")
+    _write(tmp_path / "ref.npz", _meta(clamp_ids=[], scale=1.0))
+    _write(tmp_path / "arm.npz", _meta(scale=1.0), values=(9.0, 2.0, 3.0))
+    report = _run(tmp_path)
+    assert [v.status for v in report.verdicts] == ["ok"]
+    assert "pourri.npz" in report.skipped
