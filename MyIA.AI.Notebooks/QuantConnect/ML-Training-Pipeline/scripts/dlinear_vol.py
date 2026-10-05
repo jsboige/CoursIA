@@ -919,6 +919,11 @@ def main() -> None:
           f"(out of {len(agg)} configs)")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    # newline="\n" + encoding : l'empreinte declaree par _write_cluster_manifest est
+    # calculee sur le texte normalise en LF (read_text normalise CRLF -> LF) ; les
+    # octets sur disque doivent etre ce texte-la, sinon le couple (bytes, sha256)
+    # du manifeste decrit deux jeux d'octets differents (issue #19104 ; meme
+    # correctif que m13_ms_har.py et merge_m13_partials.py).
     out_path.write_text(json.dumps({
         "rows": all_rows,
         "aggregated": agg,
@@ -934,7 +939,7 @@ def main() -> None:
             "debias": args.debias,
             "loss_fn": args.loss_fn,
         },
-    }, indent=2))
+    }, indent=2), encoding="utf-8", newline="\n")
     print(f"\n[done] {time.time() - t0:.1f}s -- wrote {out_path}")
     if args.manifest_out:
         _write_cluster_manifest(

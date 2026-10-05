@@ -257,11 +257,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-18d-Humour-Banc-Dur-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
@@ -322,6 +317,21 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python_en.ipynb",
+      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python_en.ipynb",
+      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python_en.ipynb",
+      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/03-Aspire-Observabilite.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire"
     },
@@ -338,11 +348,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/06-Aspire-GardeFous-Roslyn.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/07-Aspire-SemanticFleet-MultiConnector.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire"
     },
     {
@@ -1372,16 +1377,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12a-Composer-Regards.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part1-Foundations"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part1-Foundations"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part2-CSP"
     },
@@ -1593,16 +1588,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13c-CHSH-Landau-Saturation.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
     {
@@ -1837,6 +1822,11 @@
     },
     {
       "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/07-Aspire-SemanticFleet-MultiConnector.ipynb",
+      "series": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire"
+    },
+    {
+      "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/PostTraining"
     },
@@ -1859,11 +1849,6 @@
       "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part1-Foundations"
     },
     {
       "kind": "unreachable",
@@ -1929,7 +1914,7 @@
   "wrapped": [
     {
       "series": "MyIA.AI.Notebooks/Complexity",
-      "notebooks": 9
+      "notebooks": 10
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment",
@@ -1950,6 +1935,10 @@
     {
       "series": "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration",
       "notebooks": 4
+    },
+    {
+      "series": "MyIA.AI.Notebooks/GenAI/Image/05-History",
+      "notebooks": 3
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/Texte",

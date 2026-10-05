@@ -34,6 +34,18 @@ réalisables dans le profil *Local sobre*, à l'exception de `genai-rush.md` qui
 exige une clé OpenAI directe pour les étapes image et voix (deux endpoints non
 relayés par les tiers).
 
+Avant d'ouvrir le premier notebook d'un parcours, exécuter le préflight :
+
+```bash
+python scripts/notebook_tools/learner_preflight.py --parcours <local|dotnet|genai>
+```
+
+Le script vérifie la présence (jamais la valeur) de Python, Jupyter, des
+noyaux attendus, de .NET SDK, de Lean 4 sous WSL, du GPU NVIDIA et de
+Docker selon le profil, et liste pour chaque manque la commande de
+remédiation. Sortie humaine par défaut, JSON via `--json`. Code retour
+`0` = prêt, `1` = au moins un manque, `2` = profil inconnu.
+
 ## Vues du catalogue (par domaine)
 
 Cinq pages listent les notebooks par thème. Elles sont **régénérées
