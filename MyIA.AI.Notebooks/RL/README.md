@@ -33,43 +33,43 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [rl_1_intro_cartpole](rl_1_intro_cartpole.ipynb) | Introduction PPO, CartPole | 25-30 min |
-| 1b | [rl_1b_bitwise_logic_synthesis](rl_1b_bitwise_logic_synthesis.ipynb) | Synthèse logique d'un contrôleur CartPole : bitwise 4-règles — scellement observation→bits IEEE-754, contrôleur LQR de référence (taux de désaccord), PPO budget modeste, étude de rupture et ablation. Accrétion de rl_1 | 20-25 min |
-| 1c | [rl_1c_prolog_distillation](rl_1c_prolog_distillation.ipynb) | Distillation d'une politique RL en programme Prolog exécutable : teacher PPO from scratch (seed fixe), census exhaustif de T-bar, induction gloutonne type FOIL, liste de décision avec cuts, one-pass vs DAgger, SWI-Prolog réel journalisé. Accrétion de rl_1 | 45-60 min |
-| 2 | [rl_2_wrappers_sauvegarde_callbacks](rl_2_wrappers_sauvegarde_callbacks.ipynb) | Wrappers, sauvegarde, callbacks | 35-40 min |
-| 3 | [rl_3_experience_replay_her](rl_3_experience_replay_her.ipynb) | HER, goal-conditioned RL | 40-45 min |
-| 4 | [rl_4_multi_armed_bandits](rl_4_multi_armed_bandits.ipynb) | Bandits manchots, exploration vs exploitation, Thompson Sampling | 30-35 min |
-| 5 | [rl_5_mdp_dp_qlearning](rl_5_mdp_dp_qlearning.html) | MDP, Value/Policy Iteration, Q-Learning tabulaire | 45-50 min |
-| 6 | [rl_6_dqn_policy_gradient](rl_6_dqn_policy_gradient.ipynb) | DQN depuis zéro, REINFORCE | 50-55 min |
-| 6b | [rl_6b_actor_critic](rl_6b_actor_critic.html) | Actor-Critic (A2C) depuis zéro, advantage, entropy bonus | 45-50 min |
-| 6c | [rl_6c_ppo_from_scratch](rl_6c_ppo_from_scratch.html) | PPO depuis zéro, échantillonnage d'importance (ratios par epoch, ESS), clipped surrogate, GAE, comparaison A2C vs PPO | 45-50 min |
-| 6d | [rl_6d_sac_from_scratch](rl_6d_sac_from_scratch.html) | SAC depuis zéro, maximum entropy RL, twin Q-networks, auto-température | 45-50 min |
-| 6e | [rl_6e_grpo_from_scratch](rl_6e_grpo_from_scratch.html) | GRPO depuis zéro (DeepSeek-R1), avantage relatif intra-groupe (sans critic), clip PPO + KL vs référence, portefeuille synthétique multi-seed | 45-50 min |
-| 7 | [rl_7_multi_agent_rl](rl_7_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
-| 7b | [RL-7b-Climbing-Game](RL-7b-Climbing-Game.ipynb) | Sur-généralisation relative dans le Climbing Game coopératif : même agent tabulaire, IQL vs Hysteretic Q-learning, protocole multi-graines, IQM + intervalle bootstrap, ablation du pessimisme | ~45 min |
-| 8 | [rl_8_model_based_dyna_q](rl_8_model_based_dyna_q.html) | Model-based RL : Dyna-Q, Dyna-Q+, planification, rollouts | 45-50 min |
-| 9 | [rl_9_offline_rl](rl_9_offline_rl.html) | RL offline : Behavior Cloning, erreur d'extrapolation, BCQ-lite | 50-55 min |
-| 10 | [rl_10_reward_shaping](rl_10_reward_shaping.html) | Reward Shaping (Ng 1999), curriculum learning, pont RLHF | 45-50 min |
-| 11 | [rl_11_pomdp](rl_11_pomdp.html) | POMDP, Tiger Problem, belief tracking, Q-MDP | 45-50 min |
-| 12 | [rl_12_distributional_rl](rl_12_distributional_rl.ipynb) | RL distributionnel : C51 (Categorical DQN) depuis zéro, projection catégorielle, politique CVaR | 50-55 min |
-| 13 | [rl_13_curiosity_exploration](rl_13_curiosity_exploration.html) | Exploration par curiosité (RND), motivation intrinsèque, piège d'exploitation | 35-40 min |
-| 14 | [rl_14_hierarchical_rl](rl_14_hierarchical_rl.ipynb) | Hierarchical RL — l'Option framework de Sutton, Precup & Singh : abstraction temporelle, options `(I, π, β)`, gridworld quatre-pièces, crédit sur longue horizon | ~50 min |
-| 15 | [rl_15_grpo_group_relative_policy](rl_15_grpo_group_relative_policy.ipynb) | GRPO (Group Relative Policy Optimization) vs PPO sur CartPole-v1 — avantage relatif intra-groupe (sans critic) vs GAE bootstrapé, multi-seed 6 (0/1/7/42/99/123), Wilcoxon signed-rank + IC95% bootstrap. Prong B discrimination moteur. Sous-grain #13436 de l'EPIC #1454. **Verdict v3 (REPAIR c.644) : INCONCLUSIVE** (le claim initial v1 « GRPO BEATS PPO » souffrait de défauts done-mask + pad-mask — c.642 a corrigé en INCONCLUSIVE, puis c.644 a détecté 4 post-fix incohérences résolues : Wilcoxon n=4 inatteignable, verdict tri-state asymmétrique, hypothèse descriptive fausse réfutée, titre PR ré-aligné — verdict v3 INCONCLUSIVE maintenu, moyennes v3 = 299.36 vs 197.65, std = 55.26 vs 104.99) | 40-45 min |
-| 16 | [rl_16_dream_rsi](rl_16_dream_rsi.ipynb) | Dream-RSI (arXiv 2609.14858, preprint 14/09/2026) : exploration explicite **programmable** (politique = code), historique de découverte = simulateur-replay, **dreaming** = évaluation off-policy à coût zéro, boucle RSI avec incumbent (garantie non-régression replay-only) — monde jouet circle-packing stdlib (16 cercles), ablation replay brut vs guidance sémantique mesurée (3/2/7), chiffres du papier rapportés non canonisés. Distillation #16417 | 40-45 min |
+| 1 | [RL-01-Premiers-Pas-Stable-Baselines3-Python](RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb) | Introduction PPO, CartPole | 25-30 min |
+| 1b | [RL-01b-Synthese-Logique-Bitwise-Python](RL-01b-Synthese-Logique-Bitwise-Python.ipynb) | Synthèse logique d'un contrôleur CartPole : bitwise 4-règles — scellement observation→bits IEEE-754, contrôleur LQR de référence (taux de désaccord), PPO budget modeste, étude de rupture et ablation. Accrétion de RL-01 | 20-25 min |
+| 1c | [RL-01c-Distillation-Politique-Prolog-Python](RL-01c-Distillation-Politique-Prolog-Python.ipynb) | Distillation d'une politique RL en programme Prolog exécutable : teacher PPO from scratch (seed fixe), census exhaustif de T-bar, induction gloutonne type FOIL, liste de décision avec cuts, one-pass vs DAgger, SWI-Prolog réel journalisé. Accrétion de RL-01 | 45-60 min |
+| 2 | [RL-02-Wrappers-Sauvegarde-Callbacks-Python](RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb) | Wrappers, sauvegarde, callbacks | 35-40 min |
+| 3 | [RL-03-Experience-Replay-HER-Python](RL-03-Experience-Replay-HER-Python.ipynb) | HER, goal-conditioned RL | 40-45 min |
+| 4 | [RL-04-Bandits-Manchots-Python](RL-04-Bandits-Manchots-Python.ipynb) | Bandits manchots, exploration vs exploitation, Thompson Sampling | 30-35 min |
+| 5 | [RL-05-MDP-Programmation-Dynamique-Q-Learning-Python](RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.html) | MDP, Value/Policy Iteration, Q-Learning tabulaire | 45-50 min |
+| 6 | [RL-06-DQN-Policy-Gradient-Python](RL-06-DQN-Policy-Gradient-Python.ipynb) | DQN depuis zéro, REINFORCE | 50-55 min |
+| 6b | [RL-06b-Actor-Critic-Python](RL-06b-Actor-Critic-Python.html) | Actor-Critic (A2C) depuis zéro, advantage, entropy bonus | 45-50 min |
+| 6c | [RL-06c-PPO-Depuis-Zero-Python](RL-06c-PPO-Depuis-Zero-Python.html) | PPO depuis zéro, échantillonnage d'importance (ratios par epoch, ESS), clipped surrogate, GAE, comparaison A2C vs PPO | 45-50 min |
+| 6d | [RL-06d-SAC-Depuis-Zero-Python](RL-06d-SAC-Depuis-Zero-Python.html) | SAC depuis zéro, maximum entropy RL, twin Q-networks, auto-température | 45-50 min |
+| 6e | [RL-06e-GRPO-Depuis-Zero-Python](RL-06e-GRPO-Depuis-Zero-Python.html) | GRPO depuis zéro (DeepSeek-R1), avantage relatif intra-groupe (sans critic), clip PPO + KL vs référence, portefeuille synthétique multi-seed | 45-50 min |
+| 7 | [RL-07-Apprentissage-Multi-Agent-Python](RL-07-Apprentissage-Multi-Agent-Python.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
+| 7b | [RL-07b-Sur-Generalisation-Climbing-Game-Python](RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb) | Sur-généralisation relative dans le Climbing Game coopératif : même agent tabulaire, IQL vs Hysteretic Q-learning, protocole multi-graines, IQM + intervalle bootstrap, ablation du pessimisme | ~45 min |
+| 8 | [RL-08-Dyna-Q-Planification-Python](RL-08-Dyna-Q-Planification-Python.html) | Model-based RL : Dyna-Q, Dyna-Q+, planification, rollouts | 45-50 min |
+| 9 | [RL-09-RL-Offline-Behavior-Cloning-Python](RL-09-RL-Offline-Behavior-Cloning-Python.html) | RL offline : Behavior Cloning, erreur d'extrapolation, BCQ-lite | 50-55 min |
+| 10 | [RL-10-Reward-Shaping-Curriculum-Python](RL-10-Reward-Shaping-Curriculum-Python.html) | Reward Shaping (Ng 1999), curriculum learning, pont RLHF | 45-50 min |
+| 11 | [RL-11-POMDP-Croyances-Python](RL-11-POMDP-Croyances-Python.html) | POMDP, Tiger Problem, belief tracking, Q-MDP | 45-50 min |
+| 12 | [RL-12-Distributional-RL-C51-Python](RL-12-Distributional-RL-C51-Python.ipynb) | RL distributionnel : C51 (Categorical DQN) depuis zéro, projection catégorielle, politique CVaR | 50-55 min |
+| 13 | [RL-13-Curiosite-RND-Python](RL-13-Curiosite-RND-Python.html) | Exploration par curiosité (RND), motivation intrinsèque, piège d'exploitation | 35-40 min |
+| 14 | [RL-14-RL-Hierarchique-Options-Python](RL-14-RL-Hierarchique-Options-Python.ipynb) | Hierarchical RL — l'Option framework de Sutton, Precup & Singh : abstraction temporelle, options `(I, π, β)`, gridworld quatre-pièces, crédit sur longue horizon | ~50 min |
+| 15 | [RL-15-GRPO-Comparatif-Multi-Graines-Python](RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | GRPO (Group Relative Policy Optimization) vs PPO sur CartPole-v1 — avantage relatif intra-groupe (sans critic) vs GAE bootstrapé, multi-seed 6 (0/1/7/42/99/123), Wilcoxon signed-rank + IC95% bootstrap. Prong B discrimination moteur. Sous-grain #13436 de l'EPIC #1454. **Verdict v3 (REPAIR c.644) : INCONCLUSIVE** (le claim initial v1 « GRPO BEATS PPO » souffrait de défauts done-mask + pad-mask — c.642 a corrigé en INCONCLUSIVE, puis c.644 a détecté 4 post-fix incohérences résolues : Wilcoxon n=4 inatteignable, verdict tri-state asymmétrique, hypothèse descriptive fausse réfutée, titre PR ré-aligné — verdict v3 INCONCLUSIVE maintenu, moyennes v3 = 299.36 vs 197.65, std = 55.26 vs 104.99) | 40-45 min |
+| 16 | [RL-16-Dream-RSI-Python](RL-16-Dream-RSI-Python.ipynb) | Dream-RSI (arXiv 2609.14858, preprint 14/09/2026) : exploration explicite **programmable** (politique = code), historique de découverte = simulateur-replay, **dreaming** = évaluation off-policy à coût zéro, boucle RSI avec incumbent (garantie non-régression replay-only) — monde jouet circle-packing stdlib (16 cercles), ablation replay brut vs guidance sémantique mesurée (3/2/7), chiffres du papier rapportés non canonisés. Distillation #16417 | 40-45 min |
 | 17 | [rl_17_k_server_wfa](rl_17_k_server_wfa.ipynb) | k-server et work function algorithm : la conjecture (1990) mesurée en monde jouet — un seul moteur DP (la work function EST l'optimum offline), WFA en ligne sur ligne/cycle/métrique uniforme, vérification par instance WFA ≤ k×OPT (0 violation / 600 instances seedées), duel WFA vs LRU/FIFO sur paging (boucle k+2 : LRU 60 faults vs WFA 46, k×OPT = 96), work function visualisée en heatmap des configurations. Distillation du preprint arXiv 2609.15979 (soumis 14/09/2026, **non relu** — bandeau honnêteté : mesuré ≠ prouvé, ratios réalisés ~1.1-1.6 vs garantie pire-cas k) | 35-40 min |
 | 18 | [rl_18_matroid_secretary](rl_18_matroid_secretary.ipynb) | Le secrétaire matroïdal : la conjecture (2007) mesurée élément par élément — trois matroïdes jouets par oracle (uniforme/partition/graphique), l'algorithme de Singla (échantillon Bin(n,1/2), configuration virtuelle, glouton des deux côtés — ordinal, ne connaît que n), banc de mesure P[accept \| e ∈ OPT] sur 6 instances × 4000 essais : min 0,260-0,353, garantie 1/4 jamais violée et **serrée sur les rangs 1-2**, E[ALG]/OPT ≈ 0,44, prix de l'universalité 0,41 → 0,26 vs le seuil 1/e classique (formule exacte n=8 vs limite asymptotique). La garantie utilisée comme **test exécutable** : le bug d'implémentation du prototype (0,119) détecté par le banc. Distillation du preprint arXiv 2609.14555 (soumis 13/09/2026, **non relu**) | 35-40 min |
-| 19 | [rl_19_reward_tampering](rl_19_reward_tampering.ipynb) | Reward tampering : l'agent qui peut **réécrire** sa récompense — *Rocks and Diamonds* à paramètre θ modifiable (exemple 2 d'Everitt et al., Synthese 2021), quatre agents résolus par **induction arrière exacte** sur 32 252 états (standard, oracle, *current-RF* TI-ignoring et TI-considering) : les trois prédictions du papier mesurées `conforme`. Au-delà du diagramme : **l'indifférence n'est pas la protection** — valeur de l'option de manipuler +16 (standard) contre +0 (TI-ignoring), mais départage aléatoire des égalités → manipulation 33/200 (H = 30) et 68/200 (H = 60), toujours après la tâche ; Q-learning standard 0/5 graines en initialisation nulle, 5/5 en optimiste. RF-input tampering (autocollants sur la caméra) : 88 observé / 0 réel contre 20 / 20 sous récompense sur croyance. Distillation #14468 | 35-40 min |
-| pt-0 | [rlpt_0_reward_model_from_scratch](rlpt_0_reward_model_from_scratch.ipynb) | Reward model from scratch (Bradley-Terry) : apprendre r(x, y) depuis des paires de préférences sur le monde de rlpt_1 — MLE BT sans `trl.RewardTrainer`, évaluation honnête vs plafond de Bayes, calibration (ECE), identification affine, multi-seed 4 | 35-40 min |
-| pt-0b | [rlpt_0b_preference_dataset_bias](rlpt_0b_preference_dataset_bias.ipynb) | Biais d'un dataset de préférences, mesurés sur monde synthétique à longueurs variables : les trois biais classiques (longueur, position, annotateurs) injectés à paramètres connus, dégât mesuré contre le plafond de Bayes d'un juge **oracle non biaisé**, puis les mitigations du cahier des charges (length-controlled, swap-augmentation, annotator embedding) plus une quatrième qui sert de contrôle — verdict mesuré : aucune ne franchit 2σ, le length-controlled est **structurellement** sans effet sur une métrique de classement, l'orthogonalisation de longueur **aggrave** le biais | 40-45 min |
-| pt-0c | [rlpt_0c_reward_hacking_case_study](rlpt_0c_reward_hacking_case_study.ipynb) | Anatomie d'un reward hacking **qui prend** — le pendant de `rlpt_3` : reward model Bradley-Terry appris sur des préférences à biais de longueur, PPO from scratch sur ce proxy, puis **bras de contrôle** (récompense longueur-contrôlée + oracle) qui identifie le biais comme cause. Mesures : qualité vraie 0,4545 → 0,0170 sous le proxy biaisé, contre 0,9905 sous contrôle ; basculement situé sur l'action de tête du proxy (argmax non correct à α ≈ 2,0), stable sur 4 graines | 35-40 min |
-| pt-0d | [rlpt_0d_reward_trainer_sota](rlpt_0d_reward_trainer_sota.ipynb) | Le **même** problème que `rlpt_0`, traité par le harnais industriel `trl.RewardTrainer` : monde, juge, architecture (5 441 paramètres) et seeds identiques, une seule variable — le harnais. Documente les **quatre exigences de contrat** non devinables (`num_labels=1`, `processing_class`, `gradient_checkpointing=False`, `self.post_init()`) et la traduction `y` → `chosen_ids`/`rejected_ids` ; verdict mesuré : `trl` **devance** la boucle maison (0.676 ± 0.007 vs 0.658 ± 0.008, écart +0.018 = 2.2σ ; Brier et Spearman meilleurs aussi) pour un coût en temps de **~10×** sur ce modèle minuscule, et l'évaluation honnête reste **entièrement à ré-écrire** — `trl` n'évalue pas pour vous | 35-40 min |
-| pt-0e | [rlpt_0e_trl_DPO_SOTA](rlpt_0e_trl_DPO_SOTA.ipynb) | `trl.DPOTrainer` (bras SOTA) contre DPO from scratch et reward model explicite de `rlpt_0` sur le **même monde et les mêmes paires de préférences**, à budget égal (même β, même lr, mêmes époques) — multi-seed {0,1,7,42} départagé au plafond de Bayes : verdict **B ≈ C > A** (DPO maison 0.679 / trl 0.678 / RM 0.661 vs plafond 0.695 ; B vs C indiscernables à ±0.008 près), marges implicites B↔C corrélées ρ≈0.98 = même math ; la différence robuste est le **coût fixe** de la pile (×22 sur jouet CPU) — inclut la garde de frontière prompt/complétion (piège trl : prompt sans espace finale) | 25-35 min |
-| pt-0f | [rlpt_0f_comparaison_GRPO_TRL_et_PPO_maison](rlpt_0f_comparaison_GRPO_TRL_et_PPO_maison.ipynb) | `trl.GRPOTrainer` (bras SOTA **en ligne**) contre le PPO maison de `rlpt_1` sur le **même monde et le même juge RM** (`rlpt_0`), à budget apparié (2 304 réponses évaluées par bras, même β_KL) — multi-seed {0,1,7,42} : verdict **INCONCLUSIVE** (gain maison 0.486±0.205 / trl 0.670±0.102, écart +0.184 < 2σ) ; la différence robuste est le **critic** (value net appris vs moyenne de groupe — la baseline est LE choix de design) et le coût d'écriture et de runtime (tableau comparatif section 7) — inclut le fait structurant mesuré dans l'env : `trl.PPOTrainer` a **quitté la racine** de trl (déplacé dans `trl.experimental.ppo`, assert garde-frontière sur la surface réelle) et le trainer historique **remis en service** en 3e bras (section 5bis : PPO complet critic + GAE, juge BT reconstruit au format lib, seed 0) | 30-45 min |
-| pt-0g | [rlpt_0g_ppo_TRL_experimental](rlpt_0g_ppo_TRL_experimental.ipynb) | `trl.experimental.ppo.PPOTrainer` / `PPOConfig` instanciés comme surface SOTA réelle (pas seulement importés) — surface instable par convention mais invocable, signature introspectée (`num_train_epochs`, `use_cpu`). Boucle PPO conforme Schulman 2017 (rollout → GAE → surrogate clip → value loss) avec hyperparamètres alignés sur `PPOConfig`. **Verdict SOTA `INTRINSIC`** documenté (6 axes) : la mini-tâche symbolique ne se branche pas sur `PPOTrainer` directement (LM `transformers` requis), mais l'algorithme est strictement celui qu'enrobe TRL. Multi-seed {0,1,7,42} : moyenne finale 0.401 ± 0.041, **en dessous** du baseline uniforme 0.497 (gap −0.096 ≈ 2.3σ), donc **dans la bande** des 3 baselines (verdict **INCONCLUSIVE** : PPO ne surpasse pas le baseline uniforme, mais l'écart reste comparable à 2σ et le notebook documente la signature d'apprentissage). Complément de `rlpt_0f` (PPO maison vs GRPO) sur l'axe RLHF #16063 — ferme l'item 6 | 30-40 min |
-| pt-1 | [rlpt_1_ppo_lm_rlhf](rlpt_1_ppo_lm_rlhf.html) | PPO pour alignement d'un petit LM (RLHF toy, from scratch, char-level) : reward model jouet, KL vs politique SFT de référence, multi-seed 4 — la signature RLHF, différenciée de rl_6c (PPO CartPole) et rl_6e (GRPO) | 40-45 min |
-| pt-2 | [rlpt_2_grpo_minimal](rlpt_2_grpo_minimal.html) | GRPO sur Qwen3.5-0.8B local (8 Go Viability), reward vérifiable, budget steps borné — le cœur « à la Deepseek » : group rollouts, avantage sans value net, pont #5105 | 45-55 min |
-| pt-3 | [rlpt_3_reward_hacking](rlpt_3_reward_hacking.html) | Reward hacking × inoculation, version compacte du capstone #5105 : le hack sur récompense vérifiable faillible, la détection rewardspy, l'inoculation comme variable expérimentale, verdict reproductible (seed fixée) | 35-40 min |
-| pt-4 | [rlpt_4_dpo_vs_ppo](rlpt_4_dpo_vs_ppo.html) | DPO/ORPO offline vs GRPO online sur même tâche conversationnelle, même budget 40 steps, préférences auto-fabriquées — verdict multi-seed {42,0,1,7} honnête DM, dispersion inter-seed documentée | 50-55 min |
+| 19 | [RL-19-Reward-Tampering-Python](RL-19-Reward-Tampering-Python.ipynb) | Reward tampering : l'agent qui peut **réécrire** sa récompense — *Rocks and Diamonds* à paramètre θ modifiable (exemple 2 d'Everitt et al., Synthese 2021), quatre agents résolus par **induction arrière exacte** sur 32 252 états (standard, oracle, *current-RF* TI-ignoring et TI-considering) : les trois prédictions du papier mesurées `conforme`. Au-delà du diagramme : **l'indifférence n'est pas la protection** — valeur de l'option de manipuler +16 (standard) contre +0 (TI-ignoring), mais départage aléatoire des égalités → manipulation 33/200 (H = 30) et 68/200 (H = 60), toujours après la tâche ; Q-learning standard 0/5 graines en initialisation nulle, 5/5 en optimiste. RF-input tampering (autocollants sur la caméra) : 88 observé / 0 réel contre 20 / 20 sous récompense sur croyance. Distillation #14468 | 35-40 min |
+| pt-0 | [RLPT-00-Reward-Model-Bradley-Terry-Python](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) | Reward model from scratch (Bradley-Terry) : apprendre r(x, y) depuis des paires de préférences sur le monde de RLPT-01 — MLE BT sans `trl.RewardTrainer`, évaluation honnête vs plafond de Bayes, calibration (ECE), identification affine, multi-seed 4 | 35-40 min |
+| pt-0b | [RLPT-00b-Biais-Dataset-Preferences-Python](PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.ipynb) | Biais d'un dataset de préférences, mesurés sur monde synthétique à longueurs variables : les trois biais classiques (longueur, position, annotateurs) injectés à paramètres connus, dégât mesuré contre le plafond de Bayes d'un juge **oracle non biaisé**, puis les mitigations du cahier des charges (length-controlled, swap-augmentation, annotator embedding) plus une quatrième qui sert de contrôle — verdict mesuré : aucune ne franchit 2σ, le length-controlled est **structurellement** sans effet sur une métrique de classement, l'orthogonalisation de longueur **aggrave** le biais | 40-45 min |
+| pt-0c | [RLPT-00c-Anatomie-Reward-Hacking-Python](PostTraining/RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb) | Anatomie d'un reward hacking **qui prend** — le pendant de `RLPT-03` : reward model Bradley-Terry appris sur des préférences à biais de longueur, PPO from scratch sur ce proxy, puis **bras de contrôle** (récompense longueur-contrôlée + oracle) qui identifie le biais comme cause. Mesures : qualité vraie 0,4545 → 0,0170 sous le proxy biaisé, contre 0,9905 sous contrôle ; basculement situé sur l'action de tête du proxy (argmax non correct à α ≈ 2,0), stable sur 4 graines | 35-40 min |
+| pt-0d | [RLPT-00d-Reward-Trainer-TRL-Python](PostTraining/RLPT-00d-Reward-Trainer-TRL-Python.ipynb) | Le **même** problème que `RLPT-00`, traité par le harnais industriel `trl.RewardTrainer` : monde, juge, architecture (5 441 paramètres) et seeds identiques, une seule variable — le harnais. Documente les **quatre exigences de contrat** non devinables (`num_labels=1`, `processing_class`, `gradient_checkpointing=False`, `self.post_init()`) et la traduction `y` → `chosen_ids`/`rejected_ids` ; verdict mesuré : `trl` **devance** la boucle maison (0.676 ± 0.007 vs 0.658 ± 0.008, écart +0.018 = 2.2σ ; Brier et Spearman meilleurs aussi) pour un coût en temps de **~10×** sur ce modèle minuscule, et l'évaluation honnête reste **entièrement à ré-écrire** — `trl` n'évalue pas pour vous | 35-40 min |
+| pt-0e | [RLPT-00e-DPO-TRL-Python](PostTraining/RLPT-00e-DPO-TRL-Python.ipynb) | `trl.DPOTrainer` (bras SOTA) contre DPO from scratch et reward model explicite de `RLPT-00` sur le **même monde et les mêmes paires de préférences**, à budget égal (même β, même lr, mêmes époques) — multi-seed {0,1,7,42} départagé au plafond de Bayes : verdict **B ≈ C > A** (DPO maison 0.679 / trl 0.678 / RM 0.661 vs plafond 0.695 ; B vs C indiscernables à ±0.008 près), marges implicites B↔C corrélées ρ≈0.98 = même math ; la différence robuste est le **coût fixe** de la pile (×22 sur jouet CPU) — inclut la garde de frontière prompt/complétion (piège trl : prompt sans espace finale) | 25-35 min |
+| pt-0f | [RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python](PostTraining/RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb) | `trl.GRPOTrainer` (bras SOTA **en ligne**) contre le PPO maison de `RLPT-01` sur le **même monde et le même juge RM** (`RLPT-00`), à budget apparié (2 304 réponses évaluées par bras, même β_KL) — multi-seed {0,1,7,42} : verdict **INCONCLUSIVE** (gain maison 0.486±0.205 / trl 0.670±0.102, écart +0.184 < 2σ) ; la différence robuste est le **critic** (value net appris vs moyenne de groupe — la baseline est LE choix de design) et le coût d'écriture et de runtime (tableau comparatif section 7) — inclut le fait structurant mesuré dans l'env : `trl.PPOTrainer` a **quitté la racine** de trl (déplacé dans `trl.experimental.ppo`, assert garde-frontière sur la surface réelle) et le trainer historique **remis en service** en 3e bras (section 5bis : PPO complet critic + GAE, juge BT reconstruit au format lib, seed 0) | 30-45 min |
+| pt-0g | [RLPT-00g-PPO-TRL-Experimental-Python](PostTraining/RLPT-00g-PPO-TRL-Experimental-Python.ipynb) | `trl.experimental.ppo.PPOTrainer` / `PPOConfig` instanciés comme surface SOTA réelle (pas seulement importés) — surface instable par convention mais invocable, signature introspectée (`num_train_epochs`, `use_cpu`). Boucle PPO conforme Schulman 2017 (rollout → GAE → surrogate clip → value loss) avec hyperparamètres alignés sur `PPOConfig`. **Verdict SOTA `INTRINSIC`** documenté (6 axes) : la mini-tâche symbolique ne se branche pas sur `PPOTrainer` directement (LM `transformers` requis), mais l'algorithme est strictement celui qu'enrobe TRL. Multi-seed {0,1,7,42} : moyenne finale 0.401 ± 0.041, **en dessous** du baseline uniforme 0.497 (gap −0.096 ≈ 2.3σ), donc **dans la bande** des 3 baselines (verdict **INCONCLUSIVE** : PPO ne surpasse pas le baseline uniforme, mais l'écart reste comparable à 2σ et le notebook documente la signature d'apprentissage). Complément de `RLPT-00f` (PPO maison vs GRPO) sur l'axe RLHF #16063 — ferme l'item 6 | 30-40 min |
+| pt-1 | [RLPT-01-PPO-RLHF-Petit-Modele-Python](PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.html) | PPO pour alignement d'un petit LM (RLHF toy, from scratch, char-level) : reward model jouet, KL vs politique SFT de référence, multi-seed 4 — la signature RLHF, différenciée de RL-06c (PPO CartPole) et RL-06e (GRPO) | 40-45 min |
+| pt-2 | [RLPT-02-GRPO-Minimal-Python](PostTraining/RLPT-02-GRPO-Minimal-Python.html) | GRPO sur Qwen3.5-0.8B local (8 Go Viability), reward vérifiable, budget steps borné — le cœur « à la Deepseek » : group rollouts, avantage sans value net, pont #5105 | 45-55 min |
+| pt-3 | [RLPT-03-Reward-Hacking-Python](PostTraining/RLPT-03-Reward-Hacking-Python.html) | Reward hacking × inoculation, version compacte du capstone #5105 : le hack sur récompense vérifiable faillible, la détection rewardspy, l'inoculation comme variable expérimentale, verdict reproductible (seed fixée) | 35-40 min |
+| pt-4 | [RLPT-04-DPO-Offline-contre-GRPO-Online-Python](PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.html) | DPO/ORPO offline vs GRPO online sur même tâche conversationnelle, même budget 40 steps, préférences auto-fabriquées — verdict multi-seed {42,0,1,7} honnête DM, dispersion inter-seed documentée | 50-55 min |
 
 ## Frontière avec GenAI/PostTraining — où ouvre `rlpt_*`, où ouvre `PT_*`
 
@@ -77,21 +77,21 @@ Les sous-séries [`rlpt_*`](.) et [GenAI/PostTraining](../GenAI/PostTraining/REA
 
 | Question pédagogique | Ouvrir | Pourquoi |
 |---|---|---|
-| « D'où vient le reward model avant tout RLHF — comment l'apprendre à partir de préférences ? » | [`rlpt_0`](rlpt_0_reward_model_from_scratch.ipynb) | Bradley-Terry from scratch sur le monde de `rlpt_1` : l'étage que `rlpt_1` saute en codant son oracle en dur — plafond de Bayes, calibration, identification affine. |
-| « Pourquoi un reward model apprend-il le biais de son annotateur plutôt que la qualité ? » | [`rlpt_0b`](rlpt_0b_preference_dataset_bias.ipynb) | Les trois biais d'un dataset de préférences injectés à paramètres connus : le RM **recopie** le raccourci du juge (gamma mesuré vs lambda injecté) quand le biais lui est représentable, et se contente de **sous-échelonner** quand il ne l'est pas (biais de position) — dans les deux cas l'accord à l'oracle descend. |
-| « Le harnais SOTA (`trl`) fait-il mieux que ma boucle from scratch — et que me coûte-t-il ? » | [`rlpt_0d`](rlpt_0d_reward_trainer_sota.ipynb) | `trl.RewardTrainer` sur le **même** monde que `rlpt_0`, à architecture identique : le harnais **gagne** (0.676 ± 0.007 vs 0.658 ± 0.008, +0.018 = 2.2σ), coûte ~10× le temps sur un modèle minuscule, impose quatre réglages de contrat, et n'évalue pas pour vous. |
-| « Comment marche PPO-RLHF en petit, sans framework ? » | [`rlpt_1`](rlpt_1_ppo_lm_rlhf.html) | RLHF from scratch sur LM char-level — on voit les gradients, le reward model jouet, la KL vs la politique SFT de référence, multi-seed 4. |
-| « Comment GRPO est câblé *intérieurement* (group rollouts, avantage intra-groupe, no critic) ? » | [`rlpt_2`](rlpt_2_grpo_minimal.html) | GRPO Qwen3.5-0.8B local **sans `trl` complet** — la boucle d'entraînement est écrite à la main, on voit chaque rollout, chaque reward. |
-| « Le reward hacking est-il un attracteur spontané sur petit modèle ? Comment l'inoculer ? » | [`rlpt_3`](rlpt_3_reward_hacking.html) | Cas clinique minimal : 3 voies pour tenter de déclencher le hack, inoculation comme variable expérimentale, verdict reproductible (seed fixée). |
-| « Pourquoi le reward hacking arrive-t-il — le reward model est-il vraiment la cause ? » | [`rlpt_0c`](rlpt_0c_reward_hacking_case_study.ipynb) | Isolation de cause : le biais de longueur est **lu dans les poids** du reward model appris, puis **retiré** — la qualité se rétablit (bras de contrôle), et le basculement est situé sur l'action de tête du proxy. |
-| « DPO offline vs GRPO online à budget égal — qui gagne ? » | [`rlpt_4`](rlpt_4_dpo_vs_ppo.html) | Comparaison à budget 40 steps, préférences auto-fabriquées, verdict multi-seed {42,0,1,7} honnête Diebold-Mariano, dispersion inter-seed documentée. |
+| « D'où vient le reward model avant tout RLHF — comment l'apprendre à partir de préférences ? » | [`RLPT-00`](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) | Bradley-Terry from scratch sur le monde de `RLPT-01` : l'étage que `RLPT-01` saute en codant son oracle en dur — plafond de Bayes, calibration, identification affine. |
+| « Pourquoi un reward model apprend-il le biais de son annotateur plutôt que la qualité ? » | [`RLPT-00b`](PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.ipynb) | Les trois biais d'un dataset de préférences injectés à paramètres connus : le RM **recopie** le raccourci du juge (gamma mesuré vs lambda injecté) quand le biais lui est représentable, et se contente de **sous-échelonner** quand il ne l'est pas (biais de position) — dans les deux cas l'accord à l'oracle descend. |
+| « Le harnais SOTA (`trl`) fait-il mieux que ma boucle from scratch — et que me coûte-t-il ? » | [`RLPT-00d`](PostTraining/RLPT-00d-Reward-Trainer-TRL-Python.ipynb) | `trl.RewardTrainer` sur le **même** monde que `RLPT-00`, à architecture identique : le harnais **gagne** (0.676 ± 0.007 vs 0.658 ± 0.008, +0.018 = 2.2σ), coûte ~10× le temps sur un modèle minuscule, impose quatre réglages de contrat, et n'évalue pas pour vous. |
+| « Comment marche PPO-RLHF en petit, sans framework ? » | [`RLPT-01`](PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.html) | RLHF from scratch sur LM char-level — on voit les gradients, le reward model jouet, la KL vs la politique SFT de référence, multi-seed 4. |
+| « Comment GRPO est câblé *intérieurement* (group rollouts, avantage intra-groupe, no critic) ? » | [`RLPT-02`](PostTraining/RLPT-02-GRPO-Minimal-Python.html) | GRPO Qwen3.5-0.8B local **sans `trl` complet** — la boucle d'entraînement est écrite à la main, on voit chaque rollout, chaque reward. |
+| « Le reward hacking est-il un attracteur spontané sur petit modèle ? Comment l'inoculer ? » | [`RLPT-03`](PostTraining/RLPT-03-Reward-Hacking-Python.html) | Cas clinique minimal : 3 voies pour tenter de déclencher le hack, inoculation comme variable expérimentale, verdict reproductible (seed fixée). |
+| « Pourquoi le reward hacking arrive-t-il — le reward model est-il vraiment la cause ? » | [`RLPT-00c`](PostTraining/RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb) | Isolation de cause : le biais de longueur est **lu dans les poids** du reward model appris, puis **retiré** — la qualité se rétablit (bras de contrôle), et le basculement est situé sur l'action de tête du proxy. |
+| « DPO offline vs GRPO online à budget égal — qui gagne ? » | [`RLPT-04`](PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.html) | Comparaison à budget 40 steps, préférences auto-fabriquées, verdict multi-seed {42,0,1,7} honnête Diebold-Mariano, dispersion inter-seed documentée. |
 | « GRPO + RLVR sur un vrai LLM, avec `trl` + reward vérifiable + détecteurs Goodhart en ligne ? » | [PT-11a](../GenAI/PostTraining/PT_11a_grpo_qwen35_rlvr.ipynb), [PT-11b](../GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb) | La chaîne *SOTA 2024-2025* appliquée : `trl.GRPOTrainer` + Qwen3.5-0.8B QLoRA 4-bit + Z3/SymPy vérificateur + `rewardspy.watch_trl` en ligne. |
-| « Quels sont les 6 détecteurs statistiques du reward hacking ? » | [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) | Le catalogue `rewardspy.detectors` (Component Dominance, Length Drift, etc.). Outil — `rlpt_3` est le cas d'usage. |
-| « InoculationRL complet, panel persona × reward hackable, la réplique poids du capstone ? » | [#5105 ICT-25](https://github.com/jsboige/CoursIA/issues/5105) | Capstone final, **distinct** de `rlpt_3` (qui en est la version compacte). |
+| « Quels sont les 6 détecteurs statistiques du reward hacking ? » | [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) | Le catalogue `rewardspy.detectors` (Component Dominance, Length Drift, etc.). Outil — `RLPT-03` est le cas d'usage. |
+| « InoculationRL complet, panel persona × reward hackable, la réplique poids du capstone ? » | [#5105 ICT-25](https://github.com/jsboige/CoursIA/issues/5105) | Capstone final, **distinct** de `RLPT-03` (qui en est la version compacte). |
 
 **Une phrase à retenir** : `rlpt_*` = *la mécanique, en petit, sans framework* (from scratch, CPU/char-level ou Qwen3.5-0.8B sans la pile `trl` complète — on voit chaque rollout et chaque gradient) ; `GenAI/PostTraining` = *la chaîne réelle, à l'échelle* (`trl`, vrai LLM, solveur vérifiable, multi-seed, détecteurs Goodhart). Si votre question porte sur **pourquoi** un algorithme fonctionne, ouvrez `rlpt_*`. Si votre question porte sur **comment le déployer en SOTA 2025**, ouvrez `PT_*`.
 
-Le constat d'éventuelle duplication entre `rlpt_2 ↔ PT-11a` et `rlpt_3 ↔ PT-07` est traité en [#11460](https://github.com/jsboige/CoursIA/issues/11460) : la différenciation tient à *ce qu'on regarde* (mécanique vs déploiement outillé), pas à *ce qu'on calcule* — c'est précisément ce qui justifie les deux.
+Le constat d'éventuelle duplication entre `RLPT-02 ↔ PT-11a` et `RLPT-03 ↔ PT-07` est traité en [#11460](https://github.com/jsboige/CoursIA/issues/11460) : la différenciation tient à *ce qu'on regarde* (mécanique vs déploiement outillé), pas à *ce qu'on calcule* — c'est précisément ce qui justifie les deux.
 
 ## Parcours recommandé
 
@@ -159,7 +159,7 @@ Le notebook 11 aborde la partial observability : l'agent ne voit plus l'état vr
 
 Le notebook 12 enrichit l'objectif lui-même : au lieu d'apprendre l'espérance du retour comme un DQN, C51 (Categorical DQN, Bellemare et al. 2017) apprend sa **distribution complète** $Z(s,a)$ sur un support à atomes fixes, via une projection catégorielle de la cible de Bellman — ce qui débloque les politiques sensibles au risque (CVaR) impossibles avec une valeur scalaire, et ouvre la lignée QR-DQN / IQN / Rainbow.
 
-Le notebook 13 termine sur l'exploration par motivation intrinsèque : RND (Random Network Distillation) transforme l'erreur de prédiction d'un réseau cible figé en bonus de nouveauté, débloquant les récompenses parcimonieuses hors de portée d'epsilon-greedy. Une **sous-série Post-Training** (`rlpt_*`) prolonge cette lignée vers le RL appliqué aux modèles de langage : reward model appris depuis des préférences Bradley-Terry, from scratch (rlpt_0), PPO-RLHF from scratch sur un petit LM char-level (rlpt_1), GRPO sur Qwen3.5-0.8B avec reward vérifiable (rlpt_2, run réel 8 Go), l'anatomie du reward hacking et son inoculation (rlpt_3), le cas où le hack **prend** avec isolation de la cause par bras de contrôle (rlpt_0c), puis la comparaison offline-vs-online entre DPO et GRPO à budget égal (rlpt_4). Chaque notebook de la sous-série stub ≥3 exercices, ancre ses interprétations sur des sorties réellement exécutées (C.2), et documente son verdict d'honnêteté multi-seed — la série constitue la **transition naturelle** entre rl_6e (GRPO from scratch) et le pipeline capstone ICT-25 / Post-Training (#5105).
+Le notebook 13 termine sur l'exploration par motivation intrinsèque : RND (Random Network Distillation) transforme l'erreur de prédiction d'un réseau cible figé en bonus de nouveauté, débloquant les récompenses parcimonieuses hors de portée d'epsilon-greedy. Une **sous-série Post-Training** (`rlpt_*`) prolonge cette lignée vers le RL appliqué aux modèles de langage : reward model appris depuis des préférences Bradley-Terry, from scratch (RLPT-00), PPO-RLHF from scratch sur un petit LM char-level (RLPT-01), GRPO sur Qwen3.5-0.8B avec reward vérifiable (RLPT-02, run réel 8 Go), l'anatomie du reward hacking et son inoculation (RLPT-03), le cas où le hack **prend** avec isolation de la cause par bras de contrôle (RLPT-00c), puis la comparaison offline-vs-online entre DPO et GRPO à budget égal (RLPT-04). Chaque notebook de la sous-série stub ≥3 exercices, ancre ses interprétations sur des sorties réellement exécutées (C.2), et documente son verdict d'honnêteté multi-seed — la série constitue la **transition naturelle** entre RL-06e (GRPO from scratch) et le pipeline capstone ICT-25 / Post-Training (#5105).
 
 ## Prerequisites
 
@@ -209,9 +209,9 @@ pip install "trl>=1.9.2" transformers datasets accelerate
 | highway-env | latest | Parking-v0 (notebook 3) |
 | moviepy | latest | Enregistrement vidéo |
 | trl | >=1.9.2 | RLHF/GRPO/DPO trainer (sous-série rlpt_*, notebooks pt-0e/pt-0f et pt-1 à pt-4) |
-| transformers | latest | Modèles de langage (Qwen3.5-0.8B dans rlpt_2, sentence-transformers dans rlpt_4) |
-| datasets | latest | Préférences auto-fabriquées (rlpt_4) |
-| accelerate | latest | Backend d'entraînement distribué (rlpt_2) |
+| transformers | latest | Modèles de langage (Qwen3.5-0.8B dans RLPT-02, sentence-transformers dans RLPT-04) |
+| datasets | latest | Préférences auto-fabriquées (RLPT-04) |
+| accelerate | latest | Backend d'entraînement distribué (RLPT-02) |
 
 ## Contenu détaillé
 
@@ -570,42 +570,42 @@ L'expérience replay (notebook 6) stocke les transitions (état, action, reward,
 
 ```
 RL/
-├── rl_1_intro_cartpole.ipynb
-├── rl_1b_bitwise_logic_synthesis.ipynb
-├── rl_1c_prolog_distillation.ipynb
-├── rl_2_wrappers_sauvegarde_callbacks.ipynb
-├── rl_3_experience_replay_her.ipynb
-├── rl_4_multi_armed_bandits.ipynb
-├── rl_5_mdp_dp_qlearning.ipynb
-├── rl_6_dqn_policy_gradient.ipynb
-├── rl_6b_actor_critic.ipynb
-├── rl_6c_ppo_from_scratch.ipynb
-├── rl_6d_sac_from_scratch.ipynb
-├── rl_6e_grpo_from_scratch.ipynb
-├── rl_7_multi_agent_rl.ipynb
-├── RL-7b-Climbing-Game.ipynb
-├── rl_8_model_based_dyna_q.ipynb
-├── rl_9_offline_rl.ipynb
-├── rl_10_reward_shaping.ipynb
-├── rl_11_pomdp.ipynb
-├── rl_12_distributional_rl.ipynb
-├── rl_13_curiosity_exploration.ipynb
-├── rl_14_hierarchical_rl.ipynb
-├── rl_15_grpo_group_relative_policy.ipynb
-├── rl_16_dream_rsi.ipynb
+├── RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb
+├── RL-01b-Synthese-Logique-Bitwise-Python.ipynb
+├── RL-01c-Distillation-Politique-Prolog-Python.ipynb
+├── RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb
+├── RL-03-Experience-Replay-HER-Python.ipynb
+├── RL-04-Bandits-Manchots-Python.ipynb
+├── RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb
+├── RL-06-DQN-Policy-Gradient-Python.ipynb
+├── RL-06b-Actor-Critic-Python.ipynb
+├── RL-06c-PPO-Depuis-Zero-Python.ipynb
+├── RL-06d-SAC-Depuis-Zero-Python.ipynb
+├── RL-06e-GRPO-Depuis-Zero-Python.ipynb
+├── RL-07-Apprentissage-Multi-Agent-Python.ipynb
+├── RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb
+├── RL-08-Dyna-Q-Planification-Python.ipynb
+├── RL-09-RL-Offline-Behavior-Cloning-Python.ipynb
+├── RL-10-Reward-Shaping-Curriculum-Python.ipynb
+├── RL-11-POMDP-Croyances-Python.ipynb
+├── RL-12-Distributional-RL-C51-Python.ipynb
+├── RL-13-Curiosite-RND-Python.ipynb
+├── RL-14-RL-Hierarchique-Options-Python.ipynb
+├── RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb
+├── RL-16-Dream-RSI-Python.ipynb
 ├── rl_17_k_server_wfa.ipynb
 ├── rl_18_matroid_secretary.ipynb
-├── rl_19_reward_tampering.ipynb
-├── rlpt_0_reward_model_from_scratch.ipynb
-├── rlpt_0b_preference_dataset_bias.ipynb
-├── rlpt_0c_reward_hacking_case_study.ipynb
-├── rlpt_0d_reward_trainer_sota.ipynb
-├── rlpt_0e_trl_DPO_SOTA.ipynb
-├── rlpt_0f_comparaison_GRPO_TRL_et_PPO_maison.ipynb
-├── rlpt_1_ppo_lm_rlhf.ipynb
-├── rlpt_2_grpo_minimal.ipynb
-├── rlpt_3_reward_hacking.ipynb
-├── rlpt_4_dpo_vs_ppo.ipynb
+├── RL-19-Reward-Tampering-Python.ipynb
+├── RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb
+├── RLPT-00b-Biais-Dataset-Preferences-Python.ipynb
+├── RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb
+├── RLPT-00d-Reward-Trainer-TRL-Python.ipynb
+├── RLPT-00e-DPO-TRL-Python.ipynb
+├── RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb
+├── RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb
+├── RLPT-02-GRPO-Minimal-Python.ipynb
+├── RLPT-03-Reward-Hacking-Python.ipynb
+├── RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb
 └── README.md
 ```
 
@@ -643,12 +643,12 @@ Plusieurs notebooks de cette série annoncent un « pont RLHF » (notebook 9 sur
 
 | Concept RL (cette série) | Réalisation côté LLM (GenAI) |
 |--------------------------|------------------------------|
-| Behavior Cloning = imitation ([rl_9](rl_9_offline_rl.html)) | SFT — [PostTraining PT-02](../GenAI/PostTraining/PT_02_sft_baseline.ipynb), [FineTuning FT-03](../GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.html) |
-| Contrainte de support BCQ = pénalité KL ([rl_9](rl_9_offline_rl.html)) | KL vers le modèle de référence dans PPO-RLHF / DPO — [PT-03](../GenAI/PostTraining/PT_03_dpo_direct_preference.html) |
-| Reward shaping = guider via le signal ([rl_10](rl_10_reward_shaping.html)) | Reward model appris à partir de préférences — [FineTuning FT-04](../GenAI/FineTuning/FT-04-RLHF-DPO-Python.html) |
-| Biais du shaping naïf = reward hacking ([rl_10](rl_10_reward_shaping.html)) | Goodhart / overoptimisation du reward model — [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) |
-| Policy gradient / PPO ([rl_6c](rl_6c_ppo_from_scratch.html)) | PPO-RLHF et son successeur GRPO — [PT-04](../GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb) |
-| MDP, value/Q ([rl_5](rl_5_mdp_dp_qlearning.html)) | Socle policy/value réutilisé par tout post-training — [GenAI/PostTraining](../GenAI/PostTraining/README.md) |
+| Behavior Cloning = imitation ([RL-09](RL-09-RL-Offline-Behavior-Cloning-Python.html)) | SFT — [PostTraining PT-02](../GenAI/PostTraining/PT_02_sft_baseline.ipynb), [FineTuning FT-03](../GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.html) |
+| Contrainte de support BCQ = pénalité KL ([RL-09](RL-09-RL-Offline-Behavior-Cloning-Python.html)) | KL vers le modèle de référence dans PPO-RLHF / DPO — [PT-03](../GenAI/PostTraining/PT_03_dpo_direct_preference.html) |
+| Reward shaping = guider via le signal ([RL-10](RL-10-Reward-Shaping-Curriculum-Python.html)) | Reward model appris à partir de préférences — [FineTuning FT-04](../GenAI/FineTuning/FT-04-RLHF-DPO-Python.html) |
+| Biais du shaping naïf = reward hacking ([RL-10](RL-10-Reward-Shaping-Curriculum-Python.html)) | Goodhart / overoptimisation du reward model — [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) |
+| Policy gradient / PPO ([RL-06c](RL-06c-PPO-Depuis-Zero-Python.html)) | PPO-RLHF et son successeur GRPO — [PT-04](../GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb) |
+| MDP, value/Q ([RL-05](RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.html)) | Socle policy/value réutilisé par tout post-training — [GenAI/PostTraining](../GenAI/PostTraining/README.md) |
 
 En résumé : **DPO** (Direct Preference Optimization) est l'aboutissement direct de la ligne offline RL + contrainte de support + preference learning tracée par les notebooks 9 et 10. Pour le voir tourner sur de vrais LLM, suivre [GenAI/PostTraining](../GenAI/PostTraining/README.md) puis [GenAI/FineTuning](../GenAI/FineTuning/README.md).
 
