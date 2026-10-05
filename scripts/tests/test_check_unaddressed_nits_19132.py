@@ -9,9 +9,15 @@ d'ouverture du Dojo ») pour passer.
 
 Remede (modele `_HOST_QUALIFIED` de #16876) : `_cited_shas()` ignore un
 token hex immediatement qualifie comme id de cellule (`cellule`, `cell`,
-`cell_id`, `id`, avec deux-points et/ou encage optionnels). La protection
-#13639 (vrais SHAs cites detectes) est couverte par les controles
-positifs ci-dessous.
+`cell_id`, avec deux-points et/ou encage optionnels). La protection #13639
+(vrais SHAs cites detectes) est couverte par les controles positifs
+ci-dessous.
+
+`id` SEUL est exclu du remede (review ai-01 du 2026-10-05, mesuree avec cet
+organe) : « commit id 1a2b3c4d », « commit-id: 1a2b3c4d » et « pushed as id
+0abc1234ef » sont des citations de COMMIT courantes -- les masquer rouvrirait
+#13639. Le temoin correspondant est
+`test_qualifiant_id_seul_ne_masque_pas_une_citation_de_commit`.
 """
 import importlib.util
 import sys
@@ -47,10 +53,26 @@ def test_variantes_de_qualifiant():
         "cell 6f32f63e",
         "cell_id 6f32f63e",
         "cell_id: 6f32f63e",
-        "id 6f32f63e",
         "la cellule `6f32f63e`",
     ):
         assert CELL_ID not in mod._cited_shas(f"traitee dans la {forme} ce matin"), forme
+
+
+def test_qualifiant_id_seul_ne_masque_pas_une_citation_de_commit():
+    # Review ai-01 du 2026-10-05 : `id` SEUL est trop large. « commit id »,
+    # « commit-id: » et « pushed as id » sont des tournures courantes de
+    # citation de COMMIT ; les faire sauter rouvrirait #13639 -- une levee qui
+    # cite un SHA inexistant doit tomber. Le temoin est l'inverse du cas vise :
+    # ici le token DOIT rester lu.
+    for corps, jeton in (
+        ("corrige au commit id 1a2b3c4d", "1a2b3c4d"),
+        ("corrige au commit-id: 1a2b3c4d", "1a2b3c4d"),
+        ("pushed as id 0abc1234ef", "0abc1234ef"),
+        ("le commit id `1a2b3c4d` est absent de la PR", "1a2b3c4d"),
+    ):
+        assert jeton in mod._cited_shas(corps), (
+            f"citation de commit masquee par le qualifiant `id` : {corps!r}"
+        )
 
 
 def test_qualifiant_non_immediat_ne_masque_pas():

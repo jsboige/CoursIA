@@ -3567,7 +3567,14 @@ _HOST_QUALIFIED = re.compile(r"\bhost\s*:?\s*$")
 # L'encage est tolere parce qu'un id de cellule s'ecrit le plus souvent
 # entre backticks ; c'est la forme la plus precise pour designer une
 # cellule, et l'organe ne doit pas apprendre a l'auteur a l'eviter.
-_CELL_QUALIFIED = re.compile(r"\b(?:cellule|cell_id|cell|id)\b\s*:?\s*[`'«]?\s*$")
+# `id` SEUL est deliberement absent de l'alternation (review ai-01 du
+# 2026-10-05, mesuree avec cet organe) : « corrige au commit id 1a2b3c4d »,
+# « commit-id: 1a2b3c4d », « pushed as id 0abc1234ef » sont des citations de
+# COMMIT courantes. Les laisser sauter rouvrirait exactement le trou de #13639
+# -- une levee qui cite un SHA inexistant doit tomber. Le qualifiant doit
+# nommer la CELLULE, pas un identifiant quelconque : `cellule`, `cell`,
+# `cell_id` suffisent au cas vise.
+_CELL_QUALIFIED = re.compile(r"\b(?:cellule|cell_id|cell)\b\s*:?\s*[`'«]?\s*$")
 
 
 def _cited_shas(body: str) -> set[str]:
