@@ -28,8 +28,13 @@ name: Lean CI Matrix
 # l'union. Jamais les deux declencheurs en meme temps (double build).
 
 on:
+  # Pas de `branches:` -- le filtre `paths:` ci-dessous scope deja le
+  # declenchement aux fichiers des lakes du manifeste. Conserver
+  # `branches: [main]` excluait les PR empilees (base != main) a la
+  # creation (issue #15652) ; sans `branches:`, le workflow tourne sur
+  # toute PR empilee des qu'un commit touche un fichier matche. Cf.
+  # lean-knot.yml pour le mecanisme complet.
   push:
-    branches: [main]
     paths:
       # sudoku_lean
       - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/**.lean'
@@ -155,8 +160,10 @@ on:
       - 'scripts/ci/check_lake_matrix_paths.py'
       - '.github/actions/lean-axiom/action.yml'
       - 'scripts/lean/axiom_check_step.py'
+  # Cf. le bloc `push` ci-dessus : pas de `branches: [main]` non plus
+  # ici, pour la meme raison (#15652). `types: [edited]` est necessaire
+  # pour qu'un retarget vers main re-declenche le workflow.
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       # UNION identique au push -- le garde check_lake_matrix_paths.py

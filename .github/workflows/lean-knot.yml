@@ -64,6 +64,26 @@ name: Lean Knot CI
 # n'est plus déléguée à une PR du split (#15598).
 # Raising this baseline requires a documented
 # justification in the PR body (a NEW real tactic sorry, not prose).
+#
+# MECANISME DE DECLENCHEMENT (issue #15652, documente ici le 2026-10-05) :
+# un workflow PR qui combine `branches: [main]` + `paths:` + une cle `types:`
+# SANS `edited` rate systematiquement les PR empilees. La PR empilee est
+# creee avec une base = branche parente, pas main, donc elle est hors du
+# `branches:` a la creation ; quand la parente est mergee et l'enfant
+# retarget vers main, l'evenement `base_ref_changed` emet un `edited` que
+# les workflows sans `edited` ignorent. La PR traverse tout son cycle de
+# review SANS CI Lean, jusqu'au prochain commit.
+#
+# Ce workflow (lean-knot.yml) a ete corrige sur les deux verrous : le bloc
+# `pull_request` ne porte PAS de `branches: [main]` (le `paths:` scope deja
+# aux fichiers de knot_lean) et inclut `edited` dans ses `types:`. Le
+# retrait du `branches:` (option b du design-gate de #15652) a ete applique
+# a lean-ci-matrix.yml et lean-visibility-advisory.yml dans la meme veine.
+# La mesure du double run de l'option (b) (PR empilee + parente ouvertes
+# simultanement) : les groupes `concurrency:` sont cles par
+# `${{ github.ref }}` (distinct par PR), donc 2 runs concurrents sont
+# theoriques -- la verification terrain depend d'une PR empilee reelle
+# sur un lake de la matrice, a jouer au prochain cycle empile.
 
 on:
   push:
