@@ -24,7 +24,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 4 | ICT-25 | tri des négatifs, désordre de sections établi | **LU** (tranche 1, 2026-08-24) |
 | 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU 3/3 tranches** (lectures du 2026-09-19 ; posées au ledger par #16814, #16821, #16827 — rang complet, 100 % des strands) |
 | 6 | **Fondations 01 → 09** (extension #11690) | `ICT-01` à `ICT-09` — racine de la numérotation, les deux piliers + strate dynamique | **LU** (tranche A de l'extension, 2026-10-05) |
-| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS 14/25** (strand 7, ouvert 2026-10-05 — jusqu'à `ICT-15c`) |
+| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS 15/25** (strand 7, ouvert 2026-10-05 — jusqu'à `ICT-15e`) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -651,3 +651,13 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Résultat | Signatures différenciées (ex. gray_scott spectral 0,500 / sens 0 ; may spectral 0,0067 / sens_max 4,000) ; paires : norms L₂ de 0,7207 (axelrod↔grokking) à 1,7170 (gray_scott↔may) ; mean_norm_L₂ = **1,2598** → **VERDICT = NOISE** (seuils falsifiables écrits : STABLE ≤ 0,05, NOISE ≥ 0,30) — le motif d'obstruction n'est PAS un objet stable, le méta-proxy est rejeté tel quel. |
 | Critique | (1) Le verdict NOISE clôt le fil sans analyse des paires : gray_scott↔may (1,7170) et axelrod↔grokking (0,7207) encadrent un facteur 2,4 d'hétérogénéité que le md n'exploite pas. (2) Exo 1 redemande « le verdict 4 substrats » déjà imprimé par la cellule 12 — exercice sans écart au livré. (3) Un seul état par substrat (pas de graines) : la stabilité du verdict NOISE elle-même n'est pas mesurée. |
 | Verdict | **SOLIDE** — négatif propre et falsifiable : seuils écrits AVANT la mesure, verdict NOISE assumé en sortie, artefact d'instrument (saturation #7578) diagnostiqué et corrigé avec sa trace pédagogique. L'objet méta-proxy n'existe pas en l'état — c'est un résultat, pas un échec. |
+
+### `ICT-15e-Bridge2-RecoverabilityAgency` — 25 cellules (15 md, 10 code, 10/10 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| Intention | **Bridge #2 de #8077, le seul non livré des 5** : la recouvrabilité EST agentivité — la trajectoire de réparation porte-t-elle une signature temporelle (slope_ratio, monotonicity, skewness…) qu'un random walk calibré sur les mêmes extrema ne reproduit pas ? Distinct d'ICT-9 (couverture) : ici c'est la **structure temporelle** de la récupération qui est testée. Conjecture **pré-enregistrée** avant les expériences. |
+| Contenu réel | Gray-Scott 64×64, ablation disque r=8, snapshots tous les 20 pas ; signature 5-D ; 3 contrôles (ground truth RD · random walk ancré · interpolation linéaire/pure diffusion structurelle) ; seuil p95 par permutation null (n_shuffle=200) ; garde-fou n_trials=80 ; 3 substrats (défaut · variant spots F=0,029 k=0,057 · seed 7 reproductibilité) + sanity négatif diffusion pure ; 2 exos en squelette commenté **silencieux**. |
+| Résultat | **Verdict CONFIRMED ×3** (agrégé `{'CONFIRMED': 3}`) : Mahalanobis RD-vs-naif > p95 partout (2,836>2,689 · 2,784>2,750 · 2,756>2,670), dynamic_ratio 1,597 / 1,132 / 1,652. Le md discute honnêtement l'hétérogénéité des marges (13 % → 65 %, maillon faible = variant spots) et la ligne seed 7 (1,652) qui écarte l'artefact de graine. Sanity négatif exécuté : diffusion pure ratio 0,757. Le bridge #2 reste vivant sur les 3 configurations — pas démontré uniforme. |
+| Critique | (1) La discrimination repose entièrement sur le contraste random-walk : **RD-vs-diff sous le p95 null sur les trois substrats** (1,776/2,460/1,668 vs 2,689/2,750/2,670) — la signature « irréductiblement temporelle » pourrait se réduire à une interpolation lisse entre extrema, nuance non surfacée dans le md (l'exo 2 extended_signature serait la réponse). (2) Diversité de graines limitée à un seul alternatif (seed 7). (3) Exos 1-2 silencieux. |
+| Verdict | **SOLIDE** — épistémologie exemplaire : pré-enregistrement écrit, trois contrôles dont un sanity négatif exécuté, seuil par permutation, lecture des magnitudes au-delà du binaire, reproductibilité montrée. Le pont #2 est livré vivant avec sa marge faible déclarée. |
