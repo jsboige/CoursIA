@@ -221,12 +221,23 @@ def diff_kernel(base_info, head_info):
 # coordinateur 2026-09-26) : la derive va dans le sens du canon decide --
 # ce n'est pas une regression, pas plus qu'une derive de patch (#17371).
 # La DIRECTION porte l'acceptation : la transition inverse reste rouge.
-# Portee au kernel .NET C# mesure dans le depot (kernelspec
-# ``.net-csharp`` : 141 notebooks a 13.0, 7 a 12.0 au 2026-09-27) -- la
-# classe fondatrice Python 3.11 -> 3.13 reste hors table.
+# Portee mesuree au 2026-10-05 :
+#   - C# ``.net-csharp`` : 141 notebooks a 13.0, 7 a 12.0 (#17679, transition acceptee) ;
+#   - Python ``python3`` (serie QC/Python) : 11 versions heterogenes
+#     (3.8.10, 3.9.0, 3.10.0, 3.10.11, 3.10.19, 3.11.0, 3.11.9, 3.11.14,
+#     3.11.15, 3.13.3, 3.13.7, 3.13.12, 3.13.14) ; 60 carnets ``python3`` + 2
+#     ``conda-torch`` ; canon documente dans requirements.txt = 3.11
+#     (QuantConnect cloud, ligne 23). La transition 3.10 -> 3.11 est la
+#     migration historique de la serie ; 3.11 -> 3.13 la convergence
+#     future. Les deux restent acceptees en direction du canon.
+# La transition inverse (3.13 -> 3.11, 3.11 -> 3.10) reste rouge.
 CANONICAL_LANGUAGE_TRANSITIONS = {
     (".net-csharp", "12.0", "13.0"):
         "C# 12.0 -> 13.0 : convergence vers le canon C# 13.0 (#17679)",
+    ("python3", "3.10", "3.11"):
+        "Python 3.10 -> 3.11 : convergence vers le canon QC/Python (#19181)",
+    ("python3", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 : convergence vers le canon Python 3.13 (#19181)",
 }
 
 

@@ -317,11 +317,51 @@ def test_canonical_transition_kernelspec_change_refused():
     assert ckd.accepted_canonical_transition(a, b) is False
 
 
-def test_canonical_transition_python_minor_stays_out():
-    # La classe fondatrice (Python 3.11 -> 3.13) reste hors table : la
-    # table est scoped au kernel, pas au couple de numeros.
+# --- #19181 : table d'acceptation canon Python (QC/Python) -----------------
+# Mesure du 2026-10-05 sur la serie QC/Python : 11 versions heterogenes
+# (3.8.10 a 3.13.14) ; 60 carnets ``python3`` + 2 ``conda-torch``. Canon
+# documente dans ``MyIA.AI.Notebooks/QuantConnect/requirements.txt`` (3.11,
+# QuantConnect cloud). La transition 3.10 -> 3.11 est la migration
+# historique de la serie ; 3.11 -> 3.13 la convergence future. Les deux
+# restent acceptees en direction du canon ; la direction inverse reste
+# rouge.
+
+
+def test_canonical_transition_python_311_to_313_accepted():
+    # Positif 1 : la convergence vers Python 3.13 est couverte.
     a = {"language_version": "3.11.16", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is True
+    # la derive brute existe bien -- c'est la table qui l'accepte.
+    assert ckd.diff_kernel(a, b)
+
+
+def test_canonical_transition_python_310_to_311_accepted():
+    # Positif 2 : la migration historique vers le canon 3.11 est couverte.
+    a = {"language_version": "3.10.19", "kernelspec_name": "python3"}
+    b = {"language_version": "3.11.9", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is True
+
+
+def test_canonical_transition_python_313_to_311_refused():
+    # Negatif 1 : la direction inverse est une regression du canon.
+    a = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    b = {"language_version": "3.11.16", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_python_311_to_310_refused():
+    # Negatif 2 : retombada sur 3.10 apres adoption du canon 3.11.
+    a = {"language_version": "3.11.9", "kernelspec_name": "python3"}
+    b = {"language_version": "3.10.19", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_python_kernelspec_change_refused():
+    # Negatif 3 : un changement de kernelspec.name reste rouge, meme avec
+    # des versions couvertes par la table.
+    a = {"language_version": "3.11.9", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.3", "kernelspec_name": "python311"}
     assert ckd.accepted_canonical_transition(a, b) is False
 
 

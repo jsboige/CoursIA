@@ -154,6 +154,11 @@ cloudpickle>=3.0.0
 # - Requires Docker Desktop running
 #
 # Version Compatibility:
-# - Python 3.11+ recommended
+# - Python 3.11 recommended (canon #19181, aligne sur QuantConnect cloud)
 # - Compatible with QuantConnect cloud (Python 3.11)
+# - La table CANONICAL_LANGUAGE_TRANSITIONS du cliquet
+#   ``scripts/notebook_tools/check_kernel_drift.py`` accepte les
+#   transitions 3.10 -> 3.11 (migration historique) et 3.11 -> 3.13
+#   (convergence future) en direction du canon. La direction inverse
+#   reste rouge.
 # - NumPy < 2.0 for compatibility with some libraries
