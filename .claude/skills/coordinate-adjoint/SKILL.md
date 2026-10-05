@@ -38,6 +38,22 @@ Restent réservés à `myia-ai-01:CoursIA` :
 8. **Chaque cycle doit faire avancer le dépôt concrètement.** Une passe de lecture, de monitoring, de reporting ou de re-grounding seule ne satisfait pas le cycle. Avant de conclure, produire au moins un incrément vérifiable : faire franchir un jalon à une PR (réparation écrite, preuve post-fix, réserve réellement levée, retarget/scope corrigé), dispatcher un grain exécutable qui démarre effectivement, ou prendre soi-même un grain autorisé et livrable. Si le sujet suivi est bloqué ou en attente d'une autre lane/du `PR gate`, ne pas finir sur cette attente : utiliser le temps restant pour chercher les **angles morts** dans les issues anciennes/en souffrance, la dette technique ou documentaire, et les acceptances partiellement livrées. Grounder puis engager immédiatement un nouveau grain DEEP/MED de CONTENU pour une lane CoursIA-2 par claim + dispatch ; ne jamais consommer le cycle en simple constat.
 9. Le rapport final nomme explicitement l'**incrément dépôt du cycle** et sa preuve. Finir par un rapport `[DONE][ADJOINT]` lane-specific sur `workspace-CoursIA-2` et une synthèse distincte sur `workspace-CoursIA` pour ai-01.
 
+## Tournee issues — dossiers `[CLOSURE PREFLIGHT]` (Grain C, #17956)
+
+**Pointeur** : la **forme** du geste (5 points : entree / lecture G.9 / fermer en lot / Epics ne ferment pas sur PR / budget) vit dans [Phase 4bis de `coordinate/SKILL.md`](../coordinate/SKILL.md#phase-4bis-passe-issues-sur-dossiers-de-fermeture-mandat-user-2026-09-26). Cette section dit **ce que l'adjoint fait de different**.
+
+**Role de l'adjoint** : reactif, branche sur les dispatches nominatifs d'ai-01. Le pool d'issues est l'urne du secretaire (item Niveau 1 de [adjoint-secretary/SKILL.md](../adjoint-secretary/SKILL.md)) ; l'adjoint n'y va pas spontanement. Il produit des dossiers de fermeture **quand ai-01 lui en confie un lot** par DM ou par steer sur `workspace-CoursIA-2`, et complete la liste nominative que le secretaire lui a deja fournie.
+
+**Geste concret** :
+- **Meme contrat** que la Phase 4bis, mais pose par l'adjoint en complement des dossiers secretaaire (item 13 adjoint-secretary : deux dossiers de la meme famille sur la meme issue = collision de surfaces-sha256) ;
+- **ordre** : la liste nominative du secretaire d'abord (item 7 de la doctrine Hub du secretaire), puis le lot d'ai-01. Un lot non encore dispatche reste en `pending` et n'est pas consomme ;
+- **verdict** : `verdict: CLOSE` ou `KEEP` dans le bloc `[CLOSURE PREFLIGHT]` (cf `#17956` point 2 pour la grammaire exacte du gabarit `--template` que l'organe `check_closure_dossier.py` lit) ;
+- **l'adjoint ne ferme pas** : la fermeture reste un geste ai-01, signe sous `myia-ai-01` en fin de cycle `/coordinate`. Ce que l'adjoint livre, c'est la **preuve** (le dossier), pas l'acte ;
+- **mesure 7j** : l'acceptance de #17956 demande un delta `issues fermees par semaine / taille du pool` avant et apres. L'adjoint consigne le **cote sortant** dans son rapport `[DONE][ADJOINT]` : compte de `[CLOSURE PREFLIGHT]` emis dans la journee, et compte d'issues fermees par ai-01 sur la foi de ces dossiers, pour la fenetre de 7 j glissants ;
+- **dette d'Epic** : un dossier `verdict: KEEP` sur un Epic qui reste ouvert nomme les PRs atomiques restantes dans le ledger `issue-debt` (item suivant), pas dans le bloc de fermeture.
+
+**Anti-pattern** : l'adjoint ne pose pas de dossier `[CLOSURE PREFLIGHT]` sur une issue qu'il a lui-meme livree (auto-attestation, comme pour les PRs -- cf item 4 des garde-fous d'emission de dossiers PR). Sa lane figure dans `QUALIFYING_LANES_CLOSURE` (a verifier au code de `check_closure_dossier.py` une fois la phase B livree) ; une lane hors liste rend `NO-DOSSIER` quelle que soit la qualite des mesures.
+
 ## Ledger de dette — journalisation des observations (mandat ai-01 2026-09-18)
 
 **Référence canonique** : `scripts/coordination/debt_ledger.py` + `scripts/coordination/README.md` sur `main` (phase A mergée) — relire le source AVANT tout append, le schéma vit dans le code.
