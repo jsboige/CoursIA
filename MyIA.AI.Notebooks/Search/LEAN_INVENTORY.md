@@ -25,14 +25,14 @@ A* vs BFS sur terrain pondéré — convention sibling-lake). Répond aussi au p
 problème non-trivial (heuristique discriminante), pas un graphe à coût uniforme où A*
 dégénère en BFS.
 
-² Notebook câblé : **Discrepancy-02-Komlos-Lean.ipynb** (`Search/Discrepancy/`, kernel
+² Notebook câblé : **Search-09e-Komlos-Lean.ipynb** (`Search/Discrepancy/`, kernel
 `lean4-wsl`, descendu le 2026-10-04 de l'ancien chemin
 `Search/Part1-Foundations/Search-09d-Lean-Discrepancy-Komlos.ipynb` par #19151) — `#check` des
 énoncés du lake (Komlós, Beck–Fiala, régimes Bansal–Jiang 2025) et
 témoins coloriés ±1 énumérés exhaustivement sur des instances jouet.
 
 Le livrable A de [#12823](https://github.com/jsboige/CoursIA/issues/12823) (Beck–Fiala 2k−1
-implémenté + CP-SAT en oracle exact) est livré en **Discrepancy-01-BeckFiala-Lean-Python.ipynb**
+implémenté + CP-SAT en oracle exact) est livré en **Search-09d-BeckFiala-Lean-Python.ipynb**
 (kernel `python3`) : c'est un **pont Python vers le lake**, sans Lean au runtime — il ne compte
 donc pas dans la colonne *Notebook câblé*, qui mesure l'invocation effective du lake.
 

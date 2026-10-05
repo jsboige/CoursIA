@@ -347,8 +347,8 @@ Search/
 │   ├── Search-12a-Composer-Regards.ipynb       # Composer des regards : play forward x coplay backward, corridor optimal f*=g+d (op 12 #12204)
 │   └── Search-13a-Traverser-Murs-Certifies.ipynb   # Traverser un mur : chemin minimal certifié (potentiels, 0-1 BFS, flot max/coupure min) sur pavage hexagonal (op 13 #12204)
 ├── Discrepancy/                           # Sous-série formelle (ouverte par #17816, arbitrage Search #17802) : compagnons Lean du lake discrepancy_lean
-│   ├── Discrepancy-01-BeckFiala-Lean-Python.ipynb   # Beck–Fiala : pont Python vers le lake, sans Lean au runtime
-│   └── Discrepancy-02-Komlos-Lean.ipynb             # Compagnon formel : lake discrepancy_lean via kernel lean4-wsl (#13868)
+│   ├── Search-09d-BeckFiala-Lean-Python.ipynb   # Beck–Fiala : pont Python vers le lake, sans Lean au runtime
+│   └── Search-09e-Komlos-Lean.ipynb             # Compagnon formel : lake discrepancy_lean via kernel lean4-wsl (#13868)
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (18 notebooks : 9 Python + 9 jumeaux C#)
 │   ├── CSP-1-Fundamentals.ipynb
