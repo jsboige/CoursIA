@@ -40,7 +40,7 @@ Restent réservés à `myia-ai-01:CoursIA` :
 
 ## Tournee issues — dossiers `[CLOSURE PREFLIGHT]` (Grain C, #17956)
 
-**Pointeur** : la **forme** du geste (5 points : entree / lecture G.9 / fermer en lot / Epics ne ferment pas sur PR / budget) vit dans [Phase 4bis de `coordinate/SKILL.md`](../coordinate/SKILL.md#phase-4bis-passe-issues-sur-dossiers-de-fermeture-mandat-user-2026-09-26). Cette section dit **ce que l'adjoint fait de different**.
+**Pointeur** : la **forme** du geste (5 points : entree / lecture G.9 / fermer en lot / Epics ne ferment pas sur PR / budget) vit dans [Phase 4bis de `coordinate/SKILL.md`](../coordinate/SKILL.md#phase-4bis---passe-issues-sur-dossiers-de-fermeture-mandat-user-2026-09-26). Cette section dit **ce que l'adjoint fait de different**.
 
 **Role de l'adjoint** : reactif, branche sur les dispatches nominatifs d'ai-01. Le pool d'issues est l'urne du secretaire (item Niveau 1 de [adjoint-secretary/SKILL.md](../adjoint-secretary/SKILL.md)) ; l'adjoint n'y va pas spontanement. Il produit des dossiers de fermeture **quand ai-01 lui en confie un lot** par DM ou par steer sur `workspace-CoursIA-2`, et complete la liste nominative que le secretaire lui a deja fournie.
 
@@ -52,7 +52,7 @@ Restent réservés à `myia-ai-01:CoursIA` :
 - **mesure 7j** : l'acceptance de #17956 demande un delta `issues fermees par semaine / taille du pool` avant et apres. L'adjoint consigne le **cote sortant** dans son rapport `[DONE][ADJOINT]` : compte de `[CLOSURE PREFLIGHT]` emis dans la journee, et compte d'issues fermees par ai-01 sur la foi de ces dossiers, pour la fenetre de 7 j glissants ;
 - **dette d'Epic** : un dossier `verdict: KEEP` sur un Epic qui reste ouvert nomme les PRs atomiques restantes dans le ledger `issue-debt` (item suivant), pas dans le bloc de fermeture.
 
-**Anti-pattern** : l'adjoint ne pose pas de dossier `[CLOSURE PREFLIGHT]` sur une issue qu'il a lui-meme livree (auto-attestation, comme pour les PRs -- cf item 4 des garde-fous d'emission de dossiers PR). Sa lane figure dans `QUALIFYING_LANES_CLOSURE` (a verifier au code de `check_closure_dossier.py` une fois la phase B livree) ; une lane hors liste rend `NO-DOSSIER` quelle que soit la qualite des mesures.
+**Anti-pattern** : l'adjoint ne pose pas de dossier `[CLOSURE PREFLIGHT]` sur une issue qu'il a lui-meme livree (auto-attestation, comme pour les PRs -- cf item 4 des garde-fous d'emission de dossiers PR). Sa lane figure dans `QUALIFYING_LANES` (canonique, `scripts/check_adjoint_prevalidation.py` l.134) ; une lane hors liste rend `NO-DOSSIER` quelle que soit la qualite des mesures.
 
 ## Ledger de dette — journalisation des observations (mandat ai-01 2026-09-18)
 
