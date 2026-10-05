@@ -78,6 +78,7 @@ if str(SCRIPT_DIR) not in sys.path:
 
 # Reuse the V2 keepers' primitives (single source of truth) ---------------
 from s3_hmm_regime import fit_markov_regime  # noqa: E402
+import strategy_metrics  # noqa: E402
 from s4_inverse_vol_ridge_v2 import (  # noqa: E402
     SYMBOLS,
     DEFENSIVE,
@@ -280,18 +281,18 @@ def oos_regime_probabilities(
 # ── Walk-forward backtest ────────────────────────────────────────────────────
 
 def _sharpe_ann(returns: np.ndarray) -> float:
-    if len(returns) < 10:
+    """Annualized Sharpe (``strategy_metrics.sharpe``: ddof=1, risk-free 0, 252 days).
+
+    Returns nan for fewer than 10 returns or a standard deviation <= 1e-12.
+    """
+    if len(returns) < 10 or float(np.std(returns, ddof=1)) <= 1e-12:
         return float("nan")
-    mu = float(np.mean(returns))
-    sigma = float(np.std(returns, ddof=1))
-    return (mu / sigma) * np.sqrt(252) if sigma > 1e-12 else float("nan")
+    return float(strategy_metrics.sharpe(returns))
 
 
 def _max_drawdown(returns: np.ndarray) -> float:
-    cum = np.cumprod(1 + returns)
-    peak = np.maximum.accumulate(cum)
-    dd = (cum - peak) / peak
-    return float(np.min(dd)) if len(dd) > 0 else 0.0
+    """Max drawdown, starting capital as first peak (``strategy_metrics.max_drawdown``)."""
+    return strategy_metrics.max_drawdown(returns)
 
 
 def walk_forward_sizing(
