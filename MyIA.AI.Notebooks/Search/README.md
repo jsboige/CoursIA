@@ -289,7 +289,7 @@ Au-delà de la Partie 2, le même marathon a livré les jumeaux C# de la **Parti
 ### Livres de référence
 
 - [AIMA - Russell & Norvig (4th ed.)](http://aima.cs.berkeley.edu/) - Chapitres 3-6
-- [Convex Optimization - Boyd & Vandenberghe (Cambridge UP, 2004)](https://stanford.edu/~boyd/books/cvxbook/) - Cadre unificateur LP/QP/SOCP/SDP ; le LP de Search-9 en est le cas lineaire. Archive : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Search\2004 - Convex Optimisation.pdf`
+- [Convex Optimization - Boyd & Vandenberghe (Cambridge UP, 2004)](https://web.stanford.edu/~boyd/cvxbook/) - Cadre unificateur LP/QP/SOCP/SDP ; le LP de Search-9 en est le cas linéaire. Archive : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Search\2004 - Convex Optimisation.pdf`
 - [Constraint Processing - Rina Dechter (2003)](https://www.cambridge.org/core/books/constraint-processing/)
 - [Handbook of Constraint Programming (2006)](https://www.elsevier.com/books/handbook-of-constraint-programming/)
 - [The CP-SAT Primer (2023)](https://pganalyze.com/blog/cp-sat-primer) - Guide pratique OR-Tools
