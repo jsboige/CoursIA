@@ -773,6 +773,95 @@ imports is a separate Epic sub-tranche).
 0 `pass`, 0 `return None`, 0 `sorry`, 0 `raise NotImplementedError`
 introduced in the shim.  Every public symbol either re-exports
 `_jvm_compat` (C184) or stdlib-only `logging`.  No derivation logic.
+
+## Entonnoir de sophismes -- FallacyWorkflowPlugin closure (#18391)
+
+Seven files vendored from the EPITA-IS fallacy-detection funnel, at commit
+`ecfd9b9c31d299ad9e08ee0e7a726d436f4ebd8e` (the commit cited by issue #18391):
+
+| File in CoursIA `argumentation_lib/` | Upstream path in EPITA-IS |
+|---------------------------------------|---------------------------|
+| `_fallacy_workflow_plugin.py` | `argumentation_analysis/plugins/fallacy_workflow_plugin.py` |
+| `_exploration_plugin.py` | `argumentation_analysis/plugins/exploration_plugin.py` |
+| `_identification_models.py` | `argumentation_analysis/plugins/identification_models.py` |
+| `_taxonomy_navigator.py` | `argumentation_analysis/agents/utils/taxonomy_navigator.py` |
+| `_taxonomy_tree.py` | `argumentation_analysis/utils/taxonomy_tree.py` |
+| `_taxonomy_local_overrides.py` | `argumentation_analysis/utils/taxonomy_local_overrides.py` |
+| `_plaintext_destination.py` | `argumentation_analysis/core/plaintext_destination.py` |
+
+**Dependency closure.** A BFS over the upstream imports of the entry point
+(`FallacyWorkflowPlugin`) closes on exactly these seven modules, 111,612 bytes.
+No other `argumentation_analysis.*` module is reachable -- established by
+walking the import graph, not by inspection. Runtime dependency:
+`semantic_kernel` (verified against 1.42.0); only public SK symbols are used.
+
+### Declared deviations from the cited upstream commit
+
+Deviations 1 and 4 are mechanical and behaviour-neutral. Deviation 2 is the
+substantive one: without it the vendored funnel resolves nothing. No file
+carries more than the deviations named against it below.
+
+1. **Imports rewritten** (six of the seven files) from `argumentation_analysis.*` package
+   paths to vendored relative names -- the same transformation applied to every
+   other module of this package.
+2. **`_fallacy_workflow_plugin.py` reads the taxonomy CSV as `utf-8-sig`**
+   instead of `utf-8`. The vendored CSV
+   (`data/argumentum_fallacies_taxonomy.csv`) is a byte-faithful mirror of
+   upstream Argumentum carrying a UTF-8 BOM; read as plain `utf-8`, the BOM
+   stays glued to the first header cell, so the column is named `﻿PK` and
+   every `row["PK"]` lookup returns empty. Measured on the 1408-row mirror:
+   `utf-8` -> 0 rows carry a PK, 0 deep-index entries, all 7 roots mapped to
+   `""`; `utf-8-sig` -> 1408 PKs and 91 deep-index entries. Under `utf-8` the
+   wide-net phase resolved **0 of 15** candidates and the funnel **silently
+   degraded to the one-shot regime**. Not repairable on the CSV side: the
+   mirror's integrity guard forbids editing it (see the docstring of
+   `_taxonomy_local_overrides.py`). `utf-8-sig` reads a BOM-less file exactly
+   like `utf-8`, so the change has no other effect. Note the notebook series
+   already read this CSV as `utf-8-sig` (cell `[2]` of `Argumentation-02`):
+   the vendored reader was the outlier.
+3. **`_fallacy_workflow_plugin.py` detaches the descent-trace FileHandler before
+   its truncating write** (`_persist_trace`). That handler is opened in mode
+   `"w"` at the start of the run and keeps its file offset, so writing the JSON
+   underneath it left the handler emitting at the old offset and padded the
+   artifact with NUL bytes. Measured on a 7-fallacy run: 8240 chars of JSON
+   followed by 3624 NULs -- `json.load` on the declared trace file raised
+   `Extra data`. The caller's `finally` still re-detaches harmlessly.
+4. **`_plaintext_destination.py` sets `encoding="utf-8", errors="replace"`** on
+   the `git check-ignore` call that already passes `text=True`. This file has no
+   `argumentation_analysis.*` import (standard library only), so deviation 1 does
+   not apply to it. The repository gate `check-subprocess-encoding` refuses
+   `text=True` without an explicit encoding -- on a cp1252 host, the child's
+   UTF-8 output is decoded with the wrong codec (#12811). Only the exit code is
+   consumed, so the deviation is behaviour-neutral.
+
+Per-file summary:
+
+| File | Deviations |
+|------|-----------|
+| `_fallacy_workflow_plugin.py` | 1, 2, 3 |
+| `_plaintext_destination.py` | 4 |
+| `_exploration_plugin.py`, `_identification_models.py`, `_taxonomy_navigator.py`, `_taxonomy_tree.py`, `_taxonomy_local_overrides.py` | 1 |
+
+### Verification of the vendored funnel (measured 2026-10-05)
+
+Through the public API only (`taxonomy_file_path=`, no `taxonomy_data`
+shortcut), on the synthetic text of `Argumentation-02`:
+
+- Phase 1 resolves candidates: `deep_index=91`, root PKs
+  `['1','1280','175','594','696','798','887']`.
+- Regime reached: `exploration_method = wide_net_parallel`,
+  `analysis_regime = funnel` -- **not** the `one_shot` fallback.
+- 6 branches explored, 21 iterations, 54 descent LLM calls.
+- Confirmed PKs all at depth >= 2 (3,4,4,4,4,4,5,6), each with a real `path`.
+- Rejections produced: 7 `Leaf not confirmed` records, plus
+  `Branch supersession: 9 confirmed, 2 branches superseded` -- the trace
+  evidence #18391 requires.
+- Trace artifact after deviation 3: 7986 chars, 0 NUL bytes, valid JSON.
+
+These are single-run figures: the funnel calls a live LLM, so counts vary
+between runs while the structure of the evidence does not. Reproduce with
+`Argumentation-02-Fallacies-Detection-Python.ipynb` section 5.
+
 What this NOTICE does NOT cover
 -------------------------------
 
