@@ -10,9 +10,9 @@
 
 ## Convention d'écriture
 
-Chaque ligne suit le format :
+Chaque ligne suit le format (TSV avec tabs comme séparateurs) :
 
-```
+```text
 date_cycle<TAB>#issue<TAB>chaperon_proposé<TAB>axe<TAB>statut<TAB>preuve<TAB>note
 ```
 
@@ -45,8 +45,10 @@ L'audit 2026-10-05T05:50Z liste 56 orphelines axe B ; la plupart portent un clai
 
 #### Statut émission commentaires nominatifs
 
-```
-2026-10-05T06:00Z	#16473	#16473	B	PROPOSÉ	c.5988917609 + c.5988930369	Claim initial + suivi postés sur l'EPIC parapropluie. Aucun commentaire nominatif émis sur les sous-grains axe B ce cycle (immixtion). Stratégie validée par coordination avec adjoint à venir.
+```text
+date_cycle | #issue | chaperon | axe | statut | preuve | note
+2026-10-05T06:00Z | #16473 | #16473 | B | PROPOSÉ | c.5988917609 + c.5988930369 | Claim initial + suivi postés sur l'EPIC parapluie. Aucun commentaire nominatif émis sur les sous-grains axe B ce cycle (immixtion). Stratégie validée par coordination avec adjoint à venir.
+2026-10-05T06:10Z | PR#19232 | — | B | OUVERT | https://github.com/jsboige/CoursIA/pull/19232 | Ledger de suivi acceptance 2 lot 1 (axe B) — ouvert par ma lane pour matérialiser la stratégie sans commentaires nominatifs. À reviewer par l'adjoint (po-2025:CoursIA) et le coordinateur (ai-01) avant émission des commentaires sur les sous-grains à claim tiers.
 ```
 
 ### Lots 2-5 — axes A, C, D, E, F
