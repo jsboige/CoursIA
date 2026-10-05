@@ -24,7 +24,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 4 | ICT-25 | tri des négatifs, désordre de sections établi | **LU** (tranche 1, 2026-08-24) |
 | 5 | GWT / SAE + non numérotés | alimente #7260 (renumérotation) | **LU 3/3 tranches** (lectures du 2026-09-19 ; posées au ledger par #16814, #16821, #16827 — rang complet, 100 % des strands) |
 | 6 | **Fondations 01 → 09** (extension #11690) | `ICT-01` à `ICT-09` — racine de la numérotation, les deux piliers + strate dynamique | **LU** (tranche A de l'extension, 2026-10-05) |
-| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS** (strand 7, ouvert 2026-10-05) |
+| 7 | **Tranche B 10 → 17b** (extension #11690) | `ICT-10` à `ICT-17b` non couverts par les strands 1-5 | **EN COURS 12/25** (strand 7, ouvert 2026-10-05 — jusqu'à `ICT-15`) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -621,3 +621,13 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Résultat | Non-stationnaire : A > B — recovery 0,680 vs 0,433 (Δ +0,247), regret Δ −31,4 ; stationnaire : A = B (recovery 1,000 partout) → verdict **CONFIRMED-CONDITIONNEL** avec frontière écrite ; **null adverse C≡B : 0 violation sur 5 seeds × 397 pas post-warmup** — l'agent épistémique-ablaté est strictement greedy, l'avantage de A est entièrement crédité au terme épistémique. Leçon : l'EFE n'est plus une re-description de la MSE, elle pilote l'action. |
 | Critique | (1) Le Δ +0,247 est porté par 4 seeds sur 5 — **seed 1 inverse le sens** (recA 0,015 vs recB 0,510) sans lecture par seed dans le md : la moyenne masque une défaite complète d'un seed. (2) Exos silencieux (squelette commenté). |
 | Verdict | **SOLIDE** — le null adverse exécuté (0 violation) est le geste qui distingue ce banc d'une démo : l'avantage est **attribué**, pas dépeint ; la frontière de validité (régime stationnaire) est mesurée et assumée. |
+
+### `ICT-15-IntegratedComplexity` — 25 cellules (17 md, 8 code, 8/8 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| Intention | **Capstone strate 4** : confronter la thèse fondatrice de la série (#5090/#5091) à l'appareil — Φ (intégration), F (surprise) et K (compression) sont-elles trois facettes d'une même quantité ? Trois scalaires sur les mêmes substrats, contrastés au même contrôle (un seul tirage de rng permute la trajectoire pour les trois). |
+| Contenu réel | 3 substrats (S1_tri / S2_bistable / S3_replicateur) ; `emergence_gain` 3 facettes (ec/fe/k) créditées vs contrôle shuffle ; Gate 4 = tau de Kendall par paire × 5 graines [0,1,7,42,99] ; Gate 5 = les 3 scalaires à travers le pli de GrazingModel (c_fold=2,604, sweep 0,80×→1,20×, 9 points) avec changepoints ; 3 exos en squelette commenté **silencieux** (Gate 4 sous LZMA, tau F_ordre2 vs Φ, Gate 5 sur S3). |
+| Résultat | Gains crédités oui sur les 3 substrats (ex. S1 3,808/2,144/0,341 ; S3 2,390/2,089/0,941). **Gate 4 : NE CONVERGE PAS** — tau moyen **−0,067**, 33 % positif seulement (les 3 facettes classent différemment les substrats, ex. seed 1 : ec\|fe +1,00 mais fe\|k −1,00). **Gate 5 : COINCIDENT à Δ près** — changepoints Φ=6, F=4, K=2 pour un pli à l'index 4 (écart max 2 pas) : les trois scalaires localisent le **même** changement de régime. Bilan : « ni prouvée ni réfutée, *opérationalisée* » — l'identité Φ=F=K n'est pas affirmée, sa mesure est livrée falsifiable. |
+| Critique | (1) Les taus par graine sont instables (seed 99 : k concorde à +1,00 avec ec quand seed 1 les oppose à −1,00) sans lecture par graine dans le md. (2) Gate 5 évalué sur une seule graine (seed=7 par défaut) — la coïncidence des changepoints n'est pas multi-seed. (3) Exos silencieux, dont l'exo 1 (LZMA) qui mesurerait K avec le vrai compresseur au lieu de zlib. |
+| Verdict | **SOLIDE** — le capstone tire la conclusion honnête à deux faces : divergence des **classements** (négatif assumé, affiché en sortie) + convergence des **changepoints** à travers le pli ; verdict INTRINSIC documenté pour Φ strict (intégrale sur toutes les partitions intractable), proxy déclaré. La thèse fondatrice sort *opérationalisée*, pas décrétée. |
