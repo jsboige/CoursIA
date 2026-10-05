@@ -2236,3 +2236,118 @@ class TestBoldTitlesAndPairing:
             "Numberless statements with stubs outside the window keep the "
             "conservative count (got %d)" % result.count
         )
+
+
+# ---------------------------------------------------------------------------
+# Accented print marker + pure-import guard (#18741 PR A)
+# ---------------------------------------------------------------------------
+
+class TestAccentedPrintMarkerAndImportGuard:
+    """Two false-negative causes measured on 2026-10-05 (diagnostic on #18741):
+
+    - the print stub pattern required the UNACCENTED spelling ``a completer``
+      while the comment/sentinel patterns accept ``a compl[eé]ter`` / ``à
+      compléter`` -- PT_09 (3 real skeleton cells marked by accented prints)
+      rendered 1/3;
+    - a PURE import cell read as a stub (its imports are stripped from the
+      effective-line count, so ``0 <= 1``), and the backward header pairing
+      (#18146) absorbed it in place of the real stub below the header --
+      PT_11c counted Exercice 1 twice and Exercices 2/3 zero times (2/3).
+    """
+
+    @pytest.mark.parametrize(
+        "marker",
+        [
+            'print("Exercice 2 a completer : ...")',
+            'print("Exercice 2 a compléter : ...")',
+            'print("Exercice 2 à completer : ...")',
+            'print("Exercice 2 à compléter : ...")',
+        ],
+    )
+    def test_accented_print_marker_flags_multi_line_skeleton(self, marker):
+        # Two effective code lines: the line-count rule cannot rescue the cell,
+        # so ONLY the print pattern decides -- the exact PT_09 shape.
+        source = marker + "\ntrajectoire = collecte_rollout(env, policy)\n"
+        assert _is_stub_code(source) is True, (
+            "the print stub marker must accept the accented francophone forms"
+        )
+
+    def test_accented_print_notebook_counts_three(self, tmp_path):
+        """PT_09 layout: three numbered headers, each followed by a 2-line
+        skeleton whose only stub marker is an accented print. Unfixed, all
+        three headers pair with nothing and a numbered header with no stub is
+        silently dropped -> 0."""
+        nb = _write_nb(
+            tmp_path / "accented_prints.ipynb",
+            [
+                _md("# Titre"),
+                _md("### Exercice 1 : boucle de rollout"),
+                _code(
+                    'print("Exercice 1 à compléter : la boucle de rollout")\n'
+                    "trajectoire = collecte_rollout(env, policy)\n"
+                ),
+                _md("### Exercice 2 : calcul des avantages"),
+                _code(
+                    'print("Exercice 2 à compléter : les avantages GAE")\n'
+                    "avantages = calcule_avantages(rewards)\n"
+                ),
+                _md("### Exercice 3 : mise a jour"),
+                _code(
+                    'print("Exercice 3 à compléter : la mise a jour")\n'
+                    "nouvelle_politique = maj_politique(politique)\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "accented print markers must pair their headers (got %d)"
+            % result.count
+        )
+
+    def test_pure_import_cell_is_not_a_stub(self):
+        assert _is_stub_code("import re\nfrom typing import Optional") is False
+        assert _is_stub_code("import numpy as np") is False
+        assert _is_stub_code("using System;\nusing System.Linq;") is False
+
+    def test_import_plus_code_is_untouched_by_the_guard(self):
+        # The guard only covers cells whose effective lines are ALL imports: a
+        # 1-code-line import cell keeps the historical `<= 1` verdict.
+        assert _is_stub_code("import numpy as np\nresultat = None") is True
+
+    def test_header_does_not_absorb_preceding_import_block(self, tmp_path):
+        """PT_11c layout (measured on the real notebook): an import block sits
+        directly above the Exercice 1 header, its real stub uses a plain TODO
+        marker, and the Exercices 2/3 stubs use ACCENTED print markers with a
+        prose cell between each stub and the next header.
+
+        Unfixed: header 1 absorbs the import block (backward undescribing),
+        its real stub counts standalone, and headers 2/3 pair nothing -> 2.
+        Accent fix alone: headers 2/3 pair their stubs but the import
+        absorption keeps the double-count -> 4 (the measured over-count).
+        Both fixes: each header pairs its own stub -> 3."""
+        nb = _write_nb(
+            tmp_path / "import_guard.ipynb",
+            [
+                _md("# Titre"),
+                _code("import re\nfrom typing import Optional"),
+                _md("### Exercice 1 : classement"),
+                _code("# TODO etudiant : classifier\nverdict = None"),
+                _md("On evalue maintenant la recompense."),
+                _md("### Exercice 2 : recompense"),
+                _code(
+                    'print("Exercice 2 à compléter : la fonction de recompense")\n'
+                    "recompense = calcule_recompense(trajectoire)\n"
+                ),
+                _md("Enfin, la penalite."),
+                _md("### Exercice 3 : penalite"),
+                _code(
+                    'print("Exercice 3 à compléter : la penalite")\n'
+                    "penalite = calcule_penalite(ecarts)\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "an import block is not a stub: headers must pair their own "
+            "stubs (got %d)" % result.count
+        )
