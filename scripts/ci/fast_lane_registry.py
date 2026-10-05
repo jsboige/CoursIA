@@ -1576,3 +1576,56 @@ TRANCHE16: list[Guard] = [
         warn_rc=(2,),
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 17 (#19116) -- garde de parite jumeau FR/<lang> scopee au diff.
+# Une PR notebook-only qui casse la parite d'un jumeau ``xxx_<lang>.ipynb``
+# (re-execution native au lieu du re-rendu T4, #18844) n'etait vue par
+# AUCUNE jambe : Scripts Tests (CPU) filtre sur ``scripts/**``,
+# ``translation-parity.yml`` ne tourne que sur schedule/dispatch. Le défaut
+# atterrissait sur ``main`` vert puis rougissait la PR de scripts suivante.
+#
+# Temoins fondateurs (rejoues en developpement du garde) :
+#   - POSITIF : diff complet de #18844 (``origin/main...c4c53386af``) --
+#     4 notebooks modifies, 1 paire touchee (medical_chatbot en), rouge
+#     CODE_DRIFT cellule ``d0d7a23d`` (48 sorties FR vs 41 EN), exit 1 ;
+#   - NEGATIF : tete de #19115 (``f43225aeef``, re-rendu T4 du meme
+#     jumeau) -- meme paire touchee, 0 bloquant, exit 0.
+#
+# Forme : le garde calcule lui-meme son diff (``{base_ref}...HEAD``),
+# evalue uniquement les paires dont UN membre change (re-executer seulement
+# le FR casse aussi la parite), bloquant. rc=2 = incident d'entree
+# (git/JSON), neutre au check-run (forme control-chars-in-cells-guard).
+# ---------------------------------------------------------------------------
+TRANCHE17: list[Guard] = [
+    Guard(
+        name="twin-parity-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/translation/check_translation_parity.py",
+            "scripts/translation/check_twin_parity_changed.py",
+            "scripts/translation/tests/test_check_twin_parity_changed.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/translation/check_twin_parity_changed.py",
+            "--diff", "{base_ref}...HEAD",
+        ],
+        blocking=True,
+        # `absorbed=True` (#19118, reserve de revue) : le job always-on lance
+        # `fast_lane.py --shadow`, et `effective_shadow = args.shadow and not
+        # guard.absorbed`. Sans absorption, ce garde emettait
+        # `fast-lane (ombre): twin-parity-guard` avec une conclusion neutre et
+        # n'entrait pas dans `blocking_failed` : `blocking=True` etait une
+        # declaration sans effet, et une PR de la forme #18844 (CODE_DRIFT
+        # d0d7a23d) serait passee. Meme convention que les autres gardes natifs
+        # absorbes (TRANCHE8/9/10/14) : un garde sans workflow d'origine n'a
+        # aucun autre emetteur de son nom de check-run.
+        absorbed=True,
+        needs_base=True,
+        warn_rc=(2,),
+    ),
+]
