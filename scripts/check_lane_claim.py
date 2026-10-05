@@ -1252,7 +1252,7 @@ def _gh_open_prs_with_files() -> list[dict]:
     proc = subprocess.run(
         [
             "gh", "pr", "list", "--state", "open",
-            "--json", "number,title,headRefName,body,files",
+            "--json", "number,title,headRefName,body,files,additions,deletions",
             "--limit", "200",
         ],
         # #12811 -- 200 PR bodies in one payload: a single non-cp1252 byte
@@ -1271,6 +1271,78 @@ def _gh_open_prs_with_files() -> list[dict]:
         raise RuntimeError(
             f"gh pr list returned non-JSON (exit {proc.returncode}): {exc}"
         )
+
+
+# #14300 -- the PR-body -> issue reference predicate, extracted from
+# `_find_open_pr_for_issue_by_lane` so the implicit-occupation leg reads the
+# SAME rule instead of forking a stricter twin that would drift (#9485
+# single-reader). The leniency (bare `#N`) is a deliberate choice of the
+# DELIVERED binder -- a PR body that mentions the issue informally still
+# evidences work on it -- and the implicit leg inherits it: over-matching
+# withholds a grain (fail-closed), under-matching serves a collision.
+_PR_ISSUE_REF_RE = re.compile(
+    r"(?i)\b(?:closes|fixes|refs|see|resolves|part\s+of|part-of)\s*"
+    r"#(\d+)\b|\B#(\d+)\b"
+)
+
+
+def _pr_body_references_issue(body: str, issue_number: int) -> bool:
+    """True when `body` carries any reference form of `issue_number`."""
+    for m in _PR_ISSUE_REF_RE.finditer(body):
+        captured = m.group(1) or m.group(2)
+        if captured is None:
+            continue
+        try:
+            if int(captured) == issue_number:
+                return True
+        except ValueError:
+            continue
+    return False
+
+
+# #14300 -- the implicit-occupation finder (issue mode, no --paths). The
+# claim record only sees [CLAIMED] markers; the incident the issue documents
+# (#14259, 2026-09-02) had two lanes converging on one file with ZERO
+# markers posted -- the organ said CLEAR and was "right": nobody had
+# claimed. The strongest signal of occupation -- an OPEN PR of another lane
+# already referencing the issue -- lived one `gh pr list` away.
+def _find_open_prs_referencing_issue(
+    issue_number: int,
+    my_lane: str,
+    prs: list[dict] | None = None,
+) -> list[dict]:
+    """Open PRs of OTHER lanes whose body references `issue_number`.
+
+    Own-lane PRs are omitted (a lane does not collide with itself -- the
+    same exclusion the `--paths` leg applies). A PR whose lane tag is
+    unreadable counts as another lane (`extract_lane` returns None,
+    None != my_lane): fail-closed, mirroring `--paths`, where an
+    unreadable lane tag also counts as a collision. Sorted by PR number
+    (deterministic verdict order). Test injection: pass `prs` to avoid the
+    `gh` round-trip.
+    """
+    if prs is None:
+        prs = _gh_open_prs_with_files()
+    out: list[dict] = []
+    for pr in prs:
+        body = pr.get("body") or ""
+        if not _pr_body_references_issue(body, issue_number):
+            continue
+        lane = extract_lane(body)
+        if lane == my_lane:
+            continue
+        files = [f.get("path") for f in (pr.get("files") or [])
+                 if f.get("path")]
+        out.append({
+            "number": pr.get("number"),
+            "lane": lane,
+            "title": pr.get("title"),
+            "files": files,
+            "additions": pr.get("additions"),
+            "deletions": pr.get("deletions"),
+        })
+    out.sort(key=lambda d: d["number"] or 0)
+    return out
 
 
 # #12386 v2 -- `_find_open_pr_for_issue_by_lane` returns the unique OPEN PR
@@ -1306,10 +1378,6 @@ def _find_open_pr_for_issue_by_lane(
     """
     if prs is None:
         prs = _gh_open_prs_with_files()
-    pat = re.compile(
-        r"(?i)\b(?:closes|fixes|refs|see|resolves|part\s+of|part-of)\s*"
-        + r"#(\d+)\b|\B#(\d+)\b"
-    )
     matches: list[int] = []
     for pr in prs:
         body = (pr.get("body") or "")
@@ -1320,14 +1388,9 @@ def _find_open_pr_for_issue_by_lane(
         pr_lane = extract_lane(body)
         if pr_lane != lane:
             continue
-        for m in pat.finditer(body):
-            captured = m.group(1) or m.group(2)
-            if captured is None:
-                continue
+        if _pr_body_references_issue(body, issue_number):
             try:
-                if int(captured) == issue_number:
-                    matches.append(int(pr["number"]))
-                    break
+                matches.append(int(pr["number"]))
             except (KeyError, ValueError, TypeError):
                 continue
     if len(matches) == 0:
@@ -2267,6 +2330,14 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                check_open_pr_paths: bool = False) -> int:
     """Issue-claim check: exit 1 if another lane blocks, 0 if clear.
 
+    Exit 3 (#14300): IMPLICIT -- no [CLAIMED] marker blocks, but an OPEN PR
+    of ANOTHER lane references this issue. Implicit occupation has no
+    marker authority, so it neither reuses BLOCKED (exit 1) nor the
+    io/gh-error exit 2 that check_grain_free.py documents for this mode.
+    Emitted only on the read path (`check_open_pr_paths=True`): a `--claim`
+    posting is the deconfliction gesture itself and is never refused by
+    this leg.
+
     Args:
         payload: `gh issue view --json ...` payload (or `from-json`).
         my_lane: caller lane `machine:workspace`.
@@ -2478,6 +2549,34 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         print("STALE_DETECTION disabled -- claims are NOT age-filtered "
               "(--no-stale or threshold None). Old claims still block.",
               file=sys.stderr)
+
+    # #14300 -- the IMPLICIT leg, issue mode (the incident's exact shape:
+    # `check_lane_claim.py 14259 --lane ...` said CLEAR while PR #14293 of
+    # another lane was already 79+/3- deep on the same file). Read path
+    # only (`--claim` is exempt: posting the marker IS the deconfliction
+    # gesture, and the writer path calls this function with
+    # `check_open_pr_paths=False`). Lazy by outcome: it runs only when the
+    # claim record is otherwise CLEAR (`not others` -- final, post
+    # scope-filter and stale-filter), because a blocking claim subsumes
+    # implicit occupation AND skipping the gh round-trip on BLOCKED probes
+    # keeps the picker's N-per-draw probes cheap. Fail-open with a loud
+    # WARN on gh failure, same posture as the #16570 paths leg: a leg that
+    # cannot measure must not fabricate a verdict.
+    implicit_occupation: list[dict] = []
+    if (check_open_pr_paths and not others
+            and payload.get("number") is not None):
+        try:
+            implicit_occupation = _find_open_prs_referencing_issue(
+                int(payload["number"]), my_lane)
+        except (RuntimeError, ValueError, TypeError) as exc:
+            print(
+                f"WARN: la jambe IMPLICIT (#14300) n'a pas pu tourner "
+                f"({exc}) : le verdict ci-dessous ne dit rien des PRs "
+                f"OUVERTES d'une autre lane referencant ce grain. "
+                f"Verifier a la main avec "
+                f"`gh pr list --state open --search \"<N>\"` avant d'editer.",
+                file=sys.stderr,
+            )
 
     # #12327 -- lint qualifier runs AFTER the reducer: the epic-wide marker
     # lint can no longer say `il bloque toutes les autres lanes` for a
@@ -2802,6 +2901,14 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # `exit 2`, matching the contract `--paths` already carries (#9959).
         "open_pr_collisions": [
             _serialise_path_collision(c) for c in open_pr_collisions],
+        # #14300 -- the IMPLICIT leg's finding, same single-report contract
+        # as open_pr_collisions above. Non-empty routes the verdict below
+        # to `IMPLICIT` at exit 3 -- distinct from claim-BLOCKED (exit 1)
+        # and from the io/gh-error exit 2 that check_grain_free.py
+        # documents for this mode. Empty list = no OPEN PR of another lane
+        # references the issue (or the leg was skipped: BLOCKED verdict,
+        # posting path, or a gh failure WARNed above).
+        "implicit_occupation": implicit_occupation,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
@@ -3103,6 +3210,35 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         )
         print("\n".join(lines), file=sys.stderr)
         return 2
+    # #14300 -- IMPLICIT: an OPEN PR of another lane references this issue
+    # while no [CLAIMED] marker exists. Distinct verdict by mandate: the
+    # occupation is real (code is already pushed on the other lane's
+    # branch) but carries no marker authority, so it is neither CLEAR
+    # (exit 0) nor BLOCKED (exit 1); it is also not the io/gh-error exit 2
+    # that check_grain_free.py documents for this mode. Exit 3, its own
+    # contract. Paths are named per the body's exigence 2 -- the collision
+    # is a fact of FILE, not of issue.
+    if implicit_occupation:
+        lines = []
+        for pr in implicit_occupation:
+            files = pr.get("files") or []
+            shown = ", ".join(files[:3]) + (
+                f" (+{len(files) - 3} autres)" if len(files) > 3 else "")
+            delta = ""
+            if pr.get("additions") is not None:
+                delta = f"{pr['additions']}+/{pr['deletions'] or 0}-, "
+            lane = pr.get("lane") or "lane ILLISIBLE"
+            lines.append(
+                f"IMPLICIT: lane {lane} a une PR ouverte "
+                f"(#{pr.get('number')}, {delta}sur {shown or 'fichiers inconnus'}) "
+                f"sans [CLAIMED] pose."
+            )
+        print("\n" + "\n".join(lines))
+        print(
+            "          Traiter comme occupee. Poser le marqueur ou "
+            "deconflicter avant d'editer (#14300)."
+        )
+        return 3
     parts = []
     if mine:
         parts.append("resuming your own active claim")
