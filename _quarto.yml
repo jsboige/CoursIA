@@ -1967,7 +1967,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/05-table-de-caracteres.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/06-bulles-minkowski.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/07-zeros-fonctions-l-gaps-gue.ipynb"
-    - "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/08-serre-dans-mathlib.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/08-serre-dans-mathlib-Lean.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/09-congruences-tau-lacunarite-delta.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/10-empilements-borne-lp-cohn-elkies.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/11-corps-quadratiques-reciprocite-quadratique.ipynb"
