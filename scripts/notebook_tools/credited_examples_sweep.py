@@ -296,8 +296,20 @@ def sweep(repo: str, repo_dir: Path, hours: int, now: dt.datetime,
         except RuntimeError as exc:
             errors.append(f"#{number}: body illisible ({exc})")
             continue
-        result = check([Path(p) for p in paths], base_ref=base,
-                       head_ref=head_ref, pr_body=body)
+        try:
+            result = check([Path(p) for p in paths], base_ref=base,
+                           head_ref=head_ref, pr_body=body)
+        except (OSError, ValueError) as exc:
+            # #19215 (review 5411248369, voie 2) : un carnet illisible depuis
+            # l'arbre du jour ne doit pas emporter les AUTRES PR de la
+            # fenetre. Nommee, la PR est ecartee et la suite est mesuree --
+            # l'inverse d'un masque : le repli est compte et imprime.
+            errors.append(
+                f"#{number}: carnet illisible depuis l'arbre du jour "
+                f"({exc.__class__.__name__}: {exc}) -- renomme ou supprime "
+                "apres merge, PR ecartee"
+            )
+            continue
         summary = result.as_payload().get("summary", {})
         lost = int(summary.get("credited_lost_unexempted", 0) or 0)
         diff_errors = int(summary.get("credited_diff_errors", 0) or 0)

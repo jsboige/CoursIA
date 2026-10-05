@@ -22,8 +22,16 @@ from __future__ import annotations
 
 import datetime as dt
 import importlib.util
+import json
+import subprocess
 import sys
+
+import pytest
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "notebook_tools"))
+
+import check_pr_exercises as _cpe  # noqa: E402
 
 _SCRIPT = Path(__file__).resolve().parent.parent / "notebook_tools" / "credited_examples_sweep.py"
 _spec = importlib.util.spec_from_file_location("credited_examples_sweep", _SCRIPT)
@@ -373,3 +381,135 @@ class TestSweepVerdicts:
         rows, errs = _sweep([_pr(1)], files={1: [_nb(IPY)]}, body=boom)
         assert rows == []
         assert len(errs) == 1 and "body illisible" in errs[0]
+
+
+class TestARenamedNotebookNoLongerTakesDownTheSweep:
+    """Review #19215 (5411248369), la mesure qui a fait tomber `--hours 72`.
+
+    #18788 a MODIFIE ICT-45-InoculationBifurcation-9B ; #19153 l'a ensuite
+    RENOMME en ICT-42b. Pour #18788 le chemin est donc MODIFIED, mais il
+    n'existe plus dans l'arbre du jour : `check_notebooks` comptait les
+    exercices sur cet arbre et levait un FileNotFoundError, ce qui emportait
+    TOUT le balayage -- les autres PR de la fenetre n'etaient pas mesurees.
+    """
+
+    def test_a_failing_check_names_the_pr_and_the_others_are_still_measured(self):
+        def check(paths, base_ref="", head_ref="", pr_body=""):
+            if paths and "ICT-45" in str(paths[0]):
+                raise FileNotFoundError(
+                    "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-...ipynb")
+            return _FakeResult()
+
+        rows, errs = _sweep(
+            [_pr(18788), _pr(18789)],
+            files={18788: [_nb("MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-x.ipynb")],
+                   18789: [_nb(IPY)]},
+            check=check,
+        )
+        assert [r["number"] for r in rows] == [18789], \
+            "un carnet illisible ne doit pas emporter les autres PR"
+        assert len(errs) == 1
+        assert errs[0].startswith("#18788:")
+        assert "carnet illisible" in errs[0]
+        assert "renomme ou supprime apres merge" in errs[0]
+        assert "FileNotFoundError" in errs[0], \
+            "le nom de l'exception doit rester lisible dans le repli"
+
+    def test_only_a_missing_notebook_is_named_other_errors_still_propagate(self):
+        """La portee du `except` est etroite : un bug du compteur ne doit pas
+        se derober en « carnet renomme ». Un repli trop large remplacerait une
+        panne par un chiffre manquant, ce que la fenetre ne distinguerait pas
+        d'une PR sans perte."""
+        def check(paths, base_ref="", head_ref="", pr_body=""):
+            raise RuntimeError("bug du compteur")
+
+        with pytest.raises(RuntimeError):
+            _sweep([_pr(7)], files={7: [_nb(IPY)]}, check=check)
+
+
+def _notebook_json(n_exercises):
+    """Un carnet minimal : N paires (en-tete `### Exercice i` + stub TODO)."""
+    cells = []
+    for i in range(1, n_exercises + 1):
+        cells.append({"cell_type": "markdown", "metadata": {},
+                      "source": [f"### Exercice {i}\n", "A completer.\n"]})
+        cells.append({"cell_type": "code", "metadata": {}, "execution_count": None,
+                      "outputs": [], "source": ["# TODO etudiant\n",
+                                                "result = None\n"]})
+    return {"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+
+
+def _git(repo, *args):
+    subprocess.run(
+        ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t",
+         "-c", "core.autocrlf=false", *args],
+        check=True, capture_output=True, text=True,
+    )
+
+
+class TestTheCountReadsTheRevisionNotTheTree:
+    """Review #19215 : `check_notebooks` comptait les exercices sur l'ARBRE DU
+    JOUR (`count_exercises_in_notebook(path)`), alors que le diff credite lit
+    deja le blob de `head_ref`. Deux consequences, une panne et un chiffre
+    faux -- les deux sont epinglees ici sur un depot git reel."""
+
+    REL = "MyIA.AI.Notebooks/Search/Part1/x.ipynb"
+
+    def _repo_with_head(self, tmp_path, *, tree):
+        """Depot a deux commits ; la tete porte 3 exercices.
+
+        ``tree`` : ce que l'arbre de travail contient a la fin -- ``None``
+        (carnet renomme/supprime depuis), ou un carnet d'un autre nombre
+        d'exercices (l'arbre a bouge depuis le merge)."""
+        repo = tmp_path / "repo"
+        (repo / Path(self.REL).parent).mkdir(parents=True)
+        target = repo / self.REL
+        _git(repo, "init", "-q")
+        target.write_text(json.dumps(_notebook_json(1)), encoding="utf-8")
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-q", "-m", "base")
+        base = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
+                              capture_output=True, text=True, check=True).stdout.strip()
+        target.write_text(json.dumps(_notebook_json(3)), encoding="utf-8")
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-q", "-m", "head")
+        head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
+                              capture_output=True, text=True, check=True).stdout.strip()
+        if tree is None:
+            target.unlink()
+        else:
+            target.write_text(json.dumps(_notebook_json(tree)), encoding="utf-8")
+        return repo, base, head
+
+    def _count(self, result):
+        """Le compte du carnet mesure, quel que soit son seau."""
+        for bucket in (result.ok, result.sub_threshold, result.parse_errors,
+                       result.out_of_corpus):
+            for verdict in bucket:
+                if verdict.path.endswith("x.ipynb"):
+                    return verdict.count
+        raise AssertionError("le carnet n'apparait dans aucun seau du resultat")
+
+    def test_a_modified_notebook_absent_from_the_tree_is_counted_from_the_blob(
+            self, tmp_path, monkeypatch):
+        """Le cas #18788 puis #19153 : ICT-45 modifie, puis renomme."""
+        repo, base, head = self._repo_with_head(tmp_path, tree=None)
+        monkeypatch.chdir(repo)
+        result = _cpe.check_notebooks([Path(self.REL)], base_ref=base, head_ref=head)
+        assert self._count(result) == 3, \
+            "le compte doit venir du blob de tete, pas de l'arbre (absent)"
+
+    def test_the_tree_version_never_wins_over_the_pr_head(self, tmp_path, monkeypatch):
+        """Meme quand le chemin existe, c'est la revision de la PR qui compte."""
+        repo, base, head = self._repo_with_head(tmp_path, tree=1)
+        monkeypatch.chdir(repo)
+        result = _cpe.check_notebooks([Path(self.REL)], base_ref=base, head_ref=head)
+        assert self._count(result) == 3, \
+            "1 exercice dans l'arbre, 3 dans la tete : la tete est la mesure"
+
+    def test_without_a_head_ref_the_tree_still_serves(self, tmp_path, monkeypatch):
+        """Retro-compatibilite : l'appel sans tete (CLI locale) lit l'arbre."""
+        repo, _base, _head = self._repo_with_head(tmp_path, tree=2)
+        monkeypatch.chdir(repo)
+        result = _cpe.check_notebooks([Path(self.REL)])
+        assert self._count(result) == 2
