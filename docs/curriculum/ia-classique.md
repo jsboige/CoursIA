@@ -88,13 +88,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 57 | [App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb) | BETA | Oui |
 | 58 | [App-32 — Szpiro : Pasten 2026 rend N log log N…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb) | BETA | Oui |
 
-## Search/Discrepancy (1 notebooks)
-
-| # | Notebook | Maturité | Exécutable |
-|---|----------|----------|------------|
-| 1 | [Discrepancy-02 — Discrépance combinatoire : la couche…](../../MyIA.AI.Notebooks/Search/Discrepancy/Discrepancy-02-Komlos-Lean.ipynb) | BETA | Oui |
-
-## Search/Part1-Foundations (43 notebooks)
+## Search/Part1-Foundations (44 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
