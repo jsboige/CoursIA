@@ -354,6 +354,7 @@ Ce notebook bonus incarne l'extension de vocabulaire $\eta : L_t \to L_{t+1}$ co
 - Pipeline composé : OWL (déclarer) + SHACL (juger) + owlrl (mesurer) + RDF-star (attribuer)
 - Le coup nul : une extension sans conséquence déductive est un résultat, pas un échec
 - Provenance de l'auteur du coup par reification RDF-star + PROV : *qui a proposé ce schéma, et au nom de quoi ?*
+- **Contrôle négatif** : un coup qui passe le juge SHACL mais produit un delta owlrl vide borne la falsifiabilité de la mesure
 
 #### SW-15-Python-Coup-Argumentatif (Bonus) : la greffe AIF/Dung (45 min)
 
@@ -376,6 +377,10 @@ Ce notebook bonus introduit le **proof-carrying inference** : chaque conclusion 
 - Ce que le certificat **ne prouve pas** est aussi important que ce qu'il prouve — la section 7 d'open-ontologies en fait une discipline (« *Every line above is worth less if this section is missing* »)
 
 > **Pont Lean** : le checker jouet applique une *procédure* ; le checker Lean d'open-ontologies porte un *théorème*. La série [Lean](../Lean/) est le prolongement naturel — compiler `horn_certificate_sound` sur la mini-table de règles en kernel Lean 4.
+
+#### SW-16-Python-ProofCarryingOntologies (Bonus) : le certificat d'inférence (60 min)
+
+Ce notebook ferme la trilogie des coups par un **renversement de charge de preuve** : ce n'est plus le moteur qui doit *convaincre* le consommateur qu'une conclusion tient, c'est le consommateur qui **vérifie un certificat** que le moteur lui fournit. Sur la fixture pizza de SW-13 (mini-ontologie RDFS, 4 règles Horn, dont une règle métier `allergenPropagation`), un moteur Horn naïf (forward-chaining instrumenté, ~60 lignes) émet pour chaque conclusion un **certificat de preuve** : règle appliquée, prémisses, conclusion, pas d'inférence. Un **checker indépendant** (autre code, autre cycle, autre auteur) accepte ou rejette le certificat sans ré-exécuter le moteur. Le notebook exécute la jambe complète sur la vraie ontologie `data/pizza.owl` via le binaire `open-ontologies v1.4.0` (Fabio Rovai, MIT, Rust) — `pizza-cli infer` produit un certificat, le checker jouet le valide, et **les deux marches coïncident** (un moteur de production et un checker de 60 lignes rendent le même verdict). Quatre certificats forgés (règle inventée, prémisse absente, conclusion truquée, support amputé) sont rejetés nommément, ce qui borne la falsifiabilité du checker. Trois exemples guidés (extension de l'ontologie + nouvelle claim, forge de la double liaison, slice minimal) et trois exercices (claim absente, règle inconnue par la fenêtre, amputation locale vs validité globale) ferment la série.
 
 ---
 
@@ -412,18 +417,21 @@ Si vous n'avez pas d'environnement .NET, vous pouvez suivre uniquement les noteb
 
 1. **SW-2b** (RDF Basics Python) → **SW-3b** (Graph Ops Python) → **SW-4b** (SPARQL Python) → **SW-5b** (Linked Data Python) → **SW-6b** (RDFS Python) → **SW-7b** (OWL Python) : les 6 sidetracks couvrent les fondamentaux avec rdflib/owlready2.
 2. Puis **SW-8** (SHACL) → **SW-9** (JSON-LD) → **SW-10** (RDF-Star) → **SW-11** (KG) → **SW-12** (GraphRAG) : les standards modernes et l'IA.
+3. Extensions : **SW-14** (coup ontologique) → **SW-15** (coup argumentatif) → **SW-16** (proof-carrying) : la trilogie qui ferme le pipeline.
 
 ### Parcours data engineer (~3h)
 
 Pour les praticiens qui veulent aller vite :
 
 1. **SW-2b** (RDF en 5 min) → **SW-4b** (SPARQL) → **SW-8** (SHACL : valider vos données) → **SW-9** (JSON-LD : exposer en API) → **SW-12** (GraphRAG : connecter aux LLMs).
+2. Si vous déployez des ontologies en production, ajoutez **SW-14** (coup) et **SW-16** (certificat) à la fin.
 
 ### Parcours ontologue (~4h)
 
 Pour les personnes créant des ontologies et des vocabulaires :
 
 1. **SW-6** (RDFS) → **SW-7** (OWL) → **SW-7b** (OWL Python) → **SW-8** (SHACL : contraintes sur les données) → **SW-13** (comparaison raisonneurs).
+2. La trilogie de l'**évolution d'ontologie** : **SW-14** (coup) → **SW-15** (coup argumentatif) → **SW-16** (preuve vérifiable).
 
 ### Parcours extensions (~3h, bonus Python)
 
@@ -436,7 +444,7 @@ Pour les personnes intéressées par la **composition des standards** et la **v�
 ## Quick Start
 
 ```bash
-# Python (notebooks SW-2b a SW-7b, SW-8 a SW-16)
+# Python (notebooks SW-2b a SW-7b, SW-8 a SW-13 ; bonus SW-14/15/16)
 pip install rdflib pySHACL owlready2 kglab SPARQLWrapper
 
 # .NET (notebooks SW-1 a SW-7, jumeaux C# SW-8/9/10/11/13)
