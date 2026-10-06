@@ -918,3 +918,133 @@ def test_belt_merge_only_flag_is_accepted(monkeypatch, capsys):
                    "--belt-merge-only", "--json"])
     assert rc == 0
     assert json.loads(capsys.readouterr().out)["mode"] == "belt"
+
+
+# Volet livraison du tapis (#19390) : la voie ponderee ecartait et
+# remplacait les candidats [INFO] candidate-delivered, le tapis les
+# servait comme grains neufs (mesure 06/10 : #15974 et #16048, deux
+# marqueurs chacune, servies a deux reprises). Les tests portent sur la
+# boucle extraite `belt_pick_with_replacements` -- convention du
+# fichier : main() n'est appele qu'a pool vide.
+
+
+def _belt_args(grains=2, include_delivered=False):
+    import types
+    return types.SimpleNamespace(
+        grains=grains, include_delivered=include_delivered,
+        lane="myia-po-2023:CoursIA-2")
+
+
+def _free_claims(items):
+    return {it["number"]: (pig.CLAIM_CODE_FREE, "libre") for it in items}
+
+
+def test_belt_withdraws_delivered_candidates_and_replaces():
+    """Controle positif #19390 : un candidat livre (label OU commentaire)
+    sort en withheld -- cause LIVRAISON -- jamais en picks, et le suivant
+    le remplace dans la fenetre."""
+    marked_label = _make_item(15974, age_days=100, idle=10, last=None)
+    marked_label["labels"] = ["candidate-delivered"]
+    marked_comment = _make_item(16048, age_days=99, idle=9, last=None)
+    clean_a = _make_item(19001, age_days=50, idle=5, last=None)
+    clean_b = _make_item(19002, age_days=49, idle=5, last=None)
+    pool = [marked_label, marked_comment, clean_a, clean_b]
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: n == 16048)
+    assert [p["number"] for p in picks] == [19001, 19002], (
+        "les candidats livres doivent etre remplaces, pas servis")
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert 15974 in causes and causes[15974].startswith("LIVRAISON")
+    assert 16048 in causes and causes[16048].startswith("LIVRAISON")
+    assert not state["budget_hit"] and state["failures"] == []
+
+
+def test_belt_keeps_unmarked_candidate_pickable():
+    """Controle negatif #19390 : sans marqueur (label absent, sonde
+    False), le candidat reste tirable."""
+    clean = _make_item(19003, age_days=40, idle=4, last=None)
+    picks, withheld, _ = pig.belt_pick_with_replacements(
+        [clean], _free_claims([clean]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False)
+    assert [p["number"] for p in picks] == [19003]
+    assert withheld == []
+
+
+def test_belt_unread_probe_is_fail_open_and_reported():
+    """Tri-etat : sonde None (lecture en echec) = candidat CONSERVE,
+    echec rapporte -- une lecture qui n'a pas abouti n'est pas une
+    absence de signal."""
+    unread = _make_item(19004, age_days=40, idle=4, last=None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [unread], _free_claims([unread]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: None)
+    assert [p["number"] for p in picks] == [19004]
+    assert withheld == []
+    assert state["failures"] == [19004]
+
+
+def test_belt_does_not_withdraw_umbrella_on_marker():
+    """Portee : l'urne grain seule. Une umbrella marquee reste servie --
+    un marqueur sur un EPIC n'est pas un verdict de fermeture (decision
+    mesuree du canal label, cf delivered_signal_reason)."""
+    umbrella = _make_item(19005, age_days=60, idle=6, klass="umbrella",
+                          last=None)
+    umbrella["labels"] = ["candidate-delivered"]
+    picks, withheld, _ = pig.belt_pick_with_replacements(
+        [umbrella], _free_claims([umbrella]), _belt_args(), probe_budget=8)
+    assert [p["number"] for p in picks] == [19005]
+    assert withheld == []
+
+
+def test_belt_probe_budget_is_bounded_and_fail_open_when_exhausted():
+    """Cout borne : le budget de sondes vaut la fenetre de tete. Au-dela,
+    plus personne n'est sonde -- fail-OPEN rapporte (budget_hit), jamais
+    un faux LIVRAISON sur un candidat jamais lu."""
+    items = [_make_item(n, age_days=30, idle=3, last=None)
+             for n in (19006, 19007, 19008)]
+    probes = []
+
+    def counting_probe(n, lane=None):
+        probes.append(n)
+        return True
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        items, _free_claims(items), _belt_args(), probe_budget=1,
+        delivered_probe=counting_probe)
+    # 1 sonde : le premier candidat est ecarte (marqueur lu), les deux
+    # suivants sont SERVIS sans lecture -- le budget epuise ne fabrique
+    # ni retrait ni silence non dit.
+    assert probes == [19006]
+    assert [p["number"] for p in picks] == [19007, 19008]
+    assert [w[0]["number"] for w in withheld] == [19006]
+    assert state["budget_hit"] is True
+
+
+def test_has_delivered_signal_grammar_ignores_discursive_mentions(monkeypatch):
+    """Controle negatif #19390, au niveau de la grammaire : une mention
+    discursive porte la sous-chaine sans etre un en-tete de marqueur --
+    elle ne doit pas retirer le candidat. Le vrai en-tete, si."""
+    def fake_run(argv, **kwargs):
+        class _P:
+            stdout = ""
+            returncode = 0
+        marker = argv[3]
+        if marker == "15974":
+            _P.stdout = json.dumps({
+                "comments": [
+                    {"body": "Verifie : rien de livree ici, "
+                             "sans [INFO] candidate-delivered dans ce fil."},
+                ]})
+        else:
+            _P.stdout = json.dumps({
+                "comments": [
+                    {"body": "[INFO] candidate-delivered lane "
+                             "myia-po-2024:CoursIA-2 -- preuve firsthand."},
+                ]})
+        return _P()
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    assert pig.has_delivered_signal(15974) is False, (
+        "une mention discursive n'est pas un marqueur")
+    assert pig.has_delivered_signal(16048) is True
