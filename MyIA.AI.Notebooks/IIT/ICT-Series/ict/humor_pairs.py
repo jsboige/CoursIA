@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """Couche d'acces au corpus humour consolide (CORPUS_DUR) pour #14035.
 
-Reproduit le geste du pilote ICT-35 : les cellules code [0..10] de
-``GameTheory-18d-Humour-Banc-Dur-Python.ipynb`` sont executees dans un namespace
-isole, sans editer le notebook source, et ``CORPUS_DUR`` en est extrait.
-La source de verite reste le notebook GT-24b, jamais copie.
+Reproduit le geste du pilote ICT-35 : les cellules code [26..33] de la section
+echelle de ``GameTheory-18c-Humour-Banc-Python.ipynb`` (absorption #14032) sont
+executees dans un namespace isole, sans editer le notebook source, et
+``CORPUS_DUR`` en est extrait. La source de verite reste le banc humour, jamais copie.
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
-# Taxonomie de labels du banc consolide (GT-24b, verifiee sur le pilote ICT-35).
+# Taxonomie de labels du banc consolide (verifiee sur le pilote ICT-35).
 LABELS: tuple[str, ...] = (
     "humour_reussi",
     "rire_sans_recadrage",
@@ -26,36 +26,37 @@ LABELS: tuple[str, ...] = (
     "rien",
 )
 
-# Derniere cellule code de GT-24b a executer : CORPUS_DUR est construit dans
-# la cellule 10 (mesure firsthand sur le notebook source).
-_CORPUS_CELL_END = 10
+# Plage de cellules code de la section echelle du banc consolide a executer :
+# CORPUS_DUR est construit dans la cellule 33 (mesure firsthand, #14032).
+_CORPUS_CELL_START = 26
+_CORPUS_CELL_END = 33
 
-# Champs du contrat d'instance (GT-24b cellule 10, verbe du banc).
+# Champs du contrat d'instance (banc consolide cellule 33, verbe du banc).
 _REQUIRED_FIELDS = ("id", "texte", "features", "label", "justification", "source")
 
 
-def gt24b_path() -> Path:
+def banc_humour_path() -> Path:
     """Chemin canonique du banc humour consolide, resolu depuis ce module."""
     return (
         Path(__file__).resolve().parents[3]
         / "GameTheory"
-        / "GameTheory-18d-Humour-Banc-Dur-Python.ipynb"
+        / "GameTheory-18c-Humour-Banc-Python.ipynb"  # consolide #14032
     )
 
 
 def _corpus_cwd() -> Path:
     """Repertoire d'execution reproduisant le cwd du pilote ICT-35.
 
-    La cellule 4 de GT-24b resout son cache Argumentum en chemin RELATIF
+    La cellule 26 du banc consolide resout son cache Argumentum en chemin RELATIF
     (``Path("argumentum_scenarii.csv")``) : selon le cwd, elle fait un hit
     cache ou declenche un fetch GitHub raw. Le cache du pilote vit dans le
     dossier ICT-Series ; a defaut on retombe sur le dossier du notebook
-    (comportement natif du banc, fetch documente dans sa cellule 4).
+    (comportement natif du banc, fetch documente dans sa cellule 28).
     """
-    for d in (Path(__file__).resolve().parent, gt24b_path().parent):
+    for d in (Path(__file__).resolve().parent, banc_humour_path().parent):
         if (d / "argumentum_scenarii.csv").exists():
             return d
-    return gt24b_path().parent
+    return banc_humour_path().parent
 
 
 @contextmanager
@@ -69,19 +70,19 @@ def _cwd(path: Path) -> Iterator[None]:
 
 
 def load_corpus_dur(path: Path | None = None) -> list[dict[str, Any]]:
-    """Charge ``CORPUS_DUR`` en executant les cellules de GT-24b.
+    """Charge ``CORPUS_DUR`` en executant les cellules du banc humour (18c).
 
-    Reproduction deterministe (``random.seed(42)`` est pose par GT-24b
-    lui-meme dans la cellule 10) ; le notebook source n'est jamais modifie.
+    Reproduction deterministe (``random.seed(42)`` est pose par le banc
+    lui-meme dans la cellule 33) ; le notebook source n'est jamais modifie.
     L'exec se fait dans le cwd portant le cache Argumentum (cf :func:`_corpus_cwd`)
     pour ne pas dependre du repertoire appelant.
     """
-    nb_path = path or gt24b_path()
+    nb_path = path or banc_humour_path()
     nb = json.loads(nb_path.read_text(encoding="utf-8"))
     ns: dict[str, Any] = {}
     with _cwd(_corpus_cwd()):
         for i, cell in enumerate(nb["cells"]):
-            if cell["cell_type"] == "code" and i <= _CORPUS_CELL_END:
+            if cell["cell_type"] == "code" and _CORPUS_CELL_START <= i <= _CORPUS_CELL_END:
                 exec("".join(cell["source"]), ns)  # noqa: S102 - reproduction, motif du pilote ICT-35 cell[3]
     corpus = ns["CORPUS_DUR"]
     validate_corpus(corpus)
@@ -113,7 +114,8 @@ def label_distribution(corpus: list[dict[str, Any]]) -> Counter:
 # --------------------------------------------------------------------------- #
 
 # Edits main : (setup verbatim, punchline verbatim, punchline_neutre, controle).
-# - setup + punchline = le texte COMMITTE de l'instance (source de verite GT-24b),
+# - setup + punchline = le texte COMMITTE de l'instance (source de verite : le
+#   banc humour consolide),
 #   re-verifie au chargement (span unique, suffixe exact).
 # - punchline_neutre : continuation coherente attendue — tue l'incongruite,
 #   conserve le lexique du registre, taille comparable.
@@ -153,7 +155,7 @@ _PAIR_EDITS: dict[str, tuple[str, str, str, str]] = {
     "joke-p29": ("Les submodules Git, c'est comme les voisins : ", "mieux vaut ne pas les déranger.", "on les voit rarement.", "ils prennent de la place."),
     "joke-p30": ("Il était une fois un UTF-8 qui ne savait pas où était la fin. ", "Il était perdu dans un BOM.", "Il attendait son dernier octet.", "Il cherchait son marqueur de fin."),
     # Top-up a >=30 : les instances Argumentum sont TRONQUEES a ~150 c. par le
-    # banc GT-24b (punchline jamais committée) — inutilisables. Les one-liners
+    # banc humour (punchline jamais committée) — inutilisables. Les one-liners
     # edge-04/05 (label recadrage_sans_rire : incongruite vive, annotateur n'a
     # pas ri) completent — heterogeneite de label documentée, l'incongruite
     # portee par le texte est le critere du pairing.

@@ -625,28 +625,50 @@ def _default_branch(repo: str, fetch=_gh_json) -> str:
 #: la reponse `workflow_runs[].name`). La liste reste explicite et documentee
 #: pour qu'une derive silencieuse d'un nom GitHub ne fausse pas le verdict.
 #:
-#: Pourquoi cette liste : un workflow `push: main` path-filtered qui n'a PAS
-#: de trigger `pull_request` peut etre rouge sur main sans rougir la PR
-#: candidate (la PR ne touche pas les paths concernes). C'est precisement le
-#: cas que la derogation vise : main est reellement rouge, mais la PR n'a
-#: aucun moyen de le voir. A ce jour (2026-10-02) le seul workflow repondant
-#: a ce critere est `Scripts & Notebook-Tools Tests` (scripts-tests.yml,
-#: push main, paths `scripts/**`, pas de trigger pull_request).
+#: Pourquoi cette liste : un workflow path-filtre `scripts/**` peut etre
+#: rouge sur main sans rougir la PR candidate -- sauf a toucher les memes
+#: paths, la PR ne declenche pas le workflow et ne voit donc jamais ce
+#: rouge. C'est precisement le cas que la derogation vise : main est
+#: reellement rouge, mais la PR n'a aucun moyen de le voir. A ce jour
+#: (2026-10-04) le seul workflow repondant a ce critere est `Scripts &
+#: Notebook-Tools Tests` (scripts-tests.yml : declencheurs push main ET
+#: pull_request, tous deux filtres par la MEME liste de chemins -- les deux
+#: incluent `tests/**`, `pytest.ini`, `.github/workflows/**` et une poignee
+#: de sujets hors `scripts/` (registre d'attributions, `conway_lean/**`,
+#: `prosody_lab/syllable_pitch.py`, `Track2-GoogleADK/**`, ...). Une PR qui
+#: ne touche AUCUN de ces chemins ne le declenche sur aucun des deux. #19069
+#: corrige ici deux mentions erronees successives : « pas de trigger
+#: pull_request » (version initiale) puis « une PR hors `scripts/**` », qui
+#: ignorait `tests/**` et `.github/workflows/**` (releve Hermes).
 MAIN_RED_WORKFLOWS = (
     # (yml_path, display_name)
     ("scripts-tests.yml", "Scripts & Notebook-Tools Tests"),
 )
+
+#: #19180 : conclusions qui portent un verdict ROUGE sur main. `timed_out`
+#: (le workflow a epuise son temps) et `startup_failure` (il n'a pas pu
+#: demarrer) sont des rouges reels : main n'a pas rendu de vert. Seules les
+#: conclusions SANS verdict -- `cancelled`, `skipped`, et toute autre valeur
+#: hors des deux tuples -- se sautent (#19069).
+MAIN_RED_CONCLUSIONS = ("failure", "timed_out", "startup_failure")
+MAIN_VERDICT_CONCLUSIONS = ("success",) + MAIN_RED_CONCLUSIONS
 
 
 def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
     """#18686 + #18790 + #18796 : motif de rouge observable sur la branche
     par defaut, ou None si vert.
 
-    Pour chaque workflow de `MAIN_RED_WORKFLOWS`, lit le DERNIER run sur
-    `main` via l'API workflow-directe
+    Pour chaque workflow de `MAIN_RED_WORKFLOWS`, lit le DERNIER run
+    REELLEMENT CONCLU sur `main` via l'API workflow-directe
     `repos/{repo}/actions/workflows/{yml_path}/runs?branch={branch}&event=push
-    &status=completed&per_page=1`. Le premier run rendu est le verdict le
-    plus frais de ce workflow sur main, **independamment de son anciennete**
+    &status=completed&per_page=10`, puis saute cote client les runs sans
+    verdict (`cancelled`, `skipped` : `status=completed` les inclut, et en
+    passe de merge en rafale la concurrence du workflow annule les runs
+    intermediaires -- le dernier run rendu masquait alors le rouge reel,
+    #19069). Le premier run a verdict rendu -- `success`, ou un rouge de
+    `MAIN_RED_CONCLUSIONS` (#19180 : `timed_out` et `startup_failure` en
+    sont) -- est le verdict le plus frais de ce workflow sur main,
+    **independamment de son anciennete**
     (limite de la fenetre globale du commit de tete : un merge non lie aux
     paths du workflow peut evict le run hors de la fenetre de 100 -- CR
     ai-01 2026-10-02 18:55Z sur #18796).
@@ -690,7 +712,7 @@ def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
         try:
             payload = fetch(
                 "repos/{}/actions/workflows/{}/runs"
-                "?branch={}&event=push&status=completed&per_page=1".format(
+                "?branch={}&event=push&status=completed&per_page=10".format(
                     repo, _yml, branch
                 )
             )
@@ -701,23 +723,44 @@ def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
         )
         if not isinstance(entries, list) or not entries:
             continue
-        run = entries[0]
-        if not isinstance(run, dict):
+        # #19069 : `status=completed` inclut les runs `cancelled`/`skipped`.
+        # En passe de merge en rafale, la concurrence du workflow annule les
+        # runs intermediaires et le dernier run rendu n'a alors AUCUN
+        # verdict : la derogation restait fermee alors que le dernier run
+        # reellement conclu sur main etait rouge. On saute les runs sans
+        # verdict et on prend le premier reellement conclu. #19180 : un
+        # `timed_out` ou un `startup_failure` EST un verdict (rouge) ; le
+        # sauter remontait jusqu'au vert precedent et declarait main vert.
+        run = next(
+            (
+                r
+                for r in entries
+                if isinstance(r, dict)
+                and r.get("conclusion") in MAIN_VERDICT_CONCLUSIONS
+            ),
+            None,
+        )
+        if run is None:
             continue
         # Garde-fou : le display_name GitHub doit matcher le display_name
         # canonique de l'entree. Un changement de nom cote GitHub ne fait
         # PAS evoluer silencieusement le verdict : on ignore le run.
         if run.get("name") != display_name:
             continue
-        if run.get("conclusion") != "failure":
+        if run.get("conclusion") not in MAIN_RED_CONCLUSIONS:
             continue
         created = run.get("created_at") or ""
         if latest is None or created > (latest.get("created_at") or ""):
             latest = run
     if latest is None:
         return None
-    return "main rouge: workflow `{}` en echec sur {} (run {})".format(
+    conclusion = latest.get("conclusion")
+    # Le motif nomme la conclusion quand ce n'est pas un `failure` ordinaire,
+    # pour que la derogation reste justifiable a la relecture (#19180).
+    qualifier = "" if conclusion == "failure" else " ({})".format(conclusion)
+    return "main rouge: workflow `{}` en echec{} sur {} (run {})".format(
         latest.get("name") or "?",
+        qualifier,
         branch,
         (latest.get("html_url") or "").rsplit("/", 1)[-1] or "?",
     )

@@ -607,4 +607,43 @@ theorem reidemeister3Connected_witness_movesConnects :
   unfold movesConnects
   decide
 
+/-! ## 7. Complétude (⇐) — le témoin canonique tranche
+
+Le header documente la complétude (`Reidemeister1Connected d d' →
+verifyR1Fwd d d' = true`) comme travail ultérieur, appuyée sur un argument
+de plausibilité : le vérificateur extrait les témoins exactement dans la
+forme de la chirurgie des définitions. Les deux examples bornés suivants
+**mesurent** cet alignement sur le cas décisif soulevé par le forensic du
+03/10 (#18611) : le kink NON terminal. Verdict mesuré : les deux langages
+parlent la même chirurgie — la complétude par maillon est un **lemme à
+prouver** (induction sur l'existentiel de la définition), pas un énoncé
+à affaiblir. -/
+
+/-- Direction complétude tenue sur le témoin canonique : la paire (d₁, d₂)
+    dont `reidemeister1Connected_satisfiable` (Reidemeister.lean) prouve
+    qu'elle satisfait la Prop passe le vérificateur Bool. Côté Prop le kink
+    est ajouté par `++ [C]` (donc toujours en fin de liste), côté Bool il
+    est lu par `getLast?` — même forme, kernel `decide` rend vrai. -/
+example : verifyR1Fwd
+    { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
+    { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 }
+    = true := by decide
+
+/-- Le kink NON terminal n'est pas un trou de complétude : la Prop
+    l'exclut d'office (la chirurgie est `set i Y' ++ [C]`, le kink est
+    TOUJOURS en fin de liste) et le vérificateur le refuse pareillement.
+    Ici les croisements sont exactement ceux du témoin ci-dessus, seul
+    l'ordre diffère : le kink `⟨1,5,6,6⟩` est inséré à l'indice 1, avant
+    le croisement réécrit `⟨5,2,3,4⟩`. `verifyR1` (les deux orientations)
+    rend faux : le pas R1 est refusé pour cette paire dans les deux
+    langages. Portée volontairement bornée : cet exemple tranche le pas
+    R1 seul — il n'établit PAS que la paire soit dépourvue de toute chaîne
+    de moves (la clôture transitive, par exemple via une réécriture R3
+    d'indices intérieurs, n'est ni prouvée ni réfutée ici). Cohérence
+    Prop/Bool sur le pas, pas un défaut de l'organe. -/
+example : verifyR1
+    { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
+    { crossings := [⟨1,2,3,4⟩, ⟨1,5,6,6⟩, ⟨5,2,3,4⟩], numEdges := 6 }
+    = false := by decide
+
 end Knots

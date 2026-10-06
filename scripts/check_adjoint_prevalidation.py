@@ -167,6 +167,16 @@ VERDICT_READY = "READY"
 VERDICT_BLOCKED = "BLOCKED"
 CANONICAL_VERDICTS = (VERDICT_READY, VERDICT_BLOCKED)
 
+# The branch a PR must target for a dossier to claim READY. Any other base
+# means the PR is stacked on top of another PR whose own merge state the
+# dossier cannot carry -- a READY here would authorize a merge into a
+# branch the gate has no jurisdiction on, including a branch that has been
+# squash-merged (the work is already on `main` via a different path) or
+# abandoned (the work is dead and the merge would resurrect nothing).
+# #19002: the measure of 2026-10-03 caught 4 such PRs in the open pool
+# (table in #19002 body), two of them (#18819, #18993) with a dead base.
+CANONICAL_BASE = "main"
+
 EXIT_READY = 0
 EXIT_NO_DOSSIER = 1
 EXIT_UNKNOWN = 2
@@ -221,6 +231,21 @@ REQUIRED_FIELDS = {
     "domain",
     "verdict",
 }
+# #18933 (invariant B de #17020) : provenance du verdict. Champs OPTIONNELS au
+# parse (un dossier BLOCKED ou legacy n'en porte pas), REQUIRED quand le
+# verdict est READY -- un READY doit etre le rendu de l'organe, pas une
+# appreciation (incident 2026-09-20 : 5 dossiers Haiku READY par defaut sur
+# #16364/#16365/#16379/#16386, dont un Solution-leak HIGH).
+VERDICT_ORGAN_FIELDS = ("organ", "organ-command", "organ-rc")
+ORGAN_NAME = "check_adjoint_prevalidation.py"
+
+# #18934 (invariant C de #17020) : refutation d'un dossier precedent. Un
+# dossier READY qui recouvre un dossier BLOCKED a tete constante doit citer
+# l'ancien (supersedes: numero du commentaire) et nommer ce qu'il refute
+# (supersedes-why). Champs OPTIONNELS au parse et hors contradiction --
+# un dossier sans aine sur la meme tete n'a rien a citer.
+SUPERSEDES_FIELDS = ("supersedes", "supersedes-why")
+
 INTEGER_FIELDS = {
     "pr",
     "comments-reviewed",
@@ -296,7 +321,12 @@ def parse_dossier(
         fields[key] = value
 
     missing = sorted(REQUIRED_FIELDS - fields.keys())
-    unknown = sorted(fields.keys() - REQUIRED_FIELDS)
+    unknown = sorted(
+        fields.keys()
+        - REQUIRED_FIELDS
+        - set(VERDICT_ORGAN_FIELDS)
+        - set(SUPERSEDES_FIELDS)
+    )
     if missing:
         errors.append("missing fields: " + ", ".join(missing))
     if unknown:
@@ -815,10 +845,11 @@ def probe_b0(pr: int) -> dict[str, Any]:
     """Run the B.0 organ on ``pr``. A failure to measure is fail-closed.
 
     The import is lazy because the probe runs only for a dossier that claims
-    READY: BLOCKED and absent dossiers never load the organ. A failure to
-    import it is a failure to measure like any other -- it surfaces as
-    ``RuntimeError``, which ``main`` reports as UNKNOWN (exit 2), never as a
-    traceback.
+    READY (``refute_ready_b0``) or BLOCKED with b0 as its sole blocking field
+    (``recheck_blocked_b0``, #19093): absent dossiers and other BLOCKED
+    reasons never load the organ. A failure to import it is a failure to
+    measure like any other -- it surfaces as ``RuntimeError``, which ``main``
+    reports as UNKNOWN (exit 2), never as a traceback.
     """
     try:
         try:
@@ -854,6 +885,121 @@ def refute_ready_b0(
     return verdict, [], dossier
 
 
+def derive_verdict(
+    snapshot: dict[str, Any], probe: Any = None
+) -> tuple[str, list[str]]:
+    """#18933 -- le verdict DERIVE de l'organe, pas ecrit par l'emetteur.
+
+    L'organe refait au moment de l'appel les mesures que le gate refait a
+    l'evaluation : latest-wins des checks (requis + verts), B.0 (organe
+    ``check_unaddressed_nits``), threads non resolus, draft -- et, depuis
+    le constat adjoint du 04/10 (PR #18984) : etat OPEN et diff non vide,
+    les deux predicats que ``validate_dossier`` exigeait deja. Renvoie
+    ``(VERDICT_READY, [])`` quand toutes sont vertes, sinon
+    ``(VERDICT_BLOCKED, raisons)``. C'est le rendu de CETTE fonction -- via
+    ``--derive-verdict`` -- qu'un dossier READY doit citer (organ,
+    organ-command, organ-rc) et que le gate reexecute
+    (``refute_ready_verdict``). Les actes de lecture (body lu, scope,
+    domaine) restent des champs du dossier : ils ne determinent plus le
+    verdict, ils l'accompagnent.
+    """
+    reasons: list[str] = list(
+        check_claim_contradictions(
+            "latest-wins-green", snapshot.get("checkRuns")
+        )
+    )
+    if snapshot.get("isDraft"):
+        reasons.append("draft pull request cannot be READY")
+    unresolved = sum(
+        not (thread.get("isResolved", False))
+        for thread in snapshot.get("threads") or []
+    )
+    if unresolved:
+        reasons.append(f"{unresolved} unresolved review thread(s)")
+    # Les deux predicats que validate_dossier exigeait deja mais que la
+    # derivation initiale omettait (constat adjoint 04/10, PR #18984) :
+    # une PR MERGED ou CLOSED ne peut pas etre READY, et un diff vide
+    # n'a rien a squasher -- garder derive et validate symetriques.
+    if snapshot.get("state") != "OPEN":
+        reasons.append(
+            f"pull request state must be OPEN, live={snapshot.get('state')}"
+        )
+    if snapshot.get("changedFiles") == 0:
+        reasons.append("READY requires a non-empty diff: 0 files changed")
+    reasons.extend(
+        b0_claim_contradictions("clear", (probe or probe_b0)(snapshot["number"]))
+    )
+    if reasons:
+        return VERDICT_BLOCKED, reasons
+    return VERDICT_READY, []
+
+
+def refute_ready_verdict(
+    snapshot: dict[str, Any],
+    verdict: str,
+    errors: list[str],
+    dossier: Dossier | None,
+    probe: Any = None,
+) -> tuple[str, list[str], Dossier | None]:
+    """Demote a READY verdict that the organ no longer derives (#18933).
+
+    Meme geste que ``refute_ready_b0`` : le gate rederive le verdict des
+    mesures vivantes a la tete. Un dossier READY dont le verdict n'est plus
+    derive (check rouge, thread ouvert, B.0 leve, draft) est REFUSE (rc 1),
+    pas requalifie en BLOCKED -- un dossier dont l'affirmation cles est
+    fausse ne merite pas la confiance sur ses autres champs. Seul READY est
+    redecompose : BLOCKED et dossier absent ne coutent rien.
+    """
+    if verdict != VERDICT_READY or dossier is None:
+        return verdict, errors, dossier
+    derived, reasons = derive_verdict(snapshot, probe)
+    if derived != VERDICT_READY:
+        return "", [*errors, (
+            "verdict claim 'READY' is no longer derived by the organ "
+            f"({ORGAN_NAME} --derive-verdict) at the head: " + "; ".join(reasons)
+        )], None
+    return verdict, errors, dossier
+def recheck_blocked_b0(
+    pr: int,
+    verdict: str,
+    dossier: Dossier | None,
+    probe: Any = None,
+) -> tuple[str, list[str], Dossier | None]:
+    """Expire a BLOCKED dossier whose only blocking field, ``b0``, no longer blocks.
+
+    Symmetric of ``refute_ready_b0`` (#19093). The READY probe compares the
+    dossier's ``b0: clear`` claim with the live organ; this one asks the mirror
+    question -- a dossier that attested ``b0: blocked`` for a remark a later
+    lift has extinguished must not keep answering rc=3 forever. Measured
+    instance (2026-10-04, #19012): dossier BLOCKED at 02:49Z for a review
+    reserve, the coordinator's APPROVE lifts it at 06:13Z on the same head,
+    and the gate still answered rc=3 at 10:24Z -- the pull request slept 4 h.
+    Cause: ``surfaces_fingerprint`` neutralizes the coordinator's own later
+    reviews (``_is_own_later_act``), so a lift by the coordinator expires
+    neither a READY nor a BLOCKED stamp.
+
+    Only the b0-ONLY case expires, and only toward a re-stamp: the answer
+    becomes the no-dossier outcome (exit 1), which routes the pull request to
+    a third-party lane for a fresh dossier -- never back to the author as
+    mergeable. Any other blocking field (checks, scope, domain) keeps the
+    dossier standing: its reason may still hold.
+    """
+    if verdict != VERDICT_BLOCKED or dossier is None:
+        return verdict, [], dossier
+    if blocking_fields(dossier) != ["b0"]:
+        return verdict, [], dossier
+    result = (probe or probe_b0)(pr)
+    if result and result.get("blocked"):
+        return verdict, [], dossier
+    return "", [
+        "dossier BLOCKED for b0 only, but the live B.0 organ "
+        f"(check_unaddressed_nits.py) no longer blocks PR #{pr} -- the "
+        "dossier's stated reason is extinguished, a re-stamp is required: "
+        "a third-party lane must post a fresh dossier (never merge on "
+        "this one)"
+    ], None
+
+
 def carrying_lane(snapshot: dict[str, Any]) -> str | None:
     """Return the lane that carries this pull request, from its `Grain:` tag.
 
@@ -884,40 +1030,98 @@ def is_out_of_fleet(snapshot: dict[str, Any]) -> bool:
     )
 
 
-def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
-    """Validate a parsed dossier against one live PR snapshot."""
-    f = dossier.fields
-    errors: list[str] = []
-    integers = {key: _integer(f, key, errors) for key in INTEGER_FIELDS}
+def dossier_self_consistency_errors(
+    fields: dict[str, str], target_number: int | None = None
+) -> list[str]:
+    """Controls that depend on the DOSSIER alone -- no PR snapshot, no network.
 
-    # Structural integrity only: "is this a dossier I can trust?" -- NOT "is this
-    # PR mergeable?". The verdict is read separately by evaluate(), so an honest
-    # BLOCKED dossier stays a valid dossier instead of being indistinguishable
-    # from an absent one (#16800).
+    Split out of ``validate_dossier`` (#19312) so that ``post_dossier.py`` can
+    refuse an incoherent dossier BEFORE it is published. The coherence between
+    ``verdict`` and ``domain`` used to be checked only by the gate, which needs
+    a live PR snapshot and therefore ran only after the POST: an incoherent
+    dossier reached the PR and became a surface to delete by hand.
+
+    ``target_number`` is the only live value some of these controls need -- the
+    ``organ-command`` must name ``<organ> --derive-verdict <n>``. When it is
+    None the dossier is not yet bound to a target and that control is skipped
+    rather than guessed; the gate always passes a number.
+
+    Structural integrity only: "is this a dossier I can trust?" -- NOT "is this
+    PR mergeable?". The verdict is read separately by evaluate(), so an honest
+    BLOCKED dossier stays a valid dossier instead of being indistinguishable
+    from an absent one (#16800).
+    """
+    errors: list[str] = []
     expected = {
         "schema": "1",
         "complete": "true",
         "body": "read",
     }
     for key, value in expected.items():
-        if f.get(key) != value:
+        if fields.get(key) != value:
             errors.append(f"{key} must be {value!r}")
-    verdict = f.get("verdict", "")
+    verdict = fields.get("verdict", "")
     if verdict not in CANONICAL_VERDICTS:
         errors.append(
             "verdict must be one of " + ", ".join(repr(v) for v in CANONICAL_VERDICTS)
         )
+    if verdict != VERDICT_READY:
+        return errors
+    for key, value in (
+        ("checks", "latest-wins-green"),
+        ("b0", "clear"),
+        ("scope", "pass"),
+    ):
+        if fields.get(key) != value:
+            errors.append(f"{key} must be {value!r} when verdict is READY")
+    if fields.get("domain") not in {"pass", "not-applicable"}:
+        errors.append("domain must be 'pass' or 'not-applicable' when verdict is READY")
+    # #18933 -- un READY doit etre le rendu d'un organe : provenance
+    # obligatoire et exacte. Sans elle, le verdict est une appreciation.
+    for key in VERDICT_ORGAN_FIELDS:
+        if not fields.get(key, "").strip():
+            errors.append(
+                f"{key} is required when verdict is READY -- the verdict "
+                "must be the render of the organ, not an appreciation "
+                "(#18933)"
+            )
+    if fields.get("organ") and fields.get("organ") != ORGAN_NAME:
+        errors.append(
+            f"organ must be {ORGAN_NAME!r} when verdict is READY, got "
+            f"{fields.get('organ')!r} (#18933)"
+        )
+    command = fields.get("organ-command", "")
+    if target_number is not None and command and not re.search(
+        rf"{re.escape(ORGAN_NAME)}\s+--derive-verdict\s+{target_number}\b",
+        command,
+    ):
+        errors.append(
+            "organ-command must invoke '"
+            f"{ORGAN_NAME} --derive-verdict {target_number}' "
+            f"when verdict is READY, got {command!r} (#18933)"
+        )
+    if fields.get("organ-rc") and fields.get("organ-rc") != "0":
+        errors.append(
+            "organ-rc must be '0' (the organ derived READY at emission) "
+            f"when verdict is READY, got {fields.get('organ-rc')!r} (#18933)"
+        )
+    return errors
+
+
+def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
+    """Validate a parsed dossier against one live PR snapshot."""
+    f = dossier.fields
+    errors: list[str] = []
+    integers = {key: _integer(f, key, errors) for key in INTEGER_FIELDS}
+
+    # Self-contained controls first (#19312), then the ones that read the live
+    # snapshot. Order is preserved: the extracted function emits the same errors
+    # in the same sequence as the inline block it replaces.
+    errors.extend(dossier_self_consistency_errors(f, snapshot.get("number")))
+
+    verdict = f.get("verdict", "")
     ready_claimed = verdict == VERDICT_READY
     if ready_claimed:
-        for key, value in (
-            ("checks", "latest-wins-green"),
-            ("b0", "clear"),
-            ("scope", "pass"),
-        ):
-            if f.get(key) != value:
-                errors.append(f"{key} must be {value!r} when verdict is READY")
-        if f.get("domain") not in {"pass", "not-applicable"}:
-            errors.append("domain must be 'pass' or 'not-applicable' when verdict is READY")
         # The claim is not taken on faith: it is checked against the live
         # latest-wins verdicts, naming any contradicting check (#16957).
         errors.extend(
@@ -925,6 +1129,22 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
                 f.get("checks", ""), snapshot.get("checkRuns")
             )
         )
+        # A READY dossier must target the default branch. A PR stacked on a
+        # feature branch carries a base whose own merge state lives outside
+        # this dossier's jurisdiction -- including the dead branches the
+        # measure of 2026-10-03 caught (squash-merged or abandoned, see
+        # #19002). The dossier cannot attest a merge into a branch it has
+        # not seen, so the gate refuses READY when the base is anything
+        # other than `main`. The error names the base so the lane knows
+        # which branch to retarget onto (the lane, not the gate, owns the
+        # retarget: a base bump is a content decision, see git-workflow.md
+        # L898 collision guard).
+        base = snapshot.get("baseRefName")
+        if base != CANONICAL_BASE:
+            errors.append(
+                f"baseRefName must be {CANONICAL_BASE!r} when verdict is READY "
+                f"(got {base!r}); retarget the PR before stamping a new dossier"
+            )
     elif verdict == VERDICT_BLOCKED and not blocking_fields(dossier):
         # Un BLOCKED qui ne nomme aucun champ bloquant est inerte : il occupe la
         # surface de gate sans dire quoi reparer, et ai-01 ne peut ni merger ni
@@ -1047,6 +1267,60 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     return errors
 
 
+def mute_contradictions(
+    dossier: Dossier,
+    candidates: list[tuple[Dossier, list[str]]],
+    comment_count: int,
+) -> list[str]:
+    """#18934 -- un READY qui recouvre un BLOCKED a tete constante refute par son nom.
+
+    « Le dernier dossier gagne » : sans cette garde, un READY peut recouvrir
+    en silence un BLOCKED anterieur du meme compte -- le masquage mesure le
+    2026-09-20 etait intra-login, la preuve que le defaut vit dans la
+    RELATION entre dossiers successifs, pas dans l'identite de l'emetteur ;
+    il survit donc a tout elargissement d'auteurs. La contradiction se joue
+    a tete constante (``head`` egaux) : a tete changee, l'ancien dossier est
+    deja perime par exact-head et il n'y a rien a refuter.
+
+    Le nouveau dossier doit porter ``supersedes: <numero du commentaire de
+    l'ancien>`` (position 1-based dans le fil, celle que restamp_warning
+    affiche deja) et ``supersedes-why: <texte>`` nommant ce qui est refute :
+    preuve apportee, erreur de l'ancien, ou perimetre different. Muette, la
+    contradiction refuse le dossier (rc 1) -- l'option A de la prescription,
+    fail-closed comme le reste du gate. La direction conservatrice (BLOCKED
+    apres READY) n'exige rien : elle serre, elle ne debloque pas.
+    """
+    if dossier.fields.get("verdict") != VERDICT_READY:
+        return []
+    covered = next(
+        (
+            previous
+            for previous, _errors in reversed(candidates[:-1])
+            if previous.fields.get("verdict") == VERDICT_BLOCKED
+            and previous.fields.get("head") == dossier.fields.get("head")
+        ),
+        None,
+    )
+    if covered is None:
+        return []
+    position = str(covered.comment_index + 1)
+    if dossier.fields.get("supersedes", "").strip() != position:
+        return [
+            "mute contradiction (#18934): verdict READY covers the BLOCKED "
+            f"dossier by {covered.author} from {covered.created_at} (comment "
+            f"{position} of {comment_count}) at the same head without refuting "
+            f"it -- set 'supersedes: {position}' and 'supersedes-why: <what "
+            "changed or what the BLOCKED dossier got wrong>"
+        ]
+    if not dossier.fields.get("supersedes-why", "").strip():
+        return [
+            "mute contradiction (#18934): supersedes cites comment "
+            f"{position} but supersedes-why is empty -- name what is refuted "
+            "(proof brought, the old dossier's error, or a different scope)"
+        ]
+    return []
+
+
 def evaluate_with_dossier(
     snapshot: dict[str, Any],
 ) -> tuple[str, list[str], Dossier | None]:
@@ -1083,6 +1357,7 @@ def evaluate_with_dossier(
 
     dossier, errors = candidates[-1]
     errors = [*errors, *validate_dossier(dossier, snapshot)]
+    errors.extend(mute_contradictions(dossier, candidates, len(comments)))
     # A dossier is a snapshot. Any later comment invalidates it, including a
     # reply that claims the PR is still ready -- unless the coordinator itself
     # wrote it, which it cannot be unaware of (see _is_own_later_act), or it
@@ -1414,8 +1689,52 @@ def render_template(snapshot: dict[str, Any], lane: str = ADJOINT_LANE) -> str:
         ("scope", "REPLACE_WITH_pass_OR_fail"),
         ("domain", "REPLACE_WITH_pass_OR_not-applicable_OR_fail"),
         ("verdict", "REPLACE_WITH_READY_OR_BLOCKED"),
+        # #18933 -- provenance du verdict : un READY cite l'organe qui l'a
+        # derive. Optionnel sur BLOCKED (supprimer les trois lignes ou les
+        # remplir), REQUIRED sur READY.
+        ("organ", "REPLACE_WITH_check_adjoint_prevalidation.py"),
+        (
+            "organ-command",
+            "REPLACE_WITH_python scripts/check_adjoint_prevalidation.py"
+            f" --derive-verdict {snapshot['number']}",
+        ),
+        ("organ-rc", "REPLACE_WITH_0_OR_3"),
     )
     return "\n".join([START, *(f"{key}: {value}" for key, value in fields), END])
+
+
+def render_emitted_dossier(
+    snapshot: dict[str, Any], lane: str = ADJOINT_LANE, probe: Any = None
+) -> tuple[str, str, list[str]]:
+    """#18933 -- rendre un dossier COMPLET : verdict DERIVE + provenance.
+
+    Le rendu part du template mecanique (``render_template``), remplace la
+    ligne ``verdict:`` par le verdict derive par l'organe et insere le bloc
+    de provenance (organ / organ-command / organ-rc) avant END. Seuls les
+    actes de lecture (complete/body/scope/domain, et le champ bloquant a
+    nommer si BLOCKED) restent a remplir par la lane emettrice. Renvoie
+    (bloc, verdict, raisons) -- l'emetteur rapporte le rc mesure
+    (0 READY / 3 BLOCKED) sans le choisir.
+    """
+    template = render_template(snapshot, lane)
+    verdict, reasons = derive_verdict(snapshot, probe)
+    organ_rc = EXIT_READY if verdict == VERDICT_READY else EXIT_BLOCKED_WITH_SUBSTANCE
+    provenance = {
+        "verdict": str(verdict),
+        "organ": ORGAN_NAME,
+        "organ-command": (
+            "python scripts/" f"{ORGAN_NAME} --derive-verdict {snapshot['number']}"
+        ),
+        "organ-rc": str(organ_rc),
+    }
+    lines = []
+    for line in template.split("\n"):
+        key = line.split(":", 1)[0] if ":" in line else None
+        if key in provenance and line.startswith(key + ":"):
+            lines.append(f"{key}: {provenance[key]}")
+        else:
+            lines.append(line)
+    return "\n".join(lines), verdict, reasons
 
 
 def main() -> int:
@@ -1448,9 +1767,45 @@ def main() -> int:
         action="store_true",
         help="render a complete dossier template from the live snapshot",
     )
+    parser.add_argument(
+        "--derive-verdict",
+        action="store_true",
+        help="ORGAN MODE (#18933): derive the verdict from the live "
+        "measurements (latest-wins checks + B.0 organ + unresolved threads "
+        "+ draft), print it and exit 0 (READY) / 3 (BLOCKED). A READY "
+        "dossier cites this command and its rc.",
+    )
+    parser.add_argument(
+        "--emit",
+        action="store_true",
+        help="render a COMPLETE dossier (#18933): mechanical fields + "
+        "verdict DERIVED by the organ + provenance "
+        "(organ/organ-command/organ-rc). Only the reading acts "
+        "(complete/body/scope/domain) stay for the emitting lane to fill.",
+    )
     args = parser.parse_args()
     try:
         snapshot = load_snapshot(args.pr)
+        if args.derive_verdict:
+            verdict, reasons = derive_verdict(snapshot)
+            print(verdict)
+            for reason in reasons:
+                print(f"- {reason}", file=sys.stderr)
+            return (
+                EXIT_READY if verdict == VERDICT_READY
+                else EXIT_BLOCKED_WITH_SUBSTANCE
+            )
+        if args.emit:
+            block, verdict, reasons = render_emitted_dossier(
+                snapshot, args.lane
+            )
+            print(block)
+            for reason in reasons:
+                print(f"# derived-blocked: {reason}", file=sys.stderr)
+            return (
+                EXIT_READY if verdict == VERDICT_READY
+                else EXIT_BLOCKED_WITH_SUBSTANCE
+            )
         if args.template:
             print(render_template(snapshot, args.lane))
             warning = restamp_warning(snapshot)
@@ -1476,6 +1831,11 @@ def main() -> int:
         verdict, errors, dossier = evaluate_with_dossier(snapshot)
         if not errors:
             verdict, errors, dossier = refute_ready_b0(args.pr, verdict, dossier)
+            verdict, errors, dossier = refute_ready_verdict(
+                snapshot, verdict, errors, dossier
+            )
+        if not errors:
+            verdict, errors, dossier = recheck_blocked_b0(args.pr, verdict, dossier)
     except (
         RuntimeError,
         KeyError,

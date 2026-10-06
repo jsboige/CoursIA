@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1340
-breakdown: SymbolicAI=312, GenAI=257, Search=156, ML=126, QuantConnect=115, GameTheory=109, IIT=93, Probas=76, Sudoku=38, RL=36, Complexity=9, CaseStudies=6, NLP=5, Compression=1, cross-series=1
-maturity: BETA=1179, DRAFT=89, ALPHA=68, TEMPLATE=4
+total: 1366
+breakdown: SymbolicAI=319, GenAI=264, Search=157, ML=130, QuantConnect=116, GameTheory=109, IIT=94, Probas=77, Sudoku=38, RL=37, Complexity=11, CaseStudies=6, NLP=5, cross-series=2, Compression=1
+maturity: BETA=1201, DRAFT=90, ALPHA=71, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -103,14 +103,14 @@ Complexity
 GameTheory
 ├── (à plat) - Nash, Minimax, Coopétition, MARL, Mechanism Design
 ├── SocialChoice/ - Arrow, Sen, Condorcet (Lean 4)
-└── *_lean/ + lean_game_defs(_ext)/ - 9 lakes (game_theory_lean [Arrow, Shapley, Stable Marriage], conway_cgt_lean, minimax_lean, assignment_lean, asymmetric_information_lean, social_choice_lean, social_choice_lean_peters [lake de référence externe], lean_game_defs, lean_game_defs_ext — ces deux derniers en `lakefile.toml`, pas `.lean`)
+└── *_lean/ + lean_game_defs(_ext)/ - 9 lakes (game_theory_lean [Arrow, Shapley, Stable Marriage], conway_cgt_lean, minimax_lean, assignment_lean, asymmetric_information_lean, social_choice_lean, social_choice_lean_peters [lake de référence externe, sous SocialChoice/], lean_game_defs, lean_game_defs_ext — ces deux derniers en `lakefile.toml`, pas `.lean`)
 
 ML
 ├── ML.Net/ - Tutoriels ML.NET C# (classification, régression, clustering)
 └── DataScienceWithAgents/ - Agents Python sklearn + ONNX jumeaux
 
 RL
-└── (à plat) - rl_1..13 : DQN, PPO, SAC, GRPO (DeepSeek-R1) from scratch
+└── (à plat) - RL-01..13 : DQN, PPO, SAC, GRPO (DeepSeek-R1) from scratch
 
 CaseStudies
 ├── Diagnostic-Medical/ - LLM-assisted diagnosis

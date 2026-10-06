@@ -11,15 +11,46 @@ from sklearn.preprocessing import StandardScaler
 # OOS 1Y Sharpe 3.39, 5Y CAGR 57.94%, 5Y Drawdown 15.20%, 76% Win Rate
 # Long-short equity with ML overlay, Hurst-style regime detection, ATR-scaled filters
 # Source: QC Strategy Library #238, cloned 2026-04-04; redeployed 2026-06-15, QC Project ID: 32921183
+#
+# Instrumentation de mesure (#19450) : parametres start/end (defauts = dates du code
+# d'origine), mode (base = regle d'origine ; top4 = controle : les 4 plus grandes
+# capitalisations a poids egaux, sans GLD, sans stop, sans ML, sans jambe courte),
+# fee_mult (1 = frais inchanges). Valeur du portefeuille a chaque cloture dans le
+# graphique "shadow" (contrat de rejeu en ombre, #18923).
+
+
+class _ScaledFeeModel(FeeModel):
+    """Frais du courtier (modele par defaut de Lean), mis a l'echelle (identite a 1.0)."""
+
+    def __init__(self, multiplier):
+        self._multiplier = multiplier
+        self._base = InteractiveBrokersFeeModel()
+
+    def get_order_fee(self, parameters):
+        fee = self._base.get_order_fee(parameters)
+        if fee is None or self._multiplier == 1.0:
+            return fee
+        amount = float(fee.value.amount) * self._multiplier
+        return OrderFee(CashAmount(amount, fee.value.currency))
 
 
 class VolatilityHarvestML_LongShort(QCAlgorithm):
 
     def Initialize(self):
-        self.SetStartDate(2015, 1, 1)
-        self.set_end_date(2024, 12, 31)
+        start = datetime.strptime(self.GetParameter("start") or "2015-01-01", "%Y-%m-%d")
+        end = datetime.strptime(self.GetParameter("end") or "2024-12-31", "%Y-%m-%d")
+        self.SetStartDate(start.year, start.month, start.day)
+        self.set_end_date(end.year, end.month, end.day)
         self.SetCash(100000)
         self.SetBrokerageModel(BrokerageName.InteractiveBrokersBrokerage, AccountType.Margin)
+
+        self.mode = self.GetParameter("mode") or "base"
+        if self.mode not in ("base", "top4"):
+            raise ValueError(f"mode inconnu : {self.mode}")
+        self.fee_mult = float(self.GetParameter("fee_mult") or 1)
+        if self.fee_mult != 1.0:
+            self.SetSecurityInitializer(
+                lambda security: security.SetFeeModel(_ScaledFeeModel(self.fee_mult)))
 
         self.Settings.FreePortfolioValuePercentage = 0.025
 
@@ -72,6 +103,22 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
 
         self.AddUniverse(self.CoarseSelection, self.FineSelection)
 
+        # Comptes du graphique shadow (contrat #18923)
+        self.start_value = 100000.0
+        self.closes = 0
+        self.traded = 0.0
+
+        if self.mode == "top4":
+            # Controle : les 4 plus grandes capitalisations, poids egaux, 100 %,
+            # sans GLD, sans stop, sans ML, sans jambe courte.
+            self.Schedule.On(
+                self.DateRules.MonthStart("SPY"),
+                self.TimeRules.AfterMarketOpen("SPY", 30),
+                self.Rebalance_Top4
+            )
+            self.SetWarmUp(252)
+            return
+
         self.Schedule.On(
             self.DateRules.EveryDay("SPY"),
             self.TimeRules.AfterMarketOpen("SPY", 30),
@@ -103,6 +150,38 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
         )
 
         self.SetWarmUp(252)
+
+    def Rebalance_Top4(self):
+        if self.IsWarmingUp:
+            return
+        syms = list(self._top_set)
+        if not syms:
+            return
+        w = 1.0 / float(len(syms))
+        for sym in syms:
+            self.SetHoldings(sym, w)
+        for kvp in self.Portfolio:
+            sym = kvp.Key
+            if sym.SecurityType != SecurityType.Equity:
+                continue
+            if sym in (self.spy, self.gld) or sym in self._top_set:
+                continue
+            if kvp.Value.Invested:
+                self.Liquidate(sym)
+
+    def OnOrderEvent(self, event):
+        if event.Status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED):
+            self.traded += (abs(event.FillQuantity * event.FillPrice) / self.Portfolio.TotalPortfolioValue)
+
+    def OnData(self, data):
+        if self.IsWarmingUp:
+            return
+        if not data.Bars.ContainsKey(self.spy):
+            return
+        self.Plot("shadow", f"e{self.closes % 5}", self.Portfolio.TotalPortfolioValue)
+        self.Plot("shadow", "fees", self.Portfolio.TotalFees / self.start_value)
+        self.Plot("shadow", "turnover", self.traded)
+        self.closes += 1
 
     def _safe_set_holdings(self, symbol, target_weight):
         pv = float(self.Portfolio.TotalPortfolioValue)

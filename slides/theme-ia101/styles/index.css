@@ -450,3 +450,47 @@ a {
 .slidev-layout table:not(.colored-table) tbody tr + tr td {
   border-top: 1px solid var(--color-bg-dark);
 }
+
+/* -------------------------------------------------------------------- */
+/* #15048 -- composition par groupes TeachingStep.
+ *
+ * Le flux multi-groupes vit dans le THEME (une seule definition), jamais
+ * dans une collection de coordonnees absolues par deck (le defaut fondateur
+ * de la doctrine : top: 305px/left: 48px et derivees dans les style.css).
+ * ts-stack empile des groupes illustres ; ts-compare pose deux colonnes
+ * de comparaison. Les tailles restent portées par le composant
+ * (components/TeachingStep.vue, tokens sm/md/lg). */
+/* -------------------------------------------------------------------- */
+
+/* Une diapo qui porte une pile ou une comparaison de groupes est une
+ * colonne flex : le titre prend sa hauteur, la zone de groupes prend le
+ * RESTE -- c'est ce qui rend la hauteur des groupes DEFINIE et borne les
+ * figures a leur groupe (sans elle, flex:1 1 0 les effondre a zero et
+ * leur contenu deborde, mesure pilote 08 : .ts hauteur 0). */
+.slidev-layout:has(> .ts-stack),
+.slidev-layout:has(> .ts-compare) {
+  display: flex;
+  flex-direction: column;
+}
+
+.ts-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.ts-stack > * {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.ts-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+}

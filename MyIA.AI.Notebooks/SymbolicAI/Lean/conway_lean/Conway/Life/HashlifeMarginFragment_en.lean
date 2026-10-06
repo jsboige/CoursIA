@@ -658,6 +658,78 @@ theorem gridToMacroCellWithOffset_level_le_of_box (g : Grid) (a b : Int × Int)
                ((gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat)) ≤ _
       exact ceilLog2_mono hside_le
 
+/-- **Reconstruction level bounded below by spatial span.** If two cells of
+    `g` sit at Chebyshev distance at least `2 ^ i`, the reconstruction
+    `gridToMacroCellWithOffset g` has level at least `i`: the dominant
+    coordinate stretches the bounding box by `2 ^ i`, the frame side
+    (`span + 5` padding) strictly exceeds `2 ^ i`, and `2 ^ ceilLog2 ≥ side`
+    (`ceilLog2_spec`) rules out any lower level. This is the exact
+    counterpart of `gridToMacroCellWithOffset_level_le_of_box` (upper
+    bound): together they bound the reconstruction level by the geometry of
+    the support, on both ends. -/
+theorem gridToMacroCellWithOffset_level_ge_of_span (g : Grid) (i : Nat)
+    (p q : Int × Int) (hp : p ∈ g) (hq : q ∈ g)
+    (hspan : 2 ^ i ≤ chebDist p q) :
+    i ≤ (gridToMacroCellWithOffset g).2.level := by
+  unfold chebDist at hspan
+  have hcast : ((2 ^ i : Nat) : Int) ≤
+      max (Int.natAbs (q.1 - p.1)) (Int.natAbs (q.2 - p.2)) := by
+    exact_mod_cast hspan
+  cases g with
+  | nil => exact absurd hp (by simp)
+  | cons p₀ ps =>
+    have hrmin_p : gridRowMin (p₀ :: ps) ≤ p.1 := gridRowMin_le_of_mem _ p hp
+    have hrmin_q : gridRowMin (p₀ :: ps) ≤ q.1 := gridRowMin_le_of_mem _ q hq
+    have hrmax_p : p.1 ≤ gridRowMax (p₀ :: ps) := le_gridRowMax_of_mem _ p hp
+    have hrmax_q : q.1 ≤ gridRowMax (p₀ :: ps) := le_gridRowMax_of_mem _ q hq
+    have hcmin_p : gridColMin (p₀ :: ps) ≤ p.2 := gridColMin_le_of_mem _ p hp
+    have hcmin_q : gridColMin (p₀ :: ps) ≤ q.2 := gridColMin_le_of_mem _ q hq
+    have hcmax_p : p.2 ≤ gridColMax (p₀ :: ps) := le_gridColMax_of_mem _ p hp
+    have hcmax_q : q.2 ≤ gridColMax (p₀ :: ps) := le_gridColMax_of_mem _ q hq
+    have hrowabs : Int.natAbs (q.1 - p.1) = q.1 - p.1 ∨
+        Int.natAbs (q.1 - p.1) = p.1 - q.1 := by
+      rcases le_or_gt p.1 q.1 with h | h
+      · exact Or.inl (Int.natAbs_of_nonneg (by omega))
+      · exact Or.inr (by
+          rw [show q.1 - p.1 = -(p.1 - q.1) by ring, Int.natAbs_neg]
+          exact Int.natAbs_of_nonneg (by omega))
+    have hcolabs : Int.natAbs (q.2 - p.2) = q.2 - p.2 ∨
+        Int.natAbs (q.2 - p.2) = p.2 - q.2 := by
+      rcases le_or_gt p.2 q.2 with h | h
+      · exact Or.inl (Int.natAbs_of_nonneg (by omega))
+      · exact Or.inr (by
+          rw [show q.2 - p.2 = -(p.2 - q.2) by ring, Int.natAbs_neg]
+          exact Int.natAbs_of_nonneg (by omega))
+    have hext : ((2 ^ i : Nat) : Int) ≤
+        gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) ∨
+        ((2 ^ i : Nat) : Int) ≤
+        gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) := by
+      rcases hrowabs with h1 | h1 <;> rcases hcolabs with h2 | h2 <;> omega
+    -- The frame side (dominant span + 5) exceeds 2^i in either branch.
+    have hside : (2 ^ i) ≤ max
+        ((gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat)
+        ((gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat) := by
+      rcases hext with hrow | hcol
+      · refine Nat.le_trans ?_ (Nat.le_max_left _ _)
+        have hnn : (0 : Int) ≤ gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5 := by omega
+        have h5 : ((2 ^ i : Nat) : Int) ≤
+            gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5 := by omega
+        exact (Int.le_toNat hnn).mpr h5
+      · refine Nat.le_trans ?_ (Nat.le_max_right _ _)
+        have hnn : (0 : Int) ≤ gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5 := by omega
+        have h5 : ((2 ^ i : Nat) : Int) ≤
+            gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5 := by omega
+        exact (Int.le_toNat hnn).mpr h5
+    simp only [gridToMacroCellWithOffset]
+    rw [MacroCell.level_buildFromGrid]
+    by_contra hlt
+    push_neg at hlt
+    have hpowlt : 2 ^ MacroCell.ceilLog2
+        (max ((gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat)
+             ((gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat)) < 2 ^ i :=
+      Nat.pow_lt_pow_right (by norm_num) hlt
+    exact absurd (Nat.le_trans hside (MacroCell.ceilLog2_spec _)) (Nat.not_le.mpr hpowlt)
+
 /-! ## L3 periodic class `T ∣ 2^k` — hcap of oscillators (tranche 3, step 6)
 
 Second L3 link **entirely closed**: the generalization of the `T = 1` chain
@@ -2224,6 +2296,674 @@ theorem cexBlock1_supportInMargin_k2 : supportInMargin cexBlock1 2 :=
     (no live cells to constrain — `List.all` over `[]` is vacuously true). -/
 theorem cexEmpty1_supportInMargin_k0 : supportInMargin cexEmpty1 0 :=
   supportInMargin_trivial _ _
+
+/-! ## Tranche 14 — compositionality: disjoint union (#13483)
+
+The missing locality law of the program: two configurations whose supports are
+separated by more than `2·t` evolve independently — the evolution of the union
+is the union of the evolutions, in the membership sense (`evolve_union_mem`). This is the assembly brick
+of the admitted classes (still life, oscillator, spaceship): the actual
+content of Life patterns is a juxtaposition of pieces from these classes. The
+capture transfer (trajectory boxes of the parts → `jumpCapturedF` of the
+union's reconstruction, via the `jumpCapturedF_of_dilation` corridor) is the
+next tranche: it requires the padded-render geometry, the cloison already
+named by that corridor.
+-/
+
+/-- **Tranche 14, link 1(a) — local agreement of union and part.** On the
+    Chebyshev-`t` box of a point `q` near `g₁` (witness `hnear`), the union
+    `g₁ ++ g₂` and `g₁` alone render the same state: any live cell of `g₂` in
+    the box would be at distance `≤ 2·t` from the witness (triangle),
+    contradicting the **strict** separation `2·t < d` — the equality case
+    (`2·t = d`) lets the box touch both supports, hence the strict bound. -/
+theorem union_agrees_with_left (t : Nat) (g₁ g₂ : Grid) (q : Int × Int)
+    (hnear : ∃ p, p ∈ g₁ ∧ chebDist p q ≤ t)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 2 * t < chebDist p r) :
+    ∀ r, chebDist q r ≤ t → isAlive (g₁ ++ g₂) r = isAlive g₁ r := by
+  intro r hqr
+  obtain ⟨p, hp₁, hpq⟩ := hnear
+  have hg₂r : r ∉ g₂ := by
+    intro hrmem
+    have hle := hsep p hp₁ r hrmem
+    have htri : chebDist p r ≤ chebDist p q + chebDist q r := chebDist_triangle p r q
+    omega
+  cases hb : isAlive (g₁ ++ g₂) r with
+  | true =>
+    have hm := (isAlive_true_iff_mem _ r).mp hb
+    rw [List.mem_append] at hm
+    rcases hm with h | h
+    · exact ((isAlive_true_iff_mem g₁ r).mpr h).symm
+    · exact absurd h hg₂r
+  | false =>
+    cases hc : isAlive g₁ r with
+    | true =>
+      have hu : r ∈ g₁ := (isAlive_true_iff_mem g₁ r).mp hc
+      have hcontr : isAlive (g₁ ++ g₂) r = true :=
+        (isAlive_true_iff_mem _ r).mpr (List.mem_append.mpr (Or.inl hu))
+      rw [hb] at hcontr
+      exact Bool.noConfusion hcontr
+    | false => rfl
+
+/-- **Tranche 14, link 0 — union in the `isAlive` sense.** Purely
+    set-theoretic brick (no separation required, no time step): the state
+    of an append is the "or" of the states of the parts. Serves the `t = 0`
+    case of the union law and the append-order bridge. -/
+theorem isAlive_append_or (g₁ g₂ : Grid) (q : Int × Int) :
+    isAlive (g₁ ++ g₂) q = (isAlive g₁ q || isAlive g₂ q) := by
+  cases hA : isAlive g₁ q with
+  | true =>
+      have hm : q ∈ g₁ ++ g₂ :=
+        List.mem_append.mpr (Or.inl ((isAlive_true_iff_mem g₁ q).mp hA))
+      rw [(isAlive_true_iff_mem _ q).mpr hm, Bool.true_or]
+  | false =>
+      cases hB : isAlive g₂ q with
+      | true =>
+          have hm : q ∈ g₁ ++ g₂ :=
+            List.mem_append.mpr (Or.inr ((isAlive_true_iff_mem g₂ q).mp hB))
+          rw [(isAlive_true_iff_mem _ q).mpr hm, Bool.false_or]
+      | false =>
+          have hU : isAlive (g₁ ++ g₂) q = false := by
+            cases hd : isAlive (g₁ ++ g₂) q with
+            | false => rfl
+            | true =>
+                have hmem := (isAlive_true_iff_mem _ q).mp hd
+                rw [List.mem_append] at hmem
+                rcases hmem with h | h
+                · rw [(isAlive_true_iff_mem g₁ q).mpr h] at hA
+                  exact Bool.noConfusion hA
+                · rw [(isAlive_true_iff_mem g₂ q).mpr h] at hB
+                  exact Bool.noConfusion hB
+          rw [hU, Bool.false_or]
+
+/-- **Tranche 14, link 1(b) — the pointwise union law.** Under strict
+    separation `2·t < d` of the initial supports, the state at any point
+    after `t` generations of the union is the "or" of the states of the
+    parts: near `g₁` the union evolves like `g₁` alone (local agreement) and
+    `g₂` is dead there (cone + triangle); outside both cones, everything is
+    dead. -/
+theorem evolve_union (t : Nat) (g₁ g₂ : Grid)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 2 * t < chebDist p r) (q : Int × Int) :
+    isAlive (evolve t (g₁ ++ g₂)) q =
+      (isAlive (evolve t g₁) q || isAlive (evolve t g₂) q) := by
+  by_cases hn₁ : ∃ p, p ∈ g₁ ∧ chebDist p q ≤ t
+  · have hagree : ∀ r, chebDist q r ≤ t → isAlive (g₁ ++ g₂) r = isAlive g₁ r :=
+      union_agrees_with_left t g₁ g₂ q hn₁ hsep
+    have hbow : isAlive (evolve t (g₁ ++ g₂)) q = isAlive (evolve t g₁) q :=
+      evolve_box_agree t (g₁ ++ g₂) g₁ q hagree
+    have hdead : isAlive (evolve t g₂) q = false := by
+      cases hd : isAlive (evolve t g₂) q with
+      | false => rfl
+      | true =>
+        obtain ⟨r, hr₂, hrq⟩ := evolve_reach_chebyshev t g₂ q hd
+        obtain ⟨p, hp₁, hpq⟩ := hn₁
+        have hle := hsep p hp₁ r ((isAlive_true_iff_mem g₂ r).mp hr₂)
+        have htri : chebDist p r ≤ chebDist p q + chebDist q r :=
+          chebDist_triangle p r q
+        have hcomm : chebDist q r = chebDist r q := chebDist_comm q r
+        omega
+    rw [hbow, hdead, Bool.or_false]
+  · by_cases hn₂ : ∃ p, p ∈ g₂ ∧ chebDist p q ≤ t
+    · have hseps : ∀ p ∈ g₂, ∀ r ∈ g₁, 2 * t < chebDist p r := by
+        intro p hp r hr
+        have hle := hsep r hr p hp
+        rw [chebDist_comm]
+        exact hle
+      have hagree : ∀ r, chebDist q r ≤ t → isAlive (g₂ ++ g₁) r = isAlive g₂ r :=
+        union_agrees_with_left t g₂ g₁ q hn₂ hseps
+      have hbow : isAlive (evolve t (g₂ ++ g₁)) q = isAlive (evolve t g₂) q :=
+        evolve_box_agree t (g₂ ++ g₁) g₂ q hagree
+      have hdead : isAlive (evolve t g₁) q = false := by
+        cases hd : isAlive (evolve t g₁) q with
+        | false => rfl
+        | true =>
+          obtain ⟨r, hr₁, hrq⟩ := evolve_reach_chebyshev t g₁ q hd
+          obtain ⟨p, hp₂, hpq⟩ := hn₂
+          have hle := hseps p hp₂ r ((isAlive_true_iff_mem g₁ r).mp hr₁)
+          have htri : chebDist p r ≤ chebDist p q + chebDist q r :=
+            chebDist_triangle p r q
+          have hcomm : chebDist q r = chebDist r q := chebDist_comm q r
+          omega
+      have hswap : isAlive (evolve t (g₁ ++ g₂)) q = isAlive (evolve t (g₂ ++ g₁)) q := by
+        cases t with
+        | zero =>
+            show isAlive (g₁ ++ g₂) q = isAlive (g₂ ++ g₁) q
+            rw [isAlive_append_or g₁ g₂ q, isAlive_append_or g₂ g₁ q]
+            cases isAlive g₁ q <;> cases isAlive g₂ q <;> rfl
+        | succ n =>
+            exact congrArg (isAlive · q) (evolve_congr (fun p =>
+              List.mem_append.trans (or_comm.trans List.mem_append.symm))
+              (Nat.succ_le_succ (Nat.zero_le n)))
+      rw [hswap, hbow, hdead, Bool.false_or]
+    · have hdead₁ : isAlive (evolve t g₁) q = false := by
+        cases hd : isAlive (evolve t g₁) q with
+        | false => rfl
+        | true =>
+          obtain ⟨p, hp₁, hpq⟩ := evolve_reach_chebyshev t g₁ q hd
+          exact absurd ⟨p, (isAlive_true_iff_mem g₁ p).mp hp₁, hpq⟩ hn₁
+      have hdead₂ : isAlive (evolve t g₂) q = false := by
+        cases hd : isAlive (evolve t g₂) q with
+        | false => rfl
+        | true =>
+          obtain ⟨p, hp₂, hpq⟩ := evolve_reach_chebyshev t g₂ q hd
+          exact absurd ⟨p, (isAlive_true_iff_mem g₂ p).mp hp₂, hpq⟩ hn₂
+      have hdeadU : isAlive (evolve t (g₁ ++ g₂)) q = false := by
+        cases hd : isAlive (evolve t (g₁ ++ g₂)) q with
+        | false => rfl
+        | true =>
+          obtain ⟨p, hpU, hpq⟩ := evolve_reach_chebyshev t (g₁ ++ g₂) q hd
+          have hmemU : p ∈ g₁ ++ g₂ := (isAlive_true_iff_mem _ p).mp hpU
+          rw [List.mem_append] at hmemU
+          rcases hmemU with h | h
+          · exact absurd ⟨p, h, hpq⟩ hn₁
+          · exact absurd ⟨p, h, hpq⟩ hn₂
+      rw [hdeadU, hdead₁, hdead₂, Bool.false_or]
+
+/-- **Tranche 14, link 1(c) — trajectory of the union, membership form.**
+    Under strict separation `2·t < d` of the initial supports, the membership
+    of the evolution of the union is the union of the memberships of the
+    evolutions. The "literal list" form `evolve t (g₁ ++ g₂) = evolve t g₁ ++
+    evolve t g₂` is false for `t ≥ 1`: the canonical enumeration of `evolve`
+    (lexicographic order, `canonical_evolve_of_pos`) interleaves points of
+    separated parts sharing a column, where the append keeps them blocked —
+    order is not preserved, only the support is. This is the compositionality
+    brick that the capture transfer (tranche 14b) will consume: trajectory
+    boxes of the parts → box of the union, membership reasoning. -/
+theorem evolve_union_mem (t : Nat) (g₁ g₂ : Grid)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 2 * t < chebDist p r) (q : Int × Int) :
+    q ∈ evolve t (g₁ ++ g₂) ↔ (q ∈ evolve t g₁ ∨ q ∈ evolve t g₂) := by
+  simp only [← isAlive_true_iff_mem]
+  rw [evolve_union t g₁ g₂ hsep q, Bool.or_eq_true]
+
+/-- **Slice 14b, link 1 — hull box of the union trajectory.**
+    Under strict separation `2·T < d` of the initial supports (hence of every
+    time `s ≤ T` by monotonicity), if each part trajectory lives in its box
+    (`h₁`, `h₂` — componentwise conjunction form, the corridor language),
+    the union trajectory lives in the hull box: lower bounds at the `min`,
+    upper bounds at the `max`, component by component. This is the first
+    link of the capture transfer announced in the docstring of
+    `evolve_union_mem`: the adherence of the union reads off those of the
+    parts (`evolve_union_mem` at every time `s ≤ T`); link 2 — the
+    level/window geometry of the union reconstruction, connecting this hull
+    to the `jumpCapturedF` predicate via `jumpCapturedF_of_dilation` —
+    remains to be established. -/
+theorem evolve_union_hull_box (T : Nat) (g₁ g₂ : Grid)
+    (a₁ b₁ a₂ b₂ : Int × Int)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 2 * T < chebDist p r)
+    (h₁ : ∀ s ≤ T, ∀ p, isAlive (evolve s g₁) p = true →
+      a₁.1 ≤ p.1 ∧ p.1 < b₁.1 ∧ a₁.2 ≤ p.2 ∧ p.2 < b₁.2)
+    (h₂ : ∀ s ≤ T, ∀ p, isAlive (evolve s g₂) p = true →
+      a₂.1 ≤ p.1 ∧ p.1 < b₂.1 ∧ a₂.2 ≤ p.2 ∧ p.2 < b₂.2)
+    (s : Nat) (hs : s ≤ T) (p : Int × Int)
+    (hp : isAlive (evolve s (g₁ ++ g₂)) p = true) :
+    min a₁.1 a₂.1 ≤ p.1 ∧ p.1 < max b₁.1 b₂.1 ∧
+      min a₁.2 a₂.2 ≤ p.2 ∧ p.2 < max b₁.2 b₂.2 := by
+  have hseps : ∀ q ∈ g₁, ∀ r ∈ g₂, 2 * s < chebDist q r := by
+    intro q hq r hr
+    have hb := hsep q hq r hr
+    omega
+  obtain hA | hB := (evolve_union_mem s g₁ g₂ hseps p).mp
+    ((isAlive_true_iff_mem _ p).mp hp)
+  · obtain ⟨c1, c2, c3, c4⟩ := h₁ s hs p ((isAlive_true_iff_mem _ p).mpr hA)
+    exact ⟨(min_le_left _ _).trans c1, c2.trans_le (le_max_left _ _),
+      (min_le_left _ _).trans c3, c4.trans_le (le_max_left _ _)⟩
+  · obtain ⟨c1, c2, c3, c4⟩ := h₂ s hs p ((isAlive_true_iff_mem _ p).mpr hB)
+    exact ⟨(min_le_right _ _).trans c1, c2.trans_le (le_max_right _ _),
+      (min_le_right _ _).trans c3, c4.trans_le (le_max_right _ _)⟩
+
+/-! ## Tranche 14b, link 2 — uniform independence and capture of periodic unions
+
+Link 1 (`evolve_union_mem`, `evolve_union_hull_box`) establishes compositionality
+under **cone** separation `2·t < d` : a hypothesis that degrades with time and dies at
+the jump horizon — the two parts of a confined union stay close to their boxes, but
+their separation `d` is bounded by the extent of the union, so `2·2^k < d` is
+arithmetically closed (the same closure as the corridor,
+`jumpCapturedF_of_dilation`). This link reverses the angle: for trajectories
+**confined for all time**, the separation that matters is **uniform and constant** —
+three cells of Chebyshev between the supports at every instant — and it suffices for
+independence at every `t`, with no `2·t < d` condition.
+
+Why 3 and not 2: a single step of the Game of Life births a median cell between two
+supports at distance 2 (two live cells on one side, one on the other — `B3` counts the
+three neighbours of the intermediate cell). At distance 3, the closed neighbourhood
+(Chebyshev ≤ 1) of a candidate of one part never meets the support of the other
+(triangle inequality: `3 − 1 = 2 > 1`), and the local rule splits exactly. This is the
+**step-level** geometry announced by the docstring of `evolve_union_hull_box`: the box
+hull makes the hypothesis checkable (3-separated boxes,
+`hsep_of_confined_boxes`), and the present link derives from it the `jumpCapturedF`
+capture of periodic unions — via the periodic route
+(`jumpCapturedF_of_period_divides`), the corridor remaining closed.
+-/
+
+/-- **Bool bridge: membership in an append-union.** `isAlive` (a `List.elem`)
+    distributes over `++` by boolean `or`. Building block of the local split of the
+    B3/S23 rule. -/
+theorem isAlive_append (g₁ g₂ : Grid) (p : Int × Int) :
+    isAlive (g₁ ++ g₂) p = (isAlive g₁ p || isAlive g₂ p) := by
+  by_cases h₁ : p ∈ g₁ <;> by_cases h₂ : p ∈ g₂ <;>
+    simp [isAlive, List.mem_append, h₁, h₂]
+
+/-- **The local rule only sees the grid.** Two grids that are pointwise equal in the
+    `isAlive` sense decide each cell identically: the neighbour count
+    (`countP_congr`) and the presence of the cell itself. Used to transport the
+    evolution of the union to the append of the part evolutions. -/
+theorem aliveNext_congr_isAlive {G H : Grid} (h : ∀ r, isAlive G r = isAlive H r)
+    (q : Int × Int) : aliveNext G q = aliveNext H q := by
+  have hc : liveNeighborCount G q = liveNeighborCount H q := by
+    unfold liveNeighborCount
+    rw [List.countP_congr (fun r _ => by rw [h r])]
+  unfold aliveNext
+  rw [hc, h q]
+
+/-- **The step only sees the grid (membership form).** Consequence of
+    `aliveNext_congr_isAlive` via `mem_step_iff`: two `isAlive`-equal grids have the same
+    `step` in the sense of members. -/
+theorem mem_step_congr {G H : Grid} (h : ∀ r, isAlive G r = isAlive H r)
+    (q : Int × Int) : q ∈ step G ↔ q ∈ step H := by
+  rw [mem_step_iff, mem_step_iff]
+  have hcand : q ∈ candidates G ↔ q ∈ candidates H := by
+    unfold candidates
+    simp only [List.mem_append, List.mem_flatMap, ← isAlive_true_iff_mem, h]
+  rw [hcand, aliveNext_congr_isAlive h q]
+
+/-- **Distance of a candidate to the foreign support.** If the supports of `g₁` and
+    `g₂` are 3-separated, every **candidate** of `g₁` (live cell or Moore neighbour
+    of a live one — Chebyshev ≤ 1 from the support) is at Chebyshev ≥ 2 from every
+    live cell of `g₂`. This is the triangle inequality `3 − 1 = 2`: the closed
+    neighbourhood of a candidate never touches the other support. -/
+theorem far_of_candidates_sep (g₁ g₂ : Grid)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 3 ≤ chebDist p r) (x : Int × Int)
+    (hx : x ∈ candidates g₁) (r : Int × Int) (hr : isAlive g₂ r = true) :
+    2 ≤ chebDist x r := by
+  obtain hg | ⟨p, hp, hqx⟩ := by
+    unfold candidates at hx
+    simpa only [List.mem_append, List.mem_flatMap] using hx
+  · have h3 := hsep x hg r ((isAlive_true_iff_mem g₂ r).mp hr)
+    omega
+  · have htri : chebDist p r ≤ chebDist p x + chebDist x r := chebDist_triangle p r x
+    have h1 : chebDist p x ≤ 1 := chebDist_le_one_of_moore p x hqx
+    have h3 := hsep p hp r ((isAlive_true_iff_mem g₂ r).mp hr)
+    omega
+
+/-- **Locality of the B3/S23 rule.** A cell at Chebyshev ≥ 2 from every live cell of
+    `g₂` is decided by the union exactly as by `g₁` alone: no cell of `g₂` enters its
+    closed neighbourhood (the 9 cells at Chebyshev ≤ 1), so neither the count nor
+    the presence can differ. -/
+theorem aliveNext_of_far (g₁ g₂ : Grid) (q : Int × Int)
+    (hfar : ∀ r, isAlive g₂ r = true → 2 ≤ chebDist q r) :
+    aliveNext (g₁ ++ g₂) q = aliveNext g₁ q := by
+  have hnone : ∀ r ∈ mooreNeighbors q, isAlive g₂ r = false := by
+    intro r hr
+    cases hb : isAlive g₂ r with
+    | false => rfl
+    | true =>
+        have h2 := hfar r hb
+        have h1 := chebDist_le_one_of_moore q r hr
+        omega
+  have hcount : liveNeighborCount (g₁ ++ g₂) q = liveNeighborCount g₁ q := by
+    unfold liveNeighborCount
+    rw [List.countP_congr (fun r hr => by
+      rw [isAlive_append, hnone r hr, Bool.or_false])]
+  have hself : isAlive (g₁ ++ g₂) q = isAlive g₁ q := by
+    rw [isAlive_append]
+    cases hb : isAlive g₂ q with
+    | false => simp
+    | true =>
+        have h2 := hfar q hb
+        have h0 := chebDist_self q
+        omega
+  unfold aliveNext
+  rw [hcount, hself]
+
+/-- **Split of one step under separation 3.** Under 3-separation of the supports,
+    the step of the union is the union of the steps in the sense of members: every
+    candidate belongs to one part, its decision is that of its part alone
+    (`aliveNext_of_far` via `far_of_candidates_sep`), and conversely. This is the
+    **step-level** building block — the induction of link 2 — which the cone
+    separation `2·t < d` of link 1 cannot give at a constant horizon. -/
+theorem mem_step_union (g₁ g₂ : Grid)
+    (hsep : ∀ p ∈ g₁, ∀ r ∈ g₂, 3 ≤ chebDist p r) (q : Int × Int) :
+    q ∈ step (g₁ ++ g₂) ↔ (q ∈ step g₁ ∨ q ∈ step g₂) := by
+  have hsepswap : ∀ p ∈ g₂, ∀ r ∈ g₁, 3 ≤ chebDist p r := by
+    intro p hp r hr
+    have h := hsep r hr p hp
+    rwa [chebDist_comm] at h
+  have hcommU : ∀ r, isAlive (g₁ ++ g₂) r = isAlive (g₂ ++ g₁) r := by
+    intro r
+    rw [isAlive_append, isAlive_append, Bool.or_comm]
+  have hfarR : ∀ (q : Int × Int)
+      (hf : ∀ r, isAlive g₁ r = true → 2 ≤ chebDist q r),
+      aliveNext (g₁ ++ g₂) q = aliveNext g₂ q := by
+    intro q hf
+    rw [aliveNext_congr_isAlive hcommU q,
+      aliveNext_of_far g₂ g₁ q (fun r hr => hf r hr)]
+  have hcandU₁ : ∀ x ∈ candidates g₁, x ∈ candidates (g₁ ++ g₂) := by
+    intro x hx
+    unfold candidates at hx ⊢
+    rcases List.mem_append.mp hx with hx' | hx'
+    · exact List.mem_append.mpr (Or.inl (List.mem_append.mpr (Or.inl hx')))
+    · obtain ⟨p, hp, hxmem⟩ := List.mem_flatMap.mp hx'
+      exact List.mem_append.mpr (Or.inr (List.mem_flatMap.mpr
+        ⟨p, List.mem_append.mpr (Or.inl hp), hxmem⟩))
+  have hcandU₂ : ∀ x ∈ candidates g₂, x ∈ candidates (g₁ ++ g₂) := by
+    intro x hx
+    unfold candidates at hx ⊢
+    rcases List.mem_append.mp hx with hx' | hx'
+    · exact List.mem_append.mpr (Or.inl (List.mem_append.mpr (Or.inr hx')))
+    · obtain ⟨p, hp, hxmem⟩ := List.mem_flatMap.mp hx'
+      exact List.mem_append.mpr (Or.inr (List.mem_flatMap.mpr
+        ⟨p, List.mem_append.mpr (Or.inr hp), hxmem⟩))
+  constructor
+  · intro hmem
+    rw [mem_step_iff] at hmem
+    obtain ⟨hc, ha⟩ := hmem
+    -- candidate split: one of the two parts carries it
+    have hcsplit : q ∈ candidates g₁ ∨ q ∈ candidates g₂ := by
+      unfold candidates at hc ⊢
+      rcases List.mem_append.mp hc with hq' | hq'
+      · rcases List.mem_append.mp hq' with h | h
+        · exact Or.inl (List.mem_append.mpr (Or.inl h))
+        · exact Or.inr (List.mem_append.mpr (Or.inl h))
+      · obtain ⟨p, hp, hqmem⟩ := List.mem_flatMap.mp hq'
+        rcases List.mem_append.mp hp with hp₁ | hp₂
+        · exact Or.inl (List.mem_append.mpr (Or.inr (List.mem_flatMap.mpr
+            ⟨p, hp₁, hqmem⟩)))
+        · exact Or.inr (List.mem_append.mpr (Or.inr (List.mem_flatMap.mpr
+            ⟨p, hp₂, hqmem⟩)))
+    rcases hcsplit with hx₁ | hx₂
+    · refine Or.inl ?_
+      rw [mem_step_iff]
+      refine ⟨hx₁, ?_⟩
+      rw [← aliveNext_of_far g₁ g₂ q (fun r hr =>
+        far_of_candidates_sep g₁ g₂ hsep q hx₁ r hr)]
+      exact ha
+    · refine Or.inr ?_
+      rw [mem_step_iff]
+      refine ⟨hx₂, ?_⟩
+      rw [hfarR q (fun r hr =>
+        far_of_candidates_sep g₂ g₁ hsepswap q hx₂ r hr)] at ha
+      exact ha
+  · rintro (h | h)
+    · rw [mem_step_iff] at h ⊢
+      obtain ⟨hc, ha⟩ := h
+      refine ⟨hcandU₁ q hc, ?_⟩
+      rw [aliveNext_of_far g₁ g₂ q (fun r hr =>
+        far_of_candidates_sep g₁ g₂ hsep q hc r hr)]
+      exact ha
+    · rw [mem_step_iff] at h ⊢
+      obtain ⟨hc, ha⟩ := h
+      refine ⟨hcandU₂ q hc, ?_⟩
+      rw [hfarR q (fun r hr =>
+        far_of_candidates_sep g₂ g₁ hsepswap q hc r hr)]
+      exact ha
+
+/-- **Split at all times under uniform separation.** If the supports of the two
+    parts stay 3-separated **at every instant** of their own trajectories, then the
+    evolution of the union follows member by member the union of the evolutions, at
+    every instant — the hypothesis does not degrade with `t` (unlike the `2·t < d`
+    of link 1). Induction on `s`: the step splits (`mem_step_union`), and the union
+    grid at instant `s` is `isAlive`-equal to the append of the parts by the
+    induction hypothesis (`mem_step_congr`). -/
+theorem mem_evolve_union_sep (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r) :
+    ∀ s q, q ∈ evolve s (g₁ ++ g₂) ↔ (q ∈ evolve s g₁ ∨ q ∈ evolve s g₂) := by
+  intro s
+  induction s with
+  | zero => intro q; exact List.mem_append
+  | succ s ih =>
+    intro q
+    have hcongr : ∀ r, isAlive (evolve s (g₁ ++ g₂)) r
+        = isAlive (evolve s g₁ ++ evolve s g₂) r := by
+      intro r
+      rw [isAlive_append]
+      have hiff := ih r
+      simp only [← isAlive_true_iff_mem] at hiff
+      cases hA : isAlive (evolve s g₁) r <;>
+        cases hB : isAlive (evolve s g₂) r <;>
+        cases hU : isAlive (evolve s (g₁ ++ g₂)) r <;>
+        simp [hA, hB, hU] at hiff ⊢
+    rw [evolve_succ, evolve_succ, evolve_succ,
+      mem_step_congr hcongr q, mem_step_union _ _ (hsep s)]
+
+/-- **Periodicity of the union.** Two periodic parts of the same period `T`, whose
+    trajectories stay 3-separated, form a `T`-periodic union — in the **strong**
+    sense of the list equality required by `jumpCapturedF_of_period_divides`. The
+    proof is the members→equality bridge of the still-life model: `evolve T` returns
+    a canonical grid (`canonical_evolve_of_pos`, with no input hypothesis), the
+    union is canonical by hypothesis, and the members coincide by
+    `mem_evolve_union_sep`. -/
+theorem evolve_period_union {T : Nat} (hT : 0 < T) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T g₁ = g₁) (hfix₂ : evolve T g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) :
+    evolve T (g₁ ++ g₂) = g₁ ++ g₂ := by
+  apply Canonical.ext (canonical_evolve_of_pos hT _) hcan
+  intro p
+  rw [mem_evolve_union_sep g₁ g₂ hsep T p, hfix₁, hfix₂]
+  exact List.mem_append.symm
+
+/-- **hcap of periodic unions — link 2.** For a union of two parts of the same
+    period `T` whose trajectories stay 3-separated, **every** instant `t` sees its
+    reconstruction captured: the union is `T`-periodic (`evolve_period_union`),
+    hence each `evolve t (union)` is too (`evolve_phase_fix`), stays canonical along
+    the trajectory, and the capture via the periodic route applies
+    (`jumpCapturedF_reconstruction_of_period`, tranche 3 step 6) — under the window
+    condition `T ∣ 2^level` at instant `t`, satisfied automatically for low dyadic
+    periods (corollary below). -/
+theorem hcap_of_union_periodic {T : Nat} (hT : 0 < T) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T g₁ = g₁) (hfix₂ : evolve T g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) (t : Nat)
+    (hdiv : T ∣ 2 ^ (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true := by
+  have hperU : evolve T (g₁ ++ g₂) = g₁ ++ g₂ :=
+    evolve_period_union hT g₁ g₂ hsep hfix₁ hfix₂ hcan
+  have hperm : evolve T (evolve t (g₁ ++ g₂)) = evolve t (g₁ ++ g₂) :=
+    evolve_phase_fix _ hperU t
+  have hgcan : Canonical (evolve t (g₁ ++ g₂)) := by
+    cases t with
+    | zero => exact hcan
+    | succ m => exact canonical_evolve_of_pos (by omega) _
+  exact jumpCapturedF_reconstruction_of_period _ hgcan hT hperm hdiv
+
+/-- **hcap of low dyadic periodic unions — free window.** For `T ∈ {1, 2, 4}`
+    (still lifes, period-2 and period-4 oscillators — blinker, toad, beacon), the
+    window condition `T ∣ 2^level` follows from non-emptiness alone: the n-aware
+    bound gives `2 < 2^level` as soon as the grid is non-empty (hence `level ≥ 2`),
+    and `1, 2, 4` divide `2^level` as soon as `level ≥ 0, 1, 2`. Non-emptiness
+    propagates along the trajectory by periodicity. This is the consumable form:
+    two oscillators separated by three cells are captured at any horizon. -/
+theorem hcap_of_union_periodic_low {T : Nat} (hT4 : T = 1 ∨ T = 2 ∨ T = 4)
+    (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T g₁ = g₁) (hfix₂ : evolve T g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) (hne : g₁ ++ g₂ ≠ []) (t : Nat) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true := by
+  have hT : 0 < T := by rcases hT4 with rfl | rfl | rfl <;> omega
+  have hperU : evolve T (g₁ ++ g₂) = g₁ ++ g₂ :=
+    evolve_period_union hT g₁ g₂ hsep hfix₁ hfix₂ hcan
+  have hne_t : evolve t (g₁ ++ g₂) ≠ [] := by
+    intro hnil
+    have hm := evolve_mulF_of_period _ hperU (t + 1)
+    have hge : t + 1 ≤ (t + 1) * T := by
+      have h1 : (t + 1) * 1 ≤ (t + 1) * T :=
+        Nat.mul_le_mul (Nat.le_refl _) (by omega)
+      rw [Nat.mul_one] at h1
+      exact h1
+    have hsplit : (t + 1) * T = ((t + 1) * T - t) + t := by omega
+    have hnilEv : ∀ m, evolve m ([] : Grid) = [] := by
+      intro m
+      induction m with
+      | zero => rfl
+      | succ m ih => rw [evolve_succ, ih]; rfl
+    rw [hsplit, evolve_add, hnil, hnilEv] at hm
+    exact hne hm.symm
+  have hlvl2 : 2 ≤ (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level := by
+    have hN := gridToMacroCellWithOffsetN_level_gt_n 2 (evolve t (g₁ ++ g₂)) hne_t
+    rw [gridToMacroCellWithOffsetN_le_two_eq 2 _ (by omega)] at hN
+    cases hL : (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level with
+    | zero => rw [hL] at hN; exact absurd hN (by decide)
+    | succ m =>
+      cases m with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m' => omega
+  refine hcap_of_union_periodic hT g₁ g₂ hsep hfix₁ hfix₂ hcan t ?_
+  rcases hT4 with rfl | rfl | rfl
+  · exact Nat.one_dvd _
+  · obtain ⟨j, hj⟩ : ∃ j, (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level
+        = j + 2 := ⟨(gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level - 2, by omega⟩
+    rw [hj, pow_succ, pow_succ]
+    exact ⟨2 ^ j * 2, by ring⟩
+  · obtain ⟨j, hj⟩ : ∃ j, (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level
+        = j + 2 := ⟨(gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level - 2, by omega⟩
+    rw [hj, pow_succ, pow_succ]
+    exact ⟨2 ^ j, by ring⟩
+
+/-- **The boxes → separation bridge: the hull of link 1 pays the hypothesis of
+    link 2.** If each part trajectory lives in its box at every instant and the
+    boxes are 3-separated, then the supports are 3-separated at every instant —
+    exactly the `hsep` hypothesis consumed by `mem_evolve_union_sep` and the capture
+    chain above. Combined with the part confinements (which `evolve_union_hull_box`
+    receives as hypotheses), this is the full chaining announced by the docstring
+    of link 1: trajectory boxes → uniform separation → capture. -/
+theorem hsep_of_confined_boxes (g₁ g₂ : Grid) (a₁ b₁ a₂ b₂ : Int × Int)
+    (h₁ : ∀ s p, isAlive (evolve s g₁) p = true →
+      a₁.1 ≤ p.1 ∧ p.1 < b₁.1 ∧ a₁.2 ≤ p.2 ∧ p.2 < b₁.2)
+    (h₂ : ∀ s p, isAlive (evolve s g₂) p = true →
+      a₂.1 ≤ p.1 ∧ p.1 < b₂.1 ∧ a₂.2 ≤ p.2 ∧ p.2 < b₂.2)
+    (hbox : ∀ p, a₁.1 ≤ p.1 ∧ p.1 < b₁.1 ∧ a₁.2 ≤ p.2 ∧ p.2 < b₁.2 →
+      ∀ r, a₂.1 ≤ r.1 ∧ r.1 < b₂.1 ∧ a₂.2 ≤ r.2 ∧ r.2 < b₂.2 → 3 ≤ chebDist p r) :
+    ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r := by
+  intro s p hp r hr
+  exact hbox p (h₁ s p ((isAlive_true_iff_mem _ p).mpr hp)) r
+    (h₂ s r ((isAlive_true_iff_mem _ r).mpr hr))
+
+/-- **L2 assembled for low dyadic periodic unions.** Assembly corollary mirroring
+    `hashlife_correct_margin_of_still_life`: a MacroCell whose grid rendered at the
+    origin splits into two parts of the same period `T ∈ {1, 2, 4}` with
+    3-separated trajectories satisfies the Hashlife equality at any horizon `2^k`
+    under `centralCorrect`. This is the first **composed** L3 case: two oscillators
+    separated by three cells — each class covered alone already was, their union
+    was not. -/
+theorem hashlife_correct_margin_of_union_periodic (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T : Nat} (hT4 : T = 1 ∨ T = 2 ∨ T = 4)
+    (g₁ g₂ : Grid) (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T g₁ = g₁) (hfix₂ : evolve T g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) (hne : g₁ ++ g₂ ≠ []) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_union_periodic_low hT4 g₁ g₂ hsep hfix₁ hfix₂ hcan hne t
+
+/-! ### Maillon 3 — the full dyadic tower of periodic unions
+
+The maillon-2 corollary `_low` covers `T ∈ {1, 2, 4}` because non-emptiness
+only buys `level ≥ 2` there. For high periods (`T = 8, 16, 32…`) the window
+`T ∣ 2 ^ level` must be **witnessed geometrically**: this is the role of the
+reinforced separation `max 3 (2 ^ i) ≤ chebDist` — separating the two parts
+by at least `2 ^ i` at every phase stretches every phase of the union over
+`2 ^ i` (each part stays non-empty along its trajectory by periodicity),
+hence forces a reconstruction level `≥ i`
+(`gridToMacroCellWithOffset_level_ge_of_span`), and `2 ^ i ∣ 2 ^ level`
+follows from `i ≤ level`. A single hypothesis carries both roles: `max 3
+(2^i)` is the separation demanded by the scission (3) upgraded by the
+window (2^i). -/
+
+/-- **Non-emptiness propagates along a periodic trajectory.** If `g` is
+    `T`-periodic (`T > 0`) and non-empty, no phase is empty: an empty phase
+    would make all later phases empty (evolving the empty grid stays empty),
+    in particular the return `evolve (T · m) g = g` — contradicting
+    `g ≠ []`. This is what provides, at every instant `t`, a member in each
+    part of the union — the span witness of the dyadic window. -/
+theorem evolve_ne_of_period_ne {T : Nat} (hT : 0 < T) (g : Grid)
+    (hper : evolve T g = g) (hne : g ≠ []) (t : Nat) :
+    evolve t g ≠ [] := by
+  intro hnil
+  have hnilEv : ∀ m, evolve m ([] : Grid) = [] := by
+    intro m
+    induction m with
+    | zero => rfl
+    | succ m ih => rw [evolve_succ, ih]; rfl
+  have hmod := Nat.mod_lt t hT
+  have hsplit : T - t % T + t = (t / T + 1) * T := by
+    have hle : t % T ≤ T := Nat.le_of_lt hmod
+    have hmodle : t % T ≤ t := Nat.mod_le t T
+    have hdiv : t / T * T = t - t % T := by
+      have h := Nat.div_add_mod t T
+      rw [Nat.mul_comm] at h
+      omega
+    rw [Nat.add_mul, Nat.one_mul, hdiv]
+    omega
+  have hstep : evolve (T - t % T + t) g = evolve (T - t % T) (evolve t g) :=
+    evolve_add _ _ _
+  rw [hnil, hnilEv] at hstep
+  rw [hsplit, evolve_mulF_of_period g hper (t / T + 1)] at hstep
+  exact hne hstep
+
+/-- **hcap of dyadic periodic unions — window witnessed by geometry.** Two
+    parts of common period `T = 2 ^ i` whose supports stay separated by at
+    least `max 3 (2 ^ i)` (Chebyshev) at every phase are captured at any
+    horizon: the ≥ 3 separation pays the maillon-2 scission
+    (`evolve_period_union`), the ≥ `2 ^ i` separation pays the window —
+    every phase of the union is stretched over `2 ^ i` by its two non-empty
+    parts (`evolve_ne_of_period_ne` on both sides), hence reconstructed at a
+    level ≥ `i`, and `2 ^ i ∣ 2 ^ level`. Extends the `_low` corollary (T ∈
+    {1, 2, 4}, free window by non-emptiness) to the whole dyadic tower:
+    periods 8, 16, 32… included. -/
+theorem hcap_of_union_periodic_dyadic {T i : Nat} (hTi : T = 2 ^ i)
+    (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂,
+      max 3 (2 ^ i) ≤ chebDist p r)
+    (hfix₁ : evolve T g₁ = g₁) (hfix₂ : evolve T g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) (hne₁ : g₁ ≠ []) (hne₂ : g₂ ≠ [])
+    (t : Nat) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true := by
+  have hT : 0 < T := by rw [hTi]; exact pow_pos (by norm_num) i
+  have hsep3 : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r :=
+    fun s p hp r hr => Nat.le_trans (Nat.le_max_left 3 (2 ^ i)) (hsep s p hp r hr)
+  obtain ⟨p, hp⟩ : ∃ p, p ∈ evolve t g₁ :=
+    List.exists_mem_of_ne_nil _ (evolve_ne_of_period_ne hT g₁ hfix₁ hne₁ t)
+  obtain ⟨r, hr⟩ : ∃ r, r ∈ evolve t g₂ :=
+    List.exists_mem_of_ne_nil _ (evolve_ne_of_period_ne hT g₂ hfix₂ hne₂ t)
+  have hmemU_p : p ∈ evolve t (g₁ ++ g₂) :=
+    (mem_evolve_union_sep g₁ g₂ hsep3 t p).mpr (Or.inl hp)
+  have hmemU_r : r ∈ evolve t (g₁ ++ g₂) :=
+    (mem_evolve_union_sep g₁ g₂ hsep3 t r).mpr (Or.inr hr)
+  have hspan : 2 ^ i ≤ chebDist p r :=
+    Nat.le_trans (Nat.le_max_right 3 (2 ^ i)) (hsep t p hp r hr)
+  have hlvl : i ≤ (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level :=
+    gridToMacroCellWithOffset_level_ge_of_span _ i p r hmemU_p hmemU_r hspan
+  have hdiv : T ∣ 2 ^ (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level := by
+    obtain ⟨j, hj⟩ : ∃ j, (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level
+        = i + j := ⟨(gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level - i,
+          by omega⟩
+    rw [hTi, hj, pow_add]
+    exact ⟨2 ^ j, by ring⟩
+  exact hcap_of_union_periodic hT g₁ g₂ hsep3 hfix₁ hfix₂ hcan t hdiv
+
+/-- **L2 assembly for high dyadic periodic unions.** Exact mirror of
+    `hashlife_correct_margin_of_union_periodic`: a MacroCell whose grid
+    rendered at the origin splits into two parts of common period
+    `T = 2 ^ i` — uniform separation `max 3 (2 ^ i)` — satisfies the
+    Hashlife equality at any horizon `2 ^ k` under `centralCorrect`. After
+    still lifes (`_of_still_life`, T = 1), single oscillators
+    (`_of_period`, dyadic T alone) and low unions (`_of_union_periodic`,
+    T ∈ {1, 2, 4}), this is the composed class of high periods: two
+    oscillators of period 8 and beyond, separated by `max(3, T)` cells,
+    remain captured at any horizon. -/
+theorem hashlife_correct_margin_of_union_periodic_dyadic (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T i : Nat} (hTi : T = 2 ^ i)
+    (g₁ g₂ : Grid) (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂,
+      max 3 (2 ^ i) ≤ chebDist p r)
+    (hfix₁ : evolve T g₁ = g₁) (hfix₂ : evolve T g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) (hne₁ : g₁ ≠ []) (hne₂ : g₂ ≠ []) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_union_periodic_dyadic hTi g₁ g₂ hsep hfix₁ hfix₂ hcan hne₁ hne₂ t
 
 /-! ## Synthesis — the fragment is non-empty and the framework statement is honest
 

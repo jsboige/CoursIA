@@ -38,9 +38,23 @@ import json
 import re
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any
 
 from gh_payload_cache import PayloadCache, cache_key
+
+# Le fetcher par **tranches de dates** (`ci/`, meme depot). Ce module
+# reproduisait a la main la classe de defaut que ce fichier resout : un
+# `--search` unique passe par l'API de recherche, qui plafonne le jeu de
+# resultats, et la troncature emporte les plus **anciennes** -- exactement les
+# livraisons qu'une fenetre longue existe pour voir (#19209). Le helper
+# retrecit une tranche saturee et **leve** plutot que de rendre un corpus
+# tronque. Import par chemin de dossier, comme `variation_adjacency_guard.py`.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "ci"))
+from fetch_merged_prs_since import (  # noqa: E402
+    fetch as fetch_merged_window,
+    run_gh as fetch_slice_raw,
+)
 
 REPO = "jsboige/CoursIA"
 
@@ -58,9 +72,9 @@ DEFAULT_WINDOW_DAYS = 14
 # fenetre doit etre nettement plus longue qu'un tour complet de la file :
 # avec ~100 grains/jour et ~500 issues ouvertes, un tour fait ~5 j, et
 # une lane a regime lent (10-20 grains/jour) complete un tour en 25-50 j.
-# 90 j couvrent les deux regimes. Le plafond `MERGED_FETCH_LIMIT = 400`
-# borne le corpus de toute facon -- si la fenetre depasse 400 PRs, le
-# tapis sert avec ce qui rentre, comme la volee ponderee aujourd'hui.
+# 90 j couvrent les deux regimes. Le corpus n'est PAS borne par la fenetre :
+# il est ramene par tranches de dates (#19209), donc une fenetre longue rend
+# bien tout ce qui a ete merge dessus.
 BELT_WINDOW_DAYS = 90
 
 # Amortissement plus mordant que celui par issue : une zone qui a deja recu
@@ -71,9 +85,18 @@ SERIES_SCALE_DEFAULT = 2.0
 # pedagogique reel fait des milliers de lignes, un fichier de config non.
 NEW_NB_MIN_ADDITIONS = 200
 
-# Plafond du `gh pr list` de la fenetre mergee : l'atteindre tronque le
-# corpus, et `measure_delivery` doit pouvoir le signaler.
-MERGED_FETCH_LIMIT = 400
+# Champs demandes aux PRs mergees. `files` est necessaire au tapis
+# (`family_of` en derive la zone d'atterrissage) et c'est le champ le plus
+# cher : il est demande une fois, pas par tranche supplementaire.
+MERGED_FIELDS = "number,title,body,files,mergedAt"
+
+# TTL des tranches de dates CLOSES (#19236). Une PR mergee est immuable ; seul
+# un edit de body apres merge peut faire devier une tranche close, et la
+# fenetre du tapis est de 90 j. 30 j bornent cette derive tout en rendant les
+# tranches passees effectivement permanentes a l'echelle d'un tour de file --
+# sans quoi chaque lane repayait le corpus entier a l'expiration du cache
+# global (mesure #19236 : 7 min 25 s a froid, toutes les heures).
+PAST_SLICE_TTL_SECONDS = 30 * 24 * 3600
 
 _PARENT_RE = re.compile(
     r"(?:enfant\s+de|fille\s+de|sous-t\w+\s+de|part\s+of"
@@ -184,6 +207,7 @@ def fetch_merged(
     cache_mode: str = "off",
     cache_status: dict[str, dict[str, Any]] | None = None,
     cache_ttl_seconds: float = 60 * 60,
+    slice_stats: dict[str, int] | None = None,
 ) -> tuple[list[dict], str | None]:
     """PRs mergees sur la fenetre, avec leurs fichiers.
 
@@ -193,27 +217,78 @@ def fetch_merged(
     coupe mais mergee dans la fenetre (mesure du 2026-08-23 : 101 pechees
     contre 181 reelles, 44 % de la population absente). Cle de tri != cle de
     filtre est un faux silencieux.
+
+    Depuis #19236, la fenetre est cachee **par tranche de dates** en plus de
+    l'entree globale : une tranche close (`until <= jour courant`) a une TTL
+    longue (`PAST_SLICE_TTL_SECONDS`) et n'est plus re-telechargee, seule la
+    tranche vive qui contient aujourd'hui repaie une requete. C'est ce qui
+    ramene le tapis a UN appel reseau a chaud au lieu des ~30 tranches.
     """
     now = now or dt.datetime.now(dt.timezone.utc)
-    stamp = (now - dt.timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S+00:00")
-    command = [
-        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
-        "--limit", str(MERGED_FETCH_LIMIT), "--search", "merged:>=" + stamp,
-        "--json", "number,title,body,files,mergedAt",
-    ]
+    start = (now - dt.timedelta(days=days)).date()
+    # Cle de cache : elle DOIT changer avec la methode de fetch. Les payloads
+    # deja en cache ont ete ramenes par l'appel unique plafonne ; les rejouer
+    # rendrait le corpus tronque que ce changement supprime (#19209).
     identity = [
         "gh", "pr", "list", "--repo", REPO, "--state", "merged",
-        "--limit", str(MERGED_FETCH_LIMIT), "--window-days", str(days),
-        "--json", "number,title,body,files,mergedAt",
+        "--sliced-days", str(days),
+        "--json", MERGED_FIELDS,
     ]
+    counter_snapshot = {"hits": 0, "fetches": 0, "slices": 0}
+
+    def slice_run(since: str, until: str) -> list[dict]:
+        """Une tranche servie par le cache, ou telechargee si elle est vive.
+
+        La cle est le couple `(since, until)` de la tranche -- stable d'un
+        jour a l'autre depuis que la grille est ancree (#19236). Une tranche
+        servie en `stale` (refresh en echec) LEVE : composer un corpus melant
+        des tranches fraiches et une tranche d'il y a 30 j, puis le cacher
+        comme neuf au niveau global, rendrait la provenance illisible.
+        """
+        ttl = (PAST_SLICE_TTL_SECONDS
+               if dt.date.fromisoformat(until) <= now.date()
+               else cache_ttl_seconds)
+        ident = [
+            "gh", "pr", "list", "--repo", REPO, "--state", "merged",
+            "--slice", since, until,
+            "--json", MERGED_FIELDS,
+        ]
+        result = cache.get_or_fetch(
+            cache_key(REPO, "series-slice", ident),
+            ttl,
+            lambda: fetch_slice_raw(since, until, MERGED_FIELDS),
+            mode=cache_mode,
+        )
+        counter_snapshot["slices"] += 1
+        if result.status == "hit":
+            counter_snapshot["hits"] += 1
+        else:
+            # `bypass` n'est PAS un hit : `get_or_fetch` ne rend ce statut
+            # qu'APRES avoir appele `fetch()` (mode `off`, ou echec
+            # d'ecriture disque au moment de poser l'entree) -- la tranche
+            # est telechargee. La compter comme hit faisait dire a la ligne
+            # de synthese « N servie(s) depuis le cache » d'un corpus qui
+            # venait de partir integralement en reseau (reserve Hermes
+            # #19246 : en mode off, 4 appels reseau affiches « 4 servies,
+            # 0 telechargee » au head ec761a4989).
+            counter_snapshot["fetches"] += 1
+        if result.status == "stale":
+            raise RuntimeError(
+                f"tranche {since}..{until} servie en cache stale apres echec "
+                f"du refresh: {result.error or 'erreur inconnue'}"
+            )
+        return result.payload
 
     def fetch_raw() -> list[dict]:
-        raw = subprocess.run(
-            command,
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            check=True, timeout=300,
-        ).stdout
-        return json.loads(raw)
+        # Tranches de dates plutot qu'un `--search` unique : le corpus rendu
+        # atteint le cutoff au lieu de s'arreter au plafond de l'API de
+        # recherche, qui emportait les livraisons les plus anciennes (#19209).
+        # Une tranche indecoupable LEVE -- jamais un corpus partiel qui aurait
+        # l'air complet.
+        return fetch_merged_window(
+            since=start.isoformat(), fields=MERGED_FIELDS, today=now.date(),
+            run=slice_run if cache is not None else None,
+        )
 
     try:
         cache_err = None
@@ -231,6 +306,13 @@ def fetch_merged(
             cache_read_status = result.status
             if cache_status is not None:
                 cache_status["series"] = result.as_dict()
+            # Le resume de tranches ne va PAS dans `cache_status` : ce dict est
+            # le contrat `nom -> verdict de cache` (une entree = un
+            # CacheResult serialise), et ses consommateurs lisent
+            # `entry["status"]`. Un compteur de tranches s'y lirait comme un
+            # verdict de plus.
+            if slice_stats is not None and counter_snapshot["slices"]:
+                slice_stats.update(counter_snapshot)
             if result.status == "stale":
                 cache_err = "cache stale apres echec du refresh: {}".format(
                     result.error or "erreur inconnue"
@@ -245,7 +327,11 @@ def fetch_merged(
             ]
         return prs, cache_err
     except (subprocess.CalledProcessError, json.JSONDecodeError,
-            subprocess.TimeoutExpired, OSError) as exc:
+            subprocess.TimeoutExpired, OSError, RuntimeError) as exc:
+        # `RuntimeError` vient du fetcher par tranches : une tranche
+        # indecoupable refuse de rendre un corpus partiel. On rend l'ERREUR
+        # (corpus vide + message), jamais un corpus tronque qui aurait l'air
+        # complet -- c'est l'acceptance 3 de #19209.
         return [], "{}: {}".format(type(exc).__name__, exc)
 
 
@@ -287,7 +373,7 @@ def last_delivery_per_issue(prs, issue_numbers):
     Coût : zero appel reseau supplementaire -- c'est un regroupement du meme
     corpus `delivery_prs` deja fetché pour `measure_delivery`. Le balayage est
     O(N*M) sur N PRs * M issues, sans hash, parce que le pool fait < 1k
-    issues et la fenetre plafonne à `MERGED_FETCH_LIMIT` PRs.
+    issues et la fenetre de 90 j fait ~9650 PRs mergees (mesure #19209).
 
     Convention : `cited_issues(pr)` est la seule definition de "declare servir
     une issue" (voir `#13435`). Le label `candidate-delivered` n'entre pas
@@ -328,12 +414,20 @@ def delivery_factor(state, age_days, window_days, boost_max):
 
 
 def measure_delivery(prs, umbrella_numbers, *, now, days,
-                     fetch_error=None, fetch_limit=MERGED_FETCH_LIMIT,
+                     fetch_error=None, fetch_limit=None,
                      calibration_max=0.5):
     """Mesure l'age de derniere livraison reelle pour chaque umbrella.
 
     Rend un dict stable (JSON-ready) : fenetre demandee vs effective,
     troncature par la limite de fetch, et par umbrella l'etat, la date/l'age,
+
+    `fetch_limit` n'a plus de defaut (greffe #19212 sur #19213) : depuis
+    #19209 le fetch est decoupe par tranches de dates -- une fenetre sature
+    LEVE au lieu de tronquer -- donc le corpus rendu est honnete (~9650 PRs
+    sur 90 j) et `len(prs) >= 400` etait TOUJOURS vrai : chaque tirage
+    imprimait « TRONQUEE par la limite de fetch » sur un corpus complet. Le
+    drapeau ne se deduit plus que d'un plafond EXPLICITEMENT passe par un
+    appelant qui fetch encore sous limite.
     le nombre de livraisons, le facteur theorique au plafond de calibration
     et la route coordinateur quand le body est suspect de peremption.
 
@@ -345,7 +439,8 @@ def measure_delivery(prs, umbrella_numbers, *, now, days,
     sig = {
         "window_days_requested": days,
         "window_days_effective": days,
-        "truncated": bool(prs) and len(prs) >= fetch_limit,
+        "truncated": (fetch_limit is not None and bool(prs)
+              and len(prs) >= fetch_limit),
         "corpus_size": len(prs or []),
         "corpus_error": fetch_error,
         "items": {},

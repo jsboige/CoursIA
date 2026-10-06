@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 82
-breakdown: Lean=82
-maturity: BETA=79, DRAFT=2, ALPHA=1
+pedagogical_count: 89
+breakdown: Lean=89
+maturity: BETA=86, DRAFT=2, ALPHA=1
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
@@ -91,6 +91,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 8b | [Lean-08b-Erdos-Formal-Conjectures-Lean](Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb) | Companion **natif** (kernel Lean) : le programme Erdős et le pattern conjecture-as-sorry — EGZ importé de Mathlib (`#print axioms` = `[propext, Classical.choice, Quot.sound]`), équation d'Erdős–Moser restatée (`[sorryAx]` visible), témoin calculé dans `ZMod 3` - pilote narratif Epic #13106 | 25 min |
 | 9 | [Lean-09-SK-Multi-Agents-Lean-Python](Lean-09-SK-Multi-Agents-Lean-Python.ipynb) | Agent Framework (Microsoft), orchestration multi-agents | 45 min |
 | 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
+| 10b | [Lean-10b-LeanDojo-v2-Pantograph-Lean-Python](Lean-10b-LeanDojo-v2-Pantograph-Lean-Python.html) | LeanDojo-**v2** : base dynamique (`DynamicDatabase`, curriculum random/novel_premises), serveur RPC **Pantograph** (but → tactique → état, pas à pas et preuve entière `check_compile`), pipeline « tracage → politique → vérification Lean » qui réalise l'exercice 3 de Lean-10 - See #18430 | 40 min |
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: réseaux de neurones vérifiés, IBP, CROWN | 1h30-2h |
 | 11b | [Lean-11b-TorchLean-Python](Lean-11b-TorchLean-Python.ipynb) | Implémentation Python des algorithmes de vérification (IBP, CROWN) | 1h30-2h |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | théorème de sensibilité (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
@@ -103,6 +104,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 13 | [Lean-13-Kochen-Specker](Lean-13-Kochen-Specker.ipynb) | théorème de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parité, contextuality quantique - Pilier 1.B Epic #1651 | 60 min |
 | 13b | [Lean-13b-CHSH-Tsirelson-Native](Lean-13b-CHSH-Tsirelson-Native.ipynb) | Companion **natif** du lake `conway_lean` : la borne de Tsirelson exécutée in-kernel — `#check` de la signature exacte (7 classes de types + `IsCHSHTuple`, conclusion `≤ (2 * √2) • 1`), `#print axioms` = `[propext, Classical.choice, Quot.sound]` sans `sorryAx`, frontière classique mesurée (score `2` atteint, mélange équilibré → `0`), contrôle positif de kernel contre le REPL muet (#11874) et 3 exercices - Epic #13106 | 30 min |
 | 13c | [Lean-13c-CHSH-Landau-Saturation](Lean-13c-CHSH-Landau-Saturation.ipynb) | Companion **natif** du lake `conway_lean` : la saturation de Tsirelson exécutée in-kernel — `#check` de l'égalité centrale `chshOperator A₀ A₁ B₀ B₁ = (2 * √2) • 1` (égalité exacte, pas un majorant : la borne de Lean-13b devient un maximum démontré), `#print axioms` = `[propext, Classical.choice, Quot.sound]` sans `sorryAx`, témoin de Pauli (`sigmaZ`, `sigmaX`, `B₀`, `B₁` en `Matrix (Fin 2) (Fin 2) ℝ`), forme spectrale bilatérale (`2√2` sur la diagonale), anticommutateur, critère de Landau vérifié sur le témoin (spectre ±1) et 3 exercices - Epic #13106 | 25 min |
+| 13d | [Lean-13d-CHSH-Indeterminisme-Native](Lean-13d-CHSH-Indeterminisme-Native.ipynb) | Companion **natif** du lake `conway_lean` : la route statistique vers l'indéterminisme exécutée in-kernel — modèle local déterministe du jeu CHSH en vocabulaire FWT (`AliceResponse`/`BobResponse` : fonctions de l'état caché, localité par signature, l'analogue structurel de MIN), frontière locale état par état (`|realizedScore| = 2`, délégué à `classical_abs_score`), écart de Tsirelson `2 < 2√2` et conclusion `chsh_indeterminism` (aucun modèle local déterministe ne réalise un score `> 2` en réels — la même conclusion que le théorème du libre arbitre, obtenue par l'argument statistique), tableau comparatif des deux routes (contextuelle vs statistique) et 3 exercices - Epic #13106 | 25 min |
 | 14 | [Lean-14-Finiteness-Derivatives](Lean-14-Finiteness-Derivatives.ipynb) | Dérivées symboliques de Brzozowski : la finitude des dérivées qui garantit le matching linéaire (langages rationnels, automates) | 25 min |
 | 14b | [Lean-14b-Finiteness-Lean-Companion](Lean-14b-Finiteness-Lean-Companion.ipynb) | Companion **natif** (kernel Lean) : les 7 déclarations du lake `finiteness_lean` (`Regex`, `nullable`, `deriv`, `derivWord`, `accepts`, `aStar`, `abWord`) re-déclarées fidèlement (kernel sans oleans), vérifiées et exécutées in-kernel, finitude observée sur une regex à union (6 préfixes → 4 dérivées distinctes) | 20 min |
 
@@ -233,6 +235,8 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 12b | Lean-Sensitivity-Theorem (natif) | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 13 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
 | 13b | CHSH-Tsirelson-Native | ~8 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
+| 13c | CHSH-Landau-Saturation | ~11 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
+| 13d | CHSH-Indeterminisme-Native | ~10 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
 | 14 | Finiteness-Derivatives | ~12 | 1 | - | **NOUVEAU** |
 | 14b | Finiteness-Lean-Companion | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 15 | Grothendieck-Tribute | ~23 | 0 | - | **NOUVEAU** (hommage) |
@@ -439,6 +443,7 @@ Lean/
 ├── Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb # Lean4 (WSL, grothendieck-16200) kernel - pattern conjecture-as-sorry : EGZ Mathlib + Erdős-Moser restatée (Epic #13106)
 ├── Lean-09-SK-Multi-Agents-Lean-Python.ipynb    # Python kernel - Agent Framework
 ├── Lean-10-LeanDojo.ipynb          # Python kernel - LeanDojo
+├── Lean-10b-LeanDojo-v2-Pantograph-Lean-Python.ipynb # Python kernel (WSL venv leandojo-v2) - LeanDojo-v2 : DynamicDatabase + serveur RPC Pantograph (See #18430)
 ├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
 ├── Lean-11b-TorchLean-Python.ipynb  # Python kernel - Implémentation algorithmes
 ├── Lean-12-Sensitivity-Theorem.ipynb # Python kernel - théorème de sensibilité (Huang 2019, hypercube, signing matrix)
@@ -460,6 +465,7 @@ Lean/
 ├── Lean-13-Kochen-Specker.ipynb    # Lean4 kernel - théorème de Kochen-Specker (Pilier 1.B)
 ├── Lean-13b-CHSH-Tsirelson-Native.ipynb # Lean4 (WSL, conway-build) kernel - borne de Tsirelson : signature, axiomes, frontière classique (Epic #13106)
 ├── Lean-13c-CHSH-Landau-Saturation.ipynb # Lean4 (WSL) kernel - saturation de Tsirelson : témoin de Pauli, égalité centrale 2√2, forme spectrale (Epic #13106)
+├── Lean-13d-CHSH-Indeterminisme-Native.ipynb # Lean4 (WSL) kernel - pont CHSH <-> libre arbitre : modèle local déterministe, frontière état par état, conclusion d'indéterminisme (Epic #13106)
 ├── Lean-14-Finiteness-Derivatives.ipynb # Python kernel - dérivées symboliques de Brzozowski (finitude, matching linéaire)
 ├── Lean-14b-Finiteness-Lean-Companion.ipynb # Lean kernel - companion natif du lake finiteness_lean (7 déclarations citées)
 ├── Lean-16f-Conway-Free-Will-Theorem.ipynb # Python kernel - hommage Conway (théorème du libre arbitre, adossé à FreeWillTheorem.lean)
@@ -509,7 +515,7 @@ Lean/
 │   ├── 05-table-de-caracteres.ipynb
 │   ├── 06-bulles-minkowski.ipynb
 │   ├── 07-zeros-fonctions-l-gaps-gue.ipynb
-│   ├── 08-serre-dans-mathlib.ipynb
+│   ├── 08-serre-dans-mathlib-Lean.ipynb
 │   ├── 09-congruences-tau-lacunarite-delta.ipynb
 │   ├── serre100_lean/             # Lake Serre 100 (Hasse, MZV, Yoneda, caractères — modules FR + jumeaux _en)
 │   └── README.md
@@ -632,7 +638,7 @@ Le notebook Lean-17a donne le contexte historique (noeud de Conway, slice-genre,
 
 ### Lecture transversale
 
-[La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du dépôt (changement de représentation, certification A/B/C).
+[La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) : une grille de lecture grothendieckienne du dépôt (changement de représentation, certification A/B/C).
 
 ## FAQ
 

@@ -45,7 +45,7 @@ name: Lean Knot CI
 #   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
 #   - Basic.lean:               0 (the "1" under prose-header was a TODO prose comment)
 #   - MathlibPrerequisites.lean:0 (the "2" were the prose roadmap index)
-# Total real tactic sorry = 9 (mesure `count_code_sorry.py` champ
+# Total real tactic sorry = 8 (mesure `count_code_sorry.py` champ
 # `distinct_code_sorry` ; historique :
 # 16 (après #8766) → 17 (#9966 wall fronted) → 16 (wall DISCHARGED) → 14
 # (#11211/#11227 fox/col) → 11 (mesure 2026-08-28, `count_code_sorry.py`) →
@@ -55,13 +55,35 @@ name: Lean Knot CI
 # du split de PR 14821) → **9** (PR #18615 : nouveau module
 # `Knots.ReidemeisterCombinatorial` ajoute 1 sorry dans
 # `verifyMoves_sound`, énoncé cible d'organe — squelette d'organe tranche
-# 1, PR2+ prouvera la soundness sur le squelette conservateur actuel).
+# 1, PR2+ prouvera la soundness sur le squelette conservateur actuel) →
+# **8** (PR #19107 : `verifyMoves_sound` prouvée, le sorry du squelette est
+# déchargé).
 # Cette valeur DOIT rester synchronisée avec `LEAN_INVENTORY.md` ligne « knot_lean
-# | 9 » et avec `knot_lean/README.md` table des sorries — cf. #13312 ; split
-# #14821 terminé (CLOSED) : la synchronisation est à jour au 2026-09-30, elle
+# | 8 » et avec `knot_lean/README.md` table des sorries — cf. #13312 ; split
+# #14821 terminé (CLOSED) : la synchronisation est à jour au 2026-10-05, elle
 # n'est plus déléguée à une PR du split (#15598).
 # Raising this baseline requires a documented
 # justification in the PR body (a NEW real tactic sorry, not prose).
+#
+# MECANISME DE DECLENCHEMENT (issue #15652, documente ici le 2026-10-05) :
+# un workflow PR qui combine `branches: [main]` + `paths:` + une cle `types:`
+# SANS `edited` rate systematiquement les PR empilees. La PR empilee est
+# creee avec une base = branche parente, pas main, donc elle est hors du
+# `branches:` a la creation ; quand la parente est mergee et l'enfant
+# retarget vers main, l'evenement `base_ref_changed` emet un `edited` que
+# les workflows sans `edited` ignorent. La PR traverse tout son cycle de
+# review SANS CI Lean, jusqu'au prochain commit.
+#
+# Ce workflow (lean-knot.yml) a ete corrige sur les deux verrous : le bloc
+# `pull_request` ne porte PAS de `branches: [main]` (le `paths:` scope deja
+# aux fichiers de knot_lean) et inclut `edited` dans ses `types:`. Le
+# retrait du `branches:` (option b du design-gate de #15652) a ete applique
+# a lean-ci-matrix.yml et lean-visibility-advisory.yml dans la meme veine.
+# La mesure du double run de l'option (b) (PR empilee + parente ouvertes
+# simultanement) : les groupes `concurrency:` sont cles par
+# `${{ github.ref }}` (distinct par PR), donc 2 runs concurrents sont
+# theoriques -- la verification terrain depend d'une PR empilee reelle
+# sur un lake de la matrice, a jouer au prochain cycle empile.
 
 on:
   push:
@@ -145,7 +167,7 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
       display-name: knot_lean
-      sorry-baseline: "9"
+      sorry-baseline: "8"
       sorry-filter-mode: real
 
   # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).

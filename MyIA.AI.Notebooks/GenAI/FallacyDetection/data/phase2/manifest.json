@@ -15,8 +15,8 @@
   "seed": 0
  },
  "sources": {
-  "fallacies_blob_sha1": "4ac3f12eaf15fbda1de3432abbf5b57b6cb9e728",
-  "virtues_blob_sha1": "9ff35b599e3eb6ba9c2b4563bf3ff52419def1b9",
+  "fallacies_blob_sha1": "a761735375883b3ce19876cc0c781dc722ed8815",
+  "virtues_blob_sha1": "0cce826f64f677b9a777c6a4253745e007689c39",
   "scenarii_blob_sha1": "9f20eb808a1d22c9c1a5dd1b96460b0d6a23db60",
   "scenarii_upstream_commit": "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c"
  },

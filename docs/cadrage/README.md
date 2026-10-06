@@ -10,14 +10,14 @@ Une **veille** (texte connu et non traité) figure dans le tableau comme une lig
 
 | Communauté interlocutrice | Document | Relation | Textes rattachés | Statut |
 |---|---|---|---|---|
-| Communauté mathématique | [`leiden-declaration-position.md`](../leiden-declaration-position.md) | position | Déclaration de Leiden (2026), SAIR Open Models | traité |
+| Communauté mathématique | [`leiden-declaration-position.md`](leiden-declaration-position.md) | position | Déclaration de Leiden (2026), SAIR Open Models | traité |
 | Autorité morale | [`magnifica-humanitas-dialogue.md`](../magnifica-humanitas-dialogue.md) | dialogue | *Magnifica Humanitas* (Léon XIV, 2026) | traité (reprise user en attente, voir #11359) |
 | Recherche en sûreté de l'IA | [`singapore-consensus-self-audit.md`](singapore-consensus-self-audit.md) | self-audit | *2026 Singapore Consensus* (R11, Casper et al.) | traité (#16757) |
 | Recherche en sûreté de l'IA — veille | — | veille | *International AI Safety Report 2026* (arXiv 2602.21012) et ses deux *Key Updates* | non traité |
 | Recherche en sûreté de l'IA — veille | — | veille | *Towards Guaranteed Safe AI* | non traité (#16761) |
 | Science ouverte et évaluation | — (section de Leiden tant qu'il n'y a pas de pratique propre) | section | UNESCO Open Science, FAIR, DORA | traité (section du document Leiden) |
 | Fondateurs de la discipline | [`aima-armature.md`](aima-armature.md) | armature | AIMA 4e, textes de position des auteurs, position « benchmark-driven AI » (ICML 2026) | traité (#17541) |
-| Lecture interne transversale | [`grothendieckian-lens.md`](../grothendieckian-lens.md) | lens | — | traité (clé de lecture) |
+| Lecture interne transversale | [`grothendieckian-lens.md`](grothendieckian-lens.md) | lens | — | traité (clé de lecture) |
 
 ## Règles d'agrégation
 
@@ -28,7 +28,7 @@ Une **veille** (texte connu et non traité) figure dans le tableau comme une lig
 ## Migration par tranches (cf #17525)
 
 - **Tranche 1** : Singapore entre dans `docs/cadrage/` directement (#16757), et le répertoire naît avec son index.
-- **Tranche 2** : `leiden-declaration-position.md` et `grothendieckian-lens.md` migrent après merge de #17495 et #17467.
+- **Tranche 2** : `leiden-declaration-position.md` et `grothendieckian-lens.md` migrent après merge de #17495 et #17467 — **faite** (préconditions satisfaites le 27/09 ; migration + retablissement des liens entrants livres).
 - **Tranche 3** : `magnifica-humanitas-dialogue.md` migre après reprise user du texte (arbitrage du 22/09).
 
 ## Voir aussi

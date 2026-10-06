@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
+# CI-CHECK: --check-env
+#   ^ `--check-env` prints the kernel/toolchain inventory and exits 0 -- it
+#     runs no notebook. Declared for the CI advisory guard (#10643).
 # H.7 P3 Notebook Runner — unified kernel dispatch
 # Detects kernel type from notebook metadata and delegates to appropriate executor.
 #
 # Supported kernels:
 #   - python3          → Papermill
+#   - global-3.13      → Papermill (kernelspec natif, env Python 3.13, #16262)
 #   - .net-csharp      → .NET Interactive cell-by-cell (jupyter nbconvert)
 #   - .net-fsharp      → .NET Interactive cell-by-cell
 #   - lean4 / lean     → Lean 4 via elan + lake
@@ -138,6 +142,14 @@ execute_notebook() {
             ;;
         lean4|lean|lean4-wsl)
             execute_lean "$nb"
+            return $?
+            ;;
+        global-3.13)
+            # Kernel Python 3.13 dedie (serie Lean, #16262) : execution SANS
+            # --kernel override -- le kernelspec du notebook fait foi, sinon le
+            # fallback python3 masquerait l'environnement cible.
+            log "Python/global-3.13 (kernelspec natif): $(basename "$nb")"
+            papermill "$nb" "${RESULTS_DIR}/$(basename "$nb")" --execution-timeout "$TIMEOUT_PER_CELL" 2>&1
             return $?
             ;;
         *)

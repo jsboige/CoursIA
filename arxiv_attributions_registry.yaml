@@ -69,7 +69,7 @@ attributions:
     date: "2026-08-24"
 
   - arxiv_id: "1506.02438"
-    notebook: "MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb"
+    notebook: "MyIA.AI.Notebooks/RL/RL-06c-PPO-Depuis-Zero-Python.ipynb"
     cell_index: 1
     expected_citation: "Schulman, J., Moritz, P., Levine, S., Jordan, M. & Abbeel, P. (2015), High-Dimensional Continuous Control Using Generalized Advantage Estimation, arXiv:1506.02438"
     source_pr: "#12838"
@@ -133,3 +133,12 @@ attributions:
     source_pr: "#17296"
     correction: "Nanda et al. grokking: identifiant 2305.00493 (Basak 2023, physique nucleaire -- Estimation of collision centrality) -> 2301.05217 (Progress measures for grokking via mechanistic interpretability). Titre et auteurs etaient deja justes : seule l'attribution de l'ID etait fausse."
     date: "2026-09-21"
+
+  # ===== Passe 7 — rescan du 2026-10-05 (PR #19186) =====
+  - arxiv_id: "1603.06518"
+    notebook: "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/10-empilements-borne-lp-cohn-elkies.ipynb"
+    cell_index: 23
+    expected_citation: "*The sphere packing problem in dimension 24*, Annals **185** (2017) — [arXiv:1603.06518](https://arxiv.org/abs/1603.06518)"
+    source_pr: "#19186"
+    correction: "Empilements dimension 24 (Cohn-Kumar-Miller-Radchenko-Viazovska): identifiant 1603.04244 (Antinolo et al. 2016, astrochimie -- Reactivity of OH and CH3OH ... Barnard 1b) -> 1603.06518 (The sphere packing problem in dimension 24). Titre et auteurs etaient deja justes : seule l'attribution de l'ID etait fausse."
+    date: "2026-10-05"

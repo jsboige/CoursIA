@@ -31,7 +31,7 @@ Le matériel QC mélange 4 types de notebooks qu'un visiteur doit distinguer :
 
 | Stratégie | Type | Classe d'actifs | Statut | Évidence |
 |-----------|------|-----------------|--------|----------|
-| `LongShortHarvest-QC` | Composite pairs | Multi-actifs | **Alive — BEATS** | Baseline cluster 98.7% (backtest vérifié) ; figure #5740 |
+| `LongShortHarvest-QC` | Long/short actions (grandes capitalisations + vente à découvert) | US Equity | **NO BEATS** | QC Cloud 2026-10-06 (#19450), 2018-01 → 2026-09 : Sharpe 0,44 (taux sans risque nul) contre 0,79 pour SPY détenu et 0,81 pour le 60/40, p Holm 1,00 ; pire baisse −61,6 % (rachats forcés de janvier 2021). L'ancien « 98.7% » ne mesurait pas `main.py` |
 | `Framework_Composite_FamaFrenchAllWeather` | Composite | Multi-actifs | **Alive — BEATS** | 87.5% OOS (backtest vérifié) |
 | `DynamicVIXSpyRegime-QC` | Régime VIX | US Equity | **Alive** | 69.4% (backtest vérifié) |
 | `BitcoinRegimeGate-QC` | Régime BTC (gate 24/7) | US Equity (QQQ/SHY) | **Alive — risk-adjusted** | QC Cloud 2026-09-30 (distillat #18576) : IS 2016-21 Sharpe **1.133** vs QQQ-hold 0.961 (MaxDD 14.4 % vs 28.2 %) ; OOS 2022-26 Sharpe **0.64** vs QQQ-hold 0.43 (MaxDD 15.2 % vs 34.7 %) ; PSR OOS 14.3 % (edge vs cash non significatif) |
@@ -44,6 +44,14 @@ Le matériel QC mélange 4 types de notebooks qu'un visiteur doit distinguer :
 | `RiskParity` / `Cloud-RiskParity-Composite` | Inverse-vol risk-parity | Multi-actifs | **Needs-improvement** (plafond structurel) | Sharpe 0.399 (contre-exemple pédagogique, figure #5753) ; **run frais 2026-08-14 baseline #1630 : 0.027** (tranche 24 ci-dessous) |
 | `DualMomentum` | Momentum dual-asset | Multi-actifs | **Superseded** | Échec TLT 2022 → remplacé par `DualMomentumNoTLT` |
 | `DualMomentumNoTLT` | Momentum (sans TLT) | Multi-actifs | **Alive** (remplacement) | Figure #5754 |
+
+### Portages issus d'un semis `[QC-research]`
+
+Projets créés à partir d'une issue de lecture d'article, sous les garde-fous écrits dans l'issue avant le premier backtest. Ils ne comptent dans aucune tranche #1621.
+
+| Stratégie | Type | Classe d'actifs | Statut | Évidence |
+|-----------|------|-----------------|--------|----------|
+| `OpeningRangeBreakout` | Momentum intraday (cassure du range d'ouverture, « stocks in play ») | Actions US | **Ignore — NO BEATS après frais** | #16355. Paramètres de l'article (range de 5 min, univers de 1000) : CAGR +4,10 % sur 2016-2019 puis −5,23 % sur 2020-2023, frais d'environ 32 % du capital de départ sur chaque fenêtre. Variante communautaire (range d'une minute) : arrêtée par les limites de temps de QC Cloud, mesurée sur sa portion exécutée seulement, et de signe opposé selon la taille de l'univers. Piste famille refermée. Détail : [README](../../MyIA.AI.Notebooks/QuantConnect/projects/OpeningRangeBreakout/) |
 
 ## Régimes de performance (connaissance cluster firsthand)
 
@@ -119,7 +127,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `EMA-Cross-Index` | `projects/EMA-Cross-Index/` | Trend EMA | Vérifié | tableau vérifié ci-dessus (figure #5746) |
 | `ForexCarry` | `projects/ForexCarry/` | FX carry/momentum | Vérifié | tableau vérifié ci-dessus (figure #5748) |
 | `Framework_Composite_FamaFrenchAllWeather` | `projects/Framework_Composite_FamaFrenchAllWeather/` | Composite | Vérifié | tableau vérifié ci-dessus (87.5 % OOS) |
-| `LongShortHarvest-QC` | `projects/LongShortHarvest-QC/` | Composite pairs | Vérifié | tableau vérifié ci-dessus (BEATS, 98.7 %) |
+| `LongShortHarvest-QC` | `projects/LongShortHarvest-QC/` | Long/short actions | Vérifié | tableau vérifié ci-dessus (NO BEATS, #19450) |
 | `ML-RandomForest` | `projects/ML-RandomForest/` | ML supervisé (RF) | Vérifié | tableau vérifié ci-dessus (figure #5747) |
 | `ML-XGBoost` | `projects/ML-XGBoost/` | ML supervisé (XGBoost) | Vérifié | tableau vérifié ci-dessus (figure #5749) |
 | `RiskParity` | `projects/RiskParity/` | Inverse-vol risk-parity | Vérifié | tableau vérifié ci-dessus (Needs-improvement, 0.399) |
@@ -139,7 +147,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Vol-GARCH-Target` | `projects/Vol-GARCH-Target/` | Vol (GARCH) | **Needs-improvement** | 2018–2025 (1761 j.) ; Sharpe 0.325 ; CAGR 6.97 % ; MaxDD 10.8 % ; PSR 14.9 % ; NP 60.3 % ($56 709) — modeste, plafond structurel |
 | `Vol-Ensemble-Conservative` | `projects/Vol-Ensemble-Conservative/` | Vol ensemble | **Needs-improvement** | 2018–2025 (1761 j.) ; Sharpe 0.265 ; CAGR 6.14 % ; MaxDD 10.4 % ; PSR 13.6 % ; NP 51.8 % ($50 438) — modeste, plafond structurel |
 | `HAR-RV-Kelly` | `projects/HAR-RV-Kelly/` | Volatility / Kelly | **Needs-improvement** | pleine période (2516 j.) ; Sharpe 0.146 ; CAGR 4.23 % ; MaxDD 12.8 % ; PSR 3.0 % ; NP 51.3 % ($50 666) — quasi-baseline, edge nul |
-| `InverseVolatility-Rank` | `projects/InverseVolatility-Rank/` | Risk-parity inversé | **Needs-improvement / near-BROKEN** | pleine période (1629 j.) ; Sharpe 0.124 ; CAGR 4.13 % ; **MaxDD 41.0 %** ; PSR 1.9 % — drawdown inacceptable, edge nul |
+| `InverseVolatility-Rank` | `projects/InverseVolatility-Rank/` | Risk-parity inversé | **Needs-improvement / near-BROKEN** | code Cloud 29463533, fenêtre Cloud 2018-12-31 → 2024-04-01 (1629 j., sans brokerage) : Sharpe 0.124 ; CAGR 4.13 % ; **MaxDD 41.0 %** ; PSR 1.9 % — drawdown inacceptable, edge nul. **Version dépôt (#19018)** : 2015-01-01 → 2024-04-01 (2865 j., IBKR MARGIN, projet Cloud 37313767) : Sharpe 0.529 ; CAGR 14.86 % ; MaxDD 40.5 % ; PSR 3.34 % |
 
 #### Vérifié (tranche 3, backtests QC Cloud via MCP) (5)
 
@@ -406,7 +414,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 |-----------|--------|------|--------|------------------------------------------------------------------------|
 | `Options-VGT` | `projects/Options-VGT/` | Options income (covered-call OTM tech single-names vs benchmark VGT) | **Needs-improvement** | 2020–2026 (1552 j., 655 ordres) ; **Sharpe 0.507** ; CAGR 14.19 % ; MaxDD 16.20 % ; **PSR 17.51 %** (max cohorte) ; NP 127.16 % ($76 641) — **best Sharpe cohorte** + meilleur PSR + drawdown contenu (16.20 %) ; `GainStrategy` couvre NVDA/ORCL/CSCO/AMD/QCOM avec options OTM ~30 j ; edge non significative |
 | `Trend-Following` | `projects/Trend-Following/` | Trend AQR 12-momentum multi-actifs | **Needs-improvement** | post-#2801 verify, 1630 baseline (2516 j., 451 ordres) ; **Sharpe 0.407** ; CAGR 7.89 % ; **MaxDD 14.60 %** ; **PSR 8.68 %** ; NP 113.82 % ($93 177) — profil « momentum prudent » : drawdown contenu 14.6 % (2e min cohorte) ; Sharpe décevant post-#2801 (vs 1.07 historique, downgrade documenté PR #2988) — edge non significative |
-| `PCA-StatArbitrage` | `projects/PCA-StatArbitrage/` | Stat-arb factoriel PCA multi-paires | **Needs-improvement** | 2015–2026 (tradeableDates=0 affiché, 3694 ordres) ; **Sharpe 0.165** ; CAGR 5.34 % ; MaxDD 35.90 % ; **PSR 0.18 %** ; NP 78.72 % ($772 239) — `tradeableDates=0` red flag (le count est-il sur le backtester ?), NP absolu record $772K MAIS PSR quasi-nul = **edge statistique nulle** ; MaxDD 35.9 % élevé ; profil « leverage sur facteur PCA » ne suffit pas à valider un edge |
+| `PCA-StatArbitrage` | `projects/PCA-StatArbitrage/` | Stat-arb factoriel PCA multi-paires | **Needs-improvement** | fenêtre du code Cloud 29461658, 2015-01-01 → 2026-03-01 (#19018 : le `main.py` dépôt s'arrête au 2024-01-01 — mesures par fenêtre dans le README du projet) (tradeableDates=0 affiché, 3694 ordres) ; **Sharpe 0.165** ; CAGR 5.34 % ; MaxDD 35.90 % ; **PSR 0.18 %** ; NP 78.72 % ($772 239) — `tradeableDates=0` red flag (le count est-il sur le backtester ?), NP absolu record $772K MAIS PSR quasi-nul = **edge statistique nulle** ; MaxDD 35.9 % élevé ; profil « leverage sur facteur PCA » ne suffit pas à valider un edge |
 | `TermStructureCommodities-QC` | `projects/TermStructureCommodities-QC/` | Term structure commodités roll-yield | **BROKEN** | 2018–2025 aligned (2129 j., 468 ordres) ; **Sharpe −0.244** (négatif) ; CAGR **−31.48 %** ; **MaxDD 96.80 %** ; **PSR 0.007 %** (quasi-nul) ; NP **−92.93 %** ($−929 294) — **effondrement systématique** sur la fenêtre alignée 2018-2025 : la courbe terme commodités post-2020 (Covid super-cycle 2020-2022 puis normalisation 2022-2024) ne fournit pas le signal directionnel roll-yield attendu ; perte ≈ capital initial ; edge nul à tous les seuils |
 
 
@@ -466,7 +474,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 
 ### Observations pédagogiques
 
-- **`Positive-Negative-Splits-ML` (Sharpe 1.511 / PSR 82.33 % / CAGR 75.72 % / MaxDD 37.60 %)` : **edge ★ cohorte max** = **2ᵉ PSR > 50 % cohorte QC #1621 depuis tr.3 BlackLitterman PSR 51 %** (tranche 16 c.705 `Framework_Composite_TrendWeather` PSR 77.94 % désormais 3ᵉ). Sharpe 1.511 + CAGR 75.72 % + NP $1.83M record cohorte = profil event-driven fundamental exceptionnel. `LinearRegression` earnings surprise magnitude + historical split ratios predicts post-earnings drift. tradeableDates=1320 j. (post-#2801 IBKR margin verify) confirmant robustness long-terme. **Confirmation empirique** : event-driven fundamental bien calibré >>> trend pur sur Sharpe par unité de risque ET signification statistique. Walk-forward multi-seed OOS requis avant promotion production, mais PSR 82.33 % in-sample = signal robuste.
+- **`Positive-Negative-Splits-ML` (Sharpe 1.511 / PSR 82.33 % / CAGR 75.72 % / MaxDD 37.60 %)` : **edge ★ cohorte max** = **2ᵉ PSR > 50 % cohorte QC #1621 depuis tr.3 BlackLitterman PSR 51 %** (tranche 16 c.705 `Framework_Composite_TrendWeather` PSR 77.94 % désormais 3ᵉ). Sharpe 1.511 + CAGR 75.72 % + NP $1.83M record cohorte = profil event-driven fundamental exceptionnel. `LinearRegression` à deux variables, le facteur de division et le taux de variation de XLK sur 22 séances, qui prédit le rendement à 3 jours après l'annonce d'une division (le code n'utilise aucune donnée de résultats : description corrigée par #19242). tradeableDates=1320 j. (post-#2801 IBKR margin verify) confirmant robustness long-terme. **Confirmation empirique** : event-driven fundamental bien calibré >>> trend pur sur Sharpe par unité de risque ET signification statistique. Walk-forward multi-seed OOS requis avant promotion production, mais PSR 82.33 % in-sample = signal robuste.
+  - **Revu par #19242 (2026-10-05)** : la mesure ne se reproduit pas (Sharpe 1,16 et PSR 43,6 % sur 2018 → 2024-04, statistiques QC) ; 89 % du résultat vient de 2023-2024 et 69 % de titres entrés à moins d'un dollar ; QC estime la capacité à 3 000 dollars. Sur 2018 → 2026-09, la règle d'origine se ruine sur une vente à découvert (décembre 2025) et la variante long seul est `NO BEATS` contre SPY et le 60/40 SPY/IEF. Détail : [SplitEventsLongOnly](../../MyIA.AI.Notebooks/QuantConnect/projects/SplitEventsLongOnly/).
 - **`Stoploss-Volatility-ML` (Sharpe 0.291 / MaxDD 20.00 % / PSR 1.84 %)` : **min MaxDD cohorte (20.00 %)** + profil risk-management discipliné = stoploss volatility SPY vol-proxy v2 fonctionne structurellement (MaxDD contenu) MAIS PSR 1.84 % reste sous 50 %, edge statistique **non confirmée**. ML risk-management = discipline structurelle sans alpha significative, typique des stratégies défensives post-2020.
 
 - **`ML-SVM` (Sharpe 0.147 / MaxDD 27.10 % / PSR 0.46 %)` : SVM biweekly equity-only v3-no-regime-2015 = profil le plus prudent cohorte. 823 ordres sur 2825 j. = signal haute fréquence. MAIS PSR 0.46 % quasi-nul + Sharpe 0.147 = SVM supervisé equity ne surfit pas la cohorte, **pattern ML/DL post-2020**.

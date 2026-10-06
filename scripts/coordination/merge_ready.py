@@ -103,6 +103,11 @@ Comportement :
   (``approved-exact-head`` / ``approval-not-on-head`` / ``no-approval``,
   point 1 de #17672) sur TOUTES les voix, bots compris ; elle informe.
   Ce qui BLOQUE est l'etape 2ter : la seule voix du coordinateur.
+  Une quatrieme valeur, ``review-ready`` (point 2 de #17672), signale
+  les PRs qui ont franchi TOUTES les portes delegables (prefiltre,
+  perimetre, dossier precheck) et n'attendent que la relecture
+  coordinateur -- le dashboard les distingue des PRs bloquees sur
+  un autre probleme.
 - Journal : une ligne JSON par PR evaluee (ts UTC en Z, pr, head,
   verdict, reason, merged, review) dans
   ``%LOCALAPPDATA%/CoursIA/merge_ready/journal.jsonl`` (surchargeable
@@ -205,6 +210,13 @@ APPROVED_EXACT_HEAD = "approved-exact-head"
 APPROVAL_NOT_ON_HEAD = "approval-not-on-head"
 NO_APPROVAL = "no-approval"
 NOT_EVALUATED = "not-evaluated"  # ligne d'un run interrompu avant evaluation
+#: Disposition de la PR telle que la verrait l'organe si la lecture du
+#: coordinateur etait reglee : toutes les portes delegables (prefiltre,
+#: perimetre, dossier precheck) sont vertes, seule manque la disposition
+#: ai-01 a la tete exacte. Sert au dashboard coordinateur a distinguer
+#: « PR qui n'attend que sa relecture » de « PR qui a un autre probleme ».
+#: Voir #17672 point 2.
+REVIEW_READY = "review-ready"
 
 #: Ce qui vaut approbation : l'etat REEL ``APPROVED``, ou le verdict type
 #: ``LGTM`` emis en corps de voix (``VERDICT_RE`` du canon ne type que LGTM et
@@ -502,7 +514,7 @@ def list_open_prs(runner: Runner, gh_env: dict[str, str]) -> list[int]:
 #: review se classe sans appel supplementaire (l'oid de review y figure, mesure
 #: du 2026-09-25 : ``gh pr view --json reviews`` rend ``commit.oid``).
 PR_VIEW_FIELDS = (
-    "number,title,isDraft,body,headRefName,headRefOid,baseRefOid,files,"
+    "number,title,isDraft,body,headRefName,headRefOid,baseRefName,baseRefOid,files,"
     "changedFiles,comments,reviews"
 )
 
@@ -875,6 +887,41 @@ def twin_collision_reason(
     return f"twin-collision-unreadable:rc={res.returncode}"
 
 
+def base_ref_liveness(
+    runner: Runner, gh_env: dict[str, str], base_ref_name: str
+) -> str:
+    """Etape 5ter, suite (#19014) : la base non-`main` peut etre **vivante**
+    (une PR ouverte dont la tete est cette branche) ou **morte** (la PR
+    porteuse a ete fermee ou squash-marigee, la branche n'est rattachee a
+    aucune PR ouverte). Le gate (#19002) refuse les deux ; merge_ready
+    porte le meme refus en defense en profondeur, mais doit nommer lequel
+    des deux s'applique -- une lane qui lit ``base-live-not-main`` doit
+    attendre le merge de la PR porteuse, une lane qui lit ``base-gone``
+    doit retargeter sur ``main`` (cf. git-workflow.md L898 collision guard).
+
+    La distinction se fait sur la liste ``gh pr list --state all`` filtree
+    sur ``head:<base_ref_name>``. Une PR OPEN avec cette tete = live,
+    sinon (CLOSE/MERGED/absente) = gone. Erreur REST = ``unreadable``
+    (fail-CLOSED : on ne declare pas un etat qu'on n'a pas mesure)."""
+    res = runner.run(
+        ["gh", "pr", "list", "--repo", REPO, "--state", "all",
+         "--search", f"head:{base_ref_name}",
+         "--json", "number,state", "--limit", "5"],
+        env=gh_env,
+    )
+    if res.returncode != 0:
+        return "unreadable"
+    rows = _json_stdout(res, "gh pr list --search head:")
+    if not isinstance(rows, list):
+        return "unreadable"
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("state") or "").upper() == "OPEN":
+            return "live"
+    return "gone"
+
+
 def mergeable_state_and_head(
     runner: Runner, pr: int, gh_env: dict[str, str]
 ) -> tuple[str, str]:
@@ -972,9 +1019,15 @@ def evaluate_pr(
     if reason is not None:
         return skip(reason)
     # 2ter. approbation du coordinateur (Q67) : une PR non lue ne paie pas le gate.
+    # Si on skip ici, les portes delegables EN AMONT ont toutes ete vertes
+    # (prefiltre 1, perimetre 2, dossier precheck 2bis) -- c'est precisement
+    # la definition de l'etat REVIEW_READY (#17672 point 2) : seule manque la
+    # disposition ai-01 a la tete exacte. On la porte en disposition, le
+    # ``reason`` conserve la granularite (``no-coordinator-approval`` /
+    # ``coordinator-approval-stale`` / ``coordinator-approval-unverifiable``).
     reason = coordinator_approval_reason(view, view_head, runner, gh_env)
     if reason is not None:
-        return skip(reason)
+        return PRVerdict(pr, view_head, "skipped", reason, False, REVIEW_READY)
     # 3. gate d'entree.
     ready, gate_head, gate_reason = run_gate(runner, pr, gh_env)
     if not ready:
@@ -994,6 +1047,25 @@ def evaluate_pr(
     reason = twin_collision_reason(runner, pr, gate_head, view.get("files") or [])
     if reason is not None:
         return skip(reason)
+    # 5ter. defense en profondeur : la base de la PR doit etre `main` (#19002,
+    # distingue en #19014). Le gate a deja refuse READY si la base n'est pas
+    # `main`, mais un gate anterieur a #19002 (ou un rc 0 accidente) ne
+    # suffit pas : merge_ready est l'organe qui **execute** le merge, et il
+    # doit verifier lui-meme. Le `view` charge a l'etape 0 porte la base via
+    # `PR_VIEW_FIELDS` ; on la lit ici pour eviter un round-trip REST
+    # supplementaire. La base morte (squash-mergee ou fermee) et la base
+    # empilee sur une PR ouverte (vivante) portent toutes deux un nom qui
+    # n'est pas `main` ; le gate les refuse toutes les deux, mais la lane
+    # n'a pas le meme geste a faire (retargeter vs. attendre) -- d'ou les
+    # deux motifs distincts `base-gone` et `base-live-not-main`.
+    base_ref_name = view.get("baseRefName") or ""
+    if base_ref_name != "main":
+        liveness = base_ref_liveness(runner, gh_env, base_ref_name)
+        if liveness == "live":
+            return skip(f"base-live-not-main:{base_ref_name}")
+        if liveness == "gone":
+            return skip(f"base-gone:{base_ref_name}")
+        return skip(f"base-not-main-unreadable:{base_ref_name}")
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(runner, pr, gh_env)
     if state != "clean":
