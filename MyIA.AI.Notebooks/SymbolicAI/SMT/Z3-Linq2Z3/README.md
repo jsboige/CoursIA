@@ -289,7 +289,7 @@ Issue de référence : #19278. Cette série s'ancre principalement sur un livre-
 
 | Thème du livre | Notebook porteur | Vérification |
 |----------------|------------------|--------------|
-| Solver API, theories, modèles | série Z3-Linq2Z3 entière (18 notebooks) | OK (la série entière relève du livre ; pas d'inventaire chapitre-par-chapitre) |
+| Solver API, theories, modèles | série Z3-Linq2Z3 entière | OK (la série entière relève du livre ; pas d'inventaire chapitre-par-chapitre) |
 | Array theory, Nested arrays | `04_Array_Theory`, `05_Nested_Arrays_2D` | à_confirmer (PDF corrompu worker) |
 | Cryptarithmetic | `13_Cryptarithmetic_SMT` | à_confirmer |
 | MaxSAT / Optimize | `14_Optimize_MaxSAT` | à_confirmer |
