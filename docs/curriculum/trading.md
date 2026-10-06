@@ -295,8 +295,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Le critere de Kelly — compagnon Python du lake…](../../MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion.ipynb) | BETA | Non |
-| 2 | [Kelly — compagnon natif (kernel Lean 4)](../../MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion_lean.ipynb) | BETA | Non |
+| 1 | [Le critere de Kelly — compagnon Python du lake…](../../MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion-Python.ipynb) | BETA | Non |
+| 2 | [Kelly — compagnon natif (kernel Lean 4)](../../MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion-Lean.ipynb) | BETA | Non |
 
 ## QuantConnect/projects (46 notebooks)
 
