@@ -278,3 +278,110 @@ class TestInternalRepresentation:
         obs = _rng(6).standard_normal(2000)
         phi = c.ar1_coefficient(obs)
         assert abs(phi) < 0.1
+
+
+# --------------------------------------------------------------------------- #
+#  Pont cusp <-> trèfle (#19333-G) : tore, nœuds (2, n), Alexander
+# --------------------------------------------------------------------------- #
+
+
+class TestTorusAndTrefoil:
+    """Invariants **mesurés** du pont cusp/trèfle.
+
+    L'identification « la cubique cuspidale se relève en trèfle en polaires » est
+    *citée* (hidden-phenomena, Michael & Kenta, 2026-10-03,
+    https://hidden-phenomena.com/articles/trefoil) et n'est donc pas testée ici.
+    Ce qui est testé est ce que le module **calcule** : le plongement du tore,
+    les nombres d'enroulement du nœud ``(2, n)``, et le polynôme d'Alexander que
+    ``knot_lean`` prouve pour le trèfle (``alexander_trefoil`` : ``X^2 - X + 1``).
+    """
+
+    def test_torus_points_respects_the_implicit_equation(self):
+        # Tout point du plongement appartient au tore :
+        # (sqrt(x^2 + y^2) - R)^2 + z^2 = r^2.
+        R, r = 2.0, 1.0
+        th = _rng(0).uniform(-np.pi, np.pi, 50)
+        ph = _rng(1).uniform(-np.pi, np.pi, 50)
+        x, y, z = c.torus_points(th, ph, R=R, r=r)
+        radial = np.sqrt(x ** 2 + y ** 2)
+        assert np.allclose((radial - R) ** 2 + z ** 2, r ** 2)
+
+    def test_torus_points_landmarks(self):
+        # phi = 0 -> z = 0 et rayon R + r ; theta = 0 -> x = R + r cos phi.
+        x, y, z = c.torus_points(0.0, 0.0, R=2.0, r=1.0)
+        assert float(x) == pytest.approx(3.0)
+        assert float(y) == pytest.approx(0.0)
+        assert float(z) == pytest.approx(0.0)
+
+    def test_torus_knot_winding_is_the_two_n_signature(self):
+        # 2 phi = n theta : theta s'enroule 2 fois, phi n fois — mesuré, pas
+        # déclaré. C'est la signature 2-3 que le trèfle doit porter.
+        for n in (3, 5, 7):
+            theta, phi = c.torus_knot(n)
+            assert c.torus_knot_winding(theta, phi) == (2, n)
+
+    def test_torus_knot_is_closed_on_the_torus(self):
+        # theta in [0, 4 pi] est le plus petit domaine qui referme la courbe :
+        # premier et dernier points confondus dans R^3.
+        theta, phi = c.torus_knot(3, points=601)
+        x, y, z = c.torus_points(theta, phi)
+        assert np.allclose([x[0], y[0], z[0]], [x[-1], y[-1], z[-1]])
+
+    def test_trefoil_and_cinquefoil_are_distinct_knots(self):
+        # Témoin négatif : le rapport 2 phi = 5 theta ne donne PAS le trèfle.
+        t3, p3 = c.torus_knot(3)
+        t5, p5 = c.torus_knot(5)
+        assert c.torus_knot_winding(t3, p3) != c.torus_knot_winding(t5, p5)
+
+    def test_alexander_trefoil_matches_the_lean_theorem(self):
+        # knot_lean, Knots/Conway.lean : alexander_trefoil = X^2 - X + 1.
+        assert np.allclose(c.alexander_torus_knot(3), [1.0, -1.0, 1.0])
+
+    def test_alexander_cinquefoil_is_the_degree_four_alternating_polynomial(self):
+        assert np.allclose(c.alexander_torus_knot(5), [1.0, -1.0, 1.0, -1.0, 1.0])
+
+    def test_alexander_roots_trefoil_are_primitive_sixth_roots_of_unity(self):
+        # Les racines de X^2 - X + 1 sont exp(+/- i pi/3) : les racines 6-ièmes
+        # primitives de l'unité (phi(6) = 2, pas 3), d'où l'ordre 6 revendiqué.
+        roots = c.alexander_roots_torus_knot(3)
+        expected = np.array([np.exp(1j * np.pi / 3), np.exp(-1j * np.pi / 3)])
+        assert np.allclose(np.sort_complex(roots), np.sort_complex(expected))
+
+    def test_alexander_roots_cinquefoil_are_primitive_tenth_roots(self):
+        # Témoin négatif, volet algébrique : les racines du cinquefoil sont les
+        # racines 10-ièmes primitives de l'unité, pas les 6-ièmes — les deux
+        # nœuds sont distingués par l'invariant même que knot_lean calcule.
+        roots = c.alexander_roots_torus_knot(5)
+        expected = np.array([np.exp(1j * np.pi * k / 5) for k in (1, 3, 7, 9)])
+        assert np.allclose(np.sort_complex(roots), np.sort_complex(expected))
+
+    def test_alexander_rejects_degenerate_order(self):
+        with pytest.raises(ValueError):
+            c.alexander_torus_knot(0)
+
+
+def test_importing_catastrophe_does_not_pull_matplotlib():
+    """Le module documente « numpy uniquement » : le tracé s'importe *dans* la
+    fonction, jamais en tête de module.
+
+    Le garde se mesure dans un interpréteur neuf : dans le processus de test,
+    matplotlib est déjà chargé par d'autres suites, et l'assertion y serait
+    vraie sans rien prouver.
+    """
+    import subprocess
+
+    # ``_ROOT`` est le paquet ``ict/`` lui-meme ; c'est son parent qui rend
+    # ``import ict`` resolvable dans un interpreteur neuf.
+    series_root = os.path.dirname(_ROOT)
+    code = (
+        f"import sys; sys.path.insert(0, {series_root!r}); import ict.catastrophe; "
+        "assert 'matplotlib' not in sys.modules, 'matplotlib imported eagerly'"
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    assert proc.returncode == 0, proc.stderr

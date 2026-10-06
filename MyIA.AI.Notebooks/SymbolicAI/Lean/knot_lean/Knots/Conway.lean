@@ -1064,7 +1064,15 @@ theorem det_three_aux (A : Matrix (Fin 3) (Fin 3) (Polynomial ℤ)) :
 
 /-- Contrôle positif : le trèfle retrouve la valeur classique t² − t + 1
 sous la normalisation désignée (mineur sans première ligne ni dernière
-colonne). -/
+colonne).
+
+C'est aussi le polynôme du **nœud torique** `(2, 3)` : `t² − t + 1` s'écrit
+`(t³ + 1)/(t + 1)`, et ses racines sont les racines 6-ièmes **primitives** de
+l'unité. L'article de hidden-phenomena (Michael & Kenta, 03/10/2026,
+https://hidden-phenomena.com/articles/trefoil) identifie ce nœud à la
+**cubique cuspidale** `y² = x³` relevée en polaires sur le tore (`2φ = 3θ`) —
+courbe de bifurcation `4a³ + 27b² = 0` de la fronce de Thom, rejouée côté
+Python dans `IIT/ICT-Series/ICT-23` (`ict/catastrophe.py`, section #19333-G). -/
 theorem alexander_trefoil :
     alexanderPolynomial trefoil = Polynomial.X ^ 2 - Polynomial.X + 1 := by
   have hp : arcPartition trefoilDiagram = [[4, 5], [1, 6], [2, 3]] := by

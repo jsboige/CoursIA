@@ -1070,7 +1070,16 @@ theorem det_three_aux (A : Matrix (Fin 3) (Fin 3) (Polynomial ℤ)) :
 
 /-- Positive control: the trefoil recovers the classical value t² − t + 1
 under the designated normalization (minor without first row nor last
-column). -/
+column).
+
+It is also the polynomial of the **(2, 3) torus knot**: `t² − t + 1` reads
+`(t³ + 1)/(t + 1)`, and its roots are the **primitive** 6th roots of unity.
+The hidden-phenomena article (Michael & Kenta, 2026-10-03,
+https://hidden-phenomena.com/articles/trefoil) identifies this knot with the
+**cuspidal cubic** `y² = x³` lifted in polar coordinates onto the torus
+(`2φ = 3θ`) — the bifurcation curve `4a³ + 27b² = 0` of Thom's cusp, replayed
+on the Python side in `IIT/ICT-Series/ICT-23` (`ict/catastrophe.py`, section
+#19333-G). -/
 theorem alexander_trefoil :
     alexanderPolynomial trefoil = Polynomial.X ^ 2 - Polynomial.X + 1 := by
   have hp : arcPartition trefoilDiagram = [[4, 5], [1, 6], [2, 3]] := by

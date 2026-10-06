@@ -556,7 +556,8 @@ def _intent_from_line(line: str | None) -> str | None:
     return text
 
 
-def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
+def _parse_claim_events(comment: dict,
+                        tracked: list[str] | None = None) -> list[ClaimEvent]:
     """One ClaimEvent per bracketed marker line -- the #10881 reducer fix.
 
     A comment can LEGITIMATELY carry markers for several lanes: the natural
@@ -648,7 +649,7 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
             # when the scope cannot be matched by fnmatch. Without this field
             # an unclosed-brace scope would silently degrade to "non-blocking
             # accidental empty" -- the exact defect that motivated #10597.
-            unparseable_scope=_unparseable_scope_in(paths) if paths else [],
+            unparseable_scope=_unparseable_scope_in(paths, tracked) if paths else [],
             intent=_intent_from_line(line),
             # #12072 -- structured signal for a scope declared OFF the marker
             # line (line-start `paths?` elsewhere in the comment, e.g. a
@@ -669,7 +670,8 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
     return events
 
 
-def parse_claim_event(comment: dict) -> ClaimEvent | None:
+def parse_claim_event(comment: dict,
+                     tracked: list[str] | None = None) -> ClaimEvent | None:
     """Classify one issue comment into a claim event, or None if not a marker.
 
     Legacy single-event view: the LAST bracketed marker of the comment is the
@@ -680,8 +682,11 @@ def parse_claim_event(comment: dict) -> ClaimEvent | None:
     `extract_lane`; None when the body carries no lane token (surfaced as
     "unattributed", never guessed). The timestamp is the comment's server
     `createdAt` -- the Defaut-2 fix: body stamps are not trusted.
+
+    `tracked` is forwarded to `_unparseable_scope_in` so a bare word that is
+    a tracked filename at the repo root (#19435) is accepted as a valid glob.
     """
-    events = _parse_claim_events(comment)
+    events = _parse_claim_events(comment, tracked=tracked)
     return events[-1] if events else None
 
 
@@ -806,7 +811,8 @@ def _extract_delivered_pr_ref(line: str | None) -> int | None:
     return int(m.group(1)) if m else None
 
 
-def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
+def _unparseable_scope_in(parts: list[str] | None,
+                           tracked: list[str] | None = None) -> list[str]:
     """Return the subset of `parts` that look UNMATCHABLE: brace residue
     (`{` / `}`) OR a glob-free prose fragment (no `/`, no fnmatch meta).
 
@@ -817,7 +823,7 @@ def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
     acceptance #2). The list returned here is the witness, so the
     reducer and the JSON audit can surface it without re-parsing.
 
-    #12052 -- a second class of unmatchable residue: PROSE WITHOUT SLASHES OR
+    #12052 -- a second class of unparseable residue: PROSE WITHOUT SLASHES OR
     METACHARACTERS (e.g. `tranche A)` after a parenthetical annotation split).
     Such a fragment survives the brace-aware comma split because it carries no
     `{` and no `,` at depth 0, but fnmatch still will not match it (fnmatch
@@ -830,10 +836,20 @@ def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
     truncation was incomplete. Empty when the scope is fully parseable.
     Empty on `parts is None` (no clause -> epic-wide semantics handled by
     the caller).
+
+    #19435 -- a THIRD class accepted: a bare word (no `/`, no fnmatch meta)
+    that is the LITERAL NAME of a tracked file at the repo root (e.g.
+    `_quarto.yml`, `Makefile`, `LICENSE`). The fnmatch semantics treat a
+    bare word as a literal filename; if the word matches a tracked file,
+    the glob is well-formed. The check accepts these when `tracked` is
+    provided (caller has done a `git ls-files` walk); without `tracked`,
+    the bare word is still residue (fail-CLOSED outside a git repo).
+    Empty `parts` -> empty witness (caller semantics).
     """
     if not parts:
         return []
     fnmatch_metas = set("*?[!")
+    tracked_set = set(tracked) if tracked else None
     residue: list[str] = []
     for p in parts:
         if "{" in p or "}" in p:
@@ -841,9 +857,15 @@ def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
             continue
         # A glob contains at least one path separator OR one fnmatch meta.
         # A bare word without either is prose that fnmatch will treat as a
-        # literal filename (matching only the literal string) -- on tracked
-        # files this is effectively never the intent.
+        # literal filename (matching only the literal string). Two cases
+        # are accepted as well-formed:
+        #   1. the bare word is a TRACKED FILE at the repo root (#19435) --
+        #      fnmatch will match it against the literal filename.
+        #   2. (n/a) the glob is genuinely unmatchable: any other bare
+        #      word is residue and lifts the claim to epic-wide (#12052).
         if "/" not in p and not any(m in p for m in fnmatch_metas):
+            if tracked_set is not None and p in tracked_set:
+                continue
             residue.append(p)
     return residue
 
@@ -1008,7 +1030,8 @@ def _gh_issue_comments(issue: str) -> dict:
     return json.loads(proc.stdout)
 
 
-def _sort_events(payload: dict) -> list[ClaimEvent]:
+def _sort_events(payload: dict,
+                 tracked: list[str] | None = None) -> list[ClaimEvent]:
     """Parse + chronologically sort claim events from a `gh issue view` payload.
 
     Uses `_parse_claim_events` -- one event per marker line (#10881) -- so a
@@ -1017,11 +1040,16 @@ def _sort_events(payload: dict) -> list[ClaimEvent]:
     share the server `createdAt`; the stable sort preserves their in-comment
     marker order, so the walk-order reducer sees `[CLAIMED] X\n[DONE] X` as
     open-then-close (final state inactive), exactly as before.
+
+    `tracked` is forwarded to each `_parse_claim_events` so a bare word that
+    is a tracked filename at the repo root (#19435) is accepted as a valid
+    glob. Without `tracked` (e.g. --from-json offline mode), the legacy
+    fail-CLOSED behaviour holds: bare words remain residue.
     """
     events = [
         ev
         for c in payload.get("comments", [])
-        for ev in _parse_claim_events(c)
+        for ev in _parse_claim_events(c, tracked=tracked)
     ]
     # Server createdAt, ISO 8601 UTC -> lexicographic order == chronological.
     events.sort(key=lambda e: e.created_at or "")
@@ -2291,11 +2319,12 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             best-effort: on `gh` failure it warns and leaves the primary
             verdict untouched rather than failing the whole check.
     """
-    events = _sort_events(payload)
-    # One shared tracked-files walk feeds BOTH the #10881 lint and the
-    # #10958 empty-scope witness (best-effort: None outside a git repo, in
-    # which case both features degrade to their pre-#10958 behaviour).
+    # One shared tracked-files walk feeds the #10958 empty-scope witness AND
+    # the #19435 root-filename acceptance (best-effort: None outside a git
+    # repo, in which case the empty-scope witness degrades to its pre-#10958
+    # behaviour AND the root-filename acceptance is fail-CLOSED).
     tracked = _git_tracked_files()
+    events = _sort_events(payload, tracked=tracked)
     # #11239 lint -- bare markers without brackets (invisible to the organ).
     # Same non-blocking spirit as the #10881 lint above: the writer learns at
     # the call site that their lock was never registered, instead of two lanes

@@ -5,7 +5,7 @@
 <!-- CATALOG-STATUS
 series: RL
 pedagogical_count: 37
-breakdown: root=37
+breakdown: root=26, PostTraining=11
 maturity: BETA=32, ALPHA=3, DRAFT=2
 -->
 

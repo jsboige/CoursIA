@@ -1166,6 +1166,42 @@ def test_commit_de_contenu_apres_l_approbation_perime_la_lecture(tmp_path):
     assert lines[-1]["reason"] == "coordinator-approval-stale"
 
 
+def test_skip_2ter_porte_review_ready_en_disposition(tmp_path):
+    """#17672 point 2 : quand une PR skip a l'etape 2ter (approbation
+    coordinateur), toutes les portes delegables en amont sont vertes
+    (prefiltre, perimetre, dossier precheck). La disposition portee est
+    ``review-ready`` -- le dashboard coordinateur distingue alors « PR qui
+    n'attend que sa relecture » de « PR qui a un autre probleme »."""
+    view = default_view(coordinator=HEAD_MOVED)
+    runner = ScriptedRunner(views={123: view}, **refresh_topology(tree="d1ff"))
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "coordinator-approval-stale"
+    assert lines[-1]["review"] == "review-ready"
+
+
+def test_skip_sans_approbation_porte_review_ready(tmp_path):
+    """#17672 point 2 : variante ``no-coordinator-approval`` (aucune voix
+    approbatrice du coordinateur). La disposition est toujours
+    ``review-ready`` puisque les portes delegables en amont sont vertes."""
+    runner = ScriptedRunner(views={123: default_view(coordinator=None)})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+    assert lines[-1]["review"] == "review-ready"
+
+
+def test_skip_prefiltre_ne_porte_pas_review_ready(tmp_path):
+    """#17672 point 2 : un skip en AMONT de 2ter (ici, brouillon) garde
+    la disposition review brute (``no-approval``), pas ``review-ready`` :
+    les portes delegables ne sont pas toutes vertes, l'etat REVIEW_READY
+    ne s'applique pas."""
+    view = default_view(coordinator=None)
+    view["isDraft"] = True
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "draft"
+    assert lines[-1]["review"] == "no-approval"
+
+
 def test_preuve_illisible_fail_closed(tmp_path):
     view = default_view(coordinator=HEAD_MOVED)
     runner = ScriptedRunner(views={123: view}, commits={})
