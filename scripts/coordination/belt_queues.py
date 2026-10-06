@@ -89,14 +89,27 @@ def needs_of(pick: dict) -> list[str]:
     return out
 
 
-def group_picks(picks: list[dict]) -> list[dict]:
+def visit_age_days(pick: dict, now: datetime) -> float | None:
+    """Jours depuis la derniere visite au sens du tapis : merge citant l'issue ou claim attribue.
+
+    Le champ ``idle`` du picker mesure l'activite quelconque (``updated_at``) : un commentaire
+    de bot le remet a zero sans que personne ait servi l'issue. Ce n'est pas la cle du tapis.
+    """
+    stamps = [s for s in (pick.get("last_delivery_stamp"), pick.get("last_claim_stamp")) if s]
+    ref = max(stamps) if stamps else pick.get("created_at")
+    if not ref:
+        return None
+    return round((now - datetime.fromisoformat(ref.replace("Z", "+00:00"))).total_seconds() / 86400.0, 1)
+
+
+def group_picks(picks: list[dict], now: datetime) -> list[dict]:
     """Familles dans l'ordre du tapis (rang du premier membre)."""
     groups: dict[str, dict] = {}
     for rank, p in enumerate(picks):
         fam = family_of(p)
         g = groups.setdefault(fam, {"family": fam, "rank": rank, "items": []})
-        g["items"].append({"number": p["number"], "title": p.get("title"), "idle": p.get("idle"),
-                           "needs": needs_of(p)})
+        g["items"].append({"number": p["number"], "title": p.get("title"),
+                           "since_visit": visit_age_days(p, now), "needs": needs_of(p)})
     return sorted(groups.values(), key=lambda g: g["rank"])
 
 
@@ -132,8 +145,8 @@ def gh_issue_state(number: int) -> dict:
     return json.loads(out.stdout)
 
 
-def board(belt: dict, lanes: list[str], previous: dict | None, fetch_issue=gh_issue_state,
-          recette=None) -> dict:
+def board(belt: dict, lanes: list[str], previous: dict | None, now: datetime,
+          fetch_issue=gh_issue_state, recette=None) -> dict:
     plates = measure_plates(previous, fetch_issue) if previous else {}
     on_plate = {it["number"] for p in plates.values() for it in p["remaining"]}
     picks = [p for p in belt.get("picks", []) if p["number"] not in on_plate]
@@ -146,19 +159,19 @@ def board(belt: dict, lanes: list[str], previous: dict | None, fetch_issue=gh_is
             "arc": plate["arc"] if plate else None,
             "recette": recette(lane) if recette else None,
         }
-    return {"drawn": len(belt.get("picks", [])), "families": group_picks(picks), "lanes": out_lanes,
+    return {"drawn": len(belt.get("picks", [])), "families": group_picks(picks, now), "lanes": out_lanes,
             "previous_at": previous["assigned_at"] if previous else None}
 
 
 def render_board(b: dict) -> str:
     lines = [f"{b['drawn']} issues tirees ; repartition precedente : {b['previous_at'] or 'aucune'}", "",
-             "# Familles (ordre du tapis)"]
+             "# Familles (ordre du tapis ; jours depuis la derniere visite)"]
     for g in b["families"]:
         lines.append(f"\n## {g['family']} ({len(g['items'])})")
         for it in g["items"]:
             needs = f" [{', '.join(it['needs'])}]" if it["needs"] else ""
-            idle = "" if it.get("idle") is None else f"{it['idle']} j"
-            lines.append(f"  #{it['number']} {idle}{needs} {it.get('title') or ''}")
+            age = "" if it.get("since_visit") is None else f"{it['since_visit']} j"
+            lines.append(f"  #{it['number']} {age}{needs} {it.get('title') or ''}")
     lines += ["", "# Lanes"]
     for lane, info in b["lanes"].items():
         rest = [it["number"] for it in info["remaining"]]
@@ -244,7 +257,7 @@ def main(argv: list[str] | None = None) -> int:
 
             def recette(lane: str) -> dict:
                 return rd.run(lane, rd.DEFAULT_WINDOW_DAYS, now, list_issues=lambda: listed, fetch_issue=fetch)
-        result = board(_read_json(args.belt_json), lanes, _load_previous(args.previous), recette=recette)
+        result = board(_read_json(args.belt_json), lanes, _load_previous(args.previous), now, recette=recette)
     except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError) as exc:
         print(f"UNKNOWN: belt_queues injoignable ({type(exc).__name__})")
         return 2

@@ -25,8 +25,10 @@ NOW = datetime(2026, 10, 6, 13, 43, tzinfo=timezone.utc)
 A, B = "myia-po-2023:CoursIA", "myia-po-2027:CoursIA-2"
 
 
-def _pick(n, title="t", body="", labels=None, idle=40, genre="docs"):
-    return {"number": n, "title": title, "body": body, "labels": labels or [], "idle": idle, "genre": genre}
+def _pick(n, title="t", body="", labels=None, genre="docs", delivered=None, claimed=None,
+          created="2026-09-01T00:00:00Z"):
+    return {"number": n, "title": title, "body": body, "labels": labels or [], "genre": genre, "idle": 0,
+            "last_delivery_stamp": delivered, "last_claim_stamp": claimed, "created_at": created}
 
 
 def _payload(n, comments=(), state="OPEN"):
@@ -55,8 +57,14 @@ def test_needs_detects_vision_and_local_vllm():
     assert bq.needs_of(_pick(1, "x", "appel a 192.168.0.47:5002")) == ["vllm-local"]
 
 
+def test_visit_age_uses_belt_stamps_not_updated_at():
+    p = _pick(1, delivered="2026-09-30T13:43:00Z", claimed="2026-10-02T13:43:00Z")
+    assert bq.visit_age_days(p, NOW) == 4.0
+    assert bq.visit_age_days(_pick(2, created="2026-09-26T13:43:00Z"), NOW) == 10.0
+
+
 def test_groups_keep_belt_order_of_first_member():
-    groups = bq.group_picks([_pick(1, "[X] a"), _pick(2, "[Y] b"), _pick(3, "[X] c")])
+    groups = bq.group_picks([_pick(1, "[X] a"), _pick(2, "[Y] b"), _pick(3, "[X] c")], NOW)
     assert [g["family"] for g in groups] == ["X", "Y"]
     assert [it["number"] for it in groups[0]["items"]] == [1, 3]
 
@@ -104,7 +112,7 @@ def test_board_hides_issues_still_on_a_plate_and_reports_recette():
 
     def recette(lane):
         return {"verdict": "DUE", "issue": 17586} if lane == B else {"verdict": "OK", "issue": 17586}
-    res = bq.board(belt, [A, B], PREV, fetch_issue=payloads.__getitem__, recette=recette)
+    res = bq.board(belt, [A, B], PREV, NOW, fetch_issue=payloads.__getitem__, recette=recette)
     drawn = [it["number"] for g in res["families"] for it in g["items"]]
     assert drawn == [30, 31]
     assert [it["number"] for it in res["lanes"][A]["remaining"]] == [11]
@@ -114,7 +122,7 @@ def test_board_hides_issues_still_on_a_plate_and_reports_recette():
 
 
 def test_board_without_previous_assignment():
-    res = bq.board({"picks": [_pick(1, "[X] a")]}, [A], None)
+    res = bq.board({"picks": [_pick(1, "[X] a")]}, [A], None, NOW)
     assert res["previous_at"] is None and res["lanes"][A]["assigned"] == 0
 
 
