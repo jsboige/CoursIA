@@ -1030,69 +1030,98 @@ def is_out_of_fleet(snapshot: dict[str, Any]) -> bool:
     )
 
 
-def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
-    """Validate a parsed dossier against one live PR snapshot."""
-    f = dossier.fields
-    errors: list[str] = []
-    integers = {key: _integer(f, key, errors) for key in INTEGER_FIELDS}
+def dossier_self_consistency_errors(
+    fields: dict[str, str], target_number: int | None = None
+) -> list[str]:
+    """Controls that depend on the DOSSIER alone -- no PR snapshot, no network.
 
-    # Structural integrity only: "is this a dossier I can trust?" -- NOT "is this
-    # PR mergeable?". The verdict is read separately by evaluate(), so an honest
-    # BLOCKED dossier stays a valid dossier instead of being indistinguishable
-    # from an absent one (#16800).
+    Split out of ``validate_dossier`` (#19312) so that ``post_dossier.py`` can
+    refuse an incoherent dossier BEFORE it is published. The coherence between
+    ``verdict`` and ``domain`` used to be checked only by the gate, which needs
+    a live PR snapshot and therefore ran only after the POST: an incoherent
+    dossier reached the PR and became a surface to delete by hand.
+
+    ``target_number`` is the only live value some of these controls need -- the
+    ``organ-command`` must name ``<organ> --derive-verdict <n>``. When it is
+    None the dossier is not yet bound to a target and that control is skipped
+    rather than guessed; the gate always passes a number.
+
+    Structural integrity only: "is this a dossier I can trust?" -- NOT "is this
+    PR mergeable?". The verdict is read separately by evaluate(), so an honest
+    BLOCKED dossier stays a valid dossier instead of being indistinguishable
+    from an absent one (#16800).
+    """
+    errors: list[str] = []
     expected = {
         "schema": "1",
         "complete": "true",
         "body": "read",
     }
     for key, value in expected.items():
-        if f.get(key) != value:
+        if fields.get(key) != value:
             errors.append(f"{key} must be {value!r}")
-    verdict = f.get("verdict", "")
+    verdict = fields.get("verdict", "")
     if verdict not in CANONICAL_VERDICTS:
         errors.append(
             "verdict must be one of " + ", ".join(repr(v) for v in CANONICAL_VERDICTS)
         )
+    if verdict != VERDICT_READY:
+        return errors
+    for key, value in (
+        ("checks", "latest-wins-green"),
+        ("b0", "clear"),
+        ("scope", "pass"),
+    ):
+        if fields.get(key) != value:
+            errors.append(f"{key} must be {value!r} when verdict is READY")
+    if fields.get("domain") not in {"pass", "not-applicable"}:
+        errors.append("domain must be 'pass' or 'not-applicable' when verdict is READY")
+    # #18933 -- un READY doit etre le rendu d'un organe : provenance
+    # obligatoire et exacte. Sans elle, le verdict est une appreciation.
+    for key in VERDICT_ORGAN_FIELDS:
+        if not fields.get(key, "").strip():
+            errors.append(
+                f"{key} is required when verdict is READY -- the verdict "
+                "must be the render of the organ, not an appreciation "
+                "(#18933)"
+            )
+    if fields.get("organ") and fields.get("organ") != ORGAN_NAME:
+        errors.append(
+            f"organ must be {ORGAN_NAME!r} when verdict is READY, got "
+            f"{fields.get('organ')!r} (#18933)"
+        )
+    command = fields.get("organ-command", "")
+    if target_number is not None and command and not re.search(
+        rf"{re.escape(ORGAN_NAME)}\s+--derive-verdict\s+{target_number}\b",
+        command,
+    ):
+        errors.append(
+            "organ-command must invoke '"
+            f"{ORGAN_NAME} --derive-verdict {target_number}' "
+            f"when verdict is READY, got {command!r} (#18933)"
+        )
+    if fields.get("organ-rc") and fields.get("organ-rc") != "0":
+        errors.append(
+            "organ-rc must be '0' (the organ derived READY at emission) "
+            f"when verdict is READY, got {fields.get('organ-rc')!r} (#18933)"
+        )
+    return errors
+
+
+def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
+    """Validate a parsed dossier against one live PR snapshot."""
+    f = dossier.fields
+    errors: list[str] = []
+    integers = {key: _integer(f, key, errors) for key in INTEGER_FIELDS}
+
+    # Self-contained controls first (#19312), then the ones that read the live
+    # snapshot. Order is preserved: the extracted function emits the same errors
+    # in the same sequence as the inline block it replaces.
+    errors.extend(dossier_self_consistency_errors(f, snapshot.get("number")))
+
+    verdict = f.get("verdict", "")
     ready_claimed = verdict == VERDICT_READY
     if ready_claimed:
-        for key, value in (
-            ("checks", "latest-wins-green"),
-            ("b0", "clear"),
-            ("scope", "pass"),
-        ):
-            if f.get(key) != value:
-                errors.append(f"{key} must be {value!r} when verdict is READY")
-        if f.get("domain") not in {"pass", "not-applicable"}:
-            errors.append("domain must be 'pass' or 'not-applicable' when verdict is READY")
-        # #18933 -- un READY doit etre le rendu d'un organe : provenance
-        # obligatoire et exacte. Sans elle, le verdict est une appreciation.
-        for key in VERDICT_ORGAN_FIELDS:
-            if not f.get(key, "").strip():
-                errors.append(
-                    f"{key} is required when verdict is READY -- the verdict "
-                    "must be the render of the organ, not an appreciation "
-                    "(#18933)"
-                )
-        if f.get("organ") and f.get("organ") != ORGAN_NAME:
-            errors.append(
-                f"organ must be {ORGAN_NAME!r} when verdict is READY, got "
-                f"{f.get('organ')!r} (#18933)"
-            )
-        command = f.get("organ-command", "")
-        if command and not re.search(
-            rf"{re.escape(ORGAN_NAME)}\s+--derive-verdict\s+{snapshot.get('number')}\b",
-            command,
-        ):
-            errors.append(
-                "organ-command must invoke '"
-                f"{ORGAN_NAME} --derive-verdict {snapshot.get('number')}' "
-                f"when verdict is READY, got {command!r} (#18933)"
-            )
-        if f.get("organ-rc") and f.get("organ-rc") != "0":
-            errors.append(
-                "organ-rc must be '0' (the organ derived READY at emission) "
-                f"when verdict is READY, got {f.get('organ-rc')!r} (#18933)"
-            )
         # The claim is not taken on faith: it is checked against the live
         # latest-wins verdicts, naming any contradicting check (#16957).
         errors.extend(

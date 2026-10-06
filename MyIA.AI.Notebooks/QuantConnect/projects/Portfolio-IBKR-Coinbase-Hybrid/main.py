@@ -133,8 +133,16 @@ class PortfolioHybridIBKRCoinbase(QCAlgorithm):
       reproduces the Binance basis on Coinbase data). See README MiCA section.
 
     Account-currency fix (2026-10) adds:
-    - ``account_currency`` (default ``USD``; ``USDT`` reproduces the earlier runs).
+    - ``account_currency`` (default = the venue's quote currency, i.e. ``USD`` on
+      Coinbase and ``USDT`` on Binance; pin either to break the venue/currency
+      coupling deliberately).
     - ``crypto_universe`` (default ``btceth``; ``basket6`` = the earlier 6-coin basket).
+
+    Venue axis (#19272) adds:
+    - ``crypto_market`` (default ``coinbase``; ``binance``): selects the venue,
+      hence the pair suffix (BTCUSD vs BTCUSDT), the QC market, and the fee model
+      (native CoinbaseFeeModel vs Binance's own spot taker basis). Same universe,
+      same windows -- so a Coinbase/Binance pair of runs isolates the venue.
     """
 
     # Intra-sleeve weights (research allocation WITHIN each sleeve, fixed).
@@ -154,11 +162,24 @@ class PortfolioHybridIBKRCoinbase(QCAlgorithm):
     }
 
     IBKR_SECTORS = ["XLK", "XLF", "XLE", "XLV", "XLY", "XLI", "XLB", "XLU", "XLP"]
-    # Coinbase pairs are USD-quoted (BTCUSD, not BTCUSDT). Only BTC/ETH have
-    # continuous full-window data on QC; selected by the crypto_universe parameter.
+    # The crypto VENUE is an explicit axis (#19272). Coinbase pairs are USD-quoted
+    # (BTCUSD); Binance pairs are USDT-quoted (BTCUSDT) -- the pair suffix IS the
+    # quote currency, and QC cannot value a holding quoted in one currency on an
+    # account denominated in the other (the finding that produced the
+    # account_currency parameter, #18790). Selecting a venue therefore selects its
+    # quote currency, unless account_currency overrides it explicitly.
+    # taker_bps is the venue's own spot taker basis (Coinbase Advanced-1 0.8%,
+    # Binance spot 0.1% -- the figure this file already calls "the Binance basis").
+    CRYPTO_VENUES = {
+        "coinbase": {"market": Market.COINBASE, "quote": "USD", "taker_bps": 80.0},
+        "binance":  {"market": Market.BINANCE,  "quote": "USDT", "taker_bps": 10.0},
+    }
+    # Base tickers only -- the pair is assembled as base + the venue's quote
+    # suffix. Only BTC/ETH have continuous full-window data on QC; selected by the
+    # crypto_universe parameter.
     CRYPTO_UNIVERSES = {
-        "btceth": ["BTCUSD", "ETHUSD"],
-        "basket6": ["BTCUSD", "ETHUSD", "SOLUSD", "ADAUSD", "LTCUSD", "XRPUSD"],
+        "btceth": ["BTC", "ETH"],
+        "basket6": ["BTC", "ETH", "SOL", "ADA", "LTC", "XRP"],
     }
 
     @staticmethod
@@ -196,12 +217,23 @@ class PortfolioHybridIBKRCoinbase(QCAlgorithm):
         raw_fee = self.get_parameter("crypto_fee_bps")
         self.crypto_fee_bps = float(raw_fee) if raw_fee else None
 
-        # Account currency USD by default (see header "Account currency" finding):
-        # a USDT account cannot value USD-quoted assets until a USDT/USD conversion
-        # exists on QC, so a 2018 start keeps the crypto sleeve in cash for years.
-        # "USDT" stays selectable to reproduce the pre-2026-10 README results.
+        # The venue fixes the quote currency the account must be denominated in
+        # (#19272). Read it first; everything crypto-side below depends on it.
+        venue_name = self.get_parameter("crypto_market", "coinbase").lower()
+        if venue_name not in self.CRYPTO_VENUES:
+            raise ValueError(
+                f"crypto_market must be one of {sorted(self.CRYPTO_VENUES)}, "
+                f"got {venue_name!r}")
+        self.crypto_venue = self.CRYPTO_VENUES[venue_name]
+
+        # Account currency defaults to the venue's quote currency (see header
+        # "Account currency" finding): a USDT account cannot value USD-quoted
+        # assets until a USDT/USD conversion exists on QC, so a 2018 start keeps
+        # the crypto sleeve in cash for years. account_currency stays overridable
+        # to reproduce the pre-2026-10 "USDT on Coinbase" runs.
         # Set BEFORE set_cash.
-        self.set_account_currency(self.get_parameter("account_currency", "USD"))
+        self.set_account_currency(
+            self.get_parameter("account_currency", self.crypto_venue["quote"]))
         self.set_cash(100000)
 
         # DEFAULT brokerage (no set_brokerage_model): IBKR margin rejects Crypto.
@@ -224,22 +256,34 @@ class PortfolioHybridIBKRCoinbase(QCAlgorithm):
             sec.set_slippage_model(PercentSlippageModel(0.0005))
             self.sector_symbols[ticker] = sec.symbol
 
-        # Coinbase sleeve (crypto): native CoinbaseFeeModel by default (realistic
-        # Coinbase Advanced-1 tier: maker 0.6% / taker 0.8% -- set_holdings emits
-        # MARKET orders so the 0.8% taker rate applies). Set crypto_fee_bps to a
-        # flat value to override with PercentFeeModel instead (used to isolate the
-        # pure fee effect: crypto_fee_bps=10 reproduces the Binance basis on the
-        # SAME Coinbase data, isolating data-source vs fee-level contributions).
-        # Only BTCUSD/ETHUSD have continuous full-window data, hence the btceth
-        # default; basket6 (legacy) breaks a USD account on QC (0 orders).
+        # Crypto sleeve. The pair is base + the venue's quote suffix, so the SAME
+        # universe runs on either venue (#19272): BTC -> BTCUSD on Coinbase,
+        # BTCUSDT on Binance. Symbols stay KEYED BY THE FULL PAIR, which is what
+        # the signal helpers below address.
+        # Fees: Coinbase keeps its NATIVE CoinbaseFeeModel (Advanced-1 taker 0.8%
+        # -- set_holdings emits MARKET orders, so the taker rate applies), which
+        # keeps the reference leg identical to the pre-#19272 runs. Binance has no
+        # native model here, so it takes its own spot taker basis. crypto_fee_bps
+        # overrides BOTH with a flat PercentFeeModel -- that is what isolates the
+        # pure fee effect across venues (crypto_fee_bps=10 on Coinbase reproduces
+        # the Binance basis, isolating data-source from fee-level contributions).
+        # Only BTC/ETH have continuous full-window data, hence the btceth default;
+        # basket6 (legacy) breaks a USD account on QC (0 orders).
         universe = self.get_parameter("crypto_universe", "btceth")
+        market = self.crypto_venue["market"]
+        suffix = self.crypto_venue["quote"]
+        self.crypto_btc = "BTC" + suffix
         self.crypto_symbols = {}
-        for ticker in self.CRYPTO_UNIVERSES[universe]:
-            sec = self.add_crypto(ticker, Resolution.DAILY, Market.COINBASE)
-            if self.crypto_fee_bps is None:
+        for base in self.CRYPTO_UNIVERSES[universe]:
+            ticker = base + suffix
+            sec = self.add_crypto(ticker, Resolution.DAILY, market)
+            if self.crypto_fee_bps is not None:
+                sec.set_fee_model(PercentFeeModel(self.crypto_fee_bps / 10000.0))
+            elif market == Market.COINBASE:
                 sec.set_fee_model(CoinbaseFeeModel())
             else:
-                sec.set_fee_model(PercentFeeModel(self.crypto_fee_bps / 10000.0))
+                sec.set_fee_model(
+                    PercentFeeModel(self.crypto_venue["taker_bps"] / 10000.0))
             sec.set_slippage_model(PercentSlippageModel(0.0005))
             self.crypto_symbols[ticker] = sec.symbol
 
@@ -328,12 +372,12 @@ class PortfolioHybridIBKRCoinbase(QCAlgorithm):
 
     def _ema_cross_crypto(self):
         """SMA20 > SMA50 on BTC -> 100% BTC ; else cash."""
-        btc = self._close_series(self.crypto_symbols["BTCUSD"], 60)
+        btc = self._close_series(self.crypto_symbols[self.crypto_btc], 60)
         if btc is None or len(btc) < 50:
             return {}
         sma20 = float(btc.iloc[-20:].mean())
         sma50 = float(btc.iloc[-50:].mean())
-        return {self.crypto_symbols["BTCUSD"]: 1.0} if sma20 > sma50 else {}
+        return {self.crypto_symbols[self.crypto_btc]: 1.0} if sma20 > sma50 else {}
 
     def _crypto_multicanal(self):
         """Equal-weight basket of cryptos with data."""
@@ -349,7 +393,7 @@ class PortfolioHybridIBKRCoinbase(QCAlgorithm):
 
     def _har_rv_voltarget(self):
         """BTC weight = clip(0.15 / RV22, 0, 1), RV22 = std(returns, 22) x sqrt(252)."""
-        btc = self._close_series(self.crypto_symbols["BTCUSD"], 30)
+        btc = self._close_series(self.crypto_symbols[self.crypto_btc], 30)
         if btc is None or len(btc) < 23:
             return {}
         rets = btc.pct_change().dropna()
@@ -358,7 +402,7 @@ class PortfolioHybridIBKRCoinbase(QCAlgorithm):
         rv22 = float(rets.iloc[-22:].std() * (252 ** 0.5))
         if rv22 <= 0:
             return {}
-        return {self.crypto_symbols["BTCUSD"]: min(0.15 / rv22, 1.0)}
+        return {self.crypto_symbols[self.crypto_btc]: min(0.15 / rv22, 1.0)}
 
     def rebalance(self):
         if self.is_warming_up:
