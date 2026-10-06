@@ -21,7 +21,7 @@ name: Lean Axiom Check (reusable)
 #     proof-integrity:
 #       uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
 #       with:
-#         project-path:   MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
+#         project-path:   MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean
 #         display-name:   knot_lean
 #         target-modules: "Knots.Basic,Knots.Conway,Knots.Invariant,Knots.Reidemeister,Knots.Lidman"
 #         allow-axioms:   "propext,funext,Quot.lift,Quot.mk,Quot.sound,Classical.choice"

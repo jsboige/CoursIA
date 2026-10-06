@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validation exhaustive des chirurgies de transfert de tricolorabilité (knot_lean).
 
-Miroir Python fidèle des définitions Lean de ``MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean``
+Miroir Python fidèle des définitions Lean de ``MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean``
 (Basic.lean / Invariant.lean / Reidemeister.lean) :
 
 - ``PDCrossing`` / ``KnotDiagram`` / ``KnotDiagram.wf`` (Basic.lean L275)
