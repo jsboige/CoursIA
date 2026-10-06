@@ -109,10 +109,12 @@ class: genai-illustrated genai-system
 
 ---
 layout: image-overlay
-class: genai-illustrated genai-pyramid
+class: genai-illustrated
 ---
 
 # Pyramide des méthodes d'adaptation
+
+<TeachingStep placement="end" size="lg">
 
 <v-clicks at="1">
 
@@ -122,7 +124,11 @@ class: genai-illustrated genai-pyramid
 
 </v-clicks>
 
-<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_002.png" alt="Pyramide des méthodes d'adaptation" /></div>
+<template #visual>
+<div v-click="1" class="genai-figure"><img src="./images/img_002.png" alt="Pyramide des méthodes d'adaptation" /></div>
+</template>
+
+</TeachingStep>
 
 ---
 layout: image-overlay
