@@ -1,0 +1,69 @@
+{
+  "pain_cos_valence": 0.93,
+  "pain_cos_matrix": {
+    "pain_all": {
+      "pain_all": 1.0,
+      "fear": 0.28,
+      "sadness": 0.4,
+      "valence": 0.93
+    },
+    "fear": {
+      "pain_all": 0.28,
+      "fear": 1.0,
+      "sadness": 0.36,
+      "valence": 0.55
+    },
+    "sadness": {
+      "pain_all": 0.4,
+      "fear": 0.36,
+      "sadness": 1.0,
+      "valence": 0.65
+    },
+    "valence": {
+      "pain_all": 0.93,
+      "fear": 0.55,
+      "sadness": 0.65,
+      "valence": 1.0
+    }
+  },
+  "probe_4d_pain_valence": 0.54,
+  "matrix_4d": {
+    "pain_all": {
+      "sonde:pain_all": 0.74,
+      "sonde:fear": 0.3,
+      "sonde:sadness": 0.33,
+      "sonde:valence": 0.54
+    },
+    "fear": {
+      "sonde:pain_all": 0.5,
+      "sonde:fear": 0.94,
+      "sonde:sadness": 0.67,
+      "sonde:valence": 0.69
+    },
+    "sadness": {
+      "sonde:pain_all": 0.62,
+      "sonde:fear": 0.67,
+      "sonde:sadness": 0.94,
+      "sonde:valence": 0.85
+    },
+    "valence": {
+      "sonde:pain_all": 0.92,
+      "sonde:fear": 0.81,
+      "sonde:sadness": 0.88,
+      "sonde:valence": 0.96
+    }
+  },
+  "replay_diag": {
+    "diag": 0.9,
+    "offdiag": 0.65,
+    "ecart": 0.25
+  },
+  "capture_seconds": [
+    74
+  ],
+  "model": "Qwen/Qwen3-14B-Base",
+  "gpu_cap_gib": 21.0,
+  "cpu_cap": "12GiB",
+  "ran_at": "2026-10-05T11:31:37.137698+00:00",
+  "protocol": "ICT-47 cells 0..48 executees tel quel ; seul patch : model_id + plafonds memoire de la cellule replay (47)"
+}

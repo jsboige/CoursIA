@@ -197,6 +197,25 @@ soit 5,4 % au-dessus des 209,7 Mo/s declares, et un facteur **76**. Le plafond p
 conteneur a ete verifie separement : 7,4 Go/s ramenes a 21,2 Mo/s sous un cap de
 20 Mio/s, a 1 % pres.
 
+### Resserrer un cap : nommer ce qui a ete mesure, et ce qui ne l'a pas ete (#15202)
+
+Le cap de 1536 Mo par slot avait ete juge « ~10x le pic mesure ». Le pic avait
+ete pris sur des jobs ordinaires : le rendu Quarto du site, qui n'en faisait pas
+partie, a fini en OOM (`exit 137`) a 1145 carnets sur 1276, et `main` est reste
+rouge du 2026-09-07 au 2026-09-08. Le rendu est sorti du pool auto-heberge
+(#15203). Le defaut de methode, lui, demeure : la marge n'etait juste que pour
+les jobs mesures.
+
+Toute PR qui **abaisse** une borne de ce repertoire (memoire, CPU, budget, nombre
+de slots) porte donc dans son body deux listes :
+
+- les jobs dont le pic a ete **mesure** sous la nouvelle valeur, avec la mesure ;
+- les jobs **non mesures** qui tournent sur ce pool, nommes un par un.
+
+La seconde liste ne peut pas etre vide par omission. Si elle contient un job
+lourd, la PR dit pourquoi le cap le laisse passer, ou elle le sort du pool
+d'abord.
+
 ## Ce que la conteneurisation du superviseur ne resoudra PAS
 
 Le superviseur lance ses conteneurs a travers le socket du daemon. Une fois
