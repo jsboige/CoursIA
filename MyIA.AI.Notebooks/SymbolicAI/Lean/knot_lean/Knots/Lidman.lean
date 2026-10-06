@@ -14,7 +14,16 @@
 
   Référence : Lidman (2026), arXiv:2606.12431
 
-  Epic #2874, Phase 1 (scaffolding only - sorry permanent).
+  Epic #2874. Ce fichier héberge DEUX résultats distincts :
+    1. `unknotting_11n102_upper` : borne supérieure u(11n102) ≤ 2. ATTAQUABLE
+       en condition par l'organe natif `ReidemeisterCombinatorial` (theorem
+       `verifyMoves_sound` prouvé l.235 + contrat `unknottingWitness` l.264-268).
+       Le `sorry` sera levé quand la passe prouveur construira explicitement
+       le témoin d'unknotting pour ce diagramme — voir Epic #1453 / issue #18611.
+    2. `unknotting_11n102` : théorème de Lidman u(11n102) = 2. Sorry
+       EFFECTIVEMENT PERMANENT : la preuve repose sur l'homologie de Heegaard
+       Floer (d-invariants, HFred, formule du cône de Gainullin), hors Mathlib 4
+       — décennie(s) de formalisation à prévoir.
 
   Prérequis Mathlib nécessaires (TRÈS LOINTAIN) :
   - Topologie des 3-variétés (revêtements ramifiés, espaces fibrés de Seifert)
@@ -73,10 +82,29 @@ def knot_11n102 : Knot where
 /-! ## 2. Bornes sur le nombre de dénouement
 
 KnotInfo donne u(11n102) ∈ {1, 2}. Lidman montre que la valeur exacte est 2.
+
+**Dichotomie des deux résultats :**
+  - Borne supérieure u(11n102) ≤ 2 : ATTAQUABLE par l'organe natif
+    `ReidemeisterCombinatorial` — le contrat `UnknottingWitness` + le théorème
+    `verifyMoves_sound` (l.235) + la documentation du témoin (l.264-268)
+    suffisent, modulo la construction explicite du witness par le prouveur.
+  - Borne inférieure u(11n102) ≥ 2 (i.e. u = 2, vu la borne sup) : HORS DE
+    PORTÉE. La preuve de Lidman exige l'algorithme de Némethi pour HF, les
+    d-invariants Ozsváth-Szabó, la formule de Ni-Wu, et la formule du cône
+    de Gainullin — le tout hors Mathlib 4.
 -/
 
 /-- Le nombre de dénouement de 11n102 est au plus 2
-(évident à partir d'un diagramme avec les changements de croisement appropriés). -/
+(évident à partir d'un diagramme avec les changements de croisement appropriés).
+
+**Statut formel :** ce `sorry` est **résoluble en condition** par l'organe
+natif `ReidemeisterCombinatorial`. Le théorème `verifyMoves_sound`
+(preuve : l.235) fournit la correction des mouvements de Reidemeister ;
+le contrat `unknottingWitness` (l.264-268) documente la forme du témoin
+attendu. Il reste à la passe prouveur de construire explicitement le
+témoin pour ce diagramme — voir Epic #1453 / issue #18611. La levée
+de ce sorry est conditionnée par la disponibilité de ce witness, pas
+par un manque de bibliothèque. -/
 theorem unknotting_11n102_upper : Knot.unknottingNumber knot_11n102 ≤ 2 := by
   rw [Knot.unknottingNumber]
   apply Nat.sInf_le
@@ -96,7 +124,18 @@ et la comparaison des d-invariants via Ni-Wu mènent à une contradiction
 sur la structure de HFred(Y).
 -/
 
-/-- Théorème de Lidman : le nombre de dénouement de 11n102 est exactement 2. -/
+/-- Théorème de Lidman : le nombre de dénouement de 11n102 est exactement 2.
+
+**Statut formel :** ce `sorry` est **effectivement permanent**. La preuve
+combine l'astuce de Montesinos (revêtement ramifié double ↔ chirurgie
+demi-entière), la structure de Seifert du revêtement, l'algorithme de
+Némethi pour le calcul de l'homologie Heegaard Floer (HFred, d-invariants),
+la formule de Ni-Wu pour les chirurgies cosmétiques, et la formule du cône
+de Gainullin — toutes hors Mathlib 4 à ce jour. Difficulté estimée :
+décennie(s) de formalisation. Ce sorry n'est **pas** conditionné par un
+manque de witness : il est conditionné par une absence structurelle de théorie
+de jauge 4-dimensionnelle et d'homologie Heegaard Floer dans la bibliothèque.
+Voir le sketch détaillé dans le body du théorème. -/
 theorem unknotting_11n102 : Knot.unknottingNumber knot_11n102 = 2 := by
   exact sorry
   -- Reference: Lidman (2026), arXiv:2606.12431

@@ -276,6 +276,28 @@ La série manipule un vocabulaire précis (SMT, théorie des tableaux, standard 
 | Barrett, Fontaine & Tinelli, "The SMT-LIB Standard: Version 2.6" (2017) | Standard SMT-LIB émis par le convertisseur et consommé par Z3 (notebooks 04, 10) |
 | McCarthy, "Towards a Mathematical Science of Computation" (IFIP 1962) | Axiomes de la théorie des tableaux `select`/`store` (notebook 04) |
 | Tarski, "A Decision Method for Elementary Algebra and Geometry" (1948) | Décidabilité de la théorie des réels (élimination des quantificateurs sur les corps réels clos) — fondement des preuves d'absence de racine réelle (notebook 16) |
+
+## Ouvrages-ancrage
+
+Issue de référence : #19278. Cette série s'ancre principalement sur un livre-ancrage pratique, partagé avec la série sœur [Z3-API](../Z3-API/README.md#ouvrages-ancrage) :
+
+- **Yurichev, D., *SAT/SMT by Example* (édition publique, 12 février 2023, 666 pages)** — déposé à `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (identité vérifiée sur page de titre, 2026-10-05). Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT.
+
+**Avertissement — défaut biblio au 2026-10-05** : le PDF Yurichev sur la machine worker po-2026 a une structure interne invalide (`fitz.open()` rend 0 page extractible, idem OR94, Multiagent 2009, 5 PDFs du gisement Automata). Le livre est référencé en tant que tel (titre, auteur, année, dépot GDrive vérifié), mais les détails de chapitre ou d'exemple spécifique ne sont pas ancrés firsthand tant qu'une copie lisible n'est pas réacquise. Issue de suivi à ouvrir par le mainteneur (hors périmètre worker — c'est un geste bibliothèque, pas un geste de code).
+
+### Mapping carnet ↔ livre (mapping de l'issue #19278, à confirmer par lecture effective du PDF)
+
+| Thème du livre | Notebook porteur | Vérification |
+|----------------|------------------|--------------|
+| Solver API, theories, modèles | série Z3-Linq2Z3 entière | OK (la série entière relève du livre ; pas d'inventaire chapitre-par-chapitre) |
+| Array theory, Nested arrays | `04_Array_Theory`, `05_Nested_Arrays_2D` | à_confirmer (PDF corrompu worker) |
+| Cryptarithmetic | `13_Cryptarithmetic_SMT` | à_confirmer |
+| MaxSAT / Optimize | `14_Optimize_MaxSAT` | à_confirmer |
+| Bit-vectors, overflow | `15_BitVectors_Overflow` | à_confirmer |
+| UNSAT cores | `17_UnsatCores` | à_confirmer |
+| Einstein's riddle & puzzles | `18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | à_confirmer |
+| Real arithmetic | `16_RealArithmetic` | à_confirmer |
+
 ## FAQ / Troubleshooting
 
 | Problème | Solution |

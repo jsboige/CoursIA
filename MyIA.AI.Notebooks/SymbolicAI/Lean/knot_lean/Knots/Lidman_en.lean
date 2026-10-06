@@ -14,7 +14,16 @@
 
   Reference: Lidman (2026), arXiv:2606.12431
 
-  Epic #2874, Phase 1 (scaffolding only — sorry permanent).
+  Epic #2874. This file hosts TWO distinct results:
+    1. `unknotting_11n102_upper`: upper bound u(11n102) ≤ 2. ATTACKABLE
+       in condition via the native `ReidemeisterCombinatorial` organ (theorem
+       `verifyMoves_sound` proved at l.235 + `unknottingWitness` contract l.264-268).
+       The `sorry` will be lifted once the prover pass explicitly constructs the
+       unknotting witness for this diagram — see Epic #1453 / issue #18611.
+    2. `unknotting_11n102`: Lidman's theorem u(11n102) = 2. Sorry EFFECTIVELY
+       PERMANENT: the proof relies on Heegaard Floer homology (d-invariants,
+       HFred, Gainullin mapping cone formula), outside Mathlib 4 — decade(s) of
+       formalisation to expect.
 
   Mathlib prerequisites needed (VERY FAR):
   - 3-manifold topology (branched covers, Seifert fibered spaces)
@@ -74,10 +83,28 @@ def knot_11n102 : Knot where
 /-! ## 2. Unknotting number bounds
 
 KnotInfo gives u(11n102) ∈ {1, 2}. Lidman shows it is exactly 2.
+
+**Dichotomy between the two results:**
+  - Upper bound u(11n102) ≤ 2: ATTACKABLE via the native organ
+    `ReidemeisterCombinatorial` — the `UnknottingWitness` contract + the
+    theorem `verifyMoves_sound` (l.235) + witness documentation (l.264-268)
+    suffice, modulo the explicit witness construction by the prover.
+  - Lower bound u(11n102) ≥ 2 (i.e. u = 2, given the upper bound): OUT OF
+    REACH. Lidman's proof needs Némethi's algorithm for HF, Ozsváth-Szabó
+    d-invariants, Ni-Wu's formula, and Gainullin's mapping cone formula —
+    all outside Mathlib 4.
 -/
 
 /-- The unknotting number of 11n102 is at most 2
-(obvious from a diagram with appropriate crossing changes). -/
+(obvious from a diagram with appropriate crossing changes).
+
+**Formal status:** this `sorry` is **conditionally solvable** via the native
+organ `ReidemeisterCombinatorial`. The theorem `verifyMoves_sound` (proof:
+l.235) provides Reidemeister move correctness; the `unknottingWitness`
+contract (l.264-268) documents the expected witness shape. The remaining
+work is for the prover pass to construct the witness explicitly for this
+diagram — see Epic #1453 / issue #18611. Lifting this sorry is gated by the
+availability of that witness, not by any library gap. -/
 theorem unknotting_11n102_upper : Knot.unknottingNumber knot_11n102 ≤ 2 := by
   rw [Knot.unknottingNumber]
   apply Nat.sInf_le
@@ -97,7 +124,17 @@ d-invariants via Ni-Wu leads to a contradiction on the structure
 of HFred(Y).
 -/
 
-/-- Lidman's theorem: the unknotting number of 11n102 is exactly 2. -/
+/-- Lidman's theorem: the unknotting number of 11n102 is exactly 2.
+
+**Formal status:** this `sorry` is **effectively permanent**. The proof
+combines the Montesinos trick (branched double cover ↔ half-integral surgery),
+the Seifert structure of the cover, Némethi's algorithm for computing
+Heegaard Floer homology (HFred, d-invariants), Ni-Wu's formula for cosmetic
+surgeries, and Gainullin's mapping cone formula — all outside Mathlib 4 as
+of today. Estimated difficulty: decade(s) of formalisation. This sorry is
+**not** gated by a missing witness: it is gated by a structural absence
+of 4-dimensional gauge theory and Heegaard Floer homology in the library.
+See the detailed sketch in the theorem body. -/
 theorem unknotting_11n102 : Knot.unknottingNumber knot_11n102 = 2 := by
   exact sorry
   -- Reference: Lidman (2026), arXiv:2606.12431

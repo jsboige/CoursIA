@@ -3005,6 +3005,41 @@ def test_unparseable_scope_in_flags_bare_word_prose():
     assert clc._unparseable_scope_in(None) == []
 
 
+def test_unparseable_scope_in_accepts_tracked_root_filename():
+    """#19435 -- a bare word (no `/`, no fnmatch meta) that is the LITERAL NAME
+    of a tracked file at the repo root is accepted as a well-formed glob.
+    fnmatch treats a bare word as a literal filename; if the word matches
+    a tracked file, the glob is well-formed. Without `tracked` (fail-CLOSED
+    outside a git repo), the bare word is still residue (#12052).
+    """
+    tracked = ["_quarto.yml", "Makefile", "LICENSE", "README.md",
+               "docs/foo.md"]
+    # Bare word matching a tracked file -> accepted.
+    assert clc._unparseable_scope_in(["_quarto.yml"], tracked) == []
+    # Multiple tracked filenames -> all accepted.
+    assert clc._unparseable_scope_in(
+        ["_quarto.yml", "Makefile", "LICENSE"], tracked) == []
+    # Mixed: tracked file accepted, prose residue still flagged.
+    assert clc._unparseable_scope_in(
+        ["_quarto.yml", "prose sans separateur"], tracked) == \
+        ["prose sans separateur"]
+    # Bare word NOT in tracked -> still residue (fail-CLOSED).
+    assert clc._unparseable_scope_in(
+        ["not_a_real_file_xyz"], tracked) == ["not_a_real_file_xyz"]
+    # Without tracked, the bare word is residue (legacy #12052 behaviour).
+    assert clc._unparseable_scope_in(["_quarto.yml"]) == ["_quarto.yml"]
+    assert clc._unparseable_scope_in(["_quarto.yml"], None) == ["_quarto.yml"]
+    # tracked=[] (empty walk) is not the same as None: an empty walk means
+    # the caller could not prove tracked files exist, so the bare word is
+    # residue. Mirrors the `_empty_scope_in` fail-OPEN-without-walk contract.
+    assert clc._unparseable_scope_in(["_quarto.yml"], []) == ["_quarto.yml"]
+    # Plain tracked path with a slash is still clean.
+    assert clc._unparseable_scope_in(
+        ["docs/foo.md"], tracked) == []
+    # Brace residue still flagged (legacy #10597 contract preserved).
+    assert clc._unparseable_scope_in(["{a,b}/x.py"], tracked) == ["{a,b}/x.py"]
+
+
 def test_run_check_paren_annotation_does_not_fabricate_block(capsys):
     """Acceptance #4: end-to-end, a scoped claim with the parenthetical form
     from Form B parses to a single live glob and DOES NOT block another lane
@@ -3652,7 +3687,7 @@ def test_coordinator_arbitration_comment_reduces_per_lane():
     body = (
         "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
         "paths: MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb, "
-        "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb\n"
+        "MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb\n"
         "[RELEASED] lane myia-ai-01:CoursIA — annule mes marqueurs du "
         "05:53:20Z et du 07:06:23Z\n"
         "[CLAIMED] lane myia-ai-01:CoursIA -- "
@@ -3667,7 +3702,7 @@ def test_coordinator_arbitration_comment_reduces_per_lane():
     ]
     assert events[0].paths == [
         "MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb",
-        "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb",
+        "MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb",
     ]
     assert events[2].paths == [
         "scripts/notebook_tools/check_interp_positioning.py",
@@ -3690,7 +3725,7 @@ def test_coordinator_arbitration_comment_reduces_per_lane():
     assert set(active) == {"myia-po-2024:CoursIA-2", "myia-ai-01:CoursIA"}
     assert active["myia-po-2024:CoursIA-2"].paths == [
         "MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb",
-        "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb",
+        "MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb",
     ]
     assert active["myia-ai-01:CoursIA"].paths == [
         "scripts/notebook_tools/check_interp_positioning.py",

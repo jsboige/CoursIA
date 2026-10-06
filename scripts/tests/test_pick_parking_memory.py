@@ -17,6 +17,8 @@ Run:
 """
 from __future__ import annotations
 
+import datetime as dt
+import pytest
 import math
 import random
 import sys
@@ -108,12 +110,27 @@ def test_gvar_factors_unchanged_under_long_visits():
     assert math.isclose(base / penalized, 4.0, rel_tol=1e-9)
 
 
-def test_fetch_visits_cache_name_separates_windows(monkeypatch):
+
+@pytest.mark.parametrize("pin", [
+    dt.datetime(2026, 10, 5, tzinfo=dt.timezone.utc),   # alignement COLLIDANT (rouge CI du 05/10)
+    dt.datetime(2026, 9, 20, tzinfo=dt.timezone.utc),   # alignement sans collision
+])
+def test_fetch_visits_cache_name_separates_windows(monkeypatch, pin):
     """Les deux fenetres partagent la fonction mais pas l'identite de cache :
-    1 j sous le nom `visits`, 30 j sous `long_visits` -- sinon le status de
-    l'une ecrase celui de l'autre et un stale 30 j se lirait sur la colonne
-    du jour."""
+    1 j sous le nom `visits`, 30 j sous le nom `long_visits` -- sinon le status
+    de l'une ecrase celui de l'autre et un stale 30 j se lirait sur la colonne
+    du jour.
+
+    Horloge EPIGLEE sur deux dates : depuis l'ancrage des tranches (#19236),
+    les grilles des deux fenetres peuvent LEGITIMEMENT partager une tranche
+    terminale selon le jour -- l'identite de cache est (cache_name, tranche),
+    pas la tranche seule. L'ancienne assertion de disjointance des chaines
+    n'etait pas une propriete du code mais du calendrier (rouge CI du
+    2026-10-05, verte au jour d'ecriture). Les invariants ci-dessous tiennent
+    en TOUTE date."""
     import json
+
+    monkeypatch.setattr(pig, "NOW", pin)
 
     class _FakeCompleted:
         def __init__(self, stdout):
@@ -137,21 +154,25 @@ def test_fetch_visits_cache_name_separates_windows(monkeypatch):
     # Depuis #19209 une fenetre n'est plus ramenee par UN appel : elle l'est
     # par des TRANCHES de dates (le `--search` unique plafonnait a 1000 et la
     # troncature emportait les plus anciennes). Le nombre d'appels depend donc
-    # de la largeur de la fenetre et n'est plus 1 : l'assertion porte sur ce
-    # que ce test NOMME -- les deux fenetres coupent a des dates DISTINCTES,
-    # donc ne partagent pas la meme identite de cache.
+    # de la largeur de la fenetre et n'est plus 1.
     assert short_calls, "la fenetre de 1 j doit interroger l'API"
     assert long_calls, "la fenetre de 30 j doit interroger l'API"
 
-    def cutoffs(cmds):
-        return {c[c.index("--search") + 1] for c in cmds if "--search" in c}
+    def since_of(cmds):
+        return {c[c.index("--search") + 1].split("merged:>=")[1].split()[0]
+                for c in cmds if "--search" in c}
 
-    short_cut, long_cut = cutoffs(short_calls), cutoffs(long_calls)
-    assert short_cut and long_cut, (short_calls, long_calls)
-    assert not (short_cut & long_cut), (
-        "les deux fenetres doivent couper a des dates distinctes : "
-        f"{sorted(short_cut)} vs {sorted(long_cut)}"
-    )
+    def until_of(cmds):
+        return {c[c.index("--search") + 1].split("merged:<")[1].split()[0]
+                for c in cmds if "--search" in c}
+
+    short_since, long_since = since_of(short_calls), since_of(long_calls)
+    short_until, long_until = until_of(short_calls), until_of(long_calls)
+    assert short_since and long_since and short_until and long_until, (short_calls, long_calls)
     # La fenetre de 30 j doit remonter PLUS LOIN : sinon les deux fenetres
     # couvriraient la meme periode et le nom de cache ne separerait rien.
-    assert min(long_cut) < min(short_cut), (sorted(long_cut)[:1], sorted(short_cut)[:1])
+    assert min(long_since) < min(short_since), (sorted(long_since)[:1], sorted(short_since)[:1])
+    # Les deux fenetres ferment sur la meme borne (today+1 passe par
+    # fetch_visits) : sous deux noms distincts, meme tranche partagee =
+    # deux entrees de cache distinctes.
+    assert max(long_until) == max(short_until) == (pin.date() + dt.timedelta(days=1)).isoformat()

@@ -31,7 +31,7 @@ Le matériel QC mélange 4 types de notebooks qu'un visiteur doit distinguer :
 
 | Stratégie | Type | Classe d'actifs | Statut | Évidence |
 |-----------|------|-----------------|--------|----------|
-| `LongShortHarvest-QC` | Composite pairs | Multi-actifs | **Alive — BEATS** | Baseline cluster 98.7% (backtest vérifié) ; figure #5740 |
+| `LongShortHarvest-QC` | Long/short actions (grandes capitalisations + vente à découvert) | US Equity | **NO BEATS** | QC Cloud 2026-10-06 (#19450), 2018-01 → 2026-09 : Sharpe 0,44 (taux sans risque nul) contre 0,79 pour SPY détenu et 0,81 pour le 60/40, p Holm 1,00 ; pire baisse −61,6 % (rachats forcés de janvier 2021). L'ancien « 98.7% » ne mesurait pas `main.py` |
 | `Framework_Composite_FamaFrenchAllWeather` | Composite | Multi-actifs | **Alive — BEATS** | 87.5% OOS (backtest vérifié) |
 | `DynamicVIXSpyRegime-QC` | Régime VIX | US Equity | **Alive** | 69.4% (backtest vérifié) |
 | `BitcoinRegimeGate-QC` | Régime BTC (gate 24/7) | US Equity (QQQ/SHY) | **Alive — risk-adjusted** | QC Cloud 2026-09-30 (distillat #18576) : IS 2016-21 Sharpe **1.133** vs QQQ-hold 0.961 (MaxDD 14.4 % vs 28.2 %) ; OOS 2022-26 Sharpe **0.64** vs QQQ-hold 0.43 (MaxDD 15.2 % vs 34.7 %) ; PSR OOS 14.3 % (edge vs cash non significatif) |
@@ -44,6 +44,14 @@ Le matériel QC mélange 4 types de notebooks qu'un visiteur doit distinguer :
 | `RiskParity` / `Cloud-RiskParity-Composite` | Inverse-vol risk-parity | Multi-actifs | **Needs-improvement** (plafond structurel) | Sharpe 0.399 (contre-exemple pédagogique, figure #5753) ; **run frais 2026-08-14 baseline #1630 : 0.027** (tranche 24 ci-dessous) |
 | `DualMomentum` | Momentum dual-asset | Multi-actifs | **Superseded** | Échec TLT 2022 → remplacé par `DualMomentumNoTLT` |
 | `DualMomentumNoTLT` | Momentum (sans TLT) | Multi-actifs | **Alive** (remplacement) | Figure #5754 |
+
+### Portages issus d'un semis `[QC-research]`
+
+Projets créés à partir d'une issue de lecture d'article, sous les garde-fous écrits dans l'issue avant le premier backtest. Ils ne comptent dans aucune tranche #1621.
+
+| Stratégie | Type | Classe d'actifs | Statut | Évidence |
+|-----------|------|-----------------|--------|----------|
+| `OpeningRangeBreakout` | Momentum intraday (cassure du range d'ouverture, « stocks in play ») | Actions US | **Ignore — NO BEATS après frais** | #16355. Paramètres de l'article (range de 5 min, univers de 1000) : CAGR +4,10 % sur 2016-2019 puis −5,23 % sur 2020-2023, frais d'environ 32 % du capital de départ sur chaque fenêtre. Variante communautaire (range d'une minute) : arrêtée par les limites de temps de QC Cloud, mesurée sur sa portion exécutée seulement, et de signe opposé selon la taille de l'univers. Piste famille refermée. Détail : [README](../../MyIA.AI.Notebooks/QuantConnect/projects/OpeningRangeBreakout/) |
 
 ## Régimes de performance (connaissance cluster firsthand)
 
@@ -119,7 +127,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `EMA-Cross-Index` | `projects/EMA-Cross-Index/` | Trend EMA | Vérifié | tableau vérifié ci-dessus (figure #5746) |
 | `ForexCarry` | `projects/ForexCarry/` | FX carry/momentum | Vérifié | tableau vérifié ci-dessus (figure #5748) |
 | `Framework_Composite_FamaFrenchAllWeather` | `projects/Framework_Composite_FamaFrenchAllWeather/` | Composite | Vérifié | tableau vérifié ci-dessus (87.5 % OOS) |
-| `LongShortHarvest-QC` | `projects/LongShortHarvest-QC/` | Composite pairs | Vérifié | tableau vérifié ci-dessus (BEATS, 98.7 %) |
+| `LongShortHarvest-QC` | `projects/LongShortHarvest-QC/` | Long/short actions | Vérifié | tableau vérifié ci-dessus (NO BEATS, #19450) |
 | `ML-RandomForest` | `projects/ML-RandomForest/` | ML supervisé (RF) | Vérifié | tableau vérifié ci-dessus (figure #5747) |
 | `ML-XGBoost` | `projects/ML-XGBoost/` | ML supervisé (XGBoost) | Vérifié | tableau vérifié ci-dessus (figure #5749) |
 | `RiskParity` | `projects/RiskParity/` | Inverse-vol risk-parity | Vérifié | tableau vérifié ci-dessus (Needs-improvement, 0.399) |

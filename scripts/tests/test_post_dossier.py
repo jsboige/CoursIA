@@ -220,6 +220,78 @@ def test_double_stamp_other_lane_refused(tmp_path, monkeypatch):
     assert not any(call[0] == "api" for call in router.calls)
 
 
+def test_double_stamp_rc3_with_supersedes_posts_through(tmp_path, monkeypatch, capsys):
+    """#19420 -- gate rc 3 (BLOCKED intact), lane tierce, refutation explicite :
+    le dossier porte ``supersedes`` et ``supersedes-why`` non vide, donc le
+    poster accepte le re-stamp et le gate rejoue."""
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=3, lane=OTHER_LANE))
+    monkeypatch.setattr(mod, "rerun_gate", lambda family, repo, target: 0)
+    body = _adjoint_body(
+        verdict="BLOCKED",  # le noueau dossier peut etre READY ou BLOCKED ; on
+        # garde BLOCKED pour exercer le chemin rc 3 sans contradiction muette.
+        supersedes="5",
+        **{"supersedes-why": "checks devenus verts a la meme tete, dossier de l'adjoint a l'arret (#19420)"},
+    )
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == 0  # gate rejoue rend 0 (le gate decide la refutation)
+    assert any(call[0] == "api" for call in router.calls)
+    # Pas de message d'anti-double-stamp dans la sortie
+    assert "anti-double-stamp" not in capsys.readouterr().err
+
+
+def test_double_stamp_rc3_without_supersedes_refused(tmp_path, monkeypatch, capsys):
+    """#19420 -- gate rc 3, lane tierce, dossier SANS refute explicite :
+    le poster refuse comme avant (anti-double-stamp)."""
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=3, lane=OTHER_LANE))
+    body = _adjoint_body(verdict="BLOCKED")
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert not any(call[0] == "api" for call in router.calls)
+    err = capsys.readouterr().err
+    assert "anti-double-stamp" in err
+    assert "supersedes" in err  # le message d'erreur pointe le champ manquant
+
+
+def test_double_stamp_rc3_with_empty_supersedes_why_refused(tmp_path, monkeypatch, capsys):
+    """#19420 -- supersedes renseigne mais supersedes-why vide : refus (intention
+    muette, le gate mute contradiction #18934 n'a rien a juger)."""
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=3, lane=OTHER_LANE))
+    body = _adjoint_body(
+        verdict="BLOCKED",
+        supersedes="5",
+        **{"supersedes-why": ""},
+    )
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert "anti-double-stamp" in capsys.readouterr().err
+
+
+def test_double_stamp_rc0_with_supersedes_refused(tmp_path, monkeypatch, capsys):
+    """#19420 -- rc 0 (READY intact) reste refuse meme avec supersedes : un
+    second tampon READY n'ouvre pas une guerre de dossiers. La garde anti-
+    double-stamp reste ferme, distincte du cas rc 3."""
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=0, lane=OTHER_LANE))
+    body = _adjoint_body(
+        supersedes="5",
+        **{"supersedes-why": "checks devenus verts"},
+    )
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert not any(call[0] == "api" for call in router.calls)
+    err = capsys.readouterr().err
+    assert "anti-double-stamp" in err
+    # Le message est l'ancien (rc 0) -- pas le nouveau (rc 3).
+    assert "a re-stamp is licite only for its own lane" in err
+
+
 def test_gate_unknown_refused(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "gh_json", GhRouter())
     monkeypatch.setattr(mod, "run_gate", GateStub(rc=2))
