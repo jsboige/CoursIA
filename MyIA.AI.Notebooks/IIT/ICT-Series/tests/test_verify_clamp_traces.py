@@ -234,11 +234,14 @@ def _write_npz_with_corrupt_arm_only_member(path, meta):
 def test_a_corrupt_arm_only_member_is_unjudgeable_not_a_crash(tmp_path):
     """Miroir bras-seul : un membre EXTRA du bras corrompu rend le bras
     ILLISIBLE (echec declare), et l'audit poursuit -- jamais un AttributeError
-    qui tuerait le jugement des autres bras."""
+    qui tuerait le jugement des autres bras. Le bras sain present dans le
+    corpus est jugé « ok » a cote : c'est lui qui verrouille la poursuite."""
     _write(tmp_path / "ref.npz", _meta(clamp_ids=[], scale=1.0))
     _write_npz_with_corrupt_arm_only_member(tmp_path / "arm.npz", _meta(scale=1.0))
+    _write(tmp_path / "sain.npz", _meta(scale=1.0), values=(9.0, 2.0, 3.0))
     report = _run(tmp_path)
-    assert [v.status for v in report.verdicts] == ["ILLISIBLE"]
+    assert [v.trace.name for v in report.verdicts] == ["arm.npz", "sain.npz"]
+    assert [v.status for v in report.verdicts] == ["ILLISIBLE", "ok"]
     assert report.failures, "un bras illisible doit faire echouer le controle"
     assert "archive illisible" in report.verdicts[0].detail
 
