@@ -51,7 +51,10 @@ from gh_payload_cache import PayloadCache, cache_key
 # retrecit une tranche saturee et **leve** plutot que de rendre un corpus
 # tronque. Import par chemin de dossier, comme `variation_adjacency_guard.py`.
 sys.path.insert(0, str(Path(__file__).resolve().parent / "ci"))
-from fetch_merged_prs_since import fetch as fetch_merged_window  # noqa: E402
+from fetch_merged_prs_since import (  # noqa: E402
+    fetch as fetch_merged_window,
+    run_gh as fetch_slice_raw,
+)
 
 REPO = "jsboige/CoursIA"
 
@@ -86,6 +89,14 @@ NEW_NB_MIN_ADDITIONS = 200
 # (`family_of` en derive la zone d'atterrissage) et c'est le champ le plus
 # cher : il est demande une fois, pas par tranche supplementaire.
 MERGED_FIELDS = "number,title,body,files,mergedAt"
+
+# TTL des tranches de dates CLOSES (#19236). Une PR mergee est immuable ; seul
+# un edit de body apres merge peut faire devier une tranche close, et la
+# fenetre du tapis est de 90 j. 30 j bornent cette derive tout en rendant les
+# tranches passees effectivement permanentes a l'echelle d'un tour de file --
+# sans quoi chaque lane repayait le corpus entier a l'expiration du cache
+# global (mesure #19236 : 7 min 25 s a froid, toutes les heures).
+PAST_SLICE_TTL_SECONDS = 30 * 24 * 3600
 
 _PARENT_RE = re.compile(
     r"(?:enfant\s+de|fille\s+de|sous-t\w+\s+de|part\s+of"
@@ -196,6 +207,7 @@ def fetch_merged(
     cache_mode: str = "off",
     cache_status: dict[str, dict[str, Any]] | None = None,
     cache_ttl_seconds: float = 60 * 60,
+    slice_stats: dict[str, int] | None = None,
 ) -> tuple[list[dict], str | None]:
     """PRs mergees sur la fenetre, avec leurs fichiers.
 
@@ -205,6 +217,12 @@ def fetch_merged(
     coupe mais mergee dans la fenetre (mesure du 2026-08-23 : 101 pechees
     contre 181 reelles, 44 % de la population absente). Cle de tri != cle de
     filtre est un faux silencieux.
+
+    Depuis #19236, la fenetre est cachee **par tranche de dates** en plus de
+    l'entree globale : une tranche close (`until <= jour courant`) a une TTL
+    longue (`PAST_SLICE_TTL_SECONDS`) et n'est plus re-telechargee, seule la
+    tranche vive qui contient aujourd'hui repaie une requete. C'est ce qui
+    ramene le tapis a UN appel reseau a chaud au lieu des ~30 tranches.
     """
     now = now or dt.datetime.now(dt.timezone.utc)
     start = (now - dt.timedelta(days=days)).date()
@@ -216,6 +234,50 @@ def fetch_merged(
         "--sliced-days", str(days),
         "--json", MERGED_FIELDS,
     ]
+    counter_snapshot = {"hits": 0, "fetches": 0, "slices": 0}
+
+    def slice_run(since: str, until: str) -> list[dict]:
+        """Une tranche servie par le cache, ou telechargee si elle est vive.
+
+        La cle est le couple `(since, until)` de la tranche -- stable d'un
+        jour a l'autre depuis que la grille est ancree (#19236). Une tranche
+        servie en `stale` (refresh en echec) LEVE : composer un corpus melant
+        des tranches fraiches et une tranche d'il y a 30 j, puis le cacher
+        comme neuf au niveau global, rendrait la provenance illisible.
+        """
+        ttl = (PAST_SLICE_TTL_SECONDS
+               if dt.date.fromisoformat(until) <= now.date()
+               else cache_ttl_seconds)
+        ident = [
+            "gh", "pr", "list", "--repo", REPO, "--state", "merged",
+            "--slice", since, until,
+            "--json", MERGED_FIELDS,
+        ]
+        result = cache.get_or_fetch(
+            cache_key(REPO, "series-slice", ident),
+            ttl,
+            lambda: fetch_slice_raw(since, until, MERGED_FIELDS),
+            mode=cache_mode,
+        )
+        counter_snapshot["slices"] += 1
+        if result.status == "hit":
+            counter_snapshot["hits"] += 1
+        else:
+            # `bypass` n'est PAS un hit : `get_or_fetch` ne rend ce statut
+            # qu'APRES avoir appele `fetch()` (mode `off`, ou echec
+            # d'ecriture disque au moment de poser l'entree) -- la tranche
+            # est telechargee. La compter comme hit faisait dire a la ligne
+            # de synthese « N servie(s) depuis le cache » d'un corpus qui
+            # venait de partir integralement en reseau (reserve Hermes
+            # #19246 : en mode off, 4 appels reseau affiches « 4 servies,
+            # 0 telechargee » au head ec761a4989).
+            counter_snapshot["fetches"] += 1
+        if result.status == "stale":
+            raise RuntimeError(
+                f"tranche {since}..{until} servie en cache stale apres echec "
+                f"du refresh: {result.error or 'erreur inconnue'}"
+            )
+        return result.payload
 
     def fetch_raw() -> list[dict]:
         # Tranches de dates plutot qu'un `--search` unique : le corpus rendu
@@ -225,6 +287,7 @@ def fetch_merged(
         # l'air complet.
         return fetch_merged_window(
             since=start.isoformat(), fields=MERGED_FIELDS, today=now.date(),
+            run=slice_run if cache is not None else None,
         )
 
     try:
@@ -243,6 +306,13 @@ def fetch_merged(
             cache_read_status = result.status
             if cache_status is not None:
                 cache_status["series"] = result.as_dict()
+            # Le resume de tranches ne va PAS dans `cache_status` : ce dict est
+            # le contrat `nom -> verdict de cache` (une entree = un
+            # CacheResult serialise), et ses consommateurs lisent
+            # `entry["status"]`. Un compteur de tranches s'y lirait comme un
+            # verdict de plus.
+            if slice_stats is not None and counter_snapshot["slices"]:
+                slice_stats.update(counter_snapshot)
             if result.status == "stale":
                 cache_err = "cache stale apres echec du refresh: {}".format(
                     result.error or "erreur inconnue"
