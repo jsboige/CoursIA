@@ -128,7 +128,7 @@ def _read_member(url: str, local_off: int, comp_size: int, method: int) -> bytes
 
 
 def _load_manifest() -> dict[str, dict[str, int | str]]:
-    """Charger les tailles et empreintes des series utilisees par ML-10."""
+    """Charger les tailles et empreintes des series utilisees par ML-09b."""
     try:
         with open(_MANIFEST_PATH, encoding="utf-8") as fh:
             manifest = json.load(fh)
