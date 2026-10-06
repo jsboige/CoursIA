@@ -63,22 +63,6 @@ RICH_MIMES: tuple[str, ...] = (
     "application/javascript",
     "application/json",
 )
-import argparse
-import json
-import re
-import sys
-import urllib.error
-import urllib.request
-from html import unescape as html_unescape
-from pathlib import Path
-from typing import Iterable
-
-DEFAULT_BASE_URL = "https://jsboige.github.io/CoursIA"
-HTTP_TIMEOUT_S = 10
-
-# Prefixes d'affichage a normaliser (leon: ──────▶ etc.)
-LEAN_PREFIX_PATTERN = re.compile(r"^[─━\-=]{2,}\s*[▶>»]+\s*", re.MULTILINE)
-WHITESPACE_PATTERN = re.compile(r"\s+")
 
 
 def _normalize_line(line: str) -> str:
