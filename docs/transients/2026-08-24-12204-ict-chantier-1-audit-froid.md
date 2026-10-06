@@ -144,6 +144,37 @@ Mandat §4bis : « A6 est donc une décision, plus une enquête. » Vérificatio
 
 **Acceptance sortie ce cycle :** verdict d'attestation de l'opération 3 écrit dans le ledger (cette tranche), avec sa preuve (3 vérifications nommées) et le statut du témoin négatif.
 
+## Tranche c.1114 (2026-10-06, po-2023:CoursIA-2) — Ruzsa : contrat de l'organ corrigé + application ICT + témoin de limite
+
+Issue dispatchée par le coordinateur ai-01 (commentaire #18405, 2026-09-29) ; claim posé par cette lane le 2026-10-06. Précédent c.1308 (po-2024) laissait la **livraison** de la distance de Ruzsa sur objet ICT en suspens (« Non livré dans cette tranche —> à pousser en grain suivant si ai-01 l'autorise »). La présente tranche tranche ce volet : l'organ est qualifié firsthand, l'application à `factor_geometry.py` est livrée sous forme de carnet exécuté, et le **témoin de limite** demandé par le point 3 de #18405 est documenté.
+
+**Quatre vérifications firsthand ce cycle** (toutes dans `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36b-RuzsaOnFactorGeometry-Python.ipynb` — carnet de 14 cellules, 7 code exécutées papermill, 0 erreur) :
+
+1. **Organ cellule 1 (invariants) sur-revendique `d[X;X] = 0`.** Reproduction : `d_ruzsa({0:0.5, 1:0.5}, {0:0.5, 1:0.5}, 4) = 0.500000` bit (cellule 5 du carnet, cas 2). Le 0.5 vient de `H(X'-X) = 1.5` bits (distribution `{0: 0.5, 1: 0.25, 3: 0.25}`) moins `H(X) = H(Y) = 1` bit. Le contrat correct est : `d[X;Y] = 0` si et seulement si Y est une translatee de X (`Y = X + a` pour un `a` du groupe), pas un cas général pour `X = Y`. L'invariant tient pour X uniforme sur G (cas 1 du carnet : Z/8Z uniforme → `d[X;X] = 0.000000`).
+
+2. **L'invariant de translation COMMUNE tient :** `d[X+a; Y+a] = d[X;Y]` pour tout `a` (cellule 5 du carnet, cas 3). Test sur `X = {0:0.5, 1:0.5}` (non uniforme), translations 0, 1, 2 : les trois valeurs de `d_ruzsa(X;X+a)` sont **identiques à 1e-15** (mêmes 0.5). L'invariant cellule 1 est donc **vrai** sous sa forme littérale (`d[X+a; Y+a] = d[X;Y]`) ; c'est sa **conséquence** `d[X;X] = 0` qui est sur-revendiquée.
+
+3. **Application à `factor_geometry.py` :** `synthesize_activations(bases, n_tokens=4000, signal_var=1.0, noise_var=0.1, rng)` produit `X ∈ ℝ^{4000 × 24}`. Quantification par signe (signe ±1 → groupe `Z/2Z` additif). Distribution marginale de la coordonnée 0 : `{0: 0.5045, 1: 0.4955}`, `H(X) = 0.9999` bits, `d_ruzsa(X;X) = 0.000058` bits — la structure orthogonale des facteurs + le bruit gaussien rendent la marginale **quasi-uniforme** sur Z/2Z, donc `d_ruzsa` est essentiellement 0. C'est le cas **favorable** d'application de l'organ sur un objet ICT.
+
+4. **Témoin de limite :** sur le **même** objet d'activations, 3 schémas de quantification différents donnent des valeurs différentes de `d_ruzsa` (cellule 8 du carnet, witness). Signe (Z/2Z) → 0.000058 bit ; 3-quantiles (Z/3Z) → 0.000000 bit (par construction, marginales uniformes) ; 5-quantiles (Z/5Z) → 0.000000 bit (idem) ; hash LSB (Z/2Z, exercice 1) → 0.072061 bit (LSB biaisé de la mantisse IEEE 754 → marginale `{0: 0.665, 1: 0.335}`). **C'est précisément le "mapping affine" que l'organ cellule 5 dénonce** : la valeur de `d_ruzsa` dépend du schéma de quantification, pas seulement de l'objet sous-jacent. L'organ fonctionne sur son terrain (groupes abéliens, X uniforme), mais ne transporte pas tel quel sur les objets ICT — il faudrait soit garantir l'uniformité marginale par construction, soit contrôler la quantification comme une variable explicite de la mesure.
+
+**Verdict c.1114** :
+
+- **Op 3 reste en file d'attente** (statut inchangé depuis c.1308). Le présent carnet **ne promeut pas** l'op 3 : il documente un **test de limite** (aboutissant 2 du point 3 de #18405 : « Distance de Ruzsa : application sur un objet ICT à structure de groupe, **ou** test de limite documenté »), pas une seconde attestation indépendante. La règle d'admission reste : 2ᵉ attestation sur substrat indépendant.
+- **Contrat de l'organ documenté** : `d[X+a; Y+a] = d[X;Y]` (vrai), `d[X;X] = 0` (vrai ssi X uniforme sur G, **sur-revendiqué** par la cellule 1). Le carnet ICT-36b documente l'overclaim et le mécanisme sous-jacent (entropie de la différence plus petite que l'entropie marginale pour X non uniforme). **Suivi proposé** (hors périmètre de cette tranche) : PR sur la série source `SymbolicAI/Lean/ANALYSE/` pour corriger l'invariant cellule 1 (ajouter la condition « X uniforme sur G »). La qualification de l'organ est **indépendante** de cette correction (po-2025 l'a identifiée 36 h avant, cf commentaire #18405 du 2026-10-05T20:25:53Z).
+- **Le témoin de limite est mesuré** : sur le même objet ICT, 4 schémas de quantification donnent 4 valeurs de `d_ruzsa` (0, 0, 0.000058, 0.072). La dépendance au schéma est le **résultat** de cette tranche, pas un échec — c'est l'illustration ICT du « mapping affine » que l'organ cellule 5 met en garde.
+
+**Effet sur la table #12204** : néant sur la promotion de l'op 3. La tranche **remplit** le point 3 de #18405 (test de limite documenté) et **étend** la qualification de l'organ source (overclaim cellule 1 identifié et reproduit). Pour une promotion en TABLE, il faudrait une 2ᵉ attestation sur substrat hors-PFR (cf précédent c.1308).
+
+**Acceptance sortie ce cycle :**
+
+- [x] Contrat organ qualifié firsthand (4 cas, 0 réécriture, organ cellule 2 vendorisé verbatim avec SPDX).
+- [x] Overclaim cellule 1 reproduit et documenté (`d[X;X] = 0.5` pour X non uniforme sur Z/4Z).
+- [x] Application à `ict.factor_geometry.synthesize_activations` livrée (carnet ICT-36b, 7 code cells exécutées).
+- [x] Témoin de limite livré (3 schémas, 4 valeurs de `d_ruzsa` sur le même objet).
+- [x] 5 questions organ-first documentées en cellule 9 du carnet.
+- [x] Statut op 3 inchangé : file d'attente.
+
 ## Tranche réconciliation (2026-10-04, po-2027:CoursIA) — ops 2 et 6 : deux 2ᵉ attestations enregistrées (artefacts antérieurs au dernier toucher du ledger, non comptés)
 
 Motif : pattern #11900 inversé — ce n'est pas le body qui a vieilli, c'est le **ledger**. Deux artefacts livrés sur `main` entre deux tranches n'ont jamais été enregistrés dans la table. Vérification firsthand des deux ce 04/10.
