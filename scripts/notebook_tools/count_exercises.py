@@ -141,6 +141,11 @@ ARTIFACT_STEM_RE = re.compile(
     r"|^research[_-]"
     r"|[_-]research(?:[_-]v?\d+)?$"
     r"|[_-]output(?:[_-]v?\d+)?$"
+    # (#18741 Declarations, ledger #11) `SemanticKernel/Notebook-Generated`
+    # -- a GENERATED artifact (double-counted as standard + template before
+    # this pattern). Exact-stem form: "Generated" alone is a subject word
+    # elsewhere, the full stem names the artifact.
+    r"|^notebook-generated$"
     r"|repro$",
     re.IGNORECASE,
 )
@@ -176,6 +181,28 @@ LEGACY_RE = re.compile(r"legacy", re.IGNORECASE)
 OUT_OF_CORPUS_KINDS = frozenset(
     {"artifact", "template", "vendored", "archive", "legacy", "tooling", "student"}
 )
+
+#: (#18741 Declarations) Individually declared statuses, transcribed from the
+#: qualification ledger (`docs/ledgers/18741-qualification-14-notebooks.md`)
+#: and the approved 4-part decoupage. These notebooks ARE course material --
+#: they stay in the corpus and in its denominator -- but their exercise budget
+#: is declared, not defaulted: the kind name carries the reason so a fleet
+#: scan shows WHY the notebook is not actionable instead of silently hiding
+#: it. Threshold 0 mirrors the setup/Lean rows of the rule's exception table
+#: (the acceptable count includes zero); it is not an out-of-corpus removal.
+DECLARED_STATUSES: dict[str, tuple[str, int | None]] = {
+    # Ledger #10 -- mono-exercise calibration notebook, intent declared in
+    # the #18741 issue body.
+    "PT_17_laya_proper_rewards_toy": ("declared-mono-exercise", 0),
+    # Ledger #15 (post-scriptum to the table) -- ablation companion of the
+    # LAYA series, 1/3, same declared family as PT_17.
+    "PT_18_laya_ablation_distillation": ("declared-ablation-companion", 0),
+    # Ledger #13 -- no exercise section; the #18741 body asks for a declared
+    # demonstration status OR added tasks. The approved decoupage retains the
+    # declared status (adding tasks is separate content work, not counter
+    # policy).
+    "TV-03-Internalisation-CoT": ("declared-demo", 0),
+}
 
 
 def classify_notebook(path: Path) -> tuple[str, int | None]:
@@ -267,6 +294,11 @@ def _classify(
         return ("setup", KIND_MINIMUM["setup"])
     if LEAN_STEM_RE.search(stem):
         return ("lean", KIND_MINIMUM["lean"])
+    # (#18741 Declarations) consulted LAST among the pattern rules so a
+    # declared status never shadows a structural kind (a declared notebook
+    # moved under an `_archive/` directory is archive first).
+    if stem in DECLARED_STATUSES:
+        return DECLARED_STATUSES[stem]
     return ("standard", standard_threshold)
 
 # \bexercice\b anywhere in the line, case-insensitive, French or English form.
@@ -350,7 +382,7 @@ STUB_PATTERNS = [
     # defeats that fallback via the ``_body_computes_result`` gate: the TODOs
     # are "leftover comments above a body that computes" and the cell fell
     # through as a solution. Measured (2026-09-16): exactly 5 notebooks
-    # under-counted by this blind spot (rl_8_model_based_dyna_q Ex2
+    # under-counted by this blind spot (RL-08-Dyna-Q-Planification-Python Ex2
     # prioritized-sweeping skeleton, PT_11a Ex1, Search-03c Ex1, Planners-1
     # Ex2, SL-12 Ex3), each -1 real exercise, 0 false positives.
     # The ``a completer`` tail accepts the accented francophone spellings

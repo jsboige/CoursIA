@@ -79,6 +79,13 @@ below the header.
 documented in this NOTICE before commit.** CoursIA-original code that extends
 or wraps the verbatim content lives in separate files (NOT prefixed with `_`).
 
+**Fins de ligne (seule divergence documentee).** L'amont livre `_fallacy_workflow_plugin.py`
+et `_taxonomy_navigator.py` en CRLF. Le depot impose `*.py text eol=lf` (`.gitattributes`) :
+ces deux fichiers sont stockes en LF. Un blob CRLF sous `eol=lf` fait apparaitre le fichier
+modifie apres chaque checkout et bloque tout organe qui exige un arbre propre. Le contenu reste
+identique a l'amont aux fins de ligne pres : `git diff --ignore-cr-at-eol` est vide.
+L'identite SHA256 octet a octet se verifie donc apres conversion CRLF -> LF du fichier amont.
+
 Partial copies (See #14026)
 ---------------------------
 
