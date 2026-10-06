@@ -195,7 +195,7 @@ Aucune divergence ⇒ **P1+ GROUND TRUTH 92 ATTEINT** (les 92 cross-checks ont �
 
 **Statut au 2026-10-06 (c.1100 → c.1101)** :
 
-- ✅ c.1100 : scoping ferme (PR #19520 merged).
+- ✅ c.1100 : scoping ferme (PR #19520 OPEN au relevé c.1117 07/10 00:35Z, `merged_at: null` ; collision scoping avec #19523 à arbitrer par ai-01 — une redaction anterieure de cette ligne affirmait « merged », **c'est faux**).
 - ✅ c.1101 : **tranche Python-only exécutée** (Cornacchia+quarter sur 92 premiers), `status: passed`, JSON+CSV produits, **0 désaccord inter-backends** (seuls les deux backends Python, Cornacchia+quarter vs prefix_values+original_values). Voir `docs/research/cartier-miller-p1-plus-results.md` (livré en c.1101) pour le détail.
 - ⏳ passe 2 (à arbitrer) : exécution BSGS échantillon 10/92 (~5 min) + Harvey C++ (`RECOVERABLE-MACHINE` po-2027/ai-01).
 

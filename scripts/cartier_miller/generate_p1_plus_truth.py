@@ -47,7 +47,7 @@ from math import isqrt
 from pathlib import Path
 
 
-# ----------------------------- Vendored upstream (verbatim from pin 37a3b72) ---
+# ----------------------------- Vendored upstream (verbatim from pin 37a9b72) ---
 
 
 def is_prime(n: int) -> bool:
