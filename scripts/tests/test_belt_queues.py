@@ -103,6 +103,35 @@ def test_hand_back_by_another_lane_does_not_empty_my_plate():
     assert [it["number"] for it in plates[A]["remaining"]] == [10, 11]
 
 
+def _delivered(lane, at, pr):
+    return {"author": {"login": "jsboige"}, "createdAt": at,
+            "body": f"[DELIVERED] lane {lane} -- PR #{pr}", "url": "u"}
+
+
+def test_delivered_with_open_pr_keeps_the_issue_on_the_plate():
+    # Meme lecture que recette_due.held_by (reducteur v2, #12386) : la PR est en
+    # vol, la lane tient l'issue ; le board ne doit pas la croire rendue.
+    payloads = {10: _payload(10, [_mark(A, "2026-10-06T10:00:00Z"), _delivered(A, "2026-10-06T11:00:00Z", 42)]),
+                11: _payload(11), 20: _payload(20)}
+    plates = bq.measure_plates(PREV, payloads.__getitem__, pr_states={42: "OPEN"})
+    assert [it["number"] for it in plates[A]["remaining"]] == [10, 11]
+
+
+@pytest.mark.parametrize("state", ["MERGED", "CLOSED"])
+def test_delivered_with_merged_or_closed_pr_empties_the_plate(state):
+    payloads = {10: _payload(10, [_mark(A, "2026-10-06T10:00:00Z"), _delivered(A, "2026-10-06T11:00:00Z", 42)]),
+                11: _payload(11), 20: _payload(20)}
+    plates = bq.measure_plates(PREV, payloads.__getitem__, pr_states={42: state})
+    assert [it["number"] for it in plates[A]["remaining"]] == [11]
+
+
+def test_reclaim_after_merged_delivery_keeps_the_issue_on_the_plate():
+    payloads = {10: _payload(10, [_delivered(A, "2026-10-06T10:00:00Z", 42), _mark(A, "2026-10-06T11:00:00Z")]),
+                11: _payload(11), 20: _payload(20)}
+    plates = bq.measure_plates(PREV, payloads.__getitem__, pr_states={42: "MERGED"})
+    assert [it["number"] for it in plates[A]["remaining"]] == [10, 11]
+
+
 # --- board ------------------------------------------------------------------------
 
 def test_board_hides_issues_still_on_a_plate_and_reports_recette():

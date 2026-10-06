@@ -113,17 +113,30 @@ def group_picks(picks: list[dict], now: datetime) -> list[dict]:
     return sorted(groups.values(), key=lambda g: g["rank"])
 
 
-def lane_served_since(payload: dict, lane: str, since: str) -> bool:
+def lane_served_since(payload: dict, lane: str, since: str,
+                      pr_states: dict[int, str] | None = None) -> bool:
     """La lane a rendu la main depuis la repartition (``[DELIVERED]``, ``[RELEASED]``, ``[DONE]``).
 
     Un ``[CLAIMED]`` seul ne vide pas l'assiette : le coordinateur le pose lui-meme
     au dispatch, et une issue prise mais pas rendue reste a servir.
+
+    La main rendue se lit par le reducteur v2 (#12386), le meme que
+    ``recette_due.held_by`` : un ``[DELIVERED]`` dont la PR est encore OUVERTE
+    garde l'issue dans l'assiette, car la substance est en vol et la lane la tient.
+    Une PR MERGED (claim verrouille) ou fermee, un ``[DELIVERED]`` sans PR, un
+    ``[RELEASED]`` ou un ``[DONE]`` la rendent. ``pr_states`` injecte l'etat des
+    PRs (tests) ; absent, le reducteur le lit par ``gh``.
     """
-    return any(ev.lane == lane and ev.get("action") == "close" and (ev.created_at or "") >= since
-               for ev in clc._sort_events(payload))
+    events = clc._sort_events(payload)
+    if not any(ev.lane == lane and ev.get("action") == "close" and (ev.created_at or "") >= since
+               for ev in events):
+        return False
+    active, _ = clc.compute_active_claims(events, pr_states=pr_states)
+    held = active.get(lane)
+    return held is None or bool(held.get("locked"))
 
 
-def measure_plates(previous: dict, fetch_issue) -> dict[str, dict]:
+def measure_plates(previous: dict, fetch_issue, pr_states: dict[int, str] | None = None) -> dict[str, dict]:
     """Ce qui reste dans l'assiette de chaque lane depuis la repartition precedente."""
     since = previous["assigned_at"]
     plates = {}
@@ -131,7 +144,7 @@ def measure_plates(previous: dict, fetch_issue) -> dict[str, dict]:
         remaining = []
         for it in info["queue"]:
             payload = fetch_issue(it["number"])
-            if payload.get("state", "OPEN").upper() != "OPEN" or lane_served_since(payload, lane, since):
+            if payload.get("state", "OPEN").upper() != "OPEN" or lane_served_since(payload, lane, since, pr_states):
                 continue
             remaining.append(it)
         plates[lane] = {"assigned": len(info["queue"]), "remaining": remaining, "arc": info.get("arc")}
