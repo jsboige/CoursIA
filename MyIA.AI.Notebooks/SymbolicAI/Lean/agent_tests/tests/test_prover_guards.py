@@ -3935,6 +3935,882 @@ def test_reverify_survives_errors_list_fallback(monkeypatch):
     )
 
 
+# ──────────────────────────────────────────────────────────────────────────
+# #18432 — tri-state final re-verify: wall-clock timeout is UNKNOWN, not a
+# compile failure. Marker: lean_server._run_lake_build -> tools.compile ->
+# _reverify_compiles_clean (structured `wall_clock_timeout`), caller restores
+# the original AND saves the candidate as a scaffold patch.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_reverify_unknown_on_wall_clock_timeout(monkeypatch):
+    """#18432: a fresh re-verify that hits the wall-clock budget must return
+    the UNKNOWN sentinel — NOT False. This is the founding defect: on timeout
+    the raw output is empty and parses to zero errors, so the bool gate read
+    "false + zero errors" as 'truly broken' and REVERTED real work on a
+    verdict that never existed."""
+    import json
+    import prover.verifier as vmod
+    from prover.provers import _reverify_compiles_clean, _ReverifyUnknown
+
+    class _Verifier:
+        @classmethod
+        def invalidate(cls, filepath):
+            pass
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _Verifier())
+
+    class _TacticTools:
+        def compile(self, check_axioms=False):
+            # Timeout shape: marker set by the verifier + propagated by
+            # tools.compile(). level_1_build False, raw_output empty,
+            # parsed errors [] -- exactly the pre-fix revert trigger.
+            return json.dumps({
+                "level_1_build": False,
+                "raw_output": "",
+                "errors": [],
+                "error_count": 0,
+                "wall_clock_timeout": True,
+                "timeout_s": 600,
+            })
+
+    result = _reverify_compiles_clean("dummy/path.lean", _TacticTools())
+    assert isinstance(result, _ReverifyUnknown), (
+        f"wall-clock timeout must yield the UNKNOWN sentinel, got {result!r}"
+    )
+    assert result.reason == "wall_clock_timeout"
+    assert result.timeout_s == 600
+
+
+def test_reverify_unknown_sentinel_is_falsy(monkeypatch):
+    """#18432 truthiness HARD contract: a tri-state carried as a string or
+    Enum would be TRUTHY and flip every legacy ``if _reverify_compiles_clean
+    (...)`` call site into preserving on UNKNOWN. The sentinel must be falsy
+    so an un-updated consumer fails CLOSED (conservative revert), never into
+    an unverified preserve."""
+    from prover.provers import _ReverifyUnknown
+
+    sentinel = _ReverifyUnknown("wall_clock_timeout", 600)
+    assert not sentinel, "UNKNOWN sentinel must be falsy (fail-closed contract)"
+    # What a legacy un-updated caller effectively asks with `if helper(...):`
+    # is bool(result) -- that must NOT preserve on UNKNOWN.
+    assert bool(sentinel) is False, (
+        "a legacy `if helper(...)` consumer must never preserve on UNKNOWN"
+    )
+    # And it is a distinct third state, not a bool in disguise.
+    assert sentinel is not True
+    assert sentinel is not False
+
+
+def test_reverify_real_errors_without_marker_still_false(monkeypatch):
+    """#18432 regression guard: WITHOUT the timeout marker the gate keeps the
+    #6790 real-errors semantics — False (revert). The tri-state must not turn
+    a genuine build failure into an UNKNOWN."""
+    import json
+    import prover.verifier as vmod
+    from prover.provers import _reverify_compiles_clean
+
+    class _Verifier:
+        @classmethod
+        def invalidate(cls, filepath):
+            pass
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _Verifier())
+
+    class _TacticTools:
+        def compile(self, check_axioms=False):
+            # Real failure shape: no marker, a parseable error.
+            return json.dumps({
+                "level_1_build": False,
+                "raw_output": "Foo.lean:12:3: error: type mismatch\n",
+                "wall_clock_timeout": False,
+                "timeout_s": None,
+            })
+
+    result = _reverify_compiles_clean("dummy/path.lean", _TacticTools())
+    assert result is False, (
+        "real parseable errors without a timeout marker must stay False "
+        "(revert) -- the #6790 real-errors path is unchanged"
+    )
+
+
+def test_lean_server_timeout_returns_structured_marker(tmp_path, monkeypatch):
+    """#18432 server side: a wall-clock exhaustion must return the STRUCTURED
+    marker (wall_clock_timeout=True + timeout_s) — the legacy synthetic string
+    said '(300s)' while the actual budget was 600s, and its empty raw_output
+    was indistinguishable from a zero-error outcome at every consumer."""
+    import subprocess as _sp
+    import lean_server
+    from lean_server import LeanVerifier
+
+    lake_root = tmp_path / "fake_lake"
+    lake_root.mkdir()
+    (lake_root / "lakefile.toml").write_text("", encoding="utf-8")
+
+    def _raise_timeout(*a, **k):
+        raise _sp.TimeoutExpired(cmd=["lake"], timeout=600)
+
+    monkeypatch.setattr(lean_server.subprocess, "run", _raise_timeout)
+
+    v = LeanVerifier(project_dir=str(lake_root))
+    result = v._run_lake_build(lake_root, "Foo/Bar.lean")
+
+    assert result["wall_clock_timeout"] is True
+    assert result["success"] is False
+    assert result["timeout_s"] == 600
+    assert "300s" not in result["errors"], (
+        "the timeout message must state the ACTUAL budget, not the stale 300s"
+    )
+    assert "600" in result["errors"]
+
+
+def test_lean_server_timeout_budget_env_knob(tmp_path, monkeypatch):
+    """#18432: the wall-clock budget is parameterizable per lake / per run via
+    $LEAN_LAKE_BUILD_TIMEOUT_S (same env-knob idiom as LEAN_LAKE_BIN); an
+    unparsable value fails closed to the 600s default. The knob must drive
+    the ACTUAL subprocess timeout (the real final compile), not merely be
+    echoed in the timeout message."""
+    import subprocess as _sp
+    import lean_server
+    from lean_server import LeanVerifier, _lake_build_timeout_s
+
+    # Knob parses -> parameterized budget, echoed in the marker.
+    monkeypatch.setenv("LEAN_LAKE_BUILD_TIMEOUT_S", "123")
+    assert _lake_build_timeout_s() == 123.0
+
+    lake_root = tmp_path / "fake_lake"
+    lake_root.mkdir()
+    (lake_root / "lakefile.toml").write_text("", encoding="utf-8")
+
+    seen_kwargs = {}
+
+    def _raise_timeout(*a, **k):
+        seen_kwargs.update(k)
+        raise _sp.TimeoutExpired(cmd=["lake"], timeout=k.get("timeout"))
+
+    monkeypatch.setattr(lean_server.subprocess, "run", _raise_timeout)
+    v = LeanVerifier(project_dir=str(lake_root))
+    result = v._run_lake_build(lake_root, "Foo/Bar.lean")
+    # The knob reached the REAL subprocess timeout argument.
+    assert seen_kwargs.get("timeout") == 123.0, (
+        "LEAN_LAKE_BUILD_TIMEOUT_S must drive the actual subprocess timeout"
+    )
+    assert result["timeout_s"] == 123
+    assert "123" in result["errors"]
+
+    # Unparsable / non-positive / NON-FINITE -> fail closed to 600s (a
+    # budget must be bounded or subprocess.run itself rejects it).
+    monkeypatch.setenv("LEAN_LAKE_BUILD_TIMEOUT_S", "not-a-number")
+    assert _lake_build_timeout_s() == 600.0
+    monkeypatch.setenv("LEAN_LAKE_BUILD_TIMEOUT_S", "0")
+    assert _lake_build_timeout_s() == 600.0
+    for _bad in ("inf", "-inf", "nan", "infinity"):
+        monkeypatch.setenv("LEAN_LAKE_BUILD_TIMEOUT_S", _bad)
+        assert _lake_build_timeout_s() == 600.0, (
+            f"non-finite budget {_bad!r} must be rejected (bounded budget)"
+        )
+    monkeypatch.delenv("LEAN_LAKE_BUILD_TIMEOUT_S")
+    assert _lake_build_timeout_s() == 600.0
+
+
+def test_lean_server_timeout_with_real_error_is_confirmed_failure(tmp_path, monkeypatch):
+    """#18432 priority contract: TimeoutExpired carries the PARTIAL output
+    captured before the kill — if a real Lean diagnostic is already in
+    there, the failure is CONFIRMED (errors outrank UNKNOWN): no
+    wall_clock_timeout marker, the error is surfaced, and only the forensic
+    wall_clock_exhausted flag records the cut."""
+    import subprocess as _sp
+    import lean_server
+    from lean_server import LeanVerifier
+
+    lake_root = tmp_path / "fake_lake"
+    lake_root.mkdir()
+    (lake_root / "lakefile.toml").write_text("", encoding="utf-8")
+
+    real_error = "Foo.lean:12:3: error: type mismatch\n"
+
+    def _raise_timeout(*a, **k):
+        # str payload (text-mode subprocess) carrying a REAL diagnostic.
+        # NB: TimeoutExpired's signature is (cmd, timeout, output, stderr) —
+        # the pre-kill stdout lands in `output`, there is no `stdout` kwarg.
+        raise _sp.TimeoutExpired(cmd=["lake"], timeout=600, output=real_error)
+
+    monkeypatch.setattr(lean_server.subprocess, "run", _raise_timeout)
+    v = LeanVerifier(project_dir=str(lake_root))
+    result = v._run_lake_build(lake_root, "Foo/Bar.lean")
+
+    assert result.get("wall_clock_timeout") is not True, (
+        "a timeout with a confirmed diagnostic is NOT the verdict-less UNKNOWN"
+    )
+    assert result["success"] is False
+    assert result["wall_clock_exhausted"] is True
+    assert "type mismatch" in result["errors"]
+    assert "type mismatch" in result["raw_output"], "partial output preserved"
+
+    # bytes payload (subprocess may hand back undecoded bytes) — same verdict.
+    def _raise_timeout_bytes(*a, **k):
+        raise _sp.TimeoutExpired(cmd=["lake"], timeout=600,
+                                 output=real_error.encode("utf-8"))
+
+    monkeypatch.setattr(lean_server.subprocess, "run", _raise_timeout_bytes)
+    result_b = v._run_lake_build(lake_root, "Foo/Bar.lean")
+    assert result_b.get("wall_clock_timeout") is not True
+    assert "type mismatch" in result_b["errors"]
+
+
+def test_compile_confirmed_errors_beat_timeout_unknown(tmp_path, monkeypatch):
+    """#18432 tools-level priority: when the verifier reports the confirmed-
+    failure timeout shape (real error in partial output, no UNKNOWN marker),
+    TacticTools.compile() must surface error_count > 0 and wall_clock_timeout
+    False — the reverify/consume chain then takes the plain ERRORS leg."""
+    import json
+    import prover.verifier as vmod
+
+    class _FakeVerifier:
+        def verify_project_file(self, rel, force=False):
+            return {
+                "success": False,
+                "errors": "Foo.lean:12:3: error: type mismatch",
+                "raw_output": "Foo.lean:12:3: error: type mismatch\n",
+                "wall_clock_exhausted": True,
+                "timeout_s": 600,
+            }
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _FakeVerifier())
+
+    state = ProofState(theorem_statement="t")
+    fake = tmp_path / "Target.lean"
+    fake.write_text("theorem t : True := by\n  sorry\n", encoding="utf-8")
+    tt = TacticTools(state, str(fake))
+
+    rv = json.loads(tt.compile())
+    assert rv["error_count"] >= 1
+    assert rv["wall_clock_timeout"] is False
+
+
+def test_compile_propagates_wall_clock_timeout_marker(tmp_path, monkeypatch):
+    """#18432 tools side: TacticTools.compile() must carry the verifier's
+    wall-clock marker through to its JSON — before the fix the marker died
+    here (compile() rebuilds errors from an empty raw_output), so the
+    downstream JSON looked exactly like a zero-error outcome."""
+    import json
+    import prover.verifier as vmod
+
+    class _FakeVerifier:
+        def verify_project_file(self, rel, force=False):
+            return {
+                "success": False,
+                "errors": "lake build timed out (600s wall-clock) — "
+                          "budget exhausted, NO compile verdict (#18432)",
+                "raw_output": "",
+                "wall_clock_timeout": True,
+                "timeout_s": 600,
+            }
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _FakeVerifier())
+
+    state = ProofState(theorem_statement="t")
+    fake = tmp_path / "Target.lean"
+    fake.write_text("theorem t : True := by\n  sorry\n", encoding="utf-8")
+    tt = TacticTools(state, str(fake))
+
+    rv = json.loads(tt.compile())
+    assert rv["wall_clock_timeout"] is True, (
+        "compile() must propagate the verifier's wall-clock marker (#18432)"
+    )
+    assert rv["timeout_s"] == 600
+    # The timeout shape parses to ZERO errors -- which is exactly why the
+    # marker (not error_count) is the only honest signal.
+    assert rv["error_count"] == 0
+    assert rv["level_1_build"] is False
+
+
+def test_write_unknown_scaffold_patch_saves_candidate_beside_trace(tmp_path):
+    """#18432 caller artifact: at a final-verify UNKNOWN the candidate (still
+    on disk) must be saved as a unified patch BESIDE the trace/results BEFORE
+    the original is restored, with a header that says the content is
+    UNVERIFIED. The helper never mutates the target file itself -- restoring
+    the original stays the caller's explicit, auditable act."""
+    from prover.provers import _write_unknown_scaffold_patch
+
+    original = "theorem t : True := by\n  sorry\n"
+    candidate = "theorem t : True := by\n  trivial\n"
+    target = tmp_path / "Target.lean"
+    target.write_text(candidate, encoding="utf-8")
+
+    traces_dir = tmp_path / "traces"
+    traces_dir.mkdir()
+
+    class _FakeTrace:
+        output_dir = traces_dir
+
+    patch_path = _write_unknown_scaffold_patch(
+        _FakeTrace(), str(target), original,
+        patch_name="multi_Demo_x_prov_reverify_unknown.patch",
+        reason="wall_clock_timeout", timeout_s=600,
+    )
+
+    assert patch_path is not None
+    p = Path(patch_path)
+    assert p.parent == traces_dir, "patch must live beside the trace/results"
+    assert p.name == "multi_Demo_x_prov_reverify_unknown.patch"
+    body = p.read_text(encoding="utf-8")
+    # Header: unverified-ness + re-apply guidance are part of the contract.
+    assert "UNVERIFIED" in body and "#18432" in body
+    assert "LEAN_LAKE_BUILD_TIMEOUT_S" in body
+    # Unified-diff body: original -> candidate, the sorry -> trivial edit.
+    assert "--- Target.lean (original)" in body
+    assert "+++ Target.lean (candidate, UNVERIFIED)" in body
+    assert "-  sorry" in body and "+  trivial" in body
+    # The helper must NOT have touched the on-disk candidate: the caller
+    # restores the original AFTER (and separately from) the patch write.
+    assert target.read_text(encoding="utf-8") == candidate
+
+
+def test_write_unknown_scaffold_patch_archival_failure_keeps_scaffold(tmp_path):
+    """#18432 archival failure must NOT destroy the scaffold: when the primary
+    location (beside the trace/results) is unwritable, the candidate must
+    still be archived via the fallback copy NEXT TO the target .lean file —
+    the restore of the original must not be the thing that erases the only
+    copy of the unverified work."""
+    from prover.provers import _write_unknown_scaffold_patch
+
+    original = "theorem t : True := by\n  sorry\n"
+    candidate = "theorem t : True := by\n  trivial\n"
+    target = tmp_path / "lake" / "Target.lean"
+    target.parent.mkdir()
+    target.write_text(candidate, encoding="utf-8")
+
+    # Primary location points at a FILE -> Path.write_text raises -> fallback.
+    not_a_dir = tmp_path / "occupied"
+    not_a_dir.write_text("", encoding="utf-8")
+
+    class _BrokenTrace:
+        output_dir = not_a_dir
+
+    result = _write_unknown_scaffold_patch(
+        _BrokenTrace(), str(target), original,
+        patch_name="multi_Demo_x_prov_reverify_unknown.patch",
+        reason="wall_clock_timeout", timeout_s=600,
+    )
+    assert result is not None, "fallback beside the target must succeed"
+    fallback = Path(result)
+    assert fallback.parent == target.parent
+    assert fallback.name == "Target.lean.reverify_unknown.patch"
+    body = fallback.read_text(encoding="utf-8")
+    assert "-  sorry" in body and "+  trivial" in body, (
+        "the fallback copy must carry the candidate diff (the scaffold)"
+    )
+    # The helper still never mutates the on-disk candidate.
+    assert target.read_text(encoding="utf-8") == candidate
+
+
+def test_consume_reverify_tri_state_unknown_restores_and_never_success(tmp_path,
+                                                                       monkeypatch):
+    """#18432 caller contract, UNKNOWN leg: wall-clock timeout (fresh build
+    false + ZERO errors after the budget) must (a) save the scaffold patch
+    BEFORE restoring the original, (b) restore the original on disk, (c)
+    return final_build_ok=False so the caller's success gate (``... and
+    final_build_ok``) can NEVER fire on UNKNOWN, (d) cite the patch path."""
+    import prover.verifier as vmod
+    from prover.provers import _consume_reverify_tri_state
+
+    class _Verifier:
+        @classmethod
+        def invalidate(cls, filepath):
+            pass
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _Verifier())
+
+    original = "theorem t : True := by\n  sorry\n"
+    candidate = "theorem t : True := by\n  trivial\n"
+    target = tmp_path / "Target.lean"
+    target.write_text(candidate, encoding="utf-8")
+
+    traces_dir = tmp_path / "traces"
+    traces_dir.mkdir()
+
+    class _FakeTrace:
+        output_dir = traces_dir
+
+        def log(self, *a, **k):
+            pass
+
+    class _TacticTools:
+        def __init__(self):
+            self._best_content = "stale"
+            self._best_sorry_count = 1
+
+        def compile(self, check_axioms=False):
+            import json
+            return json.dumps({
+                "level_1_build": False,
+                "raw_output": "",
+                "errors": [],
+                "error_count": 0,
+                "wall_clock_timeout": True,
+                "timeout_s": 600,
+            })
+
+    rv = _consume_reverify_tri_state(
+        str(target), _TacticTools(), _FakeTrace(), original,
+        original_sorry_count=1, demo_name="DemoX", provider="prov",
+        final_sorry=0, structural_progress=True,
+    )
+
+    # (c) first — UNKNOWN can never become a success.
+    assert rv["final_build_ok"] is False, (
+        "final_build_ok must stay False on UNKNOWN — success can never fire"
+    )
+    assert rv["unknown"] is True
+    # (d) patch path cited in the returned result.
+    assert rv["patch"] is not None
+    body = Path(rv["patch"]).read_text(encoding="utf-8")
+    assert "-  sorry" in body and "+  trivial" in body, (
+        "patch carries the candidate: it was written BEFORE the restore"
+    )
+    assert Path(rv["patch"]).parent == traces_dir
+    # (b) original restored on disk.
+    assert target.read_text(encoding="utf-8") == original
+    # Caller-side fields reset: sorry back to the entry count, no structural
+    # claim, best snapshot cleared.
+    assert rv["final_sorry"] == 1
+    assert rv["structural_progress"] is False
+
+
+def test_consume_reverify_tri_state_real_errors_revert(tmp_path, monkeypatch):
+    """#18432 caller contract, ERRORS leg: real parseable errors keep the
+    #6790 revert semantics — restore original, final_build_ok False, patch
+    None (nothing to archive: the snapshot is proven broken)."""
+    import json
+    import prover.verifier as vmod
+    from prover.provers import _consume_reverify_tri_state
+
+    class _Verifier:
+        @classmethod
+        def invalidate(cls, filepath):
+            pass
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _Verifier())
+
+    original = "theorem t : True := by\n  sorry\n"
+    target = tmp_path / "Target.lean"
+    target.write_text("theorem t : True := by\n  omega\n", encoding="utf-8")
+
+    class _FakeTrace:
+        output_dir = tmp_path
+
+        def log(self, *a, **k):
+            pass
+
+    class _TacticTools:
+        _best_content = "stale"
+        _best_sorry_count = 1
+
+        def compile(self, check_axioms=False):
+            return json.dumps({
+                "level_1_build": False,
+                "raw_output": "Target.lean:2:3: error: unsolved goals\n",
+                "wall_clock_timeout": False,
+                "timeout_s": None,
+            })
+
+    rv = _consume_reverify_tri_state(
+        str(target), _TacticTools(), _FakeTrace(), original,
+        original_sorry_count=1, demo_name="DemoX", provider="prov",
+        final_sorry=0, structural_progress=False,
+    )
+    assert rv["final_build_ok"] is False
+    assert rv["unknown"] is False
+    assert rv["patch"] is None
+    assert target.read_text(encoding="utf-8") == original
+    assert rv["final_sorry"] == 1
+
+
+def test_consume_reverify_tri_state_clean_preserves(tmp_path, monkeypatch):
+    """#18432 caller contract, CLEAN leg: fresh build confirms the snapshot
+    -> preserve. final_sorry / structural_progress pass through UNCHANGED
+    (#6790 behavior intact)."""
+    import json
+    import prover.verifier as vmod
+    from prover.provers import _consume_reverify_tri_state
+
+    class _Verifier:
+        @classmethod
+        def invalidate(cls, filepath):
+            pass
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _Verifier())
+
+    candidate = "theorem t : True := by\n  trivial\n"
+    target = tmp_path / "Target.lean"
+    target.write_text(candidate, encoding="utf-8")
+
+    class _FakeTrace:
+        output_dir = tmp_path
+
+        def log(self, *a, **k):
+            pass
+
+    class _TacticTools:
+        def compile(self, check_axioms=False):
+            return json.dumps({
+                "level_1_build": True,
+                "raw_output": "info: invocation took 5.2s\n",
+                "wall_clock_timeout": False,
+                "timeout_s": None,
+            })
+
+    rv = _consume_reverify_tri_state(
+        str(target), _TacticTools(), _FakeTrace(), "theorem t : True := by\n  sorry\n",
+        original_sorry_count=2, demo_name="DemoX", provider="prov",
+        final_sorry=1, structural_progress=True,
+    )
+    assert rv["final_build_ok"] is True
+    assert rv["unknown"] is False
+    assert rv["patch"] is None
+    assert rv["final_sorry"] == 1, "preserve outcome passes final_sorry through"
+    assert rv["structural_progress"] is True
+    # Preserve means PRESERVE: the on-disk candidate is untouched.
+    assert target.read_text(encoding="utf-8") == candidate
+
+
+def test_consume_reverify_tri_state_archive_impossible_keeps_candidate(tmp_path,
+                                                                       monkeypatch):
+    """#18432 archive-impossible contract: when NO verified archive venue
+    works, restoring would destroy the ONLY copy of the unverified work —
+    the consumer must KEEP the candidate on disk, skip the restore, and
+    still return final_build_ok=False (explicit UNKNOWN, never a success)."""
+    import json
+    import prover.verifier as vmod
+    from prover.provers import _consume_reverify_tri_state
+
+    class _Verifier:
+        @classmethod
+        def invalidate(cls, filepath):
+            pass
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _Verifier())
+
+    original = "theorem t : True := by\n  sorry\n"
+    candidate = "theorem t : True := by\n  trivial\n"
+    lake_dir = tmp_path / "lake"
+    lake_dir.mkdir()
+    target = lake_dir / "Target.lean"
+    target.write_text(candidate, encoding="utf-8")
+    # Primary venue: output_dir points at a FILE -> unusable.
+    not_a_dir = tmp_path / "occupied"
+    not_a_dir.write_text("", encoding="utf-8")
+    # Fallback venue: a DIRECTORY sits at the exact fallback patch path.
+    (lake_dir / "Target.lean.reverify_unknown.patch").mkdir()
+
+    class _BrokenTrace:
+        output_dir = not_a_dir
+
+        def log(self, *a, **k):
+            pass
+
+    class _TacticTools:
+        _best_content = "stale"
+        _best_sorry_count = 1
+
+        def compile(self, check_axioms=False):
+            return json.dumps({
+                "level_1_build": False, "raw_output": "", "errors": [],
+                "error_count": 0, "wall_clock_timeout": True, "timeout_s": 600,
+            })
+
+    rv = _consume_reverify_tri_state(
+        str(target), _TacticTools(), _BrokenTrace(), original,
+        original_sorry_count=1, demo_name="DemoX", provider="prov",
+        final_sorry=0, structural_progress=True,
+    )
+    assert rv["final_build_ok"] is False, "UNKNOWN can never become a success"
+    assert rv["unknown"] is True
+    assert rv["patch"] is None, "no verified archive was possible"
+    assert rv["restored"] is False
+    # THE contract: the candidate survives on disk — no restore over it.
+    assert target.read_text(encoding="utf-8") == candidate
+    assert rv["final_sorry"] == 1, "conservative count while unverified"
+
+
+def test_consume_reverify_tri_state_trace_log_failure_loses_nothing(tmp_path,
+                                                                    monkeypatch):
+    """#18432: a broken trace backend (trace.log raises) must lose NOTHING —
+    the archive is still written and the original still restored."""
+    import json
+    import prover.verifier as vmod
+    from prover.provers import _consume_reverify_tri_state
+
+    class _Verifier:
+        @classmethod
+        def invalidate(cls, filepath):
+            pass
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _Verifier())
+
+    original = "theorem t : True := by\n  sorry\n"
+    candidate = "theorem t : True := by\n  trivial\n"
+    target = tmp_path / "Target.lean"
+    target.write_text(candidate, encoding="utf-8")
+    traces_dir = tmp_path / "traces"
+    traces_dir.mkdir()
+
+    class _ExplodingTrace:
+        output_dir = traces_dir
+
+        def log(self, *a, **k):
+            raise RuntimeError("trace backend down")
+
+    class _TacticTools:
+        _best_content = "stale"
+        _best_sorry_count = 1
+
+        def compile(self, check_axioms=False):
+            return json.dumps({
+                "level_1_build": False, "raw_output": "", "errors": [],
+                "error_count": 0, "wall_clock_timeout": True, "timeout_s": 600,
+            })
+
+    rv = _consume_reverify_tri_state(
+        str(target), _TacticTools(), _ExplodingTrace(), original,
+        original_sorry_count=1, demo_name="DemoX", provider="prov",
+        final_sorry=0, structural_progress=True,
+    )
+    assert rv["patch"] is not None, "archive written despite trace failure"
+    assert rv["restored"] is True
+    assert target.read_text(encoding="utf-8") == original
+
+
+def test_write_unknown_scaffold_patch_never_overwrites_previous_archive(tmp_path):
+    """#18432 collision safety: fixed patch names would overwrite the
+    previous run's archive. Exclusive-create + -N suffix: a second archive
+    with the same name lands on a DISTINCT path and the first is intact."""
+    from prover.provers import _write_unknown_scaffold_patch
+
+    target = tmp_path / "Target.lean"
+    target.write_text("theorem t : True := by\n  trivial\n", encoding="utf-8")
+    traces_dir = tmp_path / "traces"
+    traces_dir.mkdir()
+
+    class _FakeTrace:
+        output_dir = traces_dir
+
+    original = "theorem t : True := by\n  sorry\n"
+    first = _write_unknown_scaffold_patch(
+        _FakeTrace(), str(target), original, patch_name="run.patch",
+        reason="wall_clock_timeout", timeout_s=600)
+    # Change the candidate so the two archives differ verifiably.
+    target.write_text("theorem t : True := by\n  simp\n", encoding="utf-8")
+    second = _write_unknown_scaffold_patch(
+        _FakeTrace(), str(target), original, patch_name="run.patch",
+        reason="wall_clock_timeout", timeout_s=600)
+
+    assert first and second and first != second
+    first_body = Path(first).read_text(encoding="utf-8")
+    second_body = Path(second).read_text(encoding="utf-8")
+    assert "+  trivial" in first_body, "first archive intact (not overwritten)"
+    assert "+  simp" in second_body and "+  trivial" not in second_body
+
+
+def test_write_unknown_scaffold_patch_double_failure_returns_none(tmp_path):
+    """#18432: BOTH venues unusable -> None, signalled loudly; the helper
+    never touches the on-disk candidate (the keep-or-restore decision stays
+    with the caller, which must then KEEP it)."""
+    from prover.provers import _write_unknown_scaffold_patch
+
+    lake_dir = tmp_path / "lake"
+    lake_dir.mkdir()
+    target = lake_dir / "Target.lean"
+    candidate = "theorem t : True := by\n  trivial\n"
+    target.write_text(candidate, encoding="utf-8")
+    not_a_dir = tmp_path / "occupied"
+    not_a_dir.write_text("", encoding="utf-8")
+    (lake_dir / "Target.lean.reverify_unknown.patch").mkdir()
+
+    class _BrokenTrace:
+        output_dir = not_a_dir
+
+    result = _write_unknown_scaffold_patch(
+        _BrokenTrace(), str(target), "theorem t : True := by\n  sorry\n",
+        patch_name="x.patch", reason="wall_clock_timeout", timeout_s=600)
+    assert result is None
+    assert target.read_text(encoding="utf-8") == candidate
+
+
+def test_unknown_patch_missing_trailing_newline_replays_faithfully(tmp_path):
+    """#18432 replay fidelity: a source or candidate without a final newline
+    must be encoded with the standard ``\\ No newline at end of file`` marker
+    (difflib alone glues the last line into the next entry and corrupts the
+    replay). The test acts as the judge: it APPLIES the archived unified
+    patch to the original with a real mini-applier (difflib.restore is an
+    ndiff tool and must not be used on unified output) and requires the
+    reconstructed candidate to be byte-identical."""
+
+    def _apply_unified(original: str, diff_lines: list) -> str:
+        """Minimal unified-diff applier (test-side): reconstructs side 2 from
+        side 1. Validates side 1 consumption; honours the git-style bare
+        '\\ No newline at end of file' marker with one-line lookahead (the
+        marker qualifies the line BEFORE it)."""
+        src = original.splitlines(keepends=True)
+        out = []
+        i = 0
+        idx = 0
+        lines = [ln for ln in diff_lines
+                 if not ln.startswith(("---", "+++", "@@", "#"))]
+        while idx < len(lines):
+            ln = lines[idx]
+            if ln.startswith("\\"):
+                idx += 1
+                continue
+            tag, payload = ln[0], ln[1:]
+            # Lookahead: a bare marker right after this line removes its
+            # trailing newline (git semantics).
+            noeol = (idx + 1 < len(lines)
+                     and lines[idx + 1].startswith("\\ No newline"))
+            eff = payload[:-1] if (noeol and payload.endswith("\n")) else payload
+            if tag == "-":
+                assert i < len(src) and src[i] == eff, (
+                    f"unified diff does not match side 1 at line {i}: "
+                    f"{src[i]!r} != {eff!r}")
+                i += 1
+            elif tag == "+":
+                out.append(eff)
+            elif tag == " ":
+                assert i < len(src) and src[i] == eff, (
+                    f"unified diff context mismatch at line {i}: "
+                    f"{src[i]!r} != {eff!r}")
+                out.append(eff)
+                i += 1
+            else:
+                raise AssertionError(f"unexpected diff line: {ln!r}")
+            idx += 1
+        assert i == len(src), (
+            f"side 1 not fully consumed ({i}/{len(src)}) — patch inconsistent")
+        return "".join(out)
+
+    from prover.provers import (
+        _write_unknown_scaffold_patch, _normalized_diff_lines, _decode_diff_lines,
+    )
+
+    cases = [
+        ("no_eol_original", "theorem t : True := by\n  sorry",
+         "theorem t : True := by\n  trivial\n"),
+        ("no_eol_candidate", "theorem t : True := by\n  sorry\n",
+         "theorem t : True := by\n  trivial"),
+        ("both_no_eol", "theorem t : True := by\n  sorry",
+         "theorem t : True := by\n  trivial"),
+        # Trailing-newline-ONLY change: the unified format cannot qualify a
+        # context line differently per side — recovery must go through the
+        # embedded exact contents (b64), which is the judge for this case.
+        ("eol_only_change", "theorem t : True := by\n  sorry",
+         "theorem t : True := by\n  sorry\n"),
+    ]
+    for label, original, candidate in cases:
+        # Unit level: the marker encoding round-trips both contents.
+        assert _decode_diff_lines(_normalized_diff_lines(original)) == original, label
+        assert _decode_diff_lines(_normalized_diff_lines(candidate)) == candidate, label
+
+        # End-to-end: apply the archived patch to the original.
+        target = tmp_path / f"Case_{label}.lean"
+        target.write_text(candidate, encoding="utf-8")
+        traces_dir = tmp_path / f"traces_{label}"
+        traces_dir.mkdir()
+
+        class _FakeTrace:
+            output_dir = traces_dir
+
+        patch = _write_unknown_scaffold_patch(
+            _FakeTrace(), str(target), original, patch_name="run.patch",
+            reason="wall_clock_timeout", timeout_s=600)
+        assert patch is not None, label
+        body = Path(patch).read_text(encoding="utf-8")
+        diff_lines = body.splitlines(keepends=True)
+
+        # Lossless recovery invariant (ALL cases): the embedded exact
+        # contents reconstruct both sides byte-for-byte.
+        import base64
+        import re as _re
+        b64_orig = _re.search(r"# exact_original_b64=(\S+)\n", body).group(1)
+        b64_cand = _re.search(r"# exact_candidate_b64=(\S+)\n", body).group(1)
+        assert base64.b64decode(b64_orig).decode("utf-8") == original, label
+        assert base64.b64decode(b64_cand).decode("utf-8") == candidate, label
+
+        if label == "eol_only_change":
+            continue  # unified body intentionally ambiguous here — b64 is the judge
+
+        assert any("No newline at end of file" in ln for ln in diff_lines), (
+            f"{label}: the standard EOF marker must be present"
+        )
+        replayed = _apply_unified(original, diff_lines)
+        assert replayed == candidate, (
+            f"{label}: patch replay not byte-identical:\n"
+            f"  replayed={replayed!r}\n  expected={candidate!r}"
+        )
+
+
+def test_consume_autonomous_final_unknown_archives_and_restores(tmp_path):
+    """#18432 autonomous UNKNOWN leg (bounded coverage of the real site's
+    helper): verified archive under the auto_ name, then original restored,
+    final_sorry reset to the entry count."""
+    from prover.provers import _consume_autonomous_final_unknown
+
+    original = "theorem t : True := by\n  sorry\n"
+    candidate = "theorem t : True := by\n  trivial\n"
+    target = tmp_path / "Target.lean"
+    target.write_text(candidate, encoding="utf-8")
+    traces_dir = tmp_path / "traces"
+    traces_dir.mkdir()
+
+    class _FakeTrace:
+        output_dir = traces_dir
+
+        def log(self, *a, **k):
+            pass
+
+    rv = _consume_autonomous_final_unknown(
+        _FakeTrace(), str(target), original, original_sorry_count=2,
+        demo_name="DemoX", provider="prov", timeout_s=600)
+    assert rv["restored"] is True
+    assert rv["patch"] is not None
+    assert Path(rv["patch"]).name == "auto_DemoX_prov_reverify_unknown.patch"
+    assert target.read_text(encoding="utf-8") == original
+    assert rv["final_sorry"] == 2
+
+
+def test_consume_autonomous_final_unknown_archive_impossible_keeps_candidate(tmp_path):
+    """#18432 autonomous archive-impossible leg: candidate KEPT on disk,
+    restore skipped, final_sorry conservative — the run stays explicit
+    UNKNOWN / non-success downstream."""
+    from prover.provers import _consume_autonomous_final_unknown
+
+    original = "theorem t : True := by\n  sorry\n"
+    candidate = "theorem t : True := by\n  trivial\n"
+    lake_dir = tmp_path / "lake"
+    lake_dir.mkdir()
+    target = lake_dir / "Target.lean"
+    target.write_text(candidate, encoding="utf-8")
+    not_a_dir = tmp_path / "occupied"
+    not_a_dir.write_text("", encoding="utf-8")
+    (lake_dir / "Target.lean.reverify_unknown.patch").mkdir()
+
+    class _BrokenTrace:
+        output_dir = not_a_dir
+
+        def log(self, *a, **k):
+            pass
+
+    rv = _consume_autonomous_final_unknown(
+        _BrokenTrace(), str(target), original, original_sorry_count=2,
+        demo_name="DemoX", provider="prov", timeout_s=600)
+    assert rv["restored"] is False
+    assert rv["patch"] is None
+    assert target.read_text(encoding="utf-8") == candidate, (
+        "no restore over the only copy of the unverified work"
+    )
+    assert rv["final_sorry"] == 2
+
+
 def test_count_sorries_from_build_output_type_safe_on_list_input():
     """Defense-in-depth companion to ``test_parse_lean_errors_accepts_list_input``
     (#6846): the two build-output parsers share the same input shape, so

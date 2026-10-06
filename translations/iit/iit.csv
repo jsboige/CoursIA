@@ -2185,7 +2185,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity-Python.ipynb,1da573
 result_ex3 = None  # TODO etudiant
 print(""Exercice 3 a completer : Gate 5 sur S3, verdict ="", result_ex3)",,,,,,,,9a225154b7f2ee8b,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity-Python.ipynb,6024e699,markdown,fr,2fe9f55a6a6ac812,"**Prochaines étapes** (Epic #4588, strate 5) : ICT-16 (MDL deux parties, le pont F = résiduel de K), ICT-17 (machine epsilon, complexité statistique), ICT-18 (FlecheDuTempsReversibilisation, production d'entropie thermodynamique et reversibilisation -- le pendant *thermodynamique* de la complexite de representation d'ICT-17, GPU-free). La réconciliation du cadrage (double lecture du sigle) est l'objet dédié de #5091.",,,,,,,,2fe9f55a6a6ac812,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,8c29c0c4,markdown,fr,282b03bea1f3d388,"# ICT-16 — MDL / code en deux parties et bosse complexite-entropie
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,8c29c0c4,markdown,fr,17bb1f9b0b53d427,"# ICT-16 — MDL / code en deux parties et bosse complexite-entropie
 
 **Strate 5** | Epic **#4588** | Issue **#5099** | Part of **#4588** (Closes **#5099**).
 **Navigation** : [Index](README.md) | [17b — Grokking et compression](ICT-17b-Grokking-CompressionProgress-Python.ipynb) | Axe transverse : [ICT-MUH — le texte où Tegmark cite Schmidhuber](ICT-MUH-FibreTegmark.ipynb)
@@ -2206,7 +2206,7 @@ ICT-0 a pose que l'integration ($\Phi$), la surprise ($F$) et la compression ($K
 5. **Gates falsifiables** : G6 (identite comptable MDL/zlib) + G7 (bosse complexite-entropie).
 6. **Trois exercices** (stub ; a completer).
 
-**Dependances** : `ict.mdl` (numpy-only), `ict.compression` (numpy + zlib). Pas de GPU, pas de Lean. Notebook executable end-to-end (les exercices sont stubs mais ne leveent pas d'exception -- règle C.1).",,,,,,,,282b03bea1f3d388,,,,,,,,
+**Dependances** : `ict.mdl` (numpy-only), `ict.compression` (numpy + zlib). Pas de GPU, pas de Lean. Notebook executable end-to-end (les exercices sont stubs mais ne leveent pas d'exception -- règle C.1).",,,,,,,,17bb1f9b0b53d427,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,548759d1,markdown,fr,ea1639c25a176b38,"## 1. Codelength d'une TPM : prior de Krichevsky-Trofimov
 
 Le prior KT pour une distribution multinomiale a $k$ catégories ajoute $1/2$ a chaque compte, ce qui lisse les probabilites vers $1/k$ sans jamais atteindre zero. La codelength marginale d'une ligne $n_{i,1}, \dots, n_{i,k}$ vaut :
@@ -3772,7 +3772,7 @@ Une lecture complementaire est la **decomposition de Hodge** du champ de flux ne
   - Relier a England 2013 *dissipation-driven adaptation* : formaliser la derivation thermodynamique de l'auto-maintien (les systèmes qui dissipent plus tendent a s'auto-organiser -- mais tous ne deviennent pas agents).
   - Croiser ICT-18 avec ICT-2/3/9 pour cartographier les systèmes dans le **plan (moyen, fin)** ; l'enjeu serait alors un troisieme axe vertical (Friston free energy / cloture de contraintes), definissant un cube de la triade.
   - **ICT-19 ?** : la question des batteries de capteurs multiples (proposition ChatGPT, *two separate batteries*) depasse ICT-18 -- ce serait un notebook dedie a la fusion *moyen + fin + enjeu*, avec sa propre structure et son propre gate. ICT-18 fournit la brique ; ICT-19 l'assemblerait.",,,,,,,,964d034f35a6c488,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb,c6a54be62e36,markdown,fr,f8ebb2c825b931d4,"# ICT-19b — Raffinement et résolution des stubs (tranche 3)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb,c6a54be62e36,markdown,fr,54b03cf4c2ab54db,"# ICT-19b — Raffinement et résolution des stubs (tranche 3)
 
 [← ICT-19 squelette (tranche 2)](ICT-19-EnjeuBattery-Python.ipynb) · [↑ ICT-Series](README.md) · [→ ICT-20](ICT-20-FeatureCatastrophes-Python.ipynb) · [Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)
 
@@ -3797,7 +3797,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb,c
 ## Durée estimée
 
 20 min (lecture + exécution séquentielle). Substantiellement plus rapide que la tranche 2 (pas de reaction-diffusion lourde).
-",,,,,,,,f8ebb2c825b931d4,,,,,,,,
+",,,,,,,,54b03cf4c2ab54db,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb,d99d055d2fb8,code,fr,b7f11e7c4b0e8c22,"# Setup : imports + matplotlib Agg non-interactif (GPU-free, numpy only)
 import sys
 import numpy as np
@@ -4093,7 +4093,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb,4
 
 Entre les deux : un continuum de substrats hybrides (ex: ressort faible + dérive constante). Le notebook pédagogique invite à explorer ce continuum pour développer l'intuition.
 ",,,,,,,,b3180bab7b0d8507,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb,7fce2d2e4b6e,markdown,fr,fef95b9f3192d69e,"## 12. Verdict final — réconciliation tranches 2 et 3
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb,7fce2d2e4b6e,markdown,fr,510165d77d247a73,"## 12. Verdict final — réconciliation tranches 2 et 3
 
 ### Récapitulatif de l'enjeu mesuré — valeurs de CE notebook
 
@@ -4133,7 +4133,7 @@ Son Gate ENJEU-1 y échouait (`FAIL`) précisément parce que (a) S4 y était sc
 ### Conclusion méthodologique
 
 La batterie de l'ENJEU discrimine les substrats à enjeu (S1, S3, Custom A, **et S4**) du pur dissipateur (Custom B / S5), **y compris** S4 une fois mesuré avec le bon instrument. La leçon de la tranche 3 : un résultat nul doit d'abord être suspecté d'être un artefact d'instrument ou de câblage avant d'être consacré en *limite physique*. Ici, le bon instrument (`repair_gain` en champ) + le comparateur `I_thermo`-apparié (diffusion pure) + le régime de Pearson transforment un faux échec en signature d'agence nette et honnête.
-",,,,,,,,fef95b9f3192d69e,,,,,,,,
+",,,,,,,,510165d77d247a73,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb,6fe086cc9a49,markdown,fr,d6696e47bc7b3dae,"## 13. Annexe — limites et suites
 
 ### Résolu dans cette tranche
@@ -6279,7 +6279,7 @@ relais.
 
 **Code & tests** : ``ict/persona_cusp.py`` (module reutilisable,
 numpy-only) + ``tests/test_persona_cusp.py`` (12 tests PASS).",,,,,,,,8ba2a4d47c2fe0b3,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb,445ab538,markdown,fr,dcbcfc4b680dd10f,"# ICT-24 — WorkspaceIgnition : l'axe Global Workspace et le Gate de réconciliation IIT<->GWT sur S4
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb,445ab538,markdown,fr,c7f5a419b5aab4d6,"# ICT-24 — WorkspaceIgnition : l'axe Global Workspace et le Gate de réconciliation IIT<->GWT sur S4
 
 *[Série ICT — Integrated Causal Trajectories, Epic #4588, strate 5.](./README.md) Part of #4588.*
 
@@ -6309,7 +6309,7 @@ Seul le Gate 24 est causal. Les Gates 22–23 livrent un verdict observationnel 
 
 L'appareil `ict/workspace.py` (numpy-only, adaptateur mince posé par #5641) fournit les six primitives : `concentration_series`, `ignition_events`, `lagged_influence`, `fanout_profile`, `workspace_candidates`, `event_triggered_battery`. Cette dernière **réutilise `ict.synthesis.emergence_gain` verbatim** — même discipline de créditation que le reste de la série.
 
-",,,,,,,,dcbcfc4b680dd10f,,,,,,,,
+",,,,,,,,c7f5a419b5aab4d6,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb,3cd10ff4,markdown,fr,601e7b2fed1723ad,"## Garde-fous d'honnêteté (à lire avant les résultats)
 
 Ces cinq garde-fous sont aussi dans la docstring de `ict/workspace.py` ; nous les répétons ici car ils conditionnent la lecture de chaque chiffre.
@@ -6624,7 +6624,7 @@ Le **Gate 24** (phase 2, GPU) tranchera la question causale : si le clamp sélec
 L'opérateur `do` de Pearl est ici implicite : le Gate 24 **réalise** un `do(workspace = clampé)` — une intervention chirurgicale sur le graphe, contre un `do(autant de features aléatoires = clampées)`. La même armature formelle traverse la série : voir le [Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb), qui exécute l'échelle de Pearl et les trois règles sur `dowhy` (identification backdoor/front-door + estimation + réfutation), et relie cette série à Tweety-11, Infer-5 et PyMC-5.
 
 ",,,,,,,,22adf40546e587ef,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb,88dc0e55,markdown,fr,18c6cf788a85e988,"## Références
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb,88dc0e55,markdown,fr,3c3677ad82c757b8,"## Références
 
 - Anthropic, *Global Workspace in Claude* (2025) — [anthropic.com/research/global-workspace](https://www.anthropic.com/research/global-workspace). Opérateur d'accès = jacobien des logits ; broadcast mesuré structurellement ; preuve maîtresse = ablation sélective. IIT/Tononi absents ; claim limité à l'access-consciousness.
 - Baars, B. J. — *A Cognitive Theory of Consciousness* (Global Workspace Theory).
@@ -6632,7 +6632,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb,88dc0e55,
 - Jansma, K., Hoel, E. — *Engineering Emergence* (2025) — émergence causale multi-échelle, CE 2.0. Voir [ICT-5](ICT-05-CausalEmergence-Python.ipynb).
 - Série ICT : [ICT-21](ICT-21-SAETrajectoires-Python.ipynb) (substrat S4), [ICT-5](ICT-05-CausalEmergence-Python.ipynb) (émergence causale), [ICT-Synthese](ICT-Synthese-CrossSubstrat.ipynb).
 
-",,,,,,,,18c6cf788a85e988,,,,,,,,
+",,,,,,,,3c3677ad82c757b8,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,9bcd075e,markdown,fr,8ad8d8c5a9632a23,"# ICT-3 — Robustesse & délai de gratification : étude quantitative
 
 > Série **ICT** (*Integrated Causal Trajectories*, Epic [#4588](https://github.com/jsboige/CoursIA/issues/4588)).
@@ -11458,7 +11458,7 @@ La valence **apprise** complète la valence **programmée** d'ICT-12 sans s'y r�
 
 C'est le grain #7740 (« l'expérience manquante ») : opérationnaliser l'**investissement** thomien — non pas *où sera la proie* ($p̂$), mais *combien l'agent investit* dans un signal ($\pi$). Le module `ict.learned_valence` est la brique ; ce notebook la met en scène. Les strates suivantes (argumentation #7289, jeu évolutif #7746) reprendront cette valence apprise comme source de prégnance transférable.
 ",,,,,,,,e8bfc08fe230246e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12c-PregnanceAnimat-Python.ipynb,d53a3d8b,markdown,fr,d21e0c7c393ca711,"# ICT-12c — Animat prégnance/valence incarné : la dissociation $\hat p$ / $\pi$ (#7740)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12c-PregnanceAnimat-Python.ipynb,d53a3d8b,markdown,fr,7e79e3ca3927cf7a,"# ICT-12c — Animat prégnance/valence incarné : la dissociation $\hat p$ / $\pi$ (#7740)
 
 **Sous-série ICT** (trajectoires intégrées, Epic #4588, strate 3). Notebook compagnon d'[ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb) (valence *programmée*) et d'[ICT-12b](ICT-12b-LearnedValence-Python.ipynb) (valence *apprise*, banc **désincarné**).
 
@@ -11466,7 +11466,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12c-PregnanceAnimat-Python.ipynb,d53a3d8b,m
 
 [ICT-12b](ICT-12b-LearnedValence-Python.ipynb) a montré qu'une valence peut être **apprise** (Rescorla-Wagner), **transférable** (un signal neutre devient attractif) et **distincte** de la prédiction $\hat p$ — mais sur des bancs **désincarnés** : un signal y est un index abstrait, sans environnement, sans corps, sans action. Ce notebook fait le pas suivant (jambe C1, [#7740](https://github.com/jsboige/CoursIA/issues/7740)) : **incarner** cette « expérience manquante » dans un animat qui se déplace, a un état interne (la faim), et choisit ses actions.
 
-L'enjeu scientifique : une fois incarnée, la valence et la prédiction se dissocient-elles encore ? Ou l'incarnation les recolle-t-elle en un seul signal de poursuite ? La réponse passe par une **matrice de dissociation**, pas un printout par mesure.",,,,,,,,d21e0c7c393ca711,,,,,,,,
+L'enjeu scientifique : une fois incarnée, la valence et la prédiction se dissocient-elles encore ? Ou l'incarnation les recolle-t-elle en un seul signal de poursuite ? La réponse passe par une **matrice de dissociation**, pas un printout par mesure.",,,,,,,,7e79e3ca3927cf7a,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12c-PregnanceAnimat-Python.ipynb,b65039fc,code,fr,360d58bc6711e9b3,"import sys, os
 sys.path.insert(0, os.getcwd())  # ICT-Series/ pour `from ict import ...`
 
@@ -11705,7 +11705,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12c-PregnanceAnimat-Python.ipynb,b04b6eca,c
 #  1. ObjectSpec(idx=3, intrinsic_valence=-1.0) (prédateur).
 #  2. Mesurer avoidance = 1 - approach_fraction(pred_idx) ; vérifier qu'elle est haute.
 print(""Exercice 3 à compléter : abstention face à un signal répulsif."")",,,,,,,,372395eb5ed72d87,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12c-PregnanceAnimat-Python.ipynb,7025fc1e,markdown,fr,42b9a6fc6ee518dd,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12c-PregnanceAnimat-Python.ipynb,7025fc1e,markdown,fr,abe44ffb1512bbd4,"## Conclusion
 
 L'incarnation ne recolle pas valence et prédiction — elle les **dissocie** plus nettement encore. Sur le régime erratique, le modèle interne $\hat p$ est fortement dégradé (ratio erreur vs persistance ×4.1 relativement au balistique) mais l'investissement thomien — la valence apprise $\pi$, transférée par co-occurrence, réversible par extinction, mobilisant l'action — tient. C'est la réponse à la question #7740 : **prégnance et représentation sont deux grandeurs distinctes**, même chez un animat incarné.
 
@@ -11713,7 +11713,7 @@ Cette dissociation **survit à l'analyse multi-graines** : sur les cinq graines 
 
 *Portée honnête* : ce notebook couvre les **six mesures** 1, 2, 3, 4, 5, 6 + la matrice de dissociation. Les mesures 4 (énergie-libre adaptive) et 5 (information prédictive), différées en PR-A comme recherche, sont désormais livrées (§7) : `free_energy` mode `fixed` n'est qu'un habillage du MSE (gate 1), mais la précision *adaptive* amortit l'explosion erratique (gate 2), et l'information mutuelle $I(\hat q;o)$ y est *anti-corrélée* au MSE (plafond épistémique). Trois lecteurs orthogonaux de $\hat q$.
 
-> **Voir aussi.** [ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb) (valence programmée, champ spatial), [ICT-12b](ICT-12b-LearnedValence-Python.ipynb) (valence apprise désincarnée, le banc algorithmique que cet animat incarne), [ICT-0-Framing](ICT-0-Framing.md) (jambe C1, #7740).",,,,,,,,42b9a6fc6ee518dd,,,,,,,,
+> **Voir aussi.** [ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb) (valence programmée, champ spatial), [ICT-12b](ICT-12b-LearnedValence-Python.ipynb) (valence apprise désincarnée, le banc algorithmique que cet animat incarne), [ICT-0-Framing](ICT-0-Framing.md) (jambe C1, #7740).",,,,,,,,abe44ffb1512bbd4,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb,905617e2,markdown,fr,d1985fed4688c865,"# ICT-12d — Animat inhibé (Laborit) : contrôlabilité, rigidification, dette d'irréversibilité (#7741)
 
 **Sous-série ICT** (trajectoires intégrées, Epic #4588). Notebook compagnon du module [`ict.inhibited_action`](ict/inhibited_action.py) (PR [#8825](https://github.com/jsboige/CoursIA/pull/8825)). **Jambe C2** de la tresse transverse — *parallèle* à [C1 — ICT-12c](ICT-12c-PregnanceAnimat-Python.ipynb) (prégnance/valence incarnée, #7740), et distincte d'[ICT-30](ICT-30-InhibitedInvention-Python.ipynb) (inhibition de l'**innovation**, strate 7 collective, #7746) : ici l'inhibition porte sur l'**action** d'un animat individuel (strate 3/5).
@@ -13903,15 +13903,15 @@ def extended_signature(structures):
     return out
 print(""Exercice 2 stub : completer extended_signature et reintegrer dans le bridge."")
 ",,,,,,,,30ec48f6231154f6,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb,29333580,markdown,fr,88643280df246676,"### Exercice 3 -- Bridge #2 vs ICT-15c : discrimination temporelle vs collapsus spectral
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb,29333580,markdown,fr,f4189c06d8385324,"### Exercice 3 -- Bridge #2 vs ICT-15c : discrimination temporelle vs collapsus spectral
 
 ICT-15c (#7395, PR #9328) donne `verdict: NOISE` sur les memes substrats Gray-Scott : les 3 proxys (spectral/sens_mean/sens_max) collapsent en un verdict agrege qui n'invalide pas l'instrument mais ne discrimine pas non plus.
 
 **Question falsifiable** : la discrimination **temporelle** de ICT-15e (signature 5-D sur la trajectoire brute) **survit-elle** la ou la discrimination **spectrale** de ICT-15c a collapse ? Si oui, ICT-15e fournit un **proxy de rechange** pour le meta-detector d'obstruction de #7395.
 
 **TODO etudiant** : comparer les verdicts ICT-15e par substrat (ce notebook) avec les verdicts ICT-15c (cf `ICT-15c-MetaProxyObstruction-Python.ipynb`) et conclure sur l'orthogonalite.
-",,,,,,,,88643280df246676,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb,fd4b50a8,code,fr,45c10d7abd376729,"# Exercice 3 -- Bridge #2 vs ICT-15c : orthogonalite des discriminations.
+",,,,,,,,f4189c06d8385324,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb,fd4b50a8,code,fr,42b5e9b1ebf53d39,"# Exercice 3 -- Bridge #2 vs ICT-15c : orthogonalite des discriminations.
 # TODO etudiant :
 # 1. Lister les verdicts ICT-15c par substrat (lecture directe ICT-15c-MetaProxyObstruction-Python.ipynb)
 # 2. Lister les verdicts ICT-15e par substrat (lecture du tableau synthese ci-dessus)
@@ -13919,7 +13919,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipy
 print(""ICT-15e substrats : voir tableau synthese (cell 8)."")
 print(""ICT-15c substrats : lire ICT-15c-MetaProxyObstruction-Python.ipynb (PR #9328)."")
 print(""Orthogonalite : a evaluer par l'etudiant en croisant les deux tableaux."")
-",,,,,,,,45c10d7abd376729,,,,,,,,
+",,,,,,,,42b5e9b1ebf53d39,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb,f9171432,markdown,fr,9e0ebf9f6d6c18ce,"## Conclusion
 
 ICT-15e adresse le **bridge #2** du protocole #8077 (`recouvrabilite -> agentivite`) : la trajectoire de reparation **est-elle** un signal distinct de ce que produirait un random walk calibre sur les memes extrema ? Sur 3 configurations Gray-Scott (F=0.0367/k=0.0649 pearl, F=0.029/k=0.057 spots, reproductibilite seed=7), la discrimination temporelle est mesuree par **distance de Mahalanobis sur signature 5-D** avec **seuil p95 par permutation null**.
@@ -14608,7 +14608,7 @@ for nom, states in all_states.items():
 print("""")
 print(""Exercice a completer : table de comparaison + conclusion."")
 ",,,,,,,,9cae5eeafcbf4ae0,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb,86e77177,markdown,fr,25c96a1cc6c0d8c3,"# ICT-15h -- Pont #1-bis (chantier 2/3) : le regime asymetrique confirme le negatif de $\sigma$
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb,86e77177,markdown,fr,2512228ae8595bce,"# ICT-15h -- Pont #1-bis (chantier 2/3) : le regime asymetrique confirme le negatif de $\sigma$
 
 *See [#9531](https://github.com/jsboige/CoursIA/issues/9531).*
 
@@ -14629,7 +14629,7 @@ On construit pour cela le double-puits **asymetrique** $V(x) = a x^4 - b x^2 + c
 (terme cubique anti-symetrique sous $x \mapsto -x$), dont les deux minima ont des
 profondeurs, courbures, largeurs et barrieres **differentes** -- la richesse
 geometrique que le regime symetrique ne pouvait pas sonder.
-",,,,,,,,25c96a1cc6c0d8c3,,,,,,,,
+",,,,,,,,2512228ae8595bce,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb,9f2839b8,markdown,fr,7a3a049edc45941f,"## 1. Le substrat asymetrique $V(x) = a x^4 - b x^2 + c x^3$
 
 Le terme cubique $c x^3$ brise l'equivalence des deux bassins sans detruire le
@@ -15291,7 +15291,7 @@ rho_b, amm_b, amn_b, red_b = sweep(train_b, held_b, ""B. Source i.i.d. (ordre 0)
 plt.tight_layout(); plt.show()
 print(f""Scenario A (peaky)  : Spearman(MDL, NLL held-out) = {rho_p:+.3f}  argmin MDL=k{amm_p}, NLL=k{amn_p}  reduction NLL vs k0 = {red_p:+.0f} bits"")
 print(f""Scenario B (i.i.d.) : Spearman(MDL, NLL held-out) = {rho_b:+.3f}  argmin MDL=k{amm_b}, NLL=k{amn_b}  reduction NLL vs k0 = {red_b:+.0f} bits"")",,,,,,,,76c3d68923bf4b2b,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,356cdcba99928dd3,markdown,fr,7d4109b767b2d614,"Le pont est **calibré, pas magique** — et c'est le résultat honnête :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,356cdcba99928dd3,markdown,fr,23ee64e7be718314,"Le pont est **calibré, pas magique** — et c'est le résultat honnête :
 
 - **Scénario A (Markov d'ordre 2, compressible)** : MDL minimal et NLL held-out minimal **coïncident à
   $k=2$** (le véritable ordre générateur), $\rho=+1{,}0$. Capturer l'ordre réduit le NLL d'environ
@@ -15319,7 +15319,7 @@ du code deux-parties), démontrée sur des sources synthétiques d'entropie cont
 sur les LLMs (qui nécessiteraient GPU, cf. [ICT-17b](ICT-17b-Grokking-CompressionProgress-Python.ipynb) pour la
 jambe K à l'entraînement). Le régime de **rupture** (MDL et NLL en désaccord) surviendrait sous
 échantillonnage (trop peu de données pour les contextes d'ordre élevé) — hors de ce notebook.
-Ligne inscrite dans la matrice de dissociations #7734. Voir #8077.",,,,,,,,7d4109b767b2d614,,,,,,,,
+Ligne inscrite dans la matrice de dissociations #7734. Voir #8077.",,,,,,,,23ee64e7be718314,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,f2a124b6,markdown,fr,be2c75261977a03b,"# ICT-17b — Grokking et compression-progress : la jambe K à l'épreuve de l'entraînement
 
 *Strand Schmidhuber de la série ICT — See #4588, #7258, #5090.*
@@ -18339,7 +18339,7 @@ Le socle CPU certifie la mécanique : faille certifiée par test, détecteur off
 - Levin — réversibilisation comme mesure d'agentivité (fondation théorique de la série).
 - Anthropic, *Global Workspace in Claude* (2025) — contexte GWT, cf ICT-24.
 - Issue #5105 — cahier des charges ICT-25 (Gates 20-21/bonus, split PR1 CPU / PR2 GPU).",,,,,,,,7d8fa9d04041839a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-26-SignalingConvention-Python.ipynb,38fcc6dd,markdown,fr,425c3a0f333e56fa,"# ICT-26 — Convention de signalisation (expérience A, strate 7)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-26-SignalingConvention-Python.ipynb,38fcc6dd,markdown,fr,3894fc109c11484c,"# ICT-26 — Convention de signalisation (expérience A, strate 7)
 
 *Compagnon pédagogique du module `ict.signaling_convention` (#7746, jambe D2 expérience A).*
 
@@ -18369,7 +18369,7 @@ rapportées avec leur **dispersion inter-graines** (moyenne ± écart-type,
 ddof=1), le verdict honnête compte les graines sur lesquelles il tient, et les
 grandeurs déterministes (plafonds analytiques comme $\log_2 n$) sont
 explicitement distinguées des grandeurs simulées.
-",,,,,,,,425c3a0f333e56fa,,,,,,,,
+",,,,,,,,3894fc109c11484c,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-26-SignalingConvention-Python.ipynb,43404eb2,code,fr,851a0905f21a962d,"# Setup : import du package ict (via sys.path cwd, cf C973-L) + numpy/matplotlib.
 import sys
 sys.path.insert(0, ""."")
@@ -18549,7 +18549,7 @@ print()
 print(""Lecture : choc modéré -> succès immédiat élevé (résiste), récupération rapide ;"")
 print(""          choc brutal  -> succès immédiat effondré (la convention est détruite)."")
 ",,,,,,,,8e1e70e4cd116901,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-26-SignalingConvention-Python.ipynb,8232bbbf,markdown,fr,0315118044dbd026,"## Synthèse — la convention comme émergence du *meaning*
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-26-SignalingConvention-Python.ipynb,8232bbbf,markdown,fr,36e961f0a51dfd35,"## Synthèse — la convention comme émergence du *meaning*
 
 | Verdict | Ce qu'il montre | Contrôle falsifiant | Multi-graines (0/1/7/42/99) |
 |---|---|---|---|
@@ -18573,7 +18573,7 @@ cinq de cet échantillon ne code pas tous les états. C'est une propriété rée
 du mécanisme Roth-Erev (l'échappatoire au pooling n'est pas garantie), pas un
 défaut de protocole — et c'est exactement ce que l'exercice 1 vous demande
 d'explorer via la température.
-",,,,,,,,0315118044dbd026,,,,,,,,
+",,,,,,,,36e961f0a51dfd35,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-26-SignalingConvention-Python.ipynb,13827fe8,markdown,fr,2bc47164c47f9ec5,"## 5. Exercices
 
 Trois exercices pour rendre la convention opératoire. Chaque stub s'exécute
@@ -18850,7 +18850,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-27-SymbolInvention-Python.ipynb,7af84c2f,co
 # Comparer vocab final a celui du cas uniforme (state_dist=None, i.e. equiprobable).
 # print(f""Vocab asymetrique = {...}, vocab uniforme = {...}"")
 print(""Exercice 3 : a completer (stub sans erreur, C.1 OK)."")",,,,,,,,19f5216f32f24d75,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-28-CollectiveAdoption-Python.ipynb,6b34f11e,markdown,fr,c6c04e2144106fcb,"# ICT-28 — Adoption collective et seuil de performativité (expérience C, strate 7)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-28-CollectiveAdoption-Python.ipynb,6b34f11e,markdown,fr,7af744c5bca71b1c,"# ICT-28 — Adoption collective et seuil de performativité (expérience C, strate 7)
 
 *Compagnon pédagogique du module `ict.collective_adoption` (#7746, jambe D2 expérience C).*
 
@@ -18872,7 +18872,7 @@ instigateurs domine et la cible cascade.
 
 **La chaîne A→B→C** : A montre comment une convention *émerge* (individu) ; B
 comment le vocabulaire s'*invente* (individu) ; C comment une convention
-*contagionne* une population (multi-agent).",,,,,,,,c6c04e2144106fcb,,,,,,,,
+*contagionne* une population (multi-agent).",,,,,,,,7af744c5bca71b1c,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-28-CollectiveAdoption-Python.ipynb,9d67a87b,code,fr,a8c21c89f9d7baf3,"# Setup : import du package ict (via sys.path cwd, cf C973-L) + numpy/matplotlib.
 import sys
 sys.path.insert(0, ""."")
@@ -24221,8 +24221,8 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15g-EmpiricalHuangExploitation-Python.ipynb
 
 Les cas dégénérés sont surtout des cibles OR_4/AND_4 dont le point minoritaire tombe dans le holdout : le train ne contient alors qu'une classe, et une prédiction constante peut atteindre train_acc = 1 sans résoudre la cible complète. Le résultat reste limité aux hypercubes de 3 et 4 bits, au MLP de 16 neurones cachés, au split 75/25, à 400 étapes, aux quatre graines et aux cinq cibles étudiées. La **transposition conjecturale** du banc hérité, qui emploie un graphe de transitions observées plutôt que l'hypercube, conserve son statut distinct.",,,,,,,,2d1a62e91fe6db9a,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb,acquis-renvoi,markdown,fr,6d6942f060fef2e7,"> **Acquis et parenté** : chantier 2/3 de la famille Pont #1-bis — le verdict CONFIRMED-NEGATIVE que ce régime asymétrique **généralise** est celui du chantier 1/3, [ICT-15f-Bridge1bis-DecoupledFamily-Python](ICT-15f-Bridge1bis-DecoupledFamily-Python.ipynb) ; le chantier 3/3 est [ICT-15i-Bridge1bis-2DLandscape-Python](ICT-15i-Bridge1bis-2DLandscape-Python.ipynb).
-",,,,,,,,6d6942f060fef2e7,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb,acquis-renvoi,markdown,fr,9209854671c9ade9,"> **Acquis et parenté** : chantier 2/3 de la famille Pont #1-bis — le verdict CONFIRMED-NEGATIVE que ce régime asymétrique **généralise** est celui du chantier 1/3, [ICT-15f-Bridge1bis-DecoupledFamily-Python](ICT-15f-Bridge1bis-DecoupledFamily-Python.ipynb) ; le chantier 3/3 est [ICT-15i-Bridge1bis-2DLandscape-Python](ICT-15i-Bridge1bis-2DLandscape-Python.ipynb).
+",,,,,,,,9209854671c9ade9,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15i-Bridge1bis-2DLandscape-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15j-NerveDiscriminant-Python.ipynb,ab85b44c,markdown,fr,28735900a4fdf0e3,"# ICT-15j — Discriminant Čech par nerf simplicial (gudhi)
 
@@ -26770,7 +26770,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21-SAETrajectoires-Python.ipynb,d2ebe253,co
 #              en precisant la taille de chaque groupe
 resultats_ex4 = None  # TODO etudiant
 print(""Exercice a completer"")",,,,,,,,581a81518f352bf9,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21b-SAECalibration-Python.ipynb,66c92a69,markdown,fr,ab150644d8c444bc,"# ICT-21b-SAECalibration-Python — que reconstruit réellement chaque SAE ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21b-SAECalibration-Python.ipynb,66c92a69,markdown,fr,b143e54e696b90b9,"# ICT-21b-SAECalibration-Python — que reconstruit réellement chaque SAE ?
 
 **Navigation** : [Index](README.md) | [<< ICT-21 SAE Trajectoires](ICT-21-SAETrajectoires-Python.ipynb) | [Tete-a-tete SAE<->J-space >>](ICT-SAE-JLens-TeteATete.ipynb)
 
@@ -26784,7 +26784,7 @@ Ce notebook établit cette vérité-terrain pour les deux échelles modélisable
 | locale A | Qwen3-1.7B-Base (génération Qwen3) | 14/28 | SAE-Res-...-W32K-L0_50 | 2048 | 32 768 | 50 |
 | locale B | Qwen3.5-2B-Base (génération Qwen3.5) | 12/24 | SAE-Res-...-W32K-L0_50 | 2048 | 32 768 | 50 |
 
-La profondeur relative 0.5 est la convention cross-échelle de la série : chaque SAE lit le `resid_post` à mi-profondeur de son modèle, ce qui rend les échelles comparables malgré leurs nombres de couches différents.",,,,,,,,ab150644d8c444bc,,,,,,,,
+La profondeur relative 0.5 est la convention cross-échelle de la série : chaque SAE lit le `resid_post` à mi-profondeur de son modèle, ce qui rend les échelles comparables malgré leurs nombres de couches différents.",,,,,,,,b143e54e696b90b9,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21b-SAECalibration-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21b-SAECalibration-Python.ipynb,eb775ce7,markdown,fr,7ae280537336bbce,"## Garde-fous d'honnêteté (à lire avant les résultats)
 
@@ -27189,14 +27189,14 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21b-SAECalibration-Python.ipynb,175f336e,ma
 - le L0 mesuré colle exactement à la release (50.0) : les captures sont dans la convention officielle, la garde de cohérence est passée, et la largeur effective (~3 % des features actives sur ce corpus) borne ce qu'un panel type ICT-21 peut sélectionner.
 
 Prochaine étape de l'épic : reporter la capture sur le couple de référence 9B/W64K (relais carte > 8 Go), puis croiser fidelité × dynamique pour répondre à la question de fond : la dynamique S4 est-elle robuste à la part de variance laissée hors dictionnaire ?",,,,,,,,f1f06df75f7ffbd1,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21b-SAECalibration-Python.ipynb,9dd49b3a,markdown,fr,ffacd8d16bc278fc,"## Références
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21b-SAECalibration-Python.ipynb,9dd49b3a,markdown,fr,6a350d27f13519eb,"## Références
 
 - Épic #8236 — calibration cross-échelle des SAE (Phase 0 : ce notebook).
 - Notebook frère : `ICT-21-SAETrajectoires-Python.ipynb` — trajectoires d'états discrets 9B/2B/1.7B sur la même batterie.
 - Dépôts officiels Qwen-Scope : `Qwen/SAE-Res-Qwen3-1.7B-Base-W32K-L0_50`, `Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_50` (convention encode/décode de l'app officielle).
 - Module de mesure : `ict/sae_calibration.py` (numpy-only, tests dans `ict/tests/test_sae_calibration.py`).
 - Script d'extraction : `scripts/extract_sae_fidelity.py` (GPU confiné, régénération déterministe).
-- Issue #12940 — bug latent de layout `W_dec` dans le path clamp d'ICT-21, découvert par cette calibration.",,,,,,,,ffacd8d16bc278fc,,,,,,,,
+- Issue #12940 — bug latent de layout `W_dec` dans le path clamp d'ICT-21, découvert par cette calibration.",,,,,,,,6a350d27f13519eb,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb,e0971260,markdown,fr,86da5a50ba53a064,"# ICT-21c-SAECatastrophes-Python — forme et dynamique des perturbations du dictionnaire
 
 **Navigation** : [Index](README.md) | [<< ICT-21b-SAECalibration-Python](ICT-21b-SAECalibration-Python.ipynb) | [Tete-a-tete SAE<->J-space >>](ICT-SAE-JLens-TeteATete.ipynb)
@@ -28882,8 +28882,8 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-27-SymbolInvention-Python.ipynb,3ee330e1,ma
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-27-SymbolInvention-Python.ipynb,acquis-renvoi,markdown,fr,610375ad7c2978d4,"> **Acquis et parenté** : expérience **B** (invention de symboles) — suppose **A**, la convention donnée de [ICT-26-SignalingConvention-Python](ICT-26-SignalingConvention-Python.ipynb), dont le répertoire initial est précisément ce que l'invention quitte. Famille A→E, [#7746](https://github.com/jsboige/CoursIA/issues/7746).
 ",,,,,,,,610375ad7c2978d4,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-28-CollectiveAdoption-Python.ipynb,d175eff9,markdown,fr,87044b9851354922,> **Statut épistémique** — **Fortement soutenu** : Une convention devient **causale** (cascade population) au-delà d'un seuil `rho_c` d'instigateurs. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,87044b9851354922,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-28-CollectiveAdoption-Python.ipynb,acquis-renvoi,markdown,fr,ed133e53e04cea14,"> **Acquis et parenté** : expérience **C** (adoption collective) de la famille A→E ([ICT-26](ICT-26-SignalingConvention-Python.ipynb) → [ICT-30](ICT-30-InhibitedInvention-Python.ipynb), [#7743](https://github.com/jsboige/CoursIA/issues/7743)/[#7746](https://github.com/jsboige/CoursIA/issues/7746), axe transverse D2) — le seuil de performativité agit sur le collectif qui porte la convention de A.
-",,,,,,,,ed133e53e04cea14,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-28-CollectiveAdoption-Python.ipynb,acquis-renvoi,markdown,fr,21f6c92209ea977a,"> **Acquis et parenté** : expérience **C** (adoption collective) de la famille A→E ([ICT-26](ICT-26-SignalingConvention-Python.ipynb) → [ICT-30](ICT-30-InhibitedInvention-Python.ipynb), [#7743](https://github.com/jsboige/CoursIA/issues/7743)/[#7746](https://github.com/jsboige/CoursIA/issues/7746), axe transverse D2) — le seuil de performativité agit sur le collectif qui porte la convention de A.
+",,,,,,,,21f6c92209ea977a,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-28-CollectiveAdoption-Python.ipynb,restore17066-ict28,markdown,fr,7d1b00e87499bd7c,"## Lecture 3 — Au-dessus du seuil : la cascade mene a 0.850
 
 Au-dessus du seuil, le verdict `above_threshold_cascades` confirme : a rho = 0.8, l'adoption finale de la cible atteint **0.850** -- la convention cascade jusqu'a devenir quasi-universelle, sans intervention externe additionnelle apres l'initialisation.

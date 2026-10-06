@@ -29,6 +29,13 @@ CoursIA copy
 | `_probabilistic_handler.py` (152 lines) | `argumentation_analysis/agents/core/logic/probabilistic_handler.py` | a8025f60 (2026-07-02) |
 | `_dialogue_handler.py` (153 lines) | `argumentation_analysis/agents/core/logic/dialogue_handler.py` | a8025f60 (2026-07-02) |
 | `_tweety_initializer.py` (365 lines) | `argumentation_analysis/agents/core/logic/tweety_initializer.py` | a8025f60 (2026-07-02) |
+| `_fallacy_workflow_plugin.py` (1763 lines) | `argumentation_analysis/plugins/fallacy_workflow_plugin.py` | ecfd9b9c (2026-09-29, tronc EPITA figé sur issue #18391 portee 2) |
+| `_exploration_plugin.py` (191 lines) | `argumentation_analysis/plugins/exploration_plugin.py` | ecfd9b9c (2026-09-29, tronc EPITA figé sur issue #18391 portee 2) |
+| `_taxonomy_navigator.py` (192 lines) | `argumentation_analysis/agents/utils/taxonomy_navigator.py` | ecfd9b9c (2026-09-29, tronc EPITA figé sur issue #18391 portee 2) |
+| `_taxonomy_local_overrides.py` (123 lines) | `argumentation_analysis/utils/taxonomy_local_overrides.py` | ecfd9b9c (2026-09-29, dep transitive de fallacy_workflow_plugin) |
+| `_taxonomy_tree.py` (55 lines) | `argumentation_analysis/utils/taxonomy_tree.py` | ecfd9b9c (2026-09-29, dep transitive de taxonomy_navigator) |
+| `_plaintext_destination.py` (75 lines) | `argumentation_analysis/core/plaintext_destination.py` | ecfd9b9c (2026-09-29, dep transitive de fallacy_workflow_plugin) |
+| `_identification_models.py` (59 lines) | `argumentation_analysis/plugins/identification_models.py` | ecfd9b9c (2026-09-29, dep transitive de fallacy_workflow_plugin) |
 
 Rationale for verbatim import
 -----------------------------
@@ -71,6 +78,13 @@ below the header.
 **Any divergence from the cited upstream commit is a regression and must be
 documented in this NOTICE before commit.** CoursIA-original code that extends
 or wraps the verbatim content lives in separate files (NOT prefixed with `_`).
+
+**Fins de ligne (seule divergence documentee).** L'amont livre `_fallacy_workflow_plugin.py`
+et `_taxonomy_navigator.py` en CRLF. Le depot impose `*.py text eol=lf` (`.gitattributes`) :
+ces deux fichiers sont stockes en LF. Un blob CRLF sous `eol=lf` fait apparaitre le fichier
+modifie apres chaque checkout et bloque tout organe qui exige un arbre propre. Le contenu reste
+identique a l'amont aux fins de ligne pres : `git diff --ignore-cr-at-eol` est vide.
+L'identite SHA256 octet a octet se verifie donc apres conversion CRLF -> LF du fichier amont.
 
 Partial copies (See #14026)
 ---------------------------

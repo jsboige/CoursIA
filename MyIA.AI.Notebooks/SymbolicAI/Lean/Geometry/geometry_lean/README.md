@@ -20,9 +20,10 @@ lake build           # 0 sorry — le lac est intégralement prouvé
 ```
 
 La CI
-([`lean-geometry.yml`](https://github.com/jsboige/CoursIA/blob/main/.github/workflows/lean-geometry.yml))
-rejoue le build et le gate proof-integrity (axiomes) sur chaque PR touchant le
-lac.
+([`lean-ci-matrix.yml`](https://github.com/jsboige/CoursIA/blob/main/.github/workflows/lean-ci-matrix.yml),
+entrée `geometry` du manifeste `scripts/lean/ci_lakes.json` depuis la
+consolidation #13751) rejoue le build et le gate proof-integrity (axiomes)
+sur chaque PR touchant le lac.
 
 ## Feuille de route
 

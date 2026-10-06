@@ -39,7 +39,7 @@ faits :
    avec les mêmes mots** : #13562 = « issue restée OPEN malgré la
    livraison » ; #13608 = « doublon mergé ». Citer les deux illustre le
    mieux le tell **« OPEN + zéro PR liée n'est PAS une preuve de fraîcheur »**
-   — voir [proactive-coordination.md §L1356](../.claude/rules/proactive-coordination.md) (R5 hard) ; un épisode précurseur avait été tracé sur
+   — voir [proactive-coordination.md §L1356](../../.claude/rules/proactive-coordination.md) (R5 hard) ; un épisode précurseur avait été tracé sur
    **#8835/#8836** (doublon mergé), qui ne se confond pas avec #13562.
 
 Le `check_lane_claim.py` actuel (PR #9775) détecte les **claims
@@ -186,10 +186,10 @@ d'audit.
 
 ## 6. Voir aussi
 
-- [proactive-coordination.md §L898](../.claude/rules/proactive-coordination.md) — collision guard **avant d'ÉCRIRE**, pas avant de pousser.
-- [proactive-coordination.md §L1356](../.claude/rules/proactive-coordination.md) — preflight claim `--state all`, jamais `--state open` seul.
-- [lane-claim-protocol.md](../.claude/rules/lane-claim-protocol.md) — règle HARD `[CLAIMED]` côté worker, partitionnement `paths:`, organe `scripts/check_lane_claim.py`.
-- [proactive-coordination-detail.md](reference/proactive-coordination-detail.md) — backlog pickup, pool global, never-idle.
+- [proactive-coordination.md §L898](../../.claude/rules/proactive-coordination.md) — collision guard **avant d'ÉCRIRE**, pas avant de pousser.
+- [proactive-coordination.md §L1356](../../.claude/rules/proactive-coordination.md) — preflight claim `--state all`, jamais `--state open` seul.
+- [lane-claim-protocol.md](../../.claude/rules/lane-claim-protocol.md) — règle HARD `[CLAIMED]` côté worker, partitionnement `paths:`, organe `scripts/check_lane_claim.py`.
+- [proactive-coordination-detail.md](../reference/proactive-coordination-detail.md) — backlog pickup, pool global, never-idle.
 - **Issue #14300** — acceptance partielle (cette PR) ; suivi outillage `--check-implicit`.
 - **Issue #13562** (OPEN, créée 2026-08-30) + **Issue #13608** (MERGED, liée à #13562) — l'incident fondateur du tell : issue OPEN, livrée en rider par une PR mergée qui ne l'a pas close. Source de la ligne « **OPEN + zéro PR liée n'est PAS une preuve de fraîcheur** ».
 - **Issue #14032** — exemple vécu c.925, claim explicite partitionné sans collision.
