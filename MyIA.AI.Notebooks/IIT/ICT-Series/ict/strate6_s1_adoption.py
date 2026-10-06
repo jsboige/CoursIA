@@ -553,3 +553,304 @@ def run_sweep(
                 n_new += 1
     return {"written": n_new, "total_lines": len(done) + n_new, "out": str(out)}
 
+
+# --------------------------------------------------------------------------- #
+#  Analyse pre-enregistree (c.6007595872) : bandes H1-H5, comptes par seed,    #
+#  bootstrap, arbre de decision ferme.                                        #
+# --------------------------------------------------------------------------- #
+
+
+def _r_star(radii: Sequence[float], b_curve: Sequence[float]) -> Optional[float]:
+    """r* = premier rayon ou B < 0,50 ; jamais traverse -> None (>0,60)."""
+    for r, b in zip(radii, b_curve):
+        if b < 0.50:
+            return float(r)
+    return None
+
+
+def _b_at(
+    radii: Sequence[float], b_curve: Sequence[float], r_target: float
+) -> float:
+    """B interpole lineairement au rayon r_target sur la grille (bornes : plateau)."""
+    return float(np.interp(r_target, radii, b_curve))
+
+
+def _slope_tail(
+    radii: Sequence[float], b_curve: Sequence[float], r_star: Optional[float]
+) -> Optional[float]:
+    """Pente |dB/dr| sur [r*, r*+0,15] (pre-reg H3). r* None -> None (pas de queue mesurable)."""
+    if r_star is None:
+        return None
+    b_low = _b_at(radii, b_curve, r_star)
+    b_high = _b_at(radii, b_curve, r_star + 0.15)
+    return abs(b_low - b_high) / 0.15
+
+
+def analyze_sweep(
+    jsonl_path: str,
+    *,
+    consigne_radius: float = 0.10,
+    n_bootstrap: int = 10_000,
+    bootstrap_seed: int = 20_261_006,
+) -> Dict[str, object]:
+    """Analyse pre-enregistree du sweep J1 : bandes H1-H5 + verdict ferme.
+
+    Implémente le contrat du pre-reg (c.6007595872) : médianes par bras,
+    comptes par seed publiés pour chaque hypothèse, bootstrap 10k sur les
+    seeds (IC 95 %), arbre de décision dans l'ordre fixé (P0 -> H5 -> H1-H4).
+    Traitement des cas non spécifies, declare dans la sortie : r* None
+    (jamais traverse) vaut > 0,60 -- dans la bande COOP8, hors bande MONO ;
+    separation None-satisfait si r*_MONO <= 0,50 ; pente None (pas de
+    traverse) = H3 NON_CALCULABLE, compte non conforme.
+    """
+    from pathlib import Path as _Path
+
+    records = []
+    for line in _Path(jsonl_path).read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            rec = json.loads(line)
+            if rec["params"]["consigne_radius"] == consigne_radius:
+                records.append(rec)
+    by_arm: Dict[int, list] = {}
+    for rec in records:
+        by_arm.setdefault(rec["k"], []).append(rec)
+    arms = sorted(by_arm)
+    completeness = {
+        "expected_arms": [1, 2, 4, 8],
+        "per_arm_counts": {str(k): len(by_arm.get(k, [])) for k in (1, 2, 4, 8)},
+        "complete": all(len(by_arm.get(k, [])) >= 20 for k in (1, 2, 4, 8)),
+    }
+
+    # --- Mediane par bras : A, courbe B, r* (mediane ET par seed) ------------- #
+    arm_stats: Dict[int, Dict[str, object]] = {}
+    for k in arms:
+        recs = by_arm[k]
+        radii = recs[0]["radii"]
+        b_mat = np.array([r["B"] for r in recs], dtype=float)
+        a_vec = np.array([r["A_expH"] for r in recs], dtype=float)
+        b_med = np.median(b_mat, axis=0)
+        rstars = [_r_star(radii, row) for row in b_mat]
+        arm_stats[k] = {
+            "n_seeds": len(recs),
+            "A_median": float(np.median(a_vec)),
+            "A_per_seed": [float(a) for a in a_vec],
+            "B_median_curve": [float(x) for x in b_med],
+            "B_per_seed_005": [float(row[0]) for row in b_mat],
+            "r_star_median_curve": _r_star(radii, b_med),
+            "r_star_per_seed": rstars,
+        }
+
+    # --- H5 : manipulation de l'alterite (porte sur la clause 1 AVANT tout) --- #
+    h5_bands = {1: (1.00, 1.00), 2: (1.5, 2.0), 4: (2.8, 4.0), 8: (4.5, 8.0)}
+    h5_detail = {}
+    h5_ok = True
+    for k, (lo, hi) in h5_bands.items():
+        if k not in arm_stats:
+            h5_ok = False
+            h5_detail[str(k)] = {"bande": [lo, hi], "mesure": None, "ok": False}
+            continue
+        a_med = arm_stats[k]["A_median"]
+        ok = bool(lo - 1e-9 <= a_med <= hi + 1e-9)
+        in_band_seeds = sum(
+            1 for a in arm_stats[k]["A_per_seed"] if lo - 1e-9 <= a <= hi + 1e-9
+        )
+        h5_detail[str(k)] = {
+            "bande": [lo, hi],
+            "mesure": a_med,
+            "ok": ok,
+            "graine_dans_bande": in_band_seeds,
+            "n_seeds": arm_stats[k]["n_seeds"],
+        }
+        h5_ok = h5_ok and ok
+
+    def _med_or_none(k: int, key: str):
+        return arm_stats[k][key] if k in arm_stats else None
+
+    # --- H1 : court terme ------------------------------------------------------ #
+    b_mono_005 = _med_or_none(1, "B_per_seed_005")
+    b_coop8_005 = _med_or_none(8, "B_per_seed_005")
+    if b_mono_005 is not None and b_coop8_005 is not None:
+        h1_mono_band = bool(0.90 <= np.median(b_mono_005) <= 1.00)
+        delta_b = float(np.median(b_mono_005) - np.median(b_coop8_005))
+        h1_delta_band = bool(0.02 <= delta_b <= 0.25)
+        h1_direction_seeds = sum(
+            1 for m, c in zip(b_mono_005, b_coop8_005) if m >= c
+        )
+        h1 = {
+            "B_MONO_005_median": float(np.median(b_mono_005)),
+            "B_MONO_005_bande": [0.90, 1.00],
+            "B_MONO_005_ok": h1_mono_band,
+            "deltaB_median": delta_b,
+            "deltaB_bande": [0.02, 0.25],
+            "deltaB_ok": h1_delta_band,
+            "direction_par_seed": f"{h1_direction_seeds}/{min(len(b_mono_005), len(b_coop8_005))}",
+            "ok": h1_mono_band and h1_delta_band,
+        }
+    else:
+        h1 = {"ok": False, "erreur": "bras manquant"}
+
+    # --- H2 : rayon critique --------------------------------------------------- #
+    r_mono = _med_or_none(1, "r_star_median_curve")
+    r_coop8 = _med_or_none(8, "r_star_median_curve")
+
+    def _sep(r_m: Optional[float], r_c: Optional[float]) -> Optional[bool]:
+        if r_m is None:
+            return False  # MONO ne traverse pas : aucune separation mesurable.
+        if r_c is None:
+            return bool(r_m <= 0.50)  # COOP8 > 0,60 : sep >= 0,10 ssi MONO <= 0,50.
+        return bool(r_c - r_m >= 0.10 - 1e-9)
+
+    if r_mono is not None or r_coop8 is not None or 1 in arm_stats:
+        h2 = {
+            "r_star_MONO": r_mono,
+            "r_star_MONO_bande": [0.15, 0.45],
+            "r_star_MONO_ok": bool(r_mono is not None and 0.15 <= r_mono <= 0.45),
+            "r_star_COOP8": r_coop8,
+            "r_star_COOP8_bande": [0.30, ">0.60"],
+            "r_star_COOP8_ok": bool(r_coop8 is None or r_coop8 >= 0.30 - 1e-9),
+            "separation_ok": _sep(r_mono, r_coop8),
+            "r_star_per_seed_MONO_dans_bande": sum(
+                1 for r in (arm_stats[1]["r_star_per_seed"] if 1 in arm_stats else [])
+                if r is not None and 0.15 <= r <= 0.45
+            ),
+            "ok": bool(
+                (r_mono is not None and 0.15 <= r_mono <= 0.45)
+                and (r_coop8 is None or r_coop8 >= 0.30 - 1e-9)
+                and _sep(r_mono, r_coop8)
+            ),
+        }
+    else:
+        h2 = {"ok": False, "erreur": "bras manquant"}
+
+    # --- H3 : pente de queue --------------------------------------------------- #
+    # Lecture declaree : fenetre COMMUNE ancoree sur r*_MONO -- la comparaison
+    # like-for-like (si chaque pente vivait sur sa propre fenetre, un COOP8 sans
+    # traverse dans la grille rendrait le ratio non calculable alors que sa
+    # degradation douce sur la meme fenetre est exactement le signal attendu).
+    def _slope_on_window(k: int, r_window: Optional[float]) -> Optional[float]:
+        if k not in arm_stats or r_window is None:
+            return None
+        slopes = []
+        for rec in by_arm[k]:
+            slopes.append(_slope_tail(rec["radii"], rec["B"], r_window))
+        vals = [s for s in slopes if s is not None]
+        return float(np.median(vals)) if vals else None
+
+    r_mono_h3 = arm_stats[1]["r_star_median_curve"] if 1 in arm_stats else None
+    slope_mono = _slope_on_window(1, r_mono_h3)
+    slope_coop8 = _slope_on_window(8, r_mono_h3)
+    slope_coop8_own = _slope_on_window(8, arm_stats[8]["r_star_median_curve"]) if 8 in arm_stats else None
+    if slope_mono is not None and slope_coop8 is not None:
+        h3 = {
+            "fenetre": [r_mono_h3, (r_mono_h3 + 0.15) if r_mono_h3 is not None else None],
+            "pente_MONO": slope_mono,
+            "pente_COOP8": slope_coop8,
+            "pente_COOP8_fenetre_propre": slope_coop8_own,
+            "ratio": slope_mono / slope_coop8 if slope_coop8 > 0 else None,
+            "ok": bool(slope_mono >= 1.5 * slope_coop8 - 1e-9) if slope_coop8 > 0 else (slope_mono > 0),
+        }
+    else:
+        h3 = {
+            "pente_MONO": slope_mono,
+            "pente_COOP8": slope_coop8,
+            "ok": False,
+            "statut": "NON_CALCULABLE (r*_MONO non traverse -- pas de fenetre de queue)",
+        }
+
+    # --- H4 : Kendall tau(A median, r* median) sur les 4 bras ------------------ #
+    # Amendement pre-reg (c.6010593089, AVANT deblinbage) : la bande originale
+    # tau < 0 contredisait H2 (r*_MONO < r*_COOP8 => association positive) et son
+    # propre gloss. Bande corrigee : tau dans {+1/3 ; +1}, refute par {-1/3 ; -1}.
+    try:
+        from scipy.stats import kendalltau
+        have = [k for k in (1, 2, 4, 8) if k in arm_stats]
+        a_vals = [arm_stats[k]["A_median"] for k in have]
+        # r* None (jamais traverse) = ordinalement le PLUS GRAND -> proxy 0,65.
+        r_vals = [0.65 if arm_stats[k]["r_star_median_curve"] is None
+                  else arm_stats[k]["r_star_median_curve"] for k in have]
+        tau = float(kendalltau(a_vals, r_vals).statistic) if len(have) >= 3 else None
+        h4 = {
+            "tau_kendall": tau,
+            "predit": [1.0 / 3.0, 1.0],
+            "refute_par": [-1.0, -1.0 / 3.0],
+            "amendement": "c.6010593089 (signe corrige avant deblinbage)",
+            "n_points": len(have),
+            "ok": bool(tau is not None and tau > 0),
+        }
+    except ImportError:  # pragma: no cover - scipy present dans l'env du depot
+        h4 = {"ok": False, "erreur": "scipy indisponible (kendalltau)"}
+
+    # --- Bootstrap 10k sur les seeds (IC 95 % des grandeurs pivots) ------------ #
+    rng_boot = np.random.default_rng(bootstrap_seed)
+
+    def _boot_median(values: Sequence[float]) -> Optional[List[float]]:
+        arr = np.asarray(values, dtype=float)
+        if arr.size == 0:
+            return None
+        idx = rng_boot.integers(0, arr.size, size=(n_bootstrap, arr.size))
+        meds = np.median(arr[idx], axis=1)
+        return [float(np.percentile(meds, 2.5)), float(np.percentile(meds, 97.5))]
+
+    def _boot_delta(mono: Sequence[float], coop: Sequence[float]) -> Optional[List[float]]:
+        n = min(len(mono), len(coop))
+        if n == 0:
+            return None
+        m, c = np.asarray(mono[:n]), np.asarray(coop[:n])
+        i_m = rng_boot.integers(0, n, size=(n_bootstrap, n))
+        i_c = rng_boot.integers(0, n, size=(n_bootstrap, n))
+        deltas = np.median(m[i_m], axis=1) - np.median(c[i_c], axis=1)
+        return [float(np.percentile(deltas, 2.5)), float(np.percentile(deltas, 97.5))]
+
+    bootstrap = {
+        "n_resamples": n_bootstrap,
+        "IC95_B_MONO_005": _boot_median(b_mono_005 or []),
+        "IC95_B_COOP8_005": _boot_median(b_coop8_005 or []),
+        "IC95_deltaB": _boot_delta(b_mono_005 or [], b_coop8_005 or []),
+        "IC95_A_par_bras": {
+            str(k): _boot_median(arm_stats[k]["A_per_seed"]) for k in arms
+        },
+    }
+
+    # --- Arbre de decision ferme (ordre pre-registre) -------------------------- #
+    if not completeness["complete"]:
+        verdict = "INCOMPLET (sweep non termine -- verdict NON EMISSIBLE)"
+    elif not h5_ok:
+        verdict = "NON_DISCRIMINANT"
+    elif h1["ok"] and h2["ok"] and h3["ok"] and h4["ok"]:
+        verdict = "ALTERITE_BUDGET_REELLE"
+    elif (
+        h2["r_star_MONO"] is not None
+        and r_coop8 is not None
+        and h2["r_star_MONO"] >= r_coop8
+        and slope_mono is not None
+        and slope_coop8 is not None
+        and slope_mono <= slope_coop8
+    ):
+        verdict = "INVERSION"
+    elif (not h1["ok"]) and (not h2["ok"]) and (not h3["ok"]):
+        verdict = "ALTERITE_BUDGET_NULLE"
+    else:
+        # Mixte : dissociation publiee par hypothese ; agrege = signature H1-H3.
+        sig = h1["ok"] and h2["ok"] and h3["ok"]
+        verdict = (
+            "ALTERITE_BUDGET_REELLE (agrege H1-H3) -- H4 DISSOCIE, rapporte separement"
+            if sig
+            else "DISSOCIE (comptes par hypothese) -- agrege = signature contre-regime non tenue"
+        )
+
+    return {
+        "source": str(jsonl_path),
+        "consigne_radius": consigne_radius,
+        "n_records": len(records),
+        "completeness": completeness,
+        "arm_stats": {str(k): arm_stats[k] for k in arms},
+        "H1": h1,
+        "H2": h2,
+        "H3": h3,
+        "H4": h4,
+        "H5": {"ok": h5_ok, "detail": h5_detail},
+        "bootstrap": bootstrap,
+        "verdict": verdict,
+    }
+
+

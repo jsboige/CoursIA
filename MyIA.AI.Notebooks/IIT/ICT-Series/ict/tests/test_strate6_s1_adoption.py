@@ -23,6 +23,7 @@ if _ROOT not in sys.path:
 from ict.strate6_s1_adoption import (  # noqa: E402
     PolyAdoptionGame,
     anchor_state,
+    analyze_sweep,
     convention_alphabet,
     effective_alterity,
 )
@@ -253,3 +254,110 @@ def test_ancre_k1_absorbe_flotteurs():
     g = PolyAdoptionGame(1, rng=_rng(100))
     anchor, _ = anchor_state(g, n_rounds=1500, anneal_to=0.1)
     assert anchor[0] > 32 / 48
+
+
+# --------------------------------------------------------------------------- #
+#  Gate G : analyse pre-enregistree -- l'arbre de decision sur donnees         #
+#  synthetiques a verdict calcule a la main (le contrat est le verdict).       #
+# --------------------------------------------------------------------------- #
+
+
+_RADII = (0.05, 0.10, 0.15, 0.25, 0.35, 0.50)
+
+
+def _write_synth_jsonl(path, arms, n_seeds=20):
+    """Ecrit un JSONL synthetique : memes courbes B pour tous les seeds du bras."""
+    import json as _json
+
+    lines = []
+    for k, a_val, b_curve in arms:
+        for seed in range(n_seeds):
+            lines.append(
+                _json.dumps(
+                    {
+                        "k": k,
+                        "seed": seed,
+                        "anchor": [1.0] + [0.0] * 7,
+                        "A_expH": a_val,
+                        "basins": 1,
+                        "radii": list(_RADII),
+                        "B": list(b_curve),
+                        "params": {
+                            "n_rounds": 4000,
+                            "window": 50,
+                            "tau": 15,
+                            "n_samples": 40,
+                            "consigne_radius": 0.10,
+                        },
+                    }
+                )
+            )
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+
+
+def test_analyse_verdict_reelle():
+    """Curves concues pour tomber dans TOUTES les bandes -> ALTERITE_BUDGET_REELLE.
+
+    Verifie a la main : B_MONO(0.05)=1.0 dans [0.90,1.00], deltaB=0.05 dans
+    [0.02,0.25], r*_MONO=0.35 (B=0.5 a r=0.25 n'est PAS strictement < 0.50) dans
+    [0.15,0.45], r*_COOP8=None (>0.60) dans [0.30,>0.60], pentes fenetre commune
+    [0.35,0.50] : MONO |0.2-0.1|/0.15=0.667 vs COOP8 |0.82-0.8|/0.15=0.133
+    (ratio 5.0 >= 1.5), A medians dans les bandes H5, tau(A,r*) > 0."""
+    import tempfile
+    from pathlib import Path
+
+    arms = [
+        (1, 1.0, [1.0, 1.0, 0.9, 0.5, 0.2, 0.1]),
+        (2, 1.8, [1.0, 0.98, 0.95, 0.8, 0.6, 0.45]),
+        (4, 3.4, [1.0, 0.99, 0.97, 0.9, 0.8, 0.7]),
+        (8, 6.0, [0.95, 0.93, 0.9, 0.85, 0.82, 0.8]),
+    ]
+    with tempfile.TemporaryDirectory() as tmp:
+        p = Path(tmp) / "sweep.jsonl"
+        _write_synth_jsonl(p, arms)
+        res = analyze_sweep(str(p))
+    assert res["verdict"] == "ALTERITE_BUDGET_REELLE", res["verdict"]
+    assert res["H1"]["ok"] and res["H2"]["ok"] and res["H3"]["ok"]
+    assert res["H4"]["ok"] and res["H4"]["tau_kendall"] > 0
+    assert res["H5"]["ok"]
+    # Controles chiffres cles (tolerance : interpolation lineaire exacte).
+    assert res["H2"]["r_star_MONO"] == pytest.approx(0.35)
+    assert res["H3"]["ratio"] == pytest.approx((0.2 - 0.1) / (0.82 - 0.8), rel=1e-3)
+    assert res["completeness"]["complete"] is True
+
+
+def test_analyse_verdict_non_discriminant():
+    """A(2) hors bande -> H5 echoue -> NON_DISCRIMINANT (arret, pas de verdict these)."""
+    import tempfile
+    from pathlib import Path
+
+    arms = [
+        (1, 1.0, [1.0, 1.0, 0.9, 0.5, 0.2, 0.1]),
+        (2, 1.2, [1.0, 0.98, 0.95, 0.8, 0.6, 0.45]),  # 1.2 hors [1.5 ; 2.0]
+        (4, 3.4, [1.0, 0.99, 0.97, 0.9, 0.8, 0.7]),
+        (8, 6.0, [0.95, 0.93, 0.9, 0.85, 0.82, 0.8]),
+    ]
+    with tempfile.TemporaryDirectory() as tmp:
+        p = Path(tmp) / "sweep.jsonl"
+        _write_synth_jsonl(p, arms)
+        res = analyze_sweep(str(p))
+    assert res["H5"]["ok"] is False
+    assert res["verdict"] == "NON_DISCRIMINANT"
+
+
+def test_analyse_verdict_incomplet():
+    """Sweep non termine (< 20 seeds/bras) -> verdict NON EMISSIBLE, jamais de demi-verdict."""
+    import tempfile
+    from pathlib import Path
+
+    arms = [
+        (1, 1.0, [1.0, 1.0, 0.9, 0.5, 0.2, 0.1]),
+        (8, 6.0, [0.95, 0.93, 0.9, 0.85, 0.82, 0.8]),
+    ]
+    with tempfile.TemporaryDirectory() as tmp:
+        p = Path(tmp) / "sweep.jsonl"
+        _write_synth_jsonl(p, arms, n_seeds=3)
+        res = analyze_sweep(str(p))
+    assert "INCOMPLET" in res["verdict"]
+    assert res["completeness"]["complete"] is False
