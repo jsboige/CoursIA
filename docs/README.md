@@ -267,6 +267,7 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 |---------|-------------|
 | [research/fallacy-detection-survey.md](research/fallacy-detection-survey.md) | Survey SOTA détection de sophismes + argument mining, fondant l'EPIC #10355 (Phase 1 livrable 1). 10 sources primaires (Logic/LogicClimate, MAFALDA 23 classes, IBM-Rank-30k, AraucariaDB), constat clé : taxonomie Argumentum 1408/8 familles écrase les datasets académiques 13-23 → mapping d'étiquettes = livrable de recherche à part entière |
 | [research/quant-prose-residual-machine-dep.md](research/quant-prose-residual-machine-dep.md) | Inventaire résiduel des timings machine-dépendants cités en prose (#10158) — scan `check_machine_dep_timing.py --all` sur 1008 notebooks. Recense ce qui reste après passage de l'organe, pour que le résidu soit une liste et non une impression |
+| [research/cartier-miller-p1-elliptic-prefix.md](research/cartier-miller-p1-elliptic-prefix.md) | Lecture ligne-par-ligne de elliptic_prefix.py (P1 elliptic curve Cartier-Miller, EPIC #19452) — composante Schoof+BSGS quarter-point, stdlib only, 8 composants documentés. Suite #19487 (P0 cartography). |
 
 ## Audit sémantique cross-famille (docs/audit/)
 
