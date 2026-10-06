@@ -28,13 +28,20 @@ name: Lean CI Matrix
 # l'union. Jamais les deux declencheurs en meme temps (double build).
 
 on:
-  # Pas de `branches:` -- le filtre `paths:` ci-dessous scope deja le
-  # declenchement aux fichiers des lakes du manifeste. Conserver
-  # `branches: [main]` excluait les PR empilees (base != main) a la
-  # creation (issue #15652) ; sans `branches:`, le workflow tourne sur
-  # toute PR empilee des qu'un commit touche un fichier matche. Cf.
-  # lean-knot.yml pour le mecanisme complet.
+  # Bloc `push` : `branches: [main]` + `paths:`. Le `branches: [main]`
+  # filtre la branche **poussee** : un push sur une feature ne declenche
+  # pas la matrice. Le `paths:` filtre les fichiers (lakes du manifeste +
+  # self-cover du gate). Cf. lean-knot.yml pour le modele applique.
+  #
+  # Bloc `pull_request` (l. ~166) : PAS de `branches:` (option b design-gate
+  # #15652). Conserver `branches: [main]` excluait les PR empilees (base !=
+  # main) a la creation, et rate les retarget vers main sans commit
+  # (l'evenement `base_ref_changed` est un `edited` que les workflows sans
+  # `edited` ignorent). Le `paths:` scope deja aux fichiers matchés et la
+  # cle `types: [opened, synchronize, edited, reopened]` couvre le retarget.
+  # Cf. lean-knot.yml pour le meme pattern (l. 89-90 + bloc PR).
   push:
+    branches: [main]
     paths:
       # sudoku_lean
       - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/**.lean'
@@ -160,9 +167,11 @@ on:
       - 'scripts/ci/check_lake_matrix_paths.py'
       - '.github/actions/lean-axiom/action.yml'
       - 'scripts/lean/axiom_check_step.py'
-  # Cf. le bloc `push` ci-dessus : pas de `branches: [main]` non plus
-  # ici, pour la meme raison (#15652). `types: [edited]` est necessaire
-  # pour qu'un retarget vers main re-declenche le workflow.
+  # Cf. le bloc `push` ci-dessus : `branches: [main]` filtre la branche
+  # **poussee**, pas la base d'une PR. Ici on retire `branches:` du bloc
+  # `pull_request` (option b design-gate #15652) -- le filtre `paths:`
+  # scope deja, et `types: [edited]` est necessaire pour qu'un retarget
+  # vers main re-declenche le workflow. Pattern identique a lean-knot.yml.
   pull_request:
     types: [opened, synchronize, edited, reopened]
     paths:
