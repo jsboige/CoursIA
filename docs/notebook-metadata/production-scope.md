@@ -296,8 +296,8 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Lean -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-04-Quantifiers-Lean.ipynb`

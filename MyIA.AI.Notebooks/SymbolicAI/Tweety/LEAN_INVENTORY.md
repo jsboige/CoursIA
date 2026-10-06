@@ -39,7 +39,7 @@ et fonction caractéristique, au-dessus de Mathlib.
 **Câblage CI** : matrice [`lean-ci-matrix.yml`](../../../.github/workflows/lean-ci-matrix.yml)
 (clé `argumentation` dans `scripts/lean/ci_lakes.json` ; push `main`, paths `MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/**.lean` + `lakefile.*`), pipeline `real`.
 
-**Notebook câblé** : `Tweety-5b-Lean-Argumentation.ipynb` (kernel `lean4-wsl`, importe
+**Notebook câblé** : `Tweety-5b-Argumentation-Lean.ipynb` (kernel `lean4-wsl`, importe
 `Argumentation.*`) — companion conceptuel Tweety-5.
 
 **Suivi** : Epic [#4038](https://github.com/jsboige/CoursIA/issues/4038) /

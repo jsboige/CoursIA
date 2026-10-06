@@ -348,8 +348,8 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 3 | [Logiques de Base - Propositionnelle et Premier Ordre](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) | BETA | Oui |
 | 4 | [Tweety C# / IKVM - Sémantique propositionnelle : mondes…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02b-Semantics-CSharp.ipynb) | BETA | Oui |
 | 5 | [Tweety-2c — Logique du premier ordre en C#/.NET (port…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb) | BETA | Oui |
-| 6 | [Tweety-02d — Labo FOL : Tweety répond, Lean certifie](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02d-FOL-Lab-Lean.ipynb) | BETA | Non |
-| 7 | [Tweety-02e — Calculs de preuve : Hilbert, séquents,…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02e-Preuves-Hilbert-Gentzen-Lean.ipynb) | BETA | Non |
+| 6 | [Tweety-02d — Labo FOL : Tweety répond, Lean certifie](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02d-FOL-Lab-Lean-Python.ipynb) | BETA | Non |
+| 7 | [Tweety-02e — Calculs de preuve : Hilbert, séquents,…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python.ipynb) | BETA | Non |
 | 8 | [Tweety-02f — Le zoo modal : huit systèmes, une carte…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02f-Modal-Zoo-Lean-Python.ipynb) | BETA | Non |
 | 9 | [Tweety-6 — Argumentation structuree (twin C# / .NET…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-CSharp.ipynb) | BETA | Oui |
 | 10 | [Argumentation Structuree](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) | BETA | Oui |
@@ -362,23 +362,23 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 17 | [Préférences et Théorie du Vote en C# / .NET (port natif…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-CSharp.ipynb) | ALPHA | Oui |
 | 18 | [Préférences et Théorie du Vote](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb) | ALPHA | Oui |
 | 19 | [Tweety-10 — Markov Logic Networks (MLN) en .NET (C# /…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb) | BETA | Oui |
-| 20 | [Tweety-10 — Markov Logic Networks (MLN)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb) | BETA | Oui |
-| 21 | [Tweety-11 — Inférence causale & do-calculus (twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb) | BETA | Oui |
-| 22 | [Tweety-11 — Raisonnement Causal : du do-calculus aux…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | BETA | Oui |
-| 23 | [Argumentation Abstraite : Grounded Extension - Pont…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject.ipynb) | BETA | Oui |
+| 20 | [Tweety-10 — Markov Logic Networks (MLN)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb) | BETA | Oui |
+| 21 | [Tweety-11 — Inférence causale & do-calculus (twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb) | BETA | Oui |
+| 22 | [Tweety-11 — Raisonnement Causal : du do-calculus aux…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) | BETA | Oui |
+| 23 | [Argumentation Abstraite : Grounded Extension - Pont…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject-Python.ipynb) | BETA | Oui |
 | 24 | [Tweety-3 — Description Logics en C#/.NET (port natif…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb) | BETA | Oui |
 | 25 | [Logiques Avancees - DL, Modale, QBF, Conditional](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics.ipynb) | BETA | Oui |
 | 26 | [Tweety-3 — Conditional Logics en C#/.NET (port natif…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Conditional-Logics-Csharp.ipynb) | BETA | Oui |
 | 27 | [Tweety-3 — Argumentation abstraite de Dung en C#/.NET…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Dung-Csharp.ipynb) | BETA | Oui |
 | 28 | [Tweety-3 Modal Logic en C#/.NET (port natif IKVM)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-ModalLogic-Csharp.ipynb) | BETA | Oui |
 | 29 | [Tweety-3 - Quantified Boolean Formulas en C#/.NET (port…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-QBF-Csharp.ipynb) | BETA | Oui |
-| 30 | [Tweety-3b — Labo Modal : Kripke répond, Lean certifie](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3b-Modal-Lab-Lean.ipynb) | BETA | Non |
+| 30 | [Tweety-3b — Labo Modal : Kripke répond, Lean certifie](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3b-Modal-Lab-Lean-Python.ipynb) | BETA | Non |
 | 31 | [Tweety-4 — Argumentation structurée ASPIC+ en C#/.NET…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Aspic-Csharp.ipynb) | BETA | Oui |
 | 32 | [Tweety C# / IKVM - Revision de Croyances (Port .NET du…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision-Csharp.ipynb) | BETA | Oui |
 | 33 | [Révision de Croyances et Incohérence](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) | BETA | Oui |
 | 34 | [Tweety-5 : Argumentation Abstraite de Dung (C# / .NET)…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation-Csharp.ipynb) | BETA | Oui |
 | 35 | [Argumentation Abstraite (Dung)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb) | BETA | Oui |
-| 36 | [Tweety-5b — Théorie de l'argumentation de Dung…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb) | BETA | Non |
-| 37 | [Tweety-5d — Synthèse certifiée d'extensions stables :…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5d-Stable-Synthesis-Lean.ipynb) | BETA | Non |
-| 38 | [Tweety-5e — Laboratoire propositionnel : validité,…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5e-Propositional-Lab-Lean.ipynb) | BETA | Non |
+| 36 | [Tweety-5b — Théorie de l'argumentation de Dung…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Argumentation-Lean.ipynb) | BETA | Non |
+| 37 | [Tweety-5d — Synthèse certifiée d'extensions stables :…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5d-Stable-Synthesis-Lean-Python.ipynb) | BETA | Non |
+| 38 | [Tweety-5e — Laboratoire propositionnel : validité,…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5e-Propositional-Lab-Lean-Python.ipynb) | BETA | Non |
 | 39 | [Tweety .NET - Probe Phase 1 axe 2 : initialisation du…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/_probes/Tweety-IKVM-Init-Probe.ipynb) | BETA | Oui |
