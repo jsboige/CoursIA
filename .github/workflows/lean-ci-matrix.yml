@@ -28,6 +28,18 @@ name: Lean CI Matrix
 # l'union. Jamais les deux declencheurs en meme temps (double build).
 
 on:
+  # Bloc `push` : `branches: [main]` + `paths:`. Le `branches: [main]`
+  # filtre la branche **poussee** : un push sur une feature ne declenche
+  # pas la matrice. Le `paths:` filtre les fichiers (lakes du manifeste +
+  # self-cover du gate). Cf. lean-knot.yml pour le modele applique.
+  #
+  # Bloc `pull_request` (l. ~166) : PAS de `branches:` (option b design-gate
+  # #15652). Conserver `branches: [main]` excluait les PR empilees (base !=
+  # main) a la creation, et rate les retarget vers main sans commit
+  # (l'evenement `base_ref_changed` est un `edited` que les workflows sans
+  # `edited` ignorent). Le `paths:` scope deja aux fichiers matchés et la
+  # cle `types: [opened, synchronize, edited, reopened]` couvre le retarget.
+  # Cf. lean-knot.yml pour le meme pattern (l. 89-90 + bloc PR).
   push:
     branches: [main]
     paths:
@@ -130,6 +142,12 @@ on:
       - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/**.lean'
       - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lean-toolchain'
+      # geometry_lean (herite du wrapper lean-geometry.yml supprime, #13751 :
+      # 0 sorry verifie de naissance, axiom target-modules "*" + allow-axioms vide,
+      # fail-on-sorry true par defaut -- parametres reportes au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lean-toolchain'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
@@ -149,8 +167,12 @@ on:
       - 'scripts/ci/check_lake_matrix_paths.py'
       - '.github/actions/lean-axiom/action.yml'
       - 'scripts/lean/axiom_check_step.py'
+  # Cf. le bloc `push` ci-dessus : `branches: [main]` filtre la branche
+  # **poussee**, pas la base d'une PR. Ici on retire `branches:` du bloc
+  # `pull_request` (option b design-gate #15652) -- le filtre `paths:`
+  # scope deja, et `types: [edited]` est necessaire pour qu'un retarget
+  # vers main re-declenche le workflow. Pattern identique a lean-knot.yml.
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       # UNION identique au push -- le garde check_lake_matrix_paths.py
@@ -248,6 +270,12 @@ on:
       - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/**.lean'
       - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lean-toolchain'
+      # geometry_lean (herite du wrapper lean-geometry.yml supprime, #13751 :
+      # 0 sorry verifie de naissance, axiom target-modules "*" + allow-axioms vide,
+      # fail-on-sorry true par defaut -- parametres reportes au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lean-toolchain'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'

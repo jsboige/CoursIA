@@ -186,21 +186,21 @@ def simulate(returns: pd.DataFrame, schedule: dict[pd.Timestamp, dict[str, float
     ``band`` (an exit to zero always trades), the fee is ``fee`` times the
     traded weight, paid out of the portfolio. Cash earns 0 and may dip slightly
     below zero when untraded lines have drifted up: its minimum is reported.
+    ``turnover`` is the traded weight of each session (0 between rebalances).
     """
     cols = list(returns.columns)
     w = dict.fromkeys(cols, 0.0)
     started = False
-    out, traded_total, fees_total, min_cash = [], 0.0, 0.0, 1.0
+    out, moves, traded_total, fees_total, min_cash = [], [], 0.0, 0.0, 1.0
     for t, row in returns.iterrows():
         r_p = 0.0
         if started:
             r_p = sum(w[c] * row[c] for c in cols)
             growth = 1.0 + r_p
             w = {c: w[c] * (1.0 + row[c]) / growth for c in cols}
-        fee_frac = 0.0
+        fee_frac, moved = 0.0, 0.0
         if t in schedule:
             tgt = schedule[t]
-            moved = 0.0
             for c in cols:
                 goal = float(tgt.get(c, 0.0))
                 gap = goal - w[c]
@@ -216,9 +216,10 @@ def simulate(returns: pd.DataFrame, schedule: dict[pd.Timestamp, dict[str, float
         if started:
             min_cash = min(min_cash, 1.0 - sum(w.values()))
         out.append((t, (1.0 + r_p) * (1.0 - fee_frac) - 1.0))
+        moves.append((t, moved))
     series = pd.Series(dict(out)).sort_index()
-    return {"returns": series, "traded": traded_total, "fees": fees_total,
-            "min_cash_weight": min_cash}
+    return {"returns": series, "turnover": pd.Series(dict(moves)).sort_index(),
+            "traded": traded_total, "fees": fees_total, "min_cash_weight": min_cash}
 
 
 # ---------------------------------------------------------------- tests

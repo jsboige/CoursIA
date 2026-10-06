@@ -45,6 +45,14 @@ Le matériel QC mélange 4 types de notebooks qu'un visiteur doit distinguer :
 | `DualMomentum` | Momentum dual-asset | Multi-actifs | **Superseded** | Échec TLT 2022 → remplacé par `DualMomentumNoTLT` |
 | `DualMomentumNoTLT` | Momentum (sans TLT) | Multi-actifs | **Alive** (remplacement) | Figure #5754 |
 
+### Portages issus d'un semis `[QC-research]`
+
+Projets créés à partir d'une issue de lecture d'article, sous les garde-fous écrits dans l'issue avant le premier backtest. Ils ne comptent dans aucune tranche #1621.
+
+| Stratégie | Type | Classe d'actifs | Statut | Évidence |
+|-----------|------|-----------------|--------|----------|
+| `OpeningRangeBreakout` | Momentum intraday (cassure du range d'ouverture, « stocks in play ») | Actions US | **Ignore — NO BEATS après frais** | #16355. Paramètres de l'article (range de 5 min, univers de 1000) : CAGR +4,10 % sur 2016-2019 puis −5,23 % sur 2020-2023, frais d'environ 32 % du capital de départ sur chaque fenêtre. Variante communautaire (range d'une minute) : arrêtée par les limites de temps de QC Cloud, mesurée sur sa portion exécutée seulement, et de signe opposé selon la taille de l'univers. Piste famille refermée. Détail : [README](../../MyIA.AI.Notebooks/QuantConnect/projects/OpeningRangeBreakout/) |
+
 ## Régimes de performance (connaissance cluster firsthand)
 
 Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut anticiper le comportement d'une stratégie selon sa classe :
