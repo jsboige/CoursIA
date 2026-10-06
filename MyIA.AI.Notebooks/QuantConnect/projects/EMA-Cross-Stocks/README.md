@@ -61,6 +61,7 @@ lean backtest --project .
 ## Fichiers
 
 - `main.py` - Stratégie de croisement EMA (algorithm « manual », sans Alpha Model)
+- `quantbook.ipynb` - Research QuantBook multi-stock (22 cellules, 10 code) : EMA crossover sur le panier AAPL/MSFT/GOOGL/AMZN/NVDA, avec variantes de périodes EMA et d'allocation (momentum vs equal-weight)
 - `README.en.md` - Version anglaise (original historique, non mise à jour)
 
 ## Références
