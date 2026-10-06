@@ -28,6 +28,19 @@ vient de Mathlib et ce qui est hors portée (voir #14871).
   percolation*, arXiv:2603.03257 (math.PR, v1, CC-BY 4.0) — théorème de la
   section 3.0.
 
+## Plan de croissance
+
+La sous-série garde son emplacement dans `Applications/` (arbitrage #16231,
+articulé à la hiérarchie Probas #14873) et grandit par paliers numérotés — le
+plan détaillé, avec pour chaque carnet ce qu'il démontre, l'organe qu'il
+appelle et son prérequis, vit dans l'issue de suivi **#19494** :
+
+| # | Carnet prévu | Palier |
+|---|--------------|--------|
+| 03 | `Percolation-03-Critique-Python` | le régime critique comme limite finie : seuil dépendant de la taille, loi de puissance des composantes au point critique |
+| 04 | `Percolation-04-Sharpness-Python` | le théorème mesuré : la queue origine-fixe raidit quand `p ↓ p_c` (sharpness supercritique) |
+| 04 | `Percolation-04-Sharpness-Lean` (exploratoire) | jumeau formel du palier 4 : énoncé fini paramétrique au-dessus du socle prouvé du lake |
+
 ## Pont vers la série ICT
 
 Le notebook conserve un **pont structurel** vers la série **ICT** (modèle
