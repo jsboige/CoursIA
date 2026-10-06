@@ -38,8 +38,9 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-05 | [05-Gibbard-Satterthwaite](05-Gibbard-Satterthwaite.ipynb) | Gibbard-Satterthwaite sans mystère : la manipulation comme témoin (ex-GT-22, re-slot #12375) | 30 min | COMPLET |
 | SC-06 | [06-Mobius-Aggregation-Pouvoir-Manipulation](06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Möbius sur le treillis des coalitions : dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée (See #12204) | 40 min | COMPLET |
 | SC-07 | [07-Committees-Core](07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas Hare/Droop, certificats de paiement et règle de l'entropie harmonique (arXiv 2609.11912, See #16848) | 40 min | COMPLET |
+| SC-09 | [09-Committees-STV-Monroe-ChamberlinCourant](09-Committees-STV-Monroe-ChamberlinCourant.ipynb) | Comités multi-vainqueurs : STV (Hare 1857, polynomial), Monroe (1995, NP-dur, couverture exacte) et Chamberlin-Courant (1983, NP-dur, couverture au plus un), confrontation Z3 ILP (Handbook Computational Social Choice ch. 6, See #19371) | 50 min | COMPLET |
 
-**Durée totale** : ~5h15
+**Durée totale** : ~6h05
 
 > **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) et [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ces trois jumeaux C# sont comptés dans le `pedagogical_count` de la sous-série mais arborent le statut `PARITÉ` dans le tableau ci-dessus pour les distinguer des sept notebooks d'origine dont ils sont les retranscriptions .NET.
 
@@ -65,6 +66,7 @@ flowchart TD
     Result -.- Relax["Cartographie des relaxations<br/>électeur médian (Downs) · Split Cycle<br/>chaque paire d'axiomes réalisable"]
     Result -.- Coop["Face coopérative (SC-06)<br/>Möbius · dividendes de Harsanyi<br/>v = Σ m(T)·u_T · poids ≠ pouvoir"]
     Coop -.- Comm["Comités par approbation (SC-07)<br/>core toujours non vide<br/>quotas Hare/Droop · certificats"]
+    Comm -.- Rank2["Bulletins de classement (SC-09)<br/>STV · Monroe · Chamberlin-Courant<br/>confrontation Z3 ILP"]
 ```
 
 ### Étape 1 : Le théorème d'Arrow par la simulation (SC-01, 45 min)
@@ -128,6 +130,10 @@ Le notebook SC-06 ouvre la face coopérative de l'agrégation : ce que l'on agr�
 ### Étape 7 : Élections de comité par approbation (SC-07, 40 min)
 
 Le notebook SC-07 change d'objet une seconde fois : on n'élit plus un gagnant unique mais un **comité** de k sièges, sur des bulletins d'approbation. La notion de stabilité s'y transfère sous la forme du **core** : un comité W est dans le core si aucun groupe de votants (suffisamment gros au regard du **quota Hare**, confronté au **quota Droop**) ne peut lui opposer un ensemble de candidats qu'il approuverait unanimement. Le résultat central distillé — le théorème d'existence de Becker, Greger & Peters (arXiv 2609.11912) — est mis en machine sur le fil rouge n=4 votants, k=2 sièges : le comité favori des majoritaires n'est PAS dans le core (coalition bloquante exhibée), le comité proportionnel l'est, et un **certificat de paiement** (paiements + réserve) l'atteste. Trois règles concrètes — AV, PAV, règle de l'entropie harmonique — sont ensuite comparées sur 25 instances : leur taux de retour dans le core distingue ce qu'une règle simple garantit de ce qu'exige la stabilité.
+
+### Étape 8 : Comités multi-vainqueurs — STV, Monroe, Chamberlin-Courant (SC-09, 50 min)
+
+Le notebook SC-09 quitte l'approbation pour les **bulletins de classement** (rankings) et confronte trois règles classiques d'élection à k sièges, alignées sur le **chapitre 6 du *Handbook of Computational Social Choice*** (Brandt, Conitzer, Endriss, Lang 2016) : **STV** (Single Transferable Vote, Hare 1857, polynomial, satisfait la Droop quota), **Monroe** (1995, NP-dur, chaque votant couvert exactement une fois par le comité), et **Chamberlin-Courant** (1983, NP-dur, couverture au plus une fois). Les trois règles sont implémentées en Python pur (force brute sur C(m, k) sous-ensembles pour les deux NP-dures), puis **confrontées à une formulation ILP Z3** (mode `Optimize` avec variables binaires `x_c` pour le comité et `y_{i,c}` pour l'affectation) qui résout l'optimum global. Verdict sur le profil de référence : STV donne un comité `['a','b']` (respecte le quota), Monroe et CC donnent l'optimum Borda `score=28` avec un comité différent de STV — l'écart illustre que **la Droop quota ne suffit pas à capturer la représentation proportionnelle**. Trois exercices (C.1) étendent le carnet à des profils personnalisés.
 
 ## Prerequisites
 
