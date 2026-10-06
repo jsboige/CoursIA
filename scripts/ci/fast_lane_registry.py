@@ -1685,30 +1685,6 @@ TRANCHE16: list[Guard] = [
         needs_base=True,
         warn_rc=(2,),
     ),
-    # Issue #19374 : garde CI contre les blobs CRLF ou mixtes sous
-    # ``eol=lf`` (classe de #19287). Un blob CRLF ou mixte sous un
-    # attribut ``text eol=lf`` fait paraitre le fichier modifie apres
-    # chaque checkout, sur toutes les machines : git renormalise a la
-    # lecture mais ne reecrit jamais le blob. ``merge_ready`` et
-    # ``check_clean_cycle_exit`` voient alors sale le clone principal
-    # de chaque lane. Le correctif ponctuel est ``git add --renormalize
-    # <fichier>`` (cf #19373) ; ce garde empeche la prochaine de la
-    # classe. Detection : ``git diff --name-only --diff-filter=AM
-    # origin/main...HEAD`` puis ``git ls-files --eol -- <path>`` par
-    # chemin, awk-equivalent en Python. Un blob CRLF voulu (.bat,
-    # fixture) se declare par ``eol=crlf`` ou ``-text`` dans
-    # ``.gitattributes``, jamais par exemption. Controle positif
-    # verifie : un blob mixte sous ``eol=lf`` rougit avec le nom du
-    # fichier et la commande de reparation.
-    Guard(
-        name="eol-blob-guard",
-        source=FAST_LANE_NATIVE,
-        paths=[],
-        argv=["python", "scripts/ci/check_eol_blobs.py"],
-        blocking=True,
-        needs_base=True,
-        warn_rc=(2,),
-    ),
 ]
 
 
@@ -1762,27 +1738,43 @@ TRANCHE17: list[Guard] = [
         needs_base=True,
         warn_rc=(2,),
     ),
-    # Issue #19374 : garde CI contre les blobs CRLF ou mixtes sous
-    # ``eol=lf`` (classe de #19287). Un blob CRLF ou mixte sous un
-    # attribut ``text eol=lf`` fait paraitre le fichier modifie apres
-    # chaque checkout, sur toutes les machines : git renormalise a la
-    # lecture mais ne reecrit jamais le blob. ``merge_ready`` et
-    # ``check_clean_cycle_exit`` voient alors sale le clone principal
-    # de chaque lane. Le correctif ponctuel est ``git add --renormalize
-    # <fichier>`` (cf #19373) ; ce garde empeche la prochaine de la
-    # classe. Detection : ``git diff --name-only --diff-filter=AM
-    # origin/main...HEAD`` puis ``git ls-files --eol -- <path>`` par
-    # chemin, awk-equivalent en Python. Un blob CRLF voulu (.bat,
-    # fixture) se declare par ``eol=crlf`` ou ``-text`` dans
-    # ``.gitattributes``, jamais par exemption. Controle positif
-    # verifie : un blob mixte sous ``eol=lf`` rougit avec le nom du
-    # fichier et la commande de reparation.
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 18 (#19374) -- garde CI contre les blobs CRLF ou mixtes sous
+# attribut ``eol=lf`` (classe de #19287). Un blob CRLF ou mixte sous un
+# attribut ``text eol=lf`` fait paraitre le fichier modifie apres chaque
+# checkout, sur toutes les machines : git renormalise a la lecture mais
+# ne reecrit jamais le blob. ``merge_ready`` et ``check_clean_cycle_exit``
+# voient alors sale le clone principal de chaque lane. Le correctif
+# ponctuel est ``git add --renormalize <fichier>`` (cf #19373) ; ce garde
+# empeche la prochaine de la classe.
+#
+# Detection : ``git diff --name-only --diff-filter=AM origin/main...HEAD``
+# puis ``git ls-files --eol -- <path>`` par chemin, awk-equivalent en
+# Python. Un blob CRLF voulu (.bat, fixture) se declare par ``eol=crlf``
+# ou ``-text`` dans ``.gitattributes``, jamais par exemption.
+#
+# `absorbed=True` (#19374, suivi d'integration) : ce garde n'a pas de
+# workflow d'origine -- le job always-on lance `fast_lane.py --shadow`,
+# et `effective_shadow = args.shadow and not guard.absorbed`. Sans
+# absorption, le garde sortait sous `fast-lane (ombre): eol-blob-guard`
+# avec une conclusion NEUTRE et n'entrait pas dans `blocking_failed` :
+# `blocking=True` etait une declaration sans effet. C'est la classe de
+# defaut que `test_aucun_garde_bloquant_n_est_inert_sans_declaration`
+# ferme dans `test_fast_lane.py`. Verifie vert sur `main` avant
+# absorption (`--diff origin/main...HEAD` -> rc=0) ; l'absorption ne
+# rougit aucune PR par dette heritee.
+# ---------------------------------------------------------------------------
+TRANCHE18: list[Guard] = [
     Guard(
         name="eol-blob-guard",
         source=FAST_LANE_NATIVE,
         paths=[],
         argv=["python", "scripts/ci/check_eol_blobs.py"],
         blocking=True,
+        absorbed=True,
         needs_base=True,
         warn_rc=(2,),
     ),
