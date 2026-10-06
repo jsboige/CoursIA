@@ -4170,6 +4170,17 @@ def latest_claim_stamp(issue_number: int) -> str | None:
     l'issue. Cout : 1 requete pour les deux, la meme charge de commentaires
     (probe de tete de `settle_belt_head`). ``None`` si aucun marqueur ou si
     la lecture echoue -- l'issue garde alors sa date de merge, comme avant.
+
+    Note (#c.1113) : ce chemin reste utile comme repli unitaire, mais la
+    voie de tete du tapis (``settle_belt_head``) passe par
+    ``fetch_latest_claim_stamps_bulk`` -- une seule requete GraphQL
+    multiplexee sur N issues, qui fait tomber le cout d'un cycle
+    ``pick_idle_grain --belt`` de ~50 s a ~3 s sur la sonde de tete.
+    Mesure c.1113 (2026-10-06) : 36 sondes x ~1.4 s = 50 s minimum avant
+    patch. Symptome observe = "1 ligne au demarrage puis 1-2 min de
+    silence puis exit 0 avec tapis vide" (cf `proactive-coordination.md`
+    regle 7 -- un picker qui depasse la fenetre cron de 30 s ne sert pas
+    la lane).
     """
     try:
         out = subprocess.run(
@@ -4185,6 +4196,119 @@ def latest_claim_stamp(issue_number: int) -> str | None:
         return max(stamps) if stamps else None
     except Exception:  # noqa: BLE001 - sonde best-effort, l'issue garde son merge
         return None
+
+
+def _claim_stamp_from_comments(comments: list[dict]) -> str | None:
+    """Stamp canonique d'une liste de commentaires -- sans appel reseau.
+
+    Reproduit le corps de ``latest_claim_stamp`` mais prend les commentaires
+    en argument : c'est ce que ``fetch_latest_claim_stamps_bulk`` branche
+    apres son unique aller-retour GraphQL. Sortie : ISO 8601 UTC ou ``None``.
+    """
+    cs = [c for c in comments if isinstance(c, dict)]
+    stamps = [s for s in (claim_visit_stamp(cs), delivered_info_stamp(cs)) if s]
+    return max(stamps) if stamps else None
+
+
+def fetch_latest_claim_stamps_bulk(
+    issue_numbers: list[int],
+    *,
+    cache: PayloadCache | None = None,
+    cache_mode: str = "off",
+    cache_status: dict[str, dict[str, Any]] | None = None,
+) -> tuple[dict[int, str | None], str | None]:
+    """Stamp canonique par issue, une seule requete GraphQL multiplexee.
+
+    Symptome mesure c.1113 : ``settle_belt_head`` appelait ``latest_claim_stamp``
+    jusqu'a ``belt_check_window * 3 + 12 = 36 a 54`` fois, chacune un round-trip
+    ``gh issue view N --json comments`` (~1.4 s par appel, ~37 Ko de charge
+    par issue tres commentee). Sur le tapis roulant par defaut, c'etait un
+    minimum de 50 s en pure sonde, depassant le budget cron de 30 s du worker
+    et donnant un picker qui "stall" -- 1 ligne au demarrage (la banniere),
+    puis rien pendant 1-2 minutes, puis exit 0 avec un tapis vide ou biaise
+    (cf `proactive-coordination.md` regle 7, `lane-claim-protocol.md` regle 1).
+    Ce chemin remplace ces 36-54 requetes par UNE requete GraphQL
+    (``gh api graphql``), aliasant chaque issue par ``i<number>`` et
+    remontant ses 100 plus recents commentaires. Cout : ~3 s pour 36 issues
+    le 2026-10-06, mesure sur origin/main (cf memo c.1113 §4).
+
+    Cache : TTL = ``VISITS_CACHE_TTL_SECONDS`` (15 min). Le pick est execute
+    plusieurs fois par session par une meme lane, et la sonde ne depend
+    que du flux de claims/sous-issues -- pas d'un phenomene rapide. Le hit
+    en mode ``auto`` est ``verified=False`` par defaut (la sonde de probe
+    n'est pas branchee ici -- l'ajout d'une sonde est une future PR, le
+    gain de cette PR-ci est deja suffisant) ; un verdict ``stale`` sert le
+    hit anterieur si le refresh tombe, ``miss`` recharge.
+
+    Erreurs :
+    - ``subprocess.CalledProcessError`` / ``TimeoutExpired`` / ``OSError`` :
+      on rend ``({}, err)`` ; le caller retombe sur les stamps partiels
+      caches ou sur ``belt_pool[:need]`` non reclassees, comme avant le patch.
+    - Issue inconnue (GitHub returning ``null``) : stamp ``None`` pour
+      cette cle, sans bruit. Pas d'exception.
+    - JSON decode : ``RuntimeError`` propagee jusqu'a `_cached_payload`,
+      qui sert un hit anterieur en `stale` si present, sinon propage.
+    """
+    if not issue_numbers:
+        return {}, None
+
+    sorted_nums = sorted({int(n) for n in issue_numbers})
+    identity = ["claim_stamps_bulk"] + [str(n) for n in sorted_nums]
+
+    def fetch_raw() -> dict[str, str | None]:
+        # Les alias GraphQL doivent etre des identifiers valides. On utilise
+        # `i{n}` -- convention compatible avec la validation du picker
+        # (`cache_key` accepte alnum/-/_). 100 commentaires / issue : la
+        # fenetre observee c.1113 -- les issues avec >100 commentaires sont
+        # rares, et les marqueurs de recence vivent dans la queue recente
+        # (les claims et sous-issues sont les derniers postes).
+        aliases = " ".join(
+            f"i{n}: issue(number: {n}) {{ ... on Issue {{ number "
+            f"comments(first: 100) "
+            f"{{ nodes {{ author {{ login }} body createdAt }} }} }} }}"
+            for n in sorted_nums
+        )
+        query = (
+            "query { repository(owner: \"jsboige\", name: \"CoursIA\") { "
+            + aliases
+            + " } }"
+        )
+        r = subprocess.run(
+            ["gh", "api", "graphql", "-f", f"query={query}"],
+            capture_output=True, text=True, encoding="utf-8",
+            check=True, timeout=30,
+        )
+        try:
+            data = json.loads(r.stdout)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"GraphQL decode failed: {exc}") from exc
+        repo = data.get("data", {}).get("repository") or {}
+        out_map: dict[str, str | None] = {}
+        for n in sorted_nums:
+            node = repo.get(f"i{n}")
+            if not node:
+                out_map[str(n)] = None
+                continue
+            comments = (node.get("comments") or {}).get("nodes") or []
+            out_map[str(n)] = _claim_stamp_from_comments(comments)
+        return out_map
+
+    try:
+        result = _cached_payload(
+            "claim_stamps",
+            identity,
+            fetch_raw,
+            cache=cache,
+            cache_mode=cache_mode,
+            ttl_seconds=VISITS_CACHE_TTL_SECONDS,
+            cache_status=cache_status,
+        )
+    except Exception as exc:  # noqa: BLE001 - repli sur belt_pool[:need] non reclasse
+        return {}, f"{type(exc).__name__}: {exc}"
+    # La cache rend des cles str ; on remet en `int` pour matcher les
+    # `issue["number"]` du `belt_pool` (et la cle `int -> str | None` du JSON).
+    int_map: dict[int, str | None] = {int(k): v for k, v in result.items()}
+    return int_map, None
 
 
 def settle_belt_head(
@@ -5720,8 +5844,49 @@ def main(argv: list[str] | None = None) -> int:
         # claims de la tete de file. `--belt-merge-only` rend l'ancien ordre.
         if not args.belt_merge_only:
             apply_child_visits(pool, belt_pool)
-            settle_belt_head(belt_pool, belt_check_window, latest_claim_stamp,
-                             max_probes=belt_check_window * 3 + 12)
+            # #c.1113 : GraphQL multiplex pour la sonde de tete. Avant ce
+            # patch, `settle_belt_head` appelait `latest_claim_stamp` jusqu'a
+            # `belt_check_window * 3 + 12 = 36 a 54` fois -- un round-trip
+            # `gh issue view N --json comments` a chaque fois, ~1.4 s/appel,
+            # ~50 s minimum en pure sonde. La voie multiplexee tombe a ~3 s
+            # pour 36 issues et tient sous le budget cron worker de 30 s.
+            # Si la voie multiplexee echoue, on retombe sur la sonde unitaire
+            # (chemin d'avant patch, lent mais fonctionnel) et on marque le
+            # fait en banniere. Cf memo c.1113 §4.
+            bulk_targets = [it["number"] for it in belt_pool[:belt_check_window]]
+            bulk_stamps, bulk_err = fetch_latest_claim_stamps_bulk(
+                bulk_targets,
+                cache=payload_cache,
+                cache_mode=effective_cache_mode,
+                cache_status=cache_status,
+            )
+            if bulk_stamps:
+                # Closure qui sert les stamps depuis la map ; les numeros
+                # absents de la map (issue inconnue, rate-limit, ...) tombent
+                # sur la sonde unitaire, comme un repli.
+                fallback_used: list[int] = []
+
+                def _probe(n: int) -> str | None:
+                    if n in bulk_stamps:
+                        return bulk_stamps[n]
+                    fallback_used.append(n)
+                    return latest_claim_stamp(n)
+
+                settle_belt_head(belt_pool, belt_check_window, _probe,
+                                 max_probes=belt_check_window * 3 + 12)
+                if fallback_used and not args.json:
+                    print(f"   Sonde unitaire repli sur {len(fallback_used)} "
+                          f"issue(s) absente(s) du bulk GraphQL : "
+                          f"{', '.join('#'+str(n) for n in fallback_used[:5])}"
+                          f"{'...' if len(fallback_used) > 5 else ''}.")
+            else:
+                # Bulk totalement en echec : on laisse `latest_claim_stamp`
+                # gerer -- lent. On previent le lecteur.
+                if not args.json:
+                    print(f"   Sonde de tete en repli unitaire (bulk GraphQL "
+                          f"indisponible : {bulk_err or 'cache miss sans refresh'}).")
+                settle_belt_head(belt_pool, belt_check_window, latest_claim_stamp,
+                                 max_probes=belt_check_window * 3 + 12)
         belt_check_nums = [it["number"] for it in belt_pool[:belt_check_window]]
         belt_claims = check_claims(belt_check_nums, args.lane)
         # Boucle de service extraite (#19390) : claims + sonde de livraison
