@@ -73,10 +73,15 @@ services:
       - HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_TOKEN:-}
       - HF_TOKEN=${HUGGINGFACE_TOKEN:-}
 
+    # Single-worker contention: a long generation (max-text-length tokens at
+    # ~3.7 tok/s) blocks the event loop for minutes, so /v1/health can time
+    # out DURING active synthesis -- the flap is expected under load, not a
+    # crash. Do not raise --workers to fix it (one model copy per worker,
+    # measured 20.3GB VRAM each on a 24GB GPU).
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/v1/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8080/v1/health || exit 1"]
       interval: 60s
-      timeout: 30s
+      timeout: 60s
       retries: 5
       start_period: 600s
 
