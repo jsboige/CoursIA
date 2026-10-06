@@ -5,7 +5,7 @@
 
 ## Description
 
-Template/skeleton project for RL portfolio optimization.
+Projet de référence en optimisation de portefeuille par RL : la stratégie Q-Learning effective vit dans les notebooks (recherche documentée, baseline incluse), `main.py` reste un squelette de structure.
 
 ## How to Run
 
@@ -16,7 +16,7 @@ Template/skeleton project for RL portfolio optimization.
 
 | Metric | Value |
 |--------|-------|
-| Status | Template/skeleton (no active strategy) |
+| Status | Reference implementation (Q-Learning dans les notebooks ; main.py squelette) |
 
 ## Files
 

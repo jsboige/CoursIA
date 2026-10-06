@@ -18,17 +18,19 @@ Stop-loss à -8 % pour couper les vraies ruptures. Maximum 4 positions simultan�
 lean backtest --project .
 ```
 
-**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour lancer.
+**QC Cloud :** Pas de projet cloud persistant ; un backtest de sweep est enregistré — verdict **BROKEN** (`docs/qc/qc-strategies-status.md` l.186). Copier les fichiers dans un nouveau projet QC Cloud pour relancer.
 
-## Métriques de backtest (2015-2026)
+## Métriques (backtest QC Cloud — sweep #1621, tranche 4)
 
 | Métrique | Valeur |
 |----------|--------|
-| Sharpe Ratio | 0.294 |
-| CAGR | 7.53 % |
-| Max Drawdown | 16.5 % |
-| Rendement net | +80.9 % |
-| Rebalance | Scan quotidien |
+| Sharpe Ratio | −0.082 |
+| CAGR | 3.00 % |
+| Max Drawdown | 17.5 % |
+| PSR | 1.3 % |
+| Fenêtre | 2845 j. |
+
+Verdict : **BROKEN** — Sharpe négatif, edge nul. Reproduction QuantBook sur le code v4.0 local (`quantbook.ipynb`, cellule d'en-tête) : Sharpe 0.365, CAGR 7.2 %, MaxDD 14.7 % — plus favorable que le run cloud de sweep.
 
 ## Fichiers
 
