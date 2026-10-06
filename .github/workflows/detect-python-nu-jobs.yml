@@ -1,0 +1,151 @@
+name: Detect python-nu jobs (advisory + ratchet)
+
+# #17444 / Q35 : 14 jobs GitHub Actions invoquent `python` nu sans
+# `actions/setup-python`. Les runners self-hosted `coursia-linux` ont
+# `python3` mais pas `python` -> exit 127. L'organe ferme la boucle :
+# tout futur workflow qui reintroduit la classe est attrape avant merge.
+#
+# Strategie de deploiement :
+# 1. Mode `advisory --baseline 14` : exit 0 sur main, la migration est
+#    en cours (cf #17470 sweep des 9 jobs Linux). Affiche les 14
+#    defauts en commentaire de PR.
+# 2. Ratchet : exit 1 si le compte depasse la baseline (regression).
+# 3. Tests pytest : executent le controleur positif (un cas fabrique
+#    est attrape) et l'exemption Windows nommee
+#    (`windows-dotnet-tests` n'est pas flagge).
+#
+# Ciblee par paths: on ne redéclenche que si le scanner ou les workflows
+# touches par la classe bougent -- pas sur un PR de notebook.
+
+on:
+  pull_request:
+    types: [opened, synchronize, edited, reopened]
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - "scripts/ci/detect_python_nu_jobs.py"
+      - "scripts/tests/test_detect_python_nu_jobs.py"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: detect-python-nu-jobs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Detector unit tests (controle positif + exemption Windows)
+    # Tranche 4 #14283 : jambe Linux auto-hebergee. Garde anti-fork
+    # exigee par check_self_hosted_runner_policy.py : un `runs-on`
+    # STATIQUE la rend auditable.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run detector tests
+        run: |
+          python -m pip install --quiet pytest pyyaml
+          python -m pytest scripts/tests/test_detect_python_nu_jobs.py -v
+
+  scan:
+    name: Scan workflows (advisory + ratchet)
+    needs: tests
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Scan with baseline=14 (ratchet)
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          python -m pip install --quiet pyyaml
+          python scripts/ci/detect_python_nu_jobs.py --mode advisory --baseline 14 --json > /tmp/scan.json
+          cat /tmp/scan.json
+          # Ratchet : si le compte depasse la baseline, exit 1
+          COUNT=$(python -c "import json,sys; print(len(json.load(open('/tmp/scan.json'))['defects']))")
+          echo "::notice::#17444 scan: ${COUNT} default(s) on this PR (baseline 14)"
+          if [ "${COUNT}" -gt 14 ]; then
+            echo "::error::#17444 REGRESSION: ${COUNT} > baseline 14. La classe s'aggrave."
+            exit 1
+          fi
+
+      - name: Comment PR with defects list
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          python - <<'PY'
+          import json, os, subprocess, sys
+          with open("/tmp/scan.json") as f:
+              data = json.load(f)
+          defects = data.get("defects", [])
+          if not defects:
+              print("Aucun defaut : commentaire skip.")
+              sys.exit(0)
+          lines = [
+              "## :mag: #17444 -- detecteur python-nu",
+              "",
+              f"**{len(defects)} defaut(s)** sur cette PR (baseline 14, migration en cours).",
+              "",
+              "| Workflow | Job | Steps |",
+              "|---|---|---:|",
+          ]
+          for d in defects:
+              lines.append(
+                  f"| `{d['workflow']}` | `{d['job']}` | {len(d['steps_with_python'])} |"
+              )
+          lines.extend([
+              "",
+              "L'organe reste en **advisory** tant que la migration n'est pas terminee.",
+              "Une PR qui **augmente** le compte au-dela de 14 est rouge (ratchet).",
+              "",
+              "<details><summary>Detail des steps concernes</summary>",
+              "",
+          ])
+          for d in defects:
+              lines.append(f"- `{d['workflow']}` :: `{d['job']}`")
+              for s in d['steps_with_python']:
+                  lines.append(f"  - `{s}`")
+          lines.append("")
+          lines.append("</details>")
+          lines.append("")
+          lines.append("---")
+          lines.append("*Auto-genere par `scripts/ci/detect_python_nu_jobs.py --mode advisory --baseline 14` (issue #17444).*")
+          body = "\n".join(lines)
+          payload = json.dumps({"body": body})
+          with open("/tmp/comment_payload.json", "w") as f:
+              f.write(payload)
+          r = subprocess.run(
+              [
+                  "gh", "api",
+                  f"repos/jsboige/CoursIA/issues/{os.environ['PR_NUMBER']}/comments",
+                  "-X", "POST",
+                  "--input", "/tmp/comment_payload.json",
+              ],
+              capture_output=True, text=True,
+          )
+          if r.returncode != 0:
+              print(f"WARN: comment post failed: {r.stderr}")
+          else:
+              print("Comment posted.")
+          PY
