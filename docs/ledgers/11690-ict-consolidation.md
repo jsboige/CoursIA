@@ -522,7 +522,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 6. **L'instrument de mesure reste la fragilité principale — les exos silencieux sont le moule dominant.** Sur les 25 carnets, la quasi-totalité porte des exercices en squelette **silencieux** (C.1-conformes, mais sans sortie de rappel) — l'inverse du moule de la tranche A (01-09, où les exos émettent). Deux dettes de lecture recoupent (écarts par graine non commentés : 14b seed 1, 15 taus par graine, 17b graines discordantes) et deux dettes de protocole (4 seeds au lieu de 5 dans 15f/15h ; fenêtrage non balayé dans 17b). Toutes LIGHT.
 7. **Famille d'accrétions ICT-15 = la plus large de la série (11 siblings : 15b→15l)** — signalée pour #7260 (renumérotation) : c'est un **candidat** à examiner (argument pédagogique à écrire, jamais un renommage reflexe, cf `notebook-accretion-numbering`). La plage 10→17b ne porte par ailleurs aucun candidat fusion ; 17b est une accrétion de 17 (MDL, K statique) vers l'entraînement (K dynamique) — la séparation porte le sens.
 
-### `ICT-10-CatastropheGrammar-Python.ipynb` — 22 cellules (13 md, 9 code, 9/9 exécutées)
+### `ICT-10-CatastropheGrammar-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -532,7 +532,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) La clause ≥2/3 est affichée mais la marge du seul cas gagnant (+0,0120 ± 0,0020) n'est pas mise en regard des marges négatives brutes — la dissymétrie de lecture est laissée à l'étudiant. (2) Les 7 catastrophes élémentaires sont citées, une seule calculée (pli renvoyé à l'exo 1, les 5 autres absentes) — choix annoncé dès l'intro, pas un oubli. |
 | Verdict | **SOLIDE** — la charnière Thom tient par son honnêteté : caveat catégorie-erreur écrit dans le carnet, banc multi-graines avec négatif affiché, pont vers la strate 3 barreau par barreau (table finale des passages instanciés). |
 
-### `ICT-11-CausalAgencyProfiles-Python.ipynb` — 27 cellules (16 md, 11 code, 11/11 exécutées)
+### `ICT-11-CausalAgencyProfiles-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -542,7 +542,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) `basin_return` à **n_trials=4** par échelle : probabilités granulaires (0,50 = 2/4) — la divergence Gate 1 True/False entre les deux mesures repose en partie sur cette granularité, non résolue à 4 essais. (2) Corrélations sur **n=4 points** : r=0,50 et −0,14 ne sont pas séparables de 0, aucun intervalle affiché. (3) Exos silencieux (pattern 02/04). La conclusion qualitative (divergence des mesures, pic à échelle méso) survit ; la preuve statistique du « régime-dépendant » ne tient pas à ces effectifs. |
 | Verdict | **À MUSCLER** — question et divergence réelles, chiffres pivots sous-dimensionnés : remonter n_trials (≥16) et appuyer les corrélations (plus d'échelles ou intervalles bootstrap) transformerait un verdict suggestif en verdict établi. |
 
-### `ICT-12-ValenceFieldsAndAnimats-Python.ipynb` — 29 cellules (18 md, 11 code, 11/11 exécutées)
+### `ICT-12-ValenceFieldsAndAnimats-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -552,7 +552,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Le tableau de la gate 1 rend des égalités à la 3ᵉ décimale (0,996 vs 0,972 en erratique) sans afficher le nombre d'essais par régime dans la sortie — impossible de savoir si l'écart erratique est une défaite réelle du p̂ ou du bruit d'échantillonnage. (2) Le régime discriminateur (« source rapide ») est mesuré à une seule vitesse — pas de sweep du paramètre qui sépare les deux animats. |
 | Verdict | **SOLIDE** — le contrôle d'ablation est la pièce maîtresse (capture ~0 pour l'aléatoire) ; le fil « modèle interne payant ou ruineux, réponse falsifiée gate par gate » continue ICT-10 avec cette fois un environnement spatial. |
 
-### `ICT-12b-LearnedValence-Python.ipynb` — 18 cellules (10 md, 8 code, 8/8 exécutées)
+### `ICT-12b-LearnedValence-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -562,7 +562,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Les verdicts binarisés (transferred=1.0, distinct=1.0) portent sur des quantités continues arrondies — le seuil de binarisation n'est pas affiché dans la sortie. (2) n_condition=50 fixe : pas de sweep du nombre d'essais d'association dans le corps (l'exo 2 l'approche par le seuil de lr). |
 | Verdict | **SOLIDE** — carnet court mais complet : acquisition, transfert, extinction, et un contrôle négatif qui rend le banc de distinctness réfuable dans les deux sens — l'anti-décoratif est la signature de la série. |
 
-### `ICT-12c-PregnanceAnimat-Python.ipynb` — 36 cellules (24 md, 12 code, 12/12 exécutées)
+### `ICT-12c-PregnanceAnimat-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -572,7 +572,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Les gates du volet énergie libre ([F fixe / F-adaptatif / MI]) sont binaires (1/0) sur des mesures ponctuelles — la robustesse 5/5 graines couvre la dissociation, pas ce volet-là. (2) 24 md pour 12 code : la densité de prose la plus forte de la sous-série — chaque gate a sa lecture écrite, mais le carnet frôle le survey narratif par endroits. |
 | Verdict | **SOLIDE** — le grain #7740 porte sa conclusion : prégnance et représentation sont deux grandeurs distinctes, même incarnées ; la dispersion est lue honnêtement (0,82 ± 0,12 « sous 1 » dit comme tel, pas maquillé en victoire nette). |
 
-### `ICT-12d-InhibitedActionAnimat-Python.ipynb` — 21 cellules (12 md, 9 code, 9/9 exécutées)
+### `ICT-12d-InhibitedActionAnimat-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -582,7 +582,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Les seuils de verdict (0,3 nat, 0,1) sont affichés mais leur origine n'est pas discutée — le drop observé est si loin du seuil que le choix importe peu, mais le seuil 0 de l'efficacité est un non-seuil (tout drop > 0 compte). (2) Exos silencieux : squelette commenté, rappel commenté aussi — le pattern 02/04 poussé à son maximum. |
 | Verdict | **SOLIDE** — l'échelle Laborit reçoit son substrat falsifiable : quatre verdicts, contrôle par branche d'action, robustesse 5 seeds avec dispersion affichée ; le pont I(R) (l'action ne module plus la dette d'irréversibilité) est le prolongement le plus original. |
 
-### `ICT-12e-Value-of-Information-Animat-Python.ipynb` — 23 cellules (15 md, 8 code, 8/8 exécutées)
+### `ICT-12e-Value-of-Information-Animat-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -592,7 +592,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Monde 2 états × 2 actions — assumé et écrit (contrat binaire du cross-engine, multi-états hors contrat) : portée bornée proprement. (2) L'animat est décisionnel mais pas encore **actif** (coût endogène du senseur renvoyé au cran suivant) : le titre « animat incarné » anticipe sur la greffe 4 (#13570). |
 | Verdict | **SOLIDE** — le standard organ-first appliqué à la VOI : formes closes dans `ict.voi`, comparateur cross-engine, contrôles négatif/oracle/bruit, contrat d'accord chiffré — le carnet démontre l'organe sans le réécrire. |
 
-### `ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb` — 46 cellules (25 md, 21 code, 21/21 exécutées)
+### `ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -602,7 +602,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) L'appariement inter-régimes fait beaucoup en une cellule (3862 caractères) — la chaîne empreinte sha → verdict est lisible en sortie, le déroulé ne l'est pas. (2) b1_max_persistence à 5 runs : la disymétrie R2 (0,026-0,41) vs R3/R4 (0 exact) est nette, mais la borne inférieure de détection (b1 minimal détectable à 5 runs) n'est pas affichée. |
 | Verdict | **SOLIDE** — le carnet-charnière de la strate 3 : Axelrod reproduit, seuil théorique retrouvé, équilibre polymorphe, et la question TDA (stratégie comme forme) reçoit une réponse à trois visages dont un négatif affiché (R3−R4=0) — le plus riche de la tranche à ce jour. |
 
-### `ICT-13b-DecroisementDynamiqueObservable-Python.ipynb` — 32 cellules (21 md, 11 code, 11/11 exécutées)
+### `ICT-13b-DecroisementDynamiqueObservable-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -612,7 +612,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) La table décroisée de la section 3 montre b1=0 partout (comptes de trous à échelle pleine) alors que la persistance maximale (0,50) vit dans les sections ultérieures — les deux échelles coexistent sans que la sortie rappelle laquelle parle. (2) Les 4 PRs arbitrées ne sont pas nommées dans les sorties lues (le renvoi à #12673 est dans le md) — le lien banc → PR se reconstitue hors carnet. |
 | Verdict | **SOLIDE** — le genre exact que l'extension veut capturer : une annexe qui **arbitre** quatre bancs divergents par plan factoriel, contrôle de résolution et multi-seed, et conclut « chaque PR garde sa substance, aucun banc à refaire » — le ground-truth de l'arbitrage #12673. |
 
-### `ICT-14-FreeEnergySurprise-Python.ipynb` — 22 cellules (14 md, 8 code, 8/8 exécutées)
+### `ICT-14-FreeEnergySurprise-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -622,7 +622,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Les taux de divergence (35 %, 15 %) sont donnés sans effectif des comparaisons sous-jacentes — la granularité du pourcentage n'est pas lisible en sortie. (2) La partie May tient en 3 lignes de sortie : le pont énergie-libre/bifurcation est esquissé ici, son développement vit dans 14b — découpage assumé mais la section frôle l'annexe. |
 | Verdict | **SOLIDE** — réponse nette et falsifiée à la question du titre : F fixe = redondant (mesuré), F adaptatif = information nouvelle concentrée sur les discontinuités (mesuré) ; la décomposition accuracy/complexity est écrite et démontrée en sortie. |
 
-### `ICT-14b-ActiveInferenceEFE-Python.ipynb` — 25 cellules (15 md, 10 code, 10/10 exécutées)
+### `ICT-14b-ActiveInferenceEFE-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -632,7 +632,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Le Δ +0,247 est porté par 4 seeds sur 5 — **seed 1 inverse le sens** (recA 0,015 vs recB 0,510) sans lecture par seed dans le md : la moyenne masque une défaite complète d'un seed. (2) Exos silencieux (squelette commenté). |
 | Verdict | **SOLIDE** — le null adverse exécuté (0 violation) est le geste qui distingue ce banc d'une démo : l'avantage est **attribué**, pas dépeint ; la frontière de validité (régime stationnaire) est mesurée et assumée. |
 
-### `ICT-15-IntegratedComplexity` — 25 cellules (17 md, 8 code, 8/8 exécutées)
+### `ICT-15-IntegratedComplexity` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -642,7 +642,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Les taus par graine sont instables (seed 99 : k concorde à +1,00 avec ec quand seed 1 les oppose à −1,00) sans lecture par graine dans le md. (2) Gate 5 évalué sur une seule graine (seed=7 par défaut) — la coïncidence des changepoints n'est pas multi-seed. (3) Exos silencieux, dont l'exo 1 (LZMA) qui mesurerait K avec le vrai compresseur au lieu de zlib. |
 | Verdict | **SOLIDE** — le capstone tire la conclusion honnête à deux faces : divergence des **classements** (négatif assumé, affiché en sortie) + convergence des **changepoints** à travers le pli ; verdict INTRINSIC documenté pour Φ strict (intégrale sur toutes les partitions intractable), proxy déclaré. La thèse fondatrice sort *opérationalisée*, pas décrétée. |
 
-### `ICT-15b-SensitivityCanonicity` — 43 cellules (26 md, 17 code, 17/17 exécutées)
+### `ICT-15b-SensitivityCanonicity` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -652,7 +652,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Le rejet de S2 repose sur s_max=0 : la trajectoire reste entièrement dans le régime haut (2000/2000) et ne visite jamais deux états voisins — l'« inconsistency » mesure peut-être la couverture d'échantillonnage, pas la structure ; aucune mise en garde de ce type dans le md. (2) Exos silencieux, dont l'exo 3 (vérification manuelle MAJ_4) qui serait le contrôle étudiant le plus direct de la borne. |
 | Verdict | **SOLIDE** — banc de réfutation canonique : conjecture posée, comptée, rejetée à 5/8 avec interprétation théorique, contrôle positif sur fonctions connues exécuté. Le caveat S2 (s_max nul par non-visite) est la seule dette, de lecture. |
 
-### `ICT-15c-MetaProxyObstruction` — 23 cellules (12 md, 11 code, 11/11 exécutées)
+### `ICT-15c-MetaProxyObstruction` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -662,7 +662,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Le verdict NOISE clôt le fil sans analyse des paires : gray_scott↔may (1,7170) et axelrod↔grokking (0,7207) encadrent un facteur 2,4 d'hétérogénéité que le md n'exploite pas. (2) Exo 1 redemande « le verdict 4 substrats » déjà imprimé par la cellule 12 — exercice sans écart au livré. (3) Un seul état par substrat (pas de graines) : la stabilité du verdict NOISE elle-même n'est pas mesurée. |
 | Verdict | **SOLIDE** — négatif propre et falsifiable : seuils écrits AVANT la mesure, verdict NOISE assumé en sortie, artefact d'instrument (saturation #7578) diagnostiqué et corrigé avec sa trace pédagogique. L'objet méta-proxy n'existe pas en l'état — c'est un résultat, pas un échec. |
 
-### `ICT-15e-Bridge2-RecoverabilityAgency` — 25 cellules (15 md, 10 code, 10/10 exécutées)
+### `ICT-15e-Bridge2-RecoverabilityAgency` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -672,7 +672,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) La discrimination repose entièrement sur le contraste random-walk : **RD-vs-diff sous le p95 null sur les trois substrats** (1,776/2,460/1,668 vs 2,689/2,750/2,670) — la signature « irréductiblement temporelle » pourrait se réduire à une interpolation lisse entre extrema, nuance non surfacée dans le md (l'exo 2 extended_signature serait la réponse). (2) Diversité de graines limitée à un seul alternatif (seed 7). (3) Exos 1-2 silencieux. |
 | Verdict | **SOLIDE** — épistémologie exemplaire : pré-enregistrement écrit, trois contrôles dont un sanity négatif exécuté, seuil par permutation, lecture des magnitudes au-delà du binaire, reproductibilité montrée. Le pont #2 est livré vivant avec sa marge faible déclarée. |
 
-### `ICT-15f-Bridge1bis-DecoupledFamily` — 24 cellules (16 md, 8 code, 8/8 exécutées)
+### `ICT-15f-Bridge1bis-DecoupledFamily` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -682,7 +682,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) 4 seeds et non la batterie canonique de 5 (99 absent). (2) La dégradation « récupération déterministe = géométrique insensible à la barrière » (0,800 constant) frôle la trivialité — le carnet le dit lui-même (leçon 3) mais le contraste ne vit que sur la jambe stochastique. (3) Exos silencieux. |
 | Verdict | **SOLIDE** — design quasi irréprochable : découplage par construction **vérifié en sortie**, confondant (barrière) identifié puis intégré à la purge (FWL 2-cov), null par seed, contrôle positif re-couplé exécuté, verdict unanime. La falsification du Pont #1 sort généralisée avec la méthode qui l'établit. |
 
-### `ICT-15g-EmpiricalHuangExploitation` — 21 cellules (8 md, 13 code, 13/13 exécutées)
+### `ICT-15g-EmpiricalHuangExploitation` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -692,7 +692,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) La tension avec le rejet 5/8 d'ICT-15b n'est pas réconciliée explicitement : mêmes théorème et ratio, verdicts opposés selon la discrétisation (le gray_scott d'ici dégénère là où celui de 15b rejetait) — la leçon « le verdict dépend du codage » méritait un paragraphe. (2) Le panel May 3/5 montre une sensibilité au choix d'observable déclarée mais non résolue. (3) Les 2 exos sont des stubs qui impriment déjà des verdicts partiels. |
 | Verdict | **SOLIDE** — l'instrument est ici gâté comme nulle part ailleurs dans la strate : théorème vérifié exhaustivement (256 fonctions, 0 violation), références exactes, bande appariée en degré, observables en panel, cross-check Čech recalculé en live. Le résultat est nuancé (consistent sur les substrats non dégénérés) et les dégenerescences sont isolées en inconclusive plutôt que comptées pour la cause. |
 
-### `ICT-15h-Bridge1bis-AsymmetricFamily` — 28 cellules (19 md, 9 code, 9/9 exécutées)
+### `ICT-15h-Bridge1bis-AsymmetricFamily` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -702,7 +702,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) L'asymétrie, corrélée à la récupération (+0,22-0,24), est mesurée à part mais **non incluse dans la purge FWL** (2-cov seulement) — unpartialized, elle reste un confondant candidat. (2) Le couplage résuel +0,471 après stratification dépasse le seuil calibré : le verdict repose entièrement sur la jambe statistique, ce que le md assume sans quantifier la robustesse à un 3ᵉ covariable. (3) 4 seeds, exos silencieux. |
 | Verdict | **SOLIDE** — la transparence méthodologique est le contenu du carnet : couplage structurel déclaré, échec du gate de découplage assumé, verdict porté par FWL sous null par seed, contrôle nul exécuté qui prouve que le protocole voit le couplage quand il existe. Le négatif du Pont #1 est généralisé aux bassins asymétriques. |
 
-### `ICT-15i-Bridge1bis-2DLandscape` — 27 cellules (18 md, 9 code, 9/9 exécutées)
+### `ICT-15i-Bridge1bis-2DLandscape` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -712,7 +712,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Seed 42 : \|partial_min\| = 0,134 dépasse le null p95 unilatéral (0,099) — côté **négatif** ; la convention « CONFIRMED-NEGATIVE » y lit une réfutation renforcée de l'effet positif, mais le caractère unilatéral/bilatéral du test n'est pas écrit. (2) Le null p95 le plus bas (0,099-0,129) est serré face aux partials d'autres seeds — la marge est mince et non commentée. |
 | Verdict | **SOLIDE** — la forme terminale du chantier : le test est mené dans le régime qui **maximalise la chance de l'hypothèse concurrente** (knob orthogonal, scalaire charitable, découplage vérifié < 0,2, valeurs propres vérifiées analytiquement) — et le négatif tient quand même. Clôture d'Epic à trois régimes convergents, la plus forte preuve de la strate. |
 
-### `ICT-15j-NerveDiscriminant` — 21 cellules (12 md, 9 code, 9/9 exécutées)
+### `ICT-15j-NerveDiscriminant` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -722,7 +722,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) `diverges_from_svd: None` / `rho_svd: None` dans le verdict rendu : la jambe d'acceptance « diverge de la SVD » est discutée qualitativement (gray_scott) mais **jamais calculée** — le contrat pré-enregistré n'est fermé que sur deux jambes sur trois. (2) grokking : b1=0,1100 en cellule 8 vs 0,0453 dans la table finale, sans phrase de réconciliation (graine/médiane ?). (3) Exos silencieux. |
 | Verdict | **SOLIDE** — l'épisode #12673 vaut pédagogiquement plus que le résultat : un négatif autopsié (observable dégénéré), un substrat régénéré, la baseline morte conservée côte à côte, le verdict révisé par écrit. gudhi réel, acceptance pré-enregistrée, CPU borné tenu (0,02 s), robustesse multi-seed. Le `rho_svd: None` est la seule jambe non fermée. |
 
-### `ICT-15k-RecollementMacroCells` — 36 cellules (24 md, 12 code, 12/12 exécutées)
+### `ICT-15k-RecollementMacroCells` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -732,7 +732,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Le compteur « div=15 » à marge 0 sature à T (15 pas = toutes les étapes) : la granularité par pas n'est pas distinguée du décompte plafonné. (2) Le carnet livre le cadre macrocell/fibres/transports, pas l'algorithme Hashlife complet (mémoïsation inter-niveaux, superspeed) — le titre « comme espace étalé » est exact, mais un lecteur peut attendre Gosper entier. (3) Exos silencieux. |
 | Verdict | **SOLIDE** — le plus bel agencement instrumental de la strate : moteur calibré sur constantes canoniques, contraste sain/cassé binaire, témoin qui **paie** (30/30), et un résultat physique net — le rayon causal mesuré indépendamment prédit la marge de recollement requise, sur 3 règles × 3 seeds. La dette #7744 (nerf jamais construit) est soldée par la structure que le substrat impose lui-même. |
 
-### `ICT-15l-IndependanceGenerateur` — 23 cellules (13 md, 10 code, 10/10 exécutées)
+### `ICT-15l-IndependanceGenerateur` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -742,7 +742,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) L'exo 2 (« le relief croît-il avec le taux de turnover ? ») est exactement le prolongement expérimental du finding — silencieux, la démonstration du confond reste binaire là où une courbe relief(μ) la rendrait graduée. (2) R2 à σ=0,21 sur 3 graines (0,19-0,70) : la dispersion inter-graines du générateur B n'est pas commentée alors qu'elle dépasse celle de tous les autres régimes. (3) 3 graines seulement. |
 | Verdict | **SOLIDE** — le carnet d'audit modèle : verdict pré-enregistré puis **calculé** (jamais écrit à la main), contrôle négatif construit pour être indiscernable du vrai générateur (prouvé bit à bit), appariement déclaré régime par régime. Le relief b1 est invalidé comme discriminant de nouveauté — la leçon est méthodologique et elle est livrée. |
 
-### `ICT-16-MDLTwoPartCode` — 29 cellules (17 md, 12 code, 12/12 exécutées)
+### `ICT-16-MDLTwoPartCode` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -752,7 +752,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) La corrélation MDL↔zlib porte sur **8 trajectoires** (p=0,006 sur n=8) — significative mais étroite ; (2) les deux scénarios NLL sont **construits** (A/B synthétiques), pas des substrats ICT réels — le raccord au reste de la série n'est pas mesuré ; (3) 3 exos silencieux. |
 | Verdict | **SOLIDE** — la paire de contrôles est le geste fort : MDL validé **et** falsifié au bon endroit (scénario sans structure → k0, 0 bit gagné), proxy corrélé à un instrument indépendant, bosse tracée avec son pic chiffré. Banc MDL honnête et complet. |
 
-### `ICT-17-EpsilonMachine` — 28 cellules (17 md, 11 code, 11/11 exécutées)
+### `ICT-17-EpsilonMachine` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -762,7 +762,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Le ratio S3 agree/n_used = 0,009 (18 accord / 1 980 désaccord) est extrême et renvoyé à la seule note de granularité (C198) — le cas S3 méritait un diagnostic propre. (2) Gate 9 (plafond I ≤ E) n'est vérifié que sur S2. (3) 3 exos silencieux. |
 | Verdict | **SOLIDE** — algorithme réel (pas de proxy), contrôle de synchronisation, et surtout deux gates qui testent l'instrument contre ses limites : Gate 8 déclare l'accord Crutchfield/Hoel **impossible par construction** (granularités différentes) et reporte la métrique complémentaire au lieu de l'enterrer ; Gate 9 vérifie le plafond théorique avec un bon **et** un mauvais estimateur. La jambe computationnelle est raccordée à des substrats nommés de la série. |
 
-### `ICT-17b-Grokking-CompressionProgress` — 36 cellules (19 md, 17 code, 17/17 exécutées)
+### `ICT-17b-Grokking-CompressionProgress` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
