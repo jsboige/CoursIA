@@ -19,4 +19,4 @@ nettoyage, visualisation et statistiques descriptives sur des données réelles.
 - Le package R `palmerpenguins` (compilation, documentation, CSV) est distribué sous **CC0 1.0** (« dedicated to the public domain ») : réutilisation et redistribution autorisées, y compris commercialement, sans restriction.
 - Les données LTER sous-jacentes relèvent de la politique de diffusion LTER (« distribution unlimited ») avec **attribution attendue** de la source — couverte par la citation ci-dessus, reproduite également dans les notebooks qui consomment le jeu.
 
-Aucune modification des CSV n'a été faite au vendoring (contrôle : `wc -l` = 345 lignes chacun, en-tête compris).
+Aucune modification des CSV n'a été faite au vendoring (contrôle `wc -l` au moment du dépôt : mêmes dimensions que la référence, en-tête compris).
