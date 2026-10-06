@@ -23,3 +23,4 @@ Stratégie de régression Ridge prédisant les rendements du jour suivant sur un
 ## Fichiers
 
 - `main.py` — Stratégie (`MLRegressionAlgorithm`)
+- `quantbook.ipynb` - QuantBook de recherche : régression appliquée à la prévision des rendements

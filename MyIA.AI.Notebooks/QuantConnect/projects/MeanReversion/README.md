@@ -33,7 +33,8 @@ lean backtest --project .
 ## Fichiers
 
 - `main.py` - Stratégie (v4.0, mean-reversion sur ETF sectoriels)
-- `research.ipynb` - Optimisation RSI, stop-loss et tests de période de détention
+- `research.ipynb` - Recherche : pivot stocks -> ETF sectoriels, hypothèses H1-H8 (RSI, stop-loss, période de détention...)
+- `quantbook.ipynb` - Reproduction QuantBook de l'analyse exploratoire sur les ETF sectoriels (données natives QC)
 
 ## Références
 

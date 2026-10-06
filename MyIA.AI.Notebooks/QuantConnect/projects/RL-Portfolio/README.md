@@ -21,3 +21,5 @@ Template/skeleton project for RL portfolio optimization.
 ## Files
 
 - main.py - Template structure
+- quantbook.ipynb - QuantBook de recherche : allocation de portefeuille par apprentissage par renforcement
+- research.ipynb - Recherche : analyse et optimisation de la stratégie Q-Learning d'allocation (implémentation effective - main.py reste un template)
