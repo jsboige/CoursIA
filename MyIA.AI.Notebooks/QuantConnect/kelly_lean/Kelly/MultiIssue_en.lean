@@ -55,7 +55,7 @@ open Real
     independent bets, the expected log-capital after one step is indeed the
     sum of contributions (total capital is the product of multipliers, whose
     log is the sum of logs). -/
-def jointGrowth2 (β₁ β₂ : Bet) (f₁ f₂ : ℝ) : ℝ :=
+noncomputable def jointGrowth2 (β₁ β₂ : Bet) (f₁ f₂ : ℝ) : ℝ :=
   growth β₁ f₁ + growth β₂ f₂
 
 /-- **Multi-bet Kelly theorem at 2 bets (maximiser)**: for two independent

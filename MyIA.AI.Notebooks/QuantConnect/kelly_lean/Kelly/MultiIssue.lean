@@ -55,7 +55,7 @@ open Real
     individuelles. Pour des paris indépendants, le log-capital espéré après un
     pas est bien la somme des contributions (le capital total est le produit
     des multiplicateurs, dont le log est la somme des logs). -/
-def jointGrowth2 (β₁ β₂ : Bet) (f₁ f₂ : ℝ) : ℝ :=
+noncomputable def jointGrowth2 (β₁ β₂ : Bet) (f₁ f₂ : ℝ) : ℝ :=
   growth β₁ f₁ + growth β₂ f₂
 
 /-- **Théorème de Kelly multi-pari à 2 paris (maximiseur)** : pour deux paris
