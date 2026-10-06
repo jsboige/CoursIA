@@ -264,3 +264,6 @@ MyIA.AI.Notebooks/RL/rlpt_1_ppo_lm_rlhf.ipynb	MyIA.AI.Notebooks/RL/PostTraining/
 MyIA.AI.Notebooks/RL/rlpt_2_grpo_minimal.ipynb	MyIA.AI.Notebooks/RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/RL/rlpt_3_reward_hacking.ipynb	MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/RL/rlpt_4_dpo_vs_ppo.ipynb	MyIA.AI.Notebooks/RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb	2026-10-06	myia-po-2026:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17b-Knots-Invariants-Companion.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb	2026-10-06	myia-po-2026:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb	2026-10-06	myia-po-2026:CoursIA
