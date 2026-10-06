@@ -529,6 +529,66 @@ class TestActuariatManifest:
         assert after == baseline + 15
 
 
+class TestLlmEngineerManifest:
+    """Tests pour le manifeste LLM Engineer (#19544, EPIC #19543 pli 1).
+
+    Couvre : (a) tous les notebooks cites existent sur disque ;
+    (b) le manifeste compile en 8 branches + 6 accretions ;
+    (c) la duree totale est raisonnable ;
+    (d) les jumeaux .NET (10d/10e/10f) n'apparaissent qu'en detour, pas en branche principale.
+    """
+    manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "llm-engineer.json"
+
+    def test_all_selected_notebooks_exist_on_disk(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        selected = [path for group in manifest["branches"] + manifest["accretions"]
+                    for path in group["notebooks"]]
+        assert len(selected) == len(set(selected)), "duplicate path in manifest"
+        assert all((gp.REPO_ROOT / "MyIA.AI.Notebooks" / path).is_file()
+                   for path in selected)
+
+    def test_compiles_eight_branches_and_six_accretions(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        branches = [b["id"] for b in manifest["branches"]]
+        accretions = [a["id"] for a in manifest["accretions"]]
+        compiled = gp.compile_parcours(catalog, manifest, branches, accretions)
+        assert len(compiled["groups"]) == len(branches) + len(accretions)
+        assert [g["id"] for g in compiled["groups"][:len(branches)]] == branches
+
+    def test_total_duration_under_50_hours(self):
+        """Le parcours complet tient en moins de 50 h, sinon c'est un autre format qu'un parcours."""
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = gp.compile_parcours(
+            catalog, manifest,
+            [b["id"] for b in manifest["branches"]],
+            [a["id"] for a in manifest["accretions"]],
+        )
+        assert compiled["duration_minutes"] < 50 * 60, (
+            f"duree totale {compiled['duration_minutes']} min >= 50 h, "
+            f"le parcours n'est plus un itineraire mais une encyclopedie"
+        )
+
+    def test_dotnet_jumeaux_only_in_detour_not_main_branch(self):
+        """Les jumeaux .NET (10d, 10e, 10f) sont en detour, jamais en branche principale.
+
+        La consigne du pli 1 (issue #19544) : les jumeaux .NET apparaissent comme
+        detours, pas comme branche principale (l'apprenant Python doit pouvoir
+        suivre le parcours ; l'apprenant .NET a un point d'entree).
+        """
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        dotnet_jumeaux = ["10d", "10e", "10f"]
+        for branch in manifest["branches"]:
+            for path in branch["notebooks"]:
+                for code in dotnet_jumeaux:
+                    if code in path and "DotNet" in path:
+                        raise AssertionError(
+                            f"jumeau .NET {path} dans la branche principale {branch['id']}; "
+                            f"il devrait etre dans une accretion (detour)"
+                        )
+
+
 class TestFailClosedWrite:
     def test_manual_page_without_marker_is_refused_and_preserved(
             self, monkeypatch, tmp_path, capsys):

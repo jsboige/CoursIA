@@ -1,0 +1,584 @@
+{
+  "groups": [
+    {
+      "id": "fondations-texte",
+      "kind": "branches",
+      "prerequisites": [],
+      "notebooks": [
+        {
+          "path": "GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb",
+          "title": "Tokenisation from scratch — l'unité de compte de tout le dépôt",
+          "duration_minutes": 30,
+          "kernel": "Python (coursia-ml-training)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb",
+          "title": "Embeddings from scratch — word2vec skip-gram, la géométrie avant l'API",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "appel-controle",
+      "kind": "branches",
+      "prerequisites": [
+        "fondations-texte"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Texte/01_OpenAI_Intro.ipynb",
+          "title": "1. Introduction a l'IA generative avec l'API OpenAI",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/02_PromptEngineering.ipynb",
+          "title": "2. Prompt Engineering : Techniques Avancées",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/03_Structured_Outputs.ipynb",
+          "title": "3. Structured Outputs : Sorties JSON Garanties",
+          "duration_minutes": 45,
+          "kernel": "base",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/03b_Typed_Decisions_System1.ipynb",
+          "title": "3b. Décisions typées « système 1 » : décider sans générer",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/03c_Constrained_Decoding_Python.ipynb",
+          "title": "3c. Décodage contraint au niveau du token",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/04_Function_Calling.ipynb",
+          "title": "Function Calling : Connecter les LLMs au Monde Réel",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "stockage-rag",
+      "kind": "branches",
+      "prerequisites": [
+        "fondations-texte"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb",
+          "title": "Stockage vectoriel réel — persistance, index ANN (HNSW) et compromis rappel-exact",
+          "duration_minutes": 45,
+          "kernel": "Python (coursia-ml-training)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb",
+          "title": "RAG 05b — Mode serveur Qdrant : compromis exact/ANN ef sur 10k vecteurs (démo méthode)",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb",
+          "title": "02 — Retrieval avancé : HyDE, reranking et évaluation",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb",
+          "title": "RAG 08 — Kernel Memory et la recherche hybride : BM25 + dense fusionnés en RRF, et la mesure honnête du gain sur petit corpus",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/RAG-et-Memoire-Semantique/01-Hands-On-Grounding.ipynb",
+          "title": "Hands-On Grounding — Qdrant en mémoire",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "inference-service",
+      "kind": "branches",
+      "prerequisites": [
+        "appel-controle"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Texte/10_LocalLlama.ipynb",
+          "title": "10. Hébergement Local de Modèles Génératifs",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/10b_Inference_Mechanics.ipynb",
+          "title": "10b. Mécanique d'inférence LLM : construire et mesurer un KV-cache",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/10c_Long_Context_Strategies.ipynb",
+          "title": "10c. Stratégies pour contextes longs — budget de tokens, biais de position, map-reduce, prefix caching",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/11_Quantization.ipynb",
+          "title": "11. Quantization",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "agents-memoire",
+      "kind": "branches",
+      "prerequisites": [
+        "appel-controle",
+        "stockage-rag"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Texte/13_Agentic_Orchestration.ipynb",
+          "title": "13. Orchestration agentique du test-time scaling",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/14_Persistent_Memory.ipynb",
+          "title": "14. Memoire persistante pour le test-time scaling",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/14b_Paginated_Memory-Python.ipynb",
+          "title": "14b. Memoire paginee d'agent -- fenetre glissante, resume progressif, eviction",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/RAG-et-Memoire-Semantique/06-KernelMemory-InProcess.ipynb",
+          "title": "06 — Kernel Memory in-process : la couche d'abstraction Microsoft",
+          "duration_minutes": 45,
+          "kernel": ".NET (C#)",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/RAG-et-Memoire-Semantique/07-KernelMemory-Python-Quickstart.ipynb",
+          "title": "RAG 07 — Kernel Memory Python : ingestion, recherche et citations par-dessus Qdrant (mode service)",
+          "duration_minutes": 45,
+          "kernel": "Python 3 (ipykernel)",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": true,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "adaptation",
+      "kind": "branches",
+      "prerequisites": [
+        "inference-service"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb",
+          "title": "FT-00a : LoRA from scratch — démonter l'adaptation bas-rang",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb",
+          "title": "FT-00b : LoRA hyperparams from scratch — ablation rang × alpha",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb",
+          "title": "FT-00c : LoRA SOTA — la même adaptation, cette fois avec peft",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/FineTuning/FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb",
+          "title": "FT-00d : LoRA + QLoRA SOTA Comparison",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb",
+          "title": "FT-01 : Introduction au Fine-Tuning",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb",
+          "title": "FT-02 : QLoRA — Fine-Tuning avec Quantization",
+          "duration_minutes": 60,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb",
+          "title": "FT-03 : Supervised Fine-Tuning (SFT) — Enseigner un format de reponse",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb",
+          "title": "FT-04 : RLHF et Alignement — Préférences Humaines et DPO",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/PostTraining/PT_01_intro_post_training.ipynb",
+          "title": "PT-01 — Introduction et vue d'ensemble",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/PostTraining/PT_02_sft_baseline.ipynb",
+          "title": "PT-02 — Supervised Fine-Tuning baseline (SFT)",
+          "duration_minutes": 45,
+          "kernel": "coursia-ml-training",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb",
+          "title": "PT-03 — Direct Préférence Optimization (DPO)",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/PostTraining/PT_06_eval_comparative.ipynb",
+          "title": "PT-06 — Evaluation Comparative du Post-Training",
+          "duration_minutes": 30,
+          "kernel": "coursia-ml-training",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "evaluation",
+      "kind": "branches",
+      "prerequisites": [
+        "appel-controle"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Texte/22_Evaluating_Generated_Text.ipynb",
+          "title": "22 — Évaluer les sorties générées : BLEU, ROUGE, perplexité et juge LLM",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/13b_Agent_Evaluation.ipynb",
+          "title": "13b — Évaluation d'agents : succès, coût, ablation et sûreté",
+          "duration_minutes": 30,
+          "kernel": "Python 3 (coursia2)",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "securite",
+      "kind": "branches",
+      "prerequisites": [
+        "appel-controle"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Texte/09b_Prompt_Security_RedTeam.ipynb",
+          "title": "9b. Prompt Security & Red-Teaming sur notre stack self-hosted",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Security/Control/Control-Refusal-Direction.ipynb",
+          "title": "Controle par interpretabilite — direction du refus, ablation, unlearning",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Security/Tooling/Tooling-MCP-Attack-Surface.ipynb",
+          "title": "Surface d'attaque des outils MCP — le piège de la description",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    }
+  ],
+  "duration_minutes": 1560,
+  "known_duration_minutes": 1560
+}
