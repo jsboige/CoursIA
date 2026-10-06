@@ -28,7 +28,13 @@ Four choices shape it:
    most 0.5 % above the reference price), refused unless the account is a
    paper account (``D`` prefix) and the connection is read-write. ``place``
    waits for the fills and books them before returning, so the sells of a cycle
-   fund its buys.
+   fund its buys. The limit price sits on the price ladder of the order route
+   (its IBKR market rule), not on the contract's ``minTick``: a Xetra ETF
+   above 50 EUR moves by 0.01 on SMART while its ``minTick`` is 0.0001. A
+   price off the ladder is rejected with error 110, which ``ib_insync``
+   reports as a warning only, leaving the order ``PendingSubmit``: an order the
+   gateway never acknowledges is cancelled and raises
+   :class:`OrderNotAcknowledgedError` instead of passing for a working order.
 
 The module imports ``ib_insync`` lazily: importing it does not require the
 library, and the tests drive the adapter with a fake client.
@@ -84,6 +90,10 @@ class LedgerError(RuntimeError):
 
 class LedgerDriftError(LedgerError):
     """The ledger holds more of a line than the account does."""
+
+
+class OrderNotAcknowledgedError(RuntimeError):
+    """The gateway never acknowledged an order; it was cancelled, the cycle must stop."""
 
 
 # -- sleeve ledger ------------------------------------------------------------
@@ -208,7 +218,7 @@ class IBKRBroker:
         self.account = self._select_account(account)
         self.price_sources: dict[str, str] = {}
         self._contracts: dict[str, Any] = {}
-        self._ticks: dict[str, float] = {}
+        self._ladders: dict[str, list[tuple[float, float]]] = {}
         self._prices: dict[str, float] = {}
         self._synced = False
         for spec in self.lines.values():
@@ -246,9 +256,36 @@ class IBKRBroker:
             contract = details[0].contract
             if contract.currency != spec.currency:
                 raise LedgerError(f"{symbol} trades in {contract.currency}, expected {spec.currency}")
+            self._ladders[symbol] = self._price_ladder(symbol, details[0], spec.exchange)
             self._contracts[symbol] = contract
-            self._ticks[symbol] = float(details[0].minTick or 0.01)
         return self._contracts[symbol]
+
+    def _price_ladder(self, symbol: str, details: Any, exchange: str) -> list[tuple[float, float]]:
+        """Price increments the route ``exchange`` accepts, as ``(low edge, increment)`` rungs.
+
+        ``validExchanges`` and ``marketRuleIds`` are parallel lists: the rule
+        paired with the route is the one the exchange enforces. Details without
+        market rules fall back to ``minTick``.
+        """
+        venues = [v.strip() for v in (getattr(details, "validExchanges", "") or "").split(",")]
+        rules = [r.strip() for r in (getattr(details, "marketRuleIds", "") or "").split(",")]
+        if rules == [""]:
+            return [(0.0, float(details.minTick or 0.01))]
+        if len(rules) != len(venues) or exchange not in venues or not rules[venues.index(exchange)].isdigit():
+            raise ValueError(f"no market rule for {symbol} on {exchange}")
+        rungs = self.ib.reqMarketRule(int(rules[venues.index(exchange)]))
+        if not rungs:
+            raise ValueError(f"market rule of {symbol} on {exchange} is empty")
+        return sorted((float(r.lowEdge), float(r.increment)) for r in rungs)
+
+    def tick(self, symbol: str, price: float) -> float:
+        """Price increment of ``symbol`` at ``price`` on its order route."""
+        self._contract(symbol)
+        increment = self._ladders[symbol][0][1]
+        for low_edge, step in self._ladders[symbol]:
+            if price >= low_edge:
+                increment = step
+        return increment
 
     def _symbol_of(self, con_id: int) -> str | None:
         for symbol, spec in self.lines.items():
@@ -373,6 +410,13 @@ class IBKRBroker:
             if trade.isDone():
                 break
             self.ib.sleep(0.5)
+        if not trade.fills and trade.orderStatus.status == "PendingSubmit":
+            self.ib.cancelOrder(trade.order)
+            raise OrderNotAcknowledgedError(
+                f"the gateway never acknowledged the order for {quantity:+d} {symbol} at {limit} "
+                f"(PendingSubmit after {self.fill_timeout:g} s, cancelled); error 110 in the "
+                "client log means a price off the tick ladder"
+            )
         changed = False
         for fill in trade.fills:
             changed |= self._book_fill(fill)
@@ -381,10 +425,9 @@ class IBKRBroker:
         return str(trade.order.orderId)
 
     def limit_price(self, symbol: str, quantity: int, reference: float) -> float:
-        """Reference price moved by the collar against us, rounded to the tick."""
-        self._contract(symbol)
-        tick = self._ticks[symbol]
+        """Reference price moved by the collar against us, rounded to the route's tick."""
         raw = reference * (1.0 + self.collar if quantity > 0 else 1.0 - self.collar)
+        tick = self.tick(symbol, raw)
         return round(round(raw / tick) * tick, 10)
 
 

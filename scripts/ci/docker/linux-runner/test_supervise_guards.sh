@@ -43,6 +43,13 @@ REPO_ENTRYPOINT_SHA="$(sha256sum "$SCRIPT_DIR/entrypoint.sh" 2>/dev/null | awk '
 REPO_HEALTH_SHA="$(sha256sum "$SCRIPT_DIR/work_cache_health.sh" 2>/dev/null | awk '{print $1}')"
 cat > "$TEST_DIR/bin/docker" <<STUB
 #!/usr/bin/env bash
+# Endpoint vise : les gardes de perimetre #15164 sondent CHAQUE daemon par
+# docker -H <socket>. EP=default quand aucun -H n'est passe.
+EP="default"
+if [ "\$1" = "-H" ]; then EP="\$2"; shift 2; fi
+# Daemon DOWN sur l'endpoint alternatif : TOUT echoue (docker ps y compris)
+# alors que le socket existe -- c'est le cas present-but-mute de #15164.
+if [ "\$EP" != "default" ] && [ "\$STUB_DOCKER_ID_ALT" = "DOWN" ]; then exit 1; fi
 if [ "\$1" = "run" ]; then
   case "\$*" in
     *work_cache_health.sh*)
@@ -55,14 +62,43 @@ if [ "\$1" = "run" ]; then
   exit 0
 fi
 # Garde d'appartenance du mur agrege (#15157) : la liste d'IDs rendue au
-# filtre label=coursia-ci=1 est pilotable par le test via STUB_CI_CONTAINER_IDS.
+# filtre label=coursia-ci=1 est pilotable par le test via STUB_CI_CONTAINER_IDS
+# (endpoint par defaut) et STUB_CI_CONTAINER_IDS_ALT (endpoint -H, #15164).
 if [ "\$1" = "ps" ] && echo "\$*" | grep -q 'label=coursia-ci=1'; then
-  if [ -n "\$STUB_CI_CONTAINER_IDS" ]; then printf '%s\n' \$STUB_CI_CONTAINER_IDS; fi
+  if [ "\$EP" != "default" ] && [ -n "\$STUB_CI_CONTAINER_IDS_ALT" ]; then
+    printf '%s\n' \$STUB_CI_CONTAINER_IDS_ALT
+  elif [ -n "\$STUB_CI_CONTAINER_IDS" ]; then
+    printf '%s\n' \$STUB_CI_CONTAINER_IDS
+  fi
   exit 0
 fi
 # Pilote cgroup du daemon (Test 59) : `docker info --format {{.CgroupDriver}}`.
 # Vide par defaut -- les autres tests gardent le chemin cgroupfs inchange.
-if [ "\$1" = "info" ]; then echo "\${STUB_CGROUP_DRIVER:-}"; exit 0; fi
+# ID de daemon par endpoint (#15164) : cle de deduplication de running_ci_mb.
+# STUB_DOCKER_ID_ALT="DOWN" simule un socket present mais muet (info exit 1).
+if [ "\$1" = "info" ]; then
+  case "\$*" in
+    *'{{.ID}}'*)
+      if [ "\$EP" != "default" ] && [ -n "\$STUB_DOCKER_ID_ALT" ]; then
+        [ "\$STUB_DOCKER_ID_ALT" = "DOWN" ] && exit 1
+        echo "\$STUB_DOCKER_ID_ALT"
+      else
+        echo "\${STUB_DOCKER_ID:-stub-desktop}"
+      fi
+      ;;
+    *) echo "\${STUB_CGROUP_DRIVER:-}" ;;
+  esac
+  exit 0
+fi
+# Caps memoire des conteneurs (#15164) : une ligne par ID demande, valeur en
+# octets pilotable par STUB_MEM_BYTES. Defaut 0 -- les autres probes inspect
+# (State.Status & co) gardent le silence d'avant.
+if [ "\$1" = "inspect" ]; then
+  case "\$*" in
+    *HostConfig.Memory*) shift 3; for _id in "\$@"; do echo "\${STUB_MEM_BYTES:-0}"; done ;;
+  esac
+  exit 0
+fi
 exit 0
 STUB
 chmod +x "$TEST_DIR/bin/docker"
@@ -2868,6 +2904,111 @@ root  900     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner
     ko "refus attendu avec un start vivant, rc=$rc err=$err"
   fi
   rm -f "$TEST_DIR/state-G/stop"
+)
+echo ""
+
+# --- Test 62 : #15164 -- la somme couvre les DEUX daemons, pas celui de DOCKER_HOST
+#
+# Mesure fondatrice (ai-01, 2026-09-08) : deux superviseurs ne comptaient
+# chacun que SA moitie de flotte et comparaient ce demi-total au budget ENTIER
+# -- 20480 Mo nominaux sous un budget declare de 12288, les deux gardes
+# vertes. La sonde DOIT enumerer les sockets declares et sommer les deux.
+echo "Test 62 : budget -- somme des caps sur les DEUX daemons declares (#15164)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  source_supervise
+  : > "$TEST_DIR/ce62.sock"
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/ce62.sock"
+  export STUB_CI_CONTAINER_IDS="a1 a2" STUB_CI_CONTAINER_IDS_ALT="b1" STUB_DOCKER_ID_ALT="ce-daemon"
+  export STUB_MEM_BYTES=1073741824
+  out="$(running_ci_mb 2>/dev/null)"
+  if [ "$out" = "3072" ]; then
+    ok "2 conteneurs Desktop + 1 docker-ce a 1 GiB chacun = 3072 Mo comptes"
+  else
+    ko "somme attendue 3072, rendue '$out'"
+  fi
+  unset COURSIA_RUNNER_DOCKER_ENDPOINTS STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES
+)
+echo ""
+
+# --- Test 63 : #15164 -- DOCKER_HOST epingle sur un socket liste : compte UNE fois
+#
+# Deduplication par ID de daemon, pas par chemin : si le endpoint par defaut
+# et un socket liste sont le MEME daemon (DOCKER_HOST pointant un socket deja
+# liste), les memes conteneurs ne doivent pas etre comptes deux fois. Le stub
+# rend le meme ID aux deux endpoints quand STUB_DOCKER_ID_ALT est vide.
+echo "Test 63 : budget -- meme daemon sous deux endpoints compte une fois (#15164)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  source_supervise
+  : > "$TEST_DIR/ce63.sock"
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/ce63.sock"
+  export STUB_CI_CONTAINER_IDS="a1" STUB_CI_CONTAINER_IDS_ALT="a1"
+  export STUB_MEM_BYTES=1073741824
+  out="$(running_ci_mb 2>/dev/null)"
+  if [ "$out" = "1024" ]; then
+    ok "meme ID de daemon aux deux endpoints : 1 GiB compte une fois, pas deux"
+  else
+    ko "somme attendue 1024 (dedup par ID), rendue '$out'"
+  fi
+  unset COURSIA_RUNNER_DOCKER_ENDPOINTS STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_MEM_BYTES
+)
+echo ""
+
+# --- Test 64 : #15164 -- socket PRESENT mais daemon muet : REFUS, jamais 0
+#
+# Le coeur du fail-closed : un daemon muet peut porter des conteneurs, compter
+# 0 pour lui est exactement le defaut que ce garde ferme. STUB_DOCKER_ID_ALT=DOWN
+# fait echouer TOUT (docker ps en tete) sur le second socket, socket present.
+# Deux observables : la sonde rend rc!=0 en nommant le socket sur stderr, et
+# assert_memory_budget REFUSE le demarrage en nommant l'impossibilite.
+echo "Test 64 : budget -- daemon muet sur socket present : refus, pas zero (#15164)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  source_supervise
+  : > "$TEST_DIR/ce64.sock"
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/ce64.sock"
+  export STUB_DOCKER_ID_ALT="DOWN"
+  out="$(running_ci_mb 2>"$TEST_DIR/t64.err")"; rc=$?
+  if [ "$rc" != "0" ] && grep -q "injoignable sur '$TEST_DIR/ce64.sock'" "$TEST_DIR/t64.err"; then
+    ok "sonde : rc=$rc, la raison nomme le socket muet"
+  else
+    ko "refus attendu, rc=$rc err='$(cat "$TEST_DIR/t64.err" 2>/dev/null)'"
+  fi
+  err="$( (assert_memory_budget start 1 512m) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && echo "$err" | grep -q "n'est PAS mesurable"; then
+    ok "assert_memory_budget refuse et nomme l'impossibilite de mesurer"
+  else
+    ko "refus du garde attendu, rc=$rc err='$err'"
+  fi
+  unset COURSIA_RUNNER_DOCKER_ENDPOINTS STUB_DOCKER_ID_ALT
+)
+echo ""
+
+# --- Test 65 : #15164 -- socket ABSENT : hors perimetre, pas un refus
+#
+# Frontiere du fail-closed : un chemin de socket absent n'est pas un daemon
+# muet -- c'est un daemon non installe (machine mono-daemon, conteneur de
+# runner sans le second socket monte). Il ne porte rien : l'ecarter DUIT sur
+# stderr mais ne refuse pas -- sinon aucune machine sans docker-ce ne
+# pourrait plus mesurer son budget.
+echo "Test 65 : budget -- socket absent : hors perimetre sans refus (#15164)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  source_supervise
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/pas-la.sock"
+  export STUB_CI_CONTAINER_IDS="a1" STUB_MEM_BYTES=1073741824
+  out="$(running_ci_mb 2>"$TEST_DIR/t65.err")"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "1024" ] && grep -q "hors perimetre" "$TEST_DIR/t65.err"; then
+    ok "socket absent ecarte et annonce, somme du daemon vivant comptee"
+  else
+    ko "rc=$rc out='$out' err='$(cat "$TEST_DIR/t65.err" 2>/dev/null)'"
+  fi
+  unset COURSIA_RUNNER_DOCKER_ENDPOINTS STUB_CI_CONTAINER_IDS STUB_MEM_BYTES
 )
 echo ""
 
