@@ -40,7 +40,7 @@ Outils internes du livre, sans exemple de stratégie à reproduire.
 | 02 | IdentifyingMissingData | détection des valeurs manquantes | [QC-Py-31-Transformer-Training](Python/QC-Py-31-Transformer-Training.ipynb) (`isna().sum()` par colonne) | COVERED |
 | 03 | UsingBoxPlotToIdentifyOutliers | boîte à moustaches | [Ensemble-DLinear-TFT](projects/Ensemble-DLinear-TFT/) (compare des Sharpe, ne repère pas de valeurs aberrantes) | PARTIAL |
 | 04 | UsingZScoreToIdentifyOutliers | score z | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | COVERED |
-| 05 | UsingIQRToIdentifyOutliers | écart interquartile | — | GAP |
+| 05 | UsingIQRToIdentifyOutliers | écart interquartile | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) (Partie 7) | COVERED |
 | 06 | RemovingOutliers | filtrage des valeurs aberrantes | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | PARTIAL |
 | 07 | TransformingOutliers | transformation logarithmique | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) (logarithme de la capitalisation, sans lien explicite avec les valeurs aberrantes) | PARTIAL |
 | 08 | CappingFlooringOutliers | écrêtage (winsorisation) | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) (`clip`) | COVERED |
@@ -53,7 +53,7 @@ Outils internes du livre, sans exemple de stratégie à reproduire.
 | 15 | HurstCoefficient | exposant de Hurst | [ML-Reversion-Trending](projects/ML-Reversion-Trending/) | COVERED |
 | 16 | CorrelationAnalysis | corrélation de Pearson, carte de chaleur | [QC-Py-03-Data-Management](Python/QC-Py-03-Data-Management.ipynb), [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | COVERED |
 | 17 | FeatureImportanceAnalysis | importance des variables (forêt aléatoire) | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb), [QC-Py-19-ML-Supervised-Classification](Python/QC-Py-19-ML-Supervised-Classification.ipynb) | COVERED |
-| 18 | AutoIdentificationOfFeatures | élimination récursive des variables (RFE) | — | GAP |
+| 18 | AutoIdentificationOfFeatures | élimination récursive des variables (RFE) | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) (Partie 6, `RFE` sur les features déjà filtrées par corrélation) | COVERED |
 | 19 | PCA | analyse en composantes principales | [PCA-StatArbitrage](projects/PCA-StatArbitrage/), [QC-Py-Cloud-06-PCA-StatArb](Python/QC-Py-Cloud-06-PCA-StatArb.ipynb) | COVERED |
 | 20 | DataSplit | séparation apprentissage / test | [QC-Py-21-Portfolio-Optimization-ML](Python/QC-Py-21-Portfolio-Optimization-ML.ipynb) (`train_test_split`) | COVERED |
 | 21 | KFoldCrossValidation | validation croisée | [QC-Py-19-ML-Supervised-Classification](Python/QC-Py-19-ML-Supervised-Classification.ipynb), [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) (`TimeSeriesSplit`, variante temporelle) | PARTIAL |
@@ -65,7 +65,7 @@ Outils internes du livre, sans exemple de stratégie à reproduire.
 | # | Script du livre | Modèle | Ressource du dépôt | Statut |
 |---|-----------------|--------|--------------------|--------|
 | 01 | LinearRegression | régression linéaire | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) | COVERED |
-| 02 | PolynomialRegression | régression polynomiale | — | GAP |
+| 02 | PolynomialRegression | régression polynomiale | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) (Partie 2, degrés 1/2/3 comparés) | COVERED |
 | 03 | LassoRegression | régularisation L1 | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb), [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) | COVERED |
 | 04 | RidgeRegression | régularisation L2 | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb), [ML-Regression](projects/ML-Regression/) | COVERED |
 | 05 | MarkovSwitchingDynamicRegression | régression à changement de régime (statsmodels) | [Markov-Regime-Detection](projects/Markov-Regime-Detection/) (`MarkovRegression`) | COVERED |
@@ -78,7 +78,7 @@ Outils internes du livre, sans exemple de stratégie à reproduire.
 | 12 | GaussianNaiveBayes | classifieur bayésien naïf gaussien | [ML-Gaussian-Classifier](projects/ML-Gaussian-Classifier/), [Gaussian-Direction-Classifier](projects/Gaussian-Direction-Classifier/) | COVERED |
 | 13 | ConvolutionalNeuralNetworks | réseau convolutif | [ML-Temporal-CNN](projects/ML-Temporal-CNN/), [ML-HeadShoulders-CNN](projects/ML-HeadShoulders-CNN/) | COVERED |
 | 14 | LGBRankerRanking | apprentissage du classement (`LGBMRanker`) | [Clustering-Fundamentals-ML](projects/Clustering-Fundamentals-ML/) | COVERED |
-| 15 | OPTICSClustering | partitionnement par densité (OPTICS) | — | GAP |
+| 15 | OPTICSClustering | partitionnement par densité (OPTICS) | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) (Partie 8, détection de régimes) | COVERED |
 | 16 | OpenAILanguageModel | modèle de langage OpenAI | [QC-Py-26-LLM-Trading-Signals](Python/QC-Py-26-LLM-Trading-Signals.ipynb), [ML-LLM-Summarization](projects/ML-LLM-Summarization/) | COVERED |
 | 17 | AmazonChronosModel | Chronos (prévision de séries) | [ML-Chronos-Foundation](projects/ML-Chronos-Foundation/), [Chronos-Foundation-Forecasting](projects/Chronos-Foundation-Forecasting/) | COVERED |
 | 18 | FinBERTModel | FinBERT (sentiment financier) | [QC-Py-Cloud-01-FinBERT-Sentiment](Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb), [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/) | COVERED |
@@ -301,6 +301,7 @@ Ces projets n'ont pas d'exemple correspondant dans le livre, mais illustrent des
 | Exemple | Suite |
 |---------|-------|
 | 04/05, 04/18, 05/02, 05/15 | [#18957](https://github.com/jsboige/CoursIA/issues/18957) : écart interquartile, élimination récursive des variables, régression polynomiale, OPTICS (scripts courts sur données synthétiques, à porter dans QC-Py-18 à 20) |
+| 06/02 | [#18958](https://github.com/jsboige/CoursIA/issues/18958) : régimes par prétraitement de facteurs |
 | 06/08/01, 06/08/03 | [#18960](https://github.com/jsboige/CoursIA/issues/18960) : stop fixe de référence et couverture par put, dans [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) |
 | 06/18/02, 06/19/02 | [#18962](https://github.com/jsboige/CoursIA/issues/18962) : ré-entraînement de Chronos et de FinBERT (calcul GPU) |
 | 07/01 | [#18902](https://github.com/jsboige/CoursIA/issues/18902) |
