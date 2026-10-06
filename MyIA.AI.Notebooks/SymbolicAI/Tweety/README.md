@@ -32,7 +32,7 @@ Un nom de notebook Tweety suit la forme `Tweety-<NN>[<lettre>]-<Titre>-<Noyau?>.
 | numéro nu `01`–`12` | `Tweety-01-Setup-Python` | une marche du parcours principal : on peut s'arrêter là |
 | lettre après le numéro | `Tweety-02b-Semantics-CSharp` | un approfondissement du palier `02`, facultatif |
 | suffixe `-Python` / `-CSharp` / `-Lean` / `-Lean-Python` | `Tweety-3b-Modal-Lab-Lean` | le kernel à installer ; `-Lean-Python` désigne un notebook Python qui pilote Lean |
-| `-CSharp` vs `-Csharp` | `Tweety-10-MLN-Csharp` vs `Tweety-02-Basic-Logics-CSharp` | deux écritures historiques du même suffixe, encore en cours de normalisation (#16231) |
+| `-CSharp` vs `-Csharp` | `Tweety-10-MLN-CSharp` vs `Tweety-5-Abstract-Argumentation-Csharp` | deux écritures historiques du même suffixe, encore en cours de normalisation (#16231) |
 
 La normalisation des noms est en cours (#16231) — la colonne **Stack** des tables fait foi.
 
@@ -256,7 +256,7 @@ Le palier 07 est porté par le **07a** (Python) et son jumeau **07ac** (C#) ; le
 
 | Lettre | Notebook | Ce que cette lettre ajoute |
 |---|---|---|
-| 10c | [Tweety-10-MLN-Csharp](Tweety-10-MLN-Csharp.ipynb) | MLN porté .NET (IKVM, c.188 PR #5209) — `MarkovLogicNetwork`, vrais appels |
+| 10c | [Tweety-10-MLN-CSharp](Tweety-10-MLN-CSharp.html) | MLN porté .NET (IKVM, c.188 PR #5209) — `MarkovLogicNetwork`, vrais appels |
 | 11c | [Tweety-11-Causal-Csharp](Tweety-11-Causal-Csharp.ipynb) | Twin C# moteur causal booléen from-scratch .NET : do-operator, contrefactuels par mondes jumeaux |
 
 ### Sous-série Argumentation — Argumentum
@@ -515,7 +515,7 @@ Tweety/
 ├── Tweety-09-Preferences-Python.ipynb                     # Préférences, vote
 ├── Tweety-09-Preferences-CSharp.ipynb              # Préférences .NET (IKVM, PROD)
 ├── Tweety-10-MLN.ipynb                            # Markov Logic Networks
-├── Tweety-10-MLN-Csharp.ipynb                     # MLN .NET (IKVM, PROD)
+├── Tweety-10-MLN-CSharp.ipynb                     # MLN .NET (IKVM, PROD)
 ├── Tweety-11-Causal.ipynb                         # do-calculus Pearl
 ├── Tweety-11-Causal-Csharp.ipynb                  # Twin C# moteur causal from-scratch (BCL, PROD)
 ├── tweety_init.py                                 # Module d'initialisation JPype/JVM
