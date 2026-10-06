@@ -28,7 +28,7 @@ python genai.py auth audit    # token present + correct (Bearer comfyui / Basic 
 python genai.py gpu           # VRAM libre sur le GPU cible ?
 python genai.py quant summary # bonne quant chargee ?
 ```
-- comfyui-qwen : GPU0 ~20GB, Bearer (`COMFYUI_API_TOKEN` ou alias `COMFYUI_AUTH_TOKEN`). forge-turbo : GPU1 ~8GB, Basic (`FORGE_USER`/`FORGE_PASSWORD`). vllm-zimage : GPU1 ~15GB, no auth.
+- comfyui-qwen : GPU0, Bearer (`COMFYUI_API_TOKEN` ou alias `COMFYUI_AUTH_TOKEN`). forge-turbo : GPU1, Basic (`FORGE_USER`/`FORGE_PASSWORD`). vllm-zimage : GPU1, no auth. VRAM idle = `docs/genai/genai-services.md`.
 
 ### Phase 2 — Quantization (arbitrage VRAM)
 - GPU 8GB => `genai.py quant apply qwen` (Nunchaku INT4 ~4GB) obligatoire.
