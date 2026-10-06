@@ -32,33 +32,31 @@ lean backtest --project .
 
 **QC Cloud :** Ouvrir le projet 34881290 dans l'IDE QuantConnect et cliquer sur « Backtest ».
 
-## Métriques de backtest (2015-2024)
+## Métriques de backtest (2015-2026, run courant du registre)
 
 | Métrique | Valeur |
 |----------|--------|
-| Sharpe Ratio | 0.575 |
-| CAGR | 13.088% |
-| Max Drawdown | 26.500% |
-| Net Profit | 242.406% |
-| PSR | 4.230% |
-| Total Orders | 1029 |
-| Benchmark | SPY |
-| Résolution | Minute |
-| Compte | IBKR Cash |
-| DTE / OTM | 21 jours / 5% |
+| Sharpe Ratio | 0.529 |
+| CAGR | 12.78% |
+| Max Drawdown | 26.4% |
+| Net Profit | 286.0% ($2 167 801) |
+| PSR | 10.63% |
 
-> **Provenance** : backtest QC Cloud `4b8c217c3927ab637379f8641f676679` (2026-08-06),
-> projet 34881290, IBKR Cash account, capital initial 1 000 000 $, résolution minute,
-> 2516 jours tradeables (2015-01-01 → 2024-12-31). Re-exécuter via QC Cloud pour
-> recalculer.
+> **Provenance** : run courant du registre — `docs/qc/qc-strategies-status.md` l.280
+> (2015-2026, 2821 j., Needs-improvement : « bon profil long-terme mais edge non
+> significative »). Run précédent, supersédé : backtest QC Cloud
+> `4b8c217c3927ab637379f8641f676679` (2026-08-06, projet 34881290, IBKR Cash, capital
+> initial 1 000 000 $, résolution minute, 2015-01-01 → 2024-12-31, 2516 j., 1029 ordres,
+> DTE/OTM 21 j/5 % : Sharpe 0.575 / CAGR 13.088 % / MaxDD 26.5 % / PSR 4.23 % /
+> NP 242.4 %) — remplacé par le run 2015-2026 ci-dessus.
 >
 > **Lecture honnête** : le wheel est une stratégie *très populaire* dans la littérature
 > de « revenu passif par les options », souvent présentée comme quasi-garantie. Les
-> chiffres montrent le contraire. Un CAGR de 13,1 % sur 2015-2024 est **comparable au
-> buy & hold de SPY** sur la même période (≈ 13-14 %), mais avec un **Sharpe de 0,575
-> nettement inférieur** à celui du benchmark (~0,7-0,8) et un **PSR de 4,2 %**
+> chiffres montrent le contraire. Un CAGR de 12,8 % sur 2015-2026 est **comparable au
+> buy & hold de SPY** sur la même période (≈ 13-14 %), mais avec un **Sharpe de 0,529
+> nettement inférieur** à celui du benchmark (~0,7-0,8) et un **PSR de 10,6 %**
 > catastrophique — l'edge statistique est nul, très loin du seuil de confiance de
-> 50 % (et a fortiori 95 %). Le Max Drawdown de 26,5 % (creux COVID 2020) est par
+> 50 % (et a fortiori 95 %). Le Max Drawdown de 26,4 % est par
 > ailleurs substantiel.
 >
 > En d'autres termes : la vente de primes d'options n'extrait **pas d'alpha** ici ;
