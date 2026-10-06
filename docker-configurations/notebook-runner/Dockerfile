@@ -2,8 +2,12 @@
 # Supports: Python 3.11 (system, bookworm) + kernel global-3.13, .NET 9.0 Interactive (C#), Lean 4 (elan)
 # Usage: docker-compose run notebook-runner /scripts/h7_p3_notebook_runner.sh <notebook.ipynb>
 
-# Stage 1: Base image with .NET 9.0 SDK
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS base
+# Stage 1: Base image with .NET 10.0 SDK
+# SDK 10 requis depuis le canon dotnet-interactive 1.0.712001 (decision #18766,
+# hote net10.0) : sous SDK 9, l'install du tool echoue avec "Settings file
+# 'DotnetToolSettings.xml' was not found in the package" (mesure 2026-10-06,
+# probe sur sdk:9.0 -> echec, sdk:10.0 -> INSTALL_RC=0).
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS base
 
 # Install system dependencies
 # Python = le python3 SYSTEME du tag 9.0 (Debian bookworm, 3.11) :
@@ -60,7 +64,11 @@ RUN wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Mi
 # Stage 3: .NET Interactive
 FROM global-313 AS dotnet-interactive
 
-RUN dotnet tool install --global Microsoft.dotnet-interactive \
+# Pin canon 1.0.712001 (decision #18766, docs/reference/kernels-runtime.md) :
+# sans --version, l'install prend le dernier build publie, actuellement casse
+# ("Settings file 'DotnetToolSettings.xml' was not found in the package",
+# mesure 2026-10-06) -- image inconstructible.
+RUN dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001 \
     && ~/.dotnet/tools/dotnet-interactive jupyter install
 
 # Stage 4: Lean 4 toolchain (elan)
