@@ -1137,6 +1137,46 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/RL/PostTraining"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/RL/PostTraining"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-00d-Reward-Trainer-TRL-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/RL/PostTraining"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-00e-DPO-TRL-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/RL/PostTraining"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/RL/PostTraining"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/RL/PostTraining"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-01c-Distillation-Politique-Prolog-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/RL"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-06e-GRPO-Depuis-Zero-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/RL"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/RL/RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
@@ -1152,52 +1192,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/rl_17_k_server_wfa.ipynb",
-      "series": "MyIA.AI.Notebooks/RL"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/RL/RL-19-Reward-Tampering-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/RL-01c-Distillation-Politique-Prolog-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/RL"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/RL-06e-GRPO-Depuis-Zero-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/RL"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/RL"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/RL"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-00d-Reward-Trainer-TRL-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/RL"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-00e-DPO-TRL-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/RL"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/RL"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/rl_17_k_server_wfa.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
@@ -1218,11 +1218,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-20b-SudokuBenchmark-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-23-Factorio-Balancer.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
     },
     {
@@ -1267,17 +1262,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-24-MAPF-Guarantee-Audit.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-28-LearningToBranch-Generalization-Audit.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
     },
     {
@@ -1287,7 +1272,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-33-NeuralDiving-Coloration.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-31-RCPSP-Max-Feasibility-Bounds.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
     },
     {
@@ -1444,6 +1429,21 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-31-Synthese-Croisee.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-02-Factorio-Balancer-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-03-MAPF-Guarantee-Audit-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-10-NeuralDiving-Coloration-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
     },
     {
       "kind": "orphan_entry",
@@ -1852,7 +1852,17 @@
     },
     {
       "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-21-VoiceLeading.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
+    },
+    {
+      "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
+    },
+    {
+      "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
     },
     {
@@ -1919,7 +1929,7 @@
   "wrapped": [
     {
       "series": "MyIA.AI.Notebooks/Complexity",
-      "notebooks": 10
+      "notebooks": 11
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment",
@@ -1964,6 +1974,10 @@
     {
       "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks",
       "notebooks": 2
+    },
+    {
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours",
+      "notebooks": 37
     },
     {
       "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations",

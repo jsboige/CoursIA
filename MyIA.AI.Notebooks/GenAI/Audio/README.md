@@ -4,7 +4,7 @@
 series: GenAI-Audio
 pedagogical_count: 38
 breakdown: Audio=38
-maturity: BETA=36, DRAFT=2
+maturity: BETA=36, ALPHA=1, DRAFT=1
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Video Workflows](../Video/README.md)

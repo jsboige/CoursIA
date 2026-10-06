@@ -933,20 +933,41 @@ layout: default
 
 # Autres Applications (1/2)
 
+<!-- Pilote #15048 (comparaison avec schéma) : deux groupes TeachingStep en
+     colonnes via ts-compare, chacun porte SA figure sous son texte -- les
+     schémas ne sont plus une rangée détachée du bas de la diapo. -->
 
-- Solveurs Modulo Théorie
-  - SAT + Quantificateurs
-  - + Théories arithmétiques
-  - + Optimiseurs
-- Ingénierie de connaissances
-  - Triplets, Ontologies
-  - Web sémantique
-  - W3C
-  - Linked Data
+<div class="ts-compare">
 
-<div class="flex justify-center gap-6 mt-3">
-<img src="./images/img_048.png" class="max-h-[170px] w-[45%] object-contain" alt="Cartographie des médias et réseaux sociaux : TV, presse, blogs, forums, podcasts, partage vidéo et photo" />
-<img src="./images/img_049.png" class="max-h-[170px] w-[45%] object-contain" alt="Architecture du web sémantique : Trust, Proof, Logic, Ontology, RDF, XML, URI, Unicode" />
+<TeachingStep v-click="1" placement="below" size="md">
+
+**Solveurs Modulo Théorie**
+
+- SAT + Quantificateurs
+- \+ Théories arithmétiques
+- \+ Optimiseurs
+
+<template #visual>
+<img src="./images/img_029.png" alt="Progression du backtracking sur le problème des N-reines : retour arrière après violation de contrainte" />
+</template>
+
+</TeachingStep>
+
+<TeachingStep v-click="2" placement="below" size="sm">
+
+**Ingénierie de connaissances**
+
+- Triplets, Ontologies
+- Web sémantique
+- W3C
+- Linked Data
+
+<template #visual>
+<img src="./images/img_048.png" alt="Nuage Linked Open Data : les jeux de données publiques interconnectées du web des données" />
+</template>
+
+</TeachingStep>
+
 </div>
 
 <!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
