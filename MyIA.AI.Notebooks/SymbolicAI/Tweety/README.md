@@ -174,9 +174,9 @@ Numéros nus uniquement, lisibles de haut en bas. Le compte et la maturité exac
 |---|----------|--------------------|-------|
 | 1  | [Tweety-01-Setup-Python](Tweety-01-Setup-Python.ipynb) | Configuration JVM, JARs, solveurs externes | Python |
 | 2  | [Tweety-02-Basic-Logics-Python](Tweety-02-Basic-Logics-Python.ipynb) | Logique propositionnelle (SAT) et du premier ordre (FOL) | Python |
-| 3  | [Tweety-03-Advanced-Logics-Python](Tweety-03-Advanced-Logics-Python.ipynb) | DL, Modale, QBF, Conditionnelle | Python |
-| 4  | [Tweety-04-Belief-Revision-Python](Tweety-04-Belief-Revision-Python.ipynb) | MUS, MaxSAT, Mesures d'incohérence, AGM | Python |
-| 5  | [Tweety-05-Abstract-Argumentation-Python](Tweety-05-Abstract-Argumentation-Python.ipynb) | Dung AF, sémantiques grounded/stable/CF2 | Python |
+| 3  | [Tweety-03-Advanced-Logics-Python](Tweety-03-Advanced-Logics-Python.html) | DL, Modale, QBF, Conditionnelle | Python |
+| 4  | [Tweety-04-Belief-Revision-Python](Tweety-04-Belief-Revision-Python.html) | MUS, MaxSAT, Mesures d'incohérence, AGM | Python |
+| 5  | [Tweety-05-Abstract-Argumentation-Python](Tweety-05-Abstract-Argumentation-Python.html) | Dung AF, sémantiques grounded/stable/CF2 | Python |
 | 6  | [Tweety-06-Structured-Argumentation-Python](Tweety-06-Structured-Argumentation-Python.ipynb) | ASPIC+, DeLP, ABA, ASP | Python |
 | 7  | [Tweety-07a-Extended-Frameworks-Python](Tweety-07a-Extended-Frameworks-Python.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended | Python |
 | 8  | [Tweety-08-Agent-Dialogues-Python](Tweety-08-Agent-Dialogues-Python.ipynb) | Agents, dialogues argumentatifs, loteries | Python |
@@ -207,25 +207,25 @@ Une section par palier qui ouvre des lettres. Chaque lettre est **facultative** 
 | Lettre | Notebook | Ce que cette lettre ajoute |
 |---|---|---|
 | 03b | [Tweety-03b-Modal-Lab-Lean-Python](Tweety-03b-Modal-Lab-Lean-Python.html) | **Labo modal croisé** (tranche C de l'EPIC #15066) : schémas `K`/`T`/`4`/`5` — syntaxe `MlParser` Tweety (bug SPASS #1334 documenté), balayage exhaustif des 512 cadres 3-mondes en Python (correspondances T/réflexif, 4/transitif, 5/euclidien mesurées en égalités exactes), certificats du kernel Lean sur le pont `FormalLogic.ModalBridge` (#17017) |
-| 03c-DL | [Tweety-03-Advanced-Logics-CSharp](Tweety-03-Advanced-Logics-CSharp.ipynb) | DL/ML/QBF/CL .NET — **DRAFT** : conflits de noms DLL entre `logics.ml` + `logics.cl` + `logics.qbf` simultanés |
-| 03c-CL | [Tweety-03-Conditional-Logics-CSharp](Tweety-03-Conditional-Logics-CSharp.ipynb) | Logique conditionnelle .NET (IKVM) — raisonneur `cl` réel |
-| 03c-Dung | [Tweety-03-Dung-CSharp](Tweety-03-Dung-CSharp.ipynb) | Argumentation de Dung .NET (IKVM, c.182 PR #5194) — `NaiveDlReasoner` |
-| 03c-ML | [Tweety-03-ModalLogic-CSharp](Tweety-03-ModalLogic-CSharp.ipynb) | Logique modale .NET (IKVM) — `MlReasoner` réel |
-| 03c-QBF | [Tweety-03-QBF-CSharp](Tweety-03-QBF-CSharp.ipynb) | QBF .NET (IKVM, c.185 PR #5202) — solveur QBF réel |
+| 03c-DL | [Tweety-03-Advanced-Logics-CSharp](Tweety-03-Advanced-Logics-CSharp.html) | DL/ML/QBF/CL .NET — **DRAFT** : conflits de noms DLL entre `logics.ml` + `logics.cl` + `logics.qbf` simultanés |
+| 03c-CL | [Tweety-03-Conditional-Logics-CSharp](Tweety-03-Conditional-Logics-CSharp.html) | Logique conditionnelle .NET (IKVM) — raisonneur `cl` réel |
+| 03c-Dung | [Tweety-03-Dung-CSharp](Tweety-03-Dung-CSharp.html) | Argumentation de Dung .NET (IKVM, c.182 PR #5194) — `NaiveDlReasoner` |
+| 03c-ML | [Tweety-03-ModalLogic-CSharp](Tweety-03-ModalLogic-CSharp.html) | Logique modale .NET (IKVM) — `MlReasoner` réel |
+| 03c-QBF | [Tweety-03-QBF-CSharp](Tweety-03-QBF-CSharp.html) | QBF .NET (IKVM, c.185 PR #5202) — solveur QBF réel |
 
 #### Autour de 04 — belief revision et ASPIC+
 
 | Lettre | Notebook | Ce que cette lettre ajoute |
 |---|---|---|
-| 04c-BR | [Tweety-04-Belief-Revision-CSharp](Tweety-04-Belief-Revision-CSharp.ipynb) | Belief Revision .NET (IKVM) : `Revision`/`MUSMaxSAT` réels |
-| 04c-Aspic | [Tweety-04-Aspic-CSharp](Tweety-04-Aspic-CSharp.ipynb) | ASPIC+ .NET (IKVM) — `AspicArgumentation` réel |
+| 04c-BR | [Tweety-04-Belief-Revision-CSharp](Tweety-04-Belief-Revision-CSharp.html) | Belief Revision .NET (IKVM) : `Revision`/`MUSMaxSAT` réels |
+| 04c-Aspic | [Tweety-04-Aspic-CSharp](Tweety-04-Aspic-CSharp.html) | ASPIC+ .NET (IKVM) — `AspicArgumentation` réel |
 
 #### Autour de 05 — argumentation abstraite et compagnons Lean
 
 | Lettre | Notebook | Ce que cette lettre ajoute |
 |---|---|---|
 | 05b | [Tweety-05b-Argumentation-Lean](Tweety-05b-Argumentation-Lean.html) | **Compagnon natif** (kernel Lean) : preuve formelle 0-sorry de Dung dans le lake `argumentation_lean` (grounded = point fixe Knaster–Tarski), `#check` + `#print axioms` in-kernel (UNLOCK c.127, jonction Mathlib #2611) |
-| 05c | [Tweety-05-Abstract-Argumentation-CSharp](Tweety-05-Abstract-Argumentation-CSharp.ipynb) | Twin C# Dung AF **from-scratch** (BCL .NET, pas IKVM/JVM) : fonction caractéristique, acceptabilité, ensembles admissibles/complets, sémantiques grounded (plus petit point fixe) / stable / preferred, labeling 3 valeurs (in/out/undec), génération aléatoire, 3 exercices |
+| 05c | [Tweety-05-Abstract-Argumentation-CSharp](Tweety-05-Abstract-Argumentation-CSharp.html) | Twin C# Dung AF **from-scratch** (BCL .NET, pas IKVM/JVM) : fonction caractéristique, acceptabilité, ensembles admissibles/complets, sémantiques grounded (plus petit point fixe) / stable / preferred, labeling 3 valeurs (in/out/undec), génération aléatoire, 3 exercices |
 | 05d | [Tweety-05d-Stable-Synthesis-Lean-Python](Tweety-05d-Stable-Synthesis-Lean-Python.html) | **Synthèse certifiée** d'extensions stables (Loi II #12205, variante `-c`, #13597) : spécification → **Z3** (générateur ≠ vérificateur) → témoin `{1, 2, 5}` → certificat Lean `by decide` dans le lake `argumentation_lean` (module `Argumentation.Synthesis` + sibling `_en`, i18n #4980) ; cas UNSAT du 3-cycle certifié (`afB_no_stable`) |
 | 05e | [Tweety-05e-Propositional-Lab-Lean-Python](Tweety-05e-Propositional-Lab-Lean-Python.html) | **Compagnon transversal** (tranche A de l'EPIC #15066) : trois formules-témoins (`SYL` valide, `ORB` satisfiable non valide, `CONTR` insatisfiable) traversent **trois lectures** — Tweety via JPype (verdicts et contre-modèles **calculés**), recomptage Python indépendant des 8 mondes du fragment `{a, b, c}`, certification du kernel Lean natif sur **Foundation (FFL)** au commit épinglé ; la même chaîne de formule est sérialisée pour les deux moteurs (SOTA, aucune réimplémentation jouet) |
 
