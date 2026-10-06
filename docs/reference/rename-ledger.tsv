@@ -264,3 +264,5 @@ MyIA.AI.Notebooks/RL/rlpt_1_ppo_lm_rlhf.ipynb	MyIA.AI.Notebooks/RL/PostTraining/
 MyIA.AI.Notebooks/RL/rlpt_2_grpo_minimal.ipynb	MyIA.AI.Notebooks/RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/RL/rlpt_3_reward_hacking.ipynb	MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/RL/rlpt_4_dpo_vs_ppo.ipynb	MyIA.AI.Notebooks/RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Supercritique.ipynb	MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb	2026-10-06	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Lean.ipynb	MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb	2026-10-06	myia-po-2027:CoursIA
