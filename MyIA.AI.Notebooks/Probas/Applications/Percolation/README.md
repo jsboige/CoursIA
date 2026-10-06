@@ -13,6 +13,7 @@ critique** (p ≈ p_c). Simulation-first : on fait *voir* les trois régimes
 |-----------|----------|-------|------------------|
 | [Percolation-Supercritique](Percolation-Supercritique.ipynb) | 1 (Python) | Python 3 + `networkx` | Tore carré (degré 4, `p_c(bond, ℤ²) = 1/2`) et tore hexagonal (degré 3, `p_c ≈ 0.6527`) — trois régimes mesurés, géant du tore, vitesse de disparition `Φ(n) ~ √n` |
 | [Percolation-Lean](Percolation-Lean.ipynb) | 2 (Lean 4) | Lean 4 + Mathlib (`percolation_lean`) | Compagnon exécutable du lake : configurations d'arêtes ouvertes, Harris–Kleitman fini, connexité croissante, composantes, frontière isopérimétrique avec profil calculé sur `C₃`/`C₄` |
+| [Percolation-03-Critique-Python](Percolation-03-Critique-Python.ipynb) | 3 (Python) | Python 3 + `networkx` | Physique du point critique : loi d'échelle finie `M(L, 1/2)/L² ~ L^{-β/ν}`, distribution de tailles `P(s) ~ s^{-τ'}`, convergence `p_c(L) → 1/2`. Sweep `L ∈ {8,16,32,64}` × `p ∈ {0.45,…,0.55}` × 32 seeds = 640 simulations `networkx.connected_components` canonique |
 
 ## Formalisation Lean (`percolation_lean/`)
 
