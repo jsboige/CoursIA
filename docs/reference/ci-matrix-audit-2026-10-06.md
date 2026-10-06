@@ -11,7 +11,7 @@
 | `ict-tests.yml` | push + pull_request + workflow_dispatch | `[ict-tests]` (2 suites via `matrix.include`) | oui (push + pull_request) | **OK** |
 | `runner-starvation-advisory.yml` | schedule + workflow_dispatch | `[starve]` (2 labels via `matrix.include`) | N/A — pas de trigger PR | **OK** |
 | `slow-lane.yml` | schedule + workflow_dispatch | `[codeql-scheduled]` (4 langages via `matrix`) | N/A — pas de trigger PR | **OK** |
-| `lean-build.yml` | workflow_dispatch | `[ci-matrix]` | N/A — dispatch only | **OK** (couvert par #19381) |
+| `lean-build.yml` | workflow_call (reusable) | `[ci-matrix]` | N/A — pas de trigger PR (reusable only) | **OK** (couvert par #19381) |
 
 `lean-ci-matrix.yml` (dispatcher de `lean-build.yml` via `uses:`) n'apparaît pas dans cette liste — il n'a pas de `strategy: matrix:` propre, c'est un wrapper qui passe la liste des lakes touchés à `lean-build.yml::ci-matrix`.
 
