@@ -715,6 +715,7 @@ project:
     - "MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb"
+    - "MyIA.AI.Notebooks/Complexity/Complexity-07-KolmogorovBornee-Sequences-Python.ipynb"
     - "MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb"
     - "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup-Python.ipynb"
