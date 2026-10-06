@@ -405,18 +405,28 @@ CONCERN_MARKERS = (
     "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "REQUEST_CHANGES",
     "NEEDS_CHANGES", "CONCERNS",
     "SUSPECT_", "STRUCTURAL_ONLY", "SCOPE FLAG", "scope mismatch",
-    "avant de merger", "il va falloir", "a nuancer", "à nuancer",
+    "avant merge", "avant de merger", "il va falloir", "a nuancer", "à nuancer",
     # Marqueur de position de verdict (#13083 instance 3, 2026-10-05) :
-    # remplace les sous-chaines brutes « avant merge » / « before merge »
-    # (l.408-413 avant ce commit). Mesure du corpus 200 PRs les plus recentes :
-    # 13 PRs avec « avant merge » en prose, 0 avec « before merge », 0 avec
-    # le marqueur structurel. Le filet par mot-cle est un agrandissement de
-    # la surface de faux positifs (la regle pr-review-discipline dit que le
-    # contrat est cote emission, pas cote lecture). Un reviewer qui veut
-    # bloquer avant merge ecrit `[BEFORE-MERGE]` dans son commentaire, le
-    # filet le voit, et le marqueur reste non-levable par l'auteur de la PR
-    # (meme regle que les autres marqueurs structurels).
+    # AJOUTE en extension aux sous-chaines brutes « avant merge » /
+    # « before merge » ci-dessous (et non en REMPLACEMENT). Hermes a releve
+    # que le retrait de « avant merge » / « before merge » cassait 6 tests
+    # (faux negatifs de detection sur les consommateurs has_live_marker /
+    # classify / dossier ADJOINT mal-forme -- cf review clusterManager-Myia
+    # 2026-10-05T??:??:Z). Le geste annonce etait « neutraliser [BEFORE-MERGE]
+    # en position de mention » : il est realise par les 7 sous-patterns
+    # Position I/I' qui matchent desormais `\bavant(?:\s+(?:le|la|l'))?\s+merge\b`
+    # OU `\[BEFORE-MERGE\]` -- les deux continuent de fonctionner comme
+    # discriminant de mention, et les 4 faux negatifs mesures (Le scope /
+    # Il reste un point / Le point 3 / La reserve) sont restaures. Le retrait
+    # du sous-chaines brutes, lui, etait une erreur : le contrat d'emission
+    # ne bascule pas (13 PRs avec « avant merge » en prose mes. c.183, 0
+    # avec le marqueur structurel). On garde donc les deux formes.
     "[BEFORE-MERGE]",
+    # Miroir anglais de « avant merge » : fenetre 04-23..04-30 (triage po-2023,
+    # #11044) — 2 faux negatifs mesures, PRs mergees sans aucune levee :
+    # #594 « issues that should be addressed before merge » et #590
+    # « CRITICAL — Must fix before merge ». Une seule addition couvre les deux.
+    "before merge",
     # Fenetre 2026-08-16 (#11201) : le registre naturel d'un nit redige a la main.
     # Le commentaire 03:22:28Z de #11190 disait « Une seule chose a changer —
     # une ligne » sans AUCUN marqueur ci-dessus : une fois le faux negatif
