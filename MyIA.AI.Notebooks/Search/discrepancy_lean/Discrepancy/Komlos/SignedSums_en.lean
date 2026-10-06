@@ -11,7 +11,7 @@ The original Dahia source lives in the `gdahia/Komlos` repository (module
 Lemma 1.4 — reads there at l.37-58. This lake module opens the
 distillation: the first brick `sum_smul_inl` ships here in generic form,
 the consumption map of the organs is measured at the top of the module,
-and the framework decision (route α) is recorded.
+and the framework decision (option (c), arbitrated in k2.6a) is recorded.
 -/
 
 import Discrepancy.Basic_en
@@ -43,12 +43,13 @@ growing ambient `E → E × ℝ → (E × ℝ) × ℝ → …` — it is the gen
 | `sum_smul_inl` | **missing — shipped below, generic** | ✓ k2.6 |
 | convexHull (`add_smul`/`sum_smul`/`mem_convexHull'`) | `Pullback` l.150/189/213 | ✓ generic |
 
-The architectural gap stays open: moving the monomorphic organs to the
-generic setting (route α) would re-prove k2.0–k2.4 in generic form;
-route β (two-space ping-pong) is closed by measurement — the pullback
-returns to the hull of the current ambient but the next split applies to
-the split distribution, the ambient grows at every level anyway.
-Framework decision to be recorded at delivery.
+The architectural gap is **arbitrated in k2.6a** (option (c): the growing
+space is realized as `Fin (d + k) → ℤ` via the `liftUp` embedding,
+without re-generalizing the organs — route α is set aside, route β
+(two-space ping-pong) is closed by measurement). `sum_smul_inl` remains
+the generic ℝ-modular organ, **complementary to `sum_smul_snoc`**
+(k2.6a, lake form on the grid side): consumable on the transport/hull
+side, where the moments live in `ℝ`.
 -/
 
 namespace Discrepancy.Komlos_en

@@ -10,7 +10,8 @@ Le source Dahia original vit dans le dépôt `gdahia/Komlos` (module
 L'assemblage final — l'itération `induction n with` du Lemme 1.4 — s'y lit
 l.37-58. Ce module du lake ouvre la distillation : la première brique
 `sum_smul_inl` y est livrée générique, la carte de consommation des organes
-est mesurée en tête de module, la décision de cadre (voie α) est consignée.
+est mesurée en tête de module, la décision de cadre (option (c),
+arbitrée en k2.6a) y est consignée.
 -/
 
 import Discrepancy.Basic
@@ -42,12 +43,13 @@ monomorphes (`Fin d → ℤ`, hauteur `Bool`) :
 | `sum_smul_inl` | **absent — livré ci-dessous, générique** | ✓ k2.6 |
 | convexHull (`add_smul`/`sum_smul`/`mem_convexHull'`) | `Pullback` l.150/189/213 | ✓ génériques |
 
-L'écart d'architecture est ouvert : la mise au générique des organes
-monomorphes (voie α) redémontrerait k2.0–k2.4 en forme générique ; la
-voie β (ping-pong deux espaces) est close par la mesure — le pullback
-ramène au hull de l'ambiant courant mais le split suivant s'applique à la
-distribution scindée, l'ambiant croît à chaque niveau de toute façon.
-Décision de cadre à consigner à la livraison.
+L'écart d'architecture est **arbitré en k2.6a** (option (c) : l'espace
+qui grandit est réalisé `Fin (d + k) → ℤ` par l'embedding `liftUp`, sans
+re-généralisation des organes — la voie α est écartée, la voie β
+(ping-pong deux espaces) est close par la mesure). `sum_smul_inl` reste
+l'organe générique ℝ-modulaire, **complémentaire de `sum_smul_snoc`**
+(k2.6a, forme lake côté grille) : consommable côté transport/hull, où
+les moments vivent dans `ℝ`.
 -/
 
 namespace Discrepancy.Komlos
