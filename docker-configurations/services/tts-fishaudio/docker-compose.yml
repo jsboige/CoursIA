@@ -1,26 +1,43 @@
-# FishAudio S2-Pro TTS Service - BnB 4-bit NF4 quantized
+# FishAudio S2-Pro TTS Service - official snapshot, fp16 (--half) on GPU1
 # API server with CUDA support on GPU1 (RTX 3090 24GB)
 #
-# GPU: RTX 3090 (24GB) - ~5GB VRAM with BnB 4-bit quantization
+# GPU: RTX 3090 24GB - ~20GB VRAM with the official fp16 snapshot (--half)
 # Port: 8197
 # API: POST /v1/tts, GET /v1/health
 # Docs: http://localhost:8197/docs
 #
 # Notes:
-#   - Model S2-Pro BnB 4-bit (~3GB model.pth) must be in checkpoints/s2-pro-bnb4/
-#   - tokenizer.json must be present (generated from Qwen2.5 base + FishAudio special tokens)
-#   - config.json required (fish_qwen3_omni format)
+#   - Checkpoint: official HuggingFace snapshot fishaudio/s2-pro (~11GB safetensors)
+#     in checkpoints/s2-pro/ (see README setup -- snapshot_download)
+#   - The former custom image fishaudio/fish-speech:server-cuda-bnb4 (~5GB VRAM,
+#     NF4) was never published upstream and is lost; its 4-bit checkpoints in
+#     checkpoints/s2-pro-bnb4/ use a house format (mixed fp16 embeddings + packed
+#     linear layers, no separate scales) that upstream images cannot load.
+#     The official fp16 snapshot is the supported path (measured 2026-10-06:
+#     warm-up 20.33GB VRAM, 3.7 tok/s generation on a RTX 3090).
+#   - The upstream image entrypoint (run_webui.py) intercepts CLI args: the
+#     compose file pins the api_server entrypoint explicitly.
 #   - Reference voices stored in ./references/ (sample.wav + sample.lab)
 #   - S2 Pro supports 15000+ emotion tags: (whisper), (shout), (laugh)...
 #   - Use parenthesis syntax for emotions: (angry), (sad), (excited)
-#   - BnB 4-bit reduces VRAM from ~18GB to ~5GB (NF4 quantization)
-#   - Image: fishaudio/fish-speech:server-cuda-bnb4 (patched upstream + bnb4 support)
 
 services:
   tts-fishaudio:
-    image: fishaudio/fish-speech:server-cuda-bnb4
+    image: fishaudio/fish-speech:latest
     container_name: tts-fishaudio
     hostname: tts-fishaudio
+    entrypoint: ["/app/.venv/bin/python"]
+    command:
+      - tools/api_server.py
+      - --llama-checkpoint-path
+      - ${LLAMA_CHECKPOINT_PATH:-checkpoints/s2-pro}
+      - --decoder-checkpoint-path
+      - ${DECODER_CHECKPOINT_PATH:-checkpoints/s2-pro/codec.pth}
+      - --decoder-config-name
+      - ${DECODER_CONFIG_NAME:-modded_dac_vq}
+      - --listen
+      - 0.0.0.0:8080
+      - --half
 
     ports:
       - "127.0.0.1:${FISHAUDIO_PORT:-8197}:8080"
@@ -71,7 +88,7 @@ services:
     labels:
       - "com.myia.service=tts-fishaudio"
       - "com.myia.gpu=rtx-3090"
-      - "com.myia.model=fishaudio-s2-pro-bnb4"
+      - "com.myia.model=fishaudio-s2-pro"
 
   # Sidecar: Idle Monitor - Stop container after inactivity
   idle-monitor:
