@@ -347,11 +347,16 @@ breadth, harmonisation des scalaires trend) à trancher sur mesure.
 trois fenêtres.** Dates paramétrables (`$start`/`$end` YYYYMMDD, défauts
 2016-2026 inchangés) ; trois runs depuis le même compile (projet 36488678) :
 
-| Fenêtre | Run | Sharpe | CAR | PnL | Ordres |
-|---|---|---|---|---|---|
-| Full 2016-2026 | `b35d302d` | **−0.19** | −31.9 % | −$98 382 | 3 104 |
-| Dev 2016-2021 | `27d2de09` | **−0.311** | −59.7 % | −$98 381 | 3 098 |
-| OOS 2021-2026 | `2f590dcd` | **−0.128** | −54.3 % | −$98 874 | 1 269 |
+| Fenêtre | Run | Sharpe | CAR | PnL | MaxDD | Ordres |
+|---|---|---|---|---|---|---|
+| Full 2016-2026 | `b35d302d` | **−0.19** | −31.9 % | −$98 382 | **99.8 %** | 3 104 |
+| Dev 2016-2021 | `27d2de09` | **−0.311** | −59.7 % | −$98 381 | **99.8 %** | 3 098 |
+| OOS 2021-2026 | `2f590dcd` | **−0.128** | −54.3 % | −$98 874 | **99.4 %** | 1 269 |
+
+MaxDD lus à `read_backtest` sur les trois runs (99.800 % / 99.800 % / 99.400 %).
+Les MaxDD 98.0 / 98.2 % cités ailleurs dans ce README sont ceux **d'autres
+runs** — le post-fix `dc766352` (98.0 %) et les sondes `0f906bb8` / `24b322ef`
+(98.2 %, projet 36719632) — pas de ces trois fenêtres.
 
 Verdict conforme à la règle C (multi-fenêtres, jamais « promising ») :
 **NO BEATS**, cohérent avec le verdict de la famille #13 (trend-only,
@@ -360,9 +365,9 @@ Sharpe −0.168/−0.231) et avec le retour communauté de l'article #16001
 pente — il l'aggrave sur la fenêtre full.
 
 **Finding diagnostique ouvert** (le + important pour la suite) : la perte
-~99 % du capital sur CHAQUE fenêtre est un régime de ruine, pas une mauvaise
-année — un portfolio trend+carry à 18 futurs ne perd pas 99 % partout par
-hasard. Hypothèse principale, non confirmée faute de logs (qc-mcp-lite n'expose
+~98 % du capital et le MaxDD mesuré (99.8 / 99.8 / 99.4 %) sur CHAQUE fenêtre
+sont un régime de ruine, pas une mauvaise année — un portfolio trend+carry à
+18 futurs ne perd pas 99 % partout par hasard. Hypothèse principale, non confirmée faute de logs (qc-mcp-lite n'expose
 pas le log du run) : **saturation de la jambe carry** — des ratios
 gap-annualisé/risque-annualisé grands font toucher le cap ±20 en permanence,
 40 % du blend devient un pari directionnel maximal par instrument, amplifié
