@@ -1,6 +1,6 @@
 <!--
   FICHIER MANUEL — parcours narratif pilote (EPIC #13844 Phase 2, issue #15807).
-  Écrit à la main à partir de docs/curriculum/_inventory.md : contrairement aux
+  Écrit à la main à partir de docs/transients/2026-09-02-curriculum-inventory.md : contrairement aux
   pages docs/curriculum/*.md générées chaque jour par catalog-cron.yml, ce fichier
   n'est PAS régénéré automatiquement — ne pas l'inclure dans generate_parcours.py.
 -->
@@ -97,7 +97,7 @@ métaheuristiques composées) — l'épilogue le nomme.
     exacte puis MCMC. *Suppose : bases de probabilités.*
 14. **`PyMC-05-Causal-Inference.ipynb`** (30 min) — do-calculus, contre-factuels — la
     jonction moderne d'AIMA ch. 16. *Annexe probabiliste : le README PyMC (4 parcours,
-    ~10 h) prolonge cette phase (embryon #5 de `_inventory.md`).*
+    ~10 h) prolonge cette phase (embryon #5 de `2026-09-02-curriculum-inventory.md`).*
 
 ### Phase 7 — Décision multi-agents (AIMA ch. 5 approfondi + théorie des jeux) — GameTheory, ~2 h 30
 
@@ -114,7 +114,7 @@ métaheuristiques composées) — l'épilogue le nomme.
 
 18. **`SymbolicAI/Planners/`** — PDDL, STRIPS, planification temporelle et hiérarchique.
     Entrée par le README de la série, dont le parcours existe déjà (embryon #12 de
-    `_inventory.md` — il est `INTEGRATE`, donc cité, pas réécrit) ; sa durée se lit dans le
+    `2026-09-02-curriculum-inventory.md` — il est `INTEGRATE`, donc cité, pas réécrit) ; sa durée se lit dans le
     README de la série, ce parcours ne la re-chiffre pas. *Suppose : Phase 4 (CSP) —
     la planification est un CSP séquencé.*
 
@@ -154,11 +154,11 @@ défaut de ce parcours, pas de l'apprenant.
 ## Sources — ce parcours recolle, il ne réinvente pas
 
 La structure « Phase N — Titre (notebooks, durée) » généralise `GameTheory/README.md`
-(embryon #1 de `_inventory.md`) ; la clause de prérequis explicite reprend sa formulation
+(embryon #1 de `2026-09-02-curriculum-inventory.md`) ; la clause de prérequis explicite reprend sa formulation
 (embryon #7 pour les compagnons Lean) ; l'index multi-stack ML sert d'aiguillage (embryon
 #3) ; `Search/README.md` est la structure socle des phases 1-3 (embryon #15) ; l'annexe
 probabiliste PyMC est l'embryon #5. Inventaire complet des embryons :
-`docs/curriculum/_inventory.md` (Phase 0 de l'EPIC #13844).
+`docs/transients/2026-09-02-curriculum-inventory.md` (Phase 0 de l'EPIC #13844).
 
 *Hors périmètre de ce fichier (cf #15807) : moteur Quarto (#10921), outillage de génération
 de parcours (#14620), réécriture de `PARCOURS.md` (Phase 3, après les trois pilotes).*
