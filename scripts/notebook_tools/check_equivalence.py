@@ -8,6 +8,14 @@ Issue #19301, decision du mainteneur 2026-10-05 :
 - Normaliser les prefixes d'affichage Lean et les espaces.
 - Verdicts : EQUIVALENT / MISSING_PAGE / LOST_OUTPUTS / UNKNOWN (reseau : jamais un rouge).
 
+Regle du MIME rendu (revue coord 06/10, c.5994810325) : un `display_data`
+qui porte `text/plain` PLUS un MIME riche (`text/html`, `text/markdown`,
+`image/*`, `application/pdf`) ne montre JAMAIS le `text/plain` dans la
+page publiee (Quarto rend le plus riche). La regle : on ne compte
+`text/plain` que si aucun MIME riche n'est present dans le meme `data`.
+Sans cette regle, une figure matplotlib (`image/png` + `text/plain` backup)
+fait LOST_OUTPUTS perpetuel, et la classe n'est jamais EQUIVALENT.
+
 Usage :
     python scripts/notebook_tools/check_equivalence.py --notebook MyIA.AI.Notebooks/.../foo.ipynb
     python scripts/notebook_tools/check_equivalence.py --notebook ... --base-url https://jsboige.github.io/CoursIA
@@ -20,6 +28,41 @@ Codes de sortie :
     3 : UNKNOWN (erreur reseau, retry possible)
     4 : NOTEBOOK_ERROR (carnet invalide)
 """
+import argparse
+import json
+import re
+import sys
+import urllib.error
+import urllib.request
+from html import unescape as html_unescape
+from pathlib import Path
+from typing import Iterable
+
+DEFAULT_BASE_URL = "https://jsboige.github.io/CoursIA"
+HTTP_TIMEOUT_S = 10
+
+# Prefixes d'affichage a normaliser (leon: ──────▶ etc.)
+LEAN_PREFIX_PATTERN = re.compile(r"^[─━\-=]{2,}\s*[▶>»]+\s*", re.MULTILINE)
+WHITESPACE_PATTERN = re.compile(r"\s+")
+
+# MIME riches : un display_data qui en porte un rend ce MIME, pas
+# text/plain. Revue coord 06/10, c.5994810325. (Pas de `application/`
+# exotiques : les formats sortant de l'ecosysteme Jupyter sont listes
+# explicitement, le reste est ignore par defaut.)
+RICH_MIMES: tuple[str, ...] = (
+    "text/html",
+    "text/markdown",
+    "text/latex",
+    "image/png",
+    "image/jpeg",
+    "image/gif",
+    "image/svg+xml",
+    "image/webp",
+    "image/bmp",
+    "application/pdf",
+    "application/javascript",
+    "application/json",
+)
 import argparse
 import json
 import re
@@ -50,12 +93,22 @@ def extract_outputs(notebook_path: str) -> list[str]:
 
     Renvoie la liste des lignes normalisees, en excluant les lignes qui
     sont deja presentes dans les sources de cellules (reprises de code).
+
+    Regle du MIME rendu (revue coord 06/10, c.5994810325) : pour un
+    `execute_result` ou `display_data`, on ne prend `data['text/plain']`
+    QUE si aucun MIME riche (`text/html`, `text/markdown`, `image/*`,
+    `application/pdf`, ...) n'est present dans le meme `data`. Sinon
+    la page publiee rend le MIME riche et le `text/plain` n'apparait
+    jamais : il ne doit pas etre compare.
+
+    Erreurs : un fichier introuvable, illisible, ou un JSON invalide
+    leve une exception (OSError, json.JSONDecodeError, UnicodeDecodeError).
+    On n'avale plus l'exception ici : un carnet corrompu doit rendre
+    `NOTEBOOK_ERROR` (cf. check_equivalence, verdict dedie), pas
+    `EQUIVALENT` par accident.
     """
-    try:
-        with open(notebook_path, encoding="utf-8") as fh:
-            nb = json.load(fh)
-    except Exception:
-        return []
+    with open(notebook_path, encoding="utf-8") as fh:
+        nb = json.load(fh)
     sources_text: set[str] = set()
     for cell in nb.get("cells", []):
         src = "".join(cell.get("source", []))
@@ -78,14 +131,19 @@ def extract_outputs(notebook_path: str) -> list[str]:
                 elif isinstance(raw, list):
                     text = "".join(raw)
             elif otype in ("execute_result", "display_data"):
-                # execute_result / display_data: text/plain is under data['text/plain']
+                # execute_result / display_data: text/plain sous data['text/plain'].
+                # Regle du MIME rendu (cf. docstring module) : si un MIME riche
+                # est present dans le meme data, text/plain n'est pas rendu par
+                # Quarto, donc on l'ignore pour eviter un LOST_OUTPUTS fantome.
                 data = out.get("data", {})
                 if isinstance(data, dict):
-                    raw = data.get("text/plain")
-                    if isinstance(raw, str):
-                        text = raw
-                    elif isinstance(raw, list):
-                        text = "".join(raw)
+                    has_rich = any(m in data for m in RICH_MIMES)
+                    if not has_rich:
+                        raw = data.get("text/plain")
+                        if isinstance(raw, str):
+                            text = raw
+                        elif isinstance(raw, list):
+                            text = "".join(raw)
             if text is None:
                 continue
             for line in text.splitlines():
@@ -170,7 +228,15 @@ def check_equivalence(notebook_path: str, base_url: str = DEFAULT_BASE_URL) -> d
         verdict["verdict"] = "UNKNOWN"
         verdict["error"] = "no html body"
         return verdict
-    outputs = extract_outputs(notebook_path)
+    try:
+        outputs = extract_outputs(notebook_path)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        # Carnet corrompu, JSON invalide, ou fichier illisible : NOTEBOOK_ERROR
+        # (revue coord 06/10, c.5994810325). Avant, extract_outputs avalait
+        # l'exception et renvoyait [], ce qui faisait EQUIVALENT par accident.
+        verdict["verdict"] = "NOTEBOOK_ERROR"
+        verdict["error"] = f"notebook read failed: {type(exc).__name__}: {exc}"
+        return verdict
     verdict["total_lines"] = len(outputs)
     # Deshéchapper le HTML avant recherche (&quot; -> ", &amp; -> &, &lt; -> <, etc.)
     # Leçon revue coord 05/10, c.5994810325 : 528 entités `&quot;` sur une page

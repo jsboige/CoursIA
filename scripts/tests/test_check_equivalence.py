@@ -166,11 +166,112 @@ class TestExtractOutputs:
         # La ligne "x = 1" doit etre filtree (deja dans sources)
         assert "x = 1" not in result
 
-    def test_json_malformed(self, tmp_path):
+    def test_json_malformed_raises(self, tmp_path):
+        """Un carnet au JSON invalide leve json.JSONDecodeError, ne rend pas [].
+
+        Leçon revue coord 06/10, c.5994810325 : avant, extract_outputs
+        avalsit l'exception et renvoyait [], ce qui faisait EQUIVALENT
+        par accident sur un carnet corrompu. Le verdict NOTEBOOK_ERROR
+        est dedie.
+        """
+        import json as _json
         nb = tmp_path / "bad.ipynb"
         nb.write_text("{ not json", encoding="utf-8")
+        with pytest.raises(_json.JSONDecodeError):
+            mod.extract_outputs(str(nb))
+
+    def test_mime_rendu_text_html_dismiss_text_plain(self, tmp_path):
+        """Un `display_data` qui porte `text/html` + `text/plain` ignore le text/plain.
+
+        Leçon revue coord 06/10, c.5994810325 : Quarto rend `text/html`,
+        pas `text/plain`. Le text/plain est un fallback que la page
+        publiee n'utilise pas. La regle du MIME rendu : ne pas comparer
+        le text/plain quand un MIME riche est present.
+        """
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{
+                "output_type": "display_data",
+                "data": {
+                    "text/html": "<div>42</div>",
+                    "text/plain": "should_not_be_compared",
+                },
+                "metadata": {},
+            }],
+        )
         result = mod.extract_outputs(str(nb))
+        # text/plain ignore (text/html present)
+        assert "should_not_be_compared" not in result
+        assert "42" not in result  # text/html n'est pas extrait par cet organe
+        # Sortie vide : on n'a rien a comparer (le HTML est rendu par Quarto,
+        # pas par le carnet).
         assert result == []
+
+    def test_mime_rendu_image_png_dismiss_text_plain(self, tmp_path):
+        """Un display_data matplotlib (image/png + text/plain) ignore le text/plain.
+
+        Leçon revue coord 06/10, c.5994810325 : Search-02 et ML-1 ont 8
+        lignes `<Figure ...>` qui sont les `text/plain` de figures dont
+        le MIME rendu est `image/png`. Avant la regle, ces figures faisaient
+        LOST_OUTPUTS. Apres, elles sont EQUIVALENT.
+        """
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["plt.show()"],
+            outputs=[{
+                "output_type": "display_data",
+                "data": {
+                    "image/png": "iVBORw0KGgoAAAANSUhEUgAA",
+                    "text/plain": "<Figure size 432x288 with 1 Axes>",
+                },
+                "metadata": {},
+            }],
+        )
+        result = mod.extract_outputs(str(nb))
+        # text/plain ignore (image/png present)
+        assert "Figure" not in result
+        assert result == []
+
+    def test_mime_rendu_text_markdown_dismiss_text_plain(self, tmp_path):
+        """`text/markdown` est un MIME riche : dismiss text/plain."""
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["md"],
+            outputs=[{
+                "output_type": "display_data",
+                "data": {
+                    "text/markdown": "# Title",
+                    "text/plain": "should_be_ignored",
+                },
+                "metadata": {},
+            }],
+        )
+        result = mod.extract_outputs(str(nb))
+        assert "should_be_ignored" not in result
+        assert result == []
+
+    def test_mime_rendu_text_plain_only_kept(self, tmp_path):
+        """Un `display_data` avec UNIQUEMENT text/plain garde le text/plain.
+
+        C'est la regle inverse : sans MIME riche, text/plain est la
+        seule sortie et doit etre comparee.
+        """
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["x = 1"],
+            outputs=[{
+                "output_type": "display_data",
+                "data": {"text/plain": "rendered value"},
+                "metadata": {},
+            }],
+        )
+        result = mod.extract_outputs(str(nb))
+        assert "rendered value" in result
 
     def test_no_code_cells(self, tmp_path):
         nb = tmp_path / "test.ipynb"
@@ -462,6 +563,60 @@ class TestCheckEquivalence:
         verdict = mod.check_equivalence("/nonexistent/path/to/carnet.ipynb")
         assert verdict["verdict"] == "NOTEBOOK_ERROR"
         assert "not found" in verdict["error"]
+
+    def test_notebook_corrupt_renders_notebook_error(self, tmp_path):
+        """Un carnet JSON invalide rend NOTEBOOK_ERROR, pas EQUIVALENT.
+
+        Leçon revue coord 06/10, c.5994810325 : avant, extract_outputs
+        avalsit l'exception et renvoyait [], ce qui faisait passer un
+        carnet corrompu en EQUIVALENT. Maintenant l'exception remonte
+        et check_equivalence traduit en NOTEBOOK_ERROR.
+        """
+        nb = tmp_path / "test.ipynb"
+        nb.write_text("{ not json", encoding="utf-8")
+        fake_resp = mock.MagicMock()
+        fake_resp.status = 200
+        fake_resp.read.return_value = b"<html>anything</html>"
+        fake_resp.__enter__ = mock.MagicMock(return_value=fake_resp)
+        fake_resp.__exit__ = mock.MagicMock(return_value=False)
+        with mock.patch("urllib.request.urlopen", return_value=fake_resp):
+            verdict = mod.check_equivalence(str(nb))
+        assert verdict["verdict"] == "NOTEBOOK_ERROR"
+        assert "JSONDecodeError" in verdict["error"] or "json" in verdict["error"].lower()
+
+    def test_matplotlib_figure_is_equivalent(self, tmp_path):
+        """Une figure matplotlib (image/png + text/plain) ne fait plus LOST_OUTPUTS.
+
+        Leçon revue coord 06/10, c.5994810325 : avec la regle du MIME
+        rendu, un `display_data` qui porte `image/png` est ignore pour
+        la comparaison (le text/plain n'est pas rendu par Quarto). La
+        page peut etre EQUIVALENT, plus LOST_OUTPUTS.
+        """
+        nb = tmp_path / "test.ipynb"
+        _make_notebook_with_outputs(
+            nb,
+            sources=["plt.show()"],
+            outputs=[{
+                "output_type": "display_data",
+                "data": {
+                    "image/png": "iVBORw0KGgoAAAANSUhEUgAA",
+                    "text/plain": "<Figure size 432x288 with 1 Axes>",
+                },
+                "metadata": {},
+            }],
+        )
+        # Page déployée : pas de mention du text/plain (Quarto rend le PNG).
+        fake_resp = mock.MagicMock()
+        fake_resp.status = 200
+        fake_resp.read.return_value = b"<html><body><img src='figure.png'/></body></html>"
+        fake_resp.__enter__ = mock.MagicMock(return_value=fake_resp)
+        fake_resp.__exit__ = mock.MagicMock(return_value=False)
+        with mock.patch("urllib.request.urlopen", return_value=fake_resp):
+            verdict = mod.check_equivalence(str(nb))
+        # Plus de text/plain a comparer (regle du MIME rendu) -> EQUIVALENT
+        assert verdict["verdict"] == "EQUIVALENT"
+        assert verdict["total_lines"] == 0
+        assert verdict["found_lines"] == 0
 
     def test_lean_prefix_in_page(self, tmp_path):
         """Un prefixe Lean dans la page ne doit pas bloquer la detection."""
