@@ -128,8 +128,8 @@ lakes frères) ; deux notebooks compagnons le rendent pédagogique :
 
 | Notebook | Rôle |
 |---|---|
-| [`Kelly_companion-Python.ipynb`](Kelly_companion-Python.ipynb) | **Volet numérique (Python)** : montre, côte à côte avec les théorèmes prouvés, pourquoi `f*` maximise le taux de croissance espéré `g(f)` et pourquoi tout sur-pari (`f > f*`) ou sous-pari (`f < f*`) est strictement sous-optimal — narration économique, figures et lien trading. |
-| [`Kelly_companion-Lean.ipynb`](Kelly_companion-Lean.ipynb) | **Jumeau à kernel Lean 4** : chaque énoncé du lake est importé et vérifié par le noyau Lean lui-même (`#check`, `#print axioms`, exemples re-prouvés en cellule) — les énoncés qui compilent, pas la prose recopiée. |
+| [`Kelly_companion-Python.ipynb`](Kelly_companion-Python.html) | **Volet numérique (Python)** : montre, côte à côte avec les théorèmes prouvés, pourquoi `f*` maximise le taux de croissance espéré `g(f)` et pourquoi tout sur-pari (`f > f*`) ou sous-pari (`f < f*`) est strictement sous-optimal — narration économique, figures et lien trading. |
+| [`Kelly_companion-Lean.ipynb`](Kelly_companion-Lean.html) | **Jumeau à kernel Lean 4** : chaque énoncé du lake est importé et vérifié par le noyau Lean lui-même (`#check`, `#print axioms`, exemples re-prouvés en cellule) — les énoncés qui compilent, pas la prose recopiée. |
 
 ## Carnets suivants
 
