@@ -81,6 +81,8 @@ Voir [STRATEGIES_DETAIL.md](STRATEGIES_DETAIL.md#qc-strategy-library-clones-avan
 
 > **TrendFollowing** (catalogue 1.072) n'est **pas reproductible** depuis le `main.py` du dépôt : le baseline-clone (2015-2024, IBKR) donne un Sharpe bien inférieur (~0.36-0.41, PSR < 9%). Le 1.072 provient d'un état du code cloud antérieur — à citer avec ce caveat (diagnostic finding #18).
 
+> **Framework_Composite_TrendWeather** (catalogue 1.155) se reproduit sur sa fenêtre : QC Cloud rend 1,15 sur 2015-01-01 → 2025-12-31 (#19393). Mais sa liste de 15 titres a été écrite en 2026 et porte une information que l'algorithme ne pouvait pas avoir. Avec les 15 plus grandes capitalisations connues à chaque date, le verdict préinscrit est `NO BEATS` contre SPY et 60/40 : voir [TrendWeatherPointInTime](TrendWeatherPointInTime/).
+
 ### Le discriminateur (leçon durable)
 
 La résistance aux frais **n'est pas** l'asset-class ni ML-vs-indicateur : c'est le **realized-turnover** = fréquence × taille par trade × homogénéité des frais du panier. Un composite equity-only fee-homogeneous en rebalancement mensuel (**c2 0.574**) tient là où un multi-asset rotationnel (**AllWeather 0.47**) s'effondre — même architecture, c'est l'univers qui décide.

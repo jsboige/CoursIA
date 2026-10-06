@@ -39,7 +39,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 5 | Positive-Negative-Splits-ML | ML | Equities | ~~1.74~~ → **1.51** ✓post-#2801 | 75.7 | 37.6 | 2.01 | **non robuste** (revu par #19242 : reproduction 2018 → 2024-04 Sharpe 1,16 / PSR 43,6 %, 89 % du résultat en 2023-2024, capacité estimée par QC 3 000 dollars ; 2018 → 2026-09 : ruine en vente à découvert, variante long seul `NO BEATS`) |
 | 6 | DynamicVIXSpyRegime-QC | ML | Equities/VIX | ~~1.72~~ → **1.00** ✓post-#2801 | 17.9 | 16.5 | 1.09 | robuste (confirmed, **PSR 69.4%** — catalog 1.72 was 1Y-OOS, full decade -42%) |
 | 7 | MacroFactorRotation-QC | ML | Multi-asset | ~~1.23~~ → **0.73** ✓post-#2801 | 22.6 | 42.0 | 0.54 | robuste (revised Sharpe -40%, real fees) |
-| 8 | Framework_Composite_TrendWeather | COMP | Equities | ~~1.16~~ → **1.14** ✓post-#2801 | 27.1 | 27.7 | 0.98 | robuste (confirmed, PSR 77.9%) |
+| 8 | Framework_Composite_TrendWeather | COMP | Equities | ~~1.16~~ → **1.14** ✓post-#2801 | 27.1 | 27.7 | 0.98 | **non robuste** (revu par #19393 : la mesure se reproduit sur 2015-2025, Sharpe 1,15, mais PSR 55,7 % et non 77,9 % ; la liste des 15 titres est choisie en 2026 ; avec les 15 plus grandes capitalisations connues à chaque date, 2018 → 2026-09 : Sharpe 0,77 / PSR 14,5 % contre 0,91 pour la liste, `NO BEATS` contre SPY et 60/40) |
 | 9 | Trend-Following | IND | Equities | ~~1.07~~ → **0.41** ✓post-#2801 | 7.9 | 14.6 | 0.54 | **historique** (downgraded: real IBKR fees) |
 | 10 | Multi-Layer-EMA | IND | Crypto (BTC) | ~~0.93~~ → **0.80** ✓post-#2801 | 25.0 | 57.1 | 0.44 | robuste (confirmed -14%, ML crypto holds, PSR 23.9%, MaxDD -57% BTC) |
 | 11 | Portfolio-Optimization-ML | ML | Multi-asset | ~~0.90~~ → **0.88** ✓post-#2801 | 27.2 | 41.6 | 0.65 | robuste (confirmed -2%, monthly rebalance + fee-homogeneous US equity basket = near-immune, PSR 37.2%) |
@@ -86,7 +86,7 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | LeveragedETFMomentum | 32732756 | 1.80 | **1.78** | -1% | robuste (confirmed, leveraged) |
 | Positive-Negative-Splits-ML | 30317350 | 1.74 | **1.51** | -13% | **non robuste** (revu par #19242 : reproduction 2018 → 2024-04 Sharpe 1,16 / PSR 43,6 %, 89 % du résultat en 2023-2024, capacité estimée par QC 3 000 dollars ; 2018 → 2026-09 : ruine en vente à découvert, variante long seul `NO BEATS`) |
 | MacroFactorRotation | 32730301 | 1.23 | **0.73** | -40% | robuste (revised Sharpe) |
-| Framework_Composite_TrendWeather | 28825740 | 1.16 | **1.14** | -2% | robuste (confirmed, **PSR 77.9%**) |
+| Framework_Composite_TrendWeather | 28825740 | 1.16 | **1.14** | -2% | **non robuste** (revu par #19393 : la mesure se reproduit sur 2015-2025, Sharpe 1,15, mais PSR 55,7 % et non 77,9 % ; la liste des 15 titres est choisie en 2026 ; avec les 15 plus grandes capitalisations connues à chaque date, 2018 → 2026-09 : Sharpe 0,77 / PSR 14,5 % contre 0,91 pour la liste, `NO BEATS` contre SPY et 60/40) |
 | Trend-Following | 28797562 | 1.07 | **0.41** | -62% | **historique** (was robuste) |
 | Multi-Layer-EMA | 28433748 | 0.93 | **0.80** | -14% | robuste (confirmed, **ML crypto holds**, PSR 23.9%, MaxDD -57%) |
 | EMA-Cross-Stocks | 28789946 | 0.87 | **0.99** | +14% | robuste (confirmed, PSR 49.7%) |
@@ -133,7 +133,7 @@ over against that fee. Four regimes now observed:
   (-40%) is the milder case in this family. **These catalog rankings are not reliable.**
 
 - **Structured ML & regime composites HOLD** (-2% to -14%): Positive-Negative-Splits-ML (1.51,
-  **PSR 82.3%**, statut revu par #19242 : non robuste), Framework_Composite_TrendWeather (1.14, **PSR 77.9%**), and Multi-Layer-EMA
+  **PSR 82.3%**, statut revu par #19242 : non robuste), Framework_Composite_TrendWeather (1.14, **PSR 77.9%**, statut revu par #19393 : non robuste), and Multi-Layer-EMA
   (0.80, PSR 23.9%) confirm. Contrast with MomentumRegime (0.185) and now Crypto-MultiCanal —
   only the *structured* ML/regime-aware designs survive real fees. **These are real alpha.**
 
@@ -188,7 +188,7 @@ and MomentumStrategy (0.50, PSR 9.3%) — both non-significant PSR, technically 
 
 1. Positive-Negative-Splits-ML — 1.51, PSR 82.3% (structured ML, top leader, replaces collapsed value entries) — **statut retiré par #19242** : la mesure ne se reproduit pas (Sharpe 1,16, PSR 43,6 % sur 2018 → 2024-04) et la règle se ruine en vente à découvert en décembre 2025
 2. LeveragedETFMomentum — 1.78, PSR 79.8% (leveraged, extreme profile)
-3. Framework_Composite_TrendWeather — 1.14, PSR 77.9% (regime-aware composite)
+3. Framework_Composite_TrendWeather — 1.14, PSR 77.9% (regime-aware composite) — **statut retiré par #19393** : le Sharpe se reproduit sur 2015-2025 (1,15) mais la PSR non (55,7 %), et la liste des 15 titres, choisie en 2026, porte l'information ; l'univers ex ante est `NO BEATS` contre SPY et 60/40
 4. EMA-Cross-Stocks — 0.99, PSR 49.7% (high-turnover US equity, near-significance, near-immune)
 
 Only these 4 survive both the fee remediation AND a significance bar. The "robuste" Tier-1 band
@@ -347,7 +347,7 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 | RL-Q-Learning | 32057969 | 2020-2021* | 0.584 | 18.2 | 33.2 | — | `fb1a6366` | *Hardcoded dates |
 | PuppiesOfTheDow-QC | 32732704 | 2018-2025 | 0.302 | 9.613 | 28.8 | 3.5 | `37266daa` | Collapse vs catalog 1.99 (period overfitting) |
 | LeveragedETFMomentum-QC | 32732756 | 2018-2025 | **1.779** | 126.388 | 53.3 | **79.8** | `2addf467` | Confirms catalog 1.80. Lev ETF: extreme CAGR, MaxDD 53% |
-| Framework_Composite_TrendWeather | 28825740 | 2018-2025 | 0.948 | 24.603 | 27.5 | 56.6 | `cd84c50b` | Close to catalog 1.16, best composite |
+| Framework_Composite_TrendWeather | 28825740 | 2018-2025 | 0.948 | 24.603 | 27.5 | 56.6 | `cd84c50b` | Close to catalog 1.16, best composite (revu par #19393 : liste de titres choisie en 2026, univers ex ante `NO BEATS`) |
 | HighBookToMarketFScore-QC | 32732820 | 2018-2025 | 0.411 | 14.513 | 60.4 | 4.5 | `5ef58b0d` | Collapse vs catalog 2.09, MaxDD 60% |
 | MeanReversion v5.2 | 30776121 | 2015-2024 | **0.810** | 10.040 | 7.5 | 46.8 | `b2c5b08f` | Promoted Tier 2→1. Calmar 1.34 (best risk-adj). PSR 46.8% |
 | AdaptiveAssetAllocation | 28693649 | 2008-2024 | 0.509 | 8.008 | 18.9 | 10.6 | `89e8aaef` | Promoted Tier 4→1. Min-var + momentum |
@@ -498,7 +498,7 @@ ou `Sigma` est la **matrice de covariance** complete (correlations incluses). R�
 
 16. **PuppiesOfTheDow et HighBookToMarketFScore: effondrement sur periode alignee**: Sharpe catalog 1.99 et 2.09 (obtenus sur leur fenetre glissante par defaut `end_date - 12 ans`) tombent a 0.302 (PSR 3.5%) et 0.411 (PSR 4.5%, MaxDD 60.4%) sur 2018-2025. Les deux meilleures lignes ML/IND du Tier 1 ne sont pas reproductibles sur la fenetre standardisee.
 
-17. **TrendWeather: le composite qui tient**: Sharpe 0.948 (PSR 56.6%), proche du catalog 1.16. Contraste fort avec MomentumRegime (0.185) — toutes les architectures composites ne se valent pas.
+17. **TrendWeather: le composite qui tient**: Sharpe 0.948 (PSR 56.6%), proche du catalog 1.16. (Revu par #19393 : le chiffre tient, mais il dépend d'une liste de 15 titres choisie en 2026 ; avec un univers ex ante, le verdict est `NO BEATS` contre SPY et 60/40.) Contraste fort avec MomentumRegime (0.185) — toutes les architectures composites ne se valent pas.
 
 18. **Caveat reproductibilite Trend-Following**: le code du repo backteste sur 2018-2024 donne Sharpe 0.365 / MaxDD 13.8% (backtest `3748cb62`), loin du 1.072 publie ci-dessus (`7792ae0a`, 2018-2025, etat du code cloud anterieur). Periodes differentes (2025 inclus ou non) ET drift possible repo vs cloud — a investiguer avant de citer 1.072 comme reference du code versionne.
 
@@ -684,7 +684,7 @@ The table makes the family hierarchy explicit: the regime switch (#26) is the di
 | VolTarget-Momentum | ~0.65 | 0.648 | ~0 | Performance confirmee |
 | PuppiesOfTheDow-QC | 1.99 | 0.302 | -1.688 | Period overfitting severe (catalog = fenetre glissante 12 ans) |
 | LeveragedETFMomentum-QC | 1.80 | 1.779 | -0.021 | Performance confirmee (mais MaxDD 53%) |
-| Framework_Composite_TrendWeather | 1.16 | 0.948 | -0.212 | Legere degradation, composite robuste |
+| Framework_Composite_TrendWeather | 1.16 | 0.948 | -0.212 | Legere degradation (revu par #19393 : liste choisie en 2026, univers ex ante `NO BEATS`) |
 | HighBookToMarketFScore-QC | 2.09 | 0.411 | -1.679 | Period overfitting severe + MaxDD 60% |
 | MeanReversion | 0.29 (old) | **0.810** (v5.2) | +0.520 | v5.2 IBKR dramatically better. Calmar 1.34 |
 | AdaptiveAssetAllocation | untested | 0.509 | +0.509 | First aligned baseline. Min-var + momentum |
