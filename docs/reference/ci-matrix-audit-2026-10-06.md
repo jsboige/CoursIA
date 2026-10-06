@@ -2,7 +2,7 @@
 
 **Contexte** : la PR #19381 a traité les 23 dispatchers `lean-*.yml` + `lean-ci-matrix.yml` + `lean-visibility-advisory.yml` (issue #15652). Au-delà du périmètre lean, ce grain vérifie que les workflows CI non-lean utilisant `strategy: matrix:` ont une configuration de triggers cohérente (push + pull_request avec `branches: [main]`, ou absence justifiée de ces triggers).
 
-**Méthodologie** : `yaml.safe_load` sur les 160 fichiers `.github/workflows/*.yml`, filtre des workflows ayant au moins un job `strategy: matrix:`, vérification de la cohérence des triggers (présence/absence de `push` et `pull_request`, présence de `branches:`).
+**Méthodologie** : `yaml.safe_load` sur l'ensemble des fichiers `.github/workflows/*.yml` (catalogue tenu par `scripts/ci/_catalog_workflows.py`, voir aussi `COURSE_CATALOG.generated.*` byte-identique à `main` — règle `catalog-pr-hygiene`), filtre des workflows ayant au moins un job `strategy: matrix:`, vérification de la cohérence des triggers (présence/absence de `push` et `pull_request`, présence de `branches:`).
 
 ## Résultats — 0 défaut mesuré
 
