@@ -63,21 +63,28 @@ layout: image-overlay
 <!-- Référence PPTX : slide 03. -->
 
 ---
-layout: image-overlay
-class: genai-illustrated genai-system
+layout: default
+class: pilot-teachingstep
 ---
 
 # Un système génératif ne se réduit pas au modèle
 
-<v-clicks at="1">
+<!-- Pilote #15048 (groupe + figure) : le paragraphe et sa figure forment UN
+     groupe TeachingStep -- la figure apparaît avec son texte (même index de
+     clic), sa place est réservée par la grille du composant dès l'état
+     initial, et aucune coordonnée ne vit dans ce fichier. -->
+
+<TeachingStep v-click="1" placement="end" size="md">
 
 - **Au-delà du modèle :** entrées, traitement, stockage, sorties et boucle de retour forment une application générative.
 - **Entrées et stockage :** consignes, documents et conversation alimentent le contexte. Poids appris et mémoire externe restent distincts.
 - **Sortie et retour :** générer, vérifier, corriger. Une conversation ne réentraîne pas les poids ; une réponse plausible ne prouve pas sa fiabilité.
 
-</v-clicks>
+<template #visual>
+<img src="./images/img_001.png" alt="Entrées, traitement, sorties, stockage et retour" />
+</template>
 
-<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_001.png" alt="Entrées, traitement, sorties, stockage et retour" /></div>
+</TeachingStep>
 
 ---
 
@@ -144,23 +151,40 @@ class: genai-illustrated genai-tokens
 <div v-click="2" class="genai-visual visual-2 of-2"><img src="./images/img_007.png" alt="Analogies entre vecteurs de mots" /></div>
 
 ---
-layout: image-overlay
-class: genai-illustrated genai-attention
+layout: default
+class: pilot-teachingstep
 ---
 
 # Réseaux de neurones et attention
 
-<v-clicks at="1">
+<!-- Pilote #15048 (plusieurs groupes illustrés) : deux groupes TeachingStep
+     empilés via ts-stack, chacun porte SA figure -- plus de figures flottant
+     à des hauteurs absolues distinctes (visual-1/visual-2 du style.css). -->
+
+<div class="ts-stack">
+
+<TeachingStep v-click="1" placement="end" size="sm">
 
 - **Réseaux de neurones :** des transformations paramétrées composent plusieurs couches. L’apprentissage ajuste leurs poids.
+
+<template #visual>
+<img src="./images/img_004.png" alt="Réseau de neurones entièrement connecté" />
+</template>
+
+</TeachingStep>
+
+<TeachingStep v-click="2" placement="start" size="lg">
+
 - **Attention :** chaque position combine les informations du contexte. Les poids d’attention ne constituent pas une explication causale complète.
 - **Activité polysémie :** donner deux sens à « avocat », écrire deux phrases, puis dessiner les liens vers les mots qui lèvent l’ambiguïté.
 
-</v-clicks>
+<template #visual>
+<img src="./images/img_005.png" alt="Liens contextuels autour du mot bat" />
+</template>
 
-<div v-click="1" class="genai-visual visual-1 of-2"><img src="./images/img_004.png" alt="Réseau de neurones entièrement connecté" /></div>
+</TeachingStep>
 
-<div v-click="2" class="genai-visual visual-2 of-2"><img src="./images/img_005.png" alt="Liens contextuels autour du mot bat" /></div>
+</div>
 
 ---
 layout: image-overlay
