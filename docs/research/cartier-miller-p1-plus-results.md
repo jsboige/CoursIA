@@ -108,7 +108,7 @@ Pour chaque premier `p` :
 
 ### 2.3 CSV (`example_results/p1_plus_python_truth.csv`)
 
-93 lignes (header + 92 rows) : `p, L_max, stopping_indices, exact_binomial, quarter_applicable`.
+Header + 92 rows : `p, L_max, stopping_indices, exact_binomial, quarter_applicable`.
 
 | p | L_max | stopping_indices | exact_binomial | quarter_applicable |
 |---:|---:|---:|---:|---:|
