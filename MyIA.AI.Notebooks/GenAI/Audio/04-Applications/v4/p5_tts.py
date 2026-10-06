@@ -1037,14 +1037,20 @@ def _synthesize_batch(
 
     with ThreadPoolExecutor(max_workers=_MAX_WORKERS) as pool:
         futures = {pool.submit(_gen, item): item[0] for item in to_generate}
+        segs_by_idx = {item[0]: item[1] for item in to_generate}
         for future in as_completed(futures):
             seg_idx = futures[future]
             try:
                 results[seg_idx] = future.result()
             except Exception as exc:
+                # FishAudio timeouts are a known transient (see _MAX_WORKERS):
+                # log the real cause and keep a valid speaker so the schema
+                # accepts the failure record and the run survives.
+                print(f"  [P5] seg {seg_idx} FAILED: "
+                      f"{type(exc).__name__}: {exc}")
                 results[seg_idx] = TTSResult(
                     seg_index=seg_idx,
-                    speaker="",
+                    speaker=segs_by_idx[seg_idx].speaker,
                     reference_id="",
                     mp3_path="",
                     duration_s=0.0,
@@ -1121,6 +1127,15 @@ def run(force: bool = False) -> Path:
         if generated > 0 and generated % 50 < _BATCH_SIZE:
             print(f"  [P5] Progress: {batch_end}/{total} "
                   f"(gen={generated}, cached={cached}, fail={failed})")
+
+        # Persist after each batch: a transient (known FishAudio timeout,
+        # see _MAX_WORKERS) must cost at most one batch, never the whole
+        # run -- a relaunch resumes from these per-segment text hashes.
+        results_path.write_text(
+            json.dumps([r.model_dump() for r in results], indent=2,
+                       ensure_ascii=False),
+            encoding="utf-8",
+        )
 
     results_path.write_text(
         json.dumps([r.model_dump() for r in results], indent=2, ensure_ascii=False),
