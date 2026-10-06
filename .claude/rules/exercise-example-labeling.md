@@ -59,6 +59,14 @@ Trois gestes, dans cet ordre, et **le premier est une conservation** :
 
 Le stub d'exercice n'utilise **jamais** `raise NotImplementedError` / `assert False` / `1/0`. Patterns corrects : `pass`, `print("Exercice a completer")`, `return None`, `result = None  # TODO etudiant`. Le notebook doit s'executer de bout en bout meme exercices non completes.
 
+## Indice commente sans preuve complete (durcissement #8053, #17714)
+
+Un scaffold d'exercice **commente** (bloc `-- TODO etudiant`, indice) ne contient **jamais la preuve complete** : ni la tactique finale, ni les valeurs concretes qui constituent la reponse. L'enonce, le squelette et les etapes a trous restent ; la derniere marche reste a l'etudiant. Un indice qui livre `simp [foo]` final, un `decide` de cloture ou l'affectation demandee est une solution de-leakable en commentaire — a degrader comme #18119 l'a fait, pas un cas assumable.
+
+**Pourquoi le texte et pas l'organe** : le detecteur de la convention #8053 (`detect_solution_leaks.py`) est structurellement muet sur cette classe — son test de stub est une disjonction, une cellule portant un motif de stub est classee « stub » quelle que soit la preuve commentee qui l'accompagne (mesure #17714 : 0 finding avant ET apres durcissement). La regle vit ici tant que l'organe ne couvre pas la classe.
+
+**Precedent** : Lean-36-Structures-Finies-MUH (#18119, see #17714) — les trois indices commentes perdaient le `simp [sameBinaryTable]` final, les cibles concretes de `shift3` et le `decide` final ; enonce + squelette + etapes a trous conserves, re-execution 9/9 (C.2), densite 1620 c/cell au-dela du plancher 1200.
+
 ## Incidents de reference
 
 - **#1214** (commit a9d8ff8b) "fix(leaks): relabel SemanticWeb instructor solutions as Exemple guide (16->0 HIGH)" : find-replace AVEUGLE `Exercice` -> `Exemple guide` sur 7 notebooks SW pour faire passer le leak-scanner SANS de-leaker. A corrompu la prose. Gaming du detecteur, pas une correction. Reverte/corrige via #1339.
