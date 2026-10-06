@@ -133,6 +133,18 @@ Le **3ᵉ pilier** du post-training moderne, et souvent le **seul utilisé en pr
 - **Training time cible** : < 60 min par notebook
 - **Datasets HF publics** : `HuggingFaceH4/ultrafeedback_binarized` subset, `openai/gsm8k`, `HuggingFaceH4/MATH-500`
 
+## Attentes tailles-dépendantes (leçon ICT-25, #15639)
+
+La section précédente est la contrainte de la **petite carte** ; elle ne dit pas ce qu'on peut *attendre* d'un run selon la taille. Leçon ICT-25 (concern user sur #15634) : on ne peut pas attendre la même chose d'un 2B et d'un 9B+. **Toute PR de training comparant des tailles déclare sa classe d'attente par taille** — sur le modèle d'ICT-25, qui sépare ses runs par taille ; une comparaison inter-tailles sans ce calibrage produit des verdicts non comparables.
+
+| Classe | Tailles | Attente légitime |
+|---|---|---|
+| Routing / actions simples | ≤ 2B | GRPO-RLVR calibrable sur tâches courtes vérifiables |
+| Étage moyen | 4B-8B | FT/PT de tâches structurées ; enveloppe VRAM selon carte (mesurée, pas estimée) |
+| Tâches ambitieuses FT/PT | 9B+ | runs séparés par taille, cartes 24 Go+ (4090/3090), fenêtres réservées |
+
+La sonde du mur vit dans `_measurements/vram_wall_probe.py` (recipe PT_11d exacte, instrument inchangé depuis #15633) ; ses mesures par **taille × carte** sont consignées dans `_measurements/vram_probe_results_*.jsonl` — c'est l'artefact qui fait foi pour les enveloppes, jamais une estimation en prose. Voir #1454 (nomination étage moyen) et #15639 (échelle de la sonde).
+
 ## Quick Start
 
 ```bash
