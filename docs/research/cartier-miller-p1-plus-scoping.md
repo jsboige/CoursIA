@@ -27,7 +27,7 @@ def is_prime(n: int) -> bool:
 
 ### 1.1 Confusion historique à dissiper (correction §1 c.1100)
 
-Une rédaction antérieure de cette section affirmait que les 92 premiers provenaient de `range(13, 1000, 4) ∩ is_prime` (≈ 79 premiers ≡ 1 mod 4 entre 13 et 997). **C'est faux.** La source des 92 est uniquement `range(7, 500) ∩ is_prime`. Le test `test_independent_point_counts_and_complete_sum` itère bien sur `range(13, 1000, 4)` (79 premiers ≡ 1 mod 4), mais **ces 79 sont un sous-ensemble disjoint des 92 du `primes_all_indices`** : 24 premiers ≡ 1 mod 4 dans `[7, 499]` (13, 17, 29, 37, 41, 53, 61, 73, 89, 97, 101, 109, 113, 137, 149, 157, 173, 181, 193, 197, 229, 233, 241, 257) sont communs aux deux listes ; 55 premiers non ≡ 1 mod 4 dans `[7, 499]` (7, 11, 19, 23, 31, 43, 47, 59, 67, 71, 79, 83, 103, 107, 127, 131, 139, 151, 163, 167, 179, 191, 199, 211, 223, 227, 239, 251, 263, 271, 283, 307, 311, 331, 347, 359, 367, 379, 383, 419, 431, 439, 443, 463, 467, 479, 487, 491, 499, ...) sont **uniquement** dans `primes_all_indices` ; les 55 restants des 79 (`range(13, 1000, 4)`) sont des premiers ≥ 503 hors de `[7, 499]`.
+Une rédaction antérieure de cette section affirmait que les 92 premiers provenaient de `range(13, 1000, 4) ∩ is_prime` (≈ 79 premiers ≡ 1 mod 4 entre 13 et 997). **C'est faux.** La source des 92 est uniquement `range(7, 500) ∩ is_prime`. Le test `test_independent_point_counts_and_complete_sum` itère bien sur `range(13, 1000, 4)` (79 premiers ≡ 1 mod 4), mais **ces 79 sont un sous-ensemble disjoint des 92 du `primes_all_indices`** : 43 premiers ≡ 1 mod 4 dans `[7, 499]` (13, 17, 29, 37, 41, 53, 61, 73, 89, 97, 101, 109, 113, 137, 149, 157, 173, 181, 193, 197, 229, 233, 241, 257, 269, 277, 281, 293, 313, 317, 337, 349, 353, 373, 389, 397, 401, 409, 421, 433, 449, 457, 461) sont communs aux deux listes ; 49 premiers non ≡ 1 mod 4 dans `[7, 499]` (7, 11, 19, 23, 31, 43, 47, 59, 67, 71, 79, 83, 103, 107, 127, 131, 139, 151, 163, 167, 179, 191, 199, 211, 223, 227, 239, 251, 263, 271, 283, 307, 311, 331, 347, 359, 367, 379, 383, 419, 431, 439, 443, 463, 467, 479, 487, 491, 499) sont **uniquement** dans `primes_all_indices` ; les 36 restants des 79 (`range(13, 1000, 4) ∩ is_prime`) sont des premiers ≡ 1 mod 4 ≥ 503 hors de `[7, 499]`. **Bilan** : 43 + 49 = 92 (partition des `primes_all_indices`) ; 43 + 36 = 79 (partition des `range(13, 1000, 4) ∩ is_prime`).
 
 ### 1.2 Validation empirique au c.1101
 
@@ -218,8 +218,8 @@ Liste complète reconstruite par `list_92_primes.py --print` (à exécuter, ne p
 
 | Range | Count | Exemples |
 |---|---:|---|
-| 7..97 | 7 | 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97 (22 pays) |
-| 101..499 | 7 | 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499 (70 pays) |
+| 7..97 | 22 | 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97 |
+| 101..499 | 70 | 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499 |
 
 Le script de référence est `pilot.py:139` : re-dérive la liste par `range(7, 500) ∩ is_prime`. La valeur exacte 92 est `primes_all_indices` dans `harvey_validation.json`.
 

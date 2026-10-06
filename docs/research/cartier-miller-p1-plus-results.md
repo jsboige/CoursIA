@@ -30,7 +30,7 @@ Script `scripts/cartier_miller/generate_p1_plus_truth.py` re-implémente **fidè
 4. `Quadratic` + `Elliptic` + `miller_constant` (elliptic_prefix.py:12-100).
 5. `legendre2` + `cornacchia_quarter` + `_elliptic_e` + `quarter` (elliptic_prefix.py:103-193).
 
-Toutes les fonctions sont tagguées `# Source : upstream pilot.py / elliptic_prefix.py (pin 37a3b72)` avec le SPDX-License-Identifier GPL-2.0-or-later en tête de fichier. Pas de modification algorithmique — vendorisation verbatim, recopiée à partir des sources upstream lues via `gh api` au commit `37a9b72`.
+Toutes les fonctions sont tagguées `# Source : upstream pilot.py / elliptic_prefix.py (pin 37a9b72)` avec le SPDX-License-Identifier GPL-2.0-or-later en tête de fichier. Pas de modification algorithmique — vendorisation verbatim, recopiée à partir des sources upstream lues via `gh api` au commit `37a9b72`.
 
 ### 1.2 Pipeline par premier
 
@@ -83,7 +83,7 @@ Pour chaque premier `p` :
 
 ```json
 {
-  "utc_started": "2026-10-06T15:20:06+00:00",
+  "utc_started": "2026-10-06T15:50:50+00:00",
   "platform": "Python-only ground truth (no NTL, no Harvey C++)",
   "python": "3.13.3",
   "upstream_pin": "37a9b72",
@@ -112,12 +112,12 @@ Header + 92 rows : `p, L_max, stopping_indices, exact_binomial, quarter_applicab
 
 | p | L_max | stopping_indices | exact_binomial | quarter_applicable |
 |---:|---:|---:|---:|---:|
-| 7 | 3 | 4 | 0 | 0 (p≡3 mod 4) |
-| 11 | 5 | 6 | 0 | 0 |
+| 7 | 3 | 4 | 1 (p≤199) | 0 (p≡3 mod 4) |
+| 11 | 5 | 6 | 1 (p≤199) | 0 (p≡3 mod 4) |
 | 13 | 6 | 7 | 1 (p≤199) | 1 |
-| 17 | 8 | 9 | 1 | 1 |
+| 17 | 8 | 9 | 1 (p≤199) | 1 |
 | ... | ... | ... | ... | ... |
-| 199 | 99 | 100 | 1 (p≤199) | 0 (p≡3) |
+| 199 | 99 | 100 | 1 (p≤199) | 0 (p≡3 mod 4) |
 | ... | ... | ... | ... | ... |
 | 487 | 243 | 244 | 0 | 0 |
 | 491 | 245 | 246 | 0 | 0 |
