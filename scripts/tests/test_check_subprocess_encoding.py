@@ -1,11 +1,15 @@
-"""Tests for check_subprocess_encoding (ratchet gate, #13140).
+"""Tests for check_subprocess_encoding (ratchet gate, #13140, extended to
+.ipynb cells by #19475 / tapis #15629).
 
 Unit tests target the pure scan_source() parser (balanced-paren call spans,
 the text/universal_newlines/encoding discrimination, multiline kwargs); the
 integration tests drive main(argv) directly (per the cli-surface lesson:
 running _run_check or scan_source through a bypassed argv hides CLI bugs).
+The .ipynb extension adds scan_notebook(), which iterates code cells of a
+Python-kernel notebook and reuses scan_source on each cell.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -167,4 +171,119 @@ def test_main_base_mode(monkeypatch, capsys):
     # No files on disk with those names -> 0 violations, exit 0, paths filtered.
     assert cse.main(["--base", "origin/main"]) == 0
     out = capsys.readouterr().out
-    assert "1 changed .py file(s)" in out
+    # #19475: 1 .py (scripts/a.py) + 1 .ipynb (notebook.ipynb) -- the .py under
+    # _peters is filtered by the EXCLUDE_MARKERS check.
+    assert "1 .py + 1 .ipynb" in out
+    assert "0 violation(s)" in out
+
+
+# ---------------------------------------------------------------------------
+# .ipynb coverage (Issue #19475, extension du ratchet aux cellules)
+# ---------------------------------------------------------------------------
+
+def _write_notebook(path, cells, kernel="python3", language="python"):
+    """Helper: write a minimal nbformat-4 notebook with the given cells."""
+    nb = {
+        "metadata": {
+            "kernelspec": {"name": kernel, "language": language},
+        },
+        "cells": cells,
+    }
+    path.write_text(json.dumps(nb), encoding="utf-8")
+
+
+def test_scan_notebook_violation_in_first_cell(tmp_path):
+    nb = tmp_path / "victim.ipynb"
+    _write_notebook(nb, [
+        {"cell_type": "code",
+         "source": "import subprocess\nsubprocess.run(['x'], text=True)\n"},
+    ])
+    findings = cse.scan_notebook(str(nb))
+    assert len(findings) == 1
+    abs_line, cell_idx, snippet = findings[0]
+    assert cell_idx == 0
+    assert abs_line == 2  # second line of the cell
+    assert "text=True" in snippet
+
+
+def test_scan_notebook_clean_when_encoding_present(tmp_path):
+    nb = tmp_path / "clean.ipynb"
+    _write_notebook(nb, [
+        {"cell_type": "code",
+         "source": ('import subprocess\nsubprocess.run(["x"], text=True, '
+                    'encoding="utf-8", errors="replace")\n')},
+    ])
+    assert cse.scan_notebook(str(nb)) == []
+
+
+def test_scan_notebook_skips_non_python_kernels(tmp_path):
+    nb = tmp_path / "dotnet.ipynb"
+    _write_notebook(
+        nb,
+        [{"cell_type": "code",
+          "source": "// C# code -- this is .NET Interactive, no subprocess.\n"}],
+        kernel=".net-csharp",
+        language="csharp",
+    )
+    # C# subprocess.run is a non-Python construct, but the kernelspec filter
+    # short-circuits before any source scan.
+    assert cse.scan_notebook(str(nb)) == []
+
+
+def test_scan_notebook_skips_markdown_cells(tmp_path):
+    nb = tmp_path / "mixed.ipynb"
+    _write_notebook(nb, [
+        {"cell_type": "markdown",
+         "source": "Reference to subprocess.run(text=True) is just prose.\n"},
+        {"cell_type": "code", "source": "x = 1\n"},
+    ])
+    assert cse.scan_notebook(str(nb)) == []
+
+
+def test_scan_notebook_line_offset_continues_across_cells(tmp_path):
+    nb = tmp_path / "multi.ipynb"
+    _write_notebook(nb, [
+        {"cell_type": "code", "source": "x = 1\n"},  # 1 line
+        {"cell_type": "code",
+         "source": "import subprocess\nsubprocess.run(['x'], text=True)\n"},  # 2 lines
+    ])
+    findings = cse.scan_notebook(str(nb))
+    assert len(findings) == 1
+    abs_line, cell_idx, _ = findings[0]
+    assert cell_idx == 1
+    # Cell 0 occupies 1 line, +1 separator => cell 1 starts at line 3.
+    # The call line in cell 1 is the second line of that cell => abs 4.
+    assert abs_line == 4
+
+
+def test_scan_notebook_malformed_json_returns_empty(tmp_path):
+    nb = tmp_path / "broken.ipynb"
+    nb.write_text("{ this is not json", encoding="utf-8")
+    assert cse.scan_notebook(str(nb)) == []
+
+
+def test_scan_notebook_list_source_is_joined(tmp_path):
+    """nbformat 4.x stores cell source as a list of strings; the parser
+    must join them before scanning, otherwise line offsets are off."""
+    nb = tmp_path / "list_src.ipynb"
+    _write_notebook(nb, [
+        {"cell_type": "code",
+         "source": ["import subprocess\n", "subprocess.run(['x'], text=True)\n"]},
+    ])
+    findings = cse.scan_notebook(str(nb))
+    assert len(findings) == 1
+    _, cell_idx, snippet = findings[0]
+    assert cell_idx == 0
+    assert "text=True" in snippet
+
+
+def test_main_files_mode_picks_up_ipynb(tmp_path, capsys):
+    nb = tmp_path / "bad.ipynb"
+    _write_notebook(nb, [
+        {"cell_type": "code",
+         "source": "import subprocess\nsubprocess.run(['x'], text=True)\n"},
+    ])
+    assert cse.main([str(nb)]) == 1
+    out = capsys.readouterr().out
+    assert "cell[0]" in out
+    assert "text=True without encoding=" in out

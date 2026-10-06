@@ -166,11 +166,16 @@ repos:
       - id: check-subprocess-encoding
         name: Refuse NEW text=True without encoding= (subprocess, cp1252 crash)
         description: |
-          Ratchet gate (#13140, generalising the #12813/#12811 fix): a staged
-          .py file must not contain a subprocess call setting text=True (or
-          universal_newlines=True) without encoding= in the same call. On a
-          cp1252 host that raises UnicodeDecodeError on UTF-8 payloads — the
-          exact class that killed the lane-claim guard in production (#12811).
+          Ratchet gate (#13140, generalising the #12813/#12811 fix, extended
+          to .ipynb by #19475 / tapis #15629): a staged .py file or a staged
+          Python-kernel .ipynb file must not contain a subprocess call setting
+          text=True (or universal_newlines=True) without encoding= in the
+          same call. On a cp1252 host the moment a child writes UTF-8 bytes
+          undefined in cp1252 (0x81/0x8D/0x8F/0x90/0x9D, frequent in the ICT
+          symbols and French prose) the parent crashes with
+          UnicodeDecodeError — the exact class that killed the lane-claim
+          guard in production (#12811) and recurred across 19 notebook
+          cellules of the Lean series during the tapis #15629 sweep.
           Retroactively-clean-by-design: only files the commit touches are
           scanned, so the gate is green on main while the historical sweep
           lands tranche by tranche. No CI workflow counterpart on purpose:
@@ -178,7 +183,7 @@ repos:
         entry: python scripts/check_subprocess_encoding.py
         language: system
         pass_filenames: true
-        files: '\.py$'
+        files: '\.(py|ipynb)$'
 
       - id: cell-source-parses
         name: '#13326 — refuse un-compilable cell source (markdown-typed-code or syntax error)'

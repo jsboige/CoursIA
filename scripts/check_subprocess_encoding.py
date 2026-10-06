@@ -21,16 +21,25 @@ a violation iff it sets ``text=True`` (or the legacy alias
 -- including when ``encoding=`` sits on a separate line of a multiline call.
 
 Usage (two modes):
-    python check_subprocess_encoding.py <file.py> [file2.py ...]
+    python check_subprocess_encoding.py <file.{py,ipynb}> [file2 ...]
         Scan the given files (pre-commit mode: pre-commit passes the staged
-        filenames).
+        filenames). For .ipynb, only code cells whose kernelspec is Python
+        are scanned; .NET Interactive / Lean notebooks are skipped (the
+        subprocess / text=True pair is Python-only).
 
     python check_subprocess_encoding.py --base origin/main
-        Scan every .py file changed between merge-base(REF, HEAD) and HEAD,
-        reading the working tree (in CI the checkout IS the head).
+        Scan every .py and Python-kernel .ipynb file changed between
+        merge-base(REF, HEAD) and HEAD, reading the working tree (in CI
+        the checkout IS the head).
 
 Exit code 1 iff at least one violation is reported. Vendored / external
 subtrees (see EXCLUDE_MARKERS) are out of scope in both modes.
+
+Issue #19475 (extension to notebooks, the gap measured by the tapis #15629):
+the original guard refused NEW .py offenses, but the same defect class
+(UnicodeDecodeError cp1252 on UTF-8 payload) was measured almost
+exclusively in .ipynb cells -- the ratchet must catch the same defect in
+notebook source, not just module-level Python.
 
 Known-good fix forms: ``encoding="utf-8", errors="replace"`` -- or the
 single-quote variant ``encoding='utf-8', errors='replace'`` when the call
@@ -42,6 +51,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 import re
 import subprocess
 import sys
@@ -132,6 +142,62 @@ def scan_source(src: str) -> list[tuple[int, str]]:
     return findings
 
 
+def _is_python_kernel(metadata: dict | None) -> bool:
+    """A notebook with kernel Python (any minor) parses for scan_source. .NET
+    Interactive notebooks are skipped (their 'source' is C#/F#, not Python)."""
+    if not metadata:
+        return False
+    ks = metadata.get("kernelspec", {}) or {}
+    name = (ks.get("name") or "").lower()
+    language = (ks.get("language") or "").lower()
+    return name.startswith("python") or language == "python"
+
+
+def _cell_source(cell: dict) -> str:
+    """Concatenate the source field of a code cell (nbformat: list of str or str)."""
+    src = cell.get("source", "")
+    if isinstance(src, list):
+        return "".join(src)
+    return src or ""
+
+
+def scan_notebook(path: str) -> list[tuple[int, int, str]]:
+    """Return (1-based notebook line, 1-based cell index, snippet) per violation.
+
+    The notebook line is the absolute line offset in the concatenated cell
+    sources (each cell separated by a single '\\n' if it does not already end
+    in one). The cell index lets a reviewer jump straight to the offending
+    cell in the Jupyter UI.
+
+    Non-Python kernels are skipped (return []). Malformed JSON returns []
+    (the guard is best-effort; the cell-source-parses guard has its own
+    coverage of the malformed-notebook class).
+    """
+    findings: list[tuple[int, int, str]] = []
+    try:
+        nb = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return findings
+    if not _is_python_kernel(nb.get("metadata", {})):
+        return findings
+    cumulative_lines = 0
+    for cell_idx, cell in enumerate(nb.get("cells", []) or []):
+        if cell.get("cell_type") != "code":
+            continue
+        src = _cell_source(cell)
+        if not src:
+            cumulative_lines += 0
+            continue
+        for rel_line, snippet in scan_source(src):
+            findings.append((cumulative_lines + rel_line, cell_idx, snippet))
+        # cells separated by a single newline if not already ending in one
+        line_count = src.count("\n")
+        if not src.endswith("\n"):
+            line_count += 1
+        cumulative_lines += line_count + 1
+    return findings
+
+
 def git_out(*args: str) -> str | None:
     try:
         proc = subprocess.run(
@@ -144,7 +210,7 @@ def git_out(*args: str) -> str | None:
 
 
 def changed_python_files(base: str) -> list[str]:
-    """Files changed between merge-base(base, HEAD) and HEAD (paths, .py only)."""
+    """Files changed between merge-base(base, HEAD) and HEAD (paths, .py + .ipynb)."""
     mb = git_out("merge-base", base, "HEAD")
     if mb is None:
         # No common ancestor (orphan branch): fall back to base tip.
@@ -153,7 +219,8 @@ def changed_python_files(base: str) -> list[str]:
     if out is None:
         return []
     return [l.strip() for l in out.splitlines()
-            if l.strip().endswith(".py") and not excluded(l.strip())]
+            if (l.strip().endswith(".py") or l.strip().endswith(".ipynb"))
+            and not excluded(l.strip())]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -161,18 +228,29 @@ def main(argv: list[str] | None = None) -> int:
         description="Refuse NEW subprocess text=True calls without encoding=")
     p.add_argument("files", nargs="*", help="files to scan (pre-commit mode)")
     p.add_argument("--base", default=None, metavar="REF",
-                   help="scan .py files changed since merge-base(REF, HEAD)")
+                   help="scan .py and .ipynb files changed since merge-base(REF, HEAD)")
     args = p.parse_args(argv)
 
     if args.base:
         targets = changed_python_files(args.base)
     else:
-        targets = [f for f in args.files if f.endswith(".py") and not excluded(f)]
+        targets = [f for f in args.files
+                   if (f.endswith(".py") or f.endswith(".ipynb"))
+                   and not excluded(f)]
 
     violations = 0
     for f in targets:
         path = Path(f)
         if not path.is_file():
+            continue
+        if f.endswith(".ipynb"):
+            try:
+                for line, cell_idx, snippet in scan_notebook(f):
+                    violations += 1
+                    print(f"{f}:cell[{cell_idx}]:{line}: "
+                          f"text=True without encoding= :: {snippet}")
+            except (OSError, ValueError):
+                continue
             continue
         try:
             src = path.read_text(encoding="utf-8")
@@ -189,7 +267,10 @@ def main(argv: list[str] | None = None) -> int:
               "inside f-string expressions).")
         return 1
     if args.base:
-        print(f"subprocess-encoding ratchet: {len(targets)} changed .py file(s), 0 violation(s)")
+        n_py = sum(1 for f in targets if f.endswith(".py"))
+        n_ipynb = sum(1 for f in targets if f.endswith(".ipynb"))
+        print(f"subprocess-encoding ratchet: {n_py} .py + {n_ipynb} .ipynb "
+              f"changed file(s), 0 violation(s)")
     return 0
 
 
