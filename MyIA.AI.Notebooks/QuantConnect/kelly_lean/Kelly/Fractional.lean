@@ -52,13 +52,25 @@ lemma fractional_feasible (β : Bet) (c : ℝ) (hc0 : 0 ≤ c) (hc1 : c ≤ 1) :
   obtain ⟨hfs_left, hfs_right⟩ := kellyFrac_feasible β
   refine ⟨?_, ?_⟩
   · -- -1/b < c·f*
-    -- Equivalent à -1 < c·f*·b (b > 0)
-    have hkey : -1 < c * (kellyFrac β * β.b) := by
-      -- hfs_left : -1/b < f*, soit -1 < f*·b ; hc0 : 0 ≤ c ; hc1 : c ≤ 1 ; b > 0
-      nlinarith [hfs_left, hc0, hc1, β.hb_pos]
-    rwa [← mul_assoc, div_lt_iff₀ β.hb_pos, ← mul_lt_mul_iff_right₀ β.hb_pos] at hkey
+    -- Cas c = 0 : c·f* = 0 > -1/b (b > 0).
+    -- Cas c > 0 : on multiplie hfs_left par c ; puis -c/b ≥ -1/b (c ≤ 1, b > 0).
+    rcases eq_or_lt_of_le hc0 with rfl | hc0_pos
+    · simp [β.hb_pos]
+    · -- hfs_left : -1/b < f* ; hc0_pos : 0 < c ; donc c·f* > c·(-1/b) = -c/b
+      have h1 : c * (-(1 / β.b)) < c * kellyFrac β :=
+        (mul_lt_mul_left hc0_pos).mpr hfs_left
+      -- -c/b ≥ -1/b (puisque c ≤ 1 et b > 0)
+      have h2 : -(1 / β.b) ≤ c * (-(1 / β.b)) := by
+        rw [neg_mul, neg_div]
+        exact div_le_div_of_nonneg_right (by linarith [hc1]) β.hb_pos.le
+      linarith
   · -- c·f* < 1
-    nlinarith [hfs_right, hc0, hc1]
+    -- Cas c = 0 : 0 < 1 trivialement.
+    -- Cas c > 0 : c·f* < c·1 = c ≤ 1.
+    rcases eq_or_lt_of_le hc0 with rfl | hc0_pos
+    · simp
+    · have h1 : c * kellyFrac β < c * 1 := (mul_lt_mul_left hc0_pos).mpr hfs_right
+      linarith [hc1]
 
 /-- **Inégalité fondamentale du *fractional Kelly*** : pour `c ∈ [0, 1]`,
     `growth(c·f*) ≤ growth(f*)`. C'est la justification formelle du
