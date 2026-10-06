@@ -32,6 +32,7 @@ Le matériel QC mélange 4 types de notebooks qu'un visiteur doit distinguer :
 | Stratégie | Type | Classe d'actifs | Statut | Évidence |
 |-----------|------|-----------------|--------|----------|
 | `LongShortHarvest-QC` | Long/short actions (grandes capitalisations + vente à découvert) | US Equity | **NO BEATS** | QC Cloud 2026-10-06 (#19450), 2018-01 → 2026-09 : Sharpe 0,44 (taux sans risque nul) contre 0,79 pour SPY détenu et 0,81 pour le 60/40, p Holm 1,00 ; pire baisse −61,6 % (rachats forcés de janvier 2021). L'ancien « 98.7% » ne mesurait pas `main.py` |
+| `LeveragedETFMomentum-QC` | Rotation quotidienne d'ETF à levier (RSI + SMA) | US Equity (ETF à levier) | **BEATS** | QC Cloud 2026-10-06 (#19587), 2012-01 → 2026-09 : Sharpe 0,93 pour SPY détenu, 1,00 pour QQQ ; `base` (code tel quel) 1,50, p Holm 0,012 contre les deux ; la règle écrite exécutée en prix bruts (`rule`) 1,58, p Holm 0,004 : BEATS aussi. Seuils publiés le 31/12/2025 (la fenêtre n'est pas hors échantillon), 2020 multiplie la valeur par 16, pire baisse −52,5 % (fin 2018). L'ancien « Sharpe 1.779 » ne comparait à rien |
 | `Framework_Composite_FamaFrenchAllWeather` | Composite | Multi-actifs | **Alive — BEATS** | 87.5% OOS (backtest vérifié) |
 | `DynamicVIXSpyRegime-QC` | Régime VIX | US Equity | **Alive** | 69.4% (backtest vérifié) |
 | `BitcoinRegimeGate-QC` | Régime BTC (gate 24/7) | US Equity (QQQ/SHY) | **Alive — risk-adjusted** | QC Cloud 2026-09-30 (distillat #18576) : IS 2016-21 Sharpe **1.133** vs QQQ-hold 0.961 (MaxDD 14.4 % vs 28.2 %) ; OOS 2022-26 Sharpe **0.64** vs QQQ-hold 0.43 (MaxDD 15.2 % vs 34.7 %) ; PSR OOS 14.3 % (edge vs cash non significatif) |
@@ -81,7 +82,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 3, backtests QC Cloud MCP) | 5 | cohorte Momentum/Factor/Composite — **1 edge significatif** (BlackLitterman PSR 51 %), 2 Needs-improvement, 2 BROKEN |
 | Vérifié (tranche 4, backtests QC Cloud MCP) | 5 | cohorte MeanReversion/Macro/Multi-asset/Crypto — **0 edge significatif** (PSR < 50 %), 4 Needs-improvement, 1 BROKEN ; Multi-Layer-EMA revendication README confirmée |
 | Vérifié (tranche 5, backtests QC Cloud MCP) | 5 | cohorte Trend/Macro-Régime/Options/Causal/Factor — **0 edge significatif** (PSR < 50 %), 3 Needs-improvement, 1 near-cash, 1 near-BROKEN |
-| Vérifié (tranche 6, backtests QC Cloud MCP) | 5 | cohorte Régime/Factor/Vol/Leveraged-Factor — **1 edge candidat** (LeveragedETFMomentum PSR 79.8 %, ETF leveraged → flag OOS), 4 Needs-improvement |
+| Vérifié (tranche 6, backtests QC Cloud MCP) | 5 | cohorte Régime/Factor/Vol/Leveraged-Factor — **1 edge candidat** (LeveragedETFMomentum PSR 79.8 %, ETF leveraged → flag OOS ; mesuré depuis contre SPY et QQQ : BEATS, #19587), 4 Needs-improvement |
 | Vérifié (tranche 7, backtests QC Cloud MCP) | 5 | cohorte **ML supervisé / DL / SVM-wavelet** (5 stratégies best-guess ML du bucket Vivant promues) — **0 edge significative** (PSR max = 29.3 % Sector-ML-Classification ; 2/5 PSR < 10 % ; aucune > 50 %), 5 Needs-improvement — confirme que le ML in-sample sans walk-forward multi-seed ne surfit pas la cohorte |
 | Vérifié (tranche 8, backtests QC Cloud MCP) | 5 | cohorte **Trend + Régime + Vol risk** (5 stratégies best-guess du bucket Vivant promues) — **0 edge significative** (PSR < 50 % partout), 4 Needs-improvement, 1 BROKEN (VIX-TermStructure Sharpe négatif −0.125, PSR 0.18 %) ; max PSR 24.99 % TrendStocksLite |
 | Vérifié (tranche 9, backtests QC Cloud MCP) | 5 | cohorte Composite+Options+Vol/Momentum — **0 edge** (PSR < 50 % partout) ; PSR max 19.78 % (Framework_Composite_EMATrend) |
@@ -127,6 +128,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `EMA-Cross-Index` | `projects/EMA-Cross-Index/` | Trend EMA | Vérifié | tableau vérifié ci-dessus (figure #5746) |
 | `ForexCarry` | `projects/ForexCarry/` | FX carry/momentum | Vérifié | tableau vérifié ci-dessus (figure #5748) |
 | `Framework_Composite_FamaFrenchAllWeather` | `projects/Framework_Composite_FamaFrenchAllWeather/` | Composite | Vérifié | tableau vérifié ci-dessus (87.5 % OOS) |
+| `LeveragedETFMomentum-QC` | `projects/LeveragedETFMomentum-QC/` | Rotation d'ETF à levier | Vérifié | tableau vérifié ci-dessus (BEATS, #19587) |
 | `LongShortHarvest-QC` | `projects/LongShortHarvest-QC/` | Long/short actions | Vérifié | tableau vérifié ci-dessus (NO BEATS, #19450) |
 | `ML-RandomForest` | `projects/ML-RandomForest/` | ML supervisé (RF) | Vérifié | tableau vérifié ci-dessus (figure #5747) |
 | `ML-XGBoost` | `projects/ML-XGBoost/` | ML supervisé (XGBoost) | Vérifié | tableau vérifié ci-dessus (figure #5749) |
@@ -213,6 +215,9 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 > tranches 2-6) avec PSR > 50 % (1ʳᵉ = tranche 3 BlackLitterman 51.4 %). **MAIS** ETF leveraged
 > (CAGR 126 %, drawdown 53.3 %) → l'edge est vraisemblablement **amplifiée par le levier**, pas du
 > skill pur ; à confirmer en walk-forward OOS avant promotion. Les 4 autres : PSR < 10 % (0 edge).
+>
+> **Mesure du 2026-10-06 (#19587)** : `LeveragedETFMomentum-QC` comparé à SPY et QQQ détenus sur
+> 2012-2026, différence de Sharpe testée : verdict BEATS (tableau vérifié en tête de document).
 
 | Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
 |-----------|--------|------|--------|------------------------------------------------------------------------|
@@ -220,7 +225,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Markov-Regime-Detection` | `projects/Markov-Regime-Detection/` | Régime (Markov) | **Needs-improvement** | 2766 j. ; Sharpe 0.375 ; CAGR 8.44 % ; MaxDD 24.4 % ; PSR 5.8 % ; NP 144.0 % ($98 214) — edge non significative |
 | `HighBookToMarketFScore-QC` | `projects/HighBookToMarketFScore-QC/` | Factor (Piotroski) | **Needs-improvement** | période post-#2801 (tradeableDates=0, anomalie champ MCP ; ~2018–2025 aligned) ; Sharpe 0.411 ; CAGR 14.51 % ; **MaxDD 60.4 %** ; PSR 4.5 % ; NP 195.9 % ($17 992 007) — CAGR décent mais drawdown catastrophique |
 | `Cloud-VolTargeting` | `projects/Cloud-VolTargeting/` | Vol targeting | **Needs-improvement / near-cash** | 1761 j. (2018–2025, run frais 2026-08-14 baseline #1630, v1, 54 ordres, backtest `VolTargeting-v1-2018-2025-aligned-status-2026-08`, **reproduit exactement le run précédent**) ; Sharpe 0.207 ; CAGR 6.72 % ; MaxDD 38.2 % ; PSR 0.557 % ; NP 57.7 % ($32 854) — quasi-cash + drawddown élevé |
-| `LeveragedETFMomentum-QC` | `projects/LeveragedETFMomentum-QC/` | Leveraged ETF momentum | **Alive (edge candidat, levier) ★** | 2011 j. ; **Sharpe 1.779** ; CAGR 126.39 % ; **MaxDD 53.3 %** ; **PSR 79.8 %** ; NP 69 153 % ($59 508 108) — **2ᵉ PSR > 50 % toutes tranches (après BlackLitterman 51 %)**, MAIS ETF leveraged (levier amplifie gains ET drawdown) → edge à confirmer en walk-forward OOS, pas du skill pur |
+| `LeveragedETFMomentum-QC` | `projects/LeveragedETFMomentum-QC/` | Leveraged ETF momentum | **Alive (edge candidat, levier) ★** — mesuré depuis : BEATS (#19587) | 2011 j. ; **Sharpe 1.779** ; CAGR 126.39 % ; **MaxDD 53.3 %** ; **PSR 79.8 %** ; NP 69 153 % ($59 508 108) — **2ᵉ PSR > 50 % toutes tranches (après BlackLitterman 51 %)**, MAIS ETF leveraged (levier amplifie gains ET drawdown) → edge à confirmer en walk-forward OOS, pas du skill pur |
 
 #### Vérifié (tranche 7, backtests QC Cloud via MCP) (5)
 
@@ -910,7 +915,7 @@ Entrées où le statut *best-guess* était le plus fragile (divergence nom de do
 
 - **`Multi-Layer-EMA`** (`OptimizedCryptoAlgorithm`) — **résolu**. Vérifié tranche 4 (Needs-improvement, Sharpe 0.798). Divergence de nommage levée : crypto BTC/ETH/LTC (Binance) avec EMA10/50 + RSI + Bollinger + filtre de volatilité ATR (max 3 positions) — « Multi-Layer-EMA » est défendable (EMA = couche primaire d'un empilement multi-indicateurs).
 
-- **`LeveragedETFMomentum-QC`** (`ConditionalSectorRotation`) — **résolu, pas une divergence**. QC Strategy Library #60 (Grant Forman) : ETF à effet de levier SPY/QQQ/TQQQ/UVXY/TECL/SPXL/SQQQ/TECS/BSV, régime RSI + SMA. Le dossier nomme le *thème* (momentum ETF levier), la classe le *mécanisme* (rotation conditionnelle) — complémentaires. Déjà backtesté tranche 6 (PSR 79.8 %, flag OOS ETF levier).
+- **`LeveragedETFMomentum-QC`** (`ConditionalSectorRotation`) — **résolu, pas une divergence**. QC Strategy Library #60 (Grant Forman) : ETF à effet de levier SPY/QQQ/TQQQ/UVXY/TECL/SPXL/SQQQ/TECS/BSV, régime RSI + SMA. Le dossier nomme le *thème* (momentum ETF levier), la classe le *mécanisme* (rotation conditionnelle) — complémentaires. Déjà backtesté tranche 6 (PSR 79.8 %, flag OOS ETF levier). Mesuré contre SPY et QQQ le 2026-10-06 : BEATS (#19587).
 
 - **`MacroFactorRotation-QC`** (`AIStocksBondsRotationAlgorithm`) — **résolu, pas une divergence**. QC Strategy Library #72 (Derek Melchin) : rotation cross-actifs SPY/GLD/BND/BTCUSD pilotée par `DecisionTreeRegressor` sur facteurs FRED (VIX, courbe 10Y-3M, fed funds), rebalancement mensuel. Nom = thème macro-factoriel, classe = mécanisme ML actions/bonds/crypto. Multi-actifs sur brokerage par défaut (IBKR rejette le crypto — cf #1027).
 
