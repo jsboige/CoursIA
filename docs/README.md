@@ -14,8 +14,8 @@ Fichiers présents directement à la racine du répertoire `docs/`. Triage initi
 | [magnifica-humanitas-dialogue.md](magnifica-humanitas-dialogue.md) | **nouveau** (2026-08-17) | Dialogue avec l'encyclique *Magnifica Humanitas* (Léon XIV, 2026) — le programme du dépôt confronté, § par §, aux appels du texte (vérification comme bien commun, désarmement, choix social, écologie, éducation) ; tensions conservées. #11359 |
 | [leiden-declaration-position.md](cadrage/leiden-declaration-position.md) | **nouveau** (2026-08-26) | Positionnement de CoursIA face à la Déclaration de Leiden sur l’IA et les mathématiques : principes confrontés aux artefacts, lacunes nommées, engagements mesurables et tensions conservées. #13105 |
 | [PARCOURS.md](PARCOURS.md) | **KEEP** | Schéma maturité 3 axes (éditorial / reproductibilité / revue scientifique) — décompose le `maturity` monolithique du catalogue (5 valeurs mélangées) en 3 préoccupations orthogonales auditables indépendamment. ACCEPTÉ 2026-07-23, pilote c.763 critères 1-3. Linked #8051. 110 lignes. Triage #7422 (c.911, po-2023) |
-| [qc-research-issue-template.md](qc-research-issue-template.md) | **doublon** (à réconcilier) | Ébauche du template de sous-issue QC-research (EPIC #11698), 2487 o. La version canonique est [qc/qc-research-issue-template.md](qc/qc-research-issue-template.md) (8226 o) : c'est elle que `scripts/notebook_tools/qc_research_monitor.py:54` lit comme `TEMPLATE_PATH`, et elle seule porte les conventions de titre/labels, le cap journalier, les 5 anti-patterns et les 4 exemples de verdict. Cette copie racine n'est référencée nulle part — indexée ici pour être visible plutôt que supprimée en silence, la disposition relevant d'un grain dédié |
-| [data-policy.md](data-policy.md) | **nouveau** (2026-09-02) | Politique de données (cadrage) : 4 catégories (curée / brute téléchargeable + fetch / checkpoint documenté / trace régénérable) + arbitrage par cas, périmètre restreint assumé par po-2024:CoursIA-2. #13742 |
+| qc-research-issue-template.md | ~~**doublon** supprimé~~ (#19283) | Ébauche racinaire dupliquée par [qc/qc-research-issue-template.md](qc/qc-research-issue-template.md). La copie racine n'était référencée par aucun script ni lien entrant — supprimée pour réduire la surface de désynchronisation (la version `qc/` est l'unique source). EPIC #11698 inchangé |
+| [data-policy.md](cadrage/data-policy.md) | **nouveau** (2026-09-02) | Politique de données (statut cadrage, pas doctrine exécutable) : 4 catégories (curée / brute téléchargeable + fetch / checkpoint documenté / trace régénérable) + arbitrage par cas. Migré #19283 vers `cadrage/` — le cadrage agrégateur n'indexe pas les politiques techniques ; le sommaire `cadrage/README.md` ne le porte pas non plus (communauté interlocutrice ≠ règle de dépôt). #13742 |
 
 ## Référence (docs/reference/)
 
@@ -42,6 +42,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 
 | Fichier | Description |
 |---------|-------------|
+| [reference/claim-implicit-check.md](reference/claim-implicit-check.md) | Garde implicite des claims de PR (procédure HARD #14300) — détecte les claims techniques qui ne s'expriment pas via un mot-clé de verdict mais via une réorganisation statique du diff. Migré de la racine #19283 |
 | [reference/pr-review-context.md](reference/pr-review-context.md) | Contexte incidents + anti-patterns reviews |
 | [reference/proactive-coordination-detail.md](reference/proactive-coordination-detail.md) | Backlog 8 sources, tirage du grain, cadence |
 | [reference/regles-vigilance-detail.md](reference/regles-vigilance-detail.md) | Détails G.1-G.9 + incidents |

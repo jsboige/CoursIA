@@ -25,7 +25,7 @@ Pour trancher un cas nouveau, **dans cet ordre** :
 
 ## 3. Arbitrage par cas concret (état first-hand)
 
-Vérifications first-hand ([G.1](../CLAUDE.md)) — po-2024 :
+Vérifications first-hand ([G.1](../../CLAUDE.md)) — po-2024 :
 
 ### Cas **vérifiés** (verdict tranché)
 
@@ -34,7 +34,7 @@ Vérifications first-hand ([G.1](../CLAUDE.md)) — po-2024 :
 | `MyIA.Trading.Converter/7z-x64.dll` | 3,1 Mo | **EXCEPTION NATIVE — KEEP** (§2.5) | Référencé par `MyIA.Trading.Converter.csproj:30` (`<Content Include="7z-x64.dll">`) ET `CompressionHelper.cs:281-282` (fallback `ConfigurationManager.AppSettings["7zLocation"]` quand SharpCompress ne suffit pas). Suppression casserait la compilation du module C#. |
 | `MyIA.Trading.Converter/7z-x86.dll` | 2,7 Mo | **EXCEPTION NATIVE — KEEP** (§2.5) | Idem, fallback 32 bits via `Environment.Is64BitProcess`. |
 | `QuantConnect/Python/transformer_checkpoint.pt` | 42 Mo | **CHECKPOINT — LFS EXISTANT** | Tracké via **Git LFS** : pointeur de 133 octets (`size 43541550`, `git check-attr` → filter/diff/merge=lfs), vérifié firsthand. Exceptions gitignore dans **les deux** fichiers : racine `.gitignore:876` (`!MyIA.AI.Notebooks/QuantConnect/Python/transformer_checkpoint.pt`) et `MyIA.AI.Notebooks/QuantConnect/.gitignore:73` (`!Python/transformer_checkpoint.pt`, forme relative). Pas un `_best` — checkpoint daté. **Reste à vérifier** : que le notebook qui le consomme documente la provenance (entraînement référencé / geste de reproduction) ; sinon basculer vers le `_best` correspondant. |
-| `ML/ML.Net/taxi-fare.csv` | 24 Mo (non tracké) | **NON-TRACKED — geste requis** | Introuvable dans `origin/main` (`git ls-tree -r` : aucun fichier `*taxi*`). Le registre canonique [`docs/notebook-metadata/DATASET_REGISTRY.md`](notebook-metadata/DATASET_REGISTRY.md) le classe **NON-TRACKED / hors registre** : présent localement comme artefact ~25 Mo non committé, référencé par les notebooks ML-2/ML-4, non reproductible par fork. La mesure « 24 Mo CURÉE — KEEP » de la version initiale mesurait l'artefact local, pas un fichier du dépôt. **Geste** : issue dédiée — committer un sous-échantillon ≤ 5 Mo avec `fetch_taxi_fare.py`, ou retirer la référence des notebooks (le registre tranche : « soit commit, soit supprimer la référence »). |
+| `ML/ML.Net/taxi-fare.csv` | 24 Mo (non tracké) | **NON-TRACKED — geste requis** | Introuvable dans `origin/main` (`git ls-tree -r` : aucun fichier `*taxi*`). Le registre canonique [`docs/notebook-metadata/DATASET_REGISTRY.md`](../notebook-metadata/DATASET_REGISTRY.md) le classe **NON-TRACKED / hors registre** : présent localement comme artefact ~25 Mo non committé, référencé par les notebooks ML-2/ML-4, non reproductible par fork. La mesure « 24 Mo CURÉE — KEEP » de la version initiale mesurait l'artefact local, pas un fichier du dépôt. **Geste** : issue dédiée — committer un sous-échantillon ≤ 5 Mo avec `fetch_taxi_fare.py`, ou retirer la référence des notebooks (le registre tranche : « soit commit, soit supprimer la référence »). |
 | `Search/Part2-CSP/org.chocosolver.solver.dll` | 11,9 Mo (copie unique) | **EXCEPTION VENDORED — DEDUPE livrée** | DLL **IKVM 8.15.0** (build .NET du JAR choco-solver 4.10.17 — pas un NuGet : le chargement direct du JAR via `#r` n'est pas pris en charge par IKVM, voie SOTA établie #4667/#3801). **8 consommateurs vivants mesurés** : les carnets `Search/Part2-CSP/CSP-*-Csharp`, `Sudoku/Sudoku-11-Choco-CSharp.ipynb`, `Sudoku/README.md`. Les DEUX copies trackées (`Search/Part2-CSP/` + `Sudoku/`) étaient **byte-identiques** (blob `02ef8ac5c4`, 11,9 Mo × 2) : la copie `Sudoku/` est retirée, `Sudoku-11-Choco-CSharp` référence la copie `Part2-CSP/` par chemin relatif (`#r "../Search/Part2-CSP/org.chocosolver.solver.dll"`), re-exécutée réellement (C.2). −11,9 Mo. |
 
 ### Cas **à re-vérifier** (rappel, hors scope de ce grain)
@@ -89,7 +89,7 @@ Le seul geste de cohérence sortant de cette mesure est :
 ## Origine
 
 - Issue #13742 (arbitrage + politique de données, périmètre restreint assumé par po-2024:CoursIA-2).
-- Chaque verdict est first-hand, pas une paraphrase du ticket ([G.1](../CLAUDE.md)).
+- Chaque verdict est first-hand, pas une paraphrase du ticket ([G.1](../../CLAUDE.md)).
 
 — lane `myia-po-2024:CoursIA-2`, cycle c.868 (2026-09-02) — corps initial (sections 1-5).
 
