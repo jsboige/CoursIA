@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SymbolicLearning
-pedagogical_count: 26
-breakdown: SymbolicLearning=26
-maturity: BETA=24, ALPHA=2
+pedagogical_count: 27
+breakdown: SymbolicLearning=27
+maturity: BETA=25, ALPHA=2
 -->
 
 ## Présentation
@@ -712,7 +712,7 @@ Le **capstone SL-11** est l'un des rares pipelines neuro-symboliques bout-en-bou
 | [SemanticWeb](../SemanticWeb/README.md) | Représentation de connaissances | RDFS/OWL formalisent les déterminations et les hiérarchies de généralité |
 | [Planners](../Planners/README.md) | Planification | EBL compile les théories en règles opérationnelles, similaire aux heuristiques de planification |
 | [Lean](../Lean/README.md) | Preuves formelles | L'arbre de preuve EBL est analogue aux arbres de preuve Lean 4 |
-| Lecture transversale | [La mer qui monte](../../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de représentation, certification A/B/C |
+| Lecture transversale | [La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de représentation, certification A/B/C |
 
 **Version 1.4.0** — Septembre 2026 — ajout SL-13 (diagnostic DISCOVER / TPR, EPIC #14366 grain G6) : table de pioche 55 exercices, phase 5 étendue au versant structurel (TPR approximative vs exacte), parenté cross-lane complétée. Total : 24 notebooks (BETA=22, ALPHA=2, réconciliés par le catalog-cron). EPIC #3975 tranche symboliclearning.
 

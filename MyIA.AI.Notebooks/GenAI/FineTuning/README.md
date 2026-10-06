@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-FineTuning
-pedagogical_count: 10
-breakdown: FineTuning=10
-maturity: BETA=10
+pedagogical_count: 11
+breakdown: FineTuning=11
+maturity: BETA=11
 -->
 
 [← GenAI](../README.md) | [↑ ..](../README.md) | [→ PostTraining](../PostTraining/README.md)
@@ -44,23 +44,23 @@ FineTuning/
 
 | Notebook | Sujet | Prérequis | Durée | Niveau |
 |----------|-------|-----------|-------|--------|
-| [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb) | LoRA from scratch : `LoRALinear`/`LoRAConv2d` en PyTorch pur, initialisation canonique, fusion et sa dérive | Bases PyTorch | ~30 min | Intermédiaire |
-| [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb) | Ablation `r × alpha` from scratch : sweet-spots mesurés sur 18 configurations, comparaisons aux baselines | FT-00a | ~15 min | Intermédiaire |
-| [FT-01](FT-01-Introduction-FineTuning-Python.ipynb) | Fine-tuning complet, partiel, LoRA | Bases LLMs | ~30 min | Débutant |
-| [FT-02](FT-02-QLoRA-Quantization-Python.ipynb) | Quantization NF4, QLoRA, bitsandbytes | FT-01 | ~30 min | Intermédiaire |
-| [FT-03](FT-03-Supervised-FineTuning-SFT-Python.ipynb) | SFT sur Qwen3.5-0.8B : enseigner un contrat de format balisé | FT-01 | ~45 min | Intermédiaire |
-| [FT-04](FT-04-RLHF-DPO-Python.ipynb) | Reward Model, RLHF, DPO | FT-01, FT-02, FT-03 | ~30 min | Avancé |
-| [FT-05](FT-05-ModelMerging-Routing-Python.ipynb) | TIES, DARE, MergeKit, routage MoE | FT-01 à FT-04 | ~45 min | Avancé |
-| [FT-06](FT-06-Vision-Language-LoRA-Python.ipynb) | LoRA vision-langage Qwen3.5-0.8B, conformité image->texte | FT-02, FT-03 | ~45 min | Avancé |
+| [FT-00a](FT-00a-LoRA-from-scratch-Python.html) | LoRA from scratch : `LoRALinear`/`LoRAConv2d` en PyTorch pur, initialisation canonique, fusion et sa dérive | Bases PyTorch | ~30 min | Intermédiaire |
+| [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch-Python.html) | Ablation `r × alpha` from scratch : sweet-spots mesurés sur 18 configurations, comparaisons aux baselines | FT-00a | ~15 min | Intermédiaire |
+| [FT-01](FT-01-Introduction-FineTuning-Python.html) | Fine-tuning complet, partiel, LoRA | Bases LLMs | ~30 min | Débutant |
+| [FT-02](FT-02-QLoRA-Quantization-Python.html) | Quantization NF4, QLoRA, bitsandbytes | FT-01 | ~30 min | Intermédiaire |
+| [FT-03](FT-03-Supervised-FineTuning-SFT-Python.html) | SFT sur Qwen3.5-0.8B : enseigner un contrat de format balisé | FT-01 | ~45 min | Intermédiaire |
+| [FT-04](FT-04-RLHF-DPO-Python.html) | Reward Model, RLHF, DPO | FT-01, FT-02, FT-03 | ~30 min | Avancé |
+| [FT-05](FT-05-ModelMerging-Routing-Python.html) | TIES, DARE, MergeKit, routage MoE | FT-01 à FT-04 | ~45 min | Avancé |
+| [FT-06](FT-06-Vision-Language-LoRA-Python.html) | LoRA vision-langage Qwen3.5-0.8B, conformité image->texte | FT-02, FT-03 | ~45 min | Avancé |
 
 ### Socle from-scratch (compléments techniques, 00a → 00b → 00c)
 
 | Notebook | Sujet | Prérequis | Durée | Niveau |
 |----------|-------|-----------|-------|--------|
-| [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb) | LoRA from scratch : `LoRALinear`/`LoRAConv2d` en PyTorch pur, initialisation canonique, fusion et sa dérive | Bases PyTorch | ~30 min | Intermédiaire |
-| [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb) | Ablation `r × alpha` from scratch : sweet-spots mesurés sur 18 configurations, comparaisons aux baselines | FT-00a | ~15 min | Intermédiaire |
-| [FT-00c](FT-00c-LoRA-SOTA-Comparison-Python.ipynb) | La même adaptation refaite avec `peft.LoraConfig` : paramètres, exactitude, lignes de code — le coût/bénéfice de l'outil SOTA mesuré | FT-00a | ~15 min | Intermédiaire |
-| [FT-00d](FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb) | QLoRA = peft + bitsandbytes 4-bit NF4 ; la mesure structurelle first-hand qui montre que bnb ne mord que sur `nn.Linear` (SmallCNN 19.85 %, BigMLP 100 %, DistilBERT 64.37 % — mesures first-hand) — l'arbre de décision avant d'invoquer QLoRA | FT-00a, FT-00c | ~30 min | Intermédiaire |
+| [FT-00a](FT-00a-LoRA-from-scratch-Python.html) | LoRA from scratch : `LoRALinear`/`LoRAConv2d` en PyTorch pur, initialisation canonique, fusion et sa dérive | Bases PyTorch | ~30 min | Intermédiaire |
+| [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch-Python.html) | Ablation `r × alpha` from scratch : sweet-spots mesurés sur 18 configurations, comparaisons aux baselines | FT-00a | ~15 min | Intermédiaire |
+| [FT-00c](FT-00c-LoRA-SOTA-Comparison-Python.html) | La même adaptation refaite avec `peft.LoraConfig` : paramètres, exactitude, lignes de code — le coût/bénéfice de l'outil SOTA mesuré | FT-00a | ~15 min | Intermédiaire |
+| [FT-00d](FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.html) | QLoRA = peft + bitsandbytes 4-bit NF4 ; la mesure structurelle first-hand qui montre que bnb ne mord que sur `nn.Linear` (SmallCNN 19.85 %, BigMLP 100 %, DistilBERT 64.37 % — mesures first-hand) — l'arbre de décision avant d'invoquer QLoRA | FT-00a, FT-00c | ~30 min | Intermédiaire |
 
 ## Technologies couvertes
 
@@ -100,7 +100,7 @@ pip install mergekit  # Pour FT-05 uniquement
 ## Concepts clés
 
 ### LoRA (Low-Rank Adaptation)
-Décompose les mises à jour de poids en matrices de bas rang (A, B avec rang r << dim). Réduit les paramètres entraînables de ~99%. Le mécanisme est démonté from-scratch (sans `peft`) dans [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb) : initialisation canonique, gel, budget `r(d+k)`, fusion et sa (non-)bit-exactitude. Le **réglage** `r × alpha` est mesuré dans [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb) : 18 configurations sur la même mini-tâche, trois régularités quantifiées. La **confrontation à l'outil SOTA** est faite dans [FT-00c](FT-00c-LoRA-SOTA-Comparison-Python.ipynb) : `peft.LoraConfig` refait la même adaptation en deux lignes — le notebook mesure ce que l'écosystème apporte et ce qu'il masque.
+Décompose les mises à jour de poids en matrices de bas rang (A, B avec rang r << dim). Réduit les paramètres entraînables de ~99%. Le mécanisme est démonté from-scratch (sans `peft`) dans [FT-00a](FT-00a-LoRA-from-scratch-Python.html) : initialisation canonique, gel, budget `r(d+k)`, fusion et sa (non-)bit-exactitude. Le **réglage** `r × alpha` est mesuré dans [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch-Python.html) : 18 configurations sur la même mini-tâche, trois régularités quantifiées. La **confrontation à l'outil SOTA** est faite dans [FT-00c](FT-00c-LoRA-SOTA-Comparison-Python.html) : `peft.LoraConfig` refait la même adaptation en deux lignes — le notebook mesure ce que l'écosystème apporte et ce qu'il masque.
 
 ### QLoRA
 Combine quantization 4-bit (NF4 + double quantization) avec LoRA. Permet de fine-tuner des modèles 7B sur un GPU consumer (RTX 3090/4090).
@@ -164,7 +164,7 @@ Le rang `r` de LoRA contrôle le compromis paramètres/qualité :
 - **r=32-64** : tâches complexes (raisonnement, code). Plus de paramètres mais plus de VRAM.
 - **r=128+** : rarement nécessaire — à ce stade, un full fine-tuning partiel est souvent plus efficace.
 
-Le notebook [FT-01](FT-01-Introduction-FineTuning-Python.ipynb) compare r=4 vs r=16 vs r=64 sur DistilBERT pour rendre ce compromis visible.
+Le notebook [FT-01](FT-01-Introduction-FineTuning-Python.html) compare r=4 vs r=16 vs r=64 sur DistilBERT pour rendre ce compromis visible.
 
 ### bitsandbytes ne s'installe pas sur Windows
 
@@ -208,10 +208,10 @@ Si le modèle merge (FT-05) perd en qualité par rapport aux adaptateurs individ
 | Série | Connection | Détails |
 |-------|------------|---------|
 | **[GenAI/PostTraining](../PostTraining/README.md)** | Profondeur méthodologique | Série sœur : la math du loss derrière SFT/DPO + GRPO/RLVR. FineTuning = recettes, PostTraining = pourquoi ça marche. |
-| **[RL — rl_5 MDP/Q-Learning](../../RL/rl_5_mdp_dp_qlearning.ipynb)** | Fondations policy/value | Socle Bellman/Q réutilisé par tout post-training. |
-| **[RL — rl_6c PPO from scratch](../../RL/rl_6c_ppo_from_scratch.ipynb)** | PPO from scratch | L'optimiseur derrière PPO-RLHF, implémenté pas à pas. |
-| **[RL — rl_9 offline RL](../../RL/rl_9_offline_rl.ipynb)** | SFT = Behavior Cloning | DPO comme preference learning offline ; contrainte de support = KL. |
-| **[RL — rl_10 reward shaping](../../RL/rl_10_reward_shaping.ipynb)** | Reward model = shaping appris | Reward shaping (Ng 1999) et reward hacking, préfiguration tabulaire du reward model RLHF. |
+| **[RL — RL-05 MDP/Q-Learning](../../RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.html)** | Fondations policy/value | Socle Bellman/Q réutilisé par tout post-training. |
+| **[RL — RL-06c PPO from scratch](../../RL/RL-06c-PPO-Depuis-Zero-Python.html)** | PPO from scratch | L'optimiseur derrière PPO-RLHF, implémenté pas à pas. |
+| **[RL — RL-09 offline RL](../../RL/RL-09-RL-Offline-Behavior-Cloning-Python.html)** | SFT = Behavior Cloning | DPO comme preference learning offline ; contrainte de support = KL. |
+| **[RL — RL-10 reward shaping](../../RL/RL-10-Reward-Shaping-Curriculum-Python.html)** | Reward model = shaping appris | Reward shaping (Ng 1999) et reward hacking, préfiguration tabulaire du reward model RLHF. |
 
 ## Références
 

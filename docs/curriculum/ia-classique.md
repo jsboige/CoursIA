@@ -20,9 +20,9 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 179 |
+| Notebooks | 181 |
 | PRODUCTION | 0 |
-| BETA | 179 |
+| BETA | 181 |
 | ALPHA | 0 |
 
 ## Search/Applications (58 notebooks)
@@ -88,7 +88,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 57 | [App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb) | BETA | Oui |
 | 58 | [App-32 — Szpiro : Pasten 2026 rend N log log N…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb) | BETA | Oui |
 
-## Search/Part1-Foundations (43 notebooks)
+## Search/Part1-Foundations (44 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -108,33 +108,34 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 14 | [Search-03d (C#) — Weighted A\* : recherche à…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb) | BETA | Oui |
 | 15 | [Search-03d — Weighted A\* : recherche à sous-optimalité…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb) | BETA | Oui |
 | 16 | [Search-03e : A* et l'optimalité sous heuristique…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb) | BETA | Non |
-| 17 | [Search-04-LocalSearch (C#) : Recherche Locale et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch-CSharp.ipynb) | BETA | Oui |
-| 18 | [Search-04-LocalSearch : Recherche Locale et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb) | BETA | Oui |
-| 19 | [Search-05-GeneticAlgorithms-CSharp : Algorithmes…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms-CSharp.ipynb) | BETA | Oui |
-| 20 | [Search-5 : Algorithmes génétiques](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms.ipynb) | BETA | Oui |
-| 21 | [Search-6 — Recherche adversariale (jeux à somme nulle)…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb) | BETA | Oui |
-| 22 | [Search-06-AdversarialSearch : Recherche Adversariale](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb) | BETA | Oui |
-| 23 | [Search-07-MCTS-And-Beyond (C#) : Monte Carlo Tree…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond-CSharp.ipynb) | BETA | Oui |
-| 24 | [Search-07-MCTS-And-Beyond : Monte Carlo Tree Search et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb) | BETA | Oui |
-| 25 | [Search-08-DancingLinks-CSharp : L'algorithme X et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks-CSharp.ipynb) | BETA | Oui |
-| 26 | [Search-08-DancingLinks : L'algorithme X et Dancing…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb) | BETA | Oui |
-| 27 | [Search-9 : Programmation Linéaire et Simplexe (C# /…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming-CSharp.ipynb) | BETA | Oui |
-| 28 | [Search-09-LinearProgramming : Programmation Lineaire et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb) | BETA | Oui |
-| 29 | [Search-09b : Minima fallacieux — le paysage de la…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09b-SpuriousMinima.ipynb) | BETA | Oui |
-| 30 | [Search-09c — Discrépance combinatoire : colorier ±1…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb) | BETA | Oui |
-| 31 | [Search-09d — Discrépance combinatoire : la couche…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-Lean-Discrepancy-Komlos.ipynb) | BETA | Oui |
-| 32 | [Search-10 (C#) : Automates Finis Classiques — jumeau…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb) | BETA | Oui |
-| 33 | [Search-10 : Automates Symboliques avec Z3](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb) | BETA | Oui |
-| 34 | [Search-11 (C#) : Métaheuristiques — Optimisation par…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb) | BETA | Oui |
-| 35 | [Search-11-métaheuristiques : Optimisation avec MEALPy](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb) | BETA | Oui |
-| 36 | [Search-11b (Part 2) : Particle Swarm Optimization (C# /…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb) | BETA | Oui |
-| 37 | [Search-11b-Métaheuristiques-Deep-Part3 : Artificial Bee…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb) | BETA | Oui |
-| 38 | [Search-11b-Métaheuristiques-Deep-Part4 : Benchmark…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb) | BETA | Oui |
-| 39 | [Search-11b : Métaheuristiques d'optimisation (C# /…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb) | BETA | Oui |
-| 40 | [Search-11c — Sélection empirique d'algorithmes : deux…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb) | BETA | Oui |
-| 41 | [Search-11d — Descente sous budget : la loi derrière les…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb) | BETA | Oui |
-| 42 | [Search-12a — Composer des regards : play forward,…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12a-Composer-Regards.ipynb) | BETA | Oui |
-| 43 | [Search-13a — Traverser des murs : chemins minimaux…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb) | BETA | Oui |
+| 17 | [Search-03f · Réparer localement sous garantie : la…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03f-Reparer-Localement-Sous-Garantie-Python.ipynb) | BETA | Oui |
+| 18 | [Search-04-LocalSearch (C#) : Recherche Locale et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch-CSharp.ipynb) | BETA | Oui |
+| 19 | [Search-04-LocalSearch : Recherche Locale et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb) | BETA | Oui |
+| 20 | [Search-05-GeneticAlgorithms-CSharp : Algorithmes…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms-CSharp.ipynb) | BETA | Oui |
+| 21 | [Search-5 : Algorithmes génétiques](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms.ipynb) | BETA | Oui |
+| 22 | [Search-6 — Recherche adversariale (jeux à somme nulle)…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb) | BETA | Oui |
+| 23 | [Search-06-AdversarialSearch : Recherche Adversariale](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb) | BETA | Oui |
+| 24 | [Search-07-MCTS-And-Beyond (C#) : Monte Carlo Tree…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond-CSharp.ipynb) | BETA | Oui |
+| 25 | [Search-07-MCTS-And-Beyond : Monte Carlo Tree Search et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb) | BETA | Oui |
+| 26 | [Search-08-DancingLinks-CSharp : L'algorithme X et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks-CSharp.ipynb) | BETA | Oui |
+| 27 | [Search-08-DancingLinks : L'algorithme X et Dancing…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb) | BETA | Oui |
+| 28 | [Search-9 : Programmation Linéaire et Simplexe (C# /…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming-CSharp.ipynb) | BETA | Oui |
+| 29 | [Search-09-LinearProgramming : Programmation Lineaire et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb) | BETA | Oui |
+| 30 | [Search-09b : Minima fallacieux — le paysage de la…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09b-SpuriousMinima.ipynb) | BETA | Oui |
+| 31 | [Search-09c — Discrépance combinatoire : colorier ±1…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb) | BETA | Oui |
+| 32 | [Discrepancy-02 — Discrépance combinatoire : la couche…](../../MyIA.AI.Notebooks/Search/Discrepancy/Discrepancy-02-Komlos-Lean.ipynb) | BETA | Oui |
+| 33 | [Search-10 (C#) : Automates Finis Classiques — jumeau…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb) | BETA | Oui |
+| 34 | [Search-10 : Automates Symboliques avec Z3](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb) | BETA | Oui |
+| 35 | [Search-11 (C#) : Métaheuristiques — Optimisation par…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb) | BETA | Oui |
+| 36 | [Search-11-métaheuristiques : Optimisation avec MEALPy](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb) | BETA | Oui |
+| 37 | [Search-11b (Part 2) : Particle Swarm Optimization (C# /…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb) | BETA | Oui |
+| 38 | [Search-11b-Métaheuristiques-Deep-Part3 : Artificial Bee…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb) | BETA | Oui |
+| 39 | [Search-11b-Métaheuristiques-Deep-Part4 : Benchmark…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb) | BETA | Oui |
+| 40 | [Search-11b : Métaheuristiques d'optimisation (C# /…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb) | BETA | Oui |
+| 41 | [Search-11c — Sélection empirique d'algorithmes : deux…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb) | BETA | Oui |
+| 42 | [Search-11d — Descente sous budget : la loi derrière les…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb) | BETA | Oui |
+| 43 | [Search-12a — Composer des regards : play forward,…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12a-Composer-Regards.ipynb) | BETA | Oui |
+| 44 | [Search-13a — Traverser des murs : chemins minimaux…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb) | BETA | Oui |
 
 ## Search/Part2-CSP (17 notebooks)
 
@@ -158,7 +159,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 16 | [CSP-9-Distributed](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb) | BETA | Oui |
 | 17 | [CSP-9-Distributed : CSP Distribués (DisCSP)](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb) | BETA | Oui |
 
-## Search/Part4-Metaheuristics (23 notebooks)
+## Search/Part4-Metaheuristics (24 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -185,46 +186,47 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 21 | [MGS-28 : Bare Bones PSO MGS contre mealpy — le PSO sans…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-28-BareBonesPSO-vs-Mealpy.ipynb) | BETA | Oui |
 | 22 | [MGS-29 : GA MGS compose "Default" contre BaseGA mealpy…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-29-GA-vs-Mealpy.ipynb) | BETA | Oui |
 | 23 | [MGS-30 : Scatter Search MGS contre son ombre — la…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-30-ScatterSearch-Decomposition.ipynb) | BETA | Oui |
+| 24 | [MGS-31 : Synthèse croisée MGS contre mealpy — neuf…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-31-Synthese-Croisee.ipynb) | BETA | Oui |
 
 ## Sudoku (38 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Sudoku-00 : Environnement et Classes de Base (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb) | BETA | Oui |
-| 2 | [Sudoku-01 : Résolution par Backtracking](../../MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Csharp.ipynb) | BETA | Oui |
+| 1 | [Sudoku-00 : Environnement et Classes de Base (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-CSharp.ipynb) | BETA | Oui |
+| 2 | [Sudoku-01 : Résolution par Backtracking](../../MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-CSharp.ipynb) | BETA | Oui |
 | 3 | [Sudoku-01 : Resolution par Backtracking (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb) | BETA | Oui |
-| 4 | [Résolution de Sudoku avec Algorithm X et Dancing Links](../../MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Csharp.ipynb) | BETA | Oui |
+| 4 | [Résolution de Sudoku avec Algorithm X et Dancing Links](../../MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-CSharp.ipynb) | BETA | Oui |
 | 5 | [Sudoku-Python-DancingLinks : Dancing Links / Algorithm…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Python.ipynb) | BETA | Oui |
-| 6 | [Sudoku-03 : Résolution par Algorithme Génétique (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-Csharp.ipynb) | BETA | Oui |
+| 6 | [Sudoku-03 : Résolution par Algorithme Génétique (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-CSharp.ipynb) | BETA | Oui |
 | 7 | [Sudoku-Python-Genetic : Algorithme Génétique (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-Python.ipynb) | BETA | Oui |
-| 8 | [Résolution de Sudoku par Recuit Simulé](../../MyIA.AI.Notebooks/Sudoku/Sudoku-04-SimulatedAnnealing-Csharp.ipynb) | BETA | Oui |
+| 8 | [Résolution de Sudoku par Recuit Simulé](../../MyIA.AI.Notebooks/Sudoku/Sudoku-04-SimulatedAnnealing-CSharp.ipynb) | BETA | Oui |
 | 9 | [Sudoku-04 : Recuit Simule (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-04-SimulatedAnnealing-Python.ipynb) | BETA | Oui |
-| 10 | [Sudoku-05 : Particle Swarm Optimization (PSO)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Csharp.ipynb) | BETA | Oui |
+| 10 | [Sudoku-05 : Particle Swarm Optimization (PSO)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-CSharp.ipynb) | BETA | Oui |
 | 11 | [Sudoku-05 : Particle Swarm Optimization (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Python.ipynb) | BETA | Oui |
-| 12 | [Sudoku-06 : Résolution par CSP Académique (AIMA)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-Csharp.ipynb) | BETA | Oui |
+| 12 | [Sudoku-06 : Résolution par CSP Académique (AIMA)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-CSharp.ipynb) | BETA | Oui |
 | 13 | [Sudoku-06 : Résolution par CSP Académique (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-Python.ipynb) | BETA | Oui |
-| 14 | [Sudoku-07 : Résolution par Propagation de Contraintes…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-Csharp.ipynb) | BETA | Oui |
+| 14 | [Sudoku-07 : Résolution par Propagation de Contraintes…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-CSharp.ipynb) | BETA | Oui |
 | 15 | [Sudoku-07 : Résolution par Propagation de Contraintes…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-Python.ipynb) | BETA | Oui |
-| 16 | [Résolution de Sudoku par Stratégies Humaines](../../MyIA.AI.Notebooks/Sudoku/Sudoku-08-HumanStrategies-Csharp.ipynb) | BETA | Oui |
+| 16 | [Résolution de Sudoku par Stratégies Humaines](../../MyIA.AI.Notebooks/Sudoku/Sudoku-08-HumanStrategies-CSharp.ipynb) | BETA | Oui |
 | 17 | [Sudoku-08 : Resolution par Stratégies Humaines (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-08-HumanStrategies-Python.ipynb) | BETA | Oui |
-| 18 | [Notebook 9: Résolution de Sudoku par Coloration de…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-Csharp.ipynb) | BETA | Oui |
+| 18 | [Notebook 9: Résolution de Sudoku par Coloration de…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-CSharp.ipynb) | BETA | Oui |
 | 19 | [Sudoku-09 : Coloration de Graphe (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-Python.ipynb) | BETA | Oui |
-| 20 | [Sudoku-10 : Résolution avec OR-Tools (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Csharp.ipynb) | BETA | Oui |
+| 20 | [Sudoku-10 : Résolution avec OR-Tools (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb) | BETA | Oui |
 | 21 | [Sudoku-10-ORTools-Python : OR-Tools CP-SAT (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb) | BETA | Oui |
-| 22 | [Sudoku-11-Choco-Csharp : Solveur Choco via IKVM](../../MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Csharp.ipynb) | BETA | Oui |
+| 22 | [Sudoku-11-Choco-CSharp : Solveur Choco via IKVM](../../MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-CSharp.ipynb) | BETA | Oui |
 | 23 | [Notebook 11: Résolution de Sudoku avec Choco Constraint…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb) | BETA | Oui |
-| 24 | [Sudoku-12 : Résolution avec Z3 SMT Solver (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Csharp.ipynb) | BETA | Oui |
+| 24 | [Sudoku-12 : Résolution avec Z3 SMT Solver (C#)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-CSharp.ipynb) | BETA | Oui |
 | 25 | [Sudoku-12-Z3-Python : Z3 SMT Solver (Python)](../../MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Python.ipynb) | BETA | Oui |
-| 26 | [Sudoku 12b : Linq2Z3 — l'histoire d'un binding, de 81…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-12b-Z3-Linq2Z3-Csharp.ipynb) | BETA | Oui |
-| 27 | [Sudoku-13 : Le Sudoku comme Regex Symbolique -…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) | BETA | Oui |
+| 26 | [Sudoku 12b : Linq2Z3 — l'histoire d'un binding, de 81…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-12b-Z3-Linq2Z3-CSharp.ipynb) | BETA | Oui |
+| 27 | [Sudoku-13 : Le Sudoku comme Regex Symbolique -…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb) | BETA | Oui |
 | 28 | [Sudoku-13 : Le Sudoku comme Regex Symbolique — twin…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb) | BETA | Oui |
-| 29 | [Sudoku-14 : Automates avec BDD/MDD - Approche Pure](../../MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb) | BETA | Oui |
+| 29 | [Sudoku-14 : Automates avec BDD/MDD - Approche Pure](../../MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-CSharp.ipynb) | BETA | Oui |
 | 30 | [Sudoku-14 : Automates avec BDD/MDD - Approche Pure…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Python.ipynb) | BETA | Oui |
-| 31 | [Résolution de Sudoku avec Infer.NET](../../MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Csharp.ipynb) | BETA | Oui |
+| 31 | [Résolution de Sudoku avec Infer.NET](../../MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-CSharp.ipynb) | BETA | Oui |
 | 32 | [Sudoku-15-Infer-Python : Resolution Probabiliste avec…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Python.ipynb) | BETA | Oui |
 | 33 | [Sudoku-16 : Résolution par Réseaux de Neurones](../../MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb) | BETA | Non |
 | 34 | [Notebook 17: Resolution de Sudoku avec Large Language…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-17-LLM-Python.ipynb) | BETA | Non |
-| 35 | [Comparaison des Solveurs de Sudoku](../../MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb) | BETA | Oui |
+| 35 | [Comparaison des Solveurs de Sudoku](../../MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb) | BETA | Oui |
 | 36 | [Comparaison des Solveurs de Sudoku](../../MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb) | BETA | Oui |
 | 37 | [Sudoku-18b - Comparaison statistique honnête de…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb) | BETA | Oui |
-| 38 | [Sudoku-19 — Soundness de la propagation de contraintes…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-19-Lean-Propagation.ipynb) | BETA | Oui |
+| 38 | [Sudoku-19 — Soundness de la propagation de contraintes…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-19-Lean-Propagation-Lean.ipynb) | BETA | Oui |

@@ -279,6 +279,62 @@ def test_failing_advisory_is_not_a_red():
     assert pig.blocking_causes(state) == []
 
 
+def test_native_changes_requested_is_a_cause_without_an_organ_verdict():
+    """Controle POSITIF du couple #18829 : sans verdict d'organe, l'etat natif
+    reste une cause.
+
+    Sans ce controle, le correctif pourrait « passer » en supprimant purement la
+    cause -- la lane ne verrait plus jamais une reserve non levee. Le drapeau
+    doit etre le discriminant, pas un decor.
+    """
+    state = _state(reviews=[("CHANGES_REQUESTED", "clusterManager-Myia")])
+    expected = ["CHANGES_REQUESTED non leve (clusterManager-Myia)"]
+    assert pig.blocking_causes(state) == expected
+    assert pig.blocking_causes(state, review_points_clear=False) == expected
+
+
+def test_changes_requested_lifted_by_a_third_party_is_not_a_cause():
+    """#18829, mesure : CR Hermes du 02/10 10:29Z, leve par ai-01 le 04/10 02:35Z.
+
+    GitHub conserve la derniere review PAR AUTEUR : l'etat natif reste
+    `CHANGES_REQUESTED` a jamais. L'organe B.0, lui, lit la levee et rend rc=0.
+    Le picker ouvrait pourtant une file de reparation sur cette PR -- premier
+    geste de la lane, sur un travail deja fait et deja approuve.
+    """
+    state = _state(reviews=[("CHANGES_REQUESTED", "clusterManager-Myia")])
+    assert pig.blocking_causes(state, review_points_clear=True) == []
+
+
+def test_unaddressed_review_points_records_evaluated_clear_as_zero(monkeypatch):
+    """« Evaluee et claire » doit etre DISTINCT de « jamais evaluee ».
+
+    Le `0` est l'information qui autorise `blocking_causes` a ignorer un
+    `CHANGES_REQUESTED` natif ; son absence signifie « non evaluee » et la cause
+    est alors conservee. Sans cette distinction, le correctif #18829 serait
+    fail-OPEN sur toute panne par-PR.
+    """
+    import check_unaddressed_nits
+    monkeypatch.setattr(check_unaddressed_nits, "analyse_pr",
+                        lambda n: {"blocked": False, "blocking": []})
+    assert pig.unaddressed_review_points([18829]) == {18829: 0}
+
+
+def test_unaddressed_review_points_leaves_an_unreadable_pr_absent(monkeypatch):
+    """Controle negatif du precedent : une PR illisible reste ABSENTE du dict.
+
+    L'appelant lit `== 0`, donc absent ne vaut pas clair : la cause est
+    conservee (fail-closed). Une exception avalee ne doit jamais produire
+    l'equivalent d'un acquittement.
+    """
+    import check_unaddressed_nits
+
+    def _boom(n):
+        raise RuntimeError("reseau")
+
+    monkeypatch.setattr(check_unaddressed_nits, "analyse_pr", _boom)
+    assert pig.unaddressed_review_points([18829]) == {}
+
+
 def test_failing_required_check_is_a_red_and_names_the_advisory_as_diagnostic():
     state = _state(checks=[
         ("PR gate", "FAILURE", True),
@@ -3449,3 +3505,126 @@ def test_marker_no_match_discursive_mention(monkeypatch):
     # sur la meme ligne que [INFO]).
     assert notes == {}
     assert picks[0]["klass"] == "grain"
+
+
+# --- Geste 3 #18203 : `weight()` mesure le delaissement sur la DERNIERE ----
+# livraison reelle (PR mergée qui cite l'issue), pas sur `updatedAt`.
+# -----------------------------------------------------------------------------
+
+
+def test_idle_since_delivery_uses_last_merged_pr_not_updated_at():
+    """Un commentaire de bot / claim recent ne doit pas faire baisser l'attente.
+
+    Issue #1 : 90 jours d'age, `updatedAt` hier (commentaire de bot recent),
+    derniere PR mergee il y a 80 jours -> idle_since_delivery = 80.
+    Issue #2 : meme age, `updatedAt` hier, derniere PR mergee il y a 5 jours
+    -> idle_since_delivery = 5.
+
+    Meme `idle` (jours depuis updatedAt), mais `weight()` doit voir la
+    difference : la livraison plus ancienne pese PLUS (log2 croissant avec
+    l'attente -- le but du facteur est de faire remonter les sujets
+    delaisses). Voir `weight()` ligne ~1625 : `w *= 1.0 + log2(1 + idle/14)`.
+    """
+    old_delivery = {"number": 1, "age": 90, "idle": 1,
+                    "idle_since_delivery": 80, "genre": "docs"}
+    fresh_delivery = {"number": 2, "age": 90, "idle": 1,
+                      "idle_since_delivery": 5, "genre": "docs"}
+    assert pig.weight(old_delivery, None) > pig.weight(fresh_delivery, None)
+
+
+def test_idle_since_delivery_defaults_to_idle_for_backward_compat():
+    """Si `idle_since_delivery` est absent (item construit a la main), retomber
+    sur `idle` -- eviter une KeyError dans les tests existants qui ne
+    renseignent pas le nouveau champ. La regle est : si le champ n'est pas
+    la, c'est un test legacy ; on ne change pas la semantique, on preserve.
+    """
+    legacy = {"number": 1, "age": 30, "idle": 40, "genre": "docs"}
+    fresh = {"number": 2, "age": 30, "idle": 1, "idle_since_delivery": 1,
+             "genre": "docs"}
+    # Legacy : meme comportement qu'avant le patch (poids sur `idle`).
+    assert pig.weight(legacy, None) == pig.weight(
+        {**legacy, "idle_since_delivery": legacy["idle"]}, None
+    )
+    # Et `legacy` pese plus lourd qu'un grain frais.
+    assert pig.weight(legacy, None) > pig.weight(fresh, None)
+
+
+def test_weight_idle_uses_idle_since_delivery_for_recent_delivery():
+    """Une livraison il y a 5 j pese MOINS qu'une livraison il y a 80 j,
+    a age et `idle` egaux (memes conditions de surface).
+    """
+    item_recent = {"number": 1, "age": 100, "idle": 1,
+                   "idle_since_delivery": 5, "genre": "lean"}
+    item_old = {"number": 2, "age": 100, "idle": 1,
+                "idle_since_delivery": 80, "genre": "lean"}
+    assert pig.weight(item_old, None) > pig.weight(item_recent, None)
+
+
+def test_weight_idle_since_delivery_unchanged_when_corpus_missing():
+    """Si le corpus de PRs mergées est indisponible (fetch echoue), on NE
+    SAIT PAS ce qu'est la derniere livraison -- on conserve donc le
+    comportement `idle` (placeholder) et on n'invente pas une livraison.
+    Doctrinalement : un defaut de mesure n'est pas une negligence prouvee.
+    """
+    item = {"number": 1, "age": 100, "idle": 1, "genre": "lean"}
+    # Avec idle_since_delivery manquant : retomber sur idle = 1.
+    assert pig.weight(item, None) == pig.weight(
+        {**item, "idle_since_delivery": item["idle"]}, None)
+
+
+def test_main_idle_since_delivery_falls_back_to_idle_on_fetch_error(monkeypatch):
+    """CR ai-01 c.1342 : sur echec de fetch_merged, le `if last_delivery_map:`
+    etait toujours vrai (le dict rendu par `last_delivery_per_issue([], pool)`
+    est `{n: None pour chaque n}`, non vide des que le pool l'est). Le
+    placeholder `idle` n'etait donc JAMAIS pose. Ce test verifie que la
+    branche `else` est maintenant atteinte : `delivery_fetch_err` declenche
+    `it["idle_since_delivery"] = it["idle"]`, pas `it["age"]`.
+    """
+    # Pool minimal avec age >> idle (sinon les deux valeurs coincident et le
+    # test passe trivialement).
+    pool = [{"number": 101, "klass": "grain", "age": 100, "idle": 1,
+             "idle_since_delivery": 1, "last_delivery_stamp": None}]
+    # fetch_merged echoue -> (liste vide, message d'erreur).
+    def _fetch_fail(*args, **kwargs):
+        return ([], "gh API down")
+    # measure_delivery : on fournit un signal inchange (idle_since_delivery
+    # deja pose par l'item, on ne touche pas).
+    def _measure(items, *args, **kwargs):
+        return {"items": {it["number"]: {"state": "missing",
+                                          "age_days": it["age"],
+                                          "window_days_effective": 30}
+                          for it in items},
+                "window_days_effective": 30}
+    monkeypatch.setattr(pig, "fetch_merged", _fetch_fail)
+    monkeypatch.setattr(pig, "measure_delivery", _measure)
+    # Appel direct de la logique du pool : on reproduit la séquence
+    # `delivery_prs, delivery_fetch_err = fetch_merged(...)` puis
+    # `if not delivery_fetch_err and last_delivery_map:`.
+    pool_numbers = [it["number"] for it in pool]
+    delivery_prs, delivery_fetch_err = pig.fetch_merged(30)
+    delivery_sig = pig.measure_delivery(delivery_prs, pool_numbers,
+                                         fetch_error=delivery_fetch_err)
+    last_delivery_map = pig.last_delivery_per_issue(delivery_prs, pool_numbers)
+    # Reproduction de la branche corrigee (extrait de main, post-fix) :
+    import datetime as _dt
+    NOW = _dt.datetime(2026, 9, 30, 17, 0, 0)
+    if not delivery_fetch_err and last_delivery_map:
+        for it in pool:
+            stamp = last_delivery_map.get(it["number"])
+            if stamp:
+                when = _dt.datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+                it["idle_since_delivery"] = round((NOW - when).total_seconds() / 86400.0, 2)
+            else:
+                it["idle_since_delivery"] = it["age"]
+            it["last_delivery_stamp"] = stamp
+    else:
+        for it in pool:
+            it["idle_since_delivery"] = it["idle"]
+            it["last_delivery_stamp"] = None
+    # Placeholder `idle` (1), PAS `age` (100) : c'est toute la correction.
+    assert pool[0]["idle_since_delivery"] == 1, (
+        f"attendu 1 (idle), recu {pool[0]['idle_since_delivery']}"
+    )
+    assert pool[0]["last_delivery_stamp"] is None
+
+

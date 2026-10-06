@@ -531,3 +531,67 @@ def test_run_is_deterministic_under_same_mock_config():
     r2 = _run(AnalysisRunner(_kernel(), "svc", _state()))
     assert [p["turns"] for p in r1["phases"]] == [p["turns"] for p in r2["phases"]]
     assert [p["name"] for p in r1["phases"]] == [p["name"] for p in r2["phases"]]
+
+
+# ---------------------------------------------------------------------------
+# Per-phase turn budget (#18776) — max_informal_turns / max_formal_turns
+# ---------------------------------------------------------------------------
+def test_per_phase_budget_defaults_to_max_turns_half_when_unset():
+    """When max_informal_turns / max_formal_turns are None, fall back to
+    max_turns // 2 (legacy behaviour). Locks backwards compatibility with
+    callers that do not opt into per-phase budgets.
+    """
+    runner = AnalysisRunner(_kernel(), "svc", _state(), max_turns=20)
+    assert runner.max_informal_turns == 10
+    assert runner.max_formal_turns == 10
+
+
+def test_per_phase_budget_independent_values_override_legacy_default():
+    """max_informal_turns and max_formal_turns, when provided, override
+    the max_turns // 2 fallback independently.
+    """
+    runner = AnalysisRunner(
+        _kernel(), "svc", _state(),
+        max_turns=20, max_informal_turns=15, max_formal_turns=8,
+    )
+    assert runner.max_informal_turns == 15
+    assert runner.max_formal_turns == 8
+    assert runner.max_turns == 20  # legacy field untouched
+
+
+def test_phase1_respects_max_informal_turns_above_max_turns_half():
+    """Phase 1 must break at max_informal_turns (15 here), not at the legacy
+    max_turns // 2 (10). Guards the regression of #18776.
+    """
+    AGC = sys.modules[
+        "semantic_kernel.agents.group_chat.agent_group_chat"
+    ].AgentGroupChat
+    AGC.YIELD_NAMES = [f"turn{i}" for i in range(50)]
+    runner = AnalysisRunner(
+        _kernel(), "svc", _state(),
+        max_turns=20, max_informal_turns=15, max_formal_turns=10,
+    )
+    out = _run(runner)
+    informal = next(p for p in out["phases"] if p["name"] == "informal")
+    formal = next(p for p in out["phases"] if p["name"] == "formal")
+    assert informal["turns"] == 15
+    assert formal["turns"] == 10
+
+
+def test_phase2_respects_max_formal_turns_below_max_turns_half():
+    """Phase 2 must break at max_formal_turns (3 here), independently of
+    the legacy max_turns // 2 (5). Mirror image of the phase-1 case.
+    """
+    AGC = sys.modules[
+        "semantic_kernel.agents.group_chat.agent_group_chat"
+    ].AgentGroupChat
+    AGC.YIELD_NAMES = [f"turn{i}" for i in range(50)]
+    runner = AnalysisRunner(
+        _kernel(), "svc", _state(),
+        max_turns=10, max_informal_turns=5, max_formal_turns=3,
+    )
+    out = _run(runner)
+    informal = next(p for p in out["phases"] if p["name"] == "informal")
+    formal = next(p for p in out["phases"] if p["name"] == "formal")
+    assert informal["turns"] == 5
+    assert formal["turns"] == 3

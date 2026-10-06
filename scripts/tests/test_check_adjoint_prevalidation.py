@@ -78,6 +78,12 @@ def _body(**changes: str) -> str:
         "scope": "pass",
         "domain": "pass",
         "verdict": "READY",
+        # #18933 : un READY est le rendu de l'organe -- provenance par defaut.
+        "organ": "check_adjoint_prevalidation.py",
+        "organ-command": (
+            "python scripts/check_adjoint_prevalidation.py --derive-verdict 123"
+        ),
+        "organ-rc": "0",
     }
     fields.update(changes)
     lines = [mod.START, *(f"{key}: {value}" for key, value in fields.items()), mod.END]
@@ -609,6 +615,11 @@ def _filled(template: str) -> str:
     verdicts = {
         "complete": "true", "body": "read", "checks": "latest-wins-green",
         "b0": "clear", "scope": "pass", "domain": "pass", "verdict": "READY",
+        "organ": "check_adjoint_prevalidation.py",
+        "organ-command": (
+            "python scripts/check_adjoint_prevalidation.py --derive-verdict 123"
+        ),
+        "organ-rc": "0",
     }
     lines = []
     for line in template.splitlines():
@@ -1228,9 +1239,74 @@ def test_skipped_and_neutral_conclusions_are_not_red():
          "conclusion": "skipped", "started_at": "2026-09-20T10:00:00Z"},
         {"id": 2, "name": "coverage", "status": "completed",
          "conclusion": "neutral", "started_at": "2026-09-20T10:01:00Z"},
+        {"id": 3, "name": "PR gate", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-20T10:02:00Z"},
     ]
     verdict, errors = mod.evaluate(snapshot)
     assert verdict == mod.VERDICT_READY, errors
+
+
+_CODEQL_ONLY = [
+    {"id": i, "name": name, "status": "completed", "conclusion": "success",
+     "started_at": "2026-09-30T04:30:40Z"}
+    for i, name in enumerate(
+        ["Analyze (actions)", "Analyze (csharp)", "Analyze (python)", "CodeQL"],
+        start=1,
+    )
+]
+_ABSENT_PR_GATE = (
+    "checks claim 'latest-wins-green' is contradicted by the absence of "
+    "required check 'PR gate' on the head"
+)
+
+
+def test_head_without_pr_gate_run_is_not_green_by_vacuity():
+    """#18579 founding case (#18527, #18500): the pull_request workflows never
+    fired on the head, only the CodeQL legs ran. Every present check is green,
+    so pre-#18579 nothing contradicted the claim and the dossier read READY."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = list(_CODEQL_ONLY)
+    errors = _errors(snapshot)
+    assert any(_ABSENT_PR_GATE in error for error in errors), errors
+
+
+def test_head_with_no_check_run_at_all_is_not_green():
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = []
+    errors = _errors(snapshot)
+    assert any(_ABSENT_PR_GATE in error for error in errors), errors
+
+
+def test_pr_gate_in_flight_without_completed_run_is_not_green():
+    """In flight has no verdict yet: with no earlier completed run on the head,
+    the required check has said nothing and cannot be claimed green."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = list(_CODEQL_ONLY) + [
+        {"id": 9, "name": "PR gate", "status": "in_progress",
+         "conclusion": None, "started_at": "2026-09-30T10:20:00Z"}
+    ]
+    errors = _errors(snapshot)
+    assert any(_ABSENT_PR_GATE in error for error in errors), errors
+
+
+def test_pr_gate_rerun_in_flight_keeps_the_last_completed_green():
+    """Positive control: a rerun in flight falls back to the last completed
+    run of the same head, which is green -- the presence rule adds nothing."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = list(_CODEQL_ONLY) + [
+        {"id": 8, "name": "PR gate", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-30T10:00:00Z"},
+        {"id": 9, "name": "PR gate", "status": "in_progress",
+         "conclusion": None, "started_at": "2026-09-30T10:20:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_blocked_dossier_is_not_refused_for_an_absent_pr_gate():
+    """The presence rule refutes a READY claim only: a BLOCKED dossier on a
+    head without CI stays readable (exit 3), it is the reason it is blocked."""
+    assert mod.check_claim_contradictions("BLOCKED", []) == []
 
 
 def test_in_flight_rerun_has_no_verdict_and_hides_nothing():
@@ -1675,8 +1751,15 @@ def test_blocked_dossier_on_frozen_campaign_keeps_its_own_message(
     monkeypatch, capsys
 ):
     """Le gel ne re-ecrit pas un verdict BLOCKED : deja non mergeable, il
-    garde son message propre (l'exemption READY-only du check)."""
-    snapshot = _snapshot_with(title=FROZEN_TITLE, verdict="BLOCKED", b0="blocked")
+    garde son message propre (l'exemption READY-only du check). Le dossier
+    porte un second motif (checks) : le re-jeu B.0 de #19093 ne l'expire pas,
+    on teste bien le gel sur un BLOCKED intact."""
+    snapshot = _snapshot_with(
+        title=FROZEN_TITLE,
+        verdict="BLOCKED",
+        b0="blocked",
+        checks="BLOCKED:gate rouge",
+    )
     rc = _run_main(monkeypatch, snapshot)
     assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
     assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
@@ -1827,3 +1910,583 @@ def test_main_exits_ready_when_organ_agrees(monkeypatch, capsys):
     monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
     monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
     assert mod.main() == mod.EXIT_READY
+
+
+# --- #19093 : un dossier BLOCKED dont le seul motif b0 est eteint expire ------
+# Mesure fondatrice (2026-10-04, #19012) : dossier BLOCKED 02:49Z pour une
+# reserve de review, APPROVE coordinateur 06:13Z sur la meme tete, le gate
+# repondait toujours rc=3 a 10:24Z -- la PR a dormi 4 h. La fingerprint
+# neutralise les reviews posterieures du coordinateur (_is_own_later_act),
+# donc sa levee n'expire pas le tampon : c'est le re-jeu de l'organe B.0 qui
+# tranche, symetriquement au re-jeu des claims `b0: clear` (#17698).
+
+
+def _blocked_b0_snapshot(**changes: str):
+    """Dossier BLOCKED dont b0 est le SEUL champ bloquant (acceptance #19093)."""
+    fields = {"verdict": "BLOCKED", "b0": "blocked:reserve vivante"}
+    fields.update(changes)
+    return _snapshot_with(**fields)
+
+
+def test_blocked_b0_only_expired_when_organ_no_longer_blocks(monkeypatch, capsys):
+    """Acceptance 1 : organ rc=0 -> le gate ne rend PAS 3 et nomme le re-tampon."""
+    snapshot = _blocked_b0_snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out
+    assert "no longer blocks PR #123" in out
+    assert "re-stamp" in out and "third-party lane" in out
+
+
+def test_blocked_b0_only_stands_when_organ_still_blocks(monkeypatch, capsys):
+    """Acceptance 2 (temoin negatif) : organ rc=1 -> le gate rend toujours 3."""
+    snapshot = _blocked_b0_snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(
+        mod,
+        "probe_b0",
+        lambda pr: {"blocked": True, "blocking": [{"kind": "nit", "author": "u", "src": "c"}]},
+    )
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_blocked_with_other_motif_not_touched_by_the_recheck(monkeypatch, capsys):
+    """Acceptance 3 : un autre motif bloquant (checks) garde son dossier,
+    meme quand l'organe B.0 ne bloque plus -- sa raison peut tenir encore."""
+    snapshot = _blocked_b0_snapshot(checks="BLOCKED:gate rouge")
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_recheck_blocked_b0_never_probes_a_non_blocked_verdict():
+    """Le probe n'est paye que pour un dossier BLOCKED existant : ni READY,
+    ni dossier absent (symetrique de test_b0_probe_not_paid_...)."""
+    probe, calls = _organ(False)
+    verdict, dossier = _ready_dossier()
+    assert mod.recheck_blocked_b0(123, verdict, dossier, probe) == (verdict, [], dossier)
+    assert mod.recheck_blocked_b0(123, "", None, probe) == ("", [], None)
+    assert calls == []
+
+
+# --- #18637 : advisories sticky (marqueur en FIN de corps) et resumes de bot --
+
+_STICKY_STALE = (
+    "✅ No unanchored measurement claim detected in the notebooks this PR changed.\n\n"
+    "Scope = notebooks CHANGED in this PR.\n"
+    "<!-- Sticky Pull Request Commentstale-claim-advisory -->"
+)
+
+
+def test_sticky_advisory_pose_does_not_expire_the_dossier():
+    """#18637 acceptance (positive control) : la pose d'un advisory sticky par
+    ``github-actions[bot]`` apres le dossier laisse le verdict lisible. Mesure
+    fondatrice (2026-09-30) : 19 dossiers sur 22 perimes par ces seules poses
+    et reecritures de bot.
+    """
+    for body in (
+        _STICKY_STALE,
+        "⚠️ Factual-mislabel review needed.\n<!-- Sticky Pull Request Commentfactual-mislabel-advisory -->",
+        "<!-- REVIEW-COVERAGE:START -->\nseuil depasse\n<!-- REVIEW-COVERAGE:END -->",
+        "## Golden-Set Execution (H.7 P3)\n\n✅ **3/3** notebooks passed",
+        "## Notebook PR Validation: PASS\n\n| nb | ok |",
+        "## Notebook outputs-required (H.4 schema): **PASS** (every code cell carries an `outputs: list`)",
+    ):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        pose = _comment(body, login="github-actions[bot]")
+        pose["createdAt"] = T1
+        snapshot["comments"].append(pose)
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, (body.splitlines()[0], errors)
+
+
+def test_sticky_advisory_rewrite_keeps_the_fingerprint():
+    """#18637 : la reecriture en place d'un advisory sticky ne change pas le hash,
+    sa presence le change toujours."""
+    base = _base_snapshot()
+    v1 = dict(base, comments=[_comment(_STICKY_STALE, "github-actions[bot]")])
+    v2 = dict(base, comments=[_comment(
+        "⚠️ Stale-claim review needed: contenu different.\n"
+        "<!-- Sticky Pull Request Commentstale-claim-advisory -->",
+        "github-actions[bot]")])
+    assert mod.surfaces_fingerprint(v1) == mod.surfaces_fingerprint(v2)
+    assert mod.surfaces_fingerprint(base) != mod.surfaces_fingerprint(v1)
+
+
+def test_sticky_forms_require_the_bot_author_and_a_listed_header():
+    """#18637 (negative controls) : un tiers qui recopie la forme perime le
+    dossier ; un en-tete sticky non liste (non consultatif) aussi ; un marqueur
+    sticky qui n'est pas en fin de corps aussi."""
+    cases = (
+        (_STICKY_STALE, "clusterManager-Myia"),
+        ("## Golden-Set Execution (H.7 P3)\ncopie", "myia-po-2023"),
+        ("## Notebook outputs-required (H.4 schema): **PASS** copie", "myia-po-2023"),
+        ("rapport\n<!-- Sticky Pull Request Commentsome-blocking-guard -->", "github-actions[bot]"),
+        ("<!-- Sticky Pull Request Commentstale-claim-advisory -->\nsuite ajoutee", "github-actions[bot]"),
+    )
+    for body, login in cases:
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        row = _comment(body, login=login)
+        row["createdAt"] = T1
+        snapshot["comments"].append(row)
+        errors = _errors(snapshot)
+        assert any("discussion changed after dossier" in e for e in errors), (login, body[:40])
+
+
+def test_pre18637_stamp_stays_verifiable():
+    """#18637 transition : un dossier tamponne AVANT le correctif (empreinte
+    qui hache le corps entier du sticky) reste accepte tant que les surfaces
+    n'ont pas bouge -- le merge du correctif ne tue pas les dossiers intacts."""
+    base = _base_snapshot()
+    snap = dict(base, comments=[_comment(_STICKY_STALE, "github-actions[bot]")])
+    old = mod.pre18637_surfaces_fingerprint(snap)
+    new = mod.surfaces_fingerprint(snap)
+    assert old != new
+    rewritten = dict(base, comments=[_comment(
+        "⚠️ autre texte\n<!-- Sticky Pull Request Commentstale-claim-advisory -->",
+        "github-actions[bot]")])
+    # l'ancienne empreinte, elle, bouge avec le corps : elle ne protege que
+    # l'etat exact qu'elle a tamponne.
+    assert mod.pre18637_surfaces_fingerprint(rewritten) != old
+
+
+# --- #18933 : un READY est le rendu d'un organe, pas une appreciation --------
+# Invariant B de #17020. Incident fondateur 2026-09-20 : 5 dossiers Haiku
+# READY par defaut. Trois mecanismes : (1) provenance REQUIRED sur READY,
+# (2) derive_verdict = l'organe rederive le verdict des mesures vivantes,
+# (3) render_emitted_dossier = l'emetteur rend un dossier dont le verdict et
+# la provenance viennent de l'organe. Un dossier BLOCKED n'a pas de
+# provenance a porter : les champs restent OPTIONNELS hors READY.
+
+
+def _no_provenance() -> dict:
+    return {"organ": "", "organ-command": "", "organ-rc": ""}
+
+
+def _fill_reading_acts(block: str) -> str:
+    """Le geste de la lane emettrice : remplir les actes de lecture du --emit."""
+    fill = {
+        "complete: REPLACE_WITH_true": "complete: true",
+        "body: REPLACE_WITH_read": "body: read",
+        "checks: REPLACE_WITH_latest-wins-green_OR_BLOCKED": "checks: latest-wins-green",
+        "b0: REPLACE_WITH_clear_OR_blocked": "b0: clear",
+        "scope: REPLACE_WITH_pass_OR_fail": "scope: pass",
+        "domain: REPLACE_WITH_pass_OR_not-applicable_OR_fail": "domain: pass",
+    }
+    for old, new in fill.items():
+        assert old in block, old
+        block = block.replace(old, new, 1)
+    assert "REPLACE_WITH" not in block
+    return block
+
+
+def test_ready_without_provenance_is_refused():
+    """Un READY sans organ/organ-command/organ-rc = une appreciation."""
+    snapshot = _snapshot(_body(**_no_provenance()))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any("organ is required when verdict is READY" in e for e in errors)
+    assert any("organ-command is required when verdict is READY" in e for e in errors)
+    assert any("organ-rc is required when verdict is READY" in e for e in errors)
+
+
+def test_ready_with_wrong_organ_name_is_refused():
+    snapshot = _snapshot(_body(organ="haiku_opinion.py"))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any("organ must be 'check_adjoint_prevalidation.py'" in e for e in errors)
+
+
+def test_ready_with_wrong_organ_command_is_refused():
+    snapshot = _snapshot(
+        _body(**{"organ-command": "python scripts/check_adjoint_prevalidation.py 123"})
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any(
+        "organ-command must invoke 'check_adjoint_prevalidation.py"
+        " --derive-verdict 123'" in e
+        for e in errors
+    )
+
+
+def test_ready_with_wrong_pr_in_command_is_refused():
+    snapshot = _snapshot(
+        _body(**{"organ-command": (
+            "python scripts/check_adjoint_prevalidation.py --derive-verdict 999"
+        )})
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any("--derive-verdict 123" in e for e in errors)
+
+
+def test_ready_with_nonzero_organ_rc_is_refused():
+    snapshot = _snapshot(_body(**{"organ-rc": "3"}))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any("organ-rc must be '0'" in e for e in errors)
+
+
+def test_blocked_dossier_needs_no_provenance():
+    """BLOCKED ne coute rien a prouver : les champs restent optionnels."""
+    changes = {"verdict": "BLOCKED", "b0": "blocked"}
+    changes.update(_no_provenance())
+    snapshot = _snapshot(_body(**changes))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert not any("organ" in e for e in errors)
+
+
+def test_derive_verdict_ready_when_all_green():
+    verdict, reasons = mod.derive_verdict(
+        _base_snapshot(), lambda pr: {"blocked": False, "blocking": []}
+    )
+    assert verdict == mod.VERDICT_READY and reasons == []
+
+
+def test_derive_verdict_names_each_blocking_measurement():
+    """Chaque mesure bloquante est nommee : check rouge, draft, thread, B.0."""
+    snapshot = _base_snapshot()
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    snapshot["isDraft"] = True
+    snapshot["threads"].append({"isResolved": False})
+    probe = lambda pr: {  # noqa: E731
+        "blocked": True,
+        "blocking": [{"kind": "nit", "author": "u", "src": "c"}],
+    }
+    verdict, reasons = mod.derive_verdict(snapshot, probe)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert any("PR gate" in r or "latest-wins" in r for r in reasons), reasons
+    assert any("draft" in r for r in reasons)
+    assert any("unresolved review thread" in r for r in reasons)
+    assert any("unlifted remark" in r for r in reasons)
+
+
+def test_derive_verdict_blocked_when_merged():
+    """#18984 -- une PR MERGED ne peut pas etre READY (constat adjoint 04/10).
+
+    validate_dossier exigeait deja state OPEN ; la derivation l'omettait :
+    sur un snapshot MERGED aux checks verts, derive_verdict rendait READY.
+    """
+    snapshot = _base_snapshot()
+    snapshot["state"] = "MERGED"
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}
+    )
+    assert verdict == mod.VERDICT_BLOCKED
+    assert any("state must be OPEN" in r for r in reasons), reasons
+
+
+def test_derive_verdict_blocked_when_empty_diff():
+    """#18984 -- un diff vide n'a rien a squasher, READY impossible."""
+    snapshot = _base_snapshot()
+    snapshot["changedFiles"] = 0
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}
+    )
+    assert verdict == mod.VERDICT_BLOCKED
+    assert any("non-empty diff" in r for r in reasons), reasons
+
+
+def test_derive_verdict_probes_b0_by_default(monkeypatch):
+    probe, calls = _organ(False)
+    monkeypatch.setattr(mod, "probe_b0", probe)
+    mod.derive_verdict(_base_snapshot())
+    assert calls == [123]
+
+
+def test_refute_ready_verdict_demotes_when_organ_no_longer_derives():
+    """Dossier READY, mais la tete a tourne : check rouge au snapshot."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    verdict, dossier = _ready_dossier()
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        snapshot, verdict, [], dossier,
+        lambda pr: {"blocked": False, "blocking": []},
+    )
+    assert verdict == "" and dossier is None
+    assert len(errors) == 1
+    assert "no longer derived by the organ" in errors[0]
+    assert "check_adjoint_prevalidation.py --derive-verdict" in errors[0]
+
+
+def test_refute_ready_verdict_keeps_ready_when_derived():
+    verdict, dossier = _ready_dossier()
+    out = mod.refute_ready_verdict(
+        _base_snapshot(), verdict, [], dossier,
+        lambda pr: {"blocked": False, "blocking": []},
+    )
+    assert out == (mod.VERDICT_READY, [], dossier)
+
+
+def test_refute_ready_verdict_preserves_b0_errors_and_skips_probe():
+    """Regression #18933 : les erreurs du refute b0 ne sont plus ecrasees,
+    et le probe n'est pas paye quand le verdict n'est plus READY."""
+    probe, calls = _organ(True, [{"kind": "nit", "author": "u", "src": "c"}])
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        _base_snapshot(), "", ["b0 claim 'clear' is contradicted by ..."], None, probe
+    )
+    assert verdict == "" and dossier is None
+    assert errors == ["b0 claim 'clear' is contradicted by ..."]
+    assert calls == []
+
+
+def test_refute_ready_verdict_appends_its_error_after_b0_errors():
+    """b0 leve ET la tete a tourne : les deux raisons survivent ensemble."""
+    snapshot = _base_snapshot()
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    b0_errors = ["b0 claim 'clear' is contradicted by ..."]
+    ready_verdict, ready_dossier = _ready_dossier()
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        snapshot, ready_verdict, b0_errors, ready_dossier,
+        lambda pr: {"blocked": False, "blocking": []},
+    )
+    assert verdict == "" and dossier is None
+    assert errors[0] == b0_errors[0]
+    assert "no longer derived by the organ" in errors[1]
+
+
+def test_render_emitted_dossier_ready_round_trips_through_the_gate():
+    """L'emission verifiable : le dossier rendu par --emit, ses actes de
+    lecture remplis, PASSE le gate (provenance comprise)."""
+    snapshot = _snapshot()  # pre-dossier : c'est l'emetteur qui part du template
+    probe = lambda pr: {"blocked": False, "blocking": []}  # noqa: E731
+    block, verdict, reasons = mod.render_emitted_dossier(snapshot, probe=probe)
+    assert verdict == mod.VERDICT_READY and reasons == []
+    assert "verdict: READY" in block
+    assert block.count("organ:") == 1  # in-place, pas de cle dupliquee
+    assert "organ: check_adjoint_prevalidation.py" in block
+    assert (
+        "organ-command: python scripts/check_adjoint_prevalidation.py"
+        " --derive-verdict 123" in block
+    )
+    assert "organ-rc: 0" in block
+    # round-trip : la lane remplit les actes de lecture, poste, le gate valide.
+    carrying = _snapshot(_body())
+    carrying["comments"][-1]["body"] = _fill_reading_acts(block)
+    verdict, errors = mod.evaluate(carrying)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_render_emitted_dossier_blocked_carries_rc3():
+    snapshot = _base_snapshot()
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    probe = lambda pr: {"blocked": False, "blocking": []}  # noqa: E731
+    block, verdict, reasons = mod.render_emitted_dossier(snapshot, probe=probe)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert any("PR gate" in r or "latest-wins" in r for r in reasons)
+    assert "verdict: BLOCKED" in block
+    assert "organ-rc: 3" in block
+    assert block.count("organ:") == 1
+
+
+def test_main_derive_verdict_mode_is_organ_only(monkeypatch, capsys):
+    """--derive-verdict : l'organe imprime le verdict, rc 0/3, pas de gate."""
+    snapshot = _base_snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(
+        sys, "argv", ["check_adjoint_prevalidation.py", "--derive-verdict", "123"]
+    )
+    assert mod.main() == mod.EXIT_READY
+    assert capsys.readouterr().out.strip() == "READY"
+
+
+def test_main_derive_verdict_mode_blocked_rc3(monkeypatch, capsys):
+    snapshot = _base_snapshot()
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(
+        sys, "argv", ["check_adjoint_prevalidation.py", "--derive-verdict", "123"]
+    )
+    assert mod.main() == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.strip() == "BLOCKED"
+
+
+def test_main_emit_mode_prints_a_dossier_that_passes(monkeypatch, capsys):
+    snapshot = _snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(
+        sys, "argv", ["check_adjoint_prevalidation.py", "--emit", "123"]
+    )
+    assert mod.main() == mod.EXIT_READY
+    block = capsys.readouterr().out
+    assert "verdict: READY" in block and "organ-rc: 0" in block
+    carrying = _snapshot(_body())
+    carrying["comments"][-1]["body"] = _fill_reading_acts(block)
+    assert mod.evaluate(carrying)[0] == mod.VERDICT_READY
+
+
+# --- #18934 : un READY qui recouvre un BLOCKED le refute par son nom ---------
+# Invariant C de #17020. Incident fondateur 2026-09-20 : le masquage d'un
+# dossier valide par un dossier posterieur moins rigoureux etait intra-login
+# -- le defaut vit dans la RELATION entre dossiers successifs, pas dans
+# l'identite de l'emetteur. A tete constante, un READY doit citer l'ancien
+# BLOCKED (supersedes) et nommer ce qu'il refute (supersedes-why).
+
+
+OTHER_HEAD = "f" * 40
+
+
+def _stacked_dossiers(first: dict, second: dict) -> dict:
+    """Snapshot a deux dossiers sur la MEME tete : BLOCKED (index 1) puis
+    second (index 2). Chaque dossier temoigne des commentaires qui le
+    precedent (comments-reviewed == comment_index, surfaces-sha256 sur le
+    prefixe) -- sinon l'evaluation echouerait pour la mauvaise raison.
+    """
+    snapshot = _base_snapshot()
+    first_fields = {"verdict": "BLOCKED", "b0": "blocked", "comments-reviewed": "1"}
+    first_fields.update(first)
+    first_fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 1)
+    snapshot["comments"].append(_comment(_body(**first_fields)))
+
+    second_fields = {"comments-reviewed": "2"}
+    second_fields.update(second)
+    second_fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 2)
+    snapshot["comments"].append(_comment(_body(**second_fields)))
+    return snapshot
+
+
+def test_mute_contradiction_is_refused_and_names_the_covered_dossier():
+    """READY muet sur BLOCKED meme tete : refus rc 1, l'ancien est nomme."""
+    snapshot = _stacked_dossiers({}, {})
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == ""
+    assert len(errors) == 1
+    error = errors[0]
+    assert "mute contradiction (#18934)" in error
+    assert "comment 2 of 3" in error  # l'ancien BLOCKED, pas le READY
+    assert "supersedes: 2" in error
+
+
+def test_ready_with_supersedes_and_why_stands():
+    """La refutation nommee debloque : citation exacte + raison non vide."""
+    snapshot = _stacked_dossiers(
+        {},
+        {"supersedes": "2", "supersedes-why": "B.0 levered: nit lifted in c3"},
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_supersedes_citing_the_wrong_comment_is_refused():
+    snapshot = _stacked_dossiers({}, {"supersedes": "1", "supersedes-why": "x"})
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == ""
+    assert any("supersedes: 2" in e for e in errors)
+
+
+def test_supersedes_without_why_is_refused():
+    snapshot = _stacked_dossiers({}, {"supersedes": "2", "supersedes-why": "  "})
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == ""
+    assert any("supersedes-why is empty" in e for e in errors)
+
+
+def test_changed_head_means_nothing_to_refute():
+    """A tete changee l'ancien est deja perime par exact-head : pas de
+    contradiction, le READY n'a rien a citer."""
+    snapshot = _stacked_dossiers({"head": OTHER_HEAD}, {})
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_blocked_over_ready_needs_no_refutation():
+    """La direction conservatrice serre, elle ne debloque pas : rien a exiger."""
+    snapshot = _stacked_dossiers(
+        {"verdict": "READY", "b0": "clear"},
+        {"verdict": "BLOCKED", "b0": "blocked"},
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert errors == []
+
+
+def test_stray_supersedes_on_a_lone_ready_is_tolerated():
+    """Champs optionnels hors contradiction : un dossier sans aine sur la
+    meme tete ne peut pas etre refuse pour les porter."""
+    snapshot = _snapshot(_body(supersedes="7", **{"supersedes-why": "nostalgia"}))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_main_refuses_mute_contradiction_with_rc1(monkeypatch, capsys):
+    snapshot = _stacked_dossiers({}, {})
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out and "mute contradiction (#18934)" in out
+# --- #19002 : la base doit etre `main` pour READY -------------------------
+# Mesure du 2026-10-03 : 4 PRs a base != main dans le pool ouvert, dont
+# #18819 (base squash-mergee) et #18993 (base fermee sans merge). Avant
+# #19002, le gate rendait rc=0 READY sur ces PRs, et merge_ready fusionnait
+# dans la branche morte. La regle : un dossier READY exige une base
+# `main` ; sinon, refus. Trois tests : un temoin positif (base main, le
+# chemin nominal inchange), un temoin negatif sur une base de feature
+# encore ouverte (#18985/#18967), un temoin negatif sur une base dont la
+# PR porteuse est fermee ou mergee (#18819/#18993).
+
+
+def test_base_main_does_not_change_a_ready_dossier():
+    """Temooin positif : une PR a base main, dossier READY canonique,
+    verdict READY inchange. Le chemin nominal n'est pas casse par #19002."""
+    snapshot = _snapshot(_body())
+    assert snapshot["baseRefName"] == "main"
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+    assert not errors
+
+
+def test_base_feature_open_refuses_ready_and_names_the_base():
+    """Temooin negatif : PR empilee sur une branche de feature encore
+    ouverte (#18985 / #18967). Le gate refuse READY et nomme la base
+    pour que la lane sache ou retargeter."""
+    snapshot = _snapshot(_body())
+    snapshot["baseRefName"] = "docs/qc-book-inventory-reconciliation"
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == "", verdict
+    assert dossier is None, dossier
+    assert any("baseRefName must be 'main'" in e for e in errors), errors
+    # Le message nomme la base fautive -- la lane en a besoin pour le
+    # retarget, et la regle sans le nom forcerait a rouvrir le PR.
+    assert any(
+        "docs/qc-book-inventory-reconciliation" in e for e in errors
+    ), errors
+
+
+def test_base_dead_refuses_ready_and_names_the_base():
+    """Temooin negatif : PR empilee sur une branche dont la PR porteuse
+    est fermee ou squash-mergee (#18819 / #18993). Meme verdict que la
+    base de feature, avec un nom different -- le gate refuse dans les
+    deux cas parce que son contrat ne sait pas dire 'cette base est
+    morte' (et n'a pas besoin de le dire : retarget sur main)."""
+    snapshot = _snapshot(_body())
+    snapshot["baseRefName"] = "renum/17063-complexity-05b"  # #18819
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == "", verdict
+    assert dossier is None, dossier
+    assert any("baseRefName must be 'main'" in e for e in errors), errors
+    assert any("renum/17063-complexity-05b" in e for e in errors), errors

@@ -18,4 +18,11 @@
     <ProjectReference Include="..\MyIA.AI.Shared\MyIA.AI.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Fixture de validation croisee du moteur Go (EPIC #7265, tranche 2b) :
+         verdicts figes de pyspiel (OpenSpiel) et gnugo 3.8, regenerables par
+         Search/Go/oracles/generate_go_oracle_fixture.py -->
+    <None Include="Search/Go/oracles/go_oracle_fixture.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

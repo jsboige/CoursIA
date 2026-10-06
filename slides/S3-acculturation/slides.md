@@ -1850,7 +1850,7 @@ layout: section
 <img src="./images/img_121.png" class="max-h-[130px] w-[45%] object-contain" alt="Jeu Atari Breakout : deux captures d'écran avec score — terrain classique du RL" />
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb">rl_1_intro_cartpole.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb">rl_5_mdp_dp_qlearning.ipynb</a> (MDP, TD, Q-learning).</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb">RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb">RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb</a> (MDP, TD, Q-learning).</p>
 ---
 layout: section
 ---
@@ -2378,7 +2378,7 @@ graph LR
 - Cas d'usage : recherche web, exécution de code, orchestration de tâches
 - Le chatbot devient un **agent actif** qui accomplit des tâches
 
-> Notebooks : `GenAI/SemanticKernel/` (20 notebooks)
+> Notebooks : `GenAI/SemanticKernel/`
 
 
 

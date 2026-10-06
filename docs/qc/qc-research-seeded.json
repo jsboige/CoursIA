@@ -3,8 +3,8 @@
   "21143": {
    "url": "https://www.quantconnect.com/research/21143/harvesting-the-volatility-risk-premium-with-a-dual-vix-signal/",
    "lastmod": "2026-08-11T10:46:30+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-09-01",
+   "issue": 13892
   },
   "21132": {
    "url": "https://www.quantconnect.com/research/21132/sizing-market-exposure-with-aggregate-sales-growth/",
@@ -21,8 +21,8 @@
   "21050": {
    "url": "https://www.quantconnect.com/research/21050/cross-asset-etf-momentum-with-a-correlation-based-short-hedge/",
    "lastmod": "2026-07-17T12:05:13+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-09-01",
+   "issue": 14091
   },
   "20966": {
    "url": "https://www.quantconnect.com/research/20966/filing-language-stability-as-a-selection-signal/",
@@ -33,8 +33,8 @@
   "20937": {
    "url": "https://www.quantconnect.com/research/20937/dynamic-conversion-arbitrage-on-the-magnificent-7/",
    "lastmod": "2026-06-19T11:33:55+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-09-04",
+   "issue": 18802
   },
   "20886": {
    "url": "https://www.quantconnect.com/research/20886/the-max-effect-with-vix-based-leverage-scaling/",
@@ -129,8 +129,8 @@
   "17902": {
    "url": "https://www.quantconnect.com/research/17902/bitcoin-as-a-leading-indicator/",
    "lastmod": "2025-02-14T06:21:50+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-09-30",
+   "issue": 18575
   },
   "17900": {
    "url": "https://www.quantconnect.com/research/17900/intraday-application-of-hidden-markov-models/",
@@ -867,7 +867,7 @@
   "21195": {
    "url": "https://www.quantconnect.com/research/21195/bitcoin-regime-signal-for-growth-equities/",
    "lastmod": "2026-08-21T13:40:23+00:00",
-   "seeded_at": null,
+   "seeded_at": "2026-09-30",
    "issue": 12748
   },
   "21382": {

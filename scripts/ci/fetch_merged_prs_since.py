@@ -71,7 +71,25 @@ SEARCH_RESULT_CAP = 1000
 # not a throughput assumption.
 SLICE_DAYS = 3
 
+# Ancrage FIXE de la grille de tranches (#19236). Une grille ancree a `since`
+# se decale d'un jour a chaque appel (`since` avance avec la date du jour) :
+# des cles de cache par tranche ne vivraient alors qu'un jour. En alignant
+# les bornes interieures sur un multiple de `slice_days` depuis une date
+# fixe, la tranche [b, b+3) garde la MEME cle d'un jour a l'autre -- une
+# tranche passee, immuable une fois la journee close, reste servie par le
+# cache au lieu d'etre re-telechargee chaque matin. Seul
+# `(jour - SLICE_ANCHOR).days % slice_days` compte : n'importe quelle date
+# fixe convient.
+SLICE_ANCHOR = date(2026, 1, 5)
+
 DEFAULT_DAYS = 21
+
+# Champs demandes par defaut. Les appelants qui n'ont besoin que du corps et de
+# la date gardent ce jeu : `files` est le champ le plus cher de l'API (il porte
+# la liste des fichiers touches), et le demander pour rien paie le cout sans la
+# donnee. Un appelant qui a besoin des fichiers (le tapis, via `family_of`)
+# passe `fields=` explicitement.
+DEFAULT_FIELDS = "number,body,mergedAt"
 
 
 def since_date(days: int) -> str:
@@ -79,7 +97,7 @@ def since_date(days: int) -> str:
     return (date.today() - timedelta(days=days)).isoformat()
 
 
-def run_gh(since: str, until: str) -> list[dict]:
+def run_gh(since: str, until: str, fields: str = DEFAULT_FIELDS) -> list[dict]:
     """One date slice of merged PRs, ``[since, until)`` on MERGE time.
 
     Uses only flags `gh pr list` actually has -- `--search` and `--limit`.
@@ -93,49 +111,82 @@ def run_gh(since: str, until: str) -> list[dict]:
             "--state", "merged",
             "--search", f"merged:>={since} merged:<{until}",
             "--limit", str(SEARCH_RESULT_CAP),
-            "--json", "number,body,mergedAt",
+            "--json", fields,
         ],
         capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     )
     return json.loads(out.stdout)
 
 
-def fetch(since: str, run=run_gh, slice_days: int = SLICE_DAYS,
-          today: date | None = None) -> list[dict]:
+def aligned_boundaries(start: date, end: date, slice_days: int):
+    """Base slices covering ``[start, end)``, interior edges on fixed anchors.
+
+    The FIRST slice may be partial ``[start, b)`` where ``b`` is the first
+    boundary AFTER ``start`` aligned on ``SLICE_ANCHOR`` (no partial slice
+    when ``start`` is already aligned); the following ones are aligned
+    ``[b, b + k)``; the LAST is clipped at ``end``. Coverage is identical to
+    a grid anchored at ``start`` -- only the position of interior edges
+    changes, and that position is what makes a slice key stable from one day
+    to the next (#19236).
+    """
+    k = max(1, slice_days)
+    offset = (start - SLICE_ANCHOR).days % k
+    aligned = start + timedelta(days=k if offset == 0 else k - offset)
+    cur = start
+    while cur < end:
+        stop = min(aligned, end)
+        yield cur, stop
+        cur = stop
+        aligned = cur + timedelta(days=k)
+
+
+def fetch(since: str, run=None, slice_days: int = SLICE_DAYS,
+          today: date | None = None, fields: str = DEFAULT_FIELDS) -> list[dict]:
     """Walk ``[since, tomorrow)`` in date slices and merge them into one list.
 
-    ``run`` is dependency-injected for tests. A slice that returns exactly
-    ``SEARCH_RESULT_CAP`` items was truncated by the search API: it is halved
-    and retried, and a one-day slice still at the cap raises -- returning it
-    would silently drop merges and hand the guard a partial sequence that looks
-    complete.
+    ``run`` is dependency-injected for tests -- a two-argument callable
+    ``(since, until) -> list[dict]``. When it is omitted, the real fetch is
+    bound to ``fields`` (so an injected fake keeps its two-argument contract).
+
+    A slice that returns exactly ``SEARCH_RESULT_CAP`` items was truncated by
+    the search API: it is halved and retried, and a one-day slice still at the
+    cap raises -- returning it would silently drop merges and hand the caller a
+    partial sequence that looks complete.
+
+    Since #19236, interior slice edges are anchored on ``SLICE_ANCHOR`` (cf
+    ``aligned_boundaries``) so a given past slice keeps the same
+    ``(since, until)`` bounds across days -- the caller caches per slice, and
+    a grid anchored at ``since`` would re-key every entry once a day.
     """
+    if run is None:
+        run = lambda s, u: run_gh(s, u, fields)  # noqa: E731
     start = date.fromisoformat(since)
     end = (today or date.today()) + timedelta(days=1)
     acc: list[dict] = []
     seen: set[int] = set()
-    cur = start
-    while cur < end:
-        width = max(1, slice_days)
-        while True:
-            nxt = min(cur + timedelta(days=width), end)
-            batch = run(cur.isoformat(), nxt.isoformat())
-            if len(batch) < SEARCH_RESULT_CAP or width == 1:
-                break
-            width = max(1, width // 2)
-        if len(batch) >= SEARCH_RESULT_CAP:
-            raise RuntimeError(
-                f"fetch_merged_prs_since: the single day {cur.isoformat()} "
-                f"returned {len(batch)} PRs, at the search cap of "
-                f"{SEARCH_RESULT_CAP}. The window cannot be sliced any finer, "
-                "so the result would be silently truncated -- failing instead."
-            )
-        for pr in batch:
-            n = pr.get("number")
-            if n is not None and n not in seen:
-                seen.add(n)
-                acc.append(pr)
-        cur = nxt
+    for base_cur, bound in aligned_boundaries(start, end, slice_days):
+        cur = base_cur
+        while cur < bound:
+            width = min(max(1, slice_days), (bound - cur).days)
+            while True:
+                nxt = cur + timedelta(days=width)
+                batch = run(cur.isoformat(), nxt.isoformat())
+                if len(batch) < SEARCH_RESULT_CAP or width == 1:
+                    break
+                width = max(1, width // 2)
+            if len(batch) >= SEARCH_RESULT_CAP:
+                raise RuntimeError(
+                    f"fetch_merged_prs_since: the single day {cur.isoformat()} "
+                    f"returned {len(batch)} PRs, at the search cap of "
+                    f"{SEARCH_RESULT_CAP}. The window cannot be sliced any finer, "
+                    "so the result would be silently truncated -- failing instead."
+                )
+            for pr in batch:
+                n = pr.get("number")
+                if n is not None and n not in seen:
+                    seen.add(n)
+                    acc.append(pr)
+            cur = nxt
     return acc
 
 

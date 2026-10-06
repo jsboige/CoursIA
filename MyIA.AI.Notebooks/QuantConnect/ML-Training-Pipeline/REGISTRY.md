@@ -4,6 +4,10 @@
 
 Auto-generated: 2026-05-03 22:29
 
+Updated: 2026-10-04 — M13 Markov-Switching HAR revalidation cluster 7 actifs appariée par origine (port #18190, Epic #1454, lane myia-po-2023:CoursIA) : **NO BEATS cluster** — 0/21 couples BEATS, 20/21 NO BEATS, 1/21 INCONCLUSIVE (h=10, un actif), aux deux jambes (brute et dé-biaisée). Le verdict publié de M13 (sign-test binomial sur le **Sharpe**, 39/84 combos traités comme indépendants, p=0,7774) n'est ni réfuté ni confirmé par cette passe : elle porte sur une **autre métrique** (MSE) et ajoute la lecture §C qui manquait. Deux réserves sur ce verdict publié : quatre graines d'un EM déterministe sur la même fenêtre ne sont pas quatre réplications indépendantes (le dénominateur 84 sur-déclare la puissance), et aucune jambe DM ni rapport de biais n'existait. L'appariement par origine est ici l'**identité** (0 refus shared-target sur 21 agrégats, gap max 0,0, longueurs appariées 538–1890) : les deux jambes partagent la même série `rv` et le même découpage, donc le garde **prouve** la coïncidence des jours au lieu de la supposer — contrairement à M15, où il a refusé deux fois avant toute mesure valide et a mis au jour un défaut de convention réel. Défaut latent corrigé au passage : la cible de la jambe HAR servait aux **deux** prévisions (`ms_pred = ms_fc.reindex(target.index)`), toute divergence entre les cibles réalisées des deux jambes était silencieusement ignorée ; chaque jambe porte désormais sa propre cible et le join refuse sur mismatch (`target_tol=1e-8`). Agrégat et preuves de folds/dates/DM : `scripts/results/m13_ms_har_cluster_aligned.json` (13 819 octets, sha256 `72db2e77ece296b1`), artefact complet hors dépôt (152 346 octets, sha256 `e78561eb06a7…`) ; détail dans `docs/M13_MS_HAR.md`.
+
+Updated: 2026-10-03 — M18 TimesFM 2.5 revalidation cluster 7 actifs (Epic #1454, défrichage 3070) : **NO BEATS cluster vs log_har** (3/7 actifs BEATS — BTC, ETH, SOL — p=0,7734, les deux vues {1,5,10}/{1,5,22}) ; le « 5/6 BEATS » #14778 se reproduit exactement sur BTC/ETH mais ne généralise pas aux cinq actifs yfinance courts (~721 j) — aucun horizon NO BEATS, perte de puissance (profil M4). vs har_rv INCONCLUSIVE 5/7 (p=0,2266). Fix harnais au passage : manifeste vide en exit 0 depuis la refonte M16 de `_load_panel` (tuple non unpacké)
+
 Updated: 2026-05-06 — Stage -1 Panier baselines: 18 BEATS, 32 FAILS across 50 experiments (26 symbols x 2 models)
 
 Updated: 2026-06-12 — Ladder #1409 verdicts consolidated; legacy SPY-single checkpoints marked ARCHIVED
@@ -26,6 +30,8 @@ Updated: 2026-08-24 — Re-validation hors-biais des keepers BTC (issues #11041/
 
 Updated: 2026-08-24 — M15 LSTM-vol patch persistance biais + slice 2/2 dé-biaisé symétrique (issue #12734): patch livré, run complet dispatché au prochain cycle
 
+Updated: 2026-10-01 — M15 LSTM-vol revalidation cluster 7 actifs appariée par origine (port #18190, Epic #1454) + clôture du run différé #12734 : **NO BEATS cluster** (brute 19/21, calibrée 18/21, centrée BEATEN 19/21 ; var_ratio 1,12-1,34 sur 21/21). Le port a mesuré un défaut de convention dans le harnais M15 lui-même (join naïf refusé gap 4,25, puis relabel positionnel refusé gap 3,51 aux frontières de fold) : les verdicts §C antérieurs comparaient des fenêtres différentes. L'antécédent BTC « 2/3 BEATS » (#11034) ne survit pas à l'appariement corrigé (INCONCLUSIVE brut h=5/h=10)
+
 Updated: 2026-09-01 — PatchTST BTC log-RV revalidé contre HAR débiaisé train-only (#14081) : h=1 INCONCLUSIVE, h=5/h=10 NO BEATS ; var_ratio > 1 aux trois horizons
 
 Updated: 2026-09-02 — M16 HAR asymétrique BTC revalidé contre HAR débiaisé train-only (#1454) : h=1 INCONCLUSIVE, h=5/h=10 BEATS ; verdict brut 3/3 réfuté
@@ -44,6 +50,8 @@ Updated: 2026-09-05 — M17 HAR-LJ-Asym round-4 (PR #14592, adjoint re-review DM
 
 Updated: 2026-09-28 — M17 HAR-LJ-Asym revalidation sur sept actifs avec origine et cible appariées, purge horizon et calibration train-only (Epic #1454) : **NO BEATS cluster** contre HAR (6/21 couples gagnants, 2/21 perdants, 13/21 non concluants ; SOL et LTC seuls majoritaires, 2/7 actifs, sign-test unilatéral p=0,9375) et contre M12 (1/21 couple gagnant, aucun actif majoritaire, p=1). Les 4 graines OLS sont bit-identiques, pas des réplications indépendantes. L'ancien `BTC h=1 BEATS` des lignes 2026-09-04/05 ci-dessus est **SUPERSEDED** par le rejeu apparié : BTC 0/3 horizon gagnant contre HAR et M12. Agrégat et preuves de folds/dates/DM : `scripts/results/m17_har_lj_asym_cluster_aligned.json` (blob Git SHA-256 `2ca4b9ffe0582d290dfa77a3f8c47a0381e099e4eba7ecbc4e1fc221729ff6ae`, 352 102 octets) ; détail dans `docs/M17_HAR_LJ_ASYM.md`.
 
+Updated: 2026-09-30 — M4 DLinear-vol revalidation sur sept actifs appariée par origine (port #18190, Epic #1454) : **edge de précision confiné à BTC** — jambe recentrée BEATS sur BTC h=1/h=5 seulement (4/4 graines, p_median 2,2e-09/8,9e-05), **0/18 sur les six autres actifs** (XRP h=10 NO BEATS) ; jambe calibrée 3/21 BEATS (BTC h=1/h=5, SOL h=1 — ce dernier 0/4 en jambe brute) ; ETH h=1 `refuted-de-biased` (le BEATS Cycle 25 était le biais HAR) ; 7 couples NO BEATS en jambe brute aux horizons longs. Diagnostic d'alignement : cibles partagées identiques (gap 0,0) sur 21/21 couples, 0 refus. Manifeste : `scripts/results/m4_dlinear_vol_cluster_aligned.json` (31 406 octets) ; séries complètes hors dépôt (11 753 743 octets, #15890) : `G:\Mon Drive\MyIA\Dev\Trading\ML-Training-Pipeline\m4_dlinear_vol_cluster_full.json` ; détail dans `docs/M4_DLINEAR_VOL.md`.
+
 Updated: 2026-09-05 — M18 TimesFM 2.5 zero-shot première entrée §C (issue #14768, lane myia-po-2026) : **vs Log-HAR 5/6 BEATS, 1/6 INCONCLUSIVE (BTC h=22, log-HAR numériquement meilleur mais p=0,23), 0/6 NO BEATS** — réserves : ETH h=22 p=0,0445 limite. Horizons 1/5/22 j, walk-forward 5 folds, seeds bit-identiques (GPU déterministe), débiais symétrique, DM conjonction MSE (#11010). Vrai checkpoint attesté (SHA 1d952420fba8, 43 720 séries, fail-explicit). Calibration quantile native : couverture 80 % à ±0,026 du nominal. HAR en niveaux dégénère en quasi-persistence (MSE identiques à 6 décimales, hashs distincts). Détail section M18 + `docs/M18_TimesFM.md`.
 
 Updated: 2026-09-05 — M18 correctif baseline har_rv (issue #14791, lane myia-po-2026) : la clause « HAR en niveaux dégénère en quasi-persistence » ci-dessus était **fausse — SUPERSEDES**. L'égalité har_rv == persistence (5e-14) était un bug d'alignement dans `HarRvModel.fit` (régresseurs contemporains de la cible → fit identité parfait, résidu ~1e-19, prévision = persistence exacte) ; le contrôle « hashs distincts » ne pouvait pas le détecter. Correctif : régresseurs décalés d'un pas (miroir `realized_variance.har_lag_features`) + garde `assert_baselines_distinct` (paires de baselines distinctes ≥ 1e-6 relatif sur ≥ 1 point OOS, sinon le run échoue). Re-run complet 24 cellules (checkpoint SHA inchangé, 43 720 séries, persistence/ewma/log_har bit-identiques) : **vs har_rv 6/6 BEATS +29,8/+51,1 %** (colonne tableau M18 mise à jour), `baseline_weakest_rel_sep` 0,11-0,18 ; har_rv corrigé meilleur que persistence (BTC h=1 MSE 1,044 vs 1,172). Verdict de tête #14768 inchangé (vs Log-HAR 5/6). Tests +7 (dont dents du garde prouvées sur l'alignement bugué : rouge à 2,65e-11).
@@ -54,7 +62,46 @@ Updated: 2026-09-08 — M19 MiniCPM5-2B GRPO+QLoRA sur DAPO-Math-17k, entrée §
 
 Updated: 2026-09-13 — M12 HAR-RV-J revalidé sur sept actifs avec calibration train-only symétrique (#16004, Epic #1454, lane myia-po-2025:CoursIA) : **NO BEATS cluster** — 0/7 actifs BEATS, sign-test binomial exact unilatéral p=1,0 ; ADA NO BEATS (3/3 horizons battus en DM-MSE, p=0,021-0,026), ETH NO BEATS (h=5/h=10, p=0,029/0,036), cinq actifs INCONCLUSIVE ; 0/21 couples BEATS (5 NO BEATS, 16 INCONCLUSIVE). Le BEATS Cycle 31 (p=7,9e-7, 64/84, calibration asymétrique + pseudo-réplication 4 seeds d'un OLS déterministe) **n'est pas confirmé** — sans réfutation définitive (protocoles et fenêtres diffèrent, cinq actifs ~724 j). Biais OOS signé du candidat calibré supérieur à la baseline calibrée (+0,103/+0,095/+0,017 vs −0,013/−0,018/−0,023 aux h=1/5/10) ; les écarts les plus amples apparaissent sur les fenêtres yfinance courtes, constat descriptif sans attribution causale. Détail section M12 + `docs/M12_HAR_RV_J.md`.
 
+Updated: 2026-10-04 — M5 HMM regime-switching HAR revalidé cluster 7 actifs appariée par origine (port #18190, Epic #1454, lane myia-po-2023:CoursIA) : **h=1 BEATS sur 6/7 actifs après dé-biais** (ETH +8,7 %, LTC +11,7 %, XRP +11,8 %, ADA +11,3 %, DOT +10,1 %, SOL +5,7 % — edges portés par la précision, dm_centered_p<0,012 ; BTC seul INCONCLUSIVE, sa baseline HAR porte le biais OOS le plus fort du cluster) ; **h=5 INCONCLUSIVE 7/7** ; **h=10 NO BEATS 7/7** (−42,9 % à −100,9 % dé-biaisé) — la nocivité long-horizon n'était pas un artefact BTC/ETH, elle est structurelle sur l'univers cluster. Join d'identité prouvé sur les 21 cellules (dm_n_aligned==n_preds, gap 0, zéro TARGET_MISMATCH — les deux jambes sortent de la même boucle, la garde fail-closed est la preuve). 84 walk-forwards 4 seeds, mse, refit 22, HMM K=2. Détail `docs/M5_HMM_REGIME.md` + manifeste `scripts/results/m5_hmm_regime_cluster_aligned.json` + JSON complet hors dépôt (GDrive, précédent #18664).
+
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
+
+## M18 TimesFM 2.5 — revalidation cluster 7 actifs (2026-10-03) — Epic #1454
+
+Port du protocole de la famille #1454 (M16/M12/M17) au lead zero-shot de #14778 : 7
+actifs (BTC, ETH, SOL, LTC, XRP, ADA, DOT) × horizons {1, 5, 10, 22} × graines
+{0, 7, 42, 99} bit-identiques (inférence déterministe — `n_seeds_effective=1`),
+repli par actif (règle M16) + sign-test binomial exact unilatéral, deux vues
+(`cluster` {1,5,10}, `protocol` {1,5,22}), quatre baselines. Run RTX 3070 (rôle
+pionnier du ping-pong GPU #1454) : 1462,9 s, 126 368 séries servies, SHA checkpoint
+inchangé (`1d952420fba8`). Couche d'agrégation additive
+`scripts/m18_tsfm_cluster.py` (+11 tests) ; alignement intra-harnais consigné (un
+seul walk-forward sert les deux jambes — pas de jointure cross-harness à mesurer,
+contrairement à M4/M15).
+
+- **Verdict cluster : NO BEATS contre la référence log_har** — 3/7 actifs BEATS
+  (BTC, ETH, SOL), p=0,7734, dans les DEUX vues. Le claim #14778 « 5/6 BEATS vs
+  Log-HAR » se reproduit exactement sur son périmètre (BTC h=1 +19,7 % p≈0, ETH
+  BEATS 3/3) mais **ne généralise pas** : à h=1, 6/7 actifs BEATS (tous sauf DOT) ;
+  à h≥5 l'edge ne tient en BEATS que sur BTC, ETH et SOL (+9,27 % p=0,028 à h=5) —
+  LTC, XRP, ADA et DOT (les quatre actifs yfinance à ~721 j horaires vs 2 277 pour
+  BTC) passent INCONCLUSIVE à h≥5, aucun horizon NO BEATS vs log_har (perte de
+  puissance, pas réfutation ; profil M4 : edge confiné aux longues séries).
+- vs persistence : **BEATS 7/7** (p=0,0078, les deux vues). vs ewma : NO BEATS 2/7
+  (p=0,9375, vue cluster). vs har_rv : INCONCLUSIVE 5/7 (p=0,2266) — la baseline
+  HAR recalibrée reste la référence non battue de la famille (M12/M15/M16/M17).
+- **Conséquence ping-pong GPU** : aucun `[GPU-QUEUE]` pour M18 — le goulot est la
+  profondeur de données (séries hourly longues pour les cinq actifs distants), pas
+  le compute.
+- **Fix incident** : le harnais `m18_tsfm_benchmark.py` produisait un manifeste
+  VIDE en exit 0 depuis la refonte M16 de `har_asymmetric` (`_load_panel` retourne
+  `(panel, failures)`, tuple assigné entier → tout actif skippé en silence,
+  « 0 series served »). Fix : unpack + `validate_requested_panel` + garde
+  fail-closed (0 série → `SystemExit`). 49 tests verts, smoke 6552 séries servies.
+- **Manifeste** : `scripts/results/m18_tsfm_cluster_aligned.json` (36 301 octets) ;
+  séries complètes hors dépôt (#15890) :
+  `G:\Mon Drive\MyIA\Dev\Trading\ML-Training-Pipeline\m18_tsfm_cluster_full.json`
+  (905 349 octets) ; détail dans `docs/M18_TimesFM.md` §Revalidation cluster.
 
 ## M19 MiniCPM5-2B GRPO+QLoRA DAPO — entrée §C (2026-09-08) — issue #15099 probe B
 
@@ -430,6 +477,37 @@ rerun complet 12/12 avec persistance des séries `pred_lstm`/`pred_har`/`pred_ta
 (instrument PR #12745), verdict mesuré : **`refuted-de-biased` 3/3** — section dédiée ci-dessous
 (issues #11041/#11034).
 
+### M4 DLinear-vol — revalidation cluster 7 actifs appariée par origine (2026-09-30, Epic #1454)
+
+Port du protocole #18190 (fixé pour M17) : les jambes DM brute et calibrée joint désormais les
+deux walk-forwards sur leurs **dates d'origine** communes et **refuse fail-closed** si les cibles
+partagées divergent (`TARGET_MISMATCH`), au lieu de tronquer positionnellement (`[:min_len]`).
+La jambe recentrée (#12684) passait déjà par la jointure par dates ; elle hérite maintenant de la
+validation des cibles. Run : 7 actifs (BTC/ETH/SOL/LTC/XRP/ADA/DOT) × h 1/5/10 × graines 0/7/42/99,
+`--debias --loss-fn mse`, 84 combinaisons, 12 291 s.
+
+| Jambe | BEATS | NO BEATS | INCONCLUSIVE | refuted | Détail |
+|-------|------:|---------:|-------------:|--------:|--------|
+| Calibrée (verdict doc) | 3/21 | 0/21 | 18/21 | — | BTC h=1/h=5, SOL h=1 |
+| Brute (4 états) | 4/21 | 7/21 | 10/21 | — | + ETH h=1 ; NO BEATS : SOL/LTC/ADA h=10, DOT h=5/10, XRP h=5/10 |
+| Précision (recentrée) | 2/21 | 1/21 | 16/21 | 2/21 | BEATS BTC h=1/h=5 ; NO BEATS XRP h=10 ; refuted BTC h=10, ETH h=1 |
+
+**Verdict cluster : edge de précision confiné à BTC** (h=1 : +10,1 % hors biais, 4/4 graines,
+p_median 2,2e-09 ; h=5 : +7,5 %, 8,9e-05). Hors BTC : 0/18 BEATS en précision. ETH h=1 réfuté
+(porté par le biais HAR), SOL h=1 ne bat que la baseline calibrée (jambe brute 0/4, p 0,20).
+Le mécanisme se lit dans les biais : HAR sous-estime fortement la vol BTC (−0,23 à −0,45) mais est
+quasi neutre sur les petits actifs (|biais| < 0,03 sur DOT/XRP) — le levier « dé-biaser la
+baseline » n'existe pas hors BTC, et DLinear surestime les six autres actifs (+0,03 à +0,28).
+
+- **Manifeste** : `scripts/results/m4_dlinear_vol_cluster_aligned.json` (31 406 octets — verdicts,
+  diagnostics d'alignement par combo, SHA-256 par pièce du JSON complet ; `dm_target_gap_max` = 0,0
+  sur 21/21 couples, 0 refus, jointures stables across graines).
+- **Séries complètes** hors dépôt (>512 Ko, #15890) :
+  `G:\Mon Drive\MyIA\Dev\Trading\ML-Training-Pipeline\m4_dlinear_vol_cluster_full.json`
+  (11 753 743 octets, SHA-256 LF-normalisé `1d25cbc7948e2a16…` — préfixe).
+- **Régénération** : commande dans `docs/M4_DLINEAR_VOL.md` §Revalidation cluster (reprise sur
+  checkpoint JSONL, une ligne par combo).
+
 ## M15 LSTM-vol — entrée §C (2026-08-14) — issue #10941
 
 2e entrée du registre conforme au barème `pr-review-discipline.md` §C (suite #10908/#10930) :
@@ -561,6 +639,65 @@ uniquement, aucune stratégie dérivée, borne crypto 10 bps non imputée.
   biais uniquement ; décomposition `mse = biais² + var` vérifiée au 1e-12 par seed). Artefacts
   hors repo (`results/` gitignoré) — instrument de persistance : PR #12745.
 - **Verdict §C recentré** : **0/3 BEATS, 0/3 INCONCLUSIVE, 3/3 NO BEATS** — `refuted-de-biased`.
+
+## M15 LSTM-vol — revalidation cluster appariée par origine (2026-10-01) — Epic #1454, port #18190, clôture #12734
+
+Le protocole d'appariement par origine (#18190, validé sur M4/#18650) est porté au harnais M15 et
+le run complet différé par #12734 est livré sous forme étendue : **cluster 7 actifs**
+(BTC/ETH/SOL/LTC/XRP/ADA/DOT) x 3 horizons x 4 seeds = 84 combos, `loss_fn=mse`, refit 110,
+hidden 64, GPU RTX 3070 Laptop, runtime réel ~82 min (restart checkpoint inclus). Les jambes DM
+joignent les deux walk-forwards sur leurs dates d'origine communes, valident la cible partagée
+d'abord, et **refusent** (`TARGET_MISMATCH`) plutôt que de comparer en silence. Trois jambes :
+HAR brute, HAR calibrée train-only, erreurs centrées (variance).
+
+### Le défaut de convention que le port a mesuré (résultat principal)
+
+Le garde shared-target a refusé **deux fois** avant toute mesure valide — le protocole fait son
+travail : (1) join naïf refusé (BTC h=1, gap 4,25) — cible LSTM `[i+1, i+h]` vs cible HAR
+`[i, i+h-1]` : **les verdicts §C antérieurs de M15 comparaient des prévisions de fenêtres
+différentes** ; (2) relabel positionnel refusé (gap 3,51) — les boucles s'arrêtent à
+`test_end - horizon`, la sortie HAR concaténée saute h positions à chaque frontière de fold, et le
+décalage positionnel `values[1:]` franchit la frontière. Correctif : relabel sur la **date
+boursière précédente de l'index complet** (`_relabel_har_to_lstm_origin(..., full_index)`), test
+de régression `test_relabel_survives_fold_boundaries_in_the_har_output`. Sur le run complet :
+gap max 3,6e-15 (ULP flottant), 0 cellule TARGET_MISMATCH sur 21, n_joined min 545.
+
+**Asymétrie résiduelle documentée** : à l'origine appariée, HAR connaît `rv` jusqu'à `t-1`, le
+LSTM ses features jusqu'à `t-2` (convention M15 : un jour de trou entre frontière d'information et
+fenêtre cible). Direction conservatrice — le verdict BEATEN ci-dessous n'est jamais lu comme une
+déficience LSTM seule.
+
+### Verdicts
+
+Agrégé par horizon (28 combos chacun) :
+
+| Horizon | edge MSE | σ | dm_p_median | brute | calibrée | centrée (variance) |
+|---|---|---|---|---|---|---|
+| h=1  | −20,8 % | 7,04  | 0,0001 | NO BEATS | NO BEATS (p 0,0006) | BEATEN (p 0,0024) |
+| h=5  | −30,3 % | 18,04 | 0,0004 | NO BEATS | NO BEATS (p 0,0104) | BEATEN (p 0,0026) |
+| h=10 | −45,2 % | 32,79 | 0,0003 | NO BEATS | NO BEATS (p 0,0525) | BEATEN (p 0,0089) |
+
+Par cellule (21) : brute NO BEATS 19/21 (INCONCLUSIVE BTC h=5 p=0,195 / h=10 p=0,053) ; calibrée
+NO BEATS 18/21 (INCONCLUSIVE SOL h=10, XRP h=5/h=10) ; centrée BEATEN (variance) 19/21
+(INCONCLUSIVE XRP h=5/h=10). **var_ratio LSTM/HAR = 1,12-1,34, > 1 sur les 21 cellules** : le
+déficit est de la **variance** — même après retrait du biais, le LSTM est uniformément moins
+précis que HAR.
+
+**Lecture** : (1) le verdict `refuted-de-biased` BTC du 2026-08-24 est **étendu au cluster 7
+actifs** avec une structure plus tranchée — là où l'edge BTC publié était le biais² de HAR, la
+mesure corrigée montre un déficit de précision qui ne dépend pas de la convention de biais ;
+(2) l'antécédent BTC-only hidden=64 refit-110 « 2/3 BEATS » (#11034, jambe brute) **ne survit pas
+à l'appariement corrigé** — ses cellules h=5/h=10 sont INCONCLUSIVE brutes et NO BEATS calibrées :
+le « BEATS » était porté par la convention mixte, pas par le modèle ; (3) M15 reste non-keeper.
+
+- **Manifeste committé** : `scripts/results/m15_lstm_rv_cluster_aligned.json` (politique #15890 —
+  verdicts + diagnostics d'alignement par cellule + ancres SHA-256 par coin, aucune série).
+- **Séries complètes** : `G:\Mon Drive\MyIA\Dev\Trading\ML-Training-Pipeline\m15_lstm_rv_cluster_full.json`
+  (12,3 Mo ; sha256 LF `909244cb…d67d818`, octets bruts `4e7167e5…d79abd`).
+- **Notebook §8.5** : `m15_lstm_rv_sc_validation.ipynb` cellule de lecture du manifeste, exécutée
+  (0 erreur) — la fermeture #12734 « keeper vérifiable post-hoc » est effective : verdicts,
+  décompositions et erreurs par combo rejouables sans ré-entraînement.
+- **Détail** : `docs/M15_LSTM_RV.md` section « Revalidation cluster appariée par origine ».
 
 ## PatchTST-vol BTC — revalidation hors biais (2026-09-01) — issue #14081
 

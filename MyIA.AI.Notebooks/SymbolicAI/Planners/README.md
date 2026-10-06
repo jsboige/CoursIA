@@ -119,7 +119,7 @@ Pour les applications de planification par contraintes et temporelles :
 #### Parcours neuro-symbolique (~6h, recherche)
 Pour les approches combinées apprentissage profond + symbolique :
 1. `0-Setup` → `1-Introduction` → `4-Fast-Downward`
-2. `10-LLM-Planning` → `11-Unified-Planning` → `12-LOOP` → `14-LLM-Space-Reducer`
+2. `10-LLM-Planning` → `11-Unified-Planning` → `12-LOOP` → `10b-LLM-Space-Reducer`
 
 ## Quel parcours choisir ?
 
@@ -600,7 +600,7 @@ La planification automatique est une branche de l'IA symbolique :
 | **[SmartContracts](../SmartContracts/)** | Exécution planifiée | Les smart contracts DeFi (liquidations, arbitrage) sont des problèmes de planification sous contraintes temporelles et de gaz. Le notebook SC-14 (vérification formelle Foundry / symbolic execution) certifie ces contrats, comme la preuve Lean certifie l'admissibilité d'une heuristique de planification (Planners-5b). |
 | **[GameTheory](../../GameTheory/)** | Jeux séquentiels | La recherche heuristique (A*, single-agent en planification) et la recherche adversariale (minimax, multi-agent en théorie des jeux) partagent la même structure de graphe d'états. Les jeux coopératifs (Shapley) sont des problèmes d'allocation de tâches planifiables. |
 | **[Search](../../Search/)** | Fondements communs | La série Search couvre les algorithmes de base (BFS, DFS, A*) utilisés dans les planificateurs. CSP (Search Part2) correspond à OR-Tools CP-SAT (Planners-7). |
-| Lecture transversale | [La mer qui monte](../../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du dépôt : changement de représentation, certification A/B/C |
+| Lecture transversale | [La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) | Grille de lecture grothendieckienne du dépôt : changement de représentation, certification A/B/C |
 
 ## Cross-séries Bridges
 
@@ -747,7 +747,7 @@ La planification automatique est le versant **décisionnel** de l'IA — là où
 - **Reliez au raisonnement formel** : les domaines PDDL formalisent un monde ; les ontologies OWL font de même. La série **[SemanticWeb](../SemanticWeb/)** offre la représentation, Planners l'exploite pour agir.
 - **Certifiez vos plans** : un plan correct n'est pas un plan sûr. La vérification formelle (séries **[Lean](../Lean/)** et **[SmartContracts](../SmartContracts/)**) s'applique aussi aux séquences d'actions critiques.
 - **Élargissez à la recherche adversariale** : la planification mono-agent rencontre la théorie des jeux multi-agents dans la série **[GameTheory](../../GameTheory/)** ; la recherche combinatoire (CSP, satisfaction de contraintes) se trouve dans la série **[Search](../../Search/)**.
-- Les tables « Ponts avec les autres séries » et « Cross-séries Bridges » ci-dessus cartographient l'ensemble de ces connexions ; la [Lecture transversale](../../../docs/grothendieckian-lens.md) les relie au fil rouge du dépôt.
+- Les tables « Ponts avec les autres séries » et « Cross-séries Bridges » ci-dessus cartographient l'ensemble de ces connexions ; la [Lecture transversale](../../../docs/cadrage/grothendieckian-lens.md) les relie au fil rouge du dépôt.
 
 ### Le fil rouge
 

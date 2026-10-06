@@ -19,7 +19,7 @@ module-set réel du disque (issue #13138). Ligne `conway_cgt_lean` re-synchronis
 | `minimax_lean` | v4.33.0 | 0 | ZeroSum + Concavity + SionApplication (+ `_en`) | COMPLET |
 | `assignment_lean` | v4.33.0 | 0 | Definitions / Duality / KuhnMunkres / Optimality (+ `_en`) | COMPLET (#12598) |
 | `asymmetric_information_lean` | v4.33.0 | 0 | Lemons / Signaling / Screening / MiyazakiWilson / BayesianLink (+ `_en`) | COMPLET (Epic #12844) |
-| `social_choice_lean_peters` | v4.32.1 | 0 | PetersTour (+ `_en`) | Référence seule |
+| `SocialChoice/social_choice_lean_peters` | v4.32.1 | 0 | PetersTour (+ `_en`) | Référence seule |
 | `conway_cgt_lean` | v4.31.0-rc2 | 0 | CGTTour (+ `_en`) | Tour de référence |
 
 **Tombstones (absorbés, EPIC #4365)** :
@@ -28,7 +28,7 @@ module-set réel du disque (issue #13138). Ligne `conway_cgt_lean` re-synchronis
 |-----------|---------|
 | ~~`cooperative_games_lean`~~ | **Supprimé** (rm #6587) → [`game_theory_lean/CooperativeGames/`](game_theory_lean/CooperativeGames/) |
 | ~~`social_choice_lean`~~ | Absorbé (#6058, 2026-07-11) → [`game_theory_lean/SocialChoice/`](game_theory_lean/SocialChoice/) — ne subsistent que 4 markdown tombstone |
-| ~~`repeated_games_lean`~~ | Absorbé (#6146) → [`game_theory_lean/RepeatedGames/`](game_theory_lean/RepeatedGames/) — coquille archive conservée (lakefile neutralisé, 0 module) |
+| ~~`repeated_games_lean`~~ | Absorbé (#6146) → [`game_theory_lean/RepeatedGames/`](game_theory_lean/RepeatedGames/) — coquille retirée du disque (#4362) |
 
 Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemple pédagogique, pas du code de production. `asymmetric_information_lean` porte 2 *naive* sorry (prose/docstrings) pour 0 vrai sorry de code.
 
@@ -102,11 +102,11 @@ véracité Vickrey + contre-exemple au premier prix (#1469). Build repris par
 
 ---
 
-### 4. social_choice_lean_peters
+### 4. social_choice_lean_peters (sous `SocialChoice/` depuis #4362)
 
 **Objectif** : projet de référence important DominikPeters/SocialChoiceLean comme dépendance Lake.
 
-**Toolchain** : v4.32.1 (pin effectif ; **hors cible du parc** depuis #14773 — dependance amont `SocialChoiceLean` incompatible 4.33, cf. `social_choice_lean_peters/README.md §Statut`) | **Dépendances** : Mathlib4 (`520045ab`), SocialChoiceLean `94a4c650` (revs effectives du `lake-manifest.json`)
+**Toolchain** : v4.32.1 (pin effectif ; **hors cible du parc** depuis #14773 — dependance amont `SocialChoiceLean` incompatible 4.33, cf. `SocialChoice/social_choice_lean_peters/README.md §Statut`) | **Dépendances** : Mathlib4 (`520045ab`), SocialChoiceLean `94a4c650` (revs effectives du `lake-manifest.json`)
 
 | Fichier | sorry | Description |
 |------|-------|-------------|
@@ -276,13 +276,13 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 |---------|----------|-----------|
 | game_theory_lean | COMPLET | 1 sorry (stretch Folk, toléré #4880). StableMarriage : anciens énoncés faux réfutés, `exists_isManOptimal` honnête prouvé ; Lattice fermé. A absorbé `stable_marriage_lean/` + `cooperative_games_lean/` + `social_choice_lean/` + `repeated_games_lean/` (EPIC #4365). |
 | ~~cooperative_games_lean~~ | **Supprimé** (rm #6587) | Absorbé byte-identique dans `game_theory_lean/CooperativeGames/`. |
-| ~~social_choice_lean~~ | **Absorbé** (#6058) | 7 modules → `game_theory_lean/SocialChoice/` ; docs tombstone uniquement. |
-| ~~repeated_games_lean~~ | **Absorbé** (#6146) | 4 modules → `game_theory_lean/RepeatedGames/` ; coquille archive. |
+| ~~social_choice_lean~~ | **Absorbé** (#6058) | → `game_theory_lean/SocialChoice/` ; docs tombstone uniquement. |
+| ~~repeated_games_lean~~ | **Absorbé** (#6146) | → `game_theory_lean/RepeatedGames/` ; coquille retirée du disque (#4362). |
 | lean_game_defs / _ext | COMPLET | 0 sorry, sans Mathlib. |
 | minimax_lean | COMPLET | 0 sorry ; application de Sion prouvée. |
 | assignment_lean | COMPLET | 0 sorry (#12598). |
 | asymmetric_information_lean | COMPLET | 0 code sorry (Epic #12844). |
-| social_choice_lean_peters | N/A | Référence seule (Peters `94a4c650`, Mathlib `520045ab`, v4.32.1). |
+| SocialChoice/social_choice_lean_peters | N/A | Référence seule (Peters `94a4c650`, Mathlib `520045ab`, v4.32.1). |
 | conway_cgt_lean | N/A | Tour de référence (v4.31.0-rc2, suit l'amont). |
 
 Les cibles de calibration Conway (Doomsday / FRACTRAN / Look-and-Say / Nim / Angel) vivent dans `SymbolicAI/Lean/conway_lean/` et sont toujours consommées par `agent_tests/prover/config.py` (co-évolution du harnais prover #1453).

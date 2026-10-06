@@ -30,7 +30,6 @@ import numpy as np
 import torch
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "shared"))
-from baselines import sharpe_from_returns
 from data_utils import compute_data_hash, generate_synthetic_data, load_data
 from features import FeatureEngineer
 
@@ -85,18 +84,34 @@ def load_checkpoint(checkpoint_dir: Path) -> tuple:
 
 
 
+import strategy_metrics  # noqa: E402
+
+
 def compute_sharpe(returns: np.ndarray, annualize: bool = True) -> float:
-    """Compute Sharpe ratio from returns series."""
-    return float(sharpe_from_returns(returns, annualize=annualize))
+    """Compute Sharpe ratio from returns series (``strategy_metrics.sharpe``).
 
-
-def compute_max_drawdown(cumulative_returns: np.ndarray) -> float:
-    """Compute maximum drawdown from cumulative returns."""
-    if len(cumulative_returns) < 2:
+    Returns 0.0 for fewer than 2 returns or a standard deviation below 1e-12.
+    The formula used the population standard deviation (ddof=0) through
+    ``baselines.sharpe_from_returns`` until #19016: the standard deviation
+    grows by ``sqrt(n / (n - 1))``, so the value is multiplied by
+    ``sqrt((n - 1) / n)`` -- pinned by the tranche-4 tests.
+    """
+    if len(returns) < 2 or float(np.std(returns, ddof=1)) < 1e-12:
         return 0.0
-    peak = np.maximum.accumulate(cumulative_returns)
-    drawdown = (cumulative_returns - peak) / (np.abs(peak) + 1e-8)
-    return float(drawdown.min())
+    return float(strategy_metrics.sharpe(
+        returns, periods_per_year=252 if annualize else 1))
+
+
+def compute_max_drawdown(returns: np.ndarray) -> float:
+    """Max drawdown from a returns series (``strategy_metrics.max_drawdown``).
+
+    Returns 0.0 for fewer than 2 returns. The input used to be a cumulative-sum
+    path normalised by ``abs(peak) + 1e-8``; it is now the returns series, so the
+    value is a fraction of wealth, like the shared definition.
+    """
+    if len(returns) < 2:
+        return 0.0
+    return strategy_metrics.max_drawdown(returns)
 
 
 def evaluate_checkpoint(
@@ -185,8 +200,8 @@ def evaluate_checkpoint(
     # Compute cumulative returns for Sharpe/MaxDD
     rewards = test_trajs["rewards"]
     cum_returns = np.cumsum(rewards)
-    sharpe = sharpe_from_returns(rewards)
-    max_dd = compute_max_drawdown(cum_returns)
+    sharpe = compute_sharpe(rewards)
+    max_dd = compute_max_drawdown(rewards)
 
     # Transaction cost analysis
     actions = test_trajs["actions"]
@@ -203,7 +218,7 @@ def evaluate_checkpoint(
     trade_mask = np.zeros(len(rewards), dtype=bool)
     trade_mask[1:] = position_changes[1:] > 0
     cost_adjusted_returns[trade_mask] -= commission
-    net_sharpe = sharpe_from_returns(cost_adjusted_returns)
+    net_sharpe = compute_sharpe(cost_adjusted_returns)
 
     results = {
         "checkpoint": str(checkpoint_dir),
@@ -265,9 +280,8 @@ def run_dry_run() -> dict:
     eval_metrics = evaluate_dt(model, trajs, context_length=5, device="cpu")
 
     rewards = trajs["rewards"]
-    cum_returns = np.cumsum(rewards)
-    sharpe = sharpe_from_returns(rewards)
-    max_dd = compute_max_drawdown(cum_returns)
+    sharpe = compute_sharpe(rewards)
+    max_dd = compute_max_drawdown(rewards)
 
     return {
         "dry_run": True,

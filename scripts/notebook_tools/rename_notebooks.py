@@ -38,6 +38,9 @@ ces invariants, pas des details :
   I4  historique, catalogue, fixtures declarees : exclus par listes explicites.
   I5  dry-run par defaut ; `--apply` explicite.
   I6  deux commits : 1 = `git mv` seuls, 2 = referents (une PR = un sujet).
+      Un renommage de casse seule passe par un nom-relais, et le commit 1 ne
+      nomme pas ses chemins (git refuse un pathspec des que l'index porte une
+      variante de casse -- #19159).
 
 HOOKS PRE-COMMIT : les commits de l'outil passent par les hooks du depot. Un
 hook qui CORRIGE un fichier indexe (fix-hr-separator sur un carnet renomme) ou
@@ -110,7 +113,11 @@ LEAN_DRIVE_RES = (
 
 # Un nom qui porte une de ces queues pretend piloter Lean ; sous noyau Python
 # SANS preuve citee, la cible ne se devine pas (review #17801 point 2).
-LEAN_CLAIM_TAILS = LEAN_LEGACY_TAILS
+# `-lean-python` en fait partie : c'est le suffixe que l'outil produit LUI-MEME
+# quand la preuve existe, donc un nom qui le porte sans preuve revendique autant
+# qu'un `-Lean` -- et le retrait en point fixe (#19157) le ferait disparaitre en
+# silence au profit de `-Python`.
+LEAN_CLAIM_TAILS = LEAN_LEGACY_TAILS + ("-lean-python",)
 
 # Exclusions EXPLICITES (I4) : jamais devinees par heuristique.
 EXCLUDED_BASENAMES = {"research.ipynb"}
@@ -205,6 +212,33 @@ def lean_drive_proof(nb: dict) -> tuple[int, str] | None:
 # Nom canonique
 # ---------------------------------------------------------------------------
 
+# Le suffixe de noyau se consomme d'un BLOC : `-Lean-Python` est UN suffixe, pas
+# deux mots. Plus long d'abord, sinon `lean-python` serait coupe en `lean`.
+_FINAL_KERNEL_RE = re.compile(r"[-_]+(?:lean-python|lean|python|csharp)$", re.I)
+
+# Mot de noyau dans le TITRE : la grammaire l'exclut (le suffixe seul nomme le
+# noyau), en infixe comme EN TETE -- `Lean-Argumentation-Lean` repete le noyau,
+# ce que la regle d'accretion §1 refuse. Une cible qui en porte un sera renommee
+# une seconde fois -- review #17801 point 3 : elle tombe en A TRANCHER au lieu
+# d'etre proposee.
+_KERNEL_INFIX_RE = re.compile(r"(?:^|[-_])(?:lean|python|csharp)(?=[-_]|$)", re.I)
+
+
+def _strip_final_kernel(title: str) -> str:
+    """Retire le suffixe de noyau final, EN POINT FIXE et d'un bloc.
+
+    `-Lean-Python` est UN suffixe : n'en retirer que le dernier mot laissait
+    `-Lean` dans le titre, que `canonical_target` re-suffixait en
+    `-Lean-Lean-Python` (#19157). Le point fixe consomme aussi les empilements
+    herites (`-Python-Python`), ce qui rend la cible idempotente.
+    """
+    while True:
+        reduit = _FINAL_KERNEL_RE.sub("", title)
+        if reduit == title:
+            return title
+        title = reduit
+
+
 def canonical_target(filename: str, kernel_suffix: str) -> str:
     """Nom canonique d'un fichier pour un suffixe de noyau donne.
 
@@ -215,7 +249,11 @@ def canonical_target(filename: str, kernel_suffix: str) -> str:
     m = STEM_RE.match(stem)
     if not m:
         # Nom hors grammaire de serie (index nu, prefixe absent) : on se borne
-        # a apposer le suffixe de noyau, acte minimal sans risque.
+        # a apposer le suffixe de noyau, acte minimal sans risque -- mais en
+        # retirant d'abord un suffixe DEJA present, sinon la cible en empile un
+        # second a chaque passage (`Diagnostic-Medical` -> `-Python-Python`,
+        # mesure #19157 : 2824 cas d'idempotence sur l'arbre).
+        stem = _strip_final_kernel(stem)
         return f"{stem}-{_cap(kernel_suffix)}.ipynb"
     prefix, num, accr = m.group("prefix"), m.group("num"), m.group("accr")
     title = m.group("title")
@@ -242,29 +280,23 @@ def canonical_target(filename: str, kernel_suffix: str) -> str:
             title = re.sub(r"^Lean[-_]", "", title, flags=re.I)
             title = re.sub(r"[-_]Lean(?=[-_]|$)", "", title, flags=re.I)
 
-    # Le titre ne se termine jamais par le mot du noyau qu'on va apposer --
+    # Le titre ne se termine jamais par le suffixe de noyau qu'on va apposer --
     # dans N'IMPORTELLE casse heritee (`-Csharp` compte, mesure de l'arbre :
-    # 114 fichiers).
-    title = re.sub(r"[-_]+(?:lean|python|csharp)$", "", title, flags=re.I)
+    # 114 fichiers). Retrait en point fixe : cf `_strip_final_kernel` (#19157).
+    title = _strip_final_kernel(title)
 
     title = title.strip("-_ ")
     body = f"{title}{part}" if title else part.lstrip("-")
     return f"{prefix}-{num.zfill(2)}{accr}-{body}-{_cap(kernel_suffix)}.ipynb"
 
 
-# Mot de noyau en INFIXE de titre : la grammaire l'exclut (le suffixe seul nomme
-# le noyau). Une cible qui en porte un sera renommee une seconde fois -- review
-# #17801 point 3 : elle tombe en A TRANCHER au lieu d'etre proposee.
-_KERNEL_INFIX_RE = re.compile(r"[-_](?:lean|python|csharp)(?=[-_]|$)", re.I)
-_FINAL_KERNEL_RE = re.compile(r"[-_]+(?:lean-python|lean|python|csharp)$", re.I)
-
-
 def target_violation(new_name: str) -> str | None:
     """Pourquoi la cible calculee ne satisfait PAS elle-meme la grammaire.
 
     Renvoie None si la cible est canonique (STEM_RE + noyau en dernier, jamais
-    en infixe), sinon la raison. Une cible non canonique promet un SECOND
-    renommage : la ligne de la table doit tomber en A TRANCHER, pas etre livree.
+    repete dans le titre -- ni en infixe, ni EN TETE), sinon la raison. Une cible
+    non canonique promet un SECOND renommage : la ligne de la table doit tomber
+    en A TRANCHER, pas etre livree.
 
     Le basename est extrait avant toute analyse : un chemin complet passe a
     l'appel (POSIX ou Windows) recevrait a tort la raison generique « hors
@@ -476,6 +508,40 @@ def build_patterns(forms_list: list[RefForms]) -> list[tuple[RefForms, re.Patter
     return out
 
 
+def _same_name_detection(
+        forms_list: list[RefForms]) -> list[tuple[re.Pattern[str], str]]:
+    """Motifs de DETECTION des citations du nom nu pour les renommages qui
+    changent de dossier SANS changer de nom (#19173, reserve Hermes sur la
+    review de #19154).
+
+    Sur une telle paire, la paire filename est un no-op (``o == n``, eliminee
+    de build_patterns) : aucune reecriture du nom n'est possible ni
+    necessaire. Mais ces citations sont des segments de chemin dont le
+    prefixe devient faux apres le deplacement, et sans motif le scan les
+    comptait a zero -- le porteur etait saute AVANT la garde
+    ``_path_context_hits`` : ni reecrit, ni refuse, 404 silencieux (mesure :
+    un deplacement Part1-Foundations -> Part2-structures a nom conserve).
+
+    Ces motifs n'allument QUE le refus (signatures (a) et (b) de la garde) :
+    un hit de detection seul n'entre jamais dans ``rewrites`` ni dans
+    ``mixed_refused`` -- le nom ne change pas, il n'y a rien a ecrire. Meme
+    litteraux que la garde : filename et forme urlencodee -- le stem nu
+    n'est jamais un segment de chemin.
+    """
+    out: list[tuple[re.Pattern[str], str]] = []
+    for f in forms_list:
+        old_dir = f.old_rel.rsplit("/", 1)[0] if "/" in f.old_rel else ""
+        new_dir = f.new_rel.rsplit("/", 1)[0] if "/" in f.new_rel else ""
+        if old_dir == new_dir:
+            continue  # meme dossier : aucun prefixe ne devient faux
+        if f.filename != _new_stem(f) + ".ipynb":
+            continue  # le nom change : les motifs de reecriture le couvrent
+        for literal in {f.filename, f.urlencoded}:
+            out.append((re.compile(r"(?<![\w-])" + re.escape(literal)
+                                   + r"(?![\w-])"), literal))
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Scan des referents
 # ---------------------------------------------------------------------------
@@ -485,9 +551,59 @@ class Plan:
     moves: list[tuple[str, str]] = field(default_factory=list)
     rewrites: dict[str, int] = field(default_factory=dict)      # fichier -> nb
     mixed_refused: list[str] = field(default_factory=list)      # ipynb I2/I3 fail-closed
+    path_refused: list[tuple[str, str]] = field(default_factory=list)  # fichier, ancien -- #19154
     code_cells: list[tuple[str, int, str]] = field(default_factory=list)
     outputs: list[tuple[str, int, str]] = field(default_factory=list)
     fragmented: list[tuple[str, int]] = field(default_factory=list)
+
+
+def _path_context_hits(raw: str, forms_list: list[RefForms],
+                       carrier_rel: str = "") -> list[str]:
+    """Occurrences du NOM DE FICHIER ancien employees comme segment de chemin
+    -- c'est-a-dire immédiatement precedees de `/` -- pour les paires dont le
+    renommage CHANGE DE DOSSIER (#19154).
+
+    Reecriture de leur seul basename fabriquerait un chemin dont le prefixe
+    n'est plus valide (lien relatif `../../prefix/OldName.ipynb` -> 404
+    silencieux une fois le notebook deplace). Ces occurrences demandent un
+    recalcul du prefixe selon l'emplacement du porteur, que l'organe ne fait
+    pas : il les REFUSE. Fail-closed assume : un sur-refus ne casse rien, la
+    reecriture d'un lien casse la navigation.
+
+    Les occurrences couvertes par la forme COMPLETE (`full`, chemin depuis la
+    racine) ne sont pas des hits : leur prefixe est remplace en meme temps que
+    le nom, correctement. Seul le nom de fichier `foo.ipynb` et sa forme
+    urlencodee `foo%20bar.ipynb` sont examines -- le stem nu n'est jamais un
+    segment de chemin.
+    """
+    hits: list[str] = []
+    for f in forms_list:
+        old_dir = f.old_rel.rsplit("/", 1)[0] if "/" in f.old_rel else ""
+        new_dir = f.new_rel.rsplit("/", 1)[0] if "/" in f.new_rel else ""
+        if old_dir == new_dir:
+            continue  # meme dossier : le prefixe relatif reste valide
+        if carrier_rel == f.old_rel:
+            # Le fichier RENOMME lui-meme : ses auto-mentions (prose,
+            # metadata.papermill au chemin machine) ne sont pas des liens de
+            # navigation vers le renomme.
+            continue
+        covered = list(re.finditer(
+            r"(?<![\w-])" + re.escape(f.full) + r"(?![\w-])", raw))
+        # Litteraux tries par longueur decroissante : le filename contient le
+        # stem (urlencode == stem sans espace), une seule occurrence ne doit
+        # produire qu'UN hit -- le literal le plus long.
+        seen: list[tuple[int, int]] = []
+        for literal in sorted({f.filename, f.urlencoded}, key=len, reverse=True):
+            for m in re.finditer(
+                    r"/" + re.escape(literal) + r"(?![\w-])", raw):
+                span = (m.start() + 1, m.end())      # le literal, sans le `/`
+                if any(s <= span[0] and span[1] <= e for s, e in seen):
+                    continue                          # deja couvert par un plus long
+                if not any(c.start() < m.start() + 1 and
+                           m.end() <= c.end() for c in covered):
+                    seen.append(span)
+                    hits.append(literal)
+    return hits
 
 
 _TEXT_SUFFIXES = frozenset({
@@ -501,14 +617,27 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
     repo = repo or repo_root()
     plan = Plan()
     pats = build_patterns(forms_list)
+    # #19154 : la garde path-context ne concerne que les renommages qui
+    # changent de dossier ; sans aucun deplacement, cout nul.
+    dir_change = [f for f in forms_list
+                  if (f.old_rel.rsplit("/", 1)[0] if "/" in f.old_rel else "")
+                  != (f.new_rel.rsplit("/", 1)[0] if "/" in f.new_rel else "")]
+    # #19173 : motifs de detection des citations du nom nu pour les paires
+    # meme-nom changeant de dossier -- sans eux, raw_total = 0 sur ces
+    # porteurs et la garde ci-dessous ne les voyait jamais.
+    det_pats = _same_name_detection(forms_list)
     # Prefiltre combine : une alternation des litteraux, SANS frontieres. Tout
     # match d'un pattern individuel (litteral + frontieres) contient le
     # litteral, donc ce filtre ne peut jamais exclure un fichier porteurl --
     # il ne fait qu'epargner les ~200 scans par cellule sur les fichiers sans
     # aucune occurrence (mesure : dry-run GameTheory, 11 759 fichiers tracks,
-    # >70 min a 100 % CPU sur le chemin non prefiltre).
-    _pre = re.compile("|".join(sorted({re.escape(old) for _, _, old, _ in pats},
-                                      key=len, reverse=True)))
+    # >70 min a 100 % CPU sur le chemin non prefiltre). Les litteraux de
+    # detection y entrent aussi : sinon le prefiltre exclurait exactement les
+    # porteurs que la detection doit allumer.
+    _pre = re.compile("|".join(sorted(
+        {re.escape(old) for _, _, old, _ in pats}
+        | {re.escape(lit) for _, lit in det_pats},
+        key=len, reverse=True)))
     ls = subprocess.run(["git", "ls-files"], cwd=repo, capture_output=True,
                         text=True, encoding="utf-8", errors="replace", check=True)
     for line in ls.stdout.splitlines():
@@ -529,11 +658,39 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
             raw = p.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
+        pre_hit = _pre.search(raw) is not None
         raw_total = (sum(len(pat.findall(raw)) for _, pat, _, _ in pats)
-                     if _pre.search(raw) else 0)
+                     if pre_hit else 0)
+        # #19173 : hits de detection (nom nu d'un renommage meme-nom changeant
+        # de dossier) -- ils ne reecrivent rien, ils allument la garde.
+        det_total = (sum(len(pat.findall(raw)) for pat, _ in det_pats)
+                     if det_pats and pre_hit else 0)
+
+        # #19154 : un referent en CONTEXTE DE CHEMIN ne peut pas etre reecrit
+        # sans recalculer son prefixe -- chose que l'organe ne fait pas. Deux
+        # signatures : (a) le nom precede de `/` (lien `../prefix/Old.ipynb`,
+        # valide depuis n'importe quel dossier) ; (b) le nom NU cite par un
+        # porteur du DOSSIER D'ORIGINE (lien voisin `(Old.ipynb)`, resolu
+        # contre ce dossier avant comme apres -- mesure : Search-12a cite
+        # Search-11d en nu). Refus fail-closed, passage manuel. Le fichier
+        # RENOMME lui-meme est exclu de (b) : ses auto-mentions (prose,
+        # metadata.papermill) ne sont pas des liens de navigation.
+        # #19173 : la garde s'allume aussi sur un hit de DETECTION seul --
+        # c'est le seul canal par lequel un citateur du nom nu d'un renommage
+        # meme-nom changeant de dossier est vu.
+        path_hits = (_path_context_hits(raw, dir_change, rel)
+                     if raw_total or det_total else [])
+        cdir = rel.rsplit("/", 1)[0] if "/" in rel else ""
+        same_dir = [f for f in dir_change
+                    if rel != f.old_rel
+                    and cdir == (f.old_rel.rsplit("/", 1)[0]
+                                 if "/" in f.old_rel else "")]
 
         if not rel.endswith(".ipynb"):
-            if raw_total:
+            if (raw_total or det_total) and (path_hits or same_dir):
+                plan.path_refused.append(
+                    (rel, path_hits[0] if path_hits else same_dir[0].filename))
+            elif raw_total:
                 plan.rewrites[rel] = raw_total
             continue
 
@@ -560,7 +717,7 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
                             for _, pat, _, _ in pats)
             if blob_hits < joined_hits:
                 plan.fragmented.append((rel, i))
-        if not raw_total:
+        if not raw_total and not det_total:
             continue
 
         # Comptage par surface : markdown + metadata top-niveau = REESCRIRE ;
@@ -582,6 +739,14 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
             # Fail-closed I2/I3 : le fichier melange surfaces reescrivables et
             # protegees, ou porte une occurrence hors zones connues.
             plan.mixed_refused.append(rel)
+        elif (allowed or det_total) and (path_hits or same_dir):
+            # #19154 : surfaces saines mais lien relatif dont le prefixe
+            # deviendrait faux -- refuser plutot que committer un 404.
+            # #19173 : un hit de detection seul suffit -- les citations du nom
+            # nu d'un renommage meme-nom changeant de dossier ne donnent aucun
+            # coup de reecriture (allowed = 0), le refus est pourtant du.
+            plan.path_refused.append(
+                (rel, path_hits[0] if path_hits else same_dir[0].filename))
         elif allowed:
             plan.rewrites[rel] = allowed
 
@@ -601,6 +766,117 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
                         plan.outputs.append((rel, i, old))
                         break
     return plan
+
+
+# ---------------------------------------------------------------------------
+# Garde de cibles : NTFS est insensible a la casse
+# ---------------------------------------------------------------------------
+
+def conflicting_targets(pairs: list[tuple[str, str]], repo: Path) -> list[str]:
+    """Cibles deja presentes ET distinctes de leur propre source.
+
+    Sur un FS insensible a la casse (NTFS, HFS+ par defaut), un renommage
+    case-only (-Csharp -> -CSharp) voit sa cible « deja presente » parce
+    qu'elle EST la source. Un vrai conflit est une cible existante qui est
+    un fichier DISTINCT de sa propre source.
+    """
+    out: list[str] = []
+    for old, new in pairs:
+        if not (repo / new).exists():
+            continue
+        try:
+            distinct = not os.path.samefile(repo / old, repo / new)
+        except OSError:
+            distinct = True
+        if distinct:
+            out.append(new)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Mouvement des fichiers et garde de commit (#19159)
+# ---------------------------------------------------------------------------
+# Un renommage de CASSE SEULE (-Csharp -> -CSharp) est un cas a part sur un FS
+# insensible a la casse : il faut deux temps pour que l'INDEX enregistre la
+# casse cible, et le commit ne peut pas nommer ses chemins. Mesure en issue
+# (#19159) : quatre sequences testees, un `git mv` direct laisse l'index sur
+# l'ancienne graphie, et `git commit -- <chemins>` est refuse par git des que
+# l'index porte une variante de casse du chemin nomme (`will not add file
+# alias`) -- meme quand l'index porte deja la bonne casse.
+
+class MoveError(RuntimeError):
+    """Un `git mv` a echoue. Le message porte la sortie git brute."""
+
+
+def _git_run(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace")
+
+
+def _case_tmp_rel(repo: Path, new: str) -> str:
+    """Nom-relais, dans le MEME dossier, pour un renommage de casse seule."""
+    dossier, base = os.path.split(new)
+    index = 0
+    while True:
+        nom = f".rename-case-{index}-{base}"
+        rel = f"{dossier}/{nom}" if dossier else nom
+        if not (repo / rel).exists():
+            return rel
+        index += 1
+
+
+def move_file(repo: Path, old: str, new: str) -> list[str]:
+    """`git mv` d'un fichier ; en DEUX temps quand seule la casse change.
+
+    Le detour par un nom-relais est ce qui fait passer l'index sur la casse
+    cible : `git mv N-Csharp.ipynb N-CSharp.ipynb` laisse l'index sur
+    `N-Csharp.ipynb` et le commit suivant echoue (#19159). Rend les deux
+    graphies, pour la verification d'ensemble de `commit_moves`.
+    """
+    etapes = [(old, new)]
+    if old != new and old.lower() == new.lower():
+        tmp = _case_tmp_rel(repo, new)
+        etapes = [(old, tmp), (tmp, new)]
+    for src, dst in etapes:
+        r = _git_run(repo, "mv", src, dst)
+        if r.returncode != 0:
+            raise MoveError(f"git mv {src} -> {dst} : {(r.stderr or r.stdout).strip()[:200]}")
+    return [old, new]
+
+
+def staged_paths(repo: Path) -> list[str]:
+    """Tous les chemins touches par l'index -- les DEUX cotes d'un renommage.
+
+    `--name-only` ne rend que le nouveau nom d'un renommage ; `--name-status`
+    rend `R100\t<ancien>\t<nouveau>`, ce dont la garde a besoin.
+    """
+    r = _git_run(repo, "diff", "--cached", "--name-status")
+    if r.returncode != 0:
+        raise MoveError(f"git diff --cached : {(r.stderr or r.stdout).strip()[:200]}")
+    out: list[str] = []
+    for ligne in r.stdout.splitlines():
+        out += [p for p in ligne.split("\t")[1:] if p]
+    return out
+
+
+def commit_moves(repo: Path, expected: set[str], msg: str) -> int:
+    """Commit 1 : les mouvements SEULS, sans pathspec.
+
+    Le pathspec portait la garantie « ne committer que ses propres mouvements »
+    mais git le refuse sur un renommage de casse seule (#19159). La garantie
+    est donc rendue autrement : l'ensemble stage est verifie AVANT le commit,
+    et un chemin etranger fait refuser la passe sans rien committer.
+    """
+    etrangers = sorted({p for p in staged_paths(repo) if p not in expected})
+    if etrangers:
+        print("INDEX ETRANGER -- refus de committer. Chemins hors mouvements :")
+        for p in etrangers:
+            print("   ", p)
+        return 1
+    r = _git_run(repo, "commit", "-m", msg)
+    if r.returncode != 0:
+        print(f"[commit 1] echec : {(r.stdout + r.stderr).strip()[:300]}")
+    return r.returncode
 
 
 # ---------------------------------------------------------------------------
@@ -750,6 +1026,10 @@ def report(plan: Plan, pairs: list[tuple[str, str]]) -> None:
         print(f"== FICHIERS REFUSES (surfaces melangees, fail-closed I2/I3) : {len(plan.mixed_refused)} -- passage manuel requis")
         for rel in plan.mixed_refused:
             print(f"   {rel}")
+    if plan.path_refused:
+        print(f"== LIENS RELATIFS REFUSES (changement de dossier, prefixe non recalculable, #19154) : {len(plan.path_refused)} -- passage manuel requis")
+        for rel, old in plan.path_refused:
+            print(f"   {rel} cite `{old}` dans un chemin relatif")
     if plan.fragmented:
         print(f"== REFERENCES FRAGMENTEES (source JSON scindee en elements) : {len(plan.fragmented)} -- manuel")
         for rel, i in plan.fragmented:
@@ -853,7 +1133,7 @@ def main(argv: list[str] | None = None) -> int:
     if collisions:
         print("COLLISIONS dans la table :", collisions)
         return 1
-    exist = [new for _, new in pairs if (repo / new).exists()]
+    exist = conflicting_targets(pairs, repo)
     if exist:
         print("CIBLES DEJA PRESENTES :", exist)
         return 1
@@ -889,17 +1169,24 @@ def main(argv: list[str] | None = None) -> int:
         print(dirty[:600])
         return 1
 
-    # commit 1 : git mv seuls (R100 visibles, aucun contenu modifie) -- chemins
-    # NOMMES, jamais un commit qui attrape l'index entier.
-    move_paths: list[str] = []
-    for old, new in pairs:
-        (repo / new).parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["git", "mv", old, new], cwd=repo, check=True)
-        move_paths += [old, new]
+    # commit 1 : git mv seuls (R100 visibles, aucun contenu modifie). La garde
+    # « ne committer que ses propres mouvements » vit dans `commit_moves` --
+    # verification de l'ensemble stage, pas pathspec : git refuse un pathspec
+    # des qu'un renommage de casse seule est dans l'index (#19159).
+    expected: set[str] = set()
+    try:
+        for old, new in pairs:
+            (repo / new).parent.mkdir(parents=True, exist_ok=True)
+            expected.update(move_file(repo, old, new))
+    except MoveError as exc:
+        print(f"MOUVEMENT INTERROMPU : {exc}")
+        print("Des renommages peuvent etre presents sur le disque SANS etre "
+              "committes : les committer ou les retirer avant de relancer.")
+        return 1
     msg1 = (f"rename(#16231): git mv purs ({len(pairs)} notebooks)\n\n"
             f"Table : {a.mapping}, pilotee par rename_notebooks.py.")
-    subprocess.run(["git", "commit", "-m", msg1, "--", *move_paths],
-                   cwd=repo, check=True)
+    if commit_moves(repo, expected, msg1) != 0:
+        return 1
 
     # commit 2 : referents par surface, au texte -- add et commit nommes.
     # Le plan a ete scanne AVANT les git mv : un notebook deplace qui cite un

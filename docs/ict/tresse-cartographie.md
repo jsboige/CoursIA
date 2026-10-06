@@ -30,7 +30,7 @@ Quatre opérations, chacune avec son ancrage dans le dépôt, ses aboutissants o
 **L'opération.** *Ce qui se recolle* quand on change d'ouverture — le passage du local au global. Le langage est celui de la cohomologie : sections globales `H⁰` (le cran où le local se globalise sans reste), `H¹` (le cran où l'obstruction au recollement devient mesurable), `H^n` (les crans supérieurs). Le geste est *mesurer ce qui résiste à un changement de cartes* — invariance sous changement de point de vue.
 
 **Ancrage dépôt.**
-- [`docs/grothendieckian-lens.md`](../grothendieckian-lens.md) — la lentille, ses 6 sections (recollement, faisceau, Čech, gerbe, etc.), re-groundée par PR [#8189](https://github.com/jsboige/CoursIA/pull/8189) + [#8382](https://github.com/jsboige/CoursIA/pull/8382) sur le repo (GT 6→2 lakes, ICT strates/tresse/Schreiber).
+- [`docs/cadrage/grothendieckian-lens.md`](../cadrage/grothendieckian-lens.md) — la lentille, ses 6 sections (recollement, faisceau, Čech, gerbe, etc.), re-groundée par PR [#8189](https://github.com/jsboige/CoursIA/pull/8189) + [#8382](https://github.com/jsboige/CoursIA/pull/8382) sur le repo (GT 6→2 lakes, ICT strates/tresse/Schreiber).
 - Lake [`grothendieck_lean`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/) — module [`Grothendieck/SheafCohomology/Basic.lean`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean), `H0_equiv_global_sections` (zéro `sorry` de production), [`MayerVietoris.lean`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/MayerVietoris.lean) exact.
 - Le **premier** document [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md) cite explicitement cette ancre dans sa section « Pourquoi cette grille » : « En langue grothendieckienne, ce sont les sections globales — `H⁰`, le cran où le local se globalise sans reste ».
 
@@ -79,8 +79,8 @@ Quatre opérations, chacune avec son ancrage dans le dépôt, ses aboutissants o
 **L'opération.** *Ce qui s'améliore en compression* — la diminution de la longueur de description d'un objet sans perte d'information *utile*. La dissociation, dans la grille du premier document, est le **tell** d'un gain de compression : deux proxys qui *s'éloignent* (l'un comprime mieux que l'autre) marquent une transition de phase représentationnelle.
 
 **Ancrage dépôt.**
-- [ICT-17b-Grokking-CompressionProgress.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress.ipynb) — la compression progressive lue comme transition de phase, avec bosse Crutchfield-Feldman sur `model_bits + résiduel` (cf. [`dissolution-scalaires.md`](dissolution-scalaires.md) palier 5 : K bipolaire puis tri-polaire, la bosse force deux dimensions).
-- [ICT-15-IntegratedComplexity.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity.ipynb) — la convergence Φ/F/K comme *signature* conjointe, dont le resserrement signale une compression effective.
+- [ICT-17b-Grokking-CompressionProgress-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) — la compression progressive lue comme transition de phase, avec bosse Crutchfield-Feldman sur `model_bits + résiduel` (cf. [`dissolution-scalaires.md`](dissolution-scalaires.md) palier 5 : K bipolaire puis tri-polaire, la bosse force deux dimensions).
+- [ICT-15-IntegratedComplexity-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity-Python.ipynb) — la convergence Φ/F/K comme *signature* conjointe, dont le resserrement signale une compression effective.
 
 **Aboutissants opérationnels dans la série ICT.**
 - La dissociation est *portée* par un proxy (ICT-17b cell [13] interprétation honnête : `K_compression_progress` positif sur grokking, `K_rang_effectif` négatif, `K_fisher_md` saute — *choisir K = déclarer un proxy*, cf. [`dissolution-scalaires.md`](dissolution-scalaires.md) palier 6).
@@ -96,8 +96,8 @@ Quatre opérations, chacune avec son ancrage dans le dépôt, ses aboutissants o
 
 **Ancrage dépôt.**
 - [`MyIA.AI.Notebooks/IIT/ICT-Series/thom-synthese-distillation.md`](../../MyIA.AI.Notebooks/IIT/ICT-Series/thom-synthese-distillation.md) — distillation PR [#9534](https://github.com/jsboige/CoursIA/pull/9534) MERGED 2026-08-05T01:55:30Z par jsboige, distillation Ch.1 à Ch.8 de *Sémiophysique* (1991) pour le **socle transverse** des strates hautes (langage / circulation de prégnances, genres comme espaces de possibles extensibles) — un socle de lecture, **pas un barreau** de l'axe vertical (divergence 2 de [#13908](https://github.com/jsboige/CoursIA/issues/13908)).
-- [ICT-10-CatastropheGrammar.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb) — la catastrophe fronce, le métathéorème, le lacet de prédation (cycle d'hystérésis à 2 catastrophes avec perception J et capture K, aire signée non nulle, représentant interne `p̂`).
-- [ICT-12-ValenceFieldsAndAnimats.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb) — prolonge ICT-10 en mesurant les rôles actantiels (capture, évasion, irréversibilité, switching). L'animat anticipateur `p̂` y gagne en balistique, perd en erratique.
+- [ICT-10-CatastropheGrammar-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb) — la catastrophe fronce, le métathéorème, le lacet de prédation (cycle d'hystérésis à 2 catastrophes avec perception J et capture K, aire signée non nulle, représentant interne `p̂`).
+- [ICT-12-ValenceFieldsAndAnimats-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats-Python.ipynb) — prolonge ICT-10 en mesurant les rôles actantiels (capture, évasion, irréversibilité, switching). L'animat anticipateur `p̂` y gagne en balistique, perd en erratique.
 
 **Aboutissants opérationnels dans la série ICT.**
 - Le *lacet de prédation* d'ICT-10 = hystérésis à 2 catastrophes ; c'est la **mesure** Thom-compatible la plus directe dans la série (aire signée non nulle sur cycle perception-capture).
@@ -112,8 +112,8 @@ Quatre opérations, chacune avec son ancrage dans le dépôt, ses aboutissants o
 **L'opération.** *Ce qui se met à jour* — la surprise d'une observation sous un modèle génératif, régularisée par la complexité KL entre prédiction et prior. L'énergie libre variationnelle est une borne supérieure stricte de la surprise ; sa décomposition *accuracy + complexity* la rend *opérationnellement mesurable* sur des bancs où le modèle génératif est gaussien ou en famille exponentielle connue.
 
 **Ancrage dépôt.**
-- [ICT-14-FreeEnergySurprise.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise.ipynb) — la jambe énergie-libre attachée au représentant interne `p̂` d'ICT-10. Thèse cell-anchored : « la jambe énergie-libre restait non attachée, alors que le banc expérimental la préparait sans le dire ». Trois *gates* falsifiables (précision fixe → MSE habillage ? précision adaptative → divergence du classement MSE ? bistable → marquage du franchissement du pli ?).
-- [ICT-14b-ActiveInferenceEFE.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14b-ActiveInferenceEFE.ipynb) — livré par PR [#9545](https://github.com/jsboige/CoursIA/pull/9545) (MERGED, issue [#9532](https://github.com/jsboige/CoursIA/issues/9532) CLOSED) — banc d'inférence active : l'expected free energy pilote l'action.
+- [ICT-14-FreeEnergySurprise-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb) — la jambe énergie-libre attachée au représentant interne `p̂` d'ICT-10. Thèse cell-anchored : « la jambe énergie-libre restait non attachée, alors que le banc expérimental la préparait sans le dire ». Trois *gates* falsifiables (précision fixe → MSE habillage ? précision adaptative → divergence du classement MSE ? bistable → marquage du franchissement du pli ?).
+- [ICT-14b-ActiveInferenceEFE-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14b-ActiveInferenceEFE-Python.ipynb) — livré par PR [#9545](https://github.com/jsboige/CoursIA/pull/9545) (MERGED, issue [#9532](https://github.com/jsboige/CoursIA/issues/9532) CLOSED) — banc d'inférence active : l'expected free energy pilote l'action.
 
 **Aboutissants opérationnels dans la série ICT.**
 - La **décomposition** *accuracy + complexity* est mesurée directement sur banc gaussien : c'est l'énergie libre variationnelle en famille fermée, sans approximation.
@@ -192,11 +192,11 @@ l'**horizon** des strates hautes.*
 
 **Ce que cette table ne place pas encore.** Cinq documents de la phase
 [#5726](https://github.com/jsboige/CoursIA/issues/5726) restent hors carte :
-`ICT-Life-SubstratCertifie`, `ICT-32-StratificationCausaleLife` et `ICT-33-SoupCollisions` portent sur le
+`ICT-Life-SubstratCertifie`, `ICT-32-StratificationCausaleLife-Python` et `ICT-33-SoupCollisions-Python` portent sur le
 substrat GOL et **appellent un barreau** — question **ouverte**, explicitement *non* tranchée en
 [#13908](https://github.com/jsboige/CoursIA/issues/13908) (l'automate cellulaire dont la correction est certifiée en Lean est le substrat *le
 plus transparent* de la série : l'insérer demande de décider s'il précède S1 ou constitue
-une entrée latérale) ; `ICT-31-ContrasteTroisSubstrats` et `ICT-34-BancRecollementLectures` sont des
+une entrée latérale) ; `ICT-31-ContrasteTroisSubstrats-Python` et `ICT-34-BancRecollementLectures-Python` sont des
 **pattes** (cross-substrat).
 
 **Ce que la tresse y gagne.** Les quatre fils ne se répartissent pas au hasard sur l'échelle :
@@ -309,7 +309,7 @@ Sans (a), la prose ICT risque de glisser d'opérationnellement valide à formell
 
 **Ancres dépôt** :
 - [`MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md) — cadrage ICT-0, **source de vérité unique des strates** (§ « Deux axes de lecture : strates verticales × tresse transverse », arbitrage [#13908](https://github.com/jsboige/CoursIA/issues/13908)) : c'est la carte que §1.6 consomme et sur laquelle les corrections d'axe de ce document sont alignées.
-- [`docs/grothendieckian-lens.md`](../grothendieckian-lens.md) — la lentille Grothendieck, re-groundée PR [#8189](https://github.com/jsboige/CoursIA/pull/8189) + [#8382](https://github.com/jsboige/CoursIA/pull/8382).
+- [`docs/cadrage/grothendieckian-lens.md`](../cadrage/grothendieckian-lens.md) — la lentille Grothendieck, re-groundée PR [#8189](https://github.com/jsboige/CoursIA/pull/8189) + [#8382](https://github.com/jsboige/CoursIA/pull/8382).
 - [`MyIA.AI.Notebooks/IIT/ICT-Series/thom-synthese-distillation.md`](../../MyIA.AI.Notebooks/IIT/ICT-Series/thom-synthese-distillation.md) — distillation Thom Ch.1-8, PR [#9534](https://github.com/jsboige/CoursIA/pull/9534) MERGED 2026-08-05.
 - Lake [`grothendieck_lean`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/), modules [`SheafCohomology/Basic.lean`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean) et [`MayerVietoris.lean`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/MayerVietoris.lean).
 - Notebooks ICT ancres : ICT-10, ICT-12, ICT-14, ICT-14b (PR [#9545](https://github.com/jsboige/CoursIA/pull/9545) MERGED, [#9532](https://github.com/jsboige/CoursIA/issues/9532) CLOSED), ICT-15, ICT-15b/c/d, ICT-17, ICT-17b, ICT-21, ICT-22.

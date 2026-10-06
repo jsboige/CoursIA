@@ -43,6 +43,13 @@ REPO_ENTRYPOINT_SHA="$(sha256sum "$SCRIPT_DIR/entrypoint.sh" 2>/dev/null | awk '
 REPO_HEALTH_SHA="$(sha256sum "$SCRIPT_DIR/work_cache_health.sh" 2>/dev/null | awk '{print $1}')"
 cat > "$TEST_DIR/bin/docker" <<STUB
 #!/usr/bin/env bash
+# Endpoint vise : les gardes de perimetre #15164 sondent CHAQUE daemon par
+# docker -H <socket>. EP=default quand aucun -H n'est passe.
+EP="default"
+if [ "\$1" = "-H" ]; then EP="\$2"; shift 2; fi
+# Daemon DOWN sur l'endpoint alternatif : TOUT echoue (docker ps y compris)
+# alors que le socket existe -- c'est le cas present-but-mute de #15164.
+if [ "\$EP" != "default" ] && [ "\$STUB_DOCKER_ID_ALT" = "DOWN" ]; then exit 1; fi
 if [ "\$1" = "run" ]; then
   case "\$*" in
     *work_cache_health.sh*)
@@ -55,14 +62,43 @@ if [ "\$1" = "run" ]; then
   exit 0
 fi
 # Garde d'appartenance du mur agrege (#15157) : la liste d'IDs rendue au
-# filtre label=coursia-ci=1 est pilotable par le test via STUB_CI_CONTAINER_IDS.
+# filtre label=coursia-ci=1 est pilotable par le test via STUB_CI_CONTAINER_IDS
+# (endpoint par defaut) et STUB_CI_CONTAINER_IDS_ALT (endpoint -H, #15164).
 if [ "\$1" = "ps" ] && echo "\$*" | grep -q 'label=coursia-ci=1'; then
-  if [ -n "\$STUB_CI_CONTAINER_IDS" ]; then printf '%s\n' \$STUB_CI_CONTAINER_IDS; fi
+  if [ "\$EP" != "default" ] && [ -n "\$STUB_CI_CONTAINER_IDS_ALT" ]; then
+    printf '%s\n' \$STUB_CI_CONTAINER_IDS_ALT
+  elif [ -n "\$STUB_CI_CONTAINER_IDS" ]; then
+    printf '%s\n' \$STUB_CI_CONTAINER_IDS
+  fi
   exit 0
 fi
 # Pilote cgroup du daemon (Test 59) : `docker info --format {{.CgroupDriver}}`.
 # Vide par defaut -- les autres tests gardent le chemin cgroupfs inchange.
-if [ "\$1" = "info" ]; then echo "\${STUB_CGROUP_DRIVER:-}"; exit 0; fi
+# ID de daemon par endpoint (#15164) : cle de deduplication de running_ci_mb.
+# STUB_DOCKER_ID_ALT="DOWN" simule un socket present mais muet (info exit 1).
+if [ "\$1" = "info" ]; then
+  case "\$*" in
+    *'{{.ID}}'*)
+      if [ "\$EP" != "default" ] && [ -n "\$STUB_DOCKER_ID_ALT" ]; then
+        [ "\$STUB_DOCKER_ID_ALT" = "DOWN" ] && exit 1
+        echo "\$STUB_DOCKER_ID_ALT"
+      else
+        echo "\${STUB_DOCKER_ID:-stub-desktop}"
+      fi
+      ;;
+    *) echo "\${STUB_CGROUP_DRIVER:-}" ;;
+  esac
+  exit 0
+fi
+# Caps memoire des conteneurs (#15164) : une ligne par ID demande, valeur en
+# octets pilotable par STUB_MEM_BYTES. Defaut 0 -- les autres probes inspect
+# (State.Status & co) gardent le silence d'avant.
+if [ "\$1" = "inspect" ]; then
+  case "\$*" in
+    *HostConfig.Memory*) shift 3; for _id in "\$@"; do echo "\${STUB_MEM_BYTES:-0}"; done ;;
+  esac
+  exit 0
+fi
 exit 0
 STUB
 chmod +x "$TEST_DIR/bin/docker"
@@ -1095,20 +1131,21 @@ echo "Test 27 : budget CPU inter-familles refuse le depassement (#15091, trou #1
 (
   cd "$SCRIPT_DIR"
   # 12 waiters a 1 vCPU deja actifs ; on demande 2 slots lean a 6 vCPU.
-  # 12 + 12 = 24 > 8 -> refus. C'est exactement la configuration que le cap
-  # --cpus PAR CONTENEUR declare conforme et qui prend 24 coeurs.
+  # Les waiters sont EXCLUS de la somme (#15574) : le refus vient du seul
+  # 0 + 12 = 12 > 8. Ancienne semantique (waiters comptes) : 24 > 8 -- le
+  # refus tenait alors pour moitie sur des vCPU que personne ne consomme.
   export PS_OUTPUT="jsboige  4242     1   10:28:11  bash scripts/ci/docker/linux-runner/supervise.sh waiters 12"
   source_supervise
   CPU_BUDGET=8
   err="$( (assert_cpu_budget "lean" 2 6) 2>&1 )"; rc=$?
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "budget CPU inter-familles depasse"; then
-    ok "depassement refuse (rc=$rc)"
+  if [ "$rc" != "0" ] && echo "$err" | grep -q "budget CPU inter-familles depasse : 12.00 vCPU"; then
+    ok "depassement refuse (rc=$rc, somme 12.00 -- waiters exclus)"
   else
-    ko "refus attendu, rc=$rc err=$err"
+    ko "refus attendu avec somme 12.00, rc=$rc err=$err"
   fi
-  if echo "$err" | grep -q "deja actif : waiters n=12 cpus=1" \
+  if echo "$err" | grep -q "deja actif : waiters n=12 cpus=1 -> 12.00 (exclu du budget" \
      && echo "$err" | grep -q "demande    : lean n=2 cpus=6"; then
-    ok "le message NOMME les deux termes de la somme"
+    ok "le message NOMME les deux termes, le waiter marque exclu"
   else
     ko "detail par famille attendu dans le message, err=$err"
   fi
@@ -1123,10 +1160,10 @@ echo "Test 28 : budget CPU -- controle negatif (sous le plafond, puis non arme)"
   source_supervise
   CPU_BUDGET=8
   out="$( (assert_cpu_budget "start" 1 3) 2>&1 )"; rc=$?
-  if [ "$rc" = "0" ] && echo "$out" | grep -q "7.00 / 8"; then
-    ok "4x1 + 1x3 = 7 <= 8 : accepte, total affiche"
+  if [ "$rc" = "0" ] && echo "$out" | grep -q "3.00 / 8"; then
+    ok "0 (4 waiters exclus) + 1x3 = 3 <= 8 : accepte, total affiche"
   else
-    ko "acceptation attendue avec total 7.00, rc=$rc out=$out"
+    ko "acceptation attendue avec total 3.00, rc=$rc out=$out"
   fi
   # Non arme (0) : aucune machine ne se voit imposer un plafond non declare.
   CPU_BUDGET=0
@@ -2785,6 +2822,193 @@ echo "Test 59 : pilote systemd -> --cgroup-parent = NOM de slice, pas chemin cgr
   else
     ko "slice absente : parent attendu vide, vaut '$CI_CGROUP_PARENT' (rc=$rc)"
   fi
+)
+echo ""
+
+# --- Test 60 : #15574 item 3 -- les waiters sortent de la somme, dans les DEUX sens
+echo "Test 60 : budget CPU -- waiters exclus de la somme, familles d'execution gardees (#15574 item 3)"
+(
+  cd "$SCRIPT_DIR"
+  # Parc po-2024 cible : docker 6 x 3 deja actif + waiters 12 ; la demande
+  # porte sur les autres familles. family_cpus_of retombe sur les defauts du
+  # script (3 / 1 / 6) : /proc/<pid> inexistant en harnais.
+  export PS_OUTPUT="root  552     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh start 6
+root  553     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh waiters 12"
+  source_supervise
+  CPU_BUDGET=24
+  # (a) Les familles d'EXECUTION restent gardees : 6x3 + 2x6 = 30 > 24 ->
+  #     refus, malgre des waiters qui ne comptent plus. C'est aussi la
+  #     demonstration mesuree du trou d'arithmetique de la decision #15574
+  #     (budget 24 + docker 6 + lean 2 ne demarre pas : la jambe lean serait
+  #     refusee au boot, verrou « service failed » de persist/README.md).
+  #     La lane deploie donc 30, ecart consigne sur le dashboard.
+  err="$( (assert_cpu_budget "lean" 2 6) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && echo "$err" | grep -q "depasse : 30.00 vCPU"; then
+    ok "(a) 18 + 12 = 30 > 24 : refus, familles d'execution toujours gardees"
+  else
+    ko "refus avec somme 30.00 attendu, rc=$rc err=$err"
+  fi
+  # (b) Le sens decisif de l'exclusion : une DEMANDE de 24 waiters (24 vCPU
+  #     fantomes) passe sous le meme budget 24 -- comptee, elle ferait
+  #     18 + 24 = 42 et serait refusee.
+  out="$( (assert_cpu_budget "waiters" 24 1) 2>&1 )"; rc=$?
+  if [ "$rc" = "0" ] && echo "$out" | grep -q "18.00 / 24"; then
+    ok "(b) demande de 24 waiters acceptee : 18.00 / 24, waiters hors somme"
+  else
+    ko "acceptation avec total 18.00 attendue, rc=$rc out=$out"
+  fi
+  # (c) La flotte cible complete demarre a budget 30 (borne incluse : le
+  #     garde refuse seulement t > b).
+  CPU_BUDGET=30
+  out="$( (assert_cpu_budget "lean" 2 6) 2>&1 )"; rc=$?
+  if [ "$rc" = "0" ] && echo "$out" | grep -q "30.00 / 30"; then
+    ok "(c) docker 6 + lean 2 acceptes a budget 30 exact"
+  else
+    ko "acceptation avec total 30.00 attendue, rc=$rc out=$out"
+  fi
+)
+echo ""
+
+# --- Test 61 : #15574 item 3 -- la porte a sentinelle ignore les superviseurs waiters
+#
+# Incident mesure du 2026-10-01 (po-2024) : restart des deux jambes d'execution
+# avec waiters debout. Les superviseurs d'execution tues par TERM avant leur
+# cleanup, la sentinel STOP_FILE posee par l'ExecStop n'est retiree par personne
+# ; la porte refuse alors chaque redemarrage au motif "un superviseur est
+# vivant" qui ne liste QUE des waiters -- crash-loop des deux jambes, pool a
+# zero jusqu'a purge manuelle de la sentinel. Un superviseur waiters ne draine
+# rien : il ne doit pas tenir la porte. Meme exclusion que assert_cpu_budget
+# (test 60) -- la sentinel protege la part qui calcule, pas la part qui dort.
+echo "Test 61 : porte a sentinelle -- waiters ne tiennent pas la porte, start/lean si (#15574 item 3)"
+(
+  cd "$SCRIPT_DIR"
+  export PS_OUTPUT="root  553     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh waiters 12"
+  source_supervise
+  mkdir -p "$TEST_DIR/state-G"
+  touch "$TEST_DIR/state-G/stop"
+  # (a) sentinel + superviseurs waiters SEULS vivants -> purge, porte ouverte.
+  err="$( (stop_sentinel_gate) 2>&1 )"; rc=$?
+  if [ "$rc" = "0" ] && [ ! -f "$TEST_DIR/state-G/stop" ] && echo "$err" | grep -q "perimee"; then
+    ok "(a) waiters vivants seuls : sentinel perimee purgee, porte ouverte"
+  else
+    ko "purge attendue avec waiters vivants seuls, rc=$rc err=$err"
+  fi
+  # (b) controle negatif : un superviseur d'execution vivant tient la porte.
+  export PS_OUTPUT="root  553     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh waiters 12
+root  900     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh start 6"
+  touch "$TEST_DIR/state-G/stop"
+  err="$( (stop_sentinel_gate) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && [ -f "$TEST_DIR/state-G/stop" ] && echo "$err" | grep -q "un superviseur est vivant"; then
+    ok "(b) superviseur start vivant : refus conserve, sentinel conservee"
+  else
+    ko "refus attendu avec un start vivant, rc=$rc err=$err"
+  fi
+  rm -f "$TEST_DIR/state-G/stop"
+)
+echo ""
+
+# --- Test 62 : #15164 -- la somme couvre les DEUX daemons, pas celui de DOCKER_HOST
+#
+# Mesure fondatrice (ai-01, 2026-09-08) : deux superviseurs ne comptaient
+# chacun que SA moitie de flotte et comparaient ce demi-total au budget ENTIER
+# -- 20480 Mo nominaux sous un budget declare de 12288, les deux gardes
+# vertes. La sonde DOIT enumerer les sockets declares et sommer les deux.
+echo "Test 62 : budget -- somme des caps sur les DEUX daemons declares (#15164)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  source_supervise
+  : > "$TEST_DIR/ce62.sock"
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/ce62.sock"
+  export STUB_CI_CONTAINER_IDS="a1 a2" STUB_CI_CONTAINER_IDS_ALT="b1" STUB_DOCKER_ID_ALT="ce-daemon"
+  export STUB_MEM_BYTES=1073741824
+  out="$(running_ci_mb 2>/dev/null)"
+  if [ "$out" = "3072" ]; then
+    ok "2 conteneurs Desktop + 1 docker-ce a 1 GiB chacun = 3072 Mo comptes"
+  else
+    ko "somme attendue 3072, rendue '$out'"
+  fi
+  unset COURSIA_RUNNER_DOCKER_ENDPOINTS STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES
+)
+echo ""
+
+# --- Test 63 : #15164 -- DOCKER_HOST epingle sur un socket liste : compte UNE fois
+#
+# Deduplication par ID de daemon, pas par chemin : si le endpoint par defaut
+# et un socket liste sont le MEME daemon (DOCKER_HOST pointant un socket deja
+# liste), les memes conteneurs ne doivent pas etre comptes deux fois. Le stub
+# rend le meme ID aux deux endpoints quand STUB_DOCKER_ID_ALT est vide.
+echo "Test 63 : budget -- meme daemon sous deux endpoints compte une fois (#15164)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  source_supervise
+  : > "$TEST_DIR/ce63.sock"
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/ce63.sock"
+  export STUB_CI_CONTAINER_IDS="a1" STUB_CI_CONTAINER_IDS_ALT="a1"
+  export STUB_MEM_BYTES=1073741824
+  out="$(running_ci_mb 2>/dev/null)"
+  if [ "$out" = "1024" ]; then
+    ok "meme ID de daemon aux deux endpoints : 1 GiB compte une fois, pas deux"
+  else
+    ko "somme attendue 1024 (dedup par ID), rendue '$out'"
+  fi
+  unset COURSIA_RUNNER_DOCKER_ENDPOINTS STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_MEM_BYTES
+)
+echo ""
+
+# --- Test 64 : #15164 -- socket PRESENT mais daemon muet : REFUS, jamais 0
+#
+# Le coeur du fail-closed : un daemon muet peut porter des conteneurs, compter
+# 0 pour lui est exactement le defaut que ce garde ferme. STUB_DOCKER_ID_ALT=DOWN
+# fait echouer TOUT (docker ps en tete) sur le second socket, socket present.
+# Deux observables : la sonde rend rc!=0 en nommant le socket sur stderr, et
+# assert_memory_budget REFUSE le demarrage en nommant l'impossibilite.
+echo "Test 64 : budget -- daemon muet sur socket present : refus, pas zero (#15164)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  source_supervise
+  : > "$TEST_DIR/ce64.sock"
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/ce64.sock"
+  export STUB_DOCKER_ID_ALT="DOWN"
+  out="$(running_ci_mb 2>"$TEST_DIR/t64.err")"; rc=$?
+  if [ "$rc" != "0" ] && grep -q "injoignable sur '$TEST_DIR/ce64.sock'" "$TEST_DIR/t64.err"; then
+    ok "sonde : rc=$rc, la raison nomme le socket muet"
+  else
+    ko "refus attendu, rc=$rc err='$(cat "$TEST_DIR/t64.err" 2>/dev/null)'"
+  fi
+  err="$( (assert_memory_budget start 1 512m) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && echo "$err" | grep -q "n'est PAS mesurable"; then
+    ok "assert_memory_budget refuse et nomme l'impossibilite de mesurer"
+  else
+    ko "refus du garde attendu, rc=$rc err='$err'"
+  fi
+  unset COURSIA_RUNNER_DOCKER_ENDPOINTS STUB_DOCKER_ID_ALT
+)
+echo ""
+
+# --- Test 65 : #15164 -- socket ABSENT : hors perimetre, pas un refus
+#
+# Frontiere du fail-closed : un chemin de socket absent n'est pas un daemon
+# muet -- c'est un daemon non installe (machine mono-daemon, conteneur de
+# runner sans le second socket monte). Il ne porte rien : l'ecarter DUIT sur
+# stderr mais ne refuse pas -- sinon aucune machine sans docker-ce ne
+# pourrait plus mesurer son budget.
+echo "Test 65 : budget -- socket absent : hors perimetre sans refus (#15164)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  source_supervise
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/pas-la.sock"
+  export STUB_CI_CONTAINER_IDS="a1" STUB_MEM_BYTES=1073741824
+  out="$(running_ci_mb 2>"$TEST_DIR/t65.err")"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "1024" ] && grep -q "hors perimetre" "$TEST_DIR/t65.err"; then
+    ok "socket absent ecarte et annonce, somme du daemon vivant comptee"
+  else
+    ko "rc=$rc out='$out' err='$(cat "$TEST_DIR/t65.err" 2>/dev/null)'"
+  fi
+  unset COURSIA_RUNNER_DOCKER_ENDPOINTS STUB_CI_CONTAINER_IDS STUB_MEM_BYTES
 )
 echo ""
 

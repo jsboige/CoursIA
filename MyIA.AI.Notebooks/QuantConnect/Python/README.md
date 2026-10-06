@@ -2,7 +2,7 @@
 series: QuantConnect-Python
 pedagogical_count: 60
 breakdown: Python=60
-maturity: DRAFT=32, BETA=20, ALPHA=8
+maturity: DRAFT=33, BETA=19, ALPHA=8
 -->
 
 # QuantConnect Python Notebooks
@@ -75,6 +75,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-27-Production-Deployment | NON EXÉCUTÉ | |
 | QC-Py-28-Market-Regime-Detection | NON EXÉCUTÉ | |
 | QC-Py-28b-Macro-Cycle-Regimes | EXÉCUTÉ | cellules locales exécutées + run QC Cloud 2016-2026 (diagnostic → allocation) |
+| QC-Py-28c-Factor-Preprocessing-Regime | EXÉCUTÉ | cellules locales exécutées sur série synthétique à régimes (port du livre 06/02, issue #18958) |
 | QC-Py-29-Derivatives-Valuation | EXÉCUTÉ | cellules locales exécutées (BS / arbre CRR / Monte-Carlo : convergence, grecques, scénario liquidité) |
 | QC-Py-30-LSTM-Training | EXÉCUTÉ | |
 | QC-Py-31-Transformer-Training | EXÉCUTÉ | |
@@ -197,6 +198,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-27-Production-Deployment](QC-Py-27-Production-Deployment.ipynb) | Déploiement live, monitoring |
 | [QC-Py-28-Market-Regime-Detection](QC-Py-28-Market-Regime-Detection.ipynb) | Détection de régimes de marché |
 | [QC-Py-28b-Macro-Cycle-Regimes](QC-Py-28b-Macro-Cycle-Regimes.ipynb) | Macro et régimes : diagnostic composite borné, indicateurs → budget de risque |
+| [QC-Py-28c-Factor-Preprocessing-Regime](QC-Py-28c-Factor-Preprocessing-Regime.html) | Prétraitement de facteurs (FFD, standardisation, ACP) pour la détection de régime — port du livre 06/02, comparaison à la classe majoritaire |
 | [QC-Py-29-Derivatives-Valuation](QC-Py-29-Derivatives-Valuation.ipynb) | Valorisation d'un dérivé : Black-Scholes, arbre binomial et Monte-Carlo sur le même contrat — précision, convergence, flexibilité, coût, liquidité |
 
 ## Entraînement ML (QC-Py-30 à 32)
@@ -276,7 +278,7 @@ Le fil rouge : la **rigueur méthodologique** — l'audit d'exécution honnête 
 2. **Exécuter sur QC Cloud** : les notebooks marqués `[QC CLOUD]` nécessitent QuantConnect Cloud (gratuit) — copier le code dans un projet QC Lab.
 3. **Consulter les projets associés** : chaque notebook pédagogique a un `main.py` correspondant dans `../projects/` pour exécution backtest réelle.
 4. **Approfondir le RL** : si le trading RL vous intéresse, enchaîner QC-Py-25 (intro RL) → 32 (DQN) → 33 (PPO) → 34 (SAC/A2C) dans l'ordre.
-5. **Lire le livre** : *Hands-On AI Trading* (Jared Broad, 2025), dont les 22 exemples sont mappés à ces notebooks (cf. `../BOOK_MAPPING.md`).
+5. **Lire le livre** : *Hands-On AI Trading* (Jared Broad, 2025), dont les exemples sont rattachés à ces notebooks dans [BOOK_MAPPING.md](../BOOK_MAPPING.md).
 6. **Retour au README principal** : pour la vue d'ensemble de la série QuantConnect complète (incluant les 50+ projets de stratégies backtestées) et les cross-series bridges.
 
 > **Rappel honnête** : le trading algorithmique est un domaine où l'overfitting est la règle. La discipline du walk-forward, du multi-seed et du out-of-sample strict — enseignée tout au long de cette sous-série — est ce qui sépare une stratégie robuste d'une illusion statistique.

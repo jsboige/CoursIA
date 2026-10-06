@@ -74,6 +74,16 @@ Critères de retrait (cf issue #14195 acceptance) :
    cannot be moved or removed") : le prononcer REFUSE evite un FAILED a
    chaque passe --apply. Les gitignorés **non-cache** (`.env` laissé, ...)
    sont signalés (`ignored=...`) sans bloquer le retrait.
+7. **Fenetre « agent vivant » sur content_on_main (#18494)** : le retrait
+   par contenu deja integre (`HEAD` ancetre de `origin/main`, predicat 5
+   de l'issue #17771) est un critere de CONTENU, pas d'ACTIVITE. Un agent
+   vivant en phase de lecture (worktree propre, branche sans commit propre,
+   avant sa premiere edition) y est indiscernable d'un worktree abandonne.
+   Un marqueur d'activite recent -- mtime de `.lane-owner`, a defaut mtime
+   du dossier -- plus jeune que la fenetre (`--activity-window-h`, defaut
+   6 h) fait REFUSER le retrait (`reason=recent_activity:<age>h`). Des que
+   le marqueur depasse la fenetre, le worktree redevient retirable : le
+   refus protege la phase de travail, il ne conserve rien indefiniment.
 
 Ancre PR : `gh pr list --state all --search "head:<branch>"` (autoritative,
 cf matrice a 4 ancres de `.claude/rules/git-workflow.md` §orphan-branch-scan).
@@ -198,6 +208,7 @@ import shutil
 import subprocess
 import sys
 import traceback
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -299,31 +310,57 @@ def run_git(cwd: str, *args: str, check: bool = True) -> subprocess.CompletedPro
     )
 
 
-def current_repo_root() -> str:
-    """Racine du repo CoursIA resolue depuis ce script.
+def _ancestor_repo_root(start: Path) -> str | None:
+    """Plus proche ancetre de `start` qui ressemble a un depot git.
 
-    Les 3 appels `run_git(...)` (worktree list, cle de cache par remote
-    origin, worktree remove) doivent operer sur le repo hebergeant ce
-    script, independamment du cwd du processus appelant. Avant, ils
-    passaient `"."` et resolvaient contre le cwd reel -- casse depuis une
-    tache planifiee (#14473) ou tout autre cwd non-repo (#17904).
-
-    La racine est le plus proche ancetre de `__file__` qui contient
-    `.gitmodules` ou `.git/`. Cachee au premier appel (memoization
-    legere, pas de cache disque).
+    Rend None si aucun ancetre ne porte `.gitmodules` ni `.git/` (le
+    repertoire est hors de tout depot). Pur filesystem : aucun appel git,
+    donc utilisable sans cout dans les resolutions chaudes.
     """
+    p = start.resolve()
+    while p != p.parent:
+        if (p / ".gitmodules").is_file() or (p / ".git").exists():
+            return str(p)
+        p = p.parent
+    return None
+
+
+# Cible explicite posee par main() depuis --path (Maintenance#64, contrat
+# #18219 : le cwd de l'ANALYSE redirige le scan). None = pas de cible.
+_SCAN_ROOT_OVERRIDE: str | None = None
+
+
+def current_repo_root() -> str:
+    """Racine du repo VISE PAR LE SCAN, en trois priorites (Maintenance#64).
+
+    1. `--path` : la cible explicite de l'analyse, posee par main(). C'est
+       le contrat documente de --path depuis #18219 (« le cwd de l'analyse
+       redirige le scan ») -- contrat que la resolution par `__file__` seule
+       ne tenait pas : un wrapper multi-fermes invoquant une seule copie du
+       script scannait N fois sa ferme d'origine.
+    2. le repo contenant le cwd du processus, s'il existe (invocation
+       `cd <ferme> ; python <script>`, l'autre style du wrapper fleet).
+       Non memoise : depend du cwd courant.
+    3. le repo hebergeant ce script (tache planifiee #14473 : cwd System32
+       hors de tout repo ; #17904). Cache au premier appel.
+
+    L'ordre restaure la visée multi-fermes (priorites 1-2) SANS regresser
+    la robustesse schtasks (priorite 3) : un cwd hors repo tombe toujours
+    sur le repo du script.
+    """
+    if _SCAN_ROOT_OVERRIDE is not None:
+        return _SCAN_ROOT_OVERRIDE
+    cwd_root = _ancestor_repo_root(Path.cwd())
+    if cwd_root is not None:
+        return cwd_root
     cache_attr = "_coursia_root_cache"
     cached = getattr(current_repo_root, cache_attr, None)
     if cached is not None:
         return cached
-    p = Path(__file__).resolve().parent
-    while p != p.parent:
-        if (p / ".gitmodules").is_file() or (p / ".git").exists():
-            setattr(current_repo_root, cache_attr, str(p))
-            return str(p)
-        p = p.parent
-    setattr(current_repo_root, cache_attr, os.getcwd())
-    return os.getcwd()
+    script_root = _ancestor_repo_root(Path(__file__).resolve().parent)
+    root = script_root if script_root is not None else os.getcwd()
+    setattr(current_repo_root, cache_attr, root)
+    return root
 
 
 def _repo_root_for_worktree(wt_path: str) -> str:
@@ -502,6 +539,39 @@ def read_lane_owner(wt_path: str) -> Optional[str]:
         if stripped:
             return stripped[:64]
     return None
+
+
+def recent_activity_age_hours(wt_path: str,
+                              now: Optional[float] = None) -> float:
+    """Age en heures du marqueur d'activite le plus recent du worktree.
+
+    #18494 : un worktree sans commit propre peut etre celui d'un agent
+    VIVANT en phase de lecture (spawn lance, pas encore sa premiere
+    edition). Deux marqueurs, du plus fiable au moins fiable :
+
+    - mtime de `.lane-owner`, pose par le spawn a la creation ;
+    - a defaut, mtime du dossier du worktree lui-meme (les agents
+      ecrivent tot : `.ipynb`, caches -- en phase de lecture seule, seule
+      la creation du worktree marque le dossier).
+
+    Retourne l'age du plus recent des deux. Chemin illisible : +inf (aucune
+    activite prouvable, le worktree n'est pas protege par cette garde).
+    """
+    now = time.time() if now is None else now
+    candidates: list = []
+    lane_owner = Path(wt_path) / ".lane-owner"
+    try:
+        if lane_owner.exists():
+            candidates.append(lane_owner.stat().st_mtime)
+    except OSError:
+        pass
+    try:
+        candidates.append(Path(wt_path).stat().st_mtime)
+    except OSError:
+        pass
+    if not candidates:
+        return float("inf")
+    return (now - max(candidates)) / 3600.0
 
 
 def same_worktree_path(a: str, b: str) -> bool:
@@ -1079,12 +1149,16 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
 
 
 def diagnose_worktree(wt_path: str, current_path: str,
-                      head_sha: Optional[str] = None) -> WorktreeStatus:
+                      head_sha: Optional[str] = None,
+                      activity_window_h: float = 6.0) -> WorktreeStatus:
     """Diagnostic complet d'un worktree.
 
     `head_sha` (fourni par `list_worktrees`, porcelain) sert uniquement a
     la garde oid du cache de verdicts MERGED (#15369) : sans lui, l'etage
     cache est saute, jamais consulte a l'aveugle.
+
+    `activity_window_h` : fenetre de la garde « agent vivant » (#18494),
+    appliquee au retrait par contenu deja integre (predicat content_on_main).
     """
     info = get_worktree_info(wt_path, current_path)
 
@@ -1332,7 +1406,36 @@ def diagnose_worktree(wt_path: str, current_path: str,
     # committee ni untracked non tolere (sinon ``uncommitted_source_changes``
     # / ``untolerated_untracked`` seraient sortis). Le worktree ne porte
     # plus rien que main ne contienne deja.
+    #
+    # #18494 -- la fenetre « agent vivant ». `content_on_main` est un
+    # critere de CONTENU, pas d'ACTIVITE : un agent vivant traverse
+    # necessairement un etat « worktree propre + branche sans commit
+    # propre » (sa phase de lecture, avant la premiere edition), et un
+    # `--apply` dans cette fenetre detruit son plan de travail en cours.
+    # Un marqueur d'activite recent (`.lane-owner` ou mtime du dossier)
+    # fait donc REFUSER le retrait ; passe la fenetre, plus rien ne le
+    # protege -- le refus couvre la phase de travail, pas la conservation.
     if info["branch"] and head_is_ancestor_of_main(wt_path):
+        age_h = recent_activity_age_hours(wt_path)
+        if age_h < activity_window_h:
+            return WorktreeStatus(
+                path=wt_path,
+                branch=info["branch"],
+                is_current=False,
+                pr_state=None,
+                pr_number=None,
+                pr_url=None,
+                ahead_count=info["ahead_count"],
+                has_source_dirty=info["has_source_dirty"],
+                untracked_paths=info["untracked"],
+                decision="REFUSE",
+                refusal_reason=f"recent_activity:{age_h:.1f}h",
+                has_submodules=info["has_submodules"],
+                blocking_untracked=info.get("blocking_untracked", []),
+                ignored_extra=info.get("ignored_extra", []),
+                lane_owner=info.get("lane_owner"),
+                content_on_main=True,
+            )
         return WorktreeStatus(
             path=wt_path,
             branch=info["branch"],
@@ -1640,7 +1743,10 @@ def main() -> int:
     p.add_argument(
         "--path",
         default=None,
-        help="Cwd pour `git worktree list`. Default = CWD.",
+        help="Cible de l'analyse : cwd ET racine du scan (`git worktree "
+             "list` + cle de cache). Doit vivre dans un depot git "
+             "(Maintenance#64, multi-fermes). Default = CWD s'il est "
+             "dans un repo, sinon le repo de ce script.",
     )
     p.add_argument(
         "--warn-threshold",
@@ -1650,6 +1756,17 @@ def main() -> int:
         help="Emet sur stderr une ligne [WARN][prune-task] prete a poster "
              "sur le dashboard workspace si refused > N (#3895). Desactive "
              "par defaut ; la tache planifiee passe 20.",
+    )
+    p.add_argument(
+        "--activity-window-h",
+        type=float,
+        default=6.0,
+        metavar="H",
+        help="Fenetre « agent vivant » (#18494) : un worktree sans commit "
+             "propre dont un marqueur d'activite (.lane-owner, a defaut "
+             "mtime du dossier) est plus jeune que H heures est REFUSE "
+             "(reason=recent_activity:<age>h) au lieu d'etre retire par "
+             "content_on_main. Defaut 6.0.",
     )
     args = p.parse_args()
 
@@ -1663,15 +1780,16 @@ def main() -> int:
     except OSError:
         current_path = cwd
 
-    # `--path` est le cwd de l'ANALYSE, pas un filtre -- contrat porte par
-    # l'en-tete (`--path /c/dev/CoursIA-X`) et par le help ci-dessus. Les
-    # trois appels `run_git(...)` resolvent leur cible en PREMIER argument,
-    # pas via le cwd reel du processus : depuis un autre dossier -- le cas
-    # de la tache planifiee (#14473), dont le cwd est System32 -- il fallait
-    # que les sites ne s'appuient pas sur `"."`. Resolution adoptee :
-    #   - `run_git(current_repo_root(), ...)` pour `worktree list` et la cle
-    #     de cache (`remote get-url origin`) : la racine du repo de CE
-    #     script, ou du `--path` apres le `os.chdir` ci-dessous ;
+    # `--path` est le cwd de l'ANALYSE ET la cible du scan -- contrat porte
+    # par l'en-tete et le help. Les appels `run_git(...)` resolvent leur
+    # cible en PREMIER argument, pas via le cwd reel du processus : depuis
+    # un autre dossier -- le cas de la tache planifiee (#14473), dont le
+    # cwd est System32 -- il fallait que les sites ne s'appuient pas sur
+    # `"."`. Resolution adoptee (Maintenance#64) :
+    #   - `run_git(current_repo_root(), ...)` pour `worktree list` et la
+    #     cle de cache (`remote get-url origin`) : priorite 1 la cible
+    #     explicite du `--path` (posee ci-dessous), priorite 2 le repo du
+    #     cwd, priorite 3 le repo de CE script ;
     #   - `run_git(_repo_root_for_worktree(wt.path), ...)` pour
     #     `worktree remove` : le depot HEBERGEUR du worktree, pas forcement
     #     le meme (les tests hermetiques vivent dans des repo e phemeres
@@ -1684,6 +1802,21 @@ def main() -> int:
         except OSError as e:
             print(f"ERROR: --path inutilisable ({args.path}): {e}", file=sys.stderr)
             return 2
+        # Maintenance#64 : un --path hors de tout depot git doit echouer
+        # TOUT DE SUITE et bruyamment -- le repli silencieux sur le repo de
+        # ce script faisait scannera le wrapper fleet N fois sa ferme
+        # d'origine en croyant couvrir les autres.
+        path_root = _ancestor_repo_root(Path(current_path))
+        if path_root is None:
+            print(
+                f"ERROR: --path hors de tout depot git ({args.path}) -- "
+                f"la cible du scan serait retombee sur le repo de ce "
+                f"script (Maintenance#64)",
+                file=sys.stderr,
+            )
+            return 2
+        global _SCAN_ROOT_OVERRIDE
+        _SCAN_ROOT_OVERRIDE = path_root
 
     try:
         worktrees = list_worktrees()
@@ -1696,7 +1829,8 @@ def main() -> int:
         try:
             statuses.append(
                 diagnose_worktree(
-                    wt["path"], current_path, head_sha=wt.get("head_sha")
+                    wt["path"], current_path, head_sha=wt.get("head_sha"),
+                    activity_window_h=args.activity_window_h,
                 )
             )
         except RuntimeError as e:

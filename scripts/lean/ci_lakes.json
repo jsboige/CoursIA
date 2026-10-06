@@ -186,15 +186,15 @@
     },
     {
       "lake": "decisiontheory",
-      "project-path": "MyIA.AI.Notebooks/Probas/decision_theory_lean",
+      "project-path": "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean",
       "display-name": "decision_theory_lean",
       "sorry-baseline": "2",
       "sorry-filter-mode": "real",
       "paths": [
-        "MyIA.AI.Notebooks/Probas/decision_theory_lean/**.lean",
-        "MyIA.AI.Notebooks/Probas/decision_theory_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/Probas/decision_theory_lean/lakefile.toml",
-        "MyIA.AI.Notebooks/Probas/decision_theory_lean/lean-toolchain"
+        "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/**.lean",
+        "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/lean-toolchain"
       ]
     },
     {
@@ -232,15 +232,15 @@
     },
     {
       "lake": "socialchoicepeters",
-      "project-path": "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters",
       "display-name": "social_choice_lean_peters",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "paths": [
-        "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/**.lean",
-        "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.lean",
-        "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lakefile.toml",
-        "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lean-toolchain"
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lakefile.toml",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lean-toolchain"
       ]
     },
     {
@@ -257,6 +257,19 @@
       ]
     },
     {
+      "lake": "iit",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean",
+      "display-name": "iit_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/lean-toolchain"
+      ]
+    },
+    {
       "lake": "serre100",
       "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean",
       "display-name": "serre100_lean",
@@ -269,6 +282,32 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lean-toolchain",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ]
+    },
+    {
+      "lake": "percolation",
+      "project-path": "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean",
+      "display-name": "percolation_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/**.lean",
+        "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "geometry",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean",
+      "display-name": "geometry_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lean-toolchain"
       ]
     }
   ]

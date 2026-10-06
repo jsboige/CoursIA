@@ -107,7 +107,7 @@ pip install scikit-learn xgboost lightgbm
 
 ## Module: backtest_helpers
 
-**Fichier**: `shared/backtest_helpers.py` (335 lignes)
+**Fichier**: `shared/backtest_helpers.py`
 
 ### Description
 
@@ -225,7 +225,7 @@ comparison_df = compare_strategies(
 
 ## Module: features
 
-**Fichier**: `shared/features.py` (316 lignes)
+**Fichier**: `shared/features.py`
 
 ### Description
 
@@ -344,7 +344,7 @@ for train_df, test_df in splits:
 
 ## Module: indicators
 
-**Fichier**: `shared/indicators.py` (263 lignes)
+**Fichier**: `shared/indicators.py`
 
 ### Description
 
@@ -455,7 +455,7 @@ LowerBand = MiddleBand - multiplier * StdDev(Prix, period)
 
 ## Module: ml_utils
 
-**Fichier**: `shared/ml_utils.py` (418 lignes)
+**Fichier**: `shared/ml_utils.py`
 
 ### Description
 
@@ -649,7 +649,7 @@ results = cross_validate_walk_forward(
 
 ## Module: plotting
 
-**Fichier**: `shared/plotting.py` (332 lignes)
+**Fichier**: `shared/plotting.py`
 
 ### Description
 
@@ -1044,7 +1044,7 @@ returns = prices.pct_change().dropna()
 
 - [SESSION5_PATTERNS.md](../projects/_docs/SESSION5_PATTERNS.md) - AlphaModel Framework
 - [README.md](../projects/README.md) - Stratégies QuantConnect
-- [HANDSON_AI_TRADING_MAPPING.md](../docs/HANDSON_AI_TRADING_MAPPING.md) - Mapping notebooks projets
+- [BOOK_MAPPING.md](../BOOK_MAPPING.md) - Inventaire des exemples du livre *Hands-On AI Trading*
 
 ### Contribution
 

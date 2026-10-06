@@ -130,7 +130,7 @@ Stratégies ML/AI implémentées avec `sklearn` (compatible QC Cloud). Basées s
 - [Stoploss-Volatility-ML](Stoploss-Volatility-ML/) : Lasso stop-loss optimization. BROKEN (CBOE data unavailable).
 - [TradingCosts-Optimization](TradingCosts-Optimization/) : DecisionTree crypto cost optimization. Quasi flat.
 - [ML-HeadShoulders-CNN](ML-HeadShoulders-CNN/) : CNN Head & Shoulders detection USDCAD. Échec de généralisation synthétique → réel.
-- [ML-FinBERT-Sentiment](ML-FinBERT-Sentiment/) : FinBERT sentiment. TF unavailable on QC Cloud, 0 trades.
+- [ML-FinBERT-Sentiment](ML-FinBERT-Sentiment/) : FinBERT sentiment (portage Ex19 du livre). Inférence in-algo sur QC Cloud (PyTorch) ; l'historique « 0 trade » venait de `add_data(TiingoNews, ticker en chaîne)` — un Symbol mappé est requis.
 
 ### Consolidated (code merged)
 

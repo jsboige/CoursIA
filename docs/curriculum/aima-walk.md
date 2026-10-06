@@ -120,10 +120,10 @@ métaheuristiques composées) — l'épilogue le nomme.
 
 ### Phase 9 — Apprentissage par renforcement (AIMA ch. 21-22) — RL, ~2 h 15
 
-19. **`RL/rl_1_intro_cartpole.ipynb`** (45 min) — MDP, Q-learning, Gymnasium. *Suppose :
+19. **`RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb`** (45 min) — MDP, Q-learning, Gymnasium. *Suppose :
     Phase 3 (arbres de décision séquentiels).*
-20. **`rl_3_experience_replay_her.ipynb`** (45 min) — replay, HER, stabilité.
-21. **`rl_15_grpo_group_relative_policy.ipynb`** (45 min) — policy gradients modernes
+20. **`RL-03-Experience-Replay-HER-Python.ipynb`** (45 min) — replay, HER, stabilité.
+21. **`RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb`** (45 min) — policy gradients modernes
     (GRPO) — la jonction explicite avec les LLM de la Phase 10.
 
 ### Phase 10 — Langage et LLM (AIMA ch. 23-24, actualisés) — GenAI/Texte, ~2 h 30
@@ -137,7 +137,7 @@ métaheuristiques composées) — l'épilogue le nomme.
 ### Épilogue — Où le corpus dépasse AIMA, ~45 min
 
 25. **`IIT/IIT-01-IntroToPyPhi.ipynb`** (45 min) — théorie de l'information intégrée :
-    hors AIMA, propre au dépôt. Prolongements nommés : `Search-09d-Lean-Discrepancy-Komlos`
+    hors AIMA, propre au dépôt. Prolongements nommés : `Discrepancy-02-Komlos-Lean`
     (recherche **formelle**, compagnon Lean de la phase 2), la série IIT complète (59
     notebooks de la famille la plus dense du dépôt, cf `docs/curriculum/recherche.md`).
 
