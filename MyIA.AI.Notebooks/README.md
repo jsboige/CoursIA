@@ -110,7 +110,7 @@ ML
 └── DataScienceWithAgents/ - Agents Python sklearn + ONNX jumeaux
 
 RL
-└── (à plat) - rl_1..13 : DQN, PPO, SAC, GRPO (DeepSeek-R1) from scratch
+└── (à plat) - RL-01..13 : DQN, PPO, SAC, GRPO (DeepSeek-R1) from scratch
 
 CaseStudies
 ├── Diagnostic-Medical/ - LLM-assisted diagnosis

@@ -3652,7 +3652,7 @@ def test_coordinator_arbitration_comment_reduces_per_lane():
     body = (
         "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
         "paths: MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb, "
-        "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb\n"
+        "MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb\n"
         "[RELEASED] lane myia-ai-01:CoursIA — annule mes marqueurs du "
         "05:53:20Z et du 07:06:23Z\n"
         "[CLAIMED] lane myia-ai-01:CoursIA -- "
@@ -3667,7 +3667,7 @@ def test_coordinator_arbitration_comment_reduces_per_lane():
     ]
     assert events[0].paths == [
         "MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb",
-        "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb",
+        "MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb",
     ]
     assert events[2].paths == [
         "scripts/notebook_tools/check_interp_positioning.py",
@@ -3690,7 +3690,7 @@ def test_coordinator_arbitration_comment_reduces_per_lane():
     assert set(active) == {"myia-po-2024:CoursIA-2", "myia-ai-01:CoursIA"}
     assert active["myia-po-2024:CoursIA-2"].paths == [
         "MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb",
-        "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb",
+        "MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb",
     ]
     assert active["myia-ai-01:CoursIA"].paths == [
         "scripts/notebook_tools/check_interp_positioning.py",
