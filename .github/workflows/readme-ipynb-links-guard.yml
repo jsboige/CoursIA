@@ -82,7 +82,7 @@ jobs:
             BASE_SHA=$(git rev-parse HEAD^1)
           fi
           echo "BASE_SHA calcule: ${BASE_SHA}"
-          # F1 (Tell c.16866 / Hermes review 09:33Z) -- les violations
+          # F1 (Hermes review 09:33Z) -- les violations
           # `::error::STALE_LINK` partent sur STDERR (regen_quarto_render.py
           # l.503 `print(..., file=sys.stderr)`), le `grep` du round 1 ne
           # capturait que stdout et rendait `NEW=0` alors qu'une violation
@@ -92,7 +92,7 @@ jobs:
           # passes (PR + base). Le temoin est la run suivant ce commit :
           # une STALE_LINK injectee doit faire `NOUVELLES >= 1` (=exit 1).
           #
-          # F3 (Tell c.16866 / adjoint review 24) -- les `|| true` aux
+          # F3 (adjoint review 24) -- les `|| true` aux
           # lignes 84, 86, 89, 91 mangeaient les pannes scanner / checkout :
           # un `grep` qui ne matche pas (parce que le scanner est tombe)
           # rendait `pr_violations.txt` VIDE avec exit 0 ; un `git checkout`
@@ -135,7 +135,7 @@ jobs:
             cat /tmp/python_stdout.txt
             exit 1
           fi
-          # F6 (Tell c.4 / adjoint c26) -- PY_RC=1 sans resume stdout = crash
+          # F6 (adjoint c26) -- PY_RC=1 sans resume stdout = crash
           if [ "${PY_RC}" -eq 1 ]; then
             if grep -q "README-link audit:" /tmp/python_stdout.txt; then
               : # resume present -- l'audit a echoue normalement (violations)
@@ -146,7 +146,7 @@ jobs:
               exit 1
             fi
           fi
-          # F7 (Tell c.4 / adjoint c26) -- grep rc=2 (regex malformee ou
+          # F7 (adjoint c26) -- grep rc=2 (regex malformee ou
           # fichier absent) doit etre refuse, pas ignore. Avant V4, seul
           # rc=1 etait distingue de rc=0 -- rc=2 passait inapercu.
           if [ "${GREP_RC}" -ge 2 ]; then
