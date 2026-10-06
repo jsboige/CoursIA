@@ -3948,7 +3948,11 @@ def upsert_orphans_comment(number: int, body: str) -> None:
 #      Une cloture (`[RELEASED]`, `[DONE]`, `[DELIVERED]`...) est aussi une
 #      visite : elle AVANCE la date, elle ne l'efface pas -- mesure #7742,
 #      rendue le 19/09 apres deux tranches mergees, qu'une lecture « rendu =
-#      rang rendu » remettait en tete comme jamais servie ;
+#      rang rendu » remettait en tete comme jamais servie. Le marqueur de
+#      livraison `[INFO] candidate-delivered` compte au meme titre dans le
+#      probe (#19295, grammaire `_DELIVERED_MARKER_RE`) : une lane qui rend
+#      la main apres avoir confronte l'issue a ses criteres l'a servie --
+#      #13107 servie 4 fois sans jamais reculer etait la mesure fondatrice ;
 #   3. la creation de la plus recente sous-issue ouverte qui la nomme comme
 #      parent (`last_child_stamp`, `apply_child_visits`, zero appel reseau).
 _PARENT_BODY_RE = re.compile(r"(?i)\bpart of #(\d+)")
@@ -4035,12 +4039,36 @@ def claim_visit_stamp(comments: list[dict]) -> str | None:
     return max(stamps) if stamps else None
 
 
-def latest_claim_stamp(issue_number: int) -> str | None:
-    """Date du plus recent marqueur de claim de l'issue (cf `claim_visit_stamp`).
+def delivered_info_stamp(comments: list[dict]) -> str | None:
+    """``createdAt`` serveur du plus recent marqueur [INFO] candidate-delivered.
 
-    Toutes lanes confondues : une reservation est une visite, quelle que soit
-    la lane qui la pose. Cout : 1 requete. ``None`` si aucun marqueur ou si la
-    lecture echoue -- l'issue garde alors sa date de merge, comme avant.
+    Un marqueur de livraison dit qu'une lane a confronte l'issue a ses
+    criteres et rendu la main (#15069) : c'est une visite au sens du tapis
+    (#19295 -- #13107 servie 4 fois par des lanes differentes, jamais
+    recule, parce que la metrie n'ecoutait que merges/claims/sous-issues).
+    Grammaire : le marqueur canonique du picker (`_DELIVERED_MARKER_RE`,
+    ancre en tete de ligne, discriminants anti-mention-discursive sur la
+    forme annonce), pas une regex nouvelle. Pas d'exigence de lane
+    attribuee : les formes canoniques ne portent pas forcement
+    `lane <machine:workspace>`, la garde anti-FP est portee par l'ancrage
+    et les discriminants (cf test discursif).
+    """
+    stamps = [c.get("createdAt") for c in comments
+              if isinstance(c, dict)
+              and _DELIVERED_MARKER_RE.search(c.get("body") or "")]
+    stamps = [s for s in stamps if s]
+    return max(stamps) if stamps else None
+
+
+def latest_claim_stamp(issue_number: int) -> str | None:
+    """Date du plus recent marqueur de lane en commentaire (cf `claim_visit_stamp`).
+
+    Deux marqueurs comptent, toutes lanes confondues, au meme titre de
+    visite : le claim (grammaire `check_lane_claim`) et le ``[INFO]
+    candidate-delivered`` (#19295) -- chacun dit qu'une lane a servi
+    l'issue. Cout : 1 requete pour les deux, la meme charge de commentaires
+    (probe de tete de `settle_belt_head`). ``None`` si aucun marqueur ou si
+    la lecture echoue -- l'issue garde alors sa date de merge, comme avant.
     """
     try:
         out = subprocess.run(
@@ -4049,9 +4077,11 @@ def latest_claim_stamp(issue_number: int) -> str | None:
             capture_output=True, text=True, encoding="utf-8", check=True,
             timeout=30,
         ).stdout
-        comments = (json.loads(out) or {}).get("comments") or []
-        return claim_visit_stamp(
-            [c for c in comments if isinstance(c, dict)])
+        comments = [c for c in (json.loads(out) or {}).get("comments") or []
+                    if isinstance(c, dict)]
+        stamps = [s for s in (claim_visit_stamp(comments),
+                              delivered_info_stamp(comments)) if s]
+        return max(stamps) if stamps else None
     except Exception:  # noqa: BLE001 - sonde best-effort, l'issue garde son merge
         return None
 

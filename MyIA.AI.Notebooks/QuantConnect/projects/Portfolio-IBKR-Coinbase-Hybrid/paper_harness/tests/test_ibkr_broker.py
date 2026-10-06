@@ -15,6 +15,7 @@ from paper_harness.ibkr_broker import (  # noqa: E402
     LedgerDriftError,
     LedgerError,
     LineSpec,
+    OrderNotAcknowledgedError,
     SleeveLedger,
     us_signal_closes,
 )
@@ -34,8 +35,9 @@ class FakeTicker:
 
 
 class FakeTrade:
-    def __init__(self, order, fills, done=True):
+    def __init__(self, order, fills, done=True, status=None):
         self.order, self.fills, self._done = order, fills, done
+        self.orderStatus = SimpleNamespace(status=status or ("Filled" if done else "Submitted"))
 
     def isDone(self):
         return self._done
@@ -45,13 +47,16 @@ class FakeIB:
     """The slice of ``ib_insync.IB`` the adapter uses, with scripted answers."""
 
     def __init__(self, accounts=(PAPER,), market=None, close=None, history=None,
-                 account_positions=None, executions=(), fill_price=None, fill_now=True):
+                 account_positions=None, executions=(), fill_price=None, fill_now=True,
+                 acknowledged=True, venues=None, rules=None):
         self.accounts = list(accounts)
         self.market, self.close, self.history = market or {}, close or {}, history or {}
         self.account_positions = account_positions or {}
         self.executions = list(executions)
-        self.fill_price, self.fill_now = fill_price or {}, fill_now
-        self.orders, self.history_calls, self.data_type = [], [], None
+        self.fill_price, self.fill_now, self.acknowledged = fill_price or {}, fill_now, acknowledged
+        # venues: symbol -> (validExchanges, marketRuleIds); rules: rule id -> [(low edge, increment)]
+        self.venues, self.rules = venues or {}, rules or {}
+        self.orders, self.history_calls, self.data_type, self.cancelled = [], [], None, []
 
     def managedAccounts(self):
         return self.accounts
@@ -64,7 +69,14 @@ class FakeIB:
         if symbol is None:
             return []
         c = Contract(conId=contract.conId, symbol=symbol, currency="EUR", secType="STK")
-        return [SimpleNamespace(contract=c, minTick=0.01)]
+        venues, rule_ids = self.venues.get(symbol, ("", ""))
+        return [SimpleNamespace(contract=c, minTick=0.01, validExchanges=venues, marketRuleIds=rule_ids)]
+
+    def reqMarketRule(self, rule_id):
+        return [SimpleNamespace(lowEdge=e, increment=i) for e, i in self.rules.get(rule_id, [])]
+
+    def cancelOrder(self, order):
+        self.cancelled.append(order.orderId)
 
     def reqMarketDataType(self, t):
         self.data_type = t
@@ -94,6 +106,8 @@ class FakeIB:
         order.orderId = len(self.orders) + 1
         self.orders.append((contract.symbol, order))
         fills = []
+        if not self.acknowledged:  # e.g. error 110, which ib_insync logs as a warning only
+            return FakeTrade(order, fills, done=False, status="PendingSubmit")
         if self.fill_now:
             fills.append(fill(contract.conId, order.action, order.totalQuantity,
                               self.fill_price.get(contract.symbol, order.lmtPrice),
@@ -261,6 +275,42 @@ def test_unfilled_order_is_booked_by_the_next_sync(tmp_path):
     ib.account_positions = {2: 10}
     b.sync()
     assert b.ledger.positions == {"IUSM": 10}
+
+
+# Market rules read on a paper session (2026-10-05): SMART ladder of a Xetra ETF
+# (rule 2077) next to a venue ladder (rule 1906); the contract's minTick is 0.0001.
+XETRA_ETF_RULES = {
+    2077: [(0.0, 0.0001), (1.0, 0.0002), (2.0, 0.0005), (5.0, 0.001), (10.0, 0.002), (20.0, 0.005), (50.0, 0.01)],
+    1906: [(0.0, 0.0001), (5.0, 0.0002), (10.0, 0.0005)],
+}
+
+
+def test_limit_price_sits_on_the_routes_market_rule(tmp_path):
+    ib = FakeIB(market={"SXR8": 743.32, "IUSM": 12.0},
+                venues={"SXR8": ("SMART,IBIS2", "2077,1906"), "IUSM": ("SMART,AEB", "2077,2077")},
+                rules=XETRA_ETF_RULES)
+    b = broker(tmp_path, ib)
+    # 743.32 x 1.005 = 747.0366: above 50 EUR the SMART step is 0.01, not the venue's 0.0005
+    assert b.tick("SXR8", 747.0366) == 0.01
+    assert b.limit_price("SXR8", 34, 743.32) == pytest.approx(747.04)
+    # 12 x 0.995 = 11.94 sits in the 10-20 EUR rung (step 0.002)
+    assert b.tick("IUSM", 11.94) == 0.002
+    assert b.limit_price("IUSM", -10, 12.0) == pytest.approx(11.94)
+
+
+def test_route_missing_from_the_market_rules_is_refused(tmp_path):
+    ib = FakeIB(market={"SXR8": 600.0}, venues={"SXR8": ("IBIS2", "1906")}, rules=XETRA_ETF_RULES)
+    with pytest.raises(ValueError, match="no market rule for SXR8 on SMART"):
+        broker(tmp_path, ib).limit_price("SXR8", 1, 600.0)
+
+
+def test_order_never_acknowledged_is_cancelled_and_raises(tmp_path):
+    ib = FakeIB(market={"SXR8": 600.0}, acknowledged=False)
+    b = broker(tmp_path, ib, fill_timeout=1.0)
+    with pytest.raises(OrderNotAcknowledgedError, match=r"never acknowledged the order for \+5 SXR8"):
+        b.place("SXR8", 5)
+    assert ib.cancelled == [1]
+    assert b.ledger.positions == {} and b.ledger.cash == pytest.approx(10_000.0)
 
 
 # -- signals and full cycle ---------------------------------------------------

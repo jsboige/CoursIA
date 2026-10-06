@@ -137,6 +137,24 @@ class Guard:
 # admise comme "pas de workflow d'origine".
 FAST_LANE_NATIVE = "(garde natif de la voie rapide : aucun workflow d'origine)"
 
+# Le lot pilote (#11835) est exempte par declaration du controle d'identité
+# byte-a-byte (#19193). Raison mesuree le 2026-10-05 : les noms dans le
+# registre (ex `banner-guard`) ne sont pas alignes avec les noms des jobs
+# dans les workflows d'origine (ex `probeAddresses banner guard`), car le
+# renommage byte-identique n'a pas ete fait a l'absorption (le workflow
+# d'origine porte encore le declencheur `pull_request`, c'est lui qui
+# bloque, la voie rapide observe -- cf PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF).
+# Le geste de bascule est porte par le programme #12567.
+PILOT_LOT_NAME = "PILOT"
+
+# Gardes absorbes apres #19168 dont le byte-a-byte-identique n'est pas encore
+# aligne. Mesuree le 2026-10-05 : la voie rapide les a absorbes par
+# declaration (absorbed=True, source=workflow.yml) mais le `name:` du job
+# dans le workflow source n'a pas ete renomme byte-identique au `guard.name`.
+# Programme #12567 est le geste de bascule ; en attendant, le filet
+# d'identite les signale sans les exiger.
+TRANCHE_ALIGNMENT_EN_COURS = frozenset({"TRANCHE10"})
+
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
 
 # ---------------------------------------------------------------------------

@@ -141,6 +141,11 @@ ARTIFACT_STEM_RE = re.compile(
     r"|^research[_-]"
     r"|[_-]research(?:[_-]v?\d+)?$"
     r"|[_-]output(?:[_-]v?\d+)?$"
+    # (#18741 Declarations, ledger #11) `SemanticKernel/Notebook-Generated`
+    # -- a GENERATED artifact (double-counted as standard + template before
+    # this pattern). Exact-stem form: "Generated" alone is a subject word
+    # elsewhere, the full stem names the artifact.
+    r"|^notebook-generated$"
     r"|repro$",
     re.IGNORECASE,
 )
@@ -176,6 +181,28 @@ LEGACY_RE = re.compile(r"legacy", re.IGNORECASE)
 OUT_OF_CORPUS_KINDS = frozenset(
     {"artifact", "template", "vendored", "archive", "legacy", "tooling", "student"}
 )
+
+#: (#18741 Declarations) Individually declared statuses, transcribed from the
+#: qualification ledger (`docs/ledgers/18741-qualification-14-notebooks.md`)
+#: and the approved 4-part decoupage. These notebooks ARE course material --
+#: they stay in the corpus and in its denominator -- but their exercise budget
+#: is declared, not defaulted: the kind name carries the reason so a fleet
+#: scan shows WHY the notebook is not actionable instead of silently hiding
+#: it. Threshold 0 mirrors the setup/Lean rows of the rule's exception table
+#: (the acceptable count includes zero); it is not an out-of-corpus removal.
+DECLARED_STATUSES: dict[str, tuple[str, int | None]] = {
+    # Ledger #10 -- mono-exercise calibration notebook, intent declared in
+    # the #18741 issue body.
+    "PT_17_laya_proper_rewards_toy": ("declared-mono-exercise", 0),
+    # Ledger #15 (post-scriptum to the table) -- ablation companion of the
+    # LAYA series, 1/3, same declared family as PT_17.
+    "PT_18_laya_ablation_distillation": ("declared-ablation-companion", 0),
+    # Ledger #13 -- no exercise section; the #18741 body asks for a declared
+    # demonstration status OR added tasks. The approved decoupage retains the
+    # declared status (adding tasks is separate content work, not counter
+    # policy).
+    "TV-03-Internalisation-CoT": ("declared-demo", 0),
+}
 
 
 def classify_notebook(path: Path) -> tuple[str, int | None]:
@@ -267,6 +294,11 @@ def _classify(
         return ("setup", KIND_MINIMUM["setup"])
     if LEAN_STEM_RE.search(stem):
         return ("lean", KIND_MINIMUM["lean"])
+    # (#18741 Declarations) consulted LAST among the pattern rules so a
+    # declared status never shadows a structural kind (a declared notebook
+    # moved under an `_archive/` directory is archive first).
+    if stem in DECLARED_STATUSES:
+        return DECLARED_STATUSES[stem]
     return ("standard", standard_threshold)
 
 # \bexercice\b anywhere in the line, case-insensitive, French or English form.
@@ -416,8 +448,14 @@ STUB_PATTERNS = [
     # returned literal in mid-cell without a sentinel comment stays a derived
     # return. (OWUI issue #15676 -- ``return -1  # valeur "a completer
     # (placeholder neutre)"`` in cell 11.)
+    # C# form (#18741 PR C): the tail uses ``//`` and the vocabulary is the
+    # student-marker family -- ``return -1; // TODO etudiant`` (Aspire 01
+    # c23, the /health waiter). ``;?`` absorbs the C# statement terminator;
+    # ``TODO`` and ``etudiant`` join the vocabulary exactly as in
+    # ``_STUDENT_MARKER_VOCAB_RE``: a bare-number return annotated with a
+    # student TODO is a sentinel, not a computation.
     re.compile(
-        r"\breturn\s+-?\d+\s*#.*\b(?:a compl[eé]ter|a remplir|placeholder|neutre|stub)\b",
+        r"\breturn\s+-?\d+\s*;?\s*(?://|#|--)\s*(?:TODO\b|[^\n]*\b(?:a compl[eé]ter|a remplir|placeholder|neutre|stub|etudiant)\b)",
         re.IGNORECASE,
     ),
     # Pure-sentinelle string literals: ``return "a determiner"``,
@@ -491,6 +529,16 @@ PLACEHOLDER_VALUE_RE = re.compile(
     re.IGNORECASE,
 )
 
+#: Line-tail placeholder vocabulary on a ``return`` (#18741 PR B). The tail
+#: comment is stripped before operand analysis, so a return that SELF-DECLARES
+#: its value provisional -- ``return "api"  # placeholder — a affiner`` (OWUI
+#: 05 c17) -- read as a computed string literal. Same vocabulary family as the
+#: ``return <number>  # ...`` stub pattern (#15676).
+_RETURN_TAIL_PLACEHOLDER_RE = re.compile(
+    r"^\s*(?://|#|--).*\b(?:a compl[eé]ter|a remplir|placeholder|neutre|stub)\b",
+    re.IGNORECASE,
+)
+
 # Indices of STUB_PATTERNS that are COMMENT markers (# TODO, # Indice, // TODO,
 # -- TODO). A leftover comment marker in an otherwise COMPLETE body is not itself
 # a stub signal: `# TODO etudiant` above a full implementation is an instructor's
@@ -503,6 +551,75 @@ PLACEHOLDER_VALUE_RE = re.compile(
 # a mixed cell (Search-11 cell 43 -- a complete `profit_function` plus a
 # truncated `# A COMPLETER` Problem skeleton), which must stay a stub.
 COMMENT_STUB_PATTERN_IDX = frozenset({3, 4, 5, 6, 7, 8})
+
+#: Indices of the EXECUTABLE placeholder markers (``pass`` [1], ``return
+#: None`` [2]) that stay stubs UNLESS the body otherwise computes a result
+#: (#18741 PR B). Measured incident: PT_11c c7 -- a COMPLETE worked verifier
+#: whose fallback ``except ValueError: pass`` / ``return None`` fired the
+#: unconditional markers, so the Exercice 1 header absorbed it (backward
+#: pairing) and its real stub counted standalone -> 4 hits for 3 exercises.
+#: The gate mirrors the comment-marker one: a canonical stub (signature +
+#: comments + ``return None``) has no derived return, so ``_body_computes_
+#: result`` stays False and the marker keeps firing.
+EXECUTABLE_PLACEHOLDER_PATTERN_IDX = frozenset({1, 2})
+
+#: Student-marker vocabulary that names a write-hole when it sits beside an
+#: executable placeholder marker or a placeholder assignment (#18741 PR B).
+#: ``Exercice`` is included on purpose: the annotated ``pass`` of Wan 02-3
+#: c28/c30 and AnimateDiff 01-5 c24 (``# Exercice: ...`` directly above the
+#: ``pass``) is the write-hole itself, while the INCIDENTAL fallbacks of a
+#: worked body (PT_11c c7 ``except ValueError: pass``) carry no vocabulary
+#: within two lines -- the discriminator measured on both families.
+_STUDENT_MARKER_VOCAB_RE = re.compile(
+    r"\bTODO\b|\bExercice\b|[eé]tudiant|[aà] compl[eé]ter|[aà] vous",
+    re.IGNORECASE,
+)
+
+#: (#18741 PR C) Reading-exercise declaration. Some markdown cell of the
+#: notebook announces that its exercises are READING exercises -- Audio 06-3
+#: c11 ``## 5. Trois exercices de lecture chiffree`` : the answer is prose
+#: written next to the notebook, no code stub exists, so the numbered
+#: headers below can never pair. Measured scope: 8 notebooks in the corpus
+#: carry the phrase; the gate below only fires on headers that are ALSO
+#: unpaired, so paired local exercises in those notebooks are untouched.
+READING_EXERCISE_SECTION_RE = re.compile(r"exercices?\s+de\s+lecture", re.IGNORECASE)
+
+#: (#18741 PR C) External write-space evidence in a numbered exercise
+#: header -- the stub lives OUTSIDE the notebook, in the lab project beside
+#: it. Direct form: a backticked source-file path (Orleans 01 c9 ``Ouvrir
+#: `OrleansAgentLab/Grains.cs` et completer ...``). Indirect form:
+#: ``Completer `Class.Member(...)``` (Orleans 02 c20/22/24) -- the dotted
+#: member belongs to the lab file the exercise section points to; the
+#: ``[^`]*`` tail absorbs argument lists inside the backticks. A header
+#: whose local stub pairs never reaches these gates (pairing is checked
+#: first), so the only headers counted are those with strictly no local
+#: write-space AND positive external evidence in their own text.
+EXTERNAL_CS_PATH_RE = re.compile(r"`[^`]*\.(?:cs|csproj|fs)`")
+EXTERNAL_COMPLETE_MEMBER_RE = re.compile(
+    r"compl[eé]t\w*\s+`[A-Za-z_]\w*\.[A-Za-z_]\w*[^`]*`", re.IGNORECASE
+)
+
+
+def _executable_markers_are_deliberate(
+    pattern: "re.Pattern[str]", source: str
+) -> bool:
+    """True when at least one match of an executable placeholder marker
+    (``pass`` / ``return None``) carries student-marker vocabulary on its own
+    line or within the two lines above it.
+
+    The EXECUTABLE_PLACEHOLDER gate targets the incidental fallback of a
+    worked body; a ``pass`` annotated ``# Exercice: ...`` right above names
+    the student's write-hole and keeps its verdict whatever the surrounding
+    body computes (#18741 PR B -- Wan 02-3 c28/c30, AnimateDiff 01-5 c24
+    vs PT_11c c7, Sudoku-17 c28).
+    """
+    lines = source.split("\n")
+    for m in pattern.finditer(source):
+        line_no = source.count("\n", 0, m.start())
+        window = "\n".join(lines[max(0, line_no - 2):line_no + 1])
+        if _STUDENT_MARKER_VOCAB_RE.search(window):
+            return True
+    return False
 
 # Index of the generic ``<name> = None`` assignment pattern above (the #15688
 # widening of ``result = None``). The COMMENT markers above are stubs UNLESS
@@ -639,10 +756,16 @@ def _return_is_derived(
 
     Line-tail comments (``// TODO``, ``# a completer``) are stripped before
     analysis (#18146): the comment slashes used to satisfy the binary-operator
-    regex and mark placeholder returns as computed.
+    regex and mark placeholder returns as computed. One tail is NOT stripped
+    but READ: a tail carrying the placeholder vocabulary declares the returned
+    value provisional (#18741 PR B -- OWUI 05 c17 ``return "api"  # placeholder
+    -- a affiner`` read as a solved string and gated the cell's ``# TODO``
+    marker away).
     """
-    m = re.match(r"^return\b(.*?)(?:\s(?://|#).*)?$", return_stmt.strip())
+    m = re.match(r"^return\b(.*?)(\s(?://|#).*)?$", return_stmt.strip())
     if not m:
+        return False
+    if _RETURN_TAIL_PLACEHOLDER_RE.match(m.group(2) or ""):
         return False
     operand = m.group(1).strip().rstrip(";").strip()
     if not operand or re.match(r"^(?:none|null)\b", operand, re.IGNORECASE):
@@ -670,12 +793,35 @@ def _return_is_derived(
         assign_re = re.compile(
             rf"^(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(base)}\s*[+\-*/%]?=(?!=)"
         )
-        none_only_re = re.compile(
-            rf"^(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(base)}\s*=\s*None\b"
+        # An assignment of a PLACEHOLDER VALUE is not a computation (#18741
+        # PR B -- Video 02-6 c16: ``trouvees = []`` ... ``return trouvees``
+        # read as derived, gating the ``# Indice`` / ``# TODO etudiant``
+        # markers away). Same empty-typed family the literal branch above
+        # already rejects on the return itself.
+        # NB: second fragment is a plain raw string -- ``\{`` in an f-string
+        # opens a replacement field (the backslash then lands in the
+        # expression part, a hard SyntaxError pre-3.12).
+        placeholder_only_re = re.compile(
+            rf'^(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(base)}\s*=\s*'
+            r'(?:None|null|False|0|0\.0|0\.0[fF]|\[\]|\{\}|\(\)|\x22\x22|\x27\x27|set\(\))\s*$',
+            re.IGNORECASE,
         )
         for ln in code_lines_before:
-            if assign_re.match(ln) and not none_only_re.match(ln):
+            if assign_re.match(ln) and not placeholder_only_re.match(ln):
                 return True  # assigned a computed value before the return
+        # A placeholder-seeded container the body FILLS by mutation computes
+        # its result (#15080 D01 c30 regression of the gate above: ``rows =
+        # []`` then ``rows.append(...)`` in the loop, ``return rows`` -- a
+        # full solution, not a passthrough). Only the never-touched shape
+        # (Video 02-6 c16 ``trouvees = []`` ... ``return trouvees``) is a
+        # placeholder return.
+        mutate_re = re.compile(
+            rf"\b{re.escape(base)}\s*\.\s*(?:append|extend|insert|update|pop"
+            rf"|clear|remove|add|setdefault)\b"
+            rf"|\b{re.escape(base)}\s*\[[^\]]*\]\s*[+\-*/%]?=(?!=)"
+        )
+        if any(mutate_re.search(ln) for ln in code_lines_before):
+            return True
         return False
     if re.search(r"[+\-*/%]|\b(?:and|or|in)\b|\bis\s+not\b", operand):
         return True  # binary expression
@@ -780,6 +926,121 @@ def _none_placeholder_passthrough(source: str) -> bool:
     return False
 
 
+def _name_reassigned_after(
+    lines: list[str], line_no: int, name: str, also_placeholder: bool = False
+) -> bool:
+    """True when ``name`` is reassigned a computed value at same-or-deeper
+    indentation after ``lines[line_no]`` (the scoping rule of
+    :func:`_none_placeholder_passthrough`, factored out for reuse). With
+    ``also_placeholder`` the reassignment itself must be non-placeholder.
+    """
+    indent = len(lines[line_no]) - len(lines[line_no].lstrip(" \t"))
+    tail = "" if also_placeholder else r"(?!\s*(?:None|null)\b)"
+    reassign_re = re.compile(
+        rf"^[ \t]*(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(name)}"
+        rf"\s*[+\-*/%]?=(?!=){tail}",
+        re.IGNORECASE,
+    )
+    for j in range(line_no + 1, len(lines)):
+        if reassign_re.match(lines[j]):
+            j_indent = len(lines[j]) - len(lines[j].lstrip(" \t"))
+            if j_indent >= indent:
+                return True
+    return False
+
+
+#: Cell-level dict/list-literal assignment opener whose values are collected
+#: until the matching closer (#18741 PR B).
+_TEMPLATE_ASSIGN_OPEN_RE = re.compile(r"^([A-Za-z_]\w*)\s*=\s*([\[{])")
+
+#: Scalar placeholder assignment whose tail comment names the student's
+#: write-space (#18741 PR B, differencier-les-assistants c27:
+#: ``ASSISTANT_A_REECRIRE = ""   # A vous : le nom, tel qu'il figure...``).
+#: The vocabulary tail is REQUIRED for scalars -- a bare ``model = None``
+#: initializer or the seeded container of a worked body (D01 c30 ``rows =
+#: []``) must not read as a hole -- and the name must never be reassigned.
+_SCALAR_PLACEHOLDER_ASSIGN_RE = re.compile(
+    r"^([A-Za-z_]\w*)\s*=\s*(?:None|null|False|0|0\.0|0\.0[fF]"
+    r"|\x22\x22|\x27\x27|set\(\))\s*(?:#|//|--)"
+)
+
+
+def _placeholder_template_assignment(source: str) -> bool:
+    """True when a ``name = {``/``[`` literal's every value is a None hole.
+
+    The measured shape (#18741 PR B, Texte 09b c30): the STUDENT part of the
+    cell is ``reponses = {"P1": None, "P2": None, "P3": None}`` -- a template
+    of None holes IS the write-space handed to the student, the assignment
+    twin of the RETURNED template :func:`_return_literal_is_template` already
+    recognizes -- while the instructor's ``verifier_classification`` helper
+    below carries a derived ``return ok`` that made ``_body_computes_result``
+    testify for the whole cell, gating the ``# TODO etudiant`` markers away.
+
+    Deliberately narrower than PLACEHOLDER_VALUE_RE: only ``None``/``null``
+    count as holes here. A cell-level ``{"seed": 0, "epochs": 3}`` config or a
+    ``[False, ...]`` flag list uses 0/False legitimately, and the cost of a
+    false stub (an over-counted exercise) exceeds a missed one. A name later
+    reassigned a computed value in its scope is a pipeline initializer, not a
+    placeholder (Kokoro-01-5 c38 family).
+    """
+    lines = source.split("\n")
+    for i, ln in enumerate(lines):
+        # Scalar twin first: ``X = ""  # A vous : ...`` -- the write-space is
+        # the placeholder assignment itself, the computing helper that shares
+        # the cell is the instructor's (differencier c27). The tail must name
+        # the student (vocab) and the name is never reassigned after.
+        ms = _SCALAR_PLACEHOLDER_ASSIGN_RE.match(ln.strip())
+        if ms:
+            scalar_name = ms.group(1)
+            tail = ln.strip()[ms.end():]
+            if _STUDENT_MARKER_VOCAB_RE.search(tail) and not _name_reassigned_after(
+                lines, i, scalar_name
+            ):
+                return True
+            continue
+        m = _TEMPLATE_ASSIGN_OPEN_RE.match(ln.strip())
+        if not m:
+            continue
+        name, opener = m.group(1), m.group(2)
+        closer = "]" if opener == "[" else "}"
+        first = ln.strip().split("=", 1)[1].lstrip()
+        if first.startswith(opener):
+            first = first[1:]
+        entries: list[str] = []
+        if closer in first:
+            entries.extend(
+                e.strip() for e in first.split(closer, 1)[0].split(",") if e.strip()
+            )
+            terminated = True
+        else:
+            if first.strip():
+                entries.append(first.rstrip(","))
+            terminated = False
+            for j in range(i + 1, min(i + 60, len(lines))):
+                nxt = lines[j].strip()
+                if nxt.startswith(closer):
+                    terminated = True
+                    break
+                entries.append(nxt.rstrip(","))
+            if not terminated:
+                continue  # unterminated literal: not our shape
+        if not entries:
+            continue
+        for entry in entries:
+            value = entry.split(":", 1)[1].strip() if ":" in entry else entry
+            # The TODO vocabulary rides in the tail (``"P1": None,  # TODO
+            # etudiant``): strip it before judging the value. NB: the split
+            # eats the whitespace AHEAD of the comment marker too, so the
+            # leftover is ``"None, "`` -- strip whitespace BEFORE the trailing
+            # comma (a bare rstrip(",") sees a space and keeps the comma).
+            value = re.split(r"\s(?:#|//|--)", value)[0].strip().rstrip(",").strip()
+            if not re.match(r"^(?:None|null)$", value, re.IGNORECASE):
+                return False
+        if not _name_reassigned_after(lines, i, name):
+            return True
+    return False
+
+
 def _none_assignment_in_signature(source: str) -> bool:
     """True when a ``<name> = None`` match is a function-signature default.
 
@@ -860,7 +1121,7 @@ class ExerciseHit:
     cell_index: int
     cell_type: str  # 'markdown' or 'code'
     source: str  # full cell source (joined)
-    detected_by: str  # 'markdown_header' | 'code_cell_comment'
+    detected_by: str  # 'markdown_header' | 'code_cell_comment' | 'reading_header' | 'external_header'
 
     @property
     def preview(self) -> str:
@@ -926,6 +1187,18 @@ def _is_stub_code(source: str) -> bool:
             # a completer" print / raise / assert) stay unconditional.
             if idx in COMMENT_STUB_PATTERN_IDX and _body_computes_result(source):
                 continue
+            # ``pass`` / ``return None`` as an incidental FALLBACK of a body
+            # that computes a real result is not a stub shape (#18741 PR B,
+            # PT_11c c7): the executable markers share the computing-body
+            # gate of the comment markers above -- UNLESS the marker is
+            # annotated with student vocabulary beside it (a ``pass`` under
+            # ``# Exercice: ...`` names the write-hole, Wan 02-3 c28).
+            if (
+                idx in EXECUTABLE_PLACEHOLDER_PATTERN_IDX
+                and _body_computes_result(source)
+                and not _executable_markers_are_deliberate(pat, source)
+            ):
+                continue
             # The generic ``<name> = None`` assignment is a stub marker only
             # in its placeholder shape (#15713 + #15688): the composed gate
             # rejects signature defaults, demo initializers later reassigned,
@@ -936,6 +1209,11 @@ def _is_stub_code(source: str) -> bool:
             ):
                 continue
             return True
+    # A cell-level dict/list template of None holes is the write-space handed
+    # to the student, whatever computed helper shares the cell (#18741 PR B,
+    # Texte 09b c30): judged on shape, before any body-computes testimony.
+    if _placeholder_template_assignment(source):
+        return True
     lines = [
         ln.strip()
         for ln in source.strip().split("\n")
@@ -1209,6 +1487,24 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
     deferred_unpaired: dict[int, int] = {}
     blocker_of: dict[int, int] = {}
     unpaired_header_cells: set[int] = set()
+    #: (#18741 PR C) Headers counted by the reading/external gates, by kind.
+    #: The deferred-chain resolution below consults it: in a reading section
+    #: (Audio 06-3), consecutive numbered headers block EACH OTHER (c12
+    #: blocked by c13, c13 by c14), so the upper chain members are deferred
+    #: and only the terminal reaches the gate -- a gated terminal covers its
+    #: chain exactly the way a stub-paired terminal does.
+    gated_kind: dict[int, str] = {}
+    #: (#18741 PR C) Reading-exercise scope: a notebook that declares its
+    #: exercises are reading exercises somewhere in its markdown. Precomputed
+    #: once -- the declaration lives in a SECTION header (Audio 06-3 c11),
+    #: not in each numbered exercise header below it.
+    reading_scope = any(
+        READING_EXERCISE_SECTION_RE.search(
+            "".join(c.get("source", []))
+        )
+        for c in cells
+        if c.get("cell_type") == "markdown"
+    )
     for idx in sorted(header_cell_indices):
         instance_count = header_instance_counts[idx]
         header_source = header_sources[idx]
@@ -1363,7 +1659,45 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
                     # only if that nearer header itself finds no write-space
                     # (resolved after the loop, blocker chain walk).
                     deferred_unpaired[idx] = instance_count
-                elif not forward_has_code_cell:
+                    continue
+                # (#18741 PR C) Two strictly-evidenced exceptions before the
+                # drop: the exercise is real but its write-space is NOT a local
+                # code cell. A reading exercise (the notebook declares
+                # "exercices de lecture" -- the answer is prose, Audio 06-3) or
+                # an external-file exercise (the header names the lab source to
+                # complete, Orleans 01/02 -- the stub lives in the .csproj
+                # beside the notebook and no local stub can ever pair). Both
+                # gates require positive evidence; the generic drop rule below
+                # is unchanged for headers without it. Counted hits do NOT
+                # inflate unpaired_markdown_instances: their write-space
+                # exists, elsewhere.
+                if reading_scope:
+                    for _ in range(instance_count):
+                        result.exercises.append(
+                            ExerciseHit(
+                                cell_index=idx,
+                                cell_type="markdown",
+                                source=header_source,
+                                detected_by="reading_header",
+                            )
+                        )
+                    gated_kind[idx] = "reading_header"
+                    continue
+                if EXTERNAL_CS_PATH_RE.search(header_source) or (
+                    EXTERNAL_COMPLETE_MEMBER_RE.search(header_source)
+                ):
+                    for _ in range(instance_count):
+                        result.exercises.append(
+                            ExerciseHit(
+                                cell_index=idx,
+                                cell_type="markdown",
+                                source=header_source,
+                                detected_by="external_header",
+                            )
+                        )
+                    gated_kind[idx] = "external_header"
+                    continue
+                if not forward_has_code_cell:
                     result.unpaired_markdown_instances += instance_count
                     unpaired_header_cells.add(idx)
                 continue
@@ -1393,6 +1727,20 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
         if terminal in unpaired_header_cells:
             result.unpaired_markdown_instances += count
             unpaired_header_cells.add(idx)
+        elif terminal in gated_kind:
+            # (#18741 PR C) The chain's terminal was counted by a
+            # reading/external gate: the deferred members above it are
+            # exercises of the same family (Audio 06-3 -- c12/c13 deferred
+            # behind their successors, terminal c14 reading-counted).
+            for _ in range(count):
+                result.exercises.append(
+                    ExerciseHit(
+                        cell_index=idx,
+                        cell_type="markdown",
+                        source=header_sources[idx],
+                        detected_by=gated_kind[terminal],
+                    )
+                )
 
     # Second pass: code-cell exercises with NO preceding markdown header.
     #
