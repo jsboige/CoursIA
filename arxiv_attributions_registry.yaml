@@ -69,7 +69,7 @@ attributions:
     date: "2026-08-24"
 
   - arxiv_id: "1506.02438"
-    notebook: "MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb"
+    notebook: "MyIA.AI.Notebooks/RL/RL-06c-PPO-Depuis-Zero-Python.ipynb"
     cell_index: 1
     expected_citation: "Schulman, J., Moritz, P., Levine, S., Jordan, M. & Abbeel, P. (2015), High-Dimensional Continuous Control Using Generalized Advantage Estimation, arXiv:1506.02438"
     source_pr: "#12838"
