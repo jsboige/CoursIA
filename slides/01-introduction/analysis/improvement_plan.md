@@ -115,7 +115,7 @@ Le deck Introduction est transversal : il presente les concepts que les notebook
 | 29 | Theorie des jeux | `GameTheory/GameTheory-02b-Lean-Definitions-Lean.ipynb` a `GameTheory-16b` |
 | 13 | Deep learning / GenAI | `GenAI/Image/` (15+ notebooks), `ML/ML.Net/` (5 notebooks) |
 | 13 | Trading algorithmique | `QuantConnect/` (27 notebooks - a verifier) |
-| 39 | Agent apprenant | `RL/rl_1_intro_cartpole.ipynb` a `rl_3_experience_replay_dqn` |
+| 39 | Agent apprenant | `RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb` a `rl_3_experience_replay_dqn` |
 
 ### Slide "Pour aller plus loin" a ajouter
 

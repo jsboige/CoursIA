@@ -39,6 +39,9 @@ RUN python3 -m pip install --break-system-packages --no-cache-dir \
     nashpy open_spiel \
     # SemanticWeb
     rdflib owlready2 pyshacl \
+    # SmartContracts SC-11 (LLM-Assisted) : backend EthereumTester local --
+    # web3 pour EthereumTesterProvider, eth-tester[py-evm] pour le backend
+    web3 "eth-tester[py-evm]" \
     && python3 -m ipykernel install --name python3 --user
 
 # Stage 2b: kernel Python 3.13 "global-3.13" (notebooks serie Lean, #16262)
