@@ -213,12 +213,18 @@ class TestNotebookToPageUrl:
         assert url == "https://jsboige.github.io/CoursIA/MyIA.AI.Notebooks/ML/ML.Net/ML-1-Python.html"
 
     def test_absolute_path(self):
+        """Un path absolu Windows est normalise en chemin relatif gh-pages.
+
+        L'URL doit oter le prefixe machine (ex. `D:/CoursIA-2/`) et ne
+        conserver que la partie publiee a partir de `MyIA.AI.Notebooks/`,
+        sinon le `D:/` se retrouve dans l'URL publiee (cf. MISSING_PAGE
+        sur tout le corpus reel, docstring de la fonction).
+        """
         url = mod.notebook_to_page_url(
             "D:/CoursIA-2/MyIA.AI.Notebooks/Search/Search-01.ipynb",
             "https://jsboige.github.io/CoursIA",
         )
-        # L'URL garde le path complet incluant MyIA.AI.Notebooks/
-        assert url == "https://jsboige.github.io/CoursIA/D:/CoursIA-2/MyIA.AI.Notebooks/Search/Search-01.html"
+        assert url == "https://jsboige.github.io/CoursIA/MyIA.AI.Notebooks/Search/Search-01.html"
 
     def test_windows_backslash_normalized(self):
         """Le path Windows avec backslash doit etre normalise en forward slash."""
