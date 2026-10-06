@@ -19,6 +19,7 @@ Stratégie composite combinant deux approches complémentaires via le QuantConne
 - `main.py` : Configuration de l'algorithme avec CompositeAlpha et MultiStrategyPCM
 - `alpha_models.py` : Classes SectorMomentumAlpha et RegimeSwitchingAlpha
 - `portfolio_construction.py` : MultiStrategyPCM pour l'allocation de capital par stratégie
+- `quantbook.ipynb` : QuantBook de recherche du composite Momentum + RegimeSwitching (données natives QC, pré-backtest)
 
 ## Résultats de backtest (T60/RS40)
 
