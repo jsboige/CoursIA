@@ -125,10 +125,25 @@ python scripts/shadow_replay.py --registry shadow/registry.json --csv shadow/pas
 
 Un backtest à la fois, annoncé sur le tableau de bord de coordination : le quota d'appels QC est partagé par toute la flotte.
 
+## Points d'entrée disponibles
+
+| Point d'entrée | Ce qu'il rejoue | Paramètres |
+|---|---|---|
+| `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/shadow_inverse_vol.py:inverse_vol` | la règle à inverse de la volatilité du harnais papier, sur SPY, QQQ, IEF et GLD, telle que l'expérience #19072 l'a mesurée ; rendements d'un investisseur en euros | `convention` : `"U"` (volatilité des cours en dollars) ou `"F"` (volatilité des cours convertis en euros) ; `target` : la cible de `inverse_vol_weights` (0,025 dans le verdict de #19072) |
+
+Fonctionnement de `inverse_vol` :
+
+- il importe `inverse_vol_currency.py` (règle du harnais, conversion en euros, simulation) au lieu de le recopier : une candidate gelée rejoue le code qui a produit le verdict de #19072 ;
+- le portefeuille reste en liquidités jusqu'à la première séance à partir de D. Sa clôture porte l'allocation d'ouverture et ses frais ; viennent ensuite les dernières séances des mois terminés ;
+- les séances rejouées vont de D inclus à la date du passage exclue : la séance du jour peut être encore ouverte quand le passage tourne ;
+- fenêtre de volatilité, plafond par ligne, bande et frais sont ceux de #19072 ;
+- les cours (Yahoo, ajustés des dividendes) sont téléchargés à chaque passage dans un dossier temporaire.
+
 ## Cadence
 
 Un passage par mois, à la première séance du mois. Chaque passage est une PR qui ne touche que `passes.csv`. Elle cite la sortie de `validate` et le dossier des séries.
 
 ## Ce qui n'est pas encore là
 
-- **Les premières inscriptions et le rythme automatique** sont les étapes 2 et 3 de #18923.
+- **Les premières inscriptions** (étape 2 de #18923) : les conventions `U` et `F` de `inverse_vol` se gèlent une fois ce point d'entrée sur `main`, au commit qui le porte ; leur premier passage a lieu à la première séance du mois suivant.
+- **Le rythme automatique** est l'étape 3 de #18923.
