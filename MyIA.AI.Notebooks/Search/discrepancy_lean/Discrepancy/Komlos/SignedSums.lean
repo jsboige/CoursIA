@@ -353,7 +353,7 @@ theorem exists_colouring_aux (n : ℕ) :
           funext j
           induction j using Fin.lastCases with
           | last => simp [liftUp]
-          | cast k => simp [liftUp, Pi.smul_apply, smul_eq_mul]
+          | cast k => simp [liftUp, Pi.smul_apply]
         constructor
         · refine Finset.mem_image.2 ⟨a + 3 • v i.castSucc,
             (hAstab a ha i.castSucc).1, ?_⟩
@@ -381,7 +381,7 @@ theorem exists_colouring_aux (n : ℕ) :
         have hid1 : (-(3 • v i.castSucc) - 3 • v i.castSucc : Fin d → ℤ)
             = -(6 • v i.castSucc) := by
           funext j
-          simp only [Pi.sub_apply, Pi.smul_apply, smul_eq_mul, Pi.neg_apply]
+          simp only [Pi.sub_apply, Pi.smul_apply, Pi.neg_apply]
           ring
         have hid2 : 3 • v (Fin.last n) - 3 • v i.castSucc - 3 • v i.castSucc
             = w - 6 • v i.castSucc := by
@@ -391,7 +391,7 @@ theorem exists_colouring_aux (n : ℕ) :
         have hid3 : -(3 • v (Fin.last n)) - 3 • v i.castSucc - 3 • v i.castSucc
             = -w - 6 • v i.castSucc := by
           funext j
-          simp only [Pi.sub_apply, Pi.smul_apply, smul_eq_mul, Pi.neg_apply, hw]
+          simp only [Pi.sub_apply, Pi.smul_apply, Pi.neg_apply, hw]
           ring
         have h6set : SupportContained S P
             ({0, w, -w, -(6 • v i.castSucc), w - 6 • v i.castSucc,
@@ -431,14 +431,14 @@ theorem exists_colouring_aux (n : ℕ) :
                   * ((liftUp (v i.castSucc, false)) (Fin.last d) : ℝ)
               = (Fin.snoc z β : Fin (d + 1) → ℝ) (Fin.last d)
             rw [hS', coordMoment_pushUp_split_last w P S, hb]
-            simp [hv'snoc]
+            simp
         | cast k =>
             show coordMoment (pushUp (split w P)) S' k.castSucc
               + ∑ i : Fin n, (ε' i : ℝ)
                   * ((liftUp (v i.castSucc, false)) k.castSucc : ℝ)
               = (Fin.snoc z β : Fin (d + 1) → ℝ) k.castSucc
             rw [hS', coordMoment_pushUp_split_of_support w mono3 k, hz]
-            simp [hv'snoc]
+            simp
       have hmem2 : (fun j => coordMoment (pushUp (split w P)) S' j
             + ∑ i : Fin n, (ε' i : ℝ) * ((liftUp (v i.castSucc, false)) j : ℝ))
           ∈ convexHull ℝ
