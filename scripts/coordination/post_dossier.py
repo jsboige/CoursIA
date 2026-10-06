@@ -26,7 +26,14 @@ Refus (rc 4, RIEN n'est poste) si :
 6. le gate de la famille rend deja 0 ou 3 (dossier intact) pose par une
    AUTRE lane -- anti-double-stamp ; un re-stamp de SA propre lane reste
    licite. Un rc 2 (UNKNOWN) ferme aussi la porte : on ne poste pas
-   au-dessus d'un etat illisible.
+   au-dessus d'un etat illisible. Sur rc 3 (BLOCKED), un re-stamp d'une
+   lane tierce est licite si le dossier refute explicitement le dossier
+   en place via les champs ``supersedes`` (numero du commentaire de
+   l'ancien) et ``supersedes-why`` non vide -- le motif du dossier BLOCKED
+   peut etre perime a la meme tete et la lane d'origine peut etre
+   indisponible (#19420). Le gate juge ensuite la refutation comme pour
+   toute contradiction muette (#18934). rc 0 reste refuse : un second
+   tampon n'ouvre pas une guerre de dossiers.
 
 Le POST part par ``gh api ... --input payload.json`` (jamais ``-f body=@``,
 cf gh-posting-hygiene.md), puis le corps publie est relu (ligne 1, longueur,
@@ -282,10 +289,28 @@ def main(argv: list[str] | None = None) -> int:
             return refuse(f"gate rc {gate_rc} but its JSON is unreadable: {exc}")
         existing_lane = family.lane_of(gate_payload)
         if existing_lane and existing_lane != args.lane:
-            return refuse(
-                f"anti-double-stamp: gate rc {gate_rc} with an intact dossier by "
-                f"lane {existing_lane!r} -- a re-stamp is licite only for its own lane"
-            )
+            # #19420 -- rc 3 (BLOCKED) admetre un re-stamp d'une lane tierce
+            # si le dossier refute le dossier en place (supersedes + why).
+            # rc 0 (READY) reste refuse : un second tampon n'ouvre pas une
+            # guerre de dossiers, et le gate du dossier mute contradiction
+            # (#18934) n'a rien a juger sans supersedes effectif.
+            if gate_rc == 3:
+                supersedes = dossier.fields.get("supersedes", "").strip()
+                supersedes_why = dossier.fields.get("supersedes-why", "").strip()
+                if supersedes and supersedes_why:
+                    pass  # re-stamp tiers autorise sous refute explicite
+                else:
+                    return refuse(
+                        f"anti-double-stamp: gate rc 3 with an intact dossier by "
+                        f"lane {existing_lane!r} -- a re-stamp from {args.lane!r} "
+                        "is licite only with non-empty 'supersedes' and "
+                        "'supersedes-why' fields naming what is refuted (#19420)"
+                    )
+            else:
+                return refuse(
+                    f"anti-double-stamp: gate rc {gate_rc} with an intact dossier by "
+                    f"lane {existing_lane!r} -- a re-stamp is licite only for its own lane"
+                )
 
     comment = post_comment(args.repo, target, body)
     comment_id = comment.get("id")

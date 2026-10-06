@@ -5275,8 +5275,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     delivered_state: dict = {"failures": [], "budget_hit": False}
 
-    payload_cache = PayloadCache(args.cache_dir)
+    # Capacite dimensionnee pour le cache PAR TRANCHE (#19236) : la fenetre du
+    # tapis (90 j) couvre ~30 tranches de 3 j, qui s'ajoutent aux entrees
+    # pool / visites / series. Au plafond par defaut (32), les tranches les
+    # plus anciennes seraient evincees (LRU par mtime) et re-telechargees au
+    # tour suivant -- le cache par tranche serait annule par sa propre
+    # pression. 64 laisse la marge d'un tour complet plus les autres entrees.
+    payload_cache = PayloadCache(args.cache_dir, max_entries=64)
     cache_status: dict[str, dict[str, Any]] = {}
+    # Observabilite du cache PAR TRANCHE (#19236) : combien de tranches
+    # servies par le cache contre telechargees. Hors de `cache_status`, dont
+    # le contrat est `nom -> verdict de cache` (cf fetch_merged).
+    slice_stats: dict[str, int] = {}
 
     # #14591 Volet A : auto-appliquer --prev-genre depuis le CSV d'etat si
     # la lane y est connue. L'utilisateur peut toujours surcharger via
@@ -5510,6 +5520,7 @@ def main(argv: list[str] | None = None) -> int:
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
         cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
+        slice_stats=slice_stats,
     )
     delivery_sig = measure_delivery(
         delivery_prs, umbrella_numbers, now=NOW, days=delivery_window_days,
@@ -5874,6 +5885,14 @@ def main(argv: list[str] | None = None) -> int:
     # (`cache.pool.verified == false`) mais muet en clair -- or c'est
     # precisement le silence que #17096 designe comme le defaut.
     notice = cache_notice_lines(cache_status, show_all=args.cache_status)
+    if args.cache_status and slice_stats:
+        # #19236 : le cout du corpus etait invisible -- dire combien de
+        # tranches le cache a servies est ce qui rend le gain mesurable.
+        notice.append(
+            "Cache tranches (#19236) : {} servie(s) depuis le cache, "
+            "{} telechargee(s)".format(
+                slice_stats.get("hits", 0), slice_stats.get("fetches", 0))
+        )
 
     if args.json:
         print(json.dumps({
