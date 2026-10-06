@@ -6732,6 +6732,29 @@ def test_implicit_absent_when_no_pr_references(monkeypatch, capsys):
     assert "CLEAR" in captured.out
 
 
+def test_implicit_not_run_when_caller_owns_the_grain(monkeypatch, capsys):
+    # Non-regression review 5429946072 (lettre #14300 : « sans qu'aucun
+    # [CLAIMED] n'ait ete pose ») : la jambe ne tourne que si le registre
+    # ne porte AUCUN claim actif -- ni d'une autre lane, ni de l'APPELANT.
+    # Une lane qui a pose son marqueur et croise une PR tierce sur l'issue
+    # reste OWNED_BY_ME (exit 0), jamais IMPLICIT (exit 3) : sinon le
+    # message « poser le marqueur » ne leverait rien et le picker retirait
+    # a la lane son propre grain.
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
+    p = payload(comment("[CLAIMED] lane myia-po-2024:CoursIA -- supervise",
+                        "2026-09-02T10:00:00Z"),
+                number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "IMPLICIT" not in captured.out
+    brace = captured.out.find("{")
+    data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
+    assert data["my_active_claim"] is True
+    assert data["implicit_occupation"] == []
+
+
 def test_implicit_skips_own_lane_pr(monkeypatch, capsys):
     # Une lane ne collisionne pas avec elle-meme : la PR de MA lane qui
     # reference l'issue est ma livraison en cours, pas une occupation.

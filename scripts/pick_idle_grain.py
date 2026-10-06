@@ -1793,6 +1793,12 @@ def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
             blocking = data.get("blocking_lanes") or []
             if blocking:
                 return CLAIM_CODE_BLOCKED, "BLOQUE par " + ", ".join(blocking)
+            # review 5429946072 : le claim de l'APPELANT est teste AVANT
+            # l'occupation implicite -- un grain deja marque par la lane qui
+            # tire est OWNED_BY_ME, une PR tierce citee en passant ne doit
+            # pas le faire sortir de l'urne comme IMPLICIT.
+            if data.get("my_active_claim"):
+                return CLAIM_CODE_OWNED_BY_ME, "deja claim par cette lane"
             implicit = data.get("implicit_occupation") or []
             if implicit:
                 refs = ", ".join(
@@ -1801,8 +1807,6 @@ def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
                     for i in implicit)
                 return (CLAIM_CODE_IMPLICIT,
                         f"PR ouverte d'une autre lane : {refs}")
-            if data.get("my_active_claim"):
-                return CLAIM_CODE_OWNED_BY_ME, "deja claim par cette lane"
             stale = data.get("stale_claims") or []
             if stale:
                 return (CLAIM_CODE_FREE_STALE,

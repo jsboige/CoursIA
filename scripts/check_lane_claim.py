@@ -2556,14 +2556,18 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # only (`--claim` is exempt: posting the marker IS the deconfliction
     # gesture, and the writer path calls this function with
     # `check_open_pr_paths=False`). Lazy by outcome: it runs only when the
-    # claim record is otherwise CLEAR (`not others` -- final, post
-    # scope-filter and stale-filter), because a blocking claim subsumes
-    # implicit occupation AND skipping the gh round-trip on BLOCKED probes
-    # keeps the picker's N-per-draw probes cheap. Fail-open with a loud
-    # WARN on gh failure, same posture as the #16570 paths leg: a leg that
-    # cannot measure must not fabricate a verdict.
+    # registry carries NO active claim at all -- neither another lane's
+    # (`not others`, final post scope-filter and stale-filter) nor the
+    # caller's (`mine is None`, review 5429946072: the letter of #14300 is
+    # « sans qu'aucun [CLAIMED] n'ait ete pose » -- a lane that HAS posted
+    # its marker owns the grain, and an open PR of a third lane must not
+    # flip its verdict to IMPLICIT), because any claim subsumes implicit
+    # occupation AND skipping the gh round-trip on claimed probes keeps
+    # the picker's N-per-draw probes cheap. Fail-open with a loud WARN on
+    # gh failure, same posture as the #16570 paths leg: a leg that cannot
+    # measure must not fabricate a verdict.
     implicit_occupation: list[dict] = []
-    if (check_open_pr_paths and not others
+    if (check_open_pr_paths and not others and mine is None
             and payload.get("number") is not None):
         try:
             implicit_occupation = _find_open_prs_referencing_issue(

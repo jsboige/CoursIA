@@ -1063,6 +1063,14 @@ def test_summarize_claim_implicit_occupation():
     assert code == pig.CLAIM_CODE_IMPLICIT
     assert "#14293" in human
     assert "myia-po-2026:CoursIA" in human
+    # review 5429946072 : le claim de l'APPELANT est teste AVANT l'implicite
+    # -- un grain deja marque par la lane qui tire reste OWNED_BY_ME meme si
+    # une PR tierce reference l'issue (sinon la lane perd son propre grain).
+    owned_json = ('{"blocking_lanes": [], "my_active_claim": true,'
+                  '"stale_claims": [], "implicit_occupation": '
+                  '[{"number": 14293, "lane": "myia-po-2026:CoursIA"}]}')
+    code, human = pig._summarize_claim(owned_json, 0)
+    assert code == pig.CLAIM_CODE_OWNED_BY_ME
     # priorite : un BLOCKED explicite prime sur l'implicite (le marqueur a
     # plus d'autorite) -- le reducteur teste blocking_lanes AVANT.
     both_json = ('{"blocking_lanes": ["myia-po-2027:CoursIA"],'
