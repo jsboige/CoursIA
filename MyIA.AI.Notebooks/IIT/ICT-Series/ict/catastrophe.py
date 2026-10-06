@@ -131,6 +131,98 @@ def bifurcation_curve(a_grid) -> Tuple[np.ndarray, np.ndarray]:
     return -b, b
 
 
+def cusp_polar_torus(
+    n_cusps: int, n_samples: int = 400, R: float = 2.0, r: float = 1.0
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Cubique cuspidale ``y**2 = x**3`` en polaires, fermee sur le tore (R, r).
+
+    Parametrisation du **nœud torus** ``T(2, n_cusps)`` : on impose la
+    relation ``2 phi = n_cusps theta``. La cubique cuspidale vue comme
+    trace sur le tore de revolution (R, r) -- une courbe reguliere sur la
+    surface du tore -- se **ferme** quand theta fait **deux tours** autour
+    du petit axe (``theta = 4 pi``) et phi fait **n_cusps tours** autour du
+    grand axe (``phi = 2 pi n_cusps``). La projection de cette courbe sur le
+    plan du tore forme :
+
+    * ``n_cusps = 3`` -> **trèfle** ``3_1`` (noeud de Rolfsen, 3 croisements)
+    * ``n_cusps = 5`` -> **cinquefoil** ``5_1`` (5 croisements)
+    * ``n_cusps = 2`` -> **hopf link** (2 composantes fermees, ce n'est plus
+      un nœud au sens propre)
+
+    Renvoie les coordonnees 3D ``(x, y, z)`` d'un echantillonnage regulier
+    de la trace sur la surface du tore.
+    """
+    if n_cusps < 2:
+        raise ValueError("n_cusps doit etre >= 2 (n=1 ne ferme pas)")
+    theta = np.linspace(0.0, 4.0 * np.pi, n_samples)
+    phi = n_cusps * theta / 2.0
+    x = (R + r * np.cos(theta)) * np.cos(phi)
+    y = (R + r * np.cos(theta)) * np.sin(phi)
+    z = r * np.sin(theta)
+    return x, y, z
+
+
+def torus_knot_crossings(
+    n_cusps: int, n_samples: int = 2000, R: float = 2.0, r: float = 1.0
+) -> int:
+    """Compte les auto-croisements de la trace cuspidale projetée sur (x, y).
+
+    Pour un noeud torus ``T(2, n)`` (n >= 3) ferme sur le tore de revolution,
+    la projection sur le plan equatorial (x, y) presente **``2 (n - 1)``**
+    croisements generiques (formule standard des noeuds torus :
+    ``p (q - 1)`` avec ``p = 2``, ``q = n``). Temoin negatif :
+    ``n = 3`` -> **4 croisements** (trefle, pas 3 ni 5) ; ``n = 5`` ->
+    **8 croisements** (cinquefoil, pas 3 ni 10). C'est la signature qui
+    distingue trèfle et cinquefoil **sans interpreter visuellement** une
+    figure 3D -- le **témoin negatif** specifie par le ticket #19352.
+
+    Note : ``n_cusps = 2`` produit la **Hopf link** (2 composantes fermees,
+    ce n'est plus un nœud au sens propre) ; la detection sur une seule
+    boucle surcompte les paires, et la valeur rendue n'est pas une
+    signature de nœud. Pour ``n >= 3``, la formule tient.
+
+    Algorithme : la trace forme une boucle fermee de ``n_samples`` segments,
+    le segment ``i`` etant ``(i, (i+1) mod n_samples)``. On enumere les
+    paires de segments **non adjacents** ``(i, j)`` avec ``j > i + 1`` ; deux
+    segments se croisent si l'orientation du quadruplet change de signe sur
+    les deux diagonales. On decompte les paires ``(i, j)`` qui verifient
+    cette condition : chaque croisement est vu une fois (la paire
+    ``(i, j)`` avec ``i < j``), pas deux.
+    """
+    if n_cusps < 2:
+        raise ValueError("n_cusps doit etre >= 2")
+    theta = np.linspace(0.0, 4.0 * np.pi, n_samples)
+    phi = n_cusps * theta / 2.0
+    px = (R + r * np.cos(theta)) * np.cos(phi)
+    py = (R + r * np.cos(theta)) * np.sin(phi)
+
+    n = n_samples
+
+    def seg_intersect(i: int, j: int) -> bool:
+        ai, bi = i, (i + 1) % n
+        ci, di = j, (j + 1) % n
+        ax, ay = px[ai], py[ai]
+        bx, by = px[bi], py[bi]
+        cx, cy = px[ci], py[ci]
+        dx, dy = px[di], py[di]
+        d1 = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+        d2 = (bx - ax) * (dy - ay) - (by - ay) * (dx - ax)
+        d3 = (dx - cx) * (ay - cy) - (dy - cy) * (ax - cx)
+        d4 = (dx - cx) * (by - cy) - (dy - cy) * (bx - cx)
+        return ((d1 > 0 and d2 < 0) or (d1 < 0 and d2 > 0)) and (
+            (d3 > 0 and d4 < 0) or (d3 < 0 and d4 > 0)
+        )
+
+    n_cross = 0
+    for i in range(n):
+        for j in range(i + 2, n):
+            # La paire (i=0, j=n-1) : segments (0,1) et (n-1,0) -- non
+            # adjacents en boucle fermee, donc a tester.
+            if seg_intersect(i, j):
+                n_cross += 1
+    return n_cross
+
+
 # --------------------------------------------------------------------------- #
 #  Relaxation gradient et lacet d'hysteresis (le lacet de predation)           #
 # --------------------------------------------------------------------------- #
