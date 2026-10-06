@@ -51,12 +51,6 @@
       "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
     },
     {
-      "kind": "link_404",
-      "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-10-NeuralDiving-Coloration-Python.ipynb",
-      "target": "Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python.ipynb",
-      "text": "<< App-31 Bornes RCPSP"
-    },
-    {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
@@ -1444,11 +1438,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-03-MAPF-Guarantee-Audit-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-06-LearningToBranch-Generalization-Audit-Python.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
     },
     {
