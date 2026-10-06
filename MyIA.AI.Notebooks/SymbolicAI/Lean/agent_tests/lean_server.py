@@ -15,6 +15,7 @@ cache (verified ~2s for a Voting.lean cache hit).
 """
 
 import hashlib
+import math
 import os
 import platform
 import subprocess
@@ -100,6 +101,28 @@ def _resolve_lake_command(extra_args: List[str], cwd: str = None) -> Tuple[List[
             return [str(lake_exe), *extra_args], env
 
     return ["lake", *extra_args], env
+
+
+def _lake_build_timeout_s() -> float:
+    """Wall-clock budget (seconds) for ONE ``lake build`` invocation (#18432).
+
+    Read from ``$LEAN_LAKE_BUILD_TIMEOUT_S`` at every call so a per-lake /
+    per-run budget can be set by the launcher (same env-knob idiom as
+    ``LEAN_LAKE_BIN`` / ``LEAN_USE_WSL``). Historical default 600s (see
+    ``_run_lake_build``). Non-parsable, non-positive or NON-FINITE values
+    (nan / inf — a budget must be bounded or ``subprocess.run`` itself
+    fails) fall back to the default.
+    """
+    raw = os.getenv("LEAN_LAKE_BUILD_TIMEOUT_S")
+    if raw is None:
+        return 600.0
+    try:
+        val = float(raw)
+    except ValueError:
+        return 600.0
+    if not math.isfinite(val) or val <= 0:
+        return 600.0
+    return val
 
 
 def _has_lakefile(p: Path) -> bool:
@@ -499,15 +522,27 @@ class LeanVerifier:
         the cwd is the Lake project root so ``.lake/build/lib/<module>.olean``
         is written/read at the same path as manual builds.
 
-        Timeout is 600s (increased from 300s). WSL builds via ``/mnt/c/``
-        suffer 9P/NTFS overhead (~10x slower than native), so a cold build
-        can exceed the original 300s ceiling. See DEMO 35/36 traces.
+        Timeout defaults to 600s (increased from 300s). WSL builds via
+        ``/mnt/c/`` suffer 9P/NTFS overhead (~10x slower than native), so a
+        cold build can exceed the original 300s ceiling. See DEMO 35/36
+        traces. Since #18432 the budget is parameterizable per lake / per
+        run via ``$LEAN_LAKE_BUILD_TIMEOUT_S`` (see ``_lake_build_timeout_s``).
+        On exhaustion the PARTIAL output captured before the kill decides
+        the verdict: a real Lean error already emitted = confirmed failure
+        (``wall_clock_exhausted`` forensic flag), no parseable error = the
+        verdict-less UNKNOWN (``wall_clock_timeout`` marker) — a timeout
+        without diagnostics is the ABSENCE of a verdict, not a negative one.
         """
         module_name = relative_path.replace("/", ".").replace("\\", ".")
         if module_name.endswith(".lean"):
             module_name = module_name[:-5]
 
         cmd, env = _resolve_lake_command(["build", "-R", module_name], cwd=str(project))
+
+        # #18432: capture the budget ONCE — the subprocess timeout and the
+        # TimeoutExpired report must cite the exact same value (no second
+        # getenv, no truncation).
+        budget = _lake_build_timeout_s()
 
         try:
             start = time.time()
@@ -516,7 +551,7 @@ class LeanVerifier:
                 cwd=str(project),
                 capture_output=True,
                 text=True, encoding="utf-8", errors="replace",
-                timeout=600,
+                timeout=budget,
                 env=env,
             )
             duration = time.time() - start
@@ -555,8 +590,46 @@ class LeanVerifier:
                 "build_time_s": round(duration, 1),
                 "lake_cmd": cmd[0],
             }
-        except subprocess.TimeoutExpired:
-            return {"success": False, "errors": "lake build timed out (300s)", "raw_output": ""}
+        except subprocess.TimeoutExpired as _te:
+            # #18432: a wall-clock exhaustion is NOT by itself a compile
+            # verdict. But subprocess hands us the PARTIAL stdout/stderr
+            # captured before the kill — a real Lean diagnostic may already
+            # be in there, in which case the failure is CONFIRMED (errors
+            # win over UNKNOWN). Only a timeout with no parseable error is
+            # the verdict-less UNKNOWN (wall_clock_timeout marker).
+            def _decode(data) -> str:
+                if data is None:
+                    return ""
+                if isinstance(data, bytes):
+                    return data.decode("utf-8", errors="replace")
+                return str(data)
+
+            # TimeoutExpired carries the pre-kill capture in `.output`
+            # (alias for stdout — there is no `.stdout` attribute) and
+            # `.stderr`; either may be bytes (undecoded) or str.
+            partial = _decode(getattr(_te, "output", None)) + "\n" \
+                + _decode(getattr(_te, "stderr", None))
+            partial_errors = self._extract_errors(partial)
+            if partial_errors:
+                return {
+                    "success": False,
+                    "errors": "\n".join(partial_errors),
+                    "raw_output": partial,
+                    # Forensic metadata only — NOT the UNKNOWN marker: a
+                    # confirmed diagnostic outranks the wall-clock cut.
+                    "wall_clock_exhausted": True,
+                    "timeout_s": budget,
+                }
+            return {
+                "success": False,
+                "errors": (
+                    f"lake build timed out ({budget:g}s wall-clock) — "
+                    f"budget exhausted, NO compile verdict (#18432)"
+                ),
+                "raw_output": partial,
+                "wall_clock_timeout": True,
+                "timeout_s": budget,
+            }
         except FileNotFoundError:
             return {
                 "success": False,
