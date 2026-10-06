@@ -260,9 +260,17 @@ def fetch_merged(
             mode=cache_mode,
         )
         counter_snapshot["slices"] += 1
-        if result.status in {"hit", "bypass"}:
+        if result.status == "hit":
             counter_snapshot["hits"] += 1
         else:
+            # `bypass` n'est PAS un hit : `get_or_fetch` ne rend ce statut
+            # qu'APRES avoir appele `fetch()` (mode `off`, ou echec
+            # d'ecriture disque au moment de poser l'entree) -- la tranche
+            # est telechargee. La compter comme hit faisait dire a la ligne
+            # de synthese « N servie(s) depuis le cache » d'un corpus qui
+            # venait de partir integralement en reseau (reserve Hermes
+            # #19246 : en mode off, 4 appels reseau affiches « 4 servies,
+            # 0 telechargee » au head ec761a4989).
             counter_snapshot["fetches"] += 1
         if result.status == "stale":
             raise RuntimeError(

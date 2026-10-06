@@ -954,6 +954,26 @@ def test_the_slice_summary_is_reported_apart_from_cache_status(tmp_path, monkeyp
     assert stats2["hits"] == 3 and stats2["fetches"] == 1, stats2
 
 
+def test_off_mode_downloads_are_counted_as_downloads_not_hits(tmp_path, monkeypatch):
+    """Reserve Hermes #19246 : en mode `off`, chaque tranche part en reseau.
+
+    `get_or_fetch` rend `bypass` APRES avoir appele `fetch()` (mode `off`,
+    ou echec d'ecriture disque) : la tranche est telechargee, pas servie
+    depuis le cache. La compter comme hit faisait afficher « 4 servie(s)
+    depuis le cache, 0 telechargee(s) » a un run qui venait de payer 4
+    appels reseau -- exactement le defaut reproduit par Hermes au head
+    ec761a4989.
+    """
+    net = _SliceNetwork()
+    monkeypatch.setattr(ss, "fetch_slice_raw", net)
+    cache = _cached_19236(tmp_path, lambda: 1_800_000_000.0)
+    stats = {}
+    ss.fetch_merged(9, now=_NOW_19236, cache=cache, cache_mode="off",
+                    cache_ttl_seconds=3600, slice_stats=stats)
+    assert len(net.calls) == 4, net.calls
+    assert stats["hits"] == 0 and stats["fetches"] == 4, stats
+
+
 def test_a_slice_at_the_search_cap_still_raises(tmp_path, monkeypatch):
     """#19209 : une tranche indecoupable LEVE -- la saturation est inchangee.
 
