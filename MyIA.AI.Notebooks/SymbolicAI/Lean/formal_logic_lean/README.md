@@ -124,5 +124,5 @@ lake build
 ```
 
 Voir aussi : `Lean-03b-Formalized-Formal-Logic-Lean-Python.ipynb` (le notebook),
-`../Tweety/Tweety-5d-Stable-Synthesis-Lean-Python.ipynb` (le patron générateur →
+`../Tweety/Tweety-05d-Stable-Synthesis-Lean-Python.ipynb` (le patron générateur →
 certificat), `../../../docs/lean/` (pièges tactiques).

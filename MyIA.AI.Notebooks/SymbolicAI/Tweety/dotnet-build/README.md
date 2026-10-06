@@ -13,7 +13,7 @@ est placé **à côté du notebook** qui le charge.
 | `build-tweety-pl-shade.pom.xml` | POM aggregator Maven shade (produit le fat-jar) | Oui (reproductibilité) |
 | `build-TweetyShade.csproj` | Projet MSBuild `<IkvmReference>` (convertit le fat-jar en DLL) | Oui (reproductibilité) |
 
-## Fichiers — cluster `beliefdynamics` (notebook [`../Tweety-4-Belief-Revision-Csharp.ipynb`](../Tweety-4-Belief-Revision-Csharp.ipynb))
+## Fichiers — cluster `beliefdynamics` (notebook [`../Tweety-04-Belief-Revision-CSharp.ipynb`](../Tweety-04-Belief-Revision-CSharp.ipynb))
 
 | Fichier | Rôle | Committé ? |
 |---------|------|-----------|

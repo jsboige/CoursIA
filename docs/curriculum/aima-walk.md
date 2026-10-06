@@ -88,7 +88,7 @@ métaheuristiques composées) — l'épilogue le nomme.
 10. **`SymbolicAI/Tweety/Tweety-2-Basic-Logics.ipynb`** (45 min) — logique propositionnelle
     avec la bibliothèque Tweety (Java). *Suppose : prérequis 3 (Java).*
 11. **`Tweety-2c-FOL-Csharp.ipynb`** (45 min) — logique du premier ordre, twin .NET.
-12. **`Tweety-3-Advanced-Logics.ipynb`** (45 min) — logiques non classiques (défaut,
+12. **`Tweety-03-Advanced-Logics-Python.ipynb`** (45 min) — logiques non classiques (défaut,
     modales). *Pont : `Tweety-11-Causal-Python.ipynb` pour la jonction avec la Phase 6.*
 
 ### Phase 6 — Raisonnement probabiliste (AIMA ch. 12-16) — PyMC, ~1 h

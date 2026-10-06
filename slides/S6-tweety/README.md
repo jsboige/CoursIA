@@ -30,9 +30,9 @@ Deck de presentation pour la serie de 10 notebooks **TweetyProject** (`SymbolicA
 |----------|-------|
 | Tweety-1-Setup | Configuration JVM + JARs |
 | Tweety-2-Basic-Logics | PL + FOL |
-| Tweety-3-Advanced-Logics | DL, Modale, QBF |
-| Tweety-4-Belief-Revision | AGM, MUS, MaxSAT |
-| Tweety-5-Abstract-Argumentation | Frameworks de Dung |
+| Tweety-03-Advanced-Logics-Python | DL, Modale, QBF |
+| Tweety-04-Belief-Revision-Python | AGM, MUS, MaxSAT |
+| Tweety-05-Abstract-Argumentation-Python | Frameworks de Dung |
 | Tweety-6-Structured-Argumentation | ASPIC+, DeLP, ABA |
 | Tweety-7a-Extended-Frameworks | ADF, Bipolar, WAF |
 | Tweety-7b-Ranking-Probabilistic | Ranking + Probabiliste |
