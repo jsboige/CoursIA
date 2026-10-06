@@ -127,6 +127,16 @@ def _split_sentences(text: str, max_chars: int = 160) -> list[str]:
         p = raw.strip()
         if not p:
             continue
+        # A part with no alphanumeric content (closing quote "»", stray
+        # underscore, trailing punctuation the regex split off) must not
+        # become its own chunk: the gateway renders no audio for it
+        # (Kokoro "No audio segments generated", HTTP 500) and
+        # qwen_tts_voicedesign_chunked treats any failed chunk as fatal.
+        # Attach it to the running chunk instead -- it belongs to the
+        # sentence it closes.
+        if not re.search(r"[^\W_]", p):
+            cur = f"{cur}{p}"
+            continue
         if cur and len(cur) + 1 + len(p) > max_chars:
             chunks.append(cur)
             cur = p
