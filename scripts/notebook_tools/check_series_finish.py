@@ -11,8 +11,11 @@ Criteres (cf docs/reference/finition-de-serie.md, valide mainteneur 2026-10-05) 
    - `## Pour aller plus loin`
 3. **Capstone** : signale dans le README si pas applicable (phrase "Pas de capstone").
 
-Le chemin principal exclut les sous-dossiers archive/output, et ne considere que les
-carnets presents au top-level d'une sous-serie (pas les recursifs profond).
+Le chemin principal est defini recursivement (cf finition-de-serie.md :
+"l'ensemble de ses carnets, sous-dossiers compris"). En sont exclus
+`_archive`, `_output`, `.ipynb_checkpoints`, et tout suffixe de fichier
+`*_output.ipynb` (cf issue #19478 -- sinon un fichier isole `X_output.ipynb`
+hors dossier `_output` est comptabilise comme carnet de la serie).
 
 Usage :
     python scripts/notebook_tools/check_series_finish.py --series ML
@@ -103,16 +106,28 @@ def list_series_notebooks(series: str) -> list[str]:
     Il ne se définit pas par une profondeur de dossier."
 
     On applique donc : récursivité complète, exclusion des seuls fragments
-    archive / output / checkpoints.
+    archive / output / checkpoints (par **segment** de chemin) **et** du
+    suffixe de fichier `*_output.ipynb` (cf issue #19478 -- sans cela,
+    un fichier isole `X_output.ipynb` hors dossier `_output` est
+    comptabilise comme carnet de la serie).
     """
     from pathlib import Path
     root = Path(SERIES_ROOT) / series
     if not root.is_dir():
         return []
     notebooks = []
+    excluded_segments = (ARCHIVE_FRAGMENT, OUTPUT_FRAGMENT, CHECKPOINT_FRAGMENT)
     for p in root.rglob("*.ipynb"):
         rel = p.relative_to(root).as_posix()
-        if any(frag in rel.split("/") for frag in (ARCHIVE_FRAGMENT, OUTPUT_FRAGMENT, CHECKPOINT_FRAGMENT)):
+        segments = rel.split("/")
+        if any(frag in segments for frag in excluded_segments):
+            continue
+        # Exclusion par suffixe de fichier (cf #19478) : un `X_output.ipynb`
+        # isole hors dossier `_output` n'est pas un carnet de la serie.
+        # Le matching est strict (`_output.ipynb` en suffixe exact), pas un
+        # sous-match (`_output` au milieu) -- `_output_archive.ipynb` est
+        # deja capture par l'exclusion par segment.
+        if p.name.endswith("_output.ipynb"):
             continue
         notebooks.append(str(p))
     return sorted(notebooks)
