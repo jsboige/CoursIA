@@ -55,11 +55,13 @@ _MAX_PREFIX_TAGS = 4  # Max prosody tags prepended before segment text.
 # Activation: env flag NARRATOR_QWEN_ROUTING (default "1"). Set "0" to fall
 # back to the FishAudio narrator clone (legacy path).
 #
-# Disabled-by-env safety: if the gateway is unreachable / 4xx, the narrator
-# branch returns status="failed" with reference_id="qwen-voicedesign-narrator-fr-literary"
-# — we do NOT silently fall back to FishAudio (that would defeat the
-# measurement in #1028). The pipeline-level run() surfaces the failure per
-# acceptance #6 of #15002.
+# Failure contract: if the gateway is unreachable / 4xx, the narrator branch
+# raises NarratorQwenUnavailable, and `_synthesize_batch` re-raises it instead
+# of absorbing it into a survivable status="failed" record — that tolerant
+# path is reserved for FishAudio transients. The pass therefore ABORTS: we do
+# NOT silently fall back to FishAudio (that would defeat the measurement in
+# #1028), and we do not emit an audiobook whose narrator segments are simply
+# missing. Acceptance #6 of #15002.
 _NARRATOR_QWEN_ROUTING: bool = os.getenv("NARRATOR_QWEN_ROUTING", "1") == "1"
 _QWEN_NARRATOR_REFERENCE_ID: str = "qwen-voicedesign-narrator-fr-literary"
 
@@ -1042,6 +1044,17 @@ def _synthesize_batch(
             seg_idx = futures[future]
             try:
                 results[seg_idx] = future.result()
+            except NarratorQwenUnavailable:
+                # Hard failure by contract (acceptance #6 of #15002, cf the
+                # class docstring): the narrator routing exists to SURFACE the
+                # Qwen regression #1028. Recording a missing narrator segment
+                # as a survivable status="failed" beside FishAudio transients
+                # IS the silent degradation the typed exception was created to
+                # prevent -- and run()'s final guard would not catch it, since
+                # that guard only fires when NOTHING at all was generated.
+                # Propagate: the pass aborts instead of shipping an audiobook
+                # with narrator segments missing.
+                raise
             except Exception as exc:
                 # FishAudio timeouts are a known transient (see _MAX_WORKERS):
                 # log the real cause and keep a valid speaker so the schema

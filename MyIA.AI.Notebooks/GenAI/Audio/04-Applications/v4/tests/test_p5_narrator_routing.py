@@ -153,3 +153,48 @@ def test_synthesize_narrator_qwen_raises_on_empty_input():
     except NarratorQwenUnavailable:
         return  # success: raised as designed
     raise AssertionError("NarratorQwenUnavailable not raised on empty input")
+
+
+def test_synthesize_batch_propagates_narrator_hard_failure():
+    """A Qwen narrator failure must ABORT the batch, not be absorbed into a
+    survivable status="failed" record.
+
+    The gap was measured in review of PR #19453: the typed
+    NarratorQwenUnavailable was caught by the generic `except Exception`
+    handler, and run()'s final guard only fires when NOTHING was generated.
+    A Qwen gateway outage with FishAudio healthy for every other speaker
+    therefore finished the pass with the narrator segments silently missing --
+    exactly the regression the typed exception exists to surface.
+    """
+    from v4 import p5_tts
+    from v4.schemas import AnnotatedSegment
+
+    text = "Un texte narrateur volontairement non cache."
+    seg = AnnotatedSegment(
+        seg_index=987654,  # distinctive: no cached mp3 can match it
+        speaker="narrateur",
+        type="narration",
+        text=text,
+        annotated_text=text,
+    )
+
+    def _boom(_seg, _text):
+        raise p5_tts.NarratorQwenUnavailable("gateway :8196 unreachable")
+
+    original_seg, original_thermal = (
+        p5_tts._synthesize_segment,
+        p5_tts.thermal_wait,
+    )
+    try:
+        p5_tts._synthesize_segment = _boom
+        p5_tts.thermal_wait = lambda *a, **k: None
+        p5_tts._synthesize_batch([(seg, text)])
+    except p5_tts.NarratorQwenUnavailable:
+        return  # success: propagated instead of degraded
+    finally:
+        p5_tts._synthesize_segment = original_seg
+        p5_tts.thermal_wait = original_thermal
+    raise AssertionError(
+        "NarratorQwenUnavailable was absorbed by the generic handler -- the "
+        "pass would ship an audiobook with narrator segments missing"
+    )

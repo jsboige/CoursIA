@@ -133,9 +133,13 @@ def _split_sentences(text: str, max_chars: int = 160) -> list[str]:
         # (Kokoro "No audio segments generated", HTTP 500) and
         # qwen_tts_voicedesign_chunked treats any failed chunk as fatal.
         # Attach it to the running chunk instead -- it belongs to the
-        # sentence it closes.
+        # sentence it closes. When no chunk is running yet (text opening on
+        # an orphan "»"), there is no sentence to close: attach nothing, or
+        # the next chunk would lead with a bare glyph sent to the gateway
+        # (residual nit, review of #19453).
         if not re.search(r"[^\W_]", p):
-            cur = f"{cur}{p}"
+            if cur:
+                cur = f"{cur}{p}"
             continue
         if cur and len(cur) + 1 + len(p) > max_chars:
             chunks.append(cur)
