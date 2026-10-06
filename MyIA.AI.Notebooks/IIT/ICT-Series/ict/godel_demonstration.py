@@ -5,11 +5,14 @@ Outille la cellule ajoutée au notebook Lean-34 (cycle 26, grain #19351 du plan 
 Le module materialize l'exemple de l'article *The Gödel Number of a Non-Trivial
 Sentence* (Sheydvasser, 04/07/2026, https://derangedmathematician.substack.com/p/
 the-godel-number-of-a-non-trivial) : la numérotation de Gödel du **théorème de
-Pythagore** formule dans le **langage de Tarski** (B3 "entre", C4 "congruence").
-
-Cinq versions de l'énoncé, de plus en plus verbeuses -- la version 5 **s'auto-
-réfère** (la diagonale de Gödel), donc sa longueur explose en 10^8+ caractères et
-son nombre de Gödel depasse les bornes du représentable en Python.
+Pythagore** formule -- en **paraphrase informelle** inspiree de la notation de
+Tarski (B3 "entre", C4 "congruence"). Les versions 2 a 4 ne sont **pas** des
+formulations rigoureuses du langage de Tarski (la congruence y est 4-aire, pas
+une fonction binaire ; il n'y a pas de symbole de fonction), mais des
+**schémas pedagogiques** qui montrent la croissance de complexite. La version
+5 **s'auto-refere** (la diagonale de Gödel) -- sa longueur explose par
+auto-substitution, et son nombre de Gödel depasse les bornes du representable
+en Python (on n'affiche que l'ordre de grandeur log10).
 
 L'operation de Gödel sous-jacente est la **substitution** : encoder une chaîne
 s sur alphabet ASCII comme un entier N par
@@ -26,7 +29,8 @@ nombre ; pour la version 5, le nombre est astronomique et on n'affiche que
 l'ordre de grandeur (log10).
 """
 
-from math import log10, pi
+import math
+from math import log10
 
 
 def _is_prime_stream(n: int):
@@ -58,57 +62,62 @@ def godel_pythagore(version: int) -> str:
     if version == 1:
         return "for any right triangle, a^2 + b^2 = c^2"
     if version == 2:
+        # Paraphrase informelle inspiree de la notation Tarski.
+        # La notation stricte de Tarski n'a pas de symbole de fonction (Cong
+        # est 4-aire, et il n'y a pas de predicat "right angle" -- le
+        # triangle rectangle est un cas particulier hors du langage nu).
+        # Cette version sert d'echelle de complexite, pas d'encodage formel.
         return (
             "forall triangle ABC with right angle at C, "
-            "if B3(A, C, B) and B3(B, C, A) "
-            "then C4(A, B) is the sum of C4(A, C) and C4(B, C)"
+            "if B3(A, C, B) "  # C entre A et B (segment AB)
+            "then the segment AB has length equal to the sum of lengths of AC and BC squared"
         )
     if version == 3:
         return (
-            "Tarski language: B3(x, y, z) means 'y is between x and z'. "
-            "C4(x, y) means 'x and y are congruent'. "
+            "Informal paraphrase (not strict Tarski language): "
+            "B3(x, y, z) means 'y is between x and z'. "
             "Theorem (Pythagoras): For any points A, B, C such that B3(A, C, B) "
-            "and B3(B, C, A), if the angle at C is a right angle, then "
-            "C4(A, B) is the sum of C4(A, C) and C4(B, C)."
+            "and AC perpendicular to BC, "
+            "the squared length of AB equals the sum of squared lengths of AC and BC."
         )
     if version == 4:
         # Version developpee avec preuve informelle
         return (
-            "Tarski language: B3(x, y, z) means 'y is between x and z'. "
-            "C4(x, y) means 'x and y are congruent'. "
+            "Informal paraphrase (not strict Tarski language): "
+            "B3(x, y, z) means 'y is between x and z'. "
             "Axioms of betweenness (Tarski 1959): "
             "B3(x, y, z) implies B3(z, y, x). "
             "B3(x, y, z) and B3(x, z, y) imply y = z. "
-            "Lemma (existence of right angle): there exists points A, B, C "
-            "such that B3(A, C, B) and B3(B, C, A). "
+            "Lemma (existence of right angle): there exist points A, B, C "
+            "such that B3(A, C, B) and AC perpendicular to BC. "
             "Theorem (Pythagoras): For any such points A, B, C, "
-            "C4(A, B) is the sum of C4(A, C) and C4(B, C). "
+            "AB^2 = AC^2 + BC^2. "
             "Proof sketch: by the area argument of Euclid's Elements I.47. "
             "QED."
         )
     # version 5 : l'enonce s'auto-reference -- c'est la diagonale de Gödel.
-    # On itere k fois la substitution @ <- repr(base). A chaque iteration, la
-    # longueur double (chaque @ est remplace par la chaîne entiere, qui contient
-    # elle-même un @ -- le nombre d'occurrences double aussi). En 10 iterations
-    # on atteint ~600k caractères, suffisant pour demontrer la dynamique.
-    # L'article de Sheydvasser continue l'iteration jusqu'a > 10^212077 chiffres
-    # numeriques, ce qui necessiterait k ~ 30 iterations (chaine de ~10^9 chars)
-    # -- hors de portee d'un notebook pedagogique. Le verdict garde l'esprit du
-    # critere : la diagonale fait exploser la longueur.
+    # On itere k fois la substitution @ <- repr(s). A chaque iteration, le
+    # nombre de @ dans s est **carre** (chaque @ est remplace par une copie
+    # de s qui contient elle-meme plusieurs @), donc la longueur explose
+    # super-lineairement. Mesure : 3 iterations sur la base ci-dessous
+    # produisent 256 @ et ~120k caracteres. L'article de Sheydvasser continue
+    # l'iteration jusqu'a > 10^212077 chiffres numeriques, ce qui necessiterait
+    # k ~ 30 iterations (chaine de ~10^9 chars) -- hors de portee d'un
+    # notebook pedagogique. Le verdict garde l'esprit du critere : la
+    # diagonale fait exploser la longueur.
     base = (
-        "Tarski language: B3(x, y, z) means 'y is between x and z'. "
-        "C4(x, y) means 'x and y are congruent'. "
+        "Informal paraphrase (not strict Tarski language): "
+        "B3(x, y, z) means 'y is between x and z'. "
         "Theorem (Pythagoras, self-referential encoding v5): "
-        "For any points A, B, C such that B3(A, C, B) and B3(B, C, A), "
-        "if the angle at C is a right angle, then C4(A, B) is the sum of "
-        "C4(A, C) and C4(B, C). "
+        "For any points A, B, C such that B3(A, C, B) "
+        "and AC perpendicular to BC, AB^2 = AC^2 + BC^2. "
         "Encoded statement: <@> "
         "Note: <@> refers to the Gödel code of THIS very sentence. "
         "The diagonal lemma guarantees that such a self-referential "
         "encoding exists."
     )
     s = base
-    n_iter = 3  # 3 iterations -> ~64k caractères (base * 4^3)
+    n_iter = 3  # 3 iterations -> 256 @ (k**2 par iter), ~120k caracteres
     for _ in range(n_iter):
         s = s.replace("@", repr(s))
     return s
@@ -139,11 +148,22 @@ def godel_number_log10(s: str) -> float:
     """log10 du nombre de Gödel, robuste aux chaînes très longues.
 
     log10(N) = Σ_{i=0}^{len(s)-1}  (ord(s[i]) + 1) * log10(p_i)
+
+    Garantit que `_PRIMES_10K` contient au moins `len(s)` premiers avant la
+    somme. L'extension utilise un criblage complet jusqu'a une borne derivee
+    du PNT (pi(x) ~ x / ln x) -- suffisant pour ne pas tronquer la somme sur
+    des chaines de ~10^6 caracteres.
     """
-    if len(s) > len(_PRIMES_10K):
-        # Etend le crible par blocs de 100k.
-        n = max(len(s) + 1000, len(_PRIMES_10K) * 2)
-        _PRIMES_10K.extend(_is_prime_stream(n))
+    needed = len(s)
+    if len(_PRIMES_10K) < needed:
+        # Borne : pi(x) >= n pour x >= n * (ln n + ln ln n) (Rosser + Schoenfeld).
+        # On prend une marge +100 pour absorber les fluctuations.
+        if needed < 6:
+            bound = 15
+        else:
+            bound = int(needed * (math.log(needed) + math.log(math.log(needed)))) + 100
+        _PRIMES_10K.clear()
+        _PRIMES_10K.extend(_is_prime_stream(bound))
     return sum((ord(c) + 1) * log10(p) for i, (c, p) in enumerate(zip(s, _PRIMES_10K)))
 
 
