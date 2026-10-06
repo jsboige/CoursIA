@@ -402,4 +402,118 @@ theorem step_menProposedDownward {n : Nat} (menPref : Fin n → Fin n → Nat)
   · -- Cas m ≠ m' : delegue a la preuve reelle.
     exact step_menProposedDownward_unchanged menPref h m' m heq m w1 w2 hpmw2 hmw1
 
+/-- Conservation : `womenBestState` est preserve par `step` quand
+    la femme pas-passee `w` est differente de la femme `w_fresh` (qui
+    est appariee par le step). C'est une partie de `step_womenBest`
+    (la moitie facile) : le matching de `w` n'est pas modifie par
+    le step, et la table `proposed` de `w` n'est pas modifiee (le
+    `(m''' = m' ∧ w' = w_fresh)` est faux pour `w' = w` quand
+    `w ≠ w_fresh`). Donc l'invariant est preserve par l'hypothese
+    d'induction `h`.
+
+    Source : `step_womenBest` (~30 lignes). Phase 2.
+
+    **Note technique critique** : dans ce modele simplifie, le step
+    propose TOUJOURS a `w_fresh = rank 0` (la femme la mieux classee
+    par convention d'indexation Fin 0). La femme `w_fresh` est
+    appariee a `m'` (le proposeur), mais il n'y a aucune logique
+    de "women accept best proposal" dans le step. Donc l'invariant
+    `womenBestState` -- qui exige que la femme appariee detienne
+    sa meilleure proposition -- N'EST PAS preserve par le step
+    simplifie en general.
+
+    Le cas `w ≠ w_fresh` est preserve par h (le matching et proposed
+    de w sont inchanges). Mais le cas `w = w_fresh` exige que
+    `womenPref w_fresh m'` (la preference de w_fresh pour m') soit
+    <= toutes les autres preferences des proposeurs, ce qui n'est
+    pas garanti par le step simplifie.
+
+    Pour une preservation reelle, il faudrait soit :
+    (a) ajouter une logique "women accept best" dans le step, OU
+    (b) axiomatiser `womenPref w_fresh m' = 0` (le proposeur est
+        le preferre de w_fresh).
+
+    Le cas `w = w_fresh` est documente avec sorry, et la moitie
+    `w ≠ w_fresh` est prouvee reellement ci-dessous. -/
+theorem step_womenBest_unchanged {n : Nat} (womenPref : Fin n → Fin n → Nat)
+    {s : GSState n} (h : womenBestState womenPref s)
+    (m' : Fin n) (w : Fin n) (hwfresh : w ≠ (⟨0, n.pos_of_ne_zero (Nat.ne_of_gt (Nat.zero_lt_succ n))⟩ : Fin n)) :
+    womenBestState womenPref
+      (if hfree : s.isFree m' then
+        let w_fresh : Fin n := ⟨0, n.pos_of_ne_zero (Nat.ne_of_gt (Nat.zero_lt_succ n))⟩
+        { matching :=
+            { menMatches := fun m''' => if m''' = m' then some w_fresh else s.matching.menMatches m'''
+              womenMatches := fun w' => if w' = w_fresh then some m' else s.matching.womenMatches w' }
+          proposed := fun m''' w' => s.proposed m''' w' ∨ (m''' = m' ∧ w' = w_fresh) }
+      else s) := by
+  -- w ≠ w_fresh : le matching de w est inchange (le `if w' = w_fresh` est faux pour w' = w).
+  -- La table proposed de w est inchangee (le `(m''' = m' ∧ w' = w_fresh)` est faux pour w' = w).
+  -- Donc pour tout m'', proposed' w m'' = s.proposed w m''.
+  -- L'invariant est preserve par h.
+  intro w' m hmw
+  by_cases hfree : s.isFree m'
+  · -- Cas isFree m' : unfold la nouvelle table proposed et matching.
+    -- Pour w ≠ w_fresh : (w = w_fresh) est faux, donc womenMatches w' = s.matching.womenMatches w'
+    -- (cas w' = w dans le if).
+    -- Aussi : (m''' = m' ∧ w' = w_fresh) est faux pour w' = w, donc proposed' w w'' = s.proposed w w''.
+    have hmw' : (if w = (⟨0, n.pos_of_ne_zero (Nat.ne_of_gt (Nat.zero_lt_succ n))⟩ : Fin n) then some m' else s.matching.womenMatches w) = s.matching.womenMatches w := by
+      simp only [hwfresh]
+    have hpw : ∀ (m'' : Fin n),
+        (s.proposed w m'' ∨ (w = m' ∧ m'' = ⟨0, n.pos_of_ne_zero (Nat.ne_of_gt (Nat.zero_lt_succ n))⟩ : Fin n)) = (s.proposed w m'') := by
+      intro m''
+      simp only [hwfresh]  -- simplifie `w = w_fresh` (Faux)
+    intro m' hpm'
+    -- hpm' : proposed' w m' = True
+    rw [hmw'] at hmw
+    -- hmw : s.matching.womenMatches w = some m
+    -- On a besoin de : womenPref w m <= womenPref w m'
+    -- Cas m'' = m' : hpw m' donne s.proposed w m' = (s.proposed w m') True, et h s'applique.
+    -- Cas m'' ≠ m' : hpm' est dans le if-then-else, et l'unfold donne s.proposed w m'.
+    have hpw' := hpw m'
+    rw [hpw'] at hpm'
+    -- hpm' : s.proposed w m'
+    -- h : womenBestState s, donc h w m m' : s.matching.womenMatches w = some m -> s.proposed w m' -> womenPref w m <= womenPref w m'
+    exact h w m m' hmw hpm'
+  · -- Cas ¬ isFree m' : GSState.step retourne `s` inchange.
+    -- L'invariant est preserve directement par h.
+    intro m' hpm'
+    exact h w m m' hmw hpm'
+
+/-- Conservation : `womenBestState` est preserve par `step`.
+    Source : `step_womenBest` (~30 lignes). Phase 2.
+
+    **Limitation tranche 6** : le cas `w = w_fresh` exige que la
+    nouvelle appariee `m'` detienne la meilleure proposition de
+    `w_fresh`. Le step simplifie propose toujours a `w_fresh = rank 0`
+    sans logique "women accept best", donc cette condition n'est PAS
+    garantie.
+
+    Le cas `w ≠ w_fresh` est delegue a `step_womenBest_unchanged`
+    (preuve reelle, voir ci-dessus). Le cas `w = w_fresh` reste en
+    `sorry` documente, avec deux voies de resolution documentees :
+    (a) ajouter une logique "women accept best" dans le step, ou
+    (b) axiomatiser `womenPref w_fresh m' = 0`.
+
+    Strategie anti-regression (CLAUDE.md section D) : le sorry est
+    annote, pas cache. Le lecteur peut confronter le plan de port
+    au source reel (mmaaz-git/stable-marriage-lean, step plus sophistique
+    avec women-accept-best). -/
+theorem step_womenBest {n : Nat} (womenPref : Fin n → Fin n → Nat)
+    {s : GSState n} (h : womenBestState womenPref s) (m' : Fin n) :
+    womenBestState womenPref (GSState.step womenPref s m') := by
+  intro w hmw
+  by_cases heq : w = (⟨0, n.pos_of_ne_zero (Nat.ne_of_gt (Nat.zero_lt_succ n))⟩ : Fin n)
+  · -- Cas w = w_fresh : le step apparie w_fresh a m', mais l'invariant
+    -- exige womenPref w_fresh m' <= womenPref w_fresh m'' pour tout m''
+    -- qui a propose. Le step simplifie ne garantit pas cette condition.
+    -- sorry documente avec 2 voies de resolution (cf. commentaire du
+    -- theoreme).
+    subst heq
+    -- Documentation de la structure, corps en `sorry` car la preuve
+    -- exige soit (a) une logique women-accept-best dans le step,
+    -- soit (b) un axiome womenPref w_fresh m' = 0.
+    sorry
+  · -- Cas w ≠ w_fresh : delegue a la preuve reelle.
+    exact step_womenBest_unchanged womenPref h m' w heq w hmw
+
 end StableMarriage
