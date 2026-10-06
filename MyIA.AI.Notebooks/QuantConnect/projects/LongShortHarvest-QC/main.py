@@ -89,6 +89,9 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
 
         self._active = []
         self._entry = {}
+        # #19455 fix: pending short orders tracked so _entry is not popped
+        # while Rebalance_Short's _safe_set_holdings call has not yet filled.
+        self._short_pending = set()
 
         self.long_trail_1 = float(self.GetParameter("long_trail_1") or 0.095)
         self.long_trail_2 = float(self.GetParameter("long_trail_2") or 0.07)
@@ -668,6 +671,9 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
             w = -abs(self.short_gross) / float(len(selected))
             for _, sym, close_now, atr20 in picked:
                 self._safe_set_holdings(sym, w)
+                # #19455 fix: stamp pending so RiskCheck_Short keeps _entry
+                # until the order materialises (QuantConnect fills at next bar close).
+                self._short_pending.add(sym)
                 if sym not in self._entry:
                     self._entry[sym] = {"entry_price": close_now, "entry_atr": atr20}
 
@@ -675,9 +681,23 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
         if self.IsWarmingUp:
             return
 
+        # #19455 fix: clear pending for symbols whose orders have filled.
+        for sym in list(self._short_pending):
+            if self.Portfolio[sym].Invested:
+                self._short_pending.discard(sym)
+
         exits = []
         for sym, info in list(self._entry.items()):
-            if not self.Securities.ContainsKey(sym) or not self.Portfolio[sym].Invested:
+            if not self.Securities.ContainsKey(sym):
+                self._entry.pop(sym, None)
+                continue
+
+            # #19455 fix: keep _entry while the short order is still pending,
+            # so the next RiskCheck (after fill) will still see the stop trigger.
+            if sym in self._short_pending:
+                continue
+
+            if not self.Portfolio[sym].Invested:
                 self._entry.pop(sym, None)
                 continue
 
