@@ -407,7 +407,7 @@ Lecture complète (contenu ET `outputs`) des sept non-numérotés restants, 2026
 
 Lecture complète (contenu ET `outputs`) des neuf notebooks, 2026-10-05, par `myia-po-2025:CoursIA-2`. Le tableau d'avancement, fermé au chemin critique le 2026-09-19, est **rouvert par l'extension du 2026-10-05** (arbitrage ai-01 : étendre le ledger aux notebooks non couverts par les strands 1-5, claims #11690 c.5993715662 + c.5993797520). Périmètre = la tranche A de la partition ai-01 (DM 13:41Z : A 01-09, B 10-17b, C 20+33-39, D 40a-47, E non numérotés, une PR par tranche) : le passage IIT→ICT (01), le modèle minimal (02), sa quantification (03), son négatif disséqué (04), le pilier Hoel (05), le pont tri→TPM (06), la signature scale-free (07), puis la strate dynamique continue — pli de May et signaux précurseurs (08), agence et régénération Gray-Scott (09).
 
-### `ICT-01-PhiTrajectories-Python.ipynb` — 26 cellules (16 md, 10 code, 10/10 exécutées)
+### `ICT-01-PhiTrajectories-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -417,7 +417,7 @@ Lecture complète (contenu ET `outputs`) des neuf notebooks, 2026-10-05, par `my
 | **Critique** | (1) L'exemple vedette de trajectoire est court : depuis (0,0,0) sur AND/OR, l'attracteur fixe livre un film Φ à deux images — le contraste dynamique repose sur le **paysage**, pas sur la trajectoire. (2) Aucune batterie multi-graines ni gate : réseaux et états initiaux fixes — le carnet fonde la série et **précède** le standard SEEDS [0,1,7,42,99] des strands 2-4. |
 | **Verdict + action** | **SOLIDE**. La fondation tient : écart ×10 mesuré + perturbation-récupération montrée. Action : aucune propre — l'arrimage au moule (gates, multi-graines) relève d'un enrichissement de série, pas d'un défaut du carnet. |
 
-### `ICT-02-SelfSortingMorphogenesis-Python.ipynb` — 27 cellules (18 md, 9 code, 9/9 exécutées)
+### `ICT-02-SelfSortingMorphogenesis-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -427,7 +427,7 @@ Lecture complète (contenu ET `outputs`) des neuf notebooks, 2026-10-05, par `my
 | **Critique** | (1) Les trois stubs d'exercices n'émettent aucune sortie de rappel — C.1 conforme (aucune erreur volontaire), mais le pattern maison (`print("Exercice a completer")`, suivi par ICT-01 et ICT-03) manque : micro-incohérence de moule. (2) Rien d'autre mesuré : le sweep de gélation est déjà multi-graines (15/point) dans l'exemple guidé. |
 | **Verdict + action** | **SOLIDE** — le modèle minimal est posé avec ses régimes mesurés, y compris le négatif chimérique. Action (optionnelle, LIGHT) : aligner les 3 stubs sur le pattern de sortie de rappel à l'occasion d'une prochaine édition du carnet — jamais un grain dédié. |
 
-### `ICT-03-RobustnessDelayedGratification-Python.ipynb` — 28 cellules (17 md, 11 code, 11/11 exécutées)
+### `ICT-03-RobustnessDelayedGratification-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -437,7 +437,7 @@ Lecture complète (contenu ET `outputs`) des neuf notebooks, 2026-10-05, par `my
 | **Critique** | (1) Le sweep principal (cellule 7) rend les **moyennes sur 5 graines sans dispersion** (pas de min/max dans la sortie texte) — la dispersion n'apparaît que côté récupération (cellule 11) ; une ligne d'écart par point lèverait l'objection. (2) Rien d'autre mesuré : la batterie canonique est complète, les deux algotypes partout. |
 | **Verdict + action** | **SOLIDE** — c'est la **genèse méthodologique du moule** : le standard SEEDS [0,1,7,42,99] que les strands 2-4 tiennent pour acquis est déjà appliqué ici, avant eux. Action : aucune propre. |
 
-### `ICT-04-ChimericArraysKinAggregation-Python.ipynb` — 28 cellules (18 md, 10 code, 10/10 exécutées)
+### `ICT-04-ChimericArraysKinAggregation-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -447,7 +447,7 @@ Lecture complète (contenu ET `outputs`) des neuf notebooks, 2026-10-05, par `my
 | **Critique** | (1) Même écart de moule qu'ICT-02 : stubs silencieux (C.1 conforme, sortie de rappel absente). (2) `KinSortingArray` vit dans le package `ict/` — organ-first respecté (aucune re-dérivation), dépendance de série assumée. |
 | **Verdict + action** | **SOLIDE** — le négatif d'ICT-2 devient un régime **caractérisé (40 graines), réparé (0/40) et expliqué (le sweep de liberté)**. Action (optionnelle, LIGHT) : même alignement de stubs qu'ICT-02, même occasion. |
 
-### `ICT-05-CausalEmergence.ipynb` — 27 cellules (17 md, 10 code, 10/10 exécutées)
+### `ICT-05-CausalEmergence.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -457,17 +457,17 @@ Lecture complète (contenu ET `outputs`) des neuf notebooks, 2026-10-05, par `my
 | Critique | (1) L'exemple vedette travaille à état unique (0,0,0,0) — la dépendance à l'état, question centrale de PyPhi, est renvoyée à l'exo 2 plutôt que montrée dans le corps. (2) La sortie nomme la partition retenue mais le périmètre de la recherche (combien de partitions testées, méthode exhaustive vs heuristique) n'apparaît pas dans les sorties lues. |
 | Verdict | **SOLIDE** — pilier Hoel correctement calculé, emergence positive mesurée avec partition nommée ; compléments = exos déjà en place. |
 
-### `ICT-06-SortingToTPM-CausalEmergence.ipynb` — 33 cellules (20 md, 13 code, 13/13 exécutées)
+### `ICT-06-SortingToTPM-CausalEmergence.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
 | Intention | Le pont tri → TPM annoncé par la feuille de route : construire la TPM de la morphogenèse de tri d'ICT-02 et mesurer son émergence causale avec les primitives CE 2.0 (determinism, degeneracy, effectiveness, `greedy_apportionment`, complexité émergente). |
-| Contenu réel | Morphogenèse 6 cellules (bubble, départ sortedness 0,467) ; collecte de 240 trajectoires agrégées → TPM micro 24×24 ; profil causal micro ; macro **intuitif** « niveau de tri » à 7 états ; chemin d'échelles par `greedy_apportionment` ; complexité émergente. 3 exos (taille vs effectiveness, émergence chimérique, robustesse). |
+| Contenu réel | Morphogenèse d'un tableau à 6 éléments (bubble, départ sortedness 0,467) ; collecte de 240 trajectoires agrégées → TPM micro 24×24 ; profil causal micro ; macro **intuitif** « niveau de tri » à 7 états ; chemin d'échelles par `greedy_apportionment` ; complexité émergente. 3 exos (taille vs effectiveness, émergence chimérique, robustesse). |
 | Résultat | Couple structurant : micro determinism 0,7472 / effectiveness 0,7170 ; le macro intuitif **descend** à 0,6825 (le regroupement naturel échoue — négatif assumé) alors que le chemin greedy fait **monter** l'effectiveness pendant que l'EI en bits **descend** — la dissociation effectiveness/EI est montrée en tableau ; EC = 8,1658, log2(L)=4,3923 vs H(p)=3,7735. |
 | Critique | (1) La TPM 24×24 est estimée sur 240 trajectoires agrégées — la variance d'estimation par cellule n'est pas affichée (l'exo 1 l'approche par le biais des tailles). (2) Les extensions naturelles (émergence chimérique, robustesse) vivent dans les exos 2-3, pas dans le corps — découpage assumé, mais le corps s'arrête au cas nominatif. |
 | Verdict | **SOLIDE** — le pont ICT-02 → CE 2.0 tient, avec le négatif du macro intuitif comme résultat pédagogique central ; rien à muscler en urgence. |
 
-### `ICT-07-ScaleFreeSignatures.ipynb` — 29 cellules (19 md, 10 code, 10/10 exécutées)
+### `ICT-07-ScaleFreeSignatures.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -477,7 +477,7 @@ Lecture complète (contenu ET `outputs`) des neuf notebooks, 2026-10-05, par `my
 | Critique | (1) L'exo 3 (189 caractères de source) est le plus mince de la série : le patron « Etape 1/2/3 » des exos 1-2 y manque, l'étudiant reçoit une consigne quasi nue. (2) Le verdict du sweep par taille (la signature dépend-elle de n ?) ne vit pas dans une sortie lue — la cellule n'émet pas de texte, la conclusion se lit dans le md suivant. |
 | Verdict | **SOLIDE** — c'est le carnet qui **réfute** proprement l'extension scale-free du tri (R=−34) tout en confirmant le branchement critique ; le rejet comme livrable est la culture de la série. |
 
-### `ICT-08-AttractorLandscapesEWS.ipynb` — 32 cellules (20 md, 12 code, 12/12 exécutées)
+### `ICT-08-AttractorLandscapesEWS.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -487,7 +487,7 @@ Lecture complète (contenu ET `outputs`) des neuf notebooks, 2026-10-05, par `my
 | Critique | (1) Le contraste 0,650 (May) vs ±1,000 (double-puits jouet) est disponible en sortie mais non commenté dans les sorties lues — l'écart bruit-réel vs jouet est le vrai contenu, il mérite une phrase. (2) p=1,9e-237 sur la tendance de variance vient du N (184k points) ; sur une série autocorrélée (AR1≈0,74-0,99) la taille effective est bien plus petite — le chiffre impressionne plus qu'il n'informe sans cette précaution. |
 | Verdict | **SOLIDE** — paysages + EWS réellement couplés, avec le piège AR1 comme enseignement d'instrument in vivo. |
 
-### `ICT-09-AgencyRegeneration.ipynb` — 33 cellules (22 md, 11 code, 11/11 exécutées)
+### `ICT-09-AgencyRegeneration.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
