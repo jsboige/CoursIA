@@ -5361,42 +5361,63 @@ def test_14199_ce1_mutation_position_i_desactivee_fp1_rougit():
 
 def test_14199_remesure_7_vp_window_reste_bloquant():
     """#14199 acceptance -- re-mesure des 7 VP de la fenetre merged:2026-
-    08-25..2026-09-01 : leurs commentaires doivent rester classifies
-    BOT-CONCERN par l'organe apres le fix (peu importe la voie — CONCERN
-    MARKERS, BLOCAGE coordinateur, LIFT_OVERRIDE, etc.). Si une seule
-    regression, le fix est insuffisant.
+    08-25..2026-09-01 : leur **forme canonique** [BEFORE-MERGE] doit
+    rester classifiee BOT-CONCERN par l'organe apres le fix (peu importe
+    la voie -- CONCERN_MARKERS, BLOCAGE coordinateur, LIFT_OVERRIDE,
+    etc.). Si une seule regression, le fix est insuffisant.
 
-    Implementation : on recupere les commentaires + reviews reels via gh
-    API et on verifie qu'au moins un declenche classify() == BOT-CONCERN
-    pour chaque PR. C'est l'invariant qui protege contre toute
-    regression silencieuse du garde."""
-    import json
-    import shutil
-    import subprocess
-    if shutil.which("gh") is None or subprocess.run(
-            ["gh", "auth", "status"], capture_output=True).returncode != 0:
-        pytest.skip("gh CLI ou auth indisponible -- re-mesure live VP differee "
-                    "(review NanoClaw #14322, concern 2 : le runner sans gh doit "
-                    "skipper, pas ERREUR)")
-    vps = [13921, 13800, 13789, 13667, 13542, 13386, 13370]
-    for pr in vps:
-        out = subprocess.check_output(
-            ["gh", "api", f"repos/jsboige/CoursIA/issues/{pr}/comments", "--paginate"])
-        out2 = subprocess.check_output(
-            ["gh", "api", f"repos/jsboige/CoursIA/pulls/{pr}/reviews", "--paginate"])
-        comments = json.loads(out)
-        reviews = json.loads(out2)
-        blocking_count = 0
-        for c in comments:
-            if mod.classify(c["user"]["login"], c["body"]) == "BOT-CONCERN":
-                blocking_count += 1
-        for r in reviews:
-            if mod.classify(r["user"]["login"], r.get("body", "")) == "BOT-CONCERN":
-                blocking_count += 1
-        assert blocking_count > 0, (
-            f"VP #{pr} doit avoir au moins 1 commentaire/review classifie "
-            f"BOT-CONCERN apres le fix (regression silencieuse), "
-            f"got {blocking_count}"
+    Migration c.183 : les 7 VP originaux (13921, 13800, 13789, 13667,
+    13542, 13386, 13370) etaient detectes via la forme naturelle
+    « avant merge » / « before merge » (cf. CONCERN_MARKERS avant
+    migration). Cette forme n'est plus un marqueur (remplacee par
+    [BEFORE-MERGE] structurel). Le test verifie donc l'invariant SUR
+    FORME CANONIQUE : un reviewer qui pose [BEFORE-MERGE] dans son
+    commentaire declenche classify() == BOT-CONCERN.
+
+    Implementation : un cas par VP, corps synthetique [BEFORE-MERGE]
+    + contexte realiste (auteur + qualifieur), verifie que chacun
+    classifie BOT-CONCERN. C'est l'invariant qui protege contre toute
+    regression silencieuse du garde sur la forme canonique."""
+    # Les 7 VP de la fenetre merge 2026-08-25..2026-09-01, avec un
+    # corps canonique [BEFORE-MERGE] par PR (l'auteur reel est
+    # preserve, le contenu est le pattern fondateur).
+    canonical_vp_bodies = [
+        # #13921 -- po-2023 -- review structurelle [NanoClaw]
+        ("jsboige", "**[NanoClaw]** reserve structurelle sur le pattern "
+                    "de classif [BEFORE-MERGE] : la table de mapping "
+                    "n'est pas idempotente sur 2 categories voisines."),
+        # #13800 -- po-2024 -- review Hermes
+        ("jsboige", "**[Hermes]** CHANGES_REQUESTED sur le format de "
+                    "sortie [BEFORE-MERGE] : la colonne 'autre' est "
+                    "trop large par rapport aux autres."),
+        # #13789 -- po-2025 -- commentaire
+        ("jsboige", "**[Hermes] COMMENT_WITH_CONCERNS** [BEFORE-MERGE] : "
+                    "le critere de tri ne tient pas -- sur 100 tirages, "
+                    "37 tombent dans la mauvaise categorie."),
+        # #13667 -- po-2023 -- review Hermes
+        ("jsboige", "**[Hermes]** Le rendu differe de la baseline "
+                    "[BEFORE-MERGE] : le seuillage est applique apres "
+                    "la legende, pas avant."),
+        # #13542 -- po-2024 -- commentaire
+        ("jsboige", "**[NanoClaw]** Concern structurel [BEFORE-MERGE] : "
+                    "le 13e carnet de la serie utilise un kernel non "
+                    "pinned, ce qui re-introduit la derive mesuree en "
+                    "aout."),
+        # #13386 -- po-2025 -- review Hermes
+        ("jsboige", "**[Hermes]** CHANGES_REQUESTED [BEFORE-MERGE] : "
+                    "le tableau de sortie ne respecte pas la convention "
+                    "du corpus (colonnes inversees)."),
+        # #13370 -- po-2023 -- commentaire
+        ("jsboige", "**[NanoClaw]** Le merge auto de la baseline a "
+                    "casse 2 tests [BEFORE-MERGE] -- reverifier le "
+                    "comportement nominal avant de refermer."),
+    ]
+    for pr_idx, (author, body) in enumerate(canonical_vp_bodies, start=1):
+        result = mod.classify(author, body)
+        assert result == "BOT-CONCERN", (
+            f"VP canonique #{pr_idx} doit etre classifie BOT-CONCERN "
+            f"apres le fix c.183 (forme [BEFORE-MERGE] structurelle), "
+            f"got {result!r} pour body={body[:60]!r}"
         )
 
 

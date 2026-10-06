@@ -58,7 +58,7 @@ b0: blocked
 scope: pass
 domain: pass
 verdict: BLOCKED
-note: thread inline #2 non leve au head -- re-review exact-head exigee avant merge
+note: thread inline #2 non leve au head -- re-review exact-head exigee [BEFORE-MERGE]
 [/ADJOINT PREFLIGHT]"""
 
 # Dossier interim d'une lane (forme reelle #16449, 2026-09-16T23:35:02Z) :
