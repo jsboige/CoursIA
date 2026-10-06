@@ -113,6 +113,7 @@ lean backtest --project .
 
 - `main.py` - Strategy (v2.0, EMA 20/60 with cooldown)
 - `research.ipynb` - EMA period grid search and robustness validation (6 hypothèses H1-H6 + régimes + synthèse)
+- `quantbook.ipynb` - Research QuantBook « EMA Crossover SPY Index » : reproduction QuantBook de la stratégie EMA crossover sur SPY
 
 ## References
 
