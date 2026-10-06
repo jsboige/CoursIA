@@ -274,7 +274,7 @@ Cadrage **méthodologique** de l'audit sémantique (grade B-méthodologique, EPI
 
 | Fichier | Description |
 |---------|-------------|
-| [transients/2026-07-23-audit-sampling-protocol.md](transients/2026-07-23-audit-sampling-protocol.md) | Protocole d'audit d'échantillonnage sémantique cross-famille : ≥5%/famille par cycle mensuel, env-vierge (pas cache), confrontation claims-markdown ↔ sorties réelles, détection fallback silencieux (TenSEAL CKKS incident fondateur). 5 litmus + grille outillée `scripts/audit/extract_claims_vs_outputs.py`, avec état de validation par litmus (2/5 jamais déclenchés) et limite connue du matching numérique. Grade B-méthodologique, #8052. 164 lignes |
+| [transients/2026-07-23-audit-sampling-protocol.md](transients/2026-07-23-audit-sampling-protocol.md) | Protocole d'audit d'échantillonnage sémantique cross-famille : ≥5%/famille par cycle mensuel, env-vierge (pas cache), confrontation claims-markdown ↔ sorties réelles, détection fallback silencieux (TenSEAL CKKS incident fondateur). 5 litmus + grille outillée `scripts/audit/extract_claims_vs_outputs.py`, avec état de validation par litmus (2/5 jamais déclenchés) et limite connue du matching numérique. Grade B-méthodologique, #8052. |
 
 ### Audit path-filters des workflows (docs/audit/workflow-path-filters/)
 
