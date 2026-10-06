@@ -11,8 +11,8 @@ critique** (p ≈ p_c). Simulation-first : on fait *voir* les trois régimes
 
 | Composant | Notebook | Stack | Ce qu'il apporte |
 |-----------|----------|-------|------------------|
-| [Percolation-01-Supercritique-Python](Percolation-01-Supercritique-Python.ipynb) | 1 (Python) | Python 3 + `networkx` | Tore carré (degré 4, `p_c(bond, ℤ²) = 1/2`) et tore hexagonal (degré 3, `p_c ≈ 0.6527`) — trois régimes mesurés, géant du tore, vitesse de disparition `Φ(n) ~ √n` |
-| [Percolation-02-Lean](Percolation-02-Lean.ipynb) | 2 (Lean 4) | Lean 4 + Mathlib (`percolation_lean`) | Compagnon exécutable du lake : configurations d'arêtes ouvertes, Harris–Kleitman fini, connexité croissante, composantes, frontière isopérimétrique avec profil calculé sur `C₃`/`C₄` |
+| [Percolation-01-Supercritique-Python](Percolation-01-Supercritique-Python.html) | 1 (Python) | Python 3 + `networkx` | Tore carré (degré 4, `p_c(bond, ℤ²) = 1/2`) et tore hexagonal (degré 3, `p_c ≈ 0.6527`) — trois régimes mesurés, géant du tore, vitesse de disparition `Φ(n) ~ √n` |
+| [Percolation-02-Lean](Percolation-02-Lean.html) | 2 (Lean 4) | Lean 4 + Mathlib (`percolation_lean`) | Compagnon exécutable du lake : configurations d'arêtes ouvertes, Harris–Kleitman fini, connexité croissante, composantes, frontière isopérimétrique avec profil calculé sur `C₃`/`C₄` |
 
 ## Formalisation Lean (`percolation_lean/`)
 
