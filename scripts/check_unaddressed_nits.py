@@ -2476,6 +2476,50 @@ def _live_lift_positions(normalised: str) -> list[int]:
                 if j != -1]
         s1 = min(ends) if ends else len(scanned)
         negation_zones.append((neg.start(), s1))
+    # #19356 — recherche de LIFT_MARKERS rendue INSENSIBLE A LA CASSE sur
+    # `scanned` (la longueur est preservee, les positions restent celles
+    # de `scanned` -- meme invariant que `_unaccent`). Le contrat B.0
+    # discrimine par AUTEUR (lift tiers) et par PHRASE (LIFT_MARKER
+    # nominal), pas par la casse de la premiere lettre. Cas fondateur
+    # : coordinateur (myia-ai-01) repond sur #19356 par « Levee
+    # coordinateur du Concern de jsboige... » -- « Levee » capitalise
+    # n'etait pas dans LIFT_MARKERS (la liste porte « levee » minuscule,
+    # unaccentue, mais pas la variante capitalisee). Le second hit
+    # « levee » (minuscule) a la position 862 etait CORRECTEMENT
+    # neutralise par `_lift_is_negated` (« cette levee ne vaut pas
+    # dossier »), laissant le nit sans aucun leveur.
+    #
+    # La capitalisation n'ouvre PAS un droit d'auto-levee par meme login
+    # partage (cf. test 19356 #2, _lift_eligible garde #14850/#14947) ni
+    # une mention nominale (cf. test 19356 #3, _lift_is_narrated tient).
+    # `_lift_is_negated`, `_lift_is_narrated`, `_SCOPE_NEGATION_RE` et la
+    # garde (3) anti-underscore restent en place -- seule la SOUS-CHAINE
+    # de detection du marker est cassee.
+    # Recherche standard de LIFT_MARKERS en CASSE STRICTE. La forme
+    # canonique du marqueur (cf. `LIFT_MARKERS` plus haut) doit etre
+    # respectee a la lettre : « levee » minuscule, « Je leve » /
+    # « Je leve » casse mixte, « LGTM » sigle. La tolerance a la casse
+    # des participes passes (« Levee » capital en tete de phrase) est
+    # traitee a part par `_has_live_lift_participle` (cf. #19356),
+    # reserve au tiers coordinateur (LIFT_OVERRIDE_LOGINS) -- l'etaler
+    # sur l'etat standard casserait le gate « [avant merge] » (le mot
+    # « merge » en minuscule y matcherait « Merged » case-insensible)
+    # et la discrimination narration / lift pour les formes « Levee :
+    # BLOCAGE » vs « Levee coordinateur du Concern de jsboige... »,
+    # que la position-du-marker-resolue-par-deux-points arbitre.
+    # Recherche standard de LIFT_MARKERS en CASSE STRICTE. La forme
+    # canonique du marqueur (cf. `LIFT_MARKERS` plus haut) doit etre
+    # respectee a la lettre : « levee » minuscule, « Je leve » /
+    # « Je leve » casse mixte, « LGTM » sigle. La tolerance a la casse
+    # des participes passes (« Levee » capital en tete de phrase) est
+    # reservee au tiers coordinateur -- voir `_has_participle_lift_at_start`,
+    # appelee par le chemin d'override coordinateur dans `analyse` (#19356).
+    # Etaler la tolerance sur l'etat standard casserait (a) le gate
+    # `[avant merge]` (le mot `merge` en minuscule y matcherait `Merged`
+    # case-insensible) et (b) la discrimination narration / lift pour
+    # les formes `Levee : BLOCAGE` vs `Levee coordinateur du Concern
+    # de jsboige...`, que la position-du-marker-resolue-par-deux-points
+    # arbitre.
     for marker in LIFT_MARKERS:
         m = _unaccent(marker)
         bounded = _WORD_BOUNDED_LIFT_RE.get(m.lower())
@@ -2648,6 +2692,102 @@ def has_live_lift(body: str) -> bool:
     neutre passait pour un geste de levée.
     """
     return bool(_live_lift_positions(_unaccent(body)))
+
+
+# #19356 — extension coordinateur : un PARTICIPE PASSE en tete de corps
+# (`Levee`, `Levée`, `Dissipe`, `Dissipé`, `Traite`, `Traité`...) suivi
+# d'un contenu NON-NARRATION-FORM est un leveur, par un tiers
+# coordinateur. Le contrat ecrit de B.0 dit : « une levee par un tiers,
+# avec une phrase ». Le tiers designe par le login en
+# `LIFT_OVERRIDE_LOGINS` (= myia-ai-01) satisfait la moitie tiers par
+# construction ; la phrase est ici un participe passe employe comme
+# leveur (« Levee coordinateur du Concern de jsboige... »), pas comme
+# narration formee au deux-points (« Levee : BLOCAGE -- ne pas
+# merger. », qui reste un EMISSION, discrimination portee par le
+# `_block_emitted` au-dessous de la branche lift). La voie est
+# REFUSEe pour les participes en milieu de corps (un `dissipé` au
+# milieu d'une phrase n'est pas un leveur standalone : il appartient
+# au predicat du verbe, pas a un geste), et REFUSEe apres un `:` (le
+# deux-points annonce l'emission, cf. #16006).
+#
+# Le scope est preserve par l'appelant (`_override_scopes_reserve` ou
+# voie 3 self) : le corps doit nommer l'auteur de la reserve (login ou
+# persona Hermes/NanoClaw) pour ouvrir la levee ; sans scope, le geste
+# ne leve rien.
+_NARRATION_FORM_PARTICIPLES = frozenset({
+    "levee", "dissipe", "dissiper", "dissipant", "dissipee", "dissipes",
+    "dissipees", "dissipe",
+})
+
+
+def _is_narration_form_with_colon(scanned: str, pos: int, end: int) -> bool:
+    """Le hit `pos:end` est-il un participe en tete de corps suivi de ` :` ?
+
+    Discrimination par deux-points (cf. #16006) : un « Levee : BLOCAGE »
+    est une EMISSION, pas un leveur. Un « Levee coordinateur du
+    Concern... » (sans deux-points juste apres) reste un leveur. La
+    detection regarde l'eventuel whitespace entre la fin du marqueur et
+    le `:`, et exige que la tete de corps (apres strip du whitespace
+    initial et d'un eventuel heading markdown `#{1,6}` ou `**...**`)
+    precede immediatement le hit.
+    """
+    if pos > 16:
+        return False  # pas en tete de corps (apres heading + ws)
+    # whitespace entre la fin du marqueur et le `:`
+    cursor = end
+    while cursor < len(scanned) and scanned[cursor] in " \t":
+        cursor += 1
+    return cursor < len(scanned) and scanned[cursor] == ":"
+
+
+def _has_participle_lift_at_start(body: str) -> bool:
+    """#19356 — un PARTICIPE PASSE en tete de corps (forme capitalisee
+    en debut de phrase) est-il employe comme leveur par un tiers
+    coordinateur ? La fonction regarde les participes passes francais
+    presents dans `LIFT_MARKERS` (cf. `_NARRATION_FORM_PARTICIPLES`),
+    case-insensible, en tete de corps uniquement, et exige qu'ils ne
+    soient pas suivis d'un deux-points (sinon c'est une narration /
+    emission, portee par `_block_emitted`). Le retour est un
+    BOOLEEN -- c'est l'appelant qui verifie le scope de la levee
+    (cf. `_override_scopes_reserve`). La detection des
+    `_LIFT_NEGATION_TOKENS` n'est pas dupliquee ici : un corps qui
+    contient une negation directe d'un leveur (`ne leve pas`) ne
+    declare pas un leveur, et la branche self de `_lift_eligible` ne
+    s'active pas pour un tiers ; l'appelant teste les conditions
+    completes avant de crediter.
+    """
+    if not body:
+        return False
+    normalised = _unaccent(body)
+    stripped = normalised.lstrip(" \t\r\n")
+    # heading markdown optionnel (## Titre / **titre**) en tete
+    heading_skip = re.match(
+        r"^(?:#{1,6}[ \t]+|\*\*[ \t]*[^*\n]{0,80}\*\*[ \t]*\n?)",
+        stripped)
+    if heading_skip:
+        body_start = heading_skip.end()
+    else:
+        body_start = 0
+    if body_start >= len(stripped):
+        return False
+    rest = stripped[body_start:]
+    # Cherche un participe en tete de mot (apres whitespace initial)
+    m = re.match(
+        r"\s*(" + "|".join(re.escape(p) for p in _NARRATION_FORM_PARTICIPLES)
+        + r")\b",
+        rest, re.IGNORECASE)
+    if m is None:
+        return False
+    hit_end = body_start + m.end()
+    # Verifier que ce n'est pas une narration `Levee : X` -- le
+    # deux-points apres le marqueur (avec whitespace tolere) signale
+    # l'emission, pas la levee.
+    cursor = hit_end
+    while cursor < len(stripped) and stripped[cursor] in " \t":
+        cursor += 1
+    if cursor < len(stripped) and stripped[cursor] == ":":
+        return False
+    return True
 
 
 # Marqueurs reconnus par MOTIF plutot que par sous-chaine. La cle est le marqueur
@@ -4820,8 +4960,33 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # declare le relais, la LEVEE revendique le siege en tete de ligne.
         siege = (_QUALIFYING_SEAT_BODY_RE.search(_strip_quoted(nit_body or ""))
                  and _QUALIFYING_SEAT_HEAD_RE.search(_strip_quoted(lift_body or "")))
+        # #19356 — troisieme ouverture de la trappe coordinateur : une
+        # PHRASE de levee (`has_live_lift` non narration, non negation, non
+        # cancelled, non severity) suffit pour un compte en
+        # `LIFT_OVERRIDE_LOGINS`. Le contrat ecrit de B.0 dit : « une
+        # levee par un tiers, avec une phrase » ; le tiers designe par le
+        # coordinateur (login `myia-ai-01`) satisfait la moitie tiers par
+        # construction, et la phrase de levee est deja filtree par
+        # `has_live_lift` (cas fondateur : #19356, coordinateur leve un
+        # Concern user voix nue par « Levee coordinateur du Concern de
+        # jsboige... » -- sans cette voie, le geste n'eteignait aucun
+        # nit). Le `_has_participle_lift_at_start` etend la detection
+        # au cas capitalisee des participes passes (levee / dissipe
+        # etc.) en tete de corps, discriminatee du deux-points EMISSION
+        # par `_is_narration_form_with_colon` (un `Levee : BLOCAGE`
+        # reste un EMISSION portee par `_block_emitted` plus bas, pas
+        # un leveur -- cf. test fondateur
+        # `test_16006_les_deux_points_annoncent_l_emission`). Scope
+        # preserve par `_override_scopes_reserve` ci-dessous : le corps
+        # doit nommer l'auteur de la reserve (login ou persona
+        # Hermes/NanoClaw) pour ouvrir la levee, sinon la fonction rend
+        # `False` -- un override sans nom n'eteint pas une reserve qu'il
+        # ne declare pas viser.
         if not (lift_author in LIFT_OVERRIDE_LOGINS
-                and (m is not None or siege)):
+                and (m is not None
+                     or siege
+                     or has_live_lift(lift_body or "")
+                     or _has_participle_lift_at_start(lift_body or ""))):
             return False
         if siege and m is None:
             # Le scope #14216 est porte par la DECLARATION du nit
@@ -4857,7 +5022,16 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         if can_lift(c)
         # #12908 : levée VIVE exigée — le PREFLIGHT de #12798 qui demandait
         # « une levée explicite » était compté comme levée par le sac de mots.
-        and has_live_lift(_strip_adjoint_dossier(c.get("body", "")))
+        # #19356 : la detection accepte aussi un PARTICIPE PASSE en tete
+        # de corps (`Levee coordinateur du Concern de jsboige...`),
+        # porte par un tiers coordinateur et discrimine du deux-points
+        # EMISSION par `_has_participle_lift_at_start`. La voie
+        # self n'est pas etendue (le PR author sous `jsboige` reste
+        # borne par `has_live_lift` strict) ; la voie 3 (self-lift
+        # voix nue) prend le relais en aval si le PR author leve
+        # explicitement sa propre reserve.
+        and (has_live_lift(_strip_adjoint_dossier(c.get("body", "")))
+             or _has_participle_lift_at_start(_strip_adjoint_dossier(c.get("body", ""))))
         and not _lift_cancelled(_strip_quoted(c.get("body", "")))
         # #12836 / #12798 : une reserve qui narre une ancienne levee reste
         # une reserve, pas un evenement de levee du signal precedent.
@@ -4870,12 +5044,16 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # la levee un seul. Une review APPROVED est deja traitee par
         # approved_rereviews (etat natif) ; une review COMMENTED qui ecrit
         # « je leve ma CHANGES_REQUESTED » est une levee comme un commentaire.
+        # Meme extension #19356 que ci-dessus : un PARTICIPE PASSE en tete
+        # de corps est aussi un leveur, discrimine du deux-points
+        # EMISSION par `_has_participle_lift_at_start`.
         (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""),
          r.get("body", ""))
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "COMMENTED"
         and can_lift(r)
-        and has_live_lift(_strip_adjoint_dossier(r.get("body", "")))
+        and (has_live_lift(_strip_adjoint_dossier(r.get("body", "")))
+             or _has_participle_lift_at_start(_strip_adjoint_dossier(r.get("body", ""))))
         and not _lift_cancelled(_strip_quoted(r.get("body", "")))
         and classify((r.get("author") or {}).get("login", ""),
                      r.get("body", "")) is None

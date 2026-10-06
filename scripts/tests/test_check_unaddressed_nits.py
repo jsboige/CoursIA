@@ -6945,3 +6945,105 @@ def test_16780_phrase_reelle_poursuit_de_lever() -> None:
     }
     res = run([USER_NIT, real_lift])
     assert res["blocked"] is False
+
+
+# --- #19356 : coordinateur leve un Concern user voix nue en phrase libre.
+# Cas fondateur : PR #19356, coordinateur (myia-ai-01) repond le 2026-10-06T10:50:34Z
+# par un body qui OUVRE sur « Levée coordinateur du Concern de jsboige » puis
+# expose le constat de relecture (tete, cellules, sortie). Le body ne porte
+# aucun marqueur formel ([OVERRIDE], [Hermes], [myia-ai-01:CoursIA]) -- c'est
+# une levee en francais courant, par un tiers, avec une phrase : exactement
+# le contrat ecrit de B.0 (« une levee par un tiers, avec une phrase »).
+#
+# Defaut mesure : `_live_lift_positions` cherche LIFT_MARKERS en sous-chaine
+# CASSE-SENSIBLE. Le body du coordinateur porte « Levee » (capital L) en
+# tete, hors LIFT_MARKERS (qui contient « levee » minuscule, levee
+# unaccentuee, mais pas la variante capitalisee). Le second hit « levee »
+# a la position 862 du body est CORRECTEMENT neutralise par `_lift_is_negated`
+# (« cette levee ne vaut pas dossier » -- le coordinateur precise que ce
+# geste ne vaut pas dossier de prevalidation). Resultat : aucun hit
+# `has_live_lift`, Voie 3 ne leve pas, le nit reste bloque.
+#
+# Le test rouge : un coordinateur (login myia-ai-01) qui leve un Concern
+# user voix nue avec une phrase en francais courant DOIT lever le nit.
+# La casse de la premiere lettre ne discrimine pas l'intention.
+
+def test_19356_coordinateur_leve_voice_nue_jsboige_phrase_capitalisee():
+    """#19356 : la levee par un tiers, avec une phrase, tient meme si la
+    premiere lettre de « Levee » est capitalisee. La casse de la
+    sous-chaine n'est pas le discriminant de B.0 (qui est l'auteur + la
+    presence d'une phrase)."""
+    concern = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(9),
+        "body": "Concern: j'aurais mis plus de choses du cote d'un notebook "
+                "knots avec un renvoi vers ICT, pas seulement dans le .lean "
+                "du polynome alexander du treffle.",
+    }
+    coord_lift = {
+        "author": {"login": "myia-ai-01"},
+        "createdAt": at(11),
+        "body": (
+            "Levee coordinateur du Concern de jsboige (2026-10-05T18:29:33Z). "
+            "Le contenu est desormais dans le carnet de noeuds (cellules 41-44 "
+            "de Lean-17b-Knots-Invariants-Companion.ipynb), avec le renvoi "
+            "vers ICT-23. Cette levee ne vaut pas dossier : la PR passe par la "
+            "prevalidation habituelle."
+        ),
+    }
+    res = run([concern, coord_lift])
+    assert res["blocked"] is False, (
+        "Le coordinateur (myia-ai-01) leve un Concern user voix nue par une "
+        "phrase de levee en francais courant. Le contrat B.0 dit : 'une "
+        "levee par un tiers, avec une phrase'. La casse de 'Levee' "
+        "(capital L) n'est pas le discriminant -- l'organe doit la reconnaitre."
+    )
+
+
+def test_19356_phrase_de_levee_capitalisee_ne_leve_pas_si_auteur_voix_nue_egale():
+    """Controle faux-positif : la capitalisation n'ouvre pas un droit
+    d'auto-levee par meme login partage. Un PR author (jsboige) qui
+    capitalise « Levee » au debut ne leve toujours pas un autre jsboige
+    voix nue -- la discrimination par auteur tient (cf. #14850, #14947)."""
+    concern = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(9),
+        "body": "Concern: regression sur la cellule 12.",
+    }
+    same_author_lift = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(11),
+        "body": "Levee de mon propre Concern : la cellule 12 a ete corrigee.",
+    }
+    res = run([concern, same_author_lift])
+    # Le self-lift voix nue par l'AUTEUR de la reserve est autorise
+    # (cf. test_auteur_du_nit_leve_son_nit, B.0 voie nue). Ici on teste
+    # le discriminant de CASSE -- pas de redefinition du regime auteur.
+    assert res["blocked"] is False, (
+        "Le self-lift voix nue par l'auteur de la reserve leve, peu "
+        "importe la casse."
+    )
+
+
+def test_19356_capitalisation_ne_leve_pas_si_motif_est_mention_narration():
+    """Controle faux-positif #2 : la capitalisation n'ouvre pas la voie
+    a une mention nominale. « La Levee de la reserve » (determinant + Levee
+    capitalise) reste une narration couverte par `_lift_is_narrated`."""
+    concern = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(9),
+        "body": "Concern: cellule 12 a corriger.",
+    }
+    narration = {
+        "author": {"login": "myia-ai-01"},
+        "createdAt": at(11),
+        "body": "La Levee de la reserve est documentee en PR #19000 ; "
+                "voici le suivi.",
+    }
+    res = run([concern, narration])
+    assert res["blocked"] is True, (
+        "Le determinant 'La' devant 'Levee' en fait une narration (cf. "
+        "#12908, _lift_is_narrated). La capitalisation n'ouvre pas la "
+        "voie aux mentions nominales -- le filet narration-nominale "
+        "doit continuer a filtrer."
+    )
