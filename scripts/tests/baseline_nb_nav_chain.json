@@ -1137,17 +1137,17 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/RL-7b-Climbing-Game.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/rl_11_pomdp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-11-POMDP-Croyances-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
@@ -1157,47 +1157,47 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/rl_19_reward_tampering.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-19-Reward-Tampering-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/rl_1c_prolog_distillation.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-01c-Distillation-Politique-Prolog-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/rl_6e_grpo_from_scratch.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/RL-06e-GRPO-Depuis-Zero-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/rlpt_0_reward_model_from_scratch.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/rlpt_0b_preference_dataset_bias.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/rlpt_0d_reward_trainer_sota.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-00d-Reward-Trainer-TRL-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/rlpt_0e_trl_DPO_SOTA.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-00e-DPO-TRL-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/rlpt_1_ppo_lm_rlhf.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/rlpt_4_dpo_vs_ppo.ipynb",
+      "notebook": "MyIA.AI.Notebooks/RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {

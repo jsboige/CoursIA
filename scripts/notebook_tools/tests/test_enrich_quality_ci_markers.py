@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import enrich_quality_ci  # noqa: E402
 
 
-NB_NAME = "rl_15_grpo_group_relative_policy.ipynb"
+NB_NAME = "RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb"
 MARKER = (
     f"enrich-quality: reecriture assumee -- MyIA.AI.Notebooks/RL/{NB_NAME} : "
     "retrait de la chronologie Git (Epic #14442 D3), substance relue base et tete"
@@ -62,7 +62,7 @@ class TestParsePrBodyMarkers:
             assert self._parse(f"enrich-quality: {token} -- {NB_NAME} : raison") is True
 
     def test_wrong_notebook_inert(self):
-        body = "enrich-quality: reecriture assumee -- MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb : autre notebook"
+        body = "enrich-quality: reecriture assumee -- MyIA.AI.Notebooks/RL/RL-06c-PPO-Depuis-Zero-Python.ipynb : autre notebook"
         assert self._parse(body) is False
 
     def test_missing_reason_inert(self):
