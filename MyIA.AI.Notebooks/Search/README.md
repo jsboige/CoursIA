@@ -291,7 +291,7 @@ Au-delà de la Partie 2, le même marathon a livré les jumeaux C# de la **Parti
 - [AIMA - Russell & Norvig (4th ed.)](http://aima.cs.berkeley.edu/) - Chapitres 3-6
 - [Constraint Processing - Rina Dechter (2003)](https://www.cambridge.org/core/books/constraint-processing/)
 - [Handbook of Constraint Programming (2006)](https://www.elsevier.com/books/handbook-of-constraint-programming/)
-- [The CP-SAT Primer (2023)](https://pganalyze.com/blog/cp-sat-primer) - Guide pratique OR-Tools
+- [The CP-SAT Primer (Krupke & Schmitt, 2023, CC-BY)](https://d-krupke.github.io/cpsat-primer/) - Fonctionnement interne de CP-SAT : presolve, LNS, hints de solution, portfolio de workers (lecture en ligne gratuite)
 
 ### Bibliothèques
 
