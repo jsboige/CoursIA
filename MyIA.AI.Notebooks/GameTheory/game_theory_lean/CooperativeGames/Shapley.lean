@@ -312,7 +312,7 @@ private theorem pos_term_eq (G : TUGame N) :
     v(univ) - v(∅) = v(univ).
     Identité clé : chaque v(S) apparaît comme +v(S) avec coefficient c(|S|-1,n)
     et comme -v(S) avec coefficient c(|S|,n)·(n-|S|), qui s'annulent. -/
--- MSZ ch. 6 (axiomatique) — efficacité : la valeur de Shapley distribue exactement `v(N)` au grand-coalition.
+-- MSZ ch. 18 (axiomatique) — efficacité : la valeur de Shapley distribue exactement `v(N)` au grand-coalition.
 theorem shapley_efficient (G : TUGame N) :
     ∑ i : N, shapleyValue G i = G.v Finset.univ := by
   classical
@@ -401,7 +401,7 @@ theorem shapley_efficient (G : TUGame N) :
     (3) f est une bijection (inverse : échanger i↔j)
 
     Utiliser Finset.sum_bij pour conclure ∑_S g(S) = ∑_T g'(T). -/
--- MSZ ch. 6 (axiomatique) — symétrie : deux joueurs équivalents reçoivent la même valeur.
+-- MSZ ch. 18 (axiomatique) — symétrie : deux joueurs équivalents reçoivent la même valeur.
 theorem shapley_symmetric (G : TUGame N) (i j : N)
     (h : Solution.SymmetricPlayers G i j) :
     shapleyValue G i = shapleyValue G j := by
@@ -507,7 +507,7 @@ theorem shapley_symmetric (G : TUGame N) (i j : N)
       rw [hsym]
 
 /-- Valeur de Shapley sur les jeux d'unanimité : chaque joueur de T obtient 1/|T| -/
--- MSZ ch. 6 (axiomatique) — `unanimity axiom` : sur un jeu unanime `1_S`, la valeur de Shapley attribue `1/n` à chaque membre de `S` et `0` sinon.
+-- MSZ ch. 18 (axiomatique) — `unanimity axiom` : sur un jeu unanime `1_S`, la valeur de Shapley attribue `1/n` à chaque membre de `S` et `0` sinon.
 theorem shapley_unanimity (T : Finset N) (hT : T.Nonempty) (i : N) :
     shapleyValue (TUGame.unanimityGame T hT) i =
     if i ∈ T then (1 : ℝ) / T.card else 0 := by
@@ -536,7 +536,7 @@ theorem shapley_unanimity (T : Finset N) (hT : T.Nonempty) (i : N) :
     · rfl
 
 /-- La valeur de Shapley vérifie l'additivité -/
--- MSZ ch. 6 (axiomatique) — additivité : la valeur de Shapley est additive sur la somme de jeux.
+-- MSZ ch. 18 (axiomatique) — additivité : la valeur de Shapley est additive sur la somme de jeux.
 theorem shapley_additive (G H : TUGame N) (i : N) :
     shapleyValue (Solution.AddGames G H) i =
     shapleyValue G i + shapleyValue H i := by
@@ -811,7 +811,7 @@ private theorem mobius_decomposition_axiom (G : TUGame N) (S : Finset N) :
         exact hRsub (hRT.trans hTS)
       rw [hfilter, Finset.sum_empty]
 
--- MSZ ch. 6 (décomposition de Möbius) — `Harsanyi 1963` (référence primaire) : tout jeu TU se décompose en somme de jeux unanimites `1_S` pondérés par les coefficients de Möbius `m(S)`.
+-- MSZ ch. 18 (décomposition de Möbius) — `Harsanyi 1963` (référence primaire) : tout jeu TU se décompose en somme de jeux unanimites `1_S` pondérés par les coefficients de Möbius `m(S)`.
 theorem mobius_decomposition (G : TUGame N) (S : Finset N) :
     G.v S = ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
         mobiusCoeff G T :=
@@ -1000,7 +1000,7 @@ private theorem game_eq_mobius_sum (G : TUGame N) :
 /-- Unicité de la valeur de Shapley : toute solution axiomatique est égale à la valeur de Shapley.
     Stratégie : décomposer G = ∑_{T≠∅} a_T · u_T via Mobius, puis φ et shapleyValue se
     distribuent sur la somme et coïncide sur chaque terme via phi_eq_shapley_weighted. -/
--- MSZ ch. 6 (caractérisation) — théorème d'unicité : efficacité + symétrie + additivité (ou unanimité) caractérisent **uniquement** la valeur de Shapley.
+-- MSZ ch. 18 (caractérisation) — théorème d'unicité : efficacité + symétrie + additivité (ou unanimité) caractérisent **uniquement** la valeur de Shapley.
 theorem shapley_uniqueness (φ : Solution N)
     (h_eff : φ.Efficiency)
     (h_sym : φ.Symmetry)
@@ -1043,7 +1043,7 @@ def SimpleGame (G : TUGame N) : Prop :=
 
 /-- Un `WeightedVotingGame` est simple : sa fonction caractéristique est un `if … then 1 else 0`,
 donc la valeur de chaque coalition est `0` ou `1`. -/
--- MSZ ch. 8 — un jeu de vote pondéré `[q; w_1, ..., w_n]` est simple ssi la coalition qui dépasse `q` est gagnante (et les autres perdantes).
+-- MSZ ch. 18 — un jeu de vote pondéré `[q; w_1, ..., w_n]` est simple ssi la coalition qui dépasse `q` est gagnante (et les autres perdantes).
 theorem weighted_voting_game_simple (weights : N → ℝ) (quota : ℝ) (hquota : 0 < quota) :
     SimpleGame (WeightedVotingGame weights quota hquota) := by
   intro S
@@ -1303,7 +1303,7 @@ def Dictator (G : TUGame N) (i : N) : Prop :=
     de `Dictator`) et `i` gagne seul (`v {i} = 1`, première conjonction de `Dictator i`).
     Appliquer la propriété de veto de `j` à la coalition gagnante `{i}` force `j ∈ {i}`,
     c'est-à-dire `j = i`. -/
--- MSZ ch. 8 — un jeu de vote a un dictateur unique ssi la coalition de tous les autres joueurs (sans le dictateur) n'est pas gagnante et le dictateur est critique.
+-- MSZ ch. 18 — un jeu de vote a un dictateur unique ssi la coalition de tous les autres joueurs (sans le dictateur) n'est pas gagnante et le dictateur est critique.
 theorem dictator_unique (G : TUGame N) (i j : N) (hi : Dictator G i) (hj : Dictator G j) :
     i = j := by
   -- `j` est un joueur veto (seconde conjonction de `Dictator`) et `i` gagne seul
@@ -1537,7 +1537,7 @@ def DummyPlayer (G : TUGame N) (i : N) : Prop :=
   ∀ S : Finset N, i ∉ S → G.v (S ∪ {i}) = G.v S
 
 /-- Les joueurs muets ont une valeur de Shapley nulle. -/
--- MSZ ch. 6 — un joueur dummy (n'apporte rien à aucune coalition) reçoit une valeur de Shapley nulle.
+-- MSZ ch. 18 — un joueur dummy (n'apporte rien à aucune coalition) reçoit une valeur de Shapley nulle.
 theorem dummy_shapley_zero (G : TUGame N) (i : N) (h : DummyPlayer G i) :
     shapleyValue G i = 0 :=
   ShapleyValue.shapley_null_player G i h
@@ -1548,7 +1548,7 @@ theorem dummy_shapley_zero (G : TUGame N) (i : N) (h : DummyPlayer G i) :
     Un joueur muet ne change jamais la valeur d'une coalition, donc il ne peut jamais se
     produire que `v S = 1` tandis que `v (S.erase i) = 0` : l'hypothèse de muet force
     `v S = v (S.erase i)`, contredisant la criticalité. -/
--- MSZ ch. 8 — un joueur dummy a un Banzhaf brut nul (car il n'est jamais critique).
+-- MSZ ch. 18 — un joueur dummy a un Banzhaf brut nul (car il n'est jamais critique).
 theorem dummy_banzhaf_raw_zero (G : TUGame N) (i : N) (h : DummyPlayer G i) :
     BanzhafRaw G i = 0 := by
   -- Un joueur muet n'est critique dans aucune coalition : la criticalité exige `v S = 1`
@@ -1645,7 +1645,7 @@ private def banzhafSwap (i j : N) (S : Finset N) : Finset N :=
     s'échange, la valeur est invariante, et `(σ S) \ {j} = σ (S \ {i})`). Les deux filtres de
     coalitions critiques sont donc en bijection, et leurs cardinalités — les indices bruts de
     Banzhaf — coïncident. -/
--- MSZ ch. 8 — `Banzhaf 1965` (référence primaire) : l'indice de Banzhaf brut compte le nombre de coalitions où un joueur est critique.
+-- MSZ ch. 18 — `Banzhaf 1965` (référence primaire) : l'indice de Banzhaf brut compte le nombre de coalitions où un joueur est critique.
 theorem banzhaf_raw_symmetric (G : TUGame N) (i j : N)
     (h : Solution.SymmetricPlayers G i j) :
     BanzhafRaw G i = BanzhafRaw G j := by
@@ -1913,7 +1913,7 @@ theorem banzhaf_index_le_two (G : TUGame N) (i : N) : BanzhafIndex G i ≤ 2 := 
     `banzhaf_raw_le_univ ≤ 2 ^ card N`) et s'apparie avec `banzhaf_index_nonneg` pour
     épingler l'indice dans `[0, 1]`. Le joueur `i : N` force `0 < card N`, donc la
     soustraction Nat `card N - 1` ne déborde pas. -/
--- MSZ ch. 8 — l'indice de Banzhaf normalisé est inférieur ou égal à 1 (trivial, par convention de normalisation).
+-- MSZ ch. 18 — l'indice de Banzhaf normalisé est inférieur ou égal à 1 (trivial, par convention de normalisation).
 theorem banzhaf_index_le_one (G : TUGame N) (i : N) : BanzhafIndex G i ≤ 1 := by
   have hn : 0 < Fintype.card N := Fintype.card_pos_iff.mpr ⟨i⟩
   have hdenom : 0 < (2 : ℝ) ^ (Fintype.card N - 1) := pow_pos (by norm_num) _

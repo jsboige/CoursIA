@@ -90,7 +90,7 @@ noyau cône-fermé : le cône général (engendré par un ensemble fini, éventu
 dépendant) est une union finie (Carathéodory) de tels cônes simpliciaux, tous
 fermés. -/
 
--- MSZ ch. 5 — l'enveloppe conique d'un ensemble linéairement indépendant est fermée (lemme technique du plan Bondareva-Farkas).
+-- MSZ ch. 17 — l'enveloppe conique d'un ensemble linéairement indépendant est fermée (lemme technique du plan Bondareva-Farkas).
 theorem conicHull_linearIndependent_isClosed
     {ι F : Type*} [Fintype ι] [NormedAddCommGroup F] [NormedSpace ℝ F]
     [FiniteDimensional ℝ F] (v : ι → F) (hli : LinearIndependent ℝ v) :
@@ -154,7 +154,7 @@ l'union finie d'ensembles fermés est fermée. -/
     simplicial d'une sous-famille linéairement indépendante. Démontré par
     induction bien fondée sur la cardinalité de l'ensemble fini porteur
     (cardinalité minimale ⟹ support plein). -/
--- MSZ ch. 5 — caractérisation d'appartenance au cône par un sous-ensemble linéairement indépendant.
+-- MSZ ch. 17 — caractérisation d'appartenance au cône par un sous-ensemble linéairement indépendant.
 theorem mem_cone_iff_exists_li_subset
     {ι F : Type*} [Fintype ι] [DecidableEq ι] [NormedAddCommGroup F] [NormedSpace ℝ F]
     [FiniteDimensional ℝ F] (v : ι → F) (y : F)
@@ -301,7 +301,7 @@ theorem mem_cone_iff_exists_li_subset
   exact (measure Finset.card).wf.induction Finset.univ step hgood_univ
 
 /-- **Brique 3.** Une enveloppe conique engendrée par un ensemble fini est fermée. -/
--- MSZ ch. 5 — un cône finiment engendré est fermé (clé du lemme de Farkas).
+-- MSZ ch. 17 — un cône finiment engendré est fermé (clé du lemme de Farkas).
 theorem finGenCone_isClosed
     {ι F : Type*} [Fintype ι] [DecidableEq ι] [NormedAddCommGroup F] [NormedSpace ℝ F]
     [FiniteDimensional ℝ F] (v : ι → F) :
@@ -371,7 +371,7 @@ l'image est un cône engendré par un ensemble fini (générateurs de la base st
 `gen S = phiAugCont v (Pi.single S 1)`), donc fermé par `finGenCone_isClosed`, donc
 `adhérence(image) = image`. L'appartenance se réduit à `∃ w ≥ 0, phiAugCont v w = y`. -/
 
--- MSZ ch. 5 — `y ∈ augCone` ssi une certaine inégalité est satisfaite (forme intermédiaire du lemme de Farkas).
+-- MSZ ch. 17 — `y ∈ augCone` ssi une certaine inégalité est satisfaite (forme intermédiaire du lemme de Farkas).
 theorem augCone_mem_iff (v : Finset N → ℝ) (y : (Option N) → ℝ) :
     y ∈ augCone v ↔ ∃ w : Finset N → ℝ, (∀ S, 0 ≤ w S) ∧ phiAugCont v w = y := by
   -- Générateurs de la base standard : gen S = phiAugCont v (e_S), avec e_S = Pi.single S 1.
@@ -452,7 +452,7 @@ def balancedUnit (t : ℝ) : (Option N) → ℝ := fun j => match j with
     générateurs en nombre fini `phiAugCont v (Pi.single S 1)`. Le sens (⟸) est
     porteur pour le décodage du témoin : il traduit une fonctionnelle de séparation
     `f` en rationalité coalitionnelle du témoin candidat `x`. -/
--- MSZ ch. 5 — dualité cône / cône-augmenté (forme symétrique du lemme de Farkas).
+-- MSZ ch. 17 — dualité cône / cône-augmenté (forme symétrique du lemme de Farkas).
 lemma augCone_dual_iff (v : Finset N → ℝ) (f : ((Option N) → ℝ) →L[ℝ] ℝ) :
     (∀ y ∈ augCone v, 0 ≤ f y) ↔
       ∀ S : Finset N, 0 ≤ f (phiAugCont v (Pi.single S 1)) := by
@@ -493,7 +493,7 @@ coalition arbitraire `S` ; ils sont le prérequis du lemme de décodage du témo
 /-- Coordonnée `some i` du générateur-`S` : l'indicateur d'incidence `1` si
     `i ∈ S`, sinon `0`. Généralise le cas particulier de la grande coalition
     à n'importe quel `S`. -/
--- MSZ ch. 5 — application de la famille génératrice à un indice actif (décomposition du lemme de Farkas).
+-- MSZ ch. 17 — application de la famille génératrice à un indice actif (décomposition du lemme de Farkas).
 lemma gen_apply_some (v : Finset N → ℝ) (S : Finset N) (i : N) :
     (phiAugCont v (Pi.single S 1)) (some i) = if i ∈ S then (1 : ℝ) else 0 := by
   -- defeq : `(phiAugCont v (Pi.single S 1)) (some i)` se réduit à la branche `some`,
@@ -521,7 +521,7 @@ lemma gen_apply_some (v : Finset N → ℝ) (S : Finset N) (i : N) :
 
 /-- Coordonnée `none` du générateur-`S` : la valeur de coalition `v S`.
     Généralise le cas particulier de la grande coalition à n'importe quel `S`. -/
--- MSZ ch. 5 — application de la famille génératrice à un indice inactif.
+-- MSZ ch. 17 — application de la famille génératrice à un indice inactif.
 lemma gen_apply_none (v : Finset N → ℝ) (S : Finset N) :
     (phiAugCont v (Pi.single S 1)) none = v S := by
   -- defeq : la branche `none` est `∑ T, w T * v T` avec `w = Pi.single S 1`.
@@ -551,7 +551,7 @@ convertit l'inégalité duale du cône `0 ≤ f (générateur S)` (issue de
     vaut la combinaison d'incidence sur `S` (un vecteur de base `some i` par
     `i ∈ S`) plus le multiple de valeur `v S • Pi.single none 1` sur l'axe
     `none`. -/
--- MSZ ch. 5 — décomposition canonique d'un élément du cône augmenté en termes de la famille génératrice.
+-- MSZ ch. 17 — décomposition canonique d'un élément du cône augmenté en termes de la famille génératrice.
 lemma gen_decomp (v : Finset N → ℝ) (S : Finset N) :
     phiAugCont v (Pi.single S 1) =
       (∑ i ∈ S, (Pi.single (some i) 1 : (Option N) → ℝ)) + v S • Pi.single none 1 := by
@@ -599,7 +599,7 @@ lemma gen_decomp (v : Finset N → ℝ) (S : Finset N) :
     linéaire `f`, `f (générateur S) = ∑ i ∈ S, f (base-some i) + v S * f (base-none)`.
     C'est la forme algébrique que consomme le décodage du témoin (appliquer `f`
     à `gen_decomp`). -/
--- MSZ ch. 5 — linéarité de l'application de la famille génératrice.
+-- MSZ ch. 17 — linéarité de l'application de la famille génératrice.
 lemma gen_apply_linear (v : Finset N → ℝ) (S : Finset N)
     (f : ((Option N) → ℝ) →L[ℝ] ℝ) :
     f (phiAugCont v (Pi.single S 1)) =
@@ -624,7 +624,7 @@ porteuse du décodage. -/
     `f (phiAugCont v (Pi.single ⊤ 1)) + t * f (Pi.single none 1) < 0` ;
     combinée à la non-négativité sur le générateur, `t * f (Pi.single none 1) < 0`,
     d'où le signe (t > 0). -/
--- MSZ ch. 5 — existence d'un hyperplan séparant le cône d'un point qui n'y appartient pas (lemme de Farkas).
+-- MSZ ch. 17 — existence d'un hyperplan séparant le cône d'un point qui n'y appartient pas (lemme de Farkas).
 lemma separatingFunctional_none_neg (v : Finset N → ℝ) {t : ℝ} (ht : 0 < t)
     (f : ((Option N) → ℝ) →L[ℝ] ℝ)
     (hfCone : ∀ y ∈ augCone v, 0 ≤ f y)
@@ -694,7 +694,7 @@ l'inégalité duale du cône `0 ≤ f (générateur S)` via l'identité de liné
     générateur de la grande coalition plus `t` fois le vecteur de base `none`.
     Sous une fonctionnelle séparatrice, cette identité fournit le budget strict
     `∑ x ≤ v(N) + t`. -/
--- MSZ ch. 5 — décomposition de la condition balancée en termes du cône augmenté.
+-- MSZ ch. 17 — décomposition de la condition balancée en termes du cône augmenté.
 lemma balancedUnit_decomp (v : Finset N → ℝ) (t : ℝ) :
     balancedUnit (v Finset.univ + t) =
       phiAugCont v (Pi.single Finset.univ 1) + t • Pi.single none 1 := by
@@ -716,7 +716,7 @@ lemma balancedUnit_decomp (v : Finset N → ℝ) (t : ℝ) :
     une pré-imputation `x` qui est coalitionnellement rationnelle et dans le
     budget `∑ x ≤ v(N) + t`. L'hypothèse de jeu équilibré n'entre que plus tard,
     dans `Basic.lean`, via le pont qui *produit* un tel `f`. -/
--- MSZ ch. 5 — existence d'une pré-imputation dans le strict core (conséquence directe de la balancedness).
+-- MSZ ch. 17 — existence d'une pré-imputation dans le strict core (conséquence directe de la balancedness).
 lemma exists_preimputation_strict_core (v : Finset N → ℝ) {t : ℝ} (ht : 0 < t)
     (f : ((Option N) → ℝ) →L[ℝ] ℝ)
     (hfCone : ∀ y ∈ augCone v, 0 ≤ f y)

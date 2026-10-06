@@ -11,9 +11,10 @@
   Références bibliographiques :
   - M. Maschler, E. Solan, S. Zamir, *Game Theory*, Cambridge University Press
     2013, ISBN 978-1-107-62748-3. Chapitres référencés (à confirmer sur
-    l'ouvrage physique) : ch. 2 (jeux à paiements latéraux / TU), ch. 3
-    (le cœur / Core), ch. 5 (théorème de Bondareva-Shapley, jeux balancés,
-    lemme de Farkas), ch. 6 (valeur de Shapley, vecteurs marginaux).
+    l'ouvrage physique) : ch. 16 (Coalitional games with transferable utility),
+    ch. 17 (The Core, Bondareva-Shapley theorem, balanced games,
+    Farkas lemma),
+    ch. 18 (The Shapley value, marginal vectors).
   - L.S. Shapley, « A Value for N-Person Games », *Contributions to the
     Theory of Games* II (1953), pp. 307-317.
   - O.N. Bondareva, « Some applications of the methods of linear programming
@@ -147,14 +148,14 @@ def Balanced : Prop :=
     qu'énoncé est en fait FAUX sans hypothèses supplémentaires. Un contre-exemple :
     N = Fin 1, v(∅) = 0, v({0}) = -1.
     CORRECTIF : on prouve l'énoncé plus faible v(∅) ≥ 0 (trivial depuis empty_zero). -/
--- MSZ ch. 2 — superadditivité d'un jeu vide ; trivial car `v(∅) = 0` est implicite.
+-- MSZ ch. 16 — superadditivité d'un jeu vide ; trivial car `v(∅) = 0` est implicite.
 theorem superadditive_empty_nonneg (_h : G.Superadditive) :
     G.v ∅ ≥ 0 := by
   rw [G.empty_zero]
 
 /-- Pour les jeux superadditifs dont tous les singletons ont une valeur non
     négative, la grande coalition a une valeur non négative. -/
--- MSZ ch. 2 — conséquence directe de la superadditivité et de la non-négativité des singletons.
+-- MSZ ch. 16 — conséquence directe de la superadditivité et de la non-négativité des singletons.
 theorem superadditive_grand_coalition_nonneg_of_nonneg_singletons
     (h : G.Superadditive) (hnn : ∀ i : N, G.v {i} ≥ 0) :
     G.v Finset.univ ≥ 0 := by
@@ -181,7 +182,7 @@ theorem superadditive_grand_coalition_nonneg_of_nonneg_singletons
                    = ∑_i ∑_{S∋i} w(S)·x(i)       [Fubini, double somme]
                    = ∑_i x(i)·∑_{S∋i} w(S)       [factorisation par x(i)]
                    = ∑_i x(i)·1 = v(N)            [balancé + efficacité] -/
--- MSZ ch. 5 (Bondareva-Shapley) — direction `Core nonvide ⇒ Balanced` : si le Core n'est pas vide, une allocation `x` en son sein fournit les poids balancés `λ_{ij} = x_{ij}`.
+-- MSZ ch. 17 (Bondareva-Shapley) — direction `Core nonvide ⇒ Balanced` : si le Core n'est pas vide, une allocation `x` en son sein fournit les poids balancés `λ_{ij} = x_{ij}`.
 theorem bondareva_shapley_forward :
     G.Core.Nonempty → G.Balanced := by
   rintro ⟨x, ⟨hx_eff, hx_gr⟩⟩
@@ -285,7 +286,7 @@ theorem balancedUnit_notIn_augCone (t : ℝ) (ht : 0 < t) (hb : G.Balanced) :
        hyperplane_separation pour obtenir un hyperplan séparant témoignant d'un
        système de poids non balancé, contredisant l'hypothèse balancée.
     5. Extraire l'allocation du noyau depuis le point d'intersection. -/
--- MSZ ch. 5 (Bondareva-Shapley) — direction `Balanced ⇒ Core nonvide` : utilise le lemme de Farkas (plan de `Bondareva-Farkas` formalisé dans `ConeKernel.lean`).
+-- MSZ ch. 17 (Bondareva-Shapley) — direction `Balanced ⇒ Core nonvide` : utilise le lemme de Farkas (plan de `Bondareva-Farkas` formalisé dans `ConeKernel.lean`).
 theorem bondareva_shapley_backward :
     G.Balanced → G.Core.Nonempty := by
   intro hb
@@ -459,7 +460,7 @@ theorem bondareva_shapley_backward :
   exact hCore
 
 /-- Bondareva-Shapley : le noyau est non vide si et seulement si le jeu est balancé. -/
--- MSZ ch. 5 (Bondareva-Shapley) — théorème central : un jeu TU a un Core non-vide ssi il est balancé. `Bondareva 1963` (forward) + `Shapley 1967` (backward).
+-- MSZ ch. 17 (Bondareva-Shapley) — théorème central : un jeu TU a un Core non-vide ssi il est balancé. `Bondareva 1963` (forward) + `Shapley 1967` (backward).
 theorem bondareva_shapley :
     G.Core.Nonempty ↔ G.Balanced :=
   ⟨bondareva_shapley_forward G, bondareva_shapley_backward G⟩
@@ -554,7 +555,7 @@ private lemma sdiff_subset_prefix_of_max
   · exact absurd (enumIndex_injective h) hji
 
 /-- Pour les jeux convexes, le vecteur marginal domine v(S) sur chaque coalition. -/
--- MSZ ch. 6 (vecteurs marginaux) — `Shapley 1971, Cores of convex games` (référence primaire) : pour un jeu convexe, le vecteur marginal domine tout élément du Core.
+-- MSZ ch. 18 (vecteurs marginaux) — `Shapley 1971, Cores of convex games` (référence primaire) : pour un jeu convexe, le vecteur marginal domine tout élément du Core.
 lemma marginalVector_dominates (h : G.Convex) :
     ∀ S : Finset N, ∑ i ∈ S, G.marginalVector i ≥ G.v S := by
   intro S
@@ -608,7 +609,7 @@ lemma marginalVector_dominates (h : G.Convex) :
       linarith
 
 /-- Pour les jeux convexes, le vecteur marginal appartient au noyau. -/
--- MSZ ch. 6 — `Shapley 1971` : pour un jeu convexe, le vecteur marginal APPARTIENT au Core (et donc le Core est non-vide).
+-- MSZ ch. 18 — `Shapley 1971` : pour un jeu convexe, le vecteur marginal APPARTIENT au Core (et donc le Core est non-vide).
 theorem marginalVector_mem_core (h : G.Convex) :
     G.marginalVector ∈ G.Core :=
   ⟨G.marginalVector_efficient, G.marginalVector_dominates h⟩
@@ -619,7 +620,7 @@ end MarginalVector
     games »). Preuve constructive directe via les vecteurs marginaux : le long de
     toute énumération fixée de N, le vecteur de contribution marginale appartient
     au noyau lorsque le jeu est convexe. -/
--- MSZ ch. 3 + ch. 6 — théorème de Shapley 1971 : tout jeu convexe a un Core non-vide (le vecteur marginal en est un témoin).
+-- MSZ ch. 17 + ch. 18 — théorème de Shapley 1971 : tout jeu convexe a un Core non-vide (le vecteur marginal en est un témoin).
 theorem convex_core_nonempty (h : G.Convex) :
     G.Core.Nonempty :=
   ⟨G.marginalVector, G.marginalVector_mem_core h⟩

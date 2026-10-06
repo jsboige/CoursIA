@@ -402,8 +402,8 @@ l'archivage hors-Git.
 
 | Référence | Chapitres / sections cités | Fichiers Lean |
 |---|---|---|
-| **Maschler, Solan, Zamir — *Game Theory*, CUP 2013** (ISBN 978-1-107-62748-3) | ch. 2 (TU, side payments) · ch. 3 (Core) · ch. 5 (Bondareva-Shapley, Farkas, jeux balancés) · ch. 6 (valeur de Shapley, Möbius, vecteurs marginaux) · ch. 8 (Banzhaf, jeux de vote pondérés, veto) | `Basic.lean` (header, `Core`, `Balanced`, `bondareva_shapley`, `convex_core_nonempty`) ; `ConeKernel.lean` (header, `phiAugLinear`, `augCone`, `balancedUnit`, `separatingFunctional_none_neg`) ; `Shapley.lean` (header, `shapleyCoef`, `shapleyValue`, axiomes ch. 6, `mobius_decomposition`, `banzhaf_raw_symmetric`) |
-| **Lloyd S. Shapley — « A Value for N-Person Games », 1953** | formule de la valeur, axiomes | `Shapley.lean` (`shapleyCoef`, `shapleyValue`, axiomes ch. 6) |
+| **Maschler, Solan, Zamir — *Game Theory*, CUP 2013** (ISBN 978-1-107-62748-3) | ch. 16 (Coalitional games with transferable utility, side payments) · ch. 17 (The Core) · ch. 17 (Bondareva-Shapley, Farkas lemma, balanced collections) · ch. 18 (The Shapley value, Möbius decomposition, marginal vectors) · ch. 18 (Shapley-Shubik power indices) ; Banzhaf absent du découpage chapitré MSZ 2013 | `Basic.lean` (header, `Core`, `Balanced`, `bondareva_shapley`, `convex_core_nonempty`) ; `ConeKernel.lean` (header, `phiAugLinear`, `augCone`, `balancedUnit`, `separatingFunctional_none_neg`) ; `Shapley.lean` (header, `shapleyCoef`, `shapleyValue`, axiomes ch. 18, `mobius_decomposition`, `banzhaf_raw_symmetric`) |
+| **Lloyd S. Shapley — « A Value for N-Person Games », 1953** | formule de la valeur, axiomes | `Shapley.lean` (`shapleyCoef`, `shapleyValue`, axiomes ch. 18) |
 | **O. N. Bondareva — *Problemy Kibernetiki* 10, 1963** | direction forward de Bondareva-Shapley | `Basic.lean` (`bondareva_shapley_forward`) ; `ConeKernel.lean` (`balancedUnit`) |
 | **Lloyd S. Shapley — « Cores of convex games », *IJGT* 1, 1971** | vecteurs marginaux + Core des jeux convexes | `Basic.lean` (`marginalVector_dominates`, `marginalVector_mem_core`, `convex_core_nonempty`) |
 | **John C. Harsanyi — *Management Science* 9(2), 1963** | décomposition de Möbius (dividendes) | `Shapley.lean` (`mobius_decomposition`, `mobiusCoeff`) |
@@ -412,8 +412,8 @@ l'archivage hors-Git.
 **Note d'acquisition (issue #19275) :** le volume Maschler-Solan-Zamir 2013
 n'est **pas** encore disponible localement. Les références `MSZ ch. N` dans
 les docstrings sont données au chapitre près d'après l'index usuel de
-l'ouvrage (ch. 2 TU, ch. 3 Core, ch. 5 Bondareva-Shapley, ch. 6 Shapley
-value, ch. 8 power indices) ; **à confirmer sur l'ouvrage physique** dès
+l'ouvrage (ch. 16 TU, ch. 17 Core, ch. 17 Bondareva-Shapley, ch. 18 Shapley
+value, ch. 18 power indices)) ; **à confirmer sur l'ouvrage physique** dès
 acquisition. Aucune référence `ch. N` n'est citée en aval d'une vérification
 préalable. Le présent README et les en-têtes des fichiers `.lean` portent
 la même note, pour traçabilité.
