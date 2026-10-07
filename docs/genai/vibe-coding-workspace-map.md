@@ -14,7 +14,7 @@ Le périmètre Vibe-Coding + séries GenAI voisines couvre **9 workspaces logiqu
 | **Roo Code** | `MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/` | 279 | workspace | 5 modules + Corrections + Demo-Roo-Capabilities + Scripts + workspaces |
 | **Claw Systems** (NanoClaw, Hermes, OpenClaw) | `MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claw-Systems/` | 16 | workspace | Agents autonomes conteneurisés (Telegram + cluster) ; 11 docs |
 | **Claudish** | `MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claudish/` | 8 | workspace | Proxy multi-provider (Anthropic ↔ GLM ↔ Qwen ↔ DeepSeek) |
-| **MyIA.AgentSafetyAnalyzer** (sous-série Roslyn) | `MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/` | 7 | sous-série technique | Production-ready des analyseurs prototypés dans `Vibe-Coding/docs/Roslyn-Code-Guardrails.ipynb` ; Epic #10473, sub-grain #10500b. **Non listé dans `Vibe-Coding/README.md` l.13-19** (oubli structurel) |
+| **MyIA.AgentSafetyAnalyzer** (sous-série Roslyn) | `MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/` | 7 | sous-série technique | Production-ready des analyseurs prototypés dans `Roslyn-Code-Guardrails.ipynb` (hébergé dans `analyzers/` depuis le 07/10/2026) ; Epic #10473, sub-grain #10500b |
 | **vLLM** | `docker-configurations/services/vllm-zimage/` | 3 | service Docker | Compose + env + README ; vit avec les autres services GenAI (ComfyUI, Forge, Whisper) |
 | **Open WebUI** | `MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/` + 2 notebooks dans `Texte/19-20_OWUI_*.ipynb` | 53 | plateforme | Tour de la plateforme + QA Playwright (6 modules) ; la plateforme **vit dans sa série native** |
 | **AI-Engine (WordPress)** | `MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/` | 52 | plateforme | Extension WordPress GenAI ; **LivresAgités** = parcours cas d'usage 04 |
@@ -57,7 +57,7 @@ Le scope #14526 demande de distinguer **workspace, sous-thème, consommateur et 
 
 ### Sous-série technique
 
-- `Vibe-Coding/analyzers/` — `MyIA.AgentSafetyAnalyzer` (NuGet-ready, `netstandard2.0`) ; prototypes Roslyn du notebook `docs/Roslyn-Code-Guardrails.ipynb`. AGSEC001-005 (Process.Start non-constant, SQL concat, File.Read non-constant, HttpClient URL non-constante, credentials hardcodées).
+- `Vibe-Coding/analyzers/` — `MyIA.AgentSafetyAnalyzer` (NuGet-ready, `netstandard2.0`) ; prototypes Roslyn du notebook `Roslyn-Code-Guardrails.ipynb` (même dossier). AGSEC001-005 (Process.Start non-constant, SQL concat, File.Read non-constant, HttpClient URL non-constante, credentials hardcodées).
 
 ## Convention observée
 
