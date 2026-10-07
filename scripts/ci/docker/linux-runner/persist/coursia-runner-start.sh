@@ -46,8 +46,8 @@ export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 # disparu depuis). La somme des caps declares depassait donc la RAM de la VM
 # (27 648 Mo en vol pour 24 032 disponibles), et c'est la VM qui swappait.
 # Le nombre est le PLAFOND D'ADMISSION, egal a la somme des caps declares des
-# trois jambes, recomposee pour tenir dans la VM : 4x1536 docker + 8x512
-# waiters + 1x6144 lean = 16 384 Mo. Les ~7 500 Mo restants sont la marge du
+# trois jambes, recomposee pour tenir dans la VM : 4x1536 docker + 12x512
+# waiters + 1x6144 lean = 18 432 Mo. Les ~5 600 Mo restants sont la marge du
 # noyau, de dockerd et du page cache -- les retrecir serait refaire l'erreur
 # dans l'autre sens.
 #
@@ -59,12 +59,15 @@ export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 # COMPOSITION 2026-10-08 : les caps PAR CONTENEUR sont conserves (ils sont
 # calibres : `docker --memory` est atteint sous charge, les baisser ferait
 # tuer des jobs sains), ce sont les EFFECTIFS qui baissent -- docker 6->4
-# (service), waiters 12->8 (service), lean 2->1 (service) -- et le swap lean
-# qui passe a ZERO (COURSIA_LEAN_RUNNER_MEMORY_SWAP=LEAN_MEMORY, cf
-# coursia-lean-start.sh). Ce dernier geste rend a lui seul 24 576 Mo de swap
-# au noyau : c'etait la plus grosse masse non comptee par ce budget, qui
-# n'indexe que `--memory` (jamais le swap).
-export COURSIA_RUNNER_BUDGET_GB=16
+# (service) et lean 2->1 (service) -- et le swap lean qui passe a ZERO
+# (COURSIA_LEAN_RUNNER_MEMORY_SWAP=LEAN_MEMORY, cf coursia-lean-start.sh).
+# Ce dernier geste rend a lui seul 24 576 Mo de swap au noyau : c'etait la plus
+# grosse masse non comptee par ce budget, qui n'indexe que `--memory` (jamais
+# le swap). Les waiters restent a 12 : leur unite et leur wrapper appartiennent
+# a ai-01 (table du README de persist/), les reduire ici changerait la
+# declaration d'une AUTRE machine -- et leur effectif n'est pas ce qui a
+# produit l'incident.
+export COURSIA_RUNNER_BUDGET_GB=18
 
 # BUDGET CPU INTER-FAMILLES (#15574 item 3, arbitrage coordinateur du
 # 2026-10-01, comment 5933689033). supervise.sh le lit (assert_cpu_budget) :

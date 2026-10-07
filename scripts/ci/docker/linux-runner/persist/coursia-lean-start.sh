@@ -52,16 +52,17 @@ export COURSIA_LEAN_RUNNER_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-myia-
 export COURSIA_RUNNER_STATE_DIR="${COURSIA_RUNNER_STATE_DIR:-/var/lib/coursia-lean}"
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 
-# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 16 Go. La VM WSL
+# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 18 Go. La VM WSL
 # est revenue a 24 032 Mo (`.wslconfig memory=24GB`, mesure 2026-10-08) : le
 # 40 110 Mo qui justifiait 42 depuis le 2026-09-21 (#17322) n'existe plus, et
 # la somme des caps declares (27 648 Mo) depassait la RAM de la VM.
-# Composition recomposee pour tenir dans la VM : 4x1536 docker + 8x512
-# waiters + 1x6144 lean = 16 384 Mo, cette jambe passant de 2 slots a 1.
+# Composition recomposee pour tenir dans la VM : 4x1536 docker + 12x512
+# waiters + 1x6144 lean = 18 432 Mo, cette jambe passant de 2 slots a 1 (les
+# waiters ne bougent pas : leur unite appartient a ai-01, cf README de persist/).
 # Les trois jambes doivent annoncer le meme nombre : assert_memory_budget
 # somme les familles entre elles, une divergence refuserait des slots sans
 # nommer sa cause.
-export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-16}"
+export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-18}"
 
 # AUCUN SWAP POUR LES CONTENEURS LEAN (mission URGENTE ai-01, 2026-10-08).
 # `--memory-swap = --memory` : docker n'accorde alors AUCUN swap au conteneur.

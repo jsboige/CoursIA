@@ -18,8 +18,8 @@
 #
 # N slots porte par l'argument ExecStart (po-2024 -> 1 depuis le 2026-10-08,
 # mission URGENTE ai-01 ai01-urgent-po2024-runners-mem-2220 : la VM WSL est
-# revenue a 24 032 Mo, la composition 4x1536 docker + 8x512 waiters +
-# 1x6144 lean = 16 384 Mo tient dans sa RAM. L'effectif lean est ce qui baisse
+# revenue a 24 032 Mo, la composition 4x1536 docker + 12x512 waiters +
+# 1x6144 lean = 18 432 Mo tient dans sa RAM. L'effectif lean est ce qui baisse
 # -- les volumes _work chauds coursia-runner-work-lean-1 reste porte par ce
 # slot, -2 devient inutilise et n'est PAS supprime : le remonter est le geste
 # de retour si la VM est reagrandie, et un volume detruit ne se recree pas
