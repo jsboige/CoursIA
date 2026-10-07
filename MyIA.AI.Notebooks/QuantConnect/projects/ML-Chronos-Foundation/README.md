@@ -48,8 +48,11 @@ Le ré-entraînement est donc aussi porté **hors** de l'algorithme, par un harn
   méga-capitalisations.
 - **Entraînement** : 2016-01-01 → 2021-12-31. **Hors échantillon** : 19 origines
   trimestrielles 2022-01-03 → 2026-07-01 (premier jour de bourse de chaque trimestre
-  depuis 2022-01-01), chacune évaluée sur son horizon de prévision de 63 jours — le
-  dernier horizon évalué court jusqu'à début septembre 2026.
+  depuis 2022-01-01), chacune évaluée sur son horizon de prévision de **63 séances**
+  (séances de bourse de l'index, origine incluse) — le dernier horizon évalué court du
+  2026-07-01 au **2026-09-29** (dernière prévision), et la valorisation du dernier
+  rebalancement stratégique porte sur le **2026-09-30**, la séance qui suit la dernière
+  prévision (`index[i+63]` du harnais, distincte de la fin d'horizon `index[i+62]`).
 - Recette du livre : `context_length` 126 jours, `prediction_length` 63 jours,
   `learning_rate` 1e-5, `adamw_torch_fused`, lot 32, accumulation 2, `tf32` (Ampere), 20
   échantillons de prévision par origine.
