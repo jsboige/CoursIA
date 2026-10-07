@@ -377,7 +377,7 @@ helper dedie pour les recoveries futures (cf recommendation §2).
 
 4. **Mettre a jour `share-state.json`** : la 10eme jonction n'est pas
    tracee dans le store. Deux choix :
-     - (a) Ajouter manuellement `search_lean` dans le tableau `members` (1 ligne, trivial).
+     - (a) Ajouter manuellement `search_lean` dans le tableau `members` (trivial).
      - (b) Re-invoquer `setup_shared_mathlib.ps1 -Apply` ce qui regenerera
        le fichier et re-claimera les 9 anciens + le nouveau — risque de faux
        positifs si le script considere l'etat actuel comme `drift`.
