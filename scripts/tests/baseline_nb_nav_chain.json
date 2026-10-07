@@ -277,11 +277,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory/SocialChoice"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/07-Committees-Core.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory/SocialChoice"
     },
@@ -1567,6 +1562,11 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-00-Escalier-Entree-Lean-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
     },
@@ -1924,7 +1924,7 @@
   "wrapped": [
     {
       "series": "MyIA.AI.Notebooks/Complexity",
-      "notebooks": 11
+      "notebooks": 13
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment",
