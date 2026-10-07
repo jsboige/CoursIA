@@ -90,7 +90,9 @@ Le livrable **complète et produit ses ordres** : 2 ordres = les 2 rebalancement
 
 **Sur la sonde `probe9`** : elle porte 8191 ordres-marqueurs de plus (un `market_order` d'une action SPY par bit de son masque de diagnostic) et rend pourtant des statistiques **identiques à l'unité près** à celles de v7. Les marqueurs sont donc **neutres sur la mesure** — 8191 ordres d'écart ne déplacent ni le Sharpe, ni le rendement, ni le drawdown. Les deux exécutions se corroborent.
 
-**Deux réserves, mesurées.** (1) La comparaison au livre est **à fenêtre inégale** : le livre couvre 2022 entier, le livrable le premier sixième (mur natif, cf. §Historique) — aucun jugement de performance n'est tiré de l'écart. (2) Ces chiffres **ne sont pas un verdict de stratégie** : deux mois, une seule configuration, aucune répétition multi-seed — le résultat est celui du portage fidèle, pas une évaluation du modèle.
+**Verdict du modèle de base : `INCONCLUSIVE`.** Sur 40 séances et **2 ordres** — les deux rebalancements mensuels, exactement le rythme du livre — l'échantillon est trop court pour conclure quoi que ce soit sur la stratégie. Le mot est exigé par le critère 4 de #18903, et le seul défendable ici est celui-ci : ni `BEATS` ni `NO BEATS`, parce que ce backtest n'est pas une mesure de performance — c'est la vérification qu'un portage fidèle **complète et trade**. Le verdict de l'autre bras, le ré-entraînement FinBERT évalué hors échantillon sur quatre graines, est **`NO BEATS`** et vit dans la section « Résultat » ci-dessus.
+
+**Deux bornes de mesure, qui encadrent ce verdict.** (1) La comparaison au livre est **à fenêtre inégale** : le livre couvre 2022 entier, le livrable le premier sixième (mur natif, cf. §Historique) — aucun jugement de performance n'est tiré de l'écart. (2) Une seule configuration, déterministe, sans répétition multi-seed : le résultat est celui du portage fidèle, pas une évaluation du modèle.
 
 ## Fichiers
 
