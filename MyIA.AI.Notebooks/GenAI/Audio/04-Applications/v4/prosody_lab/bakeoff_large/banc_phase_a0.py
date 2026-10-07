@@ -56,6 +56,46 @@ def run_client(client_name: str, text: str, out_wav: str, **client_kwargs) -> di
     return result
 
 
+def _librosa_available(python_exe: str) -> bool:
+    """L'organe importe librosa en differe (prosody_metrics.load_audio) : un
+    interpreteur qui ne l'a pas ne le montre qu'a l'execution, jamais a l'import."""
+    try:
+        out = subprocess.run(
+            [python_exe, "-c", "import librosa"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180,
+        )
+        return out.returncode == 0
+    except Exception:
+        return False
+
+
+def resolve_prosody_python(repo_root: Path) -> tuple[str, str]:
+    """Interpreteur de la jambe prosodie, et provenance du choix.
+
+    L'organe tourne en SOUS-PROCESSUS, mais `sys.executable` est l'interpreteur du
+    BANC -- donc le venv du CLIENT mesure. La jambe prosodie ne marchait que pour
+    les clients dont le venv porte librosa (venv-cosyvoice3) et echouait en rc=1
+    pour les autres (venv-zonos) ; l'echec etait alors rapporte comme un
+    `verify_prosody exit=1` attribue au client. La colonne prosodie du bakeoff
+    etait donc biaisee vers les clients qui ont librosa par accident, et non par
+    qualite -- un biais de mesure, pas un defaut de client.
+
+    Priorite : PROSODY_PYTHON (explicite), puis l'interpreteur courant s'il a
+    librosa, puis un venv frere de _runtime/ qui l'a. A defaut l'interpreteur
+    courant, et l'erreur dira lequel -- pour ne plus accuser le client.
+    """
+    forced = os.environ.get("PROSODY_PYTHON")
+    if forced:
+        return forced, "PROSODY_PYTHON"
+    if _librosa_available(sys.executable):
+        return sys.executable, "sys.executable (librosa present)"
+    pattern = "venv-*/Scripts/python.exe" if os.name == "nt" else "venv-*/bin/python"
+    for cand in sorted((repo_root / "_runtime").glob(pattern)):
+        if _librosa_available(str(cand)):
+            return str(cand), f"_runtime/{cand.parent.parent.name} (auto-detecte)"
+    return sys.executable, "sys.executable (aucun interpreteur avec librosa trouve)"
+
+
 def measure_prosody(wav_path: str) -> dict:
     """Délègue à scripts/tts_verification/verify_prosody.py --single."""
     rel_script = Path("scripts") / "tts_verification" / "verify_prosody.py"
@@ -71,19 +111,35 @@ def measure_prosody(wav_path: str) -> dict:
     script = repo_root / rel_script
     if not script.exists():
         return {"error": f"verify_prosody.py not found at {script}"}
+    python_exe, source = resolve_prosody_python(repo_root)
     try:
         out = subprocess.run(
             # `--single` imprime deja le rapport JSON sur stdout ; `--json` attend un
             # CHEMIN et n'est honore que par la branche `--audio-dir` de l'organe
             # (verify_prosody.py:391,408). Le passer nu faisait sortir argparse en rc=2.
-            [sys.executable, str(script), "--single", wav_path],
+            [python_exe, str(script), "--single", wav_path],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
         )
         if out.returncode == 0 and out.stdout.strip():
-            return json.loads(out.stdout)
-        return {"error": f"verify_prosody exit={out.returncode}", "stderr": out.stderr[:300]}
+            report = json.loads(out.stdout)
+            if isinstance(report, dict):
+                # Trace de l'interpreteur : la colonne prosodie reste auditable
+                # meme quand l'auto-detection a choisi un venv frere.
+                report["_interpreter"] = {"path": python_exe, "source": source}
+            return report
+        # Panne d'environnement, pas defaut du client mesure : on la nomme telle quelle.
+        if "No module named 'librosa'" in (out.stderr or ""):
+            return {
+                "error": (f"prosodie indisponible : l'interpreteur {python_exe} n'a pas "
+                          "librosa. Definir PROSODY_PYTHON vers un venv qui l'a."),
+                "interpreter": python_exe, "interpreter_source": source,
+                "stderr": out.stderr[:300],
+            }
+        return {"error": f"verify_prosody exit={out.returncode}",
+                "interpreter": python_exe, "interpreter_source": source,
+                "stderr": out.stderr[:300]}
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": str(e), "interpreter": python_exe, "interpreter_source": source}
 
 
 def measure_wer(wav_path: str, reference_text: str, model_size: str = "tiny") -> dict:
