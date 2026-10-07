@@ -2009,9 +2009,12 @@ def main() -> int:
             print(f"  - {error}")
     if ready:
         return EXIT_READY
-    if frozen_reason is not None:
+    if dossier is not None:
+        # Dossier atteste : verdict fonctionnel (READY ou BLOCKED) tient.
+        # BLOCKED+gel ou READY+gel -> rc=3 (le gate refuse le MERGE, le
+        # gel COMPLETE la sortie).
         return EXIT_BLOCKED_WITH_SUBSTANCE
-    return EXIT_NO_DOSSIER if verdict != VERDICT_BLOCKED else EXIT_BLOCKED_WITH_SUBSTANCE
+    return EXIT_NO_DOSSIER
 
 
 if __name__ == "__main__":
