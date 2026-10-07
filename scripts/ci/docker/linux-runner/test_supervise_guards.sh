@@ -2462,7 +2462,12 @@ echo "Test 38 : HTTP 403 sur fetch_token = terminal apres N essais consecutifs (
   cat > "$TEST_DIR/bin38/gh" <<'STUB'
 #!/usr/bin/env bash
 # Simule un compte sans droit admin : gh api rend HTTP 403 sur stderr
-# et exit 1, sans token.
+# et exit 1, sans token. #15154 critere 1 : `gh api user` repond -- le
+# compte ambiant est resoluble et doit paraitre dans le diagnostic.
+if [ "$1 $2" = "api user" ]; then
+  echo "myia-ai-01"
+  exit 0
+fi
 echo '{"message":"You must have repository admin permissions","documentation_url":"https://docs.github.com/rest","status":"403"}' >&2
 echo 'gh: You must have repository admin permissions (HTTP 403)' >&2
 exit 1
@@ -2494,6 +2499,15 @@ STUB
     ok "le diagnostic pointe la cause structurelle (compte sans droit admin)"
   else
     ko "diagnostic 'compte sans droit admin' attendu, err=$(head -5 "$TEST_DIR/err38.log")"
+  fi
+  # #15154 critere 1 (residu du preflight KEEP 2026-09-27) : le diagnostic
+  # doit nommer le compte RESOLU, pas la variable COURSIA_RUNNER_GH_ACCOUNT.
+  # Le stub resolu le compte ambiant en "myia-ai-01" -- c'est ce nom qui doit
+  # paraitre, sans epinglage.
+  if grep -q "'myia-ai-01'" "$TEST_DIR/err38.log"; then
+    ok "le diagnostic nomme le compte ambiant resolu 'myia-ai-01' (critere 1)"
+  else
+    ko "compte resolu absent du diagnostic, err=$(head -5 "$TEST_DIR/err38.log")"
   fi
   # L'ARRET COORDONNE : un slot qui detecte une cause structurelle pose le
   # sentinel STOP_FILE pour prevenir les slots siblings. Le superviseur
@@ -2559,6 +2573,85 @@ STUB
     ko "ABANDON inattendu sur 5xx, err=$(head -5 "$TEST_DIR/err39.log")"
   fi
   unset COURSIA_RUNNER_AUTH_FAIL_MAX || true
+)
+echo ""
+
+# --- Test 66 : compte epingle introuvable = AUTH terminal, compte nomme (#15154) -------------
+echo "Test 66 : gh auth token --user introuvable = AUTH terminal apres N essais, compte nomme (#15154)"
+(
+  cd "$SCRIPT_DIR"
+  mkdir -p "$TEST_DIR/bin66" "$TEST_DIR/state-66"
+  cat > "$TEST_DIR/bin66/gh" <<'STUB'
+#!/usr/bin/env bash
+# Simule un trousseau gh ou le compte epingle n'existe pas : TOUTE
+# sous-commande `auth` echoue (exit 1). Le POST registration-token ne doit
+# JAMAIS etre atteint : fetch_token retourne avant. Le marqueur (emis
+# uniquement sur ce POST) le prouve ; tout autre appel gh echoue en silence,
+# comme un environnement degrade le ferait.
+if [ "$1" = "auth" ]; then
+  echo "gh: not logged in to any account" >&2
+  exit 1
+fi
+if [ "$1" = "api" ] && [ "$3" = "POST" ]; then
+  echo "STUB_REACHED_PAST_AUTH" >&2
+fi
+exit 1
+STUB
+  chmod +x "$TEST_DIR/bin66/gh"
+  cp "$TEST_DIR/bin/docker" "$TEST_DIR/bin66/docker"
+  chmod +x "$TEST_DIR/bin66/docker"
+  cp "$TEST_DIR/bin/sleep" "$TEST_DIR/bin66/sleep"
+  chmod +x "$TEST_DIR/bin66/sleep"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin66/ps"
+  chmod +x "$TEST_DIR/bin66/ps"
+  export PATH="$TEST_DIR/bin66:$PATH"
+  export COURSIA_RUNNER_NAME_PREFIX="test-prefix-66"
+  export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-66"
+  export COURSIA_RUNNER_AUTH_FAIL_MAX=3
+  export COURSIA_RUNNER_GH_ACCOUNT="ghost-account"
+  export SLEEP_LOG="$TEST_DIR/sleep66.log"
+  : > "$SLEEP_LOG"
+  timeout --kill-after=1 15 bash "$SCRIPT_DIR/supervise.sh" start 1 \
+    >/dev/null 2>"$TEST_DIR/err66.log"
+  rc=$?
+  # Reserve du preflight KEEP (2026-09-27) : avant #15154 le `return 1` de
+  # l'epinglage partait AVANT l'ecriture du fichier d'etat -- code absent =
+  # transitoire = boucle infinie sur une cause qui ne se resout jamais.
+  # Le marqueur HTTP=AUTH doit etre classe terminal comme un 4xx.
+  if grep -q "ABANDON : 3 echecs consecutifs HTTP AUTH" "$TEST_DIR/err66.log"; then
+    ok "ABANDON emis sur compte epingle introuvable (HTTP AUTH terminal)"
+  else
+    ko "ABANDON HTTP AUTH attendu, err=$(head -5 "$TEST_DIR/err66.log")"
+  fi
+  # Critere 1 : le compte epingle est nomme -- pas la variable.
+  if grep -q "'ghost-account'" "$TEST_DIR/err66.log"; then
+    ok "le diagnostic nomme le compte epingle 'ghost-account'"
+  else
+    ko "compte epingle absent du diagnostic, err=$(head -5 "$TEST_DIR/err66.log")"
+  fi
+  if grep -q "introuvable dans le trousseau" "$TEST_DIR/err66.log"; then
+    ok "la cause nommee est l'epinglage casse, pas le droit admin"
+  else
+    ko "cause 'introuvable dans le trousseau' attendue, err=$(head -5 "$TEST_DIR/err66.log")"
+  fi
+  if grep -q "STUB_REACHED_PAST_AUTH" "$TEST_DIR/err66.log"; then
+    ko "le POST registration-token a ete atteint malgre l'echec auth (retour attendu AVANT)"
+  else
+    ok "l'echec d'epinglage retourne avant tout appel API"
+  fi
+  if [ -f "$TEST_DIR/state-66/stop" ]; then
+    ok "sentinel STOP_FILE pose par ABANDON AUTH -- arret coordonne"
+  else
+    ko "sentinel STOP_FILE attendu apres ABANDON AUTH"
+  fi
+  n_sleeps="$(wc -l < "$SLEEP_LOG" | tr -d ' ')"
+  if [ "$n_sleeps" -le 4 ]; then
+    ok "backoff borne sur AUTH (sleep appele $n_sleeps fois, pas infini)"
+  else
+    ko "backoff excessif sur AUTH : $n_sleeps sleeps, err=$(head -5 "$TEST_DIR/err66.log")"
+  fi
+  unset COURSIA_RUNNER_AUTH_FAIL_MAX || true
+  unset COURSIA_RUNNER_GH_ACCOUNT || true
 )
 echo ""
 
