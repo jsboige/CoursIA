@@ -891,6 +891,108 @@ def test_split_base_corroboration_trois_etats():
     assert (base3, infra3, undec3) == ({}, {}, {})
 
 
+def test_diff_bounded_check_exclu_de_base_issue_19645(monkeypatch):
+    """#19645 : un organe borne au diff ne peut PAS heriter de la base.
+
+    Cas fondateur : `prose-counts-guard` lit SEULEMENT les lignes ajoutees
+    par la PR (`--diff {base_ref}...HEAD`). Il ne tourne que sur `pull_request`,
+    donc il est absent du rollup de `main` -> `undecided`. Le comportement
+    d'avant #17154 imputait `undecided` a `base` (fail-closed par defaut), ce
+    qui disait a la lane « pas le votre, ne rien faire », alors que la cause
+    est forcement dans le diff de la PR. Le fix : un check declare borne au
+    diff est place dans `undecided` SEUL, jamais dans `base` -- la lane
+    garde la main.
+
+    La source de verite est le registre de la voie rapide (Guard.argv /
+    Guard.delta_argv), pas une liste de noms. Le test monkeypatche le
+    retour de la fonction pour eviter une dependance dure sur le contenu
+    du registre.
+    """
+    monkeypatch.setattr(pig, "_diff_bounded_check_names",
+                        lambda: {"prose-counts-guard"})
+    corroborated = {"prose-counts-guard": [101, 202],
+                    "Scripts Tests (CPU)": [303, 404]}
+    names = {"prose-counts-guard": {"prose-counts-guard"},
+             "Scripts Tests (CPU)": {"Scripts Tests (CPU)"}}
+    # Probe vide : tout part en `undecided` par defaut (#17154). La cle
+    # diff-bounded doit quand meme etre exclue de `base`.
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names, _probe(),
+        diff_bounded=pig._diff_bounded_check_names())
+    assert "prose-counts-guard" not in base
+    assert "prose-counts-guard" in undecided
+    # Scripts Tests (CPU) n'est PAS borne au diff : comportement inchange.
+    assert "Scripts Tests (CPU)" in base
+    assert infra == {}
+
+
+def test_diff_bounded_aggregator_via_organ_suffix(monkeypatch):
+    """#19645 : un agregateur `PR gate :: prose-counts-guard` beneficie du filtre.
+
+    Le suffixe `:: organ` est retire pour le lookup dans la liste
+    diff-bounded. Un agregateur dont l'UN des organes est borne au diff ne
+    peut pas etre impute a la base par cet organe. Pour la lane, le PR
+    apparait dans `red` (l'organe borne au diff est un vrai rouge, pas un
+    heritage).
+    """
+    monkeypatch.setattr(pig, "_diff_bounded_check_names",
+                        lambda: {"prose-counts-guard"})
+    corroborated = {"PR gate :: prose-counts-guard": [501, 502],
+                    "PR gate :: perimeter": [601, 602]}
+    names = {"PR gate :: prose-counts-guard": {"PR gate"},
+             "PR gate :: perimeter": {"PR gate"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names, _probe(),  # probe vide -> tout undecided
+        diff_bounded=pig._diff_bounded_check_names())
+    assert "PR gate :: prose-counts-guard" not in base
+    assert "PR gate :: prose-counts-guard" in undecided
+    # perimeter n'est pas diff-bounded : reste en base (repli par defaut).
+    assert "PR gate :: perimeter" in base
+
+
+def test_diff_bounded_ne_bloque_pas_base_rouge_reelle(monkeypatch):
+    """#19645 : un check NON diff-bounded reste impute a la base si rouge sur main.
+
+    Le filtre diff_bounded est un ENSEMBLE de noms : il n'elargit pas la
+    classe `base` aux checks ordinaires, et il ne soustrait pas `Scripts
+    Tests (CPU)` du verdict quand ce check est effectivement rouge sur
+    `main`. La regression est : avant #19645, ce check etait inchange. Le
+    test verifie l'inchange.
+    """
+    monkeypatch.setattr(pig, "_diff_bounded_check_names",
+                        lambda: {"prose-counts-guard"})
+    corroborated = {"Scripts Tests (CPU)": [701, 702]}
+    names = {"Scripts Tests (CPU)": {"Scripts Tests (CPU)"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names,
+        _probe(main_red=["Scripts Tests (CPU)"],
+               main_names=["Scripts Tests (CPU)"]),
+        diff_bounded=pig._diff_bounded_check_names())
+    assert base == {"Scripts Tests (CPU)": [701, 702]}
+    assert undecided == {}
+    assert infra == {}
+
+
+def test_diff_bounded_none_preserve_comportement_avant_19645(monkeypatch):
+    """#19645 : `diff_bounded=None` (defaut) garde le comportement d'avant.
+
+    Un appelant qui ne passe pas le filtre ne doit pas voir son verdict
+    change -- la nouvelle logique n'est effective que si l'appelant a
+    effectivement recupere le registre. C'est le filet de la regle : aucun
+    caller historique ne doit casser.
+    """
+    monkeypatch.setattr(pig, "_diff_bounded_check_names",
+                        lambda: {"prose-counts-guard"})
+    corroborated = {"prose-counts-guard": [801, 802]}
+    names = {"prose-counts-guard": {"prose-counts-guard"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names, _probe(),
+        diff_bounded=None)
+    # probe vide + undecided -> base (comportement d'avant)
+    assert "prose-counts-guard" in base
+    assert "prose-counts-guard" in undecided
+
+
 def test_geste_infra_n_invente_pas_d_id_de_run():
     """L'id du check-run n'est pas un id de workflow run : le picker n'en donne aucun.
 
