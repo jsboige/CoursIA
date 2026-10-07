@@ -21,8 +21,21 @@
 # a chaque demarrage (jamais recopie dans un EnvironmentFile, jamais en argv).
 set -uo pipefail
 
-MASTER_ENV="${COURSIA_MASTER_ENV:-/mnt/d/CoursIA/.secrets/master.env}"
-REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/CoursIA}"
+# Depot par sonde des deux racines connues -- ce wrapper est deploye a l'identique
+# sur les deux sieges, dont les chemins different d'un segment (cf. persist/README.md) :
+#   po-2024 : /mnt/d/Dev/CoursIA (migration 2026-09-17)
+#   ai-01   : /mnt/d/CoursIA
+# L'ancien defaut unique /mnt/d/CoursIA faisait crash-looper la jambe waiters de
+# po-2024 au premier restart post-deploiement budget (08/10). Premier existant
+# gagne ; surcharge par COURSIA_REPO_DIR / COURSIA_MASTER_ENV inchangee.
+REPO_DIR="${COURSIA_REPO_DIR:-}"
+if [ -z "$REPO_DIR" ]; then
+  for d in /mnt/d/Dev/CoursIA /mnt/d/CoursIA; do
+    [ -d "$d" ] && REPO_DIR="$d" && break
+  done
+fi
+[ -n "$REPO_DIR" ] || { echo "repo introuvable : ni /mnt/d/Dev/CoursIA ni /mnt/d/CoursIA -- definir COURSIA_REPO_DIR" >&2; exit 1; }
+MASTER_ENV="${COURSIA_MASTER_ENV:-$REPO_DIR/.secrets/master.env}"
 ARG="${1:-12}"
 
 [ -r "$MASTER_ENV" ] || { echo "master.env illisible : $MASTER_ENV" >&2; exit 1; }
