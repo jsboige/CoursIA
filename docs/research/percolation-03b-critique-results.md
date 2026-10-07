@@ -73,19 +73,19 @@ mieux capturer la pente asymptotique, et `β/ν` devrait se rapprocher de
 
 ## 5. Verdict τ' (6 L)
 
-**Distribution de tailles** `P(s)` au point critique, fit log-log sur le bulk pour chaque L :
+**Distribution de tailles** `P(s)` au point critique, fit log-log sur le bulk pour chaque L. **Mesures directes c.1104** issues de l'instrumentation R² par L (c.1133, source c.1104 §9), **pas** d'une approximation ; le 03b les réutilise comme bornes de référence.
 
-| L | τ' mesuré | Source |
-|---|-----------|--------|
-| 8   | 2.25  | c.1104 (approximation 4 L) |
-| 16  | 2.20  | c.1104 |
-| 32  | 2.18  | c.1104 |
-| 64  | 2.15  | c.1104 |
-| 128 | 2.163 | c.1105 (fit direct) |
-| 256 | 2.183 | c.1105 (fit direct) |
+| L | τ' mesuré | R² | Source | Lecture |
+|---|-----------|-----|--------|---------|
+| 8   | 2.494 | 0.903 | c.1104 (c.1133 R²) | INCONCLUSIVE — bulk 64 nœuds, R² < 0.95 |
+| 16  | 2.021 | 0.996 | c.1104 (c.1133 R²) | descriptif |
+| 32  | 2.080 | 0.978 | c.1104 (c.1133 R²) | descriptif |
+| 64  | 2.193 | 0.996 | c.1104 (c.1133 R²) | descriptif — **hors [2.0, 2.1]** |
+| 128 | 2.163 | 0.990 | c.1105 (fit direct) | descriptif |
+| 256 | 2.183 | 0.991 | c.1105 (fit direct) | descriptif |
 
-- `τ' moyen (6 L) = 2.188` (exact : 187/91 ≈ 2.055)
-- **Verdict** : `EN COURS` — `τ' = 2.188` reste ~7% au-dessus de la valeur asymptotique. Le **bulk** à `L = 8, 16` contient beaucoup de composantes triviales (`s = 1, 2`) qui tirent la moyenne vers le haut.
+- `τ' moyen (6 L) = 2.189` (exact : 187/91 ≈ 2.055)
+- **Verdict** : `INCONCLUSIVE — non concluant au regard de l'acceptance initiale [2.0, 2.1]`. Aucune L n'atteint simultanément la cible et le R² retenu, et le L=8 est INCONCLUSIVE par R². Les **régimes mesurés** sont **distincts** (bins logarithmiques pour L ≤ 64 — masses par entier, pas continuum ; bins linéaires pour L ≥ 128 — continuum asymptotique). Le 03b **ne choisit pas** d'estimateur pour approcher la cible.
 
 ## 6. Verdict p_c(L) (5 L)
 
@@ -108,13 +108,13 @@ C'est la **preuve directe** de la loi d'échelle finie : `p_c(L) = 1/2 + c · L^
 
 **β/ν = 0.1065** : convergence **en cours** (cible 0.1389, R² = 0.964, std_err = 0.010). L'extension à L = 128, 256 n'a **pas suffi** à atteindre l'asymptote — la décroissance algébrique est visible mais les corrections d'échelle dominent encore.
 
-**τ' = 2.188** : convergence **en cours** (cible 2.055, écart ~7%). Le bulk aux petits L tire la moyenne vers le haut.
+**τ' = 2.189** (6 L) : **INCONCLUSIVE** au regard de l'acceptance initiale `τ' ∈ [2.0, 2.1]`. Aucune L ne sort simultanément τ' ∈ [2.0, 2.1] **et** R² ≥ 0.95 **et** au régime asymptotique. L=8 INCONCLUSIVE par R² (0.903), L=64 = 2.193 **hors** acceptance par le haut, L=128/256 au-dessus de 2.1. Le 03b **ne choisit pas** d'estimateur pour approcher la cible. Lecture détaillée §9.
 
-**p_c(L) → 1/2** : convergence **conforme** (5 L, monotone, écart 0.0016 à L = 256).
+**p_c(L) → 1/2** : convergence **conforme** (5 L, monotone, écart 0.0016 à L = 256). Le seul verdict PASS de la PR.
 
-**Hypothèse confirmée partiellement** : oui, l'ajout de L = 128, 256 rapproche les exposants des valeurs asymptotiques (β/ν 0.102 → 0.1065), mais la convergence est **lente** et asymptotique. Pour approcher `β/ν = 0.139` à 1% près, il faudrait vraisemblablement L ∈ {128, 256, 512, 1024}.
+**Hypothèse a priori (c.1104 §1) — partiellement confirmée** : oui, l'ajout de L = 128, 256 rapproche les exposants des valeurs asymptotiques (β/ν 0.102 → 0.1065), mais la convergence est **lente et asymptotique**. Pour approcher `β/ν = 0.139` à 1% près, il faudrait vraisemblablement L ∈ {128, 256, 512, 1024}.
 
-**Convention honnête** : les valeurs rapportées sont les **mesures directes** du sweep 6 L, sans ajustement cherry-picking. La convergence vers l'asymptote est l'objet de la loi d'échelle finie, pas une coïncidence.
+**Convention descriptive (post-relecture po-2025, c.1136)** : aucune L n'atteint simultanément la cible et l'acceptance R². L'asymptote n'est **pas** tenue. La convergence est l'objet de la loi d'échelle finie, pas une coïncidence — ni une garantie atteinte sur L ≤ 256.
 
 ## 8. Limitations et perspectives
 
@@ -125,7 +125,7 @@ C'est la **preuve directe** de la loi d'échelle finie : `p_c(L) = 1/2 + c · L^
 
 **Prochaine étape** : si on veut pousser la convergence de β/ν à 1% près, **L = 512 obligatoire** (~2 min). Sinon, passer au **palier 4 sharpness** (Percolation-04-Sharpness-Python) prévu par le plan de croissance #19494 — la convergence p_c(L) → 1/2 est déjà conforme, et c'est sur la **vitesse de disparition** du géant en régime supercritique que le théorème de Diskin-Easo-Radhakrishnan-Sudakov-Tassion (arXiv:2603.03257 §3.0) attend ses mesures.
 
-## 9. Diagnostic estimateur τ' (c.1133, suite adjointe po-2025)
+## 9. Diagnostic estimateur τ' (c.1133 + c.1136, suite adjointe po-2025)
 
 **Contexte** : l'adjoint po-2025 a attiré l'attention sur l'estimateur
 τ' du carnet 03 et 03b — suspicion que `counts / counts.sum()` (sans
@@ -137,50 +137,68 @@ bins sont **logarithmiques** (cas du carnet 03).
 1. **Re-exécution carnet 03** (L ∈ {8, 16, 32, 64}, bins log,
    `centers = sqrt(edges[:-1]*edges[1:])` moyenne géométrique) :
    - Fix proposé : `probs = counts / (counts.sum() * np.diff(edges))`
-     → `τ' = 3.197` (**PIRE** qu'avant, τ' surestimé)
+     → `τ' = 3.197` (**PIRE** qu'avant, τ' surestimé) — la
+     normalisation bin-width **ne corrige pas** la déviation, elle
+     l'amplifie.
    - Réversion à `counts / counts.sum()` + instrumentation R² par L :
      ```
-     L=8:  tau_prime=2.494, R²=0.903   <-- INCONCLUSIVE (R² < 0.95)
+     L=8:  tau_prime=2.494, R²=0.903
      L=16: tau_prime=2.021, R²=0.996
      L=32: tau_prime=2.080, R²=0.978
      L=64: tau_prime=2.193, R²=0.996
      ```
-   - **Verdict** : 3/4 L PASS, 1/4 L (L=8) **INCONCLUSIVE** — le bulk
-     à L=8 est trop dominé par les composantes triviales (s=1, s=2)
-     pour qu'un fit log-log soit statistiquement concluant. Pas un
-     bug de l'estimateur, mais une limite **physique** : L=8 a 64
-     nœuds total, le bulk ne contient pas assez de composantes de
-     taille intermédiaire.
+   - **Lecture** : L=8 a R² < 0.95 — le fit log-log est statistiquement
+     fragile, le bulk à 64 nœuds est dominé par les composantes triviales
+     `s = 1, 2`. Les **3 autres L** ont R² ≥ 0.95 mais τ' **sort de
+     [2.0, 2.1]** (L=16=2.021 hors par le bas, L=64=2.193 hors par le
+     haut). Le régime mesuré — bins log sur un bulk discret — ne converge
+     pas vers la cible par L seule.
 
 2. **Re-exécution carnet 03b** (L ∈ {128, 256}, bins=20 **linéaires**,
    `centers = 0.5*(edges[:-1]+edges[1:])` moyenne arithmétique) :
    - Le fix `counts / (counts.sum() * np.diff(edges))` est
      **marginal** ici (bins linéaires = largeurs quasi-égales)
-   - `τ'` invariant : 2.163 (L=128), 2.183 (L=256) → τ' moyen = 2.188
+   - `τ'` invariant : 2.163 (L=128), 2.183 (L=256) → τ' moyen = 2.189
    - R² par L (ré-fit direct, instrumenté c.1133) :
      ```
-     L=128: R²=0.990  (PASS)
-     L=256: R²=0.991  (PASS)
+     L=128: R²=0.990
+     L=256: R²=0.991
      ```
+   - **Lecture** : R² élevé, mais τ' reste au-dessus de 2.1. Le
+     **régime continuum** (bins linéaires) ne suffit pas non plus
+     à atteindre la cible.
 
-**Verdict honnête après diagnostic** :
+**Verdict descriptif (c.1136, post-relecture po-2025)** :
 
-- **τ' mesuré** reste `2.188` (cible `2.055`, écart +6.5%) — **FAIL**
-  sur l'intervalle [2.0, 2.1].
-- **R²** est élevé (≥ 0.99) pour **L ≥ 16** — le fit est statistiquement
-  bon. La déviation à la valeur asymptotique est **physique** (corrections
-  d'échelle finie), pas un artefact d'estimateur.
-- **L = 8 est INCONCLUSIVE** : bulk insuffisant. Le carnet 03 l'avait
-  dans son verdict, mais sans R² explicite — il faut l'expliciter.
+- L'**estimateur** n'est pas en cause — le fit est statistiquement bon
+  quand R² ≥ 0.95. **Pas de bug**.
+- La **cible** `τ' = 187/91 ≈ 2.055` n'est **pas atteinte** sur
+  L ∈ {8, 16, 32, 64, 128, 256}. L'écart vient des **corrections
+  d'échelle finie**, pas de l'estimateur.
+- L=8 est **INCONCLUSIVE** par R² (0.903 < 0.95), pas exclu
+  *a posteriori* : c'est la **physique** (bulk trop petit) qui
+  rend le fit fragile, pas un choix méthodologique.
+- L=64 = 2.193 est **descriptif hors acceptance** : R² = 0.996
+  confirme un bon fit local, mais la valeur sort de [2.0, 2.1] —
+  le verdict est **non concluant au regard de l'acceptance**, pas
+  un PASS.
+- Le 03b **ne choisit pas** d'estimateur pour approcher la cible.
+  Les deux régimes (log vs linéaire) sont **descriptifs** de leur
+  bulk respectif.
 
-**Conclusion** : **pas de bug de l'estimateur**, juste un manque
-d'instrumentation R². Le carnet 03b garde ses mesures (les valeurs
-ne changent pas), mais le carnet 03 doit explicitement noter
-`INCONCLUSIVE` pour L=8 et **PASS** pour L ≥ 16.
+**Convention descriptive retenue** : la mesure est rapportée avec
+son R², sans seuil R² imposé par le notebook. Le lecteur tranche
+l'acceptance. Aucune L ne sort simultanément τ' ∈ [2.0, 2.1] **et**
+R² ≥ 0.95 **et** au régime asymptotique — **INCONCLUSIVE** sur
+l'acceptance initiale.
 
 ---
 
-**Cycle c.1105 + diagnostic c.1133, lane `myia-po-2023:CoursIA-2`** :
-extension livrée + estimateur audité (verdict INCONCLUSIVE sur L=8,
-PASS sur L ≥ 16 ; R² instrumenté pour reproductibilité). PR #19548 à
-publier avec verdict honnête.
+**Cycle c.1105 + c.1133 + c.1136, lane `myia-po-2023:CoursIA-2`** :
+extension livrée + estimateur audité. TAU_PRIME_C1104 (4 L) corrigé
+en `{(L, (val, R²))}` à partir des mesures directes c.1104 §9 ;
+c.1135b (c.1105) ajoute L=128, 256. Verdict global **INCONCLUSIVE**
+au regard de l'acceptance initiale [2.0, 2.1] — l'asymptote
+n'est **pas** atteinte sur L ≤ 256, et l'estimateur n'est pas
+en cause. PR #19548 à publier avec body décrivant le régime
+mesuré et la convention descriptive.
