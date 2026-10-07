@@ -26,10 +26,25 @@ La tranche 3 (#19227) ajoute :
 5. Mode `--json-in` : consomme le JSON produit par `--mode measure`
    (n'a pas besoin de ré-exécuter la mesure -- gain de temps + déterminisme).
 
+Pli 3 EPIC Origami Wolfram (#19766) ajoute :
+6. Mode `--mode wolfram` : mesure K_trajectory sur les trajectoires 1-D des
+   4 classes canoniques de Wolfram (Rule 0 = I/uniform, Rule 4 = II/periodic,
+   Rule 30 = III/chaotic, Rule 110 = IV/complex). Le discriminant attendu
+   (Wolfram 2002 ch. 2-3) : la classe I collapse (K(t, W_last) ~ 0, ratio ~ 0),
+   la classe II collapse aussi (périodicité courte capturée par LZ), les
+   classes III et IV restent hautes (chaos / structure persistante, ratio
+   proche de 1). Le discriminant IV vs III par K_trajectory seule est
+   attendu non-trivial — la discrimination fine est dans
+   `ict.wolfram_step.classify_rule` (proxy-gliders diagonaux ≥ 5) qui
+   tranche sur la dimension spatiale, pas la complexité LZ. Voir
+   `MyIA.AI.Notebooks/IIT/ICT-Series/ict/wolfram_step.py` (organe pli 2,
+   PR #19793) pour l'instrument de simulation utilisé ici.
+
 Usage :
     python scripts/hashlife/k_trajectory.py --mode measure
     python scripts/hashlife/k_trajectory.py --mode verify-corpus
     python scripts/hashlife/k_trajectory.py --mode bounds --json-in results.json
+    python scripts/hashlife/k_trajectory.py --mode wolfram
 """
 from __future__ import annotations
 
@@ -540,11 +555,208 @@ def cmd_bounds(args: argparse.Namespace) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+# Pli 3 EPIC Origami Wolfram (#19766) — mode wolfram
+# ---------------------------------------------------------------------------
+
+# Chemin de l'organe ict.wolfram_step (PR #19793) — utilisé pour la simulation.
+# Ce chemin est relatif à la racine du dépôt (worktree-aware via __file__).
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_WOLFRAM_STEP_PATH = _REPO_ROOT / "MyIA.AI.Notebooks" / "IIT" / "ICT-Series" / "ict" / "wolfram_step.py"
+
+
+def _wolfram_step():
+    """Import paresseux de l'organe ict.wolfram_step (cherché sur le PYTHONPATH,
+    sinon par chargement direct du fichier .py). Lève FileNotFoundError si
+    l'organe n'est pas disponible (pli 2 non mergé — voir PR #19793).
+    """
+    try:
+        # Tentative 1 : import direct (l'organe doit être sur le PYTHONPATH,
+        # ex. via ICT_ROOT/sys.path côté carnet).
+        from ict.wolfram_step import wolfram_trajectory  # type: ignore
+        return wolfram_trajectory
+    except ImportError:
+        pass
+    # Tentative 2 : chargement direct du fichier source (pli 2 OPEN, pas mergé
+    # sur main). On utilise importlib pour rester léger.
+    import importlib.util
+    if not _WOLFRAM_STEP_PATH.exists():
+        raise FileNotFoundError(
+            f"ict/wolfram_step.py introuvable à {_WOLFRAM_STEP_PATH}. "
+            "L'organe pli 2 EPIC #19766 (PR #19793) doit être mergé ou "
+            "disponible sur le worktree courant."
+        )
+    spec = importlib.util.spec_from_file_location("ict.wolfram_step", _WOLFRAM_STEP_PATH)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Impossible de charger {_WOLFRAM_STEP_PATH}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)  # type: ignore[union-attr]
+    return mod.wolfram_trajectory
+
+
+def wolfram_rule_trajectory(
+    rule: int,
+    n_cells: int = 64,
+    n_steps: int = 16,
+    seed: int = 33,
+) -> list[list[list[Cell]]]:
+    """Trajectoire 1-D de Wolfram, présentée comme une suite de grilles 1×N.
+
+    Délègue à l'organe ``ict.wolfram_step.wolfram_trajectory`` (pli 2 EPIC
+    #19766, PR #19793). Chaque état 1-D est wrappé en une grille 1×N pour
+    rester compatible avec ``k_trajectory`` (qui attend des grilles 2D).
+
+    Parametres
+    ----------
+    rule : int
+        Règle de Wolfram (0 à 255).
+    n_cells : int
+        Taille de la grille 1-D (par défaut 64, alignée sur `ict.wolfram_step`).
+    n_steps : int
+        Nombre de pas (par défaut 16, aligné sur 2^4 de la mesure GoL).
+    seed : int
+        Graine pseudo-aléatoire de l'état initial.
+
+    Retour
+    ------
+    list[list[list[Cell]]]
+        Suite de grilles 1×N (compatible avec ``k_trajectory``).
+    """
+    fn = _wolfram_step()
+    states = fn(rule=rule, n_cells=n_cells, n_steps=n_steps, seed=seed, record_densities=False)
+    return [[row.tolist()] for row in states]
+
+
+def measure_wolfram_corpus(
+    rules: Sequence[int] = (0, 4, 30, 110),
+    n_cells: int = 64,
+    n_steps: int = 16,
+    seed: int = 33,
+) -> list[dict]:
+    """Mesure K_trajectory sur les règles canoniques de Wolfram (4 classes).
+
+    Parametres
+    ----------
+    rules : Sequence[int]
+        Règles à mesurer (défaut : 0, 4, 30, 110 — un représentant par classe).
+    n_cells : int
+        Taille de la grille 1-D.
+    n_steps : int
+        Nombre de pas (= longueur de la trajectoire).
+    seed : int
+        Graine pseudo-aléatoire.
+
+    Retour
+    ------
+    list[dict]
+        Résultats de mesure, même format que ``measure_k_trajectory``.
+    """
+    n_values = [0, 1, 2, 3, 4]  # W = 1, 2, 4, 8, 16
+    all_results = []
+    for rule in rules:
+        traj = wolfram_rule_trajectory(rule, n_cells=n_cells, n_steps=n_steps, seed=seed)
+        name = f"wolfram_R{rule:03d}"
+        all_results.extend(measure_k_trajectory(name, traj, n_values))
+    return all_results
+
+
+def verdict_wolfram(results: list[dict]) -> dict:
+    """Verdict discriminant par classe de Wolfram.
+
+    Hypothèse falsifiable (#19766 pli 3) :
+    * I (uniform, ex. R0)  : K_last / K_first ~ 0 (LZ collapse la constance)
+    * II (periodic, ex. R4) : K_last / K_first ~ 0 (LZ collapse la période courte)
+    * III (chaotic, ex. R30) : K_last / K_first ~ 1 (entropie saturée, pas
+      de répétition LZ)
+    * IV (complex, ex. R110) : K_last / K_first ~ 1 (entropie saturée, pas
+      plus que III — la discrimination III vs IV par K_trajectory seule est
+      attendu non-triviale, c'est l'analyse spatiale dans le carnet qui
+      tranche via proxy-gliders diagonaux).
+
+    Le verdict ici signale uniquement la **famille** (I/II collapse, III/IV
+    high-entropy), pas la discrimination fine III vs IV.
+    """
+    by_name: dict[str, list[dict]] = {}
+    for r in results:
+        by_name.setdefault(r["trajectory"], []).append(r)
+
+    verdicts = {}
+    for name, runs in by_name.items():
+        runs_sorted = sorted(runs, key=lambda r: r["n"])
+        if len(runs_sorted) < 2:
+            verdicts[name] = "INCONCLUSIVE (insufficient data points)"
+            continue
+        first_k = runs_sorted[0]["k_trajectory"]
+        last_k = runs_sorted[-1]["k_trajectory"]
+        ratio = last_k / first_k if first_k > 0 else float("inf")
+        # Extrait le numéro de règle
+        rule_str = name.split("_R")[-1] if "_R" in name else "???"
+        rule = int(rule_str) if rule_str.isdigit() else None
+        if rule is not None and rule in (0, 32, 160, 232):
+            family = "I"
+        elif rule is not None and rule in (4, 8, 13):
+            family = "II"
+        elif rule is not None and rule in (30, 45, 75, 126):
+            family = "III"
+        elif rule is not None and rule == 110:
+            family = "IV"
+        else:
+            family = "?"
+
+        if ratio < 0.3:
+            tag = "COLLAPSED (LZ capture la constance ou la période)"
+            family_match = family in ("I", "II")
+        elif ratio < 0.7:
+            tag = "WEAK-COLLAPSE (période partiellement capturée)"
+        else:
+            tag = "HIGH-ENTROPY (LZ ne collapse pas)"
+            family_match = family in ("III", "IV")
+        verdicts[name] = (
+            f"Wolfram-{family} {tag} (ratio {ratio:.3f}, "
+            f"first_k={first_k}, last_k={last_k}, "
+            f"family_match={family_match})"
+        )
+    return verdicts
+
+
+def cmd_wolfram(args: argparse.Namespace) -> int:
+    """Mode wolfram : mesure K_trajectory sur les 4 classes de Wolfram.
+
+    Pli 3 EPIC Origami (#19766) — instrument de mesure comparative entre
+    `ict.wolfram_step` (naïf O(n) par pas) et Hashlife (O(log n) par pas).
+    L'instrument K_trajectory sert ici à quantifier la complexité de chaque
+    classe, pas à discriminer III vs IV.
+    """
+    rules = tuple(int(r) for r in (args.rules or "0,4,30,110").split(","))
+    n_cells = args.n_cells
+    n_steps = args.n_steps
+    seed = args.seed
+    results = measure_wolfram_corpus(rules=rules, n_cells=n_cells, n_steps=n_steps, seed=seed)
+    v = verdict_wolfram(results)
+
+    print(f"{'Trajectory':18s}  {'n':>3s}  {'W':>4s}  {'K(t,W)':>8s}  {'K/n':>8s}")
+    print("-" * 52)
+    for r in results:
+        print(f"{r['trajectory']:18s}  {r['n']:>3d}  {r['W']:>4d}  "
+              f"{r['k_trajectory']:>8d}  {r['k_over_n']:>8.2f}")
+    print()
+    print("=== Verdict discriminant Wolfram ===")
+    for name, status in v.items():
+        print(f"  {name:18s}  {status}")
+
+    if args.json_out:
+        out = {"rules": list(rules), "n_cells": n_cells, "n_steps": n_steps, "seed": seed,
+               "results": results, "verdicts": v}
+        Path(args.json_out).write_text(json.dumps(out, indent=2, ensure_ascii=False))
+        print(f"\n[INFO] résultats Wolfram écrits dans {args.json_out}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else "K_trajectory")
     parser.add_argument(
         "--mode",
-        choices=["measure", "verify-corpus", "bounds"],
+        choices=["measure", "verify-corpus", "bounds", "wolfram"],
         default="measure",
         help="Mode d'exécution (défaut: measure)",
     )
@@ -558,11 +770,36 @@ def main() -> int:
         default=None,
         help="JSON d'entrée (résultats de `--mode measure`), pour les modes qui consomment des résultats",
     )
+    parser.add_argument(
+        "--rules",
+        default="0,4,30,110",
+        help="Liste de règles Wolfram séparées par des virgules (mode wolfram, défaut: 0,4,30,110)",
+    )
+    parser.add_argument(
+        "--n-cells",
+        type=int,
+        default=64,
+        help="Taille de la grille 1-D (mode wolfram, défaut: 64)",
+    )
+    parser.add_argument(
+        "--n-steps",
+        type=int,
+        default=16,
+        help="Nombre de pas simulés (mode wolfram, défaut: 16, aligné 2^4)",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=33,
+        help="Graine pseudo-aléatoire (mode wolfram, défaut: 33)",
+    )
     args = parser.parse_args()
     if args.mode == "measure":
         return cmd_measure(args)
     if args.mode == "bounds":
         return cmd_bounds(args)
+    if args.mode == "wolfram":
+        return cmd_wolfram(args)
     return cmd_verify_corpus(args)
 
 

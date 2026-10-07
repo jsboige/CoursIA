@@ -1,0 +1,159 @@
+{
+  "rules": [
+    0,
+    4,
+    30,
+    110
+  ],
+  "n_cells": 64,
+  "n_steps": 16,
+  "seed": 33,
+  "results": [
+    {
+      "trajectory": "wolfram_R000",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 181,
+      "k_over_n": 181.0
+    },
+    {
+      "trajectory": "wolfram_R000",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 95,
+      "k_over_n": 95.0
+    },
+    {
+      "trajectory": "wolfram_R000",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 52,
+      "k_over_n": 26.0
+    },
+    {
+      "trajectory": "wolfram_R000",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 31,
+      "k_over_n": 10.333333333333334
+    },
+    {
+      "trajectory": "wolfram_R000",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 19,
+      "k_over_n": 4.75
+    },
+    {
+      "trajectory": "wolfram_R004",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 256,
+      "k_over_n": 256.0
+    },
+    {
+      "trajectory": "wolfram_R004",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 150,
+      "k_over_n": 150.0
+    },
+    {
+      "trajectory": "wolfram_R004",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 83,
+      "k_over_n": 41.5
+    },
+    {
+      "trajectory": "wolfram_R004",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 45,
+      "k_over_n": 15.0
+    },
+    {
+      "trajectory": "wolfram_R004",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 26,
+      "k_over_n": 6.5
+    },
+    {
+      "trajectory": "wolfram_R030",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 257,
+      "k_over_n": 257.0
+    },
+    {
+      "trajectory": "wolfram_R030",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 196,
+      "k_over_n": 196.0
+    },
+    {
+      "trajectory": "wolfram_R030",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 166,
+      "k_over_n": 83.0
+    },
+    {
+      "trajectory": "wolfram_R030",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 150,
+      "k_over_n": 50.0
+    },
+    {
+      "trajectory": "wolfram_R030",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 139,
+      "k_over_n": 34.75
+    },
+    {
+      "trajectory": "wolfram_R110",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 256,
+      "k_over_n": 256.0
+    },
+    {
+      "trajectory": "wolfram_R110",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 196,
+      "k_over_n": 196.0
+    },
+    {
+      "trajectory": "wolfram_R110",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 168,
+      "k_over_n": 84.0
+    },
+    {
+      "trajectory": "wolfram_R110",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 150,
+      "k_over_n": 50.0
+    },
+    {
+      "trajectory": "wolfram_R110",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 139,
+      "k_over_n": 34.75
+    }
+  ],
+  "verdicts": {
+    "wolfram_R000": "Wolfram-I COLLAPSED (LZ capture la constance ou la période) (ratio 0.105, first_k=181, last_k=19, family_match=True)",
+    "wolfram_R004": "Wolfram-II COLLAPSED (LZ capture la constance ou la période) (ratio 0.102, first_k=256, last_k=26, family_match=True)",
+    "wolfram_R030": "Wolfram-III WEAK-COLLAPSE (période partiellement capturée) (ratio 0.541, first_k=257, last_k=139, family_match=True)",
+    "wolfram_R110": "Wolfram-IV WEAK-COLLAPSE (période partiellement capturée) (ratio 0.543, first_k=256, last_k=139, family_match=True)"
+  }
+}
