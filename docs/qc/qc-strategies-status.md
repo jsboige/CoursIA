@@ -36,14 +36,16 @@ Le matériel QC mélange 4 types de notebooks qu'un visiteur doit distinguer :
 | `DynamicVIXSpyRegime-QC` | Régime VIX | US Equity | **Alive** | 69.4% (backtest vérifié) |
 | `BitcoinRegimeGate-QC` | Régime BTC (gate 24/7) | US Equity (QQQ/SHY) | **Alive — risk-adjusted** | QC Cloud 2026-09-30 (distillat #18576) : IS 2016-21 Sharpe **1.133** vs QQQ-hold 0.961 (MaxDD 14.4 % vs 28.2 %) ; OOS 2022-26 Sharpe **0.64** vs QQQ-hold 0.43 (MaxDD 15.2 % vs 34.7 %) ; PSR OOS 14.3 % (edge vs cash non significatif) |
 | `AllWeather` | Multi-asset risk-parity | Actions/Bonds/Or/Commodities | **Alive** | Figure #5743 |
-| `EMA-Cross-Index` | Trend EMA | US Equity (SPY) | **Alive** | Figure #5746 |
+| `EMA-Cross-Index` | Trend EMA | US Equity (SPY) | **Needs-improvement** (sous SPY détenu) | Figure #5746. Mesure locale du README, 2015-2026, configuration recommandée EMA 20/60 + stop suiveur 5 % : Sharpe 0.797 ; CAGR 9.0 % ; MaxDD 24.2 % ; verdict du README « MITIGÉ / UNDERPERFORM », la stratégie finit sous SPY détenu en CAGR (réaligné #19709) |
 | `EMA-Cross-Crypto` | Trend EMA | Crypto (BTC) | **Alive** | Figure #5750 |
-| `ML-RandomForest` | ML supervisé (RF) | US large-cap | **Alive** | Figure #5747 |
-| `ML-XGBoost` | ML supervisé (XGBoost) | US large-cap | **Alive** | Figure #5749 |
-| `ForexCarry` | FX carry/momentum | G10 FX | **Alive** | Figure #5748 |
+| `ML-RandomForest` | ML supervisé (RF) | US large-cap | **Needs-improvement** (PSR < 50 %) | Figure #5747. QC Cloud 2026-08-06, projet 29434751, 2015-2024 : Sharpe 0.819 ; CAGR 24.25 % ; MaxDD 40.5 % ; **PSR 14.52 %**. Sept titres Mag7 sur dix et une seule graine : du bêta filtré, pas d'alpha ML (README) (réaligné #19709) |
+| `ML-XGBoost` | ML supervisé (XGBoost) | US large-cap | **Needs-improvement** (PSR < 50 %) | Figure #5749. QC Cloud 2026-08-06, projet 29434753, 2015-2024 : Sharpe 0.787 ; CAGR 19.49 % ; MaxDD 35.9 % ; **PSR 15.40 %**. Régresseur `GradientBoostingRegressor` (pas la bibliothèque `xgboost`) utilisé en classement, univers Mag7 + tech (README) (réaligné #19709) |
+| `ForexCarry` | FX carry/momentum | G10 FX | **BROKEN** (`main.py` actuel) | Figure #5748. Mesure du README, 2018-2026, `main.py` v4.0 : **Sharpe −0.156** ; CAGR −0.6 % ; MaxDD 13.95 %. Les variantes v3a et v3e (Sharpe +0.501 et +1.687) ne vivent que dans `research.ipynb`, pas dans `main.py` (réaligné #19709) |
 | `RiskParity` / `Cloud-RiskParity-Composite` | Inverse-vol risk-parity | Multi-actifs | **Needs-improvement** (plafond structurel) | Sharpe 0.399 (contre-exemple pédagogique, figure #5753) ; **run frais 2026-08-14 baseline #1630 : 0.027** (tranche 24 ci-dessous) |
 | `DualMomentum` | Momentum dual-asset | Multi-actifs | **Superseded** | Échec TLT 2022 → remplacé par `DualMomentumNoTLT` |
-| `DualMomentumNoTLT` | Momentum (sans TLT) | Multi-actifs | **Alive** (remplacement) | Figure #5754 |
+| `DualMomentumNoTLT` | Momentum (sans TLT) | Multi-actifs | **Needs-improvement** (remplacement, PSR < 50 %) | Figure #5754. QC Cloud 2026-08-06, projet 31244186, 2015-2024 : Sharpe 0.633 ; CAGR 16.91 % ; MaxDD 34.5 % ; **PSR 5.98 %**. Bat SPY en CAGR, sans alpha statistiquement significatif (README) (réaligné #19709) |
+
+> **Réalignement du 2026-10-07 (#19709).** `EMA-Cross-Index`, `ML-RandomForest`, `ML-XGBoost`, `ForexCarry` et `DualMomentumNoTLT` portaient « Alive » sur la seule foi d'une figure de la campagne #5654. Leur README donne depuis une mesure chiffrée qui ne soutient pas ce statut. Elles suivent maintenant la règle du registre : PSR < 50 % donne Needs-improvement, un Sharpe négatif donne BROKEN. `BlackLitterman-Momentum` (tranche 3) est réaligné de la même façon. Les récits des tranches 3 à 17 qui citent « BlackLitterman PSR 51 % » décrivent la mesure de la tranche 3, que le backtest du README (2026-08-07) ne reproduit pas.
 
 ### Portages issus d'un semis `[QC-research]`
 
@@ -78,7 +80,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 |--------|-------:|---------|
 | Vérifié (tranche 1, firsthand) | 13 | statut firsthand confirmé dans le tableau ci-dessus |
 | Vérifié (tranche 2, backtests QC Cloud MCP) | 5 | métriques réelles (Sharpe/CAGR/MaxDD) — **toutes Needs-improvement** (PSR < 50 %, pas d'edge statistique) |
-| Vérifié (tranche 3, backtests QC Cloud MCP) | 5 | cohorte Momentum/Factor/Composite — **1 edge significatif** (BlackLitterman PSR 51 %), 2 Needs-improvement, 2 BROKEN |
+| Vérifié (tranche 3, backtests QC Cloud MCP) | 5 | cohorte Momentum/Factor/Composite — **1 edge significatif** (BlackLitterman PSR 51 %), 2 Needs-improvement, 2 BROKEN ; edge non reproduit par la re-mesure 2015-2026 du README (2026-08-07, PSR 1.99 %, NO-BEATS), réaligné #19709 |
 | Vérifié (tranche 4, backtests QC Cloud MCP) | 5 | cohorte MeanReversion/Macro/Multi-asset/Crypto — **0 edge significatif** (PSR < 50 %), 4 Needs-improvement, 1 BROKEN ; Multi-Layer-EMA revendication README confirmée |
 | Vérifié (tranche 5, backtests QC Cloud MCP) | 5 | cohorte Trend/Macro-Régime/Options/Causal/Factor — **0 edge significatif** (PSR < 50 %), 3 Needs-improvement, 1 near-cash, 1 near-BROKEN |
 | Vérifié (tranche 6, backtests QC Cloud MCP) | 5 | cohorte Régime/Factor/Vol/Leveraged-Factor — **1 edge candidat** (LeveragedETFMomentum PSR 79.8 %, ETF leveraged → flag OOS), 4 Needs-improvement |
@@ -121,7 +123,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `BitcoinRegimeGate-QC` | `projects/BitcoinRegimeGate-QC/` | Régime BTC (gate) | Vérifié | tableau vérifié ci-dessus (IS/OOS + benchmark QQQ apparié) |
 | `Cloud-RiskParity-Composite` | `projects/Cloud-RiskParity-Composite/` | Inverse-vol risk-parity | Vérifié | run frais 2026-08-14 baseline #1630 (voir tranche « statut réel Cloud-* » ci-dessous : Sharpe 0.027, Needs-improvement confirmé) |
 | `DualMomentum` | `projects/DualMomentum/` | Momentum dual-asset | Vérifié | tableau vérifié ci-dessus (Superseded) |
-| `DualMomentumNoTLT` | `projects/DualMomentumNoTLT/` | Momentum (sans TLT) | Vérifié | tableau vérifié ci-dessus (Alive) |
+| `DualMomentumNoTLT` | `projects/DualMomentumNoTLT/` | Momentum (sans TLT) | Vérifié | tableau vérifié ci-dessus (Needs-improvement, réaligné #19709) |
 | `DynamicVIXSpyRegime-QC` | `projects/DynamicVIXSpyRegime-QC/` | Régime VIX | Vérifié | tableau vérifié ci-dessus (69.4 %) |
 | `EMA-Cross-Crypto` | `projects/EMA-Cross-Crypto/` | Trend EMA | Vérifié | tableau vérifié ci-dessus (figure #5750) |
 | `EMA-Cross-Index` | `projects/EMA-Cross-Index/` | Trend EMA | Vérifié | tableau vérifié ci-dessus (figure #5746) |
@@ -160,7 +162,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 
 | Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
 |-----------|--------|------|--------|------------------------------------------------------------------------|
-| `BlackLitterman-Momentum` | `projects/BlackLitterman-Momentum/` | Factor / Momentum | **Alive (edge candidat)** | 2018–2025 (2766 j.) ; **Sharpe 0.83** ; CAGR 15.83 % ; MaxDD 16.9 % ; **PSR 51.4 %** ; NP 404.0 % ($405 328) — **seule stratégie de la cohorte avec PSR > 50 %** (edge statistiquement significative) ; à confirmer en walk-forward OOS |
+| `BlackLitterman-Momentum` | `projects/BlackLitterman-Momentum/` | Factor / Momentum | **Needs-improvement — NO-BEATS** (edge de la tranche non reproduit) | Tranche 3 : 2018–2025 (2766 j.) ; Sharpe 0.83 ; CAGR 15.83 % ; MaxDD 16.9 % ; PSR 51.4 % ; NP 404.0 % — seule stratégie de la cohorte avec PSR > 50 %. **Re-mesure du README** (QC Cloud 2026-08-07, projet 29816300, benchmark SPY) : 2015-01-01 → 2026-01-01, 2381 ordres ; **Sharpe 0.512** ; CAGR 9.98 % ; MaxDD 16.1 % ; **PSR 1.99 %** ; ne bat pas SPY détenu (réaligné #19709) |
 | `composite-c2-equityfactor` | `projects/composite-c2-equityfactor/` | Composite equity/factor | **Needs-improvement** | 2018–2025 (1761 j.) ; Sharpe 0.574 ; CAGR 11.94 % ; MaxDD 18.6 % ; PSR 25.8 % ; NP 120.4 % ($105 319) — décent mais edge non significative |
 | `AssetClassMomentum-QC` | `projects/AssetClassMomentum-QC/` | Cross-asset momentum | **Needs-improvement (v2.0, amélioré)** | **v2.0 consolidation article QC research #21050** (issue #14091, hedge court -30 % gated par corrélation 20 j vs 250 j, univers 13 ETFs, momentum 3/6/9/12 m, top-4) : Dev 2016–2021 (1511 j.) ; **Sharpe 0.712** ; CAGR 13.60 % ; MaxDD 21.8 % ; PSR 16.96 % ; NP 115.0 % ($82 103) · OOS 2022–2026 (1127 j.) ; Sharpe 0.035 ; CAGR 6.21 % ; MaxDD 19.8 % ; **PSR 0.65 % (edge non confirmé OOS)** · Full 2016–2026 (2638 j.) ; **Sharpe 0.423** ; CAGR 10.54 % ; **MaxDD 21.8 %** ; PSR 0.98 % ; NP 186.4 % ($181 895) — vs v1 (2018–2025 : Sharpe 0.22 / MaxDD 28.1 % / PSR 3.8 %) : risque amélioré (MaxDD −6.3 pt), Sharpe pleine période ×2, **mais PSR < 50 % partout** ; cohérent avec l'article (Sharpe 0.498 vs SPY 0.407, 2007–2026), source primaire Pauchlyová & Vojtko 2025 SSRN 5095447 |
 | `MomentumRegime-AdaptiveWeights` | `projects/MomentumRegime-AdaptiveWeights/` | Momentum / Régime | **Needs-improvement / near-cash** | 2018–2025 (1761 j.) ; **Sharpe −0.729** ; CAGR 1.88 % ; MaxDD 4.3 % ; PSR 17.4 % ; NP 13.9 % — Sharpe négatif (sous le sans-risque), quasi-flat |
