@@ -11,7 +11,7 @@
 5. **RÈGLE F** — NTL absente (Python pur, pas de Lean build), `networkx` installé OK
 6. 4 smells — non-convergence BFS, dépassement mémoire `L=128`, ambiguïté seuil fini/infini, seed-fluctuation asymétrique
 7. Comparaison vs vanilla — `networkx.connected_components` BFS + log-bin histogram, pas de dépendance hors-`networkx`
-8. Livrable — `Percolation-03-Critique-Python.ipynb` (12-16 cellules), `docs/research/percolation-03-critique-results.md` (~250 l.), `example_results/p03_critique_validation.json`
+8. Livrable — `Percolation-03-Critique-Python.ipynb` (Carnet d'application), `docs/research/percolation-03-critique-results.md` (~250 l.), `example_results/p03_critique_validation.json`
 9. Plan d'exécution 4 phases — A design cellules (15 min) + B exécution papermill (30 min) + C validation (10 min) + D rapport + PR (15 min). Total ~70 min wall-clock sur 1-2 cycles.
 10. Recommandation — auto-suffisant localement (networkx OK, pas de NTL requise), peut être livré sans routage cross-machine.
 
@@ -145,7 +145,7 @@ def sample_at_p_c(L, p, seed):
 
 | Fichier | Description | Lignes |
 |---------|-------------|--------|
-| `MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03-Critique-Python.ipynb` | Carnet d'application (12-16 cellules) | ~700 l. |
+| `MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03-Critique-Python.ipynb` | Carnet d'application | ~700 l. |
 | `docs/research/percolation-03-critique-results.md` | Rapport ground truth : mesures, fits β/ν et τ', comparaison vs théorie | ~250 l. |
 | `example_results/p03_critique_validation.json` | JSON machine-readable (4 L × 5 p × 32 seeds) | ~600 l. |
 | `MyIA.AI.Notebooks/Probas/Applications/Percolation/README.md` | Update : ajouter ligne 03 dans le tableau | +5/-2 |
@@ -154,7 +154,7 @@ def sample_at_p_c(L, p, seed):
 
 | Phase | Activité | Durée |
 |-------|----------|-------|
-| A | Design des 12-16 cellules (sections 1-7) | 15 min |
+| A | Design des cellules (sections 1-7) | 15 min |
 | B | Exécution papermill + collecte 640 simulations | 30 min |
 | C | Validation : vérification `β/ν ∈ [-0.13, -0.15]` et `τ' ∈ [2.0, 2.1]` | 10 min |
 | D | Rédaction rapport + README + PR | 15 min |
@@ -173,7 +173,7 @@ def sample_at_p_c(L, p, seed):
 - [ ] `P(s)` au point critique suit `s^{-τ'}` avec `τ' ∈ [2.0, 2.1]` (fit log-log, `R² > 0.95`).
 - [ ] `p_c(L) → 1/2` comme `L^{-1/ν}` (Schröder, simple universal check).
 - [ ] README mis à jour avec ligne 03.
-- [ ] Tests : 0 erreur, 0 cellule `NotImplementedError` (C.1), outputs présents (C.2), pre-commit H.3 PASS.
+- [ ] Tests : aucune erreur, aucune cellule `NotImplementedError` (C.1), outputs présents (C.2), pre-commit H.3 PASS.
 
 ---
 
@@ -183,13 +183,13 @@ def sample_at_p_c(L, p, seed):
 
 | # | Carnet | Statut | Lignes |
 |---|--------|--------|--------|
-| 01 | `Percolation-Supercritique.ipynb` | Livré (c.1089 canonisation) | 34 cellules, 165 KB |
+| 01 | `Percolation-Supercritique.ipynb` | Livré (c.1089 canonisation) | voir carnet |
 | 02 | `Percolation-Lean.ipynb` | Livré (c.1089 canonisation) | n/a, lake mature |
 | 03 | `Percolation-03-Critique-Python.ipynb` | **À créer (c.1103 scoping)** | ~700 l. (estimé) |
 
 ### État du lake `percolation_lean`
 
-5 modules FR (`Basic`, `Connectivity`, `Components`, `Boundary`, `Examples`) + 5 modules EN (convention i18n #4980), `proof-integrity` câblé en CI. Le lake porte les **primitives finies** : configurations d'arêtes, Harris-Kleitman, connexité croissante, composantes, frontière isopérimétrique `C₃`/`C₄`.
+Modules FR (`Basic`, `Connectivity`, `Components`, `Boundary`, `Examples`) + modules EN (convention i18n #4980), `proof-integrity` câblé en CI. Le lake porte les **primitives finies** : configurations d'arêtes, Harris-Kleitman, connexité croissante, composantes, frontière isopérimétrique `C₃`/`C₄`.
 
 Le **seuil critique `p_c`** et la **loi de taille des composantes** sont **hors-portée** du lake (no agenda claims these as targets in `grounding.md`). 03 (Python) **mesure** ce que le lake ne prouve pas.
 
