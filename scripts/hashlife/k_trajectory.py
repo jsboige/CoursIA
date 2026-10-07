@@ -766,11 +766,248 @@ def cmd_wolfram(args: argparse.Namespace) -> int:
     return 0
 
 
+
+"""Extension pli 4 cross-classes pour k_trajectory.py -- a inserer apres wolfram_cross_verdict()."""
+
+# ---------------- Pli 4 : cross-classes 4 regles ----------------
+
+
+# Seuils partages avec wolfram_verdict()
+_FRAGILE = 0.7
+_ENTRENED = 0.95
+
+
+WOLFRAM_CLASS_MAP = {
+    0: ("I", "uniforme"),
+    4: ("II", "periodique"),
+    30: ("III", "chaotique"),
+    110: ("IV", "Turing-complet"),
+}
+
+
+def measure_wolfram_4classes(
+    n_cells: int = 64, n_steps: int = 64, seed: int = 33
+) -> list[dict]:
+    """Mesure K_trajectory sur les 4 classes canoniques de Wolframe.
+
+    Regles : 0 (I, uniforme), 4 (II, periodique), 30 (III, chaotique),
+    110 (IV, Turing-complet). Le verdict attendu :
+
+    - I/II (R0/R4) : COLLAPSED (LZ capture la structure simple).
+    - III/IV (R30/R110) : WEAK-COLLAPSE ou ENTROPIE PARTIELLE.
+
+    Si la discrimination fine III vs IV emerge (ratio R30 != ratio R110
+    au-dela du bruit), c'est un resultat falsifiable positif. Sinon, le
+    discriminant K_trajectory est confirme comme insuffisant pour
+    discriminer Turing vs chaos 1-D (cf. WOLFRAM-VERDICT-CROSS-CLASSES.md).
+    """
+    n_values = [0, 1, 2, 3, 4, 5, 6]  # W = 1, 2, 4, 8, 16, 32, 64
+    all_results = []
+    for rule in (0, 4, 30, 110):
+        all_results.extend(
+            measure_wolfram_trajectory(
+                rule=rule,
+                n_cells=n_cells,
+                n_steps=n_steps,
+                seed=seed,
+                n_values=n_values,
+            )
+        )
+    return all_results
+
+
+def wolfram_class_verdict(results: list[dict]) -> dict:
+    """Verdict par regle, calibre pour les 4 classes Wolframe.
+
+    Pour chaque regle, calcule le ratio K(t, W_last) / K(t, W_first) et
+    classifie en utilisant les conventions de WOLFRAM :
+
+    - WOLFRAM-COLLAPSED : ratio < _FRAGILE (LZ collapse : I/II attendu).
+    - WOLFRAM-WEAK-COLLAPSE : _FRAGILE <= ratio < _ENTRENED
+      (entropie partielle, III/IV attendu).
+    - WOLFRAM-ENTRENED : ratio >= _ENTRENED
+      (LZ ne collapse pas, entropie maximale).
+
+    Cas particuliers :
+    - Si rule in {0, 4} et verdict WOLFRAM-ENTRENED : VERDICT-REFUTED
+      (les classes I/II doivent collapse ; non-collapse contredit la
+      classification Wolframe).
+    - Si rule in {30, 110} et verdict WOLFRAM-COLLAPSED : VERDICT-REFUTED
+      (les classes III/IV ne doivent pas collapse ; ce serait un signal
+      qu'on n'instrumente pas correctement le regime attendu).
+    """
+    by_name: dict[str, list[dict]] = {}
+    for r in results:
+        by_name.setdefault(r["trajectory"], []).append(r)
+
+    verdicts = {}
+    for name, runs in by_name.items():
+        runs_sorted = sorted(runs, key=lambda r: r["n"])
+        if len(runs_sorted) < 2:
+            verdicts[name] = "INCONCLUSIVE (insufficient data points)"
+            continue
+        first_k = runs_sorted[0]["k_trajectory"]
+        last_k = runs_sorted[-1]["k_trajectory"]
+        ratio = last_k / first_k if first_k > 0 else float("inf")
+
+        # Identifier la regle depuis le nom (format: wolfram_R<N>_n<NC>_seed<S>)
+        try:
+            rule = int(name.split("_R")[1].split("_")[0])
+        except (IndexError, ValueError):
+            verdicts[name] = f"INCONCLUSIVE (parse fail, ratio {ratio:.3f})"
+            continue
+
+        klass = WOLFRAM_CLASS_MAP.get(rule)
+        if klass is None:
+            verdicts[name] = f"INCONCLUSIVE (regle {rule} hors 4 classes, ratio {ratio:.3f})"
+            continue
+
+        klass_label, klass_name = klass
+        if ratio < _FRAGILE:
+            raw = f"WOLFRAM-COLLAPSED (ratio {ratio:.3f} < {_FRAGILE})"
+        elif ratio < _ENTRENED:
+            raw = f"WOLFRAM-WEAK-COLLAPSE (ratio {ratio:.3f} in [{_FRAGILE},{_ENTRENED}))"
+        else:
+            raw = f"WOLFRAM-ENTRENED (ratio {ratio:.3f} >= {_ENTRENED})"
+
+        # Calibrer par classe
+        if klass_label in ("I", "II"):
+            if ratio < _ENTRENED:
+                verdicts[name] = f"CLASS-{klass_label}-CONFIRMED ({raw})"
+            else:
+                verdicts[name] = (
+                    f"CLASS-{klass_label}-REFUTED ({raw} -- "
+                    f"{klass_name} doit collapse sous LZ)"
+                )
+        else:  # III, IV
+            if ratio >= _FRAGILE:
+                verdicts[name] = f"CLASS-{klass_label}-CONFIRMED ({raw})"
+            else:
+                verdicts[name] = (
+                    f"CLASS-{klass_label}-REFUTED ({raw} -- "
+                    f"{klass_name} doit avoir entropie partielle)"
+                )
+
+    return verdicts
+
+
+def wolfram_4classes_cross_verdict(cv: dict) -> str:
+    """Verdict final sur les 4 classes Wolframe vs K_trajectory.
+
+    Renvoie un verdict falsifiable en fonction du pattern observe :
+
+    - ALL-EXPECTED : I/II collapse, III/IV WEAK-COLLAPSE ou ENTREPRED.
+      C'est le resultat attendu selon la classification Wolframe 2002.
+
+    - I/II-INVERSE : I ou II reste WEAK ou ENTREPRED alors qu'il devrait
+      collapse. Le discriminant detecte une entropie dans une trajectoire
+      qui n'en a pas -- faux positif.
+
+    - III/IV-INVERSE : III ou IV collapse alors qu'il devrait garder de
+      l'entropie. Faux negatif -- le K_trajectory manque l'information
+      structurelle.
+
+    - PARTIAL : une ou plusieurs classes confirment, une ou plusieurs
+      contredisent. Resultat mixte.
+
+    - INDETERMINATE : donnees insuffisantes (donnees manquantes ou
+      ratio bruite).
+    """
+    confirmed = []
+    refuted = []
+    for name, verdict_str in cv.items():
+        if "CONFIRMED" in verdict_str:
+            confirmed.append(name)
+        elif "REFUTED" in verdict_str:
+            refuted.append(name)
+        # INCONCLUSIVE ignore
+
+    if not confirmed and not refuted:
+        return "WOLFRAM-4CLASSES-INDETERMINATE (donnees insuffisantes)"
+    if not refuted:
+        return f"WOLFRAM-4CLASSES-ALL-EXPECTED ({len(confirmed)}/{len(cv)} classes confirment)"
+
+    refuted_classes = set()
+    for n in refuted:
+        try:
+            rule = int(n.split("_R")[1].split("_")[0])
+            klass = WOLFRAM_CLASS_MAP.get(rule, ("?",))[0]
+            refuted_classes.add(klass)
+        except (IndexError, ValueError):
+            pass
+
+    if refuted_classes.issubset({"I", "II"}):
+        return f"WOLFRAM-4CLASSES-I/II-INVERSE ({len(refuted)}/{len(cv)} contredisent -- faux positif sur structure simple)"
+    if refuted_classes.issubset({"III", "IV"}):
+        return f"WOLFRAM-4CLASSES-III/IV-INVERSE ({len(refuted)}/{len(cv)} contredisent -- faux negatif sur entropie)"
+    return f"WOLFRAM-4CLASSES-PARTIAL ({len(confirmed)} confirm / {len(refuted)} refute)"
+
+
+def cmd_wolfram_4classes(args: argparse.Namespace) -> int:
+    """Mode wolfram-4classes : mesure K_trajectory sur les 4 classes Wolframe.
+
+    Mesure R0 (I), R4 (II), R30 (III), R110 (IV) et produit un verdict
+    par classe + un verdict cross-classes falsifiable.
+
+    Usage :
+        python scripts/hashlife/k_trajectory.py --mode wolfram-4classes \\
+            --n-cells 64 --n-steps 64 --seed 33
+    """
+    n_values = [0, 1, 2, 3, 4, 5, 6]
+    results = measure_wolfram_4classes(
+        n_cells=args.n_cells, n_steps=args.n_cells, seed=args.seed
+    )
+
+    # Affichage par regle
+    print(f"{'Trajectory':35s}  {'Class':>5s}  {'n':>3s}  {'W':>4s}  {'K(t,W)':>8s}  {'K/n':>8s}")
+    print("-" * 90)
+    by_rule: dict[int, list[dict]] = {}
+    for r in results:
+        try:
+            rule = int(r["trajectory"].split("_R")[1].split("_")[0])
+            by_rule.setdefault(rule, []).append(r)
+        except (IndexError, ValueError):
+            pass
+    for rule in (0, 4, 30, 110):
+        runs = sorted(by_rule.get(rule, []), key=lambda r: r["n"])
+        klass_label = WOLFRAM_CLASS_MAP.get(rule, ("?",))[0]
+        for run in runs:
+            print(
+                f"{run['trajectory']:35s}  {klass_label:>5s}  {run['n']:>3d}  "
+                f"{run['W']:>4d}  {run['k_trajectory']:>8d}  {run['k_over_n']:>8.2f}"
+            )
+
+    # Verdicts
+    print()
+    print("=== Verdict Wolframe par regle ===")
+    cv = wolfram_class_verdict(results)
+    for name, status in cv.items():
+        print(f"  {name:35s}  {status}")
+    print()
+    final = wolfram_4classes_cross_verdict(cv)
+    print(f"=== Verdict final cross-classes ===")
+    print(f"  {final}")
+
+    # Sortie JSON
+    if args.json_out:
+        out = {
+            "results": results,
+            "per_class_verdicts": cv,
+            "cross_classes_verdict": final,
+            "n_cells": args.n_cells,
+            "n_steps": args.n_cells,
+            "seed": args.seed,
+            "rules": (0, 4, 30, 110),
+            "class_map": {str(k): v for k, v in WOLFRAM_CLASS_MAP.items()},
+        }
+        Path(args.json_out).write_text(json.dumps(out, indent=2, ensure_ascii=False))
+        print(f"\n[INFO] resultats ecrits dans {args.json_out}")
+    return 0
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else "K_trajectory")
     parser.add_argument(
         "--mode",
-        choices=["measure", "verify-corpus", "bounds", "wolfram"],
+        choices=["measure", "verify-corpus", "bounds", "wolfram", "wolfram-4classes"],
         default="measure",
         help="Mode d'exécution (défaut: measure)",
     )
@@ -814,6 +1051,8 @@ def main() -> int:
         return cmd_bounds(args)
     if args.mode == "wolfram":
         return cmd_wolfram(args)
+    if args.mode == "wolfram-4classes":
+        return cmd_wolfram_4classes(args)
     return cmd_verify_corpus(args)
 
 

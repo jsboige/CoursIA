@@ -1,0 +1,234 @@
+{
+  "results": [
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 709,
+      "k_over_n": 709.0
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 359,
+      "k_over_n": 359.0
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 184,
+      "k_over_n": 92.0
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 103,
+      "k_over_n": 34.333333333333336
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 55,
+      "k_over_n": 13.75
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "n": 5,
+      "W": 32,
+      "k_trajectory": 31,
+      "k_over_n": 6.2
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "n": 6,
+      "W": 64,
+      "k_trajectory": 21,
+      "k_over_n": 3.5
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 1024,
+      "k_over_n": 1024.0
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 582,
+      "k_over_n": 582.0
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 311,
+      "k_over_n": 155.5
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 159,
+      "k_over_n": 53.0
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 83,
+      "k_over_n": 20.75
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "n": 5,
+      "W": 32,
+      "k_trajectory": 45,
+      "k_over_n": 9.0
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "n": 6,
+      "W": 64,
+      "k_trajectory": 28,
+      "k_over_n": 4.666666666666667
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 1026,
+      "k_over_n": 1026.0
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 785,
+      "k_over_n": 785.0
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 664,
+      "k_over_n": 332.0
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 600,
+      "k_over_n": 200.0
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 556,
+      "k_over_n": 139.0
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "n": 5,
+      "W": 32,
+      "k_trajectory": 534,
+      "k_over_n": 106.8
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "n": 6,
+      "W": 64,
+      "k_trajectory": 523,
+      "k_over_n": 87.16666666666667
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "n": 0,
+      "W": 1,
+      "k_trajectory": 1026,
+      "k_over_n": 1026.0
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "n": 1,
+      "W": 2,
+      "k_trajectory": 790,
+      "k_over_n": 790.0
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "n": 2,
+      "W": 4,
+      "k_trajectory": 676,
+      "k_over_n": 338.0
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "n": 3,
+      "W": 8,
+      "k_trajectory": 600,
+      "k_over_n": 200.0
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "n": 4,
+      "W": 16,
+      "k_trajectory": 556,
+      "k_over_n": 139.0
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "n": 5,
+      "W": 32,
+      "k_trajectory": 534,
+      "k_over_n": 106.8
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "n": 6,
+      "W": 64,
+      "k_trajectory": 523,
+      "k_over_n": 87.16666666666667
+    }
+  ],
+  "per_class_verdicts": {
+    "wolfram_R0_n64_seed33": "CLASS-I-CONFIRMED (WOLFRAM-COLLAPSED (ratio 0.030 < 0.7))",
+    "wolfram_R4_n64_seed33": "CLASS-II-CONFIRMED (WOLFRAM-COLLAPSED (ratio 0.027 < 0.7))",
+    "wolfram_R30_n64_seed33": "CLASS-III-REFUTED (WOLFRAM-COLLAPSED (ratio 0.510 < 0.7) -- chaotique doit avoir entropie partielle)",
+    "wolfram_R110_n64_seed33": "CLASS-IV-REFUTED (WOLFRAM-COLLAPSED (ratio 0.510 < 0.7) -- Turing-complet doit avoir entropie partielle)"
+  },
+  "cross_classes_verdict": "WOLFRAM-4CLASSES-III/IV-INVERSE (2/4 contredisent -- faux negatif sur entropie)",
+  "n_cells": 64,
+  "n_steps": 64,
+  "seed": 33,
+  "rules": [
+    0,
+    4,
+    30,
+    110
+  ],
+  "class_map": {
+    "0": [
+      "I",
+      "uniforme"
+    ],
+    "4": [
+      "II",
+      "periodique"
+    ],
+    "30": [
+      "III",
+      "chaotique"
+    ],
+    "110": [
+      "IV",
+      "Turing-complet"
+    ]
+  }
+}
