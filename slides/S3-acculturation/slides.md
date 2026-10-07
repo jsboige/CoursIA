@@ -2780,7 +2780,7 @@ au vert. Le sauvetage ne pouvait qu'ajouter une façon d'échouer.
 
 
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/Roslyn-Code-Guardrails.ipynb">Roslyn-Code-Guardrails.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/Roslyn-Code-Guardrails.ipynb">Roslyn-Code-Guardrails.ipynb</a>.</p>
 ---
 
 
