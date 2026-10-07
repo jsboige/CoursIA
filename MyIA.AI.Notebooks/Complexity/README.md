@@ -10,6 +10,16 @@ exacts, simulations Monte Carlo, chronos encadrés), puis confronté à l'état 
 [Mathlib](https://github.com/leanprover-community/mathlib4) — ce qui y existe, ce qui
 n'y existe pas encore, et pourquoi.
 
+## Objectifs d'apprentissage
+
+À l'issue de cette série, vous serez capable de :
+
+1. **Mesurer** le coût d'un algorithme en pas (et non en secondes), reconnaître trois croissances sur le test de doublement, et tracer la table de budget à $10^8$ pas/s
+2. **Distinguer** vérifier de trouver (P vs NP) et exécuter une réduction polynomiale entre deux problèmes (subset-sum → Partition) en transformant, résolvant, retraduisant le certificat
+3. **Diagonaliser** pour séparer deux classes de complexité (Hartmanis–Stearns 1965, $\mathrm{TIME}(f) \subsetneq \mathrm{TIME}(f \log f)$) et instrumenter la simulation multi-rubans
+4. **Décider** sans connaître la suite (online : ski-rental $e/(e-1)$, paging LRU/FIFO, secrétaire $1/e$) et battre les conjectures tombées en septembre 2026 (secrétaire matroïdal, k-server WFA)
+5. **Compter** vs vérifier (#P, déterminant vs permanente, frontière quantique BosonSampling $\lvert\mathrm{perm}\rvert^2$) et déquantifier les circuits stabilisateurs (CHP/Aaronson–Gottesman)
+
 ## Notebooks
 
 | Notebook | Public | Accrétion | Hommage | Contenu | Langue |
