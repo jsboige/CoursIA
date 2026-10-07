@@ -130,7 +130,7 @@ def build_corpus(
     """Un corpus par seed : panneau belief joint exact, etats caches, labels
     de selectivite one-vs-rest (etat 0 de chaque facteur) et decoupe gelee.
 
-    La decoupe train/eval est un permutation seeee par ``seed`` (meme
+    La decoupe train/eval est une permutation seedee par ``seed`` (meme
     discipline que :func:`ict.lens_gates.heldout_linear_score`) : probes, SAE
     et cibles sont ajustes sur train, la batterie mesure sur eval.
     """

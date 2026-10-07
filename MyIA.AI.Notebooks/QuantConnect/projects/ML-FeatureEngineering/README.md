@@ -22,3 +22,4 @@ Feature engineering experiments for ML trading strategies. Tests various feature
 ## Files
 
 - main.py - Feature engineering framework
+- quantbook.ipynb - QuantBook de référence : construction et analyse des features de trading
