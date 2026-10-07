@@ -1202,3 +1202,102 @@ class TestRequiredKeys15145:
         monkeypatch.setattr(sys, "argv",
                             ["render_envs.py", "--check", "--strict"])
         assert render_envs.main() == 1
+
+    # ------------------------------------------------------------------ #
+    # #19462 — derived_required : la regle statique REQUIRED_KEYS est
+    # augmentee par derived_required(), qui regarde l'etat observe du
+    # .env (presence de OPENAI_BASE_URL -> models.myia.io) pour declarer
+    # CLAUDISH_PROXY_KEY comme requise. Q6 option b, decision user : une
+    # regle derivee reagit aux ajouts de TARGET_ENVS, plutot qu'une table
+    # statique qui s'averait incomplete des la 4e cible.
+    # ------------------------------------------------------------------ #
+    def test_derived_required_claudish_endpoint(self, tmp_path, monkeypatch):
+        """Cas 1 : cible dont OPENAI_BASE_URL pointe la passerelle claudish
+        SANS CLAUDISH_PROXY_KEY -> derived_required() declare la cle
+        requise."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\nCLAUDISH_PROXY_KEY=proxy-1234\n",
+            [("svc", "HF_TOKEN=stable\nOPENAI_BASE_URL=https://models.myia.io/v1\n")],
+        )
+        monkeypatch.setattr(render_envs, "REQUIRED_KEYS", {})
+        out = render_envs.derived_required(
+            targets[0], set(render_envs.read_env(targets[0]).keys())
+        )
+        assert "CLAUDISH_PROXY_KEY" in out
+
+    def test_derived_required_other_endpoint(self, tmp_path, monkeypatch):
+        """Cas 2 : OPENAI_BASE_URL pointe un autre endpoint (api.openai.com)
+        -> derived_required() NE declare PAS CLAUDISH_PROXY_KEY. La regle
+        est specifique a la passerelle claudish, pas une cle universelle
+        pour les clients OpenAI-like."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\n",
+            [("svc", "HF_TOKEN=stable\nOPENAI_BASE_URL=https://api.openai.com/v1\n")],
+        )
+        monkeypatch.setattr(render_envs, "REQUIRED_KEYS", {})
+        out = render_envs.derived_required(
+            targets[0], set(render_envs.read_env(targets[0]).keys())
+        )
+        assert "CLAUDISH_PROXY_KEY" not in out
+
+    def test_derived_required_commented_out_endpoint(self, tmp_path, monkeypatch):
+        """Cas 3 : OPENAI_BASE_URL est commente -> derived_required() ne
+        declenche PAS la regle. Une URL en commentaire n'est pas une URL
+        active ; exigir la cle d'auth dans ce cas fabriquerait un faux
+        rouge."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\n",
+            [("svc", "HF_TOKEN=stable\n# OPENAI_BASE_URL=https://models.myia.io/v1\n")],
+        )
+        monkeypatch.setattr(render_envs, "REQUIRED_KEYS", {})
+        out = render_envs.derived_required(
+            targets[0], set(render_envs.read_env(targets[0]).keys())
+        )
+        assert "CLAUDISH_PROXY_KEY" not in out
+
+    def test_derived_required_key_already_present_short_circuits(
+        self, tmp_path, monkeypatch
+    ):
+        """Cas bonus : la cle est deja dans la cible -> derived_required()
+        court-circuite et rend frozenset() vide. Une regle qui se
+        declencherait quand la cle est deja la transformerait un [OK] en
+        rouge fantome."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\nCLAUDISH_PROXY_KEY=present\n",
+            [("svc", "HF_TOKEN=stable\nOPENAI_BASE_URL=https://models.myia.io/v1\nCLAUDISH_PROXY_KEY=present\n")],
+        )
+        monkeypatch.setattr(render_envs, "REQUIRED_KEYS", {})
+        out = render_envs.derived_required(
+            targets[0], set(render_envs.read_env(targets[0]).keys())
+        )
+        assert out == frozenset()
+
+    def test_sync_derived_required_end_to_end(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """Integration : cible qui pointe la passerelle claudish SANS la
+        cle d'auth -> --check la nomme comme 'REQUIRED key(s) with no
+        line', --strict sort 1, sync() append la ligne depuis master.
+        C'est le critere de mort de l'issue #19462."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\nCLAUDISH_PROXY_KEY=proxy-1234\n",
+            [("svc", "HF_TOKEN=stable\nOPENAI_BASE_URL=https://models.myia.io/v1\n")],
+        )
+        monkeypatch.setattr(render_envs, "REQUIRED_KEYS", {})
+        # --check nomme
+        assert render_envs.sync(check_only=True) == 0
+        out = capsys.readouterr().out
+        assert "REQUIRED key(s) with no line" in out
+        assert "CLAUDISH_PROXY_KEY" in out
+        # --strict exit 1
+        assert render_envs.sync(check_only=True, strict=True) == 1
+        # sync append
+        assert render_envs.sync(check_only=False) == 0
+        text = targets[0].read_text(encoding="utf-8")
+        assert "CLAUDISH_PROXY_KEY=proxy-1234" in text
+        assert "***1234" in capsys.readouterr().out
