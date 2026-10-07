@@ -35,7 +35,7 @@ Les quatre séries **implantent le même formalisme** avec des outils différent
 
 | Direction | Notebook | Moteur | Ce qu'il apporte de plus |
 |-----------|----------|--------|--------------------------|
-| Logique + SCM + contrefactuels | [Tweety-11](../../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | Tweety (.NET) | backend causal logique, opérateur `do` natif |
+| Logique + SCM + contrefactuels | [Tweety-11](../../../SymbolicAI/Tweety/Tweety-11-Causal-Python.html) | Tweety (.NET) | backend causal logique, opérateur `do` natif |
 | Message passing exact | [Infer-5](../../Infer/Infer-5-Causal-Inference.ipynb) | Infer.NET | backdoor, front-door, Simpson, médiation, capstone contrefactuel |
 | MCMC bayésien | [PyMC-5](../../PyMC/PyMC-05-Causal-Inference.ipynb) | PyMC | incertitude postérieure sur l'effet, contrefactuel bayésien |
 | Émergence causale (Hoel) | [ICT-5](../../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb), [ICT-6](../../../IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | information effective, coarse-graining, multiscale |
