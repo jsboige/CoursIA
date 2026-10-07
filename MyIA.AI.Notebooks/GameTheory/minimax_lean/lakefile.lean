@@ -37,6 +37,11 @@ package «minimax_lean» where
 require mathlib from git
   "https://github.com/leanprover-community/mathlib4.git" @ "db584cd6d46c92f209a44c0f1c829460d327499d"
 
+-- globs : `Minimax.*` (racine ET sous-modules) et non `.submodules` (sous-modules
+-- seuls) -- le second laissait le module racine Minimax (qui declare
+-- `MinimaxLean.Status`) hors de `lake build` : le step proof-integrity revele
+-- par #18038 echouait sur l'olean racine absent (mesure PR #19535, 06/10).
+-- Pattern maison : game_theory_lean (`CooperativeGames.*`, `StableMarriage.*`).
 @[default_target]
 lean_lib «Minimax» where
-  globs := #[.submodules `Minimax, `Minimax_en]
+  globs := #[`Minimax.*, `Minimax_en]
