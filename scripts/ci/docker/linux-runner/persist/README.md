@@ -30,10 +30,29 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `po-2026/pool.sh` | **po-2026** | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, **8 slots** et **borne depuis le 2026-09-22** (cf. `po-2026/README.md`) |
 | `po-2026/run-pool-po2026.sh` | **po-2026** (hote Windows) | `C:\dev\CoursIA-runners-p0\run-pool-po2026.sh` | **deploye et vivant** -- lanceur de la tache planifiee, porte la borne CPU/memoire. **Attention : ce fichier vit sous `C:\dev\...`, pas sous `D:\Dev\CoursIA-runners-p0\`** (cf. `po-2026/README.md`) |
 | `po-2026/README.md` | -- | -- | **document** : architecture, dimensionnement, piege du verrou |
+| `po-2024/coursia-ci.slice` | **po-2024** | `/etc/systemd/system/coursia-ci.slice` | **a deployer** (2026-10-08) -- le mur kernel qui manquait a cette machine : `MemoryHigh=20G`, `MemoryMax=22G`, `MemorySwapMax=0`. Homonyme de la slice ai-01, valeurs differentes (cf. section `po-2024/`) |
+| `po-2024/coursia-waiters.service.d/10-sizing.conf` | **po-2024** | `/etc/systemd/system/coursia-waiters.service.d/10-sizing.conf` | **a deployer** (2026-10-08) -- 12 -> 6 slots waiters pour po-2024 seulement, par drop-in, parce que `coursia-waiters.service` est le fichier d'**ai-01** que les deux machines executent |
 
 Le sous-repertoire `ai-01/` existe parce que les deux machines ont des fichiers
 **homonymes et incompatibles**. Les melanger a plat, comme c'etait le cas, revient
 a laisser croire qu'il n'y en a qu'un.
+
+Le sous-repertoire `po-2024/` existe pour la meme raison que `ai-01/` : ses deux
+fichiers sont homonymes de fichiers d'autres machines, et **incompatibles** avec
+eux. `coursia-ci.slice` porte les bornes de la VM de 24 Go de po-2024, la ou la
+copie d'ai-01 borne une machine bien plus large ; les confondre ferait deployer
+16 Go de plafond dur sur une machine qui en a 24, ou l'inverse. Le drop-in
+waiters est l'autre moitie du meme probleme : l'unite `coursia-waiters.service`
+appartient a ai-01 et po-2024 l'execute **telle quelle**, donc editer l'unite
+pour descendre po-2024 descendrait aussi ai-01 -- le drop-in rend le perimetre
+explicite.
+
+Les fichiers po-2024 anterieurs (wrappers `runner-start`, `lean-start`, unites
+`runner` et `lean`) restent a la racine de `persist/` : ce sont eux qui ont
+etabli la convention « racine = po-2024 » avant que les sous-repertoires
+n'existent, et les deplacer serait du churn sans portee. Tout **nouvel** artefact
+propre a une machine dont le nom est deja pris ailleurs va dans son
+sous-repertoire.
 
 Le sous-repertoire `po-2026/` existe pour une raison differente : cette machine est
 la seule du parc dont la chaine de runners ne passe **ni par Docker ni par une unite

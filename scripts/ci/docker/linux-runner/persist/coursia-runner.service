@@ -10,8 +10,25 @@
 # 2026-09-22, puis a 6 le 2026-10-01 (#15574 item 3, arbitrage coordinateur
 # comment 5933689033) : 6 x 3 vCPU = 18 vCPU docker, + 2 lean x 6 = 30 vCPU
 # d'execution pour 16 disponibles -- le budget COURSIA_RUNNER_CPU_BUDGET=30
-# du wrapper garde cette somme. Le defaut wrapper (N=4) reste le filet --
-# `start 6` ici est l'intention explicite pour cette machine.
+# du wrapper gardait cette somme. Le defaut wrapper (N=4) reste le filet --
+# `start 6` ici etait l'intention explicite pour cette machine.
+#
+# 6 -> 4 LE 2026-10-08, ET LA RAISON EST MEMOIRE, PAS CPU. La VM WSL de cette
+# machine est revenue a 24 032 Mo alors que la composition declaree totalisait
+# 27 648 Mo de caps (6x1536 docker + 12x512 waiters + 2x6144 lean) : une somme
+# de caps superieure a la RAM, payee en swap -- 104 GiB ecrits en moins de 11 h,
+# DriveFS et la coordination de la flotte en premier. Les 4 slots ramenent la
+# composition a 21 504 Mo, sous la VM avec 2 528 Mo de marge.
+#
+# LE CAP UNITAIRE N'EST PAS TOUCHE (1536 Mo), et c'est mesure : 3 des 6
+# conteneurs le touchaient a 99 %. C'est la CONCURRENCE qui ne tenait pas, pas
+# la taille d'un job -- un job lourd garde exactement le meme regime memoire, il
+# attend son tour au lieu de pousser la machine dans le swap.
+#
+# Le budget CPU suit mecaniquement : 4 x 3 + 2 lean x 6 = 24, et c'est la valeur
+# que porte desormais COURSIA_RUNNER_CPU_BUDGET dans les deux wrappers. L'axe CPU
+# lui-meme n'est PAS tranche ici -- #15574 a son propre point de retour mesure
+# J+7, qui tombe le 2026-10-08 et reste ouvert.
 [Unit]
 Description=CoursIA Linux runners supervisor (docker slots)
 # #15095 : Requires+BindsTo INVERSE le choix Wants= de #14347 item 2. Le
@@ -37,7 +54,7 @@ StartLimitBurst=5
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/coursia-runner-start.sh start 6
+ExecStart=/usr/local/bin/coursia-runner-start.sh start 4
 ExecStop=/usr/local/bin/coursia-runner-start.sh stop
 Restart=always
 RestartSec=30
@@ -53,9 +70,15 @@ TimeoutStopSec=900
 # de le laisser rivaliser a poids egal avec le reste de la machine.
 # Requiert cgroup v2 avec le controleur io delegue ; IOAccounting rend la
 # consommation lisible dans systemctl status meme la ou le poids ne mord pas.
-# Le plafond DUR de bande passante (IOWriteBandwidthMax) est volontairement
-# laisse ouvert : il exige de nommer le device, et sa valeur doit sortir d une
-# mesure sous charge, pas d une intuition -- question posee a roo-extensions.
+# Le plafond DUR de bande passante (IOWriteBandwidthMax) reste volontairement
+# ABSENT DE CETTE UNITE, et c est toujours le cas depuis le 2026-10-08 : sur
+# une unite, il ne bornerait que ce que le superviseur ecrit lui-meme (ses
+# journaux), parce que les conteneurs sont ses NEVEUX -- nes dans le cgroup du
+# daemon, pas dans le sien. Le plafond dur vit donc dans la slice, ou vivent
+# les conteneurs : persist/po-2024/coursia-ci.slice porte IOWriteBandwidthMax /
+# IOReadBandwidthMax, et COURSIA_RUNNER_CGROUP_PARENT y fait entrer les trois
+# familles. La valeur y est reprise de la mesure d ai-01 sous charge plutot que
+# devinee ici.
 IOAccounting=yes
 IOWeight=50
 

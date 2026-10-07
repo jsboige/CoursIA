@@ -1,0 +1,168 @@
+# Budget AGREGE des conteneurs runner -- po-2024 (VM WSL de 24 Go).
+#
+# POURQUOI CETTE MACHINE DEPLOIE LA SLICE, ALORS QU'ELLE NE LE FAISAIT PAS
+# -----------------------------------------------------------------------
+# `persist/coursia-ci.slice` (copie de reference d'ai-01) ecrivait noir sur
+# blanc : « Sur une machine qui NE la deploie PAS (po-2024), il n'y a rien a
+# faire. » C'etait vrai, et c'est exactement ce que cette PR ferme.
+#
+# Mesure du 2026-10-08 (firsthand, `wsl.exe -d Ubuntu` sur po-2024) :
+#
+#   coursia-ci.slice ............ chargee mais `inactive (dead)`
+#   /etc/systemd/system/coursia-ci.slice ... inexistant
+#   MemoryHigh / MemoryMax / MemorySwapMax ... infinity (aucun mur kernel)
+#   vmmem ........................ 24 032 Mo (free -m), .wslconfig memory=24GB
+#   swap consomme ................ 6 285 Mo a l'instant de la mesure
+#   swap ECRIT depuis le boot ..... 104 GiB en moins de 11 h (rapport ai-01)
+#
+# La chaine causale est celle qu'ai-01 a nommee le 2026-09-07 et qui a gele sa
+# machine quatre fois : la RAM sature, la VM swappe sur un FICHIER DU DISQUE
+# WINDOWS, DriveFS tombe le premier, `G:` et ROOSYNC_SHARED_PATH disparaissent
+# avec lui -- et toute la coordination de la flotte s'arrete. Sur po-2024 il
+# n'y avait, jusqu'ici, AUCUNE borne kernel derriere le budget userspace :
+# `COURSIA_RUNNER_BUDGET_GB` refuse de DEMARRER un slot, il ne borne pas ce
+# qu'un slot deja lance consomme.
+#
+# CE QUE LA COMPOSITION DE po-2024 ETAIT DEVENUE (mesure du 2026-10-08)
+# ---------------------------------------------------------------------
+# Le budget declare etait 42 Go. La VM en fait 24. L'ecart datait : le
+# dimensionnement du 2026-09-21 avait ete calibre pour une VM de 40 110 Mo
+# (.wslconfig memory=40GB, arbitrage user, mission
+# msg-20260921T203652-qxg3en) ; la VM est depuis revenue a 24 Go -- `.wslconfig
+# memory=24GB` et `free -m` le confirment tous les deux -- et le 42 est reste.
+#
+# Les caps reellement declares, eux, n'ont jamais totalise 43 008 Mo : le
+# commentaire qui justifiait le 42 comptait « 12x1536 » pour les waiters, alors
+# que `WAITER_MEMORY` vaut 512m (supervise.sh l.180). La composition mesuree
+# etait :
+#
+#   6 slots docker x 1536 Mo  = 9 216 Mo   (3 des 6 a 99 % de leur cap)
+#   12 waiters x 512 Mo       = 6 144 Mo   (59 a 118 Mo reellement consommes)
+#   2 slots lean x 6144 Mo    = 12 288 Mo  (67 et 74 Mo au repos)
+#   ---------------------------------------
+#   total CAPS                 27 648 Mo  >  24 032 Mo de VM
+#
+# Une composition dont la somme des caps depasse la RAM de la machine ne peut
+# pas etre tenue : elle se paie en swap. C'est la definition du probleme, et
+# aucun garde userspace ne peut le resoudre seul -- il fallait un mur kernel.
+#
+# L'ARITHMETIQUE RETENUE (budget 21 Go, meme nombre sur les trois jambes)
+# ---------------------------------------------------------------------
+#   4 slots docker x 1536 Mo  = 6 144 Mo
+#   6 waiters x 512 Mo        = 3 072 Mo
+#   2 slots lean x 6144 Mo    = 12 288 Mo
+#   ---------------------------------------
+#   total CAPS                 21 504 Mo   sous 24 032 Mo -> marge 2 528 Mo
+#
+# MARGES PRISES, ET CE QU'ELLES COUVRENT :
+#   - le cap docker unitaire est INCHANGE a 1536 Mo. Il n'est pas en trop : 3
+#     conteneurs sur 6 le touchaient a 99 % au moment de la mesure. On reduit
+#     le NOMBRE de slots, jamais le cap -- un job lourd garde exactement le
+#     meme regime memoire, c'est la concurrence qui baisse ;
+#   - le cap waiter est INCHANGE a 512 Mo, pour la meme raison, en plus fort :
+#     un waiter n'est pas un conteneur inerte, il EXECUTE les jobs PR-gate
+#     (label `coursia-waiter`). Baisser son cap aurait change le regime de jobs
+#     non mesures -- ce que la regle #15202 de persist/README.md interdit de
+#     faire sans les nommer. On reduit de 12 a 6 slots ;
+#   - la jambe lean est INCHANGEE (2 x 6144 Mo). Elle reste le poste dominant
+#     (58 % du budget) et elle est assume : c'est le goulot du parc, et
+#     l'abaisser toucherait des builds Lean, pas des jobs interchangeables ;
+#   - 2 528 Mo restent hors caps pour le noyau WSL2, dockerd et le page cache.
+#     Mesure du meme jour : le systeme hors conteneurs pesait ~3 200 Mo, dont
+#     2 429 Mo de `buff/cache` -- reclaimable, et c'est precisement ce que
+#     MemoryHigh met sous pression avant le mur.
+#
+# CPU : CETTE SLICE NE LE TRANCHE PAS, ET LE DIT
+# ----------------------------------------------
+# Aucun CPUQuota. Le dimensionnement CPU de po-2024 a son propre arbitrage
+# (coordinateur, 2026-10-01, comment 5933689033) et son point de retour mesure
+# J+7 -- qui tombe aujourd'hui, 2026-10-08. Melanger les deux axes dans une
+# meme PR rendrait le point de retour illisible. `CPUAccounting=yes` est pose :
+# on mesure, on ne plafonne pas.
+#
+# ORDRE DE DEPLOIEMENT -- LA SLICE D'ABORD, LES CONTENEURS ENSUITE
+# ----------------------------------------------------------------
+#  1. sudo cp persist/po-2024/coursia-ci.slice /etc/systemd/system/
+#     sudo systemctl daemon-reload && sudo systemctl start coursia-ci.slice
+#  2. redeployer les wrappers et les unites (budget 21, start 4, waiters 6)
+#  3. sudo systemctl daemon-reload
+#  4. redemarrer les trois jambes -- un conteneur DEJA VIVANT ne migre PAS
+#     dans la slice : seul un cycle de conteneur l'y met. Les slots en vol
+#     partent en fin de job (ExecStop gracieux, TimeoutStopSec=900).
+#  5. verification : le demarrage doit afficher
+#     « [slice] mur agrege ACTIF : memory.high=... memory.max=... »
+#
+# Le drapeau `--cgroup-parent` est pose par supervise.sh des que
+# `COURSIA_RUNNER_CGROUP_PARENT` est declare (c'est fait dans les wrappers
+# po-2024). Sur le daemon docker-ce de cette machine, le pilote systemd resout
+# `coursia-ci.slice` en slice imbriquee sous `coursia.slice` -- le chemin
+# cgroup reel est /sys/fs/cgroup/coursia.slice/coursia-ci.slice/, qui est la
+# qu'on lit `memory.max` et `io.max`.
+[Unit]
+Description=CoursIA CI runner containers -- aggregate budget (all families, po-2024)
+Documentation=https://github.com/jsboige/CoursIA/blob/main/docs/ci/self-hosted-runners.md
+Before=slices.target
+
+[Slice]
+CPUAccounting=yes
+
+IOAccounting=yes
+IOWeight=50
+# Plafonds DURS, agreges, sur le device qui porte /var/lib/docker.
+#
+# Valeurs REPRISES de la slice d'ai-01 sans re-mesure sur cette machine, et
+# c'est ecrit ici pour que personne ne les lise comme un dimensionnement
+# po-2024 : ai-01 les a mesurees le 2026-09-07 sur SON device (8:64, /dev/sde),
+# trois conteneurs ecrivant 400 Mio en oflag=direct -- 221 Mo/s cumules sous
+# plafond contre 16,9 GB/s sans lui, facteur 76.
+#
+# Le plafond est declare par CHEMIN (/var/lib/docker), donc portable ; c'est la
+# VALEUR qui n'est pas re-mesuree ici. Elle est conservee telle quelle parce
+# qu'elle est volontairement large (200 Mio/s en ecriture, ~2 % d'un disque
+# NVMe) : son role est d'interdire qu'un thrash PASSE L'ECHELLE, pas de
+# reguler un debit normal. L'incident de po-2024 est memoire, pas I/O -- ce
+# plafond est une ceinture, pas le sujet de cette PR. Il est requis en plus :
+# `assert_slice` (supervise.sh l.1138) REFUSE de demarrer si la slice declaree
+# est introuvable ou sans `io.max`.
+IOWriteBandwidthMax=/var/lib/docker 209715200
+IOReadBandwidthMax=/var/lib/docker 419430400
+
+# ---------------------------------------------------------------------------
+# AXE MEMOIRE -- le sujet de cette slice
+# ---------------------------------------------------------------------------
+# MemoryHigh met sous PRESSION avant le mur : en cgroup v2 le page cache est
+# impute au cgroup qui le faute, donc c'est lui, et pas MemoryMax, qui
+# declenche la recuperation au lieu de tuer le job dessus.
+#
+# 20G : sous les 21 504 Mo de caps declares, pour que la pression arrive avant
+#       que la somme des caps soit atteinte -- c'est la que le reclaim doit
+#       travailler.
+# 22G : le filet de dernier recours, 2 Go au-dessus du budget userspace et
+#       2 Go sous la VM. Franchir les deux gardes a la fois demanderait que le
+#       garde userspace (qui refuse de DEMARRER un slot au-dela de 21 Go) et
+#       le reclaim du cache echouent tous les deux.
+#
+# MemorySwapMax=0 -- AUCUN SWAP AUTORISE POUR LA CI.
+# C'est l'arbitrage central de cette PR, et il est assume, pas subi. Le swap
+# d'une VM WSL est un FICHIER SUR LE DISQUE WINDOWS : chaque page poussee la
+# est une ecriture disque qui retarde DriveFS, puis `G:`, puis RooSync (chaine
+# causale nommee par ai-01 le 2026-09-07, et les 104 GiB ecrits en 11 h sur
+# cette machine le 2026-10-08). Un job qui depasse son cap doit mourir
+# (exit 137) -- un echec local, retryable, qui ne coute qu'un job -- plutot que
+# de faire tomber la coordination de la flotte entiere.
+#
+# CONSEQUENCE NOMMEE, POUR QU'ELLE NE SOIT PAS DECOUVERTE EN PANNE :
+# la jambe lean perd son coussin. `LEAN_MEMORY_SWAP` valait 12g (6 Go de RAM
+# + 6 Go de swap par slot), et le commentaire de `supervise.sh` (bloc LEAN)
+# documente pourquoi : « supprimer le swap ne retire pas le pic de Hashlife, il
+# transforme un build qui deborde en un exit 137 -- c'est un curseur, pas un
+# dogme. » Le curseur est ici tourne dans l'autre sens, deliberement. Le build
+# Hashlife de conway_lean depassait 16 Go a froid : a 6 Go sans swap il ne
+# passera PAS. La reponse n'est pas de remonter le swap de cette machine, elle
+# est de router ce lake vers un runner hosted (32 Go de fallocate swap,
+# lean-axiom.yml) -- meme raisonnement que le commentaire de supervise.sh, dont
+# la conclusion est reprise mot pour mot.
+MemoryAccounting=yes
+MemoryHigh=20G
+MemoryMax=22G
+MemorySwapMax=0

@@ -84,9 +84,25 @@
 #      Avec `COURSIA_REQUIRE_CI_SLICE=1`, son absence devient un refus de
 #      demarrer plutot qu'un avertissement.
 #
-# Sur une machine qui NE la deploie PAS (po-2024), il n'y a rien a faire :
+# Sur une machine qui NE la deploie PAS, il n'y a rien a faire :
 # `CI_CGROUP_PARENT` reste vide, `--cgroup-parent` n'est pas passe, et le
 # superviseur avertit sans refuser (cf assert_ci_slice dans supervise.sh).
+#
+# po-2024 A DEPLOYE LA SIENNE LE 2026-10-08, et l'exemple que ce paragraphe
+# citait est donc tombe. Il nommait po-2024 comme LA machine sans slice ; ce
+# n'est plus vrai, et c'est precisement ce qui a ete corrige : cette machine a
+# une VM de 24 Go et sa composition declarait 27 648 Mo de caps, payes en swap
+# (104 GiB ecrits en moins de 11 h, DriveFS et RooSync emportes avec). Sa slice
+# n'est PAS une copie de celle-ci : elle porte `MemoryHigh=20G`,
+# `MemoryMax=22G`, `MemorySwapMax=0` -- des valeurs calibrees sur SA VM, et
+# aucun `CPUQuota`, parce que son axe CPU a son propre arbitrage en cours. La
+# copie de reference vit sous `po-2024/coursia-ci.slice`, et les deux ne
+# doivent jamais etre confondues : deployer celle-ci sur po-2024 poserait des
+# bornes calibrees pour une autre machine.
+#
+# La valeur de ce paragraphe n'est donc pas dans l'exemple mais dans la regle :
+# une machine sans slice n'a AUCUN mur kernel derriere son budget userspace, et
+# c'est un etat a corriger, pas un etat stable.
 #
 #
 [Unit]
