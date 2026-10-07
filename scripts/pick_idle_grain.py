@@ -2472,6 +2472,91 @@ _MAIN_HEAD_FRAGMENT = """
 """
 
 
+# #19767 : mapping d'un workflow `push` de `main` vers le nom de check
+# qui apparait dans le rollup. Une PR qui impute un rouge a `infra_rerun`
+# (rejeu) doit pouvoir etre refutee par la conclusion REELLE du meme
+# workflow sur le dernier push de `main` -- pas par le rollup, qui peut
+# etre en retard pendant les rafales de merges. Le rollup sert de
+# premiere passe ; ce mapping sert de deuxieme passe, via l'API
+# workflow-directe (cf. `merge_dwell._main_red_motif`, reutilisee
+# ci-dessous dans `_enrich_probe_with_workflow_runs`).
+#
+# Source de verite du nom de check : le bloc `jobs:` du workflow. Pour
+# `scripts-tests.yml`, le job s'appelle `scripts-tests` et son `name:` est
+# `Scripts Tests (CPU)` (cf. `.github/workflows/scripts-tests.yml` l.183-184).
+# Si le workflow ajoute un nouveau job, ce mapping suit.
+_WORKFLOW_YML_TO_CHECK_NAMES: dict[str, frozenset[str]] = {
+    "scripts-tests.yml": frozenset({"Scripts Tests (CPU)"}),
+}
+
+
+def _enrich_probe_with_workflow_runs(probe: dict | None,
+                                     repo: str = "jsboige/CoursIA",
+                                     ) -> dict | None:
+    """Croise le rollup avec l'API workflow-directe (#19767).
+
+    Le rollup de `defaultBranchRef` peut etre en retard sur la verite du
+    dernier run `push` (mesure du 2026-10-07 : `Scripts Tests (CPU)` est
+    reste ROUGE sur 3 push consecutifs de `main` -- `a32a8528` 14:24:35Z,
+    `fadbbc01` 14:32:43Z, `ab6aa5b2` 14:45:14Z, doublon d'index `0019`
+    du registre jumeau corrige par #19723 -- sans apparaitre comme rouge
+    dans le rollup). Un picker qui s'appuie sur le seul rollup classe
+    alors le rouge en `infra_rerun` (= REJEU) et la lane est envoyee
+    rejouer un rouge REEL de la base, puis le rouge revient au tour
+    suivant parce que la base est toujours rouge.
+
+    La verite est dans la conclusion du dernier run `push` du workflow
+    sur `main`. On REUTILISE le lecteur `_main_red_motif` (organe
+    canonique du DWELL, defaut #18686 + #18790 + #18796 + #19180 +
+    #19069) : il itere sur `MAIN_RED_WORKFLOWS` et lit
+    `actions/workflows/{yml}/runs?branch={main}&event=push&status=
+    completed&per_page=10`, saute les `cancelled`/`skipped` (mesure
+    #19069) et considere `timed_out`/`startup_failure` comme rouges
+    (defaut #19180). Si le motif est non-None, le workflow est rouge
+    sur `main` ; on ajoute alors a `red_keys` les noms de check qui
+    pourraient venir de ce workflow (mapping `_WORKFLOW_YML_TO_CHECK_NAMES`).
+
+    Fail-CLOSED : si `_main_red_motif` retourne None, c'est vert OU
+    illisible, et on NE TOUCHE PAS au probe -- le `split_base_corroboration`
+    retombe sur le comportement d'avant #19767 (tout impute a la base si
+    le rollup ne tranche pas). Si l'import du module `merge_dwell` echoue,
+    on rend le probe inchange. C'est le sens de la regle : un instrument
+    de plus ne doit jamais elargir la classe `infra_rerun` sans preuve.
+    """
+    if probe is None:
+        return None
+    try:
+        from ci.merge_dwell import _main_red_motif, MAIN_RED_WORKFLOWS
+    except Exception:  # noqa: BLE001 - cross-check optionnel, jamais bloquant
+        return probe
+    try:
+        motif = _main_red_motif(repo)
+    except Exception:  # noqa: BLE001
+        return probe
+    if motif is None:
+        # Vert ou illisible : on ne touche pas au probe, l'appelant
+        # tranchera sur les autres mesures (rollup, corroboration).
+        return probe
+    # Motif non-None : au moins un canary workflow est rouge. On
+    # cherche lequel par son display_name, et on propage aux check
+    # names du mapping. Si le display_name ne matche aucun canary,
+    # on ne peut pas propager (defaut d'inventaire, pas d'extension
+    # silencieuse) -- le rollup reste la seule lecture.
+    enriched = set(probe.get("red_keys") or set())
+    names = probe.get("names") or set()
+    for yml, display_name in MAIN_RED_WORKFLOWS:
+        # Le motif contient le display_name : on filtre par yml. Si
+        # le motif parle d'un autre workflow, on ignore -- on ne
+        # sait pas propager.
+        if display_name not in motif:
+            continue
+        for cn in _WORKFLOW_YML_TO_CHECK_NAMES.get(yml, frozenset()):
+            if cn in names:
+                enriched.add(cn)
+    return {"sha": probe.get("sha", ""), "red_keys": enriched,
+            "names": names}
+
+
 def fetch_main_head_probe(organ_cache: dict | None = None) -> dict | None:
     """Etat des checks sur la branche par defaut, par son rollup (#17154).
 
@@ -2492,6 +2577,14 @@ def fetch_main_head_probe(organ_cache: dict | None = None) -> dict | None:
     posee -- « le meme check est-il rouge sur la branche par defaut ? » -- et
     non la vue du commit, qui appartient aux checks de la PR fusionnee. Les
     deux instruments de branche concordent : rollup vert, run `push` vert.
+
+    #19767 : le rollup peut etre en retard sur la verite du dernier run
+    `push` (mesure du 2026-10-07, doublon d'index `0019` corrige par
+    #19723). Un rollup qui dit vert quand le run est rouge classerait
+    un rouge REEL en `infra_rerun` (= REJEU), envoyant la lane rejouer
+    un rouge de la base. La deuxieme passe enrichit `red_keys` par
+    `_enrich_probe_with_workflow_runs` (qui REUTILISE
+    `merge_dwell._main_red_motif`, organe canonique du DWELL).
 
     Rend ``{"sha": str, "red_keys": set, "names": set}`` ou ``None`` si la
     mesure n'a PAS pu etre prise (panne reseau, `defaultBranchRef` absent,
@@ -2527,8 +2620,13 @@ def fetch_main_head_probe(organ_cache: dict | None = None) -> dict | None:
     red_keys: set[str] = set()
     for ctx in _failed_contexts(state):
         red_keys.update(failed_check_keys(ctx, organ_cache))
-    return {"sha": target.get("oid") or "", "red_keys": red_keys,
-            "names": {(c.get("name") or c.get("context") or "?") for c in contexts}}
+    probe = {"sha": target.get("oid") or "", "red_keys": red_keys,
+             "names": {(c.get("name") or c.get("context") or "?") for c in contexts}}
+    # #19767 : deuxieme passe, lecture directe du dernier run `push` de
+    # `main` par workflow. Si rouge, on ajoute a `red_keys` les check
+    # names qui pourraient venir de ce workflow. Fail-CLOSED : un
+    # enrichissement impossible ne degrade pas le probe.
+    return _enrich_probe_with_workflow_runs(probe)
 
 
 def drop_superseded(contexts: list[dict]) -> list[dict]:
