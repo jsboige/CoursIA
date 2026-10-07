@@ -373,6 +373,46 @@ class TestConstants:
                 f"REQUIRED_KEYS label {lbl} matches no TARGET_ENVS entry"
             )
 
+    # --- couplage passerelle claudish (Q6(b), po-2023 2026-10-06) ----------
+    def test_gateway_endpoint_couples_proxy_key(self, tmp_path, monkeypatch):
+        """Un .env qui pointe OPENAI_BASE_URL sur la passerelle est derive en
+        REQUIRED pour CLAUDISH_PROXY_KEY. Sans ce couplage le consommateur
+        porte l'endpoint sans le credential qui l'authentifie : 401, pendant
+        que --check reste vert (la cle absente d'une cible est rapportee
+        "not provisioned", indiscernable de "pas necessaire")."""
+        nb_env = tmp_path / "MyIA.AI.Notebooks" / "SemanticKernel" / ".env"
+        nb_env.parent.mkdir(parents=True, exist_ok=True)
+        nb_env.write_text(
+            "OPENAI_BASE_URL=https://models.myia.io/v1\n"
+            "OPENAI_API_KEY=whatever\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(render_envs, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [nb_env])
+
+        assert render_envs._gateway_consumers() == {
+            "MyIA.AI.Notebooks/SemanticKernel/.env":
+                frozenset({"CLAUDISH_PROXY_KEY"})
+        }
+
+    def test_non_gateway_endpoint_is_not_coupled(self, tmp_path, monkeypatch):
+        """Contre-epreuve : le couplage vise la PASSERELLE, pas tout
+        OPENAI_BASE_URL. Un endpoint OpenAI direct, ou une ligne commentee,
+        ne doit pas reclamer de cle de proxy -- sinon la garde serait un faux
+        positif permanent sur les cibles qui ne passent pas par claudish."""
+        direct = tmp_path / "MyIA.AI.Notebooks" / "Track2" / ".env"
+        direct.parent.mkdir(parents=True, exist_ok=True)
+        direct.write_text(
+            "OPENAI_BASE_URL=https://api.openai.com/v1\n", encoding="utf-8"
+        )
+        commented = tmp_path / "MyIA.AI.Notebooks" / "GenAI" / ".env"
+        commented.parent.mkdir(parents=True, exist_ok=True)
+        commented.write_text('# OPENAI_BASE_URL=""\n', encoding="utf-8")
+        monkeypatch.setattr(render_envs, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [direct, commented])
+
+        assert render_envs._gateway_consumers() == {}
+
 
 # --------------------------------------------------------------------------- #
 # bootstrap: state machine (monkeypatch MASTER_ENV + TARGET_ENVS)

@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1354
-breakdown: SymbolicAI=317, GenAI=259, Search=157, ML=127, QuantConnect=115, GameTheory=110, IIT=94, Probas=77, Sudoku=38, RL=37, Complexity=10, CaseStudies=6, NLP=5, Compression=1, cross-series=1
-maturity: BETA=1192, DRAFT=88, ALPHA=70, TEMPLATE=4
+total: 1366
+breakdown: SymbolicAI=319, GenAI=264, Search=157, ML=130, QuantConnect=116, GameTheory=109, IIT=94, Probas=77, Sudoku=38, RL=37, Complexity=11, CaseStudies=6, NLP=5, cross-series=2, Compression=1
+maturity: BETA=1201, DRAFT=90, ALPHA=71, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -110,7 +110,7 @@ ML
 └── DataScienceWithAgents/ - Agents Python sklearn + ONNX jumeaux
 
 RL
-└── (à plat) - rl_1..13 : DQN, PPO, SAC, GRPO (DeepSeek-R1) from scratch
+└── (à plat) - RL-01..13 : DQN, PPO, SAC, GRPO (DeepSeek-R1) from scratch
 
 CaseStudies
 ├── Diagnostic-Medical/ - LLM-assisted diagnosis

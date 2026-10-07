@@ -307,6 +307,45 @@ def read_env(path: Path) -> dict[str, str]:
     return out
 
 
+# --------------------------------------------------------------------------- #
+# Couplage passerelle claudish : l'endpoint implique la cle d'authentification
+# --------------------------------------------------------------------------- #
+# Un .env qui porte l'endpoint de la passerelle (OPENAI_BASE_URL vers
+# models.myia.io) SANS CLAUDISH_PROXY_KEY part avec une adresse valide et le
+# credential qui l'authentifie absent -> 401 "invalid proxy authentication".
+#
+# Le piege est exactement celui que REQUIRED_KEYS rend mesurable (#15145) : la
+# cle EST dans master.env et EST dans SECRET_KEYS, donc tous les rapports la
+# disaient diffusee -- mais une cle absente d'une cible est rapportee "not
+# provisioned", indiscernable de "pas necessaire". La question "atteint-elle un
+# consommateur reel ?" n'avait donc pas de reponse mesurable ; mesuree, elle
+# rendait : aucun des consommateurs de la passerelle.
+#
+# Derive plutot que trois entrees statiques : une cible ajoutee demain a
+# TARGET_ENVS qui pointe la passerelle herite du couplage sans qu'on y pense, et
+# une cible dont le .env est absent ne fabrique aucun faux rouge sur un clone
+# neuf (la derivation ne voit que les fichiers PRESENTS).
+GATEWAY_HOST = "models.myia.io"
+GATEWAY_ENDPOINT_KEY = "OPENAI_BASE_URL"
+GATEWAY_AUTH_KEY = "CLAUDISH_PROXY_KEY"
+
+
+def _gateway_consumers() -> dict[str, frozenset[str]]:
+    """Targets whose .env points OPENAI_BASE_URL at the claudish gateway."""
+    out: dict[str, frozenset[str]] = {}
+    for env in TARGET_ENVS:
+        if GATEWAY_HOST in read_env(env).get(GATEWAY_ENDPOINT_KEY, ""):
+            out[env_label(env)] = frozenset({GATEWAY_AUTH_KEY})
+    return out
+
+
+# Additive: a static REQUIRED_KEYS entry for the same target keeps its own keys.
+REQUIRED_KEYS.update({
+    lbl: REQUIRED_KEYS.get(lbl, frozenset()) | keys
+    for lbl, keys in _gateway_consumers().items()
+})
+
+
 def mask(value: str) -> str:
     """Mask a secret for display: show only the last 4 chars."""
     if not value:

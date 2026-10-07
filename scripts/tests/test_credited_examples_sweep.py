@@ -75,9 +75,17 @@ def _pr(number, base="a" * 40, head="b" * 40):
     }
 
 
-def _nb(path, change="MODIFIED"):
-    """Un noeud GraphQL `pullRequest.files.nodes { path changeType }`."""
-    return {"path": path, "changeType": change}
+def _nb(path, change="MODIFIED", previous=None):
+    """Un noeud GraphQL `pullRequest.files.nodes { path changeType previousFilename }`.
+
+    `previous` n'est pose que quand il est fourni : un noeud sans la cle simule
+    la reponse degradee (renommage sous seuil de similarite) que #19251 doit
+    continuer de nommer NON MESURE, pas de mesurer contre le mauvais chemin.
+    """
+    node = {"path": path, "changeType": change}
+    if previous is not None:
+        node["previousFilename"] = previous
+    return node
 
 
 def _files_of(mapping):
@@ -98,8 +106,8 @@ def _sweep(prs, *, files=None, body=None, base_of=None, ensure=None, check=None)
         fetch_body=body or (lambda repo, number: ""),
         base_of=base_of or (lambda repo_dir, b, h: "deadbeef"),
         ensure=ensure or (lambda repo_dir, sha: True),
-        check=check or (lambda paths, base_ref="", head_ref="", pr_body="":
-                        _FakeResult()),
+        check=check or (lambda paths, base_ref="", head_ref="", pr_body="",
+                        base_path_of=None: _FakeResult()),
     )
 
 
@@ -162,6 +170,62 @@ class TestGhFormIsNotTheFilesSource:
         assert "cursor=CUR1" not in calls[0]
 
 
+class TestTheRenameBasePathComesFromRest:
+    """#19251 : `previousFilename` n'existe PAS cote GraphQL.
+
+    Mesure : le serveur repond `Field 'previousFilename' doesn't exist on type
+    'PullRequestChangedFile'` (ses champs : additions, changeType, deletions,
+    path, viewerViewedState). Le chemin de base d'un renommage est lu par une
+    seconde passe REST (`pulls/{n}/files`, champ `previous_filename`), et
+    SEULEMENT quand la PR porte un renommage.
+    """
+
+    @staticmethod
+    def _graphql(nodes):
+        return {"data": {"repository": {"pullRequest": {"files": {
+            "nodes": nodes, "pageInfo": {"hasNextPage": False}}}}}}
+
+    def test_a_renamed_node_gets_its_base_path_from_rest(self):
+        calls = []
+
+        def run(argv):
+            calls.append(list(argv))
+            if "graphql" in argv:
+                return self._graphql(
+                    [{"path": "new.ipynb", "changeType": "RENAMED"}])
+            return [{"filename": "new.ipynb", "previous_filename": "old.ipynb",
+                     "status": "renamed"}]
+
+        nodes = _mod.pr_files("o/r", 7, run=run)
+        assert nodes[0]["previousFilename"] == "old.ipynb"
+        assert any("pulls/7/files" in arg for arg in calls[-1]), \
+            f"la passe REST doit viser pulls/<n>/files : {calls[-1]}"
+
+    def test_the_rest_pass_is_skipped_when_no_file_is_renamed(self):
+        calls = []
+
+        def run(argv):
+            calls.append(list(argv))
+            return self._graphql([{"path": "x.ipynb", "changeType": "MODIFIED"}])
+
+        nodes = _mod.pr_files("o/r", 7, run=run)
+        assert nodes[0].get("previousFilename", "") == ""
+        assert len(calls) == 1, "sans renommage, une seule source est interrogee"
+
+    def test_a_failing_rest_pass_leaves_the_rename_unmeasured_not_wrong(self):
+        """L'echec de la passe REST ne doit ni planter, ni faire mesurer le
+        renommage contre le mauvais chemin : sans chemin de base, il reste NON
+        MESURE (rendu `""`, que `_ipynb_by_change` range a part)."""
+        def run(argv):
+            if "graphql" in argv:
+                return self._graphql(
+                    [{"path": "new.ipynb", "changeType": "RENAMED"}])
+            raise RuntimeError("gh failed (1): rate limited")
+
+        nodes = _mod.pr_files("o/r", 7, run=run)
+        assert nodes[0]["previousFilename"] == ""
+
+
 class TestFiltering:
     def test_only_ipynb_paths_are_kept(self):
         assert _mod.ipynb_paths([_nb(IPY), _nb(MD)]) == [IPY]
@@ -190,14 +254,17 @@ class TestFiltering:
         Ce n'est PAS une erreur de mesure (#18761) -- et la compter comme telle
         bloquait le label pour les carnets MODIFIES de la meme PR.
         """
-        modified, added, renamed = _mod._ipynb_by_change([_nb(IPY, "ADDED")])
-        assert modified == [] and added == [IPY] and renamed == []
+        modified, added, renamed_m, renamed_u = _mod._ipynb_by_change(
+            [_nb(IPY, "ADDED")])
+        assert modified == [] and added == [IPY]
+        assert renamed_m == [] and renamed_u == []
 
     def test_added_and_modified_split_in_the_same_pr(self):
         other = "MyIA.AI.Notebooks/Search/Part1/y.ipynb"
-        modified, added, renamed = _mod._ipynb_by_change(
+        modified, added, renamed_m, renamed_u = _mod._ipynb_by_change(
             [_nb(other, "ADDED"), _nb(IPY, "MODIFIED")])
-        assert modified == [IPY] and added == [other] and renamed == []
+        assert modified == [IPY] and added == [other]
+        assert renamed_m == [] and renamed_u == []
 
     def test_a_purely_additive_pr_is_named_not_dropped(self):
         rows, errs = _sweep([_pr(1)], files={1: [_nb(IPY, "ADDED")]})
@@ -206,30 +273,82 @@ class TestFiltering:
         assert rows[0]["would_label"] is False
         assert errs == []
 
-    def test_a_renamed_notebook_is_declared_unmeasured_not_lost_free(self):
-        """Un renommage PEUT perdre des exemples : on ne le dit pas « sans perte ».
+    def test_a_renamed_notebook_without_previous_is_unmeasured_not_lost_free(self):
+        """Un renommage sans `previousFilename` PEUT perdre des exemples : on ne
+        le dit pas « sans perte ».
 
-        La base est a un autre chemin (`previousFilename` hors du jeu GraphQL
-        demande ici), donc la comparaison est impossible. Le carnet ne doit ni
-        etre mesure contre le mauvais chemin, ni etre tu.
+        `previousFilename` manque (renommage sous seuil de similarite, ou
+        reponse d'API degradee) : la base est a un autre chemin inconnu, donc la
+        comparaison est impossible. Le carnet ne doit ni etre mesure contre le
+        mauvais chemin, ni etre tu (#19251 preserve ce repli).
         """
-        modified, added, renamed = _mod._ipynb_by_change([_nb(IPY, "RENAMED")])
-        assert modified == [] and added == [] and renamed == [IPY]
+        modified, added, renamed_m, renamed_u = _mod._ipynb_by_change(
+            [_nb(IPY, "RENAMED")])
+        assert modified == [] and added == []
+        assert renamed_m == [] and renamed_u == [IPY]
         rows, errs = _sweep([_pr(1)], files={1: [_nb(IPY, "RENAMED")]})
         assert len(rows) == 1 and rows[0]["renamed_notebooks"] == 1
+        assert rows[0]["renamed_measured"] == 0
         assert rows[0]["notebooks"] == 0
         assert rows[0]["would_label"] is False
+
+    def test_a_renamed_notebook_with_previous_is_measured_as_modified(self):
+        """#19251 : quand `previousFilename` est connu, un renommage est mesure.
+
+        Sa tete se lit au nouveau chemin, sa base a l'ancien -- un `git mv`
+        suivi d'une edition peut perdre des exemples comme un MODIFIED.
+        """
+        old = "MyIA.AI.Notebooks/Search/Part1/y.ipynb"
+        new = "MyIA.AI.Notebooks/Search/Part2/y.ipynb"
+        modified, added, renamed_m, renamed_u = _mod._ipynb_by_change(
+            [_nb(new, "RENAMED", previous=old)])
+        assert modified == [] and added == []
+        assert renamed_m == [(new, old)] and renamed_u == []
+        rows, errs = _sweep(
+            [_pr(1)], files={1: [_nb(new, "RENAMED", previous=old)]},
+            check=lambda paths, base_ref="", head_ref="", pr_body="",
+            base_path_of=None: _FakeResult(lost=3, diff_errors=0),
+        )
+        assert errs == []
+        assert rows[0]["renamed_notebooks"] == 1
+        assert rows[0]["renamed_measured"] == 1
+        assert rows[0]["notebooks"] == 1
+        assert rows[0]["credited_lost_unexempted"] == 3
+        assert rows[0]["would_label"] is True
+
+    def test_the_base_path_of_a_rename_reaches_the_check(self):
+        """Le contrat de la carte : `base_path_of` porte la correspondance
+        nouveau chemin -> ancien chemin, pour le cote base du diff credite."""
+        old = "MyIA.AI.Notebooks/Search/Part1/y.ipynb"
+        new = "MyIA.AI.Notebooks/Search/Part2/y.ipynb"
+        seen = {}
+
+        def check(paths, base_ref="", head_ref="", pr_body="", base_path_of=None):
+            seen["paths"] = [str(p) for p in paths]
+            seen["map"] = dict(base_path_of or {})
+            return _FakeResult()
+
+        _sweep(
+            [_pr(1)], files={1: [_nb(new, "RENAMED", previous=old)]},
+            check=check,
+        )
+        assert seen["paths"] == [str(Path(new))]
+        # la carte est clee en POSIX (le chemin tel que rendu par GraphQL), pas
+        # dans la forme native du systeme : c'est ce que `check_notebooks`
+        # normalise avant de la consulter (cf. le test de lookup ci-dessous).
+        assert seen["map"] == {new: old}
 
     def test_a_renamed_notebook_does_not_block_the_other_notebooks(self):
         """Le faux positif d'erreur produisait un faux zero de pertes (#18761).
 
-        Un carnet renomme dans la meme PR ne doit plus empecher la mesure des
-        carnets modifies -- c'est le defaut que la separation corrige.
+        Un carnet renomme SANS chemin de base dans la meme PR ne doit pas
+        empecher la mesure des carnets modifies -- c'est le defaut que la
+        separation corrige.
         """
         other = "MyIA.AI.Notebooks/Search/Part1/y.ipynb"
         seen = []
 
-        def check(paths, base_ref="", head_ref="", pr_body=""):
+        def check(paths, base_ref="", head_ref="", pr_body="", base_path_of=None):
             seen.append([str(p) for p in paths])
             return _FakeResult(lost=2, diff_errors=0)
 
@@ -240,6 +359,7 @@ class TestFiltering:
         )
         assert rows[0]["would_label"] is True, rows
         assert rows[0]["renamed_notebooks"] == 1
+        assert rows[0]["renamed_measured"] == 0
         assert seen == [[str(Path(IPY))]]
         assert errs == []
 
@@ -258,7 +378,7 @@ class TestHeadIsThePrHead:
     def test_the_check_receives_the_head_of_the_pr(self):
         captured = {}
 
-        def check(paths, base_ref="", head_ref="", pr_body=""):
+        def check(paths, base_ref="", head_ref="", pr_body="", base_path_of=None):
             captured["base_ref"] = base_ref
             captured["head_ref"] = head_ref
             return _FakeResult(1, 0)
@@ -394,7 +514,7 @@ class TestARenamedNotebookNoLongerTakesDownTheSweep:
     """
 
     def test_a_failing_check_names_the_pr_and_the_others_are_still_measured(self):
-        def check(paths, base_ref="", head_ref="", pr_body=""):
+        def check(paths, base_ref="", head_ref="", pr_body="", base_path_of=None):
             if paths and "ICT-45" in str(paths[0]):
                 raise FileNotFoundError(
                     "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-...ipynb")
@@ -420,7 +540,7 @@ class TestARenamedNotebookNoLongerTakesDownTheSweep:
         se derober en « carnet renomme ». Un repli trop large remplacerait une
         panne par un chiffre manquant, ce que la fenetre ne distinguerait pas
         d'une PR sans perte."""
-        def check(paths, base_ref="", head_ref="", pr_body=""):
+        def check(paths, base_ref="", head_ref="", pr_body="", base_path_of=None):
             raise RuntimeError("bug du compteur")
 
         with pytest.raises(RuntimeError):
@@ -443,7 +563,8 @@ def _git(repo, *args):
     subprocess.run(
         ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t",
          "-c", "core.autocrlf=false", *args],
-        check=True, capture_output=True, text=True,
+        check=True, capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
     )
 
 
@@ -469,12 +590,14 @@ class TestTheCountReadsTheRevisionNotTheTree:
         _git(repo, "add", "-A")
         _git(repo, "commit", "-q", "-m", "base")
         base = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
-                              capture_output=True, text=True, check=True).stdout.strip()
+                              capture_output=True, text=True, check=True,
+                              encoding="utf-8", errors="replace").stdout.strip()
         target.write_text(json.dumps(_notebook_json(3)), encoding="utf-8")
         _git(repo, "add", "-A")
         _git(repo, "commit", "-q", "-m", "head")
         head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
-                              capture_output=True, text=True, check=True).stdout.strip()
+                              capture_output=True, text=True, check=True,
+                              encoding="utf-8", errors="replace").stdout.strip()
         if tree is None:
             target.unlink()
         else:
@@ -513,3 +636,117 @@ class TestTheCountReadsTheRevisionNotTheTree:
         monkeypatch.chdir(repo)
         result = _cpe.check_notebooks([Path(self.REL)])
         assert self._count(result) == 2
+
+
+def _credited_notebook_json(n, *, tag):
+    """Un carnet a ``n`` exemples credits, chacun d'identite distincte.
+
+    L'identite d'un exemple credite est ``(credit, cell_id)`` : un exemple
+    conserve au renommage garde le MEME ``cell_id`` des deux cotes, sinon il
+    se lirait comme perdu puis reajoute. ``tag`` sert a distinguer des carnets
+    differents d'un meme test, pas la base de la tete.
+    """
+    cells = []
+    for i in range(1, n + 1):
+        cells.append({
+            "cell_type": "markdown", "id": f"{tag}-ex{i}", "metadata": {},
+            "source": [f"### Exemple {i}\n", f"[crédité #{1000 + i}]\n"],
+        })
+        cells.append({
+            "cell_type": "code", "id": f"{tag}-c{i}", "metadata": {},
+            "execution_count": 1, "outputs": [], "source": [f"print({i})\n"],
+        })
+    return {"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+
+
+class TestARenamedNotebookIsMeasuredAtItsOldPath:
+    """#19251 : un RENAMED dont `previousFilename` est connu est MESURE.
+
+    Le renommage est le cas aveugle qui a motive #19251 : la base est a un
+    autre chemin, donc `base:path` ne trouve rien. Sans la correspondance, la
+    mesure tombe -- et une mesure tombee se lirait soit comme zero perte (si
+    on avalait l'erreur), soit comme un diff en erreur (honnete mais inutile).
+    Ici on epingle la VRAIE mesure : le carnet renomme qui perd un exemple
+    credite est vu, sur un depot git reel.
+    """
+
+    OLD = "MyIA.AI.Notebooks/Search/Part1/moved.ipynb"
+    NEW = "MyIA.AI.Notebooks/Search/Part2/moved.ipynb"
+
+    def _repo_with_rename(self, tmp_path, *, keep=2):
+        """Commit base : 3 exemples credites a OLD. Commit tete : `git mv` vers
+        NEW, ``keep`` exemples conserves (identites stables) -- ``keep=2`` perd
+        le 3e, ``keep=3`` ne perd rien."""
+        repo = tmp_path / "repo"
+        (repo / Path(self.OLD).parent).mkdir(parents=True)
+        _git(repo, "init", "-q")
+        (repo / self.OLD).write_text(
+            json.dumps(_credited_notebook_json(3, tag="ex")), encoding="utf-8")
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-q", "-m", "base")
+        base = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
+                              capture_output=True, text=True, check=True,
+                              encoding="utf-8", errors="replace").stdout.strip()
+        (repo / Path(self.NEW).parent).mkdir(parents=True)
+        _git(repo, "mv", self.OLD, self.NEW)
+        (repo / self.NEW).write_text(
+            json.dumps(_credited_notebook_json(keep, tag="ex")), encoding="utf-8")
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-q", "-m", "head")
+        head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
+                              capture_output=True, text=True, check=True,
+                              encoding="utf-8", errors="replace").stdout.strip()
+        return repo, base, head
+
+    def _verdict(self, result, name):
+        for bucket in (result.ok, result.sub_threshold, result.parse_errors):
+            for v in bucket:
+                if v.path.endswith(name):
+                    return v
+        raise AssertionError("le carnet n'apparait dans aucun seau")
+
+    def test_the_loss_of_a_renamed_notebook_is_measured(self, tmp_path, monkeypatch):
+        repo, base, head = self._repo_with_rename(tmp_path)
+        monkeypatch.chdir(repo)
+        result = _cpe.check_notebooks(
+            [Path(self.NEW)], base_ref=base, head_ref=head,
+            base_path_of={self.NEW: self.OLD},
+        )
+        verdict = self._verdict(result, "moved.ipynb")
+        assert verdict.credited_diff_status == "ok", \
+            "avec previousFilename, le diff doit etre calcule, pas en erreur"
+        assert verdict.credited_lost_unexempted == 1, \
+            "l'exemple credite perdu au renommage doit etre vu"
+
+    def test_a_rename_without_loss_is_not_a_false_positive(
+            self, tmp_path, monkeypatch):
+        """Un renommage qui ne perd rien ne doit pas etre signale.
+
+        Sans ce controle, la mesure du renommage pourrait crier a la perte sur
+        un simple `git mv` -- le faux positif que #19251 doit eviter autant que
+        l'angle mort qu'il ferme.
+        """
+        repo, base, head = self._repo_with_rename(tmp_path, keep=3)
+        monkeypatch.chdir(repo)
+        result = _cpe.check_notebooks(
+            [Path(self.NEW)], base_ref=base, head_ref=head,
+            base_path_of={self.NEW: self.OLD},
+        )
+        verdict = self._verdict(result, "moved.ipynb")
+        assert verdict.credited_diff_status == "ok"
+        assert verdict.credited_lost_unexempted == 0, \
+            "aucun exemple perdu au renommage : rien a signaler"
+
+    def test_without_the_mapping_the_rename_is_not_silently_a_zero(
+            self, tmp_path, monkeypatch):
+        """Sans `previousFilename`, on ne MESURE pas -- et surtout on ne rend
+        pas « zero perte » : le diff reste en erreur, que #18761 refuse de
+        convertir en label. Un zero silencieux serait le vrai mensonge."""
+        repo, base, head = self._repo_with_rename(tmp_path)
+        monkeypatch.chdir(repo)
+        result = _cpe.check_notebooks(
+            [Path(self.NEW)], base_ref=base, head_ref=head)
+        verdict = self._verdict(result, "moved.ipynb")
+        assert verdict.credited_diff_status.startswith("error:"), \
+            "base absente a ce chemin : le diff doit etre en erreur, pas a zero"
+        assert verdict.credited_lost_unexempted == 0

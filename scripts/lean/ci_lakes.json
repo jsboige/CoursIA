@@ -35,6 +35,7 @@
       "display-name": "minimax_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
       "paths": [
         "MyIA.AI.Notebooks/GameTheory/minimax_lean/**.lean",
         "MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.lean",
@@ -48,6 +49,7 @@
       "display-name": "search_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
       "paths": [
         "MyIA.AI.Notebooks/Search/search_lean/**.lean",
         "MyIA.AI.Notebooks/Search/search_lean/lakefile.lean",
@@ -295,6 +297,19 @@
         "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/**.lean",
         "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lakefile.lean",
         "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "geometry",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean",
+      "display-name": "geometry_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lean-toolchain"
       ]
     }
   ]

@@ -933,20 +933,41 @@ layout: default
 
 # Autres Applications (1/2)
 
+<!-- Pilote #15048 (comparaison avec schéma) : deux groupes TeachingStep en
+     colonnes via ts-compare, chacun porte SA figure sous son texte -- les
+     schémas ne sont plus une rangée détachée du bas de la diapo. -->
 
-- Solveurs Modulo Théorie
-  - SAT + Quantificateurs
-  - + Théories arithmétiques
-  - + Optimiseurs
-- Ingénierie de connaissances
-  - Triplets, Ontologies
-  - Web sémantique
-  - W3C
-  - Linked Data
+<div class="ts-compare">
 
-<div class="flex justify-center gap-6 mt-3">
-<img src="./images/img_048.png" class="max-h-[170px] w-[45%] object-contain" alt="Cartographie des médias et réseaux sociaux : TV, presse, blogs, forums, podcasts, partage vidéo et photo" />
-<img src="./images/img_049.png" class="max-h-[170px] w-[45%] object-contain" alt="Architecture du web sémantique : Trust, Proof, Logic, Ontology, RDF, XML, URI, Unicode" />
+<TeachingStep v-click="1" placement="below" size="md">
+
+**Solveurs Modulo Théorie**
+
+- SAT + Quantificateurs
+- \+ Théories arithmétiques
+- \+ Optimiseurs
+
+<template #visual>
+<img src="./images/img_029.png" alt="Progression du backtracking sur le problème des N-reines : retour arrière après violation de contrainte" />
+</template>
+
+</TeachingStep>
+
+<TeachingStep v-click="2" placement="below" size="sm">
+
+**Ingénierie de connaissances**
+
+- Triplets, Ontologies
+- Web sémantique
+- W3C
+- Linked Data
+
+<template #visual>
+<img src="./images/img_048.png" alt="Nuage Linked Open Data : les jeux de données publiques interconnectées du web des données" />
+</template>
+
+</TeachingStep>
+
 </div>
 
 <!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
@@ -974,7 +995,7 @@ layout: default
 
 
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb">Argumentation-06-JTMS-Python.ipynb</a> (JTMS), <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb">Tweety-4-Belief-Revision.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb">SC-03-Solidity-Basics-Python.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb">Argumentation-06-JTMS-Python.ipynb</a> (JTMS), <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb">Tweety-04-Belief-Revision-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb">SC-03-Solidity-Basics-Python.ipynb</a>.</p>
 ---
 layout: section
 ---
@@ -1850,7 +1871,7 @@ layout: section
 <img src="./images/img_121.png" class="max-h-[130px] w-[45%] object-contain" alt="Jeu Atari Breakout : deux captures d'écran avec score — terrain classique du RL" />
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb">rl_1_intro_cartpole.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb">rl_5_mdp_dp_qlearning.ipynb</a> (MDP, TD, Q-learning).</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb">RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb">RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb</a> (MDP, TD, Q-learning).</p>
 ---
 layout: section
 ---
