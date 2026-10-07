@@ -1323,6 +1323,8 @@ project:
     - "MyIA.AI.Notebooks/NLP/03_CRF_Etiquetage_Sequentiel.ipynb"
     - "MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb"
     - "MyIA.AI.Notebooks/NLP/05-HMM-Viterbi.ipynb"
+    - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03-Critique-Python.ipynb"
+    - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03b-Critique-L128-L256.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Lean.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Supercritique.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03-Critique-Python.ipynb"
