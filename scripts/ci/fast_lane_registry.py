@@ -1786,4 +1786,33 @@ TRANCHE18: list[Guard] = [
         blocking=True,
         absorbed=True,
     ),
+    # Issue #17444 / Q35 : ratchet de migration "python nu sans setup-python".
+    # Mesure firsthand c.199 : 14 jobs GitHub Actions matchent la classe
+    # (`python` nu sans `actions/setup-python` sur runners self-hosted, y
+    # compris configures `ubuntu-latest` mais routables). Mode `advisory
+    # --baseline 14` : exit 0 sur main, exit 1 si le compte depasse 14
+    # (regression). Le sweep #17470 a nettoie 9 jobs Linux ; l'organe ferme
+    # la boucle (cf. c.199 PR #19497). `blocking=False` parce que l'etat
+    # actuel (14) est une migration en cours, pas un defaut -- une PR qui
+    # AUGMENTE le compte (>14) sort en `failure` (rc=1), une PR qui le
+    # REDUIT reste en `neutral` (rc=0, mais le ratchet protege). Une fois
+    # le compte a 0, basculer en `blocking=True` (PR dediee future). Meme
+    # convention FAST_LANE_NATIVE + absorbed=True que hr-substitution-guard
+    # (l'organe n'a pas de workflow d'origine, c'est la tranche pilote).
+    Guard(
+        name="detect-python-nu-jobs",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            ".github/workflows/**",
+            "scripts/ci/detect_python_nu_jobs.py",
+            "scripts/tests/test_detect_python_nu_jobs.py",
+        ],
+        argv=[
+            "python", "scripts/ci/detect_python_nu_jobs.py",
+            "--mode", "advisory", "--baseline", "14", "--json",
+        ],
+        blocking=False,
+        warn_rc=(2,),
+        absorbed=True,
+    ),
 ]
