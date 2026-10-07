@@ -7,6 +7,14 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   known_differences:
+  - '2026-10-07 (myia-po-2027:CoursIA) #19779 : csharp_sha rebaseline -- 3 fixes audit #18556 tranche
+    7/8/8b cote C# seul : teaser final "Prochaine etape" reoriente Infer-2b (notebook ANTERIEUR, 2b
+    < 7) -> Infer-8-TrueSkill, le vrai suivant ; remarque P(C1 ET C2) affinee (dependance POSITIVE
+    a la reussite conjonctive, explaining-away = negative a l echec, cf section 8) ; label "Exemple
+    guide supplementaire : Conception d un test diagnostic" -> "Exercice de reflexion". Jumeau Python
+    verifie firsthand : les trois passages defectueux n y existent pas (0 occurrence explaining /
+    Exemple guide / dependance) et sa nav cellule 0 pointe deja PyMC-08 -- aucune asymetrie
+    introduite, python_sha inchange.'
   - '2026-09-27 (myia-po-2024:CoursIA-2) #18028 : REBASELINE cote Python -- chains=4 rendu explicite sur les appels pm.sample, valeur deja effective (les sorties portent "4 chains in 4 jobs"), resultats inchanges ; jumeau C# non touche.'
   - '2026-09-03 (myia-po-2023) See #14122 : csharp_sha rebaseline suite a la suppression des 6 avertissements
     CS1701 du jumeau C# -- display(HTML(x)) remplace par x.DisplayAs("text/html"). CS1701 nomme le CONSOMMATEUR
