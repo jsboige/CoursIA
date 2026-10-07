@@ -48,6 +48,7 @@ Interpretation: strong positive Sharpe 0.445 (3rd-best no-ML backbone, close to 
 
 - `main.py` - Strategy (v3, risk-adjusted momentum with skip-month)
 - `research.ipynb` - Factor analysis and signal robustness tests
+- `quantbook.ipynb` - Reproduction QuantBook de l'analyse exploratoire sur les donnees natives QC (validation pre-backtest)
 
 ## References
 
