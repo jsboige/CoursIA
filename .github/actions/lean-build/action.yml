@@ -24,6 +24,15 @@ inputs:
     required: false
     default: ''
 
+outputs:
+  lake-cache-hit:
+    description: >
+      'true' quand l'archive `.lake` a ete restauree depuis le cache Actions.
+      La restauration seule vit dans le composite (#19658) ; le SAVE est un pas
+      explicite du job appelant, apres son `Drop Mathlib oleans` -- un post-step
+      interne au composite capturerait les oleans Mathlib (2,4 Go).
+    value: ${{ steps.lake-cache.outputs.cache-hit }}
+
 runs:
   using: composite
   steps:
@@ -134,8 +143,15 @@ runs:
         ./elan-init -y --default-toolchain none
         echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
-    - name: Cache Lake build artifacts
-      uses: actions/cache@v4
+    # RESTORE SEUL (restore-only, #19658) : le SAVE est un pas explicite du job
+    # appelant, place APRES son etape `Drop Mathlib oleans` et conditionne a
+    # `github.ref == refs/heads/main`. Avant, `actions/cache@v4` sauvegardait en
+    # post-step sur TOUTE ref qui manquait la cle : mesure du 2026-10-07, la
+    # famille `lake-*` comptait 8 entrees de ~650 Mo, 8/8 sur `refs/pull/*`
+    # et 0 sur `main` -- la meme cle dupliquee par PR, 5,2 Go du quota de 10 Go.
+    - name: Restore Lake build artifacts
+      id: lake-cache
+      uses: actions/cache/restore@v4
       with:
         path: ${{ inputs.project-path }}/.lake
         key: lake-${{ inputs.display-name }}-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}

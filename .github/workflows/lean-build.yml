@@ -206,8 +206,15 @@ jobs:
         ./elan-init -y --default-toolchain none
         echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
-    - name: Cache Lake build artifacts
-      uses: actions/cache@v4
+    # RESTORE SEUL (restore-only, #19658) : le SAVE est un pas explicite du job,
+    # place APRES son etape `Drop Mathlib oleans` et conditionne a
+    # `github.ref == refs/heads/main`. Avant, `actions/cache@v4` sauvegardait en
+    # post-step sur TOUTE ref qui manquait la cle : mesure du 2026-10-07, la
+    # famille `lake-*` comptait 8 entrees de ~650 Mo, 8/8 sur `refs/pull/*` et
+    # 0 sur `main` -- la meme cle dupliquee par PR, 5,2 Go du quota de 10 Go.
+    - name: Restore Lake build artifacts
+      id: lake-cache
+      uses: actions/cache/restore@v4
       with:
         path: ${{ inputs.project-path }}/.lake
         key: lake-${{ inputs.display-name }}-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
@@ -321,6 +328,17 @@ jobs:
         rm -rf .lake/packages/mathlib/.lake/build
         du -sh .lake 2>/dev/null || true
 
+    # SAVE EXPLICITE, main only (#19658). Les refs de PR restaurent mais
+    # n'ecrivent plus : une PR qui manque la cle repart du cache de main via
+    # `restore-keys` (prefixe), au lieu d'ajouter sa propre copie de ~650 Mo.
+    # Place APRES `Drop Mathlib oleans` : c'est l'etat allege qui doit partir.
+    - name: Save Lake build artifacts (main only)
+      if: github.ref == 'refs/heads/main' && steps.lake-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ inputs.project-path }}/.lake
+        key: ${{ steps.lake-cache.outputs.cache-primary-key }}
+
   # Mode matrice #13751 : fan-out par lake, pilote par lean-ci-matrix.yml.
   # Un job appelant (`uses:`) ne peut PAS porter `strategy:` (limite GitHub
   # Actions) -- c'est la contrainte qui a produit les 32 dispatchers un
@@ -350,6 +368,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build + sorry gate (${{ matrix.display-name }})
+      id: build
       uses: ./.github/actions/lean-build
       with:
         project-path: ${{ matrix.project-path }}
@@ -411,3 +430,14 @@ jobs:
       run: |
         rm -rf .lake/packages/mathlib/.lake/build
         du -sh .lake 2>/dev/null || true
+
+    # SAVE EXPLICITE, main only (#19658). Les refs de PR restaurent mais
+    # n'ecrivent plus : une PR qui manque la cle repart du cache de main via
+    # `restore-keys` (prefixe), au lieu d'ajouter sa propre copie de ~650 Mo.
+    # Place APRES `Drop Mathlib oleans` : c'est l'etat allege qui doit partir.
+    - name: Save Lake build artifacts (main only)
+      if: github.ref == 'refs/heads/main' && steps.build.outputs.lake-cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ matrix.project-path }}/.lake
+        key: ${{ steps.lake-cache.outputs.cache-primary-key }}
