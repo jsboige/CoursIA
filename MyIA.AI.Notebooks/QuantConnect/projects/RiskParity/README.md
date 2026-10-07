@@ -16,7 +16,9 @@
 
 ## Figures du notebook de recherche
 
-Le notebook [`research.ipynb`](research.ipynb) documente l'analyse complète de la parité de risque : exploration des actifs, inverse-volatility weighting (H1), backtest (H2), impact de TLT en 2020-2023 (H3), sensibilité au lookback de volatilité (H4) et analyse par régime de marché. La stratégie atteint un plafond structurel (Sharpe 0.544) — contre-exemple pédagogique. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+Le notebook [`research.ipynb`](research.html) documente l'analyse complète de la parité de risque : exploration des actifs, inverse-volatility weighting (H1), backtest (H2), impact de TLT en 2020-2023 (H3), sensibilité au lookback de volatilité (H4) et analyse par régime de marché. La stratégie atteint un plafond structurel (Sharpe 0.544) — contre-exemple pédagogique. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+
+Le QuantBook [`quantbook.ipynb`](quantbook.html) reproduit cette analyse exploratoire sur les données natives QuantConnect (pondération inverse-volatilité).
 
 **Exploration — l'analyse des actifs (§2).** Le **dual-panel** juxtapose la courbe « Rendements cumulés 2015-2026 » sur 6 actifs (SPY/EFA/GLD/DBC/TLT) avec la heatmap de la matrice de corrélation. Les stats annualisées cell[4]·out[1] révèlent **GLD = meilleur Sharpe 0.81** (CAGR 12.02 %) avec **corrélation SPY 0.04** — diversifieur clé du portefeuille, tandis que **DBC sous-performe** (Sharpe 0.20, CAGR 3.45 %). La lecture visuelle confirme que GLD est l'actif qui contribue le plus à la diversification : l'inverse-vol weighting amplifie mécaniquement sa pondération face aux actifs les plus risqués.
 

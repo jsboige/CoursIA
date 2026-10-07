@@ -1,5 +1,5 @@
 # H.7 P3 Notebook Runner — multi-kernel Docker image
-# Supports: Python 3.11 (system, bookworm) + kernel global-3.13, .NET 9.0 Interactive (C#), Lean 4 (elan)
+# Supports: Python 3.11 (system, bookworm) + kernel global-3.13, .NET 10.0 Interactive (C#), Lean 4 (elan)
 # Usage: docker-compose run notebook-runner /scripts/h7_p3_notebook_runner.sh <notebook.ipynb>
 
 # Stage 1: Base image with .NET 10.0 SDK
@@ -10,7 +10,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS base
 
 # Install system dependencies
-# Python = le python3 SYSTEME du tag 9.0 (Debian bookworm, 3.11) :
+# Python = le python3 SYSTEME du tag 10.0 (Debian bookworm, 3.11) :
 # - le Dockerfile d'origine demandait python3.12 via apt, qui n'existe dans
 #   AUCUN repo Debian (bookworm = 3.11) -- image inconstructible depuis main
 #   (mesure 2026-10-06 : "E: Unable to locate package python3.12") ;
