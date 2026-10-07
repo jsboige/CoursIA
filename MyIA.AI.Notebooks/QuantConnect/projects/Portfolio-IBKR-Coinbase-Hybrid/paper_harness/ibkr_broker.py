@@ -35,10 +35,10 @@ Five choices shape it:
    reports as a warning only, leaving the order ``PendingSubmit``: an order the
    gateway never acknowledges is cancelled and raises
    :class:`OrderNotAcknowledgedError` instead of passing for a working order.
-5. **Orders left working.** IBKR returns the executions of the current
-   gateway session only. After the gateway's daily restart, the executions and
-   completed orders of earlier days are gone: a paper session read on
-   2026-10-07 returned none, even with a time filter. An execution the ledger
+5. **Orders left working.** After a restart, the gateway no longer returns
+   the executions and completed orders of earlier days: a paper gateway
+   started on 2026-10-06 returned none of the fills of 2026-10-05, even with
+   a time filter. The gateway is restarted every day. An execution the ledger
    did not book before then would be lost without a trace, since the ledger
    may legitimately hold less than the account. Every order is therefore
    recorded in the ledger *before* it is sent, and stays pending until its
