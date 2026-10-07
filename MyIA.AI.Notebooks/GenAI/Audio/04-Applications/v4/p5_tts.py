@@ -1165,7 +1165,6 @@ def _synthesize_narrator_cosyvoice3(
 
     import torch
 
-    from .prosody_lab.bakeoff_large.clients import cosyvoice3 as cv3_client
 
     _, _, asset_wav = cv3_client._bootstrap_paths()
     model = _load_cv3_model()
