@@ -1,0 +1,93 @@
+{
+  "protocol": "#19725 pre-registration c.6040355929 (before first calculation)",
+  "config": {
+    "target_vol_ann": 0.6,
+    "leverage_cap": 3.0,
+    "cost_one_way": 0.001,
+    "block_start": "2022-07-01",
+    "block_end": "2023-12-15",
+    "seeds": [
+      0,
+      7,
+      42,
+      99
+    ],
+    "placebo_lag_days": 5,
+    "boot_block_mean": 22,
+    "boot_draws": 2000,
+    "boot_seed": 20261007
+  },
+  "verdict": "VOIDE_FUITE",
+  "placebo_beats_leak": true,
+  "per_seed": [
+    {
+      "seed": 0,
+      "sharpe_m5": 0.5629475731800805,
+      "sharpe_har": 0.586637174221565,
+      "sharpe_placebo": 0.7275010566601456,
+      "sharpe_rv63": 0.7266185482990092,
+      "sharpe_hold": 0.6854523914751797,
+      "sharpe_diff": -0.023689601041484543,
+      "boot_p_m5_leq_har": 0.582,
+      "placebo_diff_vs_har": 0.1408638824385806,
+      "placebo_boot_p_leq": 0.187,
+      "bias_logrv_m5_block": 0.005352306770022378,
+      "bias_logrv_har_block": 0.00652604283642322,
+      "n_days_block": 520,
+      "mean_lev_m5": 1.8139784094742777,
+      "mean_lev_har": 1.8212037387687567
+    },
+    {
+      "seed": 7,
+      "sharpe_m5": 0.5495237873156964,
+      "sharpe_har": 0.586637174221565,
+      "sharpe_placebo": 0.6515489422093208,
+      "sharpe_rv63": 0.7266185482990092,
+      "sharpe_hold": 0.6854523914751797,
+      "sharpe_diff": -0.03711338690586863,
+      "boot_p_m5_leq_har": 0.6815,
+      "placebo_diff_vs_har": 0.06491176798775578,
+      "placebo_boot_p_leq": 0.378,
+      "bias_logrv_m5_block": -0.0353173885334185,
+      "bias_logrv_har_block": 0.00652604283642322,
+      "n_days_block": 520,
+      "mean_lev_m5": 1.8319780600946114,
+      "mean_lev_har": 1.8212037387687567
+    },
+    {
+      "seed": 42,
+      "sharpe_m5": 0.6294554246433025,
+      "sharpe_har": 0.586637174221565,
+      "sharpe_placebo": 0.8587743618627511,
+      "sharpe_rv63": 0.7266185482990092,
+      "sharpe_hold": 0.6854523914751797,
+      "sharpe_diff": 0.04281825042173748,
+      "boot_p_m5_leq_har": 0.31,
+      "placebo_diff_vs_har": 0.2721371876411861,
+      "placebo_boot_p_leq": 0.0335,
+      "bias_logrv_m5_block": -0.014995985057716392,
+      "bias_logrv_har_block": 0.00652604283642322,
+      "n_days_block": 520,
+      "mean_lev_m5": 1.8400276502734978,
+      "mean_lev_har": 1.8212037387687567
+    },
+    {
+      "seed": 99,
+      "sharpe_m5": 0.6561385310324187,
+      "sharpe_har": 0.586637174221565,
+      "sharpe_placebo": 0.76699788092336,
+      "sharpe_rv63": 0.7266185482990092,
+      "sharpe_hold": 0.6854523914751797,
+      "sharpe_diff": 0.06950135681085368,
+      "boot_p_m5_leq_har": 0.2295,
+      "placebo_diff_vs_har": 0.18036070670179494,
+      "placebo_boot_p_leq": 0.1435,
+      "bias_logrv_m5_block": -0.0397917753243705,
+      "bias_logrv_har_block": 0.00652604283642322,
+      "n_days_block": 520,
+      "mean_lev_m5": 1.8564665403139307,
+      "mean_lev_har": 1.8212037387687567
+    }
+  ],
+  "series_csv_sha256": "e32e5db295fd12c36aaa597c70ae0cae878df8be53dc8a92abb0169d0566c1ef"
+}
