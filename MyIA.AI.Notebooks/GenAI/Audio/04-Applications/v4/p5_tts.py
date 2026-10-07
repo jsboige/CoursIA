@@ -71,7 +71,14 @@ _QWEN_NARRATOR_REFERENCE_ID: str = "qwen-voicedesign-narrator-fr-literary"
 # flags ON raises a configuration error, never a silent precedence (same
 # no-silent-swap contract as #15002 acceptance 6).
 _NARRATOR_COSYVOICE3_ROUTING: bool = os.getenv("NARRATOR_COSYVOICE3_ROUTING", "0") == "1"
-_CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr"
+# The "-v2" suffix is not decoration: this sentinel is bumped whenever a
+# change can alter the AUDIO of an already-rendered segment, so the batch
+# cache cannot keep serving a stale MP3 for it (#19692). v2 = the
+# degenerate-render guard. The pre-guard run had written 9 narrator MP3s of
+# ~0.10 s -- one speech token, up to 560 chars/s -- while reporting them as
+# generated; a cached segment never enters _synthesize_narrator_cosyvoice3,
+# so no guard placed there can ever see them.
+_CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr-v2"
 
 # Engine -> reference_id sentinel. The narrator cache is keyed on it
 # (#19692): an MP3 rendered by one engine is never served for another.
@@ -1044,6 +1051,44 @@ class NarratorCosyVoice3Unavailable(RuntimeError):
 _CV3_MAX_CHUNK_CHARS = 280
 _CV3_PAUSE_S = 0.25  # silence between chunks
 
+# Degenerate-render guard (#19692). CosyVoice3 can return from
+# `inference_zero_shot` having emitted a single speech token: the caller gets
+# a well-formed WAV of exactly 1/25 s -- CosyVoice's own `token_hop_len` --
+# with no error at all. Slightly longer inputs crash instead, in the f0
+# predictor, because the mel is shorter than its first conv1d kernel. The two
+# faces are ONE event, so a duration floor catches both and a re-roll clears
+# both.
+#
+# Measured on the run-5 corpus (2026-10-07): the slowest 5% of the 257
+# legitimate narrator segments run at 15.4 chars/s (median 20.1), while the 9
+# silently degenerate ones ran at 108-560 chars/s -- one of them 57 chars in
+# 0.10 s. A 40 chars/s floor sits 2.6x under the slowest legitimate segment
+# and 2.7x over the fastest degenerate one; the absolute term keeps a
+# two-character chunk from being judged by a ratio alone.
+#
+# The degeneracy is a function of (text, SEED), not of the text: across 3
+# failing texts x 5 alternate seeds, 17 of 18 renders came back at a
+# plausible duration for the same text. Hence a re-roll rather than a text
+# transformation -- and note the corollary, that no chunking rule could have
+# fixed it, since the failing texts spanned 1 to 7 tokens while a 7-token
+# input failed and a 4-token one succeeded.
+#
+# NOT transferable to the cache path: these floors are WAV durations, and an
+# MP3 carries ~0.1 s of tag and final-frame padding, so the same check applied
+# to a cached MP3 would re-render a legitimately short "--Non." on every run.
+_CV3_MIN_CHARS_PER_SEC = 40.0
+_CV3_MIN_ABS_S = 0.20
+# Five, not one: an alternate seed is not a guaranteed good seed. Measured
+# over 8 texts x 6 seeds, seed 7 degenerated on a text that seed 42 rendered
+# fine, and seed 43 on another -- so every attempt has to be checked against
+# the floor rather than the first re-roll trusted. At ~5% per-attempt
+# degeneracy off the unlucky seed, five attempts leave ~3e-7 per chunk, and a
+# healthy chunk still leaves the loop on its first pass.
+_CV3_RENDER_ATTEMPTS = 5
+# attempt 0 reproduces the pre-guard seed exactly, so a healthy chunk renders
+# bit-identically and only a degenerate one is perturbed.
+_CV3_RETRY_SEED_STRIDE = 104_729  # prime, unrelated to seed + seg_index
+
 # CosyVoice3 AutoModel: ~3.4 GB VRAM, tens of seconds to load — one instance
 # per process, not per segment.
 _CV3_MODEL_CACHE: dict[str, object] = {}
@@ -1130,6 +1175,16 @@ def _chunk_narration(text: str, max_chars: int = _CV3_MAX_CHUNK_CHARS) -> list[s
     return chunks
 
 
+def _cv3_min_expected_s(text: str) -> float:
+    """Shortest audio that could plausibly hold `text` (#19692).
+
+    A render below this floor is CosyVoice3's single-token degenerate output,
+    not fast speech -- see _CV3_MIN_CHARS_PER_SEC for the measurement that
+    places it 2.6x under the slowest legitimate narrator segment.
+    """
+    return max(_CV3_MIN_ABS_S, len(text) / _CV3_MIN_CHARS_PER_SEC)
+
+
 def _synthesize_narrator_cosyvoice3(
     seg: AnnotatedSegment,
     fishaudio_text: str,
@@ -1173,11 +1228,51 @@ def _synthesize_narrator_cosyvoice3(
 
     t0 = time.time()
     wavs = []
+    attempts = 0
     for i, chunk in enumerate(chunks):
-        torch.manual_seed(seed + i)
-        gen = model.inference_zero_shot(chunk, prompt_text, str(asset_wav), stream=False)
-        parts = [j["tts_speech"] for j in gen]
-        wavs.append(torch.cat(parts, dim=-1) if len(parts) > 1 else parts[0])
+        floor_s = _cv3_min_expected_s(chunk)
+        wav = None
+        last_dur = 0.0
+        last_exc: Exception | None = None
+        for attempt in range(_CV3_RENDER_ATTEMPTS):
+            attempts += 1
+            # attempt 0 keeps the pre-guard seed, so a healthy chunk is
+            # unchanged and only a degenerate one is perturbed.
+            torch.manual_seed(seed + i + attempt * _CV3_RETRY_SEED_STRIDE)
+            try:
+                gen = model.inference_zero_shot(
+                    chunk, prompt_text, str(asset_wav), stream=False
+                )
+                parts = [j["tts_speech"] for j in gen]
+                candidate = torch.cat(parts, dim=-1) if len(parts) > 1 else parts[0]
+            except Exception as exc:  # noqa: BLE001
+                # The crash and the silent 0.04 s are the same event: too few
+                # speech tokens. Here the mel was short enough to break the f0
+                # predictor's conv1d before anything was yielded, so it is the
+                # same re-roll that answers it.
+                last_exc, last_dur = exc, 0.0
+            else:
+                last_dur = candidate.shape[-1] / sr
+                if last_dur >= floor_s:
+                    wav = candidate
+                    break
+            logger.warning(
+                "[CV3] seg %s chunk %d/%d attempt %d/%d: degenerate render "
+                "(%.2fs for %d chars, floor %.2fs%s) - re-rolling seed",
+                seg.seg_index, i + 1, len(chunks), attempt + 1,
+                _CV3_RENDER_ATTEMPTS, last_dur, len(chunk), floor_s,
+                f", {type(last_exc).__name__}" if last_exc else "",
+            )
+        if wav is None:
+            # Hard failure, never a silent short MP3: the run counts it in
+            # Failed, which is honest, where a 0.10 s file is not.
+            raise NarratorCosyVoice3Unavailable(
+                f"seg {seg.seg_index}: chunk {i + 1}/{len(chunks)} still "
+                f"degenerate after {_CV3_RENDER_ATTEMPTS} attempts (last "
+                f"{last_dur:.2f}s for {len(chunk)} chars, floor "
+                f"{floor_s:.2f}s): {chunk[:60]!r}"
+            ) from last_exc
+        wavs.append(wav)
     elapsed = time.time() - t0
 
     pause = torch.zeros(1, int(_CV3_PAUSE_S * sr))
@@ -1221,7 +1316,7 @@ def _synthesize_narrator_cosyvoice3(
         duration_s=duration,
         seed=seed,
         status="generated",
-        attempts=1,
+        attempts=attempts,
         text_hash=text_hash,
     )
 

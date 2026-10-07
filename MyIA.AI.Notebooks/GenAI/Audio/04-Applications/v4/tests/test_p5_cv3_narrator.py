@@ -158,6 +158,196 @@ def test_synthesize_narrator_cv3_raises_on_empty_input():
     raise AssertionError("NarratorCosyVoice3Unavailable not raised on empty input")
 
 
+# Durations measured 2026-10-07 by bisect 2/3 (WAV, not MP3) on a free GPU.
+# The same text renders 0.04 s at seed 42 -- one speech token, CosyVoice's
+# token_hop_len -- and a plausible duration at other seeds; the degeneracy is
+# a function of (text, seed), reproducible bit-for-bit within a process.
+_MEASURED_DEGENERATE = [
+    ("Oui.", 0.04),
+    ("Il marcha.", 0.04),
+    ("C'était un Bordelais.", 0.04),
+    ("C'était un Bordelais", 0.04),  # trailing period is not the trigger
+    ("Il marchait lentement sur le quai désert.", 0.04),
+    ("Il marchait lentement sur le quai désert.", 0.20),  # seed 43
+    ("Le vieux marin regardait.", 0.16),  # seed 7
+]
+_MEASURED_LEGITIMATE = [
+    ("Oui.", 0.36),
+    ("Oui.", 0.64),
+    ("Il marcha.", 0.76),
+    ("Il marcha.", 1.64),
+    ("C'était un Bordelais.", 1.16),
+    ("C'était un Bordelais.", 1.88),
+    ("Il marchait lentement sur le quai désert.", 2.24),
+    ("Le vieux marin regardait.", 1.28),
+    ("Le vieux marin regardait.", 2.12),
+    ("Le vieux marin regardait la mer sans rien dire.", 2.56),
+]
+
+
+def test_cv3_floor_separates_measured_degenerate_from_legitimate():
+    """The floor must accept every measured legitimate render and reject every
+    measured degenerate one -- both columns come from the same sweep, so the
+    threshold cannot be tuned without contradicting the data."""
+    from v4.p5_tts import _cv3_min_expected_s
+
+    for text, dur in _MEASURED_DEGENERATE:
+        floor = _cv3_min_expected_s(text)
+        assert dur < floor, f"{text!r} at {dur}s must be rejected (floor {floor:.2f}s)"
+    for text, dur in _MEASURED_LEGITIMATE:
+        floor = _cv3_min_expected_s(text)
+        assert dur >= floor, f"{text!r} at {dur}s must be accepted (floor {floor:.2f}s)"
+
+
+def test_cv3_floor_keeps_an_absolute_term():
+    """A ratio alone would let a tiny chunk through on 0.04 s of audio."""
+    from v4.p5_tts import _CV3_MIN_ABS_S, _cv3_min_expected_s
+
+    assert _cv3_min_expected_s("Oui.") == _CV3_MIN_ABS_S
+    assert _cv3_min_expected_s(".") == _CV3_MIN_ABS_S
+    assert _CV3_MIN_ABS_S > 0.04, "the absolute floor must reject one speech token"
+
+
+class _FakeTensor:
+    def __init__(self, n: int):
+        self.n = n
+        self.shape = (1, n)
+
+
+class _FakeTorch:
+    """Just enough torch for the CV3 branch: the guard, the pause, the concat."""
+
+    def __init__(self):
+        self.seeds: list[int] = []
+
+    def manual_seed(self, value: int):
+        self.seeds.append(value)
+
+    def cat(self, tensors, dim=-1):
+        return _FakeTensor(sum(t.n for t in tensors))
+
+    def zeros(self, *shape):
+        return _FakeTensor(shape[-1])
+
+
+class _FakeModel:
+    """Yields a WAV of a scripted duration per call; "CRASH" raises the
+    RuntimeError the f0 predictor produces when the mel is too short."""
+
+    sample_rate = 24000
+
+    def __init__(self, script):
+        self.script = list(script)
+        self.calls: list[str] = []
+
+    def inference_zero_shot(self, text, prompt_text, wav_path, stream=False):
+        dur = self.script[len(self.calls)]
+        self.calls.append(text)
+        if dur == "CRASH":
+            raise RuntimeError(
+                "Calculated padded input size per channel: (3). Kernel size: (4)."
+            )
+        yield {"tts_speech": _FakeTensor(int(dur * self.sample_rate))}
+
+
+def _install_fake_runtime(monkeypatch, model):
+    """Wire the fake torch/torchaudio/pydub and the stub client, so the retry
+    loop is exercised hermetically -- no GPU, no CosyVoice install."""
+    import sys
+    import types
+
+    fake_torch = _FakeTorch()
+    monkeypatch.setitem(sys.modules, "torch", fake_torch)
+
+    torchaudio = types.ModuleType("torchaudio")
+    torchaudio.save = lambda buf, wav, sr, format=None: buf.write(b"WAV")
+    monkeypatch.setitem(sys.modules, "torchaudio", torchaudio)
+
+    pydub = types.ModuleType("pydub")
+
+    class _FakeAudio:
+        @staticmethod
+        def from_file(buf, format=None):
+            return _FakeAudio()
+
+        def export(self, buf, format=None, bitrate=None):
+            buf.write(b"MP3")
+
+    pydub.AudioSegment = _FakeAudio
+    monkeypatch.setitem(sys.modules, "pydub", pydub)
+
+    client = types.SimpleNamespace(
+        _bootstrap_paths=lambda: (None, None, "asset.wav"),
+        PROMPT_TEXT_ZH="prompt",
+        ENDOFPROMPT="<|endofprompt|>",
+    )
+    monkeypatch.setattr("v4.p5_tts._get_cv3_client", lambda: client)
+    monkeypatch.setattr("v4.p5_tts._load_cv3_model", lambda: model)
+    monkeypatch.setattr("v4.p5_tts.audio_duration_mp3", lambda b: 1.5)
+    return fake_torch
+
+
+def test_cv3_re_rolls_a_degenerate_render(tmp_path, monkeypatch):
+    """A 0.04 s render is retried with a different seed instead of being
+    returned as generated -- and the retry is the same text, same engine."""
+    from v4.p5_tts import _synthesize_narrator_cosyvoice3
+
+    model = _FakeModel([0.04, 0.04, 1.5])  # two degenerate, then a real one
+    fake_torch = _install_fake_runtime(monkeypatch, model)
+    seg = _build_seg(speaker="narrateur", text="Il marcha.")
+    out = _synthesize_narrator_cosyvoice3(
+        seg=seg, fishaudio_text="Il marcha.",
+        mp3_path=tmp_path / "seg_0001_narrateur.mp3", seed=42, text_hash="h",
+    )
+    assert out.status == "generated"
+    assert out.attempts == 3, "attempts must report the real re-roll count"
+    assert len(model.calls) == 3
+    assert len(set(model.calls)) == 1, "a re-roll must not rewrite the text"
+    # attempt 0 keeps the pre-guard seed; each retry moves to a fresh one.
+    assert fake_torch.seeds == [42, 42 + 104_729, 42 + 2 * 104_729]
+
+
+def test_cv3_re_rolls_the_crash_face_of_the_same_event(tmp_path, monkeypatch):
+    """The conv1d RuntimeError and the silent 0.04 s are one event with two
+    faces, so the re-roll answers the crash too instead of failing the run."""
+    from v4.p5_tts import _synthesize_narrator_cosyvoice3
+
+    model = _FakeModel(["CRASH", 1.8])
+    _install_fake_runtime(monkeypatch, model)
+    seg = _build_seg(speaker="narrateur", text="Il marcha.")
+    out = _synthesize_narrator_cosyvoice3(
+        seg=seg, fishaudio_text="Il marcha.",
+        mp3_path=tmp_path / "seg_0001_narrateur.mp3", seed=42, text_hash="h",
+    )
+    assert out.status == "generated"
+    assert out.attempts == 2
+
+
+def test_cv3_fails_loudly_when_every_attempt_degenerates(tmp_path, monkeypatch):
+    """Never a silent short MP3: an unresolvable chunk raises, so the run
+    counts it in Failed rather than shipping 0.10 s of nothing."""
+    from v4.p5_tts import (
+        _CV3_RENDER_ATTEMPTS, NarratorCosyVoice3Unavailable,
+        _synthesize_narrator_cosyvoice3,
+    )
+
+    model = _FakeModel([0.04] * _CV3_RENDER_ATTEMPTS)
+    _install_fake_runtime(monkeypatch, model)
+    mp3 = tmp_path / "seg_0001_narrateur.mp3"
+    seg = _build_seg(speaker="narrateur", text="Il marcha.")
+    try:
+        _synthesize_narrator_cosyvoice3(
+            seg=seg, fishaudio_text="Il marcha.",
+            mp3_path=mp3, seed=42, text_hash="h",
+        )
+    except NarratorCosyVoice3Unavailable as exc:
+        assert "degenerate" in str(exc)
+        assert len(model.calls) == _CV3_RENDER_ATTEMPTS
+        assert not mp3.exists(), "a failed render must not leave a partial MP3"
+        return
+    raise AssertionError("an all-degenerate chunk must raise, not return")
+
+
 def test_narrator_cache_is_engine_aware(tmp_path, monkeypatch):
     """Flipping NARRATOR_COSYVOICE3_ROUTING must not serve the previous
     engine's MP3 from the batch cache: the narrator cache keys on the
