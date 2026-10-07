@@ -1049,13 +1049,37 @@ _CV3_PAUSE_S = 0.25  # silence between chunks
 _CV3_MODEL_CACHE: dict[str, object] = {}
 
 
+def _get_cv3_client():
+    """Return the bakeoff CosyVoice3 client module, loaded once.
+
+    The module is loaded DIRECTLY from its file: bakeoff_large/__init__.py
+    is markdown prose (documentation), not valid Python — a package import
+    of prosody_lab.bakeoff_large crashes on it with a SyntaxError. Same
+    organ-first reuse as the A0C bench (#17586), which dodged the same file
+    by importing clients.cosyvoice3 off sys.path.
+    """
+    if "client" not in _CV3_MODEL_CACHE:
+        import importlib.util
+
+        cv3_path = (
+            Path(__file__).parent
+            / "prosody_lab"
+            / "bakeoff_large"
+            / "clients"
+            / "cosyvoice3.py"
+        )
+        spec = importlib.util.spec_from_file_location("cv3_bakeoff_client", cv3_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _CV3_MODEL_CACHE["client"] = module
+    return _CV3_MODEL_CACHE["client"]
+
+
 def _load_cv3_model():
     """Load the CosyVoice3 AutoModel once per process (organ-first reuse of
     the prosody_lab bakeoff client, measured on #17586)."""
     if "model" not in _CV3_MODEL_CACHE:
-        from .prosody_lab.bakeoff_large.clients import cosyvoice3 as cv3_client
-
-        _CV3_MODEL_CACHE["model"] = cv3_client.load_model()
+        _CV3_MODEL_CACHE["model"] = _get_cv3_client().load_model()
     return _CV3_MODEL_CACHE["model"]
 
 
@@ -1136,6 +1160,8 @@ def _synthesize_narrator_cosyvoice3(
     # Imported here (not at module top) so hermetic tests need neither torch
     # nor the CosyVoice runtime — the empty-input guard above runs torch-free.
     import time
+
+    cv3_client = _get_cv3_client()
 
     import torch
 
