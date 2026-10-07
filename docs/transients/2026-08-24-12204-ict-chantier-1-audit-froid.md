@@ -1,3 +1,5 @@
+> RAPPORT — 2026-08-24 — chantier 1 ICT, tranche audit-froid (ledger #12204) — figé
+
 # Ledger #12204 — Chantier 1 ICT, tranche audit-froid : trois labels par opération, quatre entrées tombées
 
 **Statut** : tranche de l'EPIC #12204 « Chantier 1 — La table des opérations ». Provisionnée par le steering ai-01 du 2026-08-22T20:54Z (« audit froid : faire tomber les entrées qui ne survivent pas »), protocole fixé par la revue extérieure du 2026-08-22 en commentaire d'issue.
@@ -19,14 +21,14 @@ Une opération `FIRSTHAND / 1 attestation / exhaustif` et une opération `RAPPOR
 
 ## La table labellisée — 14 opérations
 
-Labels établis à partir : (a) des vérifications A3 firsthand ([`12204-ict-chantier-1-a3.md`](12204-ict-chantier-1-a3.md), po-2026) ; (b) des mesures de ce cycle (§Preuves ci-dessous) ; (c) du corps de la revue extérieure pour les quatre contestées. `RAPPORTE` partout où ce cycle n'a pas relu la source firsthand — c'est le sens même du label.
+Labels établis à partir : (a) des vérifications A3 firsthand ([`12204-ict-chantier-1-a3.md`](../ledgers/12204-ict-chantier-1-a3.md), po-2026) ; (b) des mesures de ce cycle (§Preuves ci-dessous) ; (c) du corps de la revue extérieure pour les quatre contestées. `RAPPORTE` partout où ce cycle n'a pas relu la source firsthand — c'est le sens même du label.
 
 | # | Opération | provenance | attestation | force | Verdict |
 |---|---|---|---|---|---|
-| 1 | Recoordonner | FIRSTHAND (A2, #13956) | 2+ (Sudoku-13, `conway_lean`, MGS-21) — les trois tiennent | empirique avec cause mesurée + Lean-formel kernel-décidable | **TABLE** — confirmée. Dette reformulée : les trois attestations sont des post-mortems — une théorie du « bon » changement choisirait la représentation avant de payer l'échec ([A2](12204-ict-chantier-1-a2.md)) |
+| 1 | Recoordonner | FIRSTHAND (A2, #13956) | 2+ (Sudoku-13, `conway_lean`, MGS-21) — les trois tiennent | empirique avec cause mesurée + Lean-formel kernel-décidable | **TABLE** — confirmée. Dette reformulée : les trois attestations sont des post-mortems — une théorie du « bon » changement choisirait la représentation avant de payer l'échec ([A2](../ledgers/12204-ict-chantier-1-a2.md)) |
 | 2 | Abstraire à dette bornée | FIRSTHAND (réconciliation 04/10) | **2 candidates** (Kroer-Sandholm externe + GT-19 #12267 locale mesurée, enregistrée §Tranche réconciliation 04/10) | empirique-notebook (source théorique externe) | en constitution — 2ᵉ attestation candidate enregistrée ; promotion à statuer par A7 (indépendance par le stimulus à trancher, précédent op 3 c.1308 : GT-19 cite Kroer-Sandholm et naît du même voyage de digestion #12229) |
 | 3 | Quotienter / fibrer | FIRSTHAND (A3 + ce cycle) | **1 locale** (Lean-21b) | empirique-notebook | **⬇ FILE D'ATTENTE** — voir §Tombée 4 |
-| 4 | Décomposer localement | FIRSTHAND (A4, #14453) | 2+ recensées : Hashlife (Lean-formel, non-jouet) + ICT-15d (empirique jouet, partition avouée) + EPITA (empirique, identification restaurée) | Lean-formel + empirique | **TABLE** — confirmée. Dette reformulée en bipartition : la preuve décide des bords côté Hashlife (`padCenter2_margin_ge_jumpReach`), l'expérimentateur les choisit sans théorie côté ICT-15d ([A4](12204-ict-chantier-1-a4.md)) |
+| 4 | Décomposer localement | FIRSTHAND (A4, #14453) | 2+ recensées : Hashlife (Lean-formel, non-jouet) + ICT-15d (empirique jouet, partition avouée) + EPITA (empirique, identification restaurée) | Lean-formel + empirique | **TABLE** — confirmée. Dette reformulée en bipartition : la preuve décide des bords côté Hashlife (`padCenter2_margin_ge_jumpReach`), l'expérimentateur les choisit sans théorie côté ICT-15d ([A4](../ledgers/12204-ict-chantier-1-a4.md)) |
 | 5 | Recoller | RAPPORTE | **1 + 1 lecture** | Lean-formel (de Finetti) | **⬇ FILE D'ATTENTE** — voir §Tombée 3 |
 | 6 | Réparer localement sous garantie | FIRSTHAND (réconciliation 04/10) | **2** (Sandholm externe + Search-03f #19013 MERGED 2026-10-04, convention op 7 remplie — comptée dès merge) | empirique-notebook, substrat indépendant | en constitution — 2ᵉ attestation livrée (LPA\*, 0 mention de Sandholm : indépendance par construction) ; promotion TABLE à statuer par la revue (§Tranche réconciliation 04/10) |
 | 7 | Engendrer un témoin | FIRSTHAND (ce cycle) | 2+ (Sudoku-13, `conway_lean`, GT-16b #12259) | empirique + Lean-formel | **TABLE** — la mieux attestée du dépôt. GT-25 #12395 (translateur Life) renforcera la ligne quand elle quittera la file CI — non comptée tant qu'OPEN |
@@ -156,7 +158,7 @@ Motif : pattern #11900 inversé — ce n'est pas le body qui a vieilli, c'est le
 
 ## Références
 
-- EPIC : [#12204](https://github.com/jsboige/CoursIA/issues/12204) · tranches : A3 ([ledger](12204-ict-chantier-1-a3.md), PR #12293) · audit-froid (ce fichier)
+- EPIC : [#12204](https://github.com/jsboige/CoursIA/issues/12204) · tranches : A3 ([ledger](../ledgers/12204-ict-chantier-1-a3.md), PR #12293) · audit-froid (ce fichier)
 - Revue extérieure (protocole + 4 contestations) : commentaire #12204 du 2026-08-22
 - Steering : ai-01 2026-08-22T20:54Z ([DISPATCH→inbox] dashboard workspace-CoursIA)
-- Précédent de format : [`3801-sota-axe2.md`](3801-sota-axe2.md)
+- Précédent de format : [`3801-sota-axe2.md`](../ledgers/3801-sota-axe2.md)
