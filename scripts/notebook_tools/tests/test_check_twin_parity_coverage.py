@@ -11,7 +11,7 @@ single naming convention (`Foo-Csharp` -> `Foo`) and confidently reported
 "1 gap, 29 C#-only". The repo actually uses THREE conventions, and the other two
 were silently misfiled as C#-only:
 
-    Tweety-10-MLN-Csharp      <-> Tweety-10-MLN            suffix dropped
+    Tweety-10-MLN-CSharp      <-> Tweety-10-MLN-Python            suffix dropped
     Sudoku-07-Norvig-CSharp    <-> Sudoku-07-Norvig-Python   suffix substituted
     SW-10-CSharp-RDFStar      <-> SW-10-Python-RDFStar     medial token
 
@@ -36,8 +36,8 @@ SW = "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
 
 UNIVERSE = {
     # convention 1 -- suffix dropped
-    f"{TW}/Tweety-10-MLN-Csharp.ipynb",
-    f"{TW}/Tweety-10-MLN.ipynb",
+    f"{TW}/Tweety-10-MLN-CSharp.ipynb",
+    f"{TW}/Tweety-10-MLN-Python.ipynb",
     # convention 2 -- suffix substituted
     f"{SUD}/Sudoku-07-Norvig-CSharp.ipynb",
     f"{SUD}/Sudoku-07-Norvig-Python.ipynb",
@@ -55,8 +55,8 @@ UNIVERSE = {
 
 
 def test_convention_suffix_dropped():
-    assert python_twin_candidates(f"{TW}/Tweety-10-MLN-Csharp.ipynb", UNIVERSE) == [
-        f"{TW}/Tweety-10-MLN.ipynb"
+    assert python_twin_candidates(f"{TW}/Tweety-10-MLN-CSharp.ipynb", UNIVERSE) == [
+        f"{TW}/Tweety-10-MLN-Python.ipynb"
     ]
 
 

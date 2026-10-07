@@ -20,6 +20,60 @@ LOCK="$BASE/pool.lock"
 TOOLCACHE_BASE="$BASE/toolcache"
 export RUNNER_TOOL_CACHE="${RUNNER_TOOL_CACHE:-$TOOLCACHE_BASE/default}"
 mkdir -p "$BASE"
+
+# --- Mint du registration token, et sonde testable (POOL_PROBE) --------------
+# Ce bloc vit AVANT la redirection vers pool.log et AVANT le verrou de singleton :
+# une sonde lancee pendant que le pool tourne serait sinon rejetee par
+# « pool deja actif » avant d'avoir exerce ce qu'elle mesure. La sonde n'ouvre
+# aucun slot et n'ecrit rien hors de son propre stdout/stderr.
+MINT_ATTEMPTS="${MINT_ATTEMPTS:-4}"
+
+# mint_token — registration token, avec discrimination transitoire / terminal.
+# Porte au pool NATIF la doctrine que le superviseur Docker a recue par #15154
+# (#16086 pour la classification, #19597 pour le compte nomme) : 4xx hors 408 =
+# terminal, reseau / 5xx = retry. Le pool natif ne l'avait jamais recue.
+#
+# Mesure du 2026-10-07 sur pool.log (310 echecs depuis le 28/09, tous slots) :
+#   - 305 precedes d'un `UtilAcceptVsock:271: accept4 failed 110` — ETIMEDOUT du
+#     canal d'interop WSL -> gh.exe, transitoire par nature ;
+#   - 5 restants : reponses tronquees (`unexpected EOF`, `unexpected end of JSON
+#     input`) et un crash de gh.exe cote Windows — transitoires aussi.
+# AUCUN n'etait structurel. La forme mono-coup rendait pourtant le slot au tick
+# suivant du superviseur (30 s) a chaque hoquet : 247 cycles de slot perdus dans
+# la seule fenetre 05/10 23h -> 06/10 02h — et le log ne nommait pas la cause.
+mint_token() {
+  local attempt=1 out tok cause
+  while :; do
+    out="$(gh.exe api -X POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>&1)"
+    # Un registration token est une ligne alphanumerique d'au moins 20 caracteres ;
+    # toute autre sortie est un message d'erreur (ou du vide — interop muette).
+    tok="$(printf '%s' "$out" | tr -d '\r' | grep -m1 -oE '^[A-Za-z0-9]{20,}$')"
+    if [ -n "$tok" ]; then printf '%s' "$tok"; return 0; fi
+    cause="$(printf '%s' "$out" | tr '\n' ' ' | cut -c1-200)"
+    [ -n "$cause" ] || cause="<sortie vide : interop WSL->gh.exe muette>"
+    # Cause structurelle : le compte n'a pas le droit sur les endpoints runners.
+    # Ni le retry ni l'attente ne la levent (#15154) — terminal immediat.
+    if printf '%s' "$out" | grep -qE 'HTTP 40[134]|must have repository|Resource not accessible|Bad credentials'; then
+      echo "$(date -Is) mint token TERMINAL (droits du compte) — $cause"
+      return 1
+    fi
+    if [ "$attempt" -ge "$MINT_ATTEMPTS" ]; then
+      echo "$(date -Is) mint token epuise apres $MINT_ATTEMPTS tentatives (transitoire) — $cause"
+      return 1
+    fi
+    echo "$(date -Is) mint token transitoire (tentative $attempt/$MINT_ATTEMPTS) — $cause ; essai suivant dans $((attempt * 2))s"
+    sleep $((attempt * 2))
+    attempt=$((attempt + 1))
+  done
+}
+
+if [ -n "${POOL_PROBE:-}" ]; then
+  case "$POOL_PROBE" in
+    mint-token) mint_token; rc=$?; echo "$(date -Is) PROBE mint-token rc=$rc"; exit $rc ;;
+    *) echo "$(date -Is) PROBE inconnue: $POOL_PROBE"; exit 2 ;;
+  esac
+fi
+
 exec >>"$BASE/pool.log" 2>&1
 
 # Singleton: la tâche planifiee a RestartCount=3 — jamais deux superviseurs
@@ -42,7 +96,13 @@ export PIP_BREAK_SYSTEM_PACKAGES=1
 # et python y sont poses).
 export PATH="$HOME/.local/bin:$PATH"
 
-mint_token() { gh.exe api -X POST "repos/$REPO/actions/runners/registration-token" --jq .token; }
+# Garde anti-stall HTTPS (#18225, 2026-09-28) : un fetch stallé (zero octet, connexion
+# etablie puis muette — discriminant du user sur run 36420237212) pendait jusqu'au
+# plafond timeout-minutes du job. git abort des que le debit tombe sous 1 KiB/s pendant
+# 90 s : le job echoue en ~2 min (rejouable sur slot chaud) au lieu de manger 10 min.
+# Miroir en ~/.gitconfig (pose le 28/09) — l'env reste le porteur durable du contrat.
+export GIT_HTTP_LOW_SPEED_LIMIT=1024
+export GIT_HTTP_LOW_SPEED_TIME=90
 
 # Contrat de l'image, volet BINAIRES. Le pool ne telecharge PAS `gh` (l'image l'epingle par SHA-256 :
 # un telechargement non verifie serait un maillon de supply chain pour rien) — il cree le seul lien
@@ -91,23 +151,75 @@ repatch_toolcache_pythons() {
   done < <(find "$TOOLCACHE_BASE" -path '*/Python/3.11.16/x64/bin/python3.11' -type f -print0 2>/dev/null)
 }
 
+# Workspace persistant par slot (#18225, 2026-09-28) : le rm -rf integral par spawn
+# faisait de CHAQUE job un slot froid -> checkout@v4 rejouait un fetch complet du depot
+# (pack mesure : 5.49 GiB) ; les plafonds timeout-minutes calibres sur la baseline
+# chaude d'ai-01 (2-3 s, run 36423208982 : clean -ffdx + fetch incremental) devenaient
+# atteignables par tout ralentissement, et un stall HTTPS les garantissait (issue
+# #18225). En preservant slot-N/_work d'un job au suivant, le checkout retrouve le
+# regime chaud : il ne re-telecharge que le delta. ~7 GiB par slot stables (8 x 7 =
+# 56 GiB, 676 GiB libres). Un workspace corrompu s'auto-guérit : checkout retombe
+# en "Deleting the contents" + re-clone complet (une fois, puis re-chauffe).
+keep_work() { # $1 = slot — parque _work hors de l'arbre qu'on va detruire
+  local dir="$BASE/slot-$1" keep="$BASE/work-$1.keep"
+  [ -d "$dir/_work" ] || return 0
+  rm -rf "$keep"
+  mv "$dir/_work" "$keep" || { echo "$(date -Is) slot$1: conservation _work echouee"; return 1; }
+}
+# Quarantaine des _work endommages (#14801, mesures 28/09). Un job qui fait
+# actions/checkout@v4 AVEC sparse-checkout laisse des bits skip-worktree et des
+# fichiers absents dans le depot LOCAL du slot ; le _work chaud les transporte au
+# job suivant. Deux signatures mesurees : (a) bits > 0 avec git status PROPRE
+# (l'arbre se declare sain, le checkout ne nettoie jamais, l'auto-guerison
+# supposee ci-dessus ne se declenche pas) ; (b) pire : bits = 0, fichiers absents
+# et statut propre (sparse-checkout disable a efface les bits SANS re-materialiser
+# les blobs du clone partiel). Effacer les bits ne suffit donc pas : on VALIDE
+# l'arbre parque, et tout arbre endommage est ecarte -- le slot repart froid,
+# seul etat de confiance. Un arbre sain reste chaud (objectif #18225 preserve).
+validate_keep() { # $1 = keep dir — rc=0 si l'arbre est materialise et coherent
+  local repo="$1/CoursIA/CoursIA"
+  [ -d "$repo/.git" ] || return 1
+  git -C "$repo" rev-parse --git-dir >/dev/null 2>&1 || return 1
+  # (a) residu skip-worktree
+  git -C "$repo" ls-files -v 2>/dev/null | grep -q '^S' && return 1
+  # (b) index menteur : le refresh stat rend visibles les fichiers trackes absents
+  git -C "$repo" update-index --really-refresh -q >/dev/null 2>&1
+  [ -n "$(git -C "$repo" status --porcelain 2>/dev/null)" ] && return 1
+  return 0
+}
+
+restore_work() { # $1 = slot — remet le _work parque dans le slot frais, s'il est sain
+  local dir="$BASE/slot-$1" keep="$BASE/work-$1.keep"
+  [ -d "$keep" ] || return 0
+  [ -d "$dir/_work" ] && { echo "$(date -Is) slot$1: _work inattendu deja present, conserve ecarte"; rm -rf "$keep"; return 0; }
+  if validate_keep "$keep"; then
+    mv "$keep" "$dir/_work" && echo "$(date -Is) slot$1: _work restaure (regime chaud, valide)"
+  else
+    echo "$(date -Is) slot$1: _work ecarte (endommage) -> slot froid"
+    rm -rf "$keep"
+  fi
+}
+
 spawn_slot() { # $1 = slot — bloque jusqu'a la fin du job (ephemere = 1 job)
   local slot="$1"
   local dir="$BASE/slot-$slot"
   local tok
   tok="$(mint_token)"
   if [ ${#tok} -lt 20 ]; then echo "$(date -Is) slot$slot: mint token echoue"; return 1; fi
+  keep_work "$slot"
   rm -rf "$dir"; mkdir -p "$dir"
   tar -xzf "$BUNDLE" -C "$dir" || { echo "$(date -Is) slot$slot: extraction echouee"; return 1; }
   # Isolation par slot (cf. TOOLCACHE_BASE) : heritee par run.sh -> Runner.Worker ->
   # setup-python, meme canal que PIP_BREAK_SYSTEM_PACKAGES (mesure /proc/<pid>/environ).
   RUNNER_TOOL_CACHE="$TOOLCACHE_BASE/slot-$slot"; export RUNNER_TOOL_CACHE
   mkdir -p "$RUNNER_TOOL_CACHE"
+  restore_work "$slot"
   ( cd "$dir" && \
     ./config.sh --url "https://github.com/$REPO" --token "$tok" \
       --labels "coursia-ephemeral,coursia-linux" --ephemeral \
       --name "myia-po-2026-wsl-$slot" --unattended --replace \
       && ./run.sh --once ) || echo "$(date -Is) slot$slot: runner termine (rc=$?)"
+  keep_work "$slot"
   rm -rf "$dir"
 }
 

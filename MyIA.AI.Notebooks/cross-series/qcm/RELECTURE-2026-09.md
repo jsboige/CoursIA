@@ -91,7 +91,16 @@ l'option dupliquée se comporte comme un piège (un exemplaire est « correct »
 
 Depuis cette relecture, `moodle_bank.py check` signale ces doublons en `ATTENTION` (sans
 faire échouer la validation — la banque reste fidèle à la source) :
-`test_check_flags_source_duplicate_options_as_attention` couvre la détection.
+`test_check_flags_duplicate_options_as_attention` couvre la détection.
+
+**Rectification du 6 octobre 2026 — ia2-008 n'était pas un défaut de la source.** La sonde
+ci-dessus comparait le texte des réponses sans leur mise en forme. Or l'export porte les
+puissances dans des `<span style="…vertical-align:super">` : les deux `O(db)` sont en réalité
+`O(d^b)` (faux) et `O(db)` (juste), les deux `O(bm)` sont `O(b^m)` et `O(bm)`. C'est le
+convertisseur qui aplatissait les exposants, et fabriquait ainsi le doublon. Il les rend
+désormais en notation `^` (`O(b^d)`, `O(b^(d/2))`), ce qui rétablit aussi les options de la
+question sur l'exploration bidirectionnelle (deux occurrences dans ia-2). La clé d'origine de
+ia2-008, `O(db)`, est la bonne. ia5-002, lui, est bien un doublon de la source.
 
 ## Clés mathématiques recalculées
 
@@ -169,9 +178,29 @@ lecture déléguée (extrait et argument verbatim de cette passe).
   partage des pirates (=97), stratégie mixte (1/6–1/3), arbre (=2 feuilles), LeNet-5,
   ResNet (3.57 %).
 
-## Arbitrage attendu
+## Arbitrage du mainteneur — 6 octobre 2026
 
-Les constats « contestables » ne sont pas corrigés ici : corriger une clé ou dédoublonner
-une option est une décision de contenu qui appartient au mainteneur (et, pour les doublons,
-se corrige le plus naturellement **dans la source Moodle** avant toute ré-export). Ce
-registre sert de base à cet arbitrage.
+Le mainteneur a tranché (#18285) : les clés prouvées fausses sont corrigées **dans la
+banque**, chacune avec une note dans son `explication`, et l'occurrence 2020 du doublon est
+gardée. Les décisions vivent dans le convertisseur (`RETIRED`, `KEY_CORRECTIONS`), comme la
+politique de publication des figures : une ré-conversion les réapplique, et une correction
+qui ne trouve plus son option fait échouer la conversion au lieu de passer en silence.
+
+| id | décision | avant → après |
+|---|---|---|
+| ia2-008 | défaut du convertisseur (exposants), cf rectification ci-dessus | options rétablies, clé `O(db)` inchangée |
+| ia2-010 | retirée, doublon de ia2-027 (export 2020, figure embarquée) | la figure Dropbox expirée sort avec elle |
+| ia2-018 | clé corrigée | `2.4` et `3.2` cochées → `2.4` seule |
+| ia2-019 | clé corrigée | `4.7` et `7.7` cochées → `7.7` seule |
+| ia3-015 | clé corrigée | `¬(¬p∧¬q)` cochée équivalente → non cochée |
+| ia3-019 | clé corrigée | `¬(¬p∧¬q)` non cochée → cochée (non équivalente) |
+| ia4-011 | clé corrigée | `62/64` → `59/64` |
+| ia4-018 | option et clé corrigées (la bonne valeur était absente) | `378.92€` → `389.47€` |
+| ia5-002 | second exemplaire de l'option retiré | 8 → 7 options |
+| ia5-007 | clé corrigée | « Arbres de décision » paramétriques → non |
+
+Les identifiants ne sont pas réattribués : ia2-011 et les suivantes gardent le leur, ia2-010
+reste un trou dans la séquence. La banque compte 146 questions.
+
+**Non tranché** : ia1-001 (le jeu de Go « loin d'être résolu », daté dès 2016) et les 23
+coquilles, reproduites fidèlement depuis la source.
