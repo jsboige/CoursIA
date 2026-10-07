@@ -287,10 +287,37 @@ utilisateur** exposée. Documentation extraite (l. 159–163) :
    r, s, root_trials, M, bits_M, curve_calls, identity_calls,
    vertical_calls, split_restarts` (l. 175).
 
-**Vérification numérique au manuscrit** (l. 504) : « *At p = 97, … τ =
-24, s = 33, t = 79, B_n = 43* » — soit `boundary = 24`, `trace = 24`
-(24 est pair), `chi = legendre2(97) = 1` (97 mod 8 = 1), `M = 97+1−24 =
-74`, `e = ?`, `B = 43`. Le code le calcule déterministiquement.
+**Vérification numérique au manuscrit** (l. 504) : la note manuscrite
+cite les valeurs à p = 97, mais l'ordre des variables (τ, s, t, B_n)
+est ambigu dans la note (elle suppose une convention de signe
+implicite). La review Hermes du 06/10 a confronté ces valeurs à la
+sortie réelle `quarter(97)` du code pinned et a relevé une
+incohérence : la prose originale affectait `boundary = 24, B = 43`,
+tandis que le code rend `{'B': 33, 'a': 79, 'U': 43, 'trace': -18,
+'r': 9, 's': 4, ...}` (les variables `B` et `a` sont inversées entre
+la note manuscrite et la sortie).
+
+**Reconciliation c.1152 (REPAIR) :** la note manuscrite l. 504
+elle-même est ambiguë, et la confrontation dépend de la convention
+de signe (`trace = ±(p+1−M)`) que la note ne fixe pas. La vérification
+numérique complète **n'est pas reproductible localement** : le pin
+externe `bbrhuft/Cartier-Miller-…` (cf. PR #19487 body) n'est pas
+accessible publiquement (le repository est privé ou inexistant), et
+la règle F (réparer, jamais contourner) demande `NTL/Sage 10.8` pour
+une re-exécution que l'environnement local n'a pas. **Geste** : ce
+mémo cite la formule `U_p(n) = 4 B_n + (9/4) a_n` (formule (36),
+manuscrit l. 504) et confronte l'algorithme à la formule, pas les
+valeurs numériques à p = 97. La confrontation numérique est une
+**section à exécuter hors-mémo** quand le pin sera accessible (note
+ajoutée à la liste P1+ §10).
+
+**Note critique de relecture** : pour les mémos ultérieurs (P1
+pseudocode C++ #19504, P1 point_count #19499), la note manuscrite
+l. 504 doit être confrontée au code source sur la branche de pin,
+pas recopiée sans vérification. La règle de ce mémo devient
+**toujours citer la formule, confronter l'algorithme, ne JAMAIS
+citer de valeurs numériques manuscrites sans les avoir vérifiées sur
+le code pinned**.
 
 ## 8. Confrontation P0 §4 → implémentation
 
@@ -337,6 +364,14 @@ par rapport à P0 (la cartographie est cohérente).
   par ligne (fait à un niveau de classe, pas instruction-par-instruction).
 - Exécution locale de `test_validation.py` (NTL/Sage 10.8 absent ;
   règle F : installer ou router vers une lane qui a).
+- **Vérification numérique à p = 97** (note manuscrite l. 504) : la
+  note manuscrite est ambiguë sur l'ordre des variables (τ, s, t,
+  B_n) et le pin externe `bbrhuft/Cartier-Miller-…` n'est pas
+  accessible publiquement. **Ce mémo cite la formule `U_p(n) = 4 B_n
+  + (9/4) a_n` et confronte l'algorithme** (l. 173–174) à la
+  formule, **pas les valeurs numériques à p = 97**. C'est une
+  **dette de confrontation numérique** à lever dans un cycle dédié
+  (accès au code source requis) — voir §10 ligne P1 pseudocode C++.
 
 **Risque résiduel** : aucun à ce stade (P1 elliptic_prefix ne touche
 pas le code, ne certifie rien). Risque de Phase suivante = la P1.pilot
@@ -355,6 +390,7 @@ sans dépendance externe** — c'est sa raison d'être en tranche mini.
 | **P1.pilot** | `pilot.py` — orchestration, hash, per-call math data | ~1.5 h | À faire |
 | **P1.point_count** | `point_count.py` — Schoof + BSGS | ~1.5 h | À faire |
 | **P1 confrontation pseudocode ↔ C++** | `upstream/recurrences_ntl.{cpp,h}` + `upstream/hypellfrob.{cpp,h,pyx}` vs manuscrit l. 420–450 | ~2-4 h | À faire |
+| **P1.numeric §7** | Vérification numérique à p = 97 (note manuscrite l. 504 ambiguë) : confrontation `quarter(97)` rendu par code pinned vs valeurs manuscrites. **Nécessite accès au pin externe** (privé/inexistant) ou redéploiement local. | ~30 min | **BLOQUANT LEVÉ** c.1152 — section réécrite pour ne citer que la formule |
 | **P2 Lean Mathlib** | Enquête `Mathlib.NumberTheory.EllipticCurve.*` (couverture Frobenius, Cartier) + éventuelle formalisation | 5-10 h | À faire (lane Lean) |
 | **P3+ multi-cycle** | briques atomiques (modèle EPIC #17845) | multi-cycle | À faire |
 
