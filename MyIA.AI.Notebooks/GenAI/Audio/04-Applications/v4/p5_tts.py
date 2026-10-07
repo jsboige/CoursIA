@@ -1300,6 +1300,7 @@ def _synthesize_batch(
         _, seg, text = item
         return _synthesize_segment(seg, text)
 
+    seg_by_idx = {idx: seg for idx, seg, _ in to_generate}
     with ThreadPoolExecutor(max_workers=_MAX_WORKERS) as pool:
         futures = {pool.submit(_gen, item): item[0] for item in to_generate}
         for future in as_completed(futures):
@@ -1307,9 +1308,19 @@ def _synthesize_batch(
             try:
                 results[seg_idx] = future.result()
             except Exception as exc:
+                # Surface the cause FIRST: a failure record that itself
+                # crashes on schema validation (speaker="" against a
+                # Literal) masks the original exception and kills the whole
+                # run — measured while routing the narrator to CosyVoice3
+                # (#19692), where the first synthesis failure took the
+                # pipeline down without a usable traceback.
+                logger.error(
+                    "seg %s synthesis failed: %s", seg_idx, exc, exc_info=True
+                )
+                print(f"  [P5] seg {seg_idx} FAILED: {type(exc).__name__}: {exc}")
                 results[seg_idx] = TTSResult(
                     seg_index=seg_idx,
-                    speaker="",
+                    speaker=seg_by_idx[seg_idx].speaker,
                     reference_id="",
                     mp3_path="",
                     duration_s=0.0,
