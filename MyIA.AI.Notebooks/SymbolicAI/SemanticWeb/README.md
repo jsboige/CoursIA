@@ -378,10 +378,6 @@ Ce notebook bonus introduit le **proof-carrying inference** : chaque conclusion 
 
 > **Pont Lean** : le checker jouet applique une *procédure* ; le checker Lean d'open-ontologies porte un *théorème*. La série [Lean](../Lean/) est le prolongement naturel — compiler `horn_certificate_sound` sur la mini-table de règles en kernel Lean 4.
 
-#### SW-16-Python-ProofCarryingOntologies (Bonus) : le certificat d'inférence (60 min)
-
-Ce notebook ferme la trilogie des coups par un **renversement de charge de preuve** : ce n'est plus le moteur qui doit *convaincre* le consommateur qu'une conclusion tient, c'est le consommateur qui **vérifie un certificat** que le moteur lui fournit. Sur la fixture pizza de SW-13 (mini-ontologie RDFS, 4 règles Horn, dont une règle métier `allergenPropagation`), un moteur Horn naïf (forward-chaining instrumenté) émet pour chaque conclusion un **certificat de preuve** : règle appliquée, prémisses, conclusion, pas d'inférence. Un **checker indépendant** (autre code, autre cycle, autre auteur) accepte ou rejette le certificat sans ré-exécuter le moteur. Le notebook exécute la jambe complète sur la vraie ontologie `data/pizza.owl` via le binaire `open-ontologies v1.4.0` (Fabio Rovai, MIT, Rust) — `pizza-cli infer` produit un certificat, le checker jouet le valide, et **les deux marches coïncident** (un moteur de production et un checker jouet rendent le même verdict). Quatre certificats forgés (règle inventée, prémisse absente, conclusion truquée, support amputé) sont rejetés nommément, ce qui borne la falsifiabilité du checker. Trois exemples guidés (extension de l'ontologie + nouvelle claim, forge de la double liaison, slice minimal) et trois exercices (claim absente, règle inconnue par la fenêtre, amputation locale vs validité globale) ferment la série.
-
 ---
 
 ## Acquis d'apprentissage
