@@ -16,6 +16,7 @@ Collection de scripts pour télécharger et gérer les données de marché histo
 | `stitch_crypto.py` | Bitstamp + Binance + yfinance | CSV continu horaire BTC/USD |
 | `build_panier_anti_bias.py` | yfinance (26 symboles, 7 classes d'actifs) | CSV panier multi-actifs |
 | `dezip_forex.py` | Archives zip FXCM/Oanda | CSV OHLCV forex bid/ask |
+| `build_qc_custom_data.py` | Fichier tabulaire local (csv, tsv, json, jsonl) | Module `.py` consommable par un projet QuantConnect Cloud |
 
 ## Démarrage rapide
 
@@ -82,6 +83,32 @@ python scripts/datasets/download_qc_data.py --mode object-store --key my-dataset
 Sortie : `MyIA.AI.Notebooks/QuantConnect/datasets/qc/`
 
 Pré-requis : `pip install lean` + `lean login` pour le mode lean-cli.
+
+### Conversion d'un dataset en module QuantConnect
+
+Un projet QuantConnect Cloud **refuse les fichiers `.csv`** : seul du `.py` est accepté.
+`build_qc_custom_data.py` convertit un fichier tabulaire local en module `.py` — la
+constante de données, et si on le demande la classe `PythonData` qui la relit.
+
+```bash
+# Un fichier JSONL (un objet JSON par ligne) -> module de données
+python scripts/datasets/build_qc_custom_data.py \
+    --input signals.jsonl --variable KAGGLE_SIGNALS --output signals_data.py
+
+# Avec une classe de custom data : indiquer le rôle de chaque colonne
+python scripts/datasets/build_qc_custom_data.py \
+    --input filings.csv --delimiter ';' --variable FILINGS \
+    --class-name FilingSignal --date-column accepted_at \
+    --ticker-column ticker --value-column similarity --output filing_data.py
+```
+
+Formats d'entrée : `csv`, `tsv`, `json` (liste d'objets), `jsonl`/`ndjson`.
+Les valeurs sont conservées en chaînes de caractères (le consommateur type ses
+colonnes lui-même) et le rendu est déterministe : deux conversions du même
+fichier sont byte-identiques. Le module produit est destiné à être déposé dans
+un projet Cloud ; il n'est pas exécutable tel quel hors de LEAN (`AlgorithmImports`).
+
+Tests : `python -m pytest scripts/datasets/tests/test_build_qc_custom_data.py -q`
 
 ### Archive crypto (multi-sources)
 

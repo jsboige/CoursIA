@@ -5206,7 +5206,7 @@ def test_14199_fp1_qualifier_non_bloquant_neutralise():
     body = (
         "Concern (non bloquant) : mergeable_state=blocked au moment de la "
         "review — checks en cours sur une PR de 18:04Z, standard, à confirmer "
-        "avant merge. Ball merge : Emerjesse."
+        "avant merge. Ball merge : Jean-Sylvain."
     )
     assert mod.classify("jsboige", body) is None, (
         f"FP1 devrait etre neutralise (qualifier non bloquant), "
@@ -5337,7 +5337,7 @@ def test_14199_ce1_mutation_position_i_desactivee_fp1_rougit():
     Verifie par monkey-patching de `_strip_avant_merge_mention` (no-op)."""
     body = (
         "Concern (non bloquant) : mergeable_state=blocked, a confirmer "
-        "avant merge. Ball merge : Emerjesse."
+        "avant merge. Ball merge : Jean-Sylvain."
     )
     # Baseline : avec Position I, FP1 est neutralise
     assert mod.classify("jsboige", body) is None
@@ -5405,7 +5405,7 @@ def test_14199_remesure_3_fp_window_neutralise():
         ("13537", "clusterManager-Myia",
          "Concern (non bloquant) : mergeable_state=blocked au moment de "
          "la review — checks en cours sur une PR de 18:04Z, standard, a "
-         "confirmer avant merge. Ball merge : Emerjesse."),
+         "confirmer avant merge. Ball merge : Jean-Sylvain."),
         ("13498", "jsboige",
          "Passe de merge ai-01 — le concern NanoClaw est traite par la "
          "voie B.0 « issue de suivi ouverte et nommee AVANT LE MERGE ». "
