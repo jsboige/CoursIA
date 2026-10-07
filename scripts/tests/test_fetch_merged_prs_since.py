@@ -157,6 +157,34 @@ def test_main_writes_utf8_on_cp1252_stdout(monkeypatch):
     assert "a → b" in data
 
 
+def test_run_gh_poses_a_transport_timeout():
+    """#19643: l'appelant du picker attrape `subprocess.TimeoutExpired` --
+    cette plomberie reste morte si `run_gh` ne pose pas `timeout=`. Un `gh`
+    ralenti (secondary rate limit) pendait alors chaque tranche sans borne.
+    Le test capture l'appel reel de subprocess.run et exige la borne."""
+    calls = {}
+
+    def capture(*a, **kw):
+        calls["kwargs"] = kw
+        raise SystemExit  # pas de reseau
+
+    original = subprocess.run
+    subprocess.run = capture
+    try:
+        try:
+            fmps.run_gh("2026-08-01", "2026-08-04")
+        except SystemExit:
+            pass
+    finally:
+        subprocess.run = original
+
+    timeout = calls["kwargs"].get("timeout")
+    assert timeout is not None, (
+        "run_gh part sans timeout= : le catch TimeoutExpired du picker "
+        "(fetch_visits) est structurellement mort (#19643)")
+    assert timeout == fmps.GH_TIMEOUT_SECONDS
+
+
 @pytest.mark.skipif(shutil.which("gh") is None, reason="gh binary absent")
 def test_run_gh_argv_is_accepted_by_gh():
     """THE control the `--page` regression escaped for its whole life.

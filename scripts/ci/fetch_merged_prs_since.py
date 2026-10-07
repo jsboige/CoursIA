@@ -71,6 +71,18 @@ SEARCH_RESULT_CAP = 1000
 # not a throughput assumption.
 SLICE_DAYS = 3
 
+# Borne de transport d'une tranche (#19643). L'appelant du picker attrape
+# explicitement subprocess.TimeoutExpired (pick_idle_grain.py, fetch_visits) --
+# mais cette plomberie restait morte : sans `timeout=` ici, un `gh` ralenti
+# (secondary rate limit, backoff silencieux) suspendait le tirage entier sans
+# borne. 120 s couvre genereseument une tranche observee a quelques secondes ;
+# au-dela, la tranche echoue et l'appelant rend « affluence non mesuree »
+# (jamais un zero de mesure presente comme zero d'affluence, #19209) -- le
+# picker degraded vaut mieux qu'un picker pendu qui fabrique des faux
+# diagnostics chez l'agent appelant (mesure 2026-10-07 : trois runs tues au
+# timeout de l'outil, un faux « pend » poste avant la mesure qui l'a falsifiee).
+GH_TIMEOUT_SECONDS = 120
+
 # Ancrage FIXE de la grille de tranches (#19236). Une grille ancree a `since`
 # se decale d'un jour a chaque appel (`since` avance avec la date du jour) :
 # des cles de cache par tranche ne vivraient alors qu'un jour. En alignant
@@ -104,6 +116,10 @@ def run_gh(since: str, until: str, fields: str = DEFAULT_FIELDS) -> list[dict]:
     Injected as ``run`` by the tests; `test_run_gh_argv_is_accepted_by_gh`
     executes this exact argv against the real binary, which is the control
     the `--page` regression escaped for its whole life.
+
+    Bounded by ``GH_TIMEOUT_SECONDS`` (#19643) : sans borne, un `gh` ralenti
+    pendait chaque tranche indefiniment -- l'appelant du picker attrape
+    ``TimeoutExpired`` sans que rien ne puisse jamais le lever.
     """
     out = subprocess.run(
         [
@@ -114,6 +130,7 @@ def run_gh(since: str, until: str, fields: str = DEFAULT_FIELDS) -> list[dict]:
             "--json", fields,
         ],
         capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
+        timeout=GH_TIMEOUT_SECONDS,
     )
     return json.loads(out.stdout)
 

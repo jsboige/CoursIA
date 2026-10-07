@@ -658,7 +658,12 @@ def main(argv: list[str] | None = None) -> int:
         override = parse_override(payload.get("comments") or [])
         try:
             merged_prs = fetch_merged_window(since_date(21))
-        except (RuntimeError, OSError) as e:
+        except (RuntimeError, OSError, subprocess.SubprocessError,
+                json.JSONDecodeError) as e:
+            # `SubprocessError` couvre CalledProcessError (check=True du
+            # fetcher, preexistant) et TimeoutExpired (borne GH_TIMEOUT_SECONDS
+            # posee par #19643) : la fenetre illisible rend le verdict JSON
+            # non-bloquant du #15739, jamais un traceback rouge sur le guard.
             print(json.dumps({
                 "guard_pass": False, "blocking": False,
                 "reason": f"#15739 recalcul autonome : fenetre de merges illisible ({e}).",
