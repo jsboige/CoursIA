@@ -45,7 +45,10 @@ that makes it measurable on a local GPU:
 ### Protocol
 
 - **Universe**: `AAPL, MSFT, NVDA, AMZN, GOOGL` — a fixed basket of five mega-caps.
-- **Training**: 2016-01-01 → 2021-12-31. **Out of sample**: 2022-01-01 → 2026-01-01.
+- **Training**: 2016-01-01 → 2021-12-31. **Out of sample**: 19 quarterly origins
+  2022-01-03 → 2026-07-01 (first trading day of each quarter from 2022-01-01), each
+  evaluated on its 63-day forecast horizon — the last evaluated horizon runs into
+  early September 2026.
 - Book recipe: `context_length` 126 days, `prediction_length` 63 days, `learning_rate`
   1e-5, `adamw_torch_fused`, batch 32, accumulation 2, `tf32` (Ampere), 20 forecast
   samples per origin.

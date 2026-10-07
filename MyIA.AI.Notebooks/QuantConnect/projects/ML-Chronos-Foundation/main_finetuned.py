@@ -16,7 +16,10 @@ from chronos import ChronosConfig, ChronosPipeline
 # du wheel PyPI (il vit a la racine du depot amazon-science/chronos-forecasting).
 # Sur un environnement qui ne l'expose pas, on retombe sur le script vendorise
 # du projet (finetune/chronos_training.py, v2.3.2, Apache-2.0) — voir README.
+# Le livre lie AUSSI le module lui-meme (assignments `train.logger` dans _train) :
+# les deux branches lient le nom `train` en plus des trois symboles.
 try:
+    from chronos.scripts.training import train
     from chronos.scripts.training.train import (
         ChronosDataset,
         has_enough_observations,
@@ -26,6 +29,7 @@ except ImportError:  # pragma: no cover - environnement local du harnais
     import sys as _sys
 
     _sys.path.insert(0, str(Path(__file__).resolve().parent / "finetune"))
+    import chronos_training as train  # noqa: F401
     from chronos_training import (  # noqa: F401
         ChronosDataset,
         has_enough_observations,
