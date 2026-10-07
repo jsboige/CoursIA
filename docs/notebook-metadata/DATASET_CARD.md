@@ -56,7 +56,7 @@ Si le SHA256 change après fork :
 - <Cas où le dataset NE DOIT PAS être utilisé>
 ```
 
----
+***
 
 ## Cas pilotes c.795
 
@@ -98,7 +98,7 @@ Si le SHA256 change après fork :
 - Ne pas utiliser comme input d'un système de diagnostic médical réel.
 - Ne pas augmenter le nombre de patients avec de vrais identifiants sans gate `GradeBookApp/PRIVACY.md`.
 
----
+***
 
 ### `CaseStudies/Oncology-Planning/data/patients_oncology.csv`
 

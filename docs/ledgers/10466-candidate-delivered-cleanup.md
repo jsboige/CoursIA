@@ -133,6 +133,6 @@ Chaque entry = 1 cycle worker, avec :
 - Issue #10918 — registre permanent ai-01 (orphan-branch-scan cron 05:57 UTC)
 - Issue #3979 — READMEs feuilles (umbrella lean math, RELEASED épic-wide po-2026 10:15Z le 2026-08-17)
 
----
+***
 
 *Ledger tenu par la lane `myia-po-2023:CoursIA-2`. Pas d'auto-modification. Chaque entry est signée avec un cycle worker réel.*

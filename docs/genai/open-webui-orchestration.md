@@ -17,7 +17,7 @@ ligne cite sa source. Les lignes comparatives LangChain / CrewAI sont ancrées s
 documentation de ces projets ; les points non confirmés par une source fraîche sont
 explicitement marqués **« à vérifier »** plutôt qu'affirmés.
 
----
+***
 
 ## 1. Positionnement du problème
 
@@ -34,7 +34,7 @@ OWUI v0.9.0 fait passer le **produit** d'un simple front de chat à une platefor
 d'orchestration : on peut désormais y planifier des prompts, donner à un modèle une
 structure de suivi de tâches, et tenir un calendrier — **sans écrire de code**.
 
----
+***
 
 ## 2. Les trois piliers d'orchestration d'OWUI v0.9.0
 
@@ -81,7 +81,7 @@ distinction pédagogique forte : **événement réel persisté** vs **projection
 Sources : [docs Calendar](https://docs.openwebui.com/features/calendar/) ·
 [DeepWiki Automations & Calendar](https://deepwiki.com/open-webui/open-webui/20-automations-and-calendar)
 
----
+***
 
 ## 3. Sous le capot : comment OWUI exécute une automation
 
@@ -100,7 +100,7 @@ classiques de backend) :
 
 Source : [DeepWiki Automations & Calendar](https://deepwiki.com/open-webui/open-webui/20-automations-and-calendar)
 
----
+***
 
 ## 4. Migration 0.8.x → 0.9.0 : le passage en asynchrone (breaking change)
 
@@ -120,7 +120,7 @@ Deux autres changements notables de v0.9.0 : le *passthrough* OpenAI devient **o
 Sources : [guide de migration 0.9.0](https://docs.openwebui.com/features/extensibility/plugin/migration/to-0.9.0/) ·
 [release v0.9.0](https://github.com/open-webui/open-webui/releases/tag/v0.9.0)
 
----
+***
 
 ## 5. Comparatif : OWUI vs LangChain / LangGraph vs CrewAI
 
@@ -147,7 +147,7 @@ produit documentée) restent à confirmer avant d'en faire un point d'évaluatio
   checkpointing).
 - **Équipe d'agents spécialisés collaborant sur un livrable** → CrewAI (rôles, délégation).
 
----
+***
 
 ## 6. Exercices proposés (≥ 3, convention 3-exercices/notebook)
 
@@ -164,7 +164,7 @@ Ces exercices supposent l'accès à l'instance OWUI de cours référencée par
    choix OWUI vs LangGraph vs CrewAI en s'appuyant sur le tableau §5 (livrable = note
    justifiée, pas de code requis).
 
----
+***
 
 ## Annexe — note de version (à réconcilier)
 

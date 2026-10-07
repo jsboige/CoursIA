@@ -4,13 +4,13 @@
 **Machine:** myia-po-2026
 **Status:** 6 sorrys remaining (all INTRACTABLE until new formalization)
 
----
+***
 
 ## Summary
 
 47 prover-related commits over 12 days. The multi-agent Lean 4 prover successfully proved 4 sorrys (hP_conv, hP_closed, hP_nonempty, hK_empty) while agent-guided manual proofs closed 10+ targets. The prover architecture went through 7 iterations (F6–F11, B3). All remaining sorrys require new mathematical formalization (rural hospitals theorem, Bondareva-Shapley core) that the prover cannot invent.
 
----
+***
 
 ## 1. Prover Session Timeline
 
@@ -76,7 +76,7 @@
 | 2026-05-17 | GaleShapley L97 (F8+Director) | multi | 15 | INTRACTABLE (Director 2×) |
 | 2026-05-18 | GaleShapley L97 (F8+Director) | multi | 15 | INTRACTABLE (9080s timeout) |
 
----
+***
 
 ## 2. BUILD-FAIL Pattern Categories
 
@@ -102,7 +102,7 @@ From 20 prover history files containing 89 tactic attempts:
 
 5. **rcases before subst**: `subst` on reflexive equality (after prior unification) fails. Fix: `rcases` first, then `subst`.
 
----
+***
 
 ## 3. Successful Proof Techniques
 
@@ -133,7 +133,7 @@ From 20 prover history files containing 89 tactic attempts:
 4. `mod_cast` for Fin/Nat coercion before `omega`
 5. Explicit `@` for implicit-heavy API calls
 
----
+***
 
 ## 4. Failed Targets
 
@@ -147,7 +147,7 @@ From 20 prover history files containing 89 tactic attempts:
 
 **Director (GPT-5.5) confirmation:** The missing piece is mathematical formalization, not search depth. The prover architecture functions correctly but cannot invent new theorems.
 
----
+***
 
 ## 5. Prover Architecture Evolution
 
@@ -226,7 +226,7 @@ Première exécution du gradient calibration Conway sur une lane **sans clés ex
 4. **REVIEW** — Check traces at intervals (not event-by-event)
 5. **ITERATE** — Improve based on postmortem
 
----
+***
 
 ## 6. Statistics
 
@@ -237,7 +237,7 @@ Première exécution du gradient calibration Conway sur une lane **sans clés ex
 - **Remaining sorrys:** 6 (5 rural hospitals cluster + 1 Bondareva hCore)
 - **Prover history files:** JSON files in `agent_tests/prover/`
 
----
+***
 
 ## 7. Files
 

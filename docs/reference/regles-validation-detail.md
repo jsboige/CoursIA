@@ -6,7 +6,7 @@ S'applique a TOUS les agents (exécutants, coordinateur, reviewers humains, bots
 
 **Incident origine (2026-05-09)** : 5+ vagues de "fix" cosmétiques sur Sudoku-13 (5 commits structurels depuis mars 2026, `execution_count=null` sur 11/11 cellules code — jamais execute depuis sa creation) ne l'ont jamais detecte, parce que toutes les "validations" ont ete superficielles (rule C.2 vérifiée sur structure JSON, jamais sur l'execution reelle).
 
----
+***
 
 ## H.1 — Validation = execution complete + outputs verifies (HARD)
 
@@ -19,7 +19,7 @@ S'applique a TOUS les agents (exécutants, coordinateur, reviewers humains, bots
 
 Sans ces 4 preuves : la PR n'est PAS validee. Peu importe qui la signe. La verification "structure JSON OK" (rule C.2 historique) est UN sous-ensemble de H.1, pas un substitut.
 
----
+***
 
 ## H.2 — Tous les agents installent l'env complet (HARD)
 
@@ -33,7 +33,7 @@ Chaque machine cluster (po-2023, po-2024, po-2025, po-2026, ai-01) doit pouvoir 
 
 Si un agent ne peut pas executer un notebook → il INSTALLE l'env (peut demander UAC user). Pas de "skip car env manquant", pas de "delegation a un autre agent". Réparation env > contournement (extension de la regle F — cf [docs/env-python-reparation.md](env-python-reparation.md)).
 
----
+***
 
 ## H.3 — Aucun commit de notebook non-execute (HARD)
 
@@ -68,7 +68,7 @@ Activation : `pip install pre-commit && pre-commit install`. Exécution manuelle
 
 Détail du stripper : `scripts/notebook_tools/strip_probe_banner.py`. Le scanner de bornes de blocs `"text/html": [ ... ]` est **JSON-string-aware** (track profondeur de brackets en sautant les caractères dans les chaînes JSON) — une regex naive `[^\]]*` échoue sur les .NET notebooks réels dont l'inline JS `probeAddresses(["http://...","..."])` contient un `]` qui pré-ment clore la liste. Le scanner reconstruit `body_start, body_end` corrects même en présence de crochets imbriqués, et la suppression drop l'élément bannerisé + sa virgule suivante (ou précédente si dernier élément) sans casser le shape `[...]`.
 
----
+***
 
 ## H.4 — Merges coordinateur ne sont JAMAIS complaisants (HARD)
 
@@ -82,7 +82,7 @@ ai-01 (ou tout coordinateur) ne merge PAS une PR notebook sans :
 
 Cascade merge sans audit individuel = violation H.4 = revert + post-mortem dashboard. **Le contre-exemple a ne pas reproduire** : cascade 8 PRs de la nuit 8→9/05 mergee en ~30min en confiant l'audit aux body-PRs sans re-execution locale.
 
----
+***
 
 ## H.5 — Bots reviewers : audit commit-level forensique (HARD)
 
@@ -97,7 +97,7 @@ Si STRUCTURAL_ONLY ou SUSPECT_REGRESSION et le PR claim "fix" / "validate" / "OK
 
 Les bots ne peuvent pas executer les notebooks (pas d'env complet) mais ils peuvent et DOIVENT prouver l'execution via parsing JSON de la diff.
 
----
+***
 
 ## H.6 — Audit historique notebook = responsabilite bot, pas humain
 
@@ -109,7 +109,7 @@ Avant ouverture d'une issue ou PR "le notebook X est casse" / "X n'a jamais marc
 
 Sudoku-13 aurait du sortir `NEVER_EXECUTED_SINCE_<creation>` au premier appel — ca aurait économisé les 5 PRs cosmétiques accumulees depuis mars 2026.
 
----
+***
 
 ## H.7 — Plan de sortie du cycle perpetuel (incident 2026-05-09)
 
@@ -125,7 +125,7 @@ L'audit du 2026-05-09 a révélé un pattern systemique : 988 notebooks repo, do
 
 Cf [docs/archive/STABLE_SNAPSHOT.md](../archive/STABLE_SNAPSHOT.md).
 
----
+***
 
 ## Ratchet exec-sequence (#11112 tier 2) — échecs fail-by-design assumés (#11577)
 
@@ -158,7 +158,7 @@ complète est hors scope. Séquence dégradée documentée ici ; ack reviewer
 explicite requis avant merge.
 ```
 
----
+***
 
 ## References connexes
 

@@ -370,7 +370,7 @@ sur l'Epic). Comptes par catégorie :
 - `EXCL-VARIANTE` : 33
 - `SETUP` : 6
 
----
+***
 
 *Dérivé mécaniquement depuis le disque (worktree frais `origin/main`) le 2026-08-16.
 Source du calendrier : [docs/reference/teaching-context.md](../reference/teaching-context.md) — à jour 2026-08-08.

@@ -411,7 +411,7 @@ Chaque run porte `RuntimeWarning: invalid value encountered in cast` (`nodes.py:
 
 **Méthodo** : scripts scratchpad (`c272_replay.py` + variante seed 43, workflow API-format extrait des métadonnées PNG du run NaN r1 — le replay est ainsi garanti identique) ; sonde `gguf.quants.dequantize` numpy par tensor ; artefacts `c273_replay_fixed_00002_.png` (seed 42) et `c273_warm_s43_00001_.png` (seed 43) dans `C:/Users/jsboi/tensorsharp-investigation/` (hors repo) ; timings server extraits des logs (`Prompt executed in …`).
 
----
+***
 
 ## c.419 — axe Vidéo Wan 2.1 : `NON MESURÉ` (CLI support complet, VAE incompatible)
 

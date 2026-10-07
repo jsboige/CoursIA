@@ -729,7 +729,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 
 **Liens** : Issue #1621 (EPIC QC Consolidation) ; PR #7370 (tr.22 MERGED-pending) ; PRs historique tr.3-#7340 (tr.15 MERGED) ; PRs tr.7-16 (MERGED) ; PRs tr.17-22 (OPEN) ; leçons L709-L1 ★★★ / L710-L1 ★★★ / L711-L1 ★ / L712-L1 ★ / L712-L2 ★ / L712-L3 ★ / L713-L1 ★ / L713-L2 ★ / L713-L3 ★ / L714-L1 ★ / L714-L2 ★ / L714-L3 ★ / L714-L4 ★.
 
----
+***
 
 #### Vérifié (tranche 25, statut réel ML-* — création cloud + backtests frais baseline #1630) (4)
 
@@ -761,7 +761,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 
 **Liens** : Issue #1621 (EPIC, tranches 24-25) ; PR #10896 (tranche 24 Cloud-*, même fichier — merge séquentiel + update-branch) ; leçons L714-L4 ★ (cadence réduite respectée : 1 tranche / cycle).
 
----
+***
 
 #### Vérifié (tranche 26, statut réel des 2 derniers ML-* locaux — création cloud + backtests frais baseline #1630) (2)
 
@@ -779,7 +779,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 - **L716-L1 ★ (extension)** : le sweep #1630 a raté **les 6 ML-\* locaux** au total (tr.25 : 4, tr.26 : 2 — 6/6 alignés à présent). La convention snake_case de `ML-Reversion-Trending` (`set_start_date` au lieu de `SetStartDate`) fait que même un grep casse-exacte le rate : **balayer par famille de répertoires (`projects/ML-*/`)**, pas par motif de casse d'API.
 - **L716-L2 (rappel)** : projet cloud frais = template `main.py` pré-créé → `create_file` échoue, `update_file_contents` direct.
 
----
+***
 
 #### Vivant (best-guess, non vérifié) (91 physiques = 12 true + 79 promues tr7-25 ; voir synthèse)
 

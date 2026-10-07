@@ -4,7 +4,7 @@ Canevas commun pour l'harmonisation des READMEs de series (niveau 1) et de sous-
 
 Le README principal du depot donne le ton de reference (registre sobre, ouverture par une question, pas de jugement de valeur editorial) ; les READMEs de series emmenent le lecteur **plus loin**, au plus pres du contenu réel des notebooks.
 
----
+***
 
 ## Ordre canonique des sections
 
@@ -57,7 +57,7 @@ Un pont doit nommer le notebook ou le concept precis **des deux cotes** (ex. : �
 
 References academiques avec couverture par notebook + bibliotheques + formalisations le cas echeant. Modèle : `GameTheory/README.md:421-459`.
 
----
+***
 
 ## Anti-patterns a corriger (releves dans l'existant)
 

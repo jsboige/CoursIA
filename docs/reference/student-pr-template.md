@@ -2,7 +2,7 @@
 
 Instructions pour les etudiants lors des seances de TP.
 
----
+***
 
 ## Format de PR attendu
 
@@ -61,7 +61,7 @@ J'ai eu un moment de confusion sur la direction de la comparaison
 (h doit etre <= cout reel, pas l'inverse).
 ```
 
----
+***
 
 ## Regles
 

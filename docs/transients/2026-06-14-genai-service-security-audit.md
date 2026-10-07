@@ -12,7 +12,7 @@ n'est reproduit ici — uniquement des **noms** de variables et des **codes HTTP
 > Règle de preuve (#16) : un service est « sécurisé » seulement si **401 sans token
 > ET 200 avec token**, vérifié en direct — jamais sur déclaration.
 
----
+***
 
 ## 0. Re-audit live (2026-07-08) — delta vs état 2026-06-14
 
@@ -39,7 +39,7 @@ Internet (P1) est **fermé**.
 - Les tables §2/§3 ci-dessous reflètent l'état **2026-06-14** (conservé pour la
   traçabilité) ; le présent §0 est la **source de vérité courante**.
 
----
+***
 
 ## 1. Deux couches d'exposition (à ne pas confondre)
 
@@ -54,7 +54,7 @@ La surface d'attaque réelle se lit sur **deux plans distincts** :
 Un service n'est donc « interne » que s'il est **à la fois** en `127.0.0.1` côté
 Docker **et** absent de la couche IIS.
 
----
+***
 
 ## 2. Bindings Docker (état vérifié `docker ps`, 2026-06-14)
 
@@ -74,7 +74,7 @@ Docker **et** absent de la couche IIS.
 **Constat n°1** : seuls **3 conteneurs** sont joignables depuis le LAN, et **les 3
 répondent 200 sans token** (non authentifiés à ce jour).
 
----
+***
 
 ## 3. Couche publique IIS (`*.myia.io`, sondes sans token)
 
@@ -91,7 +91,7 @@ Mapping IIS confirmé dans
 **Constat n°2 (le plus grave)** : la **gateway TTS est publique sur Internet via IIS
 ET non authentifiée**. C'est la priorité de remédiation n°1.
 
----
+***
 
 ## 4. Mécanisme d'authentification disponible (déjà codé)
 
@@ -128,7 +128,7 @@ Gateway : `API_KEY=${TTS_GATEWAY_API_KEY:-}` dans
 [docker-compose.yml:26](../../docker-configurations/services/tts-multi/docker-compose.yml#L26)
 — le défaut **vide** est exactement la cause du trou.
 
----
+***
 
 ## 5. Consommateurs cross-workspace (bloquent tout flip unilatéral)
 
@@ -146,7 +146,7 @@ Activer l'auth sans propager la clé **casse** ces consommateurs. À coordonner
 
 > Mémoire opérationnelle : ne pas arrêter/roter `whisper-api` sans prévenir NanoClaw.
 
----
+***
 
 ## 6. Plan de remédiation (séquencé par risque)
 
@@ -185,7 +185,7 @@ avant flip (impacte `tts-multi.myia.io`).
 - `stt.myia.io` 404 sur `/v1/models` : re-vérifier la route réelle exposée avant de
   conclure.
 
----
+***
 
 ## 7. Synthèse
 
@@ -206,7 +206,7 @@ avant flip (impacte `tts-multi.myia.io`).
 **Bloqueur user** : le secret de la clé gateway doit être saisi **manuellement** dans
 les `.env` gitignorés (hook `block-secrets.py` interdit l'édition agent). Voir P1.
 
----
+***
 
 ## 8. F1 Root-hardening containers — plan proposé (greenlight ai-01 requis)
 
