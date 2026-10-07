@@ -192,17 +192,115 @@ def test_aggregate_separates_courant_tapis_ancien():
 
 
 def test_aggregate_sans_lane_aggregated_under_marker():
-    """Les sans-lane sont agreges sous _sans-lane, jamais absorbees ailleurs."""
+    """PR sans tag lisible -> _sans-lane ; fermeture sans PR (body None ou "")
+    -> _manuel. Les deux categories ne se confondent jamais.
+
+    Review c.6048082193 : avant le fix, pr_body="" (depuis fetch_closed_issues)
+    etait route a tort vers _sans-lane (46 fermetures dans la mesure).
+    Apres le fix, les deux cas (None et "") vont a _manuel, _sans-lane
+    reste reserve aux PRs avec body mais sans tag lisible.
+    """
     now = datetime.now(timezone.utc)
     services = [
-        _make_service(now - timedelta(days=2), now, pr_body=""),  # sans-lane
-        _make_service(now - timedelta(days=3), now, pr_body=None),  # manuel
+        _make_service(now - timedelta(days=2), now, pr_body="Description libre sans tag."),  # sans-lane
+        _make_service(now - timedelta(days=3), now, pr_body=None),  # manuel (pas de PR)
+        _make_service(now - timedelta(days=4), now, pr_body=""),  # manuel aussi (empty body = pas de PR)
     ]
     by_lane = bsb.aggregate_by_lane(services)
     assert "_sans-lane" in by_lane
     assert "_manuel" in by_lane
     assert by_lane["_sans-lane"].services == 1
-    assert by_lane["_manuel"].services == 1
+    assert by_lane["_manuel"].services == 2
+
+
+def test_attribution_empty_pr_body_is_manuel():
+    """pr_body="" (empty string, comme dans fetch_closed_issues) -> 'manuel',
+    PAS 'sans-lane'. Review c.6048082193 : le bug d'avant mettait 46
+    fermetures sans PR dans `_sans-lane` au lieu de `_manuel`.
+    """
+    s = _make_service(pr_body="")
+    bsb.attribute_service(s)
+    assert s.attribution_kind == "manuel", (
+        f"pr_body='' devrait donner 'manuel', got '{s.attribution_kind}'"
+    )
+    assert s.lane is None
+
+
+def test_dedup_T_Tplus5_same_issue_returns_one():
+    """Review c.6048082193 : mergedAt et closedAt different de quelques
+    secondes. Dedup sur (issue_number, service_date) laissait passer les
+    doublons. Apres fix (dedup sur issue_number seul), une issue fermee par
+    PR avec mergedAt=T et closedAt=T+5s donne 1 seul service.
+    """
+    base = datetime(2026, 10, 5, 12, 0, 0, tzinfo=timezone.utc)
+    iso_t = _iso(base)
+    iso_t_plus_5s = _iso(base + timedelta(seconds=5))
+    s_pr = bsb.Service(
+        issue_number=42, issue_created_at=iso_t, service_date=iso_t,
+        service_kind="pr_merge", pr_number=100,
+        pr_body="Grain: DEEP/lean -- lane myia-ai-01:CoursIA-2",
+    )
+    s_manuel = bsb.Service(
+        issue_number=42, issue_created_at=iso_t, service_date=iso_t_plus_5s,
+        service_kind="manuel", pr_number=None, pr_body=None,
+    )
+    bsb.attribute_service(s_pr)
+    bsb.attribute_service(s_manuel)
+    deduped = bsb.deduplicate_services([s_pr, s_manuel])
+    assert len(deduped) == 1
+    assert deduped[0].service_kind == "pr_merge"
+    assert deduped[0].lane == "myia-ai-01:CoursIA-2"
+    # Ordre inverse : le manuel ne doit pas ecraser le pr_merge deja vu
+    deduped_rev = bsb.deduplicate_services([s_manuel, s_pr])
+    assert len(deduped_rev) == 1
+    assert deduped_rev[0].service_kind == "pr_merge"
+
+
+def test_search_issueCount_positive_control_mismatch_raises():
+    """Si le nombre de fermetures lues != issueCount de la requete search,
+    fetch_closed_issues leve RuntimeError. Review c.6048082193 : le controle
+    positif attrape les pages manquantes ou les doublons.
+
+    On mock subprocess.run pour rendre issueCount=10 mais seulement 3 nodes,
+    ce qui doit lever RuntimeError cite dans le commentaire de PR.
+    """
+    import io
+    import unittest.mock as mock
+
+    fake_response = json.dumps({
+        "data": {
+            "search": {
+                "issueCount": 10,
+                "nodes": [
+                    {"number": 1, "createdAt": "2026-10-05T00:00:00Z", "closedAt": "2026-10-06T00:00:00Z"},
+                    {"number": 2, "createdAt": "2026-10-05T00:00:00Z", "closedAt": "2026-10-06T00:00:00Z"},
+                    {"number": 3, "createdAt": "2026-10-05T00:00:00Z", "closedAt": "2026-10-06T00:00:00Z"},
+                ],
+                "pageInfo": {"hasNextPage": False, "endCursor": None},
+            }
+        }
+    })
+    fake_completed = mock.Mock(returncode=0, stdout=fake_response, stderr="")
+
+    with mock.patch("subprocess.run", return_value=fake_completed), \
+         mock.patch.dict("os.environ", {"GH_TOKEN": "fake-token"}, clear=False), \
+         mock.patch("belt_service_balance._run_capture", return_value="fake-token"), \
+         mock.patch("sys.stderr", io.StringIO()):
+        try:
+            bsb.fetch_closed_issues(
+                "jsboige", "CoursIA",
+                datetime(2026, 10, 1, tzinfo=timezone.utc),
+                max_pages=1,
+            )
+            raised = False
+            msg = ""
+        except RuntimeError as e:
+            raised = True
+            msg = str(e)
+    assert raised, "fetch_closed_issues aurait du lever RuntimeError (read=3 vs issueCount=10)"
+    assert "closed-issues count mismatch" in msg
+    assert "read=3" in msg
+    assert "issueCount=10" in msg
 
 
 # ---------------------------------------------------------------------------

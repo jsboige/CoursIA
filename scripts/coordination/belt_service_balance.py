@@ -187,7 +187,7 @@ def attribute_service(s: Service) -> None:
     Utilise le parseur canonique de `grain_tag.py`. Si pas de PR, classe
     `manuel`. Si PR sans tag lisible, `sans-lane` (a lister).
     """
-    if s.pr_body is None:
+    if not s.pr_body:  # None or empty string -> closure without PR body
         s.attribution_kind = "manuel"
         s.lane = None
         return
@@ -495,7 +495,7 @@ def fetch_closed_issues(
     repo: str,
     window_start: datetime,
     max_pages: int = 30,
-) -> list[Service]:
+) -> tuple[list[Service], int]:
     """Issues CLOSED dans la fenetre, attribuees a `manuel` (sans PR).
 
     Le canal manquant du compteur historique : 278 fermetures sur 7 j ne
@@ -504,28 +504,34 @@ def fetch_closed_issues(
     dans la fenetre et doit etre comptee comme service, attribuee a la lane
     `manuel` (les PRs de fermeture batch ne sont pas toutes enregistees).
 
-    Tri GraphQL sur UPDATED_AT desc (CLOSED_AT n'est pas un orderBy field) ;
-    on filtre en memoire sur `closedAt >= window_start`.
+    Tri via GraphQL `search(type: ISSUE)` avec `closed:>=<date>` (filtre
+    cote serveur). Anciennement : tri UPDATED_AT desc + filtre memoire, mais
+    une issue fermee depuis longtemps mais commentee recemment (claim, release,
+    levee) remonte en tete du tri UPDATED_AT et fait tomber la fenetre trop
+    tot. Le filtre cote serveur evite ce piege.
 
-    Lecteur : `number` + `createdAt` + `closedAt`. Le `body` n'est pas
-    requis ici (pas d'attribution par tag, ces services vont tous a `manuel`).
+    Controle positif : `issueCount` de la meme requete = nombre de
+    fermetures lues (apres pagination complete). Si ecart, RuntimeError.
+
+    Retourne : (services, issueCount).
     """
     out: list[Service] = []
     end_cursor: str | None = None
     pages = 0
     has_next = True
+    expected_total = 0  # issueCount de la premiere page
     query = (
-        "query($owner: String!, $repo: String!, $endCursor: String) {\n"
-        "  repository(owner: $owner, name: $repo) {\n"
-        "    issues(first: 50, after: $endCursor, "
-        "orderBy: {field: UPDATED_AT, direction: DESC}, "
-        "states: [CLOSED]) {\n"
-        "      nodes { number createdAt closedAt }\n"
-        "      pageInfo { hasNextPage endCursor }\n"
+        "query($q: String!, $endCursor: String) {\n"
+        "  search(query: $q, type: ISSUE, first: 100, after: $endCursor) {\n"
+        "    issueCount\n"
+        "    nodes {\n"
+        "      ... on Issue { number createdAt closedAt }\n"
         "    }\n"
+        "    pageInfo { hasNextPage endCursor }\n"
         "  }\n"
         "}\n"
     )
+    search_q = f"repo:{owner}/{repo} is:issue is:closed closed:>={window_start.strftime('%Y-%m-%d')}"
     token = os.environ.get("GH_TOKEN") or _run_capture(["gh", "auth", "token"])
     if not token:
         raise RuntimeError("GH_TOKEN absent et gh auth muet (token requis)")
@@ -534,8 +540,7 @@ def fetch_closed_issues(
         payload = json.dumps({
             "query": query,
             "variables": {
-                "owner": owner,
-                "repo": repo,
+                "q": search_q,
                 "endCursor": end_cursor,
             },
         })
@@ -555,25 +560,13 @@ def fetch_closed_issues(
             raise RuntimeError(f"gh api graphql JSON parse error: {e!r}")
         if data.get("errors"):
             raise RuntimeError(f"gh api graphql errors: {data['errors']}")
-        nodes = (
-            data.get("data", {}).get("repository", {})
-            .get("issues", {}).get("nodes", [])
-        )
-        page_earliest: datetime | None = None
-        for issue in nodes:
+        search = data.get("data", {}).get("search", {})
+        if pages == 1:
+            expected_total = search.get("issueCount", 0)
+        for issue in search.get("nodes", []):
             closed_at = issue.get("closedAt")
-            if not closed_at:
-                continue
-            try:
-                d_close = _parse_iso(closed_at)
-            except Exception:
-                continue
-            if page_earliest is None or d_close < page_earliest:
-                page_earliest = d_close
-            if d_close < window_start:
-                continue
             created = issue.get("createdAt")
-            if not created:
+            if not closed_at or not created:
                 continue
             svc = Service(
                 issue_number=issue.get("number", 0),
@@ -581,34 +574,40 @@ def fetch_closed_issues(
                 service_date=closed_at,
                 service_kind="manuel",
                 pr_number=None,
-                pr_body="",
+                pr_body=None,  # None -> attribute_service met attribution_kind = "manuel"
             )
             attribute_service(svc)
             out.append(svc)
-        if page_earliest is not None and page_earliest < window_start - timedelta(days=14):
-            break
-        pi = (
-            data.get("data", {}).get("repository", {})
-            .get("issues", {}).get("pageInfo", {})
-        )
+        pi = search.get("pageInfo", {})
         has_next = bool(pi.get("hasNextPage"))
         end_cursor = pi.get("endCursor")
-    return out
+    if out and len(out) != expected_total:
+        raise RuntimeError(
+            f"closed-issues count mismatch: read={len(out)} "
+            f"issueCount={expected_total} (search_q={search_q!r})"
+        )
+    return out, expected_total
 
 
 def deduplicate_services(services: list[Service]) -> list[Service]:
-    """Dedoublonne les services sur (issue_number, service_date).
+    """Dedoublonne les services sur `issue_number` seul.
 
-    Une issue fermee par PR est dans `pr_merge` (via closingIssuesReferences)
-    ET dans `manuel` (via closedAt). On garde le `pr_merge` (attribution par
-    tag `Grain:` de la PR, plus precise) et on retire le `manuel`.
+    Une issue fermee par PR est dans `pr_merge` (via closingIssuesReferences,
+    service_date = mergedAt) ET dans `manuel` (via closedAt, service_date =
+    closedAt). GitHub ferme l'issue quelques secondes apres le merge, donc
+    `mergedAt != closedAt` -- la cle (issue_number, service_date) ne marche
+    pas et chaque fermeture via PR etait comptee deux fois. Le dedup sur
+    `issue_number` seul resout le probleme.
 
-    En cas d'egalite (deux services pour le meme issue_number + service_date
-    mais ni pr_merge ni manuels -- defensif), on garde le premier.
+    On garde le `pr_merge` (attribution par tag `Grain:` de la PR, plus
+    precise) et on retire le `manuel`.
+
+    En cas d'egalite (deux services pour le meme issue_number mais ni
+    pr_merge ni manuels -- defensif), on garde le premier.
     """
-    seen: dict[tuple[int, str], Service] = {}
+    seen: dict[int, Service] = {}
     for s in services:
-        key = (s.issue_number, s.service_date)
+        key = s.issue_number
         if key in seen:
             # Preferer pr_merge (attribution par tag)
             if seen[key].service_kind == "pr_merge":
@@ -739,7 +738,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         try:
             services_pr = fetch_services(args.owner, args.repo, window_start, max_pages=args.max_pages)
-            services_manuel = fetch_closed_issues(args.owner, args.repo, window_start, max_pages=args.max_pages)
+            services_manuel, _closed_count = fetch_closed_issues(args.owner, args.repo, window_start, max_pages=args.max_pages)
             open_issues = fetch_open_issues(args.owner, args.repo, max_pages=args.max_pages)
         except Exception as e:
             print(f"UNKNOWN: {e}", file=sys.stderr)
