@@ -9,6 +9,7 @@ Le programme est **gradué** : chaque notebook principal ne suppose que ce qui l
 | Pos. | Notebook | Public | Contenu | Statut |
 |---|---|---|---|---|
 | 01 | [Geometry-01-From-Figure-To-Equation.ipynb](Geometry-01-From-Figure-To-Equation.ipynb) | Découverte | De la figure à l'équation : coordonnées, hypothèses et conclusion en polynômes, vérification numérique sur figures aléatoires, pourquoi ce n'est pas une preuve, Schwartz–Zippel et la preuve probabiliste | Livré |
+| 00 | [Geometry-00-Escalier-Entree-Lean-Python.ipynb](Geometry-00-Escalier-Entree-Lean-Python.ipynb) | Découverte | **L'escalier d'entrée : de la figure au noyau** — un même énoncé (le milieu de l'hypoténuse, fil rouge) traversé par cinq marches de garantie croissante : figure numérique → identité symbolique exacte → témoin négatif (triangle non-rectangle) → lecture du lac companion `geometry_lean/Geometry/MidpointHypotenuse.lean` → audit des axiomes interdits (`sorry`, `native_decide.*`, `Classical.choice`). Kernel `python3`, ~10 s, sorties committées | Livré (#19705) |
 | 02 | Geometry-02 — Prouver par l'algèbre | Licence | Idéal engendré par les hypothèses, appartenance, bases de Gröbner (`sympy.groebner`), conditions de non-dégénérescence | À venir |
 | 03 | [Geometry-03-Wu-Method-Python.ipynb](Geometry-03-Wu-Method-Python.ipynb) | Licence | Pseudo-division, ensemble caractéristique (basic-set de Chou), test de Wu, non-dégénérescences auto-générées ; vérification croisée Gröbner (Rabinowitsch) ; fil rouge (milieu de l'hypoténuse) et Ceva ; témoin négatif (un énoncé faux rejeté) | Livré (#17511) |
 | 03b | [Geometry-03b-Ritt-Decomposition-Python.ipynb](Geometry-03b-Ritt-Decomposition-Python.ipynb) | Licence | Accrétion du 03 : le théorème du papillon — la conclusion est un quotient, scission de Ritt, bord dégénéré où l'énoncé est **muet** et non faux, contrôle sur 400 figures | Livré (#17511) |
@@ -20,8 +21,9 @@ Les notebooks 01, 02 et 03 forment la **première volée** : ils se mergent ense
 
 ## Le fil rouge
 
-Le **théorème du milieu de l'hypoténuse** traverse 01, 02 et 03 :
+Le **théorème du milieu de l'hypoténuse** traverse 00, 01, 02, 03 et 04 :
 
+- en 00 (l'escalier d'entrée), on le voit passer par **cinq marches de garantie croissante** — figure numérique, identité symbolique exacte, témoin négatif (triangle non-rectangle), lecture du lac Lean, audit des axiomes interdits. Le carnet 00 est le **consommateur pédagogique** du premier module du lac ;
 - en 01, on le **vérifie numériquement** sur 10 000 figures, et on mesure ce que cette vérification prouve (preuve probabiliste Schwartz–Zippel) et ne prouve pas ;
 - en 02, on le **démontre** : la conclusion appartient à l'idéal des hypothèses, décidée exactement par Gröbner ;
 - en 03, on le **redémontre** par la méthode de Wu, avec les conditions de non-dégénérescence explicites ;

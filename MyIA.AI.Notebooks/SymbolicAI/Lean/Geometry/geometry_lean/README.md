@@ -10,7 +10,7 @@ du programme gradué #17544 (« que garantit "prouvé par Gröbner" ? »).
 
 | Module | Contenu | Notebook Python doublé |
 |---|---|---|
-| `Geometry.MidpointHypotenuse` | Théorème du milieu de l'hypoténuse : équidistance du milieu aux trois sommets, rayon = hypoténuse/2 | `Geometry-01-From-Figure-To-Equation.ipynb` (fil rouge) |
+| `Geometry.MidpointHypotenuse` | Théorème du milieu de l'hypoténuse : équidistance du milieu aux trois sommets, rayon = hypoténuse/2 | `Geometry-00-Escalier-Entree-Lean-Python.ipynb` (escalier d'entrée, lecture du fichier + audit axiomes) ; `Geometry-01-From-Figure-To-Equation.ipynb` (fil rouge) |
 
 ## Construire
 
@@ -31,5 +31,8 @@ sur chaque PR touchant le lac.
 - Companion du 02 (bases de Gröbner) : interroger ce que Mathlib sait des
   idéaux et de l'appartenance (`Ideal` membership) — c'est précisément la
   question pédagogique de la position 05.
-- Notebook escalier d'entrée (volet C de #18601) : figure du 01 → calcul
-  sympy → montée Lean pas à pas jusqu'au premier théorème du lac.
+- Notebook escalier d'entrée (volet C de #18601) — **livré** dans
+  `Geometry-00-Escalier-Entree-Lean-Python.ipynb` : figure du 01 → calcul
+  sympy → témoin négatif → lecture du fichier `MidpointHypotenuse.lean` →
+  audit des axiomes interdits (`sorry`, `native_decide.*`, `Classical.choice`).
+  C'est le **consommateur pédagogique** du premier module du lac.
