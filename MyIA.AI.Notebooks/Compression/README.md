@@ -8,6 +8,16 @@ livraison du précédent ([EPIC #18706](https://github.com/jsboige/CoursIA/issue
 Chaque carnet porte le suffixe de son noyau (`-Python`, `-Lean`) — le jumeau
 Lean des définitions est prévu par les plis suivants.
 
+## Objectifs d'apprentissage
+
+À l'issue de cette série, vous serez capable de :
+
+1. **Construire** un code préfixe optimal sur un alphabet de symboles à fréquences connues (algorithme de Huffman)
+2. **Vérifier** la condition de Kraft sur un code arbitraire et reconnaître les codes qui violent la borne
+3. **Comparer** les arbres Shannon-Fano et Huffman sur un même corpus pour comprendre l'origine du gain
+4. **Calculer** la longueur moyenne d'un code et la confronter à la borne entropique de Shannon sur une source discrète
+5. **Encoder et décoder** un message avec un code préfixe arbitraire, et détecter les codes ambigus
+
 ## Carnets
 
 | Carnet | Niveau | Contenu |
