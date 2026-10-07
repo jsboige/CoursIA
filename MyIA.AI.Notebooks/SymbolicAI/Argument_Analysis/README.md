@@ -480,7 +480,7 @@ de l'arc 3.
 | Rung | Notebook | Rôle dans la série | Prérequis Kernel | Prérequis Notebook |
 |------|----------|--------------------|------------------|--------------------|
 | 00 | `Argumentation-00-Setup-Tweety-Python.ipynb` | Setup (JPype + JDK + JARs Tweety) | Python 3.10+, JPype, JDK 17 portable | aucun (point d'entrée) |
-| 02 | `Argumentation-02-Fallacies-Detection-Python.ipynb` | Détection d'arguments / sophismes | stdlib uniquement | `00` |
+| 02 | `Argumentation-02-Fallacies-Detection-Python.ipynb` | Détection d'arguments / sophismes | `pandas` ; section 5 (entonnoir agentique) : `semantic_kernel`, `python-dotenv`, clé API LLM dans le `.env` de la série | `00` |
 | 05 | `Argumentation-05-Formal-Verification-Python.ipynb` | Formalisation (PL + FOL + Modal + Dung) | `jpype` + JVM Tweety | `00`, bases de logique formelle |
 | 07 | `Argumentation-07-Orchestration-Python.ipynb` | Coordination (mini-DAG vs conversationnel) | stdlib uniquement | `02` (state-driven) |
 | 08 | `Argumentation-08-Capstone-Python.ipynb` | Intégration (baseline 0-shot vs pipeline) | Python intermédiaire | `02`, `07` |

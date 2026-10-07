@@ -1,4 +1,7 @@
 #!/bin/bash
+# CI-CHECK: --check
+#   ^ `--check` verifies elan / Lean 4 and exits; it never installs. Declared
+#     for the CI advisory guard (#10643).
 # Setup script for Lean 4 on macOS / Linux (native, no WSL)
 # Installs elan, Lean 4 stable, lean4_jupyter, and REPL
 #

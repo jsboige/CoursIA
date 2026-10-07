@@ -137,6 +137,12 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   choice/build (merite un pool a cache Mathlib chaud, cf #14337),
     #   notebook-execution-required/golden-set-execute (execution lourde).
     "bash-syntax-advisory.yml",
+    # #10643 item 3 (owner myia-po-2024:CoursIA, 2026-10-05) : garde
+    #   pure-Python de couverture compagnons bi-OS (.ps1 -> .sh, README
+    #   croise, carnets Setup). Trigger pull_request paths + garde same-repo
+    #   au niveau job + runs-on STATIQUE -- meme profil que ses voisins 3c.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "bios-companion-coverage.yml",
     "lean-social-choice.yml",
     "notebook-execution-required.yml",
     "secret-scan.yml",
@@ -501,6 +507,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   ai-01 c.5917276825) : la PR routait le job self-hosted sans
     #   toucher cette allowlist fail-closed. Rollback = revert de la PR.
     "docs-transients-guard.yml",
+    # #19290 (owner myia-po-2026:CoursIA-2, PR #19296) : lean-formal-logic
+    #   proof-integrity workflow pour le lake consumer FFL
+    #   formal_logic_lean (Tweety <-> Lean, EPIC #15066). Le job
+    #   `target-coverage` est advisory (exit 0 toujours) et tourne sur
+    #   la jambe Linux containerisee (meme profil que
+    #   docs-transients-guard / organ-duplication-advisory -- tranche 3).
+    #   Les jobs `ci` et `proof-integrity` reutilisent lean-build.yml /
+    #   lean-axiom.yml (GitHub-hosted), donc ne sont pas concernes par
+    #   cette allowlist. Garde same-repo universelle parenthesee au
+    #   niveau job (`if: head.repo.full_name == repository`).
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "lean-formal-logic.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

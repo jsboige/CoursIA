@@ -50,6 +50,7 @@ import Grothendieck.GodementMono
 import Grothendieck.GodementAcyclicity
 import Grothendieck.GodementResolution
 import Grothendieck.GodementCanonicalDiff
+import Grothendieck.GodementExactness
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney
 import Grothendieck.LeftExact
@@ -224,6 +225,26 @@ Substance réelle :
   contraire exact du témoin de la Partie 87 pour l'itération. L'exactitude en
   `C⁰F`, l'itération du pas aux degrés suivants et l'**acyclicité**
   `H^n(C⁰F) = 0` restent la frontière nommée de la Partie 90.
+- `Grothendieck.GodementExactness` (Partie 90) : le **complexe au-delà du
+  degré 0 et le mono catégorique de l'unité**. La différentielle de degré 1
+  `godementCanonicalDOne = godementStep d⁰ : C¹F ⟶ C²F` est posée, et la
+  null-composition `d⁰ ≫ d¹ = 0`
+  (`godementCanonicalDZero_comp_godementCanonicalDOne`) est une **instance
+  directe de `comp_godementStep_zero`** (P89) — le complexe s'étend à tous
+  les degrés par le même argument. L'unité de Godement est un
+  **monomorphisme catégorique** sur les faisceaux
+  (`mono_toGodement_of_isSheaf`, montée de l'injectivité section-par-section
+  de P84 par `NatTrans.mono_iff_mono_app` + `AddCommGrpCat.mono_iff_injective`)
+  — l'exactitude de `0 → F → C⁰F` en F dans le langage des complexes.
+  L'**énoncé de réduction** de l'exactitude en `C⁰F` au mono de l'unité du
+  conoyau (`exact_toGodement_godementCanonicalDZero_of_mono`, [God58] II.4.1)
+  est **retiré de cette Partie** et reporté à la Partie 91 : le draft r65
+  portait un `sorry` tactique sur sa preuve (réconciliation defeq des `X₂`,
+  instance `IsIso` non inférée) que le gate `proof-integrity` du caller
+  workflow élève en `sorryAx` transitif à l'import — classe `forbidden`
+  (pr-review-discipline §B). La **séparéité du conoyau** par recollement sur
+  faisceau, qui ferme la boucle, est la frontière nommée de la Partie 91,
+  qui posera l'énoncé ET sa preuve.
 
 Tous les `sorry`s ne sont pas comblés — la plupart sont des échafaudages
 intentionnels pour le prouveur multi-agent (cf. Epic #1453).
@@ -356,7 +377,27 @@ Substance (English):
   augmented resolution `0 → F → C⁰F → C⁰(coker μ)` **is a complex** — the
   exact opposite of the Part 87 witness for the iterated unit. Exactness at
   `C⁰F`, iteration of the step at higher degrees, and **acyclicity**
-  `H^n(C⁰F) = 0` remain the named frontier of Part 90.
+  `H^n(C⁰F) = 0` remain the named frontier of Part 91.
+- `Grothendieck.GodementExactness` (Part 90) : the **complex beyond degree 0
+  and the categorical mono of the unit**. The degree-1 differential
+  `godementCanonicalDOne = godementStep d⁰ : C¹F ⟶ C²F` is posed, and the
+  null-composition `d⁰ ≫ d¹ = 0`
+  (`godementCanonicalDZero_comp_godementCanonicalDOne`) is a **direct instance
+  of `comp_godementStep_zero`** (P89) — the complex extends to all degrees by
+  the same argument. The Godement unit is a **categorical monomorphism** on
+  sheaves (`mono_toGodement_of_isSheaf`, the categorical ascent of Part 84's
+  pointwise injectivity via `NatTrans.mono_iff_mono_app` +
+  `AddCommGrpCat.mono_iff_injective`) — the exactness of `0 → F → C⁰F` at F
+  in the language of complexes. The **reduction statement** of exactness at
+  `C⁰F` to the mono of the cokernel's unit
+  (`exact_toGodement_godementCanonicalDZero_of_mono`, [God58] II.4.1) is
+  **withdrawn from this Part** and deferred to Part 91 : the r65 draft
+  carried a `sorry` tactical proof (defeq reconciliation of the two `X₂`,
+  the `IsIso` instance not inferred) which the `proof-integrity` gate of the
+  caller workflow elevates to a `sorryAx` transitive at import — `forbidden`
+  class (pr-review-discipline §B). The **separatedness of the cokernel** by
+  gluing on sheaves, which closes the loop, is the named frontier of Part
+  91, which will pose the statement AND its proof.
 
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).

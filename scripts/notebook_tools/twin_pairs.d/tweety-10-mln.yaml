@@ -1,7 +1,7 @@
 - name: "Tweety-10 MLN"
   family: Tweety/IKVM-JPype
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "C# branche IKVM 8.14 + `tweety-mln.dll` (DLL source-recompilee, trackee sur disque) et invoque le MEME moteur Java que le jumeau Python (JPype) : construction MLN quantifiee, marginales multi-atomes via `ApproximateNaiveMlnReasoner(200000L, 200000L)`, sweep du poids de R1, exception stricte (pingouin), comparaison exact-vs-sampling (`SimpleSamplingMlnReasoner`). Les 6 marginales reproduisent le jumeau Python a 4 decimales (1.0000 / 0.7294 / 0.7294 / 0.9526 / 0.8301 / 0.8301), le sweep egalement. L'ancien verdict RECOVERABLE-LOCAL reposait sur un diagnostic FAUX en mecanisme : le \"bug IKVM 8.15 bloquant le MCMC\" etait en realite une erreur de signature d'interop (le constructeur prend des primitifs (long, long) ; lui passer des java.lang.Integer boxes echoue en CS1503). Avec les litteraux 200000L le reasoner s'instancie et query() retourne les memes valeurs que JPype (verifie firsthand 2026-08-20). Le defaut de Assembly.GetTypes() sur le shade est une lacune de la surface de reflection, pas du chargement. Le cas 1-atome en forme fermee sigma(w)=exp(w)/(1+exp(w)) (cell 11 partie A) est conserve comme ancre analytique. `SatNaiveMlnReasoner` (nomme par l'audit initial 2026-08-04) est absent de la build du shade ; `SimpleMlnReasoner` (wrapper Alchemy) requiert un binaire externe non installe -- documente dans le notebook cell 16. Verdict SOTA-OK lib-vs-lib (precedent de flip : #11839 CSP-4)."

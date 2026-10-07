@@ -281,7 +281,6 @@ from series_saturation import (  # noqa: E402
     DELIVERY_EMPTY_CORPUS,
     DELIVERY_NONE_IN_WINDOW,
     DELIVERY_UNAVAILABLE,
-    MERGED_FETCH_LIMIT,
     enrich_parent_families,
     EXPANSION,
     NEUTRAL,
@@ -289,6 +288,7 @@ from series_saturation import (  # noqa: E402
     cited_issues,
     delivery_factor,
     fetch_merged,
+    fetch_merged_window,
     fetch_series_visits,
     last_delivery_per_issue,
     measure_delivery,
@@ -865,6 +865,12 @@ def fetch_pool(
 # en 3 jours : #11601 a recu 22 PRs reparties sur 8 cellules (lane x jour), et
 # 6 de ces 8 cellules etaient DANS les clous. Aucun garde ne pouvait le voir.
 VISITS_WINDOW_DAYS = 1
+
+# Champs demandes pour compter les visites : `cited_issues` ne lit que le corps
+# et le titre, le tri ne lit que `mergedAt`. `files` n'est PAS demande ici --
+# c'est le champ le plus cher, et le compteur de visites n'en fait rien (#19209,
+# ou le jeu de champs est mesure : 111 s pour le corpus de 90 j sans `files`).
+VISITS_FIELDS = "number,title,body,mergedAt"
 # Echelle de l'amortissement. Diviseur = 1 + log2(1 + vus / VISITS_SCALE) :
 # 0 vu -> intact, 4 vus -> poids /2, 10 vus -> /2.6, 22 vus -> /3.1. Doux a 1
 # vu (/1.3 : une PR du jour sur un sujet est du travail normal, pas une veine),
@@ -921,12 +927,6 @@ def fetch_visits(
     pechees. Cle de tri != cle de filtre est un faux silencieux.
     """
     cutoff = NOW - dt.timedelta(days=days)
-    stamp = cutoff.strftime("%Y-%m-%dT%H:%M:%S+00:00")
-    command = [
-        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
-        "--limit", "400", "--search", f"merged:>={stamp}",
-        "--json", "number,title,body,mergedAt",
-    ]
     identity = [
         "gh", "pr", "list", "--repo", REPO, "--state", "merged",
         "--limit", "400", "--window-days", str(days),
@@ -934,12 +934,16 @@ def fetch_visits(
     ]
 
     def fetch_raw() -> list[dict]:
-        raw = subprocess.run(
-            command,
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            check=True, timeout=60,
-        ).stdout
-        return json.loads(raw)
+        # Tranches de dates, comme `series_saturation.fetch_merged` (#19209) :
+        # l'unique `--search` plafonne, et la troncature emporte les livraisons
+        # les plus ANCIENNES -- donc les visites qu'une fenetre de 30 j existe
+        # pour compter. Une tranche indecoupable LEVE : jamais un compteur
+        # partiel presente comme complet.
+        return fetch_merged_window(
+            since=cutoff.date().isoformat(),
+            fields=VISITS_FIELDS,
+            today=NOW.date(),
+        )
 
     try:
         prs = _cached_payload(
@@ -952,7 +956,11 @@ def fetch_visits(
             cache_status=cache_status,
         )
     except (subprocess.CalledProcessError, json.JSONDecodeError,
-            subprocess.TimeoutExpired, OSError) as exc:
+            subprocess.TimeoutExpired, OSError, RuntimeError) as exc:
+        # `RuntimeError` : une tranche indecoupable refuse de rendre un corpus
+        # partiel. On rend un compteur VIDE + l'erreur -- l'appelant doit dire
+        # que l'affluence n'a pas ete mesuree, jamais laisser un zero de mesure
+        # se lire comme un zero d'affluence (#19209).
         return {}, f"{type(exc).__name__}: {exc}"
 
     cache_entry = (cache_status or {}).get(cache_name) or {}
@@ -1103,7 +1111,13 @@ def has_delivered_signal(issue_number: int,
     except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
         return None
     for comment in comments:
-        if DELIVERED_COMMENT_MARKER in (comment.get("body") or ""):
+        # Grammaire `_DELIVERED_MARKER_RE`, pas la sous-chaine nue (#19390,
+        # controle negatif) : une mention discursive -- « sans [INFO]
+        # candidate-delivered », « [INFO] absent dans ce fil » -- porte la
+        # sous-chaine sans etre un en-tete de marqueur, et retirerait le
+        # candidat sur un faux positif. La voie ponderee et le tapis
+        # partagent cette seule grammaire.
+        if _DELIVERED_MARKER_RE.search(comment.get("body") or ""):
             return True
     return False
 
@@ -3940,7 +3954,11 @@ def upsert_orphans_comment(number: int, body: str) -> None:
 #      Une cloture (`[RELEASED]`, `[DONE]`, `[DELIVERED]`...) est aussi une
 #      visite : elle AVANCE la date, elle ne l'efface pas -- mesure #7742,
 #      rendue le 19/09 apres deux tranches mergees, qu'une lecture « rendu =
-#      rang rendu » remettait en tete comme jamais servie ;
+#      rang rendu » remettait en tete comme jamais servie. Le marqueur de
+#      livraison `[INFO] candidate-delivered` compte au meme titre dans le
+#      probe (#19295, grammaire `_DELIVERED_MARKER_RE`) : une lane qui rend
+#      la main apres avoir confronte l'issue a ses criteres l'a servie --
+#      #13107 servie 4 fois sans jamais reculer etait la mesure fondatrice ;
 #   3. la creation de la plus recente sous-issue ouverte qui la nomme comme
 #      parent (`last_child_stamp`, `apply_child_visits`, zero appel reseau).
 _PARENT_BODY_RE = re.compile(r"(?i)\bpart of #(\d+)")
@@ -4027,12 +4045,36 @@ def claim_visit_stamp(comments: list[dict]) -> str | None:
     return max(stamps) if stamps else None
 
 
-def latest_claim_stamp(issue_number: int) -> str | None:
-    """Date du plus recent marqueur de claim de l'issue (cf `claim_visit_stamp`).
+def delivered_info_stamp(comments: list[dict]) -> str | None:
+    """``createdAt`` serveur du plus recent marqueur [INFO] candidate-delivered.
 
-    Toutes lanes confondues : une reservation est une visite, quelle que soit
-    la lane qui la pose. Cout : 1 requete. ``None`` si aucun marqueur ou si la
-    lecture echoue -- l'issue garde alors sa date de merge, comme avant.
+    Un marqueur de livraison dit qu'une lane a confronte l'issue a ses
+    criteres et rendu la main (#15069) : c'est une visite au sens du tapis
+    (#19295 -- #13107 servie 4 fois par des lanes differentes, jamais
+    recule, parce que la metrie n'ecoutait que merges/claims/sous-issues).
+    Grammaire : le marqueur canonique du picker (`_DELIVERED_MARKER_RE`,
+    ancre en tete de ligne, discriminants anti-mention-discursive sur la
+    forme annonce), pas une regex nouvelle. Pas d'exigence de lane
+    attribuee : les formes canoniques ne portent pas forcement
+    `lane <machine:workspace>`, la garde anti-FP est portee par l'ancrage
+    et les discriminants (cf test discursif).
+    """
+    stamps = [c.get("createdAt") for c in comments
+              if isinstance(c, dict)
+              and _DELIVERED_MARKER_RE.search(c.get("body") or "")]
+    stamps = [s for s in stamps if s]
+    return max(stamps) if stamps else None
+
+
+def latest_claim_stamp(issue_number: int) -> str | None:
+    """Date du plus recent marqueur de lane en commentaire (cf `claim_visit_stamp`).
+
+    Deux marqueurs comptent, toutes lanes confondues, au meme titre de
+    visite : le claim (grammaire `check_lane_claim`) et le ``[INFO]
+    candidate-delivered`` (#19295) -- chacun dit qu'une lane a servi
+    l'issue. Cout : 1 requete pour les deux, la meme charge de commentaires
+    (probe de tete de `settle_belt_head`). ``None`` si aucun marqueur ou si
+    la lecture echoue -- l'issue garde alors sa date de merge, comme avant.
     """
     try:
         out = subprocess.run(
@@ -4041,9 +4083,11 @@ def latest_claim_stamp(issue_number: int) -> str | None:
             capture_output=True, text=True, encoding="utf-8", check=True,
             timeout=30,
         ).stdout
-        comments = (json.loads(out) or {}).get("comments") or []
-        return claim_visit_stamp(
-            [c for c in comments if isinstance(c, dict)])
+        comments = [c for c in (json.loads(out) or {}).get("comments") or []
+                    if isinstance(c, dict)]
+        stamps = [s for s in (claim_visit_stamp(comments),
+                              delivered_info_stamp(comments)) if s]
+        return max(stamps) if stamps else None
     except Exception:  # noqa: BLE001 - sonde best-effort, l'issue garde son merge
         return None
 
@@ -4910,6 +4954,99 @@ def write_prev_genre_csv(path: str, lane: str, genre: str, ts: str) -> None:
         pass
 
 
+def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
+                                delivered_probe=None, claims_probe=None):
+    """La boucle de service du tapis : claims, livraison, remplacement.
+
+    Extraite de ``main`` (#19390) pour etre testable sans harnais complet :
+    chaque predicat du tapis (claim tenu, livraison marquee, fail-OPEN de
+    sonde, plafond de budget) se teste sur CETTE boucle, sans appeler
+    ``main`` -- le fichier de test n'appelle ``main`` qu'a pool vide,
+    convention etablie.
+
+    ``probe_budget`` (entier > 0) borne les sondes de livraison au cout de
+    la fenetre de tete, meme doctrine que ``check_claims`` : le tapis ne
+    paie une requete commentaire que pour les candidats qu'il considere
+    reellement. Epuisement = fail-OPEN (``DELIVERED_SIGNAL_UNPROBED``),
+    rapporte dans l'etat de retour. ``delivered_probe`` (tests) remplace la
+    sonde reseau ; ``claims_probe`` (tests) remplace la verification au fil
+    de l'eau des items hors fenetre.
+
+    Rend ``(picks, withheld, etat)`` avec ``etat = {"failures": [numeros
+    illisibles], "budget_hit": bool}``.
+    """
+    budget = [int(probe_budget)]
+    state = {"failures": [], "budget_hit": False}
+
+    # Le budget enrobe TOUTE sonde, injectee ou reelle : un test qui fournit
+    # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
+    # cout ne serait testable qu'avec le reseau reel.
+    user_probe = delivered_probe or has_delivered_signal
+
+    def counted_probe(number, lane_name):
+        if budget[0] <= 0:
+            state["budget_hit"] = True
+            return DELIVERED_SIGNAL_UNPROBED
+        budget[0] -= 1
+        return user_probe(number, lane_name)
+
+    if claims_probe is None:
+        def claims_probe(numbers):
+            return check_claims(numbers, args.lane)
+
+    belt_picks: list[dict] = []
+    belt_withheld: list[tuple[dict, str]] = []
+    # Garde-fou : on n'itère pas plus loin que la fenetre + un certain
+    # quota au cas ou le pool est entierement BLOQUE. Sans plafond, un
+    # tapis sans service appellerait `check_claims` indefiniment.
+    # max_iters = min(grains * 5 + 50, len(belt_pool)) borne l'explosion.
+    max_iters = min(args.grains * 5 + 50, len(belt_pool))
+    for i, it in enumerate(belt_pool):
+        if i >= max_iters:
+            break
+        if len(belt_picks) >= args.grains:
+            break
+        n = it["number"]
+        if n in belt_claims:
+            code, human = belt_claims[n]
+        else:
+            # Verification au fil de l'eau : on n'a pas regarde plus
+            # loin que `belt_check_window` initialement ; un item hors
+            # fenetre qui n'est pas dans `belt_claims` doit etre verifie
+            # ICI, sinon le tapis le sert sans l'avoir jamais teste -- le
+            # bug fondateur du 6e CHANGES_REQUESTED.
+            extra = claims_probe([n])
+            code, human = extra.get(n, (CLAIM_CODE_ERROR, "(no check)"))
+            belt_claims[n] = (code, human)
+        if code == CLAIM_CODE_BLOCKED:
+            belt_withheld.append((it, human))
+            continue
+        # Sonde de livraison (#19390) : la voie ponderee ecartait et
+        # remplacait les candidats marques [INFO] candidate-delivered,
+        # le tapis les servait comme grains neufs -- chaque lane qui
+        # tirait une issue livree refaisait la verification puis
+        # reposait le marqueur (mesure 06/10 : #15974 et #16048, deux
+        # marqueurs chacune, servies a deux reprises). Portee : l'urne
+        # grain SEULE, comme la voie ponderee -- l'urne delivered sert
+        # precisement ces issues aux lanes habilitees (#15069), et une
+        # umbrella n'est jamais ecartee sur un marqueur (decision
+        # mesuree du canal label).
+        if it.get("klass") == "grain" and not args.include_delivered:
+            reason = delivered_signal_reason(
+                it, args.lane, counted_probe, state["failures"])
+            if reason is not None:
+                belt_withheld.append(
+                    (it, "LIVRAISON : " + reason
+                     + " Candidat remplace dans la meme urne."))
+                continue
+        # FREE, FREE_STALE, OWNED_BY_ME, ERROR -- servable.
+        # ERROR (check indisponible, parse rate...) est servable par
+        # defaut : on ne peut pas refuser un grain faute d'avoir pu
+        # verifier son claim, ce serait introduire un faux BLOQUE.
+        belt_picks.append(it)
+    return belt_picks, belt_withheld, state
+
+
 def main(argv: list[str] | None = None) -> int:
     # Console Windows cp1252 : un titre d'issue portant un caractere hors table
     # (fleche U+2192 etc.) fait crasher le print en UnicodeEncodeError et perd
@@ -5138,8 +5275,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     delivered_state: dict = {"failures": [], "budget_hit": False}
 
-    payload_cache = PayloadCache(args.cache_dir)
+    # Capacite dimensionnee pour le cache PAR TRANCHE (#19236) : la fenetre du
+    # tapis (90 j) couvre ~30 tranches de 3 j, qui s'ajoutent aux entrees
+    # pool / visites / series. Au plafond par defaut (32), les tranches les
+    # plus anciennes seraient evincees (LRU par mtime) et re-telechargees au
+    # tour suivant -- le cache par tranche serait annule par sa propre
+    # pression. 64 laisse la marge d'un tour complet plus les autres entrees.
+    payload_cache = PayloadCache(args.cache_dir, max_entries=64)
     cache_status: dict[str, dict[str, Any]] = {}
+    # Observabilite du cache PAR TRANCHE (#19236) : combien de tranches
+    # servies par le cache contre telechargees. Hors de `cache_status`, dont
+    # le contrat est `nom -> verdict de cache` (cf fetch_merged).
+    slice_stats: dict[str, int] = {}
 
     # #14591 Volet A : auto-appliquer --prev-genre depuis le CSV d'etat si
     # la lane y est connue. L'utilisateur peut toujours surcharger via
@@ -5373,6 +5520,7 @@ def main(argv: list[str] | None = None) -> int:
         cache_mode=effective_cache_mode,
         cache_status=cache_status,
         cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
+        slice_stats=slice_stats,
     )
     delivery_sig = measure_delivery(
         delivery_prs, umbrella_numbers, now=NOW, days=delivery_window_days,
@@ -5481,42 +5629,15 @@ def main(argv: list[str] | None = None) -> int:
                              max_probes=belt_check_window * 3 + 12)
         belt_check_nums = [it["number"] for it in belt_pool[:belt_check_window]]
         belt_claims = check_claims(belt_check_nums, args.lane)
-        belt_picks: list[dict] = []
-        belt_withheld: list[tuple[dict, str]] = []
-        # Garde-fou : on n'itère pas plus loin que la fenetre + un certain
-        # quota au cas ou le pool est entierement BLOQUE. Sans plafond, un
-        # tapis sans service appellerait `check_claims` indefiniment.
-        # max_iters = min(grains * 5 + 50, len(belt_pool)) borne l'explosion.
-        max_iters = min(args.grains * 5 + 50, len(belt_pool))
-        # ``checked`` accumule les numeros qui ont deja fait l'objet d'un
-        # appel ``gh`` pour eviter les repetitions au fil de l'eau.
-        checked: set[int] = set(belt_check_nums)
-        for i, it in enumerate(belt_pool):
-            if i >= max_iters:
-                break
-            if len(belt_picks) >= args.grains:
-                break
-            n = it["number"]
-            if n in belt_claims:
-                code, human = belt_claims[n]
-            else:
-                # Verification au fil de l'eau : on n'a pas regarde plus
-                # loin que `belt_check_window` initialement ; un item hors
-                # fenetre qui n'est pas dans `belt_claims` doit etre verifie
-                # ICI, sinon le tapis le sert sans l'avoir jamais teste -- le
-                # bug fondateur du 6e CHANGES_REQUESTED.
-                extra = check_claims([n], args.lane)
-                code, human = extra.get(n, (CLAIM_CODE_ERROR, "(no check)"))
-                belt_claims[n] = (code, human)
-                checked.add(n)
-            if code == CLAIM_CODE_BLOCKED:
-                belt_withheld.append((it, human))
-            else:
-                # FREE, FREE_STALE, OWNED_BY_ME, ERROR -- servable.
-                # ERROR (check indisponible, parse rate...) est servable par
-                # defaut : on ne peut pas refuser un grain faute d'avoir pu
-                # verifier son claim, ce serait introduire un faux BLOQUE.
-                belt_picks.append(it)
+        # Boucle de service extraite (#19390) : claims + sonde de livraison
+        # bornee a la fenetre de tete, remplacement dans la meme urne.
+        # Epuisement du budget de sondes = fail-OPEN, rapporte en banniere
+        # et en JSON (cf belt_pick_with_replacements).
+        belt_picks, belt_withheld, belt_pick_state = (
+            belt_pick_with_replacements(belt_pool, belt_claims, args,
+                                        belt_check_window))
+        belt_delivered_failures = belt_pick_state["failures"]
+        belt_probe_budget_hit = [belt_pick_state["budget_hit"]]
         # Banniere legere : le tapis ne refuse jamais, mais rappelle
         # les DWELL/zone pour le lecteur (information sans journal).
         if not args.json:
@@ -5527,6 +5648,26 @@ def main(argv: list[str] | None = None) -> int:
             if belt_withheld:
                 held = ", ".join(f"#{it['number']} ({c})" for it, c in belt_withheld[:5])
                 print(f"   BLOQUE par une autre lane (skip + replacement) : {held}")
+            # Volet livraison (#19390) : ligne propre, distincte du BLOQUE --
+            # le motif n'est pas une collision mais un travail deja rendu.
+            delivered_held = [(it, c) for it, c in belt_withheld
+                              if c.startswith("LIVRAISON")]
+            if delivered_held:
+                numbers = ", ".join(f"#{it['number']}"
+                                    for it, _ in delivered_held[:5])
+                print(f"   Signal de livraison : {len(delivered_held)} "
+                      f"candidat(s) ECARTE(S) (livre(s) sur main, urne "
+                      f"delivered) : {numbers}.")
+            if belt_delivered_failures:
+                numbers = ", ".join(f"#{n}"
+                                    for n in sorted(set(belt_delivered_failures)))
+                print(f"!! signal de livraison NON LU sur {numbers} : le tirage")
+                print("   est MAINTENU et ces candidats CONSERVES -- une lecture")
+                print("   qui n'a pas ABOUTI n'est PAS une absence de signal.")
+            if belt_probe_budget_hit[0]:
+                print("   Plafond de sondes de livraison atteint : les candidats")
+                print("   au-dela ne sont pas sondes (fail-OPEN) -- la verification")
+                print("   de livraison leur revient, cf check_unaddressed_nits.")
             # #18832 spec : la fenetre collision entre tirage et pose du
             # [CLAIMED] reste ouverte tant que la lane n'a pas poste le
             # claim. On rappelle ici que la lane doit poser le claim
@@ -5562,6 +5703,16 @@ def main(argv: list[str] | None = None) -> int:
                 } for it in belt_picks},
                 "withheld": [{"number": it["number"], "title": it["title"],
                               "cause": c} for it, c in belt_withheld],
+                # Volet livraison du tapis (#19390) : les trois etats ont
+                # trois messages distincts (ecarte / lecture en echec /
+                # non sonde), fail-OPEN sur les deux derniers -- meme
+                # contrat que print_delivered_signal_report.
+                "delivered_signal": {
+                    "withheld": [it["number"] for it, c in belt_withheld
+                                 if c.startswith("LIVRAISON")],
+                    "unread": sorted(set(belt_delivered_failures)),
+                    "budget_hit": belt_probe_budget_hit[0],
+                },
                 "last_delivery_window_days": delivery_window_days,
                 "substance_drought": {"triggered": False, "measured": False,
                                       "run": 0, "mode": "belt-bypassed"},
@@ -5734,6 +5885,14 @@ def main(argv: list[str] | None = None) -> int:
     # (`cache.pool.verified == false`) mais muet en clair -- or c'est
     # precisement le silence que #17096 designe comme le defaut.
     notice = cache_notice_lines(cache_status, show_all=args.cache_status)
+    if args.cache_status and slice_stats:
+        # #19236 : le cout du corpus etait invisible -- dire combien de
+        # tranches le cache a servies est ce qui rend le gain mesurable.
+        notice.append(
+            "Cache tranches (#19236) : {} servie(s) depuis le cache, "
+            "{} telechargee(s)".format(
+                slice_stats.get("hits", 0), slice_stats.get("fetches", 0))
+        )
 
     if args.json:
         print(json.dumps({

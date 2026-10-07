@@ -137,6 +137,24 @@ class Guard:
 # admise comme "pas de workflow d'origine".
 FAST_LANE_NATIVE = "(garde natif de la voie rapide : aucun workflow d'origine)"
 
+# Le lot pilote (#11835) est exempte par declaration du controle d'identité
+# byte-a-byte (#19193). Raison mesuree le 2026-10-05 : les noms dans le
+# registre (ex `banner-guard`) ne sont pas alignes avec les noms des jobs
+# dans les workflows d'origine (ex `probeAddresses banner guard`), car le
+# renommage byte-identique n'a pas ete fait a l'absorption (le workflow
+# d'origine porte encore le declencheur `pull_request`, c'est lui qui
+# bloque, la voie rapide observe -- cf PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF).
+# Le geste de bascule est porte par le programme #12567.
+PILOT_LOT_NAME = "PILOT"
+
+# Gardes absorbes apres #19168 dont le byte-a-byte-identique n'est pas encore
+# aligne. Mesuree le 2026-10-05 : la voie rapide les a absorbes par
+# declaration (absorbed=True, source=workflow.yml) mais le `name:` du job
+# dans le workflow source n'a pas ete renomme byte-identique au `guard.name`.
+# Programme #12567 est le geste de bascule ; en attendant, le filet
+# d'identite les signale sans les exiger.
+TRANCHE_ALIGNMENT_EN_COURS = frozenset({"TRANCHE10"})
+
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
 
 # ---------------------------------------------------------------------------
@@ -1719,5 +1737,82 @@ TRANCHE17: list[Guard] = [
         absorbed=True,
         needs_base=True,
         warn_rc=(2,),
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 18 -- couverture de l'index `docs/` (organe #13748).
+#
+# Origine : reserve de revue Hermes sur #19260 -- « l'organe n'est cable nulle
+# part ». Le README de `docs/` reecrit par cette PR remplace le compte ecrit
+# (146) par l'invariant lui-meme, en citant `python scripts/check_docs_index.py`
+# et son `exit 1`. Or `grep -rln check_docs_index .github/workflows/
+# scripts/ci/` rendait vide des deux cotes : l'invariant n'existait que quand un
+# humain pensait a l'executer. Si une revision supprimait une ligne d'index,
+# rien ne rougissait. Meme classe de defaut que TRANCHE17 (#19118).
+#
+# Forme moteur : garde ABSOLU, non-delta, et c'est delibere. Il mesure l'arbre
+# de HEAD, pas une difference base/PR : « tout doc vivant est-il atteignable
+# depuis l'index ? » n'a pas de sens en delta, et un `--expect-unreachable N`
+# (controle in-band positif, qui rend rc=2 si le chemin de detection est mort)
+# n'a pas sa place sur un arbre de PR -- il mesure une propriete de la
+# DETECTION, pas de la PR. D'ou l'absence de `needs_base` et de `swap_paths` :
+# aucun sous-arbre n'est bascule, lire l'arbre courant est exactement le geste
+# voulu.
+#
+# `absorbed=True` : sans absorption, le job always-on lance `fast_lane.py
+# --shadow`, donc `effective_shadow = args.shadow and not guard.absorbed` reste
+# vrai, et le garde emet une conclusion NEUTRE sous `fast-lane (ombre): ` -- un
+# `blocking=True` sans effet, soit exactement le defaut que la reserve
+# signalait. Un garde sans workflow d'origine n'a aucun autre emetteur de son
+# nom de check-run (meme convention que TRANCHE8/9/10/14/17).
+#
+# Chemin de retour : rc=1 sur doc inatteignable, 0 si tout est atteignable,
+# 2 sur echec du controle -- pas de `warn_rc` ici, l'organe est net.
+# ---------------------------------------------------------------------------
+TRANCHE18: list[Guard] = [
+    Guard(
+        name="docs-index-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "docs/**",
+            "scripts/check_docs_index.py",
+            "scripts/tests/test_check_docs_index.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=["python", "scripts/check_docs_index.py"],
+        blocking=True,
+        absorbed=True,
+    ),
+    # Issue #17444 / Q35 : ratchet de migration "python nu sans setup-python".
+    # Mesure firsthand c.199 : 14 jobs GitHub Actions matchent la classe
+    # (`python` nu sans `actions/setup-python` sur runners self-hosted, y
+    # compris configures `ubuntu-latest` mais routables). Mode `advisory
+    # --baseline 14` : exit 0 sur main, exit 1 si le compte depasse 14
+    # (regression). Le sweep #17470 a nettoie 9 jobs Linux ; l'organe ferme
+    # la boucle (cf. c.199 PR #19497). `blocking=False` parce que l'etat
+    # actuel (14) est une migration en cours, pas un defaut -- une PR qui
+    # AUGMENTE le compte (>14) sort en `failure` (rc=1), une PR qui le
+    # REDUIT reste en `neutral` (rc=0, mais le ratchet protege). Une fois
+    # le compte a 0, basculer en `blocking=True` (PR dediee future). Meme
+    # convention FAST_LANE_NATIVE + absorbed=True que hr-substitution-guard
+    # (l'organe n'a pas de workflow d'origine, c'est la tranche pilote).
+    Guard(
+        name="detect-python-nu-jobs",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            ".github/workflows/**",
+            "scripts/ci/detect_python_nu_jobs.py",
+            "scripts/tests/test_detect_python_nu_jobs.py",
+        ],
+        argv=[
+            "python", "scripts/ci/detect_python_nu_jobs.py",
+            "--mode", "advisory", "--baseline", "14", "--json",
+        ],
+        blocking=False,
+        warn_rc=(2,),
+        absorbed=True,
     ),
 ]

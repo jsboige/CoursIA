@@ -53,6 +53,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -204,6 +205,7 @@ def check_notebooks(
     base_ref: str = "",
     head_ref: str = "",
     pr_body: str = "",
+    base_path_of: dict[str, str] | None = None,
 ) -> CheckResult:
     """Classify + count each path, bucketing by advisory status.
 
@@ -218,6 +220,12 @@ def check_notebooks(
     exemption markers from ``pr_body``. The default (``base_ref=""``) skips
     this check (preserves backward compatibility for callers that don't pass
     a base ref).
+
+    #19251 -- ``base_path_of`` maps a ``path`` to the location it had at the
+    base, for a notebook the PR **renamed**: the credited diff then reads
+    ``base:previousFilename`` against ``head:path`` instead of the same path on
+    both sides (which would find nothing at the base and read as a full loss).
+    Absent from the map, ``path`` is used for both sides -- the pre-rename case.
     """
     result = CheckResult()
     # Pré-calcul des exemptions une seule fois (cf. #18740).
@@ -238,7 +246,27 @@ def check_notebooks(
             )
             continue
 
-        cnt = count_exercises_in_notebook(path)
+        # #19215 (review 5411248369) : le comptage doit porter sur la MEME
+        # revision que le diff credite, pas sur l'arbre du jour. Un carnet
+        # MODIFIE par une PR puis RENOMME (ou supprime) par une PR suivante
+        # est absent de l'arbre : `count_exercises_in_notebook` levait un
+        # FileNotFoundError qui emportait tout le balayage -- les autres PR
+        # de la fenetre n'etaient pas mesurees. Le blob de tete, lui, existe
+        # par construction pour un chemin MODIFIED.
+        #
+        # La classification, elle, reste sur `path` : `classify_notebook` lit
+        # les regles de REPERTOIRE (`IIT/`, `groupe-`, `_`) et le fichier
+        # temporaire du blob ne les porte pas -- classify sur le blob
+        # reclasserait le carnet en `archive`/`tooling` sur son seul prefixe.
+        count_path = path
+        if head_ref and _HAS_CREDITED:
+            try:
+                count_path = _read_git_blob(head_ref, str(path).replace("\\", "/"))
+            except (subprocess.CalledProcessError, OSError):
+                # Blob absent de la tete : on garde l'arbre du jour. Si lui
+                # aussi manque, l'echec est nomme par l'appelant (sweep).
+                count_path = path
+        cnt = count_exercises_in_notebook(count_path)
         if cnt.parse_error is not None:
             result.parse_errors.append(
                 NotebookVerdict(
@@ -262,7 +290,16 @@ def check_notebooks(
                     head_examples = count_credited_examples(_read_nb(head_blob))
                 else:
                     head_examples = count_credited_examples(_read_nb(path))
-                base_path = _read_git_blob(base_ref, str(path).replace("\\", "/"))
+                # #19251 -- un carnet RENOMME par la PR n'existe pas au meme
+                # chemin dans la base : sans la correspondance, `base:path`
+                # rendrait un blob absent et le diff lirait une perte totale.
+                # La carte est clee en POSIX (le chemin GraphQL) : on normalise
+                # la cle du `Path` avant de la consulter, sinon sous Windows
+                # (`str(path)` rend des `\`) la correspondance raterait en
+                # silence et le renommage redeviendrait non mesure.
+                posix_path = str(path).replace("\\", "/")
+                base_side = (base_path_of or {}).get(posix_path, posix_path)
+                base_path = _read_git_blob(base_ref, base_side)
                 base_examples = count_credited_examples(_read_nb(base_path))
                 diff = diff_examples(base_examples, head_examples)
                 nb_name = path.name
