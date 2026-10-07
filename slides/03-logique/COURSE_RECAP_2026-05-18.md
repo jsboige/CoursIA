@@ -50,7 +50,7 @@
 
 **Materiel slides**:
 - Deck S1-argumentation slides 14-25 (histoire + theorie) prepares
-- Demo Tweety-5-Abstract-Argumentation.ipynb si temps
+- Demo Tweety-05-Abstract-Argumentation-Python.ipynb si temps
 
 ## Phase 3 — Presentation du depot etudiants
 
@@ -78,9 +78,9 @@
 |----------|-------|--------|
 | Tweety-1-Setup | Installation, JVM, Tweety package | OK |
 | Tweety-2-Basic-Logics | Logique propositionnelle, modus ponens | OK |
-| Tweety-3-Advanced-Logics | FOL, semantique, models | OK |
-| Tweety-4-Belief-Revision | AGM, contraction, expansion | OK |
-| Tweety-5-Abstract-Argumentation | Dung AFs, semantique grounded/preferred | OK |
+| Tweety-03-Advanced-Logics-Python | FOL, semantique, models | OK |
+| Tweety-04-Belief-Revision-Python | AGM, contraction, expansion | OK |
+| Tweety-05-Abstract-Argumentation-Python | Dung AFs, semantique grounded/preferred | OK |
 | Tweety-6-Structured-Argumentation | ASPIC+, rules-based | OK |
 | Tweety-7a-Extended-Frameworks | Bipolaires, value-based | OK |
 | Tweety-7b-Ranking-Probabilistic | Ranking-based, probabiliste | OK |

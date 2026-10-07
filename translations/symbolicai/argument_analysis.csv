@@ -2869,7 +2869,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantic
 
 > **Notebook fondationnel** (non-agentique) de la série *Argument_Analysis*.
 > Il précède et éclaire l'aperçu de [2-formal §6](Argumentation-05-Formal-Verification-Python.ipynb)
-> et l'utilisation du solveur Tweety dans [Tweety-5](../Tweety/Tweety-5-Abstract-Argumentation.ipynb).
+> et l'utilisation du solveur Tweety dans [Tweety-5](../Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb).
 
 ## Pourquoi ce notebook
 
@@ -3241,11 +3241,11 @@ l'acceptabilité argumentative.
 
 ### Prochaines étapes
 
-- **Utiliser le solveur** : [Tweety-5](../Tweety/Tweety-5-Abstract-Argumentation.ipynb)
+- **Utiliser le solveur** : [Tweety-5](../Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb)
   applique ces sémantiques via TweetyProject (JVM) sur des AF plus grands, où l'énumération
   exhaustive devient prohibitif. Le notebook [2-formal §6](Argumentation-05-Formal-Verification-Python.ipynb)
   en fait usage dans le pipeline agentique.
-- **Prouver les théorèmes** : [Tweety-5b-Lean](../Tweety/Tweety-5b-Lean-Argumentation.ipynb)
+- **Prouver les théorèmes** : [Tweety-05b-Lean](../Tweety/Tweety-5b-Lean-Argumentation.ipynb)
   formalise en Lean les inclusions ($\text{grounded} \subseteq \text{preferred}$) et les
   conditions d'existence de la sémantique stable.
 - **Argumentation structurée** : le formalisme abstrait de Dung ignore le contenu des
