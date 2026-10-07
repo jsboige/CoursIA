@@ -18,7 +18,7 @@ Usage :
   python scripts/audit/extract_claims_vs_outputs.py <notebook>.ipynb [--out <fichier.yml>]
 
 Litmus anti-LIGHT : ce script EXTRACT, il ne DÉCIDE pas. Le verdict final = revue
-humaine/agent compétent dans le domaine. Cf docs/audit/sampling-protocol.md.
+humaine/agent compétent dans le domaine. Cf docs/transients/2026-07-23-audit-sampling-protocol.md.
 """
 
 import argparse

@@ -4,13 +4,13 @@
 
 ## Description
 
-Modèle de Deep Learning pour la prédiction de prix de cryptomonnaies utilisant des réseaux LSTM (Long Short-Term Memory) avec une architecture avancée.
+Sélection d'actifs crypto par **ranking cross-sectionnel** (Broad Ch8, *Hands-On AI Trading*) : prédire quel actif surperforme l'autre à J+1 (BTC vs ETH), et non un prix absolu. Deux modèles PyTorch sont comparés : DLinear et LSTM.
 
 ### Caractéristiques principales
 
-- **Architecture DLinear** (AAAI 2023) : décomposition ultra-simple + couches linéaires
+- **Architecture DLinear** (AAAI 2023) : décomposition ultra-simple + couches linéaires, comparée à un LSTM de référence
   - Bloc SeriesDecomposition (séparation tendance/saisonnalité par moyenne mobile)
-  - Pas de mécanisme d'attention (~10K paramètres)
+  - Pas de mécanisme d'attention — version shared-channel : 122 paramètres exactement (deux `nn.Linear(60, 1)`, calculable depuis la classe du notebook)
   - Performance SOTA en prévision de séries temporelles
 
 - **Implémentation PyTorch** : stack Deep Learning complète
@@ -18,7 +18,7 @@ Modèle de Deep Learning pour la prédiction de prix de cryptomonnaies utilisant
   - Module SeriesDecomposition
   - Modèle DLinear (prévision tendance + saisonnière)
 
-- **Cible** : prédiction du prix BTCUSDT
+- **Cible** : ranking cross-sectionnel BTC vs ETH (`y = 1` si BTC surperforme ETH à J+1, classification binaire)
 
 ## Architecture
 
@@ -38,7 +38,9 @@ Input → SeriesDecomposition → [Trend, Seasonal] → DLinear → Prediction
 
 - `main.py` : algorithme QC avec intégration du modèle PyTorch
 - `research.ipynb` : notebook de recherche avec entraînement et évaluation du modèle
+- `_generate_research.py` : script qui régénère `research.ipynb` depuis `main.py`
 - `config.json` : configuration du projet
+- `README.en.md` : version anglaise du README
 
 ## Référence
 
