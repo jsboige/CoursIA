@@ -7,8 +7,22 @@ conteneurs et ses unites.
 
 | Fichier | Chemin vivant | Etat |
 |---|---|---|
-| `pool.sh` | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, 8 slots depuis le 2026-09-22 |
+| `pool.sh` | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, 8 slots depuis le 2026-09-22. **Source deposee ici depuis le 2026-10-06** (avant, le depot ne portait que ce README) : copie byte-identique a la source `D:\Dev\CoursIA-runners-p0\pool.sh` et a la copie vivante WSL (`sha256:48bb6f272dd21aaf6ec3ec5b0fec659fbce07ff7608f7972dff5c73da7bbfab8`, 11197 octets, LF) -- le correctif `validate_keep` est verifiable depuis le depot |
 | `run-pool-po2026.sh` | `C:\dev\CoursIA-runners-p0\run-pool-po2026.sh` (hote Windows) | **deploye et vivant** -- lanceur de la tache planifiee, porte la borne CPU/memoire. La premiere forme ecrite le 2026-09-22 ne relancait **rien** (cf. piege du transport ci-dessous) ; la forme livree est verifiee de bout en bout |
+
+## `validate_keep` -- la porte contre les `_work` endommages (#14801)
+
+Deploye le 2026-09-28 23:13Z (fenetre accordee 22:06Z, zero job coupe). La classe
+de defaut : un `_work` chaud transporte l'index menteur d'un checkout sparse
+(bits `skip-worktree` sur des fichiers absents, `git status --porcelain` **vide**
+-- l'arbre se declare sain) et le job suivant meurt sur `not uptodate; will not
+remove`. `validate_keep()` (appelee par `restore_work()`) valide l'arbre parque
+avant de le restaurer : bits `^S` OU `update-index --really-refresh` + statut
+sale = **endommage** -> le keep est ecarte et le slot repart froid (seul etat de
+confiance) ; un keep sain reste chaud (objectif #18225 preserve). Preuve au
+deploiement : `pool.log` 01:13:13-14 locales, `slot1/slot2/slot3: _work ecarte
+(endommage) -> slot froid` -- les trois keeps herites des forks v1 interceptes
+des le premier spawn.
 
 **Attention -- la chaine est coupee en deux repertoires.** Mesure du 2026-09-22 :
 
