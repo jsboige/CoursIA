@@ -4,14 +4,14 @@
 > *The Unexpected AI Stack: C#/.NET, Part 1* (Charles Chen, 08/2026).
 > Sub-grain [#10500b](https://github.com/jsboige/CoursIA/issues/10500) — packaging
 > `.csproj` standalone des analyseurs prototypés dans
-> [`Roslyn-Code-Guardrails.ipynb`](Roslyn-Code-Guardrails.ipynb) (PR #10502).
+> [`Roslyn-Code-Guardrails.html`](Roslyn-Code-Guardrails.html) (PR #10502).
 > Sub-grain #10500c — extension `AGSEC004` (HttpClient non-constant URL).
 > Sub-grain #10500d — registry de suppressions `#pragma warning disable AGSECxxx`.
 > Sub-grain #10500e — extension `AGSEC005` (credentials hardcodées).
 
 ## Pourquoi ce dossier
 
-Le notebook [`Roslyn-Code-Guardrails.ipynb`](Roslyn-Code-Guardrails.ipynb),
+Le notebook [`Roslyn-Code-Guardrails`](Roslyn-Code-Guardrails.html),
 désormais hébergé dans ce dossier `analyzers/`, a prototypé trois analyseurs Roslyn
 en cellules .NET Interactive (cell 4) et un `CodeFixProvider` (cell 10) — c'est la
 **démonstration pédagogique** de l'axe.
