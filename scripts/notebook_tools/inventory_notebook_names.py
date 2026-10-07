@@ -417,7 +417,7 @@ def main():
                     help="revision de base (defaut: origin/main)")
     ap.add_argument("--baseline", type=int, default=None,
                     help="denominateur nominal (defaut: auto=ref, aligne sur "
-                         "entries (classification --base), Tell c.15814-L1 ★ NEW)")
+                         "entries (classification --base))")
     ap.add_argument("--json", action="store_true",
                     help="sortie JSON machine (defaut: humain)")
     ap.add_argument("--self-test", action="store_true",
