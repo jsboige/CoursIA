@@ -5,7 +5,7 @@ an ``ib_insync.IB`` connection to an IB Gateway **paper** session. It is built
 for the inverse-volatility sleeve in UCITS form: European lines quoted in EUR
 on Xetra, driven by signals computed on the equivalent US ETFs.
 
-Four choices shape it:
+Five choices shape it:
 
 1. **Contracts by conId.** A Xetra ticker is not always the IBKR symbol: the
    iShares $ Treasury 7-10yr (Dist) line trades as ``IUSM`` on Xetra but its
@@ -35,6 +35,19 @@ Four choices shape it:
    reports as a warning only, leaving the order ``PendingSubmit``: an order the
    gateway never acknowledges is cancelled and raises
    :class:`OrderNotAcknowledgedError` instead of passing for a working order.
+5. **Orders left working.** After a restart, the gateway no longer returns
+   the executions and completed orders of earlier days: a paper gateway
+   started on 2026-10-06 returned none of the fills of 2026-10-05, even with
+   a time filter. The gateway is restarted every day. An execution the ledger
+   did not book before then would be lost without a trace, since the ledger
+   may legitimately hold less than the account. Every order is therefore
+   recorded in the ledger *before* it is sent, and stays pending until its
+   executions are booked or it is seen closed on the day it was placed. While
+   an order is pending, :meth:`IBKRBroker.place` sends nothing more: planning
+   on a ledger that lacks its fills would send it twice. An order of an
+   earlier day that is closed but not fully booked stops the sync with
+   :class:`UnreconciledOrderError`. Its executions are read in the account
+   statement and booked with ``python -m paper_harness.ibkr_ledger``.
 
 The module imports ``ib_insync`` lazily: importing it does not require the
 library, and the tests drive the adapter with a fake client.
@@ -92,6 +105,14 @@ class LedgerDriftError(LedgerError):
     """The ledger holds more of a line than the account does."""
 
 
+class PendingOrderError(LedgerError):
+    """An order of the sleeve is not accounted for yet; no new order is sent."""
+
+
+class UnreconciledOrderError(LedgerError):
+    """An order of an earlier day may have executions the gateway no longer returns."""
+
+
 class OrderNotAcknowledgedError(RuntimeError):
     """The gateway never acknowledged an order; it was cancelled, the cycle must stop."""
 
@@ -106,6 +127,11 @@ class SleeveLedger:
     ``booked`` maps every execution already booked to the commission booked
     for it, which makes :meth:`book` idempotent and lets a commission report
     that arrives after its execution be added later.
+
+    ``pending`` maps the ``orderRef`` of each order sent and not yet accounted
+    for to its symbol, signed quantity, signed quantity booked so far and
+    placement date. ``settled`` keeps a trace of the orders that ended with
+    part of their quantity unexecuted, or that were booked by hand.
     """
 
     name: str
@@ -114,6 +140,8 @@ class SleeveLedger:
     positions: dict[str, float] = field(default_factory=dict)
     booked: dict[str, float] = field(default_factory=dict)
     flows: list[dict[str, Any]] = field(default_factory=list)
+    pending: dict[str, dict[str, Any]] = field(default_factory=dict)
+    settled: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def order_ref_prefix(self) -> str:
@@ -162,8 +190,15 @@ class SleeveLedger:
         self.cash += amount
         self.flows.append({"date": date.today().isoformat(), "amount": float(amount), "note": note})
 
-    def book(self, exec_id: str, symbol: str, quantity: float, price: float, commission: float) -> bool:
-        """Book one execution (``quantity`` signed). Return True if the ledger changed."""
+    def book(
+        self, exec_id: str, symbol: str, quantity: float, price: float, commission: float,
+        order_ref: str = "",
+    ) -> bool:
+        """Book one execution (``quantity`` signed). Return True if the ledger changed.
+
+        The execution counts towards the pending order ``order_ref``, which
+        stops being pending once its whole quantity is booked.
+        """
         commission = 0.0 if not math.isfinite(commission) or commission >= _UNSET_DOUBLE else commission
         if exec_id in self.booked:
             extra = commission - self.booked[exec_id]
@@ -172,6 +207,12 @@ class SleeveLedger:
             self.cash -= extra
             self.booked[exec_id] = commission
             return True
+        order = self.pending.get(order_ref)
+        if order is not None:
+            if order["symbol"] != symbol:
+                raise LedgerError(f"execution {exec_id} on {symbol} for order {order_ref} on {order['symbol']}")
+            if abs(order["filled"] + quantity) > abs(order["quantity"]) + 1e-9:
+                raise LedgerError(f"execution {exec_id} exceeds the quantity of order {order_ref}")
         held = self.positions.get(symbol, 0.0) + quantity
         if held < -1e-9:
             raise LedgerError(f"execution {exec_id} would leave {symbol} short in the sleeve")
@@ -181,7 +222,29 @@ class SleeveLedger:
             self.positions[symbol] = held
         self.cash -= quantity * price + commission
         self.booked[exec_id] = commission
+        if order is not None:
+            order["filled"] += quantity
+            if abs(order["quantity"] - order["filled"]) < 1e-9:
+                del self.pending[order_ref]
         return True
+
+    def track(self, order_ref: str, symbol: str, quantity: int, placed: date) -> None:
+        """Record an order about to be sent: it stays pending until accounted for."""
+        if order_ref in self.pending:
+            raise LedgerError(f"order {order_ref} is already pending")
+        if quantity == 0:
+            raise ValueError("a pending order needs a non-zero quantity")
+        self.pending[order_ref] = {
+            "symbol": symbol, "quantity": int(quantity), "filled": 0.0, "placed": placed.isoformat(),
+        }
+
+    def settle(self, order_ref: str, note: str) -> dict[str, Any]:
+        """Stop tracking a pending order whose remaining quantity will never execute."""
+        if order_ref not in self.pending:
+            raise LedgerError(f"order {order_ref} is not pending")
+        order = self.pending.pop(order_ref)
+        self.settled.append({"order_ref": order_ref, **order, "settled": date.today().isoformat(), "note": note})
+        return order
 
 
 # -- broker -------------------------------------------------------------------
@@ -311,19 +374,45 @@ class IBKRBroker:
                 raise LedgerError(f"commission of {execution.execId} is in {report.currency}")
             commission = report.commission
         side = 1.0 if execution.side == "BOT" else -1.0
-        return self.ledger.book(execution.execId, symbol, side * execution.shares, execution.price, commission)
+        return self.ledger.book(
+            execution.execId, symbol, side * execution.shares, execution.price, commission,
+            order_ref=execution.orderRef,
+        )
 
     def sync(self) -> None:
-        """Book today's tagged executions, then check the ledger against the account.
+        """Book the session's tagged executions, account for pending orders, check the account.
 
-        IBKR returns the executions of the current day only: a cycle that
-        leaves an order working must be synced again before midnight.
+        The gateway returns the executions of its current session only (see
+        the module docstring). A pending order still open stays pending. A
+        closed one placed today has all its executions in this session, so
+        whatever is not booked never executed. A closed one placed earlier may
+        have executed in a session that is gone: it raises
+        :class:`UnreconciledOrderError`, after the executions read are saved.
         """
         changed = False
         for fill in self.ib.reqExecutions():
             changed |= self._book_fill(fill)
+        stale: list[str] = []
+        if self.ledger.pending:
+            still_open = {t.order.orderRef for t in self.ib.reqAllOpenOrders()}
+            today = date.today().isoformat()
+            for ref, order in list(self.ledger.pending.items()):
+                if ref in still_open:
+                    continue
+                if order["placed"] == today:
+                    self.ledger.settle(ref, "closed the day it was placed; the rest never executed")
+                    changed = True
+                else:
+                    stale.append(ref)
         if changed:
             self.ledger.save(self.ledger_path)
+        if stale:
+            raise UnreconciledOrderError(
+                "closed order(s) of an earlier day not fully booked: "
+                + ", ".join(f"{r} ({_describe(self.ledger.pending[r])})" for r in stale)
+                + ". Their executions are no longer returned by the gateway: read them in the account "
+                "statement and book them with 'python -m paper_harness.ibkr_ledger resolve'"
+            )
         held = {p.contract.conId: float(p.position) for p in self.ib.positions(self.account)}
         for symbol, quantity in self.ledger.positions.items():
             in_account = held.get(self.lines[symbol].con_id, 0.0)
@@ -389,6 +478,12 @@ class IBKRBroker:
         if quantity == 0:
             raise ValueError("quantity must be non-zero")
         self._ensure_synced()
+        if self.ledger.pending:
+            raise PendingOrderError(
+                "order(s) not accounted for yet: "
+                + ", ".join(f"{r} ({_describe(o)})" for r, o in self.ledger.pending.items())
+                + "; nothing more is sent until their executions are booked"
+            )
         held = self.ledger.positions.get(symbol, 0.0)
         if quantity < 0 and -quantity > held + 1e-9:
             raise LedgerError(f"selling {-quantity} {symbol} exceeds the {held:g} the sleeve holds")
@@ -401,10 +496,15 @@ class IBKRBroker:
         from ib_insync import LimitOrder
 
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        ref = f"{self.ledger.order_ref_prefix}{stamp}"
         order = LimitOrder(
             "BUY" if quantity > 0 else "SELL", abs(quantity), limit,
-            tif="DAY", account=self.account, orderRef=f"{self.ledger.order_ref_prefix}{stamp}",
+            tif="DAY", account=self.account, orderRef=ref,
         )
+        # Recorded before sending: a process that dies after placeOrder still
+        # leaves the order on the ledger.
+        self.ledger.track(ref, symbol, quantity, date.today())
+        self.ledger.save(self.ledger_path)
         trade = self.ib.placeOrder(contract, order)
         for _ in range(max(1, int(self.fill_timeout / 0.5))):
             if trade.isDone():
@@ -420,6 +520,9 @@ class IBKRBroker:
         changed = False
         for fill in trade.fills:
             changed |= self._book_fill(fill)
+        if trade.isDone() and ref in self.ledger.pending:
+            self.ledger.settle(ref, f"{trade.orderStatus.status}; the rest never executed")
+            changed = True
         if changed:
             self.ledger.save(self.ledger_path)
         return str(trade.order.orderId)
@@ -429,6 +532,10 @@ class IBKRBroker:
         raw = reference * (1.0 + self.collar if quantity > 0 else 1.0 - self.collar)
         tick = self.tick(symbol, raw)
         return round(round(raw / tick) * tick, 10)
+
+
+def _describe(order: Mapping[str, Any]) -> str:
+    return f"{order['quantity']:+d} {order['symbol']} placed {order['placed']}, {order['filled']:+g} booked"
 
 
 def _market(ticker: Any) -> float:

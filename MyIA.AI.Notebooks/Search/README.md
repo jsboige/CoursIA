@@ -3,7 +3,7 @@
 <!-- CATALOG-STATUS
 series: Search
 pedagogical_count: 157
-breakdown: Applications=59, Part1-Foundations=43, Part4-Metaheuristics=35, Part2-CSP=18, Discrepancy=2
+breakdown: Applications=52, Part1-Foundations=45, Part4-Metaheuristics=35, Part2-CSP=18, Part5-Frontieres=7
 maturity: BETA=143, ALPHA=9, DRAFT=5
 -->
 
