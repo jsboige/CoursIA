@@ -1,3 +1,5 @@
+> RAPPORT — 2026-08-10 — census G-VAR-2/3 anti-blanchiment de genre, fenêtre 7 j — figé
+
 # Census G-VAR-2/3 anti-blanchiment de genre (#10290) — fenêtre 7j (2026-08-03 → 2026-08-10)
 
 **Auteur** : `myia-po-2026:CoursIA` (cycle c.1034)

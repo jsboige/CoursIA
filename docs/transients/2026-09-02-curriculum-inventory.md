@@ -1,3 +1,5 @@
+> RAPPORT — 2026-09-02 — inventaire humain des parcours (fichier manuel) — figé
+
 <!--
   FICHIER MANUEL — inventaire humain, PAS généré par generate_parcours.py.
   Cet inventaire recense tous les embryons de parcours actuellement présents
