@@ -267,6 +267,9 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 |---------|-------------|
 | [research/fallacy-detection-survey.md](research/fallacy-detection-survey.md) | Survey SOTA détection de sophismes + argument mining, fondant l'EPIC #10355 (Phase 1 livrable 1). 10 sources primaires (Logic/LogicClimate, MAFALDA 23 classes, IBM-Rank-30k, AraucariaDB), constat clé : taxonomie Argumentum 1408/8 familles écrase les datasets académiques 13-23 → mapping d'étiquettes = livrable de recherche à part entière |
 | [research/quant-prose-residual-machine-dep.md](research/quant-prose-residual-machine-dep.md) | Inventaire résiduel des timings machine-dépendants cités en prose (#10158) — scan `check_machine_dep_timing.py --all` sur 1008 notebooks. Recense ce qui reste après passage de l'organe, pour que le résidu soit une liste et non une impression |
+| [research/percolation-03-critique-results.md](research/percolation-03-critique-results.md) | Résultats d'exécution du palier 3 (PR #19537, c.1104) — physique du point critique `M(L, 1/2)/L² ~ L^{-β/ν}` et `P(s) ~ s^{-τ'}`, sweep `L ∈ {8,16,32,64}` × 32 seeds. Verdict : exposants sous leur cible (β/ν=0.1065, τ'=2.188), corrections d'échelle finie visibles |
+| [research/percolation-03b-critique-results.md](research/percolation-03b-critique-results.md) | Extension palier 3+ (PR #19548, c.1105) — `L ∈ {128, 256}` pour convergence asymptotique, fit log-log sur 6 points. Verdict : β/ν=0.1065, τ'=2.188, p_c(L) → 1/2 monotone ; convergence asymptotique **non atteinte** aux tailles accessibles |
+| [research/percolation-03c-critique-results.md](research/percolation-03c-critique-results.md) | Extension palier 3++ (PR #19550, c.1106) — `L = 512` pour pousser la convergence. Verdict : β/ν=0.1062, R²=0.977, std_err=0.007 ; cible 0.1389 toujours hors d'atteinte, écart à p_c=1/2 = 0.0013 à L=512 — corrections d'échelle finie dominent |
 
 ## Audit sémantique cross-famille (docs/audit/)
 
