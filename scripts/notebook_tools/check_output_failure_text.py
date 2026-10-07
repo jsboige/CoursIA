@@ -668,8 +668,16 @@ def _declared_fallback(nb, idx, out_text, matched, base_nb=None):
     if not declared:
         return False
     base_cell = _base_cell_for(base_nb, cell)
+# Coexistence (#19638 + #19640): si la cellule porte une sortie
+    # substantielle a la fois en base et en head, la banniere est
+    # decoration, pas remplacement -- la cellule fait toujours son
+    # travail, la banniere est un aparté. La forme de substitution
+    # (substantiel -> banner-only) renvoie toujours False (TF) ; la
+    # branche main utilise _in_fallback pour distinguer decoration
+    # d'un fallback déclaré.
     if (base_cell is not None and _substantial_output(base_cell)
-            and not _in_fallback(base_cell)):
+            and not _in_fallback(base_cell)
+            and not _substantial_output(cell)):
         return False
     return True
 
