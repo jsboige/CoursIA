@@ -15,6 +15,11 @@ subprocess reel sur kernel python3 — le parametre kernel est generique, pas
 besoin de .NET. Les executeurs exigeant une infra non disponible en CI
 (exec_dotnet_persist : kernel .NET ; execute_qcpy_docker : Docker/quantbook)
 sont testes sur leur point d'ecriture extrait, ``_save_executed``.
+
+Le kernelspec ``python3`` est une dependance **reparee** (job CI :
+``pip install ipykernel``), pas une condition de skip :
+``test_python3_kernelspec_is_registered`` rougit s'il manque, pour que
+l'integration cesse d'etre invisible sur une partie du parc (#18279).
 """
 
 import json
@@ -108,22 +113,41 @@ def test_execute_qcpy_docker_save_executed_strips_stale_block(tmp_path):
 
 # --- executeurs kernel generiques : subprocess reel sur kernel python3 ---------
 
-def _python3_kernel_available() -> bool:
-    """Le runner CI n'enregistre pas de kernelspec python3 : le subprocess
-    reel echouerait sur NoSuchKernel avant meme de toucher au code teste
-    (incident #12724, run 32681713419). On skippe l'integration, les tests
-    d'ecriture unitaires ci-dessus couvrent le cablage du strip."""
+def _python3_kernel_missing_reason() -> "str | None":
+    """Pourquoi le kernelspec ``python3`` est-il inutilisable ici ?
+
+    ``None`` quand il l'est. Cette fonction remplace un ``skipif`` qui faisait
+    disparaitre les deux tests d'integration sur toute machine sans kernelspec
+    (incident #12724, run 32681713419) : la faute -- kernel qui meurt au spawn,
+    #18279 -- n'existait alors plus que sur le sous-ensemble de machines qui
+    avaient le kernel. Le defaut paraissait machine-specifique alors qu'il
+    etait **filtre**, et c'est ce filtrage qui a fait suivre pendant dix jours
+    un axe de diagnostic .NET alors qu'aucun noyau .NET n'est lance ici.
+
+    Regle F : un environnement se repare, il ne se contourne pas par un skip.
+    """
     try:
         from jupyter_client.kernelspec import KernelSpecManager
-        return "python3" in KernelSpecManager().find_kernel_specs()
-    except Exception:
-        return False
+    except Exception as exc:
+        return ("jupyter_client indisponible ({}) : pip install jupyter_client"
+                .format(exc))
+    if "python3" in KernelSpecManager().find_kernel_specs():
+        return None
+    return ("kernelspec `python3` non enregistre : pip install ipykernel "
+            "(#18279 -- ce skip masquait la panne sur les machines sans kernel)")
 
 
-requires_python3_kernel = pytest.mark.skipif(
-    not _python3_kernel_available(),
-    reason="kernel python3 non enregistre sur ce runner (NoSuchKernel)",
-)
+def test_python3_kernelspec_is_registered():
+    """Garde de visibilite (#18279) : l'absence de kernelspec doit ROUGIR.
+
+    Sans ce test, l'absence se traduisait par deux ``skip`` silencieux et la
+    faute n'existait plus que sur les machines qui avaient le kernel -- un
+    rapport de CI nommait « kernel mort » la ou le meme code passait. Le job
+    CI installe desormais ``ipykernel`` ; si ce kernelspec disparait a nouveau,
+    c'est ici que ca se voit, pas dans un tableau de skips.
+    """
+    reason = _python3_kernel_missing_reason()
+    assert reason is None, reason
 
 
 def _run_subprocess(script: str, args: list, tmp_path: Path):
@@ -137,13 +161,11 @@ def _run_subprocess(script: str, args: list, tmp_path: Path):
         f"{script} reecrit le notebook sans retirer le bloc papermill perime")
 
 
-@requires_python3_kernel
 def test_dotnet_executor_subprocess_strips_stale_block(tmp_path):
     _run_subprocess("dotnet_executor.py", ["--kernel", "python3",
                                            "--timeout", "60"], tmp_path)
 
 
-@requires_python3_kernel
 def test_exec_single_cell_subprocess_strips_stale_block(tmp_path):
     _run_subprocess("exec_single_cell.py", ["--index", "0",
                                             "--timeout", "60"], tmp_path)

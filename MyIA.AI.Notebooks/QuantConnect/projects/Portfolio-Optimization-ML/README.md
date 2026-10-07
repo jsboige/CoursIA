@@ -67,7 +67,7 @@ Where:
 - **Paper**: "Honey, I Shrunk the Sample Covariance Matrix" (Ledoit-Wolf, 2004)
 - **Theory**: Markowitz Portfolio Theory (1952)
 - **Book**: Hands-On AI Trading (Portfolio Optimization chapter)
-- **Related Notebook**: QC-Py-21-Portfolio-Optimization-ML.ipynb
+- **Related Notebook** : `research.ipynb` (ancien nom de corpus : QC-Py-21-Portfolio-Optimization-ML.ipynb)
 
 ## Status
 
