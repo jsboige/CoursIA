@@ -84,7 +84,7 @@ lakes porteurs de sorry reel: 4/22
 
 **P4 — GT-21 sur le disque** : `GameTheory-21-Deux-Especes-de-Fleches.ipynb` présent (livré #12245, merged — commit `c7bc85f2d` tête de main à la base du worktree).
 
-**P5 — SW-14 sur le disque, exécuté** : 5/5 cellules code `execution_count 1..5`, outputs présents (vérifié ce cycle lors de la fermeture #12234).
+**P5 — SW-14 sur le disque, exécuté** : exécution bout-en-bout avec `execution_count` croissants, outputs présents (vérifié ce cycle lors de la fermeture #12234).
 
 **P6 — GT-16b AMD lu ce cycle** : générateur / vérificateur séparé / témoin d'impossibilité — op 10 attestée, avec la réserve de cohérence DSIC consignée sur #12211 (issuecomment-5383043049).
 
