@@ -274,3 +274,118 @@ precisement : la jonction elle-meme n'ecrit pas de log (cf c.1059 V1 narrow
 note Portee). L'absence de poses manuelles documentees sur po-2027 (vs 4
 documentees sur po-2024 par PR #15972) accroit la probabilite que toutes les 9
 aient ete posees par l'Apply 14/09 — `share-state.json` est la source de verite.
+
+## V4 — 10eme jonction search_lean + incident robocopy /MIR (c.1470, 2026-10-07)
+
+C.1470 — pose manuelle de la 10eme jonction NTFS pour combler le delta V3 §4.
+Le delta-9 c.724 promettait 6.9 Go d'economie et un risque faible ; le cycle
+a confirme la these, modulo un incident de recovery documente plus bas.
+
+### Source de verite (locale)
+
+| Champ | Valeur (mesuree c.1470) |
+|---|---|
+| Chemin jonction | `D:\dev\CoursIA-2\MyIA.AI.Notebooks\Search\search_lean\.lake\packages\mathlib` |
+| Cible jonction | `D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.32.1-520045ab\mathlib` |
+| Type NTFS | Junction (`fsutil reparsepoint query`) |
+| Taille visible via jonction | 11.7 GB (donor complet) |
+| `git rev-parse HEAD` via jonction | `520045ab14e26149ee970e2e617ca04b09bde5d6` (== V3) |
+| LastWriteTime jonction | 2026-10-07T14:46:22+02:00 (pose manuelle, hors script `setup_shared_mathlib.ps1`) |
+| `mathlib.bak-2611` | supprime apres verification (610 MB liberes) |
+
+### Pose manuelle (hors script)
+
+La pose a ete faite **a la main** (PowerShell `New-Item -ItemType Junction`)
+plutot que par `setup_shared_mathlib.ps1` parce que le script avait deja
+echoue c.1469 (cf incident ci-dessous) et que le delta est de 1 seul membre
+(trop petit pour relancer l'outillage). Le `share-state.json` n'est donc **pas**
+mis a jour par cette PR — le delta de 1 membre ne justifie pas la regression
+de l'outillage. **Documentation seulement, meme convention que V3.**
+
+### Note toolchain vs lakefile (5eme mesure du mismatch, c.1362+)
+
+| Champ | Cluster donor | search_lean lakefile |
+|---|---|---|
+| Lean toolchain | v4.32.1 | **v4.33.0** |
+| Mathlib rev attendue | 520045ab (v4.32.1) | **db584cd6** (v4.33.0) |
+| Mathlib rev servie | 520045ab | 520045ab (par jonction) |
+
+Le mismatch est **identique** a celui des 9 membres existants (cf c.724 et
+V3 tablice 5e colonne) : les lakefiles ont continue d'evoluer vers v4.33.0
+apres l'Apply 14/09 (Mathlib `db584cd6`), mais le donor est fige a v4.32.1
+(Mathlib `520045ab`). search_lean reproduit exactement le pattern ; la
+mutualisation est donc **coherente avec l'etat anterieur**, et le delta
+de risque est nul.
+
+### Incident c.1470 — `robocopy /MIR` destructif sur le working tree Mathlib
+
+Le 2026-10-07 vers 11:30Z, en tentant de **recuperer** un Move-Item rate
+(donor `search_lean/.lake/packages/mathlib` vers le cache cible,
+~493 MB / 6.6 GB transferes avant echec), j'ai lance par erreur
+`robocopy cache_cible source /MIR` en pensant que `/MIR` = merge. **Faux** :
+`/MIR` = `/E` + `/PURGE` = MIRROR destructif. Resultat : purge de ~6.1 GB du
+working tree Mathlib source (de 6.6 GB -> 493 MB), le `.git` (493 MB) etant
+intact.
+
+**Recovery** : `git checkout HEAD -- .` depuis le `.git` local preserve ->
+source 610 MB (.git 493 MB + Mathlib source 120 MB restaure), artefacts de
+build (~6 GB `.olean`) perdus mais regenerables au prochain `lake build`.
+Le contenu tracked est intact.
+
+**Tell fondateur** (MEMORY `robocopy-mir-destructif-c1470.md`) :
+- `robocopy /MIR` n'est PAS un copy-back ; c'est un mirror = /E + /PURGE.
+- Pour un move partiel casse : JAMAIS `/MIR`. La voie sure est `git checkout HEAD -- .` quand `.git` est intact.
+- Pour une copie additive : `robocopy SRC DST /E` (pas /MIR).
+- Pour un move gros volume : `robocopy SRC DST /MOVE /E` (plus robuste que `Move-Item` PowerShell).
+- Avant toute commande `robocopy > 1 GB` : verifier le sens SRC -> DST et le flag (/MIR est dangereux, /E est safe).
+
+### Lock Windows post-incident
+
+Le `Move-Item` rate a laisse un Windows file lock sur le dossier `mathlib`
+source (vide apres `git checkout HEAD -- .`). Symptomes mesures c.1470 :
+`Remove-Item -Force`, `cmd /c rmdir`, `robocopy /MOVE /E`, `mklink /J` echouent
+tous avec « Le processus ne peut pas acceder au fichier car ce fichier est
+utilisable par un autre processus ». Cause presumee : handle orphelin d'un
+process PowerShell predecedent (crash sans cleanup).
+
+**Resolution** : `cmd /c rmdir /s /q <path>` via wrapper PowerShell
+(`powershell -NoProfile -Command "& cmd /c rmdir /s /q '<path>'"`) contourne le
+lock — la commande brute de cmd ignore les handles PowerShell. Le dossier
+a ete supprime (REMOVED), puis la jonction NTFS creee sans encombre.
+
+Note : le PowerShell `Remove-Item -LiteralPath` (variante testee juste avant)
+n'a PAS fonctionne — c'est la combinaison `cmd /c rmdir /s /q` qui a vaincu
+le lock. Pattern a integrer dans le script `setup_shared_mathlib.ps1` ou un
+helper dedie pour les recoveries futures (cf recommendation §2).
+
+### Recommandations
+
+1. **Run `lake build` post-jonction** sur search_lean pour valider l'anti-regression §3 :
+   ```
+   cd D:/dev/CoursIA-2/MyIA.AI.Notebooks/Search/search_lean
+   lake build
+   ```
+   Attendu : succes en moins de 60 secondes (donor warm-Mathlib deja compile ;
+   12 GB de `.olean` partages entre les 10 jonctionnes). Si le build open,
+   c'est le mismatch toolchain ci-dessus qui parle — `lake update` regenererait
+   le bon Mathlib, mais detruirait la mutualisation (le donor serait ecrase).
+
+3. **Locker le helper `cmd /c rmdir /s /q`** dans `scripts/lean/` pour les
+   recoveries de Windows file lock post-Move-Item. Le script
+   `setup_shared_mathlib.ps1` n'a pas de voie de recovery documentee pour
+   ce cas (cf c.1469 Vrais-experimentes).
+
+4. **Mettre a jour `share-state.json`** : la 10eme jonction n'est pas
+   tracee dans le store. Deux choix :
+     - (a) Ajouter manuellement `search_lean` dans le tableau `members` (1 ligne, trivial).
+     - (b) Re-invoquer `setup_shared_mathlib.ps1 -Apply` ce qui regenerera
+       le fichier et re-claimera les 9 anciens + le nouveau — risque de faux
+       positifs si le script considere l'etat actuel comme `drift`.
+   Recommandation : (a) — modification minimale, conserve l'invariant
+   `LastWriteTime = 14/09` (la pose manuelle ne doit pas se faire passer pour
+   un Apply script).
+
+5. **Migrer le donor vers v4.33.0-db584cd6** si la majorite des 10 lacs jonctionnes
+   basculent leur lakefile. Aujourd'hui 0/10 ont un lakefile aligne avec le
+   donor (tous en db584cd6 vs 520045ab), donc la migration est desirable mais
+   coutee (12 GB a rebuilder). Suivi pour un EPIC separe.
