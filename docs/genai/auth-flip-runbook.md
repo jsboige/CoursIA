@@ -16,7 +16,7 @@ Claudish + Qdrant restent à exécuter.
 seul des 3 dont le compose est **dans CoursIA** (`docker-configurations/services/tts-multi/`)
 → flip exécutable par un worker via le flux canonical `master.env` + `render_envs.py`.
 
-> Référence d'analyse : [service-security-audit.md](service-security-audit.md)
+> Référence d'analyse : [2026-06-14-genai-service-security-audit.md](../transients/2026-06-14-genai-service-security-audit.md)
 > (bindings, blast-radius, mécanisme d'auth disponible). Ce runbook en est la
 > déclinaison opérationnelle, vérifiée contre le code source.
 

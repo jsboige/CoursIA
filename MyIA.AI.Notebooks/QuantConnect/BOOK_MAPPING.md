@@ -114,8 +114,8 @@ Algorithmes LEAN complets sur données de marché. Les exemples 04, 08, 18 et 19
 | 17 | Head Shoulders Pattern Matching with CNN | [ML-HeadShoulders-CNN](projects/ML-HeadShoulders-CNN/) | COVERED | Vivant | |
 | 18/01 | Amazon Chronos Model — Base Model | [ML-Chronos-Foundation](projects/ML-Chronos-Foundation/), [Chronos-Foundation-Forecasting](projects/Chronos-Foundation-Forecasting/) | COVERED | Needs-improvement (les deux, tranche 14) | |
 | 18/02 | Amazon Chronos Model — Fine-Tuned Model | [ML-Chronos-Foundation](projects/ML-Chronos-Foundation/) (`main_finetuned.py`, `finetune/`) | COVERED | Non déployé (le portage s'exécute hors QC) | ré-entraînement porté et mesuré hors échantillon sur quatre graines ; voir le verdict de la tranche 3 |
-| 19/01 | FinBERT Model — Base Model | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/), [QC-Py-Cloud-01-FinBERT-Sentiment](Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | COVERED | Needs-improvement (tranche 12) | le portage ne produit pas de transaction sur QC Cloud : [#18903](https://github.com/jsboige/CoursIA/issues/18903) |
-| 19/02 | FinBERT Model — Fine-Tuned Model | — | GAP | — | aucun ré-entraînement de FinBERT dans le dépôt |
+| 19/01 | FinBERT Model — Base Model | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/), [QC-Py-Cloud-01-FinBERT-Sentiment](Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | COVERED | Needs-improvement (tranche 12) | le portage produit désormais ses rebalancements sur QC Cloud (v7, 2022-01/02, deux ordres, Sharpe -1,137) et son verdict `INCONCLUSIVE` est écrit (critère 4, §Métriques du README) ; [#18903](https://github.com/jsboige/CoursIA/issues/18903) se ferme au merge |
+| 19/02 | FinBERT Model — Fine-Tuned Model | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/) (`main_finetuned.py`, `finetune/`) | COVERED | Non déployé (le ré-entraînement s'exécute hors QC) | ré-entraînement porté et mesuré hors échantillon sur quatre graines ; verdict **NO BEATS** (écart moyen -0,1054, -2,92 sigma, aucune graine gagnante) |
 
 ---
 
@@ -227,7 +227,7 @@ Pour 14 et 15, le texte ne donne pas de Sharpe, mais le balayage de paramètres 
 | 18/01 | aucun chiffre dans le texte ; courbes de prévision et table de rendements mensuels | 2019-01-01 → 2024-04-01, capital 100 k, 5 actions les plus liquides, Chronos pré-entraîné | Sharpe 0,277, CAGR 7,23 %, pire baisse 13,5 % | [ML-Chronos-Foundation](projects/ML-Chronos-Foundation/), 2015-01-01 → 2026-01-01 | `NON COMPARABLE` |
 | 18/02 | — | Chronos ré-entraîné | — | aucune reproduction (`GAP`) | sans objet |
 | 19/01 | idem 18/01 | 2022-01-01 → 2023-01-01, capital 100 k, 10 actions les plus liquides, FinBERT pré-entraîné | Sharpe 0,584, CAGR 22,10 %, pire baisse 43,0 % | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/), 2015-01-01 → 2026-01-01 | `NON COMPARABLE` |
-| 19/02 | — | FinBERT ré-entraîné | — | aucune reproduction (`GAP`) | sans objet |
+| 19/02 | — | FinBERT ré-entraîné | exactitude hors échantillon 0,3461 contre 0,4515 pour le modèle de base ; rendement cumulé de la stratégie −0,046 contre −0,037 | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/) (`finetune/`), hors échantillon 2019-07 → 2019-12, quatre graines | `NON COMPARABLE` : le livre ne publie aucun chiffre pour cet exemple, et le ré-entraînement n'est pas déployé sur QC |
 
 **Rejeux** (projets QuantConnect séparés, une exécution chacun) :
 
@@ -300,10 +300,9 @@ Ces projets n'ont pas d'exemple correspondant dans le livre, mais illustrent des
 
 | Exemple | Suite |
 |---------|-------|
-| 04/05, 04/18, 05/02, 05/15 | [#18957](https://github.com/jsboige/CoursIA/issues/18957) : écart interquartile, élimination récursive des variables, régression polynomiale, OPTICS (scripts courts sur données synthétiques, à porter dans QC-Py-18 à 20) |
 | 06/02 | [#18958](https://github.com/jsboige/CoursIA/issues/18958) : régimes par prétraitement de facteurs |
 | 06/08/01, 06/08/03 | [#18960](https://github.com/jsboige/CoursIA/issues/18960) : stop fixe de référence et couverture par put, dans [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) |
-| 06/19/02 | [#18962](https://github.com/jsboige/CoursIA/issues/18962) : ré-entraînement de FinBERT (calcul GPU), bloqué par [#18903](https://github.com/jsboige/CoursIA/issues/18903). Le ré-entraînement de Chronos (06/18/02) est porté dans [ML-Chronos-Foundation](projects/ML-Chronos-Foundation/) |
+| 06/18/02 | [#18962](https://github.com/jsboige/CoursIA/issues/18962) : ré-entraînement de Chronos (calcul GPU) |
 | 07/01 | [#18902](https://github.com/jsboige/CoursIA/issues/18902) |
 | 08/01 | exclusion : le livre appelle l'API payante PredictNow.ai ; le dépôt garde une optimisation sans service externe |
 | 08/02 | [#18901](https://github.com/jsboige/CoursIA/issues/18901) (méta-étiquetage sans l'API PredictNow.ai) |

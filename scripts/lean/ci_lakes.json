@@ -48,6 +48,7 @@
       "display-name": "search_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
       "paths": [
         "MyIA.AI.Notebooks/Search/search_lean/**.lean",
         "MyIA.AI.Notebooks/Search/search_lean/lakefile.lean",
