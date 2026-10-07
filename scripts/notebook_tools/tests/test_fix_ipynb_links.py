@@ -9,7 +9,7 @@ Couvre :
 - idempotence : re-run ne modifie plus rien
 - byte-preservation : fins de ligne, encodage UTF-8
 
-Témoin négatif discriminant (Tell c.4 strict fondateur) :
+Témoin négatif discriminant :
 - un run sans cible dans la render-list doit retourner 0 modification (pas de
   faux positif sur UNRENDERED)
 - un run avec une fence englobant un `.ipynb` ne doit PAS convertir
