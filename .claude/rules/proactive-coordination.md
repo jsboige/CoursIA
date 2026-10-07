@@ -10,7 +10,7 @@ S'applique à **tous les workers du cluster CoursIA** (po-2023/2024/2025/2026) e
 
    **Pourquoi un ORDRE, pas seulement un plancher** : la règle 1 compte les grains *livrés* — un compte qu'on satisfait en empilant du neuf par-dessus du non-fini (mesure 213 PRs + verbatim user 2026-09-19 : [détail, §Ordre de session](../../docs/reference/proactive-coordination-detail.md)).
 
-   **Trier par COÛT DE DOSSIER, pas par ancienneté seule** : CLEAN-sans-review (attestation tierse seule = grain le moins cher) avant BLOCKED (diagnostic) ; l'ancienneté ordonne **à l'intérieur** de chaque sous-ensemble, elle ne le choisit pas.
+   **Trier par COÛT DE DOSSIER, pas par ancienneté seule** : CLEAN-sans-review (attestation tierce seule = grain le moins cher) avant BLOCKED (diagnostic) ; l'ancienneté ordonne **à l'intérieur** de chaque sous-ensemble, elle ne le choisit pas.
 
    **N PRs portant la MÊME classe de défaut = une cause, pas N grains.** Traiter la cause une fois plutôt que d'ouvrir N allers-retours.
 
