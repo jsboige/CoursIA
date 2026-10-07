@@ -114,8 +114,8 @@ Algorithmes LEAN complets sur données de marché. Les exemples 04, 08, 18 et 19
 | 17 | Head Shoulders Pattern Matching with CNN | [ML-HeadShoulders-CNN](projects/ML-HeadShoulders-CNN/) | COVERED | Vivant | |
 | 18/01 | Amazon Chronos Model — Base Model | [ML-Chronos-Foundation](projects/ML-Chronos-Foundation/), [Chronos-Foundation-Forecasting](projects/Chronos-Foundation-Forecasting/) | COVERED | Needs-improvement (les deux, tranche 14) | |
 | 18/02 | Amazon Chronos Model — Fine-Tuned Model | — | GAP | — | aucun ré-entraînement de Chronos dans le dépôt |
-| 19/01 | FinBERT Model — Base Model | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/), [QC-Py-Cloud-01-FinBERT-Sentiment](Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | COVERED | Needs-improvement (tranche 12) | le portage ne produit pas de transaction sur QC Cloud : [#18903](https://github.com/jsboige/CoursIA/issues/18903) |
-| 19/02 | FinBERT Model — Fine-Tuned Model | — | GAP | — | aucun ré-entraînement de FinBERT dans le dépôt |
+| 19/01 | FinBERT Model — Base Model | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/), [QC-Py-Cloud-01-FinBERT-Sentiment](Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | COVERED | Needs-improvement (tranche 12) | le portage produit désormais ses rebalancements sur QC Cloud (v7, 2022-01/02, deux ordres, Sharpe -1,137) ; [#18903](https://github.com/jsboige/CoursIA/issues/18903) reste ouverte, sa fermeture revient au coordinateur |
+| 19/02 | FinBERT Model — Fine-Tuned Model | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/) (`main_finetuned.py`, `finetune/`) | COVERED | Non déployé (le ré-entraînement s'exécute hors QC) | ré-entraînement porté et mesuré hors échantillon sur quatre graines ; verdict **NO BEATS** (écart moyen -0,1054, -2,92 sigma, aucune graine gagnante) |
 
 ---
 
@@ -227,7 +227,7 @@ Pour 14 et 15, le texte ne donne pas de Sharpe, mais le balayage de paramètres 
 | 18/01 | aucun chiffre dans le texte ; courbes de prévision et table de rendements mensuels | 2019-01-01 → 2024-04-01, capital 100 k, 5 actions les plus liquides, Chronos pré-entraîné | Sharpe 0,277, CAGR 7,23 %, pire baisse 13,5 % | [ML-Chronos-Foundation](projects/ML-Chronos-Foundation/), 2015-01-01 → 2026-01-01 | `NON COMPARABLE` |
 | 18/02 | — | Chronos ré-entraîné | — | aucune reproduction (`GAP`) | sans objet |
 | 19/01 | idem 18/01 | 2022-01-01 → 2023-01-01, capital 100 k, 10 actions les plus liquides, FinBERT pré-entraîné | Sharpe 0,584, CAGR 22,10 %, pire baisse 43,0 % | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/), 2015-01-01 → 2026-01-01 | `NON COMPARABLE` |
-| 19/02 | — | FinBERT ré-entraîné | — | aucune reproduction (`GAP`) | sans objet |
+| 19/02 | — | FinBERT ré-entraîné | exactitude hors échantillon 0,3461 contre 0,4515 pour le modèle de base ; rendement cumulé de la stratégie −0,046 contre −0,037 | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/) (`finetune/`), hors échantillon 2019-07 → 2019-12, quatre graines | `NON COMPARABLE` : le livre ne publie aucun chiffre pour cet exemple, et le ré-entraînement n'est pas déployé sur QC |
 
 **Rejeux** (projets QuantConnect séparés, une exécution chacun) :
 
