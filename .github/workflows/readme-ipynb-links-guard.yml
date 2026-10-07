@@ -200,13 +200,19 @@ jobs:
             echo "::error::git checkout base en panne (rc=${CHECKOUT_BASE_RC}) -- la comparaison delta est invalide."
             exit 1
           fi
-          # F8 (#19631) : on passe le MÊME /tmp/pr_added_files.txt qu'en
-          # passe PR -- l'audit base doit aussi traiter les fichiers
-          # ajoutés par la PR comme "tracked-after-merge" pour que les
-          # deux scans soient d'accord (delta = 0 sur les liens vers
-          # fichiers PR-added, cf. fondateur #19368 CB-00).
-          python scripts/regen_quarto_render.py --check-readme-links \
-               --pr-added-files /tmp/pr_added_files.txt 2>&1 \
+          # F8b (#19631) : on NE passe PAS `--pr-added-files` ici. La passe
+          # base restaure le script de la base (qui ne supporte pas cet
+          # argument -- cf. round precedent), donc on laisse la base scanner
+          # ses propres violations SANS exemption. La passe PR seule utilise
+          # le fichier /tmp/pr_added_files.txt pour ignorer les fichiers
+          # qu'elle ajoute elle-meme (cf. fondateur #19368 CB-00). Le delta
+          # PR \ base reste coherent : un lien vers un fichier PR-added
+          # n'apparait que sur la PR (pas sur la base), et les DEUX scans
+          # le voient comme STALE_LINK, donc NEW = 0 sur ce lien-la (la
+          # passe PR l'a ignoree, la passe base l'a vue -- mais comme le
+          # fichier PR-added n'est pas sur la base, le lien n'est PAS dans
+          # la sortie de la base). Verifie par les tests temoins.
+          python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
             | tee /tmp/python_stdout_base.txt \
             | grep -E '^::error::STALE_LINK ' \
             | sort -u > /tmp/base_violations.txt
