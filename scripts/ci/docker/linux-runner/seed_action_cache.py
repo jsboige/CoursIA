@@ -88,6 +88,13 @@ CODELOAD = "https://codeload.github.com"
 # (`jsboige/CoursIA/.github/workflows/*@main`).
 ACTIONS = (
     "actions/cache@v4",
+    # #19658 : la bascule restore/save scinde l'action en deux sous-chemins.
+    # Le depot cache est le meme (`parse_uses` s'arrete a `actions/cache`),
+    # mais le scanner de `test_action_cache_seed_guard.py` compare les formes
+    # `uses:` brutes : les deux sous-chemins doivent donc etre declares, comme
+    # les trois `github/codeql-action/*` ci-dessous.
+    "actions/cache/restore@v4",
+    "actions/cache/save@v4",
     "actions/checkout@v4",
     "actions/deploy-pages@v4",
     "actions/github-script@v7",
