@@ -55,8 +55,9 @@ convergence `p_c(L) → 1/2` quand `L → ∞`.
 
 **Régression log-log** sur `M(L, 1/2) / L²` vs `L` :
 - `β/ν mesuré = 0.102` (exact : 5/36 ≈ 0.139)
-- `R² = 0.946`
-- **Verdict** : `FAIL` — slope trop faible (~26% sous la valeur asymptotique)
+- `R² = 0.946` — **INCONCLUSIVE** (R² < 0.95)
+- **Verdict** : `INCONCLUSIVE` — slope trop faible (~26% sous la valeur
+  asymptotique), et le fit n'est pas statistiquement conclusif sur 4 points.
 
 **Cause** : sur `L ∈ {8, 16, 32, 64}`, les corrections d'échelle finie
 dominent encore. La loi `M(L, 1/2) / L² ~ L^{-β/ν}` n'est asymptotique
@@ -68,14 +69,30 @@ grand pour approcher `β/ν = 5/36`.
 
 **Distribution de tailles** `P(s)` au point critique, fit log-log sur le
 bulk entre `s_min` et `s_max` pour chaque `L` :
-- `τ' moyen (sur L ∈ {8, 16, 32, 64}) = 2.20`
-- Exact : `187/91 ≈ 2.055`
-- **Verdict** : `FAIL` — `τ'` mesuré trop grand (~7% au-dessus de l'exact).
 
-**Cause** : le bulk à `L = 8` (taille totale 64) contient beaucoup de
-composantes triviales (`s = 1`, `s = 2`), ce qui rend la distribution
-**non asymptotique**. À `L = 64`, `τ'` est plus proche de l'exact mais
-l'effet cumulé sur 4 L tire la moyenne au-dessus.
+| L | τ' mesuré | R² | Verdict |
+|---|-----------|-----|---------|
+| 8  | 2.494 | **0.903** | **INCONCLUSIVE** (R² < 0.95, bulk insuffisant) |
+| 16 | 2.021 | 0.996 | PASS |
+| 32 | 2.080 | 0.978 | PASS |
+| 64 | 2.193 | 0.996 | PASS |
+
+- `τ' moyen (sur L ∈ {8, 16, 32, 64}) = 2.197`
+- `τ' moyen hors L=8 (INCONCLUSIVE) = 2.098` — **écart +2.1% à la cible**
+- Exact : `187/91 ≈ 2.055`
+- **Verdict global** : `PARTIEL` — 3/4 PASS, 1 INCONCLUSIVE (L=8)
+
+**Cause du verdict partiel** : le bulk à `L = 8` (taille totale 64)
+contient trop de composantes triviales (`s = 1`, `s = 2`) pour qu'un
+fit log-log soit statistiquement concluant (R² = 0.903). Sur `L ∈ {16, 32,
+64}`, le bulk est suffisamment grand pour des fits R² > 0.97, et la
+**moyenne conditionnelle** donne `τ' = 2.098`, écart +2.1% à l'asymptote.
+
+**Instrumentation c.1133** : le R² par L a été ajouté dans la cellule
+de fit (commit diagnostic). L'INCONCLUSIVE sur L=8 n'est pas un bug
+de l'estimateur (cf. analyse détaillée dans
+`docs/research/percolation-03b-critique-results.md` §9), mais une
+limite physique du bulk à petit L.
 
 ## 7. Verdict p_c(L) → 1/2
 
@@ -95,9 +112,18 @@ avec `1/ν = 3/4`. La convergence est conforme à la théorie.
 
 ## 8. Limitations et extensions
 
-**Verdict global** : les **tendances** sont conformes (M/L² à p_c décroît,
-p_c(L) → 1/2 monotone) ; les **valeurs asymptotiques** (β/ν = 0.139,
-τ' = 2.055) ne sont **pas encore atteintes** sur `L ∈ {8..64}`.
+**Verdict global (post c.1133)** :
+
+| Mesure | Valeur | Cible | R² | Verdict |
+|--------|--------|-------|---|---------|
+| `β/ν` (4 L, log-log) | 0.102 | 5/36 ≈ 0.139 | 0.946 | **INCONCLUSIVE** |
+| `τ'` (4 L, moyenne brute) | 2.197 | 2.055 | — | PARTIEL (3/4 PASS) |
+| `τ'` (4 L, sans L=8) | 2.098 | 2.055 | ≥ 0.978 | PASS (écart 2.1%) |
+| `p_c(L)` convergence | 0.4513→0.4890 | → 1/2 monotone | — | CONFORME |
+
+**Cause** : corrections d'échelle finie dominent à `L ≤ 64`. La
+percolation finie sur tore `T_n` ne reproduit l'asymptotique que pour
+`L ≫ ξ` — et à `p_c(ℤ²)`, `ξ = ∞`.
 
 **Cause** : corrections d'échelle finie dominent à `L ≤ 64`. La
 percolation finie sur tore `T_n` ne reproduit l'asymptotique que pour

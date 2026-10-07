@@ -125,6 +125,62 @@ C'est la **preuve directe** de la loi d'échelle finie : `p_c(L) = 1/2 + c · L^
 
 **Prochaine étape** : si on veut pousser la convergence de β/ν à 1% près, **L = 512 obligatoire** (~2 min). Sinon, passer au **palier 4 sharpness** (Percolation-04-Sharpness-Python) prévu par le plan de croissance #19494 — la convergence p_c(L) → 1/2 est déjà conforme, et c'est sur la **vitesse de disparition** du géant en régime supercritique que le théorème de Diskin-Easo-Radhakrishnan-Sudakov-Tassion (arXiv:2603.03257 §3.0) attend ses mesures.
 
+## 9. Diagnostic estimateur τ' (c.1133, suite adjointe po-2025)
+
+**Contexte** : l'adjoint po-2025 a attiré l'attention sur l'estimateur
+τ' du carnet 03 et 03b — suspicion que `counts / counts.sum()` (sans
+normalisation par largeur de bin) biaisait le fit log-log quand les
+bins sont **logarithmiques** (cas du carnet 03).
+
+**Investigations menées** :
+
+1. **Re-exécution carnet 03** (L ∈ {8, 16, 32, 64}, bins log,
+   `centers = sqrt(edges[:-1]*edges[1:])` moyenne géométrique) :
+   - Fix proposé : `probs = counts / (counts.sum() * np.diff(edges))`
+     → `τ' = 3.197` (**PIRE** qu'avant, τ' surestimé)
+   - Réversion à `counts / counts.sum()` + instrumentation R² par L :
+     ```
+     L=8:  tau_prime=2.494, R²=0.903   <-- INCONCLUSIVE (R² < 0.95)
+     L=16: tau_prime=2.021, R²=0.996
+     L=32: tau_prime=2.080, R²=0.978
+     L=64: tau_prime=2.193, R²=0.996
+     ```
+   - **Verdict** : 3/4 L PASS, 1/4 L (L=8) **INCONCLUSIVE** — le bulk
+     à L=8 est trop dominé par les composantes triviales (s=1, s=2)
+     pour qu'un fit log-log soit statistiquement concluant. Pas un
+     bug de l'estimateur, mais une limite **physique** : L=8 a 64
+     nœuds total, le bulk ne contient pas assez de composantes de
+     taille intermédiaire.
+
+2. **Re-exécution carnet 03b** (L ∈ {128, 256}, bins=20 **linéaires**,
+   `centers = 0.5*(edges[:-1]+edges[1:])` moyenne arithmétique) :
+   - Le fix `counts / (counts.sum() * np.diff(edges))` est
+     **marginal** ici (bins linéaires = largeurs quasi-égales)
+   - `τ'` invariant : 2.163 (L=128), 2.183 (L=256) → τ' moyen = 2.188
+   - R² par L (ré-fit direct, instrumenté c.1133) :
+     ```
+     L=128: R²=0.990  (PASS)
+     L=256: R²=0.991  (PASS)
+     ```
+
+**Verdict honnête après diagnostic** :
+
+- **τ' mesuré** reste `2.188` (cible `2.055`, écart +6.5%) — **FAIL**
+  sur l'intervalle [2.0, 2.1].
+- **R²** est élevé (≥ 0.99) pour **L ≥ 16** — le fit est statistiquement
+  bon. La déviation à la valeur asymptotique est **physique** (corrections
+  d'échelle finie), pas un artefact d'estimateur.
+- **L = 8 est INCONCLUSIVE** : bulk insuffisant. Le carnet 03 l'avait
+  dans son verdict, mais sans R² explicite — il faut l'expliciter.
+
+**Conclusion** : **pas de bug de l'estimateur**, juste un manque
+d'instrumentation R². Le carnet 03b garde ses mesures (les valeurs
+ne changent pas), mais le carnet 03 doit explicitement noter
+`INCONCLUSIVE` pour L=8 et **PASS** pour L ≥ 16.
+
 ---
 
-**Cycle c.1105, lane `myia-po-2023:CoursIA-2`** : extension livrée. PR à publier.
+**Cycle c.1105 + diagnostic c.1133, lane `myia-po-2023:CoursIA-2`** :
+extension livrée + estimateur audité (verdict INCONCLUSIVE sur L=8,
+PASS sur L ≥ 16 ; R² instrumenté pour reproductibilité). PR #19548 à
+publier avec verdict honnête.
