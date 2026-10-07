@@ -11,6 +11,43 @@ Portage fidèle du modèle de base de l'exemple 19 du livre (*Hands-On AI Tradin
 
 **Le modèle tourne dans l'algorithme sur QC Cloud** (variante PyTorch, `local_files_only=True` comme le livre) — mesuré par les sondes `probe2-bitmask-finbert` et `probe3-tiingo-decode` du 2026-10-05 : `torch`, `transformers` et même `tensorflow` importent sur les nœuds, et l'inférence y rend ses probabilités.
 
+## Modèle ré-entraîné (exemple 19/02)
+
+L'exemple 19/02 du livre va plus loin : **ré-entraîner** FinBERT, à chaque rebalancement mensuel, sur les articles des 30 derniers jours étiquetés par la réaction du cours, avant de scorer le mois. Deux artefacts le portent :
+
+- `main_finetuned.py` — portage fidèle du code du livre en PyTorch (écarts n1–n8 documentés en tête de fichier). Il **n'est pas exécutable en CI ni sur un nœud QC ordinaire** : le ré-entraînement tourne dans l'algorithme et demande un GPU.
+- `finetune/run_finetune_finbert.py` — harnais **hors ligne** qui sort le ré-entraînement de l'algorithme pour l'exécuter sur un GPU local, et **compare modèle de base et modèle ré-entraîné hors échantillon**.
+
+Le livre n'a **aucune séparation entraînement / hors échantillon** — il ré-entraîne et prédit sur les mêmes 100 échantillons du mois. Le harnais ajoute la séparation que l'issue demande : les six derniers mois sont retirés de l'entraînement.
+
+### Corpus et étiquetage — deux écarts mesurés, pas supposés
+
+**Source des articles.** Le livre lit Tiingo News sur QC Cloud ; hors ligne, le harnais lit **FNSPID** (`Stock_news/All_external.csv`, corpus public horodaté de même forme : date + ticker + titre). Le corpus est **CC BY-NC 4.0** et reste un **cache local hors dépôt** : seules les mesures sont committées. Sa couverture temporelle a été **mesurée** (échantillonnage de plages d'octets dans le fichier) avant de calibrer la fenêtre : ≈ 2004–2020, d'où le choix de 2015–2019.
+
+**Fenêtre de réaction.** Le livre mesure la réaction du cours **entre deux parutions consécutives**, sur des clôtures à la seconde (`Resolution.SECOND`). À résolution quotidienne, cette règle s'effondre : deux parutions de la même séance n'ont aucune réaction résolvable et rendent un label exactement nul. Mesuré sur le corpus du harnais : **410 des 680 paires consécutives (60 %) tombent dans la même séance**, donc **429 labels (63 %) sont nuls exactement** — ce qui fabrique une classe neutre majoritaire à 75 %, que le livre ne connaît pas. Le harnais mesure donc la réaction **à la parution** (rendement de la première séance dont la clôture suit l'instant de parution). Sur le même corpus, la distribution des classes passe de **12 / 75 / 13** à **32 / 29 / 38**, contre les **37,5 / 25 / 37,5** que la règle du livre vise. L'intention du livre est préservée ; sa mécanique de mesure est adaptée à la résolution disponible, et l'écart est écrit en tête du harnais.
+
+**Sélecteur d'actif et couverture du corpus.** Le livre retient le plus volatil des dix valeurs les plus liquides, sur un marché où la couverture d'actualité est **universelle** (Tiingo News sur QC Cloud). Hors ligne, la couverture de FNSPID est **très inégale** : le sélecteur du livre y désigne régulièrement un titre sans actualité observable. Mesure sur le corpus complet (13,06 M d'enregistrements parcourus, 22 496 articles retenus, 18 tickers) : la distribution va de HD 2 587 articles à **AMD 14**, et la tête de classement du livre *est* AMD — ce qui écartait **37 des 60 mois pour une raison de couverture, pas de stratégie**. Le harnais descend donc d'un rang quand le candidat n'est pas observable. Quand le premier choix du livre **est** couvert, il reste retenu à l'identique ; la même mesure passe alors à **1 948 échantillons sur 59 des 60 mois**.
+
+### Résultat — 4 graines, et un verdict qui va contre le livre
+
+Le harnais entraîne 1 680 échantillons sur 53 mois et évalue sur les **6 derniers mois tenus à l'écart** (268 échantillons, juillet-décembre 2019), quatre graines. Le modèle de base est le même pour toutes : exactitude hors échantillon **0,4515**.
+
+| Graine | Exactitude ré-entraînée | Écart au modèle de base | McNemar p | Classes prédites [nég, neu, pos] |
+| --- | --- | --- | --- | --- |
+| 1 | 0,2948 | **−0,1567** | 0,0001 | [109, 14, 145] |
+| 2 | 0,3694 | **−0,0821** | 0,0507 | [20, 6, 242] |
+| 3 | 0,3731 | **−0,0784** | 0,0640 | [36, 0, 232] |
+| 42 | 0,3470 | **−0,1045** | 0,0175 | [203, 4, 61] |
+| *vérité* | — | — | — | [90, 75, 103] |
+
+Écart moyen **−0,1054**, écart-type inter-graines 0,0361, soit **−2,92 σ**, et **aucune graine ne bat le modèle de base**. Verdict : **NO BEATS** — au sens strict, ce n'est pas « amélioration non démontrée » mais **dégradation démontrée**.
+
+**Ce que la distribution des classes prédites ajoute à l'exactitude.** Le modèle de base prédit [70, 105, 93] : il sur-prédit le neutre, biais connu de FinBERT sur du texte court. Le modèle ré-entraîné prédit **0 à 14 neutres sur 268**, quelle que soit la graine — la classe neutre **disparaît**. Le signe du déséquilibre dépend en revanche de la graine (242 positifs pour la graine 2, 203 négatifs pour la graine 42) : ce n'est donc pas un effondrement sur une classe fixe, mais la perte du neutre **et** une instabilité de signe d'une graine à l'autre. Deux époques à 3e-5 sur 1 680 étiquettes bruitées suffisent à détruire la frontière du neutre d'un modèle pré-entraîné.
+
+**Ce que ce verdict ne dit pas.** Il ne condamne pas la recette du livre, il condamne sa mesure **hors échantillon** dans ces conditions : le livre ré-entraîne et prédit sur les mêmes 100 échantillons du mois, donc sa mesure ne *peut pas* voir cette perte. C'est exactement l'écart que l'issue demande de mesurer.
+
+**Portée.** Un univers de 24 grandes capitalisations, une fenêtre (2015-2019), un modèle de base, quatre graines. Le résultat est falsifiable via `finetune/measures/` (un fichier par graine plus l'agrégat) et reproductible par `finetune/run_finetune_finbert.py`.
+
 ## Historique du « 0 trade » (fermé le 2026-10-05)
 
 Les portages v1/v2 appelaient `add_data(TiingoNews, "AAPL")` avec un **ticker en chaîne**. TiingoNews exige un `Symbol` d'action déjà mappé — l'appel lève `The custom data type TiingoNews requires mapping, but the provided ticker is not in the cache`, exception avalée par le `try/except` → zéro article → zéro trade. Le livre passe `security.symbol` (issu de l'univers) ; le portage fait de même désormais. Le diagnostic ancien « TF unavailable on QC Cloud » était faux sur les deux comptes.
@@ -57,10 +94,15 @@ Le livrable **complète et produit ses ordres** : 2 ordres = les 2 rebalancement
 
 ## Fichiers
 
-- `main.py` — Stratégie : portage PyTorch du `FinbertBaseModelAlgorithm` du livre
+- `main.py` — Stratégie : portage PyTorch du `FinbertBaseModelAlgorithm` du livre (exemple 19/01)
+- `main_finetuned.py` — Stratégie : portage du `FinbertFineTunedModelAlgorithm` du livre (exemple 19/02), ré-entraînement dans l'algorithme
+- `finetune/run_finetune_finbert.py` — Harnais hors ligne : corpus, étiquetage, ré-entraînement GPU, évaluation hors échantillon base contre ré-entraîné
+- `finetune/measures/` — Mesures committées (une par graine + agrégat)
 - `research.ipynb` — Évaluation du modèle de sentiment
 
 ## Références
 
-- *Hands-On AI Trading*, Section 06, Exemple 19 (01 Base Model)
+- *Hands-On AI Trading*, Section 06, Exemple 19 (01 Base Model, 02 Fine-Tuned Model)
 - Repo du livre : `QuantConnect/HandsOnAITradingBook`, `06 Applied Machine Learning/19 FinBERT Model`
+- `ProsusAI/finbert` — modèle de base (Hugging Face)
+- FNSPID — corpus d'articles financiers horodatés, CC BY-NC 4.0 (cache local hors dépôt ; cf. `.claude/rules/bibliography-hygiene.md`)
