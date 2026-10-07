@@ -39,7 +39,7 @@ lean backtest --project .
 | Sharpe Ratio | 0.529 |
 | CAGR | 12.78% |
 | Max Drawdown | 26.4% |
-| Net Profit | 286.0% ($2 167 801) |
+| Net Profit | 286.0% |
 | PSR | 10.63% |
 
 > **Provenance** : run courant du registre — `docs/qc/qc-strategies-status.md` l.280
@@ -49,6 +49,11 @@ lean backtest --project .
 > initial 1 000 000 $, résolution minute, 2015-01-01 → 2024-12-31, 2516 j., 1029 ordres,
 > DTE/OTM 21 j/5 % : Sharpe 0.575 / CAGR 13.088 % / MaxDD 26.5 % / PSR 4.23 % /
 > NP 242.4 %) — remplacé par le run 2015-2026 ci-dessus.
+>
+> **Écart `netProfit`** : le montant du registre ($2 167 801) n'est pas reproduit dans
+> le tableau — sur capital initial 1 000 000 $, +286.0 % donnerait ≈ 3.86 M$ et le run
+> supersédé +242.4 % ≈ 3.42 M$ ; le montant ne réconcilie avec aucun des deux runs
+> (`netProfit` à re-mesurer côté registre).
 >
 > **Lecture honnête** : le wheel est une stratégie *très populaire* dans la littérature
 > de « revenu passif par les options », souvent présentée comme quasi-garantie. Les
