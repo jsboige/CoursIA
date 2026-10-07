@@ -355,6 +355,22 @@ def test_declared_banner_replacing_a_base_render_still_fires():
     assert not got["DECLARED_FALLBACK"]
 
 
+def test_declared_fallback_kept_when_head_keeps_its_substantial_output():
+    """Faux 0 -> 1 mesure sur #19697 : cellule byte-identique entre base et
+    tete. La base est scanee sans contexte (-> DECLARED_FALLBACK), la tete
+    voyait une base substantial et restait TOOL_FAILURE -- le ratchet creait
+    une regression sur une cellule que la PR ne touchait pas. Un remplacement
+    se prouve des deux cotes : la tete doit avoir PERDU le rendu."""
+    out = "graphe: 2 noeuds, 1 arete\n" + BANNER_OUT
+    base = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, stream(out))]}
+    head = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, stream(out))]}
+
+    got = scan(head, base_nb=base)
+
+    assert not got["TOOL_FAILURE"]
+    assert len(got["DECLARED_FALLBACK"]) == 1
+
+
 def test_declared_fallback_kept_when_base_was_already_in_fallback():
     base = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, stream(BANNER_OUT))]}
     head = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, stream(BANNER_OUT))]}

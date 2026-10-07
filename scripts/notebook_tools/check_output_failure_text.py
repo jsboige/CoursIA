@@ -637,9 +637,15 @@ def _declared_fallback(nb, idx, out_text, matched, base_nb=None):
     re-execution : toute cellule a ``try/except`` porte sa banniere en litteral
     dans sa source, les deux tiennent dans la meme ligne. Quand ``base_nb`` est
     fourni et que la meme cellule (par ``id``) portait une sortie substantielle
-    a la base, le hit reste TOOL_FAILURE : la banniere a REMPLACE un rendu,
-    c'est une perte de capacite (#3473 / #11685), pas un repli documente. Une
-    cellule nouvelle, ou deja en repli a la base, garde l'exemption.
+    a la base MAIS ne la porte plus a la tete, le hit reste TOOL_FAILURE : la
+    banniere a REMPLACE un rendu, c'est une perte de capacite (#3473 / #11685),
+    pas un repli documente. Une cellule nouvelle, deja en repli a la base, ou
+    qui CONSERVE sa sortie substantielle a la tete garde l'exemption : la
+    condition mesure un remplacement, pas la presence d'un rendu a la base
+    seule -- sinon une cellule inchangee entre base et tete serait classee
+    DECLARED_FALLBACK d'un cote (scan de base, sans contexte) et TOOL_FAILURE
+    de l'autre, et toute PR touchant le carnet sans toucher la cellule
+    declencherait un faux 0 -> 1 (mesure sur #19697 : 01-5b cell-10).
     """
     cells = nb.get("cells", []) or []
     if not (0 <= idx < len(cells)):
@@ -651,7 +657,8 @@ def _declared_fallback(nb, idx, out_text, matched, base_nb=None):
     if not declared:
         return False
     base_cell = _base_cell_for(base_nb, cell)
-    if base_cell is not None and _substantial_output(base_cell):
+    if (base_cell is not None and _substantial_output(base_cell)
+            and not _substantial_output(cell)):
         return False
     return True
 
