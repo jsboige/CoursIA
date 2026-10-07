@@ -13,6 +13,8 @@
 
 from AlgorithmImports import *
 
+import numpy as np
+
 from rl_policy import RLPolicy  # genere depuis research.ipynb (section 8)
 
 from scipy.stats import norm
@@ -113,15 +115,15 @@ class RLOptionsHedgingAlgorithm(QCAlgorithm):
         calls = [c for c in chain
                  if c.right == OptionRight.CALL
                  and (c.symbol.id.date - self.time).days >= 7
-                 and c.ask > 0]
+                 and c.ask_price > 0]
         if not calls:
             return
         # ATM d'abord, puis DTM le plus proche de la cible.
-        best = min(calls, key=lambda c: (abs(c.strike_price - spot),
+        best = min(calls, key=lambda c: (abs(c.strike - spot),
                                          abs((c.symbol.id.date - self.time).days - self.dte_target)))
         self.sell(best.symbol, self.contracts)
         self.current_option = best.symbol
-        premium = float(best.ask) * self.multiplier * self.contracts
+        premium = float(best.ask_price) * self.multiplier * self.contracts
         for book in self.books.values():
             book["pnl"] += premium
 
