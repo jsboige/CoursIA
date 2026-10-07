@@ -267,7 +267,6 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 |---------|-------------|
 | [research/fallacy-detection-survey.md](research/fallacy-detection-survey.md) | Survey SOTA détection de sophismes + argument mining, fondant l'EPIC #10355 (Phase 1 livrable 1). 10 sources primaires (Logic/LogicClimate, MAFALDA 23 classes, IBM-Rank-30k, AraucariaDB), constat clé : taxonomie Argumentum 1408/8 familles écrase les datasets académiques 13-23 → mapping d'étiquettes = livrable de recherche à part entière |
 | [research/quant-prose-residual-machine-dep.md](research/quant-prose-residual-machine-dep.md) | Inventaire résiduel des timings machine-dépendants cités en prose (#10158) — scan `check_machine_dep_timing.py --all` sur 1008 notebooks. Recense ce qui reste après passage de l'organe, pour que le résidu soit une liste et non une impression |
-| [research/c1113-picker-stall-diagnostic.md](research/c1113-picker-stall-diagnostic.md) | Diagnostic du stall picker `settle_belt_head` (10 cycles c.1105-c.1113, mesure #103-N1) — 36-54 sondes x 1 round-trip, ~50 s/cycle. Correctif `fetch_latest_claim_stamps_bulk` GraphQL multiplex (script:4115), speedup 15-30x, repli gracieux unitaire. Patcher stall #2 et #3 (red_backlog, check_claims) restent a traiter |
 
 ## Audit sémantique cross-famille (docs/audit/)
 
