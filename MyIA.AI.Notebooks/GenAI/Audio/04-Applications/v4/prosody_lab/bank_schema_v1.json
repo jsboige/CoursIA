@@ -1,0 +1,190 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.openbank.org/bank_schema_v1.json",
+  "title": "Bake Bank Schema v1 — cumul cross-moteur des mesures TTS",
+  "description": "Schéma du banc de référence persistant des moteurs TTS (cf. #19695). Chaque ligne du CSV/JSONL représente un run (moteur, extract, seed) avec ses métriques mesurées et ses champs de fidélité. v1 = niveau 1 (métriques brutes + fidélité minimale). Évolutions = v2/v4/etc., jamais casser v1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ts",
+    "machine",
+    "motor",
+    "extract"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "v1",
+      "description": "Version du schéma (figé à v1 pour cette ligne)."
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp ISO 8601 UTC du run (ex. 2026-10-07T13:25:33Z)."
+    },
+    "machine": {
+      "type": "string",
+      "enum": ["myia-po-2023", "myia-po-2024", "myia-po-2025", "myia-po-2026", "myia-po-2027", "myia-ai-01", "myia-web2"],
+      "description": "Identifiant normalisé de la machine qui a produit le run."
+    },
+    "motor": {
+      "type": "string",
+      "description": "Identifiant du moteur TTS (ex. qwen3_tts_1_7b_customvoice, cosyvoice3, chatterbox_mtl_v3, pocket_tts, zonos, fishaudio_s2_pro_local)."
+    },
+    "motor_size_b": {
+      "type": ["number", "null"],
+      "description": "Taille du moteur en milliards de paramètres (null si non applicable)."
+    },
+    "motor_license": {
+      "type": "string",
+      "description": "Licence SPDX (Apache-2.0, MIT, Research-Only, etc.)."
+    },
+    "extract": {
+      "type": "string",
+      "enum": ["A", "B", "C", "D", "E"],
+      "description": "Identifiant de l'extrait de référence (A = Boule de Suif narration, B = Boule de Suif dramatique, C-E = slots futurs)."
+    },
+    "extract_text_sha256_prefix": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{16}$",
+      "description": "Préfixe 16-hex du sha256 du texte de référence (verrou anti-réécriture silencieuse)."
+    },
+    "extract_text_chars": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Nombre de caractères du texte de référence."
+    },
+    "seed": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Graine de sampling du moteur (null si non applicable, ex. modèles déterministes)."
+    },
+    "speaker": {
+      "type": ["string", "null"],
+      "description": "Identifiant de la voix (modèles multi-locuteurs)."
+    },
+    "instruct": {
+      "type": ["string", "null"],
+      "description": "Prompt d'instruction (pour les moteurs qui en acceptent)."
+    },
+    "language": {
+      "type": ["string", "null"],
+      "description": "Code langue BCP-47 (fr, en, etc.)."
+    },
+    "wer": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "description": "Word Error Rate mesuré (0.0 = parfait, 1.0+ = ajoute des mots au-delà du ref). null si non mesuré."
+    },
+    "wer_model": {
+      "type": ["string", "null"],
+      "description": "Identifiant du modèle ASR (openai/whisper-large-v3, faster-whisper-tiny, etc.)."
+    },
+    "rtf": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "description": "Real-Time Factor (audio_seconds / wallclock_seconds). < 1.0 = temps réel."
+    },
+    "vram_mb": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Pic VRAM mesuré (Mo)."
+    },
+    "duration_s": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "description": "Durée de l'audio synthétisé (secondes)."
+    },
+    "load_s": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "description": "Temps de chargement du modèle (secondes)."
+    },
+    "wallclock_total_s": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "description": "Wallclock total du banc (incluant WER et prosodie)."
+    },
+    "prosody_st_range": {
+      "type": ["number", "null"],
+      "description": "Prosodie: ST-spread (semitones range, F0). null si non mesuré."
+    },
+    "prosody_cv": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "description": "Prosodie: coefficient of variation F0."
+    },
+    "prosody_velocity": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "description": "Prosodie: vitesse (Hz/s)."
+    },
+    "prosody_verdict": {
+      "type": ["string", "null"],
+      "enum": ["EXPRESSIVE", "INSUFFICIENT", "FLAT", null]
+    },
+    "fidelity_added_words": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Fidélité (gate pré-UAT #17586): nombre de mots ajoutés par le moteur au-delà du ref. 0 = pass."
+    },
+    "fidelity_omitted_segments_3plus": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Fidélité: nombre de segments de 3+ mots omis sous au moins 2 ASR sur 3. 0 = pass."
+    },
+    "voice_consistent": {
+      "type": ["boolean", "null"],
+      "description": "Fidélité: voix CONSISTENT sur tout le passage (true), DRIFTING / ERRATIC / FADING (false). null si non testé."
+    },
+    "hallu_per_100_syl": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "description": "Densité d'hallucinations (occurrences par 100 syllabes)."
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Notes libres (erreurs rencontrées, conditions matérielles, avertissements)."
+    },
+    "source_path": {
+      "type": "string",
+      "description": "Chemin du metrics.json source ingéré (traçabilité bootstrap)."
+    }
+  },
+  "examples": [
+    {
+      "schema_version": "v1",
+      "ts": "2026-10-06T22:00:00Z",
+      "machine": "myia-po-2023",
+      "motor": "qwen3_tts_1_7b_customvoice",
+      "motor_size_b": 1.7,
+      "motor_license": "Apache-2.0",
+      "extract": "A",
+      "extract_text_sha256_prefix": "a2cab722b97d2378",
+      "extract_text_chars": 1649,
+      "seed": null,
+      "speaker": "serena",
+      "instruct": "voix posée, débit lent, ton narratif",
+      "language": "fr",
+      "wer": 0.3294,
+      "wer_model": "openai/whisper-large-v3",
+      "rtf": 5.524,
+      "vram_mb": 4432.0,
+      "duration_s": 132.88,
+      "load_s": 2893.8,
+      "wallclock_total_s": 734.0,
+      "prosody_st_range": null,
+      "prosody_cv": null,
+      "prosody_velocity": null,
+      "prosody_verdict": null,
+      "fidelity_added_words": null,
+      "fidelity_omitted_segments_3plus": null,
+      "voice_consistent": null,
+      "hallu_per_100_syl": null,
+      "notes": "WER chunked 30s/stride 5. Inflation 'débit lent' 5×.",
+      "source_path": "G:\\Mon Drive\\MyIA\\Projets\\BibliothequesSonores\\A0-review-20261006\\A0C-qwen3tts-customvoice-metrics.json"
+    }
+  ]
+}
