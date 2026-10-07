@@ -278,4 +278,26 @@ MyIA.AI.Notebooks/RL/rl_17_k_server_wfa.ipynb	MyIA.AI.Notebooks/Complexity/Compl
 MyIA.AI.Notebooks/RL/rl_18_matroid_secretary.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-04d-Secretaire-Matroidal-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/Search/Discrepancy/Discrepancy-01-BeckFiala-Lean-Python.ipynb	MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-BeckFiala-Lean-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/Search/Discrepancy/Discrepancy-02-Komlos-Lean.ipynb	MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09e-Komlos-Lean.ipynb	2026-10-05	myia-po-2027:CoursIA
- origin/main
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02d-FOL-Lab-Lean.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02d-FOL-Lab-Lean-Python.ipynb	2026-10-04	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02e-Preuves-Hilbert-Gentzen-Lean.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python.ipynb	2026-10-04	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb	2026-10-04	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb	2026-10-04	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb	2026-10-04	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject-Python.ipynb	2026-10-04	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-CSharp.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Conditional-Logics-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Conditional-Logics-CSharp.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Dung-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Dung-CSharp.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-ModalLogic-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-ModalLogic-CSharp.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-QBF-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-QBF-CSharp.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3b-Modal-Lab-Lean.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03b-Modal-Lab-Lean-Python.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Aspic-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Aspic-CSharp.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-CSharp.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-CSharp.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05b-Argumentation-Lean.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5d-Stable-Synthesis-Lean.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05d-Stable-Synthesis-Lean-Python.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5e-Propositional-Lab-Lean.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05e-Propositional-Lab-Lean-Python.ipynb	2026-10-06	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Supercritique.ipynb	MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb	2026-10-06	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Lean.ipynb	MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb	2026-10-06	myia-po-2027:CoursIA
