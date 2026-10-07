@@ -827,6 +827,7 @@ project:
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb"
+    - "MyIA.AI.Notebooks/GameTheory/SocialChoice/02-Stable-Marriage-Gale-Shapley.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb"

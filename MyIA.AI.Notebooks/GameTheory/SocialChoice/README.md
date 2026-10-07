@@ -38,6 +38,7 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-05 | [05-Gibbard-Satterthwaite](05-Gibbard-Satterthwaite.ipynb) | Gibbard-Satterthwaite sans mystère : la manipulation comme témoin (ex-GT-22, re-slot #12375) | 30 min | COMPLET |
 | SC-06 | [06-Mobius-Aggregation-Pouvoir-Manipulation](06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Möbius sur le treillis des coalitions : dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée (See #12204) | 40 min | COMPLET |
 | SC-07 | [07-Committees-Core](07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas Hare/Droop, certificats de paiement et règle de l'entropie harmonique (arXiv 2609.11912, See #16848) | 40 min | COMPLET |
+| SC-08 | [02-Stable-Marriage-Gale-Shapley](02-Stable-Marriage-Gale-Shapley.ipynb) | Mariage stable : algorithme de Gale-Shapley, jumeau Python du lake Lean `game_theory_lean/StableMarriage/` (4 574 lignes, 0 `sorry`) — couplage parfait, stabilité, man-optimalité vérifiée empiriquement par énumération exhaustive (See #19681) | 35 min | COMPLET |
 
 **Durée totale** : ~5h15
 
@@ -65,6 +66,7 @@ flowchart TD
     Result -.- Relax["Cartographie des relaxations<br/>électeur médian (Downs) · Split Cycle<br/>chaque paire d'axiomes réalisable"]
     Result -.- Coop["Face coopérative (SC-06)<br/>Möbius · dividendes de Harsanyi<br/>v = Σ m(T)·u_T · poids ≠ pouvoir"]
     Coop -.- Comm["Comités par approbation (SC-07)<br/>core toujours non vide<br/>quotas Hare/Droop · certificats"]
+    Result -.- Match["Couplages bilatéraux (SC-08)<br/>mariage stable · Gale-Shapley<br/>man-optimal · 0 paire bloquante"]
 ```
 
 ### Étape 1 : Le théorème d'Arrow par la simulation (SC-01, 45 min)
