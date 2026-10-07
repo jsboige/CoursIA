@@ -20,7 +20,7 @@ affirmations ici sont **littérales** (page/section + ligne du PDF) ou
 |---|---|---|
 | Commit audité | `37a9b727dfd5034af0b8aa8185246d58008b9e5c` | `git log --oneline -1` |
 | PDF | `Cartier_Miller_Paper_Revised_20261005.pdf` (1 114 306 octets) | `ls -la` |
-| Texte extrait | `.paper.txt` (771 lignes, layout) | `pdftotext -layout` |
+| Texte extrait | `.paper.txt` (layout) | `pdftotext -layout` |
 | Licence dépôt | MIT (LICENCE, 1069 octets) | `cat LICENSE` |
 | Statut auteur | « unrefereed draft, AI-assisted » (auto-déclaré) | `README.md` l. 16-17 |
 | Garde | « Numerical checks support the formulas, but do not replace independent review » | `README.md` l. 17-18 |
@@ -88,12 +88,12 @@ Dénombrement vérifié à la racine et dans `Cartier_Miller_Benchmark/` :
 | `Cartier_Miller_Benchmark/VALIDATION.md` | — | — | 2e pilier : protocole de validation |
 | `Cartier_Miller_Benchmark/SHA256SUMS.txt` | — | — | empreintes par fichier (auto-vérification) |
 | `Cartier_Miller_Benchmark/example_results/harvey_validation.json` | — | — | 10 809 stopping points × 92 primes + 2 130 exact binomiaux + 328 quarter-points + 26 large-mod + 3 invalid |
-| `Cartier_Miller_Benchmark/example_results/larger_three/` | — | — | 3 primes 10⁹..10¹¹ × 4 méthodes × 3 batches, 12 lignes d'accord |
-| `Cartier_Miller_Benchmark/example_results/paper_seven/` | — | — | 7 primes (p = 97 à 100 000 037), 11 batches, 28 lignes d'accord |
+| `Cartier_Miller_Benchmark/example_results/larger_three/` | — | — | 3 primes 10⁹..10¹¹ × 4 méthodes × 3 batches, 12 résultats d'accord |
+| `Cartier_Miller_Benchmark/example_results/paper_seven/` | — | — | 7 primes (p = 97 à 100 000 037), 11 batches, 28 résultats d'accord |
 | `Cartier_Miller_Benchmark/upstream/` | — | — | `hypellfrob.{cpp,h,pyx}` + `recurrences_ntl.{cpp,h}` (Sage 10.8 vendored) |
 
-**Total code applicatif :** 1 440 lignes Python + 87 lignes C++
-adaptateur + upstream vendored. Échelle typique d'une distillation
+**Total code applicatif :** 1 337 Python + 16 cmd + 87 C++ = 1 440 au total
+(adaptateur + upstream vendored). Échelle typique d'une distillation
 académique — bien plus petit que les corpus CoursIA existants.
 
 ## 4. Identité ↔ code : ce qu'on peut confronter
@@ -129,17 +129,17 @@ Le `VALIDATION.md` (2e pilier) et les `example_results/` documentent les
 **vérifications computationnelles** exécutées par l'auteur. Inventaire
 froid des chiffres annoncés vs ce que les fichiers contiennent :
 
-| VALIDATION.md声称 | Source | Vérification P0 (taille / existence) | Statut |
+| VALIDATION.md (énoncé) | Source | Vérification P0 (taille / existence) | Statut |
 |---|---|---|---|
-| 6 tests automatisés sur Linux Python 3.12 | `test_validation.py` (52 lignes) | OK (52 lignes, 6 fonctions visibles via grep) | à exécuter en P1+ |
+| 6 tests automatisés sur Linux Python 3.12 | `test_validation.py` | OK (6 fonctions visibles via grep) | à exécuter en P1+ |
 | 1 000 000 009 (large modulus) | `example_results/larger_three/benchmark.json` (89 732 octets) | OK (fichier présent) | à ouvrir en P1+ |
 | BSGS Hasse-interval annihilator | `point_count.py` l. 1-12 | OK (référencé) | à inspecter en P1+ |
 | Harvey full validation : 10 809 stopping points × 92 primes | `example_results/harvey_validation.json` | OK (présent) | à inspecter en P1+ |
 | Quarter-point cross-check : 328 primes 1 (mod 4), 13-4 999 | `example_results/harvey_validation.json` | OK | à inspecter en P1+ |
-| Pilot Table 1 : 7 primes, 11 batches, 28 lignes d'accord | `example_results/paper_seven/benchmark.json` | OK (présent) | à confronter aux valeurs annoncées |
-| Three-prime run 10⁹..10¹¹ × 4 méthodes × 3 batches, 12 lignes | `example_results/larger_three/benchmark.json` | OK (présent) | à confronter aux valeurs annoncées |
+| Pilot Table 1 : 7 primes, 11 batches, 28 résultats d'accord | `example_results/paper_seven/benchmark.json` | OK (présent) | à confronter aux valeurs annoncées |
+| Three-prime run 10⁹..10¹¹ × 4 méthodes × 3 batches, 12 résultats | `example_results/larger_three/benchmark.json` | OK (présent) | à confronter aux valeurs annoncées |
 | Native Windows non vérifié | `README.md` l. 38 | OK (mention explicite) | — |
-| GUI smoke test passé (8 lignes, 4 chart tabs, CSV/PNG export) | `GUI_preview.png` (151 047 octets) | OK (image présente) | à ouvrir en P1+ pour QA visuel |
+| GUI smoke test passé (8 résultats, 4 chart tabs, CSV/PNG export) | `GUI_preview.png` (71 663 octets) | OK (image présente) | à ouvrir en P1+ pour QA visuel |
 
 **Garde de lecture.** `VALIDATION.md` est explicitement non canonique
 pour les mathématiques : « *Finite checks do not replace review of the
@@ -154,12 +154,12 @@ cartographie. Les phases suivantes :
 
 | Phase | Objet | Volume attendu | Lane pressentie |
 |---|---|---|---|
-| **P1** | Vérif statique identité ↔ code : confronter eq. 4 manuscrit (l. 48-55) au calcul dans `elliptic_prefix.py::quarter` + `pilot.py::run` + `point_count.py::Schoof` | ~3-5 h, lecture ciblée des 3 fichiers + sous-programmes | po-2023 (cette lane) — sous-traitance `point_count.py::Schoof` possible vers ai-01 si kernel Schoof demande |
+| **P1** | Vérif statique identité ↔ code : confronter eq. 4 manuscrit (l. 48-55) au calcul dans `elliptic_prefix.py::quarter` + `pilot.py::run` + `point_count.py::Schoof` | ~3-5 h, lecture ciblée du trio de sources + sous-programmes | po-2023 (cette lane) — sous-traitance `point_count.py::Schoof` possible vers ai-01 si kernel Schoof demande |
 | **P2** | Arbitrage des candidats de formalisation Lean : identité explicite, normalisation cas exceptionnel, quarter-point `j=1728`, et **enquête d'organes Mathlib** (courbes elliptiques, Frobenius, Cartier : couverture Mathlib 4 à mesurer — `Mathlib.NumberTheory.EllipticCurve.*` ?) | ~1-2 h inventaire + 5-10 h formalisation (brique k-x séparée) | po-2025 (adjoint) ou po-2026 (Lean) — expertise Lean spécifique |
 | **P3+** | Briques atomiques : oracle externe (modèle #17845), briques itératives, jumeaux i18n, review statique des deux lanes | multi-cycle | multi-lane (modèle #17845 : Karingula-Lovett) |
 
 **Pourquoi la P1+ est à scoper en cycles dédiés.** P1 seule demande une
-relecture ligne-par-ligne de ~760 lignes Python, avec confrontation
+relecture ligne-par-ligne de l'ordre de 760 LOC Python, avec confrontation
 explicite à 4 formules du manuscrit — c'est un grain de 3-5 h, pas un
 mémo. Tenter de la faire dans la foulée de la P0 mélangerait les
 niveaux d'évidence (cartographie = `[VERIFIED par grep]` ;

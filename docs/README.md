@@ -265,6 +265,7 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 
 | Fichier | Description |
 |---------|-------------|
+| [research/cartier-miller-p0-cartography.md](research/cartier-miller-p0-cartography.md) | Cartographie énoncés ↔ code de la distillation Cartier-Miller (#19452, modèle #17845). Brique P0 = lecture intégrale + pin du dépôt externe (`bbrhuft/Cartier-Miller-...` @ `37a9b72`). P1+ explicitement hors scope. Statut auteur « unrefereed draft, AI-assisted » auto-déclaré. |
 | [research/fallacy-detection-survey.md](research/fallacy-detection-survey.md) | Survey SOTA détection de sophismes + argument mining, fondant l'EPIC #10355 (Phase 1 livrable 1). 10 sources primaires (Logic/LogicClimate, MAFALDA 23 classes, IBM-Rank-30k, AraucariaDB), constat clé : taxonomie Argumentum 1408/8 familles écrase les datasets académiques 13-23 → mapping d'étiquettes = livrable de recherche à part entière |
 | [research/quant-prose-residual-machine-dep.md](research/quant-prose-residual-machine-dep.md) | Inventaire résiduel des timings machine-dépendants cités en prose (#10158) — scan `check_machine_dep_timing.py --all` sur 1008 notebooks. Recense ce qui reste après passage de l'organe, pour que le résidu soit une liste et non une impression |
 
