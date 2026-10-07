@@ -9,6 +9,52 @@
       "params": {},
       "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
       "fingerprint": "a8f44f3e52fc28d2"
+    },
+    {
+      "id": "fs774",
+      "kind": "qc",
+      "sha": "f2027d3287e332d129b1f7cee1901a4e7fcdb43f",
+      "frozen_on": "2026-10-04",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/FourSleeve774:37416444",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
+      "fingerprint": "f7e4c1dd6503c96c"
+    },
+    {
+      "id": "splits-lo",
+      "kind": "qc",
+      "sha": "1fef19f77483a5fb0dab02681aeda7b6d9ed1a4c",
+      "frozen_on": "2026-10-05",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/SplitEventsLongOnly:37416446",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
+      "fingerprint": "274d0d5ff3b896e4"
+    },
+    {
+      "id": "ivol-U",
+      "kind": "local",
+      "sha": "a92539de9b41bff5cf5963c12e5c062d044c425a",
+      "frozen_on": "2026-10-06",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/shadow_inverse_vol.py:inverse_vol",
+      "params": {
+        "convention": "U",
+        "target": 0.025
+      },
+      "fee_model": "5 bps de la valeur échangée",
+      "fingerprint": "1695ce6178614958"
+    },
+    {
+      "id": "ivol-F",
+      "kind": "local",
+      "sha": "a92539de9b41bff5cf5963c12e5c062d044c425a",
+      "frozen_on": "2026-10-06",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/shadow_inverse_vol.py:inverse_vol",
+      "params": {
+        "convention": "F",
+        "target": 0.025
+      },
+      "fee_model": "5 bps de la valeur échangée",
+      "fingerprint": "9d89e167d99f26b1"
     }
   ]
 }

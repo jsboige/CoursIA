@@ -478,6 +478,9 @@ _PROBE_UNSOLVED_TOL = 25
 # FX-5c: a lake/lean `error:` line with no `NN:NN:` file position anywhere
 # in it is an infrastructure failure, not an elaboration verdict.
 _UNPOSITIONED_ERROR_LINE_RE = re.compile(r"^\s*error:")
+# FX-5d: any `error:` token, positioned or not — its absence from a failed
+# build means the failure is not an elaboration verdict.
+_ANY_ERROR_RE = re.compile(r"\berror:")
 
 
 def _probe_replaced_lines(
@@ -628,6 +631,20 @@ def is_true_placeholder_goal(filepath: str, sorry_line: int) -> Tuple[bool, str]
     # so ambiguity still never refuses.
     raw_output = probe_result.get("raw_output", "") or ""
     if not probe_result.get("success") and not raw_output.strip():
+        return False, ""
+    # FX-5d (#1453, pass 21 2026-10-06): since #18432 the TimeoutExpired
+    # branch hands back the PARTIAL capture (warnings from earlier lines)
+    # instead of an empty string, so FX-5b no longer sees the timeout. A
+    # wall-clock cut is no verdict on the probed line — the elaborator may
+    # never have reached it — whether or not a diagnostic made it out before
+    # the kill. Founding case: Lidman.lean sorry :112, an honest existential
+    # (`exact True.intro` type-mismatches it under `lake env lean`), refused
+    # as TRUE_PLACEHOLDER after the 600 s probe was cut with warnings only.
+    if probe_result.get("wall_clock_timeout") or probe_result.get("wall_clock_exhausted"):
+        return False, ""
+    # Same family, any other cause: a FAILED build that printed no `error:`
+    # line at all has no elaboration verdict to read closure from.
+    if not probe_result.get("success") and not _ANY_ERROR_RE.search(raw_output):
         return False, ""
 
     if _probe_closes_goal(raw_output, sorry_line):
