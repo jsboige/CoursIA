@@ -1,7 +1,7 @@
 - name: "Tweety-4 Belief-Revision"
   family: Tweety/IKVM-JPype
-  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision-Csharp.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (revision des croyances AGM, contraction/revision) : C# branche IKVM 8.15.0 + tweety-beliefdynamics.dll (tracked) + 8 refs `org.tweetyproject.*` actifs (3 cellules avec using explicite + classes Java `SimpleKbReiter`, `DefaultRevisionOperator` invoquees). Python branche JPype + `from java.util import ArrayList, HashSet` + `from org.tweetyproject.beliefdynamics.* import` + meme bibliotheque Java TweetyProject. Verifie firsthand (c.227, 2026-08-12, po-2023:CoursIA-2) : les deux cotes operent sur la meme base de connaissances Java (BeliefSet) avec les memes operateurs de revision, pont IKVM-bytecode vs JPype-JVM-runtime."
