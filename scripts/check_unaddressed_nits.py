@@ -4089,6 +4089,53 @@ def _opens_on_lift(body: str) -> bool:
     return bool(_OPENING_LIFT_RE.match(body.lstrip("\r\n \t")))
 
 
+# #19810 — discriminateur UI-web-nit : le proxy CRLF introduisait en 728146a78e
+# (#11044/#11045, ai-01, 2026-08-15) reposait sur CRLF = UI web = humain. Il
+# attrapait les VRAIS nits UI web (USER_NIT corpus, « Il reste un souci »,
+# bullet lists) mais sur-firait sur les posts CLI Windows : un commentaire
+# multi-ligne ecrit via `Path.write_text` (mode texte, `\n -> \r\n`) devenait
+# HUMAN sans aucun marqueur de reserve. Faux-positif fondateur #19704 (2026-10-08,
+# po-2026 : la lane s'est auto-bloquee au merge-gate sur son propre commentaire,
+# 0.1 h apres l'avoir poste, gap = transport CRLF seul).
+#
+# Le discriminateur preserve le signal UI web : il exige une STRUCTURE de
+# plainte (bullet-list, phrase-repere plainte EN/FR, ou phrase interrogative
+# centrée « nit/reserve »). Les posts CLI Windows — multi-lignes status,
+# chemins, SHAs, « All tests green » — n'ont aucune de ces structures et
+# retournent False, donc le CRLF proxy les laisse passer (None).
+_UI_WEB_NIT_BULLET_RE = re.compile(r"\r\n\s*(?:[-*]\s|\d+\.\s)\S")
+_UI_WEB_NIT_PHRASE_RE = re.compile(
+    r"\b(?:attention|heads[- ]?up|warning|please|merci[,\s]|"
+    r"il (?:va falloir|reste|y a|n'?y a pas)|pourrais[- ]tu|"
+    r"(?:il|y)\s+(?:a|faut)\s+|"
+    r"\bnit\b|\breserves?\b|\bsouci\b|\bprobleme\b|\bmanque\b|"
+    r"\bcass(?:e|é)\b|\bbug\b|\bwrong\b|\bbroken\b|"
+    r"ne\s+(?:pas|oublie)|avertissement|remarque|"
+    r"doit\s+(?:etre|etre|fonctionner)|faut\s+(?:pas|que))",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_ui_web_nit(body: str) -> bool:
+    """#19810 — un corps CRLF est-il une plainte UI web, ou un post Windows-CLI ?
+
+    UI web : bullet-list, phrase-repere plainte (attention/souci/nit/reserve/
+    casse/...), phrase interrogative centree. Le test USER_NIT (l.50, «
+    Attention 2 nits:\\r\\n- il va falloir splitter\\r\\n- l'attribution
+    est fausse ») couvre le 1er cas ; le test_controle_positif_vrai_nit_user_crlf
+    (#16700 l.150, « Il reste un souci :\\r\\nla cellule dit 1 722 s mais le
+    describe dit 1433.57. ») couvre le 2e.
+
+    Windows CLI : multi-lignes status (chemins absolus, SHAs 728146a78e,
+    « All tests green », « CI passing »). Aucun marqueur de plainte → False.
+    """
+    if _UI_WEB_NIT_BULLET_RE.search(body):
+        return True
+    if _UI_WEB_NIT_PHRASE_RE.search(body):
+        return True
+    return False
+
+
 def classify(author: str, body: str) -> str | None:
     """'HUMAN' (nit user, UI web) | 'BOT-CONCERN' (reviewer avec reserves) | None."""
     if author in BOT_LOGINS or not body:
@@ -4217,7 +4264,16 @@ def classify(author: str, body: str) -> str | None:
     if stripped.startswith(AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
         return "BOT-CONCERN" if live_concern else None
-    if "\r\n" in body:
+    # #19810 — proxy CRLF serre : un corps CRLF ne tient HUMAN que s'il porte
+    # une reserve claire (live_concern) OU une structure de plainte UI web
+    # (bullet list, phrase-repere plainte). Sans ca, c'est un artefact de
+    # transport (post CLI Windows via Path.write_text, Out-File, redirection
+    # PowerShell) et le commentaire reste muet. Cas fondateur #19704 :
+    # po-2026 s'auto-bloquait au merge-gate sur son propre commentaire, 0.1 h
+    # apres l'avoir poste, gap = CRLF seul. USER_NIT (l.50, attention+bullets)
+    # et test_controle_positif_vrai_nit_user_crlf (#16700 l.150, "souci")
+    # restent preserves (live_concern False mais _looks_like_ui_web_nit True).
+    if "\r\n" in body and (live_concern or _looks_like_ui_web_nit(body)):
         return "HUMAN"
     if live_concern:
         return "BOT-CONCERN"
