@@ -52,18 +52,30 @@ export COURSIA_LEAN_RUNNER_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-myia-
 export COURSIA_RUNNER_STATE_DIR="${COURSIA_RUNNER_STATE_DIR:-/var/lib/coursia-lean}"
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 
-# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 42 Go depuis
-# l'agrandissement VM du 2026-09-21 (24 032 -> 40 110 Mo, arbitrage user,
-# mission ai-01 msg-20260921T203652-qxg3en). Cette jambe est celle qui a rendu
-# l'ecart visible : ses 2 slots a 6 Go demandent 12 288 Mo, et le garde les
-# refusait tant que les 18 432 Mo des deux autres familles etaient en vol
-# (18 432 + 12 288 > 12 288) -- sous l'ancien budget 12 Go, les slots lean ne
-# DEMARRAIENT JAMAIS. Le refus etait correct ; ce qui manquait etait un budget
-# couvrant la composition complete (8x1536 + 12x1536 + 2x6144 = 43 008 Mo).
+# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 16 Go. La VM WSL
+# est revenue a 24 032 Mo (`.wslconfig memory=24GB`, mesure 2026-10-08) : le
+# 40 110 Mo qui justifiait 42 depuis le 2026-09-21 (#17322) n'existe plus, et
+# la somme des caps declares (27 648 Mo) depassait la RAM de la VM.
+# Composition recomposee pour tenir dans la VM : 4x1536 docker + 8x512
+# waiters + 1x6144 lean = 16 384 Mo, cette jambe passant de 2 slots a 1.
 # Les trois jambes doivent annoncer le meme nombre : assert_memory_budget
 # somme les familles entre elles, une divergence refuserait des slots sans
 # nommer sa cause.
-export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-42}"
+export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-16}"
+
+# AUCUN SWAP POUR LES CONTENEURS LEAN (mission URGENTE ai-01, 2026-10-08).
+# `--memory-swap = --memory` : docker n'accorde alors AUCUN swap au conteneur.
+# Ce que cela retire : la valeur par defaut de supervise.sh etait 12g de swap
+# par slot, soit 12 288 Mo par conteneur lean et 24 576 Mo pour les deux --
+# une masse qu'aucun budget ne voyait (assert_memory_budget n'indexe que
+# `--memory`), ecrite sur le NVMe qui porte le pagefile de l'hote, et le
+# mecanisme meme de l'incident de saturation. Cout assume et mesure : un build
+# lean qui depasse 6 Go de RSS ne swappe plus, il sort en exit 137. La reponse
+# a un lake trop gros pour 6 Go n'est PAS de remonter ce total, c'est de le
+# router vers un runner hosted (cf l'avertissement de supervise.sh sur
+# conway_lean).
+export COURSIA_LEAN_RUNNER_MEMORY="${COURSIA_LEAN_RUNNER_MEMORY:-6g}"
+export COURSIA_LEAN_RUNNER_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY_SWAP:-$COURSIA_LEAN_RUNNER_MEMORY}"
 
 # BUDGET CPU INTER-FAMILLES (#15574 item 3, arbitrage coordinateur du
 # 2026-10-01, comment 5933689033) -- MEME NOMBRE que coursia-runner-start.sh.

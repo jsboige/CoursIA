@@ -16,8 +16,14 @@
 # (check-run 102437210604), et deux jobs lean de PR sont restes en queue
 # toute l'apres-midi (diagnostic po-2027, 14:23Z).
 #
-# N slots porte par l'argument ExecStart (po-2024 -> 2, l'effectif
-# d'avant la chute : volumes _work chauds coursia-runner-work-lean-{1,2}).
+# N slots porte par l'argument ExecStart (po-2024 -> 1 depuis le 2026-10-08,
+# mission URGENTE ai-01 ai01-urgent-po2024-runners-mem-2220 : la VM WSL est
+# revenue a 24 032 Mo, la composition 4x1536 docker + 8x512 waiters +
+# 1x6144 lean = 16 384 Mo tient dans sa RAM. L'effectif lean est ce qui baisse
+# -- les volumes _work chauds coursia-runner-work-lean-1 reste porte par ce
+# slot, -2 devient inutilise et n'est PAS supprime : le remonter est le geste
+# de retour si la VM est reagrandie, et un volume detruit ne se recree pas
+# chaud).
 [Unit]
 Description=CoursIA Lean runners pool (coursia-lean slots)
 # Wants= et non Requires= (meme raison que coursia-runner.service, #14347) :
@@ -32,7 +38,7 @@ StartLimitBurst=5
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/coursia-lean-start.sh 2
+ExecStart=/usr/local/bin/coursia-lean-start.sh 1
 ExecStop=/usr/local/bin/coursia-lean-start.sh stop
 Restart=always
 RestartSec=30
@@ -44,8 +50,10 @@ TimeoutStopSec=900
 
 # Nice=10 gouverne le CPU ; l'I/O du pool cede sous contention comme les
 # autres (IOWeight=50), cf #15091. Les caps durs par conteneur (cpus=6,
-# memory=8g, memory-swap=24g) sont portes par supervise.sh lui-meme via
+# memory=6g, memory-swap=6g) sont portes par supervise.sh lui-meme via
 # LEAN_CPUS/LEAN_MEMORY/LEAN_MEMORY_SWAP -- l'unite ne les re-encode pas.
+# memory-swap=6g vaut AUCUN swap (docker n'en accorde que si la valeur depasse
+# memory) : c'est l'export de coursia-lean-start.sh, pose le 2026-10-08.
 IOAccounting=yes
 IOWeight=50
 

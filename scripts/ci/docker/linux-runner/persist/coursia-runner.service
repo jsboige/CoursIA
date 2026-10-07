@@ -8,10 +8,16 @@
 # l'argument ExecStart). Historique de dimensionnement : 8 -> 12 slots le
 # 2026-09-09 (famine 682 en queue, marge CPU loadavg=0.08), ramene a 8 le
 # 2026-09-22, puis a 6 le 2026-10-01 (#15574 item 3, arbitrage coordinateur
-# comment 5933689033) : 6 x 3 vCPU = 18 vCPU docker, + 2 lean x 6 = 30 vCPU
-# d'execution pour 16 disponibles -- le budget COURSIA_RUNNER_CPU_BUDGET=30
-# du wrapper garde cette somme. Le defaut wrapper (N=4) reste le filet --
-# `start 6` ici est l'intention explicite pour cette machine.
+# comment 5933689033), puis a 4 le 2026-10-08 (mission URGENTE ai-01
+# ai01-urgent-po2024-runners-mem-2220 : la VM WSL etant revenue a 24 032 Mo,
+# la somme des caps declares depassait sa RAM -- l'effectif est ce qui baisse,
+# les caps par conteneur sont calibres). Le defaut wrapper (N=4) reste le
+# filet ; `start 4` ici rejoint donc le defaut, c'est l'intention explicite
+# pour cette machine.
+#
+# vCPU d'EXECUTION declares apres le 2026-10-08 : 4 x 3 = 12 (docker) + 1 x 6
+# = 18 (lean) pour 16 disponibles -- le budget COURSIA_RUNNER_CPU_BUDGET=30 du
+# wrapper garde cette somme (les waiters, oisifs, en sont exclus).
 [Unit]
 Description=CoursIA Linux runners supervisor (docker slots)
 # #15095 : Requires+BindsTo INVERSE le choix Wants= de #14347 item 2. Le
@@ -37,7 +43,7 @@ StartLimitBurst=5
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/coursia-runner-start.sh start 6
+ExecStart=/usr/local/bin/coursia-runner-start.sh start 4
 ExecStop=/usr/local/bin/coursia-runner-start.sh stop
 Restart=always
 RestartSec=30

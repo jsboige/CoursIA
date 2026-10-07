@@ -6,7 +6,15 @@
 # Deploiement ai-01 (2026-09-07, #14612/#14846) : copie de reference -- l'original
 # vit dans la distro Ubuntu de l'hote, sous /etc/systemd/system/.
 #
-# N slots porte par l'argument ExecStart (ai-01 -> 12, l'effectif d'avant la chute).
+# N slots porte par l'argument ExecStart (ai-01 -> 12, l'effectif d'avant la
+# chute ; po-2024 -> 8 depuis le 2026-10-08, mission URGENTE ai-01
+# ai01-urgent-po2024-runners-mem-2220 : la VM WSL revenue a 24 032 Mo impose
+# une composition dont la somme des caps tient dans sa RAM -- 4x1536 docker +
+# 8x512 waiters + 1x6144 lean = 16 384 Mo. Cette jambe demande l'effectif dans
+# son argument, elle ne le lit pas d'un fichier : c'est l'unite DEPLOYEE sur la
+# machine qui fait foi, et cette copie de reference porte l'intention. Un
+# changement d'effectif ne prend qu'apres `systemctl daemon-reload` +
+# redemarrage de l'unite (les slots en vol finissent via ExecStop gracieux).
 [Unit]
 Description=CoursIA PR-gate waiter pool (coursia-waiter slots)
 # Wants= et non Requires= (meme raison que coursia-runner.service, #14347) :
@@ -30,7 +38,7 @@ StartLimitBurst=5
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/coursia-waiters-start.sh 12
+ExecStart=/usr/local/bin/coursia-waiters-start.sh 8
 ExecStop=/usr/local/bin/coursia-waiters-start.sh stop
 Restart=always
 RestartSec=30

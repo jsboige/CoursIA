@@ -39,23 +39,32 @@ export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 # rend auditable : la valeur effective vit dans un fichier que l'operateur ouvre,
 # pas dans un defaut de shell que personne ne lit.
 #
-# 42 POUR po-2024 (arbitrage user 2026-09-21, mission ai-01
-# msg-20260921T203652-qxg3en) : la VM WSL est passee de 24 032 a 40 110 Mo
-# (.wslconfig memory=40GB). Le nombre est le PLAFOND D'ADMISSION, egal a la
-# somme des caps declares des trois jambes (8x1536 docker + 12x1536 waiters +
-# 2x6144 lean = 43 008 Mo) : sous l'ancien 12 Go, la garde refusait des slots
-# sains -- les 2 slots lean ne demarraient JAMAIS tant que les autres familles
-# etaient en vol. Les vrais murs restent les caps par conteneur (docker
-# --memory) et le plafond vmmem de la VM ; l'hote garde sa moitie au-dela de
-# la VM, comme `MemoryHigh` de coursia-ci.slice sur les machines qui deployent
-# la slice (po-2024 ne la deploie pas : ici le budget n'a pas de mur kernel
-# derriere lui).
+# 16 POUR po-2024 (2026-10-08, mission URGENTE ai-01
+# ai01-urgent-po2024-runners-mem-2220) : la VM WSL est REVENUE a 24 032 Mo --
+# `.wslconfig` porte `memory=24GB` -- alors que cette declaration etait restee
+# a 42, calibree sur les 40 110 Mo de l'elargissement du 2026-09-21 (#17322,
+# disparu depuis). La somme des caps declares depassait donc la RAM de la VM
+# (27 648 Mo en vol pour 24 032 disponibles), et c'est la VM qui swappait.
+# Le nombre est le PLAFOND D'ADMISSION, egal a la somme des caps declares des
+# trois jambes, recomposee pour tenir dans la VM : 4x1536 docker + 8x512
+# waiters + 1x6144 lean = 16 384 Mo. Les ~7 500 Mo restants sont la marge du
+# noyau, de dockerd et du page cache -- les retrecir serait refaire l'erreur
+# dans l'autre sens.
 #
 # LES TROIS JAMBES DOIVENT ANNONCER LE MEME NOMBRE. `assert_memory_budget`
 # somme les conteneurs label `coursia-ci=1` de TOUTES les familles : deux jambes
 # qui divergeraient refuseraient leurs slots l'une contre l'autre, et le message
 # d'erreur ne nommerait pas la divergence -- il parlerait de memoire en vol.
-export COURSIA_RUNNER_BUDGET_GB=42
+#
+# COMPOSITION 2026-10-08 : les caps PAR CONTENEUR sont conserves (ils sont
+# calibres : `docker --memory` est atteint sous charge, les baisser ferait
+# tuer des jobs sains), ce sont les EFFECTIFS qui baissent -- docker 6->4
+# (service), waiters 12->8 (service), lean 2->1 (service) -- et le swap lean
+# qui passe a ZERO (COURSIA_LEAN_RUNNER_MEMORY_SWAP=LEAN_MEMORY, cf
+# coursia-lean-start.sh). Ce dernier geste rend a lui seul 24 576 Mo de swap
+# au noyau : c'etait la plus grosse masse non comptee par ce budget, qui
+# n'indexe que `--memory` (jamais le swap).
+export COURSIA_RUNNER_BUDGET_GB=16
 
 # BUDGET CPU INTER-FAMILLES (#15574 item 3, arbitrage coordinateur du
 # 2026-10-01, comment 5933689033). supervise.sh le lit (assert_cpu_budget) :
