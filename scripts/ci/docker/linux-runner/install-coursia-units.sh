@@ -134,6 +134,13 @@ LIST
 # Usage : icc_install_unit <target> <src_rel> <desc>
 icc_install_unit() {
   local target="$1" src_rel="$2" desc="$3"
+  # L'inventaire (collect_units) documente les chemins avec le prefixe
+  # 'persist/' -- c'est le layout du depot. Mais icc_PERSIST_DIR inclut deja
+  # le sous-arbre persist/, donc on retire le prefixe ici pour eviter le
+  # chemin double `persist/persist/...`. Sans ca, la garde `[ -r "$src" ]`
+  # echoue sur TOUTES les unites (meme avec --dry-run), et le script sort en
+  # ABANDON avant la verification A3. (#14846, fixe par ce PR.)
+  src_rel="${src_rel#persist/}"
   local src="$icc_PERSIST_DIR/$src_rel"
 
   [ -r "$src" ] || die "$src_rel introuvable dans le depot (machine=$icc_MACHINE)"
@@ -215,12 +222,18 @@ if [ "$icc_MACHINE" = "ai-01" ]; then
 fi
 
 # --- enable + start les unites, idempotent ---------------------------------
+# Note A2-seconde-moitie (#19440) : seules les *unites avec [Install]* prennent
+# `enable` -- les slices (*.slice) n'ont pas de [Install] par construction
+# (cf. systemd.slice(5)), `systemctl enable` les refuse avec « The unit files
+# have no [Install] section ». Le `start` de la section precedente suffit a
+# activer une slice. On restreint donc le `enable --now` aux .service ; la
+# verification A3 suit la meme ligne et accepte `static` pour la slice.
 log ""
 log "enable + start des unites :"
 while IFS='|' read -r icc_target _unused _desc; do
   [ -n "$icc_target" ] || continue
   case "$icc_target" in
-    /etc/systemd/system/*.service|/etc/systemd/system/*.slice)
+    /etc/systemd/system/*.service)
       icc_unit_name="$(basename "$icc_target")"
       log "  systemctl enable --now $icc_unit_name"
       [ "$icc_DRY_RUN" -eq 1 ] || systemctl enable --now "$icc_unit_name" || die "echec enable --now $icc_unit_name"
@@ -230,12 +243,12 @@ done < <(collect_units)
 
 # --- verification A3 ---------------------------------------------------------
 log ""
-log "verification A3 (is-enabled + is-active) :"
+log "verification A3 (services : is-enabled + is-active ; slices : is-active seul) :"
 icc_verify_failed=0
 while IFS='|' read -r icc_target _unused _desc; do
   [ -n "$icc_target" ] || continue
   case "$icc_target" in
-    /etc/systemd/system/*.service|/etc/systemd/system/*.slice)
+    /etc/systemd/system/*.service)
       icc_unit_name="$(basename "$icc_target")"
       icc_enabled_state="$(systemctl is-enabled "$icc_unit_name" 2>&1 || true)"
       icc_active_state="$(systemctl is-active "$icc_unit_name" 2>&1 || true)"
@@ -244,6 +257,18 @@ while IFS='|' read -r icc_target _unused _desc; do
         log "  ECHEC A3 : $icc_unit_name is-enabled=$icc_enabled_state (attendu: enabled)"
         icc_verify_failed=1
       fi
+      if [ "$icc_active_state" != "active" ]; then
+        log "  ECHEC A3 : $icc_unit_name is-active=$icc_active_state (attendu: active)"
+        icc_verify_failed=1
+      fi
+      ;;
+    /etc/systemd/system/*.slice)
+      # Slice sans [Install] : `is-enabled` rend `static` par construction,
+      # pas `enabled` (cf. systemd.slice(5)). On verifie donc `is-active`
+      # seul -- la slice a ete demarree par `systemctl start` plus haut.
+      icc_unit_name="$(basename "$icc_target")"
+      icc_active_state="$(systemctl is-active "$icc_unit_name" 2>&1 || true)"
+      log "  $icc_unit_name  is-active=$icc_active_state  (slice : pas d'[Install], enable non requis)"
       if [ "$icc_active_state" != "active" ]; then
         log "  ECHEC A3 : $icc_unit_name is-active=$icc_active_state (attendu: active)"
         icc_verify_failed=1
