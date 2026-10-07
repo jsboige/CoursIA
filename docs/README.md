@@ -267,6 +267,7 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 |---------|-------------|
 | [research/fallacy-detection-survey.md](research/fallacy-detection-survey.md) | Survey SOTA détection de sophismes + argument mining, fondant l'EPIC #10355 (Phase 1 livrable 1). 10 sources primaires (Logic/LogicClimate, MAFALDA 23 classes, IBM-Rank-30k, AraucariaDB), constat clé : taxonomie Argumentum 1408/8 familles écrase les datasets académiques 13-23 → mapping d'étiquettes = livrable de recherche à part entière |
 | [research/quant-prose-residual-machine-dep.md](research/quant-prose-residual-machine-dep.md) | Inventaire résiduel des timings machine-dépendants cités en prose (#10158) — scan `check_machine_dep_timing.py --all` sur 1008 notebooks. Recense ce qui reste après passage de l'organe, pour que le résidu soit une liste et non une impression |
+| [research/percolation-03-critique-results.md](research/percolation-03-critique-results.md) | Résultats palier 3 (#19494, PR #19537) — physique du point critique de la percolation 2D (β/ν = 5/36 exact Kesten 1980, τ' = 187/91 Stauffer, p_c(L) → 1/2). Instrument `networkx`, sweep `L ∈ {8, 16, 32, 64}`. Verdict honnête : β/ν asymptote non tenue à L ≤ 64 (corrections d'échelle finie), p_c(L) monotone PASS conforme |
 
 ## Audit sémantique cross-famille (docs/audit/)
 
