@@ -265,3 +265,27 @@ def test_compose_tts_text_keeps_full_text_for_cosyvoice3_narrator():
     composed = p5_tts._compose_tts_text(narrator)
     assert len(composed) <= p5_tts._MAX_TTS_CHARS
     assert composed.endswith("...")
+
+
+def test_strip_brackets_never_glues_neighbouring_words():
+    """A mid-text tag must become a space, never nothing: the old pattern
+    ate the tag plus its trailing whitespace and glued the neighbours
+    ("route,[short pause] quand" -> "route,quand"). Measured #19692:
+    CosyVoice3 fed such a glued run-on omits everything before the glue
+    point (seg 57: audio starts at "quand"), and the gluing also hides
+    sentence boundaries from the CV3 chunker."""
+    from v4.p5_tts import _strip_brackets_for_qwen
+
+    stripped = _strip_brackets_for_qwen(
+        "[breathing]Chacun guettait pour apercevoir un cabaret sur la route,"
+        "[short pause] quand la diligence sombra dans un amoncellement "
+        "de neige[pause] et il fallut deux heures pour la dégager."
+    )
+    assert "route, quand la diligence" in stripped
+    assert "neige et il fallut" in stripped
+    assert "route,quand" not in stripped
+    assert "neigeet" not in stripped
+    # A tag between two sentences restores the boundary instead of eating it.
+    assert _strip_brackets_for_qwen(
+        "Ils entrèrent dans la ville.[pause] On voyait des soldats."
+    ) == "Ils entrèrent dans la ville. On voyait des soldats."

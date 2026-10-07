@@ -932,8 +932,18 @@ def _strip_brackets_for_qwen(text: str) -> str:
     natural speech. Brackets would either be ignored or, worse, vocalized
     (S2-Pro regression #1277/#1485 — WER explosion on bracket text).
     """
-    # Drop content in [brackets] and any leading tag prefix block.
-    return re.sub(r"\[[^\]]+\]\s*", "", text).strip()
+    # Replace bracket tags with a SPACE, never with nothing: the old
+    # pattern ate the tag and its trailing whitespace, gluing the
+    # neighbouring words ("route,[short pause] quand" -> "route,quand",
+    # "neige[pause] et" -> "neigeet"). The glued punctuation corrupts the
+    # plain-text engines' rendering -- measured #19692: CosyVoice3 fed a
+    # glued run-on omits everything before the glue point (seg 57: the
+    # audio starts at "quand", the first clause never spoken; same
+    # signature on segs 19/38/76) -- and it hides sentence boundaries
+    # from the CV3 chunker, un-chunking text the chunking was built to
+    # bound.
+    text = re.sub(r"\[[^\]]+\]", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def _synthesize_narrator_qwen(
