@@ -11,6 +11,7 @@ Run from the v4 directory:
 from __future__ import annotations
 
 import sys
+import types
 from pathlib import Path
 
 _V4 = Path(__file__).resolve().parent.parent
@@ -199,6 +200,23 @@ def test_cv3_floor_separates_measured_degenerate_from_legitimate():
         assert dur >= floor, f"{text!r} at {dur}s must be accepted (floor {floor:.2f}s)"
 
 
+def test_cv3_floor_sits_in_the_measured_empty_band():
+    """Corpus-level calibration (#19692), separate from the bisect table above.
+
+    Over the 270-narrator artifact the fastest LEGITIMATE segment runs 38.9
+    chars/s and the slowest ASR-confirmed DEFECT runs 43.1 (seg 227: 156
+    reference words, 79 transcribed). Nothing in the corpus lies between, so
+    the floor is placed in an empty band -- and its two margins are therefore
+    thin, which the constant documents rather than hides. Restated as a rate
+    on a 100-char chunk: 2.57 s must pass, 2.32 s must not.
+    """
+    from v4.p5_tts import _cv3_min_expected_s
+
+    text = "x" * 100  # 2.57 s -> 38.9 chars/s; 2.32 s -> 43.1 chars/s
+    assert 2.57 >= _cv3_min_expected_s(text), "38.9 chars/s is legitimate"
+    assert 2.32 < _cv3_min_expected_s(text), "43.1 chars/s is a defect"
+
+
 def test_cv3_floor_keeps_an_absolute_term():
     """A ratio alone would let a tiny chunk through on 0.04 s of audio."""
     from v4.p5_tts import _CV3_MIN_ABS_S, _cv3_min_expected_s
@@ -346,6 +364,147 @@ def test_cv3_fails_loudly_when_every_attempt_degenerates(tmp_path, monkeypatch):
         assert not mp3.exists(), "a failed render must not leave a partial MP3"
         return
     raise AssertionError("an all-degenerate chunk must raise, not return")
+
+
+class _StubLLM:
+    """Minimal stand-in for CosyVoice3LM: records what the sampler hides."""
+
+    def __init__(self, stop_token_ids=(100, 101, 102)):
+        self.stop_token_ids = list(stop_token_ids)
+        self.calls: list[tuple[list[int], bool]] = []
+
+    def sampling_ids(self, weighted_scores, decoded_tokens, sampling, ignore_eos=True):
+        masked = sorted(
+            k for k, v in weighted_scores.items() if v == float("-inf")
+        )
+        self.calls.append((masked, ignore_eos))
+        return 0
+
+
+def _cv3_model(llm):
+    """The shape the real loader returns: `AutoModel()` is a factory giving
+    `CosyVoice3`, whose `.model` is the `CosyVoice3Model` carrying `.llm`."""
+    return types.SimpleNamespace(model=types.SimpleNamespace(llm=llm))
+
+
+# Upstream's non-vLLM decoder breaks on ANY of three stop ids but masks only
+# `speech_token_size` -- which is `stop_token_ids[0]`. The other two walk
+# through the min_len floor, and that is the whole degeneracy: a render ends
+# after one speech token, 1/25 s = 0.04 s (#19692).
+def test_cv3_stop_floor_patch_masks_every_stop_id():
+    from v4.p5_tts import _patch_cv3_stop_token_floor
+
+    llm = _StubLLM((100, 101, 102))
+    assert _patch_cv3_stop_token_floor(_cv3_model(llm)) == "patched"
+
+    scores = {100: 0.5, 101: 0.5, 102: 0.5, 7: 9.0}
+    llm.sampling_ids(scores, [], 25, ignore_eos=True)
+    assert scores[100] == float("-inf"), "stop_token_ids[0] was already masked"
+    assert scores[101] == float("-inf"), "the leaking id 1 must be masked too"
+    assert scores[102] == float("-inf"), "the leaking id 2 must be masked too"
+    assert scores[7] == 9.0, "a speech token must stay samplable"
+    # The inner call runs with ignore_eos=False: masking twice would make the
+    # protected prefix and the free tail indistinguishable.
+    assert llm.calls[-1][1] is False
+
+
+def test_cv3_stop_floor_patch_is_idempotent():
+    """Two prompt builds in one process must not stack wrappers -- a wrapper
+    over a wrapper would mask on the tail too, and generation would never
+    end."""
+    from v4.p5_tts import _patch_cv3_stop_token_floor
+
+    llm = _StubLLM()
+    model = _cv3_model(llm)
+    assert _patch_cv3_stop_token_floor(model) == "patched"
+    first = llm.sampling_ids
+    assert _patch_cv3_stop_token_floor(model) == "already-patched"
+    assert llm.sampling_ids is first
+    assert llm.calls == [], "patching alone must not sample"
+
+
+def test_cv3_stop_floor_leaves_the_tail_able_to_stop():
+    """Past min_len the decoder MUST be able to end: with ignore_eos=False
+    nothing is masked, so a stop id can win and break the loop."""
+    from v4.p5_tts import _patch_cv3_stop_token_floor
+
+    llm = _StubLLM((100, 101, 102))
+    _patch_cv3_stop_token_floor(_cv3_model(llm))
+    scores = {100: 0.5, 101: -2.0, 102: -3.0}
+    llm.sampling_ids(scores, [], 25, ignore_eos=False)
+    assert scores == {100: 0.5, 101: -2.0, 102: -3.0}
+
+
+def test_cv3_stop_floor_patch_fails_loudly_when_the_decoder_moved():
+    """A loader that returns another shape must stop the render rather than
+    quietly restore the leak -- and must SAY which shape it saw, so localising
+    it costs a read instead of a GPU run."""
+    from v4.p5_tts import NarratorCosyVoice3Unavailable, _patch_cv3_stop_token_floor
+
+    for model, why in (
+        (types.SimpleNamespace(), "no `.model` at all"),
+        (types.SimpleNamespace(model=types.SimpleNamespace()), "`.model` with no llm"),
+        # The measured wrong path: a first version of the patch addressed
+        # `model.llm` and raised on all nine probe segments.
+        (types.SimpleNamespace(llm=_StubLLM()), "the decoder at the top level"),
+    ):
+        try:
+            _patch_cv3_stop_token_floor(model)
+        except NarratorCosyVoice3Unavailable as exc:
+            assert "#19692" in str(exc), why
+            assert "model.llm" in str(exc), why
+        else:
+            raise AssertionError(f"must raise: {why}")
+
+
+def test_cv3_load_caches_the_refusal_instead_of_reloading_per_segment(monkeypatch):
+    """A failing patch must not reload the model for every segment: measured,
+    nine probe segments cost six loads (~16 s each) before the run gave up."""
+    from v4 import p5_tts
+    from v4.p5_tts import NarratorCosyVoice3Unavailable
+
+    loads = []
+
+    def _load():
+        loads.append(1)
+        return types.SimpleNamespace()  # a shape the patch must reject
+
+    monkeypatch.setattr(
+        p5_tts,
+        "_get_cv3_client",
+        lambda: types.SimpleNamespace(load_model=_load),
+    )
+    monkeypatch.setattr(p5_tts, "_CV3_MODEL_CACHE", {})
+
+    for _ in range(3):
+        try:
+            p5_tts._load_cv3_model()
+        except NarratorCosyVoice3Unavailable:
+            pass
+        else:
+            raise AssertionError("an unpatched loader must not hand back a model")
+    assert len(loads) == 1, f"the refusal must be cached, got {len(loads)} loads"
+
+
+def test_load_cv3_model_patches_the_decoder_on_the_way_out(monkeypatch):
+    """The patch is not optional plumbing: loading the model without it would
+    leave every narrator render on the leaky path."""
+    from v4 import p5_tts
+
+    llm = _StubLLM()
+    model = _cv3_model(llm)
+    monkeypatch.setattr(
+        p5_tts,
+        "_get_cv3_client",
+        lambda: types.SimpleNamespace(load_model=lambda: model),
+    )
+    monkeypatch.setattr(p5_tts, "_CV3_MODEL_CACHE", {})
+
+    assert p5_tts._load_cv3_model() is model
+    assert getattr(llm, "_v4_stop_floor_patched", False) is True
+    # Second call serves the cached model: the patch is not re-applied.
+    assert p5_tts._load_cv3_model() is model
+    assert llm.calls == []
 
 
 def test_narrator_cache_is_engine_aware(tmp_path, monkeypatch):

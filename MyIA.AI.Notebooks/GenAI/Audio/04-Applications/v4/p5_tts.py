@@ -1076,6 +1076,20 @@ _CV3_PAUSE_S = 0.25  # silence between chunks
 # NOT transferable to the cache path: these floors are WAV durations, and an
 # MP3 carries ~0.1 s of tag and final-frame padding, so the same check applied
 # to a cached MP3 would re-render a legitimately short "--Non." on every run.
+#
+# Where 40 comes from, measured over the 270-narrator artifact and NOT derived
+# from a ratio anyone liked (#19692):
+#   * legitimate narrator speech: p05 15.3, median 20.1, highest 38.9 chars/s
+#   * segments between 43.1 and 69 chars/s (eight of them transcribed by ASR)
+#     are ALL defective: seg 158 reads 3 words where the text has 12, seg 227
+#     79 where it has 156 -- partial degeneration, not fast speech
+#   * gross degenerates (one token): 99 to 560 chars/s
+# The corpus has NOTHING between 38.9 and 43.1, so the floor sits in an
+# empirically empty band rather than in the middle of a population. Its
+# margins are therefore thin on both sides (1.03x above the fastest legitimate,
+# 1.08x under the slowest defective) and that is stated rather than dressed up:
+# this floor is a GROSS backstop, not the fidelity organ. Fidelity is p7's
+# omission control, which votes three ASRs and is what the gate reads.
 _CV3_MIN_CHARS_PER_SEC = 40.0
 _CV3_MIN_ABS_S = 0.20
 # Five, not one: an alternate seed is not a guaranteed good seed. Measured
@@ -1092,6 +1106,107 @@ _CV3_RETRY_SEED_STRIDE = 104_729  # prime, unrelated to seed + seg_index
 # CosyVoice3 AutoModel: ~3.4 GB VRAM, tens of seconds to load — one instance
 # per process, not per segment.
 _CV3_MODEL_CACHE: dict[str, object] = {}
+
+# The re-roll above treats the symptom; this repairs the cause. Upstream's
+# non-vLLM decoder protects its first `min_len` steps against an early stop
+# token, but masks only ONE of the three ids it breaks on (#19692):
+#
+#     self.stop_token_ids = [speech_token_size + i for i in range(3)]
+#
+#     def sampling_ids(self, weighted_scores, decoded_tokens, sampling, ignore_eos=True):
+#         if ignore_eos is True:
+#             weighted_scores[self.speech_token_size] = -float('inf')
+#         ...
+#
+#     top_ids = self.sampling_ids(..., ignore_eos=True if i < min_len else False)
+#     if top_ids in self.stop_token_ids:      # ANY of the three breaks the loop
+#         break
+#
+# `speech_token_size` IS `stop_token_ids[0]`, so ids 1 and 2 stay samplable
+# inside the protected prefix: the floor leaks, and a render ends after a
+# single speech token -- 1/25 s = 0.04 s, CosyVoice's token_hop_len. This is
+# not a short-text effect and not a seed effect. `min_len` is never even 0
+# here: the decoder concatenates prompt_text and adds its length back
+# (`text_len += prompt_text_len`), so `min_len == 2 x tokens(tts_text)`, i.e.
+# 10 for "Il demanda:" -- a text whose own measured render stopped at exactly
+# one token. The floor was armed; two ids walked through it.
+#
+# The vLLM branch has no such hole (`SamplingParams(min_tokens=min_len)`
+# applies to every id in `stop_token_ids`), which is the shape this patch
+# restores to the branch we actually run. Patching the loaded sampler rather
+# than vendoring a fork keeps the reuse organ-first (#17586): the upstream
+# tree stays exactly as installed, and a CosyVoice upgrade that moves these
+# attributes fails loudly at load instead of silently rendering unguarded.
+_CV3_STOP_FLOOR_FLAG = "_v4_stop_floor_patched"
+# The decoder sits two levels down from the object `load_model()` returns:
+# `AutoModel()` is a FACTORY that returns `CosyVoice3(...)`, whose `__init__`
+# sets `self.model = CosyVoice3Model(...)`, whose own `__init__` sets
+# `self.llm = CosyVoice3LM(...)` — and it is the LM that carries
+# `sampling_ids` / `stop_token_ids`. Measured, not inferred: a first version of
+# this patch addressed `model.llm` and raised on all nine probe segments, for a
+# full GPU run of learning nothing (#19692).
+_CV3_DECODER_PATH = "model.llm"
+
+
+def _cv3_decoder(model):
+    """Return the CosyVoice3 LM, or raise naming the shape actually observed.
+
+    The diagnosis carries the observed types and attribute names on purpose:
+    a vague "no decoder" costs another GPU run to localise, which is exactly
+    what the first attempt at this patch spent.
+    """
+    inner = getattr(model, "model", None)
+    llm = getattr(inner, "llm", None) if inner is not None else None
+    if llm is None:
+        outer_attrs = sorted(vars(model)) if hasattr(model, "__dict__") else []
+        inner_attrs = (
+            sorted(vars(inner))
+            if inner is not None and hasattr(inner, "__dict__")
+            else []
+        )
+        raise NarratorCosyVoice3Unavailable(
+            f"CosyVoice3 decoder not found at `{_CV3_DECODER_PATH}`: the loaded "
+            f"object is {type(model).__name__}{outer_attrs}, its `.model` is "
+            f"{type(inner).__name__ if inner is not None else None}{inner_attrs} "
+            "-- the stop-token floor patch cannot be applied; refusing to "
+            "render unguarded (#19692)"
+        )
+    return llm
+
+
+def _patch_cv3_stop_token_floor(model) -> str:
+    """Mask every stop id CosyVoice3 breaks on, for its whole min_len prefix.
+
+    Returns "patched" or "already-patched". Raises
+    NarratorCosyVoice3Unavailable when the decoder lacks the attributes the
+    patch relies on — a silent skip would mean rendering with the leak still
+    open, which is the failure this patch exists to close.
+    """
+    llm = _cv3_decoder(model)
+    missing = [
+        name for name in ("sampling_ids", "stop_token_ids") if not hasattr(llm, name)
+    ]
+    if missing:
+        raise NarratorCosyVoice3Unavailable(
+            "CosyVoice3 decoder without " + " / ".join(missing) + ": the "
+            "stop-token floor patch cannot be applied; refusing to render "
+            "unguarded (#19692)"
+        )
+    if getattr(llm, _CV3_STOP_FLOOR_FLAG, False):
+        return "already-patched"
+
+    stop_ids = [int(i) for i in llm.stop_token_ids]
+    original = llm.sampling_ids
+
+    def sampling_ids(weighted_scores, decoded_tokens, sampling, ignore_eos=True):
+        if ignore_eos:
+            for stop_id in stop_ids:
+                weighted_scores[stop_id] = -float("inf")
+        return original(weighted_scores, decoded_tokens, sampling, ignore_eos=False)
+
+    llm.sampling_ids = sampling_ids
+    setattr(llm, _CV3_STOP_FLOOR_FLAG, True)
+    return "patched"
 
 
 def _get_cv3_client():
@@ -1122,9 +1237,30 @@ def _get_cv3_client():
 
 def _load_cv3_model():
     """Load the CosyVoice3 AutoModel once per process (organ-first reuse of
-    the prosody_lab bakeoff client, measured on #17586)."""
+    the prosody_lab bakeoff client, measured on #17586).
+
+    The decoder is patched on the way out — `_patch_cv3_stop_token_floor`
+    closes the leaky `min_len` floor at its source, so a segment renders at
+    the length its text implies instead of stopping after one speech token
+    (#19692). The status line is logged once, which is what makes the patch
+    verifiable in the measured run's log rather than assumed.
+    """
+    if "stop_floor_error" in _CV3_MODEL_CACHE:
+        # The refusal is cached too. Without this the model is reloaded (~16 s)
+        # for every segment only to fail identically -- measured: a failing
+        # patch cost six reloads in a nine-segment probe, so a 269-segment run
+        # would have burned most of an hour before reporting anything.
+        raise NarratorCosyVoice3Unavailable(_CV3_MODEL_CACHE["stop_floor_error"])
     if "model" not in _CV3_MODEL_CACHE:
-        _CV3_MODEL_CACHE["model"] = _get_cv3_client().load_model()
+        model = _get_cv3_client().load_model()
+        try:
+            status = _patch_cv3_stop_token_floor(model)
+        except NarratorCosyVoice3Unavailable as exc:
+            _CV3_MODEL_CACHE["stop_floor_error"] = str(exc)
+            raise
+        _CV3_MODEL_CACHE["stop_floor"] = status
+        logger.info("[CV3] stop-token floor patch: %s", status)
+        _CV3_MODEL_CACHE["model"] = model
     return _CV3_MODEL_CACHE["model"]
 
 
@@ -1178,9 +1314,10 @@ def _chunk_narration(text: str, max_chars: int = _CV3_MAX_CHUNK_CHARS) -> list[s
 def _cv3_min_expected_s(text: str) -> float:
     """Shortest audio that could plausibly hold `text` (#19692).
 
-    A render below this floor is CosyVoice3's single-token degenerate output,
-    not fast speech -- see _CV3_MIN_CHARS_PER_SEC for the measurement that
-    places it 2.6x under the slowest legitimate narrator segment.
+    A render below this floor is a degenerate CosyVoice3 output, not fast
+    speech: see _CV3_MIN_CHARS_PER_SEC for the measurement (legitimate speech
+    tops out at 38.9 chars/s, the slowest ASR-confirmed defect at 43.1) and for
+    why this is a gross backstop rather than the fidelity organ.
     """
     return max(_CV3_MIN_ABS_S, len(text) / _CV3_MIN_CHARS_PER_SEC)
 
