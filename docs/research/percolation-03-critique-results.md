@@ -36,7 +36,7 @@ convergence `p_c(L) → 1/2` quand `L → ∞`.
 
 - **Wall-clock total** : 3.8 s (640-budget vs 580 effectives) — soit ~0.007 s/sim en moyenne
 - **L=64 dominant** : ~17 ms/sim (vs L=8 ~0.3 ms/sim)
-- 0 erreur, 0 cellule `NotImplementedError` (C.1 conforme)
+- 0 erreur, aucune cellule `NotImplementedError` (C.1 conforme)
 - Outputs présents et cohérents (C.2 conforme)
 
 **Tableau des mesures `M(L, p) / L²` :**
