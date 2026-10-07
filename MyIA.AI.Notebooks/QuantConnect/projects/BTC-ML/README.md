@@ -44,5 +44,5 @@ pedagogical reference for ML-strategy scaffolding, not as a live alpha source.
 ## Files
 
 - main.py - Strategy (`MyEnhancedCryptoMlAlgorithm`)
-- research.ipynb - Research notebook
+- research.ipynb - Notebook de recherche (moteur simplifié, Sharpe 0.166) — le verdict faisant foi est le backtest QC Cloud du tableau ci-dessus (Sharpe 0.057)
 - quantbook.ipynb - QuantBook exploration
