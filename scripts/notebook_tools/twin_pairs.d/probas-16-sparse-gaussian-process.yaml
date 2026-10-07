@@ -6,6 +6,10 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   known_differences:
+  - '2026-10-07 (myia-po-2027:CoursIA) #tranche-15/16/17 : csharp_sha rebaseline -- header serie
+    "(23)" -> "(16/19)" (convention mesuree sur Infer-13/14/15 : NN/19 ; le 23 etait une valeur
+    orpheline). Le jumeau PyMC-16 porte la convention PyMC "(16 / parite Infer.NET, #4956)" --
+    headers serie specifiques a chaque serie, aucune asymetrie de contenu. python_sha inchange.'
   - '2026-09-13 (po-2026) : DRIFT fantome d''attestation, zero edition de notebook. La normalisation
     source str->list (#15429, PR #15445 T5 ML/Probas, merge 2026-09-11) a converti les 2 dernieres
     cellules str du cote C# ; texte rendu IDENTIQUE verifie programmatiquement (32 cellules avant/apres,
