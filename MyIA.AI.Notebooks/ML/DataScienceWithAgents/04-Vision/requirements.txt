@@ -1,0 +1,21 @@
+# Environnement de la sous-serie 04-Vision (14 carnets) -- CPython (canon ML DataScienceWithAgents).
+# Dependances relevees par grep des imports de TOUS les carnets (issue #19591), pas au juge.
+# Pins poses la ou une sortie commitee etablit la version ; ailleurs, declaration sans pin.
+# Verification : venv neuf + pip install -r + execution Papermill 4.2c..4.2k -- a router
+# vers lane GPU (les carnets 4.2c-4.2k entrainent des detecteurs, c.8236 RECOVERABLE-MACHINE).
+
+# torch : 2.14.0 (4.2j cell 2 et 4.2k cell 4 -- build +cu126 locale, base 2.14.0 sur PyPI)
+torch==2.14.0
+# torchvision : 0.23.0 (4.2f cell 2)
+torchvision==0.23.0
+# ultralytics : 8.4.153 (4.2g cell 2)
+ultralytics==8.4.153
+# libreyolo : 1.6.0 (4.2j cell 2)
+libreyolo==1.6.0
+
+# Socle numerique / plot (12 carnets numpy, 12 matplotlib, 4 cv2, 2 PIL, 1 requests)
+numpy
+matplotlib
+opencv-python
+Pillow
+requests

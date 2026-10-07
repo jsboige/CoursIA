@@ -12,10 +12,12 @@ Formula (post #16001, alpha.py `update` / `calculate_carry_forecasts`):
     months_between         = round((further_expiry - near_expiry).days / 30)
     expiry_diff_years      = abs(months_between) / 12
     annualized_raw_carry   = raw_carry / expiry_diff_years
-    carry_forecast         = annualized_raw_carry / daily_risk_price_terms
+    daily_risk_price_terms = EWMA_32(|daily returns|) * last_price
+    carry_forecast         = annualized_raw_carry / (daily_risk_price_terms * sqrt(256))
     smoothed(span)         = EWMA_span(carry_forecast)[-1]   (min_periods=span)
     scaled(span)           = smoothed * CARRY_FORECAST_SCALAR
     capped(span)           = clip(scaled, -CAP, +CAP)
+    blend                  = (1 - w) * trend + w * carry     (w = 0.4, article 60/40)
 
 Per-span forecasts are aggregated equal-weight by the caller. Spans whose
 history is shorter than the span itself are skipped, mirroring the article
@@ -49,6 +51,18 @@ CARRY_SMOOTHING_SPANS = (5, 20, 60, 120)
 
 # Per-forecast cap (same constant as the #13 port, Carver rule).
 CARRY_FORECAST_CAP = 20.0
+
+# Instrument-risk EWMA span for the carry risk adjustment (Carver's
+# default estimate of daily risk in price terms; sigma_span 32, p.604,
+# cited by the port's sigma_target usage).
+CARRY_RISK_SPAN = 32
+
+# Annualisation factor for daily risk (Carver convention, sqrt(256)).
+TRADING_DAYS_PER_YEAR = 256.0
+
+# Bounded carry history: the slowest smoothing span is 120, so 130
+# observations let every span reach its min_periods with margin.
+CARRY_HISTORY_MAX = 130
 
 
 def annualized_raw_carry(near_price, further_price, near_expiry_day, further_expiry_day):
@@ -136,3 +150,73 @@ def carry_forecasts(carry_forecast_series, spans=CARRY_SMOOTHING_SPANS,
         scaled = smoothed * scalar
         forecasts.append(float(np.clip(scaled, -cap, cap)))
     return forecasts
+
+
+def daily_price_risk(prices, span=CARRY_RISK_SPAN):
+    """Daily risk in price terms: EWMA(|daily returns|) * last price.
+
+    Carver's instrument-risk estimate (sigma_span 32, p.604): the expected
+    absolute daily price change of the instrument, in price units. Used as
+    the denominator of the carry forecast, annualised by the caller with
+    sqrt(TRADING_DAYS_PER_YEAR).
+
+    Returns None when fewer than 2 prices are given or when the smoothed
+    absolute return is not strictly positive (e.g. a perfectly flat price
+    series — risk-division would be undefined).
+    """
+    prices_arr = np.asarray([float(p) for p in prices], dtype=float)
+    if prices_arr.size < 2:
+        return None
+    if np.any(prices_arr <= 0.0):
+        return None
+    abs_rets = np.abs(np.diff(prices_arr) / prices_arr[:-1])
+    smoothed = _ewma_adjusted(abs_rets, int(span))
+    if smoothed is None or not np.isfinite(smoothed) or smoothed <= 0.0:
+        return None
+    return float(smoothed * prices_arr[-1])
+
+
+def risk_adjusted_carry(raw_carry, prices, span=CARRY_RISK_SPAN,
+                        trading_days=TRADING_DAYS_PER_YEAR):
+    """Risk-adjusted carry: annualised raw carry / annualised price risk.
+
+    Both numerator and denominator are in price-units-per-year, so the
+    ratio is dimensionless and comparable across instruments — the series
+    that `carry_forecasts` then EWMA-smooths, scales (x30) and caps
+    (+/-20). `raw_carry` is the output of `annualized_raw_carry`.
+
+    Returns None when raw_carry is None (no valid term-structure
+    observation today) or when the risk estimate is unavailable.
+    """
+    if raw_carry is None:
+        return None
+    daily_risk = daily_price_risk(prices, span)
+    if daily_risk is None:
+        return None
+    annual_risk = daily_risk * np.sqrt(float(trading_days))
+    if annual_risk <= 0.0:
+        return None
+    return float(raw_carry / annual_risk)
+
+
+def blend_forecasts(trend_forecast, carry_forecast, carry_weight):
+    """Carver-style trend/carry blend with leg renormalisation.
+
+    With both legs available: `(1 - carry_weight) * trend + carry_weight
+    * carry` (the article #16001 60/40 blend uses carry_weight=0.4).
+    When the carry leg is None — no span of the carry history has enough
+    observations yet, so `_carry_forecast` could not produce a value —
+    the weight renormalises onto the available leg and the trend
+    forecast is returned as-is. This mirrors the article's early-window
+    behaviour (forecasts contribute only once `min_periods` is met).
+
+    Raises ValueError on a carry_weight outside [0, 1] (a config typo
+    must not silently produce an inverted blend).
+    """
+    if not 0.0 <= carry_weight <= 1.0:
+        raise ValueError(f"carry_weight must be in [0, 1], got {carry_weight}")
+    if carry_forecast is None:
+        return float(trend_forecast)
+    return float(
+        (1.0 - carry_weight) * trend_forecast + carry_weight * carry_forecast
+    )

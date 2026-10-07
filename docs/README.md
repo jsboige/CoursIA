@@ -57,7 +57,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/wsl-kernels-detail.md](reference/wsl-kernels-detail.md) | Détails WSL kernels |
 | [reference/bibliography-hygiene.md](reference/bibliography-hygiene.md) | Détail de `.claude/rules/bibliography-hygiene.md` — gisement partagé `G:\Mon Drive\MyIA\IA\Bibliographie IA`, procédure de dépôt (recherche auteur *et* titre, vérification première page), nomenclature et rayons. Les publications sous droits ne sont jamais committées |
 | [reference/review-coverage-threshold.md](reference/review-coverage-threshold.md) | Document de support de l'organe `scripts/review_coverage.py` — pourquoi le seuil vaut 300 et comment l'ajuster (le nombre n'est pas arbitraire, sa dérivation est écrite) |
-| [reference/variation-genre-census-2026-08-10.md](reference/variation-genre-census-2026-08-10.md) | Census G-VAR-2/G-VAR-3 anti-blanchiment de genre (#10290), fenêtre 7 j 2026-08-03 → 2026-08-10 — mesure fondatrice des plafonds de [variation-protocol.md](../.claude/rules/variation-protocol.md) |
+| [transients/2026-08-10-variation-genre-census.md](transients/2026-08-10-variation-genre-census.md) | Census G-VAR-2/G-VAR-3 anti-blanchiment de genre (#10290), fenêtre 7 j 2026-08-03 → 2026-08-10 — mesure fondatrice des plafonds de [variation-protocol.md](../.claude/rules/variation-protocol.md) |
 | [reference/_archive-convention.md](reference/_archive-convention.md) | Convention _archive/ — modèle ML-Training-Pipeline généralisé |
 | [reference/git-workflow-detail.md](reference/git-workflow-detail.md) | Git workflow — détail : verbatim force-push, incidents, rationale |
 | [reference/lane-claim-detail.md](reference/lane-claim-detail.md) | Lane claim protocol — détail (référencé depuis .claude/rules/lane-claim-protocol.md) |
@@ -110,7 +110,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [genai/auth-flip-runbook.md](genai/auth-flip-runbook.md) | Runbook — flip d'authentification des services exposés (#16 P2) |
 | [genai/open-webui-orchestration.md](genai/open-webui-orchestration.md) | Orchestration et tâches planifiées avec Open WebUI v0.9.0 |
 | [genai/secrets-management.md](genai/secrets-management.md) | Secrets management — central source of truth (master.env + render_envs.py) |
-| [genai/service-security-audit.md](genai/service-security-audit.md) | Audit de sécurisation des services IA auto-hébergés (po-2023) |
+| [transients/2026-06-14-genai-service-security-audit.md](transients/2026-06-14-genai-service-security-audit.md) | Audit de sécurisation des services IA auto-hébergés (po-2023) |
 | [genai/audio-fading-remediation.md](genai/audio-fading-remediation.md) | Remédiation FADING audio et verdicts SOTA associés (#11719) — référence opérationnelle ; le détecteur vit dans les scripts, ce document porte le raisonnement |
 | [genai/decision-models.md](genai/decision-models.md) | Modèles de décision — relevé et shortlist |
 | [genai/model-mapping-openai.md](genai/model-mapping-openai.md) | Mapping des modèles OpenAI — génération courante |
@@ -205,6 +205,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/threshold-alignment-pre-enregistrement.md](ict/threshold-alignment-pre-enregistrement.md) | Dissociation biais d'alignement / dérive précoce (Schurger 2012) — scellage v1, re-verrouillage v2 après pilote sur graine disjointe |
 | [ict/strange-loop-irreducible-pre-enregistrement.md](ict/strange-loop-irreducible-pre-enregistrement.md) | Case 8b — le canal *self* irréductible |
 | [ict/strange-loop-scalefree-pre-enregistrement.md](ict/strange-loop-scalefree-pre-enregistrement.md) | Case 8c — métrique de ré-adaptation sans échelle |
+| [ict/bach-self-model-pre-enregistrement.md](ict/bach-self-model-pre-enregistrement.md) | Case 8d — self-model causal vs cache descriptif (H_b), ré-attribution option (c) Bach 2009 ; dette IIT-05 #12215 DOCUMENTÉE et OUVERTE (livre non archivé en GDrive) |
 | [ict/inoculation-rl-experimental-conditions.md](ict/inoculation-rl-experimental-conditions.md) | Distillation des conditions expérimentales de l'*Inoculation Prompting* (Anthropic, arXiv 2511.18397) confrontée au protocole ICT-25 — source canonique citée et vérifiée en HTML |
 | [ict/strates-as-adjunctions-prototype.md](ict/strates-as-adjunctions-prototype.md) | Prototype **grade C** : les strates ICT comme adjonctions — conjecture du jalon 3 de #8182 (TOE ↔ conscience), explicitement non démontrée |
 
@@ -220,7 +221,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/trading.md](curriculum/trading.md) | Parcours trading algorithmique (QuantConnect, ML, Probas) |
 | [curriculum/genai.md](curriculum/genai.md) | Parcours GenAI multimodale (Image, Audio, Vidéo, Texte) |
 | [curriculum/stage5_mamba_ssm.md](curriculum/stage5_mamba_ssm.md) | Note d'exploration Mamba/SSM pour le forecasting financier |
-| [curriculum/_inventory.md](curriculum/_inventory.md) | Inventaire des embryons de parcours — Phase 0 de l'EPIC #13844. **Fichier de travail tenu à la main** (statut `MANUEL`, non régénéré) : recense ce qui existe déjà en germe avant d'écrire de nouveaux parcours |
+| [transients/2026-09-02-curriculum-inventory.md](transients/2026-09-02-curriculum-inventory.md) | Inventaire des embryons de parcours — Phase 0 de l'EPIC #13844. **Fichier de travail tenu à la main** (statut `MANUEL`, non régénéré) : recense ce qui existe déjà en germe avant d'écrire de nouveaux parcours |
 | [curriculum/aima-walk-competences.md](curriculum/aima-walk-competences.md) | « Recherche et Corpus » au prisme des référentiels de compétences en IA — pilote #17982 |
 | [curriculum/aima-walk.md](curriculum/aima-walk.md) | Recherche et Corpus (AIMA-inspired) — lire le dépôt comme un corpus de recherche |
 | [curriculum/genai-rush.md](curriculum/genai-rush.md) | Accéléré vers GenAI |
@@ -256,7 +257,7 @@ Infrastructure de synchronisation et moteur de traduction du dépôt (EPIC #4957
 |---------|-------------|
 | [i18n/CSV-by-series-design.md](i18n/CSV-by-series-design.md) | Design doc infra CSV-by-series (EPIC #4957 Phase 1) |
 | [translation/argumentum-fork-mapping.md](translation/argumentum-fork-mapping.md) | Référence pérenne couche T3 (moteur `translate_csv.py`, #6949/#6976) |
-| [translation/epic-4957-status.md](translation/epic-4957-status.md) | État de clôture Phase 1 infra traduction (#4957 → #1650) |
+| [transients/2026-07-19-epic-4957-status.md](transients/2026-07-19-epic-4957-status.md) | État de clôture Phase 1 infra traduction (#4957 → #1650) |
 | [translation/translations-root-diagnostic.md](translation/translations-root-diagnostic.md) | Diagnostic du répertoire `translations/` à la racine : état des lieux et options de disposition. **Doc-only, sans action destructive** — le diagnostic est écrit et arbitrable avant qu'une ligne ne soit supprimée |
 
 ## Recherche (docs/research/)
@@ -267,6 +268,8 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 |---------|-------------|
 | [research/fallacy-detection-survey.md](research/fallacy-detection-survey.md) | Survey SOTA détection de sophismes + argument mining, fondant l'EPIC #10355 (Phase 1 livrable 1). 10 sources primaires (Logic/LogicClimate, MAFALDA 23 classes, IBM-Rank-30k, AraucariaDB), constat clé : taxonomie Argumentum 1408/8 familles écrase les datasets académiques 13-23 → mapping d'étiquettes = livrable de recherche à part entière |
 | [research/quant-prose-residual-machine-dep.md](research/quant-prose-residual-machine-dep.md) | Inventaire résiduel des timings machine-dépendants cités en prose (#10158) — scan `check_machine_dep_timing.py --all` sur 1008 notebooks. Recense ce qui reste après passage de l'organe, pour que le résidu soit une liste et non une impression |
+| [research/cartier-miller-p1-plus-scoping.md](research/cartier-miller-p1-plus-scoping.md) | Scoping P1+ ground truth 92 du dépôt bbrhuft/Cartier-Miller-evaluation-of-genus-one-coefficient-sums au pin `37a9b72` (#19452). Cible 92 premiers admissibles `range(7, 500) ∩ is_prime`, architecture pipeline 3-archi (Cornacchia/Schoof/BSGS/Harvey C++), RÈGLE F NTL/Sage RECOVERABLE-MACHINE po-2027/ai-01, plan 4 phases ~80 min. c.1100 (1ère rédaction, §1 erronée corrigée) |
+| [research/cartier-miller-p1-plus-results.md](research/cartier-miller-p1-plus-results.md) | Résultats P1+ ground truth 92 (Python-only slice, #19452) — vendoring verbatim `pilot.py` + `elliptic_prefix.py` (SPDX GPL-2.0-or-later), 4/4 critères PASS (92 / 10809 stopping indices / 2130 exact_binomial_checks / 43 quarter_cross_checks subset of 328 upstream), 0 désaccord inter-backends Python sur 100% des 10809 stopping indices. c.1101 |
 | [research/percolation-03-critique-results.md](research/percolation-03-critique-results.md) | Résultats palier 3 (#19494, PR #19537) — physique du point critique de la percolation 2D (β/ν = 5/36 exact Kesten 1980, τ' = 187/91 Stauffer, p_c(L) → 1/2). 580 simulations, 4 s wall-clock, instrument `networkx`. Verdict honnête : β/ν=0.102 vs cible 0.139 (échelle finie), p_c(L) monotone PASS |
 | [research/percolation-03b-critique-results.md](research/percolation-03b-critique-results.md) | Résultats extension palier 3+ (#19494, PR #19548) — sweep L ∈ {128, 256} × 32 seeds × 5 p (320 sims, 48 s) pour vérifier la convergence asymptotique. Verdict global : convergence en cours, asymptote non atteinte — L=512 nécessaire (scipy.sparse) |
 | [research/percolation-04-sharpness-scoping.md](research/percolation-04-sharpness-scoping.md) | Scoping palier 4 (#19494, PR #19556) — vitesse de disparition du géant en régime supercritique selon Diskin-Easo-Radhakrishnan-Sudakov-Tassion (arXiv:2603.03257 §3.0). Cadrage des instruments et acceptance, plan de carnet Python pour la mesure de la sharpness. Suite directe des paliers 3 et 3b |
@@ -277,7 +280,7 @@ Cadrage **méthodologique** de l'audit sémantique (grade B-méthodologique, EPI
 
 | Fichier | Description |
 |---------|-------------|
-| [audit/sampling-protocol.md](audit/sampling-protocol.md) | Protocole d'audit d'échantillonnage sémantique cross-famille : ≥5%/famille par cycle mensuel, env-vierge (pas cache), confrontation claims-markdown ↔ sorties réelles, détection fallback silencieux (TenSEAL CKKS incident fondateur). 5 litmus + grille outillée `scripts/audit/extract_claims_vs_outputs.py`, avec état de validation par litmus (2/5 jamais déclenchés) et limite connue du matching numérique. Grade B-méthodologique, #8052. 164 lignes |
+| [transients/2026-07-23-audit-sampling-protocol.md](transients/2026-07-23-audit-sampling-protocol.md) | Protocole d'audit d'échantillonnage sémantique cross-famille : ≥5%/famille par cycle mensuel, env-vierge (pas cache), confrontation claims-markdown ↔ sorties réelles, détection fallback silencieux (TenSEAL CKKS incident fondateur). 5 litmus + grille outillée `scripts/audit/extract_claims_vs_outputs.py`, avec état de validation par litmus (2/5 jamais déclenchés) et limite connue du matching numérique. Grade B-méthodologique, #8052. |
 
 ### Audit path-filters des workflows (docs/audit/workflow-path-filters/)
 
@@ -286,7 +289,7 @@ Exception assumée au préambule ci-dessus, et la distinction vaut d'être nomm�
 | Fichier | Description |
 |---------|-------------|
 | [audit/workflow-path-filters/latest.md](audit/workflow-path-filters/latest.md) | **Généré** — dernier état de couverture `pull_request.paths` / `paths-ignore` des workflows, horodaté en tête. Ne pas éditer à la main : la prochaine exécution l'écrase |
-| [audit/workflow-path-filters/README.md](audit/workflow-path-filters/README.md) | Compagnon rédigé du précédent (#10600). Consigne surtout que la prémisse fondatrice — « 74 workflows se déclenchent sur chaque PR, 0 filtre de chemin » — s'est révélée **partiellement fausse** à la mesure (62/72 déjà filtrés, 10 non) : le document garde la réfutation plutôt que la prémisse |
+| [transients/2026-08-14-audit-workflow-path-filters.md](transients/2026-08-14-audit-workflow-path-filters.md) | Compagnon rédigé du précédent (#10600). Consigne surtout que la prémisse fondatrice — « 74 workflows se déclenchent sur chaque PR, 0 filtre de chemin » — s'est révélée **partiellement fausse** à la mesure (62/72 déjà filtrés, 10 non) : le document garde la réfutation plutôt que la prémisse |
 
 ## ICT (docs/ict/)
 
@@ -312,7 +315,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/11690-ict-consolidation.md](ledgers/11690-ict-consolidation.md) | Consolidation ICT (contenu × résultats × critiques) — **support de travail partagé et durable** sur lequel le user et les lanes arbitrent les corrections de la série (mandat user 2026-08-18). Exception explicite au tier « éphémère → dashboard » : ce ledger est fait pour survivre aux cycles |
 | [ledgers/12204-ict-chantier-1-a2.md](ledgers/12204-ict-chantier-1-a2.md) | EPIC #12204, tranche A2 — l'opération 1 (*Recoordonner*) passe de `RAPPORTÉ` à `FIRSTHAND`. Le ledger porte la mesure qui autorise le changement de label, pas le label seul |
 | [ledgers/12204-ict-chantier-1-a3.md](ledgers/12204-ict-chantier-1-a3.md) | EPIC #12204, tranche A3 — vérification des opérations 3 et 9 (`teorth/pfr`, `planning_lean` sans `sorry`) : les deux que le tour d'horizon précédent n'avait pas atteintes |
-| [ledgers/12204-ict-chantier-1-audit-froid.md](ledgers/12204-ict-chantier-1-audit-froid.md) | EPIC #12204, tranche audit-froid — trois labels par opération, **quatre entrées tombées**. Un audit dont le livrable est ce qui ne survit pas à la relecture est plus utile qu'un audit qui confirme |
+| [transients/2026-08-24-12204-ict-chantier-1-audit-froid.md](transients/2026-08-24-12204-ict-chantier-1-audit-froid.md) | EPIC #12204, tranche audit-froid — trois labels par opération, **quatre entrées tombées**. Un audit dont le livrable est ce qui ne survit pas à la relecture est plus utile qu'un audit qui confirme |
 | [ledgers/12204-ict-chantier-1-a5.md](ledgers/12204-ict-chantier-1-a5.md) | Chantier 1 — tranche A5 : opérations 2, 6, 10 après la distillation Sandholm |
 | [ledgers/12204-ict-chantier-1-a6.md](ledgers/12204-ict-chantier-1-a6.md) | Chantier 1 — tranche A6 : statuation des opérations 11-13 (promotions TABLE) et de la file d'attente |
 | [ledgers/13746-tests-eclates-dissipation.md](ledgers/13746-tests-eclates-dissipation.md) | EPIC #13746 — Ledger dissipation câblage tests éclatés |

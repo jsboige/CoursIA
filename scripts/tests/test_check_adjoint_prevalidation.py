@@ -1649,10 +1649,11 @@ def test_fingerprint_refusal_names_the_live_surface_landscape():
 
 # --- Campagnes gelees par veto user (#17040) ----------------------------------
 
-# Titres reels (2026-09-23/24) : le second repare les degats de la campagne
-# densite et cite le parapluie dans son body -- l'exemption se lit sur le
-# titre seul (module partage frozen_campaigns).
-FROZEN_TITLE = "Densite Lab13-Web-Search-SOTA (#13410)"
+# Titres reels (2026-09-23/24) : le second repare les degats d'une campagne
+# gelee et cite le parapluie dans son body -- l'exemption se lit sur le
+# titre seul (module partage frozen_campaigns). #13410 ROUVERT le 2026-10-07 :
+# le gel se mesure sur #11601, seul parapluie gele en vie.
+FROZEN_TITLE = "enrich(qc,#11601): densite QC-Py-06b"
 REDRESSEMENT_TITLE = (
     "fix(semanticweb,#17066): redressement critique de SW-4-CSharp-SPARQL "
     "-- reference de campagne"
@@ -1709,7 +1710,7 @@ def test_ready_dossier_on_frozen_campaign_returns_rc3(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert out.startswith(
         "FROZEN -- PR #123 belongs to a frozen campaign "
-        "(frozen:#13410(veto #17040)); do not merge, dispatch to the lane author."
+        "(frozen:#11601(veto #17040)); do not merge, dispatch to the lane author."
     )
 
 
@@ -1722,29 +1723,31 @@ def test_ready_dossier_frozen_json_payload(monkeypatch, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["ready"] is False
     assert payload["verdict"] == "FROZEN"
-    assert payload["frozen"] == "frozen:#13410(veto #17040)"
+    assert payload["frozen"] == "frozen:#11601(veto #17040)"
     assert payload["dossier"]["verdict"] == "READY"
 
 
 def test_ready_redressement_citing_the_umbrella_stays_rc0(monkeypatch, capsys):
     """Redressement : le titre exempte du gel, meme quand le body cite
-    #13410 -- sinon la PR qui REPARE les degats ne serait plus mergeable."""
+    #11601 -- sinon la PR qui REPARE les degats ne serait plus mergeable."""
     snapshot = _snapshot_with(
         title=REDRESSEMENT_TITLE,
-        pr_body=_base_snapshot()["body"] + "\n\nSee #13410 (campagne densite).",
+        pr_body=_base_snapshot()["body"] + "\n\nSee #11601 (densite QC).",
     )
     rc = _run_main(monkeypatch, snapshot)
     assert rc == mod.EXIT_READY
     assert capsys.readouterr().out.startswith("READY -- PR #123")
 
 
-def test_ready_dossier_on_wt_vibe_branch_returns_rc3(monkeypatch, capsys):
-    """Relais de campagne : la branche gelee suffit, sans citation aucune --
-    et sans exemption (ce sont des relais, jamais des redressements)."""
+def test_ready_dossier_on_wt_vibe_branch_after_reopening(monkeypatch, capsys):
+    """Reouverture user de #13410 (2026-10-07) : les relais wt/vibe-* ne
+    gelent plus -- un dossier READY sur ces branches redevient READY. Le
+    mecanisme de gel par prefixe reste prouve par test_frozen_campaigns
+    (donnees injectees)."""
     snapshot = _snapshot_with(head_ref="wt/vibe-g77-search-26")
     rc = _run_main(monkeypatch, snapshot)
-    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
-    assert "frozen:#13410(veto #17040,branch wt/vibe-*)" in capsys.readouterr().out
+    assert rc == mod.EXIT_READY
+    assert capsys.readouterr().out.startswith("READY -- PR #123")
 
 
 def test_blocked_dossier_on_frozen_campaign_keeps_its_own_message(
