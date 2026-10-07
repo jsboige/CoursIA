@@ -53,6 +53,60 @@ def test_reading_repeating_its_output_has_zero_delta():
     assert c.readings[0].novel_sample == []
 
 
+def test_lone_structural_header_is_not_a_reading():
+    """Arbitrage #18411 (a) : un en-tete ## seul ne couvre pas la sortie."""
+    out = "alpha beta gamma delta epsilon zeta eta theta"
+    cells = [
+        code("print('x')", out),
+        md("## Conclusion"),
+    ]
+    c = census_notebook(nb(cells), "synthetic.ipynb")
+    assert c.code_with_output == 1
+    assert c.covered == 0
+    assert c.readings == []
+
+
+def test_lone_interpretation_title_is_not_a_reading():
+    """Arbitrage #18411 (a) : titre d'interpretation SANS corps -- exclu aussi.
+
+    C'est la classe qui gonflait la couverture : ``### Analyse`` seul passe
+    ``is_reading_cell`` et etait mesure avec un corps vide.
+    """
+    out = "alpha beta gamma delta epsilon zeta eta theta"
+    cells = [
+        code("print('x')", out),
+        md("### Analyse"),
+    ]
+    c = census_notebook(nb(cells), "synthetic.ipynb")
+    assert c.covered == 0
+    assert c.readings == []
+
+
+def test_multi_header_cell_without_prose_is_not_a_reading():
+    """En-tetes multiples sans prose : structurel, exclu du jeu de lectures."""
+    out = "alpha beta gamma delta epsilon zeta eta theta"
+    cells = [
+        code("print('x')", out),
+        md("## Partie 2\n\n### Sous-section"),
+    ]
+    c = census_notebook(nb(cells), "synthetic.ipynb")
+    assert c.covered == 0
+    assert c.readings == []
+
+
+def test_titled_reading_with_body_still_counted():
+    """Garde du filtre (a) : titre + prose reste une lecture mesuree."""
+    out = "alpha beta gamma delta epsilon zeta eta theta"
+    cells = [
+        code("print('x')", out),
+        md("## Lecture de la sortie\n\nnuance perspective dialectique reification"),
+    ]
+    c = census_notebook(nb(cells), "synthetic.ipynb")
+    assert c.covered == 1
+    assert len(c.readings) == 1
+    assert c.readings[0].delta == 1.0
+
+
 def test_reading_with_own_vocabulary_has_high_delta():
     """Controle positif : une lecture qui apporte son vocabulaire est vue haute."""
     out = "alpha beta gamma delta epsilon zeta eta theta"

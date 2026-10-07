@@ -16,7 +16,9 @@ from paper_harness.ibkr_broker import (  # noqa: E402
     LedgerError,
     LineSpec,
     OrderNotAcknowledgedError,
+    PendingOrderError,
     SleeveLedger,
+    UnreconciledOrderError,
     us_signal_closes,
 )
 from paper_harness.orchestrator import CycleConfig, run_cycle  # noqa: E402
@@ -57,6 +59,7 @@ class FakeIB:
         # venues: symbol -> (validExchanges, marketRuleIds); rules: rule id -> [(low edge, increment)]
         self.venues, self.rules = venues or {}, rules or {}
         self.orders, self.history_calls, self.data_type, self.cancelled = [], [], None, []
+        self.open_refs = set()  # orderRef of the orders still working
 
     def managedAccounts(self):
         return self.accounts
@@ -77,6 +80,7 @@ class FakeIB:
 
     def cancelOrder(self, order):
         self.cancelled.append(order.orderId)
+        self.open_refs.discard(order.orderRef)
 
     def reqMarketDataType(self, t):
         self.data_type = t
@@ -102,12 +106,17 @@ class FakeIB:
     def reqExecutions(self):
         return list(self.executions)
 
+    def reqAllOpenOrders(self):
+        return [SimpleNamespace(order=SimpleNamespace(orderRef=r)) for r in sorted(self.open_refs)]
+
     def placeOrder(self, contract, order):
         order.orderId = len(self.orders) + 1
         self.orders.append((contract.symbol, order))
         fills = []
         if not self.acknowledged:  # e.g. error 110, which ib_insync logs as a warning only
             return FakeTrade(order, fills, done=False, status="PendingSubmit")
+        if not self.fill_now:
+            self.open_refs.add(order.orderRef)
         if self.fill_now:
             fills.append(fill(contract.conId, order.action, order.totalQuantity,
                               self.fill_price.get(contract.symbol, order.lmtPrice),
@@ -311,6 +320,108 @@ def test_order_never_acknowledged_is_cancelled_and_raises(tmp_path):
         b.place("SXR8", 5)
     assert ib.cancelled == [1]
     assert b.ledger.positions == {} and b.ledger.cash == pytest.approx(10_000.0)
+    (ref,) = b.ledger.pending  # cancelled: the next sync of the day settles it
+    nxt = broker(tmp_path, ib, SleeveLedger.load(tmp_path / "ledger.json"))
+    nxt.sync()
+    assert nxt.ledger.pending == {} and nxt.ledger.settled[0]["order_ref"] == ref
+
+
+# -- orders left working: the gateway forgets the executions of earlier days --
+
+
+def _saved(tmp_path):
+    return json.loads((tmp_path / "ledger.json").read_text(encoding="utf-8"))
+
+
+def _ledger_with_pending(tmp_path, placed, ref="sleeve:20261001T070000"):
+    led = ledger(tmp_path)
+    led.track(ref, "IUSM", 10, placed)
+    led.save(tmp_path / "ledger.json")
+    return led, ref
+
+
+def test_order_is_on_the_ledger_before_it_is_sent(tmp_path):
+    ib = FakeIB(market={"IUSM": 5.0})
+    b = broker(tmp_path, ib)
+
+    def send_then_die(contract, order):
+        assert _saved(tmp_path)["pending"][order.orderRef]["quantity"] == 10
+        raise KeyboardInterrupt
+
+    ib.placeOrder = send_then_die
+    with pytest.raises(KeyboardInterrupt):
+        b.place("IUSM", 10)
+    (ref, order), = _saved(tmp_path)["pending"].items()
+    assert ref.startswith("sleeve:")
+    assert order == {"symbol": "IUSM", "quantity": 10, "filled": 0.0, "placed": date.today().isoformat()}
+
+
+def test_filled_order_leaves_nothing_pending(tmp_path):
+    b = broker(tmp_path, FakeIB(market={"SXR8": 600.0}))
+    b.place("SXR8", 5)
+    assert b.ledger.pending == {} and _saved(tmp_path)["pending"] == {}
+
+
+def test_working_order_blocks_the_next_order(tmp_path):
+    ib = FakeIB(market={"IUSM": 5.0, "SXR8": 600.0}, fill_now=False)
+    b = broker(tmp_path, ib)
+    b.place("IUSM", 10)
+    with pytest.raises(PendingOrderError, match=r"\+10 IUSM placed .*, \+0 booked"):
+        b.place("SXR8", 1)
+    assert len(ib.orders) == 1
+
+
+def test_order_closed_the_same_day_settles_its_unexecuted_rest(tmp_path):
+    ib = FakeIB(market={"IUSM": 5.0}, fill_now=False)
+    broker(tmp_path, ib).place("IUSM", 10)
+    ref = ib.orders[0][1].orderRef
+    ib.open_refs.discard(ref)  # the order expires after 4 shares
+    ib.executions = [fill(2, "BUY", 4, 5.0, ref, "e9", commission=1.25)]
+    ib.account_positions = {2: 4}
+    nxt = broker(tmp_path, ib, SleeveLedger.load(tmp_path / "ledger.json"))  # next cycle, same day
+    assert nxt.positions() == {"IUSM": 4}
+    assert nxt.ledger.pending == {}
+    (trace,) = nxt.ledger.settled
+    assert (trace["order_ref"], trace["quantity"], trace["filled"]) == (ref, 10, 4.0)
+    assert _saved(tmp_path)["settled"] == nxt.ledger.settled
+
+
+def test_order_of_an_earlier_day_still_working_stays_pending(tmp_path):
+    led, ref = _ledger_with_pending(tmp_path, date(2026, 10, 1))
+    ib = FakeIB(market={"SXR8": 600.0})
+    ib.open_refs.add(ref)
+    b = broker(tmp_path, ib, led)
+    assert b.positions() == {} and ref in b.ledger.pending
+    with pytest.raises(PendingOrderError):
+        b.place("SXR8", 1)
+
+
+def test_closed_order_of_an_earlier_day_stops_the_sync(tmp_path):
+    led, ref = _ledger_with_pending(tmp_path, date(2026, 10, 1))
+    ib = FakeIB(account_positions={2: 10, 1: 1},
+                executions=[fill(1, "BUY", 1, 600.0, "sleeve:today", "e1")])  # unrelated, readable
+    b = broker(tmp_path, ib, led)
+    with pytest.raises(UnreconciledOrderError, match=rf"{ref} \(\+10 IUSM placed 2026-10-01, \+0 booked\)"):
+        b.equity()
+    saved = _saved(tmp_path)
+    assert saved["positions"] == {"SXR8": 1}  # what could be read is saved before stopping
+    assert ref in saved["pending"]
+
+
+def test_execution_beyond_its_order_is_refused(tmp_path):
+    led, ref = _ledger_with_pending(tmp_path, date.today())
+    with pytest.raises(LedgerError, match="exceeds the quantity"):
+        led.book("e1", "IUSM", 11, 5.0, 0.0, order_ref=ref)
+    with pytest.raises(LedgerError, match="on SXR8 for order"):
+        led.book("e2", "SXR8", 1, 600.0, 0.0, order_ref=ref)
+
+
+def test_ledger_written_before_pending_orders_still_loads(tmp_path):
+    path = tmp_path / "ledger.json"
+    path.write_text(json.dumps({"name": "sleeve", "currency": "EUR", "cash": 100.0,
+                                "positions": {}, "booked": {}, "flows": []}), encoding="utf-8")
+    led = SleeveLedger.load(path)
+    assert led.pending == {} and led.settled == []
 
 
 # -- signals and full cycle ---------------------------------------------------
