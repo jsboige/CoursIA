@@ -1,3 +1,5 @@
+> RAPPORT — 2026-07-23 — protocole d'audit d'échantillonnage sémantique cross-famille — figé
+
 # Protocole d'audit d'échantillonnage sémantique cross-famille
 
 > **Statut.** Document de cadrage, grade **B-méthodologique** (protocole applicable, pas une simple suggestion).
