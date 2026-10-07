@@ -27,6 +27,7 @@ Codes de sortie :
     2 : MISSING_PAGE (page 404 ou inaccessible)
     3 : UNKNOWN (erreur reseau, retry possible)
     4 : NOTEBOOK_ERROR (carnet invalide)
+    5 : NOTHING_TO_COMPARE (aucune ligne comparable -- page non verifiee, ne pas confondre avec EQUIVALENT)
 """
 import argparse
 import json
@@ -243,7 +244,14 @@ def check_equivalence(notebook_path: str, base_url: str = DEFAULT_BASE_URL) -> d
             missing.append(line)
     verdict["found_lines"] = found
     verdict["missing_lines"] = missing
-    if missing:
+    if not outputs and not missing:
+        # Aucune ligne comparable (toutes les sorties sont en MIME riche
+        # ignorees par la regle du rendu, ou carnet sans sortie text/plain
+        # ni stream). Avant le fix #19562 ce cas rendait EQUIVALENT
+        # 0/0 -- un faux vert : une page qui aurait perdu toutes ses
+        # sorties HTML rendrait le meme verdict. Verdict dedie (cf. #19562).
+        verdict["verdict"] = "NOTHING_TO_COMPARE"
+    elif missing:
         verdict["verdict"] = "LOST_OUTPUTS"
     else:
         verdict["verdict"] = "EQUIVALENT"
@@ -270,7 +278,18 @@ def render_text(verdict: dict) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    p = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+        epilog=(
+            "Codes de sortie :\n"
+            "  0  EQUIVALENT       (toutes les lignes comparables retrouvees dans la page)\n"
+            "  1  LOST_OUTPUTS     (sortie manquante dans la page)\n"
+            "  2  MISSING_PAGE     (page 404 ou inaccessible)\n"
+            "  3  UNKNOWN          (erreur reseau, retry possible)\n"
+            "  4  NOTEBOOK_ERROR   (carnet invalide)\n"
+            "  5  NOTHING_TO_COMPARE (aucune ligne comparable -- page non verifiee)"
+        ),
+    )
     p.add_argument("--notebook", required=True, help="Chemin du .ipynb (relatif ou absolu)")
     p.add_argument("--base-url", default=DEFAULT_BASE_URL, help="Base URL des pages publiees")
     p.add_argument("--json", action="store_true", help="Sortie JSON")
@@ -288,6 +307,7 @@ def main(argv: list[str] | None = None) -> int:
         "MISSING_PAGE": 2,
         "UNKNOWN": 3,
         "NOTEBOOK_ERROR": 4,
+        "NOTHING_TO_COMPARE": 5,
     }
     return rc_map.get(verdict["verdict"], 3)
 

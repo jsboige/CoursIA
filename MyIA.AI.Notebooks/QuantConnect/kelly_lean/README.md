@@ -128,5 +128,20 @@ lakes frères) ; deux notebooks compagnons le rendent pédagogique :
 
 | Notebook | Rôle |
 |---|---|
-| [`Kelly_companion.ipynb`](Kelly_companion.ipynb) | **Volet numérique (Python)** : montre, côte à côte avec les théorèmes prouvés, pourquoi `f*` maximise le taux de croissance espéré `g(f)` et pourquoi tout sur-pari (`f > f*`) ou sous-pari (`f < f*`) est strictement sous-optimal — narration économique, figures et lien trading. |
-| [`Kelly_companion_lean.ipynb`](Kelly_companion_lean.ipynb) | **Jumeau à kernel Lean 4** : chaque énoncé du lake est importé et vérifié par le noyau Lean lui-même (`#check`, `#print axioms`, exemples re-prouvés en cellule) — les énoncés qui compilent, pas la prose recopiée. |
+| [`Kelly_companion-Python.ipynb`](Kelly_companion-Python.html) | **Volet numérique (Python)** : montre, côte à côte avec les théorèmes prouvés, pourquoi `f*` maximise le taux de croissance espéré `g(f)` et pourquoi tout sur-pari (`f > f*`) ou sous-pari (`f < f*`) est strictement sous-optimal — narration économique, figures et lien trading. |
+| [`Kelly_companion-Lean.ipynb`](Kelly_companion-Lean.html) | **Jumeau à kernel Lean 4** : chaque énoncé du lake est importé et vérifié par le noyau Lean lui-même (`#check`, `#print axioms`, exemples re-prouvés en cellule) — les énoncés qui compilent, pas la prose recopiée. |
+
+## Carnets suivants
+
+Plan de croissance trace dans l'issue
+[#19516](https://github.com/jsboige/CoursIA/issues/19516) (table postee sur
+[#16231](https://github.com/jsboige/CoursIA/issues/16231)) :
+
+1. **Fractional Kelly mesure** — module Lean `Fractional` (`growth(c*f*) ≤ growth(f*)`,
+   egalite seulement pour `c = 1`) + companion Python : surface croissance/variance
+   sur la fraction, multi-seed — la reponse chiffree au « pourquoi demi-Kelly ».
+2. **Erreur d'estimation : biais de l'optimiste** — companion Python :
+   `kellyFrac(p_hat)` applique a `p_hat` bruite → surexposition moyenne mesuree.
+3. **Kelly multi-issue** — generalisation de `Bet` a `n` issues (lake) + companion.
+4. **Cotes dynamiques / sequence** — companion Python seul (bookmaker qui ajuste
+   `b_t` dans le temps ; hors lake).
