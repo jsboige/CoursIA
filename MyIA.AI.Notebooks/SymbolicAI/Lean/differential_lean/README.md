@@ -53,10 +53,13 @@ lake exe cache get          # oleans Mathlib précompilés
 lake build                  # élabore DifferentialTour + DifferentialTour_en
 ```
 
-`lake build` n'est **pas** branché sur la CI du dépôt : la fermeture de Poincaré dépasse le
-budget des jobs Lean (cf. #18100), et l'amont est compilé depuis ses sources par sa propre
-CI. Le build est donc un **geste de visite reproductible**, exécuté hors CI et journalisé
-dans la PR.
+`lake build` n'est **pas** branché sur la CI du dépôt : inscrire ce lake dans la matrice
+partagée toucherait des surfaces CI hors du périmètre de cette visite, et la fermeture de
+Bonnet–Myers en fait la plus lourde enveloppe du dépôt — c'est un arbitrage de budget CI,
+qui revient au coordinateur et non à la PR qui livre la visite. Les coûts mesurés sont dans
+la table **Mesures relevées** ci-dessous, qui fait foi ; ce paragraphe n'en recopie aucun.
+L'amont est compilé depuis ses sources par sa propre CI. Le build est donc un **geste de
+visite reproductible**, exécuté hors CI et journalisé dans la PR.
 
 ## Mesures relevées
 
