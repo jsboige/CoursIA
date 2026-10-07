@@ -1,0 +1,77 @@
+{
+  "seed": 42,
+  "accuracy_base": 0.45149253731343286,
+  "accuracy_finetuned": 0.34701492537313433,
+  "delta": -0.10447761194029853,
+  "mcnemar": {
+    "b": 79,
+    "c": 51,
+    "n": 130,
+    "p_value": 0.017541695301202188
+  },
+  "pred_base": [
+    70,
+    105,
+    93
+  ],
+  "pred_finetuned": [
+    203,
+    4,
+    61
+  ],
+  "vrai": [
+    90,
+    75,
+    103
+  ],
+  "par_mois": {
+    "2019-07": {
+      "n": 63,
+      "symbole": "MU",
+      "exactitude_base": 0.42857142857142855,
+      "exactitude_finetuned": 0.3492063492063492,
+      "retour_base": -0.05415104548060723,
+      "retour_finetuned": 0.013537761370151807
+    },
+    "2019-08": {
+      "n": 38,
+      "symbole": "MU",
+      "exactitude_base": 0.3684210526315789,
+      "exactitude_finetuned": 0.34210526315789475,
+      "retour_base": 0.013431673822974943,
+      "retour_finetuned": -0.003357918455743736
+    },
+    "2019-09": {
+      "n": 25,
+      "symbole": "MU",
+      "exactitude_base": 0.64,
+      "exactitude_finetuned": 0.32,
+      "retour_base": 0.0018912427231083662,
+      "retour_finetuned": 0.0018912427231083662
+    },
+    "2019-10": {
+      "n": 92,
+      "symbole": "MU",
+      "exactitude_base": 0.4673913043478261,
+      "exactitude_finetuned": 0.3804347826086957,
+      "retour_base": -0.004780543208655841,
+      "retour_finetuned": 0.0011951358021639602
+    },
+    "2019-11": {
+      "n": 26,
+      "symbole": "MU",
+      "exactitude_base": 0.4230769230769231,
+      "exactitude_finetuned": 0.3076923076923077,
+      "retour_base": 0.006251293375404976,
+      "retour_finetuned": 0.006251293375404976
+    },
+    "2019-12": {
+      "n": 24,
+      "symbole": "MU",
+      "exactitude_base": 0.4166666666666667,
+      "exactitude_finetuned": 0.2916666666666667,
+      "retour_base": NaN,
+      "retour_finetuned": NaN
+    }
+  }
+}
