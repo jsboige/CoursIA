@@ -15,7 +15,7 @@ project:
     # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7
     # n'etend pas le glob **/README.md sur les sous-repertoires.
     # Archives et libs vendored EXCLUES (history interne, non pedagogique).
-    # 520 READMEs (racine + arborescence, hors archives).
+    # 519 READMEs (racine + arborescence, hors archives).
     - "README.md"
     - "docker-configurations/docs/README.md"
     - "docker-configurations/notebook-runner/README.md"
@@ -37,7 +37,6 @@ project:
     - "docker-configurations/services/vllm-zimage/README.md"
     - "docker-configurations/services/whisper-api/README.md"
     - "docker-configurations/shared/models/README.md"
-    - "docs/audit/workflow-path-filters/README.md"
     - "docs/cadrage/README.md"
     - "docs/ict/README.md"
     - "docs/lean/README.md"
@@ -539,8 +538,7 @@ project:
     # docs/*.md rendus en HTML (issue #18422). Meme mecanisme
     # que les READMEs : liste explicite (globs non etendus en Quarto 1.7).
     # Garde `---` (#11451) appliquee auto-resorbante.
-    # 159 docs/*.md (sous-arbre docs/, hors README/archive/hr).
-    - "docs/audit/sampling-protocol.md"
+    # 160 docs/*.md (sous-arbre docs/, hors README/archive/hr).
     - "docs/audit/workflow-path-filters/latest.md"
     - "docs/cadrage/aima-armature.md"
     - "docs/cadrage/data-policy.md"
@@ -549,7 +547,6 @@ project:
     - "docs/ci/scripts-tests-triage.md"
     - "docs/ci/self-hosted-runners.md"
     - "docs/ci/slow-lane.md"
-    - "docs/curriculum/_inventory.md"
     - "docs/curriculum/aima-walk-competences.md"
     - "docs/curriculum/genai-rush.md"
     - "docs/curriculum/genai.md"
@@ -620,7 +617,6 @@ project:
     - "docs/ledgers/12204-ict-chantier-1-a4.md"
     - "docs/ledgers/12204-ict-chantier-1-a5.md"
     - "docs/ledgers/12204-ict-chantier-1-a6.md"
-    - "docs/ledgers/12204-ict-chantier-1-audit-froid.md"
     - "docs/ledgers/13746-tests-eclates-dissipation.md"
     - "docs/ledgers/14169-g1-recouvrement.md"
     - "docs/ledgers/14169-z3linq-upstream-overlap.md"
@@ -693,11 +689,15 @@ project:
     - "docs/reference/teaching-context.md"
     - "docs/reference/tricephale-circulation.md"
     - "docs/reference/user-blocker-signaling-detail.md"
-    - "docs/reference/variation-genre-census-2026-08-10.md"
     - "docs/reference/wsl-kernels-detail.md"
     - "docs/research/fallacy-detection-survey.md"
     - "docs/research/quant-prose-residual-machine-dep.md"
     - "docs/test-fixtures/md-table-guard/fixture-17306.md"
+    - "docs/transients/2026-07-23-audit-sampling-protocol.md"
+    - "docs/transients/2026-08-10-variation-genre-census.md"
+    - "docs/transients/2026-08-14-audit-workflow-path-filters.md"
+    - "docs/transients/2026-08-24-12204-ict-chantier-1-audit-froid.md"
+    - "docs/transients/2026-09-02-curriculum-inventory.md"
     - "docs/translation/argumentum-fork-mapping.md"
     # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).
     # Liste explicite — globs non etendus en Quarto 1.7.
@@ -716,6 +716,8 @@ project:
     - "MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer.ipynb"
+    - "MyIA.AI.Notebooks/Complexity/Complexity-04c-KServer-WorkFunction-Python.ipynb"
+    - "MyIA.AI.Notebooks/Complexity/Complexity-04d-Secretaire-Matroidal-Python.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb"
@@ -1669,8 +1671,6 @@ project:
     - "MyIA.AI.Notebooks/RL/RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb"
     - "MyIA.AI.Notebooks/RL/RL-16-Dream-RSI-Python.ipynb"
     - "MyIA.AI.Notebooks/RL/RL-19-Reward-Tampering-Python.ipynb"
-    - "MyIA.AI.Notebooks/RL/rl_17_k_server_wfa.ipynb"
-    - "MyIA.AI.Notebooks/RL/rl_18_matroid_secretary.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/CSP/App-11-Picross.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb"
@@ -1723,8 +1723,6 @@ project:
     - "MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb"
-    - "MyIA.AI.Notebooks/Search/Discrepancy/Discrepancy-01-BeckFiala-Lean-Python.ipynb"
-    - "MyIA.AI.Notebooks/Search/Discrepancy/Discrepancy-02-Komlos-Lean.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb"
@@ -1756,6 +1754,8 @@ project:
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09b-SpuriousMinima.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-BeckFiala-Lean-Python.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09e-Komlos-Lean.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb"

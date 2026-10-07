@@ -228,6 +228,7 @@ ancien	nouveau	date	lane
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb	2026-10-03	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb	2026-10-04	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-Lean-Discrepancy-Komlos.ipynb	MyIA.AI.Notebooks/Search/Discrepancy/Discrepancy-02-Komlos-Lean.ipynb	2026-10-04	myia-po-2027:CoursIA
+
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb	2026-10-04	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb	MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/RL/rl_1b_bitwise_logic_synthesis.ipynb	MyIA.AI.Notebooks/RL/RL-01b-Synthese-Logique-Bitwise-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
@@ -271,3 +272,8 @@ MyIA.AI.Notebooks/Search/Applications/Hybrid/App-25-CombinatorialAuctions-WDP-VC
 MyIA.AI.Notebooks/Search/Applications/CSP/App-26-CoveringArrays-Guarantee-Audit.ipynb	MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/Search/Applications/Hybrid/App-28-LearningToBranch-Generalization-Audit.ipynb	MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-06-LearningToBranch-Generalization-Audit-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/Search/Applications/Hybrid/App-33-NeuralDiving-Coloration.ipynb	MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-10-NeuralDiving-Coloration-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/RL/rl_17_k_server_wfa.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-04c-KServer-WorkFunction-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/RL/rl_18_matroid_secretary.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-04d-Secretaire-Matroidal-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/Search/Discrepancy/Discrepancy-01-BeckFiala-Lean-Python.ipynb	MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-BeckFiala-Lean-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/Search/Discrepancy/Discrepancy-02-Komlos-Lean.ipynb	MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09e-Komlos-Lean.ipynb	2026-10-05	myia-po-2027:CoursIA
+ origin/main
