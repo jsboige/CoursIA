@@ -267,6 +267,7 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 |---------|-------------|
 | [research/fallacy-detection-survey.md](research/fallacy-detection-survey.md) | Survey SOTA détection de sophismes + argument mining, fondant l'EPIC #10355 (Phase 1 livrable 1). 10 sources primaires (Logic/LogicClimate, MAFALDA 23 classes, IBM-Rank-30k, AraucariaDB), constat clé : taxonomie Argumentum 1408/8 familles écrase les datasets académiques 13-23 → mapping d'étiquettes = livrable de recherche à part entière |
 | [research/quant-prose-residual-machine-dep.md](research/quant-prose-residual-machine-dep.md) | Inventaire résiduel des timings machine-dépendants cités en prose (#10158) — scan `check_machine_dep_timing.py --all` sur 1008 notebooks. Recense ce qui reste après passage de l'organe, pour que le résidu soit une liste et non une impression |
+| [research/c1111-hoel-pearl-ict32-verdict.md](research/c1111-hoel-pearl-ict32-verdict.md) | Verdict de la confrontation Hoel/Pearl sur ICT-32 (c.1111, #19508, P6 #16620) : **ne tient pas** — substrat B3/S23 déterministe ($P(Y\mid X) = \delta$ distribution delta) → coïncidence triviale des deux lectures, DAG non-trivial absent ; ICT-33 (random soups, $\det = 0.334$) est le substrat où la confrontation redevient non-triviale |
 
 ## Audit sémantique cross-famille (docs/audit/)
 

@@ -74,8 +74,8 @@ Une fois ce PR mergé (README amendé d'une phrase + ce mémo archivé), l'optio
 
 ## Sources first-hand
 
-- `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-32-StratificationCausaleLife-Python.ipynb` (lecture intégrale, 27 cellules, dont les sorties de cellule mesurent $\det = 1.000$, $\deg = 0.672$, $\mathrm{eff} = 0.328$ sur tore $2 \times 2$).
-- `MyIA.AI.Notebooks/IIT/ICT-Series/ict/causal_emergence.py` (393 lignes, lecture intégrale ; module `greedy_apportionment`, `partition_profile`, `causal_profile`).
+- `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-32-StratificationCausaleLife-Python.ipynb` (lecture intégrale ; sorties mesurent $\det = 1.000$, $\deg = 0.672$, $\mathrm{eff} = 0.328$ sur tore $2 \times 2$).
+- `MyIA.AI.Notebooks/IIT/ICT-Series/ict/causal_emergence.py` (lecture intégrale ; module `greedy_apportionment`, `partition_profile`, `causal_profile`).
 - `MyIA.AI.Notebooks/IIT/ICT-Series/README.md` (l.132-134 — la triade ICT-31/32/33 et le constat « GOL non-réparateur »).
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-31-ContrasteTroisSubstrats-Python.ipynb` (le constat que $G$, le seul transporteur, est aussi le seul sans régénération post-ablation).
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-33-SoupCollisions-Python.ipynb` (le passage à la stochasticité : $\det = 0.334$ sur random soups).
