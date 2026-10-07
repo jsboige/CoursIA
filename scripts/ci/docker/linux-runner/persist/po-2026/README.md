@@ -481,6 +481,23 @@ Sondes (meme contrat que `POOL_PROBE=mint-token`) : `POOL_PROBE=mirror-refresh`,
 remote, semis clone `--shared` avec origin rebascule, objets resolvables sans
 reseau, idempotence alternates, fail-open sans miroir).
 
+## Persistance du confinement POOL_SIZE (Q17, 2026-10-07)
+
+Un `POOL_SIZE` exporte par une session (le confinement 3 decide le 28/09) meurt
+au premier redemarrage du parc — 4 redemarrages dans la nuit 06-07/10 l'ont
+demontre (retour a 8 slots a 01:41 sans le confinement). `pool.sh` lit des
+maintenant `$BASE/pool-size.conf` (un chiffre 1-8) quand l'env n'impose rien :
+le fichier survit aux redemarrages, l'env explicite garde la priorite, toute
+valeur hors bornes est ecartee au profit du defaut 8 (le scope `MemoryMax=20G`
+a ete dimensionne pour 8 slots). Pose du confinement durable :
+
+```bash
+wsl.exe -d Ubuntu -- bash -lc 'echo 3 > /home/jesse/CoursIA-runners-p0/pool-size.conf'
+```
+
+Banc : `test_pool_size_conf.sh` (huit cas -- conf vs env vs defaut, valeurs
+pourries et hors bornes, fichier sans newline final).
+
 **Ordre de deploiement** (le PR depot ne deploye rien tout seul) : merger la PR,
 puis deployer la copie `D:` puis la copie WSL (backup + `install -m 0755`,
 securite de la section « Sequence de deploiement »), puis verifier par
