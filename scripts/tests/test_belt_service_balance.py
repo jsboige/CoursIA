@@ -344,3 +344,102 @@ def test_stock_open_by_month_groups_correctly():
 def test_stock_empty_input():
     """Pas d'issues -> dict vide."""
     assert bsb.stock_open_by_month([]) == {}
+
+
+# ---------------------------------------------------------------------------
+# Review #19786 c.6047207444 : 2 points bloquants
+# ---------------------------------------------------------------------------
+
+
+def test_dedup_prefers_pr_merge_over_manuel():
+    """Une issue fermee par PR est dans pr_merge ET dans manuel. On garde
+    le pr_merge (attribution par tag `Grain:` de la PR, plus precise) et
+    on retire le manuel. Le dedup se fait sur (issue_number, service_date)."""
+    iso_now = _iso(datetime.now(timezone.utc))
+    s_pr = bsb.Service(
+        issue_number=42,
+        issue_created_at=iso_now,
+        service_date=iso_now,
+        service_kind="pr_merge",
+        pr_number=100,
+        pr_body="Grain: DEEP/lean -- lane myia-ai-01:CoursIA-2",
+    )
+    s_manuel = bsb.Service(
+        issue_number=42,
+        issue_created_at=iso_now,
+        service_date=iso_now,
+        service_kind="manuel",
+        pr_number=None,
+        pr_body="",
+    )
+    bsb.attribute_service(s_pr)
+    bsb.attribute_service(s_manuel)
+    deduped = bsb.deduplicate_services([s_pr, s_manuel])
+    assert len(deduped) == 1
+    assert deduped[0].service_kind == "pr_merge"
+    # Ordre inverse : manuel avant pr_merge -> on garde pr_merge
+    deduped_rev = bsb.deduplicate_services([s_manuel, s_pr])
+    assert len(deduped_rev) == 1
+    assert deduped_rev[0].service_kind == "pr_merge"
+
+
+def test_dedup_keeps_separate_issues_separate():
+    """Deux issues differentes (meme service_date) restent separees."""
+    iso_now = _iso(datetime.now(timezone.utc))
+    s1 = bsb.Service(
+        issue_number=42, issue_created_at=iso_now, service_date=iso_now,
+        service_kind="pr_merge", pr_number=100,
+        pr_body="Grain: DEEP/lean -- lane myia-ai-01:CoursIA-2",
+    )
+    s2 = bsb.Service(
+        issue_number=43, issue_created_at=iso_now, service_date=iso_now,
+        service_kind="manuel", pr_number=None, pr_body="",
+    )
+    bsb.attribute_service(s1)
+    bsb.attribute_service(s2)
+    deduped = bsb.deduplicate_services([s1, s2])
+    assert len(deduped) == 2
+    assert {s.issue_number for s in deduped} == {42, 43}
+
+
+def test_main_raises_on_gh_failure_exit_2_unknown():
+    """Si fetch_services leve (panne gh), main retourne 2 + UNKNOWN sur stderr.
+
+    Avant le fix : 3 chemins `return services` avalaient la panne et
+    `main()` sortait en exit 0 avec "0 services" -- faux 0 sur panne.
+    Apres le fix : RuntimeError remonte, `main()` retourne 2 + "UNKNOWN:"
+    sur stderr.
+    """
+    import io
+    import unittest.mock as mock
+
+    def boom(*a, **k):
+        raise RuntimeError("gh api graphql returncode=22 stderr='auth required'")
+
+    with mock.patch.object(bsb, "fetch_services", side_effect=boom), \
+         mock.patch.object(bsb, "fetch_closed_issues", return_value=[]), \
+         mock.patch.object(bsb, "fetch_open_issues", return_value=[]):
+        captured_stderr = io.StringIO()
+        with mock.patch("sys.stderr", captured_stderr):
+            rc = bsb.main(["--days", "7"])
+    assert rc == 2, f"expected exit 2, got {rc}"
+    err = captured_stderr.getvalue()
+    assert "UNKNOWN" in err, f"expected UNKNOWN in stderr, got: {err}"
+    assert "gh api graphql" in err
+
+
+def test_main_raises_on_closed_issues_failure():
+    """Si fetch_closed_issues leve, main() retourne 2 (coherence avec fetch_services)."""
+    import io
+    import unittest.mock as mock
+
+    def boom(*a, **k):
+        raise RuntimeError("gh api graphql returncode=22")
+
+    with mock.patch.object(bsb, "fetch_services", return_value=[]), \
+         mock.patch.object(bsb, "fetch_closed_issues", side_effect=boom), \
+         mock.patch.object(bsb, "fetch_open_issues", return_value=[]):
+        captured_stderr = io.StringIO()
+        with mock.patch("sys.stderr", captured_stderr):
+            rc = bsb.main(["--days", "7"])
+    assert rc == 2

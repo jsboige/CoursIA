@@ -294,11 +294,11 @@ def _gh_graphql_paginated(query: str, owner: str, repo: str, max_pages: int = 30
             timeout=60,
         )
         if result.returncode != 0:
-            return nodes  # partial -- return what we have
+            raise RuntimeError(f"gh api graphql returncode={result.returncode} stderr={result.stderr[:200]!r}")
         try:
             data = json.loads(result.stdout)
-        except Exception:
-            return nodes
+        except Exception as e:
+            raise RuntimeError(f"gh api graphql JSON parse error: {e!r}")
         # Caller is responsible for the path traversal
         nodes.append(data)
         page_info = data.get("data", {}).get("repository", {}).get("defaultBranchRef", {}) \
@@ -361,7 +361,7 @@ def fetch_services(
     )
     token = os.environ.get("GH_TOKEN") or _run_capture(["gh", "auth", "token"])
     if not token:
-        return services
+        raise RuntimeError("GH_TOKEN absent et gh auth muet (token requis)")
     while has_next and pages < max_pages:
         pages += 1
         payload = json.dumps({
@@ -381,13 +381,13 @@ def fetch_services(
             timeout=60,
         )
         if r.returncode != 0:
-            return services
+            raise RuntimeError(f"gh api graphql returncode={r.returncode} stderr={r.stderr[:200]!r}")
         try:
             data = json.loads(r.stdout)
-        except Exception:
-            return services
+        except Exception as e:
+            raise RuntimeError(f"gh api graphql JSON parse error: {e!r}")
         if data.get("errors"):
-            return services  # fail-OPEN to partial result
+            raise RuntimeError(f"gh api graphql errors: {data['errors']}")
         prs = (
             data.get("data", {}).get("repository", {})
             .get("pullRequests", {})
@@ -449,7 +449,7 @@ def fetch_open_issues(owner: str, repo: str, max_pages: int = 30) -> list[dict]:
     )
     token = os.environ.get("GH_TOKEN") or _run_capture(["gh", "auth", "token"])
     if not token:
-        return out
+        raise RuntimeError("GH_TOKEN absent et gh auth muet (token requis)")
     while has_next and pages < max_pages:
         pages += 1
         payload = json.dumps({
@@ -469,13 +469,13 @@ def fetch_open_issues(owner: str, repo: str, max_pages: int = 30) -> list[dict]:
             timeout=60,
         )
         if r.returncode != 0:
-            return out
+            raise RuntimeError(f"gh api graphql returncode={r.returncode} stderr={r.stderr[:200]!r}")
         try:
             data = json.loads(r.stdout)
-        except Exception:
-            return out
+        except Exception as e:
+            raise RuntimeError(f"gh api graphql JSON parse error: {e!r}")
         if data.get("errors"):
-            return out
+            raise RuntimeError(f"gh api graphql errors: {data['errors']}")
         nodes = (
             data.get("data", {}).get("repository", {})
             .get("issues", {}).get("nodes", [])
@@ -488,6 +488,136 @@ def fetch_open_issues(owner: str, repo: str, max_pages: int = 30) -> list[dict]:
         has_next = bool(pi.get("hasNextPage"))
         end_cursor = pi.get("endCursor")
     return out
+
+
+def fetch_closed_issues(
+    owner: str,
+    repo: str,
+    window_start: datetime,
+    max_pages: int = 30,
+) -> list[Service]:
+    """Issues CLOSED dans la fenetre, attribuees a `manuel` (sans PR).
+
+    Le canal manquant du compteur historique : 278 fermetures sur 7 j ne
+    sont pas toutes portees par une PR mergee (cf. review #19786 c.6047207444
+    point 1). Une fermeture sans PR fermee (closer issue, sans merge) apparait
+    dans la fenetre et doit etre comptee comme service, attribuee a la lane
+    `manuel` (les PRs de fermeture batch ne sont pas toutes enregistees).
+
+    Tri GraphQL sur UPDATED_AT desc (CLOSED_AT n'est pas un orderBy field) ;
+    on filtre en memoire sur `closedAt >= window_start`.
+
+    Lecteur : `number` + `createdAt` + `closedAt`. Le `body` n'est pas
+    requis ici (pas d'attribution par tag, ces services vont tous a `manuel`).
+    """
+    out: list[Service] = []
+    end_cursor: str | None = None
+    pages = 0
+    has_next = True
+    query = (
+        "query($owner: String!, $repo: String!, $endCursor: String) {\n"
+        "  repository(owner: $owner, name: $repo) {\n"
+        "    issues(first: 50, after: $endCursor, "
+        "orderBy: {field: UPDATED_AT, direction: DESC}, "
+        "states: [CLOSED]) {\n"
+        "      nodes { number createdAt closedAt }\n"
+        "      pageInfo { hasNextPage endCursor }\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+    )
+    token = os.environ.get("GH_TOKEN") or _run_capture(["gh", "auth", "token"])
+    if not token:
+        raise RuntimeError("GH_TOKEN absent et gh auth muet (token requis)")
+    while has_next and pages < max_pages:
+        pages += 1
+        payload = json.dumps({
+            "query": query,
+            "variables": {
+                "owner": owner,
+                "repo": repo,
+                "endCursor": end_cursor,
+            },
+        })
+        r = subprocess.run(
+            ["gh", "api", "graphql", "--input", "-"],
+            input=payload,
+            capture_output=True,
+            text=True, encoding="utf-8", errors="replace",
+            env={**os.environ, "GH_TOKEN": token},
+            timeout=60,
+        )
+        if r.returncode != 0:
+            raise RuntimeError(f"gh api graphql returncode={r.returncode} stderr={r.stderr[:200]!r}")
+        try:
+            data = json.loads(r.stdout)
+        except Exception as e:
+            raise RuntimeError(f"gh api graphql JSON parse error: {e!r}")
+        if data.get("errors"):
+            raise RuntimeError(f"gh api graphql errors: {data['errors']}")
+        nodes = (
+            data.get("data", {}).get("repository", {})
+            .get("issues", {}).get("nodes", [])
+        )
+        page_earliest: datetime | None = None
+        for issue in nodes:
+            closed_at = issue.get("closedAt")
+            if not closed_at:
+                continue
+            try:
+                d_close = _parse_iso(closed_at)
+            except Exception:
+                continue
+            if page_earliest is None or d_close < page_earliest:
+                page_earliest = d_close
+            if d_close < window_start:
+                continue
+            created = issue.get("createdAt")
+            if not created:
+                continue
+            svc = Service(
+                issue_number=issue.get("number", 0),
+                issue_created_at=created,
+                service_date=closed_at,
+                service_kind="manuel",
+                pr_number=None,
+                pr_body="",
+            )
+            attribute_service(svc)
+            out.append(svc)
+        if page_earliest is not None and page_earliest < window_start - timedelta(days=14):
+            break
+        pi = (
+            data.get("data", {}).get("repository", {})
+            .get("issues", {}).get("pageInfo", {})
+        )
+        has_next = bool(pi.get("hasNextPage"))
+        end_cursor = pi.get("endCursor")
+    return out
+
+
+def deduplicate_services(services: list[Service]) -> list[Service]:
+    """Dedoublonne les services sur (issue_number, service_date).
+
+    Une issue fermee par PR est dans `pr_merge` (via closingIssuesReferences)
+    ET dans `manuel` (via closedAt). On garde le `pr_merge` (attribution par
+    tag `Grain:` de la PR, plus precise) et on retire le `manuel`.
+
+    En cas d'egalite (deux services pour le meme issue_number + service_date
+    mais ni pr_merge ni manuels -- defensif), on garde le premier.
+    """
+    seen: dict[tuple[int, str], Service] = {}
+    for s in services:
+        key = (s.issue_number, s.service_date)
+        if key in seen:
+            # Preferer pr_merge (attribution par tag)
+            if seen[key].service_kind == "pr_merge":
+                continue
+            if s.service_kind == "pr_merge":
+                seen[key] = s
+        else:
+            seen[key] = s
+    return list(seen.values())
 
 
 # ---------------------------------------------------------------------------
@@ -608,11 +738,13 @@ def main(argv: list[str] | None = None) -> int:
         stock: dict[str, int] = {}
     else:
         try:
-            services = fetch_services(args.owner, args.repo, window_start, max_pages=args.max_pages)
+            services_pr = fetch_services(args.owner, args.repo, window_start, max_pages=args.max_pages)
+            services_manuel = fetch_closed_issues(args.owner, args.repo, window_start, max_pages=args.max_pages)
             open_issues = fetch_open_issues(args.owner, args.repo, max_pages=args.max_pages)
         except Exception as e:
-            print(f"ERREUR reseau gh : {e}", file=sys.stderr)
+            print(f"UNKNOWN: {e}", file=sys.stderr)
             return 2
+        services = deduplicate_services(services_pr + services_manuel)
         stock = stock_open_by_month(open_issues)
 
     by_lane = aggregate_by_lane(services)
