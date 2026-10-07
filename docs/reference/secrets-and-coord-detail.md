@@ -452,6 +452,24 @@ Source : convergence des harnais roo-extensions <-> CoursIA (Epic roo-extensions
 
 
 
+### 2.8 Déporté depuis la règle — justifications, récits mesurés et provenances (tranche #15204, 2026-10-06)
+
+Déporté depuis `.claude/rules/coordinator-discipline.md` (tranche 2 du slimming #15204 ; sources citées = lignes du fichier avant déport, commit 70b0932df5). La règle garde chaque prescription ; ce qui suit est le détail en lecture différée.
+
+**Mécanisme de la mesure 3 (unicité de session), anciennes lignes 32-40.** L'organe écrit `uniqueness_measured: false` dans chacun de ses verdicts. Les noms de session (`coursia-0f`) **n'encodent pas la lane**, seule une réponse du pair la qualifie. Deux sessions lancées du **même** clone rendent toutes deux `exit 0` et le rôle COORDINATOR — `clone_ok` ne sépare que des clones *distincts*. L'organe porte la racine canonique et **rétrograde en worker** (fail-CLOSED) une session lancée depuis un clone jumeau, mais il ne tranche jamais l'unicité.
+
+**Pourquoi le perdant de l'arbitrage passe en `git worktree add`, ancienne ligne 47.** Deux sessions d'un même clone partagent HEAD, l'index et le stash, et aucune garde ne rougit sur cette corruption-là ([[concurrent-sessions-share-the-working-tree]]).
+
+**Lisibilité des deux critères de défaut, anciennes lignes 51-52.** Les deux critères de défaut de la table de décision sont choisis pour être **lisibles des deux côtés** : chaque session peut rendre son `CronList` et son heure de démarrage.
+
+**Mesure « champ de vision », ancienne ligne 73.** Mesure du 2026-09-12 : **71 des 76 PRs ouvertes (93 %) n'attendaient aucun geste de lane** — 26 prêtes à merger, 45 en attente de review coord.
+
+**Incident fondateur #15828 (rouge = requête sur ma file), ancienne ligne 75.** Le 2026-09-12, ai-01 a diagnostiqué lui-même un test d'inventaire rouge (lecture du script, du test, du générateur, d'un workflow ligne à ligne) puis délégué sa correction à un sous-agent — alors que **PR #15828 portait déjà ce fix, livrée par po-2023 dès le cycle c.507 et garée dans sa propre file**, avec 174 non-lus en inbox. Le geste correct était `gh pr list` + la lecture de l'inbox, pas `Read` sur `build_inventory`.
+
+**Provenances des mandats de l'adjoint, ancienne ligne 136.** Preflight : #13605 `issuecomment-5467391147` ; cas `ADJOINT PREFLIGHT` de `check_unaddressed_nits.py` : PR #13883 ; recalculs firsthand : DM `msg-20260904T043716-lo9ryu`.
+
+**Limites de l'organe `check_adjoint_prevalidation.py`, ancienne ligne 146.** GitHub ne permet pas à cet organe stateless de prouver un événement ensuite supprimé ou reverté. Son format canonique est généré par `--template` (hash inclus ; `--fingerprint` reste disponible). Le login GitHub étant partagé, `lane: myia-po-2025:CoursIA-2` est une déclaration de protocole fail-closed, pas une authentification cryptographique.
+
 ## 3. Secrets via RooSync — recits et justification datee
 
 

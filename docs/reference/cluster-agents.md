@@ -1,316 +1,144 @@
-# Cluster CoursIA - agents, GPUs, specialisations
+# Cluster CoursIA — machines, lanes, capacités
 
-Reference perenne sur la structure du cluster : machines, GPUs, workspaces RooSync, specialisations infrastructure. Pour les **règles de coordination** : cf [docs/architecture_mcp_roo.md](architecture_mcp_roo.md) (RooSync) + [CLAUDE.md](../../CLAUDE.md) section A. Pour le **calendrier enseignement / scope par ecole** : cf [docs/teaching-context.md](teaching-context.md).
+Référence durable sur la structure du cluster qui porte les grains CoursIA : les machines, les lanes et leurs rôles, les GPU, et les barrières de capacité qui contraignent un dispatch. Les **règles de coordination** vivent dans [CLAUDE.md](../../CLAUDE.md) §A et dans [tricephale-circulation.md](tricephale-circulation.md) ; le **calendrier d'enseignement** dans [teaching-context.md](teaching-context.md).
 
-## Machines du cluster
+Ce document décrit ce qui change peu. **Il ne porte pas l'état vivant** : qui tient un GPU, quelle lane tourne, quel modèle anime une lane, quel service est éveillé. Cet état se lit à sa source, jamais ici. Une copie de l'état vivant dans une page de référence se périme en silence, et c'est ce qui était arrivé à la version précédente de cette page.
 
-| Machine | Role principal | LAN plage / IP | GPUs | VRAM totale |
-|---------|----------------|----------------|------|-------------|
-| `myia-ai-01` | **Coordinateur** + tests universels + vLLM hosting + training BG GPU 2 + prover BG forensic | `192.168.0.x` (LAN prive, profile Private, interface `vEthernet (MyIA-AI-Gigabit)`). vLLM sur `192.168.0.47:5002` (`0.0.0.0:5002` via Docker Desktop, `remote=Any` sur profil Private + Public, controle d'acces = `VLLM_API_KEY`). WSL/Hyper-V internes : `172.28.0.1`, `172.28.16.1` (mesure ai-01, [#9976](https://github.com/jsboige/CoursIA/issues/9976) §3.1) | 3x RTX 4090 | 72 GB (3x 24) |
-| `myia-po-2023` | Hote services GenAI Image/Audio/Video (8 Docker services) | **LAN `192.168.0.x` (Ethernet), hote `192.168.0.46` — mesure firsthand po-2023 (2026-08-26, `Get-NetIPAddress`)**. WSL/Hyper-V internes : `172.26.208.1` (WSL), `172.20.224.1` (Default Switch). **vLLM `192.168.0.47:5002` JOIGNABLE** (`HTTP 401` en 0.0036 s + ping < 1 ms 0 % perte — meme plage LAN qu'ai-01, cle requise). GenAI containers sur `localhost:<port>` (ex musicgen 8192) ; voir [docs/genai/genai-services.md](../genai/genai-services.md) pour le registre | RTX 3080 + eGPU RTX 3090 | 40 GB (16 + 24) |
-| `myia-po-2024` | QC backtest + ML training (modèles <= 10M params) | **LAN `192.168.0.x` (Ethernet), hote `192.168.0.49` — mesure firsthand po-2024 (2026-08-23, `Get-NetIPAddress`)**. WSL/Hyper-V internes : `172.21.192.1` (vEthernet WSL Hyper-V firewall), `172.22.64.1` (Default Switch). **vLLM `192.168.0.47:5002` JOIGNABLE** (`HTTP 401` en 0.003 s depuis l'hote Windows `192.168.0.49` — meme plage LAN qu'ai-01, cle requise). QC MCP Docker `quantconnect/mcp-server` → QC Cloud | RTX 3070 | 8 GB |
-| `myia-po-2025` | Tracks intensives ML/audits + workspace EPITA (3 agents) | **LAN `172.24.44.x` (Ethernet 2, DHCP), hote `172.24.44.185` — mesure firsthand [#9976](https://github.com/jsboige/CoursIA/issues/9976) §3 (2026-08-10)**. LAN **physiquement disjoint** du `192.168.0.x` d'ai-01 (deux plages privées RFC 1918 distinctes). WSL/Hyper-V internes : `172.28.176.1` (WSL), `172.17.16.1` (Default Switch). Le `172.24.44.172` cité dans #9976 est la vue WSL ; l'hote lui-meme est `172.24.44.185`. **vLLM `192.168.0.47:5002` NON joignable** (`HTTP 000` + 100% ping loss depuis l'hote Windows) — ce n'est PAS un artefact WSL, c'est une route absente entre deux LAN distincts. Voir §"Regle de routage" | RTX 3080 Ti laptop | 16 GB |
-| `myia-po-2026` | Lean prover + QC MCP + service embedding + reverse proxy `xx.myia.io` | **LAN `192.168.0.x` (Ethernet), hote `192.168.0.51` — mesure firsthand po-2026 (2026-08-26, `Get-NetIPAddress`)**. WSL/Hyper-V internes : `172.25.0.1` (vEthernet WSL Hyper-V firewall), `172.17.112.1` (Default Switch). **vLLM `192.168.0.47:5002` JOIGNABLE** (`HTTP 401` en 0.004 s + ping 3/3 < 1 ms 0 % perte — meme plage LAN qu'ai-01, cle requise). Service embedding : port `8004` (`192.168.0.51:8004`, conteneur `qwen3_4b_awq_embedding_server` via wslrelay — mesure 2026-08-26). Reverse proxy `xx.myia.io` : sous-domaines publics, joignable depuis n'importe quel hote internet | RTX 3080 | 16 GB |
-| `myia-po-2027` | Worker polyvalent (notebooks RL/Search, QC-research, verification citations arXiv) — lanes CoursIA + CoursIA-2 | **LAN `192.168.0.28` (Wi-Fi), passerelle `192.168.0.254` — mesure firsthand po-2027 (2026-08-25, `Get-NetIPAddress`)**. **/24 numeriquement identique a ai-01 mais NON joignable** : `HTTP 000` sur `192.168.0.47:5002` + ping 100 % perte vers `.47` ET vers `.49` (po-2024) — le /24 entier est isole depuis cet hote (isolation client Wi-Fi probable, ou reseau physique distinct reutilisant le meme adressage RFC 1918). Voir §"Regle de routage" | RTX 4060 Laptop | 8 GB |
+## Où lire l'état vivant
 
-**Note po-2024/po-2025 swap previsionnel** : user prevoit de mettre la 3080 16GB en utilisation perenne (po-2025 mobile recoit la 3070 8GB, po-2024 fixe garde la 3080 16GB).
+| Question | Source |
+|---|---|
+| Qui occupe quel GPU, jusqu'à quand | ledger `gpu-reservation` de `scripts/coordination/debt_ledger.py` (dashboard `CoursIA-gpu-reservation-ledger`, ligne `<machine>#gpu<n>`) |
+| Quelles lanes sont actives | `roosync_dashboard(action:"list")`, puis la lecture des clés concernées |
+| Quelles machines sont en ligne | `roosync_inventory(type:"machines")` |
+| Quelles lanes peuvent émettre un dossier de prévalidation | `QUALIFYING_LANES` dans `scripts/check_adjoint_prevalidation.py` |
+| Quel modèle sert réellement le vLLM d'ai-01 | `docker inspect myia_vllm-medium-swift15-27b` (argument `--model`), jamais `/v1/models` |
+| Ports, sous-domaines et réveil des services GenAI | [genai-services.md](../genai/genai-services.md) |
+| Moteur d'une lane, et donc ce qu'elle voit | la lane elle-même : voir la section « Vision » ci-dessous |
 
-**Note LAN (cf [#9976](https://github.com/jsboige/CoursIA/issues/9976))** : la topologie des plages LAN est **mesuree sur place pour toutes les machines du cluster** (po-2024 mesuree 2026-08-23, po-2027 mesuree 2026-08-25, po-2023 et po-2026 mesurees 2026-08-26). **Un adressage /24 identique ne prouve PAS l'appartenance au meme LAN** : po-2027 (`.28`) partage le numbering du /24 d'ai-01/po-2024 tout en etant isole de tout le /24 (mesure 2026-08-25). La seule preuve de joignabilite est une mesure firsthand depuis la machine concernee (`Get-NetIPAddress` + probe endpoint), jamais une inference depuis les adresses.
+## Machines
 
-## Topologie LAN et reachabilite endpoint
+La population décrite ici est celle des machines qui portent des grains CoursIA. `myia-web1` et `myia-web2` font partie de la flotte MyIA mais travaillent sur `roo-extensions` ; elles n'apparaissent pas dans `QUALIFYING_LANES` (huit machines en ligne au 2026-10-06, dont ces deux-là).
 
-Section de reference pour le routage inter-machines des endpoints partages. La precedente absence de cette table est ce qui a rendu l'incident [#9976](https://github.com/jsboige/CoursIA/issues/9976) possible : "endpoint vivant" etait vrai *depuis ai-01*, lu comme un etat du cluster, et `master.env` etait confondu avec "cle de cluster" alors qu'il est per-machine.
+| Machine | GPU | Ce qu'elle porte pour la flotte |
+|---|---|---|
+| `myia-ai-01` | 3 × RTX 4090 (24 Go chacune), mesuré le 2026-10-06 | le coordinateur ; le vLLM de la flotte (GPU 0+1) ; le GPU d'expériences (GPU 2) ; la plupart des services partagés (Qdrant, instances Open WebUI des écoles, proxy claudish, sk-agent, NanoClaw). Toute commande à portée machine y touche la flotte entière |
+| `myia-po-2023` | RTX 3080 + eGPU RTX 3090 (24 Go) | les services GenAI image, audio et vidéo ([genai-services.md](../genai/genai-services.md)) |
+| `myia-po-2024` | RTX 3070 (8 Go) | jeton QuantConnect MCP ; la lane QC isolée |
+| `myia-po-2025` | RTX 3080 Ti laptop (16 Go), sous garde thermique | le titulaire de la coordination ; des workspaces hors CoursIA (claudish, maintenance, workspaces d'école) |
+| `myia-po-2026` | RTX 3080 | le service d'embedding (port `8004`) ; jeton QuantConnect MCP ; le secrétariat ; Hermes |
+| `myia-po-2027` | RTX 4060 laptop (8 Go) | des lanes worker ; hors du LAN d'ai-01 (voir « Réseau ») |
 
-### Endpoints partages (port → hote → joignable depuis)
+La capacité GPU des machines `po-*` est **déclarée** ; elle se confirme par la lane propriétaire avant toute réservation, pas par cette table.
 
-| Endpoint | Port | Hote qui heberge | LAN address | Joignable depuis |
-|----------|------|------------------|-------------|------------------|
-| vLLM `medium` (`ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ`, dense 27B, servi sous l'alias `qwen3.6-35b-a3b`, TP=2 GPU 0+1) | `5002` | `myia-ai-01` | `192.168.0.47:5002` (`0.0.0.0:5002` via Docker Desktop, `remote=Any` Private + Public, cle = `VLLM_API_KEY`) | **ai-01** (mesure : `401` en 0.0026 s depuis `127.0.0.1` et `192.168.0.47`). **po-2024** : mesuree 2026-08-23 → `HTTP 401` en 0.003 s (hote `192.168.0.49`) — **CONFIRME joignable**, meme plage LAN `192.168.0.x`. **po-2023** : mesuree 2026-08-26 → `HTTP 401` en 0.0036 s (hote `192.168.0.46`, ping < 1 ms 0 % perte) — **CONFIRME joignable**. **po-2026** : mesuree 2026-08-26 → `HTTP 401` en 0.004 s (hote `192.168.0.51`, ping 3/3 < 1 ms) — **CONFIRME joignable**, meme plage LAN. **po-2025** : **CONFIRME NON joignable** firsthand ([#9976](https://github.com/jsboige/CoursIA/issues/9976) §3, 2026-08-10) — `HTTP 000` (timeout 5 s) + `100%` ping loss depuis l'hote Windows `172.24.44.185`. LAN physiquement disjoint, pas un artefact WSL. Option (a) adoptee : po-2025 utilise un fournisseur externe (OpenRouter, [#6949](https://github.com/jsboige/CoursIA/issues/6949)). **po-2027** : **CONFIRME NON joignable** firsthand (2026-08-25) — `HTTP 000` (timeout 6.0 s puis 5.0 s au re-test) + `100%` ping loss vers `.47` **et** vers `.49` depuis l'hote Wi-Fi `192.168.0.28` : **/24 entier non joignable**. Le numbering /24 identique n'est PAS une preuve d'appartenance LAN (mesure, pas inference — cf Note LAN). Hors perimetre de la regle de routage, comme po-2025. Voir §Regle de routage |
-| vLLM `mini` (OmniCoder-9B-AWQ-4bit) | `5001` | `myia-ai-01` | `192.168.0.47:5001` (deprecated, meme interface que `5002`) | idem `5002` ; port a verifier avant tout test (deprecated, peut etre ferme) |
-| GenAI `musicgen` (service local) | `8192` | `myia-po-2023` | `localhost:8192` (conteneur Docker, wake-on-demand via [genai-service.py](../../MyIA.AI.Notebooks/GenAI/shared/helpers/genai_service.py)) | **po-2023** uniquement (validation reverse-proxy publique via `xx.myia.io` par po-2026, cf [docs/genai/genai-services.md](../genai/genai-services.md)) |
-| GenAI autres services Image/Audio/Video (8 conteneurs) | `8188`-`8196` (cf [genai-services.md](../genai/genai-services.md)) | `myia-po-2023` | `localhost:<port>` + reverse-proxy `xx.myia.io` | **po-2023** localhost ; tout agent via `xx.myia.io` (auth bearer) |
-| QC MCP (`quantconnect/mcp-server`) | n/a (HTTPS sortant vers `quantconnect.com`) | `myia-po-2024` + `myia-po-2026` | n/a (API Cloud) | **po-2024** et **po-2026** (tokens MCP configures sur les 2 machines). Contrainte : MAX 10 appels API QC / minute entre **tous** les agents (cf §"QuantConnect MCP" plus bas) |
-| Lean 4 / Lake build | local (`elan toolchain`) | `myia-po-2026` (specialisation principale) | local uniquement (build sur place) | **po-2026** specialise ; **ai-01** = secours (env Lean a installer si manquant) |
-| Service embedding (Qwen3-Embedding-4B AWQ, conteneur `qwen3_4b_awq_embedding_server`) | `8004` | `myia-po-2026` | `192.168.0.51:8004` (wslrelay -> conteneur Docker interne `8000`) | **LAN `192.168.0.x`** (mesure firsthand po-2026 2026-08-26 : `/v1/models` `HTTP 401` en 0.047 s, `/metrics` `HTTP 200` sans auth). Trafic flotte transitant normalement par le frontal IIS po-2023 (`192.168.0.46`) |
-| Reverse proxy `xx.myia.io` (sous-domaines GenAI publics) | `443` (HTTPS) | `myia-po-2026` (hebergement) | sous-domaines DNS publics | **tout agent** du cluster (auth bearer par sous-domaine) + internet |
-| RooSync GDrive (dashboard + messages) | n/a (HTTPS sortant) | `myia-*` (toutes les machines) | n/a | cross-machine par design |
+## Lanes et rôles
 
-### Repere de diagnostic endpoint — ne JAMAIS agreger
+Une lane est un couple `machine:workspace`, animé par un seul agent actif à la fois ([lane-claim-protocol.md](../../.claude/rules/lane-claim-protocol.md)). Le rôle et les droits d'une lane s'attachent à la lane : ils ne se déduisent **ni du moteur** qui l'anime, **ni du suffixe** de son workspace.
 
-| Symptome depuis l'hote X | Signification | Action |
-|--------------------------|---------------|--------|
-| `HTTP 401` en < 50 ms | **Vivant** + cle requise (ou token manquant/expiré). Le service repond, il refuse l'authentification. | Verifier la cle (`master.env` de la machine X, pas une autre), PAS l'adresse |
-| `HTTP 200` (avec cle valide) | **Vivant** + authentifie. Service operationnel. | OK |
-| `connection refused` | **Mort** localement : port ferme, service eteint, ou pas de listener. Le paquet arrive au TCP layer, aucun daemon ne repond. | Demarrer le service / verifier que le port est bien bound |
-| `HTTP 000` / `timeout` / `100% packet loss` (ping) | **Non joignable depuis cet hote** : route absente, pare-feu inter-LAN, ou LAN disjoint. Le paquet ne sort pas / n'arrive pas. | **NE PAS classer comme "service mort"**. Tester depuis l'hote qui heberge l'endpoint (pas l'hote X). Si LAN disjoint, c'est une propriete de routage, pas un incident service |
+| Lane | Rôle |
+|---|---|
+| `myia-ai-01:CoursIA` | coordinateur : merges, fermetures, arbitrages, politique de flotte |
+| `myia-po-2025:CoursIA-2` | titulaire : dossiers de prévalidation exact-head, vérifications avant fermeture ; ne merge ni ne ferme |
+| `myia-po-2026:CoursIA-3` | secrétariat : attestations tierces, circulation (DM nominatifs, alertes). Il refuse par contrat les dossiers des PRs `DEEP`, qui reviennent au titulaire |
+| `myia-ai-01:CoursIA-2` | worker sur la machine du coordinateur ; régisseur des GPU de la flotte depuis le 2026-10-05. Ne merge ni ne ferme |
+| `myia-po-2024:CoursIA-3` | lane QuantConnect isolée : déploiement des portefeuilles et maintenance de la partie QC, hors du tapis des workers. Elle partage le dashboard `workspace-CoursIA-3` avec le secrétariat : lire l'auteur (`machineId`) avant d'attribuer un message |
+| autres `*:CoursIA` et `*:CoursIA-2` | workers |
 
-**Regle de routage** (decision [#9976](https://github.com/jsboige/CoursIA/issues/9976) option (a), adoptee 2026-08-08) : **aucun grain necessitant l'inference locale (`192.168.0.47:5002`) n'est dispatche vers une lane hors-LAN**. Ces lanes (`po-2025` et `po-2027` confirmes non-joignables par mesure firsthand, et toute autre confirmee) recoivent soit des grains sans inference, soit des grains a fournisseur externe (OpenRouter, greenlight sur [#6949](https://github.com/jsboige/CoursIA/issues/6949)). Une lane qui recoit un grain d'inference locale et mesure `HTTP 000` doit le signaler comme **erreur de dispatch du coordinateur**, pas le contourner.
+Le trio coordinateur, titulaire et secrétaire est décrit, avec la circulation entre ses têtes, dans [tricephale-circulation.md](tricephale-circulation.md).
 
-**Securite de l'exposition `0.0.0.0:5002`** (mesure ai-01, [#9976](https://github.com/jsboige/CoursIA/issues/9976) §"La portee de securite") : la regle Docker Desktop est `remote=Any` sur les profils **Private ET Public**. Si `myia-ai-01` se retrouve un jour sur un reseau classe `Public` (partage de connexion, reseau invite, hot-spot), le port **5002 y serait joignable aussi**, protege par la seule `VLLM_API_KEY`. Pas un incident aujourd'hui (interface active `Private`, LAN de confiance), mais propriete a connaitre : **la marge d'exposition est deja consommee par defaut**, ce qui est un argument de plus contre toute re-exposition (l'option (b) est **vide cote ai-01** — rien a exposer qui ne le soit deja, mesure du [#9976](https://github.com/jsboige/CoursIA/issues/9976) §3.1).
+**Les deux relecteurs du cluster MyIA.** Hermes (`po-2026`, ordonnanceur `hermes-agent`, cycles horaires) et NanoClaw (`ai-01`, workspace `cluster-coordination`, cadence de 30 minutes) relisent les PRs et tiennent une coordination à l'échelle du cluster MyIA, au-delà de CoursIA. Ils signent sous le même compte GitHub, `clusterManager-Myia`, et se distinguent par le préfixe du corps de leur review (`[Hermes]`, `[NanoClaw]`). Ce ne sont pas des lanes au sens du protocole de claim ; leurs réserves se lèvent comme toute réserve (CLAUDE.md §B.0). Harnais et annuaire : [bot-review-harness.md](bot-review-harness.md).
 
-### Comment mesurer la reachabilite (template reutilisable)
+**Workspaces d'école.** Les workspaces des cours (EPITA, EPF, etc.) ont leur propre dashboard. Exception user du 2026-05-16 : le coordinateur peut y envoyer `[INFO]`, `[ASK]` ou `[DIRECTIVE]` par message direct ; il n'y merge pas, n'y committe pas et n'écrit pas sur leur dashboard. Scope par école : [teaching-context.md](teaching-context.md).
 
-Depuis l'hote **X** (pas depuis l'hote qui heberge l'endpoint) :
+**Anti-collision.** Un seul éditeur par notebook ou par série à la fois ; deux sessions sur une même machine (`CoursIA` et `CoursIA-2`) sont deux lanes distinctes, et un worker qui refuse un pivot vers la session voisine a raison.
 
-```bash
-# 1. Identifier la plage LAN de X (hote Windows)
+## D'où vient le grain d'une lane
+
+Il n'y a **aucune table de spécialités** dans cette page, et c'est délibéré. Une table « tel sujet va à telle lane » contredit le tirage sur le pool entier ([proactive-coordination.md](../../.claude/rules/proactive-coordination.md), R5), et la dernière qui figurait ici n'était plus appliquée par aucune lane.
+
+Le grain d'une lane vient du **tapis** (`python scripts/pick_idle_grain.py --belt --lane <machine:workspace>`) ou d'une file composée par le coordinateur. Ce qui contraint une lane, ce sont des **barrières de capacité**, et elles seules :
+
+- **GPU** : la VRAM requise, et la disponibilité au ledger ;
+- **vision** : la capacité du modèle qui anime la lane (section suivante) ;
+- **réseau** : la joignabilité des endpoints locaux (section « Réseau ») ;
+- **jetons de service** : QuantConnect MCP (`po-2024`, `po-2026`), services GenAI de `po-2023`.
+
+Un jeton de service est une capacité **en plus**, jamais un périmètre exclusif : une lane qui le détient prend aussi n'importe quel autre grain.
+
+## Vision
+
+La capacité de voir une image appartient au **modèle**, pas à la machine ni à la lane : une lane change de modèle, et une table par machine se périme au premier changement. La règle et la table des modèles sont dans [model-delegation.md](../../.claude/rules/model-delegation.md). C'est à l'agent de juger s'il voit, sur ce dont il dispose ; s'il ne voit pas, il le dit et rend la partie visuelle du grain.
+
+- **Mécanisme.** Un `Read` sur une image (`.png`, `.webp`, `.jpg`) ou sur une capture (rendu Playwright puis capture, ou Edge headless en `--screenshot` quand le profil Playwright est verrouillé) insère l'image dans le contexte d'un modèle qui voit. `mcp__sk-agent__call_agent` accepte une image en `attachment`, mais un verdict de vision indirecte non corroboré ne vaut pas validation.
+- **Sous-agents.** Le moteur derrière `model: "sonnet"` ou `"haiku"` dépend du proxy de la machine qui lance le sous-agent, et il change sans préavis. Mesure du 2026-10-06 sur `ai-01` : un sous-agent `sonnet` ne reçoit pas les images. Le sous-agent peut produire le rendu ; le regard reste à la boucle principale.
+- **Un `test -f` prouve l'existence, pas le rendu.** Le défaut à attraper : une figure réduite à des aplats, une image blanche, un placeholder, alors que le vrai outil était invocable. On la régénère, on ne la consacre pas ([sota-not-workaround.md](../../.claude/rules/sota-not-workaround.md)). Cas fondateur : une figure du README `GenAI/Image` réduite à trois aplats colorés, passée au contrôle d'existence et attrapée au premier regard le 2026-07-11, puis régénérée le 2026-07-17.
+
+## GPU d'ai-01
+
+| GPU | Usage |
+|---|---|
+| 0 et 1 | vLLM `medium` de la flotte : `ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ` (dense 27B), tensor parallel sur les deux cartes, port `5002`. Environ 20 Go occupés par carte, en permanence : ce n'est ni une fuite ni un processus zombie |
+| 2 | expériences et entraînements, réservés au ledger avant tout chargement |
+
+- **Piège de l'alias.** Le modèle est servi sous `--served-model-name qwen3.6-35b-a3b`, nom hérité d'un ancien MoE gardé pour la compatibilité des clients. Le nom servi ne dit pas quel modèle tourne.
+- **L'ancien alias `mini`** (port `5001`) n'est servi par aucun conteneur au 2026-10-06.
+- **GPU 0 et 1** : on n'y charge pas un second modèle pour une expérience. Un modèle trop grand pour 24 Go passe sur le GPU 2, avec une partie des couches déchargée en mémoire CPU.
+- **Le modèle servi comme sujet d'expérience.** Le modèle de production peut lui-même être étudié (autoencodeur parcimonieux, lecture d'activations, expérience ICT) quand l'instrument se branche sur le moteur d'inférence sans décharger le modèle. Une courte coupure du service, le temps de redémarrer le moteur avec son instrumentation, est acceptable : elle s'annonce à l'avance sur le dashboard `global`, puisque toute la flotte en dépend. Hors de ce cadre, on ne tue ni ne réinitialise leurs processus : cela couperait le modèle de toute la flotte sans prévenir.
+- **GPU 2** : le régisseur (`myia-ai-01:CoursIA-2`) tient la file des expériences (rendez-vous [#1454](https://github.com/jsboige/CoursIA/issues/1454)). Un GPU 2 vide sans raison écrite est une dette du cycle.
+- **Désignation du device.** Les variables vont sur la commande elle-même, pas sur une chaîne de commandes qui les perdrait : `CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=2 <commande>`. Ensuite, vérifier le placement réel avec `nvidia-smi --query-compute-apps`.
+- **Mémoire de la machine.** ai-01 sert la flotte : avant un run lourd, lire le taux d'engagement mémoire juste avant le lancement, pas une valeur lue plus tôt dans le cycle.
+
+## po-2025 — garde thermique
+
+La RTX 3080 Ti laptop de `po-2025` (MSI GE76) a provoqué trois arrêts système en une journée le 2026-04-28, pendant un entraînement LSTM prolongé : TDR, BSOD `0x9F`, puis arrêt thermique à 100 °C. La carte throttle déjà à 50 W vers 89 °C.
+
+Un entraînement GPU non supervisé de plus de 15 minutes y est interdit, sauf avec les trois garde-fous suivants :
+
+- le motif de `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (`TrainingCheckpoint` et `thermal_check`) ;
+- un arrêt automatique à 87 °C ;
+- un batch réduit, en précision mixte.
+
+## Réseau
+
+**Règle de routage** (décision [#9976](https://github.com/jsboige/CoursIA/issues/9976), option (a)) : aucun grain qui exige l'inférence locale d'ai-01 n'est dispatché vers une lane hors de son LAN. Ces lanes reçoivent des grains sans inférence, ou à fournisseur externe ([#6949](https://github.com/jsboige/CoursIA/issues/6949)). Une lane qui reçoit un tel grain et mesure un `HTTP 000` le signale comme une erreur de dispatch : elle ne le contourne pas.
+
+| Machine | vLLM d'ai-01 joignable | Mesure |
+|---|---|---|
+| `po-2023`, `po-2024`, `po-2026` | oui (`401` en quelques millisecondes : vivant, clé requise) | 2026-08-23 et 2026-08-26 |
+| `po-2025` | non : LAN physiquement distinct | 2026-08-10 |
+| `po-2027` | non : même numérotation /24, mais réseau isolé (Wi-Fi) | 2026-08-25 |
+
+Une adresse dans le même /24 ne prouve pas l'appartenance au même LAN : seule une mesure depuis la machine concernée le prouve. L'endpoint et sa clé se lisent dans le `.env` de chaque machine. Exposition : le port `5002` est publié par Docker Desktop sur toutes les interfaces et n'est protégé que par sa clé ; sur un réseau classé public, il y serait joignable.
+
+**Lire un résultat d'endpoint, sans jamais l'agréger d'une machine à l'autre :**
+
+| Depuis la machine X | Signification | Geste |
+|---|---|---|
+| `401` en moins de 50 ms | vivant, authentification refusée | vérifier la clé du `.env` de X, pas l'adresse |
+| `200` avec clé | vivant et authentifié | — |
+| `connection refused` | aucun service n'écoute sur ce port | démarrer le service, vérifier le port |
+| `000`, timeout, ping perdu | non joignable **depuis X** | re-tester depuis la machine hôte ; si elle répond `401`, c'est une propriété de routage, pas une panne |
+
+```powershell
+# Plage LAN de la machine X, puis sonde courte de l'endpoint
 Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.IPAddress -notlike '127.*'} | Select-Object IPAddress,InterfaceAlias
-
-# 2. Tester l'endpoint avec timeout court (eviter les hangs)
-curl.exe -s -o NUL -w "%{http_code}`n" --max-time 6 http://<LAN-IP>:<port>/v1/models
+curl.exe -s -o NUL -w "%{http_code}`n" --max-time 6 http://<adresse>:<port>/v1/models
 ```
 
-**Lecture du résultat** :
-- `200` : service vivant + cle valide (ou pas de cle requise).
-- `401` en < 50 ms : service vivant + cle requise. Verifier `master.env` sur la machine X.
-- `000` ou `timeout` : non joignable depuis X (route / pare-feu / LAN disjoint). **Re-tester depuis l'hote qui heberge l'endpoint** pour confirmer que le service est vivant — si `401` depuis l'hote hebergeur, le service marche et le probleme est strictement sur X.
-
-Documenter toute nouvelle mesure dans une sous-section "Mesures recentes" plus bas, avec horodatage, machine source, et resultat verbatim.
-
-### Mesures recentes (audit)
-
-| Date | Source | Cible | Mesure | Conclusion |
-|------|--------|-------|--------|------------|
-| 2026-08-08 | `myia-ai-01` | `192.168.0.47:5002` (vLLM self) | `HTTP 401` en 0.0026 s sur `127.0.0.1:5002` ; `HTTP 401` en 0.0027 s sur `192.168.0.47:5002` (issue [#9976](https://github.com/jsboige/CoursIA/issues/9976), mesure jsboige) | Endpoint vivant sur les 2 interfaces, `0.0.0.0:5002`, `remote=Any` Private + Public, cle requise |
-| 2026-08-08 | `myia-po-2025` | `192.168.0.47:5002` (vLLM) | `HTTP 000`, ping 100 % perte (issue [#9976](https://github.com/jsboige/CoursIA/issues/9976), constat firsthand po-2025) | **LAN disjoint** entre `192.168.0.x` et `172.24.44.172` (a confirmer si WSL interne ou LAN physique distinct — mesure depuis hote Windows requise, cf issue body §"Ce qui reste, et qui n'est pas un blocage") |
-| 2026-08-26 | `myia-po-2023` | `192.168.0.47:5002` (vLLM) | `HTTP 401` en 0.003638 s (hote Ethernet `192.168.0.46/24`, ping < 1 ms 0 % perte) ; port `5001` deprecie : `HTTP 000` — mesure firsthand [#9976](https://github.com/jsboige/CoursIA/issues/9976) | Endpoint **vivant + cle requise** ; po-2023 sur la meme plage LAN `192.168.0.x` qu'ai-01 — hors du perimetre « hors-LAN » de la regle de routage |
-| 2026-08-23 | `myia-po-2024` | `192.168.0.47:5002` (vLLM) | `HTTP 401` en 0.002996 s (hote Windows `192.168.0.49`, `curl --max-time 6` + ping 0 % perte) — mesure firsthand [#9976](https://github.com/jsboige/CoursIA/issues/9976) | Endpoint **vivant + cle requise** ; po-2024 sur la meme plage LAN `192.168.0.x` qu'ai-01, donc consomme le vLLM local (pas dans le perimetre « hors-LAN » de la regle de routage) |
-| 2026-08-25 | `myia-po-2027` | `192.168.0.47:5002` (vLLM) + ICMP `192.168.0.49` (po-2024) | `HTTP 000` en 6.010 s puis 5.003 s (re-test) ; ping `.47` = 2/2 perdus, ping `.49` = 2/2 perdus. Hote `192.168.0.28` (Wi-Fi), passerelle `192.168.0.254`, `Get-NetIPAddress` = une seule IPv4 active — mesure firsthand [#9976](https://github.com/jsboige/CoursIA/issues/9976) | **/24 entier non joignable depuis po-2027** : numbering identique mais reseau isole (isolation client Wi-Fi probable, ou adressage RFC 1918 reutilise). Le service est vivant (mesures ai-01 2026-08-08 + po-2024 2026-08-23 ci-dessus) — propriete de routage, pas un incident service. **po-2027 entre dans le perimetre « hors-LAN » de la regle de routage** (grains vLLM locaux non dispatchables vers cette lane) |
-| 2026-08-26 | `myia-po-2026` | `192.168.0.47:5002` (vLLM) | `HTTP 401` en 0.004079 s (hote Ethernet `192.168.0.51/24`, ping 3/3 < 1 ms 0 % perte) ; port `5001` deprecie : `HTTP 000` (timeout 6 s) — mesure firsthand [#9976](https://github.com/jsboige/CoursIA/issues/9976) | Endpoint **vivant + cle requise** ; po-2026 sur la meme plage LAN `192.168.0.x` qu'ai-01 — hors du perimetre « hors-LAN » de la regle de routage. Bonus meme passe : service embedding local `192.168.0.51:8004` → `401` (`/v1/models`) + `200` (`/metrics`) |
-
-## Workspaces RooSync (cluster CoursIA)
-
-Cluster simplifie depuis 2026-05-15 : **un workspace `CoursIA` par machine**, sauf po-2025 qui a 3 agents distincts pour 3 workspaces dedies (CoursIA + 2 EPITA).
-
-| RooSync ID | Role | Capacité dispatch depuis ai-01 |
-|-----------|------|--------------------------------|
-| `myia-ai-01:CoursIA` | Coord + reviewer PR + merger + tests universels | (self) |
-| `myia-po-2023:CoursIA` | GenAI Image/Audio/Video + audit notebooks (Search/CSP/Sudoku) | OUI |
-| `myia-po-2024:CoursIA` | QC backtest + ML training (sweep + Sudoku-NN) | OUI |
-| `myia-po-2025:CoursIA` | Tracks intensives CoursIA + thermal backoff | OUI (avec contrainte thermal) |
-| `myia-po-2025:2026-Epita-Programmation-par-Contraintes` | Review/merge PRs etudiants PrCon | Exception "grand manitou" |
-| `myia-po-2025:2026-Epita-Intelligence-Symbolique` | Veille thematique + enrichissement sujets EPITA-IS | Exception "grand manitou" |
-| `myia-po-2026:CoursIA` | Lean prover + QC MCP + embeddings | OUI |
-
-**Boundary EPITA workspaces** : par defaut "stay in your workspace" (CLAUDE.md global). Exception explicite user 2026-05-16 : ai-01 est coordinateur transverse "grand manitou de tous les cours IA", donc peut dispatcher `[INFO]` / `[ASK]` / `[DIRECTIVE]` vers les workspaces EPITA via `roosync_messages(action: "send")`. Limite executive : ai-01 ne merge PAS leurs PRs, ne commit PAS dans leurs branches, ne fait pas dashboard append direct sur leur dashboard.
-
-**Workspace `myia-po-2023:GenAI_Series` est DEPRECATED** depuis 2026-05-15. Tout dispatch GenAI va sur `myia-po-2023:CoursIA` uniquement.
-
-## Second workspace par machine — lanes `CoursIA-2` (depuis ~2026-06)
-
-Depuis ~juin 2026, chaque machine worker porte **deux lanes** (un `lane` = machine x workspace) : sa lane `CoursIA` historique **et** une lane `CoursIA-2` sur un second workspace, coordonnee via un **second dashboard** `workspace-CoursIA-2` co-egal. **Aucun des deux dashboards n'est « celui du coordinateur »** : ai-01 **lit ET poste un contenu lane-specific sur CHACUN** chaque cycle, jamais de broadcast miroir (cf [CLAUDE.md](../../CLAUDE.md) section A + [.claude/rules/coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) règle 3).
-
-**Toutes les machines worker portent les deux lanes**, `po-2023` incluse. La phrase que ces lignes remplacent affirmait l'inverse (« `po-2023` et `ai-01` n'ont qu'une lane `CoursIA` ») : mesure du 2026-09-12 sur les 150 derniers merges, `myia-po-2023:CoursIA-2` a livré **28 des 39** PRs `CoursIA-2` de l'échantillon — c'est *la* lane `CoursIA-2` dominante du dépôt. `ai-01` porte le coordinateur sur sa lane `CoursIA` et, depuis le 2026-09-30, une lane **worker** `myia-ai-01:CoursIA-2` (clone `D:\CoursIA-2`, MiniMax) : même machine, rôle distinct — elle ne merge ni ne ferme, et ses DMs de livraison vont à `myia-ai-01:CoursIA`. po-2025 ajoute par ailleurs ses 2 workspaces EPITA (cf section "po-2025 - 3 agents distincts").
-
-**Il n'y a délibérément aucun tableau lane → Epic ici**, et c'est le point à ne pas défaire. Cette section en portait un jusqu'au 2026-09-12 ; il assignait une spécialité nommée à chacune des quatre lanes `CoursIA-2`, et la mesure des 150 derniers merges n'en a retrouvé **aucune** honorée (#1203 et #2159 cités au plus une fois chacun sur 150 bodies ; #2137 fermée depuis le 2026-07-02 ; `po-2027:CoursIA-2` à zéro PR). Un tableau qu'aucune lane n'applique ne répartit rien : il contredit seulement R5 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md) (« Pool = TOUT l'ouvert, cross-lane, **jamais siloté** ») dans le même corpus auto-chargé, et laisse un coordinateur arbitrer au hasard entre deux consignes opposées.
-
-Ce qui détermine le grain d'une lane est le **tirage** (`python scripts/pick_idle_grain.py --lane <machine:workspace>`), pas une colonne de ce fichier. Ce qui **contraint** une lane reste écrit, mais ailleurs et sous forme mesurée : GPU et VRAM dans le tableau des machines ci-dessus, joignabilité réseau dans §"Regle de routage", capability vision dans [model-delegation.md](../../.claude/rules/model-delegation.md). Ce sont des **barrières de capacité** — les deux seules que R7 reconnaît (GPU-only, vision-only) — jamais des assignations de sujet.
-
-**Anti-collision (HARD)** : un seul editeur par serie/notebook ; une **session `CoursIA` != session `CoursIA-2`** sur la meme machine (collision-avoidance cross-session — un worker qui refuse un pivot cross-session a raison, le tort est au coordinateur). **Une lane ne se ferme jamais** : deep-queue épuisée, le worker **tire** (`pick_idle_grain.py`) et prend n'importe quelle issue techniquement exécutable du pool global, jamais "idle". La formule que cette ligne remplace renvoyait au « fallback perenne never-empty **de SA famille** », avec une liste de quatre trackers dont **trois sont fermés** (#2651, #2161, #3966 ; seul #3973 reste OPEN) : un repli famille-partitionné est exactement le silo que R5 interdit, et une liste statique de trackers se périme plus vite qu'on ne la relit. Detail : [.claude/rules/coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) règle 4.
-
-## ai-01 - topologie GPU (RTX 4090 x3)
-
-**L'occupation en cours se lit dans le ledger, pas de tete** : le kind
-`gpu-reservation` de `scripts/coordination/debt_ledger.py` (dashboard dedie
-`CoursIA-gpu-reservation-ledger`, cle de ligne `<machine>#gpu<n>`) porte qui tient
-quel device, depuis quand et jusqu'a quand — une lane sans GPU peut lire l'etat
-d'occupation sans se connecter a la machine. La topologie et la politique
-ci-dessous restent la reference **statique** ; ce qui tourne se planifie et
-s'observe dans le ledger ([#16737](https://github.com/jsboige/CoursIA/issues/16737)).
-
-Règle stricte : GPU 2 **doit etre occupee 24/7** par un training BG longue duree.
-
-| GPU | Role | Etat normal |
-|-----|------|-------------|
-| GPU 0 RTX 4090 | vLLM `medium` (Swift-1.5-Qwen3.8-27B AWQ, TP=2 avec GPU 1) | ~20-24 GB VRAM occupee 24/7 (mesure `nvidia-smi` 2026-09-26 19:12Z : 20746 MiB / 24564 MiB, 71 %) |
-| GPU 1 RTX 4090 | vLLM `medium` (TP=2 avec GPU 0) | ~19-24 GB VRAM occupee 24/7 (mesure `nvidia-smi` 2026-09-26 19:12Z : 19522 MiB / 24564 MiB, 75 %) |
-| GPU 2 RTX 4090 | **Training BG ou experience lourde reservee au ledger** (24 GB) | DOIT toujours etre occupee (training BG ou experience) |
-
-**Alias vLLM** :
-- `mini` : OmniCoder-9B-AWQ-4bit, GPU 2, port 5001, deprecated
-- `medium` : `ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ` (dense 27B, generation Qwen3.8), GPU 0+1 TP=2, port 5002
-
-**Piege de l'alias** : le modele est servi sous `--served-model-name qwen3.6-35b-a3b`, nom herite d'un ancien MoE 35B-A3B garde pour la compatibilite des clients. **Le nom servi ne dit pas quel modele tourne** : cette page a decrit un MoE pendant que GPU 0+1 servaient un dense 27B. La verite se lit dans `docker inspect myia_vllm-medium-swift15-27b` (argument `--model`), jamais dans `/v1/models`.
-
-**Anti-patterns interdits sur ai-01** :
-- Diagnostiquer GPU 0/1 VRAM ~24GB comme "zombie processes" ou "memory leak" - c'est vLLM, occupation normale
-- Tenter de killer/reset les processes sur GPU 0/1 - casse vLLM = prover SearchAgent local KO
-- Laisser GPU 2 idle "en attendant decision strategique" - toujours avoir une queue de trainings prets
-
-A chaque reveil de session ai-01 :
-1. `nvidia-smi --query-gpu=memory.used,utilization.gpu --format=csv -i 2`
-2. Si GPU 2 memory.used < 500 MiB -> lancer immediatement un training BG (queue ci-dessous)
-3. Si training BG tourne deja -> laisser, NE PAS killer pour relancer
-4. Cible : trainings >= 8h (sweep multi-seed, walk-forward M8 re-run, GARCH Phase 1, HMM/PyMC)
-
-## Capacite GPU disposable de la flotte (mandat user 2026-09-26)
-
-Le registre des GPU se gere **activement** : une experience qui a besoin de VRAM cherche la machine qui peut la donner, et se reserve dans le ledger `gpu-reservation` (ligne `<machine>#gpu<n>`) **avant** de charger quoi que ce soit, avec une echeance. Le tableau ci-dessous est la capacite **declaree** ; chaque ligne se confirme par la mesure de la lane proprietaire (fil `global` du 2026-09-26).
-
-| Machine | VRAM disposable | Usage et condition |
-|---|---|---|
-| ai-01 GPU 2 (RTX 4090) | 24 GB | la plupart des grosses experiences ; mesuree **vide** le 2026-09-26 13:47Z (45 MiB, 0 %) |
-| ai-01 GPU 0+1 | modele servi | Swift-1.5 27B = **modele par defaut des experiences LLM lourdes** qui n'exigent pas les modeles SOTA du depot ; reservation ponctuelle possible, **annoncee a l'avance sur le dashboard `global`** avec une heure de reprise (elle coupe le modele de la flotte) |
-| po-2023 (3080 + eGPU 3090) | 24 GB sur demande | la liste des modeles live ou hiberes sur ses deux GPU est a revoir |
-| po-2024 (RTX 3070) | 8 GB en continu | — |
-| po-2025 (3080 Ti laptop) | ~16 GB, experiences legeres | sous garde thermique (section suivante) ; deja sollicitee par claudish et les lanes « sol » |
-| po-2026 (RTX 3080) | a mesurer | l'embedder n'a peut-etre pas besoin de toute la VRAM qu'il tient |
-
-**Au-dela d'une carte** : un modele trop grand pour 24 GB (70B quantifie, par exemple) peut tourner sur GPU 2 avec une partie des couches dechargee en memoire CPU. C'est tres lent, mais la plage est genereuse. Cette voie passe **avant** toute reservation de GPU 0+1.
-
-## po-2025 - contrainte thermique RTX 3080 Ti (incident 2026-04-28)
-
-3 crashs systeme en 1 journee sur training LSTM prolonge :
-- TDR 141 + BSOD 0x9F (DRIVER_POWER_STATE_FAILURE)
-- Idem repete dans la meme journee
-- Hard hang firmware / shutdown thermique critique a 100C ACPI
-
-Hardware : MSI GE76 12UHS, RTX 3080 Ti laptop. Pas de persistence mode (non supporte laptop). Throttle deja a 50W sous charge a 89C, malgre power limit 150W. Lid ouvert ameliore mais ne suffit pas.
-
-**Règle ai-01** : trainings GPU non-supervises > 15 min sur po-2025 INTERDITS, sauf si :
-- Pattern reuse `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (classe `TrainingCheckpoint` + import direct de `thermal_check` ; librairie canonique, defauts `max_temp=80`, `cool_sleep=15` ; aucun superviseur externe en sous-processus)
-- Watchdog `nvidia-smi` polling avec auto-stop a 87C
-- Batch size réduit + mixed precision FP16
-
-Si user dit "OK GPU heavy po-2025" : vérifier qu'il connait l'incident avant d'agir (override possible).
-
-## po-2025 - 3 agents distincts
-
-| Workspace | Role | Etat |
-|-----------|------|------|
-| `myia-po-2025:CoursIA` | Tracks intensives ML/audits avec backoff thermal | ACTIF |
-| `myia-po-2025:2026-Epita-Programmation-par-Contraintes` | Review/merge PRs etudiants PrCon | EN ATTENTE PRs etudiants |
-| `myia-po-2025:2026-Epita-Intelligence-Symbolique` | Veille sujets + enrichissement | ACTIF veille |
-
-**Skills cross-workspace tappables** : po-2025 developpe des skills spécifiques par workspace, mais ai-01 peut tapper l'agent qui a deja la skill fraiche. Exemple : formulaire eval partenaire cree par `po-2025:2026-Epita-PrCon` plutôt que `po-2025:CoursIA`, parce que PrCon avait fait des formulaires GWorkspace+Playwright le meme jour.
-
-## Specialisations infrastructure
-
-### GenAI Image/Audio/Video -> po-2023
-
-Hardware : RTX 3080 Ti 16GB + eGPU 3090 24GB. **8 services Docker GenAI** :
-- Image : Qwen Image Edit, Z-Image/Lumina, SD Forge Turbo/Main, SD.Next
-- Audio : Whisper STT, Kokoro TTS, MusicGen, Demucs
-- Video : ComfyUI Video
-
-**Règle user** : s'il y a du GenAI Image/Audio/Video, ca va a po-2023. Lui seul peut tester notebooks contre ses propres services locaux.
-
-### GenAI Texte (vLLM) -> ai-01
-
-Les 2 containers Texte tournent sur le **vLLM workspace de ai-01**, pas po-2023. Cf section GPU topology ci-dessus pour `mini`/`medium`.
-
-### GenAI Embedding -> po-2026
-
-Container embedding dedie sur po-2026. Tout agent peut consommer l'endpoint.
-
-### Reverse proxy `xx.myia.io` -> po-2023
-
-Sous-domaines publics qui pointent vers les services GenAI de po-2023. Permet validation **bout-en-bout** des notebooks GenAI (auth bearer + timeouts + latences réelles client-side) en plus du test localhost de po-2023.
-
-**Sequence GenAI a 2 étapes** : po-2023 dev + test local, puis po-2026 (optionnel) re-validation via sous-domaine public. po-2026 intervient APRES po-2023, jamais a la place.
-
-### QuantConnect MCP -> po-2024 + po-2026
-
-Tokens API QC configures dans `.mcp.json` sur les 2 machines (Docker MCP server `quantconnect/mcp-server`). Ils peuvent `create_compile` + `create_backtest` sur QC Cloud.
-
-**Polyvalence** : avoir le token QC ne signifie PAS perimetre exclusif. Ces agents peuvent etre dispatch sur n'importe quelle mission (audit, Lean, notebooks). Le token QC = capacité **supplémentaire**.
-
-**Contrainte rate limit** : MAX 10 appels API QC / minute entre **tous les agents**. Avant backtest, annonce obligatoire sur dashboard workspace CoursIA pour eviter contention.
-
-### Lean / Mathlib -> po-2026
-
-Specialisation `*.lean`, port social_choice, Lake build, reecriture preuves structurelles. ai-01 = secours (env Lean a installer si manquant). Cf [docs/lean/prover_iteration_history.md](../lean/prover_iteration_history.md).
-
-### Whisper API host -> po-2023
-
-Rotation cle API geree par po-2023 lui-meme. **NON consommé** dans workspace CoursIA (verifie 2026-05-16, 0 .env actif avec WHISPER_API_KEY cote CoursIA).
-
-## Table rapide dispatch
-
-| Mission | Agent principal | Alternative / validation |
-|---------|-----------------|--------------------------|
-| GenAI Image/Audio/Video (containers + notebooks) | `po-2023:CoursIA` | po-2026 pour validation reverse proxy `xx.myia.io` |
-| GenAI Texte / vLLM (containers) | `ai-01:CoursIA` | tout agent pour consommer l'endpoint |
-| GenAI Embedding (container) | `po-2026:CoursIA` | tout agent pour consommer l'endpoint |
-| QC backtest / strategie | `po-2024:CoursIA` | `po-2026:CoursIA` (tokens MCP) |
-| QC partner org cleanup | `po-2024:CoursIA` | `po-2026:CoursIA` |
-| Lean / Mathlib (port + preuves) | `po-2026:CoursIA` | ai-01 secours (env a installer) |
-| Lean prover BG forensic | **`ai-01:CoursIA` systematique** | apres chaque PR / message po-2026 mentionnant sorry |
-| Audit notebooks pedagogique | tout agent polyvalent | cross-check pour eviter double couverture |
-| Execution Papermill notebooks | tout agent polyvalent | ai-01 = machine de test universelle prioritaire |
-| Review PR + merge | `ai-01:CoursIA` (seul merger) | - |
-| Test global bout-en-bout (tous kernels) | `ai-01:CoursIA` (priorite) | - |
-| Training CNN moyen (~7M, batch 128) | po-2024 / po-2025 / po-2026 (3080 16GB) | mixed precision FP16, attention batch |
-| Training CNN gros (>10M, batch >256) | ai-01 GPU 2 | po-2023 eGPU 3090 si dispo |
-| Coordination cross-workspace EPITA | `ai-01:CoursIA` via `roosync_messages send` | exception "grand manitou" |
-
-**Règle implicite** : tous les agents sont polyvalents sur la **pédagogie**. Les **specialisations sont infra/tokens/hardware**. ai-01 doit pouvoir tester partout (priorite pour installer envs manquants).
-
-## Dispatch via Epic GitHub (sprints multi-stages)
-
-Pour tout sprint / curriculum >= 3 étapes, creer **Epic GitHub** + sub-issues numerotees AVANT de dispatcher. Les agents lisent l'issue, voient leur prochain step, livrent la PR liee, prennent le step suivant **sans re-demander la coord**.
-
-| Element | Format |
-|---------|--------|
-| Epic title | `[Epic] <Nom-curriculum> - <duration estimee>` |
-| Epic body | objectif + tableau stages (S1..SN) + dependencies graph + methodologie |
-| Epic labels | `epic`, `<domain>` (ex `ml-trading`, `lean-prover`) |
-| Sub-issue title | `S<N> - <objectif> (<agent cible>)` |
-| Sub-issue body | prerequis (cite stage precedent), deliverables, gate GO/NO-GO verifiable, criteres methodologie (multi-seed, walk-forward, OOS), branch name attendu `feature/sN-<topic>` |
-| Sub-issue labels | `stage-sN`, `<domain>` |
-| Sub-issue linker | `Depends on #<previous>`, `Part of #<epic>` |
-| Dispatch RooSync | 5 lignes max, pointeur vers issue, "Suivant = #<N+1> auto-dechaine apres ta PR mergee" |
-
-**Anti-pattern interdit** : dispatch `roosync_messages send` decrivant une seule mission sans lien GitHub vers Epic ou sub-issue, sur sprint multi-stages.
-
-**Exception** : missions one-shot < 30 min ou hotfix urgent restent en RooSync direct.
-
-## Délégation — mapping `model` → moteur, par machine
-
-Le mapping du `model` explicite (`sonnet` / `haiku`) vers le moteur sous-jacent dépend de la machine d'exécution. Raisonner en **tiers** (intermédiaire / léger), pas en nom de modèle : le principe de [`model-delegation.md`](../../.claude/rules/model-delegation.md) — déléguer le read-heavy borné, garder la décision, modèle explicite obligatoire — est invariant.
-
-| Machine | `sonnet` (tier intermédiaire) | `haiku` (tier léger) |
-|---|---|---|
-| ai-01 | GLM-5.1 | Qwen 3.6 local |
-| po-2023 | ZAI GLM-5.1 | MiniMax M3 |
-| autres workers po-* | voir `roosync_inventory` | voir `roosync_inventory` |
-
-MiniMax M3 (déployé sur `po-2023` depuis 2026-07-02, mandat user) remplace Qwen 3.6 sur le tier `haiku` pour cette lane : les sous-agents `model: "haiku"` invoqués depuis po-2023 sont exécutés par MiniMax M3. Seul le moteur change, pas la règle de qualité.
-
-### Moteur de main-loop par lane
-
-Le tableau précédent décrit les **sous-agents** ; il ne décrit pas le moteur de la boucle principale. Le rôle et les droits restent attachés à la lane, jamais inférés depuis le moteur ou le suffixe du workspace.
-
-| Lane | Moteur de main-loop | Rôle |
-|---|---|---|
-| `myia-ai-01:CoursIA` | Opus | coordinateur : décisions, merges et fermetures |
-| `myia-po-2025:CoursIA` | Sol (`gpt-5.6-sol`) | worker d'élite |
-| `myia-po-2025:CoursIA-2` | Sol (`gpt-5.6-sol`) | adjoint : vérifications pré-fermeture et preflights, sans merge ni fermeture |
-| autres lanes `*:CoursIA` | slot `sonnet` → GLM, sans failover | workers |
-| autres lanes `*:CoursIA-2` | slot `haiku` → MiniMax, régime nominal | workers |
-
-Le suffixe `CoursIA-2` n'implique donc ni MiniMax ni un droit de fermeture. L'adjoint peut recevoir l'urne `delivered`, vérifier firsthand l'acceptance et poster sa preuve ; la fermeture effective reste signée par le coordinateur, conformément à la règle 6 de [`coordinator-discipline.md`](../../.claude/rules/coordinator-discipline.md).
-
-Deux lanes qui exécutent le même modèle peuvent donc avoir des autorités différentes : `myia-po-2025:CoursIA` produit des livrables, tandis que `myia-po-2025:CoursIA-2` assiste la vérification. Toute autorisation terminale se lit dans la règle de rôle, jamais dans le nom du moteur.
-
-## Capacité vision — router le QA visuel vers MiniMax (lanes CoursIA-2) ou ai-01, jamais GLM
-
-Mandat user 2026-07-11. **MiniMax M3** (main-loop des lanes CoursIA-2 sauf `myia-po-2025:CoursIA-2`, qui tourne Sol) et **ai-01** (Opus) ont des capacités de **vision** que **ZAI GLM-5.1** (lanes CoursIA) n'a pas. Objectif : que nos README et notebooks **rendent bien visuellement**.
-
-**Routage capability-driven, PAS token-driven.** Distinct de [[feedback-token-economy-anthropic-only]] : on route vers MiniMax **pour sa vision** — une capacité que GLM n'a pas — pas pour économiser. C'est le cas légitime « meilleur outil pour la tâche », pas un fallback dégradé.
-
-- **Règle.** Toute tâche dont la valeur dépend du **rendu visuel** (galeries de figures README, plots générés par notebook, sorties d'images GenAI, layout de slides, diagrammes) voit son **QA visuel** routé vers une lane **qui voit** — une lane CoursIA-2 sous MiniMax, ou **ai-01**. **Jamais** vérifié text-only sur une lane GLM : elle ne voit pas.
-- **Mécanisme concret.** Un `Read` sur un fichier image (`.png`/`.webp`/`.jpg`), ou sur un screenshot (Playwright render → screenshot → `Read`, ou `mcp__sk-agent__call_agent` avec `attachment=<chemin de l'image>` — sk-agent n'expose plus d'outil `analyze_image` dédié, mesuré 2026-09-29), insère des blocs image que MiniMax/Opus interprètent. Un `test -f` confirme l'**existence**, PAS le **rendu** — seul le regard distingue une vraie figure d'un placeholder plat, blanc ou cassé.
-- **Couplage ai-01 ↔ MiniMax (la « double vision » du mandat).** MiniMax fait le **balayage en volume** (audit read-only de N figures → liste de défauts : cassées / blanches / placeholder / alt-text incohérent / overflow slide) ; ai-01 **valide la liste et tranche au merge-gate** (regarde effectivement les figures d'une PR avant merge). Déléguer le sweep borné, garder le jugement — le sweep visuel est read-only, donc **sans collision** avec la lane qui possède la substance : le fix repart au owner.
-- **Classe de défaut à attraper** (cf [`sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) Prong A) : une figure réduite à des blocs de couleur plats / image blanche / placeholder / render cassé **alors que le vrai outil était invocable** (stack GenAI, matplotlib, solveur) → verdict RECOVERABLE-MACHINE ou -LOCAL, **régénérer**, jamais consacrer.
-
-**Incident fondateur** : `GenAI/Image/assets/readme/workflow-orchestration.png` — 3 blocs plats olive/violet/vert labellisés « sd35 photorealistic / watercolor / anime », c'est-à-dire une sortie dégénérée et non des images générées. Le fichier a passé le gate « existe sur disque » sans encombre ; il a été attrapé au **premier regard** (ai-01, 2026-07-11).
-
-## Pointeurs cross-doc
-
-- Cycle de vie / diagnostic des serveurs MCP : [architecture_mcp_roo.md](architecture_mcp_roo.md) — inventaire des 15 outils roo-state-manager : [HARNESS-OVERVIEW.md §2](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md)
-- Règles de coordination Git + dashboard : [CLAUDE.md](../../CLAUDE.md) section A
-- Calendrier enseignement + scope ecoles : [docs/teaching-context.md](teaching-context.md)
-- Training BG avec checkpoints : `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (classe `TrainingCheckpoint` ; 18 tests PR #7454, fixes GPU-thermal #7335/#7454/#7456 ; le wrapper outer-supervisor subprocess `scripts/training/train_with_checkpoints.py` documenté n'a jamais été créé — utiliser `gpu_training.py` directement)
-- QC backtest + MCP Docker : [docs/qc/quantconnect.md](../qc/quantconnect.md)
-- Lean prover BG forensic protocol : [docs/lean/prover_iteration_history.md](../lean/prover_iteration_history.md)
+## Capacités de service
+
+- **QuantConnect MCP** (`quantconnect/mcp-server`, jetons sur `po-2024` et `po-2026`) : au plus 10 appels par minute pour **toute** la flotte ; annoncer un backtest sur le dashboard avant de le lancer. Détail : [quantconnect.md](../qc/quantconnect.md).
+- **GenAI image, audio, vidéo** (`po-2023`) : registre des services, ports et sous-domaines dans [genai-services.md](../genai/genai-services.md). Un notebook qui appelle ces services se valide contre eux, pas contre une sortie de substitution.
+- **Embedding** (`po-2026`, Qwen3-Embedding-4B AWQ, port `8004`) : consommable depuis le LAN d'ai-01. Son rapatriement aux côtés du vLLM est à l'étude.
+- **Lean et Mathlib** : installables sur toutes les machines (CLAUDE.md §F). Sur ai-01, un `lake build` vise une cible, jamais le lake entier.
+
+## Pointeurs
+
+- Circulation entre coordinateur, titulaire et secrétaire : [tricephale-circulation.md](tricephale-circulation.md)
+- Délégation à des sous-agents et capacité de vision : [model-delegation.md](../../.claude/rules/model-delegation.md)
+- Bots relecteurs : [bot-review-harness.md](bot-review-harness.md)
+- Serveurs MCP, cycle de vie et diagnostic : [architecture_mcp_roo.md](architecture_mcp_roo.md)
+- Kernels et environnements : [kernels-runtime.md](kernels-runtime.md)
+- Services GenAI : [genai-services.md](../genai/genai-services.md)
+- QuantConnect : [quantconnect.md](../qc/quantconnect.md)
+- Prouveur Lean : [prover_iteration_history.md](../lean/prover_iteration_history.md)
