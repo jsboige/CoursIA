@@ -4219,26 +4219,17 @@ def fetch_latest_claim_stamps_bulk(
 ) -> tuple[dict[int, str | None], str | None]:
     """Stamp canonique par issue, une seule requete GraphQL multiplexee.
 
-    Symptome mesure c.1113 : ``settle_belt_head`` appelait ``latest_claim_stamp``
-    jusqu'a ``belt_check_window * 3 + 12 = 36 a 54`` fois, chacune un round-trip
-    ``gh issue view N --json comments`` (~1.4 s par appel, ~37 Ko de charge
-    par issue tres commentee). Sur le tapis roulant par defaut, c'etait un
-    minimum de 50 s en pure sonde, depassant le budget cron de 30 s du worker
-    et donnant un picker qui "stall" -- 1 ligne au demarrage (la banniere),
-    puis rien pendant 1-2 minutes, puis exit 0 avec un tapis vide ou biaise
-    (cf `proactive-coordination.md` regle 7, `lane-claim-protocol.md` regle 1).
-    Ce chemin remplace ces 36-54 requetes par UNE requete GraphQL
-    (``gh api graphql``), aliasant chaque issue par ``i<number>`` et
-    remontant ses 100 plus recents commentaires. Cout : ~3 s pour 36 issues
-    le 2026-10-06, mesure sur origin/main (cf memo c.1113 §4).
+    Remplace ``settle_belt_head`` qui appelait ``latest_claim_stamp`` jusqu'a
+    ``belt_check_window * 3 + 12 = 36 a 54`` fois, chacune un round-trip
+    ``gh issue view N --json comments`` (~1.4 s/issue) : cout total ~50 s
+    minimum, qui depasse le budget cron 30 s du worker et fait "stall"
+    le tapis. Une requete ``gh api graphql`` multiplexee sur N issues
+    retombe ce cout a ~3 s pour 36 issues.
 
-    Cache : TTL = ``VISITS_CACHE_TTL_SECONDS`` (15 min). Le pick est execute
-    plusieurs fois par session par une meme lane, et la sonde ne depend
-    que du flux de claims/sous-issues -- pas d'un phenomene rapide. Le hit
-    en mode ``auto`` est ``verified=False`` par defaut (la sonde de probe
-    n'est pas branchee ici -- l'ajout d'une sonde est une future PR, le
-    gain de cette PR-ci est deja suffisant) ; un verdict ``stale`` sert le
-    hit anterieur si le refresh tombe, ``miss`` recharge.
+    Cache : TTL = ``VISITS_CACHE_TTL_SECONDS`` (15 min). Le hit en mode
+    ``auto`` est ``verified=False`` par defaut (pas de sonde de probe
+    branchee -- l'ajout est une future PR). ``stale`` sert le hit
+    anterieur si le refresh tombe, ``miss`` recharge.
 
     Erreurs :
     - ``subprocess.CalledProcessError`` / ``TimeoutExpired`` / ``OSError`` :
