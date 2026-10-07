@@ -77,8 +77,14 @@ _NARRATOR_COSYVOICE3_ROUTING: bool = os.getenv("NARRATOR_COSYVOICE3_ROUTING", "0
 # degenerate-render guard. The pre-guard run had written 9 narrator MP3s of
 # ~0.10 s -- one speech token, up to 560 chars/s -- while reporting them as
 # generated; a cached segment never enters _synthesize_narrator_cosyvoice3,
-# so no guard placed there can ever see them.
-_CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr-v2"
+# so no guard placed there can ever see them. v3 = the tag-strip
+# fix (be7aa641d5): _strip_brackets_for_qwen now replaces a tag with a
+# space instead of eating it with the following whitespace. The composed
+# text (tags included) is unchanged, so its hash -- the other cache key --
+# cannot see the fix; only this sentinel re-renders the glued narrators
+# (measured: 16/20 sampled segments carried omissions traced to glue
+# points like "route,[short pause] quand" -> "route,quand").
+_CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr-v3"
 
 # Engine -> reference_id sentinel. The narrator cache is keyed on it
 # (#19692): an MP3 rendered by one engine is never served for another.
