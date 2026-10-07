@@ -127,7 +127,6 @@ def test_cv3_unavailable_is_runtime_error():
     from v4.p5_tts import NarratorCosyVoice3Unavailable, NarratorQwenUnavailable
 
     assert issubclass(NarratorCosyVoice3Unavailable, RuntimeError)
-    assert issubclass(NarratorCosyVoice3Unavailable, RuntimeError)
     assert NarratorCosyVoice3Unavailable is not NarratorQwenUnavailable
 
 
