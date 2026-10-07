@@ -20,6 +20,60 @@ LOCK="$BASE/pool.lock"
 TOOLCACHE_BASE="$BASE/toolcache"
 export RUNNER_TOOL_CACHE="${RUNNER_TOOL_CACHE:-$TOOLCACHE_BASE/default}"
 mkdir -p "$BASE"
+
+# --- Mint du registration token, et sonde testable (POOL_PROBE) --------------
+# Ce bloc vit AVANT la redirection vers pool.log et AVANT le verrou de singleton :
+# une sonde lancee pendant que le pool tourne serait sinon rejetee par
+# « pool deja actif » avant d'avoir exerce ce qu'elle mesure. La sonde n'ouvre
+# aucun slot et n'ecrit rien hors de son propre stdout/stderr.
+MINT_ATTEMPTS="${MINT_ATTEMPTS:-4}"
+
+# mint_token — registration token, avec discrimination transitoire / terminal.
+# Porte au pool NATIF la doctrine que le superviseur Docker a recue par #15154
+# (#16086 pour la classification, #19597 pour le compte nomme) : 4xx hors 408 =
+# terminal, reseau / 5xx = retry. Le pool natif ne l'avait jamais recue.
+#
+# Mesure du 2026-10-07 sur pool.log (310 echecs depuis le 28/09, tous slots) :
+#   - 305 precedes d'un `UtilAcceptVsock:271: accept4 failed 110` — ETIMEDOUT du
+#     canal d'interop WSL -> gh.exe, transitoire par nature ;
+#   - 5 restants : reponses tronquees (`unexpected EOF`, `unexpected end of JSON
+#     input`) et un crash de gh.exe cote Windows — transitoires aussi.
+# AUCUN n'etait structurel. La forme mono-coup rendait pourtant le slot au tick
+# suivant du superviseur (30 s) a chaque hoquet : 247 cycles de slot perdus dans
+# la seule fenetre 05/10 23h -> 06/10 02h — et le log ne nommait pas la cause.
+mint_token() {
+  local attempt=1 out tok cause
+  while :; do
+    out="$(gh.exe api -X POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>&1)"
+    # Un registration token est une ligne alphanumerique d'au moins 20 caracteres ;
+    # toute autre sortie est un message d'erreur (ou du vide — interop muette).
+    tok="$(printf '%s' "$out" | tr -d '\r' | grep -m1 -oE '^[A-Za-z0-9]{20,}$')"
+    if [ -n "$tok" ]; then printf '%s' "$tok"; return 0; fi
+    cause="$(printf '%s' "$out" | tr '\n' ' ' | cut -c1-200)"
+    [ -n "$cause" ] || cause="<sortie vide : interop WSL->gh.exe muette>"
+    # Cause structurelle : le compte n'a pas le droit sur les endpoints runners.
+    # Ni le retry ni l'attente ne la levent (#15154) — terminal immediat.
+    if printf '%s' "$out" | grep -qE 'HTTP 40[134]|must have repository|Resource not accessible|Bad credentials'; then
+      echo "$(date -Is) mint token TERMINAL (droits du compte) — $cause"
+      return 1
+    fi
+    if [ "$attempt" -ge "$MINT_ATTEMPTS" ]; then
+      echo "$(date -Is) mint token epuise apres $MINT_ATTEMPTS tentatives (transitoire) — $cause"
+      return 1
+    fi
+    echo "$(date -Is) mint token transitoire (tentative $attempt/$MINT_ATTEMPTS) — $cause ; essai suivant dans $((attempt * 2))s"
+    sleep $((attempt * 2))
+    attempt=$((attempt + 1))
+  done
+}
+
+if [ -n "${POOL_PROBE:-}" ]; then
+  case "$POOL_PROBE" in
+    mint-token) mint_token; rc=$?; echo "$(date -Is) PROBE mint-token rc=$rc"; exit $rc ;;
+    *) echo "$(date -Is) PROBE inconnue: $POOL_PROBE"; exit 2 ;;
+  esac
+fi
+
 exec >>"$BASE/pool.log" 2>&1
 
 # Singleton: la tâche planifiee a RestartCount=3 — jamais deux superviseurs
@@ -49,8 +103,6 @@ export PATH="$HOME/.local/bin:$PATH"
 # Miroir en ~/.gitconfig (pose le 28/09) — l'env reste le porteur durable du contrat.
 export GIT_HTTP_LOW_SPEED_LIMIT=1024
 export GIT_HTTP_LOW_SPEED_TIME=90
-
-mint_token() { gh.exe api -X POST "repos/$REPO/actions/runners/registration-token" --jq .token; }
 
 # Contrat de l'image, volet BINAIRES. Le pool ne telecharge PAS `gh` (l'image l'epingle par SHA-256 :
 # un telechargement non verifie serait un maillon de supply chain pour rien) — il cree le seul lien
