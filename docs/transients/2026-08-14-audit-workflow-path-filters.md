@@ -1,3 +1,5 @@
+> RAPPORT — 2026-08-14 — audit des filtres de chemin des workflows (présentation) — figé
+
 # Audit workflow path-filters
 
 Rapports d'audit sur la couverture `pull_request.paths` / `pull_request.paths-ignore`
