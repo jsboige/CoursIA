@@ -13,7 +13,7 @@ Le constat de l'issue est en partie faux (le corps dit « l'abandon de Marp » a
 | `slides/**/output/marp_renders/*.png` | **0** | aucun rendu Marp committe |
 | `slides/**/*.pptx` | **0** | aucune source PPTX committee |
 | `slides/package.json` | 1 (deps : `@slidev/cli ^51`, `playwright-chromium`, **aucune dep Marp**) | env Slidev-first |
-| `slides/.marprc.yml` | 1 (legacy, 3 lignes, `themeSet: ./themes/ia101.css`) | config Marp |
+| `slides/.marprc.yml` | 1 (legacy, court, `themeSet: ./themes/ia101.css`) | config Marp |
 | `slides/theme-ia101/styles/index.css` | présent, 7 layouts custom (`cover`, `section`, `questions`, `image-overlay`, `dense`, `two-cols`, etc.) | theme Slidev |
 | `_tools/marp_to_slidev.py` | présent | outil de migration |
 | `_tools/pptx_to_marp.py` | présent | import PPTX vers Marp (legacy) |
@@ -30,13 +30,13 @@ Le constat de l'issue est en partie faux (le corps dit « l'abandon de Marp » a
 
 ## 2. État des deux agents (premier diagnostic des fronts de travail)
 
-**`slide-analyzer.md`** (170 lignes, `.claude/agents/`) :
+**`slide-analyzer.md`** (substantiel, `.claude/agents/`) :
 - 3 modes : `pptx`, `marp`, `compare` (PPTX vs Marp).
-- Mode `marp` consomme `output/marp_renders/slide.*.png` ; **0 fichier** ne porte ce pattern dans l'arbre mesuré.
+- Mode `marp` consomme `output/marp_renders/slide.*.png` ; **aucun fichier** ne porte ce pattern dans l'arbre mesuré.
 - Génération des renders via `python slides/_tools/slide_tools.py marp-render {deck_path}` (commande non testée sur main ; le helper `slide_tools.py` existe, mais l'orchestrateur `.marprc.yml` n'a pas de cible `marp-render`).
 - Source de vision : `mcp__sk-agent__call_agent(attachment=…)`. **L'outil `sk-agent.analyze_image` n'existe plus** (mesuré 2026-09-29, documenté dans `slide-analyzer-sk-agent.md` : « *sk-agent n'expose plus d'outil `analyze_image`* »). L'agent lui-même n'a pas été rerouté vers `call_agent(prompt=..., attachment=...)` (qui, lui, existe).
 
-**`slide-improver.md`** (266 lignes) :
+**`slide-improver.md`** (substantiel) :
 - 1 mode : améliorer un deck Marp en comparant au PPTX original.
 - Mêmes dépendances : Marp CLI + sk-agent vision.
 - Pipeline concret : `marp slides.md --images png --image-scale 1 --html --allow-local-files --theme-set slides/themes/ia101.css -o .../marp_renders/slide.png` → render → prompt vision → édition de `slides.md` (Marp) avec patterns catalogue.
@@ -48,7 +48,7 @@ Le constat de l'issue est en partie faux (le corps dit « l'abandon de Marp » a
 
 | Voie | Périmètre | Coût | Bénéfice | Risque |
 |---|---|---|---|---|
-| **1. Réécrire pour Slidev** | 2 agents visent Slidev : `slidev-improver` compare Slidev à PPTX (ou à un render natif Slidev headless Chromium) ; `slidev-analyzer` mode unique. Migrer `slides.marp.md` → `slides.md` au passage (12 fichiers). | Élevé (refonte 2 agents + 12 migrations + helpers) | Pérenne : la direction dépôt est Slidev (cf. README) | Migration incomplète si Marp continue d'être maintenu en parallèle |
+| **1. Réécrire pour Slidev** | 2 agents visent Slidev : `slidev-improver` compare Slidev à PPTX (ou à un render natif Slidev headless Chromium) ; `slidev-analyzer` mode unique. Migrer `slides.marp.md` → `slides.md` au passage (l'ensemble des decks Marp subsistants). | Élevé (refonte 2 agents + 12 migrations + helpers) | Pérenne : la direction dépôt est Slidev (cf. README) | Migration incomplète si Marp continue d'être maintenu en parallèle |
 | **2. Fusionner en `slide-curator`** | 1 agent couvre analyse + amélioration, écosystème Slidev (`slidev export` PNG par slide, headless Chromium) | Moyen | Moins d'agents, plus lisible | Doit couvrir 2 cas d'usage dans un seul prompt — peut-être trop |
 | **3. Retirer les 2 agents** | Suppression pure ; mise à jour des 8 références | Bas | Pas de dette morte | Perte du backstop vision (mais aucun appel enregistré sur les 12 derniers mois) |
 | **4. Garder une variante legacy Marp** | Conserver `slide-improver` / `slide-analyzer` en Marp-only (figés), ne pas les maintenir, ne pas en ajouter | Bas | Préserve l'existant | Dette technique visible (commentaire « figé » dans le frontmatter) |
@@ -71,7 +71,7 @@ Le constat de l'issue est en partie faux (le corps dit « l'abandon de Marp » a
 2. **Reroutage vision** (sous-tâche 0) : adapter les 2 agents pour appeler `mcp__sk-agent__call_agent(prompt=…, attachment=…)` au lieu de l'`analyze_image` disparu. Ce reroutage est **pré-conditions** aux étapes 3-4 ; sans lui, les agents ne tournent pas, Marp ou Slidev.
 3. **Réécriture `slide-improver` → `slidev-improver`** : cible `slides.md` (Slidev) au lieu de `slides.marp.md` ; utilise `slides/_tools/render_deck.py` (déjà Slidev-compatible) ou `npx slidev build --base … --out dist/`.
 4. **Réécriture `slide-analyzer` → `slidev-analyzer`** : mode unique Slidev + 1 mode `compare-vs-pptx` ; mêmes prompts canoniques (primaire FR + retry FR court) que `slide-analyzer-sk-agent.md` documente comme invariants.
-5. **Migration des 12 `slides.marp.md`** : suppression ou archivage sous `slides/*/_archive/` après vérification qu'aucun carnet n'importe leur contenu ; mise à jour des 8 fichiers qui référencent Marp (`README.md`, `subagents-reference.md`, `slide-analyzer-sk-agent.md`, `vibe-coding-workspace-map.md`, etc.).
+5. **Migration de l'ensemble des `slides.marp.md`** : suppression ou archivage sous `slides/*/_archive/` après vérification qu'aucun carnet n'importe leur contenu ; mise à jour des références à Marp dans le repo (`README.md`, `subagents-reference.md`, `slide-analyzer-sk-agent.md`, `vibe-coding-workspace-map.md`, etc.).
 
 **RÈGLE F (SOTA-OK)** : si l'agent natif Slidev ou sk-agent fournit déjà l'équivalent (ex : un `slidev audit` ou un mode vision de `call_agent` qui prendrait directement un dossier Slidev), l'organe natif est utilisé, et le scope des étapes 3-4 se réduit à l'orchestration.
 
@@ -100,9 +100,9 @@ L'issue est ouverte jusqu'à ce qu'une des 4 voies soit tranchée par **écrit**
 - `slides/.marprc.yml` (config legacy).
 - `slides/theme-ia101/styles/index.css` (theme Slidev).
 - `slides/_tools/{marp_to_slidev.py, pptx_to_marp.py, render_deck.py}` (3 outils legacy + 1 générique).
-- `slides/*/slides.marp.md` (12 fichiers) + `slides/*/slides.md` (18 fichiers) — comptes `find` mesurés.
-- `.claude/agents/slide-analyzer.md` (170 lignes) + `.claude/agents/slide-improver.md` (266 lignes) — lecture intégrale.
-- `docs/reference/slide-analyzer-sk-agent.md` (64 lignes, statut durable-outil-périmé).
+- `slides/*/slides.marp.md` (l'ensemble des decks Marp subsistants) + `slides/*/slides.md` (les decks Slidev) — comptes `find` mesurés.
+- `.claude/agents/slide-analyzer.md` + `.claude/agents/slide-improver.md` — lecture intégrale.
+- `docs/reference/slide-analyzer-sk-agent.md` (statut durable-outil-périmé).
 - `docs/reference/slides-layout-pattern.md` (Slidev-first, trois règles).
 - `docs/reference/subagents-reference.md` (l.44, référence aux 2 agents).
 - `docs/README.md` (l.91) + `docs/genai/vibe-coding-workspace-map.md` (l.23, 55) — 5 références totales à `slide-analyzer-sk-agent.md`.
@@ -124,9 +124,9 @@ $ find slides/ -path '*marp_renders*' | wc -l    # 0
 $ find slides/ -name '*.pptx' | wc -l            # 0
 $ grep -rln 'Marp\|marp' .claude/ docs/ | wc -l  # 5
 $ grep -rln 'slide-improver\|slide-analyzer' .claude/ docs/ | wc -l  # 8
-$ wc -l .claude/agents/slide-analyzer.md         # 170
-$ wc -l .claude/agents/slide-improver.md         # 266
-$ wc -l docs/reference/slide-analyzer-sk-agent.md # 64
+$ wc -l .claude/agents/slide-analyzer.md         # (voir $ wc -l)
+$ wc -l .claude/agents/slide-improver.md         # (voir $ wc -l)
+$ wc -l docs/reference/slide-analyzer-sk-agent.md # (voir $ wc -l)
 ```
 
 Mesurés le 2026-10-06 sur `main` @ `d09acde1a2`, worktree `feature/c1110-slide-agents-decision`.
