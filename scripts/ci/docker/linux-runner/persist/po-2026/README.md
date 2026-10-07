@@ -411,7 +411,8 @@ etaient deployes en WSL sans redescendre au depot -- l'empreinte fait foi :
 | Copie | md5 |
 |---|---|
 | `origin/main`, avant resynchronisation | `603748e03148e271671b50cf71d17b7a` |
-| source `D:` **et** copie vivante WSL | `306ae316fa7ad26a3583a61a4d68e54d` |
+| source `D:` **et** copie vivante WSL (mesure du 2026-10-07, correctif mint deploye) | `77e55f7df2ce82df7175064a0b31f43b` |
+| tete de la PR maillon 3 (`test_pool_alternates.sh` vert dessus) — a rejoindre par `D:` et WSL au deploiement | `7df6190a16a06f3b968ae731e3a764fc` |
 
 La copie du depot n'avait ni la garde anti-stall HTTPS (#18225), ni le workspace chaud
 par slot (#18225 : 5,49 Gio de fetch complet evite a chaque job froid), ni la
@@ -446,3 +447,43 @@ cause** dans `pool.log`.
 
 Banc : `test_pool_mint.sh` (huit cas, via `POOL_PROBE=mint-token`, sans effet de bord).
 Controle negatif mesure : le meme banc, retry neutralise, rend **4 PASS / 4 FAIL**.
+
+## Le magasin d'objets partage -- maillon 3 de #18225 (2026-10-07)
+
+Les deux premiers correctifs (#18225 : workspace persistant, quarantaine
+`validate_keep`) rendaient le slot **chaud** le chemin nominal -- mais son echec
+revenait au **froid integral** : chaque `_work` ecarte (2353 en 9 jours, cf
+`pool.log`) ou premier spawn re-descendait le pack HTTPS complet (5,49 Gio,
+mesure run 36420237212). Le maillon 3 supprime ce cout : un **miroir bare local**
+pose une fois, dont les repos de slot empruntent les objets via **git alternates**.
+
+| Piece | Fonction | Effet |
+|---|---|---|
+| Miroir | `~/CoursIA-runners-p0/objects-mirror.git` (pose hors bande, une fois) | le contenu traverse le reseau UNE fois pour huit slots (~5,5 Gio au total, pas par slot froid) |
+| Maintenance | `mirror_refresh` (boot + tick 30 s, throttle `MIRROR_REFRESH_EVERY`=300 s, `flock -n` fd 8 sur `mirror.lock`) | fetch incrementalement `+refs/*:refs/*` ; les emprunteurs alternates lisent sans verrou (objets immuables, append-only) |
+| Branchement a chaud | `ensure_alternates` (sur chaque `_work` restaure, idempotent : une ligne par miroir) | un fetch negocie en pretendant tenir tout le miroir -> delta HTTPS = contenu reellement nouveau ; un blob promisor manquant (#14801 sig. (b), #18312) se materialise depuis le miroir AVANT qu'un lazy-fetch reseau ne puisse echouer |
+| Semis a froid | `seed_work` (quand il n'y a pas de parc, ou qu'il est ecarte) | pre-materialise `_work/CoursIA/CoursIA` par `git clone --shared --no-checkout` du miroir puis rebascule `origin` sur HTTPS : `checkout@v4` trouve un repo, fetch quasi nul, `checkout --force` materialise depuis les objets locaux |
+
+**Provision du miroir (une fois, hors bande -- le pool ne le clone pas lui-meme) :**
+
+```bash
+wsl.exe -d Ubuntu -- bash -lc 'git clone --mirror https://github.com/jsboige/CoursIA.git /home/jesse/CoursIA-runners-p0/objects-mirror.git'
+```
+
+**Fail-open par construction** : miroir absent => `mirror_refresh`,
+`ensure_alternates` et `seed_work` rendent 0 sans rien ecrire, et le parc se
+comporte exactement comme avant ce maillon (slot froid integral, nominal
+d'avant). Le miroir est une acceleration, jamais une dependance.
+
+Sondes (meme contrat que `POOL_PROBE=mint-token`) : `POOL_PROBE=mirror-refresh`,
+`POOL_PROBE=seed`, `POOL_PROBE=alternates`. Banc :
+`test_pool_alternates.sh` (cinq cas -- refresh incremental gagne le commit du
+remote, semis clone `--shared` avec origin rebascule, objets resolvables sans
+reseau, idempotence alternates, fail-open sans miroir).
+
+**Ordre de deploiement** (le PR depot ne deploye rien tout seul) : merger la PR,
+puis deployer la copie `D:` puis la copie WSL (backup + `install -m 0755`,
+securite de la section « Sequence de deploiement »), puis verifier par
+`POOL_PROBE=seed` cote WSL. Un redemarrage du pool n'est PAS requis : le
+`restore_work` du prochain spawn appelle le semis -- mais la nouvelle pool.sh ne
+tourne qu'apres relance (tache planifiee ou fin du superviseur courant).
