@@ -296,7 +296,7 @@ Palier extrait de la série 3 (accretion `03e-Plan-de-deformation` d'avant la re
 
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
-| 23a | [Biens publics non-linéaires](GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb) | Archetti-Scheuring 2012 (JTB 299 : 9-20) : sans assortiment, un équilibre polymorphe stable coexiste ; les 78 profils 2×2 de Rapoport-Guyer servent de carte d'entrée, le plan `(k, s)` de déformation porte la dynamique N-personnes. | Python | Licence |
+| 23a | [Biens publics non-linéaires](GameTheory-23a-Biens-Publics-Plan-Deformation-Python.html) | Archetti-Scheuring 2012 (JTB 299 : 9-20) : sans assortiment, un équilibre polymorphe stable coexiste ; les 78 profils 2×2 de Rapoport-Guyer servent de carte d'entrée, le plan `(k, s)` de déformation porte la dynamique N-personnes. | Python | Licence |
 
 ## Parcours transverses
 
