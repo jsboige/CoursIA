@@ -18,6 +18,7 @@ Run:
     python -m pytest scripts/tests/test_fetch_merged_prs_since.py
 """
 import io
+import math
 import shutil
 import subprocess
 import sys
@@ -198,6 +199,38 @@ def test_run_gh_argv_is_accepted_by_gh():
     assert not unknown, (
         "run_gh passe des options que `gh pr list` n'a pas : {} "
         "(c'est exactement la faute `--page`)".format(unknown))
+
+
+def test_run_gh_raises_timeout_expired_when_gh_does_not_finish(monkeypatch):
+    """#19643: a stuck `gh` (secondary rate limit, backoff silencieux) must
+    raise ``TimeoutExpired`` so the picker's `fetch_visits` can render the
+    vocabulary « tirage NON mesure » instead of a partial corpus labelled
+    complete. The default bound is `RUN_GH_TIMEOUT_S`; it is overridable.
+    """
+    # 1) le default applique la borne module
+    def too_slow(*a, **kw):
+        raise subprocess.TimeoutExpired(cmd=kw.get("args", a[0] if a else []),
+                                        timeout=kw.get("timeout"))
+    monkeypatch.setattr(subprocess, "run", too_slow)
+    with pytest.raises(subprocess.TimeoutExpired):
+        fmps.run_gh("2026-10-01", "2026-10-02")
+    # 2) l'appelant peut serrer la borne
+    with pytest.raises(subprocess.TimeoutExpired):
+        fmps.run_gh("2026-10-01", "2026-10-02", timeout=0.001)
+    # 3) math.inf desactive -- la borne n'est pas posee, l'appelant sait ce qu'il fait
+    captured = {}
+
+    def capture(*a, **kw):
+        captured["timeout"] = kw.get("timeout")
+        raise SystemExit  # ne touche pas le reseau
+
+    monkeypatch.setattr(subprocess, "run", capture)
+    try:
+        fmps.run_gh("2026-10-01", "2026-10-02", timeout=math.inf)
+    except SystemExit:
+        pass
+    assert captured["timeout"] is math.inf, (
+        f"timeout=inf doit etre transmis tel quel, pas coerce en {captured['timeout']!r}")
 
 
 def _bounds(start, end, k=3):
