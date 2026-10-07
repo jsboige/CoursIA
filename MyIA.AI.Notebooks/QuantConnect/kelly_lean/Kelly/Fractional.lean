@@ -49,30 +49,25 @@ open Real
     protecteur. -/
 lemma fractional_feasible (β : Bet) (c : ℝ) (hc0 : 0 ≤ c) (hc1 : c ≤ 1) :
     Feasible β (c * kellyFrac β) := by
-  obtain ⟨hfs_left, hfs_right⟩ := kellyFrac_feasible β
+  have hb := β.hb_pos
+  have hkf : kellyFrac β * β.b = β.b * β.p - (1 - β.p) := by
+    simp [kellyFrac, q]; field_simp [hb.ne']
   refine ⟨?_, ?_⟩
-  · -- -1/b < c·f*
-    -- Cas c = 0 : c·f* = 0 > -1/b (b > 0).
-    -- Cas c > 0 : on multiplie hfs_left par c ; puis -c/b ≥ -1/b (c ≤ 1, b > 0).
-    rcases eq_or_lt_of_le hc0 with rfl | hc0_pos
-    · -- c = 0 : c·f* = 0 > -1/b (b > 0)
+  · -- -1/b < c·f*  ⟺  -1 < c·f*·b  (b > 0), puis hkf ramène à de l'arithmétique
+    -- polynomiale close par nlinarith. Évite le case split c=0/c>0 qui cassait
+    -- sous Lean 4.33 (Decidable / mul_lt_mul_of_pos_left / linarith).
+    rw [div_lt_iff₀ hb, ← mul_assoc, mul_assoc c (kellyFrac β) β.b, hkf]
+    nlinarith [β.hp_pos, β.hp_lt_one, hb, hc0, hc1]
+  · -- c·f* < 1  ⟺  1 - c·f* > 0. On développe 1 - c·f* = c·(1-f*) + (1-c),
+    -- et (1-f*) > 0 vient de `kellyFrac_feasible`. nlinarith ferme.
+    have h1f : 1 - kellyFrac β = (1 - β.p) * (β.b + 1) / β.b := by
+      unfold kellyFrac q; field_simp [hb.ne']; ring
+    have h1f_pos : 0 < 1 - kellyFrac β := by
+      rw [h1f]
       positivity
-    · -- hfs_left : -1/b < f* ; hc0_pos : 0 < c ; donc c·f* > c·(-1/b) = -c/b
-      have h1 : c * (-(1 / β.b)) < c * kellyFrac β :=
-        mul_lt_mul_of_pos_left hfs_left hc0_pos
-      -- -c/b ≥ -1/b (puisque c ≤ 1 et b > 0)
-      have h2 : -(1 / β.b) ≤ c * (-(1 / β.b)) := by
-        rw [neg_mul]
-        exact neg_le_neg_iff.mpr (mul_le_mul_of_nonneg_right hc1 (one_div_nonneg.mpr β.hb_pos.le))
-      linarith
-  · -- c·f* < 1
-    -- Cas c = 0 : 0 < 1 trivialement.
-    -- Cas c > 0 : c·f* < c·1 = c ≤ 1.
-    rcases eq_or_lt_of_le hc0 with rfl | hc0_pos
-    · simp
-    · have h1 : c * kellyFrac β < c * 1 :=
-        mul_lt_mul_of_pos_left hfs_right hc0_pos
-      linarith [hc1]
+    have eq1 : 1 - c * kellyFrac β = c * (1 - kellyFrac β) + (1 - c) := by ring
+    rw [eq1]
+    nlinarith [h1f_pos, hc0, hc1]
 
 /-- **Inégalité fondamentale du *fractional Kelly*** : pour `c ∈ [0, 1]`,
     `growth(c·f*) ≤ growth(f*)`. C'est la justification formelle du
