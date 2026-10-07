@@ -38,7 +38,7 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-05 | [05-Gibbard-Satterthwaite](05-Gibbard-Satterthwaite.ipynb) | Gibbard-Satterthwaite sans mystère : la manipulation comme témoin (ex-GT-22, re-slot #12375) | 30 min | COMPLET |
 | SC-06 | [06-Mobius-Aggregation-Pouvoir-Manipulation](06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Möbius sur le treillis des coalitions : dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée (See #12204) | 40 min | COMPLET |
 | SC-07 | [07-Committees-Core](07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas Hare/Droop, certificats de paiement et règle de l'entropie harmonique (arXiv 2609.11912, See #16848) | 40 min | COMPLET |
-| SC-09 | [09-Committees-STV-Monroe-ChamberlinCourant](09-Committees-STV-Monroe-ChamberlinCourant.ipynb) | Comités multi-vainqueurs : STV (Hare 1857, polynomial), Monroe (1995, NP-dur, couverture exacte) et Chamberlin-Courant (1983, NP-dur, couverture au plus un), confrontation Z3 ILP (Handbook Computational Social Choice ch. 6, See #19371) | 50 min | COMPLET |
+| SC-09 | [09-Committees-STV-Monroe-ChamberlinCourant](09-Committees-STV-Monroe-ChamberlinCourant.html) | Comités multi-vainqueurs : STV (Hare 1857, polynomial), Monroe (1995, NP-dur, couverture exacte) et Chamberlin-Courant (1983, NP-dur, couverture au plus un), confrontation Z3 ILP (Handbook Computational Social Choice ch. 6, See #19371) | 50 min | COMPLET |
 
 **Durée totale** : ~6h05
 
