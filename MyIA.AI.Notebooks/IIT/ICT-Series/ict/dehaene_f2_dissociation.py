@@ -15,7 +15,7 @@ CONSTANTE à K variable, donc la signature d'accès est invariante à la
 résolution (proxy pour F2 falsifié sur ce substrat).
 
 Le test direct (K-sweep sur case 4 self/other) requiert les traces des
-bras principaux de self_model_minimal, qui sont GPU-only (Tell c.8236
+bras principaux de self_model_minimal, qui sont GPU-only (
 RECOVERABLE-MACHINE — po-2023/po-2024 GPU 24+ Go). Ce module pose la
 méthodologie et un proxy mesurable localement.
 
