@@ -3,7 +3,7 @@
   catalogue. scripts/notebook_tools/generate_parcours.py n'écrit que les
   5 pages catalogue (genai.md, ia-classique.md, ia-symbolique.md,
   trading.md, recherche.md) ; ce fichier suit la convention des pages
-  manuelles (comme _inventory.md, hors de la liste du générateur et du cron
+  manuelles (comme 2026-09-02-curriculum-inventory.md, hors de la liste du générateur et du cron
   catalog-cron.yml — le nom n'est AUCUN des cinq ids) et n'est jamais
   régénéré. Cf EPIC #13844 Phase 2 (pilote 2) et #15806.
 -->
@@ -12,7 +12,7 @@
 
 Deuxième des trois parcours narratifs pilotes de l'EPIC #13844 (Phase 2). Sa
 matière première est l'inventaire des embryons livré en Phase 0
-([_inventory.md](_inventory.md), entrées #8-14 et #35) ; sa forme généralise
+([2026-09-02-curriculum-inventory.md](../transients/2026-09-02-curriculum-inventory.md), entrées #8-14 et #35) ; sa forme généralise
 les « Parcours alternatifs » de GameTheory
 ([README](../../MyIA.AI.Notebooks/GameTheory/README.md) : durée annoncée,
 liste numérotée, clause de prérequis explicite) et sa rampe Lean reprend le
@@ -81,7 +81,7 @@ chiffre le minimum jouable — le *Natural Number Game* — à **3-4 h** (le par
 débutant complet, lecture seule, est chiffré 18-22 h et reste une extension,
 pas un prérequis). Colonne vertébrale + rampe NNG : **19 h 15 – 20 h 15**,
 d'où la fenêtre **~20 h** du titre. Le rythme « ~6 mois » de l'inventaire
-(_inventory.md:131) est un **espacement**, pas une durée : ~2 étapes par
+(2026-09-02-curriculum-inventory.md:133) est un **espacement**, pas une durée : ~2 étapes par
 semaine en travaillant sérieusement les exercices.
 
 ## Sortie concrète
@@ -175,7 +175,7 @@ d'entrée recommandée est le *Natural Number Game* (3-4 h,
 ## Portes de sortie (hors colonne vertébrale, citées)
 
 Le parcours déborde volontairement la colonne vertébrale : chaque famille
-voisine a son embryon recensé dans [_inventory.md](_inventory.md) et se prend
+voisine a son embryon recensé dans [2026-09-02-curriculum-inventory.md](../transients/2026-09-02-curriculum-inventory.md) et se prend
 comme suite naturelle, sans être comptée dans les ~20 h.
 
 - **Web sémantique** (~5 h profil Python) — le
@@ -215,5 +215,5 @@ découpage du bloc 1 vient du README Tweety (phases 1-5) ; l'ordre d'entrée
 et les companions du bloc 4 viennent de LEAN_PREREQUISITES et des fiches des
 séries concernées ; les durées sont les `duree_estimee` du catalogue, la
 fenêtre ~20 h est le compte double colonne vertébrale (16 h 15) + rampe NNG
-(3-4 h). Les mêmes embryons sont recensés dans [_inventory.md](_inventory.md)
+(3-4 h). Les mêmes embryons sont recensés dans [2026-09-02-curriculum-inventory.md](../transients/2026-09-02-curriculum-inventory.md)
 entrées #8-14, #35.
