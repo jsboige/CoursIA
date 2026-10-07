@@ -4,7 +4,7 @@
 
 ## Sections (8)
 
-1. **Cible** — convergence β/ν → 5/36 et τ' → 187/91 quand L → ∞
+1. **Cible** — convergence β/ν → 5/48 et τ' → 187/91 quand L → ∞
 2. **Architecture pipeline** — sweep L ∈ {128, 256} × 32 seeds × 5 p
 3. **Mesures effectuées** — 320 nouvelles simulations, ~48 s wall-clock
 4. **Verdict β/ν (6 L)** — log-log fit sur 6 points
@@ -18,7 +18,7 @@
 ## 1. Cible
 
 Vérifier que les **corrections d'échelle finie** qui faisaient dévier
-`β/ν = 0.102` (c.1104, 4 L) de la valeur asymptotique `5/36 ≈ 0.139`
+`β/ν = 0.102` (c.1104, 4 L) de la valeur asymptotique `5/48 ≈ 0.1042`
 s'atténuent quand on monte à `L = 128, 256`.
 
 **Hypothèse a priori** : sur 6 points au lieu de 4, le fit log-log devrait
@@ -62,10 +62,10 @@ mieux capturer la pente asymptotique, et `β/ν` devrait se rapprocher de
 ## 4. Verdict β/ν (6 L)
 
 **Régression log-log** sur `M(L, 1/2) / L²` vs `L` (6 points) :
-- `β/ν mesuré = 0.1065` (exact : 5/36 ≈ 0.1389)
+- `β/ν mesuré = 0.1065` (exact : 5/48 ≈ 0.1042)
 - `R² = 0.9635`
 - `std_err = 0.0104`
-- **Verdict** : `EN COURS` — la valeur s'est **légèrement améliorée** (0.102 → 0.1065) mais reste ~23% sous la valeur asymptotique.
+- **Verdict** : `PASS` (5/48 dans la fenêtre acceptance) — la valeur s'est **légèrement améliorée** (0.102 → 0.1065) mais reste +2% au-dessus de la cible 5/48 (cohérent à l'incertitude près, R² 0.964).
 
 **Cause** : les corrections d'échelle finie dominent encore à L ≤ 256. La convergence est **lente** : passer de 4 à 6 points n'a pas suffi à atteindre l'asymptote.
 
@@ -106,19 +106,19 @@ C'est la **preuve directe** de la loi d'échelle finie : `p_c(L) = 1/2 + c · L^
 
 ## 7. Verdict global
 
-**β/ν = 0.1065** : convergence **en cours** (cible 0.1389, R² = 0.964, std_err = 0.010). L'extension à L = 128, 256 n'a **pas suffi** à atteindre l'asymptote — la décroissance algébrique est visible mais les corrections d'échelle dominent encore.
+**β/ν = 0.1065** : convergence **en cours** (cible 0.1042, R² = 0.964, std_err = 0.010). L'extension à L = 128, 256 n'a **pas suffi** à atteindre l'asymptote — la décroissance algébrique est visible mais les corrections d'échelle dominent encore.
 
 **τ' = 2.189** (6 L) : **INCONCLUSIVE** au regard de l'acceptance initiale `τ' ∈ [2.0, 2.1]`. Aucune L ne sort simultanément τ' ∈ [2.0, 2.1] **et** R² ≥ 0.95 **et** au régime asymptotique. L=8 INCONCLUSIVE par R² (0.903), L=64 = 2.193 **hors** acceptance par le haut, L=128/256 au-dessus de 2.1. Le 03b **ne choisit pas** d'estimateur pour approcher la cible. Lecture détaillée §9.
 
 **p_c(L) → 1/2** : convergence **conforme** (5 L, monotone, écart 0.0016 à L = 256). Le seul verdict PASS de la PR.
 
-**Hypothèse a priori (c.1104 §1) — partiellement confirmée** : oui, l'ajout de L = 128, 256 rapproche les exposants des valeurs asymptotiques (β/ν 0.102 → 0.1065), mais la convergence est **lente et asymptotique**. Pour approcher `β/ν = 0.139` à 1% près, il faudrait vraisemblablement L ∈ {128, 256, 512, 1024}.
+**Hypothèse a priori (c.1104 §1) — partiellement confirmée** : oui, l'ajout de L = 128, 256 rapproche les exposants des valeurs asymptotiques (β/ν 0.102 → 0.1065), mais la convergence est **lente et asymptotique**. Pour approcher `β/ν = 0.1042` à 1% près, il faudrait vraisemblablement L ∈ {128, 256, 512, 1024}.
 
 **Convention descriptive (post-relecture po-2025, c.1136)** : aucune L n'atteint simultanément la cible et l'acceptance R². L'asymptote n'est **pas** tenue. La convergence est l'objet de la loi d'échelle finie, pas une coïncidence — ni une garantie atteinte sur L ≤ 256.
 
 ## 8. Limitations et perspectives
 
-1. **L = 512 nécessaire** : l'asymptote stricte (β/ν = 5/36 à 1% près) demanderait `L ∈ {128, 256, 512}`, soit ~2 min supplémentaires (L=512 × 32 seeds × 5 p ≈ 800 simulations × 1.2s/sim).
+1. **L = 512 nécessaire** : l'asymptote stricte (β/ν = 5/48 à 1% près) demanderait `L ∈ {128, 256, 512}`, soit ~2 min supplémentaires (L=512 × 32 seeds × 5 p ≈ 800 simulations × 1.2s/sim).
 2. **τ' biaisé par le bulk** : le fit de P(s) garde une composante non-asymptotique aux petites tailles. Un seuillage plus agressif (`s_min ~ L/4` au lieu du percentile 5) pourrait aider, mais reste à arbitrer.
 3. **scipy.sparse non utilisé** : `networkx.connected_components` reste O(N) par simulation ; à L = 1024 on basculerait sur `scipy.sparse.csgraph.connected_components` (~10× speed-up).
 4. **Seeds inhomogènes** : c.1104 utilisait 29 seeds, c.1105 en utilise 32. L'écart est faible mais pollue légèrement la combinaison. Une ré-exécution uniforme à 32 seeds pour L ∈ {8, 16, 32, 64} serait plus propre, mais coûte ~2 min.

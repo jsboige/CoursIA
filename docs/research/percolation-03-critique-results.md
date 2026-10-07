@@ -17,7 +17,7 @@
 ## 1. Cible
 
 Mesurer la **physique du point critique** de la percolation 2D — exposants
-`β/ν = 5/36` (Kesten 1980, exact), `τ' = 187/91` (Stauffer computer-exp),
+β/ν = 5/48 (Kesten 1980, exact), `τ' = 187/91` (Stauffer computer-exp),
 convergence `p_c(L) → 1/2` quand `L → ∞`.
 
 **Ce qui distingue 03 de 01** : 01 mesure le *géant* en régime `p > p_c`
@@ -54,7 +54,7 @@ convergence `p_c(L) → 1/2` quand `L → ∞`.
 ## 5. Verdict β/ν
 
 **Régression log-log** sur `M(L, 1/2) / L²` vs `L` :
-- `β/ν mesuré = 0.102` (exact : 5/36 ≈ 0.139)
+- `β/ν mesuré = 0.102` (exact: 5/48 ≈ 0.1042)
 - `R² = 0.946` — **INCONCLUSIVE** (R² < 0.95)
 - **Verdict** : `INCONCLUSIVE` — slope trop faible (~26% sous la valeur
   asymptotique), et le fit n'est pas statistiquement conclusif sur 4 points.
@@ -63,7 +63,7 @@ convergence `p_c(L) → 1/2` quand `L → ∞`.
 dominent encore. La loi `M(L, 1/2) / L² ~ L^{-β/ν}` n'est asymptotique
 que pour `L ≫ ξ` (longueur de corrélation). À `p = 1/2`, `ξ = ∞`, donc
 l'asymptote n'est jamais vraiment atteinte — il faut `L` arbitrairement
-grand pour approcher `β/ν = 5/36`.
+grand pour approcher β/ν = 5/48.
 
 ## 6. Verdict τ'
 
@@ -116,7 +116,7 @@ avec `1/ν = 3/4`. La convergence est conforme à la théorie.
 
 | Mesure | Valeur | Cible | R² | Verdict |
 |--------|--------|-------|---|---------|
-| `β/ν` (4 L, log-log) | 0.102 | 5/36 ≈ 0.139 | 0.946 | **INCONCLUSIVE** |
+| `β/ν` (4 L, log-log) | 0.102 | 5/48 ≈ 0.139 | 0.946 | **INCONCLUSIVE** |
 | `τ'` (4 L, moyenne brute) | 2.197 | 2.055 | — | PARTIEL (3/4 PASS) |
 | `τ'` (4 L, sans L=8) | 2.098 | 2.055 | ≥ 0.978 | PASS (écart 2.1%) |
 | `p_c(L)` convergence | 0.4513→0.4890 | → 1/2 monotone | — | CONFORME |
