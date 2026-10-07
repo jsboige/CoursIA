@@ -109,7 +109,7 @@ Les journaux des bras `article` et `capm` portent des refus d'ordres pour pouvoi
 | `capm` | 138 | 57 | 38 | 43 |
 | `staff` | 138 | 0 | 0 | 138 |
 
-En résolution journalière, un ordre au marché passé en séance s'exécute à la clôture. Le jour du rééquilibrage, la vente des titres qui ne sont plus retenus n'est donc pas encore exécutée quand partent les achats : les anciennes lignes occupent toujours la marge. À levier 2, l'achat d'un nouveau titre est alors refusé, et la vente, elle, s'exécute. Le bras `article` passe ainsi 56 mois sur 138 entièrement en liquidités, et 41 sur une seule ligne. Le 57ᵉ mois à deux refus garde une ligne presque pleine : l'écart à la cible y est de 1,04 ligne au total.
+En résolution journalière, un ordre au marché passé en séance s'exécute à la clôture. Le jour du rééquilibrage, la vente des titres qui ne sont plus retenus n'est donc pas encore exécutée quand partent les achats : les anciennes lignes occupent toujours la marge. À levier 2, l'achat d'un nouveau titre est alors refusé, et la vente, elle, s'exécute. Le bras `article` passe ainsi 56 mois sur 138 entièrement en liquidités, et 41 sur une seule ligne. Le 57ᵉ mois à deux refus garde une ligne presque pleine : l'écart à la cible y vaut 1,04 fois le poids d'une ligne.
 
 Les bras A et B mesurent donc le code tel qu'il tourne aujourd'hui sur Lean, et non la règle à levier 2 que décrit l'article. Leur verdict NO BEATS vaut pour ce code. Seul le bras C, sans refus, mesure la règle telle qu'elle est écrite, à levier 1. Il ne bat pas SPY non plus.
 
