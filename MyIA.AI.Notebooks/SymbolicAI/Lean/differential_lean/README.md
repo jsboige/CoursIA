@@ -62,9 +62,9 @@ dans la PR.
 
 <!-- MESURES:START -->
 Exécutées le **2026-10-07** sur `myia-po-2025`, **hors CI**, sur cette branche. Mathlib
-v4.33.1 était déjà présent dans le cache de la machine (`lake exe cache get` :
-« Already decompressed 8 690 file(s) ») — le temps de la visite est donc celui de
-l'élaboration, pas d'un téléchargement.
+v4.33.1 était déjà présent dans le cache de la machine (`lake exe cache get` ne
+télécharge rien) — le temps de la visite est donc celui de l'élaboration, pas d'un
+téléchargement.
 
 | Étape | rc | Temps | Pic RSS `lean.exe` |
 |---|---:|---:|---:|
@@ -76,7 +76,8 @@ l'élaboration, pas d'un téléchargement.
 | `lake build` (défaut : `DifferentialTour` + `_en`) | 0 | 70 s | 1 854 Mo |
 
 **Total ≈ 2 953 s (49 min)** pour la visite complète ; le build des trois fermetures à
-lui seul ≈ 2 359 s (39 min), **dominé par Bonnet–Myers** (383 modules, 31 min).
+lui seul ≈ 2 359 s (39 min), **dominé par Bonnet–Myers** (détail des fermetures dans
+la table ci-dessous).
 
 ### Fermetures d'imports (modules `DifferentialGeometry.*`, Mathlib exclu)
 
