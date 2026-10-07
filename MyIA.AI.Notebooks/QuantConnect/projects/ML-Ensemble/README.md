@@ -23,3 +23,4 @@ Stratégie ML d'ensemble combinant la régression Ridge, le Random Forest et le 
 ## Fichiers
 
 - `main.py` — Stratégie (`MLEnsembleAlgorithm`)
+- `quantbook.ipynb` - QuantBook de recherche : analyse de la stratégie d'ensemble ML
