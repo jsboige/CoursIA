@@ -405,19 +405,19 @@ vide confond.
 
 Le tableau ci-dessus annonce une copie `pool.sh` **byte-identique** a la source `D:`
 (mesure du 2026-09-22). Cette annonce etait **fausse depuis le 2026-09-28** : la copie
-du depot etait restee a la PR de livraison #17406 (131 lignes) pendant que trois
-correctifs etaient deployes en WSL sans redescendre au depot (191 lignes).
+du depot etait restee a la PR de livraison #17406 pendant que trois correctifs
+etaient deployes en WSL sans redescendre au depot -- l'empreinte fait foi :
 
-| Copie | Lignes | md5 |
-|---|---:|---|
-| `origin/main`, avant resynchronisation | 131 | `603748e03148e271671b50cf71d17b7a` |
-| source `D:` **et** copie vivante WSL | 191 | `306ae316fa7ad26a3583a61a4d68e54d` |
+| Copie | md5 |
+|---|---|
+| `origin/main`, avant resynchronisation | `603748e03148e271671b50cf71d17b7a` |
+| source `D:` **et** copie vivante WSL | `306ae316fa7ad26a3583a61a4d68e54d` |
 
 La copie du depot n'avait ni la garde anti-stall HTTPS (#18225), ni le workspace chaud
 par slot (#18225 : 5,49 Gio de fetch complet evite a chaque job froid), ni la
 quarantaine `validate_keep` (#14801). **Restaurer le pool depuis le depot
 reintroduisait donc les deux defauts** que ces correctifs reparent. `run-pool-po2026.sh`
-n'avait pas derive, lui : 31 lignes des deux cotes, `a14db6d6881d417dfb8eef309c639cd9`.
+n'avait pas derive, lui -- byte-identique des deux cotes (`a14db6d6881d417dfb8eef309c639cd9`).
 
 ## Le mint de token ne distinguait pas le transitoire du structurel
 
