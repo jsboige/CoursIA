@@ -23,6 +23,18 @@ Les séries couvrent ensemble le **cycle complet du raisonnement vérifiable** :
 
 Chaque série est autonome. Un fil rouge les traverse pourtant : du formalisme pur à la vérification certifiée, jusqu'au moment où le symbolique et le neuronal cessent d'être deux camps pour devenir deux couches d'un même système fiable.
 
+## Objectifs d'apprentissage
+
+À l'issue d'un parcours sur la famille **SymbolicAI**, le lecteur est capable de :
+
+1. **Représenter** la connaissance sous forme symbolique et la rendre manipulable par une machine — logiques formelles, révision de croyances, argumentation abstraite (Dung, ASPIC+, AGM, Pearl) côté [Tweety](Tweety/README.md) (cell.0 de `Tweety-01-Setup-Python.ipynb`) ; graphes RDF, interrogation SPARQL 1.1, ontologies RDFS/OWL, validation SHACL, JSON-LD et RDF-Star côté [SemanticWeb](SemanticWeb/README.md) (cell.0 de `SW-2b-Python-RDFBasics.ipynb`) ; analyse argumentative outillée (Toulmin, sophismes Walton, sémantiques de Dung) côté [Argument_Analysis](Argument_Analysis/README.md) (cell.0 de `Argumentation-00-Setup-Tweety-Python.ipynb`).
+2. **Prouver** la correction d'un énoncé par assistant de preuve interactif — types dépendants, isomorphisme de Curry-Howard, tactiques Lean, librairie Mathlib4 côté [Lean](Lean/README.md) (cell.0 de `Lean-01-Setup-Lean-Python.ipynb`) ; démonstration automatique en géométrie (vérification probabiliste, bases de Gröbner, méthode de Wu) côté Lean/Geometry (notebook `Geometry-01-From-Figure-To-Equation`).
+3. **Décider** la satisfiabilité et optimiser sous contraintes — encodeur SMT-LIB, preuves par `unsat`, arithmétique linéaire/non-linéaire, optimisation modulo théories côté [SMT](SMT/README.md) (cell.0 de `Z3-API/Z3-01-Introduction-Python.ipynb`) ; planification classique PDDL, recherche dans l'espace d'états, heuristiques, CP-SAT, planification temporelle et hiérarchique côté [Planners](Planners/README.md) (cell.0 de `00-Environment/Planners-0-Setup.ipynb`).
+4. **Exécuter** dans un monde simulé ou sur blockchain — agents autonomes, recherche heuristique et compromis expressivité/temps de recherche côté Planners (notebooks `Planners-1-*`) ; standards de jetons (ERC-20, ERC-721), DeFi, gouvernance on-chain, ZK, conservation de la valeur côté [SmartContracts](SmartContracts/README.md) (cell.0 de `00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb`).
+5. **Apprendre** à partir de connaissances plutôt que de données et **relier** le symbolique au neuronal — version space, explanation-based learning, programmation logique inductive (FOIL), automates, neuro-symbolique côté [SymbolicLearning](SymbolicLearning/README.md) (cell.0 de `SL-1-LogicalLearning.ipynb`) ; orchestration d'agents LLM validés par Tweety, détection de sophismes, prompting structuré côté Argument_Analysis (notebooks `Argumentation-04-*`).
+
+Chaque verbe se construit par accumulation : un lecteur qui ne suit qu'une série atteint un sous-ensemble, et c'est en croisant les huit qu'il couvre la carte complète. Les **flèches pleines** de la [carte de la famille](#carte-de-la-famille) ci-dessous matérialisent les ponts : une compétence acquise dans Tweety devient argument dans Argument_Analysis, un encodage SMT devient prouveur de borne dans Planners, une ontologie OWL devient garde-fou pour un LLM via GraphRAG.
+
 ## Comment lire ce README
 
 Le dépôt se lit à trois vitesses ([choisir sa vitesse de lecture](../../README.md#choisir-sa-vitesse-de-lecture)), et la famille SymbolicAI aussi :

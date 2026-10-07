@@ -16,7 +16,7 @@ recompilation post-C190 (`JvmDowngrader`, bytecode Java 15→8). Toutes les rece
 | `build-tweety-pl-shade.pom.xml` | POM aggregator Maven shade (produit le fat-jar) | Oui (reproductibilité) |
 | `build-TweetyShade.csproj` | Projet MSBuild `<IkvmReference>` (convertit le fat-jar en DLL) | Oui (reproductibilité) |
 
-## Fichiers — cluster `beliefdynamics` (notebook [`../Tweety-4-Belief-Revision-Csharp.ipynb`](../Tweety-4-Belief-Revision-Csharp.ipynb))
+## Fichiers — cluster `beliefdynamics` (notebook [`../Tweety-04-Belief-Revision-CSharp.ipynb`](../Tweety-04-Belief-Revision-CSharp.html))
 
 | Fichier | Rôle | Committé ? |
 |---------|------|-----------|
