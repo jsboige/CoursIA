@@ -12,7 +12,7 @@ du programme gradué #17544 (« que garantit "prouvé par Gröbner" ? »).
 |---|---|---|
 | `Geometry.MidpointHypotenuse` | Théorème du milieu de l'hypoténuse : équidistance du milieu aux trois sommets, rayon = hypoténuse/2 | `Geometry-01-From-Figure-To-Equation.ipynb` (fil rouge) |
 
-L'escalier d'entrée de la sous-série [`Geometry-00-Escalier-Entree-Lean-Python.ipynb`](../Geometry-00-Escalier-Entree-Lean-Python.ipynb) est le consommateur pédagogique de ce premier module : il part de la figure du 01, calcule avec `sympy`, puis monte jusqu'à la preuve formelle ci-dessus.
+L'escalier d'entrée de la sous-série [`Geometry-00-Escalier-Entree-Lean-Python.ipynb`](../Geometry-00-Escalier-Entree-Lean-Python.html) est le consommateur pédagogique de ce premier module : il part de la figure du 01, calcule avec `sympy`, puis monte jusqu'à la preuve formelle ci-dessus.
 
 ## Construire
 

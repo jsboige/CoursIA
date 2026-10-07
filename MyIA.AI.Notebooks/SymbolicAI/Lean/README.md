@@ -174,6 +174,13 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 |---|----------|---------|-------|
 | 37 | [Lean-37-Capstone-Serre100](Lean-37-Capstone-Serre100.ipynb) | **Capstone (escalier)** vers la sous-série [Serre 100](Serre100/README.md) — née du centenaire de Jean-Pierre Serre (EPIC #16334) : le geste de *distillation* (un énoncé de Serre rendu calculable) et son diptyque **mesure** (carnet, kernel `python3`) / **preuve** (lake [`serre100_lean/`](Serre100/serre100_lean/), kernel `lean4-wsl`) ; table de routage des huit carnets, citation du lake par ses déclarations réelles (cinq modules FR + miroirs `_en` : `trace_eg_moins_somme_caractere`, `ombreZeta_eq_zero`, `round_trip_domain`, `orthogonaliteLignesS3`, `member_iff_outer`…), et **surface de la sous-série mesurée** plutôt que déclarée — kernel `python3`, exécuté sans erreur, 3 exercices | 20 min |
 
+**Escalier vers la sous-série [Geometry](Geometry/README.md)** (EPIC #18601) : le carnet d'entrée
+[Geometry-00 — L'escalier d'entrée](Geometry/Geometry-00-Escalier-Entree-Lean-Python.html) est le
+chemin de montée de la sous-série — un même énoncé (le milieu de l'hypoténuse, fil rouge) traité par
+cinq marches de garantie croissante, de la figure numérique jusqu'à la preuve formelle dans le lac
+companion [`geometry_lean/`](Geometry/geometry_lean/), qu'il lit comme un consommateur (fichier réel,
+pas une copie) et clôt par l'audit des axiomes interdits. Kernel `python3`, une dizaine de secondes.
+
 > Numérotation : le notebook Confiance-Preuves-Native — initialement prévu en 35 — est livré en 24b (accrétion du palier 24 Calibration, décision #17545) par la PR #17530 (issue #17520) ; l'annexe A de Tegmark arrive donc en 36.
 
 **Durée totale** : le décompte par notebook vit dans le catalogue généré (`CATALOG-STATUS`) — il dérive à chaque ajout.
@@ -502,6 +509,14 @@ Lean/
 │   ├── ANALYSE-02-Tao-Lean-Python.ipynb     # Analysis I de Tao en lac Lean 4 (teorth/analysis) : architecture, lemmes emblématiques
 │   ├── ANALYSE-03-PFR-Lean.ipynb            # Conjecture PFR (teorth/pfr) : méthode entropique, cosets F₂³, #check réels
 │   ├── ANALYSE-04-PFR-Primitives-Python.ipynb # Les trois primitives de PFR et l'endroit où elles cessent de valoir (#12214)
+│   └── README.md
+├── Geometry/                      # Sous-série géométrie formelle et automatisation des preuves (EPIC #18601) : escalier d'entrée, Wu, Ritt, DD+AR, lac companion — [README](Geometry/README.md)
+│   ├── Geometry-00-Escalier-Entree-Lean-Python.ipynb # Escalier d'entrée de la sous-série : figure numérique → identité symbolique → témoin négatif → lecture du lac → audit des axiomes
+│   ├── Geometry-01-From-Figure-To-Equation.ipynb
+│   ├── Geometry-03-Wu-Method-Python.ipynb
+│   ├── Geometry-03b-Ritt-Decomposition-Python.ipynb
+│   ├── Geometry-04-DD-AR-Python.ipynb
+│   ├── geometry_lean/             # Lake companion (milieu de l'hypoténuse, modules FR et jumeaux _en)
 │   └── README.md
 ├── Langlands/                     # Sous-série formes modulaires et ponts (EPIC #17969) : [README](Langlands/README.md)
 │   ├── 01-formes-modulaires-sl2z-hecke.ipynb
