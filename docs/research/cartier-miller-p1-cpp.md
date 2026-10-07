@@ -1,7 +1,7 @@
 # P1 pseudocode C++ identity↔code — Cartier-Miller evaluation of genus-one coefficient sums
 
 **Pin :** bbrhuft/Cartier-Miller-evaluation-of-genus-one-coefficient-sums @ `37a9b72` (clone local `.scratch`)
-**Scope :** 5 fichiers C++ = `harvey_adapter.cpp` (87 l.) + `upstream/recurrences_ntl.{h,cpp}` (43/1301 l.) + `upstream/hypellfrob.{h,cpp}` (83/717 l.). Lecture intégrale sans EOF.
+**Scope :** Fichiers C++ = `harvey_adapter.cpp` (87 l.) + `upstream/recurrences_ntl.{h,cpp}` (43/1301 l.) + `upstream/hypellfrob.{h,cpp}` (83/717 l.). Lecture intégrale sans EOF.
 **Méthode :** lecture ligne-par-ligne, confrontations à `point_count.py` (231 l.), `hypellfrob.pyx` (253 l.), `pilot.py`, `benchmark_engine.py`, `SOURCE_PROVENANCE.json`, `build.sh`, `README.md`, `VALIDATION.md`, manuscrit `.paper.txt` l. 330-490.
 **Précédents :** P0 cartography (#19487), P1 elliptic_prefix (#19488), P1 pilot (#19493), P1 point_count (#19499). Ce mémo est le 5e volet.
 **Statut dépôt :** distillation didactique d'un manuscrit non-référé (MIT externe pour le PDF), dépôt GPL-2.0-or-later. Aucun verdict de nouveauté mathématique n'est porté ici. Lecture seule — aucun fichier C++ modifié.
@@ -34,7 +34,7 @@ Build (`build.sh` l. 6-8) : `g++ -O3 -std=c++17 -pthread harvey_adapter.cpp upst
 
 ### 1.3 Garantie pureté
 
-Les 4 fichiers upstream ne contiennent **aucune I/O** (aucun `iostream`/`cstdio`), **aucun aléatoire**, **aucun thread**. Le seul état mutable est le modulus global NTL (`ZZ_p::init` / `zz_p::init`), toujours manipulé via `ZZ_pContext`/`zz_pContext` save/restore (hypellfrob.cpp l. 104-106/124, l. 176-177/192, l. 236-237/253, l. 288-299/708). `harvey_adapter.cpp` est le **seul** fichier avec I/O : `cin`/`cout`/`cerr` (l. 61-85) — la bibliothèque reste pure, l'adaptateur porte le protocole.
+Les fichiers upstream ne contiennent **aucune I/O** (aucun `iostream`/`cstdio`), **aucun aléatoire**, **aucun thread**. Le seul état mutable est le modulus global NTL (`ZZ_p::init` / `zz_p::init`), toujours manipulé via `ZZ_pContext`/`zz_pContext` save/restore (hypellfrob.cpp l. 104-106/124, l. 176-177/192, l. 236-237/253, l. 288-299/708). `harvey_adapter.cpp` est le **seul** fichier avec I/O : `cin`/`cout`/`cerr` (l. 61-85) — la bibliothèque reste pure, l'adaptateur porte le protocole.
 
 ---
 
@@ -78,7 +78,7 @@ harvey_adapter calculate() l.21-51
                         └─ ntl_short_interval_products (l.762) + dyadic_evaluation (l.351)
 ```
 
-**Fonctions jamais appelées par le benchmark :** `matrix()` (hypellfrob.cpp l. 274-711, 437 lignes — tout le pipeline zeta de Monsky-Washnitzer), et ses deux sous-fonctions privées `padic_xgcd` (l. 173-216) et `padic_invert_matrix` (l. 234-267), appelées **uniquement** depuis `matrix()`. En revanche `matrix()` **est** consommée en amont par `hypellfrob.pyx::hypellfrob` (l. 158-252) dans Sage — le code n'est pas mort, il est hors périmètre du benchmark quarter-point. Les 437 lignes de `matrix()` restent néanmoins requises à la compilation (liées dans le binaire via `hypellfrob.cpp`).
+**Fonctions jamais appelées par le benchmark :** `matrix()` (hypellfrob.cpp l. 274-711 — tout le pipeline zeta de Monsky-Washnitzer), et ses deux sous-fonctions privées `padic_xgcd` (l. 173-216) et `padic_invert_matrix` (l. 234-267), appelées **uniquement** depuis `matrix()`. En revanche `matrix()` **est** consommée en amont par `hypellfrob.pyx::hypellfrob` (l. 158-252) dans Sage — le code n'est pas mort, il est hors périmètre du benchmark quarter-point. Le corps de `matrix()` reste néanmoins requises à la compilation (liées dans le binaire via `hypellfrob.cpp`).
 
 ---
 
@@ -202,7 +202,7 @@ Entiers ZZ sérialisés en décimal ASCII (`std::cout << r.B`, l. 72-74) — pr�
 
 ## 7. Dépendance NTL (versions, ZZ_p, ZZ_pX, classes)
 
-**Classes/fonctions NTL consommées** (inventaire exhaustif des 5 fichiers) :
+**Classes/fonctions NTL consommées** (inventaire exhaustif) :
 - Types : `ZZ`, `ZZ_p`, `ZZ_pX`, `ZZ_pXModulus`, `FFTRep`, `vec_ZZ_p`, `mat_ZZ_p`, `mat_ZZ`, `ZZX`, et la colonne simple précision `zz_p`, `zz_pX`, `zz_pXModulus`, `fftRep`, `vec_zz_p`, `mat_zz_p` ; contextes `ZZ_pContext`, `zz_pContext`.
 - Opérations : `ToFFTRep`/`TofftRep`, `FromFFTRep`/`FromfftRep` (l. 100-127), `XGCD` (hypellfrob.cpp l. 189), `InvMod` (l. 669), `ProbPrime(p,30)` (adapter l. 67), `power`, `SqrRoot` (l. 296, 792), `NumBits` (l. 1018), `ident` (adapter l. 31), `IsZero`/`IsOne`, `LeadCoeff`, `coeff`/`SetCoeff`, `deg`, `diff`, `LeftShift`, `rep`, `conv`/`to_*`, `SinglePrecision` (l. 75 adapter, l. 92 hypellfrob.cpp), `SetNumThreads` (l. 53), `NTL_VERSION` (l. 55).
 
@@ -246,9 +246,9 @@ Entiers ZZ sérialisés en décimal ASCII (`std::cout << r.B`, l. 72-74) — pr�
 ## 9. Bilan P1 pseudocode C++
 
 **Composants vérifiés littéralement (lecture ligne-par-ligne + sémantique retrouvée) — 16 :**
-1. En-têtes/licences/includes des 5 fichiers (§1).
+1. En-têtes/licences/includes (§1).
 2. Provenance Sage 10.8 / SHA256 / GPL (§1.1).
-3. Pureté des 4 fichiers upstream, I/O cantonnée à l'adaptateur (§1.3).
+3. Pureté des fichiers upstream, I/O cantonnée à l'adaptateur (§1.3).
 4. APIs publiques + graphe d'appels complet depuis `calculate()` (§2).
 5. Adaptateurs de templates ZZ_p↔zz_p (§3.1a).
 6. `middle_product` + crédit HQZ (§3.1b).
