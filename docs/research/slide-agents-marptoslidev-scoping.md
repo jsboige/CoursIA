@@ -61,7 +61,7 @@ Le constat de l'issue est en partie faux (le corps dit « l'abandon de Marp » a
 
 **Pourquoi pas voie 3** (retrait pur) : le diagnostic de la Slidev-vs-PPTX reste une demande récurrente des reviewers (`#221`, layout `image-overlay`). Sans agent, c'est un regard humain à chaque PR, ce qui est coûteux et non scalable. La voie 3 est défendable **si** Slidev fournit un outil natif qui le fait ; le scoping n'a pas trouvé cet outil (à vérifier en phase d'exécution).
 
-**Pourquoi pas voie 4** (legacy Marp) : 12 `slides.marp.md` cohabitent avec 18 `slides.md` ; la migration Marp→Slidev des 12 restants est un travail d'accrétion qui demande un agent outillé. Garder un agent mort pour 12 fichiers qui sont en train de migrer est une dette visible.
+**Pourquoi pas voie 4** (legacy Marp) : 12 `slides.marp.md` cohabitent avec 18 `slides.md` ; la migration Marp→Slidev des 12 restants est un travail d'accrétion qui demande un agent outillé. Garder un agent mort pour ces decks qui sont en train de migrer est une dette visible.
 
 ## 4. Plan d'exécution (à étayer en phase 2, conditionnel à l'arbitrage user/coordinateur)
 
