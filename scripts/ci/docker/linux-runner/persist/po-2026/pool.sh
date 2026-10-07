@@ -180,6 +180,18 @@ validate_keep() { # $1 = keep dir — rc=0 si l'arbre est materialise et coheren
   local repo="$1/CoursIA/CoursIA"
   [ -d "$repo/.git" ] || return 1
   git -C "$repo" rev-parse --git-dir >/dev/null 2>&1 || return 1
+  # (c) residus d'un transfert interrompu (#18312, mesure 2026-10-08) : un lock ou un
+  # tmp_pack present ICI est perime par construction -- le keep est parque entre deux
+  # jobs, aucun git ne le tient. Les purger rend l'arbre reutilisable SANS re-clone
+  # (objectif #18225 : 5,49 GiB), la ou les ecarter paierait ce prix a chaque hoquet.
+  # Mesure : l'index.lock laisse par un fetch avorte empechait `update-index` de (b)
+  # de s'ecrire -- silencieusement, ses erreurs etant redirigees.
+  find "$repo/.git" \( -name '*.lock' -o -name 'tmp_pack*' \) -delete 2>/dev/null
+  # (d) arbre NON MATERIALISE (#18312) : HEAD doit resoudre un commit. Un clone
+  # avorte laisse un depot vide, branche unborn -- et (a)/(b) ne le voient pas, car
+  # `status --porcelain` d'un index vide sur un arbre vide est PROPRE. Mesure du
+  # 2026-10-08 : ce cas rendait rc=0 (accepte comme sain) sur les slots 4..8.
+  git -C "$repo" rev-parse --verify -q HEAD >/dev/null || return 1
   # (a) residu skip-worktree
   git -C "$repo" ls-files -v 2>/dev/null | grep -q '^S' && return 1
   # (b) index menteur : le refresh stat rend visibles les fichiers trackes absents
