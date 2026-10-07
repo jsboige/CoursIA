@@ -16,6 +16,7 @@ la fusion dit "c'est peut-etre fait", l'ouverte dit "quelqu'un y est".
 """
 
 import json
+import random
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -3641,7 +3642,7 @@ def test_idle_since_delivery_defaults_to_idle_for_backward_compat():
     la, c'est un test legacy ; on ne change pas la semantique, on preserve.
     """
     legacy = {"number": 1, "age": 30, "idle": 40, "genre": "docs"}
-    fresh = {"number": 2, "age": 30, "idle": 1, "idle_since_delivery": 1,
+    fresh = {"number": 2, "age": 30, "idle": 1, "idle_since_delivery": 1, "genre": "guard",
              "genre": "docs"}
     # Legacy : meme comportement qu'avant le patch (poids sur `idle`).
     assert pig.weight(legacy, None) == pig.weight(
@@ -3730,3 +3731,221 @@ def test_main_idle_since_delivery_falls_back_to_idle_on_fetch_error(monkeypatch)
     assert pool[0]["last_delivery_stamp"] is None
 
 
+
+
+# #19768 : le tapis a servi 4 candidats sur 4 non prenables (#7742, #16643,
+# #16372, #14549) le 2026-10-07, parce que le plafond de la sonde pleine
+# (16 unites, partage avec la sonde de PR couvrante) etait deja epuise.
+# Tous quatre portaient pourtant un marqueur de cloture identifiable sur
+# le DERNIER commentaire (`[DELIVERED]`, `[RELEASED]`, gel coordinateur).
+# Le fix ajoute un filtre bon marche qui lit un seul commentaire, n'est
+# PAS couvert par `DELIVERED_SIGNAL_MAX_PROBES`, et ecarte le candidat
+# sans consommer une sonde pleine.
+
+
+class _FakeRecentComments:
+    """Stand-in subprocess pour `has_recent_delivery_marker`.
+
+    Reproduit le contrat de `gh issue view --json comments` :
+    ``{"comments": [{"body": "..."}, ...]}`` dans l'ordre chronologique.
+    """
+    def __init__(self, comments):
+        self._comments = comments
+
+    def run(self, *args, **kwargs):
+        class _R:
+            pass
+        r = _R()
+        r.stdout = json.dumps({"comments": self._comments})
+        r.returncode = 0
+        r.stderr = ""
+        return r
+
+
+def test_recent_delivery_marker_DELIVERED_true(monkeypatch):
+    """#19768 : `[DELIVERED]` en tete du DERNIER commentaire -> ecarte."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "Une discussion sans marqueur"},
+                            {"body": "[DELIVERED] lane myia-po-2026:CoursIA"},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_RELEASED_true(monkeypatch):
+    """#19768 : `[RELEASED]` en tete du DERNIER commentaire -> ecarte."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "[RELEASED] lane myia-po-2023:CoursIA"},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_FROZEN_true(monkeypatch):
+    """#19768 : `[FROZEN]` (gel coordinateur) -> ecarte."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "[FROZEN] par coordinateur -- "
+                                     "tenir jusqu'au 2026-11-01"},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_absent_false(monkeypatch):
+    """#19768 controle negatif : pas de marqueur -> False (l'appelant enchaine
+    sur la sonde pleine)."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "Une discussion ordinaire sans marqueur."},
+                            {"body": "Une autre discussion qui ne clot rien."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_delivery_marker_uniquement_dans_commentaires_anciens(monkeypatch):
+    """#19768 : un marqueur sur un ANCIEN commentaire ne suffit pas.
+
+    Seule la position dans le DERNIER commentaire compte -- un marqueur
+    enfoui au milieu du fil est signe d'un ancien etat, pas d'une
+    cloture recente. Le filtre recent regarde le DERNIER, pas tous.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "[DELIVERED] (vieux, mais conteste)"},
+                            {"body": "Reouverture suite a un autre signal."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_delivery_marker_mention_discursive_exclue(monkeypatch):
+    """#19768 controle negatif : mention discursive (sans en-tete) -> False.
+
+    Meme discrimination que `_DELIVERED_MARKER_RE` : ancrage debut de
+    ligne, pas la sous-chaine nue.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "Je note que ce ticket est marque "
+                                     "[DELIVERED] dans une discussion hors "
+                                     "de ce fil."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_delivery_marker_echec_lecture_none(monkeypatch):
+    """#19768 fail-OPEN : lecture en echec -> None, l'appelant enchaine
+    sur la sonde pleine. Ne JAMAIS elargir le filtre au prix d'une
+    lecture en echec (cf. fail-closed de #14567).
+    """
+    def _raise(*a, **k):
+        raise RuntimeError("quota exhausted")
+    monkeypatch.setattr(pig.subprocess, "run", _raise)
+    assert pig.has_recent_delivery_marker(12345) is None
+
+
+def test_recent_delivery_marker_payload_illisible_none(monkeypatch):
+    """#19768 : payload JSON illisible -> None, fail-OPEN."""
+    class _Bad:
+        stdout = "not-json"
+        returncode = 0
+        stderr = ""
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **k: _Bad())
+    assert pig.has_recent_delivery_marker(12345) is None
+
+
+def test_recent_delivery_marker_no_comments_false(monkeypatch):
+    """#19768 : issue sans commentaire -> False (rien a filtrer)."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_draw_unclaimed_filtre_recent_AVANT_sonde_pleine(monkeypatch):
+    """#19768 integration : un candidat avec marqueur recent est ecarte
+    MEME si le budget de la sonde pleine est epuise. Rejoue le cas
+    fondateur (4 candidats, tous ecartes par le filtre recent alors
+    que la sonde pleine est hors budget).
+    """
+    candidates = [
+        {"number": 7742, "title": "[FROZEN] gel coordinateur", "age": 30, "idle": 1, "idle_since_delivery": 1, "genre": "guard"},
+        {"number": 16643, "title": "livree PR #16767", "age": 25, "idle": 1, "idle_since_delivery": 1, "genre": "guard"},
+        {"number": 16372, "title": "claim RELEASED", "age": 20, "idle": 1, "idle_since_delivery": 1, "genre": "guard"},
+        {"number": 14549, "title": "depend eGPU", "age": 15, "idle": 1, "idle_since_delivery": 1, "genre": "guard"},
+    ]
+    by_class = {"grain": candidates, "umbrella": [], "delivered": []}
+
+    def _counted_probe_raising(number, lane_name):
+        raise RuntimeError("quota exhausted, budget hit")
+    state = {"failures": [], "budget_hit": True, "recent_filtered": 0}
+
+    class _A:
+        grains = 4
+        umbrellas = 0
+        delivered = 0
+        prev_genre = None
+        lane = "myia-ai-01:CoursIA-2"
+        check_claims = False
+
+    monkeypatch.setattr(pig, "has_recent_delivery_marker",
+                        lambda n: True)
+    picks, claims, conflicts = pig.draw_unclaimed(
+        by_class, _A(), random.Random(42), {}, {}, {},
+        delivered_probe=_counted_probe_raising, delivered_state=state)
+    assert picks == []
+    assert len(conflicts) == 4
+    assert all("LIVRAISON (recent)" in c[1] for c in conflicts)
+    assert state["recent_filtered"] == 4
+    assert state["failures"] == []
+
+
+def test_draw_unclaimed_filtre_recent_echec_enchaine_sur_sonde_pleine(monkeypatch):
+    """#19768 fail-OPEN : filtre recent en echec (None) -> la sonde
+    pleine prend le relais.
+    """
+    candidates = [{"number": 101, "title": "candidat A", "age": 30, "idle": 1, "idle_since_delivery": 1, "genre": "guard"}]
+    by_class = {"grain": candidates, "umbrella": [], "delivered": []}
+    monkeypatch.setattr(pig, "has_recent_delivery_marker",
+                        lambda n: None)
+
+    class _A:
+        grains = 1
+        umbrellas = 0
+        delivered = 0
+        prev_genre = None
+        lane = "myia-ai-01:CoursIA-2"
+        check_claims = False
+
+    state = {"failures": [], "budget_hit": False, "recent_filtered": 0}
+    picks, claims, conflicts = pig.draw_unclaimed(
+        by_class, _A(), random.Random(42), {}, {}, {},
+        delivered_probe=lambda n, l: True, delivered_state=state)
+    assert picks == []
+    assert len(conflicts) == 1
+    assert "LIVRAISON :" in conflicts[0][1]
+    assert state["recent_filtered"] == 0
+
+
+def test_draw_unclaimed_filtre_recent_false_enchaine_sur_sonde_pleine(monkeypatch):
+    """#19768 controle negatif : filtre recent dit False -> la sonde
+    pleine prend le relais.
+    """
+    candidates = [{"number": 101, "title": "candidat A", "age": 30, "idle": 1, "idle_since_delivery": 1, "genre": "guard"}]
+    by_class = {"grain": candidates, "umbrella": [], "delivered": []}
+    monkeypatch.setattr(pig, "has_recent_delivery_marker",
+                        lambda n: False)
+
+    class _A:
+        grains = 1
+        umbrellas = 0
+        delivered = 0
+        prev_genre = None
+        lane = "myia-ai-01:CoursIA-2"
+        check_claims = False
+
+    state = {"failures": [], "budget_hit": False, "recent_filtered": 0}
+    picks, claims, conflicts = pig.draw_unclaimed(
+        by_class, _A(), random.Random(42), {}, {}, {},
+        delivered_probe=lambda n, l: True, delivered_state=state)
+    assert picks == []
+    assert len(conflicts) == 1
+    assert state["recent_filtered"] == 0

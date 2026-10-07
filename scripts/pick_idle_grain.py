@@ -1132,6 +1132,85 @@ DELIVERED_SIGNAL_MAX_PROBES = 16
 # << lecture en echec >> sur des candidats jamais interroges.
 DELIVERED_SIGNAL_UNPROBED = object()
 
+# #19768 : marqueur de livraison recent -- ce qui distingue la CLOTURE
+# explicite (livree, claim libere, gel coordinateur) du marqueur
+# historique `[INFO] candidate-delivered`. La sonde pleine (`has_delivered_
+# signal`) lit TOUS les commentaires pour trouver ce marqueur ; ce
+# marqueur recent est volontairement plus etroit (un seul en-tete du
+# DERNIER commentaire) pour servir de **filtre bon marche AVANT la sonde
+# pleine** : il ecarte le candidat sans consommer une des
+# `DELIVERED_SIGNAL_MAX_PROBES` unites de budget. La doctrine : un
+# travail clot recemment ne doit pas etre servi a une lane en cycle
+# suivant, peu importe que la sonde pleine soit epuisee.
+#
+# Formes reconnues (ancrage debut de ligne, comme `_DELIVERED_MARKER_RE`,
+# pour eviter les mentions incidentes) :
+#   - `[DELIVERED]` : cloture explicite du travail
+#   - `[RELEASED]`  : claim libere (lane a rendu la main)
+#   - `[FROZEN]`    : gel coordinateur (decision explicite)
+# Les majuscules sont preservees -- c'est un en-tete, pas une
+# mention de prose. Pas de `\b` apres `]` : `]` n'est pas un caractere
+# de mot, donc `\b` n'a pas de frontiere a valider entre `]` et un
+# espace, et la regex ne matcherait jamais `[DELIVERED] lane X`.
+# On accepte un separateur blanc, deux-points, ou fin de ligne.
+_RECENT_DELIVERY_MARKER_RE = re.compile(
+    r"^\s*\[(?:DELIVERED|RELEASED|FROZEN)\](?=\s|:|$)",
+    re.MULTILINE,
+)
+
+
+def has_recent_delivery_marker(issue_number: int) -> bool | None:
+    """Le DERNIER commentaire porte-t-il un marqueur de cloture recent ?
+
+    TRI-ETAT (cf. `has_delivered_signal`) :
+    - ``True``  : le dernier commentaire a un en-tete `[DELIVERED]`,
+      `[RELEASED]`, ou `[FROZEN]`. Le candidat doit etre ecarte SANS
+      appeler la sonde pleine -- c'est le filtre bon marche de #19768 ;
+    - ``False`` : aucun marqueur de cloture dans le dernier commentaire.
+      L'appelant peut proceder a la sonde pleine ;
+    - ``None``  : la lecture a echoue (reseau, 403, payload illisible).
+      Fail-OPEN : l'appelant procede a la sonde pleine en le disant.
+
+    Cout : **1 requete** `gh issue view --json comments`, identique a
+    `has_delivered_signal`, mais **HORS budget** (`DELIVERED_SIGNAL_MAX_PROBES`
+    reste intact). Pourquoi separer : la sonde pleine peut etre
+    epuisee par un pool charge, et le marqueur recent etant
+    beaucoup plus discriminant (un seul commentaire, pas tous), il
+    ecarte les clotures les plus frequentes SANS toucher au budget.
+    Les 4 candidats mesures le 2026-10-07 par `myia-po-2026:CoursIA`
+    (#7742, #16643, #16372, #14549) etaient tous des clotures
+    recentes servies par le tapis -- cette fonction les aurait
+    ecartes avant l'epuisement du budget de la sonde pleine.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "view", str(issue_number), "--repo", REPO,
+             "--json", "comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=30,
+        ).stdout
+    except Exception:  # noqa: BLE001 - lecture best-effort, l'echec est DIT
+        return None
+    try:
+        payload = json.loads(out)
+    except Exception:  # noqa: BLE001 - payload illisible = pas de signal
+        return None
+    if not isinstance(payload, dict):
+        return False
+    comments = payload.get("comments") or []
+    if not isinstance(comments, list) or not comments:
+        return False
+    # Le DERNIER commentaire (le plus recent) -- l'index -1 est l'ordre
+    # chronologique de l'API `gh issue view --json comments`.
+    last = comments[-1]
+    if not isinstance(last, dict):
+        return False
+    body = last.get("body") or ""
+    if not isinstance(body, str):
+        return False
+    return bool(_RECENT_DELIVERY_MARKER_RE.search(body))
+
+
 
 def has_delivered_signal(issue_number: int,
                          lane: str | None = None) -> bool | None:
@@ -1347,13 +1426,35 @@ def print_delivered_signal_report(
     DIFFERENTS et deux d'entre eux sont des fail-OPEN. Les confondre
     reviendrait a lire un silence comme une couverture -- le defaut exact que
     ce filtre corrige, deplace d'un cran.
+
+    #19768 : la sortie distingue les ecarts par marqueur recent
+    (`[DELIVERED]` / `[RELEASED]` / `[FROZEN]` sur le DERNIER
+    commentaire, hors budget de sonde) des ecarts par sonde pleine
+    (label `candidate-delivered` ou marqueur `[INFO] candidate-delivered`
+    historique). Les deux sont des clotures, mais le premier a
+    fonctionne SANS epuiser le budget -- c'est ce que l'issue #19768
+    attend comme mesure avant/apres dans le body de la PR.
     """
     if include_delivered:
         return
-    dropped = [it for it, cause in withheld if cause.startswith("LIVRAISON")]
+    dropped = [it for it, cause in withheld
+               if cause.startswith("LIVRAISON (recent)")]
     if dropped:
         numbers = ", ".join(f"#{it['number']}" for it in dropped)
-        print(f"Signal de livraison : {len(dropped)} candidat(s) "
+        print(f"Filtre recent (#19768) : {len(dropped)} candidat(s) "
+              f"ECARTE(S) HORS BUDGET : {numbers}.")
+        print("   Marqueur de cloture sur le DERNIER commentaire "
+              "([DELIVERED] / [RELEASED] / [FROZEN]) : le tapis a")
+        print("   elimine ces clotures SANS consommer une sonde de la "
+              "borne `DELIVERED_SIGNAL_MAX_PROBES`. C'est le filtre bon")
+        print("   marche de #19768 -- mesure avant/apres : comparer avec")
+        print("   le nombre de candidats non prenables servis avant le "
+              "fix (cf. ticket #19768).")
+    dropped_full = [it for it, cause in withheld
+                    if cause.startswith("LIVRAISON :")]
+    if dropped_full:
+        numbers = ", ".join(f"#{it['number']}" for it in dropped_full)
+        print(f"Signal de livraison : {len(dropped_full)} candidat(s) "
               f"ECARTE(S) de l'urne grain : {numbers}.")
         print("   Label `" + DELIVERED_LABEL + "` ou commentaire `"
               + DELIVERED_COMMENT_MARKER + "` -- le travail est deja livre ;")
@@ -1397,7 +1498,7 @@ def print_delivered_signal_report(
               "(commentaire + PR couvrante) est atteint, la fin de l'urne "
               "n'a pas ete verifiee. Les candidats")
         print("   non sondes sont CONSERVES (fail-open).")
-    if (dropped or failed or cover_failed or inprogress
+    if (dropped or dropped_full or failed or cover_failed or inprogress
             or state.get("budget_hit")):
         print()
 
@@ -1953,8 +2054,9 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
     # l'echappatoire nommee.
     include_delivered = bool(getattr(args, "include_delivered", False))
     state = (delivered_state if delivered_state is not None
-             else {"failures": [], "budget_hit": False})
+             else {"failures": [], "budget_hit": False, "recent_filtered": 0})
     failures = state.setdefault("failures", [])
+    recent_filtered = state.setdefault("recent_filtered", 0)
     budget = [DELIVERED_SIGNAL_MAX_PROBES]
 
     def _counted_probe(number, lane_name):
@@ -2029,6 +2131,33 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             "meme urne (#14300).")))
                         continue
                     if cls == "grain" and not include_delivered:
+                        # #19768 : filtre RECENT d'abord, AVANT la sonde
+                        # pleine. Un en-tete `[DELIVERED]`, `[RELEASED]`
+                        # ou `[FROZEN]` sur le DERNIER commentaire
+                        # ecarte le candidat SANS toucher au budget
+                        # `DELIVERED_SIGNAL_MAX_PROBES` -- la sonde
+                        # pleine peut etre epuisee par un pool charge,
+                        # et le marqueur recent etant beaucoup plus
+                        # discriminant (un seul commentaire, pas tous),
+                        # il suffit a eliminer les clotures les plus
+                        # frequentes. Le 2026-10-07, le tapis a servi
+                        # 4 candidats sur 4 non prenables (#7742, #16643,
+                        # #16372, #14549) parce que le budget de la sonde
+                        # pleine etait deja epuise -- chacun portait
+                        # pourtant un marqueur recent identifiable.
+                        # Cout : 1 requete, hors budget, fail-OPEN sur
+                        # lecture en echec (l'appelant enchaine sur la
+                        # sonde pleine dans ce cas).
+                        recent = has_recent_delivery_marker(c["number"])
+                        if recent is True:
+                            state["recent_filtered"] = state.get(
+                                "recent_filtered", 0) + 1
+                            conflicts.append((c, "LIVRAISON (recent) : "
+                                "marqueur de cloture sur le dernier "
+                                "commentaire ([DELIVERED] / [RELEASED] "
+                                "/ [FROZEN]). Candidat remplace dans "
+                                "la meme urne, hors budget de sonde."))
+                            continue
                         # Le label est teste A COUT NUL et vaut meme quand le
                         # plafond de sondes est epuise ; seule la sonde de
                         # commentaire est plafonnee, et son epuisement est
@@ -5071,7 +5200,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     illisibles], "budget_hit": bool}``.
     """
     budget = [int(probe_budget)]
-    state = {"failures": [], "budget_hit": False}
+    state = {"failures": [], "budget_hit": False, "recent_filtered": 0}
 
     # Le budget enrobe TOUTE sonde, injectee ou reelle : un test qui fournit
     # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
@@ -5368,7 +5497,8 @@ def main(argv: list[str] | None = None) -> int:
         if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None
         else open_cover_signal
     )
-    delivered_state: dict = {"failures": [], "budget_hit": False}
+    delivered_state: dict = {"failures": [], "budget_hit": False,
+                              "recent_filtered": 0}
 
     # Capacite dimensionnee pour le cache PAR TRANCHE (#19236) : la fenetre du
     # tapis (90 j) couvre ~30 tranches de 3 j, qui s'ajoutent aux entrees
