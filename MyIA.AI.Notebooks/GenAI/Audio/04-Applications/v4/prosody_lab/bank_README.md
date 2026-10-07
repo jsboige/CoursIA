@@ -7,7 +7,7 @@
 
 ## À quoi ça sert
 
-Chaque campagne de mesure TTS (`bakeoff_small/measure_*.py`, `bakeoff_large/banc_phase_a0.py`, re-rendus UAT sur `G:/Mon Drive/MyIA/Projets/BibliothequesSonores/A0-review-*`) produit un JSON isolé. **Avant le banc**, ces silos ne se cumulent pas : impossible de dire « PocketTTS est meilleur que CosyVoice3 sur la famille Boule de Suif » sans rouvrir 5 fichiers.
+Chaque campagne de mesure TTS (`bakeoff_small/measure_*.py`, `bakeoff_large/banc_phase_a0.py`, re-rendus UAT sur `G:/Mon Drive/MyIA/Projets/BibliothequesSonores/A0-review-*`) produit un JSON isolé. **Avant le banc**, ces silos ne se cumulent pas : impossible de dire « PocketTTS est meilleur que CosyVoice3 sur la famille Boule de Suif » sans rouvrir chaque fichier un par un.
 
 **Avec le banc** : un fichier `bake_bank.jsonl` cumule les runs par `(motor, extract, seed)`, avec les **champs de fidélité** (gate pré-UAT #17586) : `fidelity_added_words` (0 = pass), `fidelity_omitted_segments_3plus` (0 = pass), `voice_consistent` (true = pass).
 
