@@ -132,7 +132,7 @@ public static class FactorGraphHelper
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var list = new List<string>();
-        void Add(string? p)
+        void Add(string p)
         {
             if (string.IsNullOrEmpty(p)) return;
             try
