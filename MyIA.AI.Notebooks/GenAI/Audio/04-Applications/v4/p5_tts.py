@@ -475,7 +475,15 @@ def _compose_tts_text(seg: AnnotatedSegment) -> str:
     # CRITICAL: ensure space after every ] — S2-Pro ignores tags without trailing space
     result = re.sub(r"\](?=\S)", "] ", result)
 
-    if len(result) > _MAX_TTS_CHARS:
+    # The 500-char cap is an S2-Pro input limit, not a pipeline one. A
+    # narrator rerouted to CosyVoice3 is bounded per-chunk by
+    # _chunk_narration instead: truncating here would silently drop the
+    # tail of every long narration (#19692 phase 1, measured: seg 1,
+    # 981 chars of fishaudio_text -> ~440 rendered, 17.8 s of audio for
+    # a 950-char segment). The default (FishAudio and Qwen) is unchanged.
+    if len(result) > _MAX_TTS_CHARS and not _should_route_narrator_to(
+        "cosyvoice3", seg
+    ):
         result = result[:_MAX_TTS_CHARS].rsplit(" ", 1)[0] + "..."
 
     return result

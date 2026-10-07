@@ -221,3 +221,47 @@ def test_synthesize_narrator_qwen_raises_on_empty_input():
     except NarratorQwenUnavailable:
         return  # success: raised as designed
     raise AssertionError("NarratorQwenUnavailable not raised on empty input")
+
+
+def test_compose_tts_text_keeps_full_text_for_cosyvoice3_narrator():
+    """Phase 1 (#19692): the 500-char cap in _compose_tts_text is an S2-Pro
+    input limit. A narrator rerouted to CosyVoice3 is bounded per-chunk by
+    _chunk_narration instead — truncating here silently drops the tail of
+    every long narration (measured: seg 1, 981 chars -> ~440 rendered,
+    17.8 s of audio for a 950-char segment = an omission p7's control
+    would attribute to the engine). Default (Qwen) and non-narrator
+    speakers keep the cap: their engines really do have it."""
+    from v4 import p5_tts
+
+    long_text = (
+        "Pendant plusieurs jours de suite des lambeaux d'armee en deroute "
+        "avaient traverse la ville. " * 8
+    ).strip()
+    assert len(long_text) > p5_tts._MAX_TTS_CHARS
+
+    orig_qwen = p5_tts._NARRATOR_QWEN_ROUTING
+    orig_cv3 = p5_tts._NARRATOR_COSYVOICE3_ROUTING
+    try:
+        # CosyVoice3 selected: narrator keeps the full text.
+        p5_tts._NARRATOR_QWEN_ROUTING = False
+        p5_tts._NARRATOR_COSYVOICE3_ROUTING = True
+        narrator = _build_seg(speaker="narrateur", text=long_text)
+        composed = p5_tts._compose_tts_text(narrator)
+        assert len(composed) > p5_tts._MAX_TTS_CHARS
+        assert not composed.endswith("...")
+        assert long_text[: p5_tts._MAX_TTS_CHARS] in composed
+
+        # Same flags, non-narrator: S2-Pro path keeps its cap.
+        speaker = _build_seg(speaker="loiseau", text=long_text)
+        capped = p5_tts._compose_tts_text(speaker)
+        assert len(capped) <= p5_tts._MAX_TTS_CHARS
+        assert capped.endswith("...")
+    finally:
+        p5_tts._NARRATOR_QWEN_ROUTING = orig_qwen
+        p5_tts._NARRATOR_COSYVOICE3_ROUTING = orig_cv3
+
+    # Default (Qwen narrator): behavior unchanged — cap still applies.
+    narrator = _build_seg(speaker="narrateur", text=long_text)
+    composed = p5_tts._compose_tts_text(narrator)
+    assert len(composed) <= p5_tts._MAX_TTS_CHARS
+    assert composed.endswith("...")
