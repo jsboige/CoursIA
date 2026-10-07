@@ -666,6 +666,9 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
             if holding.Invested and holding.Quantity < 0 and sym not in selected:
                 self.Liquidate(sym)
                 self._entry.pop(sym, None)
+                # #19455 note mineure Hermes: discard le pending si l'ordre
+                # n'a pas materialise entre les 2 rebalances (re-add idempotent).
+                self._short_pending.discard(sym)
 
         if selected:
             w = -abs(self.short_gross) / float(len(selected))
