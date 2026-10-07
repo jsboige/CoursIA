@@ -1,6 +1,6 @@
 - name: "Tweety-10 MLN"
   family: Tweety/IKVM-JPype
-  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK

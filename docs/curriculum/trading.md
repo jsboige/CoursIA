@@ -163,8 +163,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Percolation-Lean — le noyau fini de percolation, prouvé…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Lean.ipynb) | BETA | Oui |
-| 2 | [Percolation supercritique : le géant au-dessus du seuil](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Supercritique.ipynb) | ALPHA | Oui |
+| 1 | [Percolation-02-Lean — le noyau fini de percolation, prouvé…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb) | BETA | Oui |
+| 2 | [Percolation supercritique : le géant au-dessus du seuil](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) | ALPHA | Oui |
 | 3 | [Le Framework Rational Speech Act (RSA)](../../MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb) | BETA | Oui |
 | 4 | [Quotients, fibres et recollement : ce qui survit à la…](../../MyIA.AI.Notebooks/Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb) | BETA | Oui |
 
@@ -298,8 +298,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Le critere de Kelly — compagnon Python du lake…](../../MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion.ipynb) | BETA | Non |
-| 2 | [Kelly — compagnon natif (kernel Lean 4)](../../MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion_lean.ipynb) | BETA | Non |
+| 1 | [Le critere de Kelly — compagnon Python du lake…](../../MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion-Python.ipynb) | BETA | Non |
+| 2 | [Kelly — compagnon natif (kernel Lean 4)](../../MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion-Lean.ipynb) | BETA | Non |
 
 ## QuantConnect/projects (46 notebooks)
 
