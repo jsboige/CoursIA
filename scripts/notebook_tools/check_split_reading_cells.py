@@ -96,7 +96,7 @@ signalait :
     d'exercice (garde-fou d'origine, test
     ``test_carveout_ne_couvre_pas_un_titre_de_section``).
 
-Carve-out #18602 (Tell c.935-L1 ★★) -- conversion code->md en place : quand
+Carve-out #18602 -- conversion code->md en place : quand
 une cellule de code EXECUTE (avec ``execution_count`` ou ``outputs``) est
 convertie en cellule markdown (fence ````python``, meme id, meme position
 index), elle n'est PAS une lecture ajoutee : la lecture md qui suit reste
