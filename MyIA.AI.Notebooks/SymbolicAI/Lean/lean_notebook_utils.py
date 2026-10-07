@@ -250,7 +250,7 @@ def run_lake(
             f"set -o pipefail; cd {project_path} && lake {args} 2>&1 | tail -{tail}"
         )
         try:
-            return _run_capture(["wsl", "-d", "Ubuntu", "--", "bash", "-lc", cmd], timeout)
+            return _run_capture(["wsl", "-d", "Ubuntu", "--exec", "bash", "-lc", cmd], timeout)
         except subprocess.TimeoutExpired:
             return -1, "", f"TIMEOUT after {timeout}s"
         except FileNotFoundError:
@@ -299,7 +299,7 @@ def run_lean_snippet(
         lean_cmd = f"cd {project_path} && lake env lean {tmp_file} 2>&1"
         full_cmd = f"{write_cmd}\n{lean_cmd}"
         try:
-            _rc, out, err = _run_capture(["wsl", "-d", "Ubuntu", "--", "bash", "-lc", full_cmd], timeout)
+            _rc, out, err = _run_capture(["wsl", "-d", "Ubuntu", "--exec", "bash", "-lc", full_cmd], timeout)
             return (out or "") + (err or "")
         except subprocess.TimeoutExpired:
             return f"TIMEOUT after {timeout}s"
