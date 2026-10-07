@@ -5369,8 +5369,10 @@ def test_14199_remesure_7_vp_window_reste_bloquant():
     Migration c.183 : les 7 VP originaux (13921, 13800, 13789, 13667,
     13542, 13386, 13370) etaient detectes via la forme naturelle
     « avant merge » / « before merge » (cf. CONCERN_MARKERS avant
-    migration). Cette forme n'est plus un marqueur (remplacee par
-    [BEFORE-MERGE] structurel). Le test verifie donc l'invariant SUR
+    migration). Option (a) Hermes c.19389 (d0f9afe4d) : cette forme
+    RESTE un marqueur (le retrait avait casse 6 tests -- 4 faux negatifs
+    de detection mesures) ; [BEFORE-MERGE] reste la forme structurelle
+    ajoutee en extension. Le test verifie donc l'invariant SUR
     FORME CANONIQUE : un reviewer qui pose [BEFORE-MERGE] dans son
     commentaire declenche classify() == BOT-CONCERN.
 

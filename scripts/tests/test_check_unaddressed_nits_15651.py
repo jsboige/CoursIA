@@ -71,10 +71,10 @@ def test_apposition_neutralizes_only_temporal_markers():
 
 def test_posed_temporal_still_live_and_blocks():
     """Le marqueur POSE (pas d'apposition de levee) reste une reserve,
-    au niveau marqueur ET au niveau classify. Migration c.183 : la forme
-    naturelle « avant merge » n'est plus un marqueur (cf. CONCERN_MARKERS) ;
-    le reviewer qui veut bloquer ecrit [BEFORE-MERGE] dans son commentaire,
-    le filet le voit."""
+    au niveau marqueur ET au niveau classify. Option (a) Hermes c.19389 :
+    la forme naturelle « avant merge » RESTE un marqueur (cf. CONCERN_MARKERS,
+    d0f9afe4d) ; le reviewer peut aussi ecrire [BEFORE-MERGE] dans son
+    commentaire, le filet voit les deux formes (mention et structure)."""
     body = "Le scope des notebooks est a revoir [BEFORE-MERGE]."
     assert mod.has_live_marker(body, MARKERS) is True
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
