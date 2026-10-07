@@ -21,15 +21,17 @@
 
 **Théorème (Diskin–Easo–Radhakrishnan–Sudakov–Tassion, arXiv:2603.03257 §3.0, supercritical sharpness)** :
 
-Pour la percolation de Bernoulli sur `ℤ^d` à `d ≥ 2`, la **queue de la distribution** de la taille de la composante connexe de l'origine satisfait une **inégalité de type raideur** :
+Pour la percolation de Bernoulli sur `ℤ^d` à `d ≥ 2`, la **queue de la distribution** de la taille de la composante connexe de l'origine, définie comme `Φ(n; p) := P_p(n ≤ |C_o| < ∞)`, satisfait une **inégalité de type raideur** :
 
 ```
-P_p(|C_o| < n) ≤ exp(-c · (p - p_c)^{d-1} · n)
+Φ(n; p) = P_p(n ≤ |C_o| < ∞) ≤ exp(-c · (p - p_c)^{d-1} · n)
 ```
 
 pour `p > p_c` et `n ≥ 1`, avec `c = c(d) > 0` une constante explicite.
 
-**Conséquence** : la queue **raidit** quand `p ↓ p_c` au sens où l'exposant de décroissance de `P_p(|C_o| < n)` tend vers **zéro** (la queue devient **plus épaisse**). C'est la transition de phase au point critique.
+**Conséquence** : la queue **raidit** quand `p ↓ p_c` au sens où l'exposant de décroissance de `Φ(n; p)` tend vers **zéro** (la queue devient **plus épaisse**). C'est la transition de phase au point critique.
+
+**Pourquoi `n ≤ |C_o| < ∞` et non `|C_o| < n`** : `P(|C_o| < n)` est la fonction de répartition (croissante en `n`, minorée par `P(|C_o|1) > 0`, convergente vers `1 - θ(p) > 0`), elle **ne peut pas** être majorée par `exp(-c·n) → 0`. La quantité qui décroît et porte le taux `α(p) ~ (p − p_c)^{d−1}` est la queue **finie** `P(n ≤ |C_o| < ∞)` — c'est la définition utilisée par `Percolation-01-Supercritique` (c.1089), et c'est celle que palier 4 conserve.
 
 **Ce que mesure le palier 4** : l'exposant empirique de la queue sur des **tores finis** en fonction de `p - p_c` et de `L`. Vérifier que la queue **s'épaissit** quand `p ↓ p_c` et identifier le **régime asymptotique** où l'inégalité devient presque-égalitaire (la queue domine en `n → ∞`).
 
@@ -44,11 +46,11 @@ pour `p > p_c` et `n ≥ 1`, avec `c = c(d) > 0` une constante explicite.
 
 **Continuité** : palier 4 exploite la convergence `p_c(L) → 1/2` (PASS conforme) du palier 03 pour **définir le paramètre de contrôle** `(p - p_c(L))` sans dépendre de la valeur exacte de `p_c(ℤ²) = 1/2`.
 
-**Note sur la duplication** : la mesure de `Φ(n) = P_p(|C_o| < n)` est conceptuellement similaire à celle de `Percolation-01` (carnet 1), mais palier 4 systématise la mesure sur une **grille de p > p_c** et identifie le **régime de transition** près du seuil.
+**Note sur la duplication** : la mesure de `Φ(n) = P_p(n ≤ |C_o| < ∞)` est conceptuellement similaire à celle de `Percolation-01` (carnet 1, queue finie), et palier 4 la systématise sur une **grille de p > p_c** et identifie le **régime de transition** près du seuil. La définition est exactement celle de palier 01 ; toute déviation de cette clause invalide la comparaison.
 
 ## 3. Architecture pipeline
 
-**Cible de mesure** : `Φ(n; p, L) = P_p(|C_o| < n)` pour une grille de `(p, L)`.
+**Cible de mesure** : `Φ(n; p, L) = P_p(n ≤ |C_o| < ∞)` (queue finie) pour une grille de `(p, L)`.
 
 **Sweep proposé** :
 - **L ∈ {64, 128, 256, 512}** (4 valeurs — `L = 32` trop petit, le régime `p - p_c` petit ne se développe pas)
@@ -69,8 +71,8 @@ pour `p > p_c` et `n ≥ 1`, avec `c = c(d) > 0` une constante explicite.
 
 Pour chaque cellule `(L, p)` :
 - **Distribution de la taille de la composante de l'origine** : `P(|C_o| = k)` pour `k ∈ {1, ..., L²}`
-- **Queue cumulative** : `Φ(n) = P_p(|C_o| < n)` pour `n ∈ {1, 2, 4, 8, ..., L²}`
-- **Décroissance empirique** : `Φ(n) ~ exp(-α(L, p) · n)` en log-y → fit de la **pente** `α(L, p)`
+- **Queue finie** : `Φ(n) = P_p(n ≤ |C_o| < ∞)` pour `n ∈ {1, 2, 4, 8, ..., L²}` (la queue qui décroît)
+- **Décroissance empirique** : `Φ(n) ~ exp(-α(L, p) · n)` en log-y → fit de la **pente** `α(L, p)` sur la queue, **PAS** sur la CDF (la CDF est croissante et ne porte pas le taux)
 
 **Prédiction théorique (à vérifier)** :
 - Pour `p = 0.70` (deep supercritique, `p - p_c = 0.20`) : `α ~ (p - p_c)^{d-1} = 0.20^1 = 0.20` (en 2D), donc `Φ(n) ~ exp(-0.20 · n)` → décroissance rapide
@@ -101,7 +103,7 @@ Pour chaque cellule `(L, p)` :
 
 **Smell 1 : queue non-asymptotique à petit L** — pour L=64, le régime `p - p_c = 0.02` peut être dominé par les **fluctuations** de l'origine (la proba que `o` soit dans le géant vs hors géant reste ~50/50 même à `p = 0.52`). À L=64, la queue n'est **pas encore** dans le régime asymptotique. **Atténuation** : comparer L=64 à L=512 pour identifier le régime de transition.
 
-**Smell 2 : confusion `|C_o| < n` vs `|C_o| < ∞`** — la mesure de `Percolation-01` utilisait `Φ(n) = P_p(n ≤ |C_o| < ∞)`, qui **inclut** la queue de la distribution conditionnelle à `o` dans le géant. Palier 4 doit clarifier la définition : `Φ(n) = P_p(|C_o| < n)` (sans conditionnement, juste la proba que la composante de o ait moins de n nœuds). **Atténuation** : utiliser la même définition que palier 01, citer en référence.
+**Smell 2 : confusion `|C_o| < n` vs `n ≤ |C_o| < ∞`** — la queue **décroissante** qui porte le taux `α(p) ~ (p − p_c)^{d−1}` est `Φ(n) = P_p(n ≤ |C_o| < ∞)` (palier 01). La CDF `P(|C_o| < n)` est croissante et ne porte pas le taux. **Atténuation** : palier 4 **réutilise exactement** la définition de palier 01 (`P(n ≤ |C_o| < ∞)`), ne dévie jamais de cette clause ; toute régression sur ce smell annule la comparaison palier 01 ↔ palier 04.
 
 **Smell 3 : `p_c(L)` ≠ `1/2` exactement** — palier 03 a montré `p_c(L)` converge vers 1/2 mais reste à 0.4984 à L=256, 0.4987 à L=512. Pour le paramètre `(p - p_c)`, il faut choisir entre `p_c(ℤ²) = 1/2` (limite théorique) et `p_c(L)` mesuré (limite finie). **Atténuation** : utiliser `p - p_c(ℤ²) = p - 1/2` pour la théorie, et `p - p_c(L)` pour les comparaisons empiriques (cite §7 c.1103).
 
@@ -115,7 +117,7 @@ Pour chaque cellule `(L, p)` :
 2. `α(L, p)` extrait par fit log-y sur `Φ(n)` pour `n ∈ {1, 2, 4, 8, ...}` — **R² > 0.90** sur au moins 75% des cellules `(L, p)` avec `p ≥ 0.55`
 3. `α(p) ~ (p - 1/2)^{d-1} = (p - 1/2)^1` en log-log pour L fixé — **R² > 0.85** sur la régression
 4. Visualisation : 3 figures, slopes lisibles, ratios `α_mesuré / α_théorique` dans `[0.5, 2.0]` pour `p ≥ 0.55`
-5. Mémo résultats (≥ 100 lignes, 8 sections) avec interprétation physique
+5. Mémo résultats (substantiel, structuré en sections) avec interprétation physique
 6. Notebook C.1 (0 `NotImplementedError`), C.2 (outputs présents), H.3 (pre-commit PASS)
 
 **Verdict honnête** : si l'exposant mesuré s'écarte de `(p - p_c)^{d-1}` de plus de 50% (corrections d'échelle), le carnet documente l'écart au lieu de l'ajuster.
@@ -133,9 +135,9 @@ Pour chaque cellule `(L, p)` :
 
 ## 9. Livrable
 
-- **`MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb`** : ~15-20 cellules (markdown + code), mesure `Φ(n)`, fit `α(L, p)`, visualisation, synthèse
-- **`docs/research/percolation-04-sharpness-results.md`** : ≥ 100 lignes, 8 sections (cible, architecture, mesures, verdicts, comparaison théorie, limitations, perspectives, conclusion)
-- **README update** : +1 ligne dans le tableau des composants
+- **`MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb`** : carnet structuré (markdown + code), mesure `Φ(n)`, fit `α(L, p)`, visualisation, synthèse
+- **`docs/research/percolation-04-sharpness-results.md`** : mémo structuré en sections (cible, architecture, mesures, verdicts, comparaison théorie, limitations, perspectives, conclusion)
+- **README update** : une entrée ajoutée au tableau des composants
 - **Figures** : 3 PNG (`phi_vs_n.png`, `alpha_vs_p.png`, `alpha_ratio.png`)
 
 **Wall-clock total estimé** : ~6-7 min sweep + 5 min post-processing = **~12-15 min pour le carnet complet**. C'est plus long que les paliers 03b/03c (extensions) mais plus court que le carnet 03 initial (qui a aussi demandé du post-processing substantiel).
