@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-PostTraining
-pedagogical_count: 20
-breakdown: PostTraining=20
-maturity: BETA=14, ALPHA=6
+pedagogical_count: 21
+breakdown: PostTraining=21
+maturity: BETA=14, ALPHA=6, DRAFT=1
 -->
 
 > **Place dans GenAI** : cette série est le pendant *théorique et SOTA 2024-2025* de la série [FineTuning](../FineTuning/README.md). FineTuning couvre la boîte à outils pratique (LoRA, QLoRA, SFT, DPO, model merging) ; PostTraining remonte la chaîne conceptuelle complète SFT → RLHF → DPO → GRPO → RLVR → **GAE** et reproduit les techniques récentes (Deepseek-R1) sur petits modèles, complétée par un notebook d'évaluation comparative, un détecteur de reward hacking, et un notebook d'implémentation from-scratch de la famille "no critic" (GRPO/RLOO/GAE) sur toy env CPU, par un **notebook multi-step à crédit différé causal** (PT-12 : les cinq estimateurs re-mesurés, GAE-λ devient discriminant, verdict BEATS 5/5 seeds — le "1-step collapse" était une propriété du banc), et de **trois notebooks appliqués Qwen + GRPO + reward vérifiable + rewardspy en ligne** (PT-11a Z3 CSP arithmétique sur Qwen3.5-0.8B + PT-11b SymPy arithmétique + Z3 N-queens, plus leur validation multi-seed, **plus PT-11c sur le cran au-dessus Qwen3-1.7B/2B** qui qualifie l'étage GPU moyen 16 Go et oppose 0.8B vs 1.7B/2B à budget steps égal) qui font sortir la série du toy env vers un vrai LLM, et **PT-13 sur les corrections 2025 de la loss GRPO** (`Dr. GRPO` : retrait de `÷|o_i|` et `÷std` ; `clip-higher` de `DAPO` : ε_high=0.28 > ε_low=0.2), dont le biais de longueur est mesuré au **niveau gradient**, et **PT-14 sur les lois thermodynamiques de l'entraînement** (R08 : T ∼ η, équipartition ℓf = C·η, schedule 1/t optimal avec discontinuité η/2, force entropique — la physique des learning-rate schedules utilisés en PT-11), et **PT-15 sur le contrôle par interprétabilité** (R14 §3.2 / R11 §1.1 : refusal direction d'Arditi — extraction diffmoy, ablation par projection toutes-couches, steering additif ; machine unlearning et son évaluation white-box ; finetuning shallow « ~10 exemples rouvrent un modèle aligné » de Gade/Lermen ; evaluation awareness Claude 4.6/Apollo, et **PT-16 sur le vericoding** (Bursuc et al. 2025 : la preuve formelle comme récompense — pipeline spec → LLM local 7B → `Dafny verify`/`lean` réels → boucle de réparation 5 tentatives, avec le cas d'école LC0033 « liste vide prouvée conforme à une spec incomplète »), et **PT-17 sur les règles de score propres comme récompense (laya, Nandakishor M., Apache-2.0)** — récompense qui note une probabilité plutôt qu'une réponse ; étude étagée d'un modèle de décision non autorégressif (encodeur bidirectionnel + tête transformer, primitives `choice`/`score`/`noul`). Étage 1 (CPU from-scratch) : la famille des récompenses (binaire, linéaire, log, Brier, sphérique) sur tâche jouet où p(y|x) est connue — les propres **calibrent 7,6× mieux** que les impropres (ECE 0,011 vs 0,088) à exactitude comparable. Estimateur perturbation (GRPO-like G=8) vs gradient direct (MLE) : direct gagne en calibration. Question tranchée : la sur-confiance vient de **toute récompense qui ne note que l'argmax**, pas de la cross-entropie. Étage 2 (GPU 24 Go, ≥ 4 graines, bras CE / RL / RL+CE) reporté en PR séparée. Les deux se complèment : commencer par FineTuning pour la pratique, PostTraining pour la profondeur méthodologique.
@@ -132,6 +132,18 @@ Le **3ᵉ pilier** du post-training moderne, et souvent le **seul utilisé en pr
 - **Batch size** ≤ 4, gradient accumulation jusqu'à 16 pour batch effectif 64
 - **Training time cible** : < 60 min par notebook
 - **Datasets HF publics** : `HuggingFaceH4/ultrafeedback_binarized` subset, `openai/gsm8k`, `HuggingFaceH4/MATH-500`
+
+## Attentes tailles-dépendantes (leçon ICT-25, #15639)
+
+La section précédente est la contrainte de la **petite carte** ; elle ne dit pas ce qu'on peut *attendre* d'un run selon la taille. Leçon ICT-25 (concern user sur #15634) : on ne peut pas attendre la même chose d'un 2B et d'un 9B+. **Toute PR de training comparant des tailles déclare sa classe d'attente par taille** — sur le modèle d'ICT-25, qui sépare ses runs par taille ; une comparaison inter-tailles sans ce calibrage produit des verdicts non comparables.
+
+| Classe | Tailles | Attente légitime |
+|---|---|---|
+| Routing / actions simples | ≤ 2B | GRPO-RLVR calibrable sur tâches courtes vérifiables |
+| Étage moyen | 4B-8B | FT/PT de tâches structurées ; enveloppe VRAM selon carte (mesurée, pas estimée) |
+| Tâches ambitieuses FT/PT | 9B+ | runs séparés par taille, cartes 24 Go+ (4090/3090), fenêtres réservées |
+
+La sonde du mur vit dans `_measurements/vram_wall_probe.py` (recipe PT_11d exacte, instrument inchangé depuis #15633) ; ses mesures par **taille × carte** sont consignées dans `_measurements/vram_probe_results_*.jsonl` — c'est l'artefact qui fait foi pour les enveloppes, jamais une estimation en prose. Voir #1454 (nomination étage moyen) et #15639 (échelle de la sonde).
 
 ## Quick Start
 
