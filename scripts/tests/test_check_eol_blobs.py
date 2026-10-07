@@ -161,11 +161,16 @@ def test_main_no_changes_returns_zero(tmp_path: Path) -> None:
     assert result.returncode in (0, 2)
 
 
-def test_main_crlf_blob_flagged(tmp_path: Path) -> None:
-    """Controle positif : un blob CRLF declare text -> exit 1.
+def test_main_no_origin_main_returns_two_or_zero(tmp_path: Path) -> None:
+    """Pas d'origin/main dans un repo isole : la garde sort en rc 2 ou 0
+    (panne de sonde ou rien a verifier), elle ne rougit PAS.
 
-    Le `core.autocrlf=true` empeche `git add` de garder un blob CRLF ;
-    on force par `git hash-object -w` + `update-index --cacheinfo`.
+    Cas renomme depuis `test_main_crlf_blob_flagged` : la docstring
+    precedente pretendant un "controle positif -> exit 1" etait fausse
+    (le test ne cree pas d'origin/main, donc `_run(["git", "diff",
+    "origin/main...HEAD"])` echoue, rc=2 ; le test acceptait implicitement
+    cette issue en n'assertant rien). Le cas fondateur reel est
+    `test_main_mixed_blob_flagged_rc1` ci-dessous.
     """
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -228,3 +233,103 @@ def test_main_crlf_blob_flagged(tmp_path: Path) -> None:
             f"la garde a rougi alors qu'elle ne devait pas : "
             f"stderr={result.stderr!r}"
         )
+    assert result.returncode in (0, 2)
+
+
+def test_main_mixed_blob_flagged_rc1(tmp_path: Path) -> None:
+    """Controle positif fondateur (#19385 review) : un blob mixte declare
+    `text` dans `.gitattributes` -> exit 1, et stderr contient le nom
+    du fichier + la commande de remediation (`git add --renormalize`).
+
+    Le test pose explicitement `origin/main` (le repo isole ne cree pas
+    de remote par defaut, et c'est precisement ce qui rendait le
+    precedent test muet en rc 2) : `git update-ref refs/remotes/origin/main
+    HEAD` rend la sonde `git diff origin/main...HEAD` reellement
+    fonctionnelle, et c'est la condition pour que la garde voie le
+    blob ajoute dans le second commit.
+
+    Le test echoue sur rc 2 (la classe de faux-positifs que la review
+    ai-01 du 2026-10-07 a releve : les tests d'integration acceptaient
+    rc 2 par defaut, ce qui masquait les vrais controles positifs).
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True)
+    for key, val in (
+        ("user.email", "test@example.com"),
+        ("user.name", "Test"),
+        ("core.autocrlf", "false"),
+    ):
+        subprocess.run(
+            ["git", "config", key, val], cwd=str(repo), check=True,
+        )
+    # Commit 1 (BASE) : `.gitattributes` declare mixed.txt text eol=lf.
+    # mixed.txt n'est pas encore cree -- on declare l'attribut, puis on
+    # l'ajoute dans le commit 2. Sans attribut, la garde classerait
+    # `attr=""` et la verification `_classify` rendrait False.
+    (repo / ".gitattributes").write_text(
+        "mixed.txt text eol=lf\n", encoding="utf-8",
+    )
+    subprocess.run(
+        ["git", "add", ".gitattributes"], cwd=str(repo), check=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "base: declare eol=lf on mixed.txt", "-q"],
+        cwd=str(repo), check=True,
+    )
+    base_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=str(repo),
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    # Pose `origin/main` sur le commit de base -- sans remote, le
+    # `git diff origin/main...HEAD` echoue en rc 128 (la sonde sort
+    # en rc 2 et le test accepterait a tort). `update-ref` est la
+    # voie documentee pour declarer un upstream local.
+    subprocess.run(
+        ["git", "update-ref", "refs/remotes/origin/main", base_sha],
+        cwd=str(repo), check=True,
+    )
+    # Commit 2 (HEAD) : ajout de mixed.txt avec contenu mixte.
+    # Le `git add` normaliserait CRLF -> LF sous `text eol=lf` (meme avec
+    # core.autocrlf=false : .gitattributes prend la main). On force le
+    # blob mixte par `git hash-object -w --no-filters` + `update-index
+    # --cacheinfo` pour bypasser la renormalisation, comme
+    # `test_main_no_origin_main_returns_two_or_zero` ci-dessus.
+    mixed = tmp_path / "mixed_src.txt"
+    mixed.write_bytes(b"line1 LF\nline2 CRLF\r\n")
+    blob_sha = subprocess.run(
+        ["git", "hash-object", "-w", "--no-filters", str(mixed)],
+        capture_output=True, text=True, cwd=str(repo), check=True,
+    ).stdout.strip()
+    subprocess.run(
+        ["git", "update-index", "--add", "--cacheinfo",
+         f"100644,{blob_sha},mixed.txt"],
+        cwd=str(repo), check=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "head: add mixed blob", "-q"],
+        cwd=str(repo), check=True,
+    )
+    # Lance la garde.
+    result = subprocess.run(
+        [sys.executable, str(_MOD_PATH)],
+        capture_output=True, text=True,
+        cwd=str(repo),
+    )
+    # La garde DOIT rougir en rc 1 (pas rc 0, pas rc 2). Le test echoue
+    # sur rc 2 -- c'est precisement la classe de silencieux qui rendait
+    # le test precedent aveugle au controle positif reel.
+    assert result.returncode == 1, (
+        f"rc attendu 1, obtenu {result.returncode} "
+        f"stderr={result.stderr!r} stdout={result.stdout!r}"
+    )
+    # La sortie doit nommer le fichier et la commande de remediation.
+    combined = result.stderr + result.stdout
+    assert "mixed.txt" in combined, (
+        f"le nom du fichier devrait etre dans la sortie : "
+        f"{combined!r}"
+    )
+    assert "renormalize" in combined, (
+        f"la commande de remediation devrait etre dans la sortie : "
+        f"{combined!r}"
+    )

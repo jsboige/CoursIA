@@ -63,8 +63,8 @@ LF_ATTRS = ("text", "lf")
 # attribut EOL n'est pose (uniquement l'attribut text). On capture
 # l'attribut brut ; la decision le `.strip()` avant test d'appartenance.
 EOL_LINE_RE = re.compile(
-    r"(?P<i_eol>i/(?P<i_attr>\w+))\s+"
-    r"w/(?P<w_attr>\w+)\s+"
+    r"(?P<i_eol>i/(?P<i_attr>\S+))\s+"
+    r"w/(?P<w_attr>\S*)\s+"
     r"attr/(?P<attr>[^\t]*?)\s+"
     r"eol=(?P<eol_attr>\S+)"
     r"\s+(?P<path>.+)"
