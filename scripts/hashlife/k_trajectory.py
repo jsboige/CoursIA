@@ -26,10 +26,21 @@ La tranche 3 (#19227) ajoute :
 5. Mode `--json-in` : consomme le JSON produit par `--mode measure`
    (n'a pas besoin de ré-exécuter la mesure -- gain de temps + déterminisme).
 
+Tranche Origami pli 3 (#19742, EPIC Origami Wolfram) ajoute :
+6. Mode `--mode wolfram` : mesure K_trajectory sur les automates 1-D de
+   Wolfram (Rule 30 chaotique, Rule 110 Turing-complet). Génère la
+   trajectoire via `ict.wolfram_step.wolfram_trajectory` (organe pli 2
+   PR #19793) ; convertit chaque état 1-D en ligne 1×N compatible avec
+   `grid_to_packed` ; mesure le discriminant cross-dimension 1-D / 2-D.
+   Le verdict attendu : Rule 30 ~ SOUP-FRAGILE-* (chaos LZ-compressible),
+   Rule 110 ~ PROGRAM-CONFIRMED (Turing-completude non-compressible).
+
 Usage :
     python scripts/hashlife/k_trajectory.py --mode measure
     python scripts/hashlife/k_trajectory.py --mode verify-corpus
     python scripts/hashlife/k_trajectory.py --mode bounds --json-in results.json
+    python scripts/hashlife/k_trajectory.py --mode wolfram --rule 30 --n-cells 64
+    python scripts/hashlife/k_trajectory.py --mode wolfram --all
 """
 from __future__ import annotations
 
@@ -540,11 +551,226 @@ def cmd_bounds(args: argparse.Namespace) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+# Mode Wolfram (Origami pli 3, EPIC #19742 / PR pli 2 #19793)
+# ---------------------------------------------------------------------------
+
+
+def wolfram_trajectory_to_grid(traj: Sequence[Sequence[Cell]]) -> list[list[list[Cell]]]:
+    """Convertit une trajectoire 1-D Wolframe en liste de grilles 1×N.
+
+    Chaque état (vecteur 1-D de cellules) devient une grille 1×N : une
+    seule ligne, N colonnes. Cette forme est compatible avec
+    `grid_to_packed` (packing bits, 8 cellules/octet, MSB first).
+
+    Hypothèse : `traj[i]` est une séquence de Cell (= 0 ou 1), de longueur
+    fixe N pour tous les i. Si N n'est pas multiple de 8, le dernier
+    octet est complété par des zéros (cf. `grid_to_packed`).
+    """
+    return [[list(state)] for state in traj]
+
+
+def measure_wolfram_trajectory(
+    rule: int,
+    n_cells: int,
+    n_steps: int,
+    seed: int,
+    n_values: Sequence[int],
+) -> list[dict]:
+    """Mesure K_trajectory sur la trajectoire Wolframe d'une règle.
+
+    Génère la trajectoire via `ict.wolfram_step.wolfram_trajectory`,
+    convertit en grilles 1×N, et mesure K(t, W=2^n) pour chaque n dans
+    `n_values`.
+
+    NB : la trajectoire 1-D est "naturellement" compatible avec l'instrument
+    LZ fenêtré (les états successifs sont contigus en mémoire après
+    packing). Pas de réimplémentation de la mesure -- seul l'organe
+    `ict.wolfram_step` est invoqué.
+    """
+    try:
+        from ict.wolfram_step import wolfram_trajectory  # pli 2 PR #19793
+    except ImportError as e:
+        raise RuntimeError(
+            "ict.wolfram_step introuvable. L'organe (PR #19793) doit être "
+            "présent dans MyIA.AI.Notebooks/IIT/ICT-Series/ict/wolfram_step.py "
+            f"et ce dossier doit être dans sys.path. Erreur: {e}"
+        )
+
+    traj_1d = wolfram_trajectory(
+        rule=rule, n_cells=n_cells, n_steps=n_steps, seed=seed, record_densities=False
+    )
+    traj_grid = wolfram_trajectory_to_grid(traj_1d)
+    return measure_k_trajectory(f"wolfram_R{rule}_n{n_cells}_seed{seed}", traj_grid, n_values)
+
+
+def measure_wolfram_corpus(n_cells: int = 64, n_steps: int = 64, seed: int = 33) -> list[dict]:
+    """Mesure K_trajectory sur le corpus Wolframe (Rule 30 + Rule 110).
+
+    Règles canoniques :
+    - Rule 30 (classe III, chaotique) -- attendu SOUP-FRAGILE-*.
+    - Rule 110 (classe IV, Turing-complet) -- attendu PROGRAM-CONFIRMED
+      ou PROGRAM-WEAK (si la Turing-completude produit des motifs
+      périodiques détectables par LZ).
+
+    Paramètres :
+    - n_cells=64 : taille canonique Wolframe (Cook 2004, Wolfram 2002).
+    - n_steps=64 : 2^6 états, fenêtre max W=64 = la trajectoire entière.
+    - seed=33 : reproductibilité (cf. PR #19793).
+    """
+    n_values = [0, 1, 2, 3, 4, 5, 6]  # W = 1, 2, 4, 8, 16, 32, 64 (borne n_steps)
+    all_results = []
+    for rule in (30, 110):
+        all_results.extend(
+            measure_wolfram_trajectory(
+                rule=rule, n_cells=n_cells, n_steps=n_steps, seed=seed, n_values=n_values
+            )
+        )
+    return all_results
+
+
+def wolfram_verdict(results: list[dict]) -> dict:
+    """Verdict cross-règles pour les trajectoires Wolframe.
+
+    Pour chaque règle mesurée, calcule le ratio K(t, W_last) / K(t, W_first)
+    brut (cf. `verdict()` de la tranche 1) et classifie :
+
+    - WOLFRAM-CHAOTIC-FRAGILE (Rule 30 attendu) -- ratio < 0.7 : le chaos
+      est LZ-compressible à toutes les échelles (discriminant soupe).
+    - WOLFRAM-TURING-ENTRENED (Rule 110 attendu) -- ratio >= 0.95 : la
+      Turing-completude produit des motifs non-compressibles (auto-entretien).
+    - WOLFRAM-WEAK : ratio in [0.7, 0.95) -- indétermination, à creuser.
+
+    Le verdict cross-règles final :
+    - CONFIRMED : Rule 30 fragile + Rule 110 entrened (les deux confirment
+      l'hypothèse cross-dimension).
+    - PARTIAL : un seul des deux confirme.
+    - REFUTED : aucun des deux ne confirme (ou Rule 30 entrened, Rule 110
+      fragile -- le discriminant ne tient pas).
+    """
+    by_name: dict[str, list[dict]] = {}
+    for r in results:
+        by_name.setdefault(r["trajectory"], []).append(r)
+
+    verdicts = {}
+    for name, runs in by_name.items():
+        runs_sorted = sorted(runs, key=lambda r: r["n"])
+        if len(runs_sorted) < 2:
+            verdicts[name] = "INCONCLUSIVE (insufficient data points)"
+            continue
+        first_k = runs_sorted[0]["k_trajectory"]
+        last_k = runs_sorted[-1]["k_trajectory"]
+        ratio = last_k / first_k if first_k > 0 else float("inf")
+
+        if "R30" in name:
+            # Rule 30 = chaos = fragile (LZ collapse)
+            if ratio < 0.7:
+                verdicts[name] = f"WOLFRAM-CHAOTIC-FRAGILE (ratio {ratio:.3f} < 0.7)"
+            elif ratio < 0.95:
+                verdicts[name] = f"WOLFRAM-WEAK (ratio {ratio:.3f} in [0.7, 0.95))"
+            else:
+                verdicts[name] = (
+                    f"WOLFRAM-CHAOTIC-REFUTED (ratio {ratio:.3f} >= 0.95 -- "
+                    "le chaos ne collapse pas, discriminant 1-D différent du 2-D)"
+                )
+        elif "R110" in name:
+            # Rule 110 = Turing-complet = non-compressible = entrened
+            if ratio >= 0.95:
+                verdicts[name] = f"WOLFRAM-TURING-ENTRENED (ratio {ratio:.3f} >= 0.95)"
+            elif ratio >= 0.7:
+                verdicts[name] = f"WOLFRAM-WEAK (ratio {ratio:.3f} in [0.7, 0.95))"
+            else:
+                verdicts[name] = (
+                    f"WOLFRAM-TURING-REFUTED (ratio {ratio:.3f} < 0.7 -- "
+                    "la Turing-completude collapse sous LZ, l'auto-entretien "
+                    "1-D n'est pas detecte par K_trajectory)"
+                )
+        else:
+            verdicts[name] = f"INCONCLUSIVE (regle inconnue, ratio {ratio:.3f})"
+
+    return verdicts
+
+
+def wolfram_cross_verdict(wv: dict) -> str:
+    """Verdict final cross-règles Wolframe.
+
+    CONFIRMED : Rule 30 CHAOTIC-FRAGILE + Rule 110 TURING-ENTRENED.
+    PARTIAL : un seul des deux confirme.
+    REFUTED : aucun ne confirme, ou les deux sont inversés (Rule 30 entrened,
+              Rule 110 fragile).
+    """
+    r30_keys = [n for n in wv if "R30" in n]
+    r110_keys = [n for n in wv if "R110" in n]
+    r30_fragile = any("CHAOTIC-FRAGILE" in wv[k] for k in r30_keys)
+    r110_entrened = any("TURING-ENTRENED" in wv[k] for k in r110_keys)
+    r30_entrened = any("CHAOTIC-REFUTED" in wv[k] for k in r30_keys)
+    r110_fragile = any("TURING-REFUTED" in wv[k] for k in r110_keys)
+
+    if r30_fragile and r110_entrened:
+        return "WOLFRAM-CROSS-DIMENSION-CONFIRMED"
+    if r30_entrened and r110_fragile:
+        return "WOLFRAM-CROSS-DIMENSION-REFUTED (les deux inverses)"
+    if r30_fragile or r110_entrened:
+        return "WOLFRAM-CROSS-DIMENSION-PARTIAL"
+    return "WOLFRAM-CROSS-DIMENSION-INCONCLUSIVE"
+
+
+def cmd_wolfram(args: argparse.Namespace) -> int:
+    """Mode wolfram : mesure K_trajectory sur automates 1-D Wolframe.
+
+    Soit `--rule <int> --n-cells <int>` (mesure d'une règle unique), soit
+    `--all` (Rule 30 + Rule 110 par défaut).
+    """
+    n_values = [0, 1, 2, 3, 4, 5, 6]
+    if args.all:
+        results = measure_wolfram_corpus(
+            n_cells=args.n_cells, n_steps=args.n_cells, seed=args.seed
+        )
+    else:
+        results = measure_wolfram_trajectory(
+            rule=args.rule,
+            n_cells=args.n_cells,
+            n_steps=args.n_cells,
+            seed=args.seed,
+            n_values=n_values,
+        )
+
+    print(f"{'Trajectory':35s}  {'n':>3s}  {'W':>4s}  {'K(t,W)':>8s}  {'K/n':>8s}")
+    print("-" * 70)
+    for r in results:
+        print(
+            f"{r['trajectory']:35s}  {r['n']:>3d}  {r['W']:>4d}  "
+            f"{r['k_trajectory']:>8d}  {r['k_over_n']:>8.2f}"
+        )
+    print()
+    print("=== Verdict Wolframe par regle ===")
+    wv = wolfram_verdict(results)
+    for name, status in wv.items():
+        print(f"  {name:35s}  {status}")
+    print()
+    final = wolfram_cross_verdict(wv)
+    print(f"=== Verdict final cross-regles ===")
+    print(f"  {final}")
+
+    if args.json_out:
+        out = {
+            "results": results,
+            "per_rule_verdicts": wv,
+            "cross_verdict": final,
+            "n_cells": args.n_cells,
+            "n_steps": args.n_cells,
+            "seed": args.seed,
+        }
+        Path(args.json_out).write_text(json.dumps(out, indent=2, ensure_ascii=False))
+        print(f"\n[INFO] resultats ecrits dans {args.json_out}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else "K_trajectory")
     parser.add_argument(
         "--mode",
-        choices=["measure", "verify-corpus", "bounds"],
+        choices=["measure", "verify-corpus", "bounds", "wolfram"],
         default="measure",
         help="Mode d'exécution (défaut: measure)",
     )
@@ -558,11 +784,36 @@ def main() -> int:
         default=None,
         help="JSON d'entrée (résultats de `--mode measure`), pour les modes qui consomment des résultats",
     )
+    parser.add_argument(
+        "--rule",
+        type=int,
+        default=30,
+        help="Mode wolfram : regle Wolframe (canoniques : 30, 110). Defaut: 30",
+    )
+    parser.add_argument(
+        "--n-cells",
+        type=int,
+        default=64,
+        help="Mode wolfram : nombre de cellules de l'automate 1-D. Defaut: 64",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=33,
+        help="Mode wolfram : seed du pattern initial. Defaut: 33",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Mode wolfram : mesurer Rule 30 + Rule 110 (defaut = regle unique)",
+    )
     args = parser.parse_args()
     if args.mode == "measure":
         return cmd_measure(args)
     if args.mode == "bounds":
         return cmd_bounds(args)
+    if args.mode == "wolfram":
+        return cmd_wolfram(args)
     return cmd_verify_corpus(args)
 
 
