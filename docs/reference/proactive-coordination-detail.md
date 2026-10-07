@@ -217,3 +217,19 @@ Avant que le tirage ne devienne systématique (R5), le plafond de veine portait 
 L'amendement ai-01 du 2026-08-16T22:53Z (verbatim : « on ne jette pas du travail écrit ») borne l'interdit : **le plafond ne bloque jamais la tranche en cours**, seulement la PR suivante.
 
 Anti-pattern fondateur : continuer à claimer `#11224`/`#11271` après la 3ᵉ tranche sans passer par le picker = monoculture auto-référence, le défaut structurel que la veine-mesure a justement rendu visible.
+
+## R0 — l'ORDRE de session, et pas seulement un plancher (mesure 2026-09-19, mandat user)
+
+La règle 1 compte les grains **livrés** — un compte qu'on satisfait en empilant du neuf par-dessus du non-fini. C'est cette faille qui a motivé R0 : rendre l'avancement du travail déjà écrit **condition** du tirage, au lieu de le laisser en concurrence avec lui.
+
+**Mesure du 2026-09-19** sur le plateau : **213 PRs ouvertes**, dont **104 CLEAN** (zéro conflit, mergeables sur-le-champ) et **174 sans aucune review**. Le dépôt ne souffrait pas d'un manque de grains ouverts ; il souffrait de grains ouverts qui n'atterrissaient pas.
+
+**Verbatim user** : « *nombreuses sont celles qui n'auront pas besoin de plus de 4-5 commits de plus, donc si vous travaillez bien, les PRs en souffrance devraient pouvoir partir en moins de 24 h. Or ce n'est pas ce qu'on observe.* »
+
+Trier par **coût de dossier** plutôt que par seule ancienneté en découle : une PR **CLEAN et sans review** ne demande qu'une attestation tierce — c'est le grain le moins cher du dépôt ; une `BLOCKED` demande un diagnostic. L'ancienneté ordonne *à l'intérieur* du sous-ensemble le moins cher, elle ne le choisit pas.
+
+## L'organe d'EPIC mesure la vacuité du conteneur, pas la viabilité du grain (mesure 2026-09-15)
+
+`check_umbrella_freshness.py` rend `SATURATED` quand **tous** les enfants cités d'une EPIC sont fermés — une lecture de **conteneur**. Le verdict inverse (`FRESH`) ne dit rien de la viabilité du **grain** : une EPIC fraîche peut n'avoir qu'un résiduel `INTRINSIC`.
+
+**Mesure du 2026-09-15** : les **8 `sorry` distincts** de `knot_lean`, que #1453 désigne comme « le grain DEEP de cet EPIC », portent chacun, **dans le fichier**, l'annotation qui les déclare hors d'atteinte (`decades` away / *not in Mathlib*). L'organe n'a aucun moyen de le voir — la lecture du contenu reste due, quel que soit son verdict.
