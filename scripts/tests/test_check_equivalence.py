@@ -585,12 +585,15 @@ class TestCheckEquivalence:
         assert "JSONDecodeError" in verdict["error"] or "json" in verdict["error"].lower()
 
     def test_matplotlib_figure_is_equivalent(self, tmp_path):
-        """Une figure matplotlib (image/png + text/plain) ne fait plus LOST_OUTPUTS.
+        """Une figure matplotlib (image/png + text/plain) rend NOTHING_TO_COMPARE.
 
         Leçon revue coord 06/10, c.5994810325 : avec la regle du MIME
         rendu, un `display_data` qui porte `image/png` est ignore pour
-        la comparaison (le text/plain n'est pas rendu par Quarto). La
-        page peut etre EQUIVALENT, plus LOST_OUTPUTS.
+        la comparaison (le text/plain n'est pas rendu par Quarto). Le
+        carnet n'a donc aucune ligne comparable. Avant #19562 ce cas
+        rendait EQUIVALENT 0/0 (faux vert, une page ayant perdu ses
+        sorties HTML aurait rendu le meme verdict). #19562 introduit
+        NOTHING_TO_COMPARE rc=5, distinct d'EQUIVALENT rc=0.
         """
         nb = tmp_path / "test.ipynb"
         _make_notebook_with_outputs(
@@ -613,8 +616,8 @@ class TestCheckEquivalence:
         fake_resp.__exit__ = mock.MagicMock(return_value=False)
         with mock.patch("urllib.request.urlopen", return_value=fake_resp):
             verdict = mod.check_equivalence(str(nb))
-        # Plus de text/plain a comparer (regle du MIME rendu) -> EQUIVALENT
-        assert verdict["verdict"] == "EQUIVALENT"
+        # Aucune ligne comparable (regle du MIME rendu) -> NOTHING_TO_COMPARE
+        assert verdict["verdict"] == "NOTHING_TO_COMPARE"
         assert verdict["total_lines"] == 0
         assert verdict["found_lines"] == 0
 
