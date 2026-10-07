@@ -146,7 +146,7 @@ def main() -> int:
     parser.add_argument(
         "--cwd",
         default=None,
-        help="Papermill --cwd (Tell c.1180 ★★ fondateur). Default: smoke notebook dir.",
+        help="Papermill --cwd. Default: smoke notebook dir.",
     )
     parser.add_argument(
         "--timeout",

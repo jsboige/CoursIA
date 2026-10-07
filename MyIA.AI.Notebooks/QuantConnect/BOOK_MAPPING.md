@@ -114,8 +114,8 @@ Algorithmes LEAN complets sur données de marché. Les exemples 04, 08, 18 et 19
 | 17 | Head Shoulders Pattern Matching with CNN | [ML-HeadShoulders-CNN](projects/ML-HeadShoulders-CNN/) | COVERED | Vivant | |
 | 18/01 | Amazon Chronos Model — Base Model | [ML-Chronos-Foundation](projects/ML-Chronos-Foundation/), [Chronos-Foundation-Forecasting](projects/Chronos-Foundation-Forecasting/) | COVERED | Needs-improvement (les deux, tranche 14) | |
 | 18/02 | Amazon Chronos Model — Fine-Tuned Model | — | GAP | — | aucun ré-entraînement de Chronos dans le dépôt |
-| 19/01 | FinBERT Model — Base Model | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/), [QC-Py-Cloud-01-FinBERT-Sentiment](Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | COVERED | Needs-improvement (tranche 12) | le portage ne produit pas de transaction sur QC Cloud : [#18903](https://github.com/jsboige/CoursIA/issues/18903) |
-| 19/02 | FinBERT Model — Fine-Tuned Model | — | GAP | — | aucun ré-entraînement de FinBERT dans le dépôt |
+| 19/01 | FinBERT Model — Base Model | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/), [QC-Py-Cloud-01-FinBERT-Sentiment](Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | COVERED | Needs-improvement (tranche 12) | le portage produit désormais ses rebalancements sur QC Cloud (v7, 2022-01/02, deux ordres, Sharpe -1,137) et son verdict `INCONCLUSIVE` est écrit (critère 4, §Métriques du README) ; [#18903](https://github.com/jsboige/CoursIA/issues/18903) se ferme au merge |
+| 19/02 | FinBERT Model — Fine-Tuned Model | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/) (`main_finetuned.py`, `finetune/`) | COVERED | Non déployé (le ré-entraînement s'exécute hors QC) | ré-entraînement porté et mesuré hors échantillon sur quatre graines ; verdict **NO BEATS** (écart moyen -0,1054, -2,92 sigma, aucune graine gagnante) |
 
 ---
 
@@ -123,7 +123,7 @@ Algorithmes LEAN complets sur données de marché. Les exemples 04, 08, 18 et 19
 
 | # | Exemple du livre | Projet(s) du dépôt | Statut | Statut QC | Remarque |
 |---|------------------|--------------------|--------|-----------|----------|
-| 01 | Reinforcement Learning of Hedging Options | [RL-Options-Hedging](projects/RL-Options-Hedging/) | STUB | BROKEN (backtest QC sans code dans le dépôt) | portage suivi par [#18902](https://github.com/jsboige/CoursIA/issues/18902) |
+| 01 | Reinforcement Learning of Hedging Options | [RL-Options-Hedging](projects/RL-Options-Hedging/) | COVERED | Vivant | PPO 8 seeds vs delta BS quotidien, variance + CVaR 95 % sur 3 régimes, verdict NO BEATS — [#18902](https://github.com/jsboige/CoursIA/issues/18902) |
 
 Les projets [RL-DQN-Trading](projects/RL-DQN-Trading/) et [Reinforcement-Learning-Trading](projects/Reinforcement-Learning-Trading/), ainsi que les notebooks [QC-Py-25-Reinforcement-Learning](Python/QC-Py-25-Reinforcement-Learning.ipynb) et [QC-Py-32-RL-DQN-Trading](Python/QC-Py-32-RL-DQN-Trading.ipynb), appliquent l'apprentissage par renforcement au trading d'actions, pas à la couverture d'options. Leurs README les rattachent au chapitre 07, mais ils ne reproduisent pas cet exemple.
 
@@ -227,7 +227,7 @@ Pour 14 et 15, le texte ne donne pas de Sharpe, mais le balayage de paramètres 
 | 18/01 | aucun chiffre dans le texte ; courbes de prévision et table de rendements mensuels | 2019-01-01 → 2024-04-01, capital 100 k, 5 actions les plus liquides, Chronos pré-entraîné | Sharpe 0,277, CAGR 7,23 %, pire baisse 13,5 % | [ML-Chronos-Foundation](projects/ML-Chronos-Foundation/), 2015-01-01 → 2026-01-01 | `NON COMPARABLE` |
 | 18/02 | — | Chronos ré-entraîné | — | aucune reproduction (`GAP`) | sans objet |
 | 19/01 | idem 18/01 | 2022-01-01 → 2023-01-01, capital 100 k, 10 actions les plus liquides, FinBERT pré-entraîné | Sharpe 0,584, CAGR 22,10 %, pire baisse 43,0 % | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/), 2015-01-01 → 2026-01-01 | `NON COMPARABLE` |
-| 19/02 | — | FinBERT ré-entraîné | — | aucune reproduction (`GAP`) | sans objet |
+| 19/02 | — | FinBERT ré-entraîné | exactitude hors échantillon 0,3461 contre 0,4515 pour le modèle de base ; rendement cumulé de la stratégie −0,046 contre −0,037 | [ML-FinBERT-Sentiment](projects/ML-FinBERT-Sentiment/) (`finetune/`), hors échantillon 2019-07 → 2019-12, quatre graines | `NON COMPARABLE` : le livre ne publie aucun chiffre pour cet exemple, et le ré-entraînement n'est pas déployé sur QC |
 
 **Rejeux** (projets QuantConnect séparés, une exécution chacun) :
 
@@ -248,7 +248,7 @@ Le chapitre 07 et l'exemple 01 du chapitre 08 ne publient aucune statistique de 
 
 | # | Chiffre du livre | Conditions du livre | Notre chiffre | Nos conditions | Verdict |
 |---|------------------|---------------------|---------------|----------------|---------|
-| 07/01 | aucun chiffre : courbes de prix, de convergence des pertes, de décision face au delta et de richesse des portefeuilles de couverture (figures 7.3 à 7.8) | 2018-01-01 → 2024-01-01, capital 1 M, options sur TSLA, couverture en delta par un réseau ré-entraîné chaque mois | — | aucune reproduction ([RL-Options-Hedging](projects/RL-Options-Hedging/) est un `STUB`, portage suivi par [#18902](https://github.com/jsboige/CoursIA/issues/18902)) | `NON COMPARABLE` |
+| 07/01 | aucun chiffre : courbes de prix, de convergence des pertes, de décision face au delta et de richesse des portefeuilles de couverture (figures 7.3 à 7.8) | 2018-01-01 → 2024-01-01, capital 1 M, options sur TSLA, couverture en delta par un réseau ré-entraîné chaque mois | le livre ne publie ni variance ni CVaR comparables ; notre portage mesure variance et CVaR 95 % du P&L de couverture (PPO 8 seeds contre delta BS, 3 régimes de vol, avec et sans frais) | [RL-Options-Hedging](projects/RL-Options-Hedging/) : call ATM 30 j sur SPY, PPO contre delta BS quotidien — verdict **NO BEATS** (delta imbattu par toutes les seeds, tous régimes, tous niveaux de frais) | `NON COMPARABLE` |
 | 08/01 | aucune statistique de backtest ; les tables 8.4 à 8.9 portent sur d'autres portefeuilles, et leurs chiffres viennent du service PredictNow | 2020-02-01 → 2024-04-01, capital 100 k, 16 ETF, poids mensuels lus dans l'Object Store après un appel au service | aucune mesure publiée | [Portfolio-Optimization-ML](projects/Portfolio-Optimization-ML/) : 15 titres, covariance de Ledoit-Wolf, maximum de Sharpe, sans le service | `NON COMPARABLE` |
 | 08/02, stratégie primaire | Sharpe 0,88, rendement annuel moyen 3,5 %, pire baisse −3,5 % | hors échantillon du 2021-10-01 au 2023-01-15, EUR/USD, données EBS, sans frais de transaction ; règle de saisonnalité intrajournalière de Breedon et Ranaldo | **R1 : Sharpe −0,976, CAGR −6,20 %, pire baisse 10,6 %, profit net −7,94 %, 1336 ordres.** **R2 : Sharpe −0,143, CAGR 0,77 %, pire baisse 5,7 %, profit net 1,00 %, 1336 ordres.** **Rejeu de R2, fenêtres décalées : −1 h Sharpe 0,300, CAGR 4,56 % ; +1 h Sharpe 0,559, CAGR 6,61 %, pire baisse 3,6 %** | code de #19052 ([Corrective-AI](projects/Corrective-AI/)), stratégie primaire seule (`use_meta=false`), convention par défaut, EUR/USD OANDA à la minute, capital 100 k, frais du moteur nuls, fenêtre du livre ; R1 tel quel, R2 avec les ordres remplis au milieu de la fourchette | `ÉCART` : ni R1 ni R2 ne sont dans la tolérance (Sharpe de signe opposé ; CAGR de R2 à 2,7 points du livre, au-delà de 2 ; seule la pire baisse de R2 est dans la tolérance). L'écart achat-vente en explique une part mesurée, pas la totalité. Deuxième cause mesurée : l'horodatage des fenêtres porte le CAGR de R2 au-dessus du livre à +1 h (6,61 % contre 3,5 %) — détail [#19114](https://github.com/jsboige/CoursIA/issues/19114). L'écart de Sharpe résiduel reste porté par la source EBS contre OANDA, candidate non mesurée (barres EBS non partagées). Diagnostic : [#18901](https://github.com/jsboige/CoursIA/issues/18901) |
 | 08/02, après Corrective AI | Sharpe 1,29, rendement annuel moyen 4,1 %, pire baisse −1,9 % | idem, après le modèle correctif du service PredictNow | — | #19052 remplace le modèle correctif du service par un méta-étiquetage | `NON COMPARABLE` : le modèle correctif n'est pas celui du livre |
@@ -300,10 +300,9 @@ Ces projets n'ont pas d'exemple correspondant dans le livre, mais illustrent des
 
 | Exemple | Suite |
 |---------|-------|
-| 04/05, 04/18, 05/02, 05/15 | [#18957](https://github.com/jsboige/CoursIA/issues/18957) : écart interquartile, élimination récursive des variables, régression polynomiale, OPTICS (scripts courts sur données synthétiques, à porter dans QC-Py-18 à 20) |
 | 06/02 | [#18958](https://github.com/jsboige/CoursIA/issues/18958) : régimes par prétraitement de facteurs |
 | 06/08/01, 06/08/03 | [#18960](https://github.com/jsboige/CoursIA/issues/18960) : stop fixe de référence et couverture par put, dans [Stoploss-Volatility-ML](projects/Stoploss-Volatility-ML/) |
-| 06/18/02, 06/19/02 | [#18962](https://github.com/jsboige/CoursIA/issues/18962) : ré-entraînement de Chronos et de FinBERT (calcul GPU) |
+| 06/18/02 | [#18962](https://github.com/jsboige/CoursIA/issues/18962) : ré-entraînement de Chronos (calcul GPU) |
 | 07/01 | [#18902](https://github.com/jsboige/CoursIA/issues/18902) |
 | 08/01 | exclusion : le livre appelle l'API payante PredictNow.ai ; le dépôt garde une optimisation sans service externe |
 | 08/02 | [#18901](https://github.com/jsboige/CoursIA/issues/18901) (méta-étiquetage sans l'API PredictNow.ai) |

@@ -5,12 +5,12 @@
 
 ## Description
 
-Stratégie ML d'ensemble combinant la régression Ridge, le Random Forest et le Gradient Boosting sur un univers de 30 actions. Rebalancement hebdomadaire avec ré-entraînement mensuel. Utilise les rendements décalés comme variables explicatives pour la prédiction de direction.
+Stratégie ML d'ensemble combinant la régression Ridge, le Random Forest et le Gradient Boosting sur un univers de 30 actions. Rebalancement hebdomadaire avec ré-entraînement hebdomadaire (chaque lundi). Utilise les rendements décalés comme variables explicatives pour la prédiction de direction.
 
 ## Comment exécuter
 
 **Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Ensemble"`
-**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour l'exécuter.
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour l'exécuter. **Verdict de recherche** (notebook) : **NO BEATS** — l'ensemble ne bat pas SPY buy-and-hold (Sharpe -0.987 au meilleur cas de confiance ; SPY 0.182, CAGR 4.1 %).
 
 ## Métriques de backtest
 
@@ -23,3 +23,4 @@ Stratégie ML d'ensemble combinant la régression Ridge, le Random Forest et le 
 ## Fichiers
 
 - `main.py` — Stratégie (`MLEnsembleAlgorithm`)
+- `quantbook.ipynb` - QuantBook de recherche : analyse de la stratégie d'ensemble ML

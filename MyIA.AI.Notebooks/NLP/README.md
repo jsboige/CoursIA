@@ -6,6 +6,16 @@ Point d'entrée transversal : le deck Slidev [`slides/09-traitement-automatique-
 
 Origine : EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271) — migration des notebooks TAL depuis `GenAI/Texte` vers une série à owner propre.
 
+## Objectifs d'apprentissage
+
+À l'issue de cette série, vous serez capable de :
+
+1. **Construire** un pipeline linguistique de bout en bout (tokenisation → lemmes → POS → dépendances → NER) et mesurer ses erreurs contre un gold
+2. **Estimer** un modèle de langue n-gramme par MLE puis par lissage (Laplace add-1, Kneser-Ney), et tracer la courbe de perplexité en fonction de n
+3. **Implémenter** un CRF linéaire from scratch (forward/backward log-space, gradient, Viterbi) et vérifier l'écart nul avec `sklearn-crfsuite`
+4. **Convertir** une CFG en CNF puis appliquer l'algorithme CYK avec backpointers, et mesurer l'ambiguïté sur des phrases de référence
+5. **Décoder** par Viterbi un HMM markovien, mesurer le renversement de décision par rapport à un classifieur token par token, et confronter à `hmmlearn`/`nltk`
+
 ## Notebooks
 
 | # | Notebook | Description | Durée |

@@ -7,8 +7,22 @@ conteneurs et ses unites.
 
 | Fichier | Chemin vivant | Etat |
 |---|---|---|
-| `pool.sh` | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, 8 slots depuis le 2026-09-22 |
+| `pool.sh` | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, 8 slots depuis le 2026-09-22. **Source deposee ici depuis le 2026-10-06** (avant, le depot ne portait que ce README) : copie byte-identique a la source `D:\Dev\CoursIA-runners-p0\pool.sh` et a la copie vivante WSL (`sha256:48bb6f272dd21aaf6ec3ec5b0fec659fbce07ff7608f7972dff5c73da7bbfab8`, 11197 octets, LF) -- le correctif `validate_keep` est verifiable depuis le depot |
 | `run-pool-po2026.sh` | `C:\dev\CoursIA-runners-p0\run-pool-po2026.sh` (hote Windows) | **deploye et vivant** -- lanceur de la tache planifiee, porte la borne CPU/memoire. La premiere forme ecrite le 2026-09-22 ne relancait **rien** (cf. piege du transport ci-dessous) ; la forme livree est verifiee de bout en bout |
+
+## `validate_keep` -- la porte contre les `_work` endommages (#14801)
+
+Deploye le 2026-09-28 23:13Z (fenetre accordee 22:06Z, zero job coupe). La classe
+de defaut : un `_work` chaud transporte l'index menteur d'un checkout sparse
+(bits `skip-worktree` sur des fichiers absents, `git status --porcelain` **vide**
+-- l'arbre se declare sain) et le job suivant meurt sur `not uptodate; will not
+remove`. `validate_keep()` (appelee par `restore_work()`) valide l'arbre parque
+avant de le restaurer : bits `^S` OU `update-index --really-refresh` + statut
+sale = **endommage** -> le keep est ecarte et le slot repart froid (seul etat de
+confiance) ; un keep sain reste chaud (objectif #18225 preserve). Preuve au
+deploiement : `pool.log` 01:13:13-14 locales, `slot1/slot2/slot3: _work ecarte
+(endommage) -> slot froid` -- les trois keeps herites des forks v1 interceptes
+des le premier spawn.
 
 **Attention -- la chaine est coupee en deux repertoires.** Mesure du 2026-09-22 :
 
@@ -400,3 +414,49 @@ vide confond.
   ici). Le cap reste donc un backstop choisi haut, pas une mesure -- et la
   lecture correcte d'un `MemoryPeak` passe par `memory.stat`, jamais par le
   rapport peak/cap seul.
+
+## Derive depot <-> vivant, mesuree le 2026-10-07
+
+Le tableau ci-dessus annonce une copie `pool.sh` **byte-identique** a la source `D:`
+(mesure du 2026-09-22). Cette annonce etait **fausse depuis le 2026-09-28** : la copie
+du depot etait restee a la PR de livraison #17406 pendant que trois correctifs
+etaient deployes en WSL sans redescendre au depot -- l'empreinte fait foi :
+
+| Copie | md5 |
+|---|---|
+| `origin/main`, avant resynchronisation | `603748e03148e271671b50cf71d17b7a` |
+| source `D:` **et** copie vivante WSL | `306ae316fa7ad26a3583a61a4d68e54d` |
+
+La copie du depot n'avait ni la garde anti-stall HTTPS (#18225), ni le workspace chaud
+par slot (#18225 : 5,49 Gio de fetch complet evite a chaque job froid), ni la
+quarantaine `validate_keep` (#14801). **Restaurer le pool depuis le depot
+reintroduisait donc les deux defauts** que ces correctifs reparent. `run-pool-po2026.sh`
+n'avait pas derive, lui -- byte-identique des deux cotes (`a14db6d6881d417dfb8eef309c639cd9`).
+
+## Le mint de token ne distinguait pas le transitoire du structurel
+
+`mint_token` etait mono-coup : un seul appel a `gh.exe`, et un echec rendait le slot au
+tick suivant du superviseur (30 s). Mesure du 2026-10-07 sur `pool.log` (**310 echecs**
+depuis le 28/09, repartis sur les huit slots) :
+
+| Cause | Occurrences | Nature |
+|---|---:|---|
+| `UtilAcceptVsock:271: accept4 failed 110` -- ETIMEDOUT de l'interop WSL -> `gh.exe` | **305** | transitoire |
+| reponses tronquees (`unexpected EOF`, `unexpected end of JSON input`), crash de `gh.exe` | 5 | transitoire |
+
+**Aucune n'etait structurelle.** La distribution n'est pas un goutte-a-goutte : **247 des
+310** tiennent dans la seule fenetre `2026-10-05 23h -> 2026-10-06 02h`, ou le
+superviseur re-tentait toutes les 30 s sans jamais nommer la cause. Le compte se fait par
+proximite de lignes, pas par horodatage : la ligne `UtilAcceptVsock` **ne porte pas
+d'horodatage**, un filtre par date la rend invisible et fait conclure a tort a une autre
+cause.
+
+Le superviseur **Docker** avait recu cette doctrine par #15154 (#16086 pour la
+classification 4xx-terminal / 5xx-transitoire, #19597 pour le compte nomme) ; le pool
+**natif** ne l'avait jamais recue. `mint_token` retente desormais les causes
+transitoires (plafond `MINT_ATTEMPTS`, defaut 4, backoff 2/4/6 s), abandonne
+immediatement sur un structurel (`HTTP 40[134]`, `Bad credentials`), et **nomme la
+cause** dans `pool.log`.
+
+Banc : `test_pool_mint.sh` (huit cas, via `POOL_PROBE=mint-token`, sans effet de bord).
+Controle negatif mesure : le meme banc, retry neutralise, rend **4 PASS / 4 FAIL**.

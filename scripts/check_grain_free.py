@@ -187,12 +187,15 @@ def surface_claims(number: str, lane: str | None) -> dict:
     cmd = [sys.executable, str(script), number, "--lane", lane]
     proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
     # Semantique documentee de check_lane_claim.py, MODE ISSUE (sans --paths) :
-    #   0 = libre, 1 = claim bloquant d'une autre lane, 2 = erreur io-ou-gh.
+    #   0 = libre, 1 = claim bloquant d'une autre lane, 2 = erreur io-ou-gh,
+    #   3 = occupation IMPLICITE (#14300) -- une PR OUVERTE d'une autre lane
+    #       reference l'issue sans marqueur. Verdict, pas panne : les lignes
+    #       rapportees ci-dessous portent le detail (lane, PR, chemins).
     # Le 2 n'est PAS un resultat : le traiter comme tel afficherait une panne
     # sous les traits d'un constat benin -- la faute exacte que ce fichier
     # existe pour empecher. (En mode --paths, que l'on n'utilise pas ici, le 2
     # signifie « collision de PR cross-lane » : ne pas transposer.)
-    if proc.returncode not in (0, 1):
+    if proc.returncode not in (0, 1, 3):
         err = (proc.stderr or "").strip().splitlines()
         raise SurfaceError(f"check_lane_claim.py -> exit {proc.returncode}: "
                            f"{err[-1] if err else 'aucun message'}")
