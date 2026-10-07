@@ -31,44 +31,112 @@ def _build_seg(*, speaker: str, text: str = "x"):
 
 
 def test_routes_narrator_to_qwen_when_flag_on():
-    """When NARRATOR_QWEN_ROUTING is ON (default), narrator segments route."""
-    from v4.p5_tts import _should_route_narrator_to_qwen
+    """When NARRATOR_QWEN_ROUTING is ON (default), narrator segments route.
+    Default behavior is UNCHANGED by phase 1 (#19692): Qwen VoiceDesign
+    stays the narrator engine."""
+    from v4.p5_tts import _should_route_narrator_to
 
     seg = _build_seg(speaker="narrateur")
-    assert _should_route_narrator_to_qwen(seg) is True
+    assert _should_route_narrator_to("qwen_voicedesign", seg) is True
 
 
 def test_does_not_route_non_narrator_speakers():
     """Acceptance #1: routing is limited to narrateur; other speakers stay
-    on FishAudio clone even when the flag is ON."""
-    from v4.p5_tts import _should_route_narrator_to_qwen
+    on FishAudio clone even when an engine flag is ON."""
+    from v4.p5_tts import _should_route_narrator_to
 
-    for speaker in (
-        "elisabeth_rousset",
-        "loiseau",
-        "comte",
-        "comtesse",
-        "cornudet",
-        "officier",
-        "figurant",
-    ):
-        seg = _build_seg(speaker=speaker)
-        assert _should_route_narrator_to_qwen(seg) is False, (
-            f"non-narrator speaker '{speaker}' must NOT route to Qwen"
-        )
+    for engine in ("qwen_voicedesign", "cosyvoice3"):
+        for speaker in (
+            "elisabeth_rousset",
+            "loiseau",
+            "comte",
+            "comtesse",
+            "cornudet",
+            "officier",
+            "figurant",
+        ):
+            seg = _build_seg(speaker=speaker)
+            assert _should_route_narrator_to(engine, seg) is False, (
+                f"non-narrator speaker '{speaker}' must NOT route to {engine}"
+            )
 
 
 def test_routes_off_when_flag_disabled():
-    """Env flag NARRATOR_QWEN_ROUTING=0 disables routing (legacy path)."""
+    """Env flag NARRATOR_QWEN_ROUTING=0 with no other engine selected
+    disables routing (legacy FishAudio path)."""
     from v4 import p5_tts
 
     original = p5_tts._NARRATOR_QWEN_ROUTING
     try:
         p5_tts._NARRATOR_QWEN_ROUTING = False
         seg = _build_seg(speaker="narrateur")
-        assert p5_tts._should_route_narrator_to_qwen(seg) is False
+        assert p5_tts._should_route_narrator_to("qwen_voicedesign", seg) is False
     finally:
         p5_tts._NARRATOR_QWEN_ROUTING = original
+
+
+def test_cosyvoice3_off_by_default():
+    """Phase 1 (#19692): CosyVoice3 routing is OFF by default — the default
+    narrator engine does not change until the association's listening picks
+    the winner (#17586)."""
+    from v4 import p5_tts
+
+    assert p5_tts._NARRATOR_COSYVOICE3_ROUTING is False
+
+
+def test_cosyvoice3_routes_when_selected():
+    """With Qwen off and CosyVoice3 on, the narrator routes to CosyVoice3
+    and NOT to Qwen — engine selection is exclusive by construction."""
+    from v4 import p5_tts
+
+    orig_qwen = p5_tts._NARRATOR_QWEN_ROUTING
+    orig_cv3 = p5_tts._NARRATOR_COSYVOICE3_ROUTING
+    try:
+        p5_tts._NARRATOR_QWEN_ROUTING = False
+        p5_tts._NARRATOR_COSYVOICE3_ROUTING = True
+        seg = _build_seg(speaker="narrateur")
+        assert p5_tts._should_route_narrator_to("cosyvoice3", seg) is True
+        assert p5_tts._should_route_narrator_to("qwen_voicedesign", seg) is False
+    finally:
+        p5_tts._NARRATOR_QWEN_ROUTING = orig_qwen
+        p5_tts._NARRATOR_COSYVOICE3_ROUTING = orig_cv3
+
+
+def test_both_engine_flags_active_raises():
+    """Two active engine flags are a configuration error, never a silent
+    precedence — same no-silent-swap contract as #15002 acceptance 6."""
+    from v4 import p5_tts
+
+    orig_qwen = p5_tts._NARRATOR_QWEN_ROUTING
+    orig_cv3 = p5_tts._NARRATOR_COSYVOICE3_ROUTING
+    try:
+        p5_tts._NARRATOR_QWEN_ROUTING = True
+        p5_tts._NARRATOR_COSYVOICE3_ROUTING = True
+        seg = _build_seg(speaker="narrateur")
+        try:
+            p5_tts._should_route_narrator_to("cosyvoice3", seg)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("two active engine flags must raise ValueError")
+    finally:
+        p5_tts._NARRATOR_QWEN_ROUTING = orig_qwen
+        p5_tts._NARRATOR_COSYVOICE3_ROUTING = orig_cv3
+
+
+def test_selected_narrator_engine_none_when_all_off():
+    """No flag on -> None (legacy FishAudio narrator), not an error."""
+    from v4 import p5_tts
+
+    orig_qwen = p5_tts._NARRATOR_QWEN_ROUTING
+    orig_cv3 = p5_tts._NARRATOR_COSYVOICE3_ROUTING
+    try:
+        p5_tts._NARRATOR_QWEN_ROUTING = False
+        p5_tts._NARRATOR_COSYVOICE3_ROUTING = False
+        assert p5_tts._selected_narrator_engine() is None
+    finally:
+        p5_tts._NARRATOR_QWEN_ROUTING = orig_qwen
+        p5_tts._NARRATOR_COSYVOICE3_ROUTING = orig_cv3
 
 
 def test_strip_brackets_for_qwen_removes_inline_tags():

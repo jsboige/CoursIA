@@ -63,6 +63,23 @@ _MAX_PREFIX_TAGS = 4  # Max prosody tags prepended before segment text.
 _NARRATOR_QWEN_ROUTING: bool = os.getenv("NARRATOR_QWEN_ROUTING", "1") == "1"
 _QWEN_NARRATOR_REFERENCE_ID: str = "qwen-voicedesign-narrator-fr-literary"
 
+# Phase 1 of the narrator pivot (#19692): a second candidate engine,
+# CosyVoice3 (Fun-CosyVoice3-0.5B-2512, Apache-2.0), synthesizes the narrator
+# chunked-by-sentence behind its own flag. The DEFAULT IS UNCHANGED — flag
+# "0": Qwen VoiceDesign stays the narrator engine until the association's
+# listening picks the final engine (#17586). Engines are exclusive: both
+# flags ON raises a configuration error, never a silent precedence (same
+# no-silent-swap contract as #15002 acceptance 6).
+_NARRATOR_COSYVOICE3_ROUTING: bool = os.getenv("NARRATOR_COSYVOICE3_ROUTING", "0") == "1"
+_CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr"
+
+# Engine -> reference_id sentinel. The narrator cache is keyed on it
+# (#19692): an MP3 rendered by one engine is never served for another.
+_NARRATOR_ENGINE_REFERENCE_IDS: dict[str, str] = {
+    "qwen_voicedesign": _QWEN_NARRATOR_REFERENCE_ID,
+    "cosyvoice3": _CV3_NARRATOR_REFERENCE_ID,
+}
+
 # VoiceDesign `instructions` prompt — describes the desired voice and delivery
 # for a 19th-century French audiobook narrator. Tuned from prosody_lab A/B
 # measurements (Issue #11624 / #1028, melody partition verdict EXPRESSIVE).
@@ -849,11 +866,20 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
     mp3_path = TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3"
     current_hash = _text_hash(fishaudio_text)
 
-    # F6 (Issue #15002): narrator-only routing to Qwen3-TTS VoiceDesign.
-    # Runs BEFORE the cache check so a stale FishAudio MP3 cannot shadow a
-    # narrator reroute.
-    if _should_route_narrator_to_qwen(seg):
+    # F6 (#15002) / phase 1 (#19692): narrator-only routing to the selected
+    # alternate engine (Qwen VoiceDesign by default, CosyVoice3 behind its
+    # flag). Runs BEFORE the cache check so a stale FishAudio MP3 cannot
+    # shadow a narrator reroute.
+    if _should_route_narrator_to("qwen_voicedesign", seg):
         return _synthesize_narrator_qwen(
+            seg=seg,
+            fishaudio_text=fishaudio_text,
+            mp3_path=mp3_path,
+            seed=seed,
+            text_hash=current_hash,
+        )
+    if _should_route_narrator_to("cosyvoice3", seg):
+        return _synthesize_narrator_cosyvoice3(
             seg=seg,
             fishaudio_text=fishaudio_text,
             mp3_path=mp3_path,
@@ -962,15 +988,216 @@ def _synthesize_narrator_qwen(
     )
 
 
-def _should_route_narrator_to_qwen(seg: AnnotatedSegment) -> bool:
-    """Decide whether a segment is routed to Qwen VoiceDesign.
+def _narrator_engine_flags() -> dict[str, bool]:
+    """Narrator engine activation flags, one entry per candidate engine."""
+    return {
+        "qwen_voicedesign": _NARRATOR_QWEN_ROUTING,
+        "cosyvoice3": _NARRATOR_COSYVOICE3_ROUTING,
+    }
 
-    Acceptance #1 of #15002: routing is explicit, testable, and limited to
-    the narrator. All other speakers stay on FishAudio clone.
+
+def _selected_narrator_engine() -> str | None:
+    """The single active narrator engine, or None (legacy FishAudio path).
+
+    Two active flags is a configuration error: raising beats an undocumented
+    precedence that would silently change the rendered voice (#15002
+    acceptance 6 — no silent engine swap).
     """
-    return (
-        _NARRATOR_QWEN_ROUTING
-        and seg.speaker == "narrateur"
+    active = [engine for engine, on in _narrator_engine_flags().items() if on]
+    if len(active) > 1:
+        raise ValueError(
+            "narrator engine flags are exclusive: "
+            + ", ".join(f"{e}={on}" for e, on in _narrator_engine_flags().items())
+        )
+    return active[0] if active else None
+
+
+def _should_route_narrator_to(engine: str, seg: AnnotatedSegment) -> bool:
+    """Decide whether a narrator segment routes to `engine`.
+
+    Engine-independent successor of _should_route_narrator_to_qwen (#19692
+    acceptance 4): routing stays explicit, testable, and limited to the
+    narrator (acceptance #1 of #15002). All other speakers stay on FishAudio
+    clone whatever the flags.
+    """
+    return seg.speaker == "narrateur" and _selected_narrator_engine() == engine
+
+
+# ---------------------------------------------------------------------------
+# Phase 1 (#19692) — Narrator routing to CosyVoice3, chunked by sentence
+# ---------------------------------------------------------------------------
+# Measured on the A0C bench (#17586): the unchunked CosyVoice3 render omits
+# whole sentences (absent under 3/3 ASRs), and the chunked re-render recovers
+# the targeted segments but moves losses to chunk onsets — which is exactly
+# why p7_verify counts missing >=3-word segments instead of trusting the mean
+# WER (c.6035598289).
+
+class NarratorCosyVoice3Unavailable(RuntimeError):
+    """Raised when CosyVoice3 cannot synthesize a narrator segment (model
+    missing, inference failure, conversion failure). Same contract as
+    NarratorQwenUnavailable: hard failure, never a silent fall back to
+    FishAudio (#15002 acceptance 6)."""
+
+
+# Chunker spec = the one measured on the A0C bench (#17586, suite 1 Zonos /
+# suite 2 CosyVoice3): <=280 chars, sentence boundaries, clause fallback.
+_CV3_MAX_CHUNK_CHARS = 280
+_CV3_PAUSE_S = 0.25  # silence between chunks
+
+# CosyVoice3 AutoModel: ~3.4 GB VRAM, tens of seconds to load — one instance
+# per process, not per segment.
+_CV3_MODEL_CACHE: dict[str, object] = {}
+
+
+def _load_cv3_model():
+    """Load the CosyVoice3 AutoModel once per process (organ-first reuse of
+    the prosody_lab bakeoff client, measured on #17586)."""
+    if "model" not in _CV3_MODEL_CACHE:
+        from .prosody_lab.bakeoff_large.clients import cosyvoice3 as cv3_client
+
+        _CV3_MODEL_CACHE["model"] = cv3_client.load_model()
+    return _CV3_MODEL_CACHE["model"]
+
+
+def _chunk_narration(text: str, max_chars: int = _CV3_MAX_CHUNK_CHARS) -> list[str]:
+    """Split narration into <=max_chars chunks at sentence boundaries.
+
+    Spec = the chunker measured on the A0C bench (#17586): split after
+    . ! ?, clause fallback (, ; :) for over-long sentences, greedy whole-unit
+    grouping, never a cut mid-word. Identity is asserted — the chunks
+    reassemble to the source — so chunking can never itself drop text: the
+    omission class of #19692 lives in the model, not the chunker.
+    """
+    sentence_re = re.compile(r"(?<=[.!?])\s+")
+    clause_re = re.compile(r"(?<=[,;:])\s+")
+    text = text.strip()
+    if not text:
+        return []
+
+    units: list[str] = []
+    for sentence in (s.strip() for s in sentence_re.split(text) if s.strip()):
+        if len(sentence) <= max_chars:
+            units.append(sentence)
+            continue
+        clauses = [c.strip() for c in clause_re.split(sentence) if c.strip()]
+        if any(len(c) > max_chars for c in clauses):
+            raise ValueError(
+                f"clause > {max_chars} chars; mid-word split forbidden: {sentence[:60]}"
+            )
+        units.extend(clauses)
+
+    chunks: list[str] = []
+    current = ""
+    for unit in units:
+        candidate = f"{current} {unit}".strip() if current else unit
+        if len(candidate) <= max_chars:
+            current = candidate
+        else:
+            if current:
+                chunks.append(current)
+            current = unit
+    if current:
+        chunks.append(current)
+
+    def _norm_ws(s: str) -> str:
+        return re.sub(r"\s+", " ", s).strip()
+
+    assert _norm_ws(" ".join(chunks)) == _norm_ws(text), "chunking lost text"
+    return chunks
+
+
+def _synthesize_narrator_cosyvoice3(
+    seg: AnnotatedSegment,
+    fishaudio_text: str,
+    mp3_path: Path,
+    seed: int,
+    text_hash: str,
+) -> TTSResult:
+    """Synthesize a narrator segment via CosyVoice3, chunked by sentence.
+
+    Organ-first: model loading and the zero-shot prompt constants come from
+    the prosody_lab bakeoff client (clients.cosyvoice3, #17586); the
+    per-chunk orchestration (seed, pause, concat) is pipeline logic and lives
+    here. Chunking bounds each inference to one sentence group so p7's
+    omission control can attribute a dropped passage to a chunk onset
+    instead of losing it in the mean WER.
+    """
+    plain_text = _strip_brackets_for_qwen(fishaudio_text)
+    if not plain_text:
+        raise NarratorCosyVoice3Unavailable(
+            f"seg {seg.seg_index}: empty text after stripping brackets"
+        )
+    chunks = _chunk_narration(plain_text)
+    if not chunks:
+        raise NarratorCosyVoice3Unavailable(
+            f"seg {seg.seg_index}: chunker returned nothing"
+        )
+
+    # Imported here (not at module top) so hermetic tests need neither torch
+    # nor the CosyVoice runtime — the empty-input guard above runs torch-free.
+    import time
+
+    import torch
+
+    from .prosody_lab.bakeoff_large.clients import cosyvoice3 as cv3_client
+
+    _, _, asset_wav = cv3_client._bootstrap_paths()
+    model = _load_cv3_model()
+    prompt_text = cv3_client.PROMPT_TEXT_ZH + cv3_client.ENDOFPROMPT
+    sr = int(model.sample_rate)
+
+    t0 = time.time()
+    wavs = []
+    for i, chunk in enumerate(chunks):
+        torch.manual_seed(seed + i)
+        gen = model.inference_zero_shot(chunk, prompt_text, str(asset_wav), stream=False)
+        parts = [j["tts_speech"] for j in gen]
+        wavs.append(torch.cat(parts, dim=-1) if len(parts) > 1 else parts[0])
+    elapsed = time.time() - t0
+
+    pause = torch.zeros(1, int(_CV3_PAUSE_S * sr))
+    parts_audio: list[torch.Tensor] = []
+    for i, wav in enumerate(wavs):
+        if i:
+            parts_audio.append(pause)
+        parts_audio.append(wav)
+    full = torch.cat(parts_audio, dim=-1)
+
+    import torchaudio
+
+    wav_buf = io.BytesIO()
+    torchaudio.save(wav_buf, full, sr, format="wav")
+    wav_buf.seek(0)
+    try:
+        from pydub import AudioSegment
+
+        audio = AudioSegment.from_file(wav_buf, format="wav")
+        buf = io.BytesIO()
+        audio.export(buf, format="mp3", bitrate="192k")
+        mp3_bytes = buf.getvalue()
+    except Exception as exc:  # pragma: no cover — pydub/ffmpeg missing
+        raise NarratorCosyVoice3Unavailable(
+            f"seg {seg.seg_index}: WAV->MP3 conversion failed: {exc}"
+        ) from exc
+
+    mp3_path.write_bytes(mp3_bytes)
+    duration = audio_duration_mp3(mp3_bytes)
+    rtf = elapsed / duration if duration > 0 else float("inf")
+    logger.info(
+        "[CV3] seg %s: %d chunks, %.1fs audio, RTF %.2f",
+        seg.seg_index, len(chunks), duration, rtf,
+    )
+
+    return TTSResult(
+        seg_index=seg.seg_index,
+        speaker=seg.speaker,
+        reference_id=_CV3_NARRATOR_REFERENCE_ID,
+        mp3_path=str(mp3_path),
+        duration_s=duration,
+        seed=seed,
+        status="generated",
+        attempts=1,
+        text_hash=text_hash,
     )
 
 
@@ -986,9 +1213,28 @@ def _load_cached_hashes() -> dict[int, str]:
         return {}
 
 
+def _load_cached_reference_ids() -> dict[int, str]:
+    """Load the engine/voice sentinel (reference_id) per cached segment.
+
+    The narrator cache is engine-aware (#19692 phase 1): a text hash alone
+    cannot tell which engine rendered the MP3, so flipping
+    NARRATOR_COSYVOICE3_ROUTING would silently serve the previous engine's
+    audio. The reference_id sentinel can.
+    """
+    results_path = BASE_DIR / "outputs" / "tts_results.json"
+    if not results_path.exists():
+        return {}
+    try:
+        data = json.loads(results_path.read_text(encoding="utf-8"))
+        return {r["seg_index"]: r.get("reference_id", "") for r in data}
+    except (json.JSONDecodeError, KeyError):
+        return {}
+
+
 def _synthesize_batch(
     segments: list[tuple[AnnotatedSegment, str]],
     cached_hashes: dict[int, str] | None = None,
+    cached_refs: dict[int, str] | None = None,
 ) -> list[TTSResult]:
     """Process a batch of segments concurrently.
 
@@ -997,6 +1243,8 @@ def _synthesize_batch(
     """
     if cached_hashes is None:
         cached_hashes = {}
+    if cached_refs is None:
+        cached_refs = {}
     results: dict[int, TTSResult] = {}
 
     # Quick first pass: check which are truly cached (hash matches)
@@ -1007,7 +1255,24 @@ def _synthesize_batch(
         mp3_path = TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3"
         current_hash = _text_hash(text)
 
-        if mp3_path.exists() and cached_hashes.get(seg.seg_index) == current_hash:
+        cache_ok = (
+            mp3_path.exists() and cached_hashes.get(seg.seg_index) == current_hash
+        )
+        if cache_ok and seg.speaker == "narrateur":
+            # Engine-aware narrator cache (#19692): the MP3 is reusable only
+            # if the engine that produced it is the selected one — a stale
+            # MP3 from the previous engine must not shadow the reroute
+            # (same contract as the segment-level dispatch, #15002).
+            engine = _selected_narrator_engine()
+            expected_ref = (
+                _NARRATOR_ENGINE_REFERENCE_IDS.get(engine)
+                if engine
+                else _resolve_voice(seg)
+            )
+            if cached_refs.get(seg.seg_index) != expected_ref:
+                cache_ok = False
+
+        if cache_ok:
             size = mp3_path.stat().st_size
             duration = audio_duration_mp3(mp3_path.read_bytes()) if size > 0 else 0.0
             results[seg.seg_index] = TTSResult(
@@ -1096,6 +1361,7 @@ def run(force: bool = False) -> Path:
 
     # Preload cached hashes once (O(N) instead of O(N²))
     cached_hashes = _load_cached_hashes()
+    cached_refs = _load_cached_reference_ids()
     print(f"  Cache: {len(cached_hashes)} entries preloaded")
 
     # Process in batches for progress reporting
@@ -1107,7 +1373,7 @@ def run(force: bool = False) -> Path:
             for i in range(batch_start, batch_end)
         ]
 
-        batch_results = _synthesize_batch(batch_segs, cached_hashes)
+        batch_results = _synthesize_batch(batch_segs, cached_hashes, cached_refs)
         results.extend(batch_results)
 
         for r in batch_results:
