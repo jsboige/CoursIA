@@ -51,9 +51,10 @@ lean backtest --project .
 > NP 242.4 %) — remplacé par le run 2015-2026 ci-dessus.
 >
 > **Écart `netProfit`** : le montant du registre ($2 167 801) n'est pas reproduit dans
-> le tableau — sur capital initial 1 000 000 $, +286.0 % donnerait ≈ 3.86 M$ et le run
-> supersédé +242.4 % ≈ 3.42 M$ ; le montant ne réconcilie avec aucun des deux runs
-> (`netProfit` à re-mesurer côté registre).
+> le tableau — sur capital initial 1 000 000 $, le NP 286.0 % du registre (l.280)
+> correspond à un **bénéfice ≈ 2.86 M$** (equity finale ≈ 3.86 M$) et le run supersédé
+> +242.4 % à un bénéfice ≈ 2.42 M$ (equity finale ≈ 3.42 M$) ; le montant ne réconcilie
+> avec aucun des deux runs (`netProfit` à re-mesurer côté registre).
 >
 > **Lecture honnête** : le wheel est une stratégie *très populaire* dans la littérature
 > de « revenu passif par les options », souvent présentée comme quasi-garantie. Les
