@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: RL
-pedagogical_count: 37
-breakdown: root=26, PostTraining=11
-maturity: BETA=32, ALPHA=3, DRAFT=2
+pedagogical_count: 35
+breakdown: root=24, PostTraining=11
+maturity: BETA=30, ALPHA=3, DRAFT=2
 -->
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (26 notebooks pédagogiques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 23/09/2026 :
@@ -21,9 +21,19 @@ Le Reinforcement Learning (apprentissage par renforcement) est la branche de l'I
 
 Cette série couvre les **fondements théoriques** (bandits, MDP, équation de Bellman, Q-Learning), les **algorithmes avec réseaux de neurones** (DQN, Policy Gradient, PPO) et les **frameworks de production** (Stable Baselines3). Vous commencerez par entraîner un agent en quelques lignes avec un framework industriel, puis vous implémenterez les mêmes algorithmes depuis zéro pour comprendre ce qui se cache sous le capot.
 
-> **Note de frontière — algorithmes online (rl_17, rl_18)** : ces deux distillations relèvent de l'**analyse compétitive** (garanties de pire cas contre l'optimum offline, sans boucle d'apprentissage) plutôt que du RL stricto sensu. Elles sont hébergées ici comme famille de la **décision séquentielle** — ratios compétitifs et regret étant les deux langages de garantie de la décision online. Le placement définitif (série RL vs axe « Search Online/Offline » dédié) est sous arbitrage utilisateur (#16429).
+> **Note de frontière — algorithmes online** : les deux carnets d’algorithmique online qui vivaient dans cette série relèvent de l’**analyse compétitive** — garanties de pire cas contre l’optimum offline, sans boucle d’apprentissage — plutôt que du RL stricto sensu. Le placement arbitré (#16429) les a rangés dans la série [Complexity](../Complexity/README.md), comme lettres **04c** (k-server, work function) et **04d** (secrétaire matroïdal) de la marche 04.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs souhaitant ajouter des capacités décisionnelles à leurs applications, et chercheurs en automatique ou robotique. Prérequis : Python intermédiaire et bases en calculus (gradients). Aucune expérience RL préalable nécessaire pour le notebook 1.
+
+## Objectifs d'apprentissage
+
+À l'issue de cette série, vous serez capable de :
+
+1. **Résoudre** un problème de décision séquentielle par essai-erreur (bandits manchots, MDP, Value/Policy Iteration, Q-Learning tabulaire) et tracer la convergence empirique vers l'optimum de Bellman
+2. **Implémenter** from scratch les algorithmes avec réseaux de neurones (DQN replay+target, REINFORCE baseline, A2C advantage, PPO clipped surrogate + GAE, SAC twin-Q + auto-température, GRPO intra-groupe) et les confronter à Stable Baselines3 sur le **même monde**
+3. **Composer** la décision sous contrainte d'information incomplète (POMDP belief tracking, distributional C51, curiosity RND, hierarchical options Sutton-Precup-Singh) et mesurer ce que chaque hypothèse coûte
+4. **Arbitrer** exploration vs exploitation (multi-agents PettingZoo IQL vs Hysteretic Q, online compétitif k-server WFA, secrétaire matroïdal Singla) et battre les conjectures tombées en septembre 2026
+5. **Aligner** un petit LM par préférences (RM Bradley-Terry from scratch vs `trl.RewardTrainer`, PPO/GRPO/DPO from scratch, inoculation reward hacking) et lire les 6 détecteurs statistiques du reward hacking
 
 ## Figures — extraites des sorties réelles des notebooks
 
@@ -56,8 +66,6 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | 14 | [RL-14-RL-Hierarchique-Options-Python](RL-14-RL-Hierarchique-Options-Python.html) | Hierarchical RL — l'Option framework de Sutton, Precup & Singh : abstraction temporelle, options `(I, π, β)`, gridworld quatre-pièces, crédit sur longue horizon | ~50 min |
 | 15 | [RL-15-GRPO-Comparatif-Multi-Graines-Python](RL-15-GRPO-Comparatif-Multi-Graines-Python.html) | GRPO (Group Relative Policy Optimization) vs PPO sur CartPole-v1 — avantage relatif intra-groupe (sans critic) vs GAE bootstrapé, multi-seed 6 (0/1/7/42/99/123), Wilcoxon signed-rank + IC95% bootstrap. Prong B discrimination moteur. Sous-grain #13436 de l'EPIC #1454. **Verdict v3 (REPAIR c.644) : INCONCLUSIVE** (le claim initial v1 « GRPO BEATS PPO » souffrait de défauts done-mask + pad-mask — c.642 a corrigé en INCONCLUSIVE, puis c.644 a détecté 4 post-fix incohérences résolues : Wilcoxon n=4 inatteignable, verdict tri-state asymmétrique, hypothèse descriptive fausse réfutée, titre PR ré-aligné — verdict v3 INCONCLUSIVE maintenu, moyennes v3 = 299.36 vs 197.65, std = 55.26 vs 104.99) | 40-45 min |
 | 16 | [RL-16-Dream-RSI-Python](RL-16-Dream-RSI-Python.html) | Dream-RSI (arXiv 2609.14858, preprint 14/09/2026) : exploration explicite **programmable** (politique = code), historique de découverte = simulateur-replay, **dreaming** = évaluation off-policy à coût zéro, boucle RSI avec incumbent (garantie non-régression replay-only) — monde jouet circle-packing stdlib (16 cercles), ablation replay brut vs guidance sémantique mesurée (3/2/7), chiffres du papier rapportés non canonisés. Distillation #16417 | 40-45 min |
-| 17 | [rl_17_k_server_wfa](rl_17_k_server_wfa.html) | k-server et work function algorithm : la conjecture (1990) mesurée en monde jouet — un seul moteur DP (la work function EST l'optimum offline), WFA en ligne sur ligne/cycle/métrique uniforme, vérification par instance WFA ≤ k×OPT (0 violation / 600 instances seedées), duel WFA vs LRU/FIFO sur paging (boucle k+2 : LRU 60 faults vs WFA 46, k×OPT = 96), work function visualisée en heatmap des configurations. Distillation du preprint arXiv 2609.15979 (soumis 14/09/2026, **non relu** — bandeau honnêteté : mesuré ≠ prouvé, ratios réalisés ~1.1-1.6 vs garantie pire-cas k) | 35-40 min |
-| 18 | [rl_18_matroid_secretary](rl_18_matroid_secretary.html) | Le secrétaire matroïdal : la conjecture (2007) mesurée élément par élément — trois matroïdes jouets par oracle (uniforme/partition/graphique), l'algorithme de Singla (échantillon Bin(n,1/2), configuration virtuelle, glouton des deux côtés — ordinal, ne connaît que n), banc de mesure P[accept \| e ∈ OPT] sur 6 instances × 4000 essais : min 0,260-0,353, garantie 1/4 jamais violée et **serrée sur les rangs 1-2**, E[ALG]/OPT ≈ 0,44, prix de l'universalité 0,41 → 0,26 vs le seuil 1/e classique (formule exacte n=8 vs limite asymptotique). La garantie utilisée comme **test exécutable** : le bug d'implémentation du prototype (0,119) détecté par le banc. Distillation du preprint arXiv 2609.14555 (soumis 13/09/2026, **non relu**) | 35-40 min |
 | 19 | [RL-19-Reward-Tampering-Python](RL-19-Reward-Tampering-Python.html) | Reward tampering : l'agent qui peut **réécrire** sa récompense — *Rocks and Diamonds* à paramètre θ modifiable (exemple 2 d'Everitt et al., Synthese 2021), quatre agents résolus par **induction arrière exacte** sur 32 252 états (standard, oracle, *current-RF* TI-ignoring et TI-considering) : les trois prédictions du papier mesurées `conforme`. Au-delà du diagramme : **l'indifférence n'est pas la protection** — valeur de l'option de manipuler +16 (standard) contre +0 (TI-ignoring), mais départage aléatoire des égalités → manipulation 33/200 (H = 30) et 68/200 (H = 60), toujours après la tâche ; Q-learning standard 0/5 graines en initialisation nulle, 5/5 en optimiste. RF-input tampering (autocollants sur la caméra) : 88 observé / 0 réel contre 20 / 20 sous récompense sur croyance. Distillation #14468 | 35-40 min |
 | pt-0 | [RLPT-00-Reward-Model-Bradley-Terry-Python](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.html) | Reward model from scratch (Bradley-Terry) : apprendre r(x, y) depuis des paires de préférences sur le monde de RLPT-01 — MLE BT sans `trl.RewardTrainer`, évaluation honnête vs plafond de Bayes, calibration (ECE), identification affine, multi-seed 4 | 35-40 min |
 | pt-0b | [RLPT-00b-Biais-Dataset-Preferences-Python](PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.html) | Biais d'un dataset de préférences, mesurés sur monde synthétique à longueurs variables : les trois biais classiques (longueur, position, annotateurs) injectés à paramètres connus, dégât mesuré contre le plafond de Bayes d'un juge **oracle non biaisé**, puis les mitigations du cahier des charges (length-controlled, swap-augmentation, annotator embedding) plus une quatrième qui sert de contrôle — verdict mesuré : aucune ne franchit 2σ, le length-controlled est **structurellement** sans effet sur une métrique de classement, l'orthogonalisation de longueur **aggrave** le biais | 40-45 min |
@@ -593,8 +601,6 @@ RL/
 ├── RL-14-RL-Hierarchique-Options-Python.ipynb
 ├── RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb
 ├── RL-16-Dream-RSI-Python.ipynb
-├── rl_17_k_server_wfa.ipynb
-├── rl_18_matroid_secretary.ipynb
 ├── RL-19-Reward-Tampering-Python.ipynb
 ├── RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb
 ├── RLPT-00b-Biais-Dataset-Preferences-Python.ipynb

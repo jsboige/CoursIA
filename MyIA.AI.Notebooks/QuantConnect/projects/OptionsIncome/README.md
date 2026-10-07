@@ -34,7 +34,10 @@ Stratégies de génération de revenus via la vente d'options.
 ```
 OptionsIncome/
 ├── main.py              # Covered Call + Iron Condor
+├── main_v71_ivrank.py     # Variante v71 (filtre IV rank)
+├── main_v72_strikeavail.py # Variante v72 (disponibilité des strikes)
 ├── research.ipynb       # Analyse options, Greeks, backtest
+├── quantbook.ipynb      # QuantBook de recherche Covered Call (données natives QC)
 └── README.md            # Ce fichier
 ```
 

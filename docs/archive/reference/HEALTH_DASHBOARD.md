@@ -1,16 +1,16 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-10-06**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-10-07**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**1366** notebooks référencés au catalogue.
+**1367** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 1159 | 84.8% |
+| READY | 1160 | 84.9% |
 | DEMO | 205 | 15.0% |
 | BROKEN | 2 | 0.1% |
 
@@ -18,7 +18,7 @@
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 819 |
+| **local** (exécutable sans GPU/cloud/WSL) | 820 |
 | WSL requis | 125 |
 | GPU requis | 188 |
 | Cloud requis (QC / GenAI Docker) | 120 |
@@ -29,16 +29,16 @@
 | Série | READY | DEMO | BROKEN | Total | % READY |
 |-------|-------|------|--------|-------|---------|
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
-| Complexity | 11 | 0 | 0 | 11 | 100% |
+| Complexity | 13 | 0 | 0 | 13 | 100% |
 | Compression | 1 | 0 | 0 | 1 | 100% |
-| GameTheory | 108 | 1 | 0 | 109 | 99% |
+| GameTheory | 109 | 1 | 0 | 110 | 99% |
 | GenAI | 137 | 125 | 2 | 264 | 52% |
 | IIT | 88 | 6 | 0 | 94 | 94% |
 | ML | 110 | 20 | 0 | 130 | 85% |
 | NLP | 5 | 0 | 0 | 5 | 100% |
 | Probas | 77 | 0 | 0 | 77 | 100% |
 | QuantConnect | 73 | 43 | 0 | 116 | 63% |
-| RL | 33 | 4 | 0 | 37 | 89% |
+| RL | 31 | 4 | 0 | 35 | 89% |
 | Search | 157 | 0 | 0 | 157 | 100% |
 | Sudoku | 37 | 1 | 0 | 38 | 97% |
 | SymbolicAI | 314 | 5 | 0 | 319 | 98% |
@@ -48,10 +48,10 @@
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 890 |
+| Python 3 | 891 |
 | .NET (C#) | 268 |
-| Lean 4 (WSL) | 49 |
 | Python 3 (ipykernel) | 49 |
+| Lean 4 (WSL) | 49 |
 | Python 3 (coursia-ml-training) | 18 |
 | Python (coursia-ml-training) | 17 |
 | coursia-ml-training | 12 |

@@ -1048,3 +1048,39 @@ def test_has_delivered_signal_grammar_ignores_discursive_mentions(monkeypatch):
     assert pig.has_delivered_signal(15974) is False, (
         "une mention discursive n'est pas un marqueur")
     assert pig.has_delivered_signal(16048) is True
+
+
+def test_summarize_claim_implicit_occupation():
+    """#14300 -- occupation IMPLICITE : le JSON de l'organe porte la cle,
+    le reducteur rend CLAIM_CODE_IMPLICIT (pas FREE -- lecons du 2026-09-14 :
+    l'emission ne suffit pas, c'est la consommation qui fait le garde)."""
+    implicit_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                     '"stale_claims": [], "implicit_occupation": '
+                     '[{"number": 14293, "lane": "myia-po-2026:CoursIA",'
+                     ' "files": ["scripts/ci/docker/linux-runner/supervise.sh"],'
+                     ' "additions": 79, "deletions": 3}]}')
+    code, human = pig._summarize_claim(implicit_json + "\nIMPLICIT: ...", 3)
+    assert code == pig.CLAIM_CODE_IMPLICIT
+    assert "#14293" in human
+    assert "myia-po-2026:CoursIA" in human
+    # review 5429946072 : le claim de l'APPELANT est teste AVANT l'implicite
+    # -- un grain deja marque par la lane qui tire reste OWNED_BY_ME meme si
+    # une PR tierce reference l'issue (sinon la lane perd son propre grain).
+    owned_json = ('{"blocking_lanes": [], "my_active_claim": true,'
+                  '"stale_claims": [], "implicit_occupation": '
+                  '[{"number": 14293, "lane": "myia-po-2026:CoursIA"}]}')
+    code, human = pig._summarize_claim(owned_json, 0)
+    assert code == pig.CLAIM_CODE_OWNED_BY_ME
+    # priorite : un BLOCKED explicite prime sur l'implicite (le marqueur a
+    # plus d'autorite) -- le reducteur teste blocking_lanes AVANT.
+    both_json = ('{"blocking_lanes": ["myia-po-2027:CoursIA"],'
+                 '"my_active_claim": false, "stale_claims": [],'
+                 '"implicit_occupation": [{"number": 14293,'
+                 ' "lane": "myia-po-2026:CoursIA"}]}')
+    code, _ = pig._summarize_claim(both_json + "\n", 3)
+    assert code == pig.CLAIM_CODE_BLOCKED
+    # sans la cle (organe ancien ou jambe sautee) : comportement inchange.
+    plain_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                  '"stale_claims": []}')
+    code, _ = pig._summarize_claim(plain_json + "\n", 0)
+    assert code == pig.CLAIM_CODE_FREE
