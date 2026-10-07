@@ -6,13 +6,13 @@
 
 Un agent de renforcement (PPO) apprend à couvrir une position **courte d'un call ATM de 30 jours sur SPY**, rebalancée chaque séance. Sa politique est comparée à la référence du marché — la **couverture delta de Black-Scholes quotidienne** — sur la **variance** et la **queue (CVaR 95 %)** du P&L de couverture, avec et sans frais (5 bps sur le notionnel échangé), sur des régimes de volatilité contrastés : calme (12 %), 2020 (35 %), 2022 (25 %).
 
-## Conception (plan d'origine du stub, exécuté tel quel)
+## Conception (plan d'origine du stub, exécuté avec deux adaptations mesurées — cf. Enseignements)
 
 - **Option** : call européen ATM (K = S₀), 30 jours calendaires ≈ 21 séances.
 - **État** (5) : moneyness S/K−1, temps restant τ, delta BS, gamma BS (×10²), position de couverture courante.
 - **Action** : ratio de couverture continu a ∈ [0, 1] — on détient h = a·δ_BS parts de sous-jacent. **a = 1 constant reproduit exactement la couverture delta** : la baseline est un point spécial de l'espace des politiques.
 - **Récompense** : P&L terminal de couverture (prime − payoff + P&L de couverture − frais), normalisé, échelle O(1).
-- **Simulation** : GBM sous probabilité neutre au risque (μ = 0), pas quotidien, trois régimes de vol.
+- **Simulation** : GBM, pas quotidien, trois régimes de vol. Plan d'origine : mesure neutre au risque (μ = 0) ; **exécuté** en mesure physique (μ = 8 %/an, dérive du sous-jacent) pour l'entraînement **et** la simulation d'évaluation — sous μ = 0 le gradient de politique s'annule (4/8 seeds effondrées, mesuré ; cf. Enseignements ci-dessous).
 - **Entraînement** : PPO (stable-baselines3), 8 seeds, 120 000 pas, réseau 64×64, sans frais ; les frais n'entrent qu'à l'évaluation, des deux côtés de la comparaison.
 
 ## Fichiers
@@ -36,7 +36,7 @@ P&L par trajectoire de 21 séances, en dollars pour un spot initial de 100 $. 2 
 
 ## Verdict
 
-**NO BEATS — net et mesuré.** La couverture delta BS quotidienne n'est battue par **aucune** des 8 seeds, dans **aucun** régime, avec **ou sans** frais : la meilleure seed reste ~38-40 % au-dessus de l'écart-type du P&L delta partout, la moyenne inter-seeds est ~2,2×, et la CVaR 95 % du RL est ~2,8× plus profonde. Les frais (5 bps) ne changent rien au classement (~0,03 %) : les deux politiques échangent trop peu pour que les frais décident.
+**NO BEATS — net et mesuré.** La couverture delta BS quotidienne n'est battue par **aucune** des 8 seeds, dans **aucun** régime, avec **ou sans** frais : la meilleure seed reste +30 à +38 % au-dessus de l'écart-type du P&L delta selon le régime (calme 12 % : +37,8 % ; 2020 35 % : +35,5 % ; 2022 25 % : +30,3 %), la moyenne inter-seeds est ~2,2×, et la CVaR 95 % du RL est ~2,8× plus profonde. Les frais (5 bps) ne changent rien au classement (~0,03 %) : les deux politiques échangent trop peu pour que les frais décident.
 
 Trois enseignements documentés dans le notebook : (1) sous mesure neutre au risque, E[P&L] = 0 pour toute politique — le gradient de politique s'annule et l'entraînement est sans signal (4/8 seeds effondrées, mesuré) ; l'entraînement passe donc en mesure physique, comme le livre qui apprend sur des données réelles dérivées ; (2) le clip de l'action à sa borne laisse un gradient nul — reparamétrage [-1, 1] ; (3) malgré ces corrections, 3/8 seeds restent proches de la politique non couverte : le PPO à récompense terminale est structurellement fragile sur ce problème. La suite naturelle (non couverte) : objectif risque-aversion dans la récompense (Kolm & Ritter 2019) ou Q-learning par pas (Halperin 2020).
 
