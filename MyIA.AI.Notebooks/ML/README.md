@@ -67,11 +67,11 @@ Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) 
 
 ### Parcours Data Scientist classique (~12h)
 
-1. [ML-01](ML.Net/ML-01-Introduction.ipynb) → comprendre le pipeline ML
+1. [ML-01](ML.Net/ML-01-Introduction.html) → comprendre le pipeline ML
 1. [NumPy](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) + [Pandas](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) → maîtriser les données
 1. [Socle ML canonique 2.1 → 2.8](DataScienceWithAgents/02-ML-Cours/) → les fondamentaux scikit-learn (gradient, régressions, ensembles, biais-variance, non supervisé, PAC)
-1. [ML-02](ML.Net/ML-02-Data&Features.ipynb) + [ML-03](ML.Net/ML-03-Entrainement&AutoML.ipynb) → entraîner des modèles
-1. [ML-04](ML.Net/ML-04-Evaluation.ipynb) → évaluer rigoureusement
+1. [ML-02](ML.Net/ML-02-Data&Features.html) + [ML-03](ML.Net/ML-03-Entrainement&AutoML.html) → entraîner des modèles
+1. [ML-04](ML.Net/ML-04-Evaluation.html) → évaluer rigoureusement
 
 ### Parcours AI Agent Builder (~15h)
 
@@ -81,9 +81,9 @@ Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) 
 
 ### Parcours Enterprise .NET (~6h)
 
-1. [ML-01](ML.Net/ML-01-Introduction.ipynb) à [ML-04](ML.Net/ML-04-Evaluation.ipynb) : fondamentaux ML.NET
-1. [ML-05](ML.Net/ML-05-TimeSeries.ipynb) : séries temporelles
-1. [ML-06](ML.Net/ML-06-ONNX.ipynb) : interop Python → .NET
+1. [ML-01](ML.Net/ML-01-Introduction.html) à [ML-04](ML.Net/ML-04-Evaluation.html) : fondamentaux ML.NET
+1. [ML-05](ML.Net/ML-05-TimeSeries.html) : séries temporelles
+1. [ML-06](ML.Net/ML-06-ONNX.html) : interop Python → .NET
 1. [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) : projet intégré
 
 ## Quel parcours choisir
@@ -175,24 +175,24 @@ Pipeline ML.NET complet en C#, de l'introduction à l'évaluation avancée : du 
 
 | # | Notebook | Contenu | Focus |
 |---|----------|---------|-------|
-| 1 | [ML-01-Introduction](ML.Net/ML-01-Introduction.ipynb) | Hello ML.NET World, pipeline de base | Fondamentaux |
-| 1-Py | [ML-01-Introduction-Python](ML.Net/ML-01-Introduction-Python.ipynb) | **Jumeau Python** : pipeline ML.NET ⇄ scikit-learn (régression + classification) | Parité .NET⇄Python |
-| 2 | [ML-02-Data&Features](ML.Net/ML-02-Data&Features.ipynb) | IDataView, TextLoader, encodage | Préparation données |
-| 2-Py | [ML-02-Data&Features-Python](ML.Net/ML-02-Data&Features-Python.ipynb) | **Jumeau Python** : `IDataView`/Transforms ⇄ `ColumnTransformer`+`Pipeline` (scikit-learn) | Parité .NET⇄Python |
-| 3 | [ML-03-Entrainement&AutoML](ML.Net/ML-03-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML + **leaderboard visuel** (Plotly) | Entraînement |
-| 3-Py | [ML-03-Entrainement&AutoML-Python](ML.Net/ML-03-Entrainement&AutoML-Python.ipynb) | **Jumeau Python** : SDCA/LightGBM/AutoML ⇄ `LinearRegression`/`GradientBoosting`/`GridSearchCV` | Parité .NET⇄Python |
-| 4 | [ML-04-Evaluation](ML.Net/ML-04-Evaluation.ipynb) | Cross-validation, métriques, PFI | Évaluation |
-| 4-Py | [ML-04-Evaluation-Python](ML.Net/ML-04-Evaluation-Python.ipynb) | **Jumeau Python** : cross-validation + métriques + PFI ⇄ `cross_val_score` + `permutation_importance` (scikit-learn) | Parité .NET⇄Python |
-| 5 | [ML-05-TimeSeries](ML.Net/ML-05-TimeSeries.ipynb) | Forecasts temporelles, windowing | Séries temporelles |
-| 5-Py | [ML-05-TimeSeries-Python](ML.Net/ML-05-TimeSeries-Python.ipynb) | **Jumeau Python** : `ForecastBySsa` ⇄ `STL`+`SARIMA` (statsmodels) | Parité .NET⇄Python |
-| 6 | [ML-06-ONNX](ML.Net/ML-06-ONNX.ipynb) | Export ONNX, inférence en production | Déploiement |
-| 6-Py | [ML-06-ONNX-Python](ML.Net/ML-06-ONNX-Python.ipynb) | **Jumeau Python** : `skl2onnx` export + `onnxruntime` inférence ⇄ `OnnxTransformer` (ML.NET) | Parité .NET⇄Python |
-| 7 | [ML-07-Recommendation](ML.Net/ML-07-Recommendation.ipynb) | Système de recommandation | Recommandations |
-| 7-Py | [ML-07-Recommendation-Python](ML.Net/ML-07-Recommendation-Python.ipynb) | **Jumeau Python** : `MatrixFactorization` ⇄ `NMF` (scikit-learn) | Parité .NET⇄Python |
-| 8 | [ML-08-Clustering](ML.Net/ML-08-Clustering.ipynb) | K-Means, segmentation RFM, méthode du coude | Non-supervisé |
-| 8-Py | [ML-08-Clustering-Python](ML.Net/ML-08-Clustering-Python.ipynb) | **Jumeau Python** : `ClusteringCatalog` ⇄ `KMeans` scikit-learn + méthode du coude | Parité .NET⇄Python |
-| 9 | [ML-09-Anomaly-Detection](ML.Net/ML-09-Anomaly-Detection.ipynb) | Randomized PCA, AUC, seuil de décision | Détection d'anomalies |
-| 9-Py | [ML-09-Anomaly-Detection-Python](ML.Net/ML-09-Anomaly-Detection-Python.ipynb) | **Jumeau Python** : `RandomizedPca` ⇄ `PCA`+résidu (scikit-learn) | Parité .NET⇄Python |
+| 1 | [ML-01-Introduction](ML.Net/ML-01-Introduction.html) | Hello ML.NET World, pipeline de base | Fondamentaux |
+| 1-Py | [ML-01-Introduction-Python](ML.Net/ML-01-Introduction-Python.html) | **Jumeau Python** : pipeline ML.NET ⇄ scikit-learn (régression + classification) | Parité .NET⇄Python |
+| 2 | [ML-02-Data&Features](ML.Net/ML-02-Data&Features.html) | IDataView, TextLoader, encodage | Préparation données |
+| 2-Py | [ML-02-Data&Features-Python](ML.Net/ML-02-Data&Features-Python.html) | **Jumeau Python** : `IDataView`/Transforms ⇄ `ColumnTransformer`+`Pipeline` (scikit-learn) | Parité .NET⇄Python |
+| 3 | [ML-03-Entrainement&AutoML](ML.Net/ML-03-Entrainement&AutoML.html) | SDCA, LightGBM, AutoML + **leaderboard visuel** (Plotly) | Entraînement |
+| 3-Py | [ML-03-Entrainement&AutoML-Python](ML.Net/ML-03-Entrainement&AutoML-Python.html) | **Jumeau Python** : SDCA/LightGBM/AutoML ⇄ `LinearRegression`/`GradientBoosting`/`GridSearchCV` | Parité .NET⇄Python |
+| 4 | [ML-04-Evaluation](ML.Net/ML-04-Evaluation.html) | Cross-validation, métriques, PFI | Évaluation |
+| 4-Py | [ML-04-Evaluation-Python](ML.Net/ML-04-Evaluation-Python.html) | **Jumeau Python** : cross-validation + métriques + PFI ⇄ `cross_val_score` + `permutation_importance` (scikit-learn) | Parité .NET⇄Python |
+| 5 | [ML-05-TimeSeries](ML.Net/ML-05-TimeSeries.html) | Forecasts temporelles, windowing | Séries temporelles |
+| 5-Py | [ML-05-TimeSeries-Python](ML.Net/ML-05-TimeSeries-Python.html) | **Jumeau Python** : `ForecastBySsa` ⇄ `STL`+`SARIMA` (statsmodels) | Parité .NET⇄Python |
+| 6 | [ML-06-ONNX](ML.Net/ML-06-ONNX.html) | Export ONNX, inférence en production | Déploiement |
+| 6-Py | [ML-06-ONNX-Python](ML.Net/ML-06-ONNX-Python.html) | **Jumeau Python** : `skl2onnx` export + `onnxruntime` inférence ⇄ `OnnxTransformer` (ML.NET) | Parité .NET⇄Python |
+| 7 | [ML-07-Recommendation](ML.Net/ML-07-Recommendation.html) | Système de recommandation | Recommandations |
+| 7-Py | [ML-07-Recommendation-Python](ML.Net/ML-07-Recommendation-Python.html) | **Jumeau Python** : `MatrixFactorization` ⇄ `NMF` (scikit-learn) | Parité .NET⇄Python |
+| 8 | [ML-08-Clustering](ML.Net/ML-08-Clustering.html) | K-Means, segmentation RFM, méthode du coude | Non-supervisé |
+| 8-Py | [ML-08-Clustering-Python](ML.Net/ML-08-Clustering-Python.html) | **Jumeau Python** : `ClusteringCatalog` ⇄ `KMeans` scikit-learn + méthode du coude | Parité .NET⇄Python |
+| 9 | [ML-09-Anomaly-Detection](ML.Net/ML-09-Anomaly-Detection.html) | Randomized PCA, AUC, seuil de décision | Détection d'anomalies |
+| 9-Py | [ML-09-Anomaly-Detection-Python](ML.Net/ML-09-Anomaly-Detection-Python.html) | **Jumeau Python** : `RandomizedPca` ⇄ `PCA`+résidu (scikit-learn) | Parité .NET⇄Python |
 | TP | [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) | Régression bayésienne (Infer.NET) | Application pratique |
 
 #### AutoML : quand le leaderboard bat le `Console.WriteLine` ([#7642](https://github.com/jsboige/CoursIA/pull/7642), [#7707](https://github.com/jsboige/CoursIA/pull/7707), [#7839](https://github.com/jsboige/CoursIA/pull/7839))
@@ -211,13 +211,13 @@ L'écart entre le pire et le meilleur essai est de **338×** — un fait pédago
 
 ### Trois figures du track ML.NET (scikit-learn, statsmodels)
 
-[![Régression linéaire (ML-01) : droite de régression verte apprise par scikit-learn superposée aux données d'entraînement (cercles bleus) et de test (carrés oranges) — l'étoile rouge matérialise la prédiction pour une maison de 2,5 milliers de pieds carrés (~2,76 centaines de milliers de dollars).](assets/readme/ml1-intro.png)](ML.Net/ML-01-Introduction-Python.ipynb)
+[![Régression linéaire (ML-01) : droite de régression verte apprise par scikit-learn superposée aux données d'entraînement (cercles bleus) et de test (carrés oranges) — l'étoile rouge matérialise la prédiction pour une maison de 2,5 milliers de pieds carrés (~2,76 centaines de milliers de dollars).](assets/readme/ml1-intro.png)](ML.Net/ML-01-Introduction-Python.html)
 *ML-01 — Régression linéaire prix/surface (scikit-learn). On observe que les points `Test` (oranges) s'éloignent de la droite au-delà de ~4 milliers de pieds carrés : le modèle linéaire sous-extrapole les grandes maisons, ce que la métrique R² seule ne signalera pas.*
 
-[![Décomposition STL d'une série temporelle de ventes (ML-05) : quatre panneaux superposés — Observé (oscillations bruitées entre ~60 et ~190), Tendance (courbe orange lisse montant de ~110 début 2023 à ~160 fin 2023), Saisonnalité (sinusoïde verte d'amplitude ~40, période 7 jours), Bruit (résidu rouge, amplitude ~±25).](assets/readme/ml5-timeseries.png)](ML.Net/ML-05-TimeSeries-Python.ipynb)
+[![Décomposition STL d'une série temporelle de ventes (ML-05) : quatre panneaux superposés — Observé (oscillations bruitées entre ~60 et ~190), Tendance (courbe orange lisse montant de ~110 début 2023 à ~160 fin 2023), Saisonnalité (sinusoïde verte d'amplitude ~40, période 7 jours), Bruit (résidu rouge, amplitude ~±25).](assets/readme/ml5-timeseries.png)](ML.Net/ML-05-TimeSeries-Python.html)
 *ML-05 — Décomposition STL (`statsmodels.tsa.seasonal_decompose`, période 7). La saisonnalité hebdomadaire se lit immédiatement (amplitude ±40), et la tendance capture la croissance sous-jacente (~+50 sur 12 mois). Le TP-prevision-ventes s'appuie sur ce découpage pour combiner signal et saisonnalité.*
 
-[![Clustering K-Means (ML-08) en deux panneaux : à gauche la vérité terrain (3 segments Dormants/Réguliers/VIP sur l'axe Frequency × Monetary) ; à droite les clusters 0/1/2 retrouvés par K-Means — on observe que les labels K-Means ne s'alignent PAS avec les segments sémantiques (Cluster 0 ≠ Dormants) : K-Means segmente l'espace géométrique, pas la sémantique métier.](assets/readme/ml8-clustering.png)](ML.Net/ML-08-Clustering-Python.ipynb)
+[![Clustering K-Means (ML-08) en deux panneaux : à gauche la vérité terrain (3 segments Dormants/Réguliers/VIP sur l'axe Frequency × Monetary) ; à droite les clusters 0/1/2 retrouvés par K-Means — on observe que les labels K-Means ne s'alignent PAS avec les segments sémantiques (Cluster 0 ≠ Dormants) : K-Means segmente l'espace géométrique, pas la sémantique métier.](assets/readme/ml8-clustering.png)](ML.Net/ML-08-Clustering-Python.html)
 *ML-08 — Clustering K-Means sur données RFM (scikit-learn). Le notebook démontre la **limitation sémantique** du K-Means non supervisé : les segments de clientèle (Dormants/Réguliers/VIP) sont des catégories métier, pas des clusters géométriques. La concordance parfaite n'est possible que par chance — d'où l'intérêt d'un *mapping* a posteriori (et des méthodes supervisées dès qu'on connaît les segments).*
 
 ## Python Data Science with Agents
