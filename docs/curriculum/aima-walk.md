@@ -88,8 +88,8 @@ métaheuristiques composées) — l'épilogue le nomme.
 10. **[`Tweety-02-Basic-Logics-Python.ipynb`](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb)** (45 min) — logique propositionnelle
     avec la bibliothèque Tweety (Java). *Suppose : prérequis 3 (Java).*
 11. **[`Tweety-02c-FOL-CSharp.ipynb`](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb)** (45 min) — logique du premier ordre, twin .NET.
-12. **[`Tweety-3-Advanced-Logics.ipynb`](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics.ipynb)** (45 min) — logiques non classiques (défaut,
-    modales). *Pont : [`Tweety-11-Causal.ipynb`](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb) pour la jonction avec la Phase 6.*
+12. **[`Tweety-03-Advanced-Logics-Python.ipynb`](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb)** (45 min) — logiques non classiques (défaut,
+    modales). *Pont : [`Tweety-11-Causal-Python.ipynb`](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) pour la jonction avec la Phase 6.*
 
 ### Phase 6 — Raisonnement probabiliste (AIMA ch. 12-16) — PyMC, ~1 h
 
