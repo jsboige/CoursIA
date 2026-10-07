@@ -1768,15 +1768,40 @@ def test_blocked_dossier_on_frozen_campaign_keeps_its_own_message(
     assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
 
 
-def test_no_dossier_on_frozen_campaign_keeps_rc1(monkeypatch, capsys):
-    """Sans dossier digne de confiance : rc=1 inchange, le gel n'y ajoute
-    rien (la PR est deja non mergeable par absence de dossier)."""
+def test_no_dossier_on_frozen_campaign_names_the_freeze(monkeypatch, capsys):
+    """#19630 : sans dossier, le gel n'etait jamais evalue. La sortie
+    `NO-DOSSIER` le laisse aujourd'hui invisible -- une lane qui consulte
+    le gate avant de porter une PR au coord ne voit pas la verite
+    complete. Le fix evalue `frozen_umbrella_exclusion` systematiquement
+    et complete la sortie avec une mention du gel. Le gate passe en
+    `EXIT_BLOCKED_WITH_SUBSTANCE` (rc=3) -- le gel reste bloquant, il
+    devient lisible. Une PR non gelee sans dossier reste en rc=1 (voir
+    `test_no_dossier_non_gelee_reste_rc1` plus bas)."""
     snapshot = _base_snapshot()
     snapshot["title"] = FROZEN_TITLE
     snapshot["headRefName"] = "feature/densite-13"
     rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    out = capsys.readouterr().out
+    assert out.startswith("NO-DOSSIER")
+    assert "frozen:#13410(veto #17040)" in out
+    assert "do not merge even if a dossier is added later" in out
+
+
+def test_no_dossier_non_gelee_reste_rc1(monkeypatch, capsys):
+    """#19630 temoin negatif : une PR non gelee sans dossier rend toujours
+    `NO-DOSSIER` sans mention de gel -- le nouveau chemin d'evaluation
+    systematique du gel n'ajoute du bruit que quand il y a un gel a
+    nommer."""
+    snapshot = _base_snapshot()
+    # Pas de FROZEN_TITLE ici -- titre anodin.
+    snapshot["headRefName"] = "fix/quiet-pr"
+    rc = _run_main(monkeypatch, snapshot)
     assert rc == mod.EXIT_NO_DOSSIER
-    assert capsys.readouterr().out.startswith("NO-DOSSIER")
+    out = capsys.readouterr().out
+    assert out.startswith("NO-DOSSIER")
+    assert "frozen:" not in out
+    assert "frozen campaign" not in out
 
 
 def test_headrefname_does_not_change_the_fingerprint():

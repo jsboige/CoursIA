@@ -1927,30 +1927,63 @@ def main() -> int:
     # Veto user sur campagne gelee (#17040) : un dossier READY n'autorise pas
     # a merger une PR gelee. Le veto ne vit sur AUCUNE surface que le dossier
     # couvre -- le gate le lit au moment de se prononcer, via le module
-    # partage frozen_campaigns (meme lecteur que merge_ready). Applique
-    # seulement au verdict READY : un dossier refuse ou BLOCKED est deja non
-    # mergeable, le gel n'y ajoute rien.
-    frozen_reason = None
-    if verdict == VERDICT_READY:
-        frozen_reason = frozen_umbrella_exclusion(
-            snapshot.get("title"),
-            snapshot.get("body"),
-            snapshot.get("headRefName"),
-        )
+    # partage frozen_campaigns (meme lecteur que merge_ready).
+    #
+    # Avant #19630 : le gel n'etait evalue que si `verdict == VERDICT_READY`.
+    # Une PR sans dossier sortait en `NO-DOSSIER` (rc=1) et le gel n'etait
+    # jamais lu, alors qu'il etait detectable depuis le snapshot des la
+    # recuperation. Le fix evalue le gel systematiquement (le snapshot est
+    # toujours disponible, on l'a sous la main pour le verdict) ; sa
+    # detection N'INVERSE PAS le verdict existant (un NO-DOSSIER reste
+    # NO-DOSSIER, un BLOCKED reste BLOCKED) mais AJOUTE la mention du gel
+    # dans la sortie. Le gel reste bloquant ; il devient lisible. Une lane
+    # qui consulte le gate avant de porter une PR au coord voit la verite
+    # complete.
+    frozen_reason = frozen_umbrella_exclusion(
+        snapshot.get("title"),
+        snapshot.get("body"),
+        snapshot.get("headRefName"),
+    )
     ready = verdict == VERDICT_READY and frozen_reason is None
     result = build_result(args.pr, snapshot, verdict, errors, dossier)
     if frozen_reason is not None:
         # Le dossier reste intact et publie : ce que le gate refuse est le
         # MERGE, pas la lecture de la PR -- meme action documentee que rc=3.
-        result["ready"] = False
-        result["verdict"] = "FROZEN"
+        # En mode --json, on enrichit le payload avec le motif sans changer
+        # le verdict fonctionnel (un NO-DOSSIER reste NO-DOSSIER cote
+        # verdict, mais le champ frozen informe le caller).
         result["frozen"] = frozen_reason
+        if verdict == VERDICT_READY:
+            result["ready"] = False
+            result["verdict"] = "FROZEN"
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
-    elif frozen_reason is not None:
+    elif frozen_reason is not None and verdict == VERDICT_READY:
         print(
             f"FROZEN -- PR #{args.pr} belongs to a frozen campaign "
             f"({frozen_reason}); do not merge, dispatch to the lane author."
+        )
+    elif frozen_reason is not None:
+        # Gel sur NO-DOSSIER ou BLOCKED : on COMPLETE la sortie du verdict
+        # fonctionnel avec la mention du gel, sans la remplacer (#19630).
+        if verdict == VERDICT_BLOCKED:
+            print(
+                f"BLOCKED-WITH-SUBSTANCE -- PR #{args.pr} has an intact adjoint dossier at "
+                f"{snapshot['headRefOid']} attesting it is NOT mergeable."
+            )
+            print("  Do not open its surfaces: dispatch from the dossier's stated reason.")
+            attested = ", ".join(
+                f"{key}={dossier.fields.get(key, '')}" for key, _ in BLOCKING_FIELDS
+            )
+            blocked = ",".join(blocking_fields(dossier)) or "none named by the contract"
+            print(f"  attested reason: {attested} (blocking: {blocked})")
+        else:
+            print(f"NO-DOSSIER -- PR #{args.pr} is not adjoint-prevalidated")
+            for error in errors:
+                print(f"  - {error}")
+        print(
+            f"  note: PR also belongs to a frozen campaign "
+            f"({frozen_reason}); do not merge even if a dossier is added later."
         )
     elif ready:
         print(f"READY -- PR #{args.pr} prevalidated by adjoint at {snapshot['headRefOid']}")
@@ -1974,13 +2007,11 @@ def main() -> int:
         print(f"NO-DOSSIER -- PR #{args.pr} is not adjoint-prevalidated")
         for error in errors:
             print(f"  - {error}")
-    if frozen_reason is not None:
-        return EXIT_BLOCKED_WITH_SUBSTANCE
     if ready:
         return EXIT_READY
-    if verdict == VERDICT_BLOCKED:
+    if frozen_reason is not None:
         return EXIT_BLOCKED_WITH_SUBSTANCE
-    return EXIT_NO_DOSSIER
+    return EXIT_NO_DOSSIER if verdict != VERDICT_BLOCKED else EXIT_BLOCKED_WITH_SUBSTANCE
 
 
 if __name__ == "__main__":
