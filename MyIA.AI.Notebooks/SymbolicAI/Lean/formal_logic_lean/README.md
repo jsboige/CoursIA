@@ -66,7 +66,7 @@ Lean 4.33.1 : six erreurs (`unsolved goals`, quatre `split` en échec, un pas de
   `or_not_valid`, le contrôle négatif satisfiable-non-valide, et
   `peirce_provable` (versant preuve, reprise de `FFL.Entailment.peirce`).
 - `FormalLogic/FolBridge.lean` — versant Lean du notebook
-  `Tweety-02d-FOL-Lab-Lean.ipynb` : la même micro-théorie du premier ordre
+  `Tweety-02d-FOL-Lab-Lean-Python.ipynb` : la même micro-théorie du premier ordre
   (quatre prédicats unaires, deux constantes). `KB ⊨ Mortel(socrate)` y devient
   un théorème de conséquence sémantique. Un contre-modèle fini à deux éléments
   montre que les deux existentiels ne fusionnent pas en un témoin unique, et que
@@ -124,5 +124,5 @@ lake build
 ```
 
 Voir aussi : `Lean-03b-Formalized-Formal-Logic-Lean-Python.ipynb` (le notebook),
-`../Tweety/Tweety-5d-Stable-Synthesis-Lean.ipynb` (le patron générateur →
+`../Tweety/Tweety-05d-Stable-Synthesis-Lean-Python.ipynb` (le patron générateur →
 certificat), `../../../docs/lean/` (pièges tactiques).
