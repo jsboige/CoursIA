@@ -4,13 +4,13 @@ La série **Geometry** applique le raisonnement symbolique aux théorèmes de g�
 
 Le programme est **gradué** : chaque notebook principal ne suppose que ce qui le précède, un même théorème fil rouge (le milieu de l'hypoténuse équidistant des trois sommets) est traversé par les méthodes successives, et les résultats de recherche restent dans les accrétions `b` — le chemin principal se lit sans ouvrir de lettre. Cadre complet : Epic #17544.
 
-**Escalier depuis la série principale** : [Lean-38 — Capstone Geometry](../Lean-38-Capstone-Geometry-Lean-Python.html) présente la sous-série et en monte une première marche complète — de la figure numérique jusqu'à la preuve formelle du fil rouge dans le lac companion [`geometry_lean`](geometry_lean/).
+**Escalier depuis la série principale** : [Lean-38 — Capstone Geometry](../Lean-38-Capstone-Geometry-Lean-Python.ipynb) présente la sous-série et en monte une première marche complète — de la figure numérique jusqu'à la preuve formelle du fil rouge dans le lac companion [`geometry_lean`](geometry_lean/).
 
 ## Le programme
 
 | Pos. | Notebook | Public | Contenu | Statut |
 |---|---|---|---|---|
-| 00 | [Lean-38 — L'escalier d'entrée](../Lean-38-Capstone-Geometry-Lean-Python.html) | Découverte | **L'escalier d'entrée** : de la figure au noyau — la montée Python ⟹ Lean qui relie les méthodes de la série, jusqu'à la preuve formelle du fil rouge dans le lac companion (carnet de la série parente) | Livré |
+| 00 | [Lean-38 — L'escalier d'entrée](../Lean-38-Capstone-Geometry-Lean-Python.ipynb) | Découverte | **L'escalier d'entrée** : de la figure au noyau — la montée Python ⟹ Lean qui relie les méthodes de la série, jusqu'à la preuve formelle du fil rouge dans le lac companion (carnet de la série parente) | Livré |
 | 01 | [Geometry-01-From-Figure-To-Equation.ipynb](Geometry-01-From-Figure-To-Equation.html) | Découverte | De la figure à l'équation : coordonnées, hypothèses et conclusion en polynômes, vérification numérique sur figures aléatoires, pourquoi ce n'est pas une preuve, Schwartz–Zippel et la preuve probabiliste | Livré |
 | 02 | Geometry-02 — Prouver par l'algèbre | Licence | Idéal engendré par les hypothèses, appartenance, bases de Gröbner (`sympy.groebner`), conditions de non-dégénérescence | À venir |
 | 03 | [Geometry-03-Wu-Method-Python.ipynb](Geometry-03-Wu-Method-Python.html) | Licence | Pseudo-division, ensemble caractéristique (basic-set de Chou), test de Wu, non-dégénérescences auto-générées ; vérification croisée Gröbner (Rabinowitsch) ; fil rouge (milieu de l'hypoténuse) et Ceva ; témoin négatif (un énoncé faux rejeté) | Livré (#17511) |
@@ -36,7 +36,7 @@ Cinq regards sur le même objet — on compare des *méthodes*, pas des exemples
 ## Prérequis et coût
 
 - **Environnement** : Python 3.10+, `sympy` + `numpy` + `matplotlib` (déjà présents dans le venv projet), kernel `python3`. Aucune API payante, aucun GPU, aucun réseau.
-- **00** (escalier [Lean-38](../Lean-38-Capstone-Geometry-Lean-Python.html), série parente) : ~15 s de bout en bout (numpy + sympy exact + lecture du lac), aucune dépendance réseau — reproductibilité HIGH, sorties committées.
+- **00** (escalier [Lean-38](../Lean-38-Capstone-Geometry-Lean-Python.ipynb), série parente) : ~15 s de bout en bout (numpy + sympy exact + lecture du lac), aucune dépendance réseau — reproductibilité HIGH, sorties committées.
 - **01** : ~5 s de bout en bout (10 000 tirages vectorisés), générateur semé — reproductibilité HIGH.
 - **03** : ~3 s de bout en bout (chaînes caractéristiques déterministes, tie-break par expression) — reproductibilité HIGH, sorties committées sur `main`. Détail coût : bloc `metadata.cost` du notebook.
 - **03b** : ~4 s de bout en bout (sympy exact + 400 figures évaluées, graine fixe) — reproductibilité HIGH ; détail coût : bloc `metadata.cost` du notebook.
