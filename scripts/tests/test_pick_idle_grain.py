@@ -3861,6 +3861,11 @@ def test_main_idle_since_delivery_falls_back_to_idle_on_fetch_error(monkeypatch)
 
 
 
+[conflit resolu c.1457 : on preserve les 12 tests de #19770 (filtre recent) PLUS les 5 tests de #19913 (3e sonde PR MERGEE)]
+# Bloc 1 : 12 tests `test_recent_delivery_marker_*` + 3 tests integration `test_draw_unclaimed_filtre_recent_*` (PR #19770)
+# Bloc 2 : 5 tests `test_merged_pr_*` (PR #19913)
+# Concatenation preservee en attendant validation pytest.
+
 
 # #19768 : le tapis a servi 4 candidats sur 4 non prenables (#7742, #16643,
 # #16372, #14549) le 2026-10-07, parce que le plafond de la sonde pleine
@@ -4078,3 +4083,178 @@ def test_draw_unclaimed_filtre_recent_false_enchaine_sur_sonde_pleine(monkeypatc
     assert picks == []
     assert len(conflicts) == 1
     assert state["recent_filtered"] == 0
+
+# --- Geste 4 #19907 : 3e surface de livraison (PR MERGEE <90j citant #N) -----
+#
+# Cas fondateur (2026-10-08, cycles c.1450..c.1453, Tell c.1392 picker-delivered
+# gap confirme 9x) : 24-28 cycles successifs sans grain actionnable. Le label
+# `candidate-delivered` est retracte par le sweep post-merge au-dela de
+# l'activite recente (#15744), et le marqueur `[INFO] candidate-delivered`
+# n'est poste que par les lanes qui refutent. Restait la PR MERGEE comme
+# seule surface de verification qui survit au sweep, mais le tapis ne la
+# sondait pas -> LIVREURS anciens servis 28 cycles de suite (cas fondateur
+# #16031 perf life_compose, label retracte 09/24, servi c.1450..c.1453 sans
+# qu'aucune lane ne refute pour poser un marqueur).
+#
+# Les 4 tests ci-dessous couvrent l'acceptance de #19907 :
+# 1. PR MERGEE <90j -> ecarte du grain (controle positif)
+# 2. PR MERGEE >90j -> conserve (la fenetre de 90j borne la portee)
+# 3. Pas de PR MERGEE -> conserve (regression preservee)
+# 4. PR MERGEE recente isolee (sans label ni marqueur) -> ecarte
+#    (couvre la nouvelle surface en isolation des 2 premieres)
+
+
+def _merged_pr_payload(prs):
+    """Helper : forge le payload gh pr list --state merged --json."""
+    return prs
+
+
+def _iso_days_ago(days, hours=0):
+    """Timestamp ISO-8601 Z, aujourd'hui - `days` jours UTC."""
+    import datetime as _dt
+    moment = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(
+        days=days, hours=hours)
+    return moment.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def test_merged_pr_recent_90d_excludes_from_grain(monkeypatch):
+    """#19907 controle positif : PR MERGEE il y a 30j citant #N -> ecarte.
+
+    Le candidat n'a ni label `candidate-delivered` ni marqueur en
+    commentaire : seule la PR MERGEE le designe comme livre. Le sweep
+    post-merge a retracte le label (cf #15744) il y a 30 jours, et
+    aucune lane n'a encore refute (donc pas de marqueur en commentaire).
+    Le tapis narrow-cache l'aurait servi 28 cycles de suite -- le 3e
+    predicat corrige cet angle mort.
+
+    Le test injecte un `merged_pr_probe` qui reproduit le verdict de
+    `merged_pr_signal` pour le candidat teste : PR #17347 MERGED il y a
+    30 jours cite #16031. La sonde reelle (`merged_pr_signal`) n'est PAS
+    appelee -- on ne teste que le contrat de `delivered_signal_reason`.
+    """
+    def fake_merged_pr_probe(number, lane):
+        if number == 16031:
+            return True  # PR MERGEE <90j trouvee
+        return False
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: _FakeCompleted("[]"))
+
+    item = {"number": 16031, "klass": "grain", "labels": []}
+    reason = pig.delivered_signal_reason(
+        item, "myia-po-2026:CoursIA-2",
+        merged_pr_probe=fake_merged_pr_probe)
+    assert reason is not None, "PR MERGEE <90j doit produire un signal"
+    assert "PR MERGEE" in reason
+    assert "90" in reason  # borne visible dans le diagnostic
+
+
+def test_merged_pr_over_90d_keeps_in_grain(monkeypatch):
+    """#19907 controle de fenetre : PR MERGEE il y a 100j -> conserve.
+
+    La borne de 90 jours borne la portee du 3e predicat. Au-dela, la
+    livraison est documentee ailleurs (release notes, ledger, ou
+    trouvee par `git log --grep=#N` en GREP direct). C'est un compromis
+    entre couverture des livraisons recentes et exclusion des PRs
+    historiques (avant #19907, la mesure c.1450 a releve 4 LIVREURS
+    dans les 90 derniers jours, 0 au-dela sur le meme echantillon).
+
+    Verifie la sonde reelle `merged_pr_signal` (pas un mock) : forge
+    un payload avec une PR MERGEE il y a 100 jours, verifie que la
+    sonde rend `False` (pas de signal).
+    """
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: _FakeCompleted(
+        json.dumps([
+            {"number": 9999, "state": "MERGED",
+             "mergedAt": _iso_days_ago(100),
+             "title": "old fix for #16031",
+             "body": "historical merge"},
+        ])))
+
+    signal = pig.merged_pr_signal(16031)
+    assert signal is False, (
+        f"PR MERGEE >90j doit rendre False, recu : {signal!r}"
+    )
+
+
+def test_no_merged_pr_keeps_in_grain(monkeypatch):
+    """#19907 regression preservee : pas de PR MERGEE -> conserve.
+
+    Le candidat n'a ni label, ni marqueur, ni PR MERGEE recente -> c'est
+    un grain standard, le tapis le sert normalement. La 3e surface de
+    livraison ne change rien au cas standard.
+
+    Verifie la sonde reelle `merged_pr_signal` : payload vide -> False.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _FakeCompleted(json.dumps([])))
+
+    signal = pig.merged_pr_signal(12345)
+    assert signal is False, (
+        f"pas de PR MERGEE doit rendre False, recu : {signal!r}"
+    )
+
+
+def test_merged_pr_isolated_no_label_no_marker(monkeypatch):
+    """#19907 isolation : PR MERGEE <90j isolee (sans label/marqueur) -> ecarte.
+
+    Couvre la nouvelle surface en isolation des 2 premieres. Le candidat
+    n'a ni le label `candidate-delivered` (retracte par sweep post-merge
+    #15744) ni de marqueur `[INFO] candidate-delivered` en commentaire
+    (aucune lane n'a refute). Seule la PR MERGEE le designe comme
+    livre -- c'est exactement le cas fondateur c.1450 #16031.
+    """
+    def fake_merged_pr_probe(number, lane):
+        if number == 16031:
+            return True  # PR MERGEE <90j isolee
+        return False
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: _FakeCompleted(
+        json.dumps({"comments": [
+            {"body": "Discussion ordinaire sur le scope, pas un marqueur."},
+            {"body": "Reponse d'une lane sur un point technique."},
+        ]})))
+
+    item = {"number": 16031, "klass": "grain", "labels": []}
+    reason = pig.delivered_signal_reason(
+        item, "myia-po-2026:CoursIA-2",
+        merged_pr_probe=fake_merged_pr_probe)
+    assert reason is not None, (
+        "PR MERGEE isolee <90j doit produire un signal meme sans "
+        "label/marqueur (c'est precisement le cas fondateur c.1450)"
+    )
+    # Le diagnostic mentionne `candidate-delivered` dans son explication
+    # du sweep post-merge, mais le PREFIXE du verdict doit etre specifique
+    # a la 3e surface (PR MERGEE) -- c'est ce qui distingue le verdict
+    # d'un signal label/marqueur homonyme.
+    assert reason.startswith("SIGNAL LIVRAISON (PR MERGEE <90j)")
+    # Et la JUXTAPOSITION du prefixe de verdict (label/marqueur) doit etre
+    # ABSENTE : pas de "SIGNAL LIVRAISON (label `candidate-delivered`)"
+    # ni de "SIGNAL LIVRAISON (commentaire `[INFO] candidate-delivered`)".
+    assert "SIGNAL LIVRAISON (label" not in reason
+    assert "SIGNAL LIVRAISON (commentaire" not in reason
+
+
+def test_merged_pr_signal_anchor_substring_no_false_positive(monkeypatch):
+    """#19907 post-filtre d'ancre `#N\\b` : pas de collision de sous-chaine.
+
+    Verifie la sonde reelle `merged_pr_signal` : PR #1170391 (sous-chaine
+    de #11703) ne doit PAS etre consideree comme couvrant #11703.
+    Cf #17760, arbitrage ai-01 2026-09-25 : la recherche GitHub matche un
+    NOMBRE NU en sous-chaine, et le post-filtre `#N\\b` est necessaire.
+    """
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: _FakeCompleted(
+        json.dumps([
+            # PR #1170391 -> body contient UNIQUEMENT "#1170391" (pas de
+            # "#11703" separe), donc l'ancre #11703\b n'est pas presente.
+            {"number": 1170391, "state": "MERGED",
+             "mergedAt": _iso_days_ago(10),
+             "title": "unrelated",
+             "body": "fixes #1170391 only"},
+        ])))
+
+    signal = pig.merged_pr_signal(11703)
+    assert signal is False, (
+        f"PR #1170391 ne doit PAS couvrir #11703 (collision sous-chaine), "
+        f"recu : {signal!r}"
+    )
+
+
+)
