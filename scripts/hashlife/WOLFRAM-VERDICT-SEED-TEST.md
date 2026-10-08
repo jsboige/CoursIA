@@ -1,6 +1,6 @@
 # Origami Wolfram — pli 9 : seed specialise R110 (0001000) + 3 complexites
 
-**Verdict** : `WOLFRAM-SEED-TEST-DISCRIMINANT_FAIBLE` (8/12 cellules discriminantes).
+**Verdict** : `WOLFRAM-SEED-TEST-DISCRIMINANT_FAIBLE` (predicats WEAK ou NONDISCRIMINANT sur une minorite de presets).
 
 ## Perimetre
 
@@ -20,7 +20,7 @@ seed canonique de Wolfram 2002 ch. 7.
 
 | Preset | Pattern | Source |
 |---|---|---|
-| `single-cell` | 1 cellule centrale allumee, reste a 0 | baseline plis 4/7/8 |
+| `single-cell` | cellule centrale unique allumee, reste eteint | baseline plis 4/7/8 |
 | `wolfram-0001000` | pattern `0001000` repete 8 fois = fond periodique 7-cell | Wolfram 2002 ch. 7 (Turing-completude) |
 | `wolfram-defect` | `0001000` repete sauf defaut local au centre | Cook 2004 (preuve d'universalite R110) |
 | `random-dense` | pattern `10110011` repete | controle R30 (verdict attendu : nondiscriminant pour R30, discriminant R30 vs R110) |
@@ -86,8 +86,8 @@ periodique plutot que vers la complexite Turing-complete documentee.
 | wolfram-defect    | WEAK | WEAK | DISCRIMINANT |
 | random-dense      | DISCRIMINANT | DISCRIMINANT | DISCRIMINANT |
 
-**Verdict global** : `DISCRIMINANT_FAIBLE` (8/12 cellules discriminantes,
-4 cellules WEAK ou NONDISCRIMINANT, 0 cellule REFUTE globale).
+**Verdict global** : `DISCRIMINANT_FAIBLE` (majorite de predicats DISCRIMINANT,
+minorite WEAK ou NONDISCRIMINANT, aucun REFUTE global).
 
 ## Conclusions epistemologiques
 
@@ -136,7 +136,7 @@ periodique plutot que vers la complexite Turing-complete documentee.
 ## Livrables du pli 9
 
 - `scripts/hashlife/k_trajectory.py` : mode `--wolfram-seed-test`
-  (+~270 lignes) avec `WOLFRAM_SEED_PRESETS`, `wolfram_seed_preset`,
+  (extension substantielle) avec `WOLFRAM_SEED_PRESETS`, `wolfram_seed_preset`,
   `wolfram_trajectory_from_state`, `measure_seed_instrument_landscape`,
   `seed_discrimination_verdict`, `cmd_wolfram_seed_test`.
 - `scripts/hashlife/wolfram_seed_test_results.json` : verbatim 48 mesures

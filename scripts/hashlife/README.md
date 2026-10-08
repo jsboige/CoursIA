@@ -136,7 +136,7 @@ Mesure canonique `n_cells = 256`, `n_steps = 256`, seed 33. La statistique par b
 | wolfram-defect    | WEAK | WEAK | DISCRIMINANT |
 | random-dense      | DISCRIMINANT | DISCRIMINANT | DISCRIMINANT |
 
-- Verdict final : `WOLFRAM-SEED-TEST-DISCRIMINANT_FAIBLE` (8/12 cellules discriminantes).
+- Verdict final : `WOLFRAM-SEED-TEST-DISCRIMINANT_FAIBLE` (predicats WEAK ou NONDISCRIMINANT sur une minorite de presets).
 - Conclusion epistemologique : le facteur confondant identifie au pli 8 etait reel et plus profond que prevu -- avec le seed canonique Wolfram 2002 ch. 7, LZ devient nondiscriminant entre R30 et R110. **Mais KSF et blocks discriminent encore** (KSF capte la structure per-step ; blocks capte la variance d'entropie par bloc). 2 instruments sur 3 discriminants = `DISCRIMINANT_FAIBLE`, pas `NONDISCRIMINANT_CONFIRME`.
 - Limite mesuree : n=64, n_steps=64, 1 seul seed par preset. Pour valider statistiquement, il faudrait 5-10 seeds par preset et moyenner les deltas (travail futur, pli 10+).
 - Suite Origami : le verdict pli 9 invalide partiellement le verdict pli 8 (3 complexites nondiscriminantes) -- il devient 2 complexites nondiscriminantes + 1 faiblement discriminante. Les pistes non-trajectoire (SAT-based minimal program, causal graph analysis) restent ouvertes.
