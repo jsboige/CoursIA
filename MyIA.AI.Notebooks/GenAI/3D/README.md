@@ -23,7 +23,7 @@ L'objectif fil rouge de la série est de **comprendre NeRF de l'intérieur** —
 
 | Notebook | Contenu | Outils |
 |----------|---------|--------|
-| [3D-01-NeRF-From-Scratch](3D-01-NeRF-From-Scratch.ipynb) | Pipeline NeRF complet from scratch (~200 lignes PyTorch) : scène jouet volumétrique analytique, entraînement, tranches de densité, évaluation MSE/PSNR sur la scène Blender Lego 100×100 du papier | PyTorch, matplotlib |
+| [3D-01-NeRF-From-Scratch](3D-01-NeRF-From-Scratch.ipynb) | Pipeline NeRF complet from scratch en PyTorch : scène jouet volumétrique analytique, entraînement, tranches de densité, évaluation MSE/PSNR sur la scène Blender Lego 100×100 du papier | PyTorch, matplotlib |
 | [3D-02-NeRF-Critic](3D-02-NeRF-Critic.ipynb) | Les cinq limitations historiques de NeRF, chacune mesurée sur la scène jouet : paliers de qualité, ablation de l'encodage, bruit de pose, zoom multi-échelle, coût de l'échantillonnage | PyTorch, matplotlib |
 
 ## Prérequis et exécution
