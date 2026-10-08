@@ -11,6 +11,9 @@ Builds synthetic lake trees under ``tmp_path`` (no real .lake/packages, no
 junctions, no network). Zero source churn.
 """
 
+import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -40,6 +43,37 @@ def _make_lake(root: Path, name: str, lakefile: str = "lakefile.lean",
                body: str = "") -> Path:
     lake = root / name
     _write(lake / lakefile, body)
+    return lake
+
+
+def _link_dir(link: Path, target: Path) -> None:
+    """Cree un lien de repertoire vers ``target``.
+
+    Sous Windows on passe par une **junction** NTFS (`mklink /J`), qui n'exige pas
+    d'elevation la ou `symlink_to` en exige une ; ailleurs, un symlink ordinaire.
+    Le test se skip si aucun des deux n'est disponible.
+    """
+    link.parent.mkdir(parents=True, exist_ok=True)
+    if os.name == "nt":
+        proc = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
+                              capture_output=True, text=True)
+        if proc.returncode != 0:
+            pytest.skip(f"mklink /J indisponible : {proc.stderr.strip() or proc.stdout.strip()}")
+        return
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks not supported on this platform")
+
+
+def _make_lake_with_mathlib_link(root: Path, name: str, store: Path,
+                                 populate: bool = True) -> Path:
+    """Lac declarant mathlib, dont `.lake/packages/mathlib` est un LIEN vers ``store``."""
+    lake = _make_lake(root, name, body="require mathlib from git")
+    store.mkdir(parents=True, exist_ok=True)
+    if populate:
+        _write(store / "Mathlib" / "Init.olean")
+    _link_dir(lake / ".lake" / "packages" / "mathlib", store)
     return lake
 
 
@@ -209,12 +243,13 @@ class TestAnalyseLake:
         for name in ("L1", "L2"):
             lake = _make_lake(tmp_path, name, body='require mathlib from git')
             mlib = lake / ".lake" / "packages" / "mathlib"
-            mlib.parent.mkdir(parents=True, exist_ok=True)
-            # symlink so realpath converges on the shared store
-            try:
-                mlib.symlink_to(shared, target_is_directory=True)
-            except (OSError, NotImplementedError):
-                pytest.skip("symlinks not supported on this platform")
+            # Lien vers le store partage, pour que le realpath converge dessus.
+            # `_link_dir` (mklink /J sous Windows) la ou `symlink_to` exige une
+            # elevation : ce test se SKIPPAIT donc en permanence sur Windows, et
+            # le dedoublonnage par realpath -- precisement la propriete qu'il
+            # epingle -- n'etait verifie nulle part sur la machine qui porte les
+            # 18 junctions.
+            _link_dir(mlib, shared)
             r = analyse_lake(lake, cache)
             assert r["oleans"] == 1
         # cache holds exactly one entry for the shared realpath
@@ -224,6 +259,73 @@ class TestAnalyseLake:
         lake = _make_lake(tmp_path, "MyLake", body='require mathlib from git')
         r = analyse_lake(lake, {})
         assert str(lake) == r["lake"]
+
+
+# ---------------------------------------------------------------------------
+# analyse_lake -- jonctions
+#
+# Trois etats distincts, mesures sur po-2025 le 2026-10-08 (18 jonctions,
+# aucune utilisable) et documentes dans docs/lean/junctions-scan-po-2025.md :
+#   - `ok`      : lien vers un store peuple
+#   - `cold`    : lien vers un store VIDE (cible presente)
+#   - `dangling`: lien dont la CIBLE A DISPARU -- etat nouveau, il etait rendu
+#                 `absent` + `reel` avant ce fix
+# ---------------------------------------------------------------------------
+
+class TestJunctionStates:
+    def test_live_junction_is_detected_and_counted(self, tmp_path):
+        """Controle positif : un lien vers un store peuple reste `ok`."""
+        lake = _make_lake_with_mathlib_link(
+            tmp_path, "L", tmp_path / "store", populate=True)
+        r = analyse_lake(lake, {})
+        assert r["junction"] is True
+        assert r["status"] == "partial"  # 1 olean, sous le plancher
+        assert r["oleans"] == 1
+        assert r["realpath"]  # un cache PHYSIQUE alimente le dedoublonnage
+
+    def test_junction_to_empty_store_stays_cold(self, tmp_path):
+        """Non-regression : cible presente mais vide -> `cold`, pas `dangling`."""
+        lake = _make_lake_with_mathlib_link(
+            tmp_path, "L", tmp_path / "store", populate=False)
+        r = analyse_lake(lake, {})
+        assert r["junction"] is True
+        assert r["status"] == "cold"
+        assert r["oleans"] == 0
+
+    def test_dangling_junction_is_not_absent(self, tmp_path):
+        """Le lien survit a la disparition de sa cible : etat `dangling`."""
+        store = tmp_path / "store"
+        lake = _make_lake_with_mathlib_link(tmp_path, "L", store, populate=True)
+        shutil.rmtree(store)  # la cible disparait, le lien reste
+
+        r = analyse_lake(lake, {})
+        assert r["status"] == "dangling", r
+        assert r["junction"] is True
+        assert r["oleans"] == 0
+        assert r["junction_target"] == str(store)
+
+    def test_dangling_junction_does_not_enter_physical_cache_count(self, tmp_path):
+        """Une cible disparue n'est pas un cache physique (cle `realpath` absente)."""
+        store = tmp_path / "store"
+        lake = _make_lake_with_mathlib_link(tmp_path, "L", store, populate=True)
+        shutil.rmtree(store)
+
+        r = analyse_lake(lake, {})
+        assert "realpath" not in r
+        assert r["junction_target"] == str(store)
+
+    def test_control_real_dir_is_not_a_junction(self, tmp_path):
+        """Controle negatif : un repertoire REEL n'est jamais vu comme un lien.
+
+        Sans lui, une detection qui rendrait `junction=True` partout passerait les
+        quatre tests precedents sans rien prouver.
+        """
+        lake = _make_lake(tmp_path, "L", body='require mathlib from git')
+        _write(lake / ".lake" / "packages" / "mathlib" / "Mathlib" / "Init.olean")
+        r = analyse_lake(lake, {})
+        assert r["junction"] is False
+        assert r["status"] == "partial"
+        assert "junction_target" not in r
 
 
 # ---------------------------------------------------------------------------
@@ -267,3 +369,36 @@ class TestMainCli:
         import check_mathlib_cache as mod
 
         assert mod.main(["--repo-path", str(tmp_path / "nope")]) == 2
+
+    def test_strict_counts_dangling_junction(self, tmp_path):
+        """``--strict`` rougit sur une jonction pendante, pas seulement sur `cold`.
+
+        Une jonction pendante se presente comme un paquet installe et n'atteint
+        rien : c'est un etat casse, la ou `absent` est l'etat normal d'un lac
+        jamais construit localement (lake recuperera le paquet lui-meme).
+        """
+        import json
+        import check_mathlib_cache as mod
+
+        (tmp_path / ".git").mkdir()
+        store = tmp_path / "store"
+        lake = _make_lake_with_mathlib_link(tmp_path, "L", store, populate=True)
+        shutil.rmtree(store)
+
+        out = tmp_path / "out.json"
+        argv = ["--repo-path", str(tmp_path), "--json-out", str(out)]
+
+        assert mod.main(argv) == 0  # advisory par defaut
+        assert mod.main(argv + ["--strict"]) == 1
+
+        payload = json.loads(out.read_text(encoding="utf-8"))
+        assert [r["status"] for r in payload["results"]] == ["dangling"], payload
+
+    def test_strict_ignores_absent(self, tmp_path):
+        """Controle negatif de la borne : `absent` (aucun lien) ne fait pas rougir."""
+        import check_mathlib_cache as mod
+
+        (tmp_path / ".git").mkdir()
+        _make_lake(tmp_path, "L", body="require mathlib from git")  # pas de .lake
+
+        assert mod.main(["--repo-path", str(tmp_path), "--strict"]) == 0

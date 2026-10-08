@@ -541,3 +541,165 @@ def test_main_raises_on_closed_issues_failure():
         with mock.patch("sys.stderr", captured_stderr):
             rc = bsb.main(["--days", "7"])
     assert rc == 2
+
+# ---------------------------------------------------------------------------
+# #19804 -- attributer les fermetures sans PR a la lane du dernier claim
+# ---------------------------------------------------------------------------
+
+
+def test_attribute_closure_pr_linked_uses_visit_lane():
+    """Cas 1 de l'acceptance #19804 : fermeture SANS PR (manuel) mais avec
+    un [CLAIMED] recent d'une lane -> attribuee a cette lane.
+
+    Avant le fix : la fermeture tombait en `_manuel` (81 % du service reel
+    au 2026-10-07). Apres le fix : `attribute_closure` extrait la lane du
+    dernier marqueur de visite (claim ou livraison) et l'utilise.
+    """
+    s = bsb.Service(
+        issue_number=42,
+        issue_created_at=_iso(datetime(2026, 10, 1, tzinfo=timezone.utc)),
+        service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+        service_kind="manuel",
+        pr_number=None,
+        pr_body=None,
+    )
+    comments = [
+        {"createdAt": "2026-10-04T12:00:00Z", "body": "[CLAIMED] lane myia-po-2024:CoursIA-2"},
+        {"createdAt": "2026-10-05T08:00:00Z", "body": "Some other comment"},
+    ]
+    bsb.attribute_closure(s, comments=comments)
+    assert s.attribution_kind == "visit", f"expected 'visit', got '{s.attribution_kind}'"
+    assert s.lane == "myia-po-2024:CoursIA-2"
+
+
+def test_attribute_closure_no_visit_remains_manuel():
+    """Cas 3 de l'acceptance #19804 : fermeture sans PR et SANS visite
+    (commentaire vide) -> reste en `_manuel`.
+
+    Comportement historique preserve : la fermeture n'est pas attribuee
+    a une lane fantome si personne ne l'a servie.
+    """
+    s = bsb.Service(
+        issue_number=99,
+        issue_created_at=_iso(datetime(2026, 10, 1, tzinfo=timezone.utc)),
+        service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+        service_kind="manuel",
+        pr_number=None,
+        pr_body=None,
+    )
+    bsb.attribute_closure(s, comments=[])  # no comments
+    assert s.attribution_kind == "manuel"
+    assert s.lane is None
+
+
+def test_attribute_closure_done_marker_picks_lane():
+    """Cas 2 (extension) : un [DONE] sans CLAIMED au prealable compte
+    aussi comme visite -- la lane du [DONE] est la lane du dernier service.
+
+    Le marqueur [DONE] est dans la grammaire `check_lane_claim._sort_events`
+    et expose `lane`. Il dit qu'une lane a livre l'issue.
+    """
+    s = bsb.Service(
+        issue_number=100,
+        issue_created_at=_iso(datetime(2026, 9, 20, tzinfo=timezone.utc)),
+        service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+        service_kind="manuel",
+        pr_number=None,
+        pr_body=None,
+    )
+    comments = [
+        {"createdAt": "2026-10-04T20:00:00Z",
+         "body": "[DONE] c.99 -- myia-ai-01:CoursIA-2 (RELEASED cid ...)"},
+        {"createdAt": "2026-10-05T01:00:00Z",
+         "body": "[CLAIMED] lane myia-po-2024:CoursIA-2"},  # later
+    ]
+    bsb.attribute_closure(s, comments=comments)
+    # Plus recent = CLAIMED par po-2024 (le [DONE] est anterieur)
+    assert s.attribution_kind == "visit"
+    assert s.lane == "myia-po-2024:CoursIA-2"
+
+
+def test_aggregate_visit_under_lane_not_under_marker():
+    """Acceptance #19804 cas 2 (extension) : un service 'visit' agrege
+    sous la lane d'attribution, PAS sous '_visit'.
+
+    Comportement de `aggregate_by_lane` : `if s.lane: key = s.lane else
+    f"_{s.attribution_kind}"`. Le `visit` est donc attribue a la lane
+    (comme `grain`), pas isole sous `_visit`.
+    """
+    services = [
+        # 1er service : visit sur myia-ai-01
+        bsb.Service(
+            issue_number=1, issue_created_at=_iso(datetime(2026, 10, 1, tzinfo=timezone.utc)),
+            service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+            service_kind="manuel", pr_number=None, pr_body=None,
+            lane="myia-ai-01:CoursIA-2", attribution_kind="visit",
+        ),
+        # 2eme service : visit sur meme lane
+        bsb.Service(
+            issue_number=2, issue_created_at=_iso(datetime(2026, 10, 1, tzinfo=timezone.utc)),
+            service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+            service_kind="manuel", pr_number=None, pr_body=None,
+            lane="myia-ai-01:CoursIA-2", attribution_kind="visit",
+        ),
+        # 3eme service : manuel (pas de visite)
+        bsb.Service(
+            issue_number=3, issue_created_at=_iso(datetime(2026, 10, 1, tzinfo=timezone.utc)),
+            service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+            service_kind="manuel", pr_number=None, pr_body=None,
+            lane=None, attribution_kind="manuel",
+        ),
+    ]
+    by_lane = bsb.aggregate_by_lane(services)
+    # 2 visit + 0 manuel sur la lane ai-01
+    assert "myia-ai-01:CoursIA-2" in by_lane
+    assert by_lane["myia-ai-01:CoursIA-2"].services == 2
+    # 0 sur _visit
+    assert "_visit" not in by_lane
+    # 1 sur _manuel
+    assert "_manuel" in by_lane
+    assert by_lane["_manuel"].services == 1
+
+
+def test_fetch_closed_issues_in_memory_window_filter():
+    """Annexe #19804 : le filtre cote serveur `closed:>=YYYY-MM-DD` tronque
+    a la date, donc on peut compter jusqu'a 1 jour de trop. `fetch_closed_issues`
+    doit filtrer en memoire sur `closedAt >= window_start` apres la lecture.
+
+    Mock du retour GraphQL avec 1 issue fermee AVANT la fenetre (la veille
+    a 23h30, alors que `window_start` est le jour meme a 00h00) -- elle
+    doit etre filtree en memoire, donc `out` doit etre vide.
+    """
+    import unittest.mock as mock
+
+    fake_response = json.dumps({
+        "data": {
+            "search": {
+                "issueCount": 1,  # le serveur en compte 1
+                "nodes": [
+                    {
+                        "number": 42,
+                        "createdAt": "2026-10-01T00:00:00Z",
+                        # Veille de la fenetre -- le filtre date du serveur
+                        # l'inclut, mais le filtre memoire l'exclut.
+                        "closedAt": "2026-09-30T23:30:00Z",
+                        "comments": {"nodes": []},
+                    },
+                ],
+                "pageInfo": {"hasNextPage": False, "endCursor": None},
+            }
+        }
+    })
+    fake_completed = mock.Mock(returncode=0, stdout=fake_response, stderr="")
+    with mock.patch("subprocess.run", return_value=fake_completed), \
+         mock.patch.dict("os.environ", {"GH_TOKEN": "fake-token"}, clear=False), \
+         mock.patch.object(bsb, "_run_capture", return_value="fake-token"):
+        services, count = bsb.fetch_closed_issues(
+            "jsboige", "CoursIA",
+            datetime(2026, 10, 1, 0, 0, 0, tzinfo=timezone.utc),
+            max_pages=1,
+        )
+    # Le serveur dit issueCount=1, mais le filtre memoire vide la liste.
+    # Controle positif declenche (read=0 vs issueCount=1).
+    assert count == 1
+    assert services == []
