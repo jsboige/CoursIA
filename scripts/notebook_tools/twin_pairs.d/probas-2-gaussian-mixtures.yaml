@@ -7,6 +7,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   known_differences:
+  - '2026-10-08 (myia-po-2024:CoursIA) #17066 : REBASELINE cote Python -- redressement densite markdown-only (PyMC-02-Gaussian-Mixtures.ipynb : lectures campaign #14124 consolidees a une par sortie de code et repositionnees APRES leur code, verbatim/paraphrases et meta-commentaires supprimes, 2 lectures creees, 3 cellules campagne supprimees ; 12 cellules code byte-identiques). Jumeau C# non touche. Aucun strip outille en attente.'
   - '2026-10-07 (myia-po-2027:CoursIA) #19778 : csharp_sha rebaseline -- table Navigation cellule 0,
     colonne Precedent : Infer-1-Setup -> Infer-1b-Premiers-Modeles (raccord de la chaine
     1 -> 1b -> 2). Infer-1b n a pas de jumeau Python enregistre -- chaine nav propre a la serie C#.
