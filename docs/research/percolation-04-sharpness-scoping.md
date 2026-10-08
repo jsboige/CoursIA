@@ -115,7 +115,7 @@ Pour chaque cellule `(L, p)` :
 2. `α(L, p)` extrait par fit log-y sur `Φ(n)` pour `n ∈ {1, 2, 4, 8, ...}` — **R² > 0.90** sur au moins 75% des cellules `(L, p)` avec `p ≥ 0.55`
 3. `α(p) ~ (p - 1/2)^{d-1} = (p - 1/2)^1` en log-log pour L fixé — **R² > 0.85** sur la régression
 4. Visualisation : 3 figures, slopes lisibles, ratios `α_mesuré / α_théorique` dans `[0.5, 2.0]` pour `p ≥ 0.55`
-5. Mémo résultats (≥ 100 lignes, 8 sections) avec interprétation physique
+5. Mémo résultats (8 sections) avec interprétation physique
 6. Notebook C.1 (0 `NotImplementedError`), C.2 (outputs présents), H.3 (pre-commit PASS)
 
 **Verdict honnête** : si l'exposant mesuré s'écarte de `(p - p_c)^{d-1}` de plus de 50% (corrections d'échelle), le carnet documente l'écart au lieu de l'ajuster.
@@ -133,9 +133,9 @@ Pour chaque cellule `(L, p)` :
 
 ## 9. Livrable
 
-- **`MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb`** : ~15-20 cellules (markdown + code), mesure `Φ(n)`, fit `α(L, p)`, visualisation, synthèse
-- **`docs/research/percolation-04-sharpness-results.md`** : ≥ 100 lignes, 8 sections (cible, architecture, mesures, verdicts, comparaison théorie, limitations, perspectives, conclusion)
-- **README update** : +1 ligne dans le tableau des composants
+- **`MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb`** : mesure `Φ(n)`, fit `α(L, p)`, visualisation, synthèse
+- **`docs/research/percolation-04-sharpness-results.md`** : 8 sections (cible, architecture, mesures, verdicts, comparaison théorie, limitations, perspectives, conclusion)
+- **README update** : entrée ajoutée dans le tableau des composants
 - **Figures** : 3 PNG (`phi_vs_n.png`, `alpha_vs_p.png`, `alpha_ratio.png`)
 
 **Wall-clock total estimé** : ~6-7 min sweep + 5 min post-processing = **~12-15 min pour le carnet complet**. C'est plus long que les paliers 03b/03c (extensions) mais plus court que le carnet 03 initial (qui a aussi demandé du post-processing substantiel).
