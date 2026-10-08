@@ -1,9 +1,13 @@
 # `dotnet-build/` — Recette de build des runtimes Tweety C# / IKVM
 
 Ce dossier contient les **recettes de build** (POM shade + csproj) des runtimes .NET de Tweety
-recompilés via **IKVM 8.14.0** — la version déclarée par 18 des 19 `*.csproj` de ce dossier
-(seul `build-TweetyPreferencesShade.csproj` est en 8.15.0), ce qui est aussi la cible de
-recompilation post-C190 (`JvmDowngrader`, bytecode Java 15→8). Toutes les recettes ciblent
+recompilés via **IKVM 8.15.0** — la version déclarée par les 19 `*.csproj` de ce dossier depuis
+l'alignement #19673 (les 4 recettes « famille A » suivaient encore 8.14.0 alors que leurs DLL
+committées référencent `IKVM.Runtime 8.15.0` — les recettes ne reproduisaient pas les binaires
+livrés). La cible de recompilation post-C190 (`JvmDowngrader`, bytecode Java 15→8) est
+inchangée : la contrainte bytecode Java 8 (section suivante) porte sur le contenu du fat-jar.
+La mesure runtime #19673 établit par ailleurs qu'une DLL bâtie sous 8.14.0 charge intégralement
+sous runtime 8.15.0 (types exposés et instanciables). Toutes les recettes ciblent
 `net8.0`. Chaque runtime compilé (`org.tweetyproject.tweety-<module>.dll`) est placé
 **à côté du notebook** qui le charge.
 

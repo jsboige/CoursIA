@@ -72,6 +72,7 @@ from typing import Iterable
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import grain_tag as gt  # noqa: E402
+import pick_idle_grain as pig  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -201,6 +202,47 @@ def attribute_service(s: Service) -> None:
     # Body present but tag absent or lane absent
     s.attribution_kind = "sans-lane"
     s.lane = None
+
+
+def attribute_closure(s: Service, comments: list[dict] | None = None) -> None:
+    """Remplit `s.lane` et `s.attribution_kind` pour une fermeture SANS PR liee.
+
+    Spec #19804 : la majorite des fermetures (81 % au 2026-10-07 sur la
+    fenetre 7j) tombent en `_manuel` parce qu'aucune PR ne les ferme par
+    `closingIssuesReferences` (les lanes livrent sous `See #N` / `Part of
+    #N`, qui ne ferment pas). Mais la lane du dernier marqueur de visite
+    (claim, [RELEASED], [DONE], [INFO] candidate-delivered) sur l'issue
+    est connue : on l'utilise pour attribuer le service a la lane qui a
+    effectivement travaille dessus.
+
+    Selection :
+    1. Si `comments` est fourni, on parse inline (cas du fetch ferme
+       GraphQL qui inclut `comments(first: 100)`).
+    2. Sinon, fallback sur `pick_idle_grain.latest_claim_lane(N)` (1 requete
+       `gh issue view --json comments` par issue, plus cher).
+
+    Si une lane est trouvee, on attribue :
+      `attribution_kind = "visit"` et `s.lane = <lane>`.
+
+    Sinon, on retombe sur `_manuel` (comportement historique, c.245-c.247).
+    """
+    comments_list = comments or []
+    lane: str | None = None
+    if comments_list:
+        # Variante offline (fetch ferme, cout reseau nul)
+        lane = pig.latest_claim_lane_from_payload(comments_list)
+    if lane is None:
+        # Fallback : 1 requete par issue. Coûte N+1 ; a eviter en pratique.
+        try:
+            lane = pig.latest_claim_lane(s.issue_number)
+        except Exception:
+            lane = None
+    if lane:
+        s.attribution_kind = "visit"
+        s.lane = lane
+    else:
+        s.attribution_kind = "manuel"
+        s.lane = None
 
 
 def aggregate_by_lane(services: Iterable[Service]) -> dict[str, LaneStats]:
@@ -513,6 +555,18 @@ def fetch_closed_issues(
     Controle positif : `issueCount` de la meme requete = nombre de
     fermetures lues (apres pagination complete). Si ecart, RuntimeError.
 
+    Spec #19804 : la requete inclut `comments(first: 100, orderBy: UPDATED_AT
+    DESC)` pour attribuer les fermetures a la lane du dernier claim/delivery
+    (organ-first via `pick_idle_grain.latest_claim_lane_from_payload`).
+    Cout : 1 requete par page de 100 issues (memes 3-4 pages qu'avant), pas
+    de N+1.
+
+    Spec #19804 annexe : la requete cote serveur tronque `closed:>=YYYY-MM-DD`
+    a la date (le fuseau du runner peut compter jusqu'a 1 jour de trop).
+    On filtre en memoire sur `closedAt >= window_start` apres le controle
+    `issueCount` (qui lui reste sur la requete serveur pour eviter le piege
+    de l'arret anticipe -- une vieille issue commentee recemment).
+
     Retourne : (services, issueCount).
     """
     out: list[Service] = []
@@ -525,7 +579,12 @@ def fetch_closed_issues(
         "  search(query: $q, type: ISSUE, first: 100, after: $endCursor) {\n"
         "    issueCount\n"
         "    nodes {\n"
-        "      ... on Issue { number createdAt closedAt }\n"
+        "      ... on Issue {\n"
+        "        number createdAt closedAt\n"
+        "        comments(first: 100, orderBy: {field: UPDATED_AT, direction: DESC}) {\n"
+        "          nodes { createdAt body }\n"
+        "        }\n"
+        "      }\n"
         "    }\n"
         "    pageInfo { hasNextPage endCursor }\n"
         "  }\n"
@@ -568,15 +627,26 @@ def fetch_closed_issues(
             created = issue.get("createdAt")
             if not closed_at or not created:
                 continue
+            # Filtre en memoire : fermer avant la fenetre ne compte pas
+            # (cf. annexe #19804 sur la troncature cote serveur de `closed:>=DATE`).
+            try:
+                if _parse_iso(closed_at) < window_start:
+                    continue
+            except Exception:
+                continue
+            comments_nodes = (
+                issue.get("comments", {}).get("nodes", [])
+                if isinstance(issue.get("comments"), dict) else []
+            )
             svc = Service(
                 issue_number=issue.get("number", 0),
                 issue_created_at=created,
                 service_date=closed_at,
                 service_kind="manuel",
                 pr_number=None,
-                pr_body=None,  # None -> attribute_service met attribution_kind = "manuel"
+                pr_body=None,  # closures sans PR -- attribute_closure visite la lane
             )
-            attribute_service(svc)
+            attribute_closure(svc, comments=comments_nodes)
             out.append(svc)
         pi = search.get("pageInfo", {})
         has_next = bool(pi.get("hasNextPage"))
