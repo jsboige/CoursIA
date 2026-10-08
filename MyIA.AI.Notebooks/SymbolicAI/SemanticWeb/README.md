@@ -345,13 +345,37 @@ couche logique qui transforme un graphe déclaratif en connaissances déductible
 > **Convention d'accessibilité** : Toutes les figures portent un `alt-text` français (régénérés via `extract_readme_figures.py`, EPIC #5654). Poids total ≈ 626 KB (≤ 1.5 MB borne), max-dim 1200 px (≤ 1200 px borne), max fichier 163 KB (≤ 200 KB borne).
 
 
-#### SW-14-Python-Coup-Ontologique (Bonus) : le coup ontologique exécutable (40 min)
+#### SW-14-Python-Coup-Ontologique (Bonus) : le coup ontologique comme diff de graphe exécutable (40 min)
 
-Ce notebook bonus incarne l'extension de vocabulaire $\eta : L_t \to L_{t+1}$ comme **diff de graphe exécutable** sur rdflib : triplets ajoutés, verdict d'admissibilité pySHACL (avec contre-exemple rejeté), delta d'inférences owlrl (et le coup nul comme résultat), provenance RDF-star/PROV de l'auteur du coup. *Enregistrement rétroactif — le notebook était livré sans ligne README.*
+Ce notebook bonus incarne l'extension de vocabulaire $\eta : L_t \to L_{t+1}$ comme **diff de graphe exécutable** sur rdflib. L'ontologie jouet (bibliothèque, classes `Book` / `Member` / `Loan`) subit un coup : sous-classe `Ebook`, datatype property `format`, assertion RDF-star de provenance. Les gestes sont ceux de la série, **composés** autour d'un même objet : OWL déclare (via rdflib), SHACL juge l'admissibilité du coup, owlrl calcule le delta d'inférences (y compris le **coup nul** comme résultat), RDF-star/PROV nomme l'auteur du coup.
+
+**Points clés appris** :
+- Diff de graphe = objet rejouable, validable, inférable, refusable — pas seulement une liste de triplets ajoutés
+- Pipeline composé : OWL (déclarer) + SHACL (juger) + owlrl (mesurer) + RDF-star (attribuer)
+- Le coup nul : une extension sans conséquence déductive est un résultat, pas un échec
+- Provenance de l'auteur du coup par reification RDF-star + PROV : *qui a proposé ce schéma, et au nom de quoi ?*
 
 #### SW-15-Python-Coup-Argumentatif (Bonus) : la greffe AIF/Dung (45 min)
 
-Ce notebook bonus greffe un **graphe d'argumentation AIF** (I-nodes / RA-nodes / CA-nodes, vocabulaire de l'ontologie [Argumentum](../Argument_Analysis/ontologies/argumentum_fallacies.owl) du dépôt) sur le pipeline de SW-14 : le coup étend le vocabulaire argumentatif (nouveau schéma d'inférence `RepresentativeSample_Inference`, nouveau type de conflit `SelectionBiasRebuttal_Conflict`), passe le juge SHACL — contrôle négatif rejeté à l'appui —, produit un delta owlrl non vide, et **bascule l'extension grounded de Dung** de `{RA4}` à `{RA3, RA5}` : l'attaque du coup réhabilite l'argument du pilote. Pont naturel vers la série [Argument_Analysis](../Argument_Analysis/).
+Ce notebook bonus greffe un **graphe d'argumentation AIF** (I-nodes / RA-nodes / CA-nodes, vocabulaire de l'ontologie [Argumentum](../Argument_Analysis/ontologies/argumentum_fallacies.owl) du dépôt) sur le pipeline de SW-14 : le débat porte sur l'adoption de la classe `Ebook` elle-même. Le coup étend le vocabulaire argumentatif (nouveau schéma d'inférence `RepresentativeSample_Inference`, nouveau type de conflit `SelectionBiasRebuttal_Conflict`, conventions de nommage Argumentum), passe le juge SHACL — contrôle négatif rejeté à l'appui —, produit un delta owlrl non vide, et **bascule l'extension grounded de Dung** de `{RA4}` à `{RA3, RA5}` : l'attaque du coup réhabilite l'argument du pilote. La provenance du coup est tracée par reification RDF classique + PROV (rdflib 7.6 ne supporte pas encore la syntaxe quoted-triple native, la double lecture est établie par SW-10). Pont naturel vers la série [Argument_Analysis](../Argument_Analysis/) — taxonomie complète des schémas Walton et sémantiques preferred/stable comme prolongement.
+
+**Points clés appris** :
+- Le coup ontologique est le **format naturel d'un coup argumentatif** : étendre le vocabulaire d'un débat se juge (SHACL) et se mesure (owlrl + Dung) avec les mêmes outils qu'une ontologie
+- Les quatre gestes de SW-14 (extension, juge, conséquence, provenance) se **transplantent sans changement d'outils** sur la controverse elle-même
+- La distinction décoration / coup : un delta owlrl non vide **et** une bascule de l'extension grounded, pas seulement des triplets en plus
+
+#### SW-16-Python-ProofCarryingOntologies (Bonus) : le certificat d'inférence (50 min)
+
+Ce notebook bonus introduit le **proof-carrying inference** : chaque conclusion d'un raisonneur s'accompagne d'un **certificat** qu'un checker **indépendant** accepte ou rejette. SW-13 a benchmarké des raisonneurs qui répondent *oui/non* sans expliquer *pourquoi* ; ici, un moteur Horn naïf en Python émet un certificat JSON (`sw16-toy-cert/1`) portant la table de règles, les faits assertés et les dérivations ordonnées, et un checker indépendant (avec sa **propre** unification, inspectée mécaniquement dans le bytecode) le relit sous quatre exigences — règle connue, une seule substitution, disponibilité ordonnée des prémisses, claim atteinte. Cinq forges rejetées nommément (`PREMISE_NOT_AVAILABLE`, `SELF_SUPPORT`, `UNIFICATION_FAILED`, `CONCLUSION_MISMATCH`, `INCONSISTENT_BINDING`) démontrent que le checker mord. Deux verdicts honnêtes : `entailed` (règles intégrées seulement) vs `entailed_under_supplied_rules` (une règle que *vous* avez écrite est une supposition, jamais un fait). La **jambe réelle** invoque le binaire [open-ontologies](https://github.com/fabio-rovai/open-ontologies) v1.4.0 (moteur Rust, SHA256 vérifié) sur la fixture `data/pizza.owl` (1 944 triplets, 258 dérivations `rdfs11`) et vérifie son certificat `oo-cert/1` avec le même checker jouet — la preuve de *soundness* réelle vivant dans le checker Lean 4 (`OOCert.certificate_sound`, théorème machine-checké, cité pas rejoué).
+
+**Points clés appris** :
+- Une conclusion sans preuve transportable est un **acte de confiance** ; un certificat en fait un **fait vérifiable** par un tiers qui ne fait pas confiance au moteur
+- Vérifier ne coûte **que lire** : pas de point fixe, pas de raisonnement — relire des étapes déjà écrites sous une seule substitution
+- Un checker honnête **rejette nommément** : cinq familles de forges démontrées, dont la double liaison (décision 0008 d'open-ontologies : *zéro lecture, pas deux*) et la prémisse du futur (l'ordre du certificat porte du sens)
+- Les limites **load-bearing** sont écrites : provenance des assertions (issue #158), deux moteurs / un algorithme, théorème de localité cité mais non machine-checké, réponses négatives = opinions d'oracle
+- Ce que le certificat **ne prouve pas** est aussi important que ce qu'il prouve — la section 7 d'open-ontologies en fait une discipline (« *Every line above is worth less if this section is missing* »)
+
+> **Pont Lean** : le checker jouet applique une *procédure* ; le checker Lean d'open-ontologies porte un *théorème*. La série [Lean](../Lean/) est le prolongement naturel — compiler `horn_certificate_sound` sur la mini-table de règles en kernel Lean 4.
 
 ---
 
@@ -371,6 +395,12 @@ Ce notebook bonus greffe un **graphe d'argumentation AIF** (I-nodes / RA-nodes /
 **Applicatives**
 
 7. **Construire et exploiter un graphe de connaissances intégré à un LLM** (extraction de triplets, embeddings, GraphRAG) pour ancrer les réponses génératives sur des données structurées (`SW-11-Python-KnowledgeGraphs.ipynb`, `SW-12-Python-GraphRAG.ipynb`).
+
+**Extensions** (Bonus Python)
+
+8. **Composer les standards autour d'un même geste** : étendre le vocabulaire d'un graphe RDF comme diff de triplets, juger l'admissibilité du coup (SHACL), mesurer le delta d'inférences (OWL-RL), tracer la provenance de l'auteur (RDF-star / PROV) — `SW-14-Python-Coup-Ontologique.ipynb`.
+9. **Transplanter ce geste sur un graphe d'argumentation AIF** : étendre le vocabulaire d'un débat (nouveaux schémas d'inférence, nouveaux types de conflit), mesurer la bascule de l'extension grounded de Dung — `SW-15-Python-Coup-Argumentatif.ipynb`.
+10. **Émettre et vérifier un certificat d'inférence** : faire passer une conclusion de raisonneur d'« acte de confiance » à « fait vérifiable par un tiers » via un checker indépendant (relecture d'étapes sous une seule substitution, rejets nommés), distinguer `entailed` de `entailed_under_supplied_rules`, distinguer aussi ce qu'un certificat **ne prouve pas** (provenance, moteurs jumeaux, théorème cité) — `SW-16-Python-ProofCarryingOntologies.ipynb`.
 
 ---
 
@@ -395,10 +425,18 @@ Pour les personnes créant des ontologies et des vocabulaires :
 
 1. **SW-6** (RDFS) → **SW-7** (OWL) → **SW-7b** (OWL Python) → **SW-8** (SHACL : contraintes sur les données) → **SW-13** (comparaison raisonneurs).
 
+### Parcours extensions (~3h, bonus Python)
+
+Pour les personnes intéressées par la **composition des standards** et la **vérification des inférences** :
+
+1. **SW-14** (coup ontologique) : composer OWL + SHACL + OWL-RL + RDF-star autour d'un diff de graphe exécutable.
+2. **SW-15** (coup argumentatif) : transplanter ce geste sur un graphe d'argumentation AIF et observer la bascule de l'extension grounded de Dung.
+3. **SW-16** (proof-carrying ontologies) : faire passer une conclusion de raisonneur d'« acte de confiance » à « fait vérifiable » via un certificat d'inférence et un checker indépendant ; connaître les limites load-bearing écrites (provenance, moteurs jumeaux, théorème cité).
+
 ## Quick Start
 
 ```bash
-# Python (notebooks SW-2b a SW-7b, SW-8 a SW-13)
+# Python (notebooks SW-2b a SW-7b, SW-8 a SW-16)
 pip install rdflib pySHACL owlready2 kglab SPARQLWrapper
 
 # .NET (notebooks SW-1 a SW-7, jumeaux C# SW-8/9/10/11/13)
@@ -411,7 +449,7 @@ jupyter notebook SW-2b-Python-RDFBasics.ipynb
 jupyter notebook SW-1-CSharp-Setup.ipynb
 ```
 
-Aucune API key requise pour les notebooks fondamentaux (SW-1 à SW-11). SW-12 (GraphRAG) nécessite une clé LLM.
+Aucune API key requise pour les notebooks fondamentaux (SW-1 à SW-11) ni pour les bonus Python (SW-14, SW-15, SW-16 — la section 6 de SW-16 télécharge un binaire open-ontologies v1.4.0 d'environ 58 Mo, mis en cache après le premier passage, vérifié par SHA256 contre `SHASUMS.txt` du tag). SW-12 (GraphRAG) nécessite une clé LLM.
 
 ---
 
@@ -543,8 +581,8 @@ SemanticWeb/
 ├── SW-12-Python-GraphRAG.ipynb
 ├── SW-13-Python-Reasoners.ipynb     # Bonus
 ├── SW-13-Reasoners-CSharp.ipynb     # Twin C# (marathon #4956 Prong B)
-├── SW-14-Python-Coup-Ontologique.ipynb   # Bonus (enregistrement retroactif)
-├── SW-15-Python-Coup-Argumentatif.ipynb  # Bonus (greffe AIF/Dung, #13567)
+├── SW-14-Python-Coup-Ontologique.ipynb   # Bonus (coup ontologique : diff de graphe executable, #13566)
+├── SW-15-Python-Coup-Argumentatif.ipynb  # Bonus (coup argumentatif : greffe AIF/Dung, #13567)
 ├── SW-16-Python-ProofCarryingOntologies.ipynb   # Bonus (PCO : ontologies a preuves Lean, #16787)
 ├── movie_kg_interactive.html        # Livrable interactif SW-11 (pyvis)
 └── RDF.Net-Legacy/                  # Archive C# RDF.NET (pré-migration Python)
