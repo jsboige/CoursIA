@@ -44,7 +44,12 @@ concurrency:
 jobs:
   repeated-prose-advisory:
     name: "Repeated-prose advisory (per-notebook, non-blocking)"
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 2 (#17397) : advisory pur-Python stdlib-only, vehicule
+    # d'identite pour le check-run absorbe par fast-lane (registre TRANCHE7,
+    # cf. entete du fichier). Aucun secret, aucun GPU/CUDA/Lean/.NET.
+    # Routage #14283 inverse, retour sur ubuntu-latest et sortie de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'workflow_dispatch'
 
     steps:

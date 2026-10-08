@@ -1,6 +1,6 @@
 name: Lean Knot CI
 
-# CI for knot_lean (SymbolicAI/Lean/knot_lean).
+# CI for knot_lean (SymbolicAI/Lean/KNOTS/knot_lean).
 # Knot theory formalization (PD-codes, Reidemeister moves, tricolorability,
 # Conway knot, Lidman unknotting number). Epic #2874.
 # Rule lean-merge-discipline: lake build SUCCESS local OBLIGATOIRE avant merge.
@@ -39,7 +39,7 @@ name: Lean Knot CI
 #   - Invariant.lean:           0 (intégralement déchargé : fox/col résidus fermés
 #                                  par #11211/#11227, Knot.unknottingNumber redéfini
 #                                  par sInf par #15082 — le récit par déclaration vit
-#                                  dans `knot_lean/README.md` §sorry, il ne vit plus ici)
+#                                  dans `KNOTS/knot_lean/README.md` §sorry, il ne vit plus ici)
 #   - Lidman.lean:              2 (unknotting_11n102_upper + unknotting_11n102 —
 #                                  11n102 unknotting number = 2, Heegaard-Floer)
 #   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
@@ -59,7 +59,7 @@ name: Lean Knot CI
 # **8** (PR #19107 : `verifyMoves_sound` prouvée, le sorry du squelette est
 # déchargé).
 # Cette valeur DOIT rester synchronisée avec `LEAN_INVENTORY.md` ligne « knot_lean
-# | 8 » et avec `knot_lean/README.md` table des sorries — cf. #13312 ; split
+# | 8 » et avec `KNOTS/knot_lean/README.md` table des sorries — cf. #13312 ; split
 # #14821 terminé (CLOSED) : la synchronisation est à jour au 2026-10-05, elle
 # n'est plus déléguée à une PR du split (#15598).
 # Raising this baseline requires a documented
@@ -89,10 +89,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lean-toolchain'
       # A change to the gate must run the gate. Without these three lines the
       # workflows that define this CI are the only files it never checks, so a
       # defect in them ships unverified -- which is exactly how the broken
@@ -120,10 +120,10 @@ on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
     paths:
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lean-toolchain'
       - '.github/workflows/lean-knot.yml'
       - '.github/workflows/lean-axiom.yml'
       - '.github/workflows/lean-build.yml'
@@ -165,7 +165,7 @@ jobs:
   ci:
     uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
     with:
-      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean
       display-name: knot_lean
       sorry-baseline: "8"
       sorry-filter-mode: real
@@ -189,7 +189,7 @@ jobs:
     needs: ci
     uses: ./.github/workflows/lean-axiom.yml
     with:
-      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean
       display-name: knot_lean
       target-modules: "*"
       allow-axioms: ""
@@ -238,7 +238,7 @@ jobs:
       - name: Advisory target-coverage delta
         run: |
           python3 scripts/lean/check_target_coverage.py \
-            --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean \
+            --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean \
             --from-workflow .github/workflows/lean-knot.yml \
             --lib-root Knots \
             --name knot_lean

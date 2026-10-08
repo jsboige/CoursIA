@@ -466,6 +466,36 @@ class TestRunCheck:
         finally:
             mod.SERIES_ROOT = original
 
+    def test_serie_exclut_fichier_output_isole(self, tmp_path):
+        """#19478 point 2 : un `X_output.ipynb` isole hors dossier `_output` n'est pas un carnet de la serie."""
+        original = mod.SERIES_ROOT
+        try:
+            mod.SERIES_ROOT = str(tmp_path)
+            serie = tmp_path / "SerieFiltr"
+            serie.mkdir()
+            (serie / "README.md").write_text("## Objectifs\nblah\n", encoding="utf-8")
+            # Carnet canonique : compte
+            _make_notebook(
+                serie / "C-1-Python.ipynb",
+                ["## A retenir", "## Verifiez votre comprehension", "## Pour aller plus loin"],
+            )
+            # Fichier hors dossier `_output` mais avec suffixe `_output.ipynb` : ne compte pas
+            _make_notebook(
+                serie / "C-2-Python_output.ipynb",
+                [],  # pas de blocs, mais il ne doit pas etre compte
+            )
+            # Fichier avec suffixe `_output_archive.ipynb` (mensonge) : compte, pas un match exact
+            _make_notebook(
+                serie / "C-3-Python_output_archive.ipynb",
+                ["## A retenir", "## Verifiez votre comprehension", "## Pour aller plus loin"],
+            )
+            result = mod.run_check("SerieFiltr")
+            assert result["carnet_total"] == 2
+            assert result["carnet_finis"] == 2
+            assert result["finished"] is True
+        finally:
+            mod.SERIES_ROOT = original
+
     def test_serie_mesure_recursive(self, tmp_path):
         """Les carnets en sous-dossiers (depth >= 2) comptent dans la mesure (leçon #19297)."""
         original = mod.SERIES_ROOT
