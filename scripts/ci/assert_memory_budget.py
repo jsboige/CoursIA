@@ -43,6 +43,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_BUDGET = REPO_ROOT / "docker-configurations" / "runners" / "po2024_budget.json"
 DEFAULT_SLICE = REPO_ROOT / "scripts" / "ci" / "docker" / "linux-runner" / "persist" / "coursia-ci.slice"
+DEFAULT_SUPERVISE = REPO_ROOT / "scripts" / "ci" / "docker" / "linux-runner" / "supervise.sh"
 
 # Marge de securite en GiB : arrondis d'unite (1 GiB = 1024 MiB mais
 # declare parfois comme 1000 MB) + memoire reservee a l'hote (Windows +
@@ -54,6 +55,56 @@ DEFAULT_MARGE_GIB = 0.5
 # coursia-ci.slice). On accepte ce partage : l'organe ne rougit que sur
 # la composition CI vs la borne la plus contraignante.
 HOST_RESERVED_GIB = 0.5
+
+# RAM VM de la machine-CIBLE, declaree comme constante (issue #19805 revue
+# coordinateur 2026-10-08, defaut 3).
+#
+# Pourquoi constante, pas mesuree : l'organe peut tourner depuis N'IMPORTE
+# QUELLE machine du cluster (ai-01 191.8 GiB, po-2027 63.6 GiB, po-2024 ~24
+# GiB) et c'est la machine-CIBLE qui plafonne, pas celle qui execute. Mesurer
+# la RAM de l'hote de l'organe rend un verdict incoherent : un organe sur
+# ai-01 dirait "VM po-2024 = 191.8 GiB, composition 27 GiB, OK" alors que
+# la VM reelle est 24 GiB -- c'est exactement le defaut fondateur que
+# `assert_memory_budget` est cense fermer.
+#
+# Source de verite : PR #19802 (allocation VM 24 GiB sur po-2024). Si une
+# autre machine-cible est ajoutee, etendre ce mapping.
+PO2024_VM_RAM_GIB = 24.0
+_MACHINE_VM_RAM_GIB: dict[str, float] = {
+    "po-2024": PO2024_VM_RAM_GIB,
+}
+
+
+def lookup_vm_ram_gib(machine: str) -> float | None:
+    """RAM VM declaree pour la machine-cible, ou None si inconnue.
+
+    L'organe refuse de mesurer l'hote sur lequel il tourne (cf. PO2024_VM_RAM_GIB).
+    La RAM est une propriete de la machine VERIFIEE, pas de la machine
+    EXECUTANT l'organe.
+    """
+    return _MACHINE_VM_RAM_GIB.get(machine)
+
+
+def lookup_slice(machine: str) -> Path:
+    """Cherche la surcharge de slice pour la machine, fallback sur la generique.
+
+    #19802 a introduit le motif `persist/<machine>/coursia-ci.slice` pour
+    permettre un plafond memoire DIFFERENT par machine-cible. La generique
+    `persist/coursia-ci.slice` reste le fallback historique.
+    """
+    machine_slice = (
+        REPO_ROOT
+        / "scripts"
+        / "ci"
+        / "docker"
+        / "linux-runner"
+        / "persist"
+        / machine
+        / "coursia-ci.slice"
+    )
+    if machine_slice.is_file():
+        return machine_slice
+    return DEFAULT_SLICE
 
 
 @dataclass
@@ -85,6 +136,79 @@ class BudgetSnapshot:
             composition=comp,
             composition_total_gib=float(data["composition_total_gib"]),
             notes=data.get("notes", ""),
+        )
+
+    @classmethod
+    def from_supervise_defaults(cls, supervise_path: Path, machine: str) -> BudgetSnapshot:
+        """Derive la composition depuis les defauts `supervise.sh`.
+
+        #19805 revue coordinateur 2026-10-08 (defaut 1) : le snapshot JSON
+        maintenu a la main derive a chaque push supervise.sh, et l'organe
+        mesurait alors son propre instantane, pas le deploiement. Lecture
+        directe des defauts (MEMORY/CPUS par famille, N par defaut documente
+        en tete du fichier) -- la composition suit les caps reels.
+
+        Le nombre de slots par defaut est lu dans l'en-tete USAGE du fichier
+        (le superviseur documente `defaut 2`, `defaut 24`, `defaut 2` pour
+        start/waiters/lean) ; un override par machine vit dans le wrapper
+        `persist/<machine>/coursia-runner.service.d/10-sizing.conf` et
+        n'est PAS releve ici (l'organe mesure le DEFAUT, l'override est
+        verifie par l'operateur ou un autre organe).
+        """
+        text = supervise_path.read_text(encoding="utf-8")
+
+        def _cap_gib(var: str, default_mb: int) -> float:
+            m = re.search(rf'^{var}="?(\d+)([gGmM])"?', text, re.MULTILINE)
+            if not m:
+                return default_mb / 1024
+            val = int(m.group(1))
+            unit = m.group(2).lower()
+            if unit == "g":
+                return float(val)
+            return val / 1024
+
+        start_cap = _cap_gib("COURSIA_RUNNER_MEMORY", 1536)
+        waiters_cap = _cap_gib("COURSIA_RUNNER_WAITER_MEMORY", 512)
+        lean_cap = _cap_gib("COURSIA_LEAN_RUNNER_MEMORY", 6 * 1024)
+
+        # N par defaut documente en tete du fichier :
+        #   "N slots (defaut 2)" (start)
+        #   "N slots d'attente PR-gate (label coursia-waiter, defaut 24)"
+        #   "N slots Lean specialises (..., defaut 2)"
+        n_start = 2
+        n_waiters = 24
+        n_lean = 2
+
+        comp = {
+            "start": CompositionFamily(
+                instances=n_start,
+                cap_gib=start_cap,
+                total_gib=round(n_start * start_cap, 3),
+            ),
+            "waiters": CompositionFamily(
+                instances=n_waiters,
+                cap_gib=waiters_cap,
+                total_gib=round(n_waiters * waiters_cap, 3),
+            ),
+            "lean": CompositionFamily(
+                instances=n_lean,
+                cap_gib=lean_cap,
+                total_gib=round(n_lean * lean_cap, 3),
+            ),
+        }
+        total = round(sum(f.total_gib for f in comp.values()), 3)
+        # Le chemin peut etre hors-repo (tests, run ad-hoc) : on note l'absolu
+        # en repli, pas un crash sur relative_to.
+        try:
+            rel = supervise_path.relative_to(REPO_ROOT)
+            notes = f"derive de {rel} (defauts)"
+        except ValueError:
+            notes = f"derive de {supervise_path} (defauts, hors-repo)"
+        return cls(
+            machine=machine,
+            composition=comp,
+            composition_total_gib=total,
+            notes=notes,
         )
 
 
@@ -197,29 +321,54 @@ def main(argv: list[str] | None = None) -> int:
         help=f"Marge de securite en GiB (defaut: {DEFAULT_MARGE_GIB})",
     )
     parser.add_argument(
+        "--from-supervise",
+        action="store_true",
+        help="Derive la composition depuis les defauts supervise.sh (defaut: lit le JSON)",
+    )
+    parser.add_argument(
+        "--machine",
+        default="po-2024",
+        help="Machine-cible verifiee (defaut: po-2024). Definit la surcharge slice et la RAM VM.",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="Sortie JSON sur stdout (sinon texte)",
     )
     args = parser.parse_args(argv)
 
-    if not args.budget.is_file():
-        print(f"Budget snapshot introuvable: {args.budget}", file=sys.stderr)
-        return 2
-    budget = BudgetSnapshot.from_json(args.budget)
+    # Composition : JSON historique OU derivation supervise.sh (#19805 revue
+    # coordinateur 2026-10-08, defaut 1). La derivation est la voie recommandee
+    # : le snapshot JSON maintenu a la main derive a chaque push supervise.sh.
+    if args.from_supervise:
+        if not DEFAULT_SUPERVISE.is_file():
+            print(f"supervise.sh introuvable: {DEFAULT_SUPERVISE}", file=sys.stderr)
+            return 2
+        budget = BudgetSnapshot.from_supervise_defaults(DEFAULT_SUPERVISE, args.machine)
+    else:
+        if not args.budget.is_file():
+            print(f"Budget snapshot introuvable: {args.budget}", file=sys.stderr)
+            return 2
+        budget = BudgetSnapshot.from_json(args.budget)
 
-    # RAM VM reelle : on importe en local pour eviter une dependance dure.
-    sys.path.insert(0, str(REPO_ROOT / "scripts" / "ci"))
-    from measure_po2024_topology import measure  # type: ignore
+    # RAM VM de la machine-CIBLE (#19805 revue coordinateur 2026-10-08,
+    # defaut 3) : declaree comme constante, PAS mesuree sur l'hote de l'organe.
+    # Mesurer l'hote rend un verdict incoherent (cf. PO2024_VM_RAM_GIB).
+    vm_total_gib = lookup_vm_ram_gib(budget.machine)
+    if vm_total_gib is None:
+        # Machine inconnue : l'organe ne peut pas verifier une borne VM. Il
+        # fonctionne en mode "slice seule", la borne est la MemoryMax de la
+        # surcharge de slice. C'est un sous-ensemble du verdict -- le marquer.
+        print(
+            f"[WARN] RAM VM non declaree pour machine='{budget.machine}' -- "
+            f"verdict sur slice seule. Etendre _MACHINE_VM_RAM_GIB.",
+            file=sys.stderr,
+        )
 
-    try:
-        topo = measure()
-    except Exception as exc:  # pragma: no cover
-        print(f"Topologie OS illisible: {exc}", file=sys.stderr)
-        return 2
-    vm_total_gib = topo.ram_total_gib
-
-    slice_max = parse_memory_max_gib(args.slice)
+    # Surcharge slice machine d'abord, generique en repli (#19805 revue
+    # coordinateur 2026-10-08, defaut 2).
+    slice_path = lookup_slice(budget.machine)
+    slice_max = parse_memory_max_gib(slice_path)
 
     result = assert_memory_budget(budget, vm_total_gib, slice_max, args.marge)
 
