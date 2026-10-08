@@ -32,7 +32,7 @@ La leçon transversale est que **le « meilleur » appariement dépend du critè
 
 ## Focus — `socle-metadata-driven` : le socle partagé démontré
 
-À l'inverse de `matching-cv` qui **combine** plusieurs séries sur une même application, [`socle-metadata-driven/`](socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb) illustre ce qui est **partagé** par toutes les familles .NET du cursus : le socle transverse [`MyIA.AI.Shared`](../../MyIA.AI.Shared/) (EPIC #7265). Ce socle factorise trois besoins transverses — découverte, persistance, logique déclarative — qu'autrement chaque série ré-écrirait. Le notebook les met en scène sur un domaine factice (facturation / catalogue) en trois moments :
+À l'inverse de `matching-cv` qui **combine** plusieurs séries sur une même application, [`socle-metadata-driven/`](socle-metadata-driven/Socle-MetadataDriven-Csharp.html) illustre ce qui est **partagé** par toutes les familles .NET du cursus : le socle transverse [`MyIA.AI.Shared`](../../MyIA.AI.Shared/) (EPIC #7265). Ce socle factorise trois besoins transverses — découverte, persistance, logique déclarative — qu'autrement chaque série ré-écrirait. Le notebook les met en scène sur un domaine factice (facturation / catalogue) en trois moments :
 
 | Moment | Principe démontré | API du socle |
 |--------|-------------------|--------------|
