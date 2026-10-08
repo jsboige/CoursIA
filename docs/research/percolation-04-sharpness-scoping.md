@@ -7,7 +7,7 @@
 1. **Cible théorique** — inégalité de supercritical sharpness
 2. **Carnets amont** — 01 supercritique, 03 critique, 03b/03c extensions
 3. **Architecture pipeline** — sweep L × p > p_c × seeds
-4. **Mesures attendues** — `Φ(n) = P_p(|C_o| < n)` en fonction de `p - p_c`
+4. **Mesures attendues** — `Φ(n; p) = P_p(n ≤ |C_o| < ∞)` en fonction de `p - p_c`
 5. **Runtimes** — budget et seuils
 6. **Smells anticipés** — pièges à éviter
 7. **Acceptance** — critères d'arrêt
