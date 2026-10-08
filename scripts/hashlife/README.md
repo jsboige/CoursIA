@@ -6,15 +6,17 @@ Instrumentation pour mesurer la **complexite de trajectoire** (compression LZ fe
 
 | Fichier | Role |
 |---------|------|
-| `k_trajectory.py` | CLI principal -- modes `measure`, `verify-corpus`, `bounds`, `wolfram`, `wolfram-4classes`, `wolfram-ksf` |
+| `k_trajectory.py` | CLI principal -- modes `measure`, `verify-corpus`, `bounds`, `wolfram`, `wolfram-4classes`, `wolfram-ksf`, `wolfram-blocks` |
 | `wolfram_cross_classes_results.json` | Verbatim mesure 4 classes Wolframe (pli 4 c.110) |
 | `wolfram_ksf_results.json` | Verbatim KSF 4 classes (pli 7 c.111) |
+| `wolfram_blocks_results.json` | Verbatim block decomposition 4 classes (pli 8 c.112) |
 | `wolfram_results.json` | Verbatim mesure Rule 30 / Rule 110 (pli 3 c.109) |
 | `k_trajectory_results.json` | Mesure 2-D Game of Life (pli 1 c.103) |
 | `WOLFRAM-VERDICT.md` | Falsifiable verdict R30 / R110 (pli 3 c.109) |
 | `WOLFRAM-VERDICT-CROSS-CLASSES.md` | Falsifiable verdict 4 classes LZ (pli 4 c.110) |
 | `WOLFRAM-VERDICT-KSF.md` | Falsifiable verdict KSF R30 vs R110 (pli 7 c.111) |
-| `tests/` | Pytests (12 pli 4 + 14 pli 7 + pli 3) |
+| `WOLFRAM-VERDICT-BLOCKS.md` | Falsifiable verdict block decomposition R30 vs R110 (pli 8 c.112) |
+| `tests/` | Pytests (12 pli 4 + 14 pli 7 + 21 pli 8 + pli 3) |
 
 ## Modes CLI
 
@@ -26,6 +28,7 @@ Instrumentation pour mesurer la **complexite de trajectoire** (compression LZ fe
 | `wolfram` | K_trajectory sur Rule 30 / Rule 110 (1-D) | `python scripts/hashlife/k_trajectory.py --mode wolfram --rule 30 --n-cells 64 --n-steps 64` |
 | `wolfram-4classes` | K_trajectory LZ sur les 4 classes canoniques Wolframe (R0/R4/R30/R110) | `python scripts/hashlife/k_trajectory.py --mode wolfram-4classes --n-cells 64 --n-steps 64` |
 | `wolfram-ksf` | Kolmogorov structure function K(W\|W') sur les 4 classes | `python scripts/hashlife/k_trajectory.py --mode wolfram-ksf --n-cells 64 --n-steps 64` |
+| `wolfram-blocks` | Block decomposition Zenil 2013 (distribution entropie par bloc) sur 4 classes | `python scripts/hashlife/k_trajectory.py --mode wolfram-blocks --n-cells 64 --n-steps 64` |
 
 ## Reproduction
 
@@ -42,6 +45,13 @@ python scripts/hashlife/k_trajectory.py --mode wolfram-ksf --all --n-cells 1024 
 # Sortie JSON (mesure canonique)
 python scripts/hashlife/k_trajectory.py --mode wolfram-ksf --all --n-cells 1024 --n-steps 1024 \
     --json-out scripts/hashlife/wolfram_ksf_results.json
+
+# Mesure block decomposition (pli 8)
+python scripts/hashlife/k_trajectory.py --mode wolfram-blocks --n-cells 64 --n-steps 64
+
+# Sortie JSON block decomposition
+python scripts/hashlife/k_trajectory.py --mode wolfram-blocks --n-cells 64 --n-steps 64 \
+    --json-out scripts/hashlife/wolfram_blocks_results.json
 
 # Tests pytest
 python -m pytest scripts/hashlife/tests/ -v
@@ -87,13 +97,27 @@ Mesure canonique n_cells = 1024, n_steps = 1024, seed = 33. KSF en **bits par ce
 - **Correction du 2026-10-09** : le verdict initial `WOLFRAM-KSF-NONDISCRIMINANT` (KSF = 8.000 pour les deux regles a n_cells = 64) etait un **artefact** a deux titres -- (a) `ksf_mean` etait rendu en **octets** et compare a des landmarks en **bits/cellule** (facteur 8 : 8.000 octets = 1.0 bit/cellule, l'entropie maximale, pas un plafond) ; (b) n_cells = 64 est **sous le plancher de cadrage zlib**, ou les deux regles rendent la meme constante. L'instrument declare desormais `WOLFRAM-SATURATED` sous `n_cells < 512`.
 - Conclusion : hors saturation, KSF **discrimine** et **retrouve les quatre landmarks**. Ce qui reste hors de portee de cette famille d'instruments n'est pas la separation chaos/structure (acquise) mais la mesure de la **Turing-completude** elle-meme, qui demande un instrument non-local (Block decomposition, SAT-based minimal program, causal graph).
 
+### Pli 8 (c.112) -- Block decomposition R0/R4/R30/R110 (Zenil 2013)
+
+| Regle | Classe | mean(W=32) | std(W=32) | Verdict |
+|-------|--------|------------|-----------|---------|
+| 0     | I      | 0.055      | 0.055     | CLASS-I-DEVIATION (seed single-cell -> die pattern, pas constance) |
+| 4     | II     | 0.361      | 0.024     | CLASS-II-DEVIATION (seed single-cell -> motif periodique) |
+| 30    | III    | 1.000      | 0.000     | CLASS-III-CONFIRMED (chaos uniforme) |
+| 110   | IV     | 0.993      | 0.006     | CLASS-IV-DEVIATION (bimodalite attendue std~0.30, observe 0.006) |
+
+- Verdict final : `WOLFRAM-BLOCKS-NONDISCRIMINANT` -- std(R30, W=32) = 0.000, std(R110, W=32) = 0.006, delta 0.006 < 0.05.
+- Conclusion : Block decomposition **confirme** plis 4 et 7. Trois complexites (LZ, KSF, blocks) trois fois sans discrimination R30 vs R110 a n=64 avec seed single-cell.
+- Facteur confondant : Rule 110 exhibe ses proprietes de Turing-completude avec le seed `0001000` repete (Wolfram 2002 ch. 7). Avec seed single-cell, R110 evolue comme un automate proche du chaos. Investigation pli 9+ : seed specialise OU algorithmic likelihood (BSF Zenil 2013) OU causal graph analysis (Zenil 2012).
+
 ## Origine
 
-Suite Origami (EPIC #19742) -- plis 1 a 7 de l'instrumentation Hashlife / K_trajectory :
+Suite Origami (EPIC #19742) -- plis 1 a 8 de l'instrumentation Hashlife / K_trajectory :
 - **Pli 1** (c.103-c.104) : instrument K_trajectory 2-D, DELIVERED.
 - **Pli 2** (c.108) : organe `ict.wolfram_step` (PR #19793 OPEN).
 - **Pli 3** (c.109) : instrument 1-D Rule 30 / Rule 110 (PR #19815 OPEN).
 - **Pli 4** (c.110) : extension 4 classes Wolframe (PR #19819 OPEN).
-- **Pli 7** (c.111) : Kolmogorov structure function (PR a ouvrir).
+- **Pli 7** (c.111) : Kolmogorov structure function (PR #19826 OPEN).
+- **Pli 8** (c.112) : block decomposition Zenil (PR a ouvrir).
 
-Suite a venir : plis 5/6 (Lean hypergraphes / multiway) bloques par env Lean/JVM absent.
+Suite a venir : plis 5/6 (Lean hypergraphes / multiway) bloques par env Lean/JVM absent ; pli 9+ (SAT-based, causal graph, algorithmic likelihood).
