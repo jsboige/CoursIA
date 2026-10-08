@@ -578,6 +578,65 @@ def _base_cell_for(base_nb, cell):
     return None
 
 
+def _preserves_base_render(base_cell, head_cell, matched):
+    """True si la tete preserve le rendu substantiel de la base (#19640 review).
+
+    Le critere `_substantial_output` ne dit qu'« il y a quelque chose »,
+    pas « le rendu specifique de la base survit a la tete ». Le
+    contre-exemple fondateur : base = SVG + ligne d'info, tete =
+    banniere + ligne d'info. Les deux cellules sont substantielles
+    (l'info passe les deux tests), et l'ancien code classait la tete DF
+    par `_declared_fallback` -- alors que le SVG a ete REMPLACE par la
+    banniere, c'est la classe de degat exacte (#3473 / #11685) que la
+    condition de base existe pour attraper.
+
+    Deux formes de preservation, chacune suffit :
+
+    1. **Types MIME non textuels de la base, tous dans la tete.**
+       ``image/svg+xml``, ``image/png``, ``text/html``, etc. -- un
+       rendu graphique n'a pas toujours de replique ``text/plain``,
+       et l'ignorer rouvrirait le trou. Le test est ensembliste : si
+       la tete a au moins les memes MIMEs non textuels que la base, le
+       rendu n'est pas perdu.
+
+    2. **La banniere matchee figurait deja dans la sortie de la base.**
+       Elle n'est alors pas nouvelle, donc ce n'est pas une
+       substitution -- c'est une decoration stable, portee par les
+       deux cellules. Le predicat est textuel : ``matched in
+       _cell_output_text(base_cell)``.
+
+    Le predicat est OR : l'un OU l'autre suffit, parce que les deux
+    formes disent la meme chose sous des angles differents (mime
+    binaire vs contenu textuel). Une cellule de base SANS MIME non
+    textuel et SANS la banniere n'a aucun critere applicable : c'est
+    un appel a la forme (1) reussie par vacuite, et la forme (2) qui
+    tranche -- et donc la preservation ne tient pas, la tete est
+    suspecte.
+
+    Cas vide (base_cell sans outputs, ou sans MIME/text pertinent) :
+    on rend ``False`` -- la preservation ne peut pas etre affirmee,
+    la prudence l'emporte.
+    """
+    base_mimes: set[str] = set()
+    for out in base_cell.get("outputs", []) or []:
+        for mime in (out.get("data") or {}).keys():
+            if mime != "text/plain":
+                base_mimes.add(mime)
+    if base_mimes:
+        head_mimes: set[str] = set()
+        for out in head_cell.get("outputs", []) or []:
+            for mime in (out.get("data") or {}).keys():
+                if mime != "text/plain":
+                    head_mimes.add(mime)
+        if base_mimes <= head_mimes:
+            return True
+    if matched:
+        base_text = _cell_output_text(base_cell)
+        if matched in base_text:
+            return True
+    return False
+
+
 def _substantial_output(cell):
     """True si la cellule porte une sortie qui n'est pas qu'une banniere.
 
@@ -668,8 +727,24 @@ def _declared_fallback(nb, idx, out_text, matched, base_nb=None):
     if not declared:
         return False
     base_cell = _base_cell_for(base_nb, cell)
+# Coexistence (#19638 + #19640): si la cellule porte une sortie
+    # substantielle a la fois en base et en head, la banniere est
+    # decoration, pas remplacement -- mais seulement si la cellule
+    # head preserve le rendu de la base (#19640). La simple
+    # substantialite est insuffisante : "try/except: print(banner);
+    # print(info)" est substantial des deux cotes via la ligne info,
+    # mais le SVG derriere display(...) est perdu -- c'est la
+    # substitution que la garde doit attraper. La branche main
+    # utilise _in_fallback pour distinguer decoration d'un fallback
+    # declare.
     if (base_cell is not None and _substantial_output(base_cell)
-            and not _in_fallback(base_cell)):
+            and not _in_fallback(base_cell)
+            and not _substantial_output(cell)):
+        return False
+    if (base_cell is not None and _substantial_output(base_cell)
+            and _substantial_output(cell)):
+        if _preserves_base_render(base_cell, cell, matched):
+            return True
         return False
     return True
 
