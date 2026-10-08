@@ -12,6 +12,7 @@
 | T2 (cette PR) | pt 2 — SK, couche agents : handoff exécuté (service LLM réel, temp 0) | livré |
 | T3 (cette PR) | pt 2 — ADK : handoff natif C5 + désignation C4 exécutés via l'organe Track2 (service LLM réel, temp 0) | livré |
 | T4 | pt 2 — SK, modes restants (séquentiel, concurrent, group chat, Magentic) exécutés (service LLM réel, temp 0) | livré |
+| T5 | pt 3 — MAF, graphe typé (`WorkflowBuilder`) exécuté (service LLM réel, temp 0), borne de boucle falsifiée | livré |
 | — | pt 2 — MS Agent Framework (agents, graphe) | à venir |
 | — | pt 1 état de l'art | livré hors repo : note datée du 2026-10-05 sur [#19380](https://github.com/jsboige/CoursIA/issues/19380) ; mémo inventaire local du 2026-10-07 (po-2024:CoursIA-2) sur [#14499](https://github.com/jsboige/CoursIA/issues/14499) |
 | — | pts 3-6 (déterminisme, couverture langages, coût, verdict) | à venir |
@@ -168,6 +169,42 @@ Quatre propriétés de la couche agents se déduisent de ces huit exécutions, e
 
 **Ce que le relevé apprend pour l'évaluation comparative** : sur les quatre modes, la sonde structurelle exploitable est la **suite des `name` reçus par `agent_response_callback`**, avec une comparabilité qui dépend du mode — ordre inclus quand le mode le détermine, ensemble seul quand il ne le détermine pas. Appliquer la même assertion aux quatre modes produirait deux faux négatifs (concurrent, magentic) sur une implémentation correcte ; c'est la propriété du mode, pas la tolérance du test, qui fixe la forme de l'assertion. Le pilote ADK (§2.4) s'était déjà heurté au même point par l'autre bout (ordre C4 déterministe *par construction*), ce qui donne à la comparaison SK↔ADK une base commune : **le déterminisme se déclare par mode, jamais globalement**.
 
-### 2.6 À venir (MAF)
+### 2.6 Pilote MAF — le graphe typé (WorkflowBuilder)
 
-Statut de MAF (Microsoft Agent Framework) à vérifier, puis couverture C#. L'emplacement `eval-pilots/` accueille les pilotes SK ; le pilote ADK vit auprès de son organe Track2 ; les pilotes MAF vivront auprès de leur organe le cas échéant.
+`VÉRIFIÉ` — pilote [`eval-pilots/maf_workflow_pilot.py`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/maf_workflow_pilot.py), exécuté sous `py -3.11` / `agent-framework-core` **1.9.0**, service **réel** (`gpt-4o-mini`, température 0, budget **dur** compté par un client instrumenté qui jette au-delà).
+
+**MAF n'est pas un framework « objets d'orchestration ».** Aucune classe `SequentialOrchestration` / `HandoffOrchestration` n'existe : l'unité est le **graphe typé** — `WorkflowBuilder(start_executor=…)`, des `Executor` portant un `@handler`, des arêtes posées par `add_edge` et `add_switch_case_edge_group(Case(condition=…, target=…), …, Default(target=…))`. C'est la différence de nature avec SK, et elle décide de tout le reste : **qui parle ensuite n'est pas une décision d'agent**, c'est une arête du graphe.
+
+**L'organe natif existe déjà dans le dépôt**, et c'est lui qui fixe l'idiome du pilote : le harnais du prover Lean construit exactement ce graphe (`SymbolicAI/Lean/agent_tests/prover/workflow.py`, `ProofWorkflowBuilder`, sept exécuteurs — `SearchAgent → TacticAgent → VerifyExecutor → CriticAgent → … → yield_output`). Le pilote reprend la même grammaire (`@handler`, `ctx.send_message`, `ctx.yield_output`, `add_switch_case_edge_group`) plutôt que d'en inventer une.
+
+Les trois mêmes rôles que §2.5 (`redacteur`, `critique`, `arbitre`) et la même tâche : la charge est constante, seule l'orchestration change, ce qui rend les deux couches comparables. Le graphe posé est `redacteur → critique → (boucle de révision | arbitre)`, la branche étant une **lambda Python sur le message**.
+
+Trace d'exécution :
+
+```text
+MAF 1.9.0 (agent-framework-core)
+MAF run1: tours=5 agents=['redacteur', 'critique', 'redacteur', 'critique', 'arbitre']
+MAF run2: tours=5 agents=['redacteur', 'critique', 'redacteur', 'critique', 'arbitre']
+FORME STABLE: OK
+MULTI-AGENTS: OK
+ORDRE FIXE: OK
+BOUCLE BORNEE: OK
+LLM CALLS: 10/40
+PILOT OK maf workflow roles=3
+```
+
+**La borne est falsifiée, elle n'est pas supposée.** Un run vert sur le seul chemin nominal ne prouve pas que le plafond de boucle mord. Avec `MAX_REVISIONS = 0`, le même pilote rend **3 tours** (`redacteur, critique, arbitre`) au lieu de 5 — la branche de retour est donc réellement gouvernée par la lambda, et les assertions distinguent les deux formes au lieu d'être tautologiques.
+
+| Fait | Détail |
+| --- | --- |
+| Le routage est **déterministe par construction** | en SK/Magentic, un LLM choisit l'orateur et émet un `ProgressLedger` ; ici la condition est une lambda sur le message. Corollaire pour l'assertion : l'**ordre ET le nombre de nœuds** sont fixés par le graphe — même doctrine que séquentiel/group chat en §2.5, pas celle de concurrent/Magentic (ensemble fixe, ordre libre). |
+| Ce que « stable » peut vouloir dire, et ne peut pas | le **chemin** est fixé par les arêtes, mais le **nombre de tours de boucle** dépend du drapeau `REVISION` rendu par le LLM. Asserter l'égalité exacte des deux séquences ferait échouer le pilote le jour où le critique répond `non` au premier tour. Le pilote asserte donc la **forme du chemin** (nœuds, ordre, alternance, terminaison sur `arbitre`) et borne séparément le nombre de tours. |
+| Le repli des répétitions se fait **par identité de nœud**, pas par voisinage | la boucle alterne `redacteur, critique` : ses répétitions ne sont **pas** consécutives. Une première version repliait les seuls voisins identiques et rendait la séquence intacte — elle faisait **échouer le pilote sur un graphe correct** (mesure : `ORDRE FIXE: FAIL`). Un défaut de l'assertion, pas du graphe. |
+| `agent_framework.__version__` **ne décrit pas** ce qui s'exécute | il rend la version du **métapaquet** (1.2.2 sur cet env), simple agrégateur de dépendances, alors que le cœur chargé est `agent-framework-core` (1.9.0). C'est le second numéro qui vaut ; un relevé qui cite le premier se trompe de deux ordres de version. |
+| MAF était déjà dans le dépôt, à une version **sous son propre pin** | le harnais du prover déclare `agent-framework-openai>=1.3.0,<2.0.0` (`agent_tests/requirements.txt`), mais l'env ne portait que 1.2.2 du paquet agrégateur — les deux numéros divergent et le pin porte sur le **connecteur**, pas sur l'agrégateur. Installation alignée avant mesure (règle F : réparer, jamais contourner) ; `agent-framework-openai` 1.8.2, cœur 1.9.0. |
+
+**Ce que le relevé apprend pour l'évaluation comparative.** SK et MAF ne répondent pas à la même question. SK offre une **bibliothèque de topologies prêtes** (séquentiel, concurrent, group chat, Magentic, handoff) où le choix de l'orateur est délégué à un manager — donc à un LLM dès que la topologie est dynamique. MAF offre un **graphe** où la topologie est écrite, donc inspectable et testable hors LLM, au prix de l'écrire soi-même. Le déterminisme n'est pas une propriété du framework mais de **ce qu'on met dans le graphe** : le prover Lean s'en sert précisément pour rendre son routage vérifiable (`SwitchCaseEdgeGroup` sur `msg.next_agent`), là où un manager Magentic l'aurait rendu probabiliste. Les deux couches sont donc complémentaires plutôt que concurrentes sur ce point, et le critère de choix est la **nature de la décision de routage** : écrite → MAF, déléguée → SK.
+
+### 2.7 À venir (couverture C#)
+
+Reste de #14499 : la couverture C# (le dépôt enseigne aussi .NET Interactive). L'emplacement `eval-pilots/` accueille les pilotes Python ; les pilotes MAF vivent auprès de leur organe (`agent_tests/prover/workflow.py` pour l'idiome de référence).
