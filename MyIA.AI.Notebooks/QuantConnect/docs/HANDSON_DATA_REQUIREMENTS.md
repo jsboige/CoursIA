@@ -14,7 +14,7 @@ Ce document documente les prérequis de données pour les exemples du livre qui 
 
 **Prérequis**:
 - **API Tiingo News**: Nécessite une clé API Tiingo Premium
-- **LLM**: OpenAI GPT-4 ou Anthropic Claude (nécessite API key)
+- **LLM**: OpenAI GPT-5.6 ou Anthropic Claude (nécessite API key)
 - **Données**: News textuelles de Tiingo (pas disponible dans QC standard)
 
 **Pourquoi pas de backtest direct**: Les news Tiingo ne sont pas disponibles dans QuantConnect Cloud. L'exemple nécessite un téléchargement externe de données.

@@ -10,7 +10,7 @@ The original Dahia source lives in the repository `gdahia/Komlos` (module
 The adaptation takes the module over **name for name**, but first delivers only
 its **convexity-free** part — see the scope below.
 
-**Scope of this commit** (brick k2.1, `lake build SUCCESS` required, 0 `sorry`) :
+**Scope of this commit** (bricks k2.1 then k2.2, `lake build SUCCESS` required, 0 `sorry`) :
 
 The **pullback step** of Lemma 1.4 decomposes, in Dahia, into three lemmas :
 `exists_sign_mul_add_eq` (real arithmetic), `add_smul_mem_convexHull` (convex
@@ -33,9 +33,25 @@ already-verified base :
   `c · (Σ R y · h y) + Σ R y · g y`. It is the only sum manipulation of the
   pullback step that is not convexity.
 
-**Deferred to k2.2** (convexity surface) : `add_smul_mem_convexHull` and
-`pullback` — the only two lemmas of the Dahia module that require
-`convexHull ℝ`. The detailed state lives in `FORMAL_STATUS.md`.
+**Brick k2.2 (convexity surface)** — `convexHull` enters this lake (0
+occurrence before this commit) through the two generic lemmas the pullback
+step consumes :
+
+- `add_smul_mem_convexHull` — the point `x + c • v` of the segment
+  `[x − v, x + v]` belongs to the convex hull of any set containing both
+  endpoints. Transposed **verbatim** from Dahia (`Komlos/Pullback.lean`,
+  l.43-50) : the statement depends only on the `ℝ`-module structure of `E` ;
+- `sum_smul_mem_convexHull` — the closing step of the pullback
+  (`Convex.sum_mem` applied to `convex_convexHull`, l.83 in Dahia) : a finite
+  convex combination of points of a hull stays in the hull.
+
+**`pullback` remains deferred, and its blocker is now measured** : in Dahia it
+is stated over `E →₀ ℝ` with `E` an `ℝ`-module, the hull being taken in
+`convexHull ℝ (P.support : Set E)`. This lake's base is `Fin d → ℤ`, which is
+**not** an `ℝ`-module — `convexHull ℝ` makes no sense there without a
+coordinate-by-coordinate embedding into `Fin d → ℝ` (the "dimension
+transport" of `FORMAL_STATUS.md`). The detailed state lives in
+`FORMAL_STATUS.md`.
 -/
 
 import Discrepancy.Basic_en
@@ -46,14 +62,16 @@ import Discrepancy.Basic_en
 Lemma 1.4 concludes `μ(P) + Σ ε_i v_i ∈ conv(supp P)`. Its induction step splits
 in the direction of the last vector, applies the induction hypothesis in the
 product space, then **brings back** the resulting point into `conv(supp P)` :
-that is the *pullback*. This module delivers the algebra of that step,
-independently of any notion of convex hull.
+that is the *pullback*. This module delivers the algebra of that step (k2.1),
+then the convexity surface that algebra wraps (k2.2) — both **generic**, the
+full step remaining conditioned on the dimension transport.
 
 **Why separate.** Opening `convexHull` in this lake is a structural gesture
 (first convex-analysis surface of the lake) ; mixing it with real arithmetic and
 sum manipulation would make the diagnosis of a build failure ambiguous.
-Delivered separately, the three lemmas below are verifiable **without**
-`convexHull`, and the next brick brings only one new ingredient.
+Delivered separately, the three lemmas of k2.1 are verifiable **without**
+`convexHull` — and it is on that verified base that brick k2.2 opened the
+surface : a build failure on the convexity lemmas can now only come from them.
 
 **Scope of the result.** `exists_sign_mul_add_eq` is the ingredient that
 produces the **signed conclusion** : `e ∈ {±1}` is the sign `ε` of k2's
@@ -130,5 +148,53 @@ lemma sum_mul_add_split {ι : Type*} (T : Finset ι) (R h g : ι → ℝ) (c : �
       = c * (∑ y ∈ T, R y * h y) + ∑ y ∈ T, R y * g y := by
   rw [Finset.mul_sum, ← Finset.sum_add_distrib]
   exact Finset.sum_congr rfl fun y _ => by ring
+
+/-- **Point of a segment in a convex hull.** For `|c| ≤ 1`, the point
+`x + c • v` belongs to the convex hull of any set `s` containing both
+endpoints `x − v` and `x + v`.
+
+This is Dahia's `add_smul_mem_convexHull` (`Komlos/Pullback.lean`, l.43-50),
+transposed **verbatim** : the statement depends only on the `ℝ`-module
+structure of `E`. It is the **first occurrence of `convexHull` in this lake**
+— the convex-analysis surface opens on the already-verified base of k2.1 : the
+bound `|c| ≤ 1` is the one produced by `exists_sign_mul_add_eq`, and
+`segment_repr` is the segment identity this lemma wraps.
+
+Proof : `x + c • v` is the convex combination of `x − v` (weight `(1 − c)/2`)
+and `x + v` (weight `(1 + c)/2`) ; `Convex.add_smul_sub_mem` (Mathlib
+`Analysis.Convex.Basic:492`) produces it for the parameter `t = (1 + c)/2`,
+both bounds `0 ≤ t ≤ 1` following from `|c| ≤ 1` by `linarith` ; `convert …
+using 1` then `module` close the residual algebraic identity — the same
+argument as `segment_repr`. -/
+lemma add_smul_mem_convexHull {E : Type*} [AddCommGroup E] [Module ℝ E]
+    {s : Set E} {x v : E} (h₁ : x - v ∈ s) (h₂ : x + v ∈ s) {c : ℝ}
+    (hc : |c| ≤ 1) : x + c • v ∈ convexHull ℝ s := by
+  obtain ⟨hc₁, hc₂⟩ := abs_le.1 hc
+  convert (convex_convexHull ℝ s).add_smul_sub_mem (subset_convexHull ℝ s h₁)
+    (subset_convexHull ℝ s h₂) (t := (1 + c) / 2) ⟨by linarith, by linarith⟩ using 1
+  module
+
+/-- **Finite convex combination of points of a hull.** If `R` is a family of
+nonnegative weights summing to `1` over a `Finset` `T`, and every point `f y`
+(for `y ∈ T`) belongs to `convexHull ℝ s`, then the convex combination
+`∑ y ∈ T, R y • f y` belongs to `convexHull ℝ s`.
+
+This is the closing step of Dahia's pullback
+(`(convex_convexHull ℝ _).sum_mem hR0 hR1`, l.83), extracted in the lake's
+`Finset` form : it is what closes the step's proof once every point of the
+sum has been brought back into the hull. Generic statement ; the converse
+decomposition — reading a hull membership as weights — already exists at this
+lake's pin under the name `Finset.centerMass_mem_convexHull` (Mathlib
+`Analysis.Convex.Combination:253`).
+
+Proof : `Convex.sum_mem` (Mathlib `Analysis.Convex.Combination:214`) applied
+to `convex_convexHull ℝ s` — a convex hull is convex, and a convex
+combination of points of a convex set stays in the set. -/
+lemma sum_smul_mem_convexHull {E : Type*} [AddCommGroup E] [Module ℝ E]
+    {s : Set E} {ι : Type*} (T : Finset ι) (R : ι → ℝ) (f : ι → E)
+    (hR0 : ∀ y ∈ T, 0 ≤ R y) (hR1 : ∑ y ∈ T, R y = 1)
+    (hmem : ∀ y ∈ T, f y ∈ convexHull ℝ s) :
+    ∑ y ∈ T, R y • f y ∈ convexHull ℝ s :=
+  (convex_convexHull ℝ s).sum_mem hR0 hR1 hmem
 
 end Discrepancy.Komlos_en

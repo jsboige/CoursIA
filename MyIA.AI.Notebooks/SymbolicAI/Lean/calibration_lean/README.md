@@ -117,5 +117,5 @@ compter ; le comptage code-level retourne 0. La même distinction —
 
 - **Harnais du prouveur** : [`agent_tests/prover/`](../agent_tests/prover/) — le prouveur multi-agents que ces cibles calibrent.
 - **Cibles de production** : [`conway_lean/`](../conway_lean/),
-  [`knot_lean/`](../knot_lean/) — projets Lean sur lesquels le prouveur
+  [`knot_lean/`](../KNOTS/knot_lean/) — projets Lean sur lesquels le prouveur
   s'exécute également.
