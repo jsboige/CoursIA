@@ -951,7 +951,13 @@ def test_belt_withdraws_delivered_candidates_and_replaces():
     pool = [marked_label, marked_comment, clean_a, clean_b]
     picks, withheld, state = pig.belt_pick_with_replacements(
         pool, _free_claims(pool), _belt_args(), probe_budget=8,
-        delivered_probe=lambda n, lane=None: n == 16048)
+        delivered_probe=lambda n, lane=None: n == 16048,
+        # 3e surface de livraison #19907 : probe inert ici, le test ne
+        # couvre que le label et le marqueur. Sans ce param, le probe reel
+        # `merged_pr_signal` est appele et peut retourner un signal reel
+        # sur 19001/19002 (PRs mergees reelles sur le depot), faussant le
+        # test.
+        merged_pr_probe=lambda n, lane=None: False)
     assert [p["number"] for p in picks] == [19001, 19002], (
         "les candidats livres doivent etre remplaces, pas servis")
     causes = {w[0]["number"]: w[1] for w in withheld}
@@ -966,7 +972,11 @@ def test_belt_keeps_unmarked_candidate_pickable():
     clean = _make_item(19003, age_days=40, idle=4, last=None)
     picks, withheld, _ = pig.belt_pick_with_replacements(
         [clean], _free_claims([clean]), _belt_args(), probe_budget=8,
-        delivered_probe=lambda n, lane=None: False)
+        delivered_probe=lambda n, lane=None: False,
+        # 3e surface #19907 : probe inert ici (le test verifie que sans
+        # marqueur, le candidat reste tirable -- on ne veut pas qu'une
+        # PR reelle mergee le fausse).
+        merged_pr_probe=lambda n, lane=None: False)
     assert [p["number"] for p in picks] == [19003]
     assert withheld == []
 
@@ -978,7 +988,10 @@ def test_belt_unread_probe_is_fail_open_and_reported():
     unread = _make_item(19004, age_days=40, idle=4, last=None)
     picks, withheld, state = pig.belt_pick_with_replacements(
         [unread], _free_claims([unread]), _belt_args(), probe_budget=8,
-        delivered_probe=lambda n, lane=None: None)
+        delivered_probe=lambda n, lane=None: None,
+        # 3e surface #19907 : probe inert (le test verifie le tri-etat
+        # du probe commentaire ; la 3e surface n'est pas sous test ici).
+        merged_pr_probe=lambda n, lane=None: False)
     assert [p["number"] for p in picks] == [19004]
     assert withheld == []
     assert state["failures"] == [19004]
