@@ -1,0 +1,89 @@
+name: Assert memory budget (composition vs RAM VM, #19805)
+
+# Issue #19805 : `fix(runners): budget memoire po-2024 incoherent avec la VM --
+# 42 Go declares pour 24 032 Mo disponibles`. La composition cumulee des
+# conteneurs runners (effectifs x caps) etait superieure a la RAM de la VM
+# WSL, et l'instrumentation existante ne le detectait pas. `measure_po2024_topology`
+# mesure la topologie mais ne confronte pas la composition au budget declare,
+# et le garde precedent ne connaissait que le budget (pas la RAM VM).
+#
+# Cet organe `scripts/ci/assert_memory_budget.py` comble le trou. Il lit
+# la RAM VM reelle (via `measure_po2024_topology.measure()`) et la
+# composition depuis `docker-configurations/runners/<host>_budget.json`,
+# puis compare a la borne la plus contraignante entre MemoryMax de la
+# slice et la RAM VM (hote reserve). Rouge si la composition depasse.
+#
+# Le verdict sert deux causes :
+# 1. Detecter la derive du budget quand une revision de .wslconfig ou de
+#    la composition se fait sans toucher le snapshot (mesure fondateur
+#    de l'issue #19805 : l'agrandissement VM du 2026-09-21 a ete revertu
+#    sans que les declarations suivent).
+# 2. Empecher l'extension silencieuse des caps par conteneur (chaque
+#    modification de supervise.sh qui touche --memory doit etre
+#    accompagnee d'une mise a jour du snapshot).
+#
+# Workflow bloquant sur pull_request et push (les PRs touchant le snapshot,
+# la slice, ou les supervise.sh concernes reapparaissent dans le diff et
+# le guard rougit). Schedule quotidien en arriere-plan pour detecter les
+# derives du snapshot.
+
+on:
+  pull_request:
+    paths:
+      - "docker-configurations/runners/**"
+      - "scripts/ci/assert_memory_budget.py"
+      - "scripts/ci/measure_po2024_topology.py"
+      - "scripts/ci/docker/linux-runner/persist/coursia-ci.slice"
+      - "scripts/ci/docker/linux-runner/supervise.sh"
+  push:
+    branches: [main]
+    paths:
+      - "docker-configurations/runners/**"
+      - "scripts/ci/assert_memory_budget.py"
+      - "scripts/ci/measure_po2024_topology.py"
+      - "scripts/ci/docker/linux-runner/persist/coursia-ci.slice"
+      - "scripts/ci/docker/linux-runner/supervise.sh"
+  schedule:
+    # Verifie la derive de l'instrument meme quand aucune PR ne touche
+    # le snapshot (un revert de .wslconfig sur po-2024 lui-meme est
+    # invisible depuis le repo : la CI sert de rappel hebdomadaire).
+    - cron: "37 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  assert:
+    name: Composition vs RAM VM
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Run assert_memory_budget
+        id: assert
+        run: |
+          set -uo pipefail
+          python scripts/ci/assert_memory_budget.py --json > /tmp/assert.json
+          rc=$?
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          cat /tmp/assert.json
+          if [ $rc -ne 0 ]; then
+            echo "::error title=Incoherence budget memoire (issue #19805)::La composition cumulee des conteneurs runners depasse la borne la plus contraignante (MemoryMax slice ou RAM VM - hote reserve). Voir /tmp/assert.json et l'issue #19805."
+            exit 1
+          fi
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: Run pytest (smoke)
+        run: |
+          python -m pytest scripts/tests/test_assert_memory_budget.py -v
+        env:
+          PYTHONIOENCODING: utf-8
