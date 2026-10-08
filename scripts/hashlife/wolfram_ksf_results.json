@@ -1,0 +1,282 @@
+{
+  "results": [
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "rule": 0,
+      "W_context": 1,
+      "ksf_mean": 0.0317,
+      "ksf_min": 0,
+      "ksf_max": 2,
+      "k_context_mean": 11.0794,
+      "n_measurements": 63
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "rule": 0,
+      "W_context": 2,
+      "ksf_mean": 0.0161,
+      "ksf_min": 0,
+      "ksf_max": 1,
+      "k_context_mean": 11.1129,
+      "n_measurements": 62
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "rule": 0,
+      "W_context": 4,
+      "ksf_mean": 0.9833,
+      "ksf_min": 0,
+      "ksf_max": 1,
+      "k_context_mean": 11.1333,
+      "n_measurements": 60
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "rule": 0,
+      "W_context": 8,
+      "ksf_mean": 0.0,
+      "ksf_min": 0,
+      "ksf_max": 0,
+      "k_context_mean": 12.125,
+      "n_measurements": 56
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "rule": 0,
+      "W_context": 16,
+      "ksf_mean": 0.0,
+      "ksf_min": 0,
+      "ksf_max": 0,
+      "k_context_mean": 12.1458,
+      "n_measurements": 48
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "rule": 0,
+      "W_context": 32,
+      "ksf_mean": 0.9688,
+      "ksf_min": 0,
+      "ksf_max": 1,
+      "k_context_mean": 12.2188,
+      "n_measurements": 32
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "rule": 4,
+      "W_context": 1,
+      "ksf_mean": 2.0952,
+      "ksf_min": 2,
+      "ksf_max": 8,
+      "k_context_mean": 16.0,
+      "n_measurements": 63
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "rule": 4,
+      "W_context": 2,
+      "ksf_mean": 0.0323,
+      "ksf_min": 0,
+      "ksf_max": 2,
+      "k_context_mean": 18.0968,
+      "n_measurements": 62
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "rule": 4,
+      "W_context": 4,
+      "ksf_mean": 0.0,
+      "ksf_min": 0,
+      "ksf_max": 0,
+      "k_context_mean": 19.1167,
+      "n_measurements": 60
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "rule": 4,
+      "W_context": 8,
+      "ksf_mean": 0.0,
+      "ksf_min": 0,
+      "ksf_max": 0,
+      "k_context_mean": 19.125,
+      "n_measurements": 56
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "rule": 4,
+      "W_context": 16,
+      "ksf_mean": 0.0,
+      "ksf_min": 0,
+      "ksf_max": 0,
+      "k_context_mean": 19.1458,
+      "n_measurements": 48
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "rule": 4,
+      "W_context": 32,
+      "ksf_mean": 0.0,
+      "ksf_min": 0,
+      "ksf_max": 0,
+      "k_context_mean": 19.2188,
+      "n_measurements": 32
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "rule": 30,
+      "W_context": 1,
+      "ksf_mean": 8.5397,
+      "ksf_min": 8,
+      "ksf_max": 9,
+      "k_context_mean": 16.0317,
+      "n_measurements": 63
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "rule": 30,
+      "W_context": 2,
+      "ksf_mean": 8.371,
+      "ksf_min": 8,
+      "ksf_max": 10,
+      "k_context_mean": 24.5806,
+      "n_measurements": 62
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "rule": 30,
+      "W_context": 4,
+      "ksf_mean": 9.0,
+      "ksf_min": 8,
+      "ksf_max": 10,
+      "k_context_mean": 41.7,
+      "n_measurements": 60
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "rule": 30,
+      "W_context": 8,
+      "ksf_mean": 8.0,
+      "ksf_min": 8,
+      "ksf_max": 8,
+      "k_context_mean": 75.0,
+      "n_measurements": 56
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "rule": 30,
+      "W_context": 16,
+      "ksf_mean": 8.0,
+      "ksf_min": 8,
+      "ksf_max": 8,
+      "k_context_mean": 139.0,
+      "n_measurements": 48
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "rule": 30,
+      "W_context": 32,
+      "ksf_mean": 8.0,
+      "ksf_min": 8,
+      "ksf_max": 8,
+      "k_context_mean": 267.0,
+      "n_measurements": 32
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "rule": 110,
+      "W_context": 1,
+      "ksf_mean": 8.6825,
+      "ksf_min": 8,
+      "ksf_max": 9,
+      "k_context_mean": 16.0317,
+      "n_measurements": 63
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "rule": 110,
+      "W_context": 2,
+      "ksf_mean": 8.5161,
+      "ksf_min": 8,
+      "ksf_max": 10,
+      "k_context_mean": 24.7097,
+      "n_measurements": 62
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "rule": 110,
+      "W_context": 4,
+      "ksf_mean": 8.9,
+      "ksf_min": 8,
+      "ksf_max": 10,
+      "k_context_mean": 42.0333,
+      "n_measurements": 60
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "rule": 110,
+      "W_context": 8,
+      "ksf_mean": 8.0,
+      "ksf_min": 8,
+      "ksf_max": 8,
+      "k_context_mean": 75.0,
+      "n_measurements": 56
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "rule": 110,
+      "W_context": 16,
+      "ksf_mean": 8.0,
+      "ksf_min": 8,
+      "ksf_max": 8,
+      "k_context_mean": 139.0,
+      "n_measurements": 48
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "rule": 110,
+      "W_context": 32,
+      "ksf_mean": 8.0,
+      "ksf_min": 8,
+      "ksf_max": 8,
+      "k_context_mean": 267.0,
+      "n_measurements": 32
+    }
+  ],
+  "per_class_verdicts": {
+    "KSF_R0": "CLASS-I-DEVIATION (KSF(W=32) = 0.969 eloigne du landmark 0.000, delta 0.969)",
+    "KSF_R4": "CLASS-II-CONFIRMED (KSF(W=32) = 0.000 ~= landmark 0.000, delta 0.000)",
+    "KSF_R30": "CLASS-III-DEVIATION (KSF(W=32) = 8.000 eloigne du landmark 0.850, delta 7.150)",
+    "KSF_R110": "CLASS-IV-DEVIATION (KSF(W=32) = 8.000 eloigne du landmark 0.200, delta 7.800)"
+  },
+  "discrimination_verdict": "WOLFRAM-KSF-NONDISCRIMINANT (R30 KSF(W=32)=8.000, R110 KSF(W=32)=8.000, delta=0.000 < 0.10)",
+  "n_cells": 64,
+  "n_steps": 64,
+  "seed": 33,
+  "rules": [
+    0,
+    4,
+    30,
+    110
+  ],
+  "ksf_landmarks": {
+    "0": {
+      "klass": "I",
+      "name": "uniforme",
+      "expected_ksf": 0.0
+    },
+    "4": {
+      "klass": "II",
+      "name": "periodique",
+      "expected_ksf": 0.0
+    },
+    "30": {
+      "klass": "III",
+      "name": "chaotique",
+      "expected_ksf": 0.85
+    },
+    "110": {
+      "klass": "IV",
+      "name": "Turing-complet",
+      "expected_ksf": 0.2
+    }
+  }
+}
