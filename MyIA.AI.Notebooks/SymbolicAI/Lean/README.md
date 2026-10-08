@@ -150,6 +150,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | ANALYSE-02 | [ANALYSE-02-Tao-Lean-Python](ANALYSE/ANALYSE-02-Tao-Lean-Python.ipynb) | Le manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 40 min |
 | ANALYSE-03 | [ANALYSE-03-PFR-Lean](ANALYSE/ANALYSE-03-PFR-Lean.ipynb) | La conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 45 min |
 | ANALYSE-04 | [ANALYSE-04-PFR-Primitives-Python](ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb) | Trois primitives de PFR, et l'endroit exact où elles cessent de valoir — companion de digestion de ANALYSE-03 : ce qui se transporte hors du cadre d'origine (#12214) | 30 min |
+| ANALYSE-05 | [ANALYSE-05-KLS-Lean-Python](ANALYSE/ANALYSE-05-KLS-Lean-Python.ipynb) | La conjecture KLS démontrée (Bizeul–Klartag–Lehec 2026) : énoncé, chaîne de la preuve en cinq maillons, lac local `kls_lean` (six définitions, deux théorèmes prouvés, 0 sorry, axiomes vérifiés), thin-shell en Monte-Carlo avec saturation exacte à 8n par l'exponentielle produit, banc 1-lipschitzien minorant `poincareConstant` (#19729) | 45 min |
 | 21 | [Lean-21-MIMO-Detection-Flips](Lean-21-MIMO-Detection-Flips.ipynb) | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases et du converse complet `ml_error_prob_ge_threshold` (P(erreur ML) ≥ 1 − e^{−(2·log N − log log N)}) du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 45 min |
 | 21b | [Lean-21b-MIMO-Converse-Native](Lean-21b-MIMO-Converse-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lac `mimo_lean` : le lac importé et exécuté dans un kernel Lean 4 réel — la frontière SLT exhibée par `#check` (ce qui est prouvé vs emprunté à `YuanheZ/lean-stat-learning-theory`), les six déclarations de `NormTails` (concentration de Lipschitz gaussienne), les seize briques du converse Hanson–Wright (dont `hanson_wright_noise` et la queue chi-carré `chisq_norm_concentration`), les treize du pont ML (`Bridge`), `#print axioms` sur les théorèmes clés — uniquement les axiomes standards, zéro `sorry` | 40 min |
 | 21c | [Lean-21c-Descente-Budget](Lean-21c-Descente-Budget.ipynb) | Le budget de descente : quand la décroissance borne le nombre de flips — l'analyse qui fonde le seuil 2·log N de la détection MIMO (#12219) | 35 min |
@@ -497,11 +498,12 @@ Lean/
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
 ├── .env.example
-├── ANALYSE/                       # Sous-série des formalisations d'analyse (Sendov, Tao Analysis I, PFR ×2 — gradation #17545) : [README](ANALYSE/README.md)
+├── ANALYSE/                       # Sous-série des formalisations d'analyse (Sendov, Tao Analysis I, PFR ×2, KLS — gradation #17545) : [README](ANALYSE/README.md)
 │   ├── ANALYSE-01-Sendov-Lean-Python.ipynb  # Conjecture de Sendov : énoncé, cas numériques, contexte de la preuve 2026
 │   ├── ANALYSE-02-Tao-Lean-Python.ipynb     # Analysis I de Tao en lac Lean 4 (teorth/analysis) : architecture, lemmes emblématiques
 │   ├── ANALYSE-03-PFR-Lean.ipynb            # Conjecture PFR (teorth/pfr) : méthode entropique, cosets F₂³, #check réels
 │   ├── ANALYSE-04-PFR-Primitives-Python.ipynb # Les trois primitives de PFR et l'endroit où elles cessent de valoir (#12214)
+│   ├── ANALYSE-05-KLS-Lean-Python.ipynb  # Conjecture KLS démontrée (BKL 2026) : lac local kls_lean, thin-shell Monte-Carlo, saturation 8n
 │   └── README.md
 ├── Langlands/                     # Sous-série formes modulaires et ponts (EPIC #17969) : [README](Langlands/README.md)
 │   ├── 01-formes-modulaires-sl2z-hecke.ipynb
