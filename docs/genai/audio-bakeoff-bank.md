@@ -52,7 +52,7 @@ python bake_append.py --bank runs/bake_bank.json --run '{
   "motor": "chatterbox_mtl_v3",
   "extract": "A",
   "seed": 42,
-  "wer": 0.4179,
+  "wer": null,
   "duration_s": 17.4,
   "asr_models": ["tiny"]
 }'
@@ -99,7 +99,7 @@ Sortie : tableau markdown trié par `--sort` (`wer` par défaut, `rtf`, `duratio
 | `test_append_dry_run_valid` | Dry-run accepte un run complet sans écrire. |
 | `test_append_validation_failure` | Champ obligatoire manquant → rc=1. |
 | `test_append_validation_type_error` | Type incorrect (`string` au lieu de `number`) → rc=1. |
-| `test_append_idempotence` | 2 appends même clé = 1 ligne. |
+| `test_append_idempotence` | 2 appends même clé = une seule ligne. |
 | `test_append_upsert_updates_field` | 2ᵉ append remplace les champs du 1ᵉʳ (pas de doublon, maj des champs). |
 | `test_report_format` | Tri `wer` croissant, `null` en fin, comptage en-tête. |
 | `test_ingest_bakeoff_small` | Ingestion depuis `bakeoff_small/results` produit ≥4 runs. |
@@ -110,7 +110,7 @@ Sortie : `python test_bake_bank.py` → `8/8 passed` (c.1467).
 
 ## Convention d'ingestion — bootstrap c.1467
 
-Le banc est amorcé avec 6 runs mesurés first-hand :
+Le banc est amorcé avec des runs mesurés first-hand :
 
 | Moteur | Extract | Seed | WER | Source | Notes |
 |---|---|---|---|---|---|
