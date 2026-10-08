@@ -180,9 +180,9 @@ print(f"Winner: {'MR' if mr_sharpe > mom_sharpe else 'Momentum'}")
 ### Phase 4: Integration
 
 ```
-1. Sauvegarder dans le dossier partner-course-quant-trading/research/
-2. Mettre a jour le README du projet
-3. Proposer les changements a implementer
+1. Sauvegarder dans `MyIA.AI.Notebooks/QuantConnect/research/` (le dossier `partner-course-quant-trading/research/` n'existe pas ; les recherches vivent dans `QuantConnect/research/` au niveau racine ).
+2. Mettre a jour le README du projet.
+3. Proposer les changements a implementer.
 ```
 
 ## Exemples d'invocation
@@ -196,7 +196,7 @@ Task(
     prompt="""
     Tu es un agent qc-research-notebook.
 
-    Projet: ETF-Pairs-Trading (ID: 19865767)
+    Projet: ETF-Pairs (QuantConnect projects/, ID a lookup sur le cloud)
     Question de recherche: "L'utilisation d'un filtre de volatilite peut-elle ameliorer les performances du pairs trading?"
 
     Hypotheses:
@@ -210,7 +210,7 @@ Task(
     4. Comparer les metriques
     5. Conclure sur les hypotheses
 
-    Sauvegarder dans: partner-course-quant-trading/examples/ETF-Pairs-Trading/research/volatility-filter.ipynb
+    Sauvegarder dans: MyIA.AI.Notebooks/QuantConnect/research/etf-pairs-volatility-filter.ipynb
     """,
     description="Research volatility filter"
 )
@@ -225,7 +225,7 @@ Task(
     prompt="""
     Tu es un agent qc-research-notebook.
 
-    Projet: BTC-MachineLearning (ID: 21047688)
+    Projet: BTC-ML (QuantConnect projects/BTC-ML/, ID a lookup sur le cloud)
     Question de recherche: "Peut-on ameliorer les predictions avec des features techniques supplementaires?"
 
     Approche a tester:
