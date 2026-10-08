@@ -195,7 +195,6 @@
     "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/05-Claude-CLI-Automatisation.ipynb": 890.765,
     "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claudish/notebooks/01-claude-code-via-claudish.ipynb": 1334.143,
     "MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/CSharpRepl-Live-Patching.ipynb": 322.294,
-    "MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/Roslyn-Code-Guardrails.ipynb": 1108.0,
     "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb": 717.154,
     "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-GPT-5-Video-Understanding.ipynb": 782.429,
     "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb": 747.143,
@@ -813,6 +812,7 @@
     "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb": 594.1,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb": 2044.571,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-2-pl_agent.ipynb": 3595.429,
-    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-3-orchestration_agent.ipynb": 3739.167
+    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-3-orchestration_agent.ipynb": 3739.167,
+    "MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/Roslyn-Code-Guardrails.ipynb": 1108.0
   }
 }
