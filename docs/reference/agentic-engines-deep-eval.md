@@ -9,7 +9,8 @@
 | Tranche | Point du protocole | État |
 |---|---|---|
 | T1 (cette PR) | pt 2 — SK, mode événementiel (Process Framework) exécuté | livré |
-| — | pt 2 — SK, autres modes (séquentiel, concurrent, handoff, group chat, Magentic) | à venir |
+| T2 (cette PR) | pt 2 — SK, couche agents : handoff exécuté (service LLM réel, temp 0) | livré |
+| — | pt 2 — SK, modes restants (séquentiel, concurrent, group chat, Magentic) | à venir |
 | — | pt 2 — ADK (agents, workflows, séquentiel) | à venir |
 | — | pt 2 — MS Agent Framework (agents, graphe) | à venir |
 | — | pt 1 état de l'art | livré hors repo : note datée du 2026-10-05 sur [#19380](https://github.com/jsboige/CoursIA/issues/19380) ; mémo inventaire local du 2026-10-07 (po-2024:CoursIA-2) sur [#14499](https://github.com/jsboige/CoursIA/issues/14499) |
@@ -58,6 +59,32 @@ Faits d'API mesurés sur 1.41.3 (contrairement aux exemples publics plus anciens
 | Événements externes | `context.send_event()` ne fait que **mettre en file** (no-op silencieux une fois le process drainé) ; `context.start_with_event(...)` draine réellement la boucle. |
 | Retour d'étape | une fonction `@kernel_function` qui retourne `None` fait émettre `OnError` par le runtime — toujours retourner une valeur. |
 
-### 2.3 À venir (SK)
+### 2.3 Pilote SK couche agents — HandoffOrchestration (service LLM réel)
 
-Modes restants à exécuter : séquentiel (déjà démontré manuellement dans la série — le pilote comparatif consignera la version agentique), concurrent, handoff, group chat, Magentic, et le même couplage déterministe. L'emplacement `eval-pilots/` les accueillera un par un.
+`VERIFIÉ` — pilote [`eval-pilots/sk_agents_handoff_pilot.py`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/sk_agents_handoff_pilot.py) (161 lignes), exécuté sous `py -3.11` / semantic_kernel **1.41.3**, service **réel** (`gpt-4o-mini`, température 0, `max_completion_tokens` 200, budget **dur de 10 appels** comptés par un connecteur instrumenté). Scénario : `triage` → handoff vers `specialiste_technique` | `specialiste_formation`, 2 entrées non ambiguës × 2 exécutions. Reproduction firsthand depuis l'emplacement livré : exit 0.
+
+```text
+[technique #1/#2] decision: specialiste_technique (stable)
+[formation  #1/#2] decision: specialiste_formation (stable)
+ROUTING DETERMINISM: OK
+LLM CALLS: 10/10
+PILOT OK sk=1.41.3 orchestration=Handoff
+```
+
+**Déterminisme (pt 3, deuxième datapoint — la distinction qui compte)** : à température 0, la **décision de routage** est stable entre exécutions d'un même process ET entre processus, mais la **prose** des spécialistes n'est **pas** byte-identique entre processus (mesuré : deux runs de la même entrée « formation » produisent deux formulations différentes, routage identique). Conclusion d'évaluation : le déterminisme à temp 0 s'asserte sur les **décisions structurantes** (routage, embranchements), jamais sur le texte — les pilotes ADK/MAF seront mesurés sur la même base pour rester comparables.
+
+Faits d'API mesurés sur 1.41.3 (couche agents) :
+
+| Fait | Détail |
+| --- | --- |
+| Détournement `OPENAI_BASE_URL` | le SDK OpenAI honore silencieusement les variables d'environnement du poste (proxy local ici) → clé `sk-proj` envoyée au proxy → 401. Parade : `OpenAIChatCompletion(async_client=AsyncOpenAI(api_key=..., base_url=...))` explicite — toujours épingler le `base_url` dans un pilote reproductible. |
+| `InProcessRuntime.start()` | **synchrone** en 1.41.3 (l'`await` lève `TypeError`) ; `stop_when_idle()` est asynchrone. Import depuis `semantic_kernel.agents.runtime` (top level). |
+| `orchestration/__init__` vide | importer `HandoffOrchestration`/`OrchestrationHandoffs` depuis `semantic_kernel.agents` (top level), pas du sous-module. |
+| `gpt-5-mini` refuse `temperature=0.0` | 400 `unsupported_value` (« Only the default (1) value is supported ») — contrainte famille *reasoning* : un pilote déterministe ne peut pas la prendre ; repli `gpt-4o-mini`. `max_completion_tokens` (pas `max_tokens`) fonctionne sur les deux. |
+| Mécanique handoff | l'orchestration injecte `transfer_to_<agent>` + `complete_task` dans un **clone** du kernel de chaque agent ; filtre d'auto-invocation termine le tour juste après l'appel → exactement 1 appel LLM par tour d'agent (rend le budget tenable). `ChatCompletionAgent` active `function_choice_behavior=Auto()` par défaut. |
+| Sonde de routage | `(await result.get()).name` = l'agent qui a terminé — le signal déterministe le plus propre ; `agent_response_callback` (un simple `list.append` sync) capture la prose. Un spécialiste qui répond sans `complete_task` est auto-complété sans blocage. |
+| Réutilisation | `HandoffOrchestration` + `InProcessRuntime` **frais** par invocation ; les instances d'agents sont réutilisables (le clonage isole les plugins injectés). |
+
+### 2.4 À venir (SK puis ADK/MAF)
+
+Modes SK restants : séquentiel (la série démontre déjà le pipeline manuel — le pilote comparatif consignera la version agentique), concurrent, group chat, Magentic. Puis ADK en invoquant l'organe existant [`Track2-GoogleADK/utils/`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/) (organ-first : `adk_orchestrator`/`adk_runtime`), et MAF (statut à vérifier). L'emplacement `eval-pilots/` accueille les pilotes SK ; les pilotes ADK/MAF vivront auprès de leurs organes respectifs.
