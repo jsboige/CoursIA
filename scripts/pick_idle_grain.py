@@ -328,6 +328,52 @@ from variation_light_cap import canonicalize_genre  # noqa: E402
 # et le PENDING perime d'un rerun dans la liste lue comme jambes courantes.
 from check_run_state import fold_latest  # noqa: E402
 
+# Source de verite des organes bornes au diff (#19645) : un check qui ne lit
+# QUE les lignes ajoutees par la PR (ou compare base-vs-head par delta_argv)
+# ne peut pas heriter d'un rouge de main -- l'imputation a la base disait a
+# la lane « pas le votre », c'est-a-dire de ne rien faire, alors que la cause
+# est dans le diff de la PR. La declaration de la borne est portee par le
+# registre de la voie rapide (Guard.argv contient `--diff {base_ref}...HEAD`,
+# ou Guard.delta_argv porte la comparaison base/head) -- pas une liste de
+# noms recopiee dans le picker. C'est cette indirection qui maintient la
+# liste a jour quand la voie rapide absorbe un nouveau garde.
+def _diff_bounded_check_names() -> set[str]:
+    """Noms de checks declares bornes au diff dans le registre de la voie rapide.
+
+    Trois sources couvrent les trois formes d'un garde borne au diff :
+    - ``argv`` contient un drapeau ``--diff {base_ref}...HEAD`` (le garde ne
+      lit que les lignes AJOUTEES par la PR -- cas fondateur ``prose-counts-guard``) ;
+    - ``delta_argv`` porte une comparaison explicite base/head (le verdict
+      est delta, jamais un verdict de base) ;
+    - ``swap_paths`` non vide (le fast-lane runner bascule un sous-arbre a
+      la base pour la phase 2 -- la sortie n'a de sens qu'en delta).
+
+    Echec d'import (CI minimale sans la voie rapide) : on rend un set vide
+    fail-closed, comme avant #19645 -- l'imputation reste la voie par defaut.
+    """
+    try:
+        import importlib
+        reg = importlib.import_module("ci.fast_lane_registry")
+    except Exception:
+        return set()
+    tranches: list[list] = []
+    for attr in dir(reg):
+        if attr.startswith("TRANCHE") or attr == "PILOT":
+            val = getattr(reg, attr, None)
+            if isinstance(val, list) and val and hasattr(val[0], "name"):
+                tranches.append(val)
+    names: set[str] = set()
+    for tranche in tranches:
+        for guard in tranche:
+            argv = list(getattr(guard, "argv", []) or [])
+            argv_join = " ".join(str(a) for a in argv)
+            has_diff_flag = "--diff" in argv_join and "base_ref" in argv_join
+            has_delta = bool(getattr(guard, "delta_argv", None))
+            has_swap = bool(getattr(guard, "swap_paths", None))
+            if has_diff_flag or has_delta or has_swap:
+                names.add(guard.name)
+    return names
+
 # Enumeration CLOSE de variation-protocol.md, partitionnee CONTENU / META.
 CONTENU = {
     "lean", "qc", "training", "genai",
@@ -1755,6 +1801,12 @@ CLAIM_CODE_FREE = "FREE"
 CLAIM_CODE_FREE_STALE = "FREE_STALE"
 CLAIM_CODE_OWNED_BY_ME = "OWNED_BY_ME"
 CLAIM_CODE_BLOCKED = "BLOCKED"
+# #14300 -- occupation IMPLICITE : aucune autre lane n'a pose de marqueur,
+# mais une PR OUVERTE d'une autre lane reference le grain (l'incident
+# #14259 : deux lanes sur le meme fichier, organe CLEAR, zero marqueur).
+# Consomme par le tirage comme BLOCKED (candidat remplace) -- la lecon du
+# 2026-09-14 est que l'emission ne suffit pas, la consommation fait le garde.
+CLAIM_CODE_IMPLICIT = "IMPLICIT"
 CLAIM_CODE_UNCHECKED = "UNCHECKED"
 CLAIM_CODE_ERROR = "ERROR"
 
@@ -1787,8 +1839,20 @@ def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
             blocking = data.get("blocking_lanes") or []
             if blocking:
                 return CLAIM_CODE_BLOCKED, "BLOQUE par " + ", ".join(blocking)
+            # review 5429946072 : le claim de l'APPELANT est teste AVANT
+            # l'occupation implicite -- un grain deja marque par la lane qui
+            # tire est OWNED_BY_ME, une PR tierce citee en passant ne doit
+            # pas le faire sortir de l'urne comme IMPLICIT.
             if data.get("my_active_claim"):
                 return CLAIM_CODE_OWNED_BY_ME, "deja claim par cette lane"
+            implicit = data.get("implicit_occupation") or []
+            if implicit:
+                refs = ", ".join(
+                    "#{} ({})".format(i.get("number"),
+                                      i.get("lane") or "lane illisible")
+                    for i in implicit)
+                return (CLAIM_CODE_IMPLICIT,
+                        f"PR ouverte d'une autre lane : {refs}")
             stale = data.get("stale_claims") or []
             if stale:
                 return (CLAIM_CODE_FREE_STALE,
@@ -1956,6 +2020,13 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             ". Une autre lane tient ce grain -- ecrire dessus "
                             "produirait la collision, pas le livrable. Candidat "
                             "remplace dans la meme urne.")))
+                        continue
+                    if v_code == CLAIM_CODE_IMPLICIT:
+                        conflicts.append((c, "IMPLICIT : " + v_human + (
+                            ". Une PR ouverte d'une autre lane reference ce "
+                            "grain sans marqueur -- le prendre produirait la "
+                            "collision du #14259. Candidat remplace dans la "
+                            "meme urne (#14300).")))
                         continue
                     if cls == "grain" and not include_delivered:
                         # Le label est teste A COUT NUL et vaut meme quand le
@@ -2748,6 +2819,7 @@ def impute_base_reds(states_by_number: dict[int, dict],
 def split_base_corroboration(corroborated: dict[str, list[int]],
                              names_by_key: dict[str, set[str]],
                              probe: dict | None,
+                             diff_bounded: set[str] | None = None,
                              ) -> tuple[dict[str, list[int]], dict[str, list[int]],
                                         dict[str, list[int]]]:
     """Trie la corroboration inter-lanes selon l'etat du MEME check sur `main` (#17154).
@@ -2769,14 +2841,36 @@ def split_base_corroboration(corroborated: dict[str, list[int]],
     ``probe`` a ``None`` (mesure non prise) vaut pour la totalite du tri :
     tout part en ``base``. Une sonde indisponible ne doit jamais elargir la
     nouvelle classe -- c'est le sens fail-closed du defaut.
+
+    ``diff_bounded`` (#19645) : noms de checks qui ne lisent QUE les lignes
+    ajoutees par la PR (``argv`` contient ``--diff {base_ref}...HEAD``) ou
+    comparent explicitement base vs head par ``delta_argv``. Pour ces checks,
+    le rouge ne peut PAS heriter de `main` par definition -- la cause est
+    forcement dans le diff de la PR. On les place dans ``undecided`` SEUL
+    (jamais dans ``base``) : un check declare borne au diff ne beneficie
+    PAS du repli ``undecided -> base``, parce que la mesure (le check
+    n'est pas sur `main`) n'est pas un « je ne sais pas » mais un « il ne
+    peut pas venir de la base ». Si ``diff_bounded`` est ``None`` (defaut),
+    aucun filtre n'est applique -- comportement d'avant #19645.
     """
     if not corroborated or probe is None:
         return dict(corroborated), {}, {}
+    diff_bounded = diff_bounded or set()
     base: dict[str, list[int]] = {}
     infra: dict[str, list[int]] = {}
     undecided: dict[str, list[int]] = {}
     for key, nums in corroborated.items():
         names = names_by_key.get(key) or set()
+        # Cle de base apres retrait du suffixe agregateur « :: organ » : un
+        # agregateur `PR gate :: prose-counts-guard` doit beneficier du meme
+        # filtre qu'un check direct `prose-counts-guard`. La cle d'origine
+        # est `<nom_agregateur> :: <nom_organe>`, l'organe est l'APRES.
+        base_key = key.rsplit(" :: ", 1)[-1] if " :: " in key else key
+        if base_key in diff_bounded:
+            # Borne au diff : JAMAIS `base`. On garde dans `undecided` pour
+            # que la sortie le DISE -- la cause est forcement dans la PR.
+            undecided[key] = nums
+            continue
         if key in probe["red_keys"]:
             base[key] = nums
         elif names and names <= probe["names"]:
@@ -3512,7 +3606,8 @@ def red_backlog(lane: str, threshold_hours: float,
                                         unresolved_out=unresolved_aggregates,
                                         names_out=names_by_key)
         inherited, infra_rerun, base_undecided = split_base_corroboration(
-            corroborated, names_by_key, fetch_main_head_probe(organ_cache))
+            corroborated, names_by_key, fetch_main_head_probe(organ_cache),
+            diff_bounded=_diff_bounded_check_names())
     red = []
     dwell_waiting: list[dict] = []
     for pr in mine:
