@@ -32,7 +32,7 @@ Le matériel QC mélange 4 types de notebooks qu'un visiteur doit distinguer :
 | Stratégie | Type | Classe d'actifs | Statut | Évidence |
 |-----------|------|-----------------|--------|----------|
 | `LongShortHarvest-QC` | Long/short actions (grandes capitalisations + vente à découvert) | US Equity | **NO BEATS** | QC Cloud 2026-10-06 (#19450), 2018-01 → 2026-09 : Sharpe 0,44 (taux sans risque nul) contre 0,79 pour SPY détenu et 0,81 pour le 60/40, p Holm 1,00 ; pire baisse −61,6 % (rachats forcés de janvier 2021). L'ancien « 98.7% » ne mesurait pas `main.py` |
-| `Framework_Composite_FamaFrenchAllWeather` | Composite | Multi-actifs | **Alive — BEATS** | 87.5% OOS (backtest vérifié) |
+| `Framework_Composite_FamaFrenchAllWeather` | Composite | Multi-actifs | **NO BEATS** | QC Cloud 2026-10-07 (#19621), 2015-01 → 2026-09 : Sharpe 1,02 (taux sans risque nul, version `intent`) contre 0,83 pour SPY détenu et 0,87 pour le 60/40, p Holm 0,22 ; le code d'origine (`base`) n'émettait aucun ordre sur la tranche factorielle (filtre SMA200 jamais créé), et il est lui aussi `NO BEATS` (p Holm 0,37). L'ancien « 87.5% » était le PSR d'un petit échantillon |
 | `DynamicVIXSpyRegime-QC` | Régime VIX | US Equity | **Alive** | 69.4% (backtest vérifié) |
 | `BitcoinRegimeGate-QC` | Régime BTC (gate 24/7) | US Equity (QQQ/SHY) | **Alive — risk-adjusted** | QC Cloud 2026-09-30 (distillat #18576) : IS 2016-21 Sharpe **1.133** vs QQQ-hold 0.961 (MaxDD 14.4 % vs 28.2 %) ; OOS 2022-26 Sharpe **0.64** vs QQQ-hold 0.43 (MaxDD 15.2 % vs 34.7 %) ; PSR OOS 14.3 % (edge vs cash non significatif) |
 | `AllWeather` | Multi-asset risk-parity | Actions/Bonds/Or/Commodities | **Alive** | Figure #5743 |
@@ -128,7 +128,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `EMA-Cross-Crypto` | `projects/EMA-Cross-Crypto/` | Trend EMA | Vérifié | tableau vérifié ci-dessus (figure #5750) |
 | `EMA-Cross-Index` | `projects/EMA-Cross-Index/` | Trend EMA | Vérifié | tableau vérifié ci-dessus (figure #5746) |
 | `ForexCarry` | `projects/ForexCarry/` | FX carry/momentum | Vérifié | tableau vérifié ci-dessus (figure #5748) |
-| `Framework_Composite_FamaFrenchAllWeather` | `projects/Framework_Composite_FamaFrenchAllWeather/` | Composite | Vérifié | tableau vérifié ci-dessus (87.5 % OOS) |
+| `Framework_Composite_FamaFrenchAllWeather` | `projects/Framework_Composite_FamaFrenchAllWeather/` | Composite | Vérifié | tableau vérifié ci-dessus (NO BEATS, #19621) |
 | `LongShortHarvest-QC` | `projects/LongShortHarvest-QC/` | Long/short actions | Vérifié | tableau vérifié ci-dessus (NO BEATS, #19450) |
 | `ML-RandomForest` | `projects/ML-RandomForest/` | ML supervisé (RF) | Vérifié | tableau vérifié ci-dessus (figure #5747) |
 | `ML-XGBoost` | `projects/ML-XGBoost/` | ML supervisé (XGBoost) | Vérifié | tableau vérifié ci-dessus (figure #5749) |

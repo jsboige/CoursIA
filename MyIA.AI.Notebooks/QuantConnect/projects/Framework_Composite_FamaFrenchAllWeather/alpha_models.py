@@ -13,13 +13,17 @@ class FamaFrenchAlpha(AlphaModel):
     Base Sharpe: 0.540 (2015-2025).
     """
 
-    def __init__(self, tickers):
+    def __init__(self, tickers, mode="intent", lookback=252, vol_window=63):
         super().__init__()
         self.name = "FamaFrench"
         self.tickers = tickers
-        self.lookback = 252
+        # Mode (#19621): "intent" (default) drops the regime filter, "base"
+        # keeps the code before #19621 (filter never created, no signal),
+        # "sma" makes the filter effective.
+        self.mode = mode
+        self.lookback = lookback
         self.skip_days = 21
-        self.vol_window = 63
+        self.vol_window = vol_window
         self.symbols = {}
         self.sma200 = {}
         self.momentum_data = {}
@@ -34,20 +38,24 @@ class FamaFrenchAlpha(AlphaModel):
         if algorithm.is_warming_up:
             return []
 
-        # Get SPY SMA200 for regime filter
-        spy_sma = self.sma200.get("SPY")
-        if spy_sma is None or not spy_sma.is_ready:
-            return []
+        if self.mode == "intent":
+            # No regime filter: risk-adjusted momentum only
+            risk_on = True
+        else:
+            # Get SPY SMA200 for regime filter
+            spy_sma = self.sma200.get("SPY")
+            if spy_sma is None or not spy_sma.is_ready:
+                return []
 
-        spy = self.symbols.get("SPY")
-        if spy is None or spy not in algorithm.securities:
-            return []
-        
-        spy_price = algorithm.securities[spy].price
-        if spy_price <= 0:
-            return []
+            spy = self.symbols.get("SPY")
+            if spy is None or spy not in algorithm.securities:
+                return []
 
-        risk_on = spy_price > spy_sma.current.value
+            spy_price = algorithm.securities[spy].price
+            if spy_price <= 0:
+                return []
+
+            risk_on = spy_price > spy_sma.current.value
 
         # Calculate risk-adjusted momentum scores
         scores = {}
@@ -176,7 +184,10 @@ class FamaFrenchAlpha(AlphaModel):
     def on_securities_changed(self, algorithm, changes):
         for security in changes.added_securities:
             ticker = security.symbol.value
-            if ticker in self.tickers:
+            # SPY belongs to the AllWeather universe, not to self.tickers: in
+            # "base" mode the SMA200 below is never created and update() emits
+            # nothing. "sma" mode tracks SPY so that the filter works.
+            if ticker in self.tickers or (self.mode == "sma" and ticker == "SPY"):
                 sym = security.symbol
                 self.symbols[ticker] = sym
                 if ticker == "SPY":
