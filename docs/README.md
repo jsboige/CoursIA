@@ -357,7 +357,7 @@ Documents qui positionnent le dépôt face à un texte externe (déclarations, m
 | [cadrage/README.md](cadrage/README.md) | Index agrégateur (tableau par communauté, veilles, règles d'agrégation) — l'entrée canonique de la famille |
 | [cadrage/singapore-consensus-self-audit.md](cadrage/singapore-consensus-self-audit.md) | Audit du cluster selon les 10 principes agentic du Singapore Consensus (R11 companion, P1-P10, #16757) |
 
-Les autres documents de cadrage vivent au premier niveau de `docs/` (Grothendieckian lens, Leiden position, Magnifica Humanitas dialogue) — ils migreront dans `docs/cadrage/` par tranches successives (#17525).
+Migration par tranches close (#17525) : Grothendieck lens et Leiden position (tranche 2, #19022), puis Magnifica Humanitas dialogue (tranche 3, #19283) vivent désormais tous dans `docs/cadrage/` — l'index agrégateur est l'entrée canonique de la famille.
 
 ## CI & workflows (docs/ci/)
 
@@ -425,6 +425,17 @@ Documents conservés pour référence mais inactifs. Index complet : [archive/IN
 - [archive/genai/](archive/genai/README.md) — Infrastructure GenAI détaillée (16 fichiers)
 - [archive/suivis/genai-image/](archive/suivis/genai-image/INDEX.md) — Suivi ComfyUI/Qwen (8 fichiers + 4 phases)
 
+## Pérenne vs transient — où chercher quoi
+
+Critère de classement (#19283), opposable pour tout nouveau fichier : est **transient** un document dont la valeur meurt avec son contexte (suivi de chantier, état daté, compte rendu, plan exécuté) ; est **pérenne** un document qu'un lecteur d'ici un an ouvre encore pour comprendre le dépôt.
+
+| Ce que vous cherchez | Où |
+|---|---|
+| Une règle, une procédure, une référence durable | les foyers thématiques (`reference/`, `lean/`, `genai/`, `qc/`, `ci/`, `curriculum/`, …) |
+| Le positionnement du dépôt face à un texte externe | `cadrage/` (index par communauté interlocutrice) |
+| L'état d'un chantier à une date donnée | `transients/` (en-tête gelé, convention #14623) ou `suivis/` (transitions de série) |
+| Un document inactif, remplacé ou périmé | `archive/` (figée à dessein, jamais purge) |
+
 ## Carte rapide
 
 ```
@@ -449,7 +460,6 @@ docs/
   suivis/            Suivis de cycle (transitions de série)
   transients/        Rapports transients datés (en-tête gelé) — convention + organe (#14623)
   cadrage/           Documents épistémiques de cadrage — index par communauté interlocutrice (#17525)
-  grothendieckian-lens.md  Clé de lecture transversale du dépôt
   PARCOURS.md        Schéma maturité 3 axes (éditorial / reproductibilité / revue) — #8051
   archive/           Documents inactifs (ex-_archives)
 ```
