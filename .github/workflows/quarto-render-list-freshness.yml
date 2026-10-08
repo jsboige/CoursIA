@@ -61,7 +61,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # Fondeur du gate : on doit checker la PR HEAD (pas le merge
+          # commit synthetique `refs/pull/N/merge`) -- sinon l'arbre lu
+          # inclut les commits de main avances depuis la base de la PR,
+          # et `_quarto.yml` (regenere a la base 90b1faa7) declare a
+          # tort "stale" alors qu'il est en sync avec la tete de la PR.
+          # Mesure du 2026-10-08 sur cette PR : main 4b2cce7 a bouge de
+          # 24 commits par rapport a la base 90b1faa7, et le check-out
+          # par defaut rendait `Merge 3765b8f into 4b2cce7` -- le check
+          # freshness concluait a tort "stale" (cf. run 37784951460).
+          # Le fallback `github.ref` couvre les runs `push` et
+          # `workflow_dispatch` (le `.head.sha` n'existe pas la).
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Check _quarto.yml render list against the PR head tree
         # Le mode `--check` d'origine lit l'arbre du checkout (= la PR head)
