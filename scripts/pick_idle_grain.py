@@ -4187,6 +4187,69 @@ def latest_claim_stamp(issue_number: int) -> str | None:
         return None
 
 
+def latest_claim_lane(issue_number: int) -> str | None:
+    """Lane du plus recent marqueur de lane en commentaire (#19804).
+
+    Symetrique de `latest_claim_stamp` mais retourne la LANE (et non le
+    timestamp). Coute 1 requete (`gh issue view --json comments`), meme
+    charge de commentaires que la sonde de tete `settle_belt_head`.
+
+    Selection : parmi les `ClaimEvent` (grammaire `check_lane_claim`)
+    portes par n'importe quel commentaire, on garde le plus recent
+    (`createdAt` serveur) qui porte un `lane` non vide. Les marqueurs
+    concernes sont les memes que `latest_claim_stamp` (claim, claim-amend,
+    [RELEASED], [DONE], [INFO] candidate-delivered) -- tout marqueur
+    avec lane = une visite attribuable a la lane.
+
+    Renvoie ``None`` si aucun marqueur avec lane n'est trouve, ou si la
+    lecture reseau echoue. L'appelant peut alors retomber sur sa valeur
+    par defaut (ex. ``_manuel`` dans `belt_service_balance.py`).
+
+    Cette fonction sert le follow-up #19804 : les fermetures sans PR
+    liee (canal `closedAt` du compteur de service) representent 81 % du
+    service reel au 2026-10-07, et la majorite est en fait servie par
+    une lane (claim ou livraison), pas manuelle. La mesure tire maintenant
+    la lane du dernier marqueur, pas le seau `_manuel`.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "view", str(issue_number), "--repo", REPO,
+             "--json", "comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=30,
+        ).stdout
+        comments = [c for c in (json.loads(out) or {}).get("comments") or []
+                    if isinstance(c, dict)]
+        from check_lane_claim import _sort_events
+
+        events = [ev for ev in _sort_events({"comments": comments})
+                  if ev.lane and ev.created_at]
+        if not events:
+            return None
+        # `_sort_events` est deja chronologique asc ; on prend le dernier.
+        return events[-1].lane
+    except Exception:  # noqa: BLE001 - sonde best-effort, l'appelant decide
+        return None
+
+
+def latest_claim_lane_from_payload(comments: list[dict]) -> str | None:
+    """Variante offline de `latest_claim_lane` (accepte le payload deja charge).
+
+    Sert quand l'appelant a deja les commentaires en memoire (ex. `search`
+    GraphQL etendu avec `comments(first: 100)`). Meme selection que
+    `latest_claim_lane` : le plus recent `ClaimEvent` avec `lane` non vide.
+
+    Renvoie ``None`` si aucun marqueur avec lane. Pas d'appel reseau.
+    """
+    from check_lane_claim import _sort_events
+
+    events = [ev for ev in _sort_events({"comments": comments})
+              if ev.lane and ev.created_at]
+    if not events:
+        return None
+    return events[-1].lane
+
+
 def settle_belt_head(
     belt_pool: list[dict],
     need: int,
