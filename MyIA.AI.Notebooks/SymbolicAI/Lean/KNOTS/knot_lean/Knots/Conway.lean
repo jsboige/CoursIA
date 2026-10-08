@@ -1,0 +1,3366 @@
+/-
+  Knots.Conway — Nœud de Conway, Kinoshita-Terasaka, et la preuve de Piccirillo
+  ==============================================================================
+
+  Le nœud de Conway (11n34) est nommé d'après John Conway qui l'a découvert
+  via sa notation des nœuds. Il possède 11 croisements et un polynôme
+  d'Alexander trivial.
+
+  Résultats clés :
+  1. Conway (11n34) et Kinoshita-Terasaka (11n42) partagent le même
+     polynôme d'Alexander (trivial) — les invariants de mutation coïncident.
+  2. Slice et dichotomie lisse/topologique (Kinoshita-Terasaka slice,
+     Conway PAS slice lisse — Piccirillo 2018/2020 ; Conway topologiquement
+     slice — Freedman) : extraits dans `Knots.Slice` (issue #18397).
+     Mutation de Conway et codes PD des deux nœuds : extraits dans
+     `Knots.Mutation` et `Knots.ConwayPD` (issue #18397, tranche 2).
+
+  Epic #2874, Phase 1 (squelette uniquement — sorry permanent pour l'instant).
+
+  Prérequis Mathlib nécessaires (TRÈS LOIN) :
+  - Polynôme d'Alexander (requiert la représentation de Burau, absent de Mathlib)
+  - Définition de nœud slice (requiert la théorie des 4-variétés lisses)
+  - s-invariant de Rasmussen (requiert l'homologie de Khovanov)
+  - Construction du compagnon de trace (requiert le calcul de Kirby)
+  - Chirurgie topologique de Freedman (requiert une machinerie topologique énorme)
+-/
+
+import Knots.Basic
+import Knots.Invariant
+import Knots.Mutation
+import Knots.ConwayPD
+
+import Mathlib.Algebra.Polynomial.Basic
+import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+
+namespace Knots
+
+/-! ## 4. Même polynôme d'Alexander
+
+11n34 et 11n42 ont tous deux un polynôme d'Alexander trivial Δ(t) = 1.
+C'est pourquoi la sliceness était si difficile à déterminer — le polynôme
+d'Alexander ne peut pas les distinguer du nœud trivial.
+-/
+
+/-! ### Matrice d'Alexander du code PD (présentation de Dehn, 1928)
+
+Traduction combinatoire retenue — même méthode que pour la mutation (§1) :
+la construction d'Alexander se lit **directement sur le code PD**, sans
+surface de Seifert ni représentation de Burau. Les **arcs** du diagramme
+sont les classes d'étiquettes d'arêtes pour la relation « e2 ~ e4 en chaque
+croisement » (le brin passant au-dessus traverse le croisement : ses deux
+demi-arêtes appartiennent au même arc ; le brin passant au-dessous y est
+coupé). En chaque croisement, la relation d'Alexander (dérivée de Fox de la
+relation de Wirtinger, croisement traité avec la convention positive) donne
+la ligne : `+t` sur l'arc entrant du dessous, `−1` sur l'arc sortant du
+dessous, `1−t` sur l'arc du dessus — chaque ligne somme à zéro.
+
+Le théorème classique (Alexander 1928) garantit que pour un nœud, tout
+mineur (n−1)×(n−1) de la matrice n×n vaut Δ(t) à une unité ±t^k près. La
+**normalisation désignée** retenue fixe un représentant concret par
+diagramme : mineur sans la première ligne ni la dernière colonne.
+-/
+
+/-- Fusionne les classes contenant x et y d'une partition d'étiquettes. -/
+def mergePair (P : List (List Nat)) (x y : Nat) : List (List Nat) :=
+  let keep := P.filter (fun C => !C.contains x && !C.contains y)
+  let hit := P.filter (fun C => C.contains x || C.contains y)
+  keep ++ [hit.flatten.eraseDups]
+
+/-- Les arcs d'un diagramme : partition des étiquettes d'arêtes par la
+fermeture des paires de passage-dessus (e2 ~ e4 en chaque croisement). -/
+def arcPartition (d : KnotDiagram) : List (List Nat) :=
+  let singles := (List.range d.numEdges).map (fun i => [i + 1])
+  let pairs := d.crossings.map (fun c => (c.e2, c.e4))
+  pairs.foldl (fun P p => mergePair P p.1 p.2) singles
+
+/-- La fusion de classes est symétrique : fusionner selon `(x, y)` ou `(y, x)`
+    produit la même partition. Première brique de l'invariance R3
+    (issue #16650) : la chirurgie réécrit les paires de passage-dessus du
+    triangle avec des orientations qui diffèrent d'un diagramme à l'autre,
+    et l'argument de réindexation exige que l'orientation d'une paire ne
+    change pas la partition obtenue. -/
+theorem mergePair_symm (P : List (List Nat)) (x y : Nat) :
+    mergePair P x y = mergePair P y x := by
+  simp [mergePair, Bool.and_comm, Bool.or_comm]
+
+/-- La découpe en `take`/cons/`drop` restitue la liste : lecture « liste
+    pure » du voisinage de l'indice `i`, prouvée par induction sur la liste. -/
+theorem take_cons_drop_eq {α : Type _} (l : List α) (i : Nat)
+    (hi : i < l.length) :
+    l.take i ++ [l.get ⟨i, hi⟩] ++ l.drop (i + 1) = l := by
+  induction l generalizing i with
+  | nil => exact absurd hi (Nat.not_lt_zero i)
+  | cons a as ih =>
+    rcases i with _ | n
+    · have hget0 : (a :: as).get ⟨0, hi⟩ = a := rfl
+      rw [hget0, List.take_zero, List.nil_append]
+      simp [List.drop_succ_cons]
+    · have hn : n < as.length := by simpa using hi
+      have hget : (a :: as).get ⟨n + 1, hi⟩ = as.get ⟨n, hn⟩ := rfl
+      rw [List.take_succ_cons, List.drop_succ_cons, hget, List.cons_append]
+      exact congrArg (fun t => a :: t) (ih n hn)
+
+/-- Le repli `arcPartition` est insensible à l'orientation d'une paire
+    isolée : renverser la paire en position `i` ne change pas la partition
+    produite. C'est la traduction au niveau du repli de `mergePair_symm` —
+    la chirurgie R3 connexe réécrit les paires du triangle avec des
+    orientations qui diffèrent d'un diagramme à l'autre, et ce lemme absorbe
+    ces différences (issue #16650, deuxième brique). -/
+theorem foldl_mergePair_swap (pairs : List (Nat × Nat)) (i : Nat)
+    (hi : i < pairs.length) (P₀ : List (List Nat)) :
+    (pairs.take i ++ [(pairs.get ⟨i, hi⟩).swap] ++ pairs.drop (i + 1)).foldl
+        (fun P p => mergePair P p.1 p.2) P₀
+      = pairs.foldl (fun P p => mergePair P p.1 p.2) P₀ := by
+  have hmid : ∀ (m : Nat × Nat),
+      (pairs.take i ++ [m] ++ pairs.drop (i + 1)).foldl
+          (fun P p => mergePair P p.1 p.2) P₀
+        = (pairs.take i ++ [m.swap] ++ pairs.drop (i + 1)).foldl
+            (fun P p => mergePair P p.1 p.2) P₀ := by
+    intro m
+    obtain ⟨a, b⟩ := m
+    simp only [List.foldl_append, List.foldl_cons, List.foldl_nil,
+      Prod.swap_prod_mk]
+    rw [mergePair_symm]
+  rw [← hmid, take_cons_drop_eq pairs i hi]
+
+/-! #### Le fait de Fox : la paire de dessus partage une classe d'arcs
+
+La docstring d'`alexanderEntry` avance que « chaque ligne somme à zéro ».
+Ce n'est pas une propriété de la ligne seule : c'est la conséquence d'un fait
+structurel de `arcPartition` — en chaque croisement, les deux étiquettes de
+dessus `e2` et `e4` appartiennent à une même classe. `mergePair` fusionne
+précisément cette paire, et le repli ne fait ensuite qu'unir des classes,
+jamais en scinder une : c'est la traduction combinatoire de la relation de
+Wirtinger. Les lemmes qui suivent l'établissent pour tout diagramme dont les
+étiquettes d'arêtes vivent dans la plage `1..numEdges` (cf `EdgesInRange`).
+-/
+
+/-- Deux étiquettes d'arêtes partagent une classe de la partition `P`. -/
+def SameClass (P : List (List Nat)) (x y : Nat) : Prop :=
+  ∃ C ∈ P, x ∈ C ∧ y ∈ C
+
+/-- L'étiquette `z` est portée par au moins une classe de `P`. -/
+def Covered (P : List (List Nat)) (z : Nat) : Prop := ∃ C ∈ P, z ∈ C
+
+/-- Étape du repli de `arcPartition` : fusionner la paire de dessus. -/
+def mergeStep (P : List (List Nat)) (p : Nat × Nat) : List (List Nat) :=
+  mergePair P p.1 p.2
+
+/-- Forme dépliée de `mergePair` : les classes intactes, puis la classe
+fusionnée. -/
+lemma mergePair_eq (P : List (List Nat)) (x y : Nat) :
+    mergePair P x y =
+      (P.filter (fun C => !C.contains x && !C.contains y)) ++
+      [(P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups] := rfl
+
+/-- La classe fusionnée porte toute étiquette d'une classe du filtre `hit`. -/
+lemma mem_merged {P : List (List Nat)} {C : List Nat} {z x y : Nat}
+    (hC : C ∈ P) (hz : z ∈ C) (hxy : (C.contains x || C.contains y) = true) :
+    z ∈ (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups := by
+  rw [List.mem_eraseDups, List.mem_flatten]
+  exact ⟨C, List.mem_filter.mpr ⟨hC, hxy⟩, hz⟩
+
+/-- Une classe qui ne porte ni `x` ni `y` reste intacte dans `keep`. -/
+lemma keep_filter {P : List (List Nat)} {C : List Nat} {x y : Nat}
+    (hC : C ∈ P) (hmem : ¬(C.contains x || C.contains y) = true) :
+    C ∈ (P.filter (fun C => !C.contains x && !C.contains y)) := by
+  refine List.mem_filter.mpr ⟨hC, ?_⟩
+  simpa using hmem
+
+/-- `mergePair` ne fait pas disparaître une étiquette déjà couverte. -/
+lemma covered_mergePair {P : List (List Nat)} {x y z : Nat} (h : Covered P z) :
+    Covered (mergePair P x y) z := by
+  obtain ⟨C, hC, hz⟩ := h
+  by_cases hmem : (C.contains x || C.contains y) = true
+  · refine ⟨_, ?_, mem_merged hC hz hmem⟩
+    rw [mergePair_eq, List.mem_append]; right; exact List.mem_singleton.mpr rfl
+  · refine ⟨C, ?_, hz⟩
+    rw [mergePair_eq, List.mem_append]; left
+    exact keep_filter hC hmem
+
+/-- `mergePair` ne scinde aucune classe : deux étiquettes qui partageaient une
+classe continuent de la partager. -/
+lemma sameClass_mergePair {P : List (List Nat)} {x y a b : Nat}
+    (h : SameClass P a b) : SameClass (mergePair P x y) a b := by
+  obtain ⟨C, hC, ha, hb⟩ := h
+  by_cases hmem : (C.contains x || C.contains y) = true
+  · refine ⟨_, ?_, mem_merged hC ha hmem, mem_merged hC hb hmem⟩
+    rw [mergePair_eq, List.mem_append]; right; exact List.mem_singleton.mpr rfl
+  · refine ⟨C, ?_, ha, hb⟩
+    rw [mergePair_eq, List.mem_append]; left
+    exact keep_filter hC hmem
+
+/-- `mergePair` réunit effectivement `x` et `y` dans une même classe, dès lors
+que l'un et l'autre sont couverts (le filtre `hit` n'est alors pas vide et la
+classe fusionnée les porte tous les deux). -/
+lemma sameClass_mergePair_self {P : List (List Nat)} {x y : Nat}
+    (hx : Covered P x) (hy : Covered P y) : SameClass (mergePair P x y) x y := by
+  obtain ⟨Cx, hCx, hx'⟩ := hx
+  obtain ⟨Cy, hCy, hy'⟩ := hy
+  have hmx : (Cx.contains x || Cx.contains y) = true := by
+    rw [Bool.or_eq_true]; left; exact List.contains_iff_mem.mpr hx'
+  have hmy : (Cy.contains x || Cy.contains y) = true := by
+    rw [Bool.or_eq_true]; right; exact List.contains_iff_mem.mpr hy'
+  refine ⟨_, ?_, mem_merged hCx hx' hmx, mem_merged hCy hy' hmy⟩
+  rw [mergePair_eq, List.mem_append]; right; exact List.mem_singleton.mpr rfl
+
+/-- Le repli préserve l'appartenance partagée. -/
+lemma sameClass_foldl {pairs : List (Nat × Nat)} {P : List (List Nat)} {a b : Nat}
+    (h : SameClass P a b) : SameClass (pairs.foldl mergeStep P) a b := by
+  induction pairs generalizing P with
+  | nil => exact h
+  | cons p ps ih => rw [List.foldl_cons]; exact ih (sameClass_mergePair h)
+
+/-- Toute paire rencontrée pendant le repli finit dans une même classe. -/
+lemma sameClass_foldl_of_mem {pairs : List (Nat × Nat)} {P : List (List Nat)}
+    (hcover : ∀ q ∈ pairs, Covered P q.1 ∧ Covered P q.2) :
+    ∀ q ∈ pairs, SameClass (pairs.foldl mergeStep P) q.1 q.2 := by
+  induction pairs generalizing P with
+  | nil => intro q hq; simp at hq
+  | cons p ps ih =>
+      intro q hq
+      rw [List.foldl_cons]
+      rcases List.mem_cons.mp hq with rfl | hqs
+      · exact sameClass_foldl (sameClass_mergePair_self
+          (hcover q (List.mem_cons.mpr (Or.inl rfl))).1
+          (hcover q (List.mem_cons.mpr (Or.inl rfl))).2)
+      · exact ih (P := mergeStep P p)
+          (fun r hr => ⟨covered_mergePair (hcover r (List.mem_cons.mpr (Or.inr hr))).1,
+                        covered_mergePair (hcover r (List.mem_cons.mpr (Or.inr hr))).2⟩)
+          q hqs
+
+/-! ### Commutation de deux fusions — la reformulation `SameClass`
+
+Le repli de `arcPartition` applique les paires de dessus dans l'ordre des
+croisements. `foldl_mergePair_swap` (ci-dessus) montre qu'un échange
+adjacent de paires préserve la liste à un `take`/`drop` près — ce n'est pas
+l'égalité des listes : l'ordre d'apparition dans la classe fusionnée
+diffère (contre-exemple `P = [[1,3],[2],[4]]`, paires `(1,2)` puis `(3,4)` :
+la classe géante est `[4,1,3,2]` dans un ordre et `[2,1,3,4]` dans l'autre
+— issue #16650). Ce qui commute exactement, c'est la relation d'équivalence
+sous-jacente : deux étiquettes partagent une classe finale dans un ordre
+d'application ssi elles en partagent une dans l'autre. Le théorème
+`mergePair_mergePair_comm_equiv` l'établit via une caractérisation complète
+de `SameClass` après deux fusions (`sameClass_two_merges_iff`), dont la
+forme est invariante par échange des deux groupes.
+-/
+
+/-- `z` vit dans une classe de `P` qui porte `x` ou `y` : c'est exactement
+la condition d'atterrir dans la classe fusionnée de `mergePair P x y`. -/
+def Touches (P : List (List Nat)) (x y z : Nat) : Prop :=
+  ∃ C ∈ P, z ∈ C ∧ ((C.contains x || C.contains y) = true)
+
+/-- Une même classe de `P` porte une étiquette du groupe `{a, b}` et une du
+groupe `{c, d}` : les deux fusions produisent alors une classe unique au
+lieu de deux classes séparées. -/
+def GroupsLinked (P : List (List Nat)) (a b c d : Nat) : Prop :=
+  ∃ C ∈ P, ((C.contains a || C.contains b) = true) ∧
+    ((C.contains c || C.contains d) = true)
+
+/-- Un « hit » de classe, lu en appartenances. -/
+lemma hit_iff_mem {C : List Nat} {x y : Nat} :
+    ((C.contains x || C.contains y) = true) ↔ (x ∈ C ∨ y ∈ C) := by
+  rw [Bool.or_eq_true, List.contains_iff_mem, List.contains_iff_mem]
+
+/-- Appartenance à la classe fusionnée, caractérisée sur `P`. -/
+lemma mem_fused_iff {P : List (List Nat)} {x y z : Nat} :
+    z ∈ (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups ↔
+      Touches P x y z := by
+  rw [List.mem_eraseDups, List.mem_flatten]
+  constructor
+  · rintro ⟨C, hC, hz⟩
+    obtain ⟨hCP, hcond⟩ := List.mem_filter.mp hC
+    exact ⟨C, hCP, hz, hcond⟩
+  · rintro ⟨C, hC, hz, hcond⟩
+    exact ⟨C, List.mem_filter.mpr ⟨hC, hcond⟩, hz⟩
+
+/-- `GroupsLinked` se lit depuis le groupe `{a, b}` : une classe porte
+alors `c` ou `d`. -/
+lemma groupsLinked_iff {P : List (List Nat)} {a b c d : Nat} :
+    GroupsLinked P a b c d ↔ (Touches P a b c ∨ Touches P a b d) := by
+  constructor
+  · rintro ⟨C, hC, hab, hcd⟩
+    rw [hit_iff_mem] at hcd
+    rcases hcd with hc | hd
+    · exact Or.inl ⟨C, hC, hc, hab⟩
+    · exact Or.inr ⟨C, hC, hd, hab⟩
+  · rintro (⟨C, hC, hc, hab⟩ | ⟨C, hC, hd, hab⟩)
+    · exact ⟨C, hC, hab, by rw [hit_iff_mem]; exact Or.inl hc⟩
+    · exact ⟨C, hC, hab, by rw [hit_iff_mem]; exact Or.inr hd⟩
+
+/-- `GroupsLinked` est symétrique dans l'échange des deux groupes. -/
+lemma groupsLinked_symm {P : List (List Nat)} {a b c d : Nat} :
+    GroupsLinked P a b c d ↔ GroupsLinked P c d a b := by
+  constructor <;> rintro ⟨C, hC, h1, h2⟩ <;> exact ⟨C, hC, h2, h1⟩
+
+/-- Quand les groupes ne sont pas reliés, la classe fusionnée du groupe
+`{a, b}` ne porte ni `c` ni `d`. -/
+lemma not_mem_fused_of_not_linked {P : List (List Nat)} {a b c d : Nat}
+    (h : ¬ GroupsLinked P a b c d) :
+    ¬ (c ∈ (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups ∨
+       d ∈ (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups) :=
+  fun hmem => h (groupsLinked_iff.mpr
+    (hmem.elim (fun hc => Or.inl (mem_fused_iff.mp hc))
+               (fun hd => Or.inr (mem_fused_iff.mp hd))))
+
+/-- `SameClass` après une fusion, caractérisé sur la partition d'origine :
+une classe commune laissée intacte, ou deux étiquettes happées toutes deux
+par la fusion. -/
+lemma sameClass_mergePair_iff {P : List (List Nat)} {x y u v : Nat} :
+    SameClass (mergePair P x y) u v ↔
+      (∃ C ∈ P, u ∈ C ∧ v ∈ C ∧ ¬((C.contains x || C.contains y) = true)) ∨
+      (Touches P x y u ∧ Touches P x y v) := by
+  rw [mergePair_eq]
+  constructor
+  · rintro ⟨D, hD, hu, hv⟩
+    rw [List.mem_append] at hD
+    rcases hD with hkeep | hF
+    · obtain ⟨hDP, hcond⟩ := List.mem_filter.mp hkeep
+      exact Or.inl ⟨D, hDP, hu, hv, by simpa using hcond⟩
+    · have hDeq : D = (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups :=
+        List.mem_singleton.mp hF
+      subst hDeq
+      exact Or.inr ⟨mem_fused_iff.mp hu, mem_fused_iff.mp hv⟩
+  · rintro (⟨C, hC, hu, hv, hcond⟩ | ⟨hu, hv⟩)
+    · exact ⟨C, by rw [List.mem_append]; exact Or.inl (keep_filter hC hcond), hu, hv⟩
+    · exact ⟨_, by rw [List.mem_append]; exact Or.inr (List.mem_singleton.mpr rfl),
+        mem_fused_iff.mpr hu, mem_fused_iff.mpr hv⟩
+
+/-- `Touches` à travers une première fusion `{a, b}` : soit une classe
+intacte (hors du groupe `{a, b}`) qui porte `c` ou `d`, soit la classe
+fusionnée du groupe `{a, b}` elle-même. -/
+lemma touches_mergePair_iff {P : List (List Nat)} {a b c d z : Nat} :
+    Touches (mergePair P a b) c d z ↔
+      (∃ C ∈ P, z ∈ C ∧ ¬((C.contains a || C.contains b) = true) ∧
+        ((C.contains c || C.contains d) = true)) ∨
+      (Touches P a b z ∧ (Touches P a b c ∨ Touches P a b d)) := by
+  constructor
+  · rintro ⟨E, hE, hz, hcd⟩
+    rw [mergePair_eq, List.mem_append] at hE
+    rcases hE with hkeep | hF
+    · obtain ⟨hEP, hcond⟩ := List.mem_filter.mp hkeep
+      exact Or.inl ⟨E, hEP, hz, by simpa using hcond, hcd⟩
+    · have hEeq : E = (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups :=
+        List.mem_singleton.mp hF
+      subst hEeq
+      rw [hit_iff_mem] at hcd
+      rcases hcd with hc | hd
+      · exact Or.inr ⟨mem_fused_iff.mp hz, Or.inl (mem_fused_iff.mp hc)⟩
+      · exact Or.inr ⟨mem_fused_iff.mp hz, Or.inr (mem_fused_iff.mp hd)⟩
+  · rintro (⟨C, hC, hz, hcond, hcd⟩ | ⟨hz, hcd⟩)
+    · exact ⟨C, by rw [mergePair_eq, List.mem_append]; exact Or.inl (keep_filter hC hcond),
+        hz, hcd⟩
+    · refine ⟨(P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups,
+        by rw [mergePair_eq, List.mem_append]; exact Or.inr (List.mem_singleton.mpr rfl),
+        mem_fused_iff.mpr hz, ?_⟩
+      rw [hit_iff_mem]
+      rcases hcd with hc | hd
+      · exact Or.inl (mem_fused_iff.mpr hc)
+      · exact Or.inr (mem_fused_iff.mpr hd)
+
+/-- Caractérisation complète de `SameClass` après deux fusions `{a, b}`
+puis `{c, d}`, lue sur la partition d'origine `P`. Trois voies seulement :
+(i) une classe commune — une classe n'est jamais scindée ; ou (ii) `x` et
+`y` happés par les fusions, avec soit groupes reliés (une seule classe
+géante), soit `x` et `y` happés par le même groupe. La forme est invariante
+par échange des deux groupes — c'est elle qui donne la commutation. -/
+lemma sameClass_two_merges_iff {P : List (List Nat)} {a b c d x y : Nat} :
+    SameClass (mergePair (mergePair P a b) c d) x y ↔
+      (∃ C ∈ P, x ∈ C ∧ y ∈ C) ∨
+      ((Touches P a b x ∨ Touches P c d x) ∧ (Touches P a b y ∨ Touches P c d y) ∧
+        (GroupsLinked P a b c d ∨ (Touches P a b x ∧ Touches P a b y) ∨
+          (Touches P c d x ∧ Touches P c d y))) := by
+  rw [sameClass_mergePair_iff]
+  constructor
+  · rintro (⟨E, hE, hx, hy, hncd⟩ | ⟨hTx, hTy⟩)
+    · rw [mergePair_eq, List.mem_append] at hE
+      rcases hE with hkeep | hF
+      · obtain ⟨hEP, _⟩ := List.mem_filter.mp hkeep
+        exact Or.inl ⟨E, hEP, hx, hy⟩
+      · have hEeq : E = (P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups :=
+          List.mem_singleton.mp hF
+        subst hEeq
+        have htabx : Touches P a b x := mem_fused_iff.mp hx
+        have htaby : Touches P a b y := mem_fused_iff.mp hy
+        exact Or.inr ⟨Or.inl htabx, Or.inl htaby, Or.inr (Or.inl ⟨htabx, htaby⟩)⟩
+    · rw [touches_mergePair_iff] at hTx hTy
+      rcases hTx with hKx | ⟨htabx, hGLx⟩
+      · rcases hTy with hKy | ⟨htaby, hGLy⟩
+        · obtain ⟨C, hC, hxc, _, hcd⟩ := hKx
+          obtain ⟨D, hD, hyc, _, hcd2⟩ := hKy
+          have htcdx : Touches P c d x := ⟨C, hC, hxc, hcd⟩
+          have htcdy : Touches P c d y := ⟨D, hD, hyc, hcd2⟩
+          exact Or.inr ⟨Or.inr htcdx, Or.inr htcdy, Or.inr (Or.inr ⟨htcdx, htcdy⟩)⟩
+        · obtain ⟨C, hC, hxc, _, hcd⟩ := hKx
+          exact Or.inr ⟨Or.inr ⟨C, hC, hxc, hcd⟩, Or.inl htaby,
+            Or.inl (groupsLinked_iff.mpr hGLy)⟩
+      · rcases hTy with hKy | ⟨htaby, hGLy⟩
+        · obtain ⟨D, hD, hyc, _, hcd2⟩ := hKy
+          exact Or.inr ⟨Or.inl htabx, Or.inr ⟨D, hD, hyc, hcd2⟩,
+            Or.inl (groupsLinked_iff.mpr hGLx)⟩
+        · exact Or.inr ⟨Or.inl htabx, Or.inl htaby, Or.inl (groupsLinked_iff.mpr hGLx)⟩
+  · rintro (hI | ⟨hx, hy, hinner⟩)
+    · obtain ⟨C, hC, hxc, hyc⟩ := hI
+      by_cases hab : (C.contains a || C.contains b) = true
+      · by_cases hGL : GroupsLinked P a b c d
+        · exact Or.inr
+            ⟨touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hxc, hab⟩, groupsLinked_iff.mp hGL⟩),
+             touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hyc, hab⟩, groupsLinked_iff.mp hGL⟩)⟩
+        · left
+          refine ⟨(P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups,
+            by rw [mergePair_eq, List.mem_append]; exact Or.inr (List.mem_singleton.mpr rfl),
+            mem_fused_iff.mpr ⟨C, hC, hxc, hab⟩, mem_fused_iff.mpr ⟨C, hC, hyc, hab⟩, ?_⟩
+          rw [hit_iff_mem]
+          exact not_mem_fused_of_not_linked hGL
+      · by_cases hcd : (C.contains c || C.contains d) = true
+        · exact Or.inr
+            ⟨touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hxc, hab, hcd⟩),
+             touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hyc, hab, hcd⟩)⟩
+        · left
+          exact ⟨C, by rw [mergePair_eq, List.mem_append]; exact Or.inl (keep_filter hC hab),
+            hxc, hyc, hcd⟩
+    · rcases hinner with hGL | ⟨htabx, htaby⟩ | ⟨htcdx, htcdy⟩
+      · have mk : ∀ z : Nat, (Touches P a b z ∨ Touches P c d z) →
+            Touches (mergePair P a b) c d z := by
+          rintro z (htab | ⟨C, hC, hzc, hcdz⟩)
+          · exact touches_mergePair_iff.mpr (Or.inr ⟨htab, groupsLinked_iff.mp hGL⟩)
+          · by_cases habC : (C.contains a || C.contains b) = true
+            · exact touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hzc, habC⟩,
+                groupsLinked_iff.mp ⟨C, hC, habC, hcdz⟩⟩)
+            · exact touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hzc, habC, hcdz⟩)
+        exact Or.inr ⟨mk x hx, mk y hy⟩
+      · by_cases hGL : GroupsLinked P a b c d
+        · exact Or.inr
+            ⟨touches_mergePair_iff.mpr (Or.inr ⟨htabx, groupsLinked_iff.mp hGL⟩),
+             touches_mergePair_iff.mpr (Or.inr ⟨htaby, groupsLinked_iff.mp hGL⟩)⟩
+        · left
+          refine ⟨(P.filter (fun C => C.contains a || C.contains b)).flatten.eraseDups,
+            by rw [mergePair_eq, List.mem_append]; exact Or.inr (List.mem_singleton.mpr rfl),
+            mem_fused_iff.mpr htabx, mem_fused_iff.mpr htaby, ?_⟩
+          rw [hit_iff_mem]
+          exact not_mem_fused_of_not_linked hGL
+      · obtain ⟨C, hC, hxc, hcdx⟩ := htcdx
+        obtain ⟨D, hD, hyc, hcdy⟩ := htcdy
+        by_cases habC : (C.contains a || C.contains b) = true
+        · have hGLC : GroupsLinked P a b c d := ⟨C, hC, habC, hcdx⟩
+          by_cases habD : (D.contains a || D.contains b) = true
+          · exact Or.inr
+              ⟨touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hxc, habC⟩,
+                 groupsLinked_iff.mp hGLC⟩),
+               touches_mergePair_iff.mpr (Or.inr ⟨⟨D, hD, hyc, habD⟩,
+                 groupsLinked_iff.mp ⟨D, hD, habD, hcdy⟩⟩)⟩
+          · exact Or.inr
+              ⟨touches_mergePair_iff.mpr (Or.inr ⟨⟨C, hC, hxc, habC⟩,
+                 groupsLinked_iff.mp hGLC⟩),
+               touches_mergePair_iff.mpr (Or.inl ⟨D, hD, hyc, habD, hcdy⟩)⟩
+        · by_cases habD : (D.contains a || D.contains b) = true
+          · exact Or.inr
+              ⟨touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hxc, habC, hcdx⟩),
+               touches_mergePair_iff.mpr (Or.inr ⟨⟨D, hD, hyc, habD⟩,
+                 groupsLinked_iff.mp ⟨D, hD, habD, hcdy⟩⟩)⟩
+          · exact Or.inr
+              ⟨touches_mergePair_iff.mpr (Or.inl ⟨C, hC, hxc, habC, hcdx⟩),
+               touches_mergePair_iff.mpr (Or.inl ⟨D, hD, hyc, habD, hcdy⟩)⟩
+
+/-- La forme caractérisante de `sameClass_two_merges_iff` est invariante
+par échange des deux groupes. -/
+lemma sameClass_two_merges_comm_form {P : List (List Nat)} {a b c d x y : Nat} :
+    ((∃ C ∈ P, x ∈ C ∧ y ∈ C) ∨
+      ((Touches P a b x ∨ Touches P c d x) ∧ (Touches P a b y ∨ Touches P c d y) ∧
+        (GroupsLinked P a b c d ∨ (Touches P a b x ∧ Touches P a b y) ∨
+          (Touches P c d x ∧ Touches P c d y)))) ↔
+    ((∃ C ∈ P, x ∈ C ∧ y ∈ C) ∨
+      ((Touches P c d x ∨ Touches P a b x) ∧ (Touches P c d y ∨ Touches P a b y) ∧
+        (GroupsLinked P c d a b ∨ (Touches P c d x ∧ Touches P c d y) ∨
+          (Touches P a b x ∧ Touches P a b y)))) := by
+  constructor
+  · rintro (hI | ⟨hx, hy, hL | hab | hcd⟩)
+    · exact Or.inl hI
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inl (groupsLinked_symm.mp hL)⟩
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inr hab)⟩
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inl hcd)⟩
+  · rintro (hI | ⟨hx, hy, hL | hcd | hab⟩)
+    · exact Or.inl hI
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inl (groupsLinked_symm.mpr hL)⟩
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inr hcd)⟩
+    · exact Or.inr ⟨hx.symm, hy.symm, Or.inr (Or.inl hab)⟩
+
+/-- **Commutation de deux fusions** : l'ordre d'application des paires
+`{a, b}` puis `{c, d}` ne change pas la relation « partager une classe ».
+Les listes produites diffèrent (ordre d'apparition dans la classe
+fusionnée — contre-exemple documenté sur l'issue #16650), mais la partition
+vue comme relation d'équivalence est la même. C'est la reformulation
+correcte du lemme de commutation cherché : la commutation vit au niveau de
+`SameClass`, pas de l'égalité des listes. -/
+theorem mergePair_mergePair_comm_equiv (P : List (List Nat)) (a b c d x y : Nat) :
+    SameClass (mergePair (mergePair P a b) c d) x y ↔
+    SameClass (mergePair (mergePair P c d) a b) x y := by
+  rw [sameClass_two_merges_iff, sameClass_two_merges_comm_form,
+      ← sameClass_two_merges_iff (a := c) (b := d) (c := a) (d := b)]
+
+/-- `Touches` lu en `SameClass` : une étiquette est happée par la fusion
+    `{x, y}` exactement quand elle partage une classe avec `x` ou avec `y`.
+    C'est la cle qui rend la caractérisation de `SameClass` après fusion
+    transportable d'une partition à une autre. -/
+lemma touches_iff_sameClass {P : List (List Nat)} {x y z : Nat} :
+    Touches P x y z ↔ (SameClass P x z ∨ SameClass P y z) := by
+  constructor
+  · rintro ⟨C, hC, hz, hcond⟩
+    rw [hit_iff_mem] at hcond
+    rcases hcond with hx | hy
+    · exact Or.inl ⟨C, hC, hx, hz⟩
+    · exact Or.inr ⟨C, hC, hy, hz⟩
+  · rintro (⟨C, hC, hx, hz⟩ | ⟨C, hC, hy, hz⟩)
+    · exact ⟨C, hC, hz, by rw [hit_iff_mem]; exact Or.inl hx⟩
+    · exact ⟨C, hC, hz, by rw [hit_iff_mem]; exact Or.inr hy⟩
+
+/-- Caractérisation pure de `SameClass` après une fusion : une classe
+    commune conservée, ou deux étiquettes toutes deux happées — lu
+    entièrement en `SameClass` de la partition d'origine. C'est cette forme
+    qui fait du repli une congruence pour `SameClass`. -/
+lemma sameClass_mergePair_pure {P : List (List Nat)} {x y u v : Nat} :
+    SameClass (mergePair P x y) u v ↔
+      SameClass P u v ∨
+        ((SameClass P x u ∨ SameClass P y u) ∧
+          (SameClass P x v ∨ SameClass P y v)) := by
+  rw [sameClass_mergePair_iff, touches_iff_sameClass, touches_iff_sameClass]
+  constructor
+  · rintro (⟨C, hC, hu, hv, _⟩ | h)
+    · exact Or.inl ⟨C, hC, hu, hv⟩
+    · exact Or.inr h
+  · rintro (⟨C, hC, hu, hv⟩ | h)
+    · by_cases hcond : ((C.contains x || C.contains y) = true)
+      · rw [hit_iff_mem] at hcond
+        rcases hcond with hx | hy
+        · exact Or.inr ⟨Or.inl ⟨C, hC, hx, hu⟩, Or.inl ⟨C, hC, hx, hv⟩⟩
+        · exact Or.inr ⟨Or.inr ⟨C, hC, hy, hu⟩, Or.inr ⟨C, hC, hy, hv⟩⟩
+      · exact Or.inl ⟨C, hC, hu, hv, hcond⟩
+    · exact Or.inr h
+
+/-- **Congruence du repli** : si deux partitions sont indiscernables par
+    `SameClass`, le repli d'une même liste de paires les laisse
+    indiscernables. Le repli ne voit jamais la forme des listes de classes,
+    seulement qui partage une classe. -/
+lemma foldl_mergeStep_congr {Q₁ Q₂ : List (List Nat)}
+    (h : ∀ w z, SameClass Q₁ w z ↔ SameClass Q₂ w z)
+    (pairs : List (Nat × Nat)) :
+    ∀ w z, SameClass (pairs.foldl mergeStep Q₁) w z ↔
+           SameClass (pairs.foldl mergeStep Q₂) w z := by
+  induction pairs generalizing Q₁ Q₂ with
+  | nil => exact h
+  | cons p rest ih =>
+    refine ih ?_
+    intro w z
+    show SameClass (mergePair Q₁ p.1 p.2) w z ↔ SameClass (mergePair Q₂ p.1 p.2) w z
+    rw [sameClass_mergePair_pure, sameClass_mergePair_pure,
+        h w z, h p.1 w, h p.2 w, h p.1 z, h p.2 z]
+
+/-- **Le repli est insensible à la permutation de deux paires adjacentes** :
+    échanger les positions `i` et `i + 1` de la liste de paires ne change
+    pas la relation `SameClass` du résultat du repli. Troisième brique de
+    l'invariance R3 (issue #16650) : la chirurgie R3 connexe déplace les
+    croisements réécrits dans la liste du repli, `foldl_mergePair_swap`
+    absorbe l'orientation, `mergePair_mergePair_comm_equiv` la commutation
+    des deux fusions, et la congruence `foldl_mergeStep_congr` transporte
+    l'équivalence à travers le reste du repli. Ensemble, elles fondent la
+    préservation de la partition d'arcs sur le témoin du lake. -/
+theorem foldl_mergePair_permute_adjacent (pairs : List (Nat × Nat)) (i : Nat)
+    (hi : i + 1 < pairs.length) (P₀ : List (List Nat)) (w z : Nat) :
+    SameClass
+      ((pairs.take i ++ [pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩,
+                          pairs.get ⟨i + 1, hi⟩] ++ pairs.drop (i + 2)).foldl
+          mergeStep P₀) w z ↔
+      SameClass
+      ((pairs.take i ++ [pairs.get ⟨i + 1, hi⟩,
+                          pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩] ++ pairs.drop
+            (i + 2)).foldl mergeStep P₀) w z := by
+  have hfold : ∀ (r s : Nat × Nat),
+      ((pairs.take i ++ [r, s] ++ pairs.drop (i + 2)).foldl mergeStep P₀)
+        = (pairs.drop (i + 2)).foldl mergeStep
+            (mergeStep (mergeStep ((pairs.take i).foldl mergeStep P₀) r) s) := by
+    intro r s
+    rw [List.foldl_append, List.foldl_append, List.foldl_cons, List.foldl_cons,
+        List.foldl_nil]
+  rw [hfold (pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩) (pairs.get ⟨i + 1, hi⟩),
+      hfold (pairs.get ⟨i + 1, hi⟩) (pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩)]
+  exact foldl_mergeStep_congr
+    (mergePair_mergePair_comm_equiv ((pairs.take i).foldl mergeStep P₀)
+      (pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩).1
+      (pairs.get ⟨i, Nat.lt_of_succ_lt hi⟩).2
+      (pairs.get ⟨i + 1, hi⟩).1
+      (pairs.get ⟨i + 1, hi⟩).2)
+    (pairs.drop (i + 2)) w z
+
+/-- Toute étiquette de la plage `1..n` est couverte par les singletons initiaux. -/
+lemma covered_singles {n z : Nat} (h1 : 1 ≤ z) (h2 : z ≤ n) :
+    Covered ((List.range n).map (fun i => [i + 1])) z := by
+  refine ⟨[z], ?_, by simp⟩
+  rw [List.mem_map]
+  exact ⟨z - 1, by rw [List.mem_range]; omega, by simp only [Nat.sub_add_cancel h1]⟩
+
+/-- Les quatre étiquettes d'arête de chaque croisement vivent dans la plage
+`1..numEdges` du diagramme. -/
+def EdgesInRange (d : KnotDiagram) : Prop :=
+  ∀ c ∈ d.crossings, 1 ≤ c.e1 ∧ c.e1 ≤ d.numEdges ∧
+    1 ≤ c.e2 ∧ c.e2 ≤ d.numEdges ∧
+    1 ≤ c.e3 ∧ c.e3 ≤ d.numEdges ∧
+    1 ≤ c.e4 ∧ c.e4 ≤ d.numEdges
+
+/-- Le repli de `arcPartition` en forme de `foldl` sur `mergeStep`. -/
+lemma arcPartition_eq (d : KnotDiagram) :
+    arcPartition d = (d.crossings.map (fun c => (c.e2, c.e4))).foldl mergeStep
+      ((List.range d.numEdges).map (fun i => [i + 1])) := rfl
+
+/-- **Le fait de Fox** : en chaque croisement d'un diagramme à étiquettes en
+plage, les deux étiquettes de dessus appartiennent à une même classe de la
+partition d'arcs. C'est ce fait — et non la seule garde de cardinal de
+`alexanderPolynomialAux` — qui porte la somme de ligne nulle de la matrice
+d'Alexander (cf `alexanderEntry_sum_zero` ci-dessous). -/
+theorem arcPartition_sameClass_overStrand (d : KnotDiagram) (h : EdgesInRange d)
+    {c : PDCrossing} (hc : c ∈ d.crossings) :
+    SameClass (arcPartition d) c.e2 c.e4 := by
+  rw [arcPartition_eq]
+  have hcover : ∀ q ∈ d.crossings.map (fun c => (c.e2, c.e4)),
+      Covered ((List.range d.numEdges).map (fun i => [i + 1])) q.1 ∧
+      Covered ((List.range d.numEdges).map (fun i => [i + 1])) q.2 := by
+    intro q hq
+    rw [List.mem_map] at hq
+    obtain ⟨c', hc', rfl⟩ := hq
+    obtain ⟨_, _, h2lo, h2hi, _, _, h4lo, h4hi⟩ := h c' hc'
+    exact ⟨covered_singles h2lo h2hi, covered_singles h4lo h4hi⟩
+  exact sameClass_foldl_of_mem hcover (c.e2, c.e4) (List.mem_map.mpr ⟨c, hc, rfl⟩)
+
+/-- Contrôle : la partition d'arcs du code Conway corrigé — 11 arcs couvrant
+les 22 arêtes (condition de non-dégénérescence du mineur d'Alexander : la
+garde `arcs'.length = rest.length + 1` de `alexanderPolynomialAux` passe).
+Le code non connexe précédent produisait un arc isolé {21, 22} absorbé par
+la colonne éliminée du mineur désigné → déterminant 0. -/
+theorem conway_arcPartition :
+    arcPartition conwayKnotDiagram =
+      [[13], [22], [3, 4], [1, 2], [5, 6], [9, 7, 8], [20, 21], [10, 11, 12],
+       [18, 19], [14, 15], [16, 17]] := by
+  decide
+
+/-- Contrôle : partition d'arcs du code KT corrigé — 11 arcs, structure
+partagée avec Conway sur les croisements 1-5, divergente au-delà. -/
+theorem kinoshitaTerasaka_arcPartition :
+    arcPartition kinoshitaTerasakaDiagram =
+      [[13], [22], [3, 4], [1, 2], [5, 6], [9, 7, 8], [14, 15], [10, 11, 12],
+       [18, 19], [20, 21], [16, 17]] := by
+  decide
+
+/-- Entrée de la matrice d'Alexander : ligne du croisement `c`, colonne de
+l'arc `C`. Convention positive (Fox de la relation de Wirtinger) : `+t`
+(arc entrant du dessous), `−1` (arc sortant du dessous), `1−t` (arc du
+dessus) — chaque ligne somme à zéro, condition qui garantit que deux
+mineurs (n−1)×(n−1) diffèrent d'une unité ±t^k. Le code PD ne code pas la
+chiralité du croisement, aussi les deux conventions différeraient-elles
+d'un facteur unité — la présente est désignée. -/
+noncomputable def alexanderEntry (c : PDCrossing) (C : List Nat) : Polynomial ℤ :=
+  (if C.contains c.e1 then Polynomial.X else 0)
+    + (if C.contains c.e3 then -(1 : Polynomial ℤ) else 0)
+    + (if C.contains c.e2 || C.contains c.e4 then 1 - Polynomial.X else 0)
+
+/-! #### Les lignes d'Alexander somment à zéro
+
+Sous les hypothèses d'unicité — chaque étiquette du dessous portée par
+exactement une classe, la paire de dessus rencontrant exactement une classe —
+chaque ligne de la matrice d'Alexander somme à zéro : `t − 1 + (1 − t) = 0`.
+C'est ce fait qui rend le mineur (n−1)×(n−1) indépendant, à un signe près, du
+choix de la colonne frappée : l'affirmation normative de la docstring
+d'`alexanderEntry` devient ici un théorème. `arcPartition_sameClass_overStrand`
+fournit la moitié combinatoire (la paire de dessus partage une classe) ;
+la vérification que `arcPartition` satisfait les hypothèses d'unicité
+(`countP` = 1 par étiquette) est établie dans la section suivante
+(`arcPartition_countP_label`).
+-/
+
+/-- Somme d'une carte indicatrice : le `w` est compté une fois par classe
+porteuse. -/
+lemma sum_map_indicator (P : List (List Nat)) (p : List Nat → Bool) (w : Polynomial ℤ) :
+    (P.map (fun C => if p C then w else 0)).sum = w * (P.countP p : Polynomial ℤ) := by
+  induction P with
+  | nil => simp
+  | cons D Ps ih =>
+      by_cases hD : p D = true
+      · simp only [List.map_cons, List.sum_cons, ih, List.countP_cons, hD, if_true]
+        push_cast
+        ring
+      · simp only [List.map_cons, List.sum_cons, ih, List.countP_cons, hD, Bool.false_eq_true,
+          if_false]
+        push_cast
+        ring
+
+/-- La somme d'une carte à trois termes se distribue sur les trois sommes. -/
+lemma sum_map_three (P : List (List Nat)) (f g h : List Nat → Polynomial ℤ) :
+    (P.map (fun C => f C + g C + h C)).sum =
+      (P.map f).sum + (P.map g).sum + (P.map h).sum := by
+  induction P with
+  | nil => simp
+  | cons D Ps ih => simp only [List.map_cons, List.sum_cons, ih]; abel
+
+/-- **Somme de ligne nulle** : si chaque étiquette du dessous est portée par
+exactement une classe et si la paire de dessus rencontre exactement une
+classe, alors la ligne d'`alexanderEntry` somme à zéro. C'est le fait de Fox
+qui rend le mineur (n−1)×(n−1) indépendant, à un signe près, du choix de la
+colonne frappée — le socle demandé par See #14962 avant toute correction de
+normalisation. -/
+theorem alexanderEntry_sum_zero (P : List (List Nat)) (c : PDCrossing)
+    (h1 : P.countP (fun C => C.contains c.e1) = 1)
+    (h3 : P.countP (fun C => C.contains c.e3) = 1)
+    (h24 : P.countP (fun C => C.contains c.e2 || C.contains c.e4) = 1) :
+    (P.map (alexanderEntry c)).sum = 0 := by
+  have hmap : (P.map (alexanderEntry c)) = P.map (fun C : List Nat =>
+      ((if C.contains c.e1 then (Polynomial.X : Polynomial ℤ) else 0)
+        + (if C.contains c.e3 then (-(1 : Polynomial ℤ)) else 0)
+        + (if C.contains c.e2 || C.contains c.e4 then (1 : Polynomial ℤ) - Polynomial.X
+           else 0))) := by
+    congr 1
+  rw [hmap, sum_map_three, sum_map_indicator, h1, sum_map_indicator, h3, sum_map_indicator, h24]
+  push_cast
+  ring
+
+/-! #### `arcPartition` est une partition : l'unicité `countP` = 1
+
+La section précédente reposait sur des hypothèses d'unicité (`countP` = 1).
+Cette section les établit pour la vraie `arcPartition` : les classes sont deux
+à deux disjointes (un invariant que `mergePair` préserve), sans doublon, et
+couvrent toute la plage `1..numEdges`. Il en découle que chaque ligne de la
+matrice d'Alexander somme à zéro sans hypothèse additionnelle — le résiduel
+nommé sur See #14962 est levé. -/
+
+/-- Deux classes distinctes de `P` sont disjointes. -/
+def ClassesDisjoint (P : List (List Nat)) : Prop :=
+  ∀ C ∈ P, ∀ D ∈ P, C ≠ D → ∀ z, z ∈ C → z ∉ D
+
+/-- Les singletons initiaux sont deux à deux disjoints. -/
+lemma classesDisjoint_singles {n : Nat} :
+    ClassesDisjoint ((List.range n).map (fun i => [i + 1])) := by
+  intro C hC D hD hne z hzC hzD
+  rw [List.mem_map] at hC hD
+  obtain ⟨i, hi, rfl⟩ := hC
+  obtain ⟨j, hj, rfl⟩ := hD
+  simp only [List.mem_singleton] at hzC hzD
+  exact hne (by congr 1; omega)
+
+/-- Le filtre `keep` (classes ne portant ni `x` ni `y`) ne rencontre jamais le
+bloc fusionné : un `z` d'une classe intacte n'appartient à aucune classe touchée. -/
+lemma not_mem_merged_of_keep {P : List (List Nat)} {C : List Nat} {x y z : Nat}
+    (hP : ClassesDisjoint P)
+    (hC : C ∈ P) (hkeep : (C.contains x || C.contains y) ≠ true) :
+    z ∈ C → z ∉ (P.filter (fun D => D.contains x || D.contains y)).flatten.eraseDups := by
+  intro hz hmem
+  rw [List.mem_eraseDups, List.mem_flatten] at hmem
+  obtain ⟨D, hD, hzD⟩ := hmem
+  rw [List.mem_filter] at hD
+  obtain ⟨hDP, hDhit⟩ := hD
+  have hne : C ≠ D := by
+    intro heq; subst heq; exact hkeep hDhit
+  exact hP C hC D hDP hne z hz hzD
+
+/-- `mergePair` préserve la disjonction des classes. -/
+lemma classesDisjoint_mergePair {P : List (List Nat)} {x y : Nat}
+    (hP : ClassesDisjoint P) : ClassesDisjoint (mergePair P x y) := by
+  intro C hC D hD hne z hzC hzD
+  rw [mergePair_eq, List.mem_append] at hC hD
+  rcases hC with hC | hC <;> rcases hD with hD | hD
+  · rw [List.mem_filter] at hC hD
+    exact hP C hC.1 D hD.1 hne z hzC hzD
+  · rw [List.mem_filter] at hC
+    rw [List.mem_singleton] at hD
+    subst hD
+    refine not_mem_merged_of_keep hP hC.1 ?_ hzC hzD
+    cases hA : C.contains x <;> cases hB : C.contains y <;> simp_all
+  · rw [List.mem_filter] at hD
+    rw [List.mem_singleton] at hC
+    subst hC
+    refine not_mem_merged_of_keep hP hD.1 ?_ hzD hzC
+    cases hA : D.contains x <;> cases hB : D.contains y <;> simp_all
+  · rw [List.mem_singleton] at hC hD
+    exact hne (hC.trans hD.symm)
+
+/-- La disjonction des classes survit au repli complet. -/
+lemma classesDisjoint_foldl {pairs : List (Nat × Nat)} {P : List (List Nat)}
+    (h : ClassesDisjoint P) : ClassesDisjoint (pairs.foldl mergeStep P) := by
+  induction pairs generalizing P with
+  | nil => exact h
+  | cons p ps ih => rw [List.foldl_cons]; exact ih (classesDisjoint_mergePair h)
+
+/-- Les singletons initiaux sont deux à deux distincts. -/
+lemma pairwise_singles {n : Nat} :
+    ((List.range n).map (fun i => [i + 1])).Pairwise (fun C D => C ≠ D) :=
+  List.Pairwise.map (fun i => [i + 1])
+    (fun a b h heq => by
+      injection heq with h1
+      exact h (by omega))
+    List.nodup_range
+
+/-- Une étiquette couverte reste dans le bloc fusionné. -/
+lemma mem_merged_of_covered {P : List (List Nat)} {x y : Nat} (hx : Covered P x) :
+    x ∈ (P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups := by
+  obtain ⟨C, hCP, hx'⟩ := hx
+  refine List.mem_eraseDups.mpr (List.mem_flatten.mpr ⟨C, ?_, hx'⟩)
+  refine List.mem_filter.mpr ⟨hCP, ?_⟩
+  rw [Bool.or_eq_true]
+  exact Or.inl (List.contains_iff_mem.mpr hx')
+
+/-- `mergePair` préserve l'absence de doublon : le bloc fusionné, qui porte `x`,
+ne peut pas être une classe intacte, qui ne porte pas `x`. -/
+lemma pairwise_mergePair {P : List (List Nat)} {x y : Nat}
+    (hnd : P.Pairwise (fun C D => C ≠ D)) (hx : Covered P x) :
+    (mergePair P x y).Pairwise (fun C D => C ≠ D) := by
+  rw [mergePair_eq, List.pairwise_append]
+  have hkeep : (P.filter (fun C => !C.contains x && !C.contains y)).Pairwise
+      (fun C D => C ≠ D) := List.Pairwise.filter _ hnd
+  refine ⟨hkeep, List.pairwise_singleton _ _, ?_⟩
+  intro C hC D hDm
+  rw [List.mem_filter] at hC
+  obtain ⟨hCP, hcond⟩ := hC
+  have hfx : C.contains x = false := by
+    cases hA : C.contains x <;> cases hB : C.contains y <;> simp_all
+  rw [List.mem_singleton] at hDm
+  intro heq
+  subst heq
+  subst hDm
+  have h1 : ((P.filter (fun C => C.contains x || C.contains y)).flatten.eraseDups).contains x = true :=
+    List.contains_iff_mem.mpr (mem_merged_of_covered hx)
+  rw [h1] at hfx
+  exact Bool.noConfusion hfx
+
+/-- Les deux invariants de partition traversent le repli complet. -/
+lemma foldl_partition_inv {pairs : List (Nat × Nat)} {P : List (List Nat)}
+    (hd : ClassesDisjoint P) (hnd : P.Pairwise (fun C D => C ≠ D))
+    (hcov : ∀ q ∈ pairs, Covered P q.1 ∧ Covered P q.2) :
+    ClassesDisjoint (pairs.foldl mergeStep P) ∧
+      (pairs.foldl mergeStep P).Pairwise (fun C D => C ≠ D) := by
+  induction pairs generalizing P with
+  | nil => exact ⟨hd, hnd⟩
+  | cons p ps ih =>
+      rw [List.foldl_cons]
+      refine ih (classesDisjoint_mergePair hd)
+        (pairwise_mergePair hnd (hcov p (List.mem_cons_self ..)).1) ?_
+      intro q hq
+      have hc := hcov q (List.mem_cons_of_mem _ hq)
+      exact ⟨covered_mergePair hc.1, covered_mergePair hc.2⟩
+
+/-- La couverture d'une étiquette survit au repli complet. -/
+lemma covered_foldl {pairs : List (Nat × Nat)} {P : List (List Nat)} {z : Nat}
+    (h : Covered P z) : Covered (pairs.foldl mergeStep P) z := by
+  induction pairs generalizing P with
+  | nil => exact h
+  | cons p ps ih => rw [List.foldl_cons]; exact ih (covered_mergePair h)
+
+/-- Une liste deux-à-deux distincte dont tous les éléments valent `a` est de
+longueur au plus un. -/
+lemma pairwise_all_eq_length_le_one {α : Type} {l : List α} {a : α}
+    (hnd : l.Pairwise (fun x y => x ≠ y)) (hall : ∀ x ∈ l, x = a) : l.length ≤ 1 := by
+  cases l with
+  | nil => simp
+  | cons b t =>
+      cases t with
+      | nil => simp
+      | cons c t' =>
+          exfalso
+          have hbc : b = c := (hall b (by simp)).trans (hall c (by simp)).symm
+          cases hnd with
+          | cons hhead _ => exact absurd hbc (hhead c (by simp))
+
+/-- Pont `countP`/`filter`, autonome. -/
+lemma countP_length_filter {α : Type} {p : α → Bool} (l : List α) :
+    l.countP p = (l.filter p).length := by
+  induction l with
+  | nil => rfl
+  | cons a as ih =>
+      by_cases h : p a = true
+      · simp [h, ih]
+      · simp [h, ih]
+
+/-- **Unicité sous-strand** : dans une partition sans doublon, une étiquette
+couverte appartient à exactement une classe. -/
+lemma countP_contains_eq_one {P : List (List Nat)} {z : Nat}
+    (hd : ClassesDisjoint P) (hnd : P.Pairwise (fun C D => C ≠ D)) (hcov : Covered P z) :
+    P.countP (fun C => C.contains z) = 1 := by
+  obtain ⟨C₀, hC₀P, hz₀⟩ := hcov
+  have hfC₀ : C₀ ∈ P.filter (fun C => C.contains z) :=
+    List.mem_filter.mpr ⟨hC₀P, List.contains_iff_mem.mpr hz₀⟩
+  have hall : ∀ D ∈ P.filter (fun C => C.contains z), D = C₀ := by
+    intro D hD
+    rw [List.mem_filter] at hD
+    obtain ⟨hDP, hzD⟩ := hD
+    rw [List.contains_iff_mem] at hzD
+    by_contra hne
+    exact hd C₀ hC₀P D hDP (Ne.symm hne) z hz₀ hzD
+  have hndf : (P.filter (fun C => C.contains z)).Pairwise (fun C D => C ≠ D) :=
+    List.Pairwise.filter _ hnd
+  have hge : 0 < (P.filter (fun C => C.contains z)).length := List.length_pos_of_mem hfC₀
+  have hle : (P.filter (fun C => C.contains z)).length ≤ 1 :=
+    pairwise_all_eq_length_le_one hndf hall
+  rw [countP_length_filter]
+  omega
+
+/-- **Unicité over-strand** : si `x` et `y` partagent une classe d'une partition
+sans doublon, exactement une classe porte `x` ou `y`. -/
+lemma countP_over_eq_one {P : List (List Nat)} {x y : Nat}
+    (hd : ClassesDisjoint P) (hnd : P.Pairwise (fun C D => C ≠ D)) (hsc : SameClass P x y) :
+    P.countP (fun C => C.contains x || C.contains y) = 1 := by
+  obtain ⟨C₀, hC₀P, hx₀, hy₀⟩ := hsc
+  have hfC₀ : C₀ ∈ P.filter (fun C => C.contains x || C.contains y) := by
+    refine List.mem_filter.mpr ⟨hC₀P, ?_⟩
+    rw [Bool.or_eq_true]
+    exact Or.inl (List.contains_iff_mem.mpr hx₀)
+  have hall : ∀ D ∈ P.filter (fun C => C.contains x || C.contains y), D = C₀ := by
+    intro D hD
+    rw [List.mem_filter] at hD
+    obtain ⟨hDP, horD⟩ := hD
+    rw [Bool.or_eq_true] at horD
+    rcases horD with hxD | hyD
+    · rw [List.contains_iff_mem] at hxD
+      by_contra hne
+      exact hd C₀ hC₀P D hDP (Ne.symm hne) x hx₀ hxD
+    · rw [List.contains_iff_mem] at hyD
+      by_contra hne
+      exact hd C₀ hC₀P D hDP (Ne.symm hne) y hy₀ hyD
+  have hndf : (P.filter (fun C => C.contains x || C.contains y)).Pairwise
+      (fun C D => C ≠ D) := List.Pairwise.filter _ hnd
+  have hge : 0 < (P.filter (fun C => C.contains x || C.contains y)).length :=
+    List.length_pos_of_mem hfC₀
+  have hle : (P.filter (fun C => C.contains x || C.contains y)).length ≤ 1 :=
+    pairwise_all_eq_length_le_one hndf hall
+  rw [countP_length_filter]
+  omega
+
+/-- Chaque paire du repli est couverte par les singletons initiaux. -/
+lemma crossings_covered_singles {d : KnotDiagram} (h : EdgesInRange d) :
+    ∀ q ∈ d.crossings.map (fun c => (c.e2, c.e4)),
+      Covered ((List.range d.numEdges).map (fun i => [i + 1])) q.1 ∧
+      Covered ((List.range d.numEdges).map (fun i => [i + 1])) q.2 := by
+  intro q hq
+  rw [List.mem_map] at hq
+  obtain ⟨c', hc', rfl⟩ := hq
+  obtain ⟨_, _, h2lo, h2hi, _, _, h4lo, h4hi⟩ := h c' hc'
+  exact ⟨covered_singles h2lo h2hi, covered_singles h4lo h4hi⟩
+
+/-- Toute étiquette de la plage `1..numEdges` est couverte par la partition. -/
+lemma arcPartition_covered {d : KnotDiagram} {z : Nat}
+    (hz1 : 1 ≤ z) (hz2 : z ≤ d.numEdges) :
+    Covered (arcPartition d) z := by
+  rw [arcPartition_eq]
+  exact covered_foldl (covered_singles hz1 hz2)
+
+/-- **`arcPartition` est une partition** : classes disjointes, sans doublon. -/
+theorem arcPartition_classes (d : KnotDiagram) (h : EdgesInRange d) :
+    ClassesDisjoint (arcPartition d) ∧
+      (arcPartition d).Pairwise (fun C D => C ≠ D) := by
+  rw [arcPartition_eq]
+  exact foldl_partition_inv classesDisjoint_singles pairwise_singles
+    (crossings_covered_singles h)
+
+/-- **L'hypothèse `h1`/`h3` est un théorème** : chaque étiquette de la plage
+est portée par exactement une classe de `arcPartition`. -/
+theorem arcPartition_countP_label (d : KnotDiagram) (h : EdgesInRange d) {z : Nat}
+    (hz1 : 1 ≤ z) (hz2 : z ≤ d.numEdges) :
+    (arcPartition d).countP (fun C => C.contains z) = 1 := by
+  obtain ⟨hd, hnd⟩ := arcPartition_classes d h
+  exact countP_contains_eq_one hd hnd (arcPartition_covered hz1 hz2)
+
+/-- **Somme de ligne inconditionnelle** : pour tout diagramme à étiquettes en
+plage, chaque ligne de la matrice d'Alexander somme à zéro — la boucle entre
+le fait de Fox et la somme nulle se referme, sans hypothèse d'unicité restée
+à la main du lecteur. -/
+theorem alexanderRow_sum_zero (d : KnotDiagram) (h : EdgesInRange d)
+    {c : PDCrossing} (hc : c ∈ d.crossings) :
+    ((arcPartition d).map (alexanderEntry c)).sum = 0 := by
+  obtain ⟨h1lo, h1hi, _, _, h3lo, h3hi, _, _⟩ := h c hc
+  exact alexanderEntry_sum_zero (arcPartition d) c
+    (arcPartition_countP_label d h h1lo h1hi)
+    (arcPartition_countP_label d h h3lo h3hi)
+    (countP_over_eq_one (arcPartition_classes d h).1 (arcPartition_classes d h).2
+      (arcPartition_sameClass_overStrand d h hc))
+
+/-- Type des valeurs du polynôme d'Alexander : ℤ[t]. -/
+abbrev AlexanderPoly := Polynomial ℤ
+
+/-- Polynôme d'Alexander d'un diagramme : déterminant du mineur désigné
+(sans la première ligne, sans la dernière colonne) de la matrice
+d'Alexander. Le polynôme classique n'est défini qu'à une unité ±t^k près ;
+la normalisation désignée fixe le représentant ci-dessous.
+
+Cas désignés : diagramme sans croisement → `1` (déterminant vide, valeur
+classique du nœud trivial) ; partition d'arcs de cardinal ≠ nombre de
+croisements → `0` (diagramme dégénéré ; pour un diagramme bien formé de
+nœud, arcs et croisements sont en nombre égal — théorème non encore porté
+dans ce fichier).
+
+L'invariance par les mouvements de Reidemeister est un théorème séparé,
+non porté ici : `alexanderPolynomial` est une fonction du diagramme
+désigné, comme `mutateWindow` au §1. -/
+noncomputable def alexanderPolynomialAux (d : KnotDiagram) : AlexanderPoly :=
+  let arcs := arcPartition d
+  match d.crossings, arcs with
+  | [], _ => 1
+  | _ :: rest, arcs' =>
+      if arcs'.length = rest.length + 1 then
+        (Matrix.of fun (i j : Fin rest.length) =>
+          alexanderEntry ((rest[i.1]?).getD ⟨1, 1, 1, 1⟩) ((arcs'[j.1]?).getD [])).det
+      else 0
+
+/-- Polynôme d'Alexander du nœud, lu sur son diagramme désigné.
+Référence : Alexander (1928), Topological invariants of knots and links.
+
+NOTE (normalisation vs consommateurs) : les théorèmes `conway_trivial_alexander`
+et `KT_trivial_alexander` ci-dessous portent le contenu classique `Δ = 1`.
+Sous la normalisation désignée, le mineur du diagramme vaut une **unité**
+`±t^k` (unité fois 1). L'arbitrage différé par la note d'origine est tranché :
+le calcul (sonde Python fidèle à la construction, codes census corrigés §2-§3)
+donne −t⁶ pour 11n34 et t⁵ pour 11n42 — les énoncés portent désormais la
+valeur désignée exacte, une unité étant l'incarnation normalisée de Δ = 1.
+`conway_trivial_alexander` est prouvé ci-dessous (déterminant kernel 10×10 sur
+ℤ[t] : élimination de Gauss déterministe plus une étape composite au coin
+k=8, le coin n'étant pas éliminable par transvections seules — voir le corps
+de la preuve) ; `KT_trivial_alexander` (t⁵ pour 11n42) est prouvé également,
+par transvections intégrales du mineur (voir son corps de preuve). -/
+noncomputable def alexanderPolynomial (k : Knot) : AlexanderPoly := alexanderPolynomialAux k.diagram
+
+/-! #### Contrôles : la définition discrimine
+
+Une définition qui n'attraperait ni le nœud trivial ni le trèfle serait un
+`True` déguisé et le retrait du `sorry` serait cosmétique (même discipline
+que les contrôles de `AreMutants`, §1) :
+
+- NÉGATIF (`alexander_unknot`, prouvé) : le nœud trivial, sans croisement,
+  donne la valeur classique Δ = 1 — et toute valeur non triviale d'un nœud
+  à croisements le distingue du nœud trivial.
+- POSITIF (`alexander_trefoil`, prouvé) : le trèfle retrouve exactement la
+  valeur classique Δ(t) = t² − t + 1 sous la normalisation désignée
+  (mineur [[−1, 1−t], [t, −1]]).
+-/
+
+/-- Contrôle négatif : le nœud trivial a un polynôme d'Alexander trivial
+(matrice vide, déterminant 1). -/
+theorem alexander_unknot : alexanderPolynomial unknot = 1 := by
+  simp (config := { decide := true })
+    [alexanderPolynomial, alexanderPolynomialAux, unknot, unknotDiagram]
+
+/-- Déterminant 2×2 générique (cas particulier de l'expansion de Laplace :
+Mathlib v4.32.1 ne fournit plus `Matrix.det_two`). -/
+theorem det_two_aux (M : Matrix (Fin 2) (Fin 2) (Polynomial ℤ)) :
+    M.det = M 0 0 * M 1 1 - M 0 1 * M 1 0 := by
+  rw [Matrix.det_succ_column_zero]
+  simp [Matrix.det_unique, Fin.sum_univ_two]
+  ring
+
+/-- Déterminant 3×3 générique (même esprit que `det_two_aux` : expansion de
+Laplace le long de la première colonne, les mineurs 2×2 étant traités par
+`det_two_aux`). -/
+theorem det_three_aux (A : Matrix (Fin 3) (Fin 3) (Polynomial ℤ)) :
+    A.det = A 0 0 * (A 1 1 * A 2 2 - A 1 2 * A 2 1)
+          - A 1 0 * (A 0 1 * A 2 2 - A 0 2 * A 2 1)
+          + A 2 0 * (A 0 1 * A 1 2 - A 0 2 * A 1 1) := by
+  rw [Matrix.det_succ_column_zero]
+  simp (config := { decide := true }) [Fin.sum_univ_succ]
+  simp (config := { decide := true }) [det_two_aux, Matrix.submatrix_apply, Fin.succAbove]
+  ring
+
+/-- Contrôle positif : le trèfle retrouve la valeur classique t² − t + 1
+sous la normalisation désignée (mineur sans première ligne ni dernière
+colonne).
+
+C'est aussi le polynôme du **nœud torique** `(2, 3)` : `t² − t + 1` s'écrit
+`(t³ + 1)/(t + 1)`, et ses racines sont les racines 6-ièmes **primitives** de
+l'unité. L'article de hidden-phenomena (Michael & Kenta, 03/10/2026,
+https://hidden-phenomena.com/articles/trefoil) identifie ce nœud à la
+**cubique cuspidale** `y² = x³` relevée en polaires sur le tore (`2φ = 3θ`) —
+courbe de bifurcation `4a³ + 27b² = 0` de la fronce de Thom, rejouée côté
+Python dans `IIT/ICT-Series/ICT-23` (`ict/catastrophe.py`, section #19333-G). -/
+theorem alexander_trefoil :
+    alexanderPolynomial trefoil = Polynomial.X ^ 2 - Polynomial.X + 1 := by
+  have hp : arcPartition trefoilDiagram = [[4, 5], [1, 6], [2, 3]] := by
+    decide
+  simp only [alexanderPolynomial, alexanderPolynomialAux, trefoil, hp]
+  simp only [trefoilDiagram]
+  simp (config := { decide := true })
+  rw [det_two_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-- Corollaire de discrimination : le polynôme d'Alexander distingue le
+trèfle du nœud trivial — première non-trivialité du développement, obtenue
+en combinant les deux contrôles ci-dessus (c'est la propriété qui vend
+l'invariant : une valeur non constante sur les classes de nœuds). -/
+theorem trefoil_ne_unknot_alexander :
+    alexanderPolynomial trefoil ≠ alexanderPolynomial unknot := by
+  rw [alexander_trefoil, alexander_unknot]
+  intro h
+  have h2 := congrArg (fun p : Polynomial ℤ => p.coeff 2) h
+  simp [Polynomial.coeff_X] at h2
+
+/-- Invariance sous mutation : le mutant du trèfle (fenêtre pleine, r12) a le
+même polynôme d'Alexander que le trèfle — le polynôme d'Alexander est
+invariant par mutation (Conway 1970), et le trèfle étant amphichiral, son
+mutant reste un trèfle. -/
+theorem alexander_trefoilMutant :
+    alexanderPolynomial trefoilMutant = Polynomial.X ^ 2 - Polynomial.X + 1 := by
+  have hp : arcPartition trefoilMutantDiagram = [[1, 2], [3, 4], [5, 6]] := by
+    decide
+  simp only [alexanderPolynomial, alexanderPolynomialAux, trefoilMutant, hp]
+  dsimp [trefoilMutantDiagram, mutateWindow, KleinRot.apply, trefoilDiagram]
+  simp (config := { decide := true })
+  rw [det_two_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-- Contrôle de discrimination sur le nœud en huit (4_1) : sous la
+normalisation désignée (mineur sans première ligne ni dernière colonne), la
+fonction rend t³ − 2·t² + 2·t sur le code planaire canonique (#17595).
+
+Remarque d'honnêteté : cette valeur n'est PAS le polynôme d'Alexander
+classique de 4_1 (qui vaut t² − 3·t + 1 à un facteur unité près) ; le
+théorème mesure la valeur réellement produite par la fonction désignée sur
+un câblage à 4 croisements qui forme une boucle unique. Le trèfle
+(t² − t + 1) et le déterminant |P(−1)| = 5 = det(4_1) sont bien
+reproduits, mais la forme du polynôme diverge du classique — la matrice
+non signée traite les deux croisements négatifs du code planaire comme
+positifs. La divergence est formalisée ci-dessous
+(`alexander_figureEight_not_classical` : pas une unité) et réparée par la
+variante signée (`alexander_figureEight_signed` : le classique exact).
+-/
+theorem alexander_figureEight :
+    alexanderPolynomial figureEight =
+      Polynomial.X ^ 3 - (2 : Polynomial ℤ) * Polynomial.X ^ 2 + 2 * Polynomial.X := by
+  have hp : arcPartition figureEightDiagram = [[1, 2], [5, 6], [3, 4], [7, 8]] := by
+    decide
+  simp only [alexanderPolynomial, alexanderPolynomialAux, figureEight, hp]
+  simp only [figureEightDiagram]
+  simp (config := { decide := true })
+  rw [det_three_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-! #### Divergence de la classe 4 croisements — diagnostic et variante signée
+
+Diagnostic de l'anomalie #14962 : la ligne `alexanderEntry` est la ligne de
+Fox d'un croisement **positif** (dérivée de la relation de Wirtinger
+`x_o x_i x_o⁻¹ = x_out`, abélianisée). Le code PD ne codant pas la chiralité,
+la matrice non signée traite chaque croisement comme positif. Sur un
+diagramme tout positif — le trèfle `3_1` de `Basic.lean`, dont les trois
+croisements sont documentés positifs — la matrice EST la matrice d'Alexander
+et le mineur désigné retrouve le classique. Sur le nœud en huit `4_1`
+(amphichiral, deux croisements de chaque signe dans tout diagramme alterné
+minimal — le code planaire canonique porte les signes `[−, −, +, +]` lus par
+`crossingSign`), la matrice est fausse sur les croisements négatifs : le
+mineur rend `t³ − 2t² + 2t`, hors de la classe d'unités du classique
+`t² − 3t + 1` (ci-dessous `alexander_figureEight_not_classical`) — la
+divergence n'est donc PAS un artefact de représentant (une symétrisation ou
+une normalisation de Conway `Δ(1) = 1` ne peut pas la réparer), mais un
+artefact de chiralité. Le déterminant, lui, survit : `|P(−1)| = 5 = det(4_1)`
+(`alexander_figureEight_eval_neg_one`).
+
+La variante signée `alexanderPolynomialSigned` reçoit la chiralité en
+donnée et restitue le classique sur le huit : l'étiquetage vrai `[−, −, +, +]`
+rend exactement `−t · (t² − 3t + 1)`, son miroir `[+, +, −, −]` rend
+`−(t² − 3t + 1)` — même classe d'unités, comme l'exige l'amphichiralité. -/
+
+/-- Ligne d'Alexander d'un croisement **négatif** : dérivée de Fox de la
+relation de Wirtinger miroir `x_o⁻¹ x_i x_o = x_out`, multipliée par
+l'unité `t` pour rester polynomiale — `+1` sur l'arc entrant du dessous,
+`−t` sur l'arc sortant du dessous, `t−1` sur l'arc du dessus. Chaque ligne
+somme à zéro, comme pour `alexanderEntry`. -/
+noncomputable def alexanderEntryNeg (c : PDCrossing) (C : List Nat) : Polynomial ℤ :=
+  (if C.contains c.e1 then 1 else 0)
+    + (if C.contains c.e3 then -Polynomial.X else 0)
+    + (if C.contains c.e2 || C.contains c.e4 then Polynomial.X - 1 else 0)
+
+/-- Ligne d'Alexander signée : `true` (croisement positif) → `alexanderEntry`,
+`false` (croisement négatif) → `alexanderEntryNeg`. -/
+noncomputable def alexanderEntrySigned (c : PDCrossing) (s : Bool)
+    (C : List Nat) : Polynomial ℤ :=
+  if s then alexanderEntry c C else alexanderEntryNeg c C
+
+/-- Polynôme d'Alexander signé d'un diagramme : même mineur désigné que
+`alexanderPolynomialAux`, chaque croisement portant son signe (liste des
+signes parallèle aux croisements ; le signe du premier croisement est
+inutilisé — sa ligne est éliminée par le mineur, `getD true` neutre). -/
+noncomputable def alexanderPolynomialSigned (d : KnotDiagram)
+    (signs : List Bool) : AlexanderPoly :=
+  let arcs := arcPartition d
+  match d.crossings, arcs with
+  | [], _ => 1
+  | _ :: rest, arcs' =>
+      if arcs'.length = rest.length + 1 then
+        (Matrix.of fun (i j : Fin rest.length) =>
+          alexanderEntrySigned ((rest[i.1]?).getD ⟨1, 1, 1, 1⟩)
+            ((signs[i.1 + 1]?).getD true) ((arcs'[j.1]?).getD [])).det
+      else 0
+
+/-- La divergence n'est pas une unité : la valeur désignée sur le nœud en
+huit n'est égale à `ε · t^k · (t² − 3t + 1)` pour AUCUNE unité `ε = ±1` et
+aucun exposant `k`. Preuve par un argument de signe sur deux points
+d'évaluation : en `2`, le trinôme vaut `−1`, donc l'identité exigerait
+`4 = −ε · 2^k` — impossible pour `ε = 1` (membre de droite négatif) ; en
+`3`, le trinôme vaut `1`, donc l'identité exigerait `15 = ε · 3^k` —
+impossible pour `ε = −1` (membre de droite négatif). Comme `2^k` et `3^k`
+sont strictement positifs, chaque unité est réfutée par l'un des deux
+points. -/
+theorem alexander_figureEight_not_classical :
+    ¬ ∃ (k : ℕ) (ε : ℤ), ε * ε = 1 ∧
+      alexanderPolynomial figureEight =
+        Polynomial.C ε * Polynomial.X ^ k * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+  rintro ⟨k, ε, hε, h⟩
+  have hε' : ε = 1 ∨ ε = -1 := by
+    rw [← pow_two] at hε
+    exact sq_eq_one_iff.mp hε
+  have h2 := congrArg (Polynomial.eval 2) h
+  rw [alexander_figureEight] at h2
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X] at h2
+  norm_num at h2
+  have h3 := congrArg (Polynomial.eval 3) h
+  rw [alexander_figureEight] at h3
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X] at h3
+  norm_num at h3
+  have h2p : (0 : ℤ) < 2 ^ k := by positivity
+  have h3p : (0 : ℤ) < 3 ^ k := by positivity
+  rcases hε' with rfl | rfl <;> omega
+
+/-- Le déterminant du nœud survit à la divergence : la valeur désignée en
+`−1` vaut `−5`, donc `|P(−1)| = 5 = det(4_1)` (classique : pour un nœud,
+`det = |Δ(−1)|` ; `4_1` est amphichiral). Le mineur non signé perd la forme
+du polynôme mais pas sa valeur en `−1`. -/
+theorem alexander_figureEight_eval_neg_one :
+    (alexanderPolynomial figureEight).eval (-1) = -5 := by
+  rw [alexander_figureEight]
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+    Polynomial.eval_X, pow_two, pow_three]
+  norm_num
+
+/-- La variante signée restitue le classique sur le nœud en huit :
+l'étiquetage vrai `[−, −, +, +]` du code planaire canonique (celui que lit
+`crossingSign`, cf `Jones.writhe_figureEightDiagram`) rend exactement
+`−t · (t² − 3t + 1)` sous le même mineur désigné — la classe d'unités du
+classique `t² − 3t + 1`. -/
+theorem alexander_figureEight_signed :
+    alexanderPolynomialSigned figureEightDiagram [false, false, true, true]
+      = -(Polynomial.X * (Polynomial.X ^ 2 - 3 * Polynomial.X + 1)) := by
+  simp only [alexanderPolynomialSigned, figureEightDiagram]
+  simp (config := { decide := true })
+  rw [det_three_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntrySigned, alexanderEntry, alexanderEntryNeg]
+  ring
+
+/-- Miroir du précédent : l'étiquetage opposé `[+, +, −, −]` rend
+`−(t² − 3t + 1)` — même classe d'unités que le précédent, comme l'exige
+l'amphichiralité (les deux diagrammes miroirs représentent le même nœud). -/
+theorem alexander_figureEight_signed_mirror :
+    alexanderPolynomialSigned figureEightDiagram [true, true, false, false]
+      = -(Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+  simp only [alexanderPolynomialSigned, figureEightDiagram]
+  simp (config := { decide := true })
+  rw [det_three_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntrySigned, alexanderEntry, alexanderEntryNeg]
+  ring
+
+set_option maxRecDepth 8000 in
+set_option maxHeartbeats 32000000 in
+/-- Polynôme d'Alexander trivial du nœud de Conway — contenu classique
+Δ(t) = 1 ; sous la normalisation désignée, le mineur vaut l'unité −t⁶
+(arbitrage de la note de §4 tranché : valeur désignée exacte). -/
+theorem conway_trivial_alexander :
+    alexanderPolynomial conwayKnot = -(Polynomial.X ^ 6) := by
+  have hp := conway_arcPartition
+  simp only [alexanderPolynomial, alexanderPolynomialAux, conwayKnot, hp]
+  simp only [conwayKnotDiagram]
+  have hlen : ([[13], [22], [3, 4], [1, 2], [5, 6], [9, 7, 8], [20, 21],
+      [10, 11, 12], [18, 19], [14, 15], [16, 17]] : List (List Nat)).length =
+      ([⟨7, 2, 6, 1⟩, ⟨3, 8, 2, 7⟩, ⟨4, 12, 5, 11⟩, ⟨12, 6, 13, 5⟩,
+      ⟨16, 9, 15, 8⟩, ⟨9, 21, 10, 20⟩, ⟨17, 11, 18, 10⟩,
+      ⟨13, 19, 14, 18⟩, ⟨19, 15, 20, 14⟩, ⟨22, 17, 21, 16⟩] : List PDCrossing).length + 1 := by
+    decide
+  rw [if_pos hlen]
+  show (Matrix.of fun (i j : Fin 10) => alexanderEntry
+        ([⟨7, 2, 6, 1⟩, ⟨3, 8, 2, 7⟩, ⟨4, 12, 5, 11⟩, ⟨12, 6, 13, 5⟩,
+      ⟨16, 9, 15, 8⟩, ⟨9, 21, 10, 20⟩, ⟨17, 11, 18, 10⟩,
+      ⟨13, 19, 14, 18⟩, ⟨19, 15, 20, 14⟩, ⟨22, 17, 21, 16⟩][i.1]?.getD ⟨1, 1, 1, 1⟩)
+        ([[13], [22], [3, 4], [1, 2], [5, 6], [9, 7, 8], [20, 21],
+      [10, 11, 12], [18, 19], [14, 15], [16, 17]][j.1]?.getD [])).det = -(Polynomial.X ^ 6)
+  set A0 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h0
+  have hM0 : (Matrix.of fun (i j : Fin 10) => alexanderEntry
+        ([⟨7, 2, 6, 1⟩, ⟨3, 8, 2, 7⟩, ⟨4, 12, 5, 11⟩, ⟨12, 6, 13, 5⟩,
+      ⟨16, 9, 15, 8⟩, ⟨9, 21, 10, 20⟩, ⟨17, 11, 18, 10⟩,
+      ⟨13, 19, 14, 18⟩, ⟨19, 15, 20, 14⟩, ⟨22, 17, 21, 16⟩][i.1]?.getD ⟨1, 1, 1, 1⟩)
+        ([[13], [22], [3, 4], [1, 2], [5, 6], [9, 7, 8], [20, 21],
+      [10, 11, 12], [18, 19], [14, 15], [16, 17]][j.1]?.getD [])) = A0 := by
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp (config := { decide := true }) [Matrix.of_apply,
+        alexanderEntry, h0] <;>
+      first
+      | rfl
+      | ring
+  rw [hM0]
+  set A1 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h1
+  have e1 : A1 = A0.updateRow 7 (A0 7 + ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ) • A0 3) := by
+    rw [h1, h0]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d1 : A1.det = A0.det := by
+    rw [e1, Matrix.det_updateRow_add_smul_self A0 (by decide : ((7 : Fin 10) ≠ 3)) ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  set A2 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h2
+  have e2 : A2 = A1.updateRow 3 (A1 3 + (1 : Polynomial ℤ) • A1 0) := by
+    rw [h2, h1]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d2 : A2.det = A1.det := by
+    rw [e2, Matrix.det_updateRow_add_smul_self A1 (by decide : ((3 : Fin 10) ≠ 0)) (1 : Polynomial ℤ)]
+  set A3 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h3
+  have e3 : A3 = A2.updateRow 0 (A2 0 + (-1 : Polynomial ℤ) • A2 3) := by
+    rw [h3, h2]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d3 : A3.det = A2.det := by
+    rw [e3, Matrix.det_updateRow_add_smul_self A2 (by decide : ((0 : Fin 10) ≠ 3)) (-1 : Polynomial ℤ)]
+  set A4 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h4
+  have e4 : A4 = A3.updateRow 3 (A3 3 + (1 : Polynomial ℤ) • A3 0) := by
+    rw [h4, h3]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d4 : A4.det = A3.det := by
+    rw [e4, Matrix.det_updateRow_add_smul_self A3 (by decide : ((3 : Fin 10) ≠ 0)) (1 : Polynomial ℤ)]
+  set A5 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h5
+  have e5 : A5 = A4.updateRow 3 (A4 3 + ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ) • A4 1) := by
+    rw [h5, h4]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d5 : A5.det = A4.det := by
+    rw [e5, Matrix.det_updateRow_add_smul_self A4 (by decide : ((3 : Fin 10) ≠ 1)) ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)]
+  set A6 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h6
+  have e6 : A6 = A5.updateCol 3 (fun r => A5 r 3 + (1 : Polynomial ℤ) • A5 r 1) := by
+    rw [h6, h5]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d6 : A6.det = A5.det := by
+    rw [e6, Matrix.det_updateCol_add_smul_self A5 (by decide : ((3 : Fin 10) ≠ 1)) (1 : Polynomial ℤ)]
+  set A7 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h7
+  have e7 : A7 = A6.updateCol 1 (fun r => A6 r 1 + (-1 : Polynomial ℤ) • A6 r 3) := by
+    rw [h7, h6]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d7 : A7.det = A6.det := by
+    rw [e7, Matrix.det_updateCol_add_smul_self A6 (by decide : ((1 : Fin 10) ≠ 3)) (-1 : Polynomial ℤ)]
+  set A8 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h8
+  have e8 : A8 = A7.updateCol 3 (fun r => A7 r 3 + (1 : Polynomial ℤ) • A7 r 1) := by
+    rw [h8, h7]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d8 : A8.det = A7.det := by
+    rw [e8, Matrix.det_updateCol_add_smul_self A7 (by decide : ((3 : Fin 10) ≠ 1)) (1 : Polynomial ℤ)]
+  set A9 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h9
+  have e9 : A9 = A8.updateRow 7 (A8 7 + (-1 : Polynomial ℤ) • A8 4) := by
+    rw [h9, h8]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d9 : A9.det = A8.det := by
+    rw [e9, Matrix.det_updateRow_add_smul_self A8 (by decide : ((7 : Fin 10) ≠ 4)) (-1 : Polynomial ℤ)]
+  set A10 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h10
+  have e10 : A10 = A9.updateRow 8 (A9 8 + ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ) • A9 4) := by
+    rw [h10, h9]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d10 : A10.det = A9.det := by
+    rw [e10, Matrix.det_updateRow_add_smul_self A9 (by decide : ((8 : Fin 10) ≠ 4)) ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)]
+  set A11 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h11
+  have e11 : A11 = A10.updateRow 4 (A10 4 + (1 : Polynomial ℤ) • A10 2) := by
+    rw [h11, h10]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d11 : A11.det = A10.det := by
+    rw [e11, Matrix.det_updateRow_add_smul_self A10 (by decide : ((4 : Fin 10) ≠ 2)) (1 : Polynomial ℤ)]
+  set A12 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h12
+  have e12 : A12 = A11.updateRow 2 (A11 2 + (-1 : Polynomial ℤ) • A11 4) := by
+    rw [h12, h11]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d12 : A12.det = A11.det := by
+    rw [e12, Matrix.det_updateRow_add_smul_self A11 (by decide : ((2 : Fin 10) ≠ 4)) (-1 : Polynomial ℤ)]
+  set A13 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h13
+  have e13 : A13 = A12.updateRow 4 (A12 4 + (1 : Polynomial ℤ) • A12 2) := by
+    rw [h13, h12]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d13 : A13.det = A12.det := by
+    rw [e13, Matrix.det_updateRow_add_smul_self A12 (by decide : ((4 : Fin 10) ≠ 2)) (1 : Polynomial ℤ)]
+  set A14 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h14
+  have e14 : A14 = A13.updateCol 9 (fun r => A13 r 9 + (1 : Polynomial ℤ) • A13 r 2) := by
+    rw [h14, h13]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d14 : A14.det = A13.det := by
+    rw [e14, Matrix.det_updateCol_add_smul_self A13 (by decide : ((9 : Fin 10) ≠ 2)) (1 : Polynomial ℤ)]
+  set A15 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h15
+  have e15 : A15 = A14.updateCol 2 (fun r => A14 r 2 + (-1 : Polynomial ℤ) • A14 r 9) := by
+    rw [h15, h14]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d15 : A15.det = A14.det := by
+    rw [e15, Matrix.det_updateCol_add_smul_self A14 (by decide : ((2 : Fin 10) ≠ 9)) (-1 : Polynomial ℤ)]
+  set A16 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h16
+  have e16 : A16 = A15.updateCol 9 (fun r => A15 r 9 + (1 : Polynomial ℤ) • A15 r 2) := by
+    rw [h16, h15]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d16 : A16.det = A15.det := by
+    rw [e16, Matrix.det_updateCol_add_smul_self A15 (by decide : ((9 : Fin 10) ≠ 2)) (1 : Polynomial ℤ)]
+  set A17 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h17
+  have e17 : A17 = A16.updateRow 7 (A16 7 + ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ) • A16 6) := by
+    rw [h17, h16]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d17 : A17.det = A16.det := by
+    rw [e17, Matrix.det_updateRow_add_smul_self A16 (by decide : ((7 : Fin 10) ≠ 6)) ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)]
+  set A18 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h18
+  have e18 : A18 = A17.updateRow 8 (A17 8 + ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ) • A17 6) := by
+    rw [h18, h17]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d18 : A18.det = A17.det := by
+    rw [e18, Matrix.det_updateRow_add_smul_self A17 (by decide : ((8 : Fin 10) ≠ 6)) ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  set A19 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h19
+  have e19 : A19 = A18.updateRow 6 (A18 6 + (1 : Polynomial ℤ) • A18 3) := by
+    rw [h19, h18]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d19 : A19.det = A18.det := by
+    rw [e19, Matrix.det_updateRow_add_smul_self A18 (by decide : ((6 : Fin 10) ≠ 3)) (1 : Polynomial ℤ)]
+  set A20 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h20
+  have e20 : A20 = A19.updateRow 3 (A19 3 + (-1 : Polynomial ℤ) • A19 6) := by
+    rw [h20, h19]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d20 : A20.det = A19.det := by
+    rw [e20, Matrix.det_updateRow_add_smul_self A19 (by decide : ((3 : Fin 10) ≠ 6)) (-1 : Polynomial ℤ)]
+  set A21 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h21
+  have e21 : A21 = A20.updateRow 6 (A20 6 + (1 : Polynomial ℤ) • A20 3) := by
+    rw [h21, h20]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d21 : A21.det = A20.det := by
+    rw [e21, Matrix.det_updateRow_add_smul_self A20 (by decide : ((6 : Fin 10) ≠ 3)) (1 : Polynomial ℤ)]
+  set A22 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h22
+  have e22 : A22 = A21.updateCol 8 (fun r => A21 r 8 + (1 : Polynomial ℤ) • A21 r 3) := by
+    rw [h22, h21]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d22 : A22.det = A21.det := by
+    rw [e22, Matrix.det_updateCol_add_smul_self A21 (by decide : ((8 : Fin 10) ≠ 3)) (1 : Polynomial ℤ)]
+  set A23 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h23
+  have e23 : A23 = A22.updateCol 3 (fun r => A22 r 3 + (-1 : Polynomial ℤ) • A22 r 8) := by
+    rw [h23, h22]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d23 : A23.det = A22.det := by
+    rw [e23, Matrix.det_updateCol_add_smul_self A22 (by decide : ((3 : Fin 10) ≠ 8)) (-1 : Polynomial ℤ)]
+  set A24 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h24
+  have e24 : A24 = A23.updateCol 8 (fun r => A23 r 8 + (1 : Polynomial ℤ) • A23 r 3) := by
+    rw [h24, h23]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d24 : A24.det = A23.det := by
+    rw [e24, Matrix.det_updateCol_add_smul_self A23 (by decide : ((8 : Fin 10) ≠ 3)) (1 : Polynomial ℤ)]
+  set A25 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h25
+  have e25 : A25 = A24.updateRow 5 (A24 5 + ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ) • A24 9) := by
+    rw [h25, h24]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d25 : A25.det = A24.det := by
+    rw [e25, Matrix.det_updateRow_add_smul_self A24 (by decide : ((5 : Fin 10) ≠ 9)) ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)]
+  set A26 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h26
+  have e26 : A26 = A25.updateRow 8 (A25 8 + (-1 : Polynomial ℤ) • A25 9) := by
+    rw [h26, h25]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d26 : A26.det = A25.det := by
+    rw [e26, Matrix.det_updateRow_add_smul_self A25 (by decide : ((8 : Fin 10) ≠ 9)) (-1 : Polynomial ℤ)]
+  set A27 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  ] with h27
+  have e27 : A27 = A26.updateRow 9 (A26 9 + (1 : Polynomial ℤ) • A26 4) := by
+    rw [h27, h26]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d27 : A27.det = A26.det := by
+    rw [e27, Matrix.det_updateRow_add_smul_self A26 (by decide : ((9 : Fin 10) ≠ 4)) (1 : Polynomial ℤ)]
+  set A28 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  ] with h28
+  have e28 : A28 = A27.updateRow 4 (A27 4 + (-1 : Polynomial ℤ) • A27 9) := by
+    rw [h28, h27]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d28 : A28.det = A27.det := by
+    rw [e28, Matrix.det_updateRow_add_smul_self A27 (by decide : ((4 : Fin 10) ≠ 9)) (-1 : Polynomial ℤ)]
+  set A29 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  ] with h29
+  have e29 : A29 = A28.updateRow 9 (A28 9 + (1 : Polynomial ℤ) • A28 4) := by
+    rw [h29, h28]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d29 : A29.det = A28.det := by
+    rw [e29, Matrix.det_updateRow_add_smul_self A28 (by decide : ((9 : Fin 10) ≠ 4)) (1 : Polynomial ℤ)]
+  set A30 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  ] with h30
+  have e30 : A30 = A29.updateCol 6 (fun r => A29 r 6 + (1 : Polynomial ℤ) • A29 r 4) := by
+    rw [h30, h29]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d30 : A30.det = A29.det := by
+    rw [e30, Matrix.det_updateCol_add_smul_self A29 (by decide : ((6 : Fin 10) ≠ 4)) (1 : Polynomial ℤ)]
+  set A31 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  ] with h31
+  have e31 : A31 = A30.updateCol 4 (fun r => A30 r 4 + (-1 : Polynomial ℤ) • A30 r 6) := by
+    rw [h31, h30]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d31 : A31.det = A30.det := by
+    rw [e31, Matrix.det_updateCol_add_smul_self A30 (by decide : ((4 : Fin 10) ≠ 6)) (-1 : Polynomial ℤ)]
+  set A32 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  ] with h32
+  have e32 : A32 = A31.updateCol 6 (fun r => A31 r 6 + (1 : Polynomial ℤ) • A31 r 4) := by
+    rw [h32, h31]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d32 : A32.det = A31.det := by
+    rw [e32, Matrix.det_updateCol_add_smul_self A31 (by decide : ((6 : Fin 10) ≠ 4)) (1 : Polynomial ℤ)]
+  set A33 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 + 2 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  ] with h33
+  have e33 : A33 = A32.updateRow 7 (A32 7 + ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ) • A32 6) := by
+    rw [h33, h32]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d33 : A33.det = A32.det := by
+    rw [e33, Matrix.det_updateRow_add_smul_self A32 (by decide : ((7 : Fin 10) ≠ 6)) ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)]
+  set A34 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 + 2 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h34
+  have e34 : A34 = A33.updateRow 9 (A33 9 + (-1 : Polynomial ℤ) • A33 6) := by
+    rw [h34, h33]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d34 : A34.det = A33.det := by
+    rw [e34, Matrix.det_updateRow_add_smul_self A33 (by decide : ((9 : Fin 10) ≠ 6)) (-1 : Polynomial ℤ)]
+  set A35 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 + 2 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h35
+  have e35 : A35 = A34.updateRow 6 (A34 6 + (1 : Polynomial ℤ) • A34 5) := by
+    rw [h35, h34]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d35 : A35.det = A34.det := by
+    rw [e35, Matrix.det_updateRow_add_smul_self A34 (by decide : ((6 : Fin 10) ≠ 5)) (1 : Polynomial ℤ)]
+  set A36 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), (-1 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 + 2 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h36
+  have e36 : A36 = A35.updateRow 5 (A35 5 + (-1 : Polynomial ℤ) • A35 6) := by
+    rw [h36, h35]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d36 : A36.det = A35.det := by
+    rw [e36, Matrix.det_updateRow_add_smul_self A35 (by decide : ((5 : Fin 10) ≠ 6)) (-1 : Polynomial ℤ)]
+  set A37 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 + 2 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h37
+  have e37 : A37 = A36.updateRow 6 (A36 6 + (1 : Polynomial ℤ) • A36 5) := by
+    rw [h37, h36]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d37 : A37.det = A36.det := by
+    rw [e37, Matrix.det_updateRow_add_smul_self A36 (by decide : ((6 : Fin 10) ≠ 5)) (1 : Polynomial ℤ)]
+  set A38 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 + 2 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 + 2 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h38
+  have e38 : A38 = A37.updateCol 6 (fun r => A37 r 6 + (1 : Polynomial ℤ) • A37 r 5) := by
+    rw [h38, h37]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d38 : A38.det = A37.det := by
+    rw [e38, Matrix.det_updateCol_add_smul_self A37 (by decide : ((6 : Fin 10) ≠ 5)) (1 : Polynomial ℤ)]
+  set A39 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 + 2 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h39
+  have e39 : A39 = A38.updateCol 5 (fun r => A38 r 5 + (-1 : Polynomial ℤ) • A38 r 6) := by
+    rw [h39, h38]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d39 : A39.det = A38.det := by
+    rw [e39, Matrix.det_updateCol_add_smul_self A38 (by decide : ((5 : Fin 10) ≠ 6)) (-1 : Polynomial ℤ)]
+  set A40 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 + 2 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h40
+  have e40 : A40 = A39.updateCol 6 (fun r => A39 r 6 + (1 : Polynomial ℤ) • A39 r 5) := by
+    rw [h40, h39]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d40 : A40.det = A39.det := by
+    rw [e40, Matrix.det_updateCol_add_smul_self A39 (by decide : ((6 : Fin 10) ≠ 5)) (1 : Polynomial ℤ)]
+  set A41 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 4 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - 3 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - 2 * Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h41
+  have e41 : A41 = A40.updateRow 7 (A40 7 + ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ) • A40 6) := by
+    rw [h41, h40]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d41 : A41.det = A40.det := by
+    rw [e41, Matrix.det_updateRow_add_smul_self A40 (by decide : ((7 : Fin 10) ≠ 6)) ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ)]
+  set A42 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 4 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - 3 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - 2 * Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h42
+  have e42 : A42 = A41.updateRow 8 (A41 8 + ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ) • A41 6) := by
+    rw [h42, h41]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d42 : A42.det = A41.det := by
+    rw [e42, Matrix.det_updateRow_add_smul_self A41 (by decide : ((8 : Fin 10) ≠ 6)) ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)]
+  set A43 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (-1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 4 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - 3 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - 2 * Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - 2 * Polynomial.X ^ 2 + Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h43
+  have e43 : A43 = A42.updateRow 9 (A42 9 + ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ) • A42 6) := by
+    rw [h43, h42]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d43 : A43.det = A42.det := by
+    rw [e43, Matrix.det_updateRow_add_smul_self A42 (by decide : ((9 : Fin 10) ≠ 6)) ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)]
+  set A44 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 4 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 4 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - 3 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - 2 * Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - 2 * Polynomial.X ^ 2 + Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h44
+  have e44 : A44 = A43.updateCol 7 (fun r => A43 r 7 + (1 : Polynomial ℤ) • A43 r 6) := by
+    rw [h44, h43]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d44 : A44.det = A43.det := by
+    rw [e44, Matrix.det_updateCol_add_smul_self A43 (by decide : ((7 : Fin 10) ≠ 6)) (1 : Polynomial ℤ)]
+  set A45 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 4 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - 3 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - 2 * Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - 2 * Polynomial.X ^ 2 + Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h45
+  have e45 : A45 = A44.updateCol 6 (fun r => A44 r 6 + (-1 : Polynomial ℤ) • A44 r 7) := by
+    rw [h45, h44]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d45 : A45.det = A44.det := by
+    rw [e45, Matrix.det_updateCol_add_smul_self A44 (by decide : ((6 : Fin 10) ≠ 7)) (-1 : Polynomial ℤ)]
+  set A46 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 4 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - 3 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - 2 * Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - 2 * Polynomial.X ^ 2 + Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h46
+  have e46 : A46 = A45.updateCol 7 (fun r => A45 r 7 + (1 : Polynomial ℤ) • A45 r 6) := by
+    rw [h46, h45]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d46 : A46.det = A45.det := by
+    rw [e46, Matrix.det_updateCol_add_smul_self A45 (by decide : ((7 : Fin 10) ≠ 6)) (1 : Polynomial ℤ)]
+  set A47 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 3 * Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + 2 * Polynomial.X ^ 4 - Polynomial.X ^ 5 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - 2 * Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - 2 * Polynomial.X ^ 2 + Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h47
+  have e47 : A47 = A46.updateRow 7 (A46 7 + ((-1 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ) • A46 9) := by
+    rw [h47, h46]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d47 : A47.det = A46.det := by
+    rw [e47, Matrix.det_updateRow_add_smul_self A46 (by decide : ((7 : Fin 10) ≠ 9)) ((-1 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)]
+  set A48 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 3 * Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + 2 * Polynomial.X ^ 4 - Polynomial.X ^ 5 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 - Polynomial.X ^ 3 + 2 * Polynomial.X ^ 4 - Polynomial.X ^ 5 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h48
+  have e48 : A48 = A47.updateRow 9 (A47 9 + (1 : Polynomial ℤ) • A47 7) := by
+    rw [h48, h47]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d48 : A48.det = A47.det := by
+    rw [e48, Matrix.det_updateRow_add_smul_self A47 (by decide : ((9 : Fin 10) ≠ 7)) (1 : Polynomial ℤ)]
+  set A49 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 - Polynomial.X ^ 3 + 2 * Polynomial.X ^ 4 - Polynomial.X ^ 5 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ)]
+  ] with h49
+  have e49 : A49 = A48.updateRow 7 (A48 7 + (-1 : Polynomial ℤ) • A48 9) := by
+    rw [h49, h48]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d49 : A49.det = A48.det := by
+    rw [e49, Matrix.det_updateRow_add_smul_self A48 (by decide : ((7 : Fin 10) ≠ 9)) (-1 : Polynomial ℤ)]
+  set A50 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 3 * Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + 2 * Polynomial.X ^ 4 - Polynomial.X ^ 5 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h50
+  have e50 : A50 = A49.updateRow 9 (A49 9 + (1 : Polynomial ℤ) • A49 7) := by
+    rw [h50, h49]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d50 : A50.det = A49.det := by
+    rw [e50, Matrix.det_updateRow_add_smul_self A49 (by decide : ((9 : Fin 10) ≠ 7)) (1 : Polynomial ℤ)]
+  set A51 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 3 * Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + 2 * Polynomial.X ^ 4 - Polynomial.X ^ 5 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 3 * Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)]
+  ] with h51
+  have e51 : A51 = A50.updateCol 9 (fun r => A50 r 9 + (1 : Polynomial ℤ) • A50 r 7) := by
+    rw [h51, h50]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d51 : A51.det = A50.det := by
+    rw [e51, Matrix.det_updateCol_add_smul_self A50 (by decide : ((9 : Fin 10) ≠ 7)) (1 : Polynomial ℤ)]
+  set A52 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + 2 * Polynomial.X ^ 4 - Polynomial.X ^ 5 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 3 * Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)]
+  ] with h52
+  have e52 : A52 = A51.updateCol 7 (fun r => A51 r 7 + (-1 : Polynomial ℤ) • A51 r 9) := by
+    rw [h52, h51]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d52 : A52.det = A51.det := by
+    rw [e52, Matrix.det_updateCol_add_smul_self A51 (by decide : ((7 : Fin 10) ≠ 9)) (-1 : Polynomial ℤ)]
+  set A53 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + 2 * Polynomial.X ^ 4 - Polynomial.X ^ 5 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 3 * Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)]
+  ] with h53
+  have e53 : A53 = A52.updateCol 9 (fun r => A52 r 9 + (1 : Polynomial ℤ) • A52 r 7) := by
+    rw [h53, h52]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateCol_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d53 : A53.det = A52.det := by
+    rw [e53, Matrix.det_updateCol_add_smul_self A52 (by decide : ((9 : Fin 10) ≠ 7)) (1 : Polynomial ℤ)]
+  set A54 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X ^ 3 + 3 * Polynomial.X ^ 4 - 6 * Polynomial.X ^ 5 + 8 * Polynomial.X ^ 6 - 7 * Polynomial.X ^ 7 + 4 * Polynomial.X ^ 8 - Polynomial.X ^ 9 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 - 4 * Polynomial.X ^ 3 + 7 * Polynomial.X ^ 4 - 10 * Polynomial.X ^ 5 + 8 * Polynomial.X ^ 6 - 4 * Polynomial.X ^ 7 + Polynomial.X ^ 8 : Polynomial ℤ)]
+  ] with h54
+  have e54 : A54 = A53.updateRow 9 (((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ) • A53 9) := by
+    rw [h54, h53]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have eself : A53.updateRow 9 (A53 9) = A53 := by
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> simp [Matrix.updateRow_apply]
+  have d54 : A54.det = ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ) * A53.det := by
+    rw [e54, Matrix.det_updateRow_smul A53 9 ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ) (A53 9), eself]
+  set A55 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (-1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (1 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X ^ 4 : Polynomial ℤ)]
+  ] with h55
+  have e55 : A55 = A54.updateRow 9 (A54 9 + ((0 : Polynomial ℤ) - Polynomial.X ^ 2 + 2 * Polynomial.X ^ 3 - 2 * Polynomial.X ^ 4 + Polynomial.X ^ 5 : Polynomial ℤ) • A54 8) := by
+    rw [h55, h54]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d55 : A55.det = A54.det := by
+    rw [e55, Matrix.det_updateRow_add_smul_self A54 (by decide : ((9 : Fin 10) ≠ 8)) ((0 : Polynomial ℤ) - Polynomial.X ^ 2 + 2 * Polynomial.X ^ 3 - 2 * Polynomial.X ^ 4 + Polynomial.X ^ 5 : Polynomial ℤ)]
+  have hchain : A55.det = ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ) * A0.det := by
+    rw [d55, d54, d53, d52, d51, d50, d49, d48, d47, d46, d45, d44, d43, d42, d41, d40, d39, d38, d37, d36, d35, d34, d33, d32, d31, d30, d29, d28, d27, d26, d25, d24, d23, d22, d21, d20, d19, d18, d17, d16, d15, d14, d13, d12, d11, d10, d9, d8, d7, d6, d5, d4, d3, d2, d1]
+  have hT : A55.BlockTriangular id := by
+    intro i j hij
+    rw [h55]
+    fin_cases i <;> fin_cases j <;>
+      first
+      | exact absurd hij (by decide)
+      | simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul]
+  have hdiag : (∏ i, A55 i i) = ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ) * ( -(Polynomial.X ^ 6)) := by
+    rw [h55]
+    simp only [Fin.prod_univ_succ, Matrix.of_apply, Matrix.cons_val_zero,
+      Matrix.cons_val_succ, Fin.isValue]
+    have htail : ∀ g : Fin 0 → Polynomial ℤ, (∏ i, g i) = 1 := fun g =>
+      Finset.prod_eq_one (fun x _ => Fin.elim0 x)
+    rw [htail _]
+    ring
+  have ha : ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ) ≠ 0 := by
+    intro hz
+    have c1 := congrArg (fun p : Polynomial ℤ => p.coeff 1) hz
+    simp [Polynomial.coeff_sub, Polynomial.coeff_add,
+      Polynomial.coeff_X_pow] at c1
+  have key : ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ) * A0.det = ((0 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 - 2 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ) * (-(Polynomial.X ^ 6)) := by
+    rw [← hchain, Matrix.det_of_upperTriangular hT, hdiag]
+  exact mul_left_cancel₀ ha key
+
+set_option maxRecDepth 8000 in
+set_option maxHeartbeats 32000000 in
+/-- Polynôme d'Alexander trivial du nœud de Kinoshita-Terasaka — contenu
+classique Δ(t) = 1 ; sous la normalisation désignée, le mineur vaut
+l'unité t⁵ (même discipline que `conway_trivial_alexander` : élimination
+de Gauss déterministe sur ℤ[t] par transvections uniquement, déterminant
+invariant de proche en proche — chaque `d_k` est `det_updateRow_add_smul_self`). -/
+theorem KT_trivial_alexander :
+    alexanderPolynomial kinoshitaTerasakaKnot = Polynomial.X ^ 5 := by
+  have hp := kinoshitaTerasaka_arcPartition
+  simp only [alexanderPolynomial, alexanderPolynomialAux, kinoshitaTerasakaKnot, hp]
+  simp only [kinoshitaTerasakaDiagram]
+  have hlen : ([[13], [22], [3, 4], [1, 2], [5, 6], [9, 7, 8], [14, 15], [10, 11, 12], [18, 19], [20, 21], [16, 17]] : List (List Nat)).length =
+      ([⟨7, 2, 6, 1⟩, ⟨3, 8, 2, 7⟩, ⟨4, 12, 5, 11⟩, ⟨12, 6, 13, 5⟩, ⟨17, 9, 18, 8⟩, ⟨9, 15, 10, 14⟩, ⟨20, 11, 19, 10⟩, ⟨14, 19, 13, 18⟩, ⟨15, 21, 16, 20⟩, ⟨21, 17, 22, 16⟩] : List PDCrossing).length + 1 := by
+    decide
+  rw [if_pos hlen]
+  show (Matrix.of fun (i j : Fin 10) => alexanderEntry
+        ([⟨7, 2, 6, 1⟩, ⟨3, 8, 2, 7⟩, ⟨4, 12, 5, 11⟩, ⟨12, 6, 13, 5⟩, ⟨17, 9, 18, 8⟩, ⟨9, 15, 10, 14⟩, ⟨20, 11, 19, 10⟩, ⟨14, 19, 13, 18⟩, ⟨15, 21, 16, 20⟩, ⟨21, 17, 22, 16⟩][i.1]?.getD ⟨1, 1, 1, 1⟩)
+        ([[13], [22], [3, 4], [1, 2], [5, 6], [9, 7, 8], [14, 15], [10, 11, 12], [18, 19], [20, 21], [16, 17]][j.1]?.getD [])).det = Polynomial.X ^ 5
+  set A0 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  ] with h0
+  have hM0 : (Matrix.of fun (i j : Fin 10) => alexanderEntry
+        ([⟨7, 2, 6, 1⟩, ⟨3, 8, 2, 7⟩, ⟨4, 12, 5, 11⟩, ⟨12, 6, 13, 5⟩, ⟨17, 9, 18, 8⟩, ⟨9, 15, 10, 14⟩, ⟨20, 11, 19, 10⟩, ⟨14, 19, 13, 18⟩, ⟨15, 21, 16, 20⟩, ⟨21, 17, 22, 16⟩][i.1]?.getD ⟨1, 1, 1, 1⟩)
+        ([[13], [22], [3, 4], [1, 2], [5, 6], [9, 7, 8], [14, 15], [10, 11, 12], [18, 19], [20, 21], [16, 17]][j.1]?.getD [])) = A0 := by
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp (config := { decide := true }) [Matrix.of_apply,
+        alexanderEntry, h0] <;>
+      first
+      | rfl
+      | ring
+  rw [hM0]
+  set A1 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  ] with h1
+  have e1 : A1 = A0.updateRow 0 (A0 0 + ((1 : Polynomial ℤ) : Polynomial ℤ) • A0 3) := by
+    rw [h1, h0]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d1 : A1.det = A0.det := by
+    rw [e1, Matrix.det_updateRow_add_smul_self A0 (by decide : ((0 : Fin 10) ≠ 3)) ((1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A2 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  ] with h2
+  have e2 : A2 = A1.updateRow 3 (A1 3 + ((-1 : Polynomial ℤ) : Polynomial ℤ) • A1 0) := by
+    rw [h2, h1]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d2 : A2.det = A1.det := by
+    rw [e2, Matrix.det_updateRow_add_smul_self A1 (by decide : ((3 : Fin 10) ≠ 0)) ((-1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A3 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  ] with h3
+  have e3 : A3 = A2.updateRow 7 (A2 7 + ((-1 : Polynomial ℤ) : Polynomial ℤ) • A2 0) := by
+    rw [h3, h2]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d3 : A3.det = A2.det := by
+    rw [e3, Matrix.det_updateRow_add_smul_self A2 (by decide : ((7 : Fin 10) ≠ 0)) ((-1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A4 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)]
+  ] with h4
+  have e4 : A4 = A3.updateRow 1 (A3 1 + ((1 : Polynomial ℤ) : Polynomial ℤ) • A3 9) := by
+    rw [h4, h3]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d4 : A4.det = A3.det := by
+    rw [e4, Matrix.det_updateRow_add_smul_self A3 (by decide : ((1 : Fin 10) ≠ 9)) ((1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A5 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h5
+  have e5 : A5 = A4.updateRow 9 (A4 9 + ((-1 : Polynomial ℤ) : Polynomial ℤ) • A4 1) := by
+    rw [h5, h4]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d5 : A5.det = A4.det := by
+    rw [e5, Matrix.det_updateRow_add_smul_self A4 (by decide : ((9 : Fin 10) ≠ 1)) ((-1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A6 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h6
+  have e6 : A6 = A5.updateRow 9 (A5 9 + ((1 : Polynomial ℤ) : Polynomial ℤ) • A5 2) := by
+    rw [h6, h5]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d6 : A6.det = A5.det := by
+    rw [e6, Matrix.det_updateRow_add_smul_self A5 (by decide : ((9 : Fin 10) ≠ 2)) ((1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A7 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h7
+  have e7 : A7 = A6.updateRow 7 (A6 7 + ((-1 : Polynomial ℤ) : Polynomial ℤ) • A6 3) := by
+    rw [h7, h6]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d7 : A7.det = A6.det := by
+    rw [e7, Matrix.det_updateRow_add_smul_self A6 (by decide : ((7 : Fin 10) ≠ 3)) ((-1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A8 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h8
+  have e8 : A8 = A7.updateRow 3 (A7 3 + ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ) • A7 9) := by
+    rw [h8, h7]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d8 : A8.det = A7.det := by
+    rw [e8, Matrix.det_updateRow_add_smul_self A7 (by decide : ((3 : Fin 10) ≠ 9)) ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)]
+  set A9 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h9
+  have e9 : A9 = A8.updateRow 3 (A8 3 + ((1 : Polynomial ℤ) : Polynomial ℤ) • A8 9) := by
+    rw [h9, h8]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d9 : A9.det = A8.det := by
+    rw [e9, Matrix.det_updateRow_add_smul_self A8 (by decide : ((3 : Fin 10) ≠ 9)) ((1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A10 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h10
+  have e10 : A10 = A9.updateRow 9 (A9 9 + ((-1 : Polynomial ℤ) : Polynomial ℤ) • A9 3) := by
+    rw [h10, h9]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d10 : A10.det = A9.det := by
+    rw [e10, Matrix.det_updateRow_add_smul_self A9 (by decide : ((9 : Fin 10) ≠ 3)) ((-1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A11 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h11
+  have e11 : A11 = A10.updateRow 4 (A10 4 + ((1 : Polynomial ℤ) : Polynomial ℤ) • A10 7) := by
+    rw [h11, h10]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d11 : A11.det = A10.det := by
+    rw [e11, Matrix.det_updateRow_add_smul_self A10 (by decide : ((4 : Fin 10) ≠ 7)) ((1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A12 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h12
+  have e12 : A12 = A11.updateRow 7 (A11 7 + ((-1 : Polynomial ℤ) : Polynomial ℤ) • A11 4) := by
+    rw [h12, h11]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d12 : A12.det = A11.det := by
+    rw [e12, Matrix.det_updateRow_add_smul_self A11 (by decide : ((7 : Fin 10) ≠ 4)) ((-1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A13 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h13
+  have e13 : A13 = A12.updateRow 4 (A12 4 + ((1 : Polynomial ℤ) : Polynomial ℤ) • A12 9) := by
+    rw [h13, h12]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d13 : A13.det = A12.det := by
+    rw [e13, Matrix.det_updateRow_add_smul_self A12 (by decide : ((4 : Fin 10) ≠ 9)) ((1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A14 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 3 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 2 * Polynomial.X ^ 2 + Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h14
+  have e14 : A14 = A13.updateRow 9 (A13 9 + ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ) • A13 4) := by
+    rw [h14, h13]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d14 : A14.det = A13.det := by
+    rw [e14, Matrix.det_updateRow_add_smul_self A13 (by decide : ((9 : Fin 10) ≠ 4)) ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)]
+  set A15 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 3 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 2 * Polynomial.X ^ 2 + Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h15
+  have e15 : A15 = A14.updateRow 5 (A14 5 + ((-1 : Polynomial ℤ) : Polynomial ℤ) • A14 7) := by
+    rw [h15, h14]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d15 : A15.det = A14.det := by
+    rw [e15, Matrix.det_updateRow_add_smul_self A14 (by decide : ((5 : Fin 10) ≠ 7)) ((-1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A16 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 3 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 2 * Polynomial.X ^ 2 + Polynomial.X ^ 3 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h16
+  have e16 : A16 = A15.updateRow 7 (A15 7 + ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ) • A15 5) := by
+    rw [h16, h15]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d16 : A16.det = A15.det := by
+    rw [e16, Matrix.det_updateRow_add_smul_self A15 (by decide : ((7 : Fin 10) ≠ 5)) ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)]
+  set A17 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 4 * Polynomial.X - 7 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 4 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h17
+  have e17 : A17 = A16.updateRow 9 (A16 9 + ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 3 * Polynomial.X ^ 2 + Polynomial.X ^ 3 : Polynomial ℤ) • A16 5) := by
+    rw [h17, h16]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d17 : A17.det = A16.det := by
+    rw [e17, Matrix.det_updateRow_add_smul_self A16 (by decide : ((9 : Fin 10) ≠ 5)) ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 3 * Polynomial.X ^ 2 + Polynomial.X ^ 3 : Polynomial ℤ)]
+  set A18 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 4 * Polynomial.X - 7 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 4 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h18
+  have e18 : A18 = A17.updateRow 6 (A17 6 + ((1 : Polynomial ℤ) : Polynomial ℤ) • A17 7) := by
+    rw [h18, h17]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d18 : A18.det = A17.det := by
+    rw [e18, Matrix.det_updateRow_add_smul_self A17 (by decide : ((6 : Fin 10) ≠ 7)) ((1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A19 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 4 * Polynomial.X - 7 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 4 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h19
+  have e19 : A19 = A18.updateRow 7 (A18 7 + ((-1 : Polynomial ℤ) : Polynomial ℤ) • A18 6) := by
+    rw [h19, h18]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d19 : A19.det = A18.det := by
+    rw [e19, Matrix.det_updateRow_add_smul_self A18 (by decide : ((7 : Fin 10) ≠ 6)) ((-1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A20 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 4 * Polynomial.X - 7 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 4 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h20
+  have e20 : A20 = A19.updateRow 6 (A19 6 + ((2 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ) • A19 8) := by
+    rw [h20, h19]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d20 : A20.det = A19.det := by
+    rw [e20, Matrix.det_updateRow_add_smul_self A19 (by decide : ((6 : Fin 10) ≠ 8)) ((2 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)]
+  set A21 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + 4 * Polynomial.X - 7 * Polynomial.X ^ 2 + 4 * Polynomial.X ^ 3 - Polynomial.X ^ 4 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 4 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ), (0 : Polynomial ℤ)]
+  ] with h21
+  have e21 : A21 = A20.updateRow 8 (A20 8 + ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ) • A20 6) := by
+    rw [h21, h20]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d21 : A21.det = A20.det := by
+    rw [e21, Matrix.det_updateRow_add_smul_self A20 (by decide : ((8 : Fin 10) ≠ 6)) ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)]
+  set A22 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + 2 * Polynomial.X - 7 * Polynomial.X ^ 2 + 10 * Polynomial.X ^ 3 - 5 * Polynomial.X ^ 4 + Polynomial.X ^ 5 : Polynomial ℤ), ((2 : Polynomial ℤ) - 10 * Polynomial.X + 23 * Polynomial.X ^ 2 - 26 * Polynomial.X ^ 3 + 17 * Polynomial.X ^ 4 - 6 * Polynomial.X ^ 5 + Polynomial.X ^ 6 : Polynomial ℤ)]
+  ] with h22
+  have e22 : A22 = A21.updateRow 9 (A21 9 + ((1 : Polynomial ℤ) - 4 * Polynomial.X + 7 * Polynomial.X ^ 2 - 4 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ) • A21 6) := by
+    rw [h22, h21]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d22 : A22.det = A21.det := by
+    rw [e22, Matrix.det_updateRow_add_smul_self A21 (by decide : ((9 : Fin 10) ≠ 6)) ((1 : Polynomial ℤ) - 4 * Polynomial.X + 7 * Polynomial.X ^ 2 - 4 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)]
+  set A23 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - 7 * Polynomial.X ^ 2 + 10 * Polynomial.X ^ 3 - 5 * Polynomial.X ^ 4 + Polynomial.X ^ 5 : Polynomial ℤ), ((2 : Polynomial ℤ) - 9 * Polynomial.X + 24 * Polynomial.X ^ 2 - 26 * Polynomial.X ^ 3 + 17 * Polynomial.X ^ 4 - 6 * Polynomial.X ^ 5 + Polynomial.X ^ 6 : Polynomial ℤ)]
+  ] with h23
+  have e23 : A23 = A22.updateRow 9 (A22 9 + ((-1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ) • A22 7) := by
+    rw [h23, h22]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d23 : A23.det = A22.det := by
+    rw [e23, Matrix.det_updateRow_add_smul_self A22 (by decide : ((9 : Fin 10) ≠ 7)) ((-1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)]
+  set A24 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + 2 * Polynomial.X - 8 * Polynomial.X ^ 2 + 17 * Polynomial.X ^ 3 - 15 * Polynomial.X ^ 4 + 6 * Polynomial.X ^ 5 - Polynomial.X ^ 6 : Polynomial ℤ), ((2 : Polynomial ℤ) - 12 * Polynomial.X + 33 * Polynomial.X ^ 2 - 50 * Polynomial.X ^ 3 + 43 * Polynomial.X ^ 4 - 23 * Polynomial.X ^ 5 + 7 * Polynomial.X ^ 6 - Polynomial.X ^ 7 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - 7 * Polynomial.X ^ 2 + 10 * Polynomial.X ^ 3 - 5 * Polynomial.X ^ 4 + Polynomial.X ^ 5 : Polynomial ℤ), ((2 : Polynomial ℤ) - 9 * Polynomial.X + 24 * Polynomial.X ^ 2 - 26 * Polynomial.X ^ 3 + 17 * Polynomial.X ^ 4 - 6 * Polynomial.X ^ 5 + Polynomial.X ^ 6 : Polynomial ℤ)]
+  ] with h24
+  have e24 : A24 = A23.updateRow 7 (A23 7 + ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ) • A23 9) := by
+    rw [h24, h23]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d24 : A24.det = A23.det := by
+    rw [e24, Matrix.det_updateRow_add_smul_self A23 (by decide : ((7 : Fin 10) ≠ 9)) ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)]
+  set A25 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 15 * Polynomial.X ^ 2 + 27 * Polynomial.X ^ 3 - 20 * Polynomial.X ^ 4 + 7 * Polynomial.X ^ 5 - Polynomial.X ^ 6 : Polynomial ℤ), ((4 : Polynomial ℤ) - 21 * Polynomial.X + 57 * Polynomial.X ^ 2 - 76 * Polynomial.X ^ 3 + 60 * Polynomial.X ^ 4 - 29 * Polynomial.X ^ 5 + 8 * Polynomial.X ^ 6 - Polynomial.X ^ 7 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - 7 * Polynomial.X ^ 2 + 10 * Polynomial.X ^ 3 - 5 * Polynomial.X ^ 4 + Polynomial.X ^ 5 : Polynomial ℤ), ((2 : Polynomial ℤ) - 9 * Polynomial.X + 24 * Polynomial.X ^ 2 - 26 * Polynomial.X ^ 3 + 17 * Polynomial.X ^ 4 - 6 * Polynomial.X ^ 5 + Polynomial.X ^ 6 : Polynomial ℤ)]
+  ] with h25
+  have e25 : A25 = A24.updateRow 7 (A24 7 + ((1 : Polynomial ℤ) : Polynomial ℤ) • A24 9) := by
+    rw [h25, h24]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d25 : A25.det = A24.det := by
+    rw [e25, Matrix.det_updateRow_add_smul_self A24 (by decide : ((7 : Fin 10) ≠ 9)) ((1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A26 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 15 * Polynomial.X ^ 2 + 27 * Polynomial.X ^ 3 - 20 * Polynomial.X ^ 4 + 7 * Polynomial.X ^ 5 - Polynomial.X ^ 6 : Polynomial ℤ), ((4 : Polynomial ℤ) - 21 * Polynomial.X + 57 * Polynomial.X ^ 2 - 76 * Polynomial.X ^ 3 + 60 * Polynomial.X ^ 4 - 29 * Polynomial.X ^ 5 + 8 * Polynomial.X ^ 6 - Polynomial.X ^ 7 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - 2 * Polynomial.X + 8 * Polynomial.X ^ 2 - 17 * Polynomial.X ^ 3 + 15 * Polynomial.X ^ 4 - 6 * Polynomial.X ^ 5 + Polynomial.X ^ 6 : Polynomial ℤ), ((-2 : Polynomial ℤ) + 12 * Polynomial.X - 33 * Polynomial.X ^ 2 + 50 * Polynomial.X ^ 3 - 43 * Polynomial.X ^ 4 + 23 * Polynomial.X ^ 5 - 7 * Polynomial.X ^ 6 + Polynomial.X ^ 7 : Polynomial ℤ)]
+  ] with h26
+  have e26 : A26 = A25.updateRow 9 (A25 9 + ((-1 : Polynomial ℤ) : Polynomial ℤ) • A25 7) := by
+    rw [h26, h25]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d26 : A26.det = A25.det := by
+    rw [e26, Matrix.det_updateRow_add_smul_self A25 (by decide : ((9 : Fin 10) ≠ 7)) ((-1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A27 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 15 * Polynomial.X ^ 2 + 27 * Polynomial.X ^ 3 - 20 * Polynomial.X ^ 4 + 7 * Polynomial.X ^ 5 - Polynomial.X ^ 6 : Polynomial ℤ), ((4 : Polynomial ℤ) - 21 * Polynomial.X + 57 * Polynomial.X ^ 2 - 76 * Polynomial.X ^ 3 + 60 * Polynomial.X ^ 4 - 29 * Polynomial.X ^ 5 + 8 * Polynomial.X ^ 6 - Polynomial.X ^ 7 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((1 : Polynomial ℤ) - 3 * Polynomial.X + 2 * Polynomial.X ^ 2 - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X : Polynomial ℤ)]
+  ] with h27
+  have e27 : A27 = A26.updateRow 9 (A26 9 + ((1 : Polynomial ℤ) - 7 * Polynomial.X + 10 * Polynomial.X ^ 2 - 5 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ) • A26 8) := by
+    rw [h27, h26]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d27 : A27.det = A26.det := by
+    rw [e27, Matrix.det_updateRow_add_smul_self A26 (by decide : ((9 : Fin 10) ≠ 8)) ((1 : Polynomial ℤ) - 7 * Polynomial.X + 10 * Polynomial.X ^ 2 - 5 * Polynomial.X ^ 3 + Polynomial.X ^ 4 : Polynomial ℤ)]
+  set A28 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 15 * Polynomial.X ^ 2 + 27 * Polynomial.X ^ 3 - 20 * Polynomial.X ^ 4 + 7 * Polynomial.X ^ 5 - Polynomial.X ^ 6 : Polynomial ℤ), ((4 : Polynomial ℤ) - 21 * Polynomial.X + 57 * Polynomial.X ^ 2 - 76 * Polynomial.X ^ 3 + 60 * Polynomial.X ^ 4 - 29 * Polynomial.X ^ 5 + 8 * Polynomial.X ^ 6 - Polynomial.X ^ 7 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X : Polynomial ℤ)]
+  ] with h28
+  have e28 : A28 = A27.updateRow 8 (A27 8 + ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ) • A27 9) := by
+    rw [h28, h27]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d28 : A28.det = A27.det := by
+    rw [e28, Matrix.det_updateRow_add_smul_self A27 (by decide : ((8 : Fin 10) ≠ 9)) ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ)]
+  set A29 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 15 * Polynomial.X ^ 2 + 27 * Polynomial.X ^ 3 - 20 * Polynomial.X ^ 4 + 7 * Polynomial.X ^ 5 - Polynomial.X ^ 6 : Polynomial ℤ), ((4 : Polynomial ℤ) - 21 * Polynomial.X + 57 * Polynomial.X ^ 2 - 76 * Polynomial.X ^ 3 + 60 * Polynomial.X ^ 4 - 29 * Polynomial.X ^ 5 + 8 * Polynomial.X ^ 6 - Polynomial.X ^ 7 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X : Polynomial ℤ)]
+  ] with h29
+  have e29 : A29 = A28.updateRow 8 (A28 8 + ((1 : Polynomial ℤ) : Polynomial ℤ) • A28 9) := by
+    rw [h29, h28]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d29 : A29.det = A28.det := by
+    rw [e29, Matrix.det_updateRow_add_smul_self A28 (by decide : ((8 : Fin 10) ≠ 9)) ((1 : Polynomial ℤ) : Polynomial ℤ)]
+  set A30 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
+    ![((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-2 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), ((2 : Polynomial ℤ) - 3 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X - Polynomial.X ^ 2 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), (0 : Polynomial ℤ), ((-1 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((2 : Polynomial ℤ) - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((1 : Polynomial ℤ) : Polynomial ℤ), ((-1 : Polynomial ℤ) + 3 * Polynomial.X - 15 * Polynomial.X ^ 2 + 27 * Polynomial.X ^ 3 - 20 * Polynomial.X ^ 4 + 7 * Polynomial.X ^ 5 - Polynomial.X ^ 6 : Polynomial ℤ), ((4 : Polynomial ℤ) - 21 * Polynomial.X + 57 * Polynomial.X ^ 2 - 76 * Polynomial.X ^ 3 + 60 * Polynomial.X ^ 4 - 29 * Polynomial.X ^ 5 + 8 * Polynomial.X ^ 6 - Polynomial.X ^ 7 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) + 2 * Polynomial.X - Polynomial.X ^ 3 : Polynomial ℤ)],
+    ![(0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), (0 : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X ^ 3 : Polynomial ℤ)]
+  ] with h30
+  have e30 : A30 = A29.updateRow 9 (A29 9 + ((-1 : Polynomial ℤ) : Polynomial ℤ) • A29 8) := by
+    rw [h30, h29]
+    refine Matrix.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul] <;>
+      first
+      | rfl
+      | ring
+  have d30 : A30.det = A29.det := by
+    rw [e30, Matrix.det_updateRow_add_smul_self A29 (by decide : ((9 : Fin 10) ≠ 8)) ((-1 : Polynomial ℤ) : Polynomial ℤ)]
+  have hchain : A30.det = A0.det := by
+    rw [d30, d29, d28, d27, d26, d25, d24, d23, d22, d21, d20, d19, d18, d17, d16, d15, d14, d13, d12, d11, d10, d9, d8, d7, d6, d5, d4, d3, d2, d1]
+  have hT : A30.BlockTriangular id := by
+    intro i j hij
+    rw [h30]
+    fin_cases i <;> fin_cases j <;>
+      first
+      | exact absurd hij (by decide)
+      | simp [Matrix.of_apply, Matrix.updateRow_apply, Pi.add_apply,
+        Pi.smul_apply, smul_eq_mul]
+  have hdiag : (∏ i, A30 i i) = Polynomial.X ^ 5 := by
+    rw [h30]
+    simp only [Fin.prod_univ_succ, Matrix.of_apply, Matrix.cons_val_zero,
+      Matrix.cons_val_succ, Fin.isValue]
+    have htail : ∀ g : Fin 0 → Polynomial ℤ, (∏ i, g i) = 1 := fun g =>
+      Finset.prod_eq_one (fun x _ => Fin.elim0 x)
+    rw [htail _]
+    ring
+  rw [← hchain, Matrix.det_of_upperTriangular hT, hdiag]
+
+
+
+end Knots

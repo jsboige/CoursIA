@@ -103,6 +103,11 @@ Comportement :
   (``approved-exact-head`` / ``approval-not-on-head`` / ``no-approval``,
   point 1 de #17672) sur TOUTES les voix, bots compris ; elle informe.
   Ce qui BLOQUE est l'etape 2ter : la seule voix du coordinateur.
+  Une quatrieme valeur, ``review-ready`` (point 2 de #17672), signale
+  les PRs qui ont franchi TOUTES les portes delegables (prefiltre,
+  perimetre, dossier precheck) et n'attendent que la relecture
+  coordinateur -- le dashboard les distingue des PRs bloquees sur
+  un autre probleme.
 - Journal : une ligne JSON par PR evaluee (ts UTC en Z, pr, head,
   verdict, reason, merged, review) dans
   ``%LOCALAPPDATA%/CoursIA/merge_ready/journal.jsonl`` (surchargeable
@@ -205,6 +210,13 @@ APPROVED_EXACT_HEAD = "approved-exact-head"
 APPROVAL_NOT_ON_HEAD = "approval-not-on-head"
 NO_APPROVAL = "no-approval"
 NOT_EVALUATED = "not-evaluated"  # ligne d'un run interrompu avant evaluation
+#: Disposition de la PR telle que la verrait l'organe si la lecture du
+#: coordinateur etait reglee : toutes les portes delegables (prefiltre,
+#: perimetre, dossier precheck) sont vertes, seule manque la disposition
+#: ai-01 a la tete exacte. Sert au dashboard coordinateur a distinguer
+#: « PR qui n'attend que sa relecture » de « PR qui a un autre probleme ».
+#: Voir #17672 point 2.
+REVIEW_READY = "review-ready"
 
 #: Ce qui vaut approbation : l'etat REEL ``APPROVED``, ou le verdict type
 #: ``LGTM`` emis en corps de voix (``VERDICT_RE`` du canon ne type que LGTM et
@@ -1007,9 +1019,15 @@ def evaluate_pr(
     if reason is not None:
         return skip(reason)
     # 2ter. approbation du coordinateur (Q67) : une PR non lue ne paie pas le gate.
+    # Si on skip ici, les portes delegables EN AMONT ont toutes ete vertes
+    # (prefiltre 1, perimetre 2, dossier precheck 2bis) -- c'est precisement
+    # la definition de l'etat REVIEW_READY (#17672 point 2) : seule manque la
+    # disposition ai-01 a la tete exacte. On la porte en disposition, le
+    # ``reason`` conserve la granularite (``no-coordinator-approval`` /
+    # ``coordinator-approval-stale`` / ``coordinator-approval-unverifiable``).
     reason = coordinator_approval_reason(view, view_head, runner, gh_env)
     if reason is not None:
-        return skip(reason)
+        return PRVerdict(pr, view_head, "skipped", reason, False, REVIEW_READY)
     # 3. gate d'entree.
     ready, gate_head, gate_reason = run_gate(runner, pr, gh_env)
     if not ready:

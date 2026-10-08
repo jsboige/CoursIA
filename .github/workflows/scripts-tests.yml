@@ -280,6 +280,18 @@ jobs:
           # (requests, bcrypt, jupyter_client — see #2871 root-cause list).
           pip install numpy pandas scipy pyarrow pytest
           pip install requests bcrypt jupyter_client
+          # ipykernel (#18279) : ce job n'enregistrait AUCUN kernelspec
+          # `python3`, si bien que les deux tests d'integration de
+          # scripts/tests/test_papermill_meta_strip.py se SAUTAIENT en silence
+          # (skipif sur la presence du kernelspec). La panne « kernel mort au
+          # spawn » n'existait alors plus que sur les runners qui avaient le
+          # kernel : machine-specifique en apparence, FILTREE en realite -- et
+          # c'est ce filtrage qui a fait suivre pendant dix jours un axe de
+          # diagnostic .NET alors qu'aucun noyau .NET n'etait lance. Regle F :
+          # un environnement se repare, il ne se contourne pas par un skip.
+          # Le test de visibilite ajoute dans le meme commit rougit si ce
+          # kernelspec disparait a nouveau.
+          pip install ipykernel
           pip install pyyaml tomli
           # python-dotenv: scripts/whisper_int8_comparison.py (and several
           # genai-stack modules) import `dotenv` at top level.
