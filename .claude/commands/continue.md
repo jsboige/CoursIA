@@ -38,6 +38,15 @@ python scripts/pick_idle_grain.py --belt --lane <machine:workspace>
 
 **P3 — Le tapis** (sortie 0) : `--belt` rend **tout l'ouvert, cross-lane**, trie par **derniere visite** (dernier merge d'une PR qui cite l'issue, dernier `[CLAIMED]` pose dessus, ou creation d'une sous-issue qui la nomme ; une issue jamais servie passe devant), la plus ancienne en tete. La lane est une etiquette de reporting, pas une frontiere de travail : rien n'est "le turf d'un autre". **Servir une issue, c'est d'abord la confronter a ses criteres** (body complet, amendements du fil, contre `main`) : tous couverts -> `[INFO] candidate-delivered` avec la preuve par critere, la cloture revient au coordinateur ou a l'adjoint ; un plan, une table ou une decision deja poste dans le fil -> le grain est **l'etape suivante de ce plan**, jamais un contenu neuf a cote. Prendre les candidats **dans l'ordre**, poser le claim avant chaque edition, livrer, puis passer au suivant sans attendre review, CI, DWELL ou merge du precedent ; une issue servie repart en queue d'elle-meme. Le tapis ne pondere pas et ne refuse jamais : pas de preference de famille, de serie ni d'EPIC, et pas de repli sur une EPIC "maison". Un candidat ne se saute que pour une barriere reelle (GPU-only, vision-only, second LIGHT du meme genre d'affilee selon G-VAR-3), dite dans le rapport de cycle, et l'issue sautee reste en tete pour le tirage suivant ; un claim vivant d'une autre lane est deja retenu par le tapis. Un EPIC en tete se sert par un sous-grain, jamais par un claim de l'EPIC entier. Le tirage pondere (sans `--belt`) reste un outil de diagnostic, il ne choisit plus le grain. Regles completes : [proactive-coordination.md](../rules/proactive-coordination.md) (plancher multi-grain, "rien a faire" avec >0 issues ouvertes = echec de methode).
 
+### Phase 2bis : Ne jamais bloquer (mandat user 07/10, session directe po-2026)
+
+Aucune attente externe — CI, review, DWELL, merge, reponse d'une autre lane, run long — n'arrete la lane. Une verification non concluable a l'instant s'ecrit dans le **registre des verifications en attente** de la memoire du workspace (`pending-checks-registry.md`, indexe dans `MEMORY.md`) : `quoi | ou | geste si concluant | posee le`. Le cycle suivant l'ouvre en debut de session, verifie les lignes echues, vide les resolues — c'est une **restitution**, pas une interruption.
+
+- **Pas de watcher long.** Un `run_in_background` plus long que le cycle (30 min) immobilise la session au lieu de la faire produire : le cycle suivant verifiera gratuitement depuis le registre. Watchers toleres : uniquement courts (quelques minutes), quand la suite du travail en depend directement dans la meme fenetre.
+- **Parallelisme** : sous-agents (`run_in_background: true`), appels sk-agent, scripts en arriere-plan — la session principale reste productive pendant ce temps.
+- **Un seul observateur** par condition asynchrone ; ne jamais poller en parallele d'une notification existante, et couvrir succes, echec, annulation et terminaison inattendue.
+- **Etat durable dans les memoires, les dashboards RooSync et git** — jamais dans la memoire vive d'une instance, qui meurt avec elle.
+
 ### Phase 3 : Travailler et livrer
 
 - Une issue creee par la lane **nomme son parent** dans son body (`Part of #N` : l'EPIC ou l'issue de serie), ou ecrit `Sans parent : <raison>`. Ce lien fait avancer le parent sur le tapis et rend l'issue visible a la consolidation de sa serie.
@@ -51,7 +60,7 @@ python scripts/pick_idle_grain.py --belt --lane <machine:workspace>
 
 1. **Commit + PR AVANT le rapport** — jamais de [DONE] sur un travail non commite.
 2. `[DONE]` lane-specific sur le dashboard workspace (resume : livrables, PRs, residuel). Une PR livree ne clot jamais la session : poursuivre la file puis re-piocher jusqu'a la fin effective de la session.
-3. Bloqueur nécessitant une action user : l'inscrire dans le registre durable, puis restituer les questions ouvertes en un seul bloc en fin de session ([user-blocker-signaling](../rules/user-blocker-signaling.md)).
+3. Bloqueur nécessitant une action user : l'inscrire dans le registre durable, puis restituer les questions ouvertes en un seul bloc en fin de session ([user-blocker-signaling](../rules/user-blocker-signaling.md)). Le **registre des verifications en attente** (Phase 2bis) est relu dans le meme geste : lignes resolues retirees, lignes ouvertes conservees telles quelles — une verification en attente ne se perd pas entre deux cycles.
 4. Repondre au DM coordinateur si une mission a ete traitee.
 5. MAJ `MEMORY.md` si lecon durable (les PR#/SHA ephemeres vont au dashboard, pas en memoire).
 
