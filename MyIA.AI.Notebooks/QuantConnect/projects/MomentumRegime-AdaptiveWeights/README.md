@@ -25,11 +25,12 @@ sans risque.
 
 **SectorMomentum n'atteignait jamais les cibles.** Lean garde un seul insight actif par
 symbole avant d'appeler `determine_target_percent`. RegimeSwitching émet sur les quatre ETF
-de SectorMomentum, et c'est son insight qui reste. Les compteurs ajoutés le montrent :
+de SectorMomentum, et c'est son insight qui reste. Le compteur de la liste reçue le montre
+sous `base` ; il est mesuré avant la reconstruction des cibles :
 
 | Compteur | `base` (code d'origine) | `intent` |
 |----------|-------------------------|----------|
-| Appels de `determine_target_percent` dont la liste contient un insight SectorMomentum | 0 sur 403 | 0 sur 403 |
+| Appels de `determine_target_percent` dont la liste reçue contient un insight SectorMomentum (avant reconstruction) | 0 sur 403 | 0 sur 403 |
 | Exposition brute moyenne | 0,15 | 1,00 |
 | Corrélation hebdomadaire avec RegimeSwitching seul | 1,00 | 0,76 |
 | Corrélation hebdomadaire avec SectorMomentum seul | 0,69 | 0,995 |
@@ -62,6 +63,10 @@ références n'est significatif. La différence est testée par bootstrap circul
 | `intent` | +0,08 [−0,48 ; +0,59] | +0,02 [−0,50 ; +0,54] | 0,83 / 0,83 |
 | `base` | +0,07 [−0,30 ; +0,41] | +0,02 [−0,37 ; +0,38] | 0,75 / 0,75 |
 
+Les écarts de Sharpe sont calculés avant l'arrondi des valeurs du tableau : par exemple,
+`intent` − SPY vaut 0,0761, `intent` − `sm` vaut 0,0357 et `intent` − `rs` vaut −0,0010.
+La soustraction des Sharpes affichés à deux décimales peut donc donner un autre arrondi.
+
 Par sous-période (2015-2018, 2019-2022, 2023 → 2026-07), `intent` est derrière les deux
 références en 2015-2018 (−0,21 contre SPY, −0,32 contre le 60/40), puis devant (+0,11 et
 +0,08 contre SPY). `base` fait l'inverse : devant en 2015-2018, derrière ensuite. La grille de
@@ -85,8 +90,11 @@ moitié de GLD (50 %), puis de QQQ (37 %), de SPY (10 %) et d'IEF (3 %).
 **Choix du défaut.** Le protocole prévoyait que `intent` devienne le mode par défaut si le
 défaut était constaté selon l'un de deux critères : sous `base`, moins de la moitié des appels
 voient SectorMomentum (0 sur 403) ; ou l'exposition brute de `base` est inférieure de plus de
-10 points à celle d'`intent` (0,15 contre 1,00). Les deux sont remplis. Le changement rend le
-code conforme à ce qu'annonce `MultiStrategyPCM` ; il ne crée pas d'avantage démontré.
+10 points à celle d'`intent` (0,15 contre 1,00). Le compteur constate le filtrage sous `base`,
+mais reste à zéro dans les deux modes : il ne vérifie pas la reconstruction. La preuve qui
+discrimine les modes est l'exposition brute, confortée par les corrélations du tableau.
+Le changement rend le code conforme à ce qu'annonce `MultiStrategyPCM` ; il ne crée pas
+d'avantage démontré.
 
 **Limites.**
 - La variante (parts, QQQ, poids de retour) a été choisie après avoir vu le Sharpe hors

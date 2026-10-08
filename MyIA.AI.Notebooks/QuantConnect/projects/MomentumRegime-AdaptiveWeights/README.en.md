@@ -25,11 +25,13 @@ subtracts a risk-free rate.
 
 **SectorMomentum never reached the targets.** Lean keeps a single active insight per symbol
 before calling `determine_target_percent`. RegimeSwitching emits on SectorMomentum's four ETFs,
-and its insight is the one kept. The added counters show it:
+and its insight is the one kept.
+Le compteur de la liste reçue le montre sous `base` ; il est mesuré avant la reconstruction
+des cibles :
 
 | Counter | `base` (original code) | `intent` |
 |---------|------------------------|----------|
-| `determine_target_percent` calls whose list holds a SectorMomentum insight | 0 of 403 | 0 of 403 |
+| Appels de `determine_target_percent` dont la liste reçue contient un insight SectorMomentum (avant reconstruction) | 0 sur 403 | 0 sur 403 |
 | Average gross exposure | 0.15 | 1.00 |
 | Weekly correlation with RegimeSwitching alone | 1.00 | 0.76 |
 | Weekly correlation with SectorMomentum alone | 0.69 | 0.995 |
@@ -61,6 +63,10 @@ references is significant. The difference is tested by circular block bootstrap 
 | `intent` | +0.08 [−0.48 ; +0.59] | +0.02 [−0.50 ; +0.54] | 0.83 / 0.83 |
 | `base` | +0.07 [−0.30 ; +0.41] | +0.02 [−0.37 ; +0.38] | 0.75 / 0.75 |
 
+Les écarts de Sharpe sont calculés avant l'arrondi des valeurs du tableau : par exemple,
+`intent` − SPY vaut 0,0761, `intent` − `sm` vaut 0,0357 et `intent` − `rs` vaut −0,0010.
+La soustraction des Sharpes affichés à deux décimales peut donc donner un autre arrondi.
+
 By sub-period (2015-2018, 2019-2022, 2023 → 2026-07), `intent` trails both references in
 2015-2018 (−0.21 vs SPY, −0.32 vs the 60/40), then leads (+0.11 and +0.08 vs SPY). `base` does
 the opposite: ahead in 2015-2018, behind afterwards. The parameter grid and the doubled-fees
@@ -83,8 +89,11 @@ difference.
 **Choice of the default.** The protocol provided that `intent` becomes the default mode if the
 defect was observed under either of two criteria: under `base`, fewer than half of the calls
 see SectorMomentum (0 of 403); or the gross exposure of `base` is more than 10 points below
-that of `intent` (0.15 vs 1.00). Both are met. The change makes the code match what
-`MultiStrategyPCM` states; it creates no demonstrated advantage.
+that of `intent` (0.15 vs 1.00).
+Le compteur constate le filtrage sous `base`, mais reste à zéro dans les deux modes : il ne
+vérifie pas la reconstruction. La preuve qui discrimine les modes est l'exposition brute,
+confortée par les corrélations du tableau. Le changement rend le code conforme à ce qu'annonce
+`MultiStrategyPCM` ; il ne crée pas d'avantage démontré.
 
 **Limits.**
 - The variant (sleeves, QQQ, return weights) was chosen after seeing the out-of-sample Sharpe
