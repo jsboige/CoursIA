@@ -92,8 +92,8 @@ Introduction au framework ADK et configuration multi-provider.
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 8 | [ADK-Introduction](Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
-| 9 | [First-ADK-Agent](Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
+| 8 | [ADK-Introduction](Day4-Foundations/Lab8-ADK-Introduction.html) | Architecture ADK, configuration providers |
+| 9 | [First-ADK-Agent](Day4-Foundations/Lab9-First-ADK-Agent.html) | Premier agent pour Data Science |
 
 ### Day 5 - DS-STAR (Labs 10-12, 12b-12d, 18)
 
@@ -101,13 +101,13 @@ Data Science autonome avec l'architecture Planner-Coder-Verifier.
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 10 | [File-Analyzer](Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
-| 11 | [Planner-Coder-Loop](Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
-| 12 | [DS-Star-Workshop](Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
-| 12b | [Sequential-Orchestration](Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, orchestrateur explicite (#14058) |
-| 12c | [Agent-Handoff](Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff entre agents câblé et observable (#14058) |
-| 12d | [Token-Usage](Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM (#14058) |
-| 12e | [Session-Persistence](Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | Contrat C1b : conversation multi-tours persistante (#14058) |
+| 10 | [File-Analyzer](Day5-DS-Star/Lab10-File-Analyzer.html) | Analyse de fichiers hétérogènes |
+| 11 | [Planner-Coder-Loop](Day5-DS-Star/Lab11-Planner-Coder-Loop.html) | Boucle itérative multi-agents |
+| 12 | [DS-Star-Workshop](Day5-DS-Star/Lab12-DS-Star-Workshop.html) | Application complète |
+| 12b | [Sequential-Orchestration](Day5-DS-Star/Lab12b-Sequential-Orchestration.html) | Contrat C4 : désignation séquentielle, orchestrateur explicite (#14058) |
+| 12c | [Agent-Handoff](Day5-DS-Star/Lab12c-Agent-Handoff.html) | Contrat C5 : handoff entre agents câblé et observable (#14058) |
+| 12d | [Token-Usage](Day5-DS-Star/Lab12d-Token-Usage.html) | Contrat C6 : traçabilité de la consommation LLM (#14058) |
+| 12e | [Session-Persistence](Day5-DS-Star/Lab12e-Session-Persistence.html) | Contrat C1b : conversation multi-tours persistante (#14058) |
 
 ### Day 6 - MLE-STAR (Labs 13-15)
 
@@ -115,9 +115,9 @@ ML Engineering automatisé style Kaggle.
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 13 | [Web-Search-SOTA](Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Recherche de modèles SOTA |
-| 14 | [Ablation-Refinement](Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Optimisation ciblée |
-| 15 | [Kaggle-Challenge](Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Compétition Kaggle |
+| 13 | [Web-Search-SOTA](Day6-MLE-Star/Lab13-Web-Search-SOTA.html) | Recherche de modèles SOTA |
+| 14 | [Ablation-Refinement](Day6-MLE-Star/Lab14-Ablation-Refinement.html) | Optimisation ciblée |
+| 15 | [Kaggle-Challenge](Day6-MLE-Star/Lab15-Kaggle-Challenge.html) | Compétition Kaggle |
 
 ### Day 7 - Production (Labs 16-17)
 
@@ -125,8 +125,8 @@ Intégration GCP et projet final.
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 16 | [Data-Science-Agent](Day7-Production/Lab16-Data-Science-Agent.ipynb) | Agent BigQuery/BQML |
-| 17 | [Final-Project](Day7-Production/Lab17-Final-Project.ipynb) | Projet intégré |
+| 16 | [Data-Science-Agent](Day7-Production/Lab16-Data-Science-Agent.html) | Agent BigQuery/BQML |
+| 17 | [Final-Project](Day7-Production/Lab17-Final-Project.html) | Projet intégré |
 
 ## Installation
 

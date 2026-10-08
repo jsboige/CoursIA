@@ -67,11 +67,11 @@ Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) 
 
 ### Parcours Data Scientist classique (~12h)
 
-1. [ML-1](ML.Net/ML-1-Introduction.ipynb) → comprendre le pipeline ML
-1. [NumPy](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) + [Pandas](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) → maîtriser les données
+1. [ML-1](ML.Net/ML-1-Introduction.html) → comprendre le pipeline ML
+1. [NumPy](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.html) + [Pandas](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.html) → maîtriser les données
 1. [Socle ML canonique 2.1 → 2.8](DataScienceWithAgents/02-ML-Cours/) → les fondamentaux scikit-learn (gradient, régressions, ensembles, biais-variance, non supervisé, PAC)
-1. [ML-2](ML.Net/ML-2-Data&Features.ipynb) + [ML-3](ML.Net/ML-3-Entrainement&AutoML.ipynb) → entraîner des modèles
-1. [ML-4](ML.Net/ML-4-Evaluation.ipynb) → évaluer rigoureusement
+1. [ML-2](ML.Net/ML-2-Data&Features.html) + [ML-3](ML.Net/ML-3-Entrainement&AutoML.html) → entraîner des modèles
+1. [ML-4](ML.Net/ML-4-Evaluation.html) → évaluer rigoureusement
 
 ### Parcours AI Agent Builder (~15h)
 
@@ -81,10 +81,10 @@ Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) 
 
 ### Parcours Enterprise .NET (~6h)
 
-1. [ML-1](ML.Net/ML-1-Introduction.ipynb) à [ML-4](ML.Net/ML-4-Evaluation.ipynb) : fondamentaux ML.NET
-1. [ML-5](ML.Net/ML-5-TimeSeries.ipynb) : séries temporelles
-1. [ML-6](ML.Net/ML-6-ONNX.ipynb) : interop Python → .NET
-1. [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) : projet intégré
+1. [ML-1](ML.Net/ML-1-Introduction.html) à [ML-4](ML.Net/ML-4-Evaluation.html) : fondamentaux ML.NET
+1. [ML-5](ML.Net/ML-5-TimeSeries.html) : séries temporelles
+1. [ML-6](ML.Net/ML-6-ONNX.html) : interop Python → .NET
+1. [TP-prevision-ventes](ML.Net/TP-prevision-ventes.html) : projet intégré
 
 ## Quel parcours choisir
 
@@ -175,25 +175,25 @@ Pipeline ML.NET complet en C#, de l'introduction à l'évaluation avancée : du 
 
 | # | Notebook | Contenu | Focus |
 |---|----------|---------|-------|
-| 1 | [ML-1-Introduction](ML.Net/ML-1-Introduction.ipynb) | Hello ML.NET World, pipeline de base | Fondamentaux |
-| 1-Py | [ML-1-Introduction-Python](ML.Net/ML-1-Introduction-Python.ipynb) | **Jumeau Python** : pipeline ML.NET ⇄ scikit-learn (régression + classification) | Parité .NET⇄Python |
-| 2 | [ML-2-Data&Features](ML.Net/ML-2-Data&Features.ipynb) | IDataView, TextLoader, encodage | Préparation données |
-| 2-Py | [ML-2-Data&Features-Python](ML.Net/ML-2-Data&Features-Python.ipynb) | **Jumeau Python** : `IDataView`/Transforms ⇄ `ColumnTransformer`+`Pipeline` (scikit-learn) | Parité .NET⇄Python |
-| 3 | [ML-3-Entrainement&AutoML](ML.Net/ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML + **leaderboard visuel** (Plotly) | Entraînement |
-| 3-Py | [ML-3-Entrainement-Python](ML.Net/ML-3-Entrainement-Python.ipynb) | **Jumeau Python** : SDCA/LightGBM/AutoML ⇄ `LinearRegression`/`GradientBoosting`/`GridSearchCV` | Parité .NET⇄Python |
-| 4 | [ML-4-Evaluation](ML.Net/ML-4-Evaluation.ipynb) | Cross-validation, métriques, PFI | Évaluation |
-| 4-Py | [ML-4-Evaluation-Python](ML.Net/ML-4-Evaluation-Python.ipynb) | **Jumeau Python** : cross-validation + métriques + PFI ⇄ `cross_val_score` + `permutation_importance` (scikit-learn) | Parité .NET⇄Python |
-| 5 | [ML-5-TimeSeries](ML.Net/ML-5-TimeSeries.ipynb) | Forecasts temporelles, windowing | Séries temporelles |
-| 5-Py | [ML-5-TimeSeries-Python](ML.Net/ML-5-TimeSeries-Python.ipynb) | **Jumeau Python** : `ForecastBySsa` ⇄ `STL`+`SARIMA` (statsmodels) | Parité .NET⇄Python |
-| 6 | [ML-6-ONNX](ML.Net/ML-6-ONNX.ipynb) | Export ONNX, inférence en production | Déploiement |
-| 6-Py | [ML-6-ONNX-Python](ML.Net/ML-6-ONNX-Python.ipynb) | **Jumeau Python** : `skl2onnx` export + `onnxruntime` inférence ⇄ `OnnxTransformer` (ML.NET) | Parité .NET⇄Python |
-| 7 | [ML-7-Recommendation](ML.Net/ML-7-Recommendation.ipynb) | Système de recommandation | Recommandations |
-| 7-Py | [ML-7-Recommendation-Python](ML.Net/ML-7-Recommendation-Python.ipynb) | **Jumeau Python** : `MatrixFactorization` ⇄ `NMF` (scikit-learn) | Parité .NET⇄Python |
-| 8 | [ML-8-Clustering](ML.Net/ML-8-Clustering.ipynb) | K-Means, segmentation RFM, méthode du coude | Non-supervisé |
-| 8-Py | [ML-8-Clustering-Python](ML.Net/ML-8-Clustering-Python.ipynb) | **Jumeau Python** : `ClusteringCatalog` ⇄ `KMeans` scikit-learn + méthode du coude | Parité .NET⇄Python |
-| 9 | [ML-9-Anomaly-Detection](ML.Net/ML-9-Anomaly-Detection.ipynb) | Randomized PCA, AUC, seuil de décision | Détection d'anomalies |
-| 9-Py | [ML-9-Anomaly-Detection-Python](ML.Net/ML-9-Anomaly-Detection-Python.ipynb) | **Jumeau Python** : `RandomizedPca` ⇄ `PCA`+résidu (scikit-learn) | Parité .NET⇄Python |
-| TP | [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) | Régression bayésienne (Infer.NET) | Application pratique |
+| 1 | [ML-1-Introduction](ML.Net/ML-1-Introduction.html) | Hello ML.NET World, pipeline de base | Fondamentaux |
+| 1-Py | [ML-1-Introduction-Python](ML.Net/ML-1-Introduction-Python.html) | **Jumeau Python** : pipeline ML.NET ⇄ scikit-learn (régression + classification) | Parité .NET⇄Python |
+| 2 | [ML-2-Data&Features](ML.Net/ML-2-Data&Features.html) | IDataView, TextLoader, encodage | Préparation données |
+| 2-Py | [ML-2-Data&Features-Python](ML.Net/ML-2-Data&Features-Python.html) | **Jumeau Python** : `IDataView`/Transforms ⇄ `ColumnTransformer`+`Pipeline` (scikit-learn) | Parité .NET⇄Python |
+| 3 | [ML-3-Entrainement&AutoML](ML.Net/ML-3-Entrainement&AutoML.html) | SDCA, LightGBM, AutoML + **leaderboard visuel** (Plotly) | Entraînement |
+| 3-Py | [ML-3-Entrainement-Python](ML.Net/ML-3-Entrainement-Python.html) | **Jumeau Python** : SDCA/LightGBM/AutoML ⇄ `LinearRegression`/`GradientBoosting`/`GridSearchCV` | Parité .NET⇄Python |
+| 4 | [ML-4-Evaluation](ML.Net/ML-4-Evaluation.html) | Cross-validation, métriques, PFI | Évaluation |
+| 4-Py | [ML-4-Evaluation-Python](ML.Net/ML-4-Evaluation-Python.html) | **Jumeau Python** : cross-validation + métriques + PFI ⇄ `cross_val_score` + `permutation_importance` (scikit-learn) | Parité .NET⇄Python |
+| 5 | [ML-5-TimeSeries](ML.Net/ML-5-TimeSeries.html) | Forecasts temporelles, windowing | Séries temporelles |
+| 5-Py | [ML-5-TimeSeries-Python](ML.Net/ML-5-TimeSeries-Python.html) | **Jumeau Python** : `ForecastBySsa` ⇄ `STL`+`SARIMA` (statsmodels) | Parité .NET⇄Python |
+| 6 | [ML-6-ONNX](ML.Net/ML-6-ONNX.html) | Export ONNX, inférence en production | Déploiement |
+| 6-Py | [ML-6-ONNX-Python](ML.Net/ML-6-ONNX-Python.html) | **Jumeau Python** : `skl2onnx` export + `onnxruntime` inférence ⇄ `OnnxTransformer` (ML.NET) | Parité .NET⇄Python |
+| 7 | [ML-7-Recommendation](ML.Net/ML-7-Recommendation.html) | Système de recommandation | Recommandations |
+| 7-Py | [ML-7-Recommendation-Python](ML.Net/ML-7-Recommendation-Python.html) | **Jumeau Python** : `MatrixFactorization` ⇄ `NMF` (scikit-learn) | Parité .NET⇄Python |
+| 8 | [ML-8-Clustering](ML.Net/ML-8-Clustering.html) | K-Means, segmentation RFM, méthode du coude | Non-supervisé |
+| 8-Py | [ML-8-Clustering-Python](ML.Net/ML-8-Clustering-Python.html) | **Jumeau Python** : `ClusteringCatalog` ⇄ `KMeans` scikit-learn + méthode du coude | Parité .NET⇄Python |
+| 9 | [ML-9-Anomaly-Detection](ML.Net/ML-9-Anomaly-Detection.html) | Randomized PCA, AUC, seuil de décision | Détection d'anomalies |
+| 9-Py | [ML-9-Anomaly-Detection-Python](ML.Net/ML-9-Anomaly-Detection-Python.html) | **Jumeau Python** : `RandomizedPca` ⇄ `PCA`+résidu (scikit-learn) | Parité .NET⇄Python |
+| TP | [TP-prevision-ventes](ML.Net/TP-prevision-ventes.html) | Régression bayésienne (Infer.NET) | Application pratique |
 
 #### AutoML : quand le leaderboard bat le `Console.WriteLine` ([#7642](https://github.com/jsboige/CoursIA/pull/7642), [#7707](https://github.com/jsboige/CoursIA/pull/7707), [#7839](https://github.com/jsboige/CoursIA/pull/7839))
 
@@ -211,13 +211,13 @@ L'écart entre le pire et le meilleur essai est de **338×** — un fait pédago
 
 ### Trois figures du track ML.NET (scikit-learn, statsmodels)
 
-[![Régression linéaire (ML-1) : droite de régression verte apprise par scikit-learn superposée aux données d'entraînement (cercles bleus) et de test (carrés oranges) — l'étoile rouge matérialise la prédiction pour une maison de 2,5 milliers de pieds carrés (~2,76 centaines de milliers de dollars).](assets/readme/ml1-intro.png)](ML.Net/ML-1-Introduction-Python.ipynb)
+[![Régression linéaire (ML-1) : droite de régression verte apprise par scikit-learn superposée aux données d'entraînement (cercles bleus) et de test (carrés oranges) — l'étoile rouge matérialise la prédiction pour une maison de 2,5 milliers de pieds carrés (~2,76 centaines de milliers de dollars).](assets/readme/ml1-intro.png)](ML.Net/ML-1-Introduction-Python.html)
 *ML-1 — Régression linéaire prix/surface (scikit-learn). On observe que les points `Test` (oranges) s'éloignent de la droite au-delà de ~4 milliers de pieds carrés : le modèle linéaire sous-extrapole les grandes maisons, ce que la métrique R² seule ne signalera pas.*
 
-[![Décomposition STL d'une série temporelle de ventes (ML-5) : quatre panneaux superposés — Observé (oscillations bruitées entre ~60 et ~190), Tendance (courbe orange lisse montant de ~110 début 2023 à ~160 fin 2023), Saisonnalité (sinusoïde verte d'amplitude ~40, période 7 jours), Bruit (résidu rouge, amplitude ~±25).](assets/readme/ml5-timeseries.png)](ML.Net/ML-5-TimeSeries-Python.ipynb)
+[![Décomposition STL d'une série temporelle de ventes (ML-5) : quatre panneaux superposés — Observé (oscillations bruitées entre ~60 et ~190), Tendance (courbe orange lisse montant de ~110 début 2023 à ~160 fin 2023), Saisonnalité (sinusoïde verte d'amplitude ~40, période 7 jours), Bruit (résidu rouge, amplitude ~±25).](assets/readme/ml5-timeseries.png)](ML.Net/ML-5-TimeSeries-Python.html)
 *ML-5 — Décomposition STL (`statsmodels.tsa.seasonal_decompose`, période 7). La saisonnalité hebdomadaire se lit immédiatement (amplitude ±40), et la tendance capture la croissance sous-jacente (~+50 sur 12 mois). Le TP-prevision-ventes s'appuie sur ce découpage pour combiner signal et saisonnalité.*
 
-[![Clustering K-Means (ML-8) en deux panneaux : à gauche la vérité terrain (3 segments Dormants/Réguliers/VIP sur l'axe Frequency × Monetary) ; à droite les clusters 0/1/2 retrouvés par K-Means — on observe que les labels K-Means ne s'alignent PAS avec les segments sémantiques (Cluster 0 ≠ Dormants) : K-Means segmente l'espace géométrique, pas la sémantique métier.](assets/readme/ml8-clustering.png)](ML.Net/ML-8-Clustering-Python.ipynb)
+[![Clustering K-Means (ML-8) en deux panneaux : à gauche la vérité terrain (3 segments Dormants/Réguliers/VIP sur l'axe Frequency × Monetary) ; à droite les clusters 0/1/2 retrouvés par K-Means — on observe que les labels K-Means ne s'alignent PAS avec les segments sémantiques (Cluster 0 ≠ Dormants) : K-Means segmente l'espace géométrique, pas la sémantique métier.](assets/readme/ml8-clustering.png)](ML.Net/ML-8-Clustering-Python.html)
 *ML-8 — Clustering K-Means sur données RFM (scikit-learn). Le notebook démontre la **limitation sémantique** du K-Means non supervisé : les segments de clientèle (Dormants/Réguliers/VIP) sont des catégories métier, pas des clusters géométriques. La concordance parfaite n'est possible que par chance — d'où l'intérêt d'un *mapping* a posteriori (et des méthodes supervisées dès qu'on connaît les segments).*
 
 ## Python Data Science with Agents
@@ -228,18 +228,18 @@ Formation complète en Data Science Python enrichie d'agents IA. Vous commencere
 
 | Notebook | Contenu |
 |----------|---------|
-| [1.2-NumPy](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | Arrays, vectorisation, opérations |
-| [1.3-Pandas](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | DataFrames, filtrage, manipulation |
+| [1.2-NumPy](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.html) | Arrays, vectorisation, opérations |
+| [1.3-Pandas](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.html) | DataFrames, filtrage, manipulation |
 
 #### Trois figures du track Data Science (Pandas, Seaborn, ADK)
 
-[![Fondations Pandas (Lab1) en deux panneaux — à gauche les ventes journalières du Widget A sur 20 jours (janvier 2024), courbe oscillant entre 123 et 188 ; à droite les ventes moyennes par catégorie en barres (Accessoires ≈ 45, Électronique ≈ 130, Premium ≈ 225).](assets/readme/lab1-foundations.png)](DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb)
+[![Fondations Pandas (Lab1) en deux panneaux — à gauche les ventes journalières du Widget A sur 20 jours (janvier 2024), courbe oscillant entre 123 et 188 ; à droite les ventes moyennes par catégorie en barres (Accessoires ≈ 45, Électronique ≈ 130, Premium ≈ 225).](assets/readme/lab1-foundations.png)](DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.html)
 *Lab1 — Pandas & Matplotlib : visualisation exploratoire des ventes (20 jours, série temporelle + barres par catégorie). Cette figure introduit le double-outil Pandas + Matplotlib qu'utilisent ensuite tous les notebooks ML du track.*
 
-[![Visualisation matplotlib (Lab5) : courbe de l'évolution du chiffre d'affaires journalier entre le 01-10 et le 04-10, décroissance de ~760 à ~230 puis remontée à ~480, tracée en matplotlib pur avec le style seaborn-v0_8-whitegrid.](assets/readme/lab5-viz.png)](DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb)
+[![Visualisation matplotlib (Lab5) : courbe de l'évolution du chiffre d'affaires journalier entre le 01-10 et le 04-10, décroissance de ~760 à ~230 puis remontée à ~480, tracée en matplotlib pur avec le style seaborn-v0_8-whitegrid.](assets/readme/lab5-viz.png)](DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.html)
 *Lab5 — matplotlib pur : chiffre d'affaires journalier sur quatre jours — chute de ~760 à ~230 le premier jour, plateau, puis remontée à ~480. Sur une fenêtre aussi courte, aucune tendance ne peut en être déduite : la figure illustre le style `seaborn-v0_8-whitegrid` (un **style matplotlib**, pas un import `seaborn`) appliqué à un DataFrame Pandas.*
 
-[![Agent ADK (Lab9) : diagramme en barres du revenu total par produit — tri décroissant spontané de l'agent, Gadget Y (~46 000) > Widget B (~44 500) > Gadget X (~34 000) > Widget A (~27 500).](assets/readme/lab9-adk.png)](DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb)
+[![Agent ADK (Lab9) : diagramme en barres du revenu total par produit — tri décroissant spontané de l'agent, Gadget Y (~46 000) > Widget B (~44 500) > Gadget X (~34 000) > Widget A (~27 500).](assets/readme/lab9-adk.png)](DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.html)
 *Lab9 — Premier agent ADK : l'agent a généré et exécuté le code Matplotlib qui produit cette figure, à partir de la requête « Crée un graphique à barres montrant le revenu par produit. Utilise matplotlib. » (cellule 17). Le **tri décroissant** (`sort_values(ascending=False)`) n'était pas demandé : l'agent l'a ajouté spontanément, ce qui rend l'insight (Gadget Y bat Widget A de ~70%) immédiatement lisible — petit pas vers le « diagramme qui parle de lui-même ».*
 
 ### Socle ML canonique (02-ML-Cours)
@@ -248,27 +248,27 @@ Entre les fondations NumPy/Pandas et les labs agentic, le socle machine learning
 
 | # | Notebook | Concept rendu visible | Focus |
 |---|----------|----------------------|-------|
-| 2.1 | [Workflow ML](DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) | Train/test split, surapprentissage rendu visible | Méthodologie |
-| 2.2 | [Descente de gradient](DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb) | Ouvrir la boîte noire de `fit()` | Optimisation |
-| 2.3 | [Régression linéaire & logistique](DataScienceWithAgents/02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb) | OLS vs maximum de vraisemblance | Modèles linéaires |
-| 2.3b | [Naive Bayes génératif](DataScienceWithAgents/02-ML-Cours/2.3b-Naive-Bayes-Generatif.ipynb) | L'indépendance conditionnelle qui décide la frontière (Bernoulli, multinomial, Gaussien) | Modèles génératifs |
-| 2.3c | [Régression grande dimension](DataScienceWithAgents/02-ML-Cours/2.3c-Regression-Grande-Dimension.ipynb) | p >> n : Ridge, PCR, PLS — var ≠ valeur prédictive | Modèles linéaires |
-| 2.3d | [Modèle gaussien LDA/QDA](DataScienceWithAgents/02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA.ipynb) | L'hypothèse de covariance décide la frontière : droite (LDA) vs conique (QDA) | Modèles génératifs |
-| 2.4 | [Arbres, forêts & ensembles](DataScienceWithAgents/02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb) | Réduction de variance (bagging, boosting) | Ensembles |
-| 2.5 | [Biais, variance, CV & ROC](DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb) | Compromis biais-variance, validation croisée, ROC/AUC | Évaluation |
-| 2.5b | [Calibration des probabilités](DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.ipynb) | Reliability diagram, ECE — pourquoi 0.87 n'est pas 87 % de chances | Évaluation |
-| 2.5c | [Équité par sous-groupes](DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb) | Parité démographique, equalized odds, post-traitement par seuils | Évaluation |
-| 2.6 | [Clustering & PCA](DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | KMeans, réduction de dimension | Non supervisé |
-| 2.7 | [Modèles non paramétriques](DataScienceWithAgents/02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | SVM, k plus proches voisins | Non paramétrique |
-| 2.8 | [Théorie PAC & VC](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) | Cadre PAC, dimension de Vapnik-Chervonenkis | Théorie de l'apprentissage |
-| 2.8b | [Théorie PAC — compagnon Lean](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | La même borne PAC démontrée et interrogée depuis le lake (kernel `lean4-wsl`) | Théorie formelle |
-| 2.8c | [Borne témoin concentration](DataScienceWithAgents/02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) | Carte transversale + mesure numérique : Novikoff, témoin extrémal, Hoeffding | Théorie de l'apprentissage |
-| 2.8d | [Lean Novikoff convergence](DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) | Novikoff `n·γ² ≤ R²` interrogé en direct : `#check` + `#print axioms` | Théorie formelle |
-| 2.9 | [Grokking — généralisation tardive](DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.ipynb) | Généralisation qui émerge après que le surapprentissage soit maximal (PyTorch + ACP) | Épilogue avancé |
-| 2.10 | [Optimisation hyperparamètres](DataScienceWithAgents/02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb) | Grille, hasard, bayésien (TPE) — et quand s'arrêter | Praticien |
-| 2.11 | [Régularisation sparse LASSO](DataScienceWithAgents/02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb) | La géométrie décide : polyèdre L1 → sparsité, boule L2 → shrink | Praticien |
-| 2.12 | [Données déséquilibrées](DataScienceWithAgents/02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb) | La courbe PR dit la vérité quand la ROC flatte | Praticien |
-| 2.13 | [Analyse d'erreurs](DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb) | Tranches, worst-k : la poche invisible sous un score global correct | Praticien |
+| 2.1 | [Workflow ML](DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.html) | Train/test split, surapprentissage rendu visible | Méthodologie |
+| 2.2 | [Descente de gradient](DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.html) | Ouvrir la boîte noire de `fit()` | Optimisation |
+| 2.3 | [Régression linéaire & logistique](DataScienceWithAgents/02-ML-Cours/2.3-Regression-lineaire-logistique.html) | OLS vs maximum de vraisemblance | Modèles linéaires |
+| 2.3b | [Naive Bayes génératif](DataScienceWithAgents/02-ML-Cours/2.3b-Naive-Bayes-Generatif.html) | L'indépendance conditionnelle qui décide la frontière (Bernoulli, multinomial, Gaussien) | Modèles génératifs |
+| 2.3c | [Régression grande dimension](DataScienceWithAgents/02-ML-Cours/2.3c-Regression-Grande-Dimension.html) | p >> n : Ridge, PCR, PLS — var ≠ valeur prédictive | Modèles linéaires |
+| 2.3d | [Modèle gaussien LDA/QDA](DataScienceWithAgents/02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA.html) | L'hypothèse de covariance décide la frontière : droite (LDA) vs conique (QDA) | Modèles génératifs |
+| 2.4 | [Arbres, forêts & ensembles](DataScienceWithAgents/02-ML-Cours/2.4-Arbres-Forets-Ensembles.html) | Réduction de variance (bagging, boosting) | Ensembles |
+| 2.5 | [Biais, variance, CV & ROC](DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.html) | Compromis biais-variance, validation croisée, ROC/AUC | Évaluation |
+| 2.5b | [Calibration des probabilités](DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.html) | Reliability diagram, ECE — pourquoi 0.87 n'est pas 87 % de chances | Évaluation |
+| 2.5c | [Équité par sous-groupes](DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes.html) | Parité démographique, equalized odds, post-traitement par seuils | Évaluation |
+| 2.6 | [Clustering & PCA](DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.html) | KMeans, réduction de dimension | Non supervisé |
+| 2.7 | [Modèles non paramétriques](DataScienceWithAgents/02-ML-Cours/2.7-Modeles-Non-Parametriques.html) | SVM, k plus proches voisins | Non paramétrique |
+| 2.8 | [Théorie PAC & VC](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.html) | Cadre PAC, dimension de Vapnik-Chervonenkis | Théorie de l'apprentissage |
+| 2.8b | [Théorie PAC — compagnon Lean](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.html) | La même borne PAC démontrée et interrogée depuis le lake (kernel `lean4-wsl`) | Théorie formelle |
+| 2.8c | [Borne témoin concentration](DataScienceWithAgents/02-ML-Cours/2.8c-Borne-Temoin-Concentration.html) | Carte transversale + mesure numérique : Novikoff, témoin extrémal, Hoeffding | Théorie de l'apprentissage |
+| 2.8d | [Lean Novikoff convergence](DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.html) | Novikoff `n·γ² ≤ R²` interrogé en direct : `#check` + `#print axioms` | Théorie formelle |
+| 2.9 | [Grokking — généralisation tardive](DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.html) | Généralisation qui émerge après que le surapprentissage soit maximal (PyTorch + ACP) | Épilogue avancé |
+| 2.10 | [Optimisation hyperparamètres](DataScienceWithAgents/02-ML-Cours/2.10-Optimisation-Hyperparametres.html) | Grille, hasard, bayésien (TPE) — et quand s'arrêter | Praticien |
+| 2.11 | [Régularisation sparse LASSO](DataScienceWithAgents/02-ML-Cours/2.11-Regularisation-Sparse-LASSO.html) | La géométrie décide : polyèdre L1 → sparsité, boule L2 → shrink | Praticien |
+| 2.12 | [Données déséquilibrées](DataScienceWithAgents/02-ML-Cours/2.12-Donnees-Desequilibrees.html) | La courbe PR dit la vérité quand la ROC flatte | Praticien |
+| 2.13 | [Analyse d'erreurs](DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.html) | Tranches, worst-k : la poche invisible sous un score global correct | Praticien |
 
 Dossier : [`02-ML-Cours/`](DataScienceWithAgents/02-ML-Cours/). Le notebook 2.8 (borne PAC/VC) est le **pendant empirique** du lake [`learning_theory_lean/`](learning_theory_lean/) qui *prouve* la convergence du perceptron — voir la section [Théorie formelle (Lean)](#théorie-formelle-lean) ci-dessous. Le notebook 2.9 (grokking) est un **épilogue avancé** qui rend visible un phénomène empirique (la généralisation *après* surapprentissage complet) souvent cité dans la littérature récente (Power et al., 2022), positionné hors du parcours fundamentals par PR #7280.
 
@@ -309,10 +309,10 @@ Documentation complète : [DataScienceWithAgents/Track2-GoogleADK/README.md](Dat
 
 ## Théorie formelle (Lean)
 
-Au-delà des notebooks empiriques (ML.NET, Python), la série ML accueille un **lake Lean 4** qui formalise deux résultats théoriques canoniques de l'apprentissage : [`learning_theory_lean/`](learning_theory_lean/). Convention des **lakes frères** — le lake est le livrable formel, `lake build` SUCCESS en est la preuve d'exécution, et les notebooks pédagogiques viennent en pendant : ici [`02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) pour la moitié PAC et [`02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) pour la moitié Perceptron, compagnons **kernel Lean** (`lean4-wsl`) placés contre leur jumeau empirique [`2.8-Theorie-PAC.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) (EPIC #11703).
+Au-delà des notebooks empiriques (ML.NET, Python), la série ML accueille un **lake Lean 4** qui formalise deux résultats théoriques canoniques de l'apprentissage : [`learning_theory_lean/`](learning_theory_lean/). Convention des **lakes frères** — le lake est le livrable formel, `lake build` SUCCESS en est la preuve d'exécution, et les notebooks pédagogiques viennent en pendant : ici [`02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.html) pour la moitié PAC et [`02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.html) pour la moitié Perceptron, compagnons **kernel Lean** (`lean4-wsl`) placés contre leur jumeau empirique [`2.8-Theorie-PAC.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.html) (EPIC #11703).
 
 - **[`learning_theory_lean/`](learning_theory_lean/)** — **théorème de convergence du perceptron** (Novikoff, 1962) : pour des données linéairement séparables de marge γ et de rayon R, l'algorithme du perceptron effectue au plus `(R/γ)²` mises à jour avant de trouver un classifieur correct. Preuve **géométrique élémentaire et entièrement 0-sorry** (croissance de l'alignement `⟨wₖ,u⟩ ≥ kγ` + croissance de la norme `‖wₖ‖² ≤ kR²` + Cauchy–Schwarz), sur un espace préhilbertien réel abstrait via Mathlib.
-- **Module `PacLearning`** — **théorie PAC** (Valiant, 1984) : la chaîne complète de la **borne de complexité d'échantillon** en classe finie `m ≥ (1/ε)(ln|H| + ln(1/δ))` (concentration de Hoeffding pour Bernoulli + borne de l'union) et la **borne de généralisation agnostic** — toutes deux **0-sorry**. C'est ce module que le notebook [2.8b](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) rend exécutable déclaration par déclaration, en pendant formel du [2.8](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) qui en mesure la prédiction empirique. Un second compagnon, côté série SymbolicAI, couvre la chaîne complète des bornes et toute la branche perceptron (Novikoff + serrage) avec exercices : [`SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb`](../SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb) (See #11703).
+- **Module `PacLearning`** — **théorie PAC** (Valiant, 1984) : la chaîne complète de la **borne de complexité d'échantillon** en classe finie `m ≥ (1/ε)(ln|H| + ln(1/δ))` (concentration de Hoeffding pour Bernoulli + borne de l'union) et la **borne de généralisation agnostic** — toutes deux **0-sorry**. C'est ce module que le notebook [2.8b](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.html) rend exécutable déclaration par déclaration, en pendant formel du [2.8](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.html) qui en mesure la prédiction empirique. Un second compagnon, côté série SymbolicAI, couvre la chaîne complète des bornes et toute la branche perceptron (Novikoff + serrage) avec exercices : [`SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb`](../SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.html) (See #11703).
 
 C'est le **pendant prouvé** des notebooks de classification linéaire (`ML.Net/ML-3` entraîne des classifieurs, `02-ML-Cours/2.3` pose régression linéaire/logistique) : là où les notebooks *montrent* que le perceptron converge en pratique, le lake *prouve* la borne. Voir le [README du lake](learning_theory_lean/README.md) pour les modules et le détail de la preuve.
 
@@ -435,7 +435,7 @@ La thèse pratique est honnête : un bon modèle vit ou meurt par la qualité de
 
 ### Prochaines étapes
 
-- **Approfondir le calcul bayésien** : le [TP prévision de ventes](ML.Net/TP-prevision-ventes.ipynb) dresse un pont vers [Probas](../Probas/README.md) (Infer.NET, PyMC), où la régression bayésienne traitée ici comme cas d'application devient un langage à part entière — distributions, inférence, incertitude quantifiée.
+- **Approfondir le calcul bayésien** : le [TP prévision de ventes](ML.Net/TP-prevision-ventes.html) dresse un pont vers [Probas](../Probas/README.md) (Infer.NET, PyMC), où la régression bayésienne traitée ici comme cas d'application devient un langage à part entière — distributions, inférence, incertitude quantifiée.
 - **Passer à l'apprentissage par renforcement** : [RL](../RL/README.md) prend le relais quand l'apprentissage ne se fait plus sur des données statiques mais par **interaction** avec un environnement — le cadre naturel pour le trading ([QuantConnect](../QuantConnect/README.md)) et les systèmes décisionnels séquentiels.
 - **Mesurer l'incertitude, pas seulement la prédiction** : les notebooks d'évaluation (ML-4) introduisent métriques et PFI ; la série [Probas](../Probas/README.md) pousse plus loin en quantifiant l'incertitude d'une prédiction plutôt que son seul point estimé.
 - Pour la pratique : reprenez le TP prévision de ventes en remplaçant la régression ML.NET par une Infer.NET, puis comparez les intervalles de confiance — c'est le passage le plus formateur entre ML classique et modélisation probabiliste.
