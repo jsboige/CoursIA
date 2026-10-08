@@ -1703,6 +1703,39 @@ def render_template(snapshot: dict[str, Any], lane: str = ADJOINT_LANE) -> str:
     return "\n".join([START, *(f"{key}: {value}" for key, value in fields), END])
 
 
+def find_previous_blocked_same_head(
+    snapshot: dict[str, Any], current_head: str
+) -> tuple[int, Dossier] | None:
+    """#19869 -- miroir de `mute_contradictions` pour l'emetteur.
+
+    Trouve le dossier BLOCKED anterieur a la meme tete, miroir de la
+    recherche que `mute_contradictions` effectue au moment du gate. La
+    position est 1-based (celle que `restamp_warning` affiche deja), pour
+    que l'auto-remplissage par `--emit` rime avec le verdict du gate sans
+    qu'aucune re-edition soit necessaire.
+
+    Renvoie ``(position, Dossier)`` du dossier BLOCKED anterieur, ou
+    ``None`` si rien ne correspond. La recherche est **tete-a-tete** : un
+    dossier anterieur sur une tete differente est deja perime par
+    exact-head, et il n'y a rien a refuter.
+    """
+    comments = snapshot.get("comments") or []
+    for index in range(len(comments) - 1, -1, -1):
+        comment = comments[index]
+        dossier, _errors = parse_dossier(
+            comment.get("body") or "",
+            index,
+            _login(comment),
+            comment.get("createdAt") or "",
+        )
+        if dossier is None:
+            continue
+        if (dossier.fields.get("verdict") == VERDICT_BLOCKED
+                and dossier.fields.get("head") == current_head):
+            return (index + 1, dossier)
+    return None
+
+
 def render_emitted_dossier(
     snapshot: dict[str, Any], lane: str = ADJOINT_LANE, probe: Any = None
 ) -> tuple[str, str, list[str]]:
@@ -1715,6 +1748,13 @@ def render_emitted_dossier(
     nommer si BLOCKED) restent a remplir par la lane emettrice. Renvoie
     (bloc, verdict, raisons) -- l'emetteur rapporte le rc mesure
     (0 READY / 3 BLOCKED) sans le choisir.
+
+    #19869 -- si le verdict derive est READY et qu'un dossier BLOCKED
+    anterieur existe a la meme tete, l'emetteur **DOIT** pre-renseigner
+    `supersedes` et `supersedes-why` (cf. `mute_contradictions` l.1307) :
+    sans ces deux champs, le gate refuse le dossier pose avec NO-DOSSIER.
+    L'auto-texte invite la lane emettrice a le remplacer par une prose
+    nommant la preuve qui a change (cf. corps de `supersedes-why`).
     """
     template = render_template(snapshot, lane)
     verdict, reasons = derive_verdict(snapshot, probe)
@@ -1727,6 +1767,23 @@ def render_emitted_dossier(
         ),
         "organ-rc": str(organ_rc),
     }
+    supersedes_lines: list[str] = []
+    if verdict == VERDICT_READY:
+        previous = find_previous_blocked_same_head(
+            snapshot, snapshot["headRefOid"]
+        )
+        if previous is not None:
+            position, dossier = previous
+            supersedes_lines = [
+                f"supersedes: {position}",
+                (
+                    "supersedes-why: auto -- covers BLOCKED dossier from "
+                    f"{dossier.author} ({dossier.created_at}) at the same head; "
+                    f"re-attestation derived by {ORGAN_NAME} (organ-rc "
+                    f"{organ_rc}); replace this line with the proof that "
+                    "changed (or the old dossier's error)"
+                ),
+            ]
     lines = []
     for line in template.split("\n"):
         key = line.split(":", 1)[0] if ":" in line else None
@@ -1734,6 +1791,11 @@ def render_emitted_dossier(
             lines.append(f"{key}: {provenance[key]}")
         else:
             lines.append(line)
+    # Insertion des supersedes-* avant END (derniere ligne du template).
+    # C'est le contrat `parse_dossier` : tout ce qui est entre START et END
+    # est un champ ; placer apres END serait ignore.
+    if supersedes_lines and lines and lines[-1].strip() == END:
+        lines = lines[:-1] + supersedes_lines + [lines[-1]]
     return "\n".join(lines), verdict, reasons
 
 
