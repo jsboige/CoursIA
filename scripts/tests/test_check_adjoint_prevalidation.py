@@ -2560,9 +2560,12 @@ def test_find_previous_blocked_same_head_ignores_ready_predecessors():
     assert dossier.fields.get("verdict") == mod.VERDICT_BLOCKED
 
 
-def test_render_emitted_dossier_autofills_supersedes_for_ready():
+def test_render_emitted_dossier_autofills_supersedes_for_ready(monkeypatch):
     """Un READY au-dessus d'un BLOCKED a meme tete : supersedes+why poses
     automatiquement, dans le bloc, avant END, par --emit."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
     snapshot = _stacked_dossiers({}, {})
     block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
     assert verdict == mod.VERDICT_READY
@@ -2582,18 +2585,24 @@ def test_render_emitted_dossier_autofills_supersedes_for_ready():
     assert supersedes_index < supersedes_why_index
 
 
-def test_render_emitted_dossier_omits_supersedes_when_no_blocked():
+def test_render_emitted_dossier_omits_supersedes_when_no_blocked(monkeypatch):
     """Pas de BLOCKED anterieur a meme tete : pas de supersedes, sortie
     identique au template + provenance."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
     snapshot = _snapshot(_body())
     block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
     assert verdict == mod.VERDICT_READY
     assert "supersedes" not in block
 
 
-def test_render_emitted_dossier_omits_supersedes_for_blocked_verdict():
+def test_render_emitted_dossier_omits_supersedes_for_blocked_verdict(monkeypatch):
     """Verdict derive BLOCKED : la direction conservatrice serre, elle ne
     debloque pas. Pas de supersedes meme si un BLOCKED anterieur existe."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
     # Construire un snapshot ou le verdict derive sera BLOCKED : un draft.
     snapshot = _base_snapshot()
     snapshot["isDraft"] = True
@@ -2606,18 +2615,24 @@ def test_render_emitted_dossier_omits_supersedes_for_blocked_verdict():
     assert "supersedes" not in block
 
 
-def test_render_emitted_dossier_omits_supersedes_on_changed_head():
+def test_render_emitted_dossier_omits_supersedes_on_changed_head(monkeypatch):
     """BLOCKED anterieur sur une AUTRE tete : perime par exact-head, rien
     a refuter, pas de supersedes dans le rendu."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
     snapshot = _stacked_dossiers({"head": OTHER_HEAD}, {})
     block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
     assert verdict == mod.VERDICT_READY
     assert "supersedes" not in block
 
 
-def test_render_emitted_dossier_blocked_at_same_head_then_changed_head():
+def test_render_emitted_dossier_blocked_at_same_head_then_changed_head(monkeypatch):
     """BLOCKED sur tete-1, puis tete changee : le nouveau READY n'a rien
     a refuter (tete-1 BLOCKED est deja perime par exact-head)."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
     snapshot = _base_snapshot()
     # Premier dossier BLOCKED a tete-1 (index 1)
     blocked = {
