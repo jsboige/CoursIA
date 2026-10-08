@@ -86,7 +86,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 6, backtests QC Cloud MCP) | 5 | cohorte Régime/Factor/Vol/Leveraged-Factor — **1 edge candidat** (LeveragedETFMomentum PSR 79.8 %, ETF leveraged → flag OOS), 4 Needs-improvement |
 | Vérifié (tranche 7, backtests QC Cloud MCP) | 5 | cohorte **ML supervisé / DL / SVM-wavelet** (5 stratégies best-guess ML du bucket Vivant promues) — **0 edge significative** (PSR max = 29.3 % Sector-ML-Classification ; 2/5 PSR < 10 % ; aucune > 50 %), 5 Needs-improvement — confirme que le ML in-sample sans walk-forward multi-seed ne surfit pas la cohorte |
 | Vérifié (tranche 8, backtests QC Cloud MCP) | 5 | cohorte **Trend + Régime + Vol risk** (5 stratégies best-guess du bucket Vivant promues) — **0 edge significative** (PSR < 50 % partout), 4 Needs-improvement, 1 BROKEN (VIX-TermStructure Sharpe négatif −0.125, PSR 0.18 %) ; max PSR 24.99 % TrendStocksLite |
-| Vérifié (tranche 9, backtests QC Cloud MCP) | 5 | cohorte Composite+Options+Vol/Momentum — **0 edge** (PSR < 50 % partout) ; PSR max 19.78 % (Framework_Composite_EMATrend) |
+| Vérifié (tranche 9, backtests QC Cloud MCP) | 5 | cohorte Composite+Options+Vol/Momentum — **0 edge** (PSR < 50 % partout) ; PSR max 19.78 % (Framework_Composite_EMATrend, PSR non reproduit par #19759 : 8,95 %) |
 | Vérifié (tranche 10, backtests QC Cloud MCP) | 5 | cohorte DeepLearning+LSTM+Temporal-CNN — **1 BROKEN** (Crypto-LSTM-Prediction Sharpe -0.021) ; PSR max 28.70 % (Temporal-CNN-Prediction) |
 | Vérifié (tranche 11, backtests QC Cloud MCP) | 4 | cohorte Crypto BTC + IBKR-Binance-Hybrid — **0 edge significatif** (PSR < 50 %), 4 Needs-improvement (1 MaxDD catastrophique 72.7 %) ; cohorte limitée à 4 stratégies vérifiables firsthand (les 5ᵉ `Crypto-LSTM-Prediction` overlap tranche 10) |
 | Vérifié (tranche 12, backtests QC Cloud MCP) | 3 | cohorte ML NLP + Reinforcement Learning — 3 promotions Vivant (ML-FinBERT-Sentiment, ML-LLM-Summarization, RL-DQN-Trading) + 2 vérifications hors-Vivant (`RL-Options-Hedging` Stub BROKEN Sharpe -1.264 ; `Reinforcement-Learning-Trading` Squelette Needs-improvement PSR 2.19 %) — **1 BROKEN + 2 Needs-improvement**, PSR max 37.14 % (ML-LLM-Summarization, aucune > 50 %) |
@@ -272,7 +272,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 > Trend/Macro-Régime/Options/Causal/Factor, Régime/Factor/Vol/Leveraged-Factor ; **et distincte des
 > tranches 7-8 OPEN ML et Trend+Regime+Vol risk** qui seront ajoutées à leurs merges respectifs).
 > Métriques pleine période in-sample (non walk-forward OOS). **0 edge statistiquement significative** :
-> PSR < 50 % sur toute la cohorte (max 19.78 % `Framework_Composite_EMATrend`). Confirme pour la
+> PSR < 50 % sur toute la cohorte (max 19.78 % `Framework_Composite_EMATrend`, non reproduit par #19759 : 8,95 %). Confirme pour la
 > cohorte Composite+Options+Vol/Momentum ce que les tranches 2-8 confirment : les backtests in-sample
 > pleine période **ne valident aucun edge** sur la cohorte.
 
@@ -797,7 +797,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Dividend-Harvesting-ML` | `projects/Dividend-Harvesting-ML/` | ML dividendes | **Vérifié tranche 13** | main.py: class DividendHarvestingAlgorithm(QCAlgorithm) — voir section tranche 13 |
 | `EMA-Cross-Alpha` | `projects/EMA-Cross-Alpha/` | Trend EMA | Vivant | main.py: class EMACrossAlphaAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `EMA-Cross-Stocks` | `projects/EMA-Cross-Stocks/` | Trend EMA | **Vérifié tranche 16** | main.py: class EMACrossStocksAlgorithm(QCAlgorithm) + quantbook.ipynb — voir section tranche 16 |
-| `Framework_Composite_EMATrend` | `projects/Framework_Composite_EMATrend/` | Composite | **Vérifié tranche 9** | main.py: class FrameworkCompositeEMATrend(QCAlgorithm) + quantbook.ipynb — voir section tranche 9 |
+| `Framework_Composite_EMATrend` | `projects/Framework_Composite_EMATrend/` | Composite | **Vérifié tranche 9** | main.py: class FrameworkCompositeEMATrend(QCAlgorithm) + quantbook.ipynb — voir section tranche 9 (NO BEATS, #19759) |
 | `Framework_Composite_MomentumRegime` | `projects/Framework_Composite_MomentumRegime/` | Composite | **Vérifié tranche 16** | main.py: class FrameworkCompositeMomentumRegime(QCAlgorithm) + quantbook.ipynb — voir section tranche 16 (NO BEATS, #19740) |
 | `Framework_Composite_TrendWeather` | `projects/Framework_Composite_TrendWeather/` | Composite | **Vérifié tranche 16** | main.py: class FrameworkCompositeStrategy(QCAlgorithm) + quantbook.ipynb — voir section tranche 16 |
 | `Gaussian-Direction-Classifier` | `projects/Gaussian-Direction-Classifier/` | ML classification | **Vérifié tranche 13** | main.py: class GaussianDirectionClassifier(QCAlgorithm) + research.ipynb — voir section tranche 13 |
