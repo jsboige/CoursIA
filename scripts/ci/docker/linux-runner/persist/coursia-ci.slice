@@ -93,8 +93,9 @@
 # n'est plus vrai, et c'est precisement ce qui a ete corrige : cette machine a
 # une VM de 24 Go et sa composition declarait 27 648 Mo de caps, payes en swap
 # (104 GiB ecrits en moins de 11 h, DriveFS et RooSync emportes avec). Sa slice
-# n'est PAS une copie de celle-ci : elle porte `MemoryHigh=20G`,
-# `MemoryMax=22G`, `MemorySwapMax=0` -- des valeurs calibrees sur SA VM, et
+# n'est PAS une copie de celle-ci : elle porte `MemoryHigh=14G`,
+# `MemoryMax=16G`, `MemorySwapMax=0` (amendement J+7 du 2026-10-08 ; 20G/22G
+# au premier depot) -- des valeurs calibrees sur SA VM, et
 # aucun `CPUQuota`, parce que son axe CPU a son propre arbitrage en cours. La
 # copie de reference vit sous `po-2024/coursia-ci.slice`, et les deux ne
 # doivent jamais etre confondues : deployer celle-ci sur po-2024 poserait des

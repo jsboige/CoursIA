@@ -39,9 +39,9 @@ export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 # rend auditable : la valeur effective vit dans un fichier que l'operateur ouvre,
 # pas dans un defaut de shell que personne ne lit.
 #
-# 21 POUR po-2024 (2026-10-08) -- LE 42 EST TOMBE, ET IL ETAIT DEVENU FAUX
-# DEUX FOIS. Il avait ete pose le 2026-09-21 pour une VM de 40 110 Mo
-# (.wslconfig memory=40GB, arbitrage user, mission
+# 15 POUR po-2024 (2026-10-08, amendement J+7) -- LE 42 EST TOMBE, ET IL
+# ETAIT DEVENU FAUX DEUX FOIS. Il avait ete pose le 2026-09-21 pour une VM de
+# 40 110 Mo (.wslconfig memory=40GB, arbitrage user, mission
 # msg-20260921T203652-qxg3en). Depuis, la VM est revenue a 24 Go : `.wslconfig
 # memory=24GB` et `free -m` (24 032 Mo) le mesurent tous les deux. Et son
 # arithmetique de 43 008 Mo n'a jamais ete la vraie : elle comptait
@@ -54,9 +54,9 @@ export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 # LA COMPOSITION QUE CE BUDGET DECLARE, ET CE QU'ELLE LAISSE :
 #     4 slots docker x 1536 Mo = 6 144 Mo   (cap unitaire INCHANGE)
 #     6 waiters      x  512 Mo = 3 072 Mo   (cap unitaire INCHANGE)
-#     2 slots lean   x 6144 Mo = 12 288 Mo  (jambe inchangee)
+#     1 slot lean    x 6144 Mo = 6 144 Mo   (2 -> 1, verdict J+7 ci-dessous)
 #     --------------------------------------
-#     total CAPS                21 504 Mo   sur 24 032 -> marge 2 528 Mo
+#     total CAPS                15 360 Mo   sur 24 032 -> marge 8 672 Mo
 #
 # ON REDUIT DES NOMBRES DE SLOTS, JAMAIS DES CAPS. Mesure du 2026-10-08 :
 # 3 des 6 conteneurs docker touchaient leur cap de 1536 Mo a 99 %, donc le cap
@@ -67,9 +67,9 @@ export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 # ne l'abaisse nulle part.
 #
 # LE BUDGET RESTE UN PLAFOND D'ADMISSION, PAS UN MUR. Il refuse de DEMARRER un
-# slot au-dela de 21 Go ; il ne borne pas ce qu'un slot deja lance consomme.
+# slot au-dela de 15 Go ; il ne borne pas ce qu'un slot deja lance consomme.
 # Le mur kernel est desormais pose sur cette machine : voir
-# persist/po-2024/coursia-ci.slice (MemoryHigh=20G, MemoryMax=22G,
+# persist/po-2024/coursia-ci.slice (MemoryHigh=14G, MemoryMax=16G,
 # MemorySwapMax=0), et COURSIA_RUNNER_CGROUP_PARENT plus bas, qui y fait entrer
 # les conteneurs.
 #
@@ -77,10 +77,10 @@ export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 # somme les conteneurs label `coursia-ci=1` de TOUTES les familles : deux jambes
 # qui divergeraient refuseraient leurs slots l'une contre l'autre, et le message
 # d'erreur ne nommerait pas la divergence -- il parlerait de memoire en vol.
-# Les trois jambes de po-2024 portent 21 : celle-ci, la jambe lean, et la jambe
+# Les trois jambes de po-2024 portent 15 : celle-ci, la jambe lean, et la jambe
 # waiters (par le drop-in persist/po-2024/coursia-waiters.service.d/10-sizing.conf,
 # dont le wrapper appartient a ai-01 et ne declare aucun budget).
-export COURSIA_RUNNER_BUDGET_GB=21
+export COURSIA_RUNNER_BUDGET_GB=15
 
 # PARENT CGROUP -- LE MUR KERNEL QUI MANQUAIT A CETTE MACHINE (2026-10-08).
 # supervise.sh pose `--cgroup-parent=$COURSIA_RUNNER_CGROUP_PARENT` sur chaque
@@ -122,33 +122,36 @@ export COURSIA_RUNNER_CGROUP_PARENT="coursia-ci.slice"
 #   - le service passe de start 8 a start 6 (conforme a l'arbitrage) dans
 #     coursia-runner.service : la reduction de 24 a 18 vCPU docker vit la.
 #
-# CE BLOC PASSE DE 30 A 24 LE 2026-10-08, ET C'EST UNE CONSEQUENCE, PAS UN
-# ARBITRAGE. Le raisonnement ci-dessus tenait pour une composition docker 6 :
-# 6x3 + 2x6 = 30, et 24 aurait refuse la jambe lean. Le budget memoire de cette
-# PR descend les slots docker a 4, donc la somme REDEVIENT 4x3 + 2x6 = 24 --
-# exactement le plus petit budget ou la flotte ordonnee demarre, par le meme
-# critere que celui invoque plus haut. Ce qui a change est la composition, pas
-# la doctrine : le budget reste egal a la somme des caps des familles
-# d'execution, jamais un chiffre choisi pour lui-meme.
+# CE BLOC PASSE DE 30 A 24 PUIS A 18 LE 2026-10-08, ET LES DEUX FOIS CE SONT
+# DES CONSEQUENCES, PAS DES ARBITRAGES. Le raisonnement initial tenait pour
+# une composition docker 6 : 6x3 + 2x6 = 30, et 24 aurait refuse la jambe
+# lean. Le budget memoire de cette PR descend les slots docker a 4, donc la
+# somme redevenait 4x3 + 2x6 = 24. L'AMENDEMENT J+7 (verdict mesure, le
+# point de retour prevu par l'arbitrage) descend la jambe lean a 1 slot :
+# 4x3 + 1x6 = 18. Ce qui a change est la composition, pas la doctrine : le
+# budget reste egal a la somme des caps des familles d'execution, jamais un
+# chiffre choisi pour lui-meme.
+#
+# VERDICT J+7 (2026-10-08, characterize_runner_variance.py --days 7, 456 jobs
+# lourds) : le ratio p90/mediane des jobs lourds par runner po-2024 est
+# docker-1 9,3x · docker-2 5,1x · docker-3 14,5x · docker-4 4,0x ·
+# docker-5 23,3x · docker-6 15,4x -- CINQ RUNNERS SUR SIX AU-DESSUS DU SEUIL
+# 5x que l'arbitrage avait fixe. La regle s'applique donc : passage a 18 avec
+# right-sizing, le right-sizing etant la jambe lean (2 -> 1 slots, son cap
+# unitaire de 6 Go et 6 vCPU reste INCHANGE). Noter que la fenetre 7 j couvre
+# majoritairement l'ere 6-slots/30 vCPU d'avant le budget memoire -- rapporte
+# tel quel, la regle ne conditionnait pas sa decision a la composition.
 #
 # La sur-souscription CPU reelle de la machine baisse au passage : elle etait
-# de 30 vCPU declares pour 16 disponibles (1,875x) avec 6 slots docker ; elle
-# est de 24 pour 16 (1,5x) avec 4. L'axe CPU n'est PAS tranche ici pour autant
-# -- c'est un effet de bord mesure, pas une reponse a #15574.
-#
-# Point de retour mesure J+7 (prevu par l'arbitrage) : rejeu de
-# characterize_runner_variance.py sur la meme fenetre ; si le ratio
-# p90/mediane des jobs lourds ne descend pas sous 5x, passage a 16 avec
-# right-sizing -- qui devra alors aussi redimensionner la jambe lean, sinon
-# elle seule depasse le budget. CE POINT DE RETOUR TOMBE AUJOURD'HUI
-# (2026-10-08) et reste ouvert : il porte sur la variance des jobs lourds, il
-# n'est ni traite ni invoque par cette PR, qui ne change aucun cap CPU.
+# de 30 vCPU declares pour 16 disponibles (1,875x) avec 6 slots docker ; 24
+# pour 16 (1,5x) avec 4 docker + 2 lean ; elle est de 18 pour 16 (1,125x)
+# avec 4 docker + 1 lean.
 #
 # LES DEUX JAMBES D'EXECUTION PORTENT LE MEME NOMBRE (runner et lean) : le
 # garde fire au demarrage de chacune et somme l'autre. La jambe waiters n'en
 # declare pas : depuis l'exclusion, un demarrage de waiters n'ajoute rien a
 # la somme -- la declarer serait du decor.
-export COURSIA_RUNNER_CPU_BUDGET=24
+export COURSIA_RUNNER_CPU_BUDGET=18
 
 # #15095 : echec immediat si le demon du socket epingle ne repond pas --
 # AVANT tout demarrage de slot et tout fetch de registration token (gh).

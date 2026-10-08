@@ -17,18 +17,19 @@
 # machine est revenue a 24 032 Mo alors que la composition declaree totalisait
 # 27 648 Mo de caps (6x1536 docker + 12x512 waiters + 2x6144 lean) : une somme
 # de caps superieure a la RAM, payee en swap -- 104 GiB ecrits en moins de 11 h,
-# DriveFS et la coordination de la flotte en premier. Les 4 slots ramenent la
-# composition a 21 504 Mo, sous la VM avec 2 528 Mo de marge.
+# DriveFS et la coordination de la flotte en premier. Les 4 slots ramenaient la
+# composition a 21 504 Mo (2 528 Mo de marge) ; l'amendement J+7 du meme jour
+# (lean 2 -> 1 slot) la porte a 15 360 Mo, marge 8 672 Mo.
 #
 # LE CAP UNITAIRE N'EST PAS TOUCHE (1536 Mo), et c'est mesure : 3 des 6
 # conteneurs le touchaient a 99 %. C'est la CONCURRENCE qui ne tenait pas, pas
 # la taille d'un job -- un job lourd garde exactement le meme regime memoire, il
 # attend son tour au lieu de pousser la machine dans le swap.
 #
-# Le budget CPU suit mecaniquement : 4 x 3 + 2 lean x 6 = 24, et c'est la valeur
-# que porte desormais COURSIA_RUNNER_CPU_BUDGET dans les deux wrappers. L'axe CPU
-# lui-meme n'est PAS tranche ici -- #15574 a son propre point de retour mesure
-# J+7, qui tombe le 2026-10-08 et reste ouvert.
+# Le budget CPU suit mecaniquement : 4 x 3 + 2 lean x 6 faisait 24 ; l'amendement
+# J+7 (verdict characterize_runner_variance.py --days 7 : 5 runners sur 6 au-dessus
+# du seuil p90/mediane 5x) tranche 4 x 3 + 1 lean x 6 = 18, la valeur que porte
+# desormais COURSIA_RUNNER_CPU_BUDGET dans les deux wrappers.
 [Unit]
 Description=CoursIA Linux runners supervisor (docker slots)
 # #15095 : Requires+BindsTo INVERSE le choix Wants= de #14347 item 2. Le

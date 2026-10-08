@@ -30,7 +30,7 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `po-2026/pool.sh` | **po-2026** | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, **8 slots** et **borne depuis le 2026-09-22** (cf. `po-2026/README.md`) |
 | `po-2026/run-pool-po2026.sh` | **po-2026** (hote Windows) | `C:\dev\CoursIA-runners-p0\run-pool-po2026.sh` | **deploye et vivant** -- lanceur de la tache planifiee, porte la borne CPU/memoire. **Attention : ce fichier vit sous `C:\dev\...`, pas sous `D:\Dev\CoursIA-runners-p0\`** (cf. `po-2026/README.md`) |
 | `po-2026/README.md` | -- | -- | **document** : architecture, dimensionnement, piege du verrou |
-| `po-2024/coursia-ci.slice` | **po-2024** | `/etc/systemd/system/coursia-ci.slice` | **a deployer** (2026-10-08) -- le mur kernel qui manquait a cette machine : `MemoryHigh=20G`, `MemoryMax=22G`, `MemorySwapMax=0`. Homonyme de la slice ai-01, valeurs differentes (cf. section `po-2024/`) |
+| `po-2024/coursia-ci.slice` | **po-2024** | `/etc/systemd/system/coursia-ci.slice` | **a deployer** (2026-10-08, amendement J+7 : valeurs 20G/22G -> 14G/16G, budget 21 -> 15) -- le mur kernel qui manquait a cette machine : `MemoryHigh=14G`, `MemoryMax=16G`, `MemorySwapMax=0`. Homonyme de la slice ai-01, valeurs differentes (cf. section `po-2024/`) |
 | `po-2024/coursia-waiters.service.d/10-sizing.conf` | **po-2024** | `/etc/systemd/system/coursia-waiters.service.d/10-sizing.conf` | **a deployer** (2026-10-08) -- 12 -> 6 slots waiters pour po-2024 seulement, par drop-in, parce que `coursia-waiters.service` est le fichier d'**ai-01** que les deux machines executent |
 
 Le sous-repertoire `ai-01/` existe parce que les deux machines ont des fichiers

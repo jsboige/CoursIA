@@ -52,23 +52,32 @@ export COURSIA_LEAN_RUNNER_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-myia-
 export COURSIA_RUNNER_STATE_DIR="${COURSIA_RUNNER_STATE_DIR:-/var/lib/coursia-lean}"
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 
-# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 21 Go depuis le
-# 2026-10-08 (le 42 etait devenu faux deux fois : VM revenue de 40 110 a
-# 24 032 Mo, et son arithmetique comptait « 12x1536 waiters » pour des waiters
-# a 512 Mo -- detail complet en tete de coursia-runner-start.sh).
+# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 15 Go depuis le
+# 2026-10-08, amendement J+7 (le 42 etait devenu faux deux fois : VM revenue
+# de 40 110 a 24 032 Mo, et son arithmetique comptait « 12x1536 waiters »
+# pour des waiters a 512 Mo -- detail complet en tete de coursia-runner-start.sh).
 #
 # CETTE JAMBE EST CELLE QUI REND LE BUDGET VISIBLE, et c'est pour ca qu'elle
-# doit le declarer : ses 2 slots a 6 Go demandent 12 288 Mo a eux seuls. Sous
-# un budget trop court, le garde refuse leur demarrage -- ce qui est CORRECT,
+# doit le declarer : son slot a 6 Go demande 6 144 Mo a lui seul. Sous
+# un budget trop court, le garde refuse son demarrage -- ce qui est CORRECT,
 # et c'est l'incident fondateur ecrit ici : sous l'ancien budget 12 Go, les
 # slots lean ne demarraient JAMAIS tant que les autres familles etaient en vol.
 # Un budget qui ne couvre pas la composition complete ne protege rien : il
 # empeche une jambe entiere de tourner.
 #
+# L'AMENDEMENT J+7 DESCEND CETTE JAMBE DE 2 A 1 SLOT (verdict
+# characterize_runner_variance.py --days 7 du 2026-10-08 : 5 runners docker
+# sur 6 au-dessus du seuil p90/mediane 5x -- ratios 9,3 / 5,1 / 14,5 / 4,0 /
+# 23,3 / 15,4) : la regle #15574 item 3 tranche le passage CPU 24 -> 18, le
+# right-sizing etant ce slot unique (cap unitaire 6 Go / 6 vCPU INCHANGE --
+# on reduit un nombre de slots, jamais un cap). Le volume chaud
+# coursia-runner-work-lean-2 reste en place, non supprime : remettre le
+# second slot est un `ExecStart ... 2` + restart, pas une reconstruction.
+#
 # Les trois jambes doivent annoncer le meme nombre : assert_memory_budget
 # somme les familles entre elles, une divergence refuserait des slots sans
 # nommer sa cause.
-export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-21}"
+export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-15}"
 
 # AUCUN SWAP POUR LA JAMBE LEAN (2026-10-08) -- memory-swap = memory.
 # Le defaut de supervise.sh est `LEAN_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY_SWAP:-12g}"`,
@@ -103,18 +112,18 @@ export COURSIA_LEAN_RUNNER_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY:-6g}"
 # BUDGET CPU INTER-FAMILLES (#15574 item 3, arbitrage coordinateur du
 # 2026-10-01, comment 5933689033) -- MEME NOMBRE que coursia-runner-start.sh.
 # assert_cpu_budget somme les familles d'EXECUTION (start + lean ; les
-# waiters, oisifs, en sont exclus) et refuse le demarrage au depassement.
-# Valeur 24 depuis le 2026-10-08 : docker 4x3 + lean 2x6 = 24. C'etait 30 tant
-# que la composition portait 6 slots docker ; le budget a suivi la composition,
-# il ne l'a pas precedee. Le garde est inerte a 0 ou absent (etat anterieur de
-# la machine).
-export COURSIA_RUNNER_CPU_BUDGET="${COURSIA_RUNNER_CPU_BUDGET:-24}"
+# waiters, oisifs, en sont excludes) et refuse le demarrage au depassement.
+# Valeur 18 depuis l'amendement J+7 du 2026-10-08 : docker 4x3 + lean 1x6 =
+# 18. C'etait 24 avec 2 slots lean (4x3 + 2x6), 30 avec 6 slots docker ;
+# le budget a suivi la composition, il ne l'a pas precedee. Le garde est
+# inerte a 0 ou absent (etat anterieur de la machine).
+export COURSIA_RUNNER_CPU_BUDGET="${COURSIA_RUNNER_CPU_BUDGET:-18}"
 
 # PARENT CGROUP -- meme valeur que coursia-runner-start.sh, meme raison : les
 # trois familles doivent entrer dans la MEME slice pour que ses limites
-# s'appliquent a leur somme. Ce sont les 2 slots lean qui rendaient l'absence
-# de mur visible (12 288 Mo de caps a eux seuls, contre une VM de 24 032) ;
-# ils sont desormais sous MemorySwapMax=0 comme le reste de la CI.
+# s'appliquent a leur somme. C'est la jambe lean qui rendait l'absence
+# de mur visible (12 288 Mo de caps pour ses 2 slots d'alors, contre une VM
+# de 24 032) ; elle est desormais sous MemorySwapMax=0 comme le reste de la CI.
 export COURSIA_RUNNER_CGROUP_PARENT="coursia-ci.slice"
 
 cd "$REPO_DIR" || exit 1

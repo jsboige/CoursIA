@@ -46,13 +46,23 @@
 # pas etre tenue : elle se paie en swap. C'est la definition du probleme, et
 # aucun garde userspace ne peut le resoudre seul -- il fallait un mur kernel.
 #
-# L'ARITHMETIQUE RETENUE (budget 21 Go, meme nombre sur les trois jambes)
+# L'ARITHMETIQUE RETENUE (budget 15 Go, amendement J+7, meme nombre sur les
+# trois jambes)
 # ---------------------------------------------------------------------
 #   4 slots docker x 1536 Mo  = 6 144 Mo
 #   6 waiters x 512 Mo        = 3 072 Mo
-#   2 slots lean x 6144 Mo    = 12 288 Mo
+#   1 slot lean x 6144 Mo     = 6 144 Mo   (2 -> 1, verdict J+7 ci-dessous)
 #   ---------------------------------------
-#   total CAPS                 21 504 Mo   sous 24 032 Mo -> marge 2 528 Mo
+#   total CAPS                 15 360 Mo   sous 24 032 Mo -> marge 8 672 Mo
+#
+# L'AMENDEMENT J+7 (2026-10-08) : le point de retour prevu par l'arbitrage
+# CPU du 2026-10-01 a ete joue -- characterize_runner_variance.py --days 7,
+# 456 jobs lourds, ratio p90/mediane par runner po-2024 : docker-1 9,3x,
+# docker-2 5,1x, docker-3 14,5x, docker-4 4,0x, docker-5 23,3x, docker-6
+# 15,4x. CINQ RUNNERS SUR SIX au-dessus du seuil 5x : la regle #15574 item 3
+# tranche le passage CPU 24 -> 18, le right-sizing etant la jambe lean
+# (2 -> 1 slots). La memoire suit le meme mouvement : la composition etait
+# 21 504 Mo avec 2 slots lean, elle est 15 360 Mo avec 1.
 #
 # MARGES PRISES, ET CE QU'ELLES COUVRENT :
 #   - le cap docker unitaire est INCHANGE a 1536 Mo. Il n'est pas en trop : 3
@@ -64,13 +74,14 @@
 #     (label `coursia-waiter`). Baisser son cap aurait change le regime de jobs
 #     non mesures -- ce que la regle #15202 de persist/README.md interdit de
 #     faire sans les nommer. On reduit de 12 a 6 slots ;
-#   - la jambe lean est INCHANGEE (2 x 6144 Mo). Elle reste le poste dominant
-#     (58 % du budget) et elle est assume : c'est le goulot du parc, et
-#     l'abaisser toucherait des builds Lean, pas des jobs interchangeables ;
-#   - 2 528 Mo restent hors caps pour le noyau WSL2, dockerd et le page cache.
-#     Mesure du meme jour : le systeme hors conteneurs pesait ~3 200 Mo, dont
-#     2 429 Mo de `buff/cache` -- reclaimable, et c'est precisement ce que
-#     MemoryHigh met sous pression avant le mur.
+#   - la jambe lean passe de 2 a 1 slots (6 144 -> 6 144 Mo par slot, cap
+#     unitaire INCHANGE). Elle reste assumee : c'est le goulot du parc, et le
+#     volume chaud coursia-runner-work-lean-2 reste en place -- remettre le
+#     second slot est un `ExecStart ... 2` + restart, pas une reconstruction ;
+#   - 8 672 Mo restent hors caps pour le noyau WSL2, dockerd et le page cache.
+#     Mesure du jour du premier depot : le systeme hors conteneurs pesait
+#     ~3 200 Mo, dont 2 429 Mo de `buff/cache` -- reclaimable, et c'est
+#     precisement ce que MemoryHigh met sous pression avant le mur.
 #
 # CPU : CETTE SLICE NE LE TRANCHE PAS, ET LE DIT
 # ----------------------------------------------
@@ -84,7 +95,8 @@
 # ----------------------------------------------------------------
 #  1. sudo cp persist/po-2024/coursia-ci.slice /etc/systemd/system/
 #     sudo systemctl daemon-reload && sudo systemctl start coursia-ci.slice
-#  2. redeployer les wrappers et les unites (budget 21, start 4, waiters 6)
+#  2. redeployer les wrappers et les unites (budget 15, start 4, waiters 6,
+#     lean 1 depuis l'amendement J+7)
 #  3. sudo systemctl daemon-reload
 #  4. redemarrer les trois jambes -- un conteneur DEJA VIVANT ne migre PAS
 #     dans la slice : seul un cycle de conteneur l'y met. Les slots en vol
@@ -134,12 +146,12 @@ IOReadBandwidthMax=/var/lib/docker 419430400
 # impute au cgroup qui le faute, donc c'est lui, et pas MemoryMax, qui
 # declenche la recuperation au lieu de tuer le job dessus.
 #
-# 20G : sous les 21 504 Mo de caps declares, pour que la pression arrive avant
+# 14G : sous les 15 360 Mo de caps declares, pour que la pression arrive avant
 #       que la somme des caps soit atteinte -- c'est la que le reclaim doit
 #       travailler.
-# 22G : le filet de dernier recours, 2 Go au-dessus du budget userspace et
-#       2 Go sous la VM. Franchir les deux gardes a la fois demanderait que le
-#       garde userspace (qui refuse de DEMARRER un slot au-dela de 21 Go) et
+# 16G : le filet de dernier recours, 1 Go au-dessus du budget userspace et
+#       8 Go sous la VM. Franchir les deux gardes a la fois demanderait que le
+#       garde userspace (qui refuse de DEMARRER un slot au-dela de 15 Go) et
 #       le reclaim du cache echouent tous les deux.
 #
 # MemorySwapMax=0 -- AUCUN SWAP AUTORISE POUR LA CI.
@@ -163,6 +175,6 @@ IOReadBandwidthMax=/var/lib/docker 419430400
 # lean-axiom.yml) -- meme raisonnement que le commentaire de supervise.sh, dont
 # la conclusion est reprise mot pour mot.
 MemoryAccounting=yes
-MemoryHigh=20G
-MemoryMax=22G
+MemoryHigh=14G
+MemoryMax=16G
 MemorySwapMax=0
