@@ -33,11 +33,21 @@ Ce que ce module **ne fait pas** :
   par les sections précédentes — ces énoncés vivent dans une théorie
   4-manifolds / Khovanov / Kirby que Mathlib n'a pas.
 
-Cible Lidman:81 — `unknotting_11n102_upper` — **devient accessible** une fois
-ce module en place : on exhibe une `MoveSequence` reliant
+Cible Lidman:81 — `unknotting_11n102_upper` — **n'est pas rendue accessible par
+ce module** (statut corrigé le 2026-10-09, #18611). La route envisagée était :
+exhiber une `MoveSequence` reliant
 `(changeCrossingAt c₁ (changeCrossingAt c₂ knot_11n102)).diagram` au
-`unknotDiagram`, et `verifyMoves_sound` (à prouver par passe prouveur sur ce
-module) scelle l'implication.
+`unknotDiagram`, et sceller l'implication par `verifyMoves_sound`. Deux mesures
+la contredisent : (a) la recherche bornée de #18611 (excursions ≤ +2 croisements,
+diagrammes ≤ 13 croisements ; 138 623 états explorés depuis les 67 diagrammes
+n-changés) n'atteint `unknotDiagram` depuis aucun d'entre eux, et `min_crossings`
+reste à 11 pour chacun ; (b) le
+théorème de plancher conditionné (`Knots.ReidemeisterMoves` §8) montre qu'une
+suite dont **tous** les mouvements préservent `allFourDistinct` ne peut pas faire
+décroître le nombre de croisements — un certificat pour 11n102 devrait donc
+quitter cette classe en cours de route. L'organe reste nécessaire pour énoncer
+le contrat ; il ne suffit pas à l'honorer, et aucun des deux côtés
+(ce module, `Knots.Lidman`) ne fournit le témoin.
 
 Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier est **FR
 canonique**, avec son miroir anglais dans le sibling `ReidemeisterCombinatorial_en.lean`
@@ -264,8 +274,11 @@ croisement à un nœud (fold left). C'est le « témoin `indices` » de
 `unknottingWitness` scelle l'usage typique : « pour qu'un nœud ait un nombre
 de dénouement ≤ n, exhiber une suite de changements de croisement de longueur
 n et une suite de ReidemeisterEquiv entre l'image et `unknotDiagram` ».
-C'est le contrat que `unknotting_11n102_upper` (Lidman:81) honorera une fois
-ce module landed et `verifyMoves_sound` prouvé.
+C'est le contrat que `unknotting_11n102_upper` (Lidman:81) devrait honorer — la
+structure existe, aucune instance n'est fournie : #18611 a mesuré qu'une
+recherche bornée (diagrammes ≤ 13 croisements, 138 623 états) n'atteint pas
+`unknotDiagram` depuis la classe de 11n102, et ce module ne fournit pas le
+témoin.
 -/
 
 /-- Applique séquentiellement une liste de changements de croisement. -/
@@ -287,12 +300,16 @@ structure UnknottingWitness (k : Knot) (n : Nat) where
 Le module ne dépend que de `Knots.Reidemeister` et `Knots.Invariant` — pas de
 `Knots.ReidemeisterInvariance` (qui importerait `Knots.Conway` et ferait
 tourner le lac inutilement pour les passes qui n'attaquent que la
-combinatoire). Le sibling `_en` sera ajouté en PR2 avec le miroir anglais
-des docstrings (convention i18n EPIC #4980).
+combinatoire). Le sibling `_en` existe depuis la mise en place du patron i18n
+(EPIC #4980).
 
-Le lakefile (`Knots.lean`, ligne d'import) devra ajouter
-`import Knots.ReidemeisterCombinatorial` une fois ce module vérifié par CI —
-PR3, après soundness et witness `Lidman:81`.
+Le lac n'importe **pas** encore ce module : `Knots.lean` (agrégateur racine)
+liste `Knots.ReidemeisterMoves` mais pas `Knots.ReidemeisterCombinatorial`
+(vérifié le 2026-10-09). Le brancher suppose de résoudre d'abord la collision
+d'API avec `Knots.ReidemeisterMoves`, qui définit déjà `movesConnects`,
+`verifyMoves` et `verifyMoves_sound` (ReidemeisterMoves.lean:303/295/501) —
+deux `movesConnects` de signatures différentes dans le même namespace `Knots`
+ne peuvent pas être importés ensemble.
 -/
 
 end Knots
