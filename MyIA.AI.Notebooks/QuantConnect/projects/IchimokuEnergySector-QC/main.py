@@ -74,6 +74,10 @@ class EnergyTopTenUniverseSelectionModel(FineFundamentalUniverseSelectionModel):
     """
 
     def __init__(self, fine_size=10):
+        # Chaînage canonique QC : sans lui, l'étage fine n'est jamais armé
+        # (l'univers fine n'est pas construit, select_fine jamais invoquée --
+        # mesuré sur #19863, fine_calls=0 sur tous les runs pré-fix).
+        super().__init__(self.select_coarse, self.select_fine)
         self.fine_size = fine_size
         self.month = -1
 
