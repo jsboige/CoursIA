@@ -226,6 +226,7 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 
 ```
 Probas/
+├── Probas-KLS-Concentration.ipynb # Carnet transverse : Cheeger, hit-and-run, thin-shell (Python)
 ├── Applications/                # Applications standalone
 │   ├── Quotients-Fibres-Recollement-Python.ipynb # Géométrie catégorique (kernel Python, ex-Infer-20)
 │   ├── Percolation/             # Simulation supercritique (Python) + compagnon Lean 4 (lake percolation_lean)
@@ -450,6 +451,15 @@ Duo simulation + formalisation autour de la percolation de liens sur tore fini
 [`Percolation-02-Lean`](Applications/Percolation/Percolation-02-Lean.html) (Lean 4, compagnon exécutable du lake `percolation_lean`, noyau fini prouvé sans `sorry`) —
 voir [`Applications/Percolation/README.md`](Applications/Percolation/README.md) et #14871.
 
+## Carnets transverses (racine de la série)
+
+Le carnet [`Probas-KLS-Concentration.ipynb`](Probas-KLS-Concentration.ipynb) (kernel `python3`) ne porte ni sur un modèle bayésien particulier ni sur la décision : il prend trois **mesures log-concaves isotropes** — la gaussienne, le cube uniforme et le simplexe régulier — et mesure trois objets de leur géométrie asymptotique, en dimension croissante (n = 2 à 20). C'est le contrepoint **non-bayésien** de la série : concentration de la mesure, isopérimétrie et échantillonnage de corps convexes.
+
+- **Constante de Cheeger** par sonde de demi-espaces : `sqrt(2/pi)` retrouvé sur la gaussienne (où l'isopérimétrie de Sudakov–Tsirelson garantit que les demi-espaces sont optimaux) et `1/sqrt(3)` sur le cube isotrope, à toutes les dimensions. La portée de la sonde est **explicitée** : elle rend une borne supérieure, là où la conjecture de Kannan–Lovász–Simonovits énonce une borne inférieure en `c/sqrt(n)` — le carnet nomme l'angle mort au lieu de le masquer.
+- **Marche hit-and-run** sur les trois corps : temps d'autocorrélation en dimension croissante, estimateur validé au préalable sur un contrôle AR(1) à trou spectral connu (avec son biais de troncature mesuré), et contrôle de domaine qui attrape l'erreur de bornes la plus fréquente de l'algorithme.
+- **Variance thin-shell** : les valeurs exactes sont retrouvées — `2n` pour la gaussienne, `4n/5` pour le cube, et une formule dérivée dans le carnet même pour le simplexe isotrope, vérifiée par assertion sur six dimensions ; les largeurs de couronne convergent vers 1/2, 1/5 et 1, **constantes en n**.
+- 3 exercices (directions de la sonde, AR(1) à deux modes, effet de l'isotropisation) ; sorties réelles committées, exécution `papermill --kernel python3`.
+
 ## Prerequisites
 
 ### Niveau mathématique attendu
@@ -596,7 +606,7 @@ La visualisation des factor graphs nécessite **Graphviz installé**. Si `dot` n
 
 ### Kernels : un par sous-série, jamais mélangés
 
-Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour le corpus `Infer/` et l'arc `DecisionTheory/DecInfer/` (arc C#) ; `Python 3` pour `PyMC/`, `Pyro_RSA`, `DecisionTheory/DecPyMC/`, `DecisionTheory/Actuariat/`, `Applications/Percolation/Percolation-01-Supercritique-Python` et `Applications/Quotients-Fibres-Recollement-Python` ; `coursia-ml-training` pour les notebooks du pont causal qui l'exigent ; **Lean 4** (WSL) pour `DecInfer-02`, `DecInfer-02b`, `DecInfer-08b` et `Percolation-02-Lean`. Aucun notebook ne mélange les kernels. (Historiquement, `Infer-1b` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET.)
+Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour le corpus `Infer/` et l'arc `DecisionTheory/DecInfer/` (arc C#) ; `Python 3` pour `PyMC/`, `Probas-KLS-Concentration`, `Pyro_RSA`, `DecisionTheory/DecPyMC/`, `DecisionTheory/Actuariat/`, `Applications/Percolation/Percolation-01-Supercritique-Python` et `Applications/Quotients-Fibres-Recollement-Python` ; `coursia-ml-training` pour les notebooks du pont causal qui l'exigent ; **Lean 4** (WSL) pour `DecInfer-02`, `DecInfer-02b`, `DecInfer-08b` et `Percolation-02-Lean`. Aucun notebook ne mélange les kernels. (Historiquement, `Infer-1b` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET.)
 
 ### PyMC : échantillonnage très lent ou divergence NUTS
 
