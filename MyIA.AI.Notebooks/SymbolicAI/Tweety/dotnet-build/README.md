@@ -1,8 +1,11 @@
 # `dotnet-build/` — Recette de build des runtimes Tweety C# / IKVM
 
 Ce dossier contient les **recettes de build** (POM shade + csproj) des runtimes .NET de Tweety
-recompilés via IKVM 8.15.0. Chaque runtime compilé (`org.tweetyproject.tweety-<module>.dll`)
-est placé **à côté du notebook** qui le charge.
+recompilés via **IKVM 8.14.0** — la version déclarée par 18 des 19 `*.csproj` de ce dossier
+(seul `build-TweetyPreferencesShade.csproj` est en 8.15.0), ce qui est aussi la cible de
+recompilation post-C190 (`JvmDowngrader`, bytecode Java 15→8). Toutes les recettes ciblent
+`net8.0`. Chaque runtime compilé (`org.tweetyproject.tweety-<module>.dll`) est placé
+**à côté du notebook** qui le charge.
 
 ## Fichiers — cluster `pl` (notebook [`../Tweety-02-Basic-Logics-CSharp.ipynb`](../Tweety-02-Basic-Logics-CSharp.ipynb))
 
@@ -13,7 +16,7 @@ est placé **à côté du notebook** qui le charge.
 | `build-tweety-pl-shade.pom.xml` | POM aggregator Maven shade (produit le fat-jar) | Oui (reproductibilité) |
 | `build-TweetyShade.csproj` | Projet MSBuild `<IkvmReference>` (convertit le fat-jar en DLL) | Oui (reproductibilité) |
 
-## Fichiers — cluster `beliefdynamics` (notebook [`../Tweety-4-Belief-Revision-Csharp.ipynb`](../Tweety-4-Belief-Revision-Csharp.ipynb))
+## Fichiers — cluster `beliefdynamics` (notebook [`../Tweety-04-Belief-Revision-CSharp.ipynb`](../Tweety-04-Belief-Revision-CSharp.html))
 
 | Fichier | Rôle | Committé ? |
 |---------|------|-----------|
