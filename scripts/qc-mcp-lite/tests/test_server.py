@@ -568,6 +568,30 @@ class TestCreateProject:
             body = mock_post.call_args.kwargs["json"]
             assert body["language"] == "Py"
 
+    def test_passes_organization_id_when_given(self):
+        """The field has to reach the request body: naming the org in the
+        signature while the body drops it would leave the caller on the
+        saturated default org, with no error to explain why."""
+        mock_resp = _mock_api_response({
+            "projects": [{"projectId": 9, "name": "Y", "organizationId": "94aa4bcb"}]
+        })
+        with patch("requests.post", return_value=mock_resp) as mock_post:
+            result = create_project("Y", "Py", organization_id="94aa4bcb")
+            body = mock_post.call_args.kwargs["json"]
+            assert body["organizationId"] == "94aa4bcb"
+            assert result["organizationId"] == "94aa4bcb"
+
+    def test_omits_organization_id_when_not_given(self):
+        """Unchanged default behaviour: without the argument the key is absent
+        from the body, so QC keeps picking the default organization itself."""
+        mock_resp = _mock_api_response({
+            "projects": [{"projectId": 1, "name": "X", "organizationId": "o"}]
+        })
+        with patch("requests.post", return_value=mock_resp) as mock_post:
+            create_project("X")
+            body = mock_post.call_args.kwargs["json"]
+            assert "organizationId" not in body
+
     def test_surfaces_qc_rejection_not_empty_id(self):
         """Regression (cf create_backtest success:false guard): a rejected
         create must raise the QC error, NOT return projectId=0 silently — a
