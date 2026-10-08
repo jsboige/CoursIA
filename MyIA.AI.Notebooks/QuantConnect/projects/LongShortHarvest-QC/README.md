@@ -1,15 +1,67 @@
 # LongShortHarvest-QC
 
 **Asset class:** US Equities (long/short)
-**Cloud project ID:** None (local only)
+**Cloud project ID:** 37423502 (mesure #19450)
 
 ## Description
 
-QC Strategy Library clone. Long/short equity strategy harvesting alpha from both directions via pairs-style mean reversion.
+Clone de la stratégie « Long Short Harvest » de la Strategy Library QuantConnect. Jambe longue sur les plus grandes capitalisations américaines et l'or, pilotée par un régime VIX/SPY ; jambe courte hebdomadaire sur un titre à forte dynamique. Le détail et la mesure du code sont dans la section suivante.
+
+## Mesure du code de la stratégie (#19450) — verdict NO BEATS
+
+**Ce que les chiffres précédents mesuraient.** Le tableau « Backtest Metrics » plus bas et toutes les figures de `research.ipynb` viennent du moteur simplifié `backtest_lsh()` de ce notebook (cellule 7). Ce moteur tourne sur trois séries yfinance (SPY, GLD, VIX). SPY y remplace les 4 titres de la jambe longue, et la jambe courte est simulée par une baisse d'exposition, sans vente à découvert. Il reprend le régime VIX/SPY, mais il ne mesure pas la règle de `main.py`. Les chiffres de la Strategy Library (Sharpe 3,39, CAGR 57,94 %) ne sont pas reproduits non plus. Avant #19450, le dépôt n'avait donc publié aucune mesure du code de la stratégie.
+
+**Ce que fait `main.py`.**
+- **Jambe longue** : chaque mois, les 4 plus grandes capitalisations parmi les actions de plus d'un milliard de dollars. Chaque jour, un régime VIX/SPY répartit jusqu'à 90 % du capital entre ces 4 titres et GLD. Une forêt aléatoire surpondère un des 4 titres, et un stop suiveur en trois paliers allège les positions.
+- **Jambe courte** : chaque lundi, vente à découvert d'un titre parmi les 150 plus liquides, choisi par un score « de type Hurst » et des filtres d'extension et de dynamique, à 60 % du capital, avec un stop à 2 ATR.
+
+Ce n'est pas une stratégie de paires. Par construction, la jambe longue détient les plus grandes capitalisations américaines (AAPL, MSFT, GOOG, AMZN, NVDA selon les années).
+
+**Protocole** (règle inscrite sur #19450 avant le premier backtest) : backtests QC sur 2018-01-01 → 2026-09-25, frais du courtier (modèle par défaut de Lean). La candidate `base` (code tel quel) est comparée au SPY détenu et au 60/40 SPY/IEF de `FourSleeve774Benchmarks` (#19139). Le test porte sur la différence de Sharpe à taux sans risque nul, par bootstrap circulaire par blocs de 21 séances (10 000 tirages, graine 18921), avec correction de Holm. Deux contrôles descriptifs, hors verdict :
+- `top4` : les 4 mêmes titres à poids égaux, à 100 %, sans GLD, sans stop, sans forêt aléatoire et sans jambe courte ;
+- `noshort` : la règle avec `short_gross` = 0.
+
+**Résultats** (séances de clôture du graphique `shadow`, 2194 séances ; Sharpe à taux sans risque nul) :
+
+| Run | Sharpe | CAGR | Pire baisse | Rotation / an | Frais / an | Ordres |
+|---|---|---|---|---|---|---|
+| `base` (candidate) | 0,44 | 9,7 % | −61,6 % | 47,3 | 0,76 % | 5737 |
+| SPY détenu | 0,79 | 13,9 % | −33,6 % | 0,1 | 0,00 % | — |
+| 60/40 SPY/IEF | 0,81 | 8,9 % | −21,2 % | 0,3 | 0,02 % | — |
+| `top4` (contrôle) | 0,94 | 23,5 % | −36,1 % | 1,2 | 0,05 % | 372 |
+| `noshort` (contrôle) | 0,95 | 16,2 % | −27,8 % | 37,4 | 0,64 % | 5258 |
+
+Rotation : valeur échangée cumulée divisée par la valeur du portefeuille. Frais : rapportés au capital de départ. QC donne pour `base` un Sharpe de 0,29 (calculé avec un taux sans risque), un PSR de 0,4 % et une capacité estimée de 260 M$.
+
+| Différence de Sharpe de `base` | Écart | IC 95 % | p Holm | 2018-2020 | 2021-2023 | 2024 → 2026-09 |
+|---|---|---|---|---|---|---|
+| contre SPY | −0,34 | [−0,99 ; 0,41] | 1,00 | +0,20 | −0,60 | −0,03 |
+| contre 60/40 | −0,37 | [−1,02 ; 0,39] | 1,00 | −0,07 | −0,36 | −0,02 |
+
+**Verdict : NO BEATS.** Les deux différences sont négatives et aucune n'est significative. La règle exclut alors les runs à frais doublés et la grille de paramètres (protocole, point 5) : ils ne pouvaient plus changer le verdict. Corrélation hebdomadaire avec SPY : 0,44.
+
+**Contrôles (descriptifs, hors verdict).**
+
+| Différence de Sharpe | Écart | IC 95 % | 2018-2020 | 2021-2023 | 2024 → 2026-09 |
+|---|---|---|---|---|---|
+| `base` − `top4` | −0,49 | [−1,06 ; 0,19] | −0,32 | −0,58 | +0,20 |
+| `base` − `noshort` | −0,50 | [−1,05 ; 0,13] | −0,22 | −0,37 | −0,16 |
+
+Détenir simplement les 4 plus grandes capitalisations à poids égaux (`top4`) donne un Sharpe de 0,94 sur la fenêtre. La mécanique de la stratégie ne l'améliore pas, et la jambe courte coûte du Sharpe sur les trois sous-périodes. Sans elle, `noshort` atteint un Sharpe de 0,95, avec une pire baisse de −27,8 % contre −36,1 % pour `top4`, au prix d'un CAGR plus faible. Ce chiffre est observé après coup, sur la fenêtre même de la mesure : ce n'est pas un verdict. Tester `noshort` demanderait une règle inscrite avant le run et, de préférence, une fenêtre que cette mesure n'a pas utilisée.
+
+**D'où vient la pire baisse.** Le portefeuille perd 61,6 % entre le 13 et le 27 janvier 2021, et ne retrouve son sommet que le 24 septembre 2025. La baisse vient de la jambe courte, prise dans les rachats forcés de janvier 2021 :
+- DDD : vendu à découvert le 11 janvier pour environ 60 % du capital, perte de 33 k$ ;
+- GME : vendu le 25 janvier, position limitée à 15 k$ par la marge disponible, perte latente de 52 k$ au plus fort, 28 k$ réalisés.
+
+Sur toute la fenêtre, les positions fermées rapportent 195 k$ côté long. Côté court, elles perdent 65 k$ en 95 positions, dont 45 gagnantes. Les 5 pires positions courtes (DDD, GME, INTC, RKLB, WDC) coûtent 108 k$ ; les 90 autres rapportent 43 k$. Côté long, les plus gros contributeurs sont AAPL, GLD, GOOG, MSFT et NVDA.
+
+**Défaut mesuré : le stop de la jambe courte ne protège pas la semaine d'entrée.** L'univers est en données journalières, si bien que l'ordre de vente passé le lundi, 30 minutes après l'ouverture, n'est exécuté qu'à la clôture. `RiskCheck_Short`, qui tourne 160 minutes après l'ouverture, trouve donc la position encore vide et efface son suivi (`self._entry.pop`). La position reste alors sans stop jusqu'à la rotation du lundi suivant. Aucune des 95 positions courtes n'est sortie par le stop : toutes sortent un lundi de rotation, sauf 9 reliquats vendeurs de quelques dizaines de dollars sur des titres de la jambe longue et une radiation (IMGN). Ce défaut n'explique pas à lui seul la perte sur GME : avec des données journalières, un stop qui fonctionne aurait vendu à la clôture du 27 janvier, au plus haut. Le code mesuré est celui d'origine ; une correction se mesurera sous sa propre règle, inscrite avant le run.
+
+Les traces des runs (graphiques, statistiques, empreinte du code envoyé à QC) sont conservées hors dépôt, sous `QC-traces/19450-longshortharvest/`.
 
 ## Figures du notebook de recherche
 
-Le notebook [`research.ipynb`](research.ipynb) documente l'analyse complète : backtest de référence sur SPY/GLD/VIX, sensibilité aux hyperparamètres (sweep `score_threshold` H1, `ext_k` H2), validation walk-forward et performance par régime de marché. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+Ces figures sortent du moteur simplifié `backtest_lsh()` (SPY à la place des 4 titres, pas de vente à découvert) : elles décrivent le régime VIX/SPY, pas le code de `main.py` (voir la section précédente). Le notebook [`research.ipynb`](research.ipynb) documente l'analyse complète : backtest de référence sur SPY/GLD/VIX, sensibilité aux hyperparamètres (sweep `score_threshold` H1, `ext_k` H2), validation walk-forward et performance par régime de marché. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
 **Référence — backtest long-terme 2007-2026, l'ancre du diagnostic.** La figure de référence pose le profil de la stratégie sur ~19 ans : un **dual-panel** empilé (equity + drawdown, axe temporel commun 2007-2026) issu de `backtest_lsh()` sur les sous-jacents SPY/GLD/VIX. La courbe d'equity monte de ~1.0 à ~8.0 USD (gain cumulé ~7×), avec accélération post-COVID de ~5 à ~8 entre 2020 et 2024-2025. Le drawdown en aire rouge marque **trois pics majeurs** : -18 % mi-2008 (Lehman), -16 % mi-2020 (COVID), -11 % en 2022 (bear bonds), recovery rapide entre chaque. Les **métriques extraites de `research.ipynb` cell[9]·out[0]** sont **Sharpe 0.939, CAGR 11.47 %, MaxDD -17.96 %, WinRate 55.3 %** (note : le tableau « Backtest Metrics » ci-dessous conserve la valeur 3.39 / 57.94 % du QC Strategy Library d'origine — chiffre **non reproduit localement**, à ne pas confondre avec la perf `research.ipynb`).
 
@@ -61,18 +113,18 @@ Le notebook [`research.ipynb`](research.ipynb) documente l'analyse complète : b
 ## How to Run
 
 **Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/LongShortHarvest-QC"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**QC Cloud :** projet 37423502. Paramètres de backtest : `start`, `end`, `mode` (`base` ou `top4`), `fee_mult`, ainsi que les paramètres de la règle (`short_gross`, `long_gross`, `top_n`, `ml_tilt`, `stop_atr`, etc., voir `Initialize`).
 
 ## Backtest Metrics
 
-Les chiffres du tableau « Source = QC Strategy Library clone » restent **historiques** (Sharpe 3.39, CAGR 57.94 %, MaxDD -15.20 %) et **n'ont pas été reproduits localement**. Les **valeurs effectives** du notebook `research.ipynb` (cell[9]·out[0], référence paramètres originaux) sont reportées dans le tableau « Source = research.ipynb » et correspondent à la figure `lsh-reference.png` ci-dessus.
+La mesure du code sur QC Cloud est dans la section « Mesure du code de la stratégie » ci-dessus. Les chiffres ci-dessous ne mesurent pas `main.py`. Les chiffres du tableau « Source = QC Strategy Library clone » restent **historiques** (Sharpe 3.39, CAGR 57.94 %, MaxDD -15.20 %) et **n'ont pas été reproduits localement**. Les **valeurs effectives** du notebook `research.ipynb` (cell[9]·out[0], référence paramètres originaux) sont reportées dans le tableau « Source = research.ipynb » et correspondent à la figure `lsh-reference.png` ci-dessus.
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| Sharpe Ratio | 0.939 | research.ipynb cell[9]·out[0] |
-| CAGR | 11.47 % | research.ipynb cell[9]·out[0] |
-| Max Drawdown | -17.96 % | research.ipynb cell[9]·out[0] |
-| WinRate | 55.3 % | research.ipynb cell[9]·out[0] |
+| Sharpe Ratio | 0.939 | research.ipynb cell[9]·out[0], moteur simplifié |
+| CAGR | 11.47 % | research.ipynb cell[9]·out[0], moteur simplifié |
+| Max Drawdown | -17.96 % | research.ipynb cell[9]·out[0], moteur simplifié |
+| WinRate | 55.3 % | research.ipynb cell[9]·out[0], moteur simplifié |
 | Sharpe Ratio | 3.39 | QC Strategy Library clone (non reproduit) |
 | CAGR | 57.94 % | QC Strategy Library clone (non reproduit) |
 | Max Drawdown | -15.20 % | QC Strategy Library clone (non reproduit) |

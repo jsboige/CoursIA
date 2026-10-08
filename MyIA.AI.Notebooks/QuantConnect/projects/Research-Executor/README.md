@@ -37,10 +37,11 @@ papermill runner.ipynb output.ipynb
 |------|-------------|
 | `main.py` | Research executor algorithm that runs embedded notebooks via MockQB |
 | `runner.ipynb` | Jupyter notebook runner for the research executor |
+| `research.ipynb` | Index des notebooks de recherche |
 | `research_asset_class_momentum.ipynb` | Asset class momentum research notebook |
 | `research_commodity_term_structure.ipynb` | Commodity term structure research notebook |
 | `research_defensive_etf_rotation.ipynb` | Defensive ETF rotation research notebook |
-| `research_short_harvest.ipynb` | Short harvest research notebook |
+| `research_long_short_harvest.ipynb` | Notebook de recherche long-short harvest |
 | `research_macro_factor_rotation.ipynb` | Macro factor rotation research notebook |
 | `research_piotroski_fscore.ipynb` | Piotroski F-score research notebook |
 | `research_puppies_of_dow.ipynb` | Puppies of the Dow research notebook |

@@ -37,3 +37,4 @@ Backtests réels QC Cloud (`18961-baseline-fixed-pairs` et `18961-cluster-pca-op
 ## Files
 
 - main.py - Strategy (mode cluster derrière `GetParameter("useClusterPairs")`)
+- quantbook.ipynb - QuantBook de recherche : analyse de la stratégie de pairs trading améliorée (mode cluster, données natives QC)

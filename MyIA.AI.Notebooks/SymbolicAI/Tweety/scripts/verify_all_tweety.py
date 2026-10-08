@@ -54,9 +54,9 @@ from typing import Any, Dict, List, Optional
 TWEETY_NOTEBOOKS = [
     "Tweety-01-Setup-Python.ipynb",
     "Tweety-02-Basic-Logics-Python.ipynb",
-    "Tweety-3-Advanced-Logics.ipynb",
-    "Tweety-4-Belief-Revision.ipynb",
-    "Tweety-5-Abstract-Argumentation.ipynb",
+    "Tweety-03-Advanced-Logics-Python.ipynb",
+    "Tweety-04-Belief-Revision-Python.ipynb",
+    "Tweety-05-Abstract-Argumentation-Python.ipynb",
     "Tweety-06-Structured-Argumentation-Python.ipynb",
     # Tweety-7 divided into 7a and 7b
     "Tweety-07a-Extended-Frameworks-Python.ipynb",
@@ -101,15 +101,15 @@ TWEETY_VERSIONS = {
 # Known issues per notebook (expected failures)
 # These limitations are present in Tweety 1.28, 1.29, and 1.30
 KNOWN_ISSUES = {
-    "Tweety-3-Advanced-Logics.ipynb": [
+    "Tweety-03-Advanced-Logics-Python.ipynb": [
         "SimpleMlReasoner may hang indefinitely without SPASS external prover",
         "Limitation: Install SPASS for modal logic reasoning"
     ],
-    "Tweety-4-Belief-Revision.ipynb": [
+    "Tweety-04-Belief-Revision-Python.ipynb": [
         "CrMas imports may fail - InformationObject class removed in Tweety 1.28 API refactoring",
         "Limitation: Multi-agent belief revision unavailable via JPype"
     ],
-    "Tweety-5-Abstract-Argumentation.ipynb": [
+    "Tweety-05-Abstract-Argumentation-Python.ipynb": [
         "AF Learning disabled - ClassCastException (Tautology cannot be cast to AssociativePlFormula)",
         "Limitation: Internal Tweety bug, section commented out"
     ],

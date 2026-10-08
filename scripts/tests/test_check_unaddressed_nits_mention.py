@@ -390,7 +390,7 @@ FIXTURE_13496_APPROVE = (
     "depuis mon CHANGES_REQUESTED sur `ae88aefc`). Le one-liner demande est "
     "pose exactement, et je tiens la promesse de ma review : avec le garde, "
     "je repasse en APPROVE.\n\n"
-    "Security scan : 0 match sur le delta. Ball merge : Emerjesse."
+    "Security scan : 0 match sur le delta. Ball merge : Jean-Sylvain."
 )
 
 # #13027, review APPROVED du 2026-08-29T20:59:35Z. Meme classe, autre forme :
