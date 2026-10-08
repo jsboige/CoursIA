@@ -1,0 +1,148 @@
+{
+ "source": "https://github.com/AricieConseil/Aricie.PortalKeeper",
+ "source_pin": {
+  "commit": "1ab6620eae2e8d7607435ae5e23053ab28f47d85",
+  "branch": "master",
+  "commit_date": "2016-11-02",
+  "clone_type": "shallow, local, hors depot"
+ },
+ "shallow_clone_path": "D:/Dev/probe19197-portalkeeper",
+ "target_in_repo": "MyIA.AI.Shared/External/Aifh/",
+ "inventory_date": "2026-10-08T22:02Z",
+ "lane": "myia-po-2024:CoursIA",
+ "issue": 19197,
+ "parent_epic": 7265,
+ "method": "System.Reflection.Metadata (PEReader + MetadataReader sur FileStream) : types, namespaces, versions lus SANS charger les assemblies pour execution. SHA-256 via Get-FileHash. Aucune execution IKVM, aucun binaire tiers embarque dans CoursIA (contrat de la mission #19197).",
+ "provenance_note": "AIFH-Vol3-Core.dll et AIFH-Vol3.exe sont l'implementation .NET de 'Artificial Intelligence for Humans, Volume 3' (Jeff Heaton). Le descripteur Neural.cs consomme egalement le namespace ikvm.extensions fourni par le runtime IKVM embarque (voir External/Aima/.inventory.json, runtime_bridge_ikvm).",
+ "binaries": [
+  {
+   "file": "AIFH-Vol3-Core.dll",
+   "source_path_in_clone": "Libraries/AI/external/Encog/AIFH-Vol3-Core.dll",
+   "size_bytes": 75264,
+   "sha256": "4ffb1f670667ad035a8651650cdc345acabda5a7095be009cb1f7442c68b2e9c",
+   "asm_name": "AIFH-Vol3-Core",
+   "asm_version": "1.0.0.0",
+   "file_version": "1.0.0.0",
+   "company": "",
+   "copyright": "Copyright ©  2015",
+   "total_types": 108,
+   "public_types": 107,
+   "namespaces": [
+    "AIFH_Vol3_Core.Core.ANN (8)", "AIFH_Vol3_Core.Core.ANN.Activation (6)",
+    "AIFH_Vol3_Core.Core.ANN.Randomize (4)", "AIFH_Vol3_Core.Core.ANN.Train (4)",
+    "AIFH_Vol3_Core.Core.ANN.Train.Error (3)", "AIFH_Vol3_Core.Core.DBNN (6)",
+    "AIFH_Vol3_Core.Core.Energetic (5)", "AIFH_Vol3_Core.Core.General.Data (3)",
+    "AIFH_Vol3_Core.Core.Selection (6)", "AIFH_Vol3_Core.Core.SOM (2)",
+    "AIFH_Vol3_Core.Core.SOM.Neighborhood (5)", "AIFH_Vol3_Core.Core.SOM.Train (1)",
+    "AIFH_Vol3_Core.Core.Util (3)", "AIFH_Vol3.Core (2)", "AIFH_Vol3.Core.Distance (5)",
+    "AIFH_Vol3.Core.Error (5)", "AIFH_Vol3.Core.General (2)", "AIFH_Vol3.Core.General.Data (1)",
+    "AIFH_Vol3.Core.General.Fns (8)", "AIFH_Vol3.Core.Learning (7)",
+    "AIFH_Vol3.Core.Learning.Score (3)", "AIFH_Vol3.Core.Normalize (2)", "AIFH_Vol3.Core.Randomize (11)"
+   ]
+  },
+  {
+   "file": "AIFH-Vol3.exe",
+   "source_path_in_clone": "Libraries/AI/external/Encog/AIFH-Vol3.exe",
+   "size_bytes": 156160,
+   "sha256": "7b1856ca86d48295217ebc095c2b1dc49b2f61ed26b6d4156c75ff54a67dfa49",
+   "asm_name": "AIFH-Vol3",
+   "asm_version": "1.0.0.0",
+   "file_version": "1.0.0.0",
+   "company": "",
+   "copyright": "Copyright ©  2015",
+   "total_types": 30,
+   "public_types": 27,
+   "namespaces": [
+    "AIFH_Vol3 (2)", "AIFH_Vol3.Examples.ANN (8)", "AIFH_Vol3.Examples.Classic.Boltzmann.TSP (1)",
+    "AIFH_Vol3.Examples.Classic.HopfieldAssociate (2)", "AIFH_Vol3.Examples.Classic.Logic (5)",
+    "AIFH_Vol3.Examples.DBN (1)", "AIFH_Vol3.Examples.Intro (1)", "AIFH_Vol3.Examples.Learning (1)",
+    "AIFH_Vol3.Examples.Modeling (1)", "AIFH_Vol3.Examples.NEAT (1)", "AIFH_Vol3.Examples.Search (1)",
+    "AIFH_Vol3.Examples.Timeseries (1)"
+   ]
+  },
+  {
+   "file": "encog-core-cs.dll",
+   "source_path_in_clone": "Libraries/AI/external/Encog/encog-core-cs.dll",
+   "size_bytes": 957952,
+   "sha256": "9ef439c918716472e78913de6560788428d429e9abe436939634ab278b9de347",
+   "asm_name": "encog-core-cs",
+   "asm_version": "3.3.0.0",
+   "file_version": "3.3.0.0",
+   "product_version": "3.3.0.0",
+   "company": "Heaton Research, Inc.",
+   "copyright": "Copyright ©  2014",
+   "total_types": 933,
+   "public_types": 887,
+   "namespaces_count": 229,
+   "namespaces_extracts": [
+    "Encog (6)", "Encog.Cloud.Indicator (4)", "Encog.Cloud.Indicator.Basic (4)",
+    "Encog.Cloud.Indicator.Server (4)", "Encog.Engine.Network.Activation (18)",
+    "Encog.ML (19)", "Encog.ML.Bayesian (6)", "Encog.ML.Data (9)", "Encog.ML.EA.* (30 namespaces)",
+    "Encog.ML.Genetic.* (4)", "Encog.ML.HMM.* (5)", "Encog.ML.SVM (4)",
+    "Encog.ML.Train.Strategy (7)", "Encog.Neural.* (48 namespaces, dont Freeform, NEAT, HyperNEAT, Networks.Training.Propagation.{Back,Manhattan,Quick,Resilient,SCG})",
+    "Encog.MathUtil.* (13 namespaces, dont Matrices.Decomposition, Randomize, RBF, LIBSVM)",
+    "Encog.App.Analyst.* (26 namespaces)", "Encog.Util.* (28 namespaces)"
+   ],
+   "note": "Liste integrale des 229 namespaces (avec comptes par namespace) conservee dans le journal de mesure de la lane (inv19197_raw.json, scratchpad du cycle) ; extraits ci-dessus limites aux axes consumes et structurants."
+  },
+  {
+   "file": "CsvHelper.dll",
+   "source_path_in_clone": "Libraries/AI/external/Encog/CsvHelper.dll",
+   "size_bytes": 80384,
+   "sha256": "ea0bf45954490ffc03dfbd00035423ed6567923c9e8de58c62d421e0ef37340e",
+   "asm_name": "CsvHelper",
+   "asm_version": "2.0.0.0",
+   "file_version": "2.13.2.0",
+   "product_version": "2.13.2.0",
+   "company": "Josh Close",
+   "copyright": "Copyright © Josh Close 2009-2015",
+   "total_types": 74,
+   "public_types": 68,
+   "namespaces": ["CsvHelper (20)", "CsvHelper.Configuration (13)", "CsvHelper.TypeConversion (27)"],
+   "role": "dependance de donnees d'encog-core-cs (lecture CSV), pas consume directement par les descripteurs"
+  }
+ ],
+ "consumption_witnesses": {
+  "Neural.cs": {
+   "path_in_clone": "Libraries/AI/Neural.cs",
+   "size_bytes": 16334,
+   "usings_aifh": [
+    "AIFH_Vol3.Core.Error", "AIFH_Vol3.Core.General.Data", "AIFH_Vol3.Core.Learning",
+    "AIFH_Vol3.Examples.Learning"
+   ],
+   "usings_aifh_underscore": [
+    "AIFH_Vol3_Core.Core.ANN", "AIFH_Vol3_Core.Core.ANN.Activation", "AIFH_Vol3_Core.Core.ANN.Train"
+   ],
+   "using_ikvm": "ikvm.extensions (resolu dans IKVM.OpenJDK.Core.dll, 1 type public -- voir External/Aima/.inventory.json)",
+   "using_hors_cible": "System.Web.Security (WebForms, non disponible sur net9.0)"
+  },
+  "Probability.cs_cross": [
+   "AIFH_Vol3_Core.Core.DBNN (DeepBeliefNetwork, 6 types publics) -> AIFH-Vol3-Core.dll",
+   "Encog.Cloud.Indicator (4 types publics) -> encog-core-cs.dll"
+  ],
+  "resolution": "Chaque namespace consume par Neural.cs est verifie PRESENT dans les namespaces publics mesures : AIFH_Vol3.Core.Error/General.Data/Learning dans AIFH-Vol3-Core.dll ; AIFH_Vol3.Examples.Learning dans AIFH-Vol3.exe ; AIFH_Vol3_Core.Core.ANN/.Activation/.Train dans AIFH-Vol3-Core.dll ; ikvm.extensions dans IKVM.OpenJDK.Core.dll. Aucun using ne reste non resolu hors System.Web.Security (WebForms)."
+ },
+ "external_packages_original": [
+  {"name": "FileHelpers", "version": "3.1.5"},
+  {"name": "Microsoft.Research.CNTK.CpuEval-mkl", "version": "1.7.2"},
+  {"name": "Newtonsoft.Json", "version": "4.5.6"}
+ ],
+ "verdict": {
+  "neural_cs": "HORS CIBLE, motif distinct : absence de moteur portable. Les deux implementations sont des DLL tierces (AIFH-Vol3-Core, encog-core-cs, mesurees) et Neural.cs tire System.Web.Security (WebForms, hors cible net9.0). Un descripteur de couches/backpropagation n'a pas de moteur a lui ; ML.NET (reference dans MyIA.AI.Notebooks.csproj) est la voie .NET du depot.",
+  "source": "Verdict complet poste le 2026-10-05 en commentaire de l'issue #19197 (mesure du recouvrement organ-first)."
+ },
+ "limits_not_measured": [
+  "Le verdict repose sur la PRESENCE des organes et l'absence de moteur portable, pas sur une mesure capacite par capacite.",
+  "Non etabli : la couverture ML.NET des besoins exacts du descripteur (couches, backpropagation, RPROP, DBN/RBM, SOM, energetic networks) -- une tranche de port eventuelle devra repondre aux 5 questions d'organ-first-implementation, le fardeau de la preuve est de son cote."
+ ],
+ "license_status": {
+  "status": "non mesure",
+  "measured": "Attribution lue dans les metadonnees : encog-core-cs.dll 'Heaton Research, Inc.' / 'Copyright © 2014' ; CsvHelper.dll 'Josh Close' / 'Copyright © Josh Close 2009-2015' ; AIFH 'Copyright © 2015' sans editeur. Aucun fichier LICENSE dans le clone Aricie.PortalKeeper@1ab6620 (mesure) ni texte de licence embarque dans les DLL.",
+  "upstream_to_check": [
+   "https://github.com/heatonresearch/encog-dotnet (encog-core-cs)",
+   "Jeff Heaton, 'Artificial Intelligence for Humans, Volume 3' (AIFH-Vol3-Core / AIFH-Vol3.exe)",
+   "https://github.com/JoshClose/CsvHelper (CsvHelper 2.13.2)",
+   "https://github.com/AricieConseil/Aricie.PortalKeeper (distributeur de ces binaires)"
+  ]
+ }
+}

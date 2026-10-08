@@ -1,0 +1,160 @@
+{
+ "source": "https://github.com/AricieConseil/Aricie.PortalKeeper",
+ "source_pin": {
+  "commit": "1ab6620eae2e8d7607435ae5e23053ab28f47d85",
+  "branch": "master",
+  "commit_date": "2016-11-02",
+  "clone_type": "shallow, local, hors depot"
+ },
+ "shallow_clone_path": "D:/Dev/probe19197-portalkeeper",
+ "target_in_repo": "MyIA.AI.Shared/External/Aima/",
+ "inventory_date": "2026-10-08T22:02Z",
+ "lane": "myia-po-2024:CoursIA",
+ "issue": 19197,
+ "parent_epic": 7265,
+ "method": "System.Reflection.Metadata (PEReader + MetadataReader sur FileStream) : types, namespaces, versions lus SANS charger les assemblies pour execution. SHA-256 via Get-FileHash. Aucune execution IKVM, aucun binaire tiers embarque dans CoursIA (contrat de la mission #19197).",
+ "provenance_note": "aima-core.dll expose des namespaces Java conserves (aima.core.*) et des namespaces java.* mesures dans la DLL (java.aima.core.environment.map, java.aima.gui.framework) : trace directe d'une compilation IKVM du code Java d'aima-java. Assembly version 0.0.0.0, metadonnees editeur vides.",
+ "binaries": [
+  {
+   "file": "aima-core.dll",
+   "source_path_in_clone": "Libraries/AI/external/AIMA/aima-core.dll",
+   "size_bytes": 1020416,
+   "sha256": "78e066e970aa12d7f9237b6994de21b52b934eaa1aa7c0b9926fa697f309ebd5",
+   "asm_name": "aima-core",
+   "asm_version": "0.0.0.0",
+   "file_version": "0.0.0.0",
+   "company": " ",
+   "copyright": " ",
+   "total_types": 578,
+   "public_types": 506,
+   "namespaces": [
+    "aima.core.agent (11)", "aima.core.agent.impl (9)", "aima.core.agent.impl.aprog (3)",
+    "aima.core.agent.impl.aprog.simplerule (6)", "aima.core.environment.cellworld (4)",
+    "aima.core.environment.connectfour (4)", "aima.core.environment.eightpuzzle (5)",
+    "aima.core.environment.map (15)", "aima.core.environment.nqueens (6)",
+    "aima.core.environment.tictactoe (2)", "aima.core.environment.vacuum (17)",
+    "aima.core.environment.wumpusworld (9)", "aima.core.environment.wumpusworld.action (6)",
+    "aima.core.environment.xyenv (3)", "aima.core.learning.data (1)",
+    "aima.core.learning.framework (11)", "aima.core.learning.inductive (5)",
+    "aima.core.learning.knowledge (4)", "aima.core.learning.learners (6)",
+    "aima.core.learning.neural (18)", "aima.core.learning.reinforcement (2)",
+    "aima.core.learning.reinforcement.agent (6)", "aima.core.learning.reinforcement.example (3)",
+    "aima.core.logic.common (7)", "aima.core.logic.fol (22)", "aima.core.logic.fol.domain (7)",
+    "aima.core.logic.fol.inference (12)", "aima.core.logic.fol.inference.otter (3)",
+    "aima.core.logic.fol.inference.otter.defaultimpl (4)", "aima.core.logic.fol.inference.proof (21)",
+    "aima.core.logic.fol.inference.trace (2)", "aima.core.logic.fol.kb (2)",
+    "aima.core.logic.fol.kb.data (7)", "aima.core.logic.fol.parsing (4)",
+    "aima.core.logic.fol.parsing.ast (12)", "aima.core.logic.propositional.agent (1)",
+    "aima.core.logic.propositional.inference (9)", "aima.core.logic.propositional.kb (1)",
+    "aima.core.logic.propositional.kb.data (4)", "aima.core.logic.propositional.parsing (4)",
+    "aima.core.logic.propositional.parsing.ast (5)", "aima.core.logic.propositional.visitors (12)",
+    "aima.core.probability (8)", "aima.core.probability.bayes (9)",
+    "aima.core.probability.bayes.approx (7)", "aima.core.probability.bayes.exact (3)",
+    "aima.core.probability.bayes.impl (8)", "aima.core.probability.bayes.model (3)",
+    "aima.core.probability.domain (10)", "aima.core.probability.example (14)",
+    "aima.core.probability.full (3)", "aima.core.probability.hmm (1)",
+    "aima.core.probability.hmm.exact (3)", "aima.core.probability.hmm.impl (1)",
+    "aima.core.probability.mdp (6)", "aima.core.probability.mdp.impl (3)",
+    "aima.core.probability.mdp.search (2)", "aima.core.probability.proposition (16)",
+    "aima.core.probability.temporal (3)", "aima.core.probability.temporal.generic (3)",
+    "aima.core.probability.util (6)", "aima.core.search.adversarial (5)",
+    "aima.core.search.csp (15)", "aima.core.search.framework (25)",
+    "aima.core.search.informed (9)", "aima.core.search.local (6)",
+    "aima.core.search.nondeterministic (6)", "aima.core.search.online (3)",
+    "aima.core.search.uninformed (8)", "aima.core.util (9)",
+    "aima.core.util.datastructure (11)", "aima.core.util.math (5)",
+    "java.aima.core.environment.map (1)"
+   ]
+  },
+  {
+   "file": "aima-gui.exe",
+   "source_path_in_clone": "Libraries/AI/external/AIMA/aima-gui.exe",
+   "size_bytes": 126464,
+   "sha256": "4bd99d78cf15762e888f3e54efc95e60ce0fab69a18dee5be9aca025e4382bef",
+   "asm_name": "aima-gui",
+   "asm_version": "0.0.0.0",
+   "file_version": "0.0.0.0",
+   "company": " ",
+   "copyright": " ",
+   "total_types": 87,
+   "public_types": 58,
+   "namespaces": [
+    "aima.gui.applications (2)", "aima.gui.applications.search.csp (4)",
+    "aima.gui.applications.search.games (4)", "aima.gui.applications.search.map (6)",
+    "aima.gui.applications.vacuum (4)", "aima.gui.demo.agent (1)", "aima.gui.demo.learning (1)",
+    "aima.gui.demo.logic (6)", "aima.gui.demo.probability (1)", "aima.gui.demo.search (6)",
+    "aima.gui.framework (14)", "java.aima.gui.applications.search.map (1)", "java.aima.gui.framework (1)"
+   ]
+  }
+ ],
+ "runtime_bridge_ikvm": {
+  "note": "L'execution d'aima-core.dll exige le runtime IKVM embarque par PortalKeeper. Mesure SRM du composant central uniquement (les 10 autres fichiers ne sont pas resolus par les descripteurs) :",
+  "measured": {
+   "file": "IKVM.OpenJDK.Core.dll",
+   "source_path_in_clone": "Libraries/AI/external/IKVM/IKVM.OpenJDK.Core.dll",
+   "size_bytes": 4331520,
+   "sha256": "c39846ada7351a1f87483d3bd2a4f4e82ecc9d694d6de4434d0365fea9217b3a",
+   "asm_name": "IKVM.OpenJDK.Core",
+   "public_types": 1865,
+   "total_types": 2728,
+   "witness_for": "namespace ikvm.extensions (1 type) consomme par Neural.cs -- voir External/Aifh/.inventory.json"
+  },
+  "ikvm_dir_files": 11,
+  "ikvm_dir_bytes": 18846208,
+  "files": ["IKVM.AWT.WinForms.dll", "IKVM.OpenJDK.Beans.dll", "IKVM.OpenJDK.Core.dll",
+            "IKVM.OpenJDK.Media.dll", "IKVM.OpenJDK.Misc.dll", "IKVM.OpenJDK.Security.dll",
+            "IKVM.OpenJDK.SwingAWT.dll", "IKVM.OpenJDK.Text.dll", "IKVM.OpenJDK.Util.dll",
+            "IKVM.OpenJDK.XML.API.dll", "IKVM.Runtime.dll"]
+ },
+ "consumption_witnesses": {
+  "Logic.cs": {
+   "path_in_clone": "Libraries/AI/Logic.cs",
+   "size_bytes": 12641,
+   "usings_aima": [
+    "aima.core.logic.fol", "aima.core.logic.fol.domain", "aima.core.logic.fol.inference",
+    "aima.core.logic.fol.inference.proof", "aima.core.logic.fol.kb", "aima.core.logic.fol.parsing",
+    "aima.core.logic.propositional.inference", "aima.core.logic.propositional.kb",
+    "aima.core.logic.propositional.parsing", "aima.core.logic.propositional.parsing.ast",
+    "aima.core.logic.propositional.visitors", "aima.core.learning.knowledge"
+   ]
+  },
+  "Probability.cs": {
+   "path_in_clone": "Libraries/AI/Probability.cs",
+   "size_bytes": 32276,
+   "usings_aima": [
+    "aima.core.probability", "aima.core.probability.bayes", "aima.core.probability.bayes.approx",
+    "aima.core.probability.bayes.exact", "aima.core.probability.bayes.impl",
+    "aima.core.probability.bayes.model", "aima.core.probability.domain",
+    "aima.core.probability.hmm", "aima.core.probability.hmm.exact", "aima.core.probability.hmm.impl",
+    "aima.core.probability.proposition", "aima.core.probability.temporal.generic",
+    "aima.core.probability.util", "aima.core.util"
+   ],
+   "alias": "using Matrix = aima.core.util.math.Matrix",
+   "cross_consumption": [
+    "AIFH_Vol3_Core.Core.DBNN -> AIFH-Vol3-Core.dll (voir External/Aifh/.inventory.json)",
+    "Encog.Cloud.Indicator -> encog-core-cs.dll (voir External/Aifh/.inventory.json)"
+   ]
+  },
+  "resolution": "Chacun des 26 namespaces consumes ci-dessus est verifie PRESENT dans les namespaces publics mesures d'aima-core.dll (comptes entre parentheses dans binaries[0].namespaces). Aucun using aima.* ne reste non resolu."
+ },
+ "verdict": {
+  "logic_cs": "HORS CIBLE, motif organ-first : le depot porte deja le pont Java->.NET pour Tweety (19 projets de shading IKVM sous MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/) + Z3.Linq pour le SMT ; AIMA ajouterait un second pont FOL pour la meme semantique.",
+  "probability_cs": "HORS CIBLE, motif organ-first : Infer.NET (MyIA.AI.Notebooks/Probas/Infer/) est l'organe probabiliste du depot, parite suivie (PARITY-INVENTORY.md, LEAN_INVENTORY.md) ; BayesianNetworkInfo serait un descripteur devant un second moteur bayesien.",
+  "source": "Verdict complet poste le 2026-10-05 en commentaire de l'issue #19197 (mesure du recouvrement organ-first)."
+ },
+ "limits_not_measured": [
+  "Le verdict repose sur la PRESENCE et le ROLE des organes, pas sur une mesure de couverture capacite par capacite.",
+  "Non etabli : Tweety couvre-t-il chacune des procedures d'inference de Logic.cs (modes FOLBCAsk/FOLFCAsk/OTTER/TFMResolution/ModelElimination du descripteur) ?",
+  "Non etabli : Infer.NET couvre-t-il les modes exact/approximatif de Probability.cs (EnumerationAsk/EliminationAsk vs GibbsAsk/LikelihoodWeighting/RejectionSampling/ParticleFiltering) ?",
+  "Toute tranche voulant porter quand meme devra repondre aux 5 questions d'organ-first-implementation -- le fardeau de la preuve est de son cote."
+ ],
+ "license_status": {
+  "status": "non mesure",
+  "measured": "Aucun fichier LICENSE dans le clone Aricie.PortalKeeper@1ab6620 (seul README.md a la racine, mesure) ; metadonnees assembly vides (company/copyright = espace).",
+  "upstream_to_check": [
+   "https://github.com/aimacode/aima-java (code Java d'origine compile via IKVM)",
+   "https://github.com/AricieConseil/Aricie.PortalKeeper (distributeur de ces binaires)",
+   "runtime IKVM embarque (11 DLL) : verifier la licence du projet IKVM correspondant a cette generation"
+  ]
+ }
+}
