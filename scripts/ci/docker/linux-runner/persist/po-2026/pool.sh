@@ -92,8 +92,8 @@ export PIP_BREAK_SYSTEM_PACKAGES=1
 # PATH (Q6, 2026-09-23, reserve secretaire c.37 + mesure /proc/<pid>/environ) :
 # la relance du superviseur depuis une session interactive (fenetre Q5) herite le
 # PATH de CETTE session — ~/.local/bin ABSENT des listeners. Le pool rend son
-# contrat independant du contexte de lancement : ~/.local/bin en tete (gh 2.90.0
-# et python y sont poses).
+# contrat independant du contexte de lancement : ~/.local/bin en tete (gh 2.99.0
+# aligne sur l'epingle image le 2026-10-08, et python y sont poses).
 export PATH="$HOME/.local/bin:$PATH"
 
 # Garde anti-stall HTTPS (#18225, 2026-09-28) : un fetch stallé (zero octet, connexion
@@ -116,6 +116,11 @@ ensure_host_contract() {
   [ -x "$bin/python" ] || ln -sf "$(command -v python3)" "$bin/python"
   [ -x "$bin/python" ] || { echo "$(date -Is) CONTRAT: python nu ABSENT de $bin"; rc=1; }
   [ -x "$bin/gh" ]     || { echo "$(date -Is) CONTRAT: gh ABSENT de $bin — poser la release Linux officielle (l'image epingle 2.99.0+SHA256) ; sans lui des gardes sortent en exit 0 SANS poster"; rc=1; }
+  # « present » n'est pas « conforme » (#17407, divergence 2.90.0 du 22/09, corrigee
+  # le 2026-10-08) : le pin de version vit dans le Dockerfile (l.73-74, GH_VERSION +
+  # GH_SHA256) ; le gate crie sur toute derive pour qu'elle reste nommee, pas muette.
+  gh_ver="$( "$bin/gh" --version 2>/dev/null | head -1 | awk '{print $3}' )"
+  [ "${gh_ver:-}" = "2.99.0" ] || { echo "$(date -Is) CONTRAT: gh ${gh_ver:-INDETERMINABLE} != 2.99.0 epingle image (Dockerfile l.73-74) — reposer la release verifiee dans $bin"; rc=1; }
   [ -n "${PIP_BREAK_SYSTEM_PACKAGES:-}" ] || { echo "$(date -Is) CONTRAT: PIP_BREAK_SYSTEM_PACKAGES non pose"; rc=1; }
   command -v gh >/dev/null 2>&1 || { echo "$(date -Is) CONTRAT: gh INVISIBLE du PATH du pool (relance depuis session interactive ?) — existence du fichier ne suffit pas (reserve #17406 c.5784716255)"; rc=1; }
   command -v patchelf >/dev/null 2>&1 || { echo "$(date -Is) CONTRAT: patchelf INVISIBLE ($bin/patchelf) — re-patch RUNPATH du toolcache impossible (ASK secretary c.37 2026-09-23)"; rc=1; }
