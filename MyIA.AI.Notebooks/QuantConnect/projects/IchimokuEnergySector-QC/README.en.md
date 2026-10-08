@@ -90,12 +90,11 @@ path, which is what a single whole-position buy must do: it has no dependence on
 
 ### Out-of-sample extension (2020-08-17 → 2026-09-30)
 
-**The frozen block is not computable with this port.** The strategy leg only produces a curve on
-part of the window; elsewhere it returns an **empty run** — 0 orders, equity flat to the cent,
-`Total Fees` at 0.00 USD — without raising any error. Measured 2026-10-08 (project `37468246`,
-`list_backtests` plateau):
+**Port defect found then fixed (#19863): the fine universe was never armed.** Pre-fix runs
+(measured 2026-10-08, project `37468246`) showed **empty** windows — 0 orders, equity flat to the
+cent, no error — alongside windows that traded:
 
-| Window | Length | Orders | Status |
+| Window | Length | Orders | Status (pre-fix) |
 |---|---|---|---|
 | 2015-08-10 → 2015-10-10 | 2 months | **848** | trades |
 | 2020-02-19 → 2020-03-23 | 1 month | 0 | **empty** |
@@ -103,26 +102,23 @@ part of the window; elsewhere it returns an **empty run** — 0 orders, equity f
 | 2021-01-01 → 2022-01-01 | 12 months | 0 | **empty** |
 | 2021-08-17 → 2022-08-16 | 12 months | 0 | **empty** |
 | 2022-08-16 → 2023-08-16 | 12 months | 0 | **empty** |
-| 2020-08-17 → 2026-09-30 (frozen block) | 6.1 years | — | **does not complete** (stalls, then aborted) |
-| 2020-08-17 → 2026-09-30 (`mode: xle_hold`) | 6.1 years | 1 | completes |
 
-Three explanations were tested and **all three refuted by measurement**:
+Three explanations were first tested and **refuted by measurement** (window too short / fine-data
+end / start-month alignment). An instrumented probe (issue #19863) then reading LEAN's public
+source named the exact cause: `EnergyTopTenUniverseSelectionModel` subclassed
+`FineFundamentalUniverseSelectionModel` **without chaining any base constructor** — the canonical
+QC pattern requires `super().__init__(self.select_coarse, self.select_fine)`. Without it the fine
+universe is **never constructed**: the probe's `fine_calls` counter is **0 on every pre-fix run**
+(including the trading ones), the universe degenerates to the raw coarse (~5,000 symbols with
+fundamental data), the monthly lock (`self.month`, set inside `select_fine`) never arms — daily
+re-selection of ~5,000 symbols, >1M *insights* — and equal weighting across ~5,000 symbols
+(~$200 per position) rounds most order sizes to 0 shares: that is the origin of the "empty"
+windows. A selection producing no order is not an error for LEAN; the run concludes normally.
 
-1. **"the window is too short for the Ichimoku warm-up"** — refuted: `fall2015` traded 848
-   orders in **two months**, and the empty windows include a full year;
-2. **"the fine-fundamental data ends around 2022-08"** — refuted: the 2021 window is **entirely
-   contained** in the `2020-08-17 → 2022-08-16` one (839 orders, including 453 equity points in
-   2021 alone, 364 distinct values);
-3. **"the start month alignment"** (both trading windows start in August) — refuted by a
-   dedicated probe: `2021-08-17 → 2022-08-16` starts in August, is **entirely contained** in the
-   trading window, and returns 0 orders.
-
-What is established: the wall sits on the strategy's `FineFundamentalUniverseSelectionModel`
-path (the same project's `xle_hold` leg, same node, same bounds, completes without difficulty)
-and **the universe empties silently** — a selection returning no symbol raises no error, so the
-alpha has no symbol, hence no *insight*, hence no order, and LEAN concludes normally. The exact
-cause of the emptying **is not identified**; it is opened as a follow-up issue rather than
-guessed at here.
+**Fix** (commit `a745f2545d`, one line): canonical base-constructor chaining. The corrected
+container run **completes and trades: 1,692 orders** over 2020-08-17 → 2022-08-16 (harness Sharpe
+0.049, net -2.312 %, MaxDD 30.5 %). The 2021+ windows, re-run with the corrected probe, are
+tracked on #19863.
 
 A practical corollary, measured: **run duration betrays the emptying.** An empty 12-month window
 completes in ~90 s where two months that trade take 6-8 min — universe selection dominates the
@@ -131,33 +127,36 @@ the only discriminating read is the **equity curve** (flat to the cent = empty r
 
 ## BEATS / NO BEATS verdict
 
-**On the computable part of the frozen block, the pre-registered test returns `INCONCLUSIVE`.**
+**On the computable part of the frozen block, the pre-registered test returns `INCONCLUSIVE` —
+computed on the corrected port.**
 
-The frozen block running from 2020-08-17 to 2026-09-30 not being computable (previous section),
-the verdict bears on **2020-08-17 → 2022-08-16** — the first 24 months of the block, **entirely
-contained** in it, and the longest window on which the strategy leg actually produces a curve.
-The test is the pre-registered one, unchanged: block bootstrap, **block = 21 sessions, 10,000
-resamples, seed 42**, paired session by session, placebo at 21 sessions.
+The verdict bears on **2020-08-17 → 2022-08-16**, the corrected container-run window (1,692
+orders, fine universe armed). The test is the pre-registered one, unchanged: block bootstrap,
+**block = 21 sessions, 10,000 resamples, seed 42**, paired session by session, placebo at 21
+sessions.
 
 | | Sharpe (instrument) | Cumulative | Max drawdown |
 |---|---|---|---|
-| Strategy | 0.6078 | +2.140 % | -2.619 % |
-| XLE baseline (`xle_hold`) | 1.333 | +127.442 % | -25.983 % |
+| Strategy (fixed, `4cdcd965`) | 0.0788 | -2.513 % | -30.517 % |
+| XLE baseline (`xle_hold`) | 1.303 | +123.020 % | -25.983 % |
 
 | Test | Sharpe difference | p (beats) | p (underperforms) | Verdict |
 |---|---|---|---|---|
-| Main (520 common sessions) | -0.7252 | 0.8059 | **0.1941** | **`INCONCLUSIVE`** |
-| Placebo (baseline shifted 21 sessions) | -1.2382 | 0.9134 | 0.0866 | `INCONCLUSIVE` |
+| Main (521 common sessions) | -1.2242 | 0.9132 | **0.0868** | **`INCONCLUSIVE`** |
+| Placebo (baseline shifted 21 sessions) | -1.517 | 0.9241 | 0.0759 | `INCONCLUSIVE` |
 
 **What the verdict says, exactly.** The strategy **does not beat** XLE buy-and-hold — the Sharpe
-difference is negative and the strategy's cumulative (+2.140 %) is very far from the baseline's
-(+127.442 %). But the frozen threshold requires p < 0.05 to conclude either `BEATS` **or**
-`UNDERPERFORMS`: at p = 0.1941 one **cannot** conclude significant underperformance on this
-sample either. The verdict is therefore `INCONCLUSIVE`, and that is the verdict, not a fallback.
+difference is negative and the strategy's cumulative (-2.513 %) is very far from the baseline's
+(+123.020 % — the 2021-2022 energy rally). But the frozen threshold requires p < 0.05 to conclude
+either `BEATS` **or** `UNDERPERFORMS`: at p = 0.0868 one **cannot** conclude significant
+underperformance on this sample either. The verdict is therefore `INCONCLUSIVE`, and that is the
+verdict, not a fallback. The first version of this verdict (difference -0.7252, p 0.1941),
+computed before the universe fix, measured the degenerate raw coarse — it is **superseded** by
+this one; both are kept in the #19678 thread for traceability.
 
 **The placebo fabricates no effect**: shifting the baseline 21 sessions into the future leaves
-the Sharpe difference negative (-1.2382) and the underperformance p **drops** (0.0866) instead of
-fabricating a `BEATS` — the test is not a one-way device.
+the Sharpe difference negative (-1.517) and the verdict `INCONCLUSIVE` — the test is not a
+one-way device.
 
 **Honest limitation, frozen before the first calculation.** A verdict on a single window remains
 a verdict on a single window. Here the limitation is tighter than planned: the verdict bears on

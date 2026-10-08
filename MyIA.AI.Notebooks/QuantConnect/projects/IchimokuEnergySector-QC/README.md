@@ -91,12 +91,11 @@ au centième, ce qui est attendu d'un achat intégral unique : il n'a aucune dé
 
 ### Extension out-of-sample (2020-08-17 → 2026-09-30)
 
-**Le bloc gelé n'est pas calculable avec ce portage.** La jambe stratégie ne produit une courbe
-que sur une partie de la fenêtre ; ailleurs elle rend un **run vide** — 0 ordre, equity plate au
-centime, `Total Fees` à 0,00 $ — sans lever la moindre erreur. Mesure du 08/10 (projet
-`37468246`, plateau `list_backtests`) :
+**Défaut de portage trouvé puis corrigé (#19863) : l'univers fine n'était jamais armé.** Les runs
+pré-correction (mesure du 08/10, projet `37468246`) présentaient des fenêtres **vides** — 0 ordre,
+equity plate au centime, aucune erreur — et des fenêtres qui négocient :
 
-| Fenêtre | Durée | Ordres | Statut |
+| Fenêtre | Durée | Ordres | Statut (pré-correction) |
 |---|---|---|---|
 | 2015-08-10 → 2015-10-10 | 2 mois | **848** | négocie |
 | 2020-02-19 → 2020-03-23 | 1 mois | 0 | **vide** |
@@ -104,26 +103,24 @@ centime, `Total Fees` à 0,00 $ — sans lever la moindre erreur. Mesure du 08/1
 | 2021-01-01 → 2022-01-01 | 12 mois | 0 | **vide** |
 | 2021-08-17 → 2022-08-16 | 12 mois | 0 | **vide** |
 | 2022-08-16 → 2023-08-16 | 12 mois | 0 | **vide** |
-| 2020-08-17 → 2026-09-30 (bloc gelé) | 6,1 ans | — | **ne complète pas** (gel, puis abandon) |
-| 2020-08-17 → 2026-09-30 (`mode: xle_hold`) | 6,1 ans | 1 | complète |
 
-Trois explications ont été testées et **toutes trois réfutées par la mesure** :
+Trois explications ont d'abord été testées et **réfutées par la mesure** (fenêtre trop courte /
+fin de donnée fine / alignement du mois de départ). Une sonde instrumentée (issue #19863) puis la
+lecture de la source publique LEAN ont nommé la cause exacte : `EnergyTopTenUniverseSelectionModel`
+sous-classait `FineFundamentalUniverseSelectionModel` **sans chaîner de constructeur de base** —
+le pattern canonique QC exige `super().__init__(self.select_coarse, self.select_fine)`. Sans lui,
+l'univers fine n'est **jamais construit** : le compteur `fine_calls` de la sonde vaut **0 sur tous
+les runs pré-correction** (y compris ceux qui négociaient), l'univers dégénère en le coarse brut
+(~5 000 titres à données fondamentales), le verrou mensuel (`self.month`, posé dans
+`select_fine`) ne s'arme jamais — re-sélection quotidienne de ~5 000 symboles, >1 M d'*insights* —
+et la pondération égale sur ~5 000 titres (~200 $ par position) arrondit la plupart des tailles
+d'ordre à 0 action : c'est l'origine des fenêtres « vides ». Une sélection qui ne rend aucun
+ordre n'est pas une erreur pour LEAN ; le run conclut normalement.
 
-1. **« la fenêtre est trop courte pour le warm-up Ichimoku »** — réfutée : `fall2015` négociait
-   848 ordres en **deux mois**, et les fenêtres vides incluent une année entière ;
-2. **« la donnée fine-fundamental s'arrête vers 2022-08 »** — réfutée : la fenêtre 2021 est
-   **entièrement contenue** dans celle de `2020-08-17 → 2022-08-16` (839 ordres, dont 453 points
-   d'equity en 2021 seul, 364 valeurs distinctes) ;
-3. **« l'alignement du mois de départ »** (les deux fenêtres qui négocient commencent en août) —
-   réfutée par une sonde dédiée : `2021-08-17 → 2022-08-16` commence en août, est **entièrement
-   contenue** dans la fenêtre qui négocie, et rend 0 ordre.
-
-Ce qui est établi : le mur est sur le chemin `FineFundamentalUniverseSelectionModel` de la
-stratégie (la jambe `xle_hold` du même projet, même nœud, mêmes bornes, complète sans difficulté)
-et **l'univers se vide silencieusement** — une sélection qui ne rend aucun symbole ne lève aucune
-erreur, l'alpha n'a alors pas de symbole, donc pas d'*insight*, donc pas d'ordre, et LEAN conclut
-normalement. La cause exacte du vidage **n'est pas identifiée** ; elle est ouverte en issue de
-suivi plutôt que devinée ici.
+**Correction** (commit `a745f2545d`, une ligne) : chaînage canonique au constructeur de base. Le
+run conteneur corrigé **complète et négocie : 1 692 ordres** sur 2020-08-17 → 2022-08-16 (Sharpe
+harnais 0,049, net −2,312 %, MaxDD 30,5 %). Les fenêtres 2021+, re-jouées avec la sonde corrigée,
+sont suivies sur #19863.
 
 Un corollaire pratique, mesuré : **la durée du run trahit le vidage.** Une fenêtre de 12 mois vide
 complète en ~90 s là où deux mois qui négocient prennent 6-8 min — la sélection d'univers domine le
@@ -132,34 +129,36 @@ seule lecture qui discrimine est la **courbe d'equity** (plate au centime = run 
 
 ## Verdict BEATS / NO BEATS
 
-**Sur la partie calculable du bloc gelé, le test pré-enregistré rend `INCONCLUSIVE`.**
+**Sur la partie calculable du bloc gelé, le test pré-enregistré rend `INCONCLUSIVE` — calculé sur
+le port corrigé.**
 
-Le bloc gelé allant de 2020-08-17 à 2026-09-30 n'étant pas calculable (section précédente), le
-verdict porte sur **2020-08-17 → 2022-08-16** — les 24 premiers mois du bloc, **entièrement
-contenus** dedans, et la plus longue fenêtre sur laquelle la jambe stratégie produit réellement une
-courbe. Le test est celui du pré-enregistrement, inchangé : bootstrap par blocs, **bloc = 21
-séances, 10 000 rééchantillonnages, graine 42**, apparié séance par séance, placebo à 21 séances.
+Le verdict porte sur **2020-08-17 → 2022-08-16**, la fenêtre du run conteneur corrigé (1 692
+ordres, univers fine armé). Le test est celui du pré-enregistrement, inchangé : bootstrap par
+blocs, **bloc = 21 séances, 10 000 rééchantillonnages, graine 42**, apparié séance par séance,
+placebo à 21 séances.
 
 | | Sharpe (instrument) | Cumul | Drawdown max |
 |---|---|---|---|
-| Stratégie | 0,6078 | +2,140 % | −2,619 % |
-| Baseline XLE (`xle_hold`) | 1,333 | +127,442 % | −25,983 % |
+| Stratégie (corrigée, `4cdcd965`) | 0,0788 | −2,513 % | −30,517 % |
+| Baseline XLE (`xle_hold`) | 1,303 | +123,020 % | −25,983 % |
 
 | Test | Écart de Sharpe | p (bat) | p (sous-performe) | Verdict |
 |---|---|---|---|---|
-| Principal (520 séances communes) | −0,7252 | 0,8059 | **0,1941** | **`INCONCLUSIVE`** |
-| Placebo (baseline décalée de 21 séances) | −1,2382 | 0,9134 | 0,0866 | `INCONCLUSIVE` |
+| Principal (521 séances communes) | −1,2242 | 0,9132 | **0,0868** | **`INCONCLUSIVE`** |
+| Placebo (baseline décalée de 21 séances) | −1,517 | 0,9241 | 0,0759 | `INCONCLUSIVE` |
 
 **Ce que le verdict dit, exactement.** La stratégie **ne bat pas** le buy-and-hold XLE — l'écart de
-Sharpe est négatif et le cumul de la stratégie (+2,140 %) est très loin de celui de la baseline
-(+127,442 %). Mais le seuil gelé exige p < 0,05 pour conclure un `BEATS` **ou** un
-`UNDERPERFORMS` : à p = 0,1941, on ne peut **pas** non plus conclure à une sous-performance
-significative sur cet échantillon. Le verdict est donc `INCONCLUSIVE`, et c'est le verdict, pas un
-repli.
+Sharpe est négatif et le cumul de la stratégie (−2,513 %) est très loin de celui de la baseline
+(+123,020 % — le rally énergie 2021-2022). Mais le seuil gelé exige p < 0,05 pour conclure un
+`BEATS` **ou** un `UNDERPERFORMS` : à p = 0,0868, on ne peut **pas** non plus conclure à une
+sous-performance significative sur cet échantillon. Le verdict est donc `INCONCLUSIVE`, et c'est
+le verdict, pas un repli. La première version de ce verdict (écart −0,7252, p 0,1941), calculée
+avant la correction de l'univers, mesurait le coarse brut dégénéré — elle est **supersédée** par
+celle-ci ; les deux sont conservées dans le fil #19678 pour la traçabilité.
 
 **Le placebo ne fabrique pas d'effet** : en décalant la baseline de 21 séances vers le futur,
-l'écart de Sharpe reste négatif (−1,2382) et le p de sous-performance **baisse** (0,0866) au lieu
-de fabriquer un `BEATS` — le test n'est donc pas un dispositif à sens unique.
+l'écart de Sharpe reste négatif (−1,517) et le verdict reste `INCONCLUSIVE` — le test n'est pas un
+dispositif à sens unique.
 
 **Limite honnête, déjà gelée avant le premier calcul.** Un verdict sur une fenêtre unique reste un
 verdict sur une fenêtre. Ici la limite est plus étroite que prévu : le verdict porte sur 24 mois au
@@ -169,10 +168,10 @@ Cette réduction est une **contrainte de harnais**, pas un choix d'analyse, et e
 aucun réglage, le portage ayant été écrit et débogué sur 2015-01-01 → 2020-08-16.
 
 **Ce que ce verdict ne dit pas.** Il ne dit rien de la fenêtre 2015-01-01 → 2020-08-16 (jambe
-stratégie non exécutée sous le code courant), ni des fenêtres `2020 Recovery` et `2020 Crash`
-(l'une non exécutée, l'autre vide). L'écart de niveau avec les valeurs publiées par l'article
-(`fall2015` : −2,504 contre −0,31) n'est pas expliqué par ce verdict et reste ouvert : l'article ne
-publie ni capital ni modèle de frais, et le portage tourne sous frais de courtage réels.
+stratégie non exécutée sous le code courant), ni des fenêtres `2020 Recovery` et `2020 Crash`.
+L'écart de niveau avec les valeurs publiées par l'article (`fall2015` : −2,504 contre −0,31) n'est
+pas expliqué par ce verdict et reste ouvert : l'article ne publie ni capital ni modèle de frais, et
+le portage tourne sous frais de courtage réels.
 
 ## Référence
 
