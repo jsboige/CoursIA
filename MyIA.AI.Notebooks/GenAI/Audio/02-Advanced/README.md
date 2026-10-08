@@ -4,7 +4,7 @@
 
 Ce module explore les techniques avancées : clonage vocal, génération musicale, séparation de sources, et modèles TTS expressifs.
 
-**Dans le cadre du fil rouge podcast** : un podcast de qualité a besoin d'une voix cohérente et d'une identité sonore. [02-2](02-2-XTTS-Voice-Cloning.ipynb) clone une voix à partir d'un échantillon pour créer un narrateur récurrent. [02-3](02-3-MusicGen-Generation.ipynb) génère le jingle et le fond musical. [02-4](02-4-Demucs-Source-Separation.ipynb) isole les pistes audio d'un mix existant (utile pour remastériser un interview). [02-8](02-8-Expressive-TTS.ipynb) ajoute des émotions et de la prosodie pour varier le ton selon les passages.
+**Dans le cadre du fil rouge podcast** : un podcast de qualité a besoin d'une voix cohérente et d'une identité sonore. [02-2](02-2-XTTS-Voice-Cloning.html) clone une voix à partir d'un échantillon pour créer un narrateur récurrent. [02-3](02-3-MusicGen-Generation.html) génère le jingle et le fond musical. [02-4](02-4-Demucs-Source-Separation.html) isole les pistes audio d'un mix existant (utile pour remastériser un interview). [02-8](02-8-Expressive-TTS.html) ajoute des émotions et de la prosodie pour varier le ton selon les passages.
 
 ## Vue d'ensemble
 
@@ -19,15 +19,15 @@ Ce module explore les techniques avancées : clonage vocal, génération musical
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 1 | [02-1-Chatterbox-TTS](02-1-Chatterbox-TTS.ipynb) | Chatterbox Turbo, émotions, prosodie | Local GPU | ~8 GB |
-| 2 | [02-2-XTTS-Voice-Cloning](02-2-XTTS-Voice-Cloning.ipynb) | XTTS v2, clonage vocal zero-shot | Local GPU | ~6 GB |
-| 3 | [02-3-MusicGen-Generation](02-3-MusicGen-Generation.ipynb) | Meta MusicGen, text-to-music | Local GPU | ~10 GB |
-| 4 | [02-4-Demucs-Source-Separation](02-4-Demucs-Source-Separation.ipynb) | Demucs v4, extraction stems | Local GPU | ~4 GB |
-| 5 | [02-5-Multi-Model-TTS-Gateway](02-5-Multi-Model-TTS-Gateway.ipynb) | Gateway multi-TTS (Kokoro, TADA, Qwen3) | tts-api.myia.io | ~12 GB |
-| 6 | [02-6-MIDI-Generation](02-6-MIDI-Generation.ipynb) | midi-model (SkyTNT), génération symbolique | Local GPU | ~2-4 GB |
-| 7 | [02-7-YuE2-Song-Generation](02-7-YuE2-Song-Generation.ipynb) | YuE2-3B : zero-shot, cover, édition agentique (4 étapes canoniques) | Routée GPU 24 GB (Linux) | ~24 GB |
-| 8 | [02-8-Expressive-TTS](02-8-Expressive-TTS.ipynb) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
-| 9 | [02-9-AceStep-Music-Generation](02-9-AceStep-Music-Generation.ipynb) | ACE-Step v1.5, text-to-song multilingue | Local GPU | <4 GB |
+| 1 | [02-1-Chatterbox-TTS](02-1-Chatterbox-TTS.html) | Chatterbox Turbo, émotions, prosodie | Local GPU | ~8 GB |
+| 2 | [02-2-XTTS-Voice-Cloning](02-2-XTTS-Voice-Cloning.html) | XTTS v2, clonage vocal zero-shot | Local GPU | ~6 GB |
+| 3 | [02-3-MusicGen-Generation](02-3-MusicGen-Generation.html) | Meta MusicGen, text-to-music | Local GPU | ~10 GB |
+| 4 | [02-4-Demucs-Source-Separation](02-4-Demucs-Source-Separation.html) | Demucs v4, extraction stems | Local GPU | ~4 GB |
+| 5 | [02-5-Multi-Model-TTS-Gateway](02-5-Multi-Model-TTS-Gateway.html) | Gateway multi-TTS (Kokoro, TADA, Qwen3) | tts-api.myia.io | ~12 GB |
+| 6 | [02-6-MIDI-Generation](02-6-MIDI-Generation.html) | midi-model (SkyTNT), génération symbolique | Local GPU | ~2-4 GB |
+| 7 | [02-7-YuE2-Song-Generation](02-7-YuE2-Song-Generation.html) | YuE2-3B : zero-shot, cover, édition agentique (4 étapes canoniques) | Routée GPU 24 GB (Linux) | ~24 GB |
+| 8 | [02-8-Expressive-TTS](02-8-Expressive-TTS.html) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
+| 9 | [02-9-AceStep-Music-Generation](02-9-AceStep-Music-Generation.html) | ACE-Step v1.5, text-to-song multilingue | Local GPU | <4 GB |
 
 ## Prérequis
 

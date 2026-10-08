@@ -4,7 +4,7 @@
 
 Ce module couvre les fondamentaux du traitement audio par IA : reconnaissance vocale (STT), synthèse vocale (TTS), et opérations audio de base.
 
-**Dans le cadre du fil rouge podcast** : avant de produire un épisode, il faut maîtriser les deux briques essentielles -- faire parler la machine (TTS) et comprendre la parole humaine (STT). [01-1](01-1-OpenAI-TTS-Intro.ipynb) et [01-2](01-2-OpenAI-Whisper-STT.ipynb) couvrent les API cloud (rapides à mettre en oeuvre), tandis que [01-4](01-4-Whisper-Local.ipynb) et [01-5](01-5-Kokoro-TTS-Local.ipynb) passent en local GPU pour l'autonomie et le contrôle. [01-3](01-3-Basic-Audio-Operations.ipynb) donne les bases techniques (spectrogrammes, MFCC) utiles pour comprendre ce que manipulent les modèles.
+**Dans le cadre du fil rouge podcast** : avant de produire un épisode, il faut maîtriser les deux briques essentielles -- faire parler la machine (TTS) et comprendre la parole humaine (STT). [01-1](01-1-OpenAI-TTS-Intro.html) et [01-2](01-2-OpenAI-Whisper-STT.html) couvrent les API cloud (rapides à mettre en oeuvre), tandis que [01-4](01-4-Whisper-Local.html) et [01-5](01-5-Kokoro-TTS-Local.html) passent en local GPU pour l'autonomie et le contrôle. [01-3](01-3-Basic-Audio-Operations.html) donne les bases techniques (spectrogrammes, MFCC) utiles pour comprendre ce que manipulent les modèles.
 
 ## Vue d'ensemble
 
@@ -19,13 +19,13 @@ Ce module couvre les fondamentaux du traitement audio par IA : reconnaissance vo
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 1 | [01-1-OpenAI-TTS-Intro](01-1-OpenAI-TTS-Intro.ipynb) | API TTS (6 voix, formats, vitesse) | OpenAI API | 0 |
-| 2 | [01-2-OpenAI-Whisper-STT](01-2-OpenAI-Whisper-STT.ipynb) | Whisper API + GPT-4o-Transcribe | OpenAI API | 0 |
-| 3 | [01-3-Basic-Audio-Operations](01-3-Basic-Audio-Operations.ipynb) | librosa, spectrogrammes, MFCC, pydub | Local | 0 |
-| 4 | [01-4-Whisper-Local](01-4-Whisper-Local.ipynb) | Whisper V3 Turbo local, batch | Local GPU | ~10 GB |
-| 5 | [01-5-Kokoro-TTS-Local](01-5-Kokoro-TTS-Local.ipynb) | Kokoro 82M, TTS légère | Local GPU | ~2 GB |
+| 1 | [01-1-OpenAI-TTS-Intro](01-1-OpenAI-TTS-Intro.html) | API TTS (6 voix, formats, vitesse) | OpenAI API | 0 |
+| 2 | [01-2-OpenAI-Whisper-STT](01-2-OpenAI-Whisper-STT.html) | Whisper API + GPT-4o-Transcribe | OpenAI API | 0 |
+| 3 | [01-3-Basic-Audio-Operations](01-3-Basic-Audio-Operations.html) | librosa, spectrogrammes, MFCC, pydub | Local | 0 |
+| 4 | [01-4-Whisper-Local](01-4-Whisper-Local.html) | Whisper V3 Turbo local, batch | Local GPU | ~10 GB |
+| 5 | [01-5-Kokoro-TTS-Local](01-5-Kokoro-TTS-Local.html) | Kokoro 82M, TTS légère | Local GPU | ~2 GB |
 
-**[01-3](01-3-Basic-Audio-Operations.ipynb) — Le pipeline d'analyse audio.** Ce notebook est le seul du module à produire des visualisations : il déroule la chaîne de transformations qui révèle la structure d'un signal audio, du domaine temporel brut jusqu'aux caractéristiques exploitables par les modèles. Chaque étape ci-dessous correspond à une cellule du notebook.
+**[01-3](01-3-Basic-Audio-Operations.html) — Le pipeline d'analyse audio.** Ce notebook est le seul du module à produire des visualisations : il déroule la chaîne de transformations qui révèle la structure d'un signal audio, du domaine temporel brut jusqu'aux caractéristiques exploitables par les modèles. Chaque étape ci-dessous correspond à une cellule du notebook.
 
 **Étape 1 — Forme d'onde.** Le point de départ : l'amplitude du signal échantillonnée dans le temps. On y lit directement la structure alternée de silence et de parole :
 

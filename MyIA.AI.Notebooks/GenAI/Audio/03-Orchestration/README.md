@@ -4,7 +4,7 @@
 
 Ce module couvre l'orchestration de plusieurs modèles audio, les pipelines complexes, et l'API temps réel d'OpenAI.
 
-**Dans le cadre du fil rouge podcast** : les briques existent, il faut les assembler. [03-1](03-1-Multi-Model-Audio-Comparison.ipynb) compare les modèles STT et TTS pour choisir le meilleur selon le budget et la qualité visés. [03-2](03-2-Audio-Pipeline-Orchestration.ipynb) construit le pipeline STT vers LLM vers TTS qui constitue le coeur du podcast automatisé. [03-3](03-3-Realtime-Voice-API.ipynb) montre l'alternative temps réel d'OpenAI pour les interactions live.
+**Dans le cadre du fil rouge podcast** : les briques existent, il faut les assembler. [03-1](03-1-Multi-Model-Audio-Comparison.html) compare les modèles STT et TTS pour choisir le meilleur selon le budget et la qualité visés. [03-2](03-2-Audio-Pipeline-Orchestration.html) construit le pipeline STT vers LLM vers TTS qui constitue le coeur du podcast automatisé. [03-3](03-3-Realtime-Voice-API.html) montre l'alternative temps réel d'OpenAI pour les interactions live.
 
 ## Vue d'ensemble
 
@@ -19,9 +19,9 @@ Ce module couvre l'orchestration de plusieurs modèles audio, les pipelines comp
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 1 | [03-1-Multi-Model-Audio-Comparison](03-1-Multi-Model-Audio-Comparison.ipynb) | Benchmark STT et TTS | Mixed | ~12 GB |
-| 2 | [03-2-Audio-Pipeline-Orchestration](03-2-Audio-Pipeline-Orchestration.ipynb) | Pipelines STT→LLM→TTS, podcast | Mixed | ~14 GB |
-| 3 | [03-3-Realtime-Voice-API](03-3-Realtime-Voice-API.ipynb) | OpenAI Realtime API, WebSocket | OpenAI API | 0 |
+| 1 | [03-1-Multi-Model-Audio-Comparison](03-1-Multi-Model-Audio-Comparison.html) | Benchmark STT et TTS | Mixed | ~12 GB |
+| 2 | [03-2-Audio-Pipeline-Orchestration](03-2-Audio-Pipeline-Orchestration.html) | Pipelines STT→LLM→TTS, podcast | Mixed | ~14 GB |
+| 3 | [03-3-Realtime-Voice-API](03-3-Realtime-Voice-API.html) | OpenAI Realtime API, WebSocket | OpenAI API | 0 |
 
 ## Prérequis
 
@@ -74,4 +74,4 @@ STT Input → Processing → LLM Analysis → TTS Output
 
 - [Documentation Audio principale](../README.md)
 - [Guide API OpenAI Realtime](https://platform.openai.com/docs/api-reference/realtime)
-- [WebSocket Client Documentation](03-3-Realtime-Voice-API.ipynb)
+- [WebSocket Client Documentation](03-3-Realtime-Voice-API.html)

@@ -4,9 +4,9 @@
 
 Ce module présente des cas d'usage concrets et des workflows de production pour l'audio génératif.
 
-**Fil rouge podcast** : [04-1](04-1-Educational-Audio-Content.ipynb) automatise la narration de cours. [04-2](04-2-Transcription-Pipeline.ipynb) gère la transcription batch avec sous-titres SRT. [04-3](04-3-Music-Composition-Workflow.ipynb) compose des bandes sonores. [04-4](04-4-Audio-Video-Sync.ipynb) synchronise l'audio avec la vidéo.
+**Fil rouge podcast** : [04-1](04-1-Educational-Audio-Content.html) automatise la narration de cours. [04-2](04-2-Transcription-Pipeline.html) gère la transcription batch avec sous-titres SRT. [04-3](04-3-Music-Composition-Workflow.html) compose des bandes sonores. [04-4](04-4-Audio-Video-Sync.html) synchronise l'audio avec la vidéo.
 
-**Fil rouge audiobook (Epic #1028)** : [04-6](04-6-Audiobook-Pipeline.ipynb) a [04-12](04-12-Compilation-Audio.ipynb) forment un pipeline agentique 5-pass complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. [04-13](04-13-Audiobook-FishAudio-S2Pro.ipynb) étend le pipeline avec FishAudio S2-Pro, 29 tags prosodiques officiels et validation WER.
+**Fil rouge audiobook (Epic #1028)** : [04-6](04-6-Audiobook-Pipeline.html) a [04-12](04-12-Compilation-Audio.html) forment un pipeline agentique 5-pass complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. [04-13](04-13-Audiobook-FishAudio-S2Pro.html) étend le pipeline avec FishAudio S2-Pro, 29 tags prosodiques officiels et validation WER.
 
 
 ## Vue d'ensemble
@@ -24,11 +24,11 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 1 | [04-1-Educational-Audio-Content](04-1-Educational-Audio-Content.ipynb) | Narration automatique de cours | Mixed | ~10 GB |
-| 2 | [04-2-Transcription-Pipeline](04-2-Transcription-Pipeline.ipynb) | Batch transcription, sous-titres SRT | Mixed | ~12 GB |
-| 3 | [04-3-Music-Composition-Workflow](04-3-Music-Composition-Workflow.ipynb) | Création musicale multi-étapes | Local GPU | ~14 GB |
-| 4 | [04-4-Audio-Video-Sync](04-4-Audio-Video-Sync.ipynb) | Synchronisation audio-video | Mixed | ~10 GB |
-| 5 | [04-5-LiveCoding-LLM-Music](04-5-LiveCoding-LLM-Music.ipynb) | Strudel.cc + LLM, live coding musical | OpenAI API | 0 |
+| 1 | [04-1-Educational-Audio-Content](04-1-Educational-Audio-Content.html) | Narration automatique de cours | Mixed | ~10 GB |
+| 2 | [04-2-Transcription-Pipeline](04-2-Transcription-Pipeline.html) | Batch transcription, sous-titres SRT | Mixed | ~12 GB |
+| 3 | [04-3-Music-Composition-Workflow](04-3-Music-Composition-Workflow.html) | Création musicale multi-étapes | Local GPU | ~14 GB |
+| 4 | [04-4-Audio-Video-Sync](04-4-Audio-Video-Sync.html) | Synchronisation audio-video | Mixed | ~10 GB |
+| 5 | [04-5-LiveCoding-LLM-Music](04-5-LiveCoding-LLM-Music.html) | Strudel.cc + LLM, live coding musical | OpenAI API | 0 |
 
 ### Pipeline Audiobook Agentique (Epic #1028)
 
@@ -36,29 +36,29 @@ Pipeline complet pour générer un audiobook à partir d'un texte littéraire, a
 
 | # | Notebook | Pass | Contenu | Service | VRAM |
 | --- | ---------- | ------ | --------- | --------- | ------ |
-| 6 | [04-6-Audiobook-Pipeline](04-6-Audiobook-Pipeline.ipynb) | P0 | Pipeline audiobook orchestrateur | Mixed | ~5 GB |
-| 7 | [04-7-TTS-Voice-Benchmark](04-7-TTS-Voice-Benchmark.ipynb) | P0 | Benchmark comparatif des modèles TTS | Kokoro + Qwen3 TTS + OpenAI | ~2 GB |
-| 8 | [04-8-Lecture-Analytique](04-8-Lecture-Analytique.ipynb) | P1 | Analyse littéraire, segmentation dialogues/narration | OpenAI API | 0 |
-| 9 | [04-9-Voice-Casting](04-9-Voice-Casting.ipynb) | P2 | Attribution de voix par personnage, casting vocal | OpenAI API | 0 |
-| 10 | [04-10-Annotation-Prosodique](04-10-Annotation-Prosodique.ipynb) | P3 | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
-| 11 | [04-11-Generation-TTS](04-11-Generation-TTS.ipynb) | P4 | Génération audio Kokoro multi-voix | Kokoro TTS | ~2 GB |
-| 12 | [04-12-Compilation-Audio](04-12-Compilation-Audio.ipynb) | P5 | Concaténation FFmpeg + normalisation loudness | FFmpeg | 0 |
-| 13 | [04-13-Audiobook-FishAudio-S2Pro](04-13-Audiobook-FishAudio-S2Pro.ipynb) | Full | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~6 GB |
+| 6 | [04-6-Audiobook-Pipeline](04-6-Audiobook-Pipeline.html) | P0 | Pipeline audiobook orchestrateur | Mixed | ~5 GB |
+| 7 | [04-7-TTS-Voice-Benchmark](04-7-TTS-Voice-Benchmark.html) | P0 | Benchmark comparatif des modèles TTS | Kokoro + Qwen3 TTS + OpenAI | ~2 GB |
+| 8 | [04-8-Lecture-Analytique](04-8-Lecture-Analytique.html) | P1 | Analyse littéraire, segmentation dialogues/narration | OpenAI API | 0 |
+| 9 | [04-9-Voice-Casting](04-9-Voice-Casting.html) | P2 | Attribution de voix par personnage, casting vocal | OpenAI API | 0 |
+| 10 | [04-10-Annotation-Prosodique](04-10-Annotation-Prosodique.html) | P3 | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
+| 11 | [04-11-Generation-TTS](04-11-Generation-TTS.html) | P4 | Génération audio Kokoro multi-voix | Kokoro TTS | ~2 GB |
+| 12 | [04-12-Compilation-Audio](04-12-Compilation-Audio.html) | P5 | Concaténation FFmpeg + normalisation loudness | FFmpeg | 0 |
+| 13 | [04-13-Audiobook-FishAudio-S2Pro](04-13-Audiobook-FishAudio-S2Pro.html) | Full | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~6 GB |
 
 ### Hommage Munkres — musique et mathématiques
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 14 | [04-14-VoiceLeading-Rendu-GenAI](04-14-VoiceLeading-Rendu-GenAI.ipynb) | Rendu audio intelligent du voice leading App-21 : baseline téléphone vs MusicGen-melody (3 styles H1), spectrogrammes mesurés | MusicGen-melody (GPU local) | ~6 GB |
+| 14 | [04-14-VoiceLeading-Rendu-GenAI](04-14-VoiceLeading-Rendu-GenAI.html) | Rendu audio intelligent du voice leading App-21 : baseline téléphone vs MusicGen-melody (3 styles H1), spectrogrammes mesurés | MusicGen-melody (GPU local) | ~6 GB |
 
 ### Famille YuE2 — compréhension et transcription musicales
 
-Trois satellites : la **compréhension** (MERT2, 04-15), la **génération** ([YuE2, 02-7](../02-Advanced/02-7-YuE2-Song-Generation.ipynb)) et la **transcription** (SheetSage2, 04-16).
+Trois satellites : la **compréhension** (MERT2, 04-15), la **génération** ([YuE2, 02-7](../02-Advanced/02-7-YuE2-Song-Generation.html)) et la **transcription** (SheetSage2, 04-16).
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 15 | [04-15-MERT2-Music-Understanding](04-15-MERT2-Music-Understanding.ipynb) | Embeddings MERT2 (632 M, self-supervised, poids CC BY-NC 4.0) : corpus contrôlé 3 motifs × 4 timbres × 2 transpositions, similarité cosinus, retrieval contexte long FullSong (medley 120 s), sondes linéaires LOO motif vs timbre sur couches L1/L23/L24 | Local GPU (kernel `mert2-gpu`, pins torch 2.6.0 / transformers 4.53.2) | ~4 GB |
-| 16 | [04-16-SheetSage2-Audio-To-Score](04-16-SheetSage2-Audio-To-Score.ipynb) | Transcription audio vers partition éditable : SheetSage2 (677 M, base MERT-v2-FullSong + adaptateurs), cinq têtes (mélodie, accords, temps forts, tonalité, structure), artefacts ABC/MIDI/événements horodatés, comparaison à vérité-terrain connue par construction, cycle symbolique→audio→symbolique mesuré | Local GPU (kernel `sheetsage2-gpu`) ; poids CC BY-NC 4.0 (usage commercial interdit) | ~8 GB |
+| 15 | [04-15-MERT2-Music-Understanding](04-15-MERT2-Music-Understanding.html) | Embeddings MERT2 (632 M, self-supervised, poids CC BY-NC 4.0) : corpus contrôlé 3 motifs × 4 timbres × 2 transpositions, similarité cosinus, retrieval contexte long FullSong (medley 120 s), sondes linéaires LOO motif vs timbre sur couches L1/L23/L24 | Local GPU (kernel `mert2-gpu`, pins torch 2.6.0 / transformers 4.53.2) | ~4 GB |
+| 16 | [04-16-SheetSage2-Audio-To-Score](04-16-SheetSage2-Audio-To-Score.html) | Transcription audio vers partition éditable : SheetSage2 (677 M, base MERT-v2-FullSong + adaptateurs), cinq têtes (mélodie, accords, temps forts, tonalité, structure), artefacts ABC/MIDI/événements horodatés, comparaison à vérité-terrain connue par construction, cycle symbolique→audio→symbolique mesuré | Local GPU (kernel `sheetsage2-gpu`) ; poids CC BY-NC 4.0 (usage commercial interdit) | ~8 GB |
 
 > **Note (consolidation #13741)** : un sibling pédagogique plus minimal (re-voicing CP-SAT + MIDI synthèse, version allégée du canonique) a été archivé sous [`MyIA.AI.Notebooks/GenAI/Audio/_archive/04-14-VoiceLeading-RenduGenAI.ipynb`](../_archive/04-14-VoiceLeading-RenduGenAI.ipynb) pour éliminer le doublon de slot 04-14. Le contenu reste préservé (re-voicing, synthèse MIDI, MusicGen, spectrogrammes, export WAV) ; ce notebook canonique `Rendu-GenAI` (version complète re-exécutée #13398) reste la référence.
 
@@ -122,5 +122,5 @@ Texte littéraire -> Benchmark voix (P0)
 ## Ressources
 
 - [Documentation Audio principale](../README.md)
-- [Live Coding Guide](04-5-LiveCoding-LLM-Music.ipynb)
+- [Live Coding Guide](04-5-LiveCoding-LLM-Music.html)
 - [GenAI Services Documentation](../../../../docs/genai/genai-services.md)
