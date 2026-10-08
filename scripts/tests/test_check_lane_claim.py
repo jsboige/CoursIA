@@ -3005,6 +3005,41 @@ def test_unparseable_scope_in_flags_bare_word_prose():
     assert clc._unparseable_scope_in(None) == []
 
 
+def test_unparseable_scope_in_accepts_tracked_root_filename():
+    """#19435 -- a bare word (no `/`, no fnmatch meta) that is the LITERAL NAME
+    of a tracked file at the repo root is accepted as a well-formed glob.
+    fnmatch treats a bare word as a literal filename; if the word matches
+    a tracked file, the glob is well-formed. Without `tracked` (fail-CLOSED
+    outside a git repo), the bare word is still residue (#12052).
+    """
+    tracked = ["_quarto.yml", "Makefile", "LICENSE", "README.md",
+               "docs/foo.md"]
+    # Bare word matching a tracked file -> accepted.
+    assert clc._unparseable_scope_in(["_quarto.yml"], tracked) == []
+    # Multiple tracked filenames -> all accepted.
+    assert clc._unparseable_scope_in(
+        ["_quarto.yml", "Makefile", "LICENSE"], tracked) == []
+    # Mixed: tracked file accepted, prose residue still flagged.
+    assert clc._unparseable_scope_in(
+        ["_quarto.yml", "prose sans separateur"], tracked) == \
+        ["prose sans separateur"]
+    # Bare word NOT in tracked -> still residue (fail-CLOSED).
+    assert clc._unparseable_scope_in(
+        ["not_a_real_file_xyz"], tracked) == ["not_a_real_file_xyz"]
+    # Without tracked, the bare word is residue (legacy #12052 behaviour).
+    assert clc._unparseable_scope_in(["_quarto.yml"]) == ["_quarto.yml"]
+    assert clc._unparseable_scope_in(["_quarto.yml"], None) == ["_quarto.yml"]
+    # tracked=[] (empty walk) is not the same as None: an empty walk means
+    # the caller could not prove tracked files exist, so the bare word is
+    # residue. Mirrors the `_empty_scope_in` fail-OPEN-without-walk contract.
+    assert clc._unparseable_scope_in(["_quarto.yml"], []) == ["_quarto.yml"]
+    # Plain tracked path with a slash is still clean.
+    assert clc._unparseable_scope_in(
+        ["docs/foo.md"], tracked) == []
+    # Brace residue still flagged (legacy #10597 contract preserved).
+    assert clc._unparseable_scope_in(["{a,b}/x.py"], tracked) == ["{a,b}/x.py"]
+
+
 def test_run_check_paren_annotation_does_not_fabricate_block(capsys):
     """Acceptance #4: end-to-end, a scoped claim with the parenthetical form
     from Form B parses to a single live glob and DOES NOT block another lane
@@ -6669,3 +6704,164 @@ def test_reconciliation_release_closes_the_subject_lane_not_the_cited_one_15918(
     assert "myia-po-2023:CoursIA" not in active, (
         "the cited lane never had a claim here -- the misattributed close must not open one"
     )
+
+
+# --- IMPLICIT occupation, issue mode (#14300) --------------------------------
+#
+# Le pont exige par le body : une PR OUVERTE d'une autre lane qui REFERENCE
+# l'issue sans qu'aucun [CLAIMED] n'ait ete pose doit rendre un verdict
+# DISTINCT (ni CLEAR ni BLOCKED), en NOMMANT les chemins de la PR trouvee
+# (exigence 2). Le controle positif ci-dessous est l'incident #14259 lui-meme
+# -- exigence 3 du body : un jeu de motifs se valide par ses faux negatifs.
+
+_PR_14293 = {  # l'incident : 79+/3- sur supervise.sh, lane po-2026, zero marqueur
+    "number": 14293,
+    "title": "feat(#14259): supervision renforcee",
+    "headRefName": "feature/14259-supervise",
+    "body": ("Grain: MED/tooling — lane myia-po-2026:CoursIA — prev: LIGHT/docs #1\n\n"
+             "See #14259"),
+    "files": [{"path": "scripts/ci/docker/linux-runner/supervise.sh"},
+              {"path": "test_supervise_guards.sh"}],
+    "additions": 79,
+    "deletions": 3,
+}
+
+
+def test_implicit_positive_control_14259(monkeypatch, capsys):
+    # EXIGENCE 3 du body #14300 : le cas fondateur, verbatim.
+    # Issue 14259 sans AUCUN marqueur ; PR #14293 ouverte, autre lane,
+    # reference l'issue ; l'appelant est po-2024 (celui qui a lu CLEAR le
+    # 2026-09-02T13:45Z). Attendu : IMPLICIT a exit 3, chemins nommes.
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
+    p = payload(comment("discussion sans marqueur", "2026-09-02T10:00:00Z"),
+                number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 3
+    captured = capsys.readouterr()
+    assert "IMPLICIT:" in captured.out
+    assert "myia-po-2026:CoursIA" in captured.out
+    assert "#14293" in captured.out
+    assert "79+/3-" in captured.out
+    # exigence 2 : les CHEMINS de la PR sont nommes (pas seulement l'issue)
+    assert "scripts/ci/docker/linux-runner/supervise.sh" in captured.out
+    assert "Traiter comme occupee" in captured.out
+    assert "CLEAR" not in captured.out
+    # la cle JSON porte le finding pour les consommateurs machine (picker)
+    brace = captured.out.find("{")
+    data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
+    assert data["implicit_occupation"][0]["number"] == 14293
+
+
+def test_implicit_absent_when_no_pr_references(monkeypatch, capsys):
+    # Faux negatif de reference : une PR ouverte d'une autre lane qui ne
+    # reference PAS l'issue ne doit PAS declencher IMPLICIT.
+    other = dict(_PR_14293, body="Grain: x — lane myia-po-2027:CoursIA\n\nSee #9999")
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [other])
+    p = payload(number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "IMPLICIT" not in captured.out
+    assert "CLEAR" in captured.out
+
+
+def test_implicit_not_run_when_caller_owns_the_grain(monkeypatch, capsys):
+    # Non-regression review 5429946072 (lettre #14300 : « sans qu'aucun
+    # [CLAIMED] n'ait ete pose ») : la jambe ne tourne que si le registre
+    # ne porte AUCUN claim actif -- ni d'une autre lane, ni de l'APPELANT.
+    # Une lane qui a pose son marqueur et croise une PR tierce sur l'issue
+    # reste OWNED_BY_ME (exit 0), jamais IMPLICIT (exit 3) : sinon le
+    # message « poser le marqueur » ne leverait rien et le picker retirait
+    # a la lane son propre grain.
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
+    p = payload(comment("[CLAIMED] lane myia-po-2024:CoursIA -- supervise",
+                        "2026-09-02T10:00:00Z"),
+                number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "IMPLICIT" not in captured.out
+    brace = captured.out.find("{")
+    data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
+    assert data["my_active_claim"] is True
+    assert data["implicit_occupation"] == []
+
+
+def test_implicit_skips_own_lane_pr(monkeypatch, capsys):
+    # Une lane ne collisionne pas avec elle-meme : la PR de MA lane qui
+    # reference l'issue est ma livraison en cours, pas une occupation.
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
+    p = payload(number=14259)
+    rc = clc._run_check(p, "myia-po-2026:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 0
+    assert "IMPLICIT" not in capsys.readouterr().out
+
+
+def test_implicit_not_run_on_posting_path(monkeypatch, capsys):
+    # `--claim` appelle _run_check SANS la jambe (check_open_pr_paths=False,
+    # #16570) : poster le marqueur EST le geste de deconfliction, il ne doit
+    # jamais etre refuse par la jambe qu'il vient lever.
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
+    p = payload(number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=False)
+    assert rc == 0
+    assert "IMPLICIT" not in capsys.readouterr().out
+
+
+def test_implicit_gh_failure_degrades_to_clear_with_warn(monkeypatch, capsys):
+    # Fail-open SIGNALE (#16570, meme posture) : une jambe qui ne peut pas
+    # mesurer ne fabrique pas de verdict -- WARN + CLEAR, jamais un 3 muet.
+    def _boom():
+        raise RuntimeError("gh pr list --state open failed (exit 1): rate limit")
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", _boom)
+    p = payload(number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "WARN" in captured.err and "IMPLICIT" in captured.err
+    assert "CLEAR" in captured.out
+
+
+def test_implicit_skipped_when_a_claim_blocks(monkeypatch, capsys):
+    # Un claim bloquant SUBSUME l'occupation implicite (et epargne le gh
+    # round-trip aux sondes du picker) : la jambe ne tourne pas.
+    calls = []
+
+    def _spy():
+        calls.append(1)
+        return [_PR_14293]
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", _spy)
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA-2 -- Taches 1-2 (CPU).",
+        "2026-08-09T21:19:00Z"), number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 2  # NOT_SCOPED (l'appelant n'a pas declare de scope)
+    captured = capsys.readouterr()
+    assert "IMPLICIT" not in captured.out
+    assert calls == []  # la jambe n'a meme pas ete payee
+
+
+def test_implicit_multiple_prs_all_named(monkeypatch, capsys):
+    # Deux lanes, deux PRs : une ligne IMPLICIT par PR, sortie deterministe
+    # (tri par numero), la cle JSON porte les deux entrees.
+    second = dict(_PR_14293, number=14301, additions=12, deletions=0,
+                  body="Grain: x — lane myia-po-2027:CoursIA\n\nCloses #14259",
+                  files=[{"path": "docs/x.md"}])
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [second, _PR_14293])
+    p = payload(number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 3
+    captured = capsys.readouterr()
+    assert captured.out.count("IMPLICIT:") == 2
+    brace = captured.out.find("{")
+    data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
+    assert [e["number"] for e in data["implicit_occupation"]] == [14293, 14301]

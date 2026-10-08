@@ -127,3 +127,11 @@ Ce que ces runs montrent :
 
 Détail complet (sous-périodes, ordres refusés, version du code, chemin des séries) :
 [commentaire de verdict sur #18904](https://github.com/jsboige/CoursIA/issues/18904#issuecomment-5983808875).
+
+### Suivi en ombre
+
+La stratégie est gelée à la date du verdict, avec ses paramètres par défaut, au commit de
+`main` qui porte ces fichiers (empreinte de `main.py` revérifiée : `9b4ff36fc02d…`, celle
+des runs du verdict). Elle est inscrite au
+[registre du suivi en ombre](../../ML-Training-Pipeline/shadow/registry.json) (#18923) sous
+l'identifiant `fs774`, gelée au 2026-10-04 ; premier passage à la première séance de novembre.

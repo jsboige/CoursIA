@@ -40,6 +40,14 @@ services:
       - type: bind
         source: ../../shared/outputs
         target: /workspace/ComfyUI/output
+      # Credential ComfyUI-Login stable, monte PAR FICHIER (jamais par env
+      # compose : l'interpolation mange les '$' des bcrypt). Le hash est le
+      # Bearer lui-meme ; le charger ici supprime la derive par redemarrage.
+      # Meme mecanisme que comfyui-qwen (.secrets/qwen-api-user.token).
+      - type: bind
+        source: ../../../.secrets/video-api-user.token
+        target: /workspace/ComfyUI/.secrets/video-api-user.token
+        read_only: true
       - type: bind
         source: ./entrypoint.sh
         target: /entrypoint.sh

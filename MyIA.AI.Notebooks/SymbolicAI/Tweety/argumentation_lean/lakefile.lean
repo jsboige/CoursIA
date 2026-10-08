@@ -22,7 +22,7 @@ entier `α`, encodage standard). La **fonction caractéristique**
 `F(S) = { a | S défend a }` est un `OrderHom` monotone sur `Set α` ; l'extension
 **grounded** est son plus petit point fixe `F.lfp`.
 
-Notebook compagnon (`Tweety-5-Abstract-Argumentation.ipynb`, série Tweety) :
+Notebook compagnon (`Tweety-05-Abstract-Argumentation-Python.ipynb`, série Tweety) :
 présentation pédagogique des cadres de Dung côte à côte Python (tweety) / Lean.
 Le câblage du notebook revient au propriétaire de la série Tweety.
 -/

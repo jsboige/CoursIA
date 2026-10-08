@@ -59,6 +59,12 @@ Issue **#11900** — pools narrow structurels documentes par ai-01 c.1331p477 et
 
 Lecon durable : **un picker pondere n'est pas un picker qui sait lire**. La verification de l'operateur reste le remede ; la regle 5 de `verify-before-claiming.md` la rend explicite et reproductible, cette page detaille son application.
 
+## Précondition toxique — une condition de reprise que rien ne mesure
+
+Déportée depuis la règle (tranche #15204, 2026-10-06 ; source : lignes 36 et 58 de `.claude/rules/proactive-coordination.md` avant déport — la règle pointait déjà ici, le texte y manquait).
+
+Une condition de reprise que *rien ne mesure* ne peut jamais être constatée atteinte — elle diffère indéfiniment contre la volonté de qui l'a posée. La rendre observable est **plus petit** que le travail différé, et le débloque entièrement.
+
 ## Liens
 
 - [verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md) — regle 5 (auto-chargee)

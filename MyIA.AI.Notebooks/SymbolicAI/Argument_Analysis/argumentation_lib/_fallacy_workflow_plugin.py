@@ -9,8 +9,14 @@
 # Source commit: ecfd9b9c (2026-09-29).
 # Verbatim import rationale: see NOTICE-EPITA at the root of this directory.
 #
-# Verbatim integrity: file content below this header is byte-for-byte identical
-# to the upstream source at the cited commit. No CoursIA modification.
+# Verbatim integrity: file content below this header is identical to the upstream
+# source at the cited commit, EXCEPT two documented deviations (#19204, on top
+# of the portee-2 vendoring of #19287): (2) the taxonomy CSV is read as
+# `utf-8-sig` -- the vendored CSV carries a UTF-8 BOM that plain `utf-8` keeps
+# glued to the first header cell, silently voiding every PK lookup and
+# degrading the funnel to the one_shot regime; (3) `_persist_trace` detaches
+# the descent-trace FileHandler before its truncating write (else NUL padding).
+# Measurements: NOTICE-EPITA, section "Entonnoir de sophismes".
 #
 # This module is a verbatim vendoring of the EPITA-IS tronc plugin set
 # (FallacyWorkflowPlugin + ExplorationPlugin + TaxonomyNavigator) used by
@@ -291,7 +297,11 @@ class FallacyWorkflowPlugin:
         load_error: Optional[str] = None
         if not data and taxonomy_file_path:
             try:
-                with open(taxonomy_file_path, mode="r", encoding="utf-8") as infile:
+                # `utf-8-sig`, not `utf-8`: the vendored CSV carries a UTF-8 BOM
+                # that plain `utf-8` keeps glued to the first header cell,
+                # silently voiding every PK lookup (deviation #2, see header
+                # and NOTICE-EPITA "Entonnoir de sophismes").
+                with open(taxonomy_file_path, mode="r", encoding="utf-8-sig") as infile:
                     reader = csv.DictReader(infile)
                     data = purge_rows(list(reader))
             except FileNotFoundError:
@@ -1637,6 +1647,20 @@ class FallacyWorkflowPlugin:
             check_plaintext_destination(trace_log_path)
             trace_path = Path(trace_log_path)
             trace_path.parent.mkdir(parents=True, exist_ok=True)
+# Deviation #3: detach any FileHandler bound to this path BEFORE the
+            # truncating write. The descent-trace handler was opened in mode "w"
+            # at the start of the run and keeps its file offset; a write_text()
+            # under it truncates the file, and the handler's next record is
+            # emitted at the old offset, padding the JSON with NUL bytes.
+            # Measured 2026-10-05: 8240 chars of JSON followed by 3624 NULs.
+            # The caller's `finally` still re-detaches harmlessly.
+            for _handler in list(self.logger.handlers):
+                if isinstance(_handler, logging.FileHandler) and Path(
+                    _handler.baseFilename
+                ) == trace_path.resolve():
+                    _handler.flush()
+                    self.logger.removeHandler(_handler)
+                    _handler.close()
             trace_path.write_text(
                 json.dumps(trace_data, indent=2, ensure_ascii=False),
                 encoding="utf-8",
