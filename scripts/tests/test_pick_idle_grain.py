@@ -839,6 +839,135 @@ def test_regression_de_main_reste_imputee_a_la_base(monkeypatch):
     assert out["triggers"] == []
 
 
+# #19767 : la classe `infra_rerun` exige une lecture REELLE du dernier run
+# `push` de `main` pour le meme workflow, pas seulement le rollup. Sans
+# cette deuxieme passe, un rollup en retard pendant une rafale de merges
+# classait en `infra_rerun` (= REJEU) des rouges REELS de la base : la
+# lane etait envoyee rejouer un rouge de `main`, et le rouge revenait au
+# tour suivant parce que la base etait toujours rouge. Mesure du
+# 2026-10-07 : 4 PRs (#19338, #19705, #19708, #19719) dans ce cas, et
+# `_main_red_motif` rendait bien `main rouge` -- le rollup, lui, etait
+# muet (cf. note #19767).
+
+
+def test_enrich_probe_with_workflow_runs_rouge_marque_red_keys(monkeypatch):
+    """Controle positif (#19767) : `main` rouge pour `scripts-tests.yml`
+    -> le check `Scripts Tests (CPU)` est ajoute a `red_keys`, MEME si
+    le rollup le dit vert. La lane n'est plus envoyee rejouer un rouge
+    reel de la base.
+    """
+    from ci import merge_dwell
+    motif = ("main rouge: workflow `Scripts & Notebook-Tools Tests` "
+             "en echec sur main (run 99999999)")
+    monkeypatch.setattr(merge_dwell, "_main_red_motif", lambda repo, fetch=None: motif)
+    probe = _probe(main_names=["Scripts Tests (CPU)", "Quarto Pages"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert "Scripts Tests (CPU)" in enriched["red_keys"]
+    # Les autres checks du rollup ne sont pas touches (mapping strict).
+    assert "Quarto Pages" not in enriched["red_keys"]
+    assert enriched["names"] == probe["names"]
+
+
+def test_enrich_probe_with_workflow_runs_vert_ne_touche_pas(monkeypatch):
+    """Controle negatif (#19767) : `main` vert pour `scripts-tests.yml`
+    -> probe inchange, l'infra d'execution reste la classe dediee.
+    Rejeu preserve sur les rouges qui ne viennent PAS de la base.
+    """
+    from ci import merge_dwell
+    monkeypatch.setattr(merge_dwell, "_main_red_motif", lambda repo, fetch=None: None)
+    probe = _probe(main_names=["Scripts Tests (CPU)", "Quarto Pages"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert enriched["red_keys"] == probe["red_keys"]
+    assert enriched["names"] == probe["names"]
+
+
+def test_enrich_probe_with_workflow_runs_illisible_ne_touche_pas(monkeypatch):
+    """#19767 fail-closed : `_main_red_motif` qui leve (panne, quota)
+    -> probe inchange, l'appelant tranchera sur le rollup.
+    """
+    from ci import merge_dwell
+    def _raise(*a, **k):
+        raise RuntimeError("quota exhausted")
+    monkeypatch.setattr(merge_dwell, "_main_red_motif", _raise)
+    probe = _probe(main_names=["Scripts Tests (CPU)"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert enriched["red_keys"] == probe["red_keys"]
+    assert enriched["names"] == probe["names"]
+
+
+def test_enrich_probe_with_workflow_runs_none_inchange(monkeypatch):
+    """#19767 : probe=None (rollup vide) -> None, jamais elargi.
+    C'est le contrat fail-closed : une sonde absente ne produit jamais
+    la classe `infra_rerun` sans preuve (cf. docstring `fetch_main_head_probe`).
+    """
+    from ci import merge_dwell
+    called = {"n": 0}
+    def _track(*a, **k):
+        called["n"] += 1
+        return "main rouge: workflow `Scripts & Notebook-Tools Tests` en echec"
+    monkeypatch.setattr(merge_dwell, "_main_red_motif", _track)
+    assert pig._enrich_probe_with_workflow_runs(None) is None
+    # La 2e passe n'est pas appelee : pas d'elargissement fantome.
+    assert called["n"] == 0
+
+
+def test_enrich_probe_etranger_ne_propage_pas(monkeypatch):
+    """#19767 : un motif rouge pour un workflow HORS `MAIN_RED_WORKFLOWS`
+    ne propage PAS vers les check names. Sans mapping, pas d'extension
+    silencieuse de la classe rouge.
+    """
+    from ci import merge_dwell
+    motif = "main rouge: workflow `Some Other Workflow` en echec sur main (run 11111)"
+    monkeypatch.setattr(merge_dwell, "_main_red_motif", lambda repo, fetch=None: motif)
+    probe = _probe(main_names=["Scripts Tests (CPU)", "Other Check"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert enriched["red_keys"] == probe["red_keys"]
+
+
+def test_fetch_main_head_probe_appelle_enrichissement(monkeypatch):
+    """#19767 integration : `fetch_main_head_probe` appelle
+    `_enrich_probe_with_workflow_runs` sur le probe rollup, et le resultat
+    enrichi est ce qui est rendu. C'est le contrat de cablage -- la deuxieme
+    passe n'est PAS optionnelle.
+    """
+    from ci import merge_dwell
+    calls = {"n": 0, "last_probe": None}
+    motif = ("main rouge: workflow `Scripts & Notebook-Tools Tests` "
+             "en echec sur main (run 99999999)")
+    monkeypatch.setattr(merge_dwell, "_main_red_motif", lambda repo, fetch=None: motif)
+    def _spy(probe, repo="jsboige/CoursIA"):
+        calls["n"] += 1
+        calls["last_probe"] = probe
+        # Simule l'enrichissement attendu.
+        return {"sha": probe.get("sha", ""),
+                "red_keys": probe["red_keys"] | {"Scripts Tests (CPU)"},
+                "names": probe["names"]}
+    monkeypatch.setattr(pig, "_enrich_probe_with_workflow_runs", _spy)
+    # Stub le subprocess.run du rollup.
+    fake_repo = {"defaultBranchRef": {"target": {"oid": "deadbeef",
+                                                 "statusCheckRollup": {
+                                                     "contexts": {"nodes": [
+                                                         {"name": "Scripts Tests (CPU)"},
+                                                     ]}}}}}
+    class _Fake:
+        def __init__(self, stdout):
+            self.stdout = stdout
+            self.returncode = 0
+            self.stderr = ""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **k: _Fake(json.dumps({"data": {"repository": fake_repo}})))
+    out = pig.fetch_main_head_probe()
+    assert out is not None
+    assert calls["n"] == 1
+    assert "Scripts Tests (CPU)" in calls["last_probe"]["names"]
+    # Le probe rendu porte l'enrichissement (Scripts Tests (CPU) dans red_keys).
+    assert "Scripts Tests (CPU)" in out["red_keys"]
+
+
 def test_agregateur_absent_de_main_n_est_pas_un_vert(monkeypatch):
     """« Absent de `main` » n'est pas « vert sur `main` » -- le 3e etat est decisif.
 
