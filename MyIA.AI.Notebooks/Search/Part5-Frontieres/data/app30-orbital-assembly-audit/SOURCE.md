@@ -33,7 +33,7 @@ Le notebook exécuté produit :
 Commande de reproduction depuis la racine CoursIA :
 
 ```powershell
-python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/Search/Applications/Hybrid/App-30-OrbitalAssembly-Certificate-Audit.ipynb --timeout 600 --verbose
+python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-08-OrbitalAssembly-Certificate-Audit-Python.ipynb --timeout 600 --verbose
 ```
 
 Environnement de la collecte : Windows 11, Python 3.13, OR-Tools CP-SAT, pandas, NumPy et matplotlib. Les versions exactes sont enregistrées dans `provenance.json` lors de l'exécution.

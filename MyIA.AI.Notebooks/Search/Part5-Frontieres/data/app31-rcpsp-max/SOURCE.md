@@ -53,7 +53,7 @@ Le notebook exécuté produit :
 Commande de reproduction depuis la racine CoursIA :
 
 ```powershell
-python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/Search/Applications/Hybrid/App-31-RCPSP-Max-Feasibility-Bounds.ipynb --timeout 900 --verbose
+python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python.ipynb --timeout 900 --verbose
 ```
 
 ## Instances PSPLIB : observées, non redistribuées
