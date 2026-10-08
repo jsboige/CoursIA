@@ -49,25 +49,45 @@ open Real
     protects us. -/
 lemma fractional_feasible (β : Bet) (c : ℝ) (hc0 : 0 ≤ c) (hc1 : c ≤ 1) :
     Feasible β (c * kellyFrac β) := by
-  have hb := β.hb_pos
-  have hkf : kellyFrac β * β.b = β.b * β.p - (1 - β.p) := by
-    simp [kellyFrac, q]; field_simp [hb.ne']
+  have hfeas := kellyFrac_feasible β
+  -- hfeas.1 : -1/β.b < kellyFrac β
+  -- hfeas.2 : kellyFrac β < 1
   refine ⟨?_, ?_⟩
-  · -- -1/b < c·f*  ⟺  -1 < c·f*·b  (b > 0), then hkf reduces to polynomial
-    -- arithmetic closed by nlinarith. Avoids the c=0/c>0 case split that
-    -- broke under Lean 4.33 (Decidable / mul_lt_mul_of_pos_left / linarith).
-    rw [div_lt_iff₀ hb, ← mul_assoc, mul_assoc c (kellyFrac β) β.b, hkf]
-    nlinarith [β.hp_pos, β.hp_lt_one, hb, hc0, hc1]
-  · -- c·f* < 1  ⟺  1 - c·f* > 0. Expand 1 - c·f* = c·(1-f*) + (1-c),
-    -- and (1-f*) > 0 comes from `kellyFrac_feasible`. nlinarith closes.
-    have h1f : 1 - kellyFrac β = (1 - β.p) * (β.b + 1) / β.b := by
-      unfold kellyFrac q; field_simp [hb.ne']; ring
-    have h1f_pos : 0 < 1 - kellyFrac β := by
-      rw [h1f]
-      positivity
-    have eq1 : 1 - c * kellyFrac β = c * (1 - kellyFrac β) + (1 - c) := by ring
-    rw [eq1]
-    nlinarith [h1f_pos, hc0, hc1]
+  · -- -1/β.b < c·f* : exploit `kellyFrac_feasible.1` (hfeas.1) + c ∈ [0, 1].
+    -- Case c = 0 : c·f* = 0 > -1/b. Case c > 0, c < 1 : c·(-1/b) > -1/b
+    -- (c < 1, b > 0) then c·f* > c·(-1/b) (hfeas.1, c > 0). Case c = 1 :
+    -- c·f* = f* > -1/b (hfeas.1). Avoids the `mul_assoc` route of the broken
+    -- commit (Lean 4.33 changed the behaviour of rewrites on 3-factor products).
+    rcases eq_or_lt_of_le hc0 with rfl | hcpos
+    · rw [zero_mul]
+      -- -1 / β.b < 0.  Just use `linarith` on the explicit positive of 1/β.b.
+      -- The contradiction arises because -1/β.b is the negation of 1/β.b and
+      -- they have opposite signs.
+      have hpos : 0 < 1 / β.b := one_div_pos.mpr β.hb_pos
+      -- (-1/β.b) + (1/β.b) = 0, and 1/β.b > 0, so 1/β.b > 0 implies -1/β.b < 0.
+      linarith [show (1 / β.b) + (-1 / β.b) = 0 from by ring, hpos]
+    · -- 0 < c
+      rcases lt_or_ge c 1 with hclt | hcge
+      · -- 0 < c < 1
+        have hm1 : -1 / β.b < c * (-1 / β.b) := by
+          have h1 : -1 * (1 / β.b) = -1 / β.b := by ring
+          have h2 : c * (-1 / β.b) = -c * (1 / β.b) := by ring
+          have h3 : -1 * (1 / β.b) < -c * (1 / β.b) :=
+            mul_lt_mul_of_pos_right (by linarith : -1 < -c) (one_div_pos.mpr β.hb_pos)
+          linarith [h1, h2, h3]
+        have hm2 : c * (-1 / β.b) < c * kellyFrac β := mul_lt_mul_of_pos_left hfeas.1 hcpos
+        linarith [hm1, hm2]
+      · -- 0 < c and c ≥ 1 and c ≤ 1, hence c = 1
+        have h1 : c = 1 := le_antisymm hc1 hcge
+        rw [h1, one_mul]
+        exact hfeas.1
+  · -- c·f* < 1 : symmetrically, exploit `kellyFrac_feasible.2` (hfeas.2).
+    -- Case c = 0 : c·f* = 0 < 1. Case c > 0 : c·f* < c·1 = c ≤ 1
+    -- (hfeas.2, c > 0 then hc1).
+    rcases eq_or_lt_of_le hc0 with rfl | hcpos
+    · simp  -- c = 0
+    · have hmul : c * kellyFrac β < c * 1 := mul_lt_mul_of_pos_left hfeas.2 hcpos
+      linarith [hmul, hc1]
 
 /-- **Fundamental inequality of *fractional Kelly***: for `c ∈ [0, 1]`,
     `growth(c·f*) ≤ growth(f*)`. This is the formal justification of the
