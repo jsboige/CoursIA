@@ -1,7 +1,7 @@
 # P1 C++ anchors — Cartier-Miller evaluation of genus-one coefficient sums
 
 **Pin :** bbrhuft/Cartier-Miller-evaluation-of-genus-one-coefficient-sums @ `37a9b72` (clone local `.scratch`).
-**Scope :** lecture intégrale sans EOF de 5 fichiers C++ du pin `37a9b72` : `harvey_adapter.cpp` (l. 21-87), `upstream/recurrences_ntl.{h,cpp}`, `upstream/hypellfrob.{h,cpp}`. Comptes détaillés dans la table d'ancres §1.
+**Scope :** lecture intégrale sans EOF des fichiers C++ du pin `37a9b72` : `harvey_adapter.cpp` (l. 21-87), `upstream/recurrences_ntl.{h,cpp}`, `upstream/hypellfrob.{h,cpp}`. Comptes détaillés dans la table d'ancres §1.
 **Statut :** distillation didactique d'un manuscrit non-référé (MIT externe pour le PDF), dépôt GPL-2.0-or-later. Aucun verdict de nouveauté mathématique n'est porté ici. Lecture seule — aucun fichier C++ modifié.
 **Précédents :** P0 cartography (#19487), P1 elliptic_prefix (#19488), P1 pilot (#19493), P1 point_count (#19499). Ce mémo est le 5e volet.
 
@@ -9,7 +9,7 @@
 
 ---
 
-## 1. Ancrage amont (5 fichiers C++ du pin 37a9b72)
+## 1. Ancrage amont (fichiers C++ du pin 37a9b72)
 
 | Fichier | Lignes | Licence | Role |
 |---|---|---|---|
