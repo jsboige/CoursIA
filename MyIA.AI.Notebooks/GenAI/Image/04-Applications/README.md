@@ -10,7 +10,6 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 4 |
 | Kernel | Python 3 |
 | Durée estimée | ~4-6h |
 | GPU requis | 0-14GB |

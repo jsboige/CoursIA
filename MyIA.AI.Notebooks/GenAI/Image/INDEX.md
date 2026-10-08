@@ -144,15 +144,15 @@ MyIA.AI.Notebooks/GenAI/
     │   ├── 04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb
     │   └── 04-5-MiniMax-Cloud-Image.ipynb
     │
-    ├── examples/                     # 🎯 Exemples Sectoriels
-    │   ├── science-diagrams.ipynb
-    │   ├── history-geography.ipynb
-    │   └── literature-visual.ipynb
-    │
     ├── 05-History/                   # 📜 Racines pré-Stable-Diffusion
     │   ├── 05-0-Generateurs-Symboliques.ipynb
     │   ├── 05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb
     │   └── 05-2-CLIPasso-Semantic-Sketching.ipynb
+    │
+    ├── examples/                     # 🎯 Exemples Sectoriels
+    │   ├── science-diagrams.ipynb
+    │   ├── history-geography.ipynb
+    │   └── literature-visual.ipynb
     │
     ├── INDEX.md                      # 📑 Ce document
     ├── DEPLOYMENT.md                 # 🚀 Guide production
