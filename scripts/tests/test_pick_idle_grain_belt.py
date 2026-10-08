@@ -1021,6 +1021,53 @@ def test_belt_probe_budget_is_bounded_and_fail_open_when_exhausted():
     assert state["budget_hit"] is True
 
 
+def test_belt_probe_budget_covers_the_settle_window():
+    """#19969 : le plafond de la boucle de service ne peut pas valoir la seule
+    fenetre de tete. ``settle_belt_head`` recoit deja ``window * 3 + 12``
+    sondes pour stabiliser la MEME region de la file -- deux compteurs
+    distincts, une seule region, donc un seul plafond reseau."""
+    for window in (4, 8, 12):
+        assert pig.belt_probe_budget(window) == window * 3 + 12
+        assert pig.belt_probe_budget(window) > window, (
+            "un budget egal a la fenetre ramene la fuite de #19969")
+
+
+def test_belt_head_denser_than_the_window_no_longer_serves_delivered_items():
+    """Regression #19969, jouee sur la valeur d'avant ET d'apres.
+
+    Mesure firsthand du rapport : sur un seul tirage, huit candidats servis
+    par le tapis etaient deja livres. Au-dela du budget, la sonde rendait
+    DELIVERED_SIGNAL_UNPROBED et le candidat partait en ``picks`` comme un
+    grain neuf -- fail-OPEN assume, mais sous-dimensionne."""
+    window = 8
+    delivered = set(range(19100, 19114))          # 14 livres, fenetre de 8
+    items = [_make_item(n, age_days=200 - i, idle=2, last=None)
+             for i, n in enumerate(sorted(delivered, reverse=True))]
+    fresh = _make_item(19300, age_days=1, idle=1, last=None)
+    pool = items + [fresh]
+
+    def probe(n, lane=None):
+        return n in delivered
+
+    # Budget d'AVANT (la fenetre seule) : des livres sont servis, et
+    # l'epuisement est rapporte -- le temoin du defaut.
+    old_picks, _, old_state = pig.belt_pick_with_replacements(
+        list(pool), _free_claims(pool), _belt_args(grains=20),
+        probe_budget=window, delivered_probe=probe)
+    leaked = [p["number"] for p in old_picks if p["number"] in delivered]
+    assert leaked, "temoin : l'ancien budget doit laisser fuiter des livres"
+    assert old_state["budget_hit"] is True
+
+    # Budget aligne : plus aucun livre servi, et plus d'epuisement.
+    new_picks, new_withheld, new_state = pig.belt_pick_with_replacements(
+        list(pool), _free_claims(pool), _belt_args(grains=20),
+        probe_budget=pig.belt_probe_budget(window), delivered_probe=probe)
+    assert [p["number"] for p in new_picks] == [19300]
+    assert {w[0]["number"] for w in new_withheld} == delivered
+    assert new_state["budget_hit"] is False
+    assert new_state["failures"] == []
+
+
 def test_has_delivered_signal_grammar_ignores_discursive_mentions(monkeypatch):
     """Controle negatif #19390, au niveau de la grammaire : une mention
     discursive porte la sous-chaine sans etre un en-tete de marqueur --
@@ -1048,3 +1095,39 @@ def test_has_delivered_signal_grammar_ignores_discursive_mentions(monkeypatch):
     assert pig.has_delivered_signal(15974) is False, (
         "une mention discursive n'est pas un marqueur")
     assert pig.has_delivered_signal(16048) is True
+
+
+def test_summarize_claim_implicit_occupation():
+    """#14300 -- occupation IMPLICITE : le JSON de l'organe porte la cle,
+    le reducteur rend CLAIM_CODE_IMPLICIT (pas FREE -- lecons du 2026-09-14 :
+    l'emission ne suffit pas, c'est la consommation qui fait le garde)."""
+    implicit_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                     '"stale_claims": [], "implicit_occupation": '
+                     '[{"number": 14293, "lane": "myia-po-2026:CoursIA",'
+                     ' "files": ["scripts/ci/docker/linux-runner/supervise.sh"],'
+                     ' "additions": 79, "deletions": 3}]}')
+    code, human = pig._summarize_claim(implicit_json + "\nIMPLICIT: ...", 3)
+    assert code == pig.CLAIM_CODE_IMPLICIT
+    assert "#14293" in human
+    assert "myia-po-2026:CoursIA" in human
+    # review 5429946072 : le claim de l'APPELANT est teste AVANT l'implicite
+    # -- un grain deja marque par la lane qui tire reste OWNED_BY_ME meme si
+    # une PR tierce reference l'issue (sinon la lane perd son propre grain).
+    owned_json = ('{"blocking_lanes": [], "my_active_claim": true,'
+                  '"stale_claims": [], "implicit_occupation": '
+                  '[{"number": 14293, "lane": "myia-po-2026:CoursIA"}]}')
+    code, human = pig._summarize_claim(owned_json, 0)
+    assert code == pig.CLAIM_CODE_OWNED_BY_ME
+    # priorite : un BLOCKED explicite prime sur l'implicite (le marqueur a
+    # plus d'autorite) -- le reducteur teste blocking_lanes AVANT.
+    both_json = ('{"blocking_lanes": ["myia-po-2027:CoursIA"],'
+                 '"my_active_claim": false, "stale_claims": [],'
+                 '"implicit_occupation": [{"number": 14293,'
+                 ' "lane": "myia-po-2026:CoursIA"}]}')
+    code, _ = pig._summarize_claim(both_json + "\n", 3)
+    assert code == pig.CLAIM_CODE_BLOCKED
+    # sans la cle (organe ancien ou jambe sautee) : comportement inchange.
+    plain_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                  '"stale_claims": []}')
+    code, _ = pig._summarize_claim(plain_json + "\n", 0)
+    assert code == pig.CLAIM_CODE_FREE

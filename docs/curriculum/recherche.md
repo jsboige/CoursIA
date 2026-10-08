@@ -20,10 +20,10 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 298 |
+| Notebooks | 297 |
 | PRODUCTION | 0 |
-| BETA | 287 |
-| ALPHA | 11 |
+| BETA | 285 |
+| ALPHA | 12 |
 
 ## GameTheory (95 notebooks)
 
@@ -125,7 +125,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 94 | [GameTheory-21 — Loi II, seconde jambe : synthétiser un…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20d-Loi-II-Translateur-Life-Python.ipynb) | BETA | Oui |
 | 95 | [GameTheory-20e -- Perplexite structurelle Hashlife :…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20e-Perplexite-Structurelle-Hashlife-Python.ipynb) | BETA | Oui |
 
-## GameTheory/SocialChoice (10 notebooks)
+## GameTheory/SocialChoice (11 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -139,6 +139,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 8 | [SocialChoice-05 : Gibbard-Satterthwaite sans mystere -…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/05-Gibbard-Satterthwaite.ipynb) | BETA | Oui |
 | 9 | [SocialChoice-06 : Mobius sur le treillis des coalitions…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | BETA | Oui |
 | 10 | [07 - Élections de comité par approbation : le core…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/07-Committees-Core.ipynb) | BETA | Oui |
+| 11 | [SocialChoice 08 - Kemeny, Ranked Pairs et Dodgson :…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/08-Kemeny-RankedPairs-Dodgson.ipynb) | ALPHA | Oui |
 
 ## IIT (6 notebooks)
 
@@ -236,8 +237,8 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Percolation-Lean — le noyau fini de percolation, prouvé…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Lean.ipynb) | BETA | Oui |
-| 2 | [Percolation supercritique : le géant au-dessus du seuil](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Supercritique.ipynb) | ALPHA | Oui |
+| 1 | [Percolation-02-Lean — le noyau fini de percolation, prouvé…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb) | BETA | Oui |
+| 2 | [Percolation supercritique : le géant au-dessus du seuil](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) | ALPHA | Oui |
 | 3 | [Le Framework Rational Speech Act (RSA)](../../MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb) | BETA | Oui |
 | 4 | [Quotients, fibres et recollement : ce qui survit à la…](../../MyIA.AI.Notebooks/Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb) | BETA | Oui |
 
@@ -328,7 +329,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 18 | [18. Detection de Rupture (Change-Point) : inferer le…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb) | BETA | Oui |
 | 19 | [19. Analyse de survie / fiabilite bayesienne : inferer…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb) | BETA | Oui |
 
-## RL (26 notebooks)
+## RL (24 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -356,8 +357,6 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 22 | [RL-15 — GRPO (Group Relative Policy Optimization) sur…](../../MyIA.AI.Notebooks/RL/RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | BETA | Non |
 | 23 | [RL-16 : Dream-RSI — l'exploration comme code, évaluée…](../../MyIA.AI.Notebooks/RL/RL-16-Dream-RSI-Python.ipynb) | BETA | Oui |
 | 24 | [RL 19 - Reward tampering : quand l'agent peut modifier…](../../MyIA.AI.Notebooks/RL/RL-19-Reward-Tampering-Python.ipynb) | BETA | Oui |
-| 25 | [RL 17 - k-server et work function : la conjecture…](../../MyIA.AI.Notebooks/Complexity/Complexity-04c-KServer-WorkFunction-Python.ipynb) | BETA | Oui |
-| 26 | [RL 18 - Le secrétaire matroïdal : la conjecture…](../../MyIA.AI.Notebooks/Complexity/Complexity-04d-Secretaire-Matroidal-Python.ipynb) | BETA | Oui |
 
 ## RL/PostTraining (9 notebooks)
 

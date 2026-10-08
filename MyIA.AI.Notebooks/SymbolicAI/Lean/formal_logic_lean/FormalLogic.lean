@@ -11,7 +11,7 @@ Modules consommateurs :
 - `FormalLogic.Bridge` — pilote Tranche A (#15520) : laboratoire propositionnel,
   validité/preuve/contre-modèle sur les mêmes formules que le notebook ;
 - `FormalLogic.FolBridge` — Tranche B (#16877) : micro-théorie FOL (socrate/platon)
-  partagée avec `Tweety-02d-FOL-Lab-Lean.ipynb` — conséquences sémantiques certifiées
+  partagée avec `Tweety-02d-FOL-Lab-Lean-Python.ipynb` — conséquences sémantiques certifiées
   et contre-modèle fini à deux éléments sur la sémantique FFL des structures ;
 - `FormalLogic.GLBridge` — pilote Tranche F (#15916) : schéma de Löb, contrôle
   négatif par contre-modèle fini, point fixe de de Jongh–Sambin et interprétation
