@@ -1494,3 +1494,119 @@ def test_cli_append_refuses_an_issue_entity_on_the_device_ledger(capsys):
     assert dl.main(["append", "--ledger", dl.GPU_RESERVATION, "--entity", "jsboige/CoursIA#16737",
                     "--fields-json", '{"state": "held"}']) == 1
     assert "INVALID_ENTITY" in capsys.readouterr().err
+
+
+# --- gpu-reservation check_pending ------------------------------------------------
+
+
+def _make_gpu_record(machine, gpu_index, observed_at, fields, observation_id="obs-test"):
+    return dl.Record(
+        entity={"machine": machine, "gpu_index": gpu_index},
+        key=f"{machine}#gpu{gpu_index}",
+        actor=fields.get("holder", "test-actor"),
+        observed_at=dl.parse_utc_timestamp(observed_at),
+        confidence="high",
+        evidence="manual append",
+        observation_id=observation_id,
+        message_id=None,
+        source="test",
+        fields=dict(fields),
+    )
+
+
+def test_evaluate_gpu_pending_no_records_returns_no_obs():
+    entity = {"machine": "myia-ai-01", "gpu_index": 2}
+    now = datetime(2026, 10, 8, 12, 0, 0, tzinfo=timezone.utc)
+    verdict, reason = dl.evaluate_gpu_pending([], entity, now, "myia-ai-01:CoursIA-2")
+    assert verdict == "NO_OBS"
+    assert "myia-ai-01" in reason and "gpu2" in reason
+
+
+def test_evaluate_gpu_pending_released_record():
+    entity = {"machine": "myia-ai-01", "gpu_index": 2}
+    now = datetime(2026, 10, 8, 12, 0, 0, tzinfo=timezone.utc)
+    rec = _make_gpu_record(
+        "myia-ai-01", 2, "2026-10-08T11:00:00Z",
+        {"state": "released", "holder": "myia-ai-01:CoursIA-2"},
+    )
+    verdict, reason = dl.evaluate_gpu_pending([rec], entity, now, "myia-ai-01:CoursIA-2")
+    assert verdict == "RELEASED"
+    assert "released" in reason
+
+
+def test_evaluate_gpu_pending_held_by_other_lane_returns_hold():
+    entity = {"machine": "myia-ai-01", "gpu_index": 2}
+    now = datetime(2026, 10, 8, 12, 0, 0, tzinfo=timezone.utc)
+    rec = _make_gpu_record(
+        "myia-ai-01", 2, "2026-10-08T11:00:00Z",
+        {"state": "held", "holder": "myia-po-2025:CoursIA-2",
+         "started_at": "2026-10-08T10:00:00Z",
+         "expected_end": "2026-10-08T14:00:00Z"},
+    )
+    verdict, reason = dl.evaluate_gpu_pending([rec], entity, now, "myia-ai-01:CoursIA-2")
+    assert verdict == "HOLD"
+    assert "myia-po-2025:CoursIA-2" in reason
+
+
+def test_evaluate_gpu_pending_held_by_us_in_window_returns_ok_to_run():
+    entity = {"machine": "myia-ai-01", "gpu_index": 2}
+    now = datetime(2026, 10, 8, 12, 0, 0, tzinfo=timezone.utc)
+    rec = _make_gpu_record(
+        "myia-ai-01", 2, "2026-10-08T11:00:00Z",
+        {"state": "held", "holder": "myia-ai-01:CoursIA-2",
+         "started_at": "2026-10-08T10:00:00Z",
+         "expected_end": "2026-10-08T14:00:00Z"},
+    )
+    verdict, reason = dl.evaluate_gpu_pending([rec], entity, now, "myia-ai-01:CoursIA-2")
+    assert verdict == "OK_TO_RUN"
+    assert "myia-ai-01:CoursIA-2" in reason
+
+
+def test_evaluate_gpu_pending_held_past_expected_end_returns_stale():
+    entity = {"machine": "myia-ai-01", "gpu_index": 2}
+    now = datetime(2026, 10, 8, 12, 0, 0, tzinfo=timezone.utc)
+    rec = _make_gpu_record(
+        "myia-ai-01", 2, "2026-10-08T11:00:00Z",
+        {"state": "held", "holder": "myia-ai-01:CoursIA-2",
+         "started_at": "2026-10-08T08:00:00Z",
+         "expected_end": "2026-10-08T10:00:00Z"},
+    )
+    verdict, reason = dl.evaluate_gpu_pending([rec], entity, now, "myia-ai-01:CoursIA-2")
+    assert verdict == "STALE"
+    assert "expected_end" in reason
+
+
+def test_evaluate_gpu_pending_filters_to_matching_entity():
+    """Records for a different GPU do not influence the verdict for the asked GPU."""
+    entity = {"machine": "myia-ai-01", "gpu_index": 2}
+    now = datetime(2026, 10, 8, 12, 0, 0, tzinfo=timezone.utc)
+    other = _make_gpu_record(
+        "myia-ai-01", 1, "2026-10-08T11:00:00Z",
+        {"state": "held", "holder": "myia-po-2025:CoursIA-2"},
+        observation_id="obs-other",
+    )
+    verdict, _ = dl.evaluate_gpu_pending([other], entity, now, "myia-ai-01:CoursIA-2")
+    assert verdict == "NO_OBS"
+
+
+def test_cli_check_pending_no_snapshot(tmp_path, capsys):
+    assert dl.main(["check_pending", "--ledger", dl.GPU_RESERVATION,
+                    "--entity", "myia-ai-01#gpu2",
+                    "--state-dir", str(tmp_path)]) == 0
+    out = capsys.readouterr().out.strip()
+    assert "NO_OBS" in out
+    assert "myia-ai-01#gpu2" in out
+
+
+def test_cli_check_pending_json_output(tmp_path, capsys):
+    assert dl.main(["check_pending", "--ledger", dl.GPU_RESERVATION,
+                    "--entity", "myia-ai-01#gpu2",
+                    "--state-dir", str(tmp_path), "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out.strip())
+    assert payload["verdict"] == "NO_OBS"
+    assert payload["entity"] == "myia-ai-01#gpu2"
+
+
+def test_cli_check_pending_refuses_other_ledger():
+    assert dl.main(["check_pending", "--ledger", dl.ISSUE_DEBT,
+                    "--entity", "jsboige/CoursIA#16737"]) == 2

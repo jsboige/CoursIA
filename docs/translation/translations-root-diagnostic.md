@@ -11,7 +11,7 @@
 
 L'item 9 de l'Epic #9535 (« translations/ racine — 33 CSV, statut T1 baseline ») appelait un **rangement** du répertoire `translations/`. Mais le **premier litmus** appliqué à ce diagnostic (G.9 *verify-before-claiming*, L283) montre que la situation réelle **n'est pas celle que l'intitulé suggère** : `translations/` n'est pas un dossier à ranger, c'est un répertoire **structuré et intentionnel** (33 CSV versionnés, schéma CSV 8 langues, 6 dossiers-familles), et son « statut T1 baseline » est en fait un état **gated par construction** sur la seconde moitié de l'acceptance — pas une dette de ménage.
 
-L'audit **firsthand** (§ 2) et les issues connexes (§ 3) conduisent à un **verdict honnête** : « ranger `translations/` » au sens où #9535 l'entendait (déplacer / supprimer / renommer) **détruirait l'infrastructure qui a coûté 29 PRs de drainage entre 2026-07-10 et 2026-07-18** (cf. `docs/translation/epic-4957-status.md` § 1.4). Ce document acte l'état réel et propose trois options de disposition **non destructives** pour la décision user.
+L'audit **firsthand** (§ 2) et les issues connexes (§ 3) conduisent à un **verdict honnête** : « ranger `translations/` » au sens où #9535 l'entendait (déplacer / supprimer / renommer) **détruirait l'infrastructure qui a coûté 29 PRs de drainage entre 2026-07-10 et 2026-07-18** (cf. `docs/transients/2026-07-19-epic-4957-status.md` § 1.4). Ce document acte l'état réel et propose trois options de disposition **non destructives** pour la décision user.
 
 ## 2. Audit firsthand (c.1252)
 
@@ -82,7 +82,7 @@ Cette règle **n'a pas été honorée** : PR [#8431](https://github.com/jsboige/
 |---|---:|---|---|
 | `translations/README.md` | 5997 octets | Présent — claim « 24 254 cellules » | **OUI** (delta +216 cellules) |
 | `docs/translation/argumentum-fork-mapping.md` | 88 | Présent — référence T3, **OUVERT 2026-07-28** | Non |
-| `docs/translation/epic-4957-status.md` | 104 | Présent — Phase 1 clôture | Non |
+| `docs/transients/2026-07-19-epic-4957-status.md` | 104 | Présent — Phase 1 clôture | Non |
 | `scripts/translation/README.md` | ~70 | Présent — référence opérationnelle T1/T2/T3 | Non |
 | `.github/workflows/translation-drift.yml` | 4057 octets | Présent — CI drift-flag **WARN non-bloquant** | Non |
 
@@ -94,7 +94,7 @@ L'item 9 de l'Epic #9535 a été formulé comme « translations/ racine — 33 C
 
 ### 4.2 #4957 — Epic de référence (CLOSED, Phase 1 LIVRÉE)
 
-CLOSED 2026-07-08. Phase 1 = infrastructure de synchronisation (CSV + extracteur + détecteur + CI drift). Phase 2 = rollout **continué via PRs filles** trackées séparément (cf. `epic-4957-status.md` § 4). **29 PRs MERGED** entre 2026-07-10 et 2026-07-18, **0 OPEN**.
+CLOSED 2026-07-08. Phase 1 = infrastructure de synchronisation (CSV + extracteur + détecteur + CI drift). Phase 2 = rollout **continué via PRs filles** trackées séparément (cf. `2026-07-19-epic-4957-status.md` § 4). **29 PRs MERGED** entre 2026-07-10 et 2026-07-18, **0 OPEN**.
 
 ### 4.3 #6949 — T3 moteur fork Argumentum (OUVERTE par décision coordinateur)
 
@@ -181,7 +181,7 @@ Si la décision user penche différemment (option B ou C), ce diagnostic fournit
 
 - [scripts/translation/README.md](../../scripts/translation/README.md) — référence opérationnelle T1/T2/T3.
 - [docs/translation/argumentum-fork-mapping.md](argumentum-fork-mapping.md) — fork T3, OUVERTE par décision coord.
-- [docs/translation/epic-4957-status.md](epic-4957-status.md) — Phase 1 LIVRÉE, Phase 2 rollout via PRs filles.
+- [docs/transients/2026-07-19-epic-4957-status.md](../transients/2026-07-19-epic-4957-status.md) — Phase 1 LIVRÉE, Phase 2 rollout via PRs filles.
 - [Issue #6949](https://github.com/jsboige/CoursIA/issues/6949) — T3 moteur + doctrine c.31 « pas de resync-only ».
 - [Issue #4957](https://github.com/jsboige/CoursIA/issues/4957) — Epic infra synchro, CLOSED.
 - [Issue #1650](https://github.com/jsboige/CoursIA/issues/1650) — Epic grand-parent multilingue, OPEN.

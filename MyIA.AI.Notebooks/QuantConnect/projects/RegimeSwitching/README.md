@@ -22,3 +22,4 @@ Basculage de régime momentum/mean-reversion par croisement SMA50/SMA200. Appliq
 ## Fichiers
 
 - `main.py` - Stratégie (iter3, bascule de régime)
+- `quantbook.ipynb` - QuantBook de recherche : analyse de la stratégie RegimeSwitching
