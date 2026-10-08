@@ -371,7 +371,7 @@ par rapport à P0 (la cartographie est cohérente).
   + (9/4) a_n` et confronte l'algorithme** (l. 173–174) à la
   formule, **pas les valeurs numériques à p = 97**. C'est une
   **dette de confrontation numérique** à lever dans un cycle dédié
-  (accès au code source requis) — voir §10 ligne P1 pseudocode C++.
+  (accès au code source requis) — voir la section « P1 pseudocode C++ » plus bas.
 
 **Risque résiduel** : aucun à ce stade (P1 elliptic_prefix ne touche
 pas le code, ne certifie rien). Risque de Phase suivante = la P1.pilot
