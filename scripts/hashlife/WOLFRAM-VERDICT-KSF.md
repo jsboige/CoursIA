@@ -38,7 +38,7 @@ Les landmarks theoriques utilisaient une echelle normalisee (KSF / n_cells). A n
 
 ### 3. Pourquoi KSF echoue
 
-La KSF mesure la **redondance locale** du dernier pas sachant le contexte immediat. Pour Rule 110, les gliders et reactions dependent de **plus** que 32 cellules de contexte (Cook 2004 : echelle temporelle des gliders ~ 50-200 pas). Un contexte de 32 cellules capture l'etat local mais pas la "structure" du programme.
+La KSF mesure la **redondance locale** du dernier pas sachant le contexte immediat. Pour Rule 110, les gliders et reactions dependent de **plus** que la fenetre maximale du banc (Cook 2004 : echelle temporelle des gliders ~ 50-200 pas). Le contexte de la fenetre maximale capture l'etat local mais pas la "structure" du programme.
 
 ## Conclusion epistemologique
 
