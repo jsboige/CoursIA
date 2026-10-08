@@ -25,7 +25,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | BETA | 181 |
 | ALPHA | 0 |
 
-## Search/Applications (58 notebooks)
+## Search/Applications (51 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -44,49 +44,42 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 13 | [App-20 — Benchmark comparatif des solveurs Sudoku…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-20-SudokuBenchmark-Python.ipynb) | BETA | Oui |
 | 14 | [App-20b : Benchmark compare des solveurs Sudoku (jumeau…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-20b-SudokuBenchmark-CSharp.ipynb) | BETA | Oui |
 | 15 | [Voice Leading Minimal par Affectation — l'algorithme de…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-21-VoiceLeading.ipynb) | BETA | Oui |
-| 16 | [Frontieres-01 : Coloration d'arêtes et conjecture de Tutte](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-01-EdgeColoring-Tutte-Python.ipynb) | BETA | Oui |
-| 17 | [Frontieres-02 - Factorio Belt Balancer (CP-SAT borne)](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-02-Factorio-Balancer-Python.ipynb) | BETA | Oui |
-| 18 | [Frontieres-05 — Covering Arrays : tester les interactions…](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb) | BETA | Oui |
-| 19 | [App-2b : Coloration de graphes — Jumeau C#](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-2b-GraphColoring-CSharp.ipynb) | BETA | Oui |
-| 20 | [App-3 : Nurse Scheduling (Planification des horaires…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-3-NurseScheduling.ipynb) | BETA | Oui |
-| 21 | [App-3b : Nurse Scheduling — Twin C# (planification de…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-3b-NurseScheduling-CSharp.ipynb) | BETA | Oui |
-| 22 | [App-4 : Job-Shop Scheduling](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-4-JobShopScheduling.ipynb) | BETA | Oui |
-| 23 | [App-4b : Job-Shop Scheduling — Twin C# (ordonnancement…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-4b-JobShopScheduling-CSharp.ipynb) | BETA | Oui |
-| 24 | [App-5 : Emploi du temps universitaire — Twin C#…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb) | BETA | Oui |
-| 25 | [App-5 : Emploi du temps universitaire (University…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling.ipynb) | BETA | Oui |
-| 26 | [App-6 - Demineur : CSP, Probabilites et NP-completude](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper.ipynb) | BETA | Oui |
-| 27 | [App-7 : Wordle Solver -- CSP et théorie de…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-7-Wordle.ipynb) | BETA | Oui |
-| 28 | [App-7b : Solveur Wordle -- CSP et théorie de…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb) | BETA | Oui |
-| 29 | [App-8 : Modelisation declarative par contraintes (twin…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb) | BETA | Oui |
-| 30 | [App-8-MiniZinc : Modelisation declarative par…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc.ipynb) | BETA | Oui |
-| 31 | [App-10 : Optimisation de portefeuille par algorithme…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-10-Portfolio.ipynb) | BETA | Oui |
-| 32 | [App-10b : Optimisation de portefeuille par algorithme…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-10b-Portfolio-CSharp.ipynb) | BETA | Oui |
-| 33 | [App-13 : Le Problème du Voyageur de Commerce (TSP)](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb) | BETA | Oui |
-| 34 | [App-13b : TSP (Voyageur de Commerce) — Jumeau C#](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb) | BETA | Oui |
-| 35 | [App-17 : Vehicle Routing Problem (VRP)](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17-VRP-Logistics.ipynb) | BETA | Oui |
-| 36 | [App-17b : Vehicle Routing Problem (VRP) — Twin C#…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb) | BETA | Oui |
-| 37 | [App-17b : Vehicle Routing Problem (VRP) — Twin Python…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Python.ipynb) | BETA | Oui |
-| 38 | [App-18: Optimisation d'Hyperparametres - Approches…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18-HyperparameterTuning.ipynb) | BETA | Oui |
-| 39 | [App-18b : Optimisation d'Hyperparametres - Jumeau C#](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb) | BETA | Oui |
-| 40 | [App-18b : Optimisation d'Hyperparametres (Python —…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-Python.ipynb) | BETA | Oui |
-| 41 | [App-18c — Rustuna vs Optuna : mesurer un portage Rust…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb) | BETA | Oui |
-| 42 | [App-22 — Sélection empirique d'algorithmes : trois…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-22-AlgorithmSelection-Python.ipynb) | BETA | Oui |
-| 43 | [App-23 — Cryptanalyse différentielle de PRESENT par SAT](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) | BETA | Oui |
-| 44 | [Frontieres-03 — MAPF : auditer les garanties des solveurs](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-03-MAPF-Guarantee-Audit-Python.ipynb) | BETA | Non |
-| 45 | [Frontieres-04 — Enchères combinatoires : Winner Determination…](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-04-CombinatorialAuctions-WDP-VCG-Python.ipynb) | BETA | Oui |
-| 46 | [App-27 — Sparse index tracking](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) | BETA | Oui |
-| 47 | [Frontieres-06 — Learning to branch](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-06-LearningToBranch-Generalization-Audit-Python.ipynb) | BETA | Oui |
-| 48 | [App-29 — Équilibrage de chaîne d'assemblage (SALBP)](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-29-SALBP-AssemblyLineBalancing-Audit.ipynb) | BETA | Oui |
-| 49 | [App-30 — Ordonnancement d'assemblage orbital](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-30-OrbitalAssembly-Certificate-Audit.ipynb) | BETA | Oui |
-| 50 | [App-31 — RCPSP/max : quand la faisabilité devient le…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-31-RCPSP-Max-Feasibility-Bounds.ipynb) | BETA | Oui |
-| 51 | [Frontieres-10 — Neural diving : un plongeur appris pour CP-SAT](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-10-NeuralDiving-Coloration-Python.ipynb) | BETA | Oui |
-| 52 | [App-9 : Detection de bords par algorithmes génétiques](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9-EdgeDetection.ipynb) | BETA | Oui |
-| 53 | [TP : Conception d'Algorithmes Génétiques avec…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb) | BETA | Oui |
-| 54 | [App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | BETA | Oui |
-| 55 | [App-14 - Connect Four : Benchmark Adversarial Search](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | BETA | Oui |
-| 56 | [App-14b : Puissance 4 -- Comparaison d'algorithmes IA…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb) | BETA | Oui |
-| 57 | [App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb) | BETA | Oui |
-| 58 | [App-32 — Szpiro : Pasten 2026 rend N log log N…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb) | BETA | Oui |
+| 16 | [App-2b : Coloration de graphes — Jumeau C#](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-2b-GraphColoring-CSharp.ipynb) | BETA | Oui |
+| 17 | [App-3 : Nurse Scheduling (Planification des horaires…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-3-NurseScheduling.ipynb) | BETA | Oui |
+| 18 | [App-3b : Nurse Scheduling — Twin C# (planification de…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-3b-NurseScheduling-CSharp.ipynb) | BETA | Oui |
+| 19 | [App-4 : Job-Shop Scheduling](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-4-JobShopScheduling.ipynb) | BETA | Oui |
+| 20 | [App-4b : Job-Shop Scheduling — Twin C# (ordonnancement…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-4b-JobShopScheduling-CSharp.ipynb) | BETA | Oui |
+| 21 | [App-5 : Emploi du temps universitaire — Twin C#…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb) | BETA | Oui |
+| 22 | [App-5 : Emploi du temps universitaire (University…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling.ipynb) | BETA | Oui |
+| 23 | [App-6 - Demineur : CSP, Probabilites et NP-completude](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper.ipynb) | BETA | Oui |
+| 24 | [App-7 : Wordle Solver -- CSP et théorie de…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-7-Wordle.ipynb) | BETA | Oui |
+| 25 | [App-7b : Solveur Wordle -- CSP et théorie de…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb) | BETA | Oui |
+| 26 | [App-8 : Modelisation declarative par contraintes (twin…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb) | BETA | Oui |
+| 27 | [App-8-MiniZinc : Modelisation declarative par…](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc.ipynb) | BETA | Oui |
+| 28 | [App-10 : Optimisation de portefeuille par algorithme…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-10-Portfolio.ipynb) | BETA | Oui |
+| 29 | [App-10b : Optimisation de portefeuille par algorithme…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-10b-Portfolio-CSharp.ipynb) | BETA | Oui |
+| 30 | [App-13 : Le Problème du Voyageur de Commerce (TSP)](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb) | BETA | Oui |
+| 31 | [App-13b : TSP (Voyageur de Commerce) — Jumeau C#](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb) | BETA | Oui |
+| 32 | [App-17 : Vehicle Routing Problem (VRP)](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17-VRP-Logistics.ipynb) | BETA | Oui |
+| 33 | [App-17b : Vehicle Routing Problem (VRP) — Twin C#…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb) | BETA | Oui |
+| 34 | [App-17b : Vehicle Routing Problem (VRP) — Twin Python…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Python.ipynb) | BETA | Oui |
+| 35 | [App-18: Optimisation d'Hyperparametres - Approches…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18-HyperparameterTuning.ipynb) | BETA | Oui |
+| 36 | [App-18b : Optimisation d'Hyperparametres - Jumeau C#](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb) | BETA | Oui |
+| 37 | [App-18b : Optimisation d'Hyperparametres (Python —…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-Python.ipynb) | BETA | Oui |
+| 38 | [App-18c — Rustuna vs Optuna : mesurer un portage Rust…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb) | BETA | Oui |
+| 39 | [App-22 — Sélection empirique d'algorithmes : trois…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-22-AlgorithmSelection-Python.ipynb) | BETA | Oui |
+| 40 | [App-23 — Cryptanalyse différentielle de PRESENT par SAT](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) | BETA | Oui |
+| 41 | [App-27 — Sparse index tracking](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) | BETA | Oui |
+| 42 | [App-29 — Équilibrage de chaîne d'assemblage (SALBP)](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-29-SALBP-AssemblyLineBalancing-Audit.ipynb) | BETA | Oui |
+| 43 | [App-30 — Ordonnancement d'assemblage orbital](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-30-OrbitalAssembly-Certificate-Audit.ipynb) | BETA | Oui |
+| 44 | [App-31 — RCPSP/max : quand la faisabilité devient le…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-31-RCPSP-Max-Feasibility-Bounds.ipynb) | BETA | Oui |
+| 45 | [App-9 : Detection de bords par algorithmes génétiques](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9-EdgeDetection.ipynb) | BETA | Oui |
+| 46 | [TP : Conception d'Algorithmes Génétiques avec…](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb) | BETA | Oui |
+| 47 | [App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | BETA | Oui |
+| 48 | [App-14 - Connect Four : Benchmark Adversarial Search](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | BETA | Oui |
+| 49 | [App-14b : Puissance 4 -- Comparaison d'algorithmes IA…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb) | BETA | Oui |
+| 50 | [App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb) | BETA | Oui |
+| 51 | [App-32 — Szpiro : Pasten 2026 rend N log log N…](../../MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb) | BETA | Oui |
 
 ## Search/Part1-Foundations (44 notebooks)
 
@@ -187,6 +180,18 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 22 | [MGS-29 : GA MGS compose "Default" contre BaseGA mealpy…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-29-GA-vs-Mealpy.ipynb) | BETA | Oui |
 | 23 | [MGS-30 : Scatter Search MGS contre son ombre — la…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-30-ScatterSearch-Decomposition.ipynb) | BETA | Oui |
 | 24 | [MGS-31 : Synthèse croisée MGS contre mealpy — neuf…](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-31-Synthese-Croisee.ipynb) | BETA | Oui |
+
+## Search/Part5-Frontieres (7 notebooks)
+
+| # | Notebook | Maturité | Exécutable |
+|---|----------|----------|------------|
+| 1 | [Frontieres-01 : Coloration d'arêtes et conjecture de…](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-01-EdgeColoring-Tutte-Python.ipynb) | BETA | Oui |
+| 2 | [Frontieres-02 - Factorio Belt Balancer (CP-SAT borne)](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-02-Factorio-Balancer-Python.ipynb) | BETA | Oui |
+| 3 | [Frontieres-03 — MAPF : auditer les garanties des…](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-03-MAPF-Guarantee-Audit-Python.ipynb) | BETA | Non |
+| 4 | [Frontieres-04 — Enchères combinatoires : Winner…](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-04-CombinatorialAuctions-WDP-VCG-Python.ipynb) | BETA | Oui |
+| 5 | [Frontieres-05 — Covering Arrays : tester les…](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb) | BETA | Oui |
+| 6 | [Frontieres-06 — Learning to branch](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-06-LearningToBranch-Generalization-Audit-Python.ipynb) | BETA | Oui |
+| 7 | [Frontieres-10 — Neural diving : un plongeur appris pour…](../../MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-10-NeuralDiving-Coloration-Python.ipynb) | BETA | Oui |
 
 ## Sudoku (38 notebooks)
 
