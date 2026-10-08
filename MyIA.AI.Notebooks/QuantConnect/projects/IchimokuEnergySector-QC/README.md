@@ -60,9 +60,10 @@ expérience.
 
 **La ligne `2020 Crash` est un défaut de portage, pas un résultat.** L'article y annonce un
 Sharpe de `176,524` ; le portage n'y négocie **rien** (0 ordre, equity plate à 1 000 000 $). Un
-run qui ne trade pas ne valide ni n'infirme l'article. Voir la section « Le mur de calculabilité »
-ci-dessous : la même signature a depuis été reproduite sur quatre autres fenêtres, ce qui écarte
-l'explication initiale (« 23 séances, trop court pour armer l'univers »).
+run qui ne trade pas ne valide ni n'infirme l'article. Voir la section « Extension out-of-sample »
+ci-dessous : la même signature a depuis été reproduite sur quatre autres fenêtres **pré-correction**,
+ce qui écarte l'explication initiale (« 23 séances, trop court pour armer l'univers ») — la cause
+réelle (constructeur de base non chaîné) et son correctif y sont documentés.
 
 ### XLE buy-and-hold (même harnais)
 
@@ -103,6 +104,7 @@ equity plate au centime, aucune erreur — et des fenêtres qui négocient :
 | 2021-01-01 → 2022-01-01 | 12 mois | 0 | **vide** |
 | 2021-08-17 → 2022-08-16 | 12 mois | 0 | **vide** |
 | 2022-08-16 → 2023-08-16 | 12 mois | 0 | **vide** |
+| **2020-08-17 → 2026-09-30 (bloc gelé, corrigé)** | 6,1 ans | **4 860** | complète et négocie |
 
 Trois explications ont d'abord été testées et **réfutées par la mesure** (fenêtre trop courte /
 fin de donnée fine / alignement du mois de départ). Une sonde instrumentée (issue #19863) puis la
@@ -119,8 +121,11 @@ ordre n'est pas une erreur pour LEAN ; le run conclut normalement.
 
 **Correction** (commit `a745f2545d`, une ligne) : chaînage canonique au constructeur de base. Le
 run conteneur corrigé **complète et négocie : 1 692 ordres** sur 2020-08-17 → 2022-08-16 (Sharpe
-harnais 0,049, net −2,312 %, MaxDD 30,5 %). Les fenêtres 2021+, re-jouées avec la sonde corrigée,
-sont suivies sur #19863.
+harnais 0,049, net −2,312 %, MaxDD 30,5 %). Et à l'échelle du bloc gelé entier : le run plein bloc
+corrigé (`22fde01f1ad65`, 2020-08-17 → 2026-09-30) **complète et négocie : 4 860 ordres** — net
++12,6 %, CAGR 1,96 %, Sharpe harnais −0,041, contre +310,5 % / 25,93 %/an pour la baseline XLE du
+même bloc (mesure du 08/10, consignée dans [#19867](https://github.com/jsboige/CoursIA/pull/19867)).
+Les fenêtres 2021+, re-jouées avec la sonde corrigée, sont suivies sur #19863.
 
 Un corollaire pratique, mesuré : **la durée du run trahit le vidage.** Une fenêtre de 12 mois vide
 complète en ~90 s là où deux mois qui négocient prennent 6-8 min — la sélection d'univers domine le
@@ -129,8 +134,8 @@ seule lecture qui discrimine est la **courbe d'equity** (plate au centime = run 
 
 ## Verdict BEATS / NO BEATS
 
-**Sur la partie calculable du bloc gelé, le test pré-enregistré rend `INCONCLUSIVE` — calculé sur
-le port corrigé.**
+**Sur la fenêtre du conteneur corrigé (24 mois, la seule où le bootstrap pré-enregistré ait été
+rejoué), le test rend `INCONCLUSIVE` — calculé sur le port corrigé.**
 
 Le verdict porte sur **2020-08-17 → 2022-08-16**, la fenêtre du run conteneur corrigé (1 692
 ordres, univers fine armé). Le test est celui du pré-enregistrement, inchangé : bootstrap par
@@ -161,11 +166,14 @@ l'écart de Sharpe reste négatif (−1,517) et le verdict reste `INCONCLUSIVE` 
 dispositif à sens unique.
 
 **Limite honnête, déjà gelée avant le premier calcul.** Un verdict sur une fenêtre unique reste un
-verdict sur une fenêtre. Ici la limite est plus étroite que prévu : le verdict porte sur 24 mois au
-lieu des 74 du bloc gelé, parce que le portage ne sait pas produire la jambe stratégie au-delà.
-Cette réduction est une **contrainte de harnais**, pas un choix d'analyse, et elle est mesurée
-(table des fenêtres ci-dessus). Le résultat reste hors temps — 2020-08-17 → 2022-08-16 n'a servi à
-aucun réglage, le portage ayant été écrit et débogué sur 2015-01-01 → 2020-08-16.
+verdict sur une fenêtre. Le port corrigé **produit** la jambe stratégie sur le bloc entier (4 860
+ordres, run `22fde01f1ad65`) ; ce qui reste borné à 24 mois est le **test statistique pré-enregistré** :
+son bootstrap par blocs n'a été rejoué que sur le conteneur 2020-08-17 → 2022-08-16 (1 692 ordres) —
+tant qu'il n'est pas rejoué sur le bloc complet, la significativité est mesurée sur ces 24 mois
+uniquement, le bloc complet n'ayant fait l'objet que de la comparaison brute (net +12,6 % contre
++310,5 % — lisible `NO BEATS`, sans significativité mesurée). Le résultat reste hors temps —
+2020-08-17 → 2022-08-16 n'a servi à aucun réglage, le portage ayant été écrit et débogué sur
+2015-01-01 → 2020-08-16.
 
 **Ce que ce verdict ne dit pas.** Il ne dit rien de la fenêtre 2015-01-01 → 2020-08-16 (jambe
 stratégie non exécutée sous le code courant), ni des fenêtres `2020 Recovery` et `2020 Crash`.

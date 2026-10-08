@@ -59,9 +59,10 @@ experiment.
 
 **The `2020 Crash` row is a port defect, not a result.** The article reports a Sharpe of
 `176.524` there; the port trades **nothing** (0 orders, equity flat at 1,000,000 USD). A run
-that does not trade neither confirms nor refutes the article. See "The computability wall"
-below: the same signature has since been reproduced on four other windows, which rules out the
-initial explanation ("23 sessions, too short to arm the universe").
+that does not trade neither confirms nor refutes the article. See the "Out-of-sample extension"
+section below: the same signature has since been reproduced on four other windows **pre-fix**,
+which rules out the initial explanation ("23 sessions, too short to arm the universe") — the
+actual cause (missing base-constructor chaining) and its fix are documented there.
 
 ### XLE buy-and-hold (same harness)
 
@@ -102,6 +103,7 @@ cent, no error — alongside windows that traded:
 | 2021-01-01 → 2022-01-01 | 12 months | 0 | **empty** |
 | 2021-08-17 → 2022-08-16 | 12 months | 0 | **empty** |
 | 2022-08-16 → 2023-08-16 | 12 months | 0 | **empty** |
+| **2020-08-17 → 2026-09-30 (frozen block, fixed)** | 6.1 years | **4,860** | completes and trades |
 
 Three explanations were first tested and **refuted by measurement** (window too short / fine-data
 end / start-month alignment). An instrumented probe (issue #19863) then reading LEAN's public
@@ -117,8 +119,11 @@ windows. A selection producing no order is not an error for LEAN; the run conclu
 
 **Fix** (commit `a745f2545d`, one line): canonical base-constructor chaining. The corrected
 container run **completes and trades: 1,692 orders** over 2020-08-17 → 2022-08-16 (harness Sharpe
-0.049, net -2.312 %, MaxDD 30.5 %). The 2021+ windows, re-run with the corrected probe, are
-tracked on #19863.
+0.049, net -2.312 %, MaxDD 30.5 %). And at the scale of the whole frozen block: the corrected
+full-block run (`22fde01f1ad65`, 2020-08-17 → 2026-09-30) **completes and trades: 4,860 orders** —
+net +12.6 %, CAGR 1.96 %, harness Sharpe -0.041, against +310.5 % / 25.93 %/yr for the XLE
+baseline of the same block (measured 2026-10-08, recorded in [#19867](https://github.com/jsboige/CoursIA/pull/19867)).
+The 2021+ windows, re-run with the corrected probe, are tracked on #19863.
 
 A practical corollary, measured: **run duration betrays the emptying.** An empty 12-month window
 completes in ~90 s where two months that trade take 6-8 min — universe selection dominates the
@@ -127,8 +132,8 @@ the only discriminating read is the **equity curve** (flat to the cent = empty r
 
 ## BEATS / NO BEATS verdict
 
-**On the computable part of the frozen block, the pre-registered test returns `INCONCLUSIVE` —
-computed on the corrected port.**
+**On the corrected container window (24 months, the only one where the pre-registered bootstrap
+has been replayed), the test returns `INCONCLUSIVE` — computed on the corrected port.**
 
 The verdict bears on **2020-08-17 → 2022-08-16**, the corrected container-run window (1,692
 orders, fine universe armed). The test is the pre-registered one, unchanged: block bootstrap,
@@ -159,11 +164,14 @@ the Sharpe difference negative (-1.517) and the verdict `INCONCLUSIVE` — the t
 one-way device.
 
 **Honest limitation, frozen before the first calculation.** A verdict on a single window remains
-a verdict on a single window. Here the limitation is tighter than planned: the verdict bears on
-24 months instead of the frozen block's 74, because the port cannot produce the strategy leg
-beyond. That reduction is a **harness constraint**, not an analysis choice, and it is measured
-(window table above). The result remains out-of-sample — 2020-08-17 → 2022-08-16 was used for no
-tuning, the port having been written and debugged on 2015-01-01 → 2020-08-16.
+a verdict on a single window. The corrected port **does** produce the strategy leg over the whole
+block (4,860 orders, run `22fde01f1ad65`); what remains bounded to 24 months is the
+**pre-registered statistical test**: its block bootstrap has only been replayed on the
+2020-08-17 → 2022-08-16 container (1,692 orders) — until it is replayed on the full block,
+significance is measured on those 24 months only, the full block having only undergone the raw
+comparison (net +12.6 % vs +310.5 % — readable `NO BEATS`, no measured significance). The result
+remains out-of-sample — 2020-08-17 → 2022-08-16 was used for no tuning, the port having been
+written and debugged on 2015-01-01 → 2020-08-16.
 
 **What this verdict does not say.** It says nothing about the 2015-01-01 → 2020-08-16 window
 (strategy leg not executed under the current code), nor about the `2020 Recovery` and
