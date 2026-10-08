@@ -10,31 +10,74 @@ Le pre-enregistrement de #19678 gele le test avant toute lecture OOS :
     meme metrique recalculee.
 
 Ce fichier est l'instrument de ce test, versionne avec le projet pour que le
-verdict soit reproductible : deux courbes d'equity en entree, un verdict en
-sortie, aucune place pour un ajustement apres coup.
+verdict soit reproductible : deux courbes en entree, un verdict en sortie,
+aucune place pour un ajustement apres coup.
 
 Usage :
 
-    python verdict_stats.py --strategy equity_strategy.json \\
-                            --baseline equity_xle_hold.json
+    python verdict_stats.py --strategy strat1.json strat2.json \\
+                            --baseline baseline_full.json
     python verdict_stats.py --selftest
 
 L'auto-test est la partie qui compte : il verifie que l'instrument rend les
 TROIS verdicts possibles (BEATS sur un avantage injecte, INCONCLUSIVE sur un
-null, et un p eleve sur un desavantage injecte), donc qu'il n'est pas un
+null, UNDERPERFORMS sur un desavantage injecte), donc qu'il n'est pas un
 dispositif a sens unique.
 
-Les rendements sont lus sur les courbes d'equity, qui sont **nettes de frais**
-(LEAN deduit les frais de l'equity) : aucune hypothese de cout n'est rajoutee
-ici, et la comparaison strategie/baseline se fait sous le meme harnais.
+## Pourquoi lire `Return` et non `Equity`
+
+Mesure sur un run de ce projet (2020-08-17 -> 2026-09-30, 2235 points) : le
+chart « Strategy Equity » porte DEUX series, et elles n'ont pas la meme maille.
+
+``Equity`` est echantillonnee sur une grille pilotee par le parametre `count`
+de la requete (mesure : ~63 000 s d'ecart, soit ~17,5 h) : en tirer des
+rendements donne des rendements de 17,5 h, pas journaliers.
+``Return`` est exactement journaliere (ecart mesure 86 400 s sur 2222 des 2234
+intervalles) et c'est la serie officielle du harnais, en pourcent.
+
+## Les points a zero ne sont pas des seances
+
+La serie est un point par jour CALENDAIRE. Mesure de la repartition par jour de
+la semaine, sur les memes 2235 points : lundi 320 points dont **0 non nul**,
+dimanche 319 points dont **0 non nul**, et les vraies seances tombent
+mardi..samedi (285 a 318 non nuls par jour). Le harnais horodate chaque
+rendement a minuit US/Eastern, si bien que le rendement de la seance `D` est
+porte par l'horodatage `D+1` : les lundis et dimanches sont donc du remplissage
+structurel a 100 %, pas des seances plates.
+
+Les garder ne changerait ni le rendement cumule ni le drawdown (mesures egales
+a celles du harnais), mais fausserait le bootstrap gele, qui compte des
+**seances** : avec des blocs de 21 points melant 1/3 de remplissage, un bloc
+couvre ~15 seances au lieu de 21. On les retire donc, en gardant les zeros
+INTERNES a mardi..samedi : ceux-la sont des jours feries (68 mesures sur la
+meme fenetre, contre ~54 attendus), et une seance reellement plate a un
+rendement de 0 % -- les confondre avec du remplissage serait une erreur dans
+l'autre sens.
+
+## Caveat : le niveau du Sharpe du harnais n'est pas reproduit
+
+Le champ ``sharpeRatio`` du harnais ne se reproduit depuis aucune variante de la
+serie exportee. Mesure sur deux jambes (baseline `xle_hold` annonce 0,746 ;
+premiere tranche strategie annonce 0,204) : tous points/sqrt(252) -> 0,813 et
+0,513 ; tous points/sqrt(365) -> 0,978 et 0,618 ; seances/sqrt(252) -> 0,962 et
+0,608 ; non nuls/sqrt(252) -> 0,984 et 0,619. Un taux sans risque commun est
+aussi refute : il faudrait 1,53 %/an sur une jambe et 0,45 %/an sur l'autre.
+
+En revanche le rendement cumule et le drawdown maximal SE reproduisent (mesures
+ci-dessous), donc la serie est la bonne -- c'est la convention d'agregation du
+Sharpe qui differe. La comparaison restant appariee et construite a l'identique
+des deux cotes, le test garde sa valeur ; le niveau absolu, lui, est rapporte
+tel quel par tranche depuis le harnais, et jamais substitue par le notre.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import random
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 PERIODS_PER_YEAR = 252
@@ -42,9 +85,17 @@ BLOCK = 21
 N_RESAMPLES = 10_000
 SEED = 42
 
+# Jours de la semaine a jeter : mesure sur 2235 points, lundi et dimanche sont a
+# 0 non nul sur 0 (639 points de remplissage structurel). Voir l'en-tete.
+JOURS_DE_REMPLISSAGE = frozenset({6, 0})  # dimanche, lundi
+
 
 def daily_returns(equity: list[float]) -> list[float]:
-    """Rendements journaliers simples d'une courbe d'equity."""
+    """Rendements journaliers simples d'une courbe d'equity.
+
+    Conserve pour les series qui n'exposent pas de rendements (repli), et pour
+    l'auto-test.
+    """
     out: list[float] = []
     for prev, cur in zip(equity, equity[1:]):
         if prev <= 0:
@@ -148,41 +199,132 @@ def placebo(baseline: list[float], shift: int = BLOCK) -> list[float]:
     return baseline[shift:]
 
 
-def _load_series(path: Path) -> list[float]:
-    """Extrait une serie de valeurs d'un JSON d'equity.
+# --------------------------------------------------------------------------
+# Lecture des charts
+# --------------------------------------------------------------------------
 
-    Accepte les formes rendues par l'export de courbe (liste de scalaires,
-    liste de paires [t, v], ou dict portant 'values'/'series'), pour ne pas
-    dependre d'un detail de transport.
-    """
-    raw = json.loads(path.read_text(encoding="utf-8"))
 
-    def walk(node) -> list[float] | None:
-        if isinstance(node, list) and node:
-            if all(isinstance(x, (int, float)) for x in node):
-                return [float(x) for x in node]
-            if all(isinstance(x, (list, tuple)) and len(x) >= 2 for x in node):
-                return [float(x[-1]) for x in node]
-            for item in node:
-                got = walk(item)
-                if got:
-                    return got
-        elif isinstance(node, dict):
-            for key in ("values", "series", "equity", "data"):
-                if key in node:
-                    got = walk(node[key])
-                    if got:
-                        return got
-            for value in node.values():
-                got = walk(value)
-                if got:
-                    return got
+def _as_points(node) -> list[tuple[int, float]] | None:
+    """Convertit une liste de paires [t, v] (ou de scalaires) en points horodates."""
+    if not isinstance(node, list) or not node:
         return None
+    if all(isinstance(x, (int, float)) for x in node):
+        return [(i, float(x)) for i, x in enumerate(node)]
+    if all(isinstance(x, (list, tuple)) and len(x) >= 2 for x in node):
+        # Equity est en [t, o, h, l, c] : on lit le close, dernier element.
+        # Return est en [t, v] : le dernier element est la valeur.
+        return [(int(x[0]), float(x[-1])) for x in node]
+    return None
 
-    series = walk(raw)
-    if not series:
-        raise ValueError(f"aucune serie numerique trouvee dans {path}")
-    return series
+
+def _serie_du_chart(doc, nom: str) -> list[tuple[int, float]] | None:
+    """Rend la serie `nom` d'un chart, ou None si elle est absente."""
+    series = doc.get("series")
+    if isinstance(series, dict) and nom in series:
+        bloc = series[nom]
+        if isinstance(bloc, dict):
+            return _as_points(bloc.get("values"))
+        return _as_points(bloc)
+    return None
+
+
+def load_points(path: Path) -> list[tuple[int, float]]:
+    """Points (horodatage, rendement en fraction) d'un export de chart.
+
+    Prefere la serie ``Return`` -- journaliere et officielle, en pourcent.
+    Repli sur ``Equity`` (closes) si elle manque, avec un horodatage
+    positionnel : ce repli est une approximation assumee, la grille
+    d'``Equity`` etant pilotee par le parametre `count` de la requete.
+    """
+    doc = json.loads(path.read_text(encoding="utf-8"))
+
+    serie = _serie_du_chart(doc, "Return")
+    if serie:
+        # Unite '%' mesuree : on convertit en fraction.
+        return sorted(((t, v / 100.0) for t, v in serie), key=lambda p: p[0])
+
+    serie = _serie_du_chart(doc, "Equity")
+    if serie:
+        print(
+            f"  [WARN] {path.name}: serie 'Return' absente, repli sur 'Equity' "
+            f"-- maille non journaliere, le resultat n'est pas comparable",
+            file=sys.stderr,
+        )
+        closes = [v for _, v in serie]
+        ts = [t for t, _ in serie]
+        return list(zip(ts[1:], daily_returns(closes)))
+
+    # Dernier repli : une simple liste de valeurs, deja des rendements.
+    plat = _as_points(doc)
+    if plat:
+        print(
+            f"  [WARN] {path.name}: ni 'Return' ni 'Equity', lecture d'une liste plate",
+            file=sys.stderr,
+        )
+        return plat
+    raise ValueError(f"aucune serie exploitable dans {path}")
+
+
+def seances(points: list[tuple[int, float]]) -> list[tuple[int, float]]:
+    """Retire le remplissage structurel (lundi, dimanche) et dedoublonne."""
+    par_ts: dict[int, float] = {}
+    for ts, v in points:
+        wd = datetime.fromtimestamp(ts, tz=timezone.utc).weekday()
+        if wd in JOURS_DE_REMPLISSAGE:
+            continue
+        if ts in par_ts and not math.isclose(par_ts[ts], v, rel_tol=1e-9, abs_tol=1e-12):
+            print(
+                f"  [WARN] horodatage {ts} present deux fois avec des valeurs "
+                f"differentes ({par_ts[ts]} vs {v}) -- joint de tranche",
+                file=sys.stderr,
+            )
+        par_ts[ts] = v
+    return sorted(par_ts.items())
+
+
+def concatener(chemins: list[Path]) -> list[tuple[int, float]]:
+    """Fusionne plusieurs tranches en une serie de seances continue."""
+    fusion: list[tuple[int, float]] = []
+    for c in chemins:
+        pts = seances(load_points(c))
+        if pts:
+            print(
+                f"  {c.name}: {len(pts)} seances "
+                f"({datetime.fromtimestamp(pts[0][0], tz=timezone.utc):%Y-%m-%d} -> "
+                f"{datetime.fromtimestamp(pts[-1][0], tz=timezone.utc):%Y-%m-%d})"
+            )
+        fusion.extend(pts)
+    # Dedoublonnage final : une seance partagee par deux tranches adjacentes
+    # n'apparait qu'une fois (la derniere valeur gagne, l'ecart est signale).
+    par_ts: dict[int, float] = {}
+    for ts, v in sorted(fusion):
+        if ts in par_ts and not math.isclose(par_ts[ts], v, rel_tol=1e-9, abs_tol=1e-12):
+            print(f"  [WARN] seance {ts} divergente entre tranches", file=sys.stderr)
+        par_ts[ts] = v
+    return sorted(par_ts.items())
+
+
+def aligner(
+    strat: list[tuple[int, float]], base: list[tuple[int, float]]
+) -> tuple[list[float], list[float], int, int]:
+    """Jointure interne sur les horodatages : le test reste apparie."""
+    d_base = dict(base)
+    ts = [t for t, _ in strat if t in d_base]
+    if not ts:
+        raise ValueError("aucune seance commune entre strategie et baseline")
+    s = [v for t, v in strat if t in d_base]
+    b = [d_base[t] for t in ts]
+    return s, b, ts[0], ts[-1]
+
+
+def cumul_et_drawdown(rets: list[float]) -> tuple[float, float]:
+    """Rend (rendement cumule, drawdown maximal) -- les deux champs qui se reproduisent."""
+    eq, peak, dd = 1.0, 1.0, 0.0
+    for r in rets:
+        eq *= 1.0 + r
+        peak = max(peak, eq)
+        dd = min(dd, eq / peak - 1.0)
+    return eq - 1.0, dd
 
 
 def _selftest() -> int:
@@ -234,14 +376,43 @@ def _selftest() -> int:
     if v_plac == "BEATS":
         print("  ECHEC : le placebo fabrique un BEATS sur un null"); ok = False
 
+    # --- Chargement : le decodage de chart est la partie qui a un vrai piege ---
+    # Un lundi et un dimanche a zero doivent tomber ; un zero interne reste.
+    lundi = 1597622400      # 2020-08-17 04:00Z, un lundi
+    jour = 86400
+    points_factices = [
+        (lundi, 0.0),
+        (lundi + jour, 0.01),          # mardi : garde
+        (lundi + 2 * jour, 0.0),       # mercredi a plat : garde (ferie ou seance plate)
+        (lundi + 6 * jour, 0.0),       # dimanche : jete
+    ]
+    gardees = seances(points_factices)
+    print(f"  {'filtre des seances':22s} 4 points -> {len(gardees)} "
+          f"(attendu 2 : mardi + mercredi)")
+    if [v for _, v in gardees] != [0.01, 0.0]:
+        print("  ECHEC : le filtre des seances ne garde pas les bons points"); ok = False
+
+    # Le rendement cumule doit ignorer le remplissage : c'est ce qui se reproduit
+    # chez le harnais, et c'est le controle du filtre.
+    brut = 1.0
+    for _, v in points_factices:
+        brut *= 1.0 + v
+    garde = 1.0
+    for _, v in gardees:
+        garde *= 1.0 + v
+    if not math.isclose(brut, garde, rel_tol=1e-12):
+        print("  ECHEC : le filtre change le rendement cumule"); ok = False
+
     print("SELFTEST", "OK" if ok else "FAILED")
     return 0 if ok else 1
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--strategy", type=Path, help="JSON d'equity de la strategie")
-    ap.add_argument("--baseline", type=Path, help="JSON d'equity de la baseline XLE")
+    ap.add_argument("--strategy", type=Path, nargs="+",
+                    help="un ou plusieurs JSON de tranches strategie")
+    ap.add_argument("--baseline", type=Path, nargs="+",
+                    help="un ou plusieurs JSON de tranches baseline XLE")
     ap.add_argument("--out", type=Path, help="ecrire le resultat JSON ici")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args(argv)
@@ -251,16 +422,30 @@ def main(argv: list[str] | None = None) -> int:
     if not args.strategy or not args.baseline:
         ap.error("--strategy et --baseline requis (ou --selftest)")
 
-    strat_returns = daily_returns(_load_series(args.strategy))
-    base_returns = daily_returns(_load_series(args.baseline))
+    print("== Chargement ==")
+    strat_pts = concatener(args.strategy)
+    base_pts = concatener(args.baseline)
+    print(f"  STRAT {len(strat_pts)} seances ; BASE {len(base_pts)} seances")
 
-    main_res = block_bootstrap_p(strat_returns, base_returns)
+    s, b, t0, t1 = aligner(strat_pts, base_pts)
+    print(f"  aligne sur {len(s)} seances communes "
+          f"({datetime.fromtimestamp(t0, tz=timezone.utc):%Y-%m-%d} -> "
+          f"{datetime.fromtimestamp(t1, tz=timezone.utc):%Y-%m-%d})")
+
+    cum_s, dd_s = cumul_et_drawdown(s)
+    cum_b, dd_b = cumul_et_drawdown(b)
+    print(f"  cumul strategie {cum_s * 100:+.3f} %  drawdown {dd_s * 100:.3f} %")
+    print(f"  cumul baseline  {cum_b * 100:+.3f} %  drawdown {dd_b * 100:.3f} %")
+
+    main_res = block_bootstrap_p(s, b)
     main_res["verdict"] = verdict(
         main_res["p_beats"], main_res["p_under"], main_res["sharpe_diff"]
     )
+    main_res["cumul_strategy"] = round(cum_s, 6)
+    main_res["cumul_baseline"] = round(cum_b, 6)
 
-    shifted = placebo(base_returns)
-    plac_res = block_bootstrap_p(strat_returns[: len(shifted)], shifted)
+    shifted = placebo(b)
+    plac_res = block_bootstrap_p(s[: len(shifted)], shifted)
     plac_res["verdict"] = verdict(
         plac_res["p_beats"], plac_res["p_under"], plac_res["sharpe_diff"]
     )
