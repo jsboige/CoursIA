@@ -1,0 +1,112 @@
+name: quarto-render-list-freshness
+
+# Durable guard for the #19895 defect class : `project.render` in
+# `_quarto.yml` silently drifts on `main` because no workflow invokes
+# `--check`. The deploy workflow (`quarto-pages-deploy.yml`) regenerates
+# the file in-memory just before rendering, so the *published site* stays
+# correct, but the *committed file* on `main` rots. Every PR notebook then
+# has to either pick up the debt in its regen diff (cf. #19579, 45+/26-
+# on `_quarto.yml` for a 4-carnet PR) or trigger a conflict against the
+# next merge.
+#
+# Detection reuses `scripts/regen_quarto_render.py --check` (exit 1 if the
+# render list is stale). The PR must regenerate `_quarto.yml` to be
+# mergeable. New drift between two PRs is not allowed -- the gate ensures
+# the file is consistent with the *PR head tree* at the moment the check
+# runs, and any later merge that lands a notebook on `main` will be caught
+# by the same gate on its own PR.
+#
+# Scope : main-repo notebooks / docs / READMEs. Submodules are separate
+# repos with their own CI.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/README.md'
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'MyIA.AI.Notebooks/**/*.qmd'
+      - 'docs/**/*.md'
+      - 'docs/**/*.qmd'
+      - '_quarto.yml'
+      - 'scripts/regen_quarto_render.py'
+      - '.github/workflows/quarto-render-list-freshness.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/README.md'
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'MyIA.AI.Notebooks/**/*.qmd'
+      - 'docs/**/*.md'
+      - 'docs/**/*.qmd'
+      - '_quarto.yml'
+      - 'scripts/regen_quarto_render.py'
+  workflow_dispatch:
+
+# Annule les runs obsoletes (memes PR / push en rafale). Meme convention
+# que readme-ipynb-links-guard.yml -- cf. fix fondateur #13372.
+concurrency:
+  group: quarto-render-list-freshness-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: _quarto.yml render list freshness
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check _quarto.yml render list against the PR head tree
+        # Le mode `--check` d'origine lit l'arbre du checkout (= la PR head)
+        # et sort exit 1 si la liste project.render est stale. Le regen
+        # necessaire est : `python scripts/regen_quarto_render.py` (sans
+        # argument). On capture la sortie et le rc pour produire un message
+        # d'erreur actionnable dans le check-run -- pas seulement "exit 1".
+        # Un checkout rate ou un crash scanner = rc >= 2 (cf. F4 du voisin
+        # readme-ipynb-links-guard.yml) : on distingue l'un de l'autre.
+        run: |
+          set -euo pipefail
+          : > /tmp/scan_status.txt
+          set +e
+          python scripts/regen_quarto_render.py --check 2>&1
+          PY_RC=$?
+          set -e
+          echo "python_rc=${PY_RC}" >> /tmp/scan_status.txt
+          if [ "${PY_RC}" -eq 0 ]; then
+            echo "_quarto.yml render list is up to date."
+            exit 0
+          fi
+          if [ "${PY_RC}" -ge 2 ]; then
+            echo "::error::Scanner en panne (rc=${PY_RC}) -- le script ne s'est pas execute."
+            exit 1
+          fi
+          # PY_RC=1 = stale. Le scanner a deja imprime ::error:: sur stderr
+          # (cf. scripts/regen_quarto_render.py l.632) -- on complete avec
+          # le geste de remediation.
+          echo "::error::_quarto.yml render list is stale (defaut fondateur #19895 : la liste project.render ne reflete pas l'arbre de cette PR)."
+          echo "::error::Geste de remediation :"
+          echo "::error::  python scripts/regen_quarto_render.py"
+          echo "::error::  git add _quarto.yml && git commit -m 'chore(quarto): regen render list'"
+          exit 1
+
+      - name: Smoke test the regen script
+        # Temoin de non-regression : si une PR touche le script lui-meme,
+        # le check ci-dessus ne suffit pas a valider que le script tourne
+        # toujours. On verifie qu'un regen + check consecutif converge
+        # (idempotence), que le regen depuis l'etat actuel ne change pas le
+        # fichier (sinon le check precedent aurait rate), et que le script
+        # supporte toujours --check.
+        # On n'ecrit rien : le checkout est en mode read sur le working
+        # tree, et le regen sans modification de l'arbre ne touche pas
+        # _quarto.yml. La sortie `--check` post-regen doit etre rc=0.
+        run: |
+          set -euo pipefail
+          python scripts/regen_quarto_render.py 2>&1 | tail -1
+          python scripts/regen_quarto_render.py --check 2>&1 | tail -1
