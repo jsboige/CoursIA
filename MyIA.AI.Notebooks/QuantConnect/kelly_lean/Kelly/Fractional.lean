@@ -11,7 +11,12 @@ La fraction de Kelly `f* = (b·p − q)/b` maximise le taux de croissance espér
 *fractional Kelly*** : pour `c ∈ [0, 1]`, miser la fraction `c·f*` ne surpasse
 jamais la fraction optimale complète :
 
-    growth(c·f*) ≤ growth(f*)     (avec égalité ssi c = 1)
+    growth(c·f*) ≤ growth(f*)     (avec égalité ssi c = 1, à edge non nul)
+
+La qualification « à edge non nul » (`f* ≠ 0`) est nécessaire : sur un pari
+à edge nul (`f* = 0`, par exemple b = 1, p = q = 1/2), `c·f* = 0 = f*` pour
+tout `c`, et l'égalité vaut pour chaque `c` — c'est exactement l'hypothèse
+qu'exige `growth_fractional_lt` ci-dessous.
 
 C'est la **justification formelle du *demi-Kelly*** (c = 1/2) et, plus
 généralement, de toutes les stratégies de *position sizing* qui réduisent la

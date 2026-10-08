@@ -11,7 +11,12 @@ The Kelly fraction `f* = (b·p − q)/b` maximizes the expected growth rate
 Kelly inequality**: for `c ∈ [0, 1]`, betting the fraction `c·f*` never
 outperforms the full optimal fraction:
 
-    growth(c·f*) ≤ growth(f*)     (with equality iff c = 1)
+    growth(c·f*) ≤ growth(f*)     (with equality iff c = 1, at non-zero edge)
+
+The "non-zero edge" qualification (`f* ≠ 0`) is necessary: on a zero-edge
+bet (`f* = 0`, e.g. b = 1, p = q = 1/2), `c·f* = 0 = f*` for every `c`,
+and equality holds for each `c` — exactly the hypothesis `growth_fractional_lt`
+below requires.
 
 This is the **formal justification of the *half-Kelly*** (c = 1/2), and more
 generally of all *position sizing* strategies that shrink the optimal fraction
