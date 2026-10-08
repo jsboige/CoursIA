@@ -433,6 +433,31 @@ def test_collect_crash_workers_multiples_tous_nommes():
     assert "gw9" in verdict
 
 
+def test_collect_crash_enfant_sort_juste_apres_la_signature():
+    # Course de cadence (revue Hermes du 2026-10-08, PR #19917). La
+    # detection vit dans la boucle, qui teste tous les 0,5 s et `break`
+    # des que le fils est mort. Sur le corpus, l'ecart entre la ligne
+    # `KeyError` et la sortie du processus va de 0,21 a 0,75 s : le fils
+    # sort AVANT la premiere evaluation et le wrapper rendait le code du
+    # fils sans verdict. Les trois tests precedents ne peuvent pas voir ce
+    # cas -- leurs enfants dorment 300 s, donc la boucle mord toujours.
+    # Ici l'enfant sort juste apres la signature, ce qui est le regime
+    # reel. La conjonction doit etre re-testee apres la boucle.
+    for delay in (0.0, 0.2):
+        code, out, verdict = _run_watchdog(
+            _child(f"""
+                print("replacing crashed worker gw8", flush=True)
+                print("INTERNALERROR> KeyError: <WorkerController gw8>", flush=True)
+                import time
+                time.sleep({delay})
+            """),
+            idle_limit=480.0,
+        )
+        assert code == wd.EXIT_COLLECT_CRASH, f"delay={delay}: code={code}"
+        assert "COLLECT_CRASH" in verdict, f"delay={delay}: aucun verdict"
+        assert "gw8" in verdict, f"delay={delay}: worker non nomme"
+
+
 def test_regex_collect_crash_matche_et_ancre_gwN():
     # La regex doit capturer le nom du worker et ignorer le bruit autour.
     assert wd.COLLECT_CRASH_RE.search("INTERNALERROR> KeyError: <WorkerController gw8>")

@@ -369,9 +369,9 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
             # un exit 1 ININTERPRETABLE (pas un test qui echoue, pas un
             # blocage par silence, mais une collision interne du master
             # xdist). On tue tout de suite, on nome la collision, on
-            # laisse le CI rejouer le job (le defaut est transient,
-            # mesure : 0/10 rouges sur la deuxieme tentative, cf body
-            # PR #19916).
+            # laisse le CI rejouer le job (le defaut est transient :
+            # aucun des 7 cas signes sur 10 rouges echantillonnes ne
+            # s'est reproduit a la 2e tentative, cf issue #19915).
             if state.collect_crash_detected():
                 _verdict_collect_crash(state, idle, started, emit)
                 _kill_tree(proc)
@@ -383,6 +383,17 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
         # la sortie du wrapper sur un pipe theoriquement ouvert.
         reader.join(timeout=10)
 
+    # La conjonction est re-testee UNE FOIS la boucle sortie. Sans ce
+    # controle la course est ouverte : la boucle teste tous les 0,5 s et
+    # ``break`` des que le fils est mort, or sur le corpus l'ecart entre la
+    # ligne ``KeyError`` et la sortie du processus va de 0,21 a 0,75 s
+    # (12 runs mesures) -- 9 des 12 tombent SOUS le tick. Le fils sortait
+    # donc avant la premiere evaluation et le wrapper rendait le code du
+    # fils SANS verdict : exactement l'exit 1 ininterpretable que le mode 3
+    # existe pour supprimer (revue Hermes du 2026-10-08, PR #19917).
+    if state.collect_crash_detected():
+        _verdict_collect_crash(state, 0.0, started, emit)
+        return EXIT_COLLECT_CRASH
     return proc.returncode if proc.returncode is not None else EXIT_BLOCKED
 
 
@@ -428,10 +439,10 @@ def _verdict_collect_crash(state: _StreamState, idle: float,
          f"{collisions} ; wall du wrapper {wall:.0f} s, {state.line_count} "
          f"lignes ({state.byte_count} octets) emises au total, idle observe "
          f"{idle:.0f} s")
-    emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: kill du groupe de "
-         f"processus -- le run va finir sur INTERNALERROR sinon, le CI "
-         f"doit rejouer le job (defaut transient, signature non "
-         f"reproductible a la 2e tentative dans 7/7 cas mesures le 2026-10-08)")
+    emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: arret du groupe de "
+         f"processus -- le CI doit rejouer le job (defaut transient : "
+         f"aucun des 7 cas signes sur 10 rouges echantillonnes ne s'est "
+         f"reproduit a la 2e tentative, mesure du 2026-10-08)")
 
 
 def main(argv: list[str] | None = None) -> int:
