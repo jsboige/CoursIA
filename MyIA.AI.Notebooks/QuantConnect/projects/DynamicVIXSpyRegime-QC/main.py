@@ -10,14 +10,58 @@ from collections import deque
 # OOS 1Y Sharpe 1.72, 5Y CAGR 29.76%
 # Uses RandomForestClassifier + StandardScaler for ML overlay on VIX regime switching
 # Source: QC Strategy Library #50, cloned 2026-04-04; redeployed 2026-06-15, QC Project ID: 32921262
+#
+# Instrumentation de mesure (#19825) : parametres start/end (defauts = dates du code
+# d'origine), mode (lag, le defaut = la ligne VIX du jour D n'est livree qu'a D+1 00:00,
+# la decision de D ne voit que la cloture de D-1, comme pour SPY ; base = regle
+# d'origine, qui lit la cloture du VIX du jour meme des 00:00 : compteur a 100 % des
+# decisions sur 2015-01 -> 2026-07, d'ou le changement de defaut ; spy = SPY detenu ; sixty40 = 60 % SPY / 40 % IEF reequilibres le premier jour de
+# bourse de chaque mois), seuils vix_pct / ml_threshold / vix_low (defauts = valeurs du
+# code), fee_mult (1 = frais inchanges). Valeur du portefeuille a chaque cloture dans le
+# graphique "shadow" (contrat de rejeu en ombre, #18923). Compteurs en statistiques
+# d'execution : decisions prises, decisions dont la derniere ligne VIX lue est du jour
+# meme, entrainements dont le VIX finit apres SPY.
+
+
+class _ScaledFeeModel(FeeModel):
+    """Frais du courtier (modele par defaut de Lean), mis a l'echelle (identite a 1.0)."""
+
+    def __init__(self, multiplier):
+        self._multiplier = multiplier
+        self._base = InteractiveBrokersFeeModel()
+
+    def get_order_fee(self, parameters):
+        fee = self._base.get_order_fee(parameters)
+        if fee is None or self._multiplier == 1.0:
+            return fee
+        amount = float(fee.value.amount) * self._multiplier
+        return OrderFee(CashAmount(amount, fee.value.currency))
+
+
+MODES = ("base", "lag", "spy", "sixty40")
+REFERENCE_WEIGHTS = {"spy": {"SPY": 1.0}, "sixty40": {"SPY": 0.6, "IEF": 0.4}}
 
 class VolatilityHarvestML(QCAlgorithm):
 
     def Initialize(self):
-        self.SetStartDate(2015, 1, 1)
-        self.set_end_date(2024, 12, 31)
+        start = datetime.strptime(self.GetParameter("start") or "2015-01-01", "%Y-%m-%d")
+        end = datetime.strptime(self.GetParameter("end") or "2024-12-31", "%Y-%m-%d")
+        self.SetStartDate(start.year, start.month, start.day)
+        self.set_end_date(end.year, end.month, end.day)
         self.SetCash(100000)
         self.SetBrokerageModel(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
+
+        self.mode = self.GetParameter("mode") or "lag"
+        if self.mode not in MODES:
+            raise ValueError(f"mode inconnu : {self.mode}")
+        self.vix_pct = float(self.GetParameter("vix_pct") or 80)
+        self.ml_threshold = float(self.GetParameter("ml_threshold") or 0.6)
+        self.vix_low = float(self.GetParameter("vix_low") or 13)
+        self.fee_mult = float(self.GetParameter("fee_mult") or 1)
+        if self.fee_mult != 1.0:
+            self.SetSecurityInitializer(
+                lambda security: security.SetFeeModel(_ScaledFeeModel(self.fee_mult)))
+        CBOE.lag_days = 1 if self.mode == "lag" else 0
 
         self.spy = self.AddEquity("SPY", Resolution.Daily).Symbol
         self.tlt = self.AddEquity("TLT", Resolution.Daily).Symbol
@@ -25,6 +69,23 @@ class VolatilityHarvestML(QCAlgorithm):
         self.bil = self.AddEquity("BIL", Resolution.Daily).Symbol
 
         self.vix = self.AddData(CBOE, "VIX", Resolution.Daily).Symbol
+        self.symbols = {"SPY": self.spy}
+        if self.mode == "sixty40":
+            self.symbols["IEF"] = self.AddEquity("IEF", Resolution.Daily).Symbol
+
+        # Comptes du graphique shadow (contrat #18923) et compteurs du constat (#19825)
+        self.start_value = 100000.0
+        self.closes = 0
+        self.traded = 0.0
+        self.order_counts = {}
+        self.ref_month = -1
+        self.n_decisions = 0
+        self.n_vix_same_day = 0
+        self.n_train = 0
+        self.n_train_vix_ahead = 0
+        if self.mode in REFERENCE_WEIGHTS:
+            self.SetWarmUp(252)
+            return
 
         # ML components
         self.model = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
@@ -110,6 +171,10 @@ class VolatilityHarvestML(QCAlgorithm):
         if len(vix_closes) < self.min_training or len(spy_closes) < self.min_training:
             return
 
+        self.n_train += 1
+        if self.LastVixDay(vix_hist) > spy_hist.loc[self.spy].index[-1].date().toordinal():
+            self.n_train_vix_ahead += 1
+
         # build training set
         X, y = [], []
 
@@ -152,9 +217,13 @@ class VolatilityHarvestML(QCAlgorithm):
         if len(vix_closes) < 50 or len(spy_closes) < 200:
             return
 
+        self.n_decisions += 1
+        if self.LastVixDay(vix_hist) == self.Time.date().toordinal():
+            self.n_vix_same_day += 1
+
         current_vix = vix_closes[-1]
         vix_sma = np.mean(vix_closes[-20:])
-        vix_percentile = np.percentile(vix_closes, 80)
+        vix_percentile = np.percentile(vix_closes, self.vix_pct)
 
         spy_current = spy_closes[-1]
         spy_sma50 = np.mean(spy_closes[-50:])
@@ -177,7 +246,7 @@ class VolatilityHarvestML(QCAlgorithm):
                     # Only one class learned, use prediction directly
                     prob = 0.5 if self.model.predict(X)[0] == 0 else 0.7
 
-                ml_bullish = prob > 0.6
+                ml_bullish = prob > self.ml_threshold
 
         # === ORIGINAL LOGIC WITH ML OVERLAY ===
 
@@ -191,7 +260,7 @@ class VolatilityHarvestML(QCAlgorithm):
             return
 
         # VIX very low + extended = reduce risk
-        if current_vix < 13 and spy_current > spy_sma50 * 1.05:
+        if current_vix < self.vix_low and spy_current > spy_sma50 * 1.05:
             self.SetHoldings(self.spy, 0.40)
             self.SetHoldings(self.tlt, 0.30)
             self.SetHoldings(self.gld, 0.20)
@@ -228,11 +297,48 @@ class VolatilityHarvestML(QCAlgorithm):
             self.SetHoldings(self.gld, 0.20)
             self.SetHoldings(self.bil, 0.10)
 
+    def LastVixDay(self, vix_hist):
+        """Jour de bourse (ordinal) de la derniere ligne VIX lue."""
+        frame = vix_hist.loc[self.vix]
+        if "tradeday" in frame.columns:
+            return int(frame["tradeday"].values[-1])
+        return frame.index[-1].date().toordinal()
+
     def OnData(self, data):
-        pass
+        if self.IsWarmingUp:
+            return
+        if self.mode in REFERENCE_WEIGHTS and self.Time.month != self.ref_month:
+            # Reference detenue, reequilibree a la premiere barre journaliere du mois.
+            self.ref_month = self.Time.month
+            for ticker, weight in REFERENCE_WEIGHTS[self.mode].items():
+                self.SetHoldings(self.symbols[ticker], weight)
+        if data.Bars.ContainsKey(self.spy):
+            self.Plot("shadow", f"e{self.closes % 5}", self.Portfolio.TotalPortfolioValue)
+            self.Plot("shadow", "fees", self.Portfolio.TotalFees / self.start_value)
+            self.Plot("shadow", "turnover", self.traded)
+            self.closes += 1
+
+    def OnOrderEvent(self, event):
+        if event.Status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED):
+            self.traded += (abs(event.FillQuantity * event.FillPrice) / self.Portfolio.TotalPortfolioValue)
+        if event.Status == OrderStatus.FILLED:
+            ticker = event.Symbol.Value
+            self.order_counts[ticker] = self.order_counts.get(ticker, 0) + 1
+
+    def OnEndOfAlgorithm(self):
+        for ticker in ("SPY", "TLT", "GLD", "BIL", "IEF"):
+            self.SetRuntimeStatistic(f"Orders {ticker}", str(self.order_counts.get(ticker, 0)))
+        self.SetRuntimeStatistic("Decisions", str(self.n_decisions))
+        self.SetRuntimeStatistic("VIX same day", str(self.n_vix_same_day))
+        self.SetRuntimeStatistic("Trainings", str(self.n_train))
+        self.SetRuntimeStatistic("Train VIX ahead", str(self.n_train_vix_ahead))
 
 
 class CBOE(PythonData):
+    # Jours de decalage entre le jour de bourse d'une ligne et sa livraison (0 = code
+    # d'origine ; 1 en mode lag, fixe par Initialize avant AddData).
+    lag_days = 0
+
     def GetSource(self, config, date, isLive):
         return SubscriptionDataSource(
             f"https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
@@ -248,8 +354,10 @@ class CBOE(PythonData):
         try:
             index = CBOE()
             index.Symbol = config.Symbol
-            index.Time = datetime.strptime(data[0], "%m/%d/%Y")
+            tradeday = datetime.strptime(data[0], "%m/%d/%Y")
+            index.Time = tradeday + timedelta(days=CBOE.lag_days)
             index.Value = float(data[4])
+            index["tradeday"] = float(tradeday.toordinal())
             index["close"] = float(data[4])
             index["open"] = float(data[1])
             index["high"] = float(data[2])

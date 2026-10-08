@@ -33,7 +33,7 @@ Le matériel QC mélange 4 types de notebooks qu'un visiteur doit distinguer :
 |-----------|------|-----------------|--------|----------|
 | `LongShortHarvest-QC` | Long/short actions (grandes capitalisations + vente à découvert) | US Equity | **NO BEATS** | QC Cloud 2026-10-06 (#19450), 2018-01 → 2026-09 : Sharpe 0,44 (taux sans risque nul) contre 0,79 pour SPY détenu et 0,81 pour le 60/40, p Holm 1,00 ; pire baisse −61,6 % (rachats forcés de janvier 2021). L'ancien « 98.7% » ne mesurait pas `main.py` |
 | `Framework_Composite_FamaFrenchAllWeather` | Composite | Multi-actifs | **Alive — BEATS** | 87.5% OOS (backtest vérifié) |
-| `DynamicVIXSpyRegime-QC` | Régime VIX | US Equity | **Alive** | 69.4% (backtest vérifié) |
+| `DynamicVIXSpyRegime-QC` | Régime VIX | US Equity | **NO BEATS** | QC Cloud 2026-10-08 (#19825), 2015-01 → 2026-07 : Sharpe 0,80 (taux sans risque nul) contre 0,82 pour SPY détenu et 0,87 pour le 60/40, p Holm 1,00, en mode `lag` (désormais par défaut). Le code d'origine lisait la clôture du VIX du jour même (2894 décisions sur 2894) ; corrigée, elle ne change pas le verdict. L'ancien « 69.4% » n'apparaissait pas dans le projet |
 | `BitcoinRegimeGate-QC` | Régime BTC (gate 24/7) | US Equity (QQQ/SHY) | **Alive — risk-adjusted** | QC Cloud 2026-09-30 (distillat #18576) : IS 2016-21 Sharpe **1.133** vs QQQ-hold 0.961 (MaxDD 14.4 % vs 28.2 %) ; OOS 2022-26 Sharpe **0.64** vs QQQ-hold 0.43 (MaxDD 15.2 % vs 34.7 %) ; PSR OOS 14.3 % (edge vs cash non significatif) |
 | `AllWeather` | Multi-asset risk-parity | Actions/Bonds/Or/Commodities | **Alive** | Figure #5743 |
 | `EMA-Cross-Index` | Trend EMA | US Equity (SPY) | **Needs-improvement** (sous SPY détenu) | Figure #5746. Mesure locale du README, 2015-2026, configuration recommandée EMA 20/60 + stop suiveur 5 % : Sharpe 0.797 ; CAGR 9.0 % ; MaxDD 24.2 % ; verdict du README « MITIGÉ / UNDERPERFORM », la stratégie finit sous SPY détenu en CAGR (réaligné #19709) |
@@ -124,7 +124,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Cloud-RiskParity-Composite` | `projects/Cloud-RiskParity-Composite/` | Inverse-vol risk-parity | Vérifié | run frais 2026-08-14 baseline #1630 (voir tranche « statut réel Cloud-* » ci-dessous : Sharpe 0.027, Needs-improvement confirmé) |
 | `DualMomentum` | `projects/DualMomentum/` | Momentum dual-asset | Vérifié | tableau vérifié ci-dessus (Superseded) |
 | `DualMomentumNoTLT` | `projects/DualMomentumNoTLT/` | Momentum (sans TLT) | Vérifié | tableau vérifié ci-dessus (Needs-improvement, réaligné #19709) |
-| `DynamicVIXSpyRegime-QC` | `projects/DynamicVIXSpyRegime-QC/` | Régime VIX | Vérifié | tableau vérifié ci-dessus (69.4 %) |
+| `DynamicVIXSpyRegime-QC` | `projects/DynamicVIXSpyRegime-QC/` | Régime VIX | Vérifié | tableau vérifié ci-dessus (NO BEATS, #19825) |
 | `EMA-Cross-Crypto` | `projects/EMA-Cross-Crypto/` | Trend EMA | Vérifié | tableau vérifié ci-dessus (figure #5750) |
 | `EMA-Cross-Index` | `projects/EMA-Cross-Index/` | Trend EMA | Vérifié | tableau vérifié ci-dessus (figure #5746) |
 | `ForexCarry` | `projects/ForexCarry/` | FX carry/momentum | Vérifié | tableau vérifié ci-dessus (figure #5748) |
