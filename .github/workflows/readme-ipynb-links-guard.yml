@@ -82,6 +82,28 @@ jobs:
             BASE_SHA=$(git rev-parse HEAD^1)
           fi
           echo "BASE_SHA calcule: ${BASE_SHA}"
+          # F8 (#19631) -- les fichiers ajoutés par la PR doivent être
+          # reconnus comme cibles valides par l'audit (faux-positif fondateur
+          # #19368 : CB-00 notebook + lien README ajoutés ensemble, l'audit
+          # rapportait STALE_LINK parce que la cible n'était pas sur main
+          # au moment du check). On calcule la liste une seule fois ici,
+          # et on la passe aux DEUX passes (PR + base) via --pr-added-files,
+          # pour que les deux scans soient d'accord (delta = 0 sur ces
+          # cibles-là). Le fichier n'est pas commit : /tmp sur le runner.
+          # Pas de `|| true` (cf. F3) : un git diff qui rate cache une vraie
+          # panne (BASE_SHA invalide, depot corrompu) -- on veut rougir.
+          set +e
+          git diff --name-only --diff-filter=A "${BASE_SHA}" HEAD > /tmp/pr_added_files.txt
+          DIFF_RC=$?
+          set -e
+          echo "DIFF_ADDED rc=${DIFF_RC}" >> /tmp/scan_status.txt
+          if [ "${DIFF_RC}" -ne 0 ]; then
+            echo "panne_diff" >> /tmp/scan_kind.txt
+            echo "::error::git diff --diff-filter=A en panne (rc=${DIFF_RC}) -- la liste PR-added est invalide."
+            exit 1
+          fi
+          PR_ADDED_COUNT=$(wc -l < /tmp/pr_added_files.txt | tr -d ' ')
+          echo "PR_ADDED count=${PR_ADDED_COUNT}"
           # F1 (Tell c.16866 / Hermes review 09:33Z) -- les violations
           # `::error::STALE_LINK` partent sur STDERR (regen_quarto_render.py
           # l.503 `print(..., file=sys.stderr)`), le `grep` du round 1 ne
@@ -119,7 +141,10 @@ jobs:
           # F1 (Hermes review af2a967985) : les violations ::error::STALE_LINK
           # partent sur STDERR (regen_quarto_render.py:504) -- 2>&1 les fusionne
           # dans le pipe pour que grep les voie (sinon faux vert structurel).
-          python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
+          # F8 (#19631) : --pr-added-files /tmp/pr_added_files.txt exempt les
+          # fichiers ajoutés par la PR du flag STALE_LINK (cf. ci-dessus).
+          python scripts/regen_quarto_render.py --check-readme-links \
+               --pr-added-files /tmp/pr_added_files.txt 2>&1 \
             | tee /tmp/python_stdout.txt \
             | grep -E '^::error::STALE_LINK ' \
             | sort -u > /tmp/pr_violations.txt
@@ -175,6 +200,18 @@ jobs:
             echo "::error::git checkout base en panne (rc=${CHECKOUT_BASE_RC}) -- la comparaison delta est invalide."
             exit 1
           fi
+          # F8b (#19631) : on NE passe PAS `--pr-added-files` ici. La passe
+          # base restaure le script de la base (qui ne supporte pas cet
+          # argument -- cf. round precedent), donc on laisse la base scanner
+          # ses propres violations SANS exemption. La passe PR seule utilise
+          # le fichier /tmp/pr_added_files.txt pour ignorer les fichiers
+          # qu'elle ajoute elle-meme (cf. fondateur #19368 CB-00). Le delta
+          # PR \ base reste coherent : un lien vers un fichier PR-added
+          # n'apparait que sur la PR (pas sur la base), et les DEUX scans
+          # le voient comme STALE_LINK, donc NEW = 0 sur ce lien-la (la
+          # passe PR l'a ignoree, la passe base l'a vue -- mais comme le
+          # fichier PR-added n'est pas sur la base, le lien n'est PAS dans
+          # la sortie de la base). Verifie par les tests temoins.
           python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
             | tee /tmp/python_stdout_base.txt \
             | grep -E '^::error::STALE_LINK ' \

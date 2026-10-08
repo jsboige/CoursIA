@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: RL
-pedagogical_count: 37
-breakdown: root=26, PostTraining=11
-maturity: BETA=32, ALPHA=3, DRAFT=2
+pedagogical_count: 35
+breakdown: root=24, PostTraining=11
+maturity: BETA=30, ALPHA=3, DRAFT=2
 -->
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (26 notebooks pédagogiques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 23/09/2026 :
@@ -24,6 +24,16 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 > **Note de frontière — algorithmes online** : les deux carnets d’algorithmique online qui vivaient dans cette série relèvent de l’**analyse compétitive** — garanties de pire cas contre l’optimum offline, sans boucle d’apprentissage — plutôt que du RL stricto sensu. Le placement arbitré (#16429) les a rangés dans la série [Complexity](../Complexity/README.md), comme lettres **04c** (k-server, work function) et **04d** (secrétaire matroïdal) de la marche 04.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs souhaitant ajouter des capacités décisionnelles à leurs applications, et chercheurs en automatique ou robotique. Prérequis : Python intermédiaire et bases en calculus (gradients). Aucune expérience RL préalable nécessaire pour le notebook 1.
+
+## Objectifs d'apprentissage
+
+À l'issue de cette série, vous serez capable de :
+
+1. **Résoudre** un problème de décision séquentielle par essai-erreur (bandits manchots, MDP, Value/Policy Iteration, Q-Learning tabulaire) et tracer la convergence empirique vers l'optimum de Bellman
+2. **Implémenter** from scratch les algorithmes avec réseaux de neurones (DQN replay+target, REINFORCE baseline, A2C advantage, PPO clipped surrogate + GAE, SAC twin-Q + auto-température, GRPO intra-groupe) et les confronter à Stable Baselines3 sur le **même monde**
+3. **Composer** la décision sous contrainte d'information incomplète (POMDP belief tracking, distributional C51, curiosity RND, hierarchical options Sutton-Precup-Singh) et mesurer ce que chaque hypothèse coûte
+4. **Arbitrer** exploration vs exploitation (multi-agents PettingZoo IQL vs Hysteretic Q, online compétitif k-server WFA, secrétaire matroïdal Singla) et battre les conjectures tombées en septembre 2026
+5. **Aligner** un petit LM par préférences (RM Bradley-Terry from scratch vs `trl.RewardTrainer`, PPO/GRPO/DPO from scratch, inoculation reward hacking) et lire les 6 détecteurs statistiques du reward hacking
 
 ## Figures — extraites des sorties réelles des notebooks
 
