@@ -1911,7 +1911,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else "K_trajectory")
     parser.add_argument(
         "--mode",
-        choices=["measure", "verify-corpus", "bounds", "wolfram", "wolfram-4classes", "wolfram-ksf", "wolfram-blocks"],
+        choices=["measure", "verify-corpus", "bounds", "wolfram", "wolfram-4classes", "wolfram-ksf", "wolfram-blocks", "wolfram-seed-test"],
         default="measure",
         help="Mode d'exécution (défaut: measure)",
     )
@@ -1959,6 +1959,12 @@ def main() -> int:
         action="store_true",
         help="Mode wolfram : mesurer Rule 30 + Rule 110 (defaut = regle unique)",
     )
+    parser.add_argument(
+        "--seed-presets",
+        nargs="+",
+        default=None,
+        help="Mode wolfram-seed-test : liste des presets a tester (defaut : single-cell, wolfram-0001000, wolfram-defect, random-dense)",
+    )
     args = parser.parse_args()
     if args.mode == "measure":
         return cmd_measure(args)
@@ -1972,7 +1978,426 @@ def main() -> int:
         return cmd_wolfram_ksf(args)
     if args.mode == "wolfram-blocks":
         return cmd_wolfram_blocks(args)
+    if args.mode == "wolfram-seed-test":
+        return cmd_wolfram_seed_test(args)
     return cmd_verify_corpus(args)
+
+
+# ---------------------------------------------------------------------------
+# Pli 9 Origami Wolfram : seed specialise + 3 complexites
+# ---------------------------------------------------------------------------
+
+# Presets d'etat initial pour tester la discrimination des complexites 1-D
+# sous differentes conditions de seed. L'enjeu est de separer la discrimination
+# reelle (R30 vs R110) du facteur confondant du seed single-cell utilise dans
+# plis 4/7/8.
+#
+# Reference du seed canonique R110 : Wolfram 2002 ch. 7, §7-9 ; Cook 2004
+# (preuve d'universalite de Rule 110). Le seed "0001000 repeat" (background
+# periodique avec un defaut local) est la condition qui demontre la
+# Turing-completude de R110 dans le livre de Wolfram.
+
+WOLFRAM_SEED_PRESETS = {
+    # baseline : une seule cellule allumee au centre, n_cells cellules autour
+    # a zero. C'est le seed par defaut des plis 4/7/8 (c.110, c.111, c.112).
+    "single-cell": "0001000".replace("1", "1").replace("0", "0"),
+
+    # seed canonique Wolfram 2002 ch. 7 : pattern "0001000" repete sur toute
+    # la largeur, avec un defaut local (cellule centrale forcee a 0)
+    # qui declenche la propagation de gliders.
+    "wolfram-0001000": "0001000" * 8,  # 64 cellules
+
+    # seed canonique "defaut local" : pattern periodique avec UNE cellule
+    # cassee au centre (forcee a 0 dans un fond de 1). Wolfram 2002 utilise
+    # ce defaut pour declencher l'evolution visible.
+    "wolfram-defect": ("0001000" * 8)[:63] + "1",  # 64 cellules
+
+    # controle R30 : pattern dense aleatoire, doit rester nondiscriminant
+    # quel que soit le seed (R30 est statistiquement uniforme).
+    "random-dense": "10110011" * 8,  # 64 cellules
+}
+
+
+def wolfram_seed_preset(name: str, n_cells: int) -> list[Cell]:
+    """Retourne l'etat initial (1-D) du preset `name`, de taille `n_cells`.
+
+    Le pattern source (chaine de 0/1) est tronque ou repete pour atteindre
+    exactement `n_cells` cellules. Si le pattern source est trop court, on
+    le repete ; s'il est trop long, on le tronque au centre.
+
+    Conventions :
+    - Tous les presets definis dans WOLFRAM_SEED_PRESETS sont des chaines
+      de 0/1 de longueur divisible par 7 (motif "0001000") ou 8 ("10110011").
+    - "single-cell" est un cas special : une seule cellule allumee au centre,
+      le reste a zero. Implementé directement (pas via la chaine).
+    """
+    if name not in WOLFRAM_SEED_PRESETS:
+        raise ValueError(
+            f"Preset inconnu: {name}. Choices: {list(WOLFRAM_SEED_PRESETS.keys())}"
+        )
+    if name == "single-cell":
+        state = [0] * n_cells
+        state[n_cells // 2] = 1
+        return state
+    src = WOLFRAM_SEED_PRESETS[name]
+    if len(src) == n_cells:
+        return [int(c) for c in src]
+    # Repeter le pattern jusqu'a atteindre n_cells, puis tronquer.
+    out: list[Cell] = []
+    while len(out) < n_cells:
+        out.extend(int(c) for c in src)
+    return out[:n_cells]
+
+
+def wolfram_trajectory_from_state(
+    init_state: Sequence[Cell], rule: int, n_steps: int
+) -> list[list[Cell]]:
+    """Trajectoire 1-D a partir d'un etat initial explicite.
+
+    Wrapper local sur l'organe `ict.wolfram_step.wolfram_step` qui prend un
+    etat initial explicite (au lieu d'un seed aleatoire). Retourne une liste
+    d'etats 1-D successifs, chaque etat etant une liste de 0/1 de longueur
+    n_cells = len(init_state).
+
+    Convention de sortie : liste de listes Python (pas numpy), pour rester
+    compatible avec k_trajectory.py pur-Python. La conversion vers numpy est
+    faite en interne par wolfram_step.
+    """
+    try:
+        from ict.wolfram_step import wolfram_step  # pli 2 PR #19793
+    except ImportError as e:
+        raise RuntimeError(
+            "ict.wolfram_step introuvable. L'organe (PR #19793) doit etre "
+            "present dans MyIA.AI.Notebooks/IIT/ICT-Series/ict/wolfram_step.py "
+            f"et ce dossier doit etre dans sys.path. Erreur: {e}"
+        )
+
+    import numpy as np
+
+    state = np.asarray(list(init_state), dtype=int)
+    states: list[list[Cell]] = [state.tolist()]
+    for _ in range(n_steps - 1):
+        state = wolfram_step(state, rule)
+        states.append(state.tolist())
+    return states
+
+
+def _traj_states_to_grid(traj_states: list[list[Cell]]) -> list[list[list[Cell]]]:
+    """Convertit une trajectoire 1-D (liste d'etats) en liste de grilles 1xN.
+
+    Chaque etat devient une grille a une seule ligne, N colonnes. Format
+    compatible avec `grid_to_packed` et `measure_k_trajectory`.
+
+    C'est le meme format que `wolfram_trajectory_to_grid` mais accepte des
+    etats en listes Python au lieu de np.ndarray.
+    """
+    return [[list(state)] for state in traj_states]
+
+
+def measure_seed_instrument_landscape(
+    rules: Sequence[int] = (0, 4, 30, 110),
+    presets: Sequence[str] = ("single-cell", "wolfram-0001000", "wolfram-defect", "random-dense"),
+    n_cells: int = 64,
+    n_steps: int = 64,
+    instruments: Sequence[str] = ("lz", "ksf", "blocks"),
+    context_sizes: Sequence[int] = (1, 2, 4, 8, 16, 32),
+    block_sizes: Sequence[int] = (1, 2, 4, 8, 16, 32),
+) -> list[dict]:
+    """Mesure les 3 complexites (LZ, KSF, blocks) sur un paysage de seeds.
+
+    Produit `len(rules) * len(presets)` runs, chacun mesure par
+    `len(instruments)` complexites. Chaque entree du resultat a les cles :
+    - rule (int), preset (str), n_cells (int), n_steps (int)
+    - instrument (str) : 'lz' | 'ksf' | 'blocks'
+    - Pour 'lz' : k_trajectory_at_W, k_over_n_at_W
+    - Pour 'ksf' : ksf_at_W (par taille de contexte)
+    - Pour 'blocks' : block_entropy_mean, block_entropy_std, n_blocks
+    - summary (str) : phrase d'une ligne resume la mesure.
+    """
+    rows: list[dict] = []
+    for rule in rules:
+        for preset in presets:
+            init_state = wolfram_seed_preset(preset, n_cells)
+            traj_states = wolfram_trajectory_from_state(init_state, rule, n_steps)
+            traj_grid = _traj_states_to_grid(traj_states)
+            for instrument in instruments:
+                row: dict = {
+                    "rule": rule,
+                    "preset": preset,
+                    "n_cells": n_cells,
+                    "n_steps": n_steps,
+                    "instrument": instrument,
+                }
+                if instrument == "lz":
+                    # LZ fenetre : K_trajectory sur la trajectoire 1-D
+                    # Reutilise la fonction existante measure_k_trajectory.
+                    lz_results = measure_k_trajectory(
+                        f"wolfram_R{rule}_preset_{preset}", traj_grid, n_values=context_sizes
+                    )
+                    # lz_results : liste de {n, W, k_trajectory, k_over_n}
+                    row["lz_W"] = {str(r["W"]): r["k_trajectory"] for r in lz_results}
+                    row["lz_k_over_n"] = {
+                        str(r["W"]): r["k_over_n"] for r in lz_results
+                    }
+                    last_w = max(int(r["W"]) for r in lz_results)
+                    last_r = next(r for r in lz_results if int(r["W"]) == last_w)
+                    first_r = min(lz_results, key=lambda r: int(r["W"]))
+                    row["k_last"] = last_r["k_trajectory"]
+                    row["k_first"] = first_r["k_trajectory"]
+                    row["k_last_over_first"] = (
+                        row["k_last"] / row["k_first"] if row["k_first"] > 0 else 0.0
+                    )
+                    row["summary"] = (
+                        f"LZ K_last={row['k_last']} K_first={row['k_first']} "
+                        f"ratio={row['k_last_over_first']:.3f}"
+                    )
+                elif instrument == "ksf":
+                    # KSF : Kolmogorov structure function, calculee directement
+                    # sur traj_states (generee depuis le preset explicite).
+                    # On ne passe PAS par ksf_trajectory car celui-ci regenere
+                    # sa propre trajectoire avec un seed random.
+                    ksf_values_per_W: dict[int, list[int]] = {}
+                    for W in context_sizes:
+                        ksf_values_per_W[W] = []
+                        for t in range(W, len(traj_states)):
+                            ctx_states = traj_states[t - W:t]
+                            cur_state = traj_states[t]
+                            ctx_bytes = pack_states_1d(ctx_states)
+                            ctx_plus_cur_bytes = pack_states_1d(ctx_states + [cur_state])
+                            k_ctx = lz_compressed_length(ctx_bytes)
+                            k_full = lz_compressed_length(ctx_plus_cur_bytes)
+                            # K(W_t | context) = K(ctx || W_t) - K(ctx)
+                            ksf_values_per_W[W].append(k_full - k_ctx)
+                    ksf_W_means = {
+                        W: (sum(vs) / len(vs) if vs else 0.0)
+                        for W, vs in ksf_values_per_W.items()
+                    }
+                    row["ksf_W"] = {str(W): v for W, v in ksf_W_means.items()}
+                    last_w = max(ksf_W_means.keys())
+                    first_w = min(ksf_W_means.keys())
+                    row["ksf_last"] = ksf_W_means[last_w]
+                    row["ksf_first"] = ksf_W_means[first_w]
+                    row["ksf_last_minus_first"] = row["ksf_last"] - row["ksf_first"]
+                    row["summary"] = (
+                        f"KSF last={row['ksf_last']:.3f} first={row['ksf_first']:.3f} "
+                        f"delta={row['ksf_last_minus_first']:.3f}"
+                    )
+                elif instrument == "blocks":
+                    # Block decomposition : entropie par bloc (moyenne, std)
+                    # On appelle directement block_decompose_trajectory et
+                    # shannon_entropy_bits sur chaque bloc.
+                    block_stats: list[dict] = []
+                    for W in block_sizes:
+                        blocks = block_decompose_trajectory(traj_states, W)
+                        entropies = [shannon_entropy_bits(b) for b in blocks]
+                        if entropies:
+                            mean_e = sum(entropies) / len(entropies)
+                            std_e = (
+                                sum((e - mean_e) ** 2 for e in entropies) / len(entropies)
+                            ) ** 0.5
+                        else:
+                            mean_e = 0.0
+                            std_e = 0.0
+                        block_stats.append({
+                            "W": W,
+                            "mean": mean_e,
+                            "std": std_e,
+                            "min": min(entropies) if entropies else 0.0,
+                            "max": max(entropies) if entropies else 0.0,
+                            "n_blocks": len(blocks),
+                        })
+                    row["blocks_W"] = block_stats
+                    last_w = max(b["W"] for b in block_stats)
+                    last_b = next(b for b in block_stats if b["W"] == last_w)
+                    row["blocks_mean_at_W32"] = last_b["mean"]
+                    row["blocks_std_at_W32"] = last_b["std"]
+                    row["summary"] = (
+                        f"Blocks mean@W32={last_b['mean']:.3f} std@W32={last_b['std']:.3f}"
+                    )
+                else:
+                    raise ValueError(f"Instrument inconnu: {instrument}")
+                rows.append(row)
+    return rows
+
+
+def seed_discrimination_verdict(landscape: list[dict]) -> dict:
+    """Verdict de discrimination R30 vs R110 sur le paysage de seeds.
+
+    Compare, pour chaque instrument et chaque preset, la mesure R30 vs R110.
+    Renvoie :
+    - per_instrument : dict[str, dict[str, verdict]] -- verdict par preset
+    - global : verdict agrege sur tous les presets
+    - discriminative_presets : nombre de presets ou R30 != R110 significatif
+    - total_presets : nombre total de presets testes
+
+    Verdict par preset et par instrument :
+    - 'DISCRIMINANT' : R30 et R110 sont nettement differents (delta > seuil)
+    - 'WEAK-DISCRIMINANT' : difference existe mais petite
+    - 'NONDISCRIMINANT' : R30 et R110 indistinguables
+    """
+    if not landscape:
+        return {
+            "per_instrument": {},
+            "global": "EMPTY",
+            "discriminative_presets": 0,
+            "total_presets": 0,
+        }
+
+    presets = sorted({r["preset"] for r in landscape})
+    instruments = sorted({r["instrument"] for r in landscape})
+    rules = sorted({r["rule"] for r in landscape})
+
+    # Par (instrument, preset), comparer R30 et R110.
+    # Pour LZ : k_last_over_first.
+    # Pour KSF : ksf_last_minus_first.
+    # Pour blocks : blocks_std_at_W32.
+    def measure_value(row: dict) -> float:
+        if row["instrument"] == "lz":
+            return row["k_last_over_first"]
+        if row["instrument"] == "ksf":
+            return row["ksf_last_minus_first"]
+        if row["instrument"] == "blocks":
+            return row["blocks_std_at_W32"]
+        return 0.0
+
+    per_instrument: dict[str, dict[str, str]] = {}
+    discriminative_count = 0
+    for instrument in instruments:
+        per_instrument[instrument] = {}
+        for preset in presets:
+            r30 = next(
+                (
+                    r
+                    for r in landscape
+                    if r["instrument"] == instrument
+                    and r["preset"] == preset
+                    and r["rule"] == 30
+                ),
+                None,
+            )
+            r110 = next(
+                (
+                    r
+                    for r in landscape
+                    if r["instrument"] == instrument
+                    and r["preset"] == preset
+                    and r["rule"] == 110
+                ),
+                None,
+            )
+            if r30 is None or r110 is None:
+                per_instrument[instrument][preset] = "INCOMPLETE"
+                continue
+            v30 = measure_value(r30)
+            v110 = measure_value(r110)
+            if v30 == 0 and v110 == 0:
+                per_instrument[instrument][preset] = "NONDISCRIMINANT"
+                continue
+            # Normalisation par le max pour eviter les biais d'echelle.
+            denom = max(abs(v30), abs(v110), 1e-9)
+            delta = abs(v30 - v110) / denom
+            if delta > 0.20:
+                verdict = "DISCRIMINANT"
+            elif delta > 0.05:
+                verdict = "WEAK-DISCRIMINANT"
+            else:
+                verdict = "NONDISCRIMINANT"
+            per_instrument[instrument][preset] = verdict
+            if verdict == "DISCRIMINANT":
+                discriminative_count += 1
+
+    # Verdict global : un seul preset discriminant sur les 3 instruments ?
+    n_total = len(presets) * len(instruments)
+    if discriminative_count == 0:
+        global_verdict = "NONDISCRIMINANT_CONFIRME"
+    elif discriminative_count == n_total:
+        global_verdict = "DISCRIMINANT_FORT"
+    else:
+        global_verdict = "DISCRIMINANT_FAIBLE"
+
+    return {
+        "per_instrument": per_instrument,
+        "global": global_verdict,
+        "discriminative_presets": discriminative_count,
+        "total_presets": n_total,
+    }
+
+
+def cmd_wolfram_seed_test(args: argparse.Namespace) -> int:
+    """Mode wolfram-seed-test : paysage de seeds × 3 complexites × 4 regles.
+
+    Teste la discrimination R30 vs R110 sous differentes conditions de seed,
+    pour verifier si le verdict NONDISCRIMINANT des plis 4/7/8 tient avec
+    le seed canonique R110 (Wolfram 2002 ch. 7).
+
+    Usage :
+        python scripts/hashlife/k_trajectory.py --mode wolfram-seed-test \\
+            --n-cells 64 --n-steps 64
+    """
+    rules = (0, 4, 30, 110)
+    presets = tuple(args.seed_presets) if args.seed_presets else (
+        "single-cell", "wolfram-0001000", "wolfram-defect", "random-dense"
+    )
+    instruments = ("lz", "ksf", "blocks")
+
+    print(f"== Wolframe seed test == n_cells={args.n_cells} n_steps={args.n_steps}")
+    print(f"  Regles : {rules}")
+    print(f"  Presets : {presets}")
+    print(f"  Instruments : {instruments}")
+    print()
+
+    landscape = measure_seed_instrument_landscape(
+        rules=rules,
+        presets=presets,
+        n_cells=args.n_cells,
+        n_steps=args.n_steps,
+        instruments=instruments,
+    )
+
+    # Affichage par preset
+    for preset in presets:
+        print(f"--- preset = {preset} ---")
+        for rule in rules:
+            print(f"  Rule {rule:3d} (class {WOLFRAM_BLOCK_LANDMARKS.get(rule, ('?',))[0]})")
+            for instrument in instruments:
+                row = next(
+                    (
+                        r
+                        for r in landscape
+                        if r["preset"] == preset
+                        and r["rule"] == rule
+                        and r["instrument"] == instrument
+                    ),
+                    None,
+                )
+                if row:
+                    print(f"    [{instrument:6s}] {row['summary']}")
+        print()
+
+    # Verdict
+    print("=== Verdict discrimination R30 vs R110 (par preset x instrument) ===")
+    verdict = seed_discrimination_verdict(landscape)
+    for instrument, verdicts in verdict["per_instrument"].items():
+        print(f"  {instrument}:")
+        for preset, v in verdicts.items():
+            print(f"    {preset:25s}  {v}")
+    print()
+    print(f"=== Verdict global ===")
+    print(f"  {verdict['global']} ({verdict['discriminative_presets']}/{verdict['total_presets']} cellules discriminantes)")
+
+    if args.json_out:
+        out = {
+            "landscape": landscape,
+            "verdict": verdict,
+            "n_cells": args.n_cells,
+            "n_steps": args.n_steps,
+            "rules": list(rules),
+            "presets": list(presets),
+            "instruments": list(instruments),
+        }
+        Path(args.json_out).write_text(json.dumps(out, indent=2, ensure_ascii=False))
+        print(f"\n[INFO] resultats ecrits dans {args.json_out}")
+    return 0
 
 
 if __name__ == "__main__":

@@ -6,17 +6,19 @@ Instrumentation pour mesurer la **complexite de trajectoire** (compression LZ fe
 
 | Fichier | Role |
 |---------|------|
-| `k_trajectory.py` | CLI principal -- modes `measure`, `verify-corpus`, `bounds`, `wolfram`, `wolfram-4classes`, `wolfram-ksf`, `wolfram-blocks` |
+| `k_trajectory.py` | CLI principal -- modes `measure`, `verify-corpus`, `bounds`, `wolfram`, `wolfram-4classes`, `wolfram-ksf`, `wolfram-blocks`, `wolfram-seed-test` |
 | `wolfram_cross_classes_results.json` | Verbatim mesure 4 classes Wolframe (pli 4) |
 | `wolfram_ksf_results.json` | Verbatim KSF 4 classes (pli 7) |
 | `wolfram_blocks_results.json` | Verbatim block decomposition 4 classes (pli 8) |
+| `wolfram_seed_test_results.json` | Verbatim paysage de seeds (4 classes x 4 presets x 3 instruments, pli 9) |
 | `wolfram_results.json` | Verbatim mesure Rule 30 / Rule 110 (pli 3) |
 | `k_trajectory_results.json` | Mesure 2-D Game of Life (pli 1) |
 | `WOLFRAM-VERDICT.md` | Falsifiable verdict R30 / R110 (pli 3) |
 | `WOLFRAM-VERDICT-CROSS-CLASSES.md` | Falsifiable verdict 4 classes LZ (pli 4) |
 | `WOLFRAM-VERDICT-KSF.md` | Falsifiable verdict KSF R30 vs R110 (pli 7) |
 | `WOLFRAM-VERDICT-BLOCKS.md` | Falsifiable verdict block decomposition R30 vs R110 (pli 8) |
-| `tests/` | Pytests des plis 3, 4, 7 et 8 |
+| `WOLFRAM-VERDICT-SEED-TEST.md` | Falsifiable verdict seed specialise + 3 complexites (pli 9) |
+| `tests/` | Pytests des plis 3, 4, 7, 8 et 9 |
 
 ## Modes CLI
 
@@ -29,6 +31,7 @@ Instrumentation pour mesurer la **complexite de trajectoire** (compression LZ fe
 | `wolfram-4classes` | K_trajectory LZ sur les 4 classes canoniques Wolframe (R0/R4/R30/R110) | `python scripts/hashlife/k_trajectory.py --mode wolfram-4classes --n-cells 1024` |
 | `wolfram-ksf` | Kolmogorov structure function K(W\|W') sur les 4 classes | `python scripts/hashlife/k_trajectory.py --mode wolfram-ksf --n-cells 1024` |
 | `wolfram-blocks` | Block decomposition Zenil 2013 (distribution de complexite LZ76 par bloc) sur 4 classes | `python scripts/hashlife/k_trajectory.py --mode wolfram-blocks --n-cells 256 --n-steps 256` |
+| `wolfram-seed-test` | Paysage de seeds (4 presets : single-cell, wolfram-0001000, wolfram-defect, random-dense) x 3 instruments | `python scripts/hashlife/k_trajectory.py --mode wolfram-seed-test --n-cells 512 --n-steps 512` |
 
 Deux planchers de mesure bornent ces modes, mesures le 2026-10-09 : sous `n_cells = 512` les modes a base de compresseur (pli 4, pli 7) tombent sous le **plancher de cadrage zlib** et sont declares `WOLFRAM-SATURATED` ; sous `n_steps / W = 4` blocs le mode `wolfram-blocks` n'a plus de quoi mesurer une dispersion et rend `WOLFRAM-BLOCKS-UNDERPOWERED`. Les commandes ci-dessus sont les echelles canoniques.
 
@@ -54,6 +57,13 @@ python scripts/hashlife/k_trajectory.py --mode wolfram-blocks --n-cells 256 --n-
 # Sortie JSON block decomposition
 python scripts/hashlife/k_trajectory.py --mode wolfram-blocks --n-cells 256 --n-steps 256 \
     --json-out scripts/hashlife/wolfram_blocks_results.json
+
+# Mesure paysage de seeds (pli 9)
+python scripts/hashlife/k_trajectory.py --mode wolfram-seed-test --n-cells 64 --n-steps 64
+
+# Sortie JSON paysage de seeds
+python scripts/hashlife/k_trajectory.py --mode wolfram-seed-test --n-cells 64 --n-steps 64 \
+    --json-out scripts/hashlife/wolfram_seed_test_results.json
 
 # Tests pytest
 python -m pytest scripts/hashlife/tests/ -v
@@ -117,14 +127,29 @@ Mesure canonique `n_cells = 256`, `n_steps = 256`, seed 33. La statistique par b
 - **Correction du 2026-10-09** : la version initiale agregeait l'**entropie de Shannon** par bloc, qui est invariante a l'arrangement (`H('0101...') == H(sequence desordonnee equilibree) == 1.0`) et ne pouvait donc pas separer chaos et structure — le verdict `NONDISCRIMINANT` etait une tautologie. L'instrument declare desormais `WOLFRAM-BLOCKS-UNDERPOWERED` sous quatre blocs (n=64, W=32 n'en laisse que deux).
 - Facteur confondant : Rule 110 exhibe ses proprietes de Turing-completude avec le seed `0001000` repete (Wolfram 2002 ch. 7), non teste ici — c'est l'objet du pli 9.
 
+### Pli 9 (c.113) -- Seed specialise R110 (0001000) + 3 complexites
+
+| Preset / Instrument | LZ | KSF | Blocks |
+|---|:---:|:---:|:---:|
+| single-cell       | WEAK | DISCRIMINANT | DISCRIMINANT |
+| wolfram-0001000   | **NONDISCRIMINANT** | DISCRIMINANT | DISCRIMINANT |
+| wolfram-defect    | WEAK | WEAK | DISCRIMINANT |
+| random-dense      | DISCRIMINANT | DISCRIMINANT | DISCRIMINANT |
+
+- Verdict final : `WOLFRAM-SEED-TEST-DISCRIMINANT_FAIBLE` (8/12 cellules discriminantes).
+- Conclusion epistemologique : le facteur confondant identifie au pli 8 etait reel et plus profond que prevu -- avec le seed canonique Wolfram 2002 ch. 7, LZ devient nondiscriminant entre R30 et R110. **Mais KSF et blocks discriminent encore** (KSF capte la structure per-step ; blocks capte la variance d'entropie par bloc). 2 instruments sur 3 discriminants = `DISCRIMINANT_FAIBLE`, pas `NONDISCRIMINANT_CONFIRME`.
+- Limite mesuree : n=64, n_steps=64, 1 seul seed par preset. Pour valider statistiquement, il faudrait 5-10 seeds par preset et moyenner les deltas (travail futur, pli 10+).
+- Suite Origami : le verdict pli 9 invalide partiellement le verdict pli 8 (3 complexites nondiscriminantes) -- il devient 2 complexites nondiscriminantes + 1 faiblement discriminante. Les pistes non-trajectoire (SAT-based minimal program, causal graph analysis) restent ouvertes.
+
 ## Origine
 
-Suite Origami (EPIC #19742) -- plis 1 a 8 de l'instrumentation Hashlife / K_trajectory :
+Suite Origami (EPIC #19742) -- plis 1 a 9 de l'instrumentation Hashlife / K_trajectory :
 - **Pli 1** (c.103-c.104) : instrument K_trajectory 2-D, DELIVERED.
 - **Pli 2** (c.108) : organe `ict.wolfram_step` (PR #19793).
 - **Pli 3** (c.109) : instrument 1-D Rule 30 / Rule 110 (PR #19815).
 - **Pli 4** (c.110) : extension 4 classes Wolframe (PR #19819).
 - **Pli 7** (c.111) : Kolmogorov structure function (PR #19826).
 - **Pli 8** (c.112) : block decomposition Zenil (PR #19836).
+- **Pli 9** (c.113) : seed specialise R110 + 3 instruments (PR #19847).
 
-Suite a venir : plis 5/6 (Lean hypergraphes / multiway) bloques par env Lean/JVM absent ; pli 9 (seed specialise R110), puis SAT-based minimal program et causal graph analysis.
+Suite a venir : plis 5/6 (Lean hypergraphes / multiway) bloques par env Lean/JVM absent ; pli 10+ (SAT-based, causal graph, algorithmic likelihood, validation cross-seed pli 9).
