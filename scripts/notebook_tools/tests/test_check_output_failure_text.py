@@ -355,12 +355,14 @@ def test_declared_banner_replacing_a_base_render_still_fires():
     assert not got["DECLARED_FALLBACK"]
 
 
-def test_declared_fallback_kept_when_head_keeps_its_substantial_output():
-    """Faux 0 -> 1 mesure sur #19697 : cellule byte-identique entre base et
-    tete. La base est scanee sans contexte (-> DECLARED_FALLBACK), la tete
-    voyait une base substantial et restait TOOL_FAILURE -- le ratchet creait
-    une regression sur une cellule que la PR ne touchait pas. Un remplacement
-    se prouve des deux cotes : la tete doit avoir PERDU le rendu."""
+def test_declared_fallback_kept_when_base_output_echoes_before_failing():
+    """Faux 0 -> 1 mesure sur #19697 : le repli execute son chemin normal AVANT
+    d'echouer, donc sa sortie de base porte des lignes d'echo (« Inpainting:
+    '...' », soumission du workflow) qui la rendent ``substantial`` au sens
+    textuel. Ce cas est le seul qui atteint ``_in_fallback`` avec un verdict
+    True : ``test_declared_fallback_kept_when_base_was_already_in_fallback``
+    (base = banniere seule) sort par ``_substantial_output`` des la premiere
+    condition, sans jamais lire ``_in_fallback``."""
     out = "graphe: 2 noeuds, 1 arete\n" + BANNER_OUT
     base = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, stream(out))]}
     head = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, stream(out))]}
@@ -369,6 +371,22 @@ def test_declared_fallback_kept_when_head_keeps_its_substantial_output():
 
     assert not got["TOOL_FAILURE"]
     assert len(got["DECLARED_FALLBACK"]) == 1
+
+
+def test_declared_banner_over_an_echoing_head_still_fires_when_base_rendered():
+    """Le pendant du test precedent, et la raison pour laquelle la decision se
+    prend sur la BASE : la base RENDAIT (aucun repli), la tete n'imprime plus
+    que ses lignes d'echo puis la banniere. L'echo rend la sortie de tete
+    ``substantial`` au sens textuel -- une condition qui exigerait que la tete
+    ait perdu sa substance laisserait donc passer la perte de rendu."""
+    out = "graphe: 2 noeuds, 1 arete\n" + BANNER_OUT
+    base = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, RENDER)]}
+    head = {"cells": [id_cell("c-gv", GRAPHVIZ_SRC, stream(out))]}
+
+    got = scan(head, base_nb=base)
+
+    assert len(got["TOOL_FAILURE"]) == 1, "un rendu perdu doit continuer a gater"
+    assert not got["DECLARED_FALLBACK"]
 
 
 def test_declared_fallback_kept_when_base_was_already_in_fallback():
