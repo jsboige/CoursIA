@@ -3,7 +3,7 @@
 > **Issue** : [#19863](https://github.com/jsboige/CoursIA/issues/19863) `fix(qc): l'univers fine-fundamental se vide silencieusement -- runs vides sans erreur (portage 9031)`
 > **Part of** : [#19678](https://github.com/jsboige/CoursIA/issues/19678) (portage QC Cloud de l'article 9031, Ichimoku secteur énergie) — EPIC [#11698](https://github.com/jsboige/CoursIA/issues/11698)
 > **Lane** : `myia-po-2023:CoursIA-2` (c.1163, G-VAR-1 DEEP/research-code) — vérification finale c.1174
-> **Statut (c.1174)** : DIAGNOSTIC + FIX + VÉRIFICATION PLEIN BLOC — fix livré (`a745f2545d`, PR #19864) ; verdict re-basé sur conteneur 24 mois (`73433c968a`) ; **extension plein bloc 6,1 ans mesurée c.1174** (4 860 ordres, +12,6 % cumulé vs baseline +311,4 %, MaxDD 30,2 % ; verdict pré-enregistré inchangé, `INCONCLUSIVE`). Issue **fermée** par cette PR (handoff de `myia-po-2023:CoursIA` reçu 08/10 11:04Z, msg-20261008T090435-vyni7i).
+> **Statut (c.1177, revu c.1197)** : DIAGNOSTIC + FIX + VÉRIFICATION PLEIN BLOC — fix livré (`a745f2545d`, PR #19864) ; verdict re-basé sur conteneur 24 mois (`73433c968a`) ; **extension plein bloc 6,1 ans mesurée c.1174** (4 860 ordres, +12,6 % cumulé vs baseline +311,4 %, MaxDD 30,2 % ; verdict pré-enregistré inchangé, `INCONCLUSIVE`). Issue **prête à examiner** par le coord/adjoint — la fermeture reste à faire et leur appartient (handoff de `myia-po-2023:CoursIA` reçu 08/10 11:04Z, msg-20261008T090435-vyni7i).
 
 ## 1. Symptôme (verbatim de l'issue)
 
@@ -85,7 +85,7 @@ mesurée** — la sonde du point 3 la contredit partiellement.
 lecteur ne la croie pas testée. La mesure du point 3 l'écarte même partiellement (la fenêtre
 2021-08 → 2022-08 commence en août, comme celles qui négocient, et rend pourtant 0).
 
-## 6. Hypothèse de travail (à confirmer sur QC Cloud)
+## 6. Hypothèse de travail — RÉFUTÉE (cause mesurée au §11.3)
 
 L'enchevêtrement temporel fenêtres-vides / fenêtres-qui-négocient (mesure §2) est **caractéristique
 d'un défaut de mémoïsation lié au calendrier d'actualisation fine**. Le pattern le plus
@@ -102,7 +102,21 @@ sur QC Cloud dans le projet `37468246`). Elle est **dérivée de l'observation**
 dépend de la date de départ, et la mémoïsation mensuelle de `self.month` est le seul état
 persistant entre appels successifs du modèle.
 
-## 7. Design du fix (proposé, NON appliqué)
+> **RÉFUTÉE (c.1197, review ai-01 5463018552)** : la cause mesurée (§11.3, sonde publique
+> LEAN + lecture du source `FundamentalUniverseSelectionModel.cs`) n'est **pas** un défaut de
+> mémoïsation — c'est l'**absence totale d'appel à `select_fine`** parce que la sous-classe ne
+> chaîne aucun constructeur de base. Le texte ci-dessus est conservé comme trace de
+> l'hypothèse de travail initiale, il ne décrit pas la cause réelle.
+
+## 7. Design du fix (proposé sur l'hypothèse §6 — CADUC, hypothèse réfutée)
+
+> **Section caduque (c.1197, review ai-01 5463018552)** : les trois options ci-dessous sont
+> conçues contre l'hypothèse de mémoïsation §6, **réfutée** par la mesure (§11.3). La cause
+> réelle étant l'absence de chaînage du constructeur de base, **aucune de ces options
+> n'aurait corrigé le défaut** — en particulier l'option A : changer une sentinel ne
+> raccorde pas un callback que rien n'appelle. Le fix réellement appliqué est le chaînage
+> du ctor (`a745f2545d`, PR #19864). Le texte est conservé comme trace du raisonnement
+> initial.
 
 Le fix doit corriger le comportement au **premier appel** sans changer le comportement nominal
 mensuel. Trois options, de la moins invasive à la plus structurelle :
@@ -140,8 +154,9 @@ Re-sélectionner **à chaque appel** de `select_coarse` (sans court-circuit). Le
 mais coûte ~12x plus de temps de calcul (la sélection d'univers domine le run). À mesurer
 avant adoption.
 
-**Option A est recommandée** : correction locale, préservation de la mémoïsation nominale,
-mécanisme du défaut isolé sur le premier appel.
+**Option A était recommandée au moment de la rédaction** (correction locale, préservation de
+la mémoïsation nominale) — recommandation **retirée** : cette option repose sur l'hypothèse
+réfutée §6 et n'aurait pas corrigé le défaut (voir bannière de section).
 
 ## 8. Protocole de vérification (exécuté c.1174 — voir §11 pour les résultats)
 
@@ -279,9 +294,10 @@ base (`a745f2545d`). Le diagnostic §5/§6 est donc **précisé par la lecture L
 faite par la lane cousine (cmt c.6052989262, fichier
 `Algorithm.Framework/Selection/FundamentalUniverseSelectionModel.cs`) : la sous-classe
 *doit* passer ses sélecteurs au constructeur de la base, sans quoi la phase fine n'est
-jamais armée. Mon §7 (option A, sentinel `self.month=None`) **reste valide en surface** —
-il aurait fonctionné — mais c'est le fix canonique QC qui a été retenu (chaînage du ctor),
-plus structurel et plus court.
+jamais armée. **Correction (c.1197, review ai-01 5463018552)** : l'affirmation initiale « l'option A
+(sentinel `self.month=None`) aurait fonctionné » est **retirée** — elle est fausse : changer une
+sentinel ne raccorde pas un callback que rien n'appelle. Les §6/§7 sont requalifiés
+hypothèse réfutée / design caduc.
 
 ### 11.4 Verdict sur l'issue
 
@@ -290,7 +306,7 @@ plus structurel et plus court.
 | L'univers fine-fundamental se vide-t-il silencieusement ? | **Oui**, mesuré (8 fenêtres, 5 vides / 3 qui négocient, enchevêtrement temporel) |
 | Y a-t-il une cause identifiée ? | **Oui** : sous-classe ne chaîne aucun ctor de base (`a745f2545d`) |
 | Le fix corrige-t-il le défaut à toutes les échelles ? | **Oui** : 1 692 ordres (24 mois) + 4 860 ordres (6,1 ans), tous post-fix |
-| Le verdict pré-enregistré tient-il ? | **Oui, `INCONCLUSIVE`** : cf. PR #19864 c.6052828360 (conteneur 24 mois, écart Sharpe -1,2242, p(sous-perf) 0,0868) ; le **bloc complet 6,1 ans confirme la même lecture** (stratégie perd ~24 pts de CAGR vs XLE, sous le seuil p < 0,05 de la pré-enregistrement) |
+| Le verdict pré-enregistré tient-il ? | **Oui, `INCONCLUSIVE`** : cf. PR #19864 c.6052828360 (conteneur 24 mois, écart Sharpe -1,2242, p(sous-perf) 0,0868). Le **bloc complet 6,1 ans va dans le même sens au plan descriptif** (stratégie perd ~24 pts de CAGR vs XLE) — **sans bootstrap rejoué sur ce bloc** : la significativité n'est mesurée que sur le conteneur 24 mois, le plein bloc n'est pas testé (correction c.1197, review ai-01 5463018552) |
 | Issue fermable ? | **Oui** : défaut documenté, fix appliqué, verdict pré-enregistré tenu, vérifications indépendantes croisées (sonde publique LEAN + fix empirique + 2 fenêtres + 2 runs) |
 
 **Issue `#19863` est prête à la fermeture par le coord/adjoint** (le geste de `close` reste

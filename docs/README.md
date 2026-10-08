@@ -129,7 +129,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [qc/qc-research-notebook-memory.md](qc/qc-research-notebook-memory.md) | Mémoire de l'agent `qc-research-notebook` — relocalisée depuis `.claude/agent-memory/` (EPIC #9535, item 7) |
 | [qc/qc-strategy-analyzer-memory.md](qc/qc-strategy-analyzer-memory.md) | Mémoire de l'agent `qc-strategy-analyzer` — relocalisée depuis `.claude/agent-memory/` (EPIC #9535, item 7) |
 | [qc/qc-strategy-improver-memory.md](qc/qc-strategy-improver-memory.md) | Mémoire de l'agent `qc-strategy-improver` (38 Ko, la plus fournie des trois) — relocalisée depuis `.claude/agent-memory/` (EPIC #9535, item 7) |
-| [qc/19863-fine-fundamental-vidage-diagnostic.md](qc/19863-fine-fundamental-vidage-diagnostic.md) | Diagnostic vidage silencieux `FineFundamentalUniverseSelectionModel` (projet QC Cloud 37468246, portage article 9031) — 3 hypothèses réfutées, design fix, vérif plein bloc 6,1 ans (4 860 ordres, +12,6 % cum, MaxDD 30,2 %, verdict `INCONCLUSIVE` conteneur 24 mois) — livré c.1174 (#19867), issue #19863 fermée |
+| [qc/19863-fine-fundamental-vidage-diagnostic.md](qc/19863-fine-fundamental-vidage-diagnostic.md) | Diagnostic vidage silencieux `FineFundamentalUniverseSelectionModel` (projet QC Cloud 37468246, portage article 9031) — hypothèses réfutées, cause mesurée (chaînage ctor absent), fix livré, vérif plein bloc 6,1 ans (4 860 ordres, +12,6 % cum, MaxDD 30,2 %, verdict `INCONCLUSIVE` conteneur 24 mois) — livré c.1174 (#19867), issue #19863 prête à examiner (fermeture coord/adjoint) |
 
 ## Lean (docs/lean/)
 
