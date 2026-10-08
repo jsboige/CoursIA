@@ -135,28 +135,28 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [ML-1 (Python) : Introduction au Machine Learning avec…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction-Python.ipynb) | BETA | Oui |
-| 2 | [ML-1 : Introduction au Machine Learning avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction.ipynb) | BETA | Oui |
-| 3 | [ML-10 (Python) : l'illusion de progression en détection…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-10-TSAD-Benchmark-Flaws-Python.ipynb) | BETA | Oui |
-| 4 | [ML-11 : le Matrix Profile multidimensionnel, une…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-11-MatrixProfile-Multidim-Python.ipynb) | BETA | Oui |
-| 5 | [ML-2 : Préparation des données et ingénierie des…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data%26Features-Python.ipynb) | BETA | Oui |
-| 6 | [ML-2 : Préparation des données et ingénierie des…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data%26Features.ipynb) | BETA | Oui |
-| 7 | [ML-3 : Entraînement et AutoML](../../MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement%26AutoML.ipynb) | BETA | Oui |
-| 8 | [ML-3 (Python) : Entraînement et AutoML](../../MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement-Python.ipynb) | BETA | Oui |
-| 9 | [ML-4 : Évaluation des modèles (Python / sklearn)](../../MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation-Python.ipynb) | BETA | Oui |
-| 10 | [ML-4 : Evaluation des modèles](../../MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation.ipynb) | BETA | Oui |
-| 11 | [ML-4b : Validité statistique des comparaisons de…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-4b-ModelComparison-Validity-Python.ipynb) | BETA | Oui |
-| 12 | [ML-5 (Python) : Prévision de séries temporelles (STL +…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries-Python.ipynb) | BETA | Oui |
-| 13 | [ML-5 : Time Series Forecasting avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb) | BETA | Oui |
-| 14 | [ML-5b (Python) : Séries temporelles classiques —…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-5b-Series-Temporelles-Classiques-Python.ipynb) | BETA | Oui |
-| 15 | [ML-6 (Python) : Intégration de modèles ONNX (skl2onnx +…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX-Python.ipynb) | BETA | Oui |
-| 16 | [ML-6 : ONNX Model Integration avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX.ipynb) | BETA | Oui |
-| 17 | [ML-7 (Python) : Systèmes de recommandation par…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation-Python.ipynb) | BETA | Oui |
-| 18 | [ML-7 : Systèmes de Recommandation avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation.ipynb) | BETA | Oui |
-| 19 | [ML-8 (Python) : Clustering non-supervisé avec K-Means](../../MyIA.AI.Notebooks/ML/ML.Net/ML-8-Clustering-Python.ipynb) | BETA | Oui |
-| 20 | [ML-8 : Clustering non-supervise avec K-Means](../../MyIA.AI.Notebooks/ML/ML.Net/ML-8-Clustering.ipynb) | BETA | Oui |
-| 21 | [ML-9 (Python) : Détection d'anomalies par PCA (erreur…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection-Python.ipynb) | BETA | Oui |
-| 22 | [ML-9 : Detection d'anomalies avec Randomized PCA](../../MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb) | BETA | Oui |
+| 1 | [ML-1 (Python) : Introduction au Machine Learning avec…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb) | BETA | Oui |
+| 2 | [ML-1 : Introduction au Machine Learning avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb) | BETA | Oui |
+| 3 | [ML-10 (Python) : l'illusion de progression en détection…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | BETA | Oui |
+| 4 | [ML-11 : le Matrix Profile multidimensionnel, une…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb) | BETA | Oui |
+| 5 | [ML-2 : Préparation des données et ingénierie des…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data%26Features-Python.ipynb) | BETA | Oui |
+| 6 | [ML-2 : Préparation des données et ingénierie des…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data%26Features.ipynb) | BETA | Oui |
+| 7 | [ML-3 : Entraînement et AutoML](../../MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement%26AutoML.ipynb) | BETA | Oui |
+| 8 | [ML-3 (Python) : Entraînement et AutoML](../../MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML-Python.ipynb) | BETA | Oui |
+| 9 | [ML-4 : Évaluation des modèles (Python / sklearn)](../../MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb) | BETA | Oui |
+| 10 | [ML-4 : Evaluation des modèles](../../MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation.ipynb) | BETA | Oui |
+| 11 | [ML-4b : Validité statistique des comparaisons de…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb) | BETA | Oui |
+| 12 | [ML-5 (Python) : Prévision de séries temporelles (STL +…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb) | BETA | Oui |
+| 13 | [ML-5 : Time Series Forecasting avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries.ipynb) | BETA | Oui |
+| 14 | [ML-5b (Python) : Séries temporelles classiques —…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb) | BETA | Oui |
+| 15 | [ML-6 (Python) : Intégration de modèles ONNX (skl2onnx +…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb) | BETA | Oui |
+| 16 | [ML-6 : ONNX Model Integration avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX.ipynb) | BETA | Oui |
+| 17 | [ML-7 (Python) : Systèmes de recommandation par…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb) | BETA | Oui |
+| 18 | [ML-7 : Systèmes de Recommandation avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation.ipynb) | BETA | Oui |
+| 19 | [ML-8 (Python) : Clustering non-supervisé avec K-Means](../../MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb) | BETA | Oui |
+| 20 | [ML-8 : Clustering non-supervise avec K-Means](../../MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering.ipynb) | BETA | Oui |
+| 21 | [ML-9 (Python) : Détection d'anomalies par PCA (erreur…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb) | BETA | Oui |
+| 22 | [ML-9 : Detection d'anomalies avec Randomized PCA](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection.ipynb) | BETA | Oui |
 | 23 | [TP : Prevision des ventes d'assurance](../../MyIA.AI.Notebooks/ML/ML.Net/TP-prevision-ventes.ipynb) | BETA | Oui |
 
 ## Probas/Applications (4 notebooks)
