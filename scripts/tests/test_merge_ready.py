@@ -1330,3 +1330,120 @@ def test_base_not_main_unreadable_fail_closed(tmp_path):
     assert (
         "base-not-main-unreadable:feature/inconnu" in lines[-1]["reason"]
     ), lines[-1]
+
+
+# ---------------------------------------------------------------------------
+# 5quater (#19002) : PR empilee sur une parente via convention body
+# (``Depends on #N`` / ``Blocked by #N`` / ``Stacked on #N`` /
+# ``Requires #N`` / ``Stack: #N``) avec baseRefName == main. Cas Origami
+# 2026-10-08 : 6 PRs empilees logiquement, baseRefName = main sur chacune,
+# 5 d'entre elles sans CI complete parce que la racine n'avait pas ete
+# mergee. base_ref_liveness ne s'applique pas (base = main), donc
+# merge_ready doit sonder le body de la PR pour trouver la parente.
+# Trois cas : parent OPEN (skip), parent MERGED (chemin nominal), parent
+# CLOSED (skip, signaler pour que la lane retravaille). Le runner
+# ScriptedRunner dispatche deja ``gh pr view <N>`` sur self.views[N] (l.226)
+# -- les tests reutilisent ce mecanisme en injectant une vue avec
+# state / mergedAt pour la PR parente.
+
+
+def test_stacked_on_main_open_parent_triggers_skip(tmp_path):
+    """Temooin negatif (#19002) : PR empilee sur une parente encore OPEN
+    (la parente n'a pas ete mergee, donc la CI de la PR courante n'a pas
+    couvert le diff de la parente). merge_ready skip avec le motif
+    ``stacked-on-main:<N>:OPEN`` -- la lane doit attendre le merge de la
+    parente. Cas Origami 2026-10-08 : #19815 / #19819 / #19826 / #19836 /
+    #19847 empilees sur #19793 (la racine du pli 1)."""
+    view = default_view()
+    # body avec convention "Depends on #N" -- premiere ligne preservee pour
+    # le prefiltre (GRAIN_MED), le marker d'empilement en bas du body.
+    view["body"] = GRAIN_MED + "\n\nDepends on #19793"
+    parent_view = {
+        "number": 19793,
+        "state": "OPEN",
+        "mergedAt": None,
+    }
+    runner = ScriptedRunner(
+        views={123: view, 19793: parent_view},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert "stacked-on-main:19793:OPEN" in lines[-1]["reason"], lines[-1]
+
+
+def test_stacked_on_main_merged_parent_is_nominal(tmp_path):
+    """Temooin positif (#19002) : parente empilee deja MERGED, le merge
+    peut proceder. Le check empilement est un transit, pas un arret :
+    une fois la parente absorbee dans main, la CI de la PR courante a
+    tourne sur la bonne base. Reutilise le runner ScriptedRunner standard
+    (defaut would-merge)."""
+    view = default_view()
+    view["body"] = GRAIN_MED + "\n\nDepends on #19793"
+    parent_view = {
+        "number": 19793,
+        "state": "MERGED",
+        "mergedAt": "2026-10-08T10:26:41Z",
+    }
+    runner = ScriptedRunner(
+        views={123: view, 19793: parent_view},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    # Le verdict par defaut serait would-merge (le test base_main_does_not_
+    # change_merge_ready_outcome demontre que la base main n'invalide pas le
+    # verdict). Meme chose ici : parente mergee, le check empilement ne
+    # modifie pas le verdict. La presence du runner dispatch vers
+    # self.views[19793] confirme que le check empilement a bien eu lieu
+    # (le runner n'aurait pas ete appele sans le find_stacked_parent dans
+    # le body).
+    assert "stacked-on-main" not in (lines[-1].get("reason") or ""), lines[-1]
+
+
+def test_stacked_on_main_closed_parent_triggers_skip(tmp_path):
+    """Temooin negatif (#19002) : parente fermee (CLOSED sans merge). Le
+    motif ``stacked-on-main:<N>:CLOSED`` dit a la lane de rebrancher sur
+    la parente viable ou de reouvrir la parente. Le test distingue
+    explicitement OPEN et CLOSED pour que la lane puisse adapter son
+    geste (attendre vs rebrancher)."""
+    view = default_view()
+    view["body"] = GRAIN_MED + "\n\nBlocked by #19793"
+    parent_view = {
+        "number": 19793,
+        "state": "CLOSED",
+        "mergedAt": None,
+    }
+    runner = ScriptedRunner(
+        views={123: view, 19793: parent_view},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert "stacked-on-main:19793:CLOSED" in lines[-1]["reason"], lines[-1]
+
+
+def test_no_stacked_marker_in_body_keeps_nominal_path(tmp_path):
+    """Temooin positif (#19002) : body sans mention de parente empilee
+    (PR ordinaire sur main). Le check empilement ne fait rien -- pas de
+    round-trip supplementaire vers ``gh pr view <N>``. Le test verifie
+    egalement qu'aucune vue de PR parente n'est appelee : le ScriptedRunner
+    expose ``runner.cmds()`` qui liste les sous-processus spawnes, et on
+    s'attend a n'y voir qu'un appel ``gh pr view 123`` (la PR courante)
+    et aucun ``gh pr view <autre>``."""
+    view = default_view()
+    # body par defaut (GRAIN_MED) -- aucun marker d'empilement.
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    # Aucune mention empilement dans la raison de skip.
+    assert "stacked-on-main" not in (lines[-1].get("reason") or ""), lines[-1]
+    # Verifie qu'aucun appel ``gh pr view <N>`` autre que 123 n'a eu lieu :
+    # le check empilement est absent du chemin nominal.
+    other_pr_view_calls = [
+        cmd for cmd in runner.cmds()
+        if cmd[:3] == ["gh", "pr", "view"]
+        and cmd[3] != "123"
+    ]
+    assert other_pr_view_calls == [], (
+        f"appels inattendus vers gh pr view (autre que 123) : {other_pr_view_calls}"
+    )

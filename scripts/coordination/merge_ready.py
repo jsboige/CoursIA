@@ -887,6 +887,66 @@ def twin_collision_reason(
     return f"twin-collision-unreadable:rc={res.returncode}"
 
 
+# Conventions retenues pour detecter une PR empilee sur une parente non-encore
+# mergee, dans le body de la PR courante. Le format le plus frequent dans
+# CoursIA est "Depends on #N" (po-2024 Origami pli 2-9 sur pli 1), suivi de
+# "Blocked by #N" (GitHub-style) et de "Stacked on #N" (convention locale
+# signalee par po-2027 c.1485). Les emojis prefixant la mention sont
+# tolerees (PRs pedagogiques :sparkles: Depends on #N).
+_STACKED_PATTERNS = (
+    re.compile(r"(?:^|\s|[\W_])(?:depends\s+on|blocked\s+by|stacked\s+on|"
+               r"requires|stack\s*:)\s*#(\d+)", re.IGNORECASE | re.MULTILINE),
+)
+
+
+def find_stacked_parent(body: str | None) -> int | None:
+    """Renvoie le numero de la PR parente empilee, ou None.
+
+    Cherche la premiere mention d'un parent empile dans le body selon les
+    conventions ``_STACKED_PATTERNS``. Ne considere pas les PRs mentionnees
+    en passant (un simple lien narratif) ; le marqueur "depends on" /
+    "blocked by" doit etre explicite. Renvoie le premier N trouve pour eviter
+    les chaines d'empilement circulaires (l'organe n'essaie pas de valider
+    toute la chaine, il signale juste la premiere parente non-mergee)."""
+    if not body:
+        return None
+    for pattern in _STACKED_PATTERNS:
+        match = pattern.search(body)
+        if match:
+            return int(match.group(1))
+    return None
+
+
+def stacked_parent_state(
+    runner: Runner, parent_pr: int, gh_env: dict[str, str]
+) -> str:
+    """Renvoie l'etat logique de la PR parente empilee.
+
+    Sorties : ``MERGED``, ``OPEN``, ``CLOSED``, ``unreadable``. Le check
+    d'empilement est fail-CLOSED : tout etat non lisible equivaut a
+    ``unreadable`` et bloque le merge par defaut (meme politique que
+    ``base_ref_liveness`` ligne 905)."""
+    res = runner.run(
+        ["gh", "pr", "view", str(parent_pr),
+         "--json", "state,mergedAt", "--repo", REPO],
+        env=gh_env,
+    )
+    if res.returncode != 0:
+        return "unreadable"
+    data = _json_stdout(res, f"gh pr view {parent_pr}")
+    if not isinstance(data, dict):
+        return "unreadable"
+    state = str(data.get("state") or "").upper()
+    merged_at = data.get("mergedAt")
+    if state == "MERGED" or merged_at:
+        return "MERGED"
+    if state == "OPEN":
+        return "OPEN"
+    if state in {"CLOSED", "DRAFT"}:
+        return "CLOSED"
+    return "unreadable"
+
+
 def base_ref_liveness(
     runner: Runner, gh_env: dict[str, str], base_ref_name: str
 ) -> str:
@@ -1066,6 +1126,19 @@ def evaluate_pr(
         if liveness == "gone":
             return skip(f"base-gone:{base_ref_name}")
         return skip(f"base-not-main-unreadable:{base_ref_name}")
+    # 5quater. PR empilee via convention body (depends on / blocked by /
+    # stacked on) avec baseRefName == main. Le cas Origami 2026-10-08 :
+    # 6 PRs empilees logiquement, baseRefName = main sur chacune (la
+    # convention GitHub est de rebrancher chaque PR sur main apres un
+    # update-branch), 5 d'entre elles sans CI complete parce que la
+    # racine n'avait pas ete mergee. base_ref_liveness ne s'applique
+    # pas (base = main), mais la parente empilee dans le body donne
+    # l'info manquante. Refus tant que la parente n'est pas MERGED.
+    parent = find_stacked_parent(view.get("body"))
+    if parent is not None and parent != pr:
+        pstate = stacked_parent_state(runner, parent, gh_env)
+        if pstate != "MERGED":
+            return skip(f"stacked-on-main:{parent}:{pstate}")
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(runner, pr, gh_env)
     if state != "clean":
