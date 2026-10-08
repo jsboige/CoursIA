@@ -13,6 +13,7 @@
 | T3 (cette PR) | pt 2 — ADK : handoff natif C5 + désignation C4 exécutés via l'organe Track2 (service LLM réel, temp 0) | livré |
 | T4 | pt 2 — SK, modes restants (séquentiel, concurrent, group chat, Magentic) exécutés (service LLM réel, temp 0) | livré |
 | T5 | pt 3 — MAF, graphe typé (`WorkflowBuilder`) exécuté (service LLM réel, temp 0), borne de boucle falsifiée | livré |
+| T6 | pt 4 — couverture C# mesurée par les assemblages (SK 1.81.0, MAF 1.24.0, ADK absent), contrôles positif et négatif | livré |
 | — | pt 2 — MS Agent Framework (agents, graphe) | à venir |
 | — | pt 1 état de l'art | livré hors repo : note datée du 2026-10-05 sur [#19380](https://github.com/jsboige/CoursIA/issues/19380) ; mémo inventaire local du 2026-10-07 (po-2024:CoursIA-2) sur [#14499](https://github.com/jsboige/CoursIA/issues/14499) |
 | — | pts 3-6 (déterminisme, couverture langages, coût, verdict) | à venir |
@@ -205,6 +206,64 @@ PILOT OK maf workflow roles=3
 
 **Ce que le relevé apprend pour l'évaluation comparative.** SK et MAF ne répondent pas à la même question. SK offre une **bibliothèque de topologies prêtes** (séquentiel, concurrent, group chat, Magentic, handoff) où le choix de l'orateur est délégué à un manager — donc à un LLM dès que la topologie est dynamique. MAF offre un **graphe** où la topologie est écrite, donc inspectable et testable hors LLM, au prix de l'écrire soi-même. Le déterminisme n'est pas une propriété du framework mais de **ce qu'on met dans le graphe** : le prover Lean s'en sert précisément pour rendre son routage vérifiable (`SwitchCaseEdgeGroup` sur `msg.next_agent`), là où un manager Magentic l'aurait rendu probabiliste. Les deux couches sont donc complémentaires plutôt que concurrentes sur ce point, et le critère de choix est la **nature de la décision de routage** : écrite → MAF, déléguée → SK.
 
-### 2.7 À venir (couverture C#)
+### 2.7 Couverture C# — mesurée par les assemblages, pas par la documentation
 
-Reste de #14499 : la couverture C# (le dépôt enseigne aussi .NET Interactive). L'emplacement `eval-pilots/` accueille les pilotes Python ; les pilotes MAF vivent auprès de leur organe (`agent_tests/prover/workflow.py` pour l'idiome de référence).
+`VÉRIFIÉ` — sonde [`eval-pilots/csharp_coverage_probe.cs`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/csharp_coverage_probe.cs), exécutée sous .NET **10.0.204** (`dotnet run csharp_coverage_probe.cs`), exit 0.
+
+Le point 4 de l'issue demande « ce que chaque moteur offre réellement en C# ». La méthode n'interroge pas la documentation mais **énumère les types publics des assemblages réellement déployés** par le restaurateur de paquets : un type absent de cette énumération n'est pas utilisable, quelle que soit la doc.
+
+**Ce que la mesure renverse.** L'intuition naturelle — SK est le moteur historique du dépôt, donc le plus mature en C# — est fausse sur la couche agents. Les cinq objets d'orchestration mesurés en Python 1.41.3 (§2.3 à §2.5) **n'existent pas** dans SK C# 1.81.0, qui n'expose que le modèle historique `AgentGroupChat`. Ils existent tous les cinq dans **MAF C# 1.24.0**, avec le checkpoint et l'OTel que l'issue demande au point 3. Autrement dit, la couche la plus récente de SK est **Python d'abord**, tandis que MAF est **C# d'abord**.
+
+| Moteur | Version mesurée | Types publics | Orchestration multi-agents en C# |
+| --- | --- | --- | --- |
+| Semantic Kernel | `Microsoft.SemanticKernel.Agents.Core` 1.81.0 | 210 | **modèle historique seul** : `AgentGroupChat`, `AgentGroupChatSettings`, `SequentialSelectionStrategy`, `ChatCompletionAgent` |
+| MS Agent Framework | `Microsoft.Agents.AI.Workflows` 1.24.0 | 285 | **les cinq topologies** : `SequentialWorkflowBuilder`, `ConcurrentWorkflowBuilder`, `GroupChatWorkflowBuilder`, `MagenticWorkflowBuilder`, `HandoffWorkflowBuilder`, plus `WorkflowBuilder` |
+| Google ADK | — | — | **aucune distribution C#** |
+
+Capacités MAF C# mesurées, qui répondent directement au point 3 de l'issue :
+
+| Capacité demandée | Type mesuré |
+| --- | --- |
+| reprise d'un long run (checkpoint) | `CheckpointManager`, `CheckpointInfo`, `FileSystemJsonCheckpointStore`, `WorkflowSessionCheckpointRecovery` |
+| observabilité (traces OTel) | `OpenTelemetryWorkflowBuilderExtensions` |
+| ledger du manager Magentic | `MagenticProgressLedger` (le pendant C# du `ProgressLedger` mesuré en Python, §2.5) |
+| tour de table borné | `RoundRobinGroupChatManager` |
+
+Trace d'exécution (abrégée — les lignes de contrôle individuelles sont ci-dessus) :
+
+```text
+SK (C#)  : 210 types publics exportes
+MAF (C#) : 285 types publics exportes
+
+CONTROLE NEGATIF -- orchestration de la couche agents SK Python doit etre ABSENTE du C#
+   absent  OK  SequentialOrchestration
+   absent  OK  ConcurrentOrchestration
+   absent  OK  GroupChatOrchestration
+   absent  OK  MagenticOrchestration
+   absent  OK  HandoffOrchestration
+
+CONTROLE POSITIF -- les cinq topologies doivent etre PRESENTES dans MAF C#
+   present OK  SequentialWorkflowBuilder
+   present OK  ConcurrentWorkflowBuilder
+   present OK  GroupChatWorkflowBuilder
+   present OK  MagenticWorkflowBuilder
+   present OK  HandoffWorkflowBuilder
+   present OK  WorkflowBuilder
+
+GOOGLE ADK (C#) -- balayage des assemblages deployes
+   Google.Protobuf.dll
+
+VERDICT controles : negatif=OK positif=OK
+```
+
+**Sur Google ADK (C#).** Le paquet officiel n'existe pas : `Google.Adk` est introuvable sur NuGet, et la recherche par mots-clés ne remonte que des homonymes tiers (`NTG.Adk` est un kit d'aviation, `Hazina.LLMs.GoogleADK` une enveloppe communautaire à quelques centaines de téléchargements). La sonde le mesure par **balayage du répertoire de sortie** : la seule assembly « Google » présente est `Google.Protobuf.dll`, dépendance transitive sans rapport avec un moteur agentique. Pour un dépôt qui enseigne en **.NET Interactive**, l'écart est décisif et se lit sans hypothèse.
+
+**Ce que le relevé apprend pour l'évaluation comparative.** La question « quel moteur pour la distillation » reçoit ici une contrainte dure qui n'était pas visible dans la grille du 11/09 : nos séries sont **bilingues**, et un moteur qui n'existe qu'en Python oblige à maintenir deux piles pour un même enseignement. Sur ce critère, MAF couvre **les deux langages avec les mêmes topologies**, SK ne les couvre qu'en Python sur la couche agents, et ADK n'a pas de C# du tout. Cela ne tranche pas l'arbitrage — la maturité runtime et la dette de migration restent à mesurer — mais cela déplace un critère de « préférence » vers un **fait mesuré**.
+
+**Forme du livrable, et pourquoi.** La sonde est une **app mono-fichier** (.NET 10, directives `#:package`) : aucun `.csproj` n'est ajouté au dépôt, donc aucun impact sur `MyIA.CoursIA.sln`, `MyIA.AI.Shared.sln` ni sur les workflows .NET (tous filtrés par chemin) — un projet orphelin aurait été happé par l'un ou l'autre. La reproduction demande le réseau pour la restauration des paquets, comme les pilotes Python demandent une clé d'API.
+
+**Deux pièges de méthode, tous deux payés par une erreur réelle.** `Assembly.Load("<nom>")` ne suffit pas : rien ne référence ces assemblages, donc rien ne les charge, et la sonde rend « aucune assembly » sur un projet pourtant correctement restauré — il faut charger **par chemin** depuis le répertoire de sortie. Et un détecteur se valide par ses **faux négatifs**, pas par ses hits : d'où le contrôle négatif ci-dessus. Sans lui, « 0 hit » serait indiscernable de « sonde cassée » — le mode de défaut qui a fait passer pour un « résidu » un lake portant 80 % de la dette formelle du dépôt (règle anti-régression).
+
+### 2.8 À venir
+
+Reste de #14499 : le pilote identique dans les trois moteurs sur une **vraie charge de distillation** (point 3), et le coût pour le dépôt (point 5). L'emplacement `eval-pilots/` accueille les pilotes Python et la sonde C# ; l'idiome de référence de MAF est l'organe du dépôt (`SymbolicAI/Lean/agent_tests/prover/workflow.py`).
