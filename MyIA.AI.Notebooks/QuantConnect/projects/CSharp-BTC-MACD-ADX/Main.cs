@@ -107,6 +107,15 @@ namespace QuantConnect.Algorithm.CSharp
         [Parameter("adx-upper-percentile")]
         public int AdxUpperPercentile = 90;  // OPTIMISÉ: 85 → 90
 
+        // Fenetres walk-forward multi-regimes (addendum #9768, campagne cloud) :
+        // dates ISO "yyyy-MM-dd". Defauts = la fenetre gelee #9803 ci-dessous,
+        // comportement inchangé tant que les parametres ne sont pas fournis.
+        [Parameter("wf-start")]
+        public string WfStart = "2019-04-01";
+
+        [Parameter("wf-end")]
+        public string WfEnd = "2025-12-31";
+
         private RollingWindow<decimal> _adxWindow;
 
         // Symbole à trader (BTCUSDT)
@@ -360,13 +369,17 @@ namespace QuantConnect.Algorithm.CSharp
 
             // OPTIMISÉ: Période étendue pour test robustesse 2019-2025
             // Note: 500-day warmup needs data from ~Nov 2017 (Binance BTCUSDT available)
-            SetStartDate(2019, 4, 1);
+            // Walk-forward (#9768) : la fenetre est parametrable (wf-start/wf-end) ;
+            // les defauts reproduisent exactement la fenetre gelee #9803.
+            var wfStartDate = DateTime.ParseExact(WfStart, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var wfEndDate = DateTime.ParseExact(WfEnd, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            SetStartDate(wfStartDate);
             // Freeze the backtest window (#9803, EPIC #9768 D2 fondateur): without a real
             // SetEndDate the window drifted with each run (Sharpe 0.225 -> 0.123 over 101
             // extra trading days, 2026-04-27 -> 2026-08-06). Borne = "derniere annee civile
             // complete" : defensible par sa REGLE (pas par son resultat). Voir #9803 pour la
             // decision de design (2025-12-31 vs 2024-12-31) et la mesure de sensibilite.
-            SetEndDate(2025, 12, 31);
+            SetEndDate(wfEndDate);
 
         }
 
