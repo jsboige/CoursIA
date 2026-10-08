@@ -3861,10 +3861,6 @@ def test_main_idle_since_delivery_falls_back_to_idle_on_fetch_error(monkeypatch)
 
 
 
-[conflit resolu c.1457 : on preserve les 12 tests de #19770 (filtre recent) PLUS les 5 tests de #19913 (3e sonde PR MERGEE)]
-# Bloc 1 : 12 tests `test_recent_delivery_marker_*` + 3 tests integration `test_draw_unclaimed_filtre_recent_*` (PR #19770)
-# Bloc 2 : 5 tests `test_merged_pr_*` (PR #19913)
-# Concatenation preservee en attendant validation pytest.
 
 
 # #19768 : le tapis a servi 4 candidats sur 4 non prenables (#7742, #16643,
@@ -4257,4 +4253,3 @@ def test_merged_pr_signal_anchor_substring_no_false_positive(monkeypatch):
     )
 
 
-)
