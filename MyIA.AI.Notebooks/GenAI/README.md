@@ -38,6 +38,7 @@ L'IA générative a transformé la création de contenu en 2024-2026. Un dévelo
 | 11 | Plateformes-Conversationnelles - OWUI & AI-Engine | [README catégorie](Plateformes-Conversationnelles/README.md) | ~14h+ | Tour OWUI + Playwright E2E (30+ tests) + AI-Engine WordPress |
 | 12 | CaseStudies - Projets étudiants | [README complet](CaseStudies/README.md) | (durée libre) | Barbie/Shrek, recettes, chatbot médical, Fort Boyard |
 | 13 | Security - Oversight, contrôle et surface d'attaque des outils | [README complet](Security/README.md) | (durée libre) | Scaling laws d'oversight, interprétabilité du refus, attaques/défenses MCP |
+| 14 | 3D - Neural rendering : NeRF et ses limites | [README complet](3D/README.md) | ~3h | NeRF from scratch + cinq limitations mesurées (Pli 2 Epic #18605) |
 
 ## Activités de cours
 
