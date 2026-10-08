@@ -35,7 +35,7 @@ Mesure `K_trajectory` (compression LZ fenetree, instrument `scripts/hashlife/k_t
 - **R110 (Turing-complet) collapse a 51.0 %** : strictement identique a R30, malgre la Turing-completude theorique. Meme faux negatif.
 
 ### 3. Discrimination fine III vs IV par K_trajectory seule : **indistingable**
-- R30 et R110 produisent des trajectoires LZ-compressibles identiques (1026 -> 523 cellules, ratio 0.510).
+- R30 et R110 produisent des trajectoires LZ-compressibles identiques (ratio 0.510, reporte dans `wolfram_cross_classes_results.json`).
 - Le discriminant K_trajectory **ne peut pas** discriminer Turing vs chaos sur 1-D a cette echelle.
 
 ## Interet epistemologique
