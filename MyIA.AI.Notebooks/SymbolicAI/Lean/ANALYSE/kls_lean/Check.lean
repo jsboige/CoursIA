@@ -16,8 +16,14 @@ open KLS
 #check @KLS.IsIsotropicMeasure
 #check @KLS.poincareConstant
 #check @KLS.cheegerConstant
+#check @KLS.thick
+#check @KLS.minkowskiRatio
+#check @KLS.cheegerMinkowski
 #check @KLS.convexOn_half_sq
 #check @KLS.gaussProfile_logConcave
 
 #print axioms KLS.convexOn_half_sq
 #print axioms KLS.gaussProfile_logConcave
+#print axioms KLS.thick_Icc
+#print axioms KLS.thick_mono
+#print axioms KLS.thick_subset
