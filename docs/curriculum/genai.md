@@ -315,7 +315,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | [Claude CLI - Automatisation Avancee](../../MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/05-Claude-CLI-Automatisation.ipynb) | BETA | Non |
 | 6 | [Claude Code via Claudish](../../MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claudish/notebooks/01-claude-code-via-claudish.ipynb) | BETA | Non |
 | 7 | [CSharpRepl attache a un process .NET vivant](../../MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/CSharpRepl-Live-Patching.ipynb) | ALPHA | Oui |
-| 8 | [Garde-fous Roslyn pour le code genere par agent](../../MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/Roslyn-Code-Guardrails.ipynb) | BETA | Oui |
+| 8 | [Garde-fous Roslyn pour le code genere par agent](../../MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/Roslyn-Code-Guardrails.ipynb) | BETA | Oui |
 
 ## GenAI/Video (22 notebooks)
 
