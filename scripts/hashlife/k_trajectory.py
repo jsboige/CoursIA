@@ -1410,11 +1410,341 @@ def cmd_wolfram_ksf(args: argparse.Namespace) -> int:
     return 0
 
 
+# ---------------- Pli 8 : Block decomposition (Zenil 2013) ----------------
+
+
+# Landmarks asymptotiques (variance d'entropie par bloc a grand W).
+# Justification par classe Wolframe (Wolfram 2002 ch. 7, Cook 2004 R110) :
+# - I  (uniforme, R0)     : entropie = 0, std = 0 (constance)
+# - II (periodique, R4)   : entropie ~ 0, std ~ 0 (periode capture tout)
+# - III (chaotique, R30)  : entropie ~ 1.0, std ~ 0.0 (chaos uniforme, blocs
+#                            similaires a toutes les positions)
+# - IV (Turing, R110)     : entropie ~ 1.0 (pareil), std eleve (bimodalite :
+#                            gliders a entropie basse, reactions a entropie
+#                            elevee, structures invisibles au chaos)
+WOLFRAM_BLOCK_LANDMARKS = {
+    0: ("I", "uniforme", 0.0, 0.0),
+    4: ("II", "periodique", 0.0, 0.0),
+    30: ("III", "chaotique", 1.0, 0.0),
+    110: ("IV", "Turing-complet", 1.0, 0.30),
+}
+
+
+def shannon_entropy_bits(bitstring: Sequence[Cell]) -> float:
+    """Entropie de Shannon (base 2) d'un sequence de bits 0/1.
+
+    H = -p0 * log2(p0) - p1 * log2(p1) avec p0 + p1 = 1.
+    Conventions H = 0 si tous les bits sont egaux (p=0 ou p=1).
+    """
+    if not bitstring:
+        return 0.0
+    n = len(bitstring)
+    n_ones = sum(int(b) & 1 for b in bitstring)
+    p1 = n_ones / n
+    p0 = 1.0 - p1
+    if p0 == 0.0 or p1 == 0.0:
+        return 0.0
+    return -(p0 * math.log2(p0) + p1 * math.log2(p1))
+
+
+def block_decompose_trajectory(
+    traj_1d: Sequence[Sequence[Cell]],
+    block_length: int,
+) -> list[Sequence[Cell]]:
+    """Decompose une trajectoire 1-D Wolframe en blocs non-chevauchants.
+
+    Pour chaque pas d'index i dans [0, n_steps), avec `block_length` etant
+    la taille du bloc (en nombre d'etats consecutifs), extrait le bloc
+    traj_1d[i : i + block_length] (taille block_length x n_cells).
+
+    Retourne une liste de blocs, chacun etant une concatenation des
+    `block_length` etats successifs en une sequence lineaire de bits.
+
+    Hypothese : n_steps >= block_length.
+    """
+    if block_length <= 0:
+        raise ValueError(f"block_length must be positive, got {block_length}")
+    n_steps = len(traj_1d)
+    if n_steps < block_length:
+        return []
+
+    blocks: list[Sequence[Cell]] = []
+    for i in range(0, n_steps - block_length + 1, block_length):
+        block_states = traj_1d[i:i + block_length]
+        # Concatener en une sequence lineaire de bits
+        flat: list[Cell] = []
+        for state in block_states:
+            flat.extend(int(b) & 1 for b in state)
+        blocks.append(flat)
+    return blocks
+
+
+def block_entropy_distribution(
+    traj_1d: Sequence[Sequence[Cell]],
+    block_length: int,
+) -> dict:
+    """Distribution d'entropie Shannon (base 2) par bloc.
+
+    Pour une longueur de bloc W, decompose la trajectoire en
+    n_steps/w blocs non-chevauchants, calcule l'entropie de Shannon (base
+    2) du bitstream concatene de chaque bloc, et retourne les statistiques
+    agregees (moyenne, std, min, max, mediane).
+
+    Pour R0 (classe I) : tous les blocs identiques, entropie = 0, std = 0.
+    Pour R30 (classe III) : tous les blocs similaires, entropie ~ 1, std
+    proche de 0 (chaos = entropie maximale partout).
+    Pour R110 (classe IV) : blocs heterogenes, entropie ~ 1 en moyenne mais
+    std elevee (structures invisibles au chaos).
+
+    Reference : Zenil, Soler-Toscano, Kiani (2013) arXiv:1304.5813.
+    """
+    blocks = block_decompose_trajectory(traj_1d, block_length)
+    if not blocks:
+        return {
+            "block_length": block_length,
+            "n_blocks": 0,
+            "mean": 0.0,
+            "std": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "median": 0.0,
+        }
+
+    entropies = [shannon_entropy_bits(b) for b in blocks]
+    n = len(entropies)
+    mean = sum(entropies) / n
+    var = sum((e - mean) ** 2 for e in entropies) / n
+    std = math.sqrt(var)
+    sorted_e = sorted(entropies)
+    median = sorted_e[n // 2] if n % 2 == 1 else (
+        sorted_e[n // 2 - 1] + sorted_e[n // 2]
+    ) / 2.0
+
+    return {
+        "block_length": block_length,
+        "n_blocks": n,
+        "mean": round(mean, 4),
+        "std": round(std, 4),
+        "min": round(min(entropies), 4),
+        "max": round(max(entropies), 4),
+        "median": round(median, 4),
+    }
+
+
+def measure_wolfram_blocks(
+    n_cells: int = 64,
+    n_steps: int = 64,
+    seed: int = 33,
+    block_lengths: Sequence[int] = (1, 2, 4, 8, 16, 32),
+) -> list[dict]:
+    """Mesure la distribution d'entropie par bloc pour les 4 classes Wolframe.
+
+    Pour chaque regle (R0, R4, R30, R110) et chaque longueur de bloc W dans
+    `block_lengths`, calcule la distribution d'entropie Shannon (moyenne,
+    std, min, max, mediane) sur les blocs non-chevauchants de la
+    trajectoire.
+
+    4 regles x 6 block_lengths = 24 mesures. Permet la discrimination
+    R30 vs R110 par comparaison de la **variance d'entropie par bloc** :
+    R30 (chaos) a std ~ 0, R110 (Turing-complet) a std > 0 si structures.
+
+    Reference : Zenil, Soler-Toscano, Kiani (2013) arXiv:1304.5813.
+    """
+    try:
+        from ict.wolfram_step import wolfram_trajectory  # pli 2 PR #19793
+    except ImportError as e:
+        raise RuntimeError(
+            "ict.wolfram_step introuvable. L'organe (PR #19793) doit etre "
+            "present dans MyIA.AI.Notebooks/IIT/ICT-Series/ict/wolfram_step.py "
+            "et ce dossier doit etre dans sys.path. Erreur: {e}"
+        )
+
+    all_results = []
+    for rule in (0, 4, 30, 110):
+        traj_1d = wolfram_trajectory(
+            rule=rule, n_cells=n_cells, n_steps=n_steps, seed=seed,
+            record_densities=False,
+        )
+        for W in block_lengths:
+            dist = block_entropy_distribution(traj_1d, W)
+            all_results.append({
+                "trajectory": f"wolfram_R{rule}_n{n_cells}_seed{seed}",
+                "rule": rule,
+                "block_length": W,
+                "entropy_mean": dist["mean"],
+                "entropy_std": dist["std"],
+                "entropy_min": dist["min"],
+                "entropy_max": dist["max"],
+                "entropy_median": dist["median"],
+                "n_blocks": dist["n_blocks"],
+            })
+    return all_results
+
+
+def wolfram_blocks_verdict(results: list[dict]) -> dict:
+    """Verdict par regle : la std d'entropie par bloc est-elle conforme au landmark ?
+
+    Pour chaque regle, extrait la mesure au plus grand block_length et la
+    compare au landmark (cf. WOLFRAM_BLOCK_LANDMARKS). Si l'ecart est
+    significatif, REFUTE ; sinon CONFIRME.
+
+    Hypothese discriminante R30 vs R110 :
+    - R30 entropy_std ~ 0.0 (chaos uniforme)
+    - R110 entropy_std ~ 0.30 (bimodalite structurelle)
+    """
+    verdicts = {}
+    by_rule: dict[int, list[dict]] = {}
+    for r in results:
+        by_rule.setdefault(r["rule"], []).append(r)
+
+    for rule, runs in by_rule.items():
+        landmark = WOLFRAM_BLOCK_LANDMARKS.get(rule)
+        if landmark is None:
+            verdicts[f"BLOCKS_R{rule}"] = (
+                f"INCONCLUSIVE (regle {rule} hors 4 classes)"
+            )
+            continue
+        klass, klass_name, expected_mean, expected_std = landmark
+        runs_sorted = sorted(runs, key=lambda r: r["block_length"])
+        max_run = runs_sorted[-1]
+        observed_mean = max_run["entropy_mean"]
+        observed_std = max_run["entropy_std"]
+        # Tolerance std : 0.05 (au-dela, REFUTATION)
+        # Tolerance mean : 0.10
+        mean_delta = abs(observed_mean - expected_mean)
+        std_delta = abs(observed_std - expected_std)
+        if mean_delta < 0.10 and std_delta < 0.05:
+            verdicts[f"BLOCKS_R{rule}"] = (
+                f"CLASS-{klass}-CONFIRMED (mean={observed_mean:.3f} "
+                f"~= {expected_mean:.3f}, std={observed_std:.3f} "
+                f"~= {expected_std:.3f})"
+            )
+        else:
+            verdicts[f"BLOCKS_R{rule}"] = (
+                f"CLASS-{klass}-DEVIATION (mean={observed_mean:.3f} vs "
+                f"landmark {expected_mean:.3f} delta={mean_delta:.3f}; "
+                f"std={observed_std:.3f} vs landmark {expected_std:.3f} "
+                f"delta={std_delta:.3f})"
+            )
+
+    return verdicts
+
+
+def wolfram_blocks_discrimination_verdict(
+    verdicts: dict, results: list[dict]
+) -> str:
+    """Verdict final : block decomposition discrimine-t-elle R30 de R110 ?
+
+    Compare les std d'entropie par bloc de R30 et R110 au plus grand
+    block_length (W=32). Si std(R110) - std(R30) >= 0.05, **DISCRIMINANT**
+    (les structures invisibles au chaos le sont au block decomposition).
+    Sinon **NONDISCRIMINANT** (les complexites de trajectoire 1-D --
+    incluant la decomposition par bloc -- restent insuffisantes pour Turing
+    vs chaos).
+    """
+    by_rule: dict[int, dict] = {}
+    for r in results:
+        if r["block_length"] == 32:
+            by_rule[r["rule"]] = r
+
+    r30 = by_rule.get(30)
+    r110 = by_rule.get(110)
+    if r30 is None or r110 is None:
+        return "WOLFRAM-BLOCKS-INDETERMINATE (donnees R30/R110 W=32 manquantes)"
+
+    std_30 = r30["entropy_std"]
+    std_110 = r110["entropy_std"]
+    mean_30 = r30["entropy_mean"]
+    mean_110 = r110["entropy_mean"]
+    delta_std = std_110 - std_30
+    delta_mean = abs(mean_30 - mean_110)
+
+    if delta_std >= 0.05:
+        return (
+            f"WOLFRAM-BLOCKS-DISCRIMINANT (R30 std(W=32)={std_30:.3f}, "
+            f"R110 std(W=32)={std_110:.3f}, delta_std={delta_std:.3f} >= 0.05)"
+        )
+    return (
+        f"WOLFRAM-BLOCKS-NONDISCRIMINANT (R30 std(W=32)={std_30:.3f}, "
+        f"R110 std(W=32)={std_110:.3f}, delta_std={delta_std:.3f} < 0.05)"
+    )
+
+
+def cmd_wolfram_blocks(args: argparse.Namespace) -> int:
+    """Mode wolfram-blocks : mesure block decomposition sur les 4 classes.
+
+    Usage :
+        python scripts/hashlife/k_trajectory.py --mode wolfram-blocks \\
+            --n-cells 64 --n-steps 64 --seed 33
+    """
+    results = measure_wolfram_blocks(
+        n_cells=args.n_cells,
+        n_steps=args.n_steps,
+        seed=args.seed,
+    )
+
+    # Affichage par regle
+    print(f"{'Trajectory':35s}  {'Class':>5s}  {'W_blk':>5s}  {'Mean':>6s}  "
+          f"{'Std':>6s}  {'Min':>5s}  {'Max':>5s}  {'Median':>6s}  {'n_blk':>5s}")
+    print("-" * 100)
+    by_rule: dict[int, list[dict]] = {}
+    for r in results:
+        by_rule.setdefault(r["rule"], []).append(r)
+    for rule in (0, 4, 30, 110):
+        runs = sorted(by_rule.get(rule, []), key=lambda r: r["block_length"])
+        klass_label = WOLFRAM_BLOCK_LANDMARKS.get(rule, ("?",))[0]
+        for run in runs:
+            print(
+                f"{run['trajectory']:35s}  {klass_label:>5s}  "
+                f"{run['block_length']:>5d}  {run['entropy_mean']:>6.3f}  "
+                f"{run['entropy_std']:>6.3f}  {run['entropy_min']:>5.2f}  "
+                f"{run['entropy_max']:>5.2f}  {run['entropy_median']:>6.3f}  "
+                f"{run['n_blocks']:>5d}"
+            )
+
+    # Verdicts
+    print()
+    print("=== Verdict block decomposition par regle ===")
+    verdicts = wolfram_blocks_verdict(results)
+    for name, status in verdicts.items():
+        print(f"  {name:15s}  {status}")
+
+    # Verdict discrimination
+    final = wolfram_blocks_discrimination_verdict(verdicts, results)
+    print()
+    print("=== Verdict final discrimination R30 vs R110 ===")
+    print(f"  {final}")
+
+    # Sortie JSON
+    if args.json_out:
+        out = {
+            "results": results,
+            "per_class_verdicts": verdicts,
+            "discrimination_verdict": final,
+            "n_cells": args.n_cells,
+            "n_steps": args.n_steps,
+            "seed": args.seed,
+            "rules": (0, 4, 30, 110),
+            "blocks_landmarks": {
+                str(k): {
+                    "klass": v[0],
+                    "name": v[1],
+                    "expected_mean": v[2],
+                    "expected_std": v[3],
+                }
+                for k, v in WOLFRAM_BLOCK_LANDMARKS.items()
+            },
+        }
+        Path(args.json_out).write_text(json.dumps(out, indent=2, ensure_ascii=False))
+        print(f"\n[INFO] resultats ecrits dans {args.json_out}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else "K_trajectory")
     parser.add_argument(
         "--mode",
-        choices=["measure", "verify-corpus", "bounds", "wolfram", "wolfram-4classes", "wolfram-ksf"],
+        choices=["measure", "verify-corpus", "bounds", "wolfram", "wolfram-4classes", "wolfram-ksf", "wolfram-blocks"],
         default="measure",
         help="Mode d'exécution (défaut: measure)",
     )
@@ -1469,6 +1799,8 @@ def main() -> int:
         return cmd_wolfram_4classes(args)
     if args.mode == "wolfram-ksf":
         return cmd_wolfram_ksf(args)
+    if args.mode == "wolfram-blocks":
+        return cmd_wolfram_blocks(args)
     return cmd_verify_corpus(args)
 
 

@@ -1,0 +1,310 @@
+{
+  "results": [
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "rule": 0,
+      "block_length": 1,
+      "entropy_mean": 0.0156,
+      "entropy_std": 0.1237,
+      "entropy_min": 0.0,
+      "entropy_max": 0.9972,
+      "entropy_median": 0.0,
+      "n_blocks": 64
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "rule": 0,
+      "block_length": 2,
+      "entropy_mean": 0.0245,
+      "entropy_std": 0.1367,
+      "entropy_min": 0.0,
+      "entropy_max": 0.7856,
+      "entropy_median": 0.0,
+      "n_blocks": 32
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "rule": 0,
+      "block_length": 4,
+      "entropy_mean": 0.0326,
+      "entropy_std": 0.1262,
+      "entropy_min": 0.0,
+      "entropy_max": 0.5212,
+      "entropy_median": 0.0,
+      "n_blocks": 16
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "rule": 0,
+      "block_length": 8,
+      "entropy_mean": 0.0402,
+      "entropy_std": 0.1064,
+      "entropy_min": 0.0,
+      "entropy_max": 0.3218,
+      "entropy_median": 0.0,
+      "n_blocks": 8
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "rule": 0,
+      "block_length": 16,
+      "entropy_mean": 0.0477,
+      "entropy_std": 0.0826,
+      "entropy_min": 0.0,
+      "entropy_max": 0.1909,
+      "entropy_median": 0.0,
+      "n_blocks": 4
+    },
+    {
+      "trajectory": "wolfram_R0_n64_seed33",
+      "rule": 0,
+      "block_length": 32,
+      "entropy_mean": 0.0551,
+      "entropy_std": 0.0551,
+      "entropy_min": 0.0,
+      "entropy_max": 0.1102,
+      "entropy_median": 0.0551,
+      "n_blocks": 2
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "rule": 4,
+      "block_length": 1,
+      "entropy_mean": 0.3476,
+      "entropy_std": 0.0818,
+      "entropy_min": 0.3373,
+      "entropy_max": 0.9972,
+      "entropy_median": 0.3373,
+      "n_blocks": 64
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "rule": 4,
+      "block_length": 2,
+      "entropy_mean": 0.3528,
+      "entropy_std": 0.0866,
+      "entropy_min": 0.3373,
+      "entropy_max": 0.8351,
+      "entropy_median": 0.3373,
+      "n_blocks": 32
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "rule": 4,
+      "block_length": 4,
+      "entropy_mean": 0.3565,
+      "entropy_std": 0.0742,
+      "entropy_min": 0.3373,
+      "entropy_max": 0.6439,
+      "entropy_median": 0.3373,
+      "n_blocks": 16
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "rule": 4,
+      "block_length": 8,
+      "entropy_mean": 0.3588,
+      "entropy_std": 0.057,
+      "entropy_min": 0.3373,
+      "entropy_max": 0.5097,
+      "entropy_median": 0.3373,
+      "n_blocks": 8
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "rule": 4,
+      "block_length": 16,
+      "entropy_mean": 0.3603,
+      "entropy_std": 0.0399,
+      "entropy_min": 0.3373,
+      "entropy_max": 0.4294,
+      "entropy_median": 0.3373,
+      "n_blocks": 4
+    },
+    {
+      "trajectory": "wolfram_R4_n64_seed33",
+      "rule": 4,
+      "block_length": 32,
+      "entropy_mean": 0.3612,
+      "entropy_std": 0.0239,
+      "entropy_min": 0.3373,
+      "entropy_max": 0.385,
+      "entropy_median": 0.3612,
+      "n_blocks": 2
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "rule": 30,
+      "block_length": 1,
+      "entropy_mean": 0.9881,
+      "entropy_std": 0.0136,
+      "entropy_min": 0.9284,
+      "entropy_max": 1.0,
+      "entropy_median": 0.9937,
+      "n_blocks": 64
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "rule": 30,
+      "block_length": 2,
+      "entropy_mean": 0.9959,
+      "entropy_std": 0.006,
+      "entropy_min": 0.97,
+      "entropy_max": 1.0,
+      "entropy_median": 0.9984,
+      "n_blocks": 32
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "rule": 30,
+      "block_length": 4,
+      "entropy_mean": 0.9989,
+      "entropy_std": 0.0021,
+      "entropy_min": 0.9914,
+      "entropy_max": 1.0,
+      "entropy_median": 0.9996,
+      "n_blocks": 16
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "rule": 30,
+      "block_length": 8,
+      "entropy_mean": 0.9994,
+      "entropy_std": 0.0008,
+      "entropy_min": 0.9978,
+      "entropy_max": 1.0,
+      "entropy_median": 0.9998,
+      "n_blocks": 8
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "rule": 30,
+      "block_length": 16,
+      "entropy_mean": 0.9996,
+      "entropy_std": 0.0003,
+      "entropy_min": 0.9993,
+      "entropy_max": 0.9999,
+      "entropy_median": 0.9996,
+      "n_blocks": 4
+    },
+    {
+      "trajectory": "wolfram_R30_n64_seed33",
+      "rule": 30,
+      "block_length": 32,
+      "entropy_mean": 0.9996,
+      "entropy_std": 0.0004,
+      "entropy_min": 0.9993,
+      "entropy_max": 1.0,
+      "entropy_median": 0.9996,
+      "n_blocks": 2
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "rule": 110,
+      "block_length": 1,
+      "entropy_mean": 0.9808,
+      "entropy_std": 0.0267,
+      "entropy_min": 0.8774,
+      "entropy_max": 1.0,
+      "entropy_median": 0.9937,
+      "n_blocks": 64
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "rule": 110,
+      "block_length": 2,
+      "entropy_mean": 0.9854,
+      "entropy_std": 0.0174,
+      "entropy_min": 0.9284,
+      "entropy_max": 0.9998,
+      "entropy_median": 0.9914,
+      "n_blocks": 32
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "rule": 110,
+      "block_length": 4,
+      "entropy_mean": 0.9898,
+      "entropy_std": 0.0109,
+      "entropy_min": 0.9677,
+      "entropy_max": 1.0,
+      "entropy_median": 0.9955,
+      "n_blocks": 16
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "rule": 110,
+      "block_length": 8,
+      "entropy_mean": 0.9918,
+      "entropy_std": 0.0062,
+      "entropy_min": 0.9796,
+      "entropy_max": 0.9975,
+      "entropy_median": 0.9934,
+      "n_blocks": 8
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "rule": 110,
+      "block_length": 16,
+      "entropy_mean": 0.9927,
+      "entropy_std": 0.0062,
+      "entropy_min": 0.9853,
+      "entropy_max": 1.0,
+      "entropy_median": 0.9928,
+      "n_blocks": 4
+    },
+    {
+      "trajectory": "wolfram_R110_n64_seed33",
+      "rule": 110,
+      "block_length": 32,
+      "entropy_mean": 0.993,
+      "entropy_std": 0.0064,
+      "entropy_min": 0.9867,
+      "entropy_max": 0.9994,
+      "entropy_median": 0.993,
+      "n_blocks": 2
+    }
+  ],
+  "per_class_verdicts": {
+    "BLOCKS_R0": "CLASS-I-DEVIATION (mean=0.055 vs landmark 0.000 delta=0.055; std=0.055 vs landmark 0.000 delta=0.055)",
+    "BLOCKS_R4": "CLASS-II-DEVIATION (mean=0.361 vs landmark 0.000 delta=0.361; std=0.024 vs landmark 0.000 delta=0.024)",
+    "BLOCKS_R30": "CLASS-III-CONFIRMED (mean=1.000 ~= 1.000, std=0.000 ~= 0.000)",
+    "BLOCKS_R110": "CLASS-IV-DEVIATION (mean=0.993 vs landmark 1.000 delta=0.007; std=0.006 vs landmark 0.300 delta=0.294)"
+  },
+  "discrimination_verdict": "WOLFRAM-BLOCKS-NONDISCRIMINANT (R30 std(W=32)=0.000, R110 std(W=32)=0.006, delta_std=0.006 < 0.05)",
+  "n_cells": 64,
+  "n_steps": 64,
+  "seed": 33,
+  "rules": [
+    0,
+    4,
+    30,
+    110
+  ],
+  "blocks_landmarks": {
+    "0": {
+      "klass": "I",
+      "name": "uniforme",
+      "expected_mean": 0.0,
+      "expected_std": 0.0
+    },
+    "4": {
+      "klass": "II",
+      "name": "periodique",
+      "expected_mean": 0.0,
+      "expected_std": 0.0
+    },
+    "30": {
+      "klass": "III",
+      "name": "chaotique",
+      "expected_mean": 1.0,
+      "expected_std": 0.0
+    },
+    "110": {
+      "klass": "IV",
+      "name": "Turing-complet",
+      "expected_mean": 1.0,
+      "expected_std": 0.3
+    }
+  }
+}
