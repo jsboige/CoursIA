@@ -14,9 +14,18 @@
     L''attestation precedente (0014) datait d''avant ce merge : re-attestation en 0015, apres tous
     les strips (regle #8957). Jumeau Python inchange, python_sha inchange.'
   - '2026-10-08 (myia-po-2027:CoursIA) #19782 : csharp_sha rebaseline -- tranche 9/10/11 de
-    l''audit #18556 cote C# : etiquette « Exercice de reflexion » (cellule 59) + re-execution
-    complete du carnet apres reparation du PATH Graphviz (bannieres DOT->SVG retirees, sorties
-    identiques a origin/main cellule par cellule). Jumeau Python inchange, python_sha inchange.'
+    l''audit #18556 cote C# : etiquette de cellule code corrigee dans la cellule d31bb853 (index
+    59), qui passe de `// Exemple guide : Classification de critiques de films` a `// Exercice :
+    Detecteur de critiques negatives` -- elle est bien un exercice non resolu (4 TODO sous le
+    titre « 11. Exercice : Detecteur de Critiques Negatives »), et non l''exemple guide de la
+    section precedente. S''y ajoute une re-execution complete du carnet apres reparation du PATH
+    Graphviz (bannieres DOT->SVG retirees). Apres normalisation chaine/liste des sorties, les flux
+    sont identiques a origin/main cellule par cellule SAUF deux classes de variance de
+    re-execution : (a) la banniere NuGet de la cellule `#r` (`Installed Packages` avec versions ->
+    `Installing Packages` sans versions, les paquets etant deja restaures) ; (b) CINQ SVG (index
+    11/22/31/42/55) dont le nom de fichier embarque est horodate (`Model_09_03_26_...svg` ->
+    `Model_10_08_26_...svg`) et dont l''estampille Graphviz passe de 16.0.0 a 16.1.0 -- longueurs
+    d''octets egales, contenu identique par ailleurs. Jumeau Python inchange, python_sha inchange.'
   - '2026-09-27 (myia-po-2024:CoursIA-2) #18028 : REBASELINE cote Python -- chains=4 rendu explicite sur les appels pm.sample, valeur deja effective (les sorties portent "4 chains in 4 jobs"), resultats inchanges ; jumeau C# non touche.'
   - 'Socle pedagogique commun : classification bayesienne modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
