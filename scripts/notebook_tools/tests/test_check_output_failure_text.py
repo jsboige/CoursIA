@@ -107,6 +107,298 @@ def test_witness_patterns_match_measured_lines():
         assert any(p.search(line) for p in CAPABILITY_WITNESS_PATTERNS), line
 
 
+# ---------------------------------------------------------------------------
+# #19638: coexistence in declared-fallback cells.
+# When a cell carries BOTH a declared banner AND substantial output, scanning
+# the same notebook as base (no base_nb) and as head (with base_nb=base) must
+# agree on the classification. The pre-fix behaviour was DF=1 / TF=1 (the
+# asymmetry that rougied 4 carnets Image at every re-execution); the fix
+# moves coexistence to DF=1 / DF=1 while preserving the substitution shape
+# (substantial base -> banner-only head stays TF).
+# ---------------------------------------------------------------------------
+
+def _cid(cid, source, outputs):
+    return {"cell_type": "code", "id": cid, "source": source, "outputs": outputs}
+
+
+def test_19638_coexistence_classified_df_on_both_scans():
+    """#19638: banner + substantial output at the same notebook must be DF on
+    BOTH scan(base) and scan(head, base_nb=base). The pre-fix asymmetry was
+    DF=1 / TF=1 (rougied 4 carnets Image at every re-execution)."""
+    src = ("try:\n"
+           "    import graphviz\n"
+           "    g = graphviz.Digraph(); g.edge('a', 'b'); display(g)\n"
+           "except ImportError:\n"
+           "    print('Graphviz non disponible : rendu du graphe saute')\n"
+           "print(info)")
+    banner_only = [{"output_type": "stream",
+                     "text": "Graphviz non disponible : rendu du graphe saute"}]
+    render = [{"output_type": "display_data",
+               "data": {"image/svg+xml": "<svg/>",
+                        "text/plain": "<graphviz.Digraph object>"}}]
+    # Coexistence: banner + substantial output in BOTH base and head
+    coexistence = banner_only + render
+    base_nb = {"cells": [_cid("c-gv", src, coexistence)]}
+    head_nb = {"cells": [_cid("c-gv", src, coexistence)]}
+
+    base_scan = scan(base_nb)
+    head_scan = scan(head_nb, base_nb=base_nb)
+
+    assert len(base_scan["TOOL_FAILURE"]) == 0
+    assert len(base_scan["DECLARED_FALLBACK"]) == 1
+    assert len(head_scan["TOOL_FAILURE"]) == 0
+    assert len(head_scan["DECLARED_FALLBACK"]) == 1
+
+
+def test_19638_substitution_keeps_tf_head():
+    """#19638: the substitution (base had substantial render -> head has only
+    the banner) stays a capability loss and keeps the TOOL_FAILURE label on
+    the head scan."""
+    src = ("try:\n"
+           "    import graphviz\n"
+           "    g = graphviz.Digraph(); g.edge('a', 'b'); display(g)\n"
+           "except ImportError:\n"
+           "    print('Graphviz non disponible : rendu du graphe saute')\n"
+           "print(info)")
+    banner_only = [{"output_type": "stream",
+                     "text": "Graphviz non disponible : rendu du graphe saute"}]
+    render = [{"output_type": "display_data",
+               "data": {"image/svg+xml": "<svg/>",
+                        "text/plain": "<graphviz.Digraph object>"}}]
+    base_nb = {"cells": [_cid("c-gv", src, render)]}      # base: render
+    head_nb = {"cells": [_cid("c-gv", src, banner_only)]}  # head: lost render
+
+    base_scan = scan(base_nb)
+    head_scan = scan(head_nb, base_nb=base_nb)
+
+    # Base has no fill, no banner: nothing to scan.
+    assert len(base_scan["TOOL_FAILURE"]) == 0
+    assert len(base_scan["DECLARED_FALLBACK"]) == 0
+    # Head lost the render: substitution, stays TF (the damage #3473 / #11685).
+    assert len(head_scan["TOOL_FAILURE"]) == 1
+    assert len(head_scan["DECLARED_FALLBACK"]) == 0
+
+
+def test_19638_already_in_fallback_keeps_df():
+    """#19638: a cell already in fallback at base (banner + no render at
+    base) and STILL in fallback at head (banner + no render) keeps DF on
+    both scans -- no regression to call."""
+    src = ("try:\n"
+           "    import graphviz\n"
+           "    g = graphviz.Digraph(); g.edge('a', 'b'); display(g)\n"
+           "except ImportError:\n"
+           "    print('Graphviz non disponible : rendu du graphe saute')\n"
+           "print(info)")
+    banner_only = [{"output_type": "stream",
+                     "text": "Graphviz non disponible : rendu du graphe saute"}]
+    base_nb = {"cells": [_cid("c-gv", src, banner_only)]}
+    head_nb = {"cells": [_cid("c-gv", src, banner_only)]}
+
+    base_scan = scan(base_nb)
+    head_scan = scan(head_nb, base_nb=base_nb)
+
+    assert len(base_scan["TOOL_FAILURE"]) == 0
+    assert len(base_scan["DECLARED_FALLBACK"]) == 1
+    assert len(head_scan["TOOL_FAILURE"]) == 0
+    assert len(head_scan["DECLARED_FALLBACK"]) == 1
+
+
+def test_19638_restored_after_substitution():
+    """#19638: a cell that was in fallback at base and RESTORED a render at
+    head (banner + render at head, only banner at base) is no longer a
+    fallback -- the substantial output is back. The exemption does NOT
+    carry over from base."""
+    src = ("try:\n"
+           "    import graphviz\n"
+           "    g = graphviz.Digraph(); g.edge('a', 'b'); display(g)\n"
+           "except ImportError:\n"
+           "    print('Graphviz non disponible : rendu du graphe saute')\n"
+           "print(info)")
+    banner_only = [{"output_type": "stream",
+                     "text": "Graphviz non disponible : rendu du graphe saute"}]
+    coexistence = banner_only + [
+        {"output_type": "display_data",
+         "data": {"image/svg+xml": "<svg/>",
+                  "text/plain": "<graphviz.Digraph object>"}}
+    ]
+    base_nb = {"cells": [_cid("c-gv", src, banner_only)]}
+    head_nb = {"cells": [_cid("c-gv", src, coexistence)]}
+
+    head_scan = scan(head_nb, base_nb=base_nb)
+    assert len(head_scan["TOOL_FAILURE"]) == 0
+    assert len(head_scan["DECLARED_FALLBACK"]) == 1
+
+
+def test_19638_six_image_carnets_no_longer_rougied():
+    """#19638: the four carnets listed in the issue (plus a sweep of
+    GenAI/Image for thoroughness) now scan the same DF=1 / DF=1, so a
+    re-execution on the same carnet does not rougir the gate."""
+    import json as _json
+    from pathlib import Path as _Path
+    REPO = _Path(__file__).resolve().parent.parent.parent.parent
+    listed = (
+        "GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb",
+        "GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb",
+        "GenAI/Image/02-Advanced/02-5-Bonsai-Image-Ternary.ipynb",
+        "GenAI/Image/03-Orchestration/03-3-Performance-Optimization.ipynb",
+    )
+    for rel in listed:
+        path = REPO / "MyIA.AI.Notebooks" / rel
+        if not path.is_file():
+            continue
+        nb = _json.loads(path.read_text(encoding="utf-8"))
+        base_scan = scan(nb)
+        head_scan = scan(nb, base_nb=nb)
+        assert len(base_scan["TOOL_FAILURE"]) == 0, (
+            f"{rel}: scan(base) still TF>0 ({base_scan})")
+        assert len(head_scan["TOOL_FAILURE"]) == 0, (
+            f"{rel}: scan(+base) still TF>0 ({head_scan})")
+
+
+def test_19640_substitution_loses_svg_stays_tf():
+    """#19640 review : base SVG + info, head banniere + info -> le SVG est
+    perdu. Mere substantiality ne suffit pas : la coexistence n'est
+    declaree QUE si la tete preserve le rendu de la base. Ici, le SVG
+    n'est plus dans la tete (la banniere l'a REMPLACE), et la banniere
+    n'etait pas dans la base. Les deux formes de preservation echouent,
+    donc le hit reste TOOL_FAILURE -- c'est exactement la classe de
+    degat que #3473 / #11685 ont ouverte.
+    """
+    src = ("try:\n"
+           "    import graphviz\n"
+           "    g = graphviz.Digraph(); g.edge('a', 'b'); display(g)\n"
+           "except ImportError:\n"
+           "    print('Graphviz non disponible : rendu du graphe saute')\n"
+           "print('Graphe : 2 noeuds, 1 arete')")
+    render = [{"output_type": "display_data",
+               "data": {"image/svg+xml": "<svg/>",
+                        "text/plain": "<graphviz.Digraph object>"}},
+              {"output_type": "stream",
+               "text": "Graphe : 2 noeuds, 1 arete"}]
+    head = [{"output_type": "stream",
+             "text": "Graphviz non disponible : rendu du graphe saute"},
+            {"output_type": "stream",
+             "text": "Graphe : 2 noeuds, 1 arete"}]
+    base_nb = {"cells": [_cid("c-gv", src, render)]}      # base: SVG + info
+    head_nb = {"cells": [_cid("c-gv", src, head)]}        # head: banner + info
+    head_scan = scan(head_nb, base_nb=base_nb)
+    # La SVG a ete REMPLACE par la banner. L'info est identique. Le hit
+    # DOIT rester TF -- sinon la garde laisse passer la substitution.
+    assert len(head_scan["TOOL_FAILURE"]) == 1
+    assert len(head_scan["DECLARED_FALLBACK"]) == 0
+
+
+def test_19640_banner_already_in_base_keeps_df():
+    """#19640 review : la banniere matchee figurait deja dans la sortie
+    de la base. Elle n'est alors pas nouvelle, donc ce n'est pas une
+    substitution. La forme (2) de preservation tient, et la cellule
+    reste DF -- c'est l'asymetrie decrite dans le corps de l'issue.
+    """
+    src = ("try:\n"
+           "    import graphviz\n"
+           "    g = graphviz.Digraph(); g.edge('a', 'b'); display(g)\n"
+           "except ImportError:\n"
+           "    print('Graphviz non disponible : rendu du graphe saute')\n"
+           "print('Graphe : 2 noeuds, 1 arete')")
+    # La base porte DEJA la banniere (en plus du SVG) : c'est une
+    # decoration, pas une substitution. Le scan base la compterait
+    # naturellement, mais on verifie que le scan head SUR LA MEME
+    # cellule est coherent -- la banniere n'etait pas nouvelle.
+    base_outputs = [
+        {"output_type": "stream",
+         "text": "Graphviz non disponible : rendu du graphe saute"},
+        {"output_type": "display_data",
+         "data": {"image/svg+xml": "<svg/>",
+                  "text/plain": "<graphviz.Digraph object>"}},
+    ]
+    head_outputs = [
+        {"output_type": "stream",
+         "text": "Graphviz non disponible : rendu du graphe saute"},
+        {"output_type": "display_data",
+         "data": {"image/svg+xml": "<svg/>",
+                  "text/plain": "<graphviz.Digraph object>"}},
+    ]
+    base_nb = {"cells": [_cid("c-gv", src, base_outputs)]}
+    head_nb = {"cells": [_cid("c-gv", src, head_outputs)]}
+    head_scan = scan(head_nb, base_nb=base_nb)
+    # La banniere etait deja dans la base : preservation par forme (2).
+    # Le SVG est aussi preserve (forme 1). Coexistence confirmee.
+    assert len(head_scan["DECLARED_FALLBACK"]) == 1
+    assert len(head_scan["TOOL_FAILURE"]) == 0
+
+
+def test_19640_svg_present_in_head_keeps_df_without_banner_match():
+    """#19640 review : forme (1) de preservation -- les types MIME non
+    textuels de la base (image/svg+xml) sont tous presents a la tete.
+    La banniere peut etre nouvelle : pas une condition suffisante
+    pour trancher seule. La preservation tient par la forme (1).
+    """
+    src = ("try:\n"
+           "    import graphviz\n"
+           "    g = graphviz.Digraph(); g.edge('a', 'b'); display(g)\n"
+           "except ImportError:\n"
+           "    print('Graphviz non disponible : rendu du graphe saute')\n"
+           "print('Graphe : 2 noeuds, 1 arete')")
+    # Base : SVG + info. Tete : SVG + banner + info. La banniere est
+    # NOUVELLE (pas dans la base) -- forme (2) echouera. Mais le SVG
+    # survit -- forme (1) tient. Coexistence par preservation MIME.
+    base_outputs = [
+        {"output_type": "display_data",
+         "data": {"image/svg+xml": "<svg/>",
+                  "text/plain": "<graphviz.Digraph object>"}},
+        {"output_type": "stream",
+         "text": "Graphe : 2 noeuds, 1 arete"},
+    ]
+    head_outputs = [
+        {"output_type": "stream",
+         "text": "Graphviz non disponible : rendu du graphe saute"},
+        {"output_type": "display_data",
+         "data": {"image/svg+xml": "<svg/>",
+                  "text/plain": "<graphviz.Digraph object>"}},
+        {"output_type": "stream",
+         "text": "Graphe : 2 noeuds, 1 arete"},
+    ]
+    base_nb = {"cells": [_cid("c-gv", src, base_outputs)]}
+    head_nb = {"cells": [_cid("c-gv", src, head_outputs)]}
+    head_scan = scan(head_nb, base_nb=base_nb)
+    assert len(head_scan["DECLARED_FALLBACK"]) == 1
+    assert len(head_scan["TOOL_FAILURE"]) == 0
+
+
+def test_19640_base_svg_head_banner_only_no_info_stays_tf():
+    """#19640 review : cas du tableau, ligne 1. Base = SVG + info, tete =
+    banner + info. Meme resultat que le test fondateur (perte de SVG),
+    parce que la preservation par forme (1) demande la presence des
+    MIMEs non textuels, et `image/svg+xml` n'est plus dans la tete.
+    Forme (2) demande que la banniere matchee figurait dans la base :
+    pas le cas ici (la base avait le SVG, pas la banner).
+    """
+    src = ("try:\n"
+           "    import graphviz\n"
+           "    g = graphviz.Digraph(); g.edge('a', 'b'); display(g)\n"
+           "except ImportError:\n"
+           "    print('Graphviz non disponible : rendu du graphe saute')\n"
+           "print(info)")
+    info_text = "info: ok"
+    base_outputs = [
+        {"output_type": "display_data",
+         "data": {"image/svg+xml": "<svg/>",
+                  "text/plain": "<graphviz.Digraph object>"}},
+        {"output_type": "stream", "text": info_text},
+    ]
+    head_outputs = [
+        {"output_type": "stream",
+         "text": "Graphviz non disponible : rendu du graphe saute"},
+        {"output_type": "stream", "text": info_text},
+    ]
+    base_nb = {"cells": [_cid("c-gv", src, base_outputs)]}
+    head_nb = {"cells": [_cid("c-gv", src, head_outputs)]}
+    head_scan = scan(head_nb, base_nb=base_nb)
+    # Perte du SVG, banner nouvelle : TF.
+    assert len(head_scan["TOOL_FAILURE"]) == 1
+    assert len(head_scan["DECLARED_FALLBACK"]) == 0
+
+
 def test_founding_fixture_fires():
     """The #14262 founding pair, pinned as a fixture because the degraded
     head is branch-side history of a squash-merged PR (absent from fresh
