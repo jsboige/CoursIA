@@ -11,7 +11,7 @@
 | T1 (cette PR) | pt 2 — SK, mode événementiel (Process Framework) exécuté | livré |
 | T2 (cette PR) | pt 2 — SK, couche agents : handoff exécuté (service LLM réel, temp 0) | livré |
 | T3 (cette PR) | pt 2 — ADK : handoff natif C5 + désignation C4 exécutés via l'organe Track2 (service LLM réel, temp 0) | livré |
-| — | pt 2 — SK, modes restants (séquentiel, concurrent, group chat, Magentic) | à venir |
+| T4 | pt 2 — SK, modes restants (séquentiel, concurrent, group chat, Magentic) exécutés (service LLM réel, temp 0) | livré |
 | — | pt 2 — MS Agent Framework (agents, graphe) | à venir |
 | — | pt 1 état de l'art | livré hors repo : note datée du 2026-10-05 sur [#19380](https://github.com/jsboige/CoursIA/issues/19380) ; mémo inventaire local du 2026-10-07 (po-2024:CoursIA-2) sur [#14499](https://github.com/jsboige/CoursIA/issues/14499) |
 | — | pts 3-6 (déterminisme, couverture langages, coût, verdict) | à venir |
@@ -117,6 +117,57 @@ Faits d'API mesurés sur ADK 2.8.0 :
 | Agent unique-parent | chaque exécution reconstruit ses agents (le pilote n'a qu'un orchestrateur, mais l'organe impose un parent unique par `Agent` — mesuré 2026-10-05 : `ValidationError: Agent X already has a parent`). |
 | Log bénin en chaîne partagée | à l'étape 2 de la chaîne C4, ADK journalise `Event from an unknown agent: analyseur` : l'événement de session partagée vient du Runner de l'étape 1 — informationnel, la chaîne complète et les mains sont correctes. |
 
-### 2.5 À venir (SK restants puis MAF)
+### 2.5 Pilote SK — les quatre autres modes d'orchestration (séquentiel, concurrent, group chat, Magentic)
 
-Modes SK restants : séquentiel (la série démontre déjà le pipeline manuel — le pilote comparatif consignera la version agentique), concurrent, group chat, Magentic. Puis MAF (statut à vérifier). L'emplacement `eval-pilots/` accueille les pilotes SK ; le pilote ADK vit auprès de son organe Track2 ; les pilotes MAF vivront auprès de leur organe le cas échéant.
+`VÉRIFIÉ` — pilote [`eval-pilots/sk_orchestration_modes_pilot.py`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/sk_orchestration_modes_pilot.py), exécuté sous `py -3.11` / semantic_kernel **1.41.3**, service **réel** (`gpt-4o-mini`, température 0, `max_completion_tokens` 160 pour les agents, budget **dur** compté par un connecteur instrumenté qui jette au-delà). Complète T2 (handoff, §2.3) : les cinq modes d'orchestration de la couche agents sont désormais couverts par un exemple exécuté.
+
+Les trois mêmes rôles (`redacteur`, `critique`, `arbitre`) portent les quatre modes : la **charge est constante**, seule l'orchestration change, ce qui isole la propriété mesurée. Chaque mode tourne **deux fois** (2 × 4 = 8 exécutions).
+
+**Ce qui est asserté, et ce qui ne l'est pas.** À température 0, la **signature structurelle** d'un run — la suite des agents qui ont répondu — est stable ; la **prose** ne l'est pas (§2.3, §2.4). Les pilotes assertent donc la structure. Trois propriétés, une par famille de mode :
+
+- **séquentiel** : ordre **et** nombre fixes (la chaîne est déclarée : `redacteur → critique → arbitre`) ;
+- **group chat** : ordre **et** nombre fixes (tour de table borné par `RoundRobinGroupChatManager(max_rounds=N)`) ;
+- **concurrent** : **ensemble** fixe, ordre **libre** — les agents tournent en parallèle, exiger une séquence serait un faux négatif (mesuré : l'ordre a varié entre les deux runs, l'ensemble non) ;
+- **magentic** : **ensemble** fixe, ordre **libre** — c'est le manager qui choisit qui parle ; l'ordre est sa décision, pas une propriété du mode.
+
+Trace d'exécution (transcription abrégée — les lignes `apercu` de prose sont omises, cf. le déterminisme ci-dessous) :
+
+```text
+probe gpt-5-mini: ECHEC ('temperature' does not support 0.0) -> repli gpt-4o-mini
+probe gpt-4o-mini: OK
+
+MODE sequentiel  run1/run2: tours=3 agents=['redacteur','critique','arbitre']    STABLE: OK | TOURS [3,3]: OK
+MODE concurrent  run1: tours=3 ['arbitre','critique','redacteur']
+                 run2: tours=3 ['redacteur','critique','arbitre']               STABLE: OK | TOURS [3,3]: OK
+MODE group_chat  run1/run2: tours=3 agents=['redacteur','critique','redacteur'] STABLE: OK | TOURS [3,3]: OK
+MODE magentic    run1/run2: tours=2 agents=['redacteur','critique']             STABLE: OK | TOURS [2,6]: OK
+Max round count reached.
+
+SYNTHESE
+  sequentiel   tours=3 (attendu [3,3]) stable=True couverture=True
+  concurrent   tours=3 (attendu [3,3]) stable=True couverture=True
+  group_chat   tours=3 (attendu [3,3]) stable=True couverture=True
+  magentic     tours=2 (attendu [2,6]) stable=True couverture=True
+MULTI-AGENTS PAR MODE: OK
+ROUTING DETERMINISM: OK
+LLM CALLS: 32/110
+PILOT OK sk=1.41.3 modes=4
+```
+
+Les deux runs de **concurrent** montrent le point exact : même **ensemble** (`{arbitre, critique, redacteur}`), ordre **différent** — l'assertion porte sur l'ensemble trié, une comparaison de séquence aurait produit un faux négatif sur une implémentation correcte.
+
+Quatre propriétés de la couche agents se déduisent de ces huit exécutions, et aucune n'est documentée de façon actionnable en amont :
+
+| Fait | Détail |
+| --- | --- |
+| `agent_response_callback` se passe **au constructeur** | l'affecter après coup (`orchestration.agent_response_callback = messages.append`) est **silencieusement ignoré** en 1.41.3 : la liste de messages reste vide et le run paraît ne compter aucun tour. Les quatre constructeurs (`SequentialOrchestration`, `ConcurrentOrchestration`, `GroupChatOrchestration`, `MagenticOrchestration`) l'acceptent en kwarg. |
+| `description` **obligatoire** dès qu'un manager choisit l'orateur | `GroupChatOrchestration` lève `ValueError: All members must have a description.` — sans manager (séquentiel, concurrent) le champ est inutile, avec manager (group chat, magentic) il est requis. Un agent décrit pour un mode l'est donc pour les quatre. |
+| Le manager Magentic a besoin de son **propre budget de tokens** | il demande au service un `response_format=ProgressLedger` (JSON structuré) puis le valide par `ProgressLedger.model_validate_json(response.content)`. Avec les 160 tokens des agents, le JSON est **tronqué** et lève `ValidationError: Invalid JSON: EOF while parsing a value` — l'échec ne vient ni du modèle ni du mode, mais de la taille allouée à la réponse du manager. `StandardMagenticManager(prompt_execution_settings=...)` avec 1500 tokens corrige. Ce chemin appelle `get_chat_message_content(history, settings_clone)` **sans kernel** : l'erreur `The kernel is required for function calls` en est un symptôme trompeur, la cause réelle est la troncature. |
+| Magentic **délègue selon la tâche**, pas selon le nombre de membres | sur une tâche triviale (« définir X en une phrase »), le manager délègue **une seule fois** (`redacteur`) puis répond — de façon **stable** sur deux exécutions. Un tour unique n'est donc pas un défaut du mode : c'est le comportement attendu d'un plan court. Pour démontrer la **planification**, la tâche doit exiger plusieurs rôles (le pilote passe une tâche dédiée qui nomme explicitement le passage par le critique). |
+| Le manager Magentic **ne se termine pas seul** sur une tâche courte — il faut le borner | `max_round_count` vaut **`None` par défaut** (les deux autres garde-fous, `max_stall_count=3` et `max_reset_count`, sont posés). Mesure : non borné, le manager a produit **8 tours** (`critique` répété 5 fois) et épuisé le budget LLM avant la fin du second run. Borné à **2** comme à **3** rounds, il **bute sur le plafond** — la ligne `Max round count reached.` apparaît dans les deux cas, et la terminaison vient de la borne, jamais d'une satisfaction déclarée par le ledger. Un pilote Magentic doit donc poser `max_round_count` explicitement, et l'assertion de tours se lit comme « borné », pas comme « terminé naturellement ». |
+
+**Ce que le relevé apprend pour l'évaluation comparative** : sur les quatre modes, la sonde structurelle exploitable est la **suite des `name` reçus par `agent_response_callback`**, avec une comparabilité qui dépend du mode — ordre inclus quand le mode le détermine, ensemble seul quand il ne le détermine pas. Appliquer la même assertion aux quatre modes produirait deux faux négatifs (concurrent, magentic) sur une implémentation correcte ; c'est la propriété du mode, pas la tolérance du test, qui fixe la forme de l'assertion. Le pilote ADK (§2.4) s'était déjà heurté au même point par l'autre bout (ordre C4 déterministe *par construction*), ce qui donne à la comparaison SK↔ADK une base commune : **le déterminisme se déclare par mode, jamais globalement**.
+
+### 2.6 À venir (MAF)
+
+Statut de MAF (Microsoft Agent Framework) à vérifier, puis couverture C#. L'emplacement `eval-pilots/` accueille les pilotes SK ; le pilote ADK vit auprès de son organe Track2 ; les pilotes MAF vivront auprès de leur organe le cas échéant.
