@@ -10,7 +10,7 @@ Le source Dahia original vit dans le dépôt `gdahia/Komlos` (module
 L'adaptation reprend le module **nom pour nom**, mais n'en livre d'abord que
 la partie **sans convexité** — voir la portée ci-dessous.
 
-**Portée de ce commit** (brique k2.1, `lake build SUCCESS` requis, 0 `sorry`) :
+**Portée de ce commit** (briques k2.1 puis k2.2, `lake build SUCCESS` requis, 0 `sorry`) :
 
 Le **pas de pullback** du Lemme 1.4 se décompose, chez Dahia, en trois lemmes :
 `exists_sign_mul_add_eq` (arithmétique réelle), `add_smul_mem_convexHull`
@@ -33,9 +33,25 @@ convexité s'ouvre ensuite sur une base déjà vérifiée :
   `c · (Σ R y · h y) + Σ R y · g y`. C'est la seule manipulation de sommes
   du pas de pullback qui ne soit pas de la convexité.
 
-**Reporté à k2.2** (surface de convexité) : `add_smul_mem_convexHull` et
-`pullback` — les deux seuls lemmes du module Dahia qui exigent `convexHull ℝ`.
-L'état détaillé vit dans `FORMAL_STATUS.md`.
+**Brique k2.2 (surface de convexité)** — `convexHull` entre dans ce lake
+(0 occurrence avant ce commit) par les deux lemmes génériques que le pas de
+`pullback` consomme :
+
+- `add_smul_mem_convexHull` — le point `x + c • v` du segment `[x − v, x + v]`
+  appartient à l'enveloppe convexe de tout ensemble contenant les deux
+  extrémités. Transposé **verbatim** de Dahia (`Komlos/Pullback.lean`,
+  l.43-50) : l'énoncé ne dépend que de la structure de `ℝ`-module de `E` ;
+- `sum_smul_mem_convexHull` — l'étape de clôture du pas (`Convex.sum_mem`
+  appliqué à `convex_convexHull`, l.83 chez Dahia) : une combinaison convexe
+  finie de points d'une enveloppe reste dans l'enveloppe.
+
+**`pullback` reste reporté, et son bloqueur est désormais mesuré** : chez
+Dahia il s'énonce sur `E →₀ ℝ` avec `E` un `ℝ`-module, l'enveloppe étant
+prise dans `convexHull ℝ (P.support : Set E)`. La base de ce lake est
+`Fin d → ℤ`, qui **n'est pas** un `ℝ`-module — `convexHull ℝ` n'y a pas de
+sens sans plongement coordonnée-par-coordonnée dans `Fin d → ℝ` (le
+« transport de dimension » de `FORMAL_STATUS.md`). L'état détaillé vit dans
+`FORMAL_STATUS.md`.
 -/
 
 import Discrepancy.Basic
@@ -46,15 +62,17 @@ import Discrepancy.Basic
 Le Lemme 1.4 conclut `μ(P) + Σ ε_i v_i ∈ conv(supp P)`. Son pas d'induction
 scinde dans la direction du dernier vecteur, applique l'hypothèse d'induction
 dans l'espace produit, puis **ramène** le point obtenu dans `conv(supp P)` :
-c'est le *pullback*. Ce module livre l'algèbre de ce pas, indépendamment de
-toute notion d'enveloppe convexe.
+c'est le *pullback*. Ce module livre l'algèbre de ce pas (k2.1), puis la
+surface de convexité qu'elle enveloppe (k2.2) — les deux **génériques**, le
+pas complet restant conditionné au transport de dimension.
 
 **Pourquoi séparer.** Ouvrir `convexHull` dans ce lake est un geste structurel
 (première surface d'analyse convexe du lake) ; le mêler à de l'arithmétique
 réelle et à de la manipulation de sommes rendrait le diagnostic d'un échec de
-build ambigu. Livrés séparément, les trois lemmes ci-dessous sont vérifiables
-**sans** `convexHull`, et la brique suivante n'apporte qu'un ingrédient
-nouveau.
+build ambigu. Livrés séparément, les trois lemmes de k2.1 sont vérifiables
+**sans** `convexHull` — et c'est sur ce socle vérifié que la brique k2.2 a
+ouvert la surface : un échec de build sur les lemmes de convexité ne peut plus
+venir que d'eux.
 
 **Portée du résultat.** `exists_sign_mul_add_eq` est l'ingrédient qui produit
 la **conclusion signée** : `e ∈ {±1}` est le signe `ε` de la conclusion de k2,
@@ -132,5 +150,53 @@ lemma sum_mul_add_split {ι : Type*} (T : Finset ι) (R h g : ι → ℝ) (c : �
       = c * (∑ y ∈ T, R y * h y) + ∑ y ∈ T, R y * g y := by
   rw [Finset.mul_sum, ← Finset.sum_add_distrib]
   exact Finset.sum_congr rfl fun y _ => by ring
+
+/-- **Point d'un segment dans une enveloppe convexe.** Pour `|c| ≤ 1`, le point
+`x + c • v` appartient à l'enveloppe convexe de tout ensemble `s` contenant
+les deux extrémités `x − v` et `x + v`.
+
+C'est le lemme `add_smul_mem_convexHull` de Dahia (`Komlos/Pullback.lean`,
+l.43-50), transposé **verbatim** : l'énoncé ne dépend que de la structure de
+`ℝ`-module de `E`. C'est la **première occurrence de `convexHull` dans ce
+lake** — la surface d'analyse convexe s'ouvre sur la base déjà vérifiée de
+k2.1 : la borne `|c| ≤ 1` est celle que produit `exists_sign_mul_add_eq`, et
+`segment_repr` est l'identité de segment que ce lemme enveloppe.
+
+Preuve : `x + c • v` est la combinaison convexe de `x − v` (poids `(1 − c)/2`)
+et `x + v` (poids `(1 + c)/2`) ; `Convex.add_smul_sub_mem` (Mathlib
+`Analysis.Convex.Basic:492`) la produit pour le paramètre `t = (1 + c)/2`, les
+deux bornes `0 ≤ t ≤ 1` tombant de `|c| ≤ 1` par `linarith` ; `convert … using
+1` puis `module` referment l'identité algébrique résiduelle — le même argument
+que `segment_repr`. -/
+lemma add_smul_mem_convexHull {E : Type*} [AddCommGroup E] [Module ℝ E]
+    {s : Set E} {x v : E} (h₁ : x - v ∈ s) (h₂ : x + v ∈ s) {c : ℝ}
+    (hc : |c| ≤ 1) : x + c • v ∈ convexHull ℝ s := by
+  obtain ⟨hc₁, hc₂⟩ := abs_le.1 hc
+  convert (convex_convexHull ℝ s).add_smul_sub_mem (subset_convexHull ℝ s h₁)
+    (subset_convexHull ℝ s h₂) (t := (1 + c) / 2) ⟨by linarith, by linarith⟩ using 1
+  module
+
+/-- **Combinaison convexe finie de points d'une enveloppe.** Si `R` est une
+famille de poids positive de somme `1` sur un `Finset` `T`, et si chaque point
+`f y` (pour `y ∈ T`) appartient à `convexHull ℝ s`, alors la combinaison
+convexe `∑ y ∈ T, R y • f y` appartient à `convexHull ℝ s`.
+
+C'est l'étape de clôture du pas de `pullback` chez Dahia
+(`(convex_convexHull ℝ _).sum_mem hR0 hR1`, l.83), extraite sous la forme
+`Finset` du lake : c'est ce qui referme la preuve du pas une fois chaque point
+de la somme ramené dans l'enveloppe. Énoncé générique ; la décomposition
+inverse — lire une appartenance à l'enveloppe comme des poids — existe déjà au
+pin de ce lake sous le nom `Finset.centerMass_mem_convexHull` (Mathlib
+`Analysis.Convex.Combination:253`).
+
+Preuve : `Convex.sum_mem` (Mathlib `Analysis.Convex.Combination:214`) appliqué
+à `convex_convexHull ℝ s` — l'enveloppe convexe est convexe, et une combinaison
+convexe de points d'un convexe reste dans le convexe. -/
+lemma sum_smul_mem_convexHull {E : Type*} [AddCommGroup E] [Module ℝ E]
+    {s : Set E} {ι : Type*} (T : Finset ι) (R : ι → ℝ) (f : ι → E)
+    (hR0 : ∀ y ∈ T, 0 ≤ R y) (hR1 : ∑ y ∈ T, R y = 1)
+    (hmem : ∀ y ∈ T, f y ∈ convexHull ℝ s) :
+    ∑ y ∈ T, R y • f y ∈ convexHull ℝ s :=
+  (convex_convexHull ℝ s).sum_mem hR0 hR1 hmem
 
 end Discrepancy.Komlos

@@ -327,26 +327,30 @@ def test_skip_file_under_github_dir(tmp_path):
 
 def test_skip_frozen_umbrella_in_title(tmp_path):
     # #17021 : mergee sous le veto densite #17040 sur un dossier READY.
-    view = default_view(title="fix(pedagogy,#13410): g59-search-1 — 9 lectures")
+    # #13410 ROUVERT le 2026-10-07 : le skip se mesure sur #11601, seul gele.
+    view = default_view(title="enrich(qc,#11601): densite QC-Py-06b — tranche g2")
     runner = ScriptedRunner(views={123: view})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    assert lines[-1]["reason"] == "frozen:#13410(veto #17040)"
+    assert lines[-1]["reason"] == "frozen:#11601(veto #17040)"
     assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
     assert not any(" merge " in f" {flat} " for flat in runner.flat())
 
 
 def test_skip_frozen_umbrella_in_body(tmp_path):
-    view = default_view(body=GRAIN_MED + "\n\nSee #13410 (densite).")
+    view = default_view(body=GRAIN_MED + "\n\nSee #11601 (densite QC).")
     runner = ScriptedRunner(views={123: view})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    assert lines[-1]["reason"] == "frozen:#13410(veto #17040)"
+    assert lines[-1]["reason"] == "frozen:#11601(veto #17040)"
 
 
 def test_frozen_umbrella_prefix_number_not_matched():
-    assert mr.frozen_umbrella_exclusion("fix: #134100", "voir #134101") is None
-    assert mr.frozen_umbrella_exclusion("fix: #13410.", None) is not None
+    # #13410 ne gele plus (reouverture user 2026-10-07) ; le garde-fou (?!\d)
+    # se mesure sur #11601, seul parapluie gele en vie.
+    assert mr.frozen_umbrella_exclusion("fix: #13410.", None) is None
+    assert mr.frozen_umbrella_exclusion("fix: #116010", "voir #116011") is None
+    assert mr.frozen_umbrella_exclusion("fix: #11601.", None) is not None
 
 
 def test_frozen_umbrella_qc_density_round2():
@@ -697,25 +701,28 @@ def test_precheck_dossier_illisible_laisse_decider_le_gate(tmp_path):
     assert lines[-1]["verdict"] == "merged"
 
 
-def test_frozen_branch_prefix_without_umbrella_reference():
-    # Relais g-XX de #13410 : ni le titre ni le body ne citent le parapluie.
+def test_wt_vibe_prefix_lifted_with_13410_reopening():
+    # Reouverture user du 2026-10-07 : les relais g-XX de #13410 ne gelent
+    # plus, meme muets -- le prefixe n'etait gele que pour cette campagne.
     assert (
         mr.frozen_umbrella_exclusion(
             "fix(search,g77): relocate 12 lectures", "Grain: MED/notebook", "wt/vibe-g77-search-26"
         )
-        == "frozen:#13410(veto #17040,branch wt/vibe-*)"
+        is None
     )
     assert mr.frozen_umbrella_exclusion("fix(x): ordinaire", None, "fix/vibe-check") is None
     assert mr.frozen_umbrella_exclusion("fix(x): ordinaire", None, None) is None
 
 
-def test_skip_frozen_branch_before_gate(tmp_path):
-    view = default_view(title="fix(search,g71): lectures reprises")
-    view["headRefName"] = "wt/vibe-g71-search-20"
+def test_skip_frozen_umbrella_before_gate(tmp_path):
+    # Le skip de perimetre precede le gate : la PR gelee n'y est pas passee.
+    # (Forme branche wt/vibe-* levee avec la reouverture de #13410, 2026-10-07.)
+    view = default_view(title="enrich(qc,#11601): densite QC-Py-07")
+    view["headRefName"] = "feature/densite-qc-7"
     runner = ScriptedRunner(views={123: view})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    assert lines[-1]["reason"] == "frozen:#13410(veto #17040,branch wt/vibe-*)"
+    assert lines[-1]["reason"] == "frozen:#11601(veto #17040)"
     assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
 
 
