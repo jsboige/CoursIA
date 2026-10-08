@@ -337,6 +337,14 @@ Notes de suivi de cycle par série (transitions architecturales et narratives).
 |---------|-------------|
 | [suivis/iit-ict-transition.md](suivis/iit-ict-transition.md) | Transition IIT → ICT, pivot série ICT-Series (#4588, #5081) |
 
+## Coordination runtime (docs/coordination/)
+
+Protocoles opérationnels de la coordination flotte (registres, tenanciers, liaisons cross-machine).
+
+| Fichier | Description |
+|---------|-------------|
+| [coordination/gpu-reservation.md](coordination/gpu-reservation.md) | Protocole de réservation GPU — schéma du ledger, garde 85 % charge hôte, CUDA devices explicites, GPU 2 dédié ai-01, fold hebdomadaire, liaison picker / file #1454. Chantier #16737. |
+
 ## Cadrage épistémique (docs/cadrage/)
 
 Documents qui positionnent le dépôt face à un texte externe (déclarations, manifestes, consensus) ou face à un courant de pensée qui irrigue plusieurs séries. Règle d'agrégation par **communauté interlocutrice** (cf #17525) ; le nom du document porte sa **relation** (`-lens`, `-dialogue`, `-position`, `-self-audit`, `-armature`).
