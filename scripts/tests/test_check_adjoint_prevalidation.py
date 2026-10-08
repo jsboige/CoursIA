@@ -2647,3 +2647,109 @@ def test_render_emitted_dossier_blocked_at_same_head_then_changed_head(monkeypat
     block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
     assert verdict == mod.VERDICT_READY
     assert "supersedes" not in block
+
+
+# --- #19014 -- vivacite de la base -------------------------------------------
+#
+# Le volet `merge_ready` de #19014 est livre par #19021 (`base_ref_liveness`,
+# motifs `base-gone:` / `base-live-not-main:`). Ces tests couvrent le volet
+# **gate**, qui rendait encore un motif unique ne disant pas a la lane si la
+# branche de base etait morte ou vivante, plus l'acceptance 2 : la lecture
+# REST de `base` par `_pr_metadata`, y compris quand le champ est absent.
+
+
+def _rest_pull(**changes) -> dict:
+    row = {
+        "number": 123,
+        "title": "PR title",
+        "body": "PR body",
+        "state": "open",
+        "merged": False,
+        "draft": False,
+        "base": {"ref": "feature/parent"},
+        "head": {"sha": HEAD, "ref": "feature/bracket"},
+        "updated_at": "2026-09-28T12:00:00Z",
+        "changed_files": 3,
+        "additions": 42,
+        "deletions": 7,
+    }
+    row.update(changes)
+    return row
+
+
+def test_base_liveness_reads_the_open_pr_on_the_base_head(monkeypatch):
+    seen = {}
+
+    def fake_gh_json(args):
+        seen["args"] = args
+        return [{"number": 18985, "state": "OPEN"}]
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    assert mod._base_liveness("feature/parent") == "live"
+    assert "head:feature/parent" in seen["args"]
+
+
+def test_base_liveness_reports_a_gone_base(monkeypatch):
+    for rows in ([{"number": 1, "state": "MERGED"}], [{"number": 1, "state": "CLOSED"}], []):
+        monkeypatch.setattr(mod, "gh_json", lambda args, rows=rows: rows)
+        assert mod._base_liveness("feature/parent") == "gone", rows
+
+
+def test_base_liveness_fails_closed_and_short_circuits_main(monkeypatch):
+    calls = []
+
+    def fake_gh_json(args):
+        calls.append(args)
+        raise RuntimeError("gh exploded")
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    # `main` n'a pas besoin de la mesure : aucun appel.
+    assert mod._base_liveness("main") == "main"
+    assert calls == []
+    # Un `base` absent n'est pas un etat mesure.
+    assert mod._base_liveness(None) == "unreadable"
+    assert mod._base_liveness("") == "unreadable"
+    # Une erreur `gh` ne devient jamais un etat devine.
+    assert mod._base_liveness("feature/parent") == "unreadable"
+    # Une reponse non-liste non plus.
+    monkeypatch.setattr(mod, "gh_json", lambda args: {"not": "a list"})
+    assert mod._base_liveness("feature/parent") == "unreadable"
+
+
+def test_pr_metadata_reads_base_ref_name_from_a_rest_row(monkeypatch):
+    # Deux appels distincts : la ligne REST de la PR, puis la liste des PRs
+    # portant la tete de base. Le faux doit repondre a chacun son type.
+    def fake_gh_json(args):
+        if "list" in args:
+            return [{"number": 18985, "state": "MERGED"}]
+        return _rest_pull()
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    data = mod._pr_metadata(123, with_rollup=False)
+    assert data["baseRefName"] == "feature/parent"
+    assert data["baseLiveness"] == "gone"
+    assert data["headRefOid"] == HEAD
+
+
+def test_pr_metadata_fails_closed_when_the_rest_row_has_no_base(monkeypatch):
+    monkeypatch.setattr(mod, "gh_json", lambda args: _rest_pull(base={}))
+    data = mod._pr_metadata(123, with_rollup=False)
+    assert data["baseRefName"] is None
+    assert data["baseLiveness"] == "unreadable"
+
+
+def test_ready_refusal_names_which_of_the_two_cases_applies():
+    for liveness, marker in (("live", "base-live-not-main:"), ("gone", "base-gone:")):
+        snapshot = _snapshot(_body())
+        snapshot["baseRefName"] = "feature/parent"
+        snapshot["baseLiveness"] = liveness
+        errors = _errors(snapshot)
+        assert any(error.startswith(marker) for error in errors), liveness
+
+    # Snapshot anterieur a #19014, qui ne porte pas le champ : le message
+    # generique reste, et le refus n'est pas perdu.
+    snapshot = _snapshot(_body())
+    snapshot["baseRefName"] = "feature/parent"
+    assert any(
+        error.startswith("baseRefName must be") for error in _errors(snapshot)
+    )

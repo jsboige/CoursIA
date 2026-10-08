@@ -1108,6 +1108,36 @@ def dossier_self_consistency_errors(
     return errors
 
 
+def base_ref_error(base: Any, liveness: Any) -> str:
+    """Le refus d'une base non-`main` nomme LEQUEL des deux cas s'applique (#19014).
+
+    Une lane qui lit « retarget the PR » sur une PR empilee cherche une mort
+    de branche qui n'existe pas : la base est vivante, il faut attendre le
+    merge de la PR porteuse. Les deux motifs reprennent le vocabulaire de
+    ``merge_ready.base_ref_liveness`` (une seule lecture, deux lecteurs) :
+    ``base-live-not-main`` dit d'attendre, ``base-gone`` dit de recibler.
+    Sans mesure exploitable (``unreadable``, ou un snapshot anterieur a
+    #19014 qui ne porte pas le champ), le message generique reste --
+    fail-CLOSED : le gate ne nomme pas un etat qu'il n'a pas lu.
+    """
+    if liveness == "live":
+        return (
+            f"base-live-not-main:{base} -- la base est une PR ouverte : "
+            f"attendre son merge, puis recibler sur {CANONICAL_BASE!r} avant "
+            f"de poser un nouveau dossier"
+        )
+    if liveness == "gone":
+        return (
+            f"base-gone:{base} -- la PR porteuse est mergee ou fermee : "
+            f"recibler sur {CANONICAL_BASE!r} et rebaser avant de poser un "
+            f"nouveau dossier"
+        )
+    return (
+        f"baseRefName must be {CANONICAL_BASE!r} when verdict is READY "
+        f"(got {base!r}); retarget the PR before stamping a new dossier"
+    )
+
+
 def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     """Validate a parsed dossier against one live PR snapshot."""
     f = dossier.fields
@@ -1141,10 +1171,7 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
         # L898 collision guard).
         base = snapshot.get("baseRefName")
         if base != CANONICAL_BASE:
-            errors.append(
-                f"baseRefName must be {CANONICAL_BASE!r} when verdict is READY "
-                f"(got {base!r}); retarget the PR before stamping a new dossier"
-            )
+            errors.append(base_ref_error(base, snapshot.get("baseLiveness")))
     elif verdict == VERDICT_BLOCKED and not blocking_fields(dossier):
         # Un BLOCKED qui ne nomme aucun champ bloquant est inerte : il occupe la
         # surface de gate sans dire quoi reparer, et ai-01 ne peut ni merger ni
@@ -1549,6 +1576,38 @@ def _head_check_runs(head_sha: str) -> list[dict[str, Any]]:
         page += 1
 
 
+def _base_liveness(base_ref_name: Any) -> str:
+    """Vivacite d'une base non-`main` (#19014).
+
+    `main` n'a pas besoin de la mesure. Un `base` absent est ``unreadable``
+    -- fail-CLOSED : le gate ne nomme pas un etat qu'il n'a pas lu, et le
+    refus generique reste en place. Sinon, la liste ``gh pr list --state all
+    --search head:<base>`` tranche, avec le meme vocabulaire que
+    ``merge_ready.base_ref_liveness`` : une PR OPEN sur cette tete est
+    ``live`` (attendre son merge, puis recibler), tout le reste est ``gone``
+    (la PR porteuse est mergee ou fermee : recibler sur `main` et rebaser).
+    Une erreur `gh` rend ``unreadable``, jamais un etat devine.
+    """
+    if not base_ref_name:
+        return "unreadable"
+    if base_ref_name == CANONICAL_BASE:
+        return "main"
+    try:
+        rows = gh_json([
+            "pr", "list", "--repo", REPO, "--state", "all",
+            "--search", f"head:{base_ref_name}",
+            "--json", "number,state", "--limit", "5",
+        ])
+    except RuntimeError:
+        return "unreadable"
+    if not isinstance(rows, list):
+        return "unreadable"
+    for row in rows:
+        if isinstance(row, dict) and str(row.get("state") or "").upper() == "OPEN":
+            return "live"
+    return "gone"
+
+
 def _pr_metadata(pr: int, *, with_rollup: bool) -> dict[str, Any]:
     # Scalar fields come from REST (`repos/.../pulls/N`) so the shared GraphQL
     # quota only pays for the check rollup below. Keys keep the exact shape
@@ -1558,6 +1617,10 @@ def _pr_metadata(pr: int, *, with_rollup: bool) -> dict[str, Any]:
     if not isinstance(row, dict):
         raise RuntimeError("pull request response is not an object")
     state = row.get("state") or ""
+    # Read once: the base feeds both the field and the liveness measure.
+    # A REST row without `base` yields None, which `_base_liveness` renders
+    # `unreadable` -- the fail-closed half of acceptance #19014.
+    base_ref_name = (row.get("base") or {}).get("ref")
     data: dict[str, Any] = {
         "number": row.get("number"),
         "title": row.get("title"),
@@ -1567,7 +1630,14 @@ def _pr_metadata(pr: int, *, with_rollup: bool) -> dict[str, Any]:
         # the fingerprint payload hashes this field verbatim.
         "state": "MERGED" if row.get("merged") else state.upper(),
         "isDraft": row.get("draft"),
-        "baseRefName": (row.get("base") or {}).get("ref"),
+        "baseRefName": base_ref_name,
+        # Rides for the READY refusal only (#19014). NOT in the fingerprint
+        # payload, which `_fingerprint_payload` builds from explicit keys --
+        # adding this field cannot expire a stamp that says nothing about it.
+        # It IS in the stability identity, deliberately: the gate reads it,
+        # so a base that goes live->gone while we read must abort the
+        # snapshot like any other surface that moved.
+        "baseLiveness": _base_liveness(base_ref_name),
         "headRefOid": (row.get("head") or {}).get("sha"),
         # Rides for the frozen-campaign check only (merge_ready reads it via
         # the same shared module). NOT in the fingerprint payload, which uses
