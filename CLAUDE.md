@@ -112,6 +112,7 @@ Avant **tout** `gh pr merge`, énumérer les **trois** surfaces et vérifier que
 **Une levée porte un AUTEUR et une HEURE — sans les deux, ce n'est pas une levée.**
 
 - **Qui** : une phrase écrite par **l'auteur de la PR** ne lève pas une réserve posée par **un tiers**. Se lever soi-même une réserve d'autrui n'est pas y répondre, c'est la déclarer répondue.
+- **Sous le login partagé, seul le coordinateur lève par une phrase.** Toutes les lanes écrivent sous `jsboige` : sur une PR `jsboige`, une phrase de levée signée `jsboige` est indiscernable d'une auto-levée, et l'organe la refuse quelle que soit la lane qui l'a écrite (#13316, #13495). La levée par phrase se fait sous `myia-ai-01`, avec `[OVERRIDE] lane myia-ai-01:CoursIA` en tête de ligne, et **elle nomme l'auteur de la réserve par son login** (ou par la persona Hermes). Une lane qui a traité une réserve le dit sur la PR et le signale au coordinateur. Elle garde les voies 2 et 3 ci-dessus.
 - **Quand** : tout ce qui lève doit exister **avant** `gh pr merge`. Un commentaire de merge est un compte-rendu, **jamais une porte**.
 
 **Un commit poussé après la remarque ne la lève PAS à lui seul.** Un push muet est indiscernable d'un push qui répond : ce qui lève une remarque est **une phrase**, pas un SHA.
