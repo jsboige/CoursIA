@@ -46,7 +46,7 @@ Le journal de l'algorithme écrit :
 
 ## Résultats
 
-Backtests QuantConnect du 2026-10-05, modèle de frais par défaut de Lean pour ce courtier. Mesures sur les séries du rejeu en ombre (Sharpe à taux sans risque nul), sauf mention « QC ». Références : SPY détenu et 60/40 SPY/IEF du projet `FourSleeve774Benchmarks` (#19139), mêmes séances (2 194 rendements, aucune séance manquante d'un côté ou de l'autre).
+Backtests QuantConnect du 2026-10-05, modèle de frais par défaut de Lean pour ce courtier. Mesures sur les séries du rejeu en ombre (Sharpe à taux sans risque nul), sauf mention « QC ». Références : SPY détenu et 60/40 SPY/IEF du projet [`FourSleeve774Benchmarks`](../FourSleeve774Benchmarks/) (#19139), mêmes séances (2 194 rendements, aucune séance manquante d'un côté ou de l'autre).
 
 ### Fenêtre principale, 2018-01-01 → 2026-09-25
 
@@ -73,7 +73,7 @@ Différence de Sharpe de la variante long seul contre chaque référence, par bo
 
 Les deux différences sont négatives et aucune n'est significative : c'est le cas `NO BEATS` de la règle. La grille de cinq points n'a pas été lancée, comme prévu : elle ne pouvait plus changer le verdict.
 
-Corrélations hebdomadaires de la variante long seul sur la fenêtre principale : −0,02 avec `vt2`, −0,01 avec `aw` (paniers proxys du projet compagnon de #18904), −0,05 avec la 774, −0,04 avec la [676](../MultiHorizonMomentum676/), 0,00 avec SPY. La stratégie diversifierait ; elle ne rapporte pas assez pour mériter la place.
+Corrélations hebdomadaires de la variante long seul sur la fenêtre principale : −0,02 avec `vt2`, −0,01 avec `aw` (paniers proxys du projet compagnon de #18904), −0,05 avec la [774](../FourSleeve774/), −0,04 avec la [676](../MultiHorizonMomentum676/), 0,00 avec SPY. La stratégie diversifierait ; elle ne rapporte pas assez pour mériter la place.
 
 ### Ce que les journaux montrent
 
@@ -98,6 +98,6 @@ La fenêtre exacte du chiffre publié n'est pas documentée ; la mesure n'attein
 
 ### Suivi en ombre
 
-Le code est gelé à la date du verdict, avec `sector_prices=raw` : c'est la règle préinscrite, défaut compris. Il est inscrit au registre du suivi en ombre (#18923) après merge, comme les autres stratégies évaluées.
+Le code est gelé à la date du verdict, avec `sector_prices=raw` : c'est la règle préinscrite, défaut compris. Il est inscrit au [registre du suivi en ombre](../../ML-Training-Pipeline/shadow/registry.json) (#18923) sous l'identifiant `splits-lo`, gelé au 2026-10-05 ; premier passage à la première séance de novembre.
 
 Traces (plans, identifiants de backtest, journaux, `results.json`) : hors dépôt, dossier `QC-traces/19242-split-events` du partage du cluster.

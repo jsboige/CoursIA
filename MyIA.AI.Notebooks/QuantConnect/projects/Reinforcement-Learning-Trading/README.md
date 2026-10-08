@@ -21,3 +21,4 @@ Template/skeleton project for reinforcement learning trading.
 ## Files
 
 - main.py - Template structure
+- research.ipynb - Carnet pédagogique (Ex08) : apprentissage par renforcement appliqué au trading

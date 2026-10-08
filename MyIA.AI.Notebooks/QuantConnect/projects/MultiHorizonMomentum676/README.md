@@ -6,7 +6,7 @@ Thibodeaux, v1.1.0 du 01/10/2026). Protocole : issue
 [jsboige/CoursIA#19174](https://github.com/jsboige/CoursIA/issues/19174). Discussion
 publique de la fiche : [forum QuantConnect, discussion 21181](https://www.quantconnect.com/forum/discussion/21181/).
 Références de comparaison : celles de l'évaluation #18904, projet
-`FourSleeve774Benchmarks` ([PR #19139](https://github.com/jsboige/CoursIA/pull/19139)),
+[`FourSleeve774Benchmarks`](../FourSleeve774Benchmarks/) ([PR #19139](https://github.com/jsboige/CoursIA/pull/19139)),
 réutilisées sans être relancées (même fenêtre, mêmes frais, même rebalancement).
 
 ## Pourquoi une réimplémentation
@@ -117,7 +117,7 @@ Sharpe à taux sans risque nul. Frais annuels en % du capital de départ.
 | SPY détenu | 0,785 | 13,92 % | −33,61 % | 0,11 | 0,00 % | — |
 | 60/40 SPY/IEF | 0,815 | 8,87 % | −21,19 % | 0,32 | 0,02 % | — |
 
-Les références viennent du projet `FourSleeve774Benchmarks` (évaluation #18904,
+Les références viennent du projet [`FourSleeve774Benchmarks`](../FourSleeve774Benchmarks/) (évaluation #18904,
 [PR #19139](https://github.com/jsboige/CoursIA/pull/19139)), réutilisées sans être relancées.
 
 Ce que ces runs montrent :
@@ -139,8 +139,16 @@ Ce que ces runs montrent :
   L'écart peut venir de l'univers choisi ici ; il n'est pas attribuable sans le code
   d'origine.
 - **Corrélations hebdomadaires** sur la fenêtre principale : 0,76 avec `vt2`, 0,73 avec
-  `aw` (paniers proxys du projet compagnon de #18904), 0,73 avec la 774. Ces trois paniers
-  ont un Sharpe nettement supérieur (1,048, 1,033 et 0,978).
+  `aw` (paniers proxys du projet compagnon de #18904), 0,73 avec la
+  [774](../FourSleeve774/). Ces trois paniers ont un Sharpe nettement supérieur (1,048,
+  1,033 et 0,978).
 
 Détail complet (p brutes, intervalles, version du code, chemin des séries) :
 [verdict sur #19174](https://github.com/jsboige/CoursIA/issues/19174#issuecomment-5985904599).
+
+### Suivi en ombre
+
+Le code est gelé à la date du verdict, sans paramètre (la configuration préinscrite).
+Il est inscrit au [registre du suivi en ombre](../../ML-Training-Pipeline/shadow/registry.json)
+(#18923) sous l'identifiant `mhm676`, gelé au 2026-10-05 ; premier passage à la première
+séance de novembre.

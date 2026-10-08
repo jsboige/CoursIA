@@ -1,0 +1,762 @@
+{
+  "groups": [
+    {
+      "id": "donnees",
+      "kind": "branches",
+      "prerequisites": [],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb",
+          "title": "1.2 - Manipulation de Données avec NumPy",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb",
+          "title": "1.3 - Analyse de Données avec Pandas",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "workflow-ml",
+      "kind": "branches",
+      "prerequisites": [
+        "donnees"
+      ],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb",
+          "title": "2.1 — Le workflow d'apprentissage automatique",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb",
+          "title": "2.2 — La descente de gradient : comment un modèle apprend",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "apprentissage-supervise",
+      "kind": "branches",
+      "prerequisites": [
+        "workflow-ml"
+      ],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb",
+          "title": "2.3 — Régression linéaire et régression logistique",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.3b-Naive-Bayes-Generatif.ipynb",
+          "title": "Naive Bayes génératif vs régression logistique discriminative",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.3c-Regression-Grande-Dimension.ipynb",
+          "title": "Régression en grande dimension — quand p >> n : ridge, PCR, PLS",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA.ipynb",
+          "title": "Modèle gaussien, frontière LDA / QDA",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb",
+          "title": "2.4 — Arbres de décision, forêts aléatoires et boosting",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "evaluation-validation",
+      "kind": "branches",
+      "prerequisites": [
+        "apprentissage-supervise"
+      ],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb",
+          "title": "2.5 — Biais, variance, validation croisée et courbe ROC",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb",
+          "title": "2.10 — Optimisation d'hyperparamètres : grille, hasard, bayésien — et quand s'arrêter",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb",
+          "title": "2.12 — Données déséquilibrées : la courbe PR, les stratégies de rééchantillonnage et le seuil qui coûte",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb",
+          "title": "2.13 — Analyse d'erreurs : diagnostiquer un modèle entraîné",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "fiabilite",
+      "kind": "branches",
+      "prerequisites": [
+        "evaluation-validation"
+      ],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.ipynb",
+          "title": "2.5b — Calibration des probabilités : reliability diagrams, ECE, et pourquoi 0.87 n'est pas 87 % de chances",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb",
+          "title": "2.5c — Equite par sous-groupe : compromis performance-parite, et pourquoi l'accuracy globale ne suffit pas",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.5d-Derive-Distribution-Deploiement.ipynb",
+          "title": "2.5d — Dérive de distribution au déploiement : détecter, corriger, savoir quand on ne peut pas",
+          "duration_minutes": 45,
+          "kernel": "Python 3.11 (coursia-drift)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.15-Donnee-Comme-Responsabilite-Python.ipynb",
+          "title": "2.15 — La donnée comme responsabilité : inférence d'appartenance et confidentialité différentielle",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "interpretabilite",
+      "kind": "branches",
+      "prerequisites": [
+        "apprentissage-supervise"
+      ],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb",
+          "title": "2.14 — Explicabilité (XAI) : SHAP, LIME et contrefactuels",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb",
+          "title": "2.14b — SHAP et do-calculus : la jonction attribution causalité",
+          "duration_minutes": 30,
+          "kernel": "Python 3 (coursia-ml-training)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "deep-learning-budget",
+      "kind": "branches",
+      "prerequisites": [
+        "evaluation-validation"
+      ],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.1-Retropropagation.ipynb",
+          "title": "3.1 — La rétropropagation : la chaîne des gradients à la main",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.2-Optimisateurs.ipynb",
+          "title": "3.2 — Les optimisateurs : de SGD à Adam, ce qui change vraiment",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.3-Regularisation.ipynb",
+          "title": "3.3 — Régularisation : dropout, weight decay, early stopping",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.4-Attention-Transformer-From-Scratch.ipynb",
+          "title": "3.4 — Attention et Transformer from scratch : jusqu'au mini-GPT",
+          "duration_minutes": 45,
+          "kernel": "Python 3 (coursia2)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.11-Budget-Memoire-Entrainement.ipynb",
+          "title": "3.11 — Le budget mémoire d'un entraînement : quatre postes, calculés puis mesurés",
+          "duration_minutes": 60,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.13-Decouper-le-Modele-DDP-ZeRO-FSDP.ipynb",
+          "title": "3.13 — Découper le modèle : DDP, ZeRO, FSDP — et ce que le pipeline change",
+          "duration_minutes": 45,
+          "kernel": "Python 3 (coursia-ml-training)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "theorie-generalisation",
+      "kind": "accretions",
+      "prerequisites": [
+        "deep-learning-budget"
+      ],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb",
+          "title": "2.7 — Modèles non paramétriques : SVM et k plus proches voisins",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb",
+          "title": "2.8 — Théorie de l'apprentissage : PAC et dimension de Vapnik-Chervonenkis",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb",
+          "title": "2.8b - Theorie PAC en Lean : l'arc du lake learning_theory_lean",
+          "duration_minutes": 30,
+          "kernel": "Lean 4 (WSL)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb",
+          "title": "2.8c — Borne + Témoin extrémal + Concentration : ce que learning_theory_lean sait déjà faire",
+          "duration_minutes": 15,
+          "kernel": "Python (coursia-ml-training)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb",
+          "title": "Novikoff : la convergence du perceptron, démontrée et rejouée",
+          "duration_minutes": 30,
+          "kernel": "Lean 4 (WSL)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.ipynb",
+          "title": "2.9 — Grokking : la généralisation qui arrive en retard",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.9c-Grokking-Diagrammes-Phases.ipynb",
+          "title": "2.9c — Grokking : le diagramme de phases",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "compression-mise-en-service",
+      "kind": "accretions",
+      "prerequisites": [
+        "deep-learning-budget"
+      ],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.9-Compression-Quantization-FP.ipynb",
+          "title": "3.9 — Quantization FP : FP32 vers FP16 et BF16 depuis zéro",
+          "duration_minutes": 45,
+          "kernel": "coursia-ml-training",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.9a-Compression-Quantization-INT8.ipynb",
+          "title": "3.9a — Compression par quantification INT8 : le réseau en 4 fois plus petit",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.9b-Compression-Pruning-from-scratch.ipynb",
+          "title": "3.9b — Compression par élagage : le réseau amputé qui tient",
+          "duration_minutes": 60,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.9c-Pruning-From-Scratch.ipynb",
+          "title": "3.9c — Pruning from scratch : magnitude, structured, Lottery Ticket",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.9d-Compression-Distillation-from-scratch.ipynb",
+          "title": "3.9d — Compression par distillation : transférer le savoir, pas les poids",
+          "duration_minutes": 45,
+          "kernel": "Python 3 (coursia-ml-training)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.9e-Compression-Quantization-SOTA.ipynb",
+          "title": "3.9e — Quantification SOTA : la même INT8, par l'écosystème torch.ao",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.7-Distillation-Maitre-Eleve.ipynb",
+          "title": "3.7 — Distillation maître-élève : quand le savoir se transfère par des cibles molles",
+          "duration_minutes": 30,
+          "kernel": "coursia-ml-training",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "modeles-non-supervises",
+      "kind": "accretions",
+      "prerequisites": [
+        "evaluation-validation"
+      ],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb",
+          "title": "2.6 — Clustering (KMeans) et réduction de dimension (PCA)",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.8-Representations-Contrastives.ipynb",
+          "title": "Représentations contrastives modernes — du skip-gram aux vues continues",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb",
+          "title": "3.10 — Le pendant SOTA : la bibliothèque diffusers (DDPM et DDIM outillés)",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/03-DeepLearning/3.6-Modeles-Generatifs.ipynb",
+          "title": "3.6 — Modèles génératifs : trois objectifs, trois échecs — VAE, GAN et diffusion sur une distribution multimodale bornée",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "svm-noyautiques",
+      "kind": "accretions",
+      "prerequisites": [
+        "apprentissage-supervise"
+      ],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.7b-SMO-From-Scratch.ipynb",
+          "title": "2.7b — SMO from scratch : SVM soft-margin, boucle de Platt, KKT et gap de dualité",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.7c-SVM-SOTA-Comparison.ipynb",
+          "title": "2.7c — SVM SOTA : LIBSVM sous le capot de sklearn.svm.SVC",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "optimisation-convexe-avancee",
+      "kind": "accretions",
+      "prerequisites": [
+        "deep-learning-budget"
+      ],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.11b-Proximal-Operators-From-Scratch.ipynb",
+          "title": "2.11b — Operateurs proximaux : ISTA et FISTA from scratch",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.11c-Lasso-SOTA-Comparison.ipynb",
+          "title": "2.11c — Lasso SOTA : coordinate descent, LassoCV, et quand le SOTA prend le relais",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.11d-Optimisation-ADMM-From-Scratch.ipynb",
+          "title": "2.11d — ADMM from scratch",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.11e-CVXPY-Optimisation.ipynb",
+          "title": "2.11e — CVXPY : le problème déclaré, le solveur choisi",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.11f-Comparaison-Optimisation-Convexe.ipynb",
+          "title": "2.11f — Comparaison bloc A / bloc B : le tableau croisé de l'optimisation convexe",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    }
+  ],
+  "duration_minutes": 1800,
+  "known_duration_minutes": 1800
+}

@@ -20,12 +20,12 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 299 |
+| Notebooks | 297 |
 | PRODUCTION | 0 |
-| BETA | 288 |
-| ALPHA | 11 |
+| BETA | 285 |
+| ALPHA | 12 |
 
-## GameTheory (96 notebooks)
+## GameTheory (95 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -118,14 +118,14 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 87 | [Du marché au bilan : le pont théorie des jeux théorie…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) | BETA | Oui |
 | 88 | [GameTheory-18 : Open Games et Lentilles -- la…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18-Open-Games-et-Lentilles-Python.ipynb) | BETA | Oui |
 | 89 | [GameTheory-18b : Casser la composition — où la…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18b-Casser-la-Composition-Python.ipynb) | BETA | Oui |
-| 90 | [GameTheory-24 : Banc de calibration — humour, forme…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb) | BETA | Oui |
-| 92 | [GameTheory-19 : L'abstraction a dette mesurable](../../MyIA.AI.Notebooks/GameTheory/GameTheory-19-Abstraction-a-Dette-Python.ipynb) | BETA | Oui |
-| 93 | [GameTheory 24b : Le temoin d'impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb) | BETA | Oui |
-| 94 | [GameTheory 20c : Le chemin minimal sur un second…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | BETA | Oui |
-| 95 | [GameTheory-21 — Loi II, seconde jambe : synthétiser un…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20d-Loi-II-Translateur-Life-Python.ipynb) | BETA | Oui |
-| 96 | [GameTheory-20e -- Perplexite structurelle Hashlife :…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20e-Perplexite-Structurelle-Hashlife-Python.ipynb) | BETA | Oui |
+| 90 | [GameTheory-24 : Banc de calibration — humour, forme…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb) | BETA | Non |
+| 91 | [GameTheory-19 : L'abstraction a dette mesurable](../../MyIA.AI.Notebooks/GameTheory/GameTheory-19-Abstraction-a-Dette-Python.ipynb) | BETA | Oui |
+| 92 | [GameTheory 24b : Le temoin d'impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb) | BETA | Oui |
+| 93 | [GameTheory 20c : Le chemin minimal sur un second…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | BETA | Oui |
+| 94 | [GameTheory-21 — Loi II, seconde jambe : synthétiser un…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20d-Loi-II-Translateur-Life-Python.ipynb) | BETA | Oui |
+| 95 | [GameTheory-20e -- Perplexite structurelle Hashlife :…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20e-Perplexite-Structurelle-Hashlife-Python.ipynb) | BETA | Oui |
 
-## GameTheory/SocialChoice (10 notebooks)
+## GameTheory/SocialChoice (11 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -139,6 +139,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 8 | [SocialChoice-05 : Gibbard-Satterthwaite sans mystere -…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/05-Gibbard-Satterthwaite.ipynb) | BETA | Oui |
 | 9 | [SocialChoice-06 : Mobius sur le treillis des coalitions…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | BETA | Oui |
 | 10 | [07 - Élections de comité par approbation : le core…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/07-Committees-Core.ipynb) | BETA | Oui |
+| 11 | [SocialChoice 08 - Kemeny, Ranked Pairs et Dodgson :…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/08-Kemeny-RankedPairs-Dodgson.ipynb) | ALPHA | Oui |
 
 ## IIT (6 notebooks)
 
@@ -236,8 +237,8 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Percolation-Lean — le noyau fini de percolation, prouvé…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Lean.ipynb) | BETA | Oui |
-| 2 | [Percolation supercritique : le géant au-dessus du seuil](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-Supercritique.ipynb) | ALPHA | Oui |
+| 1 | [Percolation-02-Lean — le noyau fini de percolation, prouvé…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb) | BETA | Oui |
+| 2 | [Percolation supercritique : le géant au-dessus du seuil](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) | ALPHA | Oui |
 | 3 | [Le Framework Rational Speech Act (RSA)](../../MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb) | BETA | Oui |
 | 4 | [Quotients, fibres et recollement : ce qui survit à la…](../../MyIA.AI.Notebooks/Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb) | BETA | Oui |
 
@@ -328,42 +329,45 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 18 | [18. Detection de Rupture (Change-Point) : inferer le…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb) | BETA | Oui |
 | 19 | [19. Analyse de survie / fiabilite bayesienne : inferer…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb) | BETA | Oui |
 
-## RL (35 notebooks)
+## RL (24 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [RL-07b — Sur-généralisation relative dans le Climbing…](../../MyIA.AI.Notebooks/RL/RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb) | BETA | Oui |
-| 2 | [RL-10 : Reward Shaping et Curriculum Learning](../../MyIA.AI.Notebooks/RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb) | BETA | Oui |
-| 3 | [RL-11 : POMDP - Partial Observability et Belief…](../../MyIA.AI.Notebooks/RL/RL-11-POMDP-Croyances-Python.ipynb) | BETA | Oui |
-| 4 | [RL-12 : Distributional RL — C51 (Categorical DQN)…](../../MyIA.AI.Notebooks/RL/RL-12-Distributional-RL-C51-Python.ipynb) | BETA | Non |
-| 5 | [RL 13 - Exploration par curiosité : Random Network…](../../MyIA.AI.Notebooks/RL/RL-13-Curiosite-RND-Python.ipynb) | BETA | Oui |
-| 6 | [Hierarchical RL — l'Option framework de Sutton, Precup…](../../MyIA.AI.Notebooks/RL/RL-14-RL-Hierarchique-Options-Python.ipynb) | BETA | Oui |
-| 7 | [RL-15 — GRPO (Group Relative Policy Optimization) sur…](../../MyIA.AI.Notebooks/RL/RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | BETA | Non |
-| 8 | [RL-16 : Dream-RSI — l'exploration comme code, évaluée…](../../MyIA.AI.Notebooks/RL/RL-16-Dream-RSI-Python.ipynb) | BETA | Oui |
-| 9 | [RL 17 - k-server et work function : la conjecture…](../../MyIA.AI.Notebooks/RL/rl_17_k_server_wfa.ipynb) | BETA | Oui |
-| 10 | [RL 18 - Le secrétaire matroïdal : la conjecture…](../../MyIA.AI.Notebooks/RL/rl_18_matroid_secretary.ipynb) | BETA | Oui |
-| 11 | [RL 19 - Reward tampering : quand l'agent peut modifier…](../../MyIA.AI.Notebooks/RL/RL-19-Reward-Tampering-Python.ipynb) | BETA | Oui |
-| 12 | [Tutoriel Stable Baselines3 - Premiers pas](../../MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb) | BETA | Oui |
-| 13 | [Synthese logique d'un controleur CartPole : le bitwise…](../../MyIA.AI.Notebooks/RL/RL-01b-Synthese-Logique-Bitwise-Python.ipynb) | BETA | Oui |
-| 14 | [Distiller une politique RL en programme Prolog…](../../MyIA.AI.Notebooks/RL/RL-01c-Distillation-Politique-Prolog-Python.ipynb) | BETA | Oui |
-| 15 | [Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,…](../../MyIA.AI.Notebooks/RL/RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb) | BETA | Non |
-| 16 | [Notebook 3 – Hindsight Experience Replay (HER) : du…](../../MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb) | BETA | Oui |
-| 17 | [RL-04 : Bandits Manchots et le Compromis…](../../MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb) | BETA | Oui |
-| 18 | [RL-05 : MDP, Programmation Dynamique et Q-Learning…](../../MyIA.AI.Notebooks/RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb) | BETA | Oui |
-| 19 | [RL-06 : Deep Q-Network (DQN) et Policy Gradient](../../MyIA.AI.Notebooks/RL/RL-06-DQN-Policy-Gradient-Python.ipynb) | BETA | Oui |
-| 20 | [RL-06b - Actor-Critic : unir valeur et politique](../../MyIA.AI.Notebooks/RL/RL-06b-Actor-Critic-Python.ipynb) | BETA | Oui |
-| 21 | [PPO (Proximal Policy Optimization) depuis zero](../../MyIA.AI.Notebooks/RL/RL-06c-PPO-Depuis-Zero-Python.ipynb) | BETA | Oui |
-| 22 | [SAC (Soft Actor-Critic) depuis zero](../../MyIA.AI.Notebooks/RL/RL-06d-SAC-Depuis-Zero-Python.ipynb) | BETA | Oui |
-| 23 | [GRPO (Group Relative Policy Optimization) depuis zero](../../MyIA.AI.Notebooks/RL/RL-06e-GRPO-Depuis-Zero-Python.ipynb) | BETA | Non |
-| 24 | [RL-07 : Introduction a l'Apprentissage Multi-Agent](../../MyIA.AI.Notebooks/RL/RL-07-Apprentissage-Multi-Agent-Python.ipynb) | BETA | Oui |
-| 25 | [RL-08 : Model-Based RL — Dyna-Q et planification](../../MyIA.AI.Notebooks/RL/RL-08-Dyna-Q-Planification-Python.ipynb) | BETA | Oui |
-| 26 | [RL-09 : RL offline — Behavior Cloning et erreur…](../../MyIA.AI.Notebooks/RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb) | BETA | Oui |
-| 27 | [RL Post-Training — 0 : le reward model from scratch…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) | ALPHA | Oui |
-| 28 | [Biais d'un dataset de préférences — mesurés, pas…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.ipynb) | BETA | Oui |
-| 29 | [RL Post-Training — 0c : l'anatomie d'un hack qui PREND…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb) | BETA | Oui |
-| 30 | [RLPT-00f — Le SOTA de l'alignement en ligne :…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb) | ALPHA | Oui |
-| 31 | [RLPT-00g -- Le troisieme bras :…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-00g-PPO-TRL-Experimental-Python.ipynb) | ALPHA | Non |
-| 32 | [RL Post-Training — 1 : PPO pour l'alignement d'un petit…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb) | BETA | Oui |
-| 33 | [RL Post-Training — 2 : GRPO minimal — alignement d'un…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb) | BETA | Non |
-| 34 | [RL Post-Training — 3 : Reward hacking — anatomie d'un…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb) | BETA | Non |
-| 35 | [RL Post-Training — 4 : DPO offline vs RL online — même…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb) | BETA | Non |
+| 1 | [Tutoriel Stable Baselines3 - Premiers pas](../../MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb) | BETA | Oui |
+| 2 | [Synthese logique d'un controleur CartPole : le bitwise…](../../MyIA.AI.Notebooks/RL/RL-01b-Synthese-Logique-Bitwise-Python.ipynb) | BETA | Oui |
+| 3 | [Distiller une politique RL en programme Prolog…](../../MyIA.AI.Notebooks/RL/RL-01c-Distillation-Politique-Prolog-Python.ipynb) | BETA | Oui |
+| 4 | [Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,…](../../MyIA.AI.Notebooks/RL/RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb) | BETA | Non |
+| 5 | [Notebook 3 – Hindsight Experience Replay (HER) : du…](../../MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb) | BETA | Oui |
+| 6 | [RL-04 : Bandits Manchots et le Compromis…](../../MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb) | BETA | Oui |
+| 7 | [RL-05 : MDP, Programmation Dynamique et Q-Learning…](../../MyIA.AI.Notebooks/RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb) | BETA | Oui |
+| 8 | [RL-06 : Deep Q-Network (DQN) et Policy Gradient](../../MyIA.AI.Notebooks/RL/RL-06-DQN-Policy-Gradient-Python.ipynb) | BETA | Oui |
+| 9 | [RL-06b - Actor-Critic : unir valeur et politique](../../MyIA.AI.Notebooks/RL/RL-06b-Actor-Critic-Python.ipynb) | BETA | Oui |
+| 10 | [PPO (Proximal Policy Optimization) depuis zero](../../MyIA.AI.Notebooks/RL/RL-06c-PPO-Depuis-Zero-Python.ipynb) | BETA | Oui |
+| 11 | [SAC (Soft Actor-Critic) depuis zero](../../MyIA.AI.Notebooks/RL/RL-06d-SAC-Depuis-Zero-Python.ipynb) | BETA | Oui |
+| 12 | [GRPO (Group Relative Policy Optimization) depuis zero](../../MyIA.AI.Notebooks/RL/RL-06e-GRPO-Depuis-Zero-Python.ipynb) | BETA | Non |
+| 13 | [RL-07 : Introduction a l'Apprentissage Multi-Agent](../../MyIA.AI.Notebooks/RL/RL-07-Apprentissage-Multi-Agent-Python.ipynb) | BETA | Oui |
+| 14 | [RL-07b — Sur-généralisation relative dans le Climbing…](../../MyIA.AI.Notebooks/RL/RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb) | BETA | Oui |
+| 15 | [RL-08 : Model-Based RL — Dyna-Q et planification](../../MyIA.AI.Notebooks/RL/RL-08-Dyna-Q-Planification-Python.ipynb) | BETA | Oui |
+| 16 | [RL-09 : RL offline — Behavior Cloning et erreur…](../../MyIA.AI.Notebooks/RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb) | BETA | Oui |
+| 17 | [RL-10 : Reward Shaping et Curriculum Learning](../../MyIA.AI.Notebooks/RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb) | BETA | Oui |
+| 18 | [RL-11 : POMDP - Partial Observability et Belief…](../../MyIA.AI.Notebooks/RL/RL-11-POMDP-Croyances-Python.ipynb) | BETA | Oui |
+| 19 | [RL-12 : Distributional RL — C51 (Categorical DQN)…](../../MyIA.AI.Notebooks/RL/RL-12-Distributional-RL-C51-Python.ipynb) | BETA | Non |
+| 20 | [RL 13 - Exploration par curiosité : Random Network…](../../MyIA.AI.Notebooks/RL/RL-13-Curiosite-RND-Python.ipynb) | BETA | Oui |
+| 21 | [Hierarchical RL — l'Option framework de Sutton, Precup…](../../MyIA.AI.Notebooks/RL/RL-14-RL-Hierarchique-Options-Python.ipynb) | BETA | Oui |
+| 22 | [RL-15 — GRPO (Group Relative Policy Optimization) sur…](../../MyIA.AI.Notebooks/RL/RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | BETA | Non |
+| 23 | [RL-16 : Dream-RSI — l'exploration comme code, évaluée…](../../MyIA.AI.Notebooks/RL/RL-16-Dream-RSI-Python.ipynb) | BETA | Oui |
+| 24 | [RL 19 - Reward tampering : quand l'agent peut modifier…](../../MyIA.AI.Notebooks/RL/RL-19-Reward-Tampering-Python.ipynb) | BETA | Oui |
+
+## RL/PostTraining (9 notebooks)
+
+| # | Notebook | Maturité | Exécutable |
+|---|----------|----------|------------|
+| 1 | [RL Post-Training — 0 : le reward model from scratch…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) | ALPHA | Oui |
+| 2 | [Biais d'un dataset de préférences — mesurés, pas…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.ipynb) | BETA | Oui |
+| 3 | [RL Post-Training — 0c : l'anatomie d'un hack qui PREND…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb) | BETA | Oui |
+| 4 | [RLPT-00f — Le SOTA de l'alignement en ligne :…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb) | ALPHA | Oui |
+| 5 | [RLPT-00g -- Le troisieme bras :…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-00g-PPO-TRL-Experimental-Python.ipynb) | ALPHA | Non |
+| 6 | [RL Post-Training — 1 : PPO pour l'alignement d'un petit…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb) | BETA | Oui |
+| 7 | [RL Post-Training — 2 : GRPO minimal — alignement d'un…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb) | BETA | Non |
+| 8 | [RL Post-Training — 3 : Reward hacking — anatomie d'un…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb) | BETA | Non |
+| 9 | [RL Post-Training — 4 : DPO offline vs RL online — même…](../../MyIA.AI.Notebooks/RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb) | BETA | Non |
