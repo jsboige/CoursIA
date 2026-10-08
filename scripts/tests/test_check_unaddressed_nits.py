@@ -6945,3 +6945,88 @@ def test_16780_phrase_reelle_poursuit_de_lever() -> None:
     }
     res = run([USER_NIT, real_lift])
     assert res["blocked"] is False
+
+
+# ---------------------------------------------------------------------------
+# #19810 -- proxy CRLF serre (live_concern OU prose UI web). Avant : tout
+# corps CRLF etait HUMAN (proxy UI web). Apres : seul un CRLF + structure
+# de plainte (bullet list, phrase-repere plainte) reste HUMAN ; les posts
+# CLI Windows (status, chemins, SHAs) ne tombent plus dans le filet.
+# ---------------------------------------------------------------------------
+
+
+def test_19810_windows_cli_post_crlf_status_not_human():
+    """Cas fondateur #19704 : un post CLI Windows (CRLF + status, aucun
+    marqueur) n'est plus HUMAN. Avant le fix, le merge-gate auto-bloquait
+    la PR sur le commentaire de la lane elle-meme (gap = 0.1 h)."""
+    body = (
+        "See commit 728146a78e for the fix.\r\n"
+        "All tests green.\r\n"
+        "CI passing on ubuntu-latest, windows-2022."
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_19810_windows_cli_crlf_path_sha_not_human():
+    """Variante du cas fondateur : chemin absolu + SHA + run log."""
+    body = (
+        "Path: C:\\Users\\jsboige\\AppData\\Local\\Temp\\a19704.md\r\n"
+        "SHA: 425d171357 on origin/main ahead 1\r\n"
+        "Run #113015571236 pending."
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_19810_user_nit_crlf_bullets_still_human():
+    """Controle positif : USER_NIT corpus (l.50) -- bullet-list CRLF -- reste
+    HUMAN. La discrimination ne casse pas le signal UI web historique."""
+    res = run([USER_NIT])
+    assert res["blocked"] is True  # USER_NIT -> HUMAN -> signal -> blocked
+    assert res["blocking"][0]["kind"] == "HUMAN"
+
+
+def test_19810_souci_crlf_prose_plainte_still_human():
+    """Controle positif #16700 l.150 : « Il reste un souci » CRLF (pas de
+    bullet, pas de marker formel) reste HUMAN. La phrase-repere plainte
+    preserve le signal."""
+    body = ("Il reste un souci :\r\nla cellule dit 1 722 s mais le describe "
+            "dit 1433.57.")
+    assert mod.classify("jsboige", body) == "HUMAN"
+
+
+def test_19810_windows_cli_crlf_with_concern_still_human():
+    """Si le post CLI Windows porte un VRAI concern (CONCERN_MARKERS), il
+    reste HUMAN via la branche live_concern (le proxy CRLF n'est qu'un
+    discriminant secondaire). Le fix ne tue pas le cas concerne."""
+    body = (
+        "See commit 728146a78e.\r\n"
+        "CHANGES_REQUESTED: la cellule 12 casse le kernel."
+    )
+    assert mod.classify("jsboige", body) == "HUMAN"
+
+
+def test_19810_lf_only_post_not_human():
+    """Sanity check : un post LF-only (sans CRLF) reste None par construction.
+    Le fix ne touche pas le chemin LF ; il ne durcit que le proxy CRLF."""
+    body = "See commit 728146a78e for the fix.\nAll tests green.\nCI passing."
+    assert mod.classify("jsboige", body) is None
+
+
+def test_19810_windows_cli_crlf_attention_phrase_human():
+    """Un post CLI Windows qui contient le mot 'attention' (rare mais possible
+    -- un WARNING sur l'output) : reste HUMAN. La discrimination est
+    semantique, pas un debouncer de substrings -- un mot plainte suffit."""
+    body = (
+        "See commit 728146a78e.\r\n"
+        "Attention: kernel crash on windows-2022 step 4.\r\n"
+        "Investigating."
+    )
+    assert mod.classify("jsboige", body) == "HUMAN"
+
+
+def test_19810_no_regression_on_existing_crlf_positive_verdict():
+    """L'approbation souple « Verdict : OK » (l.248 corpus) reste None :
+    le test de non-regression couvre la branche _HUMAN_VERDICT_RE, qui
+    court-circuite le CRLF proxy."""
+    body = "**Verdict** : OK (post-rebase, 11/11 CI).\r\nDecision ai-01 REQUISE : merge."
+    assert mod.classify("jsboige", body) is None
