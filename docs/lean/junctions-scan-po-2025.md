@@ -32,6 +32,8 @@ Le verdict est **plus fort** qu'un rafraîchissement : po-2025 n'est ni une mach
 | Sauvegardes `.bak-2611` disponibles pour un Rollback | **0** |
 | Économie « potentielle » rendue par le Scan | **0 GB** (métrique aveugle ici) |
 
+> **Portée de la mesure.** Ces chiffres sont ceux du **2026-10-08 ~03:15Z**, et ils datent : un `lake exe cache get` + `lake build` de `differential_lean` (lancé 03:06Z, hors de cette mesure) était **en cours** pendant le relevé et a peuplé son `.lake/packages` à 03:24Z — le compte « 1 checkout physique » est donc un instantané, et `differential_lean` a un checkout depuis. Les **18 jonctions**, elles, ne bougent pas : un lien ne se peuple pas tout seul. La ligne « cible inexistante » est stable tant qu'aucun build ne vient repeupler le store par accident.
+
 ## 1. Sortie verbatim du Scan (2026-10-08)
 
 ```
