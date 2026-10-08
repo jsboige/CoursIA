@@ -43,6 +43,13 @@ REPO_ENTRYPOINT_SHA="$(sha256sum "$SCRIPT_DIR/entrypoint.sh" 2>/dev/null | awk '
 REPO_HEALTH_SHA="$(sha256sum "$SCRIPT_DIR/work_cache_health.sh" 2>/dev/null | awk '{print $1}')"
 cat > "$TEST_DIR/bin/docker" <<STUB
 #!/usr/bin/env bash
+# Endpoint vise : les gardes de perimetre #15164 sondent CHAQUE daemon par
+# docker -H <socket>. EP=default quand aucun -H n'est passe.
+EP="default"
+if [ "\$1" = "-H" ]; then EP="\$2"; shift 2; fi
+# Daemon DOWN sur l'endpoint alternatif : TOUT echoue (docker ps y compris)
+# alors que le socket existe -- c'est le cas present-but-mute de #15164.
+if [ "\$EP" != "default" ] && [ "\$STUB_DOCKER_ID_ALT" = "DOWN" ]; then exit 1; fi
 if [ "\$1" = "run" ]; then
   case "\$*" in
     *work_cache_health.sh*)
@@ -55,14 +62,43 @@ if [ "\$1" = "run" ]; then
   exit 0
 fi
 # Garde d'appartenance du mur agrege (#15157) : la liste d'IDs rendue au
-# filtre label=coursia-ci=1 est pilotable par le test via STUB_CI_CONTAINER_IDS.
+# filtre label=coursia-ci=1 est pilotable par le test via STUB_CI_CONTAINER_IDS
+# (endpoint par defaut) et STUB_CI_CONTAINER_IDS_ALT (endpoint -H, #15164).
 if [ "\$1" = "ps" ] && echo "\$*" | grep -q 'label=coursia-ci=1'; then
-  if [ -n "\$STUB_CI_CONTAINER_IDS" ]; then printf '%s\n' \$STUB_CI_CONTAINER_IDS; fi
+  if [ "\$EP" != "default" ] && [ -n "\$STUB_CI_CONTAINER_IDS_ALT" ]; then
+    printf '%s\n' \$STUB_CI_CONTAINER_IDS_ALT
+  elif [ -n "\$STUB_CI_CONTAINER_IDS" ]; then
+    printf '%s\n' \$STUB_CI_CONTAINER_IDS
+  fi
   exit 0
 fi
 # Pilote cgroup du daemon (Test 59) : `docker info --format {{.CgroupDriver}}`.
 # Vide par defaut -- les autres tests gardent le chemin cgroupfs inchange.
-if [ "\$1" = "info" ]; then echo "\${STUB_CGROUP_DRIVER:-}"; exit 0; fi
+# ID de daemon par endpoint (#15164) : cle de deduplication de running_ci_mb.
+# STUB_DOCKER_ID_ALT="DOWN" simule un socket present mais muet (info exit 1).
+if [ "\$1" = "info" ]; then
+  case "\$*" in
+    *'{{.ID}}'*)
+      if [ "\$EP" != "default" ] && [ -n "\$STUB_DOCKER_ID_ALT" ]; then
+        [ "\$STUB_DOCKER_ID_ALT" = "DOWN" ] && exit 1
+        echo "\$STUB_DOCKER_ID_ALT"
+      else
+        echo "\${STUB_DOCKER_ID:-stub-desktop}"
+      fi
+      ;;
+    *) echo "\${STUB_CGROUP_DRIVER:-}" ;;
+  esac
+  exit 0
+fi
+# Caps memoire des conteneurs (#15164) : une ligne par ID demande, valeur en
+# octets pilotable par STUB_MEM_BYTES. Defaut 0 -- les autres probes inspect
+# (State.Status & co) gardent le silence d'avant.
+if [ "\$1" = "inspect" ]; then
+  case "\$*" in
+    *HostConfig.Memory*) shift 3; for _id in "\$@"; do echo "\${STUB_MEM_BYTES:-0}"; done ;;
+  esac
+  exit 0
+fi
 exit 0
 STUB
 chmod +x "$TEST_DIR/bin/docker"
@@ -2426,7 +2462,12 @@ echo "Test 38 : HTTP 403 sur fetch_token = terminal apres N essais consecutifs (
   cat > "$TEST_DIR/bin38/gh" <<'STUB'
 #!/usr/bin/env bash
 # Simule un compte sans droit admin : gh api rend HTTP 403 sur stderr
-# et exit 1, sans token.
+# et exit 1, sans token. #15154 critere 1 : `gh api user` repond -- le
+# compte ambiant est resoluble et doit paraitre dans le diagnostic.
+if [ "$1 $2" = "api user" ]; then
+  echo "myia-ai-01"
+  exit 0
+fi
 echo '{"message":"You must have repository admin permissions","documentation_url":"https://docs.github.com/rest","status":"403"}' >&2
 echo 'gh: You must have repository admin permissions (HTTP 403)' >&2
 exit 1
@@ -2458,6 +2499,15 @@ STUB
     ok "le diagnostic pointe la cause structurelle (compte sans droit admin)"
   else
     ko "diagnostic 'compte sans droit admin' attendu, err=$(head -5 "$TEST_DIR/err38.log")"
+  fi
+  # #15154 critere 1 (residu du preflight KEEP 2026-09-27) : le diagnostic
+  # doit nommer le compte RESOLU, pas la variable COURSIA_RUNNER_GH_ACCOUNT.
+  # Le stub resolu le compte ambiant en "myia-ai-01" -- c'est ce nom qui doit
+  # paraitre, sans epinglage.
+  if grep -q "'myia-ai-01'" "$TEST_DIR/err38.log"; then
+    ok "le diagnostic nomme le compte ambiant resolu 'myia-ai-01' (critere 1)"
+  else
+    ko "compte resolu absent du diagnostic, err=$(head -5 "$TEST_DIR/err38.log")"
   fi
   # L'ARRET COORDONNE : un slot qui detecte une cause structurelle pose le
   # sentinel STOP_FILE pour prevenir les slots siblings. Le superviseur
@@ -2523,6 +2573,85 @@ STUB
     ko "ABANDON inattendu sur 5xx, err=$(head -5 "$TEST_DIR/err39.log")"
   fi
   unset COURSIA_RUNNER_AUTH_FAIL_MAX || true
+)
+echo ""
+
+# --- Test 66 : compte epingle introuvable = AUTH terminal, compte nomme (#15154) -------------
+echo "Test 66 : gh auth token --user introuvable = AUTH terminal apres N essais, compte nomme (#15154)"
+(
+  cd "$SCRIPT_DIR"
+  mkdir -p "$TEST_DIR/bin66" "$TEST_DIR/state-66"
+  cat > "$TEST_DIR/bin66/gh" <<'STUB'
+#!/usr/bin/env bash
+# Simule un trousseau gh ou le compte epingle n'existe pas : TOUTE
+# sous-commande `auth` echoue (exit 1). Le POST registration-token ne doit
+# JAMAIS etre atteint : fetch_token retourne avant. Le marqueur (emis
+# uniquement sur ce POST) le prouve ; tout autre appel gh echoue en silence,
+# comme un environnement degrade le ferait.
+if [ "$1" = "auth" ]; then
+  echo "gh: not logged in to any account" >&2
+  exit 1
+fi
+if [ "$1" = "api" ] && [ "$3" = "POST" ]; then
+  echo "STUB_REACHED_PAST_AUTH" >&2
+fi
+exit 1
+STUB
+  chmod +x "$TEST_DIR/bin66/gh"
+  cp "$TEST_DIR/bin/docker" "$TEST_DIR/bin66/docker"
+  chmod +x "$TEST_DIR/bin66/docker"
+  cp "$TEST_DIR/bin/sleep" "$TEST_DIR/bin66/sleep"
+  chmod +x "$TEST_DIR/bin66/sleep"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin66/ps"
+  chmod +x "$TEST_DIR/bin66/ps"
+  export PATH="$TEST_DIR/bin66:$PATH"
+  export COURSIA_RUNNER_NAME_PREFIX="test-prefix-66"
+  export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-66"
+  export COURSIA_RUNNER_AUTH_FAIL_MAX=3
+  export COURSIA_RUNNER_GH_ACCOUNT="ghost-account"
+  export SLEEP_LOG="$TEST_DIR/sleep66.log"
+  : > "$SLEEP_LOG"
+  timeout --kill-after=1 15 bash "$SCRIPT_DIR/supervise.sh" start 1 \
+    >/dev/null 2>"$TEST_DIR/err66.log"
+  rc=$?
+  # Reserve du preflight KEEP (2026-09-27) : avant #15154 le `return 1` de
+  # l'epinglage partait AVANT l'ecriture du fichier d'etat -- code absent =
+  # transitoire = boucle infinie sur une cause qui ne se resout jamais.
+  # Le marqueur HTTP=AUTH doit etre classe terminal comme un 4xx.
+  if grep -q "ABANDON : 3 echecs consecutifs HTTP AUTH" "$TEST_DIR/err66.log"; then
+    ok "ABANDON emis sur compte epingle introuvable (HTTP AUTH terminal)"
+  else
+    ko "ABANDON HTTP AUTH attendu, err=$(head -5 "$TEST_DIR/err66.log")"
+  fi
+  # Critere 1 : le compte epingle est nomme -- pas la variable.
+  if grep -q "'ghost-account'" "$TEST_DIR/err66.log"; then
+    ok "le diagnostic nomme le compte epingle 'ghost-account'"
+  else
+    ko "compte epingle absent du diagnostic, err=$(head -5 "$TEST_DIR/err66.log")"
+  fi
+  if grep -q "introuvable dans le trousseau" "$TEST_DIR/err66.log"; then
+    ok "la cause nommee est l'epinglage casse, pas le droit admin"
+  else
+    ko "cause 'introuvable dans le trousseau' attendue, err=$(head -5 "$TEST_DIR/err66.log")"
+  fi
+  if grep -q "STUB_REACHED_PAST_AUTH" "$TEST_DIR/err66.log"; then
+    ko "le POST registration-token a ete atteint malgre l'echec auth (retour attendu AVANT)"
+  else
+    ok "l'echec d'epinglage retourne avant tout appel API"
+  fi
+  if [ -f "$TEST_DIR/state-66/stop" ]; then
+    ok "sentinel STOP_FILE pose par ABANDON AUTH -- arret coordonne"
+  else
+    ko "sentinel STOP_FILE attendu apres ABANDON AUTH"
+  fi
+  n_sleeps="$(wc -l < "$SLEEP_LOG" | tr -d ' ')"
+  if [ "$n_sleeps" -le 4 ]; then
+    ok "backoff borne sur AUTH (sleep appele $n_sleeps fois, pas infini)"
+  else
+    ko "backoff excessif sur AUTH : $n_sleeps sleeps, err=$(head -5 "$TEST_DIR/err66.log")"
+  fi
+  unset COURSIA_RUNNER_AUTH_FAIL_MAX || true
+  unset COURSIA_RUNNER_GH_ACCOUNT || true
 )
 echo ""
 
@@ -2868,6 +2997,111 @@ root  900     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner
     ko "refus attendu avec un start vivant, rc=$rc err=$err"
   fi
   rm -f "$TEST_DIR/state-G/stop"
+)
+echo ""
+
+# --- Test 62 : #15164 -- la somme couvre les DEUX daemons, pas celui de DOCKER_HOST
+#
+# Mesure fondatrice (ai-01, 2026-09-08) : deux superviseurs ne comptaient
+# chacun que SA moitie de flotte et comparaient ce demi-total au budget ENTIER
+# -- 20480 Mo nominaux sous un budget declare de 12288, les deux gardes
+# vertes. La sonde DOIT enumerer les sockets declares et sommer les deux.
+echo "Test 62 : budget -- somme des caps sur les DEUX daemons declares (#15164)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  source_supervise
+  : > "$TEST_DIR/ce62.sock"
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/ce62.sock"
+  export STUB_CI_CONTAINER_IDS="a1 a2" STUB_CI_CONTAINER_IDS_ALT="b1" STUB_DOCKER_ID_ALT="ce-daemon"
+  export STUB_MEM_BYTES=1073741824
+  out="$(running_ci_mb 2>/dev/null)"
+  if [ "$out" = "3072" ]; then
+    ok "2 conteneurs Desktop + 1 docker-ce a 1 GiB chacun = 3072 Mo comptes"
+  else
+    ko "somme attendue 3072, rendue '$out'"
+  fi
+  unset COURSIA_RUNNER_DOCKER_ENDPOINTS STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES
+)
+echo ""
+
+# --- Test 63 : #15164 -- DOCKER_HOST epingle sur un socket liste : compte UNE fois
+#
+# Deduplication par ID de daemon, pas par chemin : si le endpoint par defaut
+# et un socket liste sont le MEME daemon (DOCKER_HOST pointant un socket deja
+# liste), les memes conteneurs ne doivent pas etre comptes deux fois. Le stub
+# rend le meme ID aux deux endpoints quand STUB_DOCKER_ID_ALT est vide.
+echo "Test 63 : budget -- meme daemon sous deux endpoints compte une fois (#15164)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  source_supervise
+  : > "$TEST_DIR/ce63.sock"
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/ce63.sock"
+  export STUB_CI_CONTAINER_IDS="a1" STUB_CI_CONTAINER_IDS_ALT="a1"
+  export STUB_MEM_BYTES=1073741824
+  out="$(running_ci_mb 2>/dev/null)"
+  if [ "$out" = "1024" ]; then
+    ok "meme ID de daemon aux deux endpoints : 1 GiB compte une fois, pas deux"
+  else
+    ko "somme attendue 1024 (dedup par ID), rendue '$out'"
+  fi
+  unset COURSIA_RUNNER_DOCKER_ENDPOINTS STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_MEM_BYTES
+)
+echo ""
+
+# --- Test 64 : #15164 -- socket PRESENT mais daemon muet : REFUS, jamais 0
+#
+# Le coeur du fail-closed : un daemon muet peut porter des conteneurs, compter
+# 0 pour lui est exactement le defaut que ce garde ferme. STUB_DOCKER_ID_ALT=DOWN
+# fait echouer TOUT (docker ps en tete) sur le second socket, socket present.
+# Deux observables : la sonde rend rc!=0 en nommant le socket sur stderr, et
+# assert_memory_budget REFUSE le demarrage en nommant l'impossibilite.
+echo "Test 64 : budget -- daemon muet sur socket present : refus, pas zero (#15164)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  source_supervise
+  : > "$TEST_DIR/ce64.sock"
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/ce64.sock"
+  export STUB_DOCKER_ID_ALT="DOWN"
+  out="$(running_ci_mb 2>"$TEST_DIR/t64.err")"; rc=$?
+  if [ "$rc" != "0" ] && grep -q "injoignable sur '$TEST_DIR/ce64.sock'" "$TEST_DIR/t64.err"; then
+    ok "sonde : rc=$rc, la raison nomme le socket muet"
+  else
+    ko "refus attendu, rc=$rc err='$(cat "$TEST_DIR/t64.err" 2>/dev/null)'"
+  fi
+  err="$( (assert_memory_budget start 1 512m) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && echo "$err" | grep -q "n'est PAS mesurable"; then
+    ok "assert_memory_budget refuse et nomme l'impossibilite de mesurer"
+  else
+    ko "refus du garde attendu, rc=$rc err='$err'"
+  fi
+  unset COURSIA_RUNNER_DOCKER_ENDPOINTS STUB_DOCKER_ID_ALT
+)
+echo ""
+
+# --- Test 65 : #15164 -- socket ABSENT : hors perimetre, pas un refus
+#
+# Frontiere du fail-closed : un chemin de socket absent n'est pas un daemon
+# muet -- c'est un daemon non installe (machine mono-daemon, conteneur de
+# runner sans le second socket monte). Il ne porte rien : l'ecarter DUIT sur
+# stderr mais ne refuse pas -- sinon aucune machine sans docker-ce ne
+# pourrait plus mesurer son budget.
+echo "Test 65 : budget -- socket absent : hors perimetre sans refus (#15164)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_CI_CONTAINER_IDS STUB_CI_CONTAINER_IDS_ALT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  source_supervise
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/pas-la.sock"
+  export STUB_CI_CONTAINER_IDS="a1" STUB_MEM_BYTES=1073741824
+  out="$(running_ci_mb 2>"$TEST_DIR/t65.err")"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "1024" ] && grep -q "hors perimetre" "$TEST_DIR/t65.err"; then
+    ok "socket absent ecarte et annonce, somme du daemon vivant comptee"
+  else
+    ko "rc=$rc out='$out' err='$(cat "$TEST_DIR/t65.err" 2>/dev/null)'"
+  fi
+  unset COURSIA_RUNNER_DOCKER_ENDPOINTS STUB_CI_CONTAINER_IDS STUB_MEM_BYTES
 )
 echo ""
 

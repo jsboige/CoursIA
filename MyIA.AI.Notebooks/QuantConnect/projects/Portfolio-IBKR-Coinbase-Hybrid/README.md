@@ -59,6 +59,13 @@ s'applique par défaut — bien plus cher que les 10bps Binance. Le paramètre `
 permet de surcharger avec un `PercentFeeModel` flat pour isoler l'effet fee pur (ex. `10`
 reproduit le barème Binance sur les données Coinbase).
 
+> **Depuis 2026-10 (#19272), la migration n'est plus un remplacement mais un paramètre.** Le
+> marché crypto n'est plus codé en dur : `crypto_market` (`coinbase` par défaut, `binance`)
+> sélectionne le marché, la cotation et le barème, ce qui rend les deux places comparables à
+> code identique. Voir [Comparaison de place Binance / Coinbase](#comparaison-de-place-binance--coinbase-2026-10-19272).
+> Un `crypto_market` inconnu lève une `ValueError` au démarrage plutôt que de retomber
+> silencieusement sur Coinbase.
+
 ### Correctif devise du compte (2026-10)
 
 Cette section affirmait jusqu'ici que « `USD` casse le backtest (0 trade) et `USDT` restaure
@@ -98,7 +105,8 @@ mesurés en compte USDT avec le panier de 6 paires. La référence Binance, elle
 sur un compte USDT, sans conversion. L'écart Binance → Coinbase attribué à la « source de
 données » mesurait donc surtout l'artefact de conversion. Les chiffres sont conservés comme
 trace historique ; leur interprétation est corrigée en tête de chaque tableau. Une comparaison
-propre Binance/Coinbase, sur un compte de même devise que la cotation, reste à faire.
+propre Binance/Coinbase, sur un compte de même devise que la cotation, a été faite en 2026-10 :
+voir [Comparaison de place Binance / Coinbase](#comparaison-de-place-binance--coinbase-2026-10-19272).
 
 ### Mesure corrigée (compte USD, BTC/ETH, frais Coinbase natifs)
 
@@ -192,6 +200,73 @@ Trois constats :
   compris** (MaxDD 28.1 % contre 33.0 %). La réduction de drawdown constatée sur 2018-2025
   vient des krachs de 2018 et 2022, que la fenêtre récente ne contient pas : elle ne suffit
   pas, à elle seule, à justifier le volet face à une simple détention de BTC.
+
+### Comparaison de place Binance / Coinbase (2026-10, #19272)
+
+Le portefeuille était **mono-place** : le marché crypto était codé en dur (`Market.COINBASE`,
+paires USD) et la migration MiCA avait remplacé Binance plutôt que de le rendre comparable. Le
+paramètre `crypto_market` (`coinbase` par défaut, `binance`) rend la place explicite : il
+sélectionne le marché QC, le suffixe de cotation (BTCUSD / BTCUSDT) et le barème de frais
+(`CoinbaseFeeModel()` natif à 80 bps taker, ou le taker Binance à 10 bps), la devise du compte
+suivant la cotation. Même univers (`btceth`), mêmes fenêtres, même code.
+
+Six backtests, trois jambes par fenêtre. Le contenu n'est pas « Binance est mieux » mais **la
+décomposition de l'écart entre la place et les frais** — les deux ayant changé en même temps
+lors de la migration.
+
+**Fenêtre pleine 2018-01-01 → 2025-06-01** (2 709 séances) :
+
+| Jambe | Données | Frais | Ordres | Sharpe | CAGR | MaxDD | PSR | Backtest |
+|-------|---------|-------|--------|--------|------|-------|-----|----------|
+| A | Coinbase | 80 bps natif | 619 | 0.648 | 20.96% | 40.20% | 9.4% | `69b934e7` |
+| C | Coinbase | 10 bps (`crypto_fee_bps=10`) | 615 | 0.684 | 22.13% | 40.00% | 11.1% | `f755c218` |
+| B | Binance | 10 bps natif | 584 | **0.815** | 25.61% | 37.90% | 19.7% | `22e815d4` |
+
+**Hors échantillon 2023-01-01 → 2025-06-01** (883 séances) :
+
+| Jambe | Données | Frais | Ordres | Sharpe | CAGR | MaxDD | PSR | Backtest |
+|-------|---------|-------|--------|--------|------|-------|-----|----------|
+| A' | Coinbase | 80 bps natif | 201 | 1.038 | 33.17% | 19.20% | 42.7% | `6e53d0fe` |
+| C' | Coinbase | 10 bps | 199 | 1.100 | 34.88% | 19.00% | 46.4% | `8404cc79` |
+| B' | Binance | 10 bps natif | 198 | **1.105** | 34.93% | 19.00% | 46.7% | `d79ccb3e` |
+
+La jambe C est ce qui rend la comparaison lisible : **mêmes données Coinbase, frais du niveau
+Binance**. Sans elle, l'écart A→B confondrait la place et le barème, puisque les deux ont
+changé ensemble.
+
+**Décomposition de l'écart Binance − Coinbase (en Sharpe)** :
+
+| Fenêtre | Écart total | dont frais (A→C) | dont place (C→B) |
+|---------|------------:|-----------------:|-----------------:|
+| Pleine 2018-2025 | 0.167 | 0.036 (22%) | 0.131 (78%) |
+| Hors échantillon 2023-2025 | 0.067 | 0.062 (93%) | 0.005 (7%) |
+
+**Verdict : l'écart tient aux frais, pas à la place — et la lecture « source de données » de la
+migration MiCA est infirmée hors échantillon.** Sur la fenêtre récente, à frais égalisés,
+Coinbase et Binance donnent 1.100 contre 1.105 : l'effet de place est de 0.005 Sharpe, sous le
+bruit. L'effet de place apparent sur la fenêtre pleine (0.131) est concentré sur les années
+anciennes — celles où la conversion USDT/USD n'existait pas côté Coinbase, cause déjà identifiée
+dans [Correctif devise du compte](#correctif-devise-du-compte-2026-10). Autrement dit : sur la
+période où les deux places sont réellement comparables, **elles se valent**, et le surcoût du
+barème Coinbase avancé par la migration (80 bps contre 10 bps) est bien le levier dominant.
+
+Trois réserves, dans le sens de la prudence :
+
+- un backtest par jambe n'est **pas** un test de significativité. Les PSR se lisent entre 9 % et
+  47 % selon la jambe et la fenêtre ; ils ordonnent mal les jambes de la fenêtre pleine
+  (A 9.4 %, C 11.1 %, B 19.7 %) et ne les séparent plus du tout hors échantillon (42.7 / 46.4 /
+  46.7). Aucune de ces différences n'est établie à 2σ ;
+- les deux jambes ne diffèrent pas **seulement** par la place : la cotation change aussi (USD
+  contre USDT), donc le taux de conversion implicite fait partie du résultat ;
+- la fenêtre hors échantillon 2023-2025 est un régime porteur (cf [Phase 3](#phase-3--walk-forward--multi-seed-s2-s3)),
+  ce qui écrase les écarts : le classement des jambes y est moins informatif que sur la fenêtre
+  pleine, même s'il y est plus propre.
+
+Les jambes A et A' **reproduisent exactement** les mesures déjà publiées de ce README
+(`ebe12706` : 619 ordres, Sharpe 0.648, CAGR 21.0 %, MaxDD 40.2 % ; et `affc6d09` : 201 ordres,
+Sharpe 1.038, CAGR 33.2 %, MaxDD 19.2 %) : le passage au paramètre de place est **neutre sur le
+chemin Coinbase**, ce qui est la condition pour que la comparaison porte sur la place et non sur
+un changement de code.
 
 ### Analyse fee-switch (fenêtre 2018-2025, sleeve 50/50)
 
@@ -354,8 +429,14 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
   Coinbase (+ legacy Binance), smoke tests par sleeve, circuit breakers (`risk.py`).
   Exécution paper 30j **RECOVERABLE-USER-HAND** : accès aux plateformes à la main du
   mainteneur (#1199).
+- **Comparaison de place (2026-10)** : livrée — `crypto_market` rend la place explicite, et six
+  backtests décomposent l'écart Binance/Coinbase entre frais et place. Verdict : l'écart tient
+  aux frais ; l'effet de place est un phénomène des années anciennes (0.131 Sharpe sur
+  2018-2025, 0.005 hors échantillon). Voir
+  [Comparaison de place Binance / Coinbase](#comparaison-de-place-binance--coinbase-2026-10-19272).
 - Issue tracker : [#18789](https://github.com/jsboige/CoursIA/issues/18789) (correctif devise du
-  compte), à la suite de [#1027](https://github.com/jsboige/CoursIA/issues/1027)
+  compte) et [#19272](https://github.com/jsboige/CoursIA/issues/19272) (axe place), à la suite de
+  [#1027](https://github.com/jsboige/CoursIA/issues/1027)
 
 ## Liens
 

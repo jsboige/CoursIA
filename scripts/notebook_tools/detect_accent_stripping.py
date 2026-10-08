@@ -277,7 +277,7 @@ ACCENT_PAIRS = {
     "regle": "règle",
     "regles": "règles",
     # Famille RL (#14139 / #14613) : formes context-free mesurees sur
-    # rl_1_intro_cartpole a la tete b4bdcf95f (167 occurrences). Les formes
+    # RL-01-Premiers-Pas-Stable-Baselines3-Python a la tete b4bdcf95f (167 occurrences). Les formes
     # AMBIGUES relevees dans le meme passage (entraine, enregistre,
     # recommande, cumule -- present/participe homographes une fois
     # desaccentues) sont EXCLUES a dessein : une table globale en

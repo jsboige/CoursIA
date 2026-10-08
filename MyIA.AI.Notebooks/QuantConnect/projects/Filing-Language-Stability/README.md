@@ -78,6 +78,18 @@ résolution quotidienne, les observations ne sont consommées que lors d'un
 `OnData` postérieur, ce qui rend ces imprécisions conservatrices en pratique ;
 elles restent à formaliser avant tout passage intraday.
 
+### Brancher une autre source
+
+`write_cloud_module` (`edgar_signal.py:642`) est le convertisseur **de ce projet** : il
+émet un module `.py` à partir des paires 10-K qu'il a lui-même construites, pour la
+source SEC uniquement. Pour une source ouverte nouvelle (EDGAR full-text, export
+Kaggle, fichier maison), le convertisseur généralisé est
+[`scripts/datasets/build_qc_custom_data.py`](../../../../scripts/datasets/build_qc_custom_data.py) :
+il lit `csv`/`tsv`/`json`/`jsonl` et émet le même type d'artefact (constante de
+données, plus la classe `PythonData` si on la demande). Le convertisseur du projet
+reste en place et inchangé — la généralisation ne le remplace pas, elle évite d'en
+réécrire un par source.
+
 ## Fichiers
 
 - `main.py` — stratégie Brain originale, laissée byte-identique

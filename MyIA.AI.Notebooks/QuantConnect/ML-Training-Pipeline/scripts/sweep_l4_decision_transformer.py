@@ -73,15 +73,20 @@ except ImportError:
 RESULTS_DIR = SCRIPTS_DIR / "results" / "l4_decision_transformer"
 
 
+import strategy_metrics  # noqa: E402
+
+
 def compute_sharpe(returns: np.ndarray, annual_factor: int = 252) -> float:
-    """Annualized Sharpe ratio from daily returns."""
-    if len(returns) < 10:
+    """Annualized Sharpe (``strategy_metrics.sharpe``: ddof=1, risk-free 0).
+
+    Returns 0.0 for fewer than 10 returns or a standard deviation below 1e-10.
+    The formula used the population standard deviation (ddof=0) until #19016:
+    the standard deviation grows by ``sqrt(n / (n - 1))``, so the value is
+    multiplied by ``sqrt((n - 1) / n)`` -- pinned by the tranche-4 tests.
+    """
+    if len(returns) < 10 or float(np.std(returns, ddof=1)) < 1e-10:
         return 0.0
-    mean = np.mean(returns)
-    std = np.std(returns)
-    if std < 1e-10:
-        return 0.0
-    return float(mean / std * np.sqrt(annual_factor))
+    return float(strategy_metrics.sharpe(returns, periods_per_year=annual_factor))
 
 
 def simulate_dt_portfolio(

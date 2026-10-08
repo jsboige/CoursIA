@@ -671,18 +671,77 @@ host_distress() {
   return "$HOST_VERDICT_RC"
 }
 
-# Somme, en Mo, des caps memoire des conteneurs CI DEJA en vol. On lit la
-# limite REELLEMENT APPLIQUEE par docker (HostConfig.Memory), pas une
+# Points d'acces des demons Docker qui peuvent porter des conteneurs CI sur
+# cette machine. ai-01 en fait tourner deux (Docker Desktop sur le socket par
+# defaut, docker-ce sur /var/run/docker-ce.sock, cf resolve_blkio_device et
+# #15164) : ne sonder que le endpoint de DOCKER_HOST compte une MOITIE de
+# flotte et compare ce demi-total au budget ENTIER -- c'est ainsi que la
+# machine a atteint 20480 Mo nominaux sur un budget declare de 12288 sans
+# qu'aucun garde ne rougisse. `default` designe le endpoint courant
+# (DOCKER_HOST ou socket par defaut) ; les autres entrees sont des chemins de
+# socket unix. La liste se declare sans toucher au code :
+# COURSIA_RUNNER_DOCKER_ENDPOINTS="default /var/run/docker-ce.sock"
+ci_docker_endpoints() {
+  local eps="${COURSIA_RUNNER_DOCKER_ENDPOINTS:-default /var/run/docker-ce.sock}"
+  printf '%s\n' "$eps"
+}
+
+# Somme, en Mo, des caps memoire des conteneurs CI DEJA en vol -- sur TOUS les
+# demons de ci_docker_endpoints, pas seulement celui de DOCKER_HOST (#15164).
+# On lit la limite REELLEMENT APPLIQUEE par docker (HostConfig.Memory), pas une
 # re-derivation des variables de ce script : c'est la seule facon de compter
 # une famille lancee par un AUTRE processus, avec un autre environnement --
 # soit exactement le trou que cmd_lean documente depuis toujours (« la somme
 # des caps des familles actives n'est gardee par RIEN »).
+#
+# FAIL-CLOSED, sur la bonne frontiere. L'existence d'un daemon se sonde par
+# `docker ps` : un daemon qui ne repond pas peut porter des conteneurs, et
+# compter 0 pour lui serait exactement le defaut que ce garde ferme -- on
+# refuse, et la raison part sur stderr : les appelants lisent le nombre par
+# substitution de commande, et une globale posee dans la sous-couche de $( )
+# n'atteint jamais l'appelant -- stderr, lui, traverse. Un chemin de socket
+# ABSENT n'est pas un daemon muet : c'est un daemon non installe, qui ne porte
+# rien sur cette machine -- il sort du perimetre, et le DIT sur stderr.
+#
+# Deduplication par ID de demon, AU MIEUX : DOCKER_HOST peut designer un
+# socket deja liste, et le meme daemon rendu deux fois serait compte deux
+# fois. Si l'ID ne se lit pas (info muet ou vide), on ne refuse PAS -- on
+# enumere sans dedup, ce qui ne peut que surcompter (refus conservateur),
+# jamais sous-compter.
 running_ci_mb() {
-  local ids
-  ids="$(docker ps -q --filter 'label=coursia-ci=1' 2>/dev/null)"
-  if [ -z "$ids" ]; then echo 0; return 0; fi
-  docker inspect --format '{{.HostConfig.Memory}}' $ids 2>/dev/null \
-    | awk '{ s += $1 } END { printf "%d", s/1048576 }'
+  local ep d id ids ins total=0 seen=" "
+  for ep in $(ci_docker_endpoints); do
+    case "$ep" in
+      default) d="docker" ;;
+      unix://*) d="docker -H $ep" ;;
+      *) d="docker -H unix://$ep" ;;
+    esac
+    case "$ep" in
+      default|tcp://*) ;;
+      *)
+        if [ ! -e "${ep#unix://}" ]; then
+          echo "[budget] socket $ep absent -- daemon non installe, hors perimetre" >&2
+          continue
+        fi
+        ;;
+    esac
+    if ! ids="$($d ps -q --filter 'label=coursia-ci=1' 2>/dev/null)"; then
+      echo "demon Docker injoignable sur '$ep' (docker ps en echec) -- le budget n'est PAS mesurable : un daemon muet peut porter des conteneurs. Reparer le daemon, ou retirer '$ep' de COURSIA_RUNNER_DOCKER_ENDPOINTS si ce demon n'existe plus sur cette machine, puis relancer. (#15164)" >&2
+      return 1
+    fi
+    id="$($d info --format '{{.ID}}' 2>/dev/null)" || id=""
+    if [ -n "$id" ]; then
+      case "$seen" in *" $id "*) continue ;; esac
+      seen="$seen $id "
+    fi
+    [ -n "$ids" ] || continue
+    if ! ins="$($d inspect --format '{{.HostConfig.Memory}}' $ids 2>/dev/null)"; then
+      echo "docker inspect muet sur '$ep' alors que le daemon repond -- budget non mesurable. (#15164)" >&2
+      return 1
+    fi
+    total=$(( total + $(printf '%s\n' "$ins" | awk '{ s += $1 } END { printf "%d", (s+0)/1048576 }') ))
+  done
+  echo "$total"
 }
 
 # Refuse le demarrage si la famille demandee ne tient pas dans le budget, ou si
@@ -693,7 +752,9 @@ assert_memory_budget() {
   local per_mb want_mb used_mb budget_mb rc
   per_mb="$(mem_to_mb "$per")"
   want_mb=$(( per_mb * n ))
-  used_mb="$(running_ci_mb)"
+  if ! used_mb="$(running_ci_mb)"; then
+    die "budget CI NON MESURABLE -- REFUS. La ligne ci-dessus nomme le daemon injoignable : tant qu'il ne repond pas, la somme en vol ne peut pas etre etablie, et compter 0 pour lui serait exactement le defaut que ce garde ferme. Reparer le daemon, ou ajuster COURSIA_RUNNER_DOCKER_ENDPOINTS, puis relancer. (#15164)"
+  fi
   budget_mb=$(( BUDGET_GB * 1024 ))
 
   # Un refus qui ne montre pas sa mesure se conteste au juge, puis se contourne.
@@ -742,7 +803,7 @@ Arreter une autre famille, ou demarrer '$famille $max_n'."
 # mot-cle `auto` : le N cesse d'etre un chiffre choisi a la main -- c'est un
 # `8` ecrit a la main qui a sature la machine -- et se DERIVE de la mesure.
 budget_slots() {
-  local per_mb reste_mb part_mb n rc
+  local per_mb reste_mb part_mb n rc used_mb
   per_mb="$(mem_to_mb "$1")"
   # Hote en detresse OU non mesurable : `auto` rend 0. Fail-closed dans LES DEUX
   # cas -- une mesure qui echoue doit couter un refus, sinon la panne de sonde
@@ -751,7 +812,16 @@ budget_slots() {
   host_distress; rc=$?
   [ -n "$HOST_VERDICT_OUT" ] && echo "$HOST_VERDICT_OUT" >&2
   if [ "$rc" -ne 0 ]; then echo 0; return 0; fi
-  reste_mb=$(( BUDGET_GB * 1024 - $(running_ci_mb) ))
+  # Meme fail-closed pour la somme en vol (#15164) : un daemon muet rend la
+  # mesure impossible, et `auto` rend 0 slots plutot que de dimensionner sur
+  # un demi-perimetre. Le refus explique part sur stderr ; c'est start, par
+  # assert_memory_budget, qui tue le demarrage explicite.
+  if ! used_mb="$(running_ci_mb)"; then
+    echo "[budget] auto rend 0 slot : mesure du budget impossible (raison ci-dessus) (#15164)" >&2
+    echo 0
+    return 0
+  fi
+  reste_mb=$(( BUDGET_GB * 1024 - used_mb ))
   # Part maximale qu'UNE famille peut reclamer d'un coup : la moitie du
   # residuel. Les familles coexistent par design (prefixes distincts, gardes
   # PPID aveugles l'un a l'autre) -- laisser la premiere tout prendre revient
@@ -1413,7 +1483,17 @@ fetch_token() {
   # gh ACTIF -- un `gh auth switch` dans une autre session changeait
   # l'identite des registration tokens en silence (incident 2026-09-02).
   if [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ]; then
-    GH_TOKEN="$(gh auth token --user "$COURSIA_RUNNER_GH_ACCOUNT")" || return 1
+    # #15154 : un compte epingle INTRROUVABLE dans le trousseau gh est une
+    # cause structurelle -- `gh auth token --user` n'aboutira jamais par la
+    # perseverance. Avant ce changement, le `return 1` partait AVANT toute
+    # ecriture du fichier d'etat : code HTTP absent -> transitoire -> la
+    # boucle retentait indefiniment (reserve du preflight du 2026-09-27).
+    # Le marqueur HTTP=AUTH est classe terminal par les boucles, comme un
+    # 4xx, et porte le compte epingle pour le diagnostic.
+    if ! GH_TOKEN="$(gh auth token --user "$COURSIA_RUNNER_GH_ACCOUNT")"; then
+      printf 'HTTP=AUTH\nACCOUNT=%s\n' "$COURSIA_RUNNER_GH_ACCOUNT" > "$FETCH_TOKEN_STATE_FILE"
+      return 1
+    fi
     export GH_TOKEN
   fi
   # Pas de 2>/dev/null (#14259) : l'erreur REELLE de gh (403, token expire,
@@ -1431,12 +1511,25 @@ fetch_token() {
   # absolu ecrit dans l'entete), PAS dans une variable bash. Un appel
   # `token="$(fetch_token)"` execute la fonction dans un subshell -- les
   # asignations de variables y sont locales et perdues au retour. Le fichier
-  # survit au subshell. Format : "HTTP=<code>\nERR=<stderr tronque>".
-  local err="" http_code="" state_tmp=""
+  # survit au subshell. Format : "HTTP=<code>\nACCOUNT=<compte resolu>"
+  # ( ACCOUNT seulement sur les echecs ) "\nERR=<stderr tronque>" ; le code
+  # special AUTH designe un compte epingle introuvable (terminal).
+  local err="" http_code="" account="" state_tmp=""
   err="$(gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>&1 >/dev/null)"
   if [ -n "$err" ]; then
     http_code="$(printf '%s\n' "$err" | grep -oE 'HTTP [0-9]+' | awk '{print $2}' | head -n1)"
-    printf 'HTTP=%s\nERR=%s\n' "${http_code:-0}" "$err" > "$FETCH_TOKEN_STATE_FILE"
+    # #15154 critere 1 : le diagnostic doit nommer le compte RESOLU, pas la
+    # variable qui le designe. Epingle -> sa valeur ; sinon le compte ambiant,
+    # demande a gh uniquement sur ce chemin d'echec (cout nul sur le chemin
+    # nominal). Un compte non resoluble (trousseau casse) reste nomme comme
+    # tel -- inventer une identite serait pire que l'absence.
+    if [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ]; then
+      account="$COURSIA_RUNNER_GH_ACCOUNT"
+    else
+      account="$(gh api user --jq .login 2>/dev/null || true)"
+      [ -z "$account" ] && account="compte ambiant non resoluble"
+    fi
+    printf 'HTTP=%s\nACCOUNT=%s\nERR=%s\n' "${http_code:-0}" "$account" "$err" > "$FETCH_TOKEN_STATE_FILE"
     return 1
   fi
   printf 'HTTP=200\nERR=\n' > "$FETCH_TOKEN_STATE_FILE"
@@ -1471,16 +1564,24 @@ slot_loop() {
       # retry legitime. La discrimination se fait sur le code HTTP que fetch_token
       # a depose dans $FETCH_TOKEN_STATE_FILE (le fichier survit au subshell
       # d'invocation `$(fetch_token)` -- une variable bash n'aurait pas traverse).
-      local http="" terminal=0
+      # #15154 : AUTH = compte epingle introuvable dans le trousseau gh
+      # (marqueur pose par fetch_token AVANT le return) -- meme classe que
+      # 4xx : structurel, la perseverance ne le resout pas.
+      local http="" acct="" terminal=0
       if [ -f "$FETCH_TOKEN_STATE_FILE" ]; then
         http="$(awk -F= '$1=="HTTP"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+        acct="$(awk -F= '$1=="ACCOUNT"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
       fi
       : "${http:=0}"
+      : "${acct:=inconnu}"
+      local cause_diag="compte sans droit admin ?"
+      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh"
       case "$http" in
+        AUTH) terminal=1 ;;
         4??) [ "$http" != "408" ] && terminal=1 ;;
       esac
       if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
-        echo "[slot $slot] ABANDON : $fails echecs consecutifs HTTP $http (compte sans droit admin ?). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin du compte sur le depot (cf #15154 / voie B)." >&2
+        echo "[slot $slot] ABANDON : $fails echecs consecutifs HTTP $http sur le compte '$acct' ($cause_diag). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin de '$acct' sur le depot (cf #15154 / voie B)." >&2
         # #15154 : prevenir les AUTRES slots -- ils reproduiraient la meme
         # erreur. Le sentinel STOP_FILE est observe par leur test de boucle
         # (`while [ ! -f "$STOP_FILE" ]`), donc ils sortent en arret gracieux
@@ -1492,7 +1593,7 @@ slot_loop() {
         die "superviseur arrete -- cause structurelle, voir message precedent"
       fi
       if [ "$terminal" -eq 1 ]; then
-        echo "[slot $slot] token indisponible HTTP $http (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
+        echo "[slot $slot] token indisponible HTTP $http sur le compte '$acct' (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
       else
         echo "[slot $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
       fi
@@ -1995,24 +2096,30 @@ waiter_loop() {
     if [ -z "$token" ]; then
       fails=$(( fails + 1 ))
       wait_s="$(backoff_delay "$fails")"
-      # #15154 : discrimination 4xx-terminal / 5xx-transitoire (cf slot_loop).
-      local http="" terminal=0
+      # #15154 : discrimination 4xx-terminal / 5xx-transitoire (cf slot_loop),
+      # et AUTH-terminal (compte epingle introuvable, cf fetch_token).
+      local http="" acct="" terminal=0
       if [ -f "$FETCH_TOKEN_STATE_FILE" ]; then
         http="$(awk -F= '$1=="HTTP"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+        acct="$(awk -F= '$1=="ACCOUNT"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
       fi
       : "${http:=0}"
+      : "${acct:=inconnu}"
+      local cause_diag="compte sans droit admin ?"
+      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh"
       case "$http" in
+        AUTH) terminal=1 ;;
         4??) [ "$http" != "408" ] && terminal=1 ;;
       esac
       if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
-        echo "[waiter $slot] ABANDON : $fails echecs consecutifs HTTP $http (compte sans droit admin ?). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin du compte sur le depot (cf #15154 / voie B)." >&2
+        echo "[waiter $slot] ABANDON : $fails echecs consecutifs HTTP $http sur le compte '$acct' ($cause_diag). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin de '$acct' sur le depot (cf #15154 / voie B)." >&2
         # #15154 : cf slot_loop -- le sentinel coordonne l'arret de tous
         # les slots et waiters sur la meme cause structurelle.
         touch "$STOP_FILE" 2>/dev/null || true
         die "superviseur waiter arrete -- cause structurelle, voir message precedent"
       fi
       if [ "$terminal" -eq 1 ]; then
-        echo "[waiter $slot] token indisponible HTTP $http (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
+        echo "[waiter $slot] token indisponible HTTP $http sur le compte '$acct' (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
       else
         echo "[waiter $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
       fi

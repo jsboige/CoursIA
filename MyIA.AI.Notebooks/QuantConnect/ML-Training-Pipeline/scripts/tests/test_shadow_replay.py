@@ -342,6 +342,13 @@ def test_plan_qc_extracts_frozen_files(qc_repo, tmp_path):
     assert json.loads((target / "plan.json").read_text(encoding="utf-8")) == plan
 
 
+def test_plan_qc_resolves_the_entrypoint_from_the_repo_root(qc_repo, tmp_path):
+    # Le README lance la commande depuis un sous-dossier, avec --repo a sa valeur par defaut.
+    candidate = _qc_candidate(sha=_git(qc_repo, "rev-parse", "HEAD"))
+    plan = plan_qc(qc_repo / "qcproj" / "lib", candidate, "2025-11-14", tmp_path / "plans")
+    assert sorted(f["name"] for f in plan["files"]) == ["lib/signals.py", "main.py"]
+    assert (tmp_path / "plans" / "qc-demo" / "files" / "main.py").read_text(encoding="utf-8") == QC_V1
+
 def test_plan_qc_rejects_reserved_params_and_empty_project(qc_repo, tmp_path):
     sha = _git(qc_repo, "rev-parse", "HEAD")
     reserved = _frozen(id="qc-demo", kind="qc", sha=sha, frozen_on="2025-10-01",

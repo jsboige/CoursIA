@@ -137,11 +137,11 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\RL\rl_4_multi_armed_bandits.ipynb` | 24 |
-| `MyIA.AI.Notebooks\RL\rl_6d_sac_from_scratch.ipynb` | 16 |
-| `MyIA.AI.Notebooks\RL\rl_10_reward_shaping.ipynb` | 12 |
-| `MyIA.AI.Notebooks\RL\rl_6c_ppo_from_scratch.ipynb` | 12 |
-| `MyIA.AI.Notebooks\RL\rl_8_model_based_dyna_q.ipynb` | 11 |
+| `MyIA.AI.Notebooks\RL\RL-04-Bandits-Manchots-Python.ipynb` | 24 |
+| `MyIA.AI.Notebooks\RL\RL-06d-SAC-Depuis-Zero-Python.ipynb` | 16 |
+| `MyIA.AI.Notebooks\RL\RL-10-Reward-Shaping-Curriculum-Python.ipynb` | 12 |
+| `MyIA.AI.Notebooks\RL\RL-06c-PPO-Depuis-Zero-Python.ipynb` | 12 |
+| `MyIA.AI.Notebooks\RL\RL-08-Dyna-Q-Planification-Python.ipynb` | 11 |
 
 ### Search (drainable total = 1464)
 

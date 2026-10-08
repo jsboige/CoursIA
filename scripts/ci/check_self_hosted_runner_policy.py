@@ -214,7 +214,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # repliee comme etape du sweep ci-dessous (design-gate ai-01 : "meme
     # population, meme requete ; seule la branche de remediation differe.
     # Ne pas creer un troisieme organe").
-    "pr-path-collision-advisory.yml",
+    # pr-path-collision-advisory.yml : migre ubuntu-latest par Q35 etape 2
+    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows agregateurs,
+    # 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme
+    # commit. Precedent : #17443 (po-2023, 4 agregateurs).
+
     # queue-ghost-watch.yml (#14367, owner myia-po-2023:CoursIA-2) : sonde cron
     #   04:17 UTC (offset anti-stampede, hors-:00) sur les 18 zombies QUEUED
     #   du 2026-08-19. Meme profil que runner-starvation-advisory : advisory
@@ -228,7 +232,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "queue-ghost-watch.yml",
     "qc-research-monitor.yml",
-    "repo-size-advisory.yml",
+    # repo-size-advisory.yml : migre ubuntu-latest par Q35 etape 2 (#17397,
+    # PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows agregateurs,
+    # 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme
+    # commit. Precedent : #17443 (po-2023, 4 agregateurs).
     "review-coverage-advisory.yml",
     "slides-build-advisory.yml",
     "slow-lane.yml",
@@ -247,7 +254,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (tarball, voir l'entree dediee) ; seul `deploy` reste exclu (Pages/OIDC).
     "bare-cross-dir-load-gate.yml",
     "base-not-main-advisory.yml",
-    "concurrency-conj-guard.yml",
+    # concurrency-conj-guard.yml : migre ubuntu-latest par Q35 etape 2
+    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
+    # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
+    # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
     "degenerate-figure-gate.yml",
     "docs-link-check.yml",
     "exercise-leak-ci.yml",
@@ -318,7 +328,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   intra-notebook (detect_repeated_prose.py), advisory pur-Python
     #   stdlib-only, label signe, jamais exit != 0, aucun secret.
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
-    "repeated-prose-advisory.yml",
+    # repeated-prose-advisory.yml : migre ubuntu-latest par Q35 etape 2
+    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
+    # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
+    # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
     "scripts-tests.yml",
     "series-naming-gate.yml",
     # registre TRANCHE14 (issue #16762, owner myia-po-2023:CoursIA) : meme
@@ -345,7 +358,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "svg-decimal-comma-gate.yml",
     "svg-empty-display-gate.yml",
     "svg-offscreen-flat-gate.yml",
-    "testpaths-coverage-guard.yml",
+    # testpaths-coverage-guard.yml : migre ubuntu-latest par Q35 etape 2
+    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
+    # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
+    # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
     "translation-drift.yml",
     "translation-sync.yml",
     "variation-light-genre.yml",
@@ -507,6 +523,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   ai-01 c.5917276825) : la PR routait le job self-hosted sans
     #   toucher cette allowlist fail-closed. Rollback = revert de la PR.
     "docs-transients-guard.yml",
+    # #19290 (owner myia-po-2026:CoursIA-2, PR #19296) : lean-formal-logic
+    #   proof-integrity workflow pour le lake consumer FFL
+    #   formal_logic_lean (Tweety <-> Lean, EPIC #15066). Le job
+    #   `target-coverage` est advisory (exit 0 toujours) et tourne sur
+    #   la jambe Linux containerisee (meme profil que
+    #   docs-transients-guard / organ-duplication-advisory -- tranche 3).
+    #   Les jobs `ci` et `proof-integrity` reutilisent lean-build.yml /
+    #   lean-axiom.yml (GitHub-hosted), donc ne sont pas concernes par
+    #   cette allowlist. Garde same-repo universelle parenthesee au
+    #   niveau job (`if: head.repo.full_name == repository`).
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "lean-formal-logic.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

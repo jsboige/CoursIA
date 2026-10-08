@@ -5,7 +5,7 @@
 
 ## Description
 
-GaussianNB direction classifier on 8 tech stocks. Uses lagged returns, RSI, volume, and volatility features to predict next-day direction.
+GaussianNB direction classifier on 8 tech stocks. Utilise des rendements retardés sur fenêtres de 2, 5, 10 et 21 jours pour prédire la direction du lendemain.
 
 ## How to Run
 

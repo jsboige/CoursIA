@@ -266,7 +266,7 @@ class TestCodeCellOnlyExercise:
         self, tmp_path
     ):
         """Numbered C.1 print idiom on a scaffolded skeleton whose body
-        computes (the rl_8_model_based_dyna_q Ex2 shape). The skeleton's
+        computes (the RL-08-Dyna-Q-Planification-Python Ex2 shape). The skeleton's
         ``# TODO etudiant`` markers sit above scaffolding with a DERIVED
         return (``return list(steps), Q`` -- a call), so the comment-marker
         gate in ``_is_stub_code`` skips them ("leftover comments above a body
@@ -2575,3 +2575,251 @@ class TestBodyPlaceholderVsComputing:
             "the worked verifier must stop reading as a stub so header 1 "
             "pairs its real stub (got %d)" % result.count
         )
+
+
+# ---------------------------------------------------------------------------
+# #18741 PR C -- C# sentinel returns, reading exercises, external write-space
+# ---------------------------------------------------------------------------
+
+
+class TestCsharpSentinelReturnTail:
+    """``return -1; // TODO etudiant`` is a sentinel, not a computation.
+
+    Aspire 01 c23 -- the /health waiter. The C# statement terminator and the
+    ``//`` comment marker kept the tail outside the sentinel-return pattern,
+    so the TODO marker was gated by ``_body_computes_result`` and the cell
+    read as a solution (Aspire 01: 2/3).
+    """
+
+    def test_csharp_number_return_todo_tail_is_a_stub(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("## 6. Exercices"),
+                _code(
+                    "// Exercice 2 : attendre la disponibilite d'un service.\n"
+                    "async Task<int> WaitHealthyAsync(string baseUrl, int maxTries = 12) {\n"
+                    "    return -1; // TODO etudiant\n"
+                    "}\n"
+                    "Console.WriteLine(await WaitHealthyAsync($\"http://localhost:{portA}\"));\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "the C# sentinel return with a student TODO tail must count "
+            "(got %d)" % result.count
+        )
+
+    def test_python_number_return_todo_tail_is_a_stub(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("## Exercices"),
+                _code(
+                    "# Exercice 1 : sentinelle\n"
+                    "def attendre(baseUrl):\n"
+                    "    return -1  # TODO etudiant\n"
+                    "print(attendre('x'))\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1
+
+    def test_computed_number_return_without_tail_stays_solution(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("### Exercice 1 : indice le plus proche"),
+                _code(
+                    "def plus_proche(xs, cible):\n"
+                    "    meilleur = xs[0]\n"
+                    "    for x in xs:\n"
+                    "        if abs(x - cible) < abs(meilleur - cible):\n"
+                    "            meilleur = x\n"
+                    "    return -1  # convention : aucun element sous le seuil\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 0, (
+            "a computed return of -1 whose tail carries no placeholder "
+            "vocabulary stays a solution (got %d)" % result.count
+        )
+
+
+class TestReadingExercises:
+    """Audio 06-3 -- ``exercices de lecture`` : prose answers, no code stub.
+
+    The section declares the reading scope; the numbered headers below it can
+    never pair a code stub (there is none), and the deferred-chain resolution
+    must propagate the reading kind to headers blocked by their successors.
+    """
+
+    def test_reading_section_headers_count(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("# Comparatif"),
+                _md(
+                    "## 5. Trois exercices de lecture chiffree\n\n"
+                    "Ils ne demandent pas d'execution mais une lecture des "
+                    "sorties commises."
+                ),
+                _md("### Exercice 1 — lecture du tableau"),
+                _md("### Exercice 2 — comparaison du facteur d'abstraction"),
+                _md("### Exercice 3 — decision operationnelle"),
+                _md("## Format de ce carnet"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "three reading exercises under a declared reading section must "
+            "all count, deferred chain included (got %d)" % result.count
+        )
+        kinds = {h.detected_by for h in result.exercises}
+        assert kinds == {"reading_header"}, kinds
+
+    def test_reading_gate_requires_scope_declaration(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("# Titre"),
+                _md("### Exercice 1 — un sujet"),
+                _md("### Exercice 2 — un autre"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 0, (
+            "unpaired numbered headers WITHOUT the reading declaration stay "
+            "dropped (got %d)" % result.count
+        )
+
+
+class TestExternalWriteSpace:
+    """Orleans 01/02 -- the stub lives in the lab .csproj beside the notebook.
+
+    Orleans 01 headers name the file directly (``Ouvrir `Lab/Grains.cs```),
+    Orleans 02 headers name the member (``Completer `Grain.Method(...)```);
+    the witness code cells between headers are runners, not stubs, so the
+    headers never pair locally.
+    """
+
+    def test_external_cs_path_header_counts(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("# Orleans"),
+                _md(
+                    "### Exercice 1 — estimation du cout\n\n"
+                    "Ouvrir `OrleansAgentLab/Grains.cs` et completer "
+                    "`TokenCounterGrain.EstimateCostAsync`."
+                ),
+                _code(
+                    "// Exercice 1 — temoin attendu tant que la methode est stub.\n"
+                    "var (_, pret) = LabShell.RestartSilo();\n"
+                    "Console.WriteLine(LabShell.RunClient(\"ex1\"));\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "an unpaired numbered header naming an external .cs file is an "
+            "external exercise (got %d)" % result.count
+        )
+        assert result.exercises[0].detected_by == "external_header"
+
+    def test_external_member_header_counts(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("# Orleans"),
+                _md(
+                    "### Exercice 1 — resume d'une conversation\n\n"
+                    "Completer `ConversationGrain.SummaryAsync` : retourner "
+                    "le nombre de tours."
+                ),
+                _code(
+                    "// Exercice 1 — temoin attendu tant que la methode est stub.\n"
+                    "var (_, pret) = LabShell.RestartSilo();\n"
+                    "Console.WriteLine($\"[silo relance] gateway pret : {pret}\");\n"
+                    "Console.WriteLine(LabShell.RunClient(\"ex1\").TrimEnd());\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1
+        assert result.exercises[0].detected_by == "external_header"
+
+    def test_plain_unpaired_header_stays_dropped(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("# Titre"),
+                _md("### Exercice 1 — un sujet sans espace d'ecriture"),
+                _code(
+                    "var resultat = CalculComplet(42);\n"
+                    "Console.WriteLine(resultat);\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 0, (
+            "the generic drop rule is unchanged for headers without "
+            "external evidence (got %d)" % result.count
+        )
+
+
+# ---------------------------------------------------------------------------
+# #18741 Declarations -- declared statuses transcribed from the ledger
+# ---------------------------------------------------------------------------
+
+
+class TestDeclaredStatuses:
+    """Ledger #10/#13/#15 -- individually declared budgets.
+
+    Declared notebooks stay IN the corpus (they are course material) but
+    carry their declared kind and a zero budget, mirroring the setup/Lean
+    exception rows; the generated artifact leaves the corpus entirely.
+    """
+
+    def test_declared_mono_exercise_carries_zero_budget(self):
+        kind, threshold = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb")
+        )
+        assert kind == "declared-mono-exercise"
+        assert threshold == 0
+
+    def test_declared_ablation_companion_carries_zero_budget(self):
+        kind, threshold = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/PostTraining/PT_18_laya_ablation_distillation.ipynb")
+        )
+        assert kind == "declared-ablation-companion"
+        assert threshold == 0
+
+    def test_declared_demo_carries_zero_budget(self):
+        kind, threshold = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-03-Internalisation-CoT.ipynb")
+        )
+        assert kind == "declared-demo"
+        assert threshold == 0
+
+    def test_declared_kinds_stay_in_corpus(self):
+        for kind in ("declared-mono-exercise", "declared-ablation-companion", "declared-demo"):
+            assert kind not in OUT_OF_CORPUS_KINDS
+
+    def test_generated_artifact_notebook_is_out_of_corpus(self):
+        kind, threshold = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/SemanticKernel/Notebook-Generated.ipynb")
+        )
+        assert kind == "artifact"
+        assert threshold is None
+
+    def test_archive_shadows_declared_status(self):
+        # A declared stem moved under an underscore directory is archive
+        # first: structural kinds are consulted before DECLARED_STATUSES.
+        kind, _ = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/_archives/TV-03-Internalisation-CoT.ipynb")
+        )
+        assert kind == "archive"

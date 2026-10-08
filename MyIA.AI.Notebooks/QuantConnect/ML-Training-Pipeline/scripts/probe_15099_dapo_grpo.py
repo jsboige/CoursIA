@@ -76,6 +76,14 @@ MODELS: dict[str, dict[str, str]] = {
         "path_glob": "models--Qwen--Qwen3-8B/snapshots/*",
         "label": "Qwen3-8B",
     },
+    # Second backbone de l'etage >= 8-9B (#15293), sur le GPU 2 d'ai-01.
+    # Le glob suit le depot HF `Qwen/Qwen3-14B` (instruct, non-Base) : c'est
+    # le nom annonce par ai-01 dans le DM du 2026-10-05. Les poids sont
+    # telecharges par la machine qui execute (ai-01), pas par po-2024.
+    "qwen3_14b": {
+        "path_glob": "models--Qwen--Qwen3-14B/snapshots/*",
+        "label": "Qwen3-14B",
+    },
 }
 
 

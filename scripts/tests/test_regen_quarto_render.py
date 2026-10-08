@@ -320,8 +320,8 @@ class TestReadmeLinkTargets:
         base = Path("MyIA.AI.Notebooks/RL")
 
         assert rqr._normalise_readme_target(
-            base, "./rl_1_intro_cartpole.ipynb"
-        ) == "MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb"
+            base, "./RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb"
+        ) == "MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb"
 
     def test_flags_html_when_source_not_rendered(self, monkeypatch, tmp_path):
         readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
