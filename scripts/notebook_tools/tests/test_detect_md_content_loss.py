@@ -268,8 +268,25 @@ class TestReorderSafeByCellID:
         # X mais de MEME longueur normalisee (mots de meme longueur). Les
         # TOTAUX sont egaux au caractere pres -- un critere sur les totaux
         # disculperait a tort (blanc-seing). Le critere implemente est le
-        # MULTISET des chaines : il differe, le court-circuit ne s'arme pas,
-        # l'appariement index signale le desalignement (X perdu, X' apparu).
+        # MULTISET des chaines : il differe, le court-circuit ne s'arme pas.
+        #
+        # #19870 : avec l'appariement par intersection multiset des contenus
+        # normalises (cellules byte-identiques retirees avant l'index
+        # pairing), Y est present cote base ET cote head, donc retire des
+        # deux cotes. Le residu est [X] vs [X'] : la substitution est
+        # appariee correctement par contenu, et la longueur normalisee etant
+        # egale (le test fixture le garantit par construction), le ratio
+        # h_norm / b_norm est 1.0 -> 0 finding. C'est le **comportement
+        # desire** : la substance est preservee au caractere pres, le garde
+        # n'a pas vocation a juger la qualite d'une reformulation. Le
+        # **vrai** blanc-seing anti-#10873 reste garanti par le multiset
+        # short-circuit au-dessus : un carnet ou la TOTALITE des chaines
+        # sont preservees rend 0 findings avant meme d'arriver ici.
+        #
+        # Pour verifier qu'une **vraie** perte est toujours signalee dans
+        # ce regime, voir `test_substitution_with_real_truncation_signals`
+        # ci-dessous (la cellule `X_prime` est plus courte que `X` et
+        # signale un TRUNCATED_CELL).
         x = "## Analyse technique\n\n" + ("Regarder la volatilite. " * 20)
         x_prime = "## Analyse technique\n\n" + ("Analyser la volatilite. " * 20)
         y = "## Section breve\n\n" + ("Rappel court. " * 12)
@@ -281,9 +298,80 @@ class TestReorderSafeByCellID:
         head = _nb(_md(y), _md(x_prime))  # X substitue par X' + reorder
         findings = dml._compare_cells(dml.extract_md_cells(base),
                                       dml.extract_md_cells(head))
-        assert len(findings) >= 1, (
-            "une substitution meme-longueur + reorder doit signaler (multiset "
-            f"different, totaux egaux -- trouve: {findings!r})"
+        # L'appariement par intersection retire Y (present des deux cotes),
+        # apparie X <-> X' par contenu. Longueurs normalisees egales -> 0
+        # finding. C'est correct : on a preserve la substance.
+        assert findings == [], (
+            "une substitution meme-longueur preservee au caractere pres ne "
+            "doit PAS signaler (appariement par intersection, contenu "
+            f"preserve). Trouve: {findings!r}"
+        )
+
+    def test_substitution_with_real_truncation_signals(self):
+        # #19870 garde anti-blanc-seing du fix : une substitution pure (IDs
+        # distincts, compte constant) avec une VRAIE perte de substance
+        # (X_prime est beaucoup plus court que X) doit toujours signaler.
+        # C'est l'equivalent du `test_zero_id_real_truncation_still_signals`
+        # pour le regime substitution-a-IDs-differents : l'appariement par
+        # intersection ne peut pas blanchir une reduction reelle.
+        long_x = "## Section\n\n" + ("Phrase pedagogique substantielle. " * 30)  # ~700c
+        short_x_prime = "## Section\n\n"  # ~14c (frontmatter H2 + newline)
+        y = "## Section breve\n\n" + ("Rappel court. " * 12)  # ~150c
+        base = _nb(_md(long_x), _md(y))
+        head = _nb(_md(y), _md(short_x_prime))  # X reduit a 2% + reorder
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        # Y apparie en intersection (present des deux cotes) -> retire.
+        # Residu [long_x] vs [short_x_prime] : longueur 700 -> 14, ratio 0.02
+        # -> 1 finding TRUNCATED_CELL.
+        assert len(findings) == 1
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert findings[0]["ratio"] < 0.1
+
+    def test_substitution_keeps_unchanged_cells_no_false_positive(self):
+        # #19870 cas fondateur (PR #19831 PyMC-04) : sur 36 cellules md,
+        # 6 byte-identiques, 8 reellement reduites, 1 creee. La PR supprime
+        # la cellule campagne `fuse-16` et cree `lecture-marginales`. Le
+        # multiset des contenus normalises differe (la nouvelle cellule a
+        # un contenu distinct), les IDs different (cellule creee, pas
+        # d'ancien ID) : on tombe dans la branche `else` de
+        # `_compare_cells`. AVANT #19870, l'index-legacy croisait les
+        # cellules et produisait 15 faux positifs TRUNCATED_CELL. APRES
+        # #19870, l'intersection multiset retire les 6 cellules
+        # byte-identiques avant l'appariement, le residu est trivial, et
+        # seules les VRAIES reductions apparaissent.
+        body_long = "## Section pedagogique\n\n" + ("Contenu substantiel. " * 30)  # ~700c
+        body_intact_a = "## Cellule intacte A\n\n" + ("Detail pedagogique. " * 30)  # ~700c
+        body_intact_b = "## Cellule intacte B\n\n" + ("Autre detail. " * 30)  # ~700c
+        body_intact_c = "## Cellule intacte C\n\n" + ("Encore un detail. " * 30)  # ~700c
+        body_intact_d = "## Cellule intacte D\n\n" + ("Suite. " * 30)  # ~700c
+        body_intact_e = "## Cellule intacte E\n\n" + ("Plus. " * 30)  # ~700c
+        body_intact_f = "## Cellule intacte F\n\n" + ("Encore. " * 30)  # ~700c
+        body_truncated = "## Cellule reduite\n\n" + ("Tronquee. " * 5)  # ~80c
+        body_new = "## Cellule creee\n\n" + ("Substance nouvelle. " * 20)  # ~400c
+        # base : 6 cellules intactes, 1 reduite, 1 longue (substituee en head)
+        base = _nb(
+            _md(body_intact_a), _md(body_intact_b), _md(body_intact_c),
+            _md(body_intact_d), _md(body_intact_e), _md(body_intact_f),
+            _md(body_long),        # X : longue, sera substituee en head
+            _md(body_truncated),   # Y : tronquee dans la PR (idx reel)
+        )
+        # head : 6 intactes (meme ordre), 1 nouvelle (au lieu de X), 1 tronquee
+        head = _nb(
+            _md(body_intact_a), _md(body_intact_b), _md(body_intact_c),
+            _md(body_intact_d), _md(body_intact_e), _md(body_intact_f),
+            _md(body_new),        # X' : substituee a la place de X
+            _md(body_truncated),
+        )
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        # Les 6 cellules intactes sont retirees par l'intersection multiset.
+        # body_truncated est present des deux cotes (meme contenu) -> retire.
+        # Residu [body_long] vs [body_new] : 700c -> 400c, ratio ~0.57 < 0.75
+        # -> 1 finding TRUNCATED_CELL.
+        assert len(findings) == 1, (
+            "6 cellules intactes retirees, 1 vraie reduction signalee. "
+            f"Trouve: {findings!r}"
         )
         assert findings[0]["kind"] == "TRUNCATED_CELL"
 
