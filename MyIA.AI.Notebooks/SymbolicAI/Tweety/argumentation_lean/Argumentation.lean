@@ -36,7 +36,7 @@ caractéristique, Knaster–Tarski).
 
 ## Références croisées
 
-- Notebook compagnon `Tweety-5-Abstract-Argumentation.ipynb` (série Tweety) :
+- Notebook compagnon `Tweety-05-Abstract-Argumentation-Python.ipynb` (série Tweety) :
   présentation Python (tweety) des cadres de Dung, dont ceci est le pendant prouvé.
 - Issue #4046 (roadmap Lean #4038), Epic Argumentum #2137.
 
@@ -77,7 +77,7 @@ Knaster–Tarski).
 
 ## Cross-references
 
-- Companion notebook `Tweety-5-Abstract-Argumentation.ipynb` (Tweety series):
+- Companion notebook `Tweety-05-Abstract-Argumentation-Python.ipynb` (Tweety series):
   Python (tweety) presentation of Dung's frameworks, of which this is the proven
   counterpart.
 - Issue #4046 (Lean roadmap #4038), Argumentum Epic #2137.

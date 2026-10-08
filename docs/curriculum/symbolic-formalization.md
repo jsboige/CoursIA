@@ -114,9 +114,9 @@ est la Phase 3, argumentation).
 |---|---|---|---|
 | 1 | [Tweety-01-Setup-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb) | 45 min | JDK + 42 JARs + solveurs externes auto-installés → rien |
 | 2 | [Tweety-02-Basic-Logics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) | 45 min | PL, SAT (pySAT), FOL → étape 1 |
-| 3 | [Tweety-3-Advanced-Logics](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics.ipynb) | 45 min | logiques de description, modale, QBF → étape 2 |
-| 4 | [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) | 30 min | MUS, mesure d'incohérence, révision AGM, MaxSAT → étape 2 |
-| 5 | [Tweety-5-Abstract-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb) | 45 min | **cœur** : sémantiques de Dung (grounded, preferred, stable) → étapes 2-4 |
+| 3 | [Tweety-03-Advanced-Logics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb) | 45 min | logiques de description, modale, QBF → étape 2 |
+| 4 | [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) | 30 min | MUS, mesure d'incohérence, révision AGM, MaxSAT → étape 2 |
+| 5 | [Tweety-05-Abstract-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb) | 45 min | **cœur** : sémantiques de Dung (grounded, preferred, stable) → étapes 2-4 |
 | 6 | [Tweety-06-Structured-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) | 30 min | ASPIC+, DeLP, ABA, ASP (Clingo) → étape 5 |
 | 7 | [Tweety-07a-Extended-Frameworks-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07a-Extended-Frameworks-Python.ipynb) | 30 min | ADF, bipolaire, WAF, attaques récursives → étape 5 |
 | 8 | [Tweety-07b-Ranking-Probabilistic-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb) | 30 min | classement et probabilités sur arguments → étape 5 |
@@ -168,9 +168,9 @@ d'entrée recommandée est le *Natural Number Game* (3-4 h,
 | # | Notebook | Durée | Apporte → Suppose |
 |---|---|---|---|
 | 26 | [Lean-01-Setup-Lean-Python](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) | 30 min | WSL, elan, Mathlib — l'environnement du bloc → WSL2 + elan vérifiés |
-| 27 | [Tweety-5b-Lean-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb) | 30 min | **Dung prouvé** : le companion 0-sorry de l'étape 5 → rampe NNG + étape 5 |
+| 27 | [Tweety-05b-Argumentation-Lean](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05b-Argumentation-Lean.ipynb) | 30 min | **Dung prouvé** : le companion 0-sorry de l'étape 5 → rampe NNG + étape 5 |
 | 28 | [Planners-5b-Lean-Relaxation](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb) | 15 min | **h-add formalisé** dans `planning_lean` — companion de l'étape 23 → étape 27 |
-| 29 | [Tweety-5d-Stable-Synthesis](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5d-Stable-Synthesis-Lean.ipynb) | 30 min | **Z3 → Lean** : synthèse certifiée d'extensions stables — la boucle bloc 2 ⇄ bloc 4 → étapes 15+27 |
+| 29 | [Tweety-5d-Stable-Synthesis](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05d-Stable-Synthesis-Lean-Python.ipynb) | 30 min | **Z3 → Lean** : synthèse certifiée d'extensions stables — la boucle bloc 2 ⇄ bloc 4 → étapes 15+27 |
 
 ## Portes de sortie (hors colonne vertébrale, citées)
 

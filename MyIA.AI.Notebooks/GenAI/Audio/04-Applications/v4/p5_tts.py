@@ -63,6 +63,36 @@ _MAX_PREFIX_TAGS = 4  # Max prosody tags prepended before segment text.
 _NARRATOR_QWEN_ROUTING: bool = os.getenv("NARRATOR_QWEN_ROUTING", "1") == "1"
 _QWEN_NARRATOR_REFERENCE_ID: str = "qwen-voicedesign-narrator-fr-literary"
 
+# Phase 1 of the narrator pivot (#19692): a second candidate engine,
+# CosyVoice3 (Fun-CosyVoice3-0.5B-2512, Apache-2.0), synthesizes the narrator
+# chunked-by-sentence behind its own flag. The DEFAULT IS UNCHANGED — flag
+# "0": Qwen VoiceDesign stays the narrator engine until the association's
+# listening picks the final engine (#17586). Engines are exclusive: both
+# flags ON raises a configuration error, never a silent precedence (same
+# no-silent-swap contract as #15002 acceptance 6).
+_NARRATOR_COSYVOICE3_ROUTING: bool = os.getenv("NARRATOR_COSYVOICE3_ROUTING", "0") == "1"
+# The "-v2" suffix is not decoration: this sentinel is bumped whenever a
+# change can alter the AUDIO of an already-rendered segment, so the batch
+# cache cannot keep serving a stale MP3 for it (#19692). v2 = the
+# degenerate-render guard. The pre-guard run had written 9 narrator MP3s of
+# ~0.10 s -- one speech token, up to 560 chars/s -- while reporting them as
+# generated; a cached segment never enters _synthesize_narrator_cosyvoice3,
+# so no guard placed there can ever see them. v3 = the tag-strip
+# fix (be7aa641d5): _strip_brackets_for_qwen now replaces a tag with a
+# space instead of eating it with the following whitespace. The composed
+# text (tags included) is unchanged, so its hash -- the other cache key --
+# cannot see the fix; only this sentinel re-renders the glued narrators
+# (measured: 16/20 sampled segments carried omissions traced to glue
+# points like "route,[short pause] quand" -> "route,quand").
+_CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr-v3"
+
+# Engine -> reference_id sentinel. The narrator cache is keyed on it
+# (#19692): an MP3 rendered by one engine is never served for another.
+_NARRATOR_ENGINE_REFERENCE_IDS: dict[str, str] = {
+    "qwen_voicedesign": _QWEN_NARRATOR_REFERENCE_ID,
+    "cosyvoice3": _CV3_NARRATOR_REFERENCE_ID,
+}
+
 # VoiceDesign `instructions` prompt — describes the desired voice and delivery
 # for a 19th-century French audiobook narrator. Tuned from prosody_lab A/B
 # measurements (Issue #11624 / #1028, melody partition verdict EXPRESSIVE).
@@ -451,7 +481,15 @@ def _compose_tts_text(seg: AnnotatedSegment) -> str:
     # CRITICAL: ensure space after every ] — S2-Pro ignores tags without trailing space
     result = re.sub(r"\](?=\S)", "] ", result)
 
-    if len(result) > _MAX_TTS_CHARS:
+    # The 500-char cap is an S2-Pro input limit, not a pipeline one. A
+    # narrator rerouted to CosyVoice3 is bounded per-chunk by
+    # _chunk_narration instead: truncating here would silently drop the
+    # tail of every long narration (#19692 phase 1, measured: seg 1,
+    # 981 chars of fishaudio_text -> ~440 rendered, 17.8 s of audio for
+    # a 950-char segment). The default (FishAudio and Qwen) is unchanged.
+    if len(result) > _MAX_TTS_CHARS and not _should_route_narrator_to(
+        "cosyvoice3", seg
+    ):
         result = result[:_MAX_TTS_CHARS].rsplit(" ", 1)[0] + "..."
 
     return result
@@ -849,11 +887,20 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
     mp3_path = TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3"
     current_hash = _text_hash(fishaudio_text)
 
-    # F6 (Issue #15002): narrator-only routing to Qwen3-TTS VoiceDesign.
-    # Runs BEFORE the cache check so a stale FishAudio MP3 cannot shadow a
-    # narrator reroute.
-    if _should_route_narrator_to_qwen(seg):
+    # F6 (#15002) / phase 1 (#19692): narrator-only routing to the selected
+    # alternate engine (Qwen VoiceDesign by default, CosyVoice3 behind its
+    # flag). Runs BEFORE the cache check so a stale FishAudio MP3 cannot
+    # shadow a narrator reroute.
+    if _should_route_narrator_to("qwen_voicedesign", seg):
         return _synthesize_narrator_qwen(
+            seg=seg,
+            fishaudio_text=fishaudio_text,
+            mp3_path=mp3_path,
+            seed=seed,
+            text_hash=current_hash,
+        )
+    if _should_route_narrator_to("cosyvoice3", seg):
+        return _synthesize_narrator_cosyvoice3(
             seg=seg,
             fishaudio_text=fishaudio_text,
             mp3_path=mp3_path,
@@ -891,8 +938,18 @@ def _strip_brackets_for_qwen(text: str) -> str:
     natural speech. Brackets would either be ignored or, worse, vocalized
     (S2-Pro regression #1277/#1485 — WER explosion on bracket text).
     """
-    # Drop content in [brackets] and any leading tag prefix block.
-    return re.sub(r"\[[^\]]+\]\s*", "", text).strip()
+    # Replace bracket tags with a SPACE, never with nothing: the old
+    # pattern ate the tag and its trailing whitespace, gluing the
+    # neighbouring words ("route,[short pause] quand" -> "route,quand",
+    # "neige[pause] et" -> "neigeet"). The glued punctuation corrupts the
+    # plain-text engines' rendering -- measured #19692: CosyVoice3 fed a
+    # glued run-on omits everything before the glue point (seg 57: the
+    # audio starts at "quand", the first clause never spoken; same
+    # signature on segs 19/38/76) -- and it hides sentence boundaries
+    # from the CV3 chunker, un-chunking text the chunking was built to
+    # bound.
+    text = re.sub(r"\[[^\]]+\]", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def _synthesize_narrator_qwen(
@@ -962,15 +1019,466 @@ def _synthesize_narrator_qwen(
     )
 
 
-def _should_route_narrator_to_qwen(seg: AnnotatedSegment) -> bool:
-    """Decide whether a segment is routed to Qwen VoiceDesign.
+def _narrator_engine_flags() -> dict[str, bool]:
+    """Narrator engine activation flags, one entry per candidate engine."""
+    return {
+        "qwen_voicedesign": _NARRATOR_QWEN_ROUTING,
+        "cosyvoice3": _NARRATOR_COSYVOICE3_ROUTING,
+    }
 
-    Acceptance #1 of #15002: routing is explicit, testable, and limited to
-    the narrator. All other speakers stay on FishAudio clone.
+
+def _selected_narrator_engine() -> str | None:
+    """The single active narrator engine, or None (legacy FishAudio path).
+
+    Two active flags is a configuration error: raising beats an undocumented
+    precedence that would silently change the rendered voice (#15002
+    acceptance 6 — no silent engine swap).
     """
-    return (
-        _NARRATOR_QWEN_ROUTING
-        and seg.speaker == "narrateur"
+    active = [engine for engine, on in _narrator_engine_flags().items() if on]
+    if len(active) > 1:
+        raise ValueError(
+            "narrator engine flags are exclusive: "
+            + ", ".join(f"{e}={on}" for e, on in _narrator_engine_flags().items())
+        )
+    return active[0] if active else None
+
+
+def _should_route_narrator_to(engine: str, seg: AnnotatedSegment) -> bool:
+    """Decide whether a narrator segment routes to `engine`.
+
+    Engine-independent successor of _should_route_narrator_to_qwen (#19692
+    acceptance 4): routing stays explicit, testable, and limited to the
+    narrator (acceptance #1 of #15002). All other speakers stay on FishAudio
+    clone whatever the flags.
+    """
+    return seg.speaker == "narrateur" and _selected_narrator_engine() == engine
+
+
+# ---------------------------------------------------------------------------
+# Phase 1 (#19692) — Narrator routing to CosyVoice3, chunked by sentence
+# ---------------------------------------------------------------------------
+# Measured on the A0C bench (#17586): the unchunked CosyVoice3 render omits
+# whole sentences (absent under 3/3 ASRs), and the chunked re-render recovers
+# the targeted segments but moves losses to chunk onsets — which is exactly
+# why p7_verify counts missing >=3-word segments instead of trusting the mean
+# WER (c.6035598289).
+
+class NarratorCosyVoice3Unavailable(RuntimeError):
+    """Raised when CosyVoice3 cannot synthesize a narrator segment (model
+    missing, inference failure, conversion failure). Same contract as
+    NarratorQwenUnavailable: hard failure, never a silent fall back to
+    FishAudio (#15002 acceptance 6)."""
+
+
+# Chunker spec = the one measured on the A0C bench (#17586, suite 1 Zonos /
+# suite 2 CosyVoice3): <=280 chars, sentence boundaries, clause fallback.
+_CV3_MAX_CHUNK_CHARS = 280
+_CV3_PAUSE_S = 0.25  # silence between chunks
+
+# Degenerate-render guard (#19692). CosyVoice3 can return from
+# `inference_zero_shot` having emitted a single speech token: the caller gets
+# a well-formed WAV of exactly 1/25 s -- CosyVoice's own `token_hop_len` --
+# with no error at all. Slightly longer inputs crash instead, in the f0
+# predictor, because the mel is shorter than its first conv1d kernel. The two
+# faces are ONE event, so a duration floor catches both and a re-roll clears
+# both.
+#
+# Measured on the run-5 corpus (2026-10-07): the slowest 5% of the 257
+# legitimate narrator segments run at 15.4 chars/s (median 20.1), while the 9
+# silently degenerate ones ran at 108-560 chars/s -- one of them 57 chars in
+# 0.10 s. A 40 chars/s floor sits 2.6x under the slowest legitimate segment
+# and 2.7x over the fastest degenerate one; the absolute term keeps a
+# two-character chunk from being judged by a ratio alone.
+#
+# The degeneracy is a function of (text, SEED), not of the text: across 3
+# failing texts x 5 alternate seeds, 17 of 18 renders came back at a
+# plausible duration for the same text. Hence a re-roll rather than a text
+# transformation -- and note the corollary, that no chunking rule could have
+# fixed it, since the failing texts spanned 1 to 7 tokens while a 7-token
+# input failed and a 4-token one succeeded.
+#
+# NOT transferable to the cache path: these floors are WAV durations, and an
+# MP3 carries ~0.1 s of tag and final-frame padding, so the same check applied
+# to a cached MP3 would re-render a legitimately short "--Non." on every run.
+#
+# Where 40 comes from, measured over the 270-narrator artifact and NOT derived
+# from a ratio anyone liked (#19692):
+#   * legitimate narrator speech: p05 15.3, median 20.1, highest 38.9 chars/s
+#   * segments between 43.1 and 69 chars/s (eight of them transcribed by ASR)
+#     are ALL defective: seg 158 reads 3 words where the text has 12, seg 227
+#     79 where it has 156 -- partial degeneration, not fast speech
+#   * gross degenerates (one token): 99 to 560 chars/s
+# The corpus has NOTHING between 38.9 and 43.1, so the floor sits in an
+# empirically empty band rather than in the middle of a population. Its
+# margins are therefore thin on both sides (1.03x above the fastest legitimate,
+# 1.08x under the slowest defective) and that is stated rather than dressed up:
+# this floor is a GROSS backstop, not the fidelity organ. Fidelity is p7's
+# omission control, which votes three ASRs and is what the gate reads.
+_CV3_MIN_CHARS_PER_SEC = 40.0
+_CV3_MIN_ABS_S = 0.20
+# Five, not one: an alternate seed is not a guaranteed good seed. Measured
+# over 8 texts x 6 seeds, seed 7 degenerated on a text that seed 42 rendered
+# fine, and seed 43 on another -- so every attempt has to be checked against
+# the floor rather than the first re-roll trusted. At ~5% per-attempt
+# degeneracy off the unlucky seed, five attempts leave ~3e-7 per chunk, and a
+# healthy chunk still leaves the loop on its first pass.
+_CV3_RENDER_ATTEMPTS = 5
+# attempt 0 reproduces the pre-guard seed exactly, so a healthy chunk renders
+# bit-identically and only a degenerate one is perturbed.
+_CV3_RETRY_SEED_STRIDE = 104_729  # prime, unrelated to seed + seg_index
+
+# CosyVoice3 AutoModel: ~3.4 GB VRAM, tens of seconds to load — one instance
+# per process, not per segment.
+_CV3_MODEL_CACHE: dict[str, object] = {}
+
+# The re-roll above treats the symptom; this repairs the cause. Upstream's
+# non-vLLM decoder protects its first `min_len` steps against an early stop
+# token, but masks only ONE of the three ids it breaks on (#19692):
+#
+#     self.stop_token_ids = [speech_token_size + i for i in range(3)]
+#
+#     def sampling_ids(self, weighted_scores, decoded_tokens, sampling, ignore_eos=True):
+#         if ignore_eos is True:
+#             weighted_scores[self.speech_token_size] = -float('inf')
+#         ...
+#
+#     top_ids = self.sampling_ids(..., ignore_eos=True if i < min_len else False)
+#     if top_ids in self.stop_token_ids:      # ANY of the three breaks the loop
+#         break
+#
+# `speech_token_size` IS `stop_token_ids[0]`, so ids 1 and 2 stay samplable
+# inside the protected prefix: the floor leaks, and a render ends after a
+# single speech token -- 1/25 s = 0.04 s, CosyVoice's token_hop_len. This is
+# not a short-text effect and not a seed effect. `min_len` is never even 0
+# here: the decoder concatenates prompt_text and adds its length back
+# (`text_len += prompt_text_len`), so `min_len == 2 x tokens(tts_text)`, i.e.
+# 10 for "Il demanda:" -- a text whose own measured render stopped at exactly
+# one token. The floor was armed; two ids walked through it.
+#
+# The vLLM branch has no such hole (`SamplingParams(min_tokens=min_len)`
+# applies to every id in `stop_token_ids`), which is the shape this patch
+# restores to the branch we actually run. Patching the loaded sampler rather
+# than vendoring a fork keeps the reuse organ-first (#17586): the upstream
+# tree stays exactly as installed, and a CosyVoice upgrade that moves these
+# attributes fails loudly at load instead of silently rendering unguarded.
+_CV3_STOP_FLOOR_FLAG = "_v4_stop_floor_patched"
+# The decoder sits two levels down from the object `load_model()` returns:
+# `AutoModel()` is a FACTORY that returns `CosyVoice3(...)`, whose `__init__`
+# sets `self.model = CosyVoice3Model(...)`, whose own `__init__` sets
+# `self.llm = CosyVoice3LM(...)` — and it is the LM that carries
+# `sampling_ids` / `stop_token_ids`. Measured, not inferred: a first version of
+# this patch addressed `model.llm` and raised on all nine probe segments, for a
+# full GPU run of learning nothing (#19692).
+_CV3_DECODER_PATH = "model.llm"
+
+
+def _cv3_decoder(model):
+    """Return the CosyVoice3 LM, or raise naming the shape actually observed.
+
+    The diagnosis carries the observed types and attribute names on purpose:
+    a vague "no decoder" costs another GPU run to localise, which is exactly
+    what the first attempt at this patch spent.
+    """
+    inner = getattr(model, "model", None)
+    llm = getattr(inner, "llm", None) if inner is not None else None
+    if llm is None:
+        outer_attrs = sorted(vars(model)) if hasattr(model, "__dict__") else []
+        inner_attrs = (
+            sorted(vars(inner))
+            if inner is not None and hasattr(inner, "__dict__")
+            else []
+        )
+        raise NarratorCosyVoice3Unavailable(
+            f"CosyVoice3 decoder not found at `{_CV3_DECODER_PATH}`: the loaded "
+            f"object is {type(model).__name__}{outer_attrs}, its `.model` is "
+            f"{type(inner).__name__ if inner is not None else None}{inner_attrs} "
+            "-- the stop-token floor patch cannot be applied; refusing to "
+            "render unguarded (#19692)"
+        )
+    return llm
+
+
+def _patch_cv3_stop_token_floor(model) -> str:
+    """Mask every stop id CosyVoice3 breaks on, for its whole min_len prefix.
+
+    Returns "patched" or "already-patched". Raises
+    NarratorCosyVoice3Unavailable when the decoder lacks the attributes the
+    patch relies on — a silent skip would mean rendering with the leak still
+    open, which is the failure this patch exists to close.
+    """
+    llm = _cv3_decoder(model)
+    missing = [
+        name for name in ("sampling_ids", "stop_token_ids") if not hasattr(llm, name)
+    ]
+    if missing:
+        raise NarratorCosyVoice3Unavailable(
+            "CosyVoice3 decoder without " + " / ".join(missing) + ": the "
+            "stop-token floor patch cannot be applied; refusing to render "
+            "unguarded (#19692)"
+        )
+    if getattr(llm, _CV3_STOP_FLOOR_FLAG, False):
+        return "already-patched"
+
+    stop_ids = [int(i) for i in llm.stop_token_ids]
+    original = llm.sampling_ids
+
+    def sampling_ids(weighted_scores, decoded_tokens, sampling, ignore_eos=True):
+        if ignore_eos:
+            for stop_id in stop_ids:
+                weighted_scores[stop_id] = -float("inf")
+        return original(weighted_scores, decoded_tokens, sampling, ignore_eos=False)
+
+    llm.sampling_ids = sampling_ids
+    setattr(llm, _CV3_STOP_FLOOR_FLAG, True)
+    return "patched"
+
+
+def _get_cv3_client():
+    """Return the bakeoff CosyVoice3 client module, loaded once.
+
+    The module is loaded DIRECTLY from its file: bakeoff_large/__init__.py
+    is markdown prose (documentation), not valid Python — a package import
+    of prosody_lab.bakeoff_large crashes on it with a SyntaxError. Same
+    organ-first reuse as the A0C bench (#17586), which dodged the same file
+    by importing clients.cosyvoice3 off sys.path.
+    """
+    if "client" not in _CV3_MODEL_CACHE:
+        import importlib.util
+
+        cv3_path = (
+            Path(__file__).parent
+            / "prosody_lab"
+            / "bakeoff_large"
+            / "clients"
+            / "cosyvoice3.py"
+        )
+        spec = importlib.util.spec_from_file_location("cv3_bakeoff_client", cv3_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _CV3_MODEL_CACHE["client"] = module
+    return _CV3_MODEL_CACHE["client"]
+
+
+def _load_cv3_model():
+    """Load the CosyVoice3 AutoModel once per process (organ-first reuse of
+    the prosody_lab bakeoff client, measured on #17586).
+
+    The decoder is patched on the way out — `_patch_cv3_stop_token_floor`
+    closes the leaky `min_len` floor at its source, so a segment renders at
+    the length its text implies instead of stopping after one speech token
+    (#19692). The status line is logged once, which is what makes the patch
+    verifiable in the measured run's log rather than assumed.
+    """
+    if "stop_floor_error" in _CV3_MODEL_CACHE:
+        # The refusal is cached too. Without this the model is reloaded (~16 s)
+        # for every segment only to fail identically -- measured: a failing
+        # patch cost six reloads in a nine-segment probe, so a 269-segment run
+        # would have burned most of an hour before reporting anything.
+        raise NarratorCosyVoice3Unavailable(_CV3_MODEL_CACHE["stop_floor_error"])
+    if "model" not in _CV3_MODEL_CACHE:
+        model = _get_cv3_client().load_model()
+        try:
+            status = _patch_cv3_stop_token_floor(model)
+        except NarratorCosyVoice3Unavailable as exc:
+            _CV3_MODEL_CACHE["stop_floor_error"] = str(exc)
+            raise
+        _CV3_MODEL_CACHE["stop_floor"] = status
+        logger.info("[CV3] stop-token floor patch: %s", status)
+        _CV3_MODEL_CACHE["model"] = model
+    return _CV3_MODEL_CACHE["model"]
+
+
+def _chunk_narration(text: str, max_chars: int = _CV3_MAX_CHUNK_CHARS) -> list[str]:
+    """Split narration into <=max_chars chunks at sentence boundaries.
+
+    Spec = the chunker measured on the A0C bench (#17586): split after
+    . ! ?, clause fallback (, ; :) for over-long sentences, greedy whole-unit
+    grouping, never a cut mid-word. Identity is asserted — the chunks
+    reassemble to the source — so chunking can never itself drop text: the
+    omission class of #19692 lives in the model, not the chunker.
+    """
+    sentence_re = re.compile(r"(?<=[.!?])\s+")
+    clause_re = re.compile(r"(?<=[,;:])\s+")
+    text = text.strip()
+    if not text:
+        return []
+
+    units: list[str] = []
+    for sentence in (s.strip() for s in sentence_re.split(text) if s.strip()):
+        if len(sentence) <= max_chars:
+            units.append(sentence)
+            continue
+        clauses = [c.strip() for c in clause_re.split(sentence) if c.strip()]
+        if any(len(c) > max_chars for c in clauses):
+            raise ValueError(
+                f"clause > {max_chars} chars; mid-word split forbidden: {sentence[:60]}"
+            )
+        units.extend(clauses)
+
+    chunks: list[str] = []
+    current = ""
+    for unit in units:
+        candidate = f"{current} {unit}".strip() if current else unit
+        if len(candidate) <= max_chars:
+            current = candidate
+        else:
+            if current:
+                chunks.append(current)
+            current = unit
+    if current:
+        chunks.append(current)
+
+    def _norm_ws(s: str) -> str:
+        return re.sub(r"\s+", " ", s).strip()
+
+    assert _norm_ws(" ".join(chunks)) == _norm_ws(text), "chunking lost text"
+    return chunks
+
+
+def _cv3_min_expected_s(text: str) -> float:
+    """Shortest audio that could plausibly hold `text` (#19692).
+
+    A render below this floor is a degenerate CosyVoice3 output, not fast
+    speech: see _CV3_MIN_CHARS_PER_SEC for the measurement (legitimate speech
+    tops out at 38.9 chars/s, the slowest ASR-confirmed defect at 43.1) and for
+    why this is a gross backstop rather than the fidelity organ.
+    """
+    return max(_CV3_MIN_ABS_S, len(text) / _CV3_MIN_CHARS_PER_SEC)
+
+
+def _synthesize_narrator_cosyvoice3(
+    seg: AnnotatedSegment,
+    fishaudio_text: str,
+    mp3_path: Path,
+    seed: int,
+    text_hash: str,
+) -> TTSResult:
+    """Synthesize a narrator segment via CosyVoice3, chunked by sentence.
+
+    Organ-first: model loading and the zero-shot prompt constants come from
+    the prosody_lab bakeoff client (clients.cosyvoice3, #17586); the
+    per-chunk orchestration (seed, pause, concat) is pipeline logic and lives
+    here. Chunking bounds each inference to one sentence group so p7's
+    omission control can attribute a dropped passage to a chunk onset
+    instead of losing it in the mean WER.
+    """
+    plain_text = _strip_brackets_for_qwen(fishaudio_text)
+    if not plain_text:
+        raise NarratorCosyVoice3Unavailable(
+            f"seg {seg.seg_index}: empty text after stripping brackets"
+        )
+    chunks = _chunk_narration(plain_text)
+    if not chunks:
+        raise NarratorCosyVoice3Unavailable(
+            f"seg {seg.seg_index}: chunker returned nothing"
+        )
+
+    # Imported here (not at module top) so hermetic tests need neither torch
+    # nor the CosyVoice runtime — the empty-input guard above runs torch-free.
+    import time
+
+    cv3_client = _get_cv3_client()
+
+    import torch
+
+
+    _, _, asset_wav = cv3_client._bootstrap_paths()
+    model = _load_cv3_model()
+    prompt_text = cv3_client.PROMPT_TEXT_ZH + cv3_client.ENDOFPROMPT
+    sr = int(model.sample_rate)
+
+    t0 = time.time()
+    wavs = []
+    attempts = 0
+    for i, chunk in enumerate(chunks):
+        floor_s = _cv3_min_expected_s(chunk)
+        wav = None
+        last_dur = 0.0
+        last_exc: Exception | None = None
+        for attempt in range(_CV3_RENDER_ATTEMPTS):
+            attempts += 1
+            # attempt 0 keeps the pre-guard seed, so a healthy chunk is
+            # unchanged and only a degenerate one is perturbed.
+            torch.manual_seed(seed + i + attempt * _CV3_RETRY_SEED_STRIDE)
+            try:
+                gen = model.inference_zero_shot(
+                    chunk, prompt_text, str(asset_wav), stream=False
+                )
+                parts = [j["tts_speech"] for j in gen]
+                candidate = torch.cat(parts, dim=-1) if len(parts) > 1 else parts[0]
+            except Exception as exc:  # noqa: BLE001
+                # The crash and the silent 0.04 s are the same event: too few
+                # speech tokens. Here the mel was short enough to break the f0
+                # predictor's conv1d before anything was yielded, so it is the
+                # same re-roll that answers it.
+                last_exc, last_dur = exc, 0.0
+            else:
+                last_dur = candidate.shape[-1] / sr
+                if last_dur >= floor_s:
+                    wav = candidate
+                    break
+            logger.warning(
+                "[CV3] seg %s chunk %d/%d attempt %d/%d: degenerate render "
+                "(%.2fs for %d chars, floor %.2fs%s) - re-rolling seed",
+                seg.seg_index, i + 1, len(chunks), attempt + 1,
+                _CV3_RENDER_ATTEMPTS, last_dur, len(chunk), floor_s,
+                f", {type(last_exc).__name__}" if last_exc else "",
+            )
+        if wav is None:
+            # Hard failure, never a silent short MP3: the run counts it in
+            # Failed, which is honest, where a 0.10 s file is not.
+            raise NarratorCosyVoice3Unavailable(
+                f"seg {seg.seg_index}: chunk {i + 1}/{len(chunks)} still "
+                f"degenerate after {_CV3_RENDER_ATTEMPTS} attempts (last "
+                f"{last_dur:.2f}s for {len(chunk)} chars, floor "
+                f"{floor_s:.2f}s): {chunk[:60]!r}"
+            ) from last_exc
+        wavs.append(wav)
+    elapsed = time.time() - t0
+
+    pause = torch.zeros(1, int(_CV3_PAUSE_S * sr))
+    parts_audio: list[torch.Tensor] = []
+    for i, wav in enumerate(wavs):
+        if i:
+            parts_audio.append(pause)
+        parts_audio.append(wav)
+    full = torch.cat(parts_audio, dim=-1)
+
+    import torchaudio
+
+    wav_buf = io.BytesIO()
+    torchaudio.save(wav_buf, full, sr, format="wav")
+    wav_buf.seek(0)
+    try:
+        from pydub import AudioSegment
+
+        audio = AudioSegment.from_file(wav_buf, format="wav")
+        buf = io.BytesIO()
+        audio.export(buf, format="mp3", bitrate="192k")
+        mp3_bytes = buf.getvalue()
+    except Exception as exc:  # pragma: no cover — pydub/ffmpeg missing
+        raise NarratorCosyVoice3Unavailable(
+            f"seg {seg.seg_index}: WAV->MP3 conversion failed: {exc}"
+        ) from exc
+
+    mp3_path.write_bytes(mp3_bytes)
+    duration = audio_duration_mp3(mp3_bytes)
+    rtf = elapsed / duration if duration > 0 else float("inf")
+    logger.info(
+        "[CV3] seg %s: %d chunks, %.1fs audio, RTF %.2f",
+        seg.seg_index, len(chunks), duration, rtf,
+    )
+
+    return TTSResult(
+        seg_index=seg.seg_index,
+        speaker=seg.speaker,
+        reference_id=_CV3_NARRATOR_REFERENCE_ID,
+        mp3_path=str(mp3_path),
+        duration_s=duration,
+        seed=seed,
+        status="generated",
+        attempts=attempts,
+        text_hash=text_hash,
     )
 
 
@@ -986,9 +1494,28 @@ def _load_cached_hashes() -> dict[int, str]:
         return {}
 
 
+def _load_cached_reference_ids() -> dict[int, str]:
+    """Load the engine/voice sentinel (reference_id) per cached segment.
+
+    The narrator cache is engine-aware (#19692 phase 1): a text hash alone
+    cannot tell which engine rendered the MP3, so flipping
+    NARRATOR_COSYVOICE3_ROUTING would silently serve the previous engine's
+    audio. The reference_id sentinel can.
+    """
+    results_path = BASE_DIR / "outputs" / "tts_results.json"
+    if not results_path.exists():
+        return {}
+    try:
+        data = json.loads(results_path.read_text(encoding="utf-8"))
+        return {r["seg_index"]: r.get("reference_id", "") for r in data}
+    except (json.JSONDecodeError, KeyError):
+        return {}
+
+
 def _synthesize_batch(
     segments: list[tuple[AnnotatedSegment, str]],
     cached_hashes: dict[int, str] | None = None,
+    cached_refs: dict[int, str] | None = None,
 ) -> list[TTSResult]:
     """Process a batch of segments concurrently.
 
@@ -997,6 +1524,8 @@ def _synthesize_batch(
     """
     if cached_hashes is None:
         cached_hashes = {}
+    if cached_refs is None:
+        cached_refs = {}
     results: dict[int, TTSResult] = {}
 
     # Quick first pass: check which are truly cached (hash matches)
@@ -1007,7 +1536,24 @@ def _synthesize_batch(
         mp3_path = TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3"
         current_hash = _text_hash(text)
 
-        if mp3_path.exists() and cached_hashes.get(seg.seg_index) == current_hash:
+        cache_ok = (
+            mp3_path.exists() and cached_hashes.get(seg.seg_index) == current_hash
+        )
+        if cache_ok and seg.speaker == "narrateur":
+            # Engine-aware narrator cache (#19692): the MP3 is reusable only
+            # if the engine that produced it is the selected one — a stale
+            # MP3 from the previous engine must not shadow the reroute
+            # (same contract as the segment-level dispatch, #15002).
+            engine = _selected_narrator_engine()
+            expected_ref = (
+                _NARRATOR_ENGINE_REFERENCE_IDS.get(engine)
+                if engine
+                else _resolve_voice(seg)
+            )
+            if cached_refs.get(seg.seg_index) != expected_ref:
+                cache_ok = False
+
+        if cache_ok:
             size = mp3_path.stat().st_size
             duration = audio_duration_mp3(mp3_path.read_bytes()) if size > 0 else 0.0
             results[seg.seg_index] = TTSResult(
@@ -1035,6 +1581,7 @@ def _synthesize_batch(
         _, seg, text = item
         return _synthesize_segment(seg, text)
 
+    seg_by_idx = {idx: seg for idx, seg, _ in to_generate}
     with ThreadPoolExecutor(max_workers=_MAX_WORKERS) as pool:
         futures = {pool.submit(_gen, item): item[0] for item in to_generate}
         for future in as_completed(futures):
@@ -1042,9 +1589,19 @@ def _synthesize_batch(
             try:
                 results[seg_idx] = future.result()
             except Exception as exc:
+                # Surface the cause FIRST: a failure record that itself
+                # crashes on schema validation (speaker="" against a
+                # Literal) masks the original exception and kills the whole
+                # run — measured while routing the narrator to CosyVoice3
+                # (#19692), where the first synthesis failure took the
+                # pipeline down without a usable traceback.
+                logger.error(
+                    "seg %s synthesis failed: %s", seg_idx, exc, exc_info=True
+                )
+                print(f"  [P5] seg {seg_idx} FAILED: {type(exc).__name__}: {exc}")
                 results[seg_idx] = TTSResult(
                     seg_index=seg_idx,
-                    speaker="",
+                    speaker=seg_by_idx[seg_idx].speaker,
                     reference_id="",
                     mp3_path="",
                     duration_s=0.0,
@@ -1096,6 +1653,7 @@ def run(force: bool = False) -> Path:
 
     # Preload cached hashes once (O(N) instead of O(N²))
     cached_hashes = _load_cached_hashes()
+    cached_refs = _load_cached_reference_ids()
     print(f"  Cache: {len(cached_hashes)} entries preloaded")
 
     # Process in batches for progress reporting
@@ -1107,7 +1665,7 @@ def run(force: bool = False) -> Path:
             for i in range(batch_start, batch_end)
         ]
 
-        batch_results = _synthesize_batch(batch_segs, cached_hashes)
+        batch_results = _synthesize_batch(batch_segs, cached_hashes, cached_refs)
         results.extend(batch_results)
 
         for r in batch_results:
