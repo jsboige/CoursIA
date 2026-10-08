@@ -612,6 +612,19 @@ def _substantial_output(cell):
     return bool(probe.strip())
 
 
+def _in_fallback(cell):
+    """True si la cellule porte deja un motif doux en sortie (#19697).
+
+    Une cellule de repli execute son chemin normal AVANT d'echouer : ses
+    lignes d'echo (``Inpainting: '...'``, ``Soumission du workflow...``)
+    rendent sa sortie ``substantial`` au sens du test ci-dessus sans que ce
+    soient des rendus remplaces. La condition de base de ``_declared_fallback``
+    ne peut donc pas se lire seule : repli a la base = exemption conservee.
+    """
+    return any(p.search(_cell_output_text(cell))
+               for p in DEGRADED_HINT_PATTERNS)
+
+
 def _declared_fallback(nb, idx, out_text, matched, base_nb=None):
     """True si une occurrence DOUCE est un fallback DECLARE par la cellule (#18916).
 
@@ -632,14 +645,18 @@ def _declared_fallback(nb, idx, out_text, matched, base_nb=None):
     ne passent jamais ici -- scan() leur donne priorite meme dans un stream
     stubbe, donc une vraie panne a cote d'une banniere demo reste visible.
 
-    Condition de base (review ai-01 sur #19038). Les deux ancres ci-dessus ne
-    distinguent pas un mode demo DECLARE d'une degradation SUBIE a la
-    re-execution : toute cellule a ``try/except`` porte sa banniere en litteral
-    dans sa source, les deux tiennent dans la meme ligne. Quand ``base_nb`` est
-    fourni et que la meme cellule (par ``id``) portait une sortie substantielle
-    a la base, le hit reste TOOL_FAILURE : la banniere a REMPLACE un rendu,
-    c'est une perte de capacite (#3473 / #11685), pas un repli documente. Une
-    cellule nouvelle, ou deja en repli a la base, garde l'exemption.
+    Condition de base (review ai-01 sur #19038, affinee #19697). Les deux
+    ancres ci-dessus ne distinguent pas un mode demo DECLARE d'une degradation
+    SUBIE a la re-execution : toute cellule a ``try/except`` porte sa banniere
+    en litteral dans sa source, les deux tiennent dans la meme ligne. Quand
+    ``base_nb`` est fourni et que la meme cellule (par ``id``) portait une
+    sortie substantielle ET hors repli a la base, le hit reste TOOL_FAILURE :
+    la banniere a REMPLACE un rendu, c'est une perte de capacite (#3473 /
+    #11685), pas un repli documente. Une cellule nouvelle, ou deja en repli
+    a la base, garde l'exemption -- y compris quand la sortie de repli de la
+    base porte des lignes d'echo pre-echec (``Inpainting: '...'``, soumission
+    du workflow) : ce sont la sortie normale du chemin de repli, pas des
+    rendus remplaces (#19697, faux positif mesure sur 01-5b-Qwen-Image-Edit).
     """
     cells = nb.get("cells", []) or []
     if not (0 <= idx < len(cells)):
@@ -651,7 +668,8 @@ def _declared_fallback(nb, idx, out_text, matched, base_nb=None):
     if not declared:
         return False
     base_cell = _base_cell_for(base_nb, cell)
-    if base_cell is not None and _substantial_output(base_cell):
+    if (base_cell is not None and _substantial_output(base_cell)
+            and not _in_fallback(base_cell)):
         return False
     return True
 
@@ -858,6 +876,29 @@ def self_test(cwd=None):
     if _already["TOOL_FAILURE"] or len(_already["DECLARED_FALLBACK"]) != 1:
         failures.append("a cell already in fallback at base lost its "
                         "exemption: " + repr(_already))
+    # #19697: same direction, but the base fallback run carries pre-failure
+    # echo lines ("Inpainting: '...'", "Soumission du workflow...") that make
+    # it substantial. The echoes are the normal output of the degraded path,
+    # not a replaced render -- the exemption must hold. Measured on
+    # 01-5b-Qwen-Image-Edit-2509 cell-10: byte-identical banner at base and
+    # head, ratchet FAIL 0 -> 1 on a nav-line-only diff.
+    _echo_src = ("try:\n"
+                 "    print(\"Inpainting: 'un ordinateur portable'\")\n"
+                 "    print('Soumission du workflow...')\n"
+                 "    api.post(workflow)\n"
+                 "except Exception:\n"
+                 "    print('API non disponible: Exception')\n"
+                 "    print('Workflow defini - necessite API ComfyUI active')")
+    _echo_banner = [{"output_type": "stream",
+                     "text": "Inpainting: 'un ordinateur portable'\n"
+                             "Soumission du workflow...\n"
+                             "API non disponible: Exception\n"
+                             "Workflow defini - necessite API ComfyUI active"}]
+    _echoed = scan({"cells": [_cid("c-echo", _echo_src, _echo_banner)]},
+                   base_nb={"cells": [_cid("c-echo", _echo_src, _echo_banner)]})
+    if _echoed["TOOL_FAILURE"] or len(_echoed["DECLARED_FALLBACK"]) != 1:
+        failures.append("a fallback-with-echoes base lost its exemption "
+                        "(#19697): " + repr(_echoed))
     # ... and a cell that is NEW at head (no base carrier).
     _new = scan({"cells": [_cid("c-new", _graphviz_src, _banner)]},
                 base_nb=_base_render)

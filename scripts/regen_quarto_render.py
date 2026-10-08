@@ -488,7 +488,9 @@ def _normalise_readme_target(base: Path, href: str) -> str:
     return posixpath.normpath((base / href).as_posix())
 
 
-def readme_link_violations() -> list[tuple[str, str, str]]:
+def readme_link_violations(
+    pr_added_files: set[str] | None = None,
+) -> list[tuple[str, str, str]]:
     """Return [(readme, class, detail)] for render-list-vs-README drift.
 
     Classes:
@@ -502,8 +504,26 @@ def readme_link_violations() -> list[tuple[str, str, str]]:
     #11451 `---` guard or by an exclude marker) are NOT violations: they are
     the documented raw-source population (reported by --check-readme-links as
     warnings so the sweep stays honest, but the fix is notebook-side).
+
+    ``pr_added_files`` (#19631) : when the readme-ipynb-links-guard workflow
+    runs on a PR (cf. `.github/workflows/readme-ipynb-links-guard.yml`), the
+    BASE scan finds no STALE_LINK for a link targeting a PR-added notebook
+    (the link only exists in the PR scan), producing a false-positive
+    "NEW violation" delta. The founding case is #19368 (Origami causal
+    CB-00 README) : the notebook `CausalBridges-00-PearlLadder-Intro-Python`
+    is ADDED by the same PR (commit 59ea252dd, not yet on main), and the
+    README's new link to it is intentional -- the file and its link arrive
+    together. The fix : EXCLUDE PR-added files from the STALE_LINK check.
+    Both scans then agree (no violation either way) and the delta collapses
+    to 0. The link itself remains valid for downstream sweeps; we just stop
+    flagging it as a *new* violation introduced by the PR.
     """
     rendered = set(git_tracked_notebooks())
+    if pr_added_files:
+        # PR-added files are tracked-after-merge; a link targeting one is
+        # arriving with the file, so it is not a STALE_LINK introduced by
+        # this PR. (cf. founding case #19368 / 59ea252dd).
+        rendered -= pr_added_files
     readmes = [p for p in git_tracked_readmes()
                if any(p.startswith(t) for t in NOTEBOOK_SUBTREES)]
     out: list[tuple[str, str, str]] = []
@@ -531,9 +551,18 @@ def readme_link_violations() -> list[tuple[str, str, str]]:
     return out
 
 
-def report_readme_links() -> int:
-    """Print the README-link audit and exit 1 on STALE_LINK/BROKEN (#13025)."""
+def report_readme_links(pr_added_files: set[str] | None = None) -> int:
+    """Print the README-link audit and exit 1 on STALE_LINK/BROKEN (#13025).
+
+    ``pr_added_files`` (#19631) : forwarded to ``readme_link_violations`` so the
+    delta-vs-base computation of the readme-ipynb-links-guard workflow agrees on
+    files added in the same PR as the README link target.
+    """
     rendered = set(git_tracked_notebooks())
+    if pr_added_files:
+        # Mirror the exclusion used in ``readme_link_violations`` so the
+        # `unrendered` tally below stays consistent with the violation set.
+        rendered -= pr_added_files
     readmes = [p for p in git_tracked_readmes()
                if any(p.startswith(t) for t in NOTEBOOK_SUBTREES)]
     unrendered = 0
@@ -547,7 +576,7 @@ def report_readme_links() -> int:
             norm = _normalise_readme_target(base, href)
             if norm not in rendered and (REPO_ROOT / norm).exists():
                 unrendered += 1
-    violations = readme_link_violations()
+    violations = readme_link_violations(pr_added_files=pr_added_files)
     for rel_readme, cls, href in violations:
         print(f"::error::{cls} {rel_readme} -> {href}", file=sys.stderr)
     n_readmes = len(readmes)
@@ -555,6 +584,25 @@ def report_readme_links() -> int:
           f"{len(violations)} violation(s), {unrendered} raw-source link(s) "
           "(excluded from render -- garde #11451 or hors sous-arbre).")
     return 1 if violations else 0
+
+
+def _load_added_files(path: str | None) -> set[str]:
+    """Read PR-added files list (one POSIX path per line, blank lines ignored).
+
+    Used by ``--pr-added-files`` (#19631) so the readme-ipynb-links-guard
+    workflow can hand the scanner the set of files added by the PR, so the
+    base-vs-head delta collapses to 0 on links targeting PR-added notebooks
+    (the founding case : CB-00 README -> CB-00.ipynb added by PR #19310).
+    """
+    if not path:
+        return set()
+    added = set()
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            p = line.strip()
+            if p:
+                added.add(p)
+    return added
 
 
 def main() -> int:
@@ -566,10 +614,15 @@ def main() -> int:
                          ".ipynb whose render exists (STALE_LINK), a missing "
                          "source (BROKEN), or a .html page whose notebook is "
                          "not rendered (DEAD_RENDER) -- regle #13025")
+    ap.add_argument("--pr-added-files", default=None, metavar="PATH",
+                    help="file listing PR-added paths (one per line, POSIX). "
+                         "Used by the readme-ipynb-links-guard workflow so "
+                         "STALE_LINK on a link targeting a PR-added .ipynb "
+                         "collapses on both sides of the delta (#19631).")
     args = ap.parse_args()
 
     if args.check_readme_links:
-        return report_readme_links()
+        return report_readme_links(pr_added_files=_load_added_files(args.pr_added_files))
 
     new_block = build_render_block()
     current = QUARTO_YML.read_text(encoding="utf-8")
