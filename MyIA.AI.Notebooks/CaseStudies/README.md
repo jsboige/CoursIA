@@ -264,7 +264,7 @@ Cette série est un **point de convergence** des autres séries du dépôt : cha
 
 | Étude de cas | [Search](../Search/README.md) | [Sudoku](../Sudoku/README.md) | [SymbolicAI](../SymbolicAI/README.md) | [Probas](../Probas/README.md) | [ML](../ML/README.md) |
 |---|---|---|---|---|---|
-| Diagnostic-Medical | A* (`Part1-Foundations`) | Génétique ([`Sudoku-03-Genetic-Python`](../Sudoku/Sudoku-03-Genetic-Python.ipynb)) | — | — | — |
+| Diagnostic-Medical | A* (`Part1-Foundations`) | Génétique ([`Sudoku-03-Genetic-Python`](../Sudoku/Sudoku-03-Genetic-Python.html)) | — | — | — |
 | Oncology-Planning | CSP / CP-SAT (`Part2-CSP`) | — | Ontologie OWL ([SemanticWeb](../SymbolicAI/SemanticWeb/README.md)) | Bayésien / Pyro | — |
 | SmartGrid-Energy | CP-SAT / OR-Tools (`Part2-CSP`) | — | — | Bayésien (risque) | — |
 
