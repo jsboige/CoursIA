@@ -329,6 +329,14 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/18493-counter-scan-classification.md](ledgers/18493-counter-scan-classification.md) | Issue #18493 — Scan des compteurs littéraux dans commentaires code |
 | [ledgers/18741-qualification-14-notebooks.md](ledgers/18741-qualification-14-notebooks.md) | Qualification des notebooks GenAI sous le seuil du compteur canonique |
 
+## Coordination (docs/coordination/)
+
+Protocoles de coordination de flotte.
+
+| Fichier | Description |
+|---------|-------------|
+| [coordination/gpu-reservation.md](coordination/gpu-reservation.md) | Protocole ledger GPU-reservation (#16737) — coordination des créneaux GPU multi-lanes |
+
 ## Suivis de cycle (docs/suivis/)
 
 Notes de suivi de cycle par série (transitions architecturales et narratives).
