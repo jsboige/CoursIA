@@ -192,8 +192,10 @@ Couverture par notebook des sources fondatrices de la programmation par contrain
 | CSP-1, CSP-2, CSP-8 | Dechter, R. (2003) — *Constraint Processing*. Morgan Kaufmann. Socle de la propagation de contraintes et des niveaux de consistance, en amont de la série. |
 | CSP-3 à CSP-8 | Krupke, D. et al. (2023) — *The CP-SAT Primer: Using and Understanding Google OR-Tools' CP-SAT Solver* (CC-BY). Le manuel du solveur CP-SAT, aval de la série. |
 | CSP-3, CSP-5, CSP-7 | Rossi, F., van Beek, P. & Walsh, T. (dir., 2006) — *Handbook of Constraint Programming*. Elsevier. Ouvrage de référence organisé par thème (propagation, contraintes globales, contraintes souples, temporel) — le découpage que suit la série. |
-| CSP-9 (Distributed) | **Distributed Constraint Processing** (support de cours, 2018). Passage du CSP centralisé aux formulations distribuées (DisCSP, DCOP). |
+| CSP-9 (Distributed) | **Distributed Constraint Processing** (support de cours, 2018) — `2018 - lecture-Distributed Constraint Processing.pdf`, rayon *Constraint Programming* du gisement documentaire (auteur non lisible : PDF non hydraté). Série homonyme en ligne : [G. Picard, Mines Saint-Étienne](https://www.gauthier-picard.info/files/lecture-DCSP-2025.pdf). Passage du CSP centralisé aux formulations distribuées (DisCSP, DCOP). |
 | Toute la série | Bardin, S., Bjørner, N. & Cadar, C. (2019) — *Bringing CP, SAT and SMT together: Next Challenges in Constraint Solving* (Dagstuhl Seminar 19062), Dagstuhl Reports 9(2):27. Le pont CP↔SAT↔SMT. |
+
+Le socle glisse de Dechter vers le *CP-SAT Primer* à partir de CSP-3 ; les deux cohabitent ensuite — CSP-8 relève des deux, ce qui explique sa présence dans les deux lignes de couverture.
 
 ---
 
