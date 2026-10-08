@@ -62,6 +62,15 @@ MODELS: dict[str, dict[str, str]] = {
     "minicpm5": {
         "path_glob": "models--openbmb--MiniCPM5-2B/snapshots/*",
         "label": "MiniCPM5-2B",
+        # eos_token du tokenizer = </s> (id 1) mais le template de chat
+        # termine les tours par <|im_end|> (id 130073, present dans
+        # generation_config, absent de special_tokens_map). TRL 1.12 lit
+        # l'EOS de generation, la detection de troncature ET le masque de
+        # perte depuis tokenizer.eos_token_id uniquement : sans alignement,
+        # aucune completion n'est vue "terminee" -> clipped_ratio=1 et
+        # mask_truncated_completions annule la perte (smoke 08/10 :
+        # loss/grad/entropy = 0).
+        "eos_token": "<|im_end|>",
     },
     "qwen35": {
         "path_glob": "models--Qwen--Qwen3.5-0.8B/snapshots/*",
@@ -431,6 +440,10 @@ def build_trainer(
 
     model_path = find_hf_snapshot(MODELS[model_key]["path_glob"])
     tokenizer = AutoTokenizer.from_pretrained(str(model_path))
+    eos_override = MODELS[model_key].get("eos_token")
+    if eos_override is not None:
+        # aligne l'EOS tokenizer sur le terminateur reel du template (cf MODELS)
+        tokenizer.eos_token = eos_override
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
 
