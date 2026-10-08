@@ -1345,6 +1345,13 @@ def test_base_not_main_unreadable_fail_closed(tmp_path):
 # ScriptedRunner dispatche deja ``gh pr view <N>`` sur self.views[N] (l.226)
 # -- les tests reutilisent ce mecanisme en injectant une vue avec
 # state / mergedAt pour la PR parente.
+#
+# Correctif 2026-10-08 (review du coordinateur) : un body peut declarer
+# PLUSIEURS parentes directes -- ``Depends on #A`` puis ``Blocked by #B``.
+# Ne lire que la premiere laisse la seconde invisible, et si #A est MERGED
+# le chemin nominal repart sans avoir examine #B. Les tests ci-dessous
+# couvrent donc aussi : deux parentes dont seule la SECONDE bloque, deux
+# parentes toutes deux MERGED, une parente illisible, et l'auto-reference.
 
 
 def test_stacked_on_main_open_parent_triggers_skip(tmp_path):
@@ -1390,14 +1397,18 @@ def test_stacked_on_main_merged_parent_is_nominal(tmp_path):
     )
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    # Le verdict par defaut serait would-merge (le test base_main_does_not_
-    # change_merge_ready_outcome demontre que la base main n'invalide pas le
-    # verdict). Meme chose ici : parente mergee, le check empilement ne
-    # modifie pas le verdict. La presence du runner dispatch vers
-    # self.views[19793] confirme que le check empilement a bien eu lieu
-    # (le runner n'aurait pas ete appele sans le find_stacked_parent dans
-    # le body).
+    # Le verdict NOMINAL, pas seulement l'absence du motif de refus : une
+    # parente MERGED laisse le merge se faire (review du coordinateur --
+    # « le test parent MERGED affirme seulement l'absence du motif de
+    # refus, ce qui ne prouve pas a lui seul le verdict nominal »).
+    assert lines[-1]["verdict"] == "merged", lines[-1]
+    assert lines[-1]["merged"] is True, lines[-1]
     assert "stacked-on-main" not in (lines[-1].get("reason") or ""), lines[-1]
+    # Et l'appel attendu a bien eu lieu : la parente declaree a ete
+    # interroge (le runner n'aurait pas ete sollicite sans la lecture du
+    # body), la PR courante aussi, et rien d'autre.
+    pr_view_calls = [c[3] for c in runner.cmds() if c[:3] == ["gh", "pr", "view"]]
+    assert pr_view_calls == ["123", "19793"], pr_view_calls
 
 
 def test_stacked_on_main_closed_parent_triggers_skip(tmp_path):
@@ -1447,3 +1458,122 @@ def test_no_stacked_marker_in_body_keeps_nominal_path(tmp_path):
     assert other_pr_view_calls == [], (
         f"appels inattendus vers gh pr view (autre que 123) : {other_pr_view_calls}"
     )
+
+
+# --- Parentes MULTIPLES (review du coordinateur, 2026-10-08) -----------------
+
+
+def test_find_stacked_parents_extracts_all_deduped():
+    """Le lecteur rend TOUTES les parentes declarees, dedupliquees.
+
+    Un body qui declare « Depends on #A » puis « Blocked by #B » porte deux
+    dependances **directes** de la meme PR. L'ancien lecteur ne rendait que
+    la premiere, ce qui laissait la seconde invisible des qu'on n'examinait
+    que son retour."""
+    body = (
+        GRAIN_MED
+        + "\n\nDepends on #19793\nBlocked by #19815\n"
+        + "Stacked on #19815\n"          # doublon -> une seule fois
+        + "Requires #19819\n"
+    )
+    assert mr.find_stacked_parents(body) == [19793, 19815, 19819]
+    # Aucun marker : liste vide, pas None.
+    assert mr.find_stacked_parents(GRAIN_MED) == []
+    assert mr.find_stacked_parents(None) == []
+
+
+def test_stacked_on_main_second_dep_open_triggers_skip(tmp_path):
+    """Temooin de la review (#19002) : PREMIERE parente MERGED, SECONDE OPEN.
+
+    C'est le cas que le lecteur precedent laissait passer. La premiere
+    parente etant absorbe in dans `main`, le chemin nominal repartait sans
+    jamais examiner la seconde -- et le merge se faisait sous une dependance
+    encore ouverte. Le refus doit nommer la SECONDE, pas la premiere."""
+    view = default_view()
+    view["body"] = GRAIN_MED + "\n\nDepends on #19793\nBlocked by #19815"
+    runner = ScriptedRunner(
+        views={
+            123: view,
+            19793: {
+                "number": 19793,
+                "state": "MERGED",
+                "mergedAt": "2026-10-08T10:26:41Z",
+            },
+            19815: {"number": 19815, "state": "OPEN", "mergedAt": None},
+        },
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped", lines[-1]
+    assert "stacked-on-main:19815:OPEN" in lines[-1]["reason"], lines[-1]
+    # Les DEUX parentes ont ete interrogees : la seconde n'est pas restee
+    # invisible derriere la premiere.
+    pr_view_calls = [c[3] for c in runner.cmds() if c[:3] == ["gh", "pr", "view"]]
+    assert pr_view_calls == ["123", "19793", "19815"], pr_view_calls
+
+
+def test_stacked_on_main_two_merged_deps_is_nominal(tmp_path):
+    """Temooin positif multi-parente : les deux parentes sont MERGED.
+
+    Le check d'empilement est un transit, pas un arret : deux parentes
+    absorbees dans `main` laissent le merge se faire. Verifie le verdict
+    ET les appels attendus (les deux parentes sont bien sondees)."""
+    view = default_view()
+    view["body"] = GRAIN_MED + "\n\nDepends on #19793\nBlocked by #19815"
+    runner = ScriptedRunner(
+        views={
+            123: view,
+            19793: {
+                "number": 19793,
+                "state": "MERGED",
+                "mergedAt": "2026-10-08T10:26:41Z",
+            },
+            19815: {
+                "number": 19815,
+                "state": "MERGED",
+                "mergedAt": "2026-10-08T11:00:00Z",
+            },
+        },
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged", lines[-1]
+    pr_view_calls = [c[3] for c in runner.cmds() if c[:3] == ["gh", "pr", "view"]]
+    assert pr_view_calls == ["123", "19793", "19815"], pr_view_calls
+
+
+def test_stacked_on_main_unreadable_parent_triggers_skip(tmp_path):
+    """Temooin degrade (#19002) : la parente declaree n'est pas lisible.
+
+    ``stacked_parent_state`` rend ``unreadable`` pour tout etat qu'il ne
+    peut pas classer (ici un etat inconnu), et le check est fail-CLOSED :
+    un refus nomme ``stacked-on-main:<N>:unreadable``, jamais un merge
+    confiant sur une dependance qu'on n'a pas mesuree."""
+    view = default_view()
+    view["body"] = GRAIN_MED + "\n\nDepends on #19793"
+    runner = ScriptedRunner(
+        views={123: view, 19793: {"number": 19793, "state": "GHOST"}},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped", lines[-1]
+    assert "stacked-on-main:19793:unreadable" in lines[-1]["reason"], lines[-1]
+
+
+def test_stacked_on_main_self_reference_is_explicit(tmp_path):
+    """Une PR qui se declare parente d'elle-meme rend un etat EXPLICITE.
+
+    L'ancien code l'ignorait en silence (`parent != pr`) : le body etait
+    mal forme et personne ne l'apprenait. Le motif ``self-reference`` dit a
+    la lane que son body est a corriger, sans interroger le runner pour un
+    numero qu'on a deja sous la main."""
+    view = default_view()
+    view["body"] = GRAIN_MED + "\n\nDepends on #123"
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped", lines[-1]
+    assert "stacked-on-main:123:self-reference" in lines[-1]["reason"], lines[-1]
+    # Aucun appel supplementaire : la PR courante est deja chargee.
+    pr_view_calls = [c[3] for c in runner.cmds() if c[:3] == ["gh", "pr", "view"]]
+    assert pr_view_calls == ["123"], pr_view_calls

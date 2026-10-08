@@ -899,22 +899,27 @@ _STACKED_PATTERNS = (
 )
 
 
-def find_stacked_parent(body: str | None) -> int | None:
-    """Renvoie le numero de la PR parente empilee, ou None.
+def find_stacked_parents(body: str | None) -> list[int]:
+    """Renvoie TOUS les numeros de parentes empilees declarees, dedupliques.
 
-    Cherche la premiere mention d'un parent empile dans le body selon les
-    conventions ``_STACKED_PATTERNS``. Ne considere pas les PRs mentionnees
-    en passant (un simple lien narratif) ; le marqueur "depends on" /
-    "blocked by" doit etre explicite. Renvoie le premier N trouve pour eviter
-    les chaines d'empilement circulaires (l'organe n'essaie pas de valider
-    toute la chaine, il signale juste la premiere parente non-mergee)."""
+    Un body peut declarer plusieurs dependances **directes** de la meme PR :
+    ``Depends on #A`` puis ``Blocked by #B``. Ce n'est pas une chaine
+    recursive, ce sont deux parentes que la PR courante attend l'une **et**
+    l'autre -- n'en lire qu'une laisse la seconde invisible, et si la
+    premiere est MERGED le chemin nominal repart sans avoir examine la
+    seconde (defaut mesure du 2026-10-08, review du coordinateur).
+
+    Ne considere pas les PRs mentionnees en passant : le marqueur
+    "depends on" / "blocked by" doit etre explicite. L'ordre d'apparition
+    est conserve, les doublons retires -- un body qui repete la meme
+    parente ne fait pas travailler le runner deux fois."""
     if not body:
-        return None
+        return []
+    seen: dict[int, None] = {}
     for pattern in _STACKED_PATTERNS:
-        match = pattern.search(body)
-        if match:
-            return int(match.group(1))
-    return None
+        for match in pattern.finditer(body):
+            seen.setdefault(int(match.group(1)), None)
+    return list(seen)
 
 
 def stacked_parent_state(
@@ -1134,8 +1139,14 @@ def evaluate_pr(
     # racine n'avait pas ete mergee. base_ref_liveness ne s'applique
     # pas (base = main), mais la parente empilee dans le body donne
     # l'info manquante. Refus tant que la parente n'est pas MERGED.
-    parent = find_stacked_parent(view.get("body"))
-    if parent is not None and parent != pr:
+    # TOUTES les parentes declarees sont examinees, pas seulement la
+    # premiere : un body « Depends on #A / Blocked by #B » dont #A est
+    # MERGED ne doit pas repartir au nominal en laissant #B ouverte.
+    for parent in find_stacked_parents(view.get("body")):
+        if parent == pr:
+            # Se declarer soi-meme parente est un body mal forme : etat
+            # explicite plutot qu'ignorance silencieuse.
+            return skip(f"stacked-on-main:{parent}:self-reference")
         pstate = stacked_parent_state(runner, parent, gh_env)
         if pstate != "MERGED":
             return skip(f"stacked-on-main:{parent}:{pstate}")
