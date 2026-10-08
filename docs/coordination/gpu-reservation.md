@@ -114,6 +114,48 @@ Le **fold inaugural** du ledger survit en parallèle du chantier de livraison (c
 
 **Statut du fold inaugural** : **non-applicable**. Les semaines 2026-09-28 → 2026-10-04 sont documentées dans `D:/Runs/ICT-onset-9b-c233/onset_qwen35_9b_base.json` (c.233, c.247-quater) et `D:/Runs/ICT-onset-9b-c246/onset_qwen35_9b_base_seeds23.json` (c.246, seeds 2/3) — ces jobs ont été par rapport à une réservation **hors-ledger** (le ledger n'était pas encore actif). Le fold inaugural commence à partir de c.257 (2026-10-08T03:25Z) et la première fenêtre valide est ouverte pour la prochaine expérience GPU.
 
+## Liaison cross-machine — récup statut GPU d'autres lanes (c.258)
+
+Le tenancier de `myia-ai-01#gpu2` a besoin de **récupérer le statut GPU des autres machines** pour deux usages opérationnels :
+
+1. **Routage d'une expérience GPU** : si le GPU 2 de `myia-ai-01` est saturé, le picker peut router l'expérience vers `myia-po-2023#gpu1` ou `myia-po-2024#gpu0` selon leur disponibilité.
+2. **Coordination de fenêtre** : deux expériences concurrentes sur deux machines doivent être séquencées pour éviter de saturer l'API GitHub (rate limit GraphQL partagé) ou le réseau de téléchargement de modèles.
+
+### Topologie GPU connue (à 2026-10-08)
+
+| Machine | GPU disponibles | Tenancier (lane) | Statut observation |
+|---|---|---|---|
+| `myia-ai-01` | gpu0 (vLLM), gpu1 (vLLM), **gpu2** (training) | `myia-ai-01:CoursIA-2` | observation c.257 (252 MiB used, 31°C) |
+| `myia-po-2023` | gpu0, gpu1 | `myia-po-2023:CoursIA-3` | (à confirmer — DM `po-2023`) |
+| `myia-po-2024` | gpu0, gpu1 | `myia-po-2024:CoursIA-2` | (à confirmer — DM `po-2024`) |
+| `myia-po-2025` | (à confirmer — pas de training GPU sur cette machine a priori) | `myia-po-2025:CoursIA-2` (adjoint) | n/a |
+| `myia-po-2026` | (à confirmer) | `myia-po-2026:CoursIA-2` | n/a |
+| `myia-po-2027` | (à confirmer) | `myia-po-2027:CoursIA-2` | n/a |
+
+**gpu0/gpu1 de ai-01 portent le vLLM de la flotte** et ne se réservent pas (mêmes slots sont consommés par le serving).
+
+### Protocole de récupération cross-machine (c.258)
+
+Le tenancier publie sa propre observation `[OBS]` sur le dashboard `CoursIA-gpu-reservation-ledger`. Pour récupérer l'observation d'une autre machine :
+
+1. **DM nominatif** (canal principal) : `roosync_messages send --to myia-po-2023:CoursIA-3 --subject "[gpu-status probe] 2026-10-08T03:55Z" --body "Peux-tu poster un [OBS] rafraîchi pour myia-po-2023#gpu0 et #gpu1 sur le dashboard CoursIA-gpu-reservation-ledger ? Format JSON-LINE sur une ligne. Merci."` — réponse attendue < 5 min en session worker active, < 1 h en cron.
+2. **Fallback lecture dashboard** : `roosync_dashboard read --type workspace --section all` puis grep `[OBS]` filtré par entité. Les observations sont tagguées par `entity: "myia-po-2023#gpu0"` dans le JSON, donc matchable.
+3. **Cache local** : les observations récentes (< 24 h) sont cachées dans `scripts/coordination/_local/gpu_status_cache.json` pour éviter le ping à chaque décision de routage. Le cache est rafraîchi au prochain DM probe ou à l'expiration du TTL.
+
+### Garde — ne PAS interférer avec le vLLM (c.258)
+
+L'observation `[OBS]` d'un slot gpu0/gpu1 sur ai-01 est **interdite** : ces slots portent le serving de la flotte (LLM endpoint partagé). Le tenancier publie une observation uniquement pour les slots **non-vLLM** (gpu2 sur ai-01, gpu0/gpu1 sur les autres machines selon leur rôle). Une erreur d'aiguillage (lancer un training sur un gpu vLLM) saturerait le serving et bloquerait tous les agents de la flotte.
+
+**Heuristique de discrimination vLLM / training** :
+- ai-01 : gpu0/gpu1 = vLLM (à ne **jamais** réserver), gpu2 = training.
+- po-2023/po-2024 : à confirmer par observation de la première `[OBS]`. Par convention, les machines worker `po-*` utilisent leurs gpu0/gpu1 en training (pas de serving), mais cette convention peut évoluer.
+
+### Trigger de mise à jour
+
+- **Toutes les 6 h** en cron worker (`myia-ai-01:CoursIA-2` active) : DM probe aux tenanciers des autres machines.
+- **Sur demande coordinateur** : DM HIGH au tenancier (canal direct).
+- **Événement** : nouvelle release d'expérience GPU, ou redirection de job en cours.
+
 ## Liens
 
 - Issue #16737 — Ledger de reservation GPU + planification hebdomadaire des trainings (ai-01 tenancier)
