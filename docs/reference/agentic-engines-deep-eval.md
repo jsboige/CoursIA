@@ -69,7 +69,7 @@ Faits d'API mesurés sur 1.41.3 (contrairement aux exemples publics plus anciens
 [technique #1/#2] decision: specialiste_technique (stable)
 [formation  #1/#2] decision: specialiste_formation (stable)
 ROUTING DETERMINISM: OK
-LLM CALLS: 10/10
+LLM CALLS: 9/10
 PILOT OK sk=1.41.3 orchestration=Handoff
 ```
 
@@ -82,14 +82,14 @@ Faits d'API mesurés sur 1.41.3 (couche agents) :
 | Détournement `OPENAI_BASE_URL` | le SDK OpenAI honore silencieusement les variables d'environnement du poste (proxy local ici) → clé `sk-proj` envoyée au proxy → 401. Parade : `OpenAIChatCompletion(async_client=AsyncOpenAI(api_key=..., base_url=...))` explicite — toujours épingler le `base_url` dans un pilote reproductible. |
 | `InProcessRuntime.start()` | **synchrone** en 1.41.3 (l'`await` lève `TypeError`) ; `stop_when_idle()` est asynchrone. Import depuis `semantic_kernel.agents.runtime` (top level). |
 | `orchestration/__init__` vide | importer `HandoffOrchestration`/`OrchestrationHandoffs` depuis `semantic_kernel.agents` (top level), pas du sous-module. |
-| `gpt-5-mini` refuse `temperature=0.0` | 400 `unsupported_value` (« Only the default (1) value is supported ») — contrainte famille *reasoning* : un pilote déterministe ne peut pas la prendre ; repli `gpt-4o-mini`. `max_completion_tokens` (pas `max_tokens`) fonctionne sur les deux. |
+| `gpt-5-mini` refuse `temperature=0.0` | 400 `unsupported_value` (« Only the default (1) value is supported ») — contrainte famille *reasoning* : un pilote déterministe ne peut pas la prendre. **Conséquence de méthode** : le modèle de comparaison est **épinglé en constante** (`MODEL = "gpt-4o-mini"`), et non choisi par une sonde qui bascule. Un repli automatique ferait dépendre le modèle **effectif** d'un comportement d'API, et la comparaison entre pilotes se casserait sans signal le jour où la sonde passerait. La sonde reste (elle atteste que le service répond sur ce modèle) mais elle **échoue fort** (exit 2) au lieu de basculer. `max_completion_tokens` (pas `max_tokens`) fonctionne sur les deux. |
 | Mécanique handoff | l'orchestration injecte `transfer_to_<agent>` + `complete_task` dans un **clone** du kernel de chaque agent ; filtre d'auto-invocation termine le tour juste après l'appel → exactement 1 appel LLM par tour d'agent (rend le budget tenable). `ChatCompletionAgent` active `function_choice_behavior=Auto()` par défaut. |
 | Sonde de routage | `(await result.get()).name` = l'agent qui a terminé — le signal déterministe le plus propre ; `agent_response_callback` (un simple `list.append` sync) capture la prose. Un spécialiste qui répond sans `complete_task` est auto-complété sans blocage. |
 | Réutilisation | `HandoffOrchestration` + `InProcessRuntime` **frais** par invocation ; les instances d'agents sont réutilisables (le clonage isole les plugins injectés). |
 
 ### 2.4 Pilote Google ADK — handoff natif C5 + désignation C4 (organe Track2 invoqué)
 
-`VERIFIÉ` — pilote [`Track2-GoogleADK/eval-pilots/adk_handoff_pilot.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/eval-pilots/adk_handoff_pilot.py), exécuté sous `py -3.11` / google-adk **2.8.0** via l'**organe du track** ([`utils/adk_runtime.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/adk_runtime.py) : `build_agent` + `run_agent_turn` ; [`utils/adk_orchestrator.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/adk_orchestrator.py) : `AdkOrchestrator`) — aucune réimplémentation. Service **réel** `gpt-4o-mini`, température 0 (même modèle, même réglage, même scénario de triage que le pilote T2 — les deux moteurs deviennent directement comparables), budget ex-post 12 appels mesuré par les snapshots d'usage du contrat C6. Reproduction firsthand depuis l'emplacement livré : exit 0.
+`VERIFIÉ` — pilote [`Track2-GoogleADK/eval-pilots/adk_handoff_pilot.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/eval-pilots/adk_handoff_pilot.py), exécuté sous `py -3.11` / google-adk **2.8.0** via l'**organe du track** ([`utils/adk_runtime.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/adk_runtime.py) : `build_agent` + `run_agent_turn` ; [`utils/adk_orchestrator.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/adk_orchestrator.py) : `AdkOrchestrator`) — aucune réimplémentation. Service **réel** `gpt-4o-mini`, température 0 (même modèle, même réglage, même scénario de triage que le pilote T2 — les deux moteurs deviennent directement comparables **par construction** : le modèle est épinglé en constante dans les deux pilotes, aucune sonde ne peut le substituer), budget ex-post 12 appels mesuré par les snapshots d'usage du contrat C6. Reproduction firsthand depuis l'emplacement livré : exit 0.
 
 Deux observables, alignés sur les deux mécaniques distinctes du contrat du track :
 
@@ -135,8 +135,7 @@ Les trois mêmes rôles (`redacteur`, `critique`, `arbitre`) portent les quatre 
 Trace d'exécution (transcription abrégée — les lignes `apercu` de prose sont omises, cf. le déterminisme ci-dessous) :
 
 ```text
-probe gpt-5-mini: ECHEC ('temperature' does not support 0.0) -> repli gpt-4o-mini
-probe gpt-4o-mini: OK
+probe gpt-4o-mini: OK -> OK
 
 MODE sequentiel  run1/run2: tours=3 agents=['redacteur','critique','arbitre']    STABLE: OK | TOURS [3,3]: OK
 MODE concurrent  run1: tours=3 ['arbitre','critique','redacteur']
@@ -152,7 +151,7 @@ SYNTHESE
   magentic     tours=2 (attendu [2,6]) stable=True couverture=True
 MULTI-AGENTS PAR MODE: OK
 ROUTING DETERMINISM: OK
-LLM CALLS: 32/110
+LLM CALLS: 31/110
 PILOT OK sk=1.41.3 modes=4
 ```
 
@@ -216,9 +215,13 @@ Le point 4 de l'issue demande « ce que chaque moteur offre réellement en C# »
 
 | Moteur | Version mesurée | Types publics | Orchestration multi-agents en C# |
 | --- | --- | --- | --- |
-| Semantic Kernel | `Microsoft.SemanticKernel.Agents.Core` 1.81.0 | 210 | **modèle historique seul** : `AgentGroupChat`, `AgentGroupChatSettings`, `SequentialSelectionStrategy`, `ChatCompletionAgent` |
-| MS Agent Framework | `Microsoft.Agents.AI.Workflows` 1.24.0 | 285 | **les cinq topologies** : `SequentialWorkflowBuilder`, `ConcurrentWorkflowBuilder`, `GroupChatWorkflowBuilder`, `MagenticWorkflowBuilder`, `HandoffWorkflowBuilder`, plus `WorkflowBuilder` |
+| Semantic Kernel | famille `Microsoft.SemanticKernel*` 1.81.0 — **4 assemblages**, dont `…Agents.Core` qui porte **17** types | **210** (union) | **modèle historique seul** : `AgentGroupChat`, `AgentGroupChatSettings`, `SequentialSelectionStrategy`, `ChatCompletionAgent` |
+| MS Agent Framework | famille `Microsoft.Agents.AI*` 1.24.0 — **3 assemblages**, dont `…Workflows` qui porte **132** types | **285** (union) | **les cinq topologies** : `SequentialWorkflowBuilder`, `ConcurrentWorkflowBuilder`, `GroupChatWorkflowBuilder`, `MagenticWorkflowBuilder`, `HandoffWorkflowBuilder`, plus `WorkflowBuilder` |
 | Google ADK | — | — | **aucune distribution C#** |
+
+**Ce que le chiffre est, et ce qu'il n'est pas** (précision apportée en réponse à une review). `210` et `285` sont l'**union dédoublonnée sur le nom court** des types publics de **toute la famille** d'assemblages préfixée, pas le compte d'un assemblage : le détail par assemblage est publié dans la trace ci-dessous (`Agents.Core` = 17, `Agents.Abstractions` = 27, `Abstractions` = 132, `Core` = 35 → union 210). Deux conséquences assumées : le total **dépend de ce que le projet hôte a restauré** (un connecteur de plus le gonfle), et deux types homonymes de namespaces différents y fusionnent — c'est donc un **plancher**, jamais un compte de types. Le propos de fond ne s'appuie pas sur ces totaux mais sur les **contrôles nommés** qui suivent.
+
+Le contrôle négatif est lui aussi triangulé, parce qu'un contrôle par **nom exact** ne teste qu'une **convention de nommage** (celle de la couche agents Python) et pas la surface d'API C# : il est doublé d'un contrôle **par forme** (tout type SK C# en `*Orchestration`) et d'un contrôle **par assemblage** (`Microsoft.SemanticKernel.Agents.Orchestration.dll` déployé). Les trois rendent « absent » — c'est ce qui donne sa force à l'affirmation.
 
 Capacités MAF C# mesurées, qui répondent directement au point 3 de l'issue :
 
@@ -232,15 +235,28 @@ Capacités MAF C# mesurées, qui répondent directement au point 3 de l'issue :
 Trace d'exécution (abrégée — les lignes de contrôle individuelles sont ci-dessus) :
 
 ```text
-SK (C#)  : 210 types publics exportes
-MAF (C#) : 285 types publics exportes
+SK (C#) -- 4 assemblage(s) balaye(s) :
+   Microsoft.SemanticKernel.Abstractions.dll                    132
+   Microsoft.SemanticKernel.Agents.Abstractions.dll              27
+   Microsoft.SemanticKernel.Agents.Core.dll                      17
+   Microsoft.SemanticKernel.Core.dll                             35
+   union dedoublonnee (nom court)                               210   <- PLANCHER, pas un compte de types
 
-CONTROLE NEGATIF -- orchestration de la couche agents SK Python doit etre ABSENTE du C#
-   absent  OK  SequentialOrchestration
-   absent  OK  ConcurrentOrchestration
-   absent  OK  GroupChatOrchestration
-   absent  OK  MagenticOrchestration
-   absent  OK  HandoffOrchestration
+MAF (C#) -- 3 assemblage(s) balaye(s) :
+   Microsoft.Agents.AI.Abstractions.dll                          28
+   Microsoft.Agents.AI.Workflows.dll                            132
+   Microsoft.Agents.AI.dll                                      125
+   union dedoublonnee (nom court)                               285   <- PLANCHER, pas un compte de types
+
+CONTROLE NEGATIF -- l'orchestration de la couche agents SK Python doit etre ABSENTE du C#
+   (a) par FORME -- types SK C# en `*Orchestration` : aucun  OK
+   (b) par ASSEMBLAGE -- `Microsoft.SemanticKernel.Agents.Orchestration` deploye : non  OK
+   (c) par NOM EXACT (convention Python) :
+       absent  OK  SequentialOrchestration
+       absent  OK  ConcurrentOrchestration
+       absent  OK  GroupChatOrchestration
+       absent  OK  MagenticOrchestration
+       absent  OK  HandoffOrchestration
 
 CONTROLE POSITIF -- les cinq topologies doivent etre PRESENTES dans MAF C#
    present OK  SequentialWorkflowBuilder
@@ -261,6 +277,10 @@ VERDICT controles : negatif=OK positif=OK
 **Ce que le relevé apprend pour l'évaluation comparative.** La question « quel moteur pour la distillation » reçoit ici une contrainte dure qui n'était pas visible dans la grille du 11/09 : nos séries sont **bilingues**, et un moteur qui n'existe qu'en Python oblige à maintenir deux piles pour un même enseignement. Sur ce critère, MAF couvre **les deux langages avec les mêmes topologies**, SK ne les couvre qu'en Python sur la couche agents, et ADK n'a pas de C# du tout. Cela ne tranche pas l'arbitrage — la maturité runtime et la dette de migration restent à mesurer — mais cela déplace un critère de « préférence » vers un **fait mesuré**.
 
 **Forme du livrable, et pourquoi.** La sonde est une **app mono-fichier** (.NET 10, directives `#:package`) : aucun `.csproj` n'est ajouté au dépôt, donc aucun impact sur `MyIA.CoursIA.sln`, `MyIA.AI.Shared.sln` ni sur les workflows .NET (tous filtrés par chemin) — un projet orphelin aurait été happé par l'un ou l'autre. La reproduction demande le réseau pour la restauration des paquets, comme les pilotes Python demandent une clé d'API.
+
+**Les traces d'exécution sont committées** ([`eval-pilots/traces/`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/)) : les `stdout` des six pilotes, tels quels — pour qu'une affirmation `VÉRIFIÉ` de ce document soit une **propriété du dépôt** et non du poste de l'auteur. Le `stderr` n'est pas committé : les avertissements Python y impriment des chemins absolus, et un fichier committé n'en porte pas. La séparation est faite **à la capture**, jamais par retrait de lignes après coup. Une trace committée n'est pas un contrôle — le contrôle est le pilote, rejouable par la commande du README ; la trace est le témoin daté.
+
+**Le coût de ce choix est payé, et il est petit.** Un `.csproj` hors solution aurait aussi rendu T6 rejouable ; l'app mono-fichier ne le fait pas *par elle-même* — les versions de paquets doivent être lisibles quelque part en dehors des directives. C'est le rôle de [`eval-pilots/README.md`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/README.md) : il porte les trois versions épinglées, la commande de restauration, l'interpréteur des pilotes Python et le modèle épinglé. T6 est donc rejouable depuis le dépôt seul, sans `.csproj` ni impact sur les solutions.
 
 **Deux pièges de méthode, tous deux payés par une erreur réelle.** `Assembly.Load("<nom>")` ne suffit pas : rien ne référence ces assemblages, donc rien ne les charge, et la sonde rend « aucune assembly » sur un projet pourtant correctement restauré — il faut charger **par chemin** depuis le répertoire de sortie. Et un détecteur se valide par ses **faux négatifs**, pas par ses hits : d'où le contrôle négatif ci-dessus. Sans lui, « 0 hit » serait indiscernable de « sonde cassée » — le mode de défaut qui a fait passer pour un « résidu » un lake portant 80 % de la dette formelle du dépôt (règle anti-régression).
 

@@ -29,6 +29,14 @@ from semantic_kernel.functions import KernelArguments
 MASTER_ENV = Path(__file__).resolve().parents[4] / ".secrets" / "master.env"
 OPENAI_BASE = "https://api.openai.com/v1"
 BUDGET = 10
+
+# Modele EPINGLE : le protocole deterministe exige `temperature=0`, que la famille
+# *reasoning* (`gpt-5-mini`) refuse -- 400 `unsupported_value` (mesure du 2026-10-05,
+# consignee au §2.3 du doc). Un repli automatique ferait donc dependre le modele
+# effectif d'un comportement d'API, et la comparaison T2/T3 (meme modele, meme
+# reglage, meme scenario) se casserait SANS SIGNAL le jour ou la sonde passe. Le
+# modele est donc fixe ici ; la sonde de `main` ne bascule plus, elle echoue fort.
+MODEL = "gpt-4o-mini"
 llm_calls = 0
 
 INPUTS: dict[str, str] = {
@@ -137,18 +145,20 @@ async def run_once(question: str, members: list[ChatCompletionAgent],
 
 async def main() -> int:
     api_key = load_api_key()
-    model = "gpt-5-mini"
+    # Le modele ne se choisit pas ici : il est epingle en constante (cf `MODEL`).
+    # La sonde atteste seulement que le service repond sur CE modele ; si elle
+    # echoue, on sort en 2 au lieu de basculer -- c'est ce qui garde la
+    # comparabilite T2/T3 vraie par construction plutot que par contingence.
     try:
-        pong = await probe_model(api_key, model)
-        print(f"probe {model}: OK -> {pong[:20]}")
+        pong = await probe_model(api_key, MODEL)
+        print(f"probe {MODEL}: OK -> {pong[:20]}")
     except Exception as exc:
-        print(f"probe {model}: ECHEC {type(exc).__name__}: {str(exc)[-200:]} -> repli gpt-4o-mini")
-        model = "gpt-4o-mini"
-        pong = await probe_model(api_key, model)
-        print(f"probe {model}: OK -> {pong[:20]}")
+        print(f"probe {MODEL}: ECHEC {type(exc).__name__}: {str(exc)[-200:]}")
+        print("Modele de comparaison epingle : aucun repli automatique (exit 2).")
+        return 2
 
     kernel = Kernel()
-    kernel.add_service(make_service(model, api_key))
+    kernel.add_service(make_service(MODEL, api_key))
     settings = OpenAIChatPromptExecutionSettings(temperature=0.0, max_completion_tokens=200)
     arguments = KernelArguments(settings=settings)
     triage = ChatCompletionAgent(kernel=kernel, name="triage", instructions=INSTR_TRIAGE, arguments=arguments)
