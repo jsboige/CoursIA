@@ -21,7 +21,7 @@ L'**arc décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README
 
 Le versant **PyMC** porte ces modèles en Python avec l'échantillonnage NUTS : le **corpus bayésien PyMC** ([`PyMC/`](PyMC/README.md), en miroir de l'arc Infer — paires numérotées, la paire de debugging étant `PyMC-02b` ↔ `Infer-2b` (toutes deux accrétions 2b, cf renommage #17808) ; fondations, modèles classiques, inférence causale, puis frontières : séquences, reco, processus gaussien épars, filtre de Kalman, change-point, survie) et les **miroirs de l'arc décision** ([`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md), renumérotés, dont la **jambe actuarielle** 8-12).
 
-La **percolation** ([`Applications/Percolation/`](Applications/Percolation/README.md)) complète ce trio Lean avec [`Percolation-Lean`](Applications/Percolation/Percolation-Lean.ipynb) (noyau fini prouvé sans `sorry`, compagnon du lake `percolation_lean`), jumeau de la simulation Python [`Percolation-Supercritique`](Applications/Percolation/Percolation-Supercritique.ipynb) (trois régimes mesurés).
+La **percolation** ([`Applications/Percolation/`](Applications/Percolation/README.md)) complète ce trio Lean avec [`Percolation-02-Lean`](Applications/Percolation/Percolation-02-Lean.html) (noyau fini prouvé sans `sorry`, compagnon du lake `percolation_lean`), jumeau de la simulation Python [`Percolation-01-Supercritique-Python`](Applications/Percolation/Percolation-01-Supercritique-Python.html) (trois régimes mesurés).
 
 Enfin, un **pont causal** ([`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/README.md), kernels `python3` et `coursia-ml-training`) fédère les quatre traitements de la causalité disséminés dans le dépôt — Tweety (logique), Infer.NET, PyMC et l'émergence causale (PyPhi) — autour de l'échelle de Pearl et du do-calculus. Sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/), le pont identifie l'estimande (backdoor, front-door, variable instrumentale), l'estime puis le réfute ; il monte au troisième échelon de Pearl (contrefactuel individuel), couvre les méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD), et pousse chaque hypothèse d'identification dans ses retranchements : découverte de structure quand le graphe manque (`causal-learn` : PC, GES, LiNGAM — CausalBridges-04, ex-DoWhy-3), sensibilité au confondeur caché (robustness value, E-value, Rosenbaum — CausalBridges-05, ex-DoWhy-4) et instrument faible (F-stat, biais IV vs OLS — CausalBridges-06, ex-DoWhy-5).
 
@@ -403,7 +403,7 @@ La causalité est traitée à **quatre endroits** du dépôt, chacun avec son mo
 
 | Série | Moteur | Angle causal |
 |-------|--------|--------------|
-| [Tweety-11-Causal](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | Tweety (.NET, logique) | modèle causal structurel, opérateur `do`, contrefactuels |
+| [Tweety-11-Causal-Python](../SymbolicAI/Tweety/Tweety-11-Causal-Python.html) | Tweety (.NET, logique) | modèle causal structurel, opérateur `do`, contrefactuels |
 | [Infer-5-Causal-Inference](Infer/Infer-5-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
 | [PyMC-05-Causal-Inference](PyMC/PyMC-05-Causal-Inference.ipynb) | PyMC (MCMC) | backdoor, front-door, contrefactuel bayésien |
 | [ICT-5](../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
@@ -446,8 +446,8 @@ Protocole de **représentation** — et non d'inférence : deux observations d'u
 
 Duo simulation + formalisation autour de la percolation de liens sur tore fini
 (Diskin–Easo–Radhakrishnan–Sudakov–Tassion, arXiv:2603.03257) :
-[`Percolation-Supercritique`](Applications/Percolation/Percolation-Supercritique.ipynb) (Python, trois régimes mesurés) et
-[`Percolation-Lean`](Applications/Percolation/Percolation-Lean.ipynb) (Lean 4, compagnon exécutable du lake `percolation_lean`, noyau fini prouvé sans `sorry`) —
+[`Percolation-01-Supercritique-Python`](Applications/Percolation/Percolation-01-Supercritique-Python.html) (Python, trois régimes mesurés) et
+[`Percolation-02-Lean`](Applications/Percolation/Percolation-02-Lean.html) (Lean 4, compagnon exécutable du lake `percolation_lean`, noyau fini prouvé sans `sorry`) —
 voir [`Applications/Percolation/README.md`](Applications/Percolation/README.md) et #14871.
 
 ## Prerequisites
@@ -596,7 +596,7 @@ La visualisation des factor graphs nécessite **Graphviz installé**. Si `dot` n
 
 ### Kernels : un par sous-série, jamais mélangés
 
-Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour le corpus `Infer/` et l'arc `DecisionTheory/DecInfer/` (arc C#) ; `Python 3` pour `PyMC/`, `Pyro_RSA`, `DecisionTheory/DecPyMC/`, `DecisionTheory/Actuariat/`, `Applications/Percolation/Percolation-Supercritique` et `Applications/Quotients-Fibres-Recollement-Python` ; `coursia-ml-training` pour les notebooks du pont causal qui l'exigent ; **Lean 4** (WSL) pour `DecInfer-02`, `DecInfer-02b`, `DecInfer-08b` et `Percolation-Lean`. Aucun notebook ne mélange les kernels. (Historiquement, `Infer-1b` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET.)
+Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour le corpus `Infer/` et l'arc `DecisionTheory/DecInfer/` (arc C#) ; `Python 3` pour `PyMC/`, `Pyro_RSA`, `DecisionTheory/DecPyMC/`, `DecisionTheory/Actuariat/`, `Applications/Percolation/Percolation-01-Supercritique-Python` et `Applications/Quotients-Fibres-Recollement-Python` ; `coursia-ml-training` pour les notebooks du pont causal qui l'exigent ; **Lean 4** (WSL) pour `DecInfer-02`, `DecInfer-02b`, `DecInfer-08b` et `Percolation-02-Lean`. Aucun notebook ne mélange les kernels. (Historiquement, `Infer-1b` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET.)
 
 ### PyMC : échantillonnage très lent ou divergence NUTS
 
@@ -639,7 +639,7 @@ Cette série ancre mathématiquement ses résultats phares dans un assistant de 
 | Probas (DecisionTheory)  | `decision_theory_lean`           | Coherence utility ⟹ preferences (loterie de référence) (`0 sorry`)                | [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) Coherence   |
 | ML ↔ Probas (PAC Learning) | [`learning_theory_lean`](../ML/learning_theory_lean/) | `pac_finite_class_bound` + `pac_agnostic_generalization` (`0 sorry bout-en-bout`) | [`2.8-Theorie-PAC`](../ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.html) + [`2.8b-Theorie-PAC-Lean`](../ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.html) |
 | Probas (DecisionTheory)  | `decision_theory_lean` Peters    | Indice de Gittins, identités d'escompte (`0 sorry`, ref `v4.27.0-rc1`)            | [`DecInfer-08b-Lean-Gittins`](DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb)                                          |
-| QC ↔ Probas              | `kelly_lean`                     | Fraction risquée `f* = μ−σ²/2` sous log-bienveillance (`0 sorry`)                  | [`Kelly_companion.ipynb`](../QuantConnect/kelly_lean/Kelly_companion.ipynb)                                           |
+| QC ↔ Probas              | `kelly_lean`                     | Fraction risquée `f* = μ−σ²/2` sous log-bienveillance (`0 sorry`)                  | [`Kelly_companion-Python.ipynb`](../QuantConnect/kelly_lean/Kelly_companion-Python.html)                                           |
 | GameTheory ↔ Probas      | `game_theory_lean` (Arrow)       | Impossibilité d'Arrow (5 axiomes ⇒ dictature)                                     | [`01-Arrow-Impossibility-Theorem.ipynb`](../GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb)                                          |
 | Search ↔ Probas          | `search_lean`                    | Consistance heuristique `h ≤ h*` ⇒ optimalité `A*`                                 | hub Search (cf [`search_lean/`](../Search/search_lean/))                                     |
 | SymbolicAI ↔ Probas      | `argumentation_lean`             | Extension Dung (`grounded`/`preferred`/`stable`) par cadre formel                 | [`Argumentation-03-Dung-AF-Semantics-Python.ipynb`](../SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb)                               |

@@ -1,7 +1,7 @@
 # Chantier 1 — tranche A5 : opérations 2, 6, 10 après la distillation Sandholm
 
 **EPIC** : [#12204](https://github.com/jsboige/CoursIA/issues/12204) · **lane** `myia-po-2024:CoursIA` · **date de mesure** 2026-09-27 · **base** `1e19752a233`
-**Tranches sœurs** : [A2](12204-ict-chantier-1-a2.md) (opération 1) · [A3](12204-ict-chantier-1-a3.md) (opérations 3, 9) · [A4](12204-ict-chantier-1-a4.md) (opération 4) · [audit froid](12204-ict-chantier-1-audit-froid.md) (les 14 opérations, trois axes) · [A6](12204-ict-chantier-1-a6.md) (statuation 11-13 + file d'attente)
+**Tranches sœurs** : [A2](12204-ict-chantier-1-a2.md) (opération 1) · [A3](12204-ict-chantier-1-a3.md) (opérations 3, 9) · [A4](12204-ict-chantier-1-a4.md) (opération 4) · [audit froid](../transients/2026-08-24-12204-ict-chantier-1-audit-froid.md) (les 14 opérations, trois axes) · [A6](12204-ict-chantier-1-a6.md) (statuation 11-13 + file d'attente)
 
 ## Ce que cette tranche fait
 

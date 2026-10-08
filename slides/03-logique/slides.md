@@ -223,7 +223,7 @@ layout: default
 | Ordre superieur (HOL) | Relations, fonctions | Relations | Non |
 | Modale | + mondes possibles | Necessaire/possible | Selon variante |
 
-*Notebooks : [Tweety-02-Basic-Logics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) (propositionnelle et premier ordre) · [Tweety-3-Advanced-Logics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb) (description, modale, QBF, conditionnelle) · [Lean-01-Setup-Lean-Python](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) (ordre superieur).*
+*Notebooks : [Tweety-02-Basic-Logics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) (propositionnelle et premier ordre) · [Tweety-03-Advanced-Logics-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-CSharp.ipynb) (description, modale, QBF, conditionnelle) · [Lean-01-Setup-Lean-Python](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) (ordre superieur).*
 
 ---
 layout: section
@@ -530,7 +530,7 @@ layout: default
 
 <img src="./images/img_016.png" style="position:absolute; top:50px; right:20px; width:320px;" alt="Algorithme DPLL" />
 
-*Notebooks : [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb) (SAT et SMT par API) · [Tweety-3-QBF-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-QBF-Csharp.ipynb) (quantification booleenne).*
+*Notebooks : [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb) (SAT et SMT par API) · [Tweety-03-QBF-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-QBF-CSharp.ipynb) (quantification booleenne).*
 
 ---
 layout: default
@@ -575,7 +575,7 @@ layout: default
 
 <img src="./images/img_017.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Exploration locale pour SAT" />
 
-*Notebooks : [14_Optimize_MaxSAT](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb) (relachement vers MaxSAT) · [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) (MaxSAT et incoherence).*
+*Notebooks : [14_Optimize_MaxSAT](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb) (relachement vers MaxSAT) · [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) (MaxSAT et incoherence).*
 
 ---
 layout: default
@@ -1347,7 +1347,7 @@ layout: default
 - Argumentation (raisonnement modal, mondes possibles)
 - Argumentum
 
-*Notebooks : [Tweety-3-ModalLogic-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-ModalLogic-Csharp.ipynb) (modale, SPASS-XDB) · [Tweety-3-Conditional-Logics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Conditional-Logics-Csharp.ipynb) (logiques conditionnelles).*
+*Notebooks : [Tweety-03-ModalLogic-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-ModalLogic-CSharp.ipynb) (modale, SPASS-XDB) · [Tweety-03-Conditional-Logics-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Conditional-Logics-CSharp.ipynb) (logiques conditionnelles).*
 
 ---
 layout: default
@@ -1384,7 +1384,7 @@ layout: default
   - Coherence des ensembles et forces contextuels des arguments
 - **Argumentum**
 
-*Notebooks : [Tweety-5-Abstract-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb) (Dung, semantiques, CF2) · [Tweety-06-Structured-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) (ASPIC+, ABA) · [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb).*
+*Notebooks : [Tweety-05-Abstract-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb) (Dung, semantiques, CF2) · [Tweety-06-Structured-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) (ASPIC+, ABA) · [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb).*
 
 ---
 layout: default
@@ -1480,7 +1480,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Debloquer une configuration industrielle : le solveur dit UNSAT, quelle contrainte relacher ?
 - Revision des croyances : quelle croyance retirer pour rester coherent (postulats AGM)
 
-*Notebooks : [Z3-13-UnsatCores-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) (noyaux d'insatisfiabilite) · [Z3-13b-UnsatCores-MUS-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb) (MUS par deletion-based) · [17_UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) · [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) (MUS, MCS, dualite).*
+*Notebooks : [Z3-13-UnsatCores-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) (noyaux d'insatisfiabilite) · [Z3-13b-UnsatCores-MUS-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb) (MUS par deletion-based) · [17_UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) · [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) (MUS, MCS, dualite).*
 
 ---
 layout: default
@@ -2185,7 +2185,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Incoherence = un concept dont aucune instance ne peut exister
 - De l'ontologie au graphe de connaissances, puis au RAG : la chaine complete est outillee
 
-*Notebooks : [SW-13-Python-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb) (raisonneurs OWL) · [SW-14-Python-Coup-Ontologique](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Python-Coup-Ontologique.ipynb) · [Tweety-3-Advanced-Logics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb) (logics.dl, HermiT/Pellet).*
+*Notebooks : [SW-13-Python-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb) (raisonneurs OWL) · [SW-14-Python-Coup-Ontologique](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Python-Coup-Ontologique.ipynb) · [Tweety-03-Advanced-Logics-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-CSharp.ipynb) (logics.dl, HermiT/Pellet).*
 
 ---
 layout: default
@@ -2220,7 +2220,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Hypotheses = explications raisonnables
 - Explications minimales (Ockham)
 
-*Notebooks : [Argument_Analysis_Agentic-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb) (JTMS : justification et revision) · [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) (postulats AGM).*
+*Notebooks : [Argument_Analysis_Agentic-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb) (JTMS : justification et revision) · [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) (postulats AGM).*
 
 ---
 layout: default

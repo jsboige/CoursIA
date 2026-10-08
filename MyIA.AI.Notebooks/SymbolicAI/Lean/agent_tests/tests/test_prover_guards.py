@@ -2633,6 +2633,91 @@ def test_is_true_placeholder_goal_false_on_probe_timeout(tmp_path, monkeypatch):
     assert reason == ""
 
 
+def _mock_probe_result(monkeypatch, result):
+    """Point get_verifier at a fake whose compile returns `result` verbatim."""
+    import prover.verifier as vmod
+
+    class _FakeVerifier:
+        def verify_project_file(self, rel, force=False):
+            return dict(result)
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _FakeVerifier())
+
+
+def test_is_true_placeholder_goal_false_on_timeout_with_partial_warnings(tmp_path, monkeypatch):
+    """FX-5d (#1453, pass 21 2026-10-06): since #18432 the TimeoutExpired
+    branch returns the PARTIAL capture — warnings from earlier lines — with
+    `wall_clock_timeout: True`. FX-5b only guarded an EMPTY output, so the
+    probe was read as "no error at the sorry line" and an honest existential
+    (Lidman.lean sorry :112) was refused as TRUE_PLACEHOLDER. Exact shape of
+    the LeanVerifier no-parseable-error timeout branch."""
+    from prover.lean_utils import is_true_placeholder_goal
+
+    _mock_probe_result(monkeypatch, {
+        "success": False,
+        "errors": "lake build timed out (600s wall-clock) — budget exhausted, "
+                  "NO compile verdict (#18432)",
+        "raw_output": "1:0: warning: declaration uses 'sorry'\n"
+                      "warning: unused variable `h`\n",
+        "wall_clock_timeout": True,
+        "timeout_s": 600,
+    })
+    f = tmp_path / "Cut.lean"
+    f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")
+    assert is_true_placeholder_goal(str(f), 3) == (False, "")
+
+
+def test_is_true_placeholder_goal_false_on_timeout_with_far_partial_error(tmp_path, monkeypatch):
+    """FX-5d: the confirmed-diagnostic timeout branch (`wall_clock_exhausted`)
+    carries a positioned error FAR from the probed line. Outside a cut that
+    error is valid evidence the elaborator ran (see the far-error test
+    above); after a cut it is not — the elaborator may have stopped before
+    the probed line. Ambiguity must never refuse."""
+    from prover.lean_utils import is_true_placeholder_goal
+
+    _mock_probe_result(monkeypatch, {
+        "success": False,
+        "errors": "30:2: error: unsolved goals",
+        "raw_output": "30:2: error: unsolved goals\n",
+        "wall_clock_exhausted": True,
+        "timeout_s": 600,
+    })
+    f = tmp_path / "CutFar.lean"
+    f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")
+    assert is_true_placeholder_goal(str(f), 3) == (False, "")
+
+
+def test_is_true_placeholder_goal_false_on_failed_build_without_error_line(tmp_path, monkeypatch):
+    """FX-5d: a FAILED build whose output carries no `error:` token at all
+    (killed process, OOM, any other non-elaboration failure) gives no
+    verdict on the probed line, even without the timeout marker."""
+    from prover.lean_utils import is_true_placeholder_goal
+
+    _mock_probe_result(monkeypatch, {
+        "success": False,
+        "errors": "",
+        "raw_output": "3:0: warning: declaration uses 'sorry'\nKilled\n",
+    })
+    f = tmp_path / "Killed.lean"
+    f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")
+    assert is_true_placeholder_goal(str(f), 3) == (False, "")
+
+
+def test_is_true_placeholder_goal_still_detects_true_goal_with_warnings(tmp_path, monkeypatch):
+    """FX-5d positive control: a SUCCESSFUL probe build that prints sorry
+    warnings from other declarations still confirms a genuinely-True goal —
+    the new guards only fire on failed or cut builds."""
+    from prover.lean_utils import is_true_placeholder_goal
+
+    _mock_probe_result(monkeypatch, {
+        "success": True,
+        "errors": "",
+        "raw_output": "30:8: warning: declaration uses 'sorry'\n",
+    })
+    f = tmp_path / "TrueWarn.lean"
+    f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")
+    assert is_true_placeholder_goal(str(f), 3)[0] is True
+
+
 def test_is_true_placeholder_goal_false_on_unpositioned_infra_error(tmp_path, monkeypatch):
     """FX-5c (#1453): a probe build that fails at INFRASTRUCTURE level emits
     NON-EMPTY output whose `error:` lines carry no file position — the old

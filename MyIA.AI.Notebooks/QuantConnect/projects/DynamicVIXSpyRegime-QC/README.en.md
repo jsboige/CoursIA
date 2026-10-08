@@ -26,7 +26,6 @@ QC Strategy Library #50 clone (Dynamic VIX-SPY Regime Switching by Ahmet Kasti).
 
 **Why this PR does not touch `research.ipynb` or `main.py`**:
 - `research.ipynb`: (`execution_count: 1..13`), consistent outputs, 0 errors. This is the **pedagogical reference** for local reproduction. cell[9] output = `Sharpe 0.97, CAGR 23.83%, MaxDD -22.09%` confirmed by Papermill re-run.
-- `research_output.ipynb`: consistent outputs with `research.ipynb` (same baseline 0.97 and best 1.023).
 - `main.py`: docstring explicitly contains the library reference `# OOS 1Y Sharpe 1.72, 5Y CAGR 29.76%` + URL `https://www.quantconnect.com/strategies/50` — the source is traceable, it was the README that omitted this distinction.
 
 **For the strategy as locally deployable**: `research.ipynb` is the reference. Sharpe 1.72 remains the **library claim** (to be validated before any live trading pass).
@@ -50,7 +49,6 @@ Cf. `research.ipynb` cell[3] and cell[26] for the full comparative table (12 con
 
 - `main.py` - Strategy (QC Library #50 clone, 4-asset regime switching + ML overlay)
 - `research.ipynb` - 5 hypotheses H1-H5 + comparative table + SPY benchmark (2015-2025, 2765 days)
-- `research_output.ipynb` - Same notebook, separate execution version
 
 ## References
 
