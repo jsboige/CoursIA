@@ -1,7 +1,7 @@
 - name: "Tweety-11 Causal"
   family: Tweety/IKVM-JPype
-  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = JPype vers la vraie lib Java Tweety causal-1.30 (`from org.tweetyproject.causal.reasoner import ArgumentationBasedCausalReasoner`). C# = §§1-5 from-scratch pedagogique (do-calculus reimplemente, titre 'twin C# from-scratch') + §6 (PR #10570) pont IKVM chargeant `org.tweetyproject.tweety-causal.dll` (DLL build #10566, 13/13 classes causales actives, verifie firsthand via Assembly.GetExportedTypes) : `StructuralCausalModel.intervene()` Java reel invoque sous le runtime IKVM 8.15. Verdict SOTA-OK (pas de workaround degrade) : §6 prouve la parite moteur-contre-moteur -- `do(sprinkler=True)` produit `sprinkler <=> +` (surgery Java reel) IDENTIQUE au do-calculus from-scratch §3 `do(drops=True)` -> `drops <=> +`. Les DEUX cotes executent le meme moteur Java Tweety causal (Python via JPype, C# via IKVM). parity_level reste `surface` car le mode pedagogique primaire reste §§1-5 from-scratch ; §6 est le pont de validation qui confirme la conformite du from-scratch au moteur de reference."
