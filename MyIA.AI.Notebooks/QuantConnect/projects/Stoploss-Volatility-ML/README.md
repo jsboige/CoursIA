@@ -5,7 +5,7 @@
 
 ## Description
 
-Lasso regression stop-loss volatility prediction. Predicts next-day realized volatility. Adjusts stop-loss dynamically based on predicted vol.
+Prédiction LASSO du **rendement bas hebdomadaire** (weekly low return) à partir de features de volatilité glissante (30/60/90 j). Le stop-loss s'ajuste dynamiquement selon la prédiction.
 
 ## How to Run
 

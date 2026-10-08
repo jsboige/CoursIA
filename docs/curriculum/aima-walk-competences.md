@@ -52,7 +52,7 @@ référencent les phases de [aima-walk.md](aima-walk.md).
 | 9 (P4) | CSP-2-Consistency | RCA-3A | Il propage la cohérence d'arc (AC-3) et ordonne les variables (MRV, forward-checking), mesurant l'effet de chaque heuristique sur l'arbre de recherche. |
 | 10 (P5) | Tweety-2-Basic-Logics | RCA-3C, AI4K12-2 | Il représente des énoncés en logique propositionnelle et fait répondre un solveur Tweety : la représentation symbolique comme fondement vérifié par la machine. |
 | 11 (P5) | Tweety-2c-FOL-Csharp | RCA-3A, AI4K12-2 | Il transpose les mêmes requêtes en logique du premier ordre sur le twin .NET : transférer une représentation d'un formalisme à une API sœur. |
-| 12 (P5) | Tweety-3-Advanced-Logics | RCA-3C | Il exécute des inférences en logiques par défaut et modales : comprendre que « raisonner » se décline en sémantiques différentes selon ce qu'on veut capturer. |
+| 12 (P5) | Tweety-03-Advanced-Logics-Python | RCA-3C | Il exécute des inférences en logiques par défaut et modales : comprendre que « raisonner » se décline en sémantiques différentes selon ce qu'on veut capturer. |
 | 13 (P6) | PyMC-04-Bayesian-Networks | RCA-3C, RCA-3A, AI4K12-2 | Il code un réseau bayésien, en lance l'inférence exacte puis MCMC, et voit la distribution posterieure se construire : raisonnement probabiliste représenté ET appliqué. |
 | 14 (P6) | PyMC-05-Causal-Inference | RCA-3A, AI4K12-2 | Il intervient sur un graphe causal (`do`, contre-factuels) et compare à l'observation simple : appliquer la distinction corrélation/causalité sur des calculs qu'il exécute. |
 | 15 (P7) | GameTheory-02-NormalForm | RCA-3C, AI4K12-2 | Il calcule des équilibres purs et mixtes de jeux sous forme normale : représenter une interaction stratégique et raisonner jusqu'à ses points fixes. |

@@ -21,7 +21,7 @@ arguments) — the key property that makes the characteristic function
 `F(S) = {a | S defends a}` an `OrderHom` (see `Characteristic.lean`).
 
 Cross-reference:
-- Notebook `Tweety-5-Abstract-Argumentation.ipynb` (Tweety series): Python
+- Notebook `Tweety-05-Abstract-Argumentation-Python.ipynb` (Tweety series): Python
   presentation of Dung's frameworks, of which this formalization is the proved
   counterpart.
 - Epic Argumentum #2137.
