@@ -14,11 +14,11 @@ Agent orchestrateur pour iterer sur les 110 notebooks GenAI (`MyIA.AI.Notebooks/
 
 ## Stack GenAI (services verifies)
 
-| Service | GPU | VRAM | Sous-domaine | Auth |
+| Service | GPU | VRAM idle (cf. `docs/genai/genai-services.md`) | Sous-domaine | Auth |
 |---------|-----|------|--------------|------|
-| comfyui-qwen | GPU0 | ~20GB | qwen-image-edit.myia.io | Bearer (bcrypt) |
-| forge-turbo | GPU1 | ~8GB | turbo...myia.io | Basic |
-| vllm-zimage | GPU1 | ~15GB | z-image.myia.io | aucune |
+| comfyui-qwen | GPU0 | cf. table canonique | qwen-image-edit.myia.io | Bearer (bcrypt) |
+| forge-turbo | GPU1 | cf. table canonique | turbo...myia.io | Basic |
+| vllm-zimage | GPU1 | cf. table canonique | z-image.myia.io | aucune |
 
 ## Config & secrets (HARD)
 

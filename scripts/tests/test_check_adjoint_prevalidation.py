@@ -2493,3 +2493,157 @@ def test_base_dead_refuses_ready_and_names_the_base():
     assert dossier is None, dossier
     assert any("baseRefName must be 'main'" in e for e in errors), errors
     assert any("renum/17063-complexity-05b" in e for e in errors), errors
+
+
+# #19869 -- `--emit` doit pre-renseigner `supersedes` / `supersedes-why`
+# quand un dossier BLOCKED anterieur existe a la meme tete, sinon le
+# gate (`mute_contradictions` l.1307) refuse le dossier pose avec
+# NO-DOSSIER. Les tests suivants couvrent la detection
+# (`find_previous_blocked_same_head`) et l'injection dans
+# `render_emitted_dossier`.
+
+
+def test_find_previous_blocked_same_head_returns_blocked_at_same_head():
+    """BLOCKED anterieur a la meme tete : renvoie sa position 1-based."""
+    snapshot = _stacked_dossiers({}, {})
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is not None
+    position, dossier = found
+    # Premier dossier (index 1, l'ordinary earlier) + le BLOCKED (index 2).
+    # Le READY futur (index 3 si pose) aurait position 3 ; mais on cherche
+    # un BLOCKED anterieur = le 2e commentaire pose = position 2.
+    assert position == 2
+    assert dossier.fields.get("verdict") == mod.VERDICT_BLOCKED
+
+
+def test_find_previous_blocked_same_head_returns_none_on_changed_head():
+    """Tete differente : rien a refuter, retour None (exact-head peremption)."""
+    snapshot = _stacked_dossiers({"head": OTHER_HEAD}, {})
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is None
+
+
+def test_find_previous_blocked_same_head_picks_most_recent_blocked():
+    """Quand plusieurs BLOCKED sur la meme tete : le plus recent gagne
+    (celui qu'il faut refuter, pas un anterieur deja recouvert)."""
+    snapshot = _base_snapshot()
+    # Premier BLOCKED (index 1)
+    first = {"verdict": "BLOCKED", "b0": "blocked", "comments-reviewed": "1"}
+    first["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 1)
+    snapshot["comments"].append(_comment(_body(**first)))
+    # Deuxieme BLOCKED a la meme tete (index 2)
+    second = {
+        "verdict": "BLOCKED",
+        "b0": "blocked",
+        "comments-reviewed": "2",
+        "head": HEAD,
+    }
+    second["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 2)
+    snapshot["comments"].append(_comment(_body(**second)))
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is not None
+    position, _dossier = found
+    assert position == 3  # 1 (ordinary) + 2 BLOCKED = 3 commentaires, le dernier est position 3
+
+
+def test_find_previous_blocked_same_head_ignores_ready_predecessors():
+    """Un READY anterieur n'est pas un BLOCKED a recouvrir : None."""
+    snapshot = _stacked_dossiers(
+        {"verdict": "READY", "b0": "clear"},
+        {"verdict": "BLOCKED", "b0": "blocked"},
+    )
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is not None
+    position, dossier = found
+    # Le seul BLOCKED est le 3e (l'ordinary=1, le READY=2, le BLOCKED=3).
+    assert position == 3
+    assert dossier.fields.get("verdict") == mod.VERDICT_BLOCKED
+
+
+def test_render_emitted_dossier_autofills_supersedes_for_ready(monkeypatch):
+    """Un READY au-dessus d'un BLOCKED a meme tete : supersedes+why poses
+    automatiquement, dans le bloc, avant END, par --emit."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    snapshot = _stacked_dossiers({}, {})
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_READY
+    assert "supersedes: 2" in block
+    assert "supersedes-why: auto" in block
+    # Positionnement : supersedes-* avant END, dans le bloc.
+    lines = block.split("\n")
+    end_index = next(i for i, line in enumerate(lines) if line.strip() == mod.END)
+    supersedes_index = next(
+        i for i, line in enumerate(lines) if line.startswith("supersedes:")
+    )
+    supersedes_why_index = next(
+        i for i, line in enumerate(lines) if line.startswith("supersedes-why:")
+    )
+    assert supersedes_index < end_index
+    assert supersedes_why_index < end_index
+    assert supersedes_index < supersedes_why_index
+
+
+def test_render_emitted_dossier_omits_supersedes_when_no_blocked(monkeypatch):
+    """Pas de BLOCKED anterieur a meme tete : pas de supersedes, sortie
+    identique au template + provenance."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    snapshot = _snapshot(_body())
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_READY
+    assert "supersedes" not in block
+
+
+def test_render_emitted_dossier_omits_supersedes_for_blocked_verdict(monkeypatch):
+    """Verdict derive BLOCKED : la direction conservatrice serre, elle ne
+    debloque pas. Pas de supersedes meme si un BLOCKED anterieur existe."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    # Construire un snapshot ou le verdict derive sera BLOCKED : un draft.
+    snapshot = _base_snapshot()
+    snapshot["isDraft"] = True
+    # Ajouter un BLOCKED anterieur a la meme tete.
+    blocked = {"verdict": "BLOCKED", "b0": "blocked", "comments-reviewed": "1"}
+    blocked["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 1)
+    snapshot["comments"].append(_comment(_body(**blocked)))
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert "supersedes" not in block
+
+
+def test_render_emitted_dossier_omits_supersedes_on_changed_head(monkeypatch):
+    """BLOCKED anterieur sur une AUTRE tete : perime par exact-head, rien
+    a refuter, pas de supersedes dans le rendu."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    snapshot = _stacked_dossiers({"head": OTHER_HEAD}, {})
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_READY
+    assert "supersedes" not in block
+
+
+def test_render_emitted_dossier_blocked_at_same_head_then_changed_head(monkeypatch):
+    """BLOCKED sur tete-1, puis tete changee : le nouveau READY n'a rien
+    a refuter (tete-1 BLOCKED est deja perime par exact-head)."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    snapshot = _base_snapshot()
+    # Premier dossier BLOCKED a tete-1 (index 1)
+    blocked = {
+        "verdict": "BLOCKED",
+        "b0": "blocked",
+        "comments-reviewed": "1",
+        "head": OTHER_HEAD,
+    }
+    blocked["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 1)
+    snapshot["comments"].append(_comment(_body(**blocked)))
+    # Snapshot a tete-2 (HEAD)
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_READY
+    assert "supersedes" not in block
