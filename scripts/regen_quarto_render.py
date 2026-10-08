@@ -659,4 +659,11 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        rc = main()
+    except SystemExit:
+        raise
+    except Exception as e:
+        print(f"::error::regen_quarto_render crashed: {type(e).__name__}: {e}", file=sys.stderr)
+        sys.exit(2)
+    raise SystemExit(rc)
