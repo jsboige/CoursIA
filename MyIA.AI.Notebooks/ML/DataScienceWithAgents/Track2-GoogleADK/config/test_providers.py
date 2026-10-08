@@ -120,6 +120,28 @@ def test_settings_has_default_model_for_each_provider():
     assert s.lmstudio_model
 
 
+def test_settings_model_matches_provider_default_for_each_provider():
+    # `get_provider_config` resout `settings.<p>_model or defaults["model"]` : le
+    # repli DEFAULTS n'est donc exerce que si la variable d'environnement est vide.
+    # Les deux valeurs divergent alors sans bruit, et le repli mort se perime sans
+    # que rien ne rougisse (c'est ainsi que le defaut OpenRouter a garde un
+    # identifiant retire du catalogue). Ce test les lie.
+    s = Settings()
+    paires = [
+        (ProviderType.GEMINI, s.gemini_model),
+        (ProviderType.OPENAI, s.openai_model),
+        (ProviderType.OPENROUTER, s.openrouter_model),
+        (ProviderType.QWEN, s.qwen_model),
+        (ProviderType.VLLM, s.vllm_model),
+        (ProviderType.LMSTUDIO, s.lmstudio_model),
+    ]
+    for provider, valeur_settings in paires:
+        assert valeur_settings == ProviderConfig.get_defaults(provider)["model"], (
+            f"Settings et DEFAULTS divergent pour {provider.value} : "
+            f"{valeur_settings!r} != {ProviderConfig.get_defaults(provider)['model']!r}"
+        )
+
+
 def test_settings_active_provider_is_case_insensitive_in_routing():
     # get_provider_config lower-cases active_provider before the enum lookup.
     s = Settings(active_provider="GEMINI")
@@ -230,8 +252,8 @@ def test_get_litellm_model_gemini_prefix():
 
 
 def test_get_litellm_model_openrouter_prefix():
-    cfg = ProviderConfig(provider=ProviderType.OPENROUTER, model="anthropic/claude-3.5-sonnet")
-    assert providers.get_litellm_model(cfg) == "openrouter/anthropic/claude-3.5-sonnet"
+    cfg = ProviderConfig(provider=ProviderType.OPENROUTER, model="openai/gpt-5.6-sol")
+    assert providers.get_litellm_model(cfg) == "openrouter/openai/gpt-5.6-sol"
 
 
 @pytest.mark.parametrize("provider,model,prefix", [
