@@ -112,6 +112,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [genai/secrets-management.md](genai/secrets-management.md) | Secrets management — central source of truth (master.env + render_envs.py) |
 | [transients/2026-06-14-genai-service-security-audit.md](transients/2026-06-14-genai-service-security-audit.md) | Audit de sécurisation des services IA auto-hébergés (po-2023) |
 | [genai/audio-fading-remediation.md](genai/audio-fading-remediation.md) | Remédiation FADING audio et verdicts SOTA associés (#11719) — référence opérationnelle ; le détecteur vit dans les scripts, ce document porte le raisonnement |
+| [genai/audio-bakeoff-bank.md](genai/audio-bakeoff-bank.md) | Format de banc bakeoff audio (schema v1 : `bank_schema_v1.json`, `bake_append.py`, `bake_report.py`, `test_bake_bank.py`) — référence pour les comparaisons inter-modèles ASR/TTS/prosodie (#19695) |
 | [genai/decision-models.md](genai/decision-models.md) | Modèles de décision — relevé et shortlist |
 | [genai/model-mapping-openai.md](genai/model-mapping-openai.md) | Mapping des modèles OpenAI — génération courante |
 | [genai/model-mapping.md](genai/model-mapping.md) | Inventaire et table de correspondance — modèles GenAI/OpenAI |
