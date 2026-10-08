@@ -97,7 +97,7 @@ Un cinquième run rejoue la règle d'origine (`universe=fixed`) sur la fenêtre 
 | CAGR | 27,4 % | 27,1 % | 27,1 % |
 | Pire baisse | 27,7 % | 27,7 % | 27,6 % |
 
-Le Sharpe, le CAGR et la pire baisse se reproduisent à 0,01 près ; la PSR publiée ne se reproduit pas. Le chiffre publié était donc juste sur sa fenêtre, et la note de prudence du README d'origine, qui supposait un Sharpe effectif de 0,6 à 0,9, est réfutée sur ce point. Le défaut est ailleurs : la liste des 15 titres a été choisie en 2026, et elle porte sur toute fenêtre antérieure une information que l'algorithme ne pouvait pas avoir. Sur la fenêtre principale, la règle d'origine fait 0,91 (PSR 26,8 %) en statistiques QC, et l'univers ex ante 0,77 (PSR 14,5 %).
+Le Sharpe mesuré (1,148 avant arrondi) est proche des deux valeurs publiées. Le CAGR mesuré est de 27,123 %, contre 27,4 % au catalogue et 27,1 % au registre ; la pire baisse est de 27,6 %, contre 27,7 % publiés. Ces valeurs sont proches, pas identiques, et une tolérance commune de 0,01 ne les décrit pas. La PSR publiée ne se reproduit pas. La note de prudence du README d'origine, qui supposait un Sharpe effectif de 0,6 à 0,9, est réfutée sur le seul point du Sharpe. Le défaut est ailleurs : la liste des 15 titres a été choisie en 2026, et elle porte sur toute fenêtre antérieure une information que l'algorithme ne pouvait pas avoir. Sur la fenêtre principale, la règle d'origine fait 0,91 (PSR 26,8 %) en statistiques QC, et l'univers ex ante 0,77 (PSR 14,5 %).
 
 ### Suivi en ombre
 
