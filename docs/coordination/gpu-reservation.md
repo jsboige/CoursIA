@@ -7,19 +7,16 @@
 
 ## Vue d'ensemble
 
-Le ledger `gpu-reservation` catalogue **une entrée par réservation GPU**, cléée par `<machine>#gpu<n>`. Chaque entrée porte :
+Le ledger `gpu-reservation` catalogue **une entrée par réservation GPU**, cléée par `<machine>#gpu<n>`. Chaque entrée porte **6 champs** (cf. `GPU_RESERVATION_FIELDS` dans `scripts/coordination/debt_ledger.py`) :
 
 | Champ | Type | Description |
 |---|---|---|
-| `entity` | string | `<machine>#gpu<n>` (ex : `myia-ai-01#gpu2`, `myia-po-2023#gpu0`). |
-| `issued_by` | string | lane qui a posé la réservation (ex : `myia-ai-01:CoursIA-2`). |
-| `experiment` | string | issue/PR de l'expérience (ex : `#1454` pour la file GPU 2.0). |
-| `window_start` | ISO-8601 | début de la fenêtre d'usage. |
-| `window_end` | ISO-8601 | fin de la fenêtre d'usage. |
-| `mode` | enum | `'run'` (training SAH/SAE), `'bench'` (microbench), `'hold'` (réservation sèche, ex : maintenance). |
-| `load_pct` | float | charge hôte cible à ne pas dépasser (cf. garde 85 %). |
-| `cuda_visible` | string | variable d'env CUDA Devices (ex : `CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=2`). |
-| `notes` | string | annotations libres (cf. ci-dessous). |
+| `state` | enum | `'held'` (workload en cours), `'released'` (terminal, GPU libre), `'stale'` (`held` passé `expected_end` sans release). |
+| `holder` | lane | la lane qui tient le device (ex : `myia-ai-01:CoursIA-2`). |
+| `workload` | text | une ligne décrivant ce qui tourne sur le device. |
+| `started_at` | ISO-8601 UTC | début de la fenêtre d'usage. |
+| `expected_end` | ISO-8601 UTC | fin prévue de la fenêtre ; sert de base à la détection `stale`. |
+| `issue` | issue-ref | issue d'exécution servie par cette réservation (`owner/repo#N`), si elle existe. |
 
 ## Pourquoi un ledger — pas un README
 
@@ -35,13 +32,15 @@ Le picker **ne tire plus une expérience GPU** sans qu'une observation existe da
 
 ## Format de l'envelope
 
-L'envelope est un message dashboard d'une ligne, préfixé `[OBS]`, au format JSON :
+L'envelope est un message dashboard d'une ligne, préfixé `[OBS]`, au format JSON. Le body est construit par la sous-commande `append` du `debt_ledger.py` (ou par un script ad-hoc qui passe par `--fields-json`).
+
+**Exemple réel (c.257)** : entité `myia-ai-01#gpu2`, état `released` après un run training :
 
 ```json
-[OBS] {"schema":"debt-ledger-observation/v1","kind":"gpu-reservation","entity":"myia-ai-01#gpu2","issued_by":"myia-ai-01:CoursIA-2","experiment":"#1454","window_start":"2026-10-08T00:00Z","window_end":"2026-10-08T04:00Z","mode":"run","load_pct":85.0,"cuda_visible":"CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=2","notes":"onset/SAE Qwen3.5-9B-Base seed 2/3 (c.247-quater)"}
+[OBS] {"schema":"debt-ledger-observation/v1","kind":"gpu-reservation","entity":"myia-ai-01#gpu2","fields":{"state":"released","holder":"myia-ai-01:CoursIA-2","workload":"onset/SAE Qwen3.5-9B-Base (c.247-quater)","started_at":"2026-10-07T16:53:00Z","expected_end":"2026-10-08T00:00:00Z","issue":"jsboige/CoursIA#1454"}}
 ```
 
-Une observation valide toutes les 5000 observations — au-delà, le picker doit incrémenter `issued_at` plutôt que ré-écrire l'historique.
+Une observation est **terminale** quand son `state` est `released` ou `stale`. Au-delà, le picker doit incrémenter `observed_at` plutôt que ré-écrire l'historique.
 
 ## Quand **réduire** (fold)
 
@@ -57,10 +56,10 @@ Le snapshot est publié sur le dashboard `CoursIA-gpu-reservation-ledger` avec l
 
 Avant `nvidia-smi` (ou tout autre lancement GPU) :
 
-1. **Charge hôte** : `uptime`, `free -g`, `nvidia-smi` — la charge hôte doit rester **< 85 %** sous l'expérience. Au-delà, reporter l'expérience et poster une observation `hold` (réservation à venir).
+1. **Charge hôte** : `uptime`, `free -g`, `nvidia-smi` — la charge hôte doit rester **< 85 %** sous l'expérience. Au-delà, reporter l'expérience et poster une observation `held` une fois la charge retombée (réservation à venir, pas de geste de lancement).
 2. **CUDA devices** : `CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=<n>` sur la commande elle-même. Ne pas se fier au seul `CUDA_VISIBLE_DEVICES` (variable d'env du shell sans ordre PCI = risque d'allocation ambigu).
-3. **Ledger entry** : poster `[OBS]` sur `CoursIA-gpu-reservation-ledger` **avant** le geste (pas après — sinon collision possible).
-4. **GPU 0/1 réservé** : les GPU 0 et 1 portent le vLLM de la flotte et **ne se réservent pas**. Le GPU 2 est le seul slot GPU de cette machine pour les expériences.
+3. **Ledger entry** : poster `[OBS]` (`state: held`) sur `CoursIA-gpu-reservation-ledger` **avant** le geste de lancement (pas après — sinon collision possible). Poster `[OBS]` (`state: released`) à la fin du run, avec `workload` court et `expected_end` réel.
+4. **GPU 0/1 réservé** : les GPU 0 et 1 de ai-01 portent le vLLM de la flotte et **ne se réservent pas**. Le GPU 2 est le seul slot GPU de cette machine pour les expériences.
 
 ## Périmètre du tenancier
 
@@ -76,19 +75,22 @@ Le tenancier (`myia-ai-01:CoursIA-2`) :
 
 Le picker (`scripts/pick_idle_grain.py`) croise l'urne `delivered` avec un signal **pre-launch** :
 
-1. Avant de tirer un grain `training` ou `genai` marqué **GPU-bound** (heuristique : présence de `cuda_visible`, `experiment` ∈ file #1454), le picker vérifie qu'une observation `[OBS]` existe dans le ledger pour l'entité ciblée.
-2. **Pas d'observation `[OBS]`** → le picker saute le grain et log `[SKIP gpu-reservation missing]` dans son diagnostic. La lane worker qui rencontre ce skip doit poster l'observation OU prendre un grain non-GPU.
-4. **Observation `hold`** → le picker signale `[DEFER gpu-reservation hold]` et passe au suivant.
-3. **Observation `run` valide** (window_start ≤ now ≤ window_end) → le picker tire normalement.
+1. Avant de tirer un grain `training` ou `genai` marqué **GPU-bound** (heuristique : à définir), le picker vérifie qu'une observation `[OBS]` existe dans le ledger pour l'entité ciblée via la sous-commande `check_pending --entity <m>#gpu<n>`.
+2. **Pas d'observation `[OBS]`** (`verdict: NO_OBS`) → le picker saute le grain et log `[SKIP gpu-reservation missing]`. La lane worker qui rencontre ce skip doit poster l'observation OU prendre un grain non-GPU.
+3. **Observation `held` par une autre lane** (`verdict: HOLD`) → le picker signale `[DEFER gpu-reservation hold]` et passe au suivant.
+4. **Observation `held` par ma lane, dans la fenêtre** (`verdict: OK_TO_RUN`) → le picker tire normalement.
+5. **Observation `released`** (`verdict: RELEASED`) → le GPU est libre, le picker peut tirer.
+6. **Observation `stale`** (`verdict: STALE`) → cas d'erreur, la lane tenancière doit poster un `[OBS]` de réparation.
 
-Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `EXPIRED`) en ~50 ms (cache local).
+Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
 
 ## Première observation [OBS] — c.257 (2026-10-08T03:25Z)
 
 **Entité** : `myia-ai-01#gpu2`
 **Issued by** : `myia-ai-01:CoursIA-2`
-**Mode** : `hold` (aucune expérience en cours — relevé de l'état machine, pas de réservation active)
-**Experiment** : `#1454` (file GPU 2, prochain job à scheduler)
+**State** : `held` (observation **pré-run** — relevé de l'état machine avant le prochain job, pas de workload en cours au moment de l'observation)
+**Workload** : (vide — pas de workload en cours, c'est un snapshot machine)
+**Issue** : `#1454` (file GPU 2)
 
 **Mesures firsthand 2026-10-08T03:25Z** (`nvidia-smi`, `Get-CimInstance Win32_OperatingSystem`) :
 
@@ -104,7 +106,7 @@ Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>
 | Mémoire libre | **43,1 GB** / 191,8 GB total | > 20 GB libre (OK) |
 | Conteneurs running | 49 | (pas de seuil) |
 
-**Verdict** : GPU 2 libre (252 MiB used, charge hote à 82 %). **Pas de lancement de job GPU dans l'immédiat** (charge à 82 % = marge trop mince pour un run training 4-bit QLoRA qui ajoute ~6 GB). Observation `hold` = le prochain job `#1454` peut être scheduler dès que la charge hote descend sous 70 %.
+**Verdict** : GPU 2 libre (252 MiB used, charge hote à 82 %). **Pas de lancement de job GPU dans l'immédiat** (charge à 82 % = marge trop mince pour un run training 4-bit QLoRA qui ajoute ~6 GB). Observation `held` (snapshot pré-run) = le prochain job `#1454` peut être scheduler dès que la charge hote descend sous 70 %, et **une nouvelle observation `held` avec `workload` non vide** sera postée au moment du lancement.
 
 **Note de provenance** : ces mesures sont localisées au `myia-ai-01#gpu2`. Les GPU des autres machines ne sont pas couverts par cette observation — leur tenancier publie les leurs.
 
@@ -160,8 +162,15 @@ L'observation `[OBS]` d'un slot gpu0/gpu1 sur ai-01 est **interdite** : ces slot
 
 - Issue #16737 — Ledger de reservation GPU + planification hebdomadaire des trainings (ai-01 tenancier)
 - Issue #1454 — File d'expériences GPU 2
-- `scripts/coordination/debt_ledger.py` — kind `gpu-reservation` (fonction `_summarize_gpu_reservation`, ligne 1490)
-- `scripts/coordination/debt_ledger.py` — sous-commandes `append / reduce / check_pending`
+- `scripts/coordination/debt_ledger.py` — kind `gpu-reservation` (fonction `_summarize_gpu_reservation`, ligne 1490 ; `GPU_RESERVATION_FIELDS` ligne 258)
+- `scripts/coordination/debt_ledger.py` — sous-commandes `append / reduce / check_pending` (4e livrable : PR #19855)
 - `myia-po-2023#gpu1` acceptation initiale (c.247-quater GPU 2 release precedent, seeds 0-3 Qwen3.5-9B-Base)
 - Mandat user 2026-09-18 — « les GPU devraient être gérées via le ledger de réservation que tu avais conçu »
 - Mandat user 2026-10-05 ~11:33Z — régisseur GPU de la flotte
+
+## Historique des livrables (#16737)
+
+- **1er livrable (c.255)** : protocole initial — format `[OBS]`, garde 85 %, CUDA devices explicites, GPU 2 uniquement, fold hebdo, liaison picker / #1454.
+- **2e livrable (c.257)** : 1re observation `[OBS]` + corrections paths + section "Liaison picker ↔ file #1454" + heuristique pre-launch + sous-commande `check_pending --entity`.
+- **3e livrable (c.258)** : liaison cross-machine — topologie GPU (ai-01: gpu0/1=vLLM, gpu2=training ; po-* à confirmer), protocole de récupération cross-machine (DM nominatif + dashboard + cache 24h), garde vLLM, trigger de mise à jour.
+- **4e livrable (c.260, PR #19855)** : implémentation de la sous-commande `check_pending` + fonction pure `evaluate_gpu_pending()`. **Ce commit (4e livrable doc)** aligne le protocole sur le schéma réel de `debt_ledger.py` (state/holder/workload/started_at/expected_end/issue) et corrige les noms de verdicts (`RELEASED`/`STALE` au lieu de `EXPIRED`).
