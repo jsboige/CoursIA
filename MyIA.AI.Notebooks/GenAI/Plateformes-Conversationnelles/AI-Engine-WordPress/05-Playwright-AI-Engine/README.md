@@ -42,7 +42,7 @@ des constats, pas par symétrie d'arborescence.
 
 ## Le parcours — ce qu'il mesure
 
-[`00-Parcours-QA-AI-Engine.ipynb`](00-Parcours-QA-AI-Engine.ipynb) suit
+[`00-Parcours-QA-AI-Engine.ipynb`](00-Parcours-QA-AI-Engine.html) suit
 un escalier de quatre paliers sur un indicateur témoin,
 `module_workspace` :
 
@@ -144,7 +144,7 @@ grep -nE "Bearer |password|localhost:80(8|9)[0-9]" 00-Parcours-QA-AI-Engine.ipyn
 - [`../00-Tour-Plateforme/README.md`](../00-Tour-Plateforme/README.md) —
   le tour guidé de l'interface, où ce comportement a été rencontré pour
   la première fois, au détour d'une capture
-- [`../parler-au-chatbot-en-visiteur-par-l-api.ipynb`](../03-Functional/03-1-Chatbots/parler-au-chatbot-en-visiteur-par-l-api.ipynb)
+- [`../parler-au-chatbot-en-visiteur-par-l-api.ipynb`](../03-Functional/03-1-Chatbots/parler-au-chatbot-en-visiteur-par-l-api.html)
   — dernier grain de la série « par son API », qui épuisait les faces
   atteignables sans navigateur
 - [`../../Open-WebUI/Playwright-OWUI/README.md`](../../Open-WebUI/Playwright-OWUI/README.md)

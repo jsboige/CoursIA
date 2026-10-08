@@ -42,7 +42,7 @@ du dépôt.
 
 ## Notebooks
 
-- [`auditer-la-conformite-visuelle.ipynb`](auditer-la-conformite-visuelle.ipynb) —
+- [`auditer-la-conformite-visuelle.ipynb`](auditer-la-conformite-visuelle.html) —
   smoke test structurel vs conformité visuelle : contraste WCAG, primaires
   Bootstrap, affordance des CTA. Quatre pages synthétiques portant une
   violation délibérée chacune, trois détecteurs dédiés, et la démonstration

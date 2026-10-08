@@ -86,36 +86,36 @@ d'une instance jetable dédiée (montage en 5 étapes dans
 
 ### Fonctionnel — chatbots et assistants
 
-- [configurer-chatbots-par-l-api](03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) — les chatbots sont des documents JSON : lire, dupliquer, écrire (read-modify-write) — et mesurer ce que les instructions d'un persona changent réellement
-- [parler-au-chatbot-en-visiteur](03-Functional/03-1-Chatbots/parler-au-chatbot-en-visiteur-par-l-api.ipynb) — la face navigateur : page sans jeton, `start_session` seul endpoint public, et nonce = anti-CSRF, pas authentification
-- [interroger-lassistant-de-lediteur](03-Functional/03-1-Chatbots/interroger-lassistant-de-lediteur-par-l-api.ipynb) — la face éditeur : nonce `wp_rest`, contrat découvert par les refus, frontière gratuite/Pro inscrite dans la réponse
-- [donner-une-memoire-ephemere](03-Functional/03-1-Chatbots/donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb) — la famille `files/*` : upload par refus, TTL d'une heure prouvé par soustraction, partition par utilisateur
-- [joindre-un-fichier-au-chatbot](03-Functional/03-1-Chatbots/joindre-un-fichier-au-chatbot-par-l-api.ipynb) — un fichier joint a trois destins : ignoré (200 silencieux), annoté-puis-jeté (tokens à l'appui), réellement vu (l'image bicolore)
-- [mesurer-la-derive-dun-copilot](03-Functional/03-1-Chatbots/mesurer-la-derive-dun-copilot.ipynb) — le gate humain à chaque étape ne protège pas la chaîne : des destructrices complémentaires perdent la moitié du document
-- [obtenir-des-donnees-structurees](03-Functional/03-1-Chatbots/obtenir-des-donnees-structurees-par-l-api.ipynb) — la route `/ai/json` : la case json de la matrice d'usages, son remplissage, le null silencieux du parser
+- [configurer-chatbots-par-l-api](03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.html) — les chatbots sont des documents JSON : lire, dupliquer, écrire (read-modify-write) — et mesurer ce que les instructions d'un persona changent réellement
+- [parler-au-chatbot-en-visiteur](03-Functional/03-1-Chatbots/parler-au-chatbot-en-visiteur-par-l-api.html) — la face navigateur : page sans jeton, `start_session` seul endpoint public, et nonce = anti-CSRF, pas authentification
+- [interroger-lassistant-de-lediteur](03-Functional/03-1-Chatbots/interroger-lassistant-de-lediteur-par-l-api.html) — la face éditeur : nonce `wp_rest`, contrat découvert par les refus, frontière gratuite/Pro inscrite dans la réponse
+- [donner-une-memoire-ephemere](03-Functional/03-1-Chatbots/donner-une-memoire-ephemere-au-chatbot-par-l-api.html) — la famille `files/*` : upload par refus, TTL d'une heure prouvé par soustraction, partition par utilisateur
+- [joindre-un-fichier-au-chatbot](03-Functional/03-1-Chatbots/joindre-un-fichier-au-chatbot-par-l-api.html) — un fichier joint a trois destins : ignoré (200 silencieux), annoté-puis-jeté (tokens à l'appui), réellement vu (l'image bicolore)
+- [mesurer-la-derive-dun-copilot](03-Functional/03-1-Chatbots/mesurer-la-derive-dun-copilot.html) — le gate humain à chaque étape ne protège pas la chaîne : des destructrices complémentaires perdent la moitié du document
+- [obtenir-des-donnees-structurees](03-Functional/03-1-Chatbots/obtenir-des-donnees-structurees-par-l-api.html) — la route `/ai/json` : la case json de la matrice d'usages, son remplissage, le null silencieux du parser
 
 ### Fonctionnel — formulaires
 
-- [administrer-les-formulaires-par-l-api](03-Functional/03-2-Forms/administrer-les-formulaires-par-l-api.ipynb) — le formulaire est un contenu WordPress (CPT `mwai_form`) : CRUD unitaire, rendu par shortcode, frontière gratuite/Pro mesurée
-- [auditer-un-formulaire-conditionnel](03-Functional/03-2-Forms/auditer-un-formulaire-conditionnel.ipynb) — un formulaire à branchement est une machine à états implicite : sept champs engendrent treize états, coût LLM et champs morts émergents
+- [administrer-les-formulaires-par-l-api](03-Functional/03-2-Forms/administrer-les-formulaires-par-l-api.html) — le formulaire est un contenu WordPress (CPT `mwai_form`) : CRUD unitaire, rendu par shortcode, frontière gratuite/Pro mesurée
+- [auditer-un-formulaire-conditionnel](03-Functional/03-2-Forms/auditer-un-formulaire-conditionnel.html) — un formulaire à branchement est une machine à états implicite : sept champs engendrent treize états, coût LLM et champs morts émergents
 
 ### Fonctionnel — RAG et embeddings
 
-- [ingestion-corpus-long-rag](03-Functional/03-3-RAG-et-Embeddings/ingestion-corpus-long-rag.ipynb) — découper un catalogue avant de l'indexer : la dégradation du retrieval vient du chunking, pas de l'embedder
-- [separer-les-environnements-de-vecteurs](03-Functional/03-3-RAG-et-Embeddings/separer-les-environnements-de-vecteurs.ipynb) — fuite cross-environnement et accident de réindexation, mesurés sur un vector store partitionné
+- [ingestion-corpus-long-rag](03-Functional/03-3-RAG-et-Embeddings/ingestion-corpus-long-rag.html) — découper un catalogue avant de l'indexer : la dégradation du retrieval vient du chunking, pas de l'embedder
+- [separer-les-environnements-de-vecteurs](03-Functional/03-3-RAG-et-Embeddings/separer-les-environnements-de-vecteurs.html) — fuite cross-environnement et accident de réindexation, mesurés sur un vector store partitionné
 
 ### Fonctionnel — serveur MCP
 
-- [piloter-wordpress-par-mcp](03-Functional/03-4-MCP-Server/piloter-wordpress-par-mcp.ipynb) — WordPress serveur MCP : handshake JSON-RPC, catalogue à JSON Schema, vrais `tools/call` en écriture
-- [consommer-vs-exposer-le-mcp](03-Functional/03-4-MCP-Server/consommer-vs-exposer-le-mcp.ipynb) — les deux sens du fil : chevauchement cross-catalogue (Jaccard sur verbe, cible), la redondance d'écriture est dangereuse
-- [auditer-un-serveur-mcp](03-Functional/03-4-MCP-Server/auditer-un-serveur-mcp.ipynb) — un serveur MCP utile expose les verbes du métier, pas les tables : classification CRUD/métier + distance au schéma
-- [autour-du-consent-oauth](03-Functional/03-4-MCP-Server/autour-du-consent-oauth-du-serveur-mcp.ipynb) — l'escalier des refus de l'OAuth embarqué : PKCE, consent admin mécanisé, token délégué — puis révocation mesurée
+- [piloter-wordpress-par-mcp](03-Functional/03-4-MCP-Server/piloter-wordpress-par-mcp.html) — WordPress serveur MCP : handshake JSON-RPC, catalogue à JSON Schema, vrais `tools/call` en écriture
+- [consommer-vs-exposer-le-mcp](03-Functional/03-4-MCP-Server/consommer-vs-exposer-le-mcp.html) — les deux sens du fil : chevauchement cross-catalogue (Jaccard sur verbe, cible), la redondance d'écriture est dangereuse
+- [auditer-un-serveur-mcp](03-Functional/03-4-MCP-Server/auditer-un-serveur-mcp.html) — un serveur MCP utile expose les verbes du métier, pas les tables : classification CRUD/métier + distance au schéma
+- [autour-du-consent-oauth](03-Functional/03-4-MCP-Server/autour-du-consent-oauth-du-serveur-mcp.html) — l'escalier des refus de l'OAuth embarqué : PKCE, consent admin mécanisé, token délégué — puis révocation mesurée
 
 ### Fonctionnel — multi-provider
 
-- [presenter-ai-engine-par-son-api](03-Functional/03-5-Multi-Provider/presenter-ai-engine-par-son-api.ipynb) — le socle de la série : instance jetable, catalogue des routes `mwai/v1`, première completion réelle
-- [brancher-plusieurs-providers](03-Functional/03-5-Multi-Provider/brancher-plusieurs-providers-par-l-api.ipynb) — la matrice `ai_<usage>_default_env` lue et écrite — et le piège : `settings/update` ne met pas à jour, il remplace
-- [eval-choisir-son-modele](03-Functional/03-5-Multi-Provider/eval-choisir-son-modele.ipynb) — cinq propriétés discriminantes contre n'importe quel endpoint : « je l'ai essayé, il répond bien » devient un tableau reproductible
+- [presenter-ai-engine-par-son-api](03-Functional/03-5-Multi-Provider/presenter-ai-engine-par-son-api.html) — le socle de la série : instance jetable, catalogue des routes `mwai/v1`, première completion réelle
+- [brancher-plusieurs-providers](03-Functional/03-5-Multi-Provider/brancher-plusieurs-providers-par-l-api.html) — la matrice `ai_<usage>_default_env` lue et écrite — et le piège : `settings/update` ne met pas à jour, il remplace
+- [eval-choisir-son-modele](03-Functional/03-5-Multi-Provider/eval-choisir-son-modele.html) — cinq propriétés discriminantes contre n'importe quel endpoint : « je l'ai essayé, il répond bien » devient un tableau reproductible
 
 ### Sécurité et méthode
 

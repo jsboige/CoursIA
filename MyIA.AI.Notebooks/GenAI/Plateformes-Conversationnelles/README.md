@@ -82,7 +82,7 @@ propre déploiement.
 
 ### Qui il est
 
-[`differencier-les-assistants.ipynb`](differencier-les-assistants.ipynb) traite
+[`differencier-les-assistants.ipynb`](differencier-les-assistants.html) traite
 l'autre moitié. Déclarer quatre assistants spécialisés ne les rend pas
 distincts : le prompt porte une intention, la spécialisation est une propriété
 des sorties. Le notebook construit la mesure — une batterie de sondes ambiguës,

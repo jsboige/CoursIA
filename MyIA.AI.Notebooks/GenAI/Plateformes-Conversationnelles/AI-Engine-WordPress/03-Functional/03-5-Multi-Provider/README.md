@@ -6,6 +6,6 @@ Neuf providers distants + un connecteur auto-hébergé : la matrice environnemen
 
 ## Notebooks
 
-- [`brancher-plusieurs-providers-par-l-api.ipynb`](brancher-plusieurs-providers-par-l-api.ipynb) — environnements et matrice d'usages
-- [`eval-choisir-son-modele.ipynb`](eval-choisir-son-modele.ipynb) — une mini-évaluation reproductible
-- [`presenter-ai-engine-par-son-api.ipynb`](presenter-ai-engine-par-son-api.ipynb) — le tour de l'API sur l'instance jetable Maison Valmont
+- [`brancher-plusieurs-providers-par-l-api.ipynb`](brancher-plusieurs-providers-par-l-api.html) — environnements et matrice d'usages
+- [`eval-choisir-son-modele.ipynb`](eval-choisir-son-modele.html) — une mini-évaluation reproductible
+- [`presenter-ai-engine-par-son-api.ipynb`](presenter-ai-engine-par-son-api.html) — le tour de l'API sur l'instance jetable Maison Valmont
