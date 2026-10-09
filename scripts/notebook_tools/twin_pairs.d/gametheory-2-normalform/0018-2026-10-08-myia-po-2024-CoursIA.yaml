@@ -1,0 +1,7 @@
+date: '2026-10-08'
+by: myia-po-2024:CoursIA
+python_sha: e1eef3ab8aa701664d3802e29212dd7c0615dcaa
+csharp_sha: 025b3b4b5ea3b339af3b59ee328eebbde8c0d263
+content_python_sha: 995a4174243932830d0687bf142177d3b03f8804320ad8095f428c94d245cf27
+content_csharp_sha: 4c7f9a0098d921fe22ee4c68aaf5ee5047d8b113484e05b592dd45c136717e7f
+reason: "Redressement densite #17040 (tranche GameTheory) : les DEUX jumeaux retouches en markdown-only -- Python fusion de la recap 'equilibre symetrique' (theoreme Nash 1950 conserve), C# fusions des recaps campagne (#16670) dans les lectures preexistantes. Cellules code byte-identiques, aucune re-exec requise (C.3)."
