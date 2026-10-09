@@ -7,13 +7,14 @@
     "export": "slidev export"
   },
   "dependencies": {
-    "@slidev/cli": "^51.0.0",
+    "@slidev/cli": "^53.0.0",
     "@slidev/theme-default": "latest"
   },
   "devDependencies": {
     "playwright-chromium": "^1.58.2"
   },
   "overrides": {
-    "lz-string": "1.4.4"
+    "lz-string": "1.4.4",
+    "katex": "^0.18.2"
   }
 }
