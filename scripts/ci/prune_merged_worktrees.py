@@ -1077,6 +1077,65 @@ def content_delivered_by_patch_id(wt_path: str) -> Optional[tuple]:
     return minus, plus
 
 
+def content_delivered_by_branch_patch_id(wt_path: str) -> Optional[tuple]:
+    """Voit le squash-merge **multi-commit** (#20067, reserve Hermes 09/10).
+
+    ``content_delivered_by_patch_id`` compare le patch-id d'**un** commit a
+    l'amont. Une branche a N commits squashee sur ``main`` produit un commit
+    dont le patch est la **concatenation** des N diffs, donc un patch-id qui
+    n'egale celui d'aucun commit d'origine : ``git cherry`` rend alors
+    ``plus == N`` et refuse un contenu pourtant livre -- le defaut meme que
+    #20067 vise. Mesure de la reserve (Hermes, 09/10, depots jetables git
+    2.43) : branche a 1 commit -> ``minus=1 plus=0`` (franchit) ; branche a
+    2 commits -> ``minus=0 plus=2`` (refuse). Les 6 franchissements de la
+    mesure du 09/10 sont **tous** ``minus=1 plus=0`` -- aucun multi-commit.
+
+    Plutot que de recalculer a la main le patch-id du diff de branche puis
+    de parcourir les patchs de ``main`` (``git log -p`` sur des centaines de
+    commits, capturee en memoire, pour un resultat identique), on **fabrique
+    le commit que le squash aurait produit** -- arbre de ``HEAD``, parent =
+    merge-base -- et on le donne a la meme machinerie ``git cherry``. Son
+    patch-id est exactement celui du patch de branche, et c'est git qui
+    compare, avec son propre index de patch-ids.
+
+    Le commit synthetique est **detache** (aucun ref ne le porte) : il est
+    collecte par le prochain ``git gc``. Aucune ecriture sur les refs, sur
+    l'index ou sur le worktree.
+
+    Cout : trois commandes triviales (``rev-parse``, ``merge-base``,
+    ``commit-tree``) plus le meme ``git cherry`` que la jambe precedente.
+    L'appelant ne la tente **que** lorsque la jambe per-commit n'a pas
+    tranche, donc ce cout ne s'ajoute pas au chemin ou elle decide deja.
+
+    Retourne ``(minus, plus)``, ou None si git echoue : l'appelant REFUSE
+    alors (echec de lecture = jamais un feu vert).
+    """
+    tree = run_git(wt_path, "rev-parse", "HEAD^{tree}", check=False)
+    if tree.returncode != 0 or not tree.stdout.strip():
+        return None
+    base = run_git(wt_path, "merge-base", MAIN_REF, "HEAD", check=False)
+    if base.returncode != 0 or not base.stdout.strip():
+        return None
+    synth = run_git(
+        wt_path, "commit-tree", tree.stdout.strip(),
+        "-p", base.stdout.strip(), "-m", "squash-probe (#20067)",
+        check=False,
+    )
+    if synth.returncode != 0 or not synth.stdout.strip():
+        return None
+    proc = run_git(wt_path, "cherry", MAIN_REF, synth.stdout.strip(),
+                   check=False)
+    if proc.returncode != 0:
+        return None
+    minus = plus = 0
+    for line in proc.stdout.splitlines():
+        if line.startswith("-"):
+            minus += 1
+        elif line.startswith("+"):
+            plus += 1
+    return minus, plus
+
+
 def detached_head_is_on_main(wt_path: str) -> bool:
     """Vrai si le HEAD detache est un ancetre de ``origin/main`` (#17684).
 
@@ -1571,8 +1630,21 @@ def diagnose_worktree(wt_path: str, current_path: str,
     # propre ». Comme le predicat 5, ce predicat est **branche-only** : un
     # HEAD detache releve de `detached_head_is_on_main` (#17684).
     if info["branch"]:
+        leg = None
         cherry = content_delivered_by_patch_id(wt_path)
         if cherry is not None and cherry[0] > 0 and cherry[1] == 0:
+            leg = "patch_id"
+        else:
+            # Jambe elargie (#20067, reserve Hermes du 09/10) : la precedente
+            # ne voit qu'un squash a **un seul** commit, et rend `plus == N`
+            # sur une branche a N commits squashee. Elle n'est tentee que
+            # lorsqu'il reste quelque chose a trancher, donc son cout ne
+            # s'ajoute pas au chemin ou la jambe per-commit decide deja.
+            branch_cherry = content_delivered_by_branch_patch_id(wt_path)
+            if (branch_cherry is not None
+                    and branch_cherry[0] > 0 and branch_cherry[1] == 0):
+                leg = "branch_patch_id"
+        if leg is not None:
             age_h = recent_activity_age_hours(wt_path)
             if age_h < activity_window_h:
                 return WorktreeStatus(
@@ -1592,7 +1664,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
                     ignored_extra=info.get("ignored_extra", []),
                     lane_owner=info.get("lane_owner"),
                     content_on_main=True,
-                    content_on_main_by="patch_id",
+                    content_on_main_by=leg,
                 )
             return WorktreeStatus(
                 path=wt_path,
@@ -1611,7 +1683,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
                 ignored_extra=info.get("ignored_extra", []),
                 lane_owner=info.get("lane_owner"),
                 content_on_main=True,
-                content_on_main_by="patch_id",
+                content_on_main_by=leg,
             )
 
     # Pas de PR trouvee : HEAD detaché sans correspondance, ou branche
