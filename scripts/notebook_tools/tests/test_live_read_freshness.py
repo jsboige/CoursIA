@@ -115,6 +115,24 @@ def test_citation_matches_rejects_moved_line():
     assert not citation_matches("def otcaInitial : Grid := ([] : Grid)", "def unitcellInitial : Grid := ([] : Grid)")
 
 
+def test_citation_matches_requires_word_boundary_on_full_prefix():
+    """#20076 (nit) : un symbole renomme en gardant le prefixe commun ne doit
+    plus valider -- « theorem foo » ne doit pas attester « theorem foobar »."""
+    assert not citation_matches("theorem foobar : True", "theorem foo")
+    assert not citation_matches("def foo_bar := 1", "def foo")
+
+
+def test_citation_matches_accepts_prefix_ending_at_word_boundary():
+    assert citation_matches("theorem foo : True", "theorem foo")
+    assert citation_matches("| a | 2058 |", "| a |")
+
+
+def test_citation_matches_ellipsis_path_stays_lenient_mid_word():
+    """Le chemin ellipse declare la troncature : une coupe a l'interieur d'un
+    identifiant reste attestable (le residu est nomme, pas ferme)."""
+    assert citation_matches("evolveHashlifeFastMemo helper := by", "evolveHashlifeFast...")
+
+
 # ---------------------------------------------------------------------------
 # audit_cell : le discriminant
 # ---------------------------------------------------------------------------

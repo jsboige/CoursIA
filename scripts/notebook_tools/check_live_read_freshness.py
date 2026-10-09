@@ -43,6 +43,9 @@ sortie COMMITTEE les invariants qu'elle affirme, puis les confronte au fichier :
                  Prefixe et non egalite : la sortie tronque volontiers une
                  ligne longue (ellipse), et une citation tronquee reste
                  attestable ; une citation dont la ligne a BOUGE ne l'est pas.
+                 Le prefixe se clore a une frontiere de mot -- une declaration
+                 renommee en gardant le prefixe commun ne l'atteste pas ; sur le
+                 chemin ellipse, la troncature est declaree et reste toleree.
 
 Le discriminant est mecanique et falsifiable : les deux invariants sont
 extraits de la sortie elle-meme, pas d'une configuration par cellule. Une
@@ -174,13 +177,26 @@ def citations(text: str) -> list[tuple[int, str]]:
 
 
 def citation_matches(src_line: str, cited: str) -> bool:
-    """La ligne source commence-t-elle par le texte cite (ellipse toleree) ?"""
+    """La ligne source commence-t-elle par le texte cite (ellipse toleree) ?
+
+    #20076 (nit) : sur le chemin NON-ellipse, l'acceptation par prefixe exige
+    une frontiere de mot. Sans elle, un symbole renomme en gardant le prefixe
+    commun (« theorem foo » -> « theorem foobar ») restait vert : la citation ne
+    designait plus la meme ligne, et LINE_CITATION -- dont le metier est de
+    detecter qu'une ligne a bouge -- laissait passer le cas qu'il ferme.
+
+    Le chemin ellipse (``...``) reste volontairement lenient : l'ellipse
+    DECLARE la troncature, et une coupe peut tomber a l'interieur d'un
+    identifiant. Le residu est donc nomme, pas silencieux -- une collision de
+    prefixe sur une citation TRONQUEE reste attestable.
+    """
     c = _norm(cited)
     s = _norm(src_line)
     if not c:
         return True  # citation sans texte : rien a confronter
     if s.startswith(c):
-        return True
+        rest = s[len(c):]
+        return not rest or not (rest[0].isalnum() or rest[0] == "_")
     core = c.rstrip(". …")
     return bool(core) and s.startswith(core)
 
