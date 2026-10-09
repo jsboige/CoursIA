@@ -79,7 +79,8 @@ Tout run passe par l'admission sous verrou machine-wide, impose un parallelisme
 borne aux enfants (``LEAN_NUM_THREADS``, ``-Kjobs=N`` pour ``lake build``) et
 publie ses metriques en JSON.
 
-Interface operateur (case 8 de #15666) — premier volet, le diagnostic :
+Interface operateur (case 8 de #15666) — diagnostic, arret d'urgence et
+recuperation :
 
 5. **Trois commandes de diagnostic, lecture seule** : ``status`` rapporte la
    population, le cap, la file, les leases et l'admission courante ; ``doctor``
@@ -102,11 +103,12 @@ Interface operateur (case 8 de #15666) — premier volet, le diagnostic :
    tue (pids non comparables entre namespaces). Les records de runs deja
    morts ne sont retires qu'en mode action : inspect reste lecture seule.
 
-   Reste ouvert dans ce meme case 8 : la **procedure de recuperation apres
-   crash** du superviseur. Le confinement kill-on-close fait deja mourir
-   l'arbre avec le superviseur ; il reste a rendre canonique le balayage de
-   l'etat residuel (runs morts, leases perimes) que ``sweep_stale_runs`` et
-   ``sweep_stale_tree_leases`` savent deja faire.
+7. **``recover`` — recuperation apres crash du superviseur** : le
+   confinement fait deja mourir l'arbre avec le superviseur ; ce qui survit
+   a un crash, c'est l'ETAT (run records, leases d'arbre, entrees de file
+   au pid mort). Defaut = inspect ; ``--yes`` balaye les TROIS familles en
+   reutilisant les balayages existants (jamais une seconde semantique de
+   peremption) — items d'un host etranger et records illisibles conserves.
 
 Codes de sortie stables :
   0    succes (commande terminee, nettoyage prouve ; ``doctor`` et ``dry-run``
@@ -2419,6 +2421,107 @@ def _kill_run_tree(pid: int) -> str:
     return "failed: pid survit au kill" if pid_alive(pid) else "killed"
 
 
+def _classify_state_dir(directory: Path) -> dict:
+    """Partitionne un state dir (runs/trees/queue) par peremption : vivant
+    (notre host, pid vivant — du travail ACTIF, rien a recuperer), mort
+    (notre host, pid mort — recuperable), etranger (host different, JAMAIS
+    touche), illisible (rien d'attribuable, jamais retire)."""
+    live, dead, foreign, unreadable = [], [], [], []
+    try:
+        paths = sorted(directory.glob("*.json"))
+    except OSError:
+        paths = []
+    for path in paths:
+        record = read_run(path)
+        if not record:
+            unreadable.append(path.stem)
+        elif record.get("host") != host_id():
+            foreign.append(path.stem)
+        elif pid_alive(int(record.get("pid") or -1)):
+            live.append(path.stem)
+        else:
+            dead.append(path.stem)
+    return {"live": live, "dead": dead, "foreign": foreign,
+            "unreadable": unreadable}
+
+
+def _sweep_stale_queue() -> list[str]:
+    """Retire les entrants de file morts sur CE host. Semantique extraite
+    de queue_enter (memes regles de peremption), pour que la recuperation
+    apres crash couvre les TROIS familles d'etat et pas deux."""
+    swept = []
+    for path, entry in queue_entries():
+        if entry.get("host") == host_id() and not pid_alive(
+            int(entry.get("pid") or -1)
+        ):
+            try:
+                path.unlink()
+                swept.append(path.stem)
+            except OSError:
+                pass
+    return swept
+
+
+def recover(confirm: bool, as_json: bool) -> int:
+    """Case 8 volet 2b — recuperation apres crash du superviseur.
+
+    Le confinement fait deja mourir l'arbre avec le superviseur (Job
+    Object kill-on-close sous Windows ; scope/setsid sous POSIX) : ce qui
+    survit a un crash, c'est l'ETAT — run records, leases d'arbre et
+    entrees de file dont le pid est mort. `recover` rend cet etat residuel
+    visible (defaut = inspect), puis le balaie sur --yes en REUTILISANT
+    les balayages existants — la recuperation n'invente pas une seconde
+    semantique de peremption. Un item d'un host etranger n'est jamais
+    touche (pids non comparables entre namespaces). Le code de retour est
+    EXIT_OK dans tous les cas : comme doctor, le verdict vit dans la
+    sortie, pas dans le rc."""
+    families = {
+        "runs": _classify_state_dir(runs_dir()),
+        "tree_leases": _classify_state_dir(trees_dir()),
+        "queue": _classify_state_dir(queue_dir()),
+    }
+    swept: dict[str, list[str]] = {}
+    if confirm:
+        swept = {
+            "runs": sweep_stale_runs(),
+            "tree_leases": sweep_stale_tree_leases(),
+            "queue": _sweep_stale_queue(),
+        }
+    payload = {
+        "action": "recover",
+        "mode": "act" if confirm else "inspect",
+        "host": host_id(),
+        "stale" if not confirm else "swept": {
+            name: (fam["dead"] if not confirm else swept.get(name, []))
+            for name, fam in families.items()
+        },
+        "live": {k: v["live"] for k, v in families.items()},
+        "skipped_foreign_host": {
+            k: v["foreign"] for k, v in families.items()
+        },
+        "unreadable": {k: v["unreadable"] for k, v in families.items()},
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        mode = "BALAYAGE" if confirm else "INSPECTION (ajouter --yes pour agir)"
+        print(f"recover [{mode}] host={host_id()}")
+        for name, fam in families.items():
+            stale = swept.get(name, fam["dead"])
+            print(f"  {name}: {len(fam['live'])} vivant(s), "
+                  f"{len(stale)} "
+                  f"{'balaye(s)' if confirm else 'recuperable(s)'}, "
+                  f"{len(fam['foreign'])} etranger(s) (jamais touches), "
+                  f"{len(fam['unreadable'])} illisible(s)")
+            for sid in stale:
+                print(f"    {'balaie' if confirm else 'stale'} : {sid}")
+            for fid in fam["foreign"]:
+                print(f"    etranger : {fid} -- JAMAIS touche")
+            for uid in fam["unreadable"]:
+                print(f"    illisible : {uid} -- conserve (rien a attribuer)")
+    return EXIT_OK
+
+
 def emergency_stop(run_ids: list[str], confirm: bool, as_json: bool) -> int:
     """Case 8 volet 2a — arret d'urgence des runs possedes par l'organe.
 
@@ -2608,6 +2711,18 @@ def main(argv: list[str] | None = None) -> int:
                              "les records morts. Sans ce drapeau : inspection.")
     p_stop.add_argument("--json", action="store_true")
 
+    p_rec = sub.add_parser(
+        "recover",
+        help="Recuperation apres crash du superviseur — etat residuel "
+             "(runs morts, leases perimes, file) : defaut inspecter, "
+             "--yes pour balayer. Un item d'un host etranger n'est "
+             "jamais touche")
+    p_rec.add_argument("--yes", action="store_true",
+                       help="Agir : balayer l'etat residuel de CET host "
+                            "(les balayages existants, pas une seconde "
+                            "semantique).")
+    p_rec.add_argument("--json", action="store_true")
+
     args = parser.parse_args(argv)
     try:
         if args.action == "status":
@@ -2625,6 +2740,8 @@ def main(argv: list[str] | None = None) -> int:
             return emergency_stop(
                 run_ids=args.run or [], confirm=args.yes, as_json=args.json,
             )
+        if args.action == "recover":
+            return recover(confirm=args.yes, as_json=args.json)
         if args.action == "run":
             cmd = args.cmd
             if cmd and cmd[0] == "--":
