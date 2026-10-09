@@ -4752,6 +4752,48 @@ def board_withhold_code(cause: str) -> str:
     return (text.split(" : ", 1)[0] or "ECARTE")[:40]
 
 
+def board_withheld_from_claims(
+    belt_pool: list[dict],
+    belt_withheld: list[tuple[dict, str]],
+    claims: dict,
+    depth: int,
+) -> list[tuple[dict, str]]:
+    """Etend les ecartes du tableau des verdicts NON consommables de la tete.
+
+    Le tapis ne met dans ``belt_withheld`` que les ``BLOCKED`` explicites : un
+    candidat ``IMPLICIT`` (une PR ouverte d'une autre lane cite l'issue) passe et
+    se fait servir comme grain. Le consommateur du tableau, lui, ne fait qu'UN
+    controle vivant -- sur la TETE -- et tient ``IMPLICIT`` pour non consommable :
+    il retombe alors sur le calcul local, si bien que le chemin rapide ne sert
+    jamais des que la tete est ``IMPLICIT``. Or c'est le profil ordinaire de la
+    tete : l'issue la plus anciennement visitee qu'une autre lane a ouverte.
+
+    On ecarte donc de la tete PUBLIEE tout verdict que le consommateur
+    refuserait (``BOARD_CONSUMABLE_CLAIMS``), en reutilisant les claims que le
+    tapis a DEJA calcules. Les picks ne changent pas : cette extension ne vit que
+    dans le document publie, et le consommateur garde son controle vivant, qui
+    seul ferme la course entre l'instantane et la consommation.
+    """
+    extended = list(belt_withheld)
+    seen = {it["number"] for it, _ in extended}
+    # La profondeur est celle de la tete PUBLIEE, pas la fenetre de sonde
+    # initiale : le consommateur retire les ecartes, si bien que le premier
+    # candidat qu'il retient peut etre loin dans la tete. Mesure du 2026-10-09 :
+    # 29 ecartes sur 50 publies, et le retenu au RANG 16 -- hors de la fenetre
+    # de sonde (8), donc jamais ecarte, donc toujours tenu, donc toujours repli.
+    # Le tapis a pourtant DEJA le verdict : il sonde au fil de l'eau jusqu'a
+    # servir ses picks, et le candidat retenu est justement celui qu'il sert.
+    for item in belt_pool[:max(0, depth)]:
+        number = item["number"]
+        if number in seen:
+            continue
+        verdict = claims.get(number)
+        if verdict and verdict[0] not in BOARD_CONSUMABLE_CLAIMS:
+            extended.append((item, verdict[1]))
+            seen.add(number)
+    return extended
+
+
 def build_board_snapshot(
     belt_pool: list[dict],
     withheld: list[tuple[dict, str]],
@@ -6596,8 +6638,10 @@ def main(argv: list[str] | None = None) -> int:
         # porte un document machine (--json), sur stdout sinon.
         if args.board_write:
             stream = sys.stderr if args.json else sys.stdout
+            board_withheld = board_withheld_from_claims(
+                belt_pool, belt_withheld, belt_claims, args.board_head)
             snapshot = build_board_snapshot(
-                belt_pool, belt_withheld, lane=args.lane,
+                belt_pool, board_withheld, lane=args.lane,
                 computed_at=board_utcnow(), head=args.board_head)
             written = write_board_snapshot(args.board_write, snapshot)
             over = "" if written["within_budget"] else " -- PLAFOND DEPASSE"

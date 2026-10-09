@@ -150,6 +150,82 @@ def test_writer_emits_utf8_without_bom(tmp_path):
     assert written["within_budget"] is True
 
 
+# --- La tete publiee doit etre servable ----------------------------------
+
+
+def test_board_head_withholds_verdicts_the_consumer_would_refuse(monkeypatch):
+    """Une tete IMPLICIT defaisait le chemin rapide : elle doit etre ecartee.
+
+    Mesure du 2026-10-09 : le tapis ne met dans `belt_withheld` que les BLOCKED
+    explicites, un candidat IMPLICIT passe donc dans la tete publiee. Le
+    consommateur, lui, tient IMPLICIT pour non consommable et fait UN SEUL
+    controle vivant, sur cette tete : il la tenait, et retombait sur le calcul
+    local. Le chemin rapide ne servait donc JAMAIS, et son repli coute le calcul
+    complet. Cas reel mesure le 2026-10-09 : tete `#10355` (EPIC detection de
+    sophismes), tenue par la PR ouverte `#20036` de la lane `myia-po-2023:CoursIA`
+    (verdict `IMPLICIT`, `blocking_lanes` vide).
+    """
+    _counting_claims(monkeypatch, (pig.CLAIM_CODE_FREE, "libre"))
+    items = [_item(11), _item(12), _item(13)]
+    claims = {
+        11: (pig.CLAIM_CODE_IMPLICIT, "PR ouverte d'une autre lane : #999"),
+        12: (pig.CLAIM_CODE_FREE, "libre"),
+    }
+    extended = pig.board_withheld_from_claims(items, [], claims, depth=3)
+    assert [it["number"] for it, _ in extended] == [11]
+
+    snap = _snapshot(items, withheld=extended)
+    picks, meta = pig.consume_board(snap, _args(), urns={"grain"})
+    assert meta["retained"] == 12, "la tete tenue doit etre ecartee, pas servie"
+    # Le premier retenu est servi, les suivants viennent de l'instantane ; ce qui
+    # compte ici est que le candidat ECARTE (11) ne soit pas dans la tete servie.
+    assert [it["number"] for it in picks] == [12, 13]
+
+
+def test_board_withholding_leaves_consumable_verdicts_alone():
+    """Un verdict que le consommateur ACCEPTE ne doit pas etre ecarte."""
+    items = [_item(11), _item(12)]
+    claims = {
+        11: (pig.CLAIM_CODE_FREE, "libre"),
+        12: (pig.CLAIM_CODE_OWNED_BY_ME, "deja claim par cette lane"),
+    }
+    assert pig.board_withheld_from_claims(items, [], claims, depth=2) == []
+
+
+def test_board_withholding_does_not_duplicate_the_belts_own_skips():
+    """Le tapis a deja ecarte ce candidat : ne pas le compter deux fois."""
+    items = [_item(11)]
+    claims = {11: (pig.CLAIM_CODE_BLOCKED, "BLOQUE par une autre lane")}
+    existing = [(items[0], "BLOQUE par une autre lane")]
+    extended = pig.board_withheld_from_claims(items, existing, claims, depth=1)
+    assert len(extended) == 1
+
+
+def test_board_withholding_leaves_an_unprobed_item_alone():
+    """Sans verdict du tapis, on n'invente pas d'ecarte."""
+    items = [_item(n) for n in (11, 12, 13)]
+    claims = {13: (pig.CLAIM_CODE_ERROR, "sonde en echec")}
+    assert pig.board_withheld_from_claims(items, [], claims, depth=2) == []
+
+
+def test_board_withholding_reaches_the_rank_the_consumer_retains(monkeypatch):
+    """Le defaut mesure : le candidat retenu etait au RANG 16 de la tete.
+
+    29 ecartes sur 50 publies, donc le premier candidat non ecarte tombe loin.
+    Une extension bornee a la fenetre de sonde (8) ne le voyait pas : le
+    consommateur le tenait, et retombait sur le calcul local -- mesure du
+    2026-10-09, deux passes, deux replis de 330 s. La profondeur doit donc etre
+    celle de la tete PUBLIEE.
+    """
+    _counting_claims(monkeypatch, (pig.CLAIM_CODE_FREE, "libre"))
+    items = [_item(n) for n in range(100, 150)]
+    claims = {116: (pig.CLAIM_CODE_IMPLICIT, "PR ouverte d'une autre lane : #999")}
+    extended = pig.board_withheld_from_claims(items, [], claims, depth=50)
+    assert [it["number"] for it, _ in extended] == [116]
+    # Controle negatif : la meme extension bornee a la fenetre de sonde rate le rang.
+    assert pig.board_withheld_from_claims(items, [], claims, depth=8) == []
+
+
 # --- Lecteur : validation stricte ----------------------------------------
 
 
