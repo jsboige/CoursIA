@@ -18,7 +18,10 @@
   "fallacies_blob_sha1": "a761735375883b3ce19876cc0c781dc722ed8815",
   "virtues_blob_sha1": "0cce826f64f677b9a777c6a4253745e007689c39",
   "scenarii_blob_sha1": "9f20eb808a1d22c9c1a5dd1b96460b0d6a23db60",
-  "scenarii_upstream_commit": "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c"
+  "scenarii_upstream_commit": "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c",
+  "scenarii_copy_repo_path": "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/argumentum_scenarii_cards.csv",
+  "build_repo_commit": "4e0f5a103f404dba5ed27d3e9a1cd0b982de7cfe",
+  "build_gitlink_commit": "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c"
  },
  "files": {
   "train.csv": {

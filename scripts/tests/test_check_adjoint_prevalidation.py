@@ -40,7 +40,6 @@ def _base_snapshot() -> dict:
         "comments": [_comment("ordinary earlier comment")],
         "reviews": [{"state": "COMMENTED"}, {"state": "APPROVED"}],
         "threads": [{"isResolved": True}],
-        "statusCheckRollup": [{"name": "PR gate", "conclusion": "SUCCESS"}],
         "checkRuns": [
             {
                 "id": 1,
@@ -286,7 +285,57 @@ def test_non_shared_github_author_cannot_satisfy_gate():
     snapshot = _snapshot(None)
     snapshot["comments"].append(_comment(_body(), login="worker-bot"))
     errors = _errors(snapshot)
-    assert any(error.startswith("comment author must") for error in errors)
+    # #17437 -- the message no longer asserts a single login: it names the
+    # observed one and the accepted set (shared login + fleet App identities).
+    # Naming `worker-bot` in the assertion keeps it proving THIS refusal rather
+    # than any refusal that happens to share a prefix.
+    assert any(
+        "is not an accepted dossier author" in error and "worker-bot" in error
+        for error in errors
+    )
+
+
+def test_fleet_app_identity_is_an_accepted_dossier_author():
+    """#17437: a lane signing its dossier under its GitHub App identity passes.
+
+    The migration to per-lane Apps is half done -- the Apps exist and are
+    installed (2026-10-06), the lanes still sign under the shared login. On the
+    day a lane switches, a gate comparing the author to the shared login alone
+    would refuse every dossier it files. The loop walks the whole frozen lane
+    table, so adding a lane to the organ without this gate following is caught
+    here rather than in production.
+    """
+    for lane in mod.gh_identity.APP_DOSSIER_LANES:
+        login = f"{mod.gh_identity.APP_LOGIN_PREFIX}{lane}[bot]"
+        snapshot = _snapshot(None)
+        snapshot["comments"].append(_comment(_body(), login=login))
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, f"{login}: {errors}"
+        assert errors == [], f"{login}: {errors}"
+
+
+def test_app_shaped_login_outside_the_frozen_lanes_is_refused():
+    """The accepted set is CLOSED: a login that only LOOKS like a fleet App is out.
+
+    Accepting by shape (``coursia-lane-*[bot]``) would let any GitHub App whose
+    name merely starts with the prefix sign a dossier -- the check would stop
+    proving anything about who attested. Each entry below is a near-miss that a
+    substring or prefix match would let through.
+    """
+    impostors = (
+        "coursia-lane-po-2099[bot]",   # unknown lane
+        "coursia-lane-web2[bot]",      # plausible, never provisioned
+        "coursia-lane-po-2024",        # right lane, no App suffix
+        "coursia-lane-po-202[bot]",    # prefix of a real lane
+        "coursia-lane-po-2024[bot]x",  # real login plus a trailing character
+    )
+    for login in impostors:
+        snapshot = _snapshot(None)
+        snapshot["comments"].append(_comment(_body(), login=login))
+        errors = _errors(snapshot)
+        assert any(
+            "is not an accepted dossier author" in error for error in errors
+        ), f"{login}: {errors}"
 
 
 # --- #17791 : PR hors flotte (session cloud du mainteneur) -------------------
@@ -646,18 +695,11 @@ def test_patched_restamp_can_never_match_but_a_new_comment_does():
     assert ready
 
 
-def test_metadata_identity_ignores_only_check_order():
-    first = {
-        "number": 123,
-        "updatedAt": "2026-09-16T19:00:00Z",
-        "statusCheckRollup": [
-            {"name": "A", "conclusion": "SUCCESS"},
-            {"name": "B", "conclusion": "SUCCESS"},
-        ],
-    }
-    reordered = dict(first)
-    reordered["statusCheckRollup"] = list(reversed(first["statusCheckRollup"]))
-    assert mod._metadata_identity(first) == mod._metadata_identity(reordered)
+def test_metadata_identity_is_exact():
+    """#17315: the rollup is out of the snapshot, so the identity is a plain
+    canonical rendering -- equal dicts match, any field move diverges."""
+    first = {"number": 123, "updatedAt": "2026-09-16T19:00:00Z"}
+    assert mod._metadata_identity(first) == mod._metadata_identity(dict(first))
 
     changed = dict(first)
     changed["updatedAt"] = "2026-09-16T19:00:01Z"
@@ -687,7 +729,7 @@ def _bracket_reads(monkeypatch, first, second=None):
         }
     ]
 
-    def fake_pr_metadata(pr, *, with_rollup):
+    def fake_pr_metadata(pr):
         calls["metadata"] += 1
         factory = first if calls["metadata"] == 1 else (second or first)
         return factory()
@@ -726,23 +768,23 @@ def test_load_snapshot_reads_metadata_twice_and_takes_checks_from_rest(monkeypat
     assert snapshot["threads"] == [{"thread": 1}]
 
 
-def test_load_snapshot_aborts_when_a_check_concludes_during_the_read(monkeypatch):
-    """#17390 acceptance 2: the guard must go red, not absolve.
+def test_load_snapshot_aborts_when_the_head_moves_during_the_read(monkeypatch):
+    """#17390 acceptance 2, re-based on the REST bracket (#17315).
 
-    A check moving from in-progress to a conclusion between the two metadata
-    reads makes the snapshot born of an already-stale state: the gate refuses
-    it (transient UNKNOWN, the caller retries) instead of certifying it.
+    The check-runs are keyed on `headRefOid` and fetched inside the bracket, so
+    a push landing between the two metadata reads must abort: accepting the
+    snapshot would pair the OLD head's check-runs with the NEW head, and the
+    claim verification would then read a state that never existed together.
     """
-    in_progress = _metadata_payload(
-        statusCheckRollup=[{"name": "PR gate", "status": "IN_PROGRESS", "conclusion": None}]
-    )
-    concluded = _metadata_payload(
-        statusCheckRollup=[{"name": "PR gate", "status": "COMPLETED", "conclusion": "SUCCESS"}]
-    )
-    _bracket_reads(monkeypatch, lambda: in_progress, lambda: concluded)
+    first = _metadata_payload(headRefOid=HEAD)
+    pushed = _metadata_payload(headRefOid="f" * 40)
+    calls, _runs = _bracket_reads(monkeypatch, lambda: first, lambda: pushed)
 
     with pytest.raises(RuntimeError, match="changed while prevalidation snapshot was read"):
         mod.load_snapshot(123)
+    # The check-runs were fetched for the head read BEFORE the push -- which is
+    # exactly why the mismatch is refused instead of silently accepted.
+    assert calls["check_runs_head"] == HEAD
 
 
 def test_load_snapshot_aborts_when_any_surface_moves_during_the_read(monkeypatch):
@@ -1151,13 +1193,11 @@ def test_check_completing_green_after_dossier_does_not_expire_it():
     assert verdict == mod.VERDICT_READY, errors
 
 
-def test_green_check_may_also_move_the_rollup_after_the_stamp():
-    """The rollup is neither hashed (new stamps) nor read for the claim: only
-    the per-name latest-wins verdicts of the head's check-runs are."""
+def test_green_check_landing_after_the_stamp_keeps_ready():
+    """Only the per-name latest-wins verdicts of the head's check-runs matter:
+    a green run appearing after the stamp neither expires the dossier nor
+    contradicts its `latest-wins-green` claim."""
     snapshot = _snapshot(_body())
-    snapshot["statusCheckRollup"].append(
-        {"name": "perimeter review guard (#11268)", "conclusion": "SUCCESS"}
-    )
     snapshot["checkRuns"].append(
         {"id": 2, "name": "perimeter review guard (#11268)",
          "status": "completed", "conclusion": "success",
@@ -1349,41 +1389,32 @@ def test_blocked_dossier_is_not_refuted_by_a_red_check():
     assert verdict == mod.VERDICT_BLOCKED, errors
 
 
-def test_legacy_stamp_still_accepted_while_checks_unchanged():
-    """Backward acceptance: pre-#16957 stamps hashed the rollup as well; both
-    digests are valid certificates of the discussion surfaces."""
-    legacy = mod.legacy_surfaces_fingerprint(_base_snapshot())
-    snapshot = _snapshot(_body(**{"surfaces-sha256": legacy}))
-    verdict, errors = mod.evaluate(snapshot)
-    assert verdict == mod.VERDICT_READY, errors
+def test_retired_legacy_stamp_needs_a_mechanical_restamp():
+    """#17315: the pre-#16957 fingerprint is retired with its last carrier.
 
-
-def test_legacy_stamp_whose_checks_moved_needs_a_mechanical_restamp():
-    """A legacy stamp whose checks moved matches NEITHER digest: the hash
-    embedded data that has since changed, and a SHA-256 over changed data
-    cannot be re-derived. The refusal names the recovery (--template), and the
-    re-stamped dossier can never again be expired by a check conclusion."""
-    snapshot = _snapshot(_body(**{
-        "surfaces-sha256": mod.legacy_surfaces_fingerprint(_base_snapshot())
-    }))
-    snapshot["statusCheckRollup"][0]["conclusion"] = "PENDING"
+    Both carriers merged (#16950/#16891), so a dossier still stamped with it
+    matches neither live digest. The organ fails CLOSED and names the single
+    recovery: a mechanical `--template` re-stamp.
+    """
+    assert not hasattr(mod, "legacy_surfaces_fingerprint")
+    # A stamp matching neither accepted digest is the shape of a retired-legacy
+    # dossier: fail CLOSED, with the one gesture that can recover it named.
+    snapshot = _snapshot(_body(**{"surfaces-sha256": "a" * 64}))
     errors = _errors(snapshot)
     assert any(
-        "discussion surfaces changed" in error
-        and "--template re-stamp" in error
+        "discussion surfaces changed" in error and "--template re-stamp" in error
         for error in errors
     )
 
 
 def test_surfaces_fingerprint_is_insensitive_to_check_state():
-    """The new digest must not move when only checks move -- that is the race
-    being closed. The legacy digest still does, which is why it is legacy."""
+    """The live digest must not move when only checks move -- that is the race
+    being closed. Nothing else in the module hashes check state either."""
     base = _base_snapshot()
     moved = _base_snapshot()
     moved["checkRuns"][0]["conclusion"] = "failure"
-    moved["statusCheckRollup"] = [{"name": "PR gate", "conclusion": "FAILURE"}]
     assert mod.surfaces_fingerprint(base) == mod.surfaces_fingerprint(moved)
-    assert mod.legacy_surfaces_fingerprint(base) != mod.legacy_surfaces_fingerprint(moved)
+    assert mod.pre18637_surfaces_fingerprint(base) == mod.pre18637_surfaces_fingerprint(moved)
 
 
 def test_template_renders_the_emitting_lane_not_a_borrowed_name():
@@ -2722,3 +2753,191 @@ def test_render_emitted_dossier_blocked_at_same_head_then_changed_head(monkeypat
     block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
     assert verdict == mod.VERDICT_READY
     assert "supersedes" not in block
+
+
+# --- #17315 : le cout de l'invocation est mesure et publie -------------------
+#
+# Le bucket GraphQL est partage par toute la flotte ; le bucket REST (core) est
+# par machine. L'organe publie les deux pour qu'une lane secretaire puisse
+# agreger le cout d'une campagne sans instrumenter le reseau.
+
+
+def _reset_api_usage() -> None:
+    mod.API_USAGE["rest"] = 0
+    mod.API_USAGE["graphql"] = 0
+
+
+class _Completed:
+    def __init__(self, stdout: str) -> None:
+        self.returncode = 0
+        self.stdout = stdout
+        self.stderr = ""
+
+
+def test_api_usage_counter_separates_the_two_buckets(monkeypatch):
+    """`gh api graphql` paie le bucket partage, tout le reste le bucket core."""
+    monkeypatch.setattr(
+        mod.subprocess, "run", lambda *a, **k: _Completed('{"ok": true}')
+    )
+    _reset_api_usage()
+
+    mod.gh_json(["api", "graphql", "-f", "query={...}"])
+    mod.gh_json(["api", "repos/o/r/pulls/1"])
+    mod.gh_json(["api", "repos/o/r/commits/deadbeef/check-runs"])
+    mod.gh_json(["pr", "view", "1", "--json", "state"])
+
+    assert mod.API_USAGE == {"rest": 3, "graphql": 1}
+
+
+def test_api_usage_is_published_in_json_and_on_stderr(monkeypatch, capsys):
+    """Le cout accompagne le verdict : cle `api_usage` en --json, ligne stderr
+    sinon -- stdout reste le verdict que les appelants parsent."""
+    _reset_api_usage()
+    rc = _run_main(monkeypatch, _snapshot(_body()), "--json")
+    captured = capsys.readouterr()
+
+    assert rc == mod.EXIT_READY
+    payload = json.loads(captured.out)
+    assert payload["api_usage"] == {"rest": 0, "graphql": 0}
+    assert "API usage: 0 REST, 0 GraphQL operation(s)" in captured.err
+
+
+# --- #17315 : les reviewThreads passent en une operation par lot -------------
+
+
+def _bulk_gh_json(calls: list[list[str]], payload_for):
+    def fake(args: list[str]):
+        calls.append(list(args))
+        assert args[0] == "api" and args[1] == "graphql"
+        # Les alias demandes sont les `-F pN=<pr>` de la requete.
+        prs = [int(a.split("=", 1)[1]) for a in args if a.startswith("p") and "=" in a]
+        query = next(a for a in args if a.startswith("query="))
+        requested = sorted(prs) if "repository(owner:$owner" in query else []
+        return payload_for(requested, args)
+
+    return fake
+
+
+def _threads_payload(prs, *, overflow=(), unresolved=0):
+    data = {}
+    for index, pr in enumerate(prs):
+        nodes = [
+            {"id": f"t{pr}-{n}", "isResolved": n >= unresolved, "path": "a.py",
+             "line": n, "comments": {"totalCount": 1, "nodes": [{"id": "c"}]}}
+            for n in range(1, 2 + (1 if pr in overflow else 0))
+        ]
+        data[f"p{index}"] = {
+            "pullRequest": {
+                "reviewThreads": {
+                    "nodes": nodes,
+                    "pageInfo": {"hasNextPage": pr in overflow, "endCursor": "cur"},
+                }
+            }
+        }
+    return {"data": data}
+
+
+def test_review_threads_bulk_collapses_n_prs_into_one_operation(monkeypatch):
+    """Le geste mesure : N PRs = 1 operation GraphQL, pas N."""
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        mod, "gh_json", _bulk_gh_json(calls, lambda prs, args: _threads_payload(prs))
+    )
+
+    result = mod.review_threads_bulk([11, 12, 13, 14])
+
+    assert len(calls) == 1
+    assert sorted(result) == [11, 12, 13, 14]
+    # Chaque PR recoit SES threads, pas ceux de l'alias voisin.
+    assert [t["id"] for t in result[13]] == ["t13-1"]
+
+
+def test_review_threads_bulk_chunks_above_the_batch_size(monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        mod, "gh_json", _bulk_gh_json(calls, lambda prs, args: _threads_payload(prs))
+    )
+
+    result = mod.review_threads_bulk(list(range(1, 10)))
+
+    assert len(calls) == 2, "9 PRs a batch=8 = 2 operations"
+    assert sorted(result) == list(range(1, 10))
+
+
+def test_review_threads_bulk_deduplicates_and_keeps_order(monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        mod, "gh_json", _bulk_gh_json(calls, lambda prs, args: _threads_payload(prs))
+    )
+
+    result = mod.review_threads_bulk([7, 7, 7])
+
+    assert len(calls) == 1
+    assert sorted(result) == [7]
+
+
+def test_review_threads_bulk_falls_back_per_pr_on_overflow(monkeypatch):
+    """Une PR dont les threads debordent la premiere page repart en pagination
+    par PR -- pour ELLE seule ; les autres restent dans l'operation du lot."""
+    calls: list[list[str]] = []
+    pages = {13: 0}
+
+    def fake(args: list[str]):
+        calls.append(list(args))
+        if "query($owner:String!,$repo:String!,$number:Int!" in " ".join(args):
+            pages[13] += 1
+            if pages[13] == 1:
+                return {
+                    "data": {"repository": {"pullRequest": {"reviewThreads": {
+                        "nodes": [{"id": "t13-page1", "isResolved": True,
+                                   "comments": {"totalCount": 1, "nodes": [{}]}}],
+                        "pageInfo": {"hasNextPage": True, "endCursor": "c1"},
+                    }}}}
+                }
+            return {
+                "data": {"repository": {"pullRequest": {"reviewThreads": {
+                    "nodes": [{"id": "t13-page2", "isResolved": True,
+                               "comments": {"totalCount": 1, "nodes": [{}]}}],
+                    "pageInfo": {"hasNextPage": False, "endCursor": None},
+                }}}}
+            }
+        prs = [int(a.split("=", 1)[1]) for a in args if a.startswith("p") and "=" in a]
+        return _threads_payload(prs, overflow={13})
+
+    monkeypatch.setattr(mod, "gh_json", fake)
+
+    result = mod.review_threads_bulk([12, 13])
+
+    assert [t["id"] for t in result[13]] == ["t13-page1", "t13-page2"]
+    assert [t["id"] for t in result[12]] == ["t12-1"]
+    assert len(calls) == 3, "1 lot + 2 pages pour la seule PR 13"
+
+
+def test_review_threads_bulk_preserves_the_inline_pagination_refusal(monkeypatch):
+    """Le garde-fou >100 commentaires inline survit au batching : sans lui une
+    page tronquee se lirait comme un thread complet."""
+
+    def fake(args: list[str]):
+        return {"data": {"p0": {"pullRequest": {"reviewThreads": {
+            "nodes": [{"id": "t", "isResolved": True, "comments": {
+                "totalCount": 120, "nodes": [{"id": "c"}],
+            }}],
+            "pageInfo": {"hasNextPage": False, "endCursor": None},
+        }}}}}
+
+    monkeypatch.setattr(mod, "gh_json", fake)
+
+    with pytest.raises(RuntimeError, match="more than 100 comments"):
+        mod.review_threads_bulk([42])
+
+
+def test_review_threads_single_pr_is_still_one_operation(monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        mod, "gh_json", _bulk_gh_json(calls, lambda prs, args: _threads_payload(prs))
+    )
+
+    threads = mod.review_threads(9)
+
+    assert len(calls) == 1
+    assert [t["id"] for t in threads] == ["t9-1"]
