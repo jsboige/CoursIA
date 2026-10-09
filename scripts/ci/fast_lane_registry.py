@@ -1742,7 +1742,7 @@ TRANCHE17: list[Guard] = [
 
 
 # ---------------------------------------------------------------------------
-# TRANCHE 18 (#19374) -- garde CI contre les blobs CRLF ou mixtes sous
+# TRANCHE 19 (#19374) -- garde CI contre les blobs CRLF ou mixtes sous
 # attribut ``eol=lf`` (classe de #19287). Un blob CRLF ou mixte sous un
 # attribut ``text eol=lf`` fait paraitre le fichier modifie apres chaque
 # checkout, sur toutes les machines : git renormalise a la lecture mais
@@ -1750,6 +1750,17 @@ TRANCHE17: list[Guard] = [
 # voient alors sale le clone principal de chaque lane. Le correctif
 # ponctuel est ``git add --renormalize <fichier>`` (cf #19373) ; ce garde
 # empeche la prochaine de la classe.
+#
+# Renomme TRANCHE18 -> TRANCHE19 au suivi d'integration : cette tranche
+# (2026-10-08) avait pris le nom ``TRANCHE18`` deja porte plus bas dans le
+# module par la tranche docs-index (#19260, 2026-10-06) -- Python execute
+# le module de haut en bas, la seconde affectation ecrasait la premiere,
+# et ``eol-blob-guard`` etait enregistree mais muette (ni dans l'agregat
+# du moteur, ni dans ``absorbed_guards`` : ``vars()`` ne voit que la
+# valeur finale). Regle registry : le POSTERIEUR cede l'index (cf
+# renommages TRANCHE9 -> TRANCHE10 puis TRANCHE12 -> TRANCHE15). Le test
+# qui ferme la classe :
+# ``test_fast_lane.py::test_no_module_level_name_is_assigned_twice_in_the_registry``.
 #
 # Detection : ``git diff --name-only --diff-filter=AM origin/main...HEAD``
 # puis ``git ls-files --eol -- <path>`` par chemin, awk-equivalent en
@@ -1767,7 +1778,7 @@ TRANCHE17: list[Guard] = [
 # absorption (`--diff origin/main...HEAD` -> rc=0) ; l'absorption ne
 # rougit aucune PR par dette heritee.
 # ---------------------------------------------------------------------------
-TRANCHE18: list[Guard] = [
+TRANCHE19: list[Guard] = [
     Guard(
         name="eol-blob-guard",
         source=FAST_LANE_NATIVE,
