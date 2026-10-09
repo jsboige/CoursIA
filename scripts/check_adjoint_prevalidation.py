@@ -1267,6 +1267,31 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     return errors
 
 
+def covered_blocked_dossier(
+    previous: list[Dossier], head: str
+) -> Dossier | None:
+    """Dernier dossier BLOCKED anterieur a la meme tete, ou ``None`` (#19869).
+
+    Cœur unique de la detection de couverture. Le gate
+    (`mute_contradictions`) et l'emetteur (`find_previous_blocked_same_head`,
+    qui alimente le pre-remplissage de `--emit`) doivent voir **le meme**
+    dossier : deux recherches independantes derivent, et l'emetteur finit par
+    pre-remplir un `supersedes` que le gate refuse -- c'est exactement le
+    defaut rapporte par #19869, ou le seul organe qui mordait etait celui
+    qu'on interrogeait en second.
+
+    La recherche est **tete a tete** : un dossier anterieur sur une tete
+    differente est deja perime par exact-head, et il n'y a rien a refuter.
+    """
+    for dossier in reversed(previous):
+        if (
+            dossier.fields.get("verdict") == VERDICT_BLOCKED
+            and dossier.fields.get("head") == head
+        ):
+            return dossier
+    return None
+
+
 def mute_contradictions(
     dossier: Dossier,
     candidates: list[tuple[Dossier, list[str]]],
@@ -1292,14 +1317,9 @@ def mute_contradictions(
     """
     if dossier.fields.get("verdict") != VERDICT_READY:
         return []
-    covered = next(
-        (
-            previous
-            for previous, _errors in reversed(candidates[:-1])
-            if previous.fields.get("verdict") == VERDICT_BLOCKED
-            and previous.fields.get("head") == dossier.fields.get("head")
-        ),
-        None,
+    covered = covered_blocked_dossier(
+        [previous for previous, _errors in candidates[:-1]],
+        dossier.fields.get("head") or "",
     )
     if covered is None:
         return []
@@ -1706,34 +1726,33 @@ def render_template(snapshot: dict[str, Any], lane: str = ADJOINT_LANE) -> str:
 def find_previous_blocked_same_head(
     snapshot: dict[str, Any], current_head: str
 ) -> tuple[int, Dossier] | None:
-    """#19869 -- miroir de `mute_contradictions` pour l'emetteur.
+    """#19869 -- dossier BLOCKED anterieur a la meme tete, vu par l'emetteur.
 
-    Trouve le dossier BLOCKED anterieur a la meme tete, miroir de la
-    recherche que `mute_contradictions` effectue au moment du gate. La
+    Lit le fil, puis **delegue** a `covered_blocked_dossier` : la recherche
+    que l'emetteur emploie pour pre-remplir `supersedes` est litteralement
+    celle du gate, pas un miroir qui pourrait en diverger (#19869). La
     position est 1-based (celle que `restamp_warning` affiche deja), pour
     que l'auto-remplissage par `--emit` rime avec le verdict du gate sans
     qu'aucune re-edition soit necessaire.
 
     Renvoie ``(position, Dossier)`` du dossier BLOCKED anterieur, ou
-    ``None`` si rien ne correspond. La recherche est **tete-a-tete** : un
-    dossier anterieur sur une tete differente est deja perime par
-    exact-head, et il n'y a rien a refuter.
+    ``None`` si rien ne correspond.
     """
     comments = snapshot.get("comments") or []
-    for index in range(len(comments) - 1, -1, -1):
-        comment = comments[index]
+    dossiers: list[Dossier] = []
+    for index, comment in enumerate(comments):
         dossier, _errors = parse_dossier(
             comment.get("body") or "",
             index,
             _login(comment),
             comment.get("createdAt") or "",
         )
-        if dossier is None:
-            continue
-        if (dossier.fields.get("verdict") == VERDICT_BLOCKED
-                and dossier.fields.get("head") == current_head):
-            return (index + 1, dossier)
-    return None
+        if dossier is not None:
+            dossiers.append(dossier)
+    covered = covered_blocked_dossier(dossiers, current_head)
+    if covered is None:
+        return None
+    return (covered.comment_index + 1, covered)
 
 
 def render_emitted_dossier(
