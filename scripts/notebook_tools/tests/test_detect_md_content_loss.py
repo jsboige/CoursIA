@@ -262,26 +262,25 @@ class TestReorderSafeByCellID:
         assert findings[0]["kind"] == "TRUNCATED_CELL"
         assert findings[0]["cell_idx"] == 1
 
-    def test_zero_id_same_length_substitution_still_signals(self):
-        # #10873 garde anti-blanc-seing des TOTAUX : substitution + reorder.
+    def test_zero_id_same_length_substitution_preserved_no_signal(self):
+        # #19870 : substitution meme-longueur + reorder, substance preservee.
         # base = [X (L), Y (S)], head = [Y (S), X' (L)] ou X' est DISTINCT de
-        # X mais de MEME longueur normalisee (mots de meme longueur). Les
-        # TOTAUX sont egaux au caractere pres -- un critere sur les totaux
-        # disculperait a tort (blanc-seing). Le critere implemente est le
-        # MULTISET des chaines : il differe, le court-circuit ne s'arme pas.
+        # X mais de MEME longueur normalisee (mots de meme longueur).
+        # L'appariement par intersection multiset des contenus normalises
+        # retire Y (present des deux cotes), apparie X <-> X' par contenu ;
+        # longueurs normalisees egales -> ratio 1.0 -> 0 finding. C'est le
+        # **comportement desire** : la substance est preservee au caractere
+        # pres, le garde n'a pas vocation a juger la qualite d'une
+        # reformulation.
         #
-        # #19870 : avec l'appariement par intersection multiset des contenus
-        # normalises (cellules byte-identiques retirees avant l'index
-        # pairing), Y est present cote base ET cote head, donc retire des
-        # deux cotes. Le residu est [X] vs [X'] : la substitution est
-        # appariee correctement par contenu, et la longueur normalisee etant
-        # egale (le test fixture le garantit par construction), le ratio
-        # h_norm / b_norm est 1.0 -> 0 finding. C'est le **comportement
-        # desire** : la substance est preservee au caractere pres, le garde
-        # n'a pas vocation a juger la qualite d'une reformulation. Le
-        # **vrai** blanc-seing anti-#10873 reste garanti par le multiset
-        # short-circuit au-dessus : un carnet ou la TOTALITE des chaines
-        # sont preservees rend 0 findings avant meme d'arriver ici.
+        # #10873 (reprise review #19893) : ce test n'epingle PLUS le critere
+        # multiset-contre-totaux -- son assertion est desormais ``== []``.
+        # Le critere MULTISET DES CHAINES (pas les TOTAUX de caracteres)
+        # est desormais epingle par
+        # ``test_zero_id_equal_totals_truncation_compensated_signals``
+        # ci-dessous : le cas totaux egaux + vraie troncature compensee par
+        # l'expansion d'une autre cellule, ou un critere de totaux
+        # rendrait 0 finding (blanc-seing).
         #
         # Pour verifier qu'une **vraie** perte est toujours signalee dans
         # ce regime, voir `test_substitution_with_real_truncation_signals`
@@ -292,7 +291,7 @@ class TestReorderSafeByCellID:
         y = "## Section breve\n\n" + ("Rappel court. " * 12)
         assert len(dml._normalize(x)) == len(dml._normalize(x_prime)), (
             "fixtures: X et X' doivent totaliser la meme longueur normalisee "
-            "pour que ce test prouve multiset != totaux"
+            "(substitution preservee au caractere pres)"
         )
         base = _nb(_md(x), _md(y))
         head = _nb(_md(y), _md(x_prime))  # X substitue par X' + reorder
@@ -306,6 +305,51 @@ class TestReorderSafeByCellID:
             "doit PAS signaler (appariement par intersection, contenu "
             f"preserve). Trouve: {findings!r}"
         )
+
+    def test_zero_id_equal_totals_truncation_compensated_signals(self):
+        # #10873 / review #19893 -- CE test epingle le critere multiset
+        # contre le critere des TOTAUX de caracteres. Cas exact de la
+        # review : base = [A (~700c), B (~150c)], head = [A tronquee
+        # (~150c), B etendue (~700c)]. Les TOTAUX normalises sont egaux au
+        # caractere pres -- un court-circuit sur les totaux rendrait 0
+        # finding (blanc-seing : une vraie troncature masquee par
+        # l'expansion d'une AUTRE cellule). Le MULTISET des chaines
+        # different (4 chaines deux a deux distinctes) : le court-circuit
+        # ne s'arme pas, l'intersection ne retire rien, l'appariement index
+        # residual apparie A <-> A_trunc (ratio ~0.2) et signale, pendant
+        # que B <-> B_ext (expansion, ratio > 1) ne signale pas.
+        a = "## Section A\n\n" + ("Regarder la volatilite. " * 30)
+        b = "## Section B\n\n" + ("Rappel court. " * 9)
+        a_trunc = "## Section A\n\n" + ("Analyse breve. " * 9)
+        # B_ext : extension de B jusqu'a egaliser les TOTAUX normalises au
+        # caractere pres (remplissage deterministe -- la normalisation
+        # retire les espaces, chaque mot ajoute sa longueur en lettres).
+        b_ext = "## Section B\n\n"
+        deficit = (dml._norm_len(a) + dml._norm_len(b)
+                   - dml._norm_len(a_trunc) - dml._norm_len(b_ext))
+        filler = "developpement"
+        while deficit >= len(filler):
+            b_ext += filler + " "
+            deficit -= len(filler)
+        b_ext += "d" * deficit
+        assert (dml._norm_len(a) + dml._norm_len(b)
+                == dml._norm_len(a_trunc) + dml._norm_len(b_ext)), (
+            "fixtures: les TOTAUX normalises doivent etre egaux pour que ce "
+            "test prouve multiset != totaux"
+        )
+        assert len({dml._normalize(a), dml._normalize(b),
+                    dml._normalize(a_trunc), dml._normalize(b_ext)}) == 4, (
+            "fixtures: les 4 chaines normalisees doivent etre distinctes "
+            "(sinon l'intersection pourrait retirer le signal)"
+        )
+        base = _nb(_md(a), _md(b))
+        head = _nb(_md(a_trunc), _md(b_ext))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert findings[0]["cell_idx"] == 0  # A tronquee, position head
+        assert findings[0]["ratio"] < 0.5
 
     def test_substitution_with_real_truncation_signals(self):
         # #19870 garde anti-blanc-seing du fix : une substitution pure (IDs

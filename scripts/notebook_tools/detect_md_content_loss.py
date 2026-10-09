@@ -793,13 +793,16 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
         # + la cellule creee) ; l'appariement par index sur ce residu, devenu
         # trivial, ne produit plus de faux positifs croises.
         #
-        # Garde anti-blanc-seing : ``test_zero_id_same_length_substitution_still_signals``
-        # exige toujours qu'une substitution MEME-LONGUEUR signale -- c'est
-        # garanti ici parce qu'une substitution meme-longueur produit deux
-        # chaines DISTINCTES apres normalisation (mots differents), donc deux
-        # cles distinctes dans la multiset, donc NON retraites par
-        # l'intersection. Le residu porte l'integralite des cellules impliquees
-        # dans la substitution et l'appariement index signale.
+        # Garde anti-blanc-seing (review #19893) : le court-circuit
+        # ci-dessus epingle le MULTISET DES CHAINES, PAS les TOTAUX de
+        # caracteres. ``test_zero_id_equal_totals_truncation_compensated_signals``
+        # est le temoin : totaux normalises egaux (vraie troncature d'une
+        # cellule compensee par l'expansion d'une autre) mais multiset
+        # different -- le court-circuit ne s'arme pas, l'intersection ne
+        # retire rien (4 chaines distinctes), l'appariement index residual
+        # signale la troncature. Une substitution MEME-LONGUEUR preservee,
+        # elle, ne signale pas (ratio 1.0) : voir
+        # ``test_zero_id_same_length_substitution_preserved_no_signal``.
         from collections import Counter
         base_counter: Counter[str] = Counter(_normalize(b_src) for _, _, b_src in base_md)
         head_counter: Counter[str] = Counter(_normalize(h_src) for _, _, h_src in head_md)
