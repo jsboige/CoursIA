@@ -707,7 +707,9 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # FT-01-Introduction-FineTuning + FT-03-Supervised-FineTuning. Total apres fusion : 7.
 # 2026-10-05 (#1650 tranche FT-02, QLoRA-Quantization): +1 paire T4 --
 # FineTuning/FT-02-QLoRA-Quantization. Total apres fusion : 8.
-EXPECTED_PAIR_COUNT = 8
+# 2026-10-09 (#19993 pli 5 Origami, PR #19996, desormais sur main): +1 paire T4 --
+# SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique. Total apres fusion : 9.
+EXPECTED_PAIR_COUNT = 9
 
 
 def _collect_parity_failures(repo_root: Path,
