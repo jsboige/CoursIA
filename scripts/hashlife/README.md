@@ -31,7 +31,7 @@ Instrumentation pour mesurer la **complexite de trajectoire** (compression LZ fe
 | `wolfram-4classes` | K_trajectory LZ sur les 4 classes canoniques Wolframe (R0/R4/R30/R110) | `python scripts/hashlife/k_trajectory.py --mode wolfram-4classes --n-cells 1024` |
 | `wolfram-ksf` | Kolmogorov structure function K(W\|W') sur les 4 classes | `python scripts/hashlife/k_trajectory.py --mode wolfram-ksf --n-cells 1024` |
 | `wolfram-blocks` | Block decomposition Zenil 2013 (distribution de complexite LZ76 par bloc) sur 4 classes | `python scripts/hashlife/k_trajectory.py --mode wolfram-blocks --n-cells 256 --n-steps 256` |
-| `wolfram-seed-test` | Paysage de seeds (4 presets : single-cell, wolfram-0001000, wolfram-defect, random-dense) x 3 instruments | `python scripts/hashlife/k_trajectory.py --mode wolfram-seed-test --n-cells 512 --n-steps 512` |
+| `wolfram-seed-test` | Paysage de seeds (4 presets : single-cell, wolfram-0001000, wolfram-defect, random-dense) x 3 complexites corrigees (KSF bits/cellule, blocks LZ76) | `python scripts/hashlife/k_trajectory.py --mode wolfram-seed-test --n-cells 512 --n-steps 512` |
 
 Deux planchers de mesure bornent ces modes, mesures le 2026-10-09 : sous `n_cells = 512` les modes a base de compresseur (pli 4, pli 7) tombent sous le **plancher de cadrage zlib** et sont declares `WOLFRAM-SATURATED` ; sous `n_steps / W = 4` blocs le mode `wolfram-blocks` n'a plus de quoi mesurer une dispersion et rend `WOLFRAM-BLOCKS-UNDERPOWERED`. Les commandes ci-dessus sont les echelles canoniques.
 
@@ -58,11 +58,12 @@ python scripts/hashlife/k_trajectory.py --mode wolfram-blocks --n-cells 256 --n-
 python scripts/hashlife/k_trajectory.py --mode wolfram-blocks --n-cells 256 --n-steps 256 \
     --json-out scripts/hashlife/wolfram_blocks_results.json
 
-# Mesure paysage de seeds (pli 9)
-python scripts/hashlife/k_trajectory.py --mode wolfram-seed-test --n-cells 64 --n-steps 64
+# Mesure paysage de seeds (pli 9) -- 512 minimum (WOLFRAM_SEED_MIN_N_CELLS),
+# sous ce plancher le verdict est SATURE et --json-out est refuse
+python scripts/hashlife/k_trajectory.py --mode wolfram-seed-test --n-cells 512 --n-steps 512
 
 # Sortie JSON paysage de seeds
-python scripts/hashlife/k_trajectory.py --mode wolfram-seed-test --n-cells 64 --n-steps 64 \
+python scripts/hashlife/k_trajectory.py --mode wolfram-seed-test --n-cells 512 --n-steps 512 \
     --json-out scripts/hashlife/wolfram_seed_test_results.json
 
 # Tests pytest
@@ -127,19 +128,20 @@ Mesure canonique `n_cells = 256`, `n_steps = 256`, seed 33. La statistique par b
 - **Correction du 2026-10-09** : la version initiale agregeait l'**entropie de Shannon** par bloc, qui est invariante a l'arrangement (`H('0101...') == H(sequence desordonnee equilibree) == 1.0`) et ne pouvait donc pas separer chaos et structure — le verdict `NONDISCRIMINANT` etait une tautologie. L'instrument declare desormais `WOLFRAM-BLOCKS-UNDERPOWERED` sous quatre blocs (n=64, W=32 n'en laisse que deux).
 - Facteur confondant : Rule 110 exhibe ses proprietes de Turing-completude avec le seed `0001000` repete (Wolfram 2002 ch. 7), non teste ici — c'est l'objet du pli 9.
 
-### Pli 9 (c.113) -- Seed specialise R110 (0001000) + 3 complexites
+### Pli 9 (c.113, corrige 2026-10-09) -- Seed specialise R110 (0001000) + 3 complexites
 
 | Preset / Instrument | LZ | KSF | Blocks |
 |---|:---:|:---:|:---:|
-| single-cell       | WEAK | DISCRIMINANT | DISCRIMINANT |
-| wolfram-0001000   | **NONDISCRIMINANT** | DISCRIMINANT | DISCRIMINANT |
-| wolfram-defect    | WEAK | WEAK | DISCRIMINANT |
-| random-dense      | DISCRIMINANT | DISCRIMINANT | DISCRIMINANT |
+| single-cell       | DISCRIMINANT | DISCRIMINANT | DISCRIMINANT |
+| wolfram-0001000   | DISCRIMINANT | DISCRIMINANT | DISCRIMINANT |
+| wolfram-defect    | DISCRIMINANT | DISCRIMINANT | DISCRIMINANT |
+| random-dense      | NONDISCRIMINANT | NONDISCRIMINANT | NONDISCRIMINANT |
 
-- Verdict final : `WOLFRAM-SEED-TEST-DISCRIMINANT_FAIBLE` (predicats WEAK ou NONDISCRIMINANT sur une minorite de presets).
-- Conclusion epistemologique : le facteur confondant identifie au pli 8 etait reel et plus profond que prevu -- avec le seed canonique Wolfram 2002 ch. 7, LZ devient nondiscriminant entre R30 et R110. **Mais KSF et blocks discriminent encore** (KSF capte la structure per-step ; blocks capte la variance d'entropie par bloc). 2 instruments sur 3 discriminants = `DISCRIMINANT_FAIBLE`, pas `NONDISCRIMINANT_CONFIRME`.
-- Limite mesuree : n=64, n_steps=64, 1 seul seed par preset. Pour valider statistiquement, il faudrait 5-10 seeds par preset et moyenner les deltas (travail futur, pli 10+).
-- Suite Origami : le verdict pli 9 invalide partiellement le verdict pli 8 (3 complexites nondiscriminantes) -- il devient 2 complexites nondiscriminantes + 1 faiblement discriminante. Les pistes non-trajectoire (SAT-based minimal program, causal graph analysis) restent ouvertes.
+- Verdict final (n=512, instruments corriges) : `WOLFRAM-SEED-TEST-DISCRIMINANT_FAIBLE` (9/12) -- les trois instruments discriminent R30 vs R110 sur tous les presets sauf le controle.
+- Correction 2026-10-09 : le verdict initial (n=64, `random-dense` DISCRIMINANT x3, `wolfram-0001000` LZ NONDISCRIMINANT) etait un artefact de saturation, refuted dans les deux sens a n=512. **Le facteur confondant etait l'echelle, pas le seed.**
+- Corrections portees : KSF en bits/cellule (pli 7), blocks en complexite LZ76 normalisee (pli 8), garde `WOLFRAM_SEED_MIN_N_CELLS = 512` (verdict SATURE + refus `--json-out` sous le plancher), plancher absolu `WOLFRAM_SEED_ABS_DELTA_FLOOR = 0.05` (un ratio eleve sur un delta de bruit ne fait plus un DISCRIMINANT).
+- Limite mesuree : 1 seul seed par preset (patterns deterministes) ; validation cross-seed 5-10 seeds = travail futur (pli 10+).
+- Suite Origami : les pistes non-trajectoire (SAT-based minimal program, causal graph analysis) restent ouvertes ; la veine seed est epuisee par ce pli (le seed n'est pas un facteur confondant).
 
 ## Origine
 
