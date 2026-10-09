@@ -4,7 +4,7 @@
 
 Ce module présente des cas d'usage concrets et des workflows de production pour la génération d'images.
 
-**Dans le cadre du fil rouge contenu visuel éducatif** : ce niveau met en oeuvre les workflows complets. [04-1](04-1-Educational-Content-Generation.html) automatise la création de visuels pédagogiques (brief texte vers images). [04-2](04-2-Creative-Workflows.html) gère les workflows créatifs. [04-3](04-3-Production-Integration.html) intègre le pipeline en production.
+**Dans le cadre du fil rouge contenu visuel éducatif** : ce niveau met en oeuvre les workflows complets. [04-1](04-1-Educational-Content-Generation.ipynb) automatise la création de visuels pédagogiques (brief texte vers images). [04-2](04-2-Creative-Workflows.ipynb) gère les workflows créatifs. [04-3](04-3-Production-Integration.ipynb) intègre le pipeline en production.
 
 ## Vue d'overview
 
@@ -18,11 +18,11 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------ |
-| 1 | [04-1-Educational-Content-Generation](04-1-Educational-Content-Generation.html) | Contenu éducatif | Mixed | ~10GB |
-| 2 | [04-2-Creative-Workflows](04-2-Creative-Workflows.html) | Workflows créatifs | ComfyUI | Variable |
-| 3 | [04-3-Production-Integration](04-3-Production-Integration.html) | Intégration production | Mixed | ~10GB |
-| 4 | [04-4-Cross-Stitch-Pattern-Maker-Legacy](04-4-Cross-Stitch-Pattern-Maker-Legacy.html) | Point de croix (legacy) | Local | 0 |
-| 5 | [04-5-MiniMax-Cloud-Image](04-5-MiniMax-Cloud-Image.html) | Images par API cloud | MiniMax Hailuo | 0 |
+| 1 | [04-1-Educational-Content-Generation](04-1-Educational-Content-Generation.ipynb) | Contenu éducatif | Mixed | ~10GB |
+| 2 | [04-2-Creative-Workflows](04-2-Creative-Workflows.ipynb) | Workflows créatifs | ComfyUI | Variable |
+| 3 | [04-3-Production-Integration](04-3-Production-Integration.ipynb) | Intégration production | Mixed | ~10GB |
+| 4 | [04-4-Cross-Stitch-Pattern-Maker-Legacy](04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb) | Point de croix (legacy) | Local | 0 |
+| 5 | [04-5-MiniMax-Cloud-Image](04-5-MiniMax-Cloud-Image.ipynb) | Images par API cloud | MiniMax Hailuo | 0 |
 
 ## Prérequis
 

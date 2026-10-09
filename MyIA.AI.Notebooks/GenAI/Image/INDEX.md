@@ -339,7 +339,7 @@ MyIA.AI.Notebooks/GenAI/
 ### Exemples Prêts-à-l'Emploi
 
 #### 1. **Science Diagrams** 🔬
-**Fichier** : [`Image/examples/science-diagrams.ipynb`](examples/science-diagrams.html)
+**Fichier** : [`Image/examples/science-diagrams.ipynb`](examples/science-diagrams.ipynb)
 
 **Applications** :
 - Diagrammes cellule végétale/animale
@@ -353,7 +353,7 @@ MyIA.AI.Notebooks/GenAI/
 ---
 
 #### 2. **History & Geography** 🗺️
-**Fichier** : [`Image/examples/history-geography.ipynb`](examples/history-geography.html)
+**Fichier** : [`Image/examples/history-geography.ipynb`](examples/history-geography.ipynb)
 
 **Applications** :
 - Reconstitutions événements historiques
@@ -367,7 +367,7 @@ MyIA.AI.Notebooks/GenAI/
 ---
 
 #### 3. **Literature & Visual Arts** 📖
-**Fichier** : [`Image/examples/literature-visual.ipynb`](examples/literature-visual.html)
+**Fichier** : [`Image/examples/literature-visual.ipynb`](examples/literature-visual.ipynb)
 
 **Applications** :
 - Illustrations scènes littéraires
@@ -953,7 +953,7 @@ img.save('optimized.png')
 1. **Configuration** : Suivre [Quick Start](#quick-start)
 2. **Premier Notebook** : `01-1-OpenAI-DALL-E-3.ipynb`
 3. **Tutorial** : Lire [`dalle3-complete-guide.md`](../tutorials/dalle3-complete-guide.md)
-4. **Exemple** : Exécuter [`Image/examples/science-diagrams.ipynb`](examples/science-diagrams.html)
+4. **Exemple** : Exécuter [`Image/examples/science-diagrams.ipynb`](examples/science-diagrams.ipynb)
 
 ### Parcours Recommandé
 
