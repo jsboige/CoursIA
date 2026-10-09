@@ -71,10 +71,14 @@ def test_apposition_neutralizes_only_temporal_markers():
 
 def test_posed_temporal_still_live_and_blocks():
     """Le marqueur POSE (pas d'apposition de levee) reste une reserve,
-    au niveau marqueur ET au niveau classify. Option (a) Hermes c.19389 :
-    la forme naturelle « avant merge » RESTE un marqueur (cf. CONCERN_MARKERS,
-    d0f9afe4d) ; le reviewer peut aussi ecrire [BEFORE-MERGE] dans son
-    commentaire, le filet voit les deux formes (mention et structure)."""
+    au niveau marqueur ET au niveau classify."""
+    body = "Le scope des notebooks est a revoir avant merge."
+    assert mod.has_live_marker(body, MARKERS) is True
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_posed_temporal_still_live_and_blocks_bracketed():
+    """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
     body = "Le scope des notebooks est a revoir [BEFORE-MERGE]."
     assert mod.has_live_marker(body, MARKERS) is True
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
@@ -88,20 +92,25 @@ def test_negated_lift_before_merge_stays_dead_as_before():
 
 
 def test_infinitive_lever_before_merge_still_live():
-    """L'infinitif (« a lever [BEFORE-MERGE] ») est une EXIGENCE : le lexeme
-    \\bleve(?:e|es)?\\b ne matche pas « lever ». Migration c.183 : la forme
-    canonique est [BEFORE-MERGE] ; la forme naturelle « avant merge » n'est
-    plus un marqueur (CONCERN_MARKERS)."""
+    """L'infinitif (« a lever avant merge ») est une EXIGENCE : le lexeme
+    \\bleve(?:e|es)?\\b ne matche pas « lever »."""
+    assert mod.has_live_marker("Il reste un point a lever avant merge.", MARKERS) is True
+
+
+def test_infinitive_lever_before_merge_still_live_bracketed():
+    """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
     assert mod.has_live_marker("Il reste un point a lever [BEFORE-MERGE].", MARKERS) is True
 
 
 def test_participle_without_punctuation_still_live():
-    """Residu assume (#15651, sur-bloquant donc sans danger) : le marqueur
-    [BEFORE-MERGE] SANS ponctuation reste une reserve vive (le filet ne
-    neutralise pas le marqueur structurel sur apposition de levee,
-    contrairement a l'ancien filet qui reagissait a « levee, avant merge »).
-    Migration c.183 : la forme naturelle « avant merge » n'est plus un
-    marqueur ; seule [BEFORE-MERGE] tient."""
+    """Residu assume (#15651, sur-bloquant donc sans danger) : participe
+    SANS ponctuation — la virgule est le discriminant qui separe le
+    timing d'une negation voisine ; sans elle on ne neutralise pas."""
+    assert mod.has_live_marker("Le point 3 doit etre leve avant merge.", MARKERS) is True
+
+
+def test_participle_without_punctuation_still_live_bracketed():
+    """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
     assert mod.has_live_marker("Le point 3 doit etre leve [BEFORE-MERGE].", MARKERS) is True
 
 

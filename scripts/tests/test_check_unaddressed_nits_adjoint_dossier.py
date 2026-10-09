@@ -141,6 +141,13 @@ def test_bloc_malforme_sans_fermant_nest_pas_retire():
     assert mod.classify("jsboige", malformed) is not None
 
 
+def test_bloc_malforme_sans_fermant_nest_pas_retire_bracketed():
+    # Delimiter ouvrant sans fermant : le gate (check_adjoint_prevalidation)
+    # refuse ce dossier ; l'organe ne doit pas non plus le blanchir.
+    malformed = DOSSIER_16173_BLOCKED.replace("[/ADJOINT PREFLIGHT]", "")
+    assert mod.classify("jsboige", malformed) is not None
+
+
 def test_prose_de_tombstone_avec_reserve_reste_vivante():
     body = TOMBSTONE_16173.replace(
         "Dossier supersede",

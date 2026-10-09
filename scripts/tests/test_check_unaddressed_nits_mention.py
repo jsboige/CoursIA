@@ -446,14 +446,14 @@ def test_13559_approve_sous_reserve_bloque_toujours():
 
 
 def test_13559_approve_a_corriger_avant_bloque_toujours():
-    """Controle negatif — une consigne imperative [BEFORE-MERGE] sous
-    APPROVE. Le c.13559 APPROVE logique lift les markers generiques
-    (CONCERNS, [BEFORE-MERGE]) ; seule la « sous reserve » explicite
-    preserve la reserve. Migration c.183 : la forme canonique est
-    [BEFORE-MERGE] ; la forme naturelle « avant merge » n'est plus
-    un marqueur. Le test preserve l'esprit du fondateur (« une consigne
-    imperative avant merge doit bloquer ») en utilisant le langage
-    « sous reserve » qui survit au lift APPROVE."""
+    """Controle negatif — une consigne imperative avant merge reserve."""
+    body = ("**[Hermes]** APPROVE. Le typo du docstring est a corriger avant "
+            "merge, CONCERNS mineur.")
+    assert len(_blocking(body)) == 1
+
+
+def test_13559_approve_a_corriger_avant_bloque_toujours_bracketed():
+    """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
     body = ("**[Hermes]** APPROVE sous reserve de la correction du typo "
             "du docstring [BEFORE-MERGE], CONCERNS mineur.")
     assert len(_blocking(body)) == 1

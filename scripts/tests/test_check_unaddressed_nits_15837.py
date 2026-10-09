@@ -250,12 +250,16 @@ def test_15837_borne_paragraphe_rendue_mesurable():
 
 
 def test_15837_residu_assume_narration_levee_avant_merge():
-    """Residu ASSUME et documente : « La reserve est levee [BEFORE-MERGE]. »
-    reste flagee. C'est un faux positif a trier, pas une reserve manquee —
-    le cote bon marche de l'asymetrie. Ce test fige le residu pour qu'une
-    PR future ne le « corrige » pas en rouvrant le faux negatif ci-dessus.
-    Migration c.183 : la forme naturelle « avant merge » n'est plus un
-    marqueur ; seule [BEFORE-MERGE] tient."""
+    """Residu ASSUME et documente : « La reserve est levee avant merge. » reste
+    flagee. C'est un faux positif a trier, pas une reserve manquee — le cote
+    bon marche de l'asymetrie. Ce test fige le residu pour qu'une PR future ne
+    le « corrige » pas en rouvrant le faux negatif ci-dessus."""
+    body = "La reserve est levee avant merge."
+    assert mod.has_live_marker(mod._strip_quoted(body), mod.CONCERN_MARKERS) is True
+
+
+def test_15837_residu_assume_narration_levee_avant_merge_bracketed():
+    """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
     body = "La reserve est levee [BEFORE-MERGE]."
     assert mod.has_live_marker(mod._strip_quoted(body), mod.CONCERN_MARKERS) is True
 
