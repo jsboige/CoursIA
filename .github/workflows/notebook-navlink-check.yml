@@ -13,12 +13,7 @@ name: Notebook Navlink Check
 # (deep-links into git submodules are filtered via .gitmodules parse).
 
 on:
-  pull_request:
-    paths:
-      - '**/*.ipynb'
-      - 'scripts/notebook_tools/check_notebook_navlinks.py'
-      - 'scripts/tests/baseline_nb_navlinks.json'
-      - '.github/workflows/notebook-navlink-check.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -29,6 +24,7 @@ concurrency:
 
 jobs:
   check-navlinks:
+    name: notebook-navlink-check
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 1, decision ai-01
     # 2026-09-01) : garde Python pur, sans secret ni usage du GITHUB_TOKEN. La garde
     # same-repo ci-dessous saute les PRs de fork (pr_gate.py compte `skipped` comme

@@ -22,10 +22,7 @@ name: prose-counts-guard
 # promettait ce label. #17029 a fusionne ainsi, revertee par #17632.
 
 on:
-  pull_request:
-    paths:
-      - '**/*.ipynb'
-      - '**/*.md'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -36,6 +33,7 @@ concurrency:
 
 jobs:
   prose-counts:
+    name: prose-counts-guard
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 1, decision ai-01
     # 2026-09-01) : garde Python pur, sans secret ni usage du GITHUB_TOKEN. La garde
     # same-repo ci-dessous saute les PRs de fork (pr_gate.py compte `skipped` comme

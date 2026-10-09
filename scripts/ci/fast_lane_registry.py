@@ -222,7 +222,7 @@ PILOT: list[Guard] = [
             "--scan-all", "--check", "--exclude-submodules",
         ],
         blocking=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
         name="pip-leak-guard",
@@ -235,7 +235,7 @@ PILOT: list[Guard] = [
         swap_paths=["MyIA.AI.Notebooks"],
         blocking=True,
         needs_base=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
         name="solution-leak-guard",
@@ -258,7 +258,7 @@ PILOT: list[Guard] = [
                                  # le stock ne rougit personne (lignes AJOUTEES
                                  # seules), une PR qui rouvre la veine rougit
         needs_base=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
         name="perimeter-review-guard",
@@ -308,7 +308,7 @@ PILOT: list[Guard] = [
         ],
         blocking=True,
         iterates_paths=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
         name="notebook-navlink-check",
@@ -321,7 +321,7 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/notebook_tools/check_notebook_navlinks.py",
               "--check"],
         blocking=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
         name="notebook-nav-chain-guard",
@@ -335,7 +335,7 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
               "--check"],
         blocking=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     # F2 #18970, classe inversee par #18911 (geste 2, 2026-10-09) --
     # garde delta-only sur les violations HTML_404 / BROKEN. L'audit BRUT
@@ -380,7 +380,7 @@ PILOT: list[Guard] = [
         ],
         blocking=True,
         needs_base=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
         name="notebook-interp-positioning-guard",
@@ -394,7 +394,7 @@ PILOT: list[Guard] = [
               "--check",
               "--baseline", "scripts/notebook_tools/interp_positioning_baseline.json"],
         blocking=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
         name="markdown-rendering-guard",
@@ -412,7 +412,7 @@ PILOT: list[Guard] = [
               "--baseline",
               "scripts/notebook_tools/markdown_rendering_baseline.json"],
         blocking=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
         name="self-hosted-runner-policy",

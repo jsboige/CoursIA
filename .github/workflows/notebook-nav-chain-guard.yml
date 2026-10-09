@@ -18,13 +18,7 @@ name: Notebook Nav-Chain Guard
 # any .ipynb.
 
 on:
-  pull_request:
-    paths:
-      - '**/*.ipynb'
-      - 'MyIA.AI.Notebooks/**/README.md'
-      - 'scripts/notebook_tools/check_notebook_nav_chain.py'
-      - 'scripts/tests/baseline_nb_nav_chain.json'
-      - '.github/workflows/notebook-nav-chain-guard.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -35,6 +29,7 @@ concurrency:
 
 jobs:
   check-nav-chain:
+    name: notebook-nav-chain-guard
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 1, decision ai-01
     # 2026-09-01) : garde Python pur, sans secret ni usage du GITHUB_TOKEN. La garde
     # same-repo ci-dessous saute les PRs de fork (pr_gate.py compte `skipped` comme

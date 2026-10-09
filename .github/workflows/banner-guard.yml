@@ -18,12 +18,6 @@ name: banner-guard
 # transposed to a durable CI guard (cf pip-leak-guard.yml design note).
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - '**.ipynb'
-      - 'scripts/notebook_tools/strip_probe_banner.py'
-      - '.github/workflows/banner-guard.yml'
   push:
     branches: [ main ]
     paths:
@@ -47,7 +41,7 @@ concurrency:
 
 jobs:
   banner-scan:
-    name: "probeAddresses banner guard (main-repo notebooks)"
+    name: banner-guard
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 1, decision ai-01
     # 2026-09-01) : garde Python pur, sans secret ni usage du GITHUB_TOKEN. La garde
     # same-repo ci-dessous saute les PRs de fork (pr_gate.py compte `skipped` comme

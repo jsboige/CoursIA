@@ -35,6 +35,23 @@ from fast_lane_registry import (  # noqa: E402
     TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, Guard,
 )
 
+# Lot PILOTE absorbe a l'etape 3 de #12856 (programme #12567) : comparaison
+# conclue pour ces neuf gardes -- job renomme byte-identique au `guard.name`
+# + declencheur `pull_request` retire du workflow source dans le meme commit.
+# Epingler le lot ici rend toute absorption/desabsorption ulterieure d'un
+# garde PILOT visible : c'est un geste trace, jamais un effet de bord.
+PILOT_ABSORBED_LOT_12856 = frozenset({
+    "banner-guard",
+    "pip-leak-guard",
+    "prose-counts-guard",
+    "bare-cross-dir-load-gate",
+    "notebook-navlink-check",
+    "notebook-nav-chain-guard",
+    "readme-ipynb-links-guard",
+    "notebook-interp-positioning-guard",
+    "markdown-rendering-guard",
+})
+
 
 # ---------------------------------------------------------------------------
 # 1. Selection par chemin
@@ -679,24 +696,55 @@ def test_tranche1_guards_are_absorbed_and_pilot_is_not():
     rend son verdict sous son nom canonique (donc rougissant), un garde du
     pilote reste en observation. Si les deux lots se melangent, soit le
     pilote bloque sans preuve de comparaison, soit la tranche absorbee est
-    neutralisee et son garde d'origine parti sans remplacement."""
+    neutralisee et son garde d'origine parti sans remplacement.
+
+    Lot PILOTE absorbe (#12856 etape 3, programme #12567) : les NEUF gardes
+    de PILOT_ABSORBED_LOT_12856 ont conclu leur comparaison -- job renomme
+    byte-identique + declencheur `pull_request` retire dans le meme commit.
+    Le lot est EPINGLE par intention : absorber un dixieme garde PILOT sans
+    mettre a jour cette liste (ni le checker d'identite) doit rougir ici --
+    chaque absorption du pilote est un geste trace, pas un effet de bord."""
     assert TRANCHE1, "la tranche 1 est vide : ce test n'exerce plus rien"
     for guard in TRANCHE1:
         assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
-    for guard in PILOT:
-        assert not guard.absorbed, (
-            f"{guard.name} est un garde PILOT : il reste en ombre jusqu'a "
-            "la conclusion de la comparaison")
+    absorbes_pilote = {g.name for g in PILOT if g.absorbed}
+    assert absorbes_pilote == PILOT_ABSORBED_LOT_12856, (
+        f"gardes PILOT absorbes = {sorted(absorbes_pilote)} != lot epingle "
+        f"{sorted(PILOT_ABSORBED_LOT_12856)} : absorption ou desabsorption "
+        "non tracee -- mettre a jour le lot ET verifier que le workflow "
+        "concerne a perdu son declencheur pull_request")
 
 
 def test_absorbed_workflows_no_longer_trigger_on_pull_request():
     """Chaque garde absorbe voit son workflow d'origine retire du
     declenchement `pull_request` -- sinon le garde tourne deux fois (une
     fois canonique par la voie rapide, une fois par son workflow) et la
-    mutualisation ne sauuche aucun run. Verification textuelle ancre'e :
-    `pull_request:` en debut d'indentation sous `on:`."""
+    mutualisation ne sauve aucun run. Verification textuelle ancre'e :
+    `pull_request:` en debut d'indentation sous `on:`.
+
+    Depuis l'etape 3 de #12856 le contrat couvre TOUT garde absorbe du
+    registre (decouverte dynamique des listes de Guard), y compris le lot
+    PILOTE absorbe -- pas seulement TRANCHE1. Les tranches declarees dans
+    `TRANCHE_ALIGNMENT_EN_COURS` restent exemptees : leur absorption est
+    faite par declaration mais le geste de bascule (rename + retrait du
+    trigger) est encore en cours, exactement l'exemption du checker
+    d'identite."""
     import re as _re
-    for guard in TRANCHE1:
+    import fast_lane_registry
+    align_set = set()
+    for tranche_name in fast_lane_registry.TRANCHE_ALIGNMENT_EN_COURS:
+        align_set.update(
+            id(g) for g in getattr(fast_lane_registry, tranche_name, []))
+    absorbes = []
+    for value in vars(fast_lane_registry).values():
+        if isinstance(value, list) and value and all(
+                isinstance(item, Guard) for item in value):
+            absorbes.extend(
+                g for g in value
+                if g.absorbed and g.source != FAST_LANE_NATIVE
+                and id(g) not in align_set)
+    assert absorbes, "aucun garde absorbe : ce test ne mesurerait rien"
+    for guard in absorbes:
         wf = WORKFLOWS / guard.source
         assert wf.is_file(), f"{guard.source} absent du depot"
         txt = wf.read_text(encoding="utf-8")

@@ -29,15 +29,6 @@ name: markdown-rendering-guard
 # Scope: main-repo notebooks only. Submodules are separate repos with their own CI.
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - '**.ipynb'
-      - '_quarto.yml'
-      - 'scripts/notebook_tools/detect_markdown_rendering.py'
-      - 'scripts/notebook_tools/scan_md_hierarchy.py'
-      - 'scripts/notebook_tools/markdown_rendering_baseline.json'
-      - '.github/workflows/markdown-rendering-guard.yml'
   push:
     branches: [ main ]
     paths:
@@ -64,7 +55,7 @@ concurrency:
 
 jobs:
   render-scan:
-    name: "markdown-rendering guard (main-repo notebooks)"
+    name: markdown-rendering-guard
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de

@@ -75,12 +75,6 @@ name: Bare cross-dir #load gate
 # svg-empty-display-gate.yml (#6971).
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/notebook_tools/detect_bare_cross_dir_load.py'
-      - '.github/workflows/bare-cross-dir-load-gate.yml'
   workflow_dispatch:
 
 permissions:
@@ -92,7 +86,7 @@ concurrency:
 
 jobs:
   bare-cross-dir-load:
-    name: "No bare cross-dir #load in changed notebooks"
+    name: bare-cross-dir-load-gate
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
