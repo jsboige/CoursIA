@@ -32,6 +32,16 @@ outputs:
       explicite du job appelant, apres son `Drop Mathlib oleans` -- un post-step
       interne au composite capturerait les oleans Mathlib (2,4 Go).
     value: ${{ steps.lake-cache.outputs.cache-hit }}
+  lake-cache-key:
+    description: >
+      Cle primaire du cache d'archives `.lake`, telle que calculee par la
+      restauration du composite. Exposee pour que le SAVE d'un job appelant qui
+      ne porte PAS lui-meme d'etape `id: lake-cache` (le job matriciel
+      `ci-matrix`, #13751) puisse nommer la cle : y ecrire directement
+      `steps.lake-cache.outputs.cache-primary-key` rend la chaine vide, puisque
+      l'id n'existe que dans le job `ci` et dans ce composite (revue ai-01 sur
+      #19668).
+    value: ${{ steps.lake-cache.outputs.cache-primary-key }}
 
 runs:
   using: composite
