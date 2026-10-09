@@ -11,7 +11,7 @@ temporaire avec de VRAIS git/python/grep/sort/comm -- seul le scanner
 Toute regression du bloc (perte du `2>&1`, retour d'un `|| true`, indice
 PIPESTATUS decale...) fait rougir le temoin correspondant. Rejeu manuel de
 reference (adjoint c26, 2026-10-04 09:05Z) : propre rc0, backlog 2/2/0 rc0,
-nouvelle STALE_LINK stderr 2/3/1 rc1, traceback rc1, scanner rc2, checkout refuse.
+nouvelle HTML_404 stderr 2/3/1 rc1, traceback rc1, scanner rc2, checkout refuse.
 """
 
 import os
@@ -23,19 +23,28 @@ import pytest
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 WORKFLOW = os.path.join(REPO_ROOT, ".github", "workflows", "readme-ipynb-links-guard.yml")
-STEP_NAME = "- name: Compute delta (new STALE_LINK on this PR vs base)"
+STEP_NAME = "- name: Compute delta (new HTML_404 on this PR vs base)"
 
-# Lignes de violation dans le style du vrai scanner : ::error::STALE_LINK sur STDERR.
+# Lignes de violation dans le style du vrai scanner : ::error::HTML_404 sur STDERR.
 SHARED_VIOLATIONS = [
-    "::error::STALE_LINK MyIA.AI.Notebooks/Search/README.md link1 target1.ipynb",
-    "::error::STALE_LINK MyIA.AI.Notebooks/Probas/README.md link2 target2.ipynb",
+    "::error::HTML_404 MyIA.AI.Notebooks/Search/README.md link1 target1.html",
+    "::error::HTML_404 MyIA.AI.Notebooks/Probas/README.md link2 target2.html",
 ]
 NEW_VIOLATION = (
-    "::error::STALE_LINK MyIA.AI.Notebooks/New/README.md link3 target3.ipynb"
+    "::error::HTML_404 MyIA.AI.Notebooks/New/README.md link3 target3.html"
 )
 
 STUB_TEMPLATE = '''\
-"""Stub sandbox -- simule le scanner selon STUB_MODE (encode par commit)."""
+"""Stub sandbox -- simule le scanner selon STUB_MODE.
+
+Depuis #18911 (geste 2) la passe base GARDE le script de la PR (cf. F8b
+du workflow) : les DEUX passes executent donc le meme stub, et l'ecart
+base/head vient du CONTENU, pas du code. Le stub lit
+`MyIA.AI.Notebooks/Search/README.md` et n'ajoute EXTRA que si la tete PR
+y a laisse sa marque ; la passe base restaure le README de la base (sans
+la marque) -- ce qui reproduit le delta 2/3/1 du temoin discriminant.
+"""
+import pathlib
 import sys
 
 STUB_MODE = "{mode}"
@@ -49,7 +58,11 @@ if STUB_MODE == "traceback":
     sys.stderr.write("Traceback (most recent call last):\\n")
     sys.stderr.write("  boom\\n")
     sys.exit(1)
-violations = SHARED + (EXTRA if STUB_MODE == "extra" else [])
+readme = pathlib.Path("MyIA.AI.Notebooks/Search/README.md")
+text = readme.read_text(encoding="utf-8") if readme.exists() else ""
+violations = list(SHARED)
+if STUB_MODE == "extra" and "(PR head)" in text:
+    violations += EXTRA
 for line in violations:
     print(line, file=sys.stderr)
 print("README-link audit: {{}} violations".format(len(violations)))
@@ -92,7 +105,8 @@ def extract_delta_block():
 
 def run_git(cwd, *args):
     subprocess.run(
-        ["git", *args], cwd=cwd, check=True, capture_output=True, text=True
+        ["git", *args], cwd=cwd, check=True, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
     )
 
 
@@ -161,6 +175,8 @@ def replay_block(tmp_path, pr_mode, base_mode, empty_base=False):
         cwd=str(sandbox),
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=120,
     )
     return proc.returncode, proc.stdout
@@ -194,17 +210,17 @@ def test_temoin_propre_rc0(tmp_path):
     """Base et head sans violation : rc0, message nominal."""
     rc, out = replay_block(tmp_path, "clean", "clean")
     assert rc == 0, out
-    assert "Aucune nouvelle violation STALE_LINK sur cette PR." in out
-    assert "STALE_LINK NOUVELLES sur cette PR: 0" in out
+    assert "Aucune nouvelle violation HTML_404 sur cette PR." in out
+    assert "HTML_404 NOUVELLES sur cette PR: 0" in out
 
 
 def test_temoin_backlog_2_2_0_rc0(tmp_path):
     """Backlog historique identique base/head : 2/2/0, rc0 (le backlog ne rougit pas)."""
     rc, out = replay_block(tmp_path, "shared", "shared")
     assert rc == 0, out
-    assert "STALE_LINK base" in out and ": 2" in out
-    assert "STALE_LINK head (PR): 2" in out
-    assert "STALE_LINK NOUVELLES sur cette PR: 0" in out
+    assert "HTML_404 base" in out and ": 2" in out
+    assert "HTML_404 head (PR): 2" in out
+    assert "HTML_404 NOUVELLES sur cette PR: 0" in out
 
 
 def test_temoin_nouvelle_violation_stderr_2_3_1_rc1(tmp_path):
@@ -216,11 +232,11 @@ def test_temoin_nouvelle_violation_stderr_2_3_1_rc1(tmp_path):
     """
     rc, out = replay_block(tmp_path, "extra", "shared")
     assert rc == 1, out
-    assert "STALE_LINK head (PR): 3" in out
-    assert "STALE_LINK base" in out and ": 2" in out
-    assert "STALE_LINK NOUVELLES sur cette PR: 1" in out
-    assert "::error::Nouvelle violation STALE_LINK sur cette PR" in out
-    assert "target3.ipynb" in out
+    assert "HTML_404 head (PR): 3" in out
+    assert "HTML_404 base" in out and ": 2" in out
+    assert "HTML_404 NOUVELLES sur cette PR: 1" in out
+    assert "::error::Nouvelle violation HTML_404 sur cette PR" in out
+    assert "target3.html" in out
 
 
 def test_temoin_traceback_sans_resume_rc1(tmp_path):
