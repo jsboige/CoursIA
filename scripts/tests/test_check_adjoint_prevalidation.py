@@ -2560,6 +2560,81 @@ def test_find_previous_blocked_same_head_ignores_ready_predecessors():
     assert dossier.fields.get("verdict") == mod.VERDICT_BLOCKED
 
 
+def test_emitter_and_gate_name_the_same_covered_dossier():
+    """#19869 -- l'emetteur et le gate designent le MEME dossier couvert.
+
+    C'est le controle causal du defaut : deux recherches independantes
+    derivent, et l'emetteur pre-remplit alors un `supersedes` que le gate
+    refuse. Ici la position rendue par `find_previous_blocked_same_head`
+    (ce que `--emit` ecrit) et celle que le gate cite dans son refus
+    doivent coincider -- sur la meme pile de dossiers.
+    """
+    snapshot = _two_blocked_then_ready()
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is not None
+    emitted_position, _dossier = found
+    # Deux BLOCKED sur la meme tete : l'ordre compte (le plus recent gagne).
+    # Sans cette discrimination, une recherche divergente passerait inapercue.
+    assert emitted_position == 3
+
+    _verdict, errors = mod.evaluate(snapshot)
+    assert len(errors) == 1
+    # Le gate nomme le dossier couvert en prose : "comment <pos> of <N>".
+    assert f"comment {emitted_position} of" in errors[0]
+    assert f"'supersedes: {emitted_position}'" in errors[0]
+
+
+def _two_blocked_then_ready() -> dict:
+    """Pile : ordinary (1), BLOCKED (2), BLOCKED (3), READY muet (4).
+
+    Deux BLOCKED a la meme tete font que l'ORDRE discrimine : le dossier
+    couvert est le plus recent (position 3), pas le premier. Un READY final
+    est ce qui declenche le refus du gate -- un BLOCKED apres un BLOCKED
+    n'exige rien (direction conservatrice de #18934).
+    """
+    snapshot = _base_snapshot()
+    for index in (1, 2):
+        fields = {
+            "verdict": "BLOCKED",
+            "b0": "blocked",
+            "comments-reviewed": str(index),
+            "head": HEAD,
+        }
+        fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, index)
+        snapshot["comments"].append(_comment(_body(**fields)))
+    ready = {"comments-reviewed": "3"}
+    ready["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 3)
+    snapshot["comments"].append(_comment(_body(**ready)))
+    return snapshot
+
+
+def test_covered_blocked_dossier_is_the_shared_core():
+    """Le cœur unique est appele par les DEUX chemins (#19869).
+
+    Une recherche en dur reintroduite d'un cote seul ferait diverger les
+    organes sans qu'aucun test ne rougisse : ce controle verifie que
+    `mute_contradictions` ET `find_previous_blocked_same_head` passent bien
+    par `covered_blocked_dossier`.
+    """
+    snapshot = _two_blocked_then_ready()
+    dossiers = []
+    for index, comment in enumerate(snapshot["comments"]):
+        dossier, _errors = mod.parse_dossier(
+            comment.get("body") or "",
+            index,
+            comment.get("author", {}).get("login") or "jsboige",
+            comment.get("createdAt") or "",
+        )
+        if dossier is not None:
+            dossiers.append(dossier)
+    expected = mod.covered_blocked_dossier(dossiers, HEAD)
+    assert expected is not None
+    assert expected.fields.get("verdict") == mod.VERDICT_BLOCKED
+
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found == (expected.comment_index + 1, expected)
+
+
 def test_render_emitted_dossier_autofills_supersedes_for_ready(monkeypatch):
     """Un READY au-dessus d'un BLOCKED a meme tete : supersedes+why poses
     automatiquement, dans le bloc, avant END, par --emit."""

@@ -8,8 +8,8 @@ La **Journée 2** opère le basculement central du workshop : de l'écriture du 
 
 | Lab | Sujet | Concept-phare |
 |-----|-------|---------------|
-| [Lab 2 — RFP Analysis](Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | d'un appel d'offres à un PoC en 1 heure | extraction structurée d'un texte libre par LLM |
-| [Lab 3 — CV Screening](Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | pré-qualifier des candidats avec l'IA | analyse, notation et résumé de CVs vs offre |
+| [Lab 2 — RFP Analysis](Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.html) | d'un appel d'offres à un PoC en 1 heure | extraction structurée d'un texte libre par LLM |
+| [Lab 3 — CV Screening](Labs/Lab3-CV-Screening/Lab3-CV-Screening.html) | pré-qualifier des candidats avec l'IA | analyse, notation et résumé de CVs vs offre |
 
 ## Prérequis
 
