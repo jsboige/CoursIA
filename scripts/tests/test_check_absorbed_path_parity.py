@@ -23,7 +23,9 @@ from check_absorbed_path_parity import (  # noqa: E402
     _residual_paths,
     _trigger_paths,
     covered_by,
+    findings,
 )
+from fast_lane_registry import Guard  # noqa: E402
 
 
 def test_normalize_unifie_le_dialecte_double_etoile():
@@ -82,3 +84,36 @@ def test_residual_paths():
     assert _residual_paths({"on": {"push": {"paths": ["z"]}}}) == ["z"]
     assert _residual_paths({"on": {"push": {}}}) is None
     assert _residual_paths({"on": {"pull_request": {"paths": ["x"]}}}) == []
+
+
+def _garde_absorbe():
+    return Guard(name="g", argv=["true"], source="g.yml",
+                 paths=["a.py"], absorbed=True)
+
+
+def test_source_illisible_est_un_finding(monkeypatch):
+    """Fail-closed (review #20181, CONCERNE 2).
+
+    Un garde absorbe dont la source est illisible sur la base laisse tous ses
+    motifs sans couverture prouvee : c'est un finding, pas un ecart silencieux.
+    """
+    import check_absorbed_path_parity as pap
+    monkeypatch.setattr(pap, "all_guards", lambda: iter([_garde_absorbe()]))
+    monkeypatch.setattr(pap, "_load_yaml", lambda: object())
+    monkeypatch.setattr(pap, "_git_show", lambda base, rel: None)
+    problems, skipped, stats = findings("origin/main")
+    assert problems and "illisible" in problems[0]
+    assert skipped == []
+    assert stats["checked"] == 0
+
+
+def test_source_non_parsable_est_un_finding(monkeypatch):
+    """Fail-closed (review #20181, CONCERNE 2) : non parsable == non verifiable."""
+    import check_absorbed_path_parity as pap
+    monkeypatch.setattr(pap, "all_guards", lambda: iter([_garde_absorbe()]))
+    monkeypatch.setattr(pap, "_load_yaml", lambda: object())
+    monkeypatch.setattr(pap, "_git_show", lambda base, rel: "name: g\non: [push]\n")
+    monkeypatch.setattr(pap, "_parse_workflow", lambda text, yaml: None)
+    problems, skipped, _ = findings("origin/main")
+    assert problems and "non parsable" in problems[0]
+    assert skipped == []

@@ -127,7 +127,7 @@ def covered_by(pattern: str, candidates: list[str]) -> str | None:
         if not _has_wildcard(pattern):
             # un chemin litteral est couvert par une entree litterale
             # superieure, ou par le sous-arbre qui le contient (`a/**`).
-            if cand_norm.endswith("/" + norm) or cand_norm == norm:
+            if cand_norm.endswith("/" + norm):
                 return candidate
             if cand_norm.endswith("/**") and norm.startswith(cand_norm[:-2]):
                 return candidate
@@ -213,11 +213,20 @@ def findings(base: str) -> tuple[list[str], list[str], dict]:
         rel = WORKFLOW_PREFIX + guard.source
         text = _git_show(base, rel)
         if text is None:
-            skipped.append(f"{guard.name!r}: {rel} illisible sur {base}")
+            # Fail-closed (review #20181) : un garde absorbe dont la source
+            # est illisible sur la base laisse TOUS ses motifs sans couverture
+            # prouvee. Le cout d'un faux rouge est une lecture de plus ; le
+            # cout d'un faux vert est un garde eteint en silence.
+            problems.append(
+                f"{guard.name!r}: {rel} illisible sur {base} -- couverture "
+                "non prouvee (fail-closed)")
             continue
         data = _parse_workflow(text, yaml)
         if data is None:
-            skipped.append(f"{guard.name!r}: {rel} non parsable sur {base}")
+            # Fail-closed, meme raison : non parsable == non verifiable.
+            problems.append(
+                f"{guard.name!r}: {rel} non parsable sur {base} -- couverture "
+                "non prouvee (fail-closed)")
             continue
 
         block = _event_block(data, "pull_request")
@@ -291,7 +300,7 @@ def _main(argv: list[str]) -> int:
             print(f"[absorbed-path-parity] OK -- {stats['checked']} garde(s) "
                   f"verifie(s) contre {args.base}, "
                   f"{stats['skipped']} ecarte(s) "
-                  "(etat deja consolide ou source illisible).")
+                  "(etat deja consolide).")
 
     return 1 if problems else 0
 

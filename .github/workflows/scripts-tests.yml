@@ -566,6 +566,21 @@ jobs:
         run: |
           python scripts/ci/guard_test_root.py
 
+      # #20181 : parite de couverture des gardes absorbes (review NanoClaw,
+      # CONCERNE 1 -- l'organe doit veiller, pas rester un instrument de banc).
+      # Le retrait du declencheur pull_request d'un garde absorbe n'est legal
+      # que si les `paths` du registre fast-lane couvrent les motifs retires :
+      # la voie rapide REMPLACE le workflow, un motif perdu eteint le garde en
+      # silence. Fail-closed : source de base illisible ou non parsable est un
+      # finding. Les `paths` de ce workflow couvrent deja `scripts/**` et
+      # `.github/workflows/**` -- le garde s'allume sur toute PR qui touche le
+      # registre ou retire un declencheur. Mesure locale 2026-10-10 :
+      # PARITY_OK (1 garde verifie, 19 ecartes deja consolides).
+      - name: absorbed-path-parity (#20181)
+        if: always()
+        run: |
+          python scripts/ci/check_absorbed_path_parity.py --base origin/main
+
   adk-contracts:
     name: ADK runtime contracts (18)
     # #15058: #13572 makes Track2-GoogleADK/utils/test_adk_runtime_contracts.py
