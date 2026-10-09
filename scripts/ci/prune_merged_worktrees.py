@@ -205,6 +205,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import traceback
@@ -1497,6 +1498,42 @@ def list_worktrees() -> list[dict]:
     return out
 
 
+def is_link_like(p: Path) -> bool:
+    """True pour un lien symbolique ET pour une jonction Windows (#20007).
+
+    `Path.is_symlink()` ne reconnaît que les liens de type *name surrogate* :
+    une jonction NTFS (reparse point `IO_REPARSE_TAG_MOUNT_POINT`, le geste
+    courant pour partager un `node_modules` ou un cache entre worktrees) rend
+    **False** sur les trois voies (`is_symlink`, `os.path.islink`,
+    `S_ISLNK(st_mode)`) alors qu'elle porte bien
+    `FILE_ATTRIBUTE_REPARSE_POINT`. Mesuré sur une jonction `mklink /J` :
+    `st_file_attributes == 0x410` (reparse point + directory).
+
+    Conséquence de l'aveuglement : la cible tombait dans la branche
+    `is_dir()`, où `shutil.rmtree` lève « Cannot call rmtree on a symbolic
+    link » — un `OSError` avalé par `ignore_errors=True`. L'artefact n'était
+    donc ni retiré ni listé, et le `git worktree remove` qui suit échouait
+    sur l'untracked restant : le rapport annonçait REMOVE pour un `--apply`
+    qui ne pouvait pas aboutir (#14619, même classe que l'incident jonctions
+    po-2023 c.525).
+
+    `os.unlink` retire une jonction sans suivre sa cible (mesuré : la cible
+    et son contenu survivent), donc le geste de la branche lien convient aux
+    deux formes — seul le prédicat devait changer.
+
+    Le repli `False` couvre les plateformes sans `st_file_attributes`
+    (POSIX) et un `lstat` impossible : on retombe alors sur le comportement
+    d'avant, jamais sur une suppression.
+    """
+    if p.is_symlink():
+        return True
+    try:
+        attrs = os.lstat(p).st_file_attributes
+    except (OSError, AttributeError):
+        return False
+    return bool(attrs & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+
+
 def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
     """Supprime les SEULS artefacts tolérés du worktree, avant retrait.
 
@@ -1510,6 +1547,8 @@ def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
     - seuls les chemins untracked qui matchent la liste tolérée sont visés ;
     - chaque cible doit résoudre DANS le worktree (défense en profondeur
       contre une entrée porcelain inattendue) ;
+    - les liens symboliques ET les jonctions Windows partent par `unlink`,
+      jamais par `rmtree`, qui lève sur les deux (`is_link_like`, #20007) ;
     - jamais de `--force` : le retrait reste `git worktree remove` nu. Si un
       résidu hors liste survient entre le diagnostic et l'apply, git refuse
       et le statut FAILED rend la cause (fail-closed).
@@ -1529,9 +1568,10 @@ def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
                 continue
         except OSError:
             continue
-        if target.is_symlink():
-            # rmtree sur un lien symbolique leve OSError ; unlink est le
-            # geste correct et ne touche pas la cible.
+        if is_link_like(target):
+            # rmtree sur un lien symbolique -- ou sur une jonction Windows --
+            # leve OSError ; unlink est le geste correct et ne touche pas la
+            # cible (cf is_link_like, #20007).
             try:
                 target.unlink()
                 removed.append(rel)
