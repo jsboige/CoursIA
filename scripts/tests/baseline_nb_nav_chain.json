@@ -282,11 +282,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/09-Committees-STV-Monroe-ChamberlinCourant.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory/SocialChoice"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications"
     },
@@ -797,12 +792,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/ML.Net/ML-4b-ModelComparison-Validity-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb",
       "series": "MyIA.AI.Notebooks/ML/ML.Net"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/ML.Net/ML-5b-Series-Temporelles-Classiques-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb",
       "series": "MyIA.AI.Notebooks/ML/ML.Net"
     },
     {
