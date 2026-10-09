@@ -2,34 +2,29 @@
   "by_source": {
     "Logic13": {
       "total": 15,
-      "DIRECT": 9,
+      "DIRECT": 12,
       "PARTIAL": 3,
-      "NOT_FOUND": 3,
-      "labels_not_found": [
-        "Bandwagon",
-        "False cause",
-        "Sunk cost fallacy"
-      ]
+      "NOT_FOUND": 0,
+      "labels_not_found": []
     },
     "MAFALDA-L2": {
       "total": 23,
-      "DIRECT": 15,
+      "DIRECT": 16,
       "PARTIAL": 5,
-      "NOT_FOUND": 3,
+      "NOT_FOUND": 2,
       "labels_not_found": [
-        "Appeal to popularity",
         "Appeal to values",
         "Fallacy of logic"
       ]
     }
   },
   "argumentum_families_hit": {
-    "Influence": 6,
+    "Influence": 7,
     "Tricherie": 1,
     "Insuffisance": 6,
-    "Obstruction": 4,
+    "Obstruction": 6,
     "Erreur mathématique": 7,
-    "Erreur de raisonnement": 3,
+    "Erreur de raisonnement": 4,
     "Abus de langage": 5
   },
   "argumentum_families_never_hit": [],
