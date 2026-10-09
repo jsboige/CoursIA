@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-kelly_lean
-pedagogical_count: 2
-breakdown: kelly_lean=2
-maturity: BETA=2
+pedagogical_count: 6
+breakdown: kelly_lean=6
+maturity: BETA=6
 -->
 
 # kelly_lean — optimalité du critère de Kelly (log-croissance)

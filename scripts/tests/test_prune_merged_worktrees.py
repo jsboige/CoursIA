@@ -71,6 +71,47 @@ if not os.path.exists(TEST_CWD + "/scripts/ci/prune_merged_worktrees.py"):
     TEST_CWD = "C:/dev/CoursIA-14195-prune"
 
 
+def _json_output_or_fail(proc):
+    """Contrat ``--json`` d'un sous-processus, triage AVANT le parse (#17292).
+
+    Retourne le JSON parse. Trois issues, aucune muette :
+
+    - ``rc=2`` + marqueur « echec inattendu » : le script a PLANTE -> echec
+      dur, traceback compris. Un plantage n'est pas une precondition, et le
+      skipper le rendrait invisible pour toujours.
+    - ``rc=2`` sans marqueur : le script NOMME son incapacite d'enumerer ici
+      (environnement) -> skip nomme, motif compris.
+    - ``rc=0`` sans JSON, ou JSON invalide : contrat rompu -> echec dur qui
+      rapporte le stderr du sous-processus verbatim.
+
+    Le fix initial (#17293) n'appliquait ce triage qu'a UN des trois tests
+    E2E du fichier ; les deux autres parseaient ``proc.stdout`` directement
+    et reconvertissaient la prochaine panne d'outil en ``JSONDecodeError``
+    nu -- le 3e mode de rouge de Scripts Tests (CPU), de retour.
+    """
+    stderr = (proc.stderr or "").strip()
+    if proc.returncode == 2:
+        if "echec inattendu" in stderr:
+            pytest.fail(
+                "le script a plante (rc=2), ce n'est pas une precondition :\n"
+                + stderr[:1500])
+        pytest.skip(
+            "le script declare ne pas pouvoir enumerer ici : "
+            + stderr[:400])
+    assert proc.returncode == 0, (
+        f"unexpected exit: {proc.returncode}\nstderr: {stderr[:800]}")
+    assert proc.stdout.strip(), (
+        "contrat --json rompu : stdout vide alors que rc="
+        f"{proc.returncode} -- le script doit publier son JSON, ou nommer "
+        f"son echec (rc=2). stderr: {stderr[:800]}")
+    try:
+        return json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        pytest.fail(
+            f"stdout n'est pas du JSON (rc={proc.returncode}) -- stderr du "
+            f"sous-processus, verbatim :\n{stderr[:1500] or '(vide)'}")
+
+
 # ---------------------------------------------------------------------------
 # is_untracked_artifact / is_source_dirty
 # ---------------------------------------------------------------------------
@@ -1694,32 +1735,10 @@ class TestEndToEnd:
             cwd=TEST_CWD,
         )
         skip_if_output_rate_limited(proc.stdout + proc.stderr)
-        stderr = (proc.stderr or "").strip()
-        # rc=2 a DEUX saveurs, et les confondre est le defaut d'origine :
-        #  - l'outil NOMME son incapacite d'enumerer ici (environment) : c'est la
-        #    precondition annoncee par ce test -> skip, motif compris ;
-        #  - l'outil a PLANTE (#17292) -> echec dur, traceback compris. Un
-        #    plantage n'est pas une precondition, et le skipper le rendrait
-        #    invisible pour toujours.
-        # #17229 (union) : le budget GraphQL epuise est une TROISIEME saveur --
-        # elle n'est ni une precondition d'environnement ni un plantage, et
-        # elle se saute AVANT ces deux branches (le skip ci-dessus), sinon le
-        # rc=2 d'un appel gh refuse serait lu comme un plantage de l'outil.
-        if proc.returncode == 2:
-            if "echec inattendu" in stderr:
-                pytest.fail(f"le script a plante (rc=2), ce n'est pas une precondition :\n{stderr[:1500]}")
-            pytest.skip(f"le script declare ne pas pouvoir enumerer ici : {stderr[:400]}")
-        # #3895 : refus ou pas, une passe qui s'est deroulee sort en 0.
-        # Seul rc=2 reste une panne (nommee ou traceback).
-        assert proc.returncode == 0, (
-            f"unexpected exit: {proc.returncode}\nstderr: {stderr[:800]}"
-        )
-        assert proc.stdout.strip(), (
-            "contrat --json rompu : stdout vide alors que rc="
-            f"{proc.returncode} -- le script doit publier son JSON, ou nommer "
-            f"son echec (rc=2). stderr: {stderr[:800]}"
-        )
-        out = json.loads(proc.stdout)
+        # Triage #17292/#17229 factorise dans _json_output_or_fail : rc=2
+        # plante -> echec dur ; rc=2 nomme -> skip ; le cas #17229 (budget
+        # GraphQL epuise) s'est deja saute ci-dessus, AVANT ces deux branches.
+        out = _json_output_or_fail(proc)
         if out["scanned"] == 0:
             pytest.skip("no worktree present (CI checkout shallow)")
         # Le worktree de travail principal doit toujours être refuse
@@ -1743,7 +1762,7 @@ class TestEndToEnd:
             cwd=TEST_CWD,
         )
         skip_if_output_rate_limited(proc.stdout + proc.stderr)
-        out = json.loads(proc.stdout)
+        out = _json_output_or_fail(proc)
         if out["scanned"] == 0:
             pytest.skip("no worktree present (CI checkout shallow)")
         for s in out["statuses"]:
@@ -1760,7 +1779,7 @@ class TestEndToEnd:
             cwd=TEST_CWD,
         )
         skip_if_output_rate_limited(proc.stdout + proc.stderr)
-        out = json.loads(proc.stdout)
+        out = _json_output_or_fail(proc)
         for key in ("scanned", "removable", "refused", "skipped_current",
                     "dry_run", "statuses"):
             assert key in out, f"missing key in JSON output: {key}"
@@ -2355,6 +2374,93 @@ class TestErrorContract:
         assert "sys.exit(main())" not in source
 
 
+class TestJsonOutputTriage:
+    """Le triage du helper `_json_output_or_fail` (#17292, extension #17293).
+
+    Chaque branche du contrat est verifiee sur un faux sous-processus : ce
+    sont les unites qui garantissent que les trois tests E2E qui appellent le
+    helper ne peuvent PLUS reverdir le 3e mode de rouge (JSONDecodeError nu
+    qui jette le stderr). Un test qui ne peut plus echouer n'est pas un
+    correctif -- chaque cas garde son issue dure ou son skip nomme.
+    """
+
+    class _Proc:
+        def __init__(self, returncode, stdout="", stderr=""):
+            self.returncode = returncode
+            self.stdout = stdout
+            self.stderr = stderr
+
+    def test_valid_json_passes_through(self):
+        out = _json_output_or_fail(
+            self._Proc(0, '{"scanned": 2}', ""))
+        assert out == {"scanned": 2}
+
+    def test_crash_marker_fails_hard_with_traceback(self):
+        """rc=2 + marqueur : echec dur, jamais un skip (fail-closed #17292.4)."""
+        proc = self._Proc(
+            2, "",
+            "Traceback (most recent call last):\n"
+            "ValueError: panne simulee\n"
+            "ERROR: echec inattendu, pas une decision de l'outil")
+        with pytest.raises(pytest.fail.Exception) as ei:
+            _json_output_or_fail(proc)
+        msg = str(ei.value)
+        assert "panne simulee" in msg, "le traceback n'est pas remonte"
+        assert "precondition" in msg
+
+    def test_named_inability_skips_with_motif(self):
+        proc = self._Proc(2, "", "ERROR: list_worktrees a echoue : git absent")
+        with pytest.raises(pytest.skip.Exception) as ei:
+            _json_output_or_fail(proc)
+        assert "git absent" in str(ei.value), "le motif nomme a disparu"
+
+    def test_unexpected_exit_reports_stderr(self):
+        proc = self._Proc(3, "", "ERROR diagnosing: motif du rc=3")
+        with pytest.raises(AssertionError) as ei:
+            _json_output_or_fail(proc)
+        assert "motif du rc=3" in str(ei.value)
+
+    def test_empty_stdout_reports_stderr_verbatim(self):
+        """Le cas fondateur : stdout vide, rc trompeur -- le stderr remonte."""
+        proc = self._Proc(1, "", "CauseError: la cause cherchee")
+        with pytest.raises(AssertionError) as ei:
+            _json_output_or_fail(proc)
+        msg = str(ei.value)
+        assert "la cause cherchee" in msg
+        assert "JSONDecodeError" not in msg
+
+    def test_non_json_stdout_with_rc0_reports_stderr(self):
+        """rc=0 + sortie non-JSON : contrat --json rompu, pas un parse muet."""
+        proc = self._Proc(0, "pas du json\n", "residu de stderr")
+        with pytest.raises(pytest.fail.Exception) as ei:
+            _json_output_or_fail(proc)
+        assert "residu de stderr" in str(ei.value)
+
+    def test_non_json_stdout_with_empty_stderr_names_it(self):
+        proc = self._Proc(0, "pas du json\n", "")
+        with pytest.raises(pytest.fail.Exception) as ei:
+            _json_output_or_fail(proc)
+        assert "(vide)" in str(ei.value), "un stderr vide doit etre nomme vide"
+
+    def test_every_e2e_json_site_uses_the_helper(self):
+        """L'invariant de propagation : plus AUCUN parse direct au pattern nu.
+
+        La garde est byte-ancree sur la forme exacte du pattern historique
+        (affectation du parse de ``proc.stdout`` sans le triage) : c'est elle
+        qu'un copier-coller reintroduirait, et ni le ``return`` du helper ni
+        les mentions en docstring ne la matchent. Un futur test E2E qui la
+        repaste rouvre le 3e mode de rouge exactement la ou le fix initial
+        ne l'avait ferme que pour un site sur trois.
+        """
+        source = Path(__file__).read_text(encoding="utf-8")
+        # Construit dynamiquement : le motif litteral vit dans CET assert et
+        # s'y matcherait lui-meme (garde auto-referente, mesurée au 1er run).
+        naked = "out = json.loads(proc." + "stdout)"
+        assert naked not in source, (
+            "un site E2E parse proc.stdout sans le triage "
+            "_json_output_or_fail -- voir #17292")
+
+
 class TestScanRootMultiFarms:
     """Maintenance#64 -- la cible du scan suit `--path` / le repo du cwd,
     sans regresser le repli schtasks (cwd hors repo -> repo du script).
@@ -2456,3 +2562,77 @@ class TestScanRootMultiFarms:
         expected = pmw._ancestor_repo_root(
             Path(pmw.__file__).resolve().parent)
         assert pmw.current_repo_root() == expected
+
+
+# ---------------------------------------------------------------------------
+# #20007 -- jonctions NTFS : predicat is_link_like + retrait sans suivre la cible
+# ---------------------------------------------------------------------------
+
+
+def _make_junction(link: Path, target: Path) -> None:
+    """Cree une jonction NTFS `link -> target`.
+
+    `mklink /J` ne demande aucun privilege (contrairement a un symlink, qui
+    exige Developer Mode ou une elevation) : c'est ce qui rend la jonction
+    courante pour partager un `node_modules` entre worktrees, et ce qui rend
+    le defaut #20007 atteignable sans configuration particuliere.
+    """
+    proc = subprocess.run(
+        ["cmd", "/c", "mklink", "/J", str(link), str(target)],
+        capture_output=True, text=True, check=False,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        pytest.skip(f"mklink indisponible : {(proc.stderr or '').strip()[:120]}")
+
+
+class TestIsLinkLike:
+    """Predicat pur, sans plateforme : il ne doit pas elargir la branche
+    `unlink` au-dela des liens."""
+
+    def test_plain_dir_file_and_missing_are_not_links(self, tmp_path):
+        d = tmp_path / "plain_dir"
+        d.mkdir()
+        f = tmp_path / "plain.txt"
+        f.write_text("x", encoding="utf-8")
+        assert pmw.is_link_like(d) is False
+        assert pmw.is_link_like(f) is False
+        assert pmw.is_link_like(tmp_path / "absent") is False
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="#20007 : jonction NTFS")
+class TestWindowsJunctionIsLinkLike:
+    def test_junction_is_seen_though_is_symlink_is_false(self, tmp_path):
+        """Le controle negatif qui fonde #20007 : le predicat d'origine ne
+        voit PAS une jonction -- et c'est precisement ce qui rendait le
+        defaut silencieux, la cible tombant dans la branche `is_dir()`."""
+        target = tmp_path / "real"
+        target.mkdir()
+        link = tmp_path / "node_modules"
+        _make_junction(link, target)
+
+        assert link.is_symlink() is False      # le predicat d'origine
+        assert os.path.islink(link) is False   # et son equivalent os.path
+        assert link.is_dir() is True           # d'ou la mauvaise branche
+        assert pmw.is_link_like(link) is True  # celui qui repond
+
+    def test_clean_removes_junction_and_spares_target(self, tmp_path):
+        """Le defaut mesure : `rmtree` leve, `ignore_errors=True` l'avale,
+        la jonction reste et `removed` la tait -- puis `git worktree remove`
+        echoue sur l'untracked restant (#14619)."""
+        target = tmp_path / "real"
+        target.mkdir()
+        (target / "marker.txt").write_text("x", encoding="utf-8")
+        link = tmp_path / "node_modules"
+        _make_junction(link, target)
+
+        wt = _make_status(path=str(tmp_path),
+                          untracked_paths=["node_modules/"])
+        removed = pmw.clean_tolerated_artifacts(wt)
+
+        assert "node_modules/" in removed, \
+            "la jonction doit etre retiree ET listee (#20007)"
+        assert not link.exists()
+        # Garde de surete : on retire le LIEN, jamais la cible.
+        assert target.is_dir(), "la cible de la jonction doit survivre"
+        assert (target / "marker.txt").read_text(encoding="utf-8") == "x"

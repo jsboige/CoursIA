@@ -10,6 +10,16 @@
 
 Composite framework combinant TrendStocks (75 %) avec AllWeather (25 %) via l'Algorithm Framework de QuantConnect. La composante tendance utilise SMA200+EMA20/EMA50 sur 15 large-caps (AAPL/MSFT/GOOGL/AMZN/NVDA/JPM/V/MA/UNH/JNJ/XOM/CVX/HD/PG/KO), AllWeather apporte la diversification statique (SPY 30 % / IEF 30 % / GLD 30 % / XLP 10 %).
 
+## Mesure QC Cloud (#19393, 2026-10-06)
+
+Les sections suivantes datent d'avant toute mesure cloud tracée. L'évaluation [#19393](https://github.com/jsboige/CoursIA/issues/19393) a rejoué ce code dans le projet [`TrendWeatherPointInTime`](../TrendWeatherPointInTime/), qui reprend le signal et la construction ; avec `universe=fixed`, c'est la règle de ce dossier.
+
+- **Le chiffre publié se reproduit sur sa fenêtre.** Sur 2015-01-01 → 2025-12-31, QC Cloud rend Sharpe 1,15, CAGR 27,1 % et pire baisse 27,6 %. La PSR est de 55,7 %, et non de 77,9 % comme dans le registre comparatif. L'hypothèse d'un Sharpe effectif de 0,6 à 0,9 formulée plus bas est réfutée.
+- **Le défaut est la liste.** Les 15 titres ont été choisis en 2026. Remplacés chaque mois par les 15 plus grandes capitalisations connues à cette date, la règle perd 0,18 de Sharpe sur 2018-01-01 → 2026-09-25 (1,05 contre 1,22, séries du rejeu en ombre, taux sans risque nul). NVDA, présent dans la liste dès 2018, porte 49 % du résultat des positions fermées de la poche tendance.
+- **Verdict préinscrit : `NO BEATS`.** Contre SPY détenu et le 60/40, les différences de Sharpe sont positives mais non significatives (p Holm 0,31), et négatives sur 2024 → 2026-09.
+
+Tableaux, diagnostics et traces : [README de l'évaluation](../TrendWeatherPointInTime/README.md#résultats).
+
 ## Mesures vérifiées (multi-source)
 
 > **Note honnête (#1621, drainage #9434)** : le dossier Framework_Composite_TrendWeather souffrait d'une **misattribution méthodologique « sweep comment »** : le README présentait « Sharpe 1.155, CAGR 27.4 %, MaxDD 27.7 % » comme « Métriques de backtest » alors que ces chiffres sont tirés du **bloc commentaire de `main.py:8-13`** (`Allocation sweep results (2015-2026)` v1.3/v1.4b/v1.4c/v1.4d/v1.4e — un sweep d'allocation **sans backtest tracé**) **et NON d'une exécution persistante** dans le dépôt : **pas de `lean-workspace/`, pas de `create_backtest` artifact**, pas de JSON output cloud. La stratégie a été ajoutée dans le commit `fa122ae7e` (2026-03-09, jsboige + Claude Opus) qui déclarait « Iterated from v1.0 (Sharpe 0.622) to v1.5 (Sharpe 1.155) » — la valeur 1.155 est donc plausiblement issue d'un backtest cloud **one-shot** au moment du commit initial, **non préservé** dans le dépôt. Le `quantbook.ipynb` (recherche locale Docker + yfinance) utilise un **défaut 50/50 différent** et **avertit explicitement** (cf. `iter4_research.py:176` : « Simulation Sharpe is typically 2-3x cloud Sharpe »). Les tableaux ci-dessous citent chaque source avec sa traçabilité explicite + un **drapeau SUSPECT overfit « sweep-comment »**.

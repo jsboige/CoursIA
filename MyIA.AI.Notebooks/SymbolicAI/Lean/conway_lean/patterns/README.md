@@ -19,9 +19,18 @@ Ces fichiers RLE correspondent aux théorèmes témoins échafaudés dans
 | Théorème pilier | Fichier RLE | Nombre de générations |
 |-----------------|-------------|------------------------|
 | `otca_metapixel_witness` | `otcametapixel.rle` | 35 328 |
-| `unitcell_witness` | `p5760unitlifecell.rle` (le plus proche disponible) | 4 096 |
+| `unitcell_initial_population` | `p5760unitlifecell.rle` | 5 760 (période mesurée) |
 | `gemini_witness` | `gemini.rle` | 33 699 586 |
 | `cpu_witness` | pas encore disponible | 1 048 576 |
+
+**Le pilier « Unit cell » et le fichier présent ne sont pas le même motif.**
+`Pillars.lean` visait l'UnitCell de Beluchenko (2011, période 4 096) ; l'archive
+ne contient que le p5760 de David Bell, retenu comme « le plus proche
+disponible ». La période 5 760 du fichier présent a été mesurée le 2026-10-09
+(tore 500 × 500, première répétition génération 11324 == 5564). Le motif de
+Beluchenko reste absent de l'archive ; l'attribution d'auteur du fichier
+présent (David Bell ici, Beluchenko 2011 dans `Pillars.lean`) n'est pas
+tranchée par la mesure.
 
 ## Téléchargement
 
