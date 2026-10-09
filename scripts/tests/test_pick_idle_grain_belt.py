@@ -1191,6 +1191,60 @@ def test_belt_probe_budget_is_bounded_and_fail_open_when_exhausted():
     assert state["budget_hit"] is True
 
 
+def test_belt_probe_budget_covers_the_settle_window():
+    """#19969 : le plafond de la boucle de service ne peut pas valoir la seule
+    fenetre de tete. ``settle_belt_head`` recoit deja ``window * 3 + 12``
+    sondes pour stabiliser la MEME region de la file -- deux compteurs
+    distincts, une seule region, donc un seul plafond reseau."""
+    for window in (4, 8, 12):
+        assert pig.belt_probe_budget(window) == window * 3 + 12
+        assert pig.belt_probe_budget(window) > window, (
+            "un budget egal a la fenetre ramene la fuite de #19969")
+
+
+def test_belt_head_denser_than_the_window_no_longer_serves_delivered_items():
+    """Regression #19969, jouee sur la valeur d'avant ET d'apres.
+
+    Mesure firsthand du rapport : sur un seul tirage, huit candidats servis
+    par le tapis etaient deja livres. Au-dela du budget, la sonde rendait
+    DELIVERED_SIGNAL_UNPROBED et le candidat partait en ``picks`` comme un
+    grain neuf -- fail-OPEN assume, mais sous-dimensionne."""
+    window = 8
+    delivered = set(range(19100, 19114))          # 14 livres, fenetre de 8
+    items = [_make_item(n, age_days=200 - i, idle=2, last=None)
+             for i, n in enumerate(sorted(delivered, reverse=True))]
+    fresh = _make_item(19300, age_days=1, idle=1, last=None)
+    pool = items + [fresh]
+
+    def probe(n, lane=None):
+        return n in delivered
+
+    # Budget d'AVANT (la fenetre seule) : des livres sont servis, et
+    # l'epuisement est rapporte -- le temoin du defaut.
+    old_picks, _, old_state = pig.belt_pick_with_replacements(
+        list(pool), _free_claims(pool), _belt_args(grains=20),
+        probe_budget=window, delivered_probe=probe,
+        # 3e surface #19913 : explicitement False. Sous l'ancien defaut
+        # (sonde reseau) ce test laissait `main` sonder le depot ; depuis
+        # les defauts inertes, l'omission se lit `failures` (None =
+        # non sondable) et brouille l'assertion -- l'injection rend la
+        # dependance visible.
+        merged_pr_probe=lambda n, lane=None: False)
+    leaked = [p["number"] for p in old_picks if p["number"] in delivered]
+    assert leaked, "temoin : l'ancien budget doit laisser fuiter des livres"
+    assert old_state["budget_hit"] is True
+
+    # Budget aligne : plus aucun livre servi, et plus d'epuisement.
+    new_picks, new_withheld, new_state = pig.belt_pick_with_replacements(
+        list(pool), _free_claims(pool), _belt_args(grains=20),
+        probe_budget=pig.belt_probe_budget(window), delivered_probe=probe,
+        merged_pr_probe=lambda n, lane=None: False)
+    assert [p["number"] for p in new_picks] == [19300]
+    assert {w[0]["number"] for w in new_withheld} == delivered
+    assert new_state["budget_hit"] is False
+    assert new_state["failures"] == []
+
+
 def test_has_delivered_signal_grammar_ignores_discursive_mentions(monkeypatch):
     """Controle negatif #19390, au niveau de la grammaire : une mention
     discursive porte la sous-chaine sans etre un en-tete de marqueur --

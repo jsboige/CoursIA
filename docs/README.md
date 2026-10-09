@@ -11,7 +11,7 @@ Fichiers présents directement à la racine du répertoire `docs/`. Triage initi
 | [README.md](README.md) (ce fichier) | **KEEP** | Index vivant — tous les `*.md` live sous `docs/` (hors `archive/`, figée à dessein) sont **atteignables** depuis cet index, directement ou via un index de sous-répertoire. L'atteignabilité est la bonne métrique : un doc cité par `lean/README.md` ou `ict/README.md` est dans l'index, pas absent. L'invariant n'est plus un compte écrit ici — ce chiffre avait dérivé de plus de soixante fichiers — mais la sortie de `python scripts/check_docs_index.py`, qui rend `exit 1` dès qu'un doc vivant devient inatteignable |
 | [index.qmd](index.qmd) | **KEEP + repair** | Portail Quarto miroir du `index.md` racine — 3 liens cassés détectés (lean/README.md → lean/coordinator-workflow.md ; ../parcours.qmd → ../../parcours.qmd ; ../COURSE_CATALOG.generated.md → ../../COURSE_CATALOG.generated.md) — corrigés c.805 |
 | [grothendieckian-lens.md](cadrage/grothendieckian-lens.md) | **KEEP** | Manifesto pédagogique transversal, durable, lié depuis `index.md` racine + docs/README.md ; aucune rot détectée |
-| [magnifica-humanitas-dialogue.md](magnifica-humanitas-dialogue.md) | **nouveau** (2026-08-17) | Dialogue avec l'encyclique *Magnifica Humanitas* (Léon XIV, 2026) — le programme du dépôt confronté, § par §, aux appels du texte (vérification comme bien commun, désarmement, choix social, écologie, éducation) ; tensions conservées. #11359 |
+| [magnifica-humanitas-dialogue.md](cadrage/magnifica-humanitas-dialogue.md) | **migré** (2026-10-08) | Dialogue avec l'encyclique *Magnifica Humanitas* (Léon XIV, 2026) — le programme du dépôt confronté, § par §, aux appels du texte (vérification comme bien commun, désarmement, choix social, écologie, éducation) ; tensions conservées. Migré de `docs/` vers `cadrage/` (#19283, tranche 1 résiduelle — communauté interlocutrice « Autorité morale »). #11359 |
 | [leiden-declaration-position.md](cadrage/leiden-declaration-position.md) | **nouveau** (2026-08-26) | Positionnement de CoursIA face à la Déclaration de Leiden sur l’IA et les mathématiques : principes confrontés aux artefacts, lacunes nommées, engagements mesurables et tensions conservées. #13105 |
 | [PARCOURS.md](PARCOURS.md) | **KEEP** | Schéma maturité 3 axes (éditorial / reproductibilité / revue scientifique) — décompose le `maturity` monolithique du catalogue (5 valeurs mélangées) en 3 préoccupations orthogonales auditables indépendamment. ACCEPTÉ 2026-07-23, pilote c.763 critères 1-3. Linked #8051. 110 lignes. Triage #7422 (c.911, po-2023) |
 | qc-research-issue-template.md | ~~**doublon** supprimé~~ (#19283) | Ébauche racinaire dupliquée par [qc/qc-research-issue-template.md](qc/qc-research-issue-template.md). La copie racine n'était référencée par aucun script ni lien entrant — supprimée pour réduire la surface de désynchronisation (la version `qc/` est l'unique source). EPIC #11698 inchangé |
@@ -247,7 +247,7 @@ Schémas canoniques de métadonnées par notebook : registre datasets (licence +
 | Fichier | Description |
 |---------|-------------|
 | [grothendieckian-lens.md](cadrage/grothendieckian-lens.md) | Clé de lecture grothendieckienne du dépôt (changement de représentation, certification A/B/C) |
-| [magnifica-humanitas-dialogue.md](magnifica-humanitas-dialogue.md) | Dialogue avec l'encyclique *Magnifica Humanitas* — le dépôt face aux appels de Léon XIV sur l'IA (convergences citées § par §, tensions gardées) |
+| [magnifica-humanitas-dialogue.md](cadrage/magnifica-humanitas-dialogue.md) | Dialogue avec l'encyclique *Magnifica Humanitas* — le dépôt face aux appels de Léon XIV sur l'IA (convergences citées § par §, tensions gardées) |
 | [leiden-declaration-position.md](cadrage/leiden-declaration-position.md) | Positionnement face à la Déclaration de Leiden — preuve, attribution, revue, autonomie et digestion mathématique reliées à des artefacts vérifiables |
 
 ## Internationalisation & Traduction (docs/i18n/, docs/translation/)
@@ -267,6 +267,7 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 
 | Fichier | Description |
 |---------|-------------|
+| [research/cartier-miller-p0-cartography.md](research/cartier-miller-p0-cartography.md) | Cartographie énoncés ↔ code de la distillation Cartier-Miller (#19452, modèle #17845). Brique P0 = lecture intégrale + pin du dépôt externe (`bbrhuft/Cartier-Miller-...` @ `37a9b72`). P1+ explicitement hors scope. Statut auteur « unrefereed draft, AI-assisted » auto-déclaré. |
 | [research/fallacy-detection-survey.md](research/fallacy-detection-survey.md) | Survey SOTA détection de sophismes + argument mining, fondant l'EPIC #10355 (Phase 1 livrable 1). 10 sources primaires (Logic/LogicClimate, MAFALDA 23 classes, IBM-Rank-30k, AraucariaDB), constat clé : taxonomie Argumentum 1408/8 familles écrase les datasets académiques 13-23 → mapping d'étiquettes = livrable de recherche à part entière |
 | [research/quant-prose-residual-machine-dep.md](research/quant-prose-residual-machine-dep.md) | Inventaire résiduel des timings machine-dépendants cités en prose (#10158) — scan `check_machine_dep_timing.py --all` sur 1008 notebooks. Recense ce qui reste après passage de l'organe, pour que le résidu soit une liste et non une impression |
 | [research/c1111-hoel-pearl-ict32-verdict.md](research/c1111-hoel-pearl-ict32-verdict.md) | Verdict de la confrontation Hoel/Pearl sur ICT-32 (c.1111, #19508, P6 #16620) : **ne tient pas** — substrat B3/S23 déterministe ($P(Y\mid X) = \delta$ distribution delta) → coïncidence triviale des deux lectures, DAG non-trivial absent ; ICT-33 (random soups, $\det = 0.334$) est le substrat où la confrontation redevient non-triviale |
@@ -357,7 +358,7 @@ Documents qui positionnent le dépôt face à un texte externe (déclarations, m
 | [cadrage/README.md](cadrage/README.md) | Index agrégateur (tableau par communauté, veilles, règles d'agrégation) — l'entrée canonique de la famille |
 | [cadrage/singapore-consensus-self-audit.md](cadrage/singapore-consensus-self-audit.md) | Audit du cluster selon les 10 principes agentic du Singapore Consensus (R11 companion, P1-P10, #16757) |
 
-Les autres documents de cadrage vivent au premier niveau de `docs/` (Grothendieckian lens, Leiden position, Magnifica Humanitas dialogue) — ils migreront dans `docs/cadrage/` par tranches successives (#17525).
+Migration par tranches close (#17525) : Grothendieck lens et Leiden position (tranche 2, #19022), puis Magnifica Humanitas dialogue (tranche 3, #19283) vivent désormais tous dans `docs/cadrage/` — l'index agrégateur est l'entrée canonique de la famille.
 
 ## CI & workflows (docs/ci/)
 
@@ -425,6 +426,17 @@ Documents conservés pour référence mais inactifs. Index complet : [archive/IN
 - [archive/genai/](archive/genai/README.md) — Infrastructure GenAI détaillée (16 fichiers)
 - [archive/suivis/genai-image/](archive/suivis/genai-image/INDEX.md) — Suivi ComfyUI/Qwen (8 fichiers + 4 phases)
 
+## Pérenne vs transient — où chercher quoi
+
+Critère de classement (#19283), opposable pour tout nouveau fichier : est **transient** un document dont la valeur meurt avec son contexte (suivi de chantier, état daté, compte rendu, plan exécuté) ; est **pérenne** un document qu'un lecteur d'ici un an ouvre encore pour comprendre le dépôt.
+
+| Ce que vous cherchez | Où |
+|---|---|
+| Une règle, une procédure, une référence durable | les foyers thématiques (`reference/`, `lean/`, `genai/`, `qc/`, `ci/`, `curriculum/`, …) |
+| Le positionnement du dépôt face à un texte externe | `cadrage/` (index par communauté interlocutrice) |
+| L'état d'un chantier à une date donnée | `transients/` (en-tête gelé, convention #14623) ou `suivis/` (transitions de série) |
+| Un document inactif, remplacé ou périmé | `archive/` (figée à dessein, jamais purge) |
+
 ## Carte rapide
 
 ```
@@ -449,7 +461,6 @@ docs/
   suivis/            Suivis de cycle (transitions de série)
   transients/        Rapports transients datés (en-tête gelé) — convention + organe (#14623)
   cadrage/           Documents épistémiques de cadrage — index par communauté interlocutrice (#17525)
-  grothendieckian-lens.md  Clé de lecture transversale du dépôt
   PARCOURS.md        Schéma maturité 3 axes (éditorial / reproductibilité / revue) — #8051
   archive/           Documents inactifs (ex-_archives)
 ```

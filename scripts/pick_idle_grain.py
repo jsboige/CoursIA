@@ -5484,6 +5484,24 @@ def write_prev_genre_csv(path: str, lane: str, genre: str, ts: str) -> None:
         pass
 
 
+def belt_probe_budget(belt_check_window: int) -> int:
+    """Plafond de sondes de livraison de la boucle de service (#19969).
+
+    Doit couvrir la MEME tete que ``settle_belt_head``, qui recoit deja
+    ``belt_check_window * 3 + 12`` sondes pour la stabiliser : deux compteurs
+    distincts (l'un avance la date de visite, l'autre decide du retrait), mais
+    une seule region de la file -- donc un seul plafond reseau raisonnable.
+
+    Tant que ce budget valait la seule fenetre (8 pour ``--grains`` par
+    defaut), toute tete portant plus de huit candidats deja livres faisait
+    rendre ``DELIVERED_SIGNAL_UNPROBED`` au-dela, et le tapis les servait
+    comme des grains neufs : mesure firsthand, huit candidats d'un seul
+    tirage, tous deja livres. Le plafond remonte, la doctrine ne change pas --
+    l'epuisement reste fail-OPEN et rapporte (``budget_hit``).
+    """
+    return belt_check_window * 3 + 12
+
+
 def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 delivered_probe=None, claims_probe=None,
                                 merged_pr_probe=None):
@@ -5495,14 +5513,15 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     ``main`` -- le fichier de test n'appelle ``main`` qu'a pool vide,
     convention etablie.
 
-    ``probe_budget`` (entier > 0) borne les sondes de livraison au cout de
-    la fenetre de tete, meme doctrine que ``check_claims`` : le tapis ne
-    paie une requete commentaire que pour les candidats qu'il considere
-    reellement. Epuisement = fail-OPEN (``DELIVERED_SIGNAL_UNPROBED``),
-    rapporte dans l'etat de retour. ``delivered_probe`` et
-    ``merged_pr_probe`` (tests) remplacent les sondes reseau ;
-    ``claims_probe`` (tests) remplace la verification au fil de l'eau des
-    items hors fenetre.
+    ``probe_budget`` (entier > 0) borne les sondes de livraison, meme
+    doctrine que ``check_claims`` : le tapis ne paie une requete commentaire
+    que pour les candidats qu'il considere reellement. Le caller lui passe
+    ``belt_probe_budget(belt_check_window)`` -- la valeur doit couvrir la tete
+    que la boucle peut servir, sinon les candidats au-dela sont servis sans
+    lecture (#19969). Epuisement = fail-OPEN (``DELIVERED_SIGNAL_UNPROBED``),
+    rapporte dans l'etat de retour. ``delivered_probe`` et ``merged_pr_probe``
+    (tests) remplacent les sondes reseau ; ``claims_probe`` (tests) remplace
+    la verification au fil de l'eau des items hors fenetre.
 
     Defauts INERTES (doctrine ``delivered_probe_inert`` / #19913) : un test
     qui appelle cette boucle sans injecter ses sondes n'emet AUCUNE requete
@@ -6187,7 +6206,7 @@ def main(argv: list[str] | None = None) -> int:
         # reseau par oubli.
         belt_picks, belt_withheld, belt_pick_state = (
             belt_pick_with_replacements(belt_pool, belt_claims, args,
-                                        belt_check_window,
+                                        belt_probe_budget(belt_check_window),
                                         delivered_probe=has_delivered_signal,
                                         merged_pr_probe=merged_pr_signal))
         belt_delivered_failures = belt_pick_state["failures"]
