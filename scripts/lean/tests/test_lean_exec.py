@@ -44,6 +44,7 @@ Ou via pytest :
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -1846,6 +1847,34 @@ def test_stop_yes_reports_failures_and_unknown_runs():
             "echec d'arret (1)")
 
 
+@pytest.mark.skipif(
+    os.name != "posix", reason="le zombie est une notion POSIX")
+def test_pid_alive_rejects_reaped_pending_zombie():
+    """Controle par faux POSITIF de ``pid_alive`` : un enfant tue mais PAS
+    encore reap par son parent est un zombie — il n'execute plus rien, ne
+    tient ni budget ni lease. L'ancien instrument (``os.kill(pid, 0)`` seul)
+    le declarait vivant pendant tout le poll de ``stop``, qui rendait alors
+    ``failed: pid survit au kill`` sur un kill REUSSI (#20016, state=Z
+    mesure sur toute la fenetre). Le parent ne reap pas ici, exactement
+    comme ``stop``, qui n'est jamais le parent du run arrete."""
+    proc = subprocess.Popen(
+        [PY, "-c", "import time; time.sleep(120)"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        start_new_session=True)
+    try:
+        assert le.pid_alive(proc.pid), "le sleeper doit vivre au depart"
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        for _ in range(30):  # <=3 s
+            if not le.pid_alive(proc.pid):
+                break
+            time.sleep(0.1)
+        assert not le.pid_alive(proc.pid), (
+            "un zombie (tue, non reap) n'est pas un processus vivant : "
+            "sinon stop --yes rend un echec sur un kill reussi")
+    finally:
+        proc.wait(timeout=10)
+
+
 def test_stop_cli_inspect_then_yes_kills_real_process():
     """Controle positif de bout en bout : un VRAI processus vivant, un run
     record honnete pointant dessus, inspect qui ne touche rien, --yes qui
@@ -1853,7 +1882,21 @@ def test_stop_cli_inspect_then_yes_kills_real_process():
     taskkill (Windows) / killpg (POSIX) qui travaille."""
     proc = subprocess.Popen(
         [PY, "-c", "import time; time.sleep(120)"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        # #20016/Hermes : sans session propre, le sleeper herite du pgid de
+        # pytest et le killpg de `stop --yes` tue la session de test
+        # elle-meme sous POSIX (reproduit : SIGKILL -9, deux fois). Miroir
+        # de la production, qui spawne toujours en session propre.
+        # Le parent ne reap pas de la duree du test (comme `stop`, qui n'est
+        # pas le parent) : ce controle exerce donc AUSSI la branche zombie de
+        # `pid_alive` — c'est ce qui rendait la jambe POSIX rouge.
+        start_new_session=True)
+    if os.name == "posix":
+        # Precondition du controle positif : si ceci tombe, le test
+        # redevient suicidaire sous POSIX (le killpg emporte pytest).
+        assert os.getpgid(proc.pid) != os.getpgid(0), (
+            "le sleeper doit vivre dans sa propre session, sinon le killpg "
+            "de stop --yes tue pytest (#20016)")
     try:
         with tempfile.TemporaryDirectory() as td:
             state = Path(td) / "state"

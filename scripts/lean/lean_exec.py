@@ -214,7 +214,8 @@ def trees_dir() -> Path:
 
 # ---------------------------------------------------------------------------
 # Liveness pid — reprise de tree_lock.py:51-74 (jamais os.kill(pid, 0) sur
-# Windows : CPython y TERMINE le processus cible ; probe ctypes a la place).
+# Windows : CPython y TERMINE le processus cible ; probe ctypes a la place),
+# avec UNE divergence deliberee cote POSIX : le zombie est mort (#20016).
 # ---------------------------------------------------------------------------
 
 _STILL_ACTIVE = 259
@@ -227,8 +228,32 @@ def host_id() -> str:
     return f"{platform.node()}/{os.name}"
 
 
+def _posix_state(pid: int) -> str | None:
+    """Champ 3 (etat) de ``/proc/<pid>/stat``, ou ``None`` si illisible.
+
+    Le nom du processus (champ 2) peut contenir espaces ET parentheses :
+    l'ancre est la DERNIERE parenthese fermante, l'etat suit. ``None``
+    couvre les deux cas ou l'appelant a deja sa reponse (procfs absent —
+    macOS — ou pid disparu entre les deux sondes)."""
+    try:
+        with open(f"/proc/{pid}/stat", "rb") as fh:
+            data = fh.read().decode("utf-8", "replace")
+    except OSError:
+        return None
+    close = data.rfind(")")
+    return data[close + 2] if 0 <= close < len(data) - 2 else None
+
+
 def pid_alive(pid: int) -> bool:
-    """True si ``pid`` est vivant sur CE host (tree_lock.py:51-74)."""
+    """True si ``pid`` est vivant sur CE host (tree_lock.py:51-74).
+
+    Divergence POSIX assumee vs le jumeau : ``os.kill(pid, 0)`` REUSSIT sur
+    un zombie (l'entree de table survit jusqu'au reap par le parent), et un
+    zombie ne vit pas — il n'execute plus rien, ne tient ni budget ni lease.
+    Sans cette lecture, ``stop`` rendait ``failed: pid survit au kill`` sur
+    un kill REUSSI (mesure sous POSIX : state=Z pendant tout le poll) et les
+    sweeps lisaient un run mort comme vivant. Procfs illisible -> on garde
+    le verdict de ``kill(pid, 0)`` (fail-safe vers « vivant »)."""
     if pid <= 0:
         return False
     if os.name == "nt":
@@ -250,7 +275,7 @@ def pid_alive(pid: int) -> bool:
         return False
     except PermissionError:
         return True
-    return True
+    return _posix_state(pid) != "Z"
 
 
 # ---------------------------------------------------------------------------
@@ -681,20 +706,12 @@ def queue_enter(
     run_id: str, cmd: list[str], caller: str, max_entries: int
 ) -> tuple[Path | None, str]:
     """Entre en file si elle n'est pas pleine. Les entrants morts du meme
-    host ne comptent pas (memes regles de peremption que les runs/). A
-    appeler SOUS le verrou d'admission."""
+    host ne comptent pas (memes regles de peremption que les runs/, et
+    UNE seule implementation : `_sweep_stale_queue`, #20016). A appeler
+    SOUS le verrou d'admission."""
     queue_dir().mkdir(parents=True, exist_ok=True)
-    occupied = 0
-    for path, entry in queue_entries():
-        if entry.get("host") == host_id() and not pid_alive(
-            int(entry.get("pid") or -1)
-        ):
-            try:
-                path.unlink()
-            except OSError:
-                pass
-            continue
-        occupied += 1
+    _sweep_stale_queue()
+    occupied = sum(1 for _ in queue_entries())
     if occupied >= max_entries:
         return None, f"{occupied} waiters >= queue_max {max_entries}"
     path = queue_dir() / f"{run_id}.json"
