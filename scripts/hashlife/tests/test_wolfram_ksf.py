@@ -127,11 +127,20 @@ class TestMeasureWolframKSF:
         assert rules_found == {0, 4, 30, 110}
 
 
-class TestWolframKSFDiscriminationVerdict:
-    """Verdict final de discrimination R30 vs R110."""
+class TestWolframKSFSaturationGuard:
+    """Sous le plancher, la mesure est declaree SATURATED (artefact de cadrage).
 
-    def test_ksf_is_nondiscriminant_on_c111(self):
-        """Sur c.111, R30 et R110 produisent KSF(W=32) identique -> NONDISCRIMINANT."""
+    Mesure 2026-10-09 : a n_cells = 64 les deux regles rendent ksf_mean = 8.000
+    (= n_cells / 8 octets). La (non)discrimination y est un artefact de cadrage
+    zlib, pas un resultat de contenu -- la version anterieure concluait
+    NONDISCRIMINANT sur cette zone saturee.
+    """
+
+    def test_min_n_cells_floor_value(self):
+        from k_trajectory import WOLFRAM_KSF_MIN_N_CELLS
+        assert WOLFRAM_KSF_MIN_N_CELLS == 512
+
+    def test_ksf_n64_is_saturated(self):
         from k_trajectory import (
             measure_wolfram_ksf,
             wolfram_ksf_verdict,
@@ -139,10 +148,62 @@ class TestWolframKSFDiscriminationVerdict:
         )
         results = measure_wolfram_ksf(n_cells=64, n_steps=64, seed=33)
         verdicts = wolfram_ksf_verdict(results)
+        assert all("WOLFRAM-SATURATED" in v for v in verdicts.values()), verdicts
         final = wolfram_ksf_discrimination_verdict(verdicts, results)
-        assert "WOLFRAM-KSF-NONDISCRIMINANT" in final, (
-            f"Verdict attendu NONDISCRIMINANT, observe : {final}"
+        assert "WOLFRAM-KSF-SATURATED" in final, f"observe : {final}"
+
+    def test_r30_saturation_is_the_framing_constant(self):
+        """A n_cells=64, R30 doit rendre ksf_mean == n_cells/8 (incompressible)."""
+        from k_trajectory import ksf_trajectory
+        results = ksf_trajectory(rule=30, n_cells=64, n_steps=64, seed=33,
+                                 context_sizes=(8, 32))
+        for r in results:
+            assert r["ksf_mean"] == pytest.approx(8.0, abs=1e-6), r
+
+
+class TestKsUnits:
+    """ksf_mean est en octets ; l'echelle comparable aux landmarks est bits/cellule."""
+
+    def test_bits_per_cell_is_eight_times_bytes_over_n(self):
+        from k_trajectory import ksf_trajectory
+        results = ksf_trajectory(rule=30, n_cells=64, n_steps=64, seed=33,
+                                 context_sizes=(8,))
+        r = results[0]
+        assert r["n_cells"] == 64
+        assert r["ksf_bits_per_cell"] == pytest.approx(r["ksf_mean"] * 8.0 / 64, abs=1e-3)
+
+    def test_r30_reaches_one_bit_per_cell(self):
+        """R30 incompressible : entropie maximale = 1 bit par cellule."""
+        from k_trajectory import ksf_trajectory
+        results = ksf_trajectory(rule=30, n_cells=64, n_steps=64, seed=33,
+                                 context_sizes=(32,))
+        assert results[0]["ksf_bits_per_cell"] == pytest.approx(1.0, abs=0.01)
+
+
+class TestCommittedCanonicalMeasurement:
+    """La mesure canonique committée (n=1024) porte le verdict corrige."""
+
+    def test_canonical_json_is_discriminant(self):
+        path = HASHLIFE_DIR / "wolfram_ksf_results.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        assert data["n_cells"] >= 512, "la mesure canonique doit etre hors saturation"
+        assert "WOLFRAM-KSF-DISCRIMINANT" in data["discrimination_verdict"], (
+            data["discrimination_verdict"]
         )
+        # Hors saturation, les 4 classes confirment leur landmark.
+        for name, verdict in data["per_class_verdicts"].items():
+            assert "-CONFIRMED" in verdict, f"{name}: {verdict}"
+
+    def test_canonical_r30_at_max_entropy_r110_compresses(self):
+        path = HASHLIFE_DIR / "wolfram_ksf_results.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        by_rule = {r["rule"]: r for r in data["results"] if r["W_context"] == 32}
+        assert by_rule[30]["ksf_bits_per_cell"] == pytest.approx(1.0, abs=0.01)
+        assert by_rule[110]["ksf_bits_per_cell"] < 0.6, by_rule[110]
+
+
+class TestWolframKSFDiscriminationVerdict:
+    """Verdict final de discrimination R30 vs R110."""
 
     def test_discrimination_verdict_format(self):
         """Cas INDETERMINATE si pas de R30 ou R110."""

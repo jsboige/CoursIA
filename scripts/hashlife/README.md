@@ -36,11 +36,11 @@ export PYTHONPATH=MyIA.AI.Notebooks/IIT/ICT-Series
 # Mesure 4 classes Wolframe (pli 4 LZ)
 python scripts/hashlife/k_trajectory.py --mode wolfram-4classes --n-cells 64 --n-steps 64
 
-# Mesure KSF 4 classes (pli 7)
-python scripts/hashlife/k_trajectory.py --mode wolfram-ksf --n-cells 64 --n-steps 64
+# Mesure KSF 4 classes (pli 7) -- n_cells >= 512 requis (sous ce plancher : SATURATED)
+python scripts/hashlife/k_trajectory.py --mode wolfram-ksf --all --n-cells 1024 --n-steps 1024
 
-# Sortie JSON
-python scripts/hashlife/k_trajectory.py --mode wolfram-ksf --n-cells 64 --n-steps 64 \
+# Sortie JSON (mesure canonique)
+python scripts/hashlife/k_trajectory.py --mode wolfram-ksf --all --n-cells 1024 --n-steps 1024 \
     --json-out scripts/hashlife/wolfram_ksf_results.json
 
 # Tests pytest
@@ -74,15 +74,18 @@ Mesure canonique `n_cells = 1024` (hors saturation) :
 
 ### Pli 7 (c.111) -- Kolmogorov structure function Rule 30 / Rule 110
 
-| Regle | Classe | KSF(W=32) | Verdict |
-|-------|--------|-----------|---------|
-| 0     | I      | 0.97      | CONFIRMED (boundary artifact) |
-| 4     | II     | 0.000     | CLASS-II-CONFIRMED |
-| 30    | III    | 8.000     | CLASS-III-DEVIATION (eleve, contexte n'aide pas) |
-| 110   | IV     | 8.000     | CLASS-IV-DEVIATION (identique a R30) |
+Mesure canonique n_cells = 1024, n_steps = 1024, seed = 33. KSF en **bits par cellule** (W = 32), la seule echelle commensurable aux landmarks :
 
-- Verdict final : `WOLFRAM-KSF-NONDISCRIMINANT` -- KSF(R30, W=32) = KSF(R110, W=32) = 8.000, delta 0.000.
-- Conclusion : KSF **confirme** le constat pli 4 : les complexites de trajectoire 1-D (LZ local, KSF conditionnelle) ne discriminent pas Turing-complet vs chaos a l'echelle n=64. Le discriminant adequate est **non-local** (Block decomposition, SAT-based minimal program, causal graph).
+| Regle | Classe | KSF(W=32) | Landmark | Verdict |
+|-------|--------|-----------|----------|---------|
+| 0     | I      | 0.008     | 0.000    | CLASS-I-CONFIRMED |
+| 4     | II     | 0.000     | 0.000    | CLASS-II-CONFIRMED |
+| 30    | III    | 1.000     | 0.850    | CLASS-III-CONFIRMED (entropie maximale) |
+| 110   | IV     | 0.376     | 0.200    | CLASS-IV-CONFIRMED (structure reguliere compressible) |
+
+- Verdict final : `WOLFRAM-KSF-DISCRIMINANT` -- KSF(R30, W=32) = 1.000, KSF(R110, W=32) = 0.376, delta = 0.624.
+- **Correction du 2026-10-09** : le verdict initial `WOLFRAM-KSF-NONDISCRIMINANT` (KSF = 8.000 pour les deux regles a n_cells = 64) etait un **artefact** a deux titres -- (a) `ksf_mean` etait rendu en **octets** et compare a des landmarks en **bits/cellule** (facteur 8 : 8.000 octets = 1.0 bit/cellule, l'entropie maximale, pas un plafond) ; (b) n_cells = 64 est **sous le plancher de cadrage zlib**, ou les deux regles rendent la meme constante. L'instrument declare desormais `WOLFRAM-SATURATED` sous `n_cells < 512`.
+- Conclusion : hors saturation, KSF **discrimine** et **retrouve les quatre landmarks**. Ce qui reste hors de portee de cette famille d'instruments n'est pas la separation chaos/structure (acquise) mais la mesure de la **Turing-completude** elle-meme, qui demande un instrument non-local (Block decomposition, SAT-based minimal program, causal graph).
 
 ## Origine
 

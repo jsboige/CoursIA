@@ -1094,7 +1094,13 @@ def cmd_wolfram_4classes(args: argparse.Namespace) -> int:
 # ---------------- Pli 7 : Kolmogorov structure function ----------------
 
 
-# Landmarks asymptotiques (KSF mesuree a grand contexte)
+# Plancher de mesure concluante : sous n_cells = 512, la fenetre packee
+# (W+1 etats) reste trop courte pour que zlib distingue contenu et cadrage,
+# et R30 / R110 rendent la meme constante. Mesure 2026-10-09 : a n_cells = 64
+# les deux regles rendent KSF = 8.000 (= n_cells / 8 octets, plancher exact).
+WOLFRAM_KSF_MIN_N_CELLS = 512
+
+# Landmarks asymptotiques (KSF mesuree a grand contexte), en BITS par cellule
 WOLFRAM_KSF_LANDMARKS = {
     0: ("I", "uniforme", 0.0),
     4: ("II", "periodique", 0.0),
@@ -1139,10 +1145,13 @@ def ksf_trajectory(
     K(W_t | W_{t-W'+1..t}) = len(LZ(pack_states([W_t-W'+1..t+1]))) -
     len(LZ(pack_states([W_t-W'+1..t]))), moyenne sur tous les pas t >= W'.
 
-    Une trajectoire **aleatoire** (entropie maximale) a KSF -> n_cells
-    (le contexte n'aide pas, le pas suivant a entropie totale).
-    Une trajectoire **structuree** a KSF -> 0 (le contexte suffit a
-    determiner le pas suivant).
+    Les valeurs rendues sont en **octets** ; l'echelle comparable aux
+    landmarks est `ksf_bits_per_cell` = ksf_mean * 8 / n_cells.
+
+    Une trajectoire **aleatoire** (entropie maximale) a ksf_mean -> n_cells/8
+    octets, soit 1.0 bit par cellule (le contexte n'aide pas, le pas suivant
+    a entropie totale). Une trajectoire **structuree** tend vers 0 bit par
+    cellule (le contexte suffit a determiner le pas suivant).
 
     Differenciation R30 (chaotique) vs R110 (Turing-complet) :
     - R30 est statistiquement uniforme -> KSF reste elevee, contexte n'aide
@@ -1199,10 +1208,15 @@ def ksf_trajectory(
         results.append({
             "trajectory": f"wolfram_R{rule}_n{n_cells}_seed{seed}",
             "rule": rule,
+            "n_cells": n_cells,
             "W_context": W,
             "ksf_mean": round(ksf_mean, 4),
             "ksf_min": ksf_min,
             "ksf_max": ksf_max,
+            # ksf_mean est en OCTETS ; les landmarks sont en BITS par cellule.
+            # Sans cette normalisation, R30 (incompressible) rend ksf_mean =
+            # n_cells/8, lu a tort comme des bits -- facteur 8.
+            "ksf_bits_per_cell": round(ksf_mean * 8.0 / n_cells, 4),
             "k_context_mean": round(k_ctx_mean, 4),
             "n_measurements": len(ksf_values),
         })
@@ -1240,9 +1254,16 @@ def wolfram_ksf_verdict(results: list[dict]) -> dict:
     mesure observee s'ecarte significativement du landmark, REFUTE ;
     sinon CONFIRME.
 
+    La comparaison se fait sur ksf_bits_per_cell (bits par cellule), la
+    seule echelle commensurable aux landmarks ci-dessous.
+
     Hypothese de discrimination R30 vs R110 (a falsifier ou confirmer) :
     - R30 KSF(W=32) ~ 0.85 (chaos, contexte n'aide pas).
     - R110 KSF(W=32) ~ 0.20 (Turing-complet, contexte capture gliders).
+
+    Sous n_cells < WOLFRAM_KSF_MIN_N_CELLS, la mesure est declaree
+    `WOLFRAM-SATURATED` : la fenetre packee est sous le plancher de cadrage
+    zlib et les deux regles rendent la meme constante.
     """
     verdicts = {}
     by_rule: dict[int, list[dict]] = {}
@@ -1257,9 +1278,19 @@ def wolfram_ksf_verdict(results: list[dict]) -> dict:
         klass, klass_name, expected_ksf = landmark
         runs_sorted = sorted(runs, key=lambda r: r["W_context"])
         max_run = runs_sorted[-1]
-        observed_ksf = max_run["ksf_mean"]
+        n_cells = max_run["n_cells"]
+        if n_cells < WOLFRAM_KSF_MIN_N_CELLS:
+            verdicts[f"KSF_R{rule}"] = (
+                f"WOLFRAM-SATURATED (n_cells={n_cells} < "
+                f"{WOLFRAM_KSF_MIN_N_CELLS} : la fenetre packee est sous le "
+                f"plancher de cadrage zlib, KSF mesure le cadrage, pas le contenu)"
+            )
+            continue
+        # Comparaison sur l'echelle normalisee (bits par cellule), seule
+        # comparable aux landmarks : ksf_mean est en octets.
+        observed_ksf = max_run["ksf_bits_per_cell"]
         delta = abs(observed_ksf - expected_ksf)
-        # Tolerance : 0.20 (fenetre pour bruit statistique)
+        # Tolerance : 0.20 bit/cellule (fenetre pour bruit statistique)
         if delta < 0.20:
             verdicts[f"KSF_R{rule}"] = (
                 f"CLASS-{klass}-CONFIRMED (KSF(W={max_run['W_context']}) = "
@@ -1296,18 +1327,26 @@ def wolfram_ksf_discrimination_verdict(verdicts: dict, results: list[dict]) -> s
     if r30 is None or r110 is None:
         return "WOLFRAM-KSF-INDETERMINATE (donnees R30/R110 W=32 manquantes)"
 
-    ksf_30 = r30["ksf_mean"]
-    ksf_110 = r110["ksf_mean"]
+    n_cells = r30["n_cells"]
+    if n_cells < WOLFRAM_KSF_MIN_N_CELLS:
+        return (
+            f"WOLFRAM-KSF-SATURATED (n_cells={n_cells} < "
+            f"{WOLFRAM_KSF_MIN_N_CELLS} : les deux regles rendent la meme "
+            f"constante de cadrage, toute (non)discrimination y est un artefact)"
+        )
+
+    ksf_30 = r30["ksf_bits_per_cell"]
+    ksf_110 = r110["ksf_bits_per_cell"]
     delta = abs(ksf_30 - ksf_110)
 
     if delta >= 0.10:
         return (
-            f"WOLFRAM-KSF-DISCRIMINANT (R30 KSF(W=32)={ksf_30:.3f}, "
-            f"R110 KSF(W=32)={ksf_110:.3f}, delta={delta:.3f} >= 0.10)"
+            f"WOLFRAM-KSF-DISCRIMINANT (R30 KSF(W=32)={ksf_30:.3f} bits/cellule, "
+            f"R110 KSF(W=32)={ksf_110:.3f} bits/cellule, delta={delta:.3f} >= 0.10)"
         )
     return (
-        f"WOLFRAM-KSF-NONDISCRIMINANT (R30 KSF(W=32)={ksf_30:.3f}, "
-        f"R110 KSF(W=32)={ksf_110:.3f}, delta={delta:.3f} < 0.10)"
+        f"WOLFRAM-KSF-NONDISCRIMINANT (R30 KSF(W=32)={ksf_30:.3f} bits/cellule, "
+        f"R110 KSF(W=32)={ksf_110:.3f} bits/cellule, delta={delta:.3f} < 0.10)"
     )
 
 
@@ -1323,8 +1362,8 @@ def cmd_wolfram_ksf(args: argparse.Namespace) -> int:
     )
 
     # Affichage par regle
-    print(f"{'Trajectory':35s}  {'Class':>5s}  {'W_ctx':>5s}  {'KSF_mean':>9s}  {'K_ctx':>7s}  {'n_meas':>7s}")
-    print("-" * 90)
+    print(f"{'Trajectory':35s}  {'Class':>5s}  {'W_ctx':>5s}  {'KSF_octets':>10s}  {'KSF_b/cell':>10s}  {'K_ctx':>8s}  {'n_meas':>7s}")
+    print("-" * 105)
     by_rule: dict[int, list[dict]] = {}
     for r in results:
         by_rule.setdefault(r["rule"], []).append(r)
@@ -1334,7 +1373,8 @@ def cmd_wolfram_ksf(args: argparse.Namespace) -> int:
         for run in runs:
             print(
                 f"{run['trajectory']:35s}  {klass_label:>5s}  {run['W_context']:>5d}  "
-                f"{run['ksf_mean']:>9.4f}  {run['k_context_mean']:>7.2f}  {run['n_measurements']:>7d}"
+                f"{run['ksf_mean']:>10.4f}  {run['ksf_bits_per_cell']:>10.4f}  "
+                f"{run['k_context_mean']:>8.2f}  {run['n_measurements']:>7d}"
             )
 
     # Verdicts
