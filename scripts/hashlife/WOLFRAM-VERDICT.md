@@ -1,66 +1,68 @@
 # WOLFRAM-VERDICT — mesure K_trajectory sur automates 1-D (Origami pli 3)
 
-**Issue** : #19766 pli 3 (sous-issue du pli 1 #19766 / EPIC Origami #19742)
-**PR** : (en cours d'ouverture, c.109)
-**Date** : 2026-10-08
+**Issue** : #19766 pli 3 (EPIC Origami #19742)
+**PR** : #19815
+**Date de la mesure corrigée** : 2026-10-09 (correction d'un artefact de cadrage sur la mesure initiale du 2026-10-08, réserve coordinateur sur la tête `6e3eb8f602`)
 **Lane** : myia-po-2024:CoursIA-2
-**Organe mobilise** : `ict.wolfram_step.wolfram_trajectory` (PR #19793, encore OPEN)
+**Organe mobilisé** : `ict.wolfram_step.wolfram_trajectory` (PR #19793)
 
 ## Question scientifique
 
-Le discriminant K_trajectory (T12 #18446, `scripts/hashlife/k_trajectory.py`) definit le quotient `K(t, W=2^n) / n` qui tend vers 0 pour les structures issues de la soupe (dissolution par fragilite) et reste borne inferieurement pour les programmes recursifs auto-entretenus.
+Le discriminant K_trajectory (T12 #18446, `scripts/hashlife/k_trajectory.py`) sépare en 2-D les trajectoires de soupe (collapse LZ, la dissolution vide la grille) des programmes auto-entretenus. **Ce discriminant tient-il cross-dimension sur les automates 1-D ?** Hypothèse initiale : Rule 30 (chaos, classe III) ~ fragile-LZ, Rule 110 (Turing-complet, classe IV) ~ incompressible.
 
-**Question** : ce discriminant tient-il **cross-dimension** ? Sur les automates 1-D de Wolfram (Rule 30 chaotique classe III, Rule 110 Turing-complet classe IV), K_trajectory distingue-t-il :
+## L'artefact corrigé : la zone saturée à n_cells = 64
 
-- Rule 30 (chaos) : attendu SOUP-FRAGILE-* (LZ compresse a toutes les echelles)
-- Rule 110 (Turing-complet) : attendu PROGRAM-CONFIRMED (les motifs auto-entretenus ne compressent pas)
+La mesure initiale (n_cells = 64, n_steps = 64, seed = 33) concluat « Rule 30 et Rule 110 donnent les mêmes K(t, W), donc K_trajectory ne détecte pas la Turing-complétude ». **Ce verdict était un artefact de cadrage zlib**, pas un résultat de contenu :
 
-L'hypothese etait : **les deux discriminations tiennent, et Rule 110 est moins compressible que Rule 30 a horizon long**.
+- à n_cells = 64, chaque état packé ne porte que **8 octets**, sous le plancher de cadrage zlib (~11 octets par fenêtre : en-tête + bloc stocké) ;
+- 8 octets aléatoires → 16 compressés ; 512 octets aléatoires → 523 = 512 + 11 (bloc stocké, non compressé) ;
+- les deux règles mesuraient donc **identiques à l'octet près** (1026 → 523, JSON n=64 historique) — l'instrument ne voyait que son propre cadrage ;
+- le ratio brut K(W_last)/K(W_first) est lui-même contaminé : pour un contenu incompressible, il vaut mécaniquement (c + 11/64)/(c + 11) avec c = n_cells/8 octets — Rule 30 à n=1024 rend ratio 0.922 = exactement cette arithmétique (K(W=1)/état = 139.00 = 128 + 11).
 
-## Resultat (falsifiable, mesure firsthand ce cycle)
+**Correctifs appliqués** : plancher de mesure concluante n_cells ≥ 512 (verdict `SATURATED` en dessous) ; le classement se fait sur la **fraction de compression** frac = K(t, W_last) / raw_packed_bytes, insensible au cadrage.
 
-**n_cells = 64, n_steps = 64, seed = 33** (canonique Wolframe 2002 ch. 2-3, Cook 2004) :
+## Résultat (falsifiable, remesuré firsthand)
 
-| Regle | K(t, W=1) | K(t, W=64) | Ratio | Verdict |
-|-------|-----------|------------|-------|---------|
-| Rule 30 (classe III, chaos)  | 1026 | 523 | 0.510 | **WOLFRAM-CHAOTIC-FRAGILE** (confirme) |
-| Rule 110 (classe IV, Turing) | 1026 | 523 | 0.510 | **WOLFRAM-TURING-REFUTED** (refute) |
+**n_cells = 1024, n_steps = 1024, seed = 33** (mesure canonique, `wolfram_results.json` committé) :
 
-**Cross-verdict** : `WOLFRAM-CROSS-DIMENSION-PARTIAL` (Rule 30 confirme, Rule 110 refute).
+| Règle | K(t, W=1) | K(t, W=64) | Ratio | **frac** | K(W=1)/état | Verdict |
+|-------|-----------|------------|-------|----------|-------------|---------|
+| Rule 30 (classe III, chaos) | 142 336 | 131 248 | 0.922 | **1.001** | 139.00 (= 128+11, plancher exact) | **CHAOTIC-INCOMPRESSIBLE** |
+| Rule 110 (classe IV, Turing) | 98 439 | 56 204 | 0.571 | **0.429** | 96.13 (< 139 : compression réelle dès W=1) | **TURING-STRUCTURED-COMPRESSIBLE** |
 
-**n_cells = 128, n_steps = 64, seed = 33** (resolution x2) :
+**n_cells = 512, n_steps = 512, seed = 33** (plancher de la zone concluante) :
 
-| Regle | K(t, W=1) | K(t, W=64) | Ratio | Verdict |
-|-------|-----------|------------|-------|---------|
-| Rule 30 | 3151 | 2070 | 0.657 | WOLFRAM-CHAOTIC-FRAGILE |
-| Rule 110 | 3171 | 1822 | 0.575 | WOLFRAM-TURING-REFUTED |
+| Règle | K(t, W=1) | K(t, W=64) | Ratio | frac | Verdict |
+|-------|-----------|------------|-------|------|---------|
+| Rule 30 | 38 400 | 32 856 | 0.856 | 1.003 | CHAOTIC-INCOMPRESSIBLE |
+| Rule 110 | 34 141 | 18 622 | 0.545 | 0.568 | TURING-STRUCTURED-COMPRESSIBLE |
 
-## Interpretation
+**Cross-verdict** : `WOLFRAM-CROSS-DIMENSION-REFUTED` — la discrimination entre les deux règles est **réelle dès n = 512**, mais dans le sens **inversé** de l'hypothèse.
 
-**Resultat central : K_trajectory (LZ fenetre) NE detecte PAS la Turing-completude de Rule 110.**
+Note de reproductibilité : le K exact de Rule 110 dépend du build zlib (~3 % d'écart mesuré entre postes sur K(W=1) : 101 299 / 98 439) ; les fractions de compression (0.43–0.44) et les verdicts sont stables à ce bruit près. Rule 30 est build-indépendant (blocs stockés : contenu + cadrage, rien d'autre).
 
-Les deux regles (Rule 30 chaotique, Rule 110 Turing-complete) produisent des trajectoires **LZ-compressibles a toutes les echelles mesurees**. La discrimination soup-vs-programme de la tranche 1 (T12 #18446) repose sur la detection de l'**entropie**, pas de l'**auto-entretien structurel** : un programme periodique court (blinker, pulsar) collapse aussi sous LZ (cf. mesure tranche 1, ratio brut = 0.077..0.154 vs soup 0.762..0.784).
+## Interprétation
 
-**Pourquoi Rule 110 collapse** : les automates 1-D, meme Turing-complets, produisent des motifs 1-D avec suffisamment de regularite locale pour que LZ77 (zlib level 6) trouve des repetitions. La Turing-completude se manifeste dans la **diversite des configurations accessibles** (le programme peut encoder n'importe quel calcul), pas dans la **compressibilite d'une trajectoire particuliere**.
+1. **L'instrument discrimine, l'hypothèse de direction était fausse.** La conclusion initiale « K_trajectory ne détecte pas la Turing-complétude de Rule 110 » était un artefact de taille. Hors saturation, Rule 30 et Rule 110 se séparent nettement (frac 1.001 vs 0.429 à n=1024).
+2. **Le chaos 1-D est incompressible.** Chaque fenêtre de Rule 30 reste au plafond d'entropie : zlib ne trouve rien (blocs stockés à toutes les échelles, K(W=1)/état = 128 + 11 exactement). Le collapse LZ observé sur la soupe 2-D vient de la **dissolution** (la grille se vide → régularité triviale), pas du chaos lui-même — il ne transfère pas au 1-D.
+3. **La structure Turing-complète est compressible.** La trajectoire de Rule 110 (fond périodique + particules/gliders) est **régulière**, donc LZ-compressible (57 % de sa taille brute dès n=512, 43 % à n=1024, compression réelle dès W=1 : 96.13 octets/état < 139). La Turing-complétude se manifeste dans la diversité des configurations accessibles, pas dans l'incompressibilité d'une trajectoire particulière.
+4. **Lecture épistémique** : K_trajectory mesure la **régularité LZ** d'une trajectoire, ni la classe de Wolfram, ni la Turing-complétude — la limite déjà documentée en tranche 1 (« l'instrument détecte l'entropie, pas l'auto-entretien ») se confirme cross-dimension, avec la direction mesurée ici.
 
-## Limites documentees
+## Limites documentées
 
-1. **LZ fenetre W=2^n ne detecte pas la Turing-completude 1-D**. Un instrument base sur la **complexite de regle** (Kolmogorov structure function, ou la longueur du programme minimal qui produit la trajectoire) discriminerait probablement Rule 30 de Rule 110, mais ce n'est pas l'instrument deploye dans cette tranche.
-
-2. **Horizon limite (n_steps=64)** : Rule 110 a besoin d'horizons tres longs pour faire emerger des structures auto-entretenues (gliders, collisions) ; avec 64 pas, ces structures ne sont pas encore developpees. Mesure avec n_steps=512 a tenter pour confirmer.
-
-3. **Comparaison 1-D vs 2-D** : le discriminant K_trajectory a ete concu pour des trajectoires 2-D (Game of Life soup). Sa portee au 1-D est validee pour la fragilite (Rule 30 = chaos = fragile, comme attendu) mais **pas** pour la Turing-completude (Rule 110 refute malgre la classe IV).
+1. **Horizon W = 64** : la fenêtre max reste 2^6 états ; à n_cells grand, W_last ≠ trajectoire entière. La fraction de compression est stable entre n=512 et n=1024 (0.57 → 0.43 pour Rule 110), mais un horizon W plus long reste à mesurer pour la convergence asymptotique.
+2. **Deux règles** : le corpus couvre Rule 30 / Rule 110 ; l'ajout de classes I (règle 0) et II (règle 4) fixerait le pôle « triviallement compressible » du gradient.
+3. **zlib comme approximateur de K** : borne supérieure atteignable, sensible au build (~3 % mesuré) ; un comptage de facteurs LZ76 éliminerait le cadrage résiduel — non requis pour la discrimination actuelle (0.43 vs 1.00).
 
 ## Verdict final tranche Origami pli 3
 
-**WOLFRAM-CROSS-DIMENSION-PARTIAL** :
-- L'extension au 1-D est mecaniquement valide (organe `ict.wolfram_step` invoque, format 1xN compatible avec `grid_to_packed`, mesure LZ fenetree executee sans erreur).
-- La detection de **fragilite chaotique** (Rule 30) tient cross-dimension 1-D / 2-D.
-- La detection d'**auto-entretien Turing-complet** (Rule 110) **ne tient pas** sur cet instrument ; un instrument alternatif est necessaire pour la discrimination fine.
+**WOLFRAM-CROSS-DIMENSION-REFUTED** (discrimination réelle, direction inversée) :
 
-**Suite Origami pli 5** : explorer un instrument de complexite de regle (Kolmogorov structure function, Block decomposition, ou SAT-based minimal program) pour discriminer Turing-complet vs chaos.
+- L'extension au 1-D est mécaniquement valide (organe `ict.wolfram_step` invoqué, format 1×N compatible, mesure exécutée sans erreur) et **l'instrument sépare les deux règles dès n_cells ≥ 512**.
+- L'hypothèse de transfert du discriminant soupe-2D est **réfutée dans sa direction** : chaos 1-D incompressible, structure Turing-complète compressible.
+- La zone n_cells = 64 est **saturée** (plancher de cadrage zlib) : verdict `SATURATED`/`INCONCLUSIVE` par l'instrument, toute discrimination y est un artefact.
 
-**Suite Origami pli 6** : extraire le graphe multiway d'un lake Lean et mesurer la profondeur moyenne + largeur de branchement -- un test direct de la Turing-completude via la theorie des systemes de reecriture.
+**Suites pli 5/pli 6 inchangées** : instrument de complexité de règle (Block decomposition, SAT-based minimal program) pour discriminer Turing-complet vs chaos ; graphe multiway Lean.
 
 ## Reproduction
 
@@ -68,25 +70,28 @@ Les deux regles (Rule 30 chaotique, Rule 110 Turing-complete) produisent des tra
 # Placer ict.wolfram_step dans sys.path (organe PR #19793)
 export PYTHONPATH=MyIA.AI.Notebooks/IIT/ICT-Series
 
-# Mesure Rule 30
-python scripts/hashlife/k_trajectory.py --mode wolfram --rule 30 --n-cells 64
+# Mesure canonique (cross-regles, n_cells=1024)
+python scripts/hashlife/k_trajectory.py --mode wolfram --all
 
-# Mesure cross-regles
-python scripts/hashlife/k_trajectory.py --mode wolfram --all --n-cells 128
+# Plancher de la zone concluante
+python scripts/hashlife/k_trajectory.py --mode wolfram --all --n-cells 512
+
+# Zone saturee (verdict SATURATED attendu)
+python scripts/hashlife/k_trajectory.py --mode wolfram --all --n-cells 64
 
 # Sortie JSON pour verification
-python scripts/hashlife/k_trajectory.py --mode wolfram --all --n-cells 64 --json-out wolfram_results.json
+python scripts/hashlife/k_trajectory.py --mode wolfram --all --json-out wolfram_results.json
 ```
 
-Les sorties JSON `scripts/hashlife/wolfram_results.json` sont versionnees pour reproductibilite.
+Les sorties JSON `scripts/hashlife/wolfram_results.json` (n=1024) sont versionnées pour reproductibilité. Tests : `python -m pytest scripts/hashlife/tests/test_wolfram_mode.py` (11 tests, dont le garde de saturation n=64 et la direction inversée à n=512).
 
 ## Sources
 
 - T12 #18446, tranche 3 #19227 : `scripts/hashlife/k_trajectory.py` instrument original (2-D)
-- PR #19793 : organe `ict.wolfram_step` (pli 2, OPEN)
+- PR #19793 : organe `ict.wolfram_step` (pli 2)
 - Cook 2004 : "Universality in Elementary Cellular Automata" (Rule 110 Turing-complet)
 - Wolfram 2002 *A New Kind of Science* chap. 2-3 (4 classes de comportement), 9-11 (Rule 110)
-- Crutchfield, "Between order and chaos" (Kolmogorov complexity applied to CA)
+- Zenil, Soler-Toscano et al. : compression-based complexity of CA (encadrement de l'approximation LZ de K)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 

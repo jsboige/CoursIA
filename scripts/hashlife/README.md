@@ -48,8 +48,8 @@ python -m pytest scripts/hashlife/tests/ -v
 - Verdict : **DISCRIMINANT** -- K_trajectory distingue seed `soupe` (K eleve) vs seed `structure` (K collapse).
 
 ### Pli 3 (c.109) -- K_trajectory Rule 30 / Rule 110
-- Rule 30 (chaotique) et Rule 110 (Turing-complet) **indistinguables** a l'echelle n=64.
-- Verdict : `WOLFRAM-III/IV-INDISTINGUABLE (faux negatif sur entropie)`.
+- Mesure initiale a `n_cells = 64` : R30 (chaos) et R110 (Turing-complet) rendaient le **meme** ratio (0.510) -- un artefact de cadrage zlib (`K(W=64) = 523 = 512 + 11`, identique pour les deux regles), pas un resultat sur les regles.
+- Hors saturation (`n_cells = 1024`) : R30 (frac 1.001, incompressible) et R110 (frac 0.429, compressible) **se separent**, dans le sens **inverse** de l'hypothese. Verdict : `WOLFRAM-CROSS-DIMENSION-REFUTED`. Cf. [WOLFRAM-VERDICT.md](WOLFRAM-VERDICT.md).
 
 ### Pli 4 (c.110) -- K_trajectory 4 classes Wolframe
 

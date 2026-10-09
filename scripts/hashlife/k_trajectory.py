@@ -32,15 +32,28 @@ Tranche Origami pli 3 (#19742, EPIC Origami Wolfram) ajoute :
    trajectoire via `ict.wolfram_step.wolfram_trajectory` (organe pli 2
    PR #19793) ; convertit chaque état 1-D en ligne 1×N compatible avec
    `grid_to_packed` ; mesure le discriminant cross-dimension 1-D / 2-D.
-   Le verdict attendu : Rule 30 ~ SOUP-FRAGILE-* (chaos LZ-compressible),
-   Rule 110 ~ PROGRAM-CONFIRMED (Turing-completude non-compressible).
+   Hypothèse initiale (invalidée par la mesure, cf. WOLFRAM-VERDICT.md) :
+   Rule 30 ~ fragile-LZ, Rule 110 ~ incompressible. Mesure à n_cells >= 512 :
+   l'instrument discrimine les deux règles, mais dans le sens INVERSÉ —
+   le chaos (Rule 30) est incompressible, la structure Turing-complète
+   (Rule 110) est compressible. À n_cells = 64 l'instrument est saturé par
+   le cadrage zlib (~11 octets/fenêtre vs 8 octets d'état) : toute
+   discrimination y est un artefact.
+
+Tranche Origami pli 4 (#19766, EPIC Origami Wolfram) ajoute :
+7. Mode `--mode wolfram-4classes` : mesure K_trajectory sur les 4 classes
+   canoniques de Wolframe (0/I, 4/II, 30/III, 110/IV). Même organe, même
+   plancher de mesure concluante (n_cells >= 512, cf. WOLFRAM_MIN_N_CELLS) :
+   sous ce seuil, `wolfram_class_verdict` rend SATURATED et le verdict
+   cross-classes est INCONCLUSIVE. Cf. WOLFRAM-VERDICT-CROSS-CLASSES.md.
 
 Usage :
     python scripts/hashlife/k_trajectory.py --mode measure
     python scripts/hashlife/k_trajectory.py --mode verify-corpus
     python scripts/hashlife/k_trajectory.py --mode bounds --json-in results.json
-    python scripts/hashlife/k_trajectory.py --mode wolfram --rule 30 --n-cells 64
+    python scripts/hashlife/k_trajectory.py --mode wolfram --rule 30 --n-cells 1024
     python scripts/hashlife/k_trajectory.py --mode wolfram --all
+    python scripts/hashlife/k_trajectory.py --mode wolfram-4classes --n-cells 1024
 """
 from __future__ import annotations
 
@@ -601,24 +614,42 @@ def measure_wolfram_trajectory(
         rule=rule, n_cells=n_cells, n_steps=n_steps, seed=seed, record_densities=False
     )
     traj_grid = wolfram_trajectory_to_grid(traj_1d)
-    return measure_k_trajectory(f"wolfram_R{rule}_n{n_cells}_seed{seed}", traj_grid, n_values)
+    rows = measure_k_trajectory(f"wolfram_R{rule}_n{n_cells}_seed{seed}", traj_grid, n_values)
+    # Metadonnees de cadrage pour un verdict sans artefact zlib : taille brute
+    # packee de la trajectoire et n_cells. Le verdict classe sur la fraction
+    # de compression K/raw (insensible au plancher de cadrage ~11 octets par
+    # fenetre), pas sur le ratio brut (cf. wolfram_verdict).
+    raw_packed_bytes = n_steps * ((n_cells + 7) // 8)
+    for r in rows:
+        r["n_cells"] = n_cells
+        r["raw_packed_bytes"] = raw_packed_bytes
+    return rows
 
 
-def measure_wolfram_corpus(n_cells: int = 64, n_steps: int = 64, seed: int = 33) -> list[dict]:
+def measure_wolfram_corpus(n_cells: int = 1024, n_steps: int | None = None, seed: int = 33) -> list[dict]:
     """Mesure K_trajectory sur le corpus Wolframe (Rule 30 + Rule 110).
 
     Règles canoniques :
-    - Rule 30 (classe III, chaotique) -- attendu SOUP-FRAGILE-*.
-    - Rule 110 (classe IV, Turing-complet) -- attendu PROGRAM-CONFIRMED
-      ou PROGRAM-WEAK (si la Turing-completude produit des motifs
-      périodiques détectables par LZ).
+    - Rule 30 (classe III, chaotique) -- mesuré INCOMPRESSIBLE à n >= 512 :
+      le chaos porte une entropie proche du maximum, aucune fenêtre ne
+      compresse (le collapse LZ de la soupe 2-D ne transfère pas au 1-D).
+    - Rule 110 (classe IV, Turing-complet) -- mesuré STRUCTURED-COMPRESSIBLE :
+      son fond périodique + particules sont réguliers, donc LZ-compressibles.
+      L'instrument mesure la régularité, pas la Turing-complétude.
 
     Paramètres :
-    - n_cells=64 : taille canonique Wolframe (Cook 2004, Wolfram 2002).
-    - n_steps=64 : 2^6 états, fenêtre max W=64 = la trajectoire entière.
+    - n_cells=1024 : taille canonique de la mesure committée
+      (wolfram_results.json). Plancher documenté : 512 -- en dessous,
+      chaque état packé tient sous le plancher de cadrage zlib (~11 octets
+      par fenêtre) et Rule 30 / Rule 110 mesurent identiques à l'octet
+      près (zone saturée, verdict SATURATED).
+    - n_steps : nombre d'états ; par défaut aligné sur n_cells par
+      cmd_wolfram (fenêtre max W=64).
     - seed=33 : reproductibilité (cf. PR #19793).
     """
     n_values = [0, 1, 2, 3, 4, 5, 6]  # W = 1, 2, 4, 8, 16, 32, 64 (borne n_steps)
+    if n_steps is None:
+        n_steps = n_cells
     all_results = []
     for rule in (30, 110):
         all_results.extend(
@@ -630,23 +661,30 @@ def measure_wolfram_corpus(n_cells: int = 64, n_steps: int = 64, seed: int = 33)
 
 
 def wolfram_verdict(results: list[dict]) -> dict:
-    """Verdict cross-règles pour les trajectoires Wolframe.
+    """Verdict cross-règles pour les trajectoires Wolframe, hors zone de saturation.
 
-    Pour chaque règle mesurée, calcule le ratio K(t, W_last) / K(t, W_first)
-    brut (cf. `verdict()` de la tranche 1) et classifie :
+    Le classement s'appuie sur la **fraction de compression** à la fenêtre max :
 
-    - WOLFRAM-CHAOTIC-FRAGILE (Rule 30 attendu) -- ratio < 0.7 : le chaos
-      est LZ-compressible à toutes les échelles (discriminant soupe).
-    - WOLFRAM-TURING-ENTRENED (Rule 110 attendu) -- ratio >= 0.95 : la
-      Turing-completude produit des motifs non-compressibles (auto-entretien).
-    - WOLFRAM-WEAK : ratio in [0.7, 0.95) -- indétermination, à creuser.
+        frac = K(t, W_last) / raw_packed_bytes
 
-    Le verdict cross-règles final :
-    - CONFIRMED : Rule 30 fragile + Rule 110 entrened (les deux confirment
-      l'hypothèse cross-dimension).
-    - PARTIAL : un seul des deux confirme.
-    - REFUTED : aucun des deux ne confirme (ou Rule 30 entrened, Rule 110
-      fragile -- le discriminant ne tient pas).
+    où raw_packed_bytes = n_steps * ceil(n_cells / 8) (métadonnée posée par
+    `measure_wolfram_trajectory`). Cette grandeur est insensible au plancher
+    de cadrage zlib (~11 octets par fenêtre : en-tête + bloc stocké), contrairement
+    au ratio brut K(W_last)/K(W_first) qui, pour un contenu incompressible,
+    vaut mécaniquement (c + 11/W_last) / (c + 11) avec c = ceil(n_cells/8) --
+    une constante de cadrage, pas un signal (mesuré : Rule 30 à n=1024 rend
+    ratio 0.922 = exactement cette arithmétique, K(W=1)/état = 139.00 = 128+11).
+
+    Zone de saturation : à n_cells = 64, chaque état packé ne porte que 8 octets,
+    sous le plancher de cadrage zlib ; Rule 30 et Rule 110 y mesurent identiques
+    à l'octet près (1026 -> 523 toutes les deux, cf. JSON n=64 historique).
+    Tout verdict de discrimination fabriqué à cette taille est un artefact.
+    Plancher documenté : n_cells >= 512 (64 octets d'état vs 11 de cadrage).
+
+    Classification à n_cells >= 512 (frac à W_last) :
+    - frac >= 0.98 : INCOMPRESSIBLE -- chaque fenêtre au plafond d'entropie.
+    - frac <= 0.70 : COMPRESSIBLE -- structure régulière trouvée par LZ.
+    - sinon : WEAK.
     """
     by_name: dict[str, list[dict]] = {}
     for r in results:
@@ -661,32 +699,47 @@ def wolfram_verdict(results: list[dict]) -> dict:
         first_k = runs_sorted[0]["k_trajectory"]
         last_k = runs_sorted[-1]["k_trajectory"]
         ratio = last_k / first_k if first_k > 0 else float("inf")
+        n_cells = runs_sorted[0].get("n_cells")
+        raw = runs_sorted[0].get("raw_packed_bytes")
+
+        if not n_cells or not raw:
+            verdicts[name] = f"INCONCLUSIVE (metadonnees de cadrage absentes, ratio {ratio:.3f})"
+            continue
+        content_bytes = (n_cells + 7) // 8
+        if n_cells < 512:
+            verdicts[name] = (
+                f"WOLFRAM-SATURATED (n_cells={n_cells} : {content_bytes} octets/etat sous le "
+                f"plancher de cadrage zlib ~11 octets/fenetre ; Rule 30 et Rule 110 y sont "
+                f"identiques a l'octet pres, ratio {ratio:.3f} non concluant ; n_cells >= 512 requis)"
+            )
+            continue
+        frac = last_k / raw
 
         if "R30" in name:
-            # Rule 30 = chaos = fragile (LZ collapse)
-            if ratio < 0.7:
-                verdicts[name] = f"WOLFRAM-CHAOTIC-FRAGILE (ratio {ratio:.3f} < 0.7)"
-            elif ratio < 0.95:
-                verdicts[name] = f"WOLFRAM-WEAK (ratio {ratio:.3f} in [0.7, 0.95))"
-            else:
+            if frac >= 0.98:
                 verdicts[name] = (
-                    f"WOLFRAM-CHAOTIC-REFUTED (ratio {ratio:.3f} >= 0.95 -- "
-                    "le chaos ne collapse pas, discriminant 1-D différent du 2-D)"
+                    f"WOLFRAM-CHAOTIC-INCOMPRESSIBLE (frac {frac:.3f} >= 0.98 -- le chaos "
+                    "classe III porte une entropie proche du maximum : aucune fenetre ne "
+                    "compresse ; le collapse LZ observe sur la soupe 2-D ne transfere pas au 1-D)"
                 )
+            elif frac <= 0.70:
+                verdicts[name] = f"WOLFRAM-CHAOTIC-COMPRESSIBLE (frac {frac:.3f} <= 0.70 -- collapse LZ du chaos, discriminant soupe)"
+            else:
+                verdicts[name] = f"WOLFRAM-WEAK (frac {frac:.3f} in (0.70, 0.98))"
         elif "R110" in name:
-            # Rule 110 = Turing-complet = non-compressible = entrened
-            if ratio >= 0.95:
-                verdicts[name] = f"WOLFRAM-TURING-ENTRENED (ratio {ratio:.3f} >= 0.95)"
-            elif ratio >= 0.7:
-                verdicts[name] = f"WOLFRAM-WEAK (ratio {ratio:.3f} in [0.7, 0.95))"
-            else:
+            if frac <= 0.70:
                 verdicts[name] = (
-                    f"WOLFRAM-TURING-REFUTED (ratio {ratio:.3f} < 0.7 -- "
-                    "la Turing-completude collapse sous LZ, l'auto-entretien "
-                    "1-D n'est pas detecte par K_trajectory)"
+                    f"WOLFRAM-TURING-STRUCTURED-COMPRESSIBLE (frac {frac:.3f} <= 0.70 -- la "
+                    "structure emergente de Rule 110 (fond periodique + particules) est "
+                    "reguliere, donc LZ-compressible ; l'instrument mesure la regularite, "
+                    "pas la Turing-completude)"
                 )
+            elif frac >= 0.98:
+                verdicts[name] = f"WOLFRAM-TURING-INCOMPRESSIBLE (frac {frac:.3f} >= 0.98 -- auto-entretien LZ-confirme)"
+            else:
+                verdicts[name] = f"WOLFRAM-WEAK (frac {frac:.3f} in (0.70, 0.98))"
         else:
-            verdicts[name] = f"INCONCLUSIVE (regle inconnue, ratio {ratio:.3f})"
+            verdicts[name] = f"INCONCLUSIVE (regle inconnue, frac {frac:.3f})"
 
     return verdicts
 
@@ -694,23 +747,30 @@ def wolfram_verdict(results: list[dict]) -> dict:
 def wolfram_cross_verdict(wv: dict) -> str:
     """Verdict final cross-règles Wolframe.
 
-    CONFIRMED : Rule 30 CHAOTIC-FRAGILE + Rule 110 TURING-ENTRENED.
-    PARTIAL : un seul des deux confirme.
-    REFUTED : aucun ne confirme, ou les deux sont inversés (Rule 30 entrened,
-              Rule 110 fragile).
+    Hypothèse d'origine (transfert du discriminant soupe 2-D au 1-D) :
+    CONFIRMED = Rule 30 CHAOTIC-COMPRESSIBLE + Rule 110 TURING-INCOMPRESSIBLE.
+
+    Mesure à n_cells >= 512 (seed 33) : la discrimination entre les deux règles
+    est RÉELLE, mais la direction est INVERSÉE -- Rule 30 (chaos) incompressible,
+    Rule 110 (Turing-complet) compressible -- d'où REFUTED. Une mesure en zone
+    saturée (n_cells < 512) rend INCONCLUSIVE : l'instrument n'y voit que son
+    propre cadrage.
     """
     r30_keys = [n for n in wv if "R30" in n]
     r110_keys = [n for n in wv if "R110" in n]
-    r30_fragile = any("CHAOTIC-FRAGILE" in wv[k] for k in r30_keys)
-    r110_entrened = any("TURING-ENTRENED" in wv[k] for k in r110_keys)
-    r30_entrened = any("CHAOTIC-REFUTED" in wv[k] for k in r30_keys)
-    r110_fragile = any("TURING-REFUTED" in wv[k] for k in r110_keys)
+    r30_compressible = any("CHAOTIC-COMPRESSIBLE" in wv[k] for k in r30_keys)
+    r110_incompressible = any("TURING-INCOMPRESSIBLE" in wv[k] for k in r110_keys)
+    r30_incompressible = any("CHAOTIC-INCOMPRESSIBLE" in wv[k] for k in r30_keys)
+    r110_compressible = any("STRUCTURED-COMPRESSIBLE" in wv[k] for k in r110_keys)
+    saturated = any("SATURATED" in wv[k] for k in r30_keys + r110_keys)
 
-    if r30_fragile and r110_entrened:
+    if saturated:
+        return "WOLFRAM-CROSS-DIMENSION-INCONCLUSIVE"
+    if r30_compressible and r110_incompressible:
         return "WOLFRAM-CROSS-DIMENSION-CONFIRMED"
-    if r30_entrened and r110_fragile:
-        return "WOLFRAM-CROSS-DIMENSION-REFUTED (les deux inverses)"
-    if r30_fragile or r110_entrened:
+    if r30_incompressible and r110_compressible:
+        return "WOLFRAM-CROSS-DIMENSION-REFUTED"
+    if r30_compressible or r110_incompressible:
         return "WOLFRAM-CROSS-DIMENSION-PARTIAL"
     return "WOLFRAM-CROSS-DIMENSION-INCONCLUSIVE"
 
@@ -764,7 +824,6 @@ def cmd_wolfram(args: argparse.Namespace) -> int:
         Path(args.json_out).write_text(json.dumps(out, indent=2, ensure_ascii=False))
         print(f"\n[INFO] resultats ecrits dans {args.json_out}")
     return 0
-
 
 
 """Extension pli 4 cross-classes pour k_trajectory.py -- a inserer apres wolfram_cross_verdict()."""
@@ -1029,7 +1088,8 @@ def cmd_wolfram_4classes(args: argparse.Namespace) -> int:
         }
         Path(args.json_out).write_text(json.dumps(out, indent=2, ensure_ascii=False))
         print(f"\n[INFO] resultats ecrits dans {args.json_out}")
-    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else "K_trajectory")
     parser.add_argument(
@@ -1057,8 +1117,9 @@ def main() -> int:
     parser.add_argument(
         "--n-cells",
         type=int,
-        default=64,
-        help="Mode wolfram : nombre de cellules de l'automate 1-D. Defaut: 64",
+        default=1024,
+        help="Mode wolfram : nombre de cellules de l'automate 1-D. Plancher de mesure "
+        "concluante : 512 (en dessous, cadrage zlib dominant, verdict SATURATED). Defaut: 1024",
     )
     parser.add_argument(
         "--seed",

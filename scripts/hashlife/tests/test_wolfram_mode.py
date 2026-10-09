@@ -5,7 +5,8 @@ Teste :
    avec grid_to_packed.
 2. `measure_wolfram_trajectory` : mesure K_trajectory sur Rule 30 et
    Rule 110 via l'organe ict.wolfram_step (PR #19793).
-3. `wolfram_verdict` : verdict par regle (CHAOTIC-FRAGILE / TURING-ENTRENED / REFUTED).
+3. `wolfram_verdict` : verdict par regle (SATURATED sous n_cells=512 ;
+   INCOMPRESSIBLE / STRUCTURED-COMPRESSIBLE / WEAK au-dessus).
 4. `wolfram_cross_verdict` : verdict final cross-regles.
 5. Mode `--json-in` round-trip : un JSON produit par --mode wolfram peut etre
    relu et verifier.
@@ -104,22 +105,52 @@ class TestMeasureWolframTrajectory:
 # Tests : verdicts
 # ---------------------------------------------------------------------------
 
-class TestWolframVerdict:
-    def test_rule_30_classified_fragile(self):
-        results = measure_wolfram_corpus(n_cells=64, n_steps=64, seed=33)
-        wv = wolfram_verdict(results)
-        # Rule 30 doit etre CHAOTIC-FRAGILE (LZ collapse le chaos)
-        assert any(
-            "R30" in name and "CHAOTIC-FRAGILE" in status
-            for name, status in wv.items()
-        ), f"Rule 30 should be CHAOTIC-FRAGILE, got: {wv}"
+# Mesures mise en cache par taille (chaque test reutilise le meme corpus).
+_CORPUS_CACHE: dict[int, list[dict]] = {}
 
-    def test_cross_verdict_is_partial(self):
-        # Resultat falsifiable mesure ce cycle : Rule 30 = CHAOTIC-FRAGILE,
-        # Rule 110 = TURING-REFUTED (LZ collapse Rule 110 aussi, contre la
-        # prediction de Turing-complet = non-compressible).
-        results = measure_wolfram_corpus(n_cells=64, n_steps=64, seed=33)
+
+def _corpus(n_cells: int) -> list[dict]:
+    if n_cells not in _CORPUS_CACHE:
+        _CORPUS_CACHE[n_cells] = measure_wolfram_corpus(
+            n_cells=n_cells, n_steps=n_cells, seed=33
+        )
+    return _CORPUS_CACHE[n_cells]
+
+
+class TestWolframVerdict:
+    def test_n64_is_saturated_artifact_zone(self):
+        # A n_cells=64, chaque etat packe (8 octets) est sous le plancher de
+        # cadrage zlib (~11 octets/fenetre) : Rule 30 et Rule 110 y mesurent
+        # identiques a l'octet pres. L'instrument doit refuser de discriminer
+        # (SATURATED / INCONCLUSIVE), pas fabriquer un verdict de cadrage.
+        results = _corpus(64)
         wv = wolfram_verdict(results)
+        assert all("SATURATED" in s for s in wv.values()), wv
+        assert wolfram_cross_verdict(wv) == "WOLFRAM-CROSS-DIMENSION-INCONCLUSIVE"
+
+    def test_rule_30_incompressible_at_512(self):
+        # Mesure falsifiable : le chaos classe III ne compresse pas -- chaque
+        # fenetre reste au plafond d'entropie (frac ~ 1.00, per-state K(W=1)
+        # = contenu + 11 = plancher de cadrage exact).
+        wv = wolfram_verdict(_corpus(512))
+        r30 = next(s for n, s in wv.items() if "R30" in n)
+        assert "CHAOTIC-INCOMPRESSIBLE" in r30, wv
+
+    def test_rule_110_structured_compressible_at_512(self):
+        # Mesure falsifiable : la structure emergente de Rule 110 (fond
+        # periodique + particules) est reguliere donc LZ-compressible
+        # (frac ~ 0.57 a n=512, ~ 0.43 a n=1024).
+        wv = wolfram_verdict(_corpus(512))
+        r110 = next(s for n, s in wv.items() if "R110" in n)
+        assert "STRUCTURED-COMPRESSIBLE" in r110, wv
+
+    def test_cross_verdict_is_refuted_inverted_at_512(self):
+        # Resultat falsifiable remesure : a n_cells >= 512 l'instrument
+        # discrimine les deux regles, mais dans le sens INVERSE de
+        # l'hypothese cross-dimension -- chaos incompressible, Turing-complet
+        # compressible. L'ancien verdict PARTIAL etait un artefact de cadrage
+        # a n=64 (les deux regles y sont identiques a l'octet pres).
+        wv = wolfram_verdict(_corpus(512))
         cross = wolfram_cross_verdict(wv)
         assert cross in {
             "WOLFRAM-CROSS-DIMENSION-CONFIRMED",
@@ -127,9 +158,9 @@ class TestWolframVerdict:
             "WOLFRAM-CROSS-DIMENSION-REFUTED",
             "WOLFRAM-CROSS-DIMENSION-INCONCLUSIVE",
         }
-        # Resultat attendu ce cycle : PARTIAL (Rule 30 confirme, Rule 110 refute)
-        assert cross == "WOLFRAM-CROSS-DIMENSION-PARTIAL", (
-            f"Expected PARTIAL but got {cross}. Le verdict courant est : {wv}"
+        assert cross == "WOLFRAM-CROSS-DIMENSION-REFUTED", (
+            f"Expected REFUTED (direction inversee) but got {cross}. "
+            f"Le verdict courant est : {wv}"
         )
 
 
@@ -170,3 +201,7 @@ class TestWolframJsonRoundtrip:
             "WOLFRAM-CROSS-DIMENSION-REFUTED",
             "WOLFRAM-CROSS-DIMENSION-INCONCLUSIVE",
         }
+        # A n_cells=64 (zone saturee), le CLI doit rendre SATURATED par regle
+        # et INCONCLUSIVE en cross -- aucune discrimination n'y est honnete.
+        assert all("SATURATED" in s for s in data["per_rule_verdicts"].values())
+        assert data["cross_verdict"] == "WOLFRAM-CROSS-DIMENSION-INCONCLUSIVE"

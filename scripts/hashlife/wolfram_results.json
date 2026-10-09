@@ -1,110 +1,138 @@
 {
   "results": [
     {
-      "trajectory": "wolfram_R30_n64_seed33",
+      "trajectory": "wolfram_R30_n1024_seed33",
       "n": 0,
       "W": 1,
-      "k_trajectory": 1026,
-      "k_over_n": 1026.0
+      "k_trajectory": 142336,
+      "k_over_n": 142336.0,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     },
     {
-      "trajectory": "wolfram_R30_n64_seed33",
+      "trajectory": "wolfram_R30_n1024_seed33",
       "n": 1,
       "W": 2,
-      "k_trajectory": 785,
-      "k_over_n": 785.0
+      "k_trajectory": 136704,
+      "k_over_n": 136704.0,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     },
     {
-      "trajectory": "wolfram_R30_n64_seed33",
+      "trajectory": "wolfram_R30_n1024_seed33",
       "n": 2,
       "W": 4,
-      "k_trajectory": 664,
-      "k_over_n": 332.0
+      "k_trajectory": 133888,
+      "k_over_n": 66944.0,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     },
     {
-      "trajectory": "wolfram_R30_n64_seed33",
+      "trajectory": "wolfram_R30_n1024_seed33",
       "n": 3,
       "W": 8,
-      "k_trajectory": 600,
-      "k_over_n": 200.0
+      "k_trajectory": 132480,
+      "k_over_n": 44160.0,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     },
     {
-      "trajectory": "wolfram_R30_n64_seed33",
+      "trajectory": "wolfram_R30_n1024_seed33",
       "n": 4,
       "W": 16,
-      "k_trajectory": 556,
-      "k_over_n": 139.0
+      "k_trajectory": 131776,
+      "k_over_n": 32944.0,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     },
     {
-      "trajectory": "wolfram_R30_n64_seed33",
+      "trajectory": "wolfram_R30_n1024_seed33",
       "n": 5,
       "W": 32,
-      "k_trajectory": 534,
-      "k_over_n": 106.8
+      "k_trajectory": 131424,
+      "k_over_n": 26284.8,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     },
     {
-      "trajectory": "wolfram_R30_n64_seed33",
+      "trajectory": "wolfram_R30_n1024_seed33",
       "n": 6,
       "W": 64,
-      "k_trajectory": 523,
-      "k_over_n": 87.16666666666667
+      "k_trajectory": 131248,
+      "k_over_n": 21874.666666666668,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     },
     {
-      "trajectory": "wolfram_R110_n64_seed33",
+      "trajectory": "wolfram_R110_n1024_seed33",
       "n": 0,
       "W": 1,
-      "k_trajectory": 1026,
-      "k_over_n": 1026.0
+      "k_trajectory": 98439,
+      "k_over_n": 98439.0,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     },
     {
-      "trajectory": "wolfram_R110_n64_seed33",
+      "trajectory": "wolfram_R110_n1024_seed33",
       "n": 1,
       "W": 2,
-      "k_trajectory": 790,
-      "k_over_n": 790.0
+      "k_trajectory": 87372,
+      "k_over_n": 87372.0,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     },
     {
-      "trajectory": "wolfram_R110_n64_seed33",
+      "trajectory": "wolfram_R110_n1024_seed33",
       "n": 2,
       "W": 4,
-      "k_trajectory": 676,
-      "k_over_n": 338.0
+      "k_trajectory": 80327,
+      "k_over_n": 40163.5,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     },
     {
-      "trajectory": "wolfram_R110_n64_seed33",
+      "trajectory": "wolfram_R110_n1024_seed33",
       "n": 3,
       "W": 8,
-      "k_trajectory": 600,
-      "k_over_n": 200.0
+      "k_trajectory": 74368,
+      "k_over_n": 24789.333333333332,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     },
     {
-      "trajectory": "wolfram_R110_n64_seed33",
+      "trajectory": "wolfram_R110_n1024_seed33",
       "n": 4,
       "W": 16,
-      "k_trajectory": 556,
-      "k_over_n": 139.0
+      "k_trajectory": 67402,
+      "k_over_n": 16850.5,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     },
     {
-      "trajectory": "wolfram_R110_n64_seed33",
+      "trajectory": "wolfram_R110_n1024_seed33",
       "n": 5,
       "W": 32,
-      "k_trajectory": 534,
-      "k_over_n": 106.8
+      "k_trajectory": 62172,
+      "k_over_n": 12434.4,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     },
     {
-      "trajectory": "wolfram_R110_n64_seed33",
+      "trajectory": "wolfram_R110_n1024_seed33",
       "n": 6,
       "W": 64,
-      "k_trajectory": 523,
-      "k_over_n": 87.16666666666667
+      "k_trajectory": 56204,
+      "k_over_n": 9367.333333333334,
+      "n_cells": 1024,
+      "raw_packed_bytes": 131072
     }
   ],
   "per_rule_verdicts": {
-    "wolfram_R30_n64_seed33": "WOLFRAM-CHAOTIC-FRAGILE (ratio 0.510 < 0.7)",
-    "wolfram_R110_n64_seed33": "WOLFRAM-TURING-REFUTED (ratio 0.510 < 0.7 -- la Turing-completude collapse sous LZ, l'auto-entretien 1-D n'est pas detecte par K_trajectory)"
+    "wolfram_R30_n1024_seed33": "WOLFRAM-CHAOTIC-INCOMPRESSIBLE (frac 1.001 >= 0.98 -- le chaos classe III porte une entropie proche du maximum : aucune fenetre ne compresse ; le collapse LZ observe sur la soupe 2-D ne transfere pas au 1-D)",
+    "wolfram_R110_n1024_seed33": "WOLFRAM-TURING-STRUCTURED-COMPRESSIBLE (frac 0.429 <= 0.70 -- la structure emergente de Rule 110 (fond periodique + particules) est reguliere, donc LZ-compressible ; l'instrument mesure la regularite, pas la Turing-completude)"
   },
-  "cross_verdict": "WOLFRAM-CROSS-DIMENSION-PARTIAL",
-  "n_cells": 64,
-  "n_steps": 64,
+  "cross_verdict": "WOLFRAM-CROSS-DIMENSION-REFUTED",
+  "n_cells": 1024,
+  "n_steps": 1024,
   "seed": 33
 }
