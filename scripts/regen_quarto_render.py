@@ -404,8 +404,12 @@ def build_render_block() -> list[str]:
     lines.append("    # README.md rendus en HTML (Axe C #4211). Liste explicite")
     lines.append("    # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7")
     lines.append("    # n'etend pas le glob **/README.md sur les sous-repertoires.")
+    # Aucun compteur n'est ecrit ici (ni pour les READMEs, ni pour les docs/*.md,
+    # ni pour les notebooks) : un total dans un fichier genere se perime a chaque
+    # merge, et deux PRs qui ajoutent des carnets en meme temps soit conflicent
+    # sur la ligne, soit fusionnent proprement un total FAUX (arbitrage ai-01
+    # #19901, cas mesure #19579). La liste triee qui suit fusionne sans conflit.
     lines.append("    # Archives et libs vendored EXCLUES (history interne, non pedagogique).")
-    lines.append(f"    # {len(readmes) + 1} READMEs (racine + arborescence, hors archives).")
     lines.append('    - "README.md"')
     for p in readmes:
         lines.append(f'    - "{p}"')
@@ -419,7 +423,6 @@ def build_render_block() -> list[str]:
         lines.append("    # docs/*.md rendus en HTML (issue #18422). Meme mecanisme")
         lines.append("    # que les READMEs : liste explicite (globs non etendus en Quarto 1.7).")
         lines.append("    # Garde `---` (#11451) appliquee auto-resorbante.")
-        lines.append(f"    # {len(docs_md)} docs/*.md (sous-arbre docs/, hors README/archive/hr).")
         for p in docs_md:
             lines.append(f'    - "{p}"')
     # Notebooks rendered to HTML (EPIC #10921, pilote Search #10923). Explicit
@@ -429,8 +432,7 @@ def build_render_block() -> list[str]:
         lines.append("    # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).")
         lines.append("    # Liste explicite — globs non etendus en Quarto 1.7.")
         lines.append("    # Execution desactivee + echo: true au niveau racine (_quarto.yml).")
-        lines.append(f"    # {len(notebooks)} notebooks (sous-arbres: "
-                     + ", ".join(sorted(NOTEBOOK_SUBTREES)) + ").")
+        lines.append("    # Sous-arbres rendus : " + ", ".join(sorted(NOTEBOOK_SUBTREES)) + ".")
         for p in notebooks:
             lines.append(f'    - "{p}"')
     return lines
