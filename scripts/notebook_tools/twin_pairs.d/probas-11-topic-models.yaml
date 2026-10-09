@@ -6,6 +6,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   known_differences:
+  - '2026-10-09 (myia-po-2027:CoursIA) #19782 : FUSION de main (91 commits) dans la branche -- l''attestation 0022 (2026-10-08) consignait un python_sha d''avant la fusion, perime par le merge ; l''enregistrement 0023 atteste l''etat FUSIONNE. Cote Python = celui de main (#17066 : python_sha c3d46427, identique a l''audit 0021 de po-2024 ; content_python_sha f2853d08). Cote C# = celui de #19782 (csharp_sha c7d58361 ; content_csharp_sha 4ef1a4ed). Le conflit de fusion ne portait que sur CETTE liste known_differences, purement additive -- les trois entrees sont conservees. Aucune cellule de code touchee par la fusion.'
   - '2026-10-08 (myia-po-2027:CoursIA) #19782 : csharp_sha rebaseline -- tranche 9/10/11 de
     l''audit #18556 cote C# : deux cellules markdown corrigees, aux index 51 et 45. Index 51
     (id 1cbe72e5) : teaser « Prochaine etape » retargete 11 -> 12, de Infer-10-Model-Selection
