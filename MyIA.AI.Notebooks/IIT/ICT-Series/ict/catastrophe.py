@@ -146,18 +146,28 @@ def cusp_polar_torus(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Cubique cuspidale ``y**2 = x**3`` en polaires, fermee sur le tore (R, r).
 
-    Parametrisation du **nœud torus** ``T(2, n_cusps)`` : on impose la
-    relation ``2 phi = n_cusps theta``. La cubique cuspidale vue comme
-    trace sur le tore de revolution (R, r) -- une courbe reguliere sur la
-    surface du tore -- se **ferme** quand theta fait **deux tours** autour
-    du petit axe (``theta = 4 pi``) et phi fait **n_cusps tours** autour du
-    grand axe (``phi = 2 pi n_cusps``). La projection de cette courbe sur le
-    plan du tore forme :
+    Parametrisation de la famille des **liens toriques** ``T(2, n_cusps)``
+    (par convention ``T(p, q)`` avec ``p = 2`` meridiens, ``q = n_cusps``
+    longitudinaux ; ``theta in [0, 4 pi]`` referme la courbe pour
+    ``n_cusps`` impair, et la parcourt **deux fois** sur la meme geometrie
+    pour ``n_cusps`` pair). La relation ``2 phi = n_cusps theta`` definit
+    l'image.
 
-    * ``n_cusps = 3`` -> **trèfle** ``3_1`` (noeud de Rolfsen, 3 croisements)
-    * ``n_cusps = 5`` -> **cinquefoil** ``5_1`` (5 croisements)
-    * ``n_cusps = 2`` -> **hopf link** (2 composantes fermees, ce n'est plus
-      un nœud au sens propre)
+    **Attention** : pour ``n_cusps`` **pair**, ``gcd(2, n_cusps) = 2`` et la
+    courbe ``T(2, n_cusps)`` est un **lien a 2 composantes** (link au sens
+    de Rolfsen), pas un noeud. La parametrisation ci-dessous ne trace
+    geometriquement qu'**une seule composante parcourue deux fois** : la
+    condition ``gamma(theta + 2 pi) = gamma(theta)`` est verifiee
+    numeriquement (``< 1e-14``) pour tout ``n_cusps`` pair (n = 2, 4, 6),
+    pas seulement ``n_cusps = 2``. Les cas ``n_cusps = 4, 6`` sont donc
+    **dégénérés** pour le compteur ``torus_knot_crossings`` au meme titre
+    que ``n_cusps = 2``.
+
+    Pour ``n_cusps`` **impair >= 3**, on obtient les **vrais nœuds toriques** :
+
+    * ``n_cusps = 3`` -> **trèfle** ``3_1`` (3 croisements minimaux)
+    * ``n_cusps = 5`` -> **cinquefoil** ``5_1`` (5 croisements minimaux)
+    * ``n_cusps = 7`` -> **septfoil** ``7_1`` (7 croisements minimaux)
 
     Renvoie les coordonnees 3D ``(x, y, z)`` d'un echantillonnage regulier
     de la trace sur la surface du tore.
@@ -175,21 +185,38 @@ def cusp_polar_torus(
 def torus_knot_crossings(
     n_cusps: int, n_samples: int = 2000, R: float = 2.0, r: float = 1.0
 ) -> int:
-    """Compte les auto-croisements de la trace cuspidale projetée sur (x, y).
+    """Compte les **auto-croisements de la projection (x, y)** de la trace.
 
-    Pour un noeud torus ``T(2, n)`` (n >= 3) ferme sur le tore de revolution,
-    la projection sur le plan equatorial (x, y) presente **``2 (n - 1)``**
-    croisements generiques (formule standard des noeuds torus :
-    ``p (q - 1)`` avec ``p = 2``, ``q = n``). Temoin negatif :
+    **ATTENTION** : ce compteur mesure le nombre d'auto-croisements de la
+    projection particuliere ``(x, y)`` livree par ``cusp_polar_torus``, ce
+    n'est **pas un invariant topologique** du nœud ou du lien. Il depend
+    du choix de projection (ici, l'axe du tore est projete orthogonalement
+    sur le plan equatorial). Un meme nœud peut avoir des projections
+    differentes avec des nombres de croisements tres differents ; le
+    **nombre minimal** de croisements sur toutes les projections (le
+    *crossing number*) est l'invariant topologique, et il faut un algorithme
+    dedie (e.g. SnapPy, Regina) pour le mesurer ou le borner.
+
+    **Portee de la formule** ``2 (n - 1)`` : la formule standard
+    ``p (q - 1)`` (avec ``p = 2``, ``q = n``) donne le nombre de croisements
+    **d'un diagramme regulier** du nœud torique ``T(2, n)``. **Elle n'est
+    verifiee numeriquement ici que pour ``n impair >= 3``** (noeuds
+    toriques reels : trèfle, cinquefoil, septfoil, etc.). Pour ``n pair``
+    (n = 2, 4, 6, ...), la parametrisation ``2 phi = n theta`` produit
+    ``gcd(2, n) = 2``, soit un **lien a 2 composantes**, et la
+    parametrisation ne trace qu'**une seule composante parcourue deux
+    fois** (cf. ``cusp_polar_torus``). Le compteur surcompte alors
+    massivement les paires : pour n_samples = 400 et ``n = 4`` on lit
+    ~403 croisements (au lieu des 6 attendus), pour ``n = 6`` ~407 (au
+    lieu de 10). Ce surcomptage est la **signature de la degenerescence**
+    de la parametrisation, pas un comptage legitime du link.
+
+    Temoin negatif (portee restreinte aux ``n impairs >= 3``) :
     ``n = 3`` -> **4 croisements** (trefle, pas 3 ni 5) ; ``n = 5`` ->
-    **8 croisements** (cinquefoil, pas 3 ni 10). C'est la signature qui
-    distingue trèfle et cinquefoil **sans interpreter visuellement** une
-    figure 3D -- le **témoin negatif** specifie par le ticket #19352.
-
-    Note : ``n_cusps = 2`` produit la **Hopf link** (2 composantes fermees,
-    ce n'est plus un nœud au sens propre) ; la detection sur une seule
-    boucle surcompte les paires, et la valeur rendue n'est pas une
-    signature de nœud. Pour ``n >= 3``, la formule tient.
+    **8 croisements** (cinquefoil, pas 3 ni 10) ; ``n = 7`` ->
+    **12 croisements**. C'est la signature qui distingue trèfle et
+    cinquefoil **sans interpreter visuellement** une figure 3D -- le
+    **témoin negatif** specifie par le ticket #19352.
 
     Algorithme : la trace forme une boucle fermee de ``n_samples`` segments,
     le segment ``i`` etant ``(i, (i+1) mod n_samples)``. On enumere les
