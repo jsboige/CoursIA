@@ -41,6 +41,12 @@ Exclusions: same as check_papermill_ratchet.py (notebooks in
 
 Exit code: 0 if no regression, 1 if at least one changed notebook
 shows kernel or float-format drift without a documented justification.
+
+A base that cannot be READ is not a drift: the organ refetches the base
+branch once and retries (#15553 partial-clone race), and if the base is
+still unreadable it fails closed with an ``[infrastructure][fail-closed]``
+marker and a JSON document carrying ``infrastructure_error`` -- so a
+reader of the rollup never mistakes it for a measured regression.
 """
 
 import argparse
@@ -82,8 +88,66 @@ def git_fail_closed(*args, cwd=None):
     return git(*args, cwd=cwd)
 
 
+class BaseUnreadable(RuntimeError):
+    """The base ref could not be read: an infrastructure failure, not a drift.
+
+    Kept distinct from a drift verdict on purpose. #15553 (fast-lane organ)
+    established that an organ failing to READ its input must not look, in the
+    rollup, like an organ that MEASURED a defect -- the reader would chase a
+    content regression that does not exist.
+    """
+
+
+def _refetch_base(base, cwd=None):
+    """Refetch a remote-tracking base into the exact ref merge-base reads.
+
+    Partial-clone race (#15553, measured here 2026-10-09): the checkout is
+    ``fetch-depth: 0`` + ``filter: blob:none``, and ``main`` can advance while
+    the job runs. The promisor then cannot resolve a commit that IS on the
+    remote, and ``merge-base`` fails with ``Could not read <sha>`` on an
+    otherwise readable base. An explicit refetch of the branch repairs the
+    race before the organ concludes anything.
+    """
+    prefix = "origin/"
+    if not base.startswith(prefix) or base == prefix:
+        return subprocess.CompletedProcess(
+            args=[], returncode=2, stdout="",
+            stderr=f"base ref non refetchable: {base!r}",
+        )
+    branch = base[len(prefix):]
+    refspec = f"+refs/heads/{branch}:refs/remotes/origin/{branch}"
+    return subprocess.run(
+        ["git", "fetch", "--refetch", "--filter=blob:none", "origin", refspec],
+        cwd=cwd, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+
+
 def resolve_base(base, cwd=None):
-    out = git("merge-base", base, "HEAD", cwd=cwd)
+    try:
+        out = git("merge-base", base, "HEAD", cwd=cwd)
+    except RuntimeError as first:
+        print("[kernel-drift][infrastructure] merge-base illisible contre "
+              f"{base}; refetch cible de la branche de base", file=sys.stderr)
+        fetched = _refetch_base(base, cwd=cwd)
+        if fetched.returncode != 0:
+            raise BaseUnreadable(
+                "[kernel-drift][infrastructure][fail-closed] base illisible; "
+                "aucun verdict de drift n'a ete calcule. "
+                f"base={base}; erreur initiale={first}; "
+                f"refetch={fetched.stderr.strip() or f'exit {fetched.returncode}'}"
+            ) from first
+        try:
+            out = git("merge-base", base, "HEAD", cwd=cwd)
+        except RuntimeError as second:
+            raise BaseUnreadable(
+                "[kernel-drift][infrastructure][fail-closed] base toujours "
+                "illisible apres refetch; aucun verdict de drift n'a ete "
+                f"calcule. base={base}; erreur initiale={first}; "
+                f"nouvelle lecture={second}"
+            ) from second
+        print("[kernel-drift][infrastructure] base reparee; merge-base relu "
+              "apres refetch cible", file=sys.stderr)
     return out.strip() if out.strip() else base
 
 
@@ -564,7 +628,14 @@ def canonical_env_hint(nb_path, root="."):
 
 def _run(args_obj):
     """Core logic shared between CLI and tests. Returns dict or prints."""
-    base = resolve_base(args_obj.base_ref)
+    try:
+        base = resolve_base(args_obj.base_ref)
+    except BaseUnreadable as e:
+        # Fail-closed, but WITHOUT the empty artifact that made this class
+        # indistinguishable from a drift verdict in the rollup: the JSON
+        # document is emitted and carries the cause.
+        return {"findings": [], "base": args_obj.base_ref,
+                "body_exempts": False, "infrastructure_error": str(e)}
     notebooks = changed_notebooks(base)
 
     # Defect 1: read PR body for exemption
@@ -659,6 +730,23 @@ def _run(args_obj):
     return {"findings": findings, "base": base, "body_exempts": body_exempts}
 
 
+def _infrastructure_rc(result, as_json):
+    """Emit the infrastructure artifact and return the fail-closed rc.
+
+    Returns None when the run measured something -- the caller then applies
+    the drift verdict as usual. The JSON document is printed even on failure:
+    an empty artifact is exactly what made this class unreadable in the
+    rollup (#15553 acceptance 2).
+    """
+    err = result.get("infrastructure_error")
+    if not err:
+        return None
+    if as_json:
+        print(json.dumps(result, indent=2))
+    print(err, file=sys.stderr)
+    return 1
+
+
 def main():
     """Defect 3 fix: parse argv once, build args, call _run ONCE."""
     p = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
@@ -670,6 +758,9 @@ def main():
     args = p.parse_args()
 
     result = _run(args)
+    infra_rc = _infrastructure_rc(result, args.json)
+    if infra_rc is not None:
+        return infra_rc
     findings = result["findings"]
 
     if args.json:
@@ -707,6 +798,9 @@ def main_with_args(argv):
     p.add_argument("--explain", action="store_true")
     args = p.parse_args(argv)
     result = _run(args)
+    infra_rc = _infrastructure_rc(result, args.json)
+    if infra_rc is not None:
+        return infra_rc
     findings = result["findings"]
     if args.json:
         # Single JSON emission
