@@ -1,8 +1,8 @@
 # Origami Wolfram — pli 9 : seed specialise R110 (0001000) + 3 complexites
 
 **Verdict corrige (2026-10-09)** : `WOLFRAM-SEED-TEST-DISCRIMINANT_FAIBLE` —
-9/12 cellules discriminantes, controle `random-dense` NONDISCRIMINANT sur les
-trois instruments.
+9 verdicts DISCRIMINANT sur 12, controle `random-dense` NONDISCRIMINANT sur
+les trois instruments.
 
 **Correction du 2026-10-09** (reserve c.6078963240) : le verdict initial,
 mesure a n=64 avec les instruments pre-correctif, **ne survivait pas a la
