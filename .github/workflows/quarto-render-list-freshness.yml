@@ -10,11 +10,23 @@ name: quarto-render-list-freshness
 # next merge.
 #
 # Detection reuses `scripts/regen_quarto_render.py --check` (exit 1 if the
-# render list is stale). The PR must regenerate `_quarto.yml` to be
-# mergeable. New drift between two PRs is not allowed -- the gate ensures
-# the file is consistent with the *PR head tree* at the moment the check
-# runs, and any later merge that lands a notebook on `main` will be caught
-# by the same gate on its own PR.
+# render list is stale).
+#
+# ADVISORY, not a hard gate (arbitration ai-01, review 5469480925 on #19901).
+# This guard reports drift; it does not require every notebook / README /
+# docs PR to commit a regeneration of `_quarto.yml`. It could not: it reads
+# the PR head tree and never sees the merge, so a PR that is fresh in
+# isolation can still leave `main` stale once a concurrent PR lands. Making
+# the check mandatory would have forced every content PR to edit the file
+# that conflicts, without ever guaranteeing freshness -- it would aggravate
+# the defect it was written to catch (#19579). The job name therefore
+# carries `advisory`, which is what `scripts/pr_gate.py` keys on.
+#
+# Freshness of `main` is owned by automation instead: `catalog-cron.yml`
+# regenerates `_quarto.yml` on its long-lived refresh branch, exactly as it
+# already does for the catalogue (the model ai-01 designated in the same
+# arbitration). This workflow's `push` trigger on `main` remains the
+# backstop that makes a stale `main` visible if the cron stops running.
 #
 # Scope : main-repo notebooks / docs / READMEs. Submodules are separate
 # repos with their own CI.
@@ -41,6 +53,10 @@ on:
       - 'docs/**/*.qmd'
       - '_quarto.yml'
       - 'scripts/regen_quarto_render.py'
+      # Le chemin du workflow lui-meme etait absent du declencheur push alors
+      # qu'il figurait cote pull_request (R3 de la revue NanoClaw, arbitrage
+      # ai-01 #19901) : editer ce fichier ne relancait donc pas la garde.
+      - '.github/workflows/quarto-render-list-freshness.yml'
   workflow_dispatch:
 
 # Annule les runs obsoletes (memes PR / push en rafale). Meme convention
@@ -54,7 +70,13 @@ permissions:
 
 jobs:
   check:
-    name: _quarto.yml render list freshness
+    # Le mot `advisory` est REQUIS dans le nom du job : `scripts/pr_gate.py`
+    # (regle 6, ADVISORY_MARKER) classe par SOUS-CHAINE du nom, et un job sans
+    # ce marqueur est agrege comme une porte dure. Sans lui, chaque PR qui
+    # touche un carnet, un README ou un docs/*.md devrait committer une
+    # regeneration de _quarto.yml -- exactement le conflit que ce garde veut
+    # eteindre (arbitrage ai-01, review 5469480925 sur #19901).
+    name: _quarto.yml render list freshness (advisory)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -72,7 +94,18 @@ jobs:
           # freshness concluait a tort "stale" (cf. run 37784951460).
           # Le fallback `github.ref` couvre les runs `push` et
           # `workflow_dispatch` (le `.head.sha` n'existe pas la).
-          fetch-depth: 0
+          #
+          # `fetch-depth: 1` + `repository` (R2 de la revue NanoClaw,
+          # arbitrage ai-01 #19901) : en profondeur 1, le SHA de tete n'est
+          # present que dans le depot qui le porte. Sur une PR de fork, le
+          # checkout par defaut interroge le depot de BASE, qui ne connait
+          # pas ce SHA -> `fatal: couldn't find remote ref`. Les deux
+          # changements vont ensemble : la profondeur reduit le fetch, le
+          # `repository` garantit que le SHA demande est celui du bon depot.
+          # `|| github.repository` couvre les runs `push` / `dispatch`, ou
+          # `pull_request` est absent.
+          fetch-depth: 1
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Check _quarto.yml render list against the PR head tree

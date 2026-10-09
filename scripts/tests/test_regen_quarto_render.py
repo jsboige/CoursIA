@@ -10,7 +10,8 @@ Covers:
 - ``LANDING_PAGES``: the explicit list is stable (landing pages are listed in
   a fixed order before the auto-generated README list).
 - ``build_render_block`` shape: emits a ``project:`` block with the expected
-  landing pages and a comment line with the README count.
+  landing pages, and **no** count line (counters were removed at ai-01's
+  arbitration on #19901 -- a total in a generated file rots at every merge).
 - ``argparse``: ``--check`` flag exists and prints a count message.
 
 Tests are CPU-only / hermetic: no ``git``, no I/O. ``replace_render_block`` is
@@ -20,6 +21,7 @@ checked-out repo.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -226,8 +228,14 @@ class TestBuildRenderBlockShape:
         block = rqr.build_render_block()
         assert '  render:' in block
 
-    def test_readme_count_in_comment(self, monkeypatch):
-        """The build function embeds a comment with the README count (root + N)."""
+    def test_no_count_in_generated_comment(self, monkeypatch):
+        """The build function must NOT embed a count of any of the three lists.
+
+        Removed at ai-01's arbitration on #19901 (review 5469480925). A total
+        written into the generated `_quarto.yml` rots at every merge: two PRs
+        adding notebooks either conflict on the line (#19579) or merge a FALSE
+        total cleanly, leaving `main` stale. The lists themselves stay.
+        """
         fake_readmes = [
             'MyIA.AI.Notebooks/README.md',
             'MyIA.AI.Notebooks/Search/README.md',
@@ -236,8 +244,13 @@ class TestBuildRenderBlockShape:
         monkeypatch.setattr(rqr, 'git_tracked_readmes', lambda: fake_readmes)
         block = rqr.build_render_block()
         block_str = '\n'.join(block)
-        # Comment says "<N+1> READMEs" where N is len of fake list (root + 3 = 4)
-        assert '4 READMEs' in block_str
+        # The counter that used to be emitted here (root + 3 = 4) is gone.
+        assert '4 READMEs' not in block_str
+        # ... and so are the two sibling counters, in whatever form they take.
+        assert not re.search(r'#\s*\d+\s+(?:READMEs|docs/\*\.md|notebooks)\b', block_str)
+        # The README entries themselves are still emitted (the list is not dropped).
+        for p in fake_readmes:
+            assert f'- "{p}"' in block_str
 
 
 # ---------------------------------------------------------------------------
