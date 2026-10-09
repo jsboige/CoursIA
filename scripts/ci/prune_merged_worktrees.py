@@ -87,11 +87,27 @@ Critères de retrait (cf issue #14195 acceptance) :
    6 h) fait REFUSER le retrait (`reason=recent_activity:<age>h`). Des que
    le marqueur depasse la fenetre, le worktree redevient retirable : le
    refus protege la phase de travail, il ne conserve rien indefiniment.
+8. **Contenu deja integre par PATCH-ID (#20067)** : la garde de contenu a
+   deux jambes, et elles ne sont pas equivalentes. La jambe **ascendance**
+   (predicat 5) exige que `HEAD` soit ancetre de `origin/main` ; la jambe
+   **patch-id** (`git cherry origin/main HEAD`) compare les patchs et voit
+   le cas que la premiere rate *par construction* : un **squash-merge**
+   dont la **branche distante a ete supprimee**. La tete n'est alors
+   atteignable depuis aucun ref, donc la resolution de PR rend `None` et
+   l'ascendance est fausse -- alors que le contenu, lui, est bien sur
+   `main`. Meme fenetre « agent vivant » qu'au point 7, meme forme
+   fail-closed : `minus > 0` (il y a un commit a comparer) **et**
+   `plus == 0` (aucun patch hors amont -- un seul `+` disqualifie), et une
+   lecture git en echec refuse. Le champ `content_on_main_by`
+   (`"ancestor"` / `"patch_id"`) porte la jambe dans le rapport, pour qu'un
+   squash-merge ne se lise pas comme une ascendance.
 
 Ancre PR : `gh pr list --state all --search "head:<branch>"` (autoritative,
 cf matrice a 4 ancres de `.claude/rules/git-workflow.md` §orphan-branch-scan).
 Ni `--is-ancestor` seul ni `commits/<oid>/pulls` ne suffisent : le premier
-rate les squash-merges, le second a des faux negatifs mesures.
+rate les squash-merges, le second a des faux negatifs mesures. C'est
+exactement ce trou que la seconde jambe du point 8 ferme, par le contenu
+plutot que par un ref.
 
 ## Observabilite des refus (#3895, roo-extensions)
 
@@ -198,6 +214,15 @@ Exit codes:
       `--ignored=matching`)
 - [x] Registre `blocking_untracked` (untracked non-ignores NON toleres)
       expose sur chaque verdict pour la decision humaine
+
+## Acceptance criteria (depuis #20067, jambe patch-id du contenu sur main)
+
+- [x] `git cherry` comme second temoin de contenu, fail-closed
+      (`minus > 0` **et** `plus == 0`, lecture en echec -> REFUSE)
+- [x] Meme fenetre « agent vivant » que le predicat d'ascendance (#18494)
+- [x] Jambe exposee dans le rapport (`content_on_main(ancestor|patch_id)`)
+- [x] Mesure avant cablage sur ferme reelle : 31 refuses de la classe,
+      6 franchissables, 25 restes refuses (2026-10-09, po-2025)
 """
 from __future__ import annotations
 
@@ -293,6 +318,13 @@ class WorktreeStatus:
     # Champ #17771 (additif) : REMOVE motive par contenu deja integre a
     # main (tete ancetre de origin/main), sans PR rattachable.
     content_on_main: bool = False
+    # Champ #20067 (additif) : *quelle jambe* a etabli `content_on_main`.
+    # "ancestor" = le predicat 5 (#17771, ascendance) ; "patch_id" = le
+    # predicat 6 (#20067, `git cherry`). Deux preuves differentes, et le
+    # rapport doit dire laquelle a tire -- un squash-merge n'est pas une
+    # ascendance, et confondre les deux rend la classe `no_pr_match`
+    # indiscernable d'une garde qui n'aurait rien franchi.
+    content_on_main_by: Optional[str] = None
     # Champ #3895 (additif) : lane proprietaire lue dans le marqueur
     # `.lane-owner` a la racine du worktree (None si absent). Attribue les
     # refus pour le rapport -- jamais une autorite de decision.
@@ -1014,6 +1046,37 @@ def head_is_ancestor_of_main(wt_path: str) -> bool:
     return proc.returncode == 0
 
 
+def content_delivered_by_patch_id(wt_path: str) -> Optional[tuple]:
+    """Teste le contenu livre par **patch-id**, pas par ascendance (#20067).
+
+    ``git cherry <main> HEAD`` compare chaque commit propre du worktree a
+    l'amont par *patch-id* : ``-`` = le patch est deja en amont, ``+`` = il
+    ne l'est pas. C'est la seule voie qui voit un **squash-merge** suivi de
+    la suppression de la branche -- cas ou plus aucun ref distant ne porte
+    la tete, donc ou le predicat d'ascendance (#17771) refuse *par
+    construction*, quelle que soit la realite du contenu.
+
+    Mesure du 2026-10-09 sur la ferme po-2025 (133 worktrees enregistres,
+    31 refuses en ``no_pr_match``/``detached_no_match``) : **6 franchissent**
+    (``minus>0, plus==0``) et **25 restent refuses** (un seul ``+``
+    disqualifie). La classe est donc franchissable *et* la garde reste
+    fail-closed.
+
+    Retourne ``(minus, plus)``, ou None si git echoue : l'appelant REFUSE
+    alors (echec de lecture = jamais un feu vert).
+    """
+    proc = run_git(wt_path, "cherry", MAIN_REF, "HEAD", check=False)
+    if proc.returncode != 0:
+        return None
+    minus = plus = 0
+    for line in proc.stdout.splitlines():
+        if line.startswith("-"):
+            minus += 1
+        elif line.startswith("+"):
+            plus += 1
+    return minus, plus
+
+
 def detached_head_is_on_main(wt_path: str) -> bool:
     """Vrai si le HEAD detache est un ancetre de ``origin/main`` (#17684).
 
@@ -1466,6 +1529,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
                 ignored_extra=info.get("ignored_extra", []),
                 lane_owner=info.get("lane_owner"),
                 content_on_main=True,
+                content_on_main_by="ancestor",
             )
         return WorktreeStatus(
             path=wt_path,
@@ -1484,7 +1548,71 @@ def diagnose_worktree(wt_path: str, current_path: str,
             ignored_extra=info.get("ignored_extra", []),
             lane_owner=info.get("lane_owner"),
             content_on_main=True,
+            content_on_main_by="ancestor",
         )
+
+    # Predicat 6 (#20067) : contenu deja integre a main **par patch-id**.
+    # Le predicat 5 teste l'ascendance ; il est structurellement aveugle au
+    # squash-merge suivi de la suppression de la branche -- la tete n'est
+    # alors atteignable depuis aucun ref distant, donc sa jambe
+    # « tete atteignable » est fausse par construction, quelle que soit la
+    # realite du contenu. `git cherry` compare les *patch-id*, ce qui voit
+    # ce cas.
+    #
+    # Fail-CLOSED, et c'est le point : `minus > 0` garantit qu'il y a un
+    # commit a comparer (un worktree vide n'ouvre pas le retrait), et
+    # `plus == 0` exige que **tous** les patchs soient en amont -- un seul
+    # `+` disqualifie. Mesure du 2026-10-09 : 6 franchissent sur 31 refuses
+    # de la classe, 25 restent refuses.
+    #
+    # Meme fenetre « agent vivant » que le predicat 5 (#18494) : le critere
+    # est un critere de CONTENU, pas d'ACTIVITE, et un agent vivant
+    # traverse necessairement l'etat « worktree propre, branche sans commit
+    # propre ». Comme le predicat 5, ce predicat est **branche-only** : un
+    # HEAD detache releve de `detached_head_is_on_main` (#17684).
+    if info["branch"]:
+        cherry = content_delivered_by_patch_id(wt_path)
+        if cherry is not None and cherry[0] > 0 and cherry[1] == 0:
+            age_h = recent_activity_age_hours(wt_path)
+            if age_h < activity_window_h:
+                return WorktreeStatus(
+                    path=wt_path,
+                    branch=info["branch"],
+                    is_current=False,
+                    pr_state=None,
+                    pr_number=None,
+                    pr_url=None,
+                    ahead_count=info["ahead_count"],
+                    has_source_dirty=info["has_source_dirty"],
+                    untracked_paths=info["untracked"],
+                    decision="REFUSE",
+                    refusal_reason=f"recent_activity:{age_h:.1f}h",
+                    has_submodules=info["has_submodules"],
+                    blocking_untracked=info.get("blocking_untracked", []),
+                    ignored_extra=info.get("ignored_extra", []),
+                    lane_owner=info.get("lane_owner"),
+                    content_on_main=True,
+                    content_on_main_by="patch_id",
+                )
+            return WorktreeStatus(
+                path=wt_path,
+                branch=info["branch"],
+                is_current=False,
+                pr_state=None,
+                pr_number=None,
+                pr_url=None,
+                ahead_count=info["ahead_count"],
+                has_source_dirty=info["has_source_dirty"],
+                untracked_paths=info["untracked"],
+                decision="REMOVE",
+                refusal_reason=None,
+                has_submodules=info["has_submodules"],
+                blocking_untracked=info.get("blocking_untracked", []),
+                ignored_extra=info.get("ignored_extra", []),
+                lane_owner=info.get("lane_owner"),
+                content_on_main=True,
+                content_on_main_by="patch_id",
+            )
 
     # Pas de PR trouvee : HEAD detaché sans correspondance, ou branche
     # non pushée qu'on ne peut pas relier. REFUSE conservatrice.
@@ -1679,7 +1807,12 @@ def render_text(
                 if s.pr_state and s.pr_number else ""
             )
             if not pr_part and s.content_on_main:
-                pr_part = "content_on_main"
+                # #20067 : dire *quelle jambe* a franchi la garde. Les deux
+                # preuves ne sont pas equivalentes -- une ascendance et un
+                # patch-id sont deux faits distincts, et un lecteur qui les
+                # confond lit un squash-merge comme une ascendance.
+                leg = s.content_on_main_by or "?"
+                pr_part = f"content_on_main({leg})"
             if dry_run:
                 lines.append(
                     f"WOULD REMOVE {s.path}  {branch_part}  {pr_part}"
