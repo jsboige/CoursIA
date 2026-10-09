@@ -1,16 +1,13 @@
 {
  "_comment": "Per-notebook finding counts of scan_md_hierarchy.py. BURNDOWN, do not grow: a PR that increases any count is flagged by scan-md-hierarchy-drift.yml (#11831). Regenerate (same commit as any scanner rule change) with: python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ --update-baseline",
- "generated_at": "2026-10-09T16:09:14+00:00",
- "total_findings": 44,
+ "generated_at": "2026-10-09T17:59:48+00:00",
+ "total_findings": 43,
  "notebooks": {
   "MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb": {
    "H1-DEEP": 1
   },
   "MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb": {
    "HINT-AS-HEADING": 4
-  },
-  "MyIA.AI.Notebooks/GenAI/Texte/22c_DSPy_Prompt_Compile.ipynb": {
-   "HINT-AS-HEADING": 1
   },
   "MyIA.AI.Notebooks/ML/ML.Net/ML-11-MatrixProfile-Multidim-Python.ipynb": {
    "H1-DEEP": 7,
