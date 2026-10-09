@@ -81,6 +81,20 @@ public sealed record MctsOptions
 /// <see cref="IGame{TState, TAction, TPlayer}"/> est ce qui rend ce basculement correct.
 /// </para>
 /// <para>
+/// <b>Deux formulations equivalentes, et pourquoi celle-ci.</b> L'organe natif Python
+/// de la serie Search (la classe <c>MCTS</c> de <c>App-14-ConnectFour-Adversarial.ipynb</c>)
+/// procede a l'inverse : il <i>negate a la retropropagation</i> -- chaque noeud accumule
+/// la valeur du point de vue de <b>son propre</b> joueur -- puis maximise partout. Les
+/// deux formes sont correctes et reposent sur le meme invariant de somme nulle ; elles
+/// different seulement par l'endroit ou la negation est posee. Celle retenue ici garde
+/// une perspective unique dans tout l'arbre, ce qui rend
+/// <see cref="AdversarialDecision{T}.Value"/> directement lisible comme le resultat
+/// attendu par l'appelant ; l'autre economise la bascule a chaque selection. Un lecteur
+/// qui connait la version Python ne doit donc pas conclure d'un <c>argmax</c> unique
+/// ici que l'un des deux moteurs est faux : ce qui serait faux est de garder la
+/// perspective racine <i>et</i> de maximiser partout.
+/// </para>
+/// <para>
 /// <b>Le coup rendu est le plus <i>visite</i>, pas le mieux note.</b> Un enfant a
 /// une seule visite et une moyenne parfaite est un coup de chance, pas un coup : la
 /// moyenne est le bon critere pour choisir ou <i>descendre</i>, la frequentation est
