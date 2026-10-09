@@ -139,12 +139,19 @@ FAST_LANE_NATIVE = "(garde natif de la voie rapide : aucun workflow d'origine)"
 
 # Le lot pilote (#11835) est exempte par declaration du controle d'identité
 # byte-a-byte (#19193). Raison mesuree le 2026-10-05 : les noms dans le
-# registre (ex `banner-guard`) ne sont pas alignes avec les noms des jobs
+# registre (ex `banner-guard`) n'etaient pas alignes avec les noms des jobs
 # dans les workflows d'origine (ex `probeAddresses banner guard`), car le
-# renommage byte-identique n'a pas ete fait a l'absorption (le workflow
-# d'origine porte encore le declencheur `pull_request`, c'est lui qui
-# bloque, la voie rapide observe -- cf PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF).
-# Le geste de bascule est porte par le programme #12567.
+# renommage byte-identique n'avait pas ete fait a l'absorption (le workflow
+# d'origine portait encore le declencheur `pull_request`, c'est lui qui
+# bloquait, la voie rapide observait).
+#
+# L'etape 3 de #12856 (programme #12567, cycle c.360 du 2026-10-09) a aligne
+# les NEUF gardes qui declenchaient encore sur `pull_request` : leur job est
+# renomme byte-identique et leur declencheur retire, donc ils sont desormais
+# VERIFIES et non plus exemptes. L'exemption declared ne couvre plus que le
+# residu : `solution-leak-guard`, `perimeter-review-guard`,
+# `self-hosted-runner-policy` -- dont le workflow d'origine ne declenche pas
+# sur `pull_request` (cf PILOT_SHADOW_SANS_EMETTEUR).
 PILOT_LOT_NAME = "PILOT"
 
 # Gardes absorbes apres #19168 dont le byte-a-byte-identique n'est pas encore
@@ -158,21 +165,31 @@ TRANCHE_ALIGNMENT_EN_COURS = frozenset({"TRANCHE10"})
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
 
 # ---------------------------------------------------------------------------
-# Motifs d'ombre declares du lot pilote (#19168). Trois situations distinctes,
+# Motifs d'ombre declares du lot pilote (#19168). Deux situations distinctes,
 # mesurees le 2026-10-05, et non des variantes de redaction :
-#   - 9 gardes ont un workflow d'origine qui declenche encore sur `pull_request` :
-#     le blocage est porte par lui, la voie rapide ne fait qu'observer ;
 #   - 2 gardes ont un workflow d'origine qui ne declenche PAS sur `pull_request`
 #     (`perimeter-review-guard`, `self-hosted-runner-policy`) : aucun autre
 #     emetteur de leur nom de check-run ;
 #   - 4 gardes sont natives de la voie rapide : meme situation, sans workflow.
-# Les deux dernieres categories sont donc inertes aujourd'hui -- c'est declare
-# ici, pas repare, parce que la bascule du lot pilote entier est le geste du
-# programme #12567 et non celui de cette correction.
-PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF = (
-    "phase pilote #11835 : le workflow d'origine porte encore le declencheur "
-    "`pull_request`, c'est lui qui bloque ; la voie rapide observe. Critere de "
-    "bascule : absorber quand ce declencheur sera retire (programme #12567).")
+# Ces deux categories sont donc inertes aujourd'hui -- c'est declare ici, pas
+# repare, parce que leur bascule n'apporte rien tant qu'aucun workflow ne porte
+# leur declencheur.
+#
+# La TROISIEME situation mesuree le 2026-10-05 -- « 9 gardes dont le workflow
+# d'origine declenche encore sur `pull_request` : le blocage est porte par lui,
+# la voie rapide ne fait qu'observer » -- a ete TRAITEE a l'etape 3 de #12856
+# (programme #12567, cycle c.360 du 2026-10-09). Pour ces neuf gardes, le
+# declencheur `pull_request` a ete retire du workflow source ET le `name:` du
+# job renomme byte-identique au `guard.name`, dans le meme commit. Le blocage
+# est desormais porte par la voie rapide, et le filet d'identite les VERIFIE
+# au lieu de les exempter (cf check_absorbed_check_run_identity.py).
+#
+# ATTENTION a la migration d'un garde absorbe : retirer le declencheur du
+# workflow source ne suffit pas, il faut aussi que les `paths` du registre
+# COUVRENT les `paths` du declencheur retire -- sinon le garde cesse d'etre
+# selectionne pour les fichiers qu'il surveillait (mesure c.360 :
+# `pip-leak-guard` ne portait que `**/*.ipynb`, ses trois autres motifs ont
+# ete ajoutes dans le meme commit).
 PILOT_SHADOW_SANS_EMETTEUR = (
     "phase pilote #11835, aucun autre emetteur : le workflow d'origine ne "
     "declenche pas sur `pull_request`. Critere de bascule : absorber, ou retirer "
@@ -227,7 +244,16 @@ PILOT: list[Guard] = [
     Guard(
         name="pip-leak-guard",
         source="pip-leak-guard.yml",
-        paths=NOTEBOOK_GLOBS,
+        # Les trois motifs non-ipynb viennent du declencheur `pull_request`
+        # retire a l'absorption (#12856 etape 3). Sans eux, une PR qui ne
+        # touche que le detecteur ne declencherait plus ce garde -- et le
+        # workflow source n'a AUCUN declencheur `push` pour rattraper, donc
+        # la couverture serait perdue et non deplacee.
+        paths=NOTEBOOK_GLOBS + [
+            ".github/workflows/pip-leak-guard.yml",
+            "scripts/notebook_tools/audit_pip_install_cells.py",
+            "scripts/notebook_tools/pip_leak_delta.py",
+        ],
         argv=["python", "scripts/notebook_tools/audit_pip_install_cells.py",
               "--scan-all", "--json"],
         delta_argv=["python", "scripts/notebook_tools/pip_leak_delta.py",
@@ -357,6 +383,11 @@ PILOT: list[Guard] = [
     Guard(
         name="readme-ipynb-links-guard",
         source="readme-ipynb-links-guard.yml",
+        # Parite de couverture avec le declencheur `pull_request` retire a
+        # l'absorption (#12856 etape 3) : les trois derniers motifs viennent de
+        # ce declencheur et ne sont pas couverts par son `push` residuel -- sans
+        # eux, une PR qui ne touche que le fixeur ou ses tests ne declencherait
+        # plus ce garde.
         paths=[
             "MyIA.AI.Notebooks/**/README.md",
             "MyIA.AI.Notebooks/**/*.ipynb",
@@ -364,6 +395,9 @@ PILOT: list[Guard] = [
             "scripts/regen_quarto_render.py",
             "scripts/notebook_tools/dump_readme_link_violations.py",
             "scripts/notebook_tools/diff_readme_link_violations.py",
+            "scripts/notebook_tools/fix_ipynb_links.py",
+            "scripts/notebook_tools/tests/test_fix_ipynb_links.py",
+            "scripts/notebook_tools/tests/test_readme_links_guard_workflow.py",
             ".github/workflows/readme-ipynb-links-guard.yml",
         ],
         # Le dump imprime le JSON sur stdout ; le moteur fast-lane le
