@@ -15,7 +15,7 @@ project:
     # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7
     # n'etend pas le glob **/README.md sur les sous-repertoires.
     # Archives et libs vendored EXCLUES (history interne, non pedagogique).
-    # 524 READMEs (racine + arborescence, hors archives).
+    # 528 READMEs (racine + arborescence, hors archives).
     - "README.md"
     - "docker-configurations/docs/README.md"
     - "docker-configurations/notebook-runner/README.md"
@@ -75,6 +75,7 @@ project:
     - "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/datasets/README.md"
     - "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/README.md"
     - "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/a0c_rerun/README.md"
+    - "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bakeoff_large/README.md"
     - "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bakeoff_small/README.md"
     - "MyIA.AI.Notebooks/GenAI/Audio/_archive/README.md"
     - "MyIA.AI.Notebooks/GenAI/Audio/README.md"
@@ -125,6 +126,7 @@ project:
     - "MyIA.AI.Notebooks/GenAI/README.md"
     - "MyIA.AI.Notebooks/GenAI/Security/README.md"
     - "MyIA.AI.Notebooks/GenAI/SemanticKernel/aspire-otel/README.md"
+    - "MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/README.md"
     - "MyIA.AI.Notebooks/GenAI/SemanticKernel/README.md"
     - "MyIA.AI.Notebooks/GenAI/shared/helpers/README.md"
     - "MyIA.AI.Notebooks/GenAI/Texte/LLMs-Locaux-Serving/README.md"
@@ -313,6 +315,7 @@ project:
     - "MyIA.AI.Notebooks/QuantConnect/projects/HAR-RV-Kelly/README.md"
     - "MyIA.AI.Notebooks/QuantConnect/projects/HighBookToMarketFScore-QC/README.md"
     - "MyIA.AI.Notebooks/QuantConnect/projects/HMM-KMeans-Voting/README.md"
+    - "MyIA.AI.Notebooks/QuantConnect/projects/IchimokuEnergySector-QC/README.md"
     - "MyIA.AI.Notebooks/QuantConnect/projects/InverseVolatility-Rank/README.md"
     - "MyIA.AI.Notebooks/QuantConnect/projects/LeveragedETFMomentum-QC/README.md"
     - "MyIA.AI.Notebooks/QuantConnect/projects/LongShortHarvest-QC/README.md"
@@ -389,6 +392,7 @@ project:
     - "MyIA.AI.Notebooks/QuantConnect/projects/TrendFilteredMeanReversion/README.md"
     - "MyIA.AI.Notebooks/QuantConnect/projects/TrendStocks-Alpha/README.md"
     - "MyIA.AI.Notebooks/QuantConnect/projects/TrendStocksLite/README.md"
+    - "MyIA.AI.Notebooks/QuantConnect/projects/TrendWeatherPointInTime/README.md"
     - "MyIA.AI.Notebooks/QuantConnect/projects/TurnOfMonth/README.md"
     - "MyIA.AI.Notebooks/QuantConnect/projects/VIX-TermStructure/README.md"
     - "MyIA.AI.Notebooks/QuantConnect/projects/Vol-Ensemble-Conservative/README.md"
@@ -543,7 +547,7 @@ project:
     # docs/*.md rendus en HTML (issue #18422). Meme mecanisme
     # que les READMEs : liste explicite (globs non etendus en Quarto 1.7).
     # Garde `---` (#11451) appliquee auto-resorbante.
-    # 163 docs/*.md (sous-arbre docs/, hors README/archive/hr).
+    # 171 docs/*.md (sous-arbre docs/, hors README/archive/hr).
     - "docs/audit/workflow-path-filters/latest.md"
     - "docs/cadrage/aima-armature.md"
     - "docs/cadrage/data-policy.md"
@@ -552,6 +556,7 @@ project:
     - "docs/ci/scripts-tests-triage.md"
     - "docs/ci/self-hosted-runners.md"
     - "docs/ci/slow-lane.md"
+    - "docs/coordination/gpu-reservation.md"
     - "docs/curriculum/aima-walk-competences.md"
     - "docs/curriculum/genai-rush.md"
     - "docs/curriculum/genai.md"
@@ -564,6 +569,7 @@ project:
     - "docs/dotnet/net11-toub-digest.md"
     - "docs/genai/audio-embed-pattern.md"
     - "docs/genai/audio-fading-remediation.md"
+    - "docs/genai/audio-onset-chunk-detection.md"
     - "docs/genai/decision-models.md"
     - "docs/genai/genai-services.md"
     - "docs/genai/model-mapping-openai.md"
@@ -638,6 +644,7 @@ project:
     - "docs/ml/tsad-benchmark-flaws.md"
     - "docs/notebook-metadata/cost-matrix.md"
     - "docs/notebook-metadata/DATASET_REGISTRY.md"
+    - "docs/qc/19863-fine-fundamental-vidage-diagnostic.md"
     - "docs/qc/qc-research-issue-template.md"
     - "docs/qc/qc-research-notebook-memory.md"
     - "docs/qc/qc-strategy-analyzer-memory.md"
@@ -646,6 +653,7 @@ project:
     - "docs/reference/accent-cure-defense-in-depth.md"
     - "docs/reference/adk-migration-2-eval.md"
     - "docs/reference/agent-cloud-agnosticisme.md"
+    - "docs/reference/agentic-engines-deep-eval.md"
     - "docs/reference/anti-regression-detail.md"
     - "docs/reference/architecture_mcp_roo.md"
     - "docs/reference/arxiv-attributions.md"
@@ -696,10 +704,14 @@ project:
     - "docs/reference/tricephale-circulation.md"
     - "docs/reference/user-blocker-signaling-detail.md"
     - "docs/reference/wsl-kernels-detail.md"
+    - "docs/research/c1111-hoel-pearl-ict32-verdict.md"
+    - "docs/research/cartier-miller-p0-cartography.md"
+    - "docs/research/cartier-miller-p1-elliptic-prefix.md"
     - "docs/research/cartier-miller-p1-plus-results.md"
     - "docs/research/cartier-miller-p1-plus-scoping.md"
     - "docs/research/fallacy-detection-survey.md"
     - "docs/research/quant-prose-residual-machine-dep.md"
+    - "docs/research/slide-agents-marptoslidev-scoping.md"
     - "docs/test-fixtures/md-table-guard/fixture-17306.md"
     - "docs/transients/2026-07-23-audit-sampling-protocol.md"
     - "docs/transients/2026-08-10-variation-genre-census.md"
@@ -710,7 +722,7 @@ project:
     # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).
     # Liste explicite — globs non etendus en Quarto 1.7.
     # Execution desactivee + echo: true au niveau racine (_quarto.yml).
-    # 1493 notebooks (sous-arbres: MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/Complexity/, MyIA.AI.Notebooks/Compression/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/Security/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/NLP/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/QuantConnect/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/).
+    # 1505 notebooks (sous-arbres: MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/Complexity/, MyIA.AI.Notebooks/Compression/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/Security/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/NLP/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/QuantConnect/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/).
     - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb"
@@ -728,6 +740,7 @@ project:
     - "MyIA.AI.Notebooks/Complexity/Complexity-04d-Secretaire-Matroidal-Python.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling.ipynb"
+    - "MyIA.AI.Notebooks/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-07-KolmogorovBornee-Sequences-Python.ipynb"
     - "MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb"
@@ -849,6 +862,7 @@ project:
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-4-Environment-Validation.ipynb"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-5-ComfyUI-Local-Test.ipynb"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-6-Local-Docker-Deployment.ipynb"
+    - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-7-Terminal-Long-Runs.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-3-Basic-Audio-Operations.ipynb"
@@ -1160,6 +1174,7 @@ project:
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-23-PersonaCatastrophe-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL-Python.ipynb"
+    - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25b-StratificationInterTailles-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-26-SignalingConvention-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-27-SymbolInvention-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-28-CollectiveAdoption-Python.ipynb"
@@ -1187,6 +1202,7 @@ project:
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46-Strate7-FreeCoordinates-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47-PainAxisDistillation-Python.ipynb"
+    - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47b-PainAxisInstrument-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance.ipynb"
@@ -1355,6 +1371,7 @@ project:
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-03-Actuarial-Credibility.ipynb"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-04-Ruine-Lundberg.ipynb"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb"
+    - "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-00-PearlLadder-Intro-Python.ipynb"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb"
@@ -1403,6 +1420,7 @@ project:
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-7-Skills-IRT.ipynb"
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-8-TrueSkill.ipynb"
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-9-Classification.ipynb"
+    - "MyIA.AI.Notebooks/Probas/Probas-KLS-Concentration.ipynb"
     - "MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb"
     - "MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb"
     - "MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb"
@@ -1921,6 +1939,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean_en.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-08-Ramsey-VdW.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique_en.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb"
@@ -1993,6 +2012,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-36-Structures-Finies-MUH-Lean.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-37-Capstone-Serre100.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-38-Capstone-Geometry-Lean-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/01-corps-finis-borne-hasse.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/02-valeurs-zeta-multiples-finies.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/03-cohomologie-cech-espaces-finis.ipynb"
