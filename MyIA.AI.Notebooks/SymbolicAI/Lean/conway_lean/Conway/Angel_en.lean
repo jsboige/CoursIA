@@ -15,7 +15,7 @@ arXiv:0706.2817 p.1) — wording quoted from the archived
 `2007 - Gacs - The Angel Wins.pdf` in the shared bibliography. The
 paper does not give a specific numeric power.
 
-Bibliography archived under `G:\Mon Drive\MyIA\IA\Bibliography IA\GameTheory\`:
+Bibliography archived under `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\`:
 - `2007 - Gacs - The Angel Wins.pdf` (arXiv:0706.2817v1, verified)
 - MathOverflow 357433 archived as HTML in `Technical Web Docs/`
 Paywalled papers (Bowditch/Máthé/Kloster, Cambridge Core + Elsevier
@@ -114,7 +114,7 @@ Not a tactical step — a system-borne impossibility:
 
 ## REFERENCE LITERATURE
 
-Archived under `G:\Mon Drive\MyIA\IA\Bibliography IA\`:
+Archived under `G:\Mon Drive\MyIA\IA\Bibliographie IA\`:
 
 - **Bowditch (2007)** "The Angel Game in the Plane", Combinatorics, Probability and
   Computing 16(3):349-362, DOI:10.1017/s0963548306008297 — Cambridge Core paywall.

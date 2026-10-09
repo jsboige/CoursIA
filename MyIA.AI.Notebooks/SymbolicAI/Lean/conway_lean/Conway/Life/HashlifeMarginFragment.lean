@@ -657,6 +657,78 @@ theorem gridToMacroCellWithOffset_level_le_of_box (g : Grid) (a b : Int × Int)
                ((gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat)) ≤ _
       exact ceilLog2_mono hside_le
 
+/-- **Niveau de la reconstruction minoré par l'étendue spatiale.** Si deux
+    cellules de `g` sont à distance de Chebyshev au moins `2 ^ i`, la
+    reconstruction `gridToMacroCellWithOffset g` a un niveau au moins `i` : la
+    coordonnée dominante étale la boîte englobante sur `2 ^ i`, le côté du
+    cadre (`étendue + 5` de rembourrage) dépasse strictement `2 ^ i`, et
+    `2 ^ ceilLog2 ≥ côté` (`ceilLog2_spec`) interdit un niveau plus bas. C'est
+    le pendant exact de `gridToMacroCellWithOffset_level_le_of_box` (borne
+    supérieure) : ensemble, les deux bornent le niveau de la reconstruction
+    par la géométrie du support, aux deux bouts. -/
+theorem gridToMacroCellWithOffset_level_ge_of_span (g : Grid) (i : Nat)
+    (p q : Int × Int) (hp : p ∈ g) (hq : q ∈ g)
+    (hspan : 2 ^ i ≤ chebDist p q) :
+    i ≤ (gridToMacroCellWithOffset g).2.level := by
+  unfold chebDist at hspan
+  have hcast : ((2 ^ i : Nat) : Int) ≤
+      max (Int.natAbs (q.1 - p.1)) (Int.natAbs (q.2 - p.2)) := by
+    exact_mod_cast hspan
+  cases g with
+  | nil => exact absurd hp (by simp)
+  | cons p₀ ps =>
+    have hrmin_p : gridRowMin (p₀ :: ps) ≤ p.1 := gridRowMin_le_of_mem _ p hp
+    have hrmin_q : gridRowMin (p₀ :: ps) ≤ q.1 := gridRowMin_le_of_mem _ q hq
+    have hrmax_p : p.1 ≤ gridRowMax (p₀ :: ps) := le_gridRowMax_of_mem _ p hp
+    have hrmax_q : q.1 ≤ gridRowMax (p₀ :: ps) := le_gridRowMax_of_mem _ q hq
+    have hcmin_p : gridColMin (p₀ :: ps) ≤ p.2 := gridColMin_le_of_mem _ p hp
+    have hcmin_q : gridColMin (p₀ :: ps) ≤ q.2 := gridColMin_le_of_mem _ q hq
+    have hcmax_p : p.2 ≤ gridColMax (p₀ :: ps) := le_gridColMax_of_mem _ p hp
+    have hcmax_q : q.2 ≤ gridColMax (p₀ :: ps) := le_gridColMax_of_mem _ q hq
+    have hrowabs : Int.natAbs (q.1 - p.1) = q.1 - p.1 ∨
+        Int.natAbs (q.1 - p.1) = p.1 - q.1 := by
+      rcases le_or_gt p.1 q.1 with h | h
+      · exact Or.inl (Int.natAbs_of_nonneg (by omega))
+      · exact Or.inr (by
+          rw [show q.1 - p.1 = -(p.1 - q.1) by ring, Int.natAbs_neg]
+          exact Int.natAbs_of_nonneg (by omega))
+    have hcolabs : Int.natAbs (q.2 - p.2) = q.2 - p.2 ∨
+        Int.natAbs (q.2 - p.2) = p.2 - q.2 := by
+      rcases le_or_gt p.2 q.2 with h | h
+      · exact Or.inl (Int.natAbs_of_nonneg (by omega))
+      · exact Or.inr (by
+          rw [show q.2 - p.2 = -(p.2 - q.2) by ring, Int.natAbs_neg]
+          exact Int.natAbs_of_nonneg (by omega))
+    have hext : ((2 ^ i : Nat) : Int) ≤
+        gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) ∨
+        ((2 ^ i : Nat) : Int) ≤
+        gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) := by
+      rcases hrowabs with h1 | h1 <;> rcases hcolabs with h2 | h2 <;> omega
+    -- Le côté du cadre (étendue dominante + 5) dépasse 2^i dans une branche.
+    have hside : (2 ^ i) ≤ max
+        ((gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat)
+        ((gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat) := by
+      rcases hext with hrow | hcol
+      · refine Nat.le_trans ?_ (Nat.le_max_left _ _)
+        have hnn : (0 : Int) ≤ gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5 := by omega
+        have h5 : ((2 ^ i : Nat) : Int) ≤
+            gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5 := by omega
+        exact (Int.le_toNat hnn).mpr h5
+      · refine Nat.le_trans ?_ (Nat.le_max_right _ _)
+        have hnn : (0 : Int) ≤ gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5 := by omega
+        have h5 : ((2 ^ i : Nat) : Int) ≤
+            gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5 := by omega
+        exact (Int.le_toNat hnn).mpr h5
+    simp only [gridToMacroCellWithOffset]
+    rw [MacroCell.level_buildFromGrid]
+    by_contra hlt
+    push_neg at hlt
+    have hpowlt : 2 ^ MacroCell.ceilLog2
+        (max ((gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat)
+             ((gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat)) < 2 ^ i :=
+      Nat.pow_lt_pow_right (by norm_num) hlt
+    exact absurd (Nat.le_trans hside (MacroCell.ceilLog2_spec _)) (Nat.not_le.mpr hpowlt)
+
 /-! ## L3 classe périodique `T ∣ 2^k` — hcap des oscillateurs (tranche 3, étape 6)
 
 Deuxième maillon L3 **entièrement clos** : la généralisation de la chaîne
@@ -2785,6 +2857,114 @@ theorem hashlife_correct_margin_of_union_periodic (c : MacroCell) (k : Nat)
   intro t _
   rw [hsplit]
   exact hcap_of_union_periodic_low hT4 g₁ g₂ hsep hfix₁ hfix₂ hcan hne t
+
+/-! ### Maillon 3 — la tour dyadique complète des unions périodiques
+
+Le corollaire `_low` du maillon 2 couvre `T ∈ {1, 2, 4}` parce que la
+non-vacuité n'y achète que `level ≥ 2`. Pour les périodes hautes (`T = 8, 16,
+32…`), la fenêtre `T ∣ 2 ^ level` doit être **témoignée géométriquement** :
+c'est le rôle de la séparation renforcée `max 3 (2 ^ i) ≤ chebDist` — la
+séparation d'au moins `2 ^ i` entre les deux parties, à toute phase, étale
+chaque phase de l'union sur `2 ^ i` (chaque partie reste non vide le long de
+sa trajectoire par périodicité), donc force un niveau de reconstruction
+`≥ i` (`gridToMacroCellWithOffset_level_ge_of_span`), et `2 ^ i ∣ 2 ^ level`
+dès que `i ≤ level`. Une seule hypothèse porte les deux rôles : `max 3 (2^i)`
+est la séparation exigée par la scission (3) augmentée de la fenêtre (2^i). -/
+
+/-- **La non-vacuité se propage le long d'une trajectoire périodique.** Si
+    `g` est `T`-périodique (`T > 0`) et non vide, aucune phase n'est vide :
+    une phase vide rendrait toutes les suivantes vides (l'évolution de vide
+    est vide), en particulier le retour `evolve (T · m) g = g` — contredit
+    `g ≠ []`. C'est ce qui fournit, à tout instant `t`, un membre dans chaque
+    partie de l'union — le témoin d'étendue de la fenêtre dyadique. -/
+theorem evolve_ne_of_period_ne {T : Nat} (hT : 0 < T) (g : Grid)
+    (hper : evolve T g = g) (hne : g ≠ []) (t : Nat) :
+    evolve t g ≠ [] := by
+  intro hnil
+  have hnilEv : ∀ m, evolve m ([] : Grid) = [] := by
+    intro m
+    induction m with
+    | zero => rfl
+    | succ m ih => rw [evolve_succ, ih]; rfl
+  have hmod := Nat.mod_lt t hT
+  have hsplit : T - t % T + t = (t / T + 1) * T := by
+    have hle : t % T ≤ T := Nat.le_of_lt hmod
+    have hmodle : t % T ≤ t := Nat.mod_le t T
+    have hdiv : t / T * T = t - t % T := by
+      have h := Nat.div_add_mod t T
+      rw [Nat.mul_comm] at h
+      omega
+    rw [Nat.add_mul, Nat.one_mul, hdiv]
+    omega
+  have hstep : evolve (T - t % T + t) g = evolve (T - t % T) (evolve t g) :=
+    evolve_add _ _ _
+  rw [hnil, hnilEv] at hstep
+  rw [hsplit, evolve_mulF_of_period g hper (t / T + 1)] at hstep
+  exact hne hstep
+
+/-- **hcap des unions périodiques dyadiques — fenêtre témoignée par la
+    géométrie.** Deux parties de même période `T = 2 ^ i` dont les supports
+    restent séparés d'au moins `max 3 (2 ^ i)` (chebyshevien) à toute phase
+    sont capturées à tout horizon : la séparation ≥ 3 paie la scission du
+    maillon 2 (`evolve_period_union`), la séparation ≥ `2 ^ i` paie la
+    fenêtre — chaque phase de l'union est étalée sur `2 ^ i` par ses deux
+    parties non vides (`evolve_ne_of_period_ne` de part et d'autre), donc
+    reconstruite à un niveau ≥ `i`, et `2 ^ i ∣ 2 ^ level`. Étend le
+    corollaire `_low` (T ∈ {1, 2, 4}, fenêtre gratuite par non-vacuité) à
+    toute la tour dyadique : périodes 8, 16, 32… incluses. -/
+theorem hcap_of_union_periodic_dyadic {T i : Nat} (hTi : T = 2 ^ i)
+    (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂,
+      max 3 (2 ^ i) ≤ chebDist p r)
+    (hfix₁ : evolve T g₁ = g₁) (hfix₂ : evolve T g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) (hne₁ : g₁ ≠ []) (hne₂ : g₂ ≠ [])
+    (t : Nat) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true := by
+  have hT : 0 < T := by rw [hTi]; exact pow_pos (by norm_num) i
+  have hsep3 : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r :=
+    fun s p hp r hr => Nat.le_trans (Nat.le_max_left 3 (2 ^ i)) (hsep s p hp r hr)
+  obtain ⟨p, hp⟩ : ∃ p, p ∈ evolve t g₁ :=
+    List.exists_mem_of_ne_nil _ (evolve_ne_of_period_ne hT g₁ hfix₁ hne₁ t)
+  obtain ⟨r, hr⟩ : ∃ r, r ∈ evolve t g₂ :=
+    List.exists_mem_of_ne_nil _ (evolve_ne_of_period_ne hT g₂ hfix₂ hne₂ t)
+  have hmemU_p : p ∈ evolve t (g₁ ++ g₂) :=
+    (mem_evolve_union_sep g₁ g₂ hsep3 t p).mpr (Or.inl hp)
+  have hmemU_r : r ∈ evolve t (g₁ ++ g₂) :=
+    (mem_evolve_union_sep g₁ g₂ hsep3 t r).mpr (Or.inr hr)
+  have hspan : 2 ^ i ≤ chebDist p r :=
+    Nat.le_trans (Nat.le_max_right 3 (2 ^ i)) (hsep t p hp r hr)
+  have hlvl : i ≤ (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level :=
+    gridToMacroCellWithOffset_level_ge_of_span _ i p r hmemU_p hmemU_r hspan
+  have hdiv : T ∣ 2 ^ (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level := by
+    obtain ⟨j, hj⟩ : ∃ j, (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level
+        = i + j := ⟨(gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level - i,
+          by omega⟩
+    rw [hTi, hj, pow_add]
+    exact ⟨2 ^ j, by ring⟩
+  exact hcap_of_union_periodic hT g₁ g₂ hsep3 hfix₁ hfix₂ hcan t hdiv
+
+/-- **L2 assemblée pour les unions périodiques dyadiques hautes.** Miroir
+    exact de `hashlife_correct_margin_of_union_periodic` : une MacroCell
+    dont la grille rendue à l'origine se scinde en deux parties de même
+    période `T = 2 ^ i` — séparation uniforme `max 3 (2 ^ i)` — satisfait
+    l'égalité Hashlife à tout horizon `2 ^ k` sous `centralCorrect`. Après
+    les natures mortes (`_of_still_life`, T = 1), les oscillateurs simples
+    (`_of_period`, T dyadique seul) et les unions basses
+    (`_of_union_periodic`, T ∈ {1, 2, 4}), c'est la classe composée des
+    périodes hautes : deux oscillateurs de période 8 et plus, séparés par
+    `max(3, T)` cellules, restent capturés à tout horizon. -/
+theorem hashlife_correct_margin_of_union_periodic_dyadic (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T i : Nat} (hTi : T = 2 ^ i)
+    (g₁ g₂ : Grid) (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂,
+      max 3 (2 ^ i) ≤ chebDist p r)
+    (hfix₁ : evolve T g₁ = g₁) (hfix₂ : evolve T g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) (hne₁ : g₁ ≠ []) (hne₂ : g₂ ≠ []) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_union_periodic_dyadic hTi g₁ g₂ hsep hfix₁ hfix₂ hcan hne₁ hne₂ t
 
 /-! ## Synthèse — le fragment est non vide et l'énoncé-cadre est honnête
 

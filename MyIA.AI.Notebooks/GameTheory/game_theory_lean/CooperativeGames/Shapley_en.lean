@@ -7,7 +7,11 @@
   - The Shapley value formula
   - The uniqueness theorem
 
-  Reference: L.S. Shapley, "A Value for N-Person Games" (1953)
+  Reference: L.S. Shapley, "A Value for N-Person Games" (1953); see
+  also the canonical textbook of the cluster (Maschler, Solan & Zamir,
+  "Game Theory", Cambridge UP, 2013 -- ch. 15 *The Shapley Value* for
+  axiomatic characterization and uniqueness; **anchorages to be confirmed**
+  against the book, the PDF not being available on this machine).
 
   i18n convention (cycle 39 ratified, see `docs/lean/i18n-inventory-cycle-38.md`):
   headers, sections, docstrings and intra-proof comments in English;

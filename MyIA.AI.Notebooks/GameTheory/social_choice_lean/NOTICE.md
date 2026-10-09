@@ -40,3 +40,24 @@ This project depends on **Mathlib**, the Lean 4 mathematical library:
 
 - **Lean**: v4.28.0-rc1+
 - **Lake**: v5.0.0+
+
+----------------------------------------------------
+
+État de licence des sources citées ci-dessus, mesuré le 2026-10-06
+(vérification firsthand, cf #14955) :
+
+- `asouther4/lean-social-choice` (amont principal) : **aucune licence** —
+  `license: null` à l'API GitHub, aucun fichier LICENSE à la racine
+  (contenu : `.github`, `.gitignore`, `README.md`, `leanpkg.toml`, `src`).
+- `chasenorman/lean-social-choice` et `DominikPeters/lean-social-choice`
+  (forks cités) : **introuvables** (HTTP 404 — dépôts supprimés ou
+  renommés). La mention « License: MIT » ci-dessus ne peut plus être
+  vérifiée à la source pour eux non plus.
+- Fork restant (non cité ci-dessus) : `mdnestor/lean-social-choice`,
+  `license: null`.
+
+En conséquence, aucune copie de texte de licence n'est attachée à ce
+répertoire en l'état : poser un `LICENSE-MIT.txt` de notre main
+fabriquerait une permission qu'aucune source vérifiable n'accorde. Le
+dérivé est conservé en l'état — arbitrage en cours sur #14955 (issue
+amont demandant une licence, ou retrait du dérivé).

@@ -64,7 +64,43 @@ Updated: 2026-09-13 — M12 HAR-RV-J revalidé sur sept actifs avec calibration 
 
 Updated: 2026-10-04 — M5 HMM regime-switching HAR revalidé cluster 7 actifs appariée par origine (port #18190, Epic #1454, lane myia-po-2023:CoursIA) : **h=1 BEATS sur 6/7 actifs après dé-biais** (ETH +8,7 %, LTC +11,7 %, XRP +11,8 %, ADA +11,3 %, DOT +10,1 %, SOL +5,7 % — edges portés par la précision, dm_centered_p<0,012 ; BTC seul INCONCLUSIVE, sa baseline HAR porte le biais OOS le plus fort du cluster) ; **h=5 INCONCLUSIVE 7/7** ; **h=10 NO BEATS 7/7** (−42,9 % à −100,9 % dé-biaisé) — la nocivité long-horizon n'était pas un artefact BTC/ETH, elle est structurelle sur l'univers cluster. Join d'identité prouvé sur les 21 cellules (dm_n_aligned==n_preds, gap 0, zéro TARGET_MISMATCH — les deux jambes sortent de la même boucle, la garde fail-closed est la preuve). 84 walk-forwards 4 seeds, mse, refit 22, HMM K=2. Détail `docs/M5_HMM_REGIME.md` + manifeste `scripts/results/m5_hmm_regime_cluster_aligned.json` + JSON complet hors dépôt (GDrive, précédent #18664).
 
+Updated: 2026-10-07 — M5 lu comme couche de dimensionnement (stratégie, #19725 fille de #18907, lane myia-po-2023:CoursIA, pré-enregistré c.6040355929 **avant** tout calcul) : **VOIDE_FUITE** — le placebo M5 péréimé de 5 j bat HAR sur la graine 42 (+0,272, p=0,034) : la performance du bloc gelé 2022-07→2023-12 est dominée par le bruit, la machine seule rend INCONCLUSIVE (diffs M5−HAR −0,037 à +0,070, aucune p<0,23). Finding contextuel : **les deux jambes prévision sont sous RV63 (+0,727) et sous buy & hold (+0,685)**, 4/4 graines — l'edge de prédiction ETH h=1 ne se convertit pas en valeur de stratégie par vol-targeting sur ce bloc (convergence L5/L6 du Curriculum). Aucun re-jeu de CE résultat sans nouveau pré-enregistrement. Détail `docs/M5_STRATEGY_VOLTARGET.md` + manifeste `scripts/results/m5_strategy_vol_targeting.json` + 16 tests contractuels.
+
+Updated: 2026-10-08 — P15294 re-run probe GRPO sur Hermes-function-calling-v1 (issue #15294 acceptance 2 partielle, lane myia-po-2024:CoursIA) : **Qwen3.5-0.8B produit du signal RL net sur la tâche calibrée** — Δ reward eval held-out (40 prompts × 4 générations, pré/post 100 steps, même recette GRPO+QLoRA non-thinking que M19) : **+0,2500 ± 0,1875**, 2/2 seeds progressent (0,2063→0,2688 et 0,1688→0,6063), pas d'effondrement de longueur — contre **+0,0063 ± 0,0063** (plat, courbes erratiques) du même backbone sur DAPO-Math-17k : la platitude DAPO du 0.8B était un artefact de casting, pas une propriété du backbone. Côté MiniCPM5-2B : 2 runs en chaîne détachée sur RTX 3070, verdict de comparaison 2B vs 0.8B différé à leur livraison. Manifestes `scripts/results/p15294_hermes_grpo/`.
+
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
+
+## P15294 Hermes GRPO — Qwen3.5-0.8B 2/2 seeds (2026-10-08) — issue #15294
+
+Re-run de la probe B (#15099) sur le substitut calibré Hermes-function-calling-v1
+(singleturn, Apache-2.0, non gated — le dataset xlam retenu par la veille étant
+gated). Harnais `scripts/probe_15099_dapo_grpo.py run --dataset hermes`,
+protocole inchangé : GRPO (TRL) + QLoRA NF4 r16, 100 steps, 32 completions/step,
+non-thinking, eval held-out 40 prompts × 4 générations pré/post, reward
+structurel JSON (match du bloc `<tool_call>`). RTX 3070 Laptop 8 Go (étage
+pionnier #1454), wallclock 47 050 s (seed 0) et 23 666 s (seed 1). Adapters hors
+repo (`D:/Dev/probe15099_runs`). Manifestes par run :
+`scripts/results/p15294_hermes_grpo/qwen35_seed{0,1}.json`.
+
+| | pre | post | Δ | longueur eval |
+|---|---|---|---|---|
+| Qwen3.5-0.8B seed 0 | 0,2063 | 0,2688 | +0,0625 | 399 → 402 (stable) |
+| Qwen3.5-0.8B seed 1 | 0,1688 | 0,6063 | +0,4375 | 393 → 538 (+37 %) |
+
+Verdict (partiel — côté 0.8B) : **signal RL confirmé sur tâche calibrée**. Le même
+backbone, la même recette et le même budget qui rendaient +0,0063 ± 0,0063 sur
+DAPO-Math-17k (M19, courbes erratiques) rendent +0,2500 ± 0,1875 sur Hermes :
+l'écart mesure l'artefact de casting dénoncé par la review user — la tâche
+olympiaque masquait le signal, elle ne mesurait pas une absence de trainabilité.
+L'accessibilité pré-éval mesurée (0,17-0,21) colle à la prédiction « borderline »
+de la matrice d'accessibilité (#15531).
+
+Réserves honnêtes : n=2 seeds, dispersion inter-seeds large (+0,0625 vs
++0,4375) ; la seed 1 gagne +37 % de longueur moyenne de completion (croissance,
+pas effondrement — le critère santé du harnais est respecté) ; le classement
+2B > 0.8B observé sur DAPO reste **non tranché** jusqu'aux runs MiniCPM5-2B
+(chaîne détachée armée le 2026-10-08, seed 0 puis seed 1 enchaînés
+automatiquement ; `summarize` exige ≥ 2 modèles pour le verdict de paire).
 
 ## M18 TimesFM 2.5 — revalidation cluster 7 actifs (2026-10-03) — Epic #1454
 
@@ -837,6 +873,34 @@ CSV hors dépôt, 37 040 lignes pour la grille complète).
   `scripts/tests/test_hmm_regime_vol.py`, voisins `test_btc_vol.py` /
   `test_diebold_mariano.py` / `test_har_model.py` / `test_dlinear_debiased_edge.py` verts (57).
 - **Verdict §C hors biais** : **1/6 BEATS (ETH h=1, `confirmed`), 1/6 INCONCLUSIVE, 4/6 NO BEATS**.
+
+### M5 couche de dimensionnement ETH — stratégie vol-targeting (2026-10-07, #19725)
+
+Question #18907 : l'edge de **prédiction** (ETH h=1 BEATS après dé-biais, revalidé
+#18190) survit-il à une lecture **stratégie** ? Pré-enregistrement intégral
+(hypothèse/baseline/métrique/seuil/grille/bloc/placebo) posé sur #19725
+c.6040355929 **avant** le premier calcul — protocole #18907.
+
+**Design** : prévisions du runner publié (`--dump-series`, jamais de re-fit) ;
+`lev_t = min(3,0 ; 0,60/vol_ann_t)`, jamais short ; `ret_net_t = lev_{t-1}·ret_t −
+0,001·|lev_t−lev_{t-1}|` ; bloc gelé 2022-07-01→2023-12-15 ; bootstrap stationnaire
+apparié (blocs 22 j, 2000 tirages, graine fixe, p unilatéral) — analogue Sharpe du
+DM de l'arbitrage #18907 point 4 ; jambes M5/HAR/RV63/hold/placebo-5j ; graines
+0/7/42/99 ; zéro paramètre libre.
+
+**Verdict : VOIDE_FUITE.** Machine seule INCONCLUSIVE (diffs −0,037 à +0,070,
+p ≥ 0,23) ; le placebo M5-5j bat HAR sur la graine 42 (+0,272, p = 0,034) — un
+signal *stale* qui gagne démontre que le bruit du bloc domine, la registration
+vide le verdict. Contexte tranché négativement : M5 (≤ 0,656) et HAR (0,587)
+**sous** RV63 (+0,727) et sous buy & hold (+0,685), 4/4 graines — convergent avec
+L5/L6 du Curriculum : la précision de vol ne devient pas d'alpha via vol-targeting
+sur ce bloc. Rapport de biais par graine au manifeste (biais log-RV M5 −0,040 à
++0,005 vs HAR +0,0065 constant).
+
+16 tests contractuels (formule, timing du coût, lag, placebo, déterminisme
+bootstrap, machine). Détail `docs/M5_STRATEGY_VOLTARGET.md` ; manifeste
+`scripts/results/m5_strategy_vol_targeting.json` (sha256 du dump CSV inclus) ;
+série complète hors dépôt (GDrive).
 
 ## M4 DLinear-vol — extension §C ETF (2026-08-23) — Epic #1454
 

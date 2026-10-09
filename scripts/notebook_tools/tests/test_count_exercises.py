@@ -266,7 +266,7 @@ class TestCodeCellOnlyExercise:
         self, tmp_path
     ):
         """Numbered C.1 print idiom on a scaffolded skeleton whose body
-        computes (the rl_8_model_based_dyna_q Ex2 shape). The skeleton's
+        computes (the RL-08-Dyna-Q-Planification-Python Ex2 shape). The skeleton's
         ``# TODO etudiant`` markers sit above scaffolding with a DERIVED
         return (``return list(steps), Q`` -- a call), so the comment-marker
         gate in ``_is_stub_code`` skips them ("leftover comments above a body

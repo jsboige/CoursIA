@@ -382,7 +382,7 @@ STUB_PATTERNS = [
     # defeats that fallback via the ``_body_computes_result`` gate: the TODOs
     # are "leftover comments above a body that computes" and the cell fell
     # through as a solution. Measured (2026-09-16): exactly 5 notebooks
-    # under-counted by this blind spot (rl_8_model_based_dyna_q Ex2
+    # under-counted by this blind spot (RL-08-Dyna-Q-Planification-Python Ex2
     # prioritized-sweeping skeleton, PT_11a Ex1, Search-03c Ex1, Planners-1
     # Ex2, SL-12 Ex3), each -1 real exercise, 0 false positives.
     # The ``a completer`` tail accepts the accented francophone spellings

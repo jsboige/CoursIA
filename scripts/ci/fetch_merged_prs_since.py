@@ -71,7 +71,29 @@ SEARCH_RESULT_CAP = 1000
 # not a throughput assumption.
 SLICE_DAYS = 3
 
+# Ancrage FIXE de la grille de tranches (#19236). Une grille ancree a `since`
+# se decale d'un jour a chaque appel (`since` avance avec la date du jour) :
+# des cles de cache par tranche ne vivraient alors qu'un jour. En alignant
+# les bornes interieures sur un multiple de `slice_days` depuis une date
+# fixe, la tranche [b, b+3) garde la MEME cle d'un jour a l'autre -- une
+# tranche passee, immuable une fois la journee close, reste servie par le
+# cache au lieu d'etre re-telechargee chaque matin. Seul
+# `(jour - SLICE_ANCHOR).days % slice_days` compte : n'importe quelle date
+# fixe convient.
+SLICE_ANCHOR = date(2026, 1, 5)
+
 DEFAULT_DAYS = 21
+
+# Borne de l'appel `subprocess.run` d'une tranche (#19643). Le picker peut
+# consumer au dela du timeout par defaut des tools shell d'agent (~115-120 s) ;
+# poser une borne ici permet a `pick_idle_grain.fetch_visits` (qui attrape
+# deja `subprocess.TimeoutExpired`) de rendre un verdict explicite
+# (« tirage NON mesure »), pas un crash nu ni un timeout-mute. Mesure
+# du 2026-10-07 : une tranche 30 j prend ~38 s, et le belt complet prend
+# ~123 s. Une borne a 60 s sur une tranche laisse 2x la mesure observee.
+# Surchargeable par `run_gh(..., timeout=...)` pour un appelant qui veut
+# etre plus strict.
+RUN_GH_TIMEOUT_S = 60.0
 
 # Champs demandes par defaut. Les appelants qui n'ont besoin que du corps et de
 # la date gardent ce jeu : `files` est le champ le plus cher de l'API (il porte
@@ -86,14 +108,23 @@ def since_date(days: int) -> str:
     return (date.today() - timedelta(days=days)).isoformat()
 
 
-def run_gh(since: str, until: str, fields: str = DEFAULT_FIELDS) -> list[dict]:
+def run_gh(since: str, until: str, fields: str = DEFAULT_FIELDS,
+           timeout: float | None = None) -> list[dict]:
     """One date slice of merged PRs, ``[since, until)`` on MERGE time.
 
     Uses only flags `gh pr list` actually has -- `--search` and `--limit`.
     Injected as ``run`` by the tests; `test_run_gh_argv_is_accepted_by_gh`
     executes this exact argv against the real binary, which is the control
     the `--page` regression escaped for its whole life.
+
+    `timeout` is the `subprocess.run` bound (seconds). Defaults to
+    ``RUN_GH_TIMEOUT_S`` (#19643) so a slow `gh` raises
+    ``subprocess.TimeoutExpired`` -- the caller in `pick_idle_grain` catches
+    it explicitly, and never produces a partial corpus labelled complete.
+    Pass `math.inf` to opt out (not recommended).
     """
+    if timeout is None:
+        timeout = RUN_GH_TIMEOUT_S
     out = subprocess.run(
         [
             "gh", "pr", "list",
@@ -103,8 +134,31 @@ def run_gh(since: str, until: str, fields: str = DEFAULT_FIELDS) -> list[dict]:
             "--json", fields,
         ],
         capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
+        timeout=timeout,
     )
     return json.loads(out.stdout)
+
+
+def aligned_boundaries(start: date, end: date, slice_days: int):
+    """Base slices covering ``[start, end)``, interior edges on fixed anchors.
+
+    The FIRST slice may be partial ``[start, b)`` where ``b`` is the first
+    boundary AFTER ``start`` aligned on ``SLICE_ANCHOR`` (no partial slice
+    when ``start`` is already aligned); the following ones are aligned
+    ``[b, b + k)``; the LAST is clipped at ``end``. Coverage is identical to
+    a grid anchored at ``start`` -- only the position of interior edges
+    changes, and that position is what makes a slice key stable from one day
+    to the next (#19236).
+    """
+    k = max(1, slice_days)
+    offset = (start - SLICE_ANCHOR).days % k
+    aligned = start + timedelta(days=k if offset == 0 else k - offset)
+    cur = start
+    while cur < end:
+        stop = min(aligned, end)
+        yield cur, stop
+        cur = stop
+        aligned = cur + timedelta(days=k)
 
 
 def fetch(since: str, run=None, slice_days: int = SLICE_DAYS,
@@ -119,6 +173,11 @@ def fetch(since: str, run=None, slice_days: int = SLICE_DAYS,
     the search API: it is halved and retried, and a one-day slice still at the
     cap raises -- returning it would silently drop merges and hand the caller a
     partial sequence that looks complete.
+
+    Since #19236, interior slice edges are anchored on ``SLICE_ANCHOR`` (cf
+    ``aligned_boundaries``) so a given past slice keeps the same
+    ``(since, until)`` bounds across days -- the caller caches per slice, and
+    a grid anchored at ``since`` would re-key every entry once a day.
     """
     if run is None:
         run = lambda s, u: run_gh(s, u, fields)  # noqa: E731
@@ -126,28 +185,29 @@ def fetch(since: str, run=None, slice_days: int = SLICE_DAYS,
     end = (today or date.today()) + timedelta(days=1)
     acc: list[dict] = []
     seen: set[int] = set()
-    cur = start
-    while cur < end:
-        width = max(1, slice_days)
-        while True:
-            nxt = min(cur + timedelta(days=width), end)
-            batch = run(cur.isoformat(), nxt.isoformat())
-            if len(batch) < SEARCH_RESULT_CAP or width == 1:
-                break
-            width = max(1, width // 2)
-        if len(batch) >= SEARCH_RESULT_CAP:
-            raise RuntimeError(
-                f"fetch_merged_prs_since: the single day {cur.isoformat()} "
-                f"returned {len(batch)} PRs, at the search cap of "
-                f"{SEARCH_RESULT_CAP}. The window cannot be sliced any finer, "
-                "so the result would be silently truncated -- failing instead."
-            )
-        for pr in batch:
-            n = pr.get("number")
-            if n is not None and n not in seen:
-                seen.add(n)
-                acc.append(pr)
-        cur = nxt
+    for base_cur, bound in aligned_boundaries(start, end, slice_days):
+        cur = base_cur
+        while cur < bound:
+            width = min(max(1, slice_days), (bound - cur).days)
+            while True:
+                nxt = cur + timedelta(days=width)
+                batch = run(cur.isoformat(), nxt.isoformat())
+                if len(batch) < SEARCH_RESULT_CAP or width == 1:
+                    break
+                width = max(1, width // 2)
+            if len(batch) >= SEARCH_RESULT_CAP:
+                raise RuntimeError(
+                    f"fetch_merged_prs_since: the single day {cur.isoformat()} "
+                    f"returned {len(batch)} PRs, at the search cap of "
+                    f"{SEARCH_RESULT_CAP}. The window cannot be sliced any finer, "
+                    "so the result would be silently truncated -- failing instead."
+                )
+            for pr in batch:
+                n = pr.get("number")
+                if n is not None and n not in seen:
+                    seen.add(n)
+                    acc.append(pr)
+            cur = nxt
     return acc
 
 

@@ -1133,7 +1133,7 @@ class TestBibliographicReferenceFilter:
         # FP class 4 extended (#9998) : journal SANS mot-cle generique (Nature,
         # Econometrica, Annals of Mathematics) au format SIMPLE vol:pages. Le nom
         # du journal precede immediatement le pattern (fenetre etroite 60 chars).
-        # Cas fondateur : rl_6_dqn_policy_gradient cell[27] "Nature 518:529-533".
+        # Cas fondateur : RL-06-DQN-Policy-Gradient-Python cell[27] "Nature 518:529-533".
         text = "Mnih et al., Nature 518:529-533 (2015)."
         assert mod._is_bibliographic_reference(518.0, text) is True
         assert mod._is_bibliographic_reference(529.0, text) is True

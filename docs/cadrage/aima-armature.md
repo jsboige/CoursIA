@@ -32,7 +32,7 @@ Structure de la 4e édition lue dans le sommaire du PDF du gisement (p. vii-xiii
 | 14 | Probabilistic Reasoning over Time | `NLP/05-HMM-Viterbi` | HMM, décodage de Viterbi (module numpy dédié) | 5 |
 | 15 | Probabilistic Programming | `Probas` · `ML/ML.Net` | Infer.NET **est** un langage de programmation probabiliste (cf. `Infer.NETCacheHelper.cs`) | 75 |
 | 16 | Making Simple Decisions | `Probas/DecisionTheory/DecInfer` | fondations d'utilité (`DecInfer-01-Utility-Foundations`, Infer.NET) | 75 |
-| 17 | Making Complex Decisions | `RL` (MDP, POMDP) | PPO (`ppo_cartpole.zip`), `rl_11_pomdp` | 36 |
+| 17 | Making Complex Decisions | `RL` (MDP, POMDP) | PPO (`ppo_cartpole.zip`), `RL-11-POMDP-Croyances-Python` | 36 |
 | 18 | Multiagent Decision Making | `GameTheory` · `GameTheory/game_theory_lean` | OpenSpiel (jeux répétés, enchères, négociation), jeux coopératifs en Lean (Shapley) | 109 |
 | 19 | Learning from Examples | `ML/ML.Net` | ML.NET (classifieurs, régression, évaluation) | 23 |
 | 20 | Learning Probabilistic Models | `ML/ML.Net` · `Probas` | EM/clustering ML.NET, mélanges Infer.NET | — (transversal, pas de sous-série dédiée) |

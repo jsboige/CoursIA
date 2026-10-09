@@ -92,7 +92,7 @@ notebooks:
   # deterministe. Certifie end-to-end par Papermill (39 cellules, 20 code, 0
   # erreur, 5 figures, ~12 s sur CPU, kernel coursia-ml-training = snapshot du
   # lock). Premiere serie RL au golden-set (objectif ~1/serie de #4209).
-  - path: MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb
+  - path: MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb
     series: RL
     title: "RL-4 - Bandits multi-bras (epsilon-greedy / UCB / Thompson, exploration vs exploitation)"
     kernel: python3

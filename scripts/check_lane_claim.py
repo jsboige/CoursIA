@@ -556,7 +556,48 @@ def _intent_from_line(line: str | None) -> str | None:
     return text
 
 
-def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
+def _unwrap_trapped_body(body: str) -> str:
+    """Le corps REEL quand la publication a piege son propre payload (#19971).
+
+    La classe de transport #16866/#17270 a une victime que l'organe ne voyait
+    pas : quand le corps publie est l'objet `{"body": "..."}` COMPLET, le
+    marqueur `[CLAIMED]` vit dans une VALEUR de chaine -- precede de
+    `  "body": "`, ses sauts de ligne echappes en `\\n` litteraux. `_MARKER_RE`
+    est ancre en debut de ligne (`(?m)^`) : il n'existe alors aucune ligne ou
+    ancrer le marqueur, l'organe rend `CLEAR` et le lecteur croit le grain
+    libre. Trois instances mesurees (#19727, #19796, #19915), dont deux grains
+    reellement en cours de traitement (po-2024 sur #19727, po-2023 sur #19796).
+
+    Ce n'est PAS un elargissement de `_MARKER_RE` : le contrat de l'organe
+    reste cote EMISSION (`.claude/rules/gh-posting-hygiene.md`), la lecture
+    DEFENSIVE du transport appartient a l'ENTREE. Le corps unwrape -- la
+    valeur de la cle `body`, exactement ce que l'auteur a ecrit -- est celui
+    que `_MARKER_RE` ET la clause `paths:` doivent lire ; sans lui, un claim
+    scope reduit a epic-wide par accident.
+
+    Organe-first : le predicat n'est pas re-ecrit ici, il est REUTILISE de
+    `scripts/ci/check_gh_comment_traps.py::classify_payload_body` -- l'organe
+    qui nomme deja ce payload `TRAPPED [json-payload]`. Un corps d'une autre
+    forme traverse inchange (la fonction rend `None`, jamais une devinette).
+    Import tardif et defensif : si le module est injoignable, le comportement
+    d'avant ce correctif est preserve -- une exception ici ferait passer un
+    blocage pour une absence, ce qui est precisement le defaut repare.
+    """
+    if not body:
+        return body
+    try:
+        ci_dir = Path(__file__).resolve().parent / "ci"
+        if str(ci_dir) not in sys.path:
+            sys.path.insert(0, str(ci_dir))
+        from check_gh_comment_traps import classify_payload_body  # noqa: PLC0415
+    except Exception:  # noqa: BLE001 -- organe optionnel : repli sur le corps brut
+        return body
+    inner = classify_payload_body(body)
+    return inner if inner is not None else body
+
+
+def _parse_claim_events(comment: dict,
+                        tracked: list[str] | None = None) -> list[ClaimEvent]:
     """One ClaimEvent per bracketed marker line -- the #10881 reducer fix.
 
     A comment can LEGITIMATELY carry markers for several lanes: the natural
@@ -578,7 +619,10 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
     (open then close). Per-marker fields keep the #10342/#10419 scope, the
     #10395 Variante-1 fallback and the #10597 hardener semantics.
     """
-    body = comment.get("body") or ""
+    # #19971 -- lecture defensive du transport AVANT tout parsing : un corps
+    # publie sous forme de payload JSON est unwrape une fois, ici, et c'est le
+    # corps REEL qui alimente `_MARKER_RE`, la clause `paths:` et `_body`.
+    body = _unwrap_trapped_body(comment.get("body") or "")
     author = (comment.get("author") or {}).get("login")
     created_at = comment.get("createdAt")
     url = comment.get("url")
@@ -648,7 +692,7 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
             # when the scope cannot be matched by fnmatch. Without this field
             # an unclosed-brace scope would silently degrade to "non-blocking
             # accidental empty" -- the exact defect that motivated #10597.
-            unparseable_scope=_unparseable_scope_in(paths) if paths else [],
+            unparseable_scope=_unparseable_scope_in(paths, tracked) if paths else [],
             intent=_intent_from_line(line),
             # #12072 -- structured signal for a scope declared OFF the marker
             # line (line-start `paths?` elsewhere in the comment, e.g. a
@@ -669,7 +713,8 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
     return events
 
 
-def parse_claim_event(comment: dict) -> ClaimEvent | None:
+def parse_claim_event(comment: dict,
+                     tracked: list[str] | None = None) -> ClaimEvent | None:
     """Classify one issue comment into a claim event, or None if not a marker.
 
     Legacy single-event view: the LAST bracketed marker of the comment is the
@@ -680,8 +725,11 @@ def parse_claim_event(comment: dict) -> ClaimEvent | None:
     `extract_lane`; None when the body carries no lane token (surfaced as
     "unattributed", never guessed). The timestamp is the comment's server
     `createdAt` -- the Defaut-2 fix: body stamps are not trusted.
+
+    `tracked` is forwarded to `_unparseable_scope_in` so a bare word that is
+    a tracked filename at the repo root (#19435) is accepted as a valid glob.
     """
-    events = _parse_claim_events(comment)
+    events = _parse_claim_events(comment, tracked=tracked)
     return events[-1] if events else None
 
 
@@ -806,7 +854,8 @@ def _extract_delivered_pr_ref(line: str | None) -> int | None:
     return int(m.group(1)) if m else None
 
 
-def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
+def _unparseable_scope_in(parts: list[str] | None,
+                           tracked: list[str] | None = None) -> list[str]:
     """Return the subset of `parts` that look UNMATCHABLE: brace residue
     (`{` / `}`) OR a glob-free prose fragment (no `/`, no fnmatch meta).
 
@@ -817,7 +866,7 @@ def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
     acceptance #2). The list returned here is the witness, so the
     reducer and the JSON audit can surface it without re-parsing.
 
-    #12052 -- a second class of unmatchable residue: PROSE WITHOUT SLASHES OR
+    #12052 -- a second class of unparseable residue: PROSE WITHOUT SLASHES OR
     METACHARACTERS (e.g. `tranche A)` after a parenthetical annotation split).
     Such a fragment survives the brace-aware comma split because it carries no
     `{` and no `,` at depth 0, but fnmatch still will not match it (fnmatch
@@ -830,10 +879,20 @@ def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
     truncation was incomplete. Empty when the scope is fully parseable.
     Empty on `parts is None` (no clause -> epic-wide semantics handled by
     the caller).
+
+    #19435 -- a THIRD class accepted: a bare word (no `/`, no fnmatch meta)
+    that is the LITERAL NAME of a tracked file at the repo root (e.g.
+    `_quarto.yml`, `Makefile`, `LICENSE`). The fnmatch semantics treat a
+    bare word as a literal filename; if the word matches a tracked file,
+    the glob is well-formed. The check accepts these when `tracked` is
+    provided (caller has done a `git ls-files` walk); without `tracked`,
+    the bare word is still residue (fail-CLOSED outside a git repo).
+    Empty `parts` -> empty witness (caller semantics).
     """
     if not parts:
         return []
     fnmatch_metas = set("*?[!")
+    tracked_set = set(tracked) if tracked else None
     residue: list[str] = []
     for p in parts:
         if "{" in p or "}" in p:
@@ -841,9 +900,15 @@ def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
             continue
         # A glob contains at least one path separator OR one fnmatch meta.
         # A bare word without either is prose that fnmatch will treat as a
-        # literal filename (matching only the literal string) -- on tracked
-        # files this is effectively never the intent.
+        # literal filename (matching only the literal string). Two cases
+        # are accepted as well-formed:
+        #   1. the bare word is a TRACKED FILE at the repo root (#19435) --
+        #      fnmatch will match it against the literal filename.
+        #   2. (n/a) the glob is genuinely unmatchable: any other bare
+        #      word is residue and lifts the claim to epic-wide (#12052).
         if "/" not in p and not any(m in p for m in fnmatch_metas):
+            if tracked_set is not None and p in tracked_set:
+                continue
             residue.append(p)
     return residue
 
@@ -1008,7 +1073,8 @@ def _gh_issue_comments(issue: str) -> dict:
     return json.loads(proc.stdout)
 
 
-def _sort_events(payload: dict) -> list[ClaimEvent]:
+def _sort_events(payload: dict,
+                 tracked: list[str] | None = None) -> list[ClaimEvent]:
     """Parse + chronologically sort claim events from a `gh issue view` payload.
 
     Uses `_parse_claim_events` -- one event per marker line (#10881) -- so a
@@ -1017,11 +1083,16 @@ def _sort_events(payload: dict) -> list[ClaimEvent]:
     share the server `createdAt`; the stable sort preserves their in-comment
     marker order, so the walk-order reducer sees `[CLAIMED] X\n[DONE] X` as
     open-then-close (final state inactive), exactly as before.
+
+    `tracked` is forwarded to each `_parse_claim_events` so a bare word that
+    is a tracked filename at the repo root (#19435) is accepted as a valid
+    glob. Without `tracked` (e.g. --from-json offline mode), the legacy
+    fail-CLOSED behaviour holds: bare words remain residue.
     """
     events = [
         ev
         for c in payload.get("comments", [])
-        for ev in _parse_claim_events(c)
+        for ev in _parse_claim_events(c, tracked=tracked)
     ]
     # Server createdAt, ISO 8601 UTC -> lexicographic order == chronological.
     events.sort(key=lambda e: e.created_at or "")
@@ -1252,7 +1323,7 @@ def _gh_open_prs_with_files() -> list[dict]:
     proc = subprocess.run(
         [
             "gh", "pr", "list", "--state", "open",
-            "--json", "number,title,headRefName,body,files",
+            "--json", "number,title,headRefName,body,files,additions,deletions",
             "--limit", "200",
         ],
         # #12811 -- 200 PR bodies in one payload: a single non-cp1252 byte
@@ -1271,6 +1342,82 @@ def _gh_open_prs_with_files() -> list[dict]:
         raise RuntimeError(
             f"gh pr list returned non-JSON (exit {proc.returncode}): {exc}"
         )
+
+
+# #14300 -- the PR-body -> issue reference predicate, extracted from
+# `_find_open_pr_for_issue_by_lane` so the implicit-occupation leg reads the
+# SAME rule instead of forking a stricter twin that would drift (#9485
+# single-reader). The leniency (bare `#N`) is a deliberate choice of the
+# DELIVERED binder -- a PR body that mentions the issue informally still
+# evidences work on it -- and the implicit leg inherits it: over-matching
+# withholds a grain (fail-closed), under-matching serves a collision.
+_PR_ISSUE_REF_RE = re.compile(
+    r"(?i)\b(?:closes|fixes|refs|see|resolves|part\s+of|part-of)\s*"
+    r"#(\d+)\b|\B#(\d+)\b"
+)
+
+
+def _pr_body_references_issue(body: str, issue_number: int) -> bool:
+    """True when `body` carries any reference form of `issue_number`."""
+    for m in _PR_ISSUE_REF_RE.finditer(body):
+        captured = m.group(1) or m.group(2)
+        if captured is None:
+            continue
+        try:
+            if int(captured) == issue_number:
+                return True
+        except ValueError:
+            continue
+    return False
+
+
+# #14300 -- the implicit-occupation finder (issue mode, no --paths). The
+# claim record only sees [CLAIMED] markers; the incident the issue documents
+# (#14259, 2026-09-02) had two lanes converging on one file with ZERO
+# markers posted -- the organ said CLEAR and was "right": nobody had
+# claimed. The strongest signal of occupation -- an OPEN PR of another lane
+# already referencing the issue -- lived one `gh pr list` away.
+def _find_open_prs_referencing_issue(
+    issue_number: int,
+    my_lane: str,
+    prs: list[dict] | None = None,
+) -> list[dict]:
+    """Open PRs of OTHER lanes whose body references `issue_number`.
+
+    Own-lane PRs are omitted (a lane does not collide with itself -- the
+    same exclusion the `--paths` leg applies). A PR whose lane tag is
+    unreadable counts as another lane (`extract_lane` returns None,
+    None != my_lane): fail-closed, mirroring `--paths`, where an
+    unreadable lane tag also counts as a collision. Sorted by PR number
+    (deterministic verdict order). Test injection: pass `prs` to avoid the
+    `gh` round-trip.
+    """
+    if prs is None:
+        prs = _gh_open_prs_with_files()
+    out: list[dict] = []
+    for pr in prs:
+        # #19971 -- meme lecture defensive du transport qu'a l'entree des
+        # commentaires : un body de PR piege en payload JSON cache le `lane`
+        # et la reference `#N` exactement de la meme facon (instance fondatrice
+        # #17270, mesuree sur un body de PR).
+        body = _unwrap_trapped_body(pr.get("body") or "")
+        if not _pr_body_references_issue(body, issue_number):
+            continue
+        lane = extract_lane(body)
+        if lane == my_lane:
+            continue
+        files = [f.get("path") for f in (pr.get("files") or [])
+                 if f.get("path")]
+        out.append({
+            "number": pr.get("number"),
+            "lane": lane,
+            "title": pr.get("title"),
+            "files": files,
+            "additions": pr.get("additions"),
+            "deletions": pr.get("deletions"),
+        })
+    out.sort(key=lambda d: d["number"] or 0)
+    return out
 
 
 # #12386 v2 -- `_find_open_pr_for_issue_by_lane` returns the unique OPEN PR
@@ -1306,13 +1453,12 @@ def _find_open_pr_for_issue_by_lane(
     """
     if prs is None:
         prs = _gh_open_prs_with_files()
-    pat = re.compile(
-        r"(?i)\b(?:closes|fixes|refs|see|resolves|part\s+of|part-of)\s*"
-        + r"#(\d+)\b|\B#(\d+)\b"
-    )
     matches: list[int] = []
     for pr in prs:
-        body = (pr.get("body") or "")
+        # #19971 -- meme unwrap qu'a l'entree des commentaires et qu'a la
+        # lecture de collision : le `lane` d'un body de PR piege n'est lisible
+        # qu'apres unwrap.
+        body = _unwrap_trapped_body(pr.get("body") or "")
         # Per #9485 single-reader: use the SAME `extract_lane` the rest
         # of the file uses. `extract_lane(body)` returns the first lane
         # token it finds, accepting both `lane myia-po-2023:CoursIA-2`
@@ -1320,14 +1466,9 @@ def _find_open_pr_for_issue_by_lane(
         pr_lane = extract_lane(body)
         if pr_lane != lane:
             continue
-        for m in pat.finditer(body):
-            captured = m.group(1) or m.group(2)
-            if captured is None:
-                continue
+        if _pr_body_references_issue(body, issue_number):
             try:
-                if int(captured) == issue_number:
-                    matches.append(int(pr["number"]))
-                    break
+                matches.append(int(pr["number"]))
             except (KeyError, ValueError, TypeError):
                 continue
     if len(matches) == 0:
@@ -2267,6 +2408,14 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                check_open_pr_paths: bool = False) -> int:
     """Issue-claim check: exit 1 if another lane blocks, 0 if clear.
 
+    Exit 3 (#14300): IMPLICIT -- no [CLAIMED] marker blocks, but an OPEN PR
+    of ANOTHER lane references this issue. Implicit occupation has no
+    marker authority, so it neither reuses BLOCKED (exit 1) nor the
+    io/gh-error exit 2 that check_grain_free.py documents for this mode.
+    Emitted only on the read path (`check_open_pr_paths=True`): a `--claim`
+    posting is the deconfliction gesture itself and is never refused by
+    this leg.
+
     Args:
         payload: `gh issue view --json ...` payload (or `from-json`).
         my_lane: caller lane `machine:workspace`.
@@ -2291,11 +2440,12 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             best-effort: on `gh` failure it warns and leaves the primary
             verdict untouched rather than failing the whole check.
     """
-    events = _sort_events(payload)
-    # One shared tracked-files walk feeds BOTH the #10881 lint and the
-    # #10958 empty-scope witness (best-effort: None outside a git repo, in
-    # which case both features degrade to their pre-#10958 behaviour).
+    # One shared tracked-files walk feeds the #10958 empty-scope witness AND
+    # the #19435 root-filename acceptance (best-effort: None outside a git
+    # repo, in which case the empty-scope witness degrades to its pre-#10958
+    # behaviour AND the root-filename acceptance is fail-CLOSED).
     tracked = _git_tracked_files()
+    events = _sort_events(payload, tracked=tracked)
     # #11239 lint -- bare markers without brackets (invisible to the organ).
     # Same non-blocking spirit as the #10881 lint above: the writer learns at
     # the call site that their lock was never registered, instead of two lanes
@@ -2478,6 +2628,38 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         print("STALE_DETECTION disabled -- claims are NOT age-filtered "
               "(--no-stale or threshold None). Old claims still block.",
               file=sys.stderr)
+
+    # #14300 -- the IMPLICIT leg, issue mode (the incident's exact shape:
+    # `check_lane_claim.py 14259 --lane ...` said CLEAR while PR #14293 of
+    # another lane was already 79+/3- deep on the same file). Read path
+    # only (`--claim` is exempt: posting the marker IS the deconfliction
+    # gesture, and the writer path calls this function with
+    # `check_open_pr_paths=False`). Lazy by outcome: it runs only when the
+    # registry carries NO active claim at all -- neither another lane's
+    # (`not others`, final post scope-filter and stale-filter) nor the
+    # caller's (`mine is None`, review 5429946072: the letter of #14300 is
+    # « sans qu'aucun [CLAIMED] n'ait ete pose » -- a lane that HAS posted
+    # its marker owns the grain, and an open PR of a third lane must not
+    # flip its verdict to IMPLICIT), because any claim subsumes implicit
+    # occupation AND skipping the gh round-trip on claimed probes keeps
+    # the picker's N-per-draw probes cheap. Fail-open with a loud WARN on
+    # gh failure, same posture as the #16570 paths leg: a leg that cannot
+    # measure must not fabricate a verdict.
+    implicit_occupation: list[dict] = []
+    if (check_open_pr_paths and not others and mine is None
+            and payload.get("number") is not None):
+        try:
+            implicit_occupation = _find_open_prs_referencing_issue(
+                int(payload["number"]), my_lane)
+        except (RuntimeError, ValueError, TypeError) as exc:
+            print(
+                f"WARN: la jambe IMPLICIT (#14300) n'a pas pu tourner "
+                f"({exc}) : le verdict ci-dessous ne dit rien des PRs "
+                f"OUVERTES d'une autre lane referencant ce grain. "
+                f"Verifier a la main avec "
+                f"`gh pr list --state open --search \"<N>\"` avant d'editer.",
+                file=sys.stderr,
+            )
 
     # #12327 -- lint qualifier runs AFTER the reducer: the epic-wide marker
     # lint can no longer say `il bloque toutes les autres lanes` for a
@@ -2802,6 +2984,14 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # `exit 2`, matching the contract `--paths` already carries (#9959).
         "open_pr_collisions": [
             _serialise_path_collision(c) for c in open_pr_collisions],
+        # #14300 -- the IMPLICIT leg's finding, same single-report contract
+        # as open_pr_collisions above. Non-empty routes the verdict below
+        # to `IMPLICIT` at exit 3 -- distinct from claim-BLOCKED (exit 1)
+        # and from the io/gh-error exit 2 that check_grain_free.py
+        # documents for this mode. Empty list = no OPEN PR of another lane
+        # references the issue (or the leg was skipped: BLOCKED verdict,
+        # posting path, or a gh failure WARNed above).
+        "implicit_occupation": implicit_occupation,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
@@ -3103,6 +3293,35 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         )
         print("\n".join(lines), file=sys.stderr)
         return 2
+    # #14300 -- IMPLICIT: an OPEN PR of another lane references this issue
+    # while no [CLAIMED] marker exists. Distinct verdict by mandate: the
+    # occupation is real (code is already pushed on the other lane's
+    # branch) but carries no marker authority, so it is neither CLEAR
+    # (exit 0) nor BLOCKED (exit 1); it is also not the io/gh-error exit 2
+    # that check_grain_free.py documents for this mode. Exit 3, its own
+    # contract. Paths are named per the body's exigence 2 -- the collision
+    # is a fact of FILE, not of issue.
+    if implicit_occupation:
+        lines = []
+        for pr in implicit_occupation:
+            files = pr.get("files") or []
+            shown = ", ".join(files[:3]) + (
+                f" (+{len(files) - 3} autres)" if len(files) > 3 else "")
+            delta = ""
+            if pr.get("additions") is not None:
+                delta = f"{pr['additions']}+/{pr['deletions'] or 0}-, "
+            lane = pr.get("lane") or "lane ILLISIBLE"
+            lines.append(
+                f"IMPLICIT: lane {lane} a une PR ouverte "
+                f"(#{pr.get('number')}, {delta}sur {shown or 'fichiers inconnus'}) "
+                f"sans [CLAIMED] pose."
+            )
+        print("\n" + "\n".join(lines))
+        print(
+            "          Traiter comme occupee. Poser le marqueur ou "
+            "deconflicter avant d'editer (#14300)."
+        )
+        return 3
     parts = []
     if mine:
         parts.append("resuming your own active claim")

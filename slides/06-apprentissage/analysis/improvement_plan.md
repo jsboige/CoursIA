@@ -161,7 +161,7 @@
 |-----------|---------|-----------|
 | 101-110 | MDP, Q-learning classique | `GameTheory/GameTheory-14b-RL-Basics.ipynb` |
 | 111-115 | Value iteration, policy iteration | `Probas/Infer/Infer-12-Decision.ipynb` |
-| 116-120 | Deep RL (DQN, PPO) | `RL/rl_1_intro_cartpole.ipynb`, `RL/rl_6_dqn_policy_gradient.ipynb` |
+| 116-120 | Deep RL (DQN, PPO) | `RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb`, `RL/RL-06-DQN-Policy-Gradient-Python.ipynb` |
 | 121-125 | RLHF, LLMs | `GenAI/llm-finetuning.ipynb` (si disponible, sinon créer démo) |
 | 126 | Multi-agent RL | `GameTheory/GameTheory-15b-Multi-Agent-RL.ipynb` |
 
@@ -182,7 +182,7 @@
 | 81-95 | EM, HMM learning, Bayes nets | `Probas/Infer/Infer-9-Learning.ipynb`, `Infer-10-Structure-Learning.ipynb` |
 | 96-100 | Modèles génératifs (VAE, GANs) | `GenAI/vae-*.ipynb`, `GenAI/diffusion-models.ipynb` |
 | 101-115 | RL classique (Q-learning, MDP) | `GameTheory/GameTheory-14b-RL-Basics.ipynb` |
-| 116-120 | Deep RL (DQN, PPO, SAC) | `RL/rl_1_intro_cartpole.ipynb`, `RL/rl_6_dqn_policy_gradient.ipynb` |
+| 116-120 | Deep RL (DQN, PPO, SAC) | `RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb`, `RL/RL-06-DQN-Policy-Gradient-Python.ipynb` |
 | 121-125 | RLHF et LLMs | `GenAI/llm-finetuning.ipynb` (créer si absent) |
 | 126 | Multi-agent RL | `GameTheory/GameTheory-15b-Multi-Agent-RL.ipynb` |
 

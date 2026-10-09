@@ -2039,7 +2039,7 @@ layout: section
 <img src="./images/img_100.png" alt="img_100.png" style="display:block; margin:10px auto; max-width:100%;">
 <img src="./images/img_101.png" alt="img_101.png" style="display:block; margin:10px auto; max-width:100%;">
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb">rl_1_intro_cartpole.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb">RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb</a>.</p>
 
 
 ---
@@ -2097,7 +2097,7 @@ layout: dense
 <img src="./images/img_105.png" alt="img_105.png" style="display:block; margin:10px auto; max-width:100%;">
 <img src="./images/img_106.png" alt="img_106.png" style="display:block; margin:10px auto; max-width:100%;">
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb">rl_5_mdp_dp_qlearning.ipynb</a> (MDP, ADP, TD, Q-learning).</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb">RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb</a> (MDP, ADP, TD, Q-learning).</p>
 
 
 ---
@@ -2244,7 +2244,7 @@ layout: dense
 - Finit par converger
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_6_dqn_policy_gradient.ipynb">rl_6_dqn_policy_gradient.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_3_experience_replay_her.ipynb">rl_3_experience_replay_her.ipynb</a> (replay).</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-06-DQN-Policy-Gradient-Python.ipynb">RL-06-DQN-Policy-Gradient-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb">RL-03-Experience-Replay-HER-Python.ipynb</a> (replay).</p>
 
 ---
 
@@ -2273,7 +2273,7 @@ layout: dense
 <img src="./images/img_134.png" alt="img_134.png" style="display:block; margin:10px auto; max-width:100%;">
 <img src="./images/img_135.png" alt="img_135.png" style="display:block; margin:10px auto; max-width:100%;">
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_13_curiosity_exploration.ipynb">rl_13_curiosity_exploration.ipynb</a> (exploration et curiosité).</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-13-Curiosite-RND-Python.ipynb">RL-13-Curiosite-RND-Python.ipynb</a> (exploration et curiosité).</p>
 
 
 ---
@@ -2314,7 +2314,7 @@ layout: dense
 <img src="./images/img_139.png" alt="img_139.png" style="display:block; margin:10px auto; max-width:100%;">
 <img src="./images/img_140.png" alt="img_140.png" style="display:block; margin:10px auto; max-width:100%;">
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb">rl_4_multi_armed_bandits.ipynb</a> (bandits et regret).</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb">RL-04-Bandits-Manchots-Python.ipynb</a> (bandits et regret).</p>
 
 
 ---
@@ -2390,7 +2390,7 @@ layout: dense
 <!-- RLHF : connexion directe entre RL classique (reward) et alignement des LLMs -->
 </div>
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rlpt_1_ppo_lm_rlhf.ipynb">rlpt_1_ppo_lm_rlhf.ipynb</a> (RLHF sur LLM, from scratch).</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb">RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb</a> (RLHF sur LLM, from scratch).</p>
 ---
 
 
@@ -2431,7 +2431,7 @@ layout: dense
 
 <!-- Bradley-Terry : modèle probabiliste de préférence, base de l'InstructGPT reward model -->
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rlpt_3_reward_hacking.ipynb">rlpt_3_reward_hacking.ipynb</a> (limites du reward model).</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb">RLPT-03-Reward-Hacking-Python.ipynb</a> (limites du reward model).</p>
 
 
 ---
@@ -2454,7 +2454,7 @@ layout: dense
 <!-- PPO + KL penalty : équilibre entre optimisation des préférences et préservation des capacités du LLM -->
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb">rl_6c_ppo_from_scratch.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rlpt_4_dpo_vs_ppo.ipynb">rlpt_4_dpo_vs_ppo.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-06c-PPO-Depuis-Zero-Python.ipynb">RL-06c-PPO-Depuis-Zero-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb">RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb</a>.</p>
 ---
 
 
@@ -2484,7 +2484,7 @@ layout: dense
 - **RLVR** (verifiable rewards) : récompenses objectives — tests unitaires, résultats mathématiques exacts — au lieu d'un reward model appris
 - Le corpus PostTraining déroule le pipeline complet : SFT, DPO, GRPO from scratch, runs multi-seed, comparatifs d'évaluation
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb">PT_04_grpo_deepseek_r1.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb">PT_05_rlvr_verifiable_rewards.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/rlpt_2_grpo_minimal.ipynb">rlpt_2_grpo_minimal.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb">PT_04_grpo_deepseek_r1.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb">PT_05_rlvr_verifiable_rewards.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb">RLPT-02-GRPO-Minimal-Python.ipynb</a>.</p>
 
 ---
 layout: section

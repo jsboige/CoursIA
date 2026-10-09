@@ -140,6 +140,55 @@ _LAKE_FRAGMENT = re.compile(
 _BARE_LAKE_TOKEN = {"lake", "lake.exe"}
 
 
+def _lake_holder_names(tree: ast.AST) -> set[str]:
+    """Noms lies a un executable ``lake``, resolu une fois puis reutilise.
+
+    Deux voies, toutes deux mesurees : ``shutil.which("lake")`` (la sonde de
+    toolchain) et un appel a un helper dont le NOM porte ``lake``
+    (``lake = _find_lake()``). Cette seconde voie est celle reellement ecrite
+    dans ``lean_notebook_utils.py``.
+
+    Pourquoi ce detecteur existe (mesure du 2026-10-09, #15666 case 1) : les
+    formes 1 et 2 ne lisent que des **litteraux**, donc les deux voies natives
+    de ``lean_notebook_utils.py`` (``[lake] + args.split()`` L239,
+    ``[lake, "env", "lean", str(tmp_path)]`` L291) etaient **invisibles** --
+    le garde y voyait 1 invocation directe sur 3. Un motif de detection se
+    valide par ses **faux negatifs** : celui-la rendait un chiffre plus petit
+    et plus propre, jamais une erreur, et le cliquet n'aurait pas vu une
+    migration partielle laissant une voie native derriere elle.
+    """
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        value = None
+        targets: list[ast.expr] = []
+        if isinstance(node, ast.Assign):
+            value, targets = node.value, list(node.targets)
+        elif isinstance(node, ast.AnnAssign) and node.value is not None:
+            value, targets = node.value, [node.target]
+        if value is None:
+            continue
+        hit = False
+        if isinstance(value, ast.Call):
+            fn = value.func
+            fname = (fn.attr if isinstance(fn, ast.Attribute)
+                     else fn.id if isinstance(fn, ast.Name) else "")
+            if fname == "which":
+                hit = any(
+                    isinstance(a, ast.Constant) and isinstance(a.value, str)
+                    and a.value in _BARE_LAKE_TOKEN
+                    for a in value.args
+                )
+            elif "lake" in fname.lower():
+                hit = True
+        elif (isinstance(value, ast.Constant)
+                and isinstance(value.value, str)
+                and value.value in _BARE_LAKE_TOKEN):
+            hit = True
+        if hit:
+            names.update(t.id for t in targets if isinstance(t, ast.Name))
+    return names
+
+
 def _concat_constants(node: ast.expr, depth: int = 0) -> str:
     """Parties litterales d'une concatenation (additions de chaines)."""
     if depth > 6:
@@ -233,6 +282,7 @@ def scan_file(path: Path) -> list[tuple[int, str, str]]:
         return []
     findings: list[tuple[int, str, str]] = []
     non_command_ids = _non_command_list_ids(tree)
+    holder_names = _lake_holder_names(tree)
     exempt_ids = non_command_ids
     if _organ_driver(tree):
         exempt_ids |= _argparse_payload_list_ids(tree)
@@ -264,6 +314,15 @@ def scan_file(path: Path) -> list[tuple[int, str, str]]:
                     findings.append((node.lineno, "jeton lake",
                                      f"[{elt.value}, ...]"))
                     break
+            else:
+                # Forme 2bis : meme commande, executable tenu dans une
+                # VARIABLE resolue une fois (cf `_lake_holder_names`). Seule
+                # la tete de liste compte -- c'est la position de commande,
+                # comme pour la forme 2 dont elle est le pendant.
+                if (node.elts and isinstance(node.elts[0], ast.Name)
+                        and node.elts[0].id in holder_names):
+                    findings.append((node.lineno, "jeton lake (variable)",
+                                     f"[{node.elts[0].id}, ...]"))
             continue
         if (isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div)
                 and isinstance(node.right, ast.Constant)
