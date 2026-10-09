@@ -32,8 +32,12 @@ on:
       - '_quarto.yml'
       - 'scripts/regen_quarto_render.py'
       - 'scripts/notebook_tools/fix_ipynb_links.py'
+      - 'scripts/notebook_tools/dump_readme_link_violations.py'
+      - 'scripts/notebook_tools/diff_readme_link_violations.py'
       - 'scripts/notebook_tools/tests/test_fix_ipynb_links.py'
+      - 'scripts/notebook_tools/tests/test_readme_link_violations.py'
       - 'scripts/notebook_tools/tests/test_readme_links_guard_workflow.py'
+      - 'scripts/tests/test_regen_quarto_render.py'
       - '.github/workflows/readme-ipynb-links-guard.yml'
   push:
     branches: [ main ]
@@ -43,7 +47,12 @@ on:
       - '_quarto.yml'
       - 'scripts/regen_quarto_render.py'
       - 'scripts/notebook_tools/fix_ipynb_links.py'
+      - 'scripts/notebook_tools/dump_readme_link_violations.py'
+      - 'scripts/notebook_tools/diff_readme_link_violations.py'
+      - 'scripts/notebook_tools/tests/test_fix_ipynb_links.py'
+      - 'scripts/notebook_tools/tests/test_readme_link_violations.py'
       - 'scripts/notebook_tools/tests/test_readme_links_guard_workflow.py'
+      - 'scripts/tests/test_regen_quarto_render.py'
   workflow_dispatch:
 
 # Annule les runs obsolètes (memes PR / push en rafale). Forme fix de

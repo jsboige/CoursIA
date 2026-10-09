@@ -556,8 +556,11 @@ def report_readme_links(pr_added_files: set[str] | None = None) -> int:
     """
     rendered = set(git_tracked_notebooks())
     if pr_added_files:
-        # Mirror the exclusion used in ``readme_link_violations`` so the
-        # `unrendered` tally below stays consistent with the violation set.
+        # A notebook added by this PR has no Pages render yet, so counting it
+        # as rendered would understate the raw-source tally below. This feeds
+        # that tally only: ``readme_link_violations`` no longer reads
+        # ``pr_added_files`` (its only consumer was the retired STALE_LINK
+        # class), so the violation set is unchanged by this branch.
         rendered -= pr_added_files
     readmes = [p for p in git_tracked_readmes()
                if any(p.startswith(t) for t in NOTEBOOK_SUBTREES)]
