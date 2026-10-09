@@ -156,8 +156,21 @@ QUALIFYING_LANES = frozenset({
     "myia-po-2027:CoursIA-2",
 })
 # `Grain: <genre> -- lane <machine:workspace>` in the pull request body names the
-# lane that carries the work. Same grammar as scripts/check_lane_claim.py.
-GRAIN_LANE_RE = re.compile(r"Grain:[^\n]*?\blane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)")
+# lane that carries the work. The canonical reader is `grain_tag.extract_lane`,
+# the one `scripts/check_lane_claim.py` uses; the patterns below are `findall`
+# variants of it, kept because the consumers need EVERY marker of a body, not
+# just the first.
+#
+# #15864 (4th variant of the self-block class) -- a sentence period is admitted
+# by the token class (hostnames need it), so `lane myia-po-2023:CoursIA-2.` used
+# to be captured as the lane `myia-po-2023:CoursIA-2.` -- a lane no cluster lane
+# matches. A token can no longer END on a period; periods INSIDE it survive
+# (`Foo.Bar:CoursIA-2` is unchanged), so the constraint only removes prose
+# punctuation. Measured on #14549, 2026-10-09: `delivering_lanes` returned
+# `myia-po-2023:CoursIA-2.`, and a lane named ONLY under the punctuated form is
+# absent from the set -- its own self-attesting dossier then passes the gate.
+LANE_TOKEN = r"[A-Za-z0-9_.-]*[A-Za-z0-9_-]:[A-Za-z0-9_.-]*[A-Za-z0-9_-]"
+GRAIN_LANE_RE = re.compile(r"Grain:[^\n]*?\blane\s+(" + LANE_TOKEN + r")")
 SHARED_GITHUB_LOGIN = "jsboige"
 # The gate's only consumer. Every worker lane signs SHARED_GITHUB_LOGIN, so this
 # login is the one surface author the coordinator can recognise as itself.
