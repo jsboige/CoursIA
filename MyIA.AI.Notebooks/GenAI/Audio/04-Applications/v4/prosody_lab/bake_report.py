@@ -143,6 +143,13 @@ def main() -> int:
         args.out.write_text(md, encoding="utf-8")
         print(f"Rapport ecrit: {args.out}", file=sys.stderr)
     else:
+        # Le rapport porte des accents et des glyphes ✓/✗ : un stdout PIPE prend
+        # sinon l'encodage de la locale (cp1252 sous Windows) et emet 0xe9 la ou
+        # un lecteur UTF-8 attend une sequence valide -- tout consommateur qui
+        # decode en UTF-8 echoue. La branche --out ci-dessus est deja explicite ;
+        # celle-ci l'est desormais aussi, sur toutes les plateformes.
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8")
         sys.stdout.write(md)
     return 0
 

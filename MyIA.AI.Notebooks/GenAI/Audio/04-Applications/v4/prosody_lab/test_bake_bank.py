@@ -6,14 +6,18 @@ Sortie : exit 0 si tous les tests passent, exit 1 sinon.
 Usage (depuis la racine du worktree) :
     python MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py
 
-Cablage CI : pas de gate bloquant (cadrage coordinateur #19695 point 4 : "le
-controle de schema et d'unicite est un test unitaire dans la suite existante,
-pas un nouveau workflow CI bloquant"). Le script est executable par le runner
-Scripts Tests via le test runner ad-hoc.
+Cablage CI : suite existante, pas de nouveau workflow bloqueur (cadrage
+coordinateur #19695 point 4 : "le controle de schema et d'unicite est un test
+unitaire dans la suite existante, pas un nouveau workflow CI bloquant"). Ce
+fichier est collecte par la jambe `Scripts Tests (CPU)` de
+`.github/workflows/scripts-tests.yml` -- cite nommement dans sa liste de cibles
+pytest, et ses trois fichiers-sujets (bake_append.py, bake_report.py,
+bank_schema_v1.json) figurent dans ses declencheurs `paths:`.
 """
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -46,7 +50,12 @@ def assert_contains(label: str, haystack: str, needle: str) -> None:
 
 
 def run(cmd: list[str]) -> tuple[int, str, str]:
-    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    # PYTHONIOENCODING force l'enfant en UTF-8 quel que soit l'OS. Sans lui, un
+    # stdout PIPE prend l'encodage de la locale (cp1252 sous Windows) et le
+    # decodage UTF-8 ci-dessous echoue sur le premier accent du rapport
+    # (#19820 : le rapport porte "référence"/"Durée", mesure sur myia-po-2027).
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=env)
     return proc.returncode, proc.stdout, proc.stderr
 
 
