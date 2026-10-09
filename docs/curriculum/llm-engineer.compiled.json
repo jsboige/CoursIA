@@ -577,8 +577,309 @@
           }
         }
       ]
+    },
+    {
+      "id": "jumeaux-dotnet",
+      "kind": "accretions",
+      "prerequisites": [
+        "inference-service"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Texte/10d_TensorSharp_DotNet_Inference.ipynb",
+          "title": "10d. TensorSharp : pilote d'inférence LLM native .NET",
+          "duration_minutes": 45,
+          "kernel": ".NET (C#)",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb",
+          "title": "10e. LLamaSharp : bake-off binding .NET de llama.cpp",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/10f_ORTGenAI_DotNet_BakeOff.ipynb",
+          "title": "10f. ONNX Runtime GenAI : jambe finale du bake-off .NET",
+          "duration_minutes": 45,
+          "kernel": ".NET (C#)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "caches-production",
+      "kind": "accretions",
+      "prerequisites": [
+        "inference-service"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Texte/09d_Production_Caches.ipynb",
+          "title": "9d. Production Caches : payer une fois, servir mille fois",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/09c_Production_Routage_Repli.ipynb",
+          "title": "9c. Routage et Repli : choisir le bon modèle, au bon moment",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/09e_Production_Exploitation.ipynb",
+          "title": "9e — Production : l'exploitation (coût, budget, déploiement, SLO)",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "multimodal",
+      "kind": "accretions",
+      "prerequisites": [
+        "agents-memoire"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb",
+          "title": "RAG 09 — Au-delà du texte : le plafond multimodal du service OSS et le pont vision",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "vision-fine-tuning",
+      "kind": "accretions",
+      "prerequisites": [
+        "adaptation"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb",
+          "title": "FT-06 : LoRA vision-langage — fine-tune du décodeur de Qwen3.5-0.8B",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb",
+          "title": "FT-05 : Fusion et Routage de Modèles -- Combiner les Expertises",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "post-training-avance",
+      "kind": "accretions",
+      "prerequisites": [
+        "adaptation"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb",
+          "title": "PT-04 — Group Relative Policy Optimization (GRPO)",
+          "duration_minutes": 45,
+          "kernel": "coursia-ml-training",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb",
+          "title": "PT-05 — Reinforcement Learning with Verifiable Rewards (RLVR)",
+          "duration_minutes": 45,
+          "kernel": "coursia-ml-training",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb",
+          "title": "PT-07 — Détecter le reward hacking avec rewardspy",
+          "duration_minutes": 15,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env.ipynb",
+          "title": "PT-08 — GRPO from scratch : la mécanique du signal de récompense sur un env vérifié par z3",
+          "duration_minutes": 45,
+          "kernel": "Python 3 (coursia-ml-training)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/PostTraining/PT_11a_grpo_qwen35_rlvr.ipynb",
+          "title": "PT-11a — GRPO + RLVR sur Qwen3.5-0.8B : la série PostTraining quitte le toy env",
+          "duration_minutes": 45,
+          "kernel": "Python 3 (coursia-ml-training)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb",
+          "title": "PT-11d — RLVR multi-seed sur Qwen3.5-0.8B",
+          "duration_minutes": 45,
+          "kernel": "Python (coursia-ml-training)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": true,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "oversight-scaling",
+      "kind": "accretions",
+      "prerequisites": [
+        "securite"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Security/Oversight/Oversight-Scaling-Laws-Statistics.ipynb",
+          "title": "Oversight-Scaling-Laws-Statistics",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/Security/Oversight/Oversight-Scaling-Laws-Analytics.ipynb",
+          "title": "Oversight-Scaling-Laws-Analytics",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/Security/Oversight/Oversight-Scaling-Laws-Nim.ipynb",
+          "title": "Oversight — Scaling Laws sur le jeu de Nim (R12, validation framework)",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/Security/Oversight/Oversight-Scaling-Laws-Wargames.ipynb",
+          "title": "Oversight-Scaling-Laws-Wargames",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
     }
   ],
-  "duration_minutes": 1560,
-  "known_duration_minutes": 1560
+  "duration_minutes": 2295,
+  "known_duration_minutes": 2295
 }

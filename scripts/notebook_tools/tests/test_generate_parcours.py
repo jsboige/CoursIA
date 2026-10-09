@@ -670,6 +670,47 @@ class TestLlmEngineerManifest:
                             f"il devrait etre dans une accretion (detour)"
                         )
 
+    def test_committed_compiled_json_reflects_full_selection(self):
+        """Le `compiled.json` committe doit refleter la selection COMPLETE du manifeste.
+
+        Defaut fondateur (revue ai-01 du 2026-10-09 a `5aad378cea`) : le fichier
+        livre avait ete produit avec les 8 branches SEULES, sans aucune `--accretion`.
+        Les 6 detours en etaient absents, dont les jumeaux .NET (10d/10e/10f) que
+        #19544 exige en detour. Les tests ci-dessus ne lisent que le manifeste :
+        l'ecart entre le manifeste et l'artefact livre ne pouvait donc pas lever.
+
+        La comparaison porte sur la SELECTION — ids, kinds, ordre, prerequis et
+        chemins de carnets, ce que le manifeste possede. Les champs derives du
+        catalogue (titre, duree) ne sont pas verrouilles : le catalogue se regenere
+        (#9377) et ferait rougir ce test pour une raison etrangere a la PR, meme
+        convention que `_expected_total_minutes` qui suit le catalogue plutot qu'un
+        instantane.
+        """
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        committed = json.loads(
+            (gp.REPO_ROOT / "docs" / "curriculum" / "llm-engineer.compiled.json")
+            .read_text(encoding="utf-8"))
+        generated = gp.compile_parcours(
+            catalog, manifest,
+            [b["id"] for b in manifest["branches"]],
+            [a["id"] for a in manifest["accretions"]],
+        )
+
+        def selection(compiled):
+            return [
+                (group["id"], group["kind"], tuple(group["prerequisites"]),
+                 tuple(notebook["path"] for notebook in group["notebooks"]))
+                for group in compiled["groups"]
+            ]
+
+        assert selection(committed) == selection(generated), (
+            "le compiled.json committe ne correspond pas a la selection du manifeste : "
+            "regenerer avec `python scripts/notebook_tools/generate_parcours.py "
+            "--manifest docs/curriculum/llm-engineer.json`, suivi de TOUTES les "
+            "`--branch` et de TOUTES les `--accretion` du manifeste"
+        )
+
 
 class TestFailClosedWrite:
     def test_manual_page_without_marker_is_refused_and_preserved(
