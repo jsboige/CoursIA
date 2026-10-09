@@ -21,7 +21,7 @@ Mesure `K_trajectory --mode wolfram-ksf` (pli 7, c.111) sur les 4 classes canoni
 
 `ksf_trajectory` rend `ksf_mean` en **octets** (difference de longueurs LZ). Les landmarks `WOLFRAM_KSF_LANDMARKS` sont des **bits par cellule**. Le verdict comparait donc directement des octets a des bits.
 
-Pour une trajectoire incompressible, `ksf_mean` vaut `n_cells / 8` octets, c'est-a-dire **exactement 1.0 bit par cellule** — le plancher d'entropie, pas un plafond de compresseur. A n_cells = 64 : `ksf_mean = 8.000` octets = 64 bits / 64 cellules = **1.0 bit/cellule**.
+Pour une trajectoire incompressible, `ksf_mean` vaut `n_cells / 8` octets, c'est-a-dire **exactement 1.0 bit par cellule** — le plancher d'entropie, pas un plafond de compresseur. A n_cells = 64 : `ksf_mean = 8.000` octets, soit **1.0 bit/cellule**.
 
 Le rapport initial lisait ces 8.000 comme des bits et concluait « 8/64 = 12.5 % de l'entropie maximale ». C'est un **facteur 8** : la valeur normalisee correcte est 100 %, et c'est precisement ce que predit la theorie pour Rule 30.
 
