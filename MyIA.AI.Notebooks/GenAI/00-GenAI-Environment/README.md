@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-00-GenAI-Environment
-pedagogical_count: 6
-breakdown: 00-GenAI-Environment=6
-maturity: BETA=6
+pedagogical_count: 7
+breakdown: 00-GenAI-Environment=7
+maturity: BETA=7
 -->
 
 [← GenAI](../README.md) | [↑ ..](../README.md) | [→ Image](../Image/README.md)
