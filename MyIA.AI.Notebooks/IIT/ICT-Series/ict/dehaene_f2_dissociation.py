@@ -30,7 +30,7 @@ plein), B (store vidé partout — lésion), C (self-model ablaté — contrôle
 non-dégénérescence). Verdict pré-enregistré : F2 falsifié si
 ``|score_A - score_B| < 2 * sigma(score_B)``. Mesuré sur les graines
 {0, 1, 7, 42} : ``F2_CONFIRMED_EXTENDED_REQUIRED`` (delta = +0,289 ;
-2·σ_B = 0,074) — avec la nuance que le régime B garde une reconnaissance
+2·σ_B = 0,073) — avec la nuance que le régime B garde une reconnaissance
 significative (p < 0,02), donc le self-model **persiste** sans le store, plus
 faiblement. Carnet : ``ICT-Dissociation-DehaeneF2-SelfReport.ipynb`` ;
 résultats : ``ict/results/dehaene_f2_abc_results.json``.
