@@ -24,6 +24,16 @@ from datetime import datetime
 # a chaque cloture dans le graphique "shadow" (e0..e4, echelle e0-e4, contrat de
 # rejeu en ombre #18923) ; compteurs en statistiques d'execution : switches de
 # cible (total et par jambe), exposition brute.
+#
+# Bras d'execution (#20006) : "base" (defaut) conserve exactement le couple
+# liquidate/set_holdings ; "settled" memorise la cible a la decision, ne soumet
+# que la liquidation de l'autre ETF, puis soumet l'achat depuis on_data a une
+# barre ulterieure (autre quantite nulle, aucun ordre QQQ/SHY ouvert, barre cible
+# presente). Une vente echouee est reattemptee a la decision hebdomadaire suivante
+# (jamais deux fois le meme jour). Statistiques : decisions differees, ordres
+# annules/invalides, soumissions d'achat, seances en liquidites, pending final,
+# delai decision->soumission. Ne change ni le signal, ni la cadence, ni les frais,
+# ni les references QQQ/SPY/60-40.
 
 SMA_WINDOW_DEFAULT = 50
 ROC_WINDOW_DEFAULT = 20
@@ -71,6 +81,14 @@ class BitcoinRegimeGate(QCAlgorithm):
         if self.mode not in MODES:
             raise ValueError(f"mode inconnu : {self.mode}")
 
+        # Execution (#20006) : "base" (defaut) conserve exactement le couple
+        # liquidation puis allocation ; "settled" memorise la cible a la decision,
+        # ne soumet que la liquidation de l'autre ETF, puis differe l'achat a une
+        # barre ulterieure (voir rebalance/on_data). Sans effet hors du mode "gate".
+        self._execution_mode = self.get_parameter("execution") or "base"
+        if self._execution_mode not in ("base", "settled"):
+            raise ValueError(f"execution inconnue : {self._execution_mode}")
+
         # Dates: parametres d'origine (start-year/start-month/end-year/end-month)
         # surcharges par "start"/"end" (ISO YYYY-MM-DD) quand fournis.
         start = self.get_parameter("start")
@@ -111,6 +129,16 @@ class BitcoinRegimeGate(QCAlgorithm):
         self.n_to_qqq = 0
         self.n_to_shy = 0
         self._ref_month = -1
+
+        # Etat du bras d'execution "settled" (#20006)
+        self._pending_target = None
+        self._decision_time = None
+        self.n_deferred = 0
+        self.n_invalid = 0
+        self.n_canceled = 0
+        self.acquire_count = 0
+        self.delay_seconds = 0.0
+        self.cash_closes = 0
 
         # References detenues : rien a signaler, on detient et on reequilibre.
         if self.mode in REFERENCE_WEIGHTS:
@@ -171,6 +199,18 @@ class BitcoinRegimeGate(QCAlgorithm):
 
         current = [h.symbol for h in self.portfolio.values() if h.invested]
         if current == [target]:
+            # Cible deja detenue seule : effacer toute intention differee obsolete
+            # (ex. vente echouee vers la jambe opposee), sans aucune allocation.
+            if self._execution_mode == "settled" and self._pending_target is not None:
+                self._pending_target = None
+                self._decision_time = None
+            return
+
+        # Bras "settled" (#20006) : cible memorisee a la decision, seule la
+        # liquidation de l'autre ETF est soumise, l'achat est differe. "base"
+        # (defaut) reste ci-dessous inchange (liquidation puis allocation).
+        if self._execution_mode == "settled":
+            self._rebalance_settled(target, btc_price, risk_on)
             return
 
         self.liquidate()
@@ -184,6 +224,81 @@ class BitcoinRegimeGate(QCAlgorithm):
                    f"SMA{self.sma_window}={self.sma.current.value:,.0f} "
                    f"ROC{self.roc_window}={self.roc.current.value:+.3f} "
                    f"-> {'QQQ' if risk_on else 'SHY'}")
+
+    def _has_open_orders(self) -> bool:
+        """Vrai si un ordre QQQ ou SHY est ouvert (bloque toute acquisition)."""
+        for order in self.transactions.get_open_orders():
+            if order.symbol == self.qqq or order.symbol == self.shy:
+                return True
+        return False
+
+    def _rebalance_settled(self, target, btc_price, risk_on) -> None:
+        """Decision du bras "settled" (#20006).
+
+        Memorise la cible et l'horodatage AVANT de soumettre, puis ne soumet que
+        la liquidation de l'autre ETF. Un ordre QQQ/SHY ouvert suspend la nouvelle
+        soumission (comptee) : aucun doublon ni annulation implicite. Une transition
+        deja en vol vers la meme cible n'est pas re-soumise.
+        """
+        if self._has_open_orders():
+            self.n_deferred += 1
+            self.debug(f"{self.time:%Y-%m-%d} settled: decision suspendue, ordre QQQ/SHY ouvert")
+            return
+        if (self._pending_target == target and self._decision_time is not None
+                and self.time.date() == self._decision_time.date()):
+            # Decision repetee le meme jour : rien a re-soumettre (aucun doublon).
+            return
+        # Cible et horodatage installes avant la liquidation. Une vente echouee
+        # (annulee/refusee) laissant une quantite non nulle est reattemptee a la
+        # decision hebdomadaire suivante, jamais deux fois le meme jour.
+        self._pending_target = target
+        self._decision_time = self.time
+        other = self.shy if target == self.qqq else self.qqq
+        if self.portfolio[other].invested:
+            self.liquidate(other)
+        self.n_switches += 1
+        if target == self.qqq:
+            self.n_to_qqq += 1
+        else:
+            self.n_to_shy += 1
+        self.debug(f"{self.time:%Y-%m-%d} BTC={btc_price:,.0f} "
+                   f"SMA{self.sma_window}={self.sma.current.value:,.0f} "
+                   f"ROC{self.roc_window}={self.roc.current.value:+.3f} "
+                   f"-> {'QQQ' if risk_on else 'SHY'} (settled: liquidation seule)")
+
+    def _try_acquire(self, data) -> None:
+        """Acquisition differee du bras "settled" (#20006), depuis on_data.
+
+        S'execute seulement si : une cible est en attente, la barre est posterieure
+        a la decision, l'autre jambe a une quantite nulle, aucun ordre QQQ/SHY n'est
+        ouvert, et la barre de la cible est presente. L'intention est effacee AVANT
+        la soumission (aucune reentrance, aucun achat en callback d'ordre).
+        """
+        if self._pending_target is None:
+            return
+        target = self._pending_target
+        if self._decision_time is not None and self.time.date() <= self._decision_time.date():
+            return
+        other = self.shy if target == self.qqq else self.qqq
+        if self.portfolio[other].quantity != 0:
+            return
+        if self._has_open_orders():
+            return
+        if not data.bars.contains_key(target):
+            return
+
+        decision_time = self._decision_time
+        # Effacer l'intention AVANT la soumission : aucune reentrance possible.
+        self._pending_target = None
+        self._decision_time = None
+        self.set_holdings(target, 1.0)
+        self.acquire_count += 1
+        if decision_time is not None:
+            delay = (self.time - decision_time).total_seconds()
+            self.delay_seconds += delay
+            self.log(f"{self.time:%Y-%m-%d %H:%M} settled soumission d'achat {target.value} "
+                     f"decision={decision_time:%Y-%m-%d %H:%M} "
+                     f"delai decision->soumission={delay / 86400:.1f}j")
 
     def on_data(self, data):
         if self.is_warming_up:
@@ -201,6 +316,14 @@ class BitcoinRegimeGate(QCAlgorithm):
             gross = sum(abs(holding.holdings_value) for holding in self.portfolio.values())
             self.gross_sum += gross / value if value > 0 else 0.0
             self.closes += 1
+            if gross == 0.0:
+                # Seance cloturee sans aucune position (audit #20006).
+                self.cash_closes += 1
+
+        # Bras "settled" (#20006) : acquisition differee depuis on_data, a une
+        # barre posterieure a la decision (voir _try_acquire).
+        if self.mode == "gate" and self._execution_mode == "settled":
+            self._try_acquire(data)
 
     def on_order_event(self, order_event):
         if order_event.status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED):
@@ -209,6 +332,13 @@ class BitcoinRegimeGate(QCAlgorithm):
         if order_event.status == OrderStatus.FILLED:
             ticker = order_event.symbol.value
             self.order_counts[ticker] = self.order_counts.get(ticker, 0) + 1
+        # Bras "settled" (#20006) : comptage des issues d'execution. Jamais
+        # d'achat ici (l'acquisition est pilotee par on_data, pas par callback).
+        if self._execution_mode == "settled":
+            if order_event.status == OrderStatus.INVALID:
+                self.n_invalid += 1
+            elif order_event.status == OrderStatus.CANCELED:
+                self.n_canceled += 1
 
     def on_end_of_algorithm(self):
         for ticker in ("QQQ", "SHY", "SPY", "IEF"):
@@ -220,6 +350,20 @@ class BitcoinRegimeGate(QCAlgorithm):
         self.set_runtime_statistic("Switches SHY", str(self.n_to_shy))
         self.set_runtime_statistic("Mode", self.mode)
         self.set_runtime_statistic("Frequency", self.frequency)
+        if self._execution_mode == "settled":
+            # Les "acquisitions" comptent des SOUMISSIONS d'achat, pas des
+            # remplissages ; le delai va de la decision a la soumission, pas au fill.
+            self.set_runtime_statistic("Execution", self._execution_mode)
+            self.set_runtime_statistic("Settled decisions differees", str(self.n_deferred))
+            self.set_runtime_statistic("Settled ordres annules", str(self.n_canceled))
+            self.set_runtime_statistic("Settled ordres invalides", str(self.n_invalid))
+            self.set_runtime_statistic("Settled acquisitions (soumissions)", str(self.acquire_count))
+            self.set_runtime_statistic("Settled seances en liquidites", str(self.cash_closes))
+            self.set_runtime_statistic(
+                "Settled pending target (fin)",
+                self._pending_target.value if self._pending_target is not None else "aucune")
+            avg = self.delay_seconds / self.acquire_count / 86400 if self.acquire_count else 0.0
+            self.set_runtime_statistic("Settled delai decision->soumission (j)", f"{avg:.1f}")
         final = self.portfolio.total_portfolio_value
         self.log(f"BITCOIN REGIME GATE ({self.mode}): Final=${final:,.2f}, "
                  f"Return={(final - self.start_value) / self.start_value:.2%}, gross exposure={gross:.3f}")

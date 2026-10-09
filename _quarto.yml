@@ -15,7 +15,7 @@ project:
     # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7
     # n'etend pas le glob **/README.md sur les sous-repertoires.
     # Archives et libs vendored EXCLUES (history interne, non pedagogique).
-    # 529 READMEs (racine + arborescence, hors archives).
+    # 528 READMEs (racine + arborescence, hors archives).
     - "README.md"
     - "docker-configurations/docs/README.md"
     - "docker-configurations/notebook-runner/README.md"
@@ -421,7 +421,6 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/session_state/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/session_state/reference_docs/stable_marriage/upstream/README.md"
-    - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/kls_lean/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/patterns/README.md"
@@ -548,7 +547,7 @@ project:
     # docs/*.md rendus en HTML (issue #18422). Meme mecanisme
     # que les READMEs : liste explicite (globs non etendus en Quarto 1.7).
     # Garde `---` (#11451) appliquee auto-resorbante.
-    # 171 docs/*.md (sous-arbre docs/, hors README/archive/hr).
+    # 172 docs/*.md (sous-arbre docs/, hors README/archive/hr).
     - "docs/audit/workflow-path-filters/latest.md"
     - "docs/cadrage/aima-armature.md"
     - "docs/cadrage/data-policy.md"
@@ -708,6 +707,7 @@ project:
     - "docs/research/c1111-hoel-pearl-ict32-verdict.md"
     - "docs/research/cartier-miller-p0-cartography.md"
     - "docs/research/cartier-miller-p1-elliptic-prefix.md"
+    - "docs/research/cartier-miller-p1-pilot.md"
     - "docs/research/cartier-miller-p1-plus-results.md"
     - "docs/research/cartier-miller-p1-plus-scoping.md"
     - "docs/research/fallacy-detection-survey.md"
@@ -723,7 +723,7 @@ project:
     # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).
     # Liste explicite — globs non etendus en Quarto 1.7.
     # Execution desactivee + echo: true au niveau racine (_quarto.yml).
-    # 1504 notebooks (sous-arbres: MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/Complexity/, MyIA.AI.Notebooks/Compression/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/Security/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/NLP/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/QuantConnect/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/).
+    # 1503 notebooks (sous-arbres: MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/Complexity/, MyIA.AI.Notebooks/Compression/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/Security/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/NLP/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/QuantConnect/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/).
     - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb"
@@ -1335,28 +1335,28 @@ project:
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day7-Production/Lab16-Data-Science-Agent.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day7-Production/Lab17-Final-Project.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-10-TSAD-Benchmark-Flaws-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-11-MatrixProfile-Multidim-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement&AutoML.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-4b-ModelComparison-Validity-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-5b-Series-Temporelles-Classiques-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-8-Clustering-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-8-Clustering.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection.ipynb"
     - "MyIA.AI.Notebooks/ML/ML.Net/TP-prevision-ventes.ipynb"
     - "MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb"
     - "MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb"
@@ -1938,7 +1938,6 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02-Tao-Lean-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb"
-    - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-05-KLS-Lean-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-08-Ramsey-VdW.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique_en.ipynb"
