@@ -10,12 +10,14 @@ le budget declare -- il ne pouvait pas rougir sur une composition
 incoherente avec la machine.
 
 Cet organe comble ce trou :
-- RAM VM reelle : lue via `measure_po2024_topology.measure()` (WMI / procfs / sysctl).
-- Composition declaree : lue depuis `docker-configurations/runners/<host>_budget.json`,
-  snapshot des effectifs x caps par famille. Le JSON est la source de verite
-  auditable, et il evolue avec le deploiement.
-- Plafond dur declare : MemoryMax de la slice `coursia-ci.slice`, parse depuis
-  `scripts/ci/docker/linux-runner/persist/coursia-ci.slice` (champ `MemoryMax=`).
+- RAM VM : **declaree** pour la machine-cible (`PO2024_VM_RAM_GIB`), jamais
+  mesuree sur l'hote qui execute l'organe -- cf. le bloc dedie plus bas.
+- Composition : **derivee des unites DEPLOYEES** (`persist/<machine>/<unite>.d/`
+  puis `persist/<unite>`) : effectif = argument entier de l'`ExecStart` du
+  wrapper de jambe, cap = `Environment=` de la meme unite. L'organe mesure le
+  deploiement, pas un instantane ecrit a la main ni les valeurs documentees.
+- Plafond dur declare : MemoryMax de la slice `coursia-ci.slice`, surcharge
+  `persist/<machine>/coursia-ci.slice` d'abord, generique en repli.
 - Marge : 0,5 GiB absorbe les arrondis d'unite (1024 vs 1000) et la memoire
   reservee au systeme hote (Windows hote / WSL overhead).
 
@@ -44,6 +46,24 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_BUDGET = REPO_ROOT / "docker-configurations" / "runners" / "po2024_budget.json"
 DEFAULT_SLICE = REPO_ROOT / "scripts" / "ci" / "docker" / "linux-runner" / "persist" / "coursia-ci.slice"
 DEFAULT_SUPERVISE = REPO_ROOT / "scripts" / "ci" / "docker" / "linux-runner" / "supervise.sh"
+PERSIST_DIR = REPO_ROOT / "scripts" / "ci" / "docker" / "linux-runner" / "persist"
+
+# Les trois jambes du pool CI, telles que le deploiement les installe :
+# (nom de famille, unite systemd, script du wrapper, variable de cap memoire,
+#  cap par defaut en MiB si l'unite ne le declare pas).
+#
+# L'effectif N n'est PAS dans une constante : il est lu dans l'argument entier
+# de l'`ExecStart=` de l'unite. C'est le point de la revue coordinateur du
+# 2026-10-08 (defaut 1) : le meme nombre ecrit a la main dans un snapshot ou
+# dans un en-tete de documentation derive silencieusement du deploiement.
+RUNNER_LEGS: tuple[tuple[str, str, str, str, int], ...] = (
+    ("start", "coursia-runner.service", "coursia-runner-start.sh",
+     "COURSIA_RUNNER_MEMORY", 1536),
+    ("waiters", "coursia-waiters.service", "coursia-waiters-start.sh",
+     "COURSIA_RUNNER_WAITER_MEMORY", 512),
+    ("lean", "coursia-lean.service", "coursia-lean-start.sh",
+     "COURSIA_LEAN_RUNNER_MEMORY", 6 * 1024),
+)
 
 # Marge de securite en GiB : arrondis d'unite (1 GiB = 1024 MiB mais
 # declare parfois comme 1000 MB) + memoire reservee a l'hote (Windows +
@@ -105,6 +125,66 @@ def lookup_slice(machine: str) -> Path:
     if machine_slice.is_file():
         return machine_slice
     return DEFAULT_SLICE
+
+
+def _deployed_unit_text(machine: str, unit: str, persist_dir: Path) -> tuple[str, list[Path]]:
+    """Texte de l'unite telle que DEPLOYEE pour `machine`, + les fichiers lus.
+
+    Ordre systemd : le drop-in de la machine est lu APRES l'unite et peut la
+    surcharger ; on retourne donc les deux, le drop-in en dernier, et
+    l'appelant resout « derniere definition gagne ». Un drop-in qui ne
+    redefinit pas un champ ne l'efface pas -- d'ou la concatenation plutot
+    qu'un choix exclusif.
+    """
+    parts: list[str] = []
+    read: list[Path] = []
+    base = persist_dir / unit
+    if base.is_file():
+        parts.append(base.read_text(encoding="utf-8"))
+        read.append(base)
+    dropin_dir = persist_dir / machine / f"{unit}.d"
+    if dropin_dir.is_dir():
+        for dropin in sorted(dropin_dir.glob("*.conf")):
+            parts.append(dropin.read_text(encoding="utf-8"))
+            read.append(dropin)
+    return "\n".join(parts), read
+
+
+def _execstart_instances(text: str, script: str) -> int | None:
+    """Effectif N lu dans l'`ExecStart` du wrapper `script`.
+
+    Formes rencontrees dans le deploiement : `... <script> 12` et
+    `... <script> start 4`. Le N est le DERNIER jeton entier de la ligne --
+    l'unite `start` porte un sous-commande textuelle avant lui. Derniere
+    definition gagne (un drop-in peut redefinir l'ExecStart).
+    """
+    found: int | None = None
+    for m in re.finditer(rf"^ExecStart=.*{re.escape(script)}\s+(.+)$", text, re.MULTILINE):
+        tail = m.group(1).strip().split("#", 1)[0].strip()
+        for tok in reversed(tail.split()):
+            if tok.isdigit():
+                found = int(tok)
+                break
+    return found
+
+
+def _cap_gib_from_env(text: str, var: str, default_mib: int) -> float:
+    """Cap memoire unitaire (GiB) lu dans `Environment=<var>=<valeur>`.
+
+    Derniere definition gagne. Sans declaration, le defaut de l'unite est pris
+    (le cap par defaut est documente en tete du wrapper, il ne derive pas au
+    meme rythme que l'effectif).
+    """
+    value: str | None = None
+    for m in re.finditer(rf'^Environment="?{re.escape(var)}=([^"\s]+)"?', text, re.MULTILINE):
+        value = m.group(1)
+    if value is None:
+        return default_mib / 1024
+    m = re.match(r"^(\d+)([gGmM])?$", value.strip())
+    if not m:
+        return default_mib / 1024
+    n = int(m.group(1))
+    return float(n) if (m.group(2) or "").lower() == "g" else n / 1024
 
 
 @dataclass
@@ -211,6 +291,62 @@ class BudgetSnapshot:
             notes=notes,
         )
 
+    @classmethod
+    def from_deployed_units(
+        cls, machine: str, persist_dir: Path | None = None
+    ) -> BudgetSnapshot:
+        """Composition derivee des unites DEPLOYEES pour `machine`.
+
+        #19805 revue coordinateur 2026-10-08 (defaut 1) : la composition doit
+        suivre ce que la machine EXECUTE. Ni le snapshot JSON ni les valeurs
+        documentees en en-tete de `supervise.sh` ne sont le deploiement -- le
+        premier est recopie a la main, les secondes ont derive (24 slots
+        d'attente documentes quand l'unite en lance 12, et 6 sur po-2024).
+
+        Resolution par jambe : le drop-in `persist/<machine>/<unite>.d/*.conf`
+        s'il redefinit l'`ExecStart`, sinon l'unite de base `persist/<unite>`.
+        L'effectif vient de l'`ExecStart` (dernier jeton entier), le cap de
+        l'`Environment=` de la meme unite, avec le defaut de la jambe en repli.
+        """
+        root = persist_dir if persist_dir is not None else PERSIST_DIR
+        comp: dict[str, CompositionFamily] = {}
+        sources: list[str] = []
+        missing: list[str] = []
+
+        for name, unit, script, var, default_mib in RUNNER_LEGS:
+            text, files = _deployed_unit_text(machine, unit, root)
+            if not files:
+                missing.append(str(root / unit))
+                continue
+            instances = _execstart_instances(text, script)
+            if instances is None:
+                missing.append(f"{root / unit} (ExecStart {script} illisible)")
+                continue
+            cap = _cap_gib_from_env(text, var, default_mib)
+            sources.append(f"{name}={instances}x{cap:g}G")
+            comp[name] = CompositionFamily(
+                instances=instances,
+                cap_gib=cap,
+                total_gib=round(instances * cap, 3),
+            )
+
+        if missing:
+            raise FileNotFoundError(
+                "unite(s) de jambe introuvable(s) ou illisible(s) : "
+                + ", ".join(missing)
+            )
+
+        total = round(sum(f.total_gib for f in comp.values()), 3)
+        return cls(
+            machine=machine,
+            composition=comp,
+            composition_total_gib=total,
+            notes=(
+                f"derive des unites deployees ({machine}) : "
+                + ", ".join(sources)
+            ),
+        )
+
 
 def parse_memory_max_gib(slice_path: Path) -> float | None:
     """Lit `MemoryMax=` (ou `MemoryHigh=`) depuis une unit slice systemd.
@@ -253,6 +389,11 @@ class AssertResult:
     borne_gib: float
     marge_gib: float
     verdict: str  # "OK" | "INCOHERENT"
+    # Provenance de la composition (unites deployees / supervise.sh / JSON).
+    # Portee au verdict pour que le lecteur sache CE QUI a ete mesure : un
+    # organe qui confronte une composition doit dire d'ou elle vient, sinon
+    # « 15 GiB » ne se distingue pas de « 27 GiB » comme resultat.
+    source: str = ""
     details: list[str] = field(default_factory=list)
 
 
@@ -296,6 +437,7 @@ def assert_memory_budget(
         borne_gib=borne_gib,
         marge_gib=marge_gib,
         verdict="INCOHERENT" if incoherence else "OK",
+        source=budget.notes,
         details=details,
     )
 
@@ -306,7 +448,8 @@ def main(argv: list[str] | None = None) -> int:
         "--budget",
         type=Path,
         default=DEFAULT_BUDGET,
-        help=f"Snapshot JSON de la composition (defaut: {DEFAULT_BUDGET.relative_to(REPO_ROOT)})",
+        help=f"Snapshot JSON de la composition, lu seulement avec --from-json "
+             f"(defaut: {DEFAULT_BUDGET.relative_to(REPO_ROOT)})",
     )
     parser.add_argument(
         "--slice",
@@ -321,9 +464,16 @@ def main(argv: list[str] | None = None) -> int:
         help=f"Marge de securite en GiB (defaut: {DEFAULT_MARGE_GIB})",
     )
     parser.add_argument(
+        "--from-json",
+        action="store_true",
+        help="Composition depuis le snapshot JSON (--budget). Comparaison/audit "
+             "seulement : le snapshot est recopie a la main et derive.",
+    )
+    parser.add_argument(
         "--from-supervise",
         action="store_true",
-        help="Derive la composition depuis les defauts supervise.sh (defaut: lit le JSON)",
+        help="Composition depuis les defauts documentes de supervise.sh. Repli "
+             "pour une machine sans unites deployees au depot.",
     )
     parser.add_argument(
         "--machine",
@@ -337,19 +487,28 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    # Composition : JSON historique OU derivation supervise.sh (#19805 revue
-    # coordinateur 2026-10-08, defaut 1). La derivation est la voie recommandee
-    # : le snapshot JSON maintenu a la main derive a chaque push supervise.sh.
-    if args.from_supervise:
+    # Composition : les unites DEPLOYEES par defaut (#19805 revue coordinateur
+    # 2026-10-08, defaut 1). Ni le snapshot JSON (recopie a la main) ni les
+    # valeurs documentees de supervise.sh ne sont le deploiement : les deux ont
+    # derive. Les deux restent disponibles pour l'audit et le repli, jamais
+    # comme voie par defaut -- un organe qui mesure sa propre constante ne
+    # mesure rien.
+    if args.from_json:
+        if not args.budget.is_file():
+            print(f"Budget snapshot introuvable: {args.budget}", file=sys.stderr)
+            return 2
+        budget = BudgetSnapshot.from_json(args.budget)
+    elif args.from_supervise:
         if not DEFAULT_SUPERVISE.is_file():
             print(f"supervise.sh introuvable: {DEFAULT_SUPERVISE}", file=sys.stderr)
             return 2
         budget = BudgetSnapshot.from_supervise_defaults(DEFAULT_SUPERVISE, args.machine)
     else:
-        if not args.budget.is_file():
-            print(f"Budget snapshot introuvable: {args.budget}", file=sys.stderr)
+        try:
+            budget = BudgetSnapshot.from_deployed_units(args.machine)
+        except FileNotFoundError as exc:
+            print(f"{exc}", file=sys.stderr)
             return 2
-        budget = BudgetSnapshot.from_json(args.budget)
 
     # RAM VM de la machine-CIBLE (#19805 revue coordinateur 2026-10-08,
     # defaut 3) : declaree comme constante, PAS mesuree sur l'hote de l'organe.
@@ -378,6 +537,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[{result.verdict}] {result.machine} : "
               f"composition {result.composition_total_gib:.1f} GiB vs "
               f"borne {result.borne_gib:.1f} GiB (marge {result.marge_gib} GiB)")
+        if result.source:
+            print(f"  Source        : {result.source}")
         for line in result.details:
             print(line)
 

@@ -184,14 +184,24 @@ def test_lookup_vm_ram_gib_unknown_returns_none():
     assert lookup_vm_ram_gib("") is None
 
 
-def test_lookup_slice_falls_back_to_generic():
-    """Defaut 2 : surcharge machine prime ; fallback generique en repli.
+def test_lookup_slice_machine_override_wins_on_real_po2024():
+    """Defaut 2, sur le depot reel : la surcharge po-2024 prime sur la generique.
 
-    La surcharge `persist/<machine>/coursia-ci.slice` n'est PAS encore
-    materialisee pour po-2024 (cf. #19802) -- l'organe doit retomber sur la
-    generique sans crasher.
+    `persist/po-2024/coursia-ci.slice` est materialisee sur `main` depuis
+    #19802. Le test precedent affirmait le repli sur la generique en se
+    fondant sur l'absence de ce fichier : son postulat a disparu avec le
+    deploiement, il n'etait donc plus un test de l'organe mais un test de
+    l'etat du depot.
     """
     path = lookup_slice("po-2024")
+    assert path == REPO_SLICE.parent / "po-2024" / "coursia-ci.slice"
+    assert path.is_file()
+    assert parse_memory_max_gib(path) == 16.0
+
+
+def test_lookup_slice_falls_back_to_generic_for_unknown_machine():
+    """Machine sans surcharge : repli sur la generique, sans crasher."""
+    path = lookup_slice("po-9999-unknown")
     assert path == REPO_SLICE
     assert path.is_file()
 
@@ -261,3 +271,153 @@ def test_from_supervise_defaults_falls_back_when_missing():
         assert snap.composition["lean"].cap_gib == 6.0
     finally:
         path.unlink()
+
+
+# --------------------------------------------------------------------------
+# Composition derivee des unites DEPLOYEES (defaut 1, revue coordinateur du
+# 2026-10-08). Ces tests portent sur le fichier des unites, pas sur un
+# instantane : c'est le point du defaut -- l'organe doit suivre le
+# deploiement, donc le postulat du test doit lui aussi etre lu au deploiement.
+# --------------------------------------------------------------------------
+
+
+def test_from_deployed_units_follows_the_dropin_on_real_po2024():
+    """L'effectif waiters vient du drop-in deploye, pas d'une constante.
+
+    po-2024 abaisse l'effectif de la jambe waiters par un drop-in, sans
+    toucher l'unite partagee avec ai-01. Un organe qui lit une constante
+    (24 documentes, 12 dans l'unite generique) annonce 12 ou 24 slots la ou
+    la machine en execute 6, et rougit a tort. Le drop-in est re-parse ici :
+    l'organe n'est pas cru sur parole.
+    """
+    import re as _re
+
+    persist = REPO_ROOT / "scripts" / "ci" / "docker" / "linux-runner" / "persist"
+    dropin = persist / "po-2024" / "coursia-waiters.service.d" / "10-sizing.conf"
+    assert dropin.is_file(), "drop-in po-2024 attendu sur main (#19802)"
+    dm = _re.search(
+        r"^ExecStart=.*coursia-waiters-start\.sh\s+(\d+)",
+        dropin.read_text(encoding="utf-8"),
+        _re.MULTILINE,
+    )
+    assert dm, "ExecStart attendu dans le drop-in"
+    expected = int(dm.group(1))
+
+    snap = BudgetSnapshot.from_deployed_units("po-2024")
+    assert snap.machine == "po-2024"
+    assert set(snap.composition) == {"start", "waiters", "lean"}
+    assert snap.composition["waiters"].instances == expected
+
+    # L'unite generique (celle d'ai-01) ne doit PAS gagner quand elle differe :
+    # ce serait un dimensionnement pris sur une machine et applique a l'autre.
+    gm = _re.search(
+        r"^ExecStart=.*coursia-waiters-start\.sh\s+(\d+)",
+        (persist / "coursia-waiters.service").read_text(encoding="utf-8"),
+        _re.MULTILINE,
+    )
+    if gm and int(gm.group(1)) != expected:
+        assert snap.composition["waiters"].instances != int(gm.group(1))
+
+    summed = sum(f.total_gib for f in snap.composition.values())
+    assert abs(summed - snap.composition_total_gib) < 0.01
+    assert snap.notes
+
+
+def test_from_deployed_units_dropin_beats_base_unit(tmp_path):
+    """Un drop-in qui redefinit l'ExecStart gagne sur l'unite de base."""
+    (tmp_path / "coursia-runner.service").write_text(
+        "[Service]\nExecStart=/usr/local/bin/coursia-runner-start.sh start 4\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "coursia-waiters.service").write_text(
+        "[Service]\nExecStart=/usr/local/bin/coursia-waiters-start.sh 12\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "coursia-lean.service").write_text(
+        "[Service]\nExecStart=/usr/local/bin/coursia-lean-start.sh 2\n",
+        encoding="utf-8",
+    )
+    dropin_dir = tmp_path / "po-2024" / "coursia-waiters.service.d"
+    dropin_dir.mkdir(parents=True)
+    # Forme systemd reelle : ExecStart= vide (reset) puis la nouvelle ligne.
+    (dropin_dir / "10-sizing.conf").write_text(
+        "[Service]\nExecStart=\n"
+        "ExecStart=/usr/local/bin/coursia-waiters-start.sh 6\n",
+        encoding="utf-8",
+    )
+
+    snap = BudgetSnapshot.from_deployed_units("po-2024", tmp_path)
+    assert snap.composition["start"].instances == 4
+    assert snap.composition["waiters"].instances == 6  # le drop-in gagne
+    assert snap.composition["lean"].instances == 2
+    # Caps non declares -> defauts de la jambe (1536m / 512m / 6g).
+    assert snap.composition["start"].total_gib == 6.0
+    assert snap.composition["waiters"].total_gib == 3.0
+    assert snap.composition["lean"].total_gib == 12.0
+    assert snap.composition_total_gib == 21.0
+
+
+def test_from_deployed_units_reads_cap_from_environment(tmp_path):
+    """Le cap unitaire vient de `Environment=` quand l'unite le declare."""
+    (tmp_path / "coursia-runner.service").write_text(
+        "[Service]\nEnvironment=COURSIA_RUNNER_MEMORY=2g\n"
+        "ExecStart=/usr/local/bin/coursia-runner-start.sh start 2\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "coursia-waiters.service").write_text(
+        "[Service]\nEnvironment=COURSIA_RUNNER_WAITER_MEMORY=256m\n"
+        "ExecStart=/usr/local/bin/coursia-waiters-start.sh 4\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "coursia-lean.service").write_text(
+        "[Service]\nExecStart=/usr/local/bin/coursia-lean-start.sh 1\n",
+        encoding="utf-8",
+    )
+    snap = BudgetSnapshot.from_deployed_units("po-2024", tmp_path)
+    assert snap.composition["start"].cap_gib == 2.0
+    assert snap.composition["waiters"].cap_gib == 0.25
+    assert snap.composition["start"].total_gib == 4.0
+    assert snap.composition["waiters"].total_gib == 1.0
+
+
+def test_from_deployed_units_missing_unit_raises(tmp_path):
+    """Une jambe absente leve : l'organe ne devine pas un effectif."""
+    (tmp_path / "coursia-runner.service").write_text(
+        "ExecStart=/usr/local/bin/coursia-runner-start.sh start 4\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(FileNotFoundError):
+        BudgetSnapshot.from_deployed_units("po-2024", tmp_path)
+
+
+def test_from_deployed_units_missing_execstart_raises(tmp_path):
+    """Unite presente mais ExecStart illisible : refus, pas d'effectif invente."""
+    for unit in ("coursia-runner.service", "coursia-waiters.service", "coursia-lean.service"):
+        (tmp_path / unit).write_text("[Service]\nDescription=vide\n", encoding="utf-8")
+    with pytest.raises(FileNotFoundError):
+        BudgetSnapshot.from_deployed_units("po-2024", tmp_path)
+
+
+def test_cli_default_reads_deployed_units_not_snapshot():
+    """Le defaut de la CLI est le deploiement -- pas le JSON recopie a la main.
+
+    Le workflow CI appelle l'organe SANS drapeau. Si le defaut redevenait le
+    snapshot, l'organe remesurerait sa propre constante et le rouge fondateur
+    reviendrait sans qu'aucun test ne le signale : c'est ce que ce test ferme.
+    """
+    import subprocess
+
+    proc = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "ci" / "assert_memory_budget.py"), "--json"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        cwd=str(REPO_ROOT),
+    )
+    payload = json.loads(proc.stdout)
+    assert "unites deployees" in payload["source"]
+    joined = "\n".join(payload["details"])
+    for leg in ("start", "waiters", "lean"):
+        assert leg in joined
+    assert "docker" not in joined  # la famille du snapshot JSON, pas du deploiement
+    assert proc.returncode == (1 if payload["verdict"] == "INCOHERENT" else 0)

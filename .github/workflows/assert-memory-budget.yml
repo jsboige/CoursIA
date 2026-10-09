@@ -7,25 +7,26 @@ name: Assert memory budget (composition vs RAM VM, #19805)
 # mesure la topologie mais ne confronte pas la composition au budget declare,
 # et le garde precedent ne connaissait que le budget (pas la RAM VM).
 #
-# Cet organe `scripts/ci/assert_memory_budget.py` comble le trou. Il lit
-# la RAM VM reelle (via `measure_po2024_topology.measure()`) et la
-# composition depuis `docker-configurations/runners/<host>_budget.json`,
-# puis compare a la borne la plus contraignante entre MemoryMax de la
-# slice et la RAM VM (hote reserve). Rouge si la composition depasse.
+# Cet organe `scripts/ci/assert_memory_budget.py` comble le trou. Il derive la
+# composition des unites DEPLOYEES (`scripts/ci/docker/linux-runner/persist/` :
+# `ExecStart` de chaque jambe, le drop-in de la machine-cible en surcharge),
+# prend la RAM VM de la machine-cible comme constante DECLAREE -- jamais mesuree
+# sur l'hote qui execute l'organe -- et compare a la borne la plus contraignante
+# entre MemoryMax de la slice et la RAM VM (hote reserve). Rouge si la
+# composition depasse.
 #
 # Le verdict sert deux causes :
-# 1. Detecter la derive du budget quand une revision de .wslconfig ou de
-#    la composition se fait sans toucher le snapshot (mesure fondateur
-#    de l'issue #19805 : l'agrandissement VM du 2026-09-21 a ete revertu
-#    sans que les declarations suivent).
+# 1. Detecter la derive de la composition quand un dimensionnement change sans
+#    que le reste suive (mesure fondateur de l'issue #19805 : l'agrandissement
+#    VM du 2026-09-21 a ete revertu sans que les declarations suivent).
 # 2. Empecher l'extension silencieuse des caps par conteneur (chaque
-#    modification de supervise.sh qui touche --memory doit etre
-#    accompagnee d'une mise a jour du snapshot).
+#    modification de supervise.sh qui touche --memory doit etre accompagnee
+#    d'un dimensionnement coherent, et celui-ci vit dans les unites).
 #
-# Workflow bloquant sur pull_request et push (les PRs touchant le snapshot,
-# la slice, ou les supervise.sh concernes reapparaissent dans le diff et
-# le guard rougit). Schedule quotidien en arriere-plan pour detecter les
-# derives du snapshot.
+# Workflow bloquant sur pull_request et push (les PRs touchant une unite, un
+# drop-in de machine, la slice ou supervise.sh concernes reapparaissent dans le
+# diff et le guard rougit). Schedule quotidien en arriere-plan pour detecter les
+# derives qui n'ont pas ete portees par une PR.
 
 on:
   pull_request:
@@ -33,7 +34,10 @@ on:
       - "docker-configurations/runners/**"
       - "scripts/ci/assert_memory_budget.py"
       - "scripts/ci/measure_po2024_topology.py"
-      - "scripts/ci/docker/linux-runner/persist/coursia-ci.slice"
+      # Les unites et drop-ins dont la composition est DERIVEE : le guard doit
+      # se relancer quand l'un d'eux change, sinon il rend un verdict sur un
+      # dimensionnement qui n'est plus celui du depot.
+      - "scripts/ci/docker/linux-runner/persist/**"
       - "scripts/ci/docker/linux-runner/supervise.sh"
   push:
     branches: [main]
@@ -41,7 +45,7 @@ on:
       - "docker-configurations/runners/**"
       - "scripts/ci/assert_memory_budget.py"
       - "scripts/ci/measure_po2024_topology.py"
-      - "scripts/ci/docker/linux-runner/persist/coursia-ci.slice"
+      - "scripts/ci/docker/linux-runner/persist/**"
       - "scripts/ci/docker/linux-runner/supervise.sh"
   schedule:
     # Verifie la derive de l'instrument meme quand aucune PR ne touche
