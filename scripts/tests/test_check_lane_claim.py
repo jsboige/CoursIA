@@ -6245,6 +6245,10 @@ def test_18341_no_scope_declared_leg_not_called(monkeypatch, tmp_path, capsys):
     called = []
     monkeypatch.setattr(clc, "_compute_open_pr_collisions",
                         lambda paths, my_lane, prs=None: called.append(1) or ([], []))
+    # Hermetique : sans ce stub, la jambe IMPLICIT (#14300) interroge les PRs
+    # ouvertes en direct ; sur un poste authentifie, une PR reelle citant
+    # #18305 rend rc=3 (IMPLICIT) et le test echoue selon l'etat du depot.
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [])
     rc = clc.main([
         "18305", "--lane", "myia-po-2027:CoursIA-2", "--from-json", source,
         "--no-stale",
