@@ -337,17 +337,23 @@ PILOT: list[Guard] = [
         blocking=True,
         shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
     ),
-    # F2 #18970 -- garde delta-only sur les violations STALE_LINK /
-    # BROKEN / DEAD_RENDER. L'audit BRUT de `regen_quarto_render.py
-    # --check-readme-links` rend 2432 violations au 2026-10-03 : un argv
-    # qui enverrait cette commande en blocking=True rougirait systematiquement
-    # toute PR touchant un README de serie ou un notebook rendu. Le delta
-    # argv (3-temps : HEAD capture -> base capture -> comparateur) ne
-    # rougit QUE sur les violations NOUVELLES introduites par la PR,
-    # laissant le backlog historique au sweep par famille en aval (#18911
-    # acceptation #2). Temoin verifie localement : une STALE_LINK injectee
-    # dans HEAD fait `NOUVELLES=1` (=exit 1), un PR sans nouvelle
+    # F2 #18970, classe inversee par #18911 (geste 2, 2026-10-09) --
+    # garde delta-only sur les violations HTML_404 / BROKEN. L'audit BRUT
+    # de `regen_quarto_render.py --check-readme-links` rend 618 violations
+    # au 2026-10-09 : un argv qui enverrait cette commande en blocking=True
+    # rougirait systematiquement toute PR touchant un README de serie ou un
+    # notebook rendu. Le delta argv (3-temps : HEAD capture -> base capture
+    # -> comparateur) ne rougit QUE sur les violations NOUVELLES introduites
+    # par la PR, laissant le backlog historique au sweep par famille en aval
+    # (#18911 acceptation #2). Temoin verifie localement : une HTML_404
+    # injectee dans HEAD fait `NOUVELLES=1` (=exit 1), un PR sans nouvelle
     # violation passe (exit 0) sur le meme depot.
+    #
+    # `scripts/regen_quarto_render.py` n'est VOLONTAIREMENT pas dans
+    # `swap_paths` : la phase base doit mesurer le MEME predicat que la
+    # phase head sur le contenu de base. Restaurer le script de la base
+    # ferait mesurer la classe retiree (STALE_LINK) et le comparator
+    # verrait tout le backlog comme nouveau.
     Guard(
         name="readme-ipynb-links-guard",
         source="readme-ipynb-links-guard.yml",
@@ -370,7 +376,6 @@ PILOT: list[Guard] = [
                     "{base_json}", "{head_json}"],
         swap_paths=[
             "MyIA.AI.Notebooks",
-            "scripts/regen_quarto_render.py",
             "_quarto.yml",
         ],
         blocking=True,
