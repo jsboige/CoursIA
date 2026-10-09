@@ -1,6 +1,6 @@
 {
   "by_source": {
-    "Logic13": {
+    "LOGIC": {
       "total": 15,
       "DIRECT": 12,
       "PARTIAL": 3,
@@ -9,8 +9,8 @@
     },
     "MAFALDA-L2": {
       "total": 23,
-      "DIRECT": 16,
-      "PARTIAL": 5,
+      "DIRECT": 17,
+      "PARTIAL": 4,
       "NOT_FOUND": 2,
       "labels_not_found": [
         "Appeal to values",
@@ -30,5 +30,6 @@
   "argumentum_families_never_hit": [],
   "argumentum_family_count": 7,
   "argumentum_total_leaves": 1407,
-  "argumentum_csv": "D:\\Dev\\CoursIA-17578-C\\MyIA.AI.Notebooks\\SymbolicAI\\Argument_Analysis\\data\\argumentum_fallacies_taxonomy.csv"
+  "argumentum_csv": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv",
+  "argumentum_csv_sha256": "fc8e90fea501c33330ae575a27c6c0c8ba828a10904b380a9b23c637f2887cf5"
 }
