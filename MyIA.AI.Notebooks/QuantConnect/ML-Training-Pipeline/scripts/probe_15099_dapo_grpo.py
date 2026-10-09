@@ -660,6 +660,9 @@ def mode_baseline(model_key: str, dataset_key: str) -> dict[str, Any]:
 def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False,
              dataset_key: str = "dapo") -> dict[str, Any]:
     ds = DATASETS[dataset_key]
+    # Self-describing : le budget est la variable du diagnostic de troncature
+    # (#15294), il doit etre lisible dans run.log a cote de clipped_ratio.
+    print(f"[{model_key} seed{seed}] budget de completion = {MAX_COMPLETION} tokens")
     train_rows, eval_rows = ds["load"]()
     t0 = time.time()
     trainer, model_path = build_trainer(model_key, seed, steps, train_rows,
@@ -839,14 +842,29 @@ def main() -> int:
         action="store_true",
         help="mode thinking (enable_thinking=True laisse au template, budget completion 1024)",
     )
+    ap.add_argument(
+        "--max-completion",
+        type=int,
+        default=None,
+        help="budget de completion en tokens (defaut : 384 non-thinking, 1024 avec --thinking) ; "
+             "pilote clipped_ratio (fraction de completions tronquees) et, via "
+             "mask_truncated_completions, la part du loss qui survit",
+    )
     args = ap.parse_args()
 
+    global MAX_COMPLETION
     if not args.thinking:
         CHAT_KWARGS.clear()
         CHAT_KWARGS["enable_thinking"] = False
     else:
-        global MAX_COMPLETION
         MAX_COMPLETION = 1024
+    if args.max_completion is not None:
+        # Le budget n'est pas cosmetique : avec mask_truncated_completions=True,
+        # une completion qui atteint la borne est RETIREE du loss (#15294 : a
+        # 384 tokens, clipped_ratio ~0.94-0.97 laissait un signal quasi nul).
+        # Parametrable, le balayage du budget est une commande, pas une edition
+        # du source a chaque point de diagnostic.
+        MAX_COMPLETION = args.max_completion
 
     if args.mode == "selftest":
         return mode_selftest()
