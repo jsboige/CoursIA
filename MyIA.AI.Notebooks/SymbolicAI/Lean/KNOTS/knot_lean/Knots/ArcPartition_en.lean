@@ -6,9 +6,12 @@
   `alexanderRow_sum_zero` is included because it consumes `arcPartition`;
   slices 4+ (polynomial computation `alexander_unknot`, `alexander_trefoil`,
   `det_two_aux`/`det_three_aux`) remain in Conway.lean. The FR sibling
-  `Knots/ArcPartition.lean` reproduces the body verbatim, translated
-  docstrings and comments — i18n convention `code-style.md` (byte-identity
-  on the rest).
+  `Knots/ArcPartition.lean` reproduces the body verbatim; only this file's
+  header, its `_en` imports and its `Knots_en` namespace are translated.
+  The body docstrings are, at this slice, the French text verbatim on both
+  sides — an English translation of them is optional (`code-style.md`) and
+  is not claimed here. `check_i18n_siblings.py` flags the pair `HALF-DONE`,
+  the only such pair in the lake; body byte-identity is preserved.
 
   Origin: Conway.lean l.65-979 (915 lines), reference commit origin/main
   71514d576. No reformatting, no tactic modified. -/
@@ -20,6 +23,7 @@ import Mathlib.Algebra.Polynomial.Basic
 
 namespace Knots_en
 
+/-- Fusionne les classes contenant x et y d'une partition d'étiquettes. -/
 def mergePair (P : List (List Nat)) (x y : Nat) : List (List Nat) :=
   let keep := P.filter (fun C => !C.contains x && !C.contains y)
   let hit := P.filter (fun C => C.contains x || C.contains y)
