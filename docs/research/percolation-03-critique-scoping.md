@@ -5,7 +5,7 @@
 ## Sections (10)
 
 1. Cible — quantifier le seuil fini `p_c(T_n)` et la loi de taille au point critique
-2. Théorie de référence — exposants critiques 2D (`β/ν = 5/36`, `γ/ν = 43/18`, `1/ν = 3/4`) et universalité
+2. Théorie de référence — exposants critiques 2D (`β/ν = 5/48`, `γ/ν = 43/24`, `1/ν = 3/4`) et universalité
 3. Architecture pipeline — sweep `L × p × seeds`, instrument `networkx` (héritée de 01)
 4. Budget runtime — ~30 min mono-thread pour `L ∈ {8, 16, 32, 64}` × `p ∈ {0.45, 0.48, 0.50, 0.52, 0.55}` × `seeds = 32`
 5. **RÈGLE F** — NTL absente (Python pur, pas de Lean build), `networkx` installé OK
@@ -24,7 +24,7 @@ Le carnet `Percolation-Supercritique.ipynb` (01) couvre les régimes `p < p_c` e
 **Ce que 03 doit établir :**
 
 1. **Le seuil fini dérive** : pour un tore `T_n` de côté `L = n`, le seuil effectif `p_c(L)` (où la fraction du géant passe un seuil fixé, par exemple 1/2) **n'est pas exactement 1/2** : il varie avec `L`, et converge vers `1/2` comme `L → ∞`.
-2. **Loi d'échelle finie** : à `p = p_c(ℤ²) = 1/2`, la fraction du géant `M(L, p_c) / L²` décroît comme `L^{-β/ν}`, où `β/ν = 5/36 ≈ 0.139` est l'exposant critique de la percolation 2D (Kesten, Saleur). Mesure : `log-log plot` de `M(L, 1/2)` vs `L` doit avoir un exposant `-0.139 ± 0.01`.
+2. **Loi d'échelle finie** : à `p = p_c(ℤ²) = 1/2`, la fraction du géant `M(L, p_c) / L²` décroît comme `L^{-β/ν}`, où `β/ν = 5/48 ≈ 0.104` est l'exposant critique de la percolation 2D (Kesten, Saleur). Mesure : `log-log plot` de `M(L, 1/2)` vs `L` doit avoir un exposant `-0.104 ± 0.005` (±5 %).
 3. **Loi de taille des composantes** : au point critique, la distribution de tailles des composantes connexes suit une loi de puissance `P(s) ~ s^{-τ}` où `τ' = 187/91 ≈ 2.055` en 2D (Stauffer, computer-experiment measurement). Mesure : histogramme log-binned sur les composantes non-géantes, exposant `τ' ≈ 2.05 ± 0.05`.
 
 **Ce qui distingue 03 de 01** : 01 mesure le *géant* en régime `p > p_c` (où il existe de manière stable). 03 mesure le *géant* en régime `p ≈ p_c` (où il est critique et fluctue), et la **distribution des tailles de composantes** — c'est la **physique du point critique**, qui complète le triptyque.
@@ -40,12 +40,12 @@ La percolation de Bernoulli sur `ℤ²` (bond) est **exactement résoluble** (Ke
 | `ν` | 4/3 (exact) | `ξ ~ |p - p_c|^{-ν}` |
 | `γ` | 43/18 ≈ 2.389 | `χ ~ |p - p_c|^{-γ}` |
 | `τ'` | 187/91 ≈ 2.055 | `P(s) ~ s^{-τ'}` au point critique |
-| `β/ν` | 5/36 ≈ 0.139 | Exposant de la fraction du géant à `p_c` |
+| `β/ν` | `β / ν` = `(5/36) / (4/3)` = 5/48 ≈ 0.104 | Exposant de la fraction du géant à `p_c` |
 | `γ/ν` | 43/18 · 3/4 = 43/24 ≈ 1.792 | Exposant de la susceptibilité à `p_c` |
 | `1/ν` | 3/4 | Exposant de la longueur de corrélation à `p_c` |
 
 **Vérifications à effectuer** :
-- `M(L, 1/2) / L^2 ~ L^{-5/36}` — pente `log-log` ≈ `-0.139`.
+- `M(L, 1/2) / L^2 ~ L^{-5/48}` — pente `log-log` ≈ `-0.104`. Contrôle croisé : la dimension fractale de l'amas infini `d_f = 2 - β/ν = 91/48 ≈ 1.896` est la valeur canonique de la percolation 2D ; `5/36` donnerait `d_f = 67/36 ≈ 1.861`, absente de toute table.
 - Distribution de tailles `P(s)` au point critique — exposant `τ' ≈ 2.055` sur le **bulk** (entre `s_min ~ L^{d_f/2}` et `s_max ~ L^d`), pas sur les queues.
 - **Convention honnête** : ces exposants sont **prédits par la théorie conforme** (CFT) et **vérifiés numériquement** depuis 30 ans. Les exposants mesurés sur des tores `L ≤ 256` peuvent dévier de `2-5 %` des valeurs exactes — c'est attendu, et la mesure doit le **dire** plutôt que `converger à 1 %` par cherry-picking.
 
@@ -120,7 +120,7 @@ def sample_at_p_c(L, p, seed):
 
 ## 6. 4 smells
 
-1. **BFS non-convergent sur `L=128`** : la mémoire requise pour `networkx` à `L=128` (`N=16384`, `E=32768`) est ~50 MB par simulation × 32 seeds × 5 p = 8 GB cumulés en mémoire (les simulations séquentielles n'ont pas ce problème, mais c'est le **goulot d'étranglement CPU**). Mitigation : limiter `L_max = 64` ; passer à `L=128` dans un cycle ultérieur si `networkx` est remplacé par scipy.
+1. **BFS non-convergent sur `L=128`** : la mémoire requise pour `networkx` à `L=128` (`N=16384`, `E=32768`) est ~50 MB par simulation ; un sweep mené **en parallèle** sur les 32 seeds × 5 p demanderait ~8 GB cumulés, que les simulations **séquentielles** évitent (pic mémoire ≈ une simulation). Le **goulot d'étranglement est donc le CPU** (BFS pur Python), pas la mémoire. Mitigation : limiter `L_max = 64` ; passer à `L=128` dans un cycle ultérieur si `networkx` est remplacé par scipy.
 
 2. **Distribution de tailles bruitées à petit L** : pour `L=8`, le nombre total de nœuds est 64 — la distribution de tailles est trop petite pour des bins log-decade stables. Mitigation : présenter les histogrammes à partir de `L=16`, noter `L=8` comme régime asymptotique.
 
@@ -156,7 +156,7 @@ def sample_at_p_c(L, p, seed):
 |-------|----------|-------|
 | A | Design des cellules (sections 1-7) | 15 min |
 | B | Exécution papermill + collecte 640 simulations | 30 min |
-| C | Validation : vérification `β/ν ∈ [-0.13, -0.15]` et `τ' ∈ [2.0, 2.1]` | 10 min |
+| C | Validation : vérification `β/ν ∈ [0.099, 0.109]` (soit `5/48 ≈ 0.104` à ±5 %) et `τ' ∈ [2.0, 2.1]` | 10 min |
 | D | Rédaction rapport + README + PR | 15 min |
 | **Total** | | **~70 min wall-clock sur 1-2 cycles** |
 
@@ -169,7 +169,7 @@ def sample_at_p_c(L, p, seed):
 - **c.1104+** : exécution effective (papermill sur les 640 simulations) + rapport + update README.
 
 **Acceptance pour c.1103+** (à vérifier dans le PR d'exécution) :
-- [ ] `M(L, 1/2) / L² ~ L^{-β/ν}` avec `β/ν ∈ [-0.13, -0.15]` (fit log-log, `R² > 0.95`).
+- [ ] `M(L, 1/2) / L² ~ L^{-β/ν}` avec `β/ν ∈ [0.099, 0.109]` (soit `5/48 ≈ 0.104` à ±5 % ; fit log-log, `R² > 0.95`).
 - [ ] `P(s)` au point critique suit `s^{-τ'}` avec `τ' ∈ [2.0, 2.1]` (fit log-log, `R² > 0.95`).
 - [ ] `p_c(L) → 1/2` comme `L^{-1/ν}` (Schröder, simple universal check).
 - [ ] README mis à jour avec ligne 03.
