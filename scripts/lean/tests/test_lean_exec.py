@@ -1704,6 +1704,192 @@ def test_doctor_does_not_sweep_where_status_does():
             "discrimine plus rien, le controle est vacant")
 
 
+# ---------------------------------------------------------------------------
+# stop — arret d'urgence des runs possedes (case 8 volet 2a)
+# ---------------------------------------------------------------------------
+
+def _stop_records(runs: Path) -> None:
+    """Quatre records types : vivant (notre host), mort (notre host),
+    etranger (autre namespace de pids), illisible."""
+    runs.mkdir(parents=True, exist_ok=True)
+    (runs / "live.json").write_text(json.dumps({
+        "pid": 111, "host": le.host_id(), "cmd": ["lake", "build"],
+        "caller": "probe-stop", "started_utc": "2026-10-09T00:00:00Z",
+    }), encoding="utf-8")
+    (runs / "dead.json").write_text(json.dumps(
+        {"pid": DEAD_PID, "host": le.host_id()}), encoding="utf-8")
+    (runs / "foreign.json").write_text(json.dumps(
+        {"pid": 1, "host": "autre-machine/nt"}), encoding="utf-8")
+    (runs / "corrupt.json").write_text("{illisible", encoding="utf-8")
+
+
+def test_stop_inspect_classifies_and_touches_nothing(capsys):
+    """Sans --yes, stop est un diagnostic : il classe (vivant / mort /
+    etranger / illisible) et ne retire AUCUN record — sinon l'operateur
+    n'inspecte pas, il arrete deja."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        runs = state / "runs"
+        _stop_records(runs)
+        saved_env = os.environ.get("LEAN_EXEC_STATE_DIR")
+        saved_alive = le.pid_alive
+        le.pid_alive = lambda pid: pid == 111
+        os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+        try:
+            rc = le.emergency_stop(run_ids=[], confirm=False, as_json=True)
+        finally:
+            le.pid_alive = saved_alive
+            if saved_env is None:
+                os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+            else:
+                os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+        assert rc == le.EXIT_OK
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["mode"] == "inspect"
+        assert payload["would_stop"] == ["live"], payload
+        assert payload["stopped"] == []
+        assert {e["run"] for e in payload["already_dead"]} == {
+            "dead", "corrupt"}, payload["already_dead"]
+        assert any("illisible" in e.get("note", "")
+                   for e in payload["already_dead"])
+        assert [e["run"] for e in payload["skipped_foreign_host"]] == [
+            "foreign"], payload["skipped_foreign_host"]
+        for name in ("live", "dead", "foreign", "corrupt"):
+            assert (runs / f"{name}.json").exists(), (
+                f"inspect a retire {name}.json — il ne doit rien toucher")
+
+
+def test_stop_yes_kills_only_our_live_runs():
+    """Avec --yes : seuls les runs vivants de NOTRE host sont tues, les
+    records morts suivent, l'etranger et l'illisible survivent (pids non
+    comparables / rien d'attribuable)."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        runs = state / "runs"
+        _stop_records(runs)
+        killed = []
+        saved_env = os.environ.get("LEAN_EXEC_STATE_DIR")
+        saved_alive, saved_kill = le.pid_alive, le._kill_run_tree
+        le.pid_alive = lambda pid: pid == 111
+        le._kill_run_tree = lambda pid: (killed.append(pid), "killed")[1]
+        os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+        try:
+            rc = le.emergency_stop(run_ids=[], confirm=True, as_json=False)
+        finally:
+            le.pid_alive = saved_alive
+            le._kill_run_tree = saved_kill
+            if saved_env is None:
+                os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+            else:
+                os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+        assert rc == le.EXIT_OK
+        assert killed == [111], killed
+        assert not (runs / "live.json").exists()
+        assert not (runs / "dead.json").exists()
+        assert (runs / "foreign.json").exists(), (
+            "un run d'un autre namespace de pids ne doit jamais etre retire "
+            "par stop (meme regle que sweep_stale_runs, tree_lock.py:138)")
+        assert (runs / "corrupt.json").exists(), (
+            "un record illisible ne peut etre attribue a aucun host : le "
+            "retirer a l'aveugle est exactement le geste interdit")
+
+
+def test_stop_yes_reports_failures_and_unknown_runs():
+    """Un kill qui echoue laisse le record en place et rend 1 (echec d'arret,
+    distinct du code enfant) ; un run record inconnu rend 125 (demande
+    refusee). Un pid mort entre la classification et le kill (already_dead)
+    fait retirer son record sans compter comme echec."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        runs = state / "runs"
+        runs.mkdir(parents=True)
+        (runs / "revive.json").write_text(json.dumps(
+            {"pid": 222, "host": le.host_id()}), encoding="utf-8")
+        (runs / "vanish.json").write_text(json.dumps(
+            {"pid": 333, "host": le.host_id()}), encoding="utf-8")
+
+        def fake_kill(pid: int) -> str:
+            return "failed: taskkill rc=1" if pid == 222 else "already_dead"
+
+        saved_env = os.environ.get("LEAN_EXEC_STATE_DIR")
+        saved_alive, saved_kill = le.pid_alive, le._kill_run_tree
+        le.pid_alive = lambda pid: pid in (222, 333)
+        le._kill_run_tree = fake_kill
+        os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+        try:
+            rc = le.emergency_stop(run_ids=[], confirm=True, as_json=False)
+        finally:
+            le.pid_alive = saved_alive
+            le._kill_run_tree = saved_kill
+            if saved_env is None:
+                os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+            else:
+                os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+        assert rc == le.EXIT_CHILD, "un kill echoue doit rendre 1"
+        assert (runs / "revive.json").exists(), (
+            "le record d'un run qu'on n'a pas PU tuer doit rester : "
+            "l'operateur doit pouvoir reessayer")
+        assert not (runs / "vanish.json").exists(), (
+            "un pid mort entre classification et kill est un nettoyage, "
+            "pas un echec")
+
+        os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+        try:
+            rc_unknown = le.main(["stop", "--run", "ghost", "--json"])
+        finally:
+            if saved_env is None:
+                os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+            else:
+                os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+        assert rc_unknown == le.EXIT_REFUSED, (
+            "un run record inconnu est une demande refusee (125), pas un "
+            "echec d'arret (1)")
+
+
+def test_stop_cli_inspect_then_yes_kills_real_process():
+    """Controle positif de bout en bout : un VRAI processus vivant, un run
+    record honnete pointant dessus, inspect qui ne touche rien, --yes qui
+    tue reellement et retire le record. Le kill n'est pas simule : c'est
+    taskkill (Windows) / killpg (POSIX) qui travaille."""
+    proc = subprocess.Popen(
+        [PY, "-c", "import time; time.sleep(120)"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            state = Path(td) / "state"
+            runs = state / "runs"
+            runs.mkdir(parents=True)
+            (runs / "reel.json").write_text(json.dumps({
+                "pid": proc.pid, "host": le.host_id(),
+                "cmd": [PY, "-c", "import time; time.sleep(120)"],
+                "caller": "probe-stop-reel",
+            }), encoding="utf-8")
+
+            rc = _run(state, ["stop", "--json"], timeout=90)
+            assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
+            payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+            assert payload["mode"] == "inspect"
+            assert payload["would_stop"] == ["reel"], payload
+            assert (runs / "reel.json").exists(), (
+                "l'inspection CLI n'a pas le droit de retirer le record")
+
+            act = _run(state, ["stop", "--yes", "--json"], timeout=90)
+            assert act.returncode == 0, (act.returncode, act.stdout,
+                                         act.stderr)
+            payload2 = json.loads(act.stdout[act.stdout.index("{"):])
+            assert payload2["stopped"] == ["reel"], payload2
+            assert not (runs / "reel.json").exists()
+            for _ in range(30):  # <=3 s : le kill /F est immediate
+                if proc.poll() is not None:
+                    break
+                time.sleep(0.1)
+            assert proc.poll() is not None, (
+                "le processus reel doit etre mort apres stop --yes")
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

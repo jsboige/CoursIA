@@ -94,20 +94,30 @@ Interface operateur (case 8 de #15666) — premier volet, le diagnostic :
    commune aux deux dernieres : la creation idempotente du state dir, que la
    mesure disque exige pour lire l'espace libre.
 
-   Reste ouvert dans ce meme case 8 : l'**arret d'urgence** des runs possedes
-   par l'organe (inspecter puis arreter, sans tuer aveuglement un travail
-   etranger) et la **procedure de recuperation apres crash** du superviseur.
-   ``status`` et ``doctor`` exposent deja les runs vivants et les leases sur
-   lesquels ces deux volets s'appuieront.
+6. **``stop`` — arret d'urgence des runs possedes par l'organe** : defaut =
+   INSPECT (lister les runs vivants de CET host, leur pid, leur caller),
+   ``--yes`` seul arrete. Le pid tue ne vient jamais d'un scan de table de
+   processus mais exclusivement du run record — on n'arrete pas un travail
+   non possede — et un run d'un host etranger est liste puis saute, jamais
+   tue (pids non comparables entre namespaces). Les records de runs deja
+   morts ne sont retires qu'en mode action : inspect reste lecture seule.
+
+   Reste ouvert dans ce meme case 8 : la **procedure de recuperation apres
+   crash** du superviseur. Le confinement kill-on-close fait deja mourir
+   l'arbre avec le superviseur ; il reste a rendre canonique le balayage de
+   l'etat residuel (runs morts, leases perimes) que ``sweep_stale_runs`` et
+   ``sweep_stale_tree_leases`` savent deja faire.
 
 Codes de sortie stables :
   0    succes (commande terminee, nettoyage prouve ; ``doctor`` et ``dry-run``
        rendent un diagnostic — leur verdict est dans la sortie, jamais dans le
        code de retour, y compris quand il predit un refus)
-  1    echec de la commande enfant (code reel dans le JSON)
+  1    echec de la commande enfant (code reel dans le JSON) ; ``stop`` :
+       echec de l'arret d'un run vivant
   124  timeout (arbre tue, nettoyage prouve)
   125  admission refusee (cap atteint / environnement non mesurable /
-       backend epingle en conflit avec la demande)
+       backend epingle en conflit avec la demande) ; ``stop`` : run record
+       inconnu
   126  cleanup incomplet : orphelins detectes apres termination
   127  erreur interne a l'organe
   130  interruption (SIGINT) : arbre tue, nettoyage prouve
@@ -2375,6 +2385,148 @@ def doctor(as_json: bool = False) -> int:
     return EXIT_OK
 
 
+def _kill_run_tree(pid: int) -> str:
+    """Tue l'arbre du pid enregistre. Retourne 'killed' | 'already_dead' |
+    'failed: <cause>'. Le pid ne vient JAMAIS d'un scan de table de processus :
+    uniquement du run record (spec #15666 case 8 — on n'arrete pas un travail
+    non possede par l'organe)."""
+    if not pid_alive(pid):
+        return "already_dead"
+    try:
+        if os.name == "nt":
+            # /T arbre entier, /F force : l'urgence n'a pas de phase gracieuse.
+            proc = subprocess.run(
+                ["taskkill", "/PID", str(pid), "/T", "/F"],
+                capture_output=True, text=True, timeout=15,
+                encoding="utf-8", errors="replace",
+            )
+            if proc.returncode != 0 and pid_alive(pid):
+                return f"failed: taskkill rc={proc.returncode}"
+        else:
+            try:
+                os.killpg(os.getpgid(pid), signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                os.kill(pid, signal.SIGKILL)
+    except OSError as exc:
+        if pid_alive(pid):
+            return f"failed: {exc}"
+    # Le verdict se mesure sur le pid, pas sur le rc de l'outil de kill :
+    # taskkill rend nonzero pour un processus deja mort entre-temps.
+    for _ in range(20):  # <=2 s : l'urgence n'attend pas la reap lente
+        if not pid_alive(pid):
+            return "killed"
+        time.sleep(0.1)
+    return "failed: pid survit au kill" if pid_alive(pid) else "killed"
+
+
+def emergency_stop(run_ids: list[str], confirm: bool, as_json: bool) -> int:
+    """Case 8 volet 2a — arret d'urgence des runs possedes par l'organe.
+
+    Defaut = INSPECT : lister ce qui serait arrete, ne rien tuer. L'action
+    exige --yes. Un run d'un host etranger n'est JAMAIS tue ni retire (pids
+    non comparables entre namespaces, cf sweep_stale_runs) : il est liste et
+    saute. Les records de runs deja morts sont retires seulement en mode
+    action — inspect reste lecture seule comme doctor."""
+    our_host = host_id()
+    paths = sorted(runs_dir().glob("*.json"))
+    if run_ids:
+        wanted = {f"{r}.json" for r in run_ids}
+        unknown = [r for r in run_ids if not (runs_dir() / f"{r}.json").exists()]
+        paths = [p for p in paths if p.name in wanted]
+    else:
+        unknown = []
+
+    to_stop, dead, foreign = [], [], []
+    for path in paths:
+        record = read_run(path)
+        if not record:
+            dead.append({"run": path.stem, "pid": None,
+                         "note": "record illisible"})
+            continue
+        entry = {
+            "run": path.stem,
+            "pid": record.get("pid"),
+            "cmd": record.get("cmd"),
+            "caller": record.get("caller"),
+            "started_utc": record.get("started_utc"),
+        }
+        if record.get("host") != our_host:
+            foreign.append({**entry, "host": record.get("host")})
+        elif pid_alive(record.get("pid") or 0):
+            to_stop.append(entry)
+        else:
+            dead.append(entry)
+
+    stopped, failed = [], []
+    if confirm:
+        for entry in to_stop:
+            outcome = _kill_run_tree(entry["pid"])
+            if outcome == "killed":
+                # Le superviseur vivant retirera lui-meme son record ; le
+                # retirer ici aussi est idempotent et couvre le superviseur
+                # mort (scenario recuperation). Double unlink = sans effet.
+                _remove_run_record(entry["run"])
+                stopped.append(entry)
+            elif outcome == "already_dead":
+                _remove_run_record(entry["run"])
+                dead.append(entry)
+            else:
+                failed.append({**entry, "error": outcome})
+        for entry in dead:
+            # Un record illisible ne se retire pas a l'aveugle : sans pid ni
+            # host lisibles, on ne peut rien lui attribuer — il est rapporte.
+            if "note" not in entry:
+                _remove_run_record(entry["run"])
+
+    payload = {
+        "action": "stop",
+        "mode": "act" if confirm else "inspect",
+        "host": our_host,
+        "would_stop": [e["run"] for e in to_stop] if not confirm else [],
+        "stopped": [e["run"] for e in stopped],
+        "already_dead": [
+            {"run": e["run"], "pid": e.get("pid"),
+             **({"note": e["note"]} if "note" in e else {})}
+            for e in dead
+        ],
+        "skipped_foreign_host": foreign,
+        "failed": failed,
+        "unknown_runs": unknown,
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        mode = "ARRET" if confirm else "INSPECTION (ajouter --yes pour agir)"
+        print(f"stop [{mode}] host={our_host}")
+        for e in to_stop:
+            print(f"  vivant  : {e['run']} pid={e['pid']} "
+                  f"caller={e.get('caller')} cmd={shlex.join(e['cmd'] or [])}")
+        for e in dead:
+            pid = e.get("pid")
+            print(f"  mort    : {e['run']} pid={pid}"
+                  + (" (record illisible)" if pid is None else ""))
+        for e in foreign:
+            print(f"  etranger: {e['run']} pid={e.get('pid')} "
+                  f"host={e.get('host')} -- JAMAIS touche")
+        for e in failed:
+            print(f"  echec   : {e['run']} pid={e.get('pid')} -- {e['error']}")
+        for r in unknown:
+            print(f"  inconnu : {r} (aucun run record de ce nom)")
+        if confirm:
+            print(f"resultat: {len(stopped)} arrete(s), {len(dead)} record(s) "
+                  f"retire(s), {len(failed)} echec(s)")
+        else:
+            print(f"a arreter sous --yes : {len(to_stop)}")
+    if failed:
+        return EXIT_CHILD
+    if unknown:
+        # Un run record inconnu est une demande refusee (operateur), pas un
+        # echec de la commande enfant : le code stable 1 reste reserve a
+        # l'echec d'arret d'un run reel.
+        return EXIT_REFUSED
+    return EXIT_OK
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -2443,6 +2595,19 @@ def main(argv: list[str] | None = None) -> int:
         "doctor", help="Diagnostic de l'organe (lecture seule, ne balaie pas)")
     p_doctor.add_argument("--json", action="store_true")
 
+    p_stop = sub.add_parser(
+        "stop",
+        help="Arret d'urgence des runs de CET host — defaut : inspecter "
+             "seulement ; --yes pour arreter. Un run d'un host etranger "
+             "n'est jamais tue")
+    p_stop.add_argument("--run", action="append", default=None,
+                        metavar="ID",
+                        help="Limiter a ce run record (repetable)")
+    p_stop.add_argument("--yes", action="store_true",
+                        help="Agir : tuer les runs vivants listes et retirer "
+                             "les records morts. Sans ce drapeau : inspection.")
+    p_stop.add_argument("--json", action="store_true")
+
     args = parser.parse_args(argv)
     try:
         if args.action == "status":
@@ -2456,6 +2621,10 @@ def main(argv: list[str] | None = None) -> int:
             )
         if args.action == "doctor":
             return doctor(as_json=args.json)
+        if args.action == "stop":
+            return emergency_stop(
+                run_ids=args.run or [], confirm=args.yes, as_json=args.json,
+            )
         if args.action == "run":
             cmd = args.cmd
             if cmd and cmd[0] == "--":
