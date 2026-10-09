@@ -19,6 +19,37 @@ C'est le même geste que `DynamicVIXSpyRegime-QC` (gate de régime → equity/ob
 - Liu & Tsyvinski 2021 (RFS 34(6)) — risques crypto systématiques.
 - Iyer 2022 (IMF GFSN 2022/001) — spillovers BTC → vol equity.
 
+## Mesures #19929 — test de différence contre références détenues (QC Cloud, 2026-10-08)
+
+Une seule compilation, quatre backtests sur le même projet QC, sélectionnés par le paramètre `mode` : `gate` (le candidat), et trois **références détenues** — `hold-qqq` (QQQ buy-and-hold), `spy` (SPY détenu) et `sixty40` (60 % SPY / 40 % IEF, rééquilibrés le premier jour de bourse du mois). Période 2016-01-04 → 2026-06-30, **2 636 séances communes** aux quatre backtests (fin de période demandée, aucune troncature J-90).
+
+Le Sharpe est calculé à taux sans risque nul sur les valeurs à chaque clôture ; il diffère de celui affiché par QC (0,894 pour le gate), qui déduit un taux sans risque. Le décompte ci-dessus est celui des rendements : les séries portent 2 637 valeurs de portefeuille.
+
+| Version | Sharpe | CAGR | MaxDD |
+|---|---|---|---|
+| **gate** (candidat) | **1.3139** | 16.54 % | **-15.21 %** |
+| hold-qqq (QQQ détenu) | 0.9608 | 20.56 % | -34.89 % |
+| spy (SPY détenu) | 0.8838 | 15.16 % | -33.59 % |
+| sixty40 (60 % SPY / 40 % IEF) | 0.9350 | 9.68 % | -21.14 % |
+
+**Verdict : NO BEATS.** Le test de différence est un bootstrap par blocs circulaires (21 séances, 10 000 tirages, graine 18921, la même graine pour toutes les paires) sur la différence de Sharpe `gate − référence`, avec correction de Holm sur les trois références :
+
+| Référence | Différence de Sharpe | p brut | p Holm | IC 95 % |
+|---|---|---|---|---|
+| hold-qqq | +0.353 | 0.1058 | 0.2952 | [-0.1968, 0.8754] |
+| spy | +0.430 | 0.0984 | 0.2952 | [-0.2085, 1.0137] |
+| sixty40 | +0.379 | 0.1237 | 0.2952 | [-0.2585, 0.9665] |
+
+Aucune différence n'est significative (p Holm 0.2952 partout, les intervalles de confiance à 95 % contiennent zéro). Le gate devance les références en ratio de Sharpe estimé (Sharpe +0.35 / +0.43 / +0.38) avec une pire baisse nettement plus faible, mais l'écart reste dans le bruit d'échantillonnage : **l'avantage descriptif de la mesure du 2026-09-30 n'est pas reproduit comme significatif**. Les backtests de grille (`gate_sma30`, `gate_sma70`, `gate_roc10`, `gate_roc30`, `gate_monthly`) et de frais doublés (`gate_fees2`) ne sont **pas** lancés : le protocole préinscrit les rend conditionnels à une significativité qui n'est pas là.
+
+### Réserves d'exécution (mesuré tel qu'implémenté)
+
+Ces chiffres sont ceux du code **tel qu'implémenté**, pas d'un basculement QQQ/SHY parfait. Compteurs d'exécution du backtest `gate` : **134 tentatives de cible** (67 vers QQQ, 67 vers SHY), exposition brute moyenne **0.966**, rotation **22.154 / an**, frais rapportés à l'equity **0.101 % / an**.
+
+Défaut d'ordre **confirmé** (`orders.json`, exécution `gate`) : 250 ordres = **233 remplis + 17 invalides**. Les 17 invalides portent tous le motif **« Insufficient buying power »**, sont tous des **achats** (SHY 8, QQQ 9) et sont tous soumis à **8 h ET, avant l'open** — l'heure du rééquilibrage hebdomadaire. La cause est la forme du rééquilibrage : à la bascule de cible, `liquidate()` puis `set_holdings()` partent avant l'open alors que la vente n'est **pas encore remplie** (en journalier, l'ordre du matin est rempli à la clôture) ; la jambe d'achat est contrôlée contre un pouvoir d'achat que la vente en attente n'a pas encore libéré. Conséquence : sur ces 17 tentatives (≈ 12,7 % des 134), l'achat cible a été refusé tandis que la vente précédente a ensuite été exécutée ; le portefeuille passe donc en liquidités plutôt que dans l'actif cible jusqu'à une nouvelle décision. Le comportement de base (la règle, et le couple `liquidate()` → `set_holdings()`) est **préservé tel quel** ; une correction n'est **pas** revendiquée ici — c'est une hypothèse à éprouver par une expérience dédiée, pas un résultat mesuré.
+
+Corrélations hebdomadaires au gate : hold-qqq 0.567, spy 0.497, sixty40 0.516.
+
 ## Claims de l'article confrontés — mesures du dépôt (QC Cloud, 2026-09-30)
 
 | Claim auteur (2014-2026) | Valeur |
@@ -35,7 +66,7 @@ C'est le même geste que `DynamicVIXSpyRegime-QC` (gate de régime → equity/ob
 | **Gate OOS** | 2022-01 → 2026-06 | **0.640** | 14.87 % | **15.20 %** | 14.3 % |
 | QQQ-hold OOS (benchmark) | 2022-01 → 2026-06 | 0.426 | 15.25 % | 34.70 % | 5.9 % |
 
-**Lecture** : le gate domine le buy-and-hold QQQ en risque-adjusté sur les **deux** fenêtres (Sharpe OOS +50 %, MaxDD OOS divisé par 2.3 — 15.2 % contre 34.7 %, en couvrant le bear 2022) pour un CAGR égal. Réserves honnêtes : PSR OOS 14.3 % (l'edge vs cash n'est pas statistiquement établi sur la seule fenêtre OOS), et la cohorte BTC tranche 11 du dépôt avait mesuré 0 edge **crypto → crypto** — l'edge ici vit sur la face **crypto → equity**. Statut : `Alive — risk-adjusted` (entrée `docs/qc/qc-strategies-status.md`).
+**Lecture descriptive historique, remplacée par le test ci-dessus** : sur ce découpage IS/OOS et sans test d'inférence, le gate domine le buy-and-hold QQQ en risque-ajusté sur les **deux** fenêtres (Sharpe OOS +50 %, MaxDD OOS divisé par 2.3 — 15.2 % contre 34.7 %, en couvrant le bear 2022) pour un CAGR égal. Cette lecture est **descriptive et historique** (des niveaux de Sharpe comparés entre fenêtres séparées, sans test de différence) ; elle est remplacée par le test de différence #19929 ci-dessus, qui mesure l'écart apparié sur la période commune et conclut **NO BEATS** (aucun écart significatif, p Holm 0.2952). Réserves conservées : PSR OOS 14.3 %, et la cohorte BTC tranche 11 du dépôt avait mesuré 0 edge **crypto → crypto** — l'edge revendiqué vivait sur la face **crypto → equity**. Le statut `Alive — risk-adjusted` (`docs/qc/qc-strategies-status.md`) reflète cette lecture descriptive, pas le test de différence.
 
 ## Structure
 

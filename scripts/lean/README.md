@@ -14,6 +14,7 @@ Outils pour le cycle de vie des projets Lean 4 du dépôt.
 | `check_public_anchor.py` | Detecte les `sorry` qu'aucune declaration publique n'atteint — l'angle mort residuel du gate `proof-integrity` (voir ci-dessous) |
 | `count_code_sorry.py` | Compte les `sorry` **hors commentaires** (la vraie dette) et liste les theoremes vacuous (`: True`) — ce que `grep -c sorry` surestime de ~11x (voir ci-dessous) |
 | `lean_exec.py` | Organe canonique d'execution Lean : cap de population machine-wide, confinement de l'arbre (Job Object `kill-on-close` / scope POSIX), backend epingle par lake, postcondition zero-orphelin (voir ci-dessous, #15666) |
+| `rle_to_lean_grid.py` | Convertit un motif RLE Golly en litteral `Grid` (`List (Int × Int)`) — tranche 1 de #19989 (temoins non-vacuous de `Pillars.lean`) |
 
 Tests unitaires dans `tests/`.
 
@@ -314,7 +315,7 @@ Sudoku/sudoku_lean
 SymbolicAI/Lean/calibration_lean
 SymbolicAI/Lean/conway_lean
 SymbolicAI/Lean/grothendieck_lean
-SymbolicAI/Lean/knot_lean
+SymbolicAI/Lean/KNOTS/knot_lean
 SymbolicAI/Lean/mathlib_examples
 SymbolicAI/Lean/sensitivity_lean
 SymbolicAI/Planners/planning_lean
