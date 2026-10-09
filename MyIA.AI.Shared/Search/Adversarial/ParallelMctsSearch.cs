@@ -45,10 +45,14 @@ public sealed record ParallelMctsOptions
 /// <remarks>
 /// <para>
 /// <b>Provenance -- le <c>DistributedSearch</c> GoTraxx relu par son epoque.</b>
-/// GoTraxx est un programme de go en C# de <b>Phil Garcia</b> (github.com/tgiphil,
-/// www.gotraxx.org -- le site est mort, le depot reste) ; c'est une lib tierce que
-/// PortalKeeper (Aricie) avait vendoree pour ses services IA -- elle n'est pas de
-/// la maison, et le credit du pattern lui revient. La copie vendoree
+/// GoTraxx est un programme de go en C# de <b>Philipp Garcia</b>, 2007
+/// (Copyright (c) 2007 Philipp Garcia, phil@gotraxx.org ; github.com/tgiphil ;
+/// www.gotraxx.org -- le site est mort, le depot reste). Sa licence accorde l'usage
+/// non commercial a condition de ne pas maquiller l'origine : ce fichier honore
+/// les deux -- le credit est nomme, et la transcription est marquee comme
+/// alteration (clause 2 de la licence, License.txt vendore). C'est une lib tierce
+/// que PortalKeeper (Aricie) avait vendoree pour ses services IA -- elle n'est pas
+/// de la maison, et le credit du pattern lui revient. La copie vendoree
 /// (<c>Libraries/AI/external/GoTraxx/DistributedSearch/</c> :
 /// <c>NagCoordinator</c>, <c>NagNode</c>, <c>Worker</c>, <c>WorkerProxy</c>) repartissait
 /// la recherche sur des processus distants via remoting .NET -- l'etat de l'art
