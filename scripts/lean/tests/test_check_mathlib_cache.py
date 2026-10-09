@@ -56,7 +56,8 @@ def _link_dir(link: Path, target: Path) -> None:
     link.parent.mkdir(parents=True, exist_ok=True)
     if os.name == "nt":
         proc = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
-                              capture_output=True, text=True)
+                              capture_output=True, text=True,
+                              encoding="utf-8", errors="replace")
         if proc.returncode != 0:
             pytest.skip(f"mklink /J indisponible : {proc.stderr.strip() or proc.stdout.strip()}")
         return
@@ -265,7 +266,7 @@ class TestAnalyseLake:
 # analyse_lake -- jonctions
 #
 # Trois etats distincts, mesures sur po-2025 le 2026-10-08 (18 jonctions,
-# aucune utilisable) et documentes dans docs/lean/junctions-scan-po-2025.md :
+# aucune utilisable) et documentes dans docs/lean/junctions-scan-po-2024.md §4 (seconde occurrence consolidée) :
 #   - `ok`      : lien vers un store peuple
 #   - `cold`    : lien vers un store VIDE (cible presente)
 #   - `dangling`: lien dont la CIBLE A DISPARU -- etat nouveau, il etait rendu
