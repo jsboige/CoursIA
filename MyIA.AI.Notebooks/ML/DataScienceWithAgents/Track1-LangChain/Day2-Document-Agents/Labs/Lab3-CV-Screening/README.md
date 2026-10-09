@@ -25,7 +25,7 @@ Ce laboratoire prolonge la logique du [Lab 2](../Lab2-RFP-Analysis/README.md) (a
 
 ## Notebook
 
-- [Lab3-CV-Screening.ipynb](Lab3-CV-Screening.ipynb) - notebook étudiant
+- [Lab3-CV-Screening.ipynb](Lab3-CV-Screening.html) - notebook étudiant
 - `Lab3-CV-Screening_output.ipynb` - version exécutée de référence
 
 ## Navigation
