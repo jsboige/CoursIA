@@ -384,10 +384,14 @@ PILOT: list[Guard] = [
         name="readme-ipynb-links-guard",
         source="readme-ipynb-links-guard.yml",
         # Parite de couverture avec le declencheur `pull_request` retire a
-        # l'absorption (#12856 etape 3) : les trois derniers motifs viennent de
-        # ce declencheur et ne sont pas couverts par son `push` residuel -- sans
-        # eux, une PR qui ne touche que le fixeur ou ses tests ne declencherait
-        # plus ce garde.
+        # l'absorption (#12856 etape 3) : les cinq derniers motifs viennent de
+        # ce declencheur et ne sont pas couverts par son `push` residuel --
+        # sans eux, une PR qui ne touche que le fixeur ou ses tests ne
+        # declencherait plus ce garde. Les deux tests supplementaires
+        # (test_readme_link_violations, test_regen_quarto_render) viennent de
+        # la reecriture #18911 arrivee sur main apres l'absorption -- le
+        # rebase sur main les a fait entrer dans le perimetre du declencheur
+        # retire.
         paths=[
             "MyIA.AI.Notebooks/**/README.md",
             "MyIA.AI.Notebooks/**/*.ipynb",
@@ -397,7 +401,9 @@ PILOT: list[Guard] = [
             "scripts/notebook_tools/diff_readme_link_violations.py",
             "scripts/notebook_tools/fix_ipynb_links.py",
             "scripts/notebook_tools/tests/test_fix_ipynb_links.py",
+            "scripts/notebook_tools/tests/test_readme_link_violations.py",
             "scripts/notebook_tools/tests/test_readme_links_guard_workflow.py",
+            "scripts/tests/test_regen_quarto_render.py",
             ".github/workflows/readme-ipynb-links-guard.yml",
         ],
         # Le dump imprime le JSON sur stdout ; le moteur fast-lane le
