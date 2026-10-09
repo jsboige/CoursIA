@@ -13,7 +13,11 @@ provider) is caught before it silently breaks every downstream notebook.
 
 No `.env` is required: `Settings` is constructed with explicit field overrides
 (`Settings(active_provider="gemini", ...)`) so the tests are deterministic and
-do not depend on the host environment.
+do not depend on the host environment. Les assertions qui portent sur les
+*valeurs par defaut* lisent les defauts DECLARES (`Settings.model_fields`), jamais
+une instance `Settings()` nue : une instance resout les variables d'environnement
+et le `.env`, si bien qu'une surcharge externe masquerait une divergence litterale
+(review 5463813094 de #19972).
 """
 from __future__ import annotations
 
@@ -104,20 +108,80 @@ def test_provider_config_is_constructible_with_minimal_fields():
 
 
 def test_settings_default_active_provider_is_vllm():
-    s = Settings()
-    assert s.active_provider == "vllm"
+    # Defaut DECLARE, pas la valeur resolue : une instance Settings() lit le .env
+    # et l'environnement, ou ACTIVE_PROVIDER surchargerait l'assertion.
+    assert Settings.model_fields["active_provider"].default == "vllm"
 
 
 def test_settings_has_default_model_for_each_provider():
-    s = Settings()
     # Each provider branch in get_provider_config reads settings.<p>_model;
-    # assert the defaults are non-empty strings so `settings.X or defaults["model"]`
-    # always resolves to a real model name.
-    assert s.gemini_model
-    assert s.openai_model
-    assert s.openrouter_model
-    assert s.vllm_model
-    assert s.lmstudio_model
+    # assert the DECLARED defaults are non-empty strings so
+    # `settings.X or defaults["model"]` always resolves to a real model name.
+    # Declared, not resolved: see the module docstring on hermeticity.
+    for champ in (
+        "gemini_model",
+        "openai_model",
+        "openrouter_model",
+        "vllm_model",
+        "lmstudio_model",
+    ):
+        valeur = Settings.model_fields[champ].default
+        assert isinstance(valeur, str) and valeur
+
+
+_CHAMP_MODELE = {
+    ProviderType.GEMINI: "gemini_model",
+    ProviderType.OPENAI: "openai_model",
+    ProviderType.OPENROUTER: "openrouter_model",
+    ProviderType.QWEN: "qwen_model",
+    ProviderType.VLLM: "vllm_model",
+    ProviderType.LMSTUDIO: "lmstudio_model",
+}
+
+
+def _divergences_defauts_declares():
+    """Paires (provider, defaut declare, defaut du catalogue) qui divergent.
+
+    Lit les defauts DECLARES (`Settings.model_fields[...].default`) et non une
+    instance : `Settings()` resout les variables d'environnement et le `.env`, donc
+    une surcharge externe rendrait la comparaison aveugle a une divergence
+    litterale -- c'est le defaut releve par la review 5463813094.
+    """
+    divergences = []
+    for provider, champ in _CHAMP_MODELE.items():
+        declare = Settings.model_fields[champ].default
+        catalogue = ProviderConfig.get_defaults(provider)["model"]
+        if declare != catalogue:
+            divergences.append((provider, declare, catalogue))
+    return divergences
+
+
+def test_settings_model_matches_provider_default_for_each_provider():
+    # `get_provider_config` resout `settings.<p>_model or defaults["model"]` : le
+    # repli DEFAULTS n'est donc exerce que si la variable d'environnement est vide.
+    # Les deux valeurs divergent alors sans bruit, et le repli mort se perime sans
+    # que rien ne rougisse (c'est ainsi que le defaut OpenRouter a garde un
+    # identifiant retire du catalogue). Ce test les lie -- sur les defauts
+    # DECLARES, jamais sur une instance (review 5463813094).
+    assert _divergences_defauts_declares() == []
+
+
+def test_declared_defaults_check_detects_divergence_under_env_override(monkeypatch):
+    """Temoin negatif : une surcharge d'environnement ne masque PAS une divergence litterale.
+
+    On force (a) la surcharge externe a la valeur du catalogue ET (b) une divergence
+    du defaut declare : une comparaison sur instance `Settings()` ne verrait que la
+    surcharge et resterait muette, le controle sur defauts declares doit rougir.
+    """
+    catalogue = ProviderConfig.get_defaults(ProviderType.OPENROUTER)["model"]
+    monkeypatch.setenv("OPENROUTER_MODEL", catalogue)
+    champ = Settings.model_fields["openrouter_model"]
+    monkeypatch.setattr(champ, "default", "modele-bidon/inexistant")
+    # La surcharge masque bien la divergence pour une lecture sur instance :
+    assert Settings().openrouter_model == catalogue
+    # ... et le controle sur defauts declares la voit quand meme :
+    divergences = _divergences_defauts_declares()
+    assert [p for p, _, _ in divergences] == [ProviderType.OPENROUTER], divergences
 
 
 def test_settings_active_provider_is_case_insensitive_in_routing():
@@ -230,8 +294,8 @@ def test_get_litellm_model_gemini_prefix():
 
 
 def test_get_litellm_model_openrouter_prefix():
-    cfg = ProviderConfig(provider=ProviderType.OPENROUTER, model="anthropic/claude-3.5-sonnet")
-    assert providers.get_litellm_model(cfg) == "openrouter/anthropic/claude-3.5-sonnet"
+    cfg = ProviderConfig(provider=ProviderType.OPENROUTER, model="openai/gpt-5.6-sol")
+    assert providers.get_litellm_model(cfg) == "openrouter/openai/gpt-5.6-sol"
 
 
 @pytest.mark.parametrize("provider,model,prefix", [
