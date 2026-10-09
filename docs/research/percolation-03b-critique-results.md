@@ -30,7 +30,7 @@ mieux capturer la pente asymptotique, et `β/ν` devrait se rapprocher de
 - **L ∈ {128, 256}** (2 nouvelles valeurs, extension du sweep c.1104)
 - **p ∈ {0.45, 0.48, 0.50, 0.52, 0.55}** (5 valeurs)
 - **seeds = 32 par cellule `(L, p)`** : 5 canoniques `{0, 1, 7, 42, 99}` + 27 auxiliaires `range(100, 127)`
-- **Total nouvelles simulations** : 2 × 5 × 32 = **320 simulations** (c.1104 en avait 580 sur L ∈ {8, 16, 32, 64} ; le total combiné est 4 × 5 × 29 + 2 × 5 × 32 = 900 simulations, mais les L=8,16,32,64 sont réutilisés du c.1104 par citation dans le carnet 03b — pas de re-exécution)
+- **Total nouvelles simulations** : 2 × 5 × 32 = **320 simulations** (le carnet 03 tourne désormais à 32 seeds uniformes depuis la re-exécution 2026-10-09 — 4 × 5 × 32 = 640 ; le total combiné est 960 simulations, les L=8,16,32,64 étant réutilisés du carnet 03 par citation dans le 03b via `C1104_TABLE`, rafraîchie sur les sorties fraîches)
 - `networkx.grid_2d_graph(L, L, periodic=True)` + `networkx.connected_components`
 
 ## 3. Mesures effectuées
@@ -46,30 +46,30 @@ mieux capturer la pente asymptotique, et `β/ν` devrait se rapprocher de
 | 128 | 0.0513 | 0.2201 | 0.6149 | 0.8003 | 0.8881 |
 | 256 | 0.0177 | 0.0916 | 0.5352 | 0.7951 | 0.8884 |
 
-À `p = 0.50` (point critique), `M/L²` à L = 256 (0.5352) est **plus faible** qu'à L = 128 (0.6149) et L = 64 (0.6290) — la décroissance algébrique continue.
+À `p = 0.50` (point critique), `M/L²` à L = 256 (0.5352) est **plus faible** qu'à L = 128 (0.6149) et L = 64 (0.6363) — la décroissance algébrique continue.
 
-**Tableau M(L, 0.50) / L² combiné c.1104 + c.1105 (6 L)** :
+**Tableau M(L, 0.50) / L² combiné carnet 03 + 03b (6 L)** :
 
 | L | M/L² | Source |
 |---|------|--------|
-| 8   | 0.7890 | c.1104 (29 seeds) |
-| 16  | 0.7320 | c.1104 (29 seeds) |
-| 32  | 0.7100 | c.1104 (29 seeds) |
-| 64  | 0.6290 | c.1104 (29 seeds) |
-| 128 | 0.6149 | c.1105 (32 seeds) |
-| 256 | 0.5352 | c.1105 (32 seeds) |
+| 8   | 0.7939 | carnet 03 (32 seeds, re-exéc 2026-10-09) |
+| 16  | 0.7347 | carnet 03 (32 seeds, re-exéc 2026-10-09) |
+| 32  | 0.7158 | carnet 03 (32 seeds, re-exéc 2026-10-09) |
+| 64  | 0.6363 | carnet 03 (32 seeds, re-exéc 2026-10-09) |
+| 128 | 0.6149 | 03b (32 seeds) |
+| 256 | 0.5352 | 03b (32 seeds) |
 
 ## 4. Verdict β/ν (6 L)
 
 **Régression log-log** sur `M(L, 1/2) / L²` vs `L` (6 points) :
-- `β/ν mesuré = 0.1065` (exact : 5/48 ≈ 0.1042)
-- `R² = 0.9635`
+- `β/ν mesuré = 0.1081` (exact : 5/48 ≈ 0.1042)
+- `R² = 0.9643`
 - `std_err = 0.0104`
-- **Verdict** : `PASS` (5/48 dans la fenêtre acceptance) — la valeur s'est **légèrement améliorée** (0.102 → 0.1065) mais reste +2% au-dessus de la cible 5/48 (cohérent à l'incertitude près, R² 0.964).
+- **Verdict** : `PASS` (5/48 dans la fenêtre acceptance [0.099, 0.109]) — la valeur reste +3.7% au-dessus de la cible 5/48 (cohérent à l'incertitude près, R² 0.964).
 
 **Cause** : les corrections d'échelle finie dominent encore à L ≤ 256. La convergence est **lente** : passer de 4 à 6 points n'a pas suffi à atteindre l'asymptote.
 
-**Note méthodologique** : l'écart-type du fit (0.0104) est **supérieur** à l'écart à la cible corrigée (`0.1042 - 0.1065 = -0.0023`) — le fit est **localement bon** (R² = 0.964) et **compatible avec la cible** aux erreurs près.
+**Note méthodologique** : l'écart-type du fit (0.0104) est **supérieur** à l'écart à la cible (`0.1081 − 0.1042 = +0.0039`) — le fit est **localement bon** (R² = 0.964) et **compatible avec la cible** aux erreurs près.
 
 ## 5. Verdict τ' (6 L)
 
@@ -77,14 +77,14 @@ mieux capturer la pente asymptotique, et `β/ν` devrait se rapprocher de
 
 | L | τ' mesuré | R² | Source | Lecture |
 |---|-----------|-----|--------|---------|
-| 8   | 2.494 | 0.903 | c.1104 (c.1133 R²) | INCONCLUSIVE — bulk 64 nœuds, R² < 0.95 |
-| 16  | 2.021 | 0.996 | c.1104 (c.1133 R²) | descriptif |
-| 32  | 2.080 | 0.978 | c.1104 (c.1133 R²) | descriptif |
-| 64  | 2.193 | 0.996 | c.1104 (c.1133 R²) | descriptif — **hors [2.0, 2.1]** |
-| 128 | 2.163 | 0.990 | c.1105 (fit direct) | descriptif |
-| 256 | 2.183 | 0.991 | c.1105 (fit direct) | descriptif |
+| 8   | 2.570 | 0.915 | carnet 03 (32 seeds, re-exéc 2026-10-09) | INCONCLUSIVE — bulk 64 nœuds, R² < 0.95 |
+| 16  | 2.092 | 0.995 | carnet 03 (32 seeds, re-exéc 2026-10-09) | descriptif |
+| 32  | 2.107 | 0.974 | carnet 03 (32 seeds, re-exéc 2026-10-09) | descriptif |
+| 64  | 2.211 | 0.996 | carnet 03 (32 seeds, re-exéc 2026-10-09) | descriptif — **hors [2.0, 2.1]** |
+| 128 | 2.163 | 0.990 | 03b (fit direct) | descriptif |
+| 256 | 2.183 | 0.991 | 03b (fit direct) | descriptif |
 
-- `τ' moyen (6 L) = 2.189` (exact : 187/91 ≈ 2.055)
+- `τ' moyen (6 L) = 2.221` (exact : 187/91 ≈ 2.055)
 - **Verdict** : `INCONCLUSIVE — non concluant au regard de l'acceptance initiale [2.0, 2.1]`. Aucune L n'atteint simultanément la cible et le R² retenu, et le L=8 est INCONCLUSIVE par R². Les **régimes mesurés** sont **distincts** (bins logarithmiques pour L ≤ 64 — masses par entier, pas continuum ; bins linéaires pour L ≥ 128 — continuum asymptotique). Le 03b **ne choisit pas** d'estimateur pour approcher la cible.
 
 ## 6. Verdict p_c(L) (5 L)
@@ -106,13 +106,13 @@ C'est la **preuve directe** de la loi d'échelle finie : `p_c(L) = 1/2 + c · L^
 
 ## 7. Verdict global
 
-**β/ν = 0.1065** : convergence **en cours** (cible 0.1042, R² = 0.964, std_err = 0.010). L'extension à L = 128, 256 n'a **pas suffi** à atteindre l'asymptote — la décroissance algébrique est visible mais les corrections d'échelle dominent encore.
+**β/ν = 0.1081** : convergence **en cours** (cible 0.1042, R² = 0.964, std_err = 0.010). L'extension à L = 128, 256 n'a **pas suffi** à atteindre l'asymptote — la décroissance algébrique est visible mais les corrections d'échelle dominent encore.
 
-**τ' = 2.189** (6 L) : **INCONCLUSIVE** au regard de l'acceptance initiale `τ' ∈ [2.0, 2.1]`. Aucune L ne sort simultanément τ' ∈ [2.0, 2.1] **et** R² ≥ 0.95 **et** au régime asymptotique. L=8 INCONCLUSIVE par R² (0.903), L=64 = 2.193 **hors** acceptance par le haut, L=128/256 au-dessus de 2.1. Le 03b **ne choisit pas** d'estimateur pour approcher la cible. Lecture détaillée §9.
+**τ' = 2.221** (6 L) : **INCONCLUSIVE** au regard de l'acceptance initiale `τ' ∈ [2.0, 2.1]`. Aucune L ne sort simultanément τ' ∈ [2.0, 2.1] **et** R² ≥ 0.95 **et** au régime asymptotique. L=8 INCONCLUSIVE par R² (0.915), L=64 = 2.211 **hors** acceptance par le haut, L=128/256 au-dessus de 2.1. Le 03b **ne choisit pas** d'estimateur pour approcher la cible. Lecture détaillée §9.
 
 **p_c(L) → 1/2** : convergence **conforme** (5 L, monotone, écart 0.0016 à L = 256). Le seul verdict PASS de la PR.
 
-**Hypothèse a priori (c.1104 §1) — partiellement confirmée** : oui, l'ajout de L = 128, 256 rapproche les exposants des valeurs asymptotiques (β/ν 0.102 → 0.1065), mais la convergence est **lente et asymptotique**. Pour approcher `β/ν = 0.1042` à 1% près, il faudrait vraisemblablement L ∈ {128, 256, 512, 1024}.
+**Hypothèse a priori (c.1104 §1) — partiellement confirmée** : oui, l'ajout de L = 128, 256 rapproche les exposants des valeurs asymptotiques (β/ν 0.0995 → 0.1081 à 6 points), mais la convergence est **lente et asymptotique**. Pour approcher `β/ν = 0.1042` à 1% près, il faudrait vraisemblablement L ∈ {128, 256, 512, 1024}.
 
 **Convention descriptive (post-relecture po-2025, c.1136)** : aucune L n'atteint simultanément la cible et l'acceptance R². L'asymptote n'est **pas** tenue. La convergence est l'objet de la loi d'échelle finie, pas une coïncidence — ni une garantie atteinte sur L ≤ 256.
 
@@ -121,11 +121,19 @@ C'est la **preuve directe** de la loi d'échelle finie : `p_c(L) = 1/2 + c · L^
 1. **L = 512 nécessaire** : l'asymptote stricte (β/ν = 5/48 à 1% près) demanderait `L ∈ {128, 256, 512}`, soit ~2 min supplémentaires (L=512 × 32 seeds × 5 p ≈ 800 simulations × 1.2s/sim).
 2. **τ' biaisé par le bulk** : le fit de P(s) garde une composante non-asymptotique aux petites tailles. Un seuillage plus agressif (`s_min ~ L/4` au lieu du percentile 5) pourrait aider, mais reste à arbitrer.
 3. **scipy.sparse non utilisé** : `networkx.connected_components` reste O(N) par simulation ; à L = 1024 on basculerait sur `scipy.sparse.csgraph.connected_components` (~10× speed-up).
-4. **Seeds inhomogènes** : c.1104 utilisait 29 seeds, c.1105 en utilise 32. L'écart est faible mais pollue légèrement la combinaison. Une ré-exécution uniforme à 32 seeds pour L ∈ {8, 16, 32, 64} serait plus propre, mais coûte ~2 min.
+4. **Seeds inhomogènes — RÉSOLU (2026-10-09)** : la passe c.1104 tournait à 29 seeds, c.1105 à 32. La re-exécution 2026-10-09 du carnet 03 à 32 seeds uniformes (640 simulations) referme l'écart : `C1104_TABLE` et `TAU_PRIME_C1104` citent désormais les sorties fraîches 32-seeds, et la combinaison 6 L est homogène.
 
 **Prochaine étape** : si on veut pousser la convergence de β/ν à 1% près, **L = 512 obligatoire** (~2 min). Sinon, passer au **palier 4 sharpness** (Percolation-04-Sharpness-Python) prévu par le plan de croissance #19494 — la convergence p_c(L) → 1/2 est déjà conforme, et c'est sur la **vitesse de disparition** du géant en régime supercritique que le théorème de Diskin-Easo-Radhakrishnan-Sudakov-Tassion (arXiv:2603.03257 §3.0) attend ses mesures.
 
 ## 9. Diagnostic estimateur τ' (c.1133 + c.1136, suite adjointe po-2025)
+
+> **Corrigendum (2026-10-09)** : les valeurs chiffrées citées dans cette
+> section (τ' = 2.494/2.021/2.080/2.193, R² = 0.903…) sont les mesures
+> **29 seeds** de la passe c.1133, conservées comme relevé historique. La
+> re-exécution 2026-10-09 du carnet 03 à **32 seeds uniformes** les
+> remplace : τ' = 2.570/2.092/2.107/2.211 (R² = 0.915/0.995/0.974/0.996).
+> Les conclusions de la section (estimateur sain, écart d'échelle finie)
+> sont inchangées.
 
 **Contexte** : l'adjoint po-2025 a attiré l'attention sur l'estimateur
 τ' du carnet 03 et 03b — suspicion que `counts / counts.sum()` (sans

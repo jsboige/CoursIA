@@ -28,36 +28,39 @@ convergence `p_c(L) → 1/2` quand `L → ∞`.
 
 - **L ∈ {8, 16, 32, 64}** (4 valeurs)
 - **p ∈ {0.45, 0.48, 0.50, 0.52, 0.55}** (5 valeurs)
-- **seeds = 29 par cellule `(L, p)`** : 5 canoniques (`{0,1,7,42,99}`) + 24 auxiliaires `range(100, 124)` (le scoping memo disait 32 seeds ; correction c.1104 : la liste effective est 29)
-- **Total : 4 × 5 × 29 = 580 simulations** (vs 640 visées)
+- **seeds = 32 par cellule `(L, p)`** : 5 canoniques (`{0,1,7,42,99}`) + 27 auxiliaires `range(100, 127)` (uniformisé c.1223 — le scoping memo disait 32, la passe c.1104 tournait à 29, la re-exécution 2026-10-09 restaure 32)
+- **Total : 4 × 5 × 32 = 640 simulations**
 - `networkx.grid_2d_graph(L, L, periodic=True)` + `networkx.connected_components`
 
 ## 4. Mesures effectuées
 
-- **Wall-clock total** : 3.8 s (640-budget vs 580 effectives) — soit ~0.007 s/sim en moyenne
+- **Wall-clock total** : 6.2 s (640 simulations, re-exécution 2026-10-09) — soit ~0.01 s/sim en moyenne
 - **L=64 dominant** : ~17 ms/sim (vs L=8 ~0.3 ms/sim)
 - aucune erreur, aucune cellule `NotImplementedError` (C.1 conforme)
 - Outputs présents et cohérents (C.2 conforme)
 
-**Tableau des mesures `M(L, p) / L²` :**
+**Tableau des mesures `M(L, p) / L²` (32 seeds, 2026-10-09) :**
 
 | L | p=0.45 | p=0.48 | p=0.50 | p=0.52 | p=0.55 |
 |---|--------|--------|--------|--------|--------|
-| 8  | 0.642 | 0.753 | 0.789 | 0.848 | 0.902 |
-| 16 | 0.493 | 0.661 | 0.732 | 0.802 | 0.872 |
-| 32 | 0.299 | 0.549 | 0.710 | 0.814 | 0.895 |
-| 64 | 0.118 | 0.393 | 0.629 | 0.793 | 0.881 |
+| 8  | 0.6528 | 0.7544 | 0.7939 | 0.8467 | 0.9043 |
+| 16 | 0.4845 | 0.6575 | 0.7347 | 0.8065 | 0.8732 |
+| 32 | 0.3016 | 0.5524 | 0.7158 | 0.8151 | 0.8942 |
+| 64 | 0.1196 | 0.3984 | 0.6363 | 0.7973 | 0.8821 |
 
-À `p = 0.50` (point critique), `M/L²` décroît lentement avec `L` (0.789 →
-0.732 → 0.710 → 0.629) — c'est la signature de la criticalité.
+À `p = 0.50` (point critique), `M/L²` décroît lentement avec `L` (0.7939 →
+0.7347 → 0.7158 → 0.6363) — c'est la signature de la criticalité.
 
 ## 5. Verdict β/ν
 
 **Régression log-log** sur `M(L, 1/2) / L²` vs `L` :
-- `β/ν mesuré = 0.102` (exact: 5/48 ≈ 0.1042)
-- `R² = 0.946` — **INCONCLUSIVE** (R² < 0.95)
-- **Verdict** : `INCONCLUSIVE` — slope trop faible (~26% sous la valeur
-  asymptotique), et le fit n'est pas statistiquement conclusif sur 4 points.
+- `β/ν mesuré = 0.0995` (exact: 5/48 ≈ 0.1042) — écart −4.5% à la cible
+- `R² = 0.9436` — **INCONCLUSIVE** (R² < 0.95)
+- **Fenêtre acceptance** `β/ν ∈ [0.099, 0.109]` (±5% autour de 5/48) : **PASS**
+  — la valeur mesurée tombe dans la fenêtre, mais le fit n'atteint pas le
+  seuil R² ; le verdict global reste `INCONCLUSIVE`.
+- **Verdict** : `INCONCLUSIVE` — slope à −4.5% de la valeur asymptotique,
+  et le fit n'est pas statistiquement concluant sur 4 points.
 
 **Cause** : sur `L ∈ {8, 16, 32, 64}`, les corrections d'échelle finie
 dominent encore. La loi `M(L, 1/2) / L² ~ L^{-β/ν}` n'est asymptotique
@@ -72,21 +75,21 @@ bulk entre `s_min` et `s_max` pour chaque `L` :
 
 | L | τ' mesuré | R² | Verdict |
 |---|-----------|-----|---------|
-| 8  | 2.494 | **0.903** | **INCONCLUSIVE** (R² < 0.95, bulk insuffisant) |
-| 16 | 2.021 | 0.996 | PASS |
-| 32 | 2.080 | 0.978 | PASS |
-| 64 | 2.193 | 0.996 | PASS |
+| 8  | 2.570 | **0.915** | **INCONCLUSIVE** (R² < 0.95, bulk insuffisant) |
+| 16 | 2.092 | 0.995 | PASS |
+| 32 | 2.107 | 0.974 | PASS |
+| 64 | 2.211 | 0.996 | PASS |
 
-- `τ' moyen (sur L ∈ {8, 16, 32, 64}) = 2.197`
-- `τ' moyen hors L=8 (INCONCLUSIVE) = 2.098` — **écart +2.1% à la cible**
+- `τ' moyen (sur L ∈ {8, 16, 32, 64}) = 2.245`
+- `τ' moyen hors L=8 (INCONCLUSIVE) = 2.137` — **écart +4.0% à la cible**
 - Exact : `187/91 ≈ 2.055`
 - **Verdict global** : `PARTIEL` — 3/4 PASS, 1 INCONCLUSIVE (L=8)
 
 **Cause du verdict partiel** : le bulk à `L = 8` (taille totale 64)
 contient trop de composantes triviales (`s = 1`, `s = 2`) pour qu'un
-fit log-log soit statistiquement concluant (R² = 0.903). Sur `L ∈ {16, 32,
+fit log-log soit statistiquement concluant (R² = 0.915). Sur `L ∈ {16, 32,
 64}`, le bulk est suffisamment grand pour des fits R² > 0.97, et la
-**moyenne conditionnelle** donne `τ' = 2.098`, écart +2.1% à l'asymptote.
+**moyenne conditionnelle** donne `τ' = 2.137`, écart +4.0% à l'asymptote.
 
 **Instrumentation c.1133** : le R² par L a été ajouté dans la cellule
 de fit (commit diagnostic). L'INCONCLUSIVE sur L=8 n'est pas un bug
@@ -100,15 +103,25 @@ limite physique du bulk à petit L.
 
 | L | p_c(L) mesuré |
 |---|---------------|
-| 8  | < 0.45 (giant fraction > 0.5 même à p=0.45 — hors plage) |
-| 16 | 0.4513 |
-| 32 | 0.4741 |
-| 64 | 0.4890 |
+| 8  | nan (M/L² > 0.5 sur toute la plage — hors plage) |
+| 16 | 0.4527 |
+| 32 | 0.4737 |
+| 64 | 0.4885 |
 
-**Convergence monotone** `0.4513 → 0.4741 → 0.4890 → 1/2` ✓
+**Convergence monotone** `0.4527 → 0.4737 → 0.4885 → 1/2` ✓
 
 C'est la **preuve directe** de la loi d'échelle finie : `p_c(L) = 1/2 + c · L^{-1/ν}`
 avec `1/ν = 3/4`. La convergence est conforme à la théorie.
+
+**Fit de l'exposant** (correctif c.1223 — le fit log initial prenait
+`log(déviation)` avec `déviation < 0`, d'où NaN + RuntimeWarning ; il
+ajuste désormais `log|p_c(L) − 1/2|`) :
+- `1/ν mesuré = 1.0228` (exact : 3/4 = 0.75) — **surestimé de +36%**
+- `R² = 0.9905`
+- **Lecture honnête** : sur `L ∈ {16, 32, 64}` avec une grille `p` à 5
+  points interpolée linéairement, l'exposant effectif n'est pas résolu —
+  la **monotonicité** de la convergence est le signal conforme ; la valeur
+  de `1/ν` attend une grille `p` plus fine autour de 0.5 pour être mesurable.
 
 ## 8. Limitations et extensions
 
@@ -116,14 +129,11 @@ avec `1/ν = 3/4`. La convergence est conforme à la théorie.
 
 | Mesure | Valeur | Cible | R² | Verdict |
 |--------|--------|-------|---|---------|
-| `β/ν` (4 L, log-log) | 0.102 | 5/48 ≈ 0.1042 | 0.946 | **INCONCLUSIVE** |
-| `τ'` (4 L, moyenne brute) | 2.197 | 2.055 | — | PARTIEL (3/4 PASS) |
-| `τ'` (4 L, sans L=8) | 2.098 | 2.055 | ≥ 0.978 | PASS (écart 2.1%) |
-| `p_c(L)` convergence | 0.4513→0.4890 | → 1/2 monotone | — | CONFORME |
-
-**Cause** : corrections d'échelle finie dominent à `L ≤ 64`. La
-percolation finie sur tore `T_n` ne reproduit l'asymptotique que pour
-`L ≫ ξ` — et à `p_c(ℤ²)`, `ξ = ∞`.
+| `β/ν` (4 L, log-log) | 0.0995 | 5/48 ≈ 0.1042 | 0.9436 | **INCONCLUSIVE** (fenêtre [0.099, 0.109] PASS, R² sous seuil) |
+| `τ'` (4 L, moyenne brute) | 2.245 | 2.055 | — | PARTIEL (3/4 PASS) |
+| `τ'` (4 L, sans L=8) | 2.137 | 2.055 | ≥ 0.974 | PASS (écart 4.0%) |
+| `p_c(L)` convergence | 0.4527→0.4885 | → 1/2 monotone | — | CONFORME |
+| `1/ν` (fit log \|p_c−1/2\|) | 1.0228 | 3/4 | 0.9905 | surestimé (+36%) — non résolu à cette grille p |
 
 **Cause** : corrections d'échelle finie dominent à `L ≤ 64`. La
 percolation finie sur tore `T_n` ne reproduit l'asymptotique que pour
