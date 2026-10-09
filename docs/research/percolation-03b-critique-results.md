@@ -2,7 +2,7 @@
 
 > **Suite directe de [#19494](https://github.com/jsboige/CoursIA/issues/19494)** (plan de croissance Percolation 03 critique / 04 sharpness ×2), du scoping memo §8 ([PR #19531](https://github.com/jsboige/CoursIA/pull/19531), c.1103) et de l'exécution c.1104 ([PR #19537](https://github.com/jsboige/CoursIA/pull/19537)). Ce carnet étend le sweep à `L ∈ {128, 256}` pour vérifier la **convergence asymptotique** des exposants critiques.
 
-## Sections (8)
+## Sections (9)
 
 1. **Cible** — convergence β/ν → 5/48 et τ' → 187/91 quand L → ∞
 2. **Architecture pipeline** — sweep L ∈ {128, 256} × 32 seeds × 5 p
@@ -12,6 +12,7 @@
 6. **Verdict p_c(L) (5 L)** — convergence monotone vers 1/2
 7. **Verdict global** — convergence en cours, asymptote non atteinte
 8. **Limitations et perspectives** — L = 512 nécessaire, scipy.sparse
+9. **Diagnostic estimateur τ'** — c.1133 + c.1136, suite adjointe po-2025
 
 ---
 
@@ -102,7 +103,7 @@ mieux capturer la pente asymptotique, et `β/ν` devrait se rapprocher de
 
 **Convergence monotone** `0.4512 → 0.4741 → 0.4891 → 0.4942 → 0.4984 → 1/2` ✓
 
-C'est la **preuve directe** de la loi d'échelle finie : `p_c(L) = 1/2 + c · L^{-1/ν}` avec `1/ν = 3/4`. La convergence est conforme à la théorie, et l'écart à `1/2` à `L = 256` est de `0.0016` (cible : 0 à `L = ∞`).
+C'est une **illustration numérique** — non une preuve directe — de la loi d'échelle finie `p_c(L) = 1/2 + c · L^{-1/ν}` (théorie : `1/ν = 3/4`) : la convergence observée est monotone, et l'écart à `1/2` à `L = 256` est de `0.0016` (cible : 0 à `L = ∞`).
 
 ## 7. Verdict global
 

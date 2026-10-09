@@ -2,15 +2,15 @@
 
 > **Suite directe de [#19494](https://github.com/jsboige/CoursIA/issues/19494)** (plan de croissance Percolation 03 critique / 04 sharpness ×2) et du scoping memo §8 (`percolation-03-critique-scoping.md`, c.1103, PR #19531) — exécution effective au pin `70ece81334` (main HEAD c.1104).
 
-## Sections (8)
+## Sections (7)
 
 1. **Cible** — physique du point critique (β/ν, τ', p_c(L) → 1/2)
 2. **Architecture pipeline** — sweep `L × p × seeds`, instrument `networkx`
 3. **Mesures effectuées** — 580 runs, ~4 s wall-clock mono-thread
-5. **Verdict β/ν** — mesure vs cible asymptotique
-6. **Verdict τ'** — distribution de tailles
-7. **Verdict p_c(L)** — convergence monotone vers 1/2
-8. **Limitations et extensions** — corrections d'échelle finie, extensions L ∈ {128, 256}
+4. **Verdict β/ν** — mesure vs cible asymptotique
+5. **Verdict τ'** — distribution de tailles
+6. **Verdict p_c(L)** — convergence monotone vers 1/2
+7. **Limitations et extensions** — corrections d'échelle finie, extensions L ∈ {128, 256}
 
 ---
 
@@ -24,7 +24,7 @@ convergence `p_c(L) → 1/2` quand `L → ∞`.
 (where il est stable). 03 mesure le *géant* en régime `p ≈ p_c` (where il
 **fluctue**) et la **distribution de tailles** des composantes connexes.
 
-## 3. Architecture pipeline
+## 2. Architecture pipeline
 
 - **L ∈ {8, 16, 32, 64}** (4 valeurs)
 - **p ∈ {0.45, 0.48, 0.50, 0.52, 0.55}** (5 valeurs)
@@ -32,7 +32,7 @@ convergence `p_c(L) → 1/2` quand `L → ∞`.
 - **Total : 4 × 5 × 32 = 640 simulations**
 - `networkx.grid_2d_graph(L, L, periodic=True)` + `networkx.connected_components`
 
-## 4. Mesures effectuées
+## 3. Mesures effectuées
 
 - **Wall-clock total** : 6.2 s (640 simulations, re-exécution 2026-10-09) — soit ~0.01 s/sim en moyenne
 - **L=64 dominant** : ~17 ms/sim (vs L=8 ~0.3 ms/sim)
@@ -51,7 +51,7 @@ convergence `p_c(L) → 1/2` quand `L → ∞`.
 À `p = 0.50` (point critique), `M/L²` décroît lentement avec `L` (0.7939 →
 0.7347 → 0.7158 → 0.6363) — c'est la signature de la criticalité.
 
-## 5. Verdict β/ν
+## 4. Verdict β/ν
 
 **Régression log-log** sur `M(L, 1/2) / L²` vs `L` :
 - `β/ν mesuré = 0.0995` (exact: 5/48 ≈ 0.1042) — écart −4.5% à la cible
@@ -68,7 +68,7 @@ que pour `L ≫ ξ` (longueur de corrélation). À `p = 1/2`, `ξ = ∞`, donc
 l'asymptote n'est jamais vraiment atteinte — il faut `L` arbitrairement
 grand pour approcher β/ν = 5/48.
 
-## 6. Verdict τ'
+## 5. Verdict τ'
 
 **Distribution de tailles** `P(s)` au point critique, fit log-log sur le
 bulk entre `s_min` et `s_max` pour chaque `L` :
@@ -97,7 +97,7 @@ de l'estimateur (cf. analyse détaillée dans
 `docs/research/percolation-03b-critique-results.md` §9), mais une
 limite physique du bulk à petit L.
 
-## 7. Verdict p_c(L) → 1/2
+## 6. Verdict p_c(L) → 1/2
 
 **Interpolation linéaire** de `M(L, p) / L² = 1/2` :
 
@@ -110,8 +110,9 @@ limite physique du bulk à petit L.
 
 **Convergence monotone** `0.4527 → 0.4737 → 0.4885 → 1/2` ✓
 
-C'est la **preuve directe** de la loi d'échelle finie : `p_c(L) = 1/2 + c · L^{-1/ν}`
-avec `1/ν = 3/4`. La convergence est conforme à la théorie.
+C'est une **illustration numérique** — non une preuve directe — de la loi d'échelle
+finie `p_c(L) = 1/2 + c · L^{-1/ν}` (théorie : `1/ν = 3/4`) : la convergence observée
+est monotone, et le fit ci-dessous mesure l'écart quantitatif à l'exposant.
 
 **Fit de l'exposant** (correctif c.1223 — le fit log initial prenait
 `log(déviation)` avec `déviation < 0`, d'où NaN + RuntimeWarning ; il
@@ -123,7 +124,7 @@ ajuste désormais `log|p_c(L) − 1/2|`) :
   la **monotonicité** de la convergence est le signal conforme ; la valeur
   de `1/ν` attend une grille `p` plus fine autour de 0.5 pour être mesurable.
 
-## 8. Limitations et extensions
+## 7. Limitations et extensions
 
 **Verdict global (post c.1133)** :
 
