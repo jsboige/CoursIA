@@ -5499,9 +5499,17 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     la fenetre de tete, meme doctrine que ``check_claims`` : le tapis ne
     paie une requete commentaire que pour les candidats qu'il considere
     reellement. Epuisement = fail-OPEN (``DELIVERED_SIGNAL_UNPROBED``),
-    rapporte dans l'etat de retour. ``delivered_probe`` (tests) remplace la
-    sonde reseau ; ``claims_probe`` (tests) remplace la verification au fil
-    de l'eau des items hors fenetre.
+    rapporte dans l'etat de retour. ``delivered_probe`` et
+    ``merged_pr_probe`` (tests) remplacent les sondes reseau ;
+    ``claims_probe`` (tests) remplace la verification au fil de l'eau des
+    items hors fenetre.
+
+    Defauts INERTES (doctrine ``delivered_probe_inert`` / #19913) : un test
+    qui appelle cette boucle sans injecter ses sondes n'emet AUCUNE requete
+    reseau. Qui veut le vrai signal l'injecte -- ``main`` le fait
+    explicitement. Le defaut precedent (sonde reseau) etait un piege : un
+    test neuf qui oubliait l'injection pendait sur un vrai ``gh`` (mesure
+    2026-10-09 : 99 s pour un seul test, cf. coordinateur #19913).
 
     Rend ``(picks, withheld, etat)`` avec ``etat = {"failures": [numeros
     illisibles], "budget_hit": bool}``.
@@ -5512,8 +5520,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # Le budget enrobe TOUTE sonde, injectee ou reelle : un test qui fournit
     # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
     # cout ne serait testable qu'avec le reseau reel.
-    user_probe = delivered_probe or has_delivered_signal
-    user_merged_pr_probe = merged_pr_probe or merged_pr_signal
+    user_probe = delivered_probe or delivered_probe_inert
+    user_merged_pr_probe = merged_pr_probe or merged_pr_probe_inert
 
     def counted_probe(number, lane_name):
         if budget[0] <= 0:
@@ -6173,10 +6181,15 @@ def main(argv: list[str] | None = None) -> int:
         # Boucle de service extraite (#19390) : claims + sonde de livraison
         # bornee a la fenetre de tete, remplacement dans la meme urne.
         # Epuisement du budget de sondes = fail-OPEN, rapporte en banniere
-        # et en JSON (cf belt_pick_with_replacements).
+        # et en JSON (cf belt_pick_with_replacements). Les sondes reelles
+        # sont injectees ICI explicitement : les defauts de la boucle sont
+        # inertes (#19913) pour que les tests ne sortent jamais sur le
+        # reseau par oubli.
         belt_picks, belt_withheld, belt_pick_state = (
             belt_pick_with_replacements(belt_pool, belt_claims, args,
-                                        belt_check_window))
+                                        belt_check_window,
+                                        delivered_probe=has_delivered_signal,
+                                        merged_pr_probe=merged_pr_signal))
         belt_delivered_failures = belt_pick_state["failures"]
         belt_probe_budget_hit = [belt_pick_state["budget_hit"]]
         # Banniere legere : le tapis ne refuse jamais, mais rappelle
