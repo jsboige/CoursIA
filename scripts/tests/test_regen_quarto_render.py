@@ -323,7 +323,8 @@ class TestReadmeLinkTargets:
             base, "./RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb"
         ) == "MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb"
 
-    def test_flags_html_when_source_not_rendered(self, monkeypatch, tmp_path):
+    def test_flags_html_when_target_not_committed(self, monkeypatch, tmp_path):
+        """Un lien `.html` dont la cible n'est pas committee = HTML_404 (#18911)."""
         readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
         source = readme.parent / "Excluded.ipynb"
         readme.parent.mkdir(parents=True)
@@ -340,10 +341,75 @@ class TestReadmeLinkTargets:
         assert rqr.readme_link_violations() == [
             (
                 "MyIA.AI.Notebooks/Search/README.md",
-                "DEAD_RENDER",
+                "HTML_404",
                 "Excluded.html",
             )
         ]
+
+    def test_ipynb_link_to_existing_notebook_is_valid(self, monkeypatch, tmp_path):
+        """Temoin #18911 : un lien `.ipynb` vers un carnet present n'est PAS une violation.
+
+        C'est le renversement de doctrine : la navigation de reference est
+        github.com, ou le lien `.ipynb` ouvre le viewer. Le carnet est rendu
+        (tracked) -- l'ancien predicat `STALE_LINK` le declarait pourtant
+        violation et poussait a convertir en `.html`.
+        """
+        readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
+        nb = readme.parent / "Search-01.ipynb"
+        readme.parent.mkdir(parents=True)
+        readme.write_text("[S](Search-01.ipynb)\n", encoding="utf-8")
+        nb.write_text("{}\n", encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_readmes",
+            lambda: ["MyIA.AI.Notebooks/Search/README.md"],
+        )
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_notebooks",
+            lambda: ["MyIA.AI.Notebooks/Search/Search-01.ipynb"],
+        )
+
+        assert rqr.readme_link_violations() == []
+
+    def test_broken_ipynb_link_is_flagged(self, monkeypatch, tmp_path):
+        """Un lien `.ipynb` vers un carnet absent reste BROKEN."""
+        readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
+        readme.parent.mkdir(parents=True)
+        readme.write_text("[Gone](Gone.ipynb)\n", encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_readmes",
+            lambda: ["MyIA.AI.Notebooks/Search/README.md"],
+        )
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+
+        assert rqr.readme_link_violations() == [
+            (
+                "MyIA.AI.Notebooks/Search/README.md",
+                "BROKEN",
+                "Gone.ipynb",
+            )
+        ]
+
+    def test_committed_html_target_is_not_flagged(self, monkeypatch, tmp_path):
+        """Temoin negatif : un `.html` dont la cible EST committee n'est pas une violation."""
+        readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
+        page = readme.parent / "report.html"
+        readme.parent.mkdir(parents=True)
+        readme.write_text("[R](report.html)\n", encoding="utf-8")
+        page.write_text("<html></html>\n", encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_readmes",
+            lambda: ["MyIA.AI.Notebooks/Search/README.md"],
+        )
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+
+        assert rqr.readme_link_violations() == []
 
 
 # ---------------------------------------------------------------------------
