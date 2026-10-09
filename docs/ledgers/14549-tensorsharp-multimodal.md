@@ -626,8 +626,9 @@ Le bon fichier est **Kijai/WanVideo_comfy: Wan2_1_VAE_bf16.safetensors** : 254 M
 | Métrique | Python vLLM / ComfyUI Wan | TensorSharp .NET c.445 |
 |---|---|---|
 | Binaire `TensorSharp.Cli.exe` chargé | n/a | 1.0 s (architecture wan, kv_cache_dtype=f32) |
-| Latence 9 frames 832×480 (1 seed, 30 steps) | (à mesurer sur même machine) | **33.8 s** wallclock (warmup CUDA + denoise + vae-decode) |
-| VRAM cuda[0] pic | (à mesurer) | **3.3 GiB** (DiT + UMT5 partial + VAE) |
+| Latence (30 steps, froid, RTX 3090) | **224,3 s** à 33 f / cfg 6 — parité stricte, DiT/TE Q4 sha256-identiques ([#15159 §7](15159-wan-video-inv.md)) ; fp16 natif : 123,4 s à cfg 1 | **124,4 s** à 33 f / cfg 6 · 33.8 s à 9 f (c.445) |
+| VRAM cuda[0] pic | **20 776 MiB** (33 f / cfg 6 — GGUF déquantisé fp16 en VRAM, TE+VAE résidents) | **5 063 MiB** à 33 f / cfg 6 (quantifié + offload TE) · 3.3 GiB (9 f, c.445) |
+| Déterminisme seed | **byte-identique** sur 2 exécutions complètes à process redémarré (sha256 `f1e7276e…`) | `--seed` ignoré (seed dérivée ≠ argument) |
 | Bus factor | communauté Wan massive | single-maintainer zhongkaifu + communauté ggml |
 | Documentation | abondante (ComfyUI Wan nodes) | sparse (CLI flags Wan natifs `--help`) |
 | Interop avec le reste du dépôt | Docker standalone | natif C#/.NET (Microsoft.SemanticKernel + GenAI Hosting) |
@@ -962,7 +963,7 @@ Le vrai outil (TensorSharp CLI v3.3.0.0 + DiT Wan 2.2 Q4_K_M + UMT5-XXL) a été
 | 1 — binaire chargé firsthand RTX 3090 | ✔ (sustained, bannière B1/B2/B3) |
 | 2 — ≥1 axe exécuté bout-en-bout + QA | ✔ Wan 2.1 (c.445) · **Wan 2.2 désormais ✔ aussi** (B2+B3, QA objective) |
 | 3 — verdict écrit par axe | 4 axes sur 4 : Texte / Image / Wan 2.1 / **Wan 2.2 = `SOTA-OK`** |
-| 4 — comparaison honnête vs Python/Docker | Image ✔ (c.272-273) · Vidéo : **voie 3 B.0 (a)/(b) reste ouverte** (ComfyUI Wan non installé sur cette machine — hors fenêtre worker, ~14 GB dl + redéploiement) |
+| 4 — comparaison honnête vs Python/Docker | Image ✔ (c.272-273) · **Vidéo ✔** (parité même-machine livrée : [#15159 §7](15159-wan-video-inv.md), run A′ Q4 sha256-identiques 224,3 s / 20 776 MiB vs TensorSharp 124,4 s / 5 063 MiB — TensorSharp 1,80× plus rapide, 4,1× plus économe ; split de format VAE GGUF/legacy ↔ safetensors/Diffusers documenté, déterminisme byte-level côté ComfyUI) |
 
 ### Tells / apprentissages c.33
 
