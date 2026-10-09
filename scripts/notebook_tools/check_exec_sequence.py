@@ -193,10 +193,18 @@ def self_test():
          "MyIA.AI.Notebooks/GradeBook.ipynb", "PARTIAL", True),
         ("undeclared PARTIAL is NOT exempt",
          "MyIA.AI.Notebooks/ML/foo.ipynb", "PARTIAL", False),
-        ("DIRTY under the QC root is NOT exempt",
-         "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-02-Platform-Fundamentals.ipynb",
-         "DIRTY", False),
         ("CLEAN is never exempt", "MyIA.AI.Notebooks/GradeBook.ipynb", "CLEAN", False),
+    ]
+    # Review #20089 (mutation M3) : epingler « seul PARTIAL est exemptable »
+    # sur les verdicts REELS que sequence_verdict rend. Le litteral "DIRTY"
+    # n'est jamais rendu (les buckets sont DUPLICATE/UNORDERED/NOT_FROM_1/
+    # GAP) : l'ancien controle etait vrai par construction et la mutation
+    # EXEMPTABLE_VERDICTS = {"PARTIAL", "NOT_FROM_1"} restait verte.
+    qc_root_nb = ("MyIA.AI.Notebooks/QuantConnect/Python/"
+                  "QC-Py-02-Platform-Fundamentals.ipynb")
+    exempt_controls += [
+        (f"{v} under the QC root is NOT exempt", qc_root_nb, v, False)
+        for v in sorted(DIRTY_VERDICTS)
     ]
     for label, path, verdict, expect_exempt in exempt_controls:
         got = bool(exemption_reason(path, verdict))
