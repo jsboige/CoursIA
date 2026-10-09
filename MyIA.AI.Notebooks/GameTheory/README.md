@@ -275,7 +275,7 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | 16d | [Échange de reins](GameTheory-16d-Echange-de-Reins-Lean-Python.ipynb) | Graphe de compatibilité, cycles et chaînes de donneurs, arbitrage entre cardinalité et équité | Python | Licence |
 | 16b | [Conception automatique de mécanismes](GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) | Synthétiser un mécanisme sous contraintes, puis vérifier ses propriétés | Python | Recherche |
 | 16e | [Joueurs LLM](GameTheory-16e-LLM-Players-Othman-Sandholm-Python.ipynb) | Pilote : des agents de langage hétérogènes joueurs d'un mécanisme d'Othman-Sandholm | Python | Recherche |
-| 16g | [Populations Othman-Sandholm](GameTheory-16g-Populations-Othman-Sandholm-Python.html) | Généralisation du pilote 16e : un échantillon de N paires (row, col) tirées d'une distribution sur les politiques, quatre populations scriptées, multi-seed, modèle nul | Python | Recherche |
+| 16g | [Populations Othman-Sandholm](GameTheory-16g-Populations-Othman-Sandholm-Python.ipynb) | Généralisation du pilote 16e : un échantillon de N paires (row, col) tirées d'une distribution sur les politiques, quatre populations scriptées, multi-seed, modèle nul | Python | Recherche |
 
 L'agrégation des préférences (Arrow, vote, manipulation) se poursuit dans la [sous-série SocialChoice](#sous-série-socialchoice).
 
