@@ -37,10 +37,21 @@ This is what this library does. The modules:
     **equivalence Sheffer ↔ 4 generators** is out of scope of this PR; see
     #16958 for follow-up.
   - `MUH.Cyclic`: cyclic groups C₂ and C₃ (Tegmark §2b).
-  - `MUH.Decidable`: **documented enumerative skeleton** (Tegmark §1 in fine).
-    The delivered code is a **stub** (`decideEq` compares `nSets`,
-    `ClosedUnderComp` is `trivial`) — **not** a halting enumerative algorithm.
-    The full implementation is out of scope; see #16958. -/
+  - `MUH.Aut`: the group Aut(S) — "Aut(S) is a group (easy to see)"
+    (Appendix A §1 in fine): the five group axioms are proved
+    (`aut_isGroup`), without Mathlib.
+  - `MUH.Examples`: explicit computation of automorphism groups:
+    `Aut(C₃) = {id, x ↦ 2x}` (exhaustivity proved) and `Aut(C₂) = {id}`.
+  - `MUH.Decidable`: decidability (Tegmark §1 in fine) on the restricted
+    class: `decideEq` compares headers (sets, cardinalities, number of
+    relations), and the binary-table decider is **proved correct**
+    (`sameBinaryOperation_eq_iff`).
+  - `MUH.Enumeration`: **effective enumeration** of finite tables (arity 2:
+    `m ^ (m²)` tables; arity 3: `m ^ (m³)` — the arity of the composite),
+    with **proved exhaustivity** and **proved count**; closure under
+    composition is witnessed there by membership
+    (`composeB_mem_allTernaryTables`). The arbitrary-arity tuple form
+    remains open. -/
 
 
 /-- Sub-libraries of MUH, exposed through a single import. -/
@@ -48,4 +59,7 @@ import MUH.Structure
 import MUH.Encoding
 import MUH.Boolean
 import MUH.Cyclic
+import MUH.Aut
+import MUH.Examples
+import MUH.Enumeration
 import MUH.Decidable

@@ -103,7 +103,7 @@ import re
 import subprocess
 import sys
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Sequence
 
 try:
     import gh_identity
@@ -266,10 +266,21 @@ class Dossier:
     created_at: str = ""
 
 
+API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0}
+
+
 def gh_json(args: list[str]) -> Any:
     proc = subprocess.run(
         ["gh", *args], capture_output=True, text=True, encoding="utf-8"
     )
+    # Compteur REST/GraphQL (#17315) : tout l'organe paie ici, la mesure aussi.
+    # GraphQL (`api graphql`) consomme le bucket partage de la flotte ; tout le
+    # reste (REST `api`, `pr view`, ...) paie le bucket core. Publie par
+    # ``--json`` (cle ``api_usage``) et sur stderr en fin d'invocation.
+    if len(args) >= 2 and args[0] == "api" and args[1] == "graphql":
+        API_USAGE["graphql"] += 1
+    else:
+        API_USAGE["rest"] += 1
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or "gh command failed")
     return json.loads(proc.stdout)
@@ -608,8 +619,11 @@ def _fingerprint_payload(
         "threads": snapshot.get("threads") or [],
     }
     if include_checks:
+        # Diagnostic-only branch (#17315): reads the REST check-runs of the
+        # head (present in every snapshot) instead of the retired GraphQL
+        # rollup. Never hashed into a stamp since #16957.
         payload["checks"] = sorted(
-            snapshot.get("statusCheckRollup") or [],
+            snapshot.get("checkRuns") or [],
             key=lambda row: json.dumps(
                 row, sort_keys=True, separators=(",", ":")
             ),
@@ -695,30 +709,6 @@ def surfaces_fingerprint(
     """
     return _digest(
         _fingerprint_payload(snapshot, comment_limit, neutral_after, False)
-    )
-
-
-def legacy_surfaces_fingerprint(
-    snapshot: dict[str, Any],
-    comment_limit: int | None = None,
-    neutral_after: str | None = None,
-) -> str:
-    """Pre-#16957 stamp algorithm: the same payload PLUS the check rollup.
-
-    Kept so dossiers stamped before #16957 -- whose hash embedded the check
-    state -- remain verifiable for as long as that state is byte-identical.
-    Once any check concludes, a legacy stamp stops matching; recovery is one
-    mechanical re-stamp (--template recomputes every mechanical field, no
-    re-reading of surfaces), after which no check conclusion can ever expire
-    the dossier again. A SHA-256 over data that has since changed cannot be
-    re-derived, which is why zero-touch recovery of raced legacy stamps is
-    not offered. Drop this function when no open dossier carries a legacy
-    stamp.
-    """
-    return _digest(
-        _fingerprint_payload(
-            snapshot, comment_limit, neutral_after, True, bot_forms_18637=False
-        )
     )
 
 
@@ -981,8 +971,10 @@ def recheck_blocked_b0(
     Only the b0-ONLY case expires, and only toward a re-stamp: the answer
     becomes the no-dossier outcome (exit 1), which routes the pull request to
     a third-party lane for a fresh dossier -- never back to the author as
-    mergeable. Any other blocking field (checks, scope, domain) keeps the
-    dossier standing: its reason may still hold.
+    mergeable. Any other blocking field keeps the dossier standing HERE: the
+    ``checks`` field has its own recheck (``recheck_blocked_checks``), and
+    ``scope``/``domain`` are judgments about a diff, which cannot move without
+    a push -- and a push already expires the stamp.
     """
     if verdict != VERDICT_BLOCKED or dossier is None:
         return verdict, [], dossier
@@ -997,6 +989,56 @@ def recheck_blocked_b0(
         "dossier's stated reason is extinguished, a re-stamp is required: "
         "a third-party lane must post a fresh dossier (never merge on "
         "this one)"
+    ], None
+
+
+def recheck_blocked_checks(
+    snapshot: dict[str, Any],
+    verdict: str,
+    dossier: Dossier | None,
+) -> tuple[str, list[str], Dossier | None]:
+    """Expire a BLOCKED dossier whose only blocking field, ``checks``, no longer blocks.
+
+    Third of the family, after ``refute_ready_b0`` and ``recheck_blocked_b0``
+    (#19093). ``checks`` is the ONE blocking field whose value moves without a
+    head mutation: a check concludes asynchronously, so a dossier stamped while
+    a leg was still running attests ``checks: BLOCKED`` for a state a later
+    verdict extinguishes on the very same head. Measured instances: #19906
+    (dossier BLOCKED at 2026-10-08T10:42:32Z, ``PR gate`` success at
+    11:21:46Z on the same head ``4d3eb7f67a3f`` -- 95/95 legs green and the
+    gate still answering rc=3) and #20058 (reported BLOCKED at 09:35:37Z, green
+    at 10:00:36Z, still read as unmergeable 25 min later). ``scope`` and
+    ``domain`` cannot move without a push, and a push already expires the
+    stamp; ``checks`` can, and did.
+
+    Unlike ``recheck_blocked_b0`` this costs no probe: ``checkRuns`` is already
+    on the snapshot (``_head_check_runs``), so the comparison is local. The
+    predicate is the one that refutes a false ``latest-wins-green`` claim --
+    every latest-wins conclusion green AND every required check present -- read
+    in the other direction.
+
+    Only the checks-ONLY case expires, and only toward a re-stamp: the answer
+    becomes the no-dossier outcome (exit 1), which routes the pull request to a
+    third-party lane for a fresh dossier -- never back to the author as
+    mergeable.
+    """
+    if verdict != VERDICT_BLOCKED or dossier is None:
+        return verdict, [], dossier
+    if blocking_fields(dossier) != ["checks"]:
+        return verdict, [], dossier
+    check_runs = snapshot.get("checkRuns")
+    # `None` means "not measured", and a failure to measure is never a pass.
+    # An empty list IS measured, and the required-check rule refutes it below.
+    if check_runs is None:
+        return verdict, [], dossier
+    if check_claim_contradictions("latest-wins-green", check_runs):
+        return verdict, [], dossier
+    return "", [
+        "dossier BLOCKED for checks only, but the live latest-wins state of the "
+        f"head no longer blocks PR #{snapshot.get('number')} -- every conclusion "
+        "is green and every required check is present, so the dossier's stated "
+        "reason is extinguished and a re-stamp is required: a third-party lane "
+        "must post a fresh dossier (never merge on this one)"
     ], None
 
 
@@ -1182,27 +1224,37 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
                 "self-prevalidation refused: the dossier lane "
                 f"{dossier_lane!r} is the lane that carries this pull request"
             )
-    if dossier.author != SHARED_GITHUB_LOGIN:
-        errors.append(f"comment author must be {SHARED_GITHUB_LOGIN!r}")
+    # #17437: the accepted-author set lives in ``gh_identity``, shared with
+    # ``check_closure_dossier.py`` -- the two gates read the same dossiers'
+    # authors, and two copies of the set would drift at the first lane change.
+    if dossier.author not in gh_identity.ACCEPTED_DOSSIER_AUTHORS:
+        errors.append(
+            f"comment author {dossier.author!r} is not an accepted dossier author "
+            f"(expected {SHARED_GITHUB_LOGIN!r} or a fleet App identity "
+            f"{gh_identity.APP_LOGIN_PREFIX}<lane>[bot] with <lane> in "
+            f"{', '.join(gh_identity.APP_DOSSIER_LANES)})"
+        )
     if not SHA_RE.fullmatch(f.get("head", "")):
         errors.append("head must be a full lowercase 40-character SHA")
     if not re.fullmatch(r"[0-9a-f]{64}", f.get("surfaces-sha256", "")):
         errors.append("surfaces-sha256 must be a lowercase SHA-256")
     # Dual acceptance (#16957): a stamp matches the post-fix fingerprint
-    # (discussion surfaces only) or the legacy one (which also embedded the
-    # check rollup). Both certify every discussion surface; the legacy digest
+    # (discussion surfaces only) or the pre-#18637 one (bot comments hashed
+    # whole). Both certify every discussion surface; the pre-#18637 digest
     # is strictly more fields, so accepting either weakens nothing.
+    # The pre-#16957 legacy algorithm (which also embedded the check rollup,
+    # and with it the last GraphQL consumer of the snapshot) is retired
+    # (#17315): its two carriers (#16950, #16891) are merged, and an eventual
+    # residual legacy stamp now degrades to this refusal -- fail-closed, one
+    # mechanical --template re-stamp recovers it.
     live_fingerprint = surfaces_fingerprint(
-        snapshot, dossier.comment_index, dossier.created_at
-    )
-    legacy_fingerprint = legacy_surfaces_fingerprint(
         snapshot, dossier.comment_index, dossier.created_at
     )
     pre18637_fingerprint = pre18637_surfaces_fingerprint(
         snapshot, dossier.comment_index, dossier.created_at
     )
     if f.get("surfaces-sha256") not in {
-        live_fingerprint, legacy_fingerprint, pre18637_fingerprint
+        live_fingerprint, pre18637_fingerprint
     }:
         # #16931 defaut 3 (mesure 16928) : deux hachages opaques sont
         # inexploitables — la lane refabrique le dossier EN AVEUGLE. Le refus
@@ -1267,6 +1319,31 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     return errors
 
 
+def covered_blocked_dossier(
+    previous: list[Dossier], head: str
+) -> Dossier | None:
+    """Dernier dossier BLOCKED anterieur a la meme tete, ou ``None`` (#19869).
+
+    Cœur unique de la detection de couverture. Le gate
+    (`mute_contradictions`) et l'emetteur (`find_previous_blocked_same_head`,
+    qui alimente le pre-remplissage de `--emit`) doivent voir **le meme**
+    dossier : deux recherches independantes derivent, et l'emetteur finit par
+    pre-remplir un `supersedes` que le gate refuse -- c'est exactement le
+    defaut rapporte par #19869, ou le seul organe qui mordait etait celui
+    qu'on interrogeait en second.
+
+    La recherche est **tete a tete** : un dossier anterieur sur une tete
+    differente est deja perime par exact-head, et il n'y a rien a refuter.
+    """
+    for dossier in reversed(previous):
+        if (
+            dossier.fields.get("verdict") == VERDICT_BLOCKED
+            and dossier.fields.get("head") == head
+        ):
+            return dossier
+    return None
+
+
 def mute_contradictions(
     dossier: Dossier,
     candidates: list[tuple[Dossier, list[str]]],
@@ -1292,14 +1369,9 @@ def mute_contradictions(
     """
     if dossier.fields.get("verdict") != VERDICT_READY:
         return []
-    covered = next(
-        (
-            previous
-            for previous, _errors in reversed(candidates[:-1])
-            if previous.fields.get("verdict") == VERDICT_BLOCKED
-            and previous.fields.get("head") == dossier.fields.get("head")
-        ),
-        None,
+    covered = covered_blocked_dossier(
+        [previous for previous, _errors in candidates[:-1]],
+        dossier.fields.get("head") or "",
     )
     if covered is None:
         return []
@@ -1445,24 +1517,36 @@ def build_result(
     return result
 
 
-def review_threads(pr: int) -> list[dict[str, Any]]:
-    query = """
-    query($owner:String!,$repo:String!,$number:Int!,$cursor:String){
-      repository(owner:$owner,name:$repo){
-        pullRequest(number:$number){
-          reviewThreads(first:100,after:$cursor){
-            nodes{
-              id isResolved isOutdated path line
-              comments(first:100){
-                totalCount
-                nodes{id body createdAt author{login}}
-              }
-            }
-            pageInfo{hasNextPage endCursor}
-          }
-        }
-      }
-    }"""
+REVIEW_THREADS_BATCH = 8
+
+_REVIEW_THREADS_FIELDS = (
+    "reviewThreads(first:100){"
+    "nodes{id isResolved isOutdated path line "
+    "comments(first:100){totalCount "
+    "nodes{id body createdAt author{login}}}} "
+    "pageInfo{hasNextPage endCursor}}"
+)
+
+
+def _check_inline_pagination(nodes: list[dict[str, Any]]) -> None:
+    for thread in nodes:
+        inline = thread.get("comments") or {}
+        if inline.get("totalCount", 0) > len(inline.get("nodes") or []):
+            raise RuntimeError(
+                "inline thread has more than 100 comments; complete pagination required"
+            )
+
+
+def _review_threads_paginated(pr: int) -> list[dict[str, Any]]:
+    """Per-PR cursor pagination -- the fallback when one PR fills a page."""
+    query = f"""
+    query($owner:String!,$repo:String!,$number:Int!,$cursor:String){{
+      repository(owner:$owner,name:$repo){{
+        pullRequest(number:$number){{
+          {_REVIEW_THREADS_FIELDS}
+        }}
+      }}
+    }}"""
     owner, repo = REPO.split("/", 1)
     cursor: str | None = None
     threads: list[dict[str, Any]] = []
@@ -1477,17 +1561,62 @@ def review_threads(pr: int) -> list[dict[str, Any]]:
         data = gh_json(args)
         connection = data["data"]["repository"]["pullRequest"]["reviewThreads"]
         nodes = connection.get("nodes") or []
-        for thread in nodes:
-            inline = thread.get("comments") or {}
-            if inline.get("totalCount", 0) > len(inline.get("nodes") or []):
-                raise RuntimeError(
-                    "inline thread has more than 100 comments; complete pagination required"
-                )
+        _check_inline_pagination(nodes)
         threads.extend(nodes)
         page = connection["pageInfo"]
         if not page["hasNextPage"]:
             return threads
         cursor = page["endCursor"]
+
+
+def review_threads_bulk(prs: Sequence[int]) -> dict[int, list[dict[str, Any]]]:
+    """Review threads of N pull requests in ONE GraphQL query per batch.
+
+    #17315: mass passes (gate sweeps, B.0 probes over the fleet) paid one
+    paginated query per pull request for the third B.0 surface; aliases
+    collapse N pulls into a single operation per batch, ~N/8 times fewer.
+    A pull request whose threads overflow the first page (rare) falls back
+    to per-PR pagination for that PR alone.
+    """
+    results: dict[int, list[dict[str, Any]]] = {}
+    owner, repo = REPO.split("/", 1)
+    remaining = list(dict.fromkeys(prs))
+    while remaining:
+        batch = remaining[:REVIEW_THREADS_BATCH]
+        del remaining[:REVIEW_THREADS_BATCH]
+        aliases = [f"p{i}" for i in range(len(batch))]
+        defs = "".join(f",${alias}:Int!" for alias in aliases)
+        body = "".join(
+            f"{alias}: repository(owner:$owner,name:$repo)"
+            f"{{pullRequest(number:${alias}){{{_REVIEW_THREADS_FIELDS}}}}}"
+            for alias in aliases
+        )
+        query = f"query($owner:String!,$repo:String!{defs}){{{body}}}"
+        args = [
+            "api", "graphql", "-f", f"query={query}",
+            "-F", f"owner={owner}", "-F", f"repo={repo}",
+        ]
+        for alias, pr in zip(aliases, batch):
+            args.extend(["-F", f"{alias}={pr}"])
+        data = gh_json(args)
+        for alias, pr in zip(aliases, batch):
+            # L'alias nomme le `repository`; la connexion vit sous `pullRequest`.
+            # Mesure 2026-10-08 : lire `[alias]["reviewThreads"]` leve un KeyError
+            # -- le format de reponse se verifie sur un appel LIVE, un fixture
+            # ecrit depuis la meme lecture reproduit l'erreur a l'identique.
+            connection = data["data"][alias]["pullRequest"]["reviewThreads"]
+            nodes = connection.get("nodes") or []
+            _check_inline_pagination(nodes)
+            if connection["pageInfo"]["hasNextPage"]:
+                results[pr] = _review_threads_paginated(pr)
+            else:
+                results[pr] = nodes
+    return results
+
+
+def review_threads(pr: int) -> list[dict[str, Any]]:
+    """Single-PR convenience over the aliased bulk fetch: one operation."""
+    return review_threads_bulk([pr])[pr]
 
 
 def _issue_comments(pr: int) -> list[dict[str, Any]]:
@@ -1549,16 +1678,17 @@ def _head_check_runs(head_sha: str) -> list[dict[str, Any]]:
         page += 1
 
 
-def _pr_metadata(pr: int, *, with_rollup: bool) -> dict[str, Any]:
-    # Scalar fields come from REST (`repos/.../pulls/N`) so the shared GraphQL
-    # quota only pays for the check rollup below. Keys keep the exact shape
-    # `gh pr view --json` produced, so fingerprints and the identity bracket
-    # stay byte-compatible with dossiers stamped before this change.
+def _pr_metadata(pr: int) -> dict[str, Any]:
+    # Scalar fields come from REST (`repos/.../pulls/N`) -- the whole snapshot
+    # bracket no longer touches GraphQL (#17315): the check rollup it used to
+    # carry served only the retired legacy fingerprint. Keys keep the exact
+    # shape `gh pr view --json` produced, so fingerprints and the identity
+    # bracket stay byte-compatible with dossiers stamped before this change.
     row = gh_json(["api", f"repos/{REPO}/pulls/{pr}"])
     if not isinstance(row, dict):
         raise RuntimeError("pull request response is not an object")
     state = row.get("state") or ""
-    data: dict[str, Any] = {
+    return {
         "number": row.get("number"),
         "title": row.get("title"),
         "body": row.get("body") or "",
@@ -1578,46 +1708,34 @@ def _pr_metadata(pr: int, *, with_rollup: bool) -> dict[str, Any]:
         "additions": row.get("additions"),
         "deletions": row.get("deletions"),
     }
-    if with_rollup:
-        # The check rollup has no REST equivalent, so it stays on GraphQL
-        # as a single-field query instead of the former twelve-field one.
-        rollup = gh_json([
-            "pr", "view", str(pr), "--repo", REPO,
-            "--json", "statusCheckRollup",
-        ])
-        if not isinstance(rollup, dict):
-            raise RuntimeError("pull request response is not an object")
-        data["statusCheckRollup"] = rollup.get("statusCheckRollup")
-    return data
 
 
 def _metadata_identity(data: dict[str, Any]) -> str:
-    normalized = dict(data)
-    normalized["statusCheckRollup"] = sorted(
-        data.get("statusCheckRollup") or [],
-        key=lambda row: json.dumps(row, sort_keys=True, separators=(",", ":")),
-    )
     return json.dumps(
-        normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        data, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     )
 
 
 def load_snapshot(pr: int) -> dict[str, Any]:
-    before = _pr_metadata(pr, with_rollup=True)
+    before = _pr_metadata(pr)
     snapshot = dict(before)
     snapshot["comments"] = _issue_comments(pr)
     snapshot["reviews"] = _reviews(pr)
     snapshot["threads"] = review_threads(pr)
-    # Fetched inside the before/after bracket: a check concluding during the
-    # read bumps updatedAt and aborts the snapshot (transient UNKNOWN, the
-    # caller retries), so the claim verification below never reads a state
-    # that was already stale when captured. The B.0 probe (`probe_b0`) is NOT
-    # in this bracket: it runs after, and only on a READY dossier. A remark
-    # posted between the snapshot and the probe therefore makes the organ
-    # contradict a `b0: clear` claim -- a conservative refusal, which a rerun
-    # names as a changed discussion surface.
+    # Fetched inside the before/after bracket, keyed on the head read BEFORE
+    # it: a push landing during the read moves headRefOid, the second metadata
+    # read disagrees, and the snapshot is refused (transient UNKNOWN, the
+    # caller retries) rather than pairing the old head's check-runs with the
+    # new one. Since #17315 the bracket covers PR scalar fields only -- the
+    # rollup that used to carry check state is gone, so a check changing
+    # conclusion mid-read is not itself a bracket event; the claim
+    # verification below compares against the live check-runs. The B.0 probe
+    # (`probe_b0`) is NOT in this bracket: it runs after, and only on a READY
+    # dossier. A remark posted between the snapshot and the probe therefore
+    # makes the organ contradict a `b0: clear` claim -- a conservative
+    # refusal, which a rerun names as a changed discussion surface.
     snapshot["checkRuns"] = _head_check_runs(snapshot["headRefOid"])
-    after = _pr_metadata(pr, with_rollup=True)
+    after = _pr_metadata(pr)
     if _metadata_identity(before) != _metadata_identity(after):
         raise RuntimeError("pull request changed while prevalidation snapshot was read")
     return snapshot
@@ -1703,6 +1821,38 @@ def render_template(snapshot: dict[str, Any], lane: str = ADJOINT_LANE) -> str:
     return "\n".join([START, *(f"{key}: {value}" for key, value in fields), END])
 
 
+def find_previous_blocked_same_head(
+    snapshot: dict[str, Any], current_head: str
+) -> tuple[int, Dossier] | None:
+    """#19869 -- dossier BLOCKED anterieur a la meme tete, vu par l'emetteur.
+
+    Lit le fil, puis **delegue** a `covered_blocked_dossier` : la recherche
+    que l'emetteur emploie pour pre-remplir `supersedes` est litteralement
+    celle du gate, pas un miroir qui pourrait en diverger (#19869). La
+    position est 1-based (celle que `restamp_warning` affiche deja), pour
+    que l'auto-remplissage par `--emit` rime avec le verdict du gate sans
+    qu'aucune re-edition soit necessaire.
+
+    Renvoie ``(position, Dossier)`` du dossier BLOCKED anterieur, ou
+    ``None`` si rien ne correspond.
+    """
+    comments = snapshot.get("comments") or []
+    dossiers: list[Dossier] = []
+    for index, comment in enumerate(comments):
+        dossier, _errors = parse_dossier(
+            comment.get("body") or "",
+            index,
+            _login(comment),
+            comment.get("createdAt") or "",
+        )
+        if dossier is not None:
+            dossiers.append(dossier)
+    covered = covered_blocked_dossier(dossiers, current_head)
+    if covered is None:
+        return None
+    return (covered.comment_index + 1, covered)
+
+
 def render_emitted_dossier(
     snapshot: dict[str, Any], lane: str = ADJOINT_LANE, probe: Any = None
 ) -> tuple[str, str, list[str]]:
@@ -1715,6 +1865,13 @@ def render_emitted_dossier(
     nommer si BLOCKED) restent a remplir par la lane emettrice. Renvoie
     (bloc, verdict, raisons) -- l'emetteur rapporte le rc mesure
     (0 READY / 3 BLOCKED) sans le choisir.
+
+    #19869 -- si le verdict derive est READY et qu'un dossier BLOCKED
+    anterieur existe a la meme tete, l'emetteur **DOIT** pre-renseigner
+    `supersedes` et `supersedes-why` (cf. `mute_contradictions` l.1307) :
+    sans ces deux champs, le gate refuse le dossier pose avec NO-DOSSIER.
+    L'auto-texte invite la lane emettrice a le remplacer par une prose
+    nommant la preuve qui a change (cf. corps de `supersedes-why`).
     """
     template = render_template(snapshot, lane)
     verdict, reasons = derive_verdict(snapshot, probe)
@@ -1727,6 +1884,23 @@ def render_emitted_dossier(
         ),
         "organ-rc": str(organ_rc),
     }
+    supersedes_lines: list[str] = []
+    if verdict == VERDICT_READY:
+        previous = find_previous_blocked_same_head(
+            snapshot, snapshot["headRefOid"]
+        )
+        if previous is not None:
+            position, dossier = previous
+            supersedes_lines = [
+                f"supersedes: {position}",
+                (
+                    "supersedes-why: auto -- covers BLOCKED dossier from "
+                    f"{dossier.author} ({dossier.created_at}) at the same head; "
+                    f"re-attestation derived by {ORGAN_NAME} (organ-rc "
+                    f"{organ_rc}); replace this line with the proof that "
+                    "changed (or the old dossier's error)"
+                ),
+            ]
     lines = []
     for line in template.split("\n"):
         key = line.split(":", 1)[0] if ":" in line else None
@@ -1734,6 +1908,11 @@ def render_emitted_dossier(
             lines.append(f"{key}: {provenance[key]}")
         else:
             lines.append(line)
+    # Insertion des supersedes-* avant END (derniere ligne du template).
+    # C'est le contrat `parse_dossier` : tout ce qui est entre START et END
+    # est un champ ; placer apres END serait ignore.
+    if supersedes_lines and lines and lines[-1].strip() == END:
+        lines = lines[:-1] + supersedes_lines + [lines[-1]]
     return "\n".join(lines), verdict, reasons
 
 
@@ -1836,6 +2015,10 @@ def main() -> int:
             )
         if not errors:
             verdict, errors, dossier = recheck_blocked_b0(args.pr, verdict, dossier)
+        if not errors:
+            verdict, errors, dossier = recheck_blocked_checks(
+                snapshot, verdict, dossier
+            )
     except (
         RuntimeError,
         KeyError,
@@ -1883,6 +2066,9 @@ def main() -> int:
         result["ready"] = False
         result["verdict"] = "FROZEN"
         result["frozen"] = frozen_reason
+    # #17315 : le cout de l'invocation est publie avec le verdict -- le
+    # compteur distingue les deux buckets (REST core vs GraphQL partage).
+    result["api_usage"] = dict(API_USAGE)
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
     elif frozen_reason is not None:
@@ -1913,12 +2099,21 @@ def main() -> int:
         for error in errors:
             print(f"  - {error}")
     if frozen_reason is not None:
-        return EXIT_BLOCKED_WITH_SUBSTANCE
-    if ready:
-        return EXIT_READY
-    if verdict == VERDICT_BLOCKED:
-        return EXIT_BLOCKED_WITH_SUBSTANCE
-    return EXIT_NO_DOSSIER
+        code = EXIT_BLOCKED_WITH_SUBSTANCE
+    elif ready:
+        code = EXIT_READY
+    elif verdict == VERDICT_BLOCKED:
+        code = EXIT_BLOCKED_WITH_SUBSTANCE
+    else:
+        code = EXIT_NO_DOSSIER
+    # #17315 : chiffres publies sur stderr (stdout reste le verdict parse par
+    # les appelants) -- une lane secretaire peut agreger le cout par invocation.
+    print(
+        f"API usage: {API_USAGE['rest']} REST, "
+        f"{API_USAGE['graphql']} GraphQL operation(s)",
+        file=sys.stderr,
+    )
+    return code
 
 
 if __name__ == "__main__":

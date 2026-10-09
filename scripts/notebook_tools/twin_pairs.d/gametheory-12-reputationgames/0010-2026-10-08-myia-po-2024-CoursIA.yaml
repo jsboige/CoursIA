@@ -1,0 +1,7 @@
+date: '2026-10-08'
+by: myia-po-2024:CoursIA
+python_sha: ee4c44b854bee6017686720e6ab0f8170d22168c
+csharp_sha: 2c55a00a87eb7d81f385381b1550dc8229e8f681
+content_python_sha: 9536dbb4d6980154cde61f2c88a5e02c53b259018f47892790185b697d1112f4
+content_csharp_sha: 2bb77f105091fa8118eb917dc9d1da6d96c4df391f7662d9443d45e3d49d4326
+reason: "Redressement densite #17040 (tranche GameTheory) : cote C# uniquement, 3 doublons campagne #16689 supprimes + point log2(0.5/0.1)=2 migre. Python non touche. Markdown-only, cellules code byte-identiques."

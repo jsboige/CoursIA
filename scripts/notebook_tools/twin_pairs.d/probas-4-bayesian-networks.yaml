@@ -7,6 +7,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   known_differences:
+  - '2026-10-08 (myia-po-2024:CoursIA) #17066 : REBASELINE cote Python -- redressement densite markdown-only (PyMC-04-Bayesian-Networks.ipynb : cellules campagne #14123 consolidees a une lecture par sortie de code et repositionnees APRES leur code, verbatim/paraphrases et meta-commentaires supprimes, timings fabriques alignes sur les sorties committes, enonce D-separation chaine/fourche corrige, 1 cellule campagne supprimee (narration de stub), 1 lecture creee ; 12 cellules code byte-identiques). Jumeau C# non touche. Aucun strip outille en attente.'
   - '2026-10-06 (myia-po-2027:CoursIA) #19447 : correction contraste WCAG cote Python -- classDef obs
     fill:#fef7e0, color:#b06000 -> #a05600 (4.34:1 -> 5.12:1, acceptance 2 de #15516) ; cellule markdown
     uniquement, aucune source de code touchee. Jumeau C# non touche : le pattern ambre n''existe pas
