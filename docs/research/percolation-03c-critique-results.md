@@ -4,7 +4,7 @@
 
 ## Sections (7)
 
-1. **Cible** — convergence β/ν → 5/36, τ' → 187/91 quand L → ∞
+1. **Cible** — convergence β/ν → 5/48, τ' → 187/91 quand L → ∞
 2. **Architecture pipeline** — sweep L=512 × 32 seeds × 5 p
 3. **Mesures effectuées** — 160 sims, ~186 s wall-clock
 4. **Verdict β/ν (7 L)** — log-log fit, pas d'amélioration
@@ -17,7 +17,7 @@
 ## 1. Cible
 
 Vérifier si les **corrections d'échelle finie** qui faisaient dévier
-`β/ν = 0.1065` (c.1105, 6 L) de la valeur asymptotique `5/36 ≈ 0.139`
+`β/ν = 0.1065` (c.1105, 6 L) de la valeur asymptotique `5/48 ≈ 0.104`
 s'atténuent à L = 512.
 
 **Hypothèse a priori** : sur 7 points au lieu de 6, le fit log-log devrait
@@ -59,11 +59,11 @@ mieux capturer la pente asymptotique.
 | 256 | 0.5352 | c.1105 |
 | 512 | 0.5131 | c.1106 (32 seeds) |
 
-**Fit log-log** : `β/ν = 0.1062` (cible 5/36 ≈ 0.1389, R²=0.9767, std_err=0.0073)
+**Fit log-log** : `β/ν = 0.1062` (cible 5/48 ≈ 0.1042, R²=0.9767, std_err=0.0073)
 
 **Verdict** : `EN COURS — asymptote toujours non atteinte`. Le passage de 6 à 7 points **n'a pas amélioré** `β/ν` (0.1065 → 0.1062, -0.0003). Le R² a légèrement augmenté (0.964 → 0.977), indiquant un fit **localement meilleur** mais la **pente reste asymptotiquement biaisée** par les corrections d'échelle.
 
-**Convention honnête** : l'écart à la cible (0.139 - 0.106 = 0.033) reste ~3× l'écart-type du fit (0.0073). La convergence est **structurellement bloquée** à L ≤ 512.
+**Convention honnête** : l'écart à la cible corrigée (0.1042 - 0.1062 = -0.002) est **inférieur** à l'écart-type du fit (0.0073). La valeur mesurée est **compatible avec la cible** dès L ≤ 512.
 
 ## 5. Verdict τ' (7 L)
 
@@ -108,7 +108,7 @@ mieux capturer la pente asymptotique.
 - L ∈ {1024, 2048} (10-30 min wall-clock), OU
 - Une analyse théorique des corrections d'échelle (scaling corrections : `M(L, 1/2) / L² = L^{-β/ν} (1 + a L^{-ω} + ...)` avec `ω` un exposant de correction).
 
-**Convention honnête** : les valeurs sont publiées telles quelles. Le **taux de convergence** de `β/ν` vers `5/36` est le résultat physique de cette étude : ~+0.002 par doublement de L.
+**Convention honnête** : les valeurs sont publiées telles quelles. Le **taux de convergence** de `β/ν` vers `5/48` est le résultat physique de cette étude : ~+0.002 par doublement de L.
 
 **Prochaine étape** : passer au **palier 4 sharpness** (Percolation-04-Sharpness-Python) prévu par le plan de croissance #19494. La convergence `p_c(L) → 1/2` est déjà conforme, et c'est sur la **vitesse de disparition** du géant en régime supercritique que le théorème de Diskin-Easo-Radhakrishnan-Sudakov-Tassion (arXiv:2603.03257 §3.0) attend ses mesures. Trois paliers du carnet 03 épuisés (03 critique, 03b L=128/256, 03c L=512) — passer à la suite logique.
 

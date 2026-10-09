@@ -178,7 +178,7 @@ n'ont pas été ajustées pour atteindre la cible.
    `scipy.optimize.curve_fit`, séparer la correction polynomial-log de l'exposant sharpness.
 
 **Héritage palier 03c** : la convergence asymptotique est souvent **bloquée** à L ≤ 512
-(β/ν = 0.1062 vs cible 5/36 = 0.1389), et la convention est de **publier** les mesures
+(β/ν = 0.1062 vs cible 5/48 = 0.1042), et la convention est de **publier** les mesures
 directes sans cherry-picking. Le palier 4 hérite de cette limitation structurelle.
 
 **Prochaine étape** : si une des 3 voies est jugée prioritaire, créer une issue fille
