@@ -15,7 +15,7 @@ project:
     # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7
     # n'etend pas le glob **/README.md sur les sous-repertoires.
     # Archives et libs vendored EXCLUES (history interne, non pedagogique).
-    # 528 READMEs (racine + arborescence, hors archives).
+    # 529 READMEs (racine + arborescence, hors archives).
     - "README.md"
     - "docker-configurations/docs/README.md"
     - "docker-configurations/notebook-runner/README.md"
@@ -421,6 +421,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/session_state/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/session_state/reference_docs/stable_marriage/upstream/README.md"
+    - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/kls_lean/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/patterns/README.md"
@@ -1337,12 +1338,10 @@ project:
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day7-Production/Lab17-Final-Project.ipynb"
     - "MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb"
     - "MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb"
     - "MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features-Python.ipynb"
     - "MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features.ipynb"
-    - "MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML.ipynb"
     - "MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML.ipynb"
     - "MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb"
     - "MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation.ipynb"
     - "MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb"
@@ -1357,6 +1356,8 @@ project:
     - "MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering.ipynb"
     - "MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb"
     - "MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb"
+    - "MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb"
     - "MyIA.AI.Notebooks/ML/ML.Net/TP-prevision-ventes.ipynb"
     - "MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb"
     - "MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb"
@@ -1938,6 +1939,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02-Tao-Lean-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-05-KLS-Lean-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-08-Ramsey-VdW.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique_en.ipynb"
@@ -1967,7 +1969,6 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-10b-LeanDojo-v2-Pantograph-Lean-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11-TorchLean.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11b-TorchLean-Python.ipynb"
-    - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12b-Lean-Sensitivity-Theorem.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12c-Tensor-Product-Representations-Lean.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb"
