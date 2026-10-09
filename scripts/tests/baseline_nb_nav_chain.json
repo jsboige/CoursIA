@@ -1914,6 +1914,16 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
+    },
+    {
+      "kind": "independent_chain",
+      "notebook": "MyIA.AI.Notebooks/GameTheory",
+      "series": "MyIA.AI.Notebooks/GameTheory"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/GameTheory"
     }
   ],
   "wrapped": [
