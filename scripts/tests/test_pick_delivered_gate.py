@@ -542,18 +542,24 @@ def test_sonde_couverture_en_echec_fail_open_et_dite(monkeypatch, capsys):
 
 
 def test_plafond_partage_entre_sondes_livraison_et_couverture(monkeypatch):
-    """« Au meme rang » (#16589) = AUSSI au meme cout : les deux sondes
+    """« Au meme rang » (#16589) = AUSSI au meme cout : les 3 sondes
     parent le MEME budget de DELIVERED_SIGNAL_MAX_PROBES, pas un plafond
-    double. Avec un plafond de 2 et deux candidats, exactement deux sondes
-    reelles partent (livraison du 1er, couverture du 1er) -- le 2e candidat
-    n'en a plus aucune."""
-    monkeypatch.setattr(pig, "DELIVERED_SIGNAL_MAX_PROBES", 2)
+    double. Avec un plafond de 4 et deux candidats, exactement quatre sondes
+    reelles partent (livraison 1er, merged_pr 1er, couverture 1er,
+    livraison 2e) -- le 2e candidat n'a plus que la livraison, et la
+    couverture n'est pas appelee une 2e fois."""
+    monkeypatch.setattr(pig, "DELIVERED_SIGNAL_MAX_PROBES", 4)
     _patch_draw(monkeypatch, [1, 2])
     delivered_calls = []
+    merged_pr_calls = []
     cover_calls = []
 
     def counting_delivered(number, lane=None):
         delivered_calls.append(number)
+        return False
+
+    def counting_merged_pr(number, lane=None):
+        merged_pr_calls.append(number)
         return False
 
     def counting_cover(number):
@@ -565,11 +571,15 @@ def test_plafond_partage_entre_sondes_livraison_et_couverture(monkeypatch):
     picks, _, _ = draw_unclaimed(
         by, _args(grains=2), random.Random(7), None, None, None,
         delivered_probe=counting_delivered,
-        cover_probe=counting_cover, delivered_state=state)
-    assert delivered_calls == [1], (
-        f"plafond partage : une seule sonde livraison, or {delivered_calls}")
+        cover_probe=counting_cover,
+        merged_pr_probe=counting_merged_pr,
+        delivered_state=state)
+    assert delivered_calls == [1, 2], (
+        f"plafond partage : une sonde livraison par candidat survivant, or {delivered_calls}")
+    assert merged_pr_calls == [1], (
+        f"plafond partage : une seule sonde merged_pr (1er candidat), or {merged_pr_calls}")
     assert cover_calls == [1], (
-        f"plafond partage : une seule sonde couverture, or {cover_calls}")
+        f"plafond partage : une seule sonde couverture (1er candidat), or {cover_calls}")
     assert state["budget_hit"] is True
     assert len(picks) == 2, "les non sondes sont CONSERVES (fail-open)"
 
