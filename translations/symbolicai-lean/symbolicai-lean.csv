@@ -14216,7 +14216,7 @@ FRACTRAN et le Game of Life ([Lean-16d](Lean-16d-Conway-Game-of-Life-Lean-Native
 ",,,,,,,,61e030e0017b8090,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb,48e8b04b,markdown,fr,71f1a47dd4b4637d,"# Lean-16f : Le Theoreme du Libre Arbitre (Conway-Kochen)
 
-**Navigation** : [<< Lean-16e FRACTRAN](Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb) | [Index](README.md) | [Lean-17a Noeuds >>](Lean-17a-Knots-Conway-Proofs.ipynb)
+**Navigation** : [<< Lean-16e FRACTRAN](Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb) | [Index](README.md) | [Lean-17a Noeuds >>](KNOTS-01-Conway-Proofs-Lean-Python.ipynb)
 
 **Kernel** : Python 3 (illustrations conceptuelles) + Lean 4 via WSL (exécution du port formel)
 
@@ -14830,9 +14830,9 @@ libre arbitre humain ou la conscience.
 
 ---
 
-**Navigation** : [<< Lean-16e FRACTRAN](Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb) | [Index](README.md) | [Lean-17a Noeuds >>](Lean-17a-Knots-Conway-Proofs.ipynb)
+**Navigation** : [<< Lean-16e FRACTRAN](Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb) | [Index](README.md) | [Lean-17a Noeuds >>](KNOTS-01-Conway-Proofs-Lean-Python.ipynb)
 ",,,,,,,,f79077230addfd58,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,ed9b9067,markdown,fr,2fb5ece9404a4ffd,"# Lean 17a — Conway, les Nœuds et la Preuve de Piccirillo
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,ed9b9067,markdown,fr,2fb5ece9404a4ffd,"# Lean 17a — Conway, les Nœuds et la Preuve de Piccirillo
 
 **Série** : SymbolicAI / Lean — Knots Theory (**17a**)
 
@@ -14849,8 +14849,8 @@ en moins d'une semaine (2018, Annals of Mathematics 2020).
 4. **Tye Lidman (2026)** — Unknotting number de 11n102
 5. **Vers la formalisation Lean** — Le scaffolding `knot_lean/`
 
-**Notebook compagnon** : `Lean-17b-Knots-Invariants-Companion.ipynb` — calcul effectif des invariants via SnapPy/SageMath.",,,,,,,,2fb5ece9404a4ffd,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,33657213,markdown,fr,2f10ee255df2edb0,"## 1. Qu'est-ce qu'un nœud mathématique ?
+**Notebook compagnon** : `KNOTS-02-Invariants-Python.ipynb` — calcul effectif des invariants via SnapPy/SageMath.",,,,,,,,2fb5ece9404a4ffd,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,33657213,markdown,fr,2f10ee255df2edb0,"## 1. Qu'est-ce qu'un nœud mathématique ?
 
 Un **nœud** est un plongement du cercle $S^1$ dans la sphère $S^3$
 (ou $\mathbb{R}^3$). Deux nœuds sont **équivalents** s'ils sont
@@ -14862,7 +14862,7 @@ Le théorème de Reidemeister (1927) dit que deux diagrammes de nœuds
 croisements) représentent le même nœud si et seulement si on peut passer
 de l'un à l'autre par une suite finie de **3 mouvements de Reidemeister**
 et des isotopies planaires.",,,,,,,,2f10ee255df2edb0,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,b118166d,code,fr,1487c2182de4096c,"import numpy as np
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,b118166d,code,fr,1487c2182de4096c,"import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
 
@@ -14905,7 +14905,7 @@ plt.suptitle('Les trois premiers nœuds (par nombre de croisements)',
 plt.tight_layout()
 plt.savefig('knot_basics.png', dpi=150, bbox_inches='tight')
 plt.show()",,,,,,,,1487c2182de4096c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,f4211205,markdown,fr,0654ac7a228d1104,"### Invariants de nœuds
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,f4211205,markdown,fr,0654ac7a228d1104,"### Invariants de nœuds
 
 Un **invariant** est une propriété/quantité identique pour tous les nœuds
 équivalents. Si un invariant diffère entre deux nœuds, ils sont
@@ -14923,7 +14923,7 @@ nécessairement distincts.
 La **3-colorabilité** est l'invariant le plus simple : peut-on colorer
 les brins du diagramme avec 3 couleurs, de sorte qu'à chaque croisement
 les 3 brins soient soit tous de la même couleur, soit tous différents ?",,,,,,,,0654ac7a228d1104,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,125e75d9,code,fr,8b6da66a845122a2,"# Demonstrate tricolorability of the trefoil
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,125e75d9,code,fr,8b6da66a845122a2,"# Demonstrate tricolorability of the trefoil
 fig, ax = plt.subplots(figsize=(8, 6))
 
 # Simplified trefoil with color segments
@@ -14948,7 +14948,7 @@ ax.set_aspect('equal')
 plt.tight_layout()
 plt.savefig('trefoil_tricolor.png', dpi=150, bbox_inches='tight')
 plt.show()",,,,,,,,8b6da66a845122a2,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,de5f7fc1,markdown,fr,ab9e85bcfbe6d70a,"### Exercice 1 — La règle de Fox à un croisement
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,de5f7fc1,markdown,fr,ab9e85bcfbe6d70a,"### Exercice 1 — La règle de Fox à un croisement
 
 La **3-coloration de Fox** est l'invariant démontré ci-dessus : on colorie les
 *brins* (arêtes) d'un diagramme de nœud avec 3 couleurs $\{0, 1, 2\}$. La règle
@@ -14963,7 +14963,7 @@ soit **tous de la même couleur**, soit **tous de couleurs différentes**.
 **Étape 1 :** construire l'ensemble des 3 couleurs.
 **Étape 2 :** retourner `True` si sa taille est $1$ ou $3`, `False` sinon.
 ",,,,,,,,ab9e85bcfbe6d70a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,b7450897,code,fr,76045b5003ffa575,"def fox_rule_satisfied(c1, c2, c3):
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,b7450897,code,fr,76045b5003ffa575,"def fox_rule_satisfied(c1, c2, c3):
     # TODO etudiant : les 3 couleurs c1, c2, c3 (chacune dans {0,1,2}) satisfont
     # la regle de Fox ssi elles sont toutes egales OU toutes differentes.
     # Indice : len({c1, c2, c3}) est dans {1, 2, 3}.
@@ -14977,7 +14977,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,b7450897,co
 # assert fox_rule_satisfied(0, 0, 1) is False     # deux egales -> interdit
 # print(""Exercice 1 : OK"")
 ",,,,,,,,76045b5003ffa575,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,216d4270,markdown,fr,3681845e2bc6d611,"## 2. Le nœud de Conway (11n34)
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,216d4270,markdown,fr,3681845e2bc6d611,"## 2. Le nœud de Conway (11n34)
 
 John Conway a découvert ce nœud en développant sa **notation de Conway**
 pour énumérer les nœuds. Il apparaît dans les tables de Rolfsen comme
@@ -14992,7 +14992,7 @@ pour énumérer les nœuds. Il apparaît dans les tables de Rolfsen comme
 Le nœud de Conway est un **mutant** du nœud de Kinoshita-Terasaka (11n42).
 La mutation préserve le polynôme d'Alexander, le polynôme de Jones, le
 genre... mais pas nécessairement la sliceness lisse !",,,,,,,,3681845e2bc6d611,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,1c3fc3d5,code,fr,866eb296f7d74ccf,"# Visualize the Conway knot (schematic)
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,1c3fc3d5,code,fr,866eb296f7d74ccf,"# Visualize the Conway knot (schematic)
 fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
 # Left: Conway knot (simplified representation)
@@ -15024,7 +15024,7 @@ plt.suptitle('Conway ↔ Kinoshita-Terasaka : mutants, même Alexander, pas mêm
 plt.tight_layout()
 plt.savefig('conway_vs_kt.png', dpi=150, bbox_inches='tight')
 plt.show()",,,,,,,,866eb296f7d74ccf,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,ce7290a8,markdown,fr,9015cb77a41c138a,"### Exercice 2 — Coloration propre sur tout le diagramme
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,ce7290a8,markdown,fr,9015cb77a41c138a,"### Exercice 2 — Coloration propre sur tout le diagramme
 
 Un **PD-code** (Planar Diagram) décrit un nœud comme une liste de croisements,
 chacun une liste de 4 labels d'arêtes (le sur-brin apparaît deux fois). Une
@@ -15040,7 +15040,7 @@ l'Exercice 1 (taille $1$ ou $3$).
 **Étape 1 :** boucler sur chaque crossing de pd_code.
 **Étape 2 :** retourner False dès qu'un crossing a un ensemble de couleurs de taille 2.
 ",,,,,,,,9015cb77a41c138a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,6f2816f2,code,fr,8ee5ac94bc357487,"def is_proper_coloring(pd_code, coloring):
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,6f2816f2,code,fr,8ee5ac94bc357487,"def is_proper_coloring(pd_code, coloring):
     # TODO etudiant : retourner True ssi chaque crossing de pd_code est Fox-valide.
     # pd_code : liste de crossings, chacun une liste de 4 labels d'arete.
     # coloring : dict {label: couleur dans {0,1,2}}.
@@ -15056,7 +15056,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,6f2816f2,co
 # assert is_proper_coloring([[1, 2, 3, 4]], {1: 0, 2: 0, 3: 1, 4: 0}) is False  # taille 2
 # print(""Exercice 2 : OK"")
 ",,,,,,,,8ee5ac94bc357487,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,355a68b2,markdown,fr,6c27a3e72d461bfa,"## 3. Lisa Piccirillo et la preuve (2018, Annals 2020)
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,355a68b2,markdown,fr,6c27a3e72d461bfa,"## 3. Lisa Piccirillo et la preuve (2018, Annals 2020)
 
 ### L'histoire
 
@@ -15090,7 +15090,7 @@ Piccirillo n'a pas attaqué le nœud de Conway directement. Sa stratégie :
 > « It took Lisa Piccirillo less than a week to answer a long-standing
 > question about a strange knot discovered over half a century ago. »
 > — Quanta Magazine, 2020",,,,,,,,6c27a3e72d461bfa,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,a7845962,code,fr,6b361a77cde925b8,"# Schematic of the trace companion strategy
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,a7845962,code,fr,6b361a77cde925b8,"# Schematic of the trace companion strategy
 fig, ax = plt.subplots(figsize=(12, 7))
 ax.set_xlim(0, 10)
 ax.set_ylim(0, 7)
@@ -15148,7 +15148,7 @@ ax.set_title('La stratégie de Piccirillo : le trace companion',
 plt.tight_layout()
 plt.savefig('piccirillo_strategy.png', dpi=150, bbox_inches='tight')
 plt.show()",,,,,,,,6b361a77cde925b8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,794d7f3c,markdown,fr,9604b3caf7bd4696,"## 4. Tye Lidman — Unknotting number de 11n102 (2026)
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,794d7f3c,markdown,fr,9604b3caf7bd4696,"## 4. Tye Lidman — Unknotting number de 11n102 (2026)
 
 Le papier de **Tye Lidman** ([arXiv:2606.12431](https://arxiv.org/abs/2606.12431))
 est un exemple frappant de **preuve courte mais profonde** : **une seule page**
@@ -15190,7 +15190,7 @@ par l'absurde.
 | Stratégie | Contourner le nœud → trace companion | Calcul direct → contradiction algébrique |
 | Public | Annals of Mathematics | Preprint 2026 |
 | Formalisation Lean | Décennies | Décennies |",,,,,,,,9604b3caf7bd4696,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,b9f786fc,markdown,fr,de7e81beb1a48088,"## 5. Vers la formalisation Lean — le projet `knot_lean/`
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,b9f786fc,markdown,fr,de7e81beb1a48088,"## 5. Vers la formalisation Lean — le projet `knot_lean/`
 
 Le projet `MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/` scaffolding la
 théorie des nœuds en Lean 4, avec des sorry stratégiques commentés.
@@ -15332,7 +15332,7 @@ caractérisation §9.4-9.6 a circonscrit.
 > *cross-position*.
 
 ",,,,,,,,de7e81beb1a48088,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,f35ef025,code,fr,8ae61b5111180df2,"# Summary: the Conway knot story
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,f35ef025,code,fr,8ae61b5111180df2,"# Summary: the Conway knot story
 fig, ax = plt.subplots(figsize=(12, 4))
 ax.set_xlim(0, 12)
 ax.set_ylim(0, 4)
@@ -15360,7 +15360,7 @@ ax.set_title('Chronologie : nœud de Conway → de la découverte à la résolut
 plt.tight_layout()
 plt.savefig('conway_timeline.png', dpi=150, bbox_inches='tight')
 plt.show()",,,,,,,,8ae61b5111180df2,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,d4cf34d4,markdown,fr,3eaee08e5f9519d1,"### Exercice 3 — Le nœud est-il tricoloriable ?
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,d4cf34d4,markdown,fr,3eaee08e5f9519d1,"### Exercice 3 — Le nœud est-il tricoloriable ?
 
 Un nœud est **3-coloriable** s'il existe une coloration propre utilisant
 **au moins 2 couleurs distinctes** (la coloration triviale toute-mono ne compte
@@ -15378,7 +15378,7 @@ $3^{\text{(nombre d'arêtes)}}$ colorations possibles).
 **Étape 2 :** iterer sur les colorations candidates ; retourner True a la première valide.
 **Étape 3 :** si aucune, retourner False.
 ",,,,,,,,3eaee08e5f9519d1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,bb62595e,code,fr,6a8be68be0ebba88,"import itertools
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,bb62595e,code,fr,6a8be68be0ebba88,"import itertools
 
 def is_tricolorable(pd_code):
     # TODO etudiant : retourner True ssi il existe une coloration propre non-triviale.
@@ -15395,7 +15395,7 @@ def is_tricolorable(pd_code):
 # assert is_tricolorable(trefoil_pd) is True
 # print(""Exercice 3 : OK"")
 ",,,,,,,,6a8be68be0ebba88,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,5fd5d2e0,markdown,fr,c6f45cda789b35c5,"## Références
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,5fd5d2e0,markdown,fr,c6f45cda789b35c5,"## Références
 
 1. **Piccirillo, L.** (2018/2020). *The Conway knot is not slice*. Annals of Mathematics, 191(2). [arXiv:1808.02923](https://arxiv.org/abs/1808.02923)
 2. **Lidman, T.** (2026). *The unknotting number of 11n102 is 2*. [arXiv:2606.12431](https://arxiv.org/abs/2606.12431)
@@ -15408,7 +15408,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,5fd5d2e0,ma
 9. **Prathamesh, T.V.H.** (2015). *Formalising Knot Theory in Isabelle/HOL*. LNCS 9250.
 10. **shua/leanknot** — [Formalisation Lean 4 (branche lean4)](https://github.com/shua/leanknot)
 11. **Lean AI Leaderboard** — [Conway knot not smoothly slice](https://lean-lang.org/eval/problems/conway_knot_not_smoothly_slice/)",,,,,,,,c6f45cda789b35c5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,1e2d218c,markdown,fr,fcfc4a0c5460fa14,"## 6. Prérequis Mathlib — La frontière de la formalisation
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,1e2d218c,markdown,fr,fcfc4a0c5460fa14,"## 6. Prérequis Mathlib — La frontière de la formalisation
 
 Le fichier `knot_lean/Knots/MathlibPrerequisites.lean` documente les **prérequis Mathlib** manquants pour résoudre chaque sorry du projet. C'est une **roadmap honnête** de ce qui serait nécessaire pour formaliser la théorie des nœuds dans Lean 4.
 
@@ -15446,7 +15446,7 @@ df.style.set_properties(**{'text-align': 'left'}).set_table_styles([{
     'props': [('background-color', '#f0f0f0'), ('font-weight', 'bold')]
 }])
 ```",,,,,,,,fcfc4a0c5460fa14,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,2ef1cef3,markdown,fr,b6aeef58121e8fa0,"## 4.2 Résultat de Lidman (2026) — Le formalisme Lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,2ef1cef3,markdown,fr,b6aeef58121e8fa0,"## 4.2 Résultat de Lidman (2026) — Le formalisme Lean
 
 Le fichier `knot_lean/Knots/Lidman.lean` formalise le résultat de **Tye Lidman** sur l'unknotting number du nœud 11n102 ([arXiv:2606.12431](https://arxiv.org/abs/2606.12431)).
 
@@ -15502,7 +15502,7 @@ D'après le commentaire `MathlibPrerequisites` dans Lidman.lean :
 - Némethi's algorithm for HF of plumbed manifolds
 
 **Estimation** : **décennies** avant que ces infrastructures existent dans Mathlib.",,,,,,,,b6aeef58121e8fa0,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,7cdf79fe,markdown,fr,dcfc62f7bf8ab331,"## 4.1 Preuve de Piccirillo (2020) — Le formalisme Lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,7cdf79fe,markdown,fr,dcfc62f7bf8ab331,"## 4.1 Preuve de Piccirillo (2020) — Le formalisme Lean
 
 Le fichier `knot_lean/Knots/Conway.lean` formalise le résultat de **Lisa Piccirillo** sur le nœud de Conway ([arXiv:1808.02923](https://arxiv.org/abs/1808.02923), Annals of Mathematics 2020).
 
@@ -15616,7 +15616,7 @@ D'après les commentaires dans Conway.lean, la preuve nécessiterait :
 - Freedman's topological surgery (topological machinery)
 
 **Estimation** : **décennies** avant que ces infrastructures existent dans Mathlib.",,,,,,,,dcfc62f7bf8ab331,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,f1c54358,markdown,fr,b7e366a18f81b94a,"### Interprétation : La structure du résultat formalisé
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,f1c54358,markdown,fr,b7e366a18f81b94a,"### Interprétation : La structure du résultat formalisé
 
 **Sortie obtenue** : Un extrait structuré de Conway.lean montrant la chaîne de définitions et théorèmes.
 
@@ -15640,7 +15640,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,f1c54358,ma
 5. **Les prérequis sont documentés** — chaque sorry a un commentaire détaillant ce qui manque (Burau representation pour Alexander, 4-manifolds pour slice, Khovanov pour Rasmussen, etc.). C'est une **roadmap précise** de ce qui serait nécessaire pour formaliser Piccirillo.
 
 > **Note technique** : Le commentaire ""Lean AI Leaderboard"" dans les théorèmes `conway_not_smoothly_slice` et `conway_topologically_slice` indique que ces résultats sont **suivis par la communauté Lean** (https://lean-lang.org/eval/problems/). Conway.lean fournit le scaffolding pour un effort de formalisation communautaire futur.",,,,,,,,b7e366a18f81b94a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,f7774d18,markdown,fr,7d2d4a93a15ed2c3,"### Interprétation : Une page, une profondeur extrême
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,f7774d18,markdown,fr,7d2d4a93a15ed2c3,"### Interprétation : Une page, une profondeur extrême
 
 **Sortie obtenue** : Un extrait structuré de Lidman.lean montrant les définitions et théorèmes formalisés.
 
@@ -15661,7 +15661,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,f7774d18,ma
 4. **Le contraste avec Piccirillo** — les deux preuves (Lidman 2026, Piccirillo 2020) sont ""short but deep"". Lidman = 1 page mais Heegaard Floer + 5 outils majeurs. Piccirillo = 20 pages mais stratégie indirecte (trace companion) qui contourne le nœud lui-même. **Les deux nécessitent des décennies de travail Mathlib.**
 
 > **Note technique** : Le `sorry` sur `knot_11n102.diagram` indique que même le **PD-code de 11n102** n'est pas encore entré (TODO: from KnotInfo). Le scaffolding commence au niveau des définitions combinatoires — la partie topologique est entièrement future.",,,,,,,,7d2d4a93a15ed2c3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,b8197cdd,code,fr,3556b5ba36ffe9ce,"# Render the Mathlib prerequisites table
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,b8197cdd,code,fr,3556b5ba36ffe9ce,"# Render the Mathlib prerequisites table
 import pandas as pd
 
 prereqs = [
@@ -15687,7 +15687,7 @@ styled_df = df.style.set_properties(**{'text-align': 'left'}).set_table_styles([
 }])
 
 styled_df",,,,,,,,3556b5ba36ffe9ce,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,56a3afc3,markdown,fr,6824d3f6dd43b7e3,"### Interprétation : Le message du tableau
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,56a3afc3,markdown,fr,6824d3f6dd43b7e3,"### Interprétation : Le message du tableau
 
 **Sortie obtenue** : Un tableau à 11 entrées classées par tiers de difficulté.
 
@@ -15708,7 +15708,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,56a3afc3,ma
 4. **Tier 3 est le mur** — le théorème de Reidemeister (ambient isotopy ↔ Reidemeister equivalence) nécessite PL topology, general position, Alexander's theorem. Piccirillo (Khovanov homology, Rasmussen s-invariant, 4-manifolds), Lidman (Heegaard Floer homology, d-invariants), Freedman (topological surgery) sont **au-delà de l'horizon actuel**.
 
 > **Note technique** : Ce tableau est la traduction directe du contenu de `MathlibPrerequisites.lean` sections 1-3. Chaque entrée correspond à un `theorem ..._prerequisites : True := trivial` qui documente ce qui manque. Les sorry dans les fichiers `.lean` correspondants pointent vers ces entrées.",,,,,,,,6824d3f6dd43b7e3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,98850f15,markdown,fr,e9a3261902821ce9,"### Exercice 4 — Compter les sorries dans un fichier Lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,98850f15,markdown,fr,e9a3261902821ce9,"### Exercice 4 — Compter les sorries dans un fichier Lean
 
 Les fichiers `knot_lean/Knots/*.lean` contiennent des marqueurs `sorry` indiquant les preuves manquantes. Compter ces sorries donne une **mesure de complétude** du scaffolding.
 
@@ -15720,7 +15720,7 @@ et comptez `sorry` uniquement s'il n'est pas précédé de `--` sur la même lig
 **Étape 2 :** boucler sur les lignes ; pour chaque ligne, ignorer si 'sorry' est dans un commentaire.
 **Étape 3 :** retourner le total.
 </cell_id_edit_mode",,,,,,,,e9a3261902821ce9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,0c96746f,code,fr,a83423320fd149bb,"def count_sorries_in_lean_file(filepath):
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,0c96746f,code,fr,a83423320fd149bb,"def count_sorries_in_lean_file(filepath):
     # TODO etudiant : compter les occurrences de 'sorry' hors commentaires.
     # Indice : ouvrir le fichier, boucler sur les lignes, ignorer les lignes
     #          où 'sorry' est apres '--' (commentaire Lean).
@@ -15737,7 +15737,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,0c96746f,co
 # assert count_sorries_in_lean_file(conway_path) > 0  # Conway.lean a des sorries
 # print(""Exercice 4 : OK"")
 ",,,,,,,,a83423320fd149bb,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,86e3ddf4,markdown,fr,fdd7cdc1ef444f43,"### Exercice 5 — Extraire les théorèmes d'un fichier Lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,86e3ddf4,markdown,fr,fdd7cdc1ef444f43,"### Exercice 5 — Extraire les théorèmes d'un fichier Lean
 
 Les fichiers Lean contiennent des définitions de théorèmes avec leur signature. Extraire ces signatures permet de comprendre ce qui est formalisé.
 
@@ -15751,8 +15751,8 @@ et la signature (texte entre ':' et ':='). Utilisez les expressions régulières
 
 ***
 
-**Navigation** : [<< Lean-16f — Conway Free-Will](Lean-16f-Conway-Free-Will-Theorem.ipynb) | [Index](README.md) | [Lean-17b — Invariants >>](Lean-17b-Knots-Invariants-Companion.ipynb)",,,,,,,,fdd7cdc1ef444f43,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,cc723c8c,code,fr,0e6e6824e7bdc06c,"import re
+**Navigation** : [<< Lean-16f — Conway Free-Will](Lean-16f-Conway-Free-Will-Theorem.ipynb) | [Index](README.md) | [Lean-17b — Invariants >>](KNOTS-02-Invariants-Python.ipynb)",,,,,,,,fdd7cdc1ef444f43,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,cc723c8c,code,fr,0e6e6824e7bdc06c,"import re
 
 def extract_theorem_signatures(filepath):
     # TODO etudiant : extraire les (nom, signature) des theoremes Lean.
@@ -29838,7 +29838,7 @@ La nuance `sameSet` vs `=` est importante : `step` réordonne la grille (via `fi
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb,a4-interp-glider,markdown,fr,f19810daf3802f47,"**Interprétation.** `#eval sameSet (evolve glider 4) (translate 1 1 glider)` renvoie `true` : après **4 générations**, le planeur coïncide (ensemblistement) avec sa propre translation de vecteur `(1, 1)`. Il s'est donc déplacé d'une case vers le sud-est. Contrairement aux oscillateurs — qui reviennent à leur point de départ — un **vaisseau** ne revient jamais à sa position initiale : il revient à sa *forme* translatée. C'est ce que capture la comparaison `evolve glider 4` contre `translate 1 1 glider` plutôt que contre `glider` lui-même.
 
 Cette translation diagonale est la signature du planeur : 4 pas pour avancer d'une case, soit une « vitesse » de *c/4* diagonale (le maximum pour un vaisseau de cette taille dans le Game of Life). C'est ce motif que les calculateurs à planeurs exploitent pour faire circuler de l'information.",,,,,,,,f19810daf3802f47,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,f1a2b3c4,markdown,fr,988dc45fb10827e3,"### Représentations d’un nœud : PD, DT, Gauss, Conway
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,f1a2b3c4,markdown,fr,988dc45fb10827e3,"### Représentations d’un nœud : PD, DT, Gauss, Conway
 
 Un même nœud admet plusieurs **représentations combinatoires** équivalentes. Chacune encode le diagramme (ses croisements et la connectivité des brins) sous un angle différent, utile pour un calcul d’invariant distinct. Le **nœud de Conway** $11n_{34}$ et le **trèfle** $3_1$ servent d’exemples — le trèfle (3 croisements) pour la lisibilité, Conway (11 croisements) pour le réalisme.
 
@@ -29852,7 +29852,7 @@ Un même nœud admet plusieurs **représentations combinatoires** équivalentes.
 **Pourquoi plusieurs représentations ?** Le PD-code est la forme native de la plupart des algorithmes de théorie des nœuds (graphe de Tait, homologie de Khovanov, polynôme de Jones). Le DT-code est la forme **compacte** de tabulation — la table de Hoste-Thistlethwaite-Weeks stocke des millions de nœuds ainsi. Le Gauss code est la forme la plus **géométrique**. La notation de Conway révèle la **structure de tangles**, clé pour la classification.
 
 La cellule suivante valide structurellement ces codes sur le trèfle et le nœud de Conway. La **conversion** PD $\to$ DT (re-étiquetage séquentiel le long du brin) est un exercice classique de théorie des nœuds.",,,,,,,,988dc45fb10827e3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,e5d6c7b8,code,fr,86004ed5432b1656,"# Validation structurelle des représentations de nœuds
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,e5d6c7b8,code,fr,86004ed5432b1656,"# Validation structurelle des représentations de nœuds
 # (valeurs de référence katlas.org, non calculées par conversion — la conversion PD->DT est l'exercice)
 
 # PD-codes vérifiés depuis Lean-17b KNOT_ATLAS (source katlas.org)
@@ -29912,7 +29912,7 @@ for name, pd in [(""Trèfle (3_1)"", TREFOIL_PD), (""Conway (K11n34)"", CONWAY_P
 print(""\n"" + ""-"" * 62)
 print(""Lecture DT : [4,6,2] = paires (1,4)(3,6)(5,2) aux 3 croisements."")
 print(""IMPAIRES (1,3,5) = 1er passage du brin ; PAIRES (2,4,6) = 2e passage."")",,,,,,,,86004ed5432b1656,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,interp-anchor-conway-extract,code,fr,49d093e80419bcff,"# Extrait structure de Conway.lean : la chaine de definitions et theoremes du resultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,interp-anchor-conway-extract,code,fr,49d093e80419bcff,"# Extrait structure de Conway.lean : la chaine de definitions et theoremes du resultat
 import re
 
 src = open(""knot_lean/Knots/Conway.lean"", encoding=""utf-8"").read()
@@ -29930,7 +29930,7 @@ n_sorry = src.count(""sorry"")
 n_thm = sum(1 for l in lines if re.match(r""\s*(theorem|lemma)\b"", l))
 print(f""\nTotal : {n_thm} theoremes/lemmes declares, {n_sorry} occurrences de 'sorry'"")
 ",,,,,,,,49d093e80419bcff,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,interp-anchor-lidman-extract,code,fr,5b412caa7d488961,"# Extrait structure de Lidman.lean : le resultat d'unknotting number de 11n102
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,interp-anchor-lidman-extract,code,fr,5b412caa7d488961,"# Extrait structure de Lidman.lean : le resultat d'unknotting number de 11n102
 import re
 
 src = open(""knot_lean/Knots/Lidman.lean"", encoding=""utf-8"").read()
@@ -29973,17 +29973,17 @@ for ii in range(len(i_vals)):
 plt.colorbar(im, ax=ax, label='rang')
 plt.tight_layout()
 plt.show()",,,,,,,,36358c092cfbfd51,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,34287b8c,markdown,fr,05368096c77ff9f6,"# Lean 17c — Le lake `knot_lean` par ses déclarations (compagnon formel)
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,34287b8c,markdown,fr,05368096c77ff9f6,"# Lean 17c — Le lake `knot_lean` par ses déclarations (compagnon formel)
 
 Compagnon du **Lean-17** (« Conway, les Nœuds et la Preuve de Piccirillo »). Là où Lean-17 raconte l'histoire mathématique (Fox 3-colorabilité, mutants, Piccirillo 2020, Lidman 2026) et interroge `Conway.lean` et `Lidman.lean`, ce notebook interroge les modules que Lean-17 ne cite pas — **`Basic.lean`** (les structures fondamentales), **`Invariant.lean`** (la chaîne 3-colorabilité, 71 déclarations), **`Reidemeister.lean`** (les moves R1/R2/R3 et leurs murs) et **`MathlibPrerequisites.lean`** (la feuille de route des 11 prérequis Mathlib) — et mesure l'état de la formalisation : déclarations par module, sorries réels vs prose, axiomes admis.
 
 Kernel Python par choix : le kernel natif `lean4-wsl` est gelé en attendant la mise à jour du binaire `repl` (#11874 — construit pour v4.30.0, lakes en v4.32.1). La lecture des sources reste réelle : chaque cellule ouvre le fichier `.lean` du lake et en extrait les déclarations, jamais une copie.
 
 Voir `knot_lean/README.md` pour l'état détaillé du corridor Reidemeister.",,,,,,,,05368096c77ff9f6,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,8ac57465,markdown,fr,90cd437bf2392df7,"## 1. Le lac : sept fichiers, deux langues
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,8ac57465,markdown,fr,90cd437bf2392df7,"## 1. Le lac : sept fichiers, deux langues
 
 Le lake suit la convention i18n #4980 : chaque module français a son sibling `_en` byte-identique sur le code, docstrings traduites. On inventorie les six modules FR et leurs miroirs.",,,,,,,,90cd437bf2392df7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,048a3415,code,fr,efa3ef27ff85365f,"import re
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,048a3415,code,fr,efa3ef27ff85365f,"import re
 from pathlib import Path
 
 LAKE = Path('knot_lean')
@@ -29993,12 +29993,12 @@ for p in modules:
     en = p.with_name(p.stem + '_en.lean')
     sib = 'oui' if en.exists() else 'ABSENT'
     print(f""  {p.name:28} {len(p.read_text(encoding='utf-8').splitlines()):>5} lignes   sibling _en : {sib}"")",,,,,,,,efa3ef27ff85365f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,3e52bfd7,markdown,fr,c895d72dac561168,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,3e52bfd7,markdown,fr,c895d72dac561168,"### Lecture du résultat
 Six modules FR, chacun avec son miroir `_en` — la convention i18n est respectée à 100 % sur ce lake. `MathlibPrerequisites` est le plus gros en lignes (cadre des prérequis), `Invariant.lean` porte le plus de déclarations.",,,,,,,,c895d72dac561168,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,ba0a717b,markdown,fr,87a77b037c83258f,"## 2. `Basic.lean` — les structures fondamentales
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,ba0a717b,markdown,fr,87a77b037c83258f,"## 2. `Basic.lean` — les structures fondamentales
 
 Tout le lake repose sur quatre structures : `Crossing`, `PDCrossing`, `KnotDiagram`, `Knot` (+ `Link`). Les nœuds canoniques (`unknot`, `trefoil`, `figureEight`) y sont définis, ainsi que le miroir et le nombre de croisements.",,,,,,,,87a77b037c83258f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,6df80a7f,code,fr,13fa71b01f48f3ad,"# Declarations publiques de Basic.lean, extraites du fichier reel
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,6df80a7f,code,fr,13fa71b01f48f3ad,"# Declarations publiques de Basic.lean, extraites du fichier reel
 DECL_RE = re.compile(r'^(structure|theorem|lemma|def|instance|abbrev)\s+([A-Za-z_][A-Za-z0-9_.\'\?]*)')
 
 def decls_of(path):
@@ -30013,12 +30013,12 @@ basic = decls_of(LAKE / 'Knots' / 'Basic.lean')
 print(f""Basic.lean : {len(basic)} declarations"")
 for ln, kind, name in basic:
     print(f""  L{ln:>4}  {kind:9} {name}"")",,,,,,,,13fa71b01f48f3ad,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,95c9a4f6,markdown,fr,bd7cdcf8979c549d,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,95c9a4f6,markdown,fr,bd7cdcf8979c549d,"### Lecture du résultat
 Les trois nœuds canoniques du lake sont des `def` explicites (`unknotDiagram`, `trefoilDiagram`, `figureEightDiagram` puis leurs objets `Knot`). `wf` (well-formed) est un `Bool` : la correction du PD-code est décidable et testée — `unknot_wf` en est la preuve minimale.",,,,,,,,bd7cdcf8979c549d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,923dfd00,markdown,fr,6eaea5f9ff89316d,"## 3. `Invariant.lean` — la chaîne 3-colorabilité (71 déclarations)
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,923dfd00,markdown,fr,6eaea5f9ff89316d,"## 3. `Invariant.lean` — la chaîne 3-colorabilité (71 déclarations)
 
 C'est le cœur pédagogique du lake : la définition `IsTricolorable` et le théorème-cible `tricolorable_invariant` (« la 3-colorabilité de Fox est invariante par moves de Reidemeister »), avec sa décomposition en bras ascendants R1/R2 et ses murs nommés.",,,,,,,,6eaea5f9ff89316d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,f8e81189,code,fr,5f712e415a3664f6,"# Les declarations cibles de la chaine tricolorabilite
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,f8e81189,code,fr,5f712e415a3664f6,"# Les declarations cibles de la chaine tricolorabilite
 inv = decls_of(LAKE / 'Knots' / 'Invariant.lean')
 print(f""Invariant.lean : {len(inv)} declarations\n"")
 CIBLES = ['IsTricolorable', 'triColorFoxCondition_iff_sum_mod_three',
@@ -30027,12 +30027,12 @@ CIBLES = ['IsTricolorable', 'triColorFoxCondition_iff_sum_mod_three',
 for ln, kind, name in inv:
     if any(name.startswith(c) or c in name for c in CIBLES):
         print(f""  L{ln:>4}  {kind:9} {name}"")",,,,,,,,5f712e415a3664f6,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,054abd8b,markdown,fr,f3a33ea9e2c49ec9,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,054abd8b,markdown,fr,f3a33ea9e2c49ec9,"### Lecture du résultat
 La chaîne expose la discipline de preuve du lake : `tricolorable_invariant` (le théorème-cible) est décomposé en bras `tricolorable_forward_r1` et `tricolorable_forward_r2_up`, chacun borné par des **murs nommés** (`r2_append_only_wall`, `r3_determined_wall`) — des `theorem` qui énoncent l'obligation restante au lieu de la cacher dans un `sorry` anonyme. La bi-implication R1 est complète (forward + backward, #11227).",,,,,,,,f3a33ea9e2c49ec9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,9e5c54dc,markdown,fr,a1e59f166e18924d,"## 4. Sorries réels vs prose — l'instrument juste
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,9e5c54dc,markdown,fr,a1e59f166e18924d,"## 4. Sorries réels vs prose — l'instrument juste
 
 Le README du lake documente deux comptes : `grep -c sorry` naïf (compte la prose) et le mode `real` du CI (strippe commentaires, compte mot-bounded). Un `grep` naïf sur `Invariant.lean` rend 15 là où le réel est **2**. On mesure les deux.",,,,,,,,a1e59f166e18924d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,f41d2568,code,fr,c8f962f07866152e,"# Les deux comptes, mesures sur les fichiers reels
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,f41d2568,code,fr,c8f962f07866152e,"# Les deux comptes, mesures sur les fichiers reels
 def count_sorry(path, mode):
     text = path.read_text(encoding='utf-8')
     if mode == 'naive':
@@ -30049,12 +30049,12 @@ rows.append(['TOTAL', sum(r[1] for r in rows), sum(r[2] for r in rows)])
 import pandas as pd
 df = pd.DataFrame(rows, columns=['module', 'grep naif', 'sorry reels'])
 df",,,,,,,,c8f962f07866152e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,99245d15,markdown,fr,c08ac6ac93bd28d5,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,99245d15,markdown,fr,c08ac6ac93bd28d5,"### Lecture du résultat
 L'écart naive/réel illustre le piège documenté dans les règles du dépôt : les docstrings FR documentent précisément l'absence de preuve (« mur R2 », « restent 2 sorries ») — un `grep` naïf compte cette documentation. Le CI gate sur le compte réel (baseline 14). Un instrument qui surestime la dette d'un facteur 2,5 fausse l'arbitrage de ce qu'il faut prouver ensuite.",,,,,,,,c08ac6ac93bd28d5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,67dc2946,markdown,fr,ac5c77962e7da10b,"## 5. `Reidemeister.lean` — les moves et le corridor sémantique
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,67dc2946,markdown,fr,ac5c77962e7da10b,"## 5. `Reidemeister.lean` — les moves et le corridor sémantique
 
 Les moves R1/R2/R3 y sont des `Prop` explicites (`Reidemeister1`, `Reidemeister2`, ...) avec symétries prouvées. Le corridor #8696 (5 PRs mergées) y a remplacé le move-surgery `with` par des égalités de champs. Deux sorries réels subsistent : `reidemeister_theorem` ×2 (topologie PL des 3-variétés, hors Mathlib actuel — documenté INTRINSIC).",,,,,,,,ac5c77962e7da10b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,d284ef54,code,fr,60be93e8bc12fa84,"# Les moves Reidemeister et leurs proprietes
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,d284ef54,code,fr,60be93e8bc12fa84,"# Les moves Reidemeister et leurs proprietes
 reid = decls_of(LAKE / 'Knots' / 'Reidemeister.lean')
 print(f""Reidemeister.lean : {len(reid)} declarations\n"")
 for ln, kind, name in reid:
@@ -30062,12 +30062,12 @@ for ln, kind, name in reid:
     if name.startswith('Reidemeister'):
         tag = '  <-- move'
     print(f""  L{ln:>4}  {kind:9} {name}{tag}"")",,,,,,,,60be93e8bc12fa84,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,018a9781,markdown,fr,3d5be02b0ffa9e3b,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,018a9781,markdown,fr,3d5be02b0ffa9e3b,"### Lecture du résultat
 Chaque move a sa `.symm` prouvée (la symétrie n'est pas une hypothèse cachée). `Reidemeister1Connected` vient avec ses théorèmes de comptage (`numEdges_succ`, `numCrossings_succ`) : le modèle R1-connecté rend le move *localement vérifiable* — c'est ce qui a permis le corridor.",,,,,,,,3d5be02b0ffa9e3b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,a29df633,markdown,fr,fe052b3da8860c6c,"## 7. Le tableau de bord du lake
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,a29df633,markdown,fr,fe052b3da8860c6c,"## 7. Le tableau de bord du lake
 
 Synthèse : déclarations, sorries réels, et théorèmes-phare par module.",,,,,,,,fe052b3da8860c6c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,0e5f7024,code,fr,50056aa7302c9c5a,"# Tableau de bord : declarations / theoremes / sorries reels par module
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,0e5f7024,code,fr,50056aa7302c9c5a,"# Tableau de bord : declarations / theoremes / sorries reels par module
 rows = []
 for p in modules:
     ds = decls_of(p)
@@ -30076,12 +30076,12 @@ for p in modules:
 df = pd.DataFrame(rows, columns=['module', 'declarations', 'theoremes', 'sorries reels'])
 df['sorries/decl'] = (df['sorries reels'] / df['declarations']).round(2)
 df",,,,,,,,50056aa7302c9c5a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,1b665535,markdown,fr,c5d9fb03f1ea1f59,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,1b665535,markdown,fr,c5d9fb03f1ea1f59,"### Lecture du résultat
 `MathlibPrerequisites` porte le cadre sans sorry réel ; `Basic` est propre (0) ; la dette se concentre dans `Conway` (8) et le pair `Invariant`/`Reidemeister` (2+2). Le ratio sorries/declarations rend lisible où porte l'effort de preuve restant.",,,,,,,,c5d9fb03f1ea1f59,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,45c0d3ad,markdown,fr,b150e5db746ea574,"## 8. Le miroir i18n — byte-identity du code
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,45c0d3ad,markdown,fr,b150e5db746ea574,"## 8. Le miroir i18n — byte-identity du code
 
 La convention #4980 exige que seules les docstrings et commentaires diffèrent entre `Foo.lean` et `Foo_en.lean`. Vérification mesurée : on retire prose et commentaires des deux fichiers et on compare.",,,,,,,,b150e5db746ea574,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,3a6d4311,code,fr,d148b86d959ee82a,"# Byte-identity via l'instrument canonique du depot
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,3a6d4311,code,fr,d148b86d959ee82a,"# Byte-identity via l'instrument canonique du depot
 # (check_i18n_siblings.py : la byte-identity est MODULO les lignes qui
 # differentent legitimement -- import/open/namespace _en, suffixes _en --
 # un check naive du code brut rendrait des faux NON. On localise le repo
@@ -30098,9 +30098,9 @@ r = subprocess.run(
 out = (r.stdout or r.stderr).strip().splitlines()
 print(out[-1] if out else f""(aucune sortie, rc={r.returncode})"")
 ",,,,,,,,d148b86d959ee82a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,c64c9030,markdown,fr,4f5b80a4f66c57e2,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,c64c9030,markdown,fr,4f5b80a4f66c57e2,"### Lecture du résultat
 Le lake est en état i18n **drained** : 7/7 paires byte-identiques au sens canonique (modulo `import`/`open`/`namespace _en` et les suffixes `_en` d'identifiants — les seules lignes qui diffèrent légitimement), seules les docstrings diffèrent réellement. C'est la garantie que le sibling EN ne dérive jamais du FR. Un test naïf du code brut rendrait des faux négatifs — c'est exactement pourquoi le dépôt a un instrument canonique.",,,,,,,,4f5b80a4f66c57e2,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,2382dfb5,markdown,fr,d9e3d93a29a7419b,"## Exercice 1 — Les murs nommés
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,2382dfb5,markdown,fr,d9e3d93a29a7419b,"## Exercice 1 — Les murs nommés
 
 Les murs (`r2_append_only_wall`, `r3_determined_wall`) sont la signature de la discipline de preuve du lake : énoncer l'obligation restante au lieu de la cacher. Retrouvez leur ligne exacte dans `Invariant.lean` et le texte de l'énoncé.
 
@@ -30108,11 +30108,11 @@ Les murs (`r2_append_only_wall`, `r3_determined_wall`) sont la signature de la d
 
 **Étape 1 :** lister toutes les déclarations dont le nom contient `wall`.  
 **Étape 2 :** pour chaque mur, afficher ses 2 premières lignes d'énoncé.",,,,,,,,d9e3d93a29a7419b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,8f805f22,code,fr,8ec9a6f9b75560db,"# Exercice a completer : localiser les murs nommes d'Invariant.lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,8f805f22,code,fr,8ec9a6f9b75560db,"# Exercice a completer : localiser les murs nommes d'Invariant.lean
 # Etape 1 : noms des declarations contenant 'wall'
 # Etape 2 : pour chacune, les 2 premieres lignes suivant la declaration
 pass",,,,,,,,8ec9a6f9b75560db,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,c52ef1db,markdown,fr,e2e226f42ec2e15b,"## Exercice 2 — Le compte qui fonde la baseline CI
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,c52ef1db,markdown,fr,e2e226f42ec2e15b,"## Exercice 2 — Le compte qui fonde la baseline CI
 
 Le CI gate sur **13 sorries réels** (lean-knot.yml, post-#11958). Recomptez avec l'instrument `real` ci-dessus et confrontez à la baseline.
 
@@ -30120,10 +30120,10 @@ Le CI gate sur **13 sorries réels** (lean-knot.yml, post-#11958). Recomptez ave
 
 **Étape 1 :** total real sur les six modules.  
 **Étape 2 :** afficher la comparaison au format `total vs baseline : OK/ECART`.",,,,,,,,e2e226f42ec2e15b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,7e7f464b,code,fr,67bf7500724730c2,"# Exercice a completer : confrontez le compte real a la baseline CI (13)
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,7e7f464b,code,fr,67bf7500724730c2,"# Exercice a completer : confrontez le compte real a la baseline CI (13)
 BASELINE = 13
 pass",,,,,,,,67bf7500724730c2,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,3cb867c6,markdown,fr,acd1e38af40c66d5,"## Exercice 3 — Votre premier mur
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,3cb867c6,markdown,fr,acd1e38af40c66d5,"## Exercice 3 — Votre premier mur
 
 La discipline du lake : quand une preuve résiste, on ne met pas un `sorry` anonyme — on énonce le mur. Écrivez (en Python, pour l'analyse) un détecteur de sorries *anonymes* : un `sorry` dont le théorème enveloppant ne porte ni `wall` ni commentaire d'explication.
 
@@ -30131,23 +30131,23 @@ La discipline du lake : quand une preuve résiste, on ne met pas un `sorry` anon
 
 **Étape 1 :** fonction `anonymous_sorries(path)` retournant la liste des noms de déclarations fautives.  
 **Étape 2 :** l'appliquer aux six modules — le résultat attendu sur ce lake est une liste courte.",,,,,,,,acd1e38af40c66d5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,7af659c5,code,fr,3b53d155510f6867,"# Exercice a completer : detecteur de sorries anonymes
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,7af659c5,code,fr,3b53d155510f6867,"# Exercice a completer : detecteur de sorries anonymes
 def anonymous_sorries(path):
     # retourne la liste des declarations portant un sorry sans mur nomme
     # ni commentaire d'explication a proximite
     return None  # TODO etudiant
 
 pass",,,,,,,,3b53d155510f6867,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,9454d97a,markdown,fr,d3825152d1f428a7,"## Références
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,9454d97a,markdown,fr,d3825152d1f428a7,"## Références
 
 - Lake : [`knot_lean/`](knot_lean/) — README (état des sorries, corridor Reidemeister #8696, bi-implication R1 #11227)
-- Lean-17a : [`Lean-17a-Knots-Conway-Proofs.ipynb`](Lean-17a-Knots-Conway-Proofs.ipynb) — l'histoire mathématique (Fox, Piccirillo, Lidman)
+- Lean-17a : [`KNOTS-01-Conway-Proofs-Lean-Python.ipynb`](KNOTS-01-Conway-Proofs-Lean-Python.ipynb) — l'histoire mathématique (Fox, Piccirillo, Lidman)
 - Règles du dépôt : compte `sorry` réel via `scripts/lean/count_code_sorry.py` (jamais `grep -c`)
 - Feuille de route : `Knots/MathlibPrerequisites.lean` (Epic #2874, Phase 1) — les 11 prérequis tier par tier
 - Lean AI Leaderboard : [conway_knot_not_smoothly_slice](https://lean-lang.org/eval/problems/conway_knot_not_smoothly_slice/), [conway_knot_topologically_slice](https://lean-lang.org/eval/problems/conway_knot_topologically_slice/) — les cibles Tier 3
 - Piccirillo (2020), *The Conway knot is not slice*, Annals — via Lean-17 §3
 - Lidman (2026), unknotting number de 11n102 — via Lean-17 §5",,,,,,,,d3825152d1f428a7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,d34e7144,markdown,fr,a7fea6190fa4cd39,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,d34e7144,markdown,fr,a7fea6190fa4cd39,"## Conclusion
 
 Le lake `knot_lean` n'est pas un décor : 171 déclarations réelles, une dette de preuve **ciblée** (13 sorries réels sur 4 modules, dont 10 documentés hors-portée Mathlib), une chaîne 3-colorabilité décomposée en bras et murs nommés, un miroir i18n byte-identique. Le compagnon mesure ce que Lean-17 raconte : la formalisation avance en discipline — chaque mur est un théorème, chaque sorry restant est nommé et localisé.",,,,,,,,a7fea6190fa4cd39,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Sendov-Complex-Analysis.ipynb,2d0ab3da,markdown,fr,b150683c461443e8,"# Lean-19 : La Conjecture de Sendov (preuve L. Mazur, digestion T. Tao, aout 2026) — Digestion pedagogique
@@ -33269,10 +33269,10 @@ Le bloc analytique (gauche) introduit les notions `tendsto` (limite), `Continuou
 1. **Pourquoi les filtres** : ils unifient limite en un point, limite à l'infini, continuité, convergence de suites. Une fois le formalisme des filtres maîtrisé, tous les théorèmes de passage à la limite ont la même forme.
 2. **`HasDerivAt f f' x`** vs la définition ε-δ : Mathlib définit la dérivée via la limite du taux d'accroissement, puis prouve les règles (somme, produit, chaîne). En pratique, on applique `hasDerivAt_add`, `hasDerivAt_pow`, etc.
 3. **Pont direct** : Lean-14 (Finiteness) prouve la finitude des dérivées polynomiales — il utilise `HasDerivAt`, `polynomial_deriv`, et le catalogue analytique. Lean-12 (sensibilité) manipule la norme `‖·‖` et sa continuité. Cette section est le seuil d'entrée vers la partie haute : sans filtres ni `HasDerivAt`, les notebooks ≥12 sont inaccessibles.",,,,,,,,19a9c4a12296fde3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,25cbfad6,markdown,fr,0221b7a0d0367d35,"## 6. `MathlibPrerequisites.lean` — la feuille de route des 11 prérequis
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,25cbfad6,markdown,fr,0221b7a0d0367d35,"## 6. `MathlibPrerequisites.lean` — la feuille de route des 11 prérequis
 
 Ce module ne prouve rien — et c'est son rôle. Chacune de ses 11 déclarations est un théorème **volontairement vide** (`True := trivial`) : ce qui compte n'est pas l'énoncé mais la docstring au-dessus, qui documente **ce que Mathlib ne sait pas encore faire** pour tel résultat de théorie des nœuds (Epic #2874, Phase 1). Trois tiers de difficulté annoncent trois horizons : Tier 1 accessible (les cibles Phase 2), Tier 2 modéré (Alexander, Jones), Tier 3 approfondi (le théorème de Reidemeister, Piccirillo, Lidman, Freedman — les mêmes résultats que Lean-17 raconte historiquement).",,,,,,,,0221b7a0d0367d35,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,46acbd06,code,fr,0163df936dadcdaa,"# Les 11 prerequis, extraits du fichier reel, avec tier / enjeu / reference
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,46acbd06,code,fr,0163df936dadcdaa,"# Les 11 prerequis, extraits du fichier reel, avec tier / enjeu / reference
 mp_path = LAKE / 'Knots' / 'MathlibPrerequisites.lean'
 mp_text = mp_path.read_text(encoding='utf-8')
 
@@ -33305,7 +33305,7 @@ for t, name, enjeu, ref in rows:
 print()
 df_mp = pd.DataFrame(rows, columns=['tier', 'declaration', 'enjeu', 'reference'])
 df_mp.groupby('tier', sort=False).size().rename('declarations').to_frame()",,,,,,,,0163df936dadcdaa,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,4cc1f357,markdown,fr,1abf159be1d2fe13,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,4cc1f357,markdown,fr,1abf159be1d2fe13,"### Lecture du résultat
 
 Onze déclarations, **0 sorry réel** : l'instrument du dépôt (`count_code_sorry.py`) les classe « vacuous markers » — ce ne sont pas de la dette de preuve, ce sont de la **documentation formalisée**.
 
@@ -33500,7 +33500,7 @@ Sont hors scope de ce Tribute :
 
 - **La topologie algébrique** (groupe fondamental, revêtements — Munkres, *Elements of Algebraic
   Topology*, 1984) : la série à ce sujet vit dans le dépôt avec `knot_lean` et le notebook
-  [Lean-17a-Knots](Lean-17a-Knots-Conway-Proofs.ipynb) ;
+  [Lean-17a-Knots](KNOTS-01-Conway-Proofs-Lean-Python.ipynb) ;
 - **Les variétés et l'analyse sur variétés** (*Analysis on Manifolds*, 1991) — le Munkres
   topologue **différentiel** de *Elementary Differential Topology* (1966), un autre livre que le
   manuel général ;
