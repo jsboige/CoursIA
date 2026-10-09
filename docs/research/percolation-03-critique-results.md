@@ -116,7 +116,7 @@ avec `1/ν = 3/4`. La convergence est conforme à la théorie.
 
 | Mesure | Valeur | Cible | R² | Verdict |
 |--------|--------|-------|---|---------|
-| `β/ν` (4 L, log-log) | 0.102 | 5/48 ≈ 0.139 | 0.946 | **INCONCLUSIVE** |
+| `β/ν` (4 L, log-log) | 0.102 | 5/48 ≈ 0.1042 | 0.946 | **INCONCLUSIVE** |
 | `τ'` (4 L, moyenne brute) | 2.197 | 2.055 | — | PARTIEL (3/4 PASS) |
 | `τ'` (4 L, sans L=8) | 2.098 | 2.055 | ≥ 0.978 | PASS (écart 2.1%) |
 | `p_c(L)` convergence | 0.4513→0.4890 | → 1/2 monotone | — | CONFORME |
@@ -133,7 +133,7 @@ percolation finie sur tore `T_n` ne reproduit l'asymptotique que pour
 
 1. **Étendre le sweep à `L ∈ {128, 256, 512}`** — 5× la plage actuelle,
    au prix de ~3 min supplémentaires par `(L, p)` × 32 seeds × 5 p.
-   Permettrait de mesurer `β/ν ∈ [0.12, 0.14]` (cible 0.139 ± 0.01).
+   Permettrait de mesurer `β/ν ∈ [0.09, 0.12]` (cible `5/48 ≈ 0.1042` ± 0.01).
 2. **Augmenter le nombre de seeds** à 64-256 par `(L, p)` pour
    lisser les fluctuations à petit `L` (actuellement ±30% à L=8).
 3. **Migrer vers `scipy.sparse.csgraph.connected_components`** pour
@@ -142,7 +142,7 @@ percolation finie sur tore `T_n` ne reproduit l'asymptotique que pour
 **Convention honnête** : les valeurs rapportées ici sont les **mesures
 réelles** du sweep actuel, pas des ajustements cherry-picking. Un
 lecteur qui augmente `L` jusqu'à 512 doit voir `β/ν` converger vers
-0.139. Cette convergence est l'objet de la loi d'échelle finie, pas
+0.1042. Cette convergence est l'objet de la loi d'échelle finie, pas
 une coïncidence.
 
 ---

@@ -23,7 +23,7 @@ s'atténuent quand on monte à `L = 128, 256`.
 
 **Hypothèse a priori** : sur 6 points au lieu de 4, le fit log-log devrait
 mieux capturer la pente asymptotique, et `β/ν` devrait se rapprocher de
-0.139 (tout en restant en-deçà à cause des corrections finies).
+`5/48 ≈ 0.1042` (l'écart résiduel relevant des corrections d'échelle finie).
 
 ## 2. Architecture pipeline
 
@@ -69,7 +69,7 @@ mieux capturer la pente asymptotique, et `β/ν` devrait se rapprocher de
 
 **Cause** : les corrections d'échelle finie dominent encore à L ≤ 256. La convergence est **lente** : passer de 4 à 6 points n'a pas suffi à atteindre l'asymptote.
 
-**Note méthodologique** : l'écart-type du fit (0.0104) est du même ordre que l'écart à la cible (0.139 - 0.107 = 0.032) — le fit est **localement bon** (R² = 0.964) mais **structurellement biaisé** par les corrections d'échelle.
+**Note méthodologique** : l'écart-type du fit (0.0104) est **supérieur** à l'écart à la cible corrigée (`0.1042 - 0.1065 = -0.0023`) — le fit est **localement bon** (R² = 0.964) et **compatible avec la cible** aux erreurs près.
 
 ## 5. Verdict τ' (6 L)
 
