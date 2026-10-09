@@ -104,8 +104,8 @@ pédagogique pour introduire la notion de détecteur.
 
 ### Notebooks
 
-- [ML-9-Anomaly-Detection-Python.ipynb](../../MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection-Python.ipynb) — détection par ACP, Python.
-- [ML-9-Anomaly-Detection.ipynb](../../MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb) — jumeau .NET Interactive.
+- [ML-09-Anomaly-Detection-Python.ipynb](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb) — détection par ACP, Python.
+- [ML-09-Anomaly-Detection.ipynb](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection.ipynb) — jumeau .NET Interactive.
 
 ### Depots de code
 
