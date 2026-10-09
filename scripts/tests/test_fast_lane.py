@@ -36,6 +36,23 @@ from fast_lane_registry import (  # noqa: E402
 )
 
 
+def _blank_other_tranches(monkeypatch, keep=()):
+    """Vide toutes les tranches du moteur sauf celles nommees dans `keep`.
+
+    Patcher une liste figee (`TRANCHE2/4/5`) laissait tourner les gardes
+    REELLES des tranches oubliees : leur rc, injecte par un `run_argv`
+    simule, faisait rougir le job et le test mesurait le registre au lieu du
+    comportement vise. Le depot a paye ce defaut le 2026-10-05 (absorption
+    des tranches 15/16 #19168 puis 17 #19118) et de nouveau le 2026-10-09
+    (`TRANCHE20`, garde live-read bloquant) : la bonne forme est de blanker
+    par ENUMERATION du module, pas par liste apprise.
+    """
+    import fast_lane as fl
+    for _name in sorted(n for n in vars(fl) if n.startswith("TRANCHE")):
+        if _name not in keep:
+            monkeypatch.setattr(fl, _name, [])
+
+
 # ---------------------------------------------------------------------------
 # 1. Selection par chemin
 # ---------------------------------------------------------------------------
@@ -724,9 +741,7 @@ def _drive_mixed_emission(monkeypatch, pilot_rc, tranche_rc):
     # l'absorption des tranches 15/16 (#19168) et 17 (#19118) a fait echouer ce
     # test, qui passait par accident tant qu'aucune tranche oubliee n'etait
     # absorbe et bloquante.
-    for _tranche in sorted(n for n in vars(fl) if n.startswith("TRANCHE")):
-        if _tranche != "TRANCHE1":
-            monkeypatch.setattr(fl, _tranche, [])
+    _blank_other_tranches(monkeypatch, keep={"TRANCHE1"})
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
     monkeypatch.setattr(
         fl, "run_argv",
@@ -820,9 +835,7 @@ def test_pre_argv_failure_short_circuits_the_guard(monkeypatch):
     calls = []
     monkeypatch.setattr(fl, "PILOT", [])
     monkeypatch.setattr(fl, "TRANCHE1", [guard])
-    monkeypatch.setattr(fl, "TRANCHE2", [])
-    monkeypatch.setattr(fl, "TRANCHE4", [])
-    monkeypatch.setattr(fl, "TRANCHE5", [])
+    _blank_other_tranches(monkeypatch, keep={"TRANCHE1"})
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
 
     def fake_run_argv(argv, ctx):
@@ -851,9 +864,7 @@ def test_pre_argv_success_chains_into_the_scan(monkeypatch):
     calls = []
     monkeypatch.setattr(fl, "PILOT", [])
     monkeypatch.setattr(fl, "TRANCHE1", [guard])
-    monkeypatch.setattr(fl, "TRANCHE2", [])
-    monkeypatch.setattr(fl, "TRANCHE4", [])
-    monkeypatch.setattr(fl, "TRANCHE5", [])
+    _blank_other_tranches(monkeypatch, keep={"TRANCHE1"})
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
 
     def fake_run_argv(argv, ctx):
@@ -998,9 +1009,7 @@ def test_warn_rc_incident_coherent_on_all_three_surfaces(monkeypatch):
     import fast_lane as fl
     monkeypatch.setattr(fl, "PILOT", [])
     monkeypatch.setattr(fl, "TRANCHE1", [guard])
-    monkeypatch.setattr(fl, "TRANCHE2", [])
-    monkeypatch.setattr(fl, "TRANCHE4", [])
-    monkeypatch.setattr(fl, "TRANCHE5", [])
+    _blank_other_tranches(monkeypatch, keep={"TRANCHE1"})
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
     monkeypatch.setattr(fl, "run_argv", lambda argv, ctx: (2, "illisible"))
     monkeypatch.setattr(
@@ -1036,8 +1045,7 @@ def test_iter_paths_skips_files_deleted_by_the_pr(monkeypatch):
     monkeypatch.setattr(fl, "PILOT", [])
     monkeypatch.setattr(fl, "TRANCHE1", [])
     monkeypatch.setattr(fl, "TRANCHE2", [fig])
-    monkeypatch.setattr(fl, "TRANCHE4", [])
-    monkeypatch.setattr(fl, "TRANCHE5", [])
+    _blank_other_tranches(monkeypatch, keep={"TRANCHE2"})
 
     # Un notebook REEL (pour le cas here) + un chemin absent (gone) : le
     # filtre doit garder le premier et ecarter le second.
@@ -1550,10 +1558,7 @@ def test_warn_rc_incident_emits_neutral_distinct_title_not_blocking(monkeypatch)
                   blocking=True, paths=["**/*.ipynb"], absorbed=True,
                   warn_rc=(2,))
     monkeypatch.setattr(fl, "PILOT", [guard])
-    monkeypatch.setattr(fl, "TRANCHE1", [])
-    monkeypatch.setattr(fl, "TRANCHE2", [])
-    monkeypatch.setattr(fl, "TRANCHE4", [])
-    monkeypatch.setattr(fl, "TRANCHE5", [])
+    _blank_other_tranches(monkeypatch)
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
     monkeypatch.setattr(fl, "run_argv",
                         lambda argv, ctx: (2, "gh pr diff failed: rate limit"))
@@ -1584,10 +1589,7 @@ def test_warn_rc_verdict_zero_stays_plain_success(monkeypatch):
                   blocking=True, paths=["**/*.ipynb"], absorbed=True,
                   warn_rc=(2,))
     monkeypatch.setattr(fl, "PILOT", [guard])
-    monkeypatch.setattr(fl, "TRANCHE1", [])
-    monkeypatch.setattr(fl, "TRANCHE2", [])
-    monkeypatch.setattr(fl, "TRANCHE4", [])
-    monkeypatch.setattr(fl, "TRANCHE5", [])
+    _blank_other_tranches(monkeypatch)
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
     monkeypatch.setattr(fl, "run_argv", lambda argv, ctx: (0, "clean"))
     monkeypatch.setattr(fl, "run_iter",

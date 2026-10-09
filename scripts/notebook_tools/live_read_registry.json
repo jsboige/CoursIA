@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "comment": "Cellules qui lisent en direct un fichier du depot et en committent la sortie. Chaque entree est verifiee par check_live_read_freshness.py : la sortie committee doit rester coherente avec l'etat COURANT du fichier lu. Ajouter une entree des qu'une cellule declare une telle lecture.",
+  "cells": [
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb",
+      "cell_id": "50dcfe8c",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Pillars.lean",
+      "note": "Annexe F -- compte des lignes de Pillars.lean et citations L<n> des declarations des temoins"
+    }
+  ]
+}

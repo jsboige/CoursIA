@@ -1872,3 +1872,74 @@ TRANCHE18: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 20 -- fraicheur des cellules LIVE-READ (#20049).
+#
+# Garde NATIF, tranche propre pour la meme raison que TRANCHE11 : il n'absorbe
+# aucun workflow d'origine (le stub `live-read-freshness.yml` est cree par
+# cette PR, dispatch-only, aucun trigger `pull_request` a retirer) et il ferme
+# une CLASSE de defaut. Le ranger dans TRANCHE2 (a cote de ses freres
+# `check_output_collapse.py` / `check_source_collapse.py`) rendrait l'en-tete
+# de TRANCHE2 faux.
+#
+# Defaut ferme : une cellule code peut LIRE un fichier du depot et en
+# committer la sortie (compte de lignes du fichier, declarations, numeros de
+# ligne). Rien ne la relie ensuite a ce fichier. Le jour ou une tranche le
+# reecrit, la sortie committee devient un temoignage du PASSE -- et aucun
+# organe ne le voit. Les ratchets d'absorption comparent une BASE a une TETE ;
+# ceux de structure mesurent un carnet. Aucun ne compare la sortie COMMITTEE
+# d'une cellule a l'etat COURANT du fichier qu'elle lit : c'est un troisieme
+# axe, invisible par construction.
+#
+# Donnee de declaration : `scripts/notebook_tools/live_read_registry.json`.
+# Le carnet declare ses cellules live-read et le fichier lu ; l'organe derive
+# de la sortie elle-meme ses invariants (compte de lignes accole au fichier,
+# citations ``L<n>: <texte>``) et les confronte a la source. Une re-execution
+# fraiche du carnet les satisfait -- c'est le geste de reparation attendu
+# (Stop & Repair), jamais une edition a la main de la sortie.
+#
+# Forme moteur : garde ABSOLU, non-delta (meme raison que TRANCHE18) -- il
+# mesure l'arbre de HEAD, pas une difference base/PR. Le pre-controle
+# `--self-test` epingle le discriminant en fixture (4 cas verts, 3 rouges) et
+# gate le garde comme le ferait un step distinct du workflow d'origine.
+#
+# Controle positif MESURE a la pose : `feature/otca-real-grid` (#20019,
+# ouverte) porte Pillars.lean a 348 lignes quand la cellule `50dcfe8c` de
+# Lean-16b atteste « 246 lignes » et cite L88/L126 ; cette branche ne touche
+# PAS Lean-16b, donc le rouge est authentique, pas fabrique. Sur `main` au
+# meme instant, l'organe est vert (controle negatif). Un organe resterait vert
+# sur le controle positif ne prouverait rien -- c'est la seule chose qui
+# separe un invariant d'un blanc-seing.
+#
+# `absorbed=True` : sans absorption, le job always-on lance `fast_lane.py
+# --shadow`, donc `effective_shadow = args.shadow and not guard.absorbed` reste
+# vrai et le garde emet une conclusion NEUTRE sous `fast-lane (ombre): ` -- un
+# `blocking=True` sans effet. Un garde sans workflow d'origine n'a aucun autre
+# emetteur de son nom de check-run (meme convention que TRANCHE8/9/10/11/14/17/
+# 18/19).
+# ---------------------------------------------------------------------------
+TRANCHE20: list[Guard] = [
+    Guard(
+        name="Live-read freshness (committed output vs current source)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_live_read_freshness.py",
+            "scripts/notebook_tools/live_read_registry.json",
+            "scripts/notebook_tools/tests/test_live_read_freshness.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_live_read_freshness.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_live_read_freshness.py",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
+]
