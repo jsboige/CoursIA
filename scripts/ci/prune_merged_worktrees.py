@@ -45,9 +45,12 @@ Ce script est cet organe.
 
 Critères de retrait (cf issue #14195 acceptance) :
 
-1. **Worktree avec commits non poussés** (`git rev-list --count @{u}..HEAD > 0`) :
-   REFUSE, jamais d'exception. Aucune branche n'est mergee alors qu'elle a
-   du travail non publie.
+1. **Worktree avec commits non poussés** (avance vs le ref distant homonyme
+   `refs/remotes/origin/<branche>`, repli `@{u}` hors `*/main` -- #20009) :
+   REFUSE. Exception : si HEAD est un ancêtre de `origin/main`, l'avance est
+   un artefact de bookkeeping (branche soeur en `@{u}`, aucun commit propre)
+   et le flot normal tranche. Aucune branche n'est mergee alors qu'elle a du
+   travail non publie.
 2. **Worktree avec une PR OPEN** : REFUSE. Le retrait casserait l'iteration
    en cours.
 3. **Worktree avec une PR MERGED ou CLOSED (non-merged)** : REMOVE.
@@ -663,30 +666,46 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
     branch_raw = branch_proc.stdout.strip()
     branch = None if branch_raw in ("HEAD", "") else branch_raw
 
-    # Ahead count : commits non pousses vs @{u}. Si @{u} n'est pas
-    # configure (branche feature sans `set-upstream-to`, frequente avec
-    # `git worktree add -b`), @{u} retombe sur origin/main ce qui compare
-    # la branche feature a main -- un faux positif massif. On verifie
-    # d'abord la resolution explicite : si l'upstream specifique est la
-    # branche elle-meme, on compte les commits en avance. Sinon (upstream
-    # = main), on considere 0 unpushed et on laisse le verdict PR trancher.
+    # Ahead count : commits non pousses. L'instrument #20009 : quand le ref
+    # distant homonyme refs/remotes/origin/<branche> existe localement, c'est
+    # LUI qui porte le bookkeeping de la branche. @{u} peut pointer une
+    # branche soeur (base d'une pile au moment de la creation du worktree) ;
+    # `@{u}..HEAD` mesure alors l'ecart a une branche tierce, pas du travail
+    # non pousse (mesure po-2024 : 5 worktrees refuses unpushed_commits:210
+    # avec 0 commit propre et SHA identique au ref distant homonyme).
+    # Repli @{u} historique quand le homonyme est absent : si l'upstream
+    # retombe sur origin/main (branche feature sans `set-upstream-to`),
+    # comparer la branche feature a main serait un faux positif massif --
+    # on considere 0 unpushed et on laisse le verdict PR trancher. Un ref
+    # homonyme stale en retard sur-counte (echec vers le refus), jamais
+    # l'inverse.
     ahead_count = 0
     if branch:
-        upstream_proc = run_git(
-            wt_path, "rev-parse", "--abbrev-ref",
-            f"{branch}@{{u}}", check=False,
+        base_ref = None
+        homonym_proc = run_git(
+            wt_path, "rev-parse", "--verify",
+            f"refs/remotes/origin/{branch}", check=False,
         )
-        if upstream_proc.returncode == 0:
-            upstream = upstream_proc.stdout.strip()
-            if upstream and not upstream.endswith("/main"):
-                ahead_proc = run_git(
-                    wt_path, "rev-list", "--count", "@{u}..HEAD", check=False
-                )
-                if ahead_proc.returncode == 0:
-                    try:
-                        ahead_count = int(ahead_proc.stdout.strip())
-                    except ValueError:
-                        ahead_count = 0
+        if homonym_proc.returncode == 0:
+            base_ref = f"refs/remotes/origin/{branch}"
+        else:
+            upstream_proc = run_git(
+                wt_path, "rev-parse", "--abbrev-ref",
+                f"{branch}@{{u}}", check=False,
+            )
+            if upstream_proc.returncode == 0:
+                upstream = upstream_proc.stdout.strip()
+                if upstream and not upstream.endswith("/main"):
+                    base_ref = "@{u}"
+        if base_ref:
+            ahead_proc = run_git(
+                wt_path, "rev-list", "--count", f"{base_ref}..HEAD", check=False
+            )
+            if ahead_proc.returncode == 0:
+                try:
+                    ahead_count = int(ahead_proc.stdout.strip())
+                except ValueError:
+                    ahead_count = 0
 
     # Untracked / gitignores / tracked-modifies : une seule passe, avec
     # --ignored=matching pour signaler les gitignores non-cache (#14509).
@@ -1223,8 +1242,18 @@ def diagnose_worktree(wt_path: str, current_path: str,
             lane_owner=info.get("lane_owner"),
         )
 
-    # Predicat 1 : commits non poussés -> REFUSE inconditionnel
-    if info["branch"] and info["ahead_count"] > 0:
+    # Predicat 1 : commits non poussés -> REFUSE, sauf artefact de
+    # bookkeeping #20009 : HEAD ancetre de origin/main = aucun commit
+    # propre ici, l'« avance » mesure alors l'ecart a un ref tiers
+    # (branche soeur @{u} ou homonyme absent), pas du travail non pousse.
+    # On laisse le flot trancher (verdict PR, puis predicat content_on_main
+    # et sa fenetre d'activite #18494). Fail-CLOSED : ancetre
+    # indeterminable -> refus conserve.
+    if (
+        info["branch"]
+        and info["ahead_count"] > 0
+        and not head_is_ancestor_of_main(wt_path)
+    ):
         return WorktreeStatus(
             path=wt_path,
             branch=info["branch"],
@@ -1401,8 +1430,9 @@ def diagnose_worktree(wt_path: str, current_path: str,
     # rattachable (ni par nom local, ni par tete distante), mais HEAD est
     # un ancetre de origin/main : chaque commit du worktree est deja sur
     # main. Les gardes en amont garantissent deja les deux autres
-    # conditions de l'issue -- 0 commit non pousse (sinon
-    # ``unpushed_commits`` serait sorti) et aucune edition source non
+    # conditions de l'issue -- 0 commit propre non publie (le predicat 1,
+    # ou sa garde ancestor-of-main #20009 quand l'avance est un artefact
+    # @{u}) et aucune edition source non
     # committee ni untracked non tolere (sinon ``uncommitted_source_changes``
     # / ``untolerated_untracked`` seraient sortis). Le worktree ne porte
     # plus rien que main ne contienne deja.
