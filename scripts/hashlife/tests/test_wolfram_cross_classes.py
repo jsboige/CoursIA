@@ -76,59 +76,86 @@ class TestMeasureWolfram4Classes:
         )
 
 
-class TestWolframClassVerdict:
-    """Verdict par regle : I/II CONFIRMED si COLLAPSED, III/IV CONFIRMED si non-COLLAPSED."""
+class TestWolframClassVerdictSaturation:
+    """Sous le plancher, aucune classification n'est concluante.
 
-    def test_rule0_class_I_confirmed_on_c110_measurement(self):
-        """Verifie que R0 (I, uniforme) est CONFIRME avec le ratio c.110 (0.030)."""
+    Mesure 2026-10-09 : a n_cells = 64, R30 et R110 rendent un ratio identique
+    de 0.510 (K(W=1) = 1026, K(W=64) = 523 = 512 + 11) -- l'instrument ne voit
+    que son propre cadrage. La version anterieure publiait CLASS-III-REFUTED /
+    CLASS-IV-REFUTED / III/IV-INVERSE sur cette zone saturee.
+    """
+
+    def test_min_n_cells_floor_value(self):
+        from k_trajectory import WOLFRAM_MIN_N_CELLS
+        assert WOLFRAM_MIN_N_CELLS == 512
+
+    def test_all_classes_saturated_at_n64(self):
         from k_trajectory import measure_wolfram_4classes, wolfram_class_verdict
         results = measure_wolfram_4classes(n_cells=64, n_steps=64, seed=33)
         cv = wolfram_class_verdict(results)
-        r0_name = next(n for n in cv if "R0_n64" in n)
-        assert "CLASS-I-CONFIRMED" in cv[r0_name]
-        assert "COLLAPSED" in cv[r0_name]
+        assert cv, "aucun verdict rendu"
+        for name, verdict in cv.items():
+            assert "WOLFRAM-SATURATED" in verdict, f"{name}: {verdict}"
 
-    def test_rule4_class_II_confirmed_on_c110_measurement(self):
-        """Verifie que R4 (II, periodique) est CONFIRME avec le ratio c.110 (0.027)."""
-        from k_trajectory import measure_wolfram_4classes, wolfram_class_verdict
+    def test_r30_and_r110_are_identical_at_n64(self):
+        """Tell de saturation : les deux regles rendent la meme constante."""
+        from k_trajectory import measure_wolfram_4classes
         results = measure_wolfram_4classes(n_cells=64, n_steps=64, seed=33)
-        cv = wolfram_class_verdict(results)
-        r4_name = next(n for n in cv if "R4_n64" in n)
-        assert "CLASS-II-CONFIRMED" in cv[r4_name]
-        assert "COLLAPSED" in cv[r4_name]
+        by_rule = {}
+        for r in results:
+            name = r["trajectory"]
+            if "_R30_" not in name and "_R110_" not in name:
+                continue
+            rule = int(name.split("_R")[1].split("_")[0])
+            cur = by_rule.get(rule)
+            if cur is None or r["n"] > cur["n"]:
+                by_rule[rule] = r
+        assert by_rule[30]["k_trajectory"] == by_rule[110]["k_trajectory"]
 
-    def test_rule30_class_III_refuted_on_c110_measurement(self):
-        """Verifie que R30 (III, chaotique) est REFUSE -- faux negatif sur entropie."""
-        from k_trajectory import measure_wolfram_4classes, wolfram_class_verdict
-        results = measure_wolfram_4classes(n_cells=64, n_steps=64, seed=33)
-        cv = wolfram_class_verdict(results)
-        r30_name = next(n for n in cv if "R30_n64" in n)
-        assert "CLASS-III-REFUTED" in cv[r30_name], (
-            f"R30 devrait etre REFUTED (COLLAPSED sur entropie partielle) -- "
-            f"observe: {cv[r30_name]}"
+
+class TestCommittedCanonicalMeasurement:
+    """La mesure canonique committée (n=1024) porte la classification concluante."""
+
+    @staticmethod
+    def _canonical() -> dict:
+        return json.loads(
+            (HASHLIFE_DIR / "wolfram_cross_classes_results.json").read_text(encoding="utf-8")
         )
 
-    def test_rule110_class_IV_refuted_on_c110_measurement(self):
-        """Verifie que R110 (IV, Turing-complet) est REFUSE -- faux negatif sur auto-entretien."""
-        from k_trajectory import measure_wolfram_4classes, wolfram_class_verdict
-        results = measure_wolfram_4classes(n_cells=64, n_steps=64, seed=33)
-        cv = wolfram_class_verdict(results)
-        r110_name = next(n for n in cv if "R110_n64" in n)
-        assert "CLASS-IV-REFUTED" in cv[r110_name]
+    def test_canonical_json_is_out_of_saturation(self):
+        data = self._canonical()
+        assert data["n_cells"] >= 512, "la mesure canonique doit etre hors saturation"
+        for name, verdict in data["per_class_verdicts"].items():
+            assert "WOLFRAM-SATURATED" not in verdict, f"{name}: {verdict}"
+
+    def test_canonical_separates_r30_from_r110(self):
+        data = self._canonical()
+        cv = data["per_class_verdicts"]
+        assert "CLASS-III-CONFIRMED" in cv["wolfram_R30_n1024_seed33"], cv
+        assert "CLASS-IV-REFUTED" in cv["wolfram_R110_n1024_seed33"], cv
+        # Deux classes contredisaient a n=64 ; une seule a n=1024.
+        assert "1/4" in data["cross_classes_verdict"], data["cross_classes_verdict"]
 
 
 class TestWolfram4ClassesCrossVerdict:
     """Verdict final cross-classes."""
 
-    def test_cross_verdict_is_iii_iv_inverse(self):
-        """Sur c.110, R30 et R110 sont REFUTES, R0 et R4 sont CONFIRMES -> III/IV-INVERSE."""
-        from k_trajectory import measure_wolfram_4classes, wolfram_class_verdict, wolfram_4classes_cross_verdict
-        results = measure_wolfram_4classes(n_cells=64, n_steps=64, seed=33)
-        cv = wolfram_class_verdict(results)
-        cross = wolfram_4classes_cross_verdict(cv)
-        assert "WOLFRAM-4CLASSES-III/IV-INVERSE" in cross, (
-            f"Verdict attendu III/IV-INVERSE, observe : {cross}"
+    def test_cross_verdict_is_saturated_when_all_saturated(self):
+        from k_trajectory import wolfram_4classes_cross_verdict
+        cv = {
+            "a": "WOLFRAM-SATURATED (n_cells=64 < 512)",
+            "b": "WOLFRAM-SATURATED (n_cells=64 < 512)",
+        }
+        assert "WOLFRAM-4CLASSES-SATURATED" in wolfram_4classes_cross_verdict(cv)
+
+    def test_cross_verdict_is_iii_iv_inverse_from_canonical_measurement(self):
+        """A n=1024, seule R110 contredit encore -> III/IV-INVERSE a 1/4."""
+        from k_trajectory import wolfram_4classes_cross_verdict
+        data = json.loads(
+            (HASHLIFE_DIR / "wolfram_cross_classes_results.json").read_text(encoding="utf-8")
         )
+        cross = wolfram_4classes_cross_verdict(data["per_class_verdicts"])
+        assert "WOLFRAM-4CLASSES-III/IV-INVERSE" in cross, cross
 
     def test_cross_verdict_format_is_string(self):
         from k_trajectory import wolfram_4classes_cross_verdict

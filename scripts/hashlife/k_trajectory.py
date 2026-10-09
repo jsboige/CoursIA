@@ -776,6 +776,13 @@ def cmd_wolfram(args: argparse.Namespace) -> int:
 _FRAGILE = 0.7
 _ENTRENED = 0.95
 
+# Plancher de mesure concluante pour l'automate 1-D : sous n_cells = 512, la
+# fenetre packee reste sous le plancher de cadrage zlib, toutes les regles
+# rendent la meme constante et la classification ne mesure plus le contenu.
+# Mesure 2026-10-09 : a n_cells = 64, R30 et R110 rendent un ratio identique
+# de 0.510 (K(W=1) = 1026, K(W=64) = 523 = 512 + 11).
+WOLFRAM_MIN_N_CELLS = 512
+
 
 WOLFRAM_CLASS_MAP = {
     0: ("I", "uniforme"),
@@ -857,6 +864,19 @@ def wolfram_class_verdict(results: list[dict]) -> dict:
             verdicts[name] = f"INCONCLUSIVE (parse fail, ratio {ratio:.3f})"
             continue
 
+        try:
+            n_cells = int(name.split("_n")[1].split("_")[0])
+        except (IndexError, ValueError):
+            n_cells = None
+
+        if n_cells is not None and n_cells < WOLFRAM_MIN_N_CELLS:
+            verdicts[name] = (
+                f"WOLFRAM-SATURATED (n_cells={n_cells} < {WOLFRAM_MIN_N_CELLS} : "
+                f"la fenetre packee est sous le plancher de cadrage zlib, "
+                f"ratio {ratio:.3f} mesure le cadrage, pas le contenu)"
+            )
+            continue
+
         klass = WOLFRAM_CLASS_MAP.get(rule)
         if klass is None:
             verdicts[name] = f"INCONCLUSIVE (regle {rule} hors 4 classes, ratio {ratio:.3f})"
@@ -913,6 +933,13 @@ def wolfram_4classes_cross_verdict(cv: dict) -> str:
     - INDETERMINATE : donnees insuffisantes (donnees manquantes ou
       ratio bruite).
     """
+    saturated = [n for n, v in cv.items() if "SATURATED" in v]
+    if saturated and len(saturated) == len(cv):
+        return (
+            f"WOLFRAM-4CLASSES-SATURATED ({len(saturated)}/{len(cv)} classes sous "
+            f"le plancher de cadrage zlib -- aucune classification n'y est concluante)"
+        )
+
     confirmed = []
     refuted = []
     for name, verdict_str in cv.items():
@@ -920,7 +947,7 @@ def wolfram_4classes_cross_verdict(cv: dict) -> str:
             confirmed.append(name)
         elif "REFUTED" in verdict_str:
             refuted.append(name)
-        # INCONCLUSIVE ignore
+        # INCONCLUSIVE et SATURATED ignores
 
     if not confirmed and not refuted:
         return "WOLFRAM-4CLASSES-INDETERMINATE (donnees insuffisantes)"

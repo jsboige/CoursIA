@@ -53,15 +53,18 @@ python -m pytest scripts/hashlife/tests/ -v
 
 ### Pli 4 (c.110) -- K_trajectory 4 classes Wolframe
 
+Mesure canonique `n_cells = 1024` (hors saturation) :
+
 | Regle | Classe | Ratio K(W=64)/K(W=1) | Verdict |
 |-------|--------|----------------------|---------|
-| 0     | I (uniforme) | 0.030 | CLASS-I-CONFIRMED (COLLAPSED) |
-| 4     | II (periodique) | 0.027 | CLASS-II-CONFIRMED (COLLAPSED) |
-| 30    | III (chaotique) | 0.510 | CLASS-III-REFUTED (COLLAPSED alors qu'on attend entropie partielle) |
-| 110   | IV (Turing-complet) | 0.510 | CLASS-IV-REFUTED (COLLAPSED alors qu'on attend entropie partielle) |
+| 0     | I (uniforme) | 0.053 | CLASS-I-CONFIRMED (COLLAPSED) |
+| 4     | II (periodique) | 0.023 | CLASS-II-CONFIRMED (COLLAPSED) |
+| 30    | III (chaotique) | 0.922 | CLASS-III-CONFIRMED (WEAK-COLLAPSE) |
+| 110   | IV (Turing-complet) | 0.571 | CLASS-IV-REFUTED (COLLAPSED alors qu'on attend entropie partielle) |
 
-- Verdict final : `WOLFRAM-4CLASSES-III/IV-INVERSE` (2/4 contredisent -- faux negatif sur entropie).
-- Conclusion : K_trajectory **insuffisant** pour discriminer Turing vs chaos en 1-D. Instrument adequate pour discriminer *soupe vs programme* en 2-D.
+- Verdict final : `WOLFRAM-4CLASSES-III/IV-INVERSE` (1/4 contredisent -- faux negatif sur entropie).
+- **Correction du 2026-10-09** : la mesure initiale a `n_cells = 64` publiait le **meme** ratio (0.510) pour R30 et R110 et un verdict « 2/4 contredisent » — un artefact de cadrage zlib (`K(W=64) = 523 = 512 + 11`, identique pour les deux regles). L'instrument declare desormais `WOLFRAM-SATURATED` sous `n_cells < 512`. Hors saturation, R30 et R110 se separent (0.922 vs 0.571).
+- Conclusion : K_trajectory **separe** chaos et structure en 1-D des que la mesure sort du cadrage, mais ne mesure pas la **Turing-completude** (R110 est compressible parce que regulier). Instrument adequate pour discriminer *soupe vs programme* en 2-D.
 
 ## Origine
 
