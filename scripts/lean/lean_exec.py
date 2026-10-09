@@ -79,8 +79,31 @@ Tout run passe par l'admission sous verrou machine-wide, impose un parallelisme
 borne aux enfants (``LEAN_NUM_THREADS``, ``-Kjobs=N`` pour ``lake build``) et
 publie ses metriques en JSON.
 
+Interface operateur (case 8 de #15666) — premier volet, le diagnostic :
+
+5. **Trois commandes de diagnostic, lecture seule** : ``status`` rapporte la
+   population, le cap, la file, les leases et l'admission courante ; ``doctor``
+   en rend un verdict NOMME (``OK`` / ``DEGRADE``) accompagne de la liste des
+   degradations reelles, et ne balaie RIEN — contrairement a ``status`` il ne
+   supprime jamais un run ni un lease perime, parce qu'un diagnostic qui
+   repare n'est pas un diagnostic (et que ses chiffres ne seraient plus ceux
+   qu'il vient de lire) ; ``dry-run`` repond a « que ferait un run ? » —
+   backend qui serait choisi, ressources mesurees, budget qui serait accorde,
+   verdict d'admission — **sans rien ecrire** : ni epinglage de backend, ni
+   lease d'arbre, ni entree de file, ni verrou d'admission. Seule exception
+   commune aux deux dernieres : la creation idempotente du state dir, que la
+   mesure disque exige pour lire l'espace libre.
+
+   Reste ouvert dans ce meme case 8 : l'**arret d'urgence** des runs possedes
+   par l'organe (inspecter puis arreter, sans tuer aveuglement un travail
+   etranger) et la **procedure de recuperation apres crash** du superviseur.
+   ``status`` et ``doctor`` exposent deja les runs vivants et les leases sur
+   lesquels ces deux volets s'appuieront.
+
 Codes de sortie stables :
-  0    succes (commande terminee, nettoyage prouve)
+  0    succes (commande terminee, nettoyage prouve ; ``doctor`` et ``dry-run``
+       rendent un diagnostic — leur verdict est dans la sortie, jamais dans le
+       code de retour, y compris quand il predit un refus)
   1    echec de la commande enfant (code reel dans le JSON)
   124  timeout (arbre tue, nettoyage prouve)
   125  admission refusee (cap atteint / environnement non mesurable /
@@ -848,10 +871,17 @@ def resolve_backend(
     requested: str = "auto",
     repin: bool = False,
     available: list[str] | None = None,
+    dry: bool = False,
 ) -> tuple[str | None, str]:
     """Tranche le backend d'un run. Rend (backend, detail) ; backend None =
     refus et detail est la raison ACTIONNABLE. A appeler sous AdmissionLock
     (ecriture du registre premier-ecrivain).
+
+    ``dry=True`` : la decision est rendue SANS etre consommee — aucun
+    epinglage n'est ecrit, le registre n'est jamais sauve. C'est le mode
+    de `dry-run`, qui doit previsualiser le choix de backend sans qu'un
+    diagnostic lecture-seule devienne une decision premier-ecrivain
+    (l'epinglage est precisement ce que le run reel doit encore poser).
 
     - pas de lake englobant -> native, rien a epingler ;
     - pas d'epingle -> premier disponible de DEFAULT_BACKEND_ORDER, epingle
@@ -880,6 +910,16 @@ def resolve_backend(
     pinned = entry.get("backend")
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+    def _record(backend: str, origin: str) -> None:
+        """Unique point d'ecriture de l'epinglage premier-ecrivain. En
+        dry-run il ne fait rien : la decision reste intacte pour le run
+        reel qui suivra la previsualisation."""
+        if dry:
+            return
+        registry[key] = {"backend": backend, "pinned_at": now,
+                         "origin": origin}
+        save_backends(registry)
+
     if requested == "auto":
         if pinned:
             if pinned not in available:
@@ -906,10 +946,10 @@ def resolve_backend(
                 "cache avant l'auto-epinglage"
             )
         backend = available[0]
-        registry[key] = {"backend": backend, "pinned_at": now,
-                         "origin": "default-policy"}
-        save_backends(registry)
-        return backend, f"default-policy -> {backend} (epingle posee)"
+        _record(backend, "default-policy")
+        return backend, (
+            f"default-policy -> {backend} (epingle posee)" if not dry
+            else f"default-policy -> {backend} (dry-run : NON epingle)")
 
     if pinned and pinned != requested:
         if not repin:
@@ -930,20 +970,20 @@ def resolve_backend(
                 ".lake/build existe encore — purgez-le d'abord, l'organe ne "
                 "purge JAMAIS lui-meme"
             )
-        registry[key] = {"backend": requested, "pinned_at": now,
-                         "origin": f"repin {pinned}->{requested} apres purge"}
-        save_backends(registry)
-        return requested, f"repin {pinned}->{requested} (cache purge verifie)"
+        _record(requested, f"repin {pinned}->{requested} apres purge")
+        return requested, (
+            f"repin {pinned}->{requested} (cache purge verifie)" if not dry
+            else f"repin {pinned}->{requested} (dry-run : NON repose)")
 
     if not pinned:
         if requested not in available:
             return None, (
                 f"backend {requested} demande mais indisponible : {available}"
             )
-        registry[key] = {"backend": requested, "pinned_at": now,
-                         "origin": "explicit-first-writer"}
-        save_backends(registry)
-        return requested, "explicit-first-writer (epingle posee)"
+        _record(requested, "explicit-first-writer")
+        return requested, (
+            "explicit-first-writer (epingle posee)" if not dry
+            else "explicit-first-writer (dry-run : NON epingle)")
     return pinned, f"epingle={pinned} (conforme a la demande)"
 
 
@@ -2060,6 +2100,282 @@ def backends_report(as_json: bool = False) -> int:
 
 
 # ---------------------------------------------------------------------------
+# dry-run : « que ferait un run ? » — lecture seule
+# ---------------------------------------------------------------------------
+
+def dry_run(
+    requested: str = "auto",
+    repin: bool = False,
+    budget: int | None = None,
+    cap: int | None = None,
+    cwd: str | None = None,
+    as_json: bool = False,
+) -> int:
+    """Previsualisation d'un run : backend qui serait choisi, ressources
+    mesurees, budget qui serait accorde, verdict d'admission.
+
+    N'ECRIT AUCUNE DECISION : pas d'epinglage de registre (`resolve_backend`
+    est appele avec `dry=True`), pas de lease d'arbre, pas d'entree de file,
+    pas de verrou d'admission. Le seul ecrit est la creation idempotente du
+    repertoire d'etat, que `measure_resources` fait pour lire le disque.
+
+    C'est la question a poser AVANT un run qui peut se faire refuser, ou
+    couter 1-2 h de recompilation Mathlib (bascule de backend). Sur un run
+    qui serait admis le code de sortie reste EXIT_OK : la commande rend un
+    diagnostic, elle ne rejoue pas l'admission — le verdict est dans la
+    sortie (`verdict:`), pas dans le code de retour.
+    """
+    cfg = config()
+    eff_cap = cfg["cap"] if cap is None else cap
+    eff_budget = cfg["budget"] if budget is None else budget
+    start_dir = Path(cwd) if cwd else Path.cwd()
+    root = find_lake_root(start_dir)
+    try:
+        registry = load_backends()
+        registry_error: str | None = None
+    except (OSError, ValueError) as exc:
+        registry, registry_error = {}, str(exc)
+    pinned = (registry.get(_lake_key(root)) or {}).get("backend") if root else None
+    available = preflight_backends(requested, root, pinned)
+    chosen, detail = resolve_backend(
+        root, requested=requested, repin=repin, available=available, dry=True,
+    )
+    would_write_pin = bool(
+        chosen is not None and root is not None
+        and (pinned is None or pinned != chosen)
+    )
+    resources = measure_resources()
+    missing = sorted(k for k, v in resources.items() if not v.get("ok"))
+    native_pop, native_src = scan_native_population()
+    # `granted` est la PARALLELISME accordee (`-Kjobs=N`), `budget` est le
+    # nombre de places prises dans le cap machine — deux grandeurs distinctes
+    # que `run_command` calcule separement (cf `_attempt`). Les confondre
+    # ferait predire a `dry-run` un chiffre que le run reel ne produirait pas.
+    granted, budgets = (0, {})
+    if not missing:
+        granted, budgets = compute_granted(cfg["jobs"], resources, native_pop)
+    registered, _live = live_registered_budgets()
+
+    # Chaine d'admission reproduite dans l'ORDRE de run_command (_attempt) :
+    # le PREMIER refus rencontre est celui que le run reel produirait. Un
+    # ordre different rendrait un verdict plausible et faux.
+    refusal: str | None = None
+    if native_pop < 0:
+        refusal = f"population non mesurable ({native_src})"
+    elif missing:
+        refusal = (f"telemetrie indisponible: {', '.join(missing)} "
+                   f"(fail-closed, spec #15666 §2)")
+    elif granted < 1:
+        refusal = (f"budget insuffisant (binding={budgets.get('binding')}): "
+                   f"cpu={budgets.get('cpu')} ram={budgets.get('ram')} "
+                   f"commit={budgets.get('commit')} "
+                   f"disk_free={budgets.get('disk_free_gb')}GB")
+    elif native_pop + eff_budget > eff_cap:
+        refusal = (f"cap machine-wide {eff_cap}: population native "
+                   f"{native_pop} + budget demande {eff_budget} > cap")
+    elif registered + eff_budget > eff_cap:
+        refusal = (f"cap machine-wide {eff_cap}: budgets vivants enregistres "
+                   f"{registered} + budget demande {eff_budget} > cap")
+    elif chosen is None:
+        refusal = detail
+
+    verdict = (
+        f"ADMIS (parallelisme accorde={granted})" if refusal is None
+        else f"REFUS ({refusal})"
+    )
+
+    payload = {
+        "start_dir": str(start_dir),
+        "lake_root": str(root) if root else None,
+        "backend": {
+            "requested": requested,
+            "repin": repin,
+            "pinned": pinned,
+            "available": available,
+            "chosen": chosen,
+            "detail": detail,
+            "would_write_pin": would_write_pin,
+        },
+        "registry_error": registry_error,
+        "config": cfg,
+        "cap": eff_cap,
+        "budget": eff_budget,
+        "jobs_requested": cfg["jobs"],
+        "population": {"native": native_pop, "native_src": native_src},
+        "live_registered_budgets": registered,
+        "resources": resources,
+        "telemetry_ok": not missing,
+        "missing_sources": missing,
+        "granted_jobs": granted,
+        "granted_budgets": budgets,
+        "headroom": max(0, eff_cap - native_pop),
+        "verdict": verdict,
+        "refusal": refusal,
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print(f"start dir: {payload['start_dir']}")
+        print(f"lake root: {payload['lake_root'] or '(aucun)'}")
+        if registry_error is not None:
+            print(f"registry error: ILLISIBLE ({registry_error})")
+        print(f"backend: demande={requested} epingle={pinned} "
+              f"disponibles={available or '[]'}")
+        print(f"backend choisi: {chosen or 'REFUS'}")
+        print(f"  {detail}")
+        if would_write_pin:
+            print("  (un run reel ecrirait l'epinglage ; dry-run ne l'ecrit pas)")
+        print(f"population: native={native_pop} ({native_src}) "
+              f"cap={eff_cap} budget={eff_budget} headroom={payload['headroom']}")
+        print(f"ressources: {json.dumps(resources)}")
+        print(f"parallelisme: demande={cfg['jobs']} accorde={granted} "
+              f"(binding={budgets.get('binding')})")
+        print(f"verdict: {verdict}")
+    return EXIT_OK
+
+
+# ---------------------------------------------------------------------------
+# doctor : diagnostic de l'organe — lecture seule
+# ---------------------------------------------------------------------------
+
+def doctor(as_json: bool = False) -> int:
+    """Etat de sante de l'organe en une passe : configuration, repertoire
+    d'etat, population, cap, telemetrie, registre de backends, runs vivants,
+    file, leases d'arbre, sondes.
+
+    Lecture seule : contrairement a `status`, `doctor` ne balaie PAS les
+    runs et leases perimes (le balayage supprime des fichiers) — il rapporte
+    l'etat tel qu'il est. Seul ecrit : la creation idempotente du repertoire
+    d'etat par `measure_resources`.
+
+    Rend un verdict NOMME, `OK` ou `DEGRADE` : les `problems` sont des
+    degradations reelles (repertoire d'etat non inscriptible, telemetrie
+    illisible, registre illisible, aucun backend, admission a zero, cap
+    atteint). Un etat simplement incomplet — aucun lake encore epingle —
+    n'est pas une degradation : il va dans `notes`. Un diagnostic qui crie
+    au loup sur une installation neuve ne sert a rien.
+    """
+    cfg = config()
+    problems: list[str] = []
+    notes: list[str] = []
+
+    sd = state_dir()
+    try:
+        sd.mkdir(parents=True, exist_ok=True)
+        state_writable = True
+    except OSError as exc:
+        state_writable = False
+        problems.append(f"repertoire d'etat non inscriptible ({exc})")
+
+    resources = measure_resources()
+    telemetry_ok = all(v.get("ok") for v in resources.values())
+    if not telemetry_ok:
+        illisibles = sorted(k for k, v in resources.items() if not v.get("ok"))
+        problems.append(
+            f"telemetrie illisible ({', '.join(illisibles)}) — l'admission "
+            "est fail-closed, aucun job ne sera accorde")
+
+    native_pop, native_src = scan_native_population()
+    wsl_pop, wsl_src = scan_wsl_population()
+    _registered, live = live_registered_budgets()
+    waiting = [entry for _path, entry in queue_entries()]
+    tree_leases = [entry for _path, entry in _tree_lease_entries()]
+
+    try:
+        registry = load_backends()
+        registry_error: str | None = None
+    except (OSError, ValueError) as exc:
+        registry, registry_error = {}, str(exc)
+        problems.append(
+            f"registre de backends illisible ({exc}) — fail-closed, aucun "
+            "epinglage n'est decide tant qu'il n'est pas repare")
+
+    forced = forced_backends()
+    if forced is not None:
+        probes = {b: (b in forced, "forced (LEAN_EXEC_FORCE_BACKENDS)")
+                  for b in BACKENDS}
+    else:
+        probes = {b: _probe(b) for b in BACKENDS}
+    if not any(ok for ok, _src in probes.values()):
+        problems.append(
+            "aucun backend disponible (native et wsl absents) — tout run "
+            "de lake sera refuse")
+
+    granted, budgets = (0, {})
+    if telemetry_ok:
+        granted, budgets = compute_granted(cfg["jobs"], resources, native_pop)
+        if granted == 0:
+            problems.append(
+                f"admission a 0 job maintenant "
+                f"(binding={budgets.get('binding')})")
+    if native_pop >= cfg["cap"]:
+        problems.append(
+            f"cap machine-wide atteint ({native_pop}/{cfg['cap']}) — les "
+            "runs suivants passeront par la file ou seront refuses")
+    if registry_error is None and not registry:
+        notes.append(
+            "aucun lake epingle : le premier run d'un lake posera "
+            "l'epinglage premier-ecrivain (defaut mesure)")
+    if live:
+        notes.append(f"{len(live)} run(s) vivant(s)")
+
+    verdict = "OK" if not problems else "DEGRADE"
+    payload = {
+        "verdict": verdict,
+        "problems": problems,
+        "notes": notes,
+        "state_dir": str(sd),
+        "state_writable": state_writable,
+        "config": cfg,
+        "population": {
+            "native": native_pop, "native_src": native_src,
+            "wsl": wsl_pop, "wsl_src": wsl_src,
+        },
+        "headroom": max(0, cfg["cap"] - native_pop),
+        "probes": {b: {"available": ok, "source": src}
+                   for b, (ok, src) in probes.items()},
+        "registry_path": str(backends_registry_path()),
+        "pinned_lakes": len(registry) if registry_error is None else None,
+        "registry_error": registry_error,
+        "live_runs": live,
+        "queue": waiting,
+        "tree_leases": tree_leases,
+        "resources": resources,
+        "granted_now": {
+            "jobs": granted, "budgets": budgets, "telemetry_ok": telemetry_ok,
+        },
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print(f"state: {payload['state_dir']} "
+              f"(ecriture: {'ok' if state_writable else 'REFUSEE'})")
+        print(f"config: {json.dumps(cfg)}")
+        print(f"population: native={native_pop} ({native_src}) "
+              f"wsl={wsl_pop} ({wsl_src}) cap={cfg['cap']} "
+              f"headroom={payload['headroom']}")
+        for backend in BACKENDS:
+            ok, src = probes[backend]
+            print(f"probe {backend}: {'OK' if ok else 'ABSENT'} ({src})")
+        print(f"registry: {payload['registry_path']}")
+        if registry_error is not None:
+            print(f"registry error: ILLISIBLE ({registry_error})")
+        else:
+            print(f"pinned lakes: {len(registry)}")
+        print(f"live runs: {len(live)} | queue: {len(waiting)} "
+              f"(max {cfg['queue_max']}) | tree leases: {len(tree_leases)}")
+        print(f"resources: {json.dumps(resources)}")
+        print(f"granted now: {granted} job(s) "
+              f"(binding={budgets.get('binding')})")
+        for note in notes:
+            print(f"note: {note}")
+        for problem in problems:
+            print(f"problem: {problem}")
+        print(f"verdict: {verdict}")
+    return EXIT_OK
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -2105,12 +2421,41 @@ def main(argv: list[str] | None = None) -> int:
         "backends", help="Registre d'epinglage par lake + sondes")
     p_backends.add_argument("--json", action="store_true")
 
+    p_dry = sub.add_parser(
+        "dry-run",
+        help="« Que ferait un run ? » — backend choisi, ressources mesurees, "
+             "budget qui serait accorde (lecture seule, n'ecrit rien)")
+    p_dry.add_argument("--backend", default="auto",
+                       choices=("auto", "native", "wsl"),
+                       help="Backend a simuler (auto = epingle sinon defaut)")
+    p_dry.add_argument("--repin", action="store_true",
+                       help="Simuler un re-epinglage : le registre n'est "
+                            "JAMAIS ecrit par dry-run")
+    p_dry.add_argument("--budget", type=int, default=None,
+                       help="Budget lean/lake a simuler (defaut: config)")
+    p_dry.add_argument("--cap", type=int, default=None,
+                       help="Cap machine-wide a simuler (defaut: config)")
+    p_dry.add_argument("--cwd", default=None,
+                       help="Repertoire depuis lequel chercher le lakefile")
+    p_dry.add_argument("--json", action="store_true")
+
+    p_doctor = sub.add_parser(
+        "doctor", help="Diagnostic de l'organe (lecture seule, ne balaie pas)")
+    p_doctor.add_argument("--json", action="store_true")
+
     args = parser.parse_args(argv)
     try:
         if args.action == "status":
             return status(as_json=args.json)
         if args.action == "backends":
             return backends_report(as_json=args.json)
+        if args.action == "dry-run":
+            return dry_run(
+                requested=args.backend, repin=args.repin, budget=args.budget,
+                cap=args.cap, cwd=args.cwd, as_json=args.json,
+            )
+        if args.action == "doctor":
+            return doctor(as_json=args.json)
         if args.action == "run":
             cmd = args.cmd
             if cmd and cmd[0] == "--":
