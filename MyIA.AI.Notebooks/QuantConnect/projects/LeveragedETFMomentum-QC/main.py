@@ -19,6 +19,12 @@ from datetime import datetime
 # En prix ajustes, une part d'UVXY ou de TECS vaut des centaines de milliers de dollars en
 # debut de periode : l'ordre arrondit a zero part et la branche reste en liquide. Le couple
 # raw + history execute la regle avec des nombres de parts realistes (#19587).
+#
+# Transposition UCITS (#20141) : mode ucits = signal de base inchange, execution via
+# UCITS_MAP (TQQQ/TECL -> QLD, SPXL -> SSO, UVXY/TECS/BSV -> SHV) ; mode lrs = Leverage
+# Rotation Strategy de Gayed et Bilello (2016) : SSO quand SPY cloture au-dessus de sa SMA,
+# SHV sinon ; controles sma1x (SPY au lieu de SSO) et sso, qld (levier x2 constant).
+# Les titres ajoutes ne sont souscrits que par les modes qui les utilisent.
 
 
 class _ScaledFeeModel(FeeModel):
@@ -36,7 +42,16 @@ class _ScaledFeeModel(FeeModel):
         return OrderFee(CashAmount(amount, fee.value.currency))
 
 
-HOLD_MODES = {"tqqq": "TQQQ", "spy": "SPY", "qqq": "QQQ"}
+HOLD_MODES = {"tqqq": "TQQQ", "spy": "SPY", "qqq": "QQQ", "sso": "SSO", "qld": "QLD"}
+
+# Correspondance d'execution du mode ucits (#20141) : equivalent x2 sur indice large quand il
+# existe en UCITS, monetaire (SHV) sinon.
+UCITS_MAP = {"TQQQ": "QLD", "TECL": "QLD", "SPXL": "SSO",
+             "UVXY": "SHV", "TECS": "SHV", "BSV": "SHV"}
+
+# Titres d'execution ajoutes par mode (hors signal, sans indicateur).
+TRADE_TICKERS = {"ucits": ("QLD", "SSO", "SHV"), "lrs": ("SSO", "SHV"),
+                 "sma1x": ("SHV",), "sso": ("SSO",), "qld": ("QLD",)}
 
 
 class ConditionalSectorRotation(QCAlgorithm):
@@ -51,7 +66,7 @@ class ConditionalSectorRotation(QCAlgorithm):
         self.SetBrokerageModel(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         self.mode = self.GetParameter("mode") or "base"
-        if self.mode not in ("base", "sma200") and self.mode not in HOLD_MODES:
+        if self.mode not in ("base", "sma200", "ucits", "lrs", "sma1x") and self.mode not in HOLD_MODES:
             raise ValueError(f"mode inconnu : {self.mode}")
         self.prices = self.GetParameter("prices") or "adjusted"
         self.signal = self.GetParameter("signal") or "indicators"
@@ -97,6 +112,13 @@ class ConditionalSectorRotation(QCAlgorithm):
 
             self.indicators[f"{ticker}_RSI_{self.rsi_period}_day"] = self.RSI(symbol, self.rsi_period, MovingAverageType.Wilders, Resolution.Daily)
 
+        # Titres d'execution des modes de #20141 (aucun en base)
+        for ticker in TRADE_TICKERS.get(self.mode, ()):
+            symbol = self.AddEquity(ticker, Resolution.Daily).Symbol
+            if self.prices == "raw":
+                self.Securities[symbol].SetDataNormalizationMode(DataNormalizationMode.Raw)
+            self.symbols[ticker] = symbol
+
         # 4. Initialize Specific Moving Averages required by logic
         self.indicators["SPY_SMA200"] = self.SMA(self.symbols["SPY"], self.spy_sma_period, Resolution.Daily)
         self.indicators["QQQ_SMA20"] = self.SMA(self.symbols["QQQ"], self.qqq_sma_period, Resolution.Daily)
@@ -130,7 +152,7 @@ class ConditionalSectorRotation(QCAlgorithm):
             self.Plot("shadow", "turnover", self.traded)
             self.closes += 1
 
-        if self.mode != "base":
+        if self.mode not in ("base", "ucits"):
             self.TradeControl()
             return
 
@@ -218,13 +240,17 @@ class ConditionalSectorRotation(QCAlgorithm):
         # EXECUTE TRADE
         # -------------------------------------------------------------
         if target_ticker:
+            exec_ticker = target_ticker
+            if self.mode == "ucits":
+                exec_ticker = UCITS_MAP.get(target_ticker, target_ticker)
+                self.days_on[f"sig_{target_ticker}"] = self.days_on.get(f"sig_{target_ticker}", 0) + 1
             # liquidates all other holdings and puts 100% into target
-            self.SetHoldings(self.symbols[target_ticker], 1.0, liquidateExistingHoldings=True)
-            self.days_on[target_ticker] = self.days_on.get(target_ticker, 0) + 1
+            self.SetHoldings(self.symbols[exec_ticker], 1.0, liquidateExistingHoldings=True)
+            self.days_on[exec_ticker] = self.days_on.get(exec_ticker, 0) + 1
 
     def TradeControl(self):
         """Controles et references (#19587) : meme univers, memes frais, meme cadence."""
-        if self.mode == "sma200":
+        if self.mode in ("sma200", "lrs", "sma1x"):
             price_spy = self.Securities[self.symbols["SPY"]].Price
             sma_spy = self.indicators["SPY_SMA200"].Current.Value
             if self.signal == "history":
@@ -232,7 +258,9 @@ class ConditionalSectorRotation(QCAlgorithm):
                 if sig is None:
                     return
                 price_spy, sma_spy = sig[1], sig[4]
-            target_ticker = "TQQQ" if price_spy > sma_spy else "BSV"
+            risk_on, risk_off = {"sma200": ("TQQQ", "BSV"), "lrs": ("SSO", "SHV"),
+                                 "sma1x": ("SPY", "SHV")}[self.mode]
+            target_ticker = risk_on if price_spy > sma_spy else risk_off
         else:
             target_ticker = HOLD_MODES[self.mode]
         self.SetHoldings(self.symbols[target_ticker], 1.0, liquidateExistingHoldings=True)
