@@ -112,12 +112,6 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 
 Les notebooks NON EXÉCUTÉS doivent être exécutés (kernel local pour les indépendants, QC Cloud pour ceux qui requièrent QuantBook) avant de pouvoir être marqués EXÉCUTÉ. Aucun raccourci toléré.
 
-## Audit `execution_count` du 2026-10-08 (issue #19930)
-
-L'audit `scripts/notebook_tools/check_exec_sequence.py` au commit `4b2cce7ab6` (2026-10-08, c.128) a identifié **38 carnets `QC-Py-*` en statut `PARTIAL`** dans ce dossier. Le statut `PARTIAL` (au lieu de `CLEAN` ou `DIRTY`) traduit une séquence `execution_count` qui n'est pas une série `1..N` strictement monotone : les carnets QuantConnect sont exécutés via **QC Cloud** (MCP `quantconnect/mcp-server`) ou **re-exécutés partiellement** après rebase, et la sémantique du `execution_count` est subordonnée au mode d'exécution. Ce n'est **pas** un défaut d'exécution au sens de la règle C.2 (cellules code avec `execution_count != null` et `outputs` cohérents) — c'est un statut attendu pour cette famille, documenté comme exemption à l'audit de cohérence de séquence. Le critère 4 de l'acceptance #19930 trace ce constat ; le critère 3 (re-exécution fraîche pour normaliser en `1..N`) reste hors-périmètre tant que la plate-forme QC Cloud est la voie d'exécution canonique pour les notebooks `QuantBook`.
-
----
-
 ## Aperçu — le trading quantitatif en images
 
 Chaque notebook de la série rend visible un geste quantitatif distinct, dans une figure extraite des sorties réelles des notebooks. Plutôt qu'une galerie séparée du propos, ces figures sont replacées ci-dessous dans leur progression pédagogique — du premier backtest QuantBook aux agents de renforcement profond — au plus près du concept qu'elles illustrent. La provenance détaillée (cellule, poids, alt-text) est documentée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
