@@ -286,7 +286,57 @@ def test_non_shared_github_author_cannot_satisfy_gate():
     snapshot = _snapshot(None)
     snapshot["comments"].append(_comment(_body(), login="worker-bot"))
     errors = _errors(snapshot)
-    assert any(error.startswith("comment author must") for error in errors)
+    # #17437 -- the message no longer asserts a single login: it names the
+    # observed one and the accepted set (shared login + fleet App identities).
+    # Naming `worker-bot` in the assertion keeps it proving THIS refusal rather
+    # than any refusal that happens to share a prefix.
+    assert any(
+        "is not an accepted dossier author" in error and "worker-bot" in error
+        for error in errors
+    )
+
+
+def test_fleet_app_identity_is_an_accepted_dossier_author():
+    """#17437: a lane signing its dossier under its GitHub App identity passes.
+
+    The migration to per-lane Apps is half done -- the Apps exist and are
+    installed (2026-10-06), the lanes still sign under the shared login. On the
+    day a lane switches, a gate comparing the author to the shared login alone
+    would refuse every dossier it files. The loop walks the whole frozen lane
+    table, so adding a lane to the organ without this gate following is caught
+    here rather than in production.
+    """
+    for lane in mod.gh_identity.APP_DOSSIER_LANES:
+        login = f"{mod.gh_identity.APP_LOGIN_PREFIX}{lane}[bot]"
+        snapshot = _snapshot(None)
+        snapshot["comments"].append(_comment(_body(), login=login))
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, f"{login}: {errors}"
+        assert errors == [], f"{login}: {errors}"
+
+
+def test_app_shaped_login_outside_the_frozen_lanes_is_refused():
+    """The accepted set is CLOSED: a login that only LOOKS like a fleet App is out.
+
+    Accepting by shape (``coursia-lane-*[bot]``) would let any GitHub App whose
+    name merely starts with the prefix sign a dossier -- the check would stop
+    proving anything about who attested. Each entry below is a near-miss that a
+    substring or prefix match would let through.
+    """
+    impostors = (
+        "coursia-lane-po-2099[bot]",   # unknown lane
+        "coursia-lane-web2[bot]",      # plausible, never provisioned
+        "coursia-lane-po-2024",        # right lane, no App suffix
+        "coursia-lane-po-202[bot]",    # prefix of a real lane
+        "coursia-lane-po-2024[bot]x",  # real login plus a trailing character
+    )
+    for login in impostors:
+        snapshot = _snapshot(None)
+        snapshot["comments"].append(_comment(_body(), login=login))
+        errors = _errors(snapshot)
+        assert any(
+            "is not an accepted dossier author" in error for error in errors
+        ), f"{login}: {errors}"
 
 
 # --- #17791 : PR hors flotte (session cloud du mainteneur) -------------------
