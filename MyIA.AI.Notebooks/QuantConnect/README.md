@@ -480,7 +480,7 @@ Après completion de cette série, vous maîtriserez :
 - 🎯 Stratégie momentum multi-actifs avec risk management
 - 🤖 Bot ML directionnel avec Random Forest + XGBoost
 - 🧠 Stratégie LSTM pour prédiction prix court-terme
-- 💡 LLM-augmented strategy combinant GPT-4 + indicateurs
+- 💡 LLM-augmented strategy combinant GPT-5.6 + indicateurs
 - 🏭 Déploiement production en paper trading
 
 ---
