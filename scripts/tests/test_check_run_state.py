@@ -201,3 +201,52 @@ def test_collect_reads_every_page(monkeypatch):
     monkeypatch.setattr(m, "_run_gh", fake_run_gh)
     m.collect(sha="ab")
     assert "--paginate" in seen[0]
+
+
+def test_head_sha_survit_a_un_throttle_graphql(monkeypatch):
+    """Fondateur 2026-10-08 : `gh pr view` (GraphQL) throttlé tuait l'instrument
+    entier, et `pick_idle_grain.py` en concluait « organe non lisible » -- un
+    defaut d'instrument lu comme un defaut de PR. Le head doit rester lisible
+    par REST quand GraphQL refuse."""
+    import scripts.check_run_state as m
+    seen = []
+
+    def fake_run_gh(args):
+        seen.append(args)
+        if args[0] == "pr":          # tout appel GraphQL est throttlé
+            raise RuntimeError("gh pr view 19912... -> 1: GraphQL: API rate limit "
+                               "already exceeded for user ID 3159389.")
+        return '{"head": {"sha": "359ea17fa33b3770346c091aa024c182876d6f5c"}}'
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._head_sha(19912) == "359ea17fa33b3770346c091aa024c182876d6f5c"
+    assert seen and seen[0][0] == "api", "REST doit etre tente AVANT GraphQL"
+    assert not any(a[0] == "pr" for a in seen), "aucun appel GraphQL sous throttle"
+
+
+def test_head_sha_replie_sur_graphql_si_rest_indisponible(monkeypatch):
+    """Cas inverse : l'endpoint REST tombe (jeton sans scope `pulls`), le repli
+    GraphQL doit rendre le meme SHA. La redondance va dans les deux sens."""
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        if args[0] == "api":
+            raise RuntimeError("gh api repos/.../pulls/19912... -> 1: Not Found")
+        return '{"headRefOid": "359ea17fa33b3770346c091aa024c182876d6f5c"}'
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._head_sha(19912) == "359ea17fa33b3770346c091aa024c182876d6f5c"
+
+
+def test_head_sha_leve_quand_les_deux_chemins_tombent(monkeypatch):
+    """Un instrument qui ne peut pas lire doit LE DIRE (exit 2 en amont), pas
+    rendre un SHA vide : c'est la garantie que l'echec ne redevient pas
+    silencieux."""
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        raise RuntimeError(f"gh {args[0]} ... -> 1: down")
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    with pytest.raises(RuntimeError):
+        m._head_sha(19912)
