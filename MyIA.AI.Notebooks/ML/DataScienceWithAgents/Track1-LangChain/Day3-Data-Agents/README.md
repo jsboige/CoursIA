@@ -8,10 +8,10 @@ La **Journée 3** clôt le track LangChain : les agents deviennent capables de *
 
 | Lab | Sujet | Concept-phare |
 |-----|-------|---------------|
-| [Lab 4 — Data Wrangling](Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | nettoyer un jeu de données « sale » réaliste | Pandas au service de la robustesse |
-| [Lab 5 — Viz & ML](Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | exploration visuelle puis classification scikit-learn | la visualisation guidant le modèle |
-| [Lab 6 — First Agent](Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | construire son premier agent LangChain | les 4 composants : LLM, Outils, Prompt, Exécuteur |
-| [Lab 7 — Data Analysis Agent](Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | agent répondant en langage naturel sur un DataFrame | l'agent comme interface d'analyse |
+| [Lab 4 — Data Wrangling](Labs/Lab4-DataWrangling/Lab4-DataWrangling.html) | nettoyer un jeu de données « sale » réaliste | Pandas au service de la robustesse |
+| [Lab 5 — Viz & ML](Labs/Lab5-Viz-ML/Lab5-Viz-ML.html) | exploration visuelle puis classification scikit-learn | la visualisation guidant le modèle |
+| [Lab 6 — First Agent](Labs/Lab6-First-Agent/Lab6-First-Agent.html) | construire son premier agent LangChain | les 4 composants : LLM, Outils, Prompt, Exécuteur |
+| [Lab 7 — Data Analysis Agent](Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.html) | agent répondant en langage naturel sur un DataFrame | l'agent comme interface d'analyse |
 
 ## Prérequis
 

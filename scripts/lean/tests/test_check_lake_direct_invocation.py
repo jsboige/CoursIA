@@ -210,6 +210,55 @@ def test_organ_driver_bare_list_still_flagged(tmp: Path) -> None:
     assert out and out[0][1] == "jeton lake"
 
 
+# --- forme 2bis : executable tenu dans une VARIABLE -------------------------
+#
+# Mesure du 2026-10-09 (#15666 case 1) : les formes 1 et 2 ne lisent que des
+# litteraux, donc `lean_notebook_utils.py` -- qui resout son binaire une fois
+# (`lake = _find_lake()`) puis l'execute (`[lake] + args.split()`) -- etait vu
+# pour 1 voie sur 3. Le positif et le negatif ci-dessous tiennent les deux
+# bouts : la voie variable est vue, et une variable ordinaire ne l'est pas.
+
+def test_shape2bis_variable_from_which(tmp: Path) -> None:
+    out = scan_source("""
+        import shutil, subprocess
+        lake = shutil.which("lake")
+        subprocess.run([lake] + args, cwd=p)
+    """, tmp)
+    assert out and out[0][1] == "jeton lake (variable)"
+
+
+def test_shape2bis_variable_from_lake_helper(tmp: Path) -> None:
+    # La forme reellement ecrite dans lean_notebook_utils.py : le helper porte
+    # `lake` dans son nom, le jeton litteral n'apparait nulle part.
+    out = scan_source("""
+        import subprocess
+        lake = _find_lake()
+        subprocess.run([lake, "env", "lean", str(tmp_path)])
+    """, tmp)
+    assert out and out[0][1] == "jeton lake (variable)"
+
+
+def test_negative_which_probe_alone_stays_clean(tmp: Path) -> None:
+    # La sonde seule (nom lie a un lake, jamais execute) n'est pas une voie :
+    # sinon la forme 2bis fabriquerait exactement le bruit que la forme 2
+    # exclut deja (`shutil.which("lake")`).
+    out = scan_source("""
+        import shutil
+        found = shutil.which("lake")
+    """, tmp)
+    assert not out
+
+
+def test_negative_ordinary_variable_list_head(tmp: Path) -> None:
+    # Tete de liste tenue par une variable NON liee a lake : aucune voie.
+    out = scan_source("""
+        import subprocess
+        tool = "pytest"
+        subprocess.run([tool, "-q"])
+    """, tmp)
+    assert not out
+
+
 # --- classification chemins ------------------------------------------------
 
 def test_is_test_path() -> None:
