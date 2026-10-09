@@ -7,8 +7,11 @@ name: Notebook Cell Source Parses
 # Two instances found firsthand on main:
 #   (a) PR #13287 cell -- `print(f"..."..."...")` -- double-quote outside
 #       f-string substitution (PEP 701 only governs inside `{}`).
-#   (b) GameTheory-03e-Plan-de-deformation-Python.ipynb cell[7] -- a markdown blob
-#       typed `code`, carrying an orphan output from another calculation.
+#   (b) GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb cell[7] --
+#       a markdown blob typed `code`, carrying an orphan output from another
+#       calculation. (Le constat a ete fait sous le nom d'alors,
+#       GameTheory-03e-Plan-de-deformation-Python.ipynb ; le renommage
+#       #16231 / #19484 a depuis deplace le fichier.)
 #
 # This guard:
 #   - parses every Python notebook cell touched by the PR with
