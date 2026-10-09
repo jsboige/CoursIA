@@ -26,7 +26,8 @@ name: quarto-render-list-freshness
 # regenerates `_quarto.yml` on its long-lived refresh branch, exactly as it
 # already does for the catalogue (the model ai-01 designated in the same
 # arbitration). This workflow's `push` trigger on `main` remains the
-# backstop that makes a stale `main` visible if the cron stops running.
+# backstop that surfaces a stale `main` as a notice annotation if the cron
+# stops running -- never as a red check (revue 5475880717 sur #19901).
 #
 # Scope : main-repo notebooks / docs / READMEs. Submodules are separate
 # repos with their own CI.
@@ -109,19 +110,25 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Check _quarto.yml render list against the PR head tree
-        # Le mode `--check` d'origine lit l'arbre du checkout (= la PR head)
-        # et sort exit 1 si la liste project.render est stale. Le regen
-        # necessaire est : `python scripts/regen_quarto_render.py` (sans
-        # argument). On capture la sortie et le rc pour produire un message
-        # d'erreur actionnable dans le check-run -- pas seulement "exit 1".
-        # Un checkout rate ou un crash scanner = rc >= 2 (cf. F4 du voisin
-        # readme-ipynb-links-guard.yml) : on distingue l'un de l'autre.
+        # Le mode `--check` lit l'arbre du checkout (= la PR head) et sort
+        # rc=1 si la liste project.render est stale. Sur stale, le job est
+        # ADVISORY DE FAIT, pas seulement de nom : notice + exit 0 -- modele
+        # catalog-drift.yml (job Detect drift). Prescrire a la lane de
+        # committer _quarto.yml dans sa branche recree les conflits paralleles
+        # que l'arbitrage eteint, et avec le declencheur push, main
+        # resterait rouge apres chaque merge de contenu jusqu'au passage du
+        # cron. Seul rc >= 2 (scanner en panne / checkout rate, cf. F4 du
+        # voisin readme-ipynb-links-guard.yml) reste une faute bloquante.
+        # Les ::error:: qu'imprime le scanner en mode --check (l.635/643 de
+        # scripts/regen_quarto_render.py) sont neutralises en texte brut :
+        # une annotation rouge sur un run vert serait le rouge residuel que
+        # la revue 5475880717 retire.
         run: |
           set -euo pipefail
           : > /tmp/scan_status.txt
           set +e
-          python scripts/regen_quarto_render.py --check 2>&1
-          PY_RC=$?
+          python scripts/regen_quarto_render.py --check 2>&1 | sed 's/^::error::/[quarto-drift] /'
+          PY_RC=${PIPESTATUS[0]}
           set -e
           echo "python_rc=${PY_RC}" >> /tmp/scan_status.txt
           if [ "${PY_RC}" -eq 0 ]; then
@@ -132,14 +139,11 @@ jobs:
             echo "::error::Scanner en panne (rc=${PY_RC}) -- le script ne s'est pas execute."
             exit 1
           fi
-          # PY_RC=1 = stale. Le scanner a deja imprime ::error:: sur stderr
-          # (cf. scripts/regen_quarto_render.py l.632) -- on complete avec
-          # le geste de remediation.
-          echo "::error::_quarto.yml render list is stale (defaut fondateur #19895 : la liste project.render ne reflete pas l'arbre de cette PR)."
-          echo "::error::Geste de remediation :"
-          echo "::error::  python scripts/regen_quarto_render.py"
-          echo "::error::  git add _quarto.yml && git commit -m 'chore(quarto): regen render list'"
-          exit 1
+          # PY_RC=1 = stale : notice + exit 0. La fraicheur de _quarto.yml
+          # sur main est portee par catalog-cron.yml, aucune action n'est
+          # attendue sur cette branche.
+          echo "::notice title=_quarto.yml render list stale (informational)::La liste project.render de _quarto.yml est perimee par rapport a l'arbre de cette branche. Ceci NE BLOQUE PAS la PR : la liste est regeneree sur main par catalog-cron.yml, aucune action n'est attendue sur cette branche."
+          exit 0
 
       - name: Smoke test the regen script
         # Temoin de non-regression : si une PR touche le script lui-meme,
