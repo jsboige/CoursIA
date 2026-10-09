@@ -9,6 +9,12 @@ from AlgorithmImports import *
 # est un choix declare (README.md, table « Choix declares »), pas une lecture du
 # code d'origine. Evaluation : issue #18904.
 #
+# Parametre `layout=775` : reimplementation declaree de la strategie 775 du meme
+# auteur, « Adaptive ETF and Stock Momentum » (v1.0.1 du 28/09/2026, discussion
+# 21465), qui recombine les briques de la 774 : poche d'ETF tactiques (45 %) avec
+# ETF a levier x3 et inverses, poche de momentum des grandes capitalisations (55 %)
+# avec sortie de largeur. Choix declares et regle de verdict : issue #20168.
+#
 # Contrat du rejeu en ombre (#18923, shadow/README.md) : dates par les parametres
 # `start` et `end` sans valeur par defaut ; a chaque cloture, valeur du
 # portefeuille dans le graphique `shadow` (series e0..e4 a tour de role), plus
@@ -26,6 +32,15 @@ DRIFT = 0.25          # coupe une ligne quand son poids depasse sa cible de 25 %
 MIN_ORDER = 0.002     # ordre minimal : 0,2 % du portefeuille
 BUDGETS = {1: 0.35, 2: 0.25, 3: 0.25, 4: 0.15}
 TBILL = "BIL"
+# 775 : poche actions (cle 3) et poche ETF (cle 4) ; les poches 1 et 2 sont vides.
+BUDGETS_775 = {1: 0.0, 2: 0.0, 3: 0.55, 4: 0.45}
+TBILL_775 = "SHV"
+ETF_775 = ("QQQ", "TLT", "IEF", "BSV", "GLD", "SHV", "SMH", "TQQQ", "SQQQ", "SOXL", "PSQ")
+X3 = ("TQQQ", "SOXL", "SQQQ")
+# lev=1 : chaque ETF x3 execute par son equivalent x1 (le signal ne change pas).
+LEV1 = {"TQQQ": "QQQ", "SOXL": "SMH", "SQQQ": "PSQ"}
+BAND_WINDOW = 200     # seances du rang centile du stress (indice de bande, 775)
+OUT_DAYS = 180        # retour d'office apres une sortie de largeur (775)
 
 
 class _ScaledFeeModel(FeeModel):
@@ -91,15 +106,25 @@ class FourSleeve774(QCAlgorithm):
         self.adx_max = float(self.get_parameter("adx_max", "35"))
         self.stress_max = float(self.get_parameter("stress_max", "0.45"))
         self.sizing = self.get_parameter("sizing", "invvol")      # invvol | equal
-        sleeve = self.get_parameter("sleeve", "all")              # all | 1 | 2 | 3 | 4
+        self.layout = self.get_parameter("layout", "774")         # 774 | 775
+        if self.layout not in ("774", "775"):
+            raise ValueError(f"layout inconnu : {self.layout}")
+        base = BUDGETS if self.layout == "774" else BUDGETS_775
+        sleeve = self.get_parameter("sleeve", "all")              # 774 : all | 1 | 2 | 3 | 4
+        if self.layout == "775":                                  # 775 : all | stock | etf
+            sleeve = {"all": "all", "stock": "3", "etf": "4"}[sleeve]
+        lev = self.get_parameter("lev", "3")                      # 775 : 3 | 1
+        if lev not in ("3", "1"):
+            raise ValueError(f"lev inconnu : {lev}")
+        self.exec_map = LEV1 if lev == "1" else {}
         if sleeve == "all":
-            self.budgets = dict(BUDGETS)
+            self.budgets = dict(base)
             self.name_cap = NAME_CAP
         else:
             # Une poche seule recoit tout le portefeuille ; le plafond par ligne suit le
             # meme facteur, pour que la poche garde la composition qu'elle a dans l'ensemble.
-            self.budgets = {k: (1.0 if str(k) == sleeve else 0.0) for k in BUDGETS}
-            self.name_cap = NAME_CAP / BUDGETS[int(sleeve)]
+            self.budgets = {k: (1.0 if str(k) == sleeve else 0.0) for k in base}
+            self.name_cap = NAME_CAP / base[int(sleeve)]
 
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.CASH)
         self.set_security_initializer(_Initializer(
@@ -107,8 +132,9 @@ class FourSleeve774(QCAlgorithm):
         self.settings.automatic_indicator_warm_up = True
 
         self.spy = self.add_equity("SPY", Resolution.DAILY).symbol
-        self.etf = {t: self.add_equity(t, Resolution.DAILY).symbol
-                    for t in ("QQQ", "TLT", "GLD", "PSQ", TBILL)}
+        tickers = ("QQQ", "TLT", "GLD", "PSQ", TBILL) if self.layout == "774" else ETF_775
+        self.etf = {t: self.add_equity(t, Resolution.DAILY).symbol for t in tickers}
+        self.tbill = self.etf[TBILL if self.layout == "774" else TBILL_775]
         self.vix = self.add_data(CBOE, "VIX", Resolution.DAILY).symbol
         qqq = self.etf["QQQ"]
         self.spy_sma200 = self.sma(self.spy, 200, Resolution.DAILY)
@@ -117,6 +143,15 @@ class FourSleeve774(QCAlgorithm):
         self.qqq_sma100 = self.sma(qqq, 100, Resolution.DAILY)
         self.tlt_roc = self.roc(self.etf["TLT"], 21, Resolution.DAILY)
         self.gld_roc = self.roc(self.etf["GLD"], 21, Resolution.DAILY)
+        if self.layout == "775":
+            e = self.etf
+            self.smh_rsi = self.rsi(e["SMH"], 10, MovingAverageType.WILDERS, Resolution.DAILY)
+            self.sqqq_rsi = self.rsi(e["SQQQ"], 10, MovingAverageType.WILDERS, Resolution.DAILY)
+            self.bsv_rsi = self.rsi(e["BSV"], 10, MovingAverageType.WILDERS, Resolution.DAILY)
+            self.ief_roc = self.roc(e["IEF"], 21, Resolution.DAILY)
+            self.vix_sma20 = self.sma(self.vix, 20, Resolution.DAILY)
+        self.breadth_out = None   # 775 : date de la sortie de largeur en cours
+        self.days = self.days_x3 = self.days_out = 0
 
         # Univers d'actions choisi une fois par mois (premiere seance).
         self.broad, self.top100, self.big = [], [], set()
@@ -168,7 +203,7 @@ class FourSleeve774(QCAlgorithm):
         symbols = list(self.broad)
         if not symbols:
             return None
-        h = self.history(symbols, 400, Resolution.DAILY)
+        h = self.history(symbols, 400 if self.layout == "774" else 600, Resolution.DAILY)
         if h is None or h.empty:
             return None
         close = h["close"].unstack(level=0)
@@ -180,12 +215,15 @@ class FourSleeve774(QCAlgorithm):
             return None
 
         last = close.iloc[-1]
-        ema = close.ewm(span=self.ema_len, adjust=False).mean().iloc[-1]
+        ema_full = close.ewm(span=self.ema_len, adjust=False).mean()
+        ema = ema_full.iloc[-1]
         adx = _adx(high, low, close).iloc[-1]
         above = last > ema
         stress = 1.0 - float(above.mean())          # part des titres sous leur EMA
         trend_ok = above & (adx < self.adx_max)
         vol = np.log(close).diff().iloc[-63:].std()
+        if self.layout == "775":
+            return self._stock_775(close, last, ema_full, trend_ok, stress)
 
         b1, b2, b3 = (GROSS * self.budgets[k] for k in (1, 2, 3))
         targets, tbill = {}, 0.0
@@ -225,9 +263,44 @@ class FourSleeve774(QCAlgorithm):
             for s, w in part.items():
                 targets[s] = targets.get(s, 0.0) + w
         if tbill > 0:
-            targets[self.etf[TBILL]] = targets.get(self.etf[TBILL], 0.0) + tbill
+            targets[self.tbill] = targets.get(self.tbill, 0.0) + tbill
         self.log(f"stocks {self.time.date()} stress={stress:.2f} n1={len(picks1)} "
                  f"n2={len(sleeve2)} n3={len(picks3)} tbill={tbill:.3f}")
+        return targets
+
+    def _stock_775(self, close, last, ema_full, trend_ok, stress):
+        """Poche actions de la 775 (#20168) : momentum des grandes capitalisations,
+        mis a l'echelle par l'indice de bande, sortie de largeur avec retour d'office."""
+        b = GROSS * self.budgets[3]
+        # Indice de bande : rang centile du stress du jour parmi les stress quotidiens
+        # des BAND_WINDOW dernieres seances.
+        hist = close.lt(ema_full).iloc[-BAND_WINDOW:].mean(axis=1)
+        band = float((hist <= stress + 1e-12).mean())
+
+        today = self.time.date()
+        if self.breadth_out is None:
+            if stress > self.stress_max:
+                self.breadth_out = today
+        elif stress <= self.stress_max or (today - self.breadth_out).days >= OUT_DAYS:
+            self.breadth_out = None
+        if self.breadth_out is not None:
+            self.log(f"stocks775 {today} stress={stress:.2f} band={band:.2f} out")
+            return {self.tbill: b}
+
+        n = 5 if band >= 0.5 else 10
+        pool = [s for s in close.columns if s in self.big]
+        score = ((last[pool] / close[pool].iloc[-64] - 1)
+                 + (last[pool] / close[pool].iloc[-127] - 1)
+                 + (last[pool] / close[pool].iloc[-253] - 1)) / 3.0
+        cand = score[trend_ok[pool]].dropna()
+        picks = cand[cand > 0].nlargest(n)
+        filled = b * (1.0 - band / 2.0) * len(picks) / n
+        targets = ({s: filled * float(v) / float(picks.sum()) for s, v in picks.items()}
+                   if len(picks) else {})
+        if b - filled > 0:
+            targets[self.tbill] = targets.get(self.tbill, 0.0) + b - filled
+        self.log(f"stocks775 {today} stress={stress:.2f} band={band:.2f} "
+                 f"n={len(picks)}/{n} tbill={b - filled:.3f}")
         return targets
 
     # ---------------------------------------------------------------- poche 4
@@ -270,6 +343,61 @@ class FourSleeve774(QCAlgorithm):
             targets[e[TBILL]] = targets.get(e[TBILL], 0.0) + trend - w_qqq
         return targets
 
+    def _etf_775(self):
+        """Poche ETF de la 775 (#20168) : rotation (70 %) et tendance Nasdaq (30 %)."""
+        b4 = GROSS * self.budgets[4]
+        if b4 <= 0:
+            return {}
+        e = self.etf
+
+        def price(s):
+            return float(self.securities[s].price)
+
+        targets = {}
+
+        def add(ticker, w):
+            if w > 0:
+                s = e[self.exec_map.get(ticker, ticker)]
+                targets[s] = targets.get(s, 0.0) + w
+
+        rot, trend = 0.70 * b4, 0.30 * b4
+
+        # Rotation (70 %).
+        qrsi = self.qqq_rsi.current.value
+        if price(self.spy) > self.spy_sma200.current.value:
+            pick = TBILL_775 if qrsi > 79 else "TQQQ"
+        elif qrsi < 30:
+            pick = "TQQQ"
+        elif self.smh_rsi.current.value < 30:
+            pick = "SOXL"
+        elif price(e["QQQ"]) < self.qqq_sma20.current.value:
+            pick = "SQQQ" if self.sqqq_rsi.current.value > self.bsv_rsi.current.value else "BSV"
+        else:
+            rocs = {"TLT": self.tlt_roc.current.value, "IEF": self.ief_roc.current.value,
+                    "GLD": self.gld_roc.current.value}
+            best = max(rocs, key=rocs.get)
+            pick = best if rocs[best] > 0 else TBILL_775
+        add(pick, rot)
+
+        # Tendance Nasdaq (30 %) : echelle VIX par paliers de 0,25, ratio VIX / moyenne 20 j.
+        vix = price(self.vix)
+        scale = np.floor(min(1.0, 20.0 / vix) * 4) / 4 if vix > 0 else 1.0
+        vsma = self.vix_sma20.current.value
+        ratio = vix / vsma if vsma > 0 else 1.0
+        q = price(e["QQQ"])
+        w = 0.0
+        if q > self.qqq_sma100.current.value:
+            w = trend * scale
+            add("TQQQ", w)
+        elif q > self.qqq_sma20.current.value and ratio < 1.0:
+            w = trend * scale                      # motif de retournement
+            add("QQQ", w)
+        elif ratio > 1.2:
+            w = trend * 0.25
+            add("SQQQ", w)
+        add(TBILL_775, trend - w)
+        return targets
+
     # ---------------------------------------------------------------- seance
 
     def _session(self):
@@ -283,16 +411,21 @@ class FourSleeve774(QCAlgorithm):
                     self.stock_month = month
             else:
                 self.stock_month = month
-        new_etf = self._etf_sleeve()
+        new_etf = self._etf_775() if self.layout == "775" else self._etf_sleeve()
         self._mark(self.etf_targets, new_etf)
         self.etf_targets = new_etf
 
         combined = dict(self.stock_targets)
         for s, w in self.etf_targets.items():
             combined[s] = combined.get(s, 0.0) + w
-        tbill = self.etf[TBILL]
+        tbill = self.tbill
         self.targets = {s: (w if s == tbill else min(w, self.name_cap))
                         for s, w in combined.items()}
+        if self.layout == "775":
+            x3 = {self.etf[t] for t in X3 if t not in self.exec_map}
+            self.days += 1
+            self.days_x3 += any(self.targets.get(s, 0.0) > 0 for s in x3)
+            self.days_out += self.breadth_out is not None
         self._trade()
 
     def _mark(self, old, new):
@@ -364,3 +497,8 @@ class FourSleeve774(QCAlgorithm):
         self.plot("shadow", "fees", self.portfolio.total_fees / self.start_value)
         self.plot("shadow", "turnover", self.traded)
         self.closes += 1
+
+    def on_end_of_algorithm(self):
+        if self.layout == "775" and self.days:
+            self.set_runtime_statistic("days_x3", f"{self.days_x3 / self.days:.4f}")
+            self.set_runtime_statistic("days_out", f"{self.days_out / self.days:.4f}")

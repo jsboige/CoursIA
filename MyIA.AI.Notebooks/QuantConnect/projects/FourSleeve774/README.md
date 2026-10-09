@@ -64,7 +64,9 @@ dimensionnement par la volatilité.
 | `adx_max` | 35 | seuil d'ADX du filtre de tendance |
 | `stress_max` | 0.45 | seuil de stress de largeur |
 | `sizing` | `invvol` | `invvol` ou `equal` |
-| `sleeve` | `all` | `all`, ou `1`, `2`, `3`, `4` : une poche seule, portée à tout le portefeuille, plafond par ligne mis à la même échelle |
+| `sleeve` | `all` | `all`, ou `1`, `2`, `3`, `4` : une poche seule, portée à tout le portefeuille, plafond par ligne mis à la même échelle ; avec `layout=775` : `all`, `stock` ou `etf` |
+| `layout` | `774` | `774` (cette stratégie) ou `775` (réimplémentation déclarée de la 775, [section dédiée](#variante-775--adaptive-etf-and-stock-momentum-20168)) |
+| `lev` | `3` | avec `layout=775` seulement : `1` exécute chaque ETF ×3 par son équivalent ×1 (TQQQ → QQQ, SOXL → SMH, SQQQ → PSQ) |
 
 ## Sorties
 
@@ -135,3 +137,122 @@ La stratégie est gelée à la date du verdict, avec ses paramètres par défaut
 des runs du verdict). Elle est inscrite au
 [registre du suivi en ombre](../../ML-Training-Pipeline/shadow/registry.json) (#18923) sous
 l'identifiant `fs774`, gelée au 2026-10-04 ; premier passage à la première séance de novembre.
+
+## Variante 775 — Adaptive ETF and Stock Momentum (#20168)
+
+La stratégie publique **775** « Adaptive ETF and Stock Momentum » du même auteur (v1.0.1
+du 28/09/2026, [discussion 21465](https://www.quantconnect.com/forum/discussion/21465/))
+recombine des briques de la 774 : une poche d'ETF tactiques (45 %) qui ajoute à la
+rotation des ETF à levier ×3 et inverses sur le Nasdaq-100 et les semi-conducteurs, et
+une poche de momentum des grandes capitalisations (55 %) avec une sortie complète en bons
+du Trésor quand la largeur du marché se dégrade. Son projet publié n'est pas plus lisible
+que celui de la 774 : `layout=775` est écrit d'après la description publique, avec la
+même méthode. Protocole et règle de verdict, inscrits avant le premier backtest :
+issue [#20168](https://github.com/jsboige/CoursIA/issues/20168), fille de la ligue de
+stratégies [#19821](https://github.com/jsboige/CoursIA/issues/19821).
+
+`layout=775` réutilise l'univers, l'EMA, l'ADX, le stress de largeur, l'exécution et le
+contrat `shadow` de la 774 : rien n'est dupliqué. Les titres propres à la 775 ne sont
+souscrits qu'avec ce paramètre ; avec `layout=774` (défaut), le code se comporte comme
+avant. L'entrée gelée `fs774` se rejoue au SHA de son gel.
+
+### Choix déclarés de la 775
+
+| Point laissé ouvert | Choix de cette réimplémentation |
+|---------------------|---------------------------------|
+| Parts des poches | poche actions 55 % (clé 3), poche ETF 45 % (clé 4) ; les poches 1 et 2 de la 774 sont vides |
+| Indice de bande | rang centile du stress du jour parmi les stress quotidiens des 200 dernières séances, recalculés sur l'historique au moment du choix mensuel |
+| Marché agité | indice de bande ≥ 0,5 : 5 lignes au lieu de 10 |
+| Mise à l'échelle | exposition de la poche actions × (1 − indice de bande / 2), de 100 % à 50 % ; le reste en bons du Trésor |
+| Poids dans la poche actions | proportionnels au score de momentum (moyenne des rendements 3, 6 et 12 mois), titres au-dessus de leur EMA avec ADX sous `adx_max` et à score positif ; une place non pourvue va aux bons du Trésor |
+| Sortie de largeur | au choix mensuel, stress > `stress_max` : toute la poche actions en bons du Trésor ; retour au premier choix mensuel où le stress est revenu sous `stress_max`, ou d'office 180 jours calendaires après la sortie |
+| Rotation (70 % de la poche ETF) | SPY au-dessus de sa moyenne 200 jours : TQQQ, ou SHV si le RSI 10 de QQQ dépasse 79 ; sinon TQQQ si le RSI 10 de QQQ est sous 30 ; sinon SOXL si le RSI 10 de SMH est sous 30 ; sinon, QQQ sous sa moyenne 20 jours : celui de SQQQ et BSV qui a le RSI 10 le plus haut ; sinon le meilleur de TLT, IEF et GLD sur 21 séances s'il est positif, SHV sinon |
+| Tendance Nasdaq (30 % de la poche ETF) | QQQ au-dessus de sa moyenne 100 jours : TQQQ à hauteur de min(1, 20 / VIX), par paliers de 0,25 ; motif de retournement (QQQ sous sa moyenne 100 jours, au-dessus de sa moyenne 20 jours, VIX sous sa moyenne 20 jours) : QQQ à la même échelle ; sinon VIX au-dessus de 1,2 fois sa moyenne 20 jours : SQQQ sur un quart de la sous-poche ; le reste en SHV |
+| Bons du Trésor | ETF `SHV` (exempt du plafond de 30 %) |
+| Plafond, rebalancement, ordres, frais | ceux de la 774 (tableau ci-dessus) : plafond de 30 % appliqué après addition des poches, poche actions le premier jour de bourse du mois, poche ETF chaque séance |
+
+Deux contrôles, utilisés seulement par les runs descriptifs : `lev=1` exécute chaque ETF ×3
+par son équivalent ×1 (le signal ne change pas), et `sleeve=etf` / `sleeve=stock` porte
+une poche seule à tout le portefeuille. En fin de backtest, deux statistiques
+d'exécution : `days_x3` (part des séances avec une cible non nulle sur un ETF ×3,
+haussier ou inverse) et `days_out` (part des séances où la poche actions est en sortie
+de largeur).
+
+### Résultats de la 775
+
+Règle de verdict pré-enregistrée dans le corps de #20168 avant le premier backtest.
+Fenêtre 2012-01-03 → 2026-06-30, 3 642 rendements journaliers alignés : les nœuds de
+backtest utilisés arrêtent la fin de fenêtre 90 jours avant la date du jour. Bootstrap
+circulaire par blocs de 21 séances, 10 000 tirages, correction de Holm sur les deux
+comparaisons.
+
+#### Verdict : `NO BEATS` contre les deux références
+
+| Comparaison | Différence de Sharpe | p Holm | IC 95 % | Verdict |
+|-------------|----------------------|--------|---------|---------|
+| 775 − SPY détenu | +0,358 | 0,171 | [−0,137 ; 0,847] | `NO BEATS` |
+| 775 − QQQ détenu | +0,282 | 0,171 | [−0,135 ; 0,711] | `NO BEATS` |
+
+Les deux différences sont positives, mais aucune n'est significative : la règle de
+l'issue classe ce cas `NO BEATS`. Le run à frais doublés et la grille de robustesse ne
+se lancent que si une p Holm passe sous 0,05 ; ils n'ont pas été lancés. Par
+sous-période (descriptif), la différence est positive sur les trois contre SPY ;
+contre QQQ, elle est négative sur 2017-2021 (−0,065).
+
+#### Mesures par run
+
+Sharpe à taux sans risque nul. Frais annuels en % du capital de départ.
+
+| Run | Sharpe | CAGR | Pire baisse | Rotation / an | Frais / an | Ordres |
+|-----|--------|------|-------------|---------------|------------|--------|
+| 775 | 1,268 | 30,96 % | −26,28 % | 15,6 | 0,48 % | 4 428 |
+| 775, ETF ×1 (`lev=1`) | 1,267 | 20,22 % | −23,89 % | 15,3 | 0,18 % | 4 271 |
+| Poche ETF seule (`sleeve=etf`) | 1,124 | 35,65 % | −33,14 % | 21,2 | 0,76 % | 1 850 |
+| Poche actions seule (`sleeve=stock`) | 1,109 | 24,92 % | −35,10 % | 10,4 | 0,16 % | 2 762 |
+| 774 (`layout=774`), même fenêtre | 1,174 | 18,86 % | −21,48 % | 16,0 | 0,30 % | 9 890 |
+| SPY détenu | 0,909 | 14,64 % | −33,68 % | 0,07 | 0,00 % | 3 |
+| QQQ détenu | 0,985 | 19,76 % | −35,05 % | 0,07 | 0,00 % | 3 |
+
+Ce que ces runs montrent :
+
+- **Le levier ×3 ne change pas le Sharpe.** Avec le même signal et chaque ETF ×3
+  exécuté par son équivalent ×1, le Sharpe est le même (différence +0,001,
+  IC 95 % [−0,151 ; 0,158]). Le levier fait passer le CAGR de 20,2 % à 31,0 % et la
+  pire baisse de −23,9 % à −26,3 %. La poche ETF vise un ETF ×3, haussier ou inverse,
+  à 94 % des séances. C'est le constat de #20141 sur une autre stratégie : le levier
+  change l'échelle du rendement, pas sa qualité.
+- **Les poches seules** dépassent chacune leur référence sans significativité : poche
+  ETF − QQQ +0,14 (p 0,27), poche actions − SPY +0,20 (p 0,28). Leur mélange relève le
+  Sharpe (1,27 contre 1,12 et 1,11) et réduit la pire baisse (−26,3 % contre −33,1 %
+  et −35,1 %).
+- **La 775 contre la 774**, sur la même fenêtre : +0,09 de Sharpe (p 0,25, descriptif),
+  avec moins de la moitié des ordres (4 428 contre 9 890).
+- **Sortie de largeur** : la poche actions est entièrement en bons du Trésor pendant
+  15 % des séances.
+- **Écart à la fiche.** Sur 2021-07-01 → 2026-06-30, soit les 5 ans de la fiche décalés
+  de trois mois par la fin de fenêtre : CAGR 37,8 % contre 41,3 % affichés, pire baisse
+  −23,6 % contre −31,5 %. L'écart n'est pas attribuable sans le code d'origine.
+
+#### Non-régression de `layout=774`
+
+Le nouveau `main.py` en `layout=774` a été comparé au `main.py` gelé de la 774
+(empreinte `9b4ff36fc02d…`, celle de l'entrée `fs774`) sur l'année 2020. Résultat :
+mêmes 708 ordres (heure, titre, quantité, prix), même valeur du portefeuille à chacune
+des 253 clôtures (écart maximal nul), mêmes frais. Seul l'ordre de soumission des
+ordres d'une même séance diffère. Comme chaque exécution est rapportée à la valeur du
+portefeuille à son instant, la rotation cumulée bouge d'au plus 0,0028 sur 18,17. Deux
+exécutions du même code gelé diffèrent de la même façon (563 positions sur 708, au plus
+0,0041) : l'écart vient du moteur, pas du changement.
+
+#### Limites
+
+- **Pas de période hors échantillon** : la 775 est publiée en 2026 et sa fiche couvre la
+  même histoire.
+- **Les ETF ×3 américains ne sont pas accessibles** à un investisseur particulier
+  européen (#20141) : un `BEATS` aurait ouvert une transposition, pas une adoption.
+- **Réimplémentation d'après la description publique** : un écart à la fiche peut
+  venir des choix déclarés ci-dessus.
+
+Pas de gel : la règle ne gèle la 775 qu'en cas de `BEATS`. Détail (sous-périodes, version
+du code, chemin des séries) : commentaire de résultat sur
+[#20168](https://github.com/jsboige/CoursIA/issues/20168).
