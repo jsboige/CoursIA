@@ -6,13 +6,14 @@
   "commit_date": "2016-11-02",
   "clone_type": "shallow, local, hors depot"
  },
- "shallow_clone_path": "D:/Dev/probe19197-portalkeeper",
+ "shallow_clone_path": "../../Dev/probe19197-portalkeeper/",
  "target_in_repo": "MyIA.AI.Shared/External/Aima/",
  "inventory_date": "2026-10-08T22:02Z",
  "lane": "myia-po-2024:CoursIA",
  "issue": 19197,
  "parent_epic": 7265,
  "method": "System.Reflection.Metadata (PEReader + MetadataReader sur FileStream) : types, namespaces, versions lus SANS charger les assemblies pour execution. SHA-256 via Get-FileHash. Aucune execution IKVM, aucun binaire tiers embarque dans CoursIA (contrat de la mission #19197).",
+ "counting_convention": "total_types = tous les TypeDefs du binaire (types imbriques et namespace global inclus). Compte entre parentheses par namespace = types top-level uniquement, namespace global exclu. Mesure par sonde SRM (PEReader, 2026-10-09) : l'ecart total_types - somme des namespaces se decompose en imbriques + global — aima-core 69+2, aima-gui 34+2.",
  "provenance_note": "aima-core.dll expose des namespaces Java conserves (aima.core.*) et des namespaces java.* mesures dans la DLL (java.aima.core.environment.map, java.aima.gui.framework) : trace directe d'une compilation IKVM du code Java d'aima-java. Assembly version 0.0.0.0, metadonnees editeur vides.",
  "binaries": [
   {
