@@ -1,18 +1,17 @@
 # Resharp — RE-sharp (Veanes et al, POPL 2025) en attente d'accueil
 
-## État au 2026-10-05
+## État au 2026-10-09
 
 Ce dossier porte le **package compilé** RE-sharp (3 DLLs : `Resharp.dll`, `Resharp.Runtime.dll`, `FSharp.Core.dll`) dans `.deploy/`. RE-sharp est le point d'arrivée 2025 de l'arc SFA de Margus Veanes ([voir la section "Fondements bibliographiques" du README parent](../README.md#fondements-bibliographiques)).
 
 ## Pourquoi pas de notebook d'accueil pour l'instant
 
-Le **papier RE-sharp (POPL 2025) a un PDF structurellement corrompu** sur la machine worker po-2026 au 2026-10-05 (taille disque non-nulle, 0 page extractible par PyMuPDF). Tant qu'une copie lisible n'est pas réacquise sur le disque GDrive, l'accueil pédagogique de RE-sharp ne peut pas être écrit sans inventer des details techniques (anti-régression §D, mandat user 2026-04-26).
+Le **papier RE-sharp (POPL 2025) n'est pas extractible localement** sur la machine worker po-2026 au 2026-10-09 — mais ce n'est pas une propriété du document : le fichier **existe** sur le disque GDrive, et la non-lecture est celle d'un **cache Drive non hydraté** (voir la « Note de lecture » du [README parent](../README.md#fondements-bibliographiques)). Aucune réacquisition n'est nécessaire. L'accueil pédagogique de RE-sharp reste à écrire : il demande de **lire le papier**, ce qui suppose une copie locale extractible, faute de quoi les détails techniques seraient inventés (anti-régression §D, mandat user 2026-04-26).
 
-## Action en attente (issue de suivi à ouvrir par le mainteneur)
+## Action en attente
 
-1. Réacquérir `2025 - Veanes et al - RE-sharp - High-Performance Derivative-Based Regex Matching (POPL).pdf` en version lisible sur le disque GDrive.
-2. Une fois le PDF lisible, créer un notebook d'accueil (`Resharp-01-Introduction-Python.ipynb` ou équivalent) qui démontre l'usage du package compilé sur un cas de matching regex étendu.
-3. Le présent dossier `Resharp/` reste en place avec ses DLLs, en attendant le notebook d'accueil.
+1. Lire le papier RE-sharp (POPL 2025) depuis une copie locale extractible, puis créer un notebook d'accueil (`Resharp-01-Introduction-Python.ipynb` ou équivalent) qui démontre l'usage du package compilé sur un cas de matching regex étendu.
+2. Le présent dossier `Resharp/` reste en place avec ses DLLs, en attendant le notebook d'accueil.
 
 ## Pourquoi ne pas retirer les DLLs maintenant
 
