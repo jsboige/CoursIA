@@ -15,7 +15,10 @@ classes observed:
     of ``[1.0, 1.0, ...]`` even when the cell computes the same values.
   - Float format drift: NumPy 1.x prints ``[1.0, 1.0, 1.0]``; NumPy 2.x
     prints ``[1.0, 0.9999999999999999, 1.0]``. The values are within
-    1 ULP but the textual signature differs.
+    1 ULP; since #19961 (bruit assume, cf ``_signatures_equivalent``)
+    such numerically-equal-within-1-ULP signatures are NOT drift. Only a
+    numeric difference beyond the tolerance -- or a signature that does
+    not parse as numbers and differs textually -- is flagged.
   - Machine path leak: a fresh execution under a different temp dir
     injects new ``MACHINE_PATH`` strings (covered by
     check_output_failure_text.py, not this gate).
@@ -42,6 +45,7 @@ shows kernel or float-format drift without a documented justification.
 
 import argparse
 import json
+import math
 import os
 import re
 import subprocess
@@ -163,6 +167,87 @@ def float_signatures(nb):
         joined = "".join(text_parts)
         sigs.append(tuple(FLOAT_ARRAY_RE.findall(joined)))
     return tuple(sigs)
+
+
+def _parse_array_values(array_text):
+    """Parse one matched array string into a tuple of numbers.
+
+    Returns None when ANY token fails to parse (fail-closed: the caller
+    then falls back to textual comparison, never to a false equivalence).
+    Complex tokens (trailing ``j``) are parsed with ``complex()``.
+    """
+    inner = array_text.strip().lstrip("[(").rstrip("])")
+    values = []
+    for token in inner.split(","):
+        token = token.strip()
+        try:
+            values.append(complex(token) if token.endswith("j") else float(token))
+        except ValueError:
+            return None
+    return tuple(values)
+
+
+def _within_ulp(a, b, max_ulp=1):
+    """Vrai quand a et b sont egaux a ``max_ulp`` ULP pres (#19961).
+
+    Reels : marche ``nextafter`` bornee a ``max_ulp`` pas (exactitude de la
+    mesure, pas une approximation ``isclose``). Complexes : chaque partie
+    dans la meme tolerance. NaN == NaN est accepte (deux executions du meme
+    calcul non-branche produisent NaN toutes deux) ; infini exige l'egalite
+    exacte et le meme signe.
+    """
+    if isinstance(a, complex) or isinstance(b, complex):
+        try:
+            ar, ai = (a.real, a.imag) if isinstance(a, complex) else (a, 0.0)
+            br, bi = (b.real, b.imag) if isinstance(b, complex) else (b, 0.0)
+        except AttributeError:
+            return False
+        return (_within_ulp(ar, br, max_ulp) and _within_ulp(ai, bi, max_ulp))
+    if math.isnan(a) and math.isnan(b):
+        return True
+    if math.isnan(a) or math.isnan(b):
+        return False
+    if math.isinf(a) or math.isinf(b):
+        return a == b
+    if a == b:
+        return True
+    lo, hi = (a, b) if a < b else (b, a)
+    # La marche nextafter couvre aussi les sous-normaux depuis 0.0 :
+    # nextafter(0.0, inf) est le plus petit sous-normal, et chaque pas
+    # suivant avance d'un sous-normal -- pas de cas special.
+    current = lo
+    for _ in range(max_ulp):
+        current = math.nextafter(current, math.inf)
+        if current >= hi:
+            return True
+    return current >= hi
+
+
+def _signatures_equivalent(base_sig, head_sig, max_ulp=1):
+    """Compare deux signatures float au sens de la decision #19961.
+
+    Bruit assume : deux signatures dont les valeurs sont egales a 1 ULP pres
+    ne sont PAS un drift -- c'est l'extension a la signature float de la
+    doctrine #17371 (le drift de patch ne change pas la semantique, les
+    re-execs cross-machines de la flotte produisent des byte-repr differents
+    a 1 ULP pres, mesure #19961 : base 3.13.13 vs head 3.13.3 sur ICT-23).
+    Un token qui ne parse pas retombe sur l'egalite TEXTUELLE de la paire
+    (fail-closed) : on ne fabrique jamais une equivalence non mesuree.
+    """
+    if len(base_sig) != len(head_sig):
+        return False
+    for b_text, h_text in zip(base_sig, head_sig):
+        if b_text == h_text:
+            continue
+        b_vals = _parse_array_values(b_text)
+        h_vals = _parse_array_values(h_text)
+        if b_vals is None or h_vals is None:
+            return False
+        if len(b_vals) != len(h_vals):
+            return False
+        if not all(_within_ulp(b, h, max_ulp) for b, h in zip(b_vals, h_vals)):
+            return False
+    return True
 
 
 def kernel_info(nb):
@@ -396,7 +481,7 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
             h_idx = head_ids[cid]
             b = base_sig[b_idx] if b_idx < len(base_sig) else ()
             h = head_sig[h_idx] if h_idx < len(head_sig) else ()
-            if b != h:
+            if b != h and not _signatures_equivalent(b, h):
                 diffs.append(cid)
         # Added code cells (only in head), reported ONLY when they actually
         # carry a float-array signature (#17232). An added cell with no
@@ -422,7 +507,7 @@ def _diff_signatures_ordinal(base_sig, head_sig):
     for i in range(n):
         b = base_sig[i] if i < len(base_sig) else ()
         h = head_sig[i] if i < len(head_sig) else ()
-        if b != h:
+        if b != h and not _signatures_equivalent(b, h):
             diffs.append(i)
     return diffs
 
