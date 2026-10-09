@@ -1902,8 +1902,9 @@ TRANCHE18: list[Guard] = [
 #
 # Forme moteur : garde ABSOLU, non-delta (meme raison que TRANCHE18) -- il
 # mesure l'arbre de HEAD, pas une difference base/PR. Le pre-controle
-# `--self-test` epingle le discriminant en fixture (4 cas verts, 3 rouges) et
-# gate le garde comme le ferait un step distinct du workflow d'origine.
+# `--self-test` epingle le discriminant en fixture (5 cas verts, 4 rouges, dont
+# le reflow nom/compte de la reserve 2 de #20076) et gate le garde comme le
+# ferait un step distinct du workflow d'origine.
 #
 # Controle positif MESURE a la pose : `feature/otca-real-grid` (#20019,
 # ouverte) porte Pillars.lean a 348 lignes quand la cellule `50dcfe8c` de

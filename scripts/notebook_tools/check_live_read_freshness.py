@@ -90,6 +90,11 @@ REGISTRY = Path(__file__).resolve().parent / "live_read_registry.json"
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 COUNT_RE = re.compile(r"(\d[\d   ]*)\s*lignes?\b", re.IGNORECASE)
 CITE_RE = re.compile(r"\bL\s*(\d+)\s*:\s*(.*)")
+# #20076 (reserve 2) : un nom de fichier dans la sortie, pour distinguer « la
+# ligne voisine porte le compte du fichier declare » de « elle porte celui d'un
+# AUTRE fichier ». Exige une lettre avant le point, donc un decimal (« 0.9326 »)
+# n'est pas pris pour un nom de fichier.
+FILEISH_RE = re.compile(r"[\w/-]*[A-Za-z_][\w/-]*\.[A-Za-z]\w{0,7}")
 
 
 def _norm(text: str) -> str:
@@ -115,15 +120,46 @@ def cell_output_text(cell: dict) -> str:
 
 
 def count_claims(text: str, basename: str) -> list[tuple[int, str]]:
-    """Nombres de lignes affirmes par la sortie, accoles au nom du fichier lu."""
+    """Nombres de lignes affirmes par la sortie, accoles au nom du fichier lu.
+
+    L'accollement tolere UNE ligne d'ecart (#20076, reserve 2). Une sortie
+    reflowee peut porter le nom du fichier sur une ligne et son compte sur la
+    suivante (« Pillars.lean » puis « 348 lignes »), ou les repartir dans un
+    tableau a deux colonnes ; exiger l'identite stricte de ligne laissait alors
+    le compte NON confronte, et ``NO_INVARIANT`` ne rattrapait rien puisque les
+    citations rendaient ``citations(text)`` non vide. L'organe rendait FRESH
+    sur un compte perime par simple mise en forme -- le defaut meme qu'il ferme.
+
+    La ligne voisine n'est retenue que si elle ne nomme AUCUN autre fichier :
+    sans cette borne, le compte d'un fichier voisin serait attribue au fichier
+    declare (cf ``test_count_claims_scoped_to_basename``). Le compte est
+    dedoublonne : une meme ligne voisine de deux occurrences du basename n'est
+    confrontee qu'une fois.
+    """
+    lines = text.splitlines()
     claims: list[tuple[int, str]] = []
-    for line in text.splitlines():
-        if basename not in line:
-            continue
+    seen: set[tuple[int, str]] = set()
+
+    def _add(line: str) -> None:
         for m in COUNT_RE.finditer(line):
             digits = re.sub(r"\D", "", m.group(1))
-            if digits:
-                claims.append((int(digits), _norm(line)))
+            if not digits:
+                continue
+            item = (int(digits), _norm(line))
+            if item not in seen:
+                seen.add(item)
+                claims.append(item)
+
+    for i, line in enumerate(lines):
+        if basename not in line:
+            continue
+        _add(line)
+        for j in (i - 1, i + 1):
+            if not 0 <= j < len(lines):
+                continue
+            if any(Path(t).name != basename for t in FILEISH_RE.findall(lines[j])):
+                continue
+            _add(lines[j])
     return claims
 
 
@@ -309,11 +345,13 @@ def _self_test() -> int:
         ("L2: def unitcellInitial", 0),
         ("L3: | x | y |", 0),
         ("L1: alpha ...", 0),
+        ("fichier\n3 lignes", 0),     # #20076 : nom et compte sur deux lignes
     ]
     bad = [
         ("fichier (4 lignes)", 1),
         ("L2: def otcaInitial", 1),
         ("L9: alpha", 1),
+        ("fichier\n4 lignes", 1),     # idem, compte faux : doit rougir
     ]
     failures = 0
     for text, expected in ok + bad:

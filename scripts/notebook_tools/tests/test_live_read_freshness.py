@@ -50,6 +50,27 @@ def test_count_claims_ignores_line_without_basename():
     assert count_claims("Life.lean            253 lignes", "Pillars.lean") == []
 
 
+def test_count_claims_tolerates_reflowed_output():
+    """#20076 reserve 2 : nom du fichier et compte sur deux lignes VOISINES."""
+    text = "Fichier lu : Conway/Life/Pillars.lean\ncompte : 348 lignes\n"
+    assert count_claims(text, "Pillars.lean") == [(348, "compte : 348 lignes")]
+
+
+def test_count_claims_adjacent_line_naming_another_file_is_not_claimed():
+    """La borne du repli : le compte d'un fichier VOISIN n'est pas attribue au
+    fichier declare. Sans elle, « Life.lean 253 lignes » voisinerait le nom et
+    serait confronte au mauvais fichier."""
+    text = "Pillars.lean\nLife.lean            253 lignes\n"
+    assert count_claims(text, "Pillars.lean") == []
+
+
+def test_count_claims_does_not_read_a_decimal_as_a_filename():
+    """Le garde de la borne ne doit pas prendre un decimal pour un fichier :
+    sinon toute ligne voisine portant « 0.9326 » serait ecartee."""
+    text = "Pillars.lean\nR^2 = 0.9326, soit 348 lignes\n"
+    assert count_claims(text, "Pillars.lean") == [(348, "R^2 = 0.9326, soit 348 lignes")]
+
+
 def test_citations_extract_line_and_text():
     text = "  L 87: | `otcametapixel.rle` | 2058 x 2058 |\n  L116: def otcaInitial : Grid := ([] : Grid)\n"
     assert citations(text) == [

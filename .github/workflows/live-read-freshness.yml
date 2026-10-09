@@ -20,9 +20,12 @@ name: Live-read freshness
 # fabrique. Sur `main`, au meme instant, l'organe est vert.
 #
 # Livre directement dans la voie rapide (#12567) : le verdict par-PR est
-# rendu par `fast-lane-shadow.yml` via l'entree TRANCHE2 de
-# `scripts/ci/fast_lane_registry.py`. Ce fichier ne garde que
-# `workflow_dispatch` (relance manuelle).
+# rendu par `fast-lane-shadow.yml` via l'entree TRANCHE20 de
+# `scripts/ci/fast_lane_registry.py`, et ce verdict **BLOQUE le merge**
+# (`blocking=True`, garde ABSOLU non-delta) -- le mot « shadow » nomme le
+# vehicule d'execution, pas le regime du verdict ; un lecteur qui ne lit que ce
+# nom le prendrait pour advisory. Ce fichier ne garde que `workflow_dispatch`
+# (relance manuelle).
 
 on:
   workflow_dispatch:
