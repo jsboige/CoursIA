@@ -21,6 +21,14 @@ Le contraste par lane rend le mécanisme lisible : la lane au plus gros volume s
 
 **Ce durcissement normatif substantiel exigeait un sign-off user** conformément à CLAUDE.md §A : la PR #15793 qui l'a porté ne se self-merge pas. Les corrections non normatives suivent la même PR/review, sans sign-off supplémentaire.
 
+## Ordre de session — pourquoi un ORDRE et pas seulement un plancher (R0, mandat user 2026-09-19)
+
+Déporté depuis la règle (tranche #15204, 2026-10-06 ; source : lignes 11-13 de `.claude/rules/proactive-coordination.md` avant déport, commit 70b0932df5). La règle garde la prescription ; ce qui suit est la justification mesurée.
+
+La règle 1 compte les grains *livrés* — un compte qu'on satisfait en empilant du neuf par-dessus du non-fini. Mesure du 2026-09-19 sur **213 PRs ouvertes** : **104 CLEAN** (zéro conflit, mergeables sur-le-champ) et **174 sans aucune review**. Le dépôt ne souffre pas d'un manque de grains ouverts ; il souffre de grains ouverts qui n'atterrissent pas. Verbatim user : « *nombreuses sont celles qui n'auront pas besoin de plus de 4-5 commits de plus, donc si vous travaillez bien, les PRs en souffrance devraient pouvoir partir en moins de 24 h. Or ce n'est pas ce qu'on observe.* »
+
+Sur le tri par coût de dossier : une PR **CLEAN et sans review** ne demande qu'une attestation tierce — c'est le grain le moins cher du dépôt. Une BLOCKED demande un diagnostic. L'ancienneté ordonne **à l'intérieur** du sous-ensemble le moins cher ; elle ne le choisit pas.
+
 ## Backlog pickup — sources autorisees (ordre de priorite decroissant)
 
 Wakeup sans dispatch neuf : prendre la **premiere source non-vide** et la consommer comme une **file sequentielle de grains atomiques**. Chaque grain garde sa PR propre ; une PR livree ne termine pas la session et la lane poursuit tant que sa fenetre est active.
@@ -172,6 +180,16 @@ Filtres disponibles, tous locaux et combinables : `--exclude-issue` répétable 
 La pondération du tirage porte **deux axes indépendants** (mesurés non redondants, pearson r = 0,334) : l'**âge de création** (la traîne, là où le compte s'accumule) et le **délaissement** — jours depuis la dernière activité, colonne `inact`. Le second est ce qui atteint « les EPICs qui méritent d'être conduites à leur terme et sont souvent délaissées devant les sujets du moment » : un sujet intouché depuis 53 j pèse ~2,4× un sujet du jour — assez pour remonter, trop peu pour devenir la seule veine.
 
 Mesure du 2026-08-20 sur les 140 ouvertes : **91 avaient bougé dans les 24 h**, et sur les 12 les plus inactives, **9 étaient des EPICs**. C'est cette asymétrie qui a fait du tirage systématique le premier geste de chaque cycle (mandat user 2026-08-20) : tant que la sélection par défaut restait « ce que je vois », elle restait « ce qui est récent » — les sujets menés à leur terme étaient toujours ceux du moment, et les EPICs de fond ne l'étaient jamais.
+
+## Umbrella #11900 — récits mesurés et sémantique complète de l'organe
+
+Déporté depuis la règle (tranche #15204, 2026-10-06 ; source : lignes 36, 40, 54-58 de `.claude/rules/proactive-coordination.md` avant déport). La règle garde la prescription HARD, les trois surfaces et la commande de l'organe.
+
+**Deux récits fondateurs.** (a) Deux tirages consécutifs ont remonté deux EPICs entièrement actionnables dont le paragraphe bloquant avait survécu à sa propre résolution (PR déjà mergée ; décision déjà prise par le user le jour même). (b) #2874 et #7357 : les deux conditions bloquantes étaient levées depuis **68 j et 31 j** (tableau complet : [picker-delaisse-detail.md](picker-delaisse-detail.md)).
+
+**Sémantique complète de `check_umbrella_freshness.py`.** `SATURATED` (tous les enfants cités sont fermés) est le **seul** verdict qui prend la sortie **1** — c'est la seule lecture non ambiguë. Un chemin cité introuvable sort en **avertissement**, jamais en rouge : il a pu légitimement déménager. `UNRESOLVED` (aucun enfant cité) reste **advisory** et renvoie à la surface 3 (la demande de décision, non automatisable).
+
+**Résiduel `INTRINSIC` sous `FRESH` (mesure du 2026-09-15).** Les 8 `sorry` distincts de `knot_lean`, que #1453 désigne comme « le grain DEEP de cet EPIC », portent chacun, dans le fichier, l'annotation qui les déclare hors d'atteinte (`decades` away / *not in Mathlib*). Une EPIC `FRESH` peut n'avoir que du résiduel de ce type : la lecture du contenu reste due au-delà du verdict de l'organe.
 
 ## L721 — stale-tracker guard (leçon complète)
 

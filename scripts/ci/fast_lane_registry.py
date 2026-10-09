@@ -1742,6 +1742,57 @@ TRANCHE17: list[Guard] = [
 
 
 # ---------------------------------------------------------------------------
+# TRANCHE 19 (#19374) -- garde CI contre les blobs CRLF ou mixtes sous
+# attribut ``eol=lf`` (classe de #19287). Un blob CRLF ou mixte sous un
+# attribut ``text eol=lf`` fait paraitre le fichier modifie apres chaque
+# checkout, sur toutes les machines : git renormalise a la lecture mais
+# ne reecrit jamais le blob. ``merge_ready`` et ``check_clean_cycle_exit``
+# voient alors sale le clone principal de chaque lane. Le correctif
+# ponctuel est ``git add --renormalize <fichier>`` (cf #19373) ; ce garde
+# empeche la prochaine de la classe.
+#
+# Renomme TRANCHE18 -> TRANCHE19 au suivi d'integration : cette tranche
+# (2026-10-08) avait pris le nom ``TRANCHE18`` deja porte plus bas dans le
+# module par la tranche docs-index (#19260, 2026-10-06) -- Python execute
+# le module de haut en bas, la seconde affectation ecrasait la premiere,
+# et ``eol-blob-guard`` etait enregistree mais muette (ni dans l'agregat
+# du moteur, ni dans ``absorbed_guards`` : ``vars()`` ne voit que la
+# valeur finale). Regle registry : le POSTERIEUR cede l'index (cf
+# renommages TRANCHE9 -> TRANCHE10 puis TRANCHE12 -> TRANCHE15). Le test
+# qui ferme la classe :
+# ``test_fast_lane.py::test_no_module_level_name_is_assigned_twice_in_the_registry``.
+#
+# Detection : ``git diff --name-only --diff-filter=AM origin/main...HEAD``
+# puis ``git ls-files --eol -- <path>`` par chemin, awk-equivalent en
+# Python. Un blob CRLF voulu (.bat, fixture) se declare par ``eol=crlf``
+# ou ``-text`` dans ``.gitattributes``, jamais par exemption.
+#
+# `absorbed=True` (#19374, suivi d'integration) : ce garde n'a pas de
+# workflow d'origine -- le job always-on lance `fast_lane.py --shadow`,
+# et `effective_shadow = args.shadow and not guard.absorbed`. Sans
+# absorption, le garde sortait sous `fast-lane (ombre): eol-blob-guard`
+# avec une conclusion NEUTRE et n'entrait pas dans `blocking_failed` :
+# `blocking=True` etait une declaration sans effet. C'est la classe de
+# defaut que `test_aucun_garde_bloquant_n_est_inert_sans_declaration`
+# ferme dans `test_fast_lane.py`. Verifie vert sur `main` avant
+# absorption (`--diff origin/main...HEAD` -> rc=0) ; l'absorption ne
+# rougit aucune PR par dette heritee.
+# ---------------------------------------------------------------------------
+TRANCHE19: list[Guard] = [
+    Guard(
+        name="eol-blob-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[],
+        argv=["python", "scripts/ci/check_eol_blobs.py"],
+        blocking=True,
+        absorbed=True,
+        needs_base=True,
+        warn_rc=(2,),
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
 # TRANCHE 18 -- couverture de l'index `docs/` (organe #13748).
 #
 # Origine : reserve de revue Hermes sur #19260 -- « l'organe n'est cable nulle

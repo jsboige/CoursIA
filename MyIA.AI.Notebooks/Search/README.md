@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: Search
 pedagogical_count: 157
-breakdown: Applications=59, Part1-Foundations=43, Part4-Metaheuristics=35, Part2-CSP=18, Discrepancy=2
-maturity: BETA=143, ALPHA=9, DRAFT=5
+breakdown: Applications=49, Part1-Foundations=45, Part4-Metaheuristics=35, Part2-CSP=18, Part5-Frontieres=10
+maturity: BETA=142, ALPHA=9, DRAFT=6
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -209,7 +209,7 @@ CSP-8  Temporal            ───> Temporal Planning, STP
 
 ## Parité .NET ⇄ Python
 
-Cette série est née **Python d'abord** pour son cœur pédagogique (recherche, CSP, applications), avec la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) comme territoire .NET natif (au-dessus de MetaGeneticSharp). Le **marathon parité [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956)** (juin–juillet 2026) a ensuite généralisé le binôme `Python ⇄ C#` à l'ensemble du cœur curriculaire : jumeaux C# des fondements (Part 1), de la programmation par contraintes (Part 2), de la recherche heuristique avancée et de 20 cas d'application. Depuis, des compagnons et audits App-21 à App-33 ont enrichi le dossier Applications — la galerie pédagogique et les audits de garanties, ces derniers formant la [Partie 5 — frontières](Part5-Frontieres/README.md) (séquencement #19253) ; le tableau distingue donc le cœur en binômes de l'inventaire actuel, dont les volumes sont portés par le catalogue (`CATALOG-STATUS`).
+Cette série est née **Python d'abord** pour son cœur pédagogique (recherche, CSP, applications), avec la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) comme territoire .NET natif (au-dessus de MetaGeneticSharp). Le **marathon parité [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956)** (juin–juillet 2026) a ensuite généralisé le binôme `Python ⇄ C#` à l'ensemble du cœur curriculaire : jumeaux C# des fondements (Part 1), de la programmation par contraintes (Part 2), de la recherche heuristique avancée et de 20 cas d'application. Depuis, des compagnons et audits App-21 à App-33 ont enrichi le dossier Applications — la galerie pédagogique (App-21 à App-27) et les audits de garanties devenus la [Partie 5 — frontières](Part5-Frontieres/README.md) ; le tableau distingue donc le cœur en binômes de l'inventaire actuel, dont les volumes sont portés par le catalogue (`CATALOG-STATUS`).
 
 ### Couverture actuelle
 
@@ -218,7 +218,7 @@ Cette série est née **Python d'abord** pour son cœur pédagogique (recherche,
 | [Part1-Foundations](Part1-Foundations/) | 23 (Search-1 à Search-11, Search-2b, Search-2c, Search-03b à Search-03e, Search-09b à Search-09c, Search-11c, Search-11d, Search-12a, Search-13a) | Python (22) + C# natif (Search-2c QuikGraph) | **15 jumeaux C#** (Search-1 à 11, 2b, 03b/03c/03d) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET | **9 binômes complets** — marathon achevé, voir [bilan final](#marathon-epic-4956) |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 35 (25 à la racine + 10 dans `MGS-vs-mealpy/`) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
-| [Applications](Applications/) | 20 cas cœur (App-1 à App-20) + galerie de compagnons (volumes au catalogue) | Python + .NET | **20 binômes complets** + compagnons et audits |
+| [Applications](Applications/) | 20 cas cœur (App-1 à App-20) + galerie App-21–27 (volumes au catalogue) | Python + .NET | **20 binômes complets** + compagnons App-21 à App-33 |
 | [Part5-Frontieres](Part5-Frontieres/) | Audits de garanties et distillations de preprints (volumes au catalogue) | Python | prolonge Part1/Part2/Part4 et les projets étudiants PrCon |
 | Racine | 0 | — | (aucun — voir [_archive/](_archive/) pour les anciens notebooks racine) |
 
@@ -289,6 +289,8 @@ Au-delà de la Partie 2, le même marathon a livré les jumeaux C# de la **Parti
 ### Livres de référence
 
 - [AIMA - Russell & Norvig (4th ed.)](http://aima.cs.berkeley.edu/) - Chapitres 3-6
+- [Convex Optimization - Boyd & Vandenberghe (Cambridge UP, 2004)](https://web.stanford.edu/~boyd/cvxbook/) - Cadre unificateur LP/QP/SOCP/SDP ; le LP de Search-9 en est le cas linéaire. Archive : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Search\2004 - Convex Optimisation.pdf`
+- [Heuristic Search: Theory and Applications - Edelkamp & Schrödl (Morgan Kaufmann, 2012)](https://www.elsevier.com/books/heuristic-search-theory-and-applications/edelkamp/978-0-12-372512-7) - Le partage de coûts (cost partitioning) qui sous-tend la PDB additive. Ancre page mesurée sur l'index du PDF archivé : *action cost partitioning* / *pattern database partitioning*, **p. 312** (exemplaire tronqué : seule l'index pp. 826-835 est lisible ; chapitre 8 *Combining Heuristic Functions* cohérent avec la TOC de l'édition, à confirmer sur un exemplaire complet).
 - [Constraint Processing - Rina Dechter (2003)](https://www.cambridge.org/core/books/constraint-processing/)
 - [Handbook of Constraint Programming (2006)](https://www.elsevier.com/books/handbook-of-constraint-programming/)
 - [The CP-SAT Primer (Krupke & Schmitt, 2023, CC-BY)](https://d-krupke.github.io/cpsat-primer/) - Fonctionnement interne de CP-SAT : presolve, LNS, hints de solution, portfolio de workers (lecture en ligne gratuite)
@@ -402,7 +404,8 @@ Search/
 │       └── App-22-AlgorithmSelection-Python.ipynb  # Sélection empirique : 3 jeux, 13 familles / 14 étiquettes, Pareto + préférences (PR IS #42)
 │
 │
-├── Part5-Frontieres/                     # Partie 5 — frontières : audits de garanties et distillations de preprints (carte #19253 ; ce lot pose Frontieres-01 à 06 et 10)
+├── Part5-Frontieres/                     # Partie 5 — frontières : audits de garanties et distillations de preprints (Frontieres-01..10, carte #19253)
+│
 ├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
 ├── Part4-Metaheuristics/                  # Partie 4 (35 notebooks C# .NET 9 : 25 à la racine + 10 sous MGS-vs-mealpy/) ; consomme le sous-module MetaGeneticSharp
 │
@@ -587,7 +590,7 @@ Le hub Search alignait une riche prose sur la double approche *exploration syst�
 | QC | `kelly_lean` (#5047) | Kelly criterion + mean-variance bound | [QC-Py-10-Risk-Portfolio-Management](../QuantConnect/Python/QC-Py-10-Risk-Portfolio-Management.ipynb) (Kelly sizing) |
 | GameTheory | `game_theory_lean/SocialChoice` (lakes standalone `social_choice_lean` #5050 + `cooperative_games_lean` absorbés post-#4365, contenue dans `game_theory_lean/`) | Arrow + Sen voting | [GameTheory-15-CooperativeGames-Python](../GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) |
 | GameTheory | `game_theory_lean/CooperativeGames/Shapley.lean` (lake `cooperative_games_lean` supprimé post-#4365, contenu absorbé) | Bondareva-Shapley 0 sorry #3954 | [GameTheory-13-ImperfectInfo-CFR-Python](../GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) |
-| SymbolicAI | `argumentation_lean` (#5043 MERGED) | Tweety Preferred extensions + Dung framework | [Tweety-3-Dung-Csharp](../SymbolicAI/Tweety/Tweety-3-Dung-Csharp.ipynb) (Dung Preferred semantics) |
+| SymbolicAI | `argumentation_lean` (#5043 MERGED) | Tweety Preferred extensions + Dung framework | [Tweety-03-Dung-CSharp](../SymbolicAI/Tweety/Tweety-03-Dung-CSharp.html) (Dung Preferred semantics) |
 
 ```mermaid
 flowchart LR
@@ -621,7 +624,7 @@ La double culture **simulation + preuve formelle** est précisément ce que la [
 
 Sans cette section, le chainage vers ML (perceptron 0 sorry comme borne duale de la convergence A\* sur graphes pondérés), QC (Kelly, borné inférieurement par l'arbitrage risque/rendement), GameTheory (Arrow, posant les conditions sur les procédures de vote), Probas (PAC iter-2, formalisant pourquoi un échantillon suffit) et SymbolicAI (argumentation, formalisant la sémantique preferred) restait invisible depuis Search.
 
-**Note sur les références notebooks** : six références historiques de cette section ont suivi les renumérotations du dépôt (cf issue #5065) : ML-2.3-Perceptron → `Perceptron.lean` (lake, pas de notebook pédagogique correspondant), Infer-3-ProbabilisticReasoning → Infer-3-Factor-Graphs, QC-Py-10 → QC-Py-10-Risk-Portfolio-Management, GT-15 SocialChoice ↔ CooperativeGames et GT-13 CooperativeGames ↔ ImperfectInfo-CFR (inversions), Tweety-3-PreferredSemantics → Tweety-3-Dung-Csharp.
+**Note sur les références notebooks** : six références historiques de cette section ont suivi les renumérotations du dépôt (cf issue #5065) : ML-2.3-Perceptron → `Perceptron.lean` (lake, pas de notebook pédagogique correspondant), Infer-3-ProbabilisticReasoning → Infer-3-Factor-Graphs, QC-Py-10 → QC-Py-10-Risk-Portfolio-Management, GT-15 SocialChoice ↔ CooperativeGames et GT-13 CooperativeGames ↔ ImperfectInfo-CFR (inversions), Tweety-3-PreferredSemantics → Tweety-03-Dung-CSharp.
 
 Liens : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean) · cross-refs hubs [QC](../QuantConnect/README.md) (#5047) · [central P0](../README.md) (#5049) · [GameTheory](../GameTheory/README.md) (#5050) · [Probas](../Probas/README.md) (#5053) · [ML](../ML/README.md) (#5054) · [SymbolicAI Lean](../SymbolicAI/Lean/README.md) (#5043 MERGED).
 
