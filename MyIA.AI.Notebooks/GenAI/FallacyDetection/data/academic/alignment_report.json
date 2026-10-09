@@ -1,0 +1,39 @@
+{
+  "by_source": {
+    "Logic13": {
+      "total": 15,
+      "DIRECT": 9,
+      "PARTIAL": 3,
+      "NOT_FOUND": 3,
+      "labels_not_found": [
+        "Bandwagon",
+        "False cause",
+        "Sunk cost fallacy"
+      ]
+    },
+    "MAFALDA-L2": {
+      "total": 23,
+      "DIRECT": 15,
+      "PARTIAL": 5,
+      "NOT_FOUND": 3,
+      "labels_not_found": [
+        "Appeal to popularity",
+        "Appeal to values",
+        "Fallacy of logic"
+      ]
+    }
+  },
+  "argumentum_families_hit": {
+    "Influence": 6,
+    "Tricherie": 1,
+    "Insuffisance": 6,
+    "Obstruction": 4,
+    "Erreur mathématique": 7,
+    "Erreur de raisonnement": 3,
+    "Abus de langage": 5
+  },
+  "argumentum_families_never_hit": [],
+  "argumentum_family_count": 7,
+  "argumentum_total_leaves": 1407,
+  "argumentum_csv": "D:\\Dev\\CoursIA-17578-C\\MyIA.AI.Notebooks\\SymbolicAI\\Argument_Analysis\\data\\argumentum_fallacies_taxonomy.csv"
+}
