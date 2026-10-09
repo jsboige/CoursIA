@@ -153,11 +153,19 @@ QC est multi-tenant via les "organizations". Le cluster CoursIA utilise plusieur
 
 | Org | Tier | Usage | Backtest API |
 |-----|------|-------|--------------|
-| Research tier dedicated (default user) | Research (payant) | Deploiements de reference, Binance crypto data subscription, projets de développement | Inclus |
-| Partner school | Free/sponsored | Cours partenaire, masterclass Quant League | NON inclus |
-| ECE | Free | Matériel pédagogique ECE | NON inclus |
+| Research tier dedicated (default user) | Research (payant) | Deploiements de reference, Binance crypto data subscription, projets de développement | Inclus ; **un seul** nœud de backtest, partagé par toutes les lanes |
+| ESGF_School | Éducative, sponsorisée par QuantConnect | Backtests de mesure des lanes CoursIA (demande user du 2026-10-07) | Inclus : 8 nœuds B2-8 (mesure du 2026-10-07) ; réserve hors échantillon de 90 jours, voir ci-dessous |
+| Partner school | Free/sponsored | Cours partenaire, masterclass Quant League | non re-mesuré (noté « NON inclus » avant le 2026-10-07) |
+| ECE | Free | Matériel pédagogique ECE | non re-mesuré (noté « NON inclus » avant le 2026-10-07) |
 
-**Règle d'or** : pour `create_backtest` programmatique via API, il faut **une org avec backtest API incluse** (research tier). Les orgs gratuites/éducatives (partenaire, ECE) n'ont PAS l'API backtest — erreur récurrente : tenter `create_backtest` sur une org partenaire échoue silencieusement ou avec rate-limit. Vérifier l'org cible avant de dispatcher.
+**Règle : vérifier l'organisation cible avant de lancer.** Cette section affirmait que les organisations gratuites ou éducatives n'ont pas l'API de backtest. C'est réfuté pour ESGF_School : le 2026-10-07, dix backtests de #19740 y ont été créés par API, dont trois en parallèle (projet 37485593). Les nœuds d'une organisation se lisent par `/nodes/read`.
+
+**L'organisation se choisit à la création du projet.** Un projet appartient à une organisation, et ses backtests tournent sur les nœuds de celle-ci. `/projects/create` accepte le champ `organizationId`. `create_project` de qc-mcp-lite ne le transmet pas encore sur `main` : le paramètre `organization_id` est proposé par #19760. Sans ce champ, le projet atterrit dans l'organisation par défaut.
+
+**ESGF_School retient les 90 derniers jours, sans erreur.** Un backtest ne peut pas y finir après la date du jour moins 90 jours. Une fin demandée au-delà est ramenée à cette date, et le run se termine normalement. La lecture du backtest (`/backtests/read`) le montre : `outOfSampleDays: 90`, `outOfSampleMaxEndDate`, et `backtestEnd` ramené à cette date. Exemple mesuré : les runs de #19740 demandaient une fin au 2026-09-30 et se sont arrêtés au 2026-07-09.
+- Lire la fin effective (`backtestEnd`), jamais le paramètre demandé.
+- Une mesure qui doit couvrir les trois derniers mois tourne dans l'organisation par défaut, qui n'a pas cette réserve (#19680, le 2026-10-07 : fin au 2026-09-30).
+- Tous les bras d'une comparaison tournent dans la même organisation, et le corps de la PR cite la fin effective.
 
 ### Switcher d'org
 

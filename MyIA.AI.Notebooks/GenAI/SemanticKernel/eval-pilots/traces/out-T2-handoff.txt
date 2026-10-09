@@ -1,0 +1,12 @@
+probe gpt-4o-mini: OK -> OK
+[technique #1] input: Comment configurer le kernel Semantic Kernel en C#
+    decision: specialiste_technique | reponse: Pour configurer le kernel Semantic Kernel en C# pour appeler
+[technique #2] input: Comment configurer le kernel Semantic Kernel en C#
+    decision: specialiste_technique | reponse: Pour configurer le kernel Semantic Kernel en C# pour appeler
+[formation #1] input: Quel notebook suivre pour apprendre les agents dan
+    decision: specialiste_formation | reponse: Je te recommande de suivre le notebook "Introduction aux age
+[formation #2] input: Quel notebook suivre pour apprendre les agents dan
+    decision: specialiste_formation | reponse: Je te recommande de suivre le notebook "Introduction aux age
+ROUTING DETERMINISM: OK
+LLM CALLS: 9/10
+PILOT OK sk=1.41.3 orchestration=Handoff
