@@ -5,8 +5,6 @@
 **Statut :** distillation didactique d'un manuscrit non-référé (MIT externe pour le PDF), dépôt GPL-2.0-or-later. Aucun verdict de nouveauté mathématique n'est porté ici. Lecture seule — aucun fichier C++ modifié.
 **Précédents :** P0 cartography (#19487), P1 elliptic_prefix (#19488), P1 pilot (#19493), P1 point_count (#19499). Ce mémo est le 5e volet.
 
-> **Note (c.1171 reduction coord-anchor) :** Le corps original transcrivait le pseudocode C++ ligne par ligne. Le coordinateur a releve (review 2026-10-08T06:50Z) qu'une telle transcription, paraphrase aussi serree d'un code sous GPL-2.0+, pose une question de provenance qu'une citation `fichier:ligne` + lien vers l'amont ne pose pas. Ce memoire est reduit a une **table d'ancres** : pour chaque algorithme C++ execute par le benchmark, on donne le chemin amont et la ligne de depart, et la reconstruction CoursIA (Python/C#) qui en porte la portee. Le code transcrit a ete depose ; les ancres suffisent a la tracabilite, le pseudocode executable reste dans les PRs soeurs.
-
 ---
 
 ## 1. Ancrage amont (fichiers C++ du pin 37a9b72)
@@ -94,18 +92,6 @@ Sur les 22 composants discutes dans le corps original, la table d'ancres en gard
 
 - **3 partiels** : `matrix()` (hypellfrob.cpp l. 274-711, inerte), `hypellfrob.pyx` (consomme hors benchmark), timings 3 phases C++ (donnees historiques non rejouees).
 - **3 reportes a P2+** : preuve formelle Lean de la semantique de l'adaptateur (P2.a), correctness du middle product / DyadicShifter en Lean (P2.b), pont formel Miller ↔ BGS (P2.c).
-
----
-
-## 5. Reponses aux reserves du dossier
-
-**Reservation 2026-10-06T14:19Z (jsboige, viewer) :** "Pourquoi du pseudocode cpp alors qu'on a du vrai c# et du vrai Python de partout".
-
-**Reponse :** Le pseudocode C++ a ete depose (corps original retire). La tracabilite est preservee par la **table d'ancres §2** : pour chaque algorithme C++, le lecteur sait ou il vit, s'il est execute, et quelle reconstruction CoursIA le couvre. Le code GPL-2.0+ reste chez Harvey ; les reconstructions C#/Python sont dans le depot sous leur propre licence.
-
-**Reservation 2026-10-08T06:50Z (coordinateur, 🟡) :** "La traçabilité est légitime, le mémo n'est pas le bon endroit. (...) Le choix entre les deux [réduire à une table d'ancres, ou reporter en commentaires dans les reconstructions] revient à la lane."
-
-**Reponse :** Option **reduire a une table d'ancres** retenue (cette PR). Le code transcrit a ete depose. Les ancres `fichier:ligne` (vers le pin 37a9b72) + le schema §3 donnent au lecteur le code qui s'execute (C++ chez Harvey) et la source dans le meme regard — via le lien, pas via la transcription. La licence GPL est respectee par separation (code amont non transcrit) ; la portee CoursIA est explicitee par reconstruction.
 
 ---
 
