@@ -21,11 +21,26 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
 import pick_idle_grain as pig  # noqa: E402
 from merge_dwell import evaluate as _md_evaluate  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _no_shell_escape(forbid_shell_escape):
+    """Sentinelle armee pour tout le module (#20021).
+
+    Un test qui lance un processus ici n'a pas simule une de ses sources :
+    il passait sur le cache chaud de la machine, ou sur un `gh` qui echoue
+    vite et rend un corpus vide -- un vert qui ne mesure rien. Les tests qui
+    ont besoin d'un faux `gh` patchent `pig.subprocess.run` eux-memes
+    (`_patch_gh`, `_patch_gh_annotations`) et surchargent la sentinelle.
+    """
+    return forbid_shell_escape
 
 
 class _FakeCompleted:
@@ -609,6 +624,14 @@ def _neutralize_organs(monkeypatch, states, nits=None):
     # selon que le check est vert ou rouge sur `main` le jour du run, sans
     # qu'aucune ligne de code n'ait bouge. Les tests de #17154 la re-patchent.
     monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
+    # #20021 : la lecture du DWELL est un `gh api .../annotations` par run
+    # rouge -- un organe reseau du garde, lui aussi a neutraliser par defaut
+    # (meme raison que les trois ci-dessus). Il manquait : les tests qui
+    # passent par `red_backlog` sortaient pour de vrai, et ne restaient verts
+    # que parce que `gh` echouait et que `fetch_check_dwell` rend `{}` sur
+    # echec -- indistinguable d'un « aucun plancher a lever ». Les tests qui
+    # veulent un plancher precis la re-patchent (`_patch_dwell`).
+    monkeypatch.setattr(pig, "fetch_check_dwell", lambda rid: None)
 
 
 def _patch_backlog(monkeypatch, prs, states, nits=None):
@@ -1655,11 +1678,14 @@ def test_dwell_pr_leaves_the_red_backlog_and_is_reported(monkeypatch):
     en attente de plancher).
     """
     _patch_organs(monkeypatch, {})
-    _patch_dwell(monkeypatch, {111: {"dwell_min": 120, "remaining_min": 113,
-                                     "lift_at": "2026-09-13T14:14:44Z"}})
     _patch_backlog(monkeypatch, [
         _pr_with_author(1, "myia-po-2026:CoursIA", 30, "jsboige"),
     ], {1: _dwell_state(111)})
+    # Apres `_patch_backlog` : `_neutralize_organs` pose un DWELL vide par
+    # defaut (#20021), et la convention du fichier est de re-patcher APRES
+    # pour ce qui doit etre vu (cf `fetch_lane_record_prs`).
+    _patch_dwell(monkeypatch, {111: {"dwell_min": 120, "remaining_min": 113,
+                                     "lift_at": "2026-09-13T14:14:44Z"}})
     out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
     assert out["red"] == []
     assert out["aged"] == []
@@ -3634,10 +3660,12 @@ def test_dwell_only_prs_do_not_arm_the_count_trigger(monkeypatch):
     _patch_organs(monkeypatch, {})
     runs = {424242 + n: {"dwell_min": 120, "remaining_min": 113,
                          "lift_at": "2026-09-13T14:14:44Z"} for n in (1, 2, 3)}
-    _patch_dwell(monkeypatch, runs)
     _patch_backlog(monkeypatch, [
         _pr(n, "myia-po-2024:CoursIA", 2) for n in (1, 2, 3)
     ], {n: _dwell_state(424242 + n) for n in (1, 2, 3)})
+    # Apres `_patch_backlog` (#20021) : le DWELL vide par defaut doit ceder
+    # devant celui que ce test met en scene.
+    _patch_dwell(monkeypatch, runs)
     out = pig.red_backlog("myia-po-2024:CoursIA", 24, count_threshold=3)
     assert out["red"] == []
     assert out["triggers"] == []

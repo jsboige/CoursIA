@@ -18,10 +18,24 @@ import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
 import pick_idle_grain as pig  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _no_shell_escape(forbid_shell_escape):
+    """Le tapis ne sort pas : la sentinelle est armee pour tout le module.
+
+    Sans elle, une source reseau non simulee passait par le cache chaud de
+    la machine et le test restait vert -- en worktree neuf, `gh` partait et
+    le verdict dependait du reseau (#20021). La sentinelle transforme cet
+    appel muet en echec nomme.
+    """
+    return forbid_shell_escape
 
 
 def _make_item(number, age_days, idle, klass="grain", last=None,
@@ -544,6 +558,33 @@ def _patch_belt_network(monkeypatch, prs, red_state):
                                             for n in nums})
     # Le tapis lit aussi les claims comme visites : jamais de reseau en test.
     monkeypatch.setattr(pig, "latest_claim_stamp", lambda n: None)
+    # Sources reseau que `main()` atteint PLUS LOIN que le garde rouge
+    # (#20021). Elles n'etaient pas simulees : le test ne les voyait pas
+    # parce qu'il tombait sur le cache chaud de la machine, et en worktree
+    # neuf `gh` partait pour de vrai -- resultat dependant du reseau, et
+    # suite au-dela du plafond de `pytest.ini`. La sentinelle du module
+    # (`forbid_shell_escape`) refuse desormais cet appel : simuler ici, pas
+    # se reposer sur un cache.
+    monkeypatch.setattr(pig, "fetch_visits", lambda *a, **k: ({}, None))
+    monkeypatch.setattr(pig, "fetch_series_visits", lambda *a, **k: ({}, {}, None))
+    monkeypatch.setattr(pig, "fetch_merged", lambda *a, **k: ([], None))
+
+
+def test_sentinel_refuses_any_process(forbid_shell_escape):
+    """Controle NEGATIF de la sentinelle elle-meme (#20021).
+
+    Une garde qui ne sait pas rougir ne prouve rien : ce test verifie que
+    l'instrument REFUSE un processus, et que le refus NOMME la commande. La
+    commande choisie est inoffensive (`sys.executable -c pass`) : si la
+    sentinelle etait desarmee, ce test lancerait un interpreteur, jamais
+    `gh` -- le controle ne peut donc pas dependre du reseau.
+    """
+    import subprocess
+    argv = [sys.executable, "-c", "pass"]
+    with pytest.raises(BaseException) as exc:
+        subprocess.run(argv)
+    assert "reseau non simule" in str(exc.value)
+    assert sys.executable in str(exc.value)
 
 
 def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
