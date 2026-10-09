@@ -18,7 +18,7 @@ These RLE files correspond to the witness theorems scaffolded in
 
 | Pillar theorem | RLE file | Generation count |
 |----------------|----------|-----------------|
-| `otca_metapixel_witness` | `otcametapixel.rle` | 35 328 |
+| `otca_initial_population` | `otcametapixel.rle` | 35 328 (published cycle; closed system measured) |
 | `unitcell_initial_population` | `p5760unitlifecell.rle` | 5 760 (measured period) |
 | `gemini_witness` | `gemini.rle` | 33 699 586 |
 | `cpu_witness` | not yet available | 1 048 576 |
