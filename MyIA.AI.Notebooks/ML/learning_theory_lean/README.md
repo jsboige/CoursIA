@@ -1,4 +1,4 @@
-# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + EffectiveTheory), Lean 4
+# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + EffectiveTheory + MathUniverse / Tegmark MUH), Lean 4
 
 Lake Lean 4 (Mathlib) à la racine de la série **ML**, mutualisant des résultats
 fondamentaux de **théorie de l'apprentissage** sous un même umbrella généraliste
@@ -49,6 +49,28 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    #16752) : conservation de `C` le long du flot de `ℓ₀` sans hypothèse,
    invariance de l'hyperplan centré le long du flot effectif, lemmes
    génériques de calcul différentiel.
+5. **Module `MathUniverse`** — digestion #16741/arc A (issue #16753) : l'**Annexe A**
+   de R16, *The Mathematical Universe* (Tegmark, arXiv:0704.0646) — la définition
+   opérationnelle d'une **structure mathématique** sur laquelle repose l'hypothèse
+   de l'univers mathématique (MUH) : des entités (un type fini) et une
+   **signature** `σ : Fin n → ℕ` donnant l'arité de chacune des `n` relations,
+   chaque relation étant un prédicat **décidable** — une structure finie se
+   spécifie par ses tableaux, et un tableau fini se parcourt entièrement. Trois
+   apports : **`aut`** — les bijections préservant chaque relation forment un
+   sous-groupe de `Equiv.Perm` (le « easy to see » de l'Annexe A), avec le témoin
+   concret `aut_bool8_trivial` (le groupe d'automorphismes de l'algèbre de Boole
+   à deux éléments est **trivial** — ancre déjà mobilisée par
+   `EffectiveTheory.InfoBits`) ; **`EquivStruct`** et son instance `Decidable` —
+   le « simple halting algorithm » qui décide si deux définitions finies sont
+   équivalentes, rendu par **énumération exhaustive des tableaux**
+   (« l'énumération des tableaux » du papier : `decide` **est** l'algorithme) ; et
+   les exemples du **§A.2** : **C₂** (table d'addition de Z/2), **C₃** (Z/3), et
+   l'**algèbre de Boole à deux éléments** — les huit relations F, T, ¬, ∧, ∨, ⇒, ⇔, |
+   de l'équation **(A1)** — générée par **NAND seul** (équation **A2**) : les sept
+   formules de composition du papier (`nand_false`, `nand_true`, `nand_not`,
+   `nand_and`, `nand_or`, `nand_implies`, `nand_iff`), puis
+   `equivStruct_bool8_nand8` (le témoin est l'identité), et la confirmation par
+   l'algorithme de décision lui-même, à qui le témoin n'est **pas** donné.
 
 C'est le **premier lake Lean de la série ML** (aucun lake Lean en ML auparavant,
 roadmap #4038 Tier 2). La preuve de Novikoff est **géométrique élémentaire** :
@@ -76,9 +98,12 @@ argument ERM dans `ERM`).
   les identités de l'appendice F (`loss0_grad_sum_zero`,
   `loss0_grad_dot_self`) et les lois de conservation
   (`flow_sumsq0_constant`, `flow_deriv_sum_apply` ; côté `GrokkingLemmas` :
-  `C_conserved_l0`, `meanZero_invariant`, `Z0_conserved`) sont 0-sorry.
+  `C_conserved_l0`, `meanZero_invariant`, `Z0_conserved`) sont 0-sorry. Côté
+  MathUniverse, `mem_aut_iff`, `aut_bool8_trivial`, les sept lemmes `nand_*`,
+  `equivStruct_iff_functions` et `equivStruct_bool8_nand8` sont 0-sorry.
 - **Build** : `lake build Perceptron` / `lake build PacLearning` /
-  `lake build GradientFlow` / `lake build EffectiveTheory` (dépend de Mathlib4)
+  `lake build GradientFlow` / `lake build EffectiveTheory` /
+  `lake build MathUniverse` (dépend de Mathlib4)
 
 ## Ce qui est formalisé
 
@@ -206,24 +231,51 @@ par la dynamique de ces plongements sous la perte effective `ℓ_eff = ℓ₀/Z�
 | `EffectiveTheory/CircleOfDays.lean` | 0 | R10 : la rotation des jours comme représentation de `C₇ = ZMod 7` (`rotation_cyclicSeven`) et son **irréductibilité** `circleOfDays_irreducible` (aucune droite stable : le discriminant `4(cos²(2π/7) − 1) < 0` exclut toute valeur propre réelle). |
 | `EffectiveTheory.lean` | 0 | Imports parapluie + cartographie du corpus (R02 `88CE88DB` / R06 `B589C4EF` / R10 `7DEAC929`). |
 
+### Module `MathUniverse` (digestion #16741/arc A — Annexe A de R16, Tegmark)
+
+L'Annexe A de *The Mathematical Universe* donne la définition opérationnelle sur
+laquelle repose la MUH : « une structure mathématique est un ensemble d'entités
+abstraites et de relations entre elles ». Le module la formalise, sépare la
+**signature** de sa **réalisation** (ce que fait la théorie des modèles, et ce qui
+rend l'équivalence de deux définitions de la *même* structure énonçable sans
+transport d'arité), et prend au mot la phrase du papier : il existe « un simple
+algorithme haltant » pour décider l'équivalence de deux structures finies — ici,
+`decide` **est** cet algorithme, rendu comme instance `Decidable`.
+
+Les fonctions non booléennes se codent en relations par leur graphe (note 20 du
+papier), ce qui ramène les tables d'addition de C₂/C₃ et les tables de vérité de
+l'algèbre de Boole au même objet.
+
+| Fichier | sorry | Contenu |
+|---------|-------|---------|
+| `MathUniverse.lean` | 0 | **Définition** : `FinRelStruct` (entités = type fini `α`, signature `σ : Fin n → ℕ`, relations décidables via le champ `rel_dec` — le « all these functions must be computable » du §A.2). **Aut(S)** : `Preserves` + `aut` (sous-groupe de `Equiv.Perm` : identité, composée, symétrique), pont `mem_aut_iff`, et le témoin **`aut_bool8_trivial`** (préserver la relation « x = F » épingle la constante fausse). **Décidabilité** : `EquivStruct` (isomorphisme relationnel), `equivStruct_iff_functions` (déploiement sur `α → β`, le type énumérable par excellence) et l'instance `EquivStruct.decidable` — énumération exhaustive des tableaux, les deux `letI` locaux exposant les champs `rel_dec` comme instances sans quoi la résolution ne saurait pas remonter de `Decidable (S.rel i t)` au champ qui l'atteste. **Exemples §A.2** : `nand` (symbole de Sheffer), **C₂** (`c2`, table d'addition de Z/2), **C₃** (`c3`, Z/3), **algèbre de Boole (A1)** (`bool8`, les huit relations F, T, ¬, ∧, ∨, ⇒, ⇔, \| ; signatures `c2Sig`/`c3Sig`/`bool8Sig` en `@[reducible]` — la résolution d'instances travaille à transparence `reducible` et ne déplie pas un `def` ordinaire), **génération par NAND seul (A2)** : les sept lemmes de composition `nand_false`/`nand_true`/`nand_not`/`nand_and`/`nand_or`/`nand_implies`/`nand_iff`, la structure `nand8`, l'équivalence `equivStruct_bool8_nand8` (témoin : l'identité) et la confirmation par l'algorithme — `decide (EquivStruct bool8 nand8) = true`, obtenu par `decide +kernel` (transparence complète) et **non** `native_decide`, qui ajouterait l'axiome `Lean.ofReduceBool` (banni par la discipline de preuve du dépôt). |
+| `MathUniverse_en.lean` | 0 | Sibling anglais (Epic #4980) — code byte-identique, docstrings et commentaires traduits. |
+
+Une difficulté de fond rencontrée (et corrigée, pas contournée) : écrite d'abord
+avec `<formule> = false` pour les deux constantes, l'équivalence (A1)/(A2) était
+**fausse** — les formules de NAND rendent la constante, elles ne l'affirment pas.
+Les lignes R₁/R₂ de `nand8` sont donc `t 0 = <formule>`, et c'est `decide` qui a
+révélé l'erreur avant toute publication.
+
 ### i18n FR/EN
 
 Chaque module est doublé d'un **sibling anglais** `Foo_en.lean` (namespace
 `PacLearning` ↔ `PacLearning_en`, `Perceptron` ↔ `Perceptron_en`,
 `GradientFlow` ↔ `GradientFlow_en`,
 `EffectiveTheory.GrokkingLemmas` ↔ `EffectiveTheory.GrokkingLemmas_en`
-(le reste d'`EffectiveTheory` attend son twin, #17481), imports
+(le reste d'`EffectiveTheory` attend son twin, #17481),
+`MathUniverse` ↔ `MathUniverse_en`, imports
 `_en`-suffixés, **byte-identical hors docstrings/commentaires**) — livré sous
-l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les 22
-fichiers `_en` couvrent PacLearning, Perceptron, GradientFlow et
-`GrokkingLemmas` :
+l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les twins
+`_en` couvrent PacLearning, Perceptron, GradientFlow, `GrokkingLemmas` et
+`MathUniverse` :
 
 `PacLearning_en.lean`, `PacLearning/{Agnostic,BernoulliMGF,Concentration,Data,
 ERM,Hoeffding,MGF,PacFiniteBound,Sample,SampleExpect,UniformConcentration,
 UnionBound}_en.lean`, `Perceptron_en.lean`,
 `Perceptron/{Convergence,Data,Perceptron,Tightness}_en.lean`,
 `GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`,
-`EffectiveTheory/GrokkingLemmas_en.lean`.
+`EffectiveTheory/GrokkingLemmas_en.lean`, `MathUniverse_en.lean`.
 
 **Conséquence** : les futurs raffinements doivent conserver la symétrie FR/EN
 (les deux fichiers évoluent ensemble ou pas du tout). La CI `check_i18n_siblings`
@@ -237,6 +289,7 @@ vérifie l'absence de drift (164/166 byte-identical, 0 orphan cluster-wide au
 lake build Perceptron    # théorème de Novikoff
 lake build PacLearning   # cadre PAC (modèle + propriétés élémentaires)
 lake build EffectiveTheory # corpus Tegmark : grokking + conservation + R06/R10
+lake build MathUniverse  # Annexe A de R16 : structure finie, Aut(S), equivalence decidable
 # Dépend de Mathlib4 — le premier build est lourd, les builds suivants utilisent le cache
 ```
 
@@ -279,6 +332,11 @@ déclaration dans un notebook :
   Effective Theory of Representation Learning*, arXiv:2205.10343 (2022) —
   parallélogrammes de représentation (Partie 3) et lois de conservation
   (Appendice F).
+- M. Tegmark, *The Mathematical Universe*, Foundations of Physics (2008),
+  arXiv:0704.0646 — Annexe A : la définition d'une structure mathématique
+  (entités + relations), Aut(S) comme groupe, l'algorithme haltant d'équivalence
+  de deux définitions finies, et les équations (A1)/(A2) — l'algèbre de Boole à
+  deux éléments engendrée par NAND seul.
 
 ## Voir aussi
 
@@ -286,5 +344,6 @@ déclaration dans un notebook :
 - **Issue #4293** — renommage `perceptron_lean → learning_theory_lean` + module PacLearning (mutualisation, cf `decision_theory_lean`)
 - **EPIC #13106** — digestion : le module `GradientFlow` en est la tranche « forme formalisation » (grille 10 points dans `GradientFlow.lean`)
 - **Issue #16752 / EPIC #16741** — module `EffectiveTheory` : base `Grokking.lean` (#16794) + module frère `GrokkingLemmas.lean` (recadrage ai-01 2026-09-23 : delta propre du grain R02, arc « ouverte, responsable, prouvable, explicable »)
+- **Issue #16753 / EPIC #16741** — module `MathUniverse` (arc A) : Annexe A de R16 — `FinRelStruct` (signature + relations décidables), `aut` (Aut(S) est un groupe, témoin `aut_bool8_trivial`), `EquivStruct` et son instance `Decidable` (l'algorithme haltant rendu exécutable), exemples §A.2 (C₂, C₃, algèbre de Boole engendrée par NAND seul)
 - **`ML/`** — série Machine Learning (ML.NET C#, Data Science with Agents Python)
 - **Epic #2651** — prose pédagogique README
