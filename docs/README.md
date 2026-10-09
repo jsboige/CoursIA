@@ -114,6 +114,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [genai/secrets-management.md](genai/secrets-management.md) | Secrets management — central source of truth (master.env + render_envs.py) |
 | [transients/2026-06-14-genai-service-security-audit.md](transients/2026-06-14-genai-service-security-audit.md) | Audit de sécurisation des services IA auto-hébergés (po-2023) |
 | [genai/audio-fading-remediation.md](genai/audio-fading-remediation.md) | Remédiation FADING audio et verdicts SOTA associés (#11719) — référence opérationnelle ; le détecteur vit dans les scripts, ce document porte le raisonnement |
+| [genai/audio-onset-chunk-detection.md](genai/audio-onset-chunk-detection.md) | Détection onset/mid/end/spread des spans d'omission audio (classifier déterministe CPU, #19739) — convention de hiérarchie et tests verts |
 | [genai/decision-models.md](genai/decision-models.md) | Modèles de décision — relevé et shortlist |
 | [genai/model-mapping-openai.md](genai/model-mapping-openai.md) | Mapping des modèles OpenAI — génération courante |
 | [genai/model-mapping.md](genai/model-mapping.md) | Inventaire et table de correspondance — modèles GenAI/OpenAI |
@@ -131,6 +132,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [qc/qc-research-notebook-memory.md](qc/qc-research-notebook-memory.md) | Mémoire de l'agent `qc-research-notebook` — relocalisée depuis `.claude/agent-memory/` (EPIC #9535, item 7) |
 | [qc/qc-strategy-analyzer-memory.md](qc/qc-strategy-analyzer-memory.md) | Mémoire de l'agent `qc-strategy-analyzer` — relocalisée depuis `.claude/agent-memory/` (EPIC #9535, item 7) |
 | [qc/qc-strategy-improver-memory.md](qc/qc-strategy-improver-memory.md) | Mémoire de l'agent `qc-strategy-improver` (38 Ko, la plus fournie des trois) — relocalisée depuis `.claude/agent-memory/` (EPIC #9535, item 7) |
+| [qc/19863-fine-fundamental-vidage-diagnostic.md](qc/19863-fine-fundamental-vidage-diagnostic.md) | Diagnostic vidage silencieux `FineFundamentalUniverseSelectionModel` (projet QC Cloud 37468246, portage article 9031) — hypothèses réfutées, cause mesurée (chaînage ctor absent), fix livré, vérif plein bloc 6,1 ans (4 860 ordres, +12,6 % cum, MaxDD 30,2 %, verdict `INCONCLUSIVE` conteneur 24 mois) — livré c.1174 (#19867), issue #19863 prête à examiner (fermeture coord/adjoint) |
 
 ## Lean (docs/lean/)
 
