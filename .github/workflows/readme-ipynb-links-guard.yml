@@ -54,7 +54,32 @@ jobs:
   check:
     name: Audit README -> .ipynb links
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # 12 min, pas 5 (#19982).
+    #
+    # Mesure du 2026-10-08 au niveau du JOB (le plafond borne le job, pas le
+    # run -- une duree de run inclut l'attente de runner et ne dit rien du
+    # plafond) : 40 jobs du 16:47Z au 20:29Z, de 67 s a 282 s, mediane ~97 s ;
+    # 1 job annule a 304 s (run 37801429740) -- c'est le plafond qui l'a tue.
+    # Les 2 autres annulations (46 s, 81 s) sont des supersessions de
+    # concurrence, hors sujet.
+    #
+    # Le chiffre disqualifiant n'est pas l'annule a 304 s, c'est le succes a
+    # 282 s : a 18 s du plafond. Les 300 s ne tombent pas hors de la plage
+    # legitime mesuree, elles tombent dedans -- sur un runner lent, la meme
+    # jambe passe ou est annulee selon le tirage, et le `PR gate` reporte
+    # l'annulation en rouge bloquant (`checks that hit their declared
+    # timeout-minutes`) sur toute PR touchant un README.
+    #
+    # 12 min = 720 s, ~2,6x le pire job mesure et ~7,4x la mediane. C'est un
+    # garde-fou anti-emballement, pas un seuil de performance : il doit
+    # depasser le pire cas legitime, pas le mesurer.
+    #
+    # Le volet « faire distinguer par le PR gate une cancellation-sur-plafond
+    # d'un echec reel » n'est PAS pris ici : ce comportement est doctrinal
+    # (#15905 -- « a timeout *can* be code that is too slow, and the gate
+    # cannot tell from a check-run », fail-closed assume). Le renverser serait
+    # un changement de doctrine, pas un correctif de fragilite.
+    timeout-minutes: 12
     steps:
       - name: Checkout
         uses: actions/checkout@v4
