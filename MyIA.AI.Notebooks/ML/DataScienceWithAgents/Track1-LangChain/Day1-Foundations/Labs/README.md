@@ -26,7 +26,7 @@ Ce laboratoire ouvre la **Journée 1** du workshop. Il pose les fondations techn
 
 ## Notebook
 
-- [Lab1-PythonForDataScience.ipynb](Lab1-PythonForDataScience.ipynb) — notebook étudiant (3 exercices : statistiques par produit, filtrage conditionnel, prédictions par produit)
+- [Lab1-PythonForDataScience.ipynb](Lab1-PythonForDataScience.html) — notebook étudiant (3 exercices : statistiques par produit, filtrage conditionnel, prédictions par produit)
 
 ## Suite
 
