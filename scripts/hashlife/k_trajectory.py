@@ -1573,6 +1573,10 @@ def lz76_factor_count(bitstring: str) -> int:
 
     Sensible a l'arrangement : une chaine periodique se factorise en peu de
     phrases, une chaine chaotique en beaucoup.
+
+    Port pli 8 (correctif #19836, statistique de verdict de la block
+    decomposition) -- recopie byte-identique pour que la rebase de la pile
+    Origami se resolve sans conflit de contenu.
     """
     n = len(bitstring)
     i = 0
@@ -1596,6 +1600,8 @@ def normalized_lz76_complexity(bitstring: str) -> float:
     Peut depasser 1.0 de quelques centiemes sur les chaines courtes (le
     facteur log2(n) n'est asymptotiquement exact) : c'est une propriete connue
     de l'estimateur, pas une erreur.
+
+    Port pli 8 (correctif #19836) -- recopie byte-identique.
     """
     n = len(bitstring)
     if n <= 1:
@@ -1609,6 +1615,8 @@ def _bits_to_str(bits: Sequence[Cell]) -> str:
     Necessaire car `in` sur une liste teste l'appartenance d'un ELEMENT, pas
     d'une sous-sequence : une recherche de facteur LZ sur une liste de ints
     rendrait toujours faux et degenererait en c(n) = n.
+
+    Port pli 8 (correctif #19836) -- recopie byte-identique.
     """
     return "".join("1" if (int(b) & 1) else "0" for b in bits)
 
@@ -1628,6 +1636,8 @@ def block_complexity_distribution(
     Reference : Zenil, Soler-Toscano, Kiani (2013) arXiv:1304.5813 (block
     decomposition, ou la complexite du bloc est K(bloc)) ; Li & Vitanyi (2019)
     ch. 6 (estimateur LZ76).
+
+    Port pli 8 (correctif #19836) -- recopie byte-identique.
     """
     blocks = block_decompose_trajectory(traj_1d, block_length)
     if not blocks:
@@ -1939,7 +1949,10 @@ def main() -> int:
             "Mode wolfram : nombre de cellules de l'automate 1-D. Plancher de mesure "
             "concluante : 512 (en dessous, cadrage zlib dominant, verdict SATURATED). "
             "Mode wolfram-blocks : 256 est l'echelle canonique (sous 256, W=32 "
-            "ne laisse que 2 blocs et le verdict rend UNDERPOWERED). Defaut: 1024"
+            "ne laisse que 2 blocs et le verdict rend UNDERPOWERED). "
+            "Mode wolfram-seed-test : 512 minimum (WOLFRAM_SEED_MIN_N_CELLS) -- "
+            "sous ce plancher la mesure est SATUREE et --json-out est refuse. "
+            "Defaut: 1024"
         ),
     )
     parser.add_argument(
@@ -2016,6 +2029,29 @@ WOLFRAM_SEED_PRESETS = {
     # quel que soit le seed (R30 est statistiquement uniforme).
     "random-dense": "10110011" * 8,  # 64 cellules
 }
+
+# Plancher d'echelle du test de seed (pli 9) : sous n_cells = 512, la fenetre
+# packee KSF (W+1 etats) reste sous le plancher de cadrage zlib et R30 / R110
+# rendent la meme constante -- mesure pli 7 (correctif #19826, 2026-10-09) :
+# a n_cells = 64 les deux regles rendent KSF = 8.000 = n_cells/8 octets.
+# Toute discrimination publiee sous ce plancher est un artefact de saturation,
+# pas un resultat : le verdict la declare SATUREE et le CLI refuse d'y ecrire
+# un JSON de resultats.
+WOLFRAM_SEED_MIN_N_CELLS = 512
+
+# Plancher absolu du verdict de discrimination. Un delta absolu inferieur a
+# ce plancher est NONDISCRIMINANT quelle que soit la valeur du ratio
+# normalise. Contre-mesure d'un artefact mesure (reserve c.6078963240,
+# 2026-10-09) : random-dense a n=512 porte un ratio LZ de 0.307 pour un delta
+# absolu de 0.027 -- normaliser par max(abs(v30), abs(v110)) sans plancher
+# absolu fabrique un DISCRIMINANT sur du bruit quand les deux valeurs sont
+# proches de zero. Les unites de mesure des trois instruments (ratio LZ, KSF
+# en bits/cellule, std LZ76 normalisee) sont toutes dans [0, ~1.3], un seul
+# plancher commun est commensurable. Valeur = seuil WEAK existant (0.05), le
+# seuil qui etait deja dans le code avant ce correctif ; les deltas mesures a
+# n=512 sont >= 0.19 (cas reels) et <= 0.03 (bruit), le plancher n'a pas ete
+# choisi pour faire passer un cas limite.
+WOLFRAM_SEED_ABS_DELTA_FLOOR = 0.05
 
 
 def wolfram_seed_preset(name: str, n_cells: int) -> list[Cell]:
@@ -2109,10 +2145,26 @@ def measure_seed_instrument_landscape(
     `len(instruments)` complexites. Chaque entree du resultat a les cles :
     - rule (int), preset (str), n_cells (int), n_steps (int)
     - instrument (str) : 'lz' | 'ksf' | 'blocks'
-    - Pour 'lz' : k_trajectory_at_W, k_over_n_at_W
-    - Pour 'ksf' : ksf_at_W (par taille de contexte)
-    - Pour 'blocks' : block_entropy_mean, block_entropy_std, n_blocks
+    - Pour 'lz' : lz_W, lz_k_over_n, k_last, k_first, k_last_over_first
+    - Pour 'ksf' : ksf_W (octets par contexte, trace), ksf_W_bits_per_cell,
+      ksf_last_bits_per_cell (valeur de verdict, bits/cellule au plus grand
+      contexte -- port pli 7)
+    - Pour 'blocks' : blocks_W (entropie Shannon pour trace + complexite
+      LZ76 normalisee par bloc -- port pli 8), blocks_lz76_mean_at_Wmax,
+      blocks_lz76_std_at_Wmax (valeur de verdict)
     - summary (str) : phrase d'une ligne resume la mesure.
+
+    Instruments portes des correctifs des plis freres (reserve c.6078963240,
+    2026-10-09) :
+    - KSF en bits par cellule (correctif pli 7, #19826) -- ksf_mean en octets
+      vs reperes en bits/cellule = facteur 8 ;
+    - complexite LZ76 normalisee par bloc (correctif pli 8, #19836) --
+      l'entropie de Shannon est invariante a l'arrangement et ne peut pas
+      separer une trajectoire periodique d'une trajectoire chaotique.
+
+    Echelle : sous `WOLFRAM_SEED_MIN_N_CELLS`, la mesure tourne (diagnostic)
+    mais `seed_discrimination_verdict` la declare SATUREE et le CLI refuse
+    d'ecrire le JSON de resultats.
     """
     rows: list[dict] = []
     for rule in rules:
@@ -2172,47 +2224,62 @@ def measure_seed_instrument_landscape(
                         W: (sum(vs) / len(vs) if vs else 0.0)
                         for W, vs in ksf_values_per_W.items()
                     }
+                    # Port pli 7 (correctif #19826) : ksf_mean est en OCTETS,
+                    # les seuils et reperes sont en BITS par cellule (facteur
+                    # 8). La valeur de verdict est ksf_bits_per_cell au plus
+                    # grand contexte -- la seule unite commensurable.
+                    ksf_W_bits_per_cell = {
+                        W: mean_bytes * 8.0 / n_cells
+                        for W, mean_bytes in ksf_W_means.items()
+                    }
                     row["ksf_W"] = {str(W): v for W, v in ksf_W_means.items()}
+                    row["ksf_W_bits_per_cell"] = {
+                        str(W): round(v, 4) for W, v in ksf_W_bits_per_cell.items()
+                    }
                     last_w = max(ksf_W_means.keys())
                     first_w = min(ksf_W_means.keys())
-                    row["ksf_last"] = ksf_W_means[last_w]
-                    row["ksf_first"] = ksf_W_means[first_w]
+                    row["ksf_last"] = ksf_W_means[last_w]  # octets (trace)
+                    row["ksf_first"] = ksf_W_means[first_w]  # octets (trace)
                     row["ksf_last_minus_first"] = row["ksf_last"] - row["ksf_first"]
+                    row["ksf_last_bits_per_cell"] = round(
+                        ksf_W_bits_per_cell[last_w], 4
+                    )
                     row["summary"] = (
-                        f"KSF last={row['ksf_last']:.3f} first={row['ksf_first']:.3f} "
-                        f"delta={row['ksf_last_minus_first']:.3f}"
+                        f"KSF W={last_w}: {row['ksf_last_bits_per_cell']:.3f} "
+                        f"bits/cellule ({row['ksf_last']:.3f} octets)"
                     )
                 elif instrument == "blocks":
-                    # Block decomposition : entropie par bloc (moyenne, std)
-                    # On appelle directement block_decompose_trajectory et
-                    # shannon_entropy_bits sur chaque bloc.
+                    # Block decomposition -- port pli 8 (correctif #19836) :
+                    # la statistique de verdict est la complexite LZ76
+                    # normalisee par bloc (sensible a l'arrangement), pas
+                    # l'entropie de Shannon (invariante a l'arrangement :
+                    # H('0101..01') == H(desordre equilibre)). L'entropie
+                    # reste mesuree pour tracabilite.
                     block_stats: list[dict] = []
                     for W in block_sizes:
-                        blocks = block_decompose_trajectory(traj_states, W)
-                        entropies = [shannon_entropy_bits(b) for b in blocks]
-                        if entropies:
-                            mean_e = sum(entropies) / len(entropies)
-                            std_e = (
-                                sum((e - mean_e) ** 2 for e in entropies) / len(entropies)
-                            ) ** 0.5
-                        else:
-                            mean_e = 0.0
-                            std_e = 0.0
+                        ent = block_entropy_distribution(traj_states, W)
+                        cpx = block_complexity_distribution(traj_states, W)
                         block_stats.append({
                             "W": W,
-                            "mean": mean_e,
-                            "std": std_e,
-                            "min": min(entropies) if entropies else 0.0,
-                            "max": max(entropies) if entropies else 0.0,
-                            "n_blocks": len(blocks),
+                            "entropy_mean": ent["mean"],
+                            "entropy_std": ent["std"],
+                            "complexity_mean": cpx["mean"],  # LZ76 normalisee
+                            "complexity_std": cpx["std"],  # LZ76 normalisee
+                            "n_blocks": cpx["n_blocks"],
                         })
                     row["blocks_W"] = block_stats
                     last_w = max(b["W"] for b in block_stats)
                     last_b = next(b for b in block_stats if b["W"] == last_w)
-                    row["blocks_mean_at_W32"] = last_b["mean"]
-                    row["blocks_std_at_W32"] = last_b["std"]
+                    # Mesures de verdict : mean/std de la complexite LZ76 au
+                    # plus grand W. Les anciennes cles blocks_*_at_W32
+                    # portaient l'entropie de Shannon -- remplacees, pas
+                    # re-remplies, pour ne pas laisser deux sens sous un nom.
+                    row["blocks_lz76_mean_at_Wmax"] = last_b["complexity_mean"]
+                    row["blocks_lz76_std_at_Wmax"] = last_b["complexity_std"]
                     row["summary"] = (
-                        f"Blocks mean@W32={last_b['mean']:.3f} std@W32={last_b['std']:.3f}"
+                        f"Blocks LZ76 mean@W{last_w}={last_b['complexity_mean']:.3f} "
+                        f"std@W{last_w}={last_b['complexity_std']:.3f} "
+                        f"(n_blocks={last_b['n_blocks']})"
                     )
                 else:
                     raise ValueError(f"Instrument inconnu: {instrument}")
@@ -2229,11 +2296,24 @@ def seed_discrimination_verdict(landscape: list[dict]) -> dict:
     - global : verdict agrege sur tous les presets
     - discriminative_presets : nombre de presets ou R30 != R110 significatif
     - total_presets : nombre total de presets testes
+    - measurements : valeurs brutes (v30, v110, delta absolu, ratio) par
+      cellule -- le verdict est falsifiable sans relancer la mesure.
 
     Verdict par preset et par instrument :
-    - 'DISCRIMINANT' : R30 et R110 sont nettement differents (delta > seuil)
-    - 'WEAK-DISCRIMINANT' : difference existe mais petite
-    - 'NONDISCRIMINANT' : R30 et R110 indistinguables
+    - 'DISCRIMINANT' : R30 et R110 nettement differents (ratio > 0.20 ET
+      delta absolu >= WOLFRAM_SEED_ABS_DELTA_FLOOR)
+    - 'WEAK-DISCRIMINANT' : difference existe mais petite (ratio > 0.05 et
+      delta absolu >= plancher)
+    - 'NONDISCRIMINANT' : R30 et R110 indistinguables -- y compris quand le
+      ratio normalise est eleve mais le delta absolu est sous le plancher
+      (deux valeurs proches de zero : le ratio y fabrique du bruit)
+    - 'SATURATED' : n_cells < WOLFRAM_SEED_MIN_N_CELLS -- la mesure est un
+      artefact de cadrage, aucun verdict publiable n'en sort
+    - 'INCOMPLETE' : paire R30/R110 manquante dans le paysage
+
+    Garde d'echelle (reserve c.6078963240) : a n_cells = 64, le verdict
+    publie par la version initiale etait un artefact de saturation zlib, pas
+    une mesure de discrimination.
     """
     if not landscape:
         return {
@@ -2241,29 +2321,54 @@ def seed_discrimination_verdict(landscape: list[dict]) -> dict:
             "global": "EMPTY",
             "discriminative_presets": 0,
             "total_presets": 0,
+            "measurements": {},
         }
 
     presets = sorted({r["preset"] for r in landscape})
     instruments = sorted({r["instrument"] for r in landscape})
-    rules = sorted({r["rule"] for r in landscape})
+
+    # Garde d'echelle : sous WOLFRAM_SEED_MIN_N_CELLS, la fenetre packee KSF
+    # est sous le plancher de cadrage zlib et R30 / R110 rendent la meme
+    # constante -- toute discrimination y est un artefact (cf. pli 7).
+    n_cells_seen = {r.get("n_cells", 0) for r in landscape}
+    n_cells = max(n_cells_seen) if n_cells_seen else 0
+    if n_cells < WOLFRAM_SEED_MIN_N_CELLS:
+        return {
+            "per_instrument": {
+                instr: {p: "SATURATED" for p in presets}
+                for instr in instruments
+            },
+            "global": (
+                f"WOLFRAM-SEED-SATURATED (n_cells={n_cells} < "
+                f"{WOLFRAM_SEED_MIN_N_CELLS} : la fenetre packee est sous le "
+                f"plancher de cadrage zlib, R30 et R110 y rendent la meme "
+                f"constante -- toute discrimination publiee a cette echelle "
+                f"est un artefact)"
+            ),
+            "discriminative_presets": 0,
+            "total_presets": len(presets) * len(instruments),
+            "measurements": {},
+        }
 
     # Par (instrument, preset), comparer R30 et R110.
-    # Pour LZ : k_last_over_first.
-    # Pour KSF : ksf_last_minus_first.
-    # Pour blocks : blocks_std_at_W32.
+    # Pour LZ : k_last_over_first (ratio, sans unite).
+    # Pour KSF : ksf_last_bits_per_cell (bits/cellule -- port pli 7).
+    # Pour blocks : blocks_lz76_std_at_Wmax (std LZ76 normalisee -- port pli 8).
     def measure_value(row: dict) -> float:
         if row["instrument"] == "lz":
             return row["k_last_over_first"]
         if row["instrument"] == "ksf":
-            return row["ksf_last_minus_first"]
+            return row["ksf_last_bits_per_cell"]
         if row["instrument"] == "blocks":
-            return row["blocks_std_at_W32"]
+            return row["blocks_lz76_std_at_Wmax"]
         return 0.0
 
     per_instrument: dict[str, dict[str, str]] = {}
+    measurements: dict[str, dict[str, dict]] = {}
     discriminative_count = 0
     for instrument in instruments:
         per_instrument[instrument] = {}
+        measurements[instrument] = {}
         for preset in presets:
             r30 = next(
                 (
@@ -2290,15 +2395,29 @@ def seed_discrimination_verdict(landscape: list[dict]) -> dict:
                 continue
             v30 = measure_value(r30)
             v110 = measure_value(r110)
+            abs_delta = abs(v30 - v110)
+            denom = max(abs(v30), abs(v110), 1e-9)
+            ratio = abs_delta / denom
+            measurements[instrument][preset] = {
+                "v30": round(v30, 4),
+                "v110": round(v110, 4),
+                "abs_delta": round(abs_delta, 4),
+                "ratio": round(ratio, 4),
+            }
             if v30 == 0 and v110 == 0:
                 per_instrument[instrument][preset] = "NONDISCRIMINANT"
                 continue
-            # Normalisation par le max pour eviter les biais d'echelle.
-            denom = max(abs(v30), abs(v110), 1e-9)
-            delta = abs(v30 - v110) / denom
-            if delta > 0.20:
+            # Plancher absolu AVANT le ratio : un delta absolu sous le
+            # plancher est du bruit, quelle que soit la valeur du ratio
+            # normalise (qui explose quand les deux valeurs sont proches de
+            # zero). Sans ce plancher, la normalisation par le max fabrique
+            # un DISCRIMINANT sur du bruit (reserve c.6078963240).
+            if abs_delta < WOLFRAM_SEED_ABS_DELTA_FLOOR:
+                per_instrument[instrument][preset] = "NONDISCRIMINANT"
+                continue
+            if ratio > 0.20:
                 verdict = "DISCRIMINANT"
-            elif delta > 0.05:
+            elif ratio > 0.05:
                 verdict = "WEAK-DISCRIMINANT"
             else:
                 verdict = "NONDISCRIMINANT"
@@ -2320,6 +2439,7 @@ def seed_discrimination_verdict(landscape: list[dict]) -> dict:
         "global": global_verdict,
         "discriminative_presets": discriminative_count,
         "total_presets": n_total,
+        "measurements": measurements,
     }
 
 
@@ -2327,12 +2447,15 @@ def cmd_wolfram_seed_test(args: argparse.Namespace) -> int:
     """Mode wolfram-seed-test : paysage de seeds × 3 complexites × 4 regles.
 
     Teste la discrimination R30 vs R110 sous differentes conditions de seed,
-    pour verifier si le verdict NONDISCRIMINANT des plis 4/7/8 tient avec
-    le seed canonique R110 (Wolfram 2002 ch. 7).
+    avec les instruments corriges des plis freres (KSF en bits/cellule,
+    blocks en complexite LZ76 normalisee). Echelle canonique : n=512
+    (WOLFRAM_SEED_MIN_N_CELLS) -- sous ce plancher la mesure est SATUREE et
+    le JSON de resultats est refuse.
 
     Usage :
         python scripts/hashlife/k_trajectory.py --mode wolfram-seed-test \\
-            --n-cells 64 --n-steps 64
+            --n-cells 512 --n-steps 512 \\
+            --json-out scripts/hashlife/wolfram_seed_test_results.json
     """
     rules = (0, 4, 30, 110)
     presets = tuple(args.seed_presets) if args.seed_presets else (
@@ -2344,6 +2467,19 @@ def cmd_wolfram_seed_test(args: argparse.Namespace) -> int:
     print(f"  Regles : {rules}")
     print(f"  Presets : {presets}")
     print(f"  Instruments : {instruments}")
+    if args.n_cells < WOLFRAM_SEED_MIN_N_CELLS:
+        print(
+            f"[WARN] n_cells={args.n_cells} < WOLFRAM_SEED_MIN_N_CELLS="
+            f"{WOLFRAM_SEED_MIN_N_CELLS} : mesure SATUREE (plancher de cadrage "
+            f"zlib), le verdict sera WOLFRAM-SEED-SATURATED."
+        )
+        if args.json_out:
+            print(
+                "[ERROR] --json-out refuse sous le plancher d'echelle : on ne "
+                "publie pas un artefact de saturation. Relancer avec --n-cells "
+                f">= {WOLFRAM_SEED_MIN_N_CELLS}."
+            )
+            return 1
     print()
 
     landscape = measure_seed_instrument_landscape(
