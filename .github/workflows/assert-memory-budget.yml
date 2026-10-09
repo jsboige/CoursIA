@@ -86,6 +86,12 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
 
+      # Le runner ubuntu-latest n'expose pas pytest dans le Python 3.13 de
+      # setup-python : sans cette etape le smoke test echoue sur
+      # `No module named pytest` (rouge fondeur du 2026-10-09), pas sur le code.
+      - name: Install pytest
+        run: python -m pip install --quiet --disable-pip-version-check pytest
+
       - name: Run pytest (smoke)
         run: |
           python -m pytest scripts/tests/test_assert_memory_budget.py -v
