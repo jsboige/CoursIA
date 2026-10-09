@@ -172,15 +172,15 @@ Numéros nus uniquement, lisibles de haut en bas. Le compte et la maturité exac
 
 | # | Notebook | Ce qu'on y apprend | Stack |
 |---|----------|--------------------|-------|
-| 1  | [Tweety-01-Setup-Python](Tweety-01-Setup-Python.ipynb) | Configuration JVM, JARs, solveurs externes | Python |
-| 2  | [Tweety-02-Basic-Logics-Python](Tweety-02-Basic-Logics-Python.ipynb) | Logique propositionnelle (SAT) et du premier ordre (FOL) | Python |
+| 1  | [Tweety-01-Setup-Python](Tweety-01-Setup-Python.html) | Configuration JVM, JARs, solveurs externes | Python |
+| 2  | [Tweety-02-Basic-Logics-Python](Tweety-02-Basic-Logics-Python.html) | Logique propositionnelle (SAT) et du premier ordre (FOL) | Python |
 | 3  | [Tweety-03-Advanced-Logics-Python](Tweety-03-Advanced-Logics-Python.html) | DL, Modale, QBF, Conditionnelle | Python |
 | 4  | [Tweety-04-Belief-Revision-Python](Tweety-04-Belief-Revision-Python.html) | MUS, MaxSAT, Mesures d'incohérence, AGM | Python |
 | 5  | [Tweety-05-Abstract-Argumentation-Python](Tweety-05-Abstract-Argumentation-Python.html) | Dung AF, sémantiques grounded/stable/CF2 | Python |
-| 6  | [Tweety-06-Structured-Argumentation-Python](Tweety-06-Structured-Argumentation-Python.ipynb) | ASPIC+, DeLP, ABA, ASP | Python |
-| 7  | [Tweety-07a-Extended-Frameworks-Python](Tweety-07a-Extended-Frameworks-Python.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended | Python |
-| 8  | [Tweety-08-Agent-Dialogues-Python](Tweety-08-Agent-Dialogues-Python.ipynb) | Agents, dialogues argumentatifs, loteries | Python |
-| 9  | [Tweety-09-Preferences-Python](Tweety-09-Preferences-Python.ipynb) | Préférences, théorie du vote | Python |
+| 6  | [Tweety-06-Structured-Argumentation-Python](Tweety-06-Structured-Argumentation-Python.html) | ASPIC+, DeLP, ABA, ASP | Python |
+| 7  | [Tweety-07a-Extended-Frameworks-Python](Tweety-07a-Extended-Frameworks-Python.html) | ADF, Bipolar, WAF, SAF, SetAF, Extended | Python |
+| 8  | [Tweety-08-Agent-Dialogues-Python](Tweety-08-Agent-Dialogues-Python.html) | Agents, dialogues argumentatifs, loteries | Python |
+| 9  | [Tweety-09-Preferences-Python](Tweety-09-Preferences-Python.html) | Préférences, théorie du vote | Python |
 | 10 | [Tweety-10-MLN-Python](Tweety-10-MLN-Python.html) | Markov Logic Networks (FOL pondérée) | Python |
 | 11 | [Tweety-11-Causal-Python](Tweety-11-Causal-Python.html) | do-calculus de Pearl, interventions, contrefactuels | Python |
 | 12 | [Tweety-12-Grounded-Via-TweetyProject-Python](Tweety-12-Grounded-Via-TweetyProject-Python.html) | Bouclage de la sémantique grounded entre Python et Lean | Python |
@@ -195,12 +195,12 @@ Une section par palier qui ouvre des lettres. Chaque lettre est **facultative** 
 
 | Lettre | Notebook | Ce que cette lettre ajoute |
 |---|---|---|
-| 02a | [Tweety-02-Basic-Logics-CSharp](Tweety-02-Basic-Logics-CSharp.ipynb) | Jumeau C#/.NET du 02 (IKVM, **port pilote** #4792, premier pont Java→.NET de la série) |
-| 02b | [Tweety-02b-Semantics-CSharp](Tweety-02b-Semantics-CSharp.ipynb) | Sémantique propositionnelle .NET (mondes possibles) |
-| 02c | [Tweety-02c-FOL-CSharp](Tweety-02c-FOL-CSharp.ipynb) | FOL porté .NET via IKVM 8.15.0 (`tweetyproject.logics.fol.*` réel, DLL `tweety-pl` référençant `IKVM.Runtime` 8.15.0) |
+| 02a | [Tweety-02-Basic-Logics-CSharp](Tweety-02-Basic-Logics-CSharp.html) | Jumeau C#/.NET du 02 (IKVM, **port pilote** #4792, premier pont Java→.NET de la série) |
+| 02b | [Tweety-02b-Semantics-CSharp](Tweety-02b-Semantics-CSharp.html) | Sémantique propositionnelle .NET (mondes possibles) |
+| 02c | [Tweety-02c-FOL-CSharp](Tweety-02c-FOL-CSharp.html) | FOL porté .NET via IKVM 8.15.0 (`tweetyproject.logics.fol.*` réel, DLL `tweety-pl` référençant `IKVM.Runtime` 8.15.0) |
 | 02d | [Tweety-02d-FOL-Lab-Lean-Python](Tweety-02d-FOL-Lab-Lean-Python.html) | **Labo croisé** (tranche B de l'EPIC #15066) : un même syllogisme exécuté par `SimpleFolReasoner` (six verdicts) et certifié par le noyau Lean sur le corpus **FFL épinglé** — conséquences quantifiées, contre-modèles finis exhibés ; la distinction `FALSE` ≠ « négation prouvée » y est mesurée |
 | 02e | [Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python](Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python.html) | **Calculs de preuve** (tranche D de l'EPIC #15066) : trois axiomes de Hilbert vérifiés par deux oracles réels, une preuve de Hilbert construite par **chaînage avant** (coût mesuré), puis le calcul des séquents **LK** — hauteur et taille d'un arbre **avant/après** élimination des coupures, le Hauptsatz étant invoqué comme **théorème du noyau** (`Derivation.Canonical.constructiveHauptsatz`, témoin `IsCutFree`) |
-| 02f | [Tweety-02f-Modal-Zoo-Lean-Python](Tweety-02f-Modal-Zoo-Lean-Python.ipynb) | **Zoo modal certifié** (tranche G de l'EPIC #15066) : huit systèmes normaux (`K`, `KD`, `KT`, `KTB`, `K4`, `S4`, `KD45`, `S5`) et **l'ordre** qui les relie. Les listes du module `FormalLogic.ModalZoo` ([#17642](https://github.com/jsboige/CoursIA/pull/17642)) sont **exportées** par `lake env lean` (`ModalZoo.toJson`), l'ordre est **recalculé** en Python sur les seuls profils exportés, puis la carte est dessinée : 21 inclusions strictes sur 28 paires du cube, dont 11 arêtes de couverture, et 7 paires **incomparables** — chacune certifiée par le noyau |
+| 02f | [Tweety-02f-Modal-Zoo-Lean-Python](Tweety-02f-Modal-Zoo-Lean-Python.html) | **Zoo modal certifié** (tranche G de l'EPIC #15066) : huit systèmes normaux (`K`, `KD`, `KT`, `KTB`, `K4`, `S4`, `KD45`, `S5`) et **l'ordre** qui les relie. Les listes du module `FormalLogic.ModalZoo` ([#17642](https://github.com/jsboige/CoursIA/pull/17642)) sont **exportées** par `lake env lean` (`ModalZoo.toJson`), l'ordre est **recalculé** en Python sur les seuls profils exportés, puis la carte est dessinée : 21 inclusions strictes sur 28 paires du cube, dont 11 arêtes de couverture, et 7 paires **incomparables** — chacune certifiée par le noyau |
 
 #### Autour de 03 — logiques avancées : modal et laboratoire
 
@@ -233,7 +233,7 @@ Une section par palier qui ouvre des lettres. Chaque lettre est **facultative** 
 
 | Lettre | Notebook | Ce que cette lettre ajoute |
 |---|---|---|
-| 06c | [Tweety-06-Structured-Argumentation-CSharp](Tweety-06-Structured-Argumentation-CSharp.ipynb) | Twin C# ASPIC+ from-scratch (BCL, pas IKVM ; DeLP/ABA/ASP conceptuel) |
+| 06c | [Tweety-06-Structured-Argumentation-CSharp](Tweety-06-Structured-Argumentation-CSharp.html) | Twin C# ASPIC+ from-scratch (BCL, pas IKVM ; DeLP/ABA/ASP conceptuel) |
 
 #### Autour de 07 — cadres étendus et probabilistes
 
@@ -241,16 +241,16 @@ Le palier 07 est porté par le **07a** (Python) et son jumeau **07ac** (C#) ; le
 
 | Lettre | Notebook | Ce que cette lettre ajoute |
 |---|---|---|
-| 07ac | [Tweety-07a-Extended-Frameworks-CSharp](Tweety-07a-Extended-Frameworks-CSharp.ipynb) | Twin C# hybride : ADF/SetAF/EAF/VAF from-scratch (BCL, Kleene 3-valued) + tranche 2 lib Tweety réelle via IKVM (DLL shade 7a versionnée à la racine, rebuildable via `dotnet-build/rebuild-7a.sh` ; #4956) |
-| 07b  | [Tweety-07b-Ranking-Probabilistic-Python](Tweety-07b-Ranking-Probabilistic-Python.ipynb) | Sémantiques de classement (ranking) et argumentation probabiliste |
-| 07bc | [Tweety-07b-Ranking-Probabilistic-CSharp](Tweety-07b-Ranking-Probabilistic-CSharp.ipynb) | Jumeau C# du 07b (IKVM, c.179 PR #5231) — `Ranking`, `SubgraphProbability` réels |
+| 07ac | [Tweety-07a-Extended-Frameworks-CSharp](Tweety-07a-Extended-Frameworks-CSharp.html) | Twin C# hybride : ADF/SetAF/EAF/VAF from-scratch (BCL, Kleene 3-valued) + tranche 2 lib Tweety réelle via IKVM (DLL shade 7a versionnée à la racine, rebuildable via `dotnet-build/rebuild-7a.sh` ; #4956) |
+| 07b  | [Tweety-07b-Ranking-Probabilistic-Python](Tweety-07b-Ranking-Probabilistic-Python.html) | Sémantiques de classement (ranking) et argumentation probabiliste |
+| 07bc | [Tweety-07b-Ranking-Probabilistic-CSharp](Tweety-07b-Ranking-Probabilistic-CSharp.html) | Jumeau C# du 07b (IKVM, c.179 PR #5231) — `Ranking`, `SubgraphProbability` réels |
 
 #### Autour de 08 et 09 — applications multi-agents
 
 | Lettre | Notebook | Ce que cette lettre ajoute |
 |---|---|---|
-| 08c | [Tweety-08-Agent-Dialogues-CSharp](Tweety-08-Agent-Dialogues-CSharp.ipynb) | Twin C# dialogues argumentatifs from-scratch (BCL .NET, pas IKVM/JVM ; Dung AF + agents + protocole Claim/Argue/Concede/Retract + loterie argumentative Monte-Carlo) |
-| 09c | [Tweety-09-Preferences-CSharp](Tweety-09-Preferences-CSharp.ipynb) | Préférences .NET (IKVM, c.180 PR #5268) |
+| 08c | [Tweety-08-Agent-Dialogues-CSharp](Tweety-08-Agent-Dialogues-CSharp.html) | Twin C# dialogues argumentatifs from-scratch (BCL .NET, pas IKVM/JVM ; Dung AF + agents + protocole Claim/Argue/Concede/Retract + loterie argumentative Monte-Carlo) |
+| 09c | [Tweety-09-Preferences-CSharp](Tweety-09-Preferences-CSharp.html) | Préférences .NET (IKVM, c.180 PR #5268) |
 
 #### Autour de 10 et 11 — synthèse
 
@@ -343,9 +343,9 @@ La signature du do-calculus — **P(rain | drops) ≠ P(rain | do(drops))** — 
 
 Tweety raisonne sur le do-calculus en **logique propositionnelle** : `do(X)` y est *qualitatif* — un atome forcé, un SCM réécrit, une réponse vrai/faux. C'est idéal pour *voir* la différence entre `observe` et `do` sans nombres, mais Tweety **ne chiffre pas** un effet causal ni ne lève quantitativement un paradoxe de Simpson. Les séries probabilistes du dépôt reprennent **exactement ce notebook** avec des distributions :
 
-- [Infer-5-Causal-Inference](../../Probas/Infer/Infer-5-Causal-Inference.ipynb) — le **jumeau distributionnel par message passing** : `P(Y|do(X))` calculé par mutilation de graphe en Infer.NET (EP/VMP), ajustements backdoor / front-door, paradoxe de Simpson résolu numériquement.
-- [PyMC-05-Causal-Inference](../../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) — la version **MCMC** avec l'opérateur natif `pm.do` et le contrefactuel par abduction.
-- [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) — le même `do` monte d'un cran : à **quelle échelle** un système fait-il le plus de travail causal ?
+- [Infer-5-Causal-Inference](../../Probas/Infer/Infer-5-Causal-Inference.html) — le **jumeau distributionnel par message passing** : `P(Y|do(X))` calculé par mutilation de graphe en Infer.NET (EP/VMP), ajustements backdoor / front-door, paradoxe de Simpson résolu numériquement.
+- [PyMC-05-Causal-Inference](../../Probas/PyMC/PyMC-05-Causal-Inference.html) — la version **MCMC** avec l'opérateur natif `pm.do` et le contrefactuel par abduction.
+- [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.html) — le même `do` monte d'un cran : à **quelle échelle** un système fait-il le plus de travail causal ?
 
 Vue d'ensemble des quatre paradigmes : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
@@ -834,7 +834,7 @@ Statistiques détaillées de la sous-série Tweety. Le `pedagogical_count: 36` e
 | Sous-catégorie        |    NB | Statut                       |
 |-----------------------|-------|------------------------------|
 | Python (Tw-1..11)     |    12 | PROD=12                      |
-| `Tweety-12-Grounded` (non tabulé) |  1 | maturité non déclarée     |
+| `Tweety-12-Grounded` (rangée 12 de la table racine) |  1 | maturité non déclarée     |
 | Lean companion (2d, 2e, 2f, 3b, 5b, 5d, 5e) |   7 | BETA=7            |
 | C#/.NET               |    18 | PROD=12, BETA=5, DRAFT=1     |
 | Probe `_probes/`      |     1 | BETA                         |
