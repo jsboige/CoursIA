@@ -37,7 +37,7 @@ Le matériel QC mélange 4 types de notebooks qu'un visiteur doit distinguer :
 | `BitcoinRegimeGate-QC` | Régime BTC (gate 24/7) | US Equity (QQQ/SHY) | **Alive — risk-adjusted** | QC Cloud 2026-09-30 (distillat #18576) : IS 2016-21 Sharpe **1.133** vs QQQ-hold 0.961 (MaxDD 14.4 % vs 28.2 %) ; OOS 2022-26 Sharpe **0.64** vs QQQ-hold 0.43 (MaxDD 15.2 % vs 34.7 %) ; PSR OOS 14.3 % (edge vs cash non significatif) |
 | `AllWeather` | Multi-asset risk-parity | Actions/Bonds/Or/Commodities | **Alive** | Figure #5743 |
 | `EMA-Cross-Index` | Trend EMA | US Equity (SPY) | **Needs-improvement** (sous SPY détenu) | Figure #5746. Mesure locale du README, 2015-2026, configuration recommandée EMA 20/60 + stop suiveur 5 % : Sharpe 0.797 ; CAGR 9.0 % ; MaxDD 24.2 % ; verdict du README « MITIGÉ / UNDERPERFORM », la stratégie finit sous SPY détenu en CAGR (réaligné #19709) |
-| `EMA-Cross-Crypto` | Trend EMA | Crypto (BTC) | **Alive** | Figure #5750 |
+| `EMA-Cross-Crypto` | Trend EMA | Crypto (BTC) | **NO BEATS** | QC Cloud 2026-10-09 (#20054), 2018-11 → 2026-06 (barres BTCUSDT Binance disponibles sur QC à partir du 2018-05-01) : Sharpe 1,05 (taux sans risque nul) contre 0,81 pour BTC détenu, p 0,21 ; pire baisse −45,4 % contre −76,6 %. 33 des 40 sorties sur stop suiveur sont suivies d'un rachat dans les deux jours. Statut antérieur « Alive » sur la seule foi de la figure #5750 |
 | `ML-RandomForest` | ML supervisé (RF) | US large-cap | **Needs-improvement** (PSR < 50 %) | Figure #5747. QC Cloud 2026-08-06, projet 29434751, 2015-2024 : Sharpe 0.819 ; CAGR 24.25 % ; MaxDD 40.5 % ; **PSR 14.52 %**. Sept titres Mag7 sur dix et une seule graine : du bêta filtré, pas d'alpha ML (README) (réaligné #19709) |
 | `ML-XGBoost` | ML supervisé (XGBoost) | US large-cap | **Needs-improvement** (PSR < 50 %) | Figure #5749. QC Cloud 2026-08-06, projet 29434753, 2015-2024 : Sharpe 0.787 ; CAGR 19.49 % ; MaxDD 35.9 % ; **PSR 15.40 %**. Régresseur `GradientBoostingRegressor` (pas la bibliothèque `xgboost`) utilisé en classement, univers Mag7 + tech (README) (réaligné #19709) |
 | `ForexCarry` | FX carry/momentum | G10 FX | **BROKEN** (`main.py` actuel) | Figure #5748. Mesure du README, 2018-2026, `main.py` v4.0 : **Sharpe −0.156** ; CAGR −0.6 % ; MaxDD 13.95 %. Les variantes v3a et v3e (Sharpe +0.501 et +1.687) ne vivent que dans `research.ipynb`, pas dans `main.py` (réaligné #19709) |
@@ -125,7 +125,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `DualMomentum` | `projects/DualMomentum/` | Momentum dual-asset | Vérifié | tableau vérifié ci-dessus (Superseded) |
 | `DualMomentumNoTLT` | `projects/DualMomentumNoTLT/` | Momentum (sans TLT) | Vérifié | tableau vérifié ci-dessus (Needs-improvement, réaligné #19709) |
 | `DynamicVIXSpyRegime-QC` | `projects/DynamicVIXSpyRegime-QC/` | Régime VIX | Vérifié | tableau vérifié ci-dessus (NO BEATS, #19825) |
-| `EMA-Cross-Crypto` | `projects/EMA-Cross-Crypto/` | Trend EMA | Vérifié | tableau vérifié ci-dessus (figure #5750) |
+| `EMA-Cross-Crypto` | `projects/EMA-Cross-Crypto/` | Trend EMA | Vérifié | tableau vérifié ci-dessus (NO BEATS, #20054) |
 | `EMA-Cross-Index` | `projects/EMA-Cross-Index/` | Trend EMA | Vérifié | tableau vérifié ci-dessus (figure #5746) |
 | `ForexCarry` | `projects/ForexCarry/` | FX carry/momentum | Vérifié | tableau vérifié ci-dessus (figure #5748) |
 | `Framework_Composite_FamaFrenchAllWeather` | `projects/Framework_Composite_FamaFrenchAllWeather/` | Composite | Vérifié | tableau vérifié ci-dessus (NO BEATS, #19621) |
