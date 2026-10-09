@@ -55,7 +55,7 @@ concurrency:
 
 jobs:
   render-scan:
-    name: markdown-rendering-guard
+    name: "markdown-rendering guard (main-repo notebooks)"
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de

@@ -228,7 +228,7 @@ PILOT_SHADOW_NATIF = (
 # ---------------------------------------------------------------------------
 PILOT: list[Guard] = [
     Guard(
-        name="banner-guard",
+        name="probeAddresses banner guard (main-repo notebooks)",
         source="banner-guard.yml",
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/strip_probe_banner.py",
@@ -242,7 +242,7 @@ PILOT: list[Guard] = [
         absorbed=True,
     ),
     Guard(
-        name="pip-leak-guard",
+        name="!pip install HIGH delta guard (#6314)",
         source="pip-leak-guard.yml",
         # Les trois motifs non-ipynb viennent du declencheur `pull_request`
         # retire a l'absorption (#12856 etape 3). Sans eux, une PR qui ne
@@ -275,7 +275,7 @@ PILOT: list[Guard] = [
         needs_base=True,
     ),
     Guard(
-        name="prose-counts-guard",
+        name="prose-counts",
         source="prose-counts-guard.yml",
         paths=["**/*.ipynb", "**/*.md"],
         argv=["python", "scripts/notebook_tools/check_prose_quantitative_claims.py",
@@ -322,7 +322,7 @@ PILOT: list[Guard] = [
     # a la fois ; le verdict agrege est failure si l'une des iterations
     # echoue avec un code `failure` (rc=1 pour les detecteurs deterministes).
     Guard(
-        name="bare-cross-dir-load-gate",
+        name="No bare cross-dir #load in changed notebooks",
         source="bare-cross-dir-load-gate.yml",
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/detect_bare_cross_dir_load.py",
@@ -337,7 +337,7 @@ PILOT: list[Guard] = [
         absorbed=True,
     ),
     Guard(
-        name="notebook-navlink-check",
+        name="check-navlinks",
         source="notebook-navlink-check.yml",
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/check_notebook_navlinks.py",
@@ -350,7 +350,7 @@ PILOT: list[Guard] = [
         absorbed=True,
     ),
     Guard(
-        name="notebook-nav-chain-guard",
+        name="check-nav-chain",
         source="notebook-nav-chain-guard.yml",
         paths=NOTEBOOK_GLOBS + [
             "MyIA.AI.Notebooks/**/README.md",
@@ -381,7 +381,7 @@ PILOT: list[Guard] = [
     # ferait mesurer la classe retiree (STALE_LINK) et le comparator
     # verrait tout le backlog comme nouveau.
     Guard(
-        name="readme-ipynb-links-guard",
+        name="Audit README -> .ipynb links",
         source="readme-ipynb-links-guard.yml",
         # Parite de couverture avec le declencheur `pull_request` retire a
         # l'absorption (#12856 etape 3) : les cinq derniers motifs viennent de
@@ -423,7 +423,7 @@ PILOT: list[Guard] = [
         absorbed=True,
     ),
     Guard(
-        name="notebook-interp-positioning-guard",
+        name="check_interp_positioning.py",
         source="notebook-interp-positioning.yml",
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/check_interp_positioning.py",
@@ -437,7 +437,7 @@ PILOT: list[Guard] = [
         absorbed=True,
     ),
     Guard(
-        name="markdown-rendering-guard",
+        name="markdown-rendering guard (main-repo notebooks)",
         source="markdown-rendering-guard.yml",
         paths=[
             "**/*.ipynb",

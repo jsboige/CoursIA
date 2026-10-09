@@ -54,7 +54,7 @@ permissions:
 
 jobs:
   check:
-    name: readme-ipynb-links-guard
+    name: Audit README -> .ipynb links
     runs-on: ubuntu-latest
     # 12 min, pas 5 (#19982).
     #

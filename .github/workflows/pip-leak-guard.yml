@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   pip-leak-delta:
-    name: pip-leak-guard
+    name: "!pip install HIGH delta guard (#6314)"
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 1, decision ai-01
     # 2026-09-01) : garde Python pur, sans secret ni usage du GITHUB_TOKEN. La garde
     # same-repo ci-dessous saute les PRs de fork (pr_gate.py compte `skipped` comme

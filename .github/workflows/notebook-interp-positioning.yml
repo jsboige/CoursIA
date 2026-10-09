@@ -28,7 +28,7 @@ concurrency:
 
 jobs:
   check-interp-positioning:
-    name: notebook-interp-positioning-guard
+    name: check_interp_positioning.py
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 1, decision ai-01
     # 2026-09-01) : garde Python pur, sans secret ni usage du GITHUB_TOKEN. La garde
     # same-repo ci-dessous saute les PRs de fork (pr_gate.py compte `skipped` comme

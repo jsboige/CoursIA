@@ -86,7 +86,7 @@ concurrency:
 
 jobs:
   bare-cross-dir-load:
-    name: bare-cross-dir-load-gate
+    name: "No bare cross-dir #load in changed notebooks"
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de

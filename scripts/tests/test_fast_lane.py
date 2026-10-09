@@ -41,15 +41,15 @@ from fast_lane_registry import (  # noqa: E402
 # Epingler le lot ici rend toute absorption/desabsorption ulterieure d'un
 # garde PILOT visible : c'est un geste trace, jamais un effet de bord.
 PILOT_ABSORBED_LOT_12856 = frozenset({
-    "banner-guard",
-    "pip-leak-guard",
-    "prose-counts-guard",
-    "bare-cross-dir-load-gate",
-    "notebook-navlink-check",
-    "notebook-nav-chain-guard",
-    "readme-ipynb-links-guard",
-    "notebook-interp-positioning-guard",
-    "markdown-rendering-guard",
+    "probeAddresses banner guard (main-repo notebooks)",
+    "!pip install HIGH delta guard (#6314)",
+    "prose-counts",
+    "No bare cross-dir #load in changed notebooks",
+    "check-navlinks",
+    "check-nav-chain",
+    "Audit README -> .ipynb links",
+    "check_interp_positioning.py",
+    "markdown-rendering guard (main-repo notebooks)",
 })
 
 
@@ -108,8 +108,8 @@ def test_notebook_guards_select_a_root_level_notebook():
     """Controle de bout en bout du piege `**/` sur le registre reel."""
     changed = ["Notebook-A-La-Racine.ipynb"]
     selected = [g.name for g in PILOT if fast_lane.guard_applies(g, changed)]
-    for expected in ("banner-guard", "pip-leak-guard", "solution-leak-guard",
-                     "prose-counts-guard"):
+    for expected in ("probeAddresses banner guard (main-repo notebooks)", "!pip install HIGH delta guard (#6314)", "solution-leak-guard",
+                     "prose-counts"):
         assert expected in selected, (
             f"{expected} devrait couvrir un notebook a la racine "
             "(motif `**/*.ipynb`)"
@@ -423,20 +423,20 @@ def test_advisory_flags_match_the_source_workflows():
     """
     by_name = {g.name: g for g in PILOT}
     assert by_name["solution-leak-guard"].blocking is False
-    assert by_name["prose-counts-guard"].blocking is True
-    assert "--strict" in by_name["prose-counts-guard"].argv
-    assert by_name["banner-guard"].blocking is True
-    assert by_name["pip-leak-guard"].blocking is True
+    assert by_name["prose-counts"].blocking is True
+    assert "--strict" in by_name["prose-counts"].argv
+    assert by_name["probeAddresses banner guard (main-repo notebooks)"].blocking is True
+    assert by_name["!pip install HIGH delta guard (#6314)"].blocking is True
     assert by_name["perimeter-review-guard"].blocking is True
     # 5 gardes ajoutees (extension 5 -> 10) -- bloquer par defaut
-    assert by_name["bare-cross-dir-load-gate"].blocking is True
-    assert by_name["notebook-navlink-check"].blocking is True
+    assert by_name["No bare cross-dir #load in changed notebooks"].blocking is True
+    assert by_name["check-navlinks"].blocking is True
     # nav-chain reachability (#17284) : bloquant sur le NOUVEAU seulement,
     # le baseline porte la dette assumee (450 entrees a ce head -- compte
     # informatif, le JSON fait foi ; rollout par serie)
-    assert by_name["notebook-nav-chain-guard"].blocking is True
-    assert by_name["notebook-interp-positioning-guard"].blocking is True
-    assert by_name["markdown-rendering-guard"].blocking is True
+    assert by_name["check-nav-chain"].blocking is True
+    assert by_name["check_interp_positioning.py"].blocking is True
+    assert by_name["markdown-rendering guard (main-repo notebooks)"].blocking is True
     assert by_name["self-hosted-runner-policy"].blocking is True
 
 
@@ -473,8 +473,8 @@ def test_non_iterate_guards_have_no_paths_placeholder():
     `{changed_paths}` dans argv (le placeholder n'aurait pas de sens). On
     verifie au moins que les 5 gardes existants en sont exempts."""
     by_name = {g.name: g for g in PILOT}
-    for name in ("banner-guard", "pip-leak-guard", "solution-leak-guard",
-                 "prose-counts-guard", "perimeter-review-guard"):
+    for name in ("probeAddresses banner guard (main-repo notebooks)", "!pip install HIGH delta guard (#6314)", "solution-leak-guard",
+                 "prose-counts", "perimeter-review-guard"):
         assert "{changed_paths}" not in by_name[name].argv, (
             f"{name} n'est pas iterates_paths mais porte le placeholder"
         )
