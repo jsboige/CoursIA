@@ -49,7 +49,7 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    #16752) : conservation de `C` le long du flot de `ℓ₀` sans hypothèse,
    invariance de l'hyperplan centré le long du flot effectif, lemmes
    génériques de calcul différentiel.
-5. **Module `MathUniverse`** — digestion #16741/arc A (issue #16753) : l'**Annexe A**
+5. **Module `MathUniverse`** — digestion #16741/arc B (issue #16753) : l'**Annexe A**
    de R16, *The Mathematical Universe* (Tegmark, arXiv:0704.0646) — la définition
    opérationnelle d'une **structure mathématique** sur laquelle repose l'hypothèse
    de l'univers mathématique (MUH) : des entités (un type fini) et une
@@ -231,7 +231,7 @@ par la dynamique de ces plongements sous la perte effective `ℓ_eff = ℓ₀/Z�
 | `EffectiveTheory/CircleOfDays.lean` | 0 | R10 : la rotation des jours comme représentation de `C₇ = ZMod 7` (`rotation_cyclicSeven`) et son **irréductibilité** `circleOfDays_irreducible` (aucune droite stable : le discriminant `4(cos²(2π/7) − 1) < 0` exclut toute valeur propre réelle). |
 | `EffectiveTheory.lean` | 0 | Imports parapluie + cartographie du corpus (R02 `88CE88DB` / R06 `B589C4EF` / R10 `7DEAC929`). |
 
-### Module `MathUniverse` (digestion #16741/arc A — Annexe A de R16, Tegmark)
+### Module `MathUniverse` (digestion #16741/arc B — Annexe A de R16, Tegmark)
 
 L'Annexe A de *The Mathematical Universe* donne la définition opérationnelle sur
 laquelle repose la MUH : « une structure mathématique est un ensemble d'entités
@@ -344,6 +344,6 @@ déclaration dans un notebook :
 - **Issue #4293** — renommage `perceptron_lean → learning_theory_lean` + module PacLearning (mutualisation, cf `decision_theory_lean`)
 - **EPIC #13106** — digestion : le module `GradientFlow` en est la tranche « forme formalisation » (grille 10 points dans `GradientFlow.lean`)
 - **Issue #16752 / EPIC #16741** — module `EffectiveTheory` : base `Grokking.lean` (#16794) + module frère `GrokkingLemmas.lean` (recadrage ai-01 2026-09-23 : delta propre du grain R02, arc « ouverte, responsable, prouvable, explicable »)
-- **Issue #16753 / EPIC #16741** — module `MathUniverse` (arc A) : Annexe A de R16 — `FinRelStruct` (signature + relations décidables), `aut` (Aut(S) est un groupe, témoin `aut_bool8_trivial`), `EquivStruct` et son instance `Decidable` (l'algorithme haltant rendu exécutable), exemples §A.2 (C₂, C₃, algèbre de Boole engendrée par NAND seul)
+- **Issue #16753 / EPIC #16741** — module `MathUniverse` (arc B) : Annexe A de R16 — `FinRelStruct` (signature + relations décidables), `aut` (Aut(S) est un groupe, témoin `aut_bool8_trivial`), `EquivStruct` et son instance `Decidable` (l'algorithme haltant rendu exécutable), exemples §A.2 (C₂, C₃, algèbre de Boole engendrée par NAND seul)
 - **`ML/`** — série Machine Learning (ML.NET C#, Data Science with Agents Python)
 - **Epic #2651** — prose pédagogique README

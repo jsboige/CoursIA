@@ -72,7 +72,7 @@ et `GradientFlow`. -/
 lean_lib «EffectiveTheory» where
   globs := #[.submodules `EffectiveTheory, `EffectiveTheory]
 
-/-- Module `MathUniverse` — digestion #16741/arc A (issue #16753) : Annexe A de
+/-- Module `MathUniverse` — digestion #16741/arc B (issue #16753) : Annexe A de
 R16 (*The Mathematical Universe*, Tegmark) — structures mathématiques finies
 (signature + relations décidables), Aut(S) comme groupe, décidabilité de
 l'équivalence de deux définitions finies (« simple algorithme haltant » rendu
