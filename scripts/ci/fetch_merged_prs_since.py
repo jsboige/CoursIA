@@ -84,6 +84,17 @@ SLICE_ANCHOR = date(2026, 1, 5)
 
 DEFAULT_DAYS = 21
 
+# Borne de l'appel `subprocess.run` d'une tranche (#19643). Le picker peut
+# consumer au dela du timeout par defaut des tools shell d'agent (~115-120 s) ;
+# poser une borne ici permet a `pick_idle_grain.fetch_visits` (qui attrape
+# deja `subprocess.TimeoutExpired`) de rendre un verdict explicite
+# (« tirage NON mesure »), pas un crash nu ni un timeout-mute. Mesure
+# du 2026-10-07 : une tranche 30 j prend ~38 s, et le belt complet prend
+# ~123 s. Une borne a 60 s sur une tranche laisse 2x la mesure observee.
+# Surchargeable par `run_gh(..., timeout=...)` pour un appelant qui veut
+# etre plus strict.
+RUN_GH_TIMEOUT_S = 60.0
+
 # Champs demandes par defaut. Les appelants qui n'ont besoin que du corps et de
 # la date gardent ce jeu : `files` est le champ le plus cher de l'API (il porte
 # la liste des fichiers touches), et le demander pour rien paie le cout sans la
@@ -97,14 +108,23 @@ def since_date(days: int) -> str:
     return (date.today() - timedelta(days=days)).isoformat()
 
 
-def run_gh(since: str, until: str, fields: str = DEFAULT_FIELDS) -> list[dict]:
+def run_gh(since: str, until: str, fields: str = DEFAULT_FIELDS,
+           timeout: float | None = None) -> list[dict]:
     """One date slice of merged PRs, ``[since, until)`` on MERGE time.
 
     Uses only flags `gh pr list` actually has -- `--search` and `--limit`.
     Injected as ``run`` by the tests; `test_run_gh_argv_is_accepted_by_gh`
     executes this exact argv against the real binary, which is the control
     the `--page` regression escaped for its whole life.
+
+    `timeout` is the `subprocess.run` bound (seconds). Defaults to
+    ``RUN_GH_TIMEOUT_S`` (#19643) so a slow `gh` raises
+    ``subprocess.TimeoutExpired`` -- the caller in `pick_idle_grain` catches
+    it explicitly, and never produces a partial corpus labelled complete.
+    Pass `math.inf` to opt out (not recommended).
     """
+    if timeout is None:
+        timeout = RUN_GH_TIMEOUT_S
     out = subprocess.run(
         [
             "gh", "pr", "list",
@@ -114,6 +134,7 @@ def run_gh(since: str, until: str, fields: str = DEFAULT_FIELDS) -> list[dict]:
             "--json", fields,
         ],
         capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
+        timeout=timeout,
     )
     return json.loads(out.stdout)
 

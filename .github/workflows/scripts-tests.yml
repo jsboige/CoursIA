@@ -280,6 +280,18 @@ jobs:
           # (requests, bcrypt, jupyter_client — see #2871 root-cause list).
           pip install numpy pandas scipy pyarrow pytest
           pip install requests bcrypt jupyter_client
+          # ipykernel (#18279) : ce job n'enregistrait AUCUN kernelspec
+          # `python3`, si bien que les deux tests d'integration de
+          # scripts/tests/test_papermill_meta_strip.py se SAUTAIENT en silence
+          # (skipif sur la presence du kernelspec). La panne « kernel mort au
+          # spawn » n'existait alors plus que sur les runners qui avaient le
+          # kernel : machine-specifique en apparence, FILTREE en realite -- et
+          # c'est ce filtrage qui a fait suivre pendant dix jours un axe de
+          # diagnostic .NET alors qu'aucun noyau .NET n'etait lance. Regle F :
+          # un environnement se repare, il ne se contourne pas par un skip.
+          # Le test de visibilite ajoute dans le meme commit rougit si ce
+          # kernelspec disparait a nouveau.
+          pip install ipykernel
           pip install pyyaml tomli
           # python-dotenv: scripts/whisper_int8_comparison.py (and several
           # genai-stack modules) import `dotenv` at top level.
@@ -604,3 +616,40 @@ jobs:
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$ADK_CONTRACTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ADK_CONTRACTS_FLOOR. Removing a contract test is a contract change, not housekeeping."; exit 1; fi
           echo "OK: $N tests collected (floor=$ADK_CONTRACTS_FLOOR)."
+
+      - name: Run provider default contracts
+        # #20002: config/test_providers.py was run by NO CI leg -- the trigger
+        # above already fired on Track2-GoogleADK/**, so the surface existed
+        # while the collection was silently missing. Host is this job, not the
+        # shared scripts-tests list: test_providers.py imports only pytest +
+        # pathlib + importlib.util, and config/providers.py only pydantic +
+        # pydantic_settings -- no litellm/google-adk at module level, the
+        # reason the C1-C7 contracts needed their own env. This env already
+        # carries that chain, so the hosting cost is nil.
+        #
+        # The suite is the invariant binding Settings' declared defaults to
+        # ProviderConfig.DEFAULTS: it closes the #14755 class, where a retired
+        # OpenRouter model survived as a Settings default because nothing
+        # compared the two (get_provider_config resolves `settings.<p>_model or
+        # defaults["model"]`, and the fallback only shows on an empty env var).
+        run: |
+          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/config/test_providers.py" --tb=short -q
+
+      - name: Providers collection floor (30)
+        # Two-signal semantics, same as the contracts (18) floor above: 0
+        # collected = collection crash, below floor = a test was deleted.
+        #
+        # The floor is the count measured UNDER THIS JOB'S PIN
+        # (pydantic==2.12.5), never the author's workstation: #20002 named the
+        # pin gap as the trap to clear first (the suite had been measured under
+        # 2.13.4). Replayed before wiring, on the head of this PR: 30 collected
+        # / 30 passed under the pin, and 30 / 30 under 2.13.4 as well -- so the
+        # gap was not material, and 30 is the floor.
+        if: always()
+        env:
+          ADK_PROVIDERS_FLOOR: 30
+        run: |
+          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/config/test_providers.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
+          if [ "$N" -lt "$ADK_PROVIDERS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ADK_PROVIDERS_FLOOR."; exit 1; fi
+          echo "OK: $N tests collected (floor=$ADK_PROVIDERS_FLOOR)."

@@ -19,6 +19,7 @@ Vibe-Coding/
 ├── Roo-Code/             # Ateliers Roo Code (5 modules + avances)
 ├── Claw-Systems/         # Agents IA autonomes (NanoClaw, OpenClaw)
 ├── Claudish/             # Proxy multi-provider (route assistants vers Anthropic/GLM/Qwen)
+├── analyzers/            # Sous-série Roslyn : MyIA.AgentSafetyAnalyzer + carnet de démonstration
 └── docs/                 # Documentation commune et introductions
 ```
 

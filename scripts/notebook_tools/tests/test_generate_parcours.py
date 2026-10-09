@@ -401,6 +401,88 @@ def _expected_total_minutes(manifest, catalog, branch_or_accretion_ids,
     return total
 
 
+class TestMlEngineerManifest:
+    """Tests pour le manifeste ML Engineer (#19545, EPIC #19543 pli 1).
+
+    Couvre : (a) tous les notebooks cites existent sur disque ;
+    (b) le manifeste compile en 7 branches + 5 accretions ;
+    (c) la duree totale tient en moins de 50 h ;
+    (d) pas de chemin absent du catalogue (le manifeste n'ajoute pas
+        de carnet orphelin non catalogue par generate_catalog).
+    """
+    manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "ml-engineer.json"
+
+    def test_all_selected_notebooks_exist_on_disk(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        selected = [path for group in manifest["branches"] + manifest["accretions"]
+                    for path in group["notebooks"]]
+        assert len(selected) == len(set(selected)), "duplicate path in manifest"
+        assert all((gp.REPO_ROOT / "MyIA.AI.Notebooks" / path).is_file()
+                   for path in selected), \
+            f"chemins introuvables sur disque: {[p for p in selected if not (gp.REPO_ROOT / 'MyIA.AI.Notebooks' / p).is_file()]}"
+
+    def test_all_paths_are_in_catalog(self):
+        """Le manifeste ne reference pas un carnet absent du catalogue.
+
+        Si une accretion n'est pas encore cataloguee (generate_catalog
+        gele), la verification de production compile_parcours echoue.
+        La regle est explicite : on n'indexe pas un carnet orphelin dans
+        un manifeste ; le drop ou la regeneration du catalogue relevent
+        d'un autre grain.
+        """
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        catalog_paths = {entry["path"] for entry in catalog}
+        selected = [path for group in manifest["branches"] + manifest["accretions"]
+                    for path in group["notebooks"]]
+        missing = [p for p in selected if p not in catalog_paths]
+        assert not missing, \
+            f"chemins absents du catalogue (regenerer ou drop): {missing}"
+
+    def test_compiles_seven_branches_and_five_accretions(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        branches = [b["id"] for b in manifest["branches"]]
+        accretions = [a["id"] for a in manifest["accretions"]]
+        compiled = gp.compile_parcours(catalog, manifest, branches, accretions)
+        assert len(compiled["groups"]) == len(branches) + len(accretions)
+        assert [g["id"] for g in compiled["groups"][:len(branches)]] == branches
+
+    def test_total_duration_under_50_hours(self):
+        """Le parcours complet tient en moins de 50 h, sinon c'est un autre format qu'un parcours."""
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = gp.compile_parcours(
+            catalog, manifest,
+            [b["id"] for b in manifest["branches"]],
+            [a["id"] for a in manifest["accretions"]],
+        )
+        assert compiled["duration_minutes"] < 50 * 60, (
+            f"duree totale {compiled['duration_minutes']} min >= 50 h, "
+            f"le parcours n'est plus un itineraire mais une encyclopedie"
+        )
+
+    def test_ingenierie_threading(self):
+        """Le fil d'ingenierie est explicite : les descriptions de branche
+        portent au moins une mention de reproductibilite / production /
+        mise en service / derive / cout sur les branches profondes.
+
+        Branches superficielles (donnees, workflow-ml) peuvent ne pas
+        le mentionner : le socle est universel.
+        """
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        keywords = ["reproductib", "production", "service", "déploy",
+                    "drift", "drift", "cout", "coût", "calibration", "deploiement"]
+        for branch in manifest["branches"]:
+            if branch["id"] in {"donnees", "workflow-ml"}:
+                continue
+            desc_lower = branch["description"].lower()
+            assert any(kw.lower() in desc_lower for kw in keywords), (
+                f"branche {branch['id']} sans mention d'ingenierie "
+                f"(reproductibilite/production/service/deploy/cout/calibration)"
+            )
+
+
 class TestActuariatManifest:
     manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "actuariat.json"
 

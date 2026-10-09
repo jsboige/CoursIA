@@ -23,6 +23,13 @@ machinerie de rarete est CONSOMMEE depuis ``check_split_reading_cells`` /
 ``detect_repeated_prose`` (#16786), jamais reecrite : le jour ou le critere est
 cable, les deux doivent lire le meme df.
 
+**Perimetre de la redondance (arbitrage #18411 (c)).** Le delta mesure la
+nouveaute d'une lecture contre SA sortie ancree et la prose voisine -- pas
+contre les autres lectures. La redondance exacte ENTRE lectures (triplons,
+prose repetee d'une cellule a l'autre) reste le domaine de
+``detect_repeated_prose`` (#16762) : la mesure du census 2026-09-29 montre que
+ce critere ne l'attrape pas.
+
 Usage::
 
     python reading_information_delta.py --json            # census corpus
@@ -90,8 +97,31 @@ def _cell_source(cell: dict) -> str:
     return src or ""
 
 
+def _is_structural_header(cell: dict) -> bool:
+    """En-tete structurel seul : toutes lignes vides ou titres markdown ``#``.
+
+    Arbitrage #18411 (a) : ces cellules sortent du jeu de lectures de l'instrument.
+    Un titre seul ne commente rien -- y compris un titre d'interpretation sans
+    corps (``### Analyse`` seul passe ``is_reading_cell`` et etait mesure avec un
+    corps vide). Le census 2026-09-29 doit a cette classe ses non-lectures de
+    queue basse et une couverture gonflee.
+    """
+    src = _cell_source(cell).strip()
+    if not src:
+        return True
+    return all(
+        (not line.strip()) or line.lstrip().startswith("#")
+        for line in src.splitlines()
+    )
+
+
 def _is_reading(cell: dict) -> bool:
-    """Lecture au sens #16786 (titre de lecture) ou prose d'interpretation."""
+    """Lecture au sens #16786 (titre de lecture) ou prose d'interpretation.
+
+    Arbitrage #18411 (a) : un en-tete structurel seul n'est pas une lecture.
+    """
+    if _is_structural_header(cell):
+        return False
     return is_reading_cell(cell) or is_reading_or_prose(cell)
 
 
