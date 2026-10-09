@@ -99,8 +99,16 @@ Critères de retrait (cf issue #14195 acceptance) :
    fail-closed : `minus > 0` (il y a un commit a comparer) **et**
    `plus == 0` (aucun patch hors amont -- un seul `+` disqualifie), et une
    lecture git en echec refuse. Le champ `content_on_main_by`
-   (`"ancestor"` / `"patch_id"`) porte la jambe dans le rapport, pour qu'un
-   squash-merge ne se lise pas comme une ascendance.
+   (`"ancestor"` / `"patch_id"` / `"branch_patch_id"`) porte la jambe dans
+   le rapport, pour qu'un squash-merge ne se lise pas comme une ascendance.
+   La jambe patch-id ne voit qu'un squash **d'un seul commit** (le
+   patch-id se calcule sur le diff d'un commit, reserve Hermes 09/10) ;
+   le cas **multi-commit** releve de la jambe elargie
+   `content_delivered_by_branch_patch_id`, qui fabrique le commit que le
+   squash aurait produit (`git commit-tree HEAD^{tree} -p <merge-base>`)
+   et le donne a `git cherry` -- patch-id du patch de branche entiere,
+   calcule par la machinerie git, sans scan `git log -p`. Elle n'est
+   tentee que quand la jambe per-commit ne tranche pas deja.
 
 Ancre PR : `gh pr list --state all --search "head:<branch>"` (autoritative,
 cf matrice a 4 ancres de `.claude/rules/git-workflow.md` §orphan-branch-scan).
@@ -220,7 +228,7 @@ Exit codes:
 - [x] `git cherry` comme second temoin de contenu, fail-closed
       (`minus > 0` **et** `plus == 0`, lecture en echec -> REFUSE)
 - [x] Meme fenetre « agent vivant » que le predicat d'ascendance (#18494)
-- [x] Jambe exposee dans le rapport (`content_on_main(ancestor|patch_id)`)
+- [x] Jambe exposee dans le rapport (`content_on_main(ancestor|patch_id|branch_patch_id)`)
 - [x] Mesure avant cablage sur ferme reelle : 31 refuses de la classe,
       6 franchissables, 25 restes refuses (2026-10-09, po-2025)
 """
@@ -320,10 +328,12 @@ class WorktreeStatus:
     content_on_main: bool = False
     # Champ #20067 (additif) : *quelle jambe* a etabli `content_on_main`.
     # "ancestor" = le predicat 5 (#17771, ascendance) ; "patch_id" = le
-    # predicat 6 (#20067, `git cherry`). Deux preuves differentes, et le
-    # rapport doit dire laquelle a tire -- un squash-merge n'est pas une
-    # ascendance, et confondre les deux rend la classe `no_pr_match`
-    # indiscernable d'une garde qui n'aurait rien franchi.
+    # predicat 6 (#20067, `git cherry` per-commit) ; "branch_patch_id" =
+    # la jambe elargie (squash multi-commit, reserve Hermes 09/10). Trois
+    # preuves differentes, et le rapport doit dire laquelle a tire -- un
+    # squash-merge n'est pas une ascendance, et confondre les deux rend
+    # la classe `no_pr_match` indiscernable d'une garde qui n'aurait rien
+    # franchi.
     content_on_main_by: Optional[str] = None
     # Champ #3895 (additif) : lane proprietaire lue dans le marqueur
     # `.lane-owner` a la racine du worktree (None si absent). Attribue les
@@ -1051,10 +1061,16 @@ def content_delivered_by_patch_id(wt_path: str) -> Optional[tuple]:
 
     ``git cherry <main> HEAD`` compare chaque commit propre du worktree a
     l'amont par *patch-id* : ``-`` = le patch est deja en amont, ``+`` = il
-    ne l'est pas. C'est la seule voie qui voit un **squash-merge** suivi de
-    la suppression de la branche -- cas ou plus aucun ref distant ne porte
-    la tete, donc ou le predicat d'ascendance (#17771) refuse *par
-    construction*, quelle que soit la realite du contenu.
+    ne l'est pas. C'est la voie qui voit un **squash-merge d'un seul
+    commit** suivi de la suppression de la branche -- cas ou plus aucun
+    ref distant ne porte la tete, donc ou le predicat d'ascendance
+    (#17771) refuse *par construction*, quelle que soit la realite du
+    contenu. **Limite mesuree (reserve Hermes 09/10)** : le patch-id se
+    calcule sur le diff d'*un* commit, donc un squash de branche a N
+    commits produit un patch qui n'egale celui d'aucun commit d'origine --
+    cette jambe rend alors ``plus == N`` et ne tire pas. Ce cas
+    multi-commit releve de la jambe elargie
+    ``content_delivered_by_branch_patch_id``, tentee juste apres.
 
     Mesure du 2026-10-09 sur la ferme po-2025 (133 worktrees enregistres,
     31 refuses en ``no_pr_match``/``detached_no_match``) : **6 franchissent**
