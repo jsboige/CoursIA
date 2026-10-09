@@ -56,12 +56,17 @@ def render(bank: list[dict], sort_key: str = "wer", motor_filter: str | None = N
     if motor_filter:
         rows = [r for r in rows if r.get("motor") == motor_filter]
 
-    # Tri : nulls en fin
-    def sortkey(r: dict) -> tuple[int, float]:
+    # Tri : nulls en fin. Les cles numeriques se trient par valeur ; les cles
+    # textuelles (ex. `ts`, ISO-8601) lexicographiquement, ce qui est l'ordre
+    # chronologique pour ce format. Appliquer `float()` a toutes les cles
+    # levait `ValueError` des que `sort_key='ts'`.
+    def sortkey(r: dict) -> tuple[int, float, str]:
         v = r.get(sort_key)
         if v is None:
-            return (1, 0.0)
-        return (0, float(v))
+            return (1, 0.0, "")
+        if isinstance(v, bool) or not isinstance(v, (int, float)):
+            return (0, 0.0, str(v))
+        return (0, float(v), "")
 
     rows.sort(key=sortkey)
 

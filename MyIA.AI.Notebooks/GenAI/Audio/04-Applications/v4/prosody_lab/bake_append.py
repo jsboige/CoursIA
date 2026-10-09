@@ -125,8 +125,11 @@ def validate_run(run: dict, schema: dict) -> list[str]:
             errs.append(f"{fname!r}: {val} < minimum {fdef['minimum']}")
         if "maximum" in fdef and isinstance(val, (int, float)) and val > fdef["maximum"]:
             errs.append(f"{fname!r}: {val} > maximum {fdef['maximum']}")
-        # array items enum
-        if ftype == "array" and "items" in fdef and isinstance(val, list):
+        # array items enum. Le test porte sur `types` (liste normalisee), pas sur
+        # `ftype` : le type peut etre une union JSON-Schema (`["array","null"]`),
+        # auquel cas `ftype == "array"` est faux et les elements n'etaient pas
+        # verifies.
+        if "array" in types and "items" in fdef and isinstance(val, list):
             item_enum = fdef["items"].get("enum")
             if item_enum:
                 for j, v in enumerate(val):

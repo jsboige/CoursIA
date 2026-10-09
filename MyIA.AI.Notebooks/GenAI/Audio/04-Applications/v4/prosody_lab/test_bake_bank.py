@@ -196,6 +196,80 @@ def test_report_format() -> None:
     print("[OK] test_report_format")
 
 
+def test_report_sort_chronological() -> None:
+    """`--sort ts` doit trier chronologiquement sans lever (temoin #19820).
+
+    `ts` est une chaine ISO-8601, pas un nombre : un tri qui applique `float()`
+    a toutes les cles levait `ValueError` des la premiere date. Les trois dates
+    sont volontairement desordonnees, et la troisieme est `None` pour verifier
+    que les nulles restent en fin de tableau.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        bank = Path(tmp) / "bank.json"
+        bank.write_text(json.dumps([
+            {"ts": "2026-10-08T01:00:00Z", "machine": "myia-po-2027",
+             "motor": "recent", "extract": "A", "seed": 1, "duration_s": 10.0},
+            {"ts": "2026-10-06T01:00:00Z", "machine": "myia-po-2027",
+             "motor": "ancien", "extract": "A", "seed": 1, "duration_s": 10.0},
+            {"ts": None, "machine": "myia-po-2027",
+             "motor": "sans_ts", "extract": "A", "seed": 1, "duration_s": 10.0},
+            {"ts": "2026-10-07T01:00:00Z", "machine": "myia-po-2027",
+             "motor": "median", "extract": "A", "seed": 1, "duration_s": 10.0},
+        ]), encoding="utf-8")
+        rc, stdout, stderr = run([
+            sys.executable, str(BAKE_REPORT), "--bank", str(bank), "--sort", "ts",
+        ])
+        # Vue du bug : `render(..., sort_key='ts')` rendait rc=1 avec
+        # `ValueError: could not convert string to float` dans stderr.
+        assert_eq(f"report --sort ts rc (stderr: {stderr[:200]!r})", rc, 0)
+        i_ancien = stdout.find("ancien")
+        i_median = stdout.find("median")
+        i_recent = stdout.find("recent")
+        i_none = stdout.find("sans_ts")
+        assert_true("les trois moteurs dates sont presents",
+                    min(i_ancien, i_median, i_recent, i_none) >= 0)
+        assert_true("ancien avant median", i_ancien < i_median)
+        assert_true("median avant recent", i_median < i_recent)
+        assert_true("dates avant la nulle", i_recent < i_none)
+    print("[OK] test_report_sort_chronological")
+
+
+def test_append_validation_union_enum() -> None:
+    """Un `asr_models` interdit doit etre refuse (temoin #19820).
+
+    `asr_models` est declare en union JSON-Schema `["array", "null"]` : un test
+    d'items ecrit `ftype == "array"` est faux sur ce champ, et les elements
+    n'etaient jamais verifies. `validate_run` rendait `[]` pour
+    `[123, "invalid-model"]`.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        bank = Path(tmp) / "bank.json"
+        rc, _, stderr = run([
+            sys.executable, str(BAKE_APPEND), "--bank", str(bank),
+            "--run", json.dumps({
+                "ts": "2026-10-08T01:00:00Z", "machine": "myia-po-2027",
+                "motor": "union", "extract": "A", "seed": 1, "duration_s": 10.0,
+                "asr_models": [123, "invalid-model"],
+            }),
+        ])
+        assert_eq(f"union enum rc (stderr: {stderr[:200]!r})", rc, 1)
+        assert_contains("union enum message", stderr, "asr_models")
+        assert_contains("union enum cite le 1er element", stderr, "invalid-model")
+        if bank.exists():
+            fail("un run invalide a ete ecrit dans le banc")
+        # Controle positif : les valeurs de l'enum restent acceptees.
+        rc_ok, _, stderr_ok = run([
+            sys.executable, str(BAKE_APPEND), "--bank", str(bank), "--dry-run",
+            "--run", json.dumps({
+                "ts": "2026-10-08T01:00:00Z", "machine": "myia-po-2027",
+                "motor": "union", "extract": "A", "seed": 1, "duration_s": 10.0,
+                "asr_models": ["tiny", "large-v3"],
+            }),
+        ])
+        assert_eq(f"enum valide rc (stderr: {stderr_ok[:200]!r})", rc_ok, 0)
+    print("[OK] test_append_validation_union_enum")
+
+
 def test_ingest_bakeoff_small() -> None:
     """Ingestion depuis bakeoff_small/results doit produire au moins les 4 runs (Chatterbox A/B + pocket_tts A/B)."""
     rc, stdout, _ = run([
@@ -223,6 +297,8 @@ def main() -> int:
         test_append_idempotence,
         test_append_upsert_updates_field,
         test_report_format,
+        test_report_sort_chronological,
+        test_append_validation_union_enum,
         test_ingest_bakeoff_small,
     ]
     print(f"Running {len(tests)} tests...\n")
