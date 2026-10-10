@@ -497,6 +497,7 @@ project:
     - "scripts/genai-stack/_archive/ARCHIVE_README.md"
     - "scripts/genai-stack/README.md"
     - "scripts/genai-stack/workflows/qwen_image_2_1/README.md"
+    - "scripts/hashlife/README.md"
     - "scripts/kernels/pyphi-iit/README.md"
     - "scripts/lean/README.md"
     - "scripts/notebook_tools/_archive/README.md"
