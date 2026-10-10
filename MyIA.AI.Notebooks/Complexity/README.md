@@ -2,7 +2,7 @@
 
 La série se lit en deux étages. Deux notebooks de **découverte** (01-02) ne supposent que
 Python : compter les pas d'un algorithme, puis distinguer *vérifier* de *trouver*
-(P, NP, réduction). Les positions de **licence** — 03 et 04 livrées, 05 et 06 à venir —
+(P, NP, réduction). Les positions de **licence** — 03, 04, 05 et 06 livrées —
 posent ensuite une notion par notebook sans rien supposer d'autre que les positions
 précédentes. Chaque position a son **approfondissement** (lettre `b`, niveau **Recherche**) :
 un texte fondateur, **fait tourner** (machines construites pas à pas, comptes d'opérations
@@ -54,7 +54,7 @@ principal de niveau licence qui en pose d'abord les notions.
 | 04 | [Décider sans connaître la suite](Complexity-04-OnlineAlgorithms-Python.ipynb) | Licence | [04b — conjectures online](Complexity-04b-OnlineConjectures-Secretary-KServer.ipynb), [04c — k-server, work function](Complexity-04c-KServer-WorkFunction-Python.html), [04d — secrétaire matroïdal](Complexity-04d-Secretaire-Matroidal-Python.html) |
 | 05 | [Compter est plus dur que vérifier](Complexity-05-CountingHarder-Permanent.ipynb) | Licence | [05b — La permanente, frontière quantique](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling.ipynb) |
 | 06 | [Simuler un circuit quantique classiquement](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) | Licence | [06b — Aaronson–Gottesman](Complexity-06b-AaronsonGottesman-Dequantification-Python.html) |
-| 07 | La chaîne des inclusions : L, NL, P, NP *(à venir)* | Licence | — |
+| 07 | [Complexité de Kolmogorov bornée : séquences à mémoire limitée](Complexity-07-KolmogorovBornee-Sequences-Python.ipynb) | Recherche | — |
 
 ## Position dans le dépôt
 
