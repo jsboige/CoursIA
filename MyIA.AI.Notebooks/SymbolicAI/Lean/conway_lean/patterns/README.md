@@ -18,7 +18,7 @@ Ces fichiers RLE correspondent aux théorèmes témoins échafaudés dans
 
 | Théorème pilier | Fichier RLE | Nombre de générations |
 |-----------------|-------------|------------------------|
-| `otca_metapixel_witness` | `otcametapixel.rle` | 35 328 |
+| `otca_initial_population` | `otcametapixel.rle` | 35 328 (cycle publié ; système fermé mesuré) |
 | `unitcell_initial_population` | `p5760unitlifecell.rle` | 5 760 (période mesurée) |
 | `gemini_witness` | `gemini.rle` | 33 699 586 |
 | `cpu_witness` | pas encore disponible | 1 048 576 |

@@ -34,11 +34,12 @@ la Gemini publie une auto-réplication complète en 33 699 586).
   fournit désormais un vrai Hashlife mémoïsé fuel-keyed
   (`evolveHashlifeFastMemo`) prouvé égal à la référence Phase 3b
   (`evolveHashlifeFastMemo_eq_evolveHashlifeFast`, sans `sorry`).
-- **Phase 3c motifs** (ce fichier) : l'UnitCell est désormais chargé pour
-  de vrai (`include_str` + `RLE.parseRLE!`, voir ci-dessous) — le mécanisme
-  de chargement par fichier que ce module attendait existe depuis Lean 4.33,
-  et ce RLE ne fait que 15 Ko. OTCA, Gemini et CPU restent des *grilles vides
-  placeholder* (le RLE de la Gemini est gitignoré, celui de l'OTCA fait 165 Ko)
+- **Phase 3c motifs** (ce fichier) : l'UnitCell (15 Ko) puis l'OTCA (165 Ko)
+  sont désormais chargés pour de vrai (`include_str` + `RLE.parseRLE!`,
+  voir ci-dessous) — le mécanisme de chargement par fichier que ce module
+  attendait existe depuis Lean 4.33, et le noyau parse sans littéral source
+  le plus gros RLE de l'archive. Gemini et CPU restent des *grilles vides
+  placeholder* (le RLE de la Gemini est gitignoré, celui du CPU est absent)
   et leurs témoins restent **vacuous** (`evolveHashlifeFastMemo_empty`).
 - **Le RLE présent n'est pas le motif du pilier** : cette ligne visait
   l'UnitCell de Beluchenko (2011, période **4 096**), mais l'archive ne
@@ -64,17 +65,30 @@ la Gemini publie une auto-réplication complète en 33 699 586).
   `patterns/README.md`.
   La formaliser demande un moteur **torique**, absent du lac : c'est la suite
   naturelle de cette tranche.
+- **L'OTCA, lui, est un système FERMÉ — mesure du 2026-10-09 (#19989,
+  tranche 3)** : sur 1 800 générations, l'étendue reste **strictement**
+  2058 × 2058 (aucune cellule hors de la boîte initiale à aucun relevé,
+  un planeur né entre deux relevés y serait encore visible — il ne meurt
+  pas), pendant que la population oscille en [63 955, 64 798] : la
+  machinerie tourne, mais **rien ne s'échappe** — contrairement à
+  l'UnitCell. La prédiction « un métapixel isolé sur grille sans bord
+  n'est pas périodique non plus » est donc **réfutée pour l'OTCA**. Le
+  témoin de période `evolveHashlifeFastMemo 35328 otcaInitial =
+  otcaInitial` redevient potentiellement exprimable ; il exige (a) la
+  confirmation de la période exacte sur le motif isolé et (b) un test de
+  performance du Hashlife mémoïsé à 64 691 cellules : c'est la tranche
+  suivante.
 - **Témoins négatifs appariés** (critère 2 de #19989) : `pulsar_period1_negative`
   et `pulsar_period2_negative` accompagnent `pulsar_period3` — la période vaut
   donc **exactement** 3, et non un simple diviseur de 3. C'est le seul témoin de
   période **positif** du lake, donc le seul qui puisse recevoir une paire :
-  pour l'UnitCell la paire est impossible *a fortiori* (le positif ne l'est
-  pas), et pour OTCA/Gemini/CPU les grilles sont encore vides, où un négatif ne
-  mesurerait rien de réel.
-- **Futur** : pour l'OTCA et le CPU (une fois leurs RLE chargés par le même
-  mécanisme), chaque témoin devient un `by native_decide` — à condition de
-  trancher pour eux aussi la question du bord : un métapixel isolé sur une
-  grille sans bord n'est pas périodique non plus.
+  pour l'UnitCell la paire est impossible *a fortiori* (le positif ne
+  l'est pas — système ouvert mesuré, cf. ci-dessus) ; pour l'OTCA la
+  question est **ouverte** (système fermé mesuré — le positif est
+  potentiellement exprimable, cf. ci-dessus) ; pour Gemini/CPU les grilles
+  sont encore vides, où un négatif ne mesurerait rien de réel.
+- **Futur** : le CPU (une fois son RLE chargé par le même mécanisme) — sa
+  question du bord reste à trancher par la même méthode de mesure.
 
 ### Pourquoi un fichier séparé ?
 
@@ -114,7 +128,7 @@ de l'archive communautaire LifeWiki :
 
 | Fichier                | Taille grille | Taille (Ko) | Théorème pilier        |
 |------------------------|---------------|-------------|------------------------|
-| `otcametapixel.rle`    | 2058 × 2058  | 165         | `otca_metapixel_witness` |
+| `otcametapixel.rle`    | 2058 × 2058  | 165         | `otca_initial_population` |
 | `p5760unitlifecell.rle`| 499 × 499    | 15          | `unitcell_initial_population` |
 | `turingmachine.rle`    | variable     | 104         | (récit : Acte II)      |
 | `gemini.rle`           | énorme       | 5 300       | `gemini_witness`       |
@@ -128,8 +142,8 @@ Les fichiers RLE sont **trop gros** pour des littéraux chaîne Lean
 parser au moment de la compilation). Le mécanisme de chargement par
 fichier existe en revanche depuis Lean 4.33 : `include_str` embarque
 le contenu à la compilation, le chemin étant relatif au fichier
-source. Il est utilisé ci-dessous pour l'UnitCell (15 Ko) ; l'OTCA
-(165 Ko) et la Gemini (gitignorée) restent à faire.
+source. Il est utilisé ci-dessous pour l'UnitCell (15 Ko) et l'OTCA
+(165 Ko) ; seule la Gemini (gitignorée) reste à faire.
 
 ## Placeholders de motifs
 
@@ -143,14 +157,19 @@ Ce sont des **def**, pas des `axiom` — ils ont un corps trivial
 concret (`Grid.empty`) donc aucun axiome n'est introduit. Ils
 seront remplacés par le RLE parsé dans la PR pilier réelle. -/
 
-/-- État initial de l'OTCA metapixel. Chargé depuis RLE en Phase 3c. -/
-def otcaInitial : Grid := ([] : Grid)
+/-- Source RLE de l'OTCA metapixel, embarquée à la compilation par `include_str`.
+    Le chemin est relatif à CE fichier (`Conway/Life/`). À 165 Ko, c'est le plus
+    gros motif jamais chargé dans le lac — l'hypothèse « trop gros pour le
+    noyau » est ce que cette tranche teste (voir « Statut » ci-dessus). -/
+def otcaRLE : String := include_str "../../patterns/otcametapixel.rle"
 
-/-- État de l'OTCA metapixel après un cycle on/off (35 328 générations).
-    Chargé depuis RLE en Phase 3c. -/
-def otcaTarget : Grid := ([] : Grid)
+/-- État initial de l'OTCA metapixel, décodé du RLE par l'analyseur **prouvé**
+    du dépôt (`Conway.Life.RLE.parseRLE`). Population mesurée : 64 691 cellules
+    vivantes sur une boîte 2058 × 2058. -/
+def otcaInitial : Grid := RLE.parseRLE! otcaRLE
 
-/-- Nombre de générations pour le cycle on/off de l'OTCA metapixel. -/
+/-- Nombre de générations du cycle on/off de la métacellule (valeur publiée
+    de la démo Brice Due). -/
 def otcaGens : Nat := 35328
 
 /-- Source RLE de l'UnitCell, embarquée à la compilation par `include_str`.
@@ -192,9 +211,9 @@ def cpuGens : Nat := 1048576
 Le Pulsar (oscillateur de période 3) est parsé depuis son RLE dans
 notre module RLE.lean et vérifié comme oscillateur. Il sert de
 démonstration concrète que le pipeline RLE → Grid → evolve marche
-de bout en bout. L'UnitCell, lui, est désormais chargé par
-`include_str` (voir ci-dessus) ; l'OTCA (165 Ko de RLE), la Gemini
-(gitignorée) et le CPU attendent le même branchement. -/
+de bout en bout. L'UnitCell (15 Ko) puis l'OTCA (165 Ko) sont
+désormais chargés par `include_str` (voir ci-dessus) ; la Gemini
+(gitignorée) et le CPU (RLE absent) attendent le même branchement. -/
 
 /-- Le Pulsar parsé depuis sa représentation RLE.
     Prouvé égal à la constante écrite à la main dans RLE.lean. -/
@@ -225,23 +244,36 @@ Chaque théorème affirme que `evolveHashlifeFastMemo N motif = cible`
 pour le pilier correspondant. La preuve est conçue comme un simple
 `by native_decide` une fois la mémoïsation en place. -/
 
-/-- **Témoin OTCA metapixel** — Brice Due 2006.
+/-- **OTCA metapixel** — Brice Due 2006.
 
-    L'OTCA metapixel est une métacellule 2048×2048 de période 35 328
-    qui peut émuler tout automate cellulaire life-like. Vu de loin,
-    les cellules ON et OFF sont clairement visibles. C'est la
-    première métacellule programmable, démontrant que Life peut
-    simuler *lui-même*.
+    La première métacellule programmable : 2058 × 2058, 64 691 cellules
+    vivantes, capable d'émuler tout automate cellulaire life-like — Life
+    simulant *lui-même*. Vu de loin, les états ON et OFF de la métacellule
+    sont visibles. Le cycle ON→OFF→ON publié dure 35 328 générations
+    (source : conwaylife.com/wiki/OTCA_metapixel).
 
-    Démo publique : un cycle ON→OFF→ON complet se termine en
-    35 328 générations. Source RLE : conwaylife.com/wiki/OTCA_metapixel
-    (70 Ko).
+    **Il n'y a pas de témoin de période ici — mais contrairement à
+    l'UnitCell, c'est un report, pas une impossibilité.** Mesure
+    (simulateur dense, 1 800 générations) : l'étendue reste strictement
+    2058 × 2058, aucune cellule ne quitte la boîte, la population oscille
+    en [63 955, 64 798] — système **fermé**. Le témoin
+    `evolveHashlifeFastMemo 35328 otcaInitial = otcaInitial` est donc
+    potentiellement exprimable ; il attend (a) la confirmation de la
+    période exacte 35 328 sur le motif isolé et (b) un test de performance
+    du Hashlife mémoïsé sur une grille de 64 691 cellules.
 
-    Phase 3c : `by native_decide` avec Hashlife mémoïsé.
-    Actuellement vacuous (grilles placeholder vides, voir Statut ci-dessus). -/
-theorem otca_metapixel_witness :
-    evolveHashlifeFastMemo otcaGens otcaInitial = otcaTarget :=
-  evolveHashlifeFastMemo_empty otcaGens
+    Ce qui est prouvé ici, et **non vacuous**, c'est que la grille chargée
+    est réelle : 165 Ko de RLE passés par le même `include_str` +
+    `RLE.parseRLE!` que l'UnitCell — la route `evolveHashlifeFastMemo_empty`
+    est fermée pour ce motif. -/
+theorem otca_initial_population : otcaInitial.length = 64691 := by
+  native_decide
+
+/-- La grille OTCA chargée n'est pas vide. Contrôle croisé indépendant :
+    la même population (64 691) est mesurée par comptage Python direct des
+    runs `o` du RLE source. -/
+theorem otca_initial_nonempty : otcaInitial ≠ ([] : Grid) := by
+  native_decide
 
 /-- **UnitCell** — Nicolay Beluchenko 2011.
 
