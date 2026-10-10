@@ -56,6 +56,45 @@ Each strategy includes a research notebook (QuantBook) documenting iterations an
 
 **Best backtest** : Sharpe 0.376, CAGR 7.60%, MaxDD 20.6%, Win Rate 80%
 
+`main.py` accepts two optional parameters, with no effect by default:
+
+| Parameter | Default | Role |
+|---|---|---|
+| `pcm_mode` | `base` | `base` keeps the original behaviour; `intent` adds both sleeves on `XLU` (see below) |
+| `trace` | `0` | `1` plots the portfolio value and the SPY close once per session in a `shadow` chart (interleaved series `e0`..`e4` and `b0`..`b4`, strategy league format #19821); no order changes |
+
+#### `XLU` in both sleeves: QC Cloud measurement (#20188), 2026-10-10
+
+`XLU` belongs to both sleeves: `SectorMomentum` (70%) and `Defensive` (30%). Lean's base portfolio construction model passes only one active insight per symbol to `determine_target_percent`. One sleeve can therefore hide the other on `XLU`.
+
+The measurement shows that the masking always goes the same way. Both models emit at the same instant, and the insight passed for `XLU` is, at every call, the `Defensive` one. In `base` mode, `XLU` therefore receives only the defensive share: 10% of the portfolio when SPY is below its SMA200, nothing otherwise. The `SectorMomentum` vote on `XLU` is never applied, although it is UP in 68% of the calls. Its share does not stay in cash: the sleeve's 70% is spread over the other selected sectors.
+
+The `intent` mode uses the additive fix from #19740: it rebuilds the most recent active insight per (symbol, sleeve) pair, then sums the weights per symbol. The average `XLU` target goes from 1.8% to 10.5% of the portfolio.
+
+The measurement rule was written in #20188 before the first backtest. Three runs cover the kit window, 2015-01-01 to 2024-12-31:
+- `orig`: the `main.py` from before these parameters;
+- `base` and `intent`: the new `main.py`, with `trace=1`.
+
+**Non-regression.** `base` reproduces `orig` exactly: all 27 QC statistics, turnover included, and the 2149 orders, compared one by one. The kit result is recovered: QC Sharpe 0.377, CAGR 7.59%, MaxDD 20.6%.
+
+| Run | Sharpe | CAGR | Max drawdown | Orders | Cumulative fees, % of starting capital |
+|---|---|---|---|---|---|
+| `base` | 0.72 | 7.6% | -20.6% | 2149 | 3.0% |
+| `intent` | 0.71 | 7.4% | -21.9% | 2320 | 3.3% |
+| SPY held (reference, no fees) | 0.78 | 13.0% | -33.7% | - | - |
+
+The Sharpe in this table is computed on daily returns, with a zero risk-free rate, annualised over 252 sessions. The Sharpe shown by QC (0.377 for `base`, 0.366 for `intent`) subtracts a risk-free rate.
+
+| `intent` - `base`, Sharpe difference | Gap | 95% CI | One-sided p | 2015-2018 | 2019-2021 | 2022-2024 |
+|---|---|---|---|---|---|---|
+| full window | -0.01 | [-0.21; 0.19] | 0.51 | +0.16 | -0.34 | +0.04 |
+
+The test is a circular block bootstrap with 21-session blocks (10,000 draws, seed 18921), given as descriptive only.
+
+**Reading.** The defect is real: in `base` mode, `XLU` is nearly absent from the portfolio although the momentum sleeve selects it. Its effect on the result, however, is not measurable on this window. The Sharpe gap is zero at the scale of its interval, and its sign changes from one sub-period to the next. The fix adds orders and fees. The default stays `pcm_mode=base`; changing the kit default belongs to a kit issue.
+
+The run traces (plans, hashes, charts, orders, statistics, `results.json`) are kept outside the repository, under `QC-traces/20188-kit03-xlu-shared/`.
+
 ## Structure
 
 ```
