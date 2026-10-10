@@ -1,6 +1,6 @@
 # ANALYSE — formalisations d'analyse, digérées
 
-Sous-série de la série [Lean](../README.md) (décision de gradation #17545, 24/09) : les formalisations de recherche en analyse — Sendov, *Analysis I* de Tao, PFR — descendent ici avec un arc interne **Licence → Recherche** : chaque carnet part d'un énoncé lisible et finit sur le lac réel cité par ses déclarations.
+Sous-série de la série [Lean](../README.md) (décision de gradation #17545, 24/09) : les formalisations de recherche en analyse — Sendov, *Analysis I* de Tao, PFR, KLS — descendent ici avec un arc interne **Licence → Recherche** : chaque carnet part d'un énoncé lisible et finit sur le lac réel cité par ses déclarations.
 
 La série principale garde son tutoriel (numéros 1 à 14) ; le présent dossier porte l'arc d'analyse. Les numéros de la table ci-dessous renvoient à l'ancien identifiant de série (`Lean-18` → `ANALYSE-01`, etc. — table de correspondance dans `docs/reference/rename-ledger.tsv`).
 
@@ -15,9 +15,10 @@ La série principale garde son tutoriel (numéros 1 à 14) ; le présent dossier
 | [ANALYSE-06-Sensibilite-2026-Lean](ANALYSE-06-Sensibilite-2026-Lean.ipynb) | La combinatoire booléenne 2026 d'openai/math (familles 127/132/186/192) lue depuis notre lac `Sensitivity` : Huang prouvé chez nous (`#check`/`#print axioms`), énoncés 2026 cités avec leur statut épistémique, et nos séparations sensibilité/sensibilité de bloc du module `Sensitivity.Separations`, prouvées et calculées (`#eval` natif, Pli 2 d'Origami #19898) ; jumeau anglais à code byte-identique : [ANALYSE-06-...-_en](ANALYSE-06-Sensibilite-2026-Lean_en.ipynb) | 35 min |
 | [ANALYSE-08-Ramsey-VdW](ANALYSE-08-Ramsey-VdW.ipynb) | Ramsey et van der Waerden par épuisement : R(3,3)=6 et W(2,3)=9 prouvés par énumération exhaustive (survivantes 18→12→0 côté graphes, 6→0 côté progressions), le mur 2^153 où le geste meurt, et le pont probabiliste d'Erdős (#19960, pli 4 Origami #19898) | 30 min |
 | [Note-IA-et-preuves-2026](../Note-IA-et-preuves-2026.md) | Note transverse — les trois AI-disclosures de la résolution de KLS (octobre 2026), ce qu'elles révèlent des modes de collaboration humain-IA, et trois leçons directement applicables au dépôt (#19729 grain 3/3) | 20 min |
+| [ANALYSE-05-KLS-Lean-Python](ANALYSE-05-KLS-Lean-Python.ipynb) | La conjecture KLS démontrée (Bizeul–Klartag–Lehec, arXiv:2610.05474) : énoncé (Théorème 1.1), chaîne de la preuve en cinq maillons (thin-shell, germe quadratique, localisation stochastique, suspension, critère de Song–Zhang), lac local `kls_lean` — audit Mathlib au pin, six définitions, deux théorèmes prouvés (0 sorry, `#print axioms` propre) — thin-shell en Monte-Carlo avec saturation exacte à 8n par l'exponentielle produit, banc 1-lipschitzien minorant `poincareConstant` | 45 min |
 
 **Prérequis d'entrée** : le tutoriel de la série principale (numéros 1 à 6, tactiques et Mathlib). Le point d'entrée réel documenté du carnet 01 est [Search-03e-AStar-Optimality](../../../Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb) (heuristique A*, companion `search_lean`) — voir sa cellule d'ouverture.
 
 **Marches nommées, à écrire** (règle 5 de la gradation) : entropie de Shannon avant ANALYSE-03, inégalités de concentration avant le converse MIMO ([Lean-21b](../Lean-21b-MIMO-Converse-Native.ipynb)). Elles vivront dans ce dossier ou la série principale selon la décision de renumérotation.
 
-**Marches franchissables** : depuis la série principale, le tutoriel (1-14) suffit pour ANALYSE-01. ANALYSE-02 suppose la lecture d'un lac externe ; ANALYSE-03/04 supposent l'entropie de Shannon (marche nommée ci-dessus).
+**Marches franchissables** : depuis la série principale, le tutoriel (1-14) suffit pour ANALYSE-01. ANALYSE-02 suppose la lecture d'un lac externe ; ANALYSE-03/04 supposent l'entropie de Shannon (marche nommée ci-dessus) ; ANALYSE-05 ne suppose rien au-delà du tutoriel : son lac est local, posé à côté du carnet.
