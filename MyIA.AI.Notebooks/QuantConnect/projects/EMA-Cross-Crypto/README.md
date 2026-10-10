@@ -1,13 +1,55 @@
 # EMA-Cross-Crypto
 
 **Classe d'actifs :** Crypto (BTC, ETH)
-**ID projet Cloud :** Aucun (local uniquement)
+**ID projet Cloud :** 37570206 (mesure #20054, aucun déploiement)
 
 ## Description
 
 Croisement dual EMA sur crypto. Prend position long quand EMA(20) > EMA(50) sur BTC/ETH, à 80% du capital disponible (réduit de 95% pour limiter l'exposition), avec un **filtre SMA200** (n'entre que si BTC > SMA200 = bull market structurel) et un **trailing stop 10%** intra-position (sortie si BTC recule de 10% depuis le peak depuis l'entrée).
 
-> **Note introductive** : la description précédente indiquait EMA 20/60 — la **stratégie implémentée est EMA 20/50** (cf `main.py:32-33` et `research.ipynb` cell[7] BASELINE). Le sweet spot validé sur la fenêtre 2020-2026 reste EMA 20/50 ; aucune valeur de slow_period > 50 ne bat la baseline sur le critère MaxDD (cf H1 ci-dessous).
+> **Note introductive** : la description précédente indiquait EMA 20/60 — la **stratégie implémentée est EMA 20/50** (cf `fast_period` / `slow_period` dans `main.py` et `research.ipynb` cell[7] BASELINE). Le sweet spot validé sur la fenêtre 2020-2026 reste EMA 20/50 ; aucune valeur de slow_period > 50 ne bat la baseline sur le critère MaxDD (cf H1 ci-dessous).
+
+## Mesure QC Cloud (#20054) — 2026-10-09, verdict NO BEATS
+
+Cette mesure exécute `main.py` dans le moteur Lean de QC Cloud. Elle suit le protocole commun de la ligue de stratégies (#19821), avec une règle inscrite dans le corps de #20054 avant le premier backtest. La logique de trading n'est pas modifiée. `main.py` reçoit des paramètres optionnels : dates, interrupteurs des contrôles et multiplicateur de frais. Il publie aussi des compteurs et un graphique `shadow`, avec une valeur par jour. Sans paramètre, il garde sa forme d'origine.
+
+**Données.** QC fournit les barres journalières BTCUSDT Binance à partir du 2018-05-01. Les trois indicateurs (EMA 20, EMA 50, SMA200) sont prêts le 2018-11-16. Un écart à la règle a été déclaré sur #20054 avant le lancement des runs : la fenêtre de mesure commence à cette date. La candidate et sa référence sont donc comparées du 2018-11-17 au 2026-06-30, soit 2783 jours.
+
+**Protocole.**
+- Référence : BTC détenu, même série BTCUSDT, sans frais.
+- Statistique : différence de Sharpe à taux sans risque nul, annualisée sur 365 jours.
+- Test : bootstrap circulaire par blocs de 21 jours (10 000 tirages, graine 18921). Une seule comparaison : la correction de Holm est l'identité.
+- Frais : ceux du modèle de courtier Binance.
+
+| Run | Sharpe | CAGR | Pire baisse | Ordres | Jours investis |
+|---|---|---|---|---|---|
+| `base` (candidate) | 1,05 | 34,6 % | −45,4 % | 98 | 48 % |
+| BTC détenu | 0,81 | 35,9 % | −76,6 % | — | 100 % |
+
+| Différence de Sharpe | Écart | IC 95 % | p | 2018-11 → 2020 | 2021-2023 | 2024 → 2026-06 |
+|---|---|---|---|---|---|---|
+| `base` − BTC détenu | +0,24 | [−0,33 ; 0,81] | 0,21 | +0,01 | +0,48 | +0,15 |
+
+**Verdict : NO BEATS.** L'écart est positif dans les trois sous-périodes, mais il n'est pas significatif (p = 0,21). La règle exclut alors la grille de paramètres et le run à frais doublés. La stratégie croît presque aussi vite que le BTC détenu (34,6 % contre 35,9 % par an), avec une pire baisse bien moindre (−45,4 % contre −76,6 %). Elle n'est investie qu'un jour sur deux. QC affiche un Sharpe de 1,07, calculé avec un taux sans risque, et un PSR de 38,2 %. Corrélation hebdomadaire avec BTC : 0,71.
+
+**Le stop suiveur rachète aussitôt.** Sur 40 sorties sur stop, 33 sont suivies d'un rachat dans les deux jours. Le croisement est resté haussier et le prix au-dessus de la SMA200 : la règle d'entrée se redéclenche. On compte ainsi 49 entrées pour 9 sorties sur croisement.
+
+**Contrôles descriptifs, hors verdict** (même fenêtre) :
+
+| Run | Sharpe | CAGR | Pire baisse | Ordres | Entrées | Sorties sur stop |
+|---|---|---|---|---|---|---|
+| `base` | 1,05 | 34,6 % | −45,4 % | 98 | 49 | 40 |
+| `notrail` (stop suiveur coupé) | 1,16 | 43,2 % | −37,4 % | 32 | 16 | 0 |
+| `nofilter` (filtre SMA200 coupé) | 1,04 | 36,1 % | −39,6 % | 116 | 58 | 44 |
+
+| Différence de Sharpe | Écart | IC 95 % | 2018-11 → 2020 | 2021-2023 | 2024 → 2026-06 |
+|---|---|---|---|---|---|
+| `base` − `notrail` | −0,12 | [−0,25 ; 0,02] | −0,27 | −0,05 | −0,04 |
+| `base` − `nofilter` | +0,01 | [−0,22 ; 0,24] | −0,32 | +0,17 | +0,19 |
+
+Sans le stop suiveur, la stratégie fait mieux dans les trois sous-périodes, avec trois fois moins d'ordres. Sa pire baisse est aussi plus faible (−37,4 % contre −45,4 %). Sur cette fenêtre, le stop de 10 % multiplie les allers-retours sans réduire la pire baisse. Le notebook de recherche concluait l'inverse sur 2020-2025, avec une simulation yfinance hors Lean (tableau « Synthèse » plus bas). L'écart entre les deux mesures n'est pas analysé ici. Le filtre SMA200 ne change presque rien au Sharpe sur l'ensemble de la fenêtre. Il évite en revanche toute position en 2022, comme l'annonçait le notebook : `base` n'y trade pas, `nofilter` y clôt 9 positions. Ces écarts sont observés après coup, sur la fenêtre même de la mesure : ils ne valent pas règle.
+
+Les traces des runs (plans, empreintes, graphiques, statistiques, positions fermées, `results.json`) sont conservées hors dépôt, sous `QC-traces/20054-ema-cross-crypto/`.
 
 ## Mesures vérifiées (multi-source)
 
@@ -147,9 +189,11 @@ Sur la fenêtre 2020-2026, performance de la config recommandée par sous-pério
 ## Comment exécuter
 
 **Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/EMA-Cross-Crypto"`
-**QC Cloud :** Pas encore déployée. Copier les fichiers dans un nouveau projet QC Cloud pour l'exécuter.
+**QC Cloud :** mesurée sur le projet 37570206 (#20054), sans déploiement. Copier les fichiers dans un projet QC Cloud pour l'exécuter ; les paramètres `start`, `end`, `fast`, `slow`, `trail`, `filter` et `fee_mult` sont optionnels.
 
 ## Métriques de backtest (2020-2026)
+
+Chiffres de `research.ipynb` (simulation yfinance, hors Lean). La mesure QC Cloud de `main.py` est en tête de ce README (#20054).
 
 | Configuration | Sharpe | CAGR | MaxDD | Verdict |
 |---------------|--------|------|-------|---------|
