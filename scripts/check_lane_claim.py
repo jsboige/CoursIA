@@ -1059,8 +1059,115 @@ def compute_active_claims(
 
 # --- gh plumbing -------------------------------------------------------------
 
+def _repo_slug() -> str:
+    """Slug `owner/repo` depuis le remote `origin` -- local, hors transport.
+
+    #17038 -- le repli REST a besoin du slug explicite (`gh api repos/...`),
+    la ou `gh issue view` l'infere du cwd. Le resoudre par git local evite
+    d'appeler un transport *pour* pouvoir appeler l'autre : sous panne GraphQL,
+    `gh repo view --json nameWithOwner` serait mort aussi.
+    """
+    proc = subprocess.run(
+        ["git", "remote", "get-url", "origin"],
+        capture_output=True, text=True, shell=False, encoding="utf-8",
+        errors="replace",
+    )
+    url = proc.stdout.strip() if proc.returncode == 0 else ""
+    # git@github.com:owner/repo.git OU https://github.com/owner/repo.git
+    # (+ variantes .git/ slash final) : le slug est les DEUX derniers
+    # segments de chemin, sans suffixe .git.
+    m = re.search(r"[:/]([^/:]+/[^/]+?)(?:\.git)?/?$", url) if url else None
+    if not m:
+        raise RuntimeError(
+            f"slug de repo illisible depuis origin ({url!r}) -- "
+            f"repli REST impossible"
+        )
+    return m.group(1)
+
+
+def _rest_issue_payload(issue: str, repo: str | None = None) -> dict:
+    """Meme forme que `_gh_issue_comments`, lue par REST (`gh api`).
+
+    #17038 -- `gh issue view` passe par GraphQL ; `gh api repos/...` passe par
+    REST, et leurs quotas sont DISTINCTS. Sous 403 secondary rate-limit du
+    bucket GraphQL, cette voie sert le meme contenu. Reutilisee par la sonde
+    de tete du picker (`latest_claim_stamp`) : une seule implementation du
+    mapping REST -> forme `gh issue view --json`.
+
+    Cartographie des champs : le parser (`_parse_claim_events`) lit
+    `body`, `author.login`, `createdAt`, `url` ; REST rend `body`,
+    `user.login`, `created_at`, `html_url`. `--paginate` couvre les fils
+    longs, comme `--json comments` le fait cote GraphQL.
+
+    ``repo`` -- slug `owner/repo` explicite (reserve NanoClaw du 2026-10-10
+    sur #20248). Les deux transports d'un meme appelant doivent viser le MEME
+    depot : le picker passe `--repo REPO` sur sa voie GraphQL, donc son repli
+    REST doit recevoir le meme slug. Sans cet argument le slug est infere du
+    remote `origin` du **cwd** (`_repo_slug`), ce qui sert silencieusement les
+    claims d'un autre depot quand le picker tourne depuis un worktree ou un
+    clone etranger -- la panne serait alors un mauvais verdict, pas une absence
+    de verdict. Les appelants qui n'epinglent pas de cible (la CLI de
+    `check_lane_claim`, dont la voie GraphQL inferre aussi le slug du cwd)
+    gardent le defaut, et restent donc coherents entre leurs deux transports.
+    """
+    slug = repo or _repo_slug()
+    def _api(path: str, paginate: bool = False) -> object:
+        cmd = ["gh", "api"]
+        if paginate:
+            # Flag CLI de gh : pagination cote client, pages concatenees.
+            cmd.append("--paginate")
+        cmd.append(f"repos/{slug}/{path}")
+        proc = subprocess.run(
+            cmd,
+            capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"gh api {path} failed (exit {proc.returncode}): "
+                f"{proc.stderr.strip()}"
+            )
+        return json.loads(proc.stdout)
+
+    core = _api(f"issues/{issue}")
+    if not isinstance(core, dict):
+        raise RuntimeError(f"gh api issues/{issue}: payload inattendu")
+    raw_comments = _api(f"issues/{issue}/comments?per_page=100", paginate=True)
+    if not isinstance(raw_comments, list):
+        raise RuntimeError(
+            f"gh api issues/{issue}/comments: payload inattendu")
+    comments = [
+        {
+            "body": c.get("body") or "",
+            "createdAt": c.get("created_at"),
+            "author": {"login": (c.get("user") or {}).get("login")},
+            "url": c.get("html_url"),
+        }
+        for c in raw_comments
+        if isinstance(c, dict)
+    ]
+    return {
+        "number": core.get("number"),
+        "title": core.get("title") or "",
+        "labels": [
+            {"name": (lb or {}).get("name")}
+            for lb in core.get("labels") or []
+            if isinstance(lb, dict)
+        ],
+        "comments": comments,
+    }
+
+
 def _gh_issue_comments(issue: str) -> dict:
-    """Fetch issue metadata + comments as JSON via `gh`. Raises on failure."""
+    """Fetch issue metadata + comments as JSON via `gh`. Raises on failure.
+
+    #17038 -- deux transports, un seul contrat. GraphQL d'abord (chemin
+    historique) ; s'il tombe, bascule REST en NOMMANT le transport. Si les
+    deux tombent, l'erreur nomme les DEUX : une lecture morte ne doit jamais
+    se confondre avec un verdict lu (le message porte ``NON MESURABLE``,
+    vocabulaire distinct de tout verdict de claim -- le picker propage cette
+    distinction jusqu'au bandeau du tapis).
+    """
     proc = subprocess.run(
         [
             "gh", "issue", "view", str(issue),
@@ -1079,10 +1186,20 @@ def _gh_issue_comments(issue: str) -> dict:
         encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
-        raise RuntimeError(
-            f"gh issue view {issue} failed (exit {proc.returncode}): "
-            f"{proc.stderr.strip()}"
+        graphql_err = proc.stderr.strip().splitlines()[0][:120] if proc.stderr.strip() else f"exit {proc.returncode}"
+        print(
+            f"[TRANSPORT] gh issue view (GraphQL) indisponible ({graphql_err})"
+            f" -- bascule REST, quota distinct.",
+            file=sys.stderr,
         )
+        try:
+            return _rest_issue_payload(issue)
+        except Exception as rest_exc:  # noqa: BLE001 - on nomme les deux morts
+            raise RuntimeError(
+                f"gh issue view {issue}: GraphQL puis REST tous deux tombes "
+                f"(GraphQL: {graphql_err} ; REST: {rest_exc}) -- claim NON "
+                f"MESURABLE, ce n'est pas un verdict libre"
+            ) from rest_exc
     return json.loads(proc.stdout)
 
 
