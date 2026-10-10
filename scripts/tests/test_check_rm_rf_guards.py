@@ -40,7 +40,14 @@ def test_escape_root_indented():
 
 
 def test_escape_root_after_separator():
-    assert classes('cd /tmp; rm -rf "$VAR/dir"') == ["ESCAPE_ROOT"]
+    """Un `rm` precede d'un separateur de commande est un debut de commande.
+
+    La commande est assemblee par morceaux : ecrite d'un seul litteral, ce
+    fixture ressemblerait, dans la SOURCE, a l'invocation qu'il teste, et
+    l'organe -- qui balaie les `.py` -- le compterait comme un site
+    (angle mort mesure au #20209 : la baseline avait deja perime la-dessus).
+    """
+    assert classes("cd /tmp; " "rm -rf " '"$VAR/dir"') == ["ESCAPE_ROOT"]
 
 
 def test_escape_root_braced():
@@ -56,6 +63,34 @@ def test_two_arguments_on_one_line_both_counted():
     assert classes('rm -rf "$R/a" "$R/b"') == ["ESCAPE_ROOT", "ESCAPE_ROOT"]
 
 
+def test_composite_word_var_then_glob_is_escape_root():
+    """`rm -rf "$X"/*` -> `rm -rf /*` si X est vide : la classe CATASTROPHIQUE.
+
+    Angle mort mesure (#20209) : `"$X"/*` est **un** mot shell (`"$X"` puis
+    `/*`). Un decoupage en tokens separes classait le premier BARE_VAR (benin)
+    et ignorait le second, prive de `$` -- la forme nommee par le docstring
+    passait donc invisible, et une preuve « 0 occurrence » etait fausse.
+    """
+    assert classes('rm -rf "$X"/*') == ["ESCAPE_ROOT"]
+
+
+def test_composite_word_var_then_suffix_is_escape_root():
+    """`rm -rf "$X"/dir` : meme mot composite, meme fuite hors racine."""
+    assert classes('rm -rf "$X"/dir') == ["ESCAPE_ROOT"]
+
+
+def test_two_invocations_on_one_line_are_two_sites():
+    """`search` ne rendait que la PREMIERE invocation `rm` d'une ligne.
+
+    Deux commandes separees par `;` sont deux sites : n'en voir qu'un laissait
+    la seconde fuite hors de toute mesure.
+    """
+    cmd = "rm -rf " '"$A/x"; ' "rm -rf " '"$B/y"'
+    found = g.scan_text(cmd, "f.sh")
+    assert [s["word"] for s in found] == ['"$A/x"', '"$B/y"']
+    assert {s["line"] for s in found} == {1}
+
+
 # --- cas NEGATIFS : l'organe NE DOIT PAS voir ces sites ------------------
 
 def test_bare_quoted_var_is_benign():
@@ -66,6 +101,16 @@ def test_bare_quoted_var_is_benign():
 def test_guarded_by_parameter_expansion():
     """`${VAR:?}` couvre unset ET vide : c'est la garde acceptee."""
     assert classes('rm -rf "${VAR:?}/dir"') == []
+
+
+def test_single_quoted_expansion_is_literal_not_a_leak():
+    """`'${X}/work'` : les guillemets SIMPLES empechent toute expansion.
+
+    Faux positif mesure (#20209) : le mot etait classe ESCAPE_ROOT alors qu'il
+    designe un repertoire litteralement nomme `${X}/work` -- aucune fuite hors
+    racine, et rien a reparer.
+    """
+    assert classes("rm -rf '${X}/work'") == []
 
 
 def test_set_u_is_not_accepted_as_a_guard():

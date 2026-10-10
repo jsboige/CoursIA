@@ -14,9 +14,16 @@ Trois classes, decidees par ce que devient l'argument quand la variable est vide
 
   ESCAPE_ROOT   `rm -rf "$VAR/suffixe"` -> `rm -rf "/suffixe"`  DANGEREUX
                 la suppression sort de la racine declaree, a la racine du disque.
+                Vaut aussi pour le mot shell COMPOSITE `"$VAR"/suffixe` et
+                `"$VAR"/*` : les guillemets protegent de la decoupe, pas de
+                l'appartenance au mot -- sans cette regle le premier argument
+                etait classe BARE_VAR (benin) et le second, sans `$`, ignore.
   UNQUOTED_VAR  `rm -rf $VAR/suffixe`   -> word splitting + globbing  DANGEREUX
   BARE_VAR      `rm -rf "$VAR"`         -> `rm -rf ""`  BENIN
                 `rm` refuse un operande vide : aucune suppression.
+
+Un `$` dans un segment a guillemets SIMPLES (`rm -rf '${VAR}/x'`) n'est jamais
+developpe : le mot est litteral, ce n'est pas une fuite.
 
 La seule garde qui couvre le cas **vide** est `${VAR:?}` (`:` traite unset et vide
 de la meme facon). `set -u` ne couvre que l'**unset** : il ne protege PAS du cas
@@ -43,8 +50,7 @@ from pathlib import Path
 EXIT_CLEAN = 0
 EXIT_FINDINGS = 1
 
-# Un token de commande : soit une chaine quote, soit un mot nu.
-_TOKEN = re.compile(r'"[^"]*"|\'[^\']*\'|\S+')
+_QUOTES = "\"'"
 # Invocation `rm` en debut de commande shell (pas `docker rm`, pas `git rm`).
 # Le `^[ \t]*` est indispensable : une commande indentee (`  rm -rf "$TMP/x"`) est
 # une commande en debut de ligne. SANS lui, l'organe ne voyait que les sites en
@@ -60,26 +66,98 @@ DEFAULT_ROOTS = ("scripts", ".claude")
 BASELINE_NAME = "rm_rf_guards_baseline.txt"
 
 
-def _strip_quotes(word: str) -> str:
-    if len(word) >= 2 and word[0] == word[-1] and word[0] in "\"'":
-        return word[1:-1]
-    return word
+def _shell_words(s: str) -> list[str]:
+    """Decoupe une ligne d'arguments en mots shell.
+
+    Les guillemets protegent de la DECOUPE, pas de l'appartenance au mot :
+    `"$X"/*` est **un** mot (segments `"$X"` puis `/*`). Un decoupage par
+    `\\S+|"[^"]*"` en ferait deux -- et c'est exactement l'angle mort mesure
+    (#20209) : le premier segment etait classe BARE_VAR (benin), le second,
+    depourvu de `$`, etait ignore, alors que `rm -rf "$X"/*` vide vaut
+    `rm -rf /*`.
+    """
+    words, cur, q, i, n = [], [], None, 0, len(s)
+    while i < n:
+        c = s[i]
+        if q is None:
+            if c in _QUOTES:
+                q = c
+                cur.append(c)
+            elif c.isspace():
+                if cur:
+                    words.append("".join(cur))
+                    cur = []
+            else:
+                cur.append(c)
+        else:
+            cur.append(c)
+            if c == q:
+                q = None
+            elif c == "\\" and q == '"' and i + 1 < n:
+                cur.append(s[i + 1])
+                i += 1
+        i += 1
+    if cur:
+        words.append("".join(cur))
+    return words
+
+
+def _segments(word: str) -> list[tuple[str, str | None]]:
+    """Segmente un mot en (texte, type de guillemet) -- `None` = segment nu."""
+    segs, cur, q, i, n = [], [], None, 0, len(word)
+    while i < n:
+        c = word[i]
+        if q is None:
+            if c in _QUOTES:
+                if cur:
+                    segs.append(("".join(cur), None))
+                    cur = []
+                q = c
+                cur.append(c)
+            else:
+                cur.append(c)
+        else:
+            cur.append(c)
+            if c == q:
+                segs.append(("".join(cur), q))
+                cur = []
+                q = None
+            elif c == "\\" and q == '"' and i + 1 < n:
+                cur.append(word[i + 1])
+                i += 1
+        i += 1
+    if cur:
+        segs.append(("".join(cur), q))
+    return segs
+
+
+def _content(text: str, q: str | None) -> str:
+    """Le texte d'un segment, guillemets de bord retires."""
+    if q and len(text) >= 2 and text[0] == q and text[-1] == q:
+        return text[1:-1]
+    return text[1:] if q and text.startswith(q) else text
 
 
 def classify_args(args: str) -> list[dict]:
     """Classe chaque argument d'une invocation `rm -rf`. Rend les sites dangereux."""
     out = []
-    for word in _TOKEN.findall(args):
+    for word in _shell_words(args):
         if "$" not in word:
             continue
-        raw = _strip_quotes(word)
-        quoted = raw != word
-        m = _VAR_START.match(raw)
+        segs = _segments(word)
+        # Ce que le shell passe a `rm` une fois les guillemets retires.
+        effective = "".join(_content(t, q) for t, q in segs)
+        # Quote du segment qui porte le 1er caractere : c'est lui qui decide si
+        # une expansion a lieu. Un `$` en quotes SIMPLES reste litteral.
+        lead = next((q for t, q in segs if _content(t, q)), None)
+        if lead == "'":
+            continue
+        m = _VAR_START.match(effective)
         if not m:
             continue
         var = m.group(1)
-        rest = raw[m.end():]
-        if not quoted:
+        rest = effective[m.end():]
+        if lead is None:
             # Le mot n'est pas entre guillemets : splitting + globbing.
             out.append({"klass": "UNQUOTED_VAR", "var": var, "word": word,
                         "why": f"${var} non quote : word splitting + globbing"})
@@ -115,16 +193,17 @@ def scan_text(text: str, path: str) -> list[dict]:
     """Rend les sites dangereux d'un fichier, avec leur numero de ligne."""
     found = []
     for lineno, line in enumerate(text.splitlines(), 1):
-        m = _RM.search(line)
-        if not m:
-            continue
-        tokens = _TOKEN.findall(m.group(1))[1:]  # apres le mot `rm`
-        recursive, force, idx = _rm_flags(tokens)
-        if not (recursive and force):
-            continue
-        for site in classify_args(" ".join(tokens[idx:])):
-            site.update({"file": path, "line": lineno})
-            found.append(site)
+        # `finditer`, PAS `search` : deux invocations `rm` separees par un
+        # `;` sur une meme ligne sont deux sites distincts -- `search` ne
+        # rendait que la premiere, et la seconde restait invisible.
+        for m in _RM.finditer(line):
+            tokens = _shell_words(m.group(1))[1:]  # apres le mot `rm`
+            recursive, force, idx = _rm_flags(tokens)
+            if not (recursive and force):
+                continue
+            for site in classify_args(" ".join(tokens[idx:])):
+                site.update({"file": path, "line": lineno})
+                found.append(site)
     return found
 
 
