@@ -3633,9 +3633,11 @@ def test_marker_check_failure_treated_as_no_signal(monkeypatch):
 # Defaut mesure le 2026-10-10 (lane myia-po-2023:CoursIA, cycle c.1461) : la
 # branche d'echec de `gh pr list` faisait `continue` AVANT la sonde marqueur,
 # alors que les deux passent par le MEME bucket GraphQL et tombent ensemble.
-# Resultat : 4 issues deja livrees (11 marqueurs `[INFO] candidate-delivered`
-# au total) servies en tete de tapis sous l'urne `grain`. Le fail-open est
-# preserve ; c'est le filet qui etait aveugle.
+# Resultat : 4 issues deja livrees servies en tete de tapis sous l'urne
+# `grain`. Le fail-open est preserve ; c'est le filet qui etait aveugle.
+# Marqueurs recomptes par le transport REST (ventilation, la somme fait le
+# total -- un total nu ne se verifie pas) : #16372 : 5, #14549 : 1,
+# #16031 : 2, #17464 : 4 = 12.
 
 
 _GRAPHQL_MORT = pig.subprocess.CalledProcessError(

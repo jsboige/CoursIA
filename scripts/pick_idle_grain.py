@@ -2460,8 +2460,12 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
                     f"LIVRE-urn VIA MARQUEUR [INFO] candidate-delivered en "
                     f"commentaire (recherche PR indisponible: "
                     f"{type(exc).__name__} -- le filet ne depend pas d'elle). "
-                    f"Verifier firsthand `gh issue view {n} --comments` "
-                    f"AVANT de claimer ; substance deja livree par une autre "
+                    f"Verifier firsthand `gh api "
+                    f"repos/{REPO}/issues/{n}/comments --jq '.[].body'` AVANT "
+                    f"de claimer ; ce transport lit la meme source sans le "
+                    f"bucket GraphQL qui vient de tomber, alors que "
+                    f"`gh issue view` partage ce bucket et est probablement "
+                    f"mort lui aussi. Substance deja livree par une autre "
                     f"lane.")
                 p["klass"] = "delivered"
             else:
