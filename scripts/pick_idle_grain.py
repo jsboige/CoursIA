@@ -197,6 +197,20 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gh_identity
 
+# Geste 5 #18203 : journal des tirages, module separe par construction
+# (scripts/coordination/tirage_journal.py, merge #19945). Import best-effort :
+# un environnement sans le module tire SANS journal plutot que de refuser --
+# le journal est une couche d'observabilite, jamais un gate.
+try:
+    import tirage_journal
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "coordination"))
+        import tirage_journal
+    except ImportError:
+        tirage_journal = None  # type: ignore[assignment]
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -5614,6 +5628,40 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     return belt_picks, belt_withheld, state
 
 
+def _log_tirage_safe(*, lane, candidates, retained, urn, mode):
+    """Geste 5 #18203 : consigner le tirage dans le journal inter-process.
+
+    Best-effort par construction : le journal est une COUCHE
+    D'OBSERVABILITE, pas un gate -- un defaut d'ecriture (chemin non
+    inscriptible, verrou fichier expire) ne doit jamais priver la lane
+    du grain que la commande vient de lui rendre.
+
+    Sous pytest, la consigne est INERTE sans ``TIRAGE_JOURNAL_PATH``
+    explicite (meme commutateur d'environnement que le cache et la sonde
+    delivered, cf main()) : un test unitaire n'ecrit pas dans le state
+    dir machine. Un test qui veut le journal pose la variable vers un
+    chemin temporaire.
+    """
+    if tirage_journal is None:
+        print("(journal de tirage indisponible : module absent)",
+              file=sys.stderr)
+        return None
+    if ("PYTEST_CURRENT_TEST" in os.environ
+            and not os.environ.get("TIRAGE_JOURNAL_PATH")):
+        return None
+    try:
+        record = tirage_journal.log_tirage(
+            lane=lane, candidates=list(candidates), retained=retained,
+            urn=urn, mode=mode)
+    except Exception as exc:  # noqa: BLE001 - observabilite best-effort
+        print(f"(journal de tirage NON ECRIT : {exc})", file=sys.stderr)
+        return None
+    print(f"(journal de tirage : draw_id={record.draw_id} mode={mode} "
+          f"retenu={retained} candidats={len(list(candidates))})",
+          file=sys.stderr)
+    return record
+
+
 def main(argv: list[str] | None = None) -> int:
     # Console Windows cp1252 : un titre d'issue portant un caractere hors table
     # (fleche U+2192 etc.) fait crasher le print en UnicodeEncodeError et perd
@@ -5980,6 +6028,19 @@ def main(argv: list[str] | None = None) -> int:
         if wip_hit:
             assignment = ((assignment + "+") if assignment else "") + "drainer-son-wip"
             grain = grain or (backlog.get("wip_prs") or [None])[0]
+        if not args.belt:
+            # Geste 5 #18203 : le chemin reparation est un tirage a part
+            # entiere -- c'est le plus frequent pour une lane chargee. Sans
+            # cette entree, le journal ne verrait que les tirages propres
+            # et sur-estimerait la part du pool reellement proposee. En
+            # mode belt, pas de consigne ici : le tapis journalise sa propre
+            # proposition plus bas (une invocation = une entree).
+            _log_tirage_safe(
+                lane=args.lane,
+                candidates=[r["number"] for r in (backlog.get("red") or [])],
+                retained=(grain.get("number") if isinstance(grain, dict)
+                          else grain),
+                urn="repair", mode="repair")
         if args.belt and args.json:
             # Conserve pour fusion dans la sortie tapis plus bas.
             repair_payload = {
@@ -6211,6 +6272,15 @@ def main(argv: list[str] | None = None) -> int:
                                         merged_pr_probe=merged_pr_signal))
         belt_delivered_failures = belt_pick_state["failures"]
         belt_probe_budget_hit = [belt_pick_state["budget_hit"]]
+        # Geste 5 #18203 : consigner le tirage du tapis -- candidats servis
+        # et tete retenue. Les ecartes (claims tenus, signal de livraison)
+        # restent dans la sortie (`withheld`) ; le journal porte la
+        # proposition faite a la lane, pas l'arbitrage qui l'a precedee.
+        _log_tirage_safe(
+            lane=args.lane,
+            candidates=[it["number"] for it in belt_picks],
+            retained=belt_picks[0]["number"] if belt_picks else None,
+            urn="belt", mode="belt")
         # Banniere legere : le tapis ne refuse jamais, mais rappelle
         # les DWELL/zone pour le lecteur (information sans journal).
         if not args.json:
@@ -6450,6 +6520,14 @@ def main(argv: list[str] | None = None) -> int:
         long_visits=long_visits)
     withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
+    # Geste 5 #18203 : consigner la volee ponderee. L'urne journalisee est
+    # celle du grain retenu (tete de la poignee servie) ; une poignee vide
+    # se consigne aussi -- c'est un fait de tirage, pas une absence.
+    _log_tirage_safe(
+        lane=args.lane,
+        candidates=[p["number"] for p in picks],
+        retained=picks[0]["number"] if picks else None,
+        urn=(picks[0]["klass"] if picks else "aucun"), mode="weighted")
 
     # Calcule AVANT la branche --json : sans ca, l'avertissement de cache
     # disparaissait sur la surface que les lanes utilisent reellement (`.vibe/
