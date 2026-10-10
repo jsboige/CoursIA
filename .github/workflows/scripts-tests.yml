@@ -118,7 +118,7 @@ on:
       # #13746 tranche 2 : les trois suites executees par le bloc pytest
       # ci-dessous qui ne vivent PAS sous scripts/** -- GradeBookApp,
       # QuantConnect/scripts/tests (imports : audit_readme,
-      # validate_qc_notebooks, test_algorithms) et 01-PythonForDataScience/
+      # validate_qc_notebooks, test_algorithms) et 01-Python-For-Data-Science/
       # tests (numpy/pandas purs, tests self-contenus sans reference aux
       # notebooks) -- n'avaient aucun declencheur sur leurs propres arbres :
       # elles ne s'executaient qu'en riders d'un push scripts/**, et une PR
@@ -129,7 +129,7 @@ on:
       # Python (tests self-contenus), et GradeBookApp/** qui est la cible
       # pytest verbatim. Miroir push/pull_request.
       - 'MyIA.AI.Notebooks/QuantConnect/scripts/**'
-      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests/**'
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests/**'
       - 'GradeBookApp/**'
   pull_request:
     branches: [main]
@@ -183,7 +183,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/**'
       # #13746 tranche 2 (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/QuantConnect/scripts/**'
-      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests/**'
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests/**'
       - 'GradeBookApp/**'
   workflow_dispatch:
 
@@ -412,7 +412,7 @@ jobs:
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py \
-            MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests \
+            MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
             MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \

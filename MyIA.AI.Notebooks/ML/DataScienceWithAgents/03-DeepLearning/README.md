@@ -104,7 +104,7 @@ Cette série ancre ses carnets dans la **référence canonique du deep learning*
   gradient)](../02-ML-Cours/2.2-Descente-de-gradient.html), [2.8 (théorie PAC, la borne que
   ce notebook confronte)](../02-ML-Cours/2.8-Theorie-PAC.html) et
   [2.9 (le grokking boîte noire que le 3.5 rouvre à la main)](../02-ML-Cours/2.9-Grokking-Generalisation.html)
-- NumPy niveau [1.2](../01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.html)
+- NumPy niveau [1.2](../01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.html)
   (produits matriciels, broadcast)
 
 ## Environnement
