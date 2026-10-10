@@ -1085,7 +1085,7 @@ def _repo_slug() -> str:
     return m.group(1)
 
 
-def _rest_issue_payload(issue: str) -> dict:
+def _rest_issue_payload(issue: str, repo: str | None = None) -> dict:
     """Meme forme que `_gh_issue_comments`, lue par REST (`gh api`).
 
     #17038 -- `gh issue view` passe par GraphQL ; `gh api repos/...` passe par
@@ -1098,8 +1098,19 @@ def _rest_issue_payload(issue: str) -> dict:
     `body`, `author.login`, `createdAt`, `url` ; REST rend `body`,
     `user.login`, `created_at`, `html_url`. `--paginate` couvre les fils
     longs, comme `--json comments` le fait cote GraphQL.
+
+    ``repo`` -- slug `owner/repo` explicite (reserve NanoClaw du 2026-10-10
+    sur #20248). Les deux transports d'un meme appelant doivent viser le MEME
+    depot : le picker passe `--repo REPO` sur sa voie GraphQL, donc son repli
+    REST doit recevoir le meme slug. Sans cet argument le slug est infere du
+    remote `origin` du **cwd** (`_repo_slug`), ce qui sert silencieusement les
+    claims d'un autre depot quand le picker tourne depuis un worktree ou un
+    clone etranger -- la panne serait alors un mauvais verdict, pas une absence
+    de verdict. Les appelants qui n'epinglent pas de cible (la CLI de
+    `check_lane_claim`, dont la voie GraphQL inferre aussi le slug du cwd)
+    gardent le defaut, et restent donc coherents entre leurs deux transports.
     """
-    slug = _repo_slug()
+    slug = repo or _repo_slug()
     def _api(path: str, paginate: bool = False) -> object:
         cmd = ["gh", "api"]
         if paginate:

@@ -213,3 +213,60 @@ def test_sonde_de_tete_du_picker_herite_du_repli(monkeypatch, capsys):
     stamp = pig.latest_claim_stamp(17038)
     assert stamp == "2026-10-02T10:00:00Z"
     assert "sonde de tete" in capsys.readouterr().err
+
+
+def _boom(*_a, **_k):
+    """`_repo_slug` rendu MORT : le repli ne doit pas le consulter."""
+    raise AssertionError(
+        "_repo_slug consulte alors que la cible etait epinglee (repo=)")
+
+
+def test_rest_issue_payload_epargne_repo_du_cwd(monkeypatch):
+    """`repo=` court-circuite `_repo_slug` : la cible REST est celle demandee.
+
+    Reserve NanoClaw (2026-10-10) : un appelant qui epingle sa cible cote
+    GraphQL ne doit pas la perdre cote REST.
+    """
+    seen = []
+
+    def _run(cmd, *a, **kw):
+        argv = list(cmd)
+        seen.append(argv)
+        return _ok(REST_COMMENTS)() if "/comments" in argv[-1] else _ok(REST_ISSUE)()
+
+    monkeypatch.setattr(clc, "_repo_slug", _boom)
+    monkeypatch.setattr(clc.subprocess, "run", _run)
+    payload = clc._rest_issue_payload("17038", repo="autre/depot")
+    assert payload["number"] == 17038
+    assert seen, "aucun appel REST emis"
+    assert all(a[-1].startswith("repos/autre/depot/") for a in seen), seen
+
+
+def test_sonde_de_tete_du_picker_epingle_le_repo_sur_le_repli(
+        monkeypatch, capsys):
+    """Les deux transports du picker visent le MEME depot.
+
+    Reserve NanoClaw (2026-10-10) sur #20248 : la voie GraphQL passe
+    `--repo REPO`, independante du cwd ; si le repli REST inferait le slug du
+    remote `origin` du cwd, un picker lance depuis un worktree ou un clone
+    etranger servirait les claims de cet autre depot -- silencieusement, et
+    sans mourir. `_repo_slug` est rendu MORT : le repli ne doit pas le lire.
+    """
+    import pick_idle_grain as pig
+
+    seen = []
+
+    def _run(cmd, *a, **kw):
+        argv = list(cmd)
+        if argv[:2] == ["gh", "issue"]:
+            return _graphql_dead()
+        seen.append(argv)
+        return _ok(REST_COMMENTS)() if "/comments" in argv[-1] else _ok(REST_ISSUE)()
+
+    monkeypatch.setattr(clc, "_repo_slug", _boom)
+    monkeypatch.setattr(clc.subprocess, "run", _run)
+    stamp = pig.latest_claim_stamp(17038)
+    assert stamp == "2026-10-02T10:00:00Z"
+    assert seen, "le repli REST n'a pas ete appele"
+    assert all(a[-1].startswith(f"repos/{SLUG}/") for a in seen), seen
+    assert "sonde de tete" in capsys.readouterr().err

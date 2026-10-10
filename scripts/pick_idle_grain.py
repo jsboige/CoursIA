@@ -4585,7 +4585,13 @@ def latest_claim_stamp(issue_number: int) -> str | None:
         # claims sert la meme charge de commentaires, quota distinct.
         try:
             from check_lane_claim import _rest_issue_payload
-            payload = _rest_issue_payload(str(issue_number))
+            # `repo=REPO` : la voie GraphQL ci-dessus epingle deja sa cible
+            # (`--repo REPO`, independante du cwd). Le repli REST doit viser
+            # le MEME depot -- sans cet argument il infererait le slug du
+            # remote `origin` du cwd et servirait silencieusement les claims
+            # d'un autre depot depuis un worktree/clone etranger (reserve
+            # NanoClaw du 2026-10-10 sur #20248).
+            payload = _rest_issue_payload(str(issue_number), repo=REPO)
             print(
                 f"[TRANSPORT] gh issue view (GraphQL) indisponible "
                 f"({type(graphql_exc).__name__}) -- sonde de tete #{issue_number} "
