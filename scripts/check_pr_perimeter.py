@@ -1159,11 +1159,15 @@ def _count_is_provenance_sha(line: str, m: re.Match) -> bool:
 # Liste FERMEE -- jamais elargie a du vocabulaire inconnu (cout FN borne et
 # visible, meme doctrine que COUNT_WORDS). Le VERBE est ce qui borne
 # l'exemption : sans lui la forme fondatrice reste bloquante.
+# Review #20125 : `couvre|couvrent|covers?|lists?` retires -- ce sont des
+# verbes de PERIMETRE, et « Cette PR couvre N fichiers » est la phrase la plus
+# courante d'un body qui annonce son perimetre : l'exemption la blanchissait.
+# Le fondateur #20076 n'utilise que « atteste ».
 DESCRIPTIVE_VERB = re.compile(
     r"\b(?:atteste|attestent|constate|constatent|lit|lisent|"
     r"[ée]num[èe]re|[ée]num[èe]rent|r[ée]cense|r[ée]censent|"
-    r"d[ée]nombre|d[ée]nombrent|couvre|couvrent|"
-    r"attests?|reads?|counts?|enumerates?|lists?|covers?)\b",
+    r"d[ée]nombre|d[ée]nombrent|"
+    r"attests?|reads?|counts?|enumerates?)\b",
     re.IGNORECASE,
 )
 # Controle positif exige par l'issue : la forme CANONIQUE de declaration de

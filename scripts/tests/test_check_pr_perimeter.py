@@ -4227,6 +4227,14 @@ def test_issue_20086_bare_assertion_without_verb_still_fails():
     assert not _count_exempt("Le perimetre de cette PR est de 3 fichiers uniquement.")
 
 
+def test_issue_20125_perimeter_verbs_do_not_exempt():
+    """Review #20125 : `couvre/couvrent/covers/lists` sont des verbes de
+    PERIMETRE, pas de constatation -- l'annonce de perimetre la plus courante
+    doit rester bloquante, sinon l'exemption est un blanc-seing."""
+    assert not _count_exempt("Cette PR couvre 4 fichiers.")
+    assert not _count_exempt("This PR covers 4 files.")
+
+
 def _body_candidates(body: str, n_files: int):
     items = [{"kind": "body", "author": "lane", "body": body, "source": "body", "ts": ""}]
     return select_candidates(items, n_files)[0]
