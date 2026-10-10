@@ -5,7 +5,7 @@
 **Source leçons** : L709-L1, L709-L2, L709-L3, L710-L1, L711-L1, L711-L2, L712-L1, L712-L2, L712-L3, L713-L1, L713-L2, L713-L3, L713-L4, L714-L1, L714-L2, L714-L3, L714-L4 — issues/PRs #1621, #7343 (tr.16), #7349 (tr.17), #7361 (tr.18), #7363 (tr.19), #7366 (tr.20), #7367 (tr.21), #7370 (tr.22), #7372 (tr.23)
 **Périmètre** : batches QC #1621 tr.24+ lancés par la lane `po-2024:CoursIA-2`
 
----
+***
 
 ## Quand lancer un nouveau batch
 
@@ -17,7 +17,7 @@
 
 **Si une condition échoue** : pivoter vers (a) **audit cross-tranches** sur les leçons L709-L714, (b) **consolidation** d'un fichier de référence méthodologique, (c) **substance cross-lane** autre famille CPU/.NET, (d) **stand-by** explicite posté dashboard `[DONE]` avec résumé L541-L1 ★★ 4 critères satisfaits.
 
----
+***
 
 ## Workflow batch — 7 étapes
 
@@ -108,7 +108,7 @@ Si **> 50 % des candidats** collisionnent avec PRs existantes → **pivoter** ve
 - **0 régression** (CLAUDE.md section D / anti-regression)
 - **0 notebook** modifié hors C.1/C.2 stricte (si applicable)
 
----
+***
 
 ## 10 leçons durables (consolidation cross-tranches L709-L714)
 
@@ -141,7 +141,7 @@ Si **> 50 % des candidats** collisionnent avec PRs existantes → **pivoter** ve
 - **L713-L3 ★** : RiskParity-aligned MaxDD 18.40 % mais PSR 1.85 % = drawdown bas par construction (vol inverse) MAIS edge fragile sans levier ; confirme L712-L3 ★ sizing/levier > 1x.
 - **L714-L4 ★** : **Pivot R3 triple succès c.714** = 4 itérations scan/collision pour 5 stratégies. **QC Cloud pool s'épuise post-22 tranches** (227 projets, ~80 % catalogués) → tr.24+ cadence réduite (1/2 cycles) OU pivot méthodologique.
 
----
+***
 
 ## Seuils de promotion
 
@@ -154,7 +154,7 @@ Si **> 50 % des candidats** collisionnent avec PRs existantes → **pivoter** ve
 
 **Promotion Bucket Vivant → Vérifié** : minimum **near-edge** OU **NI structurellement intéressant** (c.-à-d. méthodologie validée indépendamment du backtest, ex ESGF-Kit ML).
 
----
+***
 
 ## Anti-patterns à éviter
 
@@ -166,7 +166,7 @@ Si **> 50 % des candidats** collisionnent avec PRs existantes → **pivoter** ve
 6. **Régénération du catalogue sur branche feature** : `COURSE_CATALOG.generated.json/md` appartient à l'automatisation (R1 catalog-pr-hygiene).
 7. **Multi-pivots au-delà de 4 itérations** : signal de pivot méthodologique (L714-L4 ★).
 
----
+***
 
 ## Liens opérationnels
 
@@ -178,7 +178,7 @@ Si **> 50 % des candidats** collisionnent avec PRs existantes → **pivoter** ve
 - **Lane pionnière** : `po-2024:CoursIA-2` (MiniMax M3, VISION ACTIVE)
 - **Cluster coordination** : dashboard workspace `workspace-CoursIA-2` (cron-driven, R5.4b ≥1 PR/wakeup plancher)
 
----
+***
 
 ## Historique playbook
 
@@ -195,6 +195,6 @@ Si **> 50 % des candidats** collisionnent avec PRs existantes → **pivoter** ve
 
 **Statut QC #1621 post-tr.23** : 27 MERGED + 15 OPEN. **Pivot méthodologique recommandé pour tr.24+** : cadence réduite OU audit cross-tranches / agent propre.
 
----
+***
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

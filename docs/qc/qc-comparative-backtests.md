@@ -11,7 +11,7 @@ brokerage/fee model was previously the negligible default. Entries marked
 pre-remediation catalog values and need re-backtest before comparative conclusions.
 **Methodology** : Period common 2018-01-01 → 2024-12-31 (US equities/multi-asset), 2020-01-01 → 2024-12-31 (crypto). Metrics from `projects/catalog.json` + prior backtest runs. Pending: standardized re-backtest via MCP qc-mcp.
 
----
+***
 
 ## Legend
 
@@ -24,7 +24,7 @@ pre-remediation catalog values and need re-backtest before comparative conclusio
 | **Class** | Asset class |
 | **Status** | `robuste` = Sharpe > 0.5, backtested; `historique` = Sharpe 0-0.5; `exploratoire` = negative Sharpe; `untested` = no backtest yet |
 
----
+***
 
 ## Tier 1 — Robuste (Sharpe > 0.5, 41 strategies)
 
@@ -229,7 +229,7 @@ Backtests: `1630-baseline-HighBookToMarketFScore-post2801` (0.411, 14.5%, -60.4%
 `1630-TrendStocksLite-post2801` (0.707, 18.0%, -33.7%, PSR 25.0%),
 `1630-ML-RandomForest-post2801` (0.70, 20.6%, -40.9%, PSR 18.4%).
 
----
+***
 
 ## Tier 2 — Historique (Sharpe 0.0-0.5, 17 strategies)
 
@@ -255,7 +255,7 @@ Backtested but modest or marginal strategies. Useful for pedagogical comparison.
 | 55 | OptionsIncome | OPT | Options (SPY) | 0.21 | — | — | historique |
 | 56 | Framework_Composite_MomentumRegime | COMP | Multi-asset | 0.19 | 4.7 | — | historique |
 
----
+***
 
 ## Tier 3 — Exploratoire (Sharpe < 0, 5 strategies)
 
@@ -269,7 +269,7 @@ Negative Sharpe — either failed strategies or market conditions unfavorable.
 | 61 | PairsTrading | STAT | Equities | -0.36 | — | exploratoire |
 | 62 | ETF-Pairs | STAT | ETF | -0.71 | — | exploratoire |
 
----
+***
 
 ## Tier 4 — Untested (candidates for standardized backtest, ~38 strategies)
 
@@ -293,7 +293,7 @@ Projects with `main.py` but no recorded backtest metrics. Prime candidates for t
 
 > **Tier-4 residual characterization (2026-06-23, #1630)**: the no-ML IND/COMP/RISK/FACTOR candidates are all verified (Key-findings #22–#36). The remaining Tier-4 rows are: **ML/DL/RL** (#63–#71, #76) — heavy training, deferred to the training-specialist and to multi-seed cross-validation (Next Steps #6); **OPT** (#73 Option-Wheel, #75 Options-VGT) — naked-options strategies whose MaxDD exceeds 100 % (the QC simulator does not capture forced assignment/liquidation, see the caveat under Key-finding #13), so the baseline is intrinsically optimistic on loss and of low pedagogical value (the student OptionWheel Sharpe −0.51 / MaxDD 103.5 % already documents the catastrophe); **#92 Research-Executor** — a *research execution harness* (runs 8 embedded notebooks via a `MockQB` shim over a 2-day window and `quit()`s inside `initialize`, `on_data = pass`), **not a tradable strategy**, hence out of the #1630 aligned-baseline scope (see Key-finding #37).
 
----
+***
 
 ## Type Distribution
 
@@ -309,7 +309,7 @@ Projects with `main.py` but no recorded backtest metrics. Prime candidates for t
 | STAT (stat-arb) | 2 | -0.54 |
 | FACTOR | 1 | — |
 
----
+***
 
 ## Asset Class Distribution
 
@@ -322,7 +322,7 @@ Projects with `main.py` but no recorded backtest metrics. Prime candidates for t
 | FX | 2 |
 | Futures/Commodities | 2 |
 
----
+***
 
 ## #1630 Aligned Baselines (2018-2025 period)
 
@@ -458,7 +458,7 @@ ou `Sigma` est la **matrice de covariance** complete (correlations incluses). R�
 |---------|-------|--------|----------------|
 | BTC-ML | 29318876 | Train 2019-2022, test 2023-2026 hardcoded. Changing dates breaks ML logic. | 2023-01-01 → 2026-03-01 |
 
----
+***
 
 ## Key findings
 
@@ -690,7 +690,7 @@ The table makes the family hierarchy explicit: the regime switch (#26) is the di
 | AdaptiveAssetAllocation | untested | 0.509 | +0.509 | First aligned baseline. Min-var + momentum |
 | PairsTrading | -0.36 | -0.280 | +0.080 | Marginal improvement, still exploratoire |
 
----
+***
 
 ## Next Steps
 
@@ -714,7 +714,7 @@ The table makes the family hierarchy explicit: the regime switch (#26) is the di
 
 9. **No-ML backbone campaign complete (2026-06-23)**: all IND/COMP/RISK/FACTOR Tier-4 candidates verified (Key-findings #22–#36, 15 baselines). Remaining Tier-4 = OPT (#73/#75, naked-options MaxDD > 100 % simulator caveat) + ML/DL/RL (#63–#71/#76, deferred to #6 multi-seed / training-specialist). Research-Executor (#92) is a research harness, not a strategy — out of baseline scope (Key-finding #37).
 
----
+***
 
 ## Edge vs σ — statut & dépendance (#1630 items #6 → #7)
 
@@ -754,7 +754,7 @@ La moitié `baseline_Sharpe` de la formule **est** calculable dès maintenant (B
 
 #7 n'est pas un grain livrable ce cycle. Le chemin correct : **#6 d'abord** (sous-lots par famille ML/DL/RL, multi-cycle), puis #7 se calcule trivialement (une division par ligne). Cette section documente la dépendance pour qu'elle soit traçable plutôt qu'un vague « à calculer ». Si une priorisation est voulue, starter pack suggéré : **les 4 true leaders PSR>50%** (Positive-Negative-Splits-ML 82.3%, Framework_Composite_TrendWeather 77.9%, FamaFrenchAllWeather 87.5%, Portfolio-IBKR-Coinbase-Hybrid 62%) — confirmer leur edge en σ-unités cross-seed est le plus utile pédagogiquement.
 
----
+***
 
 ## Transaction Cost Sensitivity (See #1407)
 
@@ -912,7 +912,7 @@ Backtest-validated fee sensitivity for strategies with configurable brokerage pa
 4. **No profitable strategy flips unprofitable** at realistic fees. The risk is Sharpe degradation, not sign flip.
 5. **Slippage excluded**: Market impact on small-caps (EMA-Cross-Stocks) could add 5-15 bps/trade, doubling effective cost for those strategies.
 
----
+***
 
 ## Data Source
 

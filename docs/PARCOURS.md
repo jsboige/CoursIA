@@ -6,7 +6,7 @@
 **Date** : 2026-07-23
 **Base SHA** : `8092a4aec` (post-merge pool QC, post-#8064)
 
----
+***
 
 ## Pourquoi décomposer le monolithique `maturity`
 
@@ -94,7 +94,7 @@ blobs et tuerait l'ancre à chaque merge (#11919).
 `sorry_free` et `scientific_reviewed_by` restent rendus **comme preuves à côté** — ils ne
 pilotent plus la grade.
 
----
+***
 
 ## Migration / rétro-compatibilité
 

@@ -63,7 +63,7 @@ Depuis #17374, la jambe matricielle de `gametheory` build le lake entier (Voting
 - Dashboard `[DEFER]` AVANT le merge, pas apres
 - Pour PRs strict-vs-weak preferences ou def globale : demander la liste des theoremes downstream qui dependent de la def
 
----
+***
 
 ## 2. BG iter prover systematique post-PR/msg po-2026
 
@@ -122,7 +122,7 @@ Lancer avec `Bash run_in_background=true`. Sauvegarder `bash_id` + path `.output
 - **Reporting** : status BG (DELTA sorry, RESULT_SUCCESS, elapsed) dans dashboard cycle suivant. Ne PAS reporter "BG running, voila".
 - **Fin de cycle** : avant `[DONE]`, repondre "Est-ce qu'il y a eu un PR ou msg po-2026 ce cycle ? Si oui, BG iter a-t-il ete lance ?".
 
----
+***
 
 ## 3. Gotchas operationnels — dual-session & prover BG
 

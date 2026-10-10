@@ -6,7 +6,7 @@ Resume operationnel : CLAUDE.md section F.
 
 > **macOS / Linux** : les mode d'echec Python different de Windows (pas de DLL locking au sens Windows, pas d'UAC, pas de Defender quarantine). Le workflow de reparation est le meme en esprit (cleanup `~xxx/` + force-reinstall + verifier l'import), mais les commandes shells different. Cf la section **[Reparation sous macOS / Linux](#reparation-sous-macos--linux)** ci-dessous. Pour le setup d'un poste contributeur Mac/Linux, cf [kernels-runtime.md](kernels-runtime.md) et [setup-linux-macos.md](setup-linux-macos.md).
 
----
+***
 
 ## Symptomes red-flag
 
@@ -18,7 +18,7 @@ Resume operationnel : CLAUDE.md section F.
 - `pip list` montre le paquet mais `python -c "import pkg"` echoue
 - Un paquet **present et importable seul** fait echouer un import qui en depend (cf **Cas E** : le coupable est un *autre* paquet, herite du site-packages utilisateur)
 
----
+***
 
 ## Workflow de reparation obligatoire
 
@@ -29,7 +29,7 @@ Resume operationnel : CLAUDE.md section F.
 5. **Si Access denied persiste** → demander UAC user (executer `Start-Process powershell -Verb RunAs ...`) ou desactivation antivirus temporaire
 6. **Tester import end-to-end** avant de relancer le job (`python -c "import scipy; import sklearn; print(OK)"`)
 
----
+***
 
 ## Anti-patterns interdits
 
@@ -40,7 +40,7 @@ Resume operationnel : CLAUDE.md section F.
 - Modifier `PYTHONPATH` pour pointer vers un env autre que celui invoque par `python.exe` actuel
 - "Ca marche en dev mais pas en prod" sans diagnostic precis de la divergence d'env
 
----
+***
 
 ## Envs Conda dedies sur ai-01 (utiliser AVANT de toucher Python systeme)
 
@@ -61,7 +61,7 @@ python train_lstm.py
 
 Liste complete via `conda env list`.
 
----
+***
 
 ## Cas particuliers
 
@@ -130,7 +130,7 @@ PYTHONNOUSERSITE=1 python -c "import <le_module_qui_echoue>"   # ca passe ? -> c
 
 Ne **pas** « reparer » en reinstallant le paquet accuse par le message d'erreur : il n'est pas casse, et l'operation renforce l'illusion.
 
----
+***
 
 ## Reference incident
 
@@ -138,7 +138,7 @@ Ne **pas** « reparer » en reinstallant le paquet accuse par le message d'erreu
 
 **Lecon** : la complaisance "ca devrait marcher cette fois" est l'ennemi #1 d'un env Python sain. Diagnostiquer le pourquoi avant le comment.
 
----
+***
 
 ## Reparation sous macOS / Linux
 
@@ -187,7 +187,7 @@ conda activate coursia-ml-training     # (env cree localement, nom libre sous Ma
 python train_lstm.py
 ```
 
----
+***
 
 ## References connexes
 

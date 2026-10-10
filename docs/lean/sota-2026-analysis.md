@@ -4,7 +4,7 @@ Synthesis of the current landscape in automated theorem proving for Lean 4, with
 
 > **Update — July 2026.** The external SOTA landscape below was synthesised in May 2026 (papers up to Seed-Prover 1.5, Dec 2025) and is preserved verbatim; the frontier has since moved but a full re-survey is out of scope here. What **has** changed is the **internal harness status** referenced in §4, §5 (matrix) and §6.2: (a) the agent roster grew from the 5-agent design to a **6-role** configuration (Search / Tactic / Critic / Coordinator / Director / **Diagnosis**) with **per-role provider routing** (OpenRouter GPT-5.5 workhorse + local Qwen + Leanstral/Mistral), see #7477; (b) the harness robustness pathologies P1-P6 catalogued in the #7477 forensic are **all delivered** (typed-timeout transient handling, structural-edits tracking, heartbeat-budget classification, canonical result-kind classifier); (c) the GameTheory Lean lakes have been **consolidated** post-#4365 into `game_theory_lean/` (CooperativeGames + StableMarriage + SocialChoice + RepeatedGames aggregated under one lake), now **bilingual FR/EN** under the #4980 sibling-pair convention (21 `_en.lean` files). The internal-relevance paragraphs below are annotated inline where they now lag.
 
----
+***
 
 ## 1. DeepSeek-Prover-V2 (April 2025)
 
@@ -23,7 +23,7 @@ Synthesis of the current landscape in automated theorem proving for Lean 4, with
 
 **Relevance to us**: Their subgoal decomposition is conceptually similar to our Coordinator agent's role. The gap between formal (6) and informal (8) on AIME highlights the remaining difficulty of formalizing combinatorial arguments -- exactly our challenge with Knuth rotation sub-cases.
 
----
+***
 
 ## 2. LeanCopilot / LLMLean
 
@@ -50,7 +50,7 @@ Retrieval-Augmented Prover: extracts premises from Mathlib via embedding similar
 
 **Key insight for us**: LeanCopilot's in-framework approach (running inside the Lean tactic monad) gets precise proof states, unlike our external harness that parses error messages. Premise selection via embedding retrieval could significantly improve our TacticAgent's success rate on Mathlib-heavy proofs.
 
----
+***
 
 ## 3. ATP Landscape for Lean 4 (2025-2026)
 
@@ -98,7 +98,7 @@ AlphaZero-style RL paired with a pre-trained LM. Autoformalizes problems into Le
 
 Not open-source. Key lesson: the RL + formal verification loop (train on verified proofs, not just generated ones) is essential for scaling.
 
----
+***
 
 ## 4. Multi-Agent Proving Architectures
 
@@ -128,7 +128,7 @@ Model-agnostic agentic framework combining LLM + Lean compiler + automated solve
 
 The multi-agent variant in BFS-Prover-V2 uses separate agents for: (1) tactic generation, (2) value estimation for search node priority, (3) proof state evaluation. Published results show multi-agent tree search significantly outperforms single-agent at fixed compute budgets.
 
----
+***
 
 ## 5. Comparison Matrix
 
@@ -152,7 +152,7 @@ The multi-agent variant in BFS-Prover-V2 uses separate agents for: (1) tactic ge
 - Multi-agent approaches (MA-LoT, BFS-Prover-V2, APOLLO) consistently beat single-agent at same model size.
 - Open-source 7B models with RL can match or beat proprietary 671B models on standard benchmarks.
 
----
+***
 
 ## 6. Actionable Insights for Our Harness
 
@@ -176,7 +176,7 @@ The multi-agent variant in BFS-Prover-V2 uses separate agents for: (1) tactic ge
 
 7. **The frontier has moved to IMO/Putnam**: Standard benchmarks are saturated. Our niche (research-level combinatorics in specific domains) remains underserved by SOTA systems.
 
----
+***
 
 ## References
 

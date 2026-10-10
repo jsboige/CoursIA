@@ -24,7 +24,7 @@
 | P9 | Legibility | Rapports [DONE], lignée de grains, harnais 3 tiers | RENFORCE |
 | P10 | Human Oversight | Registre user-question, gouvernance l.87, autonomie graduée | RENFORCE |
 
----
+***
 
 ## P1 — Least Privilege → harnais serré et verrous de lane
 
@@ -155,7 +155,7 @@ C'est exactement notre problème quotidien : un worker renaît toutes les 30 min
 
 **Écart** : la charge de review humaine finale reste concentrée sur une personne (l'utilisateur) pour tout ce qui est subjectif — le batch review du registre atténue mais ne supprime pas le goulot. ÉTAT : **RENFORCE**.
 
----
+***
 
 ## Lecture critique inverse
 

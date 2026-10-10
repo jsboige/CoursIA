@@ -53,7 +53,7 @@ PRs micro qui inflate le compteur "PRs livrées" sans valeur réelle (#806 +2 li
 - [.claude/rules/anti-regression.md](../../.claude/rules/anti-regression.md)
 - CLAUDE.md section B (Reviews PR 5 points obligatoires)
 
----
+***
 
 ## Incidents fondateurs des critères A-H
 

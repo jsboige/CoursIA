@@ -16,7 +16,7 @@
 > python scripts/audit/check_scientific_review.py --check   # classe STALE_APPRECIATION
 > ```
 
----
+***
 
 ## Identification du notebook
 
@@ -112,7 +112,7 @@ EOF
 - **Date de revue** : `<YYYY-MM-DD>` (ISO 8601)
 - **Notes** : `<libre, max 200 chars>`
 
----
+***
 
 **Note** : ce registre est volontairement plus restrictif que `EDITORIAL_REVIEW_CARD.md` — il exige une preuve de fond technique (algo/proba/demo/correctness), pas seulement pédagogique.
 

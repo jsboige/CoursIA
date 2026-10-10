@@ -4,7 +4,7 @@ Résumé opérationnel : CLAUDE.md section G.
 
 S'applique a **tous les agents** (exécutants, coordinateur, reviewers humains et bots). Ces regles sont permanentes : elles ne se relâchent ni avec la pression deadline, ni avec la confiance accumulée, ni avec un APPROVED bot.
 
----
+***
 
 ## G.1 — Vérifier les claims contre le code, pas contre les rapports
 
@@ -16,7 +16,7 @@ Avant de relayer un diagnostic technique d'un autre agent dans un dispatch ou un
 
 **Incident 2026-05-24 (#274)** : ai-01 a ferme #274 (ComfyUI-RookieUI) sur un verdict "NO-GO (scope mismatch)" repris d'un audit po-2023 anterieur, SANS relire le body de l'issue. Or l'audit evaluait RookieUI contre une exigence "UI d'edition video" que #274 n'a JAMAIS formulee (#274 demande une sidebar generation d'IMAGE style A1111) — issue mal attribuee, l'audit confondait #274 avec une autre. Pire, la close a AJOUTE un rationale fabrique ("overlaps Forge/SDNext, no pedagogical value") contredisant le body. Detecte par le user ("Pure hallucination, tu as lu l'issue ?"), reverte (reopen + rétractation). **Lecon (G.1 + G.9) : un verdict est un claim comme un autre — son label ne dispense pas de relire la source qu'il pretend juger. Fermer une issue sur un label sans confronter son raisonnement au body = hallucination par procuration.**
 
----
+***
 
 ## G.2 — Metriques honnetes, pas binaires
 
@@ -33,7 +33,7 @@ Avant de relayer un diagnostic technique d'un autre agent dans un dispatch ou un
 
 **Pour services ops** : `200 OK` sur /health ne prouve pas que le service fait son travail. Test E2E reproductible obligatoire (curl + vérification du payload retourne).
 
----
+***
 
 ## G.3 — Pas de "DONE" sur progres marginal
 
@@ -45,7 +45,7 @@ Si fix corrige 5/7 cellules : rapporter `5/7, 2 restantes : <liste>`. Pas de "DO
 
 **Pourcentage explicite ou liste residuelle obligatoires.**
 
----
+***
 
 ## G.4 — Composites trop larges = split obligatoire
 
@@ -60,7 +60,7 @@ Une PR qui depasse l'un de ces seuils doit etre fractionnee en PRs coherentes pa
 
 Le coordinateur **conteste** (commentaire CHANGES_REQUESTED) au lieu de merger. Le reviewer bot DOIT poster CHANGES_REQUESTED.
 
----
+***
 
 ## G.5 — Shopping cart interdit
 
@@ -68,7 +68,7 @@ Un dispatch > 5 tracks par agent encourage le shopping (LOW d'abord, HIGH report
 
 Si un agent finit ses 2 tracks avant la coord finale : il attend, il n'invente pas une 3e mission. Laisser les LOW au cycle suivant.
 
----
+***
 
 ## G.6 — Coordinateur : audit avant merge cascade
 
@@ -78,7 +78,7 @@ Si une PR a 0 review humain ET le bot APPROVE : c'est le **minimum** acceptable,
 
 **Lire le diff > lire le titre. Lire le body > lire le mergeStateStatus. Vérifier le claim > faire confiance au rapport.**
 
----
+***
 
 ## G.7 — Stagnation cross-cycle = escalade
 
@@ -86,7 +86,7 @@ Si un blocage technique persiste sur N cycles consecutifs (ex: rebase qui ne se 
 
 Si un agent rapporte "BLOCKED" sans preuve concrete (compile log, error message, screenshot) : ne pas accepter. Demander la preuve avant de re-dispatcher.
 
----
+***
 
 ## G.8 — Bots reviewers : pas de rubber-stamp
 
@@ -98,7 +98,7 @@ Pattern interdit : APPROVED sur micro PR docs < 20 lignes isolee. Le bot DOIT de
 
 Cf [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) pour la grille complete.
 
----
+***
 
 ## G.9 — Culture du doute
 
@@ -106,7 +106,7 @@ Avant d'envoyer un rapport ou de merger : se demander explicitement "est-ce que 
 
 Avant d'accepter une "breakthrough" rapportée par un agent (sorry 5→0, BEATS magique, service restaure en 5min) : reproduire au moins 1 element du resultat. Les vrais succès résistent a la vérification ; les faux positifs s'effondrent.
 
----
+***
 
 ## References connexes
 

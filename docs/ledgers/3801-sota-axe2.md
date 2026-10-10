@@ -733,7 +733,7 @@ Total .ipynb: 3
 - **Registre varié** : kernel utilisé = `pyphi` (3/3, conda Python 3.9). Vrai outil SOTA : **PyPhi 1.2.0** (Mayner et al., lib canonique IIT 3.0). **Zéro stub** `raise NotImplementedError` / `assert False` / `1/0` (vérification regex pre-commit clean sur 40 cellules code).
 - **Cumulatif** : 7 familles distinctes dans le registre axe-2 SOTA = ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory, Probas/Infer, **IIT/PyPhi**.
 
----
+***
 
 ## Entry #008 — Sudoku (owner po-2025 strict, c.401)
 
@@ -2544,7 +2544,7 @@ Capacités distinctives du moteur QC exercées (QuantBook data pull, QC Framewor
 
 Part of #3801, #1621
 
----
+***
 
 ## Entry #028 — Probas/PyMC (1-15) (owner po-2025 strict, c.411)
 
@@ -2638,7 +2638,7 @@ La série PyMC **exerce des capacités MCMC distinctives** sans équivalent clos
 
 Part of #3801, #4956
 
----
+***
 
 ## Entry #029 — GenAI/SemanticKernel (01-10b) (owner-floue po-2025 consultatif, c.412)
 
