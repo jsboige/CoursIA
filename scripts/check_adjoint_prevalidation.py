@@ -1127,7 +1127,18 @@ def _stack_partners(target: int, index: dict[int, StackEntry]) -> list[int]:
         if not other.commits:
             continue
         if not set(entry.commits) & set(other.commits):
-            continue
+            # #20263 -- un rebase reecrit les SHA : une intersection vide
+            # ne prouve PAS l'independance, elle est exactement la
+            # signature du sommet de pile rebati que la porte existe pour
+            # attraper. Repli sur les SUJETS partages (hors bruit), comme
+            # le contrat publie le promet : « par sujet, jamais par SHA ».
+            # Les controles aval (ancetre lineaire, apport reel) restent
+            # appliques -- le repli n'elargit que la detection du candidat.
+            if not [
+                s for s in (mine & _subjects_of(other))
+                if not _is_stack_noise(s)
+            ]:
+                continue
         # Bas de pile lineaire : la tete de `target` est un ancetre de celle
         # de `other`, donc merger `target` d'abord est l'ordre correct.
         if _git(

@@ -3593,6 +3593,97 @@ def test_stack_noise_subjects_alone_do_not_block(monkeypatch):
     assert verdict == mod.VERDICT_READY, reasons
 
 
+# #20263 -- un rebase reecrit les SHA : l'intersection vide de SHA ne
+# prouve pas l'independance (trou mesure par l'adjoint, dossier
+# c6098840404). Les temoins suivants couvrent le repli par SUJETS.
+
+
+def test_stack_top_rebased_is_detected(monkeypatch):
+    """#20263 -- sommet REBATI : SHA aucun commun, sujets partages.
+
+    Un rebase reecrit tous les SHA : pre-fix, l'intersection vide
+    ecartait la candidate et la porte rendait READY le bas de pile
+    perime -- exactement le cas que le contrat promet d'attraper
+    (« par sujet, jamais par SHA »).
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"x": "A", "y": "B",
+                             "z": "D: correctif absent du bas de pile"}),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+    assert any("D: correctif absent du bas de pile" in r for r in reasons), reasons
+
+
+def test_stack_rebased_linear_base_stays_silent(monkeypatch):
+    """#20263 -- bas de pile rebati LINEAIRE : le silence d'ancetre tient.
+
+    Le repli par sujets ne court-circuite pas le controle d'ancetre :
+    meme rebatie (SHA disjoints), une base dont la tete est ancetre de
+    celle du sommet reste l'ordre de merge correct.
+    """
+    bottom = mod.STACK_REF_PREFIX + "19548"
+    top = mod.STACK_REF_PREFIX + "19556"
+    monkeypatch.setattr(mod, "_git", _synthetic_git({(bottom, top)}))
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"x": "A", "y": "B", "z": "C"}),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_rebased_without_new_subject_is_not_blocked(monkeypatch):
+    """#20263 -- sujets partages sans APPORT reel : pas de blocage.
+
+    Le repli herite du controle d'apport : une branche rebatie qui ne
+    porte aucun sujet nouveau n'est pas un sommet perime.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"x": "A", "y": "B"}),
+    )
+    verdict, reasons = mod.derive_verdict(
+        _base_snapshot(), lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_rebased_noise_only_shared_is_not_blocked(monkeypatch):
+    """#20263 -- sujets partages = bruit SEUL : le repli ne s'arme pas.
+
+    Deux PRs dont le seul sujet commun est un vidage de re-declenchement
+    ne sont pas une pile, meme rebaties : le filtre de bruit s'applique
+    au repli par sujets comme au chemin SHA.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A",
+                             "b": "Fix: empty commit to retrigger CI"}),
+        _stack_entry(19556, {"x": "C",
+                             "y": "Fix: empty commit to retrigger CI",
+                             "z": "D"}),
+    )
+    verdict, reasons = mod.derive_verdict(
+        _base_snapshot(), lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+
+
 def test_stack_vanished_head_ref_is_ignored(monkeypatch):
     """#20251 (4) -- ref de tete disparue : ecartee, jamais un incident.
 
