@@ -787,8 +787,25 @@ class TestUnmergedIndexReproduction:
         g("checkout", "-q", base_branch)
         target.write_text("main\n", encoding="utf-8")
         g(*ident, "commit", "-qam", "main")
-        merged = self._git(tmp_path, "merge", "side", check=False)
-        assert merged.returncode != 0, "le merge devait entrer en conflit"
+        # `-c merge.ff=false` : mesure sur le runner CI -- le merge y est REFUSE
+        # (« Diverging branches can't be fast-forwarded », rc=128) sans creer
+        # d'index non fusionne : `ls-files` rend 1 ligne, `--unmerged` rend vide.
+        # Le runner se comporte donc comme si `merge.ff=only` etait pose ; la
+        # reproduction locale sous cette config rend exactement les quatre
+        # signatures observees en CI. Le test prenait ce refus pour un conflit,
+        # et les trois assertions suivantes echouaient sur un index sain. Le
+        # drapeau de ligne de commande prime sur toute config ambiante.
+        # `*ident` : l'identite du committer doit accompagner le merge lui-meme
+        # -- sans elle un merge en conflit sort en « Committer identity
+        # unknown » sur un runner dont la config globale ne porte pas d'identite.
+        merged = self._git(tmp_path, *ident, "-c", "merge.ff=false", "merge",
+                           "side", check=False)
+        # Le controle porte sur l'effet attendu (index non fusionne), pas sur
+        # le code retour : un refus de merge sort aussi en non-zero.
+        unmerged = self._git(tmp_path, "ls-files", "--unmerged").stdout
+        assert unmerged.strip(), (
+            "le merge devait laisser un index non fusionne (3 stages) ; "
+            f"rc={merged.returncode}, sortie={merged.stdout}{merged.stderr}")
         return tmp_path
 
     def test_ls_files_yields_path_per_index_stage(self, tmp_path):
