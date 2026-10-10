@@ -122,6 +122,13 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_*_taxonomy.csv -t
 # l'EPIC #10355) : il est en CRLF pur, mais sans `-text` le blob stocke serait
 # normalise en LF sous `core.autocrlf=true` et differerait de l'amont.
 MyIA.AI.Notebooks/GenAI/FallacyDetection/data/argumentum_scenarii_cards.csv -text
+# Tranche C de l'EPIC #10355 (issue #17578) : corpus academique MAFALDA,
+# recopie octet pour octet depuis ChadiHelwe/MAFALDA. Les `.jsonl` amont sont
+# en LF purs ; sans `-text`, la normalisation CRLF sur une machine
+# `core.autocrlf=true` pourrait reecrire le blob stocke et la copie
+# cesserait d'etre verbatim. Preuve de verbatim : egalite des SHA de blob,
+# consignee dans NOTICE-MAFALDA et manifest.json.
+MyIA.AI.Notebooks/GenAI/FallacyDetection/data/academic/MAFALDA/*.jsonl -text
 
 
 # Meme raisonnement pour les ontologies OWL distillees depuis le meme amont, et

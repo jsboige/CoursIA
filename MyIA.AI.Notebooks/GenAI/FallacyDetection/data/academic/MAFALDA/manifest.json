@@ -1,0 +1,53 @@
+{
+ "corpus": "MAFALDA",
+ "tranche": "C",
+ "issue": 17578,
+ "epic": 10355,
+ "criteria_comment": "https://github.com/jsboige/CoursIA/issues/17578#issuecomment-6073752732",
+ "acquired_utc": "2026-10-10",
+ "upstream": {
+  "repo": "https://github.com/ChadiHelwe/MAFALDA",
+  "commit": "0df434477b914a20f55c0592ba05a53fe924c65b",
+  "is_default_branch_head": true
+ },
+ "license": {
+  "name": "CC-BY-SA (4.0)",
+  "support": "declaration in the paper: NAACL 2024, arXiv:2311.09761, \"All our code and data are publicly available under a CC-BY-SA license\"",
+  "repo_license_file": null,
+  "readme_license_mention": null,
+  "corroboration": "arXiv abs page 2311.09761 carries a CC BY-SA 4.0 license link (measured 2026-10-10)",
+  "measured_by": [
+   "myia-po-2026:CoursIA 2026-10-09 (issue comment 6073752732)",
+   "myia-po-2025:CoursIA 2026-10-10 (this acquisition)"
+  ],
+  "sharealike_derivatives": true,
+  "attribution": "Helwe, Calamai, Paris, Clavel, Suchanek (2024), arXiv:2311.09761"
+ },
+ "files": {
+  "gold_standard_dataset.jsonl": {
+   "source_path": "datasets/gold_standard_dataset.jsonl",
+   "blob_sha1": "815be42647e5c7fde3656d1d4922cf5e6228297d",
+   "sha256": "f714d58e7a21a66d63bc03ead98f376e2d9ab7a35d3f847d92ac1c2e0179004d",
+   "bytes": 243667,
+   "lines": 200,
+   "line_endings": "LF",
+   "encoding": "UTF-8 (no BOM, pure ASCII)"
+  },
+  "user_study_examples_with_labels.jsonl": {
+   "source_path": "datasets/user_study_examples_with_labels.jsonl",
+   "blob_sha1": "90289f00fa49965ba38df65d17828a9ae1c83ff5",
+   "sha256": "88928bfb2ffc1e32882f5be404286206451a9feabcb17501a7a0dd52c8827fd3",
+   "bytes": 19186,
+   "lines": 20,
+   "line_endings": "LF",
+   "encoding": "UTF-8 (no BOM, pure ASCII)"
+  }
+ },
+ "skipped": {
+  "datasets/non_annotated_dataset.jsonl": "5931992 bytes, unlabeled source texts, not needed for taxonomy alignment",
+  "datasets/users_results/": "user study results, out of scope",
+  "datasets/user_study_examples_without_labels.jsonl": "unlabeled variant of a committed file",
+  "MAFALDA_Annotation_Guidelines.pdf": "deposited to the shared GDrive bibliography with the paper (bibliography-hygiene rule), never committed"
+ },
+ "bibliography_deposit": "G:\\Mon Drive\\MyIA\\IA\\Bibliographie IA (paper + annotation guidelines)"
+}
