@@ -14,13 +14,15 @@ Clone de la stratégie 60 de la Strategy Library QuantConnect (*Leveraged ETF Mo
 
 Le code tourne avec le modèle de frais du courtier choisi par l'auteur (`SetBrokerageModel`), en compte sur marge, sans levier au-delà de 100 % du capital.
 
-## Mesure du code de la stratégie (#19587) — deux verdicts BEATS
+## Mesure du code de la stratégie (#19587) — verdict INCONCLUSIVE (pas de période hors échantillon)
+
+**Verdict : INCONCLUSIVE, faute de période hors échantillon.** Les seuils RSI de l'auteur ont été publiés le 31 décembre 2025 : toute la fenêtre de la mesure a pu servir à les régler, et les 184 séances qui suivent la publication sont trop courtes pour en tenir lieu. Sur la fenêtre de la mesure, la stratégie dépasse SPY et QQQ détenus et remplit les trois conditions du protocole, pour `base` comme pour `rule`. Ce résultat reste descriptif : sans période hors échantillon distincte, il ne permet pas de conclure (arbitrage c.6092954192 sur la PR #19599).
 
 **Ce que le dépôt publiait avant.** Le catalogue et ce README reprenaient les chiffres de la Strategy Library (Sharpe 1,80, CAGR 101 %). Le registre `docs/qc/qc-strategies-status.md` citait un backtest QC (Sharpe 1,779, PSR 79,8 %) et demandait une confirmation qui n'a jamais eu lieu. Ce README signalait aussi un « SUSPECT overfit haussier » sur la fenêtre 2015-2024. Aucun de ces chiffres n'était comparé à une référence, et aucune différence n'était testée.
 
 **Protocole** (règle inscrite sur #19587 avant le premier backtest) : backtests QC sur toute la période où les neuf ETF cotent, 2012-01-01 → 2026-09-25, frais du courtier. La fenêtre inclut donc la baisse de 2022. La candidate `base` (code tel quel) est comparée à SPY et à QQQ détenus, avec les mêmes frais et la même instrumentation. Le test porte sur la différence de Sharpe à taux sans risque nul, par bootstrap circulaire par blocs de 21 séances (10 000 tirages, graine 18921), avec correction de Holm.
 
-`BEATS` exige trois conditions contre une même référence :
+La règle préinscrite demande trois conditions contre une même référence pour conclure `BEATS` :
 - une p Holm inférieure à 0,05 ;
 - une différence qui reste positive à frais doublés et sur au moins deux des trois sous-périodes ;
 - une différence positive sur au moins 4 des 5 points de la grille.
@@ -60,7 +62,7 @@ Statistiques de QC pour `base` : Sharpe 1,68 (calculé avec un taux sans risque)
 | SMA de SPY 250 | 1,17 | −77,8 % | +0,24 | +0,17 |
 | SMA courtes 30 | 1,41 | −57,3 % | +0,48 | +0,41 |
 
-**Verdict : BEATS**, contre les deux références. Les deux p Holm valent 0,012. La différence reste positive à frais doublés, sur deux sous-périodes sur trois, et sur les cinq points de la grille. La sous-période 2012-2016 est légèrement négative contre les deux références. Corrélation hebdomadaire avec SPY : 0,41 ; avec QQQ : 0,55.
+**En échantillon, les trois conditions sont remplies** contre les deux références, à titre descriptif. Les deux p Holm valent 0,012. La différence reste positive à frais doublés, sur deux sous-périodes sur trois, et sur les cinq points de la grille. La sous-période 2012-2016 est légèrement négative contre les deux références. Corrélation hebdomadaire avec SPY : 0,41 ; avec QQQ : 0,55.
 
 **Contrôles (descriptifs, hors verdict).**
 
@@ -77,7 +79,7 @@ Le filtre de tendance seul (`sma200`) et TQQQ détenu ont un Sharpe voisin de ce
 - prix bruts, donc des nombres de parts réalistes ;
 - mêmes RSI de Wilder et SMA, recalculés chaque jour sur 400 séances d'historique ajusté (paramètres `prices=raw`, `signal=history`).
 
-Ce second verdict a été ajouté au protocole avant tout calcul de verdict (commentaire c.6024690039 sur #19587). Le contrôle `check` (signal recalculé, prix ajustés) redonne la courbe de `base` à l'identique : écart relatif maximal nul, 778 ordres, mêmes comptes d'évaluations. Le signal recalculé est donc bien celui de Lean.
+Cette seconde mesure a été ajoutée au protocole avant tout calcul de verdict (commentaire c.6024690039 sur #19587). Le contrôle `check` (signal recalculé, prix ajustés) redonne la courbe de `base` à l'identique : écart relatif maximal nul, 778 ordres, mêmes comptes d'évaluations. Le signal recalculé est donc bien celui de Lean.
 
 | Run (prix bruts) | Sharpe | CAGR | Pire baisse | Rotation / an | Frais / an | Ordres |
 |---|---|---|---|---|---|---|
@@ -110,15 +112,15 @@ En prix bruts, SPY et QQQ détenus passent des ordres périodiques, sans doute l
 | SMA de SPY 250 | 1,27 | −78,0 % | +0,34 | +0,27 |
 | SMA courtes 30 | 1,50 | −55,6 % | +0,57 | +0,50 |
 
-**Second verdict : BEATS.** Contre les deux références, p Holm 0,004. La différence reste positive à frais doublés, sur les trois sous-périodes et sur les cinq points de la grille. Corrélation hebdomadaire avec SPY : 0,38 ; avec QQQ : 0,51. `base` décrit la règle telle que QC l'exécute en prix ajustés ; `rule` décrit la règle écrite.
+**En échantillon, `rule` remplit aussi les trois conditions**, à titre descriptif. Contre les deux références, p Holm 0,004. La différence reste positive à frais doublés, sur les trois sous-périodes et sur les cinq points de la grille. Corrélation hebdomadaire avec SPY : 0,38 ; avec QQQ : 0,51. `base` décrit la règle telle que QC l'exécute en prix ajustés ; `rule` décrit la règle écrite.
 
-**Ce que le verdict ne dit pas.**
-- **Les seuils ont vu toute la fenêtre.** La Strategy Library date la version 1.0.0 de la stratégie du 31 décembre 2025. Les seuils RSI de l'auteur ont donc pu être réglés sur 2012-2025, et le bootstrap ne corrige pas ce choix. Après la publication, 184 séances seulement (2026-01-02 → 2026-09-25) : `base` y fait un Sharpe de 1,45, contre 1,42 pour SPY et 1,39 pour QQQ, avec une baisse de −31,9 %. C'est trop court pour trancher dans un sens ou dans l'autre.
+**Ce que la mesure ne dit pas.**
+- **Les seuils ont vu toute la fenêtre, d'où le verdict INCONCLUSIVE.** La Strategy Library date la version 1.0.0 de la stratégie du 31 décembre 2025. Les seuils RSI de l'auteur ont donc pu être réglés sur 2012-2025, et le bootstrap ne corrige pas ce choix. Après la publication, 184 séances seulement (2026-01-02 → 2026-09-25) : `base` y fait un Sharpe de 1,45, contre 1,42 pour SPY et 1,39 pour QQQ, avec une baisse de −31,9 %. C'est trop court pour trancher dans un sens ou dans l'autre.
 - **Une année porte une grande part du résultat.** En 2020, `base` multiplie sa valeur par 16 : UVXY prend la hausse de la volatilité de février-mars, puis TQQQ et TECL le rebond. 2020 retirée, la différence de Sharpe reste positive : +0,31 contre SPY et +0,35 contre QQQ pour `base`, +0,41 et +0,44 pour `rule`. Ces quatre écarts sont descriptifs, non testés.
 - **La pire baisse vient de la fin 2018, en TQQQ** : −52,5 % entre le 2018-08-29 et le 2018-12-24, sommet retrouvé le 2019-04-15. Sur les mêmes dates, TQQQ détenu perd 58,1 % et QQQ 22,8 %. Sur toute la fenêtre, TQQQ détenu perd jusqu'à −81,6 %.
 - **Capacité.** Le portefeuille du backtest est multiplié par environ 45 000 et atteint plusieurs milliards de dollars, bien au-delà de la capacité estimée par QC (200 à 260 M$). Le Sharpe se calcule sur les rendements et ne dépend pas de l'échelle ; le CAGR au-delà de la capacité n'est pas atteignable, et le backtest ne modélise pas l'impact de marché.
 
-**Suivi en ombre.** `base` est gelé à la date du verdict. Son inscription au registre du suivi en ombre (#18923, point 6 du protocole) est faite à part, avec les autres gels en attente.
+**Suivi en ombre.** `base` est gelé à la date de la mesure. Son suivi en ombre (#18923, point 6 du protocole) accumulera, à partir de cette date, la période hors échantillon qui manque. L'inscription au registre est faite à part, avec les autres gels en attente.
 
 Les traces des runs (graphiques, statistiques, journal des ordres, empreinte du code envoyé à QC) sont conservées hors dépôt, sous `QC-traces/19587-leveraged-etf-momentum/`.
 
@@ -141,6 +143,7 @@ Avec les défauts, la règle de trading est celle d'origine.
 ## Références
 
 - QuantConnect Strategy Library, stratégie 60 — *Leveraged ETF Momentum Allocator*, Grant Forman : `https://www.quantconnect.com/strategies/60`
-- #19587 — protocole, ajout du second verdict (c.6024690039) et résultats
+- #19587 — protocole, ajout de la seconde mesure (c.6024690039) et résultats
+- PR #19599 — arbitrage du verdict, faute de période hors échantillon (c.6092954192)
 - #18923 — suivi en ombre des stratégies mesurées
 - #19450 — même protocole, appliqué à `LongShortHarvest-QC`
