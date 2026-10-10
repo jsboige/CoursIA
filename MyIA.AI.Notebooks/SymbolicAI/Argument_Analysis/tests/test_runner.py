@@ -595,3 +595,128 @@ def test_phase2_respects_max_formal_turns_below_max_turns_half():
     formal = next(p for p in out["phases"] if p["name"] == "formal")
     assert informal["turns"] == 5
     assert formal["turns"] == 3
+
+
+# ---------------------------------------------------------------------------
+# budget_variance_study (#18776) — verdict-metric extraction on synthetic states
+# ---------------------------------------------------------------------------
+class _StudyState:
+    """Minimal state object exposing the surface compute_verdict_metrics reads."""
+
+    RAW = (
+        "les energies renouvelables sont essentielles pour lutter contre le "
+        "changement climatique et reduire les emissions de co2"
+    )
+
+    def __init__(self, arguments=None, fallacies=None, conclusion=None,
+                 belief_sets=None, query_log=None):
+        self.raw_text = self.RAW
+        self.identified_arguments = arguments or {}
+        self.identified_fallacies = fallacies or {}
+        self.final_conclusion = conclusion
+        self.belief_sets = belief_sets or {}
+        self.query_log = query_log or []
+        self.answers = {}
+
+
+def _substantive_argument():
+    return {
+        "arg1": ("les energies renouvelables sont essentielles pour lutter "
+                 "contre le changement climatique")
+    }
+
+
+def _substantive_fallacy():
+    return {
+        "fal1": {
+            "type": "Appel a l'autorite",
+            "justification": "L'orateur invoque un expert hors de son domaine.",
+            "target_argument_id": "arg1",
+        }
+    }
+
+
+def test_study_metrics_empty_state_is_incomplete():
+    from argumentation_lib import budget_variance_study as bvs
+
+    m = bvs.compute_verdict_metrics(_StudyState())
+    assert m["validation_status"] == "INCOMPLETE"
+    assert m["failed_reason"] == "ARGUMENTS_NONE"
+    assert m["substantive_arguments"] == 0
+    assert m["substantive_fallacies"] == 0
+
+
+def test_study_metrics_substantive_content_passes_content_checks():
+    from argumentation_lib import budget_variance_study as bvs
+
+    m = bvs.compute_verdict_metrics(_StudyState(
+        arguments=_substantive_argument(),
+        fallacies=_substantive_fallacy(),
+        conclusion="Synthese finale de l'analyse.",
+        belief_sets={"bs1": "p"},
+        query_log=[{"raw_result": "ACCEPTED"}],
+    ))
+    assert m["substantive_arguments"] == 1
+    assert m["substantive_fallacies"] == 1
+    assert m["failed_reason"] is None
+    # 6 checks passed out of 7 slots (the notebook's max_checks counts an
+    # extra split it never awards) -> 0.86, above the 0.8 bar.
+    assert m["confidence_score"] == 0.86
+    assert m["validation_status"] == "COMPLETE_VALIDATED"
+
+
+def test_study_metrics_state_key_argument_degrades_to_form_only():
+    from argumentation_lib import budget_variance_study as bvs
+
+    m = bvs.compute_verdict_metrics(_StudyState(
+        arguments={"arg1": "analysis_state"},
+        fallacies=_substantive_fallacy(),
+        conclusion="c",
+    ))
+    assert m["substantive_arguments"] == 0
+    assert m["failed_reason"] == "ARGUMENTS_FORM_ONLY"
+    assert m["validation_status"] == "INVALIDATED_FORM"
+
+
+def test_study_metrics_unknown_fallacy_type_degrades_to_form_only():
+    from argumentation_lib import budget_variance_study as bvs
+
+    m = bvs.compute_verdict_metrics(_StudyState(
+        arguments=_substantive_argument(),
+        fallacies={"fal1": {"type": "Type Inconnu",
+                            "justification": "pas assez d'elements ici",
+                            "target_argument_id": "arg1"}},
+        conclusion="c",
+    ))
+    assert m["substantive_fallacies"] == 0
+    assert m["failed_reason"] == "FALLACIES_FORM_ONLY"
+    assert m["validation_status"] == "INVALIDATED_FORM"
+
+
+def test_study_summarize_counts_verdict_forms():
+    from argumentation_lib import budget_variance_study as bvs
+
+    runs = [
+        {"validation_status": "PARTIAL_VALIDATED", "failed_reason": None,
+         "substantive_arguments": 3, "substantive_fallacies": 1,
+         "total_turns": 23, "duration_s": 90.0},
+        {"validation_status": "PARTIAL_VALIDATED", "failed_reason": None,
+         "substantive_arguments": 4, "substantive_fallacies": 0,
+         "total_turns": 25, "duration_s": 100.0},
+        {"error": "APIConnectionError: boom"},
+    ]
+    s = bvs.summarize(runs)
+    assert s["runs_ok"] == 2
+    assert s["runs_error"] == 1
+    assert s["verdict_forms_unique"] == ["PARTIAL_VALIDATED"]
+    assert s["verdict_forms_distribution"] == {"PARTIAL_VALIDATED": 2}
+    assert s["substantive_arguments"]["min"] == 3
+    assert s["substantive_arguments"]["max"] == 4
+
+
+def test_study_load_batch_text_reads_notebook_example():
+    from argumentation_lib import budget_variance_study as bvs
+
+    text = bvs._load_batch_text()
+    assert len(text) > 1000
+    assert "transition energetique" in text
