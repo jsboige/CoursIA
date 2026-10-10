@@ -225,3 +225,96 @@ Ce que ce cycle **n'établit pas**, et qu'il ne faut pas lire dans ces lignes :
 Le grain reste donc partiellement ouvert sur ces trois points (QA visuel routé, parité non
 mesurée), mais le blocage technique qui fondait le `NON MESURÉ` de c.419 est levé, et le verdict
 passe de « non mesuré » à **mesuré, artefact produit**.
+
+## 7. Parité ComfyUI-Wan même-machine/même-prompt (critère 4) — mesure livrée
+
+**Date** : 2026-10-09 (lane `myia-po-2023:CoursIA`, claim c.5963436956 amendé c.6085772244).
+Équivalent vidéo de la parité Image c.272-c.273 du ledger parent. Jambe restante nommée par le
+preflight ai-01 du 2026-10-09T12:44Z (critère 4 « axe Video NON COUVERT »).
+
+### Setup — la prémisse « ComfyUI Wan non installé » était périmée
+
+Le ledger parent (:965) disait « ComfyUI Wan non installé sur cette machine — hors fenêtre
+worker, ~14 GB dl + redéploiement ». Mesure : le conteneur `comfyui-qwen` (ComfyUI **0.37.2**,
+Wan natif dans le core, pytorch 2.14.0+cu126) portait **déjà** les trois composants dans son
+volume `docker-configurations/shared/models/` — aucun des ~14 GB annoncés n'était à télécharger :
+
+| Composant | Fichier (volume ComfyUI) | sha256 | Côté TensorSharp (probe §5) |
+|---|---|---|---|
+| DiT | `diffusion_models/wan2.1_t2v_1.3B_fp16.safetensors` (2,84 GB) | `be531024…` | `Wan2.1-T2V-1.3B-Q4_K_M.gguf` (982 MB, `1e22a681…`) |
+| VAE | `vae/wan_2.1_vae.safetensors` (254 MB, schéma Diffusers) | `2fc39d31…` | `Wan2_1_VAE_bf16.safetensors` (schéma legacy) |
+| TE | `text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors` (6,7 GB) | `c3355d30…` | `umt5-xxl-encoder-Q4_K_M.gguf` (`17cf97a5…`) |
+
+**Le split de format EST le finding** : les deux stacks exigent des formats incompatibles du
+même modèle — TensorSharp veut GGUF (DiT/TE) + VAE legacy, ComfyUI veut safetensors + VAE
+Diffusers. La parité stricte n'est atteignable que sur le DiT/TE GGUF (copiés dans le volume,
+sha256 vérifiés identiques de part et d'autre — leçon c.273 : le hash fait foi, pas le nom) ;
+la VAE ne peut jamais être le même fichier des deux côtés.
+
+### Workflow (API-format, patron c.272)
+
+`UnetLoaderGGUF(Wan2.1-T2V-1.3B-Q4_K_M.gguf)` → `ModelSamplingSD3(shift=8.0)` ← `--flow-shift 8.0`
+· `CLIPLoaderGGUF(umt5-xxl-encoder-Q4_K_M.gguf, type=wan)` · `VAELoader(wan_2.1_vae.safetensors)`
+· `EmptyHunyuanLatentVideo(832×480, 33 f)` · `KSampler(seed=42, steps=30, cfg=6.0, uni_pc, simple,
+denoise=1.0)` · `VAEDecode` → `CreateVideo(fps=16)` → `SaveVideo`. Paramètres alignés au bloc §5 :
+« 832x480x33f, 30 steps, unipc, cfg 6, shift 8 » — prompt positif **verbatim**, négatif vide.
+Serveur : `cuda:0 = RTX 3090` (24 GB, logs de démarrage du conteneur), même carte que le probe
+TensorSharp. Timings serveur extraits de `/history` (`status.messages` :
+`execution_start → execution_success` en ms d'horloge serveur), conciliés au wall client ; VRAM
+échantillonnée côté hôte (`nvidia-smi`, 2,5 s) pendant le run.
+
+**Leçon API SaveVideo (v0.37)** : l'entrée `format` est un combo dynamique V3 — la valeur doit
+être une **clé d'option exacte en minuscules** (`mp4`) et le codec imbriqué se sérialise
+`format.codec` (`auto`). Une valeur hors options (`"Auto"`) est **silencieusement dropée** par la
+validation et le nœud échoue à l'exécution en `TypeError: missing 1 required positional
+argument: 'format'` — aucun message d'erreur ne nomme la vraie cause.
+
+### Résultats
+
+| Voie | DiT | TE | VAE | cfg | Run | Wall client | Server exec | Pic VRAM 3090 | Sortie |
+|---|---|---|---|---|---|---|---|---|---|
+| TensorSharp.Cli §5 | Q4_K_M | Q4_K_M | legacy bf16 | 6 | froid (proc. neuf) | 124,4 s | n/a (CLI, 60 passes DiT 1,8 s mean) | 5063 MiB steady | MP4 775 Ko, std frame 75,0-75,3 |
+| ComfyUI 0.37.2 run A′ | **Q4_K_M (même sha256)** | Q4_K_M (même sha256) | Diffusers | 6 | froid (post-restart, 0 nœud caché) | 224,3 s | 220,7 s | 20 776 MiB | MP4 681 Ko `eca6ea62…`, std 95,2-96,0 |
+| ComfyUI 0.37.2 run B′ | fp16 natif | fp8 scaled | Diffusers | 6 | chaud (2 nœuds cachés, suit A′) | 163,7 s | 161,2 s | 22 094 MiB | MP4 612 Ko `06e0047b…`, std 91,4-92,0 |
+| ComfyUI 0.37.2 (datapt) | Q4_K_M (même sha256) | Q4_K_M (même sha256) | Diffusers | 1 | froid (post-restart, 0 nœud caché) | 169,1 s | 164,4 s | 23 282 MiB | MP4 1 488 Ko `f1e7276e…`, std 69,8-71,9 |
+| ComfyUI 0.37.2 (datapt) | fp16 natif | fp8 scaled | Diffusers | 1 | froid (2 nœuds cachés : VAE + latent) | 128,4 s | 123,4 s | 23 230 MiB | MP4 1 275 Ko `69ef7e9d…`, std 72,0-73,1 |
+
+### Déterminisme — le contrepoint au §6
+
+Deux exécutions complètes indépendantes du workflow q4 cfg 1 (processus serveur **redémarré**
+entre les deux, seconde à `execution_cached: []`) produisent des MP4 **byte-identiques**
+(sha256 `f1e7276e99b2d0063f75b5a9256e6cf545d0fd4d4090e5ff05d44ae69c983f18`, 1 488 189 o
+chacun). Le `--seed` **ignoré** côté TensorSharp (§6, seed dérivée 856751663) ne l'est **pas**
+côté ComfyUI : la reproductibilité, troisième point ouvert du §6, est tenue par ce stack —
+vérifiée à cfg 1 ; les runs cfg 6 héritent du même mécanisme de seed mais n'ont pas été
+re-doublés (coût GPU, apport informationnel nul après la preuve à cfg 1).
+
+### Analyse et verdict
+
+- **À paramètres alignés** (DiT/TE Q4 sha256-identiques, cfg 6, 30 steps, shift 8, 832×480×33 f,
+  même RTX 3090, froid des deux côtés) : TensorSharp 124,4 s / 5 063 MiB — ComfyUI 224,3 s /
+  20 776 MiB. **TensorSharp est 1,80× plus rapide et 4,1× plus économe en VRAM** sur ce bloc.
+- L'écart est structurel, pas accidentel : TensorSharp exécute le DiT **quantifié** (ggml_cuda,
+  Q4 natif) et offloade le TE sur CPU (5,1 GiB steady) ; ComfyUI **déquantise** le GGUF en fp16
+  en VRAM et garde TE+VAE résidents (bande 20,8-23,3 GiB selon les runs). La parité de fichiers
+  de poids ne vaut pas parité de chemin d'exécution — c'est le second finding de la mesure.
+- **Contrôle de cohérence interne** : le delta cfg 6 − cfg 1 sur q4 froid (224,3 − 169,1 =
+  55,2 s ≈ 30 passes uncond × 1,84 s) recoupe le 1,8 s/passe mesuré côté TensorSharp — les deux
+  stacks paient la passe uncond au même tarif ; l'écart global vient du chargement et du chemin
+  de poids, pas du sampler.
+- **fp16 vs q4** : à cfg 6 (B′ chaud 161,2 s vs A′ froid 220,7 s — conditions de charge
+  différentes, comparaison indicative seulement) et à cfg 1 (froids tous deux : fp16 123,4 s vs
+  q4 164,4 s) — le chemin fp16 natif est plus rapide que la déquant GGUF dans ComfyUI.
+- **Verdict critère 4** : **mesuré** — comparaison honnête même-machine/même-prompt livrée, avec
+  split de format VAE documenté et écart débit/VRAM chiffré. Pas de gagnant absolu : TensorSharp
+  = débit + efficacité VRAM + exécution quantifiée fidèle au fichier ; ComfyUI = déterminisme
+  byte-level + écosystème de nœuds. La QA visuelle (critère 2) reste routée vers une lane vision.
+
+### QA visuel (critère 2) — routage préparé
+
+Les 2 clips TensorSharp §5 + les 4 clips ComfyUI ci-dessus passent le contrôle objectif de
+non-dégénérescence (std luma par frame : 75,03-75,28 clip 3090 · 68,59-72,26 clip 3080 Ti ·
+69,81-71,90 q4 cfg 1 · 72,04-73,07 fp16 cfg 1 · 95,20-96,00 q4 cfg 6 · 91,41-92,01 fp16 cfg 6 —
+un rendu NaN/uniforme serait à 0). Les 6 MP4 + frames PNG + stats sont stageés pour une lane
+vision : `G:\Mon Drive\MyIA\IA\wan-video-qa-15159\`. La lane exécutante (GLM, sans vision) ne
+juge pas le rendu — fidélité au prompt et cohérence temporelle restent à regarder.

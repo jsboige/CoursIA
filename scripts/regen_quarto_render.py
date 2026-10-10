@@ -299,31 +299,61 @@ def git_tracked_notebooks() -> list[str]:
     return paths
 
 
+def all_tracked_notebooks() -> list[str]:
+    """Enumeration exhaustive ``git ls-files '*.ipynb'``, POSIX, triee.
+
+    Population de reference partagee par ``uncovered_notebooks()`` et
+    ``hr_blocked_notebooks()`` : une marche pour deux lectures.
+    """
+    out = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "-c", "core.quotePath=false", "ls-files", "*.ipynb"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
+    )
+    return sorted({p.strip() for p in out.stdout.splitlines() if p.strip()},
+                  key=str.lower)
+
+
+def _in_notebook_scope(p: str) -> bool:
+    """Un carnet qui n'est ni declare hors perimetre ni sous marqueur d'exclusion."""
+    return p not in NOTEBOOKS_HORS_PERIMETRE and not any(
+        bad in p for bad in NOTEBOOK_EXCLUDE_MARKERS)
+
+
 def uncovered_notebooks() -> list[str]:
     """Git-tracked ``.ipynb`` neither rendered nor declared out-of-scope (#18423).
 
     Diff d'ensemble (un motif qui rate les noms pointes est un faux negatif) :
     enumeration exhaustive ``git ls-files '*.ipynb'``, moins la render-list,
     moins les archives (NOTEBOOK_EXCLUDE_MARKERS), moins
-    NOTEBOOKS_HORS_PERIMETRE. Tout residu = trou de couverture : soit un
-    sous-arbre a ajouter, soit une exclusion a declarer, soit un carnet
-    hr-bloque (#11451) sous sous-arbre rendu.
+    NOTEBOOKS_HORS_PERIMETRE, moins les carnets ecartes par la garde `---`
+    (#11451). Tout residu = trou de couverture : un sous-arbre a ajouter, ou
+    une exclusion a declarer.
+
+    Les carnets hr-bloques ne sont **pas** des trous : ``git_tracked_notebooks``
+    les ecarte par construction, la garde est auto-resorbante, et le seul geste
+    possible -- retirer le `---` du carnet -- est un choix de contenu, pas de
+    perimetre. Les rapporter ici fait rougir la garde en permanence sur un etat
+    legitime (mesure 2026-10-10 : ``Lean-12-Sensitivity-Theorem.ipynb``, seul
+    ecarte du sous-arbre SymbolicAI/Lean, et la cause du rouge de la jambe
+    `Smoke test` de `quarto-render-list-freshness.yml`). Ils sont rendus a part
+    par ``hr_blocked_notebooks()``, a titre informatif.
     """
-    out = subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "-c", "core.quotePath=false", "ls-files", "*.ipynb"],
-        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
-    )
     rendered = set(git_tracked_notebooks())
-    uncovered = []
-    for line in out.stdout.splitlines():
-        p = line.strip()
-        if not p or p in rendered or p in NOTEBOOKS_HORS_PERIMETRE:
-            continue
-        if any(bad in p for bad in NOTEBOOK_EXCLUDE_MARKERS):
-            continue
-        uncovered.append(p)
-    uncovered.sort(key=str.lower)
-    return uncovered
+    return [p for p in all_tracked_notebooks()
+            if p not in rendered and _in_notebook_scope(p)
+            and not has_hr_separator(p)]
+
+
+def hr_blocked_notebooks() -> list[str]:
+    """Carnets de cours ecartes du rendu par la garde `---` (#11451).
+
+    Compteur informatif : un carnet ecarte est absent du site **sans** qu'aucune
+    exclusion ne le declare -- c'est le seul endroit ou cet ecart est visible.
+    La garde etant auto-resorbante, retirer le `---` du carnet le reintegre au
+    rendu au tirage suivant, sans toucher aux constantes de perimetre.
+    """
+    return [p for p in all_tracked_notebooks()
+            if _in_notebook_scope(p) and has_hr_separator(p)]
 
 
 def git_tracked_readmes() -> list[str]:
@@ -405,8 +435,12 @@ def build_render_block() -> list[str]:
     lines.append("    # README.md rendus en HTML (Axe C #4211). Liste explicite")
     lines.append("    # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7")
     lines.append("    # n'etend pas le glob **/README.md sur les sous-repertoires.")
+    # Aucun compteur n'est ecrit ici (ni pour les READMEs, ni pour les docs/*.md,
+    # ni pour les notebooks) : un total dans un fichier genere se perime a chaque
+    # merge, et deux PRs qui ajoutent des carnets en meme temps soit conflicent
+    # sur la ligne, soit fusionnent proprement un total FAUX (arbitrage ai-01
+    # #19901, cas mesure #19579). La liste triee qui suit fusionne sans conflit.
     lines.append("    # Archives et libs vendored EXCLUES (history interne, non pedagogique).")
-    lines.append(f"    # {len(readmes) + 1} READMEs (racine + arborescence, hors archives).")
     lines.append('    - "README.md"')
     for p in readmes:
         lines.append(f'    - "{p}"')
@@ -420,7 +454,6 @@ def build_render_block() -> list[str]:
         lines.append("    # docs/*.md rendus en HTML (issue #18422). Meme mecanisme")
         lines.append("    # que les READMEs : liste explicite (globs non etendus en Quarto 1.7).")
         lines.append("    # Garde `---` (#11451) appliquee auto-resorbante.")
-        lines.append(f"    # {len(docs_md)} docs/*.md (sous-arbre docs/, hors README/archive/hr).")
         for p in docs_md:
             lines.append(f'    - "{p}"')
     # Notebooks rendered to HTML (EPIC #10921, pilote Search #10923). Explicit
@@ -430,8 +463,7 @@ def build_render_block() -> list[str]:
         lines.append("    # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).")
         lines.append("    # Liste explicite — globs non etendus en Quarto 1.7.")
         lines.append("    # Execution desactivee + echo: true au niveau racine (_quarto.yml).")
-        lines.append(f"    # {len(notebooks)} notebooks (sous-arbres: "
-                     + ", ".join(sorted(NOTEBOOK_SUBTREES)) + ").")
+        lines.append("    # Sous-arbres rendus : " + ", ".join(sorted(NOTEBOOK_SUBTREES)) + ".")
         for p in notebooks:
             lines.append(f'    - "{p}"')
     return lines
@@ -646,7 +678,8 @@ def main() -> int:
             return 1
         print(f"_quarto.yml render list up to date "
               f"({n} READMEs, {n_docs} docs/*.md, {nb} notebooks, "
-              f"{len(NOTEBOOKS_HORS_PERIMETRE)} declares hors perimetre).")
+              f"{len(NOTEBOOKS_HORS_PERIMETRE)} declares hors perimetre, "
+              f"{len(hr_blocked_notebooks())} ecartes par la garde `---`).")
         return 0
 
     QUARTO_YML.write_text(proposed, encoding="utf-8")
@@ -659,4 +692,11 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        rc = main()
+    except SystemExit:
+        raise
+    except Exception as e:
+        print(f"::error::regen_quarto_render crashed: {type(e).__name__}: {e}", file=sys.stderr)
+        sys.exit(2)
+    raise SystemExit(rc)
