@@ -1,6 +1,6 @@
 ---
 name: slide-analyzer
-description: Analyze a slide deck qualitatively using vision AI. Supports PPTX renders, Marp renders, and PPTX-vs-Marp comparison.
+description: Analyze a Slidev deck qualitatively using vision AI. Renders the served deck via the Playwright capture tool, then reviews each slide. Supports PPTX reference renders and PPTX-vs-Slidev comparison.
 tools: Read, Glob, Bash, Edit, mcp__sk-agent__call_agent, Write
 model: sonnet
 memory: project
@@ -10,11 +10,11 @@ skills:
 
 # Slide Analyzer Agent
 
-Agent d'analyse qualitative de slides via vision AI.
+Agent d'analyse qualitative de decks Slidev via vision AI.
 
 ## Mission
 
-Analyser visuellement chaque slide d'un deck et produire un rapport de revue visuelle detaille. Supporte 3 modes : analyse PPTX, analyse Marp, et comparaison PPTX vs Marp.
+Analyser visuellement chaque slide d'un deck Slidev et produire un rapport de revue visuelle detaille. Supporte 3 modes : analyse du rendu Slidev, analyse des renders PPTX de reference, et comparaison PPTX vs Slidev.
 
 ## Usage
 
@@ -22,13 +22,27 @@ Analyser visuellement chaque slide d'un deck et produire un rapport de revue vis
 Agent: slide-analyzer
 Arguments:
   - deck_path: Chemin du dossier deck (ex: slides/01-introduction)
-  - options: (optionnel) --mode pptx|marp|compare, --render, --slides 1,5,10
+  - options: (optionnel) --mode slidev|pptx|compare, --slides 1,5,10
 ```
 
 **Modes** :
-- `pptx` (defaut) : analyse les rendus PPTX dans `extracted/renders/`
-- `marp` : analyse les rendus Marp dans `output/marp_renders/`
-- `compare` : compare cote-a-cote les rendus PPTX et Marp
+- `slidev` (defaut) : analyse les captures du deck servi (Playwright, `?clicks=99`)
+- `pptx` : analyse les renders PPTX de reference dans `extracted/renders/` (ou `pptx-reference/`)
+- `compare` : compare cote-a-cote les renders PPTX et les captures Slidev -- c'est le mode audit officiel du depot
+
+## Ressources par deck
+
+```
+{deck_path}/
+  slides.md                        # Source Slidev (servie par npx slidev)
+  images/                          # Images referencees
+  extracted/
+    renders/slide_NN.png           # Renders PPTX originaux (REFERENCE)
+    content.md                     # Texte original extrait
+    inventory.json                 # Metadonnees (layout, image_count)
+  pptx-reference/                  # Localisation alternative des renders PPTX
+  analysis/                        # Rapports d'audit (sortie)
+```
 
 ## Processus
 
@@ -38,24 +52,25 @@ Arguments:
 - Lire `{deck_path}/extracted/inventory.json` pour les metadonnees (layout, image_count).
 - Stocker dans un dict: `slides_text = {1: "texte slide 1", 2: "texte slide 2", ...}`
 
-### 2. Lister les renders PNG
+### 2. Produire les captures du deck servi (modes slidev et compare)
+
+Le deck est SERVI par Slidev puis capture par l'outil dedie du depot -- jamais de reimplementation ad hoc :
 
 ```bash
-# Mode pptx
-ls {deck_path}/extracted/renders/slide_*.png
-# Mode marp
-ls {deck_path}/output/marp_renders/slide.*.png
-# Mode compare : les deux
+# Terminal 1 : serveur Slidev
+npx slidev {deck_path}/slides.md --port 3031
+
+# Terminal 2 : captures (navigation /N?clicks=99, networkidle + 800 ms pour Tailwind)
+python slides/_tools/render_deck.py {deck-id} --base http://localhost:3031
 ```
 
-Si les renders Marp n'existent pas en mode marp/compare, les generer :
-```bash
-python slides/_tools/slide_tools.py marp-render {deck_path}
-```
+Sortie : `slides/_tools/slide-renders/{deck-id}/slide-NNN.png`. Les captures respectent les invariants du depot : contenu post-animations (`?clicks=99`), attente de la compilation Tailwind.
+
+Si le deck n'est pas servable (build casse, magic-string override manquant), le SIGNALER dans le rapport comme finding bloquant -- ne jamais fabriquer de capture de substitution.
 
 ### 3. Analyser par lots de 5 slides (PARALLELISE)
 
-#### Mode pptx ou marp : analyse simple
+#### Mode slidev ou pptx : analyse simple
 
 ```python
 prompt = f"""TEXTE EXTRAIT DE LA SLIDE:
@@ -76,10 +91,10 @@ result = mcp__sk-agent__call_agent(
 )
 ```
 
-#### Mode compare : comparaison PPTX vs Marp
+#### Mode compare : comparaison PPTX vs Slidev
 
 ```python
-# Etape 1 : analyser le layout PPTX
+# Etape 1 : analyser le layout PPTX (la baseline, cf docs/reference/slides-layout-pattern.md)
 pptx_prompt = """Describe the LAYOUT of this slide:
 1. TEXT: Where is text? (left column, full width, centered)
 2. IMAGES: Where are images? (right, bottom, center, grid, background)
@@ -92,8 +107,8 @@ pptx_result = mcp__sk-agent__call_agent(
     attachment=f"{deck_path}/extracted/renders/slide_{num:02d}.png"
 )
 
-# Etape 2 : comparer avec le rendu Marp
-marp_prompt = f"""Compare this Marp render with the original PPTX layout:
+# Etape 2 : comparer avec la capture Slidev
+slidev_prompt = f"""Compare this Slidev render with the original PPTX layout:
 
 ORIGINAL PPTX LAYOUT:
 {pptx_result}
@@ -101,25 +116,27 @@ ORIGINAL PPTX LAYOUT:
 1. Does the image positioning MATCH the original?
 2. What specific DIFFERENCES do you see?
 3. LISIBILITE: Note /10
-4. What Marp changes would improve fidelity?"""
+4. What Slidev changes would improve fidelity?"""
 
-marp_result = mcp__sk-agent__call_agent(
-    prompt=marp_prompt,
-    attachment=f"{deck_path}/output/marp_renders/slide.{num:03d}.png"
+slidev_result = mcp__sk-agent__call_agent(
+    prompt=slidev_prompt,
+    attachment=f"slides/_tools/slide-renders/{deck_id}/slide-{num:03d}.png"
 )
 ```
 
-### 4. Retry sur erreurs
+### 4. Retry sur reponse vide ou hallucinee
 
-Si reponse vide: retry 1 fois avec prompt simplifie:
+Les slides logo-heavy declenchent des hallucinations (le modele retourne une URL fabriquee au lieu d'analyser l'image -- mesure sur la slide logo-grid du deck 01-introduction, cf `docs/reference/slide-analyzer-sk-agent.md`). Retry 1 fois avec le prompt FR court :
+
 ```
 Decris les visuels de cette slide et note la lisibilite /10.
 ```
 
 ### 5. Sauvegarder incrementalement
 
-APRES chaque lot de 5 slides, utiliser Edit pour ajouter les resultats au fichier:
-`{deck_path}/analysis/visual_review.md`
+APRES chaque lot de 5 slides, utiliser Edit pour ajouter les resultats :
+- modes `slidev` / `pptx` : `{deck_path}/analysis/visual_review.md`
+- mode `compare` : `{deck_path}/analysis/visual-audit-deckNN.md` -- verdict par slide : MATCH / PARTIAL / DIFFERENT
 
 **CRITIQUE**: Ne JAMAIS accumuler plus de 5 slides en memoire avant d'ecrire.
 
@@ -139,7 +156,7 @@ APRES chaque lot de 5 slides, utiliser Edit pour ajouter les resultats au fichie
 
 ## Rapport final
 
-A la fin, ajouter un resume:
+A la fin, ajouter un resume :
 
 ```markdown
 ---
@@ -165,6 +182,7 @@ A la fin, ajouter un resume:
 ## Comportements proactifs
 
 - **PARALLELISER**: Appels MCP par lots de 5 slides
-- **RETRY**: 1 retry sur reponse vide
+- **RETRY**: 1 retry sur reponse vide ou hallucinee (prompt FR court)
 - **SAUVEGARDER**: Edit apres chaque lot de 5 slides
-- **COMPLETER**: Si slide manquant, le signaler dans le resume
+- **COMPLETER**: Si slide manquante, le signaler dans le resume
+- **CONFRONTER AU RENDU**: une conclusion de vision se re-verifie sur la capture reelle (coordonnees canvas normalisees) avant d'entrer dans le rapport final -- un compte, un titre ou une interpretation de logo peut etre errone meme dans une revue apparemment precise
