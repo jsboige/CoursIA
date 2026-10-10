@@ -252,6 +252,39 @@ _DELIVERED_MARKER_RE = re.compile(
 )
 
 
+def _issue_comment_bodies_rest(issue_number: int) -> list[str] | None:
+    """Corps des commentaires lus par REST (`gh api` : bucket de quota distinct).
+
+    #17038 -- `gh issue view`, `gh pr list` et `gh issue list` partagent le
+    bucket GraphQL du compte. Quand il tombe (403 secondary rate-limit), la
+    sonde marqueur et la recherche PR mouraient ENSEMBLE : le filet devenait
+    aveugle exactement au moment ou il servait. Mesure du 2026-10-10
+    (comptage par ce transport meme) : 12 marqueurs `[INFO]
+    candidate-delivered` sur 4 issues deja livrees (#16372 : 5, #14549 : 1,
+    #16031 : 2, #17464 : 4) servies en tete de tapis sous l'urne ``grain``.
+
+    ``--repo REPO`` est epingle : le repli ne depend ni du cwd ni du remote
+    ``origin`` (meme reserve que la cible des deux transports de
+    ``check_lane_claim``). Retourne None si la lecture echoue -- l'appelant
+    garde le fail-OPEN.
+
+    ``--jq '.[].body'`` : une ligne par corps de commentaire. Le motif
+    d'ancrage est applique ligne a ligne, ce qui est equivalent au
+    ``MULTILINE`` applique au corps entier (``^\\s*`` dans les deux cas), et
+    strictement plus etroit qu'une recherche sur le flux concatene.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "api", "--paginate", "--jq", ".[].body",
+             f"repos/{REPO}/issues/{issue_number}/comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=20,
+        ).stdout
+    except Exception:  # noqa: BLE001 - diagnostic best-effort
+        return None
+    return out.splitlines()
+
+
 def _has_delivered_marker(issue_number: int) -> bool | None:
     """Retourne True si l'issue porte un marqueur [INFO] candidate-delivered.
 
@@ -259,6 +292,12 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
     appelee seulement sur les candidats TIRES, jamais sur le pool). Retourne
     None si la lecture echoue (timeout, rate-limit) ; l'appelant traite None
     comme "pas de signal" et continue, exactement comme une absence.
+
+    Deux transports (#17038) : `gh issue view` (GraphQL) puis, SEULEMENT s'il
+    echoue, `gh api repos/.../issues/N/comments` (REST, quota distinct). La
+    voie nominale reste donc a exactement une requete, et l'invariant de
+    comptage des tests tient ; le repli n'existe que pour les pannes du
+    bucket partage.
     """
     try:
         out = subprocess.run(
@@ -268,8 +307,11 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
             timeout=20,
         ).stdout
         payload = json.loads(out)
-    except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
-        return None
+    except Exception:  # noqa: BLE001 - diagnostic best-effort
+        bodies = _issue_comment_bodies_rest(issue_number)
+        if bodies is None:
+            return None
+        return any(_DELIVERED_MARKER_RE.search(b) for b in bodies)
     # Tolérance : la charge utile peut être [] (issue introuvable, ou mock de
     # test ancien), {comments: [...]} (gh standard), voire {data: ...}. Le
     # contrat utile est "iterable de dict avec .body" ; tout le reste = pas
@@ -1238,6 +1280,12 @@ def has_delivered_signal(issue_number: int,
     ``lane`` n'entre pas dans le verdict (le signal vaut pour toutes les
     lanes) : il est accepte pour que la sonde et son appelant partagent une
     signature unique, et pour les sondes de test qui veulent la lire.
+
+    Deux transports (#17038) : la lecture nominale est GraphQL
+    (`gh issue view --json comments`) ; son echec bascule sur REST
+    (`_issue_comment_bodies_rest`), qui ne partage pas le bucket tombe. Le
+    tri-etat est preserve -- ``None`` seulement si les DEUX transports
+    echouent.
     """
     try:
         out = subprocess.run(
@@ -1248,7 +1296,18 @@ def has_delivered_signal(issue_number: int,
         ).stdout
         comments = (json.loads(out) or {}).get("comments") or []
     except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
-        return None
+        # #17038 -- DEUXIEME transport. `gh issue view` partage le bucket
+        # GraphQL avec `gh pr list` et `gh issue list` : quand il tombe, cette
+        # sonde s'aveuglait exactement quand le marqueur est le dernier signal
+        # disponible, et le tapis resservait des candidats deja livres. Meme
+        # repli que `_has_delivered_marker`, par le meme helper : une seule
+        # implementation du repli, un seul point a corriger. Reste TRI-ETAT --
+        # `None` si la lecture REST echoue aussi, jamais une exclusion
+        # fabriquee.
+        bodies = _issue_comment_bodies_rest(issue_number)
+        if bodies is None:
+            return None
+        return any(_DELIVERED_MARKER_RE.search(b) for b in bodies)
     for comment in comments:
         # Grammaire `_DELIVERED_MARKER_RE`, pas la sous-chaine nue (#19390,
         # controle negatif) : une mention discursive -- « sans [INFO]
@@ -2386,6 +2445,13 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
     ferme pas) -- une fusion dit "peut-etre deja fait", pas "quelqu'un y
     est". Le verrou cross-lane reste ``check_lane_claim.py``, que le
     tirage interroge desormais par defaut.
+
+    Independance des transports (#17038) : l'echec de la recherche PR ne
+    dispense pas de la sonde marqueur. Les deux passent par le bucket
+    GraphQL du compte, donc elles tombent ensemble -- et c'est precisement
+    quand la recherche est muette que le marqueur est le dernier signal
+    disponible. Le candidat conserve dans ce cas est annote et reclasse
+    ``delivered`` comme sur la voie nominale.
     """
     notes: dict[int, str] = {}
     for p in picks:
@@ -2400,7 +2466,28 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
             ).stdout
             prs = json.loads(out)
         except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
-            notes[n] = f"(recherche PR indisponible: {type(exc).__name__})"
+            # #17038 -- la recherche PR est un TRANSPORT ; le filet marqueur
+            # n'en depend pas. Ce `continue` la sautait : quand `gh pr list`
+            # tombait (bucket GraphQL partage avec `gh issue view`), un
+            # candidat deja livre repartait en tete de tapis sous l'urne
+            # ``grain`` sans que le filet soit consulte -- mesure du
+            # 2026-10-10, 4 issues livrees / 12 marqueurs.
+            if _has_delivered_marker(n):
+                notes[n] = (
+                    f"LIVRE-urn VIA MARQUEUR [INFO] candidate-delivered en "
+                    f"commentaire (recherche PR indisponible: "
+                    f"{type(exc).__name__} -- le filet ne depend pas d'elle). "
+                    f"Verifier firsthand `gh api "
+                    f"repos/{REPO}/issues/{n}/comments --jq '.[].body'` AVANT "
+                    f"de claimer ; ce transport lit la meme source sans le "
+                    f"bucket GraphQL qui vient de tomber, alors que "
+                    f"`gh issue view` partage ce bucket et est probablement "
+                    f"mort lui aussi. Substance deja livree par une autre "
+                    f"lane.")
+                p["klass"] = "delivered"
+            else:
+                notes[n] = (f"(recherche PR indisponible: "
+                            f"{type(exc).__name__})")
             continue
         if not prs:
             # c.1115 voie 1 : pas de PR
