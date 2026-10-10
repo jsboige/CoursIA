@@ -1048,6 +1048,24 @@ def _fetch_pr_heads(numbers: list[int]) -> tuple[list[int], list[str]]:
     ]
 
 
+def _prune_stack_refs(keep: list[int]) -> None:
+    """Retire les refs de tetes qui ne correspondent plus a une PR ouverte.
+
+    La passe ECRIT dans le clone de l'appelant (une ref par PR ouverte) : sans
+    elagage, elle y laisserait une ref par PR jamais nettoyee, pour toujours.
+    Une ref hors de l'ensemble courant n'est pas une mesure -- c'est un residu
+    d'une passe precedente, et elle se supprime. Le cout est nul quand rien n'a
+    ferme depuis la derniere passe.
+    """
+    proc = _git(["for-each-ref", "--format=%(refname)", STACK_REF_PREFIX])
+    if proc.returncode != 0:
+        return
+    keep_refs = {f"{STACK_REF_PREFIX}{n}" for n in keep}
+    for ref in proc.stdout.split():
+        if ref and ref not in keep_refs:
+            _git(["update-ref", "-d", ref], check=False)
+
+
 def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
     """Une passe : ce que chaque PR ouverte apporte par rapport a `main`.
 
@@ -1073,6 +1091,7 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
         ref = f"{STACK_REF_PREFIX}{p}"
         commits, subjects = _own_ref_content(ref)
         index[p] = StackEntry(p, ref, commits, subjects)
+    _prune_stack_refs(fetched)
     return index, []
 
 
