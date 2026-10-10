@@ -16,7 +16,7 @@ critique** (p ≈ p_c). Simulation-first : on fait *voir* les trois régimes
 | [Percolation-03-Critique-Python](Percolation-03-Critique-Python.ipynb) | 3 (Python) | Python 3 + `networkx` | Physique du point critique : loi d'échelle finie `M(L, 1/2)/L² ~ L^{-β/ν}`, distribution de tailles `P(s) ~ s^{-τ'}`, convergence `p_c(L) → 1/2`. Sweep `L ∈ {8,16,32,64}` × `p ∈ {0.45,…,0.55}` × 32 seeds = 640 simulations `networkx.connected_components` canonique |
 | [Percolation-03b-Critique-L128-L256](Percolation-03b-Critique-L128-L256.ipynb) | 3b (Python) | Python 3 + `networkx` | Extension du carnet 03 aux tailles `L ∈ {128, 256}` pour la convergence asymptotique. Fit log-log sur 6 points (L = 8, 16, 32, 64, 128, 256) : β/ν = 0.1065, τ' = 2.188, p_c(L) → 1/2 monotone. Sweep `L ∈ {128, 256}` × `p ∈ {0.45,…,0.55}` × 32 seeds = 320 simulations ~48 s |
 | [Percolation-03c-Critique-L512](Percolation-03c-Critique-L512.ipynb) | 3c (Python) | Python 3 + `networkx` | Extension du carnet 03b à L = 512 pour la convergence asymptotique. Fit log-log sur 7 points (L = 8, 16, 32, 64, 128, 256, 512) : β/ν = 0.1062 (cible 0.1042, R²=0.977, std_err=0.007 — convergence asymptotique bloquée aux corrections d'échelle finie), p_c(L) → 1/2 monotone (écart 0.0013 à L=512). Sweep `L = 512` × `p ∈ {0.45,…,0.55}` × 32 seeds = 160 simulations ~186 s |
-| [Percolation-04-Sharpness-Python](Percolation-04-Sharpness-Python.ipynb) | 4 (Python) | Python 3 + `networkx` | Palier 4 du plan #19494 : mesure de la queue supérieure `Ψ(n) = P(\|C_o\| ≥ n)` sur grille `L ∈ {64, 128, 256, 512}` × `p ∈ {0.50, …, 0.70}` × 32 seeds = 1024 simulations ~170 s. Comparaison au théorème de *supercritical sharpness* (Diskin-Easo-Radhakrishnan-Sudakov-Tassion, arXiv:2603.03257 §3.0). **Verdict** : palier non mesurable aux seuils `n ∈ {1, 2, …, 128}` à L ≤ 512 — le fit log-y de `Ψ(n)` est dominé par la transition initiale (Psi(1)=1 → Psi(2)~0.7) et non par la décroissance exponentielle sharpness (qui exigerait `n ~ médiane du géant`). L'alpha mesuré **décroît** avec p, opposé à la cible `(p - 1/2)^{d-1} = p - 1/2` |
+| [Percolation-04-Sharpness-Python](Percolation-04-Sharpness-Python.ipynb) | 4 (Python) | Python 3 + `networkx` | Palier 4 du plan #19494 : mesure de la queue supérieure `Ψ(n) = P(\|C_o\| ≥ n)` sur grille `L ∈ {64, 128, 256, 512}` × `p ∈ {0.50, …, 0.70}` × 32 seeds = 1024 simulations ~170 s. Comparaison au théorème de *supercritical sharpness* (Diskin-Easo-Radhakrishnan-Sudakov-Tassion, arXiv:2603.03257, §1 Theorem 1 : `P_p(n ≤ \|C_o\| < ∞) ≤ exp(-c · Φ(n))`, `Φ` isopérimétrique, `Φ(n) ≍ √n` en `d = 2`, aucune puissance de `(p - p_c)` postulée). **Verdict** : palier non mesurable aux seuils `n ∈ {1, 2, …, 128}` à L ≤ 512 — le fit log-y de `Ψ(n)` est dominé par la transition initiale (Psi(1)=1 → Psi(2)~0.7) et non par la décroissance sharpness (qui exigerait `n ~ médiane du géant`). L'alpha mesuré **décroît** quand `p ↓ p_c` — conforme au sens qualitatif au Theorem 1 (`c(p) → 0` près du point critique, la queue s'épaissit) |
 
 ## Formalisation Lean (`percolation_lean/`)
 
@@ -29,8 +29,7 @@ reste un **horizon de recherche** : le lake distingue ce qui est prouvé, ce qui
 vient de Mathlib et ce qui est hors portée (voir #14871).
 
 - Diskin, Easo, Radhakrishnan, Sudakov & Tassion, *Supercritical sharpness of
-  percolation*, arXiv:2603.03257 (math.PR, v1, CC-BY 4.0) — théorème de la
-  section 3.0.
+  percolation*, arXiv:2603.03257 (math.PR, v1, CC-BY 4.0) — Theorem 1 (§1).
 
 ## Plan de croissance
 
