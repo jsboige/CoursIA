@@ -1,0 +1,168 @@
+{
+  "sitemap_url": "https://writings.stephenwolfram.com/wrisitemap-pt-post-1.xml",
+  "sitemap_size": 245,
+  "corpus_size": 21,
+  "year_fuzz": 1,
+  "found": [
+    {
+      "query_title": "Combinators and the Story of Computation",
+      "query_year": 2020,
+      "matched_year": 2020,
+      "matched_title": "combinators and the story of computation",
+      "matched_url": "https://writings.stephenwolfram.com/2020/12/combinators-and-the-story-of-computation/",
+      "matched_slug": "combinators-and-the-story-of-computation"
+    },
+    {
+      "query_title": "Twenty Years Later: The Surprising Greater Implications of A New Kind of Science",
+      "query_year": 2022,
+      "matched_year": 2022,
+      "matched_title": "twenty years later the surprising greater implications of a new kind of science",
+      "matched_url": "https://writings.stephenwolfram.com/2022/05/twenty-years-later-the-surprising-greater-implications-of-a-new-kind-of-science/",
+      "matched_slug": "twenty-years-later-the-surprising-greater-implications-of-a-new-kind-of-science"
+    },
+    {
+      "query_title": "Computational Foundations for the Second Law of Thermodynamics",
+      "query_year": 2023,
+      "matched_year": 2023,
+      "matched_title": "computational foundations for the second law of thermodynamics",
+      "matched_url": "https://writings.stephenwolfram.com/2023/02/computational-foundations-for-the-second-law-of-thermodynamics/",
+      "matched_slug": "computational-foundations-for-the-second-law-of-thermodynamics"
+    },
+    {
+      "query_title": "Observer Theory",
+      "query_year": 2023,
+      "matched_year": 2023,
+      "matched_title": "observer theory",
+      "matched_url": "https://writings.stephenwolfram.com/2023/12/observer-theory/",
+      "matched_slug": "observer-theory"
+    },
+    {
+      "query_title": "A New Kind of Science: A 15-Year View",
+      "query_year": 2017,
+      "matched_year": 2017,
+      "matched_title": "a new kind of science a 15 year view",
+      "matched_url": "https://writings.stephenwolfram.com/2017/05/a-new-kind-of-science-a-15-year-view/",
+      "matched_slug": "a-new-kind-of-science-a-15-year-view"
+    },
+    {
+      "query_title": "What We've Built Is a Computational Language",
+      "query_year": 2020,
+      "matched_year": 2019,
+      "matched_title": "what weve built is a computational language and thats very important",
+      "matched_url": "https://writings.stephenwolfram.com/2019/05/what-weve-built-is-a-computational-language-and-thats-very-important/",
+      "matched_slug": "what-weve-built-is-a-computational-language-and-thats-very-important"
+    },
+    {
+      "query_title": "The Concept of the Ruliad",
+      "query_year": 2021,
+      "matched_year": 2021,
+      "matched_title": "the concept of the ruliad",
+      "matched_url": "https://writings.stephenwolfram.com/2021/11/the-concept-of-the-ruliad/",
+      "matched_slug": "the-concept-of-the-ruliad"
+    },
+    {
+      "query_title": "The Physicalization of Metamathematics",
+      "query_year": 2022,
+      "matched_year": 2022,
+      "matched_title": "the physicalization of metamathematics and its implications for the foundations of mathematics",
+      "matched_url": "https://writings.stephenwolfram.com/2022/03/the-physicalization-of-metamathematics-and-its-implications-for-the-foundations-of-mathematics/",
+      "matched_slug": "the-physicalization-of-metamathematics-and-its-implications-for-the-foundations-of-mathematics"
+    },
+    {
+      "query_title": "Can AI Solve Science",
+      "query_year": 2024,
+      "matched_year": 2024,
+      "matched_title": "can ai solve science",
+      "matched_url": "https://writings.stephenwolfram.com/2024/03/can-ai-solve-science/",
+      "matched_slug": "can-ai-solve-science"
+    },
+    {
+      "query_title": "What's Really Going On in Machine Learning",
+      "query_year": 2024,
+      "matched_year": 2024,
+      "matched_title": "whats really going on in machine learning some minimal models",
+      "matched_url": "https://writings.stephenwolfram.com/2024/08/whats-really-going-on-in-machine-learning-some-minimal-models/",
+      "matched_slug": "whats-really-going-on-in-machine-learning-some-minimal-models"
+    },
+    {
+      "query_title": "Why Does Biological Evolution Work",
+      "query_year": 2024,
+      "matched_year": 2024,
+      "matched_title": "why does biological evolution work a minimal model for biological evolution and other adaptive processes",
+      "matched_url": "https://writings.stephenwolfram.com/2024/05/why-does-biological-evolution-work-a-minimal-model-for-biological-evolution-and-other-adaptive-processes/",
+      "matched_slug": "why-does-biological-evolution-work-a-minimal-model-for-biological-evolution-and-other-adaptive-processes"
+    },
+    {
+      "query_title": "Foundations of Biological Evolution",
+      "query_year": 2024,
+      "matched_year": 2024,
+      "matched_title": "foundations of biological evolution more results more surprises",
+      "matched_url": "https://writings.stephenwolfram.com/2024/12/foundations-of-biological-evolution-more-results-more-surprises/",
+      "matched_slug": "foundations-of-biological-evolution-more-results-more-surprises"
+    },
+    {
+      "query_title": "What's Special about Life",
+      "query_year": 2025,
+      "matched_year": 2025,
+      "matched_title": "whats special about life bulk orchestration and the rulial ensemble in biology and beyond",
+      "matched_url": "https://writings.stephenwolfram.com/2025/11/whats-special-about-life-bulk-orchestration-and-the-rulial-ensemble-in-biology-and-beyond/",
+      "matched_slug": "whats-special-about-life-bulk-orchestration-and-the-rulial-ensemble-in-biology-and-beyond"
+    },
+    {
+      "query_title": "The Ruliology of Lambdas",
+      "query_year": 2025,
+      "matched_year": 2025,
+      "matched_title": "the ruliology of lambdas",
+      "matched_url": "https://writings.stephenwolfram.com/2025/09/the-ruliology-of-lambdas/",
+      "matched_slug": "the-ruliology-of-lambdas"
+    },
+    {
+      "query_title": "P vs. NP and the Difficulty of Computation",
+      "query_year": 2026,
+      "matched_year": 2026,
+      "matched_title": "p vs np and the difficulty of computation a ruliological approach",
+      "matched_url": "https://writings.stephenwolfram.com/2026/01/p-vs-np-and-the-difficulty-of-computation-a-ruliological-approach/",
+      "matched_slug": "p-vs-np-and-the-difficulty-of-computation-a-ruliological-approach"
+    },
+    {
+      "query_title": "What Is Ruliology",
+      "query_year": 2026,
+      "matched_year": 2026,
+      "matched_title": "what is ruliology",
+      "matched_url": "https://writings.stephenwolfram.com/2026/01/what-is-ruliology/",
+      "matched_slug": "what-is-ruliology"
+    },
+    {
+      "query_title": "What Ultimately Is There",
+      "query_year": 2026,
+      "matched_year": 2026,
+      "matched_title": "what ultimately is there metaphysics and the ruliad",
+      "matched_url": "https://writings.stephenwolfram.com/2026/02/what-ultimately-is-there-metaphysics-and-the-ruliad/",
+      "matched_slug": "what-ultimately-is-there-metaphysics-and-the-ruliad"
+    },
+    {
+      "query_title": "What Can We Learn about Engineering and Innovation from Half a Century of the Game of Life",
+      "query_year": 2025,
+      "matched_year": 2025,
+      "matched_title": "what can we learn about engineering and innovation from half a century of the game of life cellular automaton",
+      "matched_url": "https://writings.stephenwolfram.com/2025/03/what-can-we-learn-about-engineering-and-innovation-from-half-a-century-of-the-game-of-life-cellular-automaton/",
+      "matched_slug": "what-can-we-learn-about-engineering-and-innovation-from-half-a-century-of-the-game-of-life-cellular-automaton"
+    }
+  ],
+  "not_found": [
+    {
+      "query_title": "A Bibliography of Combinators",
+      "query_year": 2021
+    },
+    {
+      "query_title": "A Class of Models with the Potential to Represent Fundamental Physics",
+      "query_year": 2020
+    },
+    {
+      "query_title": "A Project to Find the Fundamental Theory of Physics",
+      "query_year": 2020
+    }
+  ],
+  "found_count": 18,
+  "not_found_count": 3
+}

@@ -129,6 +129,29 @@ class TestPositiveControls(unittest.TestCase):
         h = self.hit("translation domaine $\to$ SAS+")
         self.assertEqual(h["command"], "\\to")
 
+    def test_vt_lf_arepsilon_measured_shape(self):
+        # #20145, ANALYSE-05 cell 20 (`6def4bbf`, head 7bd84bd568) -- THE
+        # dominant shape of the corpus: `\v` became VT, and a LF sits
+        # BETWEEN the control character and its queue. `math_scopes` closed
+        # the inline scope on that LF, so 12 of the 16 measured sites were
+        # invisible; the queue `arepsilon` (\varepsilon) was also absent
+        # from QUEUES["v"], a second, independent blind spot.
+        h = self.hit("**epaississement** $A^\v\narepsilon$ -- la borne")
+        self.assertEqual(h["command"], "\\varepsilon")
+
+    def test_ff_lf_rac_measured_shape(self):
+        # ANALYSE-05 cell 20: same `<ctrl> + LF + queue` form on `\frac`
+        h = self.hit("accroissement relatif $\f\nrac{\\mu(A)}{2}$")
+        self.assertEqual(h["command"], "\\frac")
+
+    def test_vt_lf_arepsilon_then_tab_in_same_scope(self):
+        # ANALYSE-05 cell 20: a TAB defect in the SAME `$...$` scope as a VT
+        # was collateral damage -- the VT's LF closed the scope before the
+        # TAB was ever reached. Both must now surface.
+        hits = clc.find_defects("$\\le \v\narepsilon \to 0$")
+        self.assertEqual([h["command"] for h in hits],
+                         ["\\varepsilon", "\\to"])
+
 
 # --- Negative controls: shapes a looser detector gets wrong ----------------
 
@@ -178,6 +201,31 @@ class TestNegativeControls(unittest.TestCase):
 
     def test_escaped_dollar_not_a_delimiter(self):
         text = "prix \\$5 et \\$10 : pas de portee math du tout\nestimation"
+        self.assertEqual(clc.find_defects(text), [])
+
+    def test_plain_newline_still_ends_inline_scope(self):
+        # #20145 widened the inline scope past a LF, but ONLY when the LF is
+        # preceded by a control character. A plain prose newline (preceded
+        # by any other character) must still close the scope -- otherwise
+        # two unrelated dollars pair up again, the v1 false-positive class.
+        text = "le montant est $100k\net le gain est $1k par trade"
+        self.assertEqual(clc.find_defects(text), [])
+
+    def test_lf_after_ctrl_still_obeys_word_boundary(self):
+        # the LF is skipped before matching, the word-boundary rule is not:
+        # `arepsilonXYZ` continues a word, so it is not \varepsilon
+        self.assertEqual(clc.find_defects("$x^\v\narepsilonXYZ$"), [])
+
+    def test_lf_after_ctrl_outside_any_queue_is_clean(self):
+        # a control char + LF whose continuation matches no command queue
+        # stays silent -- the widening must not turn every control char
+        # into a hit
+        self.assertEqual(clc.find_defects("$x^\v\nzzz y$"), [])
+
+    def test_display_scope_unchanged_by_the_widening(self):
+        # display scopes already spanned lines; the #20145 change must not
+        # alter their verdict on the measured legitimate row-break shape
+        text = "$$1 & \\text{si } x \\leq 0 \\\\\ne^{-x} & \\text{sinon}$$"
         self.assertEqual(clc.find_defects(text), [])
 
 

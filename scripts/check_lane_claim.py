@@ -294,6 +294,19 @@ def _mask_fenced_blocks(body: str) -> str:
 # deliberate, fail-CLOSED: an amendment that names no scope is not permissive.
 _OPEN = {"CLAIMED", "CLAIMED-AMEND"}
 _CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE", "DELIVERED"}
+# #20128 -- vocabulaire de RECONNAISSANCE, distinct de `_CLOSE` ci-dessus (celui
+# que le reduceur LIT). Il sert au seul AVERTISSEMENT (#12624/#15982) : reconnaitre
+# qu'un token veut LEVER, synonymes compris, pour le DIRE a son auteur.
+#
+# Mesure 2026-10-09 : `[CLAIMED-RETRACT]` (lane po-2027:CoursIA-2, issue #20083) est
+# vu par `_find_suspected_typo_markers` (`kind='compose'`) mais `is_release_shaped`
+# rendait False, donc l'avertissement etait SAUTE en silence : la lane croyait avoir
+# rendu le grain, le reduceur gardait son claim vivant, et la PR #20084 d'une AUTRE
+# lane est restee bloquee par un mot absent d'un ensemble de cinq.
+#
+# Ce vocabulaire n'enacte RIEN -- `_MARKER_RE` (l'alternation qui decide) et `_CLOSE`
+# restent byte-identiques. Doctrine #12624 : on signale, on n'enacte pas.
+_CLOSE_SHAPED = frozenset(_CLOSE) | {"RETRACT", "RETRACTED"}
 # `[OVERRIDE] lane <machine:workspace>` (#10223): coordinator adjudication --
 # GRANTS the claim to the named lane and CLOSES every other lane's claim in one
 # gesture. Distinct from CLAIMED (grants to one) and RELEASED/DONE (closes one):
@@ -556,6 +569,46 @@ def _intent_from_line(line: str | None) -> str | None:
     return text
 
 
+def _unwrap_trapped_body(body: str) -> str:
+    """Le corps REEL quand la publication a piege son propre payload (#19971).
+
+    La classe de transport #16866/#17270 a une victime que l'organe ne voyait
+    pas : quand le corps publie est l'objet `{"body": "..."}` COMPLET, le
+    marqueur `[CLAIMED]` vit dans une VALEUR de chaine -- precede de
+    `  "body": "`, ses sauts de ligne echappes en `\\n` litteraux. `_MARKER_RE`
+    est ancre en debut de ligne (`(?m)^`) : il n'existe alors aucune ligne ou
+    ancrer le marqueur, l'organe rend `CLEAR` et le lecteur croit le grain
+    libre. Trois instances mesurees (#19727, #19796, #19915), dont deux grains
+    reellement en cours de traitement (po-2024 sur #19727, po-2023 sur #19796).
+
+    Ce n'est PAS un elargissement de `_MARKER_RE` : le contrat de l'organe
+    reste cote EMISSION (`.claude/rules/gh-posting-hygiene.md`), la lecture
+    DEFENSIVE du transport appartient a l'ENTREE. Le corps unwrape -- la
+    valeur de la cle `body`, exactement ce que l'auteur a ecrit -- est celui
+    que `_MARKER_RE` ET la clause `paths:` doivent lire ; sans lui, un claim
+    scope reduit a epic-wide par accident.
+
+    Organe-first : le predicat n'est pas re-ecrit ici, il est REUTILISE de
+    `scripts/ci/check_gh_comment_traps.py::classify_payload_body` -- l'organe
+    qui nomme deja ce payload `TRAPPED [json-payload]`. Un corps d'une autre
+    forme traverse inchange (la fonction rend `None`, jamais une devinette).
+    Import tardif et defensif : si le module est injoignable, le comportement
+    d'avant ce correctif est preserve -- une exception ici ferait passer un
+    blocage pour une absence, ce qui est precisement le defaut repare.
+    """
+    if not body:
+        return body
+    try:
+        ci_dir = Path(__file__).resolve().parent / "ci"
+        if str(ci_dir) not in sys.path:
+            sys.path.insert(0, str(ci_dir))
+        from check_gh_comment_traps import classify_payload_body  # noqa: PLC0415
+    except Exception:  # noqa: BLE001 -- organe optionnel : repli sur le corps brut
+        return body
+    inner = classify_payload_body(body)
+    return inner if inner is not None else body
+
+
 def _parse_claim_events(comment: dict,
                         tracked: list[str] | None = None) -> list[ClaimEvent]:
     """One ClaimEvent per bracketed marker line -- the #10881 reducer fix.
@@ -579,7 +632,10 @@ def _parse_claim_events(comment: dict,
     (open then close). Per-marker fields keep the #10342/#10419 scope, the
     #10395 Variante-1 fallback and the #10597 hardener semantics.
     """
-    body = comment.get("body") or ""
+    # #19971 -- lecture defensive du transport AVANT tout parsing : un corps
+    # publie sous forme de payload JSON est unwrape une fois, ici, et c'est le
+    # corps REEL qui alimente `_MARKER_RE`, la clause `paths:` et `_body`.
+    body = _unwrap_trapped_body(comment.get("body") or "")
     author = (comment.get("author") or {}).get("login")
     created_at = comment.get("createdAt")
     url = comment.get("url")
@@ -1353,7 +1409,11 @@ def _find_open_prs_referencing_issue(
         prs = _gh_open_prs_with_files()
     out: list[dict] = []
     for pr in prs:
-        body = pr.get("body") or ""
+        # #19971 -- meme lecture defensive du transport qu'a l'entree des
+        # commentaires : un body de PR piege en payload JSON cache le `lane`
+        # et la reference `#N` exactement de la meme facon (instance fondatrice
+        # #17270, mesuree sur un body de PR).
+        body = _unwrap_trapped_body(pr.get("body") or "")
         if not _pr_body_references_issue(body, issue_number):
             continue
         lane = extract_lane(body)
@@ -1408,7 +1468,10 @@ def _find_open_pr_for_issue_by_lane(
         prs = _gh_open_prs_with_files()
     matches: list[int] = []
     for pr in prs:
-        body = (pr.get("body") or "")
+        # #19971 -- meme unwrap qu'a l'entree des commentaires et qu'a la
+        # lecture de collision : le `lane` d'un body de PR piege n'est lisible
+        # qu'apres unwrap.
+        body = _unwrap_trapped_body(pr.get("body") or "")
         # Per #9485 single-reader: use the SAME `extract_lane` the rest
         # of the file uses. `extract_lane(body)` returns the first lane
         # token it finds, accepting both `lane myia-po-2023:CoursIA-2`
@@ -2131,22 +2194,45 @@ def _close_keyword(quasi: dict) -> "str | None":
     qu'elle doit attraper -- et pire, recommanderait de reposter `[CLAIMED]`, donc
     de reprendre le grain que l'auteur vient de rendre.
 
-    Le vocabulaire reste `_CLOSE`, la constante du reduceur : une seconde liste
-    locale deriverait en silence. Distinguer une quasi-LEVEE d'une quasi-PRISE
+    Le vocabulaire est `_CLOSE_SHAPED`, et non `_CLOSE` : un SYNONYME de levee
+    (`RETRACT`) doit produire le meme avertissement que la forme canonique, sinon
+    l'auteur n'apprend jamais que son geste n'a pas ete lu (#20128). La liste reste
+    UNE seule source pour la reconnaissance -- c'est l'appelant qui ramene le mot
+    reconnu a une forme que le reduceur lit (`_canonical_release_form`), de sorte
+    que reconnaitre large ne puisse pas recommander une forme large.
+
+    Distinguer une quasi-LEVEE d'une quasi-PRISE
     sert au BLOCAGE -- les deux sont invisibles a l'organe, mais seule la
     premiere explique qu'une lane attende ; lui conseiller de « lever » sur une
     quasi-prise serait un conseil que son auteur n'a pas a suivre.
     """
     for part in re.split(r"[-_\s]+", quasi.get("token") or ""):
-        if part.upper() in _CLOSE:
+        if part.upper() in _CLOSE_SHAPED:
             return part.upper()
     nearest = (quasi.get("nearest") or "").upper()
-    return nearest if nearest in _CLOSE else None
+    return nearest if nearest in _CLOSE_SHAPED else None
 
 
 def is_release_shaped(quasi: dict) -> bool:
     """Ce quasi-marqueur ressemble-t-il a une LEVEE plutot qu'a une prise ?"""
     return _close_keyword(quasi) is not None
+
+
+def _canonical_release_form(seen: "str | None") -> "str | None":
+    """Ramene un mot de fermeture RECONNU a une forme que le reduceur LIT (#20128).
+
+    Reconnaitre large ne doit pas faire recommander large : conseiller `[RETRACT]`
+    a l'auteur de `[CLAIMED-RETRACT]` lui ferait reposter une forme tout aussi
+    invisible que la sienne. Le seul mot de levee que `_MARKER_RE` enacte est
+    `RELEASED`, donc tout synonyme reconnu est ramene a lui.
+
+    `None` (aucun mot de fermeture reconnu) est rendu tel quel : l'appelant
+    retombe alors sur `nearest`, comportement inchange des quasi-marqueurs de
+    PRISE.
+    """
+    if seen is None:
+        return None
+    return seen if seen in _CLOSE else "RELEASED"
 
 
 def _composed_keyword(word: str) -> "str | None":
@@ -2220,8 +2306,12 @@ def _find_suspected_typo_markers(payload: dict) -> list[dict]:
             # Forme a RECOMMANDER dans le WARN : pour un compose c'est le mot de
             # fermeture porte par le token, jamais sa tete -- conseiller
             # `[CLAIMED]` a l'auteur de `[CLAIMED-RELEASED]` lui ferait reprendre
-            # le grain qu'il vient de rendre (#15982).
-            canonical = _close_keyword({"token": m.group(1), "nearest": nearest}) or nearest
+            # le grain qu'il vient de rendre (#15982). Et ce mot est lui-meme
+            # ramene a une forme LUE par le reduceur (#20128) : reconnaitre le
+            # synonyme `RETRACT` ne doit pas le recommander tel quel.
+            canonical = _canonical_release_form(
+                _close_keyword({"token": m.group(1), "nearest": nearest})
+            ) or nearest
             found.append({
                 "nearest": nearest,
                 "canonical": canonical,

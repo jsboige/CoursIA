@@ -39,8 +39,9 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-06 | [06-Mobius-Aggregation-Pouvoir-Manipulation](06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Möbius sur le treillis des coalitions : dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée (See #12204) | 40 min | COMPLET |
 | SC-07 | [07-Committees-Core](07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas Hare/Droop, certificats de paiement et règle de l'entropie harmonique (arXiv 2609.11912, See #16848) | 40 min | COMPLET |
 | SC-08 | [02-Stable-Marriage-Gale-Shapley](02-Stable-Marriage-Gale-Shapley.ipynb) | Mariage stable : algorithme de Gale-Shapley, jumeau Python du lake Lean `game_theory_lean/StableMarriage/` (aucun `sorry`) — couplage parfait, stabilité, man-optimalité vérifiée empiriquement par énumération exhaustive (See #19681) | 35 min | COMPLET |
+| SC-09 | [09-Committees-STV-Monroe-ChamberlinCourant](09-Committees-STV-Monroe-ChamberlinCourant.ipynb) | Comités multi-vainqueurs par classement : STV (Hare 1857, polynomial), Monroe (1995, NP-dur, quotas équilibrés floor/ceil par élu) et Chamberlin-Courant (1983, NP-dur), confrontation Z3 Optimize et profil discriminant (Handbook of Computational Social Choice ch. 6, See #19371) | 50 min | COMPLET |
 
-**Durée totale** : ~5h50
+**Durée totale** : ~6h40
 
 > **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) et [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ces trois jumeaux C# sont comptés dans le `pedagogical_count` de la sous-série mais arborent le statut `PARITÉ` dans le tableau ci-dessus pour les distinguer des notebooks d'origine dont ils sont les retranscriptions .NET.
 
@@ -67,6 +68,7 @@ flowchart TD
     Result -.- Coop["Face coopérative (SC-06)<br/>Möbius · dividendes de Harsanyi<br/>v = Σ m(T)·u_T · poids ≠ pouvoir"]
     Coop -.- Comm["Comités par approbation (SC-07)<br/>core toujours non vide<br/>quotas Hare/Droop · certificats"]
     Result -.- Match["Couplages bilatéraux (SC-08)<br/>mariage stable · Gale-Shapley<br/>man-optimal · 0 paire bloquante"]
+    Comm -.- Rank2["Bulletins de classement (SC-09)<br/>STV · Monroe · Chamberlin-Courant<br/>quotas d'équilibre vs best-in-W"]
 ```
 
 ### Étape 1 : Le théorème d'Arrow par la simulation (SC-01, 45 min)
@@ -135,6 +137,12 @@ Le notebook SC-07 change d'objet une seconde fois : on n'élit plus un gagnant u
 
 Le notebook SC-08 change d'objet une troisième fois : il ne s'agit plus d'agréger des préférences en un classement ni d'élire un comité, mais d'**apparier** deux populations qui se choisissent mutuellement. Sur le modèle de Gale & Shapley (1962), `n` hommes et `n` femmes expriment leurs préférences sur l'autre côté, et l'algorithme d'**acceptation différée** (hommes-proposent) produit un couplage parfait **stable** — aucune paire ne préférerait mutuellement rompre — et **man-optimal** : chaque homme obtient sa meilleure partenaire parmi *tous* les couplages stables. La stabilité et l'optimalité sont vérifiées empiriquement sur l'exemple de Knuth (`n=4`) par **énumération exhaustive** des 24 couplages, dont 2 sont stables. Le notebook est le **jumeau Python** du lake Lean [`game_theory_lean/StableMarriage/`](../game_theory_lean/StableMarriage/) (0 `sorry` sur les théorèmes principaux) : la simulation donne la dynamique pas-à-pas, la preuve garantit la propriété pour tout `n`.
 
+### Étape 9 : Comités multi-vainqueurs par classement — STV, Monroe, Chamberlin-Courant (SC-09, 50 min)
+
+Le notebook SC-09 change d'objet une quatrième fois : aux comités par **approbation** du SC-07 succèdent les comités par **bulletins de classement** (rankings), alignés sur le chapitre 6 du *Handbook of Computational Social Choice* (Brandt, Conitzer, Endriss & Lang 2016). Trois règles classiques d'élection à k sièges sont implémentées en Python pur puis confrontées à une formulation ILP Z3 : **STV** (Hare 1857, élimination itérative au quota de Droop, polynomial), **Monroe** (1995, NP-dur — chaque élu doit représenter entre floor(n/k) et ceil(n/k) votants, résolu par backtracking sur les affectations équilibrées) et **Chamberlin-Courant** (1983, NP-dur — chaque votant attribué à son meilleur élu, énumération brute sur les C(m, k) comités).
+
+La confrontation Z3 (mode `Optimize`, variables binaires `y_c` pour le comité et `x_{j,c}` pour l'affectation) reprend les deux règles NP-dures : la formulation Monroe ajoute à celle de CC l'unique **contrainte d'équilibre** `y_c ⟹ floor(n/k) ≤ Σⱼ x_{j,c} ≤ ceil(n/k)` — c'est la seule différence de définition entre les deux règles. Un **profil discriminant** (6 votants, 4 candidats, k = 2 : un votant place `c` en tête, les cinq autres placent `d` en tête) rend l'écart visible : CC élit `{c, d}` (score 18, charges non équilibrées 1/5) tandis que Monroe élit `{a, d}` (score 15, quotas 3/3) — Z3 et les énumérations brutes s'accordent sur les deux optima. L'expérimentation sur 20 profils aléatoires mesure enfin les taux d'accord STV / Monroe / CC. Trois exercices (C.1) étendent le carnet.
+
 ## Prerequisites
 
 - Python 3.10+ avec numpy, matplotlib, networkx (notebooks 01, 03, 04, 05, 07 — le 07 ajoute scipy) ; bibliothèque standard suffisante pour le 06
@@ -201,6 +209,7 @@ Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; D
 | Gibbard (1973) / Satterthwaite (1975) | Théorème de manipulabilité (SC-05) |
 | Harsanyi (1959) ; Curiel, *Cooperative Game Theory and Applications* (1997) | Dividendes de coalition, jeux de vote pondérés (SC-06) |
 | Becker, Greger & Peters, "Existence of the Core in Approval-Based Committee Elections" (arXiv 2609.11912) | Core non vide, quotas Hare/Droop, certificats (SC-07) |
+| **Brandt, Conitzer, Endriss, Lang, Procaccia, *Handbook of Computational Social Choice* (CUP, 2016, ISBN 978-1-107-06043-2)** | **L'ouvrage-ancrage de la sous-série** — 554 p. couvrent le programme commun des sept carnets : ch. 1-2 (impossibilités, règles de vote polynomiales, Zwicker), ch. 4-5 (Kemeny §2.7+4.1-4.2, ranked pairs §2.4+3, Dodgson §5.3 winner-NP-dur), ch. 6 (barrières computationnelles à la manipulation Gibbard-Satterthwaite, encodage SAT/Z3). Source biblio cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf`. |
 
 ## Conclusion / Prochaines étapes
 
