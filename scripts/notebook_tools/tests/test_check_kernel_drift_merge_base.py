@@ -16,6 +16,15 @@ The remediation mirrors ``scripts/ci/fast_lane.py``, the sibling organ that
 closed the same ticket: refetch the exact remote-tracking ref, retry once,
 and fail closed with an explicit infrastructure marker if the base is still
 unreadable.
+
+Scope of the class (review #20161). The refetch does NOT close the door by
+itself: ``--filter=blob:none`` brings COMMITS, while ``git diff --name-only``
+reads TREES and ``git show`` reads BLOBS -- and the promisor race is a
+property of the partial clone, not of ``merge-base`` alone. Every object
+read that follows the base resolution carries the same marking; the tests
+below pin the two that were still bare (``changed_notebooks``, ``read_blob``)
+as well as the limit of the marking (a legitimately absent blob is not an
+infrastructure failure).
 """
 
 from __future__ import annotations
@@ -165,3 +174,71 @@ def test_measured_drift_still_fails_the_run(monkeypatch, tmp_path, capsys):
     assert rc == 1
     assert payload["findings"], "une derive reelle doit rester un rouge"
     assert "infrastructure_error" not in payload
+
+
+def test_unreadable_diff_is_marked_infrastructure(monkeypatch, capsys):
+    """Un `git diff` qui ne resout pas un objet rendait le meme artefact vide.
+
+    `--filter=blob:none` ramene des commits ; le diff lit des arbres. La course
+    peut donc frapper cette lecture comme elle frappe `merge-base`.
+    """
+    results = iter([
+        _completed(0, stdout="abc123\n"),                        # merge-base OK
+        _completed(1, stderr="error: Could not read deadbeef"),   # diff KO
+    ])
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: next(results))
+
+    rc = ckd.main_with_args(["origin/main", "--json"])
+
+    assert rc == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["findings"] == []
+    assert "[infrastructure][fail-closed]" in payload["infrastructure_error"]
+    assert "Could not read deadbeef" in payload["infrastructure_error"]
+    assert "diff --name-only" in payload["infrastructure_error"]
+
+
+def test_unreadable_blob_is_marked_infrastructure(monkeypatch, capsys):
+    """Idem pour `git show` : le refetch blob:none ne ramene pas les blobs."""
+    results = iter([
+        _completed(0, stdout="abc123\n"),                        # merge-base OK
+        _completed(0, stdout="nb.ipynb\n"),                      # diff : 1 carnet
+        _completed(1, stderr="error: Could not read deadbeef"),   # show KO
+    ])
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: next(results))
+
+    rc = ckd.main_with_args(["origin/main", "--json"])
+
+    assert rc == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["findings"] == []
+    assert "[infrastructure][fail-closed]" in payload["infrastructure_error"]
+    assert "show abc123:nb.ipynb" in payload["infrastructure_error"]
+
+
+def test_unreadable_diff_raises_base_unreadable(monkeypatch):
+    """Le marquage est porte par la lecture elle-meme, pas seulement par _run."""
+    monkeypatch.setattr(
+        subprocess, "run",
+        lambda *a, **k: _completed(1, stderr="error: Could not read deadbeef"))
+
+    with pytest.raises(ckd.BaseUnreadable) as exc:
+        ckd.changed_notebooks("abc123")
+
+    message = str(exc.value)
+    assert "[infrastructure][fail-closed]" in message
+    assert "aucun verdict de drift n'a ete calcule" in message
+
+
+def test_absent_blob_is_not_an_infrastructure_failure(monkeypatch):
+    """Controle negatif du marquage : un blob legitimement absent reste None.
+
+    Sans cette garde, la marque absorberait le chemin normal « ce carnet
+    n'existait pas dans la base » -- c'est-a-dire une vraie mesure.
+    """
+    monkeypatch.setattr(
+        subprocess, "run",
+        lambda *a, **k: _completed(
+            1, stderr="fatal: path 'nb.ipynb' does not exist in 'abc123'"))
+
+    assert ckd.read_blob("abc123", "nb.ipynb") is None
