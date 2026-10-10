@@ -11,10 +11,13 @@ narratif unique — la progression des régimes dynamiques :
 
 Chaque section pose le même geste deux fois : un `#eval` qui *calcule* l'évolution
 (« on regarde le motif vivre »), puis un `theorem ... := by decide` qui *prouve*
-que ce que l'on voit est bien la propriété annoncée. Les preuves par `decide`
-s'exécutent dans le noyau sans ajouter d'axiome (cf. `Computation.lean` §6,
-fix `ceilLog2` #9536) ; les rares `native_decide` (pulsar, canon) sont signalés
-et ajoutent l'axiome `Lean.ofReduceBool` — l'équivalent formel d'un `#eval`证人.
+que ce que l'on voit est bien la propriété annoncée. Ces preuves s'exécutent dans le
+noyau ; leur *certificat* n'est pas pour autant toujours vide, et le §5 le **mesure**
+au lieu de le supposer : les théorèmes bâtis sur la référence `step`/`evolve` ne
+dépendent d'aucun axiome, ceux du chemin accéléré héritent `propext` de la couche
+`MacroCell` (`MacroCell.toGrid` en dépend, mesuré par `#print axioms`). Les rares
+`native_decide` (pulsar, canon) sont signalés et ajoutent l'axiome `Lean.ofReduceBool`
+— l'équivalent formel d'un `#eval` témoin.
 
 La convention i18n est Pattern A (cf. `code-style.md`, EPIC #4980) : ce fichier est
 le canonique français, le miroir anglais vit dans `PatternTour_en.lean`. Seules les
@@ -161,10 +164,15 @@ essentiellement le même temps qu'avancer de 2^(k-1).
 
 La correction de ce « chemin rapide » se prouve contre la référence naïve `evolve`.
 Après le fix `ceilLog2` (#9536, résolvant #8869), ces égalités passent `decide` dans
-le noyau sans ajouter d'axiome — la couche `MacroCell` n'est plus opaque au
-réducteur. C'est le point d'aboutissement de la tournée : la même évolution,
-calculée par deux algorithmes aux complexités radicalement différentes, prouvée
-égale. -/
+le noyau — la couche `MacroCell` n'est plus opaque au réducteur. **Le certificat
+n'est pourtant pas vide** : `#print axioms` rend `[propext]` sur ces théorèmes, comme
+sur `MacroCell.toGrid` lui-même. `propext` n'est pas ajouté par `decide` : une preuve
+par `decide` hérite des axiomes des définitions qu'elle déroule, et la couche
+accélérée en porte un. La référence `step`/`evolve`, elle, n'en porte aucun — la
+ligne passe entre les deux *chemins*, pas entre deux tactiques. C'est le point
+d'aboutissement de la tournée : la même évolution, calculée par deux algorithmes aux
+complexités radicalement différentes, prouvée égale, au prix d'un axiome du noyau
+montré plutôt que tu. -/
 
 -- Hashlife vs référence : même résultat sur le glider, à 4 et 8 générations.
 #eval evolveHashlifeFast 4 glider == evolve 4 glider   -- attendu : true
@@ -181,8 +189,11 @@ calculée par deux algorithmes aux complexités radicalement différentes, prouv
 
 /-- Le chemin rapide Hashlife retrouve, en une étape `MacroCell`, la translation
     diagonale (1, -1) que la référence calcule pas à pas sur 4 générations. C'est
-    l'invariance d'échelle du §3 vue depuis l'algorithme accéléré. Preuve noyau,
-    zéro axiome. -/
+    l'invariance d'échelle du §3 vue depuis l'algorithme accéléré. La preuve est un
+    `decide` du noyau, mais son certificat n'est pas vide : `#print axioms` rend
+    `[propext]`, hérité de la couche `MacroCell` (cf. §5). La référence `step`/`evolve`
+    n'en porte aucun — la ligne passe entre les deux chemins, pas entre deux
+    tactiques. -/
 theorem hashlife_fast_glider_translation_4 : evolveHashlifeFast 4 glider = shift (1, -1) glider := by decide
 
 /-! ## Coda
