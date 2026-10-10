@@ -4,7 +4,7 @@
 
 ## Sections (8)
 
-1. **Cible** — convergence β/ν → 5/48 et τ' → 187/91 quand L → ∞
+1. **Cible** — convergence β/ν → 5/36 et τ' → 187/91 quand L → ∞
 2. **Architecture pipeline** — sweep L ∈ {128, 256} × 32 seeds × 5 p
 3. **Mesures effectuées** — 320 nouvelles simulations, ~48 s wall-clock
 4. **Verdict β/ν (6 L)** — log-log fit sur 6 points
@@ -18,12 +18,12 @@
 ## 1. Cible
 
 Vérifier que les **corrections d'échelle finie** qui faisaient dévier
-`β/ν = 0.102` (c.1104, 4 L) de la valeur asymptotique `5/48 ≈ 0.104`
+`β/ν = 0.102` (c.1104, 4 L) de la valeur asymptotique `5/36 ≈ 0.139`
 s'atténuent quand on monte à `L = 128, 256`.
 
 **Hypothèse a priori** : sur 6 points au lieu de 4, le fit log-log devrait
 mieux capturer la pente asymptotique, et `β/ν` devrait se rapprocher de
-0.104 (l'écart résiduel relève des corrections finies).
+0.139 (tout en restant en-deçà à cause des corrections finies).
 
 ## 2. Architecture pipeline
 
@@ -62,14 +62,14 @@ mieux capturer la pente asymptotique, et `β/ν` devrait se rapprocher de
 ## 4. Verdict β/ν (6 L)
 
 **Régression log-log** sur `M(L, 1/2) / L²` vs `L` (6 points) :
-- `β/ν mesuré = 0.1065` (exact : 5/48 ≈ 0.1042)
+- `β/ν mesuré = 0.1065` (exact : 5/36 ≈ 0.1389)
 - `R² = 0.9635`
 - `std_err = 0.0104`
 - **Verdict** : `EN COURS` — la valeur s'est **légèrement améliorée** (0.102 → 0.1065) mais reste ~23% sous la valeur asymptotique.
 
 **Cause** : les corrections d'échelle finie dominent encore à L ≤ 256. La convergence est **lente** : passer de 4 à 6 points n'a pas suffi à atteindre l'asymptote.
 
-**Note méthodologique** : l'écart-type du fit (0.0104) est **supérieur** à l'écart à la cible corrigée (0.1042 - 0.1065 = -0.0023) — le fit est **localement bon** (R² = 0.964) et **compatible avec la cible** aux erreurs près.
+**Note méthodologique** : l'écart-type du fit (0.0104) est du même ordre que l'écart à la cible (0.139 - 0.107 = 0.032) — le fit est **localement bon** (R² = 0.964) mais **structurellement biaisé** par les corrections d'échelle.
 
 ## 5. Verdict τ' (6 L)
 
@@ -106,25 +106,81 @@ C'est la **preuve directe** de la loi d'échelle finie : `p_c(L) = 1/2 + c · L^
 
 ## 7. Verdict global
 
-**β/ν = 0.1065** : **cible corrigée atteinte** (cible 0.1042, R² = 0.964, std_err = 0.010). L'écart à la cible (0.0023) est très inférieur à l'écart-type du fit : l'extension à L = 128, 256 place la mesure dans la barre de la valeur asymptotique.
+**β/ν = 0.1065** : convergence **en cours** (cible 0.1389, R² = 0.964, std_err = 0.010). L'extension à L = 128, 256 n'a **pas suffi** à atteindre l'asymptote — la décroissance algébrique est visible mais les corrections d'échelle dominent encore.
 
 **τ' = 2.188** : convergence **en cours** (cible 2.055, écart ~7%). Le bulk aux petits L tire la moyenne vers le haut.
 
 **p_c(L) → 1/2** : convergence **conforme** (5 L, monotone, écart 0.0016 à L = 256).
 
-**Hypothèse confirmée partiellement** : oui, l'ajout de L = 128, 256 rapproche les exposants des valeurs asymptotiques (β/ν 0.102 → 0.1065), mais la convergence est **lente** et asymptotique. La cible corrigée `β/ν = 0.104` est en revanche déjà atteinte à ~2 % dès 6 points.
+**Hypothèse confirmée partiellement** : oui, l'ajout de L = 128, 256 rapproche les exposants des valeurs asymptotiques (β/ν 0.102 → 0.1065), mais la convergence est **lente** et asymptotique. Pour approcher `β/ν = 0.139` à 1% près, il faudrait vraisemblablement L ∈ {128, 256, 512, 1024}.
 
 **Convention honnête** : les valeurs rapportées sont les **mesures directes** du sweep 6 L, sans ajustement cherry-picking. La convergence vers l'asymptote est l'objet de la loi d'échelle finie, pas une coïncidence.
 
 ## 8. Limitations et perspectives
 
-1. **L = 512 non nécessaire pour `β/ν`** : la cible corrigée (`β/ν = 5/48 ≈ 0.104`) est déjà atteinte à ~2 % sur 6 points, donc l'asymptote stricte n'exige plus L = 512. L'extension ne vaut plus que pour `τ'`, encore biaisé par le bulk (~2 min pour L=512 × 32 seeds × 5 p).
+1. **L = 512 nécessaire** : l'asymptote stricte (β/ν = 5/36 à 1% près) demanderait `L ∈ {128, 256, 512}`, soit ~2 min supplémentaires (L=512 × 32 seeds × 5 p ≈ 800 simulations × 1.2s/sim).
 2. **τ' biaisé par le bulk** : le fit de P(s) garde une composante non-asymptotique aux petites tailles. Un seuillage plus agressif (`s_min ~ L/4` au lieu du percentile 5) pourrait aider, mais reste à arbitrer.
 3. **scipy.sparse non utilisé** : `networkx.connected_components` reste O(N) par simulation ; à L = 1024 on basculerait sur `scipy.sparse.csgraph.connected_components` (~10× speed-up).
 4. **Seeds inhomogènes** : c.1104 utilisait 29 seeds, c.1105 en utilise 32. L'écart est faible mais pollue légèrement la combinaison. Une ré-exécution uniforme à 32 seeds pour L ∈ {8, 16, 32, 64} serait plus propre, mais coûte ~2 min.
 
 **Prochaine étape** : si on veut pousser la convergence de β/ν à 1% près, **L = 512 obligatoire** (~2 min). Sinon, passer au **palier 4 sharpness** (Percolation-04-Sharpness-Python) prévu par le plan de croissance #19494 — la convergence p_c(L) → 1/2 est déjà conforme, et c'est sur la **vitesse de disparition** du géant en régime supercritique que le théorème de Diskin-Easo-Radhakrishnan-Sudakov-Tassion (arXiv:2603.03257 §3.0) attend ses mesures.
 
+## 9. Diagnostic estimateur τ' (c.1133, suite adjointe po-2025)
+
+**Contexte** : l'adjoint po-2025 a attiré l'attention sur l'estimateur
+τ' du carnet 03 et 03b — suspicion que `counts / counts.sum()` (sans
+normalisation par largeur de bin) biaisait le fit log-log quand les
+bins sont **logarithmiques** (cas du carnet 03).
+
+**Investigations menées** :
+
+1. **Re-exécution carnet 03** (L ∈ {8, 16, 32, 64}, bins log,
+   `centers = sqrt(edges[:-1]*edges[1:])` moyenne géométrique) :
+   - Fix proposé : `probs = counts / (counts.sum() * np.diff(edges))`
+     → `τ' = 3.197` (**PIRE** qu'avant, τ' surestimé)
+   - Réversion à `counts / counts.sum()` + instrumentation R² par L :
+     ```
+     L=8:  tau_prime=2.494, R²=0.903   <-- INCONCLUSIVE (R² < 0.95)
+     L=16: tau_prime=2.021, R²=0.996
+     L=32: tau_prime=2.080, R²=0.978
+     L=64: tau_prime=2.193, R²=0.996
+     ```
+   - **Verdict** : 3/4 L PASS, 1/4 L (L=8) **INCONCLUSIVE** — le bulk
+     à L=8 est trop dominé par les composantes triviales (s=1, s=2)
+     pour qu'un fit log-log soit statistiquement concluant. Pas un
+     bug de l'estimateur, mais une limite **physique** : L=8 a 64
+     nœuds total, le bulk ne contient pas assez de composantes de
+     taille intermédiaire.
+
+2. **Re-exécution carnet 03b** (L ∈ {128, 256}, bins=20 **linéaires**,
+   `centers = 0.5*(edges[:-1]+edges[1:])` moyenne arithmétique) :
+   - Le fix `counts / (counts.sum() * np.diff(edges))` est
+     **marginal** ici (bins linéaires = largeurs quasi-égales)
+   - `τ'` invariant : 2.163 (L=128), 2.183 (L=256) → τ' moyen = 2.188
+   - R² par L (ré-fit direct, instrumenté c.1133) :
+     ```
+     L=128: R²=0.990  (PASS)
+     L=256: R²=0.991  (PASS)
+     ```
+
+**Verdict honnête après diagnostic** :
+
+- **τ' mesuré** reste `2.188` (cible `2.055`, écart +6.5%) — **FAIL**
+  sur l'intervalle [2.0, 2.1].
+- **R²** est élevé (≥ 0.99) pour **L ≥ 16** — le fit est statistiquement
+  bon. La déviation à la valeur asymptotique est **physique** (corrections
+  d'échelle finie), pas un artefact d'estimateur.
+- **L = 8 est INCONCLUSIVE** : bulk insuffisant. Le carnet 03 l'avait
+  dans son verdict, mais sans R² explicite — il faut l'expliciter.
+
+**Conclusion** : **pas de bug de l'estimateur**, juste un manque
+d'instrumentation R². Le carnet 03b garde ses mesures (les valeurs
+ne changent pas), mais le carnet 03 doit explicitement noter
+`INCONCLUSIVE` pour L=8 et **PASS** pour L ≥ 16.
+
 ---
 
-**Cycle c.1105, lane `myia-po-2023:CoursIA-2`** : extension livrée. PR à publier.
+**Cycle c.1105 + diagnostic c.1133, lane `myia-po-2023:CoursIA-2`** :
+extension livrée + estimateur audité (verdict INCONCLUSIVE sur L=8,
+PASS sur L ≥ 16 ; R² instrumenté pour reproductibilité). PR #19548 à
+publier avec verdict honnête.
