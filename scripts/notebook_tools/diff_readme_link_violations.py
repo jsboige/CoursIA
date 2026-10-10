@@ -5,8 +5,8 @@ Reads two JSON artefacts produced by `dump_readme_link_violations.py` (base
 and head) and reports ONLY the violations that the PR introduces (head minus base).
 
 This is the guard that the fast-lane `delta_argv` slot consumes: it lets the
-PR gate stay blocking on NEW STALE_LINK (defaut fondateur #13025) without
-rouging on the 2428 historical backlog committed before the guard existed.
+PR gate stay blocking on NEW HTML_404 (#18911 geste 2, 2026-10-09) without
+rouging on the 618 historical backlog committed before the guard existed.
 
 Exit codes:
     0 = no NEW violation (PR clean)
@@ -59,9 +59,11 @@ def main() -> int:
         print(f"  - {cls}  {readme}  ->  {href}")
 
     if new:
-        # Meme format que le run originel (regen_quarto_render.py emet
-        # `::error::STALE_LINK ...` sur stderr) pour que les outils en
-        # aval qui grep le pattern continuent de fonctionner.
+        # Meme format que le scanner (regen_quarto_render.py emet
+        # `::error::<CLASSE> ...` sur stderr) pour que les outils en
+        # aval qui grep le pattern continuent de fonctionner. La classe
+        # est celle du dump, pas une constante : depuis #18911 c'est
+        # HTML_404, avant c'etait STALE_LINK.
         for cls, readme, href in new:
             print(f"::error::{cls} {readme} -> {href}", file=sys.stderr)
         return 1
