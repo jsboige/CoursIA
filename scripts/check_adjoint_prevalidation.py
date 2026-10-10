@@ -68,6 +68,10 @@ head is an ancestor of the other's (a linear stack bottom merges first
 correctly, so the door stays silent), and ignores re-trigger subjects. A
 measurement it cannot complete removes the door and says so on stderr; it
 never fabricates a refusal. `--stack-index` prints what the door reads.
+Because `derive_verdict` is also reached by `refute_ready_verdict`, the door
+covers the path the merge organ takes (`merge_ready.run_gate` shells out to
+this gate), not only the emitting lane's: what it prevents is a MERGE, and a
+gate that only guarded emission would have let the founding incident through.
 
 Exit codes -- dossier INTEGRITY and PR MERGEABILITY are two questions, and
 conflating them is what this gate used to do (#16800):

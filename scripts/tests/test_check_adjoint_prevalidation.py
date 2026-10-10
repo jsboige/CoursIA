@@ -3708,3 +3708,53 @@ def test_stack_prune_is_quiet_when_nothing_closed(monkeypatch):
     mod._prune_stack_refs([1, 2])
 
     assert [c[0] for c in calls] == ["for-each-ref"], calls
+
+
+def test_stack_door_reaches_the_merge_gate_path(monkeypatch):
+    """#20251 -- la porte atteint le chemin que le merge organe emprunte.
+
+    C'est l'assertion d'integration qui compte : `merge_ready.run_gate` lance
+    `check_adjoint_prevalidation.py <PR> --json`, dont le flot passe par
+    `refute_ready_verdict` -> `derive_verdict`. Sans ce maillon, la porte
+    n'aurait protege que la lane emettrice, pas le merge -- or c'est un MERGE
+    de sommet de pile qui a fait atterrir la version anterieure sur `main`.
+    """
+    verdict, dossier = _ready_dossier()
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(mod, "default_stack_index", lambda: _stack_index(
+        _stack_entry(snapshot["number"], {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"a": "A", "b": "B", "c": "C: correctif ulterieur"}),
+    ))
+
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        snapshot, verdict, [], dossier,
+        probe=lambda pr: {"blocked": False, "blocking": []},
+    )
+
+    assert verdict != mod.VERDICT_READY, (verdict, errors)
+    assert dossier is None
+    assert any("stack top" in e and "#19556" in e for e in errors), errors
+
+
+def test_stack_door_is_silent_on_the_merge_path_when_not_a_stack_top(monkeypatch):
+    """#20251 -- controle negatif du meme chemin : rien a signaler, rien ne change.
+
+    Sans lui, `test_stack_door_reaches_the_merge_gate_path` passerait aussi si
+    la porte refusait tout ce qu'elle voit.
+    """
+    verdict, dossier = _ready_dossier()
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(mod, "default_stack_index", lambda: _stack_index(
+        _stack_entry(snapshot["number"], {"a": "A"}),
+        _stack_entry(19556, {"z": "Z"}),
+    ))
+
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        snapshot, verdict, [], dossier,
+        probe=lambda pr: {"blocked": False, "blocking": []},
+    )
+
+    assert verdict == mod.VERDICT_READY, errors
+    assert errors == [] and dossier is not None
