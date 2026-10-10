@@ -1,7 +1,7 @@
 # LongShortHarvest-QC
 
 **Asset class:** US Equities (long/short)
-**Cloud project ID:** 37423502 (mesure #19450)
+**Cloud project ID:** 37423502 (mesures #19450 et #19837)
 
 ## Description
 
@@ -59,6 +59,66 @@ Sur toute la fenêtre, les positions fermées rapportent 195 k$ côté long. Cô
 
 Les traces des runs (graphiques, statistiques, empreinte du code envoyé à QC) sont conservées hors dépôt, sous `QC-traces/19450-longshortharvest/`.
 
+## Date du VIX (#19837) — mesure du 2026-10-09, verdict NO BEATS
+
+**Le défaut.** `main.py` lit le VIX dans le fichier quotidien du CBOE. La ligne du jour D est publiée après la clôture, mais elle était datée `Time = D`, sans heure de fin : Lean la livrait donc à D 00:00. Le contrôle quotidien de la jambe longue, 30 minutes après l'ouverture, lisait ainsi la clôture du VIX du jour même. L'entraînement mensuel de la forêt aléatoire était touché de la même façon : `GetFeatures` aligne les historiques VIX et SPY par position, si bien que chaque ligne d'entraînement voyait le VIX un jour en avance.
+
+**La correction.** Le mode `lag`, désormais par défaut, date la ligne du jour D à D + 1 et conserve le jour de bourse dans une colonne `tradeday`. Le mode `base` garde la lecture d'origine, pour la mesure. Quel que soit le verdict, le défaut passe à `lag` : c'est une correction de date, pas une promotion de performance. Deux compteurs sont publiés en fin de run, dans les statistiques d'exécution de QC :
+
+| Run | Décisions | VIX du jour même | Entraînements | VIX en avance à l'entraînement |
+|---|---|---|---|---|
+| `base` (fin 2026-07-10) | 2141 | 2141 | 103 | 103 |
+| `lag` (fin 2026-07-10) | 2141 | 0 | 103 | 2 |
+| `lag` (fenêtre complète) | 2195 | 0 | 105 | 2 |
+
+Les 2 entraînements restants en mode `lag` ne lisent pas le futur. Depuis 2022, le CBOE publie une ligne VIX pour certains jours fériés de la bourse américaine (33 dans la fenêtre). Les entraînements ont lieu à la première séance du mois. Deux fois seulement, cette première séance suit directement un tel jour férié : le 3 septembre 2024 et le 2 septembre 2025, lendemains du Labor Day. La ligne VIX de la veille est alors plus récente que la dernière séance SPY, mais elle était déjà publiée.
+
+**Protocole** (règle inscrite sur #19837 avant le premier backtest) : celui de #19450, appliqué à `lag`. Fenêtre 2018-01-01 → 2026-09-25, frais du courtier, références SPY détenu et 60/40 SPY/IEF (mêmes séries), différence de Sharpe à taux sans risque nul, bootstrap circulaire par blocs de 21 séances (10 000 tirages, graine 18921), correction de Holm.
+
+**Écart à la règle, déclaré avant toute lecture de résultat.** Les nœuds de backtest utilisés en premier arrêtent les runs 90 jours avant la date du jour, sans message d'erreur : `lag`, `base` et `noshort` s'y arrêtent le 2026-07-10. Le verdict porte donc sur un second run de `lag`, lancé sur la fenêtre complète dans le projet 37423502, avec le même code (empreinte `main.py` `09918b3f087c`). Les runs arrêtés au 2026-07-10 servent aux écarts descriptifs, calculés sur leurs 2140 séances communes.
+
+**Résultats** (fenêtre complète, séances de clôture du graphique `shadow`, 2194 séances ; Sharpe à taux sans risque nul) :
+
+| Run | Sharpe | CAGR | Pire baisse | Rotation / an | Frais / an | Ordres |
+|---|---|---|---|---|---|---|
+| `lag` (candidate) | 0,59 | 12,3 % | −58,1 % | 47,4 | 0,76 % | 5573 |
+| SPY détenu | 0,79 | 13,9 % | −33,6 % | 0,1 | 0,00 % | — |
+| 60/40 SPY/IEF | 0,81 | 8,9 % | −21,2 % | 0,3 | 0,02 % | — |
+
+QC donne pour `lag` un Sharpe de 0,40 (calculé avec un taux sans risque), un PSR de 3,0 % et une capacité estimée de 360 M$. La pire baisse est atteinte dès le 29 janvier 2021, dans les rachats forcés décrits plus haut, puis égalée fin 2022 ; le sommet du 25 janvier 2021 n'est retrouvé que le 31 juillet 2025.
+
+| Différence de Sharpe de `lag` | Écart | IC 95 % | p Holm | 2018-2020 | 2021-2023 | 2024 → 2026-09 |
+|---|---|---|---|---|---|---|
+| contre SPY | −0,20 | [−0,92 ; 0,63] | 1,00 | +0,44 | −0,70 | +0,33 |
+| contre 60/40 | −0,23 | [−0,94 ; 0,60] | 1,00 | +0,18 | −0,46 | +0,33 |
+
+**Verdict : NO BEATS.** Les deux différences sont négatives et aucune n'est significative. Comme en #19450, la règle exclut alors la grille de paramètres et le run à frais doublés. Deux sous-périodes sur trois sont positives, mais la période 2021-2023, celle de la pire baisse, l'emporte. Corrélation hebdomadaire avec SPY : 0,43.
+
+Sur leurs 2140 séances communes, le run de la fenêtre complète et le run arrêté au 2026-07-10 donnent exactement la même série de rendements : les deux projets QC reproduisent le même calcul.
+
+**Écarts descriptifs, hors verdict** (runs arrêtés au 2026-07-10, 2140 séances communes) :
+
+| Run (fin 2026-07-10) | Sharpe | CAGR | Pire baisse | Rotation / an | Frais / an | Ordres |
+|---|---|---|---|---|---|---|
+| `lag` | 0,60 | 12,7 % | −58,1 % | 47,8 | 0,76 % | 5423 |
+| `base` (code actuel) | 0,48 | 8,7 % | −58,1 % | 47,9 | 0,74 % | 5467 |
+| `noshort` (`lag`, `short_gross` = 0) | 1,12 | 19,8 % | −33,8 % | 37,8 | 0,64 % | 5020 |
+
+| Différence de Sharpe | Écart | IC 95 % | 2018-2020 | 2021-2023 | 2024 → 2026-07 |
+|---|---|---|---|---|---|
+| `base` − `lag` (effet de la date du VIX) | −0,12 | [−0,34 ; −0,0005] | −0,35 | +0,03 | −0,28 |
+| `base` actuel − `base` de #19450 (effet de #19481) | +0,03 | [−0,19 ; 0,33] | −0,10 | −0,08 | +0,15 |
+| `lag` − `top4` | −0,34 | [−1,00 ; 0,43] | −0,08 | −0,68 | +0,68 |
+| `lag` − `noshort` | −0,52 | [−1,15 ; 0,19] | −0,25 | −0,39 | −0,05 |
+
+La lecture du jour même ne gonflait pas le résultat : sur cette fenêtre, la corriger relève le Sharpe de 0,12. Un élément de contexte, sans valeur d'explication démontrée : en données journalières, l'ordre passé le matin n'est exécuté qu'à la clôture du jour même (voir la section #19450). La clôture du VIX lue en avance n'était donc connue qu'un quart d'heure après l'exécution, et l'avantage d'information restait mince. Le correctif du stop de la jambe courte (#19481) laisse le Sharpe presque inchangé, mais la pire baisse passe de −61,6 % à −58,1 %. Les contrôles disent la même chose qu'en #19450 : détenir les 4 titres (`top4`) ou supprimer la jambe courte (`noshort`) fait mieux que la règle. Ces écarts sont observés après coup, sur la fenêtre même de la mesure.
+
+Les traces des runs (plans, empreintes, graphiques, statistiques, compteurs) sont conservées hors dépôt, sous `QC-traces/19837-lsh-vix-lag/`.
+
+### Suivi en ombre
+
+Le point 6 de #19450 demandait le gel de `base` à la date du verdict. `base` lisant le VIX du jour même, c'est la variante `lag`, défaut du code depuis #19837, qui est gelée à sa place, à la date de son verdict. Le commit gelé est celui de `main` qui porte ce `main.py` (empreinte revérifiée : `09918b3f087c…`, celle des runs du verdict). Elle est inscrite au [registre du suivi en ombre](../../ML-Training-Pipeline/shadow/registry.json) (#18923) sous l'identifiant `lsh-lag`, sans paramètre, gelée au 2026-10-09 ; premier passage à la première séance de novembre.
+
 ## Figures du notebook de recherche
 
 Ces figures sortent du moteur simplifié `backtest_lsh()` (SPY à la place des 4 titres, pas de vente à découvert) : elles décrivent le régime VIX/SPY, pas le code de `main.py` (voir la section précédente). Le notebook [`research.ipynb`](research.ipynb) documente l'analyse complète : backtest de référence sur SPY/GLD/VIX, sensibilité aux hyperparamètres (sweep `score_threshold` H1, `ext_k` H2), validation walk-forward et performance par régime de marché. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
@@ -113,7 +173,7 @@ Ces figures sortent du moteur simplifié `backtest_lsh()` (SPY à la place des 4
 ## How to Run
 
 **Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/LongShortHarvest-QC"`
-**QC Cloud :** projet 37423502. Paramètres de backtest : `start`, `end`, `mode` (`base` ou `top4`), `fee_mult`, ainsi que les paramètres de la règle (`short_gross`, `long_gross`, `top_n`, `ml_tilt`, `stop_atr`, etc., voir `Initialize`).
+**QC Cloud :** projet 37423502. Paramètres de backtest : `start`, `end`, `mode` (`lag` par défaut, `base` pour la lecture du VIX du jour même, `top4`), `fee_mult`, ainsi que les paramètres de la règle (`short_gross`, `long_gross`, `top_n`, `ml_tilt`, `stop_atr`, etc., voir `Initialize`).
 
 ## Backtest Metrics
 

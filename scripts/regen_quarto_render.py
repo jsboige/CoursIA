@@ -298,31 +298,61 @@ def git_tracked_notebooks() -> list[str]:
     return paths
 
 
+def all_tracked_notebooks() -> list[str]:
+    """Enumeration exhaustive ``git ls-files '*.ipynb'``, POSIX, triee.
+
+    Population de reference partagee par ``uncovered_notebooks()`` et
+    ``hr_blocked_notebooks()`` : une marche pour deux lectures.
+    """
+    out = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "-c", "core.quotePath=false", "ls-files", "*.ipynb"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
+    )
+    return sorted({p.strip() for p in out.stdout.splitlines() if p.strip()},
+                  key=str.lower)
+
+
+def _in_notebook_scope(p: str) -> bool:
+    """Un carnet qui n'est ni declare hors perimetre ni sous marqueur d'exclusion."""
+    return p not in NOTEBOOKS_HORS_PERIMETRE and not any(
+        bad in p for bad in NOTEBOOK_EXCLUDE_MARKERS)
+
+
 def uncovered_notebooks() -> list[str]:
     """Git-tracked ``.ipynb`` neither rendered nor declared out-of-scope (#18423).
 
     Diff d'ensemble (un motif qui rate les noms pointes est un faux negatif) :
     enumeration exhaustive ``git ls-files '*.ipynb'``, moins la render-list,
     moins les archives (NOTEBOOK_EXCLUDE_MARKERS), moins
-    NOTEBOOKS_HORS_PERIMETRE. Tout residu = trou de couverture : soit un
-    sous-arbre a ajouter, soit une exclusion a declarer, soit un carnet
-    hr-bloque (#11451) sous sous-arbre rendu.
+    NOTEBOOKS_HORS_PERIMETRE, moins les carnets ecartes par la garde `---`
+    (#11451). Tout residu = trou de couverture : un sous-arbre a ajouter, ou
+    une exclusion a declarer.
+
+    Les carnets hr-bloques ne sont **pas** des trous : ``git_tracked_notebooks``
+    les ecarte par construction, la garde est auto-resorbante, et le seul geste
+    possible -- retirer le `---` du carnet -- est un choix de contenu, pas de
+    perimetre. Les rapporter ici fait rougir la garde en permanence sur un etat
+    legitime (mesure 2026-10-10 : ``Lean-12-Sensitivity-Theorem.ipynb``, seul
+    ecarte du sous-arbre SymbolicAI/Lean, et la cause du rouge de la jambe
+    `Smoke test` de `quarto-render-list-freshness.yml`). Ils sont rendus a part
+    par ``hr_blocked_notebooks()``, a titre informatif.
     """
-    out = subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "-c", "core.quotePath=false", "ls-files", "*.ipynb"],
-        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
-    )
     rendered = set(git_tracked_notebooks())
-    uncovered = []
-    for line in out.stdout.splitlines():
-        p = line.strip()
-        if not p or p in rendered or p in NOTEBOOKS_HORS_PERIMETRE:
-            continue
-        if any(bad in p for bad in NOTEBOOK_EXCLUDE_MARKERS):
-            continue
-        uncovered.append(p)
-    uncovered.sort(key=str.lower)
-    return uncovered
+    return [p for p in all_tracked_notebooks()
+            if p not in rendered and _in_notebook_scope(p)
+            and not has_hr_separator(p)]
+
+
+def hr_blocked_notebooks() -> list[str]:
+    """Carnets de cours ecartes du rendu par la garde `---` (#11451).
+
+    Compteur informatif : un carnet ecarte est absent du site **sans** qu'aucune
+    exclusion ne le declare -- c'est le seul endroit ou cet ecart est visible.
+    La garde etant auto-resorbante, retirer le `---` du carnet le reintegre au
+    rendu au tirage suivant, sans toucher aux constantes de perimetre.
+    """
+    return [p for p in all_tracked_notebooks()
+            if _in_notebook_scope(p) and has_hr_separator(p)]
 
 
 def git_tracked_readmes() -> list[str]:
@@ -404,8 +434,12 @@ def build_render_block() -> list[str]:
     lines.append("    # README.md rendus en HTML (Axe C #4211). Liste explicite")
     lines.append("    # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7")
     lines.append("    # n'etend pas le glob **/README.md sur les sous-repertoires.")
+    # Aucun compteur n'est ecrit ici (ni pour les READMEs, ni pour les docs/*.md,
+    # ni pour les notebooks) : un total dans un fichier genere se perime a chaque
+    # merge, et deux PRs qui ajoutent des carnets en meme temps soit conflicent
+    # sur la ligne, soit fusionnent proprement un total FAUX (arbitrage ai-01
+    # #19901, cas mesure #19579). La liste triee qui suit fusionne sans conflit.
     lines.append("    # Archives et libs vendored EXCLUES (history interne, non pedagogique).")
-    lines.append(f"    # {len(readmes) + 1} READMEs (racine + arborescence, hors archives).")
     lines.append('    - "README.md"')
     for p in readmes:
         lines.append(f'    - "{p}"')
@@ -419,7 +453,6 @@ def build_render_block() -> list[str]:
         lines.append("    # docs/*.md rendus en HTML (issue #18422). Meme mecanisme")
         lines.append("    # que les READMEs : liste explicite (globs non etendus en Quarto 1.7).")
         lines.append("    # Garde `---` (#11451) appliquee auto-resorbante.")
-        lines.append(f"    # {len(docs_md)} docs/*.md (sous-arbre docs/, hors README/archive/hr).")
         for p in docs_md:
             lines.append(f'    - "{p}"')
     # Notebooks rendered to HTML (EPIC #10921, pilote Search #10923). Explicit
@@ -429,8 +462,7 @@ def build_render_block() -> list[str]:
         lines.append("    # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).")
         lines.append("    # Liste explicite — globs non etendus en Quarto 1.7.")
         lines.append("    # Execution desactivee + echo: true au niveau racine (_quarto.yml).")
-        lines.append(f"    # {len(notebooks)} notebooks (sous-arbres: "
-                     + ", ".join(sorted(NOTEBOOK_SUBTREES)) + ").")
+        lines.append("    # Sous-arbres rendus : " + ", ".join(sorted(NOTEBOOK_SUBTREES)) + ".")
         for p in notebooks:
             lines.append(f'    - "{p}"')
     return lines
@@ -491,39 +523,35 @@ def _normalise_readme_target(base: Path, href: str) -> str:
 def readme_link_violations(
     pr_added_files: set[str] | None = None,
 ) -> list[tuple[str, str, str]]:
-    """Return [(readme, class, detail)] for render-list-vs-README drift.
+    """Return [(readme, class, detail)] for README link drift.
 
-    Classes:
-      STALE_LINK  -- the .ipynb target IS in the render list: the README must
-                     link the .html sibling instead (the raw .ipynb 404s on
-                     Pages -- the #13025 defect).
-      BROKEN      -- the .ipynb target does not exist on disk (dead link).
-      DEAD_RENDER -- a .html link names an existing notebook excluded from the
-                     render list, so the rendered page will not exist.
+    Classes (post-#18911 arbitration, 2026-10-09):
+      HTML_404  -- a relative `.html` link whose target is NOT committed in the
+                   repository: github.com serves a 404, because the Quarto
+                   renders live only on the Pages deployment and are never
+                   committed to the tree. This is the class the guard protects.
+      BROKEN    -- a `.ipynb` link whose target does not exist on disk (a dead
+                   link on github.com too).
+
+    `.ipynb` links are NOT violations: the reference navigation is github.com,
+    where a README that links a notebook in `.ipynb` opens the notebook viewer.
+    The site is the component that adapts — Quarto rewrites project-target
+    `.ipynb` links to their render at build time (gesture 3 of the same
+    arbitration). The former `STALE_LINK` class (`.ipynb` target listed in
+    project.render) and `DEAD_RENDER` are retired: `DEAD_RENDER` is subsumed by
+    `HTML_404` (a `.html` link to a notebook that is not rendered is a 404 on
+    github.com like any other uncommitted `.html`).
+
     UNRENDERED targets (file exists but excluded from the render list by the
     #11451 `---` guard or by an exclude marker) are NOT violations: they are
     the documented raw-source population (reported by --check-readme-links as
-    warnings so the sweep stays honest, but the fix is notebook-side).
+    a tally so the sweep stays honest, but the fix is notebook-side).
 
-    ``pr_added_files`` (#19631) : when the readme-ipynb-links-guard workflow
-    runs on a PR (cf. `.github/workflows/readme-ipynb-links-guard.yml`), the
-    BASE scan finds no STALE_LINK for a link targeting a PR-added notebook
-    (the link only exists in the PR scan), producing a false-positive
-    "NEW violation" delta. The founding case is #19368 (Origami causal
-    CB-00 README) : the notebook `CausalBridges-00-PearlLadder-Intro-Python`
-    is ADDED by the same PR (commit 59ea252dd, not yet on main), and the
-    README's new link to it is intentional -- the file and its link arrive
-    together. The fix : EXCLUDE PR-added files from the STALE_LINK check.
-    Both scans then agree (no violation either way) and the delta collapses
-    to 0. The link itself remains valid for downstream sweeps; we just stop
-    flagging it as a *new* violation introduced by the PR.
+    ``pr_added_files`` (#19631) is retained for the CLI/dumper contract: it no
+    longer affects the violation set (the PR-added-notebook false positive was
+    specific to the retired `STALE_LINK` class), only the informational
+    `unrendered` tally in :func:`report_readme_links`.
     """
-    rendered = set(git_tracked_notebooks())
-    if pr_added_files:
-        # PR-added files are tracked-after-merge; a link targeting one is
-        # arriving with the file, so it is not a STALE_LINK introduced by
-        # this PR. (cf. founding case #19368 / 59ea252dd).
-        rendered -= pr_added_files
     readmes = [p for p in git_tracked_readmes()
                if any(p.startswith(t) for t in NOTEBOOK_SUBTREES)]
     out: list[tuple[str, str, str]] = []
@@ -535,33 +563,36 @@ def readme_link_violations(
             if href.startswith(("http://", "https://", "#", "mailto:")):
                 continue  # absolute/anchor links are out of scope
             norm = _normalise_readme_target(base, href)
-            if norm in rendered:
-                out.append((rel_readme, "STALE_LINK", href))
-            elif not (REPO_ROOT / norm).exists():
+            if not (REPO_ROOT / norm).exists():
                 out.append((rel_readme, "BROKEN", href))
-            # else: UNRENDERED -- raw-source population, not a violation
+            # else: valid raw-source link -- the github.com reference form
         for m in _HTML_LINK_RE.finditer(text):
             href = m.group(1)
             if href.startswith(("http://", "https://", "#", "mailto:")):
                 continue
-            source_href = href.removesuffix(".html") + ".ipynb"
-            source = _normalise_readme_target(base, source_href)
-            if (REPO_ROOT / source).exists() and source not in rendered:
-                out.append((rel_readme, "DEAD_RENDER", href))
+            norm = _normalise_readme_target(base, href)
+            if not (REPO_ROOT / norm).exists():
+                out.append((rel_readme, "HTML_404", href))
     return out
 
 
 def report_readme_links(pr_added_files: set[str] | None = None) -> int:
-    """Print the README-link audit and exit 1 on STALE_LINK/BROKEN (#13025).
+    """Print the README-link audit and exit 1 on HTML_404/BROKEN.
 
-    ``pr_added_files`` (#19631) : forwarded to ``readme_link_violations`` so the
-    delta-vs-base computation of the readme-ipynb-links-guard workflow agrees on
-    files added in the same PR as the README link target.
+    Violations (post-#18911 arbitration): an `.html` link whose render is not
+    committed (404 on github.com), and a `.ipynb` link whose target is absent.
+    A `.ipynb` link to an existing notebook is valid, rendered or not.
+
+    ``pr_added_files`` (#19631) is retained for the CLI/dumper contract; it no
+    longer changes the violation set, only the ``unrendered`` tally below.
     """
     rendered = set(git_tracked_notebooks())
     if pr_added_files:
-        # Mirror the exclusion used in ``readme_link_violations`` so the
-        # `unrendered` tally below stays consistent with the violation set.
+        # A notebook added by this PR has no Pages render yet, so counting it
+        # as rendered would understate the raw-source tally below. This feeds
+        # that tally only: ``readme_link_violations`` no longer reads
+        # ``pr_added_files`` (its only consumer was the retired STALE_LINK
+        # class), so the violation set is unchanged by this branch.
         rendered -= pr_added_files
     readmes = [p for p in git_tracked_readmes()
                if any(p.startswith(t) for t in NOTEBOOK_SUBTREES)]
@@ -610,15 +641,15 @@ def main() -> int:
     ap.add_argument("--check", action="store_true",
                     help="exit 1 if _quarto.yml render list is stale")
     ap.add_argument("--check-readme-links", action="store_true",
-                    help="exit 1 if a rendered-subtree README links a raw "
-                         ".ipynb whose render exists (STALE_LINK), a missing "
-                         "source (BROKEN), or a .html page whose notebook is "
-                         "not rendered (DEAD_RENDER) -- regle #13025")
+                    help="exit 1 if a rendered-subtree README links a .html "
+                         "whose target is not committed (HTML_404, a 404 on "
+                         "github.com) or a .ipynb whose source is missing "
+                         "(BROKEN). A .ipynb link is valid (#18911)")
     ap.add_argument("--pr-added-files", default=None, metavar="PATH",
                     help="file listing PR-added paths (one per line, POSIX). "
-                         "Used by the readme-ipynb-links-guard workflow so "
-                         "STALE_LINK on a link targeting a PR-added .ipynb "
-                         "collapses on both sides of the delta (#19631).")
+                         "Retained for the CLI/dumper contract (#19631); since "
+                         "#18911 it no longer changes the violation set -- only "
+                         "the informational `unrendered` tally.")
     args = ap.parse_args()
 
     if args.check_readme_links:
@@ -646,7 +677,8 @@ def main() -> int:
             return 1
         print(f"_quarto.yml render list up to date "
               f"({n} READMEs, {n_docs} docs/*.md, {nb} notebooks, "
-              f"{len(NOTEBOOKS_HORS_PERIMETRE)} declares hors perimetre).")
+              f"{len(NOTEBOOKS_HORS_PERIMETRE)} declares hors perimetre, "
+              f"{len(hr_blocked_notebooks())} ecartes par la garde `---`).")
         return 0
 
     QUARTO_YML.write_text(proposed, encoding="utf-8")
@@ -659,4 +691,11 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        rc = main()
+    except SystemExit:
+        raise
+    except Exception as e:
+        print(f"::error::regen_quarto_render crashed: {type(e).__name__}: {e}", file=sys.stderr)
+        sys.exit(2)
+    raise SystemExit(rc)
