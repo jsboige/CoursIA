@@ -290,7 +290,7 @@ python scripts/i18n/render.py \
 - `docs/reference/procedures-recurrentes.md` §workflow PR (10 étapes)
 - `docs/reference/anti-regression-detail.md` — protocole suppression de code (anti-régression)
 
----
+***
 
 *Design doc rédigé 2026-07-07 par `myia-po-2025:CoursIA-2` (c.292), MSG ai-01
 msg-20260707T170624-wmu0m5. Phase 2 = decision user sur CI drift-flag + rollout multi-série.*

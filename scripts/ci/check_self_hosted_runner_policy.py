@@ -535,6 +535,27 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   niveau job (`if: head.repo.full_name == repository`).
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "lean-formal-logic.yml",
+    # #20049 (owner myia-po-2024:CoursIA-2, PR #20076) : live-read-freshness --
+    #   troisieme axe des ratchets de carnet : la coherence entre la sortie
+    #   COMMITTEE d'une cellule et l'etat COURANT du fichier qu'elle lit. Les
+    #   ratchets existants comparent une base a une tete
+    #   (check_output_collapse / check_source_collapse) ou mesurent la
+    #   structure d'un carnet ; aucun ne relie une sortie committee a sa
+    #   source vivante. Detecteur scripts/notebook_tools/
+    #   check_live_read_freshness.py, stdlib-only, self-test a controle
+    #   positif ET negatif. Le verdict par-PR est rendu par
+    #   fast-lane-shadow.yml (entree TRANCHE2 de fast_lane_registry.py) ; ce
+    #   fichier ne garde que workflow_dispatch (relance manuelle + cible
+    #   d'identite). Aucun secret, aucun GITHUB_TOKEN cote job, garde
+    #   same-repo universelle parenthesee au niveau job (#13874). Runner =
+    #   jambe Linux containerisee (LINUX_RUNNER_LABELS, meme profil que
+    #   translation-hot-drift-advisory.yml / notebook-plan-loss-gate.yml).
+    #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED remonte par
+    #   `Scripts Tests (CPU)` (run 37931243189) : la PR routait le job
+    #   self-hosted sans toucher cette allowlist fail-closed -- meme classe que
+    #   organ-duplication-advisory.yml et docs-transients-guard.yml.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "live-read-freshness.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

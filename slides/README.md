@@ -179,6 +179,16 @@ layout: section
 
 Images pleine-largeur : layout `image-overlay` avec texte par-dessus, **JAMAIS** en colonne droite (`two-cols` avec image a droite). Convention confirmee 5+ fois.
 
+### Minification CSS : `magic-string` 1.4.3 casse le build des decks
+
+**Symptome** : `slidev build` echoue sur chaque deck avec `Invalid token in pseudo element: Dimension 1.5rem`, leve par lightningcss (le minifieur CSS par defaut de Vite 8).
+
+**Cause amont**, ni Slidev ni le theme : depuis `magic-string` **1.4.3** (publiee le 2026-10-05), `@unocss/transformer-directives` reecrit en double, en fin de fichier, les declarations qu'il a inserees quand le fichier contient aussi une regle vide a nettoyer (unocss/unocss#5373, correctif propose #5375 ; cote Slidev slidevjs/slidev#2768).
+
+**Reparation** : l'override `"magic-string@^1": "1.4.2"` dans `slides/package.json`. Le contournement anterieur (`build.cssMinify: false` dans un `vite.config.ts` du theme, #19981) a ete retire avec le fichier : il desactivait la minification de tout le site construit pour masquer une dependance fautive. A retirer quand une version d'UnoCSS portant le correctif de #5375 sera publiee et tiree par Slidev (suivi dans #20051).
+
+**Ou vit un `vite.config.*`** : Slidev ne lit un `vite.config.*` que dans ses **racines** (le theme, les addons, la racine du deck) -- un `slides/vite.config.ts` serait **ignore**. Une configuration destinee aux 19 decks vit donc dans le theme (`theme-ia101/`), jamais a la racine de `slides/`.
+
 ### Verification visuelle obligatoire avant merge
 
 - Lancer `npx slidev slides.md --port 30XX` localement

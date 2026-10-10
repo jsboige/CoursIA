@@ -63,6 +63,65 @@ def test_up_to_date_epic_has_no_signal():
     ) == []
 
 
+def test_citation_list_pr_reports_its_epic_breadth():
+    """A PR quoting several EPICs is a citation list, not a delivery."""
+    epics = [
+        Epic(10355, "[EPIC] Fallacy detection", "## Objectif\nDetecter."),
+        Epic(7265, "[EPIC] Heritage", "## Objectif\nHeriter."),
+        Epic(11044, "[EPIC] Debt", "## Objectif\nPayer."),
+    ]
+    shared = _pr(19147, "Belt dump: #10355 #7265 #11044", title="fix(picker)")
+
+    findings = analyze_epics(epics, [shared])
+
+    assert sorted(f.number for f in findings) == [7265, 10355, 11044]
+    assert all(f.citation_breadth == 3 for f in findings)
+
+
+def test_single_epic_citation_keeps_breadth_one():
+    """The ordinary 1:1 shape stays distinguishable from a citation list."""
+    epics = [
+        Epic(10355, "[EPIC] Fallacy detection", "## Objectif\nDetecter."),
+        Epic(7265, "[EPIC] Heritage", "## Objectif\nHeriter."),
+    ]
+
+    findings = analyze_epics(epics, [_pr(19147, "See #10355")])
+
+    assert len(findings) == 1
+    assert findings[0].number == 10355
+    assert findings[0].citation_breadth == 1
+
+
+def test_breadth_zero_when_the_citing_pr_is_already_recorded():
+    """A stance-only finding carries no PR breadth at all."""
+    epic = Epic(
+        7,
+        "[EPIC] Veille",
+        "Pas pour maintenant.\n\n## Suivi\n- #80 — deja inscrit",
+    )
+
+    findings = analyze_epics([epic], [_pr(80, "See #7")])
+
+    assert len(findings) == 1
+    assert findings[0].unrecorded_merged == ()
+    assert findings[0].citation_breadth == 0
+
+
+def test_payload_exposes_citation_breadth():
+    """The additive field survives serialization for downstream triage."""
+    epics = [
+        Epic(10355, "[EPIC] Fallacy detection", "## Objectif\nDetecter."),
+        Epic(7265, "[EPIC] Heritage", "## Objectif\nHeriter."),
+    ]
+
+    payload = build_payload(epics, [_pr(19147, "Belt dump: #10355 #7265")])
+
+    assert {f["number"]: f["citation_breadth"] for f in payload["findings"]} == {
+        10355: 2,
+        7265: 2,
+    }
+
+
 def test_quoted_dormant_stance_is_not_live():
     epic = Epic(
         1210,

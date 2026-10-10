@@ -631,6 +631,39 @@ def unconcluded_with_inflight_successor(
     return sorted(names)
 
 
+def pending_all_queued(
+    checks: Sequence[dict],
+    self_name: str = DEFAULT_SELF_NAME,
+    advisory_jobs: frozenset[str] = frozenset(),
+) -> bool:
+    """Whether every blocking pending constituent sits at status=queued.
+
+    #13363: under self-hosted pool saturation, a gate waiter polls constituents
+    that sit ``queued`` with no runner assigned -- the verdict cannot change
+    until a constituent STARTS, so a starved queue entry is parked, not slow.
+    True means "waiting cannot change the verdict": every unconcluded blocking
+    check is queued (none in_progress). False when no pending constituent
+    exists -- the ordinary settle path owns that case.
+
+    The iteration mirrors `classify` (dedupe_latest, self/advisory excluded,
+    conclusion-authoritative #14976) so this predicate judges the SAME entry
+    per name the wait loop judges.
+    """
+    saw_pending = False
+    for check in dedupe_latest(checks):
+        name = check.get("name") or "<unnamed>"
+        if name == self_name or name.startswith(f"{self_name} /"):
+            continue
+        if _is_advisory_name(name, advisory_jobs):
+            continue
+        if (check.get("conclusion") or "").lower():
+            continue
+        saw_pending = True
+        if (check.get("status") or "").lower() != "queued":
+            return False
+    return saw_pending
+
+
 def classify(
     checks: Sequence[dict],
     self_name: str = DEFAULT_SELF_NAME,
@@ -1597,6 +1630,7 @@ def wait_and_decide(
     now=time.monotonic,
     detail: "dict | None" = None,
     fetch_job=None,
+    all_queued_polls: int = 0,
 ) -> tuple[int, str]:
     """Poll until the check set is stable, then decide.
 
@@ -1619,6 +1653,17 @@ def wait_and_decide(
     can publish it in the step summary (#15693) without changing this
     function's 2-tuple return. The last classify is authoritative: the
     deadline path re-classifies into `final_*` and overwrites the entry.
+
+    `all_queued_polls` (#13363) arms the pool-saturation early exit: when
+    every pending constituent has sat at status=queued (no runner assigned)
+    for this many consecutive polls once `polls_seen >= settle_polls` (the
+    floor poll counts toward the streak), the loop returns a STARVED verdict
+    immediately instead of burning the remaining budget polling a queue that
+    cannot move. 0 (default) disables the rule -- the historical behaviour.
+    A healthy pool flips a queued job to in_progress within seconds, so the
+    streak only accumulates under real starvation. The message starts with
+    "STARVED" so `main`'s self-cancel (#13510) and the stale sweep's
+    cancelled-leg remedy apply unchanged.
     """
     deadline = now() + timeout_min * 60.0
     quiet_streak = 0
@@ -1627,6 +1672,8 @@ def wait_and_decide(
     adv_jobs = advisory_jobs or frozenset()
     timeouts = declared_timeouts or {}
     transient_reads = 0
+    polls_seen = 0
+    all_queued_streak = 0
 
     while True:
         try:
@@ -1693,6 +1740,10 @@ def wait_and_decide(
             # wait into a PASS -- the one direction rule 1 forbids.
             continue
         transient_reads = 0
+        # #13363: counts successful polls only -- a transient retry that
+        # `continue`d above never reaches here, so it cannot advance the
+        # settle floor the all-queued streak is gated on.
+        polls_seen += 1
         pending, bad, ok, advisory = classify(checks, self_name, adv_jobs)
         if detail is not None:
             detail["advisory"] = list(advisory)
@@ -1830,6 +1881,46 @@ def wait_and_decide(
                 declared_timeouts=timeouts,
             )
 
+        # #13363: pool-saturation early exit. A pending constituent at
+        # status=queued has NO runner assigned: further polling cannot change
+        # what it reports, because it has not started. When every pending
+        # constituent is queued for `all_queued_polls` consecutive polls PAST
+        # the settle_polls floor, the verdict is already decided by the queue,
+        # and burning the remaining hosted budget polling it is the waste this
+        # issue measures (waiters burning up to 45 hosted-minutes apiece under
+        # self-hosted saturation). The message deliberately starts with
+        # "STARVED" so `main`'s self-cancel (#13510) and the stale sweep's
+        # cancelled-leg remedy apply unchanged -- the same terminal state as
+        # the deadline STARVED, reached earlier. Fail-closed toward waiting: a
+        # single in_progress constituent (a runner picked the job up) resets
+        # the streak, and so does an empty pending set -- evidence older than
+        # the current poll never triggers the exit.
+        if all_queued_polls:
+            if (
+                pending
+                and polls_seen >= settle_polls
+                and pending_all_queued(checks, self_name, adv_jobs)
+            ):
+                all_queued_streak += 1
+            else:
+                all_queued_streak = 0
+            if all_queued_streak >= all_queued_polls:
+                _report_advisory(advisory)
+                print(
+                    f"[pr-gate] every pending constituent queued with no "
+                    f"runner for {all_queued_streak} poll(s) -- early "
+                    "STARVED instead of polling a parked queue (#13363)",
+                    flush=True,
+                )
+                return 1, (
+                    "STARVED -- every pending constituent is queued with "
+                    "no runner (pool saturated): "
+                    + ", ".join(pending)
+                    + " -- waiting cannot change the verdict until a "
+                    "constituent starts; the stale sweep re-drives this "
+                    "gate when runners free up (#13363)"
+                )
+
         print(
             f"[pr-gate] waiting on {len(pending)} check(s): "
             f"{', '.join(pending[:6])}{' ...' if len(pending) > 6 else ''}",
@@ -1958,6 +2049,11 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("--timeout-min", type=float, default=90.0)
     parser.add_argument("--poll-sec", type=float, default=30.0)
     parser.add_argument("--settle-polls", type=int, default=2)
+    # #13363: early STARVED when every pending constituent sits queued with no
+    # runner for this many consecutive polls (0 disables -- historical
+    # behaviour; pr-gate.yml passes an explicit value so the behavior change
+    # is visible and revertable in one place).
+    parser.add_argument("--all-queued-polls", type=int, default=0)
     # Issue #10072 -- fork PRs short-circuit to PASS. Student PRs come from a
     # fork and have no internal convention to police; `enforce_admins: true` on
     # main's required checks would otherwise deadlock their admin merge. This
@@ -2102,6 +2198,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             advisory_jobs,
             declared_timeouts,
             detail=detail,
+            all_queued_polls=args.all_queued_polls,
         )
     except GateError as exc:
         # Rule 1: an unreadable state is a failure, never a pass. Fall

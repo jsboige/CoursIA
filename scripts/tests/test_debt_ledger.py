@@ -1610,3 +1610,124 @@ def test_cli_check_pending_json_output(tmp_path, capsys):
 def test_cli_check_pending_refuses_other_ledger():
     assert dl.main(["check_pending", "--ledger", dl.ISSUE_DEBT,
                     "--entity", "jsboige/CoursIA#16737"]) == 2
+
+
+def _write_gpu_snapshot(state_dir, *, state, holder, started_at, expected_end):
+    """Une row de snapshot, avec sa provenance -- la forme que `reduce` ecrit.
+
+    Les tests ci-dessus passent leurs enregistrements a la main a
+    `evaluate_gpu_pending` : ils n'exercaient donc JAMAIS le chemin qui part
+    d'un snapshot sur disque, et c'est exactement la ou le defaut #20077
+    vivait.
+    """
+    snap = state_dir / dl.GPU_RESERVATION / "snapshots"
+    snap.mkdir(parents=True, exist_ok=True)
+    fields = {
+        "state": state,
+        "holder": holder,
+        "started_at": started_at,
+        "expected_end": expected_end,
+    }
+    provenance = {
+        name: {
+            "value": value,
+            "observed_at": "2026-10-09T10:05:00Z",
+            "actor": holder,
+            "confidence": "high",
+            "evidence": "manual append",
+            "observation_id": "obs-20077",
+            "source": "journal",
+        }
+        for name, value in fields.items()
+    }
+    (snap / "snapshot.json").write_text(json.dumps({
+        "schema": "debt-ledger-snapshot/v1",
+        "ledger": dl.GPU_RESERVATION,
+        "rows": [{
+            "key": "myia-ai-01#gpu2",
+            "ledger": dl.GPU_RESERVATION,
+            "entity": {"machine": "myia-ai-01", "gpu_index": 2},
+            "historical": False,
+            "fields": fields,
+            "provenance": provenance,
+            # `history` est ce que `records_from_snapshot` parcourt : sans lui,
+            # ce helper ne reproduirait pas la forme reelle et le controle
+            # positif rougirait pour une AUTRE raison (aucun enregistrement)
+            # que le defaut mesure (un enregistrement par champ).
+            "history": {name: [entry] for name, entry in provenance.items()},
+        }],
+    }), encoding="utf-8")
+    return snap / "snapshot.json"
+
+
+def test_record_views_from_snapshot_carries_the_whole_row(tmp_path):
+    """Un enregistrement par row, avec TOUS les champs -- pas un par champ.
+
+    `records_from_snapshot` emet un enregistrement par (champ, entree) ; un
+    verdict en lit plusieurs sur UN enregistrement. Le melange des deux est le
+    defaut #20077.
+    """
+    _write_gpu_snapshot(tmp_path, state="held", holder="myia-po-2025:CoursIA-2",
+                        started_at="2026-10-09T06:00:00Z",
+                        expected_end="2026-10-09T18:00:00Z")
+    snapshot = json.loads(
+        (tmp_path / dl.GPU_RESERVATION / "snapshots" / "snapshot.json").read_text(encoding="utf-8"))
+    views = dl.record_views_from_snapshot(snapshot, dl.GPU_RESERVATION)
+    assert len(views) == 1, "une row -> un enregistrement"
+    assert views[0].fields["state"] == "held"
+    assert views[0].fields["holder"] == "myia-po-2025:CoursIA-2"
+    assert views[0].observed_at == dl.parse_utc_timestamp("2026-10-09T10:05:00Z")
+
+
+def test_cli_check_pending_hold_for_a_foreign_lane(tmp_path, capsys):
+    """Le gate REFUSE une lane qui n'est pas le holder (#20077, controle positif).
+
+    Avant le correctif, cette commande rendait `OK_TO_RUN` : `holder` etait lu
+    sur un enregistrement qui ne portait que `state`.
+    """
+    _write_gpu_snapshot(tmp_path, state="held", holder="myia-po-2025:CoursIA-2",
+                        started_at="2026-10-09T06:00:00Z",
+                        expected_end="2026-10-09T18:00:00Z")
+    rc = dl.main(["check_pending", "--ledger", dl.GPU_RESERVATION,
+                  "--entity", "myia-ai-01#gpu2", "--state-dir", str(tmp_path),
+                  "--my-lane", "myia-ai-01:CoursIA-2",
+                  "--now", "2026-10-09T12:00:00Z", "--json"])
+    assert rc == 1, "une lane etrangere doit etre refusee"
+    payload = json.loads(capsys.readouterr().out.strip())
+    assert payload["verdict"] == "HOLD"
+    assert "myia-po-2025:CoursIA-2" in payload["reason"]
+
+
+def test_cli_check_pending_ok_for_the_holder(tmp_path, capsys):
+    """... et il laisse passer le holder dans sa fenetre (controle negatif).
+
+    Un correctif qui rendrait `HOLD` partout serait pire que le defaut.
+    """
+    _write_gpu_snapshot(tmp_path, state="held", holder="myia-po-2025:CoursIA-2",
+                        started_at="2026-10-09T06:00:00Z",
+                        expected_end="2026-10-09T18:00:00Z")
+    rc = dl.main(["check_pending", "--ledger", dl.GPU_RESERVATION,
+                  "--entity", "myia-ai-01#gpu2", "--state-dir", str(tmp_path),
+                  "--my-lane", "myia-po-2025:CoursIA-2",
+                  "--now", "2026-10-09T12:00:00Z", "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out.strip())
+    assert payload["verdict"] == "OK_TO_RUN"
+
+
+def test_cli_check_pending_stale_past_expected_end(tmp_path, capsys):
+    """La fenetre est lue sur le MEME enregistrement que le holder (#20077).
+
+    Avec des enregistrements par champ, `expected_end` etait lui aussi `None` :
+    ni `HOLD` de propriete ni `STALE` ne pouvaient se declencher.
+    """
+    _write_gpu_snapshot(tmp_path, state="held", holder="myia-ai-01:CoursIA-2",
+                        started_at="2026-10-09T06:00:00Z",
+                        expected_end="2026-10-09T10:00:00Z")
+    rc = dl.main(["check_pending", "--ledger", dl.GPU_RESERVATION,
+                  "--entity", "myia-ai-01#gpu2", "--state-dir", str(tmp_path),
+                  "--my-lane", "myia-ai-01:CoursIA-2",
+                  "--now", "2026-10-09T12:00:00Z", "--json"])
+    assert rc == 2
+    payload = json.loads(capsys.readouterr().out.strip())
+    assert payload["verdict"] == "STALE"

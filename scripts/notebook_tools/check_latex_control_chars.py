@@ -12,11 +12,15 @@ Three discriminants, without which the detector lies (two of them were
 learned the hard way during the issue's own measurement):
 
   1. markdown cells ONLY -- in code, a newline before `else:` is legitimate;
-  2. the occurrence sits INSIDE a math scope `$...$` / `$$...$$`. Inline
+  2. the occurrence sits INSIDE a math scope `$...$` / `$$...$$`. An inline
      `$...$` never crosses a raw newline: pairing two unrelated dollars
      (currency, `$FILE` in backticks) is how a first version over-counted
      by mixing prose newlines into fake scopes. Dollars inside backtick
-     spans are code, not delimiters;
+     spans are code, not delimiters. ONE exception (#20145): a newline
+     whose PREDECESSOR is a control character is itself part of the defect
+     (`\v` -> VT + LF + "arepsilon"), so it does not close the scope --
+     without that, the organ was blind to 13 of the 16 sites a real
+     notebook carried;
   3. the characters AFTER the control char are a known command queue --
      the escape ate the backslash AND the first letter, so `\\theta` leaves
      "heta", not "theta". Searching for "theta" returns zero, and that
@@ -69,7 +73,7 @@ QUEUES = {
     "n": {"eg", "abla", "otin", "ewline", "eq", "e", "u"},
     "r": {"ightarrow", "angle", "ho", "floor", "ight"},
     "f": {"orall", "rac", "rown", "lat"},
-    "v": {"ee", "dash", "arphi", "ec", "ert", "arnothing"},
+    "v": {"ee", "dash", "arphi", "ec", "ert", "arnothing", "arepsilon"},
     "b": {"eta", "egin", "igcup", "ot", "ar", "inom"},
     "a": {"pprox", "lpha", "ngle", "leph", "st", "top",
           "rccos", "rcsin", "rctan", "rray", "malg"},
@@ -83,8 +87,9 @@ def math_scopes(text: str):
     """Yield (start, end) of $...$ / $$...$$ scopes.
 
     Inline scopes stop at a raw newline (a pairing across lines joins two
-    unrelated dollars). Display scopes may span lines. Backtick spans are
-    code.
+    unrelated dollars) -- UNLESS that newline is immediately preceded by a
+    control character, which is the #20145 defect form and must not close
+    the scope. Display scopes may span lines. Backtick spans are code.
     """
     i, n = 0, len(text)
     in_backtick = False
@@ -108,7 +113,16 @@ def math_scopes(text: str):
             i = j + 2
         elif ch == "$":
             j = i + 1
-            while j < n and text[j] != "$" and text[j] != "\n":
+            while j < n and text[j] != "$":
+                # A newline whose PREDECESSOR is a control character is part
+                # of the defect (`\v` -> VT + LF + "arepsilon"), not a scope
+                # terminator: closing there is what made the organ blind to
+                # 13 of the 16 measured sites on ANALYSE-05. A newline
+                # preceded by anything else still ends the inline scope, so
+                # two unrelated dollar signs on two prose lines are still
+                # never paired (#14859 discriminant 2).
+                if text[j] == "\n" and text[j - 1] not in CTRL:
+                    break
                 if text[j] == "\\":
                     j += 1
                 j += 1
@@ -157,7 +171,16 @@ def find_defects(source) -> list[dict]:
                 if prev == "\\":
                     k += 1
                     continue
-            queue = _match_queue(seg[k + 1 : k + 1 + MAXQ], first)
+            # The measured form is `<controle> + LF + queue`: the newline
+            # sits BETWEEN the control character and its queue, so it is
+            # skipped before matching (12 of the 16 sites on ANALYSE-05
+            # carry `VT + LF + arepsilon`, i.e. `\varepsilon`). One extra
+            # character is taken so that skipping the LF does not eat the
+            # word-boundary lookahead -- `arepsilonXYZ` must stay unmatched.
+            after = seg[k + 1 : k + 2 + MAXQ]
+            if after[:1] == "\n":
+                after = after[1:]
+            queue = _match_queue(after, first)
             if queue is None:
                 k += 1
                 continue

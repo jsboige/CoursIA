@@ -1,4 +1,4 @@
-"""Test for #19631 -- ``readme_link_violations(pr_added_files=...)`` exemption.
+"""Test for #19631 -- ``readme_link_violations(pr_added_files=...)``.
 
 Founding case (cf. issue body) : PR #19368 (Origami causal CB-00 README) voit
 son check-run ``Audit README -> .ipynb links`` rapporter STALE_LINK: 1 NOUVELLE
@@ -9,39 +9,50 @@ et le lien README est intentionnel (le carnet ET son entree README arrivent
 ensemble).
 
 Le fix (F8 dans le workflow) : l'audit accepte ``--pr-added-files <list>``,
-liste de fichiers ajoutes par la PR. Un lien vers un fichier PR-added est
-exempt de STALE_LINK (le carnet ET son entree README arrivent ensemble --
-la comparaison delta PR - base doit donner 0 sur ces cibles).
+liste de fichiers ajoutes par la PR. Un lien vers un fichier PR-added etait
+exempt de STALE_LINK.
+
+**Etat depuis #18911 (geste 2, 2026-10-09).** La classe ``STALE_LINK`` est
+retiree : un lien ``.ipynb`` n'est plus une violation, la classe bloquante est
+``HTML_404`` (un lien ``.html`` dont la cible n'est pas committee). L'exemption
+PR-added etait specifique a ``STALE_LINK`` -- un carnet ajoute par la PR ne
+peut pas produire un ``HTML_404``. Le parametre reste accepte (contrat
+CLI/dumper) mais il est **inerte** sur l'ensemble des violations ; le temoin
+qui le prouve a remplace l'ancien « au moins 1 disparition ».
 
 Temoins verifies :
   1. La fonction accepte le parametre ``pr_added_files`` (default = None).
-  2. Sans parametre, le comportement est inchange.
-  3. Avec un fichier tracked dans ``pr_added_files``, les violations le
-     ciblant disparaissent (NB : sur origin/main CB-00 n'est pas tracked,
-     on utilise donc un notebook tracked -- CB-01 -- comme temoin).
-  4. Le CLI ``--pr-added-files <path>`` charge la liste et l'applique.
-  5. La forme de la liste (POSIX, une par ligne, blancs ignores) est
+  2. ``pr_added_files`` n'affecte PLUS l'ensemble des violations (inerte).
+  3. Le CLI ``--pr-added-files <path>`` charge la liste sans erreur.
+  4. La forme de la liste (POSIX, une par ligne, blancs ignores) est
      preservee dans le chargement.
+  5. Le workflow passe encore le flag -- a la passe PR seulement (F8b).
 """
 
 from __future__ import annotations
 
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
-
-import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 RGQR = REPO_ROOT / "scripts" / "regen_quarto_render.py"
 
 # CB-01 est tracked sur origin/main (CB-00 ne l'est pas encore -- PR #19310
-# non mergée). On utilise CB-01 comme cible de reference pour les temoins
-# qui ont besoin d'un fichier effectivement tracked.
+# non mergee). On l'utilise comme cible de reference pour les temoins qui ont
+# besoin d'un fichier effectivement tracked.
 CB01 = (
     "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/"
     "CausalBridges-01-Do-Calculus.ipynb"
 )
+
+
+def _load_rgqr():
+    spec = importlib.util.spec_from_file_location("rgqr", str(RGQR))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def _run_module(*args: str) -> subprocess.CompletedProcess:
@@ -59,10 +70,7 @@ def _run_module(*args: str) -> subprocess.CompletedProcess:
 
 def test_pr_added_files_param_accepts_default_none() -> None:
     """``pr_added_files=None`` doit conserver le comportement historique."""
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("rgqr", str(RGQR))
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    mod = _load_rgqr()
     v_none = mod.readme_link_violations()
     v_explicit = mod.readme_link_violations(pr_added_files=None)
     # Meme nombre de violations, meme signature
@@ -70,44 +78,36 @@ def test_pr_added_files_param_accepts_default_none() -> None:
     assert len(v_none) > 0, "temoin casse : pas de violations brutes en repo"
 
 
-def test_pr_added_files_excludes_known_targeted_violation() -> None:
-    """Ajoute CB-01 a pr_added_files -> les STALE_LINK ciblant CB-00/01 disparaissent.
+def test_pr_added_files_is_inert_on_violations() -> None:
+    """Depuis #18911, ``pr_added_files`` n'affecte plus l'ensemble des violations.
 
-    Le cas fondateur #19368 utilise CB-00 (non tracked sur origin/main) ;
-    on transpose le test sur CB-01 qui EST tracked. La regle est la meme :
-    le fichier est dans pr_added_files -> son entree README ne releve plus
-    comme STALE_LINK. On verifie au moins 1 disparition (delta >= 1).
+    L'exemption fondee #19631 (#19368) etait specifique a la classe RETIREE
+    ``STALE_LINK`` (``.ipynb`` cible d'une entree README ajoutee par la meme
+    PR). La classe bloquante est desormais ``HTML_404`` (``.html`` sans cible
+    committee), qu'un carnet PR-added ne peut pas produire. Le parametre reste
+    accepte pour le contrat CLI/dumper, mais il est INERTE -- c'est le temoin
+    qui remplace l'ancien « au moins 1 disparition ».
     """
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("rgqr", str(RGQR))
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    mod = _load_rgqr()
     before = mod.readme_link_violations()
     after = mod.readme_link_violations(pr_added_files={CB01})
-    removed = [v for v in before if v not in after]
-    # CB-01 apparait dans plusieurs READMEs : README de la serie + README
-    # parent DecisionTheory + README parent Probas -- chacun avec sa
-    # propre STALE_LINK. Au moins une doit disparaitre.
-    # NB : le href est le chemin relatif au README parent, pas le chemin
-    # absolu ; on matche sur le basename du carnet CB-01.
-    cb01_basename = "CausalBridges-01-Do-Calculus.ipynb"
-    assert any(cb01_basename in v[2] for v in removed), (
-        f"Aucune STALE_LINK sur CB-01 dans les violations retirees : {removed[:3]}"
+    assert before == after, (
+        "pr_added_files est cense etre INERTE sur l'ensemble des violations "
+        "depuis #18911 (l'exemption #19631 visait la classe retiree STALE_LINK)"
     )
-    # Le total doit chuter d'au moins 1 (4 dans le cas mesure)
-    assert len(before) - len(after) >= 1
+    # Temoin negatif : on mesure bien un ensemble non vide.
+    assert len(before) > 0
 
 
 def test_cli_pr_added_files_loads_list(tmp_path: Path) -> None:
     """``--pr-added-files <path>`` charge la liste (POSIX, une par ligne)."""
     f = tmp_path / "added.txt"
-    # Mix : un fichier tracked (CB-01, qui changera de vrai), une ligne vide,
-    # un chemin inexistant (ignore par le scanner -- pas un .ipynb link).
+    # Mix : un fichier tracked (CB-01), une ligne vide, un chemin inexistant.
     f.write_text(f"{CB01}\n\nnot-a-real-path.ipynb\n", encoding="utf-8")
     proc = _run_module("--check-readme-links", "--pr-added-files", str(f))
-    # rc = 0 (les violations brutes ne bloquent pas -- argv capture seulement)
-    # L'important est que l'arg soit accepte et que le JSON-like stdout
-    # porte l'audit nominal "README-link audit: ...".
+    # rc = 0 (les violations brutes ne bloquent pas le dump -- argv capture
+    # seulement ; le scanner sort 1 sur violations, ce qui est attendu ici).
+    # L'important est que l'arg soit accepte et que l'audit nominal soit rendu.
     assert "README-link audit:" in proc.stdout, proc.stdout
 
 
@@ -129,18 +129,21 @@ def test_cli_pr_added_files_missing_file_is_safe() -> None:
 
 
 def test_workflow_yaml_references_pr_added_files() -> None:
-    """Le workflow YAML utilise bien --pr-added-files (regression guard).
+    """Le workflow calcule encore la liste PR-added, sur la passe PR SEULE.
 
-    Si quelqu'un retire le flag du workflow, les PR-added notebooks
-    redeviennent STALE_LINK dans le delta -- c'est le bug fondateur.
-    Le test verifie la presence des deux appels (passe PR + passe base).
+    Depuis #18911 (geste 2) la classe bloquante a change et la passe base GARDE
+    le script de la PR (cf. F8b : sinon elle mesurerait la classe retiree). La
+    passe base n'ajoute aucun fichier, donc le flag n'y est plus passe : le
+    compte passe de 2 a 1. C'est un changement de contrat, pas une regression --
+    le temoin negatif est que le calcul de la liste reste present.
     """
     wf = (REPO_ROOT / ".github" / "workflows" / "readme-ipynb-links-guard.yml").read_text(
         encoding="utf-8"
     )
-    assert wf.count("--pr-added-files /tmp/pr_added_files.txt") >= 2, (
-        "Le flag --pr-added-files doit apparaitre au moins 2x "
-        "(passe PR + passe base). Regression du fix #19631."
+    assert wf.count("--pr-added-files /tmp/pr_added_files.txt") == 1, (
+        "Le flag --pr-added-files est passe a la passe PR seulement depuis "
+        "#18911 (F8b : la passe base garde le script de la PR et n'ajoute "
+        "aucun fichier)."
     )
     # Et le calcul de la liste (diff-filter=A) doit etre present
     assert "--diff-filter=A" in wf, (
