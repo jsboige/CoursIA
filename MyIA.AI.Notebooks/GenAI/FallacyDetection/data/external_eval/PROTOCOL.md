@@ -57,6 +57,16 @@ passage 2 est rapporté séparément. Aucun seuil n'est ajusté après coup.
 
 - Feuilles d'annotation remplies, réponses brutes et identités des évaluateurs : **hors dépôt** (GDrive privé, données PII).
 - Seul un **agrégat anonymisé** (tables de ce document, comptes, alphas) peut être cité dans une PR.
+
+**Condition d'aveuglement — ce qui ne doit pas atteindre l'évaluateur.** La feuille d'annotation ne porte pas le nœud cible (§2), mais cela ne suffit pas : l'échantillonneur est **déterministe**, donc quiconque détient à la fois la graine, le manifeste et le corpus aligné peut rejouer le tirage et **reconstruire la clé**. L'aveuglement tient donc à une règle de circulation, pas à une propriété du fichier :
+
+| Document | Destinataire | Pourquoi |
+|---|---|---|
+| `sheet.jsonl` (feuille aveugle) | l'évaluateur | ne porte ni nœud, ni graine, ni rang — les identifiants sont adressés par le contenu |
+| `key.jsonl` (correction) | l'organisateur seul | porte le nœud cible |
+| `manifest.json` (graine, effectifs, empreintes) | l'organisateur seul | la graine y est en clair, et elle suffit à rejouer le tirage |
+
+Un identifiant qui afficherait la graine (forme `eval-<graine>-<rang>`) la donnerait à lire sur la feuille ; l'échantillonneur produit donc des identifiants opaques, adressés par le contenu de l'item.
 - Le corpus source et ses NOTICE de licence gouvernent l'échantillon dérivé (cf. #20217 : MAFALDA verbatim, licences vérifiées firsthand).
 
 ## 7. État

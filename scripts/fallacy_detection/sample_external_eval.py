@@ -110,6 +110,11 @@ def allocate(n: int, min_per_family: int, family_sizes: dict[str, int]) -> dict[
             f"{sum(allocation.values()) + total_headroom} "
             f"(planchers + reliquats disponibles)."
         )
+    if remaining == 0:
+        # Aucun reliquat a repartir (n egale la somme des planchers, ou chaque
+        # famille est deja saturee) : la repartition est complete. Sans ce
+        # retour, la repartition proportionnelle diviserait par un reliquat nul.
+        return allocation
     # Plus grand reste sur les headrooms : chaque famille gagne sa part entiere,
     # les plus gros restes absorbent les arrondis perdus.
     quotas = {f: headroom[f] * remaining / total_headroom for f in families}
@@ -151,8 +156,14 @@ def main(argv: list[str] | None = None) -> int:
     sheet_path = args.out_dir / "sheet.jsonl"
     key_path = args.out_dir / "key.jsonl"
     with sheet_path.open("w", encoding="utf-8") as sheet, key_path.open("w", encoding="utf-8") as key:
-        for index, record in enumerate(picked, start=1):
-            item_id = f"eval-{args.seed:04d}-{index:04d}"
+        for record in picked:
+            # Identifiant adresse par le contenu (noeud + texte), volontairement
+            # opaque : un identifiant qui afficherait la graine la donnerait a
+            # lire a l'evaluateur, et la graine suffit a rejouer le tirage sur un
+            # corpus public. L'identifiant ne revele donc ni graine ni rang.
+            item_id = "eval-" + hashlib.sha256(
+                f"{record['node']}\x00{record['text']}".encode()
+            ).hexdigest()[:12]
             sheet.write(json.dumps({"item_id": item_id, "text": record["text"], "family": record["family"]},
                                    ensure_ascii=False) + "\n")
             key.write(json.dumps({"item_id": item_id, "family": record["family"], "node": record["node"]},
