@@ -156,8 +156,21 @@ QUALIFYING_LANES = frozenset({
     "myia-po-2027:CoursIA-2",
 })
 # `Grain: <genre> -- lane <machine:workspace>` in the pull request body names the
-# lane that carries the work. Same grammar as scripts/check_lane_claim.py.
-GRAIN_LANE_RE = re.compile(r"Grain:[^\n]*?\blane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)")
+# lane that carries the work. The canonical reader is `grain_tag.extract_lane`,
+# the one `scripts/check_lane_claim.py` uses; the patterns below are `findall`
+# variants of it, kept because the consumers need EVERY marker of a body, not
+# just the first.
+#
+# #15864 (4th variant of the self-block class) -- a sentence period is admitted
+# by the token class (hostnames need it), so `lane myia-po-2023:CoursIA-2.` used
+# to be captured as the lane `myia-po-2023:CoursIA-2.` -- a lane no cluster lane
+# matches. A token can no longer END on a period; periods INSIDE it survive
+# (`Foo.Bar:CoursIA-2` is unchanged), so the constraint only removes prose
+# punctuation. Measured on #14549, 2026-10-09: `delivering_lanes` returned
+# `myia-po-2023:CoursIA-2.`, and a lane named ONLY under the punctuated form is
+# absent from the set -- its own self-attesting dossier then passes the gate.
+LANE_TOKEN = r"[A-Za-z0-9_.-]*[A-Za-z0-9_-]:[A-Za-z0-9_.-]*[A-Za-z0-9_-]"
+GRAIN_LANE_RE = re.compile(r"Grain:[^\n]*?\blane\s+(" + LANE_TOKEN + r")")
 SHARED_GITHUB_LOGIN = "jsboige"
 # The gate's only consumer. Every worker lane signs SHARED_GITHUB_LOGIN, so this
 # login is the one surface author the coordinator can recognise as itself.
@@ -971,8 +984,10 @@ def recheck_blocked_b0(
     Only the b0-ONLY case expires, and only toward a re-stamp: the answer
     becomes the no-dossier outcome (exit 1), which routes the pull request to
     a third-party lane for a fresh dossier -- never back to the author as
-    mergeable. Any other blocking field (checks, scope, domain) keeps the
-    dossier standing: its reason may still hold.
+    mergeable. Any other blocking field keeps the dossier standing HERE: the
+    ``checks`` field has its own recheck (``recheck_blocked_checks``), and
+    ``scope``/``domain`` are judgments about a diff, which cannot move without
+    a push -- and a push already expires the stamp.
     """
     if verdict != VERDICT_BLOCKED or dossier is None:
         return verdict, [], dossier
@@ -987,6 +1002,56 @@ def recheck_blocked_b0(
         "dossier's stated reason is extinguished, a re-stamp is required: "
         "a third-party lane must post a fresh dossier (never merge on "
         "this one)"
+    ], None
+
+
+def recheck_blocked_checks(
+    snapshot: dict[str, Any],
+    verdict: str,
+    dossier: Dossier | None,
+) -> tuple[str, list[str], Dossier | None]:
+    """Expire a BLOCKED dossier whose only blocking field, ``checks``, no longer blocks.
+
+    Third of the family, after ``refute_ready_b0`` and ``recheck_blocked_b0``
+    (#19093). ``checks`` is the ONE blocking field whose value moves without a
+    head mutation: a check concludes asynchronously, so a dossier stamped while
+    a leg was still running attests ``checks: BLOCKED`` for a state a later
+    verdict extinguishes on the very same head. Measured instances: #19906
+    (dossier BLOCKED at 2026-10-08T10:42:32Z, ``PR gate`` success at
+    11:21:46Z on the same head ``4d3eb7f67a3f`` -- 95/95 legs green and the
+    gate still answering rc=3) and #20058 (reported BLOCKED at 09:35:37Z, green
+    at 10:00:36Z, still read as unmergeable 25 min later). ``scope`` and
+    ``domain`` cannot move without a push, and a push already expires the
+    stamp; ``checks`` can, and did.
+
+    Unlike ``recheck_blocked_b0`` this costs no probe: ``checkRuns`` is already
+    on the snapshot (``_head_check_runs``), so the comparison is local. The
+    predicate is the one that refutes a false ``latest-wins-green`` claim --
+    every latest-wins conclusion green AND every required check present -- read
+    in the other direction.
+
+    Only the checks-ONLY case expires, and only toward a re-stamp: the answer
+    becomes the no-dossier outcome (exit 1), which routes the pull request to a
+    third-party lane for a fresh dossier -- never back to the author as
+    mergeable.
+    """
+    if verdict != VERDICT_BLOCKED or dossier is None:
+        return verdict, [], dossier
+    if blocking_fields(dossier) != ["checks"]:
+        return verdict, [], dossier
+    check_runs = snapshot.get("checkRuns")
+    # `None` means "not measured", and a failure to measure is never a pass.
+    # An empty list IS measured, and the required-check rule refutes it below.
+    if check_runs is None:
+        return verdict, [], dossier
+    if check_claim_contradictions("latest-wins-green", check_runs):
+        return verdict, [], dossier
+    return "", [
+        "dossier BLOCKED for checks only, but the live latest-wins state of the "
+        f"head no longer blocks PR #{snapshot.get('number')} -- every conclusion "
+        "is green and every required check is present, so the dossier's stated "
+        "reason is extinguished and a re-stamp is required: a third-party lane "
+        "must post a fresh dossier (never merge on this one)"
     ], None
 
 
@@ -1963,6 +2028,10 @@ def main() -> int:
             )
         if not errors:
             verdict, errors, dossier = recheck_blocked_b0(args.pr, verdict, dossier)
+        if not errors:
+            verdict, errors, dossier = recheck_blocked_checks(
+                snapshot, verdict, dossier
+            )
     except (
         RuntimeError,
         KeyError,
