@@ -125,7 +125,7 @@ doublés, prévu seulement si p < 0,05 contre les deux, n'a pas été lancé.
 | `pit-ema` − SPY | −0.21 (0.82) | +0.07 (0.40) |
 
 Compteurs : l'univers au fil de l'eau a connu 261 revues mensuelles et 18 titres distincts. Le
-signal EMA détient en moyenne 3,4 lignes sur 5 à univers fixe et 3,1 au fil de l'eau ; il passe
+signal EMA détient en moyenne 3,4 titres sur 5 à univers fixe et 3,1 au fil de l'eau ; il passe
 459 et 412 séances entièrement en liquidités.
 
 ### Ce que la mesure établit
