@@ -51,7 +51,7 @@ Cauchy–Schwarz). The latter follows by expressing a shift as a sum of
 one-step differences and applying Cauchy–Schwarz.
 -/
 
-namespace Discrepancy.Komlos
+namespace Discrepancy.Komlos_en
 
 open Finset
 
@@ -301,4 +301,4 @@ The detailed state lives in `FORMAL_STATUS.md` (« Distillation
 Karingula–Lovett »).
 -/
 
-end Discrepancy.Komlos
+end Discrepancy.Komlos_en

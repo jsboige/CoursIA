@@ -1,16 +1,22 @@
-"""bake_report.py — génère un tableau Markdown du banc de référence TTS.
+"""bake_report.py -- genere un rapport markdown triee par WER du banc TTS.
 
-Usage (depuis la racine du dépôt ou un worktree) :
-    python prosody_lab/bake_report.py --bank prosody_lab/bake_bank.jsonl \\
-        [--out prosody_lab/bake_report.md]
+Sortie : stdout OU --out <path>. Le rapport n'est PAS commite : il est poste sur
+l'issue de coordination (cadrage coordinateur #19695 07/10 09:08Z, point 3 :
+"Le rapport markdown se genere a la demande et se poste sur l'issue. Il n'est
+pas commite : les rapports ne vivent pas dans l'arbre").
 
-Tri principal : par extract (A→E), secondaire par WER croissant, tertiaire par
-motor. Les colonnes affichées :
+Usage :
+    # Vers stdout :
+    python bake_report.py --bank runs/bake_bank.json
 
-| extract | motor | seed | wer | rtf | vram_mb | duration_s | fidelity | consistent | ts |
+    # Vers un fichier :
+    python bake_report.py --bank runs/bake_bank.json --out runs/bake-report.md
 
-Le rapport **n'est pas commité** (décision ai-01 sur #19695, 2026-10-07) :
-ce script sert à la lecture et à la pré-UAT gate, pas à l'archivage git.
+    # Avec tri par RTF au lieu de WER :
+    python bake_report.py --bank runs/bake_bank.json --sort rtf
+
+    # Filtre par moteur :
+    python bake_report.py --bank runs/bake_bank.json --motor chatterbox_mtl_v3
 """
 from __future__ import annotations
 
@@ -18,100 +24,137 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
-PROSODY_LAB_ROOT = Path(__file__).resolve().parent
+THIS_DIR = Path(__file__).resolve().parent
+SCHEMA_VERSION = "v1"
 
 
-def _load_bank(bank_path: Path) -> list[dict]:
-    if not bank_path.exists():
+def load_bank(path: Path) -> list[dict]:
+    if not path.exists():
         return []
-    records = []
-    with open(bank_path, encoding="utf-8") as f:
-        for ln in f:
-            ln = ln.strip()
-            if not ln:
-                continue
-            try:
-                records.append(json.loads(ln))
-            except json.JSONDecodeError as e:
-                print(f"Ligne invalide ignorée : {e}", file=sys.stderr)
-    return records
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, list):
+        raise ValueError(f"bank root doit etre une liste JSON, got {type(data).__name__}")
+    return data
 
 
-def _fidelity(rec: dict) -> str:
-    """Synthèse des champs de fidélité (gate #17586)."""
-    add = rec.get("fidelity_added_words")
-    om = rec.get("fidelity_omitted_segments_3plus")
-    if add is None and om is None:
-        return "n/a"
-    bits = []
-    if add is not None:
-        bits.append(f"+{add}" if add > 0 else "0")
-    if om is not None:
-        bits.append(f"-{om}" if om > 0 else "0")
-    return "/".join(bits)
-
-
-def _fmt_num(v, prec: int = 3) -> str:
+def fmt_wer(v: Any) -> str:
     if v is None:
         return "—"
-    if isinstance(v, float):
-        return f"{v:.{prec}f}"
-    return str(v)
+    return f"{v * 100:.2f} %"
 
 
-def _fmt_wer(v) -> str:
+def fmt_num(v: Any, unit: str = "") -> str:
     if v is None:
         return "—"
-    return f"{v * 100:.1f}%"
+    return f"{v}{unit}"
 
 
-def render_markdown(records: list[dict]) -> str:
-    records = sorted(records, key=lambda r: (
-        r.get("extract", ""),
-        r.get("wer") if r.get("wer") is not None else 1.0,
-        r.get("motor", ""),
-    ))
-    out = ["# Bake Bank — tableau de lecture",
-           "",
-           f"_Lignes : {len(records)}_",
-           "",
-           "| extract | motor | seed | wer | rtf | vram_mb | duration_s | fidelity | consistent | ts |",
-           "|---|---|---|---|---|---|---|---|---|---|"]
-    for r in records:
-        out.append(
-            f"| {r.get('extract','—')} "
-            f"| {r.get('motor','—')} "
-            f"| {r.get('seed') if r.get('seed') is not None else '—'} "
-            f"| {_fmt_wer(r.get('wer'))} "
-            f"| {_fmt_num(r.get('rtf'), 3)} "
-            f"| {_fmt_num(r.get('vram_mb'), 0) if r.get('vram_mb') is not None else '—'} "
-            f"| {_fmt_num(r.get('duration_s'), 1)} "
-            f"| {_fidelity(r)} "
-            f"| {r.get('voice_consistent') if r.get('voice_consistent') is not None else '—'} "
-            f"| {r.get('ts','—')} |"
+def render(bank: list[dict], sort_key: str = "wer", motor_filter: str | None = None) -> str:
+    rows = list(bank)
+    if motor_filter:
+        rows = [r for r in rows if r.get("motor") == motor_filter]
+
+    # Tri : nulls en fin. Les cles numeriques se trient par valeur ; les cles
+    # textuelles (ex. `ts`, ISO-8601) lexicographiquement, ce qui est l'ordre
+    # chronologique pour ce format. Appliquer `float()` a toutes les cles
+    # levait `ValueError` des que `sort_key='ts'`.
+    def sortkey(r: dict) -> tuple[int, float, str]:
+        v = r.get(sort_key)
+        if v is None:
+            return (1, 0.0, "")
+        if isinstance(v, bool) or not isinstance(v, (int, float)):
+            return (0, 0.0, str(v))
+        return (0, float(v), "")
+
+    rows.sort(key=sortkey)
+
+    if not rows:
+        return f"# Banc TTS -- vide\n\nAucun run dans le banc (filtre motor={motor_filter!r}).\n"
+
+    lines: list[str] = []
+    n = len(rows)
+    n_with_wer = sum(1 for r in rows if r.get("wer") is not None)
+    n_moteurs = len({r.get("motor") for r in rows if r.get("motor")})
+    n_extracts = len({(r.get("motor"), r.get("extract")) for r in rows if r.get("motor") and r.get("extract")})
+
+    lines.append("# Banc de référence TTS -- rapport")
+    lines.append("")
+    lines.append(f"- **{n}** run(s) cumulé(s), **{n_with_wer}** avec WER mesuré")
+    lines.append(f"- **{n_moteurs}** moteur(s), **{n_extracts}** couple(s) (moteur, extract)")
+    lines.append(f"- Tri : `{sort_key}` (null en fin)")
+    if motor_filter:
+        lines.append(f"- Filtre moteur : `{motor_filter}`")
+    lines.append("")
+
+    # Tableau principal
+    header_cols = [
+        "Moteur", "Extract", "Seed", "Date",
+        "WER", "RTF", "VRAM (MB)", "Durée (s)",
+        "Voice stable", "Hallu/100syl", "Omissions", "ASR",
+    ]
+    lines.append("| " + " | ".join(header_cols) + " |")
+    lines.append("| " + " | ".join(["---"] * len(header_cols)) + " |")
+
+    for r in rows:
+        motor = r.get("motor", "—")
+        extract = r.get("extract", "—")
+        seed = r.get("seed", "—")
+        ts = (r.get("ts") or "—")[:10]
+        wer = fmt_wer(r.get("wer"))
+        rtf = fmt_num(r.get("rtf"))
+        vram = fmt_num(r.get("vram_mb"))
+        dur = fmt_num(r.get("duration_s"), "s")
+        voice = r.get("voice_stable")
+        voice_s = "✓" if voice is True else ("✗" if voice is False else "—")
+        hallu = fmt_num(r.get("hallu_per_100_syl"))
+        omis = fmt_num(r.get("omitted_segments"))
+        asr_models = r.get("asr_models") or []
+        asr_s = ", ".join(asr_models) if asr_models else "—"
+        lines.append(
+            f"| {motor} | {extract} | {seed} | {ts} "
+            f"| {wer} | {rtf} | {vram} | {dur} "
+            f"| {voice_s} | {hallu} | {omis} | {asr_s} |"
         )
-    return "\n".join(out) + "\n"
+
+    lines.append("")
+    # Notes
+    notes_presentes = [r for r in rows if r.get("notes")]
+    if notes_presentes:
+        lines.append("## Notes par run")
+        lines.append("")
+        for r in notes_presentes:
+            label = f"{r.get('motor', '?')}/{r.get('extract', '?')}/seed={r.get('seed', '?')}"
+            lines.append(f"- **{label}** : {r['notes']}")
+        lines.append("")
+
+    return "\n".join(lines)
 
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--bank", required=True, help="Banc JSONL.")
-    p.add_argument("--out", default=None,
-                   help="Sortie (stdout par défaut).")
+    p.add_argument("--bank", type=Path, required=True, help="Chemin du fichier banc JSON")
+    p.add_argument("--out", type=Path, default=None, help="Fichier de sortie (default: stdout)")
+    p.add_argument("--sort", default="wer", choices=["wer", "rtf", "duration_s", "ts"],
+                   help="Cle de tri (default: wer)")
+    p.add_argument("--motor", default=None, help="Filtre moteur (snake_case)")
     args = p.parse_args()
 
-    bank_path = Path(args.bank)
-    records = _load_bank(bank_path)
-    md = render_markdown(records)
-
+    bank = load_bank(args.bank)
+    md = render(bank, sort_key=args.sort, motor_filter=args.motor)
     if args.out:
-        out_path = Path(args.out)
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(out_path, "w", encoding="utf-8") as f:
-            f.write(md)
-        print(f"Rapport écrit : {out_path} ({len(records)} lignes)")
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(md, encoding="utf-8")
+        print(f"Rapport ecrit: {args.out}", file=sys.stderr)
     else:
+        # Le rapport porte des accents et des glyphes ✓/✗ : un stdout PIPE prend
+        # sinon l'encodage de la locale (cp1252 sous Windows) et emet 0xe9 la ou
+        # un lecteur UTF-8 attend une sequence valide -- tout consommateur qui
+        # decode en UTF-8 echoue. La branche --out ci-dessus est deja explicite ;
+        # celle-ci l'est desormais aussi, sur toutes les plateformes.
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8")
         sys.stdout.write(md)
     return 0
 

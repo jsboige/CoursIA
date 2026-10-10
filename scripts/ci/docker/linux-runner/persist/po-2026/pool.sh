@@ -20,6 +20,60 @@ LOCK="$BASE/pool.lock"
 TOOLCACHE_BASE="$BASE/toolcache"
 export RUNNER_TOOL_CACHE="${RUNNER_TOOL_CACHE:-$TOOLCACHE_BASE/default}"
 mkdir -p "$BASE"
+
+# --- Mint du registration token, et sonde testable (POOL_PROBE) --------------
+# Ce bloc vit AVANT la redirection vers pool.log et AVANT le verrou de singleton :
+# une sonde lancee pendant que le pool tourne serait sinon rejetee par
+# « pool deja actif » avant d'avoir exerce ce qu'elle mesure. La sonde n'ouvre
+# aucun slot et n'ecrit rien hors de son propre stdout/stderr.
+MINT_ATTEMPTS="${MINT_ATTEMPTS:-4}"
+
+# mint_token — registration token, avec discrimination transitoire / terminal.
+# Porte au pool NATIF la doctrine que le superviseur Docker a recue par #15154
+# (#16086 pour la classification, #19597 pour le compte nomme) : 4xx hors 408 =
+# terminal, reseau / 5xx = retry. Le pool natif ne l'avait jamais recue.
+#
+# Mesure du 2026-10-07 sur pool.log (310 echecs depuis le 28/09, tous slots) :
+#   - 305 precedes d'un `UtilAcceptVsock:271: accept4 failed 110` — ETIMEDOUT du
+#     canal d'interop WSL -> gh.exe, transitoire par nature ;
+#   - 5 restants : reponses tronquees (`unexpected EOF`, `unexpected end of JSON
+#     input`) et un crash de gh.exe cote Windows — transitoires aussi.
+# AUCUN n'etait structurel. La forme mono-coup rendait pourtant le slot au tick
+# suivant du superviseur (30 s) a chaque hoquet : 247 cycles de slot perdus dans
+# la seule fenetre 05/10 23h -> 06/10 02h — et le log ne nommait pas la cause.
+mint_token() {
+  local attempt=1 out tok cause
+  while :; do
+    out="$(gh.exe api -X POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>&1)"
+    # Un registration token est une ligne alphanumerique d'au moins 20 caracteres ;
+    # toute autre sortie est un message d'erreur (ou du vide — interop muette).
+    tok="$(printf '%s' "$out" | tr -d '\r' | grep -m1 -oE '^[A-Za-z0-9]{20,}$')"
+    if [ -n "$tok" ]; then printf '%s' "$tok"; return 0; fi
+    cause="$(printf '%s' "$out" | tr '\n' ' ' | cut -c1-200)"
+    [ -n "$cause" ] || cause="<sortie vide : interop WSL->gh.exe muette>"
+    # Cause structurelle : le compte n'a pas le droit sur les endpoints runners.
+    # Ni le retry ni l'attente ne la levent (#15154) — terminal immediat.
+    if printf '%s' "$out" | grep -qE 'HTTP 40[134]|must have repository|Resource not accessible|Bad credentials'; then
+      echo "$(date -Is) mint token TERMINAL (droits du compte) — $cause"
+      return 1
+    fi
+    if [ "$attempt" -ge "$MINT_ATTEMPTS" ]; then
+      echo "$(date -Is) mint token epuise apres $MINT_ATTEMPTS tentatives (transitoire) — $cause"
+      return 1
+    fi
+    echo "$(date -Is) mint token transitoire (tentative $attempt/$MINT_ATTEMPTS) — $cause ; essai suivant dans $((attempt * 2))s"
+    sleep $((attempt * 2))
+    attempt=$((attempt + 1))
+  done
+}
+
+if [ -n "${POOL_PROBE:-}" ]; then
+  case "$POOL_PROBE" in
+    mint-token) mint_token; rc=$?; echo "$(date -Is) PROBE mint-token rc=$rc"; exit $rc ;;
+    *) echo "$(date -Is) PROBE inconnue: $POOL_PROBE"; exit 2 ;;
+  esac
+fi
+
 exec >>"$BASE/pool.log" 2>&1
 
 # Singleton: la tâche planifiee a RestartCount=3 — jamais deux superviseurs
@@ -38,8 +92,8 @@ export PIP_BREAK_SYSTEM_PACKAGES=1
 # PATH (Q6, 2026-09-23, reserve secretaire c.37 + mesure /proc/<pid>/environ) :
 # la relance du superviseur depuis une session interactive (fenetre Q5) herite le
 # PATH de CETTE session — ~/.local/bin ABSENT des listeners. Le pool rend son
-# contrat independant du contexte de lancement : ~/.local/bin en tete (gh 2.90.0
-# et python y sont poses).
+# contrat independant du contexte de lancement : ~/.local/bin en tete (gh 2.99.0
+# aligne sur l'epingle image le 2026-10-08, et python y sont poses).
 export PATH="$HOME/.local/bin:$PATH"
 
 # Garde anti-stall HTTPS (#18225, 2026-09-28) : un fetch stallé (zero octet, connexion
@@ -49,8 +103,6 @@ export PATH="$HOME/.local/bin:$PATH"
 # Miroir en ~/.gitconfig (pose le 28/09) — l'env reste le porteur durable du contrat.
 export GIT_HTTP_LOW_SPEED_LIMIT=1024
 export GIT_HTTP_LOW_SPEED_TIME=90
-
-mint_token() { gh.exe api -X POST "repos/$REPO/actions/runners/registration-token" --jq .token; }
 
 # Contrat de l'image, volet BINAIRES. Le pool ne telecharge PAS `gh` (l'image l'epingle par SHA-256 :
 # un telechargement non verifie serait un maillon de supply chain pour rien) — il cree le seul lien
@@ -64,6 +116,11 @@ ensure_host_contract() {
   [ -x "$bin/python" ] || ln -sf "$(command -v python3)" "$bin/python"
   [ -x "$bin/python" ] || { echo "$(date -Is) CONTRAT: python nu ABSENT de $bin"; rc=1; }
   [ -x "$bin/gh" ]     || { echo "$(date -Is) CONTRAT: gh ABSENT de $bin — poser la release Linux officielle (l'image epingle 2.99.0+SHA256) ; sans lui des gardes sortent en exit 0 SANS poster"; rc=1; }
+  # « present » n'est pas « conforme » (#17407, divergence 2.90.0 du 22/09, corrigee
+  # le 2026-10-08) : le pin de version vit dans le Dockerfile (l.73-74, GH_VERSION +
+  # GH_SHA256) ; le gate crie sur toute derive pour qu'elle reste nommee, pas muette.
+  gh_ver="$( "$bin/gh" --version 2>/dev/null | head -1 | awk '{print $3}' )"
+  [ "${gh_ver:-}" = "2.99.0" ] || { echo "$(date -Is) CONTRAT: gh ${gh_ver:-INDETERMINABLE} != 2.99.0 epingle image (Dockerfile l.73-74) — reposer la release verifiee dans $bin"; rc=1; }
   [ -n "${PIP_BREAK_SYSTEM_PACKAGES:-}" ] || { echo "$(date -Is) CONTRAT: PIP_BREAK_SYSTEM_PACKAGES non pose"; rc=1; }
   command -v gh >/dev/null 2>&1 || { echo "$(date -Is) CONTRAT: gh INVISIBLE du PATH du pool (relance depuis session interactive ?) — existence du fichier ne suffit pas (reserve #17406 c.5784716255)"; rc=1; }
   command -v patchelf >/dev/null 2>&1 || { echo "$(date -Is) CONTRAT: patchelf INVISIBLE ($bin/patchelf) — re-patch RUNPATH du toolcache impossible (ASK secretary c.37 2026-09-23)"; rc=1; }
@@ -128,6 +185,18 @@ validate_keep() { # $1 = keep dir — rc=0 si l'arbre est materialise et coheren
   local repo="$1/CoursIA/CoursIA"
   [ -d "$repo/.git" ] || return 1
   git -C "$repo" rev-parse --git-dir >/dev/null 2>&1 || return 1
+  # (c) residus d'un transfert interrompu (#18312, mesure 2026-10-08) : un lock ou un
+  # tmp_pack present ICI est perime par construction -- le keep est parque entre deux
+  # jobs, aucun git ne le tient. Les purger rend l'arbre reutilisable SANS re-clone
+  # (objectif #18225 : 5,49 GiB), la ou les ecarter paierait ce prix a chaque hoquet.
+  # Mesure : l'index.lock laisse par un fetch avorte empechait `update-index` de (b)
+  # de s'ecrire -- silencieusement, ses erreurs etant redirigees.
+  find "$repo/.git" \( -name '*.lock' -o -name 'tmp_pack*' \) -delete 2>/dev/null
+  # (d) arbre NON MATERIALISE (#18312) : HEAD doit resoudre un commit. Un clone
+  # avorte laisse un depot vide, branche unborn -- et (a)/(b) ne le voient pas, car
+  # `status --porcelain` d'un index vide sur un arbre vide est PROPRE. Mesure du
+  # 2026-10-08 : ce cas rendait rc=0 (accepte comme sain) sur les slots 4..8.
+  git -C "$repo" rev-parse --verify -q HEAD >/dev/null || return 1
   # (a) residu skip-worktree
   git -C "$repo" ls-files -v 2>/dev/null | grep -q '^S' && return 1
   # (b) index menteur : le refresh stat rend visibles les fichiers trackes absents

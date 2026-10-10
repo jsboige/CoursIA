@@ -19,11 +19,12 @@ concurrency:
 jobs:
   guard:
     name: testpaths vs CI coverage
-    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
-    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
-    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
-    # fork n'atteint le runner. Retour arriere = revert de la PR.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 2 (#17397) : garde Python pur (testpaths coverage), vehicule
+    # d'identite absorbe par fast-lane (cf. entete du fichier l. 3-8). Aucun
+    # secret, aucun GPU/CUDA/Lean/.NET. La garde same-repo ci-dessous est
+    # conservee telle quelle -- seul le runner change. Sortie de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 5
     steps:

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 116
-breakdown: Python=61, projects=49, ML-Training-Pipeline=4, kelly_lean=2
-maturity: BETA=66, DRAFT=38, ALPHA=11, TEMPLATE=1
+pedagogical_count: 120
+breakdown: Python=61, projects=49, kelly_lean=6, ML-Training-Pipeline=4
+maturity: BETA=70, DRAFT=38, ALPHA=11, TEMPLATE=1
 -->
 
 > **Note éditoriale — counts kernels par sous-série** : Le marqueur CATALOG-STATUS agrégé ci-dessus reste **autoritatif** pour la décomposition par **sous-série** (Python / projects / ML-Training-Pipeline / kelly_lean). En revanche, pour les décomptes par **kernel** (Python vs Lean 4) **au sein** d'une sous-série — c'est-à-dire la répartition technique par interpréteur —, **ce README reste autoritatif** car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé. Cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks :
@@ -480,7 +480,7 @@ Après completion de cette série, vous maîtriserez :
 - 🎯 Stratégie momentum multi-actifs avec risk management
 - 🤖 Bot ML directionnel avec Random Forest + XGBoost
 - 🧠 Stratégie LSTM pour prédiction prix court-terme
-- 💡 LLM-augmented strategy combinant GPT-4 + indicateurs
+- 💡 LLM-augmented strategy combinant GPT-5.6 + indicateurs
 - 🏭 Déploiement production en paper trading
 
 ---
@@ -585,7 +585,7 @@ Les sujets de rattrapage 2024 et 2025 (avec corrigés, sources LaTeX) vivent dan
 | [RL](../RL/README.md) | Apprentissage par renforcement | Les stratégies RL (QC-Py-25 DQN/PPO, QC-Py-33 PPO, QC-Py-34 SAC/A2C, QC-Py-35 portfolio) prolongent les fondamentaux RL de cette série |
 | [Probas](../Probas/README.md) | Programmation probabiliste | La modélisation bayésienne des rendements et la gestion du risque s'appuient sur les modèles probabilistes de la série Probas |
 | [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparamètres de stratégies (grid search, bayésienne) rejoint les techniques de recherche |
-| [ML](../ML/ML.Net/README.md) | Séries temporelles ML.NET | L'analyse technique (QC-Py-11 Technical-Indicators) partage les mêmes fondements que le forecasting par SSA (ML-5) |
+| [ML](../ML/ML.Net/README.md) | Séries temporelles ML.NET | L'analyse technique (QC-Py-11 Technical-Indicators) partage les mêmes fondements que le forecasting par SSA (ML-05) |
 | **Lean 4 (kelly_lean)** | **Preuves formelles** | **Le théorème de Kelly est prouvé formellement dans `kelly_lean/` (Mathlib, toolchain v4.31.0-rc1) — fondement du position sizing enseigné dans QC-Py-10** |
 
 ---

@@ -488,22 +488,38 @@ def _normalise_readme_target(base: Path, href: str) -> str:
     return posixpath.normpath((base / href).as_posix())
 
 
-def readme_link_violations() -> list[tuple[str, str, str]]:
-    """Return [(readme, class, detail)] for render-list-vs-README drift.
+def readme_link_violations(
+    pr_added_files: set[str] | None = None,
+) -> list[tuple[str, str, str]]:
+    """Return [(readme, class, detail)] for README link drift.
 
-    Classes:
-      STALE_LINK  -- the .ipynb target IS in the render list: the README must
-                     link the .html sibling instead (the raw .ipynb 404s on
-                     Pages -- the #13025 defect).
-      BROKEN      -- the .ipynb target does not exist on disk (dead link).
-      DEAD_RENDER -- a .html link names an existing notebook excluded from the
-                     render list, so the rendered page will not exist.
+    Classes (post-#18911 arbitration, 2026-10-09):
+      HTML_404  -- a relative `.html` link whose target is NOT committed in the
+                   repository: github.com serves a 404, because the Quarto
+                   renders live only on the Pages deployment and are never
+                   committed to the tree. This is the class the guard protects.
+      BROKEN    -- a `.ipynb` link whose target does not exist on disk (a dead
+                   link on github.com too).
+
+    `.ipynb` links are NOT violations: the reference navigation is github.com,
+    where a README that links a notebook in `.ipynb` opens the notebook viewer.
+    The site is the component that adapts — Quarto rewrites project-target
+    `.ipynb` links to their render at build time (gesture 3 of the same
+    arbitration). The former `STALE_LINK` class (`.ipynb` target listed in
+    project.render) and `DEAD_RENDER` are retired: `DEAD_RENDER` is subsumed by
+    `HTML_404` (a `.html` link to a notebook that is not rendered is a 404 on
+    github.com like any other uncommitted `.html`).
+
     UNRENDERED targets (file exists but excluded from the render list by the
     #11451 `---` guard or by an exclude marker) are NOT violations: they are
     the documented raw-source population (reported by --check-readme-links as
-    warnings so the sweep stays honest, but the fix is notebook-side).
+    a tally so the sweep stays honest, but the fix is notebook-side).
+
+    ``pr_added_files`` (#19631) is retained for the CLI/dumper contract: it no
+    longer affects the violation set (the PR-added-notebook false positive was
+    specific to the retired `STALE_LINK` class), only the informational
+    `unrendered` tally in :func:`report_readme_links`.
     """
-    rendered = set(git_tracked_notebooks())
     readmes = [p for p in git_tracked_readmes()
                if any(p.startswith(t) for t in NOTEBOOK_SUBTREES)]
     out: list[tuple[str, str, str]] = []
@@ -515,25 +531,37 @@ def readme_link_violations() -> list[tuple[str, str, str]]:
             if href.startswith(("http://", "https://", "#", "mailto:")):
                 continue  # absolute/anchor links are out of scope
             norm = _normalise_readme_target(base, href)
-            if norm in rendered:
-                out.append((rel_readme, "STALE_LINK", href))
-            elif not (REPO_ROOT / norm).exists():
+            if not (REPO_ROOT / norm).exists():
                 out.append((rel_readme, "BROKEN", href))
-            # else: UNRENDERED -- raw-source population, not a violation
+            # else: valid raw-source link -- the github.com reference form
         for m in _HTML_LINK_RE.finditer(text):
             href = m.group(1)
             if href.startswith(("http://", "https://", "#", "mailto:")):
                 continue
-            source_href = href.removesuffix(".html") + ".ipynb"
-            source = _normalise_readme_target(base, source_href)
-            if (REPO_ROOT / source).exists() and source not in rendered:
-                out.append((rel_readme, "DEAD_RENDER", href))
+            norm = _normalise_readme_target(base, href)
+            if not (REPO_ROOT / norm).exists():
+                out.append((rel_readme, "HTML_404", href))
     return out
 
 
-def report_readme_links() -> int:
-    """Print the README-link audit and exit 1 on STALE_LINK/BROKEN (#13025)."""
+def report_readme_links(pr_added_files: set[str] | None = None) -> int:
+    """Print the README-link audit and exit 1 on HTML_404/BROKEN.
+
+    Violations (post-#18911 arbitration): an `.html` link whose render is not
+    committed (404 on github.com), and a `.ipynb` link whose target is absent.
+    A `.ipynb` link to an existing notebook is valid, rendered or not.
+
+    ``pr_added_files`` (#19631) is retained for the CLI/dumper contract; it no
+    longer changes the violation set, only the ``unrendered`` tally below.
+    """
     rendered = set(git_tracked_notebooks())
+    if pr_added_files:
+        # A notebook added by this PR has no Pages render yet, so counting it
+        # as rendered would understate the raw-source tally below. This feeds
+        # that tally only: ``readme_link_violations`` no longer reads
+        # ``pr_added_files`` (its only consumer was the retired STALE_LINK
+        # class), so the violation set is unchanged by this branch.
+        rendered -= pr_added_files
     readmes = [p for p in git_tracked_readmes()
                if any(p.startswith(t) for t in NOTEBOOK_SUBTREES)]
     unrendered = 0
@@ -547,7 +575,7 @@ def report_readme_links() -> int:
             norm = _normalise_readme_target(base, href)
             if norm not in rendered and (REPO_ROOT / norm).exists():
                 unrendered += 1
-    violations = readme_link_violations()
+    violations = readme_link_violations(pr_added_files=pr_added_files)
     for rel_readme, cls, href in violations:
         print(f"::error::{cls} {rel_readme} -> {href}", file=sys.stderr)
     n_readmes = len(readmes)
@@ -557,19 +585,43 @@ def report_readme_links() -> int:
     return 1 if violations else 0
 
 
+def _load_added_files(path: str | None) -> set[str]:
+    """Read PR-added files list (one POSIX path per line, blank lines ignored).
+
+    Used by ``--pr-added-files`` (#19631) so the readme-ipynb-links-guard
+    workflow can hand the scanner the set of files added by the PR, so the
+    base-vs-head delta collapses to 0 on links targeting PR-added notebooks
+    (the founding case : CB-00 README -> CB-00.ipynb added by PR #19310).
+    """
+    if not path:
+        return set()
+    added = set()
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            p = line.strip()
+            if p:
+                added.add(p)
+    return added
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
                     help="exit 1 if _quarto.yml render list is stale")
     ap.add_argument("--check-readme-links", action="store_true",
-                    help="exit 1 if a rendered-subtree README links a raw "
-                         ".ipynb whose render exists (STALE_LINK), a missing "
-                         "source (BROKEN), or a .html page whose notebook is "
-                         "not rendered (DEAD_RENDER) -- regle #13025")
+                    help="exit 1 if a rendered-subtree README links a .html "
+                         "whose target is not committed (HTML_404, a 404 on "
+                         "github.com) or a .ipynb whose source is missing "
+                         "(BROKEN). A .ipynb link is valid (#18911)")
+    ap.add_argument("--pr-added-files", default=None, metavar="PATH",
+                    help="file listing PR-added paths (one per line, POSIX). "
+                         "Retained for the CLI/dumper contract (#19631); since "
+                         "#18911 it no longer changes the violation set -- only "
+                         "the informational `unrendered` tally.")
     args = ap.parse_args()
 
     if args.check_readme_links:
-        return report_readme_links()
+        return report_readme_links(pr_added_files=_load_added_files(args.pr_added_files))
 
     new_block = build_render_block()
     current = QUARTO_YML.read_text(encoding="utf-8")

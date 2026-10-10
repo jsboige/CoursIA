@@ -6704,3 +6704,323 @@ def test_reconciliation_release_closes_the_subject_lane_not_the_cited_one_15918(
     assert "myia-po-2023:CoursIA" not in active, (
         "the cited lane never had a claim here -- the misattributed close must not open one"
     )
+
+
+# --- IMPLICIT occupation, issue mode (#14300) --------------------------------
+#
+# Le pont exige par le body : une PR OUVERTE d'une autre lane qui REFERENCE
+# l'issue sans qu'aucun [CLAIMED] n'ait ete pose doit rendre un verdict
+# DISTINCT (ni CLEAR ni BLOCKED), en NOMMANT les chemins de la PR trouvee
+# (exigence 2). Le controle positif ci-dessous est l'incident #14259 lui-meme
+# -- exigence 3 du body : un jeu de motifs se valide par ses faux negatifs.
+
+_PR_14293 = {  # l'incident : 79+/3- sur supervise.sh, lane po-2026, zero marqueur
+    "number": 14293,
+    "title": "feat(#14259): supervision renforcee",
+    "headRefName": "feature/14259-supervise",
+    "body": ("Grain: MED/tooling — lane myia-po-2026:CoursIA — prev: LIGHT/docs #1\n\n"
+             "See #14259"),
+    "files": [{"path": "scripts/ci/docker/linux-runner/supervise.sh"},
+              {"path": "test_supervise_guards.sh"}],
+    "additions": 79,
+    "deletions": 3,
+}
+
+
+def test_implicit_positive_control_14259(monkeypatch, capsys):
+    # EXIGENCE 3 du body #14300 : le cas fondateur, verbatim.
+    # Issue 14259 sans AUCUN marqueur ; PR #14293 ouverte, autre lane,
+    # reference l'issue ; l'appelant est po-2024 (celui qui a lu CLEAR le
+    # 2026-09-02T13:45Z). Attendu : IMPLICIT a exit 3, chemins nommes.
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
+    p = payload(comment("discussion sans marqueur", "2026-09-02T10:00:00Z"),
+                number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 3
+    captured = capsys.readouterr()
+    assert "IMPLICIT:" in captured.out
+    assert "myia-po-2026:CoursIA" in captured.out
+    assert "#14293" in captured.out
+    assert "79+/3-" in captured.out
+    # exigence 2 : les CHEMINS de la PR sont nommes (pas seulement l'issue)
+    assert "scripts/ci/docker/linux-runner/supervise.sh" in captured.out
+    assert "Traiter comme occupee" in captured.out
+    assert "CLEAR" not in captured.out
+    # la cle JSON porte le finding pour les consommateurs machine (picker)
+    brace = captured.out.find("{")
+    data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
+    assert data["implicit_occupation"][0]["number"] == 14293
+
+
+def test_implicit_absent_when_no_pr_references(monkeypatch, capsys):
+    # Faux negatif de reference : une PR ouverte d'une autre lane qui ne
+    # reference PAS l'issue ne doit PAS declencher IMPLICIT.
+    other = dict(_PR_14293, body="Grain: x — lane myia-po-2027:CoursIA\n\nSee #9999")
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [other])
+    p = payload(number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "IMPLICIT" not in captured.out
+    assert "CLEAR" in captured.out
+
+
+def test_implicit_not_run_when_caller_owns_the_grain(monkeypatch, capsys):
+    # Non-regression review 5429946072 (lettre #14300 : « sans qu'aucun
+    # [CLAIMED] n'ait ete pose ») : la jambe ne tourne que si le registre
+    # ne porte AUCUN claim actif -- ni d'une autre lane, ni de l'APPELANT.
+    # Une lane qui a pose son marqueur et croise une PR tierce sur l'issue
+    # reste OWNED_BY_ME (exit 0), jamais IMPLICIT (exit 3) : sinon le
+    # message « poser le marqueur » ne leverait rien et le picker retirait
+    # a la lane son propre grain.
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
+    p = payload(comment("[CLAIMED] lane myia-po-2024:CoursIA -- supervise",
+                        "2026-09-02T10:00:00Z"),
+                number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "IMPLICIT" not in captured.out
+    brace = captured.out.find("{")
+    data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
+    assert data["my_active_claim"] is True
+    assert data["implicit_occupation"] == []
+
+
+def test_implicit_skips_own_lane_pr(monkeypatch, capsys):
+    # Une lane ne collisionne pas avec elle-meme : la PR de MA lane qui
+    # reference l'issue est ma livraison en cours, pas une occupation.
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
+    p = payload(number=14259)
+    rc = clc._run_check(p, "myia-po-2026:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 0
+    assert "IMPLICIT" not in capsys.readouterr().out
+
+
+def test_implicit_not_run_on_posting_path(monkeypatch, capsys):
+    # `--claim` appelle _run_check SANS la jambe (check_open_pr_paths=False,
+    # #16570) : poster le marqueur EST le geste de deconfliction, il ne doit
+    # jamais etre refuse par la jambe qu'il vient lever.
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
+    p = payload(number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=False)
+    assert rc == 0
+    assert "IMPLICIT" not in capsys.readouterr().out
+
+
+def test_implicit_gh_failure_degrades_to_clear_with_warn(monkeypatch, capsys):
+    # Fail-open SIGNALE (#16570, meme posture) : une jambe qui ne peut pas
+    # mesurer ne fabrique pas de verdict -- WARN + CLEAR, jamais un 3 muet.
+    def _boom():
+        raise RuntimeError("gh pr list --state open failed (exit 1): rate limit")
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", _boom)
+    p = payload(number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "WARN" in captured.err and "IMPLICIT" in captured.err
+    assert "CLEAR" in captured.out
+
+
+def test_implicit_skipped_when_a_claim_blocks(monkeypatch, capsys):
+    # Un claim bloquant SUBSUME l'occupation implicite (et epargne le gh
+    # round-trip aux sondes du picker) : la jambe ne tourne pas.
+    calls = []
+
+    def _spy():
+        calls.append(1)
+        return [_PR_14293]
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", _spy)
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA-2 -- Taches 1-2 (CPU).",
+        "2026-08-09T21:19:00Z"), number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 2  # NOT_SCOPED (l'appelant n'a pas declare de scope)
+    captured = capsys.readouterr()
+    assert "IMPLICIT" not in captured.out
+    assert calls == []  # la jambe n'a meme pas ete payee
+
+
+def test_implicit_multiple_prs_all_named(monkeypatch, capsys):
+    # Deux lanes, deux PRs : une ligne IMPLICIT par PR, sortie deterministe
+    # (tri par numero), la cle JSON porte les deux entrees.
+    second = dict(_PR_14293, number=14301, additions=12, deletions=0,
+                  body="Grain: x — lane myia-po-2027:CoursIA\n\nCloses #14259",
+                  files=[{"path": "docs/x.md"}])
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [second, _PR_14293])
+    p = payload(number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 3
+    captured = capsys.readouterr()
+    assert captured.out.count("IMPLICIT:") == 2
+    brace = captured.out.find("{")
+    data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
+    assert [e["number"] for e in data["implicit_occupation"]] == [14293, 14301]
+
+
+# --- #19971 : payload JSON comme corps -- lecture defensive du transport ------
+#
+# La classe de transport #16866/#17270 publie parfois le payload COMPLET
+# (`{"body": "..."}`) comme corps du commentaire. Le marqueur `[CLAIMED]` vit
+# alors dans une VALEUR de chaine, precede de `  "body": "`, ses sauts de ligne
+# echappes en `\n` litteraux : `_MARKER_RE` (ancre `(?m)^`) ne matche rien,
+# l'organe rend CLEAR, et un worker qui suit la regle prend un grain occupe.
+#
+# Les trois corps ci-dessous sont les corps REELS des commentaires mesures
+# (recopies verbatim, id + horodatage serveur cites) -- pas des corps inventes
+# qui auraient la bonne forme sans avoir eu le defaut.
+
+# https://github.com/jsboige/CoursIA/issues/19727#issuecomment-6048058597
+# (po-2024:CoursIA-2, 2026-10-07T22:22:10Z)
+_PAYLOAD_19727 = (
+    '{\n  "body": "[CLAIMED] lane myia-po-2024:CoursIA-2 -- deps(slides,#19727):'
+    ' reproduire localement le build Slidev 53 sur un deck, nommer la cause exacte'
+    ' (theme/addon/layout/katex), trancher entre migrer les 19 decks ou epingler'
+    ' <52 avec motif ecrit + issue de suivi. Strategie c.107 : grain MED/docs'
+    ' (contenu adjacent, hors G-VAR-1 deja tenu par DEEP/research-code c.103'
+    ' #19766)."\n}\n'
+)
+
+# https://github.com/jsboige/CoursIA/issues/19796#issuecomment-6048415126
+# (po-2024:CoursIA-2, 2026-10-07T22:47:11Z)
+_PAYLOAD_19796 = (
+    '{\n  "body": "[CLAIMED] lane myia-po-2024:CoursIA-2 -- Origami Wolfram pli 2'
+    ' carnet (DEEP/notebook-python) : ICT-18b Wolframe / 4 classes vs'
+    ' thermodynamique.\\n\\nStrategie c.108 : narrow-cache break dans EPIC #19742'
+    ' (pli 1 DELIVERED c.103, pli 1-bis c.104, pli 2 organ `ict.wolfram_step`'
+    ' livre via PR #19793 OPEN).\\n\\nLe carnet sera developpe sur worktree branche'
+    ' du head de #19793 (organe + carnet sur la meme branche) puis rebase apres'
+    ' merge de #19793. Plancher G-VAR-1 DEEP/CONTENU."\n}\n'
+)
+
+# https://github.com/jsboige/CoursIA/issues/19796#issuecomment-6050609088
+# (po-2023:CoursIA-2, 2026-10-08T01:58:36Z) -- le TEMOIN POSITIF : meme phrase,
+# postee en clair, donc lue avant comme apres le correctif.
+_CLEAR_19796 = (
+    "[CLAIMED] lane myia-po-2023:CoursIA-2 -- paths:"
+    " MyIA.AI.Notebooks/ICT/ICT-18b-WolframClasses-ThermoSignature-Python.ipynb"
+    "\n\nGrain: DEEP/research-code -- prev: DEEP/research-code c.1159 #19843"
+    " (Gorard Lean-34, MED re-qualifié)\n\nPris en releve du pool tapis (picker"
+    " hung Tell c.19246, fallback manuel). Plan : carnet ICT-18b confrontant les"
+    " 4 classes Wolfram (I/II/III/IV) à la signature thermodynamique via"
+    " `ict.wolfram_step` (organe pli 2 #19793) et `ict.time_arrow` (organe"
+    " ICT-18). 4 exercices : génération trajectoires-types, discrimination"
+    " spatiale III vs IV, signature thermodynamique, calibration n_cells/seed."
+    " Verdict attendu : III ~ IV indiscernables sur densité (cf Exo 2 pour la"
+    " discrimination).\n\nC.1 (pas de NotImplementedError, stubs pass/print),"
+    " C.2 (commit AVEC outputs), H.3 (pre-commit execution_count != null).\n"
+)
+
+_ICT_18B = "MyIA.AI.Notebooks/ICT/ICT-18b-WolframClasses-ThermoSignature-Python.ipynb"
+
+
+def test_raw_payload_hides_the_marker_from_line_anchored_regex():
+    """Le mecanisme, epingle : dans le corps BRUT, aucune ligne ne porte le
+    marqueur -- c'est pourquoi le `(?m)^` ne peut pas le voir, et pourquoi le
+    correctif appartient a l'ENTREE (unwrap) et non au filet de detection."""
+    assert clc._MARKER_RE.search(_PAYLOAD_19727) is None
+    assert clc._MARKER_RE.search(_PAYLOAD_19796) is None
+    # le marqueur est pourtant bien present dans le texte -- c'est le parsing
+    # qui echoue, pas la donnee qui manque.
+    assert "[CLAIMED]" in _PAYLOAD_19727
+    assert "[CLAIMED]" in _PAYLOAD_19796
+
+
+def test_unwrap_returns_the_real_body_of_a_trapped_payload():
+    assert clc._unwrap_trapped_body(_PAYLOAD_19727).startswith("[CLAIMED] lane myia-po-2024:CoursIA-2")
+    # les `\n` LITTERAUX du payload deviennent de vrais sauts de ligne
+    unwrapped = clc._unwrap_trapped_body(_PAYLOAD_19796)
+    assert "\n\n" in unwrapped
+    assert "\\n\\n" not in unwrapped
+
+
+def test_unwrap_is_identity_on_a_plain_body():
+    body = _CLEAR_19796
+    assert clc._unwrap_trapped_body(body) == body
+    assert clc._unwrap_trapped_body("") == ""
+    # un corps qui CONTIENT du JSON sans ETRE le payload (prose autour) n'est
+    # pas unwrape : pas de faux positif sur un diagnostic qui cite un payload.
+    prose = 'Le corps publie etait :\n\n```json\n{"body": "x"}\n```\n\nDonc CLEAR.'
+    assert clc._unwrap_trapped_body(prose) == prose
+
+
+def test_trapped_payload_yields_the_claim_event_19727():
+    """Fixture sur le corps REEL de #19727 : la lane et le marqueur sont lus."""
+    ev = clc.parse_claim_event(comment(_PAYLOAD_19727, "2026-10-07T22:22:10Z"))
+    assert ev is not None
+    assert ev.marker == "CLAIMED"
+    assert ev.lane == "myia-po-2024:CoursIA-2"
+
+
+def test_trapped_payload_yields_the_claim_event_19796():
+    ev = clc.parse_claim_event(comment(_PAYLOAD_19796, "2026-10-07T22:47:11Z"))
+    assert ev is not None
+    assert ev.lane == "myia-po-2024:CoursIA-2"
+
+
+def test_trapped_payload_still_feeds_the_paths_clause():
+    """Le corps unwrape alimente AUSSI la clause `paths:` -- sinon un claim
+    scope reduit a epic-wide par accident (#19971 attendu 1)."""
+    trapped = json.dumps({"body": _CLEAR_19796}, ensure_ascii=False)
+    ev = clc.parse_claim_event(comment(trapped, "2026-10-08T01:58:36Z"))
+    assert ev is not None
+    assert ev.lane == "myia-po-2023:CoursIA-2"
+    assert ev.paths == [_ICT_18B]
+
+
+def test_trapped_payload_blocks_an_other_lane_end_to_end(capsys):
+    """Le cas mesure : avant le correctif, l'organe rendait CLEAR (rc=0) sur
+    un grain occupe ; apres, la lane bloquante est nommee (rc=1)."""
+    p = payload(comment(_PAYLOAD_19727, "2026-10-07T22:22:10Z", author="jsboige"),
+                number=19727)
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2", my_paths=["scripts/anything.py"])
+    assert rc == 1
+    captured = capsys.readouterr()
+    assert "BLOCKED" in captured.err
+    assert "myia-po-2024:CoursIA-2" in captured.out
+
+
+def test_trapped_scoped_payload_blocks_with_its_paths_clause(capsys):
+    """Une claim SCOPEE publiee en payload bloque la lane qui edite le fichier
+    couvert, et la clause `paths:` unwrapee apparait dans la sortie."""
+    trapped = json.dumps({"body": _CLEAR_19796}, ensure_ascii=False)
+    p = payload(comment(trapped, "2026-10-08T01:58:36Z"), number=19796)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", my_paths=[_ICT_18B])
+    assert rc == 1
+    captured = capsys.readouterr()
+    assert "BLOCKED" in captured.err
+    assert "myia-po-2023:CoursIA-2" in captured.err
+    assert _ICT_18B in captured.out
+
+
+def test_clear_body_is_the_positive_control():
+    """Temoin positif (#19971 attendu 2) : la MEME phrase postee en clair etait
+    deja couverte -- le correctif ne change pas ce chemin."""
+    p = payload(comment(_CLEAR_19796, "2026-10-08T01:58:36Z"), number=19796)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", my_paths=[_ICT_18B])
+    assert rc == 1
+
+
+def test_payload_without_marker_opens_nothing():
+    """Un payload dont le corps interne ne porte aucun marqueur ne fabrique pas
+    d'evenement : l'unwrap ne cree pas de faux positif."""
+    trapped = json.dumps({"body": "un commentaire ordinaire, sans marqueur."})
+    assert clc.parse_claim_event(comment(trapped, "2026-10-08T02:00:00Z")) is None
+
+
+def test_unwrap_reuses_the_traps_organ_predicate():
+    """Organe-first (#19971 attendu 4) : le predicat n'est pas re-ecrit ici, il
+    est celui de `scripts/ci/check_gh_comment_traps.py`."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+    from check_gh_comment_traps import classify_payload_body  # noqa: PLC0415
+    assert classify_payload_body(_PAYLOAD_19727) is not None
+    assert clc._unwrap_trapped_body(_PAYLOAD_19727) == classify_payload_body(_PAYLOAD_19727)

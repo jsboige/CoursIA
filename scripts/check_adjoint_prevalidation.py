@@ -91,6 +91,32 @@ pull request, then lifting one's own reserve -- expires the dossier the gate
 required, and a pull request blocked solely by a coordinator reserve could never
 be merged without a full adjoint round-trip. A row from any other author, or a
 coordinator row predating the dossier, still expires it.
+
+Modes queue (#16480) -- au-dessus du contrat single-PR, sans le modifier :
+
+    --queue <PRs...>  derive une file de consommation oldest-first, en JSON,
+                      SANS etat persistant : chaque appel relit le plateau.
+                      Verdicts par entree : READY (consommable maintenant) ·
+                      REVIEW_READY (dossier et gardes verts, seule manque la
+                      review qualifiante sur la tete exacte) · DWELL_PENDING
+                      (seul rouge = plancher DWELL non ecoule, ``dwell_until``
+                      porte l'echeance) · BLOCKED (cause nommee : B.0, jambe
+                      rouge hors DWELL, rollup en vol, CHANGES_REQUESTED
+                      recent, campagne gelee, dossier BLOCKED atteste) ·
+                      STALE (mutation du fil apres le dossier, dossier trop
+                      ancien, ou empreinte cassee). Les PR illisibles vont
+                      dans ``unknown`` ; exit 2 uniquement si AUCUNE entree
+                      n'a pu etre derivee.
+    --consume <PR>    revalide UNE candidate a l'instant-T pour un merge
+                      exact-head : relecture fraiche, refus de toute mutation
+                      ou anciennete. Exit 0 ssi READY, sinon 1/2/3 selon la
+                      cause (meme semantique que le mode single-PR).
+
+La queue ne substitue jamais son verdict au 2ter de ``merge_ready``
+(approbation coordinateur au merge) : ``review_qualifying`` est une porte
+informee, l'autorite reste l'organe de merge. Le plancher DWELL se lit sur
+la jambe PR gate vivante via ``merge_dwell.parse_pending_message`` (la forme
+du message vit chez l'emetteur -- jamais de copie locale, #15910).
 """
 
 from __future__ import annotations
@@ -103,15 +129,18 @@ import re
 import subprocess
 import sys
 from dataclasses import dataclass
-from typing import Any
+from datetime import datetime, timezone
+from typing import Any, Sequence
 
 try:
     import gh_identity
     import check_unaddressed_nits
+    import grain_tag
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gh_identity  # type: ignore[no-redef]
     import check_unaddressed_nits  # type: ignore[no-redef]
+    import grain_tag  # type: ignore[no-redef]
 
 # Campagnes gelees par veto user (#17040) : definition PARTAGEE avec
 # merge_ready dans scripts/coordination/frozen_campaigns.py. Ce gate ne peut
@@ -156,8 +185,21 @@ QUALIFYING_LANES = frozenset({
     "myia-po-2027:CoursIA-2",
 })
 # `Grain: <genre> -- lane <machine:workspace>` in the pull request body names the
-# lane that carries the work. Same grammar as scripts/check_lane_claim.py.
-GRAIN_LANE_RE = re.compile(r"Grain:[^\n]*?\blane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)")
+# lane that carries the work. The canonical reader is `grain_tag.extract_lane`,
+# the one `scripts/check_lane_claim.py` uses; the patterns below are `findall`
+# variants of it, kept because the consumers need EVERY marker of a body, not
+# just the first.
+#
+# #15864 (4th variant of the self-block class) -- a sentence period is admitted
+# by the token class (hostnames need it), so `lane myia-po-2023:CoursIA-2.` used
+# to be captured as the lane `myia-po-2023:CoursIA-2.` -- a lane no cluster lane
+# matches. A token can no longer END on a period; periods INSIDE it survive
+# (`Foo.Bar:CoursIA-2` is unchanged), so the constraint only removes prose
+# punctuation. Measured on #14549, 2026-10-09: `delivering_lanes` returned
+# `myia-po-2023:CoursIA-2.`, and a lane named ONLY under the punctuated form is
+# absent from the set -- its own self-attesting dossier then passes the gate.
+LANE_TOKEN = r"[A-Za-z0-9_.-]*[A-Za-z0-9_-]:[A-Za-z0-9_.-]*[A-Za-z0-9_-]"
+GRAIN_LANE_RE = re.compile(r"Grain:[^\n]*?\blane\s+(" + LANE_TOKEN + r")")
 SHARED_GITHUB_LOGIN = "jsboige"
 # The gate's only consumer. Every worker lane signs SHARED_GITHUB_LOGIN, so this
 # login is the one surface author the coordinator can recognise as itself.
@@ -266,10 +308,21 @@ class Dossier:
     created_at: str = ""
 
 
+API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0}
+
+
 def gh_json(args: list[str]) -> Any:
     proc = subprocess.run(
         ["gh", *args], capture_output=True, text=True, encoding="utf-8"
     )
+    # Compteur REST/GraphQL (#17315) : tout l'organe paie ici, la mesure aussi.
+    # GraphQL (`api graphql`) consomme le bucket partage de la flotte ; tout le
+    # reste (REST `api`, `pr view`, ...) paie le bucket core. Publie par
+    # ``--json`` (cle ``api_usage``) et sur stderr en fin d'invocation.
+    if len(args) >= 2 and args[0] == "api" and args[1] == "graphql":
+        API_USAGE["graphql"] += 1
+    else:
+        API_USAGE["rest"] += 1
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or "gh command failed")
     return json.loads(proc.stdout)
@@ -608,8 +661,11 @@ def _fingerprint_payload(
         "threads": snapshot.get("threads") or [],
     }
     if include_checks:
+        # Diagnostic-only branch (#17315): reads the REST check-runs of the
+        # head (present in every snapshot) instead of the retired GraphQL
+        # rollup. Never hashed into a stamp since #16957.
         payload["checks"] = sorted(
-            snapshot.get("statusCheckRollup") or [],
+            snapshot.get("checkRuns") or [],
             key=lambda row: json.dumps(
                 row, sort_keys=True, separators=(",", ":")
             ),
@@ -695,30 +751,6 @@ def surfaces_fingerprint(
     """
     return _digest(
         _fingerprint_payload(snapshot, comment_limit, neutral_after, False)
-    )
-
-
-def legacy_surfaces_fingerprint(
-    snapshot: dict[str, Any],
-    comment_limit: int | None = None,
-    neutral_after: str | None = None,
-) -> str:
-    """Pre-#16957 stamp algorithm: the same payload PLUS the check rollup.
-
-    Kept so dossiers stamped before #16957 -- whose hash embedded the check
-    state -- remain verifiable for as long as that state is byte-identical.
-    Once any check concludes, a legacy stamp stops matching; recovery is one
-    mechanical re-stamp (--template recomputes every mechanical field, no
-    re-reading of surfaces), after which no check conclusion can ever expire
-    the dossier again. A SHA-256 over data that has since changed cannot be
-    re-derived, which is why zero-touch recovery of raced legacy stamps is
-    not offered. Drop this function when no open dossier carries a legacy
-    stamp.
-    """
-    return _digest(
-        _fingerprint_payload(
-            snapshot, comment_limit, neutral_after, True, bot_forms_18637=False
-        )
     )
 
 
@@ -981,8 +1013,10 @@ def recheck_blocked_b0(
     Only the b0-ONLY case expires, and only toward a re-stamp: the answer
     becomes the no-dossier outcome (exit 1), which routes the pull request to
     a third-party lane for a fresh dossier -- never back to the author as
-    mergeable. Any other blocking field (checks, scope, domain) keeps the
-    dossier standing: its reason may still hold.
+    mergeable. Any other blocking field keeps the dossier standing HERE: the
+    ``checks`` field has its own recheck (``recheck_blocked_checks``), and
+    ``scope``/``domain`` are judgments about a diff, which cannot move without
+    a push -- and a push already expires the stamp.
     """
     if verdict != VERDICT_BLOCKED or dossier is None:
         return verdict, [], dossier
@@ -997,6 +1031,56 @@ def recheck_blocked_b0(
         "dossier's stated reason is extinguished, a re-stamp is required: "
         "a third-party lane must post a fresh dossier (never merge on "
         "this one)"
+    ], None
+
+
+def recheck_blocked_checks(
+    snapshot: dict[str, Any],
+    verdict: str,
+    dossier: Dossier | None,
+) -> tuple[str, list[str], Dossier | None]:
+    """Expire a BLOCKED dossier whose only blocking field, ``checks``, no longer blocks.
+
+    Third of the family, after ``refute_ready_b0`` and ``recheck_blocked_b0``
+    (#19093). ``checks`` is the ONE blocking field whose value moves without a
+    head mutation: a check concludes asynchronously, so a dossier stamped while
+    a leg was still running attests ``checks: BLOCKED`` for a state a later
+    verdict extinguishes on the very same head. Measured instances: #19906
+    (dossier BLOCKED at 2026-10-08T10:42:32Z, ``PR gate`` success at
+    11:21:46Z on the same head ``4d3eb7f67a3f`` -- 95/95 legs green and the
+    gate still answering rc=3) and #20058 (reported BLOCKED at 09:35:37Z, green
+    at 10:00:36Z, still read as unmergeable 25 min later). ``scope`` and
+    ``domain`` cannot move without a push, and a push already expires the
+    stamp; ``checks`` can, and did.
+
+    Unlike ``recheck_blocked_b0`` this costs no probe: ``checkRuns`` is already
+    on the snapshot (``_head_check_runs``), so the comparison is local. The
+    predicate is the one that refutes a false ``latest-wins-green`` claim --
+    every latest-wins conclusion green AND every required check present -- read
+    in the other direction.
+
+    Only the checks-ONLY case expires, and only toward a re-stamp: the answer
+    becomes the no-dossier outcome (exit 1), which routes the pull request to a
+    third-party lane for a fresh dossier -- never back to the author as
+    mergeable.
+    """
+    if verdict != VERDICT_BLOCKED or dossier is None:
+        return verdict, [], dossier
+    if blocking_fields(dossier) != ["checks"]:
+        return verdict, [], dossier
+    check_runs = snapshot.get("checkRuns")
+    # `None` means "not measured", and a failure to measure is never a pass.
+    # An empty list IS measured, and the required-check rule refutes it below.
+    if check_runs is None:
+        return verdict, [], dossier
+    if check_claim_contradictions("latest-wins-green", check_runs):
+        return verdict, [], dossier
+    return "", [
+        "dossier BLOCKED for checks only, but the live latest-wins state of the "
+        f"head no longer blocks PR #{snapshot.get('number')} -- every conclusion "
+        "is green and every required check is present, so the dossier's stated "
+        "reason is extinguished and a re-stamp is required: a third-party lane "
+        "must post a fresh dossier (never merge on this one)"
     ], None
 
 
@@ -1182,27 +1266,37 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
                 "self-prevalidation refused: the dossier lane "
                 f"{dossier_lane!r} is the lane that carries this pull request"
             )
-    if dossier.author != SHARED_GITHUB_LOGIN:
-        errors.append(f"comment author must be {SHARED_GITHUB_LOGIN!r}")
+    # #17437: the accepted-author set lives in ``gh_identity``, shared with
+    # ``check_closure_dossier.py`` -- the two gates read the same dossiers'
+    # authors, and two copies of the set would drift at the first lane change.
+    if dossier.author not in gh_identity.ACCEPTED_DOSSIER_AUTHORS:
+        errors.append(
+            f"comment author {dossier.author!r} is not an accepted dossier author "
+            f"(expected {SHARED_GITHUB_LOGIN!r} or a fleet App identity "
+            f"{gh_identity.APP_LOGIN_PREFIX}<lane>[bot] with <lane> in "
+            f"{', '.join(gh_identity.APP_DOSSIER_LANES)})"
+        )
     if not SHA_RE.fullmatch(f.get("head", "")):
         errors.append("head must be a full lowercase 40-character SHA")
     if not re.fullmatch(r"[0-9a-f]{64}", f.get("surfaces-sha256", "")):
         errors.append("surfaces-sha256 must be a lowercase SHA-256")
     # Dual acceptance (#16957): a stamp matches the post-fix fingerprint
-    # (discussion surfaces only) or the legacy one (which also embedded the
-    # check rollup). Both certify every discussion surface; the legacy digest
+    # (discussion surfaces only) or the pre-#18637 one (bot comments hashed
+    # whole). Both certify every discussion surface; the pre-#18637 digest
     # is strictly more fields, so accepting either weakens nothing.
+    # The pre-#16957 legacy algorithm (which also embedded the check rollup,
+    # and with it the last GraphQL consumer of the snapshot) is retired
+    # (#17315): its two carriers (#16950, #16891) are merged, and an eventual
+    # residual legacy stamp now degrades to this refusal -- fail-closed, one
+    # mechanical --template re-stamp recovers it.
     live_fingerprint = surfaces_fingerprint(
-        snapshot, dossier.comment_index, dossier.created_at
-    )
-    legacy_fingerprint = legacy_surfaces_fingerprint(
         snapshot, dossier.comment_index, dossier.created_at
     )
     pre18637_fingerprint = pre18637_surfaces_fingerprint(
         snapshot, dossier.comment_index, dossier.created_at
     )
     if f.get("surfaces-sha256") not in {
-        live_fingerprint, legacy_fingerprint, pre18637_fingerprint
+        live_fingerprint, pre18637_fingerprint
     }:
         # #16931 defaut 3 (mesure 16928) : deux hachages opaques sont
         # inexploitables — la lane refabrique le dossier EN AVEUGLE. Le refus
@@ -1267,6 +1361,31 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     return errors
 
 
+def covered_blocked_dossier(
+    previous: list[Dossier], head: str
+) -> Dossier | None:
+    """Dernier dossier BLOCKED anterieur a la meme tete, ou ``None`` (#19869).
+
+    Cœur unique de la detection de couverture. Le gate
+    (`mute_contradictions`) et l'emetteur (`find_previous_blocked_same_head`,
+    qui alimente le pre-remplissage de `--emit`) doivent voir **le meme**
+    dossier : deux recherches independantes derivent, et l'emetteur finit par
+    pre-remplir un `supersedes` que le gate refuse -- c'est exactement le
+    defaut rapporte par #19869, ou le seul organe qui mordait etait celui
+    qu'on interrogeait en second.
+
+    La recherche est **tete a tete** : un dossier anterieur sur une tete
+    differente est deja perime par exact-head, et il n'y a rien a refuter.
+    """
+    for dossier in reversed(previous):
+        if (
+            dossier.fields.get("verdict") == VERDICT_BLOCKED
+            and dossier.fields.get("head") == head
+        ):
+            return dossier
+    return None
+
+
 def mute_contradictions(
     dossier: Dossier,
     candidates: list[tuple[Dossier, list[str]]],
@@ -1292,14 +1411,9 @@ def mute_contradictions(
     """
     if dossier.fields.get("verdict") != VERDICT_READY:
         return []
-    covered = next(
-        (
-            previous
-            for previous, _errors in reversed(candidates[:-1])
-            if previous.fields.get("verdict") == VERDICT_BLOCKED
-            and previous.fields.get("head") == dossier.fields.get("head")
-        ),
-        None,
+    covered = covered_blocked_dossier(
+        [previous for previous, _errors in candidates[:-1]],
+        dossier.fields.get("head") or "",
     )
     if covered is None:
         return []
@@ -1388,6 +1502,443 @@ def evaluate(snapshot: dict[str, Any]) -> tuple[str, list[str]]:
     return verdict, errors
 
 
+# ---------------------------------------------------------------------------
+# #16480 -- queue derivation (``--queue``) and exact-head consumption
+# (``--consume``). Sans etat persistant : chaque appel relit le plateau.
+# ---------------------------------------------------------------------------
+
+#: Verdicts specifiques a la queue, au-dessus de READY/BLOCKED du gate.
+QUEUE_VERDICT_REVIEW_READY = "REVIEW_READY"
+QUEUE_VERDICT_DWELL_PENDING = "DWELL_PENDING"
+QUEUE_VERDICT_STALE = "STALE"
+
+#: Un dossier de plus de 24 h ne peut plus attester une tete exacte : la
+#: conversation a trop bouge pour qu'un humain ne re-lise pas la queue.
+STALE_AFTER_MINUTES_DEFAULT = 1440
+
+#: Ancre de partition des raisons de ``derive_verdict`` : le prefixe exact que
+#: ``check_claim_contradictions`` construit pour une jambe PR gate rouge. La
+#: classe DWELL vit dans le ``output.title`` du run, jamais dans le predicat --
+#: la queue le re-parse au travers de ``merge_dwell.parse_pending_message``
+#: (la forme du message vit chez l'emetteur, une copie deriverait en silence).
+_PR_GATE_CONTRADICTION_PREFIX = (
+    "checks claim 'latest-wins-green' is contradicted by live check 'PR gate'"
+)
+
+#: Voix dont un APPROVED sur la tete exacte ouvre la porte du merge. La queue
+#: expose cette porte a titre d'information : l'autorite de merge reste le
+#: 2ter de ``merge_ready`` (approbation coordinateur), jamais ce champ.
+COORDINATOR_REVIEW_LOGINS = frozenset({"myia-ai-01", "jsboige"})
+
+
+def _parse_ts(value: Any) -> datetime | None:
+    """ISO-8601 GitHub (``...Z``) vers datetime UTC aware, ou None."""
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _dwell_pending_message(run: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Champs du plancher NON ecoule lu sur la jambe PR gate, ou None.
+
+    Délègue le parsing à ``merge_dwell.parse_pending_message`` -- l'inverse
+    canonique du message que le gate émet. Si l'import du module échoue, la
+    fonction rend ``None`` : un rouge DWELL non parsable reste un BLOCKED
+    ordinaire (fail-closed), jamais un READY ni un DWELL_PENDING inventé.
+    """
+    if not run:
+        return None
+    output = run.get("output") or {}
+    message = (output.get("title") or "").strip()
+    if not message:
+        message = (output.get("summary") or "").strip()
+    if not message:
+        return None
+    try:
+        from ci.merge_dwell import parse_pending_message
+    except Exception:  # noqa: BLE001 - lecteur optionnel, fail-closed
+        return None
+    return parse_pending_message(message)
+
+
+def _in_flight_names(
+    check_runs: list[dict[str, Any]] | None,
+) -> list[str]:
+    """Noms des jambes sans conclusion sur la tete (en vol, en file, annulées?)."""
+    if not check_runs:
+        return []
+    return sorted({
+        (row.get("name") or "?")
+        for row in check_runs
+        if (row.get("status") or "") != "completed"
+    })
+
+
+def _review_disposition(
+    snapshot: dict[str, Any],
+) -> tuple[str, bool]:
+    """(disposition de la dernière voix de review, porte coordinateur ouverte).
+
+    La disposition lit la review la plus récente par ``submittedAt`` (latest
+    voice wins, même règle que le 2ter de ``merge_ready``). Un CHANGES_REQUESTED
+    récent n'est pas « une review manquante » : c'est une réserve à lever, la
+    candidate va au dispatch, pas à la file de review -- divergence assumée
+    du design #16483, motivée par le piège « réserve en prose libre » (#14658)
+    qu'aucun marqueur ne couvre. Champ informatif : le 2ter reste l'autorité.
+    """
+    reviews = snapshot.get("reviews") or []
+    if not reviews:
+        return "unreviewed", False
+    latest = max(reviews, key=lambda row: row.get("submittedAt") or "")
+    state = (latest.get("state") or "").upper()
+    if state == "CHANGES_REQUESTED":
+        return "changes-requested", False
+    if state == "APPROVED":
+        oid = ((latest.get("commit") or {}).get("oid")) or ""
+        if oid != (snapshot.get("headRefOid") or ""):
+            return "approval-not-on-head", False
+        login = (latest.get("author") or {}).get("login", "")
+        return "approved-exact-head", login in COORDINATOR_REVIEW_LOGINS
+    return "reviewed-without-disposition", False
+
+
+@dataclass
+class QueueEntry:
+    """Une candidate de la queue, dérivée à l'instant de l'appel (#16480)."""
+
+    pr: int
+    verdict: str
+    created_at: str = ""
+    head: str = ""
+    dossier_comment_id: str = ""
+    dossier_created_at: str = ""
+    surfaces_sha256: str = ""
+    b0_rc: str = ""
+    checks: str = ""
+    domain: str = ""
+    review_qualifying: bool = False
+    review_disposition: str = ""
+    grain_tag: dict[str, Any] | None = None
+    last_comment_is_dossier: bool = False
+    tail_to_read: int = 0
+    dossier_age_minutes: int | None = None
+    dwell_until: str = ""
+    reject_cause: str = ""
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "pr": self.pr,
+            "verdict": self.verdict,
+            "created_at": self.created_at,
+            "head": self.head,
+            "dossier_comment_id": self.dossier_comment_id,
+            "dossier_created_at": self.dossier_created_at,
+            "surfaces_sha256": self.surfaces_sha256,
+            "b0_rc": self.b0_rc,
+            "checks": self.checks,
+            "domain": self.domain,
+            "review_qualifying": self.review_qualifying,
+            "review_disposition": self.review_disposition,
+            "grain_tag": self.grain_tag,
+            "last_comment_is_dossier": self.last_comment_is_dossier,
+            "tail_to_read": self.tail_to_read,
+            "dossier_age_minutes": self.dossier_age_minutes,
+            "dwell_until": self.dwell_until,
+            "reject_cause": self.reject_cause,
+        }
+
+
+def _last_dossier_candidate(snapshot: dict[str, Any]) -> Dossier | None:
+    """Dernier commentaire-dossier parse, SANS validation (selection du gate).
+
+    Utilise par l'interception DWELL de la queue : le gate refuse un dossier
+    dont la claim ``checks:`` est contredite, donc le dossier DWELL n'arrive
+    jamais jusqu'a la classification -- la queue le re-connait pour annoter
+    l'entree, sans jamais retablir un dossier que le gate a refuse.
+    """
+    last = None
+    for index, comment in enumerate(snapshot.get("comments") or []):
+        parsed, _ = parse_dossier(
+            comment.get("body") or "",
+            index,
+            _login(comment),
+            comment.get("createdAt") or "",
+        )
+        if parsed is not None:
+            last = parsed
+    return last
+
+
+def classify_snapshot(
+    snapshot: dict[str, Any],
+    *,
+    now: datetime,
+    stale_after_minutes: int = STALE_AFTER_MINUTES_DEFAULT,
+    probe: Any = None,
+) -> QueueEntry:
+    """Classifie une PR pour la queue -- REFUSE, STALE, DWELL, review, READY.
+
+    Réutilise la chaîne du gate (``evaluate_with_dossier`` puis les mesures
+    vivantes de ``derive_verdict``) et n'ajoute que ce que la queue demande :
+    partition DWELL du rouge PR gate, détection du rollup en vol, porte de
+    review qualifiante, gel de campagne, péremption par mutation du fil ou
+    ancienneté du dossier. ``now`` est injecté pour les tests.
+    """
+    pr = snapshot.get("number") or 0
+    check_runs = snapshot.get("checkRuns")
+    in_flight = _in_flight_names(check_runs)
+    verdicts = latest_wins_check_runs(check_runs)
+    dwell = _dwell_pending_message(verdicts.get("PR gate"))
+    disposition, qualifying = _review_disposition(snapshot)
+    tag = grain_tag.parse_grain_tag(snapshot.get("body") or "")
+    comments = snapshot.get("comments") or []
+
+    verdict, errors, dossier = evaluate_with_dossier(snapshot)
+    # Annotation des dossiers REFUSES (#16480) : quand le gate refuse le
+    # dossier, la queue re-connait le dernier candidat pour exposer ses
+    # champs (domaine, empreinte, age) -- jamais son verdict : le refus du
+    # gate reste la seule verite, la queue ne retablit rien.
+    refused = (
+        None if dossier is not None else _last_dossier_candidate(snapshot)
+    )
+    record = dossier or refused
+
+    def entry(verdict_value: str, cause: str = "") -> QueueEntry:
+        tail = max(0, len(comments) - 1 - record.comment_index) if record else 0
+        age = None
+        if record and record.created_at:
+            stamp = _parse_ts(record.created_at)
+            if stamp is not None and now is not None:
+                age = max(0, int((now - stamp).total_seconds() // 60))
+        comment_id = ""
+        if record:
+            row = comments[record.comment_index] if (
+                record and 0 <= record.comment_index < len(comments)
+            ) else {}
+            comment_id = str(row.get("id") or row.get("databaseId") or "")
+        checks_label = (
+            "in-flight" if in_flight
+            else "latest-wins-green" if not check_claim_contradictions(
+                "latest-wins-green", check_runs
+            )
+            else "not-green"
+        )
+        return QueueEntry(
+            pr=pr,
+            verdict=verdict_value,
+            created_at=snapshot.get("createdAt") or "",
+            head=snapshot.get("headRefOid") or "",
+            dossier_comment_id=comment_id,
+            dossier_created_at=record.created_at if record else "",
+            surfaces_sha256=record.fields.get("surfaces-sha256", "") if record else "",
+            b0_rc=record.fields.get("b0", "") if record else "",
+            checks=checks_label,
+            domain=record.fields.get("domain", "") if record else "",
+            review_qualifying=qualifying,
+            review_disposition=disposition,
+            grain_tag=tag,
+            last_comment_is_dossier=bool(record) and record.comment_index == (
+                len(comments) - 1
+            ),
+            tail_to_read=tail,
+            dossier_age_minutes=age,
+            dwell_until=(dwell or {}).get("lift_at", "") if dwell else "",
+            reject_cause=cause,
+        )
+
+    if dossier is None:
+        stale = any(
+            "head is stale" in reason or "discussion changed after dossier" in reason
+            for reason in errors
+        )
+        if stale:
+            return entry(QUEUE_VERDICT_STALE, "; ".join(errors))
+        # Interception DWELL (#16480) : le gate REFUSE le dossier dont la
+        # claim ``checks:`` est contredite par la jambe PR gate -- mais un
+        # rouge de classe DWELL est un minuteur, pas un defaut de dossier.
+        # Si c'est la SEULE erreur, la queue re-connait le dossier refuse et
+        # l'annote au lieu de l'enterrer en BLOCKED anonyme ; toute autre
+        # erreur garde le refus integral (fail-closed).
+        if dwell:
+            candidate = _last_dossier_candidate(snapshot)
+            if candidate is not None and not [
+                reason for reason in errors
+                if not reason.startswith(_PR_GATE_CONTRADICTION_PREFIX)
+            ]:
+                dossier = candidate
+                if in_flight:
+                    return entry(
+                        VERDICT_BLOCKED,
+                        "checks in-flight on the head: " + ", ".join(in_flight),
+                    )
+                lift = _parse_ts(dwell.get("lift_at"))
+                if lift is not None and now < lift:
+                    return entry(
+                        QUEUE_VERDICT_DWELL_PENDING,
+                        f"DWELL floor not elapsed until {dwell.get('lift_at')}",
+                    )
+                return entry(
+                    VERDICT_BLOCKED,
+                    f"DWELL floor elapsed at {dwell.get('lift_at')} -- replay the "
+                    "leg (gh run rerun) or let the sweep conclude, then re-consume",
+                )
+        return entry(
+            VERDICT_BLOCKED,
+            "no dossier worth trusting: " + "; ".join(errors) if errors
+            else "no dossier on this pull request",
+        )
+
+    tail = max(0, len(comments) - 1 - dossier.comment_index)
+    age_minutes: int | None = None
+    if dossier.created_at:
+        stamp = _parse_ts(dossier.created_at)
+        if stamp is not None:
+            age_minutes = max(0, int((now - stamp).total_seconds() // 60))
+    if tail > 0:
+        return entry(
+            QUEUE_VERDICT_STALE,
+            f"{tail} comment(s) posted after the dossier -- re-read the tail, "
+            "the exact-head contract no longer holds",
+        )
+    if age_minutes is not None and age_minutes > stale_after_minutes:
+        return entry(
+            QUEUE_VERDICT_STALE,
+            f"dossier is {age_minutes} min old (> {stale_after_minutes}) -- "
+            "a fresh adjoint preflight is required",
+        )
+
+    frozen_cause = frozen_umbrella_exclusion(
+        snapshot.get("title") or "",
+        snapshot.get("body") or "",
+        snapshot.get("headRefName") or "",
+    )
+    if frozen_cause:
+        return entry(VERDICT_BLOCKED, f"frozen campaign: {frozen_cause}")
+
+    if verdict == VERDICT_READY:
+        derived, reasons = derive_verdict(snapshot, probe)
+        if derived != VERDICT_READY:
+            # NB : une contradiction checks fait deja refuser le dossier par
+            # ``validate_dossier`` -- le cas DWELL est traite par
+            # l'interception du chemin de refus ci-dessus ; ce qui reste ici
+            # (B.0 refute, thread ouvert, draft) est une demotion a nommer.
+            return entry(
+                VERDICT_BLOCKED,
+                "verdict READY no longer derived at the head: "
+                + "; ".join(reasons),
+            )
+        if in_flight:
+            return entry(
+                VERDICT_BLOCKED,
+                "checks in-flight on the head: " + ", ".join(in_flight),
+            )
+        if disposition == "changes-requested":
+            return entry(
+                VERDICT_BLOCKED,
+                "latest review voice is CHANGES_REQUESTED -- lift the remark or "
+                "obtain a re-review before consuming",
+            )
+        if not qualifying:
+            return entry(
+                QUEUE_VERDICT_REVIEW_READY,
+                "only the qualifying review door is missing: "
+                f"disposition={disposition}",
+            )
+        return entry(VERDICT_READY)
+
+    # Dossier present, verdict BLOCKED atteste.
+    _, expiry, refreshed = recheck_blocked_b0(pr, verdict, dossier, probe)
+    if refreshed is None:
+        return entry(
+            VERDICT_BLOCKED,
+            "dossier BLOCKED for b0 only, but the live B.0 organ no longer "
+            "blocks -- a fresh third-party dossier is required: "
+            + "; ".join(expiry),
+        )
+    return entry(
+        VERDICT_BLOCKED,
+        "dossier attests BLOCKED -- fields not at their READY value: "
+        + ", ".join(blocking_fields(dossier)),
+    )
+
+
+def build_queue(
+    prs: list[int],
+    *,
+    now: datetime | None = None,
+    stale_after_minutes: int = STALE_AFTER_MINUTES_DEFAULT,
+    probe: Any = None,
+    loader: Any = None,
+) -> dict[str, Any]:
+    """Queue oldest-first sur les PRs demandees, sans etat persistant.
+
+    Chaque PR est relue depuis le reseau au moment de l'appel ; une PR dont
+    la lecture echoue (reseau, mutation pendant la lecture) part dans
+    ``unknown`` -- la queue partielle reste exploitable et nomme son trou.
+    """
+    now = now or datetime.now(timezone.utc)
+    load = loader or load_snapshot
+    seen: set[int] = set()
+    entries: list[QueueEntry] = []
+    unknown: list[dict[str, Any]] = []
+    for pr in prs:
+        if pr in seen:
+            continue
+        seen.add(pr)
+        try:
+            entries.append(classify_snapshot(
+                load(pr),
+                now=now,
+                stale_after_minutes=stale_after_minutes,
+                probe=probe,
+            ))
+        except Exception as exc:  # noqa: BLE001 - une PR ne tue pas la queue
+            unknown.append({"pr": pr, "error": str(exc)[:300]})
+    entries.sort(key=lambda item: (
+        _parse_ts(item.created_at) or datetime.max.replace(tzinfo=timezone.utc),
+        item.pr,
+    ))
+    metrics: dict[str, int] = {}
+    for item in entries:
+        metrics[item.verdict] = metrics.get(item.verdict, 0) + 1
+    return {
+        "schema": "1",
+        "stale_after_minutes": stale_after_minutes,
+        "requested": sorted(seen),
+        "queue": [item.to_json() for item in entries],
+        "unknown": unknown,
+        "metrics": metrics,
+    }
+
+
+def consume_pr(
+    pr: int,
+    *,
+    now: datetime | None = None,
+    stale_after_minutes: int = STALE_AFTER_MINUTES_DEFAULT,
+    probe: Any = None,
+    loader: Any = None,
+) -> QueueEntry:
+    """Revalide UNE candidate a l'instant-T pour consommation exact-head.
+
+    Relecture fraiche garantie (aucun cache n'existe, la fonction ne partage
+    rien avec un eventuel ``--queue`` precedent) et refus de toute mutation :
+    un commentaire poste apres le dossier, une jambe en vol, un plancher non
+    ecoule ou le moindre point de review non leve rendent la sortie non-READY.
+    """
+    now = now or datetime.now(timezone.utc)
+    load = loader or load_snapshot
+    return classify_snapshot(
+        load(pr),
+        now=now,
+        stale_after_minutes=stale_after_minutes,
+        probe=probe,
+    )
+
+
 def blocking_fields(dossier: Dossier) -> list[str]:
     """The attested fields that are NOT at their READY value -- the reason.
 
@@ -1445,24 +1996,36 @@ def build_result(
     return result
 
 
-def review_threads(pr: int) -> list[dict[str, Any]]:
-    query = """
-    query($owner:String!,$repo:String!,$number:Int!,$cursor:String){
-      repository(owner:$owner,name:$repo){
-        pullRequest(number:$number){
-          reviewThreads(first:100,after:$cursor){
-            nodes{
-              id isResolved isOutdated path line
-              comments(first:100){
-                totalCount
-                nodes{id body createdAt author{login}}
-              }
-            }
-            pageInfo{hasNextPage endCursor}
-          }
-        }
-      }
-    }"""
+REVIEW_THREADS_BATCH = 8
+
+_REVIEW_THREADS_FIELDS = (
+    "reviewThreads(first:100){"
+    "nodes{id isResolved isOutdated path line "
+    "comments(first:100){totalCount "
+    "nodes{id body createdAt author{login}}}} "
+    "pageInfo{hasNextPage endCursor}}"
+)
+
+
+def _check_inline_pagination(nodes: list[dict[str, Any]]) -> None:
+    for thread in nodes:
+        inline = thread.get("comments") or {}
+        if inline.get("totalCount", 0) > len(inline.get("nodes") or []):
+            raise RuntimeError(
+                "inline thread has more than 100 comments; complete pagination required"
+            )
+
+
+def _review_threads_paginated(pr: int) -> list[dict[str, Any]]:
+    """Per-PR cursor pagination -- the fallback when one PR fills a page."""
+    query = f"""
+    query($owner:String!,$repo:String!,$number:Int!,$cursor:String){{
+      repository(owner:$owner,name:$repo){{
+        pullRequest(number:$number){{
+          {_REVIEW_THREADS_FIELDS}
+        }}
+      }}
+    }}"""
     owner, repo = REPO.split("/", 1)
     cursor: str | None = None
     threads: list[dict[str, Any]] = []
@@ -1477,17 +2040,62 @@ def review_threads(pr: int) -> list[dict[str, Any]]:
         data = gh_json(args)
         connection = data["data"]["repository"]["pullRequest"]["reviewThreads"]
         nodes = connection.get("nodes") or []
-        for thread in nodes:
-            inline = thread.get("comments") or {}
-            if inline.get("totalCount", 0) > len(inline.get("nodes") or []):
-                raise RuntimeError(
-                    "inline thread has more than 100 comments; complete pagination required"
-                )
+        _check_inline_pagination(nodes)
         threads.extend(nodes)
         page = connection["pageInfo"]
         if not page["hasNextPage"]:
             return threads
         cursor = page["endCursor"]
+
+
+def review_threads_bulk(prs: Sequence[int]) -> dict[int, list[dict[str, Any]]]:
+    """Review threads of N pull requests in ONE GraphQL query per batch.
+
+    #17315: mass passes (gate sweeps, B.0 probes over the fleet) paid one
+    paginated query per pull request for the third B.0 surface; aliases
+    collapse N pulls into a single operation per batch, ~N/8 times fewer.
+    A pull request whose threads overflow the first page (rare) falls back
+    to per-PR pagination for that PR alone.
+    """
+    results: dict[int, list[dict[str, Any]]] = {}
+    owner, repo = REPO.split("/", 1)
+    remaining = list(dict.fromkeys(prs))
+    while remaining:
+        batch = remaining[:REVIEW_THREADS_BATCH]
+        del remaining[:REVIEW_THREADS_BATCH]
+        aliases = [f"p{i}" for i in range(len(batch))]
+        defs = "".join(f",${alias}:Int!" for alias in aliases)
+        body = "".join(
+            f"{alias}: repository(owner:$owner,name:$repo)"
+            f"{{pullRequest(number:${alias}){{{_REVIEW_THREADS_FIELDS}}}}}"
+            for alias in aliases
+        )
+        query = f"query($owner:String!,$repo:String!{defs}){{{body}}}"
+        args = [
+            "api", "graphql", "-f", f"query={query}",
+            "-F", f"owner={owner}", "-F", f"repo={repo}",
+        ]
+        for alias, pr in zip(aliases, batch):
+            args.extend(["-F", f"{alias}={pr}"])
+        data = gh_json(args)
+        for alias, pr in zip(aliases, batch):
+            # L'alias nomme le `repository`; la connexion vit sous `pullRequest`.
+            # Mesure 2026-10-08 : lire `[alias]["reviewThreads"]` leve un KeyError
+            # -- le format de reponse se verifie sur un appel LIVE, un fixture
+            # ecrit depuis la meme lecture reproduit l'erreur a l'identique.
+            connection = data["data"][alias]["pullRequest"]["reviewThreads"]
+            nodes = connection.get("nodes") or []
+            _check_inline_pagination(nodes)
+            if connection["pageInfo"]["hasNextPage"]:
+                results[pr] = _review_threads_paginated(pr)
+            else:
+                results[pr] = nodes
+    return results
+
+
+def review_threads(pr: int) -> list[dict[str, Any]]:
+    """Single-PR convenience over the aliased bulk fetch: one operation."""
+    return review_threads_bulk([pr])[pr]
 
 
 def _issue_comments(pr: int) -> list[dict[str, Any]]:
@@ -1549,16 +2157,17 @@ def _head_check_runs(head_sha: str) -> list[dict[str, Any]]:
         page += 1
 
 
-def _pr_metadata(pr: int, *, with_rollup: bool) -> dict[str, Any]:
-    # Scalar fields come from REST (`repos/.../pulls/N`) so the shared GraphQL
-    # quota only pays for the check rollup below. Keys keep the exact shape
-    # `gh pr view --json` produced, so fingerprints and the identity bracket
-    # stay byte-compatible with dossiers stamped before this change.
+def _pr_metadata(pr: int) -> dict[str, Any]:
+    # Scalar fields come from REST (`repos/.../pulls/N`) -- the whole snapshot
+    # bracket no longer touches GraphQL (#17315): the check rollup it used to
+    # carry served only the retired legacy fingerprint. Keys keep the exact
+    # shape `gh pr view --json` produced, so fingerprints and the identity
+    # bracket stay byte-compatible with dossiers stamped before this change.
     row = gh_json(["api", f"repos/{REPO}/pulls/{pr}"])
     if not isinstance(row, dict):
         raise RuntimeError("pull request response is not an object")
     state = row.get("state") or ""
-    data: dict[str, Any] = {
+    return {
         "number": row.get("number"),
         "title": row.get("title"),
         "body": row.get("body") or "",
@@ -1574,50 +2183,42 @@ def _pr_metadata(pr: int, *, with_rollup: bool) -> dict[str, Any]:
         # explicit keys -- adding this field must not change surfaces-sha256.
         "headRefName": (row.get("head") or {}).get("ref"),
         "updatedAt": row.get("updated_at"),
+        # #16480 : la queue triera les candidates par anciennete de PR. Meme
+        # statut que headRefName -- hors empreinte (cles explicites), donc
+        # l'ajouter n'invalide aucun dossier vivant.
+        "createdAt": row.get("created_at"),
         "changedFiles": row.get("changed_files"),
         "additions": row.get("additions"),
         "deletions": row.get("deletions"),
     }
-    if with_rollup:
-        # The check rollup has no REST equivalent, so it stays on GraphQL
-        # as a single-field query instead of the former twelve-field one.
-        rollup = gh_json([
-            "pr", "view", str(pr), "--repo", REPO,
-            "--json", "statusCheckRollup",
-        ])
-        if not isinstance(rollup, dict):
-            raise RuntimeError("pull request response is not an object")
-        data["statusCheckRollup"] = rollup.get("statusCheckRollup")
-    return data
 
 
 def _metadata_identity(data: dict[str, Any]) -> str:
-    normalized = dict(data)
-    normalized["statusCheckRollup"] = sorted(
-        data.get("statusCheckRollup") or [],
-        key=lambda row: json.dumps(row, sort_keys=True, separators=(",", ":")),
-    )
     return json.dumps(
-        normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        data, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     )
 
 
 def load_snapshot(pr: int) -> dict[str, Any]:
-    before = _pr_metadata(pr, with_rollup=True)
+    before = _pr_metadata(pr)
     snapshot = dict(before)
     snapshot["comments"] = _issue_comments(pr)
     snapshot["reviews"] = _reviews(pr)
     snapshot["threads"] = review_threads(pr)
-    # Fetched inside the before/after bracket: a check concluding during the
-    # read bumps updatedAt and aborts the snapshot (transient UNKNOWN, the
-    # caller retries), so the claim verification below never reads a state
-    # that was already stale when captured. The B.0 probe (`probe_b0`) is NOT
-    # in this bracket: it runs after, and only on a READY dossier. A remark
-    # posted between the snapshot and the probe therefore makes the organ
-    # contradict a `b0: clear` claim -- a conservative refusal, which a rerun
-    # names as a changed discussion surface.
+    # Fetched inside the before/after bracket, keyed on the head read BEFORE
+    # it: a push landing during the read moves headRefOid, the second metadata
+    # read disagrees, and the snapshot is refused (transient UNKNOWN, the
+    # caller retries) rather than pairing the old head's check-runs with the
+    # new one. Since #17315 the bracket covers PR scalar fields only -- the
+    # rollup that used to carry check state is gone, so a check changing
+    # conclusion mid-read is not itself a bracket event; the claim
+    # verification below compares against the live check-runs. The B.0 probe
+    # (`probe_b0`) is NOT in this bracket: it runs after, and only on a READY
+    # dossier. A remark posted between the snapshot and the probe therefore
+    # makes the organ contradict a `b0: clear` claim -- a conservative
+    # refusal, which a rerun names as a changed discussion surface.
     snapshot["checkRuns"] = _head_check_runs(snapshot["headRefOid"])
-    after = _pr_metadata(pr, with_rollup=True)
+    after = _pr_metadata(pr)
     if _metadata_identity(before) != _metadata_identity(after):
         raise RuntimeError("pull request changed while prevalidation snapshot was read")
     return snapshot
@@ -1703,6 +2304,38 @@ def render_template(snapshot: dict[str, Any], lane: str = ADJOINT_LANE) -> str:
     return "\n".join([START, *(f"{key}: {value}" for key, value in fields), END])
 
 
+def find_previous_blocked_same_head(
+    snapshot: dict[str, Any], current_head: str
+) -> tuple[int, Dossier] | None:
+    """#19869 -- dossier BLOCKED anterieur a la meme tete, vu par l'emetteur.
+
+    Lit le fil, puis **delegue** a `covered_blocked_dossier` : la recherche
+    que l'emetteur emploie pour pre-remplir `supersedes` est litteralement
+    celle du gate, pas un miroir qui pourrait en diverger (#19869). La
+    position est 1-based (celle que `restamp_warning` affiche deja), pour
+    que l'auto-remplissage par `--emit` rime avec le verdict du gate sans
+    qu'aucune re-edition soit necessaire.
+
+    Renvoie ``(position, Dossier)`` du dossier BLOCKED anterieur, ou
+    ``None`` si rien ne correspond.
+    """
+    comments = snapshot.get("comments") or []
+    dossiers: list[Dossier] = []
+    for index, comment in enumerate(comments):
+        dossier, _errors = parse_dossier(
+            comment.get("body") or "",
+            index,
+            _login(comment),
+            comment.get("createdAt") or "",
+        )
+        if dossier is not None:
+            dossiers.append(dossier)
+    covered = covered_blocked_dossier(dossiers, current_head)
+    if covered is None:
+        return None
+    return (covered.comment_index + 1, covered)
+
+
 def render_emitted_dossier(
     snapshot: dict[str, Any], lane: str = ADJOINT_LANE, probe: Any = None
 ) -> tuple[str, str, list[str]]:
@@ -1715,6 +2348,13 @@ def render_emitted_dossier(
     nommer si BLOCKED) restent a remplir par la lane emettrice. Renvoie
     (bloc, verdict, raisons) -- l'emetteur rapporte le rc mesure
     (0 READY / 3 BLOCKED) sans le choisir.
+
+    #19869 -- si le verdict derive est READY et qu'un dossier BLOCKED
+    anterieur existe a la meme tete, l'emetteur **DOIT** pre-renseigner
+    `supersedes` et `supersedes-why` (cf. `mute_contradictions` l.1307) :
+    sans ces deux champs, le gate refuse le dossier pose avec NO-DOSSIER.
+    L'auto-texte invite la lane emettrice a le remplacer par une prose
+    nommant la preuve qui a change (cf. corps de `supersedes-why`).
     """
     template = render_template(snapshot, lane)
     verdict, reasons = derive_verdict(snapshot, probe)
@@ -1727,6 +2367,23 @@ def render_emitted_dossier(
         ),
         "organ-rc": str(organ_rc),
     }
+    supersedes_lines: list[str] = []
+    if verdict == VERDICT_READY:
+        previous = find_previous_blocked_same_head(
+            snapshot, snapshot["headRefOid"]
+        )
+        if previous is not None:
+            position, dossier = previous
+            supersedes_lines = [
+                f"supersedes: {position}",
+                (
+                    "supersedes-why: auto -- covers BLOCKED dossier from "
+                    f"{dossier.author} ({dossier.created_at}) at the same head; "
+                    f"re-attestation derived by {ORGAN_NAME} (organ-rc "
+                    f"{organ_rc}); replace this line with the proof that "
+                    "changed (or the old dossier's error)"
+                ),
+            ]
     lines = []
     for line in template.split("\n"):
         key = line.split(":", 1)[0] if ":" in line else None
@@ -1734,6 +2391,11 @@ def render_emitted_dossier(
             lines.append(f"{key}: {provenance[key]}")
         else:
             lines.append(line)
+    # Insertion des supersedes-* avant END (derniere ligne du template).
+    # C'est le contrat `parse_dossier` : tout ce qui est entre START et END
+    # est un champ ; placer apres END serait ignore.
+    if supersedes_lines and lines and lines[-1].strip() == END:
+        lines = lines[:-1] + supersedes_lines + [lines[-1]]
     return "\n".join(lines), verdict, reasons
 
 
@@ -1747,7 +2409,28 @@ def main() -> int:
     except gh_identity.GhIdentityError as exc:
         print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("pr", type=int, help="pull request number")
+    parser.add_argument(
+        "pr", type=int, nargs="?", default=None, help="pull request number"
+    )
+    parser.add_argument(
+        "--queue", type=int, nargs="+", default=None, metavar="PR",
+        help="#16480: derive a merge queue for the given pull requests -- "
+        "oldest-first JSON, no persistent state. Verdicts per entry: "
+        "READY / REVIEW_READY / DWELL_PENDING / BLOCKED / STALE, plus "
+        "metrics and an `unknown` list for unreadable pull requests.",
+    )
+    parser.add_argument(
+        "--consume", type=int, default=None, metavar="PR",
+        help="#16480: revalidate ONE candidate at instant-T for an exact-head "
+        "merge -- refuses any mutation (comment after the dossier, checks "
+        "in-flight, DWELL floor not elapsed, unlifted review point). "
+        "Exit 0 iff READY.",
+    )
+    parser.add_argument(
+        "--stale-after-minutes", type=int, default=STALE_AFTER_MINUTES_DEFAULT,
+        help=f"dossier age beyond which a queue entry is STALE "
+        f"(default: {STALE_AFTER_MINUTES_DEFAULT})",
+    )
     parser.add_argument("--json", action="store_true", help="emit machine-readable output")
     parser.add_argument(
         "--lane",
@@ -1784,6 +2467,42 @@ def main() -> int:
         "(complete/body/scope/domain) stay for the emitting lane to fill.",
     )
     args = parser.parse_args()
+    modes = sum(bool(m) for m in (args.pr, args.queue, args.consume))
+    if modes != 1:
+        parser.error(
+            "exactly one of <pr>, --queue <PRs...>, --consume <PR> is required"
+        )
+    if args.queue is not None:
+        result = build_queue(
+            args.queue,
+            stale_after_minutes=args.stale_after_minutes,
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        # File partielle = exploitable (les trous sont nommes dans `unknown`) ;
+        # seule l'illegibilite TOTALE rend la queue inutilisable.
+        return (
+            EXIT_UNKNOWN
+            if not result["queue"] and result["unknown"]
+            else EXIT_READY
+        )
+    if args.consume is not None:
+        try:
+            item = consume_pr(
+                args.consume,
+                stale_after_minutes=args.stale_after_minutes,
+            )
+        except Exception as exc:  # noqa: BLE001 - UNKNOWN, pas un crash
+            print(json.dumps(
+                {"pr": args.consume, "verdict": "UNKNOWN", "error": str(exc)[:300]},
+                ensure_ascii=False,
+            ))
+            return EXIT_UNKNOWN
+        print(json.dumps(item.to_json(), ensure_ascii=False, indent=2))
+        return EXIT_READY if item.verdict == VERDICT_READY else (
+            EXIT_NO_DOSSIER
+            if item.verdict == VERDICT_BLOCKED and "no dossier" in item.reject_cause
+            else EXIT_BLOCKED_WITH_SUBSTANCE
+        )
     try:
         snapshot = load_snapshot(args.pr)
         if args.derive_verdict:
@@ -1836,6 +2555,10 @@ def main() -> int:
             )
         if not errors:
             verdict, errors, dossier = recheck_blocked_b0(args.pr, verdict, dossier)
+        if not errors:
+            verdict, errors, dossier = recheck_blocked_checks(
+                snapshot, verdict, dossier
+            )
     except (
         RuntimeError,
         KeyError,
@@ -1883,6 +2606,9 @@ def main() -> int:
         result["ready"] = False
         result["verdict"] = "FROZEN"
         result["frozen"] = frozen_reason
+    # #17315 : le cout de l'invocation est publie avec le verdict -- le
+    # compteur distingue les deux buckets (REST core vs GraphQL partage).
+    result["api_usage"] = dict(API_USAGE)
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
     elif frozen_reason is not None:
@@ -1913,12 +2639,21 @@ def main() -> int:
         for error in errors:
             print(f"  - {error}")
     if frozen_reason is not None:
-        return EXIT_BLOCKED_WITH_SUBSTANCE
-    if ready:
-        return EXIT_READY
-    if verdict == VERDICT_BLOCKED:
-        return EXIT_BLOCKED_WITH_SUBSTANCE
-    return EXIT_NO_DOSSIER
+        code = EXIT_BLOCKED_WITH_SUBSTANCE
+    elif ready:
+        code = EXIT_READY
+    elif verdict == VERDICT_BLOCKED:
+        code = EXIT_BLOCKED_WITH_SUBSTANCE
+    else:
+        code = EXIT_NO_DOSSIER
+    # #17315 : chiffres publies sur stderr (stdout reste le verdict parse par
+    # les appelants) -- une lane secretaire peut agreger le cout par invocation.
+    print(
+        f"API usage: {API_USAGE['rest']} REST, "
+        f"{API_USAGE['graphql']} GraphQL operation(s)",
+        file=sys.stderr,
+    )
+    return code
 
 
 if __name__ == "__main__":

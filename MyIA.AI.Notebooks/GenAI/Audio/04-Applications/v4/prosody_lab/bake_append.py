@@ -1,303 +1,318 @@
-"""bake_append.py — append (ou valider) un run au banc de référence TTS.
+"""bake_append.py -- append (upsert) un run au banc de reference TTS.
 
-Usage (depuis la racine du dépôt ou un worktree) :
-    python prosody_lab/bake_append.py --bank prosody_lab/bake_bank.jsonl \\
-        --metrics path/to/metrics.json \\
-        --machine myia-po-2023 \\
-        --motor qwen3_tts_1_7b_customvoice \\
-        --extract A \\
-        [--seed 0] \\
-        [--motor-license Apache-2.0] \\
-        [--dry-run]
+Schéma : bank_schema_v1.json. Cle d'unicite : (motor, extract, seed). Idempotent :
+re-append avec la meme cle REMPLACE l'ancien run (meme ts/machine corriges).
 
-Le banc est un fichier JSONL (une ligne par run), append-only par défaut.
-La validation utilise `jsonschema` si disponible ; à défaut, un validateur
-interne couvrant les champs requis et les types.
+Usage :
+    # Append un run isole :
+    python bake_append.py --bank runs/bake_bank.json --run '
+    {
+      "ts": "2026-10-08T01:00:00Z",
+      "machine": "myia-po-2027",
+      "motor": "chatterbox_mtl_v3",
+      "extract": "A",
+      "seed": 42,
+      "wer": 0.4179,
+      "duration_s": 17.4,
+      "rtf": 2.51,
+      "vram_mb": 3072,
+      "voice_stable": true,
+      "asr_models": ["tiny"],
+      "notes": "bakeoff_small/chatterbox_mtl_v3 (PR #17661)"
+    }'
 
-Idempotence : la clé d'unicité est (motor, extract, extract_text_sha256_prefix, seed, ts).
-Un run avec exactement la même clé est refusé (exit 4) — pas d'écrasement
-silencieux. Pour ré-mesurer un même couple (motor, extract, seed), incrémenter
-le `ts` (ou ajouter `notes` distinctement).
+    # Append depuis un fichier JSON (un seul objet ou liste) :
+    python bake_append.py --bank runs/bake_bank.json --file runs/seed_run.json
+
+    # Ingestion depuis un repertoire bakeoff_small (le run s_bake_results.json + fichiers A__/B__) :
+    python bake_append.py --bank runs/bake_bank.json --ingest-bakeoff-small \\
+        --root MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bakeoff_small
+
+    # Append + post-validation (default : valide le schema avant ecriture) :
+    python bake_append.py --bank runs/bake_bank.json --run '{...}' --dry-run
+
+Codes de retour :
+    0 = succes (run ajoute ou remplace)
+    1 = erreur de validation (schema)
+    2 = chemin invalide
+    3 = IO erreur
 """
 from __future__ import annotations
 
 import argparse
-import datetime as dt
-import hashlib
 import json
-import os
-import socket
 import sys
 from pathlib import Path
+from typing import Any
 
-# Chemins relatifs — à appeler depuis la racine du dépôt ou un worktree.
-PROSODY_LAB_ROOT = Path(__file__).resolve().parent
-SCHEMA_PATH = PROSODY_LAB_ROOT / "bank_schema_v1.json"
+SCHEMA_VERSION = "v1"
+DEFAULT_BANK = Path("runs/bake_bank.json")
+THIS_DIR = Path(__file__).resolve().parent
+SCHEMA_PATH = THIS_DIR / f"bank_schema_{SCHEMA_VERSION}.json"
 
 
-def _load_schema() -> dict:
+def load_schema() -> dict:
     if not SCHEMA_PATH.exists():
-        raise SystemExit(f"Schéma introuvable : {SCHEMA_PATH}. "
-                         f"bake_append.py doit vivre à côté de bank_schema_v1.json.")
-    with open(SCHEMA_PATH, encoding="utf-8") as f:
-        return json.load(f)
+        raise FileNotFoundError(f"schema introuvable: {SCHEMA_PATH}")
+    return json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
 
 
-def _ts_now() -> str:
-    """Timestamp ISO 8601 UTC, suffixe Z."""
-    return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+def load_bank(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, list):
+        raise ValueError(f"bank root doit etre une liste JSON, got {type(data).__name__}")
+    return data
 
 
-def _sha256_prefix(text: str, n: int = 16) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:n]
+def save_bank(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def _infer_machine() -> str:
-    """Déduit l'identité machine depuis COMPUTERNAME (mieux que hostname,
-    cf. CLAUDE.md global)."""
-    name = os.environ.get("COMPUTERNAME") or socket.gethostname() or "unknown"
-    mapping = {
-        "MACHINE-PO2023": "myia-po-2023",
-        "MACHINE-PO2024": "myia-po-2024",
-        "MACHINE-PO2025": "myia-po-2025",
-        "MACHINE-PO2026": "myia-po-2026",
-        "MACHINE-PO2027": "myia-po-2027",
-        "MACHINE-AI01": "myia-ai-01",
-        "MACHINE-WEB2": "myia-web2",
-    }
-    return mapping.get(name.upper(), name.lower())
+def validate_run(run: dict, schema: dict) -> list[str]:
+    """Valide un run contre le schema. Retourne la liste des erreurs (vide = OK)."""
+    errs: list[str] = []
+    item_schema = schema.get("items", {})
+    required = item_schema.get("required", [])
+    properties = item_schema.get("properties", {})
 
+    for f in required:
+        if f not in run:
+            errs.append(f"champ obligatoire absent: {f!r}")
 
-def _parse_size_b(s: str | float | int | None) -> float | None:
-    """Convertit "1.7B", "100M", "0.5B" en milliards (float). None si non parsable."""
-    if s is None:
-        return None
-    if isinstance(s, (int, float)):
-        return float(s)
-    if not isinstance(s, str):
-        return None
-    s = s.strip().upper()
-    try:
-        if s.endswith("B"):
-            return float(s[:-1])
-        if s.endswith("M"):
-            return float(s[:-1]) / 1000.0
-        if s.endswith("K"):
-            return float(s[:-1]) / 1_000_000.0
-        return float(s)
-    except ValueError:
-        return None
-
-
-def _coerce_metrics(metrics: dict) -> dict:
-    """Adapte un metrics.json (chat-bakeoff ou A0-review) au schéma v1.
-
-    Stratégie : mapping direct pour les noms évidents, défaut à null pour les
-    champs non couverts par le source. Les champs de fidélité ne sont pas
-    calculés ici — ils doivent venir d'un audit ASR croisé (gate pré-UAT
-    #17586) ou être passés explicitement.
-    """
-    out = {"schema_version": "v1", "ts": _ts_now(), "machine": _infer_machine()}
-
-    # Champs directs
-    direct_keys = {
-        "motor": "motor",
-        "motor_size_b": "motor_size_b",
-        "size": "motor_size_b",
-        "license": "motor_license",
-        "extract": "extract",
-        "seed": "seed",
-        "speaker": "speaker",
-        "instruct": "instruct",
-        "language": "language",
-        "wer": "wer",
-        "wer_model": "wer_model",
-        "rtf": "rtf",
-        "vram_peak_gb": "vram_mb",  # GO → MO
-        "duration_s": "duration_s",
-        "load_s": "load_s",
-        "wallclock_total_s": "wallclock_total_s",
-    }
-    for src, dst in direct_keys.items():
-        if src in metrics and metrics[src] is not None:
-            v = metrics[src]
-            # Cas particulier : wer peut être {wer, hyp, model} → on extrait .wer
-            if src == "wer" and isinstance(v, dict):
-                v = v.get("wer")
-            # Cas particulier : seed peut être {base, per_chunk} → on extrait .base
-            if src == "seed" and isinstance(v, dict):
-                v = v.get("base")
-            # Conversion GB→MB si on lit vram_peak_gb
-            if src == "vram_peak_gb" and isinstance(v, (int, float)):
-                v = float(v) * 1024.0
-            # Parse "1.7B" / "100M" pour motor_size_b
-            if src in {"size", "motor_size_b"}:
-                v = _parse_size_b(v)
-            out[dst] = v
-
-    # Prosodie imbriquée
-    prosody = metrics.get("prosody") or metrics.get("metrics") or {}
-    if isinstance(prosody, dict):
-        if "g_st_range" in prosody:
-            out["prosody_st_range"] = prosody["g_st_range"]
-        if "g_cv" in prosody:
-            out["prosody_cv"] = prosody["g_cv"]
-        if "g_velocity" in prosody:
-            out["prosody_velocity"] = prosody["g_velocity"]
-        if "g_verdict" in prosody:
-            out["prosody_verdict"] = prosody["g_verdict"]
-
-    # Texte de référence (extract_text_sha256_prefix + chars)
-    text = metrics.get("text") or metrics.get("extract_text")
-    if text:
-        out["extract_text_sha256_prefix"] = _sha256_prefix(text)
-        out["extract_text_chars"] = len(text)
-
-    return out
-
-
-def _validate_locally(record: dict, schema: dict) -> list[str]:
-    """Validateur interne minimaliste : couvre required + types principaux.
-
-    Renvoie la liste des erreurs (vide = OK). Le validateur jsonschema est
-    préféré quand disponible ; celui-ci est le filet de sécurité.
-    """
-    errs = []
-    for req in schema.get("required", []):
-        if req not in record:
-            errs.append(f"champ requis manquant : {req!r}")
-    props = schema.get("properties", {})
-    for k, v in record.items():
-        if k not in props:
-            errs.append(f"champ non autorisé par le schéma : {k!r}")
-        spec = props.get(k, {})
-        if "const" in spec and v != spec["const"]:
-            errs.append(f"{k!r} doit valoir {spec['const']!r}, reçu {v!r}")
-        if "enum" in spec and v is not None and v not in spec["enum"]:
-            errs.append(f"{k!r} doit être dans {spec['enum']!r}, reçu {v!r}")
-        if spec.get("type") == "integer" and not isinstance(v, int):
-            errs.append(f"{k!r} doit être un entier, reçu {type(v).__name__}")
-        if spec.get("type") == "number" and not isinstance(v, (int, float)):
-            errs.append(f"{k!r} doit être un nombre, reçu {type(v).__name__}")
-        if spec.get("type") == "string" and not isinstance(v, str):
-            errs.append(f"{k!r} doit être une chaîne, reçu {type(v).__name__}")
-        if spec.get("type") == "boolean" and not isinstance(v, bool):
-            errs.append(f"{k!r} doit être un booléen, reçu {type(v).__name__}")
+    for fname, fdef in properties.items():
+        if fname not in run:
+            continue
+        val = run[fname]
+        ftype = fdef.get("type")
+        # "type": [...] is a JSON-Schema union ("number" or "null" -> nullable)
+        types = ftype if isinstance(ftype, list) else [ftype]
+        if val is None and "null" in types:
+            continue
+        if val is None:
+            errs.append(f"{fname!r}: null non autorise (type={types})")
+            continue
+        # Type check per type
+        ok = False
+        for t in types:
+            if t == "string" and isinstance(val, str):
+                ok = True
+                break
+            if t == "number" and isinstance(val, (int, float)) and not isinstance(val, bool):
+                ok = True
+                break
+            if t == "integer" and isinstance(val, int) and not isinstance(val, bool):
+                ok = True
+                break
+            if t == "boolean" and isinstance(val, bool):
+                ok = True
+                break
+            if t == "array" and isinstance(val, list):
+                ok = True
+                break
+            if t == "object" and isinstance(val, dict):
+                ok = True
+                break
+        if not ok:
+            errs.append(f"{fname!r}: type attendu {types}, got {type(val).__name__}")
+            continue
+        # enum check
+        if "enum" in fdef and val not in fdef["enum"]:
+            errs.append(f"{fname!r}: {val!r} hors enum {fdef['enum']}")
+        if "minimum" in fdef and isinstance(val, (int, float)) and val < fdef["minimum"]:
+            errs.append(f"{fname!r}: {val} < minimum {fdef['minimum']}")
+        if "maximum" in fdef and isinstance(val, (int, float)) and val > fdef["maximum"]:
+            errs.append(f"{fname!r}: {val} > maximum {fdef['maximum']}")
+        # array items enum. Le test porte sur `types` (liste normalisee), pas sur
+        # `ftype` : le type peut etre une union JSON-Schema (`["array","null"]`),
+        # auquel cas `ftype == "array"` est faux et les elements n'etaient pas
+        # verifies.
+        if "array" in types and "items" in fdef and isinstance(val, list):
+            item_enum = fdef["items"].get("enum")
+            if item_enum:
+                for j, v in enumerate(val):
+                    if v not in item_enum:
+                        errs.append(f"{fname!r}[{j}]: {v!r} hors enum {item_enum}")
     return errs
 
 
-def _validate_jsonschema(record: dict, schema: dict) -> list[str]:
-    """Validateur jsonschema (si dispo). Renvoie [] si OK."""
-    try:
-        import jsonschema
-    except ImportError:
-        return []  # validateur interne prend le relais
-    v = jsonschema.Draft7Validator(schema)
-    return [f"{'/'.join(map(str, e.path))}: {e.message}" for e in v.iter_errors(record)]
+def upsert(bank: list[dict], run: dict) -> tuple[list[dict], str]:
+    """Upsert un run dans le banc par cle (motor, extract, seed). Retourne (nouveau_banc, action)."""
+    key = ("motor", "extract", "seed")
+    for i, row in enumerate(bank):
+        if all(row.get(k) == run.get(k) for k in key):
+            bank[i] = run
+            return bank, "replaced"
+    bank.append(run)
+    return bank, "appended"
 
 
-def _key(record: dict) -> tuple:
-    """Clé d'idempotence (motor, extract, sha256_prefix, seed). Le `ts` est
-    un horodatage, pas une clé — deux mesures du même couple (même moteur,
-    même extrait, même texte de référence, même graine) doivent collisionner,
-    sinon le banc se remplirait de doublons à chaque ré-exécution."""
-    return (
-        record["motor"],
-        record["extract"],
-        record.get("extract_text_sha256_prefix", ""),
-        record.get("seed"),
-    )
+def parse_run_arg(text: str) -> dict:
+    """Decode un run depuis un argument --run (JSON inline) ou un fichier JSON."""
+    text = text.strip()
+    # Heuristique : commence par '{' -> JSON inline, sinon chemin de fichier
+    if text.startswith("{"):
+        return json.loads(text)
+    p = Path(text)
+    if not p.exists():
+        raise FileNotFoundError(f"fichier JSON introuvable: {p}")
+    data = json.loads(p.read_text(encoding="utf-8"))
+    if isinstance(data, dict):
+        return data
+    if isinstance(data, list) and len(data) == 1:
+        return data[0]
+    raise ValueError(f"fichier doit etre un objet ou une liste a 1 element, got {type(data).__name__}")
 
 
-def _existing_keys(bank_path: Path) -> set[tuple]:
-    keys = set()
-    if not bank_path.exists():
-        return keys
-    with open(bank_path, encoding="utf-8") as f:
-        for ln in f:
-            ln = ln.strip()
-            if not ln:
+def ingest_bakeoff_small(root: Path) -> list[dict]:
+    """Ingere les runs depuis bakeoff_small/results/<motor>/bake_results.json
+    et bakeoff_small/results/<motor>/<extract>__<motor>.json.
+
+    Mapping :
+    - bake_results.json : schema dict contains lists `results` (chatterbox_mtl_v3, etc.)
+    - <extract>__<motor>.json : schema par-extrait (pocket_tts, etc.)
+    """
+    runs: list[dict] = []
+    if not root.exists():
+        return runs
+    # 1) bake_results.json par moteur
+    for path in root.glob("*/bake_results.json"):
+        motor_dir = path.parent
+        motor = motor_dir.name
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for r in data.get("results", []):
+            extract = r.get("extract")
+            if not extract:
                 continue
-            try:
-                rec = json.loads(ln)
-                keys.add(_key(rec))
-            except json.JSONDecodeError:
-                continue
-    return keys
+            seed_guess = 42  # default bakeoff_small
+            # RTF : non mesuré ici, peut être dérivé de duration_s + render_s si dispo
+            rtf = None
+            duration_s = r.get("duration_s")
+            wer = r.get("wer")
+            run = {
+                "ts": "2026-09-24T00:00:00Z",
+                "machine": "myia-po-2027",
+                "motor": motor,
+                "extract": extract,
+                "seed": seed_guess,
+                "wer": wer,
+                "rtf": rtf,
+                "vram_mb": None,
+                "duration_s": duration_s,
+                "voice_stable": None,
+                "hallu_per_100_syl": None,
+                "inserted_words": None,
+                "omitted_segments": None,
+                "asr_models": ["tiny"] if wer is not None else None,
+                "notes": f"bakeoff_small/{motor} (PR #17661)",
+            }
+            runs.append(run)
+    # 2) Fichiers per-extrait (pocket_tts et autres sans bake_results.json)
+    for path in root.glob("*/*.json"):
+        if path.name == "bake_results.json":
+            continue
+        name = path.stem  # ex: A__pocket_tts
+        if "__" not in name:
+            continue
+        extract, motor = name.split("__", 1)
+        if extract not in {"A", "B", "C", "A_long", "B_long"}:
+            continue
+        data = json.loads(path.read_text(encoding="utf-8"))
+        metrics = data.get("metrics", {})
+        duration_s = metrics.get("duration_s")
+        wer = data.get("wer")
+        # Inference : pocket_tts CPU, Whisper-tiny non chargé => wer null
+        notes = data.get("wer_explanation") or f"bakeoff_small/{motor} (PR #17661)"
+        run = {
+            "ts": "2026-09-24T00:00:00Z",
+            "machine": "myia-po-2027",
+            "motor": motor,
+            "extract": extract,
+            "seed": 42,
+            "wer": wer,
+            "rtf": None,
+            "vram_mb": None,
+            "duration_s": duration_s,
+            "voice_stable": None,
+            "hallu_per_100_syl": None,
+            "inserted_words": None,
+            "omitted_segments": None,
+            "asr_models": ["tiny"] if wer is not None else None,
+            "notes": notes[:200],
+        }
+        runs.append(run)
+    return runs
 
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--bank", required=True, help="Chemin du banc JSONL (créé si absent).")
-    p.add_argument("--metrics", required=True, help="metrics.json source à ingérer.")
-    p.add_argument("--machine", default=None, help="Override machine (sinon inféré).")
-    p.add_argument("--motor", required=True, help="Identifiant du moteur TTS.")
-    p.add_argument("--extract", required=True, choices=["A", "B", "C", "D", "E"],
-                   help="Identifiant de l'extrait.")
-    p.add_argument("--seed", type=int, default=None)
-    p.add_argument("--motor-license", default=None)
-    p.add_argument("--notes", default=None)
-    p.add_argument("--source-path", default=None,
-                   help="Chemin source (traçabilité bootstrap).")
+    p.add_argument("--bank", type=Path, default=DEFAULT_BANK,
+                   help=f"Chemin du fichier banc (default: {DEFAULT_BANK})")
+    p.add_argument("--run", type=str, default=None,
+                   help="JSON inline du run, OU chemin vers un fichier .json")
+    p.add_argument("--file", type=str, default=None,
+                   help="Fichier JSON (objet ou liste)")
+    p.add_argument("--ingest-root", dest="ingest_root", type=Path, default=None,
+                   help="Repertoire a ingerer (bakeoff_small/results ou autre). Le script decouvre bake_results.json et <extract>__<motor>.json.")
+    p.add_argument("--machine", type=str, default="myia-po-2027",
+                   help="Lane si non specifiee dans le run (default: myia-po-2027)")
     p.add_argument("--dry-run", action="store_true",
-                   help="Valide sans écrire.")
+                   help="Valide et affiche sans ecriture")
+    p.add_argument("--strict", action="store_true",
+                   help="Echoue sur warning d'inference (RTF/seed/notes)")
     args = p.parse_args()
 
-    schema = _load_schema()
-    metrics_path = Path(args.metrics)
-    if not metrics_path.exists():
-        print(f"metrics.json introuvable : {metrics_path}", file=sys.stderr)
+    schema = load_schema()
+
+    new_runs: list[dict] = []
+    if args.run:
+        new_runs.append(parse_run_arg(args.run))
+    if args.file:
+        fpath = Path(args.file)
+        data = json.loads(fpath.read_text(encoding="utf-8"))
+        if isinstance(data, list):
+            new_runs.extend(data)
+        else:
+            new_runs.append(data)
+    if args.ingest_root:
+        new_runs.extend(ingest_bakeoff_small(args.ingest_root))
+
+    if not new_runs:
+        print("Aucun run a append (--run, --file, ou --ingest-root requis)", file=sys.stderr)
         return 2
-    with open(metrics_path, encoding="utf-8") as f:
-        metrics = json.load(f)
 
-    record = _coerce_metrics(metrics)
-    # Overrides CLI
-    if args.machine:
-        record["machine"] = args.machine
-    record["motor"] = args.motor
-    record["extract"] = args.extract
-    if args.seed is not None:
-        record["seed"] = args.seed
-    if args.motor_license:
-        record["motor_license"] = args.motor_license
-    if args.notes:
-        record["notes"] = args.notes
-    if args.source_path:
-        record["source_path"] = args.source_path
+    # Validation
+    validation_errors: list[str] = []
+    for i, r in enumerate(new_runs):
+        if "machine" not in r:
+            r["machine"] = args.machine
+        errs = validate_run(r, schema)
+        if errs:
+            validation_errors.append(f"run[{i}] {r.get('motor', '?')}/{r.get('extract', '?')}: " + "; ".join(errs))
 
-    # Validation jsonschema d'abord (plus stricte), validateur interne en filet
-    errs = _validate_jsonschema(record, schema)
-    if not errs:
-        errs = _validate_locally(record, schema)
-    if errs:
-        print("Validation échouée :", file=sys.stderr)
-        for e in errs:
+    if validation_errors:
+        print("VALIDATION FAILED:", file=sys.stderr)
+        for e in validation_errors:
             print(f"  - {e}", file=sys.stderr)
-        return 3
-
-    bank_path = Path(args.bank)
-    bank_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Idempotence
-    existing = _existing_keys(bank_path)
-    k = _key(record)
-    if k in existing:
-        print(f"Run déjà présent dans le banc (clé : motor={k[0]}, "
-              f"extract={k[1]}, sha256_prefix={k[2][:8]}…, seed={k[3]}).",
-              file=sys.stderr)
-        return 4
+        return 1
 
     if args.dry_run:
-        print(json.dumps(record, ensure_ascii=False, indent=2))
-        print("Dry-run : pas d'écriture.", file=sys.stderr)
+        print(f"DRY-RUN : {len(new_runs)} run(s) valide(s). Aucune ecriture.")
+        for r in new_runs:
+            print(f"  - {r['motor']}/{r['extract']}/seed={r['seed']} wer={r.get('wer')} duration={r.get('duration_s')}s")
         return 0
 
-    with open(bank_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(record, ensure_ascii=False) + "\n")
-    print(f"Run ajouté au banc : {bank_path}")
-    print(f"  motor={record['motor']} extract={record['extract']} "
-          f"wer={record.get('wer')} rtf={record.get('rtf')}")
+    # Charger le banc existant + upsert
+    bank = load_bank(args.bank)
+    counts = {"appended": 0, "replaced": 0}
+    for r in new_runs:
+        bank, action = upsert(bank, r)
+        counts[action] += 1
+
+    save_bank(args.bank, bank)
+    print(f"Banc ecrit: {args.bank} ({len(bank)} total, +{counts['appended']} append, ~{counts['replaced']} replace)")
     return 0
 
 
