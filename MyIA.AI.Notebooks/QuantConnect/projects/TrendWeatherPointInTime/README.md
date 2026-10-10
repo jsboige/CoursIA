@@ -101,6 +101,6 @@ Le Sharpe mesuré (1,148 avant arrondi) est proche des deux valeurs publiées. L
 
 ### Suivi en ombre
 
-La variante `pit` est gelée à la date du verdict, avec ses paramètres par défaut. Elle est inscrite au registre du suivi en ombre (#18923) après merge, comme les autres stratégies évaluées.
+La variante `pit` est gelée à la date du verdict, au commit de `main` qui porte ces fichiers ; les empreintes des trois fichiers extraits à ce commit sont celles des runs du verdict (`main.py` 9618cea1d839, `alpha_models.py` de37af8068da, `portfolio_construction.py` 6c325cd73df0). Elle est inscrite au [registre du suivi en ombre](../../ML-Training-Pipeline/shadow/registry.json) (#18923) sous l'identifiant `tw-pit`, avec le paramètre `universe=pit` et les autres paramètres par défaut, gelée au 2026-10-06 ; premier passage à la première séance de novembre.
 
 Traces (plans, identifiants de backtest, journaux, ordres, `results.json`) : hors dépôt, dossier `QC-traces/19393-trendweather` du partage du cluster.

@@ -88,9 +88,12 @@ public readonly record struct GoPoint(int X, int Y)
 /// Zobrist pour le superko, regions de surete) : ce port recalcule groupes et
 /// libertes par flood-fill local, ce qui est equivalent pour les regles et
 /// suppose plus lent pour un moteur de recherche — l'adaptateur IGame
-/// (tranche 3, apres le merge de #19176) mesurera ce cout. Le superko, le
-/// resign, le chargement SGF et l'evaluation CNTK ne sont pas dans cette
-/// tranche. Deux ecritures propres au patrimoine ne sont pas conservees : il
+/// (tranche 3, apres le merge de #19176) mesurera ce cout. Le superko
+/// <b>est porte</b> (tranche 4) : positionnel, par empreinte Zobrist 64 bits
+/// deterministe, l'historique des positions survivant au clonage — sans lui,
+/// l'arbre de recherche de la tranche 3 pourrait boucler sur un cycle que la
+/// racine interdit. Le resign, le chargement SGF et l'evaluation CNTK ne sont
+/// pas portes. Deux ecritures propres au patrimoine ne sont pas conservees : il
 /// envisageait de jouer hors tour (<c>IsSimpleKoViolation</c> testait
 /// <c>Turn != player</c>) — ici l'alternance est stricte ; le score vivait
 /// chez un gnugo externe — ici c'est un score de territoire (pieres + vides
@@ -104,6 +107,16 @@ public sealed class GoGame
     private readonly int[] _captured;           // prisonniers, indexes par valeur de l'enum
     private int _koIndex = -1;                  // GoTraxx SimpleKoPoint (-1 = aucun)
     private int _consecutivePasses;
+    private ulong _positionHash;                // XOR Zobrist des pierres posees
+    private HashSet<ulong> _positionHistory;    // chaque position vue depuis l'ouverture (superko)
+
+    /// <summary>
+    /// Tables Zobrist par taille de plateau, deux entrees par intersection (noir,
+    /// puis blanc). Valeurs issues d'un SplitMix64 a graine fixe : deterministes
+    /// d'une execution a l'autre, contrairement a un tirage aleatoire — un temoin
+    /// de legalite ne doit pas dependre du tirage qui l'a precede.
+    /// </summary>
+    private static readonly Dictionary<int, ulong[]> ZobristCache = new();
 
     /// <summary>Plateau carre, taille 2 a 25.</summary>
     public int Size { get; }
@@ -124,6 +137,18 @@ public sealed class GoGame
     /// </summary>
     public GoPoint? KoPoint => _koIndex < 0 ? null : PointOf(_koIndex);
 
+    /// <summary>
+    /// Empreinte Zobrist 64 bits de la position courante (pierres posees, pas le
+    /// trait). Informationnelle — sert de temoin aux tests ; la legalite superko
+    /// la recalcule elle-meme. Une collision 64 bits entre deux positions reelles
+    /// est possible en principe (anniversaire : ~2^32 positions) et negligeable en
+    /// pratique : une partie plafonne a quelques centaines de positions.
+    /// </summary>
+    public ulong PositionHash => _positionHash;
+
+    /// <summary>Nombre de positions distinctes vues depuis l'ouverture, vide compris.</summary>
+    public int PositionCount => _positionHistory.Count;
+
     /// <summary>Plateau vide, noir au trait.</summary>
     public GoGame(int size = 19, double komi = 7.5)
     {
@@ -133,6 +158,7 @@ public sealed class GoGame
         Komi = komi;
         _board = new GoColor[size * size];
         _captured = new int[3];
+        _positionHistory = new HashSet<ulong> { 0UL };
     }
 
     /// <summary>
@@ -140,7 +166,9 @@ public sealed class GoGame
     /// <c>IGame.Result</c> de la tranche 3 exige qu'un resultat ne mute pas son
     /// origine : chaque noeud de l'arbre de recherche est un clone, aucune
     /// mutation partagee. Toute l'information de partie y survit -- trait, ko,
-    /// passes consecutifs, prisonniers.
+    /// passes consecutifs, prisonniers, et l'historique de positions du superko :
+    /// un clone qui l'oublierait autoriserait en sous-arbre la repetition que la
+    /// racine interdit.
     /// </summary>
     public GoGame Clone()
     {
@@ -151,6 +179,8 @@ public sealed class GoGame
         copy._consecutivePasses = _consecutivePasses;
         copy.ToPlay = ToPlay;
         copy.IsOver = IsOver;
+        copy._positionHash = _positionHash;
+        copy._positionHistory = new HashSet<ulong>(_positionHistory);
         return copy;
     }
 
@@ -169,8 +199,11 @@ public sealed class GoGame
 
     /// <summary>
     /// Legalite dans l'ordre du patrimoine : sur-plateau, intersection vide,
-    /// pas de violation du ko simple, pas de suicide. L'alternance est
-    /// stricte : seul le trait courant obtient vrai.
+    /// pas de violation du ko simple, pas de suicide, puis pas de repetition
+    /// de position (superko positionnel). L'alternance est stricte : seul le
+    /// trait courant obtient vrai. Le passe est toujours legal — c'est la
+    /// soupape d'arbitrage qui termine les parties sans coup, et la repetition
+    /// qu'il produit est deja l'etat courant, pas une recreation.
     /// </summary>
     public bool IsLegal(GoPoint p, GoColor color)
     {
@@ -195,7 +228,31 @@ public sealed class GoGame
             return false;
         }
 
-        return !IsSuicide(idx, color);
+        if (IsSuicide(idx, color))
+        {
+            return false;
+        }
+
+        return !RecreatesPosition(idx, color);
+    }
+
+    /// <summary>
+    /// Le coup recreerait-il une position deja vue ? Superko positionnel : la
+    /// position comparee est le plateau de pierres, trait exclu (le choix
+    /// Tromp-Taylor ; le superko situationnel ajouterait le trait, plus dur
+    /// encore). Le recapture immediat du ko simple est deja couvert par
+    /// <c>_koIndex</c> ; ce qui reste vise sont les cycles longs — triple ko,
+    /// double ko, envoi-de-deux-retour-d'un — qu'aucune regle locale n'attrape.
+    /// </summary>
+    private bool RecreatesPosition(int idx, GoColor color)
+    {
+        ulong candidate = _positionHash ^ ZobristStone(idx, color);
+        foreach (int s in StonesCapturedBy(idx, color))
+        {
+            candidate ^= ZobristStone(s, color.Opposite());
+        }
+
+        return _positionHistory.Contains(candidate);
     }
 
     /// <summary>Jouer le coup pour la couleur au trait. Faux (rien ne bouge) si illegal.</summary>
@@ -230,45 +287,30 @@ public sealed class GoGame
             _consecutivePasses = 0;
             int idx = IndexOf(p);
             bool loneStone = !HasNeighbor(idx, color);
-            int capturedGroups = 0;
-            int capturedStones = 0;
-            int capturedStoneIndex = -1;
+            List<int> captured = StonesCapturedBy(idx, color);
 
-            // Retirer d'abord les chaines ennemies dont ce coup prend la
-            // derniere liberte : la pierre jouee vit de leurs intersections.
-            foreach (int n in Neighbors(idx))
+            // Empreinte de la position produite, pierres capturees comprises.
+            ulong candidate = _positionHash ^ ZobristStone(idx, color);
+            foreach (int s in captured)
             {
-                if (_board[n] != color.Opposite() || _board[n] == GoColor.Empty)
-                {
-                    continue;
-                }
-
-                (List<int> stones, HashSet<int> liberties) = Group(n);
-                if (liberties.Count == 1 && liberties.Contains(idx))
-                {
-                    capturedGroups++;
-                    capturedStones += stones.Count;
-                    foreach (int s in stones)
-                    {
-                        if (stones.Count == 1)
-                        {
-                            capturedStoneIndex = s;
-                        }
-
-                        _board[s] = GoColor.Empty;
-                    }
-                }
+                candidate ^= ZobristStone(s, color.Opposite());
+                _board[s] = GoColor.Empty;
             }
 
             _board[idx] = color;
-            _captured[(int)color.Opposite()] += capturedStones;
+            _captured[(int)color.Opposite()] += captured.Count;
 
-            // Ko simple, exactement comme GoTraxx le pose : une seule chaine
-            // capturee, d'une pierre, par une pierre isolee — le point
-            // interdit est la position de la pierre capturee.
-            _koIndex = capturedGroups == 1 && capturedStones == 1 && loneStone
-                ? capturedStoneIndex
+            // Ko simple, exactement comme GoTraxx le pose : une seule pierre
+            // capturee, par une pierre isolee — le point interdit est la
+            // position de la pierre capturee.
+            _koIndex = captured.Count == 1 && loneStone
+                ? captured[0]
                 : -1;
+
+            // La position produite est nouvelle par construction (le superko
+            // l'a verifie en legalite) : l'inscrire est un fait, pas un pari.
+            _positionHash = candidate;
+            _positionHistory.Add(candidate);
         }
 
         ToPlay = color.Opposite();
@@ -392,6 +434,66 @@ public sealed class GoGame
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Pierres ennemies que ce coup capturerait, sans toucher au plateau. Une
+    /// chaine peut toucher l'intersection jouee par plusieurs de ses pierres :
+    /// le dedoublonnage par appartenance evite de la compter deux fois — le
+    /// <c>Play</c> d'origine s'en tirait en vidant le plateau au fil du scan,
+    /// mutation qu'une sonde de legalite ne peut pas se permettre.
+    /// </summary>
+    private List<int> StonesCapturedBy(int idx, GoColor color)
+    {
+        List<int> captured = new();
+        foreach (int n in Neighbors(idx))
+        {
+            if (_board[n] != color.Opposite() || captured.Contains(n))
+            {
+                continue;
+            }
+
+            (List<int> stones, HashSet<int> liberties) = Group(n);
+            if (liberties.Count == 1 && liberties.Contains(idx))
+            {
+                captured.AddRange(stones);
+            }
+        }
+
+        return captured;
+    }
+
+    /// <summary>Entree Zobrist d'une pierre de cette couleur a cette intersection.</summary>
+    private ulong ZobristStone(int idx, GoColor color) =>
+        ZobristTable(Size)[((int)color - 1) * Size * Size + idx];
+
+    /// <summary>
+    /// Table Zobrist de cette taille de plateau, construite une fois par taille
+    /// et partagee par toutes les parties de meme taille. SplitMix64 a graine
+    /// fixe : deux executions produisent la meme table.
+    /// </summary>
+    private static ulong[] ZobristTable(int size)
+    {
+        lock (ZobristCache)
+        {
+            if (!ZobristCache.TryGetValue(size, out ulong[]? table))
+            {
+                table = new ulong[2 * size * size];
+                ulong state = 0x2545F4914F6CDD1DUL ^ (uint)size;
+                for (int i = 0; i < table.Length; i++)
+                {
+                    state += 0x9E3779B97F4A7C15UL;
+                    ulong z = state;
+                    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL;
+                    z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
+                    table[i] = z ^ (z >> 31);
+                }
+
+                ZobristCache[size] = table;
+            }
+
+            return table!;
+        }
     }
 
     /// <summary>Chaine et libertes de la pierre a cette intersection (flood-fill).</summary>
