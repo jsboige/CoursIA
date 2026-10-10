@@ -110,7 +110,7 @@ QC affiche pour `L14N2`, sur toute la fenêtre, un Sharpe de 0,72, un CAGR de 15
 
 - `L14N2` a fait 444 revues, une par lundi, et passé 1085 ordres.
 - Il a passé 493 jours sur 3104 entièrement en liquidités, soit 16 %. Le filtre de tendance n'a donc vidé le portefeuille qu'une petite partie du temps.
-- Il a détenu en moyenne 1,55 ligne sur les 2 possibles.
+- Il a détenu en moyenne 1,55 actif sur les 2 possibles.
 
 Sur les autres points, les jours en liquidités vont de 493 (`L` = 14) à 549 (`L` = 56).
 
