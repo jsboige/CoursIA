@@ -1364,6 +1364,8 @@ project:
     - "MyIA.AI.Notebooks/NLP/05-HMM-Viterbi.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb"
+    - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03-Critique-Python.ipynb"
+    - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03b-Critique-L128-L256.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-01-Prime-Pure-Chargement.ipynb"
