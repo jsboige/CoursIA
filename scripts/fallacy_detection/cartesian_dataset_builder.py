@@ -82,6 +82,19 @@ DEFAULT_SCENARII = (
 SCENARII_UPSTREAM_COMMIT = "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c"
 SCENARII_BLOB_SHA1 = "9f20eb808a1d22c9c1a5dd1b96460b0d6a23db60"
 
+# Ancrage cote depot (mesure po-2023 du 2026-10-08 sur #17578) : le gitlink du
+# sous-module Argumentum a derive APRES le build (0ab05d66 -> 65af9c38 le
+# 06/10 -> edb39554), et la reproductibilite ne doit plus se lire depuis un pin
+# amont que le depot ne pointe plus. Elle se lit depuis le commit du depot ou
+# le dataset est entre sur main : a ce commit, le gitlink etait encore le pin
+# amont. Ce sont des constantes de provenance, pas des valeurs capturees au
+# vol -- un manifeste qui dependrait du commit courant casserait le test de
+# regeneration bit-identique. La resynchronisation (cf NOTICE) les met a jour.
+SCENARII_COPY_REPO_PATH = "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/argumentum_scenarii_cards.csv"
+BUILD_REPO_COMMIT = "4e0f5a103f404dba5ed27d3e9a1cd0b982de7cfe"
+BUILD_GITLINK_COMMIT = "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c"
+ARGUMENTUM_SUBMODULE_PATH = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"
+
 LANGS = tuple(ALL_LANGS)
 LANG_NAMES = {
     "fr": "French", "en": "English", "ru": "Russian", "pt": "Portuguese",
@@ -509,6 +522,12 @@ def build(params: dict = DEFAULT_PARAMS, fallacies_csv: Path = DEFAULT_FALLACIES
         "virtues_blob_sha1": git_blob_sha1(virtues_csv),
         "scenarii_blob_sha1": git_blob_sha1(scenarii_csv),
         "scenarii_upstream_commit": SCENARII_UPSTREAM_COMMIT,
+        # Ancrage cote depot : cf constantes ci-dessus. Le builder lit la copie
+        # verbatim in-repo, pas le sous-module vivant -- c'est elle, epinglee au
+        # commit du build, qui rend la regeneration atteignable par git.
+        "scenarii_copy_repo_path": SCENARII_COPY_REPO_PATH,
+        "build_repo_commit": BUILD_REPO_COMMIT,
+        "build_gitlink_commit": BUILD_GITLINK_COMMIT,
     }
     return nodes, scenarios, scen_split, pairs, build_manifest(pairs, nodes, params, sources)
 

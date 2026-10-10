@@ -5,7 +5,7 @@
 
 ## Description
 
-Stratégie LSTM de deep learning utilisant PyTorch. Prédit le prix normalisé de SPY à J+1 à partir d'une séquence de 20 prix normalisés (min-max scaling ajusté sur le train uniquement).
+Stratégie LSTM de deep learning sous **PyTorch**. Prédit le **prix normalisé** de SPY à J+1 à partir d'une séquence de 20 prix normalisés (min-max scaling ajusté sur le train uniquement) ; la prédiction est dénormalisée en prix, puis convertie en rendement prédit pour la décision d'achat/liquidation.
 
 ## How to Run
 

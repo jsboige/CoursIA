@@ -406,6 +406,22 @@ CONCERN_MARKERS = (
     "NEEDS_CHANGES", "CONCERNS",
     "SUSPECT_", "STRUCTURAL_ONLY", "SCOPE FLAG", "scope mismatch",
     "avant merge", "avant de merger", "il va falloir", "a nuancer", "à nuancer",
+    # Marqueur de position de verdict (#13083 instance 3, 2026-10-05) :
+    # AJOUTE en extension aux sous-chaines brutes « avant merge » /
+    # « before merge » ci-dessous (et non en REMPLACEMENT). Hermes a releve
+    # que le retrait de « avant merge » / « before merge » cassait 6 tests
+    # (faux negatifs de detection sur les consommateurs has_live_marker /
+    # classify / dossier ADJOINT mal-forme -- cf review clusterManager-Myia
+    # 2026-10-05T??:??:Z). Le geste annonce etait « neutraliser [BEFORE-MERGE]
+    # en position de mention » : il est realise par les 7 sous-patterns
+    # Position I/I' qui matchent desormais `\bavant(?:\s+(?:le|la|l'))?\s+merge\b`
+    # OU `\[BEFORE-MERGE\]` -- les deux continuent de fonctionner comme
+    # discriminant de mention, et les 4 faux negatifs mesures (Le scope /
+    # Il reste un point / Le point 3 / La reserve) sont restaures. Le retrait
+    # du sous-chaines brutes, lui, etait une erreur : le contrat d'emission
+    # ne bascule pas (13 PRs avec « avant merge » en prose mes. c.183, 0
+    # avec le marqueur structurel). On garde donc les deux formes.
+    "[BEFORE-MERGE]",
     # Miroir anglais de « avant merge » : fenetre 04-23..04-30 (triage po-2023,
     # #11044) — 2 faux negatifs mesures, PRs mergees sans aucune levee :
     # #594 « issues that should be addressed before merge » et #590
@@ -1027,7 +1043,16 @@ _MENTION_VERDICT_BARE = re.compile(
     r"(?i)(?:^|[\s,;:(*]|@\S+\s+[—\-]\s+)"
     r"(?:fix(?:ed|ée?e?)?|corrig\w+|suite\s+[àa]|en\s+r[ée]ponse\s+[àa]"
     r"|r[ée]ponse\s+[àa]|lev(?:e|é|ée|er|ons)\b|lift\w*|adress\w+|trait(?:e|é|er)\b|repondu\s+[àa])"
-    r"[^():\n.]{0,40}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    # #13083 instance 3 : un marqueur structurel entre crochets
+    # (`[BEFORE-MERGE]`, `[OVERRIDE] lane <lane>`, `[BLOCAGE] lane <lane>`) n'est
+    # jamais une MENTION d'un verdict — c'est l'EMISSION elle-meme. Le strip
+    # Position G ne doit pas le capturer. Garde par exclusion du caractere
+    # `[` du gap intra-phrase : la capture verdict doit etre introduite par
+    # autre chose qu'un crochet ouvrant. Un lookbehind positionne apres le
+    # groupe capture regarde le caractere apres le verdict matche, pas
+    # avant (cf test_iso deplacement_lookbehind, c.183) — l'exclusion du
+    # gap est la seule mecanique qui protege la capture.
+    r"[^():\n.\[]{0,40}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
     r"(?!\s*[—\-]\s+commit\b)")
 
 
@@ -1196,7 +1221,7 @@ _MENTION_AVANT_MERGE_QUALIFIER = re.compile(
     # un aparte benin dans une phrase precedente ne neutralise pas un nit
     # VIVANT de la phrase suivante.
     r"[^.!?\n]{0,200}?"
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
 )
 
 _MENTION_AVANT_MERGE_VERIFIED = re.compile(
@@ -1211,7 +1236,7 @@ _MENTION_AVANT_MERGE_VERIFIED = re.compile(
     r")"
     r"\s+(?:de\s+(?:mon|ma|notre|leur)\s+)?c[ôo]t[éèe]?"
     r"[^.!?\n]{0,20}?"
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
 )
 
 _MENTION_AVANT_MERGE_VERIFIED_EN = re.compile(
@@ -1220,7 +1245,7 @@ _MENTION_AVANT_MERGE_VERIFIED_EN = re.compile(
     r"\b(?:verified|check(?:ed|ée?s?)|confirm(?:ed|ée?s?))\b"
     r"(?:\s+(?:par|by|via)\s+\S+)?"
     r"[^.!?\n]{0,40}?"
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
 )
 
 _MENTION_AVANT_MERGE_PAST_PRECEDED = re.compile(
@@ -1235,7 +1260,7 @@ _MENTION_AVANT_MERGE_PAST_PRECEDED = re.compile(
     r"|confirm(?:ed)"
     r")"
     r"[\s,;:.\\-]{0,3}"
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
 )
 
 _MENTION_AVANT_MERGE_PREFLIGHT = re.compile(
@@ -1243,7 +1268,7 @@ _MENTION_AVANT_MERGE_PREFLIGHT = re.compile(
     # Preflight / pre-flight check passe
     r"(?:pre[\s-]?flight|preflight)\s+(?:check|verified|passed|ok)"
     r"[^.!?\n]{0,20}?"
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
 )
 
 _MENTION_AVANT_MERGE_B0 = re.compile(
@@ -1252,13 +1277,13 @@ _MENTION_AVANT_MERGE_B0 = re.compile(
     r"(?:issue\s+de\s+suivi\s+(?:ouverte|ouvert|opened|open)"
     r"|voie\s+B\.\d+)"
     r"[^.!?\n]{0,80}?"
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
 )
 
 _MENTION_AVANT_MERGE_BALL = re.compile(
     r"(?i)"
     # 'avant merge' suivi de '. Ball merge : <delegate>' (delegation pattern)
-    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])"
     r"[^.!?\n]{0,30}?"
     r"\.\s*Ball\s+merge\s*:"
 )
@@ -1317,7 +1342,7 @@ _MENTION_AVANT_MERGE_HEAD_NEUTRAL = re.compile(
     # titre (espaces optionnels avant, decoration markdown optionnelle,
     # puis fin de ligne / fin de body). Le lookahead plutot que `$` capture
     # correctement la fin de body sans exiger un `\n` final.
-    r"\b(?:avant(?:\s+(?:le|la|l[\\']))?|before)\s+merge\b"
+    r"(?:\b(?:avant(?:\s+(?:le|la|l[\\']))?|before)\s+merge\b|\[BEFORE-MERGE\])"
     r"(?=\s*[.*_~`:]*\s*(?:\n|\Z))"
 )
 
@@ -1415,9 +1440,10 @@ def _strip_avant_merge_mention(body: str) -> str:
         # Le token cible est le `avant [le/la/l'] merge` (non capture, neutralise integralement)
         # La longueur du token est variable (`avant merge` = 11, `avant le merge` = 14, etc.)
         body = pat.sub(
-            lambda m: re.sub(r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b",
-                             lambda mm: " " * (mm.end() - mm.start()),
-                             m.group(0)),
+            lambda m: re.sub(
+                r"(?:\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b|\[BEFORE-MERGE\])",
+                lambda mm: " " * (mm.end() - mm.start()),
+                m.group(0)),
             body,
         )
     # Phase Position I' (#13083 instance 3) : `avant [le/la/l'] merge` /
@@ -1431,7 +1457,7 @@ def _strip_avant_merge_mention(body: str) -> str:
             # Garde-fou : si la ligne de titre porte un verbe actionnel /
             # qualifieur bloquant, NE PAS neutraliser (VP).
             re.sub(
-                r"\b(?:avant(?:\s+(?:le|la|l[\\']))?|before)\s+merge\b",
+                r"(?:\b(?:avant(?:\s+(?:le|la|l[\\']))?|before)\s+merge\b|\[BEFORE-MERGE\])",
                 lambda mm: " " * (mm.end() - mm.start())
                 if not _is_action_verb_heading(m.group(0))
                 else mm.group(0),
@@ -4089,6 +4115,53 @@ def _opens_on_lift(body: str) -> bool:
     return bool(_OPENING_LIFT_RE.match(body.lstrip("\r\n \t")))
 
 
+# #19810 — discriminateur UI-web-nit : le proxy CRLF introduisait en 728146a78e
+# (#11044/#11045, ai-01, 2026-08-15) reposait sur CRLF = UI web = humain. Il
+# attrapait les VRAIS nits UI web (USER_NIT corpus, « Il reste un souci »,
+# bullet lists) mais sur-firait sur les posts CLI Windows : un commentaire
+# multi-ligne ecrit via `Path.write_text` (mode texte, `\n -> \r\n`) devenait
+# HUMAN sans aucun marqueur de reserve. Faux-positif fondateur #19704 (2026-10-08,
+# po-2026 : la lane s'est auto-bloquee au merge-gate sur son propre commentaire,
+# 0.1 h apres l'avoir poste, gap = transport CRLF seul).
+#
+# Le discriminateur preserve le signal UI web : il exige une STRUCTURE de
+# plainte (bullet-list, phrase-repere plainte EN/FR, ou phrase interrogative
+# centrée « nit/reserve »). Les posts CLI Windows — multi-lignes status,
+# chemins, SHAs, « All tests green » — n'ont aucune de ces structures et
+# retournent False, donc le CRLF proxy les laisse passer (None).
+_UI_WEB_NIT_BULLET_RE = re.compile(r"\r\n\s*(?:[-*]\s|\d+\.\s)\S")
+_UI_WEB_NIT_PHRASE_RE = re.compile(
+    r"\b(?:attention|heads[- ]?up|warning|please|merci[,\s]|"
+    r"il (?:va falloir|reste|y a|n'?y a pas)|pourrais[- ]tu|"
+    r"(?:il|y)\s+(?:a|faut)\s+|"
+    r"\bnit\b|\breserves?\b|\bsouci\b|\bprobleme\b|\bmanque\b|"
+    r"\bcass(?:e|é)\b|\bbug\b|\bwrong\b|\bbroken\b|"
+    r"ne\s+(?:pas|oublie)|avertissement|remarque|"
+    r"doit\s+(?:etre|etre|fonctionner)|faut\s+(?:pas|que))",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_ui_web_nit(body: str) -> bool:
+    """#19810 — un corps CRLF est-il une plainte UI web, ou un post Windows-CLI ?
+
+    UI web : bullet-list, phrase-repere plainte (attention/souci/nit/reserve/
+    casse/...), phrase interrogative centree. Le test USER_NIT (l.50, «
+    Attention 2 nits:\\r\\n- il va falloir splitter\\r\\n- l'attribution
+    est fausse ») couvre le 1er cas ; le test_controle_positif_vrai_nit_user_crlf
+    (#16700 l.150, « Il reste un souci :\\r\\nla cellule dit 1 722 s mais le
+    describe dit 1433.57. ») couvre le 2e.
+
+    Windows CLI : multi-lignes status (chemins absolus, SHAs 728146a78e,
+    « All tests green », « CI passing »). Aucun marqueur de plainte → False.
+    """
+    if _UI_WEB_NIT_BULLET_RE.search(body):
+        return True
+    if _UI_WEB_NIT_PHRASE_RE.search(body):
+        return True
+    return False
+
+
 def classify(author: str, body: str) -> str | None:
     """'HUMAN' (nit user, UI web) | 'BOT-CONCERN' (reviewer avec reserves) | None."""
     if author in BOT_LOGINS or not body:
@@ -4217,7 +4290,16 @@ def classify(author: str, body: str) -> str | None:
     if stripped.startswith(AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
         return "BOT-CONCERN" if live_concern else None
-    if "\r\n" in body:
+    # #19810 — proxy CRLF serre : un corps CRLF ne tient HUMAN que s'il porte
+    # une reserve claire (live_concern) OU une structure de plainte UI web
+    # (bullet list, phrase-repere plainte). Sans ca, c'est un artefact de
+    # transport (post CLI Windows via Path.write_text, Out-File, redirection
+    # PowerShell) et le commentaire reste muet. Cas fondateur #19704 :
+    # po-2026 s'auto-bloquait au merge-gate sur son propre commentaire, 0.1 h
+    # apres l'avoir poste, gap = CRLF seul. USER_NIT (l.50, attention+bullets)
+    # et test_controle_positif_vrai_nit_user_crlf (#16700 l.150, "souci")
+    # restent preserves (live_concern False mais _looks_like_ui_web_nit True).
+    if "\r\n" in body and (live_concern or _looks_like_ui_web_nit(body)):
         return "HUMAN"
     if live_concern:
         return "BOT-CONCERN"
@@ -4328,7 +4410,7 @@ def _names_author(body: str, author: str) -> bool:
 # #18149 -- un lift `jsboige` prefixe `[NanoClaw]` / `[Hermes]` est-il signe
 # par la lane qui porte la PR ? Detection sur deux frontieres de format canonique
 # du tag de lane : (a) `[machine:workspace]` en tete de paragraphe (format
-# `[CLAIMED]` / `[DISPATCH->inbox]`, Tell c.677-L4 body PR HORS worktree) --
+# `[CLAIMED]` / `[DISPATCH->inbox]`, body PR HORS worktree) --
 # deja porte par `_CROSS_LANE_LIFT_RE` ; (b) signature de bas de corps
 # (`-- lane <machine:workspace>` ou `lane <machine:workspace> -- ...`),
 # patron de pied de commentaire observe dans les reponses de lanes depuis
@@ -4336,12 +4418,19 @@ def _names_author(body: str, author: str) -> bool:
 # lift est signe par la lane de la PR SI ET SEULEMENT SI l'extraction lit
 # la meme chaine canonique dans les deux sources (le format `CoursIA` vs
 # `CoursIA-2` discriminne -- la lane ne peut signer QUE la sienne).
+# #15864 (mesure #14549) : un point final de phrase ne peut plus terminer le
+# token de lane -- `lane myia-po-2023:CoursIA-2.` etait capture comme une lane
+# qui ne matche rien. Les points internes survivent (hostnames). Le meme
+# fragment vit dans check_adjoint_prevalidation.LANE_TOKEN ; copie locale pour
+# ne pas coupler le gate B.0 au gate d'adjoint. Voie (a) ci-dessous hors
+# perimetre : sa lane est delimitee par des crochets, pas suivie de prose.
+_LANE_TOKEN = r"[A-Za-z0-9_.-]*[A-Za-z0-9_-]:[A-Za-z0-9_.-]*[A-Za-z0-9_-]"
 _PR_LANE_FROM_BODY_RE = re.compile(
     # `Grain: ... -- lane <machine>:<workspace>` (corps PR) ; on capture
     # la lane canonique ; un prefixe optionnel avant n'est pas admis (la
     # balise est en tete de ligne apres decoration markdown).
     r"(?m)^[#>*+\-\s]*Grain:[^\n]*?\blane\s+"
-    r"([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)")
+    r"(" + _LANE_TOKEN + r")")
 _LIFT_LANE_SIGNATURE_RE = re.compile(
     # Voie (a) -- `[machine:workspace]` en tete de paragraphe.
     r"(?m)^[#>*+\-\s]*\[\s*([A-Za-z][\w.\-]*:[A-Za-z][\w.\-]*(?:\s+[^\]]+)?)\]"
@@ -4351,8 +4440,8 @@ _LIFT_LANE_FOOTER_RE = re.compile(
     # commentaire. Deux formes observees : `-- lane myia-po-XXXX:...`
     # (declaration finale separee par `--`) et `lane myia-po-XXXX:...
     # -- ...` (dans la meme ligne que le commentaire precedent).
-    r"(?m)(?:^|\s)--\s*lane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)\s*$"
-    r"|^lane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)(?:\s*--|\s*$)")
+    r"(?m)(?:^|\s)--\s*lane\s+(" + _LANE_TOKEN + r")\.?\s*$"
+    r"|^lane\s+(" + _LANE_TOKEN + r")\.?(?:\s*--|\s*$)")
 
 
 def _lift_signed_by_pr_lane(lift_body: str, pr_body: str) -> bool:

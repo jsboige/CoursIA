@@ -277,11 +277,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory/SocialChoice"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/07-Committees-Core.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory/SocialChoice"
     },
@@ -797,12 +792,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/ML.Net/ML-4b-ModelComparison-Validity-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb",
       "series": "MyIA.AI.Notebooks/ML/ML.Net"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/ML.Net/ML-5b-Series-Temporelles-Classiques-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb",
       "series": "MyIA.AI.Notebooks/ML/ML.Net"
     },
     {
@@ -1197,11 +1192,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/rl_17_k_server_wfa.ipynb",
-      "series": "MyIA.AI.Notebooks/RL"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
     },
@@ -1263,16 +1253,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-30-OrbitalAssembly-Certificate-Audit.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-31-RCPSP-Max-Feasibility-Bounds.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
     },
     {
@@ -1572,21 +1552,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-02-From-Equation-To-Proof.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-03-Wu-Method-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-07b-Examples-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
@@ -1648,6 +1613,11 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-36-Structures-Finies-MUH-Lean.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-38-Capstone-Geometry-Lean-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
     {
@@ -1797,22 +1767,22 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Tweety"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Tweety"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Aspic-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Aspic-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Tweety"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05b-Argumentation-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Tweety"
     },
     {
@@ -1852,17 +1822,7 @@
     },
     {
       "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-21-VoiceLeading.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
     },
     {
@@ -1912,6 +1872,26 @@
     },
     {
       "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
+    },
+    {
+      "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-03-Wu-Method-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
+    },
+    {
+      "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
+    },
+    {
+      "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-04-DD-AR-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
+    },
+    {
+      "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
@@ -1924,12 +1904,22 @@
       "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-08-OrbitalAssembly-Certificate-Audit-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
     }
   ],
   "wrapped": [
     {
       "series": "MyIA.AI.Notebooks/Complexity",
-      "notebooks": 11
+      "notebooks": 13
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment",

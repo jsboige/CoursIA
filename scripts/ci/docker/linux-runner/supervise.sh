@@ -1483,7 +1483,17 @@ fetch_token() {
   # gh ACTIF -- un `gh auth switch` dans une autre session changeait
   # l'identite des registration tokens en silence (incident 2026-09-02).
   if [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ]; then
-    GH_TOKEN="$(gh auth token --user "$COURSIA_RUNNER_GH_ACCOUNT")" || return 1
+    # #15154 : un compte epingle INTRROUVABLE dans le trousseau gh est une
+    # cause structurelle -- `gh auth token --user` n'aboutira jamais par la
+    # perseverance. Avant ce changement, le `return 1` partait AVANT toute
+    # ecriture du fichier d'etat : code HTTP absent -> transitoire -> la
+    # boucle retentait indefiniment (reserve du preflight du 2026-09-27).
+    # Le marqueur HTTP=AUTH est classe terminal par les boucles, comme un
+    # 4xx, et porte le compte epingle pour le diagnostic.
+    if ! GH_TOKEN="$(gh auth token --user "$COURSIA_RUNNER_GH_ACCOUNT")"; then
+      printf 'HTTP=AUTH\nACCOUNT=%s\n' "$COURSIA_RUNNER_GH_ACCOUNT" > "$FETCH_TOKEN_STATE_FILE"
+      return 1
+    fi
     export GH_TOKEN
   fi
   # Pas de 2>/dev/null (#14259) : l'erreur REELLE de gh (403, token expire,
@@ -1501,12 +1511,25 @@ fetch_token() {
   # absolu ecrit dans l'entete), PAS dans une variable bash. Un appel
   # `token="$(fetch_token)"` execute la fonction dans un subshell -- les
   # asignations de variables y sont locales et perdues au retour. Le fichier
-  # survit au subshell. Format : "HTTP=<code>\nERR=<stderr tronque>".
-  local err="" http_code="" state_tmp=""
+  # survit au subshell. Format : "HTTP=<code>\nACCOUNT=<compte resolu>"
+  # ( ACCOUNT seulement sur les echecs ) "\nERR=<stderr tronque>" ; le code
+  # special AUTH designe un compte epingle introuvable (terminal).
+  local err="" http_code="" account="" state_tmp=""
   err="$(gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>&1 >/dev/null)"
   if [ -n "$err" ]; then
     http_code="$(printf '%s\n' "$err" | grep -oE 'HTTP [0-9]+' | awk '{print $2}' | head -n1)"
-    printf 'HTTP=%s\nERR=%s\n' "${http_code:-0}" "$err" > "$FETCH_TOKEN_STATE_FILE"
+    # #15154 critere 1 : le diagnostic doit nommer le compte RESOLU, pas la
+    # variable qui le designe. Epingle -> sa valeur ; sinon le compte ambiant,
+    # demande a gh uniquement sur ce chemin d'echec (cout nul sur le chemin
+    # nominal). Un compte non resoluble (trousseau casse) reste nomme comme
+    # tel -- inventer une identite serait pire que l'absence.
+    if [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ]; then
+      account="$COURSIA_RUNNER_GH_ACCOUNT"
+    else
+      account="$(gh api user --jq .login 2>/dev/null || true)"
+      [ -z "$account" ] && account="compte ambiant non resoluble"
+    fi
+    printf 'HTTP=%s\nACCOUNT=%s\nERR=%s\n' "${http_code:-0}" "$account" "$err" > "$FETCH_TOKEN_STATE_FILE"
     return 1
   fi
   printf 'HTTP=200\nERR=\n' > "$FETCH_TOKEN_STATE_FILE"
@@ -1541,16 +1564,24 @@ slot_loop() {
       # retry legitime. La discrimination se fait sur le code HTTP que fetch_token
       # a depose dans $FETCH_TOKEN_STATE_FILE (le fichier survit au subshell
       # d'invocation `$(fetch_token)` -- une variable bash n'aurait pas traverse).
-      local http="" terminal=0
+      # #15154 : AUTH = compte epingle introuvable dans le trousseau gh
+      # (marqueur pose par fetch_token AVANT le return) -- meme classe que
+      # 4xx : structurel, la perseverance ne le resout pas.
+      local http="" acct="" terminal=0
       if [ -f "$FETCH_TOKEN_STATE_FILE" ]; then
         http="$(awk -F= '$1=="HTTP"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+        acct="$(awk -F= '$1=="ACCOUNT"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
       fi
       : "${http:=0}"
+      : "${acct:=inconnu}"
+      local cause_diag="compte sans droit admin ?"
+      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh"
       case "$http" in
+        AUTH) terminal=1 ;;
         4??) [ "$http" != "408" ] && terminal=1 ;;
       esac
       if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
-        echo "[slot $slot] ABANDON : $fails echecs consecutifs HTTP $http (compte sans droit admin ?). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin du compte sur le depot (cf #15154 / voie B)." >&2
+        echo "[slot $slot] ABANDON : $fails echecs consecutifs HTTP $http sur le compte '$acct' ($cause_diag). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin de '$acct' sur le depot (cf #15154 / voie B)." >&2
         # #15154 : prevenir les AUTRES slots -- ils reproduiraient la meme
         # erreur. Le sentinel STOP_FILE est observe par leur test de boucle
         # (`while [ ! -f "$STOP_FILE" ]`), donc ils sortent en arret gracieux
@@ -1562,7 +1593,7 @@ slot_loop() {
         die "superviseur arrete -- cause structurelle, voir message precedent"
       fi
       if [ "$terminal" -eq 1 ]; then
-        echo "[slot $slot] token indisponible HTTP $http (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
+        echo "[slot $slot] token indisponible HTTP $http sur le compte '$acct' (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
       else
         echo "[slot $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
       fi
@@ -2065,24 +2096,30 @@ waiter_loop() {
     if [ -z "$token" ]; then
       fails=$(( fails + 1 ))
       wait_s="$(backoff_delay "$fails")"
-      # #15154 : discrimination 4xx-terminal / 5xx-transitoire (cf slot_loop).
-      local http="" terminal=0
+      # #15154 : discrimination 4xx-terminal / 5xx-transitoire (cf slot_loop),
+      # et AUTH-terminal (compte epingle introuvable, cf fetch_token).
+      local http="" acct="" terminal=0
       if [ -f "$FETCH_TOKEN_STATE_FILE" ]; then
         http="$(awk -F= '$1=="HTTP"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+        acct="$(awk -F= '$1=="ACCOUNT"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
       fi
       : "${http:=0}"
+      : "${acct:=inconnu}"
+      local cause_diag="compte sans droit admin ?"
+      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh"
       case "$http" in
+        AUTH) terminal=1 ;;
         4??) [ "$http" != "408" ] && terminal=1 ;;
       esac
       if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
-        echo "[waiter $slot] ABANDON : $fails echecs consecutifs HTTP $http (compte sans droit admin ?). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin du compte sur le depot (cf #15154 / voie B)." >&2
+        echo "[waiter $slot] ABANDON : $fails echecs consecutifs HTTP $http sur le compte '$acct' ($cause_diag). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin de '$acct' sur le depot (cf #15154 / voie B)." >&2
         # #15154 : cf slot_loop -- le sentinel coordonne l'arret de tous
         # les slots et waiters sur la meme cause structurelle.
         touch "$STOP_FILE" 2>/dev/null || true
         die "superviseur waiter arrete -- cause structurelle, voir message precedent"
       fi
       if [ "$terminal" -eq 1 ]; then
-        echo "[waiter $slot] token indisponible HTTP $http (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
+        echo "[waiter $slot] token indisponible HTTP $http sur le compte '$acct' (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
       else
         echo "[waiter $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
       fi

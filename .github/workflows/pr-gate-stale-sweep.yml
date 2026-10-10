@@ -1103,6 +1103,18 @@ jobs:
       # est horaire : le cout n'est plus le meme, la promesse de fond (la
       # re-aggregation reste sans checkout) tient.
       - name: Checkout sparse (gate-absent + tir-cadence organs)
+        # if: always() -- la jambe tir (#15197) est elle-meme always() :
+        # quand la re-aggregation echoue (garde NO-OP fail-closed
+        # #17243/#17566), le job s'arrete et CE checkout etait saute,
+        # laissant la jambe tir courir sur un workspace vide ->
+        # "No such file or directory", angle mort non mesure (run
+        # 37794596784, 2026-10-08 14:42Z, constate par po-2025:CoursIA-2).
+        # Or c'est exactement le regime sous-cadence que la jambe mesure :
+        # son entree doit survivre au meme echec qu'elle. Cout : quelques
+        # secondes de checkout sparse sur les seuls runs deja rouges.
+        # La jambe gate-absent reste SANS always() -- pas de mesure
+        # supplementaire sous rate-limit, le skip protectif tient.
+        if: always()
         uses: actions/checkout@v4
         with:
           sparse-checkout: |

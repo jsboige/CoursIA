@@ -84,87 +84,9 @@ mint_token() {
   done
 }
 
-# Magasin d'objets partage (#18225, 2026-10-07) : maillon 3 de la chaine. Les deux
-# premiers (workspace persistant + quarantaine) ont rendu le slot chaud LE chemin
-# nominal, mais mesuraient son echec au prix d'un retour au froid complet : un _work
-# ecarte (2353 en 9 jours, cf pool.log) ou un premier spawn redescendait le pack
-# HTTPS integral (5.49 GiB, mesure run 36420237212). Le miroir bare local casse ce
-# cout : pose UNE fois hors bande (`git clone --mirror`), maintenu incrementalement
-# par mirror_refresh, consomme par les repos de slot via git alternates — le contenu
-# traverse le reseau une fois pour huit slots, et un slot froid materialise en
-# local sans re-telecharger l'historique. Fail-open par construction : miroir
-# absent => le parc se comporte exactement comme avant cette section.
-# Ces definitions vivent AVANT le bloc POOL_PROBE : les sondes les appellent.
-MIRROR="$BASE/objects-mirror.git"
-MIRROR_REMOTE="${MIRROR_REMOTE:-https://github.com/jsboige/CoursIA.git}"
-MIRROR_REFRESH_EVERY="${MIRROR_REFRESH_EVERY:-300}"
-
-# mirror_refresh — fetch incrementalement le miroir (append-only : les objets sont
-# immuables, les refs se deplacent atomiquement ; les emprunteurs alternates lisent
-# sans verrou). Throttle par horodatage pour que le tick de 30 s du superviseur ne
-# fasse pas un fetch par tick ; flock non bloquant : une refresh concurrente (relance
-# interactive) est sautee, pas attendue. Recharge d'urgence : voir le README.
-mirror_refresh() {
-  [ -d "$MIRROR/objects" ] || return 0
-  local now
-  now=$(date +%s)
-  [ $(( now - ${MIRROR_LAST_REFRESH:-0} )) -ge "$MIRROR_REFRESH_EVERY" ] || return 0
-  MIRROR_LAST_REFRESH=$now
-  # NB : pas de `2>/dev/null` sur ce exec — la redirection y serait PERSISTANTE
-  # (elle masquerait le stderr de tout le script, pas seulement celui de l'ouverture).
-  exec 8>"$BASE/mirror.lock" || return 0
-  flock -n 8 || return 0
-  if git --git-dir="$MIRROR" fetch --prune "$MIRROR_REMOTE" '+refs/*:refs/*' 2>&1; then
-    echo "$(date -Is) miroir rafraichi"
-  else
-    echo "$(date -Is) miroir : refresh echoue (pool continue sur l'etat precedent)"
-  fi
-  return 0
-}
-
-# ensure_alternates — $1 : un repo de slot (avec .git). Ajoute le miroir comme
-# source d'objets du repo : un fetch negocie alors avec le serveur en pretendant
-# deja tenir tout l'historique du miroir (has_object consulte les alternates), donc
-# le delta HTTPS tombe au contenu reellement nouveau ; et un blob manquant d'un
-# clone promisor blob:none (signature (b) de #14801, #18312) se materialise depuis
-# le miroir AVANT qu'un lazy-fetch reseau ne puisse echouer. Idempotent : une seule
-# ligne par miroir, quel que soit le nombre d'appels.
-ensure_alternates() {
-  [ -d "$MIRROR/objects" ] || return 0
-  local alt="$1/.git/objects/info/alternates"
-  mkdir -p "$(dirname "$alt")"
-  if [ -s "$alt" ]; then
-    grep -qxF "$MIRROR/objects" "$alt" || printf '%s\n' "$MIRROR/objects" >> "$alt"
-  else
-    printf '%s\n' "$MIRROR/objects" > "$alt"
-  fi
-}
-
-# seed_work — $1 : slot. Pre-materialise _work/CoursIA/CoursIA comme clone --shared
-# du miroir (alternates vers le miroir, zero objet copie, instantane) puis rebascule
-# origin sur HTTPS : checkout@v4 trouve un repo existant, fetch un delta quasi nul
-# (tout le contenu du miroir est deja "eu"), et checkout --force materialise l'arbre
-# depuis les objets locaux. Remplace le slot froid integral de restore_work.
-seed_work() {
-  local repo="$BASE/slot-$1/_work/CoursIA/CoursIA"
-  [ -d "$MIRROR/objects" ] || return 0
-  mkdir -p "$(dirname "$repo")"
-  if git clone --quiet --shared --no-checkout "$MIRROR" "$repo" 2>/dev/null; then
-    git -C "$repo" remote set-url origin "$MIRROR_REMOTE"
-    echo "$(date -Is) slot$1: _work seme depuis le miroir (checkout@v4 -> fetch quasi nul)"
-  else
-    echo "$(date -Is) slot$1: semis _work echoue -> slot froid integral (nominal)"
-    rm -rf "$BASE/slot-$1/_work"
-    return 1
-  fi
-}
-
 if [ -n "${POOL_PROBE:-}" ]; then
   case "$POOL_PROBE" in
     mint-token) mint_token; rc=$?; echo "$(date -Is) PROBE mint-token rc=$rc"; exit $rc ;;
-    mirror-refresh) mirror_refresh; rc=$?; echo "$(date -Is) PROBE mirror-refresh rc=$rc"; exit $rc ;;
-    seed) seed_work probe; rc=$?; echo "$(date -Is) PROBE seed rc=$rc"; exit $rc ;;
-    alternates) ensure_alternates "$BASE/probe-warm/CoursIA/CoursIA"; rc=$?; echo "$(date -Is) PROBE alternates rc=$rc"; exit $rc ;;
     *) echo "$(date -Is) PROBE inconnue: $POOL_PROBE"; exit 2 ;;
   esac
 fi
@@ -187,8 +109,8 @@ export PIP_BREAK_SYSTEM_PACKAGES=1
 # PATH (Q6, 2026-09-23, reserve secretaire c.37 + mesure /proc/<pid>/environ) :
 # la relance du superviseur depuis une session interactive (fenetre Q5) herite le
 # PATH de CETTE session — ~/.local/bin ABSENT des listeners. Le pool rend son
-# contrat independant du contexte de lancement : ~/.local/bin en tete (gh 2.90.0
-# et python y sont poses).
+# contrat independant du contexte de lancement : ~/.local/bin en tete (gh 2.99.0
+# aligne sur l'epingle image le 2026-10-08, et python y sont poses).
 export PATH="$HOME/.local/bin:$PATH"
 
 # Garde anti-stall HTTPS (#18225, 2026-09-28) : un fetch stallé (zero octet, connexion
@@ -211,6 +133,11 @@ ensure_host_contract() {
   [ -x "$bin/python" ] || ln -sf "$(command -v python3)" "$bin/python"
   [ -x "$bin/python" ] || { echo "$(date -Is) CONTRAT: python nu ABSENT de $bin"; rc=1; }
   [ -x "$bin/gh" ]     || { echo "$(date -Is) CONTRAT: gh ABSENT de $bin — poser la release Linux officielle (l'image epingle 2.99.0+SHA256) ; sans lui des gardes sortent en exit 0 SANS poster"; rc=1; }
+  # « present » n'est pas « conforme » (#17407, divergence 2.90.0 du 22/09, corrigee
+  # le 2026-10-08) : le pin de version vit dans le Dockerfile (l.73-74, GH_VERSION +
+  # GH_SHA256) ; le gate crie sur toute derive pour qu'elle reste nommee, pas muette.
+  gh_ver="$( "$bin/gh" --version 2>/dev/null | head -1 | awk '{print $3}' )"
+  [ "${gh_ver:-}" = "2.99.0" ] || { echo "$(date -Is) CONTRAT: gh ${gh_ver:-INDETERMINABLE} != 2.99.0 epingle image (Dockerfile l.73-74) — reposer la release verifiee dans $bin"; rc=1; }
   [ -n "${PIP_BREAK_SYSTEM_PACKAGES:-}" ] || { echo "$(date -Is) CONTRAT: PIP_BREAK_SYSTEM_PACKAGES non pose"; rc=1; }
   command -v gh >/dev/null 2>&1 || { echo "$(date -Is) CONTRAT: gh INVISIBLE du PATH du pool (relance depuis session interactive ?) — existence du fichier ne suffit pas (reserve #17406 c.5784716255)"; rc=1; }
   command -v patchelf >/dev/null 2>&1 || { echo "$(date -Is) CONTRAT: patchelf INVISIBLE ($bin/patchelf) — re-patch RUNPATH du toolcache impossible (ASK secretary c.37 2026-09-23)"; rc=1; }
@@ -275,6 +202,18 @@ validate_keep() { # $1 = keep dir — rc=0 si l'arbre est materialise et coheren
   local repo="$1/CoursIA/CoursIA"
   [ -d "$repo/.git" ] || return 1
   git -C "$repo" rev-parse --git-dir >/dev/null 2>&1 || return 1
+  # (c) residus d'un transfert interrompu (#18312, mesure 2026-10-08) : un lock ou un
+  # tmp_pack present ICI est perime par construction -- le keep est parque entre deux
+  # jobs, aucun git ne le tient. Les purger rend l'arbre reutilisable SANS re-clone
+  # (objectif #18225 : 5,49 GiB), la ou les ecarter paierait ce prix a chaque hoquet.
+  # Mesure : l'index.lock laisse par un fetch avorte empechait `update-index` de (b)
+  # de s'ecrire -- silencieusement, ses erreurs etant redirigees.
+  find "$repo/.git" \( -name '*.lock' -o -name 'tmp_pack*' \) -delete 2>/dev/null
+  # (d) arbre NON MATERIALISE (#18312) : HEAD doit resoudre un commit. Un clone
+  # avorte laisse un depot vide, branche unborn -- et (a)/(b) ne le voient pas, car
+  # `status --porcelain` d'un index vide sur un arbre vide est PROPRE. Mesure du
+  # 2026-10-08 : ce cas rendait rc=0 (accepte comme sain) sur les slots 4..8.
+  git -C "$repo" rev-parse --verify -q HEAD >/dev/null || return 1
   # (a) residu skip-worktree
   git -C "$repo" ls-files -v 2>/dev/null | grep -q '^S' && return 1
   # (b) index menteur : le refresh stat rend visibles les fichiers trackes absents
@@ -285,20 +224,13 @@ validate_keep() { # $1 = keep dir — rc=0 si l'arbre est materialise et coheren
 
 restore_work() { # $1 = slot — remet le _work parque dans le slot frais, s'il est sain
   local dir="$BASE/slot-$1" keep="$BASE/work-$1.keep"
-  if [ ! -d "$keep" ]; then
-    seed_work "$1"   # pas de parc : semis depuis le miroir (no-op si miroir absent)
-    return 0
-  fi
+  [ -d "$keep" ] || return 0
   [ -d "$dir/_work" ] && { echo "$(date -Is) slot$1: _work inattendu deja present, conserve ecarte"; rm -rf "$keep"; return 0; }
   if validate_keep "$keep"; then
-    if mv "$keep" "$dir/_work"; then
-      echo "$(date -Is) slot$1: _work restaure (regime chaud, valide)"
-      ensure_alternates "$dir/_work/CoursIA/CoursIA"
-    fi
+    mv "$keep" "$dir/_work" && echo "$(date -Is) slot$1: _work restaure (regime chaud, valide)"
   else
-    echo "$(date -Is) slot$1: _work ecarte (endommage) -> semis miroir"
+    echo "$(date -Is) slot$1: _work ecarte (endommage) -> slot froid"
     rm -rf "$keep"
-    seed_work "$1"
   fi
 }
 
@@ -326,8 +258,6 @@ spawn_slot() { # $1 = slot — bloque jusqu'a la fin du job (ephemere = 1 job)
 }
 
 ensure_bundle || { echo "$(date -Is) telechargement bundle echoue"; exit 1; }
-# Rafraichit le miroir au boot (si pose), puis a chaque tick via le throttle.
-mirror_refresh
 # Verifie le contrat AVANT d'ouvrir des slots : un contrat incomplet se lit dans pool.log au demarrage,
 # pas trois heures plus tard dans le rouge d'une PR d'une autre lane.
 ensure_host_contract || echo "$(date -Is) contrat d'image INCOMPLET — les jobs servis par ce pool peuvent rendre des faux rouges ou des verts fabriques"
@@ -343,6 +273,5 @@ while :; do
     fi
   done
   repatch_toolcache_pythons
-  mirror_refresh
   sleep 30
 done

@@ -7,8 +7,22 @@ conteneurs et ses unites.
 
 | Fichier | Chemin vivant | Etat |
 |---|---|---|
-| `pool.sh` | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, 8 slots depuis le 2026-09-22 |
+| `pool.sh` | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, 8 slots depuis le 2026-09-22. **Source deposee ici depuis le 2026-10-06** (avant, le depot ne portait que ce README) : copie byte-identique a la source `D:\Dev\CoursIA-runners-p0\pool.sh` et a la copie vivante WSL (`sha256:48bb6f272dd21aaf6ec3ec5b0fec659fbce07ff7608f7972dff5c73da7bbfab8`, 11197 octets, LF) -- le correctif `validate_keep` est verifiable depuis le depot |
 | `run-pool-po2026.sh` | `C:\dev\CoursIA-runners-p0\run-pool-po2026.sh` (hote Windows) | **deploye et vivant** -- lanceur de la tache planifiee, porte la borne CPU/memoire. La premiere forme ecrite le 2026-09-22 ne relancait **rien** (cf. piege du transport ci-dessous) ; la forme livree est verifiee de bout en bout |
+
+## `validate_keep` -- la porte contre les `_work` endommages (#14801)
+
+Deploye le 2026-09-28 23:13Z (fenetre accordee 22:06Z, zero job coupe). La classe
+de defaut : un `_work` chaud transporte l'index menteur d'un checkout sparse
+(bits `skip-worktree` sur des fichiers absents, `git status --porcelain` **vide**
+-- l'arbre se declare sain) et le job suivant meurt sur `not uptodate; will not
+remove`. `validate_keep()` (appelee par `restore_work()`) valide l'arbre parque
+avant de le restaurer : bits `^S` OU `update-index --really-refresh` + statut
+sale = **endommage** -> le keep est ecarte et le slot repart froid (seul etat de
+confiance) ; un keep sain reste chaud (objectif #18225 preserve). Preuve au
+deploiement : `pool.log` 01:13:13-14 locales, `slot1/slot2/slot3: _work ecarte
+(endommage) -> slot froid` -- les trois keeps herites des forks v1 interceptes
+des le premier spawn.
 
 **Attention -- la chaine est coupee en deux repertoires.** Mesure du 2026-09-22 :
 
@@ -188,9 +202,9 @@ visible des jobs. C'est ce repertoire qui doit porter les binaires que les workf
 **nom nu** -- et c'est ce qui rend la panne discrete : un binaire absent ne casse pas le runner, il
 fait echouer **les jobs d'une seule famille**, en accusant leur contenu.
 
-| Binaire | Pourquoi il est requis | Symptome quand il manque | Etat au 2026-09-22 |
+| Binaire | Pourquoi il est requis | Symptome quand il manque | Etat au 2026-10-08 |
 |---|---|---|---|
-| `gh` | gardes de perimetre et suites de tests lisent `gh pr view --json files` | `FileNotFoundError: 'gh'`, `check_exit: 127` -> `BASELINE_FAILED` ; le garde de perimetre sort en fail-loud **sans citer de contradiction reelle** | installe dans `~/.local/bin` (2.90.0, release Linux) |
+| `gh` | gardes de perimetre et suites de tests lisent `gh pr view --json files` | `FileNotFoundError: 'gh'`, `check_exit: 127` -> `BASELINE_FAILED` ; le garde de perimetre sort en fail-loud **sans citer de contradiction reelle** | installe dans `~/.local/bin` (2.99.0, aligne sur l'epingle image le 2026-10-08, SHA-256 du Dockerfile verifiee — cf. divergence corrigee ci-dessous) |
 | `python` | des workflows appellent `python script.py` en nom nu ; Ubuntu ne fournit que `python3` | `line 1: python: command not found`, `exit 127` (rendu Quarto : `python scripts/regen_quarto_render.py`) | lien `~/.local/bin/python -> /usr/bin/python3` (3.12.3) |
 
 **Le piege de la sonde, mesure le 2026-09-22.** `command -v python` depuis un shell WSL ordinaire rend
@@ -231,7 +245,7 @@ depuis le PATH du process runner :
 | Item du contrat d'image | Source | Etat mesure sur les slots natifs | Symptome s'il manque |
 |---|---|---|---|
 | `python` (nom nu) | Dockerfile l.23-26 `python-is-python3` | **present** -- `~/.local/bin/python -> /usr/bin/python3` (3.12.3) | `python: command not found`, exit 127 |
-| `gh` | Dockerfile l.70-78, epingle `2.99.0` + SHA-256 | **present, mais 2.90.0** -- divergence de version, impact non mesure | `FileNotFoundError: 'gh'`, `check_exit: 127`, gardes qui sortent **sans poster** |
+| `gh` | Dockerfile l.70-78, epingle `2.99.0` + SHA-256 | **present, 2.99.0** (aligne le 2026-10-08 sur l'epingle image, cf. divergence corrigee ci-dessous) | `FileNotFoundError: 'gh'`, `check_exit: 127`, gardes qui sortent **sans poster** |
 | `lsb_release` | Dockerfile l.30-33, pour `setup-python` + `cache: pip` | **present** | `Unable to locate executable file: lsb_release` |
 | `zstd` | Dockerfile l.34-35, pour `actions/cache` / `upload-artifact` | **present** | repli gzip (fonctionne, plus lent) -- non bloquant |
 | `python3-yaml` | Dockerfile l.36-38 | **present** (`yaml 6.0.1`) | `import yaml` echoue, puis le `pip install` de repli echoue aussi |
@@ -257,12 +271,14 @@ C'est fait dans `pool.sh` (`export PIP_BREAK_SYSTEM_PACKAGES=1`, avant la boucle
 variable est heritee par `run.sh` -> `Runner.Worker` -> les etapes du job, par le meme canal que le
 PATH (mesure : le PATH de `pool.sh` est bien retrouve dans `/proc/<pid>/environ` des listeners).
 
-**Divergence de version sur `gh` : nommee, non corrigee.** L'image epingle `2.99.0` + SHA-256 ; le slot
-natif porte `2.90.0`, pose a la main le 2026-09-22 a **09:40:45Z** (mtime de `~/.local/bin/gh`). Je ne
-pretends pas que cet ecart casse quoi que ce soit -- je ne l'ai pas mesure -- mais il est reel, et il
-est **invisible** tant que la sonde se contente de `command -v gh` : "present" n'est pas "conforme".
-Le corriger = reposer la version epinglee du Dockerfile, avec sa somme ; c'est un geste de parc, pas un
-correctif de cette PR.
+**Divergence de version sur `gh` : corrigee le 2026-10-08.** L'image epingle `2.99.0` + SHA-256
+(Dockerfile l.73-74) ; le slot natif a porte `2.90.0` du 2026-09-22 (pose manuel, mtime 09:40:45Z)
+au 2026-10-08 00:18. Correction, avec la discipline du Dockerfile : release Linux officielle
+`gh_2.99.0_linux_amd64.tar.gz`, SHA-256 verifiee contre le pin (`ed4960225d2833e04a61590d9fa2b5773d147f3aa375459e5466a40c102f3832`), posee par `mv` atomique dans `~/.local/bin/gh` -- les
+`Runner.Worker` vivants ont `~/.local/bin` en tete de PATH (mesure `/proc/<pid>/environ`), leurs execs
+de `gh` ulterieurs resolvent 2.99.0 sans redemarrage du pool. La lecon qu'il faut garder : l'ecart
+etait **invisible** tant que la sonde se contente de `command -v gh` -- "present" n'est pas "conforme".
+Le gate `ensure_host_contract` de `pool.sh` crie desormais sur toute divergence de version.
 
 **Ce qui reste sans temoin apres cette PR.** Les deux binaires sont presents sur l'hote mais poses **a la
 main**, et aucun run n'a atterri sur `myia-po-2026-wsl-*` depuis leur pose : les runs verts de
@@ -336,6 +352,7 @@ wsl.exe -d Ubuntu -- bash -lc 'install -m 0755 /mnt/d/Dev/CoursIA-runners-p0/poo
 #     pour TOUTES les lanes (cf. section precedente). Aucun sudo requis :
 wsl.exe -d Ubuntu -- bash -lc 'ln -sf /usr/bin/python3 /home/jesse/.local/bin/python'
 wsl.exe -d Ubuntu -- bash -lc 'test -x /home/jesse/.local/bin/gh || echo "gh MANQUANT : poser la release Linux officielle dans ~/.local/bin"'
+wsl.exe -d Ubuntu -- bash -lc '[ "$(/home/jesse/.local/bin/gh --version | head -1 | awk "{print \$3}")" = "2.99.0" ] || echo "gh NON CONFORME : aligner sur le pin Dockerfile l.73-74 (2.99.0)"'
 
 # 3. relancer par le chemin de production (la tache planifiee) :
 schtasks /Run /TN "CoursIA-LinuxRunners-po2026"
@@ -411,8 +428,7 @@ etaient deployes en WSL sans redescendre au depot -- l'empreinte fait foi :
 | Copie | md5 |
 |---|---|
 | `origin/main`, avant resynchronisation | `603748e03148e271671b50cf71d17b7a` |
-| source `D:` **et** copie vivante WSL (mesure du 2026-10-07, correctif mint deploye) | `77e55f7df2ce82df7175064a0b31f43b` |
-| tete de la PR maillon 3 (`test_pool_alternates.sh` vert dessus) — a rejoindre par `D:` et WSL au deploiement | `7df6190a16a06f3b968ae731e3a764fc` |
+| source `D:` **et** copie vivante WSL | `306ae316fa7ad26a3583a61a4d68e54d` |
 
 La copie du depot n'avait ni la garde anti-stall HTTPS (#18225), ni le workspace chaud
 par slot (#18225 : 5,49 Gio de fetch complet evite a chaque job froid), ni la
@@ -447,39 +463,6 @@ cause** dans `pool.log`.
 
 Banc : `test_pool_mint.sh` (huit cas, via `POOL_PROBE=mint-token`, sans effet de bord).
 Controle negatif mesure : le meme banc, retry neutralise, rend **4 PASS / 4 FAIL**.
-
-## Le magasin d'objets partage -- maillon 3 de #18225 (2026-10-07)
-
-Les deux premiers correctifs (#18225 : workspace persistant, quarantaine
-`validate_keep`) rendaient le slot **chaud** le chemin nominal -- mais son echec
-revenait au **froid integral** : chaque `_work` ecarte (2353 en 9 jours, cf
-`pool.log`) ou premier spawn re-descendait le pack HTTPS complet (5,49 Gio,
-mesure run 36420237212). Le maillon 3 supprime ce cout : un **miroir bare local**
-pose une fois, dont les repos de slot empruntent les objets via **git alternates**.
-
-| Piece | Fonction | Effet |
-|---|---|---|
-| Miroir | `~/CoursIA-runners-p0/objects-mirror.git` (pose hors bande, une fois) | le contenu traverse le reseau UNE fois pour huit slots (~5,5 Gio au total, pas par slot froid) |
-| Maintenance | `mirror_refresh` (boot + tick 30 s, throttle `MIRROR_REFRESH_EVERY`=300 s, `flock -n` fd 8 sur `mirror.lock`) | fetch incrementalement `+refs/*:refs/*` ; les emprunteurs alternates lisent sans verrou (objets immuables, append-only) |
-| Branchement a chaud | `ensure_alternates` (sur chaque `_work` restaure, idempotent : une ligne par miroir) | un fetch negocie en pretendant tenir tout le miroir -> delta HTTPS = contenu reellement nouveau ; un blob promisor manquant (#14801 sig. (b), #18312) se materialise depuis le miroir AVANT qu'un lazy-fetch reseau ne puisse echouer |
-| Semis a froid | `seed_work` (quand il n'y a pas de parc, ou qu'il est ecarte) | pre-materialise `_work/CoursIA/CoursIA` par `git clone --shared --no-checkout` du miroir puis rebascule `origin` sur HTTPS : `checkout@v4` trouve un repo, fetch quasi nul, `checkout --force` materialise depuis les objets locaux |
-
-**Provision du miroir (une fois, hors bande -- le pool ne le clone pas lui-meme) :**
-
-```bash
-wsl.exe -d Ubuntu -- bash -lc 'git clone --mirror https://github.com/jsboige/CoursIA.git /home/jesse/CoursIA-runners-p0/objects-mirror.git'
-```
-
-**Fail-open par construction** : miroir absent => `mirror_refresh`,
-`ensure_alternates` et `seed_work` rendent 0 sans rien ecrire, et le parc se
-comporte exactement comme avant ce maillon (slot froid integral, nominal
-d'avant). Le miroir est une acceleration, jamais une dependance.
-
-Sondes (meme contrat que `POOL_PROBE=mint-token`) : `POOL_PROBE=mirror-refresh`,
-`POOL_PROBE=seed`, `POOL_PROBE=alternates`. Banc :
-`test_pool_alternates.sh` (cinq cas -- refresh incremental gagne le commit du
-remote, semis clone `--shared` avec origin rebascule, objets resolvables sans
-reseau, idempotence alternates, fail-open sans miroir).
 
 ## Persistance du confinement POOL_SIZE (Q17, 2026-10-07)
 

@@ -20996,7 +20996,7 @@ et sa suite de tests · `docs/ict/synthese-invariants-dissociations-obstructions
 (section dédiée) · ICT-15d pour la leçon d'origine sur les verdicts vides.",,,,,,,,76490c596b8a8bba,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories.ipynb,header,markdown,fr,132864bbc41f6421,"# ICT — Substrat argumentation : trajectoires de croyance et dette d'irréversibilité du discours (Phase B)
 
-> **Part of** [Epic #4588](https://github.com/jsboige/CoursIA/issues/4588) — *Integrated Causal Trajectories*, graine strate 6. See #7289. Pont [ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) (Axelrod), [ICT-18](ICT-18-ArrowOfTimeReversibilization-Python.ipynb) (σ), [ICT-18b](ICT-18b-ReversibilityBudget-Python.ipynb) (budget B), série [Tweety-5](../../SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb) (Dung AF).
+> **Part of** [Epic #4588](https://github.com/jsboige/CoursIA/issues/4588) — *Integrated Causal Trajectories*, graine strate 6. See #7289. Pont [ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) (Axelrod), [ICT-18](ICT-18-ArrowOfTimeReversibilization-Python.ipynb) (σ), [ICT-18b](ICT-18b-ReversibilityBudget-Python.ipynb) (budget B), série [Tweety-5](../../SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb) (Dung AF).
 >
 > **Phase A** (grounding : TPM sur états de croyance depuis un AF de Dung) = PR #7336, VERDICT PASS. Ce notebook est la **Phase B** : le substrat argumentation soumis au zoo ICT (σ, K, spectre, budget), avec trois prédictions **pré-enregistrées avant les tests**.
 
@@ -35881,14 +35881,14 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb,fa7fb0de,ma
 - Notre arc : ICT-41 (issue #16747 — géométrie SAE) ; ICT-42 (issue #16749 — crosscoder R05, arXiv:2503.03730) ; R11 — Singapore Consensus (arXiv:2608.14611) §2.2.2 ; scoping #16760, grain #16890.
 - Théorie : Thm F.1 (LR = Σ⁻¹θ en gaussien homoscédastique) ; LEACE / Belrose et al. (Thm G.1 : direction diff-in-means = effacement linéaire optimal de nullité 1).
 - Meng, Bau, Andonian & Belinkov, *Locating and Editing Factual Associations in GPT* (ROME, NeurIPS 2022), arXiv:2202.05262 — la ligne cousine de notre carte de patching (section 1) : meme question (ou vit le fait ?), reponse par causal tracing puis *edition* des poids MLP ; ce notebook s'arrete a l'observation, l'edition reste hors perimetre.",,,,,,,,18d097b3a1567af2,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,2824b3e9,markdown,fr,df8442aabc046607,"# ICT-45 — Inoculation et bifurcation : la troisième échelle (9B)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,2824b3e9,markdown,fr,49f06b671585c438,"# ICT-42b — Inoculation et bifurcation : la troisième échelle (9B)
 **Navigation** : [Index](README.md) | [44 — Geometry of Truth](ICT-44-GeometryOfTruth-Python.ipynb) | [46 — Strate 7 : freebits de second ordre](ICT-46-Strate7-FreeCoordinates-Python.ipynb)
 
 Ce carnet étend le pilote **ICT-42** à la troisième taille, **Qwen3.5-9B-Base** (32 couches, SAE Qwen-Scope W64K-L0_50, 65 536 features) — le couple de référence historique de la série (#5101), apparié en génération au 2B du pilote (tous deux Qwen3.5, saut ×4.5). La question du pilote se repose à cette échelle : **l'inoculation d'un panel de features SAE à mi-profondeur provoque-t-elle une bifurcation représentationnelle, et cette bifurcation durcit-elle ou s'adoucit-elle quand la taille croît ?**
-",,,,,,,,df8442aabc046607,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,5fdf548e,markdown,fr,01514d5f3da7c3ba,"> **Statut épistémique** — Extension d'échelle du pilote ICT-42 (sans verdict à ce jour sur la matrice de dissociation). Les deux échelles du pilote montraient des régimes opposés (réponse massive précoce du 1.7B, transition plus tardive et douce du 2B) ; ce carnet mesure où le 9B se situe, et ne prétend à aucun verdict tant que la lecture croisée des trois échelles n'est pas faite. Les mêmes garde-fous que le pilote s'appliquent.
+",,,,,,,,49f06b671585c438,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,5fdf548e,markdown,fr,01514d5f3da7c3ba,"> **Statut épistémique** — Extension d'échelle du pilote ICT-42 (sans verdict à ce jour sur la matrice de dissociation). Les deux échelles du pilote montraient des régimes opposés (réponse massive précoce du 1.7B, transition plus tardive et douce du 2B) ; ce carnet mesure où le 9B se situe, et ne prétend à aucun verdict tant que la lecture croisée des trois échelles n'est pas faite. Les mêmes garde-fous que le pilote s'appliquent.
 ",,,,,,,,01514d5f3da7c3ba,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,4ba12608,markdown,fr,53feb5c8afb9bfeb,"## Garde-fous d'honnêteté (à lire avant les résultats)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,4ba12608,markdown,fr,53feb5c8afb9bfeb,"## Garde-fous d'honnêteté (à lire avant les résultats)
 
 - **Le banc est numpy-only et GPU-free.** Toutes les traces proviennent du pipeline `scripts/extract_sae_traces.py` (mode inoculation : `--clamp-frac 0.5` / lecture resid final), exécuté une fois par intensité α ; ce carnet ne fait que lire les `.npz` et calculer les statistiques.
 - **Le contrôle de plomberie α = 0 est dans le sweep.** La trace à intensité nulle passe par le hook d'inoculation actif mais neutre (`h' = h − 0·δ`) : toute divergence non nulle mesurée à α = 0 serait un artefact d'implémentation. Elle est vérifiée nulle avant toute lecture.
@@ -35897,7 +35897,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,4
 - **Nom des traces 9B sans slug.** Le 9B étant le modèle de référence historique de `trace_filename`, ses traces s'écrivent `inoc_layer31_…` (pas `inoc_qwen35-9b-base_layer31of32_…`) — convention byte-identique aux traces `ict21_sae_layer16_*` existantes.
 - **Chaque intensité α est une passe indépendante** (clamp appliqué une fois, propagation vers l'avant) : le protocole ne mesure pas d'hystérésis.
 ",,,,,,,,53feb5c8afb9bfeb,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,5213c3af,markdown,fr,84a39f37c458323e,"## Protocole : inoculer à mi-profondeur, lire au residual final
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,5213c3af,markdown,fr,84a39f37c458323e,"## Protocole : inoculer à mi-profondeur, lire au residual final
 
 Identique au pilote ICT-42, transposé par profondeur relative :
 
@@ -35909,7 +35909,7 @@ Identique au pilote ICT-42, transposé par profondeur relative :
 
 Le panel inoculé = **top-16 différentiel** `|mean_act(code_python) − mean_act(prose_fr)|` dérivé de la trace de référence mi-réseau de chaque échelle. Intensités α ∈ {0, 0.25, 0.5, 0.75, 1.0} ; contrôles permuté (`inocrp`, tirage uniforme seed 42) et apparié en norme (`inocmp`, bande d'activité ×2) aux α mesurés du pilote {0.25, 1.0}.
 ",,,,,,,,84a39f37c458323e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,9a19ec39,code,fr,ca9dc4c92aa42333,"import json
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,9a19ec39,code,fr,ca9dc4c92aa42333,"import json
 from pathlib import Path
 
 import numpy as np
@@ -35991,9 +35991,9 @@ for label, cfg in ECHELLES.items():
 inventaire = pd.DataFrame(rows).sort_values([""echelle"", ""alpha""]).reset_index(drop=True)
 inventaire
 ",,,,,,,,ca9dc4c92aa42333,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,b4792c01,markdown,fr,f7d895221f8e78cf,"**Lecture de l'inventaire.** La géométrie est cohérente sur les trois échelles : inoculation à la couche mi-réseau (16/31 pour le 9B, frac 0.516 — même position relative que 14/28 et 12/24), lecture au residual final, 16 features clampées, top-k officiel k=50 partout. Le corpus est strictement identique (2 699 tokens, mêmes 5 jeux × 4 prompts) : les trois bancs comparent la même intervention sur la même entrée. Seul le dictionnaire change (65 536 features pour le 9B contre 32 768 aux deux autres échelles).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,b4792c01,markdown,fr,f7d895221f8e78cf,"**Lecture de l'inventaire.** La géométrie est cohérente sur les trois échelles : inoculation à la couche mi-réseau (16/31 pour le 9B, frac 0.516 — même position relative que 14/28 et 12/24), lecture au residual final, 16 features clampées, top-k officiel k=50 partout. Le corpus est strictement identique (2 699 tokens, mêmes 5 jeux × 4 prompts) : les trois bancs comparent la même intervention sur la même entrée. Seul le dictionnaire change (65 536 features pour le 9B contre 32 768 aux deux autres échelles).
 ",,,,,,,,f7d895221f8e78cf,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,1b8f34ec,code,fr,c1ba2c6c1d69f57c,"# Controle de plomberie : a alpha = 0, le hook d'inoculation est actif mais
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,1b8f34ec,code,fr,c1ba2c6c1d69f57c,"# Controle de plomberie : a alpha = 0, le hook d'inoculation est actif mais
 # neutre (h' = h - 0*delta). Les ids top-k doivent etre IDENTIQUES a la
 # reference sans hook (inocref), token pour token.
 
@@ -36015,9 +36015,9 @@ for label, cfg in ECHELLES.items():
 plomberie = pd.DataFrame(rows)
 plomberie
 ",,,,,,,,c1ba2c6c1d69f57c,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,e1e4f9c1,markdown,fr,71017924d818a833,"**Contrôle de plomberie.** Sur les trois échelles, `ids_topk_identiques` = True et la divergence à α = 0 est exactement nulle (max 0.0e+00) : le hook d'inoculation actif mais neutre ne modifie rien — toute la divergence mesurée aux α > 0 est imputable au clamp, pas à la plomberie.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,e1e4f9c1,markdown,fr,71017924d818a833,"**Contrôle de plomberie.** Sur les trois échelles, `ids_topk_identiques` = True et la divergence à α = 0 est exactement nulle (max 0.0e+00) : le hook d'inoculation actif mais neutre ne modifie rien — toute la divergence mesurée aux α > 0 est imputable au clamp, pas à la plomberie.
 ",,,,,,,,71017924d818a833,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,b37f2bc6,code,fr,4c5e960726c21fdd,"# Re-derivation du panel differentiel depuis la reference de chaque echelle
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,b37f2bc6,code,fr,4c5e960726c21fdd,"# Re-derivation du panel differentiel depuis la reference de chaque echelle
 # (meme statistique que le pipeline : |mean_code - mean_prose|, top-16), et
 # confrontation aux ids reellement inocules dans les traces du sweep.
 
@@ -36048,9 +36048,9 @@ for label, cfg in ECHELLES.items():
                  ""identique"": top16 == inocules})
 pd.DataFrame(rows)
 ",,,,,,,,4c5e960726c21fdd,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,1c3fcd91,markdown,fr,aaf24e998245c25e,"**Panels.** La re-dérivation reproduit exactement les ids inoculés (`identique` = True sur les trois échelles) : le pipeline a bien clampé le top-16 différentiel `|mean_act(code) − mean_act(prose)|` issu de chaque référence mi-réseau. Les panels restent non appariés entre échelles (dictionnaires indépendants) — c'est la forme des courbes qu'on compare, pas les ids.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,1c3fcd91,markdown,fr,aaf24e998245c25e,"**Panels.** La re-dérivation reproduit exactement les ids inoculés (`identique` = True sur les trois échelles) : le pipeline a bien clampé le top-16 différentiel `|mean_act(code) − mean_act(prose)|` issu de chaque référence mi-réseau. Les panels restent non appariés entre échelles (dictionnaires indépendants) — c'est la forme des courbes qu'on compare, pas les ids.
 ",,,,,,,,aaf24e998245c25e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,2c94951a,code,fr,c7a8d8ea66d774bb,"# Ordre-parametre : m(alpha) = ||x_a - x_0||_1 / ||x_0||_1 par prompt,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,2c94951a,code,fr,c7a8d8ea66d774bb,"# Ordre-parametre : m(alpha) = ||x_a - x_0||_1 / ||x_0||_1 par prompt,
 # moyennee par jeu puis par echelle (meme statistique que le pilote).
 
 
@@ -36077,7 +36077,7 @@ m_par_echelle = pd.DataFrame({
 }).round(4)
 m_par_echelle
 ",,,,,,,,c7a8d8ea66d774bb,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,c105a816,code,fr,3da609841e762292,"fig, axes = plt.subplots(1, 3, figsize=(15, 4.2), sharey=True)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,c105a816,code,fr,3da609841e762292,"fig, axes = plt.subplots(1, 3, figsize=(15, 4.2), sharey=True)
 for ax, (label, t) in zip(axes, tables.items()):
     for jeu, g in t.groupby(""jeu""):
         agg = g.groupby(""alpha"")[""m""].mean()
@@ -36092,9 +36092,9 @@ fig.suptitle(""Divergence representionnelle apres inoculation mi-reseau, lecture
 fig.tight_layout()
 plt.show()
 ",,,,,,,,3da609841e762292,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,b098b2ae,markdown,fr,e2705edd2ffd6b39,"**Lecture des courbes m(α).** Le 9B prolonge et amplifie la tendance entrevue du 1.7B vers le 2B. À α = 0.25, le 1.7B a déjà divergé de 33 % (m = 0.331), le 2B de 4.5 %, le 9B de 3.4 %. À α = 1, la divergence totale décroît avec la taille : m(1) = 1.103 → 0.647 → 0.327. Les trois régimes s'ordonnent : réponse massive et précoce du 1.7B, transition tardive du 2B, transition plus tardive encore et plus faible du 9B. À intervention identique (même position relative, même nombre de features, même intensité), la représentation finale du 9B bouge **deux fois moins** que celle du 2B et **trois fois moins** que celle du 1.7B.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,b098b2ae,markdown,fr,e2705edd2ffd6b39,"**Lecture des courbes m(α).** Le 9B prolonge et amplifie la tendance entrevue du 1.7B vers le 2B. À α = 0.25, le 1.7B a déjà divergé de 33 % (m = 0.331), le 2B de 4.5 %, le 9B de 3.4 %. À α = 1, la divergence totale décroît avec la taille : m(1) = 1.103 → 0.647 → 0.327. Les trois régimes s'ordonnent : réponse massive et précoce du 1.7B, transition tardive du 2B, transition plus tardive encore et plus faible du 9B. À intervention identique (même position relative, même nombre de features, même intensité), la représentation finale du 9B bouge **deux fois moins** que celle du 2B et **trois fois moins** que celle du 1.7B.
 ",,,,,,,,e2705edd2ffd6b39,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,95bf4563,code,fr,70eea920eeeacba8,"# Nettete de la transition : pente locale dm/dalpha, point de pente maximale,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,95bf4563,code,fr,70eea920eeeacba8,"# Nettete de la transition : pente locale dm/dalpha, point de pente maximale,
 # et rapport m(0.25)/m(1) (fraction de la divergence deja presentee au
 # premier quart d'intensite -- le tell du regime ""precoce"" du 1.7B).
 
@@ -36115,9 +36115,9 @@ for label, t in tables.items():
 seuils = pd.DataFrame(rows)
 seuils
 ",,,,,,,,70eea920eeeacba8,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,9510c6a0,markdown,fr,6a5757d436dce9fd,"**Seuil et netteté.** Le point de pente maximale recule **monotonement** avec la taille : α* ≈ 0.375 (1.7B) → 0.625 (2B) → 0.875 (9B) — la transition se décale vers les hautes intensités. Et la pente maximale elle-même s'adoucit : 1.40 → 1.18 → 0.76. La fraction de divergence déjà acquise au premier quart d'intensité (m(0.25)/m(1)) reste faible hors 1.7B : 0.30 → 0.07 → 0.10. Les deux signatures convergent : plus le modèle est grand, plus la bifurcation exige d'intensité et plus elle est douce quand elle arrive.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,9510c6a0,markdown,fr,6a5757d436dce9fd,"**Seuil et netteté.** Le point de pente maximale recule **monotonement** avec la taille : α* ≈ 0.375 (1.7B) → 0.625 (2B) → 0.875 (9B) — la transition se décale vers les hautes intensités. Et la pente maximale elle-même s'adoucit : 1.40 → 1.18 → 0.76. La fraction de divergence déjà acquise au premier quart d'intensité (m(0.25)/m(1)) reste faible hors 1.7B : 0.30 → 0.07 → 0.10. Les deux signatures convergent : plus le modèle est grand, plus la bifurcation exige d'intensité et plus elle est douce quand elle arrive.
 ",,,,,,,,6a5757d436dce9fd,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,73c79b13,code,fr,9805eecb772debd7,"# Profil token-par-token : divergence creuse LOCALE par position, moyennee
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,73c79b13,code,fr,9805eecb772debd7,"# Profil token-par-token : divergence creuse LOCALE par position, moyennee
 # par echelle (ou la perturbation se dissout-elle le long du contexte ?).
 
 rows = []
@@ -36141,9 +36141,9 @@ for label in ECHELLES:
 profils = pd.DataFrame(rows)
 profils
 ",,,,,,,,9805eecb772debd7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,d348f053,markdown,fr,9d0535d323fd4288,"**Profil ensembliste.** L'indice de Jaccard inverse (fraction du top-50 **remplacé**, indépendamment des valeurs) raconte une histoire complémentaire de m(α) : à α = 1, le remplacement de l'ensemble reste substantiel aux trois échelles (0.906 → 0.852 → 0.811) — même le 9B, dont la divergence de *valeurs* m(1) = 0.33 est la plus faible, **remplace plus de 80 % de son top-50**. La hiérarchie des échelles s'inverse selon la statistique : le 9B diverge le moins en magnitude mais reste proche du 2B en rotation d'ensemble. La bifurcation du 9B est donc moins une ""cassure des valeurs"" qu'une réorganisation des features actives — à confronter à l'exercice 1.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,d348f053,markdown,fr,9d0535d323fd4288,"**Profil ensembliste.** L'indice de Jaccard inverse (fraction du top-50 **remplacé**, indépendamment des valeurs) raconte une histoire complémentaire de m(α) : à α = 1, le remplacement de l'ensemble reste substantiel aux trois échelles (0.906 → 0.852 → 0.811) — même le 9B, dont la divergence de *valeurs* m(1) = 0.33 est la plus faible, **remplace plus de 80 % de son top-50**. La hiérarchie des échelles s'inverse selon la statistique : le 9B diverge le moins en magnitude mais reste proche du 2B en rotation d'ensemble. La bifurcation du 9B est donc moins une ""cassure des valeurs"" qu'une réorganisation des features actives — à confronter à l'exercice 1.
 ",,,,,,,,9d0535d323fd4288,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,9f07b362,code,fr,6c99f44855847918,"# Comparaison cross-echelle : courbes normalisees m(alpha)/m(1).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,9f07b362,code,fr,6c99f44855847918,"# Comparaison cross-echelle : courbes normalisees m(alpha)/m(1).
 
 fig, ax = plt.subplots(figsize=(7, 4.5))
 for label, t in tables.items():
@@ -36164,13 +36164,13 @@ cross = pd.DataFrame({
 })
 cross
 ",,,,,,,,6c99f44855847918,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,86923b1f,markdown,fr,d9a894267760ed23,"**Comparaison normalisée.** Rapportées à leur divergence finale m(1), les trois courbes s'ordonnent nettement sous la diagonale de réponse linéaire, et d'autant plus bas que l'échelle est grande : le 9B concentre sa réponse sur la toute fin du balayage (m(0.5)/m(1) ≈ 0.22), le 1.7B l'étale dès le début (m(0.25)/m(1) ≈ 0.30, m(0.5)/m(1) ≈ 0.62). Sur trois points, la régularité est frappante — mais trois points dont un changement de dictionnaire ne font pas une loi d'échelle (cf. Limites).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,86923b1f,markdown,fr,d9a894267760ed23,"**Comparaison normalisée.** Rapportées à leur divergence finale m(1), les trois courbes s'ordonnent nettement sous la diagonale de réponse linéaire, et d'autant plus bas que l'échelle est grande : le 9B concentre sa réponse sur la toute fin du balayage (m(0.5)/m(1) ≈ 0.22), le 1.7B l'étale dès le début (m(0.25)/m(1) ≈ 0.30, m(0.5)/m(1) ≈ 0.62). Sur trois points, la régularité est frappante — mais trois points dont un changement de dictionnaire ne font pas une loi d'échelle (cf. Limites).
 ",,,,,,,,d9a894267760ed23,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,4b93b479,markdown,fr,6affd621de5b4c56,"## Contrôle permuté — la spécificité du panel (phase 6)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,4b93b479,markdown,fr,6affd621de5b4c56,"## Contrôle permuté — la spécificité du panel (phase 6)
 
 Le panel différentiel est-il spécial, ou toute collection de 16 features produirait-elle la même divergence ? Contrôle : même taille, tirage uniforme hors panel, seed 42 (`inocrp`), aux intensités du pilote {0.25, 1.0}.
 ",,,,,,,,6affd621de5b4c56,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,f1a6e5c5,code,fr,23eca1d249eeace7,"RP_ALPHAS = [0.25, 1.0]
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,f1a6e5c5,code,fr,23eca1d249eeace7,"RP_ALPHAS = [0.25, 1.0]
 
 
 def divergence_table_rp(echelle):
@@ -36201,13 +36201,13 @@ resume_rp = pd.DataFrame([{
 } for label, trp in tables_rp.items()]).round(4)
 resume_rp
 ",,,,,,,,23eca1d249eeace7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,c9302185,markdown,fr,a6b08cbd09ce8deb,"**Contrôle permuté.** La spécificité du panel tient aux trois échelles, et même se renforce : à α = 1, panel vs tirage aléatoire donnent 1.103 vs 0.181 (×6.1) au 1.7B, 0.647 vs 0.010 (×63) au 2B, **0.327 vs 0.006 (×53)** au 9B. Le 9B n'est donc pas ""insensible à toute inoculation"" : il est insensible à un panel aléatoire (divergence résiduelle 0.006 ≈ bruit) et spécifiquement sensible au panel différentiel code/prose. La sélectivité ne s'érode pas avec la taille — c'est l'ampleur de la réponse qui diminue.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,c9302185,markdown,fr,a6b08cbd09ce8deb,"**Contrôle permuté.** La spécificité du panel tient aux trois échelles, et même se renforce : à α = 1, panel vs tirage aléatoire donnent 1.103 vs 0.181 (×6.1) au 1.7B, 0.647 vs 0.010 (×63) au 2B, **0.327 vs 0.006 (×53)** au 9B. Le 9B n'est donc pas ""insensible à toute inoculation"" : il est insensible à un panel aléatoire (divergence résiduelle 0.006 ≈ bruit) et spécifiquement sensible au panel différentiel code/prose. La sélectivité ne s'érode pas avec la taille — c'est l'ampleur de la réponse qui diminue.
 ",,,,,,,,a6b08cbd09ce8deb,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,7cc74da5,markdown,fr,906a3dab5cc74cda,"## Contrôle apparié en norme — le confondant d'activité levé par construction (phase 6b)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,7cc74da5,markdown,fr,906a3dab5cc74cda,"## Contrôle apparié en norme — le confondant d'activité levé par construction (phase 6b)
 
 Le contrôle permuté hérite d'un confondant : un panel aléatoire tire des features bien moins actives que le panel différentiel, donc un clamp plus faible pour α égal. Contrôle : tirage restreint à la bande d'activité [m/2, 2m] du panel (`inocmp`, seed 42).
 ",,,,,,,,906a3dab5cc74cda,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,c3851b26,code,fr,4794fe719e24950e,"MP_ALPHAS = [0.25, 1.0]
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,c3851b26,code,fr,4794fe719e24950e,"MP_ALPHAS = [0.25, 1.0]
 
 
 def divergence_table_mp(echelle):
@@ -36253,13 +36253,13 @@ resume_mp = pd.DataFrame([{
 } for label, tmp in tables_mp.items()]).round(4)
 {""audit_activite"": audit_act3.to_dict(), ""resume"": resume_mp.to_dict()}
 ",,,,,,,,4794fe719e24950e,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,df1a5e94,markdown,fr,a52b02c298a3072d,"**Contrôle apparié.** Quand on annule le confondant d'activité (bande ×8, pool 83 candidats pour le 9B, même facteur que le pilote), le tableau se décompose en deux effets. À α = 1 au 9B : panel différentiel 0.327, panel apparié en norme 0.045, panel aléatoire 0.006. Le tirage apparié diverge donc ~7× plus que l'aléatoire — **l'activité de la feature participe de la réponse** — mais reste ~7× sous le panel différentiel — **l'identité différentielle code→prose porte l'essentiel**. Même décomposition qu'au 2B (0.647 / 0.080 / 0.010). Caveat honnête : la bande garantit le même ordre de grandeur, pas la même moyenne (le tirage 9B est tombé à 0.0023 contre 0.0129 pour le panel, bas de bande).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,df1a5e94,markdown,fr,a52b02c298a3072d,"**Contrôle apparié.** Quand on annule le confondant d'activité (bande ×8, pool 83 candidats pour le 9B, même facteur que le pilote), le tableau se décompose en deux effets. À α = 1 au 9B : panel différentiel 0.327, panel apparié en norme 0.045, panel aléatoire 0.006. Le tirage apparié diverge donc ~7× plus que l'aléatoire — **l'activité de la feature participe de la réponse** — mais reste ~7× sous le panel différentiel — **l'identité différentielle code→prose porte l'essentiel**. Même décomposition qu'au 2B (0.647 / 0.080 / 0.010). Caveat honnête : la bande garantit le même ordre de grandeur, pas la même moyenne (le tirage 9B est tombé à 0.0023 contre 0.0129 pour le panel, bas de bande).
 ",,,,,,,,a52b02c298a3072d,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,01a1cf95,markdown,fr,f3a3249ec66807af,"## Fidélité du relevé linéaire J-lens — troisième appareil, même question
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,01a1cf95,markdown,fr,f3a3249ec66807af,"## Fidélité du relevé linéaire J-lens — troisième appareil, même question
 
 L'inoculation mesure ce qu'une **écriture** mi-réseau produit sur la sortie ; le J-lens mesure ce qu'une **lecture** linéaire mi-réseau reconstruit du resid final. Les traces `calib_jlens_*.npz` (pipeline `extract_jlens_fidelity.py`) appliquent à chaque taille un jacobien moyen fit sur WikiText (n = 458) et quantifient l'accord par set de prompts : `overlap@10`, `rel_l2`, KL(modele || lens). Aux deux échelles déjà calibrées s'ajoutent le 9B puis le 27B — chacun via le **lens publié** `neuronpedia/jacobian-lens` (provenance et mesure de l'abandon du fit local 9B : cellule de transparence ci-dessous). Le 27B est la plus grande taille du parc Qwen3.5 couverte par un lens publié.
 ",,,,,,,,f3a3249ec66807af,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,cd309c9e,code,fr,e47678b2ae55a38f,"# Fidelite J-lens aux profondeurs de calibration, quatre echelles.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,cd309c9e,code,fr,e47678b2ae55a38f,"# Fidelite J-lens aux profondeurs de calibration, quatre echelles.
 CALIB = {
     ""Qwen3-1.7B-Base"": (""traces/calib_jlens_qwen3-1-7b.npz"", 7, 14),
     ""Qwen3.5-2B-Base"": (""traces/calib_jlens_qwen3-5-2b.npz"", 6, 12),
@@ -36295,13 +36295,13 @@ fidel = pd.DataFrame(rows)
 moyennes = fidel.groupby([""frac"", ""echelle""])[[""overlap@10"", ""rel_l2"", ""kl_nats""]].mean().round(4)
 moyennes
 ",,,,,,,,e47678b2ae55a38f,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,a881bd0b,markdown,fr,618215746731ae26,"**Le relevé linéaire poursuit sa régression au-delà du 9B.** Moyennes sur les cinq sets à mi-réseau (frac 0.5) : KL 12.52 (1.7B) → 8.18 (2B) → 9.36 (9B) → **10,41 nats (27B)** ; overlap@10 0.021 → 0.042 → 0.044 → 0,026. L'amélioration 1.7B→2B puis la régression 9B s'accentue au 27B : quatre sets sur cinq se dégradent au midi (KL 9B → 27B : code 10.02 → 11.29, prose 10.22 → 10.26, dialogue 9.46 → 11.61, narrative 7.24 → 9.24), seul math tient (9.83 → 9.65).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,a881bd0b,markdown,fr,618215746731ae26,"**Le relevé linéaire poursuit sa régression au-delà du 9B.** Moyennes sur les cinq sets à mi-réseau (frac 0.5) : KL 12.52 (1.7B) → 8.18 (2B) → 9.36 (9B) → **10,41 nats (27B)** ; overlap@10 0.021 → 0.042 → 0.044 → 0,026. L'amélioration 1.7B→2B puis la régression 9B s'accentue au 27B : quatre sets sur cinq se dégradent au midi (KL 9B → 27B : code 10.02 → 11.29, prose 10.22 → 10.26, dialogue 9.46 → 11.61, narrative 7.24 → 9.24), seul math tient (9.83 → 9.65).
 
 À toute taille le **gradient de profondeur domine** (KL frac 0.25 > frac 0.5 aux quatre échelles : 22.5 / 11.1 / 14.4 / 11,94 contre 12.5 / 8.2 / 9.4 / 10,41) — mais il **s'atténue au 27B** : à frac 0.25 le 27B repasse devant le 9B (11.94 contre 14.4) et l'écart quart→midi se resserre de 5.0 nats à 1.5. Les profondeurs précoces du grand modèle deviennent plus lisibles pendant que son mi-réseau régresse : l'avantage du linéaire migre des profondeurs tardives vers les précoces relatives.
 
 **Lecture couplée à l'inoculation.** Les deux appareils racontent la même histoire : la part d'une écriture mi-réseau que le resid final propage *linéairement* rétrécit avec la taille — adoucissement de la bifurcation (m(1) 0.647 → 0.327) côté expérience, plateau puis régression du relevé linéaire côté instrument. Le chemin mi-réseau → sortie se médialise de plus en plus par du calcul non linéaire qu'un jacobien moyen statique ne capture pas. Dernier garde-fou : le top-10 du resid final reste hors de portée partout (overlap ≤ 0.07) — le lens répond « dans quelle direction », jamais « quelles features seront actives ».
 ",,,,,,,,618215746731ae26,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,a7bb7328,code,fr,3b09ecbf56a1a894,"# KL par set et echelle, aux deux profondeurs de calibration.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,a7bb7328,code,fr,3b09ecbf56a1a894,"# KL par set et echelle, aux deux profondeurs de calibration.
 ordre = [""Qwen3-1.7B-Base"", ""Qwen3.5-2B-Base"", ""Qwen3.5-9B-Base"", ""Qwen3.5-27B""]
 fig, axes = plt.subplots(1, 2, figsize=(11.5, 3.6), sharey=True)
 for ax, frac in zip(axes, (0.25, 0.5)):
@@ -36319,31 +36319,31 @@ axes[0].legend(title="""", fontsize=8)
 plt.tight_layout()
 plt.show()
 ",,,,,,,,3b09ecbf56a1a894,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,0a22ea51,markdown,fr,f66f4e36733dd637,"**Transparence de provenance.** 1.7B et 2B : fits locaux (`fit_jlens_local.py`, WikiText n = 458, min 600 car., cible = resid final). 9B : **lens publié** `neuronpedia/jacobian-lens` — spec vérifiée au chargement : 31 couches sources (sur-ensemble des [8, 16] de calibration), cible resid final d_model 4096, n_prompts 458, construction identique. Le fit local 9B a été lancé puis **abandonné sur mesure** : prompt 1 > 69 min sans complétion (GPU sain, 100 % util — chaque passe backward du graphe 32 couches est bornée par la bande passante DRAM), extrapolation ~8-16 jours pour 458 prompts. L'artefact canonique remplace un fit redondant ; `meta_provenance` / `meta_lens_sha256` portent la traçabilité dans la trace. Caveat honnête : un écart d'artefact (fitteur différent) ne s'exclut pas formellement, mais la construction étant identique (mêmes prompts, même cible, même moyenne accumulée), l'écart attendu est de l'ordre de l'accumulation flottante — pas +1.2 nat systématique sur cinq sets.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,0a22ea51,markdown,fr,f66f4e36733dd637,"**Transparence de provenance.** 1.7B et 2B : fits locaux (`fit_jlens_local.py`, WikiText n = 458, min 600 car., cible = resid final). 9B : **lens publié** `neuronpedia/jacobian-lens` — spec vérifiée au chargement : 31 couches sources (sur-ensemble des [8, 16] de calibration), cible resid final d_model 4096, n_prompts 458, construction identique. Le fit local 9B a été lancé puis **abandonné sur mesure** : prompt 1 > 69 min sans complétion (GPU sain, 100 % util — chaque passe backward du graphe 32 couches est bornée par la bande passante DRAM), extrapolation ~8-16 jours pour 458 prompts. L'artefact canonique remplace un fit redondant ; `meta_provenance` / `meta_lens_sha256` portent la traçabilité dans la trace. Caveat honnête : un écart d'artefact (fitteur différent) ne s'exclut pas formellement, mais la construction étant identique (mêmes prompts, même cible, même moyenne accumulée), l'écart attendu est de l'ordre de l'accumulation flottante — pas +1.2 nat systématique sur cinq sets.
 
 27B : **lens publié** aussi — `qwen3.5-27b/jlens/Salesforce-wikitext/Qwen3.5-27B_jacobian_lens.pt` (fichier 3 150 Mo, sha256/16 `bb2e080ae9c9c208`, 63 couches sources sur-ensemble des [16, 32] de calibration, d_model 5120, n_prompts 672). **Deux changements de construction assumés à cette taille** : (i) le parc Qwen3.5 n'existe qu'en **instruct** à 27B (pas de jumeau `-Base`, mesuré au Hub et cohérent avec l'inventaire ICT-43) alors que les trois échelles inférieures sont des `-Base` ; (ii) le fit couvre **672** prompts contre 458 au 9B (même dataset, même cible). La fidélité reste une mesure interne (lens comparé à SON modèle), mais la lecture cross-échelle porte ces deux confondants. Côté ressource : le modèle 27B bf16 (~54 Go) ne tient pas en 24 Go de VRAM — l'extraction tourne via l'extension `--offload` de l'organe (init meta + plan accelerate GPU/CPU + lecture tensor par tensor, mesuré : `from_pretrained` matérialise le state dict entier en RAM sur ce transformers Windows), chemin validé au 9B (EXTRACT_OK au 9B, metriques au meme ordre que la trace commitee (KL midi moyen 9.37 vs 9.36, echantillon 1 vs 4 prompts/set)), extraction complète en 8 min sur RTX 3090 + 3080 Ti.
 ",,,,,,,,f66f4e36733dd637,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,4b72922e,markdown,fr,a71dae83c0998c56,"## Limites (assumées, elles délimitent le jalon)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,4b72922e,markdown,fr,a71dae83c0998c56,"## Limites (assumées, elles délimitent le jalon)
 
 - **Quatre échelles côté J-lens, trois côté inoculation — pas une loi d'échelle.** 1.7B → 2B → 9B → 27B pour la fidélité (les sauts sont hétérogènes, ×1.2 / ×4.5 / ×3, et le 9B change aussi de dictionnaire W64K vs W32K) ; l'inoculation reste mesurée sur trois (pas de traces d'inoculation 27B dans ce carnet). Et le point 27B change DEUX choses à la fois : la taille ET le régime (instruct vs base) ET la taille du fit (672 vs 458 prompts) — un indice sur quatre points dont un double changement de support, jamais un ajustement.
 - **Pas d'hystérésis**, passes indépendantes par α (même limite que le pilote).
 - **Divergence dans l'espace SAE top-k uniquement** : ce que le dictionnaire ne code pas est invisible.
 - **Panel code/prose** : le panel différentiel encode la discrimination code↔prose ; d'autres contrastes (math, dialogue) pourraient inoculer différemment.
 ",,,,,,,,a71dae83c0998c56,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,b955a62d,markdown,fr,9a8da082058788f7,"## Ce qu'il faut retenir
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,b955a62d,markdown,fr,9a8da082058788f7,"## Ce qu'il faut retenir
 
 1. **La bifurcation recule et s'adoucit avec la taille.** À intervention identique (16 features différentielles clampeées à mi-profondeur), le point de transition α* passe de ≈ 0.375 (1.7B) à ≈ 0.625 (2B) à ≈ 0.875 (9B), la pente maximale de 1.40 à 0.76, et la divergence finale m(1) de 1.10 à 0.33. Le 9B est le plus robuste des trois à l'inoculation.
 2. **La spécificité, elle, ne s'érode pas.** Contrôle permuté : le 9B répond ×53 plus au panel différentiel qu'à un panel aléatoire (0.327 vs 0.006) — sélectivité préservée, amplitude réduite.
 3. **Magnitude et rotation se dissocient.** Le 9B diverge le moins en valeurs (m(1) = 0.33) mais remplace encore 81 % de son top-50 : la bifurcation à grande échelle est une réorganisation plus qu'une destruction.
 4. **La fidélité du relevé linéaire ne suit pas l'échelle — et régresse plus fort au 27B.** KL mi-réseau (moyenne 5 sets) : 12.52 → 8.18 → 9.36 → **10.41 nats** — amélioration 1.7B→2B puis régression continue 9B→27B, quatre sets sur cinq d'accord. Au quart de profondeur, mouvement inverse : 11.94 au 27B contre 14.4 au 9B, l'écart quart→midi se resserre de 5.0 à 1.5 nats. Instrument et expérience convergent sur le midi : la part *linéairement* propagée d'une écriture mi-réseau rétrécit avec la taille. Statut : indice sur quatre points dont un double changement de support (27B instruct sans jumeau `-Base`, fit 672 vs 458 prompts), pas une loi d'échelle.
 ",,,,,,,,9a8da082058788f7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,5284f8ce,markdown,fr,b43505fb4056e37a,"## Exercices
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,5284f8ce,markdown,fr,b43505fb4056e37a,"## Exercices
 ",,,,,,,,b43505fb4056e37a,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,289584ae,markdown,fr,1cb831d40e87ed75,"### Exercice 1 — Divergence de Jaccard des top-k par intensité
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,289584ae,markdown,fr,1cb831d40e87ed75,"### Exercice 1 — Divergence de Jaccard des top-k par intensité
 
 La statistique m(α) sombre toutes les features. Exercice : pour le 9B, calculez l'indice de Jaccard `|top50_a ∩ top50_0| / |top50_a ∪ top50_0|` par prompt aux cinq intensités, moyennez, et comparez sa courbe J(α) à m(α) : la bifurcation est-elle un phénomène de *rotation* (mêmes features, valeurs déplacées) ou de *remplacement* (features différentes) ?
 ",,,,,,,,1cb831d40e87ed75,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,8b8c1cfc,code,fr,fe4508aecac2e8b1,"# Exercice 1 : divergence de Jaccard des top-k par intensite (9B).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,8b8c1cfc,code,fr,fe4508aecac2e8b1,"# Exercice 1 : divergence de Jaccard des top-k par intensite (9B).
 
 ech = ""Qwen3.5-9B-Base""
 z0 = np.load(inoc_path(ech, 0.0), allow_pickle=False)
@@ -36358,11 +36358,11 @@ for a in ALPHAS:
     rows.append({""alpha"": a, ""jaccard_moyen"": float(np.mean(jac))})
 pd.DataFrame(rows)
 ",,,,,,,,fe4508aecac2e8b1,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,a2f5b9ec,markdown,fr,77c45a4cb51bc4f0,"### Exercice 2 — La rupture dépend-elle du jeu ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,a2f5b9ec,markdown,fr,77c45a4cb51bc4f0,"### Exercice 2 — La rupture dépend-elle du jeu ?
 
 Les deux jeux qui définissent le panel (code_python, prose_fr) sont-ils aussi ceux qui divergent le plus ? Exercice : pour chaque échelle, calculez m(0.5) par jeu et classez ; testez si les jeux du panel dominent la divergence aux trois échelles.
 ",,,,,,,,77c45a4cb51bc4f0,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,742aed3b,code,fr,ea758d70135f9eec,"# Exercice 2 : m(alpha) par jeu, jeux du panel vs jeux neutres.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,742aed3b,code,fr,ea758d70135f9eec,"# Exercice 2 : m(alpha) par jeu, jeux du panel vs jeux neutres.
 
 rows = []
 for label, t in tables.items():
@@ -36372,11 +36372,11 @@ for label, t in tables.items():
                      ""jeu_du_panel"": jeu in (""code_python"", ""prose_fr"")})
 pd.DataFrame(rows).pivot_table(index=""echelle"", columns=""jeu"", values=""m(0.5)"")
 ",,,,,,,,ea758d70135f9eec,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,f22db493,markdown,fr,8ed338422a3d0b96,"### Exercice 3 — Les échelles traversent-elles la transition dans le même ordre ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,f22db493,markdown,fr,8ed338422a3d0b96,"### Exercice 3 — Les échelles traversent-elles la transition dans le même ordre ?
 
 Par prompt : le rang de divergence au α=0.5 est-il concordant entre échelles ? Exercice : appariez les prompts par clé (les jeux sont identiques), calculez un Spearman par paire d'échelles sur m(0.5) par prompt, et concluez sur l'existence d'un profil de prompt « sensible » commun.
 ",,,,,,,,8ed338422a3d0b96,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb,711d6c25,code,fr,46c58ccf510f5a81,"# Exercice 3 : Spearman par paire d'echelles sur m(0.5) par prompt.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb,711d6c25,code,fr,46c58ccf510f5a81,"# Exercice 3 : Spearman par paire d'echelles sur m(0.5) par prompt.
 
 from scipy.stats import spearmanr
 

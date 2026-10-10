@@ -17,7 +17,7 @@ Les trois pilotes suivent le modèle « Parcours alternatifs » du
 [README GameTheory](MyIA.AI.Notebooks/GameTheory/README.md) : durée annoncée,
 liste numérotée, clause de prérequis qui dit ce qui est supposé **et ce qui ne
 l'est pas**. La matière première est l'inventaire des embryons de parcours
-([`docs/curriculum/_inventory.md`](docs/curriculum/_inventory.md), EPIC
+([`docs/transients/2026-09-02-curriculum-inventory.md`](docs/transients/2026-09-02-curriculum-inventory.md), EPIC
 [#13844](https://github.com/jsboige/CoursIA/issues/13844)).
 
 ### Parcours par contraintes d'infrastructure
@@ -101,7 +101,7 @@ python scripts/notebook_tools/generate_parcours.py --dry-run # Aperçu sans écr
 Source : `COURSE_CATALOG.generated.json` (mis à jour par `generate_catalog.py`).
 
 Les pages narratives `genai-rush.md`, `symbolic-formalization.md`,
-`aima-walk.md` et l'inventaire `_inventory.md` suivent la convention des pages
+`aima-walk.md` et l'inventaire `2026-09-02-curriculum-inventory.md` suivent la convention des pages
 manuelles (préfixe underscore ou hors liste des cinq ids du générateur) : elles
 n'appartiennent **pas** au catalogue et ne sont jamais écrasées par
 `catalog-cron.yml`.
