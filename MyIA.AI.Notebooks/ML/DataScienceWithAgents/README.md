@@ -74,7 +74,7 @@ Labs 1 + 6 + 8. Découvrir le pipeline data science, construire un premier agent
 
 ```
 DataScienceWithAgents/
-├── 01-PythonForDataScience/    # Fondations Python
+├── 01-Python-For-Data-Science/    # Fondations Python
 │   └── notebooks/
 │       ├── 1.2-NumPy.ipynb
 │       └── 1.3-Pandas.ipynb
@@ -140,12 +140,12 @@ DataScienceWithAgents/
     └── Day7-Production/        # Integration GCP
 ```
 
-## Fondations (01-PythonForDataScience)
+## Fondations (01-Python-For-Data-Science)
 
 | Notebook | Contenu | Durée |
 |----------|---------|-------|
-| [1.2-NumPy](01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.html) | Arrays, opérations, vectorisation | 45 min |
-| [1.3-Pandas](01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.html) | DataFrames, filtrage, groupby | 60 min |
+| [1.2-NumPy](01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.html) | Arrays, opérations, vectorisation | 45 min |
+| [1.3-Pandas](01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.html) | DataFrames, filtrage, groupby | 60 min |
 
 ## Fondations ML (02-ML-Cours)
 

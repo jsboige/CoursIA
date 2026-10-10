@@ -1,4 +1,4 @@
-# 01-PythonForDataScience — Fondations NumPy & Pandas
+# 01-Python-For-Data-Science — Fondations NumPy & Pandas
 
 [← DataScienceWithAgents (parent)](../README.md) | [02-ML-Cours (suite) →](../02-ML-Cours/README.md)
 

@@ -1062,8 +1062,8 @@ def _aggregate_total(results):
 # seule chose que le test mesurait.
 # 28 notebooks, chemins relatifs a CORPUS_ML_DFA
 _COHORT_ML_DFA = frozenset((
-    "01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb",
-    "01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb",
+    "01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb",
+    "01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb",
     "02-ML-Cours/2.1-Workflow-ML.ipynb",
     "02-ML-Cours/2.2-Descente-de-gradient.ipynb",
     "02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb",

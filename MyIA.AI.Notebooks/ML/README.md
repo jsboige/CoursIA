@@ -68,7 +68,7 @@ Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) 
 ### Parcours Data Scientist classique (~12h)
 
 1. [ML-01](ML.Net/ML-01-Introduction.html) → comprendre le pipeline ML
-1. [NumPy](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) + [Pandas](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) → maîtriser les données
+1. [NumPy](DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) + [Pandas](DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) → maîtriser les données
 1. [Socle ML canonique 2.1 → 2.8](DataScienceWithAgents/02-ML-Cours/) → les fondamentaux scikit-learn (gradient, régressions, ensembles, biais-variance, non supervisé, PAC)
 1. [ML-02](ML.Net/ML-02-Data&Features.html) + [ML-03](ML.Net/ML-03-Entrainement&AutoML.html) → entraîner des modèles
 1. [ML-04](ML.Net/ML-04-Evaluation.html) → évaluer rigoureusement
@@ -122,7 +122,7 @@ ML/
 │   └── taxi-fare.csv
 │
 ├── DataScienceWithAgents/            # Data Science Python + AI Agents
-│   ├── 01-PythonForDataScience/      # Fondations NumPy/Pandas
+│   ├── 01-Python-For-Data-Science/      # Fondations NumPy/Pandas
 │   ├── 02-ML-Cours/                  # Socle ML canonique (scikit-learn)
 │   │   ├── 2.8b-Theorie-PAC-Lean.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean (moitie PAC)
 │   │   └── 2.8d-Lean-Novikoff-Convergence.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean (moitie Perceptron)
@@ -224,12 +224,12 @@ L'écart entre le pire et le meilleur essai est de **338×** — un fait pédago
 
 Formation complète en Data Science Python enrichie d'agents IA. Vous commencerez par les fondamentaux (NumPy, Pandas), puis construirez des agents LLM capables d'analyser des données, de nettoyer des datasets, et de participer à des compétitions Kaggle. La seconde moitié plonge dans les frameworks Google ADK pour construire des systèmes multi-agents avancés.
 
-### Fondations (01-PythonForDataScience)
+### Fondations (01-Python-For-Data-Science)
 
 | Notebook | Contenu |
 |----------|---------|
-| [1.2-NumPy](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | Arrays, vectorisation, opérations |
-| [1.3-Pandas](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | DataFrames, filtrage, manipulation |
+| [1.2-NumPy](DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | Arrays, vectorisation, opérations |
+| [1.3-Pandas](DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | DataFrames, filtrage, manipulation |
 
 #### Trois figures du track Data Science (Pandas, Seaborn, ADK)
 

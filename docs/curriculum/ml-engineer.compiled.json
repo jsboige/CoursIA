@@ -6,7 +6,7 @@
       "prerequisites": [],
       "notebooks": [
         {
-          "path": "ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb",
+          "path": "ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb",
           "title": "1.2 - Manipulation de Données avec NumPy",
           "duration_minutes": 45,
           "kernel": "Python 3",
@@ -19,7 +19,7 @@
           }
         },
         {
-          "path": "ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb",
+          "path": "ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb",
           "title": "1.3 - Analyse de Données avec Pandas",
           "duration_minutes": 30,
           "kernel": "Python 3",
