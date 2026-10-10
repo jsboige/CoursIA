@@ -107,10 +107,16 @@ jobs:
         if ! VIOLATIONS=$(python -c "
         import json
         data = json.load(open('/tmp/c2_results.json'))
+        if not data:
+            raise SystemExit('EMPTY_TARGET')
         nb_violations = [r for r in data if r['violations']]
         total_cells = sum(len(r['violations']) for r in nb_violations)
         print(f'{len(nb_violations)} notebooks, {total_cells} cells')
         " 2>/tmp/c2_parse.err); then
+          if grep -q EMPTY_TARGET /tmp/c2_parse.err; then
+            echo "::error::C.2 scanner found no notebook to check on this runner, yet the committed catalog lists notebooks (#20198). Probable cause: incomplete checkout / inherited sparse-checkout — the tree is amputated but git status stays clean. Infra root cause: #20174. Repo-side fix: #20198."
+            exit 1
+          fi
           FIRST=$(head -c 120 /tmp/c2_results.json | tr '\n' ' ')
           echo "::error::C.2 results not parseable as JSON — scanner wrote non-JSON or truncated output (file starts with: '$FIRST') (#14799)"
           exit 1
