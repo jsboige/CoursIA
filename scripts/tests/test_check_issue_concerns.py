@@ -118,7 +118,11 @@ class CitesTests(unittest.TestCase):
         self.assertFalse(mod.cites(concern, reply))
 
     def test_hhmm_token(self):
-        self.assertEqual(mod.hhmm_token("2026-10-07T15:30:59Z"), "15:30Z")
+        # Forme non interpolante (garde #17276) : assertEqual ferait sortir la valeur.
+        self.assertTrue(
+            mod.hhmm_token("2026-10-07T15:30:59Z") == "15:30Z",
+            "hhmm_token doit extraire HH:MM depuis l'ISO",
+        )
 
 
 class ResponseCandidateTests(unittest.TestCase):
