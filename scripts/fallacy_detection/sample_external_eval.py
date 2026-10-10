@@ -16,10 +16,11 @@ Trois proprietes sont mesurees, pas supposees :
    deficientes et leur taille -- jamais un echantillon silencieusement
    desequilibre.
 2. **L'aveugle est structurel, pas conventionnel.** La feuille d'annotation
-   emise pour les evaluateurs ne contient **pas** le champ ``node`` : la cle de
-   correction vit dans un fichier separe, les deux etant epingles par SHA-256
-   dans le manifeste. Un evaluateur qui ouvre la feuille ne peut pas voir
-   l'etiquette, meme par accident de colonne.
+   emise pour les evaluateurs ne contient **ni** le champ ``node`` **ni** le
+   champ ``family`` : la famille de premier niveau est la premiere moitie de
+   la reponse attendue, et la cle de correction vit dans un fichier separe,
+   les deux etant epingles par SHA-256 dans le manifeste. Un evaluateur qui
+   ouvre la feuille ne peut pas voir l'etiquette, meme par accident de colonne.
 3. **Le tirage est reproducible et affiche.** Meme graine = meme echantillon
    (identite mesurable par SHA de la feuille) ; le manifeste consigne graine,
    effectifs par famille et les empreintes SHA-256 de la source, de la feuille
@@ -164,7 +165,11 @@ def main(argv: list[str] | None = None) -> int:
             item_id = "eval-" + hashlib.sha256(
                 f"{record['node']}\x00{record['text']}".encode()
             ).hexdigest()[:12]
-            sheet.write(json.dumps({"item_id": item_id, "text": record["text"], "family": record["family"]},
+            # La feuille ne porte NI le noeud NI sa famille : la famille de
+            # premier niveau est la premiere moitie de la reponse attendue, et
+            # la laisser sur la feuille rendrait l'alpha branche circulaire.
+            # Elle vit dans la cle, ou elle sert a la stratification.
+            sheet.write(json.dumps({"item_id": item_id, "text": record["text"]},
                                    ensure_ascii=False) + "\n")
             key.write(json.dumps({"item_id": item_id, "family": record["family"], "node": record["node"]},
                                  ensure_ascii=False) + "\n")
@@ -178,7 +183,7 @@ def main(argv: list[str] | None = None) -> int:
         "source": {"path": str(args.input), "sha256": sha256_of(args.input)},
         "sheet_sha256": sha256_of(sheet_path),
         "key_sha256": sha256_of(key_path),
-        "note": "Feuille sheet.jsonl = aveugle (pas de noeud) ; cle key.jsonl = correction, a garder hors des mains des evaluateurs.",
+        "note": "Feuille sheet.jsonl = aveugle (ni noeud ni famille) ; cle key.jsonl = correction, a garder hors des mains des evaluateurs.",
     }
     manifest_path = args.out_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

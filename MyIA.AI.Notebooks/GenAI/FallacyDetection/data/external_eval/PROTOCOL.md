@@ -24,10 +24,10 @@ python scripts/fallacy_detection/sample_external_eval.py \
     --n 200 --min-per-family 10 --seed 42
 ```
 
-L'outil garantit, par construction et par tests (8 tests, `tests/test_sample_external_eval.py`) :
+L'outil garantit, par construction et par tests (`tests/test_sample_external_eval.py`) :
 
 - **plancher stratifié** : chaque famille de premier niveau ≥ 10 paires, sinon refus fail-closed nommant la famille déficiente ;
-- **aveugle structurel** : `sheet.jsonl` (feuille évaluateur) ne contient jamais le nœud cible ; `key.jsonl` (correction) est un fichier séparé ;
+- **aveugle structurel** : `sheet.jsonl` (feuille évaluateur) ne contient jamais le nœud cible **ni sa famille de premier niveau** (la liste fermée des familles reste connue des évaluateurs — c'est l'espace de réponse du passage 1 — mais la famille correcte d'un item est la première moitié de la réponse : la porter sur la feuille rendrait le seuil « branche » du §4 circulaire) ; `key.jsonl` (correction, qui porte la famille pour la stratification) est un fichier séparé ;
 - **reproductibilité** : même graine = même échantillon (SHA-256 de la feuille consigné dans `manifest.json` avec empreintes de la source et de la clé).
 
 ## 3. Évaluateurs
@@ -58,11 +58,11 @@ passage 2 est rapporté séparément. Aucun seuil n'est ajusté après coup.
 - Feuilles d'annotation remplies, réponses brutes et identités des évaluateurs : **hors dépôt** (GDrive privé, données PII).
 - Seul un **agrégat anonymisé** (tables de ce document, comptes, alphas) peut être cité dans une PR.
 
-**Condition d'aveuglement — ce qui ne doit pas atteindre l'évaluateur.** La feuille d'annotation ne porte pas le nœud cible (§2), mais cela ne suffit pas : l'échantillonneur est **déterministe**, donc quiconque détient à la fois la graine, le manifeste et le corpus aligné peut rejouer le tirage et **reconstruire la clé**. L'aveuglement tient donc à une règle de circulation, pas à une propriété du fichier :
+**Condition d'aveuglement — ce qui ne doit pas atteindre l'évaluateur.** La feuille d'annotation ne porte ni le nœud cible ni sa famille de premier niveau (§2), mais cela ne suffit pas : l'échantillonneur est **déterministe**, donc quiconque détient à la fois la graine, le manifeste et le corpus aligné peut rejouer le tirage et **reconstruire la clé**. L'aveuglement tient donc à une règle de circulation, pas à une propriété du fichier :
 
 | Document | Destinataire | Pourquoi |
 |---|---|---|
-| `sheet.jsonl` (feuille aveugle) | l'évaluateur | ne porte ni nœud, ni graine, ni rang — les identifiants sont adressés par le contenu |
+| `sheet.jsonl` (feuille aveugle) | l'évaluateur | ne porte ni nœud, ni famille, ni graine, ni rang — les identifiants sont adressés par le contenu |
 | `key.jsonl` (correction) | l'organisateur seul | porte le nœud cible |
 | `manifest.json` (graine, effectifs, empreintes) | l'organisateur seul | la graine y est en clair, et elle suffit à rejouer le tirage |
 

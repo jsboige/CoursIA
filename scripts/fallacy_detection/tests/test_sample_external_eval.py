@@ -80,15 +80,23 @@ def test_graine_differente_tirage_different(tmp_path):
 
 
 def test_feuille_aveugle_sans_etiquette(tmp_path):
-    """Propriete 2 : la feuille d'annotation ne porte jamais le noeud cible."""
+    """Propriete 2 : la feuille ne porte ni le noeud cible ni sa famille.
+
+    La famille de premier niveau est la premiere moitie de la reponse attendue
+    (le seuil "branche" de #20222 la mesure seule) : la laisser sur la feuille
+    rendrait l'alpha branche circulaire -- l'evaluateur n'aurait qu'a recopier
+    la colonne.
+    """
     corpus = make_corpus(tmp_path, {"attaque": 30, "appel": 30, "flou": 30})
     result = run_sampler(tmp_path, corpus)
     for item in result["sheet"]:
         assert "node" not in item
-        assert set(item) == {"item_id", "text", "family"}
-    # La cle, elle, porte le noeud -- et fait la meme longueur que la feuille.
+        assert "family" not in item
+        assert set(item) == {"item_id", "text"}
+    # La cle, elle, porte le noeud ET la famille (stratification) -- et fait
+    # la meme longueur que la feuille.
     assert len(result["key"]) == len(result["sheet"])
-    assert all("node" in item for item in result["key"])
+    assert all("node" in item and "family" in item for item in result["key"])
 
 
 def test_tirage_sature_par_les_planchers(tmp_path):
