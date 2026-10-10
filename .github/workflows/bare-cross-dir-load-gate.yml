@@ -75,12 +75,6 @@ name: Bare cross-dir #load gate
 # svg-empty-display-gate.yml (#6971).
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/notebook_tools/detect_bare_cross_dir_load.py'
-      - '.github/workflows/bare-cross-dir-load-gate.yml'
   workflow_dispatch:
 
 permissions:

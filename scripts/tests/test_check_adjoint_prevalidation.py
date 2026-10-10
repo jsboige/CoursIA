@@ -2868,6 +2868,388 @@ def test_render_emitted_dossier_blocked_at_same_head_then_changed_head(monkeypat
     assert "supersedes" not in block
 
 
+
+
+# ===========================================================================
+# #16480 -- queue derivation (--queue) and exact-head consumption (--consume)
+# ===========================================================================
+
+QUEUE_NOW = mod.datetime(2026, 10, 8, 20, 0, tzinfo=mod.timezone.utc)
+OTHER_HEAD = "e" * 40
+
+
+def _clear_probe(pr):
+    return {"blocked": False, "blocking": []}
+
+
+def _blocked_probe(pr):
+    return {"blocked": True, "blocking": [
+        {"kind": "review", "author": "hermes", "src": "pr"}]}
+
+
+def _classified(snapshot=None, **kwargs):
+    kwargs.setdefault("now", QUEUE_NOW)
+    kwargs.setdefault("probe", _clear_probe)
+    if snapshot is None:
+        snapshot = _reviewed_snapshot()
+    return mod.classify_snapshot(snapshot, **kwargs)
+
+
+def _review(login="myia-ai-01", state="APPROVED", oid=HEAD,
+            submitted="2026-10-08T10:00:00Z"):
+    return {
+        "state": state,
+        "submittedAt": submitted,
+        "commit": {"oid": oid},
+        "author": {"login": login},
+    }
+
+
+def _queue_snapshot(reviews, base=None, number=123, **dossier_changes):
+    """Snapshot avec les reviews posees AVANT l'empreinte du dossier.
+
+    L'empreinte hache les lignes de review (auteur, submittedAt) et le numero
+    de PR : poser les reviews apres coup ou changer le numero casserait
+    surfaces-sha256 et masquerait le check sous test. Le dossier atteste le
+    compte exact des reviews posees.
+    """
+    snapshot = dict(base) if base is not None else _base_snapshot()
+    snapshot["number"] = number
+    snapshot["reviews"] = reviews
+    fields = {"pr": str(number), "reviews-reviewed": str(len(reviews))}
+    fields.update(dossier_changes)
+    fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot)
+    snapshot["comments"] = [*snapshot["comments"], _comment(_body(**fields))]
+    return snapshot
+
+
+def _reviewed_snapshot(**dossier_changes):
+    """Nominal READY fixture: dossier + qualifying review on the exact head."""
+    return _queue_snapshot([_review()], **dossier_changes)
+
+
+def _dwell_run(lift="2026-10-08T21:00:00Z", remaining=60):
+    title = (
+        "tete du 2026-10-08T18:00:00Z -- plancher 120 min, "
+        f"reste {remaining} min ; ecoule a {lift}"
+    )
+    return {
+        "id": 7,
+        "name": "PR gate",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-10-08T18:01:00Z",
+        "output": {"title": title},
+    }
+
+
+# --- no dossier / stale -----------------------------------------------------
+
+
+def test_queue_no_dossier_is_blocked_with_cause():
+    entry = _classified(_snapshot())
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "no dossier" in entry.reject_cause
+    assert entry.dossier_created_at == ""
+    assert entry.grain_tag is not None and entry.grain_tag["lane"] == CARRIER
+
+
+def test_queue_stale_head_is_stale():
+    entry = _classified(_snapshot(_body(head=OTHER_HEAD)))
+    assert entry.verdict == mod.QUEUE_VERDICT_STALE
+    assert "head is stale" in entry.reject_cause
+
+
+def test_queue_comment_after_dossier_is_stale():
+    snapshot = _reviewed_snapshot()
+    snapshot["comments"].append(_comment("late concern"))
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_STALE
+
+
+def test_queue_dossier_older_than_stale_after_is_stale():
+    snapshot = _queue_snapshot([_review(submitted="2026-10-05T10:00:00Z")])
+    # Le dossier porte son createdAt : plus vieux que le defaut 24 h.
+    snapshot["comments"][-1] = {
+        "author": {"login": "jsboige"},
+        "body": snapshot["comments"][-1]["body"],
+        "createdAt": "2026-10-06T10:00:00Z",
+    }
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_STALE
+    assert "min old" in entry.reject_cause
+    assert entry.dossier_age_minutes == 3480
+
+
+def test_queue_dossier_age_below_threshold_is_not_stale():
+    snapshot = _queue_snapshot([_review(submitted="2026-10-05T10:00:00Z")])
+    snapshot["comments"][-1] = {
+        "author": {"login": "jsboige"},
+        "body": snapshot["comments"][-1]["body"],
+        "createdAt": "2026-10-08T19:00:00Z",
+    }
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.dossier_age_minutes == 60
+
+
+# --- READY and the review door ----------------------------------------------
+
+
+def test_queue_ready_nominal():
+    entry = _classified()
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.review_qualifying is True
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.checks == "latest-wins-green"
+    assert entry.domain == "pass"
+    assert entry.last_comment_is_dossier is True
+    assert entry.tail_to_read == 0
+    assert entry.reject_cause == ""
+    assert entry.dwell_until == ""
+
+
+def test_queue_unreviewed_is_review_ready():
+    snapshot = _queue_snapshot([_review(state="COMMENTED")])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
+    assert entry.review_disposition == "reviewed-without-disposition"
+    assert entry.review_qualifying is False
+
+
+def test_queue_approval_not_on_head_is_review_ready():
+    snapshot = _queue_snapshot([_review(oid=OTHER_HEAD)])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
+    assert entry.review_disposition == "approval-not-on-head"
+
+
+def test_queue_non_coordinator_approval_does_not_qualify():
+    snapshot = _queue_snapshot([_review(login="some-worker")])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.review_qualifying is False
+
+
+def test_queue_recent_changes_requested_blocks_dispatch():
+    """Divergence assumee du design #16483 : un CHANGES_REQUESTED recent n'est
+    pas une review manquante, c'est une reserve a lever -- le piege « reserve
+    en prose libre » (#14658) qu'aucun marqueur B.0 ne couvre."""
+    snapshot = _queue_snapshot([
+        _review(submitted="2026-10-08T10:00:00Z"),
+        _review(state="CHANGES_REQUESTED", submitted="2026-10-08T12:00:00Z"),
+    ])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "CHANGES_REQUESTED" in entry.reject_cause
+
+
+# --- DWELL ------------------------------------------------------------------
+
+
+def test_queue_dwell_pending_red_is_dwell_pending():
+    snapshot = _reviewed_snapshot()
+    snapshot["checkRuns"] = [_dwell_run(lift="2026-10-08T21:00:00Z")]
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_DWELL_PENDING
+    assert entry.dwell_until == "2026-10-08T21:00:00Z"
+
+
+def test_queue_dwell_elapsed_is_blocked_with_replay_hint():
+    snapshot = _reviewed_snapshot()
+    snapshot["checkRuns"] = [_dwell_run(lift="2026-10-08T19:00:00Z", remaining=0)]
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "replay the leg" in entry.reject_cause
+
+
+def test_queue_dwell_plus_other_red_is_blocked():
+    snapshot = _reviewed_snapshot()
+    snapshot["checkRuns"] = [
+        _dwell_run(),
+        {
+            "id": 8,
+            "name": "fast-lane",
+            "status": "completed",
+            "conclusion": "failure",
+            "started_at": "2026-10-08T18:02:00Z",
+            "output": {"title": "fast-lane -- red"},
+        },
+    ]
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "no dossier worth trusting" in entry.reject_cause
+    assert "fast-lane" in entry.reject_cause
+
+
+# --- in-flight rollup ---------------------------------------------------------
+
+
+def test_queue_rerun_inflight_over_green_blocks():
+    snapshot = _reviewed_snapshot()
+    snapshot["checkRuns"] = [
+        snapshot["checkRuns"][0],
+        {
+            "id": 9,
+            "name": "PR gate",
+            "status": "in_progress",
+            "started_at": "2026-10-08T19:59:00Z",
+        },
+    ]
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "in-flight" in entry.reject_cause
+    assert entry.checks == "in-flight"
+
+
+def test_queue_inflight_without_completed_blocks():
+    snapshot = _reviewed_snapshot()
+    snapshot["checkRuns"] = [
+        {
+            "id": 10,
+            "name": "PR gate",
+            "status": "queued",
+            "started_at": "2026-10-08T19:59:30Z",
+        }
+    ]
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    # Jambe requise sans conclusion sur la tete : l'absence est nommee.
+    assert "absence of required check" in entry.reject_cause
+
+
+# --- B.0 / frozen / attested BLOCKED ------------------------------------------
+
+
+def test_queue_b0_refuted_blocks():
+    entry = _classified(_reviewed_snapshot(), probe=_blocked_probe)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "b0" in entry.reject_cause or "B.0" in entry.reject_cause
+
+
+def test_queue_frozen_campaign_blocks(monkeypatch):
+    monkeypatch.setattr(
+        mod, "frozen_umbrella_exclusion",
+        lambda *_a, **_k: "veto user #17040",
+    )
+    entry = _classified()
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "frozen" in entry.reject_cause
+
+
+def test_queue_attested_blocked_stands_when_b0_still_blocks():
+    entry = _classified(
+        _reviewed_snapshot(verdict="BLOCKED", b0="blocked"),
+        probe=_blocked_probe,
+    )
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "attests BLOCKED" in entry.reject_cause
+
+
+def test_queue_b0_only_blocked_expires_toward_restamp():
+    entry = _classified(
+        _reviewed_snapshot(verdict="BLOCKED", b0="blocked"),
+        probe=_clear_probe,
+    )
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "re-stamp" in entry.reject_cause or "no longer blocks" in entry.reject_cause
+
+
+# --- stack child ---------------------------------------------------------------
+
+
+def test_queue_stack_child_domain_not_applicable():
+    """Une stack (base != main) ne peut pas porter de dossier READY : le gate
+    la refuse (« retarget the PR »). La queue expose le domaine declare sans
+    jamais retablir le dossier refuse -- c'est le cas not-applicable."""
+    base = _base_snapshot()
+    base["baseRefName"] = "feature/stack-base"
+    snapshot = _queue_snapshot(
+        [_review()], base=base, domain="not-applicable"
+    )
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "baseRefName must be 'main'" in entry.reject_cause
+    assert entry.domain == "not-applicable"
+
+
+# --- build_queue / consume ------------------------------------------------------
+
+
+def test_build_queue_unknown_pr_is_listed_not_fatal():
+    def loader(pr):
+        if pr == 1:
+            raise RuntimeError("gh api exploded")
+        return _reviewed_snapshot()
+
+    result = mod.build_queue(
+        [1, 123], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    assert [row["pr"] for row in result["unknown"]] == [1]
+    assert [item["pr"] for item in result["queue"]] == [123]
+    assert result["metrics"] == {mod.VERDICT_READY: 1}
+
+
+def test_build_queue_sorts_oldest_first_not_by_number():
+    older = _queue_snapshot([_review()], number=8)
+    older["createdAt"] = "2026-10-01T00:00:00Z"
+    newer = _queue_snapshot([_review()], number=9)
+    newer["createdAt"] = "2026-10-02T00:00:00Z"
+    result = mod.build_queue(
+        [9, 8],
+        now=QUEUE_NOW,
+        probe=_clear_probe,
+        loader=lambda pr: older if pr == 9 else newer,
+    )
+    assert [item["pr"] for item in result["queue"]] == [8, 9]
+
+
+def test_build_queue_dedupes_repeated_prs():
+    calls = []
+
+    def loader(pr):
+        calls.append(pr)
+        return {**_reviewed_snapshot(), "number": pr}
+
+    result = mod.build_queue(
+        [5, 5], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    assert calls == [5]
+    assert [item["pr"] for item in result["queue"]] == [5]
+
+
+def test_build_queue_metrics_count_verdicts():
+    stale = _reviewed_snapshot()
+    stale["comments"].append(_comment("late"))
+    review_ready = _queue_snapshot([])
+    loader = {1: _reviewed_snapshot(), 2: review_ready, 3: stale}.__getitem__
+    result = mod.build_queue(
+        [1, 2, 3], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    assert result["metrics"] == {
+        mod.VERDICT_READY: 1,
+        mod.QUEUE_VERDICT_REVIEW_READY: 1,
+        mod.QUEUE_VERDICT_STALE: 1,
+    }
+
+
+def test_consume_refuses_mutation_after_dossier():
+    snapshot = _reviewed_snapshot()
+    snapshot["comments"].append(_comment("posted after dossier"))
+    entry = mod.consume_pr(
+        123, now=QUEUE_NOW, probe=_clear_probe, loader=lambda pr: snapshot
+    )
+    assert entry.verdict == mod.QUEUE_VERDICT_STALE
+
+
+def test_consume_ready_nominal():
+    entry = mod.consume_pr(
+        123, now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: _reviewed_snapshot(),
+    )
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.to_json()["verdict"] == mod.VERDICT_READY
 # --- #17315 : le cout de l'invocation est mesure et publie -------------------
 #
 # Le bucket GraphQL est partage par toute la flotte ; le bucket REST (core) est
@@ -3054,3 +3436,19 @@ def test_review_threads_single_pr_is_still_one_operation(monkeypatch):
 
     assert len(calls) == 1
     assert [t["id"] for t in threads] == ["t9-1"]
+
+
+def test_grain_lane_re_refuse_le_point_final_de_phrase():
+    """#15864 (mesure #14549) -- la classe de token admet le point (hostnames),
+    donc `lane myia-po-2023:CoursIA-2.` etait capture comme une lane fantome.
+    Un token ne peut plus se TERMINER par un point ; les points internes
+    survivent."""
+    dotted = "Grain: DEEP/genai — lane myia-po-2023:CoursIA-2. Enonce reecrit."
+    assert mod.GRAIN_LANE_RE.findall(dotted) == ["myia-po-2023:CoursIA-2"]
+    clean = "Grain: DEEP/genai — lane myia-po-2023:CoursIA-2"
+    assert mod.GRAIN_LANE_RE.findall(clean) == ["myia-po-2023:CoursIA-2"]
+    host = "Grain: MED/docs — lane foo.bar.baz:CoursIA-2."
+    assert mod.GRAIN_LANE_RE.findall(host) == ["foo.bar.baz:CoursIA-2"]
+    # Aucune lane ne se reduit a un point : machine et workspace requis.
+    assert mod.GRAIN_LANE_RE.findall("Grain: MED/docs — lane :CoursIA-2") == []
+    assert mod.GRAIN_LANE_RE.findall("Grain: MED/docs — lane myia-po-2023:") == []
