@@ -246,9 +246,24 @@ Les fonctions non booléennes se codent en relations par leur graphe (note 20 du
 papier), ce qui ramène les tables d'addition de C₂/C₃ et les tables de vérité de
 l'algèbre de Boole au même objet.
 
+**Copie pédagogique déclarée** vis-à-vis de
+`SymbolicAI/Lean/tegmark_muh_lean/` (MUH, série Lean-36), qui formalise la même
+Annexe A **en noyau seul** (zéro Mathlib, cf son lakefile) : là-bas `Aut` porte
+ses axiomes de groupe démontrés à la main (`autComp_assoc`, `autId_comp`,
+`comp_autId`) et `MUH/Decidable.lean` décide l'égalité stricte des tables
+binaires (`sameBinaryOperation`, avec théorème de correction) — sans renommage
+des éléments. Ici, la structure de groupe est **héritée** de Mathlib
+(`Subgroup (Equiv.Perm α)`) et l'équivalence est décidée **à renommage près**,
+entre types porteurs différents (`EquivStruct.decidable`, confirmé par
+`decide +kernel`). Ce que l'un prouve à la main, l'autre l'obtient par
+héritage : l'écart entre les deux formalisations est lui-même le contenu
+pédagogique. La décidabilité à renommage près ne peut pas migrer dans
+`tegmark_muh_lean` sans y introduire Mathlib — ce qui y détruirait l'objet du
+cours (Lean-36 enseigne précisément ce que le noyau fait seul).
+
 | Fichier | sorry | Contenu |
 |---------|-------|---------|
-| `MathUniverse.lean` | 0 | **Définition** : `FinRelStruct` (entités = type fini `α`, signature `σ : Fin n → ℕ`, relations décidables via le champ `rel_dec` — le « all these functions must be computable » du §A.2). **Aut(S)** : `Preserves` + `aut` (sous-groupe de `Equiv.Perm` : identité, composée, symétrique), pont `mem_aut_iff`, et le témoin **`aut_bool8_trivial`** (préserver la relation « x = F » épingle la constante fausse). **Décidabilité** : `EquivStruct` (isomorphisme relationnel), `equivStruct_iff_functions` (déploiement sur `α → β`, le type énumérable par excellence) et l'instance `EquivStruct.decidable` — énumération exhaustive des tableaux, les deux `letI` locaux exposant les champs `rel_dec` comme instances sans quoi la résolution ne saurait pas remonter de `Decidable (S.rel i t)` au champ qui l'atteste. **Exemples §A.2** : `nand` (symbole de Sheffer), **C₂** (`c2`, table d'addition de Z/2), **C₃** (`c3`, Z/3), **algèbre de Boole (A1)** (`bool8`, les huit relations F, T, ¬, ∧, ∨, ⇒, ⇔, \| ; signatures `c2Sig`/`c3Sig`/`bool8Sig` en `@[reducible]` — la résolution d'instances travaille à transparence `reducible` et ne déplie pas un `def` ordinaire), **génération par NAND seul (A2)** : les sept lemmes de composition `nand_false`/`nand_true`/`nand_not`/`nand_and`/`nand_or`/`nand_implies`/`nand_iff`, la structure `nand8`, l'équivalence `equivStruct_bool8_nand8` (témoin : l'identité) et la confirmation par l'algorithme — `decide (EquivStruct bool8 nand8) = true`, obtenu par `decide +kernel` (transparence complète) et **non** `native_decide`, qui ajouterait l'axiome `Lean.ofReduceBool` (banni par la discipline de preuve du dépôt). |
+| `MathUniverse.lean` | 0 | **Définition** : `FinRelStruct` (entités = type fini `α`, signature `σ : Fin n → ℕ`, relations décidables via le champ `rel_dec` — le « all these functions must be computable » du §A.2). **Aut(S)** : `Preserves` + `aut` (sous-groupe de `Equiv.Perm` : identité, composée, symétrique), pont `mem_aut_iff`, et le témoin **`aut_bool8_trivial`** (préserver la relation « x = F » épingle la constante fausse). **Décidabilité** : `EquivStruct` (isomorphisme relationnel), `equivStruct_iff_functions` (déploiement sur `α → β`, le type énumérable par excellence) et l'instance `EquivStruct.decidable` — énumération exhaustive des tableaux, les deux `letI` locaux exposant les champs `rel_dec` comme instances sans quoi la résolution ne saurait pas remonter de `Decidable (S.rel i t)` au champ qui l'atteste. **Exemples §A.2** : `nand` (symbole de Sheffer), **C₂** (`c2`, table d'addition de Z/2), **C₃** (`c3`, Z/3), **algèbre de Boole (A1)** (`bool8`, les huit relations F, T, ¬, ∧, ∨, ⇒, ⇔, \| ; signatures `c2Sig`/`c3Sig`/`bool8Sig` en `@[reducible]` — la résolution d'instances travaille à transparence `reducible` et ne déplie pas un `def` ordinaire), **génération par NAND seul (A2)** : les sept lemmes de composition `nand_false`/`nand_true`/`nand_not`/`nand_and`/`nand_or`/`nand_implies`/`nand_iff`, la structure `nand8`, l'équivalence `equivStruct_bool8_nand8` (témoin : l'identité) et la confirmation par l'algorithme — `decide (EquivStruct bool8 nand8) = true`, obtenu par `decide +kernel` (transparence complète) et **non** `native_decide`, qui ajouterait l'axiome `Lean.ofReduceBool` (banni par la discipline de preuve du dépôt). **Critère partiel, nommé** : la *génération par composition* n'est pas réifiée en opérateur général — les compositions sont prouvées nommément (les sept `nand_*`), la clôture générale d'une signature sous composition reste à écrire. |
 | `MathUniverse_en.lean` | 0 | Sibling anglais (Epic #4980) — code byte-identique, docstrings et commentaires traduits. |
 
 Une difficulté de fond rencontrée (et corrigée, pas contournée) : écrite d'abord
