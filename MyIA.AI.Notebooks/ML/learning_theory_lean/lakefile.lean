@@ -71,3 +71,18 @@ et `GradientFlow`. -/
 @[default_target]
 lean_lib «EffectiveTheory» where
   globs := #[.submodules `EffectiveTheory, `EffectiveTheory]
+
+/-- Module `MathUniverse` — digestion #16741/arc B (issue #16753) : Annexe A de
+R16 (*The Mathematical Universe*, Tegmark) — structures mathématiques finies
+(signature + relations décidables), Aut(S) comme groupe, décidabilité de
+l'équivalence de deux définitions finies (« simple algorithme haltant » rendu
+comme instance `Decidable`), et les exemples §A.2 : C₂, C₃, algèbre de Boole à
+deux éléments (A1) et sa génération par NAND seul (A2). Frère de
+`Perceptron`, `PacLearning`, `GradientFlow` et `EffectiveTheory`. -/
+@[default_target]
+lean_lib «MathUniverse» where
+  /- Pas de `.submodules` : MathUniverse est un module plat (deux fichiers
+  racine, aucune arborescence `MathUniverse/`). Un glob `.submodules` sur un
+  module sans repertoire fait echouer la resolution de la cible bibliotheque
+  (`no such file or directory: .../MathUniverse`). -/
+  globs := #[`MathUniverse, `MathUniverse_en]

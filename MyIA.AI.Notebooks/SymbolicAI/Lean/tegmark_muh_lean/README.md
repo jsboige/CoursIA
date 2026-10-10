@@ -66,6 +66,12 @@ $ lake build MUH
 
 - `finiteness_lean/` — précédent du même pattern (dérivées symboliques de
   Brzozowski, Lean 4 standalone, sans Mathlib).
-- `coordinator-workflow.md` — le流程 de revision lake/coordinateur.
+- `MyIA.AI.Notebooks/ML/learning_theory_lean/MathUniverse.lean` — la même
+  Annexe A formalisée **avec** Mathlib : `aut` comme `Subgroup (Equiv.Perm)`
+  hérité (les axiomes que ce lake démontre à la main y sont gratuits) et
+  `EquivStruct.decidable`, équivalence à renommage près décidée par
+  `decide +kernel`. Copie pédagogique déclarée des deux côtés : ce lake
+  enseigne ce que le noyau fait seul, l'autre ce que Mathlib abbrevie.
+- `coordinator-workflow.md` — le processus de révision lake/coordinateur.
 - `decidable_instance_propagation.md` — le piège d'instance `Decidable`
   sans contexte.
