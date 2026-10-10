@@ -4184,3 +4184,80 @@ def test_both_invoking_workflows_branch_on_rc():
             f"{name} ne distingue plus rc=1 : le message de contradiction "
             "serait rendu pour un echec de mesure (#17273)"
         )
+
+
+# --- #20086 : prose descriptive chiffree ouverte par un verbe de constatation
+
+
+def _count_exempt(line: str) -> bool:
+    m = COUNT_CLAIM.search(line)
+    assert m is not None, f"aucun COUNT_CLAIM dans la ligne sonde : {line!r}"
+    return _count_is_exempt(line, m)
+
+
+def test_issue_20086_descriptive_attestation_is_exempt():
+    """Founder #20076 (body avant correction) : le compte ouvre sur ce que
+    l'auteur a LU ou ATTESTE, pas sur le perimetre de la PR."""
+    assert _count_exempt(
+        "- `life-lean-stats` (exec 12) atteste 4 fichiers (`Life.lean` 253, "
+        "`Life_en.lean` 254, `Hashlife.lean` 700, `Hashlife_en.lean` 701)"
+    )
+    assert _count_exempt("`phase1-files-list` (exec 18) atteste ~80 fichiers `.lean`")
+
+
+def test_issue_20086_canonical_colon_declaration_still_fails():
+    """Controle positif exige par l'issue : la forme canonique de declaration
+    de perimetre -- « N fichiers : a, b, c » -- n'est ouverte par aucun verbe
+    de constatation et DOIT continuer de rougir."""
+    assert not _count_exempt(
+        "7 fichiers : a.py, b.py, c.py, d.py, e.py, f.py, g.py"
+    )
+
+
+def test_issue_20086_colon_guard_survives_a_constatation_verb():
+    """Le verbe ne blanchit pas une assertion declaree par deux-points : c'est
+    la garde qui separe l'exemption du blanc-seing."""
+    assert not _count_exempt(
+        "j'atteste 7 fichiers : a.py, b.py, c.py, d.py, e.py, f.py, g.py"
+    )
+
+
+def test_issue_20086_bare_assertion_without_verb_still_fails():
+    """Sans verbe de constatation, la phrase reste une revendication."""
+    assert not _count_exempt("Le perimetre de cette PR est de 3 fichiers uniquement.")
+
+
+def test_issue_20125_perimeter_verbs_do_not_exempt():
+    """Review #20125 : `couvre/couvrent/covers/lists` sont des verbes de
+    PERIMETRE, pas de constatation -- l'annonce de perimetre la plus courante
+    doit rester bloquante, sinon l'exemption est un blanc-seing."""
+    assert not _count_exempt("Cette PR couvre 4 fichiers.")
+    assert not _count_exempt("This PR covers 4 files.")
+
+
+def _body_candidates(body: str, n_files: int):
+    items = [{"kind": "body", "author": "lane", "body": body, "source": "body", "ts": ""}]
+    return select_candidates(items, n_files)[0]
+
+
+def test_issue_20086_end_to_end_founder_body_is_signal_not_blocking():
+    """Bout en bout, au niveau ou #20076 rougissait : la ligne fondatrice
+    reste EXTRAITE et CONFRONTEE (#12201 : l'exemption ne retire pas le compte
+    de la selection), mais elle ne BLOQUE plus -- c'est la propriete
+    `blocking` du candidat qui porte le verdict."""
+    body = (
+        "- `life-lean-stats` (exec 12) atteste 4 fichiers (`Life.lean` 253, "
+        "`Life_en.lean` 254, `Hashlife.lean` 700, `Hashlife_en.lean` 701)\n"
+        "- `phase1-files-list` (exec 18) atteste ~80 fichiers `.lean`\n"
+    )
+    cands = _body_candidates(body, 7)
+    assert cands, "les lignes doivent rester des candidates (extraction inchangee)"
+    assert all(not c.blocking for c in cands), [c.text for c in cands if c.blocking]
+
+
+def test_issue_20086_end_to_end_colon_declaration_still_blocks():
+    """Controle positif bout en bout : la declaration canonique de perimetre
+    reste BLOQUANTE sur la meme liste de 7 fichiers."""
+    body = "Perimetre : 4 fichiers : Life.lean, Life_en.lean, Hashlife.lean, Hashlife_en.lean\n"
+    cands = _body_candidates(body, 7)
+    assert any(c.blocking for c in cands), "la declaration canonique doit bloquer"
