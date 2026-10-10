@@ -48,7 +48,7 @@ imparfait, un agent RL entraîné, et un pipeline LLM complet (prompting → RAG
 Vous savez surtout **où le corpus dépasse AIMA** (théorie des jeux formelle, IIT,
 métaheuristiques composées) — l'épilogue le nomme.
 
----
+***
 
 ## Le fil — AIMA comme ossature, chapitre par chapitre
 
@@ -141,7 +141,7 @@ métaheuristiques composées) — l'épilogue le nomme.
     (recherche **formelle**, compagnon Lean de la phase 2), la série IIT complète (59
     notebooks de la famille la plus dense du dépôt, cf [`recherche.md`](recherche.md)).
 
----
+***
 
 ## Ce que chaque étape suppose — règle de lecture
 

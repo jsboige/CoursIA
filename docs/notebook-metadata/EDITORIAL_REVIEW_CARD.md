@@ -4,7 +4,7 @@
 **Usage** : copié/adapté par chaque reviewer qui ajoute une entrée à [editorial-review-registry.md](editorial-review-registry.md)
 **Référence scope** : [editorial-review-registry.md §3.1](editorial-review-registry.md#3-curation-rules-hard)
 
----
+***
 
 ## Identification du notebook
 
@@ -57,7 +57,7 @@ Liste des findings significatifs (1 ligne chacun) :
 - **Date de revue** : `<YYYY-MM-DD>` (ISO 8601)
 - **Notes** : `<libre, max 200 chars>`
 
----
+***
 
 ## Exemple rempli (issu du pilote Sudoku c.764)
 
