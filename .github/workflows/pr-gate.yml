@@ -284,6 +284,18 @@ jobs:
           else
             IS_FORK_ARG=""
           fi
+          # #13363: --all-queued-polls 5 arms the pool-saturation early exit.
+          # When EVERY pending constituent has sat at status=queued (no runner
+          # assigned) for 5 consecutive polls past the settle_polls floor
+          # (~2.5 min of confirmed starvation; the exit lands ~3 min into the
+          # leg), the verdict cannot change by waiting -- a queued job has not
+          # started. The gate then prints a STARVED message, self-cancels
+          # (#13510), and the stale sweep re-drives the leg when runners free
+          # up -- instead of holding a hosted slot for the full 45-min budget
+          # polling a parked queue (measured 2026-10-07/09: up to 24 gate
+          # waiters in flight while 400+ self-hosted jobs queue). Fail-closed
+          # toward waiting: a single constituent flipping to in_progress
+          # resets the streak.
           python scripts/pr_gate.py \
             --repo "${{ github.repository }}" \
             --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
@@ -291,6 +303,7 @@ jobs:
             --timeout-min 45 \
             --poll-sec 30 \
             --settle-polls 2 \
+            --all-queued-polls 5 \
             --pr "${{ github.event.pull_request.number }}" \
             --dwell-min 120 \
             $IS_FORK_ARG
