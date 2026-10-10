@@ -40,7 +40,6 @@ def _base_snapshot() -> dict:
         "comments": [_comment("ordinary earlier comment")],
         "reviews": [{"state": "COMMENTED"}, {"state": "APPROVED"}],
         "threads": [{"isResolved": True}],
-        "statusCheckRollup": [{"name": "PR gate", "conclusion": "SUCCESS"}],
         "checkRuns": [
             {
                 "id": 1,
@@ -286,7 +285,57 @@ def test_non_shared_github_author_cannot_satisfy_gate():
     snapshot = _snapshot(None)
     snapshot["comments"].append(_comment(_body(), login="worker-bot"))
     errors = _errors(snapshot)
-    assert any(error.startswith("comment author must") for error in errors)
+    # #17437 -- the message no longer asserts a single login: it names the
+    # observed one and the accepted set (shared login + fleet App identities).
+    # Naming `worker-bot` in the assertion keeps it proving THIS refusal rather
+    # than any refusal that happens to share a prefix.
+    assert any(
+        "is not an accepted dossier author" in error and "worker-bot" in error
+        for error in errors
+    )
+
+
+def test_fleet_app_identity_is_an_accepted_dossier_author():
+    """#17437: a lane signing its dossier under its GitHub App identity passes.
+
+    The migration to per-lane Apps is half done -- the Apps exist and are
+    installed (2026-10-06), the lanes still sign under the shared login. On the
+    day a lane switches, a gate comparing the author to the shared login alone
+    would refuse every dossier it files. The loop walks the whole frozen lane
+    table, so adding a lane to the organ without this gate following is caught
+    here rather than in production.
+    """
+    for lane in mod.gh_identity.APP_DOSSIER_LANES:
+        login = f"{mod.gh_identity.APP_LOGIN_PREFIX}{lane}[bot]"
+        snapshot = _snapshot(None)
+        snapshot["comments"].append(_comment(_body(), login=login))
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, f"{login}: {errors}"
+        assert errors == [], f"{login}: {errors}"
+
+
+def test_app_shaped_login_outside_the_frozen_lanes_is_refused():
+    """The accepted set is CLOSED: a login that only LOOKS like a fleet App is out.
+
+    Accepting by shape (``coursia-lane-*[bot]``) would let any GitHub App whose
+    name merely starts with the prefix sign a dossier -- the check would stop
+    proving anything about who attested. Each entry below is a near-miss that a
+    substring or prefix match would let through.
+    """
+    impostors = (
+        "coursia-lane-po-2099[bot]",   # unknown lane
+        "coursia-lane-web2[bot]",      # plausible, never provisioned
+        "coursia-lane-po-2024",        # right lane, no App suffix
+        "coursia-lane-po-202[bot]",    # prefix of a real lane
+        "coursia-lane-po-2024[bot]x",  # real login plus a trailing character
+    )
+    for login in impostors:
+        snapshot = _snapshot(None)
+        snapshot["comments"].append(_comment(_body(), login=login))
+        errors = _errors(snapshot)
+        assert any(
+            "is not an accepted dossier author" in error for error in errors
+        ), f"{login}: {errors}"
 
 
 # --- #17791 : PR hors flotte (session cloud du mainteneur) -------------------
@@ -646,18 +695,11 @@ def test_patched_restamp_can_never_match_but_a_new_comment_does():
     assert ready
 
 
-def test_metadata_identity_ignores_only_check_order():
-    first = {
-        "number": 123,
-        "updatedAt": "2026-09-16T19:00:00Z",
-        "statusCheckRollup": [
-            {"name": "A", "conclusion": "SUCCESS"},
-            {"name": "B", "conclusion": "SUCCESS"},
-        ],
-    }
-    reordered = dict(first)
-    reordered["statusCheckRollup"] = list(reversed(first["statusCheckRollup"]))
-    assert mod._metadata_identity(first) == mod._metadata_identity(reordered)
+def test_metadata_identity_is_exact():
+    """#17315: the rollup is out of the snapshot, so the identity is a plain
+    canonical rendering -- equal dicts match, any field move diverges."""
+    first = {"number": 123, "updatedAt": "2026-09-16T19:00:00Z"}
+    assert mod._metadata_identity(first) == mod._metadata_identity(dict(first))
 
     changed = dict(first)
     changed["updatedAt"] = "2026-09-16T19:00:01Z"
@@ -687,7 +729,7 @@ def _bracket_reads(monkeypatch, first, second=None):
         }
     ]
 
-    def fake_pr_metadata(pr, *, with_rollup):
+    def fake_pr_metadata(pr):
         calls["metadata"] += 1
         factory = first if calls["metadata"] == 1 else (second or first)
         return factory()
@@ -726,23 +768,23 @@ def test_load_snapshot_reads_metadata_twice_and_takes_checks_from_rest(monkeypat
     assert snapshot["threads"] == [{"thread": 1}]
 
 
-def test_load_snapshot_aborts_when_a_check_concludes_during_the_read(monkeypatch):
-    """#17390 acceptance 2: the guard must go red, not absolve.
+def test_load_snapshot_aborts_when_the_head_moves_during_the_read(monkeypatch):
+    """#17390 acceptance 2, re-based on the REST bracket (#17315).
 
-    A check moving from in-progress to a conclusion between the two metadata
-    reads makes the snapshot born of an already-stale state: the gate refuses
-    it (transient UNKNOWN, the caller retries) instead of certifying it.
+    The check-runs are keyed on `headRefOid` and fetched inside the bracket, so
+    a push landing between the two metadata reads must abort: accepting the
+    snapshot would pair the OLD head's check-runs with the NEW head, and the
+    claim verification would then read a state that never existed together.
     """
-    in_progress = _metadata_payload(
-        statusCheckRollup=[{"name": "PR gate", "status": "IN_PROGRESS", "conclusion": None}]
-    )
-    concluded = _metadata_payload(
-        statusCheckRollup=[{"name": "PR gate", "status": "COMPLETED", "conclusion": "SUCCESS"}]
-    )
-    _bracket_reads(monkeypatch, lambda: in_progress, lambda: concluded)
+    first = _metadata_payload(headRefOid=HEAD)
+    pushed = _metadata_payload(headRefOid="f" * 40)
+    calls, _runs = _bracket_reads(monkeypatch, lambda: first, lambda: pushed)
 
     with pytest.raises(RuntimeError, match="changed while prevalidation snapshot was read"):
         mod.load_snapshot(123)
+    # The check-runs were fetched for the head read BEFORE the push -- which is
+    # exactly why the mismatch is refused instead of silently accepted.
+    assert calls["check_runs_head"] == HEAD
 
 
 def test_load_snapshot_aborts_when_any_surface_moves_during_the_read(monkeypatch):
@@ -1151,13 +1193,11 @@ def test_check_completing_green_after_dossier_does_not_expire_it():
     assert verdict == mod.VERDICT_READY, errors
 
 
-def test_green_check_may_also_move_the_rollup_after_the_stamp():
-    """The rollup is neither hashed (new stamps) nor read for the claim: only
-    the per-name latest-wins verdicts of the head's check-runs are."""
+def test_green_check_landing_after_the_stamp_keeps_ready():
+    """Only the per-name latest-wins verdicts of the head's check-runs matter:
+    a green run appearing after the stamp neither expires the dossier nor
+    contradicts its `latest-wins-green` claim."""
     snapshot = _snapshot(_body())
-    snapshot["statusCheckRollup"].append(
-        {"name": "perimeter review guard (#11268)", "conclusion": "SUCCESS"}
-    )
     snapshot["checkRuns"].append(
         {"id": 2, "name": "perimeter review guard (#11268)",
          "status": "completed", "conclusion": "success",
@@ -1349,41 +1389,32 @@ def test_blocked_dossier_is_not_refuted_by_a_red_check():
     assert verdict == mod.VERDICT_BLOCKED, errors
 
 
-def test_legacy_stamp_still_accepted_while_checks_unchanged():
-    """Backward acceptance: pre-#16957 stamps hashed the rollup as well; both
-    digests are valid certificates of the discussion surfaces."""
-    legacy = mod.legacy_surfaces_fingerprint(_base_snapshot())
-    snapshot = _snapshot(_body(**{"surfaces-sha256": legacy}))
-    verdict, errors = mod.evaluate(snapshot)
-    assert verdict == mod.VERDICT_READY, errors
+def test_retired_legacy_stamp_needs_a_mechanical_restamp():
+    """#17315: the pre-#16957 fingerprint is retired with its last carrier.
 
-
-def test_legacy_stamp_whose_checks_moved_needs_a_mechanical_restamp():
-    """A legacy stamp whose checks moved matches NEITHER digest: the hash
-    embedded data that has since changed, and a SHA-256 over changed data
-    cannot be re-derived. The refusal names the recovery (--template), and the
-    re-stamped dossier can never again be expired by a check conclusion."""
-    snapshot = _snapshot(_body(**{
-        "surfaces-sha256": mod.legacy_surfaces_fingerprint(_base_snapshot())
-    }))
-    snapshot["statusCheckRollup"][0]["conclusion"] = "PENDING"
+    Both carriers merged (#16950/#16891), so a dossier still stamped with it
+    matches neither live digest. The organ fails CLOSED and names the single
+    recovery: a mechanical `--template` re-stamp.
+    """
+    assert not hasattr(mod, "legacy_surfaces_fingerprint")
+    # A stamp matching neither accepted digest is the shape of a retired-legacy
+    # dossier: fail CLOSED, with the one gesture that can recover it named.
+    snapshot = _snapshot(_body(**{"surfaces-sha256": "a" * 64}))
     errors = _errors(snapshot)
     assert any(
-        "discussion surfaces changed" in error
-        and "--template re-stamp" in error
+        "discussion surfaces changed" in error and "--template re-stamp" in error
         for error in errors
     )
 
 
 def test_surfaces_fingerprint_is_insensitive_to_check_state():
-    """The new digest must not move when only checks move -- that is the race
-    being closed. The legacy digest still does, which is why it is legacy."""
+    """The live digest must not move when only checks move -- that is the race
+    being closed. Nothing else in the module hashes check state either."""
     base = _base_snapshot()
     moved = _base_snapshot()
     moved["checkRuns"][0]["conclusion"] = "failure"
-    moved["statusCheckRollup"] = [{"name": "PR gate", "conclusion": "FAILURE"}]
     assert mod.surfaces_fingerprint(base) == mod.surfaces_fingerprint(moved)
-    assert mod.legacy_surfaces_fingerprint(base) != mod.legacy_surfaces_fingerprint(moved)
+    assert mod.pre18637_surfaces_fingerprint(base) == mod.pre18637_surfaces_fingerprint(moved)
 
 
 def test_template_renders_the_emitting_lane_not_a_borrowed_name():
@@ -1961,8 +1992,14 @@ def test_blocked_b0_only_stands_when_organ_still_blocks(monkeypatch, capsys):
 
 
 def test_blocked_with_other_motif_not_touched_by_the_recheck(monkeypatch, capsys):
-    """Acceptance 3 : un autre motif bloquant (checks) garde son dossier,
-    meme quand l'organe B.0 ne bloque plus -- sa raison peut tenir encore."""
+    """Acceptance 3 : le re-jeu B.0 ne touche QUE la forme `b0` seul.
+
+    Ici `checks` bloque aussi, donc `blocking_fields` rend `['checks', 'b0']` et
+    le dossier tient -- l'organe B.0 ne dit rien du motif `checks`. Ce n'est PAS
+    la regle generale du champ `checks` : un dossier bloque pour `checks` SEUL
+    est re-lu par `recheck_blocked_checks` (#20082), qui l'expire vers un
+    re-tampon quand la tete est toute verte (cf. tests *blocked_checks* plus bas).
+    """
     snapshot = _blocked_b0_snapshot(checks="BLOCKED:gate rouge")
     monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
     monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
@@ -1980,6 +2017,113 @@ def test_recheck_blocked_b0_never_probes_a_non_blocked_verdict():
     assert mod.recheck_blocked_b0(123, verdict, dossier, probe) == (verdict, [], dossier)
     assert mod.recheck_blocked_b0(123, "", None, probe) == ("", [], None)
     assert calls == []
+
+
+# --- `checks` est le SEUL champ bloquant qui bouge sans push (#20082) --------
+
+
+def _blocked_checks_snapshot(**changes: str):
+    """Dossier BLOCKED dont `checks` est le SEUL champ bloquant.
+
+    `b0`/`scope`/`domain` restent aux valeurs READY (defauts de `_body`), donc
+    `blocking_fields` rend exactement `['checks']` -- la seule forme que
+    `recheck_blocked_checks` a le droit d'expirer.
+    """
+    fields = {"verdict": "BLOCKED", "checks": "BLOCKED:gate rouge"}
+    fields.update(changes)
+    return _snapshot_with(**fields)
+
+
+def _red_pr_gate() -> dict:
+    return {
+        "id": 2,
+        "name": "PR gate",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-10-08T09:00:00Z",
+        "output": {"title": "PR gate -- 1 failing check"},
+    }
+
+
+def test_blocked_checks_only_expired_when_the_head_no_longer_blocks(
+    monkeypatch, capsys
+):
+    """Acceptance 1 : tete toute verte -> le gate rend 1 et nomme le re-tampon.
+
+    Mesure fondatrice (#19906) : dossier BLOCKED a 2026-10-08T10:42:32Z pour un
+    `PR gate` encore en vol, conclu `success` a 11:21:46Z sur la MEME tete
+    `4d3eb7f67a3f` -- 95/95 jambes vertes et le gate repondait encore rc=3.
+    """
+    snapshot = _blocked_checks_snapshot()
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out
+    assert "no longer blocks PR #123" in out
+    assert "re-stamp" in out and "third-party lane" in out
+
+
+def test_blocked_checks_only_stands_when_the_head_still_blocks(monkeypatch, capsys):
+    """Acceptance 2 (temoin negatif) : une jambe rouge -> le gate rend toujours 3."""
+    snapshot = _blocked_checks_snapshot()
+    snapshot["checkRuns"] = [*snapshot["checkRuns"], _red_pr_gate()]
+    assert _run_main(monkeypatch, snapshot) == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_blocked_checks_only_stands_when_the_required_check_is_absent(
+    monkeypatch, capsys
+):
+    """Temoin negatif du temoin negatif (#18579) : une tete qui ne porte QUE des
+    jambes CodeQL est verte par vacuite ; l'absence de `PR gate` refute la
+    lecture, donc le dossier tient. Sans ce garde, la re-lecture fabriquerait
+    un re-tampon sur une tete ou les workflows `pull_request` n'ont jamais tire.
+    """
+    snapshot = _blocked_checks_snapshot()
+    snapshot["checkRuns"] = [
+        {
+            "id": 3,
+            "name": "Analyze (python)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-08T09:00:00Z",
+        }
+    ]
+    assert _run_main(monkeypatch, snapshot) == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_blocked_checks_stands_when_the_head_was_never_measured(monkeypatch, capsys):
+    """`checkRuns is None` = non mesure, et un echec de mesure n'est jamais un
+    passe : le dossier tient au lieu d'etre expire sur une absence de donnee."""
+    snapshot = _blocked_checks_snapshot()
+    snapshot["checkRuns"] = None
+    assert _run_main(monkeypatch, snapshot) == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_recheck_blocked_checks_never_fires_on_a_non_blocked_verdict():
+    """Comme `recheck_blocked_b0`, le re-jeu ne touche que BLOCKED + dossier.
+
+    Le cout est nul ici (les check-runs sont deja sur le snapshot), mais la
+    garde reste : un READY ne se re-decompose pas par cette porte.
+    """
+    snapshot = _blocked_checks_snapshot()
+    verdict, dossier = _ready_dossier()
+    assert mod.recheck_blocked_checks(snapshot, verdict, dossier) == (
+        verdict,
+        [],
+        dossier,
+    )
+    assert mod.recheck_blocked_checks(snapshot, "", None) == ("", [], None)
+
+
+def test_blocked_checks_plus_another_motif_is_left_standing(monkeypatch, capsys):
+    """Un dossier bloque pour `checks` ET un autre champ n'est pas expire : la
+    re-lecture des checks ne dit rien du motif restant."""
+    snapshot = _blocked_checks_snapshot(scope="FAIL: 6 fichiers pour 5 annonces")
+    assert _run_main(monkeypatch, snapshot) == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
 
 
 # --- #18637 : advisories sticky (marqueur en FIN de corps) et resumes de bot --
@@ -2493,3 +2637,420 @@ def test_base_dead_refuses_ready_and_names_the_base():
     assert dossier is None, dossier
     assert any("baseRefName must be 'main'" in e for e in errors), errors
     assert any("renum/17063-complexity-05b" in e for e in errors), errors
+
+
+# #19869 -- `--emit` doit pre-renseigner `supersedes` / `supersedes-why`
+# quand un dossier BLOCKED anterieur existe a la meme tete, sinon le
+# gate (`mute_contradictions` l.1307) refuse le dossier pose avec
+# NO-DOSSIER. Les tests suivants couvrent la detection
+# (`find_previous_blocked_same_head`) et l'injection dans
+# `render_emitted_dossier`.
+
+
+def test_find_previous_blocked_same_head_returns_blocked_at_same_head():
+    """BLOCKED anterieur a la meme tete : renvoie sa position 1-based."""
+    snapshot = _stacked_dossiers({}, {})
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is not None
+    position, dossier = found
+    # Premier dossier (index 1, l'ordinary earlier) + le BLOCKED (index 2).
+    # Le READY futur (index 3 si pose) aurait position 3 ; mais on cherche
+    # un BLOCKED anterieur = le 2e commentaire pose = position 2.
+    assert position == 2
+    assert dossier.fields.get("verdict") == mod.VERDICT_BLOCKED
+
+
+def test_find_previous_blocked_same_head_returns_none_on_changed_head():
+    """Tete differente : rien a refuter, retour None (exact-head peremption)."""
+    snapshot = _stacked_dossiers({"head": OTHER_HEAD}, {})
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is None
+
+
+def test_find_previous_blocked_same_head_picks_most_recent_blocked():
+    """Quand plusieurs BLOCKED sur la meme tete : le plus recent gagne
+    (celui qu'il faut refuter, pas un anterieur deja recouvert)."""
+    snapshot = _base_snapshot()
+    # Premier BLOCKED (index 1)
+    first = {"verdict": "BLOCKED", "b0": "blocked", "comments-reviewed": "1"}
+    first["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 1)
+    snapshot["comments"].append(_comment(_body(**first)))
+    # Deuxieme BLOCKED a la meme tete (index 2)
+    second = {
+        "verdict": "BLOCKED",
+        "b0": "blocked",
+        "comments-reviewed": "2",
+        "head": HEAD,
+    }
+    second["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 2)
+    snapshot["comments"].append(_comment(_body(**second)))
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is not None
+    position, _dossier = found
+    assert position == 3  # 1 (ordinary) + 2 BLOCKED = 3 commentaires, le dernier est position 3
+
+
+def test_find_previous_blocked_same_head_ignores_ready_predecessors():
+    """Un READY anterieur n'est pas un BLOCKED a recouvrir : None."""
+    snapshot = _stacked_dossiers(
+        {"verdict": "READY", "b0": "clear"},
+        {"verdict": "BLOCKED", "b0": "blocked"},
+    )
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is not None
+    position, dossier = found
+    # Le seul BLOCKED est le 3e (l'ordinary=1, le READY=2, le BLOCKED=3).
+    assert position == 3
+    assert dossier.fields.get("verdict") == mod.VERDICT_BLOCKED
+
+
+def test_emitter_and_gate_name_the_same_covered_dossier():
+    """#19869 -- l'emetteur et le gate designent le MEME dossier couvert.
+
+    C'est le controle causal du defaut : deux recherches independantes
+    derivent, et l'emetteur pre-remplit alors un `supersedes` que le gate
+    refuse. Ici la position rendue par `find_previous_blocked_same_head`
+    (ce que `--emit` ecrit) et celle que le gate cite dans son refus
+    doivent coincider -- sur la meme pile de dossiers.
+    """
+    snapshot = _two_blocked_then_ready()
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is not None
+    emitted_position, _dossier = found
+    # Deux BLOCKED sur la meme tete : l'ordre compte (le plus recent gagne).
+    # Sans cette discrimination, une recherche divergente passerait inapercue.
+    assert emitted_position == 3
+
+    _verdict, errors = mod.evaluate(snapshot)
+    assert len(errors) == 1
+    # Le gate nomme le dossier couvert en prose : "comment <pos> of <N>".
+    assert f"comment {emitted_position} of" in errors[0]
+    assert f"'supersedes: {emitted_position}'" in errors[0]
+
+
+def _two_blocked_then_ready() -> dict:
+    """Pile : ordinary (1), BLOCKED (2), BLOCKED (3), READY muet (4).
+
+    Deux BLOCKED a la meme tete font que l'ORDRE discrimine : le dossier
+    couvert est le plus recent (position 3), pas le premier. Un READY final
+    est ce qui declenche le refus du gate -- un BLOCKED apres un BLOCKED
+    n'exige rien (direction conservatrice de #18934).
+    """
+    snapshot = _base_snapshot()
+    for index in (1, 2):
+        fields = {
+            "verdict": "BLOCKED",
+            "b0": "blocked",
+            "comments-reviewed": str(index),
+            "head": HEAD,
+        }
+        fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, index)
+        snapshot["comments"].append(_comment(_body(**fields)))
+    ready = {"comments-reviewed": "3"}
+    ready["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 3)
+    snapshot["comments"].append(_comment(_body(**ready)))
+    return snapshot
+
+
+def test_covered_blocked_dossier_is_the_shared_core():
+    """Le cœur unique est appele par les DEUX chemins (#19869).
+
+    Une recherche en dur reintroduite d'un cote seul ferait diverger les
+    organes sans qu'aucun test ne rougisse : ce controle verifie que
+    `mute_contradictions` ET `find_previous_blocked_same_head` passent bien
+    par `covered_blocked_dossier`.
+    """
+    snapshot = _two_blocked_then_ready()
+    dossiers = []
+    for index, comment in enumerate(snapshot["comments"]):
+        dossier, _errors = mod.parse_dossier(
+            comment.get("body") or "",
+            index,
+            comment.get("author", {}).get("login") or "jsboige",
+            comment.get("createdAt") or "",
+        )
+        if dossier is not None:
+            dossiers.append(dossier)
+    expected = mod.covered_blocked_dossier(dossiers, HEAD)
+    assert expected is not None
+    assert expected.fields.get("verdict") == mod.VERDICT_BLOCKED
+
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found == (expected.comment_index + 1, expected)
+
+
+def test_render_emitted_dossier_autofills_supersedes_for_ready(monkeypatch):
+    """Un READY au-dessus d'un BLOCKED a meme tete : supersedes+why poses
+    automatiquement, dans le bloc, avant END, par --emit."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    snapshot = _stacked_dossiers({}, {})
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_READY
+    assert "supersedes: 2" in block
+    assert "supersedes-why: auto" in block
+    # Positionnement : supersedes-* avant END, dans le bloc.
+    lines = block.split("\n")
+    end_index = next(i for i, line in enumerate(lines) if line.strip() == mod.END)
+    supersedes_index = next(
+        i for i, line in enumerate(lines) if line.startswith("supersedes:")
+    )
+    supersedes_why_index = next(
+        i for i, line in enumerate(lines) if line.startswith("supersedes-why:")
+    )
+    assert supersedes_index < end_index
+    assert supersedes_why_index < end_index
+    assert supersedes_index < supersedes_why_index
+
+
+def test_render_emitted_dossier_omits_supersedes_when_no_blocked(monkeypatch):
+    """Pas de BLOCKED anterieur a meme tete : pas de supersedes, sortie
+    identique au template + provenance."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    snapshot = _snapshot(_body())
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_READY
+    assert "supersedes" not in block
+
+
+def test_render_emitted_dossier_omits_supersedes_for_blocked_verdict(monkeypatch):
+    """Verdict derive BLOCKED : la direction conservatrice serre, elle ne
+    debloque pas. Pas de supersedes meme si un BLOCKED anterieur existe."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    # Construire un snapshot ou le verdict derive sera BLOCKED : un draft.
+    snapshot = _base_snapshot()
+    snapshot["isDraft"] = True
+    # Ajouter un BLOCKED anterieur a la meme tete.
+    blocked = {"verdict": "BLOCKED", "b0": "blocked", "comments-reviewed": "1"}
+    blocked["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 1)
+    snapshot["comments"].append(_comment(_body(**blocked)))
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert "supersedes" not in block
+
+
+def test_render_emitted_dossier_omits_supersedes_on_changed_head(monkeypatch):
+    """BLOCKED anterieur sur une AUTRE tete : perime par exact-head, rien
+    a refuter, pas de supersedes dans le rendu."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    snapshot = _stacked_dossiers({"head": OTHER_HEAD}, {})
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_READY
+    assert "supersedes" not in block
+
+
+def test_render_emitted_dossier_blocked_at_same_head_then_changed_head(monkeypatch):
+    """BLOCKED sur tete-1, puis tete changee : le nouveau READY n'a rien
+    a refuter (tete-1 BLOCKED est deja perime par exact-head)."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    snapshot = _base_snapshot()
+    # Premier dossier BLOCKED a tete-1 (index 1)
+    blocked = {
+        "verdict": "BLOCKED",
+        "b0": "blocked",
+        "comments-reviewed": "1",
+        "head": OTHER_HEAD,
+    }
+    blocked["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 1)
+    snapshot["comments"].append(_comment(_body(**blocked)))
+    # Snapshot a tete-2 (HEAD)
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_READY
+    assert "supersedes" not in block
+
+
+# --- #17315 : le cout de l'invocation est mesure et publie -------------------
+#
+# Le bucket GraphQL est partage par toute la flotte ; le bucket REST (core) est
+# par machine. L'organe publie les deux pour qu'une lane secretaire puisse
+# agreger le cout d'une campagne sans instrumenter le reseau.
+
+
+def _reset_api_usage() -> None:
+    mod.API_USAGE["rest"] = 0
+    mod.API_USAGE["graphql"] = 0
+
+
+class _Completed:
+    def __init__(self, stdout: str) -> None:
+        self.returncode = 0
+        self.stdout = stdout
+        self.stderr = ""
+
+
+def test_api_usage_counter_separates_the_two_buckets(monkeypatch):
+    """`gh api graphql` paie le bucket partage, tout le reste le bucket core."""
+    monkeypatch.setattr(
+        mod.subprocess, "run", lambda *a, **k: _Completed('{"ok": true}')
+    )
+    _reset_api_usage()
+
+    mod.gh_json(["api", "graphql", "-f", "query={...}"])
+    mod.gh_json(["api", "repos/o/r/pulls/1"])
+    mod.gh_json(["api", "repos/o/r/commits/deadbeef/check-runs"])
+    mod.gh_json(["pr", "view", "1", "--json", "state"])
+
+    assert mod.API_USAGE == {"rest": 3, "graphql": 1}
+
+
+def test_api_usage_is_published_in_json_and_on_stderr(monkeypatch, capsys):
+    """Le cout accompagne le verdict : cle `api_usage` en --json, ligne stderr
+    sinon -- stdout reste le verdict que les appelants parsent."""
+    _reset_api_usage()
+    rc = _run_main(monkeypatch, _snapshot(_body()), "--json")
+    captured = capsys.readouterr()
+
+    assert rc == mod.EXIT_READY
+    payload = json.loads(captured.out)
+    assert payload["api_usage"] == {"rest": 0, "graphql": 0}
+    assert "API usage: 0 REST, 0 GraphQL operation(s)" in captured.err
+
+
+# --- #17315 : les reviewThreads passent en une operation par lot -------------
+
+
+def _bulk_gh_json(calls: list[list[str]], payload_for):
+    def fake(args: list[str]):
+        calls.append(list(args))
+        assert args[0] == "api" and args[1] == "graphql"
+        # Les alias demandes sont les `-F pN=<pr>` de la requete.
+        prs = [int(a.split("=", 1)[1]) for a in args if a.startswith("p") and "=" in a]
+        query = next(a for a in args if a.startswith("query="))
+        requested = sorted(prs) if "repository(owner:$owner" in query else []
+        return payload_for(requested, args)
+
+    return fake
+
+
+def _threads_payload(prs, *, overflow=(), unresolved=0):
+    data = {}
+    for index, pr in enumerate(prs):
+        nodes = [
+            {"id": f"t{pr}-{n}", "isResolved": n >= unresolved, "path": "a.py",
+             "line": n, "comments": {"totalCount": 1, "nodes": [{"id": "c"}]}}
+            for n in range(1, 2 + (1 if pr in overflow else 0))
+        ]
+        data[f"p{index}"] = {
+            "pullRequest": {
+                "reviewThreads": {
+                    "nodes": nodes,
+                    "pageInfo": {"hasNextPage": pr in overflow, "endCursor": "cur"},
+                }
+            }
+        }
+    return {"data": data}
+
+
+def test_review_threads_bulk_collapses_n_prs_into_one_operation(monkeypatch):
+    """Le geste mesure : N PRs = 1 operation GraphQL, pas N."""
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        mod, "gh_json", _bulk_gh_json(calls, lambda prs, args: _threads_payload(prs))
+    )
+
+    result = mod.review_threads_bulk([11, 12, 13, 14])
+
+    assert len(calls) == 1
+    assert sorted(result) == [11, 12, 13, 14]
+    # Chaque PR recoit SES threads, pas ceux de l'alias voisin.
+    assert [t["id"] for t in result[13]] == ["t13-1"]
+
+
+def test_review_threads_bulk_chunks_above_the_batch_size(monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        mod, "gh_json", _bulk_gh_json(calls, lambda prs, args: _threads_payload(prs))
+    )
+
+    result = mod.review_threads_bulk(list(range(1, 10)))
+
+    assert len(calls) == 2, "9 PRs a batch=8 = 2 operations"
+    assert sorted(result) == list(range(1, 10))
+
+
+def test_review_threads_bulk_deduplicates_and_keeps_order(monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        mod, "gh_json", _bulk_gh_json(calls, lambda prs, args: _threads_payload(prs))
+    )
+
+    result = mod.review_threads_bulk([7, 7, 7])
+
+    assert len(calls) == 1
+    assert sorted(result) == [7]
+
+
+def test_review_threads_bulk_falls_back_per_pr_on_overflow(monkeypatch):
+    """Une PR dont les threads debordent la premiere page repart en pagination
+    par PR -- pour ELLE seule ; les autres restent dans l'operation du lot."""
+    calls: list[list[str]] = []
+    pages = {13: 0}
+
+    def fake(args: list[str]):
+        calls.append(list(args))
+        if "query($owner:String!,$repo:String!,$number:Int!" in " ".join(args):
+            pages[13] += 1
+            if pages[13] == 1:
+                return {
+                    "data": {"repository": {"pullRequest": {"reviewThreads": {
+                        "nodes": [{"id": "t13-page1", "isResolved": True,
+                                   "comments": {"totalCount": 1, "nodes": [{}]}}],
+                        "pageInfo": {"hasNextPage": True, "endCursor": "c1"},
+                    }}}}
+                }
+            return {
+                "data": {"repository": {"pullRequest": {"reviewThreads": {
+                    "nodes": [{"id": "t13-page2", "isResolved": True,
+                               "comments": {"totalCount": 1, "nodes": [{}]}}],
+                    "pageInfo": {"hasNextPage": False, "endCursor": None},
+                }}}}
+            }
+        prs = [int(a.split("=", 1)[1]) for a in args if a.startswith("p") and "=" in a]
+        return _threads_payload(prs, overflow={13})
+
+    monkeypatch.setattr(mod, "gh_json", fake)
+
+    result = mod.review_threads_bulk([12, 13])
+
+    assert [t["id"] for t in result[13]] == ["t13-page1", "t13-page2"]
+    assert [t["id"] for t in result[12]] == ["t12-1"]
+    assert len(calls) == 3, "1 lot + 2 pages pour la seule PR 13"
+
+
+def test_review_threads_bulk_preserves_the_inline_pagination_refusal(monkeypatch):
+    """Le garde-fou >100 commentaires inline survit au batching : sans lui une
+    page tronquee se lirait comme un thread complet."""
+
+    def fake(args: list[str]):
+        return {"data": {"p0": {"pullRequest": {"reviewThreads": {
+            "nodes": [{"id": "t", "isResolved": True, "comments": {
+                "totalCount": 120, "nodes": [{"id": "c"}],
+            }}],
+            "pageInfo": {"hasNextPage": False, "endCursor": None},
+        }}}}}
+
+    monkeypatch.setattr(mod, "gh_json", fake)
+
+    with pytest.raises(RuntimeError, match="more than 100 comments"):
+        mod.review_threads_bulk([42])
+
+
+def test_review_threads_single_pr_is_still_one_operation(monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        mod, "gh_json", _bulk_gh_json(calls, lambda prs, args: _threads_payload(prs))
+    )
+
+    threads = mod.review_threads(9)
+
+    assert len(calls) == 1
+    assert [t["id"] for t in threads] == ["t9-1"]

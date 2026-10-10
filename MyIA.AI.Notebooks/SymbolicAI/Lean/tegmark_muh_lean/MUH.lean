@@ -45,8 +45,13 @@ C'est ce que cette bibliothèque fait. Les modules :
   - `MUH.Decidable` : décidabilité (Tegmark §1 in fine) sur la classe
     restreinte : `decideEq` compare les en-têtes (ensembles, cardinaux,
     nombre de relations), et le décideur de tables binaires est **prouvé
-    correct** (`sameBinaryOperation_eq_iff`). L'énumération d'arité
-    quelconque reste ouverte ; voir #16958. -/
+    correct** (`sameBinaryOperation_eq_iff`).
+  - `MUH.Enumeration` : **énumération effective** des tables finies
+    (arité 2 : `m ^ (m²)` tables ; arité 3 : `m ^ (m³)` — l'arité de la
+    composée), avec **exhaustivité prouvée** et **compte prouvé** ; la
+    clôture par composition s'y constate par appartenance
+    (`composeB_mem_allTernaryTables`). La forme tuple d'arité quelconque
+    reste ouverte. -/
 
 
 /-- Sous-bibliothèques de la MUH, exposées en un seul import. -/
@@ -56,4 +61,5 @@ import MUH.Boolean
 import MUH.Cyclic
 import MUH.Aut
 import MUH.Examples
+import MUH.Enumeration
 import MUH.Decidable
