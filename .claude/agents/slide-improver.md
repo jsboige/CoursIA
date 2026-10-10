@@ -144,18 +144,25 @@ Jamais dans le flot : une image en flot se centre, pousse le texte et laisse la 
 
 ### Pattern 4 : Apparition synchronisee (v-clicks)
 
-Attribuer un indice de clic explicite au paragraphe ET a sa figure :
+Un propos et sa figure portent **le meme indice** de clic : c'est le sens de « synchronisee » dans le titre du pattern. Le propos suivant prend l'indice suivant, avec sa propre figure.
 
 ```markdown
 <v-click at="1"/>
 
-- Explication du concept...
+- Premier concept, avec sa figure.
+
+<v-click at="1"/>
+<img src="images/img_001.png" class="absolute ..." >
 
 <v-click at="2"/>
-<img src="images/img_001.png" class="absolute ..." >
+
+- Second concept, avec sa figure.
+
+<v-click at="2"/>
+<img src="images/img_002.png" class="absolute ..." >
 ```
 
-Une figure apparait avec le propos qui l'introduit, jamais apres toute la liste. Re-verifier les indices apres tout ajout ou deplacement de paragraphe.
+Une figure apparait avec le propos qui l'introduit — **meme indice**, jamais un cran plus loin, et jamais apres toute la liste. Re-verifier les indices apres tout ajout ou deplacement de paragraphe.
 
 ### Pattern 5 : Slide dense
 
