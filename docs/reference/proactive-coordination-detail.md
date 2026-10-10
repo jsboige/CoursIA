@@ -113,7 +113,7 @@ gh pr view N --json state,mergedAt,baseRefOid 2>/dev/null | head -5
 git merge-base --is-ancestor <sha> origin/main && echo "MERGED" || echo "NOT-MERGED"
 ```
 
----
+***
 
 ## Vocabulaire d'idle-honnête — les labels bannis (R7, mandat user 2026-07-19)
 
