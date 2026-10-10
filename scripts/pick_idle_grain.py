@@ -4575,13 +4575,30 @@ def latest_claim_stamp(issue_number: int) -> str | None:
             capture_output=True, text=True, encoding="utf-8", check=True,
             timeout=30,
         ).stdout
-        comments = [c for c in (json.loads(out) or {}).get("comments") or []
-                    if isinstance(c, dict)]
-        stamps = [s for s in (claim_visit_stamp(comments),
-                              delivered_info_stamp(comments)) if s]
-        return max(stamps) if stamps else None
-    except Exception:  # noqa: BLE001 - sonde best-effort, l'issue garde son merge
-        return None
+        payload = json.loads(out) or {}
+    except Exception as graphql_exc:  # noqa: BLE001 - on TENTE l'autre transport
+        # #17038 -- sous panne GraphQL, cette sonde unitaire est le repli
+        # DESIGNe du bulk (`fetch_latest_claim_stamps_bulk`, cf c.1113) :
+        # si elle meurt aussi, la tete de tapis perd ses stamps de claim et
+        # les issues livrees restent collees en tete (mesure : #16372 servie
+        # deux jours apres son [RELEASED]). Le repli REST de l'organe des
+        # claims sert la meme charge de commentaires, quota distinct.
+        try:
+            from check_lane_claim import _rest_issue_payload
+            payload = _rest_issue_payload(str(issue_number))
+            print(
+                f"[TRANSPORT] gh issue view (GraphQL) indisponible "
+                f"({type(graphql_exc).__name__}) -- sonde de tete #{issue_number} "
+                f"bascule REST, quota distinct.",
+                file=sys.stderr,
+            )
+        except Exception:  # noqa: BLE001 - sonde best-effort, l'issue garde son merge
+            return None
+    comments = [c for c in payload.get("comments") or []
+                if isinstance(c, dict)]
+    stamps = [s for s in (claim_visit_stamp(comments),
+                          delivered_info_stamp(comments)) if s]
+    return max(stamps) if stamps else None
 
 
 def _claim_stamp_from_comments(comments: list[dict]) -> str | None:
@@ -6949,6 +6966,23 @@ def main(argv: list[str] | None = None) -> int:
                 top = belt_picks[0]
                 print(f"   ACTION REQUISE : poser [CLAIMED] lane {args.lane} sur "
                       f"#{top['number']} avant edition -- cf lane-claim-protocol.")
+            # #17038 (residu du 2026-10-09) -- contrat de verdict : un pick
+            # dont le claim est ERROR n'est PAS un candidat libre, c'est un
+            # candidat NON MESURE. Le servir reste le comportement (le tapis
+            # ne refuse jamais, faux-BLOQUE interdit cf #18836), mais jamais
+            # sous le vocabulaire du libre : la lane doit relire le claim a
+            # la main avant toute edition dessus.
+            unmeasured = [
+                it["number"] for it in belt_picks
+                if belt_claims.get(it["number"],
+                                   (CLAIM_CODE_ERROR, ""))[0] == CLAIM_CODE_ERROR
+            ]
+            if unmeasured:
+                print(f"   claim NON MESURABLE (sonde de claim tombee, GraphQL"
+                      f" puis REST) : "
+                      f"{', '.join('#'+str(n) for n in unmeasured)} -- pas des"
+                      f" candidats 'libres' : relire "
+                      f"`python scripts/check_lane_claim.py <N>` avant edition.")
             print()
         if args.json:
             # Surface JSON compatible avec la volee ponderee : `picks`,
