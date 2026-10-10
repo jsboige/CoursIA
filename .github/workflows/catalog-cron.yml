@@ -5,6 +5,12 @@ name: Catalog Auto-Regen (main, scheduled)
 # Keep COURSE_CATALOG.generated.{json,md} + README CATALOG-STATUS markers
 # CANONICAL ON MAIN without any human or agent regenerating them by hand.
 #
+# Since #19901 (arbitration ai-01, review 5469480925) this job also refreshes
+# the `project.render` list of `_quarto.yml` -- same defect class, same model:
+# a generated file that rots on `main` when nothing regenerates it on a
+# cadence. The per-PR detector for that file (`quarto-render-list-freshness.yml`)
+# is ADVISORY and stays a detector; freshness is owned here.
+#
 # Why a scheduled job is needed:
 #   The catalog embeds git-derived fields (last_validation, issue_pr_associee...)
 #   and a maturity heuristic that drift purely as commits land on main -- even
@@ -18,6 +24,11 @@ name: Catalog Auto-Regen (main, scheduled)
 #   - catalog-drift.yml         : per-PR sync (auto-regen+commit on same-repo PR
 #                                 branches; informational annotation on forks).
 #   - stale-base-warning.yml    : labels PRs whose base is >14d behind main.
+#   - quarto-render-list-freshness.yml : ADVISORY per-PR DETECTOR for the
+#                                 `_quarto.yml` render list (#19901). It reads
+#                                 the PR head tree, so it can report drift but
+#                                 cannot guarantee freshness of `main` -- it
+#                                 does not regenerate or commit anything.
 #
 # Governance rule (.claude/rules/catalog-pr-hygiene.md):
 #   Agents MUST NOT regenerate or commit COURSE_CATALOG.generated.* nor the
@@ -136,13 +147,20 @@ jobs:
           # under docs/curriculum/ from the freshly-regenerated catalog so
           # they never drift again (See #7422).
           python scripts/notebook_tools/generate_parcours.py
+          # `_quarto.yml` `project.render`: same defect class as the catalogue
+          # -- a generated file that drifts on `main` because nothing refreshes
+          # it on a cadence. Owned by THIS automation since #19901 (arbitration
+          # ai-01, review 5469480925): a per-PR guard cannot guarantee
+          # freshness, it reads the PR head tree and never sees the merge, so
+          # it was made advisory instead of mandatory.
+          python scripts/regen_quarto_render.py
 
       - name: Commit + push to chore/catalog-refresh-pending if the catalog drifted
         id: drift
         run: |
           set -euo pipefail
           BRANCH="chore/catalog-refresh-pending"
-          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md docs/archive/reference/HEALTH_DASHBOARD.md
+          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md docs/archive/reference/HEALTH_DASHBOARD.md _quarto.yml
           # Stage the 5 generated curriculum (parcours) pages if they drifted.
           mapfile -t changed_parcours < <(git ls-files -m -- 'docs/curriculum/*.md')
           if [ "${#changed_parcours[@]}" -gt 0 ]; then
@@ -267,8 +285,9 @@ jobs:
               '## Purpose',
               '',
               'Long-lived PR refreshed daily by `catalog-cron.yml` (schedule cron 03:37 UTC) to keep',
-              '`COURSE_CATALOG.generated.{json,md}` + `CATALOG-STATUS` markers + the curriculum (`docs/curriculum/*.md`)',
-              'and health dashboard (`docs/archive/reference/HEALTH_DASHBOARD.md`) canonical on `main`.',
+              '`COURSE_CATALOG.generated.{json,md}` + `CATALOG-STATUS` markers + the curriculum (`docs/curriculum/*.md`),',
+              'the health dashboard (`docs/archive/reference/HEALTH_DASHBOARD.md`) and the `project.render` list of',
+              '`_quarto.yml` canonical on `main`.',
               '',
               '**Maintainer review only — no direct push to `main`** (issue #10136). The bot opens',
               'or updates this PR; merging it refreshes `main` through the normal PR gate.',
@@ -278,6 +297,9 @@ jobs:
               '- Catalog totals (`notebook_count`, per-family counts) drift only if new notebooks landed on `main` since the last merge.',
               '- README `<!-- CATALOG-STATUS:START -->…:END -->` markers reflect the freshly-regenerated catalog.',
               '- Curriculum pages under `docs/curriculum/` and `docs/archive/reference/HEALTH_DASHBOARD.md` stay consistent.',
+              '- `_quarto.yml` `project.render` stays in sync with the notebooks / READMEs / `docs/*.md` on `main`.',
+              '  There are no counter lines in it any more (#19901): a total in a generated file either conflicts',
+              '  between two concurrent PRs or merges a false value cleanly.',
               '',
               '## Close policy',
               '',

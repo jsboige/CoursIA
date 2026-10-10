@@ -293,6 +293,12 @@ def generate_one(pair: B.Pair, texts: dict, teacher: Teacher, *, lang: str,
 
     Rend ``(record, verdict_aller_retour, votes_bruts)``. Le verdict est ``None``
     si aucun tour de vote n'a rendu de lettre exploitable.
+
+    ``min_tokens`` est un **declencheur de regeneration**, pas une garantie :
+    quand les ``retries`` sont epuises, le texte court est tout de meme
+    **accepte** et entre dans le corpus. Ces cas sont rendus visibles par
+    ``n_below_floor`` dans le rapport -- ``n_empty`` ne les compte pas, un
+    texte court n'etant pas un texte vide.
     """
     prompt = B.render_prompt(pair, texts, lang=lang)
     reply = teacher.complete(prompt, max_tokens=max_tokens, temperature=0.8)
@@ -370,9 +376,28 @@ def stratified_sample(pairs: Sequence[B.Pair], limit: int, rng: random.Random) -
     return sample
 
 
-def summarise(records: Sequence[Record], verdicts: Sequence[Optional[bool]]) -> dict:
-    """Metriques du run. Un verdict ``None`` est compte comme non mesure."""
+def summarise(records: Sequence[Record], verdicts: Sequence[Optional[bool]], *,
+              min_tokens: int = MIN_COMPLETION_TOKENS) -> dict:
+    """Metriques du run. Un verdict ``None`` est compte comme non mesure.
+
+    Deux populations coexistent, et les denominateurs le disent :
+
+    * ``n_pairs`` et ``by_family[<famille>]["n"]`` comptent **toutes** les
+      paires, y compris celles dont la generation a echoue (``n_empty``) ;
+    * ``mean_completion_tokens`` et ``example_overlap`` ne portent que sur les
+      paires **generees** (``n_generated``) : un texte vide n'a pas de longueur
+      ni de recouvrement a moyenner, l'inclure comme un zero fausserait les
+      deux.
+
+    ``n_below_floor`` compte les paires **generees mais restees sous**
+    ``min_tokens`` : le plancher est un declencheur de regeneration, pas une
+    garantie, et un run dont les ``retries`` s'epuisent accepte le texte court.
+    ``n_empty`` ne les voit pas -- un texte court n'est pas un texte vide --
+    donc un rapport qui ne publierait que ``n_empty`` laisserait croire que
+    tout ce qui a ete genere respecte le plancher.
+    """
     generated = [r for r in records if r.text]
+    below_floor = [r for r in generated if r.completion_tokens < min_tokens]
     voted = [v for v in verdicts if v is not None]
     by_family: dict[str, dict[str, int]] = {}
     for record, verdict in zip(records, verdicts):
@@ -383,7 +408,10 @@ def summarise(records: Sequence[Record], verdicts: Sequence[Optional[bool]]) -> 
             cell["hit"] += int(verdict)
     return {
         "n_pairs": len(records),
+        "n_generated": len(generated),
         "n_empty": len(records) - len(generated),
+        "n_below_floor": len(below_floor),
+        "below_floor_pairs": [r.pair_id for r in below_floor],
         "n_regenerated": sum(1 for r in records if r.attempts > 1),
         "mean_completion_tokens": (
             round(sum(r.completion_tokens for r in generated) / len(generated), 1)
@@ -403,11 +431,23 @@ def run(pairs: Sequence[B.Pair], texts: dict, teacher: Teacher, *, lang: str,
         min_tokens: int = MIN_COMPLETION_TOKENS,
         retries: int = DEFAULT_RETRIES,
         checkpoint: Optional[Path] = None,
-        progress: Optional[Callable[[int, int], None]] = None) -> tuple[list[Record], list[Optional[bool]]]:
+        progress: Optional[Callable[[int, int], None]] = None,
+        stats: Optional[dict] = None) -> tuple[list[Record], list[Optional[bool]]]:
     """Passe chaque paire au maitre, en reprenant depuis ``checkpoint`` si fourni.
 
     Le checkpoint est ecrit apres **chaque** paire : le run complet des 18 887
     paires dure des heures, une coupure ne doit pas couter le deja-fait.
+
+    La reprise **n'est pas neutre**, et ``stats`` sert a le publier. Le tirage
+    des distracteurs consomme ``rng`` dans l'ordre des paires traitees ; une
+    reprise repart d'un ``Random(seed)`` neuf et ne rejoue que les paires
+    manquantes, donc les distracteurs des paires rejouees different de ceux
+    d'un run ininterrompu a ``seed`` egal. Un rapport qui taierait la reprise
+    ferait passer deux tirages distincts pour un seul.
+
+    Si ``stats`` est fourni, il est rempli avec ``{"resumed": bool,
+    "n_resumed": int, "n_todo": int}`` ; ``n_resumed`` est le nombre de paires
+    deja presentes dans le checkpoint, pas le nombre de paires du run.
     """
     records: list[Record] = []
     verdicts: list[Optional[bool]] = []
@@ -422,6 +462,10 @@ def run(pairs: Sequence[B.Pair], texts: dict, teacher: Teacher, *, lang: str,
                 verdicts.append(row.get("roundtrip"))
                 records.append(_record_from_row(row))
     todo = [p for p in pairs if p.pair_id not in done]
+    if stats is not None:
+        stats["resumed"] = bool(records)
+        stats["n_resumed"] = len(records)
+        stats["n_todo"] = len(todo)
     rng = random.Random(seed)
     handle = open(checkpoint, "a", encoding="utf-8") if checkpoint else None
     try:
@@ -485,11 +529,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if done % 10 == 0 or done == total:
             print(f"  {done}/{total} ({time.time() - started:.0f}s)", flush=True)
 
+    resume: dict = {}
     records, verdicts = run(
         pairs, texts, teacher, lang=args.lang, seed=args.seed, votes=args.votes,
         distractors=args.distractors, max_tokens=args.max_tokens,
         min_tokens=args.min_tokens, retries=args.retries,
-        checkpoint=checkpoint, progress=progress)
+        checkpoint=checkpoint, progress=progress, stats=resume)
 
     report = {
         "model": args.model, "hub_url": args.hub_url, "split": args.split,
@@ -498,13 +543,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "min_tokens": args.min_tokens, "retries": args.retries,
         "checkpoint": checkpoint.name,
         "seconds": round(time.time() - started, 1),
-        **summarise(records, verdicts),
+        **resume,
+        **summarise(records, verdicts, min_tokens=args.min_tokens),
     }
     report_path = args.out / f"report_{args.split}_{args.lang}.json"
     report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n",
                            encoding="utf-8")
-    print(json.dumps({k: v for k, v in report.items() if k != "by_family"},
+    print(json.dumps({k: v for k, v in report.items()
+                      if k not in ("by_family", "below_floor_pairs")},
                      indent=2, ensure_ascii=False))
+    if report["n_below_floor"]:
+        print(f"  {report['n_below_floor']} paire(s) generee(s) sous le plancher "
+              f"de {args.min_tokens} tokens -- liste dans {report_path.name}")
     print(f"corpus  : {checkpoint}")
     print(f"rapport : {report_path}")
     return 0

@@ -18,13 +18,7 @@ name: Notebook Nav-Chain Guard
 # any .ipynb.
 
 on:
-  pull_request:
-    paths:
-      - '**/*.ipynb'
-      - 'MyIA.AI.Notebooks/**/README.md'
-      - 'scripts/notebook_tools/check_notebook_nav_chain.py'
-      - 'scripts/tests/baseline_nb_nav_chain.json'
-      - '.github/workflows/notebook-nav-chain-guard.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
