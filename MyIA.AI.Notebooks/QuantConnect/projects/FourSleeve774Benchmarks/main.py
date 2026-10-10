@@ -4,6 +4,7 @@ from AlgorithmImports import *
 # References de comparaison pour l'evaluation de la reimplementation declaree de la
 # strategie 774 (issue #18904). Un seul projet, mode par parametre de backtest :
 #   spy   SPY detenu (reference principale du verdict)
+#   qqq   QQQ detenu (seconde reference de la 775, issue #20168)
 #   6040  60 % SPY / 40 % IEF (seconde reference, correction de Holm)
 #   vt2   SPY / QQQ / IEF / GLD a poids egaux (panier proxy, correlations seulement)
 #   aw    SPY 0,30 / IEF 0,30 / GLD 0,30 / XLP 0,10 (panier proxy, correlations seulement)
@@ -18,6 +19,7 @@ from datetime import datetime
 
 MODES = {
     "spy": {"SPY": 1.0},
+    "qqq": {"QQQ": 1.0},
     "6040": {"SPY": 0.6, "IEF": 0.4},
     "vt2": {"SPY": 0.25, "QQQ": 0.25, "IEF": 0.25, "GLD": 0.25},
     "aw": {"SPY": 0.30, "IEF": 0.30, "GLD": 0.30, "XLP": 0.10},
