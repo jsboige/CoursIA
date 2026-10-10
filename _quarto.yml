@@ -15,7 +15,6 @@ project:
     # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7
     # n'etend pas le glob **/README.md sur les sous-repertoires.
     # Archives et libs vendored EXCLUES (history interne, non pedagogique).
-    # 528 READMEs (racine + arborescence, hors archives).
     - "README.md"
     - "docker-configurations/docs/README.md"
     - "docker-configurations/notebook-runner/README.md"
@@ -231,6 +230,8 @@ project:
     - "MyIA.AI.Notebooks/ML/ML.Net/README.md"
     - "MyIA.AI.Notebooks/ML/README.md"
     - "MyIA.AI.Notebooks/NLP/README.md"
+    - "MyIA.AI.Notebooks/Probas/Applications/Percolation/README.md"
+    - "MyIA.AI.Notebooks/Probas/Applications/Percolation/README.md"
     - "MyIA.AI.Notebooks/Probas/Applications/Percolation/README.md"
     - "MyIA.AI.Notebooks/Probas/Applications/README.md"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/README.md"
@@ -498,6 +499,7 @@ project:
     - "scripts/genai-stack/_archive/ARCHIVE_README.md"
     - "scripts/genai-stack/README.md"
     - "scripts/genai-stack/workflows/qwen_image_2_1/README.md"
+    - "scripts/hashlife/README.md"
     - "scripts/kernels/pyphi-iit/README.md"
     - "scripts/lean/README.md"
     - "scripts/notebook_tools/_archive/README.md"
@@ -547,7 +549,6 @@ project:
     # docs/*.md rendus en HTML (issue #18422). Meme mecanisme
     # que les READMEs : liste explicite (globs non etendus en Quarto 1.7).
     # Garde `---` (#11451) appliquee auto-resorbante.
-    # 172 docs/*.md (sous-arbre docs/, hors README/archive/hr).
     - "docs/audit/workflow-path-filters/latest.md"
     - "docs/cadrage/aima-armature.md"
     - "docs/cadrage/data-policy.md"
@@ -567,6 +568,7 @@ project:
     - "docs/curriculum/trading.md"
     - "docs/dotnet/net11-runtime-deltas.md"
     - "docs/dotnet/net11-toub-digest.md"
+    - "docs/genai/audio-bakeoff-bank.md"
     - "docs/genai/audio-embed-pattern.md"
     - "docs/genai/audio-fading-remediation.md"
     - "docs/genai/audio-onset-chunk-detection.md"
@@ -723,7 +725,7 @@ project:
     # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).
     # Liste explicite — globs non etendus en Quarto 1.7.
     # Execution desactivee + echo: true au niveau racine (_quarto.yml).
-    # 1504 notebooks (sous-arbres: MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/Complexity/, MyIA.AI.Notebooks/Compression/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/Security/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/NLP/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/QuantConnect/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/).
+    # Sous-arbres rendus : MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/Complexity/, MyIA.AI.Notebooks/Compression/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/Security/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/NLP/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/QuantConnect/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/.
     - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb"
@@ -857,6 +859,7 @@ project:
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/07-Committees-Core.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/08-Kemeny-RankedPairs-Dodgson.ipynb"
+    - "MyIA.AI.Notebooks/GameTheory/SocialChoice/09-Committees-STV-Monroe-ChamberlinCourant.ipynb"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-1-Environment-Setup.ipynb"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-2-Docker-Services-Management.ipynb"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-3-API-Endpoints-Configuration.ipynb"
@@ -1204,6 +1207,8 @@ project:
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46-Strate7-FreeCoordinates-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47-PainAxisDistillation-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47b-PainAxisInstrument-Python.ipynb"
+    - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-Onset9B-Aggregate-Python.ipynb"
+    - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-WolframClasses-ThermoSignature-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance.ipynb"
@@ -1367,6 +1372,8 @@ project:
     - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03-Critique-Python.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03b-Critique-L128-L256.ipynb"
+    - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03c-Critique-L512.ipynb"
+    - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-01-Prime-Pure-Chargement.ipynb"

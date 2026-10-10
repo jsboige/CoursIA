@@ -1,0 +1,177 @@
+{
+  "description": "Parcours LLM Engineer : de la tokenisation et des embeddings jusqu'a l'evaluation, en passant par l'appel de modele, le RAG, l'inference, les agents et la memoire, puis l'adaptation (fine-tuning, post-training). L'arc forme deja de fait la serie GenAI/Texte (01 a 22) ; ce manifeste le rend itinerant avec prerequis, branches et detours (.NET en detour, pas en branche principale). Les trous du parcours sont listes sur l'EPIC parent #19543.",
+  "branches": [
+    {
+      "id": "fondations-texte",
+      "description": "Fondations du texte modelise : tokenisation (BPE, tiktoken) et embeddings (representation vectorielle d'un token, puis d'un document). Avant tout appel de modele ou RAG, l'ingenieur doit savoir comment son texte est decoupe et represente.",
+      "notebooks": [
+        "GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb",
+        "GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb"
+      ]
+    },
+    {
+      "id": "appel-controle",
+      "description": "Appel d'un modele distant ou local, controle de la sortie (prompt engineering, sorties structurees, decodage contraint, function calling). Le pre-requis est uniquement la tokenisation : l'ingenieur ecrit une requete, le modele la sert.",
+      "prerequisites": [
+        "fondations-texte"
+      ],
+      "notebooks": [
+        "GenAI/Texte/01_OpenAI_Intro.ipynb",
+        "GenAI/Texte/02_PromptEngineering.ipynb",
+        "GenAI/Texte/03_Structured_Outputs.ipynb",
+        "GenAI/Texte/03b_Typed_Decisions_System1.ipynb",
+        "GenAI/Texte/03c_Constrained_Decoding_Python.ipynb",
+        "GenAI/Texte/04_Function_Calling.ipynb"
+      ]
+    },
+    {
+      "id": "stockage-rag",
+      "description": "Stockage vectoriel (HNSW, exact vs approche, rappel), retrieval avance, et recherche hybride. Le RAG prend l'embedding comme cle d'entree et le prompt structure comme sortie ; l'ingenieur apprend a mesurer le rappel avant de brancher un LLM.",
+      "prerequisites": [
+        "fondations-texte"
+      ],
+      "notebooks": [
+        "GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb",
+        "GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb",
+        "GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb",
+        "GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb",
+        "GenAI/RAG-et-Memoire-Semantique/01-Hands-On-Grounding.ipynb"
+      ]
+    },
+    {
+      "id": "inference-service",
+      "description": "Ingenierie d'inference : servir un LLM en local (vLLM, Ollama, endpoints compatibles OpenAI), KV-cache et prefill/continuous batching, contexte long, quantification (Nunchaku INT4, FP8). Le modele devient un service ; les compromis sont memoire, latence, debit et cout.",
+      "prerequisites": [
+        "appel-controle"
+      ],
+      "notebooks": [
+        "GenAI/Texte/10_LocalLlama.ipynb",
+        "GenAI/Texte/10b_Inference_Mechanics.ipynb",
+        "GenAI/Texte/10c_Long_Context_Strategies.ipynb",
+        "GenAI/Texte/11_Quantization.ipynb"
+      ]
+    },
+    {
+      "id": "agents-memoire",
+      "description": "Orchestration agentique et memoire persistante : un agent appelle des outils, garde un etat, et raisonne sur plusieurs tours. La memoire paginee distingue la memoire de travail (prompt) de la memoire longue (KernelMemory, vector store, RAG).",
+      "prerequisites": [
+        "appel-controle",
+        "stockage-rag"
+      ],
+      "notebooks": [
+        "GenAI/Texte/13_Agentic_Orchestration.ipynb",
+        "GenAI/Texte/14_Persistent_Memory.ipynb",
+        "GenAI/Texte/14b_Paginated_Memory-Python.ipynb",
+        "GenAI/RAG-et-Memoire-Semantique/06-KernelMemory-InProcess.ipynb",
+        "GenAI/RAG-et-Memoire-Semantique/07-KernelMemory-Python-Quickstart.ipynb"
+      ]
+    },
+    {
+      "id": "adaptation",
+      "description": "Adaptation d'un modele a un domaine : LoRA / QLoRA (rang, hyperparameters, comparaison SOTA), SFT (instruction tuning, format de donnees), preference learning (DPO), post-training (GRPO, RLVR). Avant d'adapter, l'ingenieur dispose deja d'un pipeline d'evaluation ; sinon, c'est l'auto-illusion.",
+      "prerequisites": [
+        "inference-service"
+      ],
+      "notebooks": [
+        "GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb",
+        "GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb",
+        "GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb",
+        "GenAI/FineTuning/FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb",
+        "GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb",
+        "GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb",
+        "GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb",
+        "GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb",
+        "GenAI/PostTraining/PT_01_intro_post_training.ipynb",
+        "GenAI/PostTraining/PT_02_sft_baseline.ipynb",
+        "GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb",
+        "GenAI/PostTraining/PT_06_eval_comparative.ipynb"
+      ]
+    },
+    {
+      "id": "evaluation",
+      "description": "Evaluation hors-echantillon : BLEU et ROUGE from scratch, juge LLM et ses failles, fidelite RAG, harnais de non-regression avant/apres adaptation. Le parcours evalue a la fin, pas au milieu ; un modele qu'on ne mesure pas est un modele qu'on n'ingeniere pas.",
+      "prerequisites": [
+        "appel-controle"
+      ],
+      "notebooks": [
+        "GenAI/Texte/22_Evaluating_Generated_Text.ipynb",
+        "GenAI/Texte/13b_Agent_Evaluation.ipynb"
+      ]
+    },
+    {
+      "id": "securite",
+      "description": "Surface d'attaque prompt (injection directe et indirecte, MCP), direction de refus, jailbreaks. L'ingenieur securise son systeme apres l'avoir concu, pas avant ; les detours de cette branche relevent de la defense en profondeur.",
+      "prerequisites": [
+        "appel-controle"
+      ],
+      "notebooks": [
+        "GenAI/Texte/09b_Prompt_Security_RedTeam.ipynb",
+        "GenAI/Security/Control/Control-Refusal-Direction.ipynb",
+        "GenAI/Security/Tooling/Tooling-MCP-Attack-Surface.ipynb"
+      ]
+    }
+  ],
+  "accretions": [
+    {
+      "id": "jumeaux-dotnet",
+      "description": "Detours .NET (TensorSharp, LLamaSharp, ORTGenAI) : montrer que la meme inference tient sur plusieurs runtimes. Jamais une branche principale : si l'apprenant est en Python, il passe ; s'il vient du .NET, il a un point d'entree.",
+      "branch": "inference-service",
+      "notebooks": [
+        "GenAI/Texte/10d_TensorSharp_DotNet_Inference.ipynb",
+        "GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb",
+        "GenAI/Texte/10f_ORTGenAI_DotNet_BakeOff.ipynb"
+      ]
+    },
+    {
+      "id": "caches-production",
+      "description": "Detour cross-cutting : caches de production, routage et repli, exploitation (observabilite, couts, quotas). La branche principale n'integre pas ces carnets ; un ingenieur qui les prend en detour comprend pourquoi la latence n'est pas un seul chiffre.",
+      "branch": "inference-service",
+      "notebooks": [
+        "GenAI/Texte/09d_Production_Caches.ipynb",
+        "GenAI/Texte/09c_Production_Routage_Repli.ipynb",
+        "GenAI/Texte/09e_Production_Exploitation.ipynb"
+      ]
+    },
+    {
+      "id": "multimodal",
+      "description": "Detour multimodal (KernelMemory multimodal) : un LLM ne sert pas que du texte. Le parcours principal reste textuel ; un apprenant qui veut la voie vision/audio prend ce detour.",
+      "branch": "agents-memoire",
+      "notebooks": [
+        "GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb"
+      ]
+    },
+    {
+      "id": "vision-fine-tuning",
+      "description": "Detour fine-tuning vision-langage : adapte un modele multimodal a une tache image+texte. Sortie du parcours textuel canonique.",
+      "branch": "adaptation",
+      "notebooks": [
+        "GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb",
+        "GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb"
+      ]
+    },
+    {
+      "id": "post-training-avance",
+      "description": "Detour post-training avance : GRPO from scratch, multi-seed, controle et interpretabilite, formal verification, RLVR, reward hacking. Pour l'apprenant qui veut aller plus loin que le SFT/DPO de base.",
+      "branch": "adaptation",
+      "notebooks": [
+        "GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb",
+        "GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb",
+        "GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb",
+        "GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env.ipynb",
+        "GenAI/PostTraining/PT_11a_grpo_qwen35_rlvr.ipynb",
+        "GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb"
+      ]
+    },
+    {
+      "id": "oversight-scaling",
+      "description": "Detour oversight et scaling laws : wargames, statistiques, analytics, modeles Nim. Sortie du parcours ingenierie, transition vers recherche.",
+      "branch": "securite",
+      "notebooks": [
+        "GenAI/Security/Oversight/Oversight-Scaling-Laws-Statistics.ipynb",
+        "GenAI/Security/Oversight/Oversight-Scaling-Laws-Analytics.ipynb",
+        "GenAI/Security/Oversight/Oversight-Scaling-Laws-Nim.ipynb",
+        "GenAI/Security/Oversight/Oversight-Scaling-Laws-Wargames.ipynb"
+      ]
+    }
+  ]
+}
