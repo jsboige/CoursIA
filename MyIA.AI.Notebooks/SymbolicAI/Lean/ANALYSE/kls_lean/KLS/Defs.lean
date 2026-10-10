@@ -142,4 +142,78 @@ noncomputable def cheegerConstant (μ : Measure (EuclideanSpace ℝ (Fin n))) : 
       μ (frontier A) / min (μ A) (μ Aᶜ)
     else ⊤)
 
+/-! ## Constante de Cheeger, version Minkowski -/
+
+/-- Épaississement (voisinage `ε` au sens de la distance) d'une partie d'un
+espace métrique : `A ^ ε = {x | ∃ a ∈ A, dist x a ≤ ε}`. Définition générique
+— elle s'applique aussi bien à `ℝ` (exemples unidimensionnels) qu'à
+`EuclideanSpace ℝ (Fin n)` (mesures de la conjecture). -/
+def thick {X : Type*} [PseudoMetricSpace X] (A : Set X) (ε : ℝ) : Set X :=
+  {x | ∃ a ∈ A, dist x a ≤ ε}
+
+/-- Toute partie est contenue dans son épaississement (`dist a a = 0 ≤ ε`). -/
+theorem thick_subset {X : Type*} [PseudoMetricSpace X] (A : Set X) (ε : ℝ) (hε : 0 ≤ ε) :
+    A ⊆ thick A ε := by
+  intro x hx
+  exact ⟨x, hx, by simpa using hε⟩
+
+/-- L'épaississement est croissant pour l'inclusion des parties. -/
+theorem thick_mono {X : Type*} [PseudoMetricSpace X] {A B : Set X} (h : A ⊆ B) (ε : ℝ) :
+    thick A ε ⊆ thick B ε := by
+  rintro x ⟨a, ha, hdist⟩
+  exact ⟨a, h ha, hdist⟩
+
+/-- L'identité calculatoire de référence : l'épaississement d'un intervalle
+compact est l'intervalle épaissi. C'est le calcul qui porte l'exemple exact
+unidimensionnel du carnet — pour la mesure uniforme sur `[-1, 1]`, la
+dérivée de Minkowski `μ (A ^ ε) - μ A = ε / 2` est constante, et la
+constante de Cheeger vaut `1` (atteinte par la moitié `[-1, 0]`). -/
+theorem thick_Icc (ε : ℝ) (hε : 0 ≤ ε) :
+    thick ((Icc (-1) 1 : Set ℝ)) ε = Icc (-1 - ε) (1 + ε) := by
+  ext x
+  simp only [thick, mem_setOf_eq, mem_Icc]
+  constructor
+  · rintro ⟨a, ⟨ha1, ha2⟩, hdist⟩
+    rw [Real.dist_eq] at hdist
+    have habs : x - a ≤ |x - a| := le_abs_self (x - a)
+    have habs' : a - x ≤ |x - a| := by
+      rw [abs_sub_comm]
+      exact le_abs_self (a - x)
+    constructor
+    · linarith [ha1, habs', hdist]
+    · linarith [ha2, habs, hdist]
+  · intro hx
+    by_cases hx1 : x < -1
+    · refine ⟨-1, ⟨by norm_num, by norm_num⟩, ?_⟩
+      rw [Real.dist_eq, abs_of_nonpos (by linarith : x - (-1) ≤ 0)]
+      linarith
+    · by_cases hx2 : 1 < x
+      · refine ⟨1, ⟨by norm_num, by norm_num⟩, ?_⟩
+        rw [Real.dist_eq, abs_of_nonneg (by linarith : (0:ℝ) ≤ x - 1)]
+        linarith
+      · exact ⟨x, ⟨by linarith, by linarith⟩, by simp only [dist_self]; exact hε⟩
+
+/-- Rapport isopérimétrique de Minkowski d'une partie `A` à l'échelle `ε` :
+l'accroissement relatif de masse de l'épaississement, normalisé par la plus
+petite des deux moitiés. C'est la dérivée discrète dont la limite `ε → 0`
+redonne la « surface » pour les mesures continues — là où `μ (frontier A)`
+est nul et la version `cheegerConstant` s'effondre. -/
+noncomputable def minkowskiRatio (μ : Measure (EuclideanSpace ℝ (Fin n)))
+    (A : Set (EuclideanSpace ℝ (Fin n))) (ε : ℝ) : ℝ≥0∞ :=
+  (μ (thick A ε) - μ A) / (ENNReal.ofReal ε * min (μ A) (μ Aᶜ))
+
+open Classical in
+/-- Constante de Cheeger au sens de Minkowski : l'inf sur les parties non
+triviales de la limite supérieure du rapport isopérimétrique quand `ε → 0`
+par valeurs positives. Pour une mesure à densité, c'est la constante
+d'isopérimétrie sensible (théorème de Bobkov–Houdré : en dimension 1,
+`h = f(m)` au point médian `m`) ; l'inégalité de Cheeger relie `h` à la
+constante de Poincaré (`C_P ≤ D / h²`, `D` constante de dimension). C'est
+la version que le grain 2 du carnet incarne expérimentalement. -/
+noncomputable def cheegerMinkowski (μ : Measure (EuclideanSpace ℝ (Fin n))) : ℝ≥0∞ :=
+  ⨅ A : Set (EuclideanSpace ℝ (Fin n)),
+    (if _h : MeasurableSet A ∧ μ A ≠ 0 ∧ μ Aᶜ ≠ 0 then
+      Filter.limsup (fun ε : ℝ => minkowskiRatio μ A ε) (nhdsWithin (0:ℝ) (Ioi (0:ℝ)))
+    else ⊤)
+
 end KLS

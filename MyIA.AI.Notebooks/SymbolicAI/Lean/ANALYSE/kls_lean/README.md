@@ -3,9 +3,13 @@
 Lake Lean 4 (Mathlib `v4.32.1`, pin `520045a`) portant les premières
 définitions du socle utilisé par la conjecture Kannan–Lovász–Simonovits :
 mesure log-concave (Borell), log-concavité fonctionnelle, isotropie,
-constante de Poincaré, constante de Cheeger — plus l'instance prouvée
+constante de Poincaré, constante de Cheeger (version frontière **et**
+version Minkowski — épaississement `thick`, rapport `minkowskiRatio`,
+constante `cheegerMinkowski`) — plus l'instance prouvée
 `gaussProfile_logConcave` : la log-concavité du **profil gaussien** 1-D
-`t ↦ exp(−t²/2)`. L'extension à la densité n-dimensionnelle suit la même
+`t ↦ exp(−t²/2)`, et le théorème `thick_Icc` (épaississement exact d'un
+intervalle compact, le calcul qui porte l'exemple unidimensionnel du
+carnet). L'extension à la densité n-dimensionnelle suit la même
 identité coordonnée par coordonnée ; elle est différée à un module ultérieur.
 
 ## Pourquoi ce lac existe
