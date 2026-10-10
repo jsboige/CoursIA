@@ -875,7 +875,7 @@ var posterior = moteur.Infer<DistributionType>(variable);
 
 ```
 Infer/
-+-- Infer-01-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb   # 19 notebooks (Infer-11 = Topic-Models)
++-- Infer-01-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb   # socle numéroté (Infer-11 = Topic-Models)
 +-- Infer-Glossary.md
 +-- FactorGraphHelper.cs          # Helper pour visualisation Graphviz
 +-- README.md
