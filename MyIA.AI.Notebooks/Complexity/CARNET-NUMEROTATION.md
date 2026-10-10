@@ -11,8 +11,12 @@
 | 03 | Plus de temps, plus de problèmes | Licence | Hiérarchie en temps, diagonalisation, limite d'une simulation bornée |
 | 04 | Décider sans connaître la suite | Licence | Algorithmes en ligne, analyse compétitive (skis, pagination, secrétaire 1/e) |
 | 05 | Compter est plus dur que vérifier | Licence | Classe #P, déterminant vs permanente, frontière quantique |
-| 06 | Simuler un circuit quantique classiquement | Licence | (à venir) Pourquoi exponentiel en général, où c'est facile (Clifford) |
-| 07 | La chaîne des inclusions : L ⊆ NL ⊆ P ⊆ NP | Licence | (à venir) Carte de la hiérarchie |
+| 06 | Simuler un circuit quantique classiquement | Licence | Coût de la simulation classique : barrière $O(2^n)$ sur $n$ qubits, simulation **Clifford** en $O(n^2)$ (Gottesman–Knill), échantillonner $\neq$ calculer la distribution exacte, inclusion BQP ⊆ PP ⊆ P#P au niveau **Cité** |
+| 07 | Complexité de Kolmogorov bornée : séquences à mémoire limitée | Recherche | $K(x)$ opérationnalisée à **mémoire bornée** (Strannegård, Nizamani, Sjöberg & Engström, AGI 2013) — arrivée de `Search/Applications` (ex-App-34), renumérotée 07 |
+
+> **État mesuré au 2026-10-10.** Les deux positions du chemin principal qui portaient « (à venir) » sont renseignées : la **06** est livrée (PR #19771, `Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb`) et la **07** est occupée par *Complexité de Kolmogorov bornée*, déjà livrée et documentée comme « renumérotée 07 » par le README de série.
+>
+> Le sujet initialement annoncé pour 07, **« La chaîne des inclusions : L ⊆ NL ⊆ P ⊆ NP »**, n'est **pas livré** et n'a plus de position sur le chemin principal — l'historique est conservé ci-dessus plutôt que réécrit. Lui rendre une position (un **08**, ou une accrétion **`07b`**) est un **arbitrage de curriculum** : il appartient à ai-01 au titre de l'EPIC [#17063](https://github.com/jsboige/CoursIA/issues/17063), au même titre que la mention « Licence » de cette même ligne, qui ne décrit plus la position réellement occupée.
 
 ## Accrétions (`b` par défaut, `c`/`d` si le palier en compte déjà un)
 

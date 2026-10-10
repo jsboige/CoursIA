@@ -6,7 +6,7 @@ Tranche P1 *mini* de la distillation [#19452](https://github.com/jsboige/CoursIA
 **Pin reproductible** : `bbrhuft/Cartier-Miller-...` @ `37a9b727dfd5034af0b8aa8185246d58008b9e5c`
 (Hermes 08:13Z, contre-lu 2026-10-06).
 
----
+***
 
 ## 1. En-tête et garantie de pureté
 
@@ -25,7 +25,7 @@ des deux autres modules. Il sert de référence Schoof (BSGS + CRT) pour
 valider `quarter()` d'elliptic_prefix sur un premier donné — voir §10
 pour l'articulation.
 
----
+***
 
 ## 2. Loi de groupe elliptique — `add` (l. 9-26)
 
@@ -59,7 +59,7 @@ Un `p ≤ 3` lèverait une `ZeroDivisionError` sur `inv(0)` plutôt qu`une
 limitation claire. **Note** : gérée en amont par pilot.py `is_prime` 
 filtrant l'exposant de 2.
 
----
+***
 
 ## 3. Multiplication scalaire — `mul` (l. 28-38)
 
@@ -85,7 +85,7 @@ lentement — l'arithmétique Python n'a pas de débordement). **Risque
 pratique nul** : tous les appels de Schoof utilisent `n ∈ [1, l-1]`
 avec `l` premier impair.
 
----
+***
 
 ## 4. Modular square root — `sqrt_mod` (l. 40-69)
 
@@ -112,7 +112,7 @@ c'est ~quelques essais en pratique (densité 1/2).
 (implicitement, l. 46-47) — un `a` qui n'a pas de racine carrée
 retourne `0`, pas d'erreur. **Fails closed**, pas fail-fast.
 
----
+***
 
 ## 5. BSGS baby-step giant-step dans l'intervalle de Hasse —
 `interval_annihilators` (l. 71-89)
@@ -138,7 +138,7 @@ baby steps = `m ≈ √((hi-lo)/2)`, complexité `O(√(hi-lo))` au lieu de
 `O(hi-lo)`. Pour Schoof, `(hi-lo) = 2√p`, donc `m ≈ p^{1/4}`
 multiplications.
 
----
+***
 
 ## 6. Trace BSGS exacte — `bsgs_trace` (l. 91-108)
 
@@ -164,7 +164,7 @@ candidate ⟹ ~`O(p · √p)` au pire. Pour `p ≲ 10⁸` ⟹ ~10¹² ops,
 **inutilisable** en pratique. C'est la **référence de ground truth**,
 pas l'algorithme de production. **Schoof (§8) le remplace**.
 
----
+***
 
 ## 7. Polynômes sur F_p — `class Polys` (l. 110-148)
 
@@ -190,7 +190,7 @@ degré du polynôme de division `ψ_L(x)` est `O(L²)`, donc O(L⁴ log L)
 en pire cas. Pour `L ≤ 100` (Schoof petits premiers), c'est ~10⁸ ops,
 dominé.
 
----
+***
 
 ## 8. Polynôme de division — `division_polynomial` (l. 167-179)
 
@@ -211,7 +211,7 @@ quand Schoof fait une boucle sur `l`.
 
 **Coût** : O(L² log L) en pire cas (FFT applicable, mais pas utilisé).
 
----
+***
 
 ## 9. Schoof mod l — `schoof_mod_l` (l. 181-208)
 
@@ -241,7 +241,7 @@ ce qui correspond à l'action de Frobenius sur `E[l]` dans F_p[x, y].
 **Pas de fallback BSGS en cas d'échec** : Schoof doit être total,
 sinon la trace reste indéterminée.
 
----
+***
 
 ## 10. Schoof total — `schoof_trace` (l. 210-227)
 
@@ -271,7 +271,7 @@ sans elle, Schoof boucle indéfiniment sur le premier `p` lui-même.
 de `p ≈ 10²⁰`, Schoof nécessite une arithmétique modulaire multi-primes
 (technique de Bostan-Lecerf).
 
----
+***
 
 ## 11. Ground truth — `direct_trace` (l. 230)
 
@@ -286,7 +286,7 @@ pilot.py utilise probablement ceci ou un échantillon `p ≤ 5000`).
 **Vérification littérale** : formule de Legendre (`(f(x)/p) = 1` si
 `f(x)` est QR, `-1` si non-QR, `0` si `f(x) = 0`). Conforme.
 
----
+***
 
 ## 13. Confrontation P0 §3 — TracéS et Frobenius
 
@@ -309,7 +309,7 @@ le pilote choisit l'un ou l'autre selon `p` (cf. `pilot.py`
 `validate()` §5 de P1.pilot, "miller_cross_checks" : 328 premiers `p ≡
 1 (mod 4)` testés avec BSGS ground truth).
 
----
+***
 
 ## 14. Confrontation P0 §4 — Schoof corécomputée l. 547+
 
@@ -334,7 +334,7 @@ un arrêt anticipé (le pilote ne va pas au-delà). Pour `p = 97`,
 `4p = 388`, donc `l ≤ 7` suffit (`2·3·5·7 = 210 < 388` mais `2·3·5·7·11
 = 2310 > 388`), donc **4 itérations** suffisent. **Conforme**.
 
----
+***
 
 ## 15. Bilan P1 point_count
 
@@ -392,7 +392,7 @@ SplitRoot, pas de `legendre2`).
 - **Validation numérique ≠ preuve** : BSGS ground truth sur 328
   premiers (pilot.py §5) — corroboration, pas démonstration.
 
----
+***
 
 ## 16. P1+ — 4 phases restantes
 
@@ -411,7 +411,7 @@ NTL vendored) au manuscrit l. 420-450 (Section 5 pseudocode Miller).
 `upstream/ntl/`, licence GPL. **Cohérent avec la GPL-2.0-or-later de
 point_count.py**.
 
----
+***
 
 ## 17. Conclusion
 
@@ -423,7 +423,7 @@ composants OK littéral**, **4/9 partiels OK**, **0 reporté**.
 
 **Suite directe** : PR P1 pseudocode C++ (cycle worker suivant, ~2-4h).
 
----
+***
 
 ## 18. HORS scope (intentionnel)
 
@@ -439,7 +439,7 @@ composants OK littéral**, **4/9 partiels OK**, **0 reporté**.
   est une **autre lane** (Lean dédiée po-2025/po-2026). HORS scope
   worker Python.
 
----
+***
 
 ## 19. Refs
 

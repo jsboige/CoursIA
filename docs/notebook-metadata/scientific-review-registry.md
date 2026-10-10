@@ -8,7 +8,7 @@
 **Date de fondation** : 2026-09-08
 **Base SHA** : `7af725e968` (origin/main)
 
----
+***
 
 ## 1. Purpose
 
