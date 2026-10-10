@@ -58,10 +58,55 @@ sans effondrement de longueur. Le verdict M19 côté 0.8B était donc bien un
 artefact de casting : la tâche olympiaque masquait le signal RL du petit modèle
 au lieu de le mesurer.
 
-**Ce qui reste ouvert (acceptance 2, côté 2B)** : les runs MiniCPM5-2B × hermes ×
-2 seeds sont en chaîne détachée sur le 3070 (~13 h/run, seed 0 puis seed 1
-enchaînés automatiquement) ; le classement 2B > 0.8B ne se prononce qu'à leur
-livraison — `summarize` exige ≥ 2 modèles pour le verdict de paire.
+**Ce qui restait ouvert (acceptance 2, côté 2B)** : les runs MiniCPM5-2B × hermes ×
+2 seeds, en chaîne détachée sur le 3070 — `summarize` exige ≥ 2 modèles pour le
+verdict de paire. **Livré ci-dessous le 2026-10-10.**
+
+## Résultats — verdict de paire 2B vs 0.8B (2026-10-10, acceptances 2 et 3 closes)
+
+Runs MiniCPM5-2B livrés par la chaîne GPU 2 (lane myia-ai-01:CoursIA-2, `SEED 1
+DONE 09:59:11Z`), manifestes `scripts/results/p15294_hermes_grpo/minicpm5_seed{0,1}.json` ;
+même recette GRPO+QLoRA non-thinking, même budget (100 steps, complétion ≤ 384),
+même eval held-out (40 prompts × 4 générations).
+
+| seed | pre | post | Δ | longueur eval | wallclock |
+|---|---|---|---|---|---|
+| 0 | 0,2125 | 0,6438 | +0,4313 | 319 → 403 | 10 657 s |
+| 1 | 0,2500 | 0,6813 | +0,4313 | 326 → 437 | 7 688 s |
+
+**Contrôle de dégénérescence (le no-op `m19` ne s'est pas reproduit).** Les runs
+`m19` MiniCPM5 étaient des no-op par construction (`eos_token` du tokenizer ≠
+terminateur du template → `clipped_ratio=1` + masque → loss/grad/entropy = 0,
+verdict `BEATS` = bruit). Les runs de cette chaîne portent la signature inverse :
+loss et grad non nuls sur 63-66 % des steps, entropy qui décroît (0,229 → 0,178 et
+0,137 → 0,006), complétions d'entraînement qui raccourcissent (262 → 178 et
+350 → 136 : le modèle apprend à émettre EOS) — et **aucun effondrement de longueur
+à l'eval** (319 → 403, 326 → 437). Le correctif eos par modèle a bien mordu ;
+les ~34-37 % de steps à loss nulle résiduelle sont les complétions encore
+tronquées au budget, masquées par design.
+
+**Verdict de paire (n=2 par modèle — tendance, pas un verdict formel)** :
+
+| modèle | Δ moyen (2 seeds) | dispersion | post reached |
+|---|---|---|---|
+| MiniCPM5-2B | **+0,4313** | ±0,0000 (réplication stricte) | 0,644 / 0,681 |
+| Qwen3.5-0.8B | +0,2500 | ±0,1875 (0,0625 vs 0,4375) | 0,269 / 0,606 |
+
+Le classement 2B > 0.8B **tient en tendance** sur la tâche calibrée : delta moyen
+supérieur, réplication stricte entre seeds là où le 0.8B disperse d'un facteur 7,
+et post-niveau atteint plus haut et plus reproductible — pour ~3,9× moins de
+wallclock cumulé (18 344 s vs 70 717 s). **À n=2 par modèle, ce n'est
+pas un verdict BEATS formel** (le protocole maison exige ≥ 4 seeds) : c'est une
+tendance convergente, à confirmer si l'EPIC rouvre des seeds supplémentaires.
+
+**Ce que cela close (acceptance 3)** : le `BEATS` M19 « 2B > 0.8B » mesuré sur
+DAPO-Math-17k était un double artefact — casting (la tâche olympiaque masquait le
+signal du 0.8B, démontré côté Qwen 2026-10-08) **et** no-op eos (le contraste 2B
+mesurait un gradient nul contre du bruit, démontré ici par la signature loss/grad
+inverse). Sur Hermes avec le correctif eos, **les deux backbones produisent du
+signal RL réel** et se comparent sur des gradients authentiques ; le classement
+observé alors (2B devant, réplication plus propre) est la première mesure non
+artefactée de la paire.
 
 ## Hors périmètre
 
