@@ -13,6 +13,26 @@ Exit codes:
     1 = at least one NEW violation (PR must be fixed)
     2 = invocation error
 
+Rename pairing (#20274): a `git mv` of a directory re-keys every violation
+touching it, in two shapes -- the identical triple under a new README path
+(violations INSIDE the renamed folder), and a changed href inside an
+unchanged README (violations in referent READMEs pointing INTO the renamed
+folder). Both leave the backlog count unchanged (measured on the T2-01
+rename: NOUVELLES=12, CORRIGEES=12, strictly symmetric; 8 of shape 1,
+4 of shape 2). Pairing rules, each proven on disk at head state (cwd =
+repo root, the fast-lane context):
+
+  shape 1 -- a "new" (class, readme, href) whose exact (class, href) twin
+  sits in the fixed set AND whose base-side README no longer exists on
+  disk is a MOVED violation.
+  shape 2 -- a "new" (class, readme, href') in the SAME readme as a fixed
+  (class, readme, href), where the resolved old href's parent directory
+  has vanished and the resolved new href's parent exists: the link
+  tracked a folder that moved.
+
+The disk checks keep the pairing honest -- a re-key whose base-side file
+or directory still exists is NOT a move and stays a NEW violation.
+
 Usage:
     python diff_readme_link_violations.py <base.json> <head.json>
 """
@@ -20,12 +40,62 @@ from __future__ import annotations
 
 import argparse
 import json
+import posixpath
 import sys
 from pathlib import Path
 
 
 def _key(v: dict) -> tuple[str, str, str]:
     return (v.get("class", ""), v.get("readme", ""), v.get("href", ""))
+
+
+def _resolve_href(readme: str, href: str) -> str:
+    return posixpath.normpath(posixpath.join(posixpath.dirname(readme), href))
+
+
+def _pair_renames(
+    new: list[tuple[str, str, str]], fixed: list[tuple[str, str, str]]
+) -> tuple[list[tuple[str, str, str, str, str]], list[tuple[str, str, str]]]:
+    """Split `new` into (moved, still_new) against `fixed`.
+
+    moved entries are (class, old_readme, old_href, new_readme, new_href);
+    each fixed entry pairs at most once.
+    """
+    fixed_by_ch: dict[tuple[str, str], list[str]] = {}
+    fixed_by_cr: dict[tuple[str, str], list[str]] = {}
+    for cls, readme, href in fixed:
+        fixed_by_ch.setdefault((cls, href), []).append(readme)
+        fixed_by_cr.setdefault((cls, readme), []).append(href)
+    moved: list[tuple[str, str, str, str, str]] = []
+    still_new: list[tuple[str, str, str]] = []
+    for cls, readme, href in new:
+        # shape 1 -- le README lui-meme a demenage, href inchangé.
+        candidates = fixed_by_ch.get((cls, href), [])
+        source = next((r for r in candidates if not Path(r).is_file()), None)
+        if source is not None:
+            candidates.remove(source)
+            fixed_by_cr.get((cls, source), []).remove(href)
+            moved.append((cls, source, href, readme, href))
+            continue
+        # shape 2 -- README inchangé, le href suit un dossier deplacé.
+        paired_href = None
+        for h_old in fixed_by_cr.get((cls, readme), []):
+            if h_old == href:
+                continue
+            p_old = _resolve_href(readme, h_old)
+            p_new = _resolve_href(readme, href)
+            if p_old == p_new:
+                continue
+            if not Path(p_old).parent.is_dir() and Path(p_new).parent.is_dir():
+                paired_href = h_old
+                break
+        if paired_href is not None:
+            fixed_by_cr[(cls, readme)].remove(paired_href)
+            fixed_by_ch.get((cls, paired_href), []).remove(readme)
+            moved.append((cls, readme, paired_href, readme, href))
+        else:
+            still_new.append((cls, readme, href))
+    return moved, still_new
 
 
 def _load(path: Path) -> list[dict]:
@@ -51,20 +121,30 @@ def main() -> int:
     new = sorted(head_set - base_set)
     fixed = sorted(base_set - head_set)
 
+    moved, still_new = _pair_renames(new, fixed)
+    consumed = {(cls, old_readme, old_href) for cls, old_readme, old_href, _, _ in moved}
+    fixed = [t for t in fixed if t not in consumed]
+
     print(f"README-link delta: base={len(base_set)} head={len(head_set)} "
-          f"NOUVELLES={len(new)} CORRIGEES={len(fixed)}")
-    for cls, readme, href in new:
+          f"NOUVELLES={len(still_new)} CORRIGEES={len(fixed)} "
+          f"DEPLACEES={len(moved)}")
+    for cls, readme, href in still_new:
         print(f"  + {cls}  {readme}  ->  {href}")
+    for cls, old_readme, old_href, new_readme, new_href in moved:
+        if old_href == new_href:
+            print(f"  ~ MOVED {cls}  {old_readme}  =>  {new_readme}  ->  {new_href}")
+        else:
+            print(f"  ~ MOVED {cls}  {old_readme}  {old_href}  =>  {new_href}")
     for cls, readme, href in fixed:
         print(f"  - {cls}  {readme}  ->  {href}")
 
-    if new:
+    if still_new:
         # Meme format que le scanner (regen_quarto_render.py emet
         # `::error::<CLASSE> ...` sur stderr) pour que les outils en
         # aval qui grep le pattern continuent de fonctionner. La classe
         # est celle du dump, pas une constante : depuis #18911 c'est
         # HTML_404, avant c'etait STALE_LINK.
-        for cls, readme, href in new:
+        for cls, readme, href in still_new:
             print(f"::error::{cls} {readme} -> {href}", file=sys.stderr)
         return 1
     return 0

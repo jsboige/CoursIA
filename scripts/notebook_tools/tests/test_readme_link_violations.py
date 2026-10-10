@@ -112,6 +112,95 @@ def test_diff_fails_on_injected_html_404(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# #20274 -- appariement des renames (T2-01). Un `git mv` de dossier re-keye
+# chaque violation : l'ancienne cle part en CORRIGEES, la nouvelle arrive en
+# NOUVELLES, sans aucun changement du backlog (mesure T2-01 : 12/12). Le
+# comparator apparie un couple (class, href) identique dont le README de
+# base a disparu du disque (cwd = racine au state head). Les 2 temoins
+# ci-dessous sont les deux cotes du discriminant.
+# ---------------------------------------------------------------------------
+
+
+def test_diff_pairs_violation_moved_by_rename(tmp_path: Path) -> None:
+    """Temoin positif : re-key par rename => DEPLACEES, exit 0.
+
+    base porte la violation sur un chemin invente (absent du disque au cwd),
+    head la porte sur un autre chemin : couple (class, href) identique +
+    README de base disparu => deplacement, pas introduction.
+    """
+    base = {"violations": [
+        {"class": "HTML_404", "readme": "zz-old-dir/README.md", "href": "notebooks/1.1-X.html"}
+    ], "n_violations": 1}
+    head = {"violations": [
+        {"class": "HTML_404", "readme": "zz-new-dir/README.md", "href": "notebooks/1.1-X.html"}
+    ], "n_violations": 1}
+    proc = _run_diff(base, head, tmp_path)
+    assert proc.returncode == 0, f"diff exit={proc.returncode}\nstdout={proc.stdout}\nstderr={proc.stderr}"
+    assert "NOUVELLES=0" in proc.stdout
+    assert "DEPLACEES=1" in proc.stdout
+    assert "MOVED" in proc.stdout
+
+
+def test_diff_refuses_pairing_when_base_readme_still_exists(tmp_path: Path) -> None:
+    """Temoin negatif : le README de base EXISTE encore au cwd => pas d'appariement.
+
+    Re-key d'une violation reelle (son chemin existe au REPO_ROOT par
+    construction) vers un chemin invente : la disparition n'est pas prouvee,
+    la violation re-keyee reste une NOUVELLE (exit 1). C'est ce temoin qui
+    empeche l'appariement de blanchir un simple copier-coller de lien casse
+    vers un nouveau fichier.
+    """
+    payload = _run_dump()
+    real = next(v for v in payload["violations"])
+    base = {"violations": [real], "n_violations": 1}
+    rekeyed = dict(real)
+    rekeyed["readme"] = "zz-invented-dir/README.md"
+    head = {"violations": [rekeyed], "n_violations": 1}
+    proc = _run_diff(base, head, tmp_path)
+    assert proc.returncode == 1, f"diff aurait du exit=1, exit={proc.returncode}\nstdout={proc.stdout}"
+    assert "NOUVELLES=1" in proc.stdout
+    assert "DEPLACEES=0" in proc.stdout
+
+
+def test_diff_pairs_href_rekey_in_unchanged_readme(tmp_path: Path) -> None:
+    """Temoin positif passe 2 : le href suit un dossier deplace, README identique.
+
+    Le README n'a pas bouge, le href change parce que sa cible a demenage :
+    l'ancien parent (invente, absent du disque au cwd) a disparu, le nouveau
+    parent (repertoire reel du depot) existe => deplacement, pas introduction.
+    """
+    base = {"violations": [
+        {"class": "HTML_404", "readme": "docs/README.md", "href": "../zz-gone-dir/notebooks/1.1-X.html"}
+    ], "n_violations": 1}
+    head = {"violations": [
+        {"class": "HTML_404", "readme": "docs/README.md", "href": "../scripts/notebook_tools/1.1-X.html"}
+    ], "n_violations": 1}
+    proc = _run_diff(base, head, tmp_path)
+    assert proc.returncode == 0, f"diff exit={proc.returncode}\nstdout={proc.stdout}\nstderr={proc.stderr}"
+    assert "NOUVELLES=0" in proc.stdout
+    assert "DEPLACEES=1" in proc.stdout
+
+
+def test_diff_refuses_href_rekey_when_old_target_dir_exists(tmp_path: Path) -> None:
+    """Temoin negatif passe 2 : l'ancien parent EXISTE encore => pas d'appariement.
+
+    Un simple changement de href vers une autre cible cassee du meme dossier
+    existant n'est pas un demenagement : l'ancienne violation est corrigee,
+    la nouvelle est une introduction (exit 1).
+    """
+    base = {"violations": [
+        {"class": "HTML_404", "readme": "docs/README.md", "href": "../scripts/notebook_tools/old-X.html"}
+    ], "n_violations": 1}
+    head = {"violations": [
+        {"class": "HTML_404", "readme": "docs/README.md", "href": "../scripts/notebook_tools/new-Y.html"}
+    ], "n_violations": 1}
+    proc = _run_diff(base, head, tmp_path)
+    assert proc.returncode == 1, f"diff aurait du exit=1, exit={proc.returncode}\nstdout={proc.stdout}"
+    assert "NOUVELLES=1" in proc.stdout
+    assert "DEPLACEES=0" in proc.stdout
+
+
+# ---------------------------------------------------------------------------
 # C23 / c.1443 -- propagation des pannes du scanner (adjoint po-2025).
 # Un defaut du wrapper transforme une indisponibilite (rc=2 / script absent
 # ou rc=1 + traceback sans resume) en scan vide reussi, ce qui masquerait
