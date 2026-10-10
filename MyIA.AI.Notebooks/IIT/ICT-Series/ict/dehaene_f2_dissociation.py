@@ -19,6 +19,22 @@ bras principaux de self_model_minimal, qui sont GPU-only (Tell c.8236
 RECOVERABLE-MACHINE — po-2023/po-2024 GPU 24+ Go). Ce module pose la
 méthodologie et un proxy mesurable localement.
 
+**Second volet — test direct A/B/C (issue #19343, reste ouvert après le
+proxy).** Le proxy ci-dessus laisse la question F2 intacte : il mesure une
+discrimination inter-catégories, pas la reconnaissance self-sur-self. Le
+second volet construit un substrat **synthétique numpy-only** où la question
+est directement falsifiable : deux agents appariés (même spectre, identité
+distincte), un *store étendu* à cinq variables, un *self-model* ridge par
+agent, et un score de reconnaissance symétrique. Trois régimes : A (store
+plein), B (store vidé partout — lésion), C (self-model ablaté — contrôle de
+non-dégénérescence). Verdict pré-enregistré : F2 falsifié si
+``|score_A - score_B| < 2 * sigma(score_B)``. Mesuré sur les graines
+{0, 1, 7, 42} : ``F2_CONFIRMED_EXTENDED_REQUIRED`` (delta = +0,289 ;
+2·σ_B = 0,073) — avec la nuance que le régime B garde une reconnaissance
+significative (p < 0,02), donc le self-model **persiste** sans le store, plus
+faiblement. Carnet : ``ICT-Dissociation-DehaeneF2-SelfReport.ipynb`` ;
+résultats : ``ict/results/dehaene_f2_abc_results.json``.
+
 References
 ----------
 S. Dehaene, *Consciousness and the Brain*, Johns Hopkins University Press
@@ -359,6 +375,330 @@ def run(trace_path: str | Path,
             "Test direct F2 (K-sweep sur case 4 self/other) = GPU-only",
             "Tell c.8236 RECOVERABLE-MACHINE (po-2023/po-2024 GPU 24+ Go)",
             "Témoins nuls (shape_perm, dirichlet) : n=100 permutations chacun, seed fixée pour reproductibilité",
+        ],
+    }
+    if output_path is not None:
+        Path(output_path).write_text(
+            json.dumps(payload, ensure_ascii=False, indent=1),
+            encoding="utf-8", newline="\n")
+    return payload
+
+
+# ---------------------------------------------------------------------------
+# Test direct F2 — régimes A/B/C (issue #19343, reste ouvert après le proxy
+# #19345). Substrat synthétique numpy-only : l'agent porte un *store étendu*
+# (les 5 variables de l'issue), et un *self-model* (prédicteur ridge à un pas
+# entraîné sur sa propre trajectoire). La reconnaissance est le pouvoir de
+# discrimination self/other du self-model, mesuré par l'AUC de ses erreurs.
+#
+# Pré-enregistrement (scellé AVANT la mesure, cf. carnet
+# `ICT-Dissociation-DehaeneF2-SelfReport.ipynb` et docs §F2) :
+#   - Régime A : store étendu plein (contenu dérivé de la dynamique PROPRE de
+#     l'agent : workspace_state, ignition_flag, report_counter, attention_index,
+#     basin_width), réinjecté dans la dynamique et lu par le self-model.
+#   - Régime B : store vidé PARTOUT (`extended_mind_store = 0`) — lésion, pas
+#     aveuglement : le canal étendu est coupé du monde ET du self-model, qui
+#     reste calculé sur ses entrées minimales (proprio + bruit).
+#   - Régime C : store plein, branche self-model ABLATÉE (prédicteur non
+#     entraîné) — contrôle de non-dégénérescence : score_C ≈ 0.
+#
+# F2 (Dehaene) prédit score_A >> score_B (le self-model est une SORTIE du
+# workspace étendu). Falsification : |score_A - score_B| < 2 * sigma(score_B)
+# sur les graines {0, 1, 7, 42}.
+# ---------------------------------------------------------------------------
+
+STORE_VARS = ("workspace_state", "ignition_flag", "report_counter",
+              "attention_index", "basin_width")
+
+ABC_SEED_BASES = (0, 1, 7, 42)
+
+
+@dataclass
+class AgentParams:
+    """Paramètres d'un agent : identité (A, G, C) + hyper-paramètres partagés."""
+
+    seed: int
+    A: np.ndarray  # (d, d) identité dynamique de l'agent
+    G: np.ndarray  # (d, 5) couplage du store étendu vers la dynamique
+    C: np.ndarray  # (d, 2) gain du drive proprioceptif
+    ign_threshold: float
+    sigma_dyn: float
+
+
+@dataclass
+class ABCResult:
+    """Résultat d'une graine : scores A/B/C + témoins nuls de permutation."""
+
+    seed_base: int
+    score_A: float
+    score_B: float
+    score_C: float
+    p_A: float
+    p_B: float
+    p_C: float
+    store_share_A: float  # part de variance du terme G·h dans la dynamique A
+    null_A: list[float] = field(default_factory=list)
+    null_B: list[float] = field(default_factory=list)
+    null_C: list[float] = field(default_factory=list)
+
+
+def _agent_params(seed: int, d: int = 8,
+                  scales: np.ndarray | None = None) -> AgentParams:
+    """Tire les paramètres d'un agent : identité propre, hyper-paramètres partagés.
+
+    ``scales`` (spectre de ``A``) est **partagé par la paire** d'agents appariés :
+    mêmes valeurs propres, base propre tirée indépendamment. C'est la condition
+    de « capacité égale » de l'issue — à défaut, deux agents tirés librement
+    n'ont ni le même temps de mélange ni la même stationnarité, et l'écart
+    mesuré signalerait la mémoire de l'un plutôt que la reconnaissance du
+    self-model.
+    """
+    rng = np.random.default_rng(seed)
+    q, _ = np.linalg.qr(rng.normal(size=(d, d)))
+    if scales is None:
+        scales = 0.65 + 0.25 * rng.random(d)
+    A = q @ np.diag(np.asarray(scales, dtype=float)) @ q.T
+    G = 0.60 * rng.normal(size=(d, len(STORE_VARS))) / np.sqrt(len(STORE_VARS))
+    C = 0.30 * rng.normal(size=(d, 2)) / np.sqrt(2.0)
+    return AgentParams(seed=seed, A=A, G=G, C=C,
+                       ign_threshold=0.75, sigma_dyn=0.02)
+
+
+def _simulate(params: AgentParams, T: int, rng: np.random.Generator,
+              store_active: bool = True) -> tuple[np.ndarray, np.ndarray]:
+    """Simule l'agent et son store étendu.
+
+    Le store est un intégrateur lent des lectures de la dynamique PROPRE de
+    l'agent (self-specific par construction) : concentration globale, événement
+    d'ignition, compteur de reports fuyant, entropie d'attention, largeur de
+    bassin (EMA de la vitesse). Avec ``store_active=False``, le store est vidé
+    partout (lésion du régime B) : il ne pilote plus la dynamique.
+    """
+    d = params.A.shape[0]
+    x = np.zeros((T, d))
+    h = np.zeros((T, len(STORE_VARS)))
+    x[0] = rng.normal(size=d) / np.sqrt(d)
+    report_acc = 0.0
+    basin_ema = 0.0
+    conc_ema = 0.0
+    for t in range(1, T):
+        prev = x[t - 1]
+        conc = float(np.linalg.norm(prev)) / np.sqrt(d)
+        if t == 1:
+            conc_ema = conc
+        # seuil RELATIF : 1.10x la concentration courante -> excursions seules
+        # Seuil RELATIF a la concentration courante : le cycle de service
+        # d'ignition est stable par construction. Un seuil absolu rendait la
+        # trajectoire multimodale (train et test dans deux regimes differents,
+        # R2 test negatif mesure) et la mesure comparait des regimes, pas des
+        # agents.
+        ign = 1.0 if conc > 1.10 * conc_ema else 0.0
+        conc_ema = 0.99 * conc_ema + 0.01 * conc
+        report_acc = 0.95 * report_acc + ign
+        absx = np.abs(prev)
+        p = absx / (absx.sum() + 1e-12)
+        att = float(-(p * np.log(p + 1e-12)).sum()) / math.log(d)
+        if t > 1:
+            basin_ema = 0.98 * basin_ema + 0.02 * float(np.linalg.norm(prev - x[t - 2]))
+        h_t = np.array([math.tanh(conc), ign,
+                        math.tanh(report_acc / 5.0), att,
+                        math.tanh(basin_ema * 5.0)])
+        if not store_active:
+            h_t = np.zeros(len(STORE_VARS))
+        h[t - 1] = h_t
+        u = rng.normal(size=2)
+        x[t] = np.tanh(params.A @ prev + params.G @ h_t + params.C @ u) \
+            + params.sigma_dyn * rng.normal(size=d)
+    h[T - 1] = h[T - 2]
+    return x, h
+
+
+def _ridge(Z: np.ndarray, Y: np.ndarray, lam: float = 1.0) -> np.ndarray:
+    """Régression ridge fermée : W = (Z^T Z + lam I)^-1 Z^T Y."""
+    k = Z.shape[1]
+    return np.linalg.solve(Z.T @ Z + lam * np.eye(k), Z.T @ Y)
+
+
+def _regime_score(x_self: np.ndarray, h_self: np.ndarray | None,
+                  x_other: np.ndarray, h_other: np.ndarray | None,
+                  rng: np.random.Generator, use_store: bool,
+                  untrained: bool = False, n_shuffles: int = 50,
+                  train_frac: float = 0.60, burn_in: float = 0.20,
+                  lam: float = 1.0) -> tuple[float, list[float]]:
+    """Score de reconnaissance self-sur-self, **symétrique et apparié**.
+
+    Le self-model est un prédicteur ridge à un pas ``x_{t+1} = W f(x_t)``
+    entraîné sur la première fraction de la trajectoire PROPRE de l'agent.
+    Chaque agent reçoit SON prédicteur ; l'avantage de reconnaissance est la
+    moyenne des deux sens ::
+
+        adv = 1/2 [ (PE(other | W_self) - PE(self | W_self)) / PE(self | W_self)
+                  + (PE(self | W_other) - PE(other | W_other)) / PE(other | W_other) ]
+
+    ``adv > 0`` : chaque prédicteur prédit mieux sa propre trajectoire que
+    celle de l'agent apparié. La forme symétrique est ce qui rend la mesure
+    robuste : elle est une différence de différences, donc les biais de cadre
+    (dérive, amplitude) s'annulent au lieu de s'ajouter — la forme
+    asymétrique mesurait ces biais (PE_other jusqu'à 635, score toujours
+    négatif sur 4/4 graines, contrôle C non nul).
+
+    Les deux agents sont standardisés par l'échelle GLOBALE (scalaire) de leur
+    train respectif : la dynamique est isotrope, donc une échelle par feature
+    n'apporte rien et amplifie une coordonnée saturée. Le contrôle C
+    (prédicteurs non entraînés) rend ≈ 0 par construction.
+
+    Le témoin nul permute les étiquettes self/other des blocs de résidus
+    (n_shuffles ≥ 50) ; il mesure ce que la même statistique donne sur des
+    données où l'identité est effacée.
+    """
+    burn = int(x_self.shape[0] * burn_in)
+    x_self, x_other = x_self[burn:], x_other[burn:]
+    if h_self is None:
+        h_self = np.zeros((x_self.shape[0], len(STORE_VARS)))
+    else:
+        h_self = h_self[burn:]
+    if h_other is None:
+        h_other = np.zeros((x_other.shape[0], len(STORE_VARS)))
+    else:
+        h_other = h_other[burn:]
+    cut = int(x_self.shape[0] * train_frac)
+
+    def prep(x, h):
+        cols = [x]
+        if use_store:
+            cols.append(h)
+        z = np.column_stack(cols)[:-1]
+        y = x[1:]
+        mu, ymu = z[:cut].mean(axis=0), y[:cut].mean(axis=0)
+        sd = float(z[:cut].std(axis=0).mean()) + 1e-6
+        ysd = float(y[:cut].std(axis=0).mean()) + 1e-6
+        return (z - mu) / sd, (y - ymu) / ysd
+
+    z_s, y_s = prep(x_self, h_self)
+    z_o, y_o = prep(x_other, h_other)
+    zero = np.zeros((z_s.shape[1], x_self.shape[1]))
+    w_s = zero if untrained else _ridge(z_s[:cut], y_s[:cut], lam)
+    w_o = zero if untrained else _ridge(z_o[:cut], y_o[:cut], lam)
+
+    def mse(z, w, y):
+        return ((z[cut:] @ w - y[cut:]) ** 2).mean(axis=1)
+
+    pe_ss, pe_os = mse(z_s, w_s, y_s), mse(z_o, w_s, y_o)
+    pe_oo, pe_so = mse(z_o, w_o, y_o), mse(z_s, w_o, y_s)
+
+    # Erreur par bloc de temps, agregee par APPARIEMENT (predicteur sur sa
+    # propre trajectoire vs predicteur sur l'autre) : c'est l'appariement qui
+    # porte l'hypothese, pas la trajectoire. Chaque cote recoit les deux
+    # predicteurs, donc la statistique est symetrique par construction.
+    blocks = np.array_split(np.arange(pe_ss.size), 20)
+    err_own = np.array([(pe_ss[b].mean() + pe_oo[b].mean()) / 2.0 for b in blocks])
+    err_cross = np.array([(pe_os[b].mean() + pe_so[b].mean()) / 2.0 for b in blocks])
+
+    def stat(a: np.ndarray, b: np.ndarray) -> float:
+        return float((b.mean() - a.mean()) / (a.mean() + 1e-12))
+
+    observed = stat(err_own, err_cross)
+    pooled = np.concatenate([err_own, err_cross])
+    n1 = err_own.size
+    nulls = []
+    for _ in range(n_shuffles):
+        perm = rng.permutation(pooled.size)
+        nulls.append(stat(pooled[perm[:n1]], pooled[perm[n1:]]))
+    return float(observed), nulls
+
+
+def _p_value(nulls: list[float], observed: float) -> float:
+    """p unilatérale : fraction de nulls >= observé (n_shuffles ≥ 50 requis)."""
+    if not nulls:
+        return 1.0
+    return sum(1 for v in nulls if v >= observed) / len(nulls)
+
+
+def _abc_verdict(scores_a: list[float], scores_b: list[float]) -> tuple[str, list[str]]:
+    """Applique la règle de verdict pré-enregistrée (issue #19343)."""
+    mean_a = float(np.mean(scores_a))
+    mean_b = float(np.mean(scores_b))
+    sigma_b = float(np.std(scores_b))
+    delta = mean_a - mean_b
+    details = [
+        f"score_A moyen = {mean_a:+.3f} (graines {['%+.3f' % v for v in scores_a]})",
+        f"score_B moyen = {mean_b:+.3f} (graines {['%+.3f' % v for v in scores_b]})",
+        f"delta = score_A - score_B = {delta:+.3f} ; 2*sigma_B = {2 * sigma_b:.3f}",
+    ]
+    if delta >= 2 * sigma_b:
+        return "F2_CONFIRMED_EXTENDED_REQUIRED", details
+    if abs(delta) < 2 * sigma_b:
+        return "F2_FALSIFIED_SELF_PERSISTS", details
+    return "F2_INVERTED_STORE_HURTS", details
+
+
+def run_abc_regimes(seed_bases: tuple[int, ...] = ABC_SEED_BASES,
+                    T: int = 8000, d: int = 8, n_shuffles: int = 50,
+                    output_path: str | Path | None = None) -> dict:
+    """Test direct F2 en régimes A/B/C sur les graines pré-enregistrées.
+
+    Pour chaque graine : deux agents appariés (même architecture, identité
+    ``A/G/C`` tirée indépendamment), trajectoires A (store plein), B (store
+    vidé partout — mêmes paramètres d'agent, seule la lésion change) et C
+    (mêmes trajectoires que A, branche self-model non entraînée).
+    """
+    results: list[ABCResult] = []
+    for sb in seed_bases:
+        pair_scales = 0.65 + 0.25 * np.random.default_rng(1000 * sb + 1).random(d)
+        p_self = _agent_params(1000 * sb + 2, d, scales=pair_scales)
+        p_other = _agent_params(1000 * sb + 3, d, scales=pair_scales)
+        x_sA, h_sA = _simulate(p_self, T, np.random.default_rng(1000 * sb + 4))
+        x_oA, h_oA = _simulate(p_other, T, np.random.default_rng(1000 * sb + 5))
+        x_sB, h_sB = _simulate(p_self, T, np.random.default_rng(1000 * sb + 6),
+                               store_active=False)
+        x_oB, h_oB = _simulate(p_other, T, np.random.default_rng(1000 * sb + 7),
+                               store_active=False)
+        s_a, n_a = _regime_score(x_sA, h_sA, x_oA, h_oA,
+                                 np.random.default_rng(1000 * sb + 8),
+                                 use_store=True, n_shuffles=n_shuffles)
+        s_b, n_b = _regime_score(x_sB, h_sB, x_oB, h_oB,
+                                 np.random.default_rng(1000 * sb + 9),
+                                 use_store=False, n_shuffles=n_shuffles)
+        s_c, n_c = _regime_score(x_sA, h_sA, x_oA, h_oA,
+                                 np.random.default_rng(1000 * sb + 10),
+                                 use_store=True, untrained=True,
+                                 n_shuffles=n_shuffles)
+        gh = (p_self.G @ h_sA[1:].T).T
+        share = float(gh.var() / (gh.var() + (p_self.A @ x_sA[:-1].T).T.var() + 1e-12))
+        results.append(ABCResult(seed_base=sb, score_A=s_a, score_B=s_b, score_C=s_c,
+                                 p_A=_p_value(n_a, s_a), p_B=_p_value(n_b, s_b),
+                                 p_C=_p_value(n_c, s_c), store_share_A=share,
+                                 null_A=n_a, null_B=n_b, null_C=n_c))
+
+    scores_a = [r.score_A for r in results]
+    scores_b = [r.score_B for r in results]
+    scores_c = [r.score_C for r in results]
+    verdict, details = _abc_verdict(scores_a, scores_b)
+    mean_c, sigma_c = float(np.mean(scores_c)), float(np.std(scores_c))
+    sanity_c = abs(mean_c) < 2 * sigma_c + 1e-9
+    payload = {
+        "case": "F2_dehaene_abc",
+        "substrate": "agents synthétiques (store étendu 5 variables + self-model ridge)",
+        "seed_bases": list(seed_bases),
+        "T": T, "d": d, "n_shuffles": n_shuffles,
+        "scores_by_seed": [
+            {"seed": r.seed_base, "A": r.score_A, "B": r.score_B, "C": r.score_C,
+             "p_A": r.p_A, "p_B": r.p_B, "p_C": r.p_C,
+             "store_share_A": r.store_share_A} for r in results
+        ],
+        "mean_A": float(np.mean(scores_a)), "std_A": float(np.std(scores_a)),
+        "mean_B": float(np.mean(scores_b)), "std_B": float(np.std(scores_b)),
+        "mean_C": mean_c, "std_C": sigma_c,
+        "delta": float(np.mean(scores_a) - np.mean(scores_b)),
+        "seeds_positive_delta": int(sum(1 for a, b in zip(scores_a, scores_b) if a > b)),
+        "verdict": verdict,
+        "kill_details": details,
+        "sanity_C_near_zero": sanity_c,
+        "limits": [
+            "Substrat SYNTHÉTIQUE : la conclusion porte sur ce modèle, pas sur un LLM",
+            "Régime B est une LÉSION (store vidé partout), pas un aveuglement du self-model",
+            "Régime C réutilise les trajectoires A : seule la branche self-model est ablatée",
+            f"Témoins nuls par permutation d'étiquettes, n={n_shuffles} par régime et par graine",
         ],
     }
     if output_path is not None:
