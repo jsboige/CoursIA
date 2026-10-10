@@ -96,6 +96,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 11b | [Lean-11b-TorchLean-Python](Lean-11b-TorchLean-Python.ipynb) | Implémentation Python des algorithmes de vérification (IBP, CROWN) | 1h30-2h |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | théorème de sensibilité (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
 | 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Huang dans le lake `sensitivity_lean`, `#check` + `#print axioms` rendus in-kernel (UNLOCK c.127, jonction Mathlib #2611) | 45 min |
+| 12c | [Lean-12c-Tensor-Product-Representations-Lean](Lean-12c-Tensor-Product-Representations-Lean.ipynb) | Companion **natif** (kernel Lean) : l'algèbre TPR du lake `sensitivity_lean` exécutée in-kernel — quatre théorèmes de `Sensitivity.TPR` (unbinding exact `tprUnbind_bind`, chirurgie de constituant `tprSurgery`, lecture par le décodeur `tprSurgery_readout`, stabilité sous approximation `tprUnbind_approx`), `#print axioms` sans `sorryAx`, frontière épistémique prouvé/hypothèse, jumeau empirique [SL-13 — DISCOVER/TPR](../SymbolicLearning/SL-13-Discover-TPR.ipynb) et 3 exercices (certificats entiers) | 35 min |
 
 ### Partie 3 : théorèmes phares (ports complets)
 
@@ -236,6 +237,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 11b | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
 | 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
 | 12b | Lean-Sensitivity-Theorem (natif) | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
+| 12c | Tensor-Product-Representations (natif) | ~35 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 13 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
 | 13b | CHSH-Tsirelson-Native | ~8 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
 | 13c | CHSH-Landau-Saturation | ~11 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
@@ -534,7 +536,7 @@ Lean/
 │   └── README.md
 ├── assets/                        # Images des README de la série ([MANIFEST](assets/readme/MANIFEST.md))
 ├── scripts/                       # Helpers de maintenance de la série ([README](scripts/README.md), _archive/)
-├── sensitivity_lean/               # Théorème de sensibilité (Huang 2019, companion Lean-12/12b) - 0 sorry 0 axiome, Lake build natif (jonction Mathlib)
+├── sensitivity_lean/               # Théorème de sensibilité (Huang 2019) + algèbre TPR (companions Lean-12/12b/12c) - 0 sorry 0 axiome, Lake build natif (jonction Mathlib)
 ├── finiteness_lean/                # Finitude des dérivées de Brzozowski (companion Lean-14) - 0 sorry, Lake build
 ├── conway_lean/                    # Conway tribute workspace (0 sorry, Lake build)
 ├── grothendieck_lean/              # Grothendieck tribute workspace (0 sorry, Lake build)
