@@ -27,7 +27,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
----
+***
 
 ## Strand 1 — Life + Čech (rang 1)
 
@@ -63,7 +63,7 @@ Lecture complète (contenu ET `outputs`) des trois notebooks, 2026-08-21, par `m
 | **Critique** | (1) **À 4/4, le verdict ne discrimine plus rien entre substrats** — l'acceptance exigeait « ≥1 distinct ». (2) Le verdict est dominé par `s2_over_s1 ≥ 0.10` (dimensionnalité SVD), pas par le cocycle : preuve interne, axelrod `NON_TRIVIAL` avec cocycle et obstruction_ratio **exactement 0.0000** — l'objet-obstruction lui-même est absent du verdict qui porte son nom. (3) Le cœur mathématique du strand obstruction (15b→15i, huit notebooks) : jamais le nerf d'un recouvrement, jamais H¹ — une SVD de dimensionnalité + résidus affines par paires. Le diagnostic user (« l'idée est là, la réalisation naïve ») est reproduit **et dépassé** : la re-exec 08-07 a fait perdre à l'instrument son seul résultat net (le négatif honnête 0/4). (4) Rang plafonné à 3 (SVD 3×N_windows). |
 | **Verdict + action** | **À MUSCLER**. Idée juste (structure relationnelle vs niveaux) ; réalisation non-contrastrante. Actions pour l'arbitrage : (a) mettre à jour les DEUX emplacements matrice (rangée 96 + note case 6 ligne 399) vers l'état post-#9792 (ou documenter le flip dedans) ; (b) décider si le verdict doit être porté par le cocycle plutôt que par la SVD ; (c) trancher le nerf/H¹ (construire le nerf d'un recouvrement réel) ou renommer l'instrument « dimensionnalité de proxys ». |
 
----
+***
 
 ## Findings transverses du strand 1 (pour l'arbitrage user)
 
@@ -71,7 +71,7 @@ Lecture complète (contenu ET `outputs`) des trois notebooks, 2026-08-21, par `m
 2. **Inversion de charge** : le non-numéroté (`ICT-Life-SubstratCertifie`) porte la substance du strand (calibration, pont Lean, EI), les numérotés portent l'application (31 : solide) et le maillon faible (15d : à muscler). Entrée directe pour #7260.
 3. **Deux instruments déclarant leurs aveugles** (ICT-31 axe S, écho Gate 21 ICT-25) : la série a une culture méthodologique saine de l'instrument qui ne voit pas — à préserver dans les consolidations.
 
----
+***
 
 ## Strand 2 — Le moule 26→30 (rang 2)
 
@@ -135,7 +135,7 @@ Lecture complète (contenu ET `outputs`) des cinq notebooks, 2026-09-19, par `my
 4. **Format gagnant identifié pour la série** : ICT-29 (verdict + « lecture du verdict avec son chiffre » sous chaque section + caveats mesurés pré-écrits dans les exercices) est le meilleur format de lecture du strand — candidat de référence si le user veut harmoniser le style des strates (arbitrage, pas une action de lane).
 5. **Entrées pour #7260 (renumérotation)** : l'ordre 26→27→28→29→30 est porteur de sens narratif (individu → invention → population → culture → pathologie), à préserver tel quel ; aucun candidat à la fusion ni à la renumérotation dans le strand ; les cinq sont numérotés proprement.
 
----
+***
 
 ## Strand 3 — 18 / 18b / 19 / 19b (rang 3)
 
@@ -188,7 +188,7 @@ Lecture complète (contenu ET `outputs`) des quatre notebooks, 2026-09-19, par `
 3. **Contrôles négatifs : trois témoins, zéro redondance.** S5a/S5b (18, faux-positif), S5 (19), Custom B (19b, ≈S5) : chaque notebook porte son propre témoin, calibrated à son instrument — à préserver tel quel dans toute consolidation.
 4. **Entrées pour #7260 (renumérotation)** : l'ordre 18→18b→19→19b est pédagogiquement correct (instrument → fin → enjeu → réparation) ; aucun notebook du strand n'est candidat à la fusion — 19 et 19b restent distincts par conception (verdict nul pédagogique vs réparation), mais leur **artificial split de charge** justifie que 19b soit lu immédiatement après 19 dans toute navigation.
 
----
+***
 
 ## Strand 4 — ICT-25 (rang 4)
 
@@ -210,7 +210,7 @@ Lecture complète (contenu ET `outputs`, 44 cellules) du notebook unique du stra
 2. **Les renvois internes par index de cellule décalent à chaque insertion de markdown « Lecture »** — input mécanique direct pour la renumérotation #7260 : ancrer les renvois sur les sections, pas sur les indices.
 3. **Le hold sur le run 2B (#10380) est triple-sourcé dans le notebook** (§5.7 : ICT-25 0.5B, JohnEnev V3 672M GSM8K ~0, PT-11b 0.8B INCONCLUSIVE) — l'input d'arbitrage GPU de #5105 est prêt sans nouvelle mesure.
 
----
+***
 
 ## Strand 5 — GWT / SAE + non numérotés (rang 5) — tranche 1 : la famille SAE
 
@@ -401,7 +401,7 @@ Lecture complète (contenu ET `outputs`) des sept non-numérotés restants, 2026
 5. **Entrées #7260 complètes pour le rang 5** : renumeroter en priorité Synthese + Argumentation + JLens ; statuer le régime des Dissociations/Greffes/Annexe (noms fonctionnels stables vs numérotation — leur nature annexale est assumée dans les titres) ; Greffe5 reste post-rework (#16762).
 6. **Le ledger est COMPLET** : rangs 1-4 + rang 5 en 3 tranches = tous les strands du chemin critique user (arbitrage 19/09) consignés. Les inputs d'arbitrage sont prêts : chaque strand porte ses findings transverses, le tableau d'avancement est fermé.
 
----
+***
 
 ## Strand 6 — Fondations 01 → 09 (extension du ledger, tranche A)
 
