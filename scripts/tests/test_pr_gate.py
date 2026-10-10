@@ -579,6 +579,110 @@ def test_wait_loop_times_out_into_a_starved_failure():
     assert "timed out" in msg and "Slow CI" in msg
 
 
+# --- #13363 -- pool-saturation early STARVED (all-queued constituents) -------
+#
+# The defect: under self-hosted pool saturation the gate waiter polls
+# constituents that sit `queued` with NO runner assigned -- the verdict cannot
+# change until a constituent STARTS, so the waiter burns its full hosted budget
+# polling a parked queue. The fix: when every pending constituent is queued
+# for `all_queued_polls` consecutive polls PAST the settle_polls floor, the
+# loop returns a STARVED verdict immediately. The message keeps the STARVED
+# prefix so main()'s self-cancel (#13510) and the stale sweep's cancelled-leg
+# remedy apply unchanged.
+
+
+def test_pending_all_queued_predicate():
+    """The predicate judges the SAME entries classify judges: self and advisory
+    excluded, conclusion-authoritative, False when nothing is pending."""
+    all_queued = [
+        run("ci / Lean CI (grothendieck_lean)", None, status="queued", rid=1),
+        run("CodeQL", "success", rid=2),
+        run("guard-advisory / Probe", None, status="queued", rid=3),
+    ]
+    assert pr_gate.pending_all_queued(
+        all_queued, "PR gate", frozenset({"guard-advisory / Probe"})
+    ) is True
+    # One runner picked a job up: waiting CAN change the verdict.
+    mixed = [
+        run("ci / Lean CI (grothendieck_lean)", None, status="queued", rid=4),
+        run("proof-integrity / Proof integrity", None, status="in_progress", rid=5),
+    ]
+    assert pr_gate.pending_all_queued(mixed) is False
+    # Nothing pending: the ordinary settle path owns this case.
+    settled = [run("CodeQL", "success", rid=6)]
+    assert pr_gate.pending_all_queued(settled) is False
+
+
+def test_all_queued_streak_fires_early_starved():
+    """Positive: an all-queued wait set exits at settle_polls + all_queued_polls
+    polls -- not at the deadline -- with the self-cancel STARVED marker."""
+    polls = []
+
+    def fetch(_repo, _sha):
+        polls.append(1)
+        return [
+            run("ci / Lean CI (grothendieck_lean)", None, status="queued", rid=1),
+            run("proof-integrity / Proof integrity", None, status="queued", rid=2),
+        ]
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=10, poll_sec=0,
+        settle_polls=2, all_queued_polls=3,
+        sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 1, "rule 1: starvation never passes"
+    assert msg.startswith("STARVED"), "must inherit the self-cancel path (#13510)"
+    assert "no runner" in msg and "Lean CI" in msg
+    assert "timed out" not in msg, "this is the early exit, not the deadline"
+    # Poll 1 sits below the settle_polls=2 floor (grace for check-runs to
+    # surface); polls 2-4 build the 3-streak -- the floor poll counts toward
+    # it, since a surfaced all-queued pending set is already evidence. Exit at
+    # poll 4, deadline at 60.
+    assert len(polls) == 4, "the settle floor must gate the streak"
+
+
+def test_all_queued_streak_reset_by_in_progress_constituent():
+    """Fail-closed toward waiting: a single constituent flipping to
+    in_progress resets the streak -- the verdict CAN now change by waiting."""
+    polls = []
+
+    def fetch(_repo, _sha):
+        polls.append(1)
+        if len(polls) <= 2:
+            return [run("Lean CI", None, status="queued")]
+        return [run("Lean CI", None, status="in_progress")]
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=10, poll_sec=0,
+        settle_polls=2, all_queued_polls=3,
+        sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 1
+    assert "timed out" in msg, "without the reset this exits early at poll 5"
+    assert "no runner" not in msg, "the early exit must not fire post-reset"
+
+
+def test_all_queued_early_exit_disabled_by_default():
+    """all_queued_polls=0 keeps the historical behaviour: an all-queued wait
+    set polls to the deadline and verdicts the #13510 timeout STARVED."""
+    polls = []
+
+    def fetch(_repo, _sha):
+        polls.append(1)
+        return [run("Lean CI", None, status="queued")]
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=10, poll_sec=0,
+        settle_polls=2,  # all_queued_polls defaults to 0 (disabled)
+        sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 1
+    assert msg.startswith("STARVED") and "timed out" in msg
+    assert "no runner" not in msg
+    # 60 loop polls to the deadline + 1 re-read on the deadline path (#11751).
+    assert len(polls) == 61, "legacy budget consumed to the deadline"
+
+
 # --- #13510 -- starvation renders CANCELLED, not FAILURE ---------------------
 #
 # The defect: a starved gate (deadline fired, constituents still pending,

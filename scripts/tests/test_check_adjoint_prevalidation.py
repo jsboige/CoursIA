@@ -1992,8 +1992,14 @@ def test_blocked_b0_only_stands_when_organ_still_blocks(monkeypatch, capsys):
 
 
 def test_blocked_with_other_motif_not_touched_by_the_recheck(monkeypatch, capsys):
-    """Acceptance 3 : un autre motif bloquant (checks) garde son dossier,
-    meme quand l'organe B.0 ne bloque plus -- sa raison peut tenir encore."""
+    """Acceptance 3 : le re-jeu B.0 ne touche QUE la forme `b0` seul.
+
+    Ici `checks` bloque aussi, donc `blocking_fields` rend `['checks', 'b0']` et
+    le dossier tient -- l'organe B.0 ne dit rien du motif `checks`. Ce n'est PAS
+    la regle generale du champ `checks` : un dossier bloque pour `checks` SEUL
+    est re-lu par `recheck_blocked_checks` (#20082), qui l'expire vers un
+    re-tampon quand la tete est toute verte (cf. tests *blocked_checks* plus bas).
+    """
     snapshot = _blocked_b0_snapshot(checks="BLOCKED:gate rouge")
     monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
     monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
@@ -2011,6 +2017,113 @@ def test_recheck_blocked_b0_never_probes_a_non_blocked_verdict():
     assert mod.recheck_blocked_b0(123, verdict, dossier, probe) == (verdict, [], dossier)
     assert mod.recheck_blocked_b0(123, "", None, probe) == ("", [], None)
     assert calls == []
+
+
+# --- `checks` est le SEUL champ bloquant qui bouge sans push (#20082) --------
+
+
+def _blocked_checks_snapshot(**changes: str):
+    """Dossier BLOCKED dont `checks` est le SEUL champ bloquant.
+
+    `b0`/`scope`/`domain` restent aux valeurs READY (defauts de `_body`), donc
+    `blocking_fields` rend exactement `['checks']` -- la seule forme que
+    `recheck_blocked_checks` a le droit d'expirer.
+    """
+    fields = {"verdict": "BLOCKED", "checks": "BLOCKED:gate rouge"}
+    fields.update(changes)
+    return _snapshot_with(**fields)
+
+
+def _red_pr_gate() -> dict:
+    return {
+        "id": 2,
+        "name": "PR gate",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-10-08T09:00:00Z",
+        "output": {"title": "PR gate -- 1 failing check"},
+    }
+
+
+def test_blocked_checks_only_expired_when_the_head_no_longer_blocks(
+    monkeypatch, capsys
+):
+    """Acceptance 1 : tete toute verte -> le gate rend 1 et nomme le re-tampon.
+
+    Mesure fondatrice (#19906) : dossier BLOCKED a 2026-10-08T10:42:32Z pour un
+    `PR gate` encore en vol, conclu `success` a 11:21:46Z sur la MEME tete
+    `4d3eb7f67a3f` -- 95/95 jambes vertes et le gate repondait encore rc=3.
+    """
+    snapshot = _blocked_checks_snapshot()
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out
+    assert "no longer blocks PR #123" in out
+    assert "re-stamp" in out and "third-party lane" in out
+
+
+def test_blocked_checks_only_stands_when_the_head_still_blocks(monkeypatch, capsys):
+    """Acceptance 2 (temoin negatif) : une jambe rouge -> le gate rend toujours 3."""
+    snapshot = _blocked_checks_snapshot()
+    snapshot["checkRuns"] = [*snapshot["checkRuns"], _red_pr_gate()]
+    assert _run_main(monkeypatch, snapshot) == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_blocked_checks_only_stands_when_the_required_check_is_absent(
+    monkeypatch, capsys
+):
+    """Temoin negatif du temoin negatif (#18579) : une tete qui ne porte QUE des
+    jambes CodeQL est verte par vacuite ; l'absence de `PR gate` refute la
+    lecture, donc le dossier tient. Sans ce garde, la re-lecture fabriquerait
+    un re-tampon sur une tete ou les workflows `pull_request` n'ont jamais tire.
+    """
+    snapshot = _blocked_checks_snapshot()
+    snapshot["checkRuns"] = [
+        {
+            "id": 3,
+            "name": "Analyze (python)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-08T09:00:00Z",
+        }
+    ]
+    assert _run_main(monkeypatch, snapshot) == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_blocked_checks_stands_when_the_head_was_never_measured(monkeypatch, capsys):
+    """`checkRuns is None` = non mesure, et un echec de mesure n'est jamais un
+    passe : le dossier tient au lieu d'etre expire sur une absence de donnee."""
+    snapshot = _blocked_checks_snapshot()
+    snapshot["checkRuns"] = None
+    assert _run_main(monkeypatch, snapshot) == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_recheck_blocked_checks_never_fires_on_a_non_blocked_verdict():
+    """Comme `recheck_blocked_b0`, le re-jeu ne touche que BLOCKED + dossier.
+
+    Le cout est nul ici (les check-runs sont deja sur le snapshot), mais la
+    garde reste : un READY ne se re-decompose pas par cette porte.
+    """
+    snapshot = _blocked_checks_snapshot()
+    verdict, dossier = _ready_dossier()
+    assert mod.recheck_blocked_checks(snapshot, verdict, dossier) == (
+        verdict,
+        [],
+        dossier,
+    )
+    assert mod.recheck_blocked_checks(snapshot, "", None) == ("", [], None)
+
+
+def test_blocked_checks_plus_another_motif_is_left_standing(monkeypatch, capsys):
+    """Un dossier bloque pour `checks` ET un autre champ n'est pas expire : la
+    re-lecture des checks ne dit rien du motif restant."""
+    snapshot = _blocked_checks_snapshot(scope="FAIL: 6 fichiers pour 5 annonces")
+    assert _run_main(monkeypatch, snapshot) == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
 
 
 # --- #18637 : advisories sticky (marqueur en FIN de corps) et resumes de bot --
@@ -2941,3 +3054,19 @@ def test_review_threads_single_pr_is_still_one_operation(monkeypatch):
 
     assert len(calls) == 1
     assert [t["id"] for t in threads] == ["t9-1"]
+
+
+def test_grain_lane_re_refuse_le_point_final_de_phrase():
+    """#15864 (mesure #14549) -- la classe de token admet le point (hostnames),
+    donc `lane myia-po-2023:CoursIA-2.` etait capture comme une lane fantome.
+    Un token ne peut plus se TERMINER par un point ; les points internes
+    survivent."""
+    dotted = "Grain: DEEP/genai — lane myia-po-2023:CoursIA-2. Enonce reecrit."
+    assert mod.GRAIN_LANE_RE.findall(dotted) == ["myia-po-2023:CoursIA-2"]
+    clean = "Grain: DEEP/genai — lane myia-po-2023:CoursIA-2"
+    assert mod.GRAIN_LANE_RE.findall(clean) == ["myia-po-2023:CoursIA-2"]
+    host = "Grain: MED/docs — lane foo.bar.baz:CoursIA-2."
+    assert mod.GRAIN_LANE_RE.findall(host) == ["foo.bar.baz:CoursIA-2"]
+    # Aucune lane ne se reduit a un point : machine et workspace requis.
+    assert mod.GRAIN_LANE_RE.findall("Grain: MED/docs — lane :CoursIA-2") == []
+    assert mod.GRAIN_LANE_RE.findall("Grain: MED/docs — lane myia-po-2023:") == []
