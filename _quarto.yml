@@ -67,6 +67,7 @@ project:
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/README.md"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/README.md"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/README.md"
+    - "MyIA.AI.Notebooks/GenAI/3D/README.md"
     - "MyIA.AI.Notebooks/GenAI/activites/README.md"
     - "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/README.md"
     - "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/README.md"
@@ -497,6 +498,7 @@ project:
     - "scripts/genai-stack/_archive/ARCHIVE_README.md"
     - "scripts/genai-stack/README.md"
     - "scripts/genai-stack/workflows/qwen_image_2_1/README.md"
+    - "scripts/hashlife/README.md"
     - "scripts/kernels/pyphi-iit/README.md"
     - "scripts/lean/README.md"
     - "scripts/notebook_tools/_archive/README.md"
@@ -721,7 +723,7 @@ project:
     # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).
     # Liste explicite — globs non etendus en Quarto 1.7.
     # Execution desactivee + echo: true au niveau racine (_quarto.yml).
-    # Sous-arbres rendus : MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/Complexity/, MyIA.AI.Notebooks/Compression/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/Security/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/NLP/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/QuantConnect/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/.
+    # Sous-arbres rendus : MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/Complexity/, MyIA.AI.Notebooks/Compression/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/, MyIA.AI.Notebooks/GenAI/3D/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/Security/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/NLP/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/QuantConnect/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/.
     - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb"
@@ -863,6 +865,8 @@ project:
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-5-ComfyUI-Local-Test.ipynb"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-6-Local-Docker-Deployment.ipynb"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-7-Terminal-Long-Runs.ipynb"
+    - "MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-From-Scratch.ipynb"
+    - "MyIA.AI.Notebooks/GenAI/3D/3D-02-NeRF-Critic.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-3-Basic-Audio-Operations.ipynb"
