@@ -294,6 +294,19 @@ def _mask_fenced_blocks(body: str) -> str:
 # deliberate, fail-CLOSED: an amendment that names no scope is not permissive.
 _OPEN = {"CLAIMED", "CLAIMED-AMEND"}
 _CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE", "DELIVERED"}
+# #20128 -- vocabulaire de RECONNAISSANCE, distinct de `_CLOSE` ci-dessus (celui
+# que le reduceur LIT). Il sert au seul AVERTISSEMENT (#12624/#15982) : reconnaitre
+# qu'un token veut LEVER, synonymes compris, pour le DIRE a son auteur.
+#
+# Mesure 2026-10-09 : `[CLAIMED-RETRACT]` (lane po-2027:CoursIA-2, issue #20083) est
+# vu par `_find_suspected_typo_markers` (`kind='compose'`) mais `is_release_shaped`
+# rendait False, donc l'avertissement etait SAUTE en silence : la lane croyait avoir
+# rendu le grain, le reduceur gardait son claim vivant, et la PR #20084 d'une AUTRE
+# lane est restee bloquee par un mot absent d'un ensemble de cinq.
+#
+# Ce vocabulaire n'enacte RIEN -- `_MARKER_RE` (l'alternation qui decide) et `_CLOSE`
+# restent byte-identiques. Doctrine #12624 : on signale, on n'enacte pas.
+_CLOSE_SHAPED = frozenset(_CLOSE) | {"RETRACT", "RETRACTED"}
 # `[OVERRIDE] lane <machine:workspace>` (#10223): coordinator adjudication --
 # GRANTS the claim to the named lane and CLOSES every other lane's claim in one
 # gesture. Distinct from CLAIMED (grants to one) and RELEASED/DONE (closes one):
@@ -2181,22 +2194,45 @@ def _close_keyword(quasi: dict) -> "str | None":
     qu'elle doit attraper -- et pire, recommanderait de reposter `[CLAIMED]`, donc
     de reprendre le grain que l'auteur vient de rendre.
 
-    Le vocabulaire reste `_CLOSE`, la constante du reduceur : une seconde liste
-    locale deriverait en silence. Distinguer une quasi-LEVEE d'une quasi-PRISE
+    Le vocabulaire est `_CLOSE_SHAPED`, et non `_CLOSE` : un SYNONYME de levee
+    (`RETRACT`) doit produire le meme avertissement que la forme canonique, sinon
+    l'auteur n'apprend jamais que son geste n'a pas ete lu (#20128). La liste reste
+    UNE seule source pour la reconnaissance -- c'est l'appelant qui ramene le mot
+    reconnu a une forme que le reduceur lit (`_canonical_release_form`), de sorte
+    que reconnaitre large ne puisse pas recommander une forme large.
+
+    Distinguer une quasi-LEVEE d'une quasi-PRISE
     sert au BLOCAGE -- les deux sont invisibles a l'organe, mais seule la
     premiere explique qu'une lane attende ; lui conseiller de « lever » sur une
     quasi-prise serait un conseil que son auteur n'a pas a suivre.
     """
     for part in re.split(r"[-_\s]+", quasi.get("token") or ""):
-        if part.upper() in _CLOSE:
+        if part.upper() in _CLOSE_SHAPED:
             return part.upper()
     nearest = (quasi.get("nearest") or "").upper()
-    return nearest if nearest in _CLOSE else None
+    return nearest if nearest in _CLOSE_SHAPED else None
 
 
 def is_release_shaped(quasi: dict) -> bool:
     """Ce quasi-marqueur ressemble-t-il a une LEVEE plutot qu'a une prise ?"""
     return _close_keyword(quasi) is not None
+
+
+def _canonical_release_form(seen: "str | None") -> "str | None":
+    """Ramene un mot de fermeture RECONNU a une forme que le reduceur LIT (#20128).
+
+    Reconnaitre large ne doit pas faire recommander large : conseiller `[RETRACT]`
+    a l'auteur de `[CLAIMED-RETRACT]` lui ferait reposter une forme tout aussi
+    invisible que la sienne. Le seul mot de levee que `_MARKER_RE` enacte est
+    `RELEASED`, donc tout synonyme reconnu est ramene a lui.
+
+    `None` (aucun mot de fermeture reconnu) est rendu tel quel : l'appelant
+    retombe alors sur `nearest`, comportement inchange des quasi-marqueurs de
+    PRISE.
+    """
+    if seen is None:
+        return None
+    return seen if seen in _CLOSE else "RELEASED"
 
 
 def _composed_keyword(word: str) -> "str | None":
@@ -2270,8 +2306,12 @@ def _find_suspected_typo_markers(payload: dict) -> list[dict]:
             # Forme a RECOMMANDER dans le WARN : pour un compose c'est le mot de
             # fermeture porte par le token, jamais sa tete -- conseiller
             # `[CLAIMED]` a l'auteur de `[CLAIMED-RELEASED]` lui ferait reprendre
-            # le grain qu'il vient de rendre (#15982).
-            canonical = _close_keyword({"token": m.group(1), "nearest": nearest}) or nearest
+            # le grain qu'il vient de rendre (#15982). Et ce mot est lui-meme
+            # ramene a une forme LUE par le reduceur (#20128) : reconnaitre le
+            # synonyme `RETRACT` ne doit pas le recommander tel quel.
+            canonical = _canonical_release_form(
+                _close_keyword({"token": m.group(1), "nearest": nearest})
+            ) or nearest
             found.append({
                 "nearest": nearest,
                 "canonical": canonical,
