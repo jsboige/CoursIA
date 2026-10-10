@@ -1912,3 +1912,49 @@ TRANCHE18: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 20 -- fuite du recit d'activite dans la prose des carnets (Epic
+# #20250, phase 0).
+#
+# Le recit de coordination (corrigenda, identifiants de cycle `c.NNNN`, noms
+# de machine ou de lane, verdicts de review, annonces de tranche) vit dans
+# git et les PR : il n'a rien a faire dans le carnet servi a l'apprenant.
+# Le critere n'est PAS la presence d'un mot -- une mention isolee de
+# provenance reste admise -- mais la PART de prose markdown occupee par des
+# passages a densite de marqueurs elevee, mesuree par carnet.
+#
+# Le mode `--diff` ne juge que les passages AJOUTES : le stock mesure
+# (11 carnets au-dessus de 15 % de part, SC-09 a 48,1 %) reste visible en
+# audit sans rougir aucune PR, et une PR qui ajoute un passage dense rougit.
+#
+# Aucun workflow d'origine -> source FAST_LANE_NATIVE, convention
+# absorbed=True (cf TRANCHE19 et hr-substitution-guard) : sans absorption,
+# `effective_shadow = args.shadow and not guard.absorbed` laisserait le
+# garde sortir en conclusion NEUTRE et `blocking=True` serait une
+# declaration sans effet.
+#
+# `warn_rc=(2,)` : rc=2 est l'incident de mesure (plage de diff illisible,
+# blob de base absent d'un clone partiel), pas une faute de la PR. L'organe
+# distingue une base ABSENTE (fichier ajoute : tous ses paragraphes sont
+# legitimement neufs) d'une base ILLISIBLE (incident) -- les confondre
+# fabriquait un refus fantome sur du contenu preexistant.
+# ---------------------------------------------------------------------------
+TRANCHE20: list[Guard] = [
+    Guard(
+        name="activity-leak",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_activity_leak.py",
+            "scripts/tests/test_check_activity_leak.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_activity_leak.py",
+              "--diff", "{base_ref}...HEAD", "--strict"],
+        blocking=True,           # BLOQUANT sur les AJOUTS seuls
+        needs_base=True,
+        warn_rc=(2,),
+        absorbed=True,
+    ),
+]
