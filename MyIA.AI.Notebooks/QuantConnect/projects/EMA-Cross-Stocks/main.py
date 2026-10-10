@@ -168,6 +168,12 @@ class EMACrossStocksAlgorithm(QCAlgorithm):
             self._lines_sum += lines
             self._cash_sessions += lines == 0
 
+        # A slice with no trade bar for the universe (a dividend or split notice, delivered at
+        # midnight) must not run the day's rebalance: every name would read as "no data" and be
+        # liquidated, and the day's real bars would then be skipped (#20258).
+        if not any(data.bars.contains_key(sym) for sym in self.symbols.values()):
+            return
+
         # Rebalance once per day
         today = self.time.date()
         if self._last_rebal == today:
