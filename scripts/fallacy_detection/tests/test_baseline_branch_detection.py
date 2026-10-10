@@ -341,3 +341,139 @@ def test_bout_en_bout_refuse_le_niveau_noeud_sur_corpus_a_un_exemple(tmp_path):
         bbd.main(["--corpus", str(corpus), "--out-dir", str(out_dir), "--level", "node"])
     assert "non mesurable" in str(excinfo.value)
     assert not out_dir.exists(), "rien ne doit etre ecrit quand la mesure est refusee"
+
+
+# --- Le rendu : la prose suit les donnees, jamais l'inverse -------------------------
+#
+# Les trois rendus ci-dessous ont ete trouves par la prevalidation adjointe sur #20234 :
+# la prose de render_report etait gelee (verdict « inferieur a l'aleatoire », familles
+# citees en dur, « non mesurable » inconditionnel), si bien qu'un corpus aux valeurs
+# inverses produisait un rapport faux sans qu'aucun test ne le voie. Ces tests portent
+# sur des rapports synthetiques : ils eprouvent le rendu, pas la mesure.
+
+
+def _synthetic_report() -> dict:
+    """Rapport minimal consommable par render_report, a surcharger par test."""
+    return {
+        "corpus": {"path": "corpus.jsonl", "sha256": "0" * 64},
+        "level": "branch",
+        "structure": {"rows": 40, "labels": 14, "support_min": 2, "support_max": 4,
+                      "groups": 25, "group_max_reuse": 3,
+                      "node_labels": 28, "node_support_max": 1},
+        "node_level": {"measurable": False, "labels": 28, "support_max": 1, "floor": 2},
+        "lexicon": {"taxonomies": ["taxo.csv"], "families": {
+            "Grande famille": {"nodes": 30, "tokens": 1816},
+            "Moyenne": {"nodes": 10, "tokens": 500},
+            "Petite famille": {"nodes": 3, "tokens": 146},
+        }},
+        "baselines": {
+            "majority_grouped": {"n": 40, "macro_f1_mean": 0.05, "macro_f1_std": 0.01},
+            "random_grouped": {"draws": 200, "macro_f1_mean": 0.0628,
+                               "macro_f1_p2_5": 0.0371, "macro_f1_p97_5": 0.0919},
+            "lexical_centroid_grouped": {"macro_f1_mean": 0.2198, "macro_f1_std": 0.02},
+            "lexical_centroid_naive": {"macro_f1_mean": 0.2291, "macro_f1_std": 0.02},
+            "rules_full": {"n": 40, "macro_f1": 0.0328, "accuracy": 0.075,
+                           "labels_never_predicted": ["Argument pertinent",
+                                                      "Honnêteté intellectuelle"],
+                           "worst_labels": ["Argument pertinent"]},
+        },
+        "leakage": {"grouped_mean": 0.2198, "naive_mean": 0.2291, "gap": 0.0093},
+    }
+
+
+def test_rendu_verdict_regles_calcule_depuis_les_valeurs():
+    """Un corpus ou la regle bat l'aleatoire ne doit pas rendre « inferieure »/« battue ».
+
+    La prose gelee affirmait l'echec quel que soit le corpus : inverser la comparaison
+    devait suffire a faire mentir le rapport.
+    """
+    report = _synthetic_report()
+    report["baselines"]["rules_full"]["macro_f1"] = 0.5
+    table = bbd.render_report(report)
+    assert "superieure a l'aleatoire" in table
+    assert "inferieur a l'aleatoire" not in table
+    assert "battue par le tirage uniforme" not in table
+
+    report["baselines"]["rules_full"]["macro_f1"] = 0.01
+    table = bbd.render_report(report)
+    assert "inferieure a l'aleatoire" in table
+    assert "battue par le tirage uniforme" in table
+    assert "superieure a l'aleatoire" not in table
+
+
+def test_rendu_familles_citees_viennent_des_dictionnaires():
+    """Les familles citees en exemple sont les extremes mesures, pas des noms en dur."""
+    table = bbd.render_report(_synthetic_report())
+    assert "`Grande famille`" in table and "1816 jetons" in table
+    assert "`Petite famille`" in table and "146 jetons" in table
+    assert "Influence" not in table
+    assert "Justesse lexicale" not in table
+    assert "sept familles" not in table
+
+
+def test_rendu_niveau_noeud_suit_le_temoin_mesurable():
+    """« mesurable » du JSON commande la prose — dans les deux sens, sans « None »."""
+    report = _synthetic_report()
+    report["node_level"] = {"measurable": True, "labels": 10, "support_max": 2, "floor": 2}
+    table = bbd.render_report(report)
+    assert "**mesurable**" in table
+    assert "non mesurable" not in table
+    assert "None etiquettes" not in table
+
+    report["node_level"] = {"measurable": False, "labels": 28, "support_max": 1, "floor": 2}
+    table = bbd.render_report(report)
+    assert "non mesurable" in table
+    assert "None etiquettes" not in table
+    assert "28 etiquettes pour 40 paires" in table
+
+
+def test_run_niveau_noeud_rend_des_etiquettes_comptees(tmp_path):
+    """Une passe --level node qui a mesure ne rend ni « None etiquettes » ni « non mesurable »."""
+    rows = [
+        {"text": f"alpha beta texte {i}", "family": "A", "node_key": f"n{g}",
+         "scenario_path": f"s{g}"}
+        for g in range(4) for i in range(2)
+    ] + [
+        {"text": f"gamma delta texte {i}", "family": "B", "node_key": f"m{g}",
+         "scenario_path": f"t{g}"}
+        for g in range(4) for i in range(2)
+    ]
+    # Au niveau nœud, les etiquettes du corpus SONT les cles de nœud : la taxonomie
+    # doit donc couvrir les huit nœuds, pas les deux familles.
+    nodes = [(f"n{g}", "alpha beta") for g in range(4)] + [(f"m{g}", "gamma delta") for g in range(4)]
+    taxo = write_taxonomy(tmp_path, [
+        {"PK": str(index + 1), "Famille": node,
+         "nom_vulgarisé": f"Titre {node}", "desc_fr": definition}
+        for index, (node, definition) in enumerate(nodes)
+    ])
+    report = bbd.run(write_corpus(tmp_path, rows), "node", 2, 3, 7, [taxo])
+    assert report["node_level"]["measurable"] is True
+    assert report["node_level"]["labels"] == report["structure"]["labels"] == 8
+    assert report["node_level"]["support_max"] == 2
+    table = bbd.render_report(report)
+    assert "nœud" in table.splitlines()[0]
+    assert "**mesurable**" in table
+    assert "non mesurable" not in table
+    assert "None etiquettes" not in table
+
+
+def test_rendu_ecart_de_fuite_distingue_observation_et_attribution():
+    """L'ecart mesure est rapporte ; l'attribution entiere au recouvrement ne l'est plus.
+
+    Un temoin a scenarios singletons (aucun recouvrement possible) reproduit un ecart de
+    la meme famille : la difference de protocole n'attribue pas le gap a elle seule.
+    """
+    table = bbd.render_report(_synthetic_report())
+    assert "0.0093" in table
+    assert "ecart observe" in table
+    assert "attribuables au recouvrement de scenario" not in table
+    assert "une cause possible" in table
+
+
+def test_rendu_en_tete_dit_le_niveau_reel():
+    """L'en-tete suit report['level'] : « branche » n'est plus ecrit en dur."""
+    report = _synthetic_report()
+    assert "branche" in bbd.render_report(report).splitlines()[0]
+
+    report["level"] = "node"
+    assert "nœud" in bbd.render_report(report).splitlines()[0]

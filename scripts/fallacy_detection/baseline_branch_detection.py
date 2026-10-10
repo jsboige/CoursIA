@@ -494,6 +494,10 @@ def run(corpus_path: Path, level: str, folds_count: int, random_draws: int, seed
 
     grouped_mean = results["lexical_centroid_grouped"]["macro_f1_mean"]
     naive_mean = results["lexical_centroid_naive"]["macro_f1_mean"]
+    # Au niveau nœud, le corpus mesure déjà les nœuds : le support de la passe est le
+    # bon témoin (require_measurable a garanti le plancher avant d'arriver ici). Sinon
+    # node_level dirait « non mesurable » alors même que la mesure vient d'avoir lieu.
+    node_measured = node_support if node_support is not None else support
     return {
         "issue": "Phase 3 gate (tranche de #17578, EPIC #10355)",
         "corpus": {"path": str(corpus_path).replace("\\", "/"), "sha256": sha256_of(corpus_path)},
@@ -502,9 +506,9 @@ def run(corpus_path: Path, level: str, folds_count: int, random_draws: int, seed
         "folds": folds_count,
         "structure": structure,
         "node_level": {
-            "measurable": node_support is not None and min(node_support.values()) >= MIN_EXAMPLES_PER_LABEL,
-            "labels": len(node_support) if node_support else None,
-            "support_max": max(node_support.values()) if node_support else None,
+            "measurable": min(node_measured.values()) >= MIN_EXAMPLES_PER_LABEL,
+            "labels": len(node_measured),
+            "support_max": max(node_measured.values()),
             "floor": MIN_EXAMPLES_PER_LABEL,
         },
         "folds_identical": overlap,
@@ -524,8 +528,9 @@ def run(corpus_path: Path, level: str, folds_count: int, random_draws: int, seed
 def render_report(report: dict) -> str:
     """Table markdown du rapport de baselines."""
     structure = report["structure"]
+    level_fr = {"branch": "branche", "node": "nœud"}.get(report["level"], report["level"])
     lines = [
-        "# Baselines de la Phase 3 — niveau « branche »",
+        f"# Baselines de la Phase 3 — niveau « {level_fr} »",
         "",
         f"Corpus : `{report['corpus']['path']}` (SHA-256 `{report['corpus']['sha256'][:12]}`), "
         f"{structure['rows']} paires, {structure['labels']} etiquettes, "
@@ -562,6 +567,32 @@ def render_report(report: dict) -> str:
     if lexicon:
         thin = sorted(lexicon, key=lambda f: (lexicon[f]["nodes"], f))[:3]
         detail = ", ".join(f"{f} ({lexicon[f]['nodes']} nœuds, {lexicon[f]['tokens']} jetons)" for f in thin)
+        rules = report["baselines"]["rules_full"]
+        never = rules.get("labels_never_predicted") or []
+        rules_f1 = rules.get("macro_f1")
+        random_mean = report["baselines"]["random_grouped"].get("macro_f1_mean")
+        if rules_f1 is None or random_mean is None:
+            verdict = "Mesure : macro-F1 non comparable ici (moyenne aleatoire indisponible)"
+            conclusion = ("Sa place de reference basse dans le gate se decide contre le reste "
+                          "du tableau.")
+        elif rules_f1 < random_mean:
+            verdict = (f"Mesure : elle est **inferieure a l'aleatoire** ({rules_f1} contre "
+                       f"{random_mean} en moyenne)")
+            conclusion = ("Une baseline a regles construite sur ces dictionnaires ne peut pas "
+                          "servir de reference basse utile au gate sur ce corpus : elle est "
+                          "battue par le tirage uniforme.")
+        elif rules_f1 > random_mean:
+            verdict = (f"Mesure : elle est **superieure a l'aleatoire** ({rules_f1} contre "
+                       f"{random_mean} en moyenne)")
+            conclusion = ("Sa place de reference basse dans le gate se decide contre le reste "
+                          "du tableau, pas contre le seul tirage uniforme.")
+        else:
+            verdict = f"Mesure : elle egale le tirage uniforme ({rules_f1})"
+            conclusion = ("Sa place de reference basse dans le gate se decide contre le reste "
+                          "du tableau.")
+        biggest = max(lexicon, key=lambda f: (lexicon[f]["tokens"], f))
+        smallest = min(lexicon, key=lambda f: (lexicon[f]["tokens"], f))
+        never_detail = f" ({', '.join(never)})" if never else ""
         lines += [
             "",
             f"Dictionnaires de la baseline a regles : {len(lexicon)} familles bâties sur les "
@@ -572,29 +603,41 @@ def render_report(report: dict) -> str:
             "**Ce que la baseline a regles a montre, contre l'attente** : le prompt de generation "
             "portait le titre et la definition du nœud cible, donc un texte repris de sa propre "
             "definition devait etre compte juste par sa propre famille -- cette reserve annoncait "
-            "un chiffre *optimiste*. Mesure : il est **inferieur a l'aleatoire**, et les "
-            "etiquettes jamais predites sont "
-            f"{report['baselines']['rules_full'].get('labels_never_predicted')}. "
-            "Le canal de l'echo existe, mais il est domine par un autre effet : le dictionnaire "
-            "d'une grande famille (`Influence`, 1816 jetons) couvre plus de texte que celui d'une "
-            "petite (`Justesse lexicale`, 146), donc la regle se replie sur les sept familles de "
-            "sophismes et n'atteint **aucune** famille de vertus. Une baseline a regles construite "
-            "sur ces dictionnaires ne peut pas servir de reference basse utile au gate : elle est "
-            "battue par le tirage uniforme.",
+            f"un chiffre *optimiste*. {verdict}, et {len(never)} etiquettes sur "
+            f"{structure['labels']} ne sont jamais predites{never_detail}. "
+            "Le canal de l'echo existe, mais un effet structurel le domine : le dictionnaire "
+            f"de `{biggest}` ({lexicon[biggest]['tokens']} jetons) couvre plus de texte que "
+            f"celui de `{smallest}` ({lexicon[smallest]['tokens']}), donc la regle favorise les "
+            "familles aux dictionnaires larges au detriment des autres. " + conclusion,
         ]
     leak = report["leakage"]
-    lines += [
-        "",
-        f"**Ecart de fuite mesure** : {leak['naive_mean']} (plis naifs) − {leak['grouped_mean']} "
-        f"(plis groupes) = **{leak['gap']}** de macro-F1 attribuables au recouvrement de scenario.",
-        "",
-        f"Niveau « nœud » : **{structure.get('node_labels')} etiquettes pour "
-        f"{structure['rows']} paires** (support maximal {structure.get('node_support_max')}) — "
-        f"sous le plancher de {report['node_level']['floor']} par etiquette, donc "
-        "**non mesurable** sur ce corpus. Le gate de Phase 3 exige une exactitude a la "
-        "feuille exacte : elle demande un corpus ou chaque nœud porte plusieurs paires.",
-        "",
-    ]
+    if leak.get("gap") is not None:
+        leak_line = (
+            f"**Ecart de fuite mesure** : {leak['naive_mean']} (plis naifs) − "
+            f"{leak['grouped_mean']} (plis groupes) = **{leak['gap']}** de macro-F1. "
+            "C'est l'ecart observe entre les deux protocoles de plis : le recouvrement de "
+            "scenario en est une cause possible, la composition et la taille des plis une "
+            "autre -- l'ecart seul n'attribue rien."
+        )
+    else:
+        leak_line = ("**Ecart de fuite mesure** : non calculable (moyenne manquante sur l'un "
+                     "des deux protocoles).")
+    node = report["node_level"]
+    if node["measurable"]:
+        node_line = (
+            f"Niveau « nœud » : **{node['labels']} etiquettes pour {structure['rows']} paires** "
+            f"(support maximal {node['support_max']}) — au-dessus du plancher de {node['floor']} "
+            "par etiquette : **mesurable** sur ce corpus."
+        )
+    else:
+        node_line = (
+            f"Niveau « nœud » : **{node['labels']} etiquettes pour {structure['rows']} paires** "
+            f"(support maximal {node['support_max']}) — sous le plancher de {node['floor']} par "
+            "etiquette, donc **non mesurable** sur ce corpus. Le gate de Phase 3 exige une "
+            "exactitude a la feuille exacte : elle demande un corpus ou chaque nœud porte "
+            "plusieurs paires."
+        )
+    lines += ["", leak_line, "", node_line, ""]
     return "\n".join(lines)
 
 
