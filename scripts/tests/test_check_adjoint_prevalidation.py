@@ -3054,3 +3054,19 @@ def test_review_threads_single_pr_is_still_one_operation(monkeypatch):
 
     assert len(calls) == 1
     assert [t["id"] for t in threads] == ["t9-1"]
+
+
+def test_grain_lane_re_refuse_le_point_final_de_phrase():
+    """#15864 (mesure #14549) -- la classe de token admet le point (hostnames),
+    donc `lane myia-po-2023:CoursIA-2.` etait capture comme une lane fantome.
+    Un token ne peut plus se TERMINER par un point ; les points internes
+    survivent."""
+    dotted = "Grain: DEEP/genai — lane myia-po-2023:CoursIA-2. Enonce reecrit."
+    assert mod.GRAIN_LANE_RE.findall(dotted) == ["myia-po-2023:CoursIA-2"]
+    clean = "Grain: DEEP/genai — lane myia-po-2023:CoursIA-2"
+    assert mod.GRAIN_LANE_RE.findall(clean) == ["myia-po-2023:CoursIA-2"]
+    host = "Grain: MED/docs — lane foo.bar.baz:CoursIA-2."
+    assert mod.GRAIN_LANE_RE.findall(host) == ["foo.bar.baz:CoursIA-2"]
+    # Aucune lane ne se reduit a un point : machine et workspace requis.
+    assert mod.GRAIN_LANE_RE.findall("Grain: MED/docs — lane :CoursIA-2") == []
+    assert mod.GRAIN_LANE_RE.findall("Grain: MED/docs — lane myia-po-2023:") == []
