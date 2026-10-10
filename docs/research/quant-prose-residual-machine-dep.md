@@ -33,13 +33,13 @@
 | Notebook | Runtime | Hint | Ambiguous | Frozen |
 |---|---|---|---|---|
 | `Sudoku-13-SymbolicAutomata-CSharp.ipynb` | 0 | 5 | 18 | 5 |
-| `Infer-2-Gaussian-Mixtures.ipynb` | 0 | 0 | 19 | 26 |
+| `Infer-02-Gaussian-Mixtures.ipynb` | 0 | 0 | 19 | 26 |
 | `Sudoku-03-Genetic-Python.ipynb` | 3 | 0 | 6 | 4 |
 | `04-1-Educational-Audio-Content.ipynb` | 7 | 0 | 0 | 1 |
 | `04-6-Audiobook-Pipeline.ipynb` | 6 | 0 | 0 | 2 |
 | `Sudoku-18-Comparison-CSharp.ipynb` | 2 | 0 | 3 | 0 |
 | `Sudoku-18-Comparison-Python.ipynb` | 1 | 2 | 2 | 0 |
-| `Infer-1b-Premiers-Modeles.ipynb` | 0 | 0 | 4 | 10 |
+| `Infer-01b-Premiers-Modeles.ipynb` | 0 | 0 | 4 | 10 |
 | `QC-Py-26-LLM-Trading-Signals.ipynb` | 0 | 0 | 4 | 0 |
 | `Sudoku-10-ORTools-CSharp.ipynb` | 0 | 0 | 4 | 0 |
 | `App-2b-GraphColoring-CSharp.ipynb` | 0 | 0 | 3 | 0 |

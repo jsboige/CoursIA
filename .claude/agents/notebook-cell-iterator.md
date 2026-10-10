@@ -331,7 +331,7 @@ Task(
     model="sonnet",
     prompt="""
     Agent notebook-cell-iterator.
-    Notebook: MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb
+    Notebook: MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb
     Cell: 3
     Objective: no_error
     Max iterations: 3

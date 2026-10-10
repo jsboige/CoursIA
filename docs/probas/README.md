@@ -48,7 +48,7 @@ Inventaire cluster complet, versions des kernels et commandes de réparation : [
 | **Message passing déterministe (EP/VMP)** | Infer-1..19-*, DecInfer-* (C#) | Infer.NET (Microsoft) — EP par défaut, Gibbs échantillonneur en option |
 | **Inférence causale** (Pearl, échelle 1→3) | Infer-5, PyMC-05, DecPyMC-01..03, DecisionTheory/Causal-Bridges (DoWhy 1-5) | `dowhy`, `causal-learn` (PC/GES/LiNGAM), backdoor/front-door/IV |
 | **Modèles hiérarchiques** (multi-niveaux, partial pooling) | Infer-12, PyMC-12 | PyMC v5+, modèles multi-niveaux |
-| **IRT / Skills rating** (compétences annotées, partial pooling par item) | Infer-7-Skills-IRT, PyMC-07-Skills-IRT | PyMC v5+, modèles de compétences annotées |
+| **IRT / Skills rating** (compétences annotées, partial pooling par item) | Infer-07-Skills-IRT, PyMC-07-Skills-IRT | PyMC v5+, modèles de compétences annotées |
 | **TrueSkill** | Infer-08, PyMC-08 | TrueSkill 2007 (Herbrich), approximation EP/VMP |
 | **LDA / Topic Models** | Infer-11, PyMC-11 | NumPyro (LDA performant), PyMC v5 |
 | **HMM / Séquences** | Infer-14, PyMC-14 | `hmmlearn`, NumPyro |

@@ -51,7 +51,7 @@ python test_notebooks.py
 ### Test a specific notebook
 
 ```bash
-python test_notebooks.py -n Infer-1-Setup.ipynb -v
+python test_notebooks.py -n Infer-01-Setup.ipynb -v
 ```
 
 ### Options
