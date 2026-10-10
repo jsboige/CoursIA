@@ -1029,6 +1029,34 @@ def test_delivered_info_stamp_ignores_discursive_mentions():
     assert pig.delivered_info_stamp(comments) is None
 
 
+def test_delivered_info_stamp_partial_ne_marque_pas_de_visite():
+    """#20008 (FP) : un marqueur PARTIEL n'est pas une livraison pleine --
+    sinon l'horloge du tapis avance sur une livraison qui n'existe pas et le
+    candidat repart en queue alors qu'un residu explicite reste ouvert.
+    Instance mesuree : #14549 c.5645287892."""
+    comments = [
+        _claim("2026-10-05T06:58:26Z",
+               "[INFO] candidate-delivered-partial -- myia-po-2023:CoursIA-2, "
+               "c.488 : 3.5/4 livre + parite mesuree. Wan Video reste ouvert"),
+        _claim("2026-10-06T00:00:00Z",
+               "[INFO candidate-delivered-partial -- residu explicite]"),
+    ]
+    assert pig.delivered_info_stamp(comments) is None
+
+
+def test_delivered_info_stamp_forme_espacee_a_contenu_interne():
+    """#20008 (FN) : la forme espacee a contenu interne
+    (`[INFO candidate-delivered <contenu>]`) est un en-tete valide -- avant
+    le fix, aucune des trois alternatives ne la reconnaissait, la visite
+    restait invisible et le candidat resservi comme grain neuf."""
+    comments = [
+        _claim("2026-10-05T06:58:26Z",
+               "[INFO candidate-delivered -- 70/81 creneaux verifies, "
+               "preuve firsthand sur main]"),
+    ]
+    assert pig.delivered_info_stamp(comments) == "2026-10-05T06:58:26Z"
+
+
 def test_latest_claim_stamp_takes_max_of_claim_and_delivered(monkeypatch):
     """Le probe de tete lit claim ET livraison dans la meme charge de
     commentaires : une seule requete (#19295, cout borne), le max gagne."""
