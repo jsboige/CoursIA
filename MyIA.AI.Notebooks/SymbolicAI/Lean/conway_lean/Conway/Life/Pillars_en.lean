@@ -73,20 +73,22 @@ the published Gemini self-replication completes in 33 699 586).
   **nothing escapes** — unlike the UnitCell. The prediction "an isolated
   metapixel on a borderless grid is not periodic either" is therefore
   **refuted for the OTCA**. The period witness
-  `evolveHashlifeFastMemo 35328 otcaInitial = otcaInitial` becomes
-  potentially expressible again; it requires (a) confirming the exact
-  period on the isolated pattern and (b) a performance test of the
-  memoized Hashlife at 64 691 cells: that is the next tranche.
+  `evolveHashlifeFastMemo 35328 otcaInitial = otcaInitial` remains
+  expressible in principle — but tranche 4 **measured** its cost: the
+  `native_decide` evaluation does not terminate within 2 h on this
+  machine (two attempts, no success line, no `.olean` produced). The
+  35,328 period stays quoted, not certified by the organ: a measured
+  ceiling, liftable on a better-endowed machine.
 - **Paired negative witnesses** (criterion 2 of #19989):
   `pulsar_period1_negative` and `pulsar_period2_negative` accompany
   `pulsar_period3`, so the period is **exactly** 3 and not merely a divisor of
-  3. This is the lake's only **positive** period witness, hence the only one
-  that can receive a pair: for the UnitCell the pair is impossible
-  *a fortiori* (the positive is not expressible — open system, measured,
-  see above); for the OTCA the question is **open** (closed system,
-  measured — the positive is potentially expressible, see above); for
-  Gemini/CPU the grids are still empty, where a negative would measure
-  nothing real.
+  3. This is the lake's only **positive** period witness, hence the only
+  one that can receive a pair: for the UnitCell the pair is impossible
+  *a fortiori* (the positive is not expressible — open system,
+  measured, see above); for the OTCA the positive remains expressible
+  in principle but its evaluation exceeds the measured ceiling
+  (tranche 4, see above); for Gemini/CPU the grids are still empty,
+  where a negative would measure nothing real.
 - **Future** : the CPU (once its RLE is loaded by the same mechanism) — its
   border question remains to be settled by the same measurement method.
 
@@ -250,15 +252,17 @@ for the corresponding pillar. The proof is intended to be a single
     visible. The published ON→OFF→ON cycle completes in 35 328
     generations (source: conwaylife.com/wiki/OTCA_metapixel).
 
-    **There is no period witness here — but unlike the UnitCell, this is
-    a postponement, not an impossibility.** Measurement (dense
-    simulator, 1 800 generations): the extent stays strictly
-    2058 × 2058, no cell ever leaves the box, the population oscillates
-    within [63 955, 64 798] — a **closed** system. The witness
-    `evolveHashlifeFastMemo 35328 otcaInitial = otcaInitial` is
-    therefore potentially expressible; it awaits (a) confirmation of the
-    exact period 35 328 on the isolated pattern and (b) a performance
-    test of the memoized Hashlife on a 64 691-cell grid.
+    **There is still no period witness here — but the postponement is
+    now measured, not merely motivated.** Motivating measurement
+    (dense simulator, 1 800 generations): the extent stays strictly
+    2058 × 2058, no cell ever leaves the box, the population
+    oscillates within [63 955, 64 798] — a **closed** system. The
+    witness `evolveHashlifeFastMemo 35328 otcaInitial = otcaInitial`
+    was attempted in tranche 4: its `native_decide` evaluation does
+    not terminate within 2 h on this machine — the lake replays are
+    consumed within seconds, then silence until the deadline, with no
+    success line and no `.olean`. A measured ceiling of the organ on
+    this witness, liftable on a better-endowed machine.
 
     What is proven here, and **non-vacuously**, is that the loaded grid
     is real: 165 KB of RLE through the same `include_str` +
