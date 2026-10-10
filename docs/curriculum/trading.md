@@ -217,7 +217,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | [Infer-8b-TrueSkill-Formules-Fermees : la mise a jour…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb) | BETA | Oui |
-| 2 | [Infer-1-Setup : Introduction et Installation](../../MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb) | BETA | Oui |
+| 2 | [Infer-01-Setup : Introduction et Installation](../../MyIA.AI.Notebooks/Probas/Infer/Infer-01-Setup.ipynb) | BETA | Oui |
 | 3 | [Infer-10-Model-Sélection : Sélection et Comparaison de…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb) | BETA | Oui |
 | 4 | [Infer-11-Topic-Models : Latent Dirichlet Allocation…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb) | BETA | Oui |
 | 5 | [12. Modèles Hiérarchiques Bayésiens — Pooling Partiel…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-12-Modeles-Hierarchiques.ipynb) | BETA | Oui |
@@ -228,15 +228,15 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 10 | [Infer-17 — Filtre de Kalman : systèmes dynamiques…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb) | BETA | Oui |
 | 11 | [Infer-18 — Détection de Rupture (Change-Point) :…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb) | BETA | Oui |
 | 12 | [Infer-19 — Analyse de survie / fiabilite bayesienne :…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb) | BETA | Oui |
-| 13 | [Infer-1b : Introduction a Infer.NET](../../MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb) | BETA | Oui |
-| 14 | [Infer-2-Gaussian-Mixtures : Distributions Gaussiennes…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb) | BETA | Oui |
-| 15 | [Infer-2b-Debugging-Bonnes-Pratiques : Troubleshooting…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb) | BETA | Oui |
-| 16 | [Infer-3-Factor-Graphs : Graphes de Facteurs et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb) | BETA | Oui |
-| 17 | [Infer-4-Bayesian-Networks : Reseaux Bayesiens…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb) | BETA | Oui |
-| 18 | [Infer-5-Causal-Inference : Inférence Causale et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb) | BETA | Oui |
-| 19 | [Infer-7-Skills-IRT : Evaluation de Competences et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-7-Skills-IRT.ipynb) | BETA | Oui |
-| 20 | [Infer-8-TrueSkill : Système de Classement et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-8-TrueSkill.ipynb) | BETA | Oui |
-| 21 | [Infer-9-Classification : Classification Bayesienne](../../MyIA.AI.Notebooks/Probas/Infer/Infer-9-Classification.ipynb) | BETA | Oui |
+| 13 | [Infer-1b : Introduction a Infer.NET](../../MyIA.AI.Notebooks/Probas/Infer/Infer-01b-Premiers-Modeles.ipynb) | BETA | Oui |
+| 14 | [Infer-02-Gaussian-Mixtures : Distributions Gaussiennes…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb) | BETA | Oui |
+| 15 | [Infer-02b-Debugging-Bonnes-Pratiques : Troubleshooting…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb) | BETA | Oui |
+| 16 | [Infer-03-Factor-Graphs : Graphes de Facteurs et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-03-Factor-Graphs.ipynb) | BETA | Oui |
+| 17 | [Infer-04-Bayesian-Networks : Reseaux Bayesiens…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb) | BETA | Oui |
+| 18 | [Infer-05-Causal-Inference : Inférence Causale et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb) | BETA | Oui |
+| 19 | [Infer-07-Skills-IRT : Evaluation de Competences et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-07-Skills-IRT.ipynb) | BETA | Oui |
+| 20 | [Infer-08-TrueSkill : Système de Classement et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-08-TrueSkill.ipynb) | BETA | Oui |
+| 21 | [Infer-09-Classification : Classification Bayesienne](../../MyIA.AI.Notebooks/Probas/Infer/Infer-09-Classification.ipynb) | BETA | Oui |
 
 ## Probas/PyMC (19 notebooks)
 
