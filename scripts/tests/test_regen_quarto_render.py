@@ -10,7 +10,8 @@ Covers:
 - ``LANDING_PAGES``: the explicit list is stable (landing pages are listed in
   a fixed order before the auto-generated README list).
 - ``build_render_block`` shape: emits a ``project:`` block with the expected
-  landing pages and a comment line with the README count.
+  landing pages, and **no** count line (counters were removed at ai-01's
+  arbitration on #19901 -- a total in a generated file rots at every merge).
 - ``argparse``: ``--check`` flag exists and prints a count message.
 
 Tests are CPU-only / hermetic: no ``git``, no I/O. ``replace_render_block`` is
@@ -20,6 +21,9 @@ checked-out repo.
 from __future__ import annotations
 
 import argparse
+import os
+import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -227,8 +231,14 @@ class TestBuildRenderBlockShape:
         block = rqr.build_render_block()
         assert '  render:' in block
 
-    def test_readme_count_in_comment(self, monkeypatch):
-        """The build function embeds a comment with the README count (root + N)."""
+    def test_no_count_in_generated_comment(self, monkeypatch):
+        """The build function must NOT embed a count of any of the three lists.
+
+        Removed at ai-01's arbitration on #19901 (review 5469480925). A total
+        written into the generated `_quarto.yml` rots at every merge: two PRs
+        adding notebooks either conflict on the line (#19579) or merge a FALSE
+        total cleanly, leaving `main` stale. The lists themselves stay.
+        """
         fake_readmes = [
             'MyIA.AI.Notebooks/README.md',
             'MyIA.AI.Notebooks/Search/README.md',
@@ -237,8 +247,13 @@ class TestBuildRenderBlockShape:
         monkeypatch.setattr(rqr, 'git_tracked_readmes', lambda: fake_readmes)
         block = rqr.build_render_block()
         block_str = '\n'.join(block)
-        # Comment says "<N+1> READMEs" where N is len of fake list (root + 3 = 4)
-        assert '4 READMEs' in block_str
+        # The counter that used to be emitted here (root + 3 = 4) is gone.
+        assert '4 READMEs' not in block_str
+        # ... and so are the two sibling counters, in whatever form they take.
+        assert not re.search(r'#\s*\d+\s+(?:READMEs|docs/\*\.md|notebooks)\b', block_str)
+        # The README entries themselves are still emitted (the list is not dropped).
+        for p in fake_readmes:
+            assert f'- "{p}"' in block_str
 
 
 # ---------------------------------------------------------------------------
@@ -324,7 +339,8 @@ class TestReadmeLinkTargets:
             base, "./RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb"
         ) == "MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb"
 
-    def test_flags_html_when_source_not_rendered(self, monkeypatch, tmp_path):
+    def test_flags_html_when_target_not_committed(self, monkeypatch, tmp_path):
+        """Un lien `.html` dont la cible n'est pas committee = HTML_404 (#18911)."""
         readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
         source = readme.parent / "Excluded.ipynb"
         readme.parent.mkdir(parents=True)
@@ -341,10 +357,75 @@ class TestReadmeLinkTargets:
         assert rqr.readme_link_violations() == [
             (
                 "MyIA.AI.Notebooks/Search/README.md",
-                "DEAD_RENDER",
+                "HTML_404",
                 "Excluded.html",
             )
         ]
+
+    def test_ipynb_link_to_existing_notebook_is_valid(self, monkeypatch, tmp_path):
+        """Temoin #18911 : un lien `.ipynb` vers un carnet present n'est PAS une violation.
+
+        C'est le renversement de doctrine : la navigation de reference est
+        github.com, ou le lien `.ipynb` ouvre le viewer. Le carnet est rendu
+        (tracked) -- l'ancien predicat `STALE_LINK` le declarait pourtant
+        violation et poussait a convertir en `.html`.
+        """
+        readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
+        nb = readme.parent / "Search-01.ipynb"
+        readme.parent.mkdir(parents=True)
+        readme.write_text("[S](Search-01.ipynb)\n", encoding="utf-8")
+        nb.write_text("{}\n", encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_readmes",
+            lambda: ["MyIA.AI.Notebooks/Search/README.md"],
+        )
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_notebooks",
+            lambda: ["MyIA.AI.Notebooks/Search/Search-01.ipynb"],
+        )
+
+        assert rqr.readme_link_violations() == []
+
+    def test_broken_ipynb_link_is_flagged(self, monkeypatch, tmp_path):
+        """Un lien `.ipynb` vers un carnet absent reste BROKEN."""
+        readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
+        readme.parent.mkdir(parents=True)
+        readme.write_text("[Gone](Gone.ipynb)\n", encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_readmes",
+            lambda: ["MyIA.AI.Notebooks/Search/README.md"],
+        )
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+
+        assert rqr.readme_link_violations() == [
+            (
+                "MyIA.AI.Notebooks/Search/README.md",
+                "BROKEN",
+                "Gone.ipynb",
+            )
+        ]
+
+    def test_committed_html_target_is_not_flagged(self, monkeypatch, tmp_path):
+        """Temoin negatif : un `.html` dont la cible EST committee n'est pas une violation."""
+        readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
+        page = readme.parent / "report.html"
+        readme.parent.mkdir(parents=True)
+        readme.write_text("[R](report.html)\n", encoding="utf-8")
+        page.write_text("<html></html>\n", encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_readmes",
+            lambda: ["MyIA.AI.Notebooks/Search/README.md"],
+        )
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+
+        assert rqr.readme_link_violations() == []
 
 
 # ---------------------------------------------------------------------------
@@ -669,9 +750,10 @@ class TestRenderSections:
         text = "\n".join(rqr.build_render_block(rqr.render_sections()))
         assert '- "README.md"' in text
         assert '- "x/README.md"' in text
-        # racine + 1 = 2 READMEs : le compte suit la section passee, pas un
-        # nouvel appel a git.
-        assert "2 READMEs" in text
+        # Aucun compteur n'est ecrit (#19901 : un total dans un fichier genere
+        # se perime a chaque merge). La racine sort de `render_sections()`, donc
+        # elle est emise exactement une fois — l'inverse est le doublon #20055.
+        assert text.count('- "README.md"') == 1
 
 
 class TestDuplicateRenderEntries:
@@ -838,3 +920,254 @@ class TestUnmergedIndexReproduction:
         assert rqr.main() == 1
         err = capsys.readouterr().err
         assert "::error::" in err and self.REL in err
+# uncovered_notebooks — trous de couverture vs carnets hr-bloques (#18423)
+# ---------------------------------------------------------------------------
+
+class TestUncoveredNotebooks:
+    """Le residu de couverture ne doit PAS contenir un carnet que le generateur
+    ecarte par construction : `uncovered_notebooks` et `git_tracked_notebooks`
+    doivent partager le meme predicat d'exclusion. Le 2026-10-10, un carnet
+    hr-bloque (`Lean-12-Sensitivity-Theorem.ipynb`) rapporté ici faisait rougir
+    en permanence la jambe `Smoke test` de `quarto-render-list-freshness.yml`.
+    """
+
+    def _fake_run(self, paths):
+        fake_output = "".join(f"{p}\n" for p in paths)
+
+        def fake_run(*args, **kwargs):
+            class Result:
+                stdout = fake_output
+                returncode = 0
+            return Result()
+
+        return fake_run
+
+    def test_hr_blocked_notebook_is_not_a_coverage_hole(self, monkeypatch):
+        """Un carnet ecarte par la garde `---` sort du residu de couverture."""
+        hr_nb = "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb"
+        monkeypatch.setattr(rqr, "all_tracked_notebooks", lambda: [hr_nb])
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+        monkeypatch.setattr(rqr, "has_hr_separator", lambda p: p == hr_nb)
+
+        assert rqr.uncovered_notebooks() == []
+        assert rqr.hr_blocked_notebooks() == [hr_nb]
+
+    def test_undeclared_notebook_stays_a_coverage_hole(self, monkeypatch):
+        """Un carnet ni rendu ni declare reste signale (temoin negatif)."""
+        orphan = "MyIA.AI.Notebooks/CoursIA-Nouveau/serie-01.ipynb"
+        monkeypatch.setattr(rqr, "all_tracked_notebooks", lambda: [orphan])
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+        monkeypatch.setattr(rqr, "has_hr_separator", lambda p: False)
+
+        assert rqr.uncovered_notebooks() == [orphan]
+        assert rqr.hr_blocked_notebooks() == []
+
+    def test_declared_and_rendered_notebooks_are_excluded(self, monkeypatch):
+        """Ni un carnet rendu ni un carnet declare hors perimetre ne sont signales."""
+        rendered = "MyIA.AI.Notebooks/Search/rendu.ipynb"
+        hors = sorted(rqr.NOTEBOOKS_HORS_PERIMETRE)[0]
+        monkeypatch.setattr(rqr, "all_tracked_notebooks", lambda: [rendered, hors])
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [rendered])
+        monkeypatch.setattr(rqr, "has_hr_separator", lambda p: False)
+
+        assert rqr.uncovered_notebooks() == []
+        assert rqr.hr_blocked_notebooks() == []
+
+    def test_real_repo_has_no_uncovered_notebook(self):
+        """Sur l'arbre courant, le residu de couverture doit etre vide."""
+        assert rqr.uncovered_notebooks() == []
+
+
+# ---------------------------------------------------------------------------
+# Contrat advisory du workflow de fraicheur
+# ---------------------------------------------------------------------------
+
+WORKFLOW_PATH = (
+    Path(__file__).resolve().parents[2]
+    / ".github"
+    / "workflows"
+    / "quarto-render-list-freshness.yml"
+)
+
+CHECK_STEP_NAME = "Check _quarto.yml render list against the PR head tree"
+
+
+def _workflow_lines() -> list:
+    return WORKFLOW_PATH.read_text(encoding="utf-8").splitlines()
+
+
+def _job_display_name() -> str:
+    """Le `name:` du job `check` -- c'est lui que `pr_gate.py` classe."""
+    lines = _workflow_lines()
+    heads = [i for i, line in enumerate(lines) if line.rstrip() == "  check:"]
+    assert len(heads) == 1, f"job check: {len(heads)} occurrences"
+    for line in lines[heads[0] + 1 :]:
+        if line.startswith("    name:"):
+            return line.split("name:", 1)[1].strip()
+    raise AssertionError("pas de name: sur le job check")
+
+
+def _check_step_script() -> str:
+    """Le shell de l'etape de controle, extrait verbatim du YAML -- jamais recopie.
+
+    Extraction stdlib, meme forme que
+    `scripts/notebook_tools/tests/test_readme_links_guard_workflow.py` : aucune
+    dependance PyYAML, et les marqueurs assertes en fin de fonction refusent une
+    extraction fausse -- un bloc vide ou tronque ferait passer les tests pour de
+    mauvaises raisons.
+    """
+    lines = _workflow_lines()
+    heads = [
+        i for i, line in enumerate(lines) if line.strip() == "- name: " + CHECK_STEP_NAME
+    ]
+    assert len(heads) == 1, f"etape de controle: {len(heads)} occurrences"
+    index = heads[0]
+    while not lines[index].strip().startswith("run:"):
+        index += 1
+        assert index < len(lines), "pas de run: dans l'etape de controle"
+    indent = len(lines[index]) - len(lines[index].lstrip())
+    block = []
+    for line in lines[index + 1 :]:
+        if line.strip() == "":
+            block.append("")
+            continue
+        if len(line) - len(line.lstrip()) > indent:
+            block.append(line[indent + 2 :])
+        else:
+            break
+    text = "\n".join(block).strip("\n") + "\n"
+    for marker in ("set -euo pipefail", "PIPESTATUS", "::notice", "exit 0"):
+        assert marker in text, f"marqueur {marker!r} absent du bloc extrait"
+    return text
+
+
+def _bash_executable() -> str:
+    """Le chemin absolu du bash de git, jamais le nom nu.
+
+    Sous Windows, `CreateProcess` cherche dans `System32` **avant** le `PATH` :
+    un `["bash", "-c", ...]` y trouve le lanceur WSL, qui n'est pas le shell du
+    depot (montages `/mnt/d`, `PIPESTATUS` indisponible). Meme resolution que
+    `scripts/notebook_tools/tests/test_readme_links_guard_workflow.py`.
+    """
+    if os.name != "nt":
+        return "bash"
+    git = shutil.which("git")
+    if not git:
+        return "bash"
+    directory = os.path.dirname(os.path.abspath(git))
+    while directory and os.path.dirname(directory) != directory:
+        for sub in ("bin", os.path.join("usr", "bin")):
+            candidate = os.path.join(directory, sub, "bash.exe")
+            if os.path.isfile(candidate):
+                return candidate
+        directory = os.path.dirname(directory)
+    return "bash"
+
+
+def _msys_path(path) -> str:
+    """Forme `/c/...` d'un chemin Windows -- invisible au shell sinon."""
+    text = str(path)
+    if os.name == "nt" and ":" in text:
+        drive, rest = text.split(":", 1)
+        return "/" + drive.lower() + rest.replace("\\", "/")
+    return text
+
+
+def _bash_python(bash_exe: str) -> str | None:
+    """L'interpreteur tel que `bash` le resout lui-meme.
+
+    L'etape du workflow invoque `python`; sous Windows c'est `python.exe` qui
+    est expose, et `bash` ne l'alias pas. On demande donc a `bash` le chemin
+    plutot que de le deduire de `sys.executable` (dont la forme Windows n'est
+    pas execuble directement par le shell).
+    """
+    probe = subprocess.run(
+        [
+            bash_exe,
+            "-c",
+            "command -v python || command -v python.exe || command -v python3 || true",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    return probe.stdout.strip() or None
+
+
+def _run_check_step(tmp_path, scanner_rc: int):
+    """Execute le shell de l'etape contre un generateur boucheonne a `scanner_rc`.
+
+    Un shim `python` est pose en tete de `PATH` **dans le shell** : un `bash -c`
+    non interactif n'herite pas des entrees ajoutees par le profil du shell hote,
+    et sur un hote Windows le nom `python` n'y resout pas. Le test mesure le
+    contrat du workflow -- la branche prise selon `PY_RC` -- pas l'environnement
+    de la machine.
+    """
+    script = _check_step_script()
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "regen_quarto_render.py").write_text(
+        "import sys\n"
+        'print("::error::liste perimee (bouchon)")\n'
+        "sys.exit({})\n".format(scanner_rc),
+        encoding="utf-8",
+    )
+    bash_exe = _bash_executable()
+    prelude = ""
+    interpreter = _bash_python(bash_exe)
+    if interpreter:
+        shim_dir = tmp_path / "shim"
+        shim_dir.mkdir()
+        shim = shim_dir / "python"
+        with open(shim, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write('#!/usr/bin/env bash\nexec "{}" "$@"\n'.format(interpreter))
+        os.chmod(shim, 0o755)
+        prelude = 'export PATH="{}:$PATH"\n'.format(_msys_path(shim_dir))
+    return subprocess.run(
+        [bash_exe, "-c", prelude + script],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=120,
+    )
+
+
+class TestWorkflowAdvisoryContract:
+    """Le garde ne rougit que si le scanner est en panne, jamais sur une liste perimee.
+
+    Reference : seconde relecture ai-01 sur #19901 (review 5475880717) -- un
+    rouge de contenu sur presque toute PR est un faux signal, et prescrire une
+    regeneration dans la branche recree le conflit que l'arbitrage eteint. Le
+    modele designe est `catalog-drift.yml` : notice + `exit 0`.
+    """
+
+    def test_job_name_carries_the_advisory_marker(self):
+        """`pr_gate.py` classe par sous-chaine : sans `advisory`, le job est une porte dure."""
+        assert "advisory" in _job_display_name()
+
+    def test_stale_list_is_success_with_a_notice(self, tmp_path):
+        """PY_RC=1 (liste perimee) : notice informative, aucune action prescrite, exit 0."""
+        result = _run_check_step(tmp_path, scanner_rc=1)
+
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "::notice" in result.stdout
+        assert "NE BLOQUE PAS" in result.stdout
+        assert "catalog-cron.yml" in result.stdout
+        assert "::error::" not in result.stdout
+
+    def test_up_to_date_list_is_success(self, tmp_path):
+        """PY_RC=0 : la liste est a jour, rien a signaler."""
+        result = _run_check_step(tmp_path, scanner_rc=0)
+
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "up to date" in result.stdout
+
+    def test_broken_scanner_is_the_only_red(self, tmp_path):
+        """PY_RC>=2 : seule vraie faute -- le script ne s'est pas execute."""
+        result = _run_check_step(tmp_path, scanner_rc=2)
+
+        assert result.returncode == 1, result.stdout + result.stderr
+        assert "::error::" in result.stdout
+        assert "Scanner en panne" in result.stdout
