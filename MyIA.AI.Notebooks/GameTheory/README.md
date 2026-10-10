@@ -95,7 +95,7 @@ On apprend à représenter un jeu sous forme normale, puis à le résoudre : dom
 |---|----------|--------------------|-------|--------|------------------|
 | 01 | Mise en route — [Python](GameTheory-01-Setup-Python.ipynb) | Installation de Nashpy et OpenSpiel, premier dilemme du prisonnier | 20 min | Découverte | — |
 | 02 | Forme normale — [Python](GameTheory-02-NormalForm-Python.ipynb) ([suite](GameTheory-02-NormalForm-Part2-Python.ipynb)) · [C#](GameTheory-02-NormalForm-CSharp.ipynb) ([suite](GameTheory-02-NormalForm-Part2-CSharp.ipynb)) | Matrices de gains, dominance, meilleure réponse ; la suite énumère les supports mixtes d'un jeu N×N | 45 min | Découverte | [02b](GameTheory-02b-Lean-Definitions-Lean.ipynb) · [02c](GameTheory-02c-Travelers-Dilemma-Python.ipynb) |
-| 03 | Topologie des jeux 2×2 — [Python](GameTheory-03-Topology2x2-Python.ipynb) · [C#](GameTheory-03-Topology2x2-CSharp.ipynb) | La table périodique de Robinson-Goforth : classer tous les jeux 2×2 ordinaux et dériver leur quotient | 80 min | Licence | [03a](GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb) · [03b](GameTheory-03c-Chambres-et-Murs-Python.ipynb) · [03c](GameTheory-03d-Le-Joueur-LLM-Python.ipynb) · [03d](GameTheory-03e-Plan-de-deformation-Python.ipynb) · [03e](GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb) · [03h](GameTheory-03g-Deux-Especes-de-Fleches-Python.ipynb) |
+| 03 | Topologie des jeux 2×2 — [Python](GameTheory-03-Topology2x2-Python.ipynb) · [C#](GameTheory-03-Topology2x2-CSharp.ipynb) | La table périodique de Robinson-Goforth : classer tous les jeux 2×2 ordinaux et dériver leur quotient | 80 min | Licence | [03a](GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb) · [03b](GameTheory-03c-Chambres-et-Murs-Python.ipynb) · [03c](GameTheory-03d-Le-Joueur-LLM-Python.ipynb) · [03e](GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb) · [03h](GameTheory-03g-Deux-Especes-de-Fleches-Python.ipynb) |
 | 04 | Équilibre de Nash — [Python](GameTheory-04-NashEquilibrium-Python.ipynb) · [C#](GameTheory-04-NashEquilibrium-CSharp.ipynb) | Nash pur et mixte, Lemke-Howson, analyse paramétrique | 60 min | Découverte | [04b](GameTheory-04b-Lean-NashExistence-Lean.ipynb) · [04c](GameTheory-04c-NashExistence-Python.ipynb) · [04d](GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) · [04e](GameTheory-04e-Reflective-Oracles-Python.ipynb) · [04f](GameTheory-04f-Theories-Decision-Predicteur-Python.ipynb) |
 | 05 | Jeux à somme nulle — [Python](GameTheory-05-ZeroSum-Minimax-Python.ipynb) · [C#](GameTheory-05-ZeroSum-Minimax-CSharp.ipynb) | Théorème minimax de von Neumann, programmation linéaire primal/dual | 40 min | Découverte | [05b](GameTheory-05b-Lean-Minimax-Lean.ipynb) |
 | 06 | Évolution de la confiance — [Python](GameTheory-06-EvolutionTrust-Python.ipynb) · [C#](GameTheory-06-EvolutionTrust-CSharp.ipynb) | Tournoi d'Axelrod, tit-for-tat, dynamique du réplicateur, processus de Moran en population finie | 65 min | Découverte | [06b](GameTheory-06b-Lean-RepeatedGames-Lean-Python.ipynb) · [06c](GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb) · [06d](GameTheory-06d-Sympathie-vs-Engagement-Python.ipynb) · [06e](GameTheory-06e-Open-Source-Game-Theory-Python.ipynb) · [06f](GameTheory-06f-Bounded-Agents-Python.ipynb) · [06f bis](GameTheory-06j-Bounded-Proofs-Reasoning-Costs-Python.ipynb) · [06g](GameTheory-06f-Bounded-Agents-Lean.ipynb) · [06g bis](GameTheory-06g-Simulation-Based-Program-Equilibria-Python.ipynb) · [06h](GameTheory-06h-Transparent-Institutions-Python.ipynb) |
@@ -192,7 +192,6 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | 03a | [Chemins de swaps](GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb) | À quelle distance sont deux jeux : parcours en largeur, théorème de décomposition, certificat Lean indépendant du plus court chemin | Python | Licence |
 | 03h | [Deux espèces de flèches](GameTheory-03g-Deux-Especes-de-Fleches-Python.ipynb) | Le théorème fini du chemin minimal : quand un swap traverse un mur ; la conjecture naïve réfutée, la condition exacte vérifiée | Python | Recherche |
 | 03c | [Le joueur LLM](GameTheory-03d-Le-Joueur-LLM-Python.ipynb) | Un modèle de langage placé dans la table périodique et confronté à ses transformations ordinales | Python | Licence |
-| 03d | [Plan de déformation](GameTheory-03e-Plan-de-deformation-Python.ipynb) | Biens publics non linéaires et déformation continue de l'espace stratégique | Python | Licence |
 | 03e | [Méta-actions tarifées](GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb) | Changer les règles comme action payante : coût en échelons de rang, seuil de migration, méta-jeu ; puis le parcours complet, du jeu nommé au coût de la méta-action | Python | Recherche |
 
 ### Autour de 04 — existence et nature de l'équilibre
@@ -291,6 +290,13 @@ L'agrégation des préférences (Arrow, vote, manipulation) se poursuit dans la 
 
 La lettre 17c est portée par deux notebooks ; la passe de renommage leur donnera des lettres distinctes.
 
+### Autour de 23 — biens publics et dilemmes N-personnes
+
+Palier extrait de la série 3 (accretion `03e-Plan-de-deformation` d'avant la renumérotation) : la table périodique de Robinson-Goforth reste l'épigraphe, mais le passage à N agents et à des fonctions de bénéfice non-linéaires constitue un objet mathématique distinct — il ne varie plus la géométrie de l'espace des jeux 2×2, il en sort.
+
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 23a | [Biens publics non-linéaires](GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb) | Archetti-Scheuring 2012 (JTB 299 : 9-20) : sans assortiment, un équilibre polymorphe stable coexiste ; les 78 profils 2×2 de Rapoport-Guyer servent de carte d'entrée, le plan `(k, s)` de déformation porte la dynamique N-personnes. | Python | Licence |
 ## Parcours transverses
 
 Quatre itinéraires qui traversent paliers et lettres pour un public précis.

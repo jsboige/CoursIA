@@ -390,7 +390,7 @@ layout: dense
 <img src="./images/img_028.png" alt="Resolution de pierre-papier-ciseaux : support des strategies mixtes" style="width:100%; height:100px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-03e-Plan-de-deformation-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Plan-de-deformation-Python.ipynb) (deformation, pierre-papier-ciseaux) · [GameTheory-05-ZeroSum-Minimax-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) (somme nulle, EU = 0).*
+*Notebooks : [GameTheory-23a-Biens-Publics-Plan-Deformation-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb) (déformation, pierre-papier-ciseaux) · [GameTheory-05-ZeroSum-Minimax-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) (somme nulle, EU = 0).*
 
 ---
 layout: dense
@@ -405,7 +405,7 @@ layout: dense
 
 ## Deformations et quotient
 
-- [GameTheory-03e-Plan-de-deformation-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Plan-de-deformation-Python.ipynb) : chemins continus entre classes
+- [GameTheory-23a-Biens-Publics-Plan-Deformation-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb) : chemins continus entre classes
 - [GameTheory-03-Topology2x2-Python (§9)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) : deriver la structure quotient (absorbé depuis l'ex-03g)
 
 ## Parcours et extensions
