@@ -15,6 +15,7 @@ qui est shime par les tests existants).
 
 import json
 import re
+import subprocess
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -1308,3 +1309,112 @@ def test_summarize_claim_implicit_occupation():
                   '"stale_claims": []}')
     code, _ = pig._summarize_claim(plain_json + "\n", 0)
     assert code == pig.CLAIM_CODE_FREE
+
+
+# --- fetch_latest_claim_stamps_bulk (PR #19594, c.1113 picker stall) ---
+
+def _graphql_payload_for(comments_by_issue: dict[int, list[dict]]) -> dict:
+    """Construit la reponse GraphQL que `gh api graphql` rendrait.
+
+    Reproduit la forme : data.repository.i{n}.comments.nodes[{author, body, createdAt}].
+    """
+    repo = {}
+    for n, comments in comments_by_issue.items():
+        repo[f"i{n}"] = {
+            "number": n,
+            "comments": {"nodes": comments},
+        }
+    return {"data": {"repository": repo}}
+
+
+def test_fetch_latest_claim_stamps_bulk_parity_with_latest_claim_stamp(monkeypatch):
+    """Parity : sur chaque issue, le stamp du bulk = le stamp de latest_claim_stamp.
+
+    Mock `subprocess.run` pour repondre en mode GraphQL aux appels `gh api graphql`
+    et en mode `gh issue view --json comments` aux appels de latest_claim_stamp.
+    """
+    issue_payloads = {
+        10: [_claim("2026-10-04T09:50:12Z",
+                    "[CLAIMED] lane myia-po-2027:CoursIA -- T1")],
+        11: [_claim("2026-10-05T10:00:00Z",
+                    "[CLAIMED] lane myia-po-2024:CoursIA -- T2"),
+             _claim("2026-10-05T11:30:00Z",
+                    "[CLAIMED-AMEND] lane myia-po-2024:CoursIA -- paths: a/**")],
+        12: [_claim("2026-10-03T08:00:00Z",
+                    "aucun marqueur de claim ici")],
+    }
+
+    def fake_run(cmd, *a, **k):
+        class _R:
+            pass
+        r = _R()
+        if cmd[:3] == ["gh", "api", "graphql"]:
+            # Match order: les issue_numbers sont tries dans fetch_latest_...
+            # mais on n'en depend pas, le resultat est indexe par alias.
+            r.stdout = json.dumps(_graphql_payload_for(issue_payloads))
+        elif cmd[:3] == ["gh", "issue", "view"]:
+            # gh issue view N --json comments : on rend le payload de l'issue N
+            n = int(cmd[3])
+            r.stdout = json.dumps({"comments": issue_payloads[n]})
+        else:
+            raise AssertionError(f"fake_run: unexpected cmd {cmd!r}")
+        return r
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+    bulk_map, err = pig.fetch_latest_claim_stamps_bulk([10, 11, 12])
+    assert err is None, f"unexpected bulk error: {err}"
+    assert bulk_map == {
+        10: "2026-10-04T09:50:12Z",
+        11: "2026-10-05T11:30:00Z",  # max de claim + claim-amend
+        12: None,                     # aucun marqueur -> None (et pas de raise)
+    }, f"parite brisee: {bulk_map}"
+
+    # Re-verification : latest_claim_stamp unitaire rend la meme valeur.
+    assert pig.latest_claim_stamp(10) == bulk_map[10]
+    assert pig.latest_claim_stamp(11) == bulk_map[11]
+    assert pig.latest_claim_stamp(12) is None
+
+
+def test_fetch_latest_claim_stamps_bulk_falls_back_on_subprocess_error(monkeypatch):
+    """Repli : une exception subprocess rend ({}, err) ; le caller peut degrader.
+
+    On verifie le contrat publie dans la docstring : pas de propagation, juste
+    un signal d'erreur que le caller (settle_belt_head) interprete comme
+    "stamp inconnu, retomber sur la sonde unitaire / belt_pool[:need]".
+    """
+    def boom(*a, **k):
+        raise subprocess.TimeoutExpired(cmd="gh api graphql", timeout=30)
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    out_map, err = pig.fetch_latest_claim_stamps_bulk([42, 99])
+    assert out_map == {}, f"le repli doit rendre un dict vide, pas {out_map!r}"
+    assert err is not None and "TimeoutExpired" in err, (
+        f"l'erreur doit nommer la cause : {err!r}")
+
+
+def test_fetch_latest_claim_stamps_bulk_handles_more_than_100_comments(monkeypatch):
+    """Pagination : avec >100 commentaires, le stamp reste correct (top 100).
+
+    GitHub rend les 100 plus recents. Les marqueurs de claim etant toujours
+    dans la queue recente, ils survivent a la fenetre. On verifie qu'un
+    claim poste il y a 200 commentaires survit quand meme.
+    """
+    # 99 commentaires anciens (sans marqueur) + 1 claim recent en queue.
+    old = [_claim(f"2026-09-{(i % 28) + 1:02d}T{(i % 24):02d}:{(i % 60):02d}Z",
+                  f"commentaire ancien #{i} sans marqueur")
+           for i in range(99)]
+    recent_claim = _claim("2026-10-06T22:00:00Z",
+                          "[CLAIMED] lane myia-po-2023:CoursIA-2 -- T-pagination")
+    payload = {1234: old + [recent_claim]}
+
+    def fake_run(cmd, *a, **k):
+        class _R:
+            stdout = json.dumps(_graphql_payload_for(payload))
+        return _R()
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    out_map, err = pig.fetch_latest_claim_stamps_bulk([1234])
+    assert err is None
+    assert out_map == {1234: "2026-10-06T22:00:00Z"}, (
+        f"le claim recent doit survivre meme avec >100 commentaires : {out_map!r}")

@@ -10,7 +10,6 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 4 |
 | Kernel | Python 3 |
 | Durée estimée | ~4-6h |
 | GPU requis | 0-14GB |
@@ -23,6 +22,7 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 | 2 | [04-2-Creative-Workflows](04-2-Creative-Workflows.ipynb) | Workflows créatifs | ComfyUI | Variable |
 | 3 | [04-3-Production-Integration](04-3-Production-Integration.ipynb) | Intégration production | Mixed | ~10GB |
 | 4 | [04-4-Cross-Stitch-Pattern-Maker-Legacy](04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb) | Point de croix (legacy) | Local | 0 |
+| 5 | [04-5-MiniMax-Cloud-Image](04-5-MiniMax-Cloud-Image.ipynb) | Images par API cloud | MiniMax Hailuo | 0 |
 
 ## Prérequis
 
@@ -64,6 +64,11 @@ pip install -r requirements-comfyui.txt
 - **Objectif** : Conversion d'images en patrons de point de croix
 - **Technologies** : PIL + algorithmes de conversion
 - **Applications** : Artisanat, loisirs, design textile
+
+### 04-5 MiniMax Hailuo — images par le service cloud
+- **Objectif** : Générer des images par l'API cloud Hailuo (texte vers image, image vers image) quand la licence des poids exclut l'auto-hébergement en UE
+- **Technologies** : API `image-01` via `urllib` + artefacts PNG et `metadata.json` commités
+- **Applications** : Illustration à la demande, transfert de style, comparaison des voies cloud et locale
 
 ## Workflows
 
