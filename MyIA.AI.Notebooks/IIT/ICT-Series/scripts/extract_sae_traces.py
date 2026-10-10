@@ -85,6 +85,7 @@ from ict.sae_traces import (  # noqa: E402  (necessairement apres sys.path)
     assert_bf16_readout,
     assert_sae_topk_compatible,
     check_sae_model_match,
+    ramp_alpha,
     resolve_capture_layer,
     trace_filename,
     w_dec_needs_transpose,
@@ -363,6 +364,21 @@ def parse_args() -> argparse.Namespace:
                         "exactement annulees). Exige --clamp-ids ; bornes [0, 1] : "
                         "alpha=0 ne clampe rien, alpha>1 sur-clampe (signe inverse) "
                         "et sort du protocole d'inoculation.")
+    p.add_argument("--clamp-ramp", type=int, default=None, metavar="CYCLES",
+                   help="hysteresis multi-passes (limite 1 du pilote ICT-42, "
+                        "#8236) : alpha devient DEPENDANT DU TOKEN — profil "
+                        "triangulaire periodique (montee 0->peak, descente "
+                        "peak->0) repete CYCLES fois sur CHAQUE prompt, "
+                        "inoculant puis relachant le meme contexte. Exige "
+                        "--clamp-ids et le mode inoculation (--clamp-frac/"
+                        "--read-frac) ; exclusif d'un --clamp-scale explicite "
+                        "(la rampe remplace l'intensite constante). Le profil "
+                        "effectif est enregistre par prompt dans la trace "
+                        "(array {set}__{i}__alpha, aligne sur les tokens finis).")
+    p.add_argument("--ramp-peak", type=float, default=1.0, metavar="PEAK",
+                   help="amplitude maximale du profil --clamp-ramp (defaut 1.0 = "
+                        "annulation complete des features du panel au sommet). "
+                        "Bornes (0, 1], comme --clamp-scale.")
     p.add_argument("--clamp-frac", type=float, default=None,
                    help="profondeur RELATIVE de la couche D'INOCULATION dans "
                         "[0, 1] (pilote #8236 ; defaut 0.5 = mi-reseau). Le SAE "
@@ -723,12 +739,23 @@ class ClampHook:
     perturbation injectee elle-meme (alpha * delta), pas sa propagation
     non-lineaire par les couches suivantes. Le protocole pilote inocule a
     ``--clamp-frac`` (defaut mi-reseau) et lit a ``--read-frac`` (defaut
-    resid final) via :class:`CaptureHook`."""
+    resid final) via :class:`CaptureHook`.
 
-    def __init__(self, sae: dict, clamp_ids: list[int], clamp_scale: float):
+    ``alpha_fn`` (hysteresis multi-passes, limite 1 du pilote) : callable
+    ``T -> numpy[T]`` produisant l'intensite PAR TOKEN (cf
+    :func:`ict.sae_traces.ramp_alpha`). Quand il est fourni, il remplace
+    ``clamp_scale`` : h' = h - alpha(t) * delta, la perturbation monte puis
+    descend sur le meme contexte. ``last_alpha`` expose le profil effectif du
+    dernier prompt — le pipeline le stocke dans la trace pour que le banc
+    GPU-free trace divergence(t) contre alpha(t) sans re-deriver la phase."""
+
+    def __init__(self, sae: dict, clamp_ids: list[int], clamp_scale: float,
+                 alpha_fn=None):
         if sae["W_dec"] is None:
             sys.exit("ERREUR: --clamp-ids exige W_dec dans le checkpoint SAE.")
         self.clamp_scale = clamp_scale
+        self.alpha_fn = alpha_fn
+        self.last_alpha = None          # profil [T] du dernier prompt (numpy)
         # Tranche du panel memoisee une fois (le hook tourne par prompt) :
         # W_enc/W_dec du SAE de la couche D'INOCULATION, indexes par feature.
         self.w_enc = sae["W_enc"][clamp_ids]          # [C, d]
@@ -737,12 +764,20 @@ class ClampHook:
 
     def __call__(self, module, inputs, output):
         out = output[0] if isinstance(output, tuple) else output   # [B, T, d]
-        if self.clamp_scale == 0.0:
+        if self.alpha_fn is None and self.clamp_scale == 0.0:
             return output                    # controle de plomberie : hook muet
         h32 = out.detach().to(torch.float32).cpu()                 # [B, T, d]
         acts = torch.relu(h32 @ self.w_enc.T + self.b_enc)         # [B, T, C]
         delta = acts @ self.w_dec                                  # [B, T, d]
-        h_new = (h32 - self.clamp_scale * delta).to(out.dtype).to(out.device)
+        if self.alpha_fn is not None:
+            alpha_np = self.alpha_fn(int(out.shape[1]))            # [T] numpy
+            self.last_alpha = alpha_np
+            a = torch.from_numpy(alpha_np).to(h32.dtype)           # [T]
+            h_new = (h32 - a[None, :, None] * delta)               # [B, T, d]
+        else:
+            self.last_alpha = None
+            h_new = h32 - self.clamp_scale * delta
+        h_new = h_new.to(out.dtype).to(out.device)
         if isinstance(output, tuple):
             return (h_new,) + tuple(output[1:])
         return h_new
@@ -776,6 +811,25 @@ def main() -> None:
         sys.exit(f"ERREUR: --clamp-scale={args.clamp_scale} hors bornes [0, 1] "
                  "(protocole d'inoculation #8236 : alpha>1 sur-clampe, signe "
                  "inverse de la contribution decodee).")
+    if args.clamp_ramp is not None:
+        if not clamp_ids:
+            sys.exit("ERREUR: --clamp-ramp exige --clamp-ids : le profil module "
+                     "un clamp, il ne cree pas un panel.")
+        if args.clamp_scale != 1.0:
+            sys.exit("ERREUR: --clamp-ramp et --clamp-scale=<alpha> sont "
+                     "exclusifs : la rampe alpha(t) REMPLACE l'intensite "
+                     "constante, pas les deux a la fois.")
+        if args.clamp_ramp < 1:
+            sys.exit(f"ERREUR: --clamp-ramp={args.clamp_ramp} : au moins 1 "
+                     "cycle (montee + descente) — pour inoculer puis relacher, "
+                     "il faut un passage complet.")
+        if not 0.0 < args.ramp_peak <= 1.0:
+            sys.exit(f"ERREUR: --ramp-peak={args.ramp_peak} hors bornes (0, 1] "
+                     "(meme protocole que --clamp-scale : >1 sur-clampe).")
+        if args.clamp_frac is None and args.read_frac is None:
+            sys.exit("ERREUR: --clamp-ramp exige le mode inoculation "
+                     "(--clamp-frac et/ou --read-frac) : l'hysteresis se "
+                     "mesure en AVAL de l'inoculation, comme la bifurcation.")
 
     from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
@@ -875,7 +929,9 @@ def main() -> None:
         out_path = out_dir / trace_filename(
             args.variant, layer, model=args.model, default_model=DEFAULT_MODEL,
             n_layers=n_layers, n_clamp=len(clamp_ids),
-            clamp_scale=args.clamp_scale, prefix=args.prefix)
+            clamp_scale=args.clamp_scale, prefix=args.prefix,
+            clamp_ramp=(None if args.clamp_ramp is None
+                        else (int(args.clamp_ramp), float(args.ramp_peak))))
         if out_path.exists() and not args.overwrite:
             sys.exit(f"ERREUR: {out_path} existe deja. Deux runs d'echelles "
                      "differentes ne doivent jamais partager un nom : verifier "
@@ -944,6 +1000,7 @@ def main() -> None:
 
     layers = find_decoder_layers(model, n_layers)
     handles = []
+    clamp_hook = None
     if inoculation:
         # Deux SAE (eventuellement le meme checkpoint si clamp == read, ce que
         # la garde read > clamp interdit ici) : les features du panel et le
@@ -953,8 +1010,13 @@ def main() -> None:
         sae_clamp = load_sae(args.sae_repo, clamp_layer, device)
         _guard(check_sae_model_match, int(sae_clamp["W_enc"].shape[1]),
                int(d_model), args.sae_repo, args.model)
-        handles.append(layers[clamp_layer].register_forward_hook(
-            ClampHook(sae_clamp, clamp_ids, args.clamp_scale)))
+        alpha_fn = None
+        if args.clamp_ramp is not None:
+            alpha_fn = (lambda T: ramp_alpha(T, cycles=int(args.clamp_ramp),
+                                             peak=float(args.ramp_peak)))
+        clamp_hook = ClampHook(sae_clamp, clamp_ids, args.clamp_scale,
+                               alpha_fn=alpha_fn)
+        handles.append(layers[clamp_layer].register_forward_hook(clamp_hook))
         capture = CaptureHook()
         handles.append(layers[layer].register_forward_hook(capture))
     else:
@@ -998,6 +1060,12 @@ def main() -> None:
             # a la capture, alignee sur ids/vals/tokens — la trace produite est
             # propre par construction, quelle que soit la machine.
             finite = torch.isfinite(vals).all(dim=-1)    # [T]
+            # Profil alpha(t) du prompt courant (hysteresis) : aligne sur les
+            # memes positions que ids/vals/tokens — le filtre non-fini
+            # s'applique a lui aussi, sinon divergence(t) serait decalee d'un
+            # token par position exclue.
+            alpha_prof = (clamp_hook.last_alpha
+                          if args.clamp_ramp is not None else None)
             n_bad = int((~finite).sum())
             if n_bad:
                 bad_pos = (~finite).nonzero().flatten().tolist()
@@ -1014,6 +1082,8 @@ def main() -> None:
                 ids = ids[finite]
                 vals = vals[finite]
                 toks = [t for t, f in zip(toks, finite.tolist()) if f]
+                if alpha_prof is not None:
+                    alpha_prof = alpha_prof[finite.numpy().astype(bool)]
             l0 = (vals > 0).sum(dim=-1).float()
             l0_all.append(l0)
             tok_total += hidden.shape[0]
@@ -1023,6 +1093,11 @@ def main() -> None:
             # dtype unicode fixe (pas object) : le .npz committe se recharge sans
             # allow_pickle=True cote notebooks GPU-free.
             arrays[f"{key}__tokens"] = np.array(toks, dtype=str)
+            # Profil d'inoculation par token (hysteresis #8236) : le banc
+            # GPU-free trace divergence(t) contre alpha(t) sans re-deriver la
+            # phase — la rampe est relative au prompt, pas au corpus.
+            if alpha_prof is not None:
+                arrays[f"{key}__alpha"] = alpha_prof.astype(np.float32)
             print(f"[trace] {key}: T={hidden.shape[0]} L0 moy={l0.mean():.1f} "
                   f"act max={vals.max():.2f}")
             if args.stage == "smoke":
@@ -1084,7 +1159,17 @@ def main() -> None:
                                    else int(mstats["pool"])),
             # Intensite du clamp (pilote #8236) : alpha=1.0 = annulation
             # exacte (Gate 24 historique) ; alpha<1 = inoculation partielle.
-            "clamp_scale": float(args.clamp_scale),
+            # Sous rampe (hysteresis), l'intensite est PAR TOKEN : clamp_scale
+            # devient null (une constante unique serait mensongere) et le
+            # profil effectif vit dans les arrays {set}__{i}__alpha.
+            "clamp_scale": (None if args.clamp_ramp is not None
+                            else float(args.clamp_scale)),
+            # Hysteresis multi-passes (limite 1 pilote ICT-42, #8236) : null
+            # par defaut ; sinon profil triangulaire alpha(t) de cycles
+            # montee+descente d'amplitude peak, repete sur chaque prompt.
+            "clamp_ramp": (None if args.clamp_ramp is None
+                           else {"cycles": int(args.clamp_ramp),
+                                 "peak": float(args.ramp_peak)}),
             # Mode inoculation : couche d'inoculation (SAE du hook) DISTINCTE
             # de la couche de lecture — "layer"/"layer_frac" ci-dessus
             # designent la lecture (SAE + encodage top-k de la trace). Null
