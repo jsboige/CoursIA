@@ -67,7 +67,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 16 | [Infer-16-Sparse-Gaussian-Process](Infer-16-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens, noyau RBF, classification non-linéaire, sparse GP |
 | 17 | [Infer-17-Kalman-Filter](Infer-17-Kalman-Filter.ipynb) | 55 min | Filtre de Kalman, système dynamique linéaire gaussien, conjugaison, EP exacte |
 | 18 | [Infer-18-Change-Point](Infer-18-Change-Point.ipynb) | 50 min | Détection de rupture, DiscreteUniform, ForEach + If/IfNot sur plage, EP, Poisson |
-| 19 | [Infer-19-Survival-Analysis](Infer-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, Exponentielle conjugée (Gamma), Weibull par transformée, S(t) forme fermée, censure à droite exécutée (`ConstrainPositive` vs Kaplan–Meier) |
+| 19 | [Infer-19-Survival-Analysis](Infer-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, Exponentielle conjuguée (Gamma), Weibull par transformée, S(t) forme fermée, censure à droite exécutée (statistiques suffisantes `Gamma(nObs, lambda)` vs Kaplan–Meier) |
 
 > **Théorie de la décision** : les notebooks de décision (utilité, EVPI, MDPs, Thompson Sampling, plus les companions Lean) forment désormais un arc autonome dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../DecisionTheory/decision_theory_lean/).
 
@@ -815,11 +815,37 @@ Le **point de rupture** (*change-point*) modélise une série qui suit un régim
 | Sélection de régime | `Variable.If(block.Index <= cp)` / `IfNot` | Branche la vraisemblance avant/après la rupture |
 | Postérieur discret | `ie.Infer<Discrete>(cp)` | Vecteur de probabilités sur les $N$ positions |
 | Initialisation EP | `taux.InitialiseTo(...)` | EP déterministe : amorcer les taux évite les optima locaux |
-| Concentration | entropie $H(\text{cp})$ | $H \to 0$ = rupture certaine ; le Bayes factor teste sa réalite (cf. Infer-8) |
+| Concentration | entropie $H(\text{cp})$ | $H \to 0$ = rupture certaine ; le Bayes factor teste sa réalite (cf. Infer-10) |
 
-**Positionnement** : [Infer-14](Infer-14-Sequences.ipynb) et [Infer-17](Infer-17-Kalman-Filter.ipynb) infèrent un état **récurrent** (un par pas) ; Infer-18 infère un **indice structurel unique** couplé à toute la plage — un usage du `If` sur une plage qu'aucun autre notebook n'exploite. Sur le cas gaussien, EP récupère le vrai point caché **exactement** (mode = 50, masse 0,998) ; sur les catastrophes minières (1851–1962), la rupture est datée à **1890–1891** (taux 3,1 → 0,9, rapport 3,3×), soit le résultat canonique de la littérature. Le notebook pointe aussi vers [Infer-5 (Causal)](Infer-5-Causal-Inference.ipynb) : un point de rupture est un changement de mécanisme générateur.
+**Positionnement** : [Infer-14](Infer-14-Sequences.ipynb) et [Infer-17](Infer-17-Kalman-Filter.ipynb) infèrent un état **récurrent** (un par pas) ; Infer-18 infère un **indice structurel unique** couplé à toute la plage — un usage du `If` sur une plage qu'aucun autre notebook n'exploite. Sur le cas gaussien, EP récupère le vrai point caché **exactement** (mode = 50, masse 0,998) ; sur les catastrophes minières (1851–1962), le mode du postérieur tombe en **1891** (intervalle crédible à 90 % : **1886–1892** ; taux 3,1 → 0,9, rapport 3,3×), soit le résultat canonique de la littérature. Le notebook pointe aussi vers [Infer-5 (Causal)](Infer-5-Causal-Inference.ipynb) : un point de rupture est un changement de mécanisme générateur.
 
 **Applications** : contrôle qualité (dérive de production), finance (changement de régime de marché), épidémiologie, surveillance de capteurs, datation d'événements structurels en sciences sociales et climatiques.
+
+### Infer-19 : Analyse de survie (time-to-event bayésien)
+
+L'**analyse de survie** modélise le **délai** qui sépare un instant initial d'un événement — panne, décès, désabonnement. Ce délai `T` est positif et asymétrique : une gaussienne est inadaptée, et la grandeur centrale n'est plus une moyenne mais la **fonction de survie** `S(t) = P(T > t)`. Le notebook construit la famille exponentielle/Weibull en restant **conjuguée** : l'exponentielle par conjugaison Gamma directe, la Weibull par **transformée de puissance** (`U = T^k ~ Exp(r)`), la forme `k` étant sélectionnée par balayage de log-vraisemblance prédictive. La **censure à droite** y est traitée sur un exemple **exécuté** : modèle naïf (biaissé), modèle corrigé par la **forme exacte en statistiques suffisantes** (`Gamma(nObs, lambda)` observée au temps total à risque — la contrainte latente `T_i > c*` n'étant pas compilable dans Infer.NET), confrontés à l'estimateur non paramétrique de Kaplan–Meier.
+
+**Durée** : 50 min
+
+**Objectifs** :
+
+- Modéliser un délai positif asymétrique et comprendre pourquoi la gaussienne échoue (temps négatifs, asymétrie, queue)
+- Maîtriser le modèle exponentiel conjugué (postérieur Gamma fermé) et la survie prédictive en forme fermée
+- Étendre à la Weibull par transformée de puissance et sélectionner la forme `k` par balayage de log-vraisemblance prédictive
+- Traiter la **censure à droite** : le biais du modèle naïf, la correction par statistiques suffisantes, la confrontation à Kaplan–Meier
+
+**Concepts clés** :
+
+| Concept | API | Description |
+| --------- | --------------- | ------------- |
+| Conjugaison exponentielle | `Variable.GammaFromShapeAndRate` | Postérieur Gamma fermé sur le taux `lambda` |
+| Transformée Weibull | `U = T^k ~ Exp(r)` | Ramène la Weibull au cas conjugué |
+| Censure à droite | `Gamma(nObs, lambda)` observée au temps total à risque | Vraisemblance exacte en statistiques suffisantes (la contrainte `T_i > c*` n'est pas compilable) |
+| Estimation non paramétrique | Kaplan–Meier (1958) | Escalier empirique adapté à la censure ; plat au-delà de `c*` |
+
+**Positionnement** : [Infer-17](Infer-17-Kalman-Filter.ipynb) et [Infer-18](Infer-18-Change-Point.ipynb) infèrent des paramètres d'un processus **observé partout** ; Infer-19 infère un **délai unique** par individu, **partiellement observé** (censure) — l'information manquante entre dans la vraisemblance au lieu d'être ignorée. PyMC-19 mène la même comparaison côté NUTS (censure par `pm.Potential`) : même protocole, même forme fermée, deux encodages du moteur.
+
+**Applications** : fiabilité industrielle (temps avant panne), essais cliniques (survie), analyse de churn client, garanties produits, maintenance prédictive.
 
 ---
 
