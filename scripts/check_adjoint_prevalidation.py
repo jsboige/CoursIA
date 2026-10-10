@@ -57,6 +57,18 @@ each one. A green gate therefore no longer hides a red B.0. It still does not
 dispense with reading the surfaces: the organ only sees its markers, and who
 lifted a remark, when, and on what substance are read by hand (CLAUDE.md §B.0).
 
+The same derivation carries a STACK door (#20251), and it closes the third
+blind spot: the gate judges ONE pull request against `main` and could not see
+that another OPEN pull request carries a newer version of the same commits. A
+stack top came out READY, was merged first, and `main` received the version
+that predated the corrections its own base branch had received hours earlier.
+The door compares commit SUBJECTS (a rebase rewrites SHAs and leaves subjects
+alone -- a stack top is precisely a rebased branch), skips pairs where this
+head is an ancestor of the other's (a linear stack bottom merges first
+correctly, so the door stays silent), and ignores re-trigger subjects. A
+measurement it cannot complete removes the door and says so on stderr; it
+never fabricates a refusal. `--stack-index` prints what the door reads.
+
 Exit codes -- dossier INTEGRITY and PR MERGEABILITY are two questions, and
 conflating them is what this gate used to do (#16800):
 
@@ -311,7 +323,7 @@ class Dossier:
 API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0}
 
 
-def gh_json(args: list[str]) -> Any:
+def _gh_invoke(args: list[str]) -> str:
     proc = subprocess.run(
         ["gh", *args], capture_output=True, text=True, encoding="utf-8"
     )
@@ -325,7 +337,21 @@ def gh_json(args: list[str]) -> Any:
         API_USAGE["rest"] += 1
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or "gh command failed")
-    return json.loads(proc.stdout)
+    return proc.stdout
+
+
+def gh_json(args: list[str]) -> Any:
+    return json.loads(_gh_invoke(args))
+
+
+def gh_lines(args: list[str]) -> list[str]:
+    """Lignes non vides d'une sortie ``gh`` brute.
+
+    Existe pour les appels pagines a ``--jq`` scalaire (``.[].number``) :
+    ``--paginate`` concatene un document par page et ``--slurp`` est refuse
+    avec ``--jq``, donc la sortie n'est pas un JSON unique.
+    """
+    return [line for line in _gh_invoke(args).splitlines() if line.strip()]
 
 
 def parse_dossier(
@@ -917,8 +943,236 @@ def refute_ready_b0(
     return verdict, [], dossier
 
 
+# ---------------------------------------------------------------------------
+# Porte « pile » (#20251)
+#
+# L'organe juge UNE PR contre `main`, a sa tete exacte. Il ne voyait pas qu'une
+# AUTRE PR ouverte porte une version plus recente des memes fichiers : un sommet
+# de pile pouvait donc sortir READY alors que les PRs du bas portaient des
+# corrections qu'il n'avait pas.
+#
+# Instance fondatrice (2026-10-10) : la pile Percolation #19548 -> #19556 ->
+# #19567, les trois de base `main`. #19567 avait ete rebatie AVANT les
+# corrections poussees ensuite sur #19548 et #19556 (enonce en `Phi_iso(n)`,
+# instrument R2 et verdict INCONCLUSIVE, re-execution C.2, reponse a un
+# REQUEST_CHANGES). Le gate a rendu READY, #19567 a ete mergee en premier, et
+# `main` a recu les versions anterieures aux corrections.
+#
+# Les commits sont apparies par SUJET, jamais par SHA : un rebase change les
+# SHA sans changer ce qu'une PR apporte -- et un sommet de pile est justement
+# une PR rebatie.
+# ---------------------------------------------------------------------------
+
+STACK_REF_PREFIX = "refs/remotes/prh/"
+STACK_FETCH_TRIES = 6
+# Sujets de re-declenchement : ils ne portent aucun contenu, et ne doivent pas,
+# a eux seuls, faire passer une PR pour un sommet de pile.
+STACK_NOISE_SUBJECTS = ("empty commit", "regenerer", "render-list")
+
+
+@dataclass
+class StackEntry:
+    """Ce qu'une PR ouverte apporte par rapport a `main`."""
+
+    number: int
+    ref: str
+    commits: list[str]
+    # sha -> sujet. Le sujet est ce qui s'apparie entre deux versions d'une PR
+    # rebatie ; le sha, lui, ne survit pas au rebase.
+    subjects: dict[str, str]
+
+
+def _git(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
+    proc = subprocess.run(
+        ["git", *args], capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
+    )
+    if check and proc.returncode != 0:
+        raise RuntimeError(f"git {' '.join(args[:3])} -> {proc.stderr.strip()[:200]}")
+    return proc
+
+
+def _own_ref_content(ref: str) -> tuple[list[str], dict[str, str]]:
+    """``(commits, sha -> sujet)`` propres a ``ref`` : hors `main`, sans fusion.
+
+    Un seul appel git par ref : les SHA et les sujets viennent du meme
+    ``log``. Deux appels par PR doubleraient le cout d'une passe qui touche
+    toutes les PR ouvertes.
+    """
+    proc = _git(
+        ["log", "--no-merges", "--format=%H\t%s", ref, "--not", "origin/main"],
+        check=False,
+    )
+    if proc.returncode != 0:
+        return [], {}
+    commits: list[str] = []
+    subjects: dict[str, str] = {}
+    for line in proc.stdout.splitlines():
+        sha, _, subject = line.partition("\t")
+        sha = sha.strip()
+        if sha:
+            commits.append(sha)
+            subjects[sha] = subject.strip()
+    return commits, subjects
+
+
+def _fetch_pr_heads(numbers: list[int]) -> tuple[list[int], list[str]]:
+    """Recupere les tetes des PR ouvertes en refs locales, plus `main`.
+
+    Un lot dont une seule ref a disparu (branche de fork supprimee) echoue
+    entierement : on retire la ref fautive et on relance, jusqu'a
+    ``STACK_FETCH_TRIES``. Une ref de tete disparue n'est pas une candidate de
+    pile, elle est simplement ecartee -- ce n'est pas un incident.
+
+    `main` voyage dans le MEME lot, et c'est deliberé : ``own_commits`` se
+    mesure ``--not origin/main``, donc un clone en retard ferait apparaitre
+    comme « propres » des commits deja merges -- la porte inventerait des piles.
+    Une passe qui rafraichit sa reference ne depend pas de la fraicheur de
+    l'appelant.
+    """
+    remaining = list(numbers)
+    for _ in range(STACK_FETCH_TRIES):
+        specs = ["main:refs/remotes/origin/main"]
+        specs += [f"pull/{p}/head:{STACK_REF_PREFIX}{p}" for p in remaining]
+        proc = _git(["fetch", "-q", "origin", *specs], check=False)
+        if proc.returncode == 0:
+            return remaining, []
+        gone = set(re.findall(r"remote ref pull/(\d+)/head", proc.stderr or ""))
+        if not gone:
+            detail = (proc.stderr or "").strip()[:200] or f"rc={proc.returncode}"
+            return [], [f"recuperation des tetes de PR impossible : {detail}"]
+        remaining = [p for p in remaining if str(p) not in gone]
+    return [], [
+        "recuperation des tetes de PR : tentatives epuisees "
+        "(des refs disparaissent a chaque passe)"
+    ]
+
+
+def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
+    """Une passe : ce que chaque PR ouverte apporte par rapport a `main`.
+
+    Renvoie ``(None, incidents)`` quand la mesure n'est pas possible. Un
+    incident ne fabrique JAMAIS un refus : il prive seulement l'organe d'une
+    porte (cf la porte B.0, dont l'echec de mesure est fail-closed a l'inverse,
+    parce qu'elle infirme une affirmation -- ici on ne peut que constater).
+    """
+    try:
+        numbers = [
+            int(line) for line in gh_lines([
+                "api", "--paginate", f"repos/{REPO}/pulls?state=open&per_page=100",
+                "--jq", ".[].number",
+            ])
+        ]
+    except Exception as exc:  # noqa: BLE001 -- mesure impossible, pas un crash
+        return None, [f"enumeration des PR ouvertes impossible : {exc}"]
+    fetched, incidents = _fetch_pr_heads(numbers)
+    if incidents:
+        return None, incidents
+    index: dict[int, StackEntry] = {}
+    for p in fetched:
+        ref = f"{STACK_REF_PREFIX}{p}"
+        commits, subjects = _own_ref_content(ref)
+        index[p] = StackEntry(p, ref, commits, subjects)
+    return index, []
+
+
+def _subjects_of(entry: StackEntry) -> set[str]:
+    return set(entry.subjects.values())
+
+
+def _is_stack_noise(subject: str) -> bool:
+    return subject.startswith("Merge ") or any(
+        token in subject for token in STACK_NOISE_SUBJECTS
+    )
+
+
+def _stack_partners(target: int, index: dict[int, StackEntry]) -> list[int]:
+    """PRs ouvertes dont ``target`` est un sommet de pile (cf ``stack_reasons``).
+
+    Predicat unique, partage par la porte et par ``--stack-index`` : deux
+    enonces du meme critere divergeraient au premier amendement.
+    """
+    entry = index.get(target)
+    if entry is None or not entry.commits:
+        return []
+    mine = _subjects_of(entry)
+    partners: list[int] = []
+    for number in sorted(index):
+        if number == target:
+            continue
+        other = index[number]
+        if not other.commits:
+            continue
+        if not set(entry.commits) & set(other.commits):
+            continue
+        # Bas de pile lineaire : la tete de `target` est un ancetre de celle
+        # de `other`, donc merger `target` d'abord est l'ordre correct.
+        if _git(
+            ["merge-base", "--is-ancestor", entry.ref, other.ref], check=False
+        ).returncode == 0:
+            continue
+        if not [
+            s for s in (_subjects_of(other) - mine) if not _is_stack_noise(s)
+        ]:
+            continue
+        partners.append(number)
+    return partners
+
+
+def stack_reasons(target: int, index: dict[int, StackEntry]) -> list[str]:
+    """Cause nommee quand ``target`` est un sommet de pile perime.
+
+    ``target`` partage des commits avec une PR ouverte ``p`` qui en porte
+    d'autres, absents de ``target``, et sa tete n'est PAS un ancetre de celle
+    de ``p``. Deux cas :
+
+    - **bas de pile lineaire** (tete de ``target`` ancetre de celle de ``p``) :
+      merger ``target`` d'abord est l'ordre correct -- aucune raison, et c'est
+      le controle negatif qui distingue la porte d'un simple « deux PRs se
+      ressemblent » ;
+    - **sommet de pile** : ``p`` porte des corrections que ``target`` n'a pas.
+      Merger ``target`` d'abord ferait atterrir sur `main` la version
+      anterieure.
+    """
+    entry = index.get(target)
+    if entry is None:
+        return []
+    mine = _subjects_of(entry)
+    reasons: list[str] = []
+    for number in _stack_partners(target, index):
+        other = index[number]
+        shared = set(entry.commits) & set(other.commits)
+        missing = sorted(
+            s for s in (_subjects_of(other) - mine) if not _is_stack_noise(s)
+        )
+        reasons.append(
+            f"stack top: shares {len(shared)} commit(s) with OPEN #{number}, which "
+            f"carries {len(missing)} commit(s) absent here -- merging this one first "
+            f"would land the earlier version on main (e.g. {missing[0][:90]!r})"
+        )
+    return reasons
+
+
+_STACK_INDEX_CACHE: dict[str, Any] = {"built": False, "index": None}
+# Sentinelle : distingue « pas d'argument » (mesure live, mise en cache) de
+# ``stack=None`` (desactivee explicitement, usage des tests).
+_STACK_AUTO = object()
+
+
+def default_stack_index() -> dict[int, StackEntry] | None:
+    if not _STACK_INDEX_CACHE["built"]:
+        index, incidents = build_stack_index()
+        _STACK_INDEX_CACHE.update(built=True, index=index)
+        for incident in incidents:
+            # Un incident se DIT et ne bloque pas : sortie stderr, verdict
+            # inchange. C'est la meme frontiere que l'organe #20250, ou une
+            # base illisible ne fabrique aucun finding.
+            print(f"STACK (WARN, mesure incomplete): {incident}", file=sys.stderr)
+    return _STACK_INDEX_CACHE["index"]
+
+
 def derive_verdict(
-    snapshot: dict[str, Any], probe: Any = None
+    snapshot: dict[str, Any], probe: Any = None, stack: Any = _STACK_AUTO
 ) -> tuple[str, list[str]]:
     """#18933 -- le verdict DERIVE de l'organe, pas ecrit par l'emetteur.
 
@@ -961,6 +1215,11 @@ def derive_verdict(
     reasons.extend(
         b0_claim_contradictions("clear", (probe or probe_b0)(snapshot["number"]))
     )
+    # Porte « pile » (#20251) : dernier ajout, pour ne pas deplacer l'ordre des
+    # raisons deja produites par les portes precedentes.
+    index = default_stack_index() if stack is _STACK_AUTO else stack
+    if index:
+        reasons.extend(stack_reasons(snapshot["number"], index))
     if reasons:
         return VERDICT_BLOCKED, reasons
     return VERDICT_READY, []
@@ -2466,7 +2725,35 @@ def main() -> int:
         "(organ/organ-command/organ-rc). Only the reading acts "
         "(complete/body/scope/domain) stay for the emitting lane to fill.",
     )
+    parser.add_argument(
+        "--stack-index",
+        action="store_true",
+        help="#20251: print the open-PR stack index the stack door reads "
+        "(per PR: own commits off main, and the PRs it is a stack top of). "
+        "Read-only, no PR argument; exits 2 when the measurement itself "
+        "fails, which is the same policy the door applies.",
+    )
     args = parser.parse_args()
+    if args.stack_index:
+        index, incidents = build_stack_index()
+        if index is None:
+            for incident in incidents:
+                print(f"STACK (WARN, mesure incomplete): {incident}",
+                      file=sys.stderr)
+            return EXIT_UNKNOWN
+        payload = {
+            "open_prs": len(index),
+            "entries": {
+                str(n): {
+                    "own_commits": len(e.commits),
+                    "stack_top_of": _stack_partners(n, index),
+                    "reasons": stack_reasons(n, index),
+                }
+                for n, e in sorted(index.items())
+            },
+        }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return EXIT_READY
     modes = sum(bool(m) for m in (args.pr, args.queue, args.consume))
     if modes != 1:
         parser.error(
