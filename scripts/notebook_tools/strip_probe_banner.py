@@ -112,6 +112,181 @@ def count_banner_lines(nb_path):
     return n
 
 
+def is_empty_envelope(obj):
+    """True for the envelope the banner strip itself leaves behind (#20190).
+
+    Shape produced on disk once the banner is removed::
+
+        {"output_type": "display_data", "data": {"text/html": ""}, "metadata": {}}
+
+    An empty ``display_data`` renders nothing, so the whole output carries no
+    information — it is the *wrapper* of a banner that is gone, not a result.
+    It also survives every later run of this tool: with no banner left,
+    ``count_banner_lines`` returns 0 and the notebook is skipped, so the
+    residue is permanent by construction (53 notebooks tracked in #20190).
+    """
+    if not isinstance(obj, dict) or obj.get("output_type") != "display_data":
+        return False
+    data = obj.get("data")
+    if not isinstance(data, dict) or list(data.keys()) != ["text/html"]:
+        return False
+    v = data["text/html"]
+    if isinstance(v, list):
+        v = "".join(str(part) for part in v)
+    return isinstance(v, str) and v.strip() == ""
+
+
+def count_empty_envelopes(nb_path):
+    """Count empty ``display_data`` envelopes across the notebook (see #20190)."""
+    try:
+        with open(nb_path, encoding="utf-8") as f:
+            nb = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return 0
+    n = 0
+    for cell in nb.get("cells", []):
+        for out in cell.get("outputs", []) or []:
+            if is_empty_envelope(out):
+                n += 1
+    return n
+
+
+def _json_array_bodies(text, key):
+    """``(body_start, body_end)`` of every ``"<key>": [ ... ]`` array body.
+
+    Bracket balancing with JSON-string awareness: brackets inside string
+    literals (the banner embeds JS array literals) must not move the depth.
+    """
+    out = []
+    for m in re.finditer(re.escape(key) + r"\s*:\s*\[", text):
+        start = m.end()
+        depth = 1
+        in_str = False
+        esc = False
+        i = start
+        while i < len(text):
+            ch = text[i]
+            if in_str:
+                if esc:
+                    esc = False
+                elif ch == "\\":
+                    esc = True
+                elif ch == '"':
+                    in_str = False
+            elif ch == '"':
+                in_str = True
+            elif ch == "[":
+                depth += 1
+            elif ch == "]":
+                depth -= 1
+                if depth == 0:
+                    out.append((start, i))
+                    break
+            i += 1
+    return out
+
+
+def _json_top_level_spans(body):
+    """``(start, end)`` of each top-level element of a JSON array body."""
+    spans = []
+    depth = 0
+    in_str = False
+    esc = False
+    start = None
+    i = 0
+    while i < len(body):
+        ch = body[i]
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+        elif ch == '"':
+            in_str = True
+            if depth == 0 and start is None:
+                start = i
+        elif ch in "[{":
+            if depth == 0 and start is None:
+                start = i
+            depth += 1
+        elif ch in "]}":
+            depth -= 1
+            if depth == 0 and start is not None:
+                spans.append((start, i + 1))
+                start = None
+        elif ch == "," and depth == 0:
+            if start is not None:
+                spans.append((start, i))
+                start = None
+        elif depth == 0 and start is None and not ch.isspace():
+            start = i
+        i += 1
+    if start is not None and body[start:].strip():
+        spans.append((start, len(body)))
+    return spans
+
+
+def _drop_empty_envelopes(new_text):
+    """Remove empty ``display_data`` envelopes from every ``outputs`` array.
+
+    Operates on raw notebook text so every other byte is preserved (same
+    philosophy as the banner passes). Returns ``(new_text, dropped)``.
+    """
+    dropped = 0
+    # Reverse file-offset order: each edit shrinks the file, so earlier
+    # offsets stay valid.
+    for body_start, body_end in reversed(_json_array_bodies(new_text, '"outputs"')):
+        body = new_text[body_start:body_end]
+        spans = _json_top_level_spans(body)
+        drops = []
+        for s, e in spans:
+            chunk = body[s:e]
+            try:
+                obj = json.loads(chunk)
+            except json.JSONDecodeError:
+                continue
+            if not is_empty_envelope(obj):
+                continue
+            if re.match(r"\s*,", body[e:]):
+                tail = re.match(r"\s*,", body[e:])
+                after_comma = e + tail.end()
+                # Also take the line break + indentation that opened the NEXT
+                # element: the element we keep already has its own preceding
+                # indentation, so leaving both would strand a whitespace-only
+                # line in the array (valid JSON, but off the canonical
+                # one-output-per-line shape). Require a newline in the run so a
+                # compact single-line array is never mangled.
+                ws = re.match(r"[ \t]*\n[ \t]*", body[after_comma:])
+                drops.append((s, after_comma + (ws.end() if ws else 0)))
+            else:
+                pre = re.search(r",\s*$", body[:s])
+                if pre:
+                    drops.append((pre.start(), e))
+                else:
+                    # Only element: drop it and the line it sat on, so the
+                    # array reads as an empty one rather than one holding a
+                    # blank line.
+                    lead = re.search(r"[ \t]*\n[ \t]*$", body[:s])
+                    drops.append((lead.start() if lead else s, e))
+        if not drops:
+            continue
+        parts = []
+        prev_end = 0
+        for s, e in sorted(drops):
+            if s < prev_end:  # overlap guard (adjacent envelopes)
+                continue
+            parts.append(body[prev_end:s])
+            prev_end = e
+        parts.append(body[prev_end:])
+        new_body = "".join(parts)
+        if new_body != body:
+            new_text = new_text[:body_start] + new_body + new_text[body_end:]
+            dropped += len(drops)
+    return new_text, dropped
+
+
 def find_banner_outputs(nb_path):
     """Return list of (cell_index, output_index) for banner outputs.
 
@@ -215,18 +390,24 @@ def strip_banner_in_place(nb_path):
        is preserved.
 
     2. **str** (one inline HTML string, common when the kernel emits a single
-       ``<script>...</script>`` block): the whole banner string is replaced
-       by ``""`` (empty string) in the on-disk JSON via a targeted text
-       rewrite. The empty string is still a valid ``text/html`` data value
-       (no display), and the surrounding ``outputs: [...]`` shape is preserved.
+       ``<script>...</script>`` block): the whole ``display_data`` output is
+       dropped from ``outputs`` via a targeted text rewrite. Blanking the
+       string instead (the previous behaviour) left an empty envelope behind
+       — ``{"data": {"text/html": ""}, ...}`` — which no later run could see
+       again, since with no banner left the tool skips the notebook. That
+       residue is #20190 (53 notebooks).
+
+    Any empty envelope already on disk (whatever put it there) is removed by
+    the same call, so the fix is self-healing for notebooks stripped by an
+    older version.
 
     Returns ``(outputs_with_banner, lines_fixed)``. ``lines_fixed`` counts
     banner-bearing JSON list elements rewritten (case 1) or string
-    replacements performed (case 2, always 1 per output).
+    replacements performed (case 2, always 1 per output) — envelope removals
+    are not counted, so the caller's ``FIXED == pre`` invariant (banner
+    count) still holds.
     """
     hits = find_banner_outputs(nb_path)
-    if not hits:
-        return (0, 0)
 
     with open(nb_path, encoding="utf-8") as f:
         text = f.read()
@@ -371,6 +552,12 @@ def strip_banner_in_place(nb_path):
             new_text = new_text[:body_start] + new_body + new_text[body_end:]
             fixed += replaced_here
 
+    # The banner passes above leave an empty envelope behind whenever the
+    # banner occupied a whole output (case 2, and the single-element list
+    # case, both end up with ``"text/html": ""``). Drop those entries — and
+    # any inherited from a run of an older version of this tool (#20190).
+    new_text, _dropped = _drop_empty_envelopes(new_text)
+
     if new_text != text:
         with open(nb_path, "w", encoding="utf-8", newline="") as f:
             f.write(new_text)
@@ -465,41 +652,57 @@ def main():
     total_files = 0
     total_banners_found = 0
     total_banners_fixed = 0
-    files_with_banner = 0
+    total_envelopes_found = 0
+    total_envelopes_left = 0
+    files_with_defect = 0
     skipped = []
     for p in sorted(paths):
-        # Count FIRST so the apply report shows pre-strip banner count (after
-        # the strip the count drops to 0; we'd otherwise miss the file in the
-        # summary).
+        # Count FIRST so the apply report shows the pre-strip counts (after
+        # the strip they drop to 0; we'd otherwise miss the file in the
+        # summary). Two defects are counted: the banner itself, and the empty
+        # ``display_data`` envelope a previous strip left behind (#20190) —
+        # the second one carries no banner, so a banner-only count skips the
+        # notebook and the residue becomes permanent.
         found = count_banner_lines(p)
+        envelopes = count_empty_envelopes(p)
         fixed = 0
-        if do_apply and found:
+        if do_apply and (found or envelopes):
             fixed = strip_banner_in_place(p)[1]
-        if not found:
+            envelopes_left = count_empty_envelopes(p)
+        else:
+            envelopes_left = envelopes
+        if not found and not envelopes:
             continue
         total_files += 1
-        files_with_banner += 1
+        files_with_defect += 1
         total_banners_found += found
         total_banners_fixed += fixed
+        total_envelopes_found += envelopes
+        total_envelopes_left += envelopes_left
         rel = os.path.relpath(p, repo_root)
+        detail = "%d banner line(s)" % found
+        if envelopes:
+            detail += ", %d empty envelope(s)" % envelopes
         if do_apply:
-            tag = "FIXED" if fixed == found else ("PARTIAL" if fixed else "SKIP")
-            print("[%s] %s  (%d banner line(s)%s)" % (
-                tag, rel, found, ", %d fixed" % fixed))
-            if fixed < found:
+            ok = fixed == found and envelopes_left == 0
+            tag = "FIXED" if ok else ("PARTIAL" if (fixed or envelopes_left < envelopes) else "SKIP")
+            print("[%s] %s  (%s%s)" % (tag, rel, detail, ", %d banner fixed" % fixed))
+            if not ok:
                 skipped.append(rel)
         else:
-            print("[DEFECT] %s  (%d banner line(s))" % (rel, found))
+            print("[DEFECT] %s  (%s)" % (rel, detail))
 
     mode = "apply" if do_apply else "scan"
-    print("\n%s summary: %d notebook(s) carrying %d probeAddresses banner line(s)"
-          % (mode, files_with_banner, total_banners_found))
+    print("\n%s summary: %d notebook(s) carrying %d probeAddresses banner line(s) "
+          "and %d empty display_data envelope(s)"
+          % (mode, files_with_defect, total_banners_found, total_envelopes_found))
     if do_apply:
-        print("  fixed: %d   skipped: %d file(s)" % (total_banners_fixed, len(skipped)))
+        print("  banner lines fixed: %d   empty envelopes left: %d   skipped: %d file(s)"
+              % (total_banners_fixed, total_envelopes_left, len(skipped)))
         for rel in skipped:
             print("    [unfixed] %s" % rel)
 
-    if args.check and total_banners_found > 0:
+    if args.check and (total_banners_found > 0 or total_envelopes_left > 0):
         sys.exit(1)
 
 
