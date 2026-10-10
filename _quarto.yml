@@ -855,6 +855,7 @@ project:
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/07-Committees-Core.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/08-Kemeny-RankedPairs-Dodgson.ipynb"
+    - "MyIA.AI.Notebooks/GameTheory/SocialChoice/09-Committees-STV-Monroe-ChamberlinCourant.ipynb"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-1-Environment-Setup.ipynb"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-2-Docker-Services-Management.ipynb"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-3-API-Endpoints-Configuration.ipynb"
