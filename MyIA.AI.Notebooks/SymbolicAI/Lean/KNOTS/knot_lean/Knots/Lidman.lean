@@ -15,11 +15,15 @@
   Référence : Lidman (2026), arXiv:2606.12431
 
   Epic #2874. Ce fichier héberge DEUX résultats distincts :
-    1. `unknotting_11n102_upper` : borne supérieure u(11n102) ≤ 2. ATTAQUABLE
-       en condition par l'organe natif `ReidemeisterCombinatorial` (theorem
-       `verifyMoves_sound` prouvé l.235 + contrat `unknottingWitness` l.264-268).
-       Le `sorry` sera levé quand la passe prouveur construira explicitement
-       le témoin d'unknotting pour ce diagramme — voir Epic #1453 / issue #18611.
+    1. `unknotting_11n102_upper` : borne supérieure u(11n102) ≤ 2. Sorry. Une
+       rédaction antérieure de cet en-tête annonçait que ce `sorry` serait levé
+       dès que « la passe prouveur construirait explicitement le témoin » :
+       cette attente n'est PAS soutenue par l'état mesuré. Le certificat
+       d'unknotting est inexprimable sous la machine de Reidemeister connectée
+       actuelle (§4), et le théorème du plancher conditionné de
+       `Knots.ReidemeisterMoves` §8 — branché sur ce diagramme au §5 — ferme la
+       route qui maintient l'hypothèse « tous les croisements four-distincts »
+       pas à pas. Voir Epic #1453 / issue #18611.
     2. `unknotting_11n102` : théorème de Lidman u(11n102) = 2. Sorry
        EFFECTIVEMENT PERMANENT : la preuve repose sur l'homologie de Heegaard
        Floer (d-invariants, HFred, formule du cône de Gainullin), hors Mathlib 4
@@ -36,6 +40,7 @@
 import Knots.Basic
 import Knots.Invariant
 import Knots.Conway
+import Knots.ReidemeisterMoves
 
 /-
   Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier est **FR canonique**,
@@ -84,27 +89,47 @@ def knot_11n102 : Knot where
 KnotInfo donne u(11n102) ∈ {1, 2}. Lidman montre que la valeur exacte est 2.
 
 **Dichotomie des deux résultats :**
-  - Borne supérieure u(11n102) ≤ 2 : ATTAQUABLE par l'organe natif
-    `ReidemeisterCombinatorial` — le contrat `UnknottingWitness` + le théorème
-    `verifyMoves_sound` (l.235) + la documentation du témoin (l.264-268)
-    suffisent, modulo la construction explicite du witness par le prouveur.
+  - Borne supérieure u(11n102) ≤ 2 : le `sorry` subsiste, et la raison n'est pas
+    un manque d'outillage. La forme « machine connectée » de la borne (§4) et le
+    plancher conditionné (§5) convergent : la route qui garde chaque diagramme
+    four-distinct est fermée par le noyau, et un move créateur (R1/R2 en
+    direction avant) introduit le kink/bigon qui invalide l'hypothèse au
+    maillon suivant. Rouvrir ce sorry demande d'abord un langage de mouvements
+    qui autorise la disparition de croisements sans sortir du certificat —
+    sujet distinct, porté par #18611.
   - Borne inférieure u(11n102) ≥ 2 (i.e. u = 2, vu la borne sup) : HORS DE
     PORTÉE. La preuve de Lidman exige l'algorithme de Némethi pour HF, les
     d-invariants Ozsváth-Szabó, la formule de Ni-Wu, et la formule du cône
     de Gainullin — le tout hors Mathlib 4.
 -/
 
-/-- Le nombre de dénouement de 11n102 est au plus 2
-(évident à partir d'un diagramme avec les changements de croisement appropriés).
+/-- Le nombre de dénouement de 11n102 est au plus 2 (évident à partir d'un
+diagramme avec les changements de croisement appropriés).
 
-**Statut formel :** ce `sorry` est **résoluble en condition** par l'organe
-natif `ReidemeisterCombinatorial`. Le théorème `verifyMoves_sound`
-(preuve : l.235) fournit la correction des mouvements de Reidemeister ;
-le contrat `unknottingWitness` (l.264-268) documente la forme du témoin
-attendu. Il reste à la passe prouveur de construire explicitement le
-témoin pour ce diagramme — voir Epic #1453 / issue #18611. La levée
-de ce sorry est conditionnée par la disponibilité de ce witness, pas
-par un manque de bibliothèque. -/
+**Statut formel (corrigé le 2026-10-09, #18611) :** la rédaction antérieure
+annonçait ce `sorry` « résoluble en condition » par la seule construction
+explicite du témoin par la passe prouveur. Cet espoir n'est pas soutenu par ce
+qui est mesuré :
+
+  - le certificat d'unknotting est **inexprimable** sous la machine de
+    Reidemeister connectée actuelle (§4 : mouvements append-only, labels frais
+    en queue) ;
+  - `Knots.ReidemeisterMoves` §8 prouve le **plancher conditionné** — un pas de
+    Reidemeister entre deux diagrammes entièrement four-distincts ne retire
+    jamais de croisement, car les moves descendants exigeraient un kink
+    `⟨a,b,c,c⟩` ou un bigon `⟨a,u,u,o⟩` que l'hypothèse interdit — et le §5
+    ci-dessous le branche sur ce diagramme : les 11 croisements du PD-code sont
+    four-distincts (`knot_11n102_allFourDistinct`), les changements de
+    croisement le restent (`knot_11n102_crossing_changes_keep_fourDistinct`),
+    donc aucune suite certifiée qui **maintient** l'hypothèse ne peut atteindre
+    le diagramme trivial (`no_fourDistinct_certificate_unknots_11n102`).
+
+Le `sorry` ne se lève donc pas par une passe prouveur sur le langage actuel :
+il demande un langage dont les mouvements descendants ne sortent pas du
+certificat. Portée exacte de ce qui est prouvé ici : la *route* qui maintient
+l'hypothèse est fermée, l'existence d'un témoin n'est pas réfutée — un move
+créateur introduit précisément le kink ou le bigon qui invalide l'hypothèse au
+maillon suivant. Voir Epic #1453 / issue #18611. -/
 theorem unknotting_11n102_upper : Knot.unknottingNumber knot_11n102 ≤ 2 := by
   rw [Knot.unknottingNumber]
   apply Nat.sInf_le
@@ -1076,5 +1101,96 @@ theorem alexander_11n102_eval_neg_one :
   simp only [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
     Polynomial.eval_pow, Polynomial.eval_X]
   norm_num
+
+/-! ## 5. Témoin du plancher conditionné (#18611)
+
+Le corps de #18611 est le **théorème du plancher conditionné** de
+`Knots.ReidemeisterMoves` (§8) : un pas de Reidemeister reliant deux diagrammes
+dont TOUS les croisements sont four-distincts ne peut pas retirer de croisement.
+La raison est structurelle — les moves descendants (R1/R2 en direction inverse)
+exigeraient un kink `⟨a,b,c,c⟩` (`e3 = e4`) ou un bigon `⟨a,u,u,o⟩` (`e2 = e3`)
+en fin de liste, et ces deux silhouettes violent la four-distinctness, donc
+l'hypothèse les réfute sans qu'aucun argument de parité `wf` soit nécessaire.
+
+Cette section branche ce théorème sur le nœud du §1. Elle ne redémontre rien :
+elle fournit les deux côtés du branchement, plus le témoin négatif qui montre
+que la condition n'est pas décorative.
+
+1. **Le diagramme de 11n102 satisfait l'hypothèse** au départ
+   (`knot_11n102_allFourDistinct`) : les 11 croisements du PD-code sont tous
+   four-distincts, vérifié par le noyau.
+2. **Les changements de croisement la préservent**
+   (`knot_11n102_crossing_changes_keep_fourDistinct`) : quel que soit le pli
+   d'indices, le diagramme obtenu reste four-distinct. Le pli des témoins de la
+   borne supérieure ne sort donc jamais de l'hypothèse, et il ne change pas non
+   plus la longueur (`foldl_changeCrossingAt_crossings_length` : 11 croisements
+   restent 11).
+
+Il en résulte `no_fourDistinct_certificate_unknots_11n102` : aucun certificat
+`movesConnects` dont tous les diagrammes restent four-distincts ne relie 11n102
+— ou n'importe lequel de ses plis de croisements — au diagramme trivial.
+
+**Portée exacte, sans surestimation.** Le théorème ne dit PAS qu'aucun témoin
+d'unknotting n'existe pour 11n102 : il dit que la route qui **maintient**
+l'hypothèse pas à pas est fermée. Un move créateur (R1/R2 en direction avant)
+introduit précisément le kink ou le bigon qui invalide l'hypothèse au maillon
+suivant — le résultat porte donc sur la *route* empruntée, pas sur l'existence
+d'un témoin. Le diagnostic de §4 (certificat inexprimable sous la machine de
+Reidemeister connectée actuelle) et la mesure de provenance de #18611 (recherche
+des états atteignables : excursions ≤ +2 croisements, diagrammes ≤ 13 croisements,
+138 623 états depuis les 67 départs n-changés — `unknotDiagram` jamais atteint,
+les 11 croisements d'origine présents dans tout état atteint) vont dans le même
+sens, mais restent une mesure **finie** : le noyau, ici, ne prouve que la
+version conditionnée.
+-/
+
+/-- **Témoin positif de l'hypothèse** : les 11 croisements du PD-code de 11n102
+    (§1) sont tous four-distincts — aucun n'est un kink ni un bigon. Vérifié par
+    le noyau sur la liste littérale (`List.all` + `decide`). -/
+theorem knot_11n102_allFourDistinct : allFourDistinct knot_11n102_diagram := by
+  intro c hc
+  have hall : knot_11n102_diagram.crossings.all (fun x => decide x.fourDistinct) = true := by
+    unfold knot_11n102_diagram
+    decide
+  exact of_decide_eq_true (List.all_eq_true.mp hall c hc)
+
+/-- Un changement de croisement préserve la longueur de la liste de croisements :
+    `List.modify` réécrit un slot, il n'en ajoute ni n'en retire aucun. -/
+theorem changeCrossingAt_crossings_length (k : Knot) (i : Nat) :
+    (k.changeCrossingAt i).diagram.crossings.length = k.diagram.crossings.length := by
+  simp [Knot.changeCrossingAt]
+
+/-- Le pli des changements de croisement préserve la longueur : 11 croisements
+    restent 11 sous les témoins de la borne supérieure, si bien que le diagramme
+    d'arrivée n'est jamais le diagramme trivial (qui en a 0). -/
+theorem foldl_changeCrossingAt_crossings_length (indices : List Nat) (k : Knot) :
+    (indices.foldl Knot.changeCrossingAt k).diagram.crossings.length =
+      k.diagram.crossings.length := by
+  induction indices generalizing k with
+  | nil => rfl
+  | cons i is ih =>
+    exact (ih (Knot.changeCrossingAt k i)).trans (by simp [Knot.changeCrossingAt])
+
+/-- **Branchement du témoin sur le théorème du plancher** : quel que soit le pli
+    d'indices, le diagramme de 11n102 reste entièrement four-distinct. -/
+theorem knot_11n102_crossing_changes_keep_fourDistinct (indices : List Nat) :
+    allFourDistinct (indices.foldl Knot.changeCrossingAt knot_11n102).diagram :=
+  foldl_changeCrossingAt_allFourDistinct indices knot_11n102 knot_11n102_allFourDistinct
+
+/-- **La route qui maintient l'hypothèse est fermée.** Aucun certificat
+    `movesConnects` dont tous les diagrammes restent four-distincts ne relie un
+    pli de changements de croisement de 11n102 au diagramme trivial — le plancher
+    conditionné interdit la conclusion. Le corollaire porte sur *toute* la
+    famille de départs, pas seulement sur le diagramme du §1 : les changements
+    de croisement ne font pas sortir de l'hypothèse. -/
+theorem no_fourDistinct_certificate_unknots_11n102 (indices : List Nat)
+    {ms : List ReidemeisterMove}
+    (h : movesConnects ms (indices.foldl Knot.changeCrossingAt knot_11n102).diagram
+      unknotDiagram)
+    (hall : ∀ m ∈ ms, allFourDistinct m.source ∧ allFourDistinct m.target) :
+    False := by
+  refine movesConnects_not_unknot_of_allFourDistinct ?_ h hall
+  rw [foldl_changeCrossingAt_crossings_length]
+  decide
 
 end Knots
