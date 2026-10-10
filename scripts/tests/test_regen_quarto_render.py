@@ -662,3 +662,62 @@ class TestGitTrackedDocsMd:
         result = rqr.git_tracked_docs_md()
         assert "docs/archive/old.md" not in result
         assert "docs/active.md" in result
+
+
+# ---------------------------------------------------------------------------
+# uncovered_notebooks — trous de couverture vs carnets hr-bloques (#18423)
+# ---------------------------------------------------------------------------
+
+class TestUncoveredNotebooks:
+    """Le residu de couverture ne doit PAS contenir un carnet que le generateur
+    ecarte par construction : `uncovered_notebooks` et `git_tracked_notebooks`
+    doivent partager le meme predicat d'exclusion. Le 2026-10-10, un carnet
+    hr-bloque (`Lean-12-Sensitivity-Theorem.ipynb`) rapporté ici faisait rougir
+    en permanence la jambe `Smoke test` de `quarto-render-list-freshness.yml`.
+    """
+
+    def _fake_run(self, paths):
+        fake_output = "".join(f"{p}\n" for p in paths)
+
+        def fake_run(*args, **kwargs):
+            class Result:
+                stdout = fake_output
+                returncode = 0
+            return Result()
+
+        return fake_run
+
+    def test_hr_blocked_notebook_is_not_a_coverage_hole(self, monkeypatch):
+        """Un carnet ecarte par la garde `---` sort du residu de couverture."""
+        hr_nb = "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb"
+        monkeypatch.setattr(rqr, "all_tracked_notebooks", lambda: [hr_nb])
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+        monkeypatch.setattr(rqr, "has_hr_separator", lambda p: p == hr_nb)
+
+        assert rqr.uncovered_notebooks() == []
+        assert rqr.hr_blocked_notebooks() == [hr_nb]
+
+    def test_undeclared_notebook_stays_a_coverage_hole(self, monkeypatch):
+        """Un carnet ni rendu ni declare reste signale (temoin negatif)."""
+        orphan = "MyIA.AI.Notebooks/CoursIA-Nouveau/serie-01.ipynb"
+        monkeypatch.setattr(rqr, "all_tracked_notebooks", lambda: [orphan])
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+        monkeypatch.setattr(rqr, "has_hr_separator", lambda p: False)
+
+        assert rqr.uncovered_notebooks() == [orphan]
+        assert rqr.hr_blocked_notebooks() == []
+
+    def test_declared_and_rendered_notebooks_are_excluded(self, monkeypatch):
+        """Ni un carnet rendu ni un carnet declare hors perimetre ne sont signales."""
+        rendered = "MyIA.AI.Notebooks/Search/rendu.ipynb"
+        hors = sorted(rqr.NOTEBOOKS_HORS_PERIMETRE)[0]
+        monkeypatch.setattr(rqr, "all_tracked_notebooks", lambda: [rendered, hors])
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [rendered])
+        monkeypatch.setattr(rqr, "has_hr_separator", lambda p: False)
+
+        assert rqr.uncovered_notebooks() == []
+        assert rqr.hr_blocked_notebooks() == []
+
+    def test_real_repo_has_no_uncovered_notebook(self):
+        """Sur l'arbre courant, le residu de couverture doit etre vide."""
+        assert rqr.uncovered_notebooks() == []
