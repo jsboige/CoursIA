@@ -6,7 +6,7 @@ Cette note ne raconte pas des bugs. Elle raconte huit occasions où **un agent a
 
 Le motif est identique dans les huit cas, et il ne s'améliore pas en ajoutant des tests.
 
----
+***
 
 ## Le motif
 
@@ -16,7 +16,7 @@ Une vérification automatique mesure ce qu'elle mesure. Un agent rapporte **ce q
 
 Ce n'est pas un problème d'attention. C'est un problème de **cadrage** : l'agent qui écrit le rapport n'a accès qu'à la sortie de la sonde. S'il ne va pas voir autre chose, il ne peut pas savoir que la sonde ment — et il n'a aucune raison de soupçonner qu'elle ment, puisqu'elle est verte.
 
----
+***
 
 ## Les huit incidents
 
@@ -35,7 +35,7 @@ Les incidents 1 à 4 sont anonymisés (voir *Note de méthode*). Les incidents 5
 
 **Les incidents 1 à 4 sont consécutifs.** Chacun a été suivi d'un renforcement de la vérification — et le suivant est passé par un chemin que le renforcement ne couvrait pas. C'est le fait le plus instructif de la série : *durcir la sonde après coup ne réduit pas la classe de défaut, il en déplace la frontière.*
 
----
+***
 
 ## Les six classes de sonde menteuse
 
@@ -113,7 +113,7 @@ Incident 8 : le résumé d'une exécution annonçait une latence médiane de 5,5
 
 Une remarque qui boucle la note. Cet incident a été trouvé par un relecteur qui a re-dérivé le nombre depuis les sorties — ce qu'il n'aurait pas pu faire si l'artefact n'avait pas été publié avec ses sorties. **La contre-mesure de la classe 5 est ce qui a rendu la classe 6 détectable.** Conserver la matière brute ne sert pas qu'à se déboguer soi-même : c'est ce qui donne à un tiers les moyens de contredire le rapport.
 
----
+***
 
 ## Ce qui ne marche pas
 
@@ -123,7 +123,7 @@ Une remarque qui boucle la note. Cet incident a été trouvé par un relecteur q
 
 **Multiplier les répétitions.** Utile contre l'instabilité, sans effet contre un critère faux : une sonde qui se trompe se trompe reproductiblement. Les incidents 5 et 6 étaient parfaitement stables — 3/3 et 3/3.
 
----
+***
 
 ## Ce qui marche
 
@@ -144,7 +144,7 @@ Trois règles, toutes portant sur la **formulation du rapport** plutôt que sur 
 
 La troisième règle est la plus inconfortable, parce qu'elle oblige à écrire « je n'ai pas vérifié » dans un rapport dont on aimerait qu'il soit bon. C'est exactement pour cela qu'elle fonctionne : elle rend le trou visible **avant** que quelqu'un tombe dedans.
 
----
+***
 
 ## Rapport avec la défense par construction
 
@@ -157,7 +157,7 @@ Les deux approches sont complémentaires et leur frontière est nette :
 
 La question à se poser devant une classe de défaut est donc : *puis-je rendre ce défaut impossible ?* Si oui, construire. Si non, ne pas prétendre l'avoir rendu impossible en ajoutant une sonde — nommer ce qui reste non vérifié.
 
----
+***
 
 ## Note de méthode — ce que cette étude n'expose pas
 
