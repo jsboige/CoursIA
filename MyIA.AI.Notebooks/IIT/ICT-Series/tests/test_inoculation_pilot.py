@@ -305,3 +305,130 @@ def test_ref_activity_aggregate_les_deux_jeux(tmp_path):
              code_python__0__topk_vals=arrays["code_python__0__topk_vals"])
     with pytest.raises(ValueError):
         mod.ref_activity(p)
+
+
+# --- Hysteresis multi-passes (limite 1 du pilote ICT-42, #8236) ---------------
+
+def test_ramp_alpha_forme_triangulaire_periodique():
+    # Verite connue par construction : 20 tokens, 2 cycles d'amplitude 1 ->
+    # 0,.2,.4,.6,.8,1,.8,...,0 puis identique. Chaque prompt vit ses cycles
+    # complets, la phase est relative au prompt.
+    import numpy as np
+    from ict.sae_traces import ramp_alpha
+    a = ramp_alpha(20, cycles=2, peak=1.0)
+    expected = np.array([0, .2, .4, .6, .8, 1, .8, .6, .4, .2] * 2,
+                        dtype=np.float32)
+    assert np.allclose(a, expected, atol=1e-6)
+    assert a.dtype == np.float32
+
+
+def test_ramp_alpha_bornes_et_neutralite_aux_extremites():
+    # Le prompt DEMARRE et FINIT non inocule (alpha=0 au premier token,
+    # retour a ~0 en fin de descente) : l'etat final mesure le retour ou le
+    # non-retour a l'etat initial — c'est le contrat du protocole.
+    import numpy as np
+    from ict.sae_traces import ramp_alpha
+    T = 64
+    for cycles in (1, 2, 3):
+        a = ramp_alpha(T, cycles=cycles, peak=0.75)
+        assert a[0] == 0.0
+        assert a.max() == pytest.approx(0.75)
+        assert a.min() >= 0.0
+        # Chaque cycle monte jusqu'a (au moins) un pas d'echantillonnage du
+        # pic et redescend jusqu'a un pas du creux : le sommet exact n'est
+        # PAS garanti (phase t*cycles/T non divisible), le maximum PAR CYCLE
+        # l'est — c'est la verite connue par construction.
+        step = 2.0 * 0.75 * cycles / T
+        seg = T // cycles
+        for c in range(cycles):
+            assert a[c * seg:(c + 1) * seg].max() >= 0.75 - step - 1e-6
+            assert a[c * seg:(c + 1) * seg].min() <= step + 1e-6
+
+
+def test_ramp_alpha_refuse_parametres_hors_protocole():
+    from ict.sae_traces import ramp_alpha
+    with pytest.raises(ValueError):
+        ramp_alpha(0, cycles=1)                     # aucun token
+    with pytest.raises(ValueError):
+        ramp_alpha(10, cycles=0)                    # pas de cycle complet
+    with pytest.raises(ValueError):
+        ramp_alpha(10, cycles=1.5)                  # cycles entier exigee
+    with pytest.raises(ValueError):
+        ramp_alpha(10, cycles=1, peak=0.0)          # pic nul = hook muet faux
+    with pytest.raises(ValueError):
+        ramp_alpha(10, cycles=1, peak=1.2)          # >1 sur-clampe (signe inverse)
+
+
+def test_filename_suffixe_ramp_discriminant_et_exclusif_du_s():
+    # La rampe suffixe APRES _clamp{n} et REMPLACE le suffixe _s : deux
+    # rampes differentes ne partagent jamais un nom, et une rampe ne doit
+    # pas cumuler les deux marqueurs d'intensite.
+    from ict.sae_traces import trace_filename
+    assert trace_filename("trained", 27, model="Qwen/Qwen3-1.7B-Base",
+                          default_model="Qwen/Qwen3-8B-Base_q8", n_layers=28,
+                          n_clamp=16, clamp_ramp=(2, 1.0),
+                          prefix="inoc") == \
+        "inoc_qwen3-17b-base_layer27of28_trained_clamp16_ramp2p1.npz"
+    # clamp_ramp + clamp_scale simultanes : la rampe gagne (le garde CLI
+    # interdit deja le combo ; le nom ne doit pas mentir sur la seconde).
+    both = trace_filename("trained", 27, n_clamp=16, clamp_scale=0.5,
+                          clamp_ramp=(2, 0.5))
+    assert "_ramp2p0.5" in both and "_s0.5" not in both
+    # rampe sans clamp : aucun suffixe (meme regle que clamp_scale seul).
+    assert trace_filename("trained", 16, n_clamp=0, clamp_ramp=(2, 1.0)) == \
+        "ict21_sae_layer16_trained.npz"
+
+
+def test_clamp_hook_alpha_fn_lineaire_et_symetrique():
+    # alpha(t) par token : le delta reste lineaire en alpha — a un instant t
+    # donne, h'(t) = h(t) - alpha(t) * delta(t). Verite connue par
+    # construction sur un profil rampe reel.
+    torch = pytest.importorskip("torch")
+    import numpy as np
+    mod = _load_script_module()
+    from ict.sae_traces import ramp_alpha
+    sae = _fake_sae(seed=3)
+    ids = [0, 1, 5]
+    T, d = 12, 8
+    h = torch.randn(1, T, d)
+    alpha = ramp_alpha(T, cycles=1, peak=1.0)
+    hook = mod.ClampHook(sae, ids, 1.0, alpha_fn=lambda n: ramp_alpha(
+        n, cycles=1, peak=1.0))
+    got = hook(None, None, h)
+    # Token par token contre la formule exacte.
+    acts = torch.relu(h[0] @ sae["W_enc"][ids].T + sae["b_enc"][ids])
+    delta = acts @ sae["W_dec"][ids]
+    expected = h[0] - torch.from_numpy(alpha)[:, None] * delta
+    assert torch.allclose(got[0], expected, atol=1e-5)
+    # Le profil effectif est expose pour la trace.
+    assert np.allclose(hook.last_alpha, alpha)
+
+
+def test_clamp_hook_alpha_fn_sommet_egale_clamp_constant():
+    # Au token sommet de la rampe (alpha=peak), la sortie DOIT coincider
+    # avec le ClampHook constant a peak sur ce meme token : la rampe n'est
+    # pas une autre physique, c'est le meme clamp module dans le temps.
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    from ict.sae_traces import ramp_alpha
+    sae = _fake_sae(seed=4)
+    ids = [2, 6]
+    h = torch.randn(1, 11, 8)
+    peak = 0.6
+    alpha = ramp_alpha(11, cycles=1, peak=peak)
+    top = int(alpha.argmax())
+    hook = mod.ClampHook(sae, ids, peak, alpha_fn=lambda n: ramp_alpha(
+        n, cycles=1, peak=peak))
+    got_ramp = hook(None, None, h)[0, top]
+    got_const = mod.ClampHook(sae, ids, peak)(None, None, h)[0, top]
+    assert torch.allclose(got_ramp, got_const, atol=1e-5)
+
+
+def test_clamp_hook_alpha_fn_last_alpha_reset_sans_fn():
+    # Sans alpha_fn, last_alpha reste None : la trace ne doit pas porter de
+    # profil fantome d'un run precedent.
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    hook = mod.ClampHook(_fake_sae(), [1], 1.0)
+    hook(None, None, torch.randn(1, 6, 8))
+    assert hook.last_alpha is None
