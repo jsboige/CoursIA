@@ -1280,6 +1280,12 @@ def has_delivered_signal(issue_number: int,
     ``lane`` n'entre pas dans le verdict (le signal vaut pour toutes les
     lanes) : il est accepte pour que la sonde et son appelant partagent une
     signature unique, et pour les sondes de test qui veulent la lire.
+
+    Deux transports (#17038) : la lecture nominale est GraphQL
+    (`gh issue view --json comments`) ; son echec bascule sur REST
+    (`_issue_comment_bodies_rest`), qui ne partage pas le bucket tombe. Le
+    tri-etat est preserve -- ``None`` seulement si les DEUX transports
+    echouent.
     """
     try:
         out = subprocess.run(
@@ -1290,7 +1296,18 @@ def has_delivered_signal(issue_number: int,
         ).stdout
         comments = (json.loads(out) or {}).get("comments") or []
     except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
-        return None
+        # #17038 -- DEUXIEME transport. `gh issue view` partage le bucket
+        # GraphQL avec `gh pr list` et `gh issue list` : quand il tombe, cette
+        # sonde s'aveuglait exactement quand le marqueur est le dernier signal
+        # disponible, et le tapis resservait des candidats deja livres. Meme
+        # repli que `_has_delivered_marker`, par le meme helper : une seule
+        # implementation du repli, un seul point a corriger. Reste TRI-ETAT --
+        # `None` si la lecture REST echoue aussi, jamais une exclusion
+        # fabriquee.
+        bodies = _issue_comment_bodies_rest(issue_number)
+        if bodies is None:
+            return None
+        return any(_DELIVERED_MARKER_RE.search(b) for b in bodies)
     for comment in comments:
         # Grammaire `_DELIVERED_MARKER_RE`, pas la sous-chaine nue (#19390,
         # controle negatif) : une mention discursive -- « sans [INFO]

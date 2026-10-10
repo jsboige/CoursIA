@@ -3710,6 +3710,64 @@ def test_sonde_marqueur_ne_touche_pas_rest_quand_graphql_vit(monkeypatch):
     assert [c for c in calls if c[1:2] == ["api"]] == []
 
 
+# --- #17038 : la sonde du TAPIS (`has_delivered_signal`) porte le meme repli
+#
+# Elle porte le meme defaut, dans une implementation SEPAREE : `gh issue view`
+# + `except: return None`, sans repli. C'est elle qui sert la boucle du tapis,
+# donc c'est elle qui decidait des 33 ecartements ; la corriger du seul cote
+# `_has_delivered_marker` laissait le tapis aveugle sous panne, ce qui est
+# exactement le defaut que la PR annonce reparer.
+
+
+def test_sonde_tapis_bascule_sur_rest_quand_graphql_meurt(monkeypatch):
+    """GraphQL mort -> la sonde du tapis lit les corps par REST.
+
+    Cible REST epinglee (`repos/<REPO>/...`) : aucun slug infere du cwd ni du
+    remote `origin`.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, issue=_GRAPHQL_MORT,
+        rest=_delivered_marker_comment()["body"] + "\n")
+    assert pig.has_delivered_signal(16372) is True
+    rest_calls = [c for c in calls if c[1:2] == ["api"]]
+    assert len(rest_calls) == 1
+    assert rest_calls[0][-1] == f"repos/{pig.REPO}/issues/16372/comments"
+
+
+def test_sonde_tapis_deux_transports_morts_reste_none(monkeypatch):
+    """Les deux transports morts -> None : le tri-etat est preserve.
+
+    Un `False` fabrique ecarterait ou garderait un candidat sur une panne ;
+    `None` dit l'echec de mesure et l'appelant tire quand meme EN LE DISANT.
+    """
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=pig.subprocess.CalledProcessError(1, ["gh"]))
+    assert pig.has_delivered_signal(16372) is None
+
+
+def test_sonde_tapis_ne_touche_pas_rest_quand_graphql_vit(monkeypatch):
+    """Invariant de cout : la voie nominale du tapis reste a UNE requete."""
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, issue={"comments": [_delivered_marker_comment()]})
+    assert pig.has_delivered_signal(16372) is True
+    assert [c for c in calls if c[1:2] == ["api"]] == []
+
+
+def test_sonde_tapis_sans_marqueur_en_repli_rend_faux(monkeypatch):
+    """Controle NEGATIF : le repli ne fabrique pas d'ecartement.
+
+    Sans marqueur dans les corps REST, la sonde rend `False` (mesure aboutie,
+    aucun signal) -- pas `True`, pas `None`.
+    """
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest="Commentaire sans marqueur de livraison.\n")
+    assert pig.has_delivered_signal(16372) is False
+
+
 def test_recherche_pr_morte_le_filet_reclasse_quand_meme(monkeypatch):
     """#17038, controle positif du defaut mesure : #16372 (une des 4 issues
     livrees du 2026-10-10) reste reclassee `delivered` malgre la panne.
