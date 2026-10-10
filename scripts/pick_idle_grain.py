@@ -1273,7 +1273,7 @@ def delivered_probe_inert(issue_number: int, lane: str | None = None) -> bool:
 
 # --- Troisieme surface de livraison : PR MERGEE citant l'issue (#19907) ------
 #
-# Mesure du 2026-10-08 (cycles c.1450..c.1453, Tell c.1392 picker-delivered
+# Mesure du 2026-10-08 (cycles c.1450..c.1453, picker-delivered
 # gap confirme 9x) : 24-28 cycles successifs sans grain actionnable. Le label
 # `candidate-delivered` est pose par un workflow quotidien 05:49Z et le
 # marqueur `[INFO] candidate-delivered` est poste par les lanes worker quand

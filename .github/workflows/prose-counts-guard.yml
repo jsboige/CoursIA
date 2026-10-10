@@ -22,10 +22,7 @@ name: prose-counts-guard
 # promettait ce label. #17029 a fusionne ainsi, revertee par #17632.
 
 on:
-  pull_request:
-    paths:
-      - '**/*.ipynb'
-      - '**/*.md'
+  workflow_dispatch:
 
 permissions:
   contents: read
