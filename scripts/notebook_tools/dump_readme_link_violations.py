@@ -12,7 +12,7 @@ This wrapper runs the check, parses both streams, and prints a JSON document
 on stdout (the engine captures stdout via `payload_of()` and writes it to
 `{name}.head.json` / `{name}.base.json` for the comparator):
 
-    {"violations": [{"class": "STALE_LINK",
+    {"violations": [{"class": "HTML_404",
                      "readme": "...",
                      "href": "..."},
                     ...],
@@ -23,13 +23,13 @@ Exit codes:
     0 = JSON printed (regardless of violation count -- the delta_argv
         comparator is the only one that decides the final verdict, and
         it ignores the upstream rc; this lets argv not rouge on the
-        2432 historical violations while still capturing them for diff).
+        618 historical violations while still capturing them for diff).
     2 = invocation error (cwd, missing upstream script, etc.).
 
 Pair with `scripts/notebook_tools/diff_readme_link_violations.py` for the
 delta comparator. Together they implement F2 of #18970 (delta-only, not
-BRUT, so the 2428 historical backlog never blocks a PR that adds zero
-new violations).
+BRUT, so the 618 historical HTML_404 backlog never blocks a PR that adds
+zero new violations).
 """
 from __future__ import annotations
 
@@ -41,7 +41,12 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-VIOLATION_RE = re.compile(r"^::error::(STALE_LINK|BROKEN|DEAD_RENDER)\s+(\S+)\s+->\s+(\S+)\s*$")
+# HTML_404 remplace STALE_LINK depuis #18911 (geste 2, 2026-10-09) ; les deux
+# sont acceptees pour rester compatible avec un dump produit par un script
+# anterieur (le comparateur, lui, est deja agnostique a la classe).
+VIOLATION_RE = re.compile(
+    r"^::error::(HTML_404|STALE_LINK|BROKEN|DEAD_RENDER)\s+(\S+)\s+->\s+(\S+)\s*$"
+)
 
 
 def _scan() -> dict:
