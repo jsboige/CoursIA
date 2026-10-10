@@ -224,5 +224,40 @@ class TestBoucleFermee(unittest.TestCase):
         self.assertEqual(fgt.collect_activations(model, x).shape, (14, 16))
 
 
+# ---------------------------------------------------------------------------
+# Regimes generatifs (#20071) : le plancher de Bayes se releve avec le bruit
+# du canal. Ces tests vivent ICI (et non dans test_bench_regimes_generatifs.py)
+# parce qu'ils exigent la couche de mesure -- torch -- et que ce fichier est
+# l'endroit du paquet ou torch se charge deja.
+# ---------------------------------------------------------------------------
+
+
+def test_plancher_croissant_avec_le_bruit_du_canal():
+    """Monotonicite en information : plus le canal d'emission est bruite
+    (``NoisedChannel``, gamma de 0 a 1), plus le meilleur filtre perd. Les
+    niveaux voisins sont separables a peine plus que le bruit d'estimation
+    (3000 pas) : tolerance 0.005, endpoint gamma=1 exact (emissions muettes
+    -> entropie uniforme ln q)."""
+    for proc, seed, q in ((bf.Mess3Canonical(), 11, 3), (bf.RRXOR(), 13, 2)):
+        floors = []
+        for gamma in (0.0, 0.15, 0.4, 0.75, 1.0):
+            noised = bf.NoisedChannel(proc, gamma)
+            _, obs = noised.sample(3000, seed=seed)
+            floors.append(fgt.bayes_floor(noised, obs, burn=32))
+        for i in range(len(floors) - 1):
+            assert floors[i + 1] >= floors[i] - 0.005, (proc.name, floors)
+        assert abs(floors[-1] - float(np.log(q))) < 0.001, floors
+
+
+def test_plancher_gamma_zero_sous_l_uniforme():
+    """A gamma = 0 le canal bruite a la loi du processus d'origine : le
+    plancher reste sous l'entropie uniforme ln q (le processus est
+    predictible)."""
+    for proc, seed, q in ((bf.Mess3Canonical(), 21, 3), (bf.RRXOR(), 22, 2)):
+        _, obs = proc.sample(3000, seed=seed)
+        noised = bf.NoisedChannel(proc, 0.0)
+        assert fgt.bayes_floor(noised, obs, burn=32) < float(np.log(q))
+
+
 if __name__ == "__main__":
     unittest.main()
