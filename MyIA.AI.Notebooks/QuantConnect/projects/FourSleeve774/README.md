@@ -162,7 +162,7 @@ avant. L'entrée gelée `fs774` se rejoue au SHA de son gel.
 |---------------------|---------------------------------|
 | Parts des poches | poche actions 55 % (clé 3), poche ETF 45 % (clé 4) ; les poches 1 et 2 de la 774 sont vides |
 | Indice de bande | rang centile du stress du jour parmi les stress quotidiens des 200 dernières séances, recalculés sur l'historique au moment du choix mensuel |
-| Marché agité | indice de bande ≥ 0,5 : 5 lignes au lieu de 10 |
+| Marché agité | indice de bande ≥ 0,5 : 5 titres au lieu de 10 |
 | Mise à l'échelle | exposition de la poche actions × (1 − indice de bande / 2), de 100 % à 50 % ; le reste en bons du Trésor |
 | Poids dans la poche actions | proportionnels au score de momentum (moyenne des rendements 3, 6 et 12 mois), titres au-dessus de leur EMA avec ADX sous `adx_max` et à score positif ; une place non pourvue va aux bons du Trésor |
 | Sortie de largeur | au choix mensuel, stress > `stress_max` : toute la poche actions en bons du Trésor ; retour au premier choix mensuel où le stress est revenu sous `stress_max`, ou d'office 180 jours calendaires après la sortie |
