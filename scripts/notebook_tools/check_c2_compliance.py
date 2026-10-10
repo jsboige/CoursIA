@@ -312,7 +312,13 @@ def main():
 
     targets = get_target_notebooks(args)
     if not targets:
-        print("No notebooks to check.")
+        # Contrat --json (#20198) : toujours du JSON, meme sur cible vide.
+        # La distinction vide/panne appartient a l'appelant (le workflow
+        # traite [] comme une erreur nommee, pas comme un succes).
+        if args.json:
+            print(json.dumps([], indent=2))
+        else:
+            print("No notebooks to check.")
         return 0
 
     results = [check_notebook(p) for p in targets]

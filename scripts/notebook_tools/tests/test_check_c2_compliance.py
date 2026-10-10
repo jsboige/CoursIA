@@ -22,6 +22,7 @@ from check_c2_compliance import (
     EXCLUDE_PEDAGOGICAL,
     check_notebook,
     get_target_notebooks,
+    main,
 )
 
 
@@ -892,6 +893,47 @@ class TestGetTargetNotebooksCatalog:
              patch("check_c2_compliance.CATALOG_PATH", cat):
             result = get_target_notebooks(self._make_args())
         assert result == []
+
+
+# ---------------------------------------------------------------------------
+# main — contrat --json sur cible vide (#20198)
+# ---------------------------------------------------------------------------
+
+class TestJsonContractOnEmptyTarget:
+    """#20198 — `--json` doit toujours emettre du JSON, meme sur cible vide.
+
+    Avant le fix, la cible vide imprimait la chaine humaine
+    "No notebooks to check." et sortait en 0 : le workflow parsait la
+    sortie comme du JSON et rougissait avec un message nommant un carnet,
+    jamais la cause (checkout ampute)."""
+
+    def test_json_empty_target_emits_empty_list_rc0(self, capsys, monkeypatch):
+        monkeypatch.setattr("sys.argv", ["check_c2_compliance.py", "--json"])
+        with patch("check_c2_compliance.get_target_notebooks", return_value=[]):
+            rc = main()
+        assert json.loads(capsys.readouterr().out) == []
+        assert rc == 0
+
+    def test_human_empty_target_message_unchanged(self, capsys, monkeypatch):
+        monkeypatch.setattr("sys.argv", ["check_c2_compliance.py"])
+        with patch("check_c2_compliance.get_target_notebooks", return_value=[]):
+            rc = main()
+        assert "No notebooks to check." in capsys.readouterr().out
+        assert rc == 0
+
+    def test_json_nonempty_target_contract_unchanged(self, capsys, monkeypatch, tmp_path):
+        """Non-regression : cible non vide -> liste de resultats, rc 0 si conforme."""
+        nb = _write_nb(tmp_path / "Ok.ipynb", [
+            _code("x = 1", exec_count=1,
+                  outputs=[{"output_type": "execute_result", "data": {"text/plain": "1"}}]),
+        ])
+        monkeypatch.setattr("sys.argv", ["check_c2_compliance.py", "--json"])
+        with patch("check_c2_compliance.get_target_notebooks", return_value=[nb]):
+            rc = main()
+        data = json.loads(capsys.readouterr().out)
+        assert len(data) == 1
+        assert data[0]["violations"] == []
+        assert rc == 0
 
 
 # ---------------------------------------------------------------------------

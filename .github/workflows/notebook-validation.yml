@@ -115,6 +115,13 @@ jobs:
           echo "::error::C.2 results not parseable as JSON — scanner wrote non-JSON or truncated output (file starts with: '$FIRST') (#14799)"
           exit 1
         fi
+        # Cible vide = erreur nommee (#20198), jamais un succes : sur un
+        # checkout sain c'est impossible (catalogue absent -> rglob rend des
+        # centaines de carnets). [] = arbre ampute (classe #20174).
+        if python -c "import json, sys; sys.exit(0 if json.load(open('/tmp/c2_results.json')) == [] else 1)"; then
+          echo "::error::C.2 target empty — checkout incomplet : le scanner n'a trouve AUCUN carnet (catalogue lu mais fichiers absents du disque ?) (#20198, cf #20174)"
+          exit 1
+        fi
         echo "C.2 compliance: $VIOLATIONS with violations (scanner exit $C2_EXIT)"
         # Report but don't block — C.2 is advisory on PRs, enforced on merge
         if echo "$VIOLATIONS" | grep -q "0 notebooks"; then
