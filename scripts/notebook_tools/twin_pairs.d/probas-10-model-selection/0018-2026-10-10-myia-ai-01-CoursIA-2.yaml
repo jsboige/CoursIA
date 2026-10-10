@@ -1,0 +1,7 @@
+date: '2026-10-10'
+by: myia-ai-01:CoursIA-2
+python_sha: a128bf637b085ffe8c546dd0f1720e744ae905b1
+csharp_sha: 01cc9775901469e2842e4f32acd17eddb1ad3ef7
+content_python_sha: 991635c83fa0ab8bc02692cb47a31d1cab161af0168a3855bf893244c1728e84
+content_csharp_sha: c71275725b8a1f3fde9b69a4282d6bdc7842f193a741b8a6b8441abc7c75514a
+reason: 'Audit de contenu markdown-only (#17222, PR #20269) : 5 enonces du carnet Python corriges contre son propre code et ses propres sorties (regle de decision ARD enoncee sur alpha ET poids alors que le code ne lit que le poids ; n_eff cite comme colonne d''az.summary alors que la section 2 lit ess_bulk ; libelles de l''exercice 2 NON/OUI absents du code ; table de synthese listant encore WAIC apres 15 pages le declarant retire ; typo). Aucun outputs ni execution_count touche -- pas de re-execution due (C.2, exception markdown). Jumeau C# NON touche : les notions corrigees (ess_bulk, retrait de WAIC d''ArviZ 1.x, seuil alpha du prior Gamma(1,1)) sont propres a la stack PyMC/ArviZ et n''ont pas d''equivalent dans Infer.NET. La paire reste en parite de contenu pedagogique (#9399 : --update ATTESTE, il ne repare pas).'
