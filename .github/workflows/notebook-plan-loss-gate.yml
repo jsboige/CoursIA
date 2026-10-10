@@ -53,9 +53,14 @@ on:
   # (cf. discipline d'auto-couverture paths #14391/#14429 -- une PR ne touchant
   # que ce workflow emet l'evenement, la garde se re-evalue sur sa propre PR).
   # PAS de `paths:` ici : un seul evenement manquant = la garde ne protege rien.
+  # `edited` (convention de `always-on-guards.yml`, qui lit lui aussi les bodies) :
+  # le marker `plan-loss: section assumee -- ...` du body est la voie que cette
+  # garde prescrit elle-meme. Sans cet evenement, un auteur qui l'ajoute apres le
+  # dernier push laisse le check rouge jusqu'a un push sans rapport -- qui re-arme
+  # en plus le plancher DWELL (#20256).
   pull_request:
     branches: [ main ]
-    types: [ opened, synchronize, reopened ]
+    types: [ opened, synchronize, edited, reopened ]
   workflow_dispatch:
 
 permissions:
