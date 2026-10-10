@@ -68,7 +68,7 @@ Updated: 2026-10-07 — M5 lu comme couche de dimensionnement (stratégie, #1972
 
 Updated: 2026-10-08 — P15294 re-run probe GRPO sur Hermes-function-calling-v1 (issue #15294 acceptance 2 partielle, lane myia-po-2024:CoursIA) : **Qwen3.5-0.8B produit du signal RL net sur la tâche calibrée** — Δ reward eval held-out (40 prompts × 4 générations, pré/post 100 steps, même recette GRPO+QLoRA non-thinking que M19) : **+0,2500 ± 0,1875**, 2/2 seeds progressent (0,2063→0,2688 et 0,1688→0,6063), pas d'effondrement de longueur — contre **+0,0063 ± 0,0063** (plat, courbes erratiques) du même backbone sur DAPO-Math-17k : la platitude DAPO du 0.8B était un artefact de casting, pas une propriété du backbone. Côté MiniCPM5-2B : 2 runs en chaîne détachée sur RTX 3070, verdict de comparaison 2B vs 0.8B différé à leur livraison. Manifestes `scripts/results/p15294_hermes_grpo/`.
 
-Updated: 2026-10-10 — P15294 verdict de paire 2B vs 0.8B (issue #15294 acceptances 2 et 3 closes, lane myia-po-2024:CoursIA-2) : **le classement 2B > 0.8B tient en tendance sur la tâche calibrée — MiniCPM5-2B +0,4313 ± 0,0000 (réplication stricte, 0,2125→0,6438 et 0,2500→0,6813) vs Qwen3.5-0.8B +0,2500 ± 0,1875** ; contrôle de dégénérescence passé (le no-op eos des runs m19 ne s'est pas reproduit : loss/grad non nuls sur 63-66 % des steps, entropy décroissante, complétions d'entraînement 350→136 = apprentissage d'EOS, aucune chute de longueur à l'eval 319→403 / 326→437) ; wallclock cumulé ~3,9× inférieur (18 344 s vs 70 717 s). **À n=2 par modèle, tendance convergente, pas un verdict BEATS formel** (protocole ≥ 4 seeds). Le BEATS M19 sur DAPO était un double artefact : casting + gradient nul eos. Manifestes `scripts/results/p15294_hermes_grpo/minicpm5_seed{0,1}.json` (chaîne GPU 2, lane myia-ai-01:CoursIA-2). Détail section P15294 verdict de paire + `docs/P15294_SMALL_MODEL_RL_DATASETS.md`.
+Updated: 2026-10-10 — P15294 verdict de paire 2B vs 0.8B (issue #15294 acceptances 2 et 3 closes, lane myia-po-2024:CoursIA-2) : **le classement 2B > 0.8B tient en tendance sur la tâche calibrée — MiniCPM5-2B +0,4313 ± 0,0000 (réplication stricte, 0,2125→0,6438 et 0,2500→0,6813) vs Qwen3.5-0.8B +0,2500 ± 0,1875** ; contrôle de dégénérescence passé (le no-op eos des runs m19 ne s'est pas reproduit : `grad_norm` non nul sur 63-66 % des steps, loss strictement positive sur 30-33 %, entropy décroissante, complétions d'entraînement seed 1 350→136 = apprentissage d'EOS, aucune chute de longueur à l'eval 319→403 / 326→437) ; wallclock cumulé ~3,9× inférieur (18 344 s vs 70 717 s). **À n=2 par modèle, tendance convergente, pas un verdict BEATS formel** (protocole ≥ 4 seeds). Le BEATS M19 sur DAPO était un double artefact : casting + gradient nul eos. Manifestes `scripts/results/p15294_hermes_grpo/minicpm5_seed{0,1}.json` (chaîne GPU 2, lane myia-ai-01:CoursIA-2). Détail section P15294 verdict de paire + `docs/P15294_SMALL_MODEL_RL_DATASETS.md`.
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 
@@ -121,11 +121,13 @@ générations pré/post, reward structurel JSON. Manifestes :
 **Contrôle de dégénérescence (acceptation de la review no-op)** : les runs m19
 MiniCPM5 étaient des no-op par construction (`eos_token` tokenizer ≠ terminateur
 du template → loss/grad/entropy = 0, BEATS = bruit). Signature inverse ici :
-loss et grad non nuls sur 63-66 % des steps, entropy décroissante (0,229→0,178 ;
-0,137→0,006), complétions d'entraînement qui raccourcissent (262→178 ; 350→136 :
-apprentissage d'EOS), aucune chute de longueur à l'eval. Le correctif eos par
-modèle a mordu ; les steps à loss nulle résiduelle (~34-37 %) sont les
-complétions encore tronquées au budget, masquées par design.
+`grad_norm` non nul sur 63-66 % des steps (66/63), loss strictement positive sur
+30-33 % (33/30), entropy décroissante (seed 0 : 0,229→0,178 ; seed 1 :
+0,137→0,006), complétions d'entraînement qui raccourcissent (seed 0 : 262→178 ;
+seed 1 : 350→136 : apprentissage d'EOS), aucune chute de longueur à l'eval. Le
+correctif eos par modèle a mordu ; les steps à gradient complètement nul
+(~34-37 %) sont les complétions encore tronquées au budget, masquées par design
+(steps à loss nulle : 67-70 %).
 
 Verdict de paire (n=2 par modèle) : **le classement 2B > 0.8B tient en tendance**
 — delta moyen supérieur (+0,4313 vs +0,2500), réplication stricte (±0,0000) là où

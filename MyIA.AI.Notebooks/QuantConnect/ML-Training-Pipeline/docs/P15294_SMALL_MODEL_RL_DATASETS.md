@@ -78,12 +78,14 @@ même eval held-out (40 prompts × 4 générations).
 `m19` MiniCPM5 étaient des no-op par construction (`eos_token` du tokenizer ≠
 terminateur du template → `clipped_ratio=1` + masque → loss/grad/entropy = 0,
 verdict `BEATS` = bruit). Les runs de cette chaîne portent la signature inverse :
-loss et grad non nuls sur 63-66 % des steps, entropy qui décroît (0,229 → 0,178 et
-0,137 → 0,006), complétions d'entraînement qui raccourcissent (262 → 178 et
-350 → 136 : le modèle apprend à émettre EOS) — et **aucun effondrement de longueur
-à l'eval** (319 → 403, 326 → 437). Le correctif eos par modèle a bien mordu ;
-les ~34-37 % de steps à loss nulle résiduelle sont les complétions encore
-tronquées au budget, masquées par design.
+`grad_norm` non nul sur 63-66 % des steps (66 % seed 0, 63 % seed 1), loss
+strictement positive sur 30-33 % (33 % seed 0, 30 % seed 1), entropy qui décroît
+(seed 0 : 0,229 → 0,178 ; seed 1 : 0,137 → 0,006), complétions d'entraînement qui
+raccourcissent (seed 0 : 262 → 178 ; seed 1 : 350 → 136 : le modèle apprend à
+émettre EOS) — et **aucun effondrement de longueur à l'eval** (319 → 403,
+326 → 437). Le correctif eos par modèle a bien mordu ; les ~34-37 % de steps à
+gradient complètement nul sont les complétions encore tronquées au budget,
+masquées par design (steps à loss nulle : 67-70 %).
 
 **Verdict de paire (n=2 par modèle — tendance, pas un verdict formel)** :
 
