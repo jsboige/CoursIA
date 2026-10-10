@@ -1709,6 +1709,7 @@ project:
     - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-40-PaperTrading-Binance.ipynb"
     - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-41-PaperTrading-IBKR.ipynb"
     - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-42-Alpha-Mining-Evolution.ipynb"
+    - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-43-Diffusion-Series-Synthetiques.ipynb"
     - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb"
     - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-ML-Classification.ipynb"
     - "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb"
