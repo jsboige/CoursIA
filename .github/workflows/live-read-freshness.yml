@@ -1,0 +1,82 @@
+name: Live-read freshness
+
+# #20049 (Part of #17465) — une cellule code peut LIRE un fichier du depot et
+# en committer la sortie (compte de lignes du fichier, declarations, numeros
+# de ligne). Rien ne la relie ensuite a ce fichier : le jour ou une tranche
+# le reecrit, la sortie committee devient un temoignage du PASSE et aucun
+# organe ne le voit.
+#
+# Les ratchets existants ne couvrent pas cet axe : check_output_collapse.py
+# et check_source_collapse.py comparent une BASE a une TETE, les autres
+# mesurent la structure d'un carnet. L'invariant porte ici est un troisieme
+# axe — la coherence entre la sortie COMMITTEE d'une cellule et l'etat
+# COURANT du fichier qu'elle lit.
+#
+# Cas fondateur : Lean-16b-Conway-Game-of-Life-Lean.ipynb, cellule
+# `50dcfe8c` (annexe F). Controle positif MESURE a la pose de l'organe :
+# la branche `feature/otca-real-grid` (#20019, ouverte) porte Pillars.lean a
+# 348 lignes quand la cellule atteste « 246 lignes » et cite L88/L126 — et
+# cette branche ne touche pas Lean-16b, donc le rouge est authentique, pas
+# fabrique. Sur `main`, au meme instant, l'organe est vert.
+#
+# Livre directement dans la voie rapide (#12567) : le verdict par-PR est
+# rendu par `fast-lane-shadow.yml` via l'entree TRANCHE20 de
+# `scripts/ci/fast_lane_registry.py`, et ce verdict **BLOQUE le merge**
+# (`blocking=True`, garde ABSOLU non-delta) -- le mot « shadow » nomme le
+# vehicule d'execution, pas le regime du verdict ; un lecteur qui ne lit que ce
+# nom le prendrait pour advisory. Ce fichier ne garde que `workflow_dispatch`
+# (relance manuelle).
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to evaluate (default: the checked-out head)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-read-freshness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  freshness:
+    name: Live-read freshness (committed output vs current source)
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Le self-test passe FIRST et gate le garde : cas verts et rouges
+      # construits, dont la forme exacte du cas fondateur.
+      - name: Detector self-test (positive + negative control)
+        run: python scripts/notebook_tools/check_live_read_freshness.py --self-test
+
+      - name: Install test dependency
+        run: python -m pip install --quiet pytest
+
+      - name: Live-read axis unit tests
+        run: python -m pytest scripts/notebook_tools/tests/test_live_read_freshness.py -q
+
+      # Le ref atteint le script par l'environnement, jamais inline dans le
+      # script de run (garde anti-injection, comme les siblings).
+      - name: Freshness check
+        env:
+          EVAL_REF: ${{ github.event.inputs.ref }}
+        run: |
+          if [ -n "$EVAL_REF" ]; then
+            python scripts/notebook_tools/check_live_read_freshness.py --ref "$EVAL_REF"
+          else
+            python scripts/notebook_tools/check_live_read_freshness.py
+          fi
