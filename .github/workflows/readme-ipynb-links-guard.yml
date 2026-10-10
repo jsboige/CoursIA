@@ -145,7 +145,7 @@ jobs:
           fi
           PR_ADDED_COUNT=$(wc -l < /tmp/pr_added_files.txt | tr -d ' ')
           echo "PR_ADDED count=${PR_ADDED_COUNT}"
-          # F1 (#16866 / Hermes review 09:33Z) -- les violations
+          # F1 (Hermes review 09:33Z) -- les violations
           # `::error::HTML_404` partent sur STDERR (regen_quarto_render.py
           # l.503 `print(..., file=sys.stderr)`), le `grep` du round 1 ne
           # capturait que stdout et rendait `NEW=0` alors qu'une violation
@@ -155,7 +155,7 @@ jobs:
           # passes (PR + base). Le temoin est la run suivant ce commit :
           # une HTML_404 injectee doit faire `NOUVELLES >= 1` (=exit 1).
           #
-          # F3 (#16866 / adjoint review 24) -- les `|| true` aux
+          # F3 (adjoint review 24) -- les `|| true` aux
           # lignes 84, 86, 89, 91 mangeaient les pannes scanner / checkout :
           # un `grep` qui ne matche pas (parce que le scanner est tombe)
           # rendait `pr_violations.txt` VIDE avec exit 0 ; un `git checkout`
