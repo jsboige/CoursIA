@@ -82,6 +82,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-32-RL-DQN-Trading | EXÉCUTÉ | |
 | QC-Py-40-PaperTrading-Binance | EXÉCUTÉ | |
 | QC-Py-41-PaperTrading-IBKR | EXÉCUTÉ | |
+| QC-Py-42-Alpha-Mining-Evolution | EXÉCUTÉ | cellules exécutées sur le panier crypto local (10 actifs ; fenêtre effective 2020-09 → 2025-03) — verdict hors-échantillon `INCONCLUSIVE` |
 | QC-Py-Cloud-01-FinBERT-Sentiment | EXÉCUTÉ | |
 | QC-Py-Cloud-02-ML-Classification | EXÉCUTÉ | |
 | QC-Py-Cloud-12-SectorRotation-Momentum | doc cloud | markdown-only — backtest sur QC Cloud |
@@ -225,6 +226,22 @@ Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, application p
 |----------|----------|
 | [QC-Py-40-PaperTrading-Binance](QC-Py-40-PaperTrading-Binance.ipynb) | Binance |
 | [QC-Py-41-PaperTrading-IBKR](QC-Py-41-PaperTrading-IBKR.ipynb) | Interactive Brokers |
+
+## Recherche — alpha mining par évolution (QC-Py-42)
+
+Recherche *from scratch* : plutôt que de coder un facteur à la main, on **fait évoluer des
+expressions alpha** (arbres d'opérateurs sur des features de base) avec `deap`, puis on les
+confronte à une baseline de facteurs fixes. C'est le pont entre la série `Search/`
+(algorithmes évolutionnaires) et la série `QuantConnect` (validation financière).
+
+| Notebook | Méthode | Ce qu'il démontre |
+|----------|---------|-------------------|
+| [QC-Py-42-Alpha-Mining-Evolution](QC-Py-42-Alpha-Mining-Evolution.ipynb) | Évolution génétique d'expressions (`deap`), walk-forward 5 blocs, 4 seeds, Diebold-Mariano à critère directionnel | Un moteur de recherche peut **produire** des alphas plausibles — et le verdict hors-échantillon dit s'il bat la baseline. Ici : non (`INCONCLUSIVE`), ce qui est le résultat, pas l'échec |
+
+Le carnet tourne sur les données **locales** du dépôt (panier crypto, 10 actifs) : aucune
+dépendance réseau, exécution reproductible. Sa fonction de fitness applique la doctrine de
+validation du dépôt (walk-forward, multi-seed, Diebold-Mariano sur une perte de précision) —
+l'objectif pédagogique est autant la **méthode de validation** que le résultat.
 
 ## Stratégies Cloud (QC-Py-Cloud-*)
 
