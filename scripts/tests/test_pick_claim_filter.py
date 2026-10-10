@@ -180,3 +180,136 @@ def test_deja_claim_par_cette_lane_n_est_pas_un_conflit():
         pick.check_claims = real
     assert [p["number"] for p in picks] == [1]
     assert conflicts == []
+
+
+# --- #20265 : le fail-OPEN du claim, et sa moitie RAPPORTEE ----------------
+#
+# Le tirage servait deja un candidat dont le claim n'avait pas pu etre lu
+# (fail-OPEN, correct) mais SE TAISAIT : le candidat partait avec un statut
+# de claim INCONNU, indiscernable d'un claim verifie libre. Les tests
+# ci-dessous sont apparies en TEMOINS DISCRIMINANTS : le positif (echec ->
+# trace) ne vaut que par le negatif (meme sonde, reussie -> trace ABSENTE).
+# Un test qui n'exerce que l'echec ne prouve pas que la trace ne se declenche
+# pas a tort.
+
+
+def _probe_returns(**verdicts):
+    """Fabrique une sonde de claim rendant le meme verdict pour tout numero."""
+    def probe(nums, lane):
+        return {n: verdicts["v"] for n in nums}
+    return probe
+
+
+def test_lecture_de_claim_en_echec_est_servie_mais_tracee():
+    """Temoin POSITIF : la sonde n'aboutit pas -> le candidat est CONSERVE
+    (fail-OPEN) et son numero est rapporte dans l'etat."""
+    real = pick.check_claims
+    pick.check_claims = _probe_returns(
+        v=(pick.CLAIM_CODE_ERROR, "lecture ratee (reseau)"))
+    state = {}
+    try:
+        picks, _, conflicts = pick.draw_unclaimed(
+            dict(EMPTY, grain=[_it(1)]), _args(), random.Random(7),
+            None, None, None, delivered_state=state)
+    finally:
+        pick.check_claims = real
+    assert [p["number"] for p in picks] == [1], "le fail-OPEN doit conserver"
+    assert conflicts == [], "un ERROR n'est pas un BLOQUE"
+    assert state["claim_unread"] == [1], "lecture ratee non rapportee"
+
+
+def test_sonde_qui_aboutit_en_free_ne_trace_rien():
+    """Temoin NEGATIF -- la moitie discriminante : la MEME sonde, reussie en
+    FREE, ne doit RIEN rapporter. Sans ce test, une trace qui se declenche a
+    tort passerait pour une reussite."""
+    real = pick.check_claims
+    pick.check_claims = _probe_returns(v=(pick.CLAIM_CODE_FREE, "libre"))
+    state = {}
+    try:
+        picks, _, _ = pick.draw_unclaimed(
+            dict(EMPTY, grain=[_it(1)]), _args(), random.Random(7),
+            None, None, None, delivered_state=state)
+    finally:
+        pick.check_claims = real
+    assert [p["number"] for p in picks] == [1]
+    assert state.get("claim_unread") == [], "lecture reussie mais rapportee"
+
+
+def test_controle_non_demande_ne_declenche_pas_de_fausse_alerte():
+    """Le repli `ERROR` couvre DEUX cas opposes : une lecture TENTEE qui
+    echoue, et un controle JAMAIS DEMANDE (`--no-check-claims`, tirage sans
+    lane). Seul le premier est un fail-OPEN a signaler -- sinon chaque tirage
+    sans lane alerterait sur tous ses candidats."""
+    real = pick.check_claims
+
+    def _never(nums, lane):
+        raise AssertionError("check_claims appele alors qu'aucune lecture "
+                             "n'a ete demandee")
+
+    pick.check_claims = _never
+    state = {}
+    try:
+        for kw in ({"check_claims": False}, {"lane": None}):
+            picks, _, _ = pick.draw_unclaimed(
+                dict(EMPTY, grain=[_it(1)]), _args(**kw), random.Random(7),
+                None, None, None, delivered_state=state)
+            assert [p["number"] for p in picks] == [1]
+    finally:
+        pick.check_claims = real
+    assert state.get("claim_unread") == [], (
+        "un controle non demande a produit une alerte")
+
+
+# --- Le tapis (2e chemin) : meme fail-OPEN, meme trace --------------------
+#
+# Le tapis n'emprunte pas `draw_unclaimed` : sa boucle de service est
+# `belt_pick_with_replacements`. Les deux chemins sont couverts ici plutot
+# que supposes convergents -- c'est le tapis que lance la Phase 2 du cycle.
+
+
+def _belt(minimal_number, code, human, lane="myia-po-2099:CoursIA"):
+    import types
+    args = types.SimpleNamespace(grains=1, include_delivered=True, lane=lane)
+    return pick.belt_pick_with_replacements(
+        [{"number": minimal_number, "klass": "grain"}],
+        {minimal_number: (code, human)}, args, probe_budget=4)
+
+
+def test_tapis_trace_la_lecture_de_claim_en_echec():
+    picks, _, state = _belt(1, pick.CLAIM_CODE_ERROR, "lecture ratee")
+    assert [p["number"] for p in picks] == [1], "le tapis doit servir"
+    assert state["claim_unread"] == [1]
+
+
+def test_tapis_ne_trace_pas_une_lecture_reussie():
+    picks, _, state = _belt(1, pick.CLAIM_CODE_FREE, "libre")
+    assert [p["number"] for p in picks] == [1]
+    assert state["claim_unread"] == []
+
+
+def test_tapis_sans_lane_ne_trace_pas():
+    """Sans lane, le tapis tire des lanes non identifiees (`--admissible`) :
+    une alerte y serait du bruit systematique."""
+    picks, _, state = _belt(1, pick.CLAIM_CODE_ERROR, "lecture ratee",
+                            lane=None)
+    assert [p["number"] for p in picks] == [1]
+    assert state["claim_unread"] == []
+
+
+# --- Le rendu : la trace est VISIBLE, et muette quand il n'y a rien -------
+
+
+def test_le_rapport_rend_la_trace_visible(capsys):
+    pick.print_claim_unread_report([20265], "myia-po-2024:CoursIA-2")
+    out = capsys.readouterr().out
+    assert "claim NON LU" in out
+    assert "#20265" in out
+    assert "check_lane_claim.py <N> --lane myia-po-2024:CoursIA-2" in out
+
+
+def test_le_rapport_est_muet_sans_lecture_ratee(capsys):
+    """Contre-epreuve du rendu : un rapport qui bavarde a vide serait du
+    bruit a chaque tirage -- y compris ceux ou tout s'est bien passe."""
+    pick.print_claim_unread_report([], "myia-po-2024:CoursIA-2")
+    pick.print_claim_unread_report(None, "myia-po-2024:CoursIA-2")
+    assert capsys.readouterr().out == ""
