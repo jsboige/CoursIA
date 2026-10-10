@@ -4808,6 +4808,412 @@ def print_belt_report(metrics: tuple[float | None, int | None, int]) -> None:
     print(f"belt --report : issues fermees sur 7 j = {closed_str}")
 
 
+# ---------------------------------------------------------------------------
+# Tableau du tapis partage -- producteur / consommateur (#20053)
+# ---------------------------------------------------------------------------
+#
+# Le calcul du tapis est identique pour toutes les lanes, a un filtre pres, et
+# chaque machine le refait pour elle seule : mesure #20053, 648 s a froid et
+# 258 s a chaud sur ai-01, au-dela du timeout (~120 s) des outils shell des
+# agents. Ce bloc publie le RESULTAT -- la tete du tapis -- pour que la flotte
+# le paie une fois par periode de validite au lieu d'une fois par machine et
+# par lane.
+#
+# Ce qui se partage est un instantane de FAITS dates, pas un verdict : chaque
+# item porte de quoi rejouer `belt_filter` et `belt_sort_key`, et le
+# consommateur re-verifie VIVANT le claim du seul candidat qu'il retient. Le
+# claim reste le verrou : deux lanes qui lisent la meme tete se departagent
+# par le claim, exactement comme aujourd'hui.
+#
+# Transport : section `status` d'un dashboard dedie (`CoursIA-belt`), sur le
+# modele deja en service de `debt_ledger.py` -- le script ECRIT en local et
+# IMPRIME l'appel MCP, l'agent l'execute. Aucune ecriture sous
+# `$ROOSYNC_SHARED_PATH`.
+
+BOARD_SCHEMA = "belt-board/v1"
+BOARD_WORKSPACE = "CoursIA-belt"
+BOARD_DEFAULT_MAX_AGE_MIN = 60.0
+BOARD_MAX_BYTES = 10 * 1024
+BOARD_HEAD_DEFAULT = 50
+BOARD_TITLE_MAX = 90
+
+#: Champ long -> cle courte. L'instantane doit tenir sous 10 Ko pour ~50
+#: items : les noms de champs pesent alors plus lourd que les valeurs.
+BOARD_ITEM_KEYS: tuple[tuple[str, str], ...] = (
+    ("number", "n"),
+    ("klass", "k"),
+    ("age", "a"),
+    ("idle", "i"),
+    ("genre", "g"),
+    ("labels", "l"),
+    ("title", "t"),
+    ("created_at", "c"),
+    ("last_delivery_stamp", "d"),
+    ("last_claim_stamp", "m"),
+    ("last_child_stamp", "h"),
+)
+
+#: Verdicts de claim qui laissent le candidat consommable par cette lane.
+#: `OWNED_BY_ME` en fait partie : un claim pose par MA lane est celui que je
+#: viens travailler, pas une collision.
+BOARD_CONSUMABLE_CLAIMS = frozenset(
+    {CLAIM_CODE_FREE, CLAIM_CODE_FREE_STALE, CLAIM_CODE_OWNED_BY_ME}
+)
+
+
+class BoardSnapshotError(ValueError):
+    """Instantane absent, tronque, ou d'un schema que ce lecteur ne sait lire."""
+
+
+def board_utcnow() -> str:
+    """Horodatage UTC a la seconde.
+
+    Suffixe `Z` : l'ordre lexicographique est alors l'ordre chronologique,
+    comme pour les trois dates de visite que `belt_visit_stamp` compare.
+    """
+    return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def board_item_encode(it: dict) -> dict:
+    """Un item du tapis -> sa forme compacte.
+
+    Les champs vides ou faux sont OMIS (un `labels` vide coute 12 octets par
+    item, sur ~50 items) ; le decodeur les rend absents, et `belt_filter`
+    comme `belt_sort_key` lisent deja par `.get(..., defaut)`.
+    """
+    out: dict = {}
+    for long_key, short_key in BOARD_ITEM_KEYS:
+        value = it.get(long_key)
+        if value in (None, "", [], 0):
+            continue
+        out[short_key] = value
+    return out
+
+
+def board_item_decode(compact: dict) -> dict:
+    """Forme compacte -> item, avec les memes defauts que le produit du tapis."""
+    out: dict = {}
+    for long_key, short_key in BOARD_ITEM_KEYS:
+        if short_key in compact:
+            out[long_key] = compact[short_key]
+    return out
+
+
+def board_withhold_code(cause: str) -> str:
+    """Cause d'ecart -> code court.
+
+    Les causes du tapis sont des phrases (« LIVRAISON : SIGNAL LIVRAISON
+    (commentaire ...) une lane a deja rendu la main ... ») : ~200 octets
+    chacune, et `withheld` n'est pas borne. Le code garde ce qui se lit par
+    machine ; la phrase complete reste sur la sortie texte du tapis.
+    """
+    text = (cause or "").strip()
+    return (text.split(" : ", 1)[0] or "ECARTE")[:40]
+
+
+def board_withheld_from_claims(
+    belt_pool: list[dict],
+    belt_withheld: list[tuple[dict, str]],
+    claims: dict,
+    depth: int,
+) -> list[tuple[dict, str]]:
+    """Etend les ecartes du tableau des verdicts NON consommables de la tete.
+
+    Le tapis ne met dans ``belt_withheld`` que les ``BLOCKED`` explicites : un
+    candidat ``IMPLICIT`` (une PR ouverte d'une autre lane cite l'issue) passe et
+    se fait servir comme grain. Le consommateur du tableau, lui, ne fait qu'UN
+    controle vivant -- sur la TETE -- et tient ``IMPLICIT`` pour non consommable :
+    il retombe alors sur le calcul local, si bien que le chemin rapide ne sert
+    jamais des que la tete est ``IMPLICIT``. Or c'est le profil ordinaire de la
+    tete : l'issue la plus anciennement visitee qu'une autre lane a ouverte.
+
+    On ecarte donc de la tete PUBLIEE tout verdict que le consommateur
+    refuserait (``BOARD_CONSUMABLE_CLAIMS``), en reutilisant les claims que le
+    tapis a DEJA calcules. Les picks ne changent pas : cette extension ne vit que
+    dans le document publie, et le consommateur garde son controle vivant, qui
+    seul ferme la course entre l'instantane et la consommation.
+    """
+    extended = list(belt_withheld)
+    seen = {it["number"] for it, _ in extended}
+    # La profondeur est celle de la tete PUBLIEE, pas la fenetre de sonde
+    # initiale : le consommateur retire les ecartes, si bien que le premier
+    # candidat qu'il retient peut etre loin dans la tete. Mesure du 2026-10-09 :
+    # 29 ecartes sur 50 publies, et le retenu au RANG 16 -- hors de la fenetre
+    # de sonde (8), donc jamais ecarte, donc toujours tenu, donc toujours repli.
+    # Le tapis a pourtant DEJA le verdict : il sonde au fil de l'eau jusqu'a
+    # servir ses picks, et le candidat retenu est justement celui qu'il sert.
+    for item in belt_pool[:max(0, depth)]:
+        number = item["number"]
+        if number in seen:
+            continue
+        verdict = claims.get(number)
+        if verdict and verdict[0] not in BOARD_CONSUMABLE_CLAIMS:
+            extended.append((item, verdict[1]))
+            seen.add(number)
+    return extended
+
+
+def build_board_snapshot(
+    belt_pool: list[dict],
+    withheld: list[tuple[dict, str]],
+    *,
+    lane: str | None,
+    computed_at: str,
+    head: int,
+) -> dict:
+    """Instantane de la tete du tapis : des faits dates, pas des verdicts.
+
+    ``belt_pool`` est le pool ADMISSIBLE deja trie par `belt_sort_key` ;
+    ``withheld`` la liste ``[(item, cause)]`` des candidats que le tapis a
+    ecartes (claim d'une autre lane, livraison deja rendue). On transporte les
+    deux : sans `withheld`, le consommateur re-servirait un candidat que le
+    producteur venait d'ecarter.
+    """
+    items = [board_item_encode(it) for it in belt_pool[:max(0, head)]]
+    return {
+        "schema": BOARD_SCHEMA,
+        "computed_at": computed_at,
+        "producer_lane": lane,
+        "head_size": len(items),
+        "pool_size": len(belt_pool),
+        "items": items,
+        "withheld": [
+            {"n": it["number"], "c": board_withhold_code(cause)}
+            for it, cause in withheld
+        ],
+    }
+
+
+def encode_board_snapshot(
+    snapshot: dict, *, max_bytes: int = BOARD_MAX_BYTES
+) -> tuple[str, dict, str]:
+    """Rend ``(texte, instantane, title_policy)``, sous le plafond de transport.
+
+    Le plafond est un contrat (un dashboard RooSync porte ~50 Ko, et sa section
+    `status` en porte d'autres) : on le tient en reduisant d'abord la longueur
+    des titres, puis en les retirant, et on l'ECRIT (`title_policy`) plutot que
+    de laisser un consommateur deviner pourquoi un titre manque.
+    """
+    policy = "full"
+    candidate = snapshot
+    text = ""
+    for policy in ("full", "short", "none"):
+        items = []
+        for compact in snapshot["items"]:
+            row = dict(compact)
+            title = row.get("t")
+            if title is not None:
+                if policy == "none":
+                    row.pop("t", None)
+                elif policy == "short":
+                    row["t"] = title[:40]
+                else:
+                    row["t"] = title[:BOARD_TITLE_MAX]
+            items.append(row)
+        candidate = dict(snapshot, items=items, title_policy=policy)
+        text = json.dumps(candidate, ensure_ascii=False, separators=(",", ":"))
+        if len(text.encode("utf-8")) <= max_bytes:
+            return text, candidate, policy
+    return text, candidate, policy
+
+
+def write_board_snapshot(
+    path: str, snapshot: dict, *, max_bytes: int = BOARD_MAX_BYTES
+) -> dict:
+    """Ecrit l'instantane en local ; rend le rapport d'ecriture.
+
+    `write_bytes` (et non `write_text`) : pas de BOM, pas de traduction de fins
+    de ligne -- l'artefact est un document JSON lu par un autre outil, pas un
+    fichier de travail Windows.
+    """
+    text, written, policy = encode_board_snapshot(snapshot, max_bytes=max_bytes)
+    payload = text.encode("utf-8")
+    target = pathlib.Path(path)
+    if str(target.parent) not in ("", "."):
+        target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(payload)
+    return {
+        "path": str(target),
+        "bytes": len(payload),
+        "title_policy": policy,
+        "within_budget": len(payload) <= max_bytes,
+        "items": len(written.get("items") or []),
+        "withheld": len(written.get("withheld") or []),
+    }
+
+
+def board_publish_call(path: str | None = None) -> str:
+    """L'appel MCP prescrit, en TEXTE (jamais une commande shell a executer).
+
+    Meme forme que `debt_ledger.dashboard_calls` : le producteur ecrit en local,
+    l'agent execute l'appel. Le contenu publie est l'instantane lui-meme, pas
+    son chemin -- un dashboard ne lit pas le disque d'une lane ; le chemin n'est
+    la que pour dire a l'agent QUOI lire, sur la ligne precedente.
+    """
+    source = f"<le contenu de {path}>" if path else "<le contenu du fichier ecrit>"
+    return (
+        f'roosync_dashboard(action:"update", type:"workspace", '
+        f'workspace:"{BOARD_WORKSPACE}", section:"status", '
+        f'content:"{source}")'
+    )
+
+
+def read_board_snapshot(path: str) -> dict:
+    """Lit et valide un instantane ; leve `BoardSnapshotError` sinon.
+
+    La validation est du cote LECTURE et elle est stricte : un instantane
+    malforme doit faire basculer le consommateur sur le calcul local, jamais
+    produire une tete silencieusement fausse.
+    """
+    try:
+        raw = pathlib.Path(path).read_text(encoding="utf-8")
+    except OSError as exc:
+        raise BoardSnapshotError(f"illisible : {exc}") from exc
+    try:
+        snapshot = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise BoardSnapshotError(f"JSON invalide : {exc}") from exc
+    if not isinstance(snapshot, dict):
+        raise BoardSnapshotError("la racine n'est pas un objet")
+    schema = snapshot.get("schema")
+    if schema != BOARD_SCHEMA:
+        raise BoardSnapshotError(
+            f"schema inconnu : {schema!r} (attendu {BOARD_SCHEMA!r})")
+    items = snapshot.get("items")
+    if not isinstance(items, list):
+        raise BoardSnapshotError("`items` absent ou non-liste")
+    if not snapshot.get("computed_at"):
+        raise BoardSnapshotError("`computed_at` absent")
+    for index, compact in enumerate(items):
+        if not isinstance(compact, dict):
+            raise BoardSnapshotError(f"item {index} : pas un objet")
+        if not isinstance(compact.get("n"), int):
+            raise BoardSnapshotError(f"item {index} : numero d'issue absent")
+    return snapshot
+
+
+def board_age_minutes(snapshot: dict, *, now=None) -> float:
+    """Age de l'instantane en minutes ; leve s'il est indatable."""
+    moment = now or dt.datetime.now(dt.timezone.utc)
+    raw = str(snapshot.get("computed_at") or "")
+    try:
+        when = dt.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise BoardSnapshotError(f"computed_at illisible : {raw!r}") from exc
+    if when.tzinfo is None:
+        # Un instantane naif est traite comme UTC : c'est ce que produit le
+        # producteur, et refuser ici couterait un repli local pour rien.
+        when = when.replace(tzinfo=dt.timezone.utc)
+    return (moment - when).total_seconds() / 60.0
+
+
+def board_is_fresh(snapshot: dict, max_age_min: float, *, now=None) -> bool:
+    """L'instantane est-il dans sa periode de validite ?"""
+    return board_age_minutes(snapshot, now=now) <= max_age_min
+
+
+def consume_board(
+    snapshot: dict,
+    args,
+    *,
+    urns: set[str] | None = None,
+    lane: str | None = None,
+    live_check: bool = True,
+) -> tuple[list[dict], dict]:
+    """Retient les candidats d'un instantane, avec UN controle vivant.
+
+    Rend ``(picks, meta)``. Le premier candidat retenu est verifie VIVANT
+    (`check_lane_claim.py`) : c'est le seul controle reseau de ce chemin, et il
+    porte sur le seul candidat que la lane s'apprete a servir. Les suivants sont
+    rendus tels que l'instantane les connaissait -- leur claim sera re-verifie
+    par la lane avant edition, comme toujours.
+
+    Un candidat retenu tenu par une autre lane rend ``picks == []`` : le caller
+    bascule alors sur le calcul local, qui est le comportement d'aujourd'hui --
+    jamais une regression.
+    """
+    items = [board_item_decode(c) for c in (snapshot.get("items") or [])]
+    withheld = {w.get("n") for w in (snapshot.get("withheld") or [])
+                if isinstance(w, dict)}
+    eligible = belt_filter(items, args, urns=urns)
+    eligible = [it for it in eligible if it["number"] not in withheld]
+    eligible.sort(key=belt_sort_key)
+    meta = {
+        "pool_size": len(items),
+        "eligible": len(eligible),
+        "withheld_skipped": len(withheld),
+        "retained": eligible[0]["number"] if eligible else None,
+        "live_check": None,
+        "reason": "ok",
+    }
+    if not eligible:
+        meta["reason"] = "instantane vide apres filtrage de lane"
+        return [], meta
+    if not live_check:
+        meta["reason"] = "controle vivant desactive (--no-check-claims)"
+        return eligible[:max(1, args.grains)], meta
+    head = eligible[0]
+    verdicts = check_claims([head["number"]],
+                            lane or getattr(args, "lane", None) or "")
+    code, human = verdicts.get(head["number"], (CLAIM_CODE_ERROR, "(no check)"))
+    meta["live_check"] = {"number": head["number"], "code": code, "human": human}
+    if code not in BOARD_CONSUMABLE_CLAIMS:
+        meta["reason"] = f"candidat retenu tenu ({code}) : {human}"
+        return [], meta
+    return eligible[:max(1, args.grains)], meta
+
+
+def print_board_consumer(snapshot: dict, picks: list[dict], meta: dict,
+                         *, age_min: float, as_json: bool) -> None:
+    """Sortie du consommateur : meme forme que le tapis, source declaree.
+
+    La provenance est ecrite, jamais implicite : un lecteur doit voir que cette
+    tete vient d'un instantane de `N` minutes et non d'un calcul local, et que
+    le garde rouge n'a PAS ete evalue sur ce chemin.
+    """
+    live = meta.get("live_check") or {}
+    if as_json:
+        out = {
+            "mode": "belt-board",
+            "lane": snapshot.get("producer_lane"),
+            "board": {
+                "computed_at": snapshot.get("computed_at"),
+                "age_min": round(age_min, 2),
+                "producer_lane": snapshot.get("producer_lane"),
+                "title_policy": snapshot.get("title_policy"),
+            },
+            "picks": picks,
+            "board_meta": meta,
+            # Le garde rouge est un calcul de pool : ce chemin ne le fait pas.
+            # Le dire explicitement empeche de lire son absence comme un "vert".
+            "red_guard": "non evalue (chemin --board-export)",
+        }
+        print(json.dumps(out, ensure_ascii=False, indent=2))
+        return
+    print(f"#20053 tete du tapis lue sur l'instantane "
+          f"({snapshot.get('computed_at')}, il y a {age_min:.0f} min, "
+          f"producteur {snapshot.get('producer_lane')}).")
+    print(f"   eligibles : {meta['eligible']} / {meta['pool_size']} items ; "
+          f"{meta['withheld_skipped']} ecarte(s) par le producteur.")
+    if live:
+        print(f"   controle vivant sur #{live['number']} : {live['code']} "
+              f"-- {live['human']}")
+    print("   garde rouge NON evalue sur ce chemin (--board-export) : "
+          "un rouge propre reste a traiter avant ce grain.")
+    if meta.get("reason") != "ok":
+        print(f"   repli : {meta['reason']}")
+    print()
+    header = (f"{'urne':<10} {'age':>4} {'inact':>5} {'genre':<14}  titre")
+    print(header)
+    print("-" * len(header))
+    for it in picks:
+        urn = it.get("klass", "grain")
+        marker = "[NEVER] " if belt_visit_stamp(it) is None else ""
+        print(f"{urn:<10} {int(it.get('age', 0)):>4}j "
+              f"{int(it.get('idle', 0)):>5}j {it.get('genre', ''):<14}  "
+              f"{marker}{it.get('title', '')[:60]}")
+
+
 def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> None:
     red = backlog["red"]
     triggers = backlog.get("triggers") or []
@@ -5720,6 +6126,26 @@ def main(argv: list[str] | None = None) -> int:
                          "jours) depuis la derniere visite sur les issues "
                          "ouvertes, et nombre d'issues fermees sur 7 j. Mode "
                          "rapport, pas de tirage.")
+    ap.add_argument("--board-write", dest="board_write", default=None,
+                    metavar="PATH",
+                    help="#20053 producteur : ecrit la tete du tapis dans PATH "
+                         "(JSON versionne, horodatage UTC, < 10 Ko) et imprime "
+                         "l'appel MCP de publication. A combiner avec --belt.")
+    ap.add_argument("--board-head", dest="board_head", type=int,
+                    default=BOARD_HEAD_DEFAULT,
+                    help=f"producteur : nombre d'items de la tete publiee "
+                         f"(defaut {BOARD_HEAD_DEFAULT}).")
+    ap.add_argument("--board-export", dest="board_export", default=None,
+                    metavar="PATH",
+                    help="#20053 consommateur : sert la tete depuis l'instantane "
+                         "PATH au lieu de recalculer le tapis. UN seul controle "
+                         "vivant (check_lane_claim) sur le candidat retenu ; "
+                         "retour au calcul local si l'instantane est perime, "
+                         "malforme, ou si le candidat retenu est tenu.")
+    ap.add_argument("--board-max-age", dest="board_max_age", type=float,
+                    default=BOARD_DEFAULT_MAX_AGE_MIN, metavar="MIN",
+                    help=f"consommateur : age maximal accepte de l'instantane, "
+                         f"en minutes (defaut {BOARD_DEFAULT_MAX_AGE_MIN:.0f}).")
     ap.add_argument("--no-check-claims", dest="check_claims",
                     action="store_false",
                     help="ne pas verifier les claims sur les tires "
@@ -5831,6 +6257,14 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("--lane est requis (--orphans-report et --admissible s'en dispensent)")
     if args.report and not args.belt:
         ap.error("--report n'a de sens qu'avec --belt (mode rapport du tapis roulant)")
+    # #20053 : les deux modes du tableau partage portent sur la TETE DU TAPIS.
+    # Sans --belt, `--board-write` publierait un classement qui n'en est pas un,
+    # et le repli de `--board-export` tomberait dans le tirage pondere -- un
+    # autre résultat, sous le meme nom.
+    if args.board_write and not args.belt:
+        ap.error("--board-write ecrit la tete du tapis : --belt est requis")
+    if args.board_export and not args.belt:
+        ap.error("--board-export sert la tete du tapis : --belt est requis")
     for low_name, high_name in (
         ("min_age_days", "max_age_days"),
         ("min_idle_days", "max_idle_days"),
@@ -5984,6 +6418,42 @@ def main(argv: list[str] | None = None) -> int:
         print("  Passer outre exige --admit-reason '<justification>', "
               "a reporter sur l'issue.")
         return 1
+
+    # #20053 consommateur : court-circuit AVANT tout fetch de pool. C'est tout
+    # l'objet du chemin -- une tete lue sur un instantane frais coute un
+    # processus local, pas les 258 s de sondes mesurees dans l'issue. Le garde
+    # rouge et l'ardoise de lane sont des calculs de pool : ils ne sont PAS
+    # evalues ici, et la sortie le dit explicitement plutot que de laisser lire
+    # leur absence comme un vert.
+    if args.board_export:
+        snapshot = None
+        age_min = 0.0
+        try:
+            snapshot = read_board_snapshot(args.board_export)
+            age_min = board_age_minutes(snapshot)
+        except BoardSnapshotError as exc:
+            print(f"(tableau du tapis inutilisable : {exc} -- calcul local)",
+                  file=sys.stderr)
+        if snapshot is not None and age_min > args.board_max_age:
+            print(f"(instantane perime : {age_min:.0f} min > "
+                  f"{args.board_max_age:.0f} min -- calcul local, puis "
+                  f"republication)", file=sys.stderr)
+            snapshot = None
+        if snapshot is not None:
+            picks, board_meta = consume_board(
+                snapshot, args, urns=selected_urns, lane=args.lane,
+                live_check=args.check_claims)
+            if picks:
+                print_board_consumer(snapshot, picks, board_meta,
+                                     age_min=age_min, as_json=args.json)
+                return 0
+            print(f"(tableau du tapis sans candidat retenu : "
+                  f"{board_meta.get('reason')} -- calcul local)",
+                  file=sys.stderr)
+        # Repli assume : le calcul local reprend la main (comportement
+        # d'aujourd'hui, donc aucune regression), et son resultat est republie
+        # pour que la flotte n'ait pas a repayer la meme chose.
+        args.board_write = args.board_write or args.board_export
 
     # L721 : ardoise de la lane, calculee AVANT le garde rouge pour que les
     # DEUX chemins (reparation comme tirage) la portent -- c'est au moment ou
@@ -6398,6 +6868,27 @@ def main(argv: list[str] | None = None) -> int:
             print("Belt : pool trie par date de derniere visite -- merge, "
                   "claim ou sous-issue (None = jamais servie, classee par sa "
                   "creation). Deterministe, sans ponderation.")
+        # #20053 producteur : la tete du tapis vient d'etre calculee, on la
+        # publie. L'ecriture est LOCALE et l'appel MCP est IMPRIME -- c'est
+        # l'agent qui l'execute (modele `debt_ledger`), aucune ecriture sous
+        # `$ROOSYNC_SHARED_PATH`. Le compte rendu va sur stderr quand stdout
+        # porte un document machine (--json), sur stdout sinon.
+        if args.board_write:
+            stream = sys.stderr if args.json else sys.stdout
+            board_withheld = board_withheld_from_claims(
+                belt_pool, belt_withheld, belt_claims, args.board_head)
+            snapshot = build_board_snapshot(
+                belt_pool, board_withheld, lane=args.lane,
+                computed_at=board_utcnow(), head=args.board_head)
+            written = write_board_snapshot(args.board_write, snapshot)
+            over = "" if written["within_budget"] else " -- PLAFOND DEPASSE"
+            print(f"[board] tete du tapis : {written['items']} item(s) et "
+                  f"{written['withheld']} ecarte(s), {written['bytes']} octets "
+                  f"(plafond {BOARD_MAX_BYTES}), titres={written['title_policy']}"
+                  f"{over}", file=stream)
+            print(f"[board] ecrit : {written['path']}", file=stream)
+            print(f"[board] publier avec : "
+                  f"{board_publish_call(written['path'])}", file=stream)
         return 0
     filtered, filter_funnel = filter_candidates_with_continuity(
         admitted,
