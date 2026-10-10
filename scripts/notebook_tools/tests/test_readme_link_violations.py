@@ -5,15 +5,15 @@ Why this test file exists
 The guard is delta-only : the argv captures violations as JSON and the
 delta_argv comparator decides the verdict. Without these tests, a refactor
 of the JSON shape (e.g. dropping `class` or renaming `href`) would silently
-break the comparator and the PR gate would stop catching NEW STALE_LINK
+break the comparator and the PR gate would stop catching NEW HTML_404
 introductions. Pinned here :
 
   1. The JSON shape (classe / readme / href) is preserved end-to-end.
   2. A NEW violation injected in head (missing in base) flips the verdict
-     to `exit=1` and emits `::error::STALE_LINK` on stderr.
+     to `exit=1` and emits `::error::HTML_404` on stderr.
   3. A PR that does not change violations passes (`exit=0`).
   4. The stderr/stdout split is what allows the workflow's own grep
-     `2>&1 | grep -E '^::error::STALE_LINK '` to keep working (F1).
+     `2>&1 | grep -E '^::error::HTML_404 '` to keep working (F1).
 
 These are the four conditions that the merge-gate relies on. Touch them
 with the corresponding test name visible in the diff.
@@ -71,9 +71,10 @@ def test_json_shape_preserved() -> None:
         # workflow qui grep `::error::<cls> <readme> -> <href>`).
         for key in ("class", "readme", "href"):
             assert key in v0, f"cle `{key}` absente du JSON : {v0}"
-        # La classe est bornee aux 3 categories de regen_quarto_render.py
-        # (cf scripts/regen_quarto_render.py l.440-460).
-        assert v0["class"] in {"STALE_LINK", "BROKEN", "DEAD_RENDER"}
+        # La classe est bornee aux categories de regen_quarto_render.py.
+        # Depuis #18911 (geste 2, 2026-10-09) : HTML_404 (lien .html vers
+        # une cible absente du depot) et BROKEN (cible inexistante).
+        assert v0["class"] in {"HTML_404", "BROKEN"}
 
 
 def test_dump_exits_zero_even_with_violations() -> None:
@@ -92,22 +93,22 @@ def test_diff_passes_when_no_new_violation(tmp_path: Path) -> None:
     assert "NOUVELLES=0" in proc.stdout
 
 
-def test_diff_fails_on_injected_stale_link(tmp_path: Path) -> None:
-    # Témoin F2 : une STALE_LINK injectée dans HEAD doit faire NOUVELLES=1
+def test_diff_fails_on_injected_html_404(tmp_path: Path) -> None:
+    # Témoin F2 : une HTML_404 injectée dans HEAD doit faire NOUVELLES=1
     # (=exit 1) -- c'est ce que la garde workflow vérifie en CI.
     base = _run_dump()
     head = dict(base)
     head["violations"] = list(base["violations"]) + [
-        {"class": "STALE_LINK", "readme": "WITNESS_README.md", "href": "WITNESS.ipynb"}
+        {"class": "HTML_404", "readme": "WITNESS_README.md", "href": "WITNESS.html"}
     ]
     head["n_violations"] = len(head["violations"])
     proc = _run_diff(base, head, tmp_path)
     assert proc.returncode == 1, f"diff aurait du exit=1, exit={proc.returncode}\nstdout={proc.stdout}\nstderr={proc.stderr}"
     assert "NOUVELLES=1" in proc.stdout
-    # F1 contreexemple : le format `::error::STALE_LINK ...` doit etre emis
+    # F1 contreexemple : le format `::error::HTML_404 ...` doit etre emis
     # sur STDERR (le workflow greperait sans 2>&1 sinon). C'est la condition
     # qui a fait rougir le run originel 37109571492 sans etre vue.
-    assert "::error::STALE_LINK WITNESS_README.md -> WITNESS.ipynb" in proc.stderr
+    assert "::error::HTML_404 WITNESS_README.md -> WITNESS.html" in proc.stderr
 
 
 # ---------------------------------------------------------------------------
