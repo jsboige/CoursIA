@@ -668,6 +668,258 @@ class TestGitTrackedDocsMd:
 
 
 # ---------------------------------------------------------------------------
+# Index non resolu et doublons de render-list (#20055)
+# ---------------------------------------------------------------------------
+#
+# Fait fondateur, mesure sur un depot jouet en merge non resolu (l'index porte
+# alors trois etages pour un meme chemin : 1=base, 2=ours, 3=theirs) :
+#
+#     git ls-files '*README.md'             -> README.md (x3)
+#     git diff --name-only --diff-filter=U  -> README.md (x1)
+#
+# `git ls-files` alimentant toute la render-list, un merge non resolu y ecrit
+# des doublons silencieux. Les gardes ci-dessous ferment ce chemin.
+
+class TestUnmergedPaths:
+    """`unmerged_paths` : detection d'un index non resolu."""
+
+    @staticmethod
+    def _fake_run(stdout: str):
+        def fake_run(*args, **kwargs):
+            class Result:
+                returncode = 0
+            Result.stdout = stdout
+            return Result()
+        return fake_run
+
+    def test_reports_conflicted_path(self, monkeypatch):
+        monkeypatch.setattr(rqr.subprocess, "run", self._fake_run("README.md\n"))
+        assert rqr.unmerged_paths() == ["README.md"]
+
+    def test_empty_when_index_is_clean(self, monkeypatch):
+        monkeypatch.setattr(rqr.subprocess, "run", self._fake_run(""))
+        assert rqr.unmerged_paths() == []
+
+    def test_deduplicates_and_sorts(self, monkeypatch):
+        """Trois etages d'index pour un meme chemin ne rendent qu'une entree."""
+        monkeypatch.setattr(rqr.subprocess, "run",
+                            self._fake_run("b/README.md\na/README.md\nb/README.md\n"))
+        assert rqr.unmerged_paths() == ["a/README.md", "b/README.md"]
+
+    def test_uses_diff_filter_u(self, monkeypatch):
+        """L'instrument est `diff --diff-filter=U`, pas `ls-files` : c'est lui
+        qui nomme le chemin une fois (cf. le fait fondateur ci-dessus)."""
+        seen = {}
+
+        def fake_run(argv, *args, **kwargs):
+            seen["argv"] = list(argv)
+
+            class Result:
+                returncode = 0
+                stdout = ""
+            return Result()
+
+        monkeypatch.setattr(rqr.subprocess, "run", fake_run)
+        rqr.unmerged_paths()
+        assert "diff" in seen["argv"]
+        assert "--diff-filter=U" in seen["argv"]
+
+
+class TestRenderSections:
+    """`render_sections` : enumeration unique, source des deux autres gardes."""
+
+    @pytest.fixture(autouse=True)
+    def _stub_git(self, monkeypatch):
+        monkeypatch.setattr(rqr, "git_tracked_readmes", lambda: ["x/README.md"])
+        monkeypatch.setattr(rqr, "git_tracked_docs_md", lambda: ["docs/a.md"])
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: ["n.ipynb"])
+
+    def test_root_readme_prepended(self):
+        assert rqr.render_sections()["readmes"] == ["README.md", "x/README.md"]
+
+    def test_sections_present(self):
+        s = rqr.render_sections()
+        assert s["landing"] == list(rqr.LANDING_PAGES)
+        assert s["docs"] == ["docs/a.md"]
+        assert s["notebooks"] == ["n.ipynb"]
+
+    def test_clean_sections_have_no_duplicate(self):
+        assert rqr.duplicate_render_entries(rqr.render_sections()) == []
+
+    def test_build_render_block_accepts_explicit_sections(self):
+        text = "\n".join(rqr.build_render_block(rqr.render_sections()))
+        assert '- "README.md"' in text
+        assert '- "x/README.md"' in text
+        # Aucun compteur n'est ecrit (#19901 : un total dans un fichier genere
+        # se perime a chaque merge). La racine sort de `render_sections()`, donc
+        # elle est emise exactement une fois — l'inverse est le doublon #20055.
+        assert text.count('- "README.md"') == 1
+
+
+class TestDuplicateRenderEntries:
+    """`duplicate_render_entries` : doublon intra-section seulement (#20055)."""
+
+    @staticmethod
+    def _sections(**over):
+        base = {"landing": [], "readmes": ["README.md"], "docs": [], "notebooks": []}
+        base.update(over)
+        return base
+
+    def test_intra_section_duplicate_is_reported(self):
+        s = self._sections(readmes=["README.md", "a/README.md", "a/README.md"])
+        assert rqr.duplicate_render_entries(s) == [("readmes", "a/README.md")]
+
+    def test_three_index_stages_report_two_repetitions(self):
+        """Le fait fondateur : trois etages d'index = deux repetitions."""
+        s = self._sections(readmes=["README.md", "a/README.md",
+                                    "a/README.md", "a/README.md"])
+        assert rqr.duplicate_render_entries(s) == [
+            ("readmes", "a/README.md"), ("readmes", "a/README.md")]
+
+    def test_cross_section_same_path_is_legitimate(self):
+        """`docs/reference/branch-cleanup-manifest.README.md` figure sur `main`
+        dans la section READMEs (motif `*README.md`) ET dans docs/*.md : ce
+        n'est pas un doublon, et la garde ne doit pas le refuser."""
+        p = "docs/reference/branch-cleanup-manifest.README.md"
+        s = self._sections(readmes=["README.md", p], docs=[p])
+        assert rqr.duplicate_render_entries(s) == []
+
+    def test_duplicate_in_docs_section_detected(self):
+        s = self._sections(docs=["docs/a.md", "docs/a.md"])
+        assert rqr.duplicate_render_entries(s) == [("docs", "docs/a.md")]
+
+    def test_duplicate_in_notebooks_section_detected(self):
+        s = self._sections(notebooks=["a.ipynb", "b.ipynb", "a.ipynb"])
+        assert rqr.duplicate_render_entries(s) == [("notebooks", "a.ipynb")]
+
+    def test_defaults_to_render_sections(self, monkeypatch):
+        monkeypatch.setattr(rqr, "git_tracked_readmes",
+                            lambda: ["a/README.md", "a/README.md"])
+        monkeypatch.setattr(rqr, "git_tracked_docs_md", lambda: [])
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+        assert rqr.duplicate_render_entries() == [("readmes", "a/README.md")]
+
+
+class TestMainRefusesUnsafeInput:
+    """`main()` : les deux refus sont branches avant toute ecriture."""
+
+    def test_refuses_unresolved_index(self, monkeypatch, capsys):
+        monkeypatch.setattr(rqr, "unmerged_paths", lambda: ["README.md", "docs/a.md"])
+        monkeypatch.setattr(sys, "argv", ["regen_quarto_render.py", "--check"])
+        assert rqr.main() == 1
+        err = capsys.readouterr().err
+        assert "::error::" in err
+        assert "README.md" in err and "docs/a.md" in err
+
+    def test_refuses_duplicate_entry(self, monkeypatch, capsys):
+        monkeypatch.setattr(rqr, "unmerged_paths", lambda: [])
+        monkeypatch.setattr(rqr, "duplicate_render_entries",
+                            lambda sections=None: [("readmes", "a/README.md")])
+        monkeypatch.setattr(sys, "argv", ["regen_quarto_render.py", "--check"])
+        assert rqr.main() == 1
+        err = capsys.readouterr().err
+        assert "::error::" in err
+        assert "a/README.md" in err and "readmes" in err
+
+    def test_refuses_duplicate_before_writing(self, monkeypatch, tmp_path):
+        """Le refus vaut aussi pour le chemin d'ecriture (pas seulement
+        `--check`) : on n'ecrit jamais une render-list dupliquee."""
+        target = tmp_path / "_quarto.yml"
+        target.write_text('project:\n  render:\n    - "old.md"\nsite:\n',
+                          encoding="utf-8")
+        before = target.read_text(encoding="utf-8")
+        monkeypatch.setattr(rqr, "unmerged_paths", lambda: [])
+        monkeypatch.setattr(rqr, "QUARTO_YML", target)
+        monkeypatch.setattr(rqr, "duplicate_render_entries",
+                            lambda sections=None: [("notebooks", "a.ipynb")])
+        monkeypatch.setattr(sys, "argv", ["regen_quarto_render.py"])
+        assert rqr.main() == 1
+        assert target.read_text(encoding="utf-8") == before
+
+
+class TestUnmergedIndexReproduction:
+    """Reproduction du fait fondateur #20055 sur un vrai depot git."""
+
+    @staticmethod
+    def _git(cwd, *args, check=True):
+        return subprocess.run(["git", *args], cwd=str(cwd), check=check,
+                              capture_output=True, text=True,
+                              encoding="utf-8", errors="replace")
+
+    #: Sous-repertoire : `git_tracked_readmes` ecarte le README de racine
+    #: (`p == "README.md"`), il faut donc un chemin non-racine pour traverser
+    #: l'enumeration reelle.
+    REL = "sub/README.md"
+
+    def _conflicted_repo(self, tmp_path):
+        def g(*args):
+            return self._git(tmp_path, *args)
+
+        ident = ("-c", "user.name=t", "-c", "user.email=t@t")
+        target = tmp_path / "sub" / "README.md"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        g("init", "-q")
+        target.write_text("base\n", encoding="utf-8")
+        g(*ident, "add", "sub/README.md")
+        g(*ident, "commit", "-qm", "base")
+        base_branch = g("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+        g("checkout", "-qb", "side")
+        target.write_text("side\n", encoding="utf-8")
+        g(*ident, "commit", "-qam", "side")
+        g("checkout", "-q", base_branch)
+        target.write_text("main\n", encoding="utf-8")
+        g(*ident, "commit", "-qam", "main")
+        # `-c merge.ff=false` : mesure sur le runner CI -- le merge y est REFUSE
+        # (« Diverging branches can't be fast-forwarded », rc=128) sans creer
+        # d'index non fusionne : `ls-files` rend 1 ligne, `--unmerged` rend vide.
+        # Le runner se comporte donc comme si `merge.ff=only` etait pose ; la
+        # reproduction locale sous cette config rend exactement les quatre
+        # signatures observees en CI. Le test prenait ce refus pour un conflit,
+        # et les trois assertions suivantes echouaient sur un index sain. Le
+        # drapeau de ligne de commande prime sur toute config ambiante.
+        # `*ident` : l'identite du committer doit accompagner le merge lui-meme
+        # -- sans elle un merge en conflit sort en « Committer identity
+        # unknown » sur un runner dont la config globale ne porte pas d'identite.
+        merged = self._git(tmp_path, *ident, "-c", "merge.ff=false", "merge",
+                           "side", check=False)
+        # Le controle porte sur l'effet attendu (index non fusionne), pas sur
+        # le code retour : un refus de merge sort aussi en non-zero.
+        unmerged = self._git(tmp_path, "ls-files", "--unmerged").stdout
+        assert unmerged.strip(), (
+            "le merge devait laisser un index non fusionne (3 stages) ; "
+            f"rc={merged.returncode}, sortie={merged.stdout}{merged.stderr}")
+        return tmp_path
+
+    def test_ls_files_yields_path_per_index_stage(self, tmp_path):
+        """L'enumeration brute rend le chemin trois fois -- c'est la cause."""
+        repo = self._conflicted_repo(tmp_path)
+        raw = self._git(repo, "ls-files", "*README.md")
+        assert raw.stdout.split().count(self.REL) == 3
+        assert len(self._git(repo, "ls-files", "--unmerged").stdout.splitlines()) == 3
+
+    def test_enumeration_would_duplicate_the_entry(self, tmp_path, monkeypatch):
+        """Le degat : sans garde, la render-list porte l'entree trois fois."""
+        repo = self._conflicted_repo(tmp_path)
+        monkeypatch.setattr(rqr, "REPO_ROOT", repo)
+        assert rqr.git_tracked_readmes().count(self.REL) == 3
+        assert rqr.duplicate_render_entries(rqr.render_sections()) == [
+            ("readmes", self.REL), ("readmes", self.REL)]
+
+    def test_unmerged_paths_names_it_once(self, tmp_path, monkeypatch):
+        """La garde nomme le chemin une seule fois."""
+        repo = self._conflicted_repo(tmp_path)
+        monkeypatch.setattr(rqr, "REPO_ROOT", repo)
+        assert rqr.unmerged_paths() == [self.REL]
+
+    def test_main_refuses_on_a_conflicted_repo(self, tmp_path, monkeypatch, capsys):
+        """Bout en bout : sur un index non resolu, le script sort en erreur en
+        nommant le chemin, au lieu d'ecrire une render-list dupliquee."""
+        repo = self._conflicted_repo(tmp_path)
+        monkeypatch.setattr(rqr, "REPO_ROOT", repo)
+        monkeypatch.setattr(sys, "argv", ["regen_quarto_render.py", "--check"])
+        assert rqr.main() == 1
+        err = capsys.readouterr().err
+        assert "::error::" in err and self.REL in err
 # uncovered_notebooks — trous de couverture vs carnets hr-bloques (#18423)
 # ---------------------------------------------------------------------------
 

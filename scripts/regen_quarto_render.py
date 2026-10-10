@@ -422,15 +422,90 @@ def git_tracked_docs_md() -> list[str]:
     return paths
 
 
-def build_render_block() -> list[str]:
-    """Build the YAML lines for the project.render list."""
+def unmerged_paths() -> list[str]:
+    """Chemins en conflit dans l'index, dedoublonnes et tries (#20055).
+
+    Pendant un merge non resolu, l'index porte trois etages pour un meme
+    chemin (1=base, 2=ours, 3=theirs) et ``git ls-files`` le rend donc une
+    fois par etage : l'enumeration produit des doublons silencieux dans la
+    render-list. Mesure du fait fondateur sur un depot jouet :
+
+        git ls-files '*README.md'            -> README.md (x3)
+        git diff --name-only --diff-filter=U -> README.md (x1)
+
+    ``--diff-filter=U`` est donc l'instrument retenu : il nomme le chemin une
+    fois, ce qui est exactement ce qu'un message d'erreur doit rendre.
+    """
+    out = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "diff", "--name-only", "--diff-filter=U"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
+    )
+    return sorted({line.strip() for line in out.stdout.splitlines() if line.strip()},
+                  key=str.lower)
+
+
+def render_sections() -> dict[str, list[str]]:
+    """Sections ordonnees de la render-list, dans leur ordre d'emission.
+
+    Une seule enumeration par section : ``build_render_block`` et
+    ``duplicate_render_entries`` consomment le meme dictionnaire, donc la
+    garde anti-doublon voit exactement ce qui sera ecrit.
+    """
+    return {
+        "landing": list(LANDING_PAGES),
+        "readmes": ["README.md", *git_tracked_readmes()],
+        "docs": git_tracked_docs_md(),
+        "notebooks": git_tracked_notebooks(),
+    }
+
+
+def duplicate_render_entries(
+    sections: dict[str, list[str]] | None = None,
+) -> list[tuple[str, str]]:
+    """Entrees repetees *dans une meme section* de la render-list (#20055).
+
+    Un doublon intra-section est la signature d'un index non resolu (cf.
+    ``unmerged_paths``) : le chemin y apparait une fois par etage.
+
+    Le meme chemin present dans DEUX sections differentes reste legitime :
+    ``docs/reference/branch-cleanup-manifest.README.md`` figure a la fois dans
+    la section READMEs (motif ``*README.md``) et dans la section docs/*.md sur
+    ``main``. La garde ne porte donc que sur le doublon intra-section -- sans
+    cette distinction, elle refuserait un etat legitime du depot.
+    """
+    if sections is None:
+        sections = render_sections()
+    dupes: list[tuple[str, str]] = []
+    for label, entries in sections.items():
+        seen: set[str] = set()
+        for entry in entries:
+            if entry in seen:
+                dupes.append((label, entry))
+            else:
+                seen.add(entry)
+    return dupes
+
+
+def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str]:
+    """Build the YAML lines for the project.render list.
+
+    ``sections`` permet a l'appelant de fournir une enumeration deja faite
+    (cf. ``render_sections``) : la garde anti-doublon et l'emission portent
+    alors sur la meme liste, au lieu de deux enumerations qui pourraient
+    diverger entre deux appels a git.
+    """
+    if sections is None:
+        sections = render_sections()
+    readmes = sections["readmes"]
+    docs_md = sections["docs"]
+    notebooks = sections["notebooks"]
+
     lines = ["project:", "  type: site", "  output-dir: _site", "  render:"]
     # Landing pages (qmd) + catalogue genere (rendu HTML, cf. LANDING_PAGES)
     lines.append("    # Landing pages (.qmd) + COURSE_CATALOG.generated.md (rendu HTML).")
-    for entry in LANDING_PAGES:
+    for entry in sections["landing"]:
         lines.append(f'    - "{entry}"')
     # READMEs (explicit list — globs do not expand in Quarto 1.7, see header)
-    readmes = git_tracked_readmes()
     lines.append("    # README.md rendus en HTML (Axe C #4211). Liste explicite")
     lines.append("    # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7")
     lines.append("    # n'etend pas le glob **/README.md sur les sous-repertoires.")
@@ -440,7 +515,6 @@ def build_render_block() -> list[str]:
     # sur la ligne, soit fusionnent proprement un total FAUX (arbitrage ai-01
     # #19901, cas mesure #19579). La liste triee qui suit fusionne sans conflit.
     lines.append("    # Archives et libs vendored EXCLUES (history interne, non pedagogique).")
-    lines.append('    - "README.md"')
     for p in readmes:
         lines.append(f'    - "{p}"')
     # docs/*.md (non-README) rendus en HTML (issue #18422, etend Axe C #4211).
@@ -448,7 +522,6 @@ def build_render_block() -> list[str]:
     # (cf. header). Les fichiers avec `---` hr sont exclus (garde #11451,
     # auto-resorbante : un futur passage `---` -> `***` les reintegre sans
     # toucher a ce script).
-    docs_md = git_tracked_docs_md()
     if docs_md:
         lines.append("    # docs/*.md rendus en HTML (issue #18422). Meme mecanisme")
         lines.append("    # que les READMEs : liste explicite (globs non etendus en Quarto 1.7).")
@@ -457,7 +530,6 @@ def build_render_block() -> list[str]:
             lines.append(f'    - "{p}"')
     # Notebooks rendered to HTML (EPIC #10921, pilote Search #10923). Explicit
     # list (globs do not expand in Quarto 1.7, see README comment above).
-    notebooks = git_tracked_notebooks()
     if notebooks:
         lines.append("    # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).")
         lines.append("    # Liste explicite — globs non etendus en Quarto 1.7.")
@@ -652,10 +724,34 @@ def main() -> int:
                          "the informational `unrendered` tally.")
     args = ap.parse_args()
 
+    # Garde 1 (#20055) : un index non resolu fait rendre a `git ls-files` un
+    # chemin une fois par etage (1=base, 2=ours, 3=theirs). Toutes les
+    # enumerations de la render-list passant par git, regenerer dans cet etat
+    # ecrit des doublons silencieux. On refuse, en nommant les chemins.
+    conflicted = unmerged_paths()
+    if conflicted:
+        print("::error::index non resolu (merge en cours) : " + ", ".join(conflicted)
+              + " -- resoudre le conflit avant de regenerer la render-list : "
+                "`git ls-files` enumere sinon un chemin une fois par etage "
+                "d'index (#20055)", file=sys.stderr)
+        return 1
+
     if args.check_readme_links:
         return report_readme_links(pr_added_files=_load_added_files(args.pr_added_files))
 
-    new_block = build_render_block()
+    sections = render_sections()
+    # Garde 2 (#20055) : la meme entree deux fois *dans une meme section*. Le
+    # meme chemin dans deux sections differentes reste legitime (cf.
+    # duplicate_render_entries) -- la garde ne vise que l'intra-section.
+    dupes = duplicate_render_entries(sections)
+    if dupes:
+        print("::error::entree dupliquee dans la render-list : "
+              + ", ".join(f"{entry} (section {label})" for label, entry in dupes)
+              + " -- une entree repetee dans une meme section vient d'un index "
+                "non resolu (#20055)", file=sys.stderr)
+        return 1
+
+    new_block = build_render_block(sections)
     current = QUARTO_YML.read_text(encoding="utf-8")
     proposed = replace_render_block(current, new_block)
 
@@ -664,9 +760,9 @@ def main() -> int:
             print("::error::_quarto.yml render list is stale. "
                   "Run: python scripts/regen_quarto_render.py", file=sys.stderr)
             return 1
-        n = len(git_tracked_readmes()) + 1
-        n_docs = len(git_tracked_docs_md())
-        nb = len(git_tracked_notebooks())
+        n = len(sections["readmes"])
+        n_docs = len(sections["docs"])
+        nb = len(sections["notebooks"])
         uncovered = uncovered_notebooks()
         if uncovered:
             print("::error::notebooks git-tracks ni rendus ni declares hors "
@@ -682,9 +778,9 @@ def main() -> int:
         return 0
 
     QUARTO_YML.write_text(proposed, encoding="utf-8")
-    n = len(git_tracked_readmes()) + 1
-    n_docs = len(git_tracked_docs_md())
-    nb = len(git_tracked_notebooks())
+    n = len(sections["readmes"])
+    n_docs = len(sections["docs"])
+    nb = len(sections["notebooks"])
     print(f"_quarto.yml updated: render list now includes "
           f"{n} READMEs, {n_docs} docs/*.md, {nb} notebooks.")
     return 0
