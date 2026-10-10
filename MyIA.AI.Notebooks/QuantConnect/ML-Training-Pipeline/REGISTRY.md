@@ -68,6 +68,8 @@ Updated: 2026-10-07 — M5 lu comme couche de dimensionnement (stratégie, #1972
 
 Updated: 2026-10-08 — P15294 re-run probe GRPO sur Hermes-function-calling-v1 (issue #15294 acceptance 2 partielle, lane myia-po-2024:CoursIA) : **Qwen3.5-0.8B produit du signal RL net sur la tâche calibrée** — Δ reward eval held-out (40 prompts × 4 générations, pré/post 100 steps, même recette GRPO+QLoRA non-thinking que M19) : **+0,2500 ± 0,1875**, 2/2 seeds progressent (0,2063→0,2688 et 0,1688→0,6063), pas d'effondrement de longueur — contre **+0,0063 ± 0,0063** (plat, courbes erratiques) du même backbone sur DAPO-Math-17k : la platitude DAPO du 0.8B était un artefact de casting, pas une propriété du backbone. Côté MiniCPM5-2B : 2 runs en chaîne détachée sur RTX 3070, verdict de comparaison 2B vs 0.8B différé à leur livraison. Manifestes `scripts/results/p15294_hermes_grpo/`.
 
+Updated: 2026-10-10 — P15294 verdict de paire 2B vs 0.8B (issue #15294 acceptances 2 et 3 closes, lane myia-po-2024:CoursIA-2) : **le classement 2B > 0.8B tient en tendance sur la tâche calibrée — MiniCPM5-2B +0,4313 ± 0,0000 (réplication stricte, 0,2125→0,6438 et 0,2500→0,6813) vs Qwen3.5-0.8B +0,2500 ± 0,1875** ; contrôle de dégénérescence passé (le no-op eos des runs m19 ne s'est pas reproduit : loss/grad non nuls sur 63-66 % des steps, entropy décroissante, complétions d'entraînement 350→136 = apprentissage d'EOS, aucune chute de longueur à l'eval 319→403 / 326→437) ; wallclock cumulé ~3,9× inférieur (18 344 s vs 70 717 s). **À n=2 par modèle, tendance convergente, pas un verdict BEATS formel** (protocole ≥ 4 seeds). Le BEATS M19 sur DAPO était un double artefact : casting + gradient nul eos. Manifestes `scripts/results/p15294_hermes_grpo/minicpm5_seed{0,1}.json` (chaîne GPU 2, lane myia-ai-01:CoursIA-2). Détail section P15294 verdict de paire + `docs/P15294_SMALL_MODEL_RL_DATASETS.md`.
+
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 
 ## P15294 Hermes GRPO — Qwen3.5-0.8B 2/2 seeds (2026-10-08) — issue #15294
@@ -101,6 +103,38 @@ pas effondrement — le critère santé du harnais est respecté) ; le classemen
 2B > 0.8B observé sur DAPO reste **non tranché** jusqu'aux runs MiniCPM5-2B
 (chaîne détachée armée le 2026-10-08, seed 0 puis seed 1 enchaînés
 automatiquement ; `summarize` exige ≥ 2 modèles pour le verdict de paire).
+
+## P15294 verdict de paire — MiniCPM5-2B vs Qwen3.5-0.8B (2026-10-10) — issue #15294
+
+Runs MiniCPM5-2B livrés par la chaîne GPU 2 (lane myia-ai-01:CoursIA-2, seed 1
+terminé 09:59:11Z, JSON de reprise écrits pour les deux seeds). Même harnais
+`scripts/probe_15099_dapo_grpo.py run --dataset hermes`, même recette GRPO+QLoRA
+NF4 r16, 100 steps, non-thinking, complétion ≤ 384, eval held-out 40 prompts × 4
+générations pré/post, reward structurel JSON. Manifestes :
+`scripts/results/p15294_hermes_grpo/minicpm5_seed{0,1}.json`.
+
+| | pre | post | Δ | longueur eval | wallclock |
+|---|---|---|---|---|---|
+| MiniCPM5-2B seed 0 | 0,2125 | 0,6438 | +0,4313 | 319 → 403 (stable) | 10 657 s |
+| MiniCPM5-2B seed 1 | 0,2500 | 0,6813 | +0,4313 | 326 → 437 (+34 %) | 7 688 s |
+
+**Contrôle de dégénérescence (acceptation de la review no-op)** : les runs m19
+MiniCPM5 étaient des no-op par construction (`eos_token` tokenizer ≠ terminateur
+du template → loss/grad/entropy = 0, BEATS = bruit). Signature inverse ici :
+loss et grad non nuls sur 63-66 % des steps, entropy décroissante (0,229→0,178 ;
+0,137→0,006), complétions d'entraînement qui raccourcissent (262→178 ; 350→136 :
+apprentissage d'EOS), aucune chute de longueur à l'eval. Le correctif eos par
+modèle a mordu ; les steps à loss nulle résiduelle (~34-37 %) sont les
+complétions encore tronquées au budget, masquées par design.
+
+Verdict de paire (n=2 par modèle) : **le classement 2B > 0.8B tient en tendance**
+— delta moyen supérieur (+0,4313 vs +0,2500), réplication stricte (±0,0000) là où
+le 0.8B disperse (+0,0625 vs +0,4375), post-niveau plus haut et plus
+reproductible (0,644/0,681 vs 0,269/0,606), wallclock cumulé ~3,9× inférieur.
+**Tendance convergente, pas un verdict BEATS formel** (protocole ≥ 4 seeds) ;
+la claim M19 « 2B > 0.8B » sur DAPO était un double artefact (casting + gradient
+nul eos) — sur Hermes corrigée, les deux backbones produisent du signal RL réel
+et la première mesure non artefactée de la paire confirme le sens observé.
 
 ## M18 TimesFM 2.5 — revalidation cluster 7 actifs (2026-10-03) — Epic #1454
 
