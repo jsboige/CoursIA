@@ -142,20 +142,75 @@ class DefensiveAlpha(AlphaModel):
 
 
 class MultiStrategyPCM(PortfolioConstructionModel):
-    """Portfolio construction that allocates capital slices per alpha model."""
+    """Portfolio construction that allocates capital slices per alpha model.
 
-    def __init__(self, alpha_allocations, rebalance=timedelta(days=7)):
+    Caveat (#19740, #20188): before determine_target_percent runs, Lean's
+    PortfolioConstructionModel keeps only one active insight per symbol. XLU is
+    in both sleeves here, so with additive=False one sleeve's XLU insight hides
+    the other's. With additive=True, the targets are rebuilt from the most
+    recent active insight per (symbol, source_model), then summed per symbol.
+    """
+
+    def __init__(self, alpha_allocations, rebalance=timedelta(days=7),
+                 additive=False, algorithm=None, watch="XLU"):
         super().__init__()
         self.alpha_allocations = alpha_allocations
+        self.additive = additive
+        self._algorithm = algorithm
+        self.watch = watch
+        # Diagnostics for #20188, published at the end of the backtest. They read
+        # the insight collection and never change a target.
+        self.calls = 0
+        self.watch_cases = {"both_up": 0, "sector_up_only": 0, "defensive_up_only": 0, "none_up": 0}
+        self.watch_passed = {}
+        self.watch_weight_sum = 0.0
         self.set_rebalancing_func(lambda dt: dt + rebalance)
 
-    def determine_target_percent(self, active_insights):
-        result = {}
-        if not active_insights:
-            return result
+    def _latest_by_source(self):
+        """Most recent active insight per (symbol, source_model)."""
+        latest = {}
+        for insight in self._algorithm.insights.get_active_insights(self._algorithm.utc_time):
+            key = (insight.symbol, insight.source_model or "Unknown")
+            previous = latest.get(key)
+            if previous is None or insight.generated_time_utc >= previous.generated_time_utc:
+                latest[key] = insight
+        return latest
 
+    def determine_target_percent(self, active_insights):
+        if not active_insights:
+            return {}
+        if self._algorithm is None:
+            return self._weights_by_source(active_insights)
+
+        latest = self._latest_by_source()
+        if self.additive:
+            totals = {}
+            for insight, weight in self._weights_by_source(list(latest.values())).items():
+                totals[insight.symbol] = totals.get(insight.symbol, 0.0) + weight
+            # active_insights holds one insight per symbol: it carries the sum.
+            result = {insight: totals.get(insight.symbol, 0.0) for insight in active_insights}
+        else:
+            result = self._weights_by_source(active_insights)
+        self._record(active_insights, latest, result)
+        return result
+
+    def _record(self, active_insights, latest, result):
+        self.calls += 1
+        up = {source for (symbol, source), insight in latest.items()
+              if symbol.value == self.watch and insight.direction == InsightDirection.UP}
+        sector, defensive = "SectorMomentum" in up, "Defensive" in up
+        case = ("both_up" if sector and defensive else "sector_up_only" if sector
+                else "defensive_up_only" if defensive else "none_up")
+        self.watch_cases[case] += 1
+        passed = [i for i in active_insights if i.symbol.value == self.watch]
+        source = (passed[0].source_model or "Unknown") if passed else "none"
+        self.watch_passed[source] = self.watch_passed.get(source, 0) + 1
+        self.watch_weight_sum += sum(w for i, w in result.items() if i.symbol.value == self.watch)
+
+    def _weights_by_source(self, insights_list):
+        result = {}
         by_alpha = {}
-        for insight in active_insights:
+        for insight in insights_list:
             source = insight.source_model or "Unknown"
             by_alpha.setdefault(source, []).append(insight)
 
@@ -227,14 +282,29 @@ class FrameworkCompositeAlgorithm(QCAlgorithm):
             DefensiveAlpha(defensive_tickers, spy_ticker="SPY", sma_period=200),
         ))
 
+        # Optional parameters (#20188):
+        # - pcm_mode: "base" (default, one insight per symbol, see MultiStrategyPCM)
+        #   or "intent" (sleeves added on XLU, held by both alpha models);
+        # - trace: "1" plots the portfolio value and the SPY close once per session
+        #   in a "shadow" chart (series e0..e4 and b0..b4); it changes no order.
+        self.pcm_mode = self.GetParameter("pcm_mode") or "base"
+        if self.pcm_mode not in ("base", "intent"):
+            raise ValueError(f"pcm_mode={self.pcm_mode}")
+        self.trace = (self.GetParameter("trace") or "0") == "1"
+        self.spy = self.Symbol("SPY")
+        self.trace_points = 0
+
         # Portfolio construction: 70% sector momentum, 30% defensive
-        self.SetPortfolioConstruction(MultiStrategyPCM(
+        self.pcm = MultiStrategyPCM(
             alpha_allocations={
                 "SectorMomentum": 0.70,
                 "Defensive": 0.30,
             },
             rebalance=timedelta(days=7),
-        ))
+            additive=(self.pcm_mode == "intent"),
+            algorithm=self,
+        )
+        self.SetPortfolioConstruction(self.pcm)
 
         # Risk management: max drawdown circuit breaker
         self.SetRiskManagement(MaxDrawdownCircuitBreaker(0.15))
@@ -248,6 +318,15 @@ class FrameworkCompositeAlgorithm(QCAlgorithm):
         # Track drawdown for logging
         self.peak_value = self.Portfolio.TotalPortfolioValue
 
+    def OnData(self, data):
+        """Shadow trace (trace=1 only): one point per SPY session, interleaved."""
+        if not self.trace or self.IsWarmingUp or not data.Bars.ContainsKey(self.spy):
+            return
+        k = self.trace_points % 5
+        self.Plot("shadow", f"e{k}", self.Portfolio.TotalPortfolioValue)
+        self.Plot("shadow", f"b{k}", data.Bars[self.spy].Close)
+        self.trace_points += 1
+
     def OnEndOfDay(self, symbol):
         """Track peak and drawdown for logging."""
         current = self.Portfolio.TotalPortfolioValue
@@ -258,6 +337,17 @@ class FrameworkCompositeAlgorithm(QCAlgorithm):
         final = self.Portfolio.TotalPortfolioValue
         self.Log(f"FRAMEWORK COMPOSITE: Final=${final:,.2f}, "
                  f"Return={(final - 100000) / 100000:.2%}")
+        pcm = self.pcm
+        stats = {
+            "PCM mode": self.pcm_mode,
+            "PCM calls": pcm.calls,
+            "XLU cases": " ".join(f"{k}={v}" for k, v in pcm.watch_cases.items()),
+            "XLU passed": " ".join(f"{k}={v}" for k, v in sorted(pcm.watch_passed.items())),
+            "XLU avg target": f"{pcm.watch_weight_sum / max(pcm.calls, 1):.4f}",
+            "Trace points": self.trace_points,
+        }
+        for key, value in stats.items():
+            self.SetRuntimeStatistic(key, str(value))
 
 
 class MaxDrawdownCircuitBreaker(RiskManagementModel):
