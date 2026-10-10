@@ -82,6 +82,20 @@ jobs:
           exit 1
         fi
 
+        # Amputation tripwire (#20174): the ZERO guard above is not enough.
+        # A sparse-checkout residue can leave a handful of stray .ipynb
+        # OUTSIDE the notebook tree (measured 2026-10-10, run 38015702551 on
+        # PR #19814: exactly 2 probe notebooks under scripts/notebook_tools/,
+        # zero under MyIA.AI.Notebooks/ out of 1516) — NB_COUNT stays > 0,
+        # the guard stays silent, and the C.2 catalog filter downstream then
+        # matches nothing. The corpus only grows, so 1000 is a floor far
+        # below the real count and far above any partial tree.
+        NB_TREE_COUNT=$(find MyIA.AI.Notebooks -name "*.ipynb" -not -path "*/.ipynb_checkpoints/*" -not -path "*/.*/*" | wc -l)
+        if [ "$NB_TREE_COUNT" -lt 1000 ]; then
+          echo "::error::MyIA.AI.Notebooks holds $NB_TREE_COUNT .ipynb (floor 1000, expected ~1500) — checkout amputated (sparse-checkout residue, #20174); NB_COUNT=$NB_COUNT across the whole tree"
+          exit 1
+        fi
+
         if [ $ERRORS -gt 0 ]; then
           echo "FAILED: $ERRORS notebook(s) with errors"
           exit 1

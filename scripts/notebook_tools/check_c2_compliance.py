@@ -312,17 +312,17 @@ def main():
 
     targets = get_target_notebooks(args)
     if not targets:
-        # --json promises a JSON stream on stdout: an empty target list must
-        # still emit parseable JSON ([]), never a human sentence. The CI job in
-        # notebook-validation.yml redirects this stream into a file it parses;
-        # a human string there turns a scanner success into a job failure with
-        # a message that names a notebook and a results file, never the cause
-        # (#20198). The empty/healthy distinction is NOT dropped here: an empty
-        # list is emitted as [], and the caller decides what it means.
+        # JSON mode is the workflow's crash/completion disambiguator (#14799):
+        # a completing run ALWAYS prints its report, and prose is not a report.
+        # An empty selection must surface as an empty JSON list, never as
+        # prose that kills the downstream parser ("Expecting value: line 1
+        # column 1"). Measured instance (2026-10-10, run 38015702551): an
+        # amputated runner checkout (#20174) left zero notebooks under
+        # MyIA.AI.Notebooks/, so the catalog filter matched nothing.
         if args.json:
             print("[]")
-        else:
-            print("No notebooks to check.")
+            return 0
+        print("No notebooks to check.")
         return 0
 
     results = [check_notebook(p) for p in targets]
