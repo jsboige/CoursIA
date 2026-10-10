@@ -32,7 +32,10 @@ python scripts/pick_idle_grain.py --belt --lane <machine:workspace>
 - Rouge **non reparable par cette lane** (garde casse sur main, dependance d'une autre PR) : l'**ecrire en commentaire sur la PR**, puis `--ignore-red`. L'echappatoire se justifie par ecrit, elle ne se prend pas en silence.
 - Seule preemption : une mission coordinateur **URGENT** (le coordinateur voit le plateau entier).
 
-**P1 — Missions coordinateur** : DM HIGH, puis steers dashboard de ma lane. Une file de plusieurs grains dispatchee a la lane se traite **en entier, dans son ordre**, avant le tapis ; le tapis complete la session quand la file est videe.
+**P1 — Missions coordinateur** : DM HIGH, puis steers dashboard de ma lane. **La file dispatchee a la lane est le tirage du tapis fait par le coordinateur** : a chaque tour, il tire les issues les moins visitees et compose pour chaque lane un arc coherent, a enchainer en multi-grain jusqu'au tour suivant. Elle se traite **en entier, dans son ordre**, avant tout tirage personnel ; le tapis (P3) complete la session quand la file est videe.
+
+- **Rendre la main sur chaque issue de la file** : `[DELIVERED] lane <machine:workspace> -- PR #N`, ou `[RELEASED] lane <machine:workspace> -- <motif>` quand une barriere reelle la fait sauter. C'est ce marqueur, et non le claim pose au dispatch, qui la retire de l'assiette que le coordinateur mesure au tour suivant.
+- **Tour de recette hebdomadaire** : `python scripts/coordination/recette_due.py --lane <machine:workspace>`. Sortie 1 (`DUE #N`) : servir cette issue en tete de file, en livrant au validateur humain une iteration qu'il peut examiner, ou en repondant a son dernier retour. Chaque lane le fait au moins une fois par semaine : chaque tour est un aller-retour de plus pour le validateur. Sortie 2 : organe injoignable, poursuivre sans.
 
 **P2 — Travail en cours** : tache `[CLAIMED]` par cette lane non terminee.
 
