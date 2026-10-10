@@ -56,4 +56,4 @@ while iteration < max_iterations and score < quality_target:
 
 - Use `haiku` for quick validation checks
 - Use `sonnet` for enrichment and standard fixes
-- Use `inherit` (or `opus` if available) for complex design and orchestration
+- Use `sonnet` for complex design and orchestration — `opus` and `inherit` are never used on po-* posts (mandat user 2026-10-10, cf [model-delegation.md](../../rules/model-delegation.md) point 3)
