@@ -35,6 +35,23 @@ from fast_lane_registry import (  # noqa: E402
     TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, Guard,
 )
 
+# Lot PILOTE absorbe a l'etape 3 de #12856 (programme #12567) : comparaison
+# conclue pour ces neuf gardes -- job renomme byte-identique au `guard.name`
+# + declencheur `pull_request` retire du workflow source dans le meme commit.
+# Epingler le lot ici rend toute absorption/desabsorption ulterieure d'un
+# garde PILOT visible : c'est un geste trace, jamais un effet de bord.
+PILOT_ABSORBED_LOT_12856 = frozenset({
+    "probeAddresses banner guard (main-repo notebooks)",
+    "!pip install HIGH delta guard (#6314)",
+    "prose-counts",
+    "No bare cross-dir #load in changed notebooks",
+    "check-navlinks",
+    "check-nav-chain",
+    "Audit README -> .ipynb links",
+    "check_interp_positioning.py",
+    "markdown-rendering guard (main-repo notebooks)",
+})
+
 
 # ---------------------------------------------------------------------------
 # 1. Selection par chemin
@@ -91,8 +108,8 @@ def test_notebook_guards_select_a_root_level_notebook():
     """Controle de bout en bout du piege `**/` sur le registre reel."""
     changed = ["Notebook-A-La-Racine.ipynb"]
     selected = [g.name for g in PILOT if fast_lane.guard_applies(g, changed)]
-    for expected in ("banner-guard", "pip-leak-guard", "solution-leak-guard",
-                     "prose-counts-guard"):
+    for expected in ("probeAddresses banner guard (main-repo notebooks)", "!pip install HIGH delta guard (#6314)", "solution-leak-guard",
+                     "prose-counts"):
         assert expected in selected, (
             f"{expected} devrait couvrir un notebook a la racine "
             "(motif `**/*.ipynb`)"
@@ -406,20 +423,20 @@ def test_advisory_flags_match_the_source_workflows():
     """
     by_name = {g.name: g for g in PILOT}
     assert by_name["solution-leak-guard"].blocking is False
-    assert by_name["prose-counts-guard"].blocking is True
-    assert "--strict" in by_name["prose-counts-guard"].argv
-    assert by_name["banner-guard"].blocking is True
-    assert by_name["pip-leak-guard"].blocking is True
+    assert by_name["prose-counts"].blocking is True
+    assert "--strict" in by_name["prose-counts"].argv
+    assert by_name["probeAddresses banner guard (main-repo notebooks)"].blocking is True
+    assert by_name["!pip install HIGH delta guard (#6314)"].blocking is True
     assert by_name["perimeter-review-guard"].blocking is True
     # 5 gardes ajoutees (extension 5 -> 10) -- bloquer par defaut
-    assert by_name["bare-cross-dir-load-gate"].blocking is True
-    assert by_name["notebook-navlink-check"].blocking is True
+    assert by_name["No bare cross-dir #load in changed notebooks"].blocking is True
+    assert by_name["check-navlinks"].blocking is True
     # nav-chain reachability (#17284) : bloquant sur le NOUVEAU seulement,
     # le baseline porte la dette assumee (450 entrees a ce head -- compte
     # informatif, le JSON fait foi ; rollout par serie)
-    assert by_name["notebook-nav-chain-guard"].blocking is True
-    assert by_name["notebook-interp-positioning-guard"].blocking is True
-    assert by_name["markdown-rendering-guard"].blocking is True
+    assert by_name["check-nav-chain"].blocking is True
+    assert by_name["check_interp_positioning.py"].blocking is True
+    assert by_name["markdown-rendering guard (main-repo notebooks)"].blocking is True
     assert by_name["self-hosted-runner-policy"].blocking is True
 
 
@@ -456,8 +473,8 @@ def test_non_iterate_guards_have_no_paths_placeholder():
     `{changed_paths}` dans argv (le placeholder n'aurait pas de sens). On
     verifie au moins que les 5 gardes existants en sont exempts."""
     by_name = {g.name: g for g in PILOT}
-    for name in ("banner-guard", "pip-leak-guard", "solution-leak-guard",
-                 "prose-counts-guard", "perimeter-review-guard"):
+    for name in ("probeAddresses banner guard (main-repo notebooks)", "!pip install HIGH delta guard (#6314)", "solution-leak-guard",
+                 "prose-counts", "perimeter-review-guard"):
         assert "{changed_paths}" not in by_name[name].argv, (
             f"{name} n'est pas iterates_paths mais porte le placeholder"
         )
@@ -679,24 +696,55 @@ def test_tranche1_guards_are_absorbed_and_pilot_is_not():
     rend son verdict sous son nom canonique (donc rougissant), un garde du
     pilote reste en observation. Si les deux lots se melangent, soit le
     pilote bloque sans preuve de comparaison, soit la tranche absorbee est
-    neutralisee et son garde d'origine parti sans remplacement."""
+    neutralisee et son garde d'origine parti sans remplacement.
+
+    Lot PILOTE absorbe (#12856 etape 3, programme #12567) : les NEUF gardes
+    de PILOT_ABSORBED_LOT_12856 ont conclu leur comparaison -- job renomme
+    byte-identique + declencheur `pull_request` retire dans le meme commit.
+    Le lot est EPINGLE par intention : absorber un dixieme garde PILOT sans
+    mettre a jour cette liste (ni le checker d'identite) doit rougir ici --
+    chaque absorption du pilote est un geste trace, pas un effet de bord."""
     assert TRANCHE1, "la tranche 1 est vide : ce test n'exerce plus rien"
     for guard in TRANCHE1:
         assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
-    for guard in PILOT:
-        assert not guard.absorbed, (
-            f"{guard.name} est un garde PILOT : il reste en ombre jusqu'a "
-            "la conclusion de la comparaison")
+    absorbes_pilote = {g.name for g in PILOT if g.absorbed}
+    assert absorbes_pilote == PILOT_ABSORBED_LOT_12856, (
+        f"gardes PILOT absorbes = {sorted(absorbes_pilote)} != lot epingle "
+        f"{sorted(PILOT_ABSORBED_LOT_12856)} : absorption ou desabsorption "
+        "non tracee -- mettre a jour le lot ET verifier que le workflow "
+        "concerne a perdu son declencheur pull_request")
 
 
 def test_absorbed_workflows_no_longer_trigger_on_pull_request():
     """Chaque garde absorbe voit son workflow d'origine retire du
     declenchement `pull_request` -- sinon le garde tourne deux fois (une
     fois canonique par la voie rapide, une fois par son workflow) et la
-    mutualisation ne sauuche aucun run. Verification textuelle ancre'e :
-    `pull_request:` en debut d'indentation sous `on:`."""
+    mutualisation ne sauve aucun run. Verification textuelle ancre'e :
+    `pull_request:` en debut d'indentation sous `on:`.
+
+    Depuis l'etape 3 de #12856 le contrat couvre TOUT garde absorbe du
+    registre (decouverte dynamique des listes de Guard), y compris le lot
+    PILOTE absorbe -- pas seulement TRANCHE1. Les tranches declarees dans
+    `TRANCHE_ALIGNMENT_EN_COURS` restent exemptees : leur absorption est
+    faite par declaration mais le geste de bascule (rename + retrait du
+    trigger) est encore en cours, exactement l'exemption du checker
+    d'identite."""
     import re as _re
-    for guard in TRANCHE1:
+    import fast_lane_registry
+    align_set = set()
+    for tranche_name in fast_lane_registry.TRANCHE_ALIGNMENT_EN_COURS:
+        align_set.update(
+            id(g) for g in getattr(fast_lane_registry, tranche_name, []))
+    absorbes = []
+    for value in vars(fast_lane_registry).values():
+        if isinstance(value, list) and value and all(
+                isinstance(item, Guard) for item in value):
+            absorbes.extend(
+                g for g in value
+                if g.absorbed and g.source != FAST_LANE_NATIVE
+                and id(g) not in align_set)
+    assert absorbes, "aucun garde absorbe : ce test ne mesurerait rien"
+    for guard in absorbes:
         wf = WORKFLOWS / guard.source
         assert wf.is_file(), f"{guard.source} absent du depot"
         txt = wf.read_text(encoding="utf-8")
@@ -907,6 +955,57 @@ def test_every_tranche_in_the_registry_is_run_by_the_engine():
         assert _re.search(rf"\b{name}\b", aggregate), (
             f"{name} est importee mais absente de l'agregat de main() : "
             f"ses gardes ne tournent jamais")
+
+
+def test_no_module_level_name_is_assigned_twice_in_the_registry():
+    """Incident #19374 (suivi d'integration, mesure 2026-10-08) : la tranche
+    eol-blob a pris le nom module-level ``TRANCHE18`` deja porte plus bas
+    par la tranche docs-index (#19260). Python execute le module de haut en
+    bas : la seconde affectation ecrasait la premiere, ``eol-blob-guard``
+    etait enregistree mais muette -- et
+    ``test_every_tranche_in_the_registry_is_run_by_the_engine`` passait
+    quand meme, car ``vars()`` ne voit que la valeur FINALE du nom. Ce test
+    ferme la classe : aucun nom du registre n'est affecte deux fois au
+    niveau module (TRANCHE ou constante -- l'ecrasement d'une constante
+    serait le meme defaut, plus silencieux encore). Seules les formes qui
+    RE-LIENT le nom comptent (``Assign``/``AnnAssign``) : ``X += [...]``
+    etend la valeur au lieu de la remplacer, ce n'est pas l'ombre
+    silencieuse mesuree ici."""
+    import ast
+    import fast_lane_registry as registry
+
+    def double_assignments(tree):
+        seen = {}
+        for node in tree.body:
+            targets = []
+            if isinstance(node, ast.Assign):
+                targets = node.targets
+            elif isinstance(node, ast.AnnAssign):
+                targets = [node.target]
+            for target in targets:
+                if isinstance(target, ast.Name):
+                    seen.setdefault(target.id, []).append(target.lineno)
+        return {n: lines for n, lines in seen.items() if len(lines) > 1}
+
+    src = Path(registry.__file__).read_text(encoding="utf-8")
+    duplicates = double_assignments(ast.parse(src))
+    assert not duplicates, (
+        f"noms module-level affectes plusieurs fois dans "
+        f"fast_lane_registry.py (lignes {duplicates}) : la derniere "
+        f"affectation ecrase les precedentes -- garde enregistree, muette "
+        f"(incident #19374)")
+
+    # Controle positif du detecteur sur la forme exacte de l'incident
+    # (deux affectations du meme nom annote, la seconde gagne) : sans lui,
+    # un futur refactor du collecteur pourrait rendre le filet muet sans
+    # jamais rougir -- un motif de detection se valide par ses faux
+    # negatifs.
+    synthetic = ast.parse(
+        "TRANCHE18: list[int] = [1]\n"
+        "TRANCHE18: list[int] = [2]\n"
+        "SINGLE: int = 3\n"
+    )
+    assert set(double_assignments(synthetic)) == {"TRANCHE18"}
 
 
 def test_smartcontract_guards_are_native_blocking_deltas():

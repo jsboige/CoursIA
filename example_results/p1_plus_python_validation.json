@@ -1,0 +1,22 @@
+{
+  "utc_started": "2026-10-06T15:50:50.129392+00:00",
+  "platform": "Python-only ground truth (no NTL, no Harvey C++)",
+  "python": "3.13.3",
+  "upstream_pin": "37a9b72",
+  "upstream_reference": "harvey_validation.json",
+  "validation": {
+    "all_stopping_indices": 10809,
+    "exact_binomial_checks": 2130,
+    "miller_cross_checks": 43,
+    "quarter_cross_checks": 43,
+    "quarter_skipped_p_mod4": 49,
+    "primes_all_indices": 92,
+    "primes_<=199": 43,
+    "primes_quarter_applicable": 43,
+    "status": "passed"
+  },
+  "subset_documented_diff": {
+    "miller_cross_checks": 328
+  },
+  "diff_vs_upstream": "match"
+}

@@ -62,6 +62,19 @@ AXIS_LABELS = {
     "F": "Fraicheur des bodies d'Epic",
 }
 
+# Mapping axe -> chaperon par defaut pour --suggest-rattachement.
+# Source de verite : le corps de l'EPIC #16473 (axes A-F, §A-F) qui designe
+# explicitement le chaperon canonique pour chaque axe. Le commentaire des
+# sub-grains peut trancher autrement ; la suggestion reste advisory.
+AXIS_TO_CHAPERON: dict[str, int] = {
+    "A": 5081,  # renum/parcours -> #5081 (notebook canon)
+    "B": 13737, # doublons/twins -> #13737 (structurel 30 perimetres)
+    "C": 4362,  # lakes Lean -> #4362 (Lean lakes)
+    "D": 9535,  # scripts sprawl -> #9535 (menage)
+    "E": 13737, # doc sprawl -> #13737 (structurel) par defaut
+    "F": 16473, # Epic body freshness -> #16473 (parapluie anti-entropie)
+}
+
 # Deliberately narrow patterns: a wrong axis is noise, an unclassified orphan
 # is still listed. Multi-word anchors beat bare keywords ("lean" alone would
 # swallow every notebook issue; "cli" alone every tooling one).
@@ -156,12 +169,41 @@ def classify_axes(title: str, body: str) -> list[str]:
     ]
 
 
+def suggest_chaperon(axes: list[str]) -> list[int]:
+    """Return chaperon candidates ordered by axis frequency, dedup'd.
+
+    A suggestion is ADVISORY (--suggest-rattachement): the human arbitrates.
+    A single-axis issue yields one suggestion; a multi-axis one yields them
+    in A-F order. UNCLASSIFIED issues yield an empty list (no heuristic
+    match). Multiple issues with the same axis always yield the SAME chaperon
+    (the AXIS_TO_CHAPERON mapping is the source of truth, not a per-issue
+    vote).
+    """
+    if not axes:
+        return []
+    seen: set[int] = set()
+    out: list[int] = []
+    for axis in axes:
+        chap = AXIS_TO_CHAPERON.get(axis)
+        if chap and chap not in seen:
+            out.append(chap)
+            seen.add(chap)
+    return out
+
+
 def audit(
     issues: list[dict[str, Any]],
     chaperones: dict[int, dict[str, Any]],
     issues_comments: dict[int, list[dict[str, Any]]] | None = None,
+    suggest: bool = False,
 ) -> dict[str, Any]:
-    """Pure core: tri of open issues into attached / orphaned-by-axis."""
+    """Pure core: tri of open issues into attached / orphaned-by-axis.
+
+    ``suggest`` (advisory): when True, each orphan carries a
+    ``suggested_chaperon`` list derived from its axes via AXIS_TO_CHAPERON.
+    The field is omitted entirely when ``suggest`` is False (default) to
+    preserve existing report consumers (acceptance 1 wire).
+    """
     chaperone_numbers = {i["number"] for i in issues} & set(CHAPERONES)
     attached: list[dict[str, Any]] = []
     orphans: list[dict[str, Any]] = []
@@ -184,12 +226,16 @@ def audit(
         absence = ["body: 0 citation des chaperons (#%s)" % " #".join(map(str, CHAPERONES))]
         if issues_comments is not None:
             absence.append("comments: 0 citation des chaperons (--deep)")
-        orphans.append({
+        axes = classify_axes(issue.get("title") or "", issue.get("body") or "")
+        orphan_entry: dict[str, Any] = {
             "number": number,
             "title": issue.get("title") or "",
-            "axes": classify_axes(issue.get("title") or "", issue.get("body") or ""),
+            "axes": axes,
             "absence": absence,
-        })
+        }
+        if suggest:
+            orphan_entry["suggested_chaperon"] = suggest_chaperon(axes)
+        orphans.append(orphan_entry)
     by_axis: dict[str, list[dict[str, Any]]] = {axis: [] for axis in AXIS_LABELS}
     by_axis["UNCLASSIFIED"] = []
     for orphan in orphans:
@@ -293,6 +339,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", help="write the report to FILE instead of stdout")
     parser.add_argument("--fail-on-orphans", action="store_true",
                         help="exit 1 when orphans > 0 (future ratchet wire; NOT the delivery posture)")
+    parser.add_argument("--suggest-rattachement", action="store_true",
+                        help="attach a suggested_chaperon list to each orphan (advisory, human review required)")
     args = parser.parse_args(argv)
 
     if args.fetch:
@@ -305,7 +353,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         issues, chaperones, issues_comments = load_input(args.input)
 
-    report = audit(issues, chaperones, issues_comments)
+    report = audit(issues, chaperones, issues_comments, suggest=args.suggest_rattachement)
     rendered = json.dumps(report, ensure_ascii=False, indent=2) if args.format == "json" else render_markdown(report)
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="\n") as handle:

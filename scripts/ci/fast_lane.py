@@ -31,6 +31,7 @@ import argparse
 import fnmatch
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -42,12 +43,32 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fast_lane_registry import (  # noqa: E402
     PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, TRANCHE5, TRANCHE6,
     TRANCHE7, TRANCHE8, TRANCHE9, TRANCHE10, TRANCHE11, TRANCHE12, TRANCHE13,
-    TRANCHE14, TRANCHE15, TRANCHE16, TRANCHE17, Guard,
+    TRANCHE14, TRANCHE15, TRANCHE16, TRANCHE17, TRANCHE18, TRANCHE19, Guard,
 )
 
 SHADOW_PREFIX = "fast-lane (ombre): "
 GUARD_TIMEOUT_S = 600
 OUTPUT_LIMIT = 60000  # marge sous la limite de 65535 de l'API Checks
+
+# Le nom d'un garde est un NOM DE CHECK-RUN (display string), jamais un nom de
+# fichier : il peut porter des caracteres que le systeme de fichiers refuse.
+# Mesure fondatrice (etape 3 de #12856) : la garde `readme-ipynb-links-guard`
+# porte le nom canonique `Audit README -> .ipynb links` ; le `>` fait echouer
+# l'ecriture du temporaire sous Windows (`OSError: [Errno 22] Invalid
+# argument`). Le fichier temporaire n'a aucune raison d'etre le nom de check :
+# il doit seulement etre unique et valide sur toutes les plateformes.
+_UNSAFE_FS_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+
+
+def tmp_id(name: str) -> str:
+    """Identifiant de fichier temporaire, valide sous Windows comme sous Unix.
+
+    Remplace les caracteres interdits et neutralise les espaces/points de fin
+    (refuses par Windows). Le nom de garde reste la cle du dictionnaire : seul
+    le NOM DE FICHIER est derive ici, et il reste unique pour les six gardes
+    delta du registre (aucune collision apres substitution).
+    """
+    return _UNSAFE_FS_CHARS.sub("_", name).rstrip(" .") or "guard"
 
 
 # ---------------------------------------------------------------------------
@@ -367,7 +388,7 @@ def main(argv: list[str] | None = None) -> int:
     guards = [g for g in PILOT + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14
-              + TRANCHE15 + TRANCHE16 + TRANCHE17
+              + TRANCHE15 + TRANCHE16 + TRANCHE17 + TRANCHE18 + TRANCHE19
               if not args.only or g.name == args.only]
     selected = [g for g in guards if guard_applies(g, changed)]
     for guard in guards:
@@ -424,7 +445,7 @@ def main(argv: list[str] | None = None) -> int:
             continue
         rc, log = run_argv(guard.argv, ctx)
         if guard.delta_argv:
-            dest = tmp / f"{guard.name}.head.json"
+            dest = tmp / f"{tmp_id(guard.name)}.head.json"
             dest.write_text(payload_of(log), encoding="utf-8")
             head_json[guard.name] = str(dest)
             print(f"[fast-lane] phase 1 (HEAD) {guard.name} : scan capture")
@@ -450,7 +471,7 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 for guard in delta_guards:
                     _, log = run_argv(guard.argv, ctx)
-                    dest = tmp / f"{guard.name}.base.json"
+                    dest = tmp / f"{tmp_id(guard.name)}.base.json"
                     dest.write_text(payload_of(log), encoding="utf-8")
                     base_json[guard.name] = str(dest)
             finally:

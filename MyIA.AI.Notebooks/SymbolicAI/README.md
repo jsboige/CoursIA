@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 317
-breakdown: Lean=87, SMT=47, Tweety=39, Argument_Analysis=32, SmartContracts=31, SemanticWeb=28, SymbolicLearning=27, Planners=25, root=1
-maturity: BETA=304, ALPHA=9, DRAFT=4
+pedagogical_count: 319
+breakdown: Lean=89, SMT=47, Tweety=39, Argument_Analysis=32, SmartContracts=31, SemanticWeb=28, SymbolicLearning=27, Planners=25, root=1
+maturity: BETA=305, ALPHA=9, DRAFT=5
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette famille de séries explore.
@@ -22,6 +22,18 @@ Les séries couvrent ensemble le **cycle complet du raisonnement vérifiable** :
 - **relier** ce pipeline aux LLMs : Argumentation.
 
 Chaque série est autonome. Un fil rouge les traverse pourtant : du formalisme pur à la vérification certifiée, jusqu'au moment où le symbolique et le neuronal cessent d'être deux camps pour devenir deux couches d'un même système fiable.
+
+## Objectifs d'apprentissage
+
+À l'issue d'un parcours sur la famille **SymbolicAI**, le lecteur est capable de :
+
+1. **Représenter** la connaissance sous forme symbolique et la rendre manipulable par une machine — logiques formelles, révision de croyances, argumentation abstraite (Dung, ASPIC+, AGM, Pearl) côté [Tweety](Tweety/README.md) (cell.0 de `Tweety-01-Setup-Python.ipynb`) ; graphes RDF, interrogation SPARQL 1.1, ontologies RDFS/OWL, validation SHACL, JSON-LD et RDF-Star côté [SemanticWeb](SemanticWeb/README.md) (cell.0 de `SW-2b-Python-RDFBasics.ipynb`) ; analyse argumentative outillée (Toulmin, sophismes Walton, sémantiques de Dung) côté [Argument_Analysis](Argument_Analysis/README.md) (cell.0 de `Argumentation-00-Setup-Tweety-Python.ipynb`).
+2. **Prouver** la correction d'un énoncé par assistant de preuve interactif — types dépendants, isomorphisme de Curry-Howard, tactiques Lean, librairie Mathlib4 côté [Lean](Lean/README.md) (cell.0 de `Lean-01-Setup-Lean-Python.ipynb`) ; démonstration automatique en géométrie (vérification probabiliste, bases de Gröbner, méthode de Wu) côté Lean/Geometry (notebook `Geometry-01-From-Figure-To-Equation`).
+3. **Décider** la satisfiabilité et optimiser sous contraintes — encodeur SMT-LIB, preuves par `unsat`, arithmétique linéaire/non-linéaire, optimisation modulo théories côté [SMT](SMT/README.md) (cell.0 de `Z3-API/Z3-01-Introduction-Python.ipynb`) ; planification classique PDDL, recherche dans l'espace d'états, heuristiques, CP-SAT, planification temporelle et hiérarchique côté [Planners](Planners/README.md) (cell.0 de `00-Environment/Planners-0-Setup.ipynb`).
+4. **Exécuter** dans un monde simulé ou sur blockchain — agents autonomes, recherche heuristique et compromis expressivité/temps de recherche côté Planners (notebooks `Planners-1-*`) ; standards de jetons (ERC-20, ERC-721), DeFi, gouvernance on-chain, ZK, conservation de la valeur côté [SmartContracts](SmartContracts/README.md) (cell.0 de `00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb`).
+5. **Apprendre** à partir de connaissances plutôt que de données et **relier** le symbolique au neuronal — version space, explanation-based learning, programmation logique inductive (FOIL), automates, neuro-symbolique côté [SymbolicLearning](SymbolicLearning/README.md) (cell.0 de `SL-1-LogicalLearning.ipynb`) ; orchestration d'agents LLM validés par Tweety, détection de sophismes, prompting structuré côté Argument_Analysis (notebooks `Argumentation-04-*`).
+
+Chaque verbe se construit par accumulation : un lecteur qui ne suit qu'une série atteint un sous-ensemble, et c'est en croisant les huit qu'il couvre la carte complète. Les **flèches pleines** de la [carte de la famille](#carte-de-la-famille) ci-dessous matérialisent les ponts : une compétence acquise dans Tweety devient argument dans Argument_Analysis, un encodage SMT devient prouveur de borne dans Planners, une ontologie OWL devient garde-fou pour un LLM via GraphRAG.
 
 ## Comment lire ce README
 
@@ -185,7 +197,8 @@ Un même théorème, le milieu de l'hypoténuse équidistant des trois sommets, 
   - [03](Lean/Geometry/Geometry-03-Wu-Method-Python.html) (Licence) : on le redémontre par la méthode de Wu, qui fait apparaître ces conditions explicitement ;
   - [04](Lean/Geometry/Geometry-04-DD-AR-Python.html) (Licence) : on le prouve par règles (DD) puis par l'algèbre (AR), le duo symbolique d'AlphaGeometry — et un énoncé faux y est réfuté deux fois.
 - **Pour approfondir** — [03b](Lean/Geometry/Geometry-03b-Ritt-Decomposition-Python.html) : le théorème du papillon et la décomposition de Ritt, avec le bord dégénéré où l'énoncé est muet et non faux.
-- **À venir** — un pont formel vers Lean.
+- **Recherche** — [05](Lean/Geometry/Geometry-05-Pont-Formel-Python.html) : le pont formel — le fil rouge prouvé au noyau Lean/Mathlib, confronté au même théorème décidé par Gröbner, et ce que chacune des deux méthodes garantit réellement.
+- **À venir** — 04b, l'accrétion de recherche de la série (Wu associé à DD+AR, proposeur neuronal — Sinha et al. 2024).
 - [README de la série Geometry](Lean/Geometry/README.md) : programme gradué (Epic #17544) et état.
 
 ### Hors série

@@ -14,14 +14,65 @@ qui est shime par les tests existants).
 """
 
 import json
+import re
+import subprocess
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
 import pick_idle_grain as pig  # noqa: E402
+
+
+class _RealGhReached(BaseException):
+    """Un test a atteint un `gh` reel.
+
+    Derive de `BaseException`, pas d'`Exception` : le picker attrape
+    large (`except Exception` / `OSError`) sur ses chemins de fetch pour
+    rendre un fail-OPEN. Un garde qui deriverait d'`Exception` serait
+    avale par ces `except` -- exactement le silence qu'il doit casser.
+    """
+
+
+@pytest.fixture(autouse=True)
+def _no_real_gh(monkeypatch, request):
+    """#19913 : aucun test de ce fichier n'emet un appel `gh`.
+
+    Le piege mesure (coordinateur, 2026-10-09) : sur une fusion avec main,
+    la suite de ce fichier pendait par tests de 30 s a plusieurs minutes.
+    Cause : `main --belt` touche des surfaces que la fixture
+    `_patch_belt_network` n'enumerait pas -- `fetch_series_visits` ->
+    `gh_payload_cache` -> `run_gh` -> `subprocess.run`, bloque sur un
+    `communicate` reel. Enumerer les surfaces une par une est une course
+    perdue : chaque fonction reseau ajoutee rouvre le trou.
+
+    Ce garde coupe au SEUL point de passage commun : `subprocess.run`
+    avec `gh` dans l'argv. Il leve en millisecondes, bruyamment, avec la
+    ligne fautive -- la ou un oubli de fixture produisait un hang muet.
+    Les autres subprocess (git...) passent inchangees. Un test qui veut
+    vraiment `gh` se marque `@pytest.mark.real_gh` et pose son propre
+    desarmement ; aucun test de ce fichier n'en a besoin.
+    """
+    if request.node.get_closest_marker("real_gh"):
+        return
+    real_run = pig.subprocess.run
+
+    def guarded_run(argv, *args, **kwargs):
+        cmd = argv if isinstance(argv, (list, tuple)) else [argv]
+        joined = " ".join(str(part) for part in cmd)
+        if re.search(r"(^|[\\/ ])gh(\.exe)?($|\s)", joined):
+            raise _RealGhReached(
+                "appel gh reel depuis un test : "
+                + joined[:160]
+                + " -- stuber la surface (voir _patch_belt_network) ou "
+                "marquer le test @pytest.mark.real_gh")
+        return real_run(argv, *args, **kwargs)
+
+    monkeypatch.setattr(pig.subprocess, "run", guarded_run)
 
 
 def _make_item(number, age_days, idle, klass="grain", last=None,
@@ -544,6 +595,33 @@ def _patch_belt_network(monkeypatch, prs, red_state):
                                             for n in nums})
     # Le tapis lit aussi les claims comme visites : jamais de reseau en test.
     monkeypatch.setattr(pig, "latest_claim_stamp", lambda n: None)
+    # `fetch_visits` (visits + long_visits, l.6024/6029 de main) etait le
+    # trou de la fixture : non patchee, `main --belt --json` sortait sur un
+    # vrai `gh` et le test pendait 99 s (mesure 2026-10-09, coordinateur
+    # #19913 : la suite bloquait sur un subprocess.communicate reel).
+    # Un dictionnaire VIDE n'est pas une visite manquante : le tapis traite
+    # l'absence comme "jamais servie" (la plus ancienne en tete), ce qui
+    # est exactement l'etat que le pool vide implique deja.
+    monkeypatch.setattr(pig, "fetch_visits", lambda *a, **k: ({}, None))
+    # `fetch_series_visits` (l.6044 de main) : 2e trou de la meme famille,
+    # trouve par le garde `_no_real_gh` (stack : series_saturation ->
+    # gh_payload_cache -> run_gh -> subprocess.run bloque en communicate).
+    # Rend `(zones, issue_to_family, erreur)` ; vide + erreur None = mesure
+    # faite, aucune zone -- un test de saturation injecte la sienne.
+    monkeypatch.setattr(pig, "fetch_series_visits",
+                        lambda **k: ({}, {}, None))
+    # `fetch_merged` (l.6066 de main, importe de series_saturation) : le
+    # corpus de livraisons reelles. Meme famille que fetch_series_visits --
+    # passe par gh_payload_cache -> run_gh. `measure_delivery`, en aval,
+    # est pure : elle ne fait que lire ce corpus. Forme `(prs, err)`.
+    monkeypatch.setattr(pig, "fetch_merged", lambda *a, **k: ([], None))
+    # `pin_gh_token()` (gh_identity, appele au demarrage de main) : le
+    # VRAI hang des tests `main --belt` (mesure 2026-10-09 : ~300 s par
+    # test, 5 tests). Le garde `_no_real_gh` l'a nomme en 0,8 s -- un
+    # `gh auth token --user myia-po-2026` sans jeton machine repond apres
+    # un aller-retour d'auth lent. C'est de l'installation d'environnement,
+    # pas le comportement sous test : on le neutralise.
+    monkeypatch.setattr(pig.gh_identity, "pin_gh_token", lambda *a, **k: None)
 
 
 def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
@@ -603,6 +681,87 @@ def test_belt_json_repair_key_absent_when_no_red(monkeypatch, capsys):
     assert payload["mode"] == "belt"
     assert payload["repair"] is None
     assert payload["last_delivery_window_days"] == 90
+
+
+class _RealProbeReached(AssertionError):
+    """Un test a atteint une sonde reseau par defaut -- le piege #19913."""
+
+
+def test_belt_loop_default_probes_are_inert(monkeypatch):
+    """#19913 : sans sonde injectee, la boucle n'atteint JAMAIS le reseau.
+
+    Les defauts de ``belt_pick_with_replacements`` sont les sondes inertes
+    (doctrine ``delivered_probe_inert`` / ``merged_pr_probe_inert``). Avant
+    le fix, le defaut etait ``has_delivered_signal`` / ``merged_pr_signal``
+    -- un test qui oubliait d'injecter sa sonde sortait sur un vrai ``gh``
+    et pendait (mesure 2026-10-09 : 99 s pour un seul test). Ce garde
+    casse au premier retour d'un defaut reseau : les vraies sondes sont
+    remplacees par des leveuses d'exception, la boucle doit completer.
+    """
+    def raise_delivered(n, lane=None):
+        raise _RealProbeReached(f"has_delivered_signal atteinte pour #{n}")
+
+    def raise_merged(n, lane=None):
+        raise _RealProbeReached(f"merged_pr_signal atteinte pour #{n}")
+
+    monkeypatch.setattr(pig, "has_delivered_signal", raise_delivered)
+    monkeypatch.setattr(pig, "merged_pr_signal", raise_merged)
+
+    pool = [_make_item(19001, age_days=50, idle=5, last=None),
+            _make_item(19002, age_days=49, idle=5, last=None)]
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(), probe_budget=8)
+
+    # Fail-OPEN : la sonde inerte rend None = « non sondable », le candidat
+    # est SERVI (jamais refuse faute de signal) et RAPPORTE dans failures
+    # -- doctrine TRI-ETAT de merged_pr_probe_inert. Les deux numeros dans
+    # failures sont le comportement attendu du defaut, pas un defaut.
+    assert [p["number"] for p in picks] == [19001, 19002]
+    assert state["failures"] == [19001, 19002]
+    assert withheld == []
+
+
+def test_belt_main_json_path_never_reaches_real_probes(monkeypatch, capsys):
+    """#19913 : le chemin complet `main --belt --json` est inerte par defaut.
+
+    Controle negatif du piege mesure par le coordinateur : sur une fusion
+    avec main, ``test_belt_json_emits_single_document_when_red_present``
+    depassait 30 s dans un vrai ``fetch_visits``, et restait bloque sur un
+    ``subprocess.communicate`` reel. Apres le fix (fixture + defauts
+    inertes), ``fetch_visits`` est couvert par la fixture, et les sondes
+    de livraison ``has_delivered_signal`` / ``merged_pr_signal`` sont
+    remplacees par des leveuses : le meme scenario main doit completer
+    vite et sans exception. Toute regression (sonde reseau non couverte
+    par la fixture, defaut reseau reintroduit dans la boucle) fait lever
+    ce test.
+    """
+    def raise_real(name):
+        def raiser(*a, **k):
+            raise _RealProbeReached(f"{name} atteinte hors injection")
+        return raiser
+
+    red = _state_red()
+    prs = [{"number": 18844,
+            "title": "PR rouge de la lane",
+            "body": "Grain: MED/guard -- lane myia-po-2024:CoursIA-2",
+            "createdAt": "2026-09-30T12:00:00Z",
+            "isDraft": False}]
+    _patch_belt_network(monkeypatch, prs, red)
+    # La fixture couvre fetch_visits (main l'appelle legitiment, sans
+    # reseau en test). Les sondes de livraison, elles, ne DOIVENT etre
+    # atteintes nulle part sur ce chemin -- defauts inertes de la boucle :
+    # si un defaut reseau revient, la leveuse fait echouer le test.
+    monkeypatch.setattr(pig, "has_delivered_signal",
+                        raise_real("has_delivered_signal"))
+    monkeypatch.setattr(pig, "merged_pr_signal",
+                        raise_real("merged_pr_signal"))
+
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["mode"] == "belt"
+    assert payload["repair"]["grain"]["number"] == 18844
 
 
 def test_non_belt_json_red_still_emits_standalone_repair(monkeypatch, capsys):
@@ -843,9 +1002,419 @@ def test_latest_claim_stamp_read_failure_is_none(monkeypatch):
     assert pig.latest_claim_stamp(1) is None
 
 
+def test_delivered_info_stamp_matches_the_three_marker_forms():
+    """#19295 : les trois formes employees par les lanes (mesure #17263
+    c.754) sont chacune une visite -- la plus recente gagne."""
+    comments = [
+        _claim("2026-09-13T09:17:03Z",
+               "[INFO] candidate-delivered #13112 -- substance deja livree"),
+        _claim("2026-10-02T12:57:29Z",
+               "[INFO candidate-delivered] lane myia-po-2026:CoursIA-2"),
+        _claim("2026-10-05T06:58:26Z",
+               "[INFO] lane myia-po-2026:CoursIA-2 -- 2026-10-05 -- "
+               "candidate-delivered, preuve firsthand"),
+    ]
+    assert pig.delivered_info_stamp(comments) == "2026-10-05T06:58:26Z"
+
+
+def test_delivered_info_stamp_ignores_discursive_mentions():
+    """Une mention du mecanisme, ancre au milieu d'une phrase, n'est pas
+    l'en-tete d'un marqueur (garde anti-FP de `_DELIVERED_MARKER_RE`)."""
+    comments = [
+        _claim("2026-10-05T00:00:00Z",
+               "sans [INFO] candidate-delivered dans ce fil, rien ne compte"),
+        _claim("2026-10-05T01:00:00Z",
+               "Le [INFO] absent : aucune livraison a signaler ici."),
+    ]
+    assert pig.delivered_info_stamp(comments) is None
+
+
+def test_latest_claim_stamp_takes_max_of_claim_and_delivered(monkeypatch):
+    """Le probe de tete lit claim ET livraison dans la meme charge de
+    commentaires : une seule requete (#19295, cout borne), le max gagne."""
+    payload = {"comments": [
+        _claim("2026-10-01T00:00:00Z",
+               "[CLAIMED] lane myia-po-2026:CoursIA -- #13107"),
+        _claim("2026-10-05T06:58:26Z",
+               "[INFO] candidate-delivered -- #13112 merged 2026-08-26"),
+    ]}
+    calls = []
+
+    class _R:
+        stdout = json.dumps(payload)
+
+    def fake_run(*a, **k):
+        calls.append(a)
+        return _R()
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    assert pig.latest_claim_stamp(13107) == "2026-10-05T06:58:26Z"
+    assert len(calls) == 1
+
+
+def test_belt_delivered_info_moves_served_issue_behind_13107_scenario():
+    """Acceptance #19295 en bout en bout : #13107 servie par un
+    `[INFO] candidate-delivered` recule derriere une issue jamais servie,
+    au meme titre qu'un claim -- le tapis cesse de la reservir comme
+    grain neuf."""
+    palomar = _make_item(13107, age_days=90, idle=1,
+                         last="2026-08-26T19:38:55Z",
+                         created="2026-08-26T12:17:31Z")
+    fresh = _make_item(19088, age_days=30, idle=1, last=None,
+                       created="2026-09-10T00:00:00Z")
+    pool = [palomar, fresh]
+    pig.settle_belt_head(
+        pool, need=2,
+        probe={13107: "2026-10-05T06:58:26Z"}.get,
+        max_probes=10)
+    assert [it["number"] for it in pool][0] == 19088
+    assert palomar["last_claim_stamp"] == "2026-10-05T06:58:26Z"
+
+
 def test_belt_merge_only_flag_is_accepted(monkeypatch, capsys):
     _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
     rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt",
                    "--belt-merge-only", "--json"])
     assert rc == 0
     assert json.loads(capsys.readouterr().out)["mode"] == "belt"
+
+
+# Volet livraison du tapis (#19390) : la voie ponderee ecartait et
+# remplacait les candidats [INFO] candidate-delivered, le tapis les
+# servait comme grains neufs (mesure 06/10 : #15974 et #16048, deux
+# marqueurs chacune, servies a deux reprises). Les tests portent sur la
+# boucle extraite `belt_pick_with_replacements` -- convention du
+# fichier : main() n'est appele qu'a pool vide.
+
+
+def _belt_args(grains=2, include_delivered=False):
+    import types
+    return types.SimpleNamespace(
+        grains=grains, include_delivered=include_delivered,
+        lane="myia-po-2023:CoursIA-2")
+
+
+def _free_claims(items):
+    return {it["number"]: (pig.CLAIM_CODE_FREE, "libre") for it in items}
+
+
+def test_belt_withdraws_delivered_candidates_and_replaces():
+    """Controle positif #19390 : un candidat livre (label OU commentaire)
+    sort en withheld -- cause LIVRAISON -- jamais en picks, et le suivant
+    le remplace dans la fenetre."""
+    marked_label = _make_item(15974, age_days=100, idle=10, last=None)
+    marked_label["labels"] = ["candidate-delivered"]
+    marked_comment = _make_item(16048, age_days=99, idle=9, last=None)
+    clean_a = _make_item(19001, age_days=50, idle=5, last=None)
+    clean_b = _make_item(19002, age_days=49, idle=5, last=None)
+    pool = [marked_label, marked_comment, clean_a, clean_b]
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: n == 16048,
+        # 3e surface de livraison #19907 : probe injecte explicitement
+        # False, le test ne couvre que le label et le marqueur. Depuis le
+        # defaut inerte (#19913), omettre le param serait aussi sur ; on
+        # l'injecte pour garder le scope du test lisible.
+        merged_pr_probe=lambda n, lane=None: False)
+    assert [p["number"] for p in picks] == [19001, 19002], (
+        "les candidats livres doivent etre remplaces, pas servis")
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert 15974 in causes and causes[15974].startswith("LIVRAISON")
+    assert 16048 in causes and causes[16048].startswith("LIVRAISON")
+    assert not state["budget_hit"] and state["failures"] == []
+
+
+def test_belt_keeps_unmarked_candidate_pickable():
+    """Controle negatif #19390 : sans marqueur (label absent, sonde
+    False), le candidat reste tirable."""
+    clean = _make_item(19003, age_days=40, idle=4, last=None)
+    picks, withheld, _ = pig.belt_pick_with_replacements(
+        [clean], _free_claims([clean]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        # 3e surface #19907 : probe inert ici (le test verifie que sans
+        # marqueur, le candidat reste tirable -- on ne veut pas qu'une
+        # PR reelle mergee le fausse).
+        merged_pr_probe=lambda n, lane=None: False)
+    assert [p["number"] for p in picks] == [19003]
+    assert withheld == []
+
+
+def test_belt_unread_probe_is_fail_open_and_reported():
+    """Tri-etat : sonde None (lecture en echec) = candidat CONSERVE,
+    echec rapporte -- une lecture qui n'a pas abouti n'est pas une
+    absence de signal."""
+    unread = _make_item(19004, age_days=40, idle=4, last=None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [unread], _free_claims([unread]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: None,
+        # 3e surface #19907 : probe inert (le test verifie le tri-etat
+        # du probe commentaire ; la 3e surface n'est pas sous test ici).
+        merged_pr_probe=lambda n, lane=None: False)
+    assert [p["number"] for p in picks] == [19004]
+    assert withheld == []
+    assert state["failures"] == [19004]
+
+
+def test_belt_does_not_withdraw_umbrella_on_marker():
+    """Portee : l'urne grain seule. Une umbrella marquee reste servie --
+    un marqueur sur un EPIC n'est pas un verdict de fermeture (decision
+    mesuree du canal label, cf delivered_signal_reason)."""
+    umbrella = _make_item(19005, age_days=60, idle=6, klass="umbrella",
+                          last=None)
+    umbrella["labels"] = ["candidate-delivered"]
+    picks, withheld, _ = pig.belt_pick_with_replacements(
+        [umbrella], _free_claims([umbrella]), _belt_args(), probe_budget=8)
+    assert [p["number"] for p in picks] == [19005]
+    assert withheld == []
+
+
+def test_belt_probe_budget_is_bounded_and_fail_open_when_exhausted():
+    """Cout borne : le budget de sondes vaut la fenetre de tete. Au-dela,
+    plus personne n'est sonde -- fail-OPEN rapporte (budget_hit), jamais
+    un faux LIVRAISON sur un candidat jamais lu."""
+    items = [_make_item(n, age_days=30, idle=3, last=None)
+             for n in (19006, 19007, 19008)]
+    probes = []
+
+    def counting_probe(n, lane=None):
+        probes.append(n)
+        return True
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        items, _free_claims(items), _belt_args(), probe_budget=1,
+        delivered_probe=counting_probe)
+    # 1 sonde : le premier candidat est ecarte (marqueur lu), les deux
+    # suivants sont SERVIS sans lecture -- le budget epuise ne fabrique
+    # ni retrait ni silence non dit.
+    assert probes == [19006]
+    assert [p["number"] for p in picks] == [19007, 19008]
+    assert [w[0]["number"] for w in withheld] == [19006]
+    assert state["budget_hit"] is True
+
+
+def test_belt_probe_budget_covers_the_settle_window():
+    """#19969 : le plafond de la boucle de service ne peut pas valoir la seule
+    fenetre de tete. ``settle_belt_head`` recoit deja ``window * 3 + 12``
+    sondes pour stabiliser la MEME region de la file -- deux compteurs
+    distincts, une seule region, donc un seul plafond reseau."""
+    for window in (4, 8, 12):
+        assert pig.belt_probe_budget(window) == window * 3 + 12
+        assert pig.belt_probe_budget(window) > window, (
+            "un budget egal a la fenetre ramene la fuite de #19969")
+
+
+def test_belt_head_denser_than_the_window_no_longer_serves_delivered_items():
+    """Regression #19969, jouee sur la valeur d'avant ET d'apres.
+
+    Mesure firsthand du rapport : sur un seul tirage, huit candidats servis
+    par le tapis etaient deja livres. Au-dela du budget, la sonde rendait
+    DELIVERED_SIGNAL_UNPROBED et le candidat partait en ``picks`` comme un
+    grain neuf -- fail-OPEN assume, mais sous-dimensionne."""
+    window = 8
+    delivered = set(range(19100, 19114))          # 14 livres, fenetre de 8
+    items = [_make_item(n, age_days=200 - i, idle=2, last=None)
+             for i, n in enumerate(sorted(delivered, reverse=True))]
+    fresh = _make_item(19300, age_days=1, idle=1, last=None)
+    pool = items + [fresh]
+
+    def probe(n, lane=None):
+        return n in delivered
+
+    # Budget d'AVANT (la fenetre seule) : des livres sont servis, et
+    # l'epuisement est rapporte -- le temoin du defaut.
+    old_picks, _, old_state = pig.belt_pick_with_replacements(
+        list(pool), _free_claims(pool), _belt_args(grains=20),
+        probe_budget=window, delivered_probe=probe,
+        # 3e surface #19913 : explicitement False. Sous l'ancien defaut
+        # (sonde reseau) ce test laissait `main` sonder le depot ; depuis
+        # les defauts inertes, l'omission se lit `failures` (None =
+        # non sondable) et brouille l'assertion -- l'injection rend la
+        # dependance visible.
+        merged_pr_probe=lambda n, lane=None: False)
+    leaked = [p["number"] for p in old_picks if p["number"] in delivered]
+    assert leaked, "temoin : l'ancien budget doit laisser fuiter des livres"
+    assert old_state["budget_hit"] is True
+
+    # Budget aligne : plus aucun livre servi, et plus d'epuisement.
+    new_picks, new_withheld, new_state = pig.belt_pick_with_replacements(
+        list(pool), _free_claims(pool), _belt_args(grains=20),
+        probe_budget=pig.belt_probe_budget(window), delivered_probe=probe,
+        merged_pr_probe=lambda n, lane=None: False)
+    assert [p["number"] for p in new_picks] == [19300]
+    assert {w[0]["number"] for w in new_withheld} == delivered
+    assert new_state["budget_hit"] is False
+    assert new_state["failures"] == []
+
+
+def test_has_delivered_signal_grammar_ignores_discursive_mentions(monkeypatch):
+    """Controle negatif #19390, au niveau de la grammaire : une mention
+    discursive porte la sous-chaine sans etre un en-tete de marqueur --
+    elle ne doit pas retirer le candidat. Le vrai en-tete, si."""
+    def fake_run(argv, **kwargs):
+        class _P:
+            stdout = ""
+            returncode = 0
+        marker = argv[3]
+        if marker == "15974":
+            _P.stdout = json.dumps({
+                "comments": [
+                    {"body": "Verifie : rien de livree ici, "
+                             "sans [INFO] candidate-delivered dans ce fil."},
+                ]})
+        else:
+            _P.stdout = json.dumps({
+                "comments": [
+                    {"body": "[INFO] candidate-delivered lane "
+                             "myia-po-2024:CoursIA-2 -- preuve firsthand."},
+                ]})
+        return _P()
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    assert pig.has_delivered_signal(15974) is False, (
+        "une mention discursive n'est pas un marqueur")
+    assert pig.has_delivered_signal(16048) is True
+
+
+def test_summarize_claim_implicit_occupation():
+    """#14300 -- occupation IMPLICITE : le JSON de l'organe porte la cle,
+    le reducteur rend CLAIM_CODE_IMPLICIT (pas FREE -- lecons du 2026-09-14 :
+    l'emission ne suffit pas, c'est la consommation qui fait le garde)."""
+    implicit_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                     '"stale_claims": [], "implicit_occupation": '
+                     '[{"number": 14293, "lane": "myia-po-2026:CoursIA",'
+                     ' "files": ["scripts/ci/docker/linux-runner/supervise.sh"],'
+                     ' "additions": 79, "deletions": 3}]}')
+    code, human = pig._summarize_claim(implicit_json + "\nIMPLICIT: ...", 3)
+    assert code == pig.CLAIM_CODE_IMPLICIT
+    assert "#14293" in human
+    assert "myia-po-2026:CoursIA" in human
+    # review 5429946072 : le claim de l'APPELANT est teste AVANT l'implicite
+    # -- un grain deja marque par la lane qui tire reste OWNED_BY_ME meme si
+    # une PR tierce reference l'issue (sinon la lane perd son propre grain).
+    owned_json = ('{"blocking_lanes": [], "my_active_claim": true,'
+                  '"stale_claims": [], "implicit_occupation": '
+                  '[{"number": 14293, "lane": "myia-po-2026:CoursIA"}]}')
+    code, human = pig._summarize_claim(owned_json, 0)
+    assert code == pig.CLAIM_CODE_OWNED_BY_ME
+    # priorite : un BLOCKED explicite prime sur l'implicite (le marqueur a
+    # plus d'autorite) -- le reducteur teste blocking_lanes AVANT.
+    both_json = ('{"blocking_lanes": ["myia-po-2027:CoursIA"],'
+                 '"my_active_claim": false, "stale_claims": [],'
+                 '"implicit_occupation": [{"number": 14293,'
+                 ' "lane": "myia-po-2026:CoursIA"}]}')
+    code, _ = pig._summarize_claim(both_json + "\n", 3)
+    assert code == pig.CLAIM_CODE_BLOCKED
+    # sans la cle (organe ancien ou jambe sautee) : comportement inchange.
+    plain_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                  '"stale_claims": []}')
+    code, _ = pig._summarize_claim(plain_json + "\n", 0)
+    assert code == pig.CLAIM_CODE_FREE
+
+
+# --- fetch_latest_claim_stamps_bulk (PR #19594, c.1113 picker stall) ---
+
+def _graphql_payload_for(comments_by_issue: dict[int, list[dict]]) -> dict:
+    """Construit la reponse GraphQL que `gh api graphql` rendrait.
+
+    Reproduit la forme : data.repository.i{n}.comments.nodes[{author, body, createdAt}].
+    """
+    repo = {}
+    for n, comments in comments_by_issue.items():
+        repo[f"i{n}"] = {
+            "number": n,
+            "comments": {"nodes": comments},
+        }
+    return {"data": {"repository": repo}}
+
+
+def test_fetch_latest_claim_stamps_bulk_parity_with_latest_claim_stamp(monkeypatch):
+    """Parity : sur chaque issue, le stamp du bulk = le stamp de latest_claim_stamp.
+
+    Mock `subprocess.run` pour repondre en mode GraphQL aux appels `gh api graphql`
+    et en mode `gh issue view --json comments` aux appels de latest_claim_stamp.
+    """
+    issue_payloads = {
+        10: [_claim("2026-10-04T09:50:12Z",
+                    "[CLAIMED] lane myia-po-2027:CoursIA -- T1")],
+        11: [_claim("2026-10-05T10:00:00Z",
+                    "[CLAIMED] lane myia-po-2024:CoursIA -- T2"),
+             _claim("2026-10-05T11:30:00Z",
+                    "[CLAIMED-AMEND] lane myia-po-2024:CoursIA -- paths: a/**")],
+        12: [_claim("2026-10-03T08:00:00Z",
+                    "aucun marqueur de claim ici")],
+    }
+
+    def fake_run(cmd, *a, **k):
+        class _R:
+            pass
+        r = _R()
+        if cmd[:3] == ["gh", "api", "graphql"]:
+            # Match order: les issue_numbers sont tries dans fetch_latest_...
+            # mais on n'en depend pas, le resultat est indexe par alias.
+            r.stdout = json.dumps(_graphql_payload_for(issue_payloads))
+        elif cmd[:3] == ["gh", "issue", "view"]:
+            # gh issue view N --json comments : on rend le payload de l'issue N
+            n = int(cmd[3])
+            r.stdout = json.dumps({"comments": issue_payloads[n]})
+        else:
+            raise AssertionError(f"fake_run: unexpected cmd {cmd!r}")
+        return r
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+    bulk_map, err = pig.fetch_latest_claim_stamps_bulk([10, 11, 12])
+    assert err is None, f"unexpected bulk error: {err}"
+    assert bulk_map == {
+        10: "2026-10-04T09:50:12Z",
+        11: "2026-10-05T11:30:00Z",  # max de claim + claim-amend
+        12: None,                     # aucun marqueur -> None (et pas de raise)
+    }, f"parite brisee: {bulk_map}"
+
+    # Re-verification : latest_claim_stamp unitaire rend la meme valeur.
+    assert pig.latest_claim_stamp(10) == bulk_map[10]
+    assert pig.latest_claim_stamp(11) == bulk_map[11]
+    assert pig.latest_claim_stamp(12) is None
+
+
+def test_fetch_latest_claim_stamps_bulk_falls_back_on_subprocess_error(monkeypatch):
+    """Repli : une exception subprocess rend ({}, err) ; le caller peut degrader.
+
+    On verifie le contrat publie dans la docstring : pas de propagation, juste
+    un signal d'erreur que le caller (settle_belt_head) interprete comme
+    "stamp inconnu, retomber sur la sonde unitaire / belt_pool[:need]".
+    """
+    def boom(*a, **k):
+        raise subprocess.TimeoutExpired(cmd="gh api graphql", timeout=30)
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    out_map, err = pig.fetch_latest_claim_stamps_bulk([42, 99])
+    assert out_map == {}, f"le repli doit rendre un dict vide, pas {out_map!r}"
+    assert err is not None and "TimeoutExpired" in err, (
+        f"l'erreur doit nommer la cause : {err!r}")
+
+
+def test_fetch_latest_claim_stamps_bulk_handles_more_than_100_comments(monkeypatch):
+    """Pagination : avec >100 commentaires, le stamp reste correct (top 100).
+
+    GitHub rend les 100 plus recents. Les marqueurs de claim etant toujours
+    dans la queue recente, ils survivent a la fenetre. On verifie qu'un
+    claim poste il y a 200 commentaires survit quand meme.
+    """
+    # 99 commentaires anciens (sans marqueur) + 1 claim recent en queue.
+    old = [_claim(f"2026-09-{(i % 28) + 1:02d}T{(i % 24):02d}:{(i % 60):02d}Z",
+                  f"commentaire ancien #{i} sans marqueur")
+           for i in range(99)]
+    recent_claim = _claim("2026-10-06T22:00:00Z",
+                          "[CLAIMED] lane myia-po-2023:CoursIA-2 -- T-pagination")
+    payload = {1234: old + [recent_claim]}
+
+    def fake_run(cmd, *a, **k):
+        class _R:
+            stdout = json.dumps(_graphql_payload_for(payload))
+        return _R()
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    out_map, err = pig.fetch_latest_claim_stamps_bulk([1234])
+    assert err is None
+    assert out_map == {1234: "2026-10-06T22:00:00Z"}, (
+        f"le claim recent doit survivre meme avec >100 commentaires : {out_map!r}")

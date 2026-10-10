@@ -40,8 +40,18 @@ le contenu predictif (correlation croisee a decalage positif). C'est l'observabl
 honnete d'une proto-representation — le pont, sous caveat explicite, vers les
 strates ulterieures (agents, features de SAE).
 
+Une derniere section (``#19333-G``) ajoute le **pont cusp <-> trefle** demande par
+la distillation #19333-G.alpha : la courbe de bifurcation ``4 a^3 + 27 b^2 = 0``
+tracee ici est la **cubique cuspidale**, que l'article de hidden-phenomena
+(Michael & Kenta, 2026-10-03, https://hidden-phenomena.com/articles/trefoil)
+identifie a un **noeud de trefle** releve en polaires sur le tore (``2 phi = 3
+theta``). La section mesure les invariants du noeud torique ``(2, n)`` (nombres
+d'enroulement, polynome d'Alexander) et fournit le trace 3D.
+
 Numpy uniquement (racines via ``numpy.roots``), comme le reste du package leger
-``ict``.
+``ict``. Le seul point de contact avec matplotlib est le trace
+(``cusp_polar_plot``, ``torus_surface``) : l'import y est **paresseux**, fait
+dans le corps des fonctions -- ``import ict.catastrophe`` reste donc numpy-only.
 """
 
 from __future__ import annotations
@@ -129,6 +139,125 @@ def bifurcation_curve(a_grid) -> Tuple[np.ndarray, np.ndarray]:
     with np.errstate(invalid="ignore"):
         b = np.sqrt(np.where(a < 0.0, -4.0 * a ** 3 / 27.0, np.nan))
     return -b, b
+
+
+def cusp_polar_torus(
+    n_cusps: int, n_samples: int = 400, R: float = 2.0, r: float = 1.0
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Cubique cuspidale ``y**2 = x**3`` en polaires, fermee sur le tore (R, r).
+
+    Parametrisation de la famille des **liens toriques** ``T(2, n_cusps)``
+    (par convention ``T(p, q)`` avec ``p = 2`` meridiens, ``q = n_cusps``
+    longitudinaux ; ``theta in [0, 4 pi]`` referme la courbe pour
+    ``n_cusps`` impair, et la parcourt **deux fois** sur la meme geometrie
+    pour ``n_cusps`` pair). La relation ``2 phi = n_cusps theta`` definit
+    l'image.
+
+    **Attention** : pour ``n_cusps`` **pair**, ``gcd(2, n_cusps) = 2`` et la
+    courbe ``T(2, n_cusps)`` est un **lien a 2 composantes** (link au sens
+    de Rolfsen), pas un noeud. La parametrisation ci-dessous ne trace
+    geometriquement qu'**une seule composante parcourue deux fois** : la
+    condition ``gamma(theta + 2 pi) = gamma(theta)`` est verifiee
+    numeriquement (``< 1e-14``) pour tout ``n_cusps`` pair (n = 2, 4, 6),
+    pas seulement ``n_cusps = 2``. Les cas ``n_cusps = 4, 6`` sont donc
+    **dégénérés** pour le compteur ``torus_knot_crossings`` au meme titre
+    que ``n_cusps = 2``.
+
+    Pour ``n_cusps`` **impair >= 3**, on obtient les **vrais nœuds toriques** :
+
+    * ``n_cusps = 3`` -> **trèfle** ``3_1`` (3 croisements minimaux)
+    * ``n_cusps = 5`` -> **cinquefoil** ``5_1`` (5 croisements minimaux)
+    * ``n_cusps = 7`` -> **septfoil** ``7_1`` (7 croisements minimaux)
+
+    Renvoie les coordonnees 3D ``(x, y, z)`` d'un echantillonnage regulier
+    de la trace sur la surface du tore.
+    """
+    if n_cusps < 2:
+        raise ValueError("n_cusps doit etre >= 2 (n=1 ne ferme pas)")
+    theta = np.linspace(0.0, 4.0 * np.pi, n_samples)
+    phi = n_cusps * theta / 2.0
+    x = (R + r * np.cos(theta)) * np.cos(phi)
+    y = (R + r * np.cos(theta)) * np.sin(phi)
+    z = r * np.sin(theta)
+    return x, y, z
+
+
+def torus_knot_crossings(
+    n_cusps: int, n_samples: int = 2000, R: float = 2.0, r: float = 1.0
+) -> int:
+    """Compte les **auto-croisements de la projection (x, y)** de la trace.
+
+    **ATTENTION** : ce compteur mesure le nombre d'auto-croisements de la
+    projection particuliere ``(x, y)`` livree par ``cusp_polar_torus``, ce
+    n'est **pas un invariant topologique** du nœud ou du lien. Il depend
+    du choix de projection (ici, l'axe du tore est projete orthogonalement
+    sur le plan equatorial). Un meme nœud peut avoir des projections
+    differentes avec des nombres de croisements tres differents ; le
+    **nombre minimal** de croisements sur toutes les projections (le
+    *crossing number*) est l'invariant topologique, et il faut un algorithme
+    dedie (e.g. SnapPy, Regina) pour le mesurer ou le borner.
+
+    **Portee de la formule** ``2 (n - 1)`` : la formule standard
+    ``p (q - 1)`` (avec ``p = 2``, ``q = n``) donne le nombre de croisements
+    **d'un diagramme regulier** du nœud torique ``T(2, n)``. **Elle n'est
+    verifiee numeriquement ici que pour ``n impair >= 3``** (noeuds
+    toriques reels : trèfle, cinquefoil, septfoil, etc.). Pour ``n pair``
+    (n = 2, 4, 6, ...), la parametrisation ``2 phi = n theta`` produit
+    ``gcd(2, n) = 2``, soit un **lien a 2 composantes**, et la
+    parametrisation ne trace qu'**une seule composante parcourue deux
+    fois** (cf. ``cusp_polar_torus``). Le compteur surcompte alors
+    massivement les paires : pour n_samples = 400 et ``n = 4`` on lit
+    ~403 croisements (au lieu des 6 attendus), pour ``n = 6`` ~407 (au
+    lieu de 10). Ce surcomptage est la **signature de la degenerescence**
+    de la parametrisation, pas un comptage legitime du link.
+
+    Temoin negatif (portee restreinte aux ``n impairs >= 3``) :
+    ``n = 3`` -> **4 croisements** (trefle, pas 3 ni 5) ; ``n = 5`` ->
+    **8 croisements** (cinquefoil, pas 3 ni 10) ; ``n = 7`` ->
+    **12 croisements**. C'est la signature qui distingue trèfle et
+    cinquefoil **sans interpreter visuellement** une figure 3D -- le
+    **témoin negatif** specifie par le ticket #19352.
+
+    Algorithme : la trace forme une boucle fermee de ``n_samples`` segments,
+    le segment ``i`` etant ``(i, (i+1) mod n_samples)``. On enumere les
+    paires de segments **non adjacents** ``(i, j)`` avec ``j > i + 1`` ; deux
+    segments se croisent si l'orientation du quadruplet change de signe sur
+    les deux diagonales. On decompte les paires ``(i, j)`` qui verifient
+    cette condition : chaque croisement est vu une fois (la paire
+    ``(i, j)`` avec ``i < j``), pas deux.
+    """
+    if n_cusps < 2:
+        raise ValueError("n_cusps doit etre >= 2")
+    theta = np.linspace(0.0, 4.0 * np.pi, n_samples)
+    phi = n_cusps * theta / 2.0
+    px = (R + r * np.cos(theta)) * np.cos(phi)
+    py = (R + r * np.cos(theta)) * np.sin(phi)
+
+    n = n_samples
+
+    def seg_intersect(i: int, j: int) -> bool:
+        ai, bi = i, (i + 1) % n
+        ci, di = j, (j + 1) % n
+        ax, ay = px[ai], py[ai]
+        bx, by = px[bi], py[bi]
+        cx, cy = px[ci], py[ci]
+        dx, dy = px[di], py[di]
+        d1 = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+        d2 = (bx - ax) * (dy - ay) - (by - ay) * (dx - ax)
+        d3 = (dx - cx) * (ay - cy) - (dy - cy) * (ax - cx)
+        d4 = (dx - cx) * (by - cy) - (dy - cy) * (bx - cx)
+        return ((d1 > 0 and d2 < 0) or (d1 < 0 and d2 > 0)) and (
+            (d3 > 0 and d4 < 0) or (d3 < 0 and d4 > 0)
+        )
+
+    n_cross = 0
+    for i in range(n):
+        for j in range(i + 2, n):
+            # La paire (i=0, j=n-1) : segments (0,1) et (n-1,0) -- non
+            # adjacents en boucle fermee, donc a tester.
+            if seg_intersect(i, j):
+                n_cross += 1
+    return n_cross
 
 
 # --------------------------------------------------------------------------- #
@@ -388,3 +517,146 @@ def anticipation_report(
             "pic_lag": peak_lag(lags, corr),
         }
     return rapport
+
+
+# --------------------------------------------------------------------------- #
+#  Pont cusp <-> trefle (#19333-G) : la cubique cuspidale en polaires sur le   #
+#  tore, et les noeuds toriques (2, n)                                        #
+# --------------------------------------------------------------------------- #
+#
+# Le pont lui-meme est *cite*, jamais re-derive : l'article de hidden-phenomena
+# (Michael & Kenta, 2026-10-03, https://hidden-phenomena.com/articles/trefoil)
+# identifie la **cubique cuspidale** ``y^2 = x^3`` -- qui EST la courbe de
+# bifurcation de la fronce, ``4 a^3 + 27 b^2 = 0``, tracee par
+# ``bifurcation_curve`` ci-dessus -- a un **noeud de trefle** releve en polaires
+# sur le tore. Figures non reproduites ; renvoi.
+#
+# Ce que ce module *mesure*, en revanche, ne depend d'aucun article : les
+# nombres d'enroulement d'une courbe fermee sur le tore, et le polynome
+# d'Alexander du noeud torique ``(2, n)`` -- ce dernier etant exactement l'objet
+# du theoreme ``alexander_trefoil`` de ``knot_lean`` (``X^2 - X + 1`` pour le
+# trefle). Le temoin negatif est le meme calcul pour ``n = 5`` (cinquefoil).
+
+
+def torus_points(theta, phi, R: float = 2.0, r: float = 1.0):
+    """Plongement du tore dans ``R^3`` : ``(theta, phi) -> (x, y, z)``.
+
+    ``theta`` est l'angle tournant autour de l'axe du tore (le grand cercle de
+    rayon ``R``), ``phi`` l'angle tournant dans le tube (le petit cercle de rayon
+    ``r``) ::
+
+        x = (R + r cos phi) cos theta
+        y = (R + r cos phi) sin theta
+        z = r sin phi
+
+    Renvoie ``(x, y, z)`` de la meme forme que ``theta`` (tout tableau numpy
+    diffusable). C'est le seul releve utilise par tout le reste de la section :
+    une courbe sur le tore n'est rien d'autre qu'un couple ``(theta, phi)``.
+    """
+    th = np.asarray(theta, dtype=float)
+    ph = np.asarray(phi, dtype=float)
+    rho = R + r * np.cos(ph)
+    return rho * np.cos(th), rho * np.sin(th), r * np.sin(ph)
+
+
+def torus_knot(n: int, points: int = 2000, turns: int = 2):
+    """Courbe ``(theta, phi)`` du noeud torique ``(2, n)`` : ``2 phi = n theta``.
+
+    Le noeud torique ``(p, q)`` est l'image d'une droite de pente ``q/p`` sur le
+    tore ; pour ``p = 2`` la relation s'ecrit ``2 phi = n theta``. Le trefle est
+    le cas ``n = 3`` ; ``n = 5`` donne le cinquefoil (temoin negatif).
+
+    Le domaine ``theta in [0, turns * 2 pi]`` avec ``turns = 2`` est le plus
+    petit qui referme la courbe pour ``n`` impair : ``theta`` s'enroule 2 fois,
+    ``phi`` s'enroule ``n`` fois. Renvoie ``(theta, phi)``, deux tableaux 1-D.
+    """
+    theta = np.linspace(0.0, float(turns) * 2.0 * np.pi, int(points))
+    return theta, 0.5 * float(n) * theta
+
+
+def torus_knot_winding(theta, phi) -> Tuple[int, int]:
+    """Nombres d'enroulement ``(w_theta, w_phi)`` **mesures** sur la courbe.
+
+    ``w = arrondi( (angle_final - angle_initial) / 2 pi )`` sur chaque angle.
+    C'est un invariant *mesure*, pas declare : le trefle ``2 phi = 3 theta``
+    doit rendre ``(2, 3)``, le cinquefoil ``(2, 5)``. Deux courbes dont les
+    paires different ne sont pas le meme noeud -- c'est ce que le temoin negatif
+    de la section exploite.
+    """
+    th = np.asarray(theta, dtype=float)
+    ph = np.asarray(phi, dtype=float)
+    return (
+        int(round(float(th[-1] - th[0]) / (2.0 * np.pi))),
+        int(round(float(ph[-1] - ph[0]) / (2.0 * np.pi))),
+    )
+
+
+def alexander_torus_knot(n: int) -> np.ndarray:
+    """Coefficients du polynome d'Alexander du noeud torique ``(2, n)``.
+
+    ``Delta(t) = (t^n + 1) / (t + 1) = t^(n-1) - t^(n-2) + ... + 1`` pour ``n``
+    impair, soit ``coefficients[k] = (-1)^(n-1-k)`` en **degre croissant**
+    (``coefficients[0]`` est le terme constant).
+
+    Pour le trefle (``n = 3``) cela donne ``[1, -1, 1]``, soit ``t^2 - t + 1``
+    -- exactement la valeur que ``knot_lean`` prouve dans ``alexander_trefoil``
+    (``Knots/Conway.lean``). La fonction ne calcule pas la valeur : elle la
+    **reconstruit par la formule du noeud torique**, ce qui en fait un controle
+    croise independant du cote Python (tests et notebook).
+    """
+    n = int(n)
+    if n < 1:
+        raise ValueError(f"n doit etre >= 1, recu {n!r}")
+    return np.array([(-1.0) ** (n - 1 - k) for k in range(n)], dtype=float)
+
+
+def alexander_roots_torus_knot(n: int):
+    """Racines complexes du polynome d'Alexander du noeud torique ``(2, n)``.
+
+    Ce sont les **racines ``2n``-iemes primitives de l'unite** : pour le trefle
+    (``n = 3``), la paire conjuguee ``exp(+/- i pi / 3)`` -- les racines 6-iemes
+    primitives. Le module les **calcule** (``numpy.roots`` sur les coefficients
+    en degre decroissant) au lieu de les declarer : c'est la mesure qui rend le
+    pont falsifiable, et elle se compare directement a ``exp(2 i pi k / 2n)``
+    pour ``k`` premier avec ``2n``.
+    """
+    coeffs = alexander_torus_knot(n)[::-1]
+    return np.roots(coeffs)
+
+
+def torus_surface(ax, R: float = 2.0, r: float = 1.0, nu: int = 60, nv: int = 30, **kwargs):
+    """Trace la **surface** du tore dans l'axe 3D ``ax`` (support du noeud).
+
+    Sans la surface, une courbe « sur le tore » flotte dans le vide et le propos
+    ne se lit pas. Import matplotlib **paresseux** (fait ici, pas en tete de
+    module) : le module reste numpy-only a l'import. Renvoie ``ax``.
+    """
+    import matplotlib.pyplot as plt  # noqa: F401  (import paresseux assume)
+
+    u = np.linspace(0.0, 2.0 * np.pi, int(nu))
+    v = np.linspace(0.0, 2.0 * np.pi, int(nv))
+    uu, vv = np.meshgrid(u, v)
+    x, y, z = torus_points(uu, vv, R=R, r=r)
+    kwargs.setdefault("alpha", 0.18)
+    kwargs.setdefault("color", "0.55")
+    kwargs.setdefault("linewidth", 0)
+    kwargs.setdefault("antialiased", True)
+    ax.plot_surface(x, y, z, **kwargs)
+    return ax
+
+
+def cusp_polar_plot(theta, phi, ax, R: float = 2.0, r: float = 1.0, **kwargs):
+    """Trace la courbe ``(theta, phi)`` **en polaires sur le tore**, dans ``ax``.
+
+    C'est le geste de l'article : la cubique cuspidale -- courbe de bifurcation
+    de la fronce -- relevee en polaires, s'enroule sur le tore. L'argument
+    ``(theta, phi)`` accepte un **meshgrid** (deux tableaux de meme forme) : 1-D
+    pour une courbe (le noeud), 2-D pour une famille de courbes. Le trace est
+    delegue a matplotlib, importe **paresseusement** dans le corps de la
+    fonction : ``import ict.catastrophe`` reste numpy-only.
+
+    Renvoie ``ax`` pour l'enchainement.
+    """
+    x, y, z = torus_points(theta, phi, R=R, r=r)
+    ax.plot(x, y, z, **kwargs)
+    return ax

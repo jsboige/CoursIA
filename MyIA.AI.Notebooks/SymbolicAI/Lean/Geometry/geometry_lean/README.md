@@ -12,6 +12,8 @@ du programme gradué #17544 (« que garantit "prouvé par Gröbner" ? »).
 |---|---|---|
 | `Geometry.MidpointHypotenuse` | Théorème du milieu de l'hypoténuse : équidistance du milieu aux trois sommets, rayon = hypoténuse/2 | `Geometry-01-From-Figure-To-Equation.ipynb` (fil rouge) |
 
+L'escalier d'entrée de la sous-série — [`Lean-38-Capstone-Geometry-Lean-Python.ipynb`](../../Lean-38-Capstone-Geometry-Lean-Python.ipynb), carnet de la série parente — est le consommateur pédagogique de ce premier module : il part de la figure du 01, calcule avec `sympy`, puis monte jusqu'à la preuve formelle ci-dessus.
+
 ## Construire
 
 ```bash
@@ -20,9 +22,10 @@ lake build           # 0 sorry — le lac est intégralement prouvé
 ```
 
 La CI
-([`lean-geometry.yml`](https://github.com/jsboige/CoursIA/blob/main/.github/workflows/lean-geometry.yml))
-rejoue le build et le gate proof-integrity (axiomes) sur chaque PR touchant le
-lac.
+([`lean-ci-matrix.yml`](https://github.com/jsboige/CoursIA/blob/main/.github/workflows/lean-ci-matrix.yml),
+entrée `geometry` du manifeste `scripts/lean/ci_lakes.json` depuis la
+consolidation #13751) rejoue le build et le gate proof-integrity (axiomes)
+sur chaque PR touchant le lac.
 
 ## Feuille de route
 

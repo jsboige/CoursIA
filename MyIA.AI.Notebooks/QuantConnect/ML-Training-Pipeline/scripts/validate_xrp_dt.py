@@ -53,7 +53,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import sys
 import time
 from datetime import datetime
@@ -134,12 +133,22 @@ def dt_positions_on_test(model, test_trajs: dict, n_test: int,
     return positions
 
 
+import strategy_metrics  # noqa: E402
+
+
 def sharpe(returns: np.ndarray, periods: int = 252) -> float:
+    """Sharpe annualise (``strategy_metrics.sharpe`` : ddof=1, taux sans risque nul).
+
+    Rend 0.0 pour moins de 2 rendements. Jusqu'a #19016 (tranche 5), le
+    denominateur portait un epsilon additif (``sd + 1e-12``) : pour un
+    ecart-type reel l'ecart relatif est negligeable (< 1e-12 / sd), mais une
+    serie constante non nulle rendait une valeur finie enorme au lieu de
+    l'infini de la convention commune -- ecart nomme dans la serie de
+    controle de la PR tranche 5.
+    """
     if len(returns) < 2:
         return 0.0
-    mu = float(np.mean(returns))
-    sd = float(np.std(returns, ddof=1)) + 1e-12
-    return mu / sd * math.sqrt(periods)
+    return float(strategy_metrics.sharpe(returns, periods_per_year=periods))
 
 
 def net_returns(positions: np.ndarray, test_returns: np.ndarray,

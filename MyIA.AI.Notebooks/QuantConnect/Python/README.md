@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-Python
-pedagogical_count: 60
-breakdown: Python=60
-maturity: DRAFT=33, BETA=19, ALPHA=8
+pedagogical_count: 61
+breakdown: Python=61
+maturity: DRAFT=33, BETA=21, ALPHA=7
 -->
 
 # QuantConnect Python Notebooks
@@ -111,8 +111,6 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 - `print("Resultats sync depuis QC Cloud projet XXXX")` — sans fetch réel
 
 Les notebooks NON EXÉCUTÉS doivent être exécutés (kernel local pour les indépendants, QC Cloud pour ceux qui requièrent QuantBook) avant de pouvoir être marqués EXÉCUTÉ. Aucun raccourci toléré.
-
----
 
 ## Aperçu — le trading quantitatif en images
 

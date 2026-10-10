@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory-SocialChoice
-pedagogical_count: 10
-breakdown: SocialChoice=10
-maturity: BETA=8, ALPHA=2
+pedagogical_count: 11
+breakdown: SocialChoice=11
+maturity: BETA=8, ALPHA=3
 -->
 
 La théorie du choix social étudie comment agréger des préférences individuelles en une décision collective. Ses résultats les plus célèbres sont des **théorèmes d'impossibilité** : le théorème d'Arrow (1951) montre qu'aucune règle de vote ne peut satisfaire simultanément des axiomes "raisonnables" (Pareto, IIA, non-dictature) dès que 3 alternatives ou plus sont en jeu ; le théorème de Sen (1970) démontre un conflit fondamental entre liberté individuelle et efficacité collective.
@@ -38,8 +38,9 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-05 | [05-Gibbard-Satterthwaite](05-Gibbard-Satterthwaite.ipynb) | Gibbard-Satterthwaite sans mystère : la manipulation comme témoin (ex-GT-22, re-slot #12375) | 30 min | COMPLET |
 | SC-06 | [06-Mobius-Aggregation-Pouvoir-Manipulation](06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Möbius sur le treillis des coalitions : dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée (See #12204) | 40 min | COMPLET |
 | SC-07 | [07-Committees-Core](07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas Hare/Droop, certificats de paiement et règle de l'entropie harmonique (arXiv 2609.11912, See #16848) | 40 min | COMPLET |
+| SC-09 | [09-Committees-STV-Monroe-ChamberlinCourant](09-Committees-STV-Monroe-ChamberlinCourant.ipynb) | Comités multi-vainqueurs par classement : STV (Hare 1857, polynomial), Monroe (1995, NP-dur, quotas équilibrés floor/ceil par élu) et Chamberlin-Courant (1983, NP-dur), confrontation Z3 Optimize et profil discriminant (Handbook of Computational Social Choice ch. 6, See #19371) | 50 min | COMPLET |
 
-**Durée totale** : ~5h15
+**Durée totale** : ~6h05
 
 > **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) et [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ces trois jumeaux C# sont comptés dans le `pedagogical_count` de la sous-série mais arborent le statut `PARITÉ` dans le tableau ci-dessus pour les distinguer des sept notebooks d'origine dont ils sont les retranscriptions .NET.
 
@@ -65,6 +66,7 @@ flowchart TD
     Result -.- Relax["Cartographie des relaxations<br/>électeur médian (Downs) · Split Cycle<br/>chaque paire d'axiomes réalisable"]
     Result -.- Coop["Face coopérative (SC-06)<br/>Möbius · dividendes de Harsanyi<br/>v = Σ m(T)·u_T · poids ≠ pouvoir"]
     Coop -.- Comm["Comités par approbation (SC-07)<br/>core toujours non vide<br/>quotas Hare/Droop · certificats"]
+    Comm -.- Rank2["Bulletins de classement (SC-09)<br/>STV · Monroe · Chamberlin-Courant<br/>quotas d'équilibre vs best-in-W"]
 ```
 
 ### Étape 1 : Le théorème d'Arrow par la simulation (SC-01, 45 min)
@@ -128,6 +130,12 @@ Le notebook SC-06 ouvre la face coopérative de l'agrégation : ce que l'on agr�
 ### Étape 7 : Élections de comité par approbation (SC-07, 40 min)
 
 Le notebook SC-07 change d'objet une seconde fois : on n'élit plus un gagnant unique mais un **comité** de k sièges, sur des bulletins d'approbation. La notion de stabilité s'y transfère sous la forme du **core** : un comité W est dans le core si aucun groupe de votants (suffisamment gros au regard du **quota Hare**, confronté au **quota Droop**) ne peut lui opposer un ensemble de candidats qu'il approuverait unanimement. Le résultat central distillé — le théorème d'existence de Becker, Greger & Peters (arXiv 2609.11912) — est mis en machine sur le fil rouge n=4 votants, k=2 sièges : le comité favori des majoritaires n'est PAS dans le core (coalition bloquante exhibée), le comité proportionnel l'est, et un **certificat de paiement** (paiements + réserve) l'atteste. Trois règles concrètes — AV, PAV, règle de l'entropie harmonique — sont ensuite comparées sur 25 instances : leur taux de retour dans le core distingue ce qu'une règle simple garantit de ce qu'exige la stabilité.
+
+### Étape 8 : Comités multi-vainqueurs par classement — STV, Monroe, Chamberlin-Courant (SC-09, 50 min)
+
+Le notebook SC-09 change d'objet une troisième fois : aux comités par **approbation** du SC-07 succèdent les comités par **bulletins de classement** (rankings), alignés sur le chapitre 6 du *Handbook of Computational Social Choice* (Brandt, Conitzer, Endriss & Lang 2016). Trois règles classiques d'élection à k sièges sont implémentées en Python pur puis confrontées à une formulation ILP Z3 : **STV** (Hare 1857, élimination itérative au quota de Droop, polynomial), **Monroe** (1995, NP-dur — chaque élu doit représenter entre floor(n/k) et ceil(n/k) votants, résolu par backtracking sur les affectations équilibrées) et **Chamberlin-Courant** (1983, NP-dur — chaque votant attribué à son meilleur élu, énumération brute sur les C(m, k) comités).
+
+La confrontation Z3 (mode `Optimize`, variables binaires `y_c` pour le comité et `x_{j,c}` pour l'affectation) reprend les deux règles NP-dures : la formulation Monroe ajoute à celle de CC l'unique **contrainte d'équilibre** `y_c ⟹ floor(n/k) ≤ Σⱼ x_{j,c} ≤ ceil(n/k)` — c'est la seule différence de définition entre les deux règles. Un **profil discriminant** (6 votants, 4 candidats, k = 2 : un votant place `c` en tête, les cinq autres placent `d` en tête) rend l'écart visible : CC élit `{c, d}` (score 18, charges non équilibrées 1/5) tandis que Monroe élit `{a, d}` (score 15, quotas 3/3) — Z3 et les énumérations brutes s'accordent sur les deux optima. L'expérimentation sur 20 profils aléatoires mesure enfin les taux d'accord STV / Monroe / CC. Trois exercices (C.1) étendent le carnet.
 
 ## Prerequisites
 
@@ -195,6 +203,7 @@ Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; D
 | Gibbard (1973) / Satterthwaite (1975) | Théorème de manipulabilité (SC-05) |
 | Harsanyi (1959) ; Curiel, *Cooperative Game Theory and Applications* (1997) | Dividendes de coalition, jeux de vote pondérés (SC-06) |
 | Becker, Greger & Peters, "Existence of the Core in Approval-Based Committee Elections" (arXiv 2609.11912) | Core non vide, quotas Hare/Droop, certificats (SC-07) |
+| **Brandt, Conitzer, Endriss, Lang, Procaccia, *Handbook of Computational Social Choice* (CUP, 2016, ISBN 978-1-107-06043-2)** | **L'ouvrage-ancrage de la sous-série** — 554 p. couvrent le programme commun des sept carnets : ch. 1-2 (impossibilités, règles de vote polynomiales, Zwicker), ch. 4-5 (Kemeny §2.7+4.1-4.2, ranked pairs §2.4+3, Dodgson §5.3 winner-NP-dur), ch. 6 (barrières computationnelles à la manipulation Gibbard-Satterthwaite, encodage SAT/Z3). Source biblio cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf`. |
 
 ## Conclusion / Prochaines étapes
 

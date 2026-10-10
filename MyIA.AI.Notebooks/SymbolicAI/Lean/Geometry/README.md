@@ -4,17 +4,20 @@ La série **Geometry** applique le raisonnement symbolique aux théorèmes de g�
 
 Le programme est **gradué** : chaque notebook principal ne suppose que ce qui le précède, un même théorème fil rouge (le milieu de l'hypoténuse équidistant des trois sommets) est traversé par les méthodes successives, et les résultats de recherche restent dans les accrétions `b` — le chemin principal se lit sans ouvrir de lettre. Cadre complet : Epic #17544.
 
+**Escalier depuis la série principale** : [Lean-38 — Capstone Geometry](../Lean-38-Capstone-Geometry-Lean-Python.ipynb) présente la sous-série et en monte une première marche complète — de la figure numérique jusqu'à la preuve formelle du fil rouge dans le lac companion [`geometry_lean`](geometry_lean/).
+
 ## Le programme
 
 | Pos. | Notebook | Public | Contenu | Statut |
 |---|---|---|---|---|
-| 01 | [Geometry-01-From-Figure-To-Equation.ipynb](Geometry-01-From-Figure-To-Equation.ipynb) | Découverte | De la figure à l'équation : coordonnées, hypothèses et conclusion en polynômes, vérification numérique sur figures aléatoires, pourquoi ce n'est pas une preuve, Schwartz–Zippel et la preuve probabiliste | Livré |
-| 02 | Geometry-02 — Prouver par l'algèbre | Licence | Idéal engendré par les hypothèses, appartenance, bases de Gröbner (`sympy.groebner`), conditions de non-dégénérescence | À venir |
-| 03 | [Geometry-03-Wu-Method-Python.ipynb](Geometry-03-Wu-Method-Python.ipynb) | Licence | Pseudo-division, ensemble caractéristique (basic-set de Chou), test de Wu, non-dégénérescences auto-générées ; vérification croisée Gröbner (Rabinowitsch) ; fil rouge (milieu de l'hypoténuse) et Ceva ; témoin négatif (un énoncé faux rejeté) | Livré (#17511) |
-| 03b | [Geometry-03b-Ritt-Decomposition-Python.ipynb](Geometry-03b-Ritt-Decomposition-Python.ipynb) | Licence | Accrétion du 03 : le théorème du papillon — la conclusion est un quotient, scission de Ritt, bord dégénéré où l'énoncé est **muet** et non faux, contrôle sur 400 figures | Livré (#17511) |
-| 04 | [Geometry-04-DD-AR-Python.ipynb](Geometry-04-DD-AR-Python.ipynb) | Licence | Base de déduction à règles (DD) et raisonnement algébrique (AR), la moitié symbolique d'AlphaGeometry : fermeture à point fixe, trace de preuve lisible, la limite combinatoire sans construction, AR (`sympy.groebner`) en oracle ; fil rouge et témoin négatif réfuté deux fois | Livré |
+| 00 | [Lean-38 — L'escalier d'entrée](../Lean-38-Capstone-Geometry-Lean-Python.ipynb) | Découverte | **L'escalier d'entrée** : de la figure au noyau — la montée Python ⟹ Lean qui relie les méthodes de la série, jusqu'à la preuve formelle du fil rouge dans le lac companion (carnet de la série parente) | Livré |
+| 01 | [Geometry-01-From-Figure-To-Equation.ipynb](Geometry-01-From-Figure-To-Equation.html) | Découverte | De la figure à l'équation : coordonnées, hypothèses et conclusion en polynômes, vérification numérique sur figures aléatoires, pourquoi ce n'est pas une preuve, Schwartz–Zippel et la preuve probabiliste | Livré |
+| 02 | [Geometry-02-From-Equation-To-Proof.ipynb](Geometry-02-From-Equation-To-Proof.html) | Licence | Idéal engendré par les hypothèses, appartenance, bases de Gröbner (`sympy.groebner`), conditions de non-dégénérescence | Livré (#17588) |
+| 03 | [Geometry-03-Wu-Method-Python.ipynb](Geometry-03-Wu-Method-Python.html) | Licence | Pseudo-division, ensemble caractéristique (basic-set de Chou), test de Wu, non-dégénérescences auto-générées ; vérification croisée Gröbner (Rabinowitsch) ; fil rouge (milieu de l'hypoténuse) et Ceva ; témoin négatif (un énoncé faux rejeté) | Livré (#17511) |
+| 03b | [Geometry-03b-Ritt-Decomposition-Python.ipynb](Geometry-03b-Ritt-Decomposition-Python.html) | Licence | Accrétion du 03 : le théorème du papillon — la conclusion est un quotient, scission de Ritt, bord dégénéré où l'énoncé est **muet** et non faux, contrôle sur 400 figures | Livré (#17511) |
+| 04 | [Geometry-04-DD-AR-Python.ipynb](Geometry-04-DD-AR-Python.html) | Licence | Base de déduction à règles (DD) et raisonnement algébrique (AR), la moitié symbolique d'AlphaGeometry : fermeture à point fixe, trace de preuve lisible, la limite combinatoire sans construction, AR (`sympy.groebner`) en oracle ; fil rouge et témoin négatif réfuté deux fois | Livré |
 | 04b | Geometry-04b — IMO-AG-30 | Recherche | Wu associé à DD+AR (Sinha et al. 2024), proposeur neuronal | À venir |
-| 05 | Geometry-05 — Pont formel | Recherche | Un théorème de 02/03 énoncé et prouvé en Lean/Mathlib : que garantit « prouvé par Gröbner » ? | En cours — première marche : le lac companion [`geometry_lean`](geometry_lean/) prouve le fil rouge (milieu de l'hypoténuse) |
+| 05 | [Geometry-05-Pont-Formel-Python.ipynb](Geometry-05-Pont-Formel-Python.html) | Recherche | **Le pont formel** : le fil rouge énoncé et **prouvé au noyau** dans le lac companion [`geometry_lean`](geometry_lean/), confronté au même théorème décidé par Gröbner — reste nul et certificat de cofacteurs d'un côté, terme de preuve de l'autre, et ce que chacun garantit | Livré |
 
 Les notebooks 01, 02 et 03 forment la **première volée** : ils se mergent ensemble, dans l'ordre — le premier état public de la série est déjà une progression complète.
 
@@ -33,10 +36,12 @@ Cinq regards sur le même objet — on compare des *méthodes*, pas des exemples
 ## Prérequis et coût
 
 - **Environnement** : Python 3.10+, `sympy` + `numpy` + `matplotlib` (déjà présents dans le venv projet), kernel `python3`. Aucune API payante, aucun GPU, aucun réseau.
+- **00** (escalier [Lean-38](../Lean-38-Capstone-Geometry-Lean-Python.ipynb), série parente) : ~15 s de bout en bout (numpy + sympy exact + lecture du lac), aucune dépendance réseau — reproductibilité HIGH, sorties committées.
 - **01** : ~5 s de bout en bout (10 000 tirages vectorisés), générateur semé — reproductibilité HIGH.
 - **03** : ~3 s de bout en bout (chaînes caractéristiques déterministes, tie-break par expression) — reproductibilité HIGH, sorties committées sur `main`. Détail coût : bloc `metadata.cost` du notebook.
 - **03b** : ~4 s de bout en bout (sympy exact + 400 figures évaluées, graine fixe) — reproductibilité HIGH ; détail coût : bloc `metadata.cost` du notebook.
 - **04** : ~3 s de bout en bout (fermeture DD déterministe + une base de Gröbner à 5 inconnues) — reproductibilité HIGH, sorties committées.
+- **05** : ~6 s de bout en bout (deux bases de Gröbner à 6 inconnues, plus la lecture du lac) — reproductibilité HIGH, sorties committées. **Aucun `lake build`** : le carnet lit le module Lean comme un **texte** (énoncés, tactiques, comptage des axiomes interdits), il ne le compile pas — c'est ce qui le rend exécutable sur CPU en quelques secondes, et c'est aussi la limite de ce qu'il établit.
 - **Publics** : Découverte (01) suppose la géométrie du lycée ; Licence (02–04) suppose 01 et une première familiarité avec l'algèbre linéaire ; Recherche (04b, 05) suppose la série ou une maturité en vérification formelle.
 
 ## Pourquoi une série de plus

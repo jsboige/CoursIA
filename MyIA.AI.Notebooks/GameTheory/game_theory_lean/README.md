@@ -181,6 +181,18 @@ Trois sous-modules FR + leurs siblings EN, absorbés depuis l'ancien
 | [`CooperativeGames.ConeKernel`](CooperativeGames/ConeKernel.lean) | 753 / 757 | 0 / 0 | `BondarevaCone.augCone`, séparateur, **Bondareva-Shapley bidirectionnel** (forward + backward), `marginalVector_mem_core`, `convex_core_nonempty` |
 | [`CooperativeGames.Shapley`](CooperativeGames/Shapley.lean) | 2 024 / 2 034 | 0 / 0 | `Solution`, **les quatre axiomes de Shapley** (efficience, symétrie, joueur nul, additivité), unicité, `mobius_decomposition`, `shapley_smulGame`, `shapley_addGames` |
 
+**Ouvrages-ancrage du cluster** :
+
+- L.S. Shapley, *A Value for N-Person Games* (1953) — papier original de
+  la valeur de Shapley et des quatre axiomes d'unicité.
+- O. Bondareva (1963) ; L.S. Shapley (1967) — papiers originaux du
+  théorème fondateur du nom commun Bondareva-Shapley.
+- Maschler, Solan & Zamir, *Game Theory*, Cambridge UP, 2013 — **traité
+  canonique** du cluster (ancrage demandé par #19275). Ch. 15 *The
+  Shapley Value* et ch. 17 *The Core* sont les chapitres centraux pour
+  cette lake. **Ancrages à confirmer** sur l'ouvrage, le PDF n'étant
+  pas acquis sur la machine worker.
+
 **Théorèmes clés** (`namespaces Solution`, `ShapleyValue`, `Mobius`,
 `BondarevaCone`) :
 

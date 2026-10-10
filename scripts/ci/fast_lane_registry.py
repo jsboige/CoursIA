@@ -137,24 +137,59 @@ class Guard:
 # admise comme "pas de workflow d'origine".
 FAST_LANE_NATIVE = "(garde natif de la voie rapide : aucun workflow d'origine)"
 
+# Le lot pilote (#11835) est exempte par declaration du controle d'identité
+# byte-a-byte (#19193). Raison mesuree le 2026-10-05 : les noms dans le
+# registre (ex `banner-guard`) n'etaient pas alignes avec les noms des jobs
+# dans les workflows d'origine (ex `probeAddresses banner guard`), car le
+# renommage byte-identique n'avait pas ete fait a l'absorption (le workflow
+# d'origine portait encore le declencheur `pull_request`, c'est lui qui
+# bloquait, la voie rapide observait).
+#
+# L'etape 3 de #12856 (programme #12567, cycle c.360 du 2026-10-09) a aligne
+# les NEUF gardes qui declenchaient encore sur `pull_request` : leur job est
+# renomme byte-identique et leur declencheur retire, donc ils sont desormais
+# VERIFIES et non plus exemptes. L'exemption declared ne couvre plus que le
+# residu : `solution-leak-guard`, `perimeter-review-guard`,
+# `self-hosted-runner-policy` -- dont le workflow d'origine ne declenche pas
+# sur `pull_request` (cf PILOT_SHADOW_SANS_EMETTEUR).
+PILOT_LOT_NAME = "PILOT"
+
+# Gardes absorbes apres #19168 dont le byte-a-byte-identique n'est pas encore
+# aligne. Mesuree le 2026-10-05 : la voie rapide les a absorbes par
+# declaration (absorbed=True, source=workflow.yml) mais le `name:` du job
+# dans le workflow source n'a pas ete renomme byte-identique au `guard.name`.
+# Programme #12567 est le geste de bascule ; en attendant, le filet
+# d'identite les signale sans les exiger.
+TRANCHE_ALIGNMENT_EN_COURS = frozenset({"TRANCHE10"})
+
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
 
 # ---------------------------------------------------------------------------
-# Motifs d'ombre declares du lot pilote (#19168). Trois situations distinctes,
+# Motifs d'ombre declares du lot pilote (#19168). Deux situations distinctes,
 # mesurees le 2026-10-05, et non des variantes de redaction :
-#   - 9 gardes ont un workflow d'origine qui declenche encore sur `pull_request` :
-#     le blocage est porte par lui, la voie rapide ne fait qu'observer ;
 #   - 2 gardes ont un workflow d'origine qui ne declenche PAS sur `pull_request`
 #     (`perimeter-review-guard`, `self-hosted-runner-policy`) : aucun autre
 #     emetteur de leur nom de check-run ;
 #   - 4 gardes sont natives de la voie rapide : meme situation, sans workflow.
-# Les deux dernieres categories sont donc inertes aujourd'hui -- c'est declare
-# ici, pas repare, parce que la bascule du lot pilote entier est le geste du
-# programme #12567 et non celui de cette correction.
-PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF = (
-    "phase pilote #11835 : le workflow d'origine porte encore le declencheur "
-    "`pull_request`, c'est lui qui bloque ; la voie rapide observe. Critere de "
-    "bascule : absorber quand ce declencheur sera retire (programme #12567).")
+# Ces deux categories sont donc inertes aujourd'hui -- c'est declare ici, pas
+# repare, parce que leur bascule n'apporte rien tant qu'aucun workflow ne porte
+# leur declencheur.
+#
+# La TROISIEME situation mesuree le 2026-10-05 -- « 9 gardes dont le workflow
+# d'origine declenche encore sur `pull_request` : le blocage est porte par lui,
+# la voie rapide ne fait qu'observer » -- a ete TRAITEE a l'etape 3 de #12856
+# (programme #12567, cycle c.360 du 2026-10-09). Pour ces neuf gardes, le
+# declencheur `pull_request` a ete retire du workflow source ET le `name:` du
+# job renomme byte-identique au `guard.name`, dans le meme commit. Le blocage
+# est desormais porte par la voie rapide, et le filet d'identite les VERIFIE
+# au lieu de les exempter (cf check_absorbed_check_run_identity.py).
+#
+# ATTENTION a la migration d'un garde absorbe : retirer le declencheur du
+# workflow source ne suffit pas, il faut aussi que les `paths` du registre
+# COUVRENT les `paths` du declencheur retire -- sinon le garde cesse d'etre
+# selectionne pour les fichiers qu'il surveillait (mesure c.360 :
+# `pip-leak-guard` ne portait que `**/*.ipynb`, ses trois autres motifs ont
+# ete ajoutes dans le meme commit).
 PILOT_SHADOW_SANS_EMETTEUR = (
     "phase pilote #11835, aucun autre emetteur : le workflow d'origine ne "
     "declenche pas sur `pull_request`. Critere de bascule : absorber, ou retirer "
@@ -193,7 +228,7 @@ PILOT_SHADOW_NATIF = (
 # ---------------------------------------------------------------------------
 PILOT: list[Guard] = [
     Guard(
-        name="banner-guard",
+        name="probeAddresses banner guard (main-repo notebooks)",
         source="banner-guard.yml",
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/strip_probe_banner.py",
@@ -204,12 +239,21 @@ PILOT: list[Guard] = [
             "--scan-all", "--check", "--exclude-submodules",
         ],
         blocking=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
-        name="pip-leak-guard",
+        name="!pip install HIGH delta guard (#6314)",
         source="pip-leak-guard.yml",
-        paths=NOTEBOOK_GLOBS,
+        # Les trois motifs non-ipynb viennent du declencheur `pull_request`
+        # retire a l'absorption (#12856 etape 3). Sans eux, une PR qui ne
+        # touche que le detecteur ne declencherait plus ce garde -- et le
+        # workflow source n'a AUCUN declencheur `push` pour rattraper, donc
+        # la couverture serait perdue et non deplacee.
+        paths=NOTEBOOK_GLOBS + [
+            ".github/workflows/pip-leak-guard.yml",
+            "scripts/notebook_tools/audit_pip_install_cells.py",
+            "scripts/notebook_tools/pip_leak_delta.py",
+        ],
         argv=["python", "scripts/notebook_tools/audit_pip_install_cells.py",
               "--scan-all", "--json"],
         delta_argv=["python", "scripts/notebook_tools/pip_leak_delta.py",
@@ -217,7 +261,7 @@ PILOT: list[Guard] = [
         swap_paths=["MyIA.AI.Notebooks"],
         blocking=True,
         needs_base=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
         name="solution-leak-guard",
@@ -231,7 +275,7 @@ PILOT: list[Guard] = [
         needs_base=True,
     ),
     Guard(
-        name="prose-counts-guard",
+        name="prose-counts",
         source="prose-counts-guard.yml",
         paths=["**/*.ipynb", "**/*.md"],
         argv=["python", "scripts/notebook_tools/check_prose_quantitative_claims.py",
@@ -240,7 +284,7 @@ PILOT: list[Guard] = [
                                  # le stock ne rougit personne (lignes AJOUTEES
                                  # seules), une PR qui rouvre la veine rougit
         needs_base=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
         name="perimeter-review-guard",
@@ -278,7 +322,7 @@ PILOT: list[Guard] = [
     # a la fois ; le verdict agrege est failure si l'une des iterations
     # echoue avec un code `failure` (rc=1 pour les detecteurs deterministes).
     Guard(
-        name="bare-cross-dir-load-gate",
+        name="No bare cross-dir #load in changed notebooks",
         source="bare-cross-dir-load-gate.yml",
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/detect_bare_cross_dir_load.py",
@@ -290,10 +334,10 @@ PILOT: list[Guard] = [
         ],
         blocking=True,
         iterates_paths=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
-        name="notebook-navlink-check",
+        name="check-navlinks",
         source="notebook-navlink-check.yml",
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/check_notebook_navlinks.py",
@@ -303,10 +347,10 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/notebook_tools/check_notebook_navlinks.py",
               "--check"],
         blocking=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
-        name="notebook-nav-chain-guard",
+        name="check-nav-chain",
         source="notebook-nav-chain-guard.yml",
         paths=NOTEBOOK_GLOBS + [
             "MyIA.AI.Notebooks/**/README.md",
@@ -317,22 +361,37 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
               "--check"],
         blocking=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
-    # F2 #18970 -- garde delta-only sur les violations STALE_LINK /
-    # BROKEN / DEAD_RENDER. L'audit BRUT de `regen_quarto_render.py
-    # --check-readme-links` rend 2432 violations au 2026-10-03 : un argv
-    # qui enverrait cette commande en blocking=True rougirait systematiquement
-    # toute PR touchant un README de serie ou un notebook rendu. Le delta
-    # argv (3-temps : HEAD capture -> base capture -> comparateur) ne
-    # rougit QUE sur les violations NOUVELLES introduites par la PR,
-    # laissant le backlog historique au sweep par famille en aval (#18911
-    # acceptation #2). Temoin verifie localement : une STALE_LINK injectee
-    # dans HEAD fait `NOUVELLES=1` (=exit 1), un PR sans nouvelle
+    # F2 #18970, classe inversee par #18911 (geste 2, 2026-10-09) --
+    # garde delta-only sur les violations HTML_404 / BROKEN. L'audit BRUT
+    # de `regen_quarto_render.py --check-readme-links` rend 618 violations
+    # au 2026-10-09 : un argv qui enverrait cette commande en blocking=True
+    # rougirait systematiquement toute PR touchant un README de serie ou un
+    # notebook rendu. Le delta argv (3-temps : HEAD capture -> base capture
+    # -> comparateur) ne rougit QUE sur les violations NOUVELLES introduites
+    # par la PR, laissant le backlog historique au sweep par famille en aval
+    # (#18911 acceptation #2). Temoin verifie localement : une HTML_404
+    # injectee dans HEAD fait `NOUVELLES=1` (=exit 1), un PR sans nouvelle
     # violation passe (exit 0) sur le meme depot.
+    #
+    # `scripts/regen_quarto_render.py` n'est VOLONTAIREMENT pas dans
+    # `swap_paths` : la phase base doit mesurer le MEME predicat que la
+    # phase head sur le contenu de base. Restaurer le script de la base
+    # ferait mesurer la classe retiree (STALE_LINK) et le comparator
+    # verrait tout le backlog comme nouveau.
     Guard(
-        name="readme-ipynb-links-guard",
+        name="Audit README -> .ipynb links",
         source="readme-ipynb-links-guard.yml",
+        # Parite de couverture avec le declencheur `pull_request` retire a
+        # l'absorption (#12856 etape 3) : les cinq derniers motifs viennent de
+        # ce declencheur et ne sont pas couverts par son `push` residuel --
+        # sans eux, une PR qui ne touche que le fixeur ou ses tests ne
+        # declencherait plus ce garde. Les deux tests supplementaires
+        # (test_readme_link_violations, test_regen_quarto_render) viennent de
+        # la reecriture #18911 arrivee sur main apres l'absorption -- le
+        # rebase sur main les a fait entrer dans le perimetre du declencheur
+        # retire.
         paths=[
             "MyIA.AI.Notebooks/**/README.md",
             "MyIA.AI.Notebooks/**/*.ipynb",
@@ -340,6 +399,11 @@ PILOT: list[Guard] = [
             "scripts/regen_quarto_render.py",
             "scripts/notebook_tools/dump_readme_link_violations.py",
             "scripts/notebook_tools/diff_readme_link_violations.py",
+            "scripts/notebook_tools/fix_ipynb_links.py",
+            "scripts/notebook_tools/tests/test_fix_ipynb_links.py",
+            "scripts/notebook_tools/tests/test_readme_link_violations.py",
+            "scripts/notebook_tools/tests/test_readme_links_guard_workflow.py",
+            "scripts/tests/test_regen_quarto_render.py",
             ".github/workflows/readme-ipynb-links-guard.yml",
         ],
         # Le dump imprime le JSON sur stdout ; le moteur fast-lane le
@@ -352,15 +416,14 @@ PILOT: list[Guard] = [
                     "{base_json}", "{head_json}"],
         swap_paths=[
             "MyIA.AI.Notebooks",
-            "scripts/regen_quarto_render.py",
             "_quarto.yml",
         ],
         blocking=True,
         needs_base=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
-        name="notebook-interp-positioning-guard",
+        name="check_interp_positioning.py",
         source="notebook-interp-positioning.yml",
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/check_interp_positioning.py",
@@ -371,10 +434,10 @@ PILOT: list[Guard] = [
               "--check",
               "--baseline", "scripts/notebook_tools/interp_positioning_baseline.json"],
         blocking=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
-        name="markdown-rendering-guard",
+        name="markdown-rendering guard (main-repo notebooks)",
         source="markdown-rendering-guard.yml",
         paths=[
             "**/*.ipynb",
@@ -389,7 +452,7 @@ PILOT: list[Guard] = [
               "--baseline",
               "scripts/notebook_tools/markdown_rendering_baseline.json"],
         blocking=True,
-        shadow_reason=PILOT_SHADOW_WORKFLOW_ENCORE_ACTIF,
+        absorbed=True,
     ),
     Guard(
         name="self-hosted-runner-policy",
@@ -1719,5 +1782,133 @@ TRANCHE17: list[Guard] = [
         absorbed=True,
         needs_base=True,
         warn_rc=(2,),
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 19 (#19374) -- garde CI contre les blobs CRLF ou mixtes sous
+# attribut ``eol=lf`` (classe de #19287). Un blob CRLF ou mixte sous un
+# attribut ``text eol=lf`` fait paraitre le fichier modifie apres chaque
+# checkout, sur toutes les machines : git renormalise a la lecture mais
+# ne reecrit jamais le blob. ``merge_ready`` et ``check_clean_cycle_exit``
+# voient alors sale le clone principal de chaque lane. Le correctif
+# ponctuel est ``git add --renormalize <fichier>`` (cf #19373) ; ce garde
+# empeche la prochaine de la classe.
+#
+# Renomme TRANCHE18 -> TRANCHE19 au suivi d'integration : cette tranche
+# (2026-10-08) avait pris le nom ``TRANCHE18`` deja porte plus bas dans le
+# module par la tranche docs-index (#19260, 2026-10-06) -- Python execute
+# le module de haut en bas, la seconde affectation ecrasait la premiere,
+# et ``eol-blob-guard`` etait enregistree mais muette (ni dans l'agregat
+# du moteur, ni dans ``absorbed_guards`` : ``vars()`` ne voit que la
+# valeur finale). Regle registry : le POSTERIEUR cede l'index (cf
+# renommages TRANCHE9 -> TRANCHE10 puis TRANCHE12 -> TRANCHE15). Le test
+# qui ferme la classe :
+# ``test_fast_lane.py::test_no_module_level_name_is_assigned_twice_in_the_registry``.
+#
+# Detection : ``git diff --name-only --diff-filter=AM origin/main...HEAD``
+# puis ``git ls-files --eol -- <path>`` par chemin, awk-equivalent en
+# Python. Un blob CRLF voulu (.bat, fixture) se declare par ``eol=crlf``
+# ou ``-text`` dans ``.gitattributes``, jamais par exemption.
+#
+# `absorbed=True` (#19374, suivi d'integration) : ce garde n'a pas de
+# workflow d'origine -- le job always-on lance `fast_lane.py --shadow`,
+# et `effective_shadow = args.shadow and not guard.absorbed`. Sans
+# absorption, le garde sortait sous `fast-lane (ombre): eol-blob-guard`
+# avec une conclusion NEUTRE et n'entrait pas dans `blocking_failed` :
+# `blocking=True` etait une declaration sans effet. C'est la classe de
+# defaut que `test_aucun_garde_bloquant_n_est_inert_sans_declaration`
+# ferme dans `test_fast_lane.py`. Verifie vert sur `main` avant
+# absorption (`--diff origin/main...HEAD` -> rc=0) ; l'absorption ne
+# rougit aucune PR par dette heritee.
+# ---------------------------------------------------------------------------
+TRANCHE19: list[Guard] = [
+    Guard(
+        name="eol-blob-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[],
+        argv=["python", "scripts/ci/check_eol_blobs.py"],
+        blocking=True,
+        absorbed=True,
+        needs_base=True,
+        warn_rc=(2,),
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 18 -- couverture de l'index `docs/` (organe #13748).
+#
+# Origine : reserve de revue Hermes sur #19260 -- « l'organe n'est cable nulle
+# part ». Le README de `docs/` reecrit par cette PR remplace le compte ecrit
+# (146) par l'invariant lui-meme, en citant `python scripts/check_docs_index.py`
+# et son `exit 1`. Or `grep -rln check_docs_index .github/workflows/
+# scripts/ci/` rendait vide des deux cotes : l'invariant n'existait que quand un
+# humain pensait a l'executer. Si une revision supprimait une ligne d'index,
+# rien ne rougissait. Meme classe de defaut que TRANCHE17 (#19118).
+#
+# Forme moteur : garde ABSOLU, non-delta, et c'est delibere. Il mesure l'arbre
+# de HEAD, pas une difference base/PR : « tout doc vivant est-il atteignable
+# depuis l'index ? » n'a pas de sens en delta, et un `--expect-unreachable N`
+# (controle in-band positif, qui rend rc=2 si le chemin de detection est mort)
+# n'a pas sa place sur un arbre de PR -- il mesure une propriete de la
+# DETECTION, pas de la PR. D'ou l'absence de `needs_base` et de `swap_paths` :
+# aucun sous-arbre n'est bascule, lire l'arbre courant est exactement le geste
+# voulu.
+#
+# `absorbed=True` : sans absorption, le job always-on lance `fast_lane.py
+# --shadow`, donc `effective_shadow = args.shadow and not guard.absorbed` reste
+# vrai, et le garde emet une conclusion NEUTRE sous `fast-lane (ombre): ` -- un
+# `blocking=True` sans effet, soit exactement le defaut que la reserve
+# signalait. Un garde sans workflow d'origine n'a aucun autre emetteur de son
+# nom de check-run (meme convention que TRANCHE8/9/10/14/17).
+#
+# Chemin de retour : rc=1 sur doc inatteignable, 0 si tout est atteignable,
+# 2 sur echec du controle -- pas de `warn_rc` ici, l'organe est net.
+# ---------------------------------------------------------------------------
+TRANCHE18: list[Guard] = [
+    Guard(
+        name="docs-index-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "docs/**",
+            "scripts/check_docs_index.py",
+            "scripts/tests/test_check_docs_index.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=["python", "scripts/check_docs_index.py"],
+        blocking=True,
+        absorbed=True,
+    ),
+    # Issue #17444 / Q35 : ratchet de migration "python nu sans setup-python".
+    # Mesure firsthand c.199 : 14 jobs GitHub Actions matchent la classe
+    # (`python` nu sans `actions/setup-python` sur runners self-hosted, y
+    # compris configures `ubuntu-latest` mais routables). Mode `advisory
+    # --baseline 14` : exit 0 sur main, exit 1 si le compte depasse 14
+    # (regression). Le sweep #17470 a nettoie 9 jobs Linux ; l'organe ferme
+    # la boucle (cf. c.199 PR #19497). `blocking=False` parce que l'etat
+    # actuel (14) est une migration en cours, pas un defaut -- une PR qui
+    # AUGMENTE le compte (>14) sort en `failure` (rc=1), une PR qui le
+    # REDUIT reste en `neutral` (rc=0, mais le ratchet protege). Une fois
+    # le compte a 0, basculer en `blocking=True` (PR dediee future). Meme
+    # convention FAST_LANE_NATIVE + absorbed=True que hr-substitution-guard
+    # (l'organe n'a pas de workflow d'origine, c'est la tranche pilote).
+    Guard(
+        name="detect-python-nu-jobs",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            ".github/workflows/**",
+            "scripts/ci/detect_python_nu_jobs.py",
+            "scripts/tests/test_detect_python_nu_jobs.py",
+        ],
+        argv=[
+            "python", "scripts/ci/detect_python_nu_jobs.py",
+            "--mode", "advisory", "--baseline", "14", "--json",
+        ],
+        blocking=False,
+        warn_rc=(2,),
+        absorbed=True,
     ),
 ]
