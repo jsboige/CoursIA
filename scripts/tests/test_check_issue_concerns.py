@@ -146,8 +146,13 @@ class CitesTests(unittest.TestCase):
     def test_hhmm_token_yields_empty_on_a_foreign_format(self):
         # #20186 : une milliseconde, un offset ou un null ne doivent pas tuer le run
         # sur les 580 issues pour une donnee non essentielle.
+        # Forme non interpolante (garde #17276, meme classe que le test ci-dessus) :
+        # assertEqual ferait sortir la valeur dans les logs CI.
         for bad in ("2026-10-07T15:30:59.000Z", "2026-10-07T15:30:59+00:00", "", None):
-            self.assertEqual(mod.hhmm_token(bad), "")
+            self.assertTrue(
+                mod.hhmm_token(bad) == "",
+                "hhmm_token doit rendre une chaine vide sur un format non-Z",
+            )
 
 
 class CiteStrengthTests(unittest.TestCase):
