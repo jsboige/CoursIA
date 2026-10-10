@@ -134,13 +134,21 @@ class MergedPullRequest:
 
 @dataclass(frozen=True)
 class EpicStaleness:
-    """Triage signals for one EPIC."""
+    """Triage signals for one EPIC.
+
+    ``citation_breadth`` is the largest number of examined EPICs that any single
+    ``unrecorded_merged`` PR cites. A PR quoting many issue numbers at once (a
+    belt dump, a dispatch list) is attributed to every EPIC it names, so a
+    breadth well above 1 marks a citation-list rather than a delivery: such a
+    finding is a candidate for human review, never for a body rewrite.
+    """
 
     number: int
     title: str
     unrecorded_merged: tuple[int, ...]
     stance_contradicted: bool
     stance_pattern: str | None
+    citation_breadth: int = 0
 
 
 def is_epic(row: dict) -> bool:
@@ -215,6 +223,11 @@ def analyze_epics(
         for issue_number in pr.cited_issues() & cited_by_epic.keys():
             cited_by_epic[issue_number].append(pr)
 
+    breadth: dict[int, int] = {}
+    for citing_epic in cited_by_epic.values():
+        for pr in citing_epic:
+            breadth[pr.number] = breadth.get(pr.number, 0) + 1
+
     findings: list[EpicStaleness] = []
     for epic in epics:
         citing = cited_by_epic[epic.number]
@@ -236,6 +249,9 @@ def analyze_epics(
                     unrecorded_merged=unrecorded,
                     stance_contradicted=stance is not None,
                     stance_pattern=stance,
+                    citation_breadth=max(
+                        (breadth[number] for number in unrecorded), default=0
+                    ),
                 )
             )
 

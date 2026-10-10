@@ -181,3 +181,24 @@ def test_18149_garde_unitaire_voxel_marker_lane():
     # PR sans tag `Grain:`
     assert mod._lift_signed_by_pr_lane(
         lift_body, "SYNTHESE sans tag Grain.") is False
+
+
+def test_18149_point_final_de_phrase_ne_forme_pas_la_lane():
+    """#15864 (mesure #14549) -- un pied de signature ponctue reste la lane
+    qui signe : `-- lane myia-po-2024:CoursIA.` doit etre lu comme
+    `myia-po-2024:CoursIA`, pas comme une lane qui ne matche rien."""
+    pr_body = "Grain: MED/notebook-python -- lane myia-po-2024:CoursIA"
+    # Voie (b), forme `-- lane X.` : le point final est de la prose.
+    lift_footer = "Leve au commit abc123. -- lane myia-po-2024:CoursIA."
+    assert mod._lift_signed_by_pr_lane(lift_footer, pr_body) is True
+    # Voie (b), forme `lane X. -- ...` dans la meme ligne.
+    lift_inline = "lane myia-po-2024:CoursIA. -- Leve au commit abc123."
+    assert mod._lift_signed_by_pr_lane(lift_inline, pr_body) is True
+    # Le tag Grain du PR lui-meme ponctue : la lane carrier reste lisible.
+    pr_dotted = "Grain: MED/notebook-python -- lane myia-po-2024:CoursIA."
+    assert mod._PR_LANE_FROM_BODY_RE.search(pr_dotted).group(1) \
+        == "myia-po-2024:CoursIA"
+    # Un point INTERNE (hostname) survit : ce n'est pas de la prose.
+    pr_host = "Grain: MED/docs -- lane foo.bar:CoursIA-2"
+    assert mod._PR_LANE_FROM_BODY_RE.search(pr_host).group(1) \
+        == "foo.bar:CoursIA-2"
