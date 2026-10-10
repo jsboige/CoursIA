@@ -25,6 +25,17 @@ Un geste de lane pose apres le Concern (claim, verification, livraison, dossier 
 cloture) n'est **pas** une reponse : il laisse le Concern ouvert et leve le drapeau
 aggravant ``gesture-after`` (#19898 : deux gestes entre les deux Concerns).
 
+Deux regles bornent ce qui **referme** un Concern (#20186) :
+
+* **Le compte ne decide pas.** Les lanes ecrivent sous plusieurs logins
+  (``jsboige``, les sieges ``myia-*``, le bot reviewer) ; un accuse de reception se
+  juge par sa **forme**, sous n'importe lequel. Router sur le seul compte du
+  mainteneur laissait les posts des autres comptes tomber dans le seau **sans
+  plancher de substance**, ou un « Concern pris » nu refermait le fil.
+* **Le mot seul ne referme pas.** Une citation **forte** — l'horodatage du Concern,
+  ou un extrait de son texte — referme ; le mot « Concern » seul ne referme que
+  porte par un acquittement de lane qui franchit ``ACK_SUBSTANCE_MIN``.
+
 Plancher ``MANUAL_REVIEW``, fail-closed : un Concern dont le traitement n'est pas
 prouve reste dans la liste, quitte a sur-signaler. L'arbitrage fin est humain.
 
@@ -55,6 +66,17 @@ REPO = "jsboige/CoursIA"
 #: ``user-remark``). Pour ``user-concern``, le prefixe reste un signal fort.
 CONCERN_AUTHOR = "jsboige"
 
+#: Les comptes sous lesquels une lane de la flotte ecrit : le compte partage du
+#: mainteneur, les sieges de worker (``myia-*``) et les bots reviewers. Un post de
+#: lane se juge par la meme regle **quel que soit** le compte qui le porte
+#: (#20186) : indexer la garde sur le seul ``jsboige`` laissait un accuse de
+#: reception nu franchir le plancher de substance des qu'il etait ecrit sous un
+#: autre login, alors que la menace nommee par l'organe est precisement le compte
+#: partage.
+LANE_LOGIN = re.compile(
+    rf"^(?:{re.escape(CONCERN_AUTHOR)}|myia-[a-z0-9-]+|clusterManager-Myia)$"
+)
+
 #: Forme mesuree du user (#19898, #16757, #17889, #18601).
 CONCERN_PREFIX = re.compile(r"^Concern\b", re.IGNORECASE)
 
@@ -72,6 +94,13 @@ GESTURE_PATTERN = re.compile(
     r"WARN|ERROR|BLOCKED|ASK|REPLY|ACK|PROPOSAL)\]|lane\s+myia-",
     re.IGNORECASE,
 )
+
+#: Le tag de geste n'est cherche que dans les premiers caracteres : un tag de
+#: protocole situe au-dela d'un long preambule n'est pas vu (donc ni
+#: ``gesture-after``, ni exclusion du seau des reponses). La borne est assumee —
+#: c'est elle qui empeche un long commentaire de lane de compter comme reponse —
+#: et elle est nommee ici pour ne pas etre decouverte par surprise (#20186).
+GESTURE_WINDOW = 400
 
 _WS = re.compile(r"\s+")
 _DECORATION = re.compile(r"^[\s*_#>`]+")
@@ -166,49 +195,102 @@ def classify(comment: Comment) -> str:
 
     La decoration markdown de tete est neutralisee avant le match : une reponse
     « **Concern pris (ai-01).** » doit se lire comme un ACK, pas comme un Concern.
+
+    Le routage porte sur **l'ensemble** des logins de lane (``LANE_LOGIN``), pas sur
+    le seul compte du mainteneur : router sur un login unique faisait tomber les
+    posts des autres comptes dans ``other``, le seul seau **sans plancher de
+    substance** — un accuse de reception nu y refermait un Concern (#20186).
     """
     stripped = _DECORATION.sub("", comment.body or "")
-    if comment.author == CONCERN_AUTHOR and CONCERN_PREFIX.match(stripped):
+    if LANE_LOGIN.match(comment.author or "") and CONCERN_PREFIX.match(stripped):
         return "ack" if ACK_PATTERN.match(stripped) else "concern"
-    if GESTURE_PATTERN.search((comment.body or "")[:400]):
+    if GESTURE_PATTERN.search((comment.body or "")[:GESTURE_WINDOW]):
         return "gesture"
     return "other"
 
 
 def hhmm_token(created_at: str) -> str:
-    """``2026-10-07T15:30:59Z`` -> ``15:30Z`` (la forme citee par #18601)."""
-    dt = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ")
+    """``2026-10-07T15:30:59Z`` -> ``15:30Z`` (la forme citee par #18601).
+
+    Rend ``""`` sur toute forme non ``Z`` (milliseconde, offset, ``null``) au lieu
+    de lever : un seul commentaire mal forme tuait le run sur les 580 issues pour
+    une donnee non essentielle (#20186). Un jeton vide **n'est pas** une citation —
+    ``cite_strength`` le teste explicitement avant de s'en servir.
+    """
+    try:
+        dt = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ")
+    except (TypeError, ValueError):
+        return ""
     return f"{dt.hour:02d}:{dt.minute:02d}Z"
 
 
-def _shares_quote(body: str, text: str, width: int = 40, step: int = 20) -> bool:
-    src = normalise(_LINK.sub("", body))
+def _shares_quote(source: str, reply: str, width: int = 40, step: int = 20) -> bool:
+    """Une fenetre du texte de ``source`` se retrouve-t-elle dans ``reply`` ?
+
+    Les parametres etaient nommes a l'envers (``body``/``text``) alors que le
+    premier recoit toujours le **Concern** et le second la **reponse** : le
+    comportement etait correct, la lecture ne l'etait pas (#20186).
+    """
+    src = normalise(_LINK.sub("", source))
     if len(src) < width:
         return False
     for i in range(0, len(src) - width + 1, step):
         window = src[i : i + width]
         if window.count(" ") > width * 0.5:
             continue
-        if window in text:
+        if window in reply:
             return True
     return False
 
 
-def cites(concern: Comment, reply: Comment) -> bool:
-    """La reponse traite-t-elle CE Concern ?
+#: Force d'une citation. Les trois formes mesurees ne se valent pas : l'horodatage
+#: du Concern et la citation de son texte s'obtiennent en **lisant** le Concern ;
+#: le mot seul s'ecrit sans l'avoir lu. La docstring historique de ``cites``
+#: concedait deja que « le mot seul ne suffit pas a distinguer un acquittement ».
+CITE_STRONG = "strong"
+CITE_WEAK = "weak"
+CITE_NONE = "none"
 
-    Trois formes mesurees, dans l'ordre de fiabilite : le mot, l'horodatage du
-    Concern, une citation de son texte. Le mot seul ne suffit pas a distinguer un
-    acquittement — mais un ACK est classe ``ack``/``other`` en amont et n'arrive
-    ici comme reponse que s'il porte du fond (#17889 : « Concern pris en compte —
-    oui, les transcripts portent plus que la premiere vague… »).
-    """
+
+def cite_strength(concern: Comment, reply: Comment) -> str:
+    """``strong`` (horodatage ou citation) | ``weak`` (le mot seul) | ``none``."""
     text = normalise(reply.body)
+    token = hhmm_token(concern.created_at)
+    if token and token in text:
+        return CITE_STRONG
+    if _shares_quote(concern.body, text):
+        return CITE_STRONG
     if _WORD_CONCERN.search(text):
+        return CITE_WEAK
+    return CITE_NONE
+
+
+def cites(concern: Comment, reply: Comment) -> bool:
+    """La reponse traite-t-elle CE Concern, au sens **faible** ?
+
+    Vrai des qu'une des trois formes est presente, le mot compris : c'est le
+    predicat de *reference*. Ce qui **referme** un Concern est ``proves``, qui
+    separe les formes fortes de la forme faible.
+    """
+    return cite_strength(concern, reply) != CITE_NONE
+
+
+def proves(concern: Comment, reply: Comment, kind: str) -> bool:
+    """La reponse REFERME-t-elle le Concern ?
+
+    Une citation **forte** referme. La forme **faible** (le mot seul) ne referme
+    que portee par un acquittement de lane qui franchit le plancher de substance —
+    doctrine de #17889 (« une lane qui prend le Concern ET pose du fond y repond »),
+    et ``is_response_candidate`` a deja ecarte les acquittements nus. Hors de la,
+    un commentaire qui ne fait que nommer le mot laisse le Concern en
+    ``MANUAL_REVIEW`` : ni prouve traite, ni ignore (#20186).
+    """
+    strength = cite_strength(concern, reply)
+    if strength == CITE_STRONG:
         return True
-    if hhmm_token(concern.created_at) in text:
-        return True
-    return _shares_quote(concern.body, text)
+    if strength == CITE_WEAK:
+        return kind == "ack"
+    return False
 
 
 #: Un acquittement de lane ne repond pas s'il ne fait qu'accuser reception. Une
@@ -234,11 +316,13 @@ def analyse_comments(number: int, comments: list[Comment]) -> IssueReport:
             continue
         later = list(zip(comments[i + 1 :], kinds[i + 1 :]))
         candidates = [
-            other for other, kind in later if is_response_candidate(kind, other)
+            (other, kind)
+            for other, kind in later
+            if is_response_candidate(kind, other)
         ]
         proof = None
-        for other in candidates:
-            if cites(comment, other):
+        for other, kind in candidates:
+            if proves(comment, other, kind):
                 proof = other.id
                 break
         if proof is not None:

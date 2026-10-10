@@ -85,6 +85,25 @@ class ClassifyTests(unittest.TestCase):
         got = mod.classify(c(4, "2026-09-18T22:21:56Z", "**Concern pris (ai-01).**", author="myia-ai-01"))
         self.assertNotEqual(got, "concern")
 
+    def test_ack_routes_the_same_under_every_lane_login(self):
+        # #20186 : un accuse de reception de lane se juge par sa FORME, pas par le
+        # compte qui le porte. Hors de jsboige il tombait dans « other », le seul
+        # seau sans plancher de substance.
+        for login in ("jsboige", "myia-ai-01", "myia-po-2026", "clusterManager-Myia"):
+            self.assertEqual(
+                mod.classify(c(20, "2026-09-18T22:21:56Z", "Concern pris en compte.", author=login)),
+                "ack",
+                f"l'ACK doit se router pareil sous {login}",
+            )
+
+    def test_non_lane_login_is_not_presumed_a_lane(self):
+        # Le routage ne s'elargit pas a tout le monde : un compte hors flotte garde
+        # le seau « other » — et c'est « proves » qui l'empeche de refermer.
+        self.assertEqual(
+            mod.classify(c(21, "2026-09-18T22:21:56Z", "Concern pris en compte.", author="un-contributeur")),
+            "other",
+        )
+
     def test_lane_gestures(self):
         self.assertEqual(mod.classify(c(5, "2026-10-08T11:56:59Z", CLAIM)), "gesture")
         self.assertEqual(mod.classify(c(6, "2026-10-08T11:57:25Z", VERIF)), "gesture")
@@ -123,6 +142,69 @@ class CitesTests(unittest.TestCase):
             mod.hhmm_token("2026-10-07T15:30:59Z") == "15:30Z",
             "hhmm_token doit extraire HH:MM depuis l'ISO",
         )
+
+    def test_hhmm_token_yields_empty_on_a_foreign_format(self):
+        # #20186 : une milliseconde, un offset ou un null ne doivent pas tuer le run
+        # sur les 580 issues pour une donnee non essentielle.
+        for bad in ("2026-10-07T15:30:59.000Z", "2026-10-07T15:30:59+00:00", "", None):
+            self.assertEqual(mod.hhmm_token(bad), "")
+
+
+class CiteStrengthTests(unittest.TestCase):
+    """#20186 : les trois formes de citation ne se valent pas."""
+
+    def test_timestamp_is_strong(self):
+        concern = c(30, "2026-10-07T15:30:59Z", "Concern: Livraison en double et 2 nits de ma part.")
+        reply = c(31, "2026-10-07T16:36:24Z", "Elements de mesure (question du 15:30Z), pour que l'arbitrage soit court.")
+        self.assertEqual(mod.cite_strength(concern, reply), mod.CITE_STRONG)
+
+    def test_quoted_text_is_strong(self):
+        concern = c(32, "2026-10-01T10:00:00Z", "Concern: le kernel drift sur trois notebooks de la serie GenAI Image.")
+        reply = c(33, "2026-10-02T10:00:00Z", "Sur le point remonte : le kernel drift sur trois notebooks de la serie GenAI Image est corrige.")
+        self.assertEqual(mod.cite_strength(concern, reply), mod.CITE_STRONG)
+
+    def test_the_word_alone_is_weak(self):
+        concern = c(34, "2026-10-01T10:00:00Z", CONCERN_2)
+        reply = c(35, "2026-10-02T10:00:00Z", "Merci, je note ce Concern pour la prochaine passe.")
+        self.assertEqual(mod.cite_strength(concern, reply), mod.CITE_WEAK)
+
+    def test_no_form_at_all_is_none(self):
+        concern = c(36, "2026-10-01T10:00:00Z", CONCERN_2)
+        reply = c(37, "2026-10-02T10:00:00Z", "J'ai pousse la branche et lance les tests.")
+        self.assertEqual(mod.cite_strength(concern, reply), mod.CITE_NONE)
+
+    def test_a_foreign_date_does_not_forge_a_strong_citation(self):
+        # Un jeton vide ne doit pas matcher toute reponse : `"" in text` est vrai.
+        concern = c(40, "pas-une-date", CONCERN_2)
+        reply = c(41, "2026-10-02T10:00:00Z", "J'ai pousse la branche et lance les tests.")
+        self.assertEqual(mod.cite_strength(concern, reply), mod.CITE_NONE)
+
+    def test_cites_remains_the_weak_predicate(self):
+        concern = c(38, "2026-10-01T10:00:00Z", CONCERN_2)
+        reply = c(39, "2026-10-02T10:00:00Z", "Merci, je note ce Concern pour la prochaine passe.")
+        self.assertTrue(mod.cites(concern, reply))
+
+
+class ProvesTests(unittest.TestCase):
+    """#20186 : ce qui REFERME un Concern."""
+
+    def test_strong_citation_closes_whatever_the_kind(self):
+        concern = c(50, "2026-10-07T15:30:59Z", "Concern: Livraison en double.")
+        reply = c(51, "2026-10-07T16:36:24Z", "Voir la question du 15:30Z, c'est traite.")
+        for kind in ("other", "ack"):
+            self.assertTrue(mod.proves(concern, reply, kind))
+
+    def test_the_word_alone_closes_only_a_substantive_ack(self):
+        concern = c(52, "2026-10-01T10:00:00Z", CONCERN_2)
+        reply = c(53, "2026-10-02T10:00:00Z", "Je note ce Concern pour la prochaine passe.")
+        self.assertTrue(mod.proves(concern, reply, "ack"))
+        self.assertFalse(mod.proves(concern, reply, "other"))
+
+    def test_nothing_closes_on_no_citation(self):
+        concern = c(54, "2026-10-01T10:00:00Z", CONCERN_2)
+        reply = c(55, "2026-10-02T10:00:00Z", "J'ai pousse la branche.")
+        for kind in ("other", "ack"):
+            self.assertFalse(mod.proves(concern, reply, kind))
 
 
 class ResponseCandidateTests(unittest.TestCase):
@@ -221,6 +303,46 @@ class AnalyseTests(unittest.TestCase):
         report = mod.analyse_comments(43, comments)
         self.assertEqual(report.concerns[0].status, "MANUAL_REVIEW")
         self.assertEqual(len(report.unresolved), 1, "fail-closed : MANUAL_REVIEW reste dans la liste")
+
+    def test_bare_lane_ack_under_another_login_does_not_close(self):
+        """#20186 : le seau « other » n'est pas un passe-droit."""
+        comments = [
+            c(1, "2026-10-01T10:00:00Z", CONCERN_1),
+            c(2, "2026-10-01T11:00:00Z", "Concern pris en compte (myia-ai-01).", author="myia-ai-01"),
+        ]
+        report = mod.analyse_comments(70, comments)
+        self.assertNotEqual(report.concerns[0].status, "REPONDU")
+        self.assertEqual(len(report.unresolved), 1, "fail-closed : le Concern reste liste")
+
+    def test_word_only_long_comment_stays_manual_review(self):
+        """Le mot seul ne referme pas, meme long, hors acquittement de lane."""
+        comments = [
+            c(1, "2026-10-01T10:00:00Z", CONCERN_1),
+            c(
+                2,
+                "2026-10-01T11:00:00Z",
+                "Point de situation : le Concern evoque la semaine derniere reste dans ma pile, "
+                "je n'ai pas encore eu le temps de regarder le depot annonce. " * 3,
+            ),
+        ]
+        report = mod.analyse_comments(71, comments)
+        self.assertEqual(report.concerns[0].status, "MANUAL_REVIEW")
+        self.assertEqual(len(report.unresolved), 1)
+
+    def test_substantive_lane_ack_under_another_login_still_closes(self):
+        """La doctrine de #17889 survit au changement de login."""
+        comments = [
+            c(1, "2026-10-01T10:00:00Z", CONCERN_1),
+            c(
+                2,
+                "2026-10-01T11:00:00Z",
+                "Concern pris en compte — voici la carte de ce qui se distille. " * 6,
+                author="myia-ai-01",
+            ),
+        ]
+        report = mod.analyse_comments(72, comments)
+        self.assertEqual(report.concerns[0].status, "REPONDU")
+        self.assertEqual(report.concerns[0].proof, 2)
 
     def test_no_concern_no_report(self):
         comments = [c(1, "2026-10-01T10:00:00Z", CLAIM), c(2, "2026-10-01T11:00:00Z", "ok")]
