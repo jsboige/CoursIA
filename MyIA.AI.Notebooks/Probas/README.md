@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 78
-breakdown: DecisionTheory=32, Infer=21, PyMC=20, Applications=4, root=1
-maturity: BETA=75, ALPHA=2, DRAFT=1
+pedagogical_count: 83
+breakdown: DecisionTheory=33, Infer=21, PyMC=20, Applications=8, root=1
+maturity: BETA=76, DRAFT=4, ALPHA=3
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (total de la famille, notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit par `github-actions[bot]`, livré par la PR permanente `chore/catalog-refresh-pending`). Pour la **répartition par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — la décomposition **technique** par interpréteur, que le marqueur n'agrège pas —, la source est la lecture directe des `metadata.kernelspec` des notebooks : ces volumes dérivent à chaque ajout et **aucun chiffre n'est maintenu ici en prose**. Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée lors du prochain passage.

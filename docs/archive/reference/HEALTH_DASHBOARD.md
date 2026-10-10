@@ -1,26 +1,26 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-10-08**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-10-10**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**1376** notebooks référencés au catalogue.
+**1397** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 1162 | 84.4% |
-| DEMO | 212 | 15.4% |
+| READY | 1183 | 84.7% |
+| DEMO | 212 | 15.2% |
 | BROKEN | 2 | 0.1% |
 
 ## Exigences d'environnement (badges)
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 821 |
-| WSL requis | 126 |
-| GPU requis | 191 |
+| **local** (exécutable sans GPU/cloud/WSL) | 835 |
+| WSL requis | 132 |
+| GPU requis | 192 |
 | Cloud requis (QC / GenAI Docker) | 124 |
 | API key requise | 200 |
 
@@ -29,39 +29,39 @@
 | Série | READY | DEMO | BROKEN | Total | % READY |
 |-------|-------|------|--------|-------|---------|
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
-| Complexity | 13 | 0 | 0 | 13 | 100% |
+| Complexity | 14 | 0 | 0 | 14 | 100% |
 | Compression | 1 | 0 | 0 | 1 | 100% |
-| GameTheory | 109 | 1 | 0 | 110 | 99% |
+| GameTheory | 110 | 1 | 0 | 111 | 99% |
 | GenAI | 138 | 127 | 2 | 267 | 52% |
-| IIT | 88 | 6 | 0 | 94 | 94% |
-| ML | 110 | 21 | 0 | 131 | 84% |
+| IIT | 91 | 7 | 0 | 98 | 93% |
+| ML | 114 | 21 | 0 | 135 | 84% |
 | NLP | 5 | 0 | 0 | 5 | 100% |
-| Probas | 78 | 0 | 0 | 78 | 100% |
-| QuantConnect | 73 | 47 | 0 | 120 | 61% |
+| Probas | 83 | 0 | 0 | 83 | 100% |
+| QuantConnect | 74 | 46 | 0 | 120 | 62% |
 | RL | 31 | 4 | 0 | 35 | 89% |
 | Search | 157 | 0 | 0 | 157 | 100% |
 | Sudoku | 37 | 1 | 0 | 38 | 97% |
-| SymbolicAI | 314 | 5 | 0 | 319 | 98% |
+| SymbolicAI | 320 | 5 | 0 | 325 | 98% |
 | cross-series | 2 | 0 | 0 | 2 | 100% |
 
 ## Kernels
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 895 |
+| Python 3 | 913 |
 | .NET (C#) | 268 |
-| Python 3 (ipykernel) | 49 |
+| Python 3 (ipykernel) | 50 |
 | Lean 4 (WSL) | 49 |
 | Python 3 (coursia-ml-training) | 18 |
 | Python (coursia-ml-training) | 17 |
 | coursia-ml-training | 12 |
 | unknown | 7 |
 | Python 3 (WSL) | 6 |
+| Python 3.13.x (CPython canonique serie Lean) | 5 |
 | Python 3.9 (PyPhi/IIT) | 4 |
 | Python 3 (PyPhi/IIT) | 4 |
 | Coursia ML Training | 3 |
 | Lean 4 | 3 |
-| Python 3.13.x (CPython canonique serie Lean) | 3 |
 | Python (GameTheory WSL + OpenSpiel) | 2 |
 | base | 2 |
 | Python 3 (coursia2) | 2 |

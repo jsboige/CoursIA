@@ -22,8 +22,8 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 |----------|--------|
 | Notebooks | 246 |
 | PRODUCTION | 0 |
-| BETA | 223 |
-| ALPHA | 23 |
+| BETA | 224 |
+| ALPHA | 22 |
 
 ## GenAI/00-GenAI-Environment (7 notebooks)
 
@@ -158,7 +158,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 7 | [Aspire : le routeur MultiConnector — vetting en ligne,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/07-Aspire-SemanticFleet-MultiConnector.ipynb) | BETA | Non |
 | 8 | [Aspire : l'asynchrone aux frontieres natives -…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/08-Aspire-AsyncFFI-Dotnet.ipynb) | BETA | Oui |
 | 9 | [Aspire : le harness Copilot SDK — CopilotClient,…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/09-Aspire-Harness-CopilotSdk.ipynb) | BETA | Oui |
-| 10 | [GitHub Copilot SDK en C# : binding, streaming, Scrutor](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/01-GitHub-Copilot-SDK-Binding.ipynb) | ALPHA | Non |
+| 10 | [GitHub Copilot SDK en C# : binding, streaming, Scrutor](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/01-GitHub-Copilot-SDK-Binding.ipynb) | BETA | Non |
 | 11 | [EF Core : des requêtes vérifiées à la compilation](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/EFCore/01-EFCore-Requetes-Compilees.ipynb) | BETA | Oui |
 | 12 | [Orleans × Aspire : le silo orchestré, les identités…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Orleans/02-Orleans-Aspire-CoHost.ipynb) | BETA | Oui |
 | 13 | [Orleans × Aspire : un cluster de deux silos, l'état…](../../MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Orleans/04-Orleans-Aspire-Cluster-Redis.ipynb) | BETA | Non |
