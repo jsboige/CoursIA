@@ -26,7 +26,11 @@ test_check_cell_source_parses.py).
 """
 
 import importlib.util
+import json
+import os
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -267,6 +271,153 @@ class TestDiffParity(unittest.TestCase):
         self.assertTrue(incidents, "une base illisible doit etre un incident")
         rc = emit_diff(added, [], True, incidents)
         self.assertEqual(rc, 2, "un incident sort en INCONNU, pas en OK ni en REFUS")
+
+    def test_rename_with_modification_is_scanned(self):
+        """R099 reel (ad0142cbb, zero-pad Infer) : le renomme+enrichi est ANALYSE.
+
+        Pre-fix, ``--diff-filter=AM`` excluant les renommages, la tranche
+        entiere echappait a la garde (trou mesure par l'adjoint, dossier
+        c6098782633) : le fichier n'apparaissait meme pas dans les analyses.
+        """
+        added, files, incidents = scan_diff("ad0142cbb^...ad0142cbb")
+        self.assertIn(
+            "MyIA.AI.Notebooks/Probas/Infer/Infer-01-Setup.ipynb",
+            files,
+            "un renommage+modification doit etre analyse (nouveau chemin)",
+        )
+        self.assertEqual(
+            [i for i in incidents if "base illisible" in i],
+            [],
+            "la base d'un renommage se lit a l'ANCIEN chemin : pas d'incident",
+        )
+
+    def test_pure_rename_is_scanned(self):
+        """R100 reel (11bf7a9b8, renommage de serie ML) : le nouveau chemin est ANALYSE.
+
+        Ces fichiers ont ete re-deplaces plus tard dans l'histoire : leur
+        tete est absente de l'arbre de travail courant, d'ou des incidents
+        legitimes -- la propriete « renommage seul = zero incident » se
+        prouve hermetiquement (classe TestHeadAndRenameHermetic).
+        """
+        _added, files, incidents = scan_diff("11bf7a9b8^...11bf7a9b8")
+        self.assertIn(
+            "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/"
+            "notebooks/1.1-Python_pour_la_Data_Science.ipynb",
+            files,
+        )
+        self.assertTrue(
+            all("base illisible" not in i for i in incidents),
+            "la base d'un renommage se lit a l'ancien chemin",
+        )
+
+
+class TestHeadAndRenameHermetic(unittest.TestCase):
+    """Trous de couverture mesures par l'adjoint (dossier c6098782633).
+
+    Depot git temporaire : la tete est lue dans l'arbre de TRAVAIL (pas au
+    commit), ce qui permet de fabriquer hermetiquement les deux etats muets
+    pre-fix -- tete absente, tete au JSON invalide -- et le couple
+    renommage seul / renommage+enrichissement.
+    """
+
+    def _commit_all(self, repo, message):
+        env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "test", "GIT_AUTHOR_EMAIL": "test@test",
+            "GIT_COMMITTER_NAME": "test", "GIT_COMMITTER_EMAIL": "test@test",
+        }
+        subprocess.run(["git", "add", "-A"], cwd=repo, check=True,
+                       capture_output=True, env=env)
+        subprocess.run(["git", "commit", "-q", "-m", message], cwd=repo,
+                       check=True, capture_output=True, env=env)
+
+    def setUp(self):
+        self._old_cwd = os.getcwd()
+        self._tmp = tempfile.TemporaryDirectory()
+        repo = Path(self._tmp.name)
+        subprocess.run(["git", "init", "-q", "--initial-branch=trunk"], cwd=repo,
+                       check=True, capture_output=True)
+        nb = Path(repo) / "serie" / "nb.ipynb"
+        nb.parent.mkdir(parents=True)
+        nb.write_text(
+            json.dumps({"cells": [
+                {"cell_type": "markdown",
+                 "source": ["Un paragraphe de cours sur les equilibres de Nash."]},
+            ]}),
+            encoding="utf-8",
+        )
+        self._commit_all(repo, "base")
+        os.chdir(repo)
+
+    def tearDown(self):
+        os.chdir(self._old_cwd)
+        self._tmp.cleanup()
+
+    def test_head_absent_is_incident(self):
+        """Tete absente de l'arbre de travail : INCIDENT rc2, jamais vert muet.
+
+        Pre-fix : `continue` silencieux -- l'organe rendait rc0 en comptant
+        le carnet parmi les « analyses » alors que RIEN n'avait ete juge.
+        """
+        nb = Path("serie/nb.ipynb")
+        nb.write_text(
+            json.dumps({"cells": [
+                {"cell_type": "markdown",
+                 "source": ["Un paragraphe de cours sur les equilibres de Nash."]},
+                {"cell_type": "markdown", "source": ["Suite du cours."]},
+            ]}),
+            encoding="utf-8",
+        )
+        self._commit_all(Path.cwd(), "modifie")
+        nb.unlink()  # absent de l'arbre de travail, present au commit
+        added, _files, incidents = scan_diff("HEAD^...HEAD")
+        self.assertEqual(added, [])
+        self.assertTrue(any("tete absente" in i for i in incidents),
+                        f"incident attendu, rendus : {incidents}")
+        self.assertEqual(emit_diff(added, [], True, incidents), 2)
+
+    def test_head_invalid_json_is_incident(self):
+        """Tete au JSON illisible : INCIDENT rc2 (meme classe, meme geste)."""
+        Path("serie/nb.ipynb").write_text("pas du json du tout", encoding="utf-8")
+        self._commit_all(Path.cwd(), "casse")
+        added, _files, incidents = scan_diff("HEAD^...HEAD")
+        self.assertEqual(added, [])
+        self.assertTrue(any("tete illisible" in i for i in incidents),
+                        f"incident attendu, rendus : {incidents}")
+        self.assertEqual(emit_diff(added, [], True, incidents), 2)
+
+    def test_rename_alone_neither_finding_nor_incident(self):
+        """git mv sans modification : analyse, zero ajout dense, zero incident."""
+        subprocess.run(["git", "mv", "serie/nb.ipynb", "serie/renomme.ipynb"],
+                       check=True, capture_output=True)
+        self._commit_all(Path.cwd(), "renomme")
+        added, files, incidents = scan_diff("HEAD^...HEAD")
+        self.assertEqual(added, [], "un renommage seul n'ajoute aucun passage")
+        self.assertEqual(incidents, [])
+        self.assertIn("serie/renomme.ipynb", files)
+
+    def test_rename_with_dense_addition_is_caught(self):
+        """git mv + paragraphe dense : l'ajout est juge, base a l'ancien chemin."""
+        subprocess.run(["git", "mv", "serie/nb.ipynb", "serie/renomme.ipynb"],
+                       check=True, capture_output=True)
+        Path("serie/renomme.ipynb").write_text(
+            json.dumps({"cells": [
+                {"cell_type": "markdown",
+                 "source": ["Un paragraphe de cours sur les equilibres de Nash."]},
+                {"cell_type": "markdown",
+                 "source": [
+                     "## Corrigendum c.1209\n\n",
+                     "Dossier de domaine de la lane `myia-po-2024:CoursIA-2` "
+                     "avec verdict `domain: fail` et tete `27d7e0541d`.",
+                 ]},
+            ]}),
+            encoding="utf-8",
+        )
+        self._commit_all(Path.cwd(), "renomme et enrichi")
+        added, files, incidents = scan_diff("HEAD^...HEAD")
+        self.assertEqual(incidents, [])
+        self.assertIn("serie/renomme.ipynb", files)
+        self.assertTrue(added, "le passage dense ajoute au renommage doit etre juge")
 
 
 class TestNotebookScan(unittest.TestCase):

@@ -483,10 +483,18 @@ def scan_diff(diff_range: str) -> tuple[list[AddedPassage], list[str], list[str]
     neuf : c'est un incident. Confondre les deux fait de chaque paragraphe
     du carnet un « ajout » et fabrique un refus fantome sur du contenu
     preexistant (classe mesuree a repetition sur la flotte).
+
+    Un fichier RENOMME (statut ``RXXX\tancien\tnouveau``) est couvert au meme
+    titre que ``M`` : son blob de base se lit a l'ANCIEN chemin -- sinon le
+    renommage accompagne d'enrichissement echappe entierement a la garde
+    (trou mesure par l'adjoint, dossier c6098782633 : ``--diff-filter=AM``
+    l'ignorait). Symetriquement, une TETE absente de l'arbre de travail ou
+    au JSON illisible est un INCIDENT (rc=2), jamais un « carnet analyse »
+    vert muet : sans cela l'organe annonce une mesure qui n'a pas eu lieu.
     """
     try:
         proc_status = subprocess.run(
-            ["git", "diff", "--name-status", "--diff-filter=AM", diff_range],
+            ["git", "diff", "--name-status", "--diff-filter=AMR", diff_range],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=120, check=False,
         )
@@ -514,11 +522,17 @@ def scan_diff(diff_range: str) -> tuple[list[AddedPassage], list[str], list[str]
         if not rel.endswith(".ipynb") or _skipped(Path(rel)):
             continue
         seen.add(rel)
-        if status == "A":
+        if status.startswith("A"):
             base_blob = None  # absence legitime : le fichier est nouveau
         else:
+            # Renommage : le blob de base vit a l'ANCIEN chemin (colonne du
+            # milieu de la ligne RXXX). Le lire au nouveau chemin rendrait la
+            # base « illisible » et ignorerait le renommage+enrichissement.
+            base_rel = (
+                parts[1] if status.startswith("R") and len(parts) >= 3 else rel
+            )
             proc = subprocess.run(
-                ["git", "show", f"{base_ref}:{rel}"],
+                ["git", "show", f"{base_ref}:{base_rel}"],
                 capture_output=True, text=True, encoding="utf-8", errors="replace",
                 timeout=60, check=False,
             )
@@ -530,10 +544,14 @@ def scan_diff(diff_range: str) -> tuple[list[AddedPassage], list[str], list[str]
         base_keys = _markdown_paragraphs_of_blob(base_blob)
         head_path = Path(rel)
         if not head_path.is_file():
+            # Tete absente : la mesure n'a pas eu lieu -- un vert muet ici
+            # annoncerait « N carnets analyses » en n'en analysant aucun.
+            incidents.append(f"{rel} : tete absente de l'arbre de travail")
             continue
         try:
             head_nb = json.loads(head_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, json.JSONDecodeError) as exc:
+            incidents.append(f"{rel} : tete illisible ({str(exc)[:80]})")
             continue
         for idx, cell in enumerate(head_nb.get("cells", [])):
             if cell.get("cell_type") != "markdown":
