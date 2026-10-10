@@ -3608,19 +3608,142 @@ def test_marker_does_not_shortcut_pr_check(monkeypatch):
 
 
 def test_marker_check_failure_treated_as_no_signal(monkeypatch):
-    """Si `gh issue view` timeout/rate-limit, _has_delivered_marker retourne
-    None ; recent_delivery continue sans annoter (best-effort, parite avec
-    la doctrine candidate-delivered : signale sans casser le flux)."""
+    """Les DEUX transports morts -> None ; recent_delivery continue sans
+    annoter (best-effort, parite avec la doctrine candidate-delivered :
+    signale sans casser le flux).
+
+    #17038 : un seul transport mort ne suffit plus a rendre la sonde muette
+    -- depuis le repli REST, c'est la mort des deux (GraphQL puis REST) qui
+    rend None. Les deux sont donc simules ici.
+    """
     def boom(cmd, **kwargs):
-        if cmd[1:3] == ["issue", "view"]:
-            raise pig.subprocess.TimeoutExpired(cmd, 20)
-        return _FakeCompleted("[]")
+        if cmd[1:3] == ["pr", "list"]:
+            return _FakeCompleted("[]")  # pas de PR couvrante
+        raise pig.subprocess.TimeoutExpired(cmd, 20)  # GraphQL ET REST morts
     monkeypatch.setattr(pig.subprocess, "run", boom)
     picks = [_pick(n=14373)]
     notes = pig.recent_delivery(picks)
     # Pas de LIVRE-urn annotation, pas de mutation de klasse.
     assert notes == {}
     assert picks[0]["klass"] == "grain"
+
+
+# --- #17038 : le filet marqueur ne depend pas du transport de la recherche PR
+#
+# Defaut mesure le 2026-10-10 (lane myia-po-2023:CoursIA, cycle c.1461) : la
+# branche d'echec de `gh pr list` faisait `continue` AVANT la sonde marqueur,
+# alors que les deux passent par le MEME bucket GraphQL et tombent ensemble.
+# Resultat : 4 issues deja livrees (11 marqueurs `[INFO] candidate-delivered`
+# au total) servies en tete de tapis sous l'urne `grain`. Le fail-open est
+# preserve ; c'est le filet qui etait aveugle.
+
+
+_GRAPHQL_MORT = pig.subprocess.CalledProcessError(
+    1, ["gh"], stderr="GraphQL: API rate limit already exceeded "
+                      "for user ID 3159389")
+
+
+def _patch_gh_transports(monkeypatch, calls, *, pr=None, issue=None, rest=None):
+    """Route les trois transports du picker : `gh pr list` et `gh issue view`
+    (GraphQL) puis `gh api` (REST).
+
+    ``pr`` / ``issue`` recoivent une charge utile JSON ; ``rest`` recoit la
+    sortie BRUTE de `gh api --jq '.[].body'` (un corps de commentaire par
+    ligne) -- c'est ce que le vrai transport imprime. Chacun peut etre une
+    exception : elle est levee, comme le ferait le `gh` en panne.
+    """
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        if cmd[1:3] == ["pr", "list"]:
+            which = pr
+        elif cmd[1:3] == ["issue", "view"]:
+            which = issue
+        elif cmd[1:2] == ["api"]:
+            which = rest
+        else:
+            raise AssertionError(f"transport inattendu : {cmd}")
+        if isinstance(which, BaseException):
+            raise which
+        return _FakeCompleted(which if cmd[1] == "api" else json.dumps(which))
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    return calls
+
+
+def test_sonde_marqueur_bascule_sur_rest_quand_graphql_meurt(monkeypatch):
+    """#17038 : GraphQL mort -> la sonde lit les corps par REST.
+
+    Sans ce repli la sonde rendait None en meme temps que la recherche PR,
+    qui partage le meme bucket : le filet etait aveugle exactement quand il
+    servait. La cible REST est epinglee (`repos/<REPO>/...`) : aucun slug
+    infere du cwd ni du remote `origin`.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, issue=_GRAPHQL_MORT,
+        rest=_delivered_marker_comment()["body"] + "\n")
+    assert pig._has_delivered_marker(14373) is True
+    rest_calls = [c for c in calls if c[1:2] == ["api"]]
+    assert len(rest_calls) == 1
+    assert rest_calls[0][-1] == f"repos/{pig.REPO}/issues/14373/comments"
+
+
+def test_sonde_marqueur_deux_transports_morts_reste_silencieuse(monkeypatch):
+    """Les deux transports morts -> None (fail-OPEN preserve)."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=pig.subprocess.CalledProcessError(1, ["gh"]))
+    assert pig._has_delivered_marker(14373) is None
+
+
+def test_sonde_marqueur_ne_touche_pas_rest_quand_graphql_vit(monkeypatch):
+    """Invariant de cout : la voie nominale reste a UNE requete.
+
+    Le repli ne doit pas doubler le cout par candidat -- il ne s'active que
+    sur echec du premier transport.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, issue={"comments": [_delivered_marker_comment()]})
+    assert pig._has_delivered_marker(14373) is True
+    assert [c for c in calls if c[1:2] == ["api"]] == []
+
+
+def test_recherche_pr_morte_le_filet_reclasse_quand_meme(monkeypatch):
+    """#17038, controle positif du defaut mesure : #16372 (une des 4 issues
+    livrees du 2026-10-10) reste reclassee `delivered` malgre la panne.
+
+    `gh pr list` ET `gh issue view` tombent (bucket GraphQL partage) ; le
+    marqueur de livraison est pourtant lisible par REST. Avant le correctif,
+    la branche d'echec faisait `continue` et le candidat deja livre
+    repartait en tete de tapis sous l'urne `grain`.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, pr=_GRAPHQL_MORT, issue=_GRAPHQL_MORT,
+        rest=_delivered_marker_comment()["body"] + "\n")
+    picks = [_pick(n=16372)]
+    notes = pig.recent_delivery(picks)
+    assert picks[0]["klass"] == "delivered"
+    assert "MARQUEUR" in notes[16372]
+    assert "recherche PR indisponible" in notes[16372]
+    assert "CalledProcessError" in notes[16372]
+
+
+def test_recherche_pr_morte_sans_marqueur_laisse_le_candidat(monkeypatch):
+    """Controle NEGATIF du meme chemin : sans marqueur, rien n'est reclasse.
+
+    C'est ce qui separe le filet d'un ecartement aveugle : la panne de
+    transport n'ecarte aucun candidat par elle-meme, seul le marqueur
+    reclasse. La note reste le diagnostic de transport.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, pr=_GRAPHQL_MORT, issue=_GRAPHQL_MORT,
+        rest="Commentaire sans marqueur de livraison.\n")
+    picks = [_pick(n=15794)]
+    notes = pig.recent_delivery(picks)
+    assert picks[0]["klass"] == "grain"
+    assert notes[15794] == "(recherche PR indisponible: CalledProcessError)"
 
 
 def test_marker_regex_matches_both_bracket_forms(monkeypatch):
