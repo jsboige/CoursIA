@@ -4,6 +4,106 @@
 >
 > **Date du relevé** : 2026-10-03. **Source primaire** : Hugging Face, espace `multimodalart/jev-decision-index`, édition `0.2.1` du 2026-09-28 (`data/index.json`, 70 implémentations sur ~120 000 requêtes, 38 benchmarks statiques).
 
+## 0. Mise à jour mesurée au 2026-10-10 — l'édition a changé, les licences sont relevées
+
+> **Ce que les sections ci-dessous disent** : relevé du 2026-10-03 sur l'édition `0.2.1` (70 implémentations), index **référencé** sans être téléchargé.
+> **Ce qui est mesuré ici** : l'index est passé à **Decision Index `0.3.1`** (`release-v3`, base `release-v2.1`), **115 implémentations**, `generated_utc` **2026-10-09T23:53:22Z**, fichier **téléchargé**. Les sections 1 à 8 sont **conservées telles quelles** : elles datent du 2026-10-03 et leurs chiffres sont ceux de `0.2.1`.
+
+**Reproduction** — outil livré avec cette mise à jour :
+
+```bash
+python scripts/genai-stack/decision_index_report.py --licenses --top 5
+```
+
+Il télécharge `data/index.json`, classe les entrées par palier de taille servie, et relève licence, disponibilité des poids et voie de service par l'API Hugging Face (une requête par dépôt).
+
+**Provenance du fichier relevé** — `data/index.json`, **1 600 089 octets**,
+`sha256` **`e532209f70fcafc25a86b4c13c9d3e42569d6e061d90fba6952017ee7fb74e7c`**,
+`generated_utc` `2026-10-09T23:53:22Z`. L'index est un espace **roulant** : l'édition
+changera, et ces valeurs datent le relevé.
+
+> **Ce fichier n'est pas déposé au gisement bibliographique.** `bibliography-hygiene`
+> range les **publications**, et pose qu'« un dataset n'est pas assimilé à une
+> publication » : il ne se recopie pas tant que sa provenance, sa licence et ses
+> droits de redistribution ne sont pas établis. La section 6.3 ci-dessous prévoyait
+> un dépôt sur `G:\Mon Drive\MyIA\IA\Bibliographie IA` au Pli 2 ; ce geste est **écarté**
+> au profit de cette empreinte, qui rend le relevé vérifiable sans redistribuer la
+> donnée. Le script retélécharge la source à chaque exécution.
+
+### 0.1 Ce que l'index ne publie pas
+
+Le corps de #18204 demande de relever « la licence, y compris celle du modèle de base ; la disponibilité des poids ; le contrat servi ; la voie de service ». Mesure : **l'index ne porte aucun de ces champs** — `license`, `choice` et `noul` y comptent **0 occurrence**, et 36 dépôts seulement sur 115 publient un `weights_repo` explicite. Ces colonnes se relèvent **hors index**, par l'API Hugging Face : c'est le geste que la section 8.1 déclarait dû, et il est fait.
+
+### 0.2 Classement par palier, licences relevées firsthand
+
+#### Palier <=1B
+
+| Modèle | Taille servie | `balanced_skill` | Dépôt des poids | Base | Licence | Poids ouverts | Voie de service |
+|---|---:|---:|---|---|---|---|---|
+| jiwo 0.8B | 0.87 B | 24.32 | eljiwo/jiwo-0.8b | Qwen/Qwen3.5-0.8B | apache-2.0 | oui | vLLM, llama.cpp (quantifié) |
+| OneJev 0.8B | 0.87 B | 20.47 | OmniJev/OneJev-0.8B | Qwen/Qwen3.5-0.8B | apache-2.0 | oui | vLLM, llama.cpp (quantifié) |
+| JPT-0.8B | 0.87 B | 18.73 | kirp/jpt-0.8b | Qwen/Qwen3.5-0.8B-Base | cc-by-nc-4.0 | oui | vLLM, llama.cpp (quantifié) |
+| Sifr 0.8B v3.1 | 0.87 B | 17.79 | mohamedlotfy50/sifr-0.8b-v3 | Qwen/Qwen3.5-0.8B | apache-2.0 | oui | vLLM, llama.cpp (quantifié) |
+| vLLM-SR Decision 2.0 Eos 0.8B | 0.87 B | 17.47 | vllm-sr/Decision-2.0-Eos-0.8B | Qwen/Qwen3.5-0.8B | apache-2.0 | oui | vLLM, llama.cpp (quantifié) |
+
+#### Palier 2-4B
+
+| Modèle | Taille servie | `balanced_skill` | Dépôt des poids | Base | Licence | Poids ouverts | Voie de service |
+|---|---:|---:|---|---|---|---|---|
+| ezjev 4B s2 | 4.66 B | 46.95 | everettjf/ezjev-4b-s2 | Qwen/Qwen3.5-4B | other | oui | vLLM, llama.cpp (quantifié) |
+| vLLM-SR Decision 2.0 Nox 4B | 4.21 B | 44.95 | vllm-sr/Decision-2.0-Nox-4B | Qwen/Qwen3.5-4B-Base | apache-2.0 | oui | vLLM, llama.cpp (quantifié) |
+| jiwo 4B | 4.66 B | 42.86 | eljiwo/jiwo-4b | Qwen/Qwen3.5-4B | apache-2.0 | oui | vLLM, llama.cpp (quantifié) |
+| Hopper (G) 1.2 | 4.66 B | 42.61 | HopitAI/hopper-g | Qwen/Qwen3.5-4B-Base | other | oui | vLLM, llama.cpp (quantifié) |
+| JPT-4B | 4.66 B | 41.63 | kirp/jpt-4b | Qwen/Qwen3.5-4B-Base | cc-by-nc-4.0 | oui | vLLM, llama.cpp (quantifié) |
+
+#### Palier 9-12B
+
+| Modèle | Taille servie | `balanced_skill` | Dépôt des poids | Base | Licence | Poids ouverts | Voie de service |
+|---|---:|---:|---|---|---|---|---|
+| Bespoke Nimble 9B v3 | 9.65 B | 54.67 | bespokelabs/Bespoke-Nimble-9B-v3 | Qwen/Qwen3.5-9B | cc-by-nc-4.0 | oui | vLLM, llama.cpp (quantifié) |
+| AJev lora5 (Gemma 4 12B) | 11.96 B | 50.02 | andyzhang232/ajev-gemma4-12b-lora5 | google/gemma-4-12B-it | apache-2.0 | oui | vLLM (quantifié 4 bits en 24 Go) |
+| Winnow-12B | 11.96 B | 49.27 | EldanRing/Winnow-12B | google/gemma-4-12B | apache-2.0 | oui | llama.cpp (GGUF), vLLM |
+| JevK5 9B v0.3.3 | 9.65 B | 48.35 | alibiserikbay/JevK5-9B | Qwen/Qwen3.5-9B | apache-2.0 | oui | vLLM, llama.cpp (quantifié) |
+| vLLM-SR Decision 2.0 Lux 9B | 9.65 B | 48.21 | vllm-sr/Decision-2.0-Lux-9B | Qwen/Qwen3.5-9B | apache-2.0 | oui | vLLM, llama.cpp (quantifié) |
+
+#### Palier 26-35B
+
+| Modèle | Taille servie | `balanced_skill` | Dépôt des poids | Base | Licence | Poids ouverts | Voie de service |
+|---|---:|---:|---|---|---|---|---|
+| Perplexity Decider v1.1 (27B) | 27.80 B | 62.75 | perplexity-ai/pplx-decider-v1.1-27b | Qwen/Qwen3.8-27B | apache-2.0 | oui | vLLM (quantifié 4 bits en 24 Go) |
+| Fastino GLiDE no-thinking (28B) | 27.80 B | 60.21 | - | - | - | non | vLLM (quantifié 4 bits en 24 Go) |
+| Torchcast Decision 27B | 27.80 B | 59.91 | torchcast-ai/torchcast-decision-27b | Qwen/Qwen3.8-27B | cc-by-nc-4.0 | oui | vLLM (quantifié 4 bits en 24 Go) |
+| deck31b (Gemma 4 31B) | 32.68 B | 59.03 | - | google/gemma-4-31B-it | - | non | vLLM (quantifié 4 bits en 24 Go) |
+| Kev 27B | 27.80 B | 58.78 | jaredpalmer/kev-27b | Qwen/Qwen3.8-27B | apache-2.0 | oui | vLLM (quantifié 4 bits en 24 Go) |
+
+### 0.3 Ce que la vérification change
+
+| Ce que les sections ci-dessous avaient retenu | Ce qui est mesuré au 2026-10-10 |
+|---|---|
+| `JPT-9B` (46,9) et `JPT-4B` (43,0), « shortlistoire candidat » | Les deux sont **`cc-by-nc-4.0`** : non commercial. Contrainte réelle pour l'usage CI/coordination visé au Pli 4. |
+| `Jet v6.2` (42,6), candidat n°3 | `michaljach/jet` rend **HTTP 401** — poids non distribués publiquement. **Non servable.** |
+| `Surogate Rune 26B-A4B` (57,4) | `apache-2.0` mais dépôt **`gated: auto`** : l'accès demande une acceptation, donc une étape manuelle en CI. |
+| absent de la shortlistoire | **`Perplexity Decider v1.1 (27B)` — 62,75, `apache-2.0`, non gated** : tête de l'index *et* permissive. |
+| absent de la shortlistoire | **`Blink v0.3 26B-A4B (NVFP4)` — 57,76, `apache-2.0`** : palier 26B déjà en 4 bits, servable sur 24 Go sans quantification à produire. |
+| `laya` (6,0), `Lavoir` (8,7) | Tête d'encodeur **encore plus basse** en `0.3.1` : `Laya` **4,43**, `Lavoir` **4,39**. La lecture de §2.1 tient, et s'accentue. |
+| toutes bases « (à confirmer) » | **Toutes `apache-2.0`** — Qwen3.5-0.8B/4B/9B, Qwen3.8-27B, gemma-4-26B-A4B-it. La contrainte NC vient des **fine-tunes**, jamais des bases. |
+
+### 0.4 Shortlistoire corrigée — le filtre de licence appliqué
+
+| # | Palier | Modèle | Score | Licence | Servabilité 24 Go | Voie |
+|---:|---|---|---:|---|---|---|
+| 1 | 26-35B | **Perplexity Decider v1.1 (27B)** | 62,75 | apache-2.0 | oui (4 bits) | vLLM |
+| 2 | 26-35B | **Blink v0.3 26B-A4B (NVFP4)** | 57,76 | apache-2.0 | oui (déjà 4 bits) | vLLM |
+| 3 | 9-12B | **Winnow-12B** | 49,27 | apache-2.0 | oui (4 bits ; GGUF publié) | vLLM, llama.cpp |
+| 4 | 2-4B | **vLLM-SR Decision 2.0 Nox 4B** | 44,95 | apache-2.0 | oui (BF16) | vLLM, llama.cpp |
+| 5 | <=1B | **jiwo 0.8B** | 24,32 | apache-2.0 | oui (BF16) | vLLM, llama.cpp |
+
+Les variantes à meilleur score de leur palier (`ezjev 4B s2` 46,95, `Bespoke Nimble 9B v3` 54,67, `Torchcast Decision 27B` 59,91) portent une licence **`other`** ou **`cc-by-nc-4.0`** : elles restent citées, mais hors shortlistoire tant que l'usage visé n'est pas tranché.
+
+### 0.5 Ce qui reste non vérifié
+
+La **mesure locale** (§5 ci-dessous) : rejouer 2-3 tranches de benchmarks chez nous. Elle demande une carte 24 Go et sort de cette mise à jour ; le verdict `RECOVERABLE-MACHINE` de §5.2 est inchangé. La qualité de présentation (§3) reste relevée au Pli 2.
+
 ## 1. Périmètre de mesure
 
 ### 1.1 Source
