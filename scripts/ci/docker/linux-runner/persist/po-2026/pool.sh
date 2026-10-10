@@ -3,9 +3,26 @@
 # Labels: coursia-ephemeral,coursia-linux — 1 job = 1 runner, re-spawn auto.
 # Source maintenue: D:\Dev\CoursIA-runners-p0\pool.sh (copie LF normalisée dans WSL).
 set -u
-POOL_SIZE="${POOL_SIZE:-8}"
+POOL_SIZE="${POOL_SIZE:-}"
 REPO="jsboige/CoursIA"
 BASE="$HOME/CoursIA-runners-p0"
+# Persistance du confinement (Q17, mesure 07/10 01:41 locale) : un POOL_SIZE
+# exporte par une session meurt au premier redemarrage du parc — 4 redemarrages
+# dans la nuit 06-07/10 l'ont demontre, le parc repartant a 8 slots sans le
+# confinement 3 decide le 28/09. Le fichier conf survit aux redemarrages ;
+# l'ENV garde la priorite (un lancement explicite POOL_SIZE=x gagne toujours).
+# Bornes 1..8 : le scope MemoryMax=20G a ete dimensionne pour 8 slots — une
+# valeur saisisse hors bornes est ecartee au profit du defaut, jamais silencieusement
+# acceptee.
+if [ -z "$POOL_SIZE" ] && [ -s "$BASE/pool-size.conf" ]; then
+  # `|| true` : read rend 1 sur un fichier sans newline final APRES avoir
+  # peuple la variable — l'echec ne dit pas « valeur absente ».
+  read -r POOL_SIZE < "$BASE/pool-size.conf" || true
+fi
+case "$POOL_SIZE" in
+  [1-8]) ;;
+  *) POOL_SIZE=8 ;;
+esac
 BUNDLE="$BASE/actions-runner.tar.gz"
 LOCK="$BASE/pool.lock"
 # Cache d'outils PERSISTANT, hors de l'arbre ephemere (#17407/Q5, arbitrage ai-01
