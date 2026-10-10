@@ -1,11 +1,12 @@
 - name: "ML-9 Anomaly-Detection"
   family: ML.NET/Python
-  python: MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection-Python.ipynb
-  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, chacun prod) : C# = Microsoft.ML (NuGet officiel Microsoft.ML, native .NET : Microsoft.ML.Transforms/Regression/Clustering/TimeSeries) et Python = scikit-learn (pip sklearn, native Python) -- chaque cote atteint le moteur SOTA ML de son ecosysteme, ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML refs + execution_count, Python sklearn imports."
   known_differences:
+    - "2026-10-09 (renommage canonique #19482, lane myia-po-2023:CoursIA-2) : padding du numero (ML-N -> ML-0N) et normalisation du suffixe de noyau, des deux cotes du couple. Le contenu pedagogique et la parite sont inchanges (meme concept, memes sorties) ; le rebaseline des content SHA enregistre le nouveau chemin **et** les edits arrives d'`origin/main` aux merges `a7c92bcb91` / `20fb3fd9d1` (renommage + merge), pas un nouveau contenu pedagogique."
     - "Re-baseline 2026-08-14 (myia-po-2024:CoursIA-2, #10878) : SHA C# avance f249f653 -> 90a7e5d2 (repositionnement cellule d'interp markdown C1 post-hoc — interp scores sous le code prediction, #10678). Markdown-only, aucun code touche, axe de parite semantic (PCA + scoring) inchange. Drift verifie parite-preserving."
     - "metadata.cost ajoute symetriquement aux deux jumeaux (#8445, po-2023) : valeurs identiques (api_usd_est=0.0, gpu_required=false, vram_tier=NONE, free_alternative=self) — addition metadata-only, n'affecte pas la parite comportementale."
     - "Socle pedagogique commun : detection d'anomalies par PCA (Analyse en Composantes Principales) sur donnees capteurs."
