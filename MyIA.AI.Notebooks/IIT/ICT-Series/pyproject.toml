@@ -42,6 +42,10 @@ dependencies = [
                              # groupe x periode ; passage de extras a deps coeur
                              # pour que `pip install -e .` couvre la suite de
                              # tests CI sans modifier le workflow -- cf. c.296)
+    "cryptography>=3.4,<44", # port S6-B (#7742) : blob corpus .json.gz.enc
+                             # (ict/extracts_tiers.py, Fernet + PBKDF2-HMAC-
+                             # SHA256 480k iters, contrat EPITA). Pin <44 :
+                             # dernier train supportant Python 3.9 (pin pyphi).
 ]
 
 [project.optional-dependencies]
