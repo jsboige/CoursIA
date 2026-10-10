@@ -76,8 +76,12 @@ Labs 1 + 6 + 8. Découvrir le pipeline data science, construire un premier agent
 DataScienceWithAgents/
 ├── 01-PythonForDataScience/    # Fondations Python
 │   └── notebooks/
-│       ├── 1.2-NumPy.ipynb
-│       └── 1.3-Pandas.ipynb
+│       ├── 1.1-Python_pour_la_Data_Science.ipynb
+│       ├── 1.2-Manipulation_de_Donnees_avec_NumPy.ipynb
+│       ├── 1.3-Analyse_de_Donnees_avec_Pandas.ipynb
+│       ├── 1.4-Visualisation_Matplotlib_Seaborn.ipynb
+│       ├── 1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb
+│       └── 1.6-Statistiques_Descriptives.ipynb
 │
 ├── 02-ML-Cours/                # Fondations ML canoniques
 │   ├── 2.1-Workflow-ML.ipynb
@@ -142,10 +146,20 @@ DataScienceWithAgents/
 
 ## Fondations (01-PythonForDataScience)
 
+La porte d'entrée de la série, en amont de NumPy et Pandas : le strict minimum de Python pour lire la suite, puis les gestes que la data science suppose acquis — visualiser une question, nettoyer un jeu sale, décrire une distribution.
+
 | Notebook | Contenu | Durée |
 |----------|---------|-------|
-| [1.2-NumPy](01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.html) | Arrays, opérations, vectorisation | 45 min |
-| [1.3-Pandas](01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.html) | DataFrames, filtrage, groupby | 60 min |
+| [1.1-Python](01-PythonForDataScience/notebooks/1.1-Python_pour_la_Data_Science.ipynb) | types et conversions (`float()` d'import), structures (`list`/`dict`/`tuple`/`set`), fonctions et docstring, compréhensions, fichiers en `with` + encodage explicite, traceback lu de bas en haut | 60-75 min |
+| [1.2-NumPy](01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | Arrays, opérations, vectorisation | 45 min |
+| [1.3-Pandas](01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | DataFrames, filtrage, groupby | 60 min |
+| [1.4-Visualisation](01-PythonForDataScience/notebooks/1.4-Visualisation_Matplotlib_Seaborn.ipynb) | matplotlib d'abord (figure/axes, une question → un graphique), erreurs classiques (axe tronqué, surcharge), puis seaborn (`hue`, `pairplot`, heatmap de corrélation) — manchots de Palmer | 60 min |
+| [1.5-Exploration](01-PythonForDataScience/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb) | audit (dimensions/types/manquants/doublons), journal des décisions de nettoyage, quasi-doublon instruit, référence auteur reproduite à zéro divergence — sur `penguins_raw.csv` | 75 min |
+| [1.6-Statistiques](01-PythonForDataScience/notebooks/1.6-Statistiques_Descriptives.ipynb) | tendance centrale, dispersion et coefficient de variation, asymétrie par sous-groupe, corrélation de Pearson et paradoxe de Simpson mesuré — renvoi vers [`Probas/`](../../Probas/README.md) | 60 min |
+
+> **Numérotation (règle d'accrétion).** La série commence à `1.1` — les notebooks `1.2` et `1.3` d'origine sont inchangés, et les prérequis s'insèrent autour d'eux. Continuité : `1.1` (Python) → `1.2` (NumPy) → `1.3` (Pandas) → `1.4` (Visualisation) → `1.5` (Exploration) → `1.6` (Statistiques) → [02-ML-Cours](02-ML-Cours/README.md).
+
+Documentation complète : [01-PythonForDataScience/README.md](01-PythonForDataScience/README.md)
 
 ## Fondations ML (02-ML-Cours)
 
