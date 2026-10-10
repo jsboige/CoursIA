@@ -1,6 +1,6 @@
 # Delegation a des sous-agents — modele explicite obligatoire (sonnet/haiku par defaut)
 
-S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` tool), quel que soit le role (coordinateur ai-01 ou worker po-*). Source : mandat user 2026-06-09 (« tout sous-agent doit avoir un modele explicite, sonnet ou haiku typiquement, et uniquement Opus dans des cas exceptionnels qui le justifient »), consolide avec le mandat 2026-06-07 sur la delegation read-heavy. Les angles morts observes par classe de tache sont synthetises ci-dessous (section « Angles morts connus »).
+S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` tool), quel que soit le role (coordinateur ai-01 ou worker po-*). Source : mandat user 2026-06-09 (« tout sous-agent doit avoir un modele explicite, sonnet ou haiku typiquement, et uniquement Opus dans des cas exceptionnels qui le justifient »), consolide avec le mandat 2026-06-07 sur la delegation read-heavy, **restreint le 10/10/2026** par le mandat user « Pas du tout » sur les sous-agents Opus des postes po-* (mesure ai-01:claudish : 6 sous-agents Opus partis de po-2027 ce jour, prompts d'agent generaliste avec ligne `opus justified`). Les angles morts observes par classe de tache sont synthetises ci-dessous (section « Angles morts connus »).
 
 ## Regle HARD — modele explicite obligatoire
 
@@ -10,12 +10,9 @@ S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` to
    - **`"sonnet"`** : taches intermediaires (audit, recensement, diagnostic, redaction, enrichissement notebook, review structurelle)
    - **`"haiku"`** : taches simples (comptage, extraction format-impose, grep/scan, verification mecanique, listing)
 
-3. **`"opus"` UNIQUEMENT sur justification explicite.** Un sous-agent opus est acceptable **uniquement** si le prompt de l'Agent tool contient une justification en anglais d'une ligne (ex: `// opus justified: needs cross-file architectural judgment beyond sonnet capability`). Les cas typiques justifies :
-   - Decision architecturale cross-fichier complexe
-   - Synthese multi-sources contradictoires necessitant un jugement nuance
-   - Investigation de regression profonde ou un sonnet pourrait manquer des subtilites
+3. **`"opus"` UNIQUEMENT depuis ai-01 — jamais depuis un poste po-\*, meme justifie (mandat user 10/10/2026).** L'Opus facture Anthropic ne part que d'ai-01 et des lanes que le user a autorisees nommement. Sur les postes po-\*, le parametre `model: "opus"` est **interdit, y compris avec la justification ecrite** que l'ancienne formulation de ce point autorisait : une tache qui semblerait l'exiger **remonte a ai-01** (dispatch ou DM), qui la delegue ou la prend lui-meme. En pratique : `model` explicite `sonnet`/`haiku` sur chaque `Agent()`, et `haiku` si l'on lance l'un des agents globaux du gabarit encore fixes `opus` (`code-explorer`, `git-sync`, `test-runner`, `code-fixer`, `test-investigator`) — le parametre de l'appel passe avant le `model:` du fichier de l'agent (ordre de resolution verifie dans le binaire Claude Code 2.1.296). Les cas autrefois « justifiables » (decision architecturale cross-fichier, synthese multi-sources contradictoire, investigation de regression profonde) restent du travail legitime — ils montent a ai-01 au lieu d'etre factures en Opus depuis un poste po-*.
 
-   **Non justifies** (opus interdit) : read-heavy borne, comptage, audit d'issues, verification de diffs, labeling, extraction, listing, generation de rapports structures.
+   **Toujours non justifies** (opus interdit partout) : read-heavy borne, comptage, audit d'issues, verification de diffs, labeling, extraction, listing, generation de rapports structures.
 
 4. **Deleguer le READ-HEAVY borne et verifiable, garder la DECISION.** Les taches a fort volume de lecture mais a critere de sortie objectif — recensement, audit d'issues, verification de diffs, diagnostic, comptage, extraction format-impose — vont a un sous-agent `sonnet` ou `haiku`. L'agent appelant garde : les **jugements** (labeling exercice/exemple, scope-vs-titre, WIP-acceptable, anti-regression Lean/preuve), les **merges/closes/dispatches**, et le **cross-check G.1** systematique.
 
