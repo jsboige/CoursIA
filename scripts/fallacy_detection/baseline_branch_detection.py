@@ -42,6 +42,7 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import math
@@ -329,7 +330,113 @@ def quantile(sorted_values: list[float], fraction: float) -> float:
     return sorted_values[low] + (sorted_values[high] - sorted_values[low]) * (position - low)
 
 
-def run(corpus_path: Path, level: str, folds_count: int, random_draws: int, seed: int) -> dict:
+#: Schemas des deux taxonomies Argumentum ; reconnus par leurs colonnes, pas par leur nom
+#: de fichier. Les racines (« Argument fallacieux », « Argument valable ») existent dans
+#: les CSV mais pas dans le corpus : la tranche A les a exclues, ici elles ne sont pas
+#: des classes et ne sont donc pas notees.
+TAXONOMY_SCHEMAS = (
+    {"family": "Famille", "title": "nom_vulgarisé", "description": "desc_fr", "key": "PK"},
+    {"family": "family_fr", "title": "title_fr", "description": "description_fr", "key": "pk"},
+)
+
+TAXONOMY_DEFAULTS = (
+    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv",
+    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_virtues_taxonomy.csv",
+)
+
+
+def detect_schema(fieldnames: list[str]) -> dict:
+    """Reconnait le schema d'une taxonomie par ses colonnes ; refuse un fichier inconnu."""
+    names = {f.lstrip("﻿") for f in fieldnames}
+    for schema in TAXONOMY_SCHEMAS:
+        if set(schema.values()) <= names:
+            return schema
+    raise SystemExit(
+        f"Taxonomie de schema inconnu : colonnes {sorted(names)[:6]}... "
+        "Attendu les colonnes d'une taxonomie Argumentum (sophismes ou vertus)."
+    )
+
+
+def load_lexicon(paths: list[Path], labels: set[str]) -> tuple[dict[str, set[str]], dict[str, dict]]:
+    """Dictionnaires de famille : titres et definitions des nœuds, **jamais** `example_*`.
+
+    Les champs `example_*` sont exclus par la meme regle d'anti-circularite que la
+    tranche A applique aux prompts : un dictionnaire bati sur les exemples du nœud
+    mesurerait le recouvrement avec les exemples, pas la capacite de la regle.
+    """
+    lexicon: dict[str, set[str]] = {label: set() for label in labels}
+    report: dict[str, dict] = {}
+    for path in paths:
+        if not path.exists():
+            raise SystemExit(f"Taxonomie introuvable : {path}")
+        with path.open(encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            schema = detect_schema(reader.fieldnames or [])
+            for row in reader:
+                family = (row.get(schema["family"]) or "").strip()
+                if family not in lexicon:
+                    continue
+                title = (row.get(schema["title"]) or "").strip()
+                description = (row.get(schema["description"]) or "").strip()
+                tokens = set(tokenize(f"{title} {description}"))
+                cell = report.setdefault(family, {"nodes": 0, "tokens": 0})
+                cell["nodes"] += 1
+                if tokens:
+                    lexicon[family] |= tokens
+                    cell["tokens"] = len(lexicon[family])
+    empty = sorted(label for label, tokens in lexicon.items() if not tokens)
+    if empty:
+        raise SystemExit(
+            f"Dictionnaire vide pour {empty} : aucune regle lexicale ne peut etre batie "
+            "pour ces familles. Verifier les colonnes de titre et de definition."
+        )
+    return lexicon, report
+
+
+def idf_over_families(lexicon: dict[str, set[str]]) -> dict[str, float]:
+    """Poids IDF d'un jeton sur les familles : un jeton present partout ne discrimine pas."""
+    total = len(lexicon)
+    document_frequency = Counter(term for tokens in lexicon.values() for term in tokens)
+    return {term: math.log(total / df) + 1.0 for term, df in document_frequency.items()}
+
+
+def make_rules_predictor(lexicon: dict[str, set[str]], weights: dict[str, float], labels: list[str]):
+    """Baseline a regles : dictionnaire de famille pondere par IDF, plus haute couverture.
+
+    Aucun entrainement : la regle est une fonction deterministe du texte. Elle est donc
+    evaluee sur le corpus entier, sans plis -- un decoupage n'aurait aucun sens pour un
+    predicteur qui n'apprend rien des items etiquetes.
+    """
+    def predict_one(text: str) -> str:
+        tokens = sorted(set(tokenize(text)))
+        best_label, best_score = None, None
+        for label in labels:
+            score = sum(weights.get(term, 0.0) for term in tokens if term in lexicon[label])
+            if best_score is None or score > best_score:
+                best_label, best_score = label, score
+        if best_label is None:
+            raise SystemExit("Baseline a regles : aucune famille candidate.")
+        return best_label
+    return predict_one
+
+
+def evaluate_whole(predict_one, items: list[dict]) -> dict:
+    """Evalue un predicteur sans entrainement sur le corpus entier : macro-F1 et exactitude."""
+    y_true = [item["label"] for item in items]
+    y_pred = [predict_one(item["text"]) for item in items]
+    score, per_label = macro_f1(y_true, y_pred)
+    hits = sum(1 for t, p in zip(y_true, y_pred) if t == p)
+    return {
+        "n": len(items),
+        "macro_f1": round(score, 4),
+        "accuracy": round(hits / len(items), 4),
+        "labels_never_predicted": sorted(set(y_true) - set(y_pred)),
+        "worst_labels": sorted(per_label, key=lambda l: (per_label[l], l))[:3],
+    }
+
+
+def run(corpus_path: Path, level: str, folds_count: int, random_draws: int, seed: int,
+        taxonomy_paths: list[Path] | None = None) -> dict:
     """Mesure complete : structure, plis, baselines, et l'ecart de fuite."""
     items = load_corpus(corpus_path, level)
     support = Counter(item["label"] for item in items)
@@ -377,6 +484,14 @@ def run(corpus_path: Path, level: str, folds_count: int, random_draws: int, seed
         "macro_f1_p97_5": round(quantile(draw_scores, 0.975), 4) if draw_scores else None,
     }
 
+    # La baseline a regles n'apprend rien des items etiquetes : regle deterministe sur le
+    # texte, evaluee sur le corpus entier. Les plis ne la concernent pas.
+    taxonomy_resolved = [Path(p) for p in (taxonomy_paths or TAXONOMY_DEFAULTS)]
+    lexicon, lexicon_report = load_lexicon(taxonomy_resolved, set(support))
+    results["rules_full"] = evaluate_whole(
+        make_rules_predictor(lexicon, idf_over_families(lexicon), sorted(support)), items
+    )
+
     grouped_mean = results["lexical_centroid_grouped"]["macro_f1_mean"]
     naive_mean = results["lexical_centroid_naive"]["macro_f1_mean"]
     return {
@@ -393,6 +508,10 @@ def run(corpus_path: Path, level: str, folds_count: int, random_draws: int, seed
             "floor": MIN_EXAMPLES_PER_LABEL,
         },
         "folds_identical": overlap,
+        "lexicon": {
+            "taxonomies": [str(p).replace("\\", "/") for p in taxonomy_resolved],
+            "families": lexicon_report,
+        },
         "baselines": results,
         "leakage": {
             "grouped_mean": grouped_mean,
@@ -420,16 +539,49 @@ def render_report(report: dict) -> str:
         "random_grouped": "Aleatoire (uniforme sur l'entrainement)",
         "lexical_centroid_grouped": "Lexicale (TF-IDF + centroide)",
         "lexical_centroid_naive": "Lexicale, plis naifs (controle de fuite)",
+        "rules_full": "A regles (dictionnaires de famille ponderes IDF)",
     }
-    order = ["majority_grouped", "random_grouped", "lexical_centroid_grouped", "lexical_centroid_naive"]
+    protocols = {
+        "lexical_centroid_naive": "plis stratifies, sans groupes",
+        "rules_full": "aucun entrainement, corpus entier",
+    }
+    order = ["majority_grouped", "random_grouped", "rules_full",
+             "lexical_centroid_grouped", "lexical_centroid_naive"]
     for key in order:
         block = report["baselines"][key]
-        protocol = "plis groupes par scenario" if "naive" not in key else "plis stratifies, sans groupes"
-        mean = block["macro_f1_mean"]
+        protocol = protocols.get(key, "plis groupes par scenario")
+        mean = block.get("macro_f1_mean", block.get("macro_f1"))
         std = block.get("macro_f1_std")
         if std is None and block.get("macro_f1_p2_5") is not None:
             std = f"IC 95 % [{block['macro_f1_p2_5']} ; {block['macro_f1_p97_5']}]"
+        if std is None and block.get("accuracy") is not None:
+            std = f"exactitude {block['accuracy']}"
         lines.append(f"| {labels[key]} | {protocol} | {mean} | {std if std is not None else '—'} |")
+
+    lexicon = report.get("lexicon", {}).get("families", {})
+    if lexicon:
+        thin = sorted(lexicon, key=lambda f: (lexicon[f]["nodes"], f))[:3]
+        detail = ", ".join(f"{f} ({lexicon[f]['nodes']} nœuds, {lexicon[f]['tokens']} jetons)" for f in thin)
+        lines += [
+            "",
+            f"Dictionnaires de la baseline a regles : {len(lexicon)} familles bâties sur les "
+            f"titres et definitions des deux taxonomies Argumentum, **jamais** sur les champs "
+            f"`example_*` (meme regle d'anti-circularite que les prompts de la tranche A). "
+            f"Les trois plus maigres : {detail}.",
+            "",
+            "**Ce que la baseline a regles a montre, contre l'attente** : le prompt de generation "
+            "portait le titre et la definition du nœud cible, donc un texte repris de sa propre "
+            "definition devait etre compte juste par sa propre famille -- cette reserve annoncait "
+            "un chiffre *optimiste*. Mesure : il est **inferieur a l'aleatoire**, et les "
+            "etiquettes jamais predites sont "
+            f"{report['baselines']['rules_full'].get('labels_never_predicted')}. "
+            "Le canal de l'echo existe, mais il est domine par un autre effet : le dictionnaire "
+            "d'une grande famille (`Influence`, 1816 jetons) couvre plus de texte que celui d'une "
+            "petite (`Justesse lexicale`, 146), donc la regle se replie sur les sept familles de "
+            "sophismes et n'atteint **aucune** famille de vertus. Une baseline a regles construite "
+            "sur ces dictionnaires ne peut pas servir de reference basse utile au gate : elle est "
+            "battue par le tirage uniforme.",
+        ]
     leak = report["leakage"]
     lines += [
         "",
@@ -454,9 +606,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--folds", type=int, default=5)
     parser.add_argument("--random-draws", type=int, default=200)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--taxonomy", action="append", default=None,
+                        help="CSV de taxonomie (defaut : les deux taxonomies Argumentum)")
     args = parser.parse_args(argv)
 
-    report = run(args.corpus, args.level, args.folds, args.random_draws, args.seed)
+    taxonomies = [Path(p) for p in args.taxonomy] if args.taxonomy else None
+    report = run(args.corpus, args.level, args.folds, args.random_draws, args.seed, taxonomies)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     json_path = args.out_dir / f"baselines_{args.level}.json"
     md_path = args.out_dir / f"baselines_{args.level}.md"

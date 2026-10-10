@@ -9,6 +9,7 @@ ignorerait les groupes passerait tous les autres tests et echouerait celui-la.
 
 from __future__ import annotations
 
+import csv
 import json
 import sys
 from collections import Counter
@@ -224,14 +225,95 @@ def test_load_corpus_fail_closed(tmp_path):
     assert "texte vide" in str(excinfo.value)
 
 
+# --- Baseline a regles : dictionnaires de taxonomie ---------------------------------
+
+
+def write_taxonomy(tmp_path: Path, rows: list[dict], name: str = "taxo.csv") -> Path:
+    """Taxonomie synthetique au schema sophismes (colonnes requises par detect_schema)."""
+    path = tmp_path / name
+    fields = ["PK", "Famille", "nom_vulgarisé", "desc_fr", "example_fr"]
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({f: row.get(f, "") for f in fields})
+    return path
+
+
+def test_lit_taxonomie_et_exclut_les_exemples(tmp_path):
+    """Le dictionnaire prend titres et definitions, et **jamais** les champs example_*.
+
+    Le jeton `zorglub` ne vit que dans `example_fr` : s'il apparait dans le
+    dictionnaire, la regle d'anti-circularite de la tranche A est enfreinte.
+    """
+    taxo = write_taxonomy(tmp_path, [
+        {"PK": "1", "Famille": "A", "nom_vulgarisé": "Appel au tiroir",
+         "desc_fr": "Vous inventez un tiroir", "example_fr": "zorglub zorglub"},
+        {"PK": "2", "Famille": "B", "nom_vulgarisé": "Erreur de comptage",
+         "desc_fr": "Vous comptez mal", "example_fr": "zorglub"},
+    ])
+    lexicon, report = bbd.load_lexicon([taxo], {"A", "B"})
+    assert "tiroir" in lexicon["A"] and "comptage" in lexicon["B"] or "comptez" in lexicon["B"]
+    assert "zorglub" not in lexicon["A"] and "zorglub" not in lexicon["B"]
+    assert report["A"]["nodes"] == 1 and report["B"]["nodes"] == 1
+
+
+def test_schema_de_taxonomie_inconnu_refuse(tmp_path):
+    """Un CSV sans les colonnes d'une taxonomie Argumentum est refuse, pas devine."""
+    path = tmp_path / "inconnu.csv"
+    path.write_text("a,b\n1,2\n", encoding="utf-8")
+    with pytest.raises(SystemExit) as excinfo:
+        bbd.load_lexicon([path], {"A"})
+    assert "schema inconnu" in str(excinfo.value)
+
+
+def test_dictionnaire_vide_refuse_en_nommant_la_famille(tmp_path):
+    """Une famille sans aucun jeton de regle est nommee, elle ne passe pas inapercue."""
+    taxo = write_taxonomy(tmp_path, [
+        {"PK": "1", "Famille": "A", "nom_vulgarisé": "Titre A", "desc_fr": "Definition A"},
+    ])
+    with pytest.raises(SystemExit) as excinfo:
+        bbd.load_lexicon([taxo], {"A", "Sans_regle"})
+    assert "Sans_regle" in str(excinfo.value)
+    assert "Dictionnaire vide" in str(excinfo.value)
+
+
+def test_baseline_a_regles_choisit_par_couverture_ponderee(tmp_path):
+    """Le texte partageant le vocabulaire d'une famille est attribue a cette famille."""
+    taxo = write_taxonomy(tmp_path, [
+        {"PK": "1", "Famille": "A", "nom_vulgarisé": "Tiroir", "desc_fr": "Vous inventez un tiroir secret"},
+        {"PK": "2", "Famille": "B", "nom_vulgarisé": "Comptage", "desc_fr": "Vous comptez mal les votes"},
+    ])
+    lexicon, _ = bbd.load_lexicon([taxo], {"A", "B"})
+    predict = bbd.make_rules_predictor(lexicon, bbd.idf_over_families(lexicon), ["A", "B"])
+    assert predict("tu inventez un tiroir secret dans ton raisonnement") == "A"
+    assert predict("tu comptes mal les votes") == "B"
+
+
+def test_baseline_a_regles_sans_entrainement():
+    """Le predicteur de regles ignore l'entrainement : la mesure porte sur le corpus entier."""
+    predict = bbd.make_rules_predictor({"A": {"alpha"}, "B": {"beta"}},
+                                       {"alpha": 1.0, "beta": 1.0}, ["A", "B"])
+    items = [{"text": "alpha alpha", "label": "A", "group": "s"},
+             {"text": "beta", "label": "B", "group": "t"}]
+    result = bbd.evaluate_whole(lambda text: predict(text), items)
+    assert result["macro_f1"] == pytest.approx(1.0)
+    assert result["accuracy"] == pytest.approx(1.0)
+    assert result["n"] == 2
+
+
 def test_bout_en_bout_ecrit_les_deux_rapports(tmp_path):
     """main() produit le JSON et la table markdown, avec l'ecart de fuite calcule."""
     corpus = write_corpus(tmp_path, rows_for({
         "A": [(f"s{i % 2}", f"alpha beta texte {i}") for i in range(8)],
         "B": [(f"t{i % 2}", f"gamma delta texte {i}") for i in range(8)],
     }))
+    taxo = write_taxonomy(tmp_path, [
+        {"PK": "1", "Famille": "A", "nom_vulgarisé": "Alpha", "desc_fr": "alpha beta"},
+        {"PK": "2", "Famille": "B", "nom_vulgarisé": "Gamma", "desc_fr": "gamma delta"},
+    ])
     out_dir = tmp_path / "out"
-    assert bbd.main(["--corpus", str(corpus), "--out-dir", str(out_dir),
+    assert bbd.main(["--corpus", str(corpus), "--out-dir", str(out_dir), "--taxonomy", str(taxo),
                      "--folds", "2", "--random-draws", "5", "--seed", "7"]) == 0
     report = json.loads((out_dir / "baselines_branch.json").read_text(encoding="utf-8"))
     assert report["structure"]["rows"] == 16
@@ -239,9 +321,13 @@ def test_bout_en_bout_ecrit_les_deux_rapports(tmp_path):
     assert report["leakage"]["gap"] is not None
     assert report["baselines"]["majority_grouped"]["macro_f1_mean"] is not None
     assert report["baselines"]["random_grouped"]["draws"] == 5
+    assert report["baselines"]["rules_full"]["accuracy"] == pytest.approx(1.0)
+    assert report["lexicon"]["families"]["A"]["nodes"] == 1
     table = (out_dir / "baselines_branch.md").read_text(encoding="utf-8")
     assert "Ecart de fuite mesure" in table
     assert "non mesurable" in table
+    assert "Ce que la baseline a regles a montre, contre l'attente" in table
+    assert "Dictionnaires de la baseline a regles" in table
 
 
 def test_bout_en_bout_refuse_le_niveau_noeud_sur_corpus_a_un_exemple(tmp_path):

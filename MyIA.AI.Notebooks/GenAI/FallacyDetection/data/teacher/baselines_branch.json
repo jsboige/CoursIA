@@ -24,6 +24,70 @@
     "floor": 2
   },
   "folds_identical": 0,
+  "lexicon": {
+    "taxonomies": [
+      "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv",
+      "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_virtues_taxonomy.csv"
+    ],
+    "families": {
+      "Insuffisance": {
+        "nodes": 174,
+        "tokens": 872
+      },
+      "Influence": {
+        "nodes": 420,
+        "tokens": 1816
+      },
+      "Erreur mathématique": {
+        "nodes": 102,
+        "tokens": 553
+      },
+      "Erreur de raisonnement": {
+        "nodes": 102,
+        "tokens": 520
+      },
+      "Abus de langage": {
+        "nodes": 89,
+        "tokens": 521
+      },
+      "Tricherie": {
+        "nodes": 394,
+        "tokens": 1622
+      },
+      "Obstruction": {
+        "nodes": 126,
+        "tokens": 699
+      },
+      "Argument pertinent": {
+        "nodes": 33,
+        "tokens": 239
+      },
+      "Présentation intègre": {
+        "nodes": 25,
+        "tokens": 225
+      },
+      "Sens quantitatif": {
+        "nodes": 20,
+        "tokens": 185
+      },
+      "Inférence maîtrisée": {
+        "nodes": 55,
+        "tokens": 338
+      },
+      "Justesse lexicale": {
+        "nodes": 18,
+        "tokens": 146
+      },
+      "Honnêteté intellectuelle": {
+        "nodes": 27,
+        "tokens": 240
+      },
+      "Échange enrichissant": {
+        "nodes": 44,
+        "tokens": 370
+      }
+    }
+  },
   "baselines": {
     "majority_grouped": {
       "folds": [
@@ -231,6 +295,26 @@
       "macro_f1_mean": 0.0628,
       "macro_f1_p2_5": 0.0371,
       "macro_f1_p97_5": 0.0919
+    },
+    "rules_full": {
+      "n": 280,
+      "macro_f1": 0.0328,
+      "accuracy": 0.075,
+      "labels_never_predicted": [
+        "Argument pertinent",
+        "Erreur mathématique",
+        "Honnêteté intellectuelle",
+        "Inférence maîtrisée",
+        "Justesse lexicale",
+        "Présentation intègre",
+        "Sens quantitatif",
+        "Échange enrichissant"
+      ],
+      "worst_labels": [
+        "Abus de langage",
+        "Argument pertinent",
+        "Erreur de raisonnement"
+      ]
     }
   },
   "leakage": {
