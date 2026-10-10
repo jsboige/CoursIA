@@ -22,7 +22,52 @@ from check_c2_compliance import (
     EXCLUDE_PEDAGOGICAL,
     check_notebook,
     get_target_notebooks,
+    main,
 )
+
+
+# ---------------------------------------------------------------------------
+# main() --json contract on an empty target list (#20198)
+# ---------------------------------------------------------------------------
+
+class TestJsonContractEmptyTarget:
+    """``--json`` must always emit parseable JSON on stdout.
+
+    The CI job in notebook-validation.yml redirects the scanner's stdout into
+    a file it parses as JSON. Before #20198 an empty target list printed the
+    human sentence ``No notebooks to check.`` and exited 0, which the parser
+    read as non-JSON and reported as a broken notebook. The contract asserted
+    here is the one the job depends on: valid JSON, and the human message kept
+    on the non-JSON path.
+    """
+
+    def _run(self, capsys, argv):
+        with patch.object(sys, "argv", ["check_c2_compliance.py", *argv]):
+            rc = main()
+        return rc, capsys.readouterr().out
+
+    def test_json_empty_target_emits_empty_array(self, tmp_path, capsys):
+        """Empty target + --json -> stdout parses as [], rc 0 (no violations)."""
+        missing = tmp_path / "missing.ipynb"
+        rc, out = self._run(capsys, ["--json", "--path", str(missing)])
+        assert json.loads(out) == []
+        assert rc == 0
+
+    def test_human_empty_target_keeps_message(self, tmp_path, capsys):
+        """Empty target without --json keeps the human sentence (unchanged)."""
+        missing = tmp_path / "missing.ipynb"
+        rc, out = self._run(capsys, ["--path", str(missing)])
+        assert out.strip() == "No notebooks to check."
+        assert rc == 0
+
+    def test_json_non_empty_unchanged(self, tmp_path, capsys):
+        """Non-regression: a real notebook still yields a JSON array of results."""
+        nb = _write_nb(tmp_path / "nb.ipynb", [_code("x = 1", exec_count=1)])
+        rc, out = self._run(capsys, ["--json", "--path", str(nb)])
+        data = json.loads(out)
+        assert isinstance(data, list) and len(data) == 1
+        assert data[0]["path"].endswith("nb.ipynb")
+        assert rc == 0
 
 
 # ---------------------------------------------------------------------------

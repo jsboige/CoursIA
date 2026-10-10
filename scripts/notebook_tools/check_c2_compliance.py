@@ -312,7 +312,17 @@ def main():
 
     targets = get_target_notebooks(args)
     if not targets:
-        print("No notebooks to check.")
+        # --json promises a JSON stream on stdout: an empty target list must
+        # still emit parseable JSON ([]), never a human sentence. The CI job in
+        # notebook-validation.yml redirects this stream into a file it parses;
+        # a human string there turns a scanner success into a job failure with
+        # a message that names a notebook and a results file, never the cause
+        # (#20198). The empty/healthy distinction is NOT dropped here: an empty
+        # list is emitted as [], and the caller decides what it means.
+        if args.json:
+            print("[]")
+        else:
+            print("No notebooks to check.")
         return 0
 
     results = [check_notebook(p) for p in targets]
