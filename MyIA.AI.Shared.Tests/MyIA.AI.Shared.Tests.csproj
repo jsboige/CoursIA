@@ -23,6 +23,10 @@
          verdicts figes de pyspiel (OpenSpiel) et gnugo 3.8, regenerables par
          Search/Go/oracles/generate_go_oracle_fixture.py -->
     <None Include="Search/Go/oracles/go_oracle_fixture.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Modele d'evaluation apprise + temoins (EPIC #7265, tranche 8) :
+         regenerables par Search/Go/oracles/train_go_eval_onnx.py -->
+    <None Include="Search/Go/oracles/go_eval_9x9_v1.onnx" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Search/Go/oracles/go_eval_onnx_expected.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
