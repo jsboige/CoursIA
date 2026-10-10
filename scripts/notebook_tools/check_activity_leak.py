@@ -79,7 +79,9 @@ from pathlib import Path
 # une regex seule ne peut pas exprimer « pas a cote de Diebold-Mariano ».
 
 _CORRIGENDUM_RE = re.compile(r"corrigendum", re.IGNORECASE)
-_CYCLE_RE = re.compile(r"\bc\.\d{2,5}(?:[-\u2013]N\d+)?\b")
+# \d{2,10} couvre les ids de commentaire longs (c.6099536615, format GitHub
+# courant) en plus du stock calibre court (c.1105).
+_CYCLE_RE = re.compile(r"\bc\.\d{2,10}(?:[-\u2013]N\d+)?\b")
 # myia-po-2024, myia-ai-01, po-2025 (nom court de machine, utilise tel quel
 # dans la prose de coordination ; « po-2025 » seul ne peut pas etre un mot).
 _MACHINE_RE = re.compile(r"\bmyia-[a-z0-9]+(?:-[a-z0-9]+)*\b|\bpo-20\d\d\b", re.IGNORECASE)
@@ -632,6 +634,16 @@ def emit_diff(added: list[AddedPassage], files: list[str], strict: bool,
             print(f"    passage : {a.verdict.preview}")
             print(f"    marqueurs : {mk}")
         print()
+    if incidents:
+        # Un REFUS avec des fichiers non mesures doit le DIRE : le verdict
+        # ci-dessus ne couvre que les fichiers lisibles.
+        print(
+            f"\n{len(incidents)} incident(s) de mesure -- le diff n'a PAS pu "
+            f"etre lu integralement : le verdict ci-dessus ne couvre que les "
+            f"fichiers lisibles."
+        )
+        for inc in incidents:
+            print(f"  - {inc}")
     print(
         "Le recit d'activite (corrigenda, cycles, lanes, verdicts) vit dans git"
         "\net les PR, pas dans le carnet servi a l'apprenant (#20250)."

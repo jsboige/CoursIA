@@ -95,6 +95,25 @@ class TestPositiveControls(unittest.TestCase):
         self.assertIn("iso_ts", names)
         self.assertIn("commit_ref", names)
 
+    def test_long_comment_id_counts_as_cycle(self):
+        """Id de commentaire long (c.6099536615) : marqueur cycle reconnu.
+
+        Pre-fix, ``_CYCLE_RE`` plafonnait a 5 chiffres : le format courant
+        des references de coordination (id GitHub 9-10 chiffres) perdait ses
+        2 points de score (reserve NanoClaw 2026-10-10 17:18Z, point 1).
+        """
+        para = (
+            "Le dossier rendu en c.6099536615 confirme la levee de la reserve ; "
+            "la lane reprend la file au cycle suivant."
+        )
+        v = judge_passage(0, para)
+        names = {n for n, _, _ in v.markers}
+        self.assertIn("cycle", names,
+                      "un id long est le format courant, pas une exception")
+        # le stock court calibre reste couvert
+        v_short = judge_passage(0, "Corrigendum c.1105 deja cite au titre.")
+        self.assertIn("cycle", {n for n, _, _ in v_short.markers})
+
     def test_section_inheritance_under_cycle_heading(self):
         cell = (
             "## Corrigendum c.1209 (depouillement STV)\n\n"
@@ -271,6 +290,29 @@ class TestDiffParity(unittest.TestCase):
         self.assertTrue(incidents, "une base illisible doit etre un incident")
         rc = emit_diff(added, [], True, incidents)
         self.assertEqual(rc, 2, "un incident sort en INCONNU, pas en OK ni en REFUS")
+
+    def test_incidents_printed_even_with_added(self):
+        """Refus ET fichiers non mesures : les incidents s'impriment aussi.
+
+        Pre-fix, ``emit_diff`` n'imprimait la liste ``incidents`` que dans la
+        branche « aucun passage dense » : un REFUS portant des fichiers non
+        lus ne disait pas que la mesure etait incomplete (reserve NanoClaw
+        2026-10-10 17:18Z, point 2).
+        """
+        import contextlib
+        import io as _io
+
+        v = judge_passage(0, "## Corrigendum c.6099536615\n\nreprise du calcul")
+        added = [_mod.AddedPassage("carnet.ipynb", v)]
+        buf = _io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = emit_diff(added, ["carnet.ipynb"], True, ["base illisible : x"])
+        self.assertEqual(rc, 1, "un REFUS strict garde son code de sortie")
+        out = buf.getvalue()
+        self.assertIn("incident(s) de mesure", out,
+                      "le REFUS doit signaler la mesure incomplete")
+        self.assertIn("base illisible : x", out,
+                      "chaque incident s'imprime dans la branche REFUS aussi")
 
     def test_rename_with_modification_is_scanned(self):
         """R099 reel (ad0142cbb, zero-pad Infer) : le renomme+enrichi est ANALYSE.
