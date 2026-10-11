@@ -18,7 +18,8 @@ from game_theory_utils import (
     find_pure_nash, find_mixed_nash_2x2,
     solve_minimax_lp, maximin_pure, minimax_pure,
     create_classic_games,
-    TitForTat, RandomStrategy, compute_payoff_matrix
+    TitForTat, RandomStrategy, AlwaysCooperate,
+    compute_payoff_matrix, play_match, run_tournament
 )
 
 
@@ -300,6 +301,21 @@ class TestRandomFamilyProperties:
                 assert B[i, j] >= B[i, :].max(), (seed, i, j)
 
     @pytest.mark.parametrize("seed", [0, 1, 7, 42, 99])
+    def test_no_profitable_deviation_on_random_2x2_family(self, seed):
+        """#20306 acceptance names the 2x2 form (>=50 generated games,
+        fixed seed): same definition check as the 3x3 family above, on
+        generated 2x2 games -- including the tie-heavy low-entropy
+        draws the integer sampler produces."""
+        rng = np.random.default_rng(seed)
+        for _ in range(50):
+            A = rng.integers(-5, 10, size=(2, 2)).astype(float)
+            B = rng.integers(-5, 10, size=(2, 2)).astype(float)
+            game = NormalFormGame(A=A, B=B)
+            for (i, j) in find_pure_nash(game):
+                assert A[i, j] >= A[:, j].max(), (seed, i, j)
+                assert B[i, j] >= B[i, :].max(), (seed, i, j)
+
+    @pytest.mark.parametrize("seed", [0, 1, 7, 42, 99])
     def test_zero_sum_lp_value_within_pure_bounds(self, seed):
         """For 50 random zero-sum games per seed, the LP value is
         sandwiched between the pure maximin (lower bound) and pure
@@ -334,6 +350,33 @@ class TestMultiSeedStochasticSimulations:
             [TitForTat(), RandomStrategy()], rounds=400
         )
         assert M[0, 1] == pytest.approx(2.25, abs=0.2)
+
+    @pytest.mark.parametrize("seed", [0, 1, 7, 42, 99])
+    def test_noise_channel_flips_actions_per_seed(self, seed):
+        """noise>0 witness on the play_match/run_tournament noise
+        channel (#20306 acceptance; compute_payoff_matrix has no noise
+        parameter, so the test above cannot exercise it). AllCooperate
+        vs AllCooperate is stateless, so every round is an iid pair of
+        flips of (C,C) at eps=0.1:
+        E[per-round payoff] = (1-e)^2*R + e(1-e)*T + e(1-e)*S + e^2*P
+                            = 3 - e - e^2 = 2.89,
+        per-round sd ~1.095, so the 2500-round average has sd ~0.022
+        and +-0.08 is ~3.7 sigma. The bound also DISCRIMINATES: with
+        noise silently ignored the payoff is exactly 3.0, which sits
+        0.11 away -- outside the bound."""
+        random.seed(seed)
+        s1, s2 = play_match(AlwaysCooperate(), AlwaysCooperate(),
+                            rounds=2500, noise=0.1)
+        assert s1 / 2500 == pytest.approx(2.89, abs=0.08)
+        assert s2 / 2500 == pytest.approx(2.89, abs=0.08)
+
+        # run_tournament threads the same noise channel: the single
+        # self-play match averages both players' per-round payoffs.
+        random.seed(seed)
+        tournament = run_tournament([AlwaysCooperate()],
+                                    rounds=2500, noise=0.1)
+        (value,) = tournament.values()
+        assert value / 2500 == pytest.approx(2.89, abs=0.08)
 
 
 if __name__ == "__main__":
