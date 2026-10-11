@@ -135,7 +135,7 @@ La campagne oppose la bibliothèque à **mealpy 3.0.2** (Python/NumPy) sur un pr
 
 | # | Notebook | Concept clé | Primitives introduites | Durée |
 |---|----------|-------------|------------------------|-------|
-| 22 → 31 | [Campagne **MGS vs mealpy**](MGS-vs-mealpy/README.md) — **10 notebooks** (PSO, DE, SA, WOA, EO, FBI, BBPSO, GA, Scatter Search, synthèse) | **Confrontation externe systématique** — la même expérience (protocole apparié Sudoku-Easy[0], budget ~8 000 évals, graines {0,1,7,42}, déterminisme 8/8 ou 12/12), deux bibliothèques (MGS C# .NET 9 vs mealpy 3.0.2 Python/NumPy via PythonNet dans le kernel .NET), un verdict quantitatif. Chaque paire isole un mécanisme (sélection greedy vs réinsertion de population, bruit A1 N(0,1) vs uniforme, écart d'ancrage, ablation de couche mémétique) et tranche sur la question « le moteur ou la stratégie ? » | voir [table des paires](MGS-vs-mealpy/README.md#table-des-paires) |  |
+| 22 → 31 | [Campagne **MGS vs mealpy**](MGS-vs-mealpy/README.md) — les optimiseurs comparés — PSO, DE, SA, WOA, EO, FBI, BBPSO, GA, Scatter Search, synthèse | **Confrontation externe systématique** — la même expérience (protocole apparié Sudoku-Easy[0], budget ~8 000 évals, graines {0,1,7,42}, déterminisme 8/8 ou 12/12), deux bibliothèques (MGS C# .NET 9 vs mealpy 3.0.2 Python/NumPy via PythonNet dans le kernel .NET), un verdict quantitatif. Chaque paire isole un mécanisme (sélection greedy vs réinsertion de population, bruit A1 N(0,1) vs uniforme, écart d'ancrage, ablation de couche mémétique) et tranche sur la question « le moteur ou la stratégie ? » | voir [table des paires](MGS-vs-mealpy/README.md#table-des-paires) |  |
 
 ## Configuration requise
 
