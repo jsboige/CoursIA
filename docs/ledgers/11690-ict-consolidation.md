@@ -38,7 +38,7 @@ Séance de relecture tenue avec le mainteneur le 2026-10-11 ; décisions consign
 
 | # | Objet | Décision (séance du 2026-10-11) | Grain qui l'exécute |
 |---|---|---|---|
-| 1 | ICT-15d | Verdict porté par le **cocycle**, plus par la SVD ; la matrice cesse de citer l'artefact périmé (les deux emplacements : rangée l.96 + note case 6 l.399) ; la construction du vrai nerf (H¹) devient une greffe à part, ré-outillée avec les organes canoniques des autres séries | Fille de correction (case 4) pour le correctif court — **à faire avant** la greffe #20298 point 4 |
+| 1 | ICT-15d | Verdict porté par le **cocycle**, plus par la SVD ; la matrice cesse de citer l'artefact périmé (deux endroits, dont la rangée ICT-15d) ; la construction du vrai nerf (H¹) devient une greffe à part, ré-outillée avec les organes canoniques des autres séries | Fille de correction (case 4) pour le correctif court — **à faire avant** la greffe #20298 point 4 |
 | 2 | ICT-11 | Au moins 16 essais par échelle ; intervalles bootstrap sur les corrélations | Fille de correction (case 4) |
 | 3 | Renumérotation | Attend la lecture complète des tranches C, D, E, en une seule passe, dans le cadre de #20298 | Phase 0 de #20298 (lecture C/D/E + inventaire des graines ICT dans les autres séries) ; phase 1 = carte cible soumise au mainteneur ; **aucun renommage avant validation** |
 | 4 | Familles fonctionnelles (Dissociations, Greffes, Annexe) | Noms conservés **à titre transitoire** ; cible (sous-série, ou accrétion du premier numéro qui manipule le concept, avec marchepied) fixée par #20298 | #20298 |
