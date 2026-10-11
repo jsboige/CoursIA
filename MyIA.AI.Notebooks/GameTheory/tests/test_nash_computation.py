@@ -6,6 +6,7 @@ Run with: pytest tests/test_nash_computation.py
 
 import pytest
 import numpy as np
+import random
 import sys
 from pathlib import Path
 
@@ -16,7 +17,8 @@ from game_theory_utils import (
     NormalFormGame, ZeroSumGame,
     find_pure_nash, find_mixed_nash_2x2,
     solve_minimax_lp, maximin_pure, minimax_pure,
-    create_classic_games
+    create_classic_games,
+    TitForTat, RandomStrategy, compute_payoff_matrix
 )
 
 
@@ -234,6 +236,104 @@ class TestNormalFormGameConstruction:
         )
         assert game.m == 2
         assert game.n == 3
+
+
+class TestDegenerateAndTies:
+    """#20306: degenerate inputs and payoff ties get definition-verified
+    behavior, not just the classic happy paths. find_pure_nash uses weak
+    best responses (>=), so ties legitimately multiply equilibria."""
+
+    def test_zero_game_every_profile_is_equilibrium(self):
+        """All-zero payoffs: every cell is a weak best-response pair,
+        so all 4 cells of the 2x2 are pure Nash equilibria."""
+        game = NormalFormGame(A=[[0, 0], [0, 0]], B=[[0, 0], [0, 0]])
+        assert find_pure_nash(game) == [(0, 0), (0, 1), (1, 0), (1, 1)]
+
+    def test_constant_payoffs_indifference_all_cells_nash(self):
+        """Each player has constant payoffs (pure indifference): every
+        cell is an equilibrium."""
+        game = NormalFormGame(A=[[2, 2], [2, 2]], B=[[1, 1], [1, 1]])
+        assert len(find_pure_nash(game)) == 4
+
+    def test_row_tie_doubles_equilibria_in_same_column(self):
+        """A=[[3,0],[3,1]]: Row ties in column 0 (3 == 3). With B
+        strictly preferring column 0, BOTH (0,0) and (1,0) are
+        equilibria -- the tie propagates to two solutions, while the
+        cells in column 1 are not (Row deviates to 3, Col to 5)."""
+        game = NormalFormGame(A=[[3, 0], [3, 1]], B=[[5, 0], [5, 0]])
+        assert find_pure_nash(game) == [(0, 0), (1, 0)]
+
+    def test_mixed_nash_none_when_row_indifferent_everywhere(self):
+        """denom_q == 0 (Row's payoff difference is constant across
+        columns): the indifference formula has no interior crossing;
+        the solver must return None, not crash or fabricate."""
+        # A[0,0]-A[0,1]-A[1,0]+A[1,1] = 1-2-3+4 = 0
+        game = NormalFormGame(A=[[1, 2], [3, 4]], B=[[0, 1], [1, 0]])
+        assert find_mixed_nash_2x2(game) is None
+
+    def test_mixed_nash_none_when_dominated_strategy(self):
+        """Prisoner's Dilemma: the indifference crossing lies outside
+        [0,1] (Defect dominates), so there is no interior mixed
+        equilibrium -- None is the correct answer."""
+        game = NormalFormGame(A=[[3, 0], [5, 1]], B=[[3, 5], [0, 1]])
+        assert find_mixed_nash_2x2(game) is None
+
+
+class TestRandomFamilyProperties:
+    """#20306: properties verified against the DEFINITION on sampled
+    games (multi-seed), not against memorized answers."""
+
+    @pytest.mark.parametrize("seed", [0, 1, 7, 42, 99])
+    def test_every_returned_pure_nash_has_no_profitable_deviation(self, seed):
+        """For 50 random 3x3 games per seed, every equilibrium returned
+        by find_pure_nash satisfies the definition directly: the row
+        payoff is the column max and the column payoff is the row max."""
+        rng = np.random.default_rng(seed)
+        for _ in range(50):
+            A = rng.integers(-5, 10, size=(3, 3)).astype(float)
+            B = rng.integers(-5, 10, size=(3, 3)).astype(float)
+            game = NormalFormGame(A=A, B=B)
+            equilibria = find_pure_nash(game)
+            assert isinstance(equilibria, list)
+            for (i, j) in equilibria:
+                assert A[i, j] >= A[:, j].max(), (seed, i, j)
+                assert B[i, j] >= B[i, :].max(), (seed, i, j)
+
+    @pytest.mark.parametrize("seed", [0, 1, 7, 42, 99])
+    def test_zero_sum_lp_value_within_pure_bounds(self, seed):
+        """For 50 random zero-sum games per seed, the LP value is
+        sandwiched between the pure maximin (lower bound) and pure
+        minimax (upper bound): mixing can only help the maximizer and
+        hurt the minimizer. Both helpers return (action, value) --
+        the bounds are the VALUES."""
+        rng = np.random.default_rng(seed)
+        for _ in range(50):
+            A = rng.integers(-9, 9, size=(3, 4)).astype(float)
+            game = ZeroSumGame(A=A)
+            _, value = solve_minimax_lp(game)
+            _, lower = maximin_pure(game)
+            _, upper = minimax_pure(game)
+            assert lower - 1e-9 <= value <= upper + 1e-9, seed
+
+
+class TestMultiSeedStochasticSimulations:
+    """#20306: stochastic simulations (noisy tournaments) validated
+    across seeds, not on one lucky draw."""
+
+    @pytest.mark.parametrize("seed", [0, 1, 7, 42, 99])
+    def test_noisy_match_payoff_concentrates_per_seed(self, seed):
+        """TitForTat vs Random(p=0.5) over 400 rounds: the stationary
+        per-round payoff of TFT = E{T,R,P,S}/4 = 9/4 = 2.25 (TFT echoes
+        the opponent's previous iid move, so its own actions are iid
+        too). Every seed lands within +-0.2 (empirical spread across
+        the five seeds ~ +-0.06). Unparameterized strategies on
+        purpose: the parameter-preservation angle is #20304/#20328,
+        not #20306."""
+        random.seed(seed)
+        M = compute_payoff_matrix(
+            [TitForTat(), RandomStrategy()], rounds=400
+        )
+        assert M[0, 1] == pytest.approx(2.25, abs=0.2)
 
 
 if __name__ == "__main__":
