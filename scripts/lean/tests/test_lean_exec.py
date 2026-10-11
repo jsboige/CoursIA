@@ -44,6 +44,7 @@ Ou via pytest :
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -1702,6 +1703,346 @@ def test_doctor_does_not_sweep_where_status_does():
         assert not (runs / "stale.json").exists(), (
             "status n'a pas balaye le run perime : le differentiel ne "
             "discrimine plus rien, le controle est vacant")
+
+
+# ---------------------------------------------------------------------------
+# stop — arret d'urgence des runs possedes (case 8 volet 2a)
+# ---------------------------------------------------------------------------
+
+def _stop_records(runs: Path) -> None:
+    """Quatre records types : vivant (notre host), mort (notre host),
+    etranger (autre namespace de pids), illisible."""
+    runs.mkdir(parents=True, exist_ok=True)
+    (runs / "live.json").write_text(json.dumps({
+        "pid": 111, "host": le.host_id(), "cmd": ["lake", "build"],
+        "caller": "probe-stop", "started_utc": "2026-10-09T00:00:00Z",
+    }), encoding="utf-8")
+    (runs / "dead.json").write_text(json.dumps(
+        {"pid": DEAD_PID, "host": le.host_id()}), encoding="utf-8")
+    (runs / "foreign.json").write_text(json.dumps(
+        {"pid": 1, "host": "autre-machine/nt"}), encoding="utf-8")
+    (runs / "corrupt.json").write_text("{illisible", encoding="utf-8")
+
+
+def test_stop_inspect_classifies_and_touches_nothing(capsys):
+    """Sans --yes, stop est un diagnostic : il classe (vivant / mort /
+    etranger / illisible) et ne retire AUCUN record — sinon l'operateur
+    n'inspecte pas, il arrete deja."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        runs = state / "runs"
+        _stop_records(runs)
+        saved_env = os.environ.get("LEAN_EXEC_STATE_DIR")
+        saved_alive = le.pid_alive
+        le.pid_alive = lambda pid: pid == 111
+        os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+        try:
+            rc = le.emergency_stop(run_ids=[], confirm=False, as_json=True)
+        finally:
+            le.pid_alive = saved_alive
+            if saved_env is None:
+                os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+            else:
+                os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+        assert rc == le.EXIT_OK
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["mode"] == "inspect"
+        assert payload["would_stop"] == ["live"], payload
+        assert payload["stopped"] == []
+        assert {e["run"] for e in payload["already_dead"]} == {
+            "dead", "corrupt"}, payload["already_dead"]
+        assert any("illisible" in e.get("note", "")
+                   for e in payload["already_dead"])
+        assert [e["run"] for e in payload["skipped_foreign_host"]] == [
+            "foreign"], payload["skipped_foreign_host"]
+        for name in ("live", "dead", "foreign", "corrupt"):
+            assert (runs / f"{name}.json").exists(), (
+                f"inspect a retire {name}.json — il ne doit rien toucher")
+
+
+def test_stop_yes_kills_only_our_live_runs():
+    """Avec --yes : seuls les runs vivants de NOTRE host sont tues, les
+    records morts suivent, l'etranger et l'illisible survivent (pids non
+    comparables / rien d'attribuable)."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        runs = state / "runs"
+        _stop_records(runs)
+        killed = []
+        saved_env = os.environ.get("LEAN_EXEC_STATE_DIR")
+        saved_alive, saved_kill = le.pid_alive, le._kill_run_tree
+        le.pid_alive = lambda pid: pid == 111
+        le._kill_run_tree = lambda pid: (killed.append(pid), "killed")[1]
+        os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+        try:
+            rc = le.emergency_stop(run_ids=[], confirm=True, as_json=False)
+        finally:
+            le.pid_alive = saved_alive
+            le._kill_run_tree = saved_kill
+            if saved_env is None:
+                os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+            else:
+                os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+        assert rc == le.EXIT_OK
+        assert killed == [111], killed
+        assert not (runs / "live.json").exists()
+        assert not (runs / "dead.json").exists()
+        assert (runs / "foreign.json").exists(), (
+            "un run d'un autre namespace de pids ne doit jamais etre retire "
+            "par stop (meme regle que sweep_stale_runs, tree_lock.py:138)")
+        assert (runs / "corrupt.json").exists(), (
+            "un record illisible ne peut etre attribue a aucun host : le "
+            "retirer a l'aveugle est exactement le geste interdit")
+
+
+def test_stop_yes_reports_failures_and_unknown_runs():
+    """Un kill qui echoue laisse le record en place et rend 1 (echec d'arret,
+    distinct du code enfant) ; un run record inconnu rend 125 (demande
+    refusee). Un pid mort entre la classification et le kill (already_dead)
+    fait retirer son record sans compter comme echec."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        runs = state / "runs"
+        runs.mkdir(parents=True)
+        (runs / "revive.json").write_text(json.dumps(
+            {"pid": 222, "host": le.host_id()}), encoding="utf-8")
+        (runs / "vanish.json").write_text(json.dumps(
+            {"pid": 333, "host": le.host_id()}), encoding="utf-8")
+
+        def fake_kill(pid: int) -> str:
+            return "failed: taskkill rc=1" if pid == 222 else "already_dead"
+
+        saved_env = os.environ.get("LEAN_EXEC_STATE_DIR")
+        saved_alive, saved_kill = le.pid_alive, le._kill_run_tree
+        le.pid_alive = lambda pid: pid in (222, 333)
+        le._kill_run_tree = fake_kill
+        os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+        try:
+            rc = le.emergency_stop(run_ids=[], confirm=True, as_json=False)
+        finally:
+            le.pid_alive = saved_alive
+            le._kill_run_tree = saved_kill
+            if saved_env is None:
+                os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+            else:
+                os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+        assert rc == le.EXIT_CHILD, "un kill echoue doit rendre 1"
+        assert (runs / "revive.json").exists(), (
+            "le record d'un run qu'on n'a pas PU tuer doit rester : "
+            "l'operateur doit pouvoir reessayer")
+        assert not (runs / "vanish.json").exists(), (
+            "un pid mort entre classification et kill est un nettoyage, "
+            "pas un echec")
+
+        os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+        try:
+            rc_unknown = le.main(["stop", "--run", "ghost", "--json"])
+        finally:
+            if saved_env is None:
+                os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+            else:
+                os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+        assert rc_unknown == le.EXIT_REFUSED, (
+            "un run record inconnu est une demande refusee (125), pas un "
+            "echec d'arret (1)")
+
+
+@pytest.mark.skipif(
+    os.name != "posix", reason="le zombie est une notion POSIX")
+def test_pid_alive_rejects_reaped_pending_zombie():
+    """Controle par faux POSITIF de ``pid_alive`` : un enfant tue mais PAS
+    encore reap par son parent est un zombie — il n'execute plus rien, ne
+    tient ni budget ni lease. L'ancien instrument (``os.kill(pid, 0)`` seul)
+    le declarait vivant pendant tout le poll de ``stop``, qui rendait alors
+    ``failed: pid survit au kill`` sur un kill REUSSI (#20016, state=Z
+    mesure sur toute la fenetre). Le parent ne reap pas ici, exactement
+    comme ``stop``, qui n'est jamais le parent du run arrete."""
+    proc = subprocess.Popen(
+        [PY, "-c", "import time; time.sleep(120)"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        start_new_session=True)
+    try:
+        assert le.pid_alive(proc.pid), "le sleeper doit vivre au depart"
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        for _ in range(30):  # <=3 s
+            if not le.pid_alive(proc.pid):
+                break
+            time.sleep(0.1)
+        assert not le.pid_alive(proc.pid), (
+            "un zombie (tue, non reap) n'est pas un processus vivant : "
+            "sinon stop --yes rend un echec sur un kill reussi")
+    finally:
+        proc.wait(timeout=10)
+
+
+def test_stop_cli_inspect_then_yes_kills_real_process():
+    """Controle positif de bout en bout : un VRAI processus vivant, un run
+    record honnete pointant dessus, inspect qui ne touche rien, --yes qui
+    tue reellement et retire le record. Le kill n'est pas simule : c'est
+    taskkill (Windows) / killpg (POSIX) qui travaille."""
+    proc = subprocess.Popen(
+        [PY, "-c", "import time; time.sleep(120)"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        # #20016/Hermes : sans session propre, le sleeper herite du pgid de
+        # pytest et le killpg de `stop --yes` tue la session de test
+        # elle-meme sous POSIX (reproduit : SIGKILL -9, deux fois). Miroir
+        # de la production, qui spawne toujours en session propre.
+        # Le parent ne reap pas de la duree du test (comme `stop`, qui n'est
+        # pas le parent) : ce controle exerce donc AUSSI la branche zombie de
+        # `pid_alive` — c'est ce qui rendait la jambe POSIX rouge.
+        start_new_session=True)
+    if os.name == "posix":
+        # Precondition du controle positif : si ceci tombe, le test
+        # redevient suicidaire sous POSIX (le killpg emporte pytest).
+        assert os.getpgid(proc.pid) != os.getpgid(0), (
+            "le sleeper doit vivre dans sa propre session, sinon le killpg "
+            "de stop --yes tue pytest (#20016)")
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            state = Path(td) / "state"
+            runs = state / "runs"
+            runs.mkdir(parents=True)
+            (runs / "reel.json").write_text(json.dumps({
+                "pid": proc.pid, "host": le.host_id(),
+                "cmd": [PY, "-c", "import time; time.sleep(120)"],
+                "caller": "probe-stop-reel",
+            }), encoding="utf-8")
+
+            rc = _run(state, ["stop", "--json"], timeout=90)
+            assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
+            payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+            assert payload["mode"] == "inspect"
+            assert payload["would_stop"] == ["reel"], payload
+            assert (runs / "reel.json").exists(), (
+                "l'inspection CLI n'a pas le droit de retirer le record")
+
+            act = _run(state, ["stop", "--yes", "--json"], timeout=90)
+            assert act.returncode == 0, (act.returncode, act.stdout,
+                                         act.stderr)
+            payload2 = json.loads(act.stdout[act.stdout.index("{"):])
+            assert payload2["stopped"] == ["reel"], payload2
+            assert not (runs / "reel.json").exists()
+            for _ in range(30):  # <=3 s : le kill /F est immediate
+                if proc.poll() is not None:
+                    break
+                time.sleep(0.1)
+            assert proc.poll() is not None, (
+                "le processus reel doit etre mort apres stop --yes")
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+
+
+# ---------------------------------------------------------------------------
+# recover — recuperation apres crash (case 8 volet 2b)
+# ---------------------------------------------------------------------------
+
+def _recover_state(state: Path) -> None:
+    """Etat residuel post-crash sur les TROIS familles : pour chacune, un
+    item mort de notre host (recuperable), un vivant (travail actif), un
+    etranger (jamais touche), un illisible (conserve)."""
+    for name, directory in (("runs", state / "runs"),
+                            ("trees", state / "trees"),
+                            ("queue", state / "queue")):
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / f"{name}-dead.json").write_text(json.dumps(
+            {"pid": DEAD_PID, "host": le.host_id()}), encoding="utf-8")
+        (directory / f"{name}-live.json").write_text(json.dumps(
+            {"pid": 111, "host": le.host_id()}), encoding="utf-8")
+        (directory / f"{name}-foreign.json").write_text(json.dumps(
+            {"pid": 1, "host": "autre-machine/nt"}), encoding="utf-8")
+        (directory / f"{name}-corrupt.json").write_text("{illisible",
+                                                        encoding="utf-8")
+
+
+def _with_recover_env(state: Path, fn):
+    saved_env = os.environ.get("LEAN_EXEC_STATE_DIR")
+    saved_alive = le.pid_alive
+    le.pid_alive = lambda pid: pid == 111
+    os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+    try:
+        return fn()
+    finally:
+        le.pid_alive = saved_alive
+        if saved_env is None:
+            os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+        else:
+            os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+
+
+def test_recover_inspect_reports_without_sweeping(capsys):
+    """Sans --yes, recover est un diagnostic de l'etat residuel : les
+    trois familles sont partitionnees (mort/vivant/etranger/illisible) et
+    AUCUN fichier ne bouge."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        _recover_state(state)
+        rc = _with_recover_env(
+            state, lambda: le.recover(confirm=False, as_json=True))
+        assert rc == le.EXIT_OK
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["mode"] == "inspect"
+        for fam in ("runs", "tree_leases", "queue"):
+            stale = payload["stale"][fam]
+            assert len(stale) == 1 and "dead" in stale[0], (fam, stale)
+            assert len(payload["live"][fam]) == 1, fam
+            assert len(payload["skipped_foreign_host"][fam]) == 1, fam
+            assert len(payload["unreadable"][fam]) == 1, fam
+        for name in ("runs", "trees", "queue"):
+            directory = state / name
+            assert len(list(directory.glob("*.json"))) == 4, (
+                f"inspect a vide {directory}")
+
+
+def test_recover_yes_sweeps_all_three_families():
+    """Avec --yes : les items morts de notre host partent dans les TROIS
+    familles ; vivants, etrangers et illisibles survivent partout."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        _recover_state(state)
+
+        def act():
+            return le.recover(confirm=True, as_json=False)
+
+        rc = _with_recover_env(state, act)
+        assert rc == le.EXIT_OK
+        for name in ("runs", "trees", "queue"):
+            directory = state / name
+            remaining = {p.stem for p in directory.glob("*.json")}
+            assert remaining == {
+                f"{name}-live", f"{name}-foreign",
+                f"{name}-corrupt"}, (name, remaining)
+
+
+def test_recover_cli_inspect_then_yes():
+    """Controle CLI : inspect rend 0 sans rien toucher, --yes balaye et
+    rend 0. Le rc ne porte pas le verdict (meme contrat que doctor)."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        _recover_state(state)
+        rc = _run(state, ["recover", "--json"], timeout=90)
+        assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
+        payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert payload["mode"] == "inspect"
+        # Vue du sous-processus : les DEUX pids de notre host (dead + live
+        # fictif) sont morts -> 2 stale par famille, 1 etranger, 1 illisible.
+        assert all(len(v) == 2 for v in payload["stale"].values()), payload
+
+        # Les pids fictifs ne sont pas vivants pour le sous-processus CLI
+        # (pas de monkeypatch la) : -dead ET -live sont balayes, mais le
+        # balayage ne touche QUE notre host — les etrangers survivent.
+        act = _run(state, ["recover", "--yes", "--json"], timeout=90)
+        assert act.returncode == 0, (act.returncode, act.stdout, act.stderr)
+        payload2 = json.loads(act.stdout[act.stdout.index("{"):])
+        assert payload2["mode"] == "act"
+        for fam in ("runs", "tree_leases", "queue"):
+            assert len(payload2["swept"][fam]) == 2, (fam, payload2["swept"])
+            assert len(payload2["skipped_foreign_host"][fam]) == 1, fam
+        for name in ("runs", "trees", "queue"):
+            directory = state / name
+            remaining = {p.stem for p in directory.glob("*.json")}
+            assert remaining == {
+                f"{name}-foreign", f"{name}-corrupt"}, (name, remaining)
 
 
 if __name__ == "__main__":

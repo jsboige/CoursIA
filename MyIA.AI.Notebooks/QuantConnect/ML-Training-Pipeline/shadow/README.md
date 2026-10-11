@@ -30,6 +30,7 @@ Limite : seul le code est gelé. L'environnement Python (versions de numpy, pand
 | `registry.json` | les candidates gelées (créé par le premier `freeze`) |
 | `passes.csv` | une ligne par candidate et par passage, en ajout seul |
 | `qc_example/main.py` | candidate QC d'exemple, qui montre le contrat d'une candidate QuantConnect (pas une candidate à suivre) |
+| `league_members.json` | séries de la matrice de corrélation de la ligue (#19821, brique 4) : une variante mesurée par stratégie, avec son issue et sa PR de mesure |
 
 Les séries journalières complètes ne vont pas dans le dépôt : `--series-dir` les écrit dans un dossier externe, dont le chemin se cite dans la PR du passage.
 
@@ -138,6 +139,16 @@ Fonctionnement de `inverse_vol` :
 - les séances rejouées vont de D inclus à la date du passage exclue : la séance du jour peut être encore ouverte quand le passage tourne ;
 - fenêtre de volatilité, plafond par ligne, bande et frais sont ceux de #19072 ;
 - les cours (Yahoo, ajustés des dividendes) sont téléchargés à chaque passage dans un dossier temporaire.
+
+## Corrélation hebdomadaire de la ligue
+
+`scripts/league_correlation.py` corrèle les courbes de capital déjà mesurées sur QC Cloud, lues dans les traces (`chart.json`, graphique `shadow`), sans relancer de backtest. Chaque série devient une suite de rendements hebdomadaires arrêtés au vendredi, pour que les séries crypto, qui ont des points le week-end, se comparent aux séries actions. Chaque paire reçoit une corrélation de Pearson sur ses semaines communes et un intervalle par bootstrap circulaire par blocs apparié. Le protocole est écrit dans #20083.
+
+```bash
+python scripts/league_correlation.py --traces-root <dossier des traces> --against spy --json matrice.json
+```
+
+`--against` rapporte chaque série à un membre et la place par rapport au seuil de 0,7 de la règle d'entrée du panier, sans décider de l'entrée. La colonne « Investies » donne la part de semaines où la stratégie n'était pas en liquide : une corrélation proche de zéro se lit sur ces seules semaines.
 
 ## Cadence
 
