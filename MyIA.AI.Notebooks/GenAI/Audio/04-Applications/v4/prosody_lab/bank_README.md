@@ -23,7 +23,7 @@ Chaque campagne de mesure TTS (`bakeoff_small/measure_*.py`, `bakeoff_large/banc
 | `motor` | string | Identifiant normalisé (ex. `qwen3_tts_1_7b_customvoice`). |
 | `motor_size_b` | number | Taille en milliards de paramètres. |
 | `motor_license` | string SPDX | Licence (Apache-2.0, MIT, Research-Only, etc.). |
-| `extract` | enum A-E | Identifiant du passage de référence (A=erreur narratif, B=dramatique, C-E=à venir). |
+| `extract` | enum A-E | Identifiant du passage de référence (A=narration courte, B=dialogue court, C=narration longue — cf. `bank_schema_v1.json` et `bakeoff_small/bench_extracts/extract_{A,B}_*.txt` ; D-E=à venir). |
 | `extract_text_sha256_prefix` | hex 16 | Verrou anti-réécriture silencieuse du texte. |
 | `seed` | int | Graine de sampling (le schéma exige un entier ; défaut 42 à l'ingestion). |
 | `wer` | float | Word Error Rate mesuré (0.0 = parfait). |
