@@ -71,6 +71,18 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    `nand_and`, `nand_or`, `nand_implies`, `nand_iff`), puis
    `equivStruct_bool8_nand8` (le témoin est l'identité), et la confirmation par
    l'algorithme de décision lui-même, à qui le témoin n'est **pas** donné.
+6. **Module `MutualGen`** — digestion #16741/arc B (issue #16753, tranche 4) : la
+   **génération mutuelle générale** du §A.2 de l'Annexe A — « two structure
+   definitions are equivalent if they generate each other ». Le terme `TermSig`
+   porte une **signature quelconque** `σ : Fin n → ℕ` (`n` symboles d'arités
+   `σ i` — le tuple d'arité quelconque, multi-générateurs), et le théorème
+   `mutual_gen_iff` établit que deux familles de générateurs qui se définissent
+   l'une l'autre engendrent **exactement les mêmes fonctions**, de toute arité —
+   par double substitution de termes (`translate`), le lemme moteur
+   (`eval_subst`, `eval_translate`) étant l'« easy to see » du papier rendu
+   précis. Témoins au noyau (`decide`) : une fonction d'arité 3 engendrée par le
+   seul NAND binaire, et la signature à deux symboles (¬ unaire, ∧ binaire)
+   engendrant ∨ par De Morgan.
 
 C'est le **premier lake Lean de la série ML** (aucun lake Lean en ML auparavant,
 roadmap #4038 Tier 2). La preuve de Novikoff est **géométrique élémentaire** :
@@ -272,6 +284,23 @@ avec `<formule> = false` pour les deux constantes, l'équivalence (A1)/(A2) éta
 Les lignes R₁/R₂ de `nand8` sont donc `t 0 = <formule>`, et c'est `decide` qui a
 révélé l'erreur avant toute publication.
 
+### Module `MutualGen` (digestion #16741/arc B — Annexe A de R16, tranche 4)
+
+Le critère partiel nommé dans la table `MathUniverse` (la génération par
+composition non réifiée) trouve ici sa moitié générale : `TermSig` donne le
+**tuple d'arité quelconque** et la génération mutuelle son **théorème général** —
+si chaque générateur de `g₁` se définit par un terme sur `g₂` et réciproquement,
+les deux familles engendrent exactement les mêmes fonctions (`mutual_gen_iff`,
+deux directions par `choose`/`translate`, l'identité des fonctions étant
+transportée par `eval_translate`). Le lemme moteur est la compatibilité de
+l'évaluation avec la substitution (`eval_subst`) : remplacer un symbole par sa
+définition dans un terme ne change pas la fonction calculée.
+
+| Fichier | sorry | Contenu |
+|---------|-------|---------|
+| `MutualGen.lean` | 0 | **Termes sur signature quelconque** : `TermSig` (variable \| symbole `i` appliqué à `σ i` sous-termes), `TermSig.eval` / `TermSig.funOf`, `GeneratesSig` (∃ terme définissant `f` — généralisation multi-symboles, arités quelconques, du `Generates` binaire). **Substitution** : `TermSig.subst` + `TermSig.eval_subst` (l'évaluation commute à la substitution, par induction avec `congrArg`/`funext`), `translate` (chaque symbole remplacé par son terme définitionnel) et `eval_translate` (la traduction préserve l'évaluation — l'« easy to see » du §A.2). **Théorème** : `mutual_gen_iff` — génération mutuelle des générateurs ⟺ mêmes fonctions engendrées, toute arité `ν`. **Exemples** (ancre `nand` de `MathUniverse`) : `nand_generates_and2` (`x ∧ y = R(R(x,y), R(x,y))`), `nand_generates_and3` (arité 3 par composition du binaire seul — le tuple d'arité quelconque), `notAnd_generates_or2` (signature à deux symboles ¬ unaire + ∧ binaire via le filtrage structurel `⟨j+1, _⟩`, ∨ par De Morgan) — chacun clos par `decide` (`Pi.instDecidableEqFintype`), le témoin vivant dans la preuve. |
+| `MutualGen_en.lean` | 0 | Sibling anglais (Epic #4980) — code byte-identique, docstrings et commentaires traduits ; seuls divergent les qualifieurs intrinsèques (import `MathUniverse_en`, référence `MathUniverse_en.Examples.nand`). |
+
 ### i18n FR/EN
 
 Chaque module est doublé d'un **sibling anglais** `Foo_en.lean` (namespace
@@ -282,15 +311,16 @@ Chaque module est doublé d'un **sibling anglais** `Foo_en.lean` (namespace
 `MathUniverse` ↔ `MathUniverse_en`, imports
 `_en`-suffixés, **byte-identical hors docstrings/commentaires**) — livré sous
 l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les twins
-`_en` couvrent PacLearning, Perceptron, GradientFlow, `GrokkingLemmas` et
-`MathUniverse` :
+`_en` couvrent PacLearning, Perceptron, GradientFlow, `GrokkingLemmas`,
+`MathUniverse` et `MutualGen` :
 
 `PacLearning_en.lean`, `PacLearning/{Agnostic,BernoulliMGF,Concentration,Data,
 ERM,Hoeffding,MGF,PacFiniteBound,Sample,SampleExpect,UniformConcentration,
 UnionBound}_en.lean`, `Perceptron_en.lean`,
 `Perceptron/{Convergence,Data,Perceptron,Tightness}_en.lean`,
 `GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`,
-`EffectiveTheory/GrokkingLemmas_en.lean`, `MathUniverse_en.lean`.
+`EffectiveTheory/GrokkingLemmas_en.lean`, `MathUniverse_en.lean`,
+`MutualGen_en.lean`.
 
 **Conséquence** : les futurs raffinements doivent conserver la symétrie FR/EN
 (les deux fichiers évoluent ensemble ou pas du tout). La CI `check_i18n_siblings`
@@ -305,6 +335,7 @@ lake build Perceptron    # théorème de Novikoff
 lake build PacLearning   # cadre PAC (modèle + propriétés élémentaires)
 lake build EffectiveTheory # corpus Tegmark : grokking + conservation + R06/R10
 lake build MathUniverse  # Annexe A de R16 : structure finie, Aut(S), equivalence decidable
+lake build MutualGen     # Annexe A de R16 : generation mutuelle generale, arite quelconque
 # Dépend de Mathlib4 — le premier build est lourd, les builds suivants utilisent le cache
 ```
 
@@ -359,6 +390,6 @@ déclaration dans un notebook :
 - **Issue #4293** — renommage `perceptron_lean → learning_theory_lean` + module PacLearning (mutualisation, cf `decision_theory_lean`)
 - **EPIC #13106** — digestion : le module `GradientFlow` en est la tranche « forme formalisation » (grille 10 points dans `GradientFlow.lean`)
 - **Issue #16752 / EPIC #16741** — module `EffectiveTheory` : base `Grokking.lean` (#16794) + module frère `GrokkingLemmas.lean` (recadrage ai-01 2026-09-23 : delta propre du grain R02, arc « ouverte, responsable, prouvable, explicable »)
-- **Issue #16753 / EPIC #16741** — module `MathUniverse` (arc B) : Annexe A de R16 — `FinRelStruct` (signature + relations décidables), `aut` (Aut(S) est un groupe, témoin `aut_bool8_trivial`), `EquivStruct` et son instance `Decidable` (l'algorithme haltant rendu exécutable), exemples §A.2 (C₂, C₃, algèbre de Boole engendrée par NAND seul)
+- **Issue #16753 / EPIC #16741** — module `MathUniverse` (arc B) : Annexe A de R16 — `FinRelStruct` (signature + relations décidables), `aut` (Aut(S) est un groupe, témoin `aut_bool8_trivial`), `EquivStruct` et son instance `Decidable` (l'algorithme haltant rendu exécutable), exemples §A.2 (C₂, C₃, algèbre de Boole engendrée par NAND seul) ; module `MutualGen` (tranche 4) : génération mutuelle générale — `TermSig` sur signature quelconque, `mutual_gen_iff` (se générer l'un l'autre ⟺ mêmes fonctions engendrées), témoins `decide` (arité 3 par NAND seul, De Morgan sur ¬/∧)
 - **`ML/`** — série Machine Learning (ML.NET C#, Data Science with Agents Python)
 - **Epic #2651** — prose pédagogique README
