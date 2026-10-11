@@ -48,26 +48,6 @@ By sub-period (2015-2018, 2019-2022, 2023 → 2026-07), `base` leads both refere
 - The thresholds (VIX 13 and 20, 80th percentile, 3 %, 1.2) and the 2015 window come from the QC library, published after part of the period: there is no out-of-sample period. This bias favoured the candidate, which strengthens the `NO BEATS`.
 - The backtests requested a later end; the compute nodes used hold back the last 90 days and brought the end to 2026-07-08, without error. All versions ran on the same nodes: the comparisons cover the same sessions.
 
-### Reference book: midnight slice (#20264)
-
-Measured on 2026-10-11 on the QC nodes, coded window 2015-01-01 → 2024-12-31, before and after the midnight-slice fix ([#20264](https://github.com/jsboige/CoursIA/issues/20264)). The protocol was pre-registered on the issue before the runs (comment `c.6103552152`); the "before" column is the `main` code at commit `bb89b25ab5`, run as is.
-
-The `spy` and `sixty40` books rebalance on the first daily bar of the month. At daily resolution, Lean delivers a dividend notice alone, in a slice stamped at midnight with no price bar: that slice used up the month's rebalance. The order was then sent at midnight and filled at the same day's open; in the other months, it was sent at the close of the first session and filled at the next open. The fix only uses up the month on a slice carrying a bar of a book security: every month now follows the second calendar. The Framework modes do not go through this test and do not change.
-
-| | `spy` before | `spy` after | `sixty40` before | `sixty40` after |
-|---|---|---|---|---|
-| Orders stamped at midnight, New York time | 2, over 2 months | 0 | 194, over 103 months | 0 |
-| Orders | 2 | 2 | 194 | 201 |
-| Sharpe (QC) | 0.530 | 0.536 | 0.444 | 0.452 |
-| CAGR | 12.91 % | 13.04 % | 8.19 % | 8.28 % |
-| Max drawdown | −33.7 % | −33.7 % | −21.2 % | −21.1 % |
-| Fees, share of starting capital | 0.004 % | 0.004 % | 0.196 % | 0.203 % |
-| Backtest | `5a6e5bf2` | `ce5399f2` | `500f75bd` | `5ddbfe50` |
-
-Here the midnight slice comes mostly from the VIX data, delivered every day at midnight: before the fix, every order of the reference books was sent at midnight, initial purchase included (2015-01-02). A VIX line dated on a US holiday (2024-09-02, Labor Day) even used up September 2024; its two orders filled the next day.
-
-The Sharpe reported by QC moves by at most 0.008, below the 0.05 threshold set in advance: the `spy` and `sixty40` rows of the measurement above, computed with the earlier code, are not restated, and the verdict does not change.
-
 ### Figures prior to #19825
 
 The table below predates the measure; it is kept for the record.

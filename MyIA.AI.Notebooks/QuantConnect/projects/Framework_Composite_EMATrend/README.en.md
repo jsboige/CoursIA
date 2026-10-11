@@ -97,24 +97,6 @@ does not create a demonstrated advantage.
   ten stocks that only TrendStocks holds (622 to 875 per stock under `base`, 238
   to 284 under `intent`).
 
-## Reference book: midnight slice (#20264)
-
-Measured on 2026-10-11 on the QC nodes, coded window 2018-01-01 → 2025-01-01, before and after the midnight-slice fix ([#20264](https://github.com/jsboige/CoursIA/issues/20264)). The protocol was pre-registered on the issue before the runs (comment `c.6103552152`); the "before" column is the `main` code at commit `bb89b25ab5`, run as is.
-
-The `spy` and `sixty40` books rebalance on the first daily bar of the month. At daily resolution, Lean delivers a dividend notice alone, in a slice stamped at midnight with no price bar: that slice used up the month's rebalance. The order was then sent at midnight and filled at the same day's open; in the other months, it was sent at the close of the first session and filled at the next open. The fix only uses up the month on a slice carrying a bar of a book security: every month now follows the second calendar. The Framework modes do not go through this test and do not change.
-
-| | `spy` before | `spy` after | `sixty40` before | `sixty40` after |
-|---|---|---|---|---|
-| Orders stamped at midnight, New York time | 0 | 0 | 129, over 67 months | 0 |
-| Orders | 1 | 1 | 143 | 148 |
-| Sharpe (QC) | 0.495 | 0.495 | 0.378 | 0.383 |
-| CAGR | 13.55 % | 13.55 % | 8.42 % | 8.49 % |
-| Max drawdown | −33.6 % | −33.6 % | −21.1 % | −21.1 % |
-| Fees, share of starting capital | 0.002 % | 0.002 % | 0.145 % | 0.150 % |
-| Backtest | `74d2c750` | `81c0fbfa` | `d4f67561` | `b404c982` |
-
-The Sharpe reported by QC moves by at most 0.005, below the 0.05 threshold set in advance: the `spy` and `sixty40` rows of the measurement above, computed with the earlier code, are not restated, and the verdict does not change.
-
 ## Figures from before #19759
 
 The two sections below date from before the measurement; they are kept for the
