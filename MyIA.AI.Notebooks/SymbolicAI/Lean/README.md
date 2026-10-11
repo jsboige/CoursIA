@@ -157,6 +157,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 21 | [Lean-21-MIMO-Detection-Flips](MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb) | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases et du converse complet `ml_error_prob_ge_threshold` (P(erreur ML) ≥ 1 − e^{−(2·log N − log log N)}) du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 45 min |
 | 21b | [Lean-21b-MIMO-Converse-Native](MIMO/MIMO-03-Converse-Native-Lean.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lac `mimo_lean` : le lac importé et exécuté dans un kernel Lean 4 réel — la frontière SLT exhibée par `#check` (ce qui est prouvé vs emprunté à `YuanheZ/lean-stat-learning-theory`), les six déclarations de `NormTails` (concentration de Lipschitz gaussienne), les seize briques du converse Hanson–Wright (dont `hanson_wright_noise` et la queue chi-carré `chisq_norm_concentration`), les treize du pont ML (`Bridge`), `#print axioms` sur les théorèmes clés — uniquement les axiomes standards, zéro `sorry` | 40 min |
 | 21c | [Lean-21c-Descente-Budget](MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb) | Le budget de descente : quand la décroissance borne le nombre de flips — l'analyse qui fonde le seuil 2·log N de la détection MIMO (#12219) | 35 min |
+| MIMO-04 | [MIMO-04-Capstone-Digestion-Python](MIMO/MIMO-04-Capstone-Digestion-Python.ipynb) | **Capstone** de la sous-série [MIMO](MIMO/README.md), et sa sortie : les énoncés du lac exécutés à la main sur une instance réelle — les cinq faits de `Descent.lean` vérifiés un par un (le coût **entier** est ce qui rend `run_length_le_cost` vraie), le témoin d'échec `DescentFailure` exhibé sur un canal identité sans bruit (la règle stricte n'accepte aucun flip, la règle relâchée cycle de période 2), la borne de queue de `NormTails` vérifiée par Monte-Carlo sur douze couples `(M, t)`, le seuil `√(2·log(2N/ε))` dérivé du union bound, et la **surface du lac recomptée depuis les sources** — où l'organe canonique rend `56` là où les sources en portent `57`, son motif de nom s'arrêtant au premier caractère grec — kernel `python3`, 3 exercices | 35 min |
 | 22 | [Lean-22-Galois-Probleme-Inverse-M23](Lean-22-Galois-Probleme-Inverse-M23.ipynb) | Le problème inverse de Galois refermé (arXiv:2608.08538, 9 août 2026) : M₂₃ prouvé simple d'ordre 10 200 960 **à l'écran** (`card_M23`/`simple_M23` exécutés, `#print axioms` = liste blanche), design de Witt S(4,7,23) vérifié des deux côtés (253 heptades), polynôme f₁ de degré 23 manipulé pour de vrai (empreinte, irréductibilité, discriminant 383 chiffres, Frobenius mod p) — les deux énoncés distingués : prouvé vs cité | 45 min |
 | 23 | [Lean-23-ERC20-Invariant-Companion](Lean-23-ERC20-Invariant-Companion.ipynb) | L'invariant de conservation d'un jeton ERC-20 (`Σ balances = totalSupply`) : traces jouets en Python, lectures statiques des 17 déclarations du lake `erc20_lean`, propreté axiomatique par absence de `sorry`, Monte-Carlo sur la tolérance numérique (#11710) | 40 min |
 | 23b | [Lean-23b-Lean-ERC20-Native-Companion](Lean-23b-Lean-ERC20-Native-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `erc20_lean` : les 17 déclarations **résolues par le kernel** (`#check`), l'invariant et les transitions `mint`/`burn`/`transfer` **évalués** sur un état concret (`by decide`), `#print axioms` natif sur les 5 théorèmes phares, la pyramide op → trace `Reachable` → invariant type-checkée avec ses gardes (#11721) | 30 min |
@@ -265,9 +266,10 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 19 | Analysis-I-Tao-Workflow | ~18 | 3 | 0 | **NOUVEAU** |
 | 20 | PFR-Entropy-Method | ~23 | 3 | 0 | **NOUVEAU** |
 | 20b | PFR-Primitives-Transportables | ~6 | 0 | - | **NOUVEAU** (digestion #12214) |
-| 21 | MIMO-Detection-Flips | ~34 | 6 | 0 | **NOUVEAU** |
-| 21b | MIMO-Converse-Native | ~30 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`) |
-| 21c | Descente-Budget | ~9 | 8 | 0 | **NOUVEAU** (#12219) |
+| 21 | MIMO-Detection-Flips | ~41 | 4 | 0 | **NOUVEAU** |
+| 21b | MIMO-Converse-Native | ~34 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`) |
+| 21c | Descente-Budget | ~24 | 4 | 0 | **NOUVEAU** (#12219) |
+| MIMO-04 | Capstone-Digestion | ~26 | 3 | 0 | **NOUVEAU** (kernel python3, capstone de la sous-série #17545) |
 | 22 | Galois-Probleme-Inverse-M23 | ~25 | 3 | 0 | **NOUVEAU** (exécution Lean + sympy) |
 | 23 | ERC20-Invariant-Companion | ~21 | 3 | 0 | **NOUVEAU** (lecture statique Python du lake) |
 | 23b | Lean-ERC20-Native-Companion | ~30 | 2 | - | **NOUVEAU** (kernel `lean4-wsl`) |
@@ -537,6 +539,7 @@ Lean/
 │   ├── MIMO-01-Descente-Budget-Lean-Python.ipynb # Python kernel - budget de descente (décroissance borne les flips, #12219)
 │   ├── MIMO-02-Detection-Flips-Lean-Python.ipynb # Python kernel - détection MIMO par flips (seuil 2·log N, companion mimo_lean)
 │   ├── MIMO-03-Converse-Native-Lean.ipynb # Lean4 (WSL) kernel - converse MIMO natif (NormTails, Hanson-Wright, #print axioms)
+│   ├── MIMO-04-Capstone-Digestion-Python.ipynb # Python kernel - capstone : les énoncés exécutés à la main, surface du lac recomptée
 │   └── README.md
 ├── assets/                        # Images des README de la série ([MANIFEST](assets/readme/MANIFEST.md))
 ├── scripts/                       # Helpers de maintenance de la série ([README](scripts/README.md), _archive/)
