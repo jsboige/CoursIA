@@ -33,7 +33,7 @@ Aricie -- DNN -- PKP -- My Intelligence Agency
 
 ---
 layout: image-overlay
-image: ./images/img_001.jpg
+image: /images/img_001.jpg
 ---
 
 # Sommaire
@@ -150,7 +150,7 @@ layout: section
 
 # Qu'est-ce que l'intelligence artificielle ?
 
-<img src="./images/img_002.png" style="position:absolute; top:80px; right:20px; width:340px;" alt="Quatre definitions de l'IA" />
+<img src="/images/img_002.png" style="position:absolute; top:80px; right:20px; width:340px;" alt="Quatre definitions de l'IA" />
 
 - **Des definitions multiples et un concept evolutif**
   - L'IA n'a pas de definition unique : elle recouvre des<br>approches très différentes
@@ -170,7 +170,7 @@ layout: section
 
 ---
 layout: image-overlay
-image: ./images/img_003.png
+image: /images/img_003.png
 imageClass: mid-right large
 ---
 
@@ -190,12 +190,12 @@ L'IA est une discipline profondement interdisciplinaire :
 
 ---
 layout: image-overlay
-image: ./images/img_004.png
+image: /images/img_004.png
 ---
 
 # Histoire succincte (1/2)
 
-<img src="./images/img_004.png" style="position:absolute; top:60px; right:20px; width:340px;" alt="Frise chronologique IA" />
+<img src="/images/img_004.png" style="position:absolute; top:60px; right:20px; width:340px;" alt="Frise chronologique IA" />
 
 **Les debuts (1943-1970)**
 - **1943** : McCulloch & Pitts modelisent le cerveau<br>comme un circuit logique
@@ -227,7 +227,7 @@ image: ./images/img_004.png
 
 ---
 layout: image-overlay
-image: ./images/img_005.jpg
+image: /images/img_005.jpg
 ---
 
 # État de l'art (1/2)
@@ -244,18 +244,18 @@ image: ./images/img_005.jpg
 
 - Preuve de conjectures mathematiques (Robbins, 1996)
 - Vehicules autonomes (vol, conduite, marche robotique)
-- Logistique et planification militaire (guerre du Golfe) <img src="./images/img_005.jpg" style="display:inline; height:1.4em; vertical-align:middle;" />
+- Logistique et planification militaire (guerre du Golfe) <img src="/images/img_005.jpg" style="display:inline; height:1.4em; vertical-align:middle;" />
 - NASA : planification autonome de missions spatiales
 - Trading algorithmique (85% du volume des marches en 2012)
 
 ---
 layout: image-overlay
-image: ./images/img_005.jpg
+image: /images/img_005.jpg
 ---
 
 # État de l'art (2/2)
 
-<img src="./images/img_006.jpg" style="position:absolute; top:14px; right:30px; width:190px; background:#fff; border:1px solid #ccc;" alt="Logo ImageNet, jeu de donnees de reference dont le deep learning a domine la classification en 2012" />
+<img src="/images/img_006.jpg" style="position:absolute; top:14px; right:30px; width:190px; background:#fff; border:1px solid #ccc;" alt="Logo ImageNet, jeu de donnees de reference dont le deep learning a domine la classification en 2012" />
 
 **Deep Learning et NLP (2010-2019)**
 
@@ -280,11 +280,11 @@ image: ./images/img_005.jpg
 **Recherche academique** : CMU, Stanford, Berkeley, MIT, Caltech, U Austin, IDSIA...
 
 <div class="image-grid">
-<img src="./images/img_007.png" alt="CMU">
-<img src="./images/img_008.png" alt="MIT">
-<img src="./images/img_009.png" alt="IDSIA">
-<img src="./images/img_010.png" alt="Berkeley">
-<img src="./images/img_011.jpg" alt="Stanford">
+<img src="/images/img_007.png" alt="CMU">
+<img src="/images/img_008.png" alt="MIT">
+<img src="/images/img_009.png" alt="IDSIA">
+<img src="/images/img_010.png" alt="Berkeley">
+<img src="/images/img_011.jpg" alt="Stanford">
 </div>
 
 **Gouvernements et laboratoires prives** : NASA, NRL, NIST, IBM, AT&T, SRI, ISI, MERL...
@@ -292,14 +292,14 @@ image: ./images/img_005.jpg
 **Beaucoup de societes** : Google, Microsoft, Facebook, Amazon, Honeywell, MITRE, Fujitsu...
 
 <div class="image-grid">
-<img src="./images/img_012.png" alt="Google">
-<img src="./images/img_013.png" alt="Microsoft">
-<img src="./images/img_014.png" alt="Honeywell">
-<img src="./images/img_015.png" alt="BodyMedia">
-<img src="./images/img_016.png" alt="MITRE">
-<img src="./images/img_017.png" alt="Fujitsu">
-<img src="./images/img_018.png" alt="Facebook">
-<img src="./images/img_019.png" alt="Amazon">
+<img src="/images/img_012.png" alt="Google">
+<img src="/images/img_013.png" alt="Microsoft">
+<img src="/images/img_014.png" alt="Honeywell">
+<img src="/images/img_015.png" alt="BodyMedia">
+<img src="/images/img_016.png" alt="MITRE">
+<img src="/images/img_017.png" alt="Fujitsu">
+<img src="/images/img_018.png" alt="Facebook">
+<img src="/images/img_019.png" alt="Amazon">
 </div>
 
 ---
@@ -318,12 +318,12 @@ image: ./images/img_005.jpg
 
 ---
 layout: image-overlay
-image: ./images/img_020.png
+image: /images/img_020.png
 ---
 
 # Agir comme l'homme : le Test de Turing
 
-<img src="./images/img_020.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Test de Turing" />
+<img src="/images/img_020.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Test de Turing" />
 
 **Alan Turing (1950)** propose un test operationnel : une machine<br>est "intelligente" si un humain ne peut la distinguer d'un autre<br>humain en conversant avec elle.
 
@@ -411,12 +411,12 @@ layout: section
 
 ---
 layout: image-overlay
-image: ./images/img_021.png
+image: /images/img_021.png
 ---
 
 # Les agents
 
-<img src="./images/img_021.png" style="position:absolute; top:60px; right:20px; width:320px;" alt="Schema agent" />
+<img src="/images/img_021.png" style="position:absolute; top:60px; right:20px; width:320px;" alt="Schema agent" />
 
 **Un agent est une entite autonome qui :**
 - **Percoit** son environnement grace a des capteurs<br>(cameras, micros, senseurs...)
@@ -455,21 +455,21 @@ image: ./images/img_021.png
 
 <IntelligencePyramid />
 
-<img src="./pptx-reference/slide-25.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligences - taxonomie en pyramide imbriquee" />
+<img src="/pptx-reference/slide-25.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligences - taxonomie en pyramide imbriquee" />
 
 ---
 
-<img src="./pptx-reference/slide-27.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligence de la recherche - taxonomie" />
-<img src="./images/img_027.jpg" style="position:absolute; bottom:24px; right:30px; width:240px; border:1px solid #ccc;" alt="Recherche de chemin dans un plan : trajectoires et points de passage" />
+<img src="/pptx-reference/slide-27.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligence de la recherche - taxonomie" />
+<img src="/images/img_027.jpg" style="position:absolute; bottom:24px; right:30px; width:240px; border:1px solid #ccc;" alt="Recherche de chemin dans un plan : trajectoires et points de passage" />
 
 ---
 
-<img src="./pptx-reference/slide-28.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligence de la pensée logique - taxonomie" />
+<img src="/pptx-reference/slide-28.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligence de la pensée logique - taxonomie" />
 
 ---
 
-<img src="./pptx-reference/slide-29.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligence de l'incertitude - taxonomie" />
-<img src="./images/img_023.png" style="position:absolute; top:14px; right:30px; width:200px; border:1px solid #ccc; background:#fff;" alt="Graphe de decision (MDP) : etats, actions et probabilites de transition" />
+<img src="/pptx-reference/slide-29.png" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;" alt="Intelligence de l'incertitude - taxonomie" />
+<img src="/images/img_023.png" style="position:absolute; top:14px; right:30px; width:200px; border:1px solid #ccc; background:#fff;" alt="Graphe de decision (MDP) : etats, actions et probabilites de transition" />
 
 ---
 
@@ -496,7 +496,7 @@ image: ./images/img_021.png
 # Environnements de tâche: exemples
 
 <div class="center-image">
-<img src="./images/img_028.png" style="max-width: 800px; margin: auto; display: block;">
+<img src="/images/img_028.png" style="max-width: 800px; margin: auto; display: block;">
 </div>
 
 ---
@@ -549,7 +549,7 @@ Chaque environnement de tâche possede des proprietes qui influencent la concept
 # Types d'environnement: exemples
 
 <div class="center-image">
-<img src="./images/img_029.png" alt="Tableau des types d'environnement" style="max-width: 800px; margin: auto; display: block;">
+<img src="/images/img_029.png" alt="Tableau des types d'environnement" style="max-width: 800px; margin: auto; display: block;">
 </div>
 
 ---
@@ -557,7 +557,7 @@ Chaque environnement de tâche possede des proprietes qui influencent la concept
 
 # Types d'agents
 
-<img src="./images/img_030.png" style="position:absolute; top:75px; right:20px; width:380px; background:white; padding:6px; border-radius:4px;" alt="Pseudocode agent pilote par table" />
+<img src="/images/img_030.png" style="position:absolute; top:75px; right:20px; width:380px; background:white; padding:6px; border-radius:4px;" alt="Pseudocode agent pilote par table" />
 
 **f(agent) = Architecture physique + Programme**
 
@@ -583,9 +583,9 @@ Un agent naif pourrait stocker une table "percepts → action" :<br>la table ser
 
 # Agent réflexe
 
-<img src="./images/img_031.png" style="position:absolute; top:60px; right:20px; width:380px; background:white; padding:4px; border-radius:4px;" alt="Schema agent reflexe" />
+<img src="/images/img_031.png" style="position:absolute; top:60px; right:20px; width:380px; background:white; padding:4px; border-radius:4px;" alt="Schema agent reflexe" />
 
-<img src="./images/img_032.png" style="position:absolute; bottom:30px; right:30px; width:340px; background:white; padding:4px; border-radius:4px;" alt="Pseudocode agent reflexe" />
+<img src="/images/img_032.png" style="position:absolute; bottom:30px; right:30px; width:340px; background:white; padding:4px; border-radius:4px;" alt="Pseudocode agent reflexe" />
 
 - **Pas de memoire**
 - **Percepts courants**
@@ -606,16 +606,16 @@ Un agent naif pourrait stocker une table "percepts → action" :<br>la table ser
 
 </div>
 
-<img src="./images/img_033.png" v-click="1" style="position:absolute; bottom:30px; left:30px; width:90px;" alt="A New Kind of Science - Wolfram" />
+<img src="/images/img_033.png" v-click="1" style="position:absolute; bottom:30px; left:30px; width:90px;" alt="A New Kind of Science - Wolfram" />
 
 
 ---
 
 # Agent réflexe fondé sur un modèle
 
-<img src="./images/img_034.png" style="position:absolute; top:60px; right:20px; width:380px; background:white; padding:4px; border-radius:4px;" alt="Schema agent modèle" />
+<img src="/images/img_034.png" style="position:absolute; top:60px; right:20px; width:380px; background:white; padding:4px; border-radius:4px;" alt="Schema agent modèle" />
 
-<img src="./images/img_035.png" style="position:absolute; bottom:30px; right:30px; width:320px; background:white; padding:4px; border-radius:4px;" alt="Pseudocode agent fonde sur un modèle" />
+<img src="/images/img_035.png" style="position:absolute; bottom:30px; right:30px; width:320px; background:white; padding:4px; border-radius:4px;" alt="Pseudocode agent fonde sur un modèle" />
 
 **Caractéristiques :**
 
@@ -634,14 +634,14 @@ Un agent naif pourrait stocker une table "percepts → action" :<br>la table ser
 
 </div>
 
-<img src="./images/img_036.png" v-click="1" style="position:absolute; bottom:30px; left:30px; width:90px;" alt="Robot Brooks" />
+<img src="/images/img_036.png" v-click="1" style="position:absolute; bottom:30px; left:30px; width:90px;" alt="Robot Brooks" />
 
 
 ---
 
 # Agent fonde sur des buts
 
-<img src="./images/img_037.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent buts" />
+<img src="/images/img_037.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent buts" />
 
 **Du reactif au deliberatif** : l'agent ne reagit plus seulement<br>a l'instant present, il anticipe le futur.
 
@@ -653,7 +653,7 @@ Un agent naif pourrait stocker une table "percepts → action" :<br>la table ser
 
 # Agent fonde sur l'utilite
 
-<img src="./images/img_038.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent utilite" />
+<img src="/images/img_038.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent utilite" />
 
 **Quand plusieurs chemins menent au but, lequel choisir ?**
 
@@ -668,7 +668,7 @@ Un agent naif pourrait stocker une table "percepts → action" :<br>la table ser
 
 # Agent capable d'apprentissage
 
-<img src="./images/img_039.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent apprentissage" />
+<img src="/images/img_039.png" style="position:absolute; top:60px; right:20px; width:400px;" alt="Schema agent apprentissage" />
 
 **Quatre composants internes :**
 
@@ -705,7 +705,7 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
 
 **Compromis fondamental :** plus la representation est riche, plus l'agent est flexible -- mais plus le raisonnement est couteux.
 
-<img src="./images/img_040.png" style="display:block; margin:8px auto; max-height:25vh;" alt="Representations: Atomique, Factorisee, Structuree" />
+<img src="/images/img_040.png" style="display:block; margin:8px auto; max-height:25vh;" alt="Representations: Atomique, Factorisee, Structuree" />
 
 ---
 
