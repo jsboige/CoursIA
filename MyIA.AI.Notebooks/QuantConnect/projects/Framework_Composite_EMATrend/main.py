@@ -158,7 +158,10 @@ class FrameworkCompositeEMATrend(QCAlgorithm):
     def on_data(self, data):
         if self.is_warming_up:
             return
-        if self.mode in REFERENCE_WEIGHTS and self.time.month != self._ref_month:
+        # A dividend or split notice arrives alone in a midnight slice, with no bar
+        # (#20264): it must not consume the month's rebalance.
+        if (self.mode in REFERENCE_WEIGHTS and self.time.month != self._ref_month
+                and any(data.bars.contains_key(self.symbols[t]) for t in REFERENCE_WEIGHTS[self.mode])):
             # Held reference, rebalanced on the first daily bar of each month.
             self._ref_month = self.time.month
             for ticker, weight in REFERENCE_WEIGHTS[self.mode].items():

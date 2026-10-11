@@ -63,6 +63,24 @@ Neither candidate is positive on two of the three sub-periods (2015-2018, 2019-2
 - The backtests requested an end on 2026-09-30. The QC organisation used holds back the last 90 days and moved the end to 2026-07-09, without an error. All versions ran in the same organisation: the comparisons cover the same sessions.
 - Under `intent`, the `PCM calls with SM` statistic stays at 0 by construction, because it counts the insights received by `determine_target_percent`. The addition shows in the gross exposure (1.00) and in the GLD orders (203 against 111 under `base`).
 
+### Reference book: midnight slice (#20264)
+
+Measured on 2026-10-11 on the QC nodes, coded window 2015-01-01 → 2025-12-31, before and after the midnight-slice fix ([#20264](https://github.com/jsboige/CoursIA/issues/20264)). The protocol was pre-registered on the issue before the runs (comment `c.6103552152`); the "before" column is the `main` code at commit `bb89b25ab5`, run as is.
+
+The `spy` and `sixty40` books rebalance on the first daily bar of the month. At daily resolution, Lean delivers a dividend notice alone, in a slice stamped at midnight with no price bar: that slice used up the month's rebalance. The order was then sent at midnight and filled at the same day's open; in the other months, it was sent at the close of the first session and filled at the next open. The fix only uses up the month on a slice carrying a bar of a book security: every month now follows the second calendar. The Framework modes do not go through this test and do not change.
+
+| | `spy` before | `spy` after | `sixty40` before | `sixty40` after |
+|---|---|---|---|---|
+| Orders stamped at midnight, New York time | 1, in 1 month | 0 | 192, over 101 months | 0 |
+| Orders | 2 | 2 | 213 | 220 |
+| Sharpe (QC) | 0.538 | 0.538 | 0.461 | 0.465 |
+| CAGR | 13.46 % | 13.46 % | 8.73 % | 8.77 % |
+| Max drawdown | −33.7 % | −33.7 % | −21.1 % | −21.1 % |
+| Fees, share of starting capital | 0.004 % | 0.004 % | 0.215 % | 0.222 % |
+| Backtest | `1beca6af` | `47c3a129` | `f6e7540d` | `2936bdba` |
+
+The Sharpe reported by QC moves by at most 0.004, below the 0.05 threshold set in advance: the `spy` and `sixty40` rows of the measurement above, computed with the earlier code, are not restated, and the verdict does not change.
+
 ### Figures before #19740
 
 The table below predates the measurement; it is kept for the record (backtest 2015-01-01 → 2025-12-31).
