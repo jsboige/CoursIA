@@ -1410,11 +1410,508 @@ def cmd_wolfram_ksf(args: argparse.Namespace) -> int:
     return 0
 
 
+# ---------------- Pli 8 : Block decomposition (Zenil 2013) ----------------
+
+
+# Landmarks asymptotiques (variance d'entropie par bloc a grand W).
+# Justification par classe Wolframe (Wolfram 2002 ch. 7, Cook 2004 R110) :
+# - I  (uniforme, R0)     : entropie = 0, std = 0 (constance)
+# - II (periodique, R4)   : entropie ~ 0, std ~ 0 (periode capture tout)
+# - III (chaotique, R30)  : entropie ~ 1.0, std ~ 0.0 (chaos uniforme, blocs
+#                            similaires a toutes les positions)
+# - IV (Turing, R110)     : entropie ~ 1.0 (pareil), std eleve (bimodalite :
+#                            gliders a entropie basse, reactions a entropie
+#                            elevee, structures invisibles au chaos)
+# Landmarks de complexite LZ76 normalisee par bloc (moyenne, ecart-type), au
+# plus grand block_length W=32. Recalibres pour l'instrument corrige -- les
+# valeurs de l'ancienne version portaient sur l'entropie de Shannon, qui est
+# invariante a l'arrangement et ne pouvait donc pas discriminer.
+#
+# Calibration : centre multi-seed (0/1/7/33/42/99) a n_cells = 256 ; la
+# verification hors echantillon se fait a n = 512 et n = 1024 (cf.
+# WOLFRAM-VERDICT-BLOCKS.md).
+#
+# Lecture : R0 et R4 sont quasi-incompressibles par bloc (peu de facteurs LZ76,
+# trajectoire reguliere) ; R30 est homogene et maximal (chaos partout, std ~ 0) ;
+# R110 est **heterogene** -- fond periodique + gliders -- donc plus compressible
+# en moyenne que R30 et surtout **dispersee** (std >> 0). C'est cette dispersion
+# qui separe III de IV.
+WOLFRAM_BLOCK_LANDMARKS = {
+    0: ("I", "uniforme", 0.01, 0.02),
+    4: ("II", "periodique", 0.04, 0.02),
+    30: ("III", "chaotique", 1.03, 0.01),
+    110: ("IV", "structure", 0.67, 0.13),
+}
+
+# Puissance minimale du test : un ecart-type sur moins de 4 blocs ne mesure rien.
+# A n_steps = 64 et W = 32 il n'y a que 2 blocs -- c'est la zone ou l'ancienne
+# version publiait un verdict de non-discrimination.
+WOLFRAM_BLOCKS_MIN_N_BLOCKS = 4
+
+
+def shannon_entropy_bits(bitstring: Sequence[Cell]) -> float:
+    """Entropie de Shannon (base 2) d'un sequence de bits 0/1.
+
+    H = -p0 * log2(p0) - p1 * log2(p1) avec p0 + p1 = 1.
+    Conventions H = 0 si tous les bits sont egaux (p=0 ou p=1).
+
+    ATTENTION -- cette grandeur est **invariante a l'arrangement** : elle ne
+    depend que du nombre de 1, jamais de leur position. Mesure 2026-10-09 :
+    `H('0101...01') == H(sequence desordonnee equilibree) == 1.0`. Elle ne
+    peut donc pas distinguer une trajectoire periodique d'une trajectoire
+    chaotique des lors que les deux sont equilibrees.
+
+    Ce n'est PAS la statistique de la block decomposition de Zenil 2013
+    (qui agrege une approximation de K(bloc)). Conservee ici pour la
+    tracabilite des mesures anterieures ; le verdict utilise
+    `block_complexity_distribution` (LZ76 normalise), qui est sensible a
+    l'arrangement.
+    """
+    if not bitstring:
+        return 0.0
+    n = len(bitstring)
+    n_ones = sum(int(b) & 1 for b in bitstring)
+    p1 = n_ones / n
+    p0 = 1.0 - p1
+    if p0 == 0.0 or p1 == 0.0:
+        return 0.0
+    return -(p0 * math.log2(p0) + p1 * math.log2(p1))
+
+
+def block_decompose_trajectory(
+    traj_1d: Sequence[Sequence[Cell]],
+    block_length: int,
+) -> list[Sequence[Cell]]:
+    """Decompose une trajectoire 1-D Wolframe en blocs non-chevauchants.
+
+    Pour chaque pas d'index i dans [0, n_steps), avec `block_length` etant
+    la taille du bloc (en nombre d'etats consecutifs), extrait le bloc
+    traj_1d[i : i + block_length] (taille block_length x n_cells).
+
+    Retourne une liste de blocs, chacun etant une concatenation des
+    `block_length` etats successifs en une sequence lineaire de bits.
+
+    Hypothese : n_steps >= block_length.
+    """
+    if block_length <= 0:
+        raise ValueError(f"block_length must be positive, got {block_length}")
+    n_steps = len(traj_1d)
+    if n_steps < block_length:
+        return []
+
+    blocks: list[Sequence[Cell]] = []
+    for i in range(0, n_steps - block_length + 1, block_length):
+        block_states = traj_1d[i:i + block_length]
+        # Concatener en une sequence lineaire de bits
+        flat: list[Cell] = []
+        for state in block_states:
+            flat.extend(int(b) & 1 for b in state)
+        blocks.append(flat)
+    return blocks
+
+
+def block_entropy_distribution(
+    traj_1d: Sequence[Sequence[Cell]],
+    block_length: int,
+) -> dict:
+    """Distribution d'entropie Shannon (base 2) par bloc.
+
+    Pour une longueur de bloc W, decompose la trajectoire en
+    n_steps/w blocs non-chevauchants, calcule l'entropie de Shannon (base
+    2) du bitstream concatene de chaque bloc, et retourne les statistiques
+    agregees (moyenne, std, min, max, mediane).
+
+    Pour R0 (classe I) : tous les blocs identiques, entropie = 0, std = 0.
+    Pour R30 (classe III) : tous les blocs similaires, entropie ~ 1, std
+    proche de 0 (chaos = entropie maximale partout).
+    Pour R110 (classe IV) : blocs heterogenes, entropie ~ 1 en moyenne mais
+    std elevee (structures invisibles au chaos).
+
+    Reference : Zenil, Soler-Toscano, Kiani (2013) arXiv:1304.5813.
+    """
+    blocks = block_decompose_trajectory(traj_1d, block_length)
+    if not blocks:
+        return {
+            "block_length": block_length,
+            "n_blocks": 0,
+            "mean": 0.0,
+            "std": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "median": 0.0,
+        }
+
+    entropies = [shannon_entropy_bits(b) for b in blocks]
+    n = len(entropies)
+    mean = sum(entropies) / n
+    var = sum((e - mean) ** 2 for e in entropies) / n
+    std = math.sqrt(var)
+    sorted_e = sorted(entropies)
+    median = sorted_e[n // 2] if n % 2 == 1 else (
+        sorted_e[n // 2 - 1] + sorted_e[n // 2]
+    ) / 2.0
+
+    return {
+        "block_length": block_length,
+        "n_blocks": n,
+        "mean": round(mean, 4),
+        "std": round(std, 4),
+        "min": round(min(entropies), 4),
+        "max": round(max(entropies), 4),
+        "median": round(median, 4),
+    }
+
+
+def lz76_factor_count(bitstring: str) -> int:
+    """Nombre de facteurs distincts de la factorisation de Lempel-Ziv 76.
+
+    Parcourt la chaine de gauche a droite et compte le nombre de phrases
+    (facteurs) nouvelles. C'est un **comptage entier** : aucun compresseur
+    n'est invoque, donc aucune constante de cadrage ne s'y ajoute (contraste
+    avec `lz_compressed_length`, dont le plancher zlib fausse les petites
+    fenetres -- cf. plis 4 et 7).
+
+    Sensible a l'arrangement : une chaine periodique se factorise en peu de
+    phrases, une chaine chaotique en beaucoup.
+    """
+    n = len(bitstring)
+    i = 0
+    count = 0
+    while i < n:
+        k = 1
+        while i + k <= n and bitstring[i:i + k] in bitstring[:i + k - 1]:
+            k += 1
+        count += 1
+        i += k
+    return count
+
+
+def normalized_lz76_complexity(bitstring: str) -> float:
+    """Complexite LZ76 normalisee : c(n) * log2(n) / n.
+
+    Estimateur standard de la complexite de Kolmogorov par factorisation LZ76
+    (Ziv & Lempel 1978 ; Li & Vitanyi 2019 ch. 6). Vaut ~1.0 pour une chaine
+    aleatoire et tend vers 0 pour une chaine periodique.
+
+    Peut depasser 1.0 de quelques centiemes sur les chaines courtes (le
+    facteur log2(n) n'est asymptotiquement exact) : c'est une propriete connue
+    de l'estimateur, pas une erreur.
+    """
+    n = len(bitstring)
+    if n <= 1:
+        return 0.0
+    return lz76_factor_count(bitstring) * math.log2(n) / n
+
+
+def _bits_to_str(bits: Sequence[Cell]) -> str:
+    """Convertit une sequence de cellules 0/1 en chaine '0'/'1'.
+
+    Necessaire car `in` sur une liste teste l'appartenance d'un ELEMENT, pas
+    d'une sous-sequence : une recherche de facteur LZ sur une liste de ints
+    rendrait toujours faux et degenererait en c(n) = n.
+    """
+    return "".join("1" if (int(b) & 1) else "0" for b in bits)
+
+
+def block_complexity_distribution(
+    traj_1d: Sequence[Sequence[Cell]],
+    block_length: int,
+) -> dict:
+    """Distribution de complexite LZ76 normalisee par bloc.
+
+    Meme decoupage que `block_entropy_distribution` (blocs non-chevauchants de
+    `block_length` etats consecutifs, chacun aplati en un bitstream), mais la
+    statistique par bloc est la complexite LZ76 normalisee -- une
+    approximation de K(bloc), donc **sensible a l'arrangement**, la ou
+    l'entropie de Shannon ne l'est pas.
+
+    Reference : Zenil, Soler-Toscano, Kiani (2013) arXiv:1304.5813 (block
+    decomposition, ou la complexite du bloc est K(bloc)) ; Li & Vitanyi (2019)
+    ch. 6 (estimateur LZ76).
+    """
+    blocks = block_decompose_trajectory(traj_1d, block_length)
+    if not blocks:
+        return {
+            "block_length": block_length,
+            "n_blocks": 0,
+            "mean": 0.0,
+            "std": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "median": 0.0,
+        }
+
+    values = [normalized_lz76_complexity(_bits_to_str(b)) for b in blocks]
+    n = len(values)
+    mean = sum(values) / n
+    var = sum((v - mean) ** 2 for v in values) / n
+    std = math.sqrt(var)
+    sorted_v = sorted(values)
+    median = sorted_v[n // 2] if n % 2 == 1 else (
+        sorted_v[n // 2 - 1] + sorted_v[n // 2]
+    ) / 2.0
+
+    return {
+        "block_length": block_length,
+        "n_blocks": n,
+        "mean": round(mean, 4),
+        "std": round(std, 4),
+        "min": round(min(values), 4),
+        "max": round(max(values), 4),
+        "median": round(median, 4),
+    }
+
+
+def measure_wolfram_blocks(
+    n_cells: int = 256,
+    n_steps: int = 256,
+    seed: int = 33,
+    block_lengths: Sequence[int] = (1, 2, 4, 8, 16, 32),
+) -> list[dict]:
+    """Mesure la distribution de complexite par bloc pour les 4 classes Wolframe.
+
+    Pour chaque regle (R0, R4, R30, R110) et chaque longueur de bloc W dans
+    `block_lengths`, calcule deux distributions sur les blocs non-chevauchants
+    de la trajectoire :
+
+    - `entropy_*` : entropie de Shannon par bloc -- **invariante a
+      l'arrangement**, conservee pour la tracabilite ;
+    - `complexity_*` : complexite LZ76 normalisee par bloc -- approximation
+      de K(bloc), **sensible a l'arrangement**. C'est celle que le verdict
+      utilise.
+
+    4 regles x 6 block_lengths = 24 mesures. Discrimine R30 de R110 par la
+    **dispersion** de la complexite par bloc : R30 (chaos homogene) a
+    std ~ 0, R110 (structure : fond periodique + gliders) a std nettement
+    positive.
+
+    Echelle : la mesure canonique est prise a `n_cells = 256`. La statistique
+    LZ76 est un comptage entier -- elle n'a pas le plancher de cadrage d'un
+    compresseur, donc contrairement aux plis 4 et 7 elle reste valide aux
+    petites fenetres ; c'est le **nombre de blocs** (`n_steps / W`) qui borne
+    la puissance du test, d'ou n=256 plutot que n=64.
+
+    Reference : Zenil, Soler-Toscano, Kiani (2013) arXiv:1304.5813.
+    """
+    try:
+        from ict.wolfram_step import wolfram_trajectory  # pli 2 PR #19793
+    except ImportError as e:
+        raise RuntimeError(
+            "ict.wolfram_step introuvable. L'organe (PR #19793) doit etre "
+            "present dans MyIA.AI.Notebooks/IIT/ICT-Series/ict/wolfram_step.py "
+            "et ce dossier doit etre dans sys.path. Erreur: {e}"
+        )
+
+    all_results = []
+    for rule in (0, 4, 30, 110):
+        traj_1d = wolfram_trajectory(
+            rule=rule, n_cells=n_cells, n_steps=n_steps, seed=seed,
+            record_densities=False,
+        )
+        for W in block_lengths:
+            ent = block_entropy_distribution(traj_1d, W)
+            cpx = block_complexity_distribution(traj_1d, W)
+            all_results.append({
+                "trajectory": f"wolfram_R{rule}_n{n_cells}_seed{seed}",
+                "rule": rule,
+                "block_length": W,
+                "entropy_mean": ent["mean"],
+                "entropy_std": ent["std"],
+                "entropy_min": ent["min"],
+                "entropy_max": ent["max"],
+                "entropy_median": ent["median"],
+                "complexity_mean": cpx["mean"],
+                "complexity_std": cpx["std"],
+                "complexity_min": cpx["min"],
+                "complexity_max": cpx["max"],
+                "complexity_median": cpx["median"],
+                "n_blocks": cpx["n_blocks"],
+            })
+    return all_results
+
+
+def wolfram_blocks_verdict(results: list[dict]) -> dict:
+    """Verdict par regle : la complexite par bloc est-elle conforme au landmark ?
+
+    Pour chaque regle, extrait la mesure au plus grand block_length et compare
+    `complexity_mean` / `complexity_std` au landmark (WOLFRAM_BLOCK_LANDMARKS).
+    Sous `WOLFRAM_BLOCKS_MIN_N_BLOCKS`, aucune comparaison n'est concluante.
+
+    Hypothese discriminante R30 vs R110 :
+    - R30 complexity_std ~ 0.01 (chaos homogene)
+    - R110 complexity_std >= 0.08 (heterogeneite structurelle)
+    """
+    verdicts = {}
+    by_rule: dict[int, list[dict]] = {}
+    for r in results:
+        by_rule.setdefault(r["rule"], []).append(r)
+
+    for rule, runs in by_rule.items():
+        landmark = WOLFRAM_BLOCK_LANDMARKS.get(rule)
+        if landmark is None:
+            verdicts[f"BLOCKS_R{rule}"] = (
+                f"INCONCLUSIVE (regle {rule} hors 4 classes)"
+            )
+            continue
+        klass, klass_name, expected_mean, expected_std = landmark
+        runs_sorted = sorted(runs, key=lambda r: r["block_length"])
+        max_run = runs_sorted[-1]
+
+        if max_run["n_blocks"] < WOLFRAM_BLOCKS_MIN_N_BLOCKS:
+            verdicts[f"BLOCKS_R{rule}"] = (
+                f"WOLFRAM-BLOCKS-UNDERPOWERED (n_blocks={max_run['n_blocks']} < "
+                f"{WOLFRAM_BLOCKS_MIN_N_BLOCKS} : un ecart-type sur si peu de "
+                f"blocs ne mesure pas la dispersion)"
+            )
+            continue
+
+        observed_mean = max_run["complexity_mean"]
+        observed_std = max_run["complexity_std"]
+        mean_delta = abs(observed_mean - expected_mean)
+        std_delta = abs(observed_std - expected_std)
+        if mean_delta < 0.15 and std_delta < 0.10:
+            verdicts[f"BLOCKS_R{rule}"] = (
+                f"CLASS-{klass}-CONFIRMED (mean={observed_mean:.3f} "
+                f"~= {expected_mean:.3f}, std={observed_std:.3f} "
+                f"~= {expected_std:.3f})"
+            )
+        else:
+            verdicts[f"BLOCKS_R{rule}"] = (
+                f"CLASS-{klass}-DEVIATION (mean={observed_mean:.3f} vs "
+                f"landmark {expected_mean:.3f} delta={mean_delta:.3f}; "
+                f"std={observed_std:.3f} vs landmark {expected_std:.3f} "
+                f"delta={std_delta:.3f})"
+            )
+
+    return verdicts
+
+
+def wolfram_blocks_discrimination_verdict(
+    verdicts: dict, results: list[dict]
+) -> str:
+    """Verdict final : la block decomposition discrimine-t-elle R30 de R110 ?
+
+    Compare les dispersions de complexite par bloc de R30 et R110 au plus grand
+    block_length (W=32). Si `std(R110) - std(R30) >= 0.05`, **DISCRIMINANT** :
+    l'heterogeneite structurelle de R110 (fond periodique + gliders) se lit dans
+    la dispersion des blocs, la ou le chaos de R30 est homogene.
+
+    Le seuil est celui de l'ancienne version : il n'a pas ete deplace pour faire
+    passer le resultat. Ce qui a change est l'instrument -- la statistique par
+    bloc est desormais sensible a l'arrangement, donc le seuil mesure enfin
+    quelque chose.
+    """
+    by_rule: dict[int, dict] = {}
+    for r in results:
+        if r["block_length"] == 32:
+            by_rule[r["rule"]] = r
+
+    r30 = by_rule.get(30)
+    r110 = by_rule.get(110)
+    if r30 is None or r110 is None:
+        return "WOLFRAM-BLOCKS-INDETERMINATE (donnees R30/R110 W=32 manquantes)"
+
+    if (r30["n_blocks"] < WOLFRAM_BLOCKS_MIN_N_BLOCKS
+            or r110["n_blocks"] < WOLFRAM_BLOCKS_MIN_N_BLOCKS):
+        return (
+            f"WOLFRAM-BLOCKS-UNDERPOWERED (n_blocks={r30['n_blocks']} pour W=32, "
+            f"minimum {WOLFRAM_BLOCKS_MIN_N_BLOCKS} : augmenter n_steps)"
+        )
+
+    std_30 = r30["complexity_std"]
+    std_110 = r110["complexity_std"]
+    mean_30 = r30["complexity_mean"]
+    mean_110 = r110["complexity_mean"]
+    delta_std = std_110 - std_30
+
+    if delta_std >= 0.05:
+        return (
+            f"WOLFRAM-BLOCKS-DISCRIMINANT (R30 mean/std={mean_30:.3f}/{std_30:.3f}, "
+            f"R110 mean/std={mean_110:.3f}/{std_110:.3f}, "
+            f"delta_std={delta_std:.3f} >= 0.05)"
+        )
+    return (
+        f"WOLFRAM-BLOCKS-NONDISCRIMINANT (R30 mean/std={mean_30:.3f}/{std_30:.3f}, "
+        f"R110 mean/std={mean_110:.3f}/{std_110:.3f}, "
+        f"delta_std={delta_std:.3f} < 0.05)"
+    )
+
+
+def cmd_wolfram_blocks(args: argparse.Namespace) -> int:
+    """Mode wolfram-blocks : mesure block decomposition sur les 4 classes.
+
+    Usage :
+        python scripts/hashlife/k_trajectory.py --mode wolfram-blocks \\
+            --n-cells 256 --n-steps 256 --seed 33
+    """
+    results = measure_wolfram_blocks(
+        n_cells=args.n_cells,
+        n_steps=args.n_steps,
+        seed=args.seed,
+    )
+
+    # Affichage par regle -- colonnes = complexite LZ76 normalisee par bloc
+    print(f"{'Trajectory':35s}  {'Class':>5s}  {'W_blk':>5s}  {'Mean':>6s}  "
+          f"{'Std':>6s}  {'Min':>5s}  {'Max':>5s}  {'Median':>6s}  {'n_blk':>5s}")
+    print("-" * 100)
+    by_rule: dict[int, list[dict]] = {}
+    for r in results:
+        by_rule.setdefault(r["rule"], []).append(r)
+    for rule in (0, 4, 30, 110):
+        runs = sorted(by_rule.get(rule, []), key=lambda r: r["block_length"])
+        klass_label = WOLFRAM_BLOCK_LANDMARKS.get(rule, ("?",))[0]
+        for run in runs:
+            print(
+                f"{run['trajectory']:35s}  {klass_label:>5s}  "
+                f"{run['block_length']:>5d}  {run['complexity_mean']:>6.3f}  "
+                f"{run['complexity_std']:>6.3f}  {run['complexity_min']:>5.2f}  "
+                f"{run['complexity_max']:>5.2f}  {run['complexity_median']:>6.3f}  "
+                f"{run['n_blocks']:>5d}"
+            )
+
+    # Verdicts
+    print()
+    print("=== Verdict block decomposition par regle ===")
+    verdicts = wolfram_blocks_verdict(results)
+    for name, status in verdicts.items():
+        print(f"  {name:15s}  {status}")
+
+    # Verdict discrimination
+    final = wolfram_blocks_discrimination_verdict(verdicts, results)
+    print()
+    print("=== Verdict final discrimination R30 vs R110 ===")
+    print(f"  {final}")
+
+    # Sortie JSON
+    if args.json_out:
+        out = {
+            "results": results,
+            "per_class_verdicts": verdicts,
+            "discrimination_verdict": final,
+            "n_cells": args.n_cells,
+            "n_steps": args.n_steps,
+            "seed": args.seed,
+            "rules": (0, 4, 30, 110),
+            "blocks_landmarks": {
+                str(k): {
+                    "klass": v[0],
+                    "name": v[1],
+                    "expected_mean": v[2],
+                    "expected_std": v[3],
+                }
+                for k, v in WOLFRAM_BLOCK_LANDMARKS.items()
+            },
+        }
+        Path(args.json_out).write_text(json.dumps(out, indent=2, ensure_ascii=False))
+        print(f"\n[INFO] resultats ecrits dans {args.json_out}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else "K_trajectory")
     parser.add_argument(
         "--mode",
-        choices=["measure", "verify-corpus", "bounds", "wolfram", "wolfram-4classes", "wolfram-ksf"],
+        choices=["measure", "verify-corpus", "bounds", "wolfram", "wolfram-4classes", "wolfram-ksf", "wolfram-blocks"],
         default="measure",
         help="Mode d'exécution (défaut: measure)",
     )
@@ -1438,8 +1935,12 @@ def main() -> int:
         "--n-cells",
         type=int,
         default=1024,
-        help="Mode wolfram : nombre de cellules de l'automate 1-D. Plancher de mesure "
-        "concluante : 512 (en dessous, cadrage zlib dominant, verdict SATURATED). Defaut: 1024",
+        help=(
+            "Mode wolfram : nombre de cellules de l'automate 1-D. Plancher de mesure "
+            "concluante : 512 (en dessous, cadrage zlib dominant, verdict SATURATED). "
+            "Mode wolfram-blocks : 256 est l'echelle canonique (sous 256, W=32 "
+            "ne laisse que 2 blocs et le verdict rend UNDERPOWERED). Defaut: 1024"
+        ),
     )
     parser.add_argument(
         "--n-steps",
@@ -1469,6 +1970,8 @@ def main() -> int:
         return cmd_wolfram_4classes(args)
     if args.mode == "wolfram-ksf":
         return cmd_wolfram_ksf(args)
+    if args.mode == "wolfram-blocks":
+        return cmd_wolfram_blocks(args)
     return cmd_verify_corpus(args)
 
 
