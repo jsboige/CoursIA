@@ -50,7 +50,7 @@ Hors échantillon, le verdict fixé d'avance est **`DEGRADATION`** : l'écart de
 
 Une estimation hors QC (clôtures ajustées, rendement de l'actif visé pendant chaque période en liquidités) chiffre ces refus. Sur la fenêtre codée, ils ont épargné 5,2 % à la variante avant et coûté 14,8 % à la variante après. Ils expliquent environ un tiers de l'écart de richesse finale. Le reste vient de décisions prises un jour plus tard, sur des clôtures différentes. Hors échantillon, l'écart tient presque entièrement à un seul achat de SPY refusé le 2026-05-01 dans la variante après (rendement de SPY manqué : 5,4 %).
 
-Un Sharpe qui bouge de 0,37 pour un décalage d'un jour du calendrier ne décrit pas une stratégie robuste. Ces chiffres mesurent les défauts, pas la stratégie, qui reste archivée. Le défaut de pouvoir d'achat est suivi à part.
+Un Sharpe qui bouge de 0,37 pour un décalage d'un jour du calendrier ne décrit pas une stratégie robuste. Ces chiffres mesurent les défauts, pas la stratégie, qui reste archivée. Le défaut de pouvoir d'achat est suivi en #20388.
 
 Identifiants de backtest QC, avant / après :
 - codée : `f324e3f5b1ad19720069b8619e4c41f6` / `d1169673f6ec0f798cb1cd644de0993b`
