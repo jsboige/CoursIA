@@ -64,27 +64,35 @@ the published Gemini self-replication completes in 33 699 586).
   `patterns/README.md`.
   Formalizing it needs a **toroidal** engine, absent from the lake: that is
   the natural continuation of this tranche.
-- **The OTCA, by contrast, is a CLOSED system — measured 2026-10-09
-  (#19989, tranche 3)**: over 1 800 generations the extent stays
-  **strictly** 2058 × 2058 (no cell ever outside the initial box at any
-  sampled generation — a glider born between two samples would still be
-  visible at the next one, since gliders do not die), while the
-  population oscillates within [63 955, 64 798]: the machinery runs, but
-  **nothing escapes** — unlike the UnitCell. The prediction "an isolated
-  metapixel on a borderless grid is not periodic either" is therefore
-  **refuted for the OTCA**. The period witness
-  `evolveHashlifeFastMemo 35328 otcaInitial = otcaInitial` becomes
-  potentially expressible again; it requires (a) confirming the exact
-  period on the isolated pattern and (b) a performance test of the
-  memoized Hashlife at 64 691 cells: that is the next tranche.
+- **The OTCA: confinement observed over the measured window — measured
+  2026-10-09 (#19989, tranche 3), refuting nothing**: over 1 800
+  generations the extent stays **strictly** 2058 × 2058 (no cell outside
+  the initial box at any sampled generation) while the population
+  oscillates within [63 955, 64 798]: the machinery runs and the window
+  shows **no escape** — unlike the UnitCell, whose openness is measured.
+  The measurement bounds three distinct questions and settles **none**:
+  (a) **observed confinement ≠ proven confinement** — a glider born
+  between two samples may interact or die without any sample seeing it,
+  so the window does not rule out a transient exit; (b) **eventual
+  recurrence** — even permanent confinement would make the state space
+  finite and force the evolution into a cycle after a possible
+  transient, without saying how long; (c) **return to the initial
+  state** — the period witness
+  `evolveHashlifeFastMemo 35328 otcaInitial = otcaInitial` remains an
+  **open hypothesis**: neither the exact period on the isolated pattern
+  nor feasibility is confirmed (performance test of the memoized
+  Hashlife at 64 691 cells): that is the next tranche. The prediction
+  "an isolated metapixel on a borderless grid is not periodic either"
+  is therefore **neither confirmed nor refuted** for the OTCA.
 - **Paired negative witnesses** (criterion 2 of #19989):
   `pulsar_period1_negative` and `pulsar_period2_negative` accompany
   `pulsar_period3`, so the period is **exactly** 3 and not merely a divisor of
   3. This is the lake's only **positive** period witness, hence the only one
   that can receive a pair: for the UnitCell the pair is impossible
   *a fortiori* (the positive is not expressible — open system, measured,
-  see above); for the OTCA the question is **open** (closed system,
-  measured — the positive is potentially expressible, see above); for
+  see above); for the OTCA the question is **open** (confinement
+  observed over the measured window — the positive remains a
+  hypothesis, see above); for
   Gemini/CPU the grids are still empty, where a negative would measure
   nothing real.
 - **Future** : the CPU (once its RLE is loaded by the same mechanism) — its
@@ -253,12 +261,14 @@ for the corresponding pillar. The proof is intended to be a single
     **There is no period witness here — but unlike the UnitCell, this is
     a postponement, not an impossibility.** Measurement (dense
     simulator, 1 800 generations): the extent stays strictly
-    2058 × 2058, no cell ever leaves the box, the population oscillates
-    within [63 955, 64 798] — a **closed** system. The witness
-    `evolveHashlifeFastMemo 35328 otcaInitial = otcaInitial` is
-    therefore potentially expressible; it awaits (a) confirmation of the
-    exact period 35 328 on the isolated pattern and (b) a performance
-    test of the memoized Hashlife on a 64 691-cell grid.
+    2058 × 2058, no cell leaves the box at any sample, the population
+    oscillates within [63 955, 64 798] — confinement **observed** over
+    the window, not proven for all generations. The witness
+    `evolveHashlifeFastMemo 35328 otcaInitial = otcaInitial` remains an
+    open hypothesis (eventual recurrence and return to the initial
+    state unmeasured); it awaits (a) confirmation of the exact period
+    35 328 on the isolated pattern and (b) a performance test of the
+    memoized Hashlife on a 64 691-cell grid.
 
     What is proven here, and **non-vacuously**, is that the loaded grid
     is real: 165 KB of RLE through the same `include_str` +

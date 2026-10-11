@@ -65,27 +65,35 @@ la Gemini publie une auto-réplication complète en 33 699 586).
   `patterns/README.md`.
   La formaliser demande un moteur **torique**, absent du lac : c'est la suite
   naturelle de cette tranche.
-- **L'OTCA, lui, est un système FERMÉ — mesure du 2026-10-09 (#19989,
-  tranche 3)** : sur 1 800 générations, l'étendue reste **strictement**
-  2058 × 2058 (aucune cellule hors de la boîte initiale à aucun relevé,
-  un planeur né entre deux relevés y serait encore visible — il ne meurt
-  pas), pendant que la population oscille en [63 955, 64 798] : la
-  machinerie tourne, mais **rien ne s'échappe** — contrairement à
-  l'UnitCell. La prédiction « un métapixel isolé sur grille sans bord
-  n'est pas périodique non plus » est donc **réfutée pour l'OTCA**. Le
-  témoin de période `evolveHashlifeFastMemo 35328 otcaInitial =
-  otcaInitial` redevient potentiellement exprimable ; il exige (a) la
-  confirmation de la période exacte sur le motif isolé et (b) un test de
-  performance du Hashlife mémoïsé à 64 691 cellules : c'est la tranche
-  suivante.
+- **L'OTCA : confinement observé sur la fenêtre mesurée — mesure du
+  2026-10-09 (#19989, tranche 3), qui ne réfute rien** : sur 1 800
+  générations, l'étendue reste **strictement** 2058 × 2058 (aucune
+  cellule hors de la boîte initiale à aucun relevé) pendant que la
+  population oscille en [63 955, 64 798] : la machinerie tourne et la
+  fenêtre ne montre **aucune évasion** — contrairement à l'UnitCell,
+  dont l'ouverture est mesurée. La mesure borne trois questions
+  distinctes et n'en tranche **aucune** : (a) **confinement observé ≠
+  confinement prouvé** — un planeur né entre deux relevés peut
+  interagir ou mourir sans qu'aucun relevé le voie, la fenêtre
+  n'exclut donc aucune sortie transitoire ; (b) **récurrence
+  éventuelle** — même un confinement permanent rendrait l'espace
+  d'états fini et imposerait une entrée en cycle après un transitoire
+  éventuel, sans en dire la longueur ; (c) **retour à l'état initial**
+  — le témoin de période `evolveHashlifeFastMemo 35328 otcaInitial =
+  otcaInitial` reste une **hypothèse ouverte** : ni la période exacte
+  sur le motif isolé ni la faisabilité ne sont confirmées (test de
+  performance du Hashlife mémoïsé à 64 691 cellules) : c'est la tranche
+  suivante. La prédiction « un métapixel isolé sur grille sans bord
+  n'est pas périodique non plus » est donc **ni confirmée ni
+  réfutée** pour l'OTCA.
 - **Témoins négatifs appariés** (critère 2 de #19989) : `pulsar_period1_negative`
   et `pulsar_period2_negative` accompagnent `pulsar_period3` — la période vaut
   donc **exactement** 3, et non un simple diviseur de 3. C'est le seul témoin de
   période **positif** du lake, donc le seul qui puisse recevoir une paire :
   pour l'UnitCell la paire est impossible *a fortiori* (le positif ne
   l'est pas — système ouvert mesuré, cf. ci-dessus) ; pour l'OTCA la
-  question est **ouverte** (système fermé mesuré — le positif est
-  potentiellement exprimable, cf. ci-dessus) ; pour Gemini/CPU les grilles
+  question est **ouverte** (confinement observé sur la fenêtre mesurée
+  — le positif reste une hypothèse, cf. ci-dessus) ; pour Gemini/CPU les grilles
   sont encore vides, où un négatif ne mesurerait rien de réel.
 - **Futur** : le CPU (une fois son RLE chargé par le même mécanisme) — sa
   question du bord reste à trancher par la même méthode de mesure.
@@ -255,12 +263,14 @@ pour le pilier correspondant. La preuve est conçue comme un simple
     **Il n'y a pas de témoin de période ici — mais contrairement à
     l'UnitCell, c'est un report, pas une impossibilité.** Mesure
     (simulateur dense, 1 800 générations) : l'étendue reste strictement
-    2058 × 2058, aucune cellule ne quitte la boîte, la population oscille
-    en [63 955, 64 798] — système **fermé**. Le témoin
-    `evolveHashlifeFastMemo 35328 otcaInitial = otcaInitial` est donc
-    potentiellement exprimable ; il attend (a) la confirmation de la
-    période exacte 35 328 sur le motif isolé et (b) un test de performance
-    du Hashlife mémoïsé sur une grille de 64 691 cellules.
+    2058 × 2058, aucune cellule ne quitte la boîte aux relevés, la
+    population oscille en [63 955, 64 798] — confinement **observé**
+    sur la fenêtre, pas prouvé pour toutes les générations. Le témoin
+    `evolveHashlifeFastMemo 35328 otcaInitial = otcaInitial` reste une
+    hypothèse ouverte (récurrence éventuelle et retour à l'état initial
+    non mesurés) ; il attend (a) la confirmation de la période exacte
+    35 328 sur le motif isolé et (b) un test de performance du Hashlife
+    mémoïsé sur une grille de 64 691 cellules.
 
     Ce qui est prouvé ici, et **non vacuous**, c'est que la grille chargée
     est réelle : 165 Ko de RLE passés par le même `include_str` +
