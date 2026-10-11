@@ -625,6 +625,236 @@ class TestContentOnMainRemove:
         assert s.refusal_reason == "detached_no_match"
 
 
+class TestContentOnMainByPatchId:
+    """#20067 : seconde jambe du contenu sur main, par patch-id.
+
+    Le predicat d'ascendance (#17771) est structurellement aveugle au
+    squash-merge dont la branche distante a ete supprimee : plus aucun ref
+    ne porte la tete, donc la resolution de PR rend None et l'ascendance
+    est fausse -- alors que le contenu est bien sur main. `git cherry`
+    compare les patchs et voit ce cas.
+
+    La garde doit rester fail-closed : un seul commit hors amont (`+`)
+    disqualifie, et une lecture git en echec n'ouvre rien.
+    """
+
+    def _info(self, **over):
+        base = dict(
+            branch="fix/squashed-gone", ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[], tracked_modified=[],
+            has_source_dirty=False, has_submodules=False, is_current=False,
+        )
+        base.update(over)
+        return base
+
+    def _diagnose(self, monkeypatch, info, cherry, ancestor=False, age_h=99.0,
+                  branch_cherry=None):
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch",
+                            lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "remote_head_for_head",
+                            lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main",
+                            lambda *a: ancestor)
+        monkeypatch.setattr(pmw, "content_delivered_by_patch_id",
+                            lambda *a: cherry)
+        monkeypatch.setattr(pmw, "content_delivered_by_branch_patch_id",
+                            lambda *a: branch_cherry)
+        monkeypatch.setattr(pmw, "recent_activity_age_hours",
+                            lambda *a, **k: age_h)
+        return pmw.diagnose_worktree("C:/fake", "C:/other",
+                                     activity_window_h=6.0)
+
+    def test_patch_id_delivered_removes_with_motif(self, monkeypatch):
+        # Tous les patchs sont en amont : REMOVE, et le rapport dit que la
+        # jambe est le patch-id -- pas une ascendance.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(3, 0))
+        assert s.decision == "REMOVE"
+        assert s.refusal_reason is None
+        assert s.content_on_main is True
+        assert s.content_on_main_by == "patch_id"
+
+    def test_ancestor_leg_is_labelled_ancestor(self, monkeypatch):
+        # Controle de discrimination : la meme issue de REMOVE par la jambe
+        # d'ascendance porte l'autre etiquette. Sans ce test, les deux
+        # jambes seraient indiscernables dans le rapport.
+        s = self._diagnose(monkeypatch, self._info(), cherry=None,
+                           ancestor=True)
+        assert s.decision == "REMOVE"
+        assert s.content_on_main_by == "ancestor"
+
+    def test_single_unmerged_patch_refuses(self, monkeypatch):
+        # Un seul `+` disqualifie : il reste du travail non livre.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(2, 1))
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+        assert s.content_on_main is False
+        assert s.content_on_main_by is None
+
+    def test_empty_branch_is_not_delivered(self, monkeypatch):
+        # `minus == 0` : aucun commit a comparer. Un worktree vide ne
+        # franchit pas la garde -- c'est ce qui distingue « contenu deja
+        # sur main » de « rien du tout ».
+        s = self._diagnose(monkeypatch, self._info(), cherry=(0, 0))
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+        assert s.content_on_main is False
+
+    def test_unreadable_cherry_refuses(self, monkeypatch):
+        # Lecture git en echec (None) : jamais un feu vert.
+        s = self._diagnose(monkeypatch, self._info(), cherry=None)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+        assert s.content_on_main is False
+
+    def test_multi_commit_squash_removes_with_branch_motif(self, monkeypatch):
+        # Reserve Hermes du 09/10 : la jambe per-commit rend `plus == N` sur
+        # une branche a N commits squashee (le squash concatene les diffs,
+        # donc son patch-id n'egale celui d'aucun commit d'origine), et elle
+        # ne franchit pas. La jambe elargie fabrique le commit que le squash
+        # aurait produit et le voit. Le rapport doit dire LAQUELLE a tire.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(0, 2),
+                           branch_cherry=(1, 0))
+        assert s.decision == "REMOVE"
+        assert s.refusal_reason is None
+        assert s.content_on_main is True
+        assert s.content_on_main_by == "branch_patch_id"
+
+    def test_branch_leg_never_runs_when_per_commit_decides(self, monkeypatch):
+        # Controle de cout : quand la jambe per-commit franchit, la jambe
+        # elargie (trois commandes git de plus) ne doit PAS etre consultee.
+        # Sans ce test, l'ordre des deux jambes pourrait s'inverser sans que
+        # rien ne le signale.
+        def _must_not_run(*a):
+            raise AssertionError(
+                "jambe elargie consultee alors que la jambe per-commit "
+                "avait deja tranche")
+
+        monkeypatch.setattr(pmw, "content_delivered_by_branch_patch_id",
+                            _must_not_run)
+        s = self._diagnose(monkeypatch, self._info(), cherry=(3, 0))
+        assert s.decision == "REMOVE"
+        assert s.content_on_main_by == "patch_id"
+
+    def test_branch_leg_unreadable_refuses(self, monkeypatch):
+        # Echec de lecture de la jambe elargie : jamais un feu vert.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(0, 2),
+                           branch_cherry=None)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+        assert s.content_on_main_by is None
+
+    def test_multi_commit_with_unmerged_work_refuses(self, monkeypatch):
+        # La jambe elargie ne blanchit pas du travail non livre : un seul
+        # `+` disqualifie, exactement comme pour la jambe per-commit.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(2, 1),
+                           branch_cherry=(0, 1))
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+
+    def test_branch_leg_empty_patch_refuses(self, monkeypatch):
+        # Branche dont le patch net est vide : `minus == 0`, il n'y a rien a
+        # comparer -- meme exigence que pour la jambe per-commit.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(0, 2),
+                           branch_cherry=(0, 0))
+        assert s.decision == "REFUSE"
+        assert s.content_on_main is False
+
+    def test_branch_leg_protects_recent_activity(self, monkeypatch):
+        # Meme fenetre « agent vivant » que les autres jambes (#18494) -- et
+        # le rapport dit bien que le contenu EST sur main, pas qu'il manque.
+        s = self._diagnose(monkeypatch, self._info(), cherry=(0, 2),
+                           branch_cherry=(1, 0), age_h=0.5)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "recent_activity:0.5h"
+        assert s.content_on_main is True
+        assert s.content_on_main_by == "branch_patch_id"
+
+    def test_live_agent_window_protects(self, monkeypatch):
+        # Meme fenetre « agent vivant » que le predicat d'ascendance
+        # (#18494) : un marqueur d'activite recent fait REFUSER, mais la
+        # jambe est renseignee (le contenu EST sur main) -- c'est ce qui
+        # distingue « protege » de « non livre ».
+        s = self._diagnose(monkeypatch, self._info(), cherry=(3, 0),
+                           age_h=0.5)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "recent_activity:0.5h"
+        assert s.content_on_main is True
+        assert s.content_on_main_by == "patch_id"
+
+    def test_detached_head_not_eligible(self, monkeypatch):
+        # Branche-only, comme le predicat d'ascendance : un HEAD detache
+        # garde son verdict dedie (#17684).
+        info = self._info(branch=None)
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "detached_head_is_on_main", lambda *a: False)
+        monkeypatch.setattr(pmw, "lookup_pr_for_detached_head",
+                            lambda *a, **k: None)
+
+        def _cherry_must_not_run(*a):
+            raise AssertionError(
+                "content_delivered_by_patch_id ne doit pas etre appele sur "
+                "un HEAD detache : le predicat est branche-only"
+            )
+
+        monkeypatch.setattr(pmw, "content_delivered_by_patch_id",
+                            _cherry_must_not_run)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "detached_no_match"
+
+    def test_source_dirt_primes_over_patch_id(self, monkeypatch):
+        # Controle negatif de symetrie : la salete source tranche AVANT
+        # toute lecture de contenu, ici comme sur la jambe d'ascendance.
+        info = self._info(
+            untracked=["src/keep.py"], blocking_untracked=["src/keep.py"],
+            has_source_dirty=True,
+        )
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+
+        def _cherry_must_not_run(*a):
+            raise AssertionError(
+                "content_delivered_by_patch_id ne doit pas etre appele : la "
+                "salete source prime"
+            )
+
+        monkeypatch.setattr(pmw, "content_delivered_by_patch_id",
+                            _cherry_must_not_run)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "uncommitted_source_changes"
+
+
+class TestContentDeliveredByPatchId:
+    """Unite du helper #20067 : comptage des lignes `-` / `+` de git cherry."""
+
+    def _run(self, monkeypatch, rc, stdout):
+        class _P:
+            returncode = rc
+
+        _P.stdout = stdout
+        monkeypatch.setattr(pmw, "run_git", lambda *a, **k: _P())
+        return pmw.content_delivered_by_patch_id("C:/fake")
+
+    def test_counts_minus_and_plus(self, monkeypatch):
+        out = (
+            "- abc123\n"
+            "- def456\n"
+            "+ 789abc\n"
+        )
+        assert self._run(monkeypatch, 0, out) == (2, 1)
+
+    def test_all_delivered(self, monkeypatch):
+        assert self._run(monkeypatch, 0, "- a\n- b\n- c\n") == (3, 0)
+
+    def test_empty_stdout_is_empty_branch(self, monkeypatch):
+        assert self._run(monkeypatch, 0, "") == (0, 0)
+
+    def test_git_failure_returns_none(self, monkeypatch):
+        # Fail-closed : l'appelant refuse sur None.
+        assert self._run(monkeypatch, 128, "") is None
+
+
 class TestRemoteHeadForHead:
     """Unite du helper #17771 : upstream explicite, puis scan de tips."""
 
@@ -2636,3 +2866,120 @@ class TestWindowsJunctionIsLinkLike:
         # Garde de surete : on retire le LIEN, jamais la cible.
         assert target.is_dir(), "la cible de la jonction doit survivre"
         assert (target / "marker.txt").read_text(encoding="utf-8") == "x"
+
+
+class TestBranchPatchIdOnRealGit:
+    """#20067 : la jambe elargie, mesuree sur un depot jetable reel.
+
+    Reproduit la reserve Hermes du 09/10 sur de vrais objets git, sans
+    monkeypatch : une branche a DEUX commits, squashee sur ``main`` puis
+    supprimee du distant. La jambe per-commit doit rendre ``(0, 2)`` et la
+    jambe elargie ``(1, 0)``. C'est ce couple qui fonde le correctif, et
+    aucun stub ne peut le fabriquer -- un test qui monkeypatche les deux
+    jambes ne prouve rien sur la mecanique git sous-jacente.
+    """
+
+    @staticmethod
+    def _git(cwd, *args):
+        return subprocess.run(
+            ["git", "-C", str(cwd), *args],
+            capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
+        )
+
+    def _farm(self, tmp_path):
+        """Depot nu + clone, identite posee, main pousse. Rend (origin, wt)."""
+        origin = tmp_path / "origin.git"
+        subprocess.run(["git", "init", "--bare", "-b", "main", str(origin)],
+                       check=True, capture_output=True)
+        wt = tmp_path / "wt"
+        subprocess.run(["git", "clone", str(origin), str(wt)],
+                       check=True, capture_output=True)
+        self._git(wt, "config", "user.email", "test@example.invalid")
+        self._git(wt, "config", "user.name", "Test")
+        (wt / "a.txt").write_text("a\n", encoding="utf-8")
+        self._git(wt, "add", "a.txt")
+        self._git(wt, "commit", "-m", "base")
+        self._git(wt, "push", "-u", "origin", "main")
+        return origin, wt
+
+    def _two_bricks(self, wt, branch):
+        self._git(wt, "checkout", "-b", branch)
+        (wt / "b.txt").write_text("b\n", encoding="utf-8")
+        self._git(wt, "add", "b.txt")
+        self._git(wt, "commit", "-m", "brique 1")
+        (wt / "c.txt").write_text("c\n", encoding="utf-8")
+        self._git(wt, "add", "c.txt")
+        self._git(wt, "commit", "-m", "brique 2")
+        self._git(wt, "push", "-u", "origin", branch)
+
+    def test_two_commit_squash_is_seen_only_by_the_branch_leg(self, tmp_path):
+        origin, wt = self._farm(tmp_path)
+        self._two_bricks(wt, "feature/squashed")
+
+        # Squash-merge sur main, puis suppression de la branche distante :
+        # c'est le cas ou plus aucun ref ne porte la tete.
+        self._git(wt, "checkout", "main")
+        self._git(wt, "merge", "--squash", "feature/squashed")
+        self._git(wt, "commit", "-m", "squash des deux briques")
+        self._git(wt, "push", "origin", "main")
+        self._git(wt, "push", "origin", "--delete", "feature/squashed")
+        # Le worktree reste pose sur sa branche, comme un worktree de lane
+        # que personne n'a nettoye.
+        self._git(wt, "checkout", "feature/squashed")
+
+        per_commit = pmw.content_delivered_by_patch_id(str(wt))
+        branch = pmw.content_delivered_by_branch_patch_id(str(wt))
+
+        assert per_commit == (0, 2), (
+            "la jambe per-commit doit rester aveugle au squash multi-commit "
+            f"(mesure : {per_commit})"
+        )
+        assert branch == (1, 0), (
+            "la jambe elargie doit retrouver le patch de branche "
+            f"(mesure : {branch})"
+        )
+
+    def test_two_commit_branch_not_merged_is_refused_by_both(self, tmp_path):
+        """Controle negatif : sans squash, aucune des deux jambes ne tire."""
+        origin, wt = self._farm(tmp_path)
+        self._two_bricks(wt, "feature/ouverte")
+
+        per_commit = pmw.content_delivered_by_patch_id(str(wt))
+        branch = pmw.content_delivered_by_branch_patch_id(str(wt))
+
+        assert per_commit == (0, 2), f"mesure : {per_commit}"
+        assert branch == (0, 1), (
+            "un contenu non livre ne doit pas etre blanchi par la jambe "
+            f"elargie (mesure : {branch})"
+        )
+
+    def test_single_commit_squash_is_still_seen_by_the_per_commit_leg(
+            self, tmp_path):
+        """Non-regression : le cas mono-commit, que la premiere jambe voit.
+
+        La jambe elargie doit y rendre la meme chose -- sinon un REMOVE
+        dependrait de l'ordre dans lequel les deux jambes sont tentees.
+        """
+        origin, wt = self._farm(tmp_path)
+        self._git(wt, "checkout", "-b", "feature/une-brique")
+        (wt / "b.txt").write_text("b\n", encoding="utf-8")
+        self._git(wt, "add", "b.txt")
+        self._git(wt, "commit", "-m", "brique unique")
+        self._git(wt, "push", "-u", "origin", "feature/une-brique")
+
+        self._git(wt, "checkout", "main")
+        self._git(wt, "merge", "--squash", "feature/une-brique")
+        self._git(wt, "commit", "-m", "squash de la brique unique")
+        self._git(wt, "push", "origin", "main")
+        self._git(wt, "push", "origin", "--delete", "feature/une-brique")
+        self._git(wt, "checkout", "feature/une-brique")
+
+        per_commit = pmw.content_delivered_by_patch_id(str(wt))
+        branch = pmw.content_delivered_by_branch_patch_id(str(wt))
+
+        assert per_commit == (1, 0), f"mesure : {per_commit}"
+        assert branch == (1, 0), (
+            "la jambe elargie doit concorder sur le cas mono-commit "
+            f"(mesure : {branch})"
+        )

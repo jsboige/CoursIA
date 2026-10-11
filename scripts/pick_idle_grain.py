@@ -225,7 +225,7 @@ REPO = "jsboige/CoursIA"
 #                                       (annonce, le mot n'est pas immediatement
 #                                       apres `[INFO` mais sur la meme ligne)
 # Forme etroite : la 3e alternative exige `candidate-delivered`
-# borne par `\b` (mot complet) sur la MEME ligne qu'un `[INFO]` en tete, pour
+# complete sur la MEME ligne qu'un `[INFO]` en tete, pour
 # eviter qu'une mention discursive du mecanisme (n'importe ou dans un
 # commentaire) fausse l'exclusion. La 1re et 2e formes restent matchees par la
 # regex d'origine (espace apres `[INFO`). La 3e forme (annonce) exige la
@@ -239,14 +239,25 @@ REPO = "jsboige/CoursIA"
 # incidentes du type "sans [INFO] candidate-delivered" ou "[INFO] absent
 # dans ce fil", ou la sous-chaîne `[INFO] candidate-delivered` est presente
 # mais n'est pas l'en-tête du commentaire.
+# #20008 : la fermeture est un LOOKAHEAD `(?![-_\w])`, jamais un `\b`. Un `\b`
+# pose apres `delivered` ne separe PAS `candidate-delivered` de
+# `candidate-delivered-partial` : le tiret est un non-mot, donc il FORME une
+# frontiere de mot (mesure du 10/10 : la variante `\b` rend True sur
+# `-partial`, le lookahead rend False). Ce seul fermeur corrige les deux
+# asymetries de grammaire mesurees sur la version precedente :
+#   - le marqueur PARTIEL (`[INFO] candidate-delivered-partial`) cessait d'etre
+#     lu comme une livraison PLEINE (FP : le candidat sortait de l'urne `grain`) ;
+#   - la forme espacee a contenu interne (`[INFO candidate-delivered <contenu>]`)
+#     n'etait reconnue par AUCUNE alternative (FN), la 2e exigeant le `]`
+#     immediatement apres le mot.
 _DELIVERED_MARKER_RE = re.compile(
     r"(?:"
-    r"^\s*\[INFO\]\s+candidate-delivered"
+    r"^\s*\[INFO\]\s+candidate-delivered(?![-_\w])"
     r"|"
-    r"^\s*\[INFO\s+candidate-delivered\]"
+    r"^\s*\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
     r"|"
     r"^\s*\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
-    r"verification first-hand)[^\n]*\bcandidate-delivered\b"
+    r"verification first-hand)[^\n]*\bcandidate-delivered(?![-_\w])"
     r")",
     re.IGNORECASE | re.MULTILINE,
 )
@@ -1703,6 +1714,37 @@ def print_delivered_signal_report(
         print()
 
 
+def print_claim_unread_report(unread, lane: str | None = None) -> None:
+    """Rend compte des claims NON LUS -- la moitie manquante du fail-OPEN.
+
+    Le tirage sert un candidat dont le claim n'a pas pu etre lu : c'est la
+    bonne doctrine (refuser un grain faute d'avoir pu verifier son claim
+    fabriquerait un faux BLOQUE). Le SILENCE qui l'accompagnait, lui, ne
+    l'etait pas : le candidat partait avec un statut de claim INCONNU, sans
+    que le rendu le distingue d'un claim verifie libre (#20265). Le signal de
+    livraison donne le patron -- il annonce deja sa lecture ratee
+    (``state["failures"]``) ; le claim fait de meme.
+
+    Ne PAS confondre avec un controle ABSENT : ``--no-check-claims`` et un
+    tirage sans lane rendent le meme code de repli sans qu'aucune lecture ait
+    ete tentee. Ce cas ne se signale pas -- une banniere y serait une fausse
+    alerte a chaque tirage sans lane. L'appelant ne passe donc que les
+    numeros d'une lecture TENTEE ET ECHOUEE.
+    """
+    numbers = sorted(set(unread or []))
+    if not numbers:
+        return
+    joined = ", ".join(f"#{num}" for num in numbers)
+    print(f"!! claim NON LU sur {joined} ({len(numbers)} candidat(s)) : la "
+          "lecture n'a pas pu etre faite")
+    print("   (reseau, 403, payload illisible). Le tirage est MAINTENU et ces")
+    print("   candidats sont CONSERVES (fail-OPEN assume) -- on ne refuse pas un")
+    print("   grain faute d'avoir pu verifier son claim. Le statut est INCONNU,")
+    print("   pas libre : verifier avant d'editer")
+    hint = ("--lane " + lane if lane else "--lane <machine:workspace>")
+    print(f"   (`python scripts/check_lane_claim.py <N> {hint}`).")
+
+
 def draw_verdict(pool_error: str | None) -> str:
     """La phrase du verdict quand la lecture du pool n'a PAS abouti (#17038).
 
@@ -2258,6 +2300,11 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
              else {"failures": [], "budget_hit": False, "recent_filtered": 0})
     failures = state.setdefault("failures", [])
     recent_filtered = state.setdefault("recent_filtered", 0)
+    # Les numeros servis sur une lecture de claim EN ECHEC (#20265).
+    claim_unread = state.setdefault("claim_unread", [])
+    # Une lecture de claim n'est SIGNALABLE que si elle a ete TENTEE : le
+    # repli `ERROR` couvre aussi le controle jamais demande.
+    check_claims_ran = bool(args.check_claims and args.lane)
     budget = [DELIVERED_SIGNAL_MAX_PROBES]
 
     def _counted_probe(number, lane_name):
@@ -2326,7 +2373,7 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                     break
                 nums = [c["number"] for c in cand]
                 verdicts = (check_claims(nums, args.lane)
-                            if args.check_claims and args.lane else {})
+                            if check_claims_ran else {})
                 claims.update(verdicts)
                 drawn = {c["number"] for c in cand}
                 pool = [it for it in pool
@@ -2334,6 +2381,16 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                 for c in cand:
                     v_code, v_human = verdicts.get(c["number"],
                                                    (CLAIM_CODE_ERROR, ""))
+                    # Le repli `ERROR` sert DEUX cas opposes : une lecture
+                    # tentee qui a echoue, et un controle jamais demande
+                    # (`--no-check-claims`, tirage sans lane) qui laisse
+                    # `verdicts` vide. Seul le premier est un fail-OPEN a
+                    # signaler -- l'autre ferait une fausse alerte a chaque
+                    # tirage sans lane (#20265).
+                    if (check_claims_ran
+                            and v_code in (CLAIM_CODE_ERROR,
+                                           CLAIM_CODE_UNCHECKED)):
+                        claim_unread.append(c["number"])
                     if v_code == CLAIM_CODE_BLOCKED:
                         conflicts.append((c, "CLAIM : " + v_human + (
                             ". Une autre lane tient ce grain -- ecrire dessus "
@@ -4662,13 +4719,36 @@ def latest_claim_stamp(issue_number: int) -> str | None:
             capture_output=True, text=True, encoding="utf-8", check=True,
             timeout=30,
         ).stdout
-        comments = [c for c in (json.loads(out) or {}).get("comments") or []
-                    if isinstance(c, dict)]
-        stamps = [s for s in (claim_visit_stamp(comments),
-                              delivered_info_stamp(comments)) if s]
-        return max(stamps) if stamps else None
-    except Exception:  # noqa: BLE001 - sonde best-effort, l'issue garde son merge
-        return None
+        payload = json.loads(out) or {}
+    except Exception as graphql_exc:  # noqa: BLE001 - on TENTE l'autre transport
+        # #17038 -- sous panne GraphQL, cette sonde unitaire est le repli
+        # DESIGNe du bulk (`fetch_latest_claim_stamps_bulk`, cf c.1113) :
+        # si elle meurt aussi, la tete de tapis perd ses stamps de claim et
+        # les issues livrees restent collees en tete (mesure : #16372 servie
+        # deux jours apres son [RELEASED]). Le repli REST de l'organe des
+        # claims sert la meme charge de commentaires, quota distinct.
+        try:
+            from check_lane_claim import _rest_issue_payload
+            # `repo=REPO` : la voie GraphQL ci-dessus epingle deja sa cible
+            # (`--repo REPO`, independante du cwd). Le repli REST doit viser
+            # le MEME depot -- sans cet argument il infererait le slug du
+            # remote `origin` du cwd et servirait silencieusement les claims
+            # d'un autre depot depuis un worktree/clone etranger (reserve
+            # NanoClaw du 2026-10-10 sur #20248).
+            payload = _rest_issue_payload(str(issue_number), repo=REPO)
+            print(
+                f"[TRANSPORT] gh issue view (GraphQL) indisponible "
+                f"({type(graphql_exc).__name__}) -- sonde de tete #{issue_number} "
+                f"bascule REST, quota distinct.",
+                file=sys.stderr,
+            )
+        except Exception:  # noqa: BLE001 - sonde best-effort, l'issue garde son merge
+            return None
+    comments = [c for c in payload.get("comments") or []
+                if isinstance(c, dict)]
+    stamps = [s for s in (claim_visit_stamp(comments),
+                          delivered_info_stamp(comments)) if s]
+    return max(stamps) if stamps else None
 
 
 def _claim_stamp_from_comments(comments: list[dict]) -> str | None:
@@ -6153,10 +6233,14 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     2026-10-09 : 99 s pour un seul test, cf. coordinateur #19913).
 
     Rend ``(picks, withheld, etat)`` avec ``etat = {"failures": [numeros
-    illisibles], "budget_hit": bool}``.
+    illisibles], "budget_hit": bool, "claim_unread": [numeros servis sur une
+    lecture de claim en echec]}``. ``claim_unread`` est le pendant du
+    ``failures`` de livraison : deux lectures qui n'ont pas ABOUTI, servies
+    quand meme (fail-OPEN) et rapportees a la lane (#20265).
     """
     budget = [int(probe_budget)]
-    state = {"failures": [], "budget_hit": False, "recent_filtered": 0}
+    state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
+             "claim_unread": []}
 
     # Le budget enrobe TOUTE sonde, injectee ou reelle : un test qui fournit
     # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
@@ -6232,6 +6316,13 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         # ERROR (check indisponible, parse rate...) est servable par
         # defaut : on ne peut pas refuser un grain faute d'avoir pu
         # verifier son claim, ce serait introduire un faux BLOQUE.
+        # Le fail-OPEN est assume, le SILENCE ne l'est pas (#20265) : un
+        # candidat servi sur une lecture en echec part avec un statut de
+        # claim INCONNU, et rien ne le distinguait d'un claim verifie libre.
+        # Le signal de livraison annoncait deja sa lecture ratee ; le claim
+        # le fait ici, au moment ou le candidat est retenu.
+        if args.lane and code in (CLAIM_CODE_ERROR, CLAIM_CODE_UNCHECKED):
+            state["claim_unread"].append(n)
         belt_picks.append(it)
     return belt_picks, belt_withheld, state
 
@@ -7020,6 +7111,10 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"!! signal de livraison NON LU sur {numbers} : le tirage")
                 print("   est MAINTENU et ces candidats CONSERVES -- une lecture")
                 print("   qui n'a pas ABOUTI n'est PAS une absence de signal.")
+            # #20265 : meme doctrine pour le claim, juxtaposee a la ligne
+            # ci-dessus -- les deux lectures ratees se lisent ensemble.
+            print_claim_unread_report(belt_pick_state.get("claim_unread"),
+                                      args.lane)
             if belt_probe_budget_hit[0]:
                 print("   Plafond de sondes de livraison atteint : les candidats")
                 print("   au-dela ne sont pas sondes (fail-OPEN) -- la verification")
@@ -7036,6 +7131,23 @@ def main(argv: list[str] | None = None) -> int:
                 top = belt_picks[0]
                 print(f"   ACTION REQUISE : poser [CLAIMED] lane {args.lane} sur "
                       f"#{top['number']} avant edition -- cf lane-claim-protocol.")
+            # #17038 (residu du 2026-10-09) -- contrat de verdict : un pick
+            # dont le claim est ERROR n'est PAS un candidat libre, c'est un
+            # candidat NON MESURE. Le servir reste le comportement (le tapis
+            # ne refuse jamais, faux-BLOQUE interdit cf #18836), mais jamais
+            # sous le vocabulaire du libre : la lane doit relire le claim a
+            # la main avant toute edition dessus.
+            unmeasured = [
+                it["number"] for it in belt_picks
+                if belt_claims.get(it["number"],
+                                   (CLAIM_CODE_ERROR, ""))[0] == CLAIM_CODE_ERROR
+            ]
+            if unmeasured:
+                print(f"   claim NON MESURABLE (sonde de claim tombee, GraphQL"
+                      f" puis REST) : "
+                      f"{', '.join('#'+str(n) for n in unmeasured)} -- pas des"
+                      f" candidats 'libres' : relire "
+                      f"`python scripts/check_lane_claim.py <N>` avant edition.")
             print()
         if args.json:
             # Surface JSON compatible avec la volee ponderee : `picks`,
@@ -7068,6 +7180,17 @@ def main(argv: list[str] | None = None) -> int:
                                  if c.startswith("LIVRAISON")],
                     "unread": sorted(set(belt_delivered_failures)),
                     "budget_hit": belt_probe_budget_hit[0],
+                },
+                # Volet claim (#20265) : le pendant du volet livraison. Une
+                # liste vide dit « toutes les lectures TENTEES ont abouti » --
+                # jamais « aucun candidat ». Un controle non demande
+                # (`--no-check-claims`, tirage sans lane) n'y figure pas : le
+                # code de repli y est indistinguable d'un echec, seul le
+                # premier est un fail-OPEN a signaler.
+                "claim_signal": {
+                    "probes_attempted": bool(args.lane),
+                    "unread": sorted(set(belt_pick_state.get("claim_unread")
+                                         or [])),
                 },
                 "last_delivery_window_days": delivery_window_days,
                 "substance_drought": {"triggered": False, "measured": False,
@@ -7325,6 +7448,17 @@ def main(argv: list[str] | None = None) -> int:
                 "budget_hit": delivered_state["budget_hit"],
                 "max_probes": DELIVERED_SIGNAL_MAX_PROBES,
             },
+            # Pendant du volet livraison, meme doctrine (#20265) :
+            # `probes_attempted` est la parce que ce chemin peut legitimement
+            # NE PAS sonder (`--no-check-claims`, tirage sans lane) -- sans
+            # elle, une liste vide se lirait « tout a abouti » alors qu'elle
+            # peut dire « rien n'a ete mesure ». Les deux etats ne se disent
+            # pas avec le meme silence.
+            "claim_signal": {
+                "probes_attempted": bool(args.check_claims and args.lane),
+                "unread": sorted(set(delivered_state.get("claim_unread")
+                                     or [])),
+            },
             "red_backlog": backlog,
             "substance_drought": drought,
             "lane_record": lane_record,
@@ -7515,6 +7649,11 @@ def main(argv: list[str] | None = None) -> int:
             print(pad + "rien : prendre un sous-grain ailleurs, sauf steer explicite.")
     print_delivered_signal_report(withheld, delivered_state,
                                   args.include_delivered)
+    # #20265 : juxtapose au signal de livraison -- les deux lectures ratees
+    # se lisent ensemble, la ou le defaut etait precisement que l'une se
+    # taisait.
+    print_claim_unread_report((delivered_state or {}).get("claim_unread"),
+                              args.lane)
     print_empty_draw_notice(withheld, picks, args.include_delivered)
     print()
     print_unattributed_blocked(backlog)
