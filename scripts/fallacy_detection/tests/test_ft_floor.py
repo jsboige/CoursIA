@@ -47,6 +47,13 @@ class TestLots:
         b = ftf.letter_batches(10, 3, 42)
         assert a == b
 
+    def test_deux_epochs_ne_partagent_pas_la_permutation(self):
+        # La permutation est derivee de (graine, epoch) : chaque epoch reçoit
+        # son ordre propre, reproductible -- verifie, pas seulement documente.
+        flat = lambda e: [i for b in ftf.letter_batches(20, 4, 42, epoch=e) for i in b]
+        assert flat(0) != flat(1) and flat(1) != flat(2)
+        assert flat(1) == [i for b in ftf.letter_batches(20, 4, 42, epoch=1) for i in b]
+
     def test_les_lots_couvrent_chaque_index_une_fois(self):
         flat = [i for batch in ftf.letter_batches(10, 3, 42) for i in batch]
         assert sorted(flat) == list(range(10))

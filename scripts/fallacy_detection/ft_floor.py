@@ -150,18 +150,22 @@ def fold_scope(base_model):
     try:
         yield peft_model
     finally:
-        restored = peft_model.unload()
-        assert restored is base_model or True  # le contrat de peft : base intacte
+        # Le contrat de ``peft`` ``unload()`` : demonte les wrappers LoRA et rend
+        # le modele de base avec ses poids originaux. Contrat documente de peft,
+        # non verifie par assert : l'identite d'objet rendue depend de la version.
+        peft_model.unload()
 
 
-def letter_batches(n: int, batch_size: int, seed: int) -> list[list[int]]:
-    """Index d'items par lot, ordre melange deterministe par graine (epoch 0 fixe).
+def letter_batches(n: int, batch_size: int, seed: int, epoch: int = 0) -> list[list[int]]:
+    """Index d'items par lot, ordre melange deterministe par (graine, epoch).
 
-    Les epochs suivantes re-melangent avec la meme graine derivee : l'ordre d'epoch
-    est deterministe et consignable, sans dependre d'un etat global.
+    Chaque epoch recoit sa propre permutation -- derivee de
+    ``f"{seed}:train:{epoch}"``, reproductible sans etat global : meme graine et
+    meme epoch donnent toujours le meme ordre, deux epochs distinctes ne
+    partagent pas la permutation.
     """
     order = list(range(n))
-    random.Random(f"{seed}:train").shuffle(order)
+    random.Random(f"{seed}:train:{epoch}").shuffle(order)
     return [order[i:i + batch_size] for i in range(0, n, batch_size)]
 
 
@@ -228,7 +232,7 @@ def run(corpus_path: Path, out_dir: Path, level: str, folds_count: int, seed: in
             peft_model.train()
             for epoch in range(EPOCHS):
                 epoch_losses: list[float] = []
-                batches = letter_batches(len(train_items), BATCH_SIZE, seed)
+                batches = letter_batches(len(train_items), BATCH_SIZE, seed, epoch=epoch)
                 for batch in batches:
                     optimizer.zero_grad()
                     for idx in batch:
