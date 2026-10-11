@@ -522,6 +522,28 @@ def _is_bot_advisory_pose(row: dict[str, Any]) -> bool:
     return _bot_advisory_key(row) is not None
 
 
+def _foreign_tail_rows(
+    comments: list[dict[str, Any]], dossier: Dossier
+) -> list[dict[str, Any]]:
+    """Commentaires posterieurs au dossier qui periment reellement le fil.
+
+    Predicat canonique partage par le gate et la queue : une row tardive
+    n'est etrangere que si elle n'est ni la voix du coordinateur
+    (``_is_own_later_act``) ni la pose consultative d'un bot marker-garde
+    (``_is_bot_advisory_pose``). La queue comptait ces lignes en brut avant
+    #16480-c2151 et reintroduisait, par un simple ``len``, exactement ce que
+    #17818/#18637 avaient neutralise cote gate (mesure 11/10 : #20094 et
+    #20372 STALE sur la seule pose PATH-COLLISION de ``github-actions[bot]``,
+    6 PR sur 102 a 18:21Z).
+    """
+    return [
+        row
+        for row in comments[dossier.comment_index + 1:]
+        if not _is_own_later_act(row, "createdAt", dossier.created_at)
+        and not _is_bot_advisory_pose(row)
+    ]
+
+
 def _review_body_has_reserve_marker(author: str, body: str) -> bool:
     """True quand, en substance, cette review pose une reserve vivante.
 
@@ -1504,12 +1526,7 @@ def evaluate_with_dossier(
     # wrote it, which it cannot be unaware of (see _is_own_later_act), or it
     # is the first pose of a consultative marker-guarded bot comment, which
     # attests nothing about the PR's substance (see _is_bot_advisory_pose).
-    foreign = [
-        row
-        for row in comments[dossier.comment_index + 1:]
-        if not _is_own_later_act(row, "createdAt", dossier.created_at)
-        and not _is_bot_advisory_pose(row)
-    ]
+    foreign = _foreign_tail_rows(comments, dossier)
     if foreign:
         errors.append(
             "discussion changed after dossier: a fresh adjoint preflight is required"
@@ -1819,15 +1836,22 @@ def classify_snapshot(
         )
 
     tail = max(0, len(comments) - 1 - dossier.comment_index)
+    foreign = _foreign_tail_rows(comments, dossier)
     age_minutes: int | None = None
     if dossier.created_at:
         stamp = _parse_ts(dossier.created_at)
         if stamp is not None:
             age_minutes = max(0, int((now - stamp).total_seconds() // 60))
-    if tail > 0:
+    if foreign:
+        # #16480-c2151 : le gate vient de valider ce dossier contre les
+        # memes predicats, donc un STALE ici ne leve que sur des lignes NON
+        # neutralisees -- le compte brut perimait des dossiers valides sur
+        # la seule pose consultative d'un bot (mesure 11/10 : #20094,
+        # #20372). ``tail`` reste le compte brut, a titre d'information.
         return entry(
             QUEUE_VERDICT_STALE,
-            f"{tail} comment(s) posted after the dossier -- re-read the tail, "
+            f"{len(foreign)} foreign comment(s) posted after the dossier "
+            f"({tail} total) -- re-read the tail, "
             "the exact-head contract no longer holds",
         )
     if age_minutes is not None and age_minutes > stale_after_minutes:
