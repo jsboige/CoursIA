@@ -1,0 +1,18 @@
+# Sites `rm -rf` sur variable tolerants connus (#20208).
+# Ces sites fuient hors de leur racine SI la variable est vide ;
+# ils sont toleres ici parce qu'un garde doit etre vert au merge.
+# Retirer une ligne des qu'un site est corrige.
+scripts/ci/docker/linux-runner/persist/ai-01/test-dryrun-sizing-control.sh:"$TMP/_aclprobe"
+scripts/ci/docker/linux-runner/persist/ai-01/test-dryrun-sizing-control.sh:"$TMP/_probe"
+scripts/ci/docker/linux-runner/persist/ai-01/test-dryrun-sizing-control.sh:"$TMP/fxr/etc/systemd/system/coursia-runner.service.d"
+scripts/ci/docker/linux-runner/test_supervise_guards.sh:"$TEST_DIR/pin-43"
+scripts/ci/docker/linux-runner/test_supervise_guards.sh:"$TEST_DIR/pin-44"
+scripts/ci/docker/linux-runner/test_supervise_guards.sh:"$TEST_DIR/pin-44-absente"
+scripts/ci/docker/linux-runner/test_work_cache_health.sh:"$R/.git/logs"
+scripts/lean/setup_shared_mathlib.sh:"${REPO_ROOT}/${donor}/.lake/packages/mathlib"
+# Deux formes COMPOSITES (`"$VAR"/suffixe`, `"$VAR"/*`) revelees par le
+# tokenizer corrige (#20209) : le mot shell n'etait pas decoupe. Meme famille
+# que les sites ci-dessus -- variable de test posee en tete de script, jamais
+# vide, exposition conditionnelle. L'organe ne reecrit rien : il les tolere.
+scripts/ci/docker/linux-runner/test_supervise_guards.sh:"$TEST_DIR"/pin-44.staging.*
+scripts/ci/docker/linux-runner/test_work_cache_health.sh:"$R/.git/refs"/*
