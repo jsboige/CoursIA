@@ -19,7 +19,7 @@ Ce qui manque : **où ces fils se touchent**. Les invariants de Grothendieck et 
 
 > **Position méthodologique.** Le passage de maturité de la série ne se décrète pas : il se *gagne* à chaque front où une unification prématurée aurait sinon pris racine. La tresse est *ici* un anti-revêtement : elle nomme les **opérations** distinctes, sans prétendre qu'elles *convergent* ou qu'elles *s'identifient*. Quand deux fils s'opposent (par exemple Grothendieck sur l'existence de sections globales là où Friston parle de mise à jour bayésienne), cette opposition est un **résultat** — pas un problème à résoudre.
 
----
+***
 
 ## Partie 1 — Cartographie de la tresse
 
@@ -207,7 +207,7 @@ part de l'échelle — il éclaire S5 et au-delà par le recollement. C'est la l
 horizontale appliquée à l'axe vertical : **la tresse se mesure sur les strates, elle ne les remplace
 pas.**
 
----
+***
 
 ## Partie 2 — Hiérarchie de sobriété : Dissociation → Score → Classe → Stack → Gerbe
 
@@ -244,7 +244,7 @@ Cette hiérarchie est **applicable** à toute la prose ICT existante et à venir
 
 > **Note de discipline.** Le présent document applique cette sobriété à lui-même : il **cartographie** la tresse et marque les **frontières**, il **ne réalise** pas les identités. Aucune affirmation de cette section ne monte *Dissociation* → *Score* → *Classe* → *Stack* → *Gerbe* sans les prérequis rassemblés.
 
----
+***
 
 ## Partie 3 — Les deux ponts Conway (distincts)
 
@@ -284,7 +284,7 @@ Les deux ponts sont **néscessaires** à la maturité de la série, mais **à de
 
 Sans (a), la prose ICT risque de glisser d'opérationnellement valide à formellement certifié sans preuve. Sans (b), la prose ICT risque de traiter tout désaccord entre proxys comme « structurel » sans test de contextualité. La sobriété exige les **deux**.
 
----
+***
 
 ## Ce que ce document n'est pas
 
@@ -296,7 +296,7 @@ Sans (a), la prose ICT risque de glisser d'opérationnellement valide à formell
 - **Ce n'est pas une promotion de la hiérarchie de sobriété en règle projet.** La hiérarchie est **appliquée** au présent document et **suggérée** aux futurs, mais sa promotion normative substantielle en règle auto-loaded requiert une PR + sign-off user conformément à CLAUDE.md §A. Ce n'est *pas* une telle PR.
 - **Ce n'est pas un audit des notebooks ICT.** Les notebooks sont cités comme ancres ; leurs verdicts internes (gates, sorry count, etc.) restent *leur* affaire. La discipline anti-régression ([anti-regression.md](../../.claude/rules/anti-regression.md)) s'applique à chaque notebook, pas à ce document.
 
----
+***
 
 ## Voir aussi
 
