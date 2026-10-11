@@ -1192,6 +1192,36 @@ def dossier_self_consistency_errors(
     return errors
 
 
+def base_ref_error(base: Any, liveness: Any) -> str:
+    """Le refus d'une base non-`main` nomme LEQUEL des deux cas s'applique (#19014).
+
+    Une lane qui lit « retarget the PR » sur une PR empilee cherche une mort
+    de branche qui n'existe pas : la base est vivante, il faut attendre le
+    merge de la PR porteuse. Les deux motifs reprennent le vocabulaire de
+    ``merge_ready.base_ref_liveness`` (une seule lecture, deux lecteurs) :
+    ``base-live-not-main`` dit d'attendre, ``base-gone`` dit de recibler.
+    Sans mesure exploitable (``unreadable``, ou un snapshot anterieur a
+    #19014 qui ne porte pas le champ), le message generique reste --
+    fail-CLOSED : le gate ne nomme pas un etat qu'il n'a pas lu.
+    """
+    if liveness == "live":
+        return (
+            f"base-live-not-main:{base} -- la base est une PR ouverte : "
+            f"attendre son merge, puis recibler sur {CANONICAL_BASE!r} avant "
+            f"de poser un nouveau dossier"
+        )
+    if liveness == "gone":
+        return (
+            f"base-gone:{base} -- la PR porteuse est mergee ou fermee : "
+            f"recibler sur {CANONICAL_BASE!r} et rebaser avant de poser un "
+            f"nouveau dossier"
+        )
+    return (
+        f"baseRefName must be {CANONICAL_BASE!r} when verdict is READY "
+        f"(got {base!r}); retarget the PR before stamping a new dossier"
+    )
+
+
 def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     """Validate a parsed dossier against one live PR snapshot."""
     f = dossier.fields
@@ -1225,10 +1255,7 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
         # L898 collision guard).
         base = snapshot.get("baseRefName")
         if base != CANONICAL_BASE:
-            errors.append(
-                f"baseRefName must be {CANONICAL_BASE!r} when verdict is READY "
-                f"(got {base!r}); retarget the PR before stamping a new dossier"
-            )
+            errors.append(base_ref_error(base, snapshot.get("baseLiveness")))
     elif verdict == VERDICT_BLOCKED and not blocking_fields(dossier):
         # Un BLOCKED qui ne nomme aucun champ bloquant est inerte : il occupe la
         # surface de gate sans dire quoi reparer, et ai-01 ne peut ni merger ni
@@ -2157,6 +2184,38 @@ def _head_check_runs(head_sha: str) -> list[dict[str, Any]]:
         page += 1
 
 
+def _base_liveness(base_ref_name: Any) -> str:
+    """Vivacite d'une base non-`main` (#19014).
+
+    `main` n'a pas besoin de la mesure. Un `base` absent est ``unreadable``
+    -- fail-CLOSED : le gate ne nomme pas un etat qu'il n'a pas lu, et le
+    refus generique reste en place. Sinon, la liste ``gh pr list --state all
+    --search head:<base>`` tranche, avec le meme vocabulaire que
+    ``merge_ready.base_ref_liveness`` : une PR OPEN sur cette tete est
+    ``live`` (attendre son merge, puis recibler), tout le reste est ``gone``
+    (la PR porteuse est mergee ou fermee : recibler sur `main` et rebaser).
+    Une erreur `gh` rend ``unreadable``, jamais un etat devine.
+    """
+    if not base_ref_name:
+        return "unreadable"
+    if base_ref_name == CANONICAL_BASE:
+        return "main"
+    try:
+        rows = gh_json([
+            "pr", "list", "--repo", REPO, "--state", "all",
+            "--search", f"head:{base_ref_name}",
+            "--json", "number,state", "--limit", "5",
+        ])
+    except RuntimeError:
+        return "unreadable"
+    if not isinstance(rows, list):
+        return "unreadable"
+    for row in rows:
+        if isinstance(row, dict) and str(row.get("state") or "").upper() == "OPEN":
+            return "live"
+    return "gone"
+
+
 def _pr_metadata(pr: int) -> dict[str, Any]:
     # Scalar fields come from REST (`repos/.../pulls/N`) -- the whole snapshot
     # bracket no longer touches GraphQL (#17315): the check rollup it used to
@@ -2167,6 +2226,10 @@ def _pr_metadata(pr: int) -> dict[str, Any]:
     if not isinstance(row, dict):
         raise RuntimeError("pull request response is not an object")
     state = row.get("state") or ""
+    # Read once: the base feeds both the field and the liveness measure.
+    # A REST row without `base` yields None, which `_base_liveness` renders
+    # `unreadable` -- the fail-closed half of acceptance #19014.
+    base_ref_name = (row.get("base") or {}).get("ref")
     return {
         "number": row.get("number"),
         "title": row.get("title"),
@@ -2176,7 +2239,14 @@ def _pr_metadata(pr: int) -> dict[str, Any]:
         # the fingerprint payload hashes this field verbatim.
         "state": "MERGED" if row.get("merged") else state.upper(),
         "isDraft": row.get("draft"),
-        "baseRefName": (row.get("base") or {}).get("ref"),
+        "baseRefName": base_ref_name,
+        # Rides for the READY refusal only (#19014). NOT in the fingerprint
+        # payload, which `_fingerprint_payload` builds from explicit keys --
+        # adding this field cannot expire a stamp that says nothing about it.
+        # It IS in the stability identity, deliberately: the gate reads it,
+        # so a base that goes live->gone while we read must abort the
+        # snapshot like any other surface that moved.
+        "baseLiveness": _base_liveness(base_ref_name),
         "headRefOid": (row.get("head") or {}).get("sha"),
         # Rides for the frozen-campaign check only (merge_ready reads it via
         # the same shared module). NOT in the fingerprint payload, which uses
@@ -2588,33 +2658,66 @@ def main() -> int:
     # Veto user sur campagne gelee (#17040) : un dossier READY n'autorise pas
     # a merger une PR gelee. Le veto ne vit sur AUCUNE surface que le dossier
     # couvre -- le gate le lit au moment de se prononcer, via le module
-    # partage frozen_campaigns (meme lecteur que merge_ready). Applique
-    # seulement au verdict READY : un dossier refuse ou BLOCKED est deja non
-    # mergeable, le gel n'y ajoute rien.
-    frozen_reason = None
-    if verdict == VERDICT_READY:
-        frozen_reason = frozen_umbrella_exclusion(
-            snapshot.get("title"),
-            snapshot.get("body"),
-            snapshot.get("headRefName"),
-        )
+    # partage frozen_campaigns (meme lecteur que merge_ready).
+    #
+    # Avant #19630 : le gel n'etait evalue que si `verdict == VERDICT_READY`.
+    # Une PR sans dossier sortait en `NO-DOSSIER` (rc=1) et le gel n'etait
+    # jamais lu, alors qu'il etait detectable depuis le snapshot des la
+    # recuperation. Le fix evalue le gel systematiquement (le snapshot est
+    # toujours disponible, on l'a sous la main pour le verdict) ; sa
+    # detection N'INVERSE PAS le verdict existant (un NO-DOSSIER reste
+    # NO-DOSSIER, un BLOCKED reste BLOCKED) mais AJOUTE la mention du gel
+    # dans la sortie. Le gel reste bloquant ; il devient lisible. Une lane
+    # qui consulte le gate avant de porter une PR au coord voit la verite
+    # complete.
+    frozen_reason = frozen_umbrella_exclusion(
+        snapshot.get("title"),
+        snapshot.get("body"),
+        snapshot.get("headRefName"),
+    )
     ready = verdict == VERDICT_READY and frozen_reason is None
     result = build_result(args.pr, snapshot, verdict, errors, dossier)
     if frozen_reason is not None:
         # Le dossier reste intact et publie : ce que le gate refuse est le
         # MERGE, pas la lecture de la PR -- meme action documentee que rc=3.
-        result["ready"] = False
-        result["verdict"] = "FROZEN"
+        # En mode --json, on enrichit le payload avec le motif sans changer
+        # le verdict fonctionnel (un NO-DOSSIER reste NO-DOSSIER cote
+        # verdict, mais le champ frozen informe le caller).
         result["frozen"] = frozen_reason
+        if verdict == VERDICT_READY:
+            result["ready"] = False
+            result["verdict"] = "FROZEN"
     # #17315 : le cout de l'invocation est publie avec le verdict -- le
     # compteur distingue les deux buckets (REST core vs GraphQL partage).
     result["api_usage"] = dict(API_USAGE)
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
-    elif frozen_reason is not None:
+    elif frozen_reason is not None and verdict == VERDICT_READY:
         print(
             f"FROZEN -- PR #{args.pr} belongs to a frozen campaign "
             f"({frozen_reason}); do not merge, dispatch to the lane author."
+        )
+    elif frozen_reason is not None:
+        # Gel sur NO-DOSSIER ou BLOCKED : on COMPLETE la sortie du verdict
+        # fonctionnel avec la mention du gel, sans la remplacer (#19630).
+        if verdict == VERDICT_BLOCKED:
+            print(
+                f"BLOCKED-WITH-SUBSTANCE -- PR #{args.pr} has an intact adjoint dossier at "
+                f"{snapshot['headRefOid']} attesting it is NOT mergeable."
+            )
+            print("  Do not open its surfaces: dispatch from the dossier's stated reason.")
+            attested = ", ".join(
+                f"{key}={dossier.fields.get(key, '')}" for key, _ in BLOCKING_FIELDS
+            )
+            blocked = ",".join(blocking_fields(dossier)) or "none named by the contract"
+            print(f"  attested reason: {attested} (blocking: {blocked})")
+        else:
+            print(f"NO-DOSSIER -- PR #{args.pr} is not adjoint-prevalidated")
+            for error in errors:
+                print(f"  - {error}")
+        print(
+            f"  note: PR also belongs to a frozen campaign "
+            f"({frozen_reason}); do not merge even if a dossier is added later."
         )
     elif ready:
         print(f"READY -- PR #{args.pr} prevalidated by adjoint at {snapshot['headRefOid']}")
@@ -2638,11 +2741,13 @@ def main() -> int:
         print(f"NO-DOSSIER -- PR #{args.pr} is not adjoint-prevalidated")
         for error in errors:
             print(f"  - {error}")
-    if frozen_reason is not None:
-        code = EXIT_BLOCKED_WITH_SUBSTANCE
-    elif ready:
+    if ready:
         code = EXIT_READY
-    elif verdict == VERDICT_BLOCKED:
+    elif dossier is not None:
+        # Dossier atteste : verdict fonctionnel (READY ou BLOCKED) tient.
+        # BLOCKED+gel ou READY+gel -> rc=3 (le gate refuse le MERGE, le
+        # gel COMPLETE la sortie). Un NO-DOSSIER+gel garde rc=1 : ce que le
+        # gate refuse est le MERGE, pas la lecture de la PR (#19630).
         code = EXIT_BLOCKED_WITH_SUBSTANCE
     else:
         code = EXIT_NO_DOSSIER

@@ -96,6 +96,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 11b | [Lean-11b-TorchLean-Python](Lean-11b-TorchLean-Python.ipynb) | Implémentation Python des algorithmes de vérification (IBP, CROWN) | 1h30-2h |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | théorème de sensibilité (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
 | 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Huang dans le lake `sensitivity_lean`, `#check` + `#print axioms` rendus in-kernel (UNLOCK c.127, jonction Mathlib #2611) | 45 min |
+| 12c | [Lean-12c-Tensor-Product-Representations-Lean](Lean-12c-Tensor-Product-Representations-Lean.ipynb) | Companion **natif** (kernel Lean) : l'algèbre TPR du lake `sensitivity_lean` exécutée in-kernel — quatre théorèmes de `Sensitivity.TPR` (unbinding exact `tprUnbind_bind`, chirurgie de constituant `tprSurgery`, lecture par le décodeur `tprSurgery_readout`, stabilité sous approximation `tprUnbind_approx`), `#print axioms` sans `sorryAx`, frontière épistémique prouvé/hypothèse, jumeau empirique [SL-13 — DISCOVER/TPR](../SymbolicLearning/SL-13-Discover-TPR.ipynb) et 3 exercices (certificats entiers) | 35 min |
 
 ### Partie 3 : théorèmes phares (ports complets)
 
@@ -151,6 +152,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | ANALYSE-02 | [ANALYSE-02-Tao-Lean-Python](ANALYSE/ANALYSE-02-Tao-Lean-Python.ipynb) | Le manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 40 min |
 | ANALYSE-03 | [ANALYSE-03-PFR-Lean](ANALYSE/ANALYSE-03-PFR-Lean.ipynb) | La conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 45 min |
 | ANALYSE-04 | [ANALYSE-04-PFR-Primitives-Python](ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb) | Trois primitives de PFR, et l'endroit exact où elles cessent de valoir — companion de digestion de ANALYSE-03 : ce qui se transporte hors du cadre d'origine (#12214) | 30 min |
+| ANALYSE-05 | [ANALYSE-05-KLS-Lean-Python](ANALYSE/ANALYSE-05-KLS-Lean-Python.ipynb) | La conjecture KLS démontrée (Bizeul–Klartag–Lehec 2026) : énoncé, chaîne de la preuve en cinq maillons, lac local `kls_lean` (six définitions, deux théorèmes prouvés, 0 sorry, axiomes vérifiés), thin-shell en Monte-Carlo avec saturation exacte à 8n par l'exponentielle produit, banc 1-lipschitzien minorant `poincareConstant` (#19729) | 45 min |
 | ANALYSE-09 | [ANALYSE-09-Tuilage-Aperiodique](ANALYSE/ANALYSE-09-Tuilage-Aperiodique.ipynb) (+ [jumeau _en](ANALYSE/ANALYSE-09-Tuilage-Aperiodique_en.ipynb)) | Contre-exemple au pavage périodique en dimension 3 (famille 155 du corpus openai/math) : un carreau fini de ℤ³ qui pave par translations sans **aucun** pavage totalement périodique — définitions (tuile, couverture exacte, rang du groupe de périodes), moteur borné exact-cover ancré sur la sémantique de `sudoku_lean`, quatre expériences mesurées dont deux pièges de fenêtre (rang mesuré 0 ou 2 pour des tuiles prouvées périodiques) et un théorème de non-pavage (prisme en L) | 30 min |
 | 21 | [Lean-21-MIMO-Detection-Flips](Lean-21-MIMO-Detection-Flips.ipynb) | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases et du converse complet `ml_error_prob_ge_threshold` (P(erreur ML) ≥ 1 − e^{−(2·log N − log log N)}) du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 45 min |
 | 21b | [Lean-21b-MIMO-Converse-Native](Lean-21b-MIMO-Converse-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lac `mimo_lean` : le lac importé et exécuté dans un kernel Lean 4 réel — la frontière SLT exhibée par `#check` (ce qui est prouvé vs emprunté à `YuanheZ/lean-stat-learning-theory`), les six déclarations de `NormTails` (concentration de Lipschitz gaussienne), les seize briques du converse Hanson–Wright (dont `hanson_wright_noise` et la queue chi-carré `chisq_norm_concentration`), les treize du pont ML (`Bridge`), `#print axioms` sur les théorèmes clés — uniquement les axiomes standards, zéro `sorry` | 40 min |
@@ -236,6 +238,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 11b | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
 | 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
 | 12b | Lean-Sensitivity-Theorem (natif) | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
+| 12c | Tensor-Product-Representations (natif) | ~35 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 13 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
 | 13b | CHSH-Tsirelson-Native | ~8 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
 | 13c | CHSH-Landau-Saturation | ~11 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
@@ -501,11 +504,12 @@ Lean/
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
 ├── .env.example
-├── ANALYSE/                       # Sous-série des formalisations d'analyse (Sendov, Tao Analysis I, PFR ×2 — gradation #17545) : [README](ANALYSE/README.md)
+├── ANALYSE/                       # Sous-série des formalisations d'analyse (Sendov, Tao Analysis I, PFR ×2, KLS — gradation #17545) : [README](ANALYSE/README.md)
 │   ├── ANALYSE-01-Sendov-Lean-Python.ipynb  # Conjecture de Sendov : énoncé, cas numériques, contexte de la preuve 2026
 │   ├── ANALYSE-02-Tao-Lean-Python.ipynb     # Analysis I de Tao en lac Lean 4 (teorth/analysis) : architecture, lemmes emblématiques
 │   ├── ANALYSE-03-PFR-Lean.ipynb            # Conjecture PFR (teorth/pfr) : méthode entropique, cosets F₂³, #check réels
 │   ├── ANALYSE-04-PFR-Primitives-Python.ipynb # Les trois primitives de PFR et l'endroit où elles cessent de valoir (#12214)
+│   ├── ANALYSE-05-KLS-Lean-Python.ipynb  # Conjecture KLS démontrée (BKL 2026) : lac local kls_lean, thin-shell Monte-Carlo, saturation 8n
 │   ├── ANALYSE-09-Tuilage-Aperiodique.ipynb  # Contre-exemple au pavage périodique 3D (openai/math 155) : exact-cover borne, rang des periodes
 │   ├── ANALYSE-09-Tuilage-Aperiodique_en.ipynb # Jumeau EN (code byte-identique)
 │   └── README.md
@@ -534,7 +538,7 @@ Lean/
 │   └── README.md
 ├── assets/                        # Images des README de la série ([MANIFEST](assets/readme/MANIFEST.md))
 ├── scripts/                       # Helpers de maintenance de la série ([README](scripts/README.md), _archive/)
-├── sensitivity_lean/               # Théorème de sensibilité (Huang 2019, companion Lean-12/12b) - 0 sorry 0 axiome, Lake build natif (jonction Mathlib)
+├── sensitivity_lean/               # Théorème de sensibilité (Huang 2019) + algèbre TPR (companions Lean-12/12b/12c) - 0 sorry 0 axiome, Lake build natif (jonction Mathlib)
 ├── finiteness_lean/                # Finitude des dérivées de Brzozowski (companion Lean-14) - 0 sorry, Lake build
 ├── conway_lean/                    # Conway tribute workspace (0 sorry, Lake build)
 ├── grothendieck_lean/              # Grothendieck tribute workspace (0 sorry, Lake build)
