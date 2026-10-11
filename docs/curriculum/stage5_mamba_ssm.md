@@ -4,7 +4,7 @@
 **Context**: Issue #754 ML SOTA Curriculum, Pivot toward volatility forecasting
 **Status**: Exploration note — implementation seed via `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/train_mamba.py`. Catalog slot: `QC-Py-23 - State Space Models (Mamba) pour Trading` (DEMO / PRODUCTION, owner po-2026, cf `CATALOG-STATUS`).
 
----
+***
 
 ## Why SSMs Matter for Finance
 
@@ -27,7 +27,7 @@ Mamba (Gu & Dao, 2023) achieves **O(L) complexity** via selective state spaces, 
 | Inference | KV cache grows | Fixed state (d_model * d_state) |
 | GPU requirement | Moderate | Lower (linear) |
 
----
+***
 
 ## Architecture Overview
 
@@ -78,7 +78,7 @@ Input [B, T, n_features]
   -> Linear head -> [B, pred_len]
 ```
 
----
+***
 
 ## Financial Applications
 
@@ -103,7 +103,7 @@ Near-linear complexity for correlation matrices across 50+ assets.
 
 O(L) enables minute-bar or tick-level modeling that Transformers cannot handle at full resolution.
 
----
+***
 
 ## Existing Implementation
 
@@ -135,7 +135,7 @@ Includes:
 | `seq_len` | 1024 | 256-4096 | Input window; Mamba handles long sequences efficiently |
 | `pred_len` | 24 | 1-96 | Forecast horizon |
 
----
+***
 
 ## Experimental Results (Issue #754)
 
@@ -148,7 +148,7 @@ Includes:
 **Conclusion**: Daily binary direction prediction is the wrong target for DL architectures.
 Pivot to **volatility forecasting** (GARCH+DL hybrid) where DL has proven 15-30% edge.
 
----
+***
 
 ## Curriculum Position
 
@@ -174,7 +174,7 @@ This fits in **Stage 5** of the ML SOTA curriculum:
 5. Evaluate Mamba on volatility forecasting vs GARCH baseline
 6. Understand when SSMs outperform Transformers (long sequences, streaming) and when not (short sequences, multi-variate cross-attention)
 
----
+***
 
 ## Key References
 
@@ -186,7 +186,7 @@ This fits in **Stage 5** of the ML SOTA curriculum:
 6. Roszyk & Slepaczuk (2024). "Hybrid GARCH-LSTM Volatility Models." SSRN.
 7. Mehrabian et al. (2024). "SAMBA: Graph-Mamba for Multi-Asset." Near-linear complexity.
 
----
+***
 
 ## Next Steps
 
