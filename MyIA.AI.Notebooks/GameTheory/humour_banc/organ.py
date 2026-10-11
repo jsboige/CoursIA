@@ -7,11 +7,14 @@ le banc 18c (section Passage a l'echelle) et par la couche ICT
 (``ict/humor_pairs.py`` delegue ici). Les autres fichiers portent la
 provenance et l'annotation figee :
 
-- ``argumentum_scenarii.csv`` : snapshot du CSV upstream Argumentum. La
-  derivation (heuristiques d'annotation puis ``random.seed(42)`` +
-  ``random.sample(labeled_arg, 60)``) sur ce snapshot reproduit exactement
-  les instances ``arg-*`` du corpus -- c'est le temoin d'identite vivant du
-  banc (cellule de chargement de 18c).
+- ``argumentum_scenarii.csv`` : snapshot du CSV upstream Argumentum, capture
+  au HEAD amont ``80dccece49`` (voir ``NOTICE-SCENARII`` : provenance,
+  licence double marque, et la mesure qui montre pourquoi la copie au pin
+  sous-module de FallacyDetection ne peut PAS servir ici -- 24/60 instances
+  divergentes). La derivation (heuristiques d'annotation puis
+  ``random.seed(42)`` + ``random.sample(labeled_arg, 60)``) sur ce snapshot
+  reproduit exactement les instances ``arg-*`` du corpus -- c'est le temoin
+  d'identite vivant du banc (cellule de chargement de 18c).
 - ``humour_pairs_edits.json`` : les 30 edits main (setup, punchline,
   punchline_neutre, controle) des paires minimales humour/unfun.
 - ``humour_typology.json`` : typologie par mecanisme comique des paires
