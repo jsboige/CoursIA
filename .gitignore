@@ -474,6 +474,10 @@ docker-configurations/services/comfyui-qwen/ComfyUI/
 
 # GenAI Notebooks Data
 MyIA.AI.Notebooks/GenAI/data/
+# Cache du dataset tiny_nerf (Lego 100x100, telecharge au runtime, provenance UCSD) -- serie 3D #19949
+# (le second motif couvre une execution papermill --cwd . depuis la racine du depot)
+MyIA.AI.Notebooks/GenAI/3D/data/
+/data/tiny_nerf_data.npz
 
 # GenAI Notebooks Outputs and Logs
 MyIA.AI.Notebooks/GenAI/outputs/*
