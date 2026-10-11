@@ -6,7 +6,7 @@ Ce dépôt contient une noix de cette espèce, et il vaut la peine de la poser s
 
 Car le dépôt CoursIA, parcouru d'une série à l'autre, ressemble d'abord à un catalogue : automates cellulaires, preuves formelles, programmation probabiliste, théorie des jeux, théorie des nœuds, planification, contrats intelligents, apprentissage par renforcement, trading, IA générative — et, à côté de ces séries d'enseignement, une série de recherche, ICT, qui interroge l'intégration, l'émergence et ce qu'on ose appeler conscience. Une vingtaine de sujets sans rapport évident. Mais lu avec une seule question en tête, il se met à raconter une histoire continue. La question n'est pas « comment résoudre ce problème ? » ; elle est grothendieckienne : *dans quel cadre ce problème cesse-t-il d'être dur ?* Suivons-la, et laissons l'eau monter.
 
----
+***
 
 ## Changer de représentation jusqu'à ce que la difficulté se dissolve
 
@@ -114,7 +114,7 @@ Reste la noix, et regardez ce qui lui est arrivé pendant la lecture. Pierre au 
 
 Ce texte a fait subir le même traitement à son propre sujet. Il ne définit nulle part ce qu'est une « lecture grothendieckienne » : il a laissé la définition monter — un changement de représentation, un recollement, une exigence de garantie, puis des ponts — jusqu'à ce qu'elle se tienne seule. Il aurait pu être un tableau, une ligne par série, une colonne par garantie. Mais un tableau découpe en fragments ce qui n'est qu'un seul geste. La bonne représentation d'un fil continu est une prose continue ; et chaque réécriture, en la rendant plus simple, fait monter l'eau d'un cran de plus. La mer, pas le burin.
 
----
+***
 
 ### Annexe — Grades de certification
 
@@ -160,7 +160,7 @@ Une hypothèse nommée dans un énoncé n'est pas un cran de cette échelle : c'
 | [#1203](https://github.com/jsboige/CoursIA/issues/1203) / [#1206](https://github.com/jsboige/CoursIA/issues/1206) / [#1210](https://github.com/jsboige/CoursIA/issues/1210) | Les trois bibliothèques externalisées. |
 | [#2137](https://github.com/jsboige/CoursIA/issues/2137) Argumentum (fermée) | Pipeline LLM + Tweety : un changement de représentation vers le vérifiable. |
 
----
+***
 
 *Repères vérifiables :*
 
