@@ -23,7 +23,7 @@ Chaque campagne de mesure TTS (`bakeoff_small/measure_*.py`, `bakeoff_large/banc
 | `motor` | string | Identifiant normalisé (ex. `qwen3_tts_1_7b_customvoice`). |
 | `motor_size_b` | number | Taille en milliards de paramètres. |
 | `motor_license` | string SPDX | Licence (Apache-2.0, MIT, Research-Only, etc.). |
-| `extract` | enum A-E | Identifiant du passage de référence (A=narration courte, B=dialogue court, C=narration longue — cf. `bank_schema_v1.json` et `prosody_lab/bench_extracts/extract_{A,B}_*.txt` ; D-E=à venir). |
+| `extract` | string | Identifiant du passage de référence. Le schéma le type **`string`** (chaîne libre en snake_case), **pas** une énumération fermée : une valeur hors A-C reste valide au schéma. Valeurs en usage : A (narration courte), B (dialogue court), C (narration longue) — cf. `bank_schema_v1.json` et `prosody_lab/bench_extracts/extract_{A,B}_*.txt`. |
 | `extract_text_sha256_prefix` | hex 16 | Verrou anti-réécriture silencieuse du texte. |
 | `seed` | int | Graine de sampling (le schéma exige un entier ; défaut 42 à l'ingestion). |
 | `wer` | float | Word Error Rate mesuré (0.0 = parfait). |
@@ -86,7 +86,7 @@ python prosody_lab/bake_report.py --bank prosody_lab/bake_bank.json \
     --out /tmp/bake_report_$(date +%Y%m%d-%H%M).md
 ```
 
-Le tableau est trié par `extract` (A→E), secondaire par `WER` croissant, tertiaire par `motor`.
+Le tableau est trié par **une seule clé** (`--sort`, `wer` par défaut ; valeurs possibles `wer`, `rtf`, `duration_s`, `ts`), en ordre **croissant** — il n'y a ni clé secondaire ni tri par `extract`/`motor`. Les runs dont la clé de tri est **absente** (null) sont placés **en fin** de tableau, quel que soit l'ordre des autres.
 
 ### Tests unitaires (suite CI existante — décision ai-01 sur #19695)
 
@@ -98,12 +98,12 @@ Script autonome (exit 0/1), collecté par la jambe `Scripts Tests (CPU)` de `.gi
 
 15 cas : schéma valide, dry-run valide, échecs de validation (champs manquants, type, enum union), idempotence, upsert, tri du rapport (WER, chrono `--sort ts`), ingestion bakeoff_small, **couche #19722** (champs étendus optionnels au schéma, mapping `bootstrap_bank._metrics_to_run`, décodeurs GDrive, non-régression expansion unique de `main()` sur conteneur multi-extraits).
 
-## Hook best-effort dans p7_verify
+## Intégration proposée dans p7_verify — **non livrée**
 
-`p7_verify` (le runner de mesure du pipeline v4) appelle optionnellement `bake_append.py` à la fin de chaque run. L'échec d'ingestion **n'arrête pas** la mesure : c'est un signal, pas un gate.
+**Statut : proposée, pas livrée.** Vérifié dans le fichier : `p7_verify.py` ne contient **aucune** occurrence de `bake_append` ni de `bank` — le runner de mesure du pipeline v4 n'appelle donc pas encore le banc. Le pseudo-code ci-dessous décrit l'intégration **envisagée** (hook best-effort en fin de run, dont l'échec d'ingestion n'arrête pas la mesure : c'est un signal, pas un gate) ; il n'est **pas** en vigueur et attend sa propre issue de suivi.
 
 ```python
-# p7_verify.py (pseudo-code)
+# p7_verify.py (pseudo-code — PROPOSÉ, non livré)
 result = measure_pipeline(...)
 try:
     subprocess.run(["python", "prosody_lab/bake_append.py",
