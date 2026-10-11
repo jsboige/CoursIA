@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jsboige/CoursIA/MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bank_schema_v1.json",
+  "title": "bake_bank_v1",
+  "description": "Schéma v1 du banc de référence persistant des moteurs TTS (issue #19695, dispatch ai-01 07/10 09:08Z). Cumul cross-campagne wer/RTF/VRAM par (motor, extract, seed). Champs de fidélité ajoutes par cadrage coordinateur : inserted_words, omitted_segments, asr_models.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": true,
+    "required": ["ts", "machine", "motor", "extract", "seed", "duration_s"],
+    "properties": {
+      "ts": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Timestamp ISO-8601 UTC du run (collecte first-hand, jamais retro-actif)."
+      },
+      "machine": {
+        "type": "string",
+        "enum": ["myia-po-2027", "myia-ai-01", "myia-po-2024", "myia-po-2025", "myia-po-2026", "myia-po-2023", "other"],
+        "description": "Lane de la machine qui a execute le run."
+      },
+      "motor": {
+        "type": "string",
+        "description": "Identifiant moteur (snake_case). Exemples : chatterbox_mtl_v3, qwen3_tts_customvoice, pocket_tts, cosyvoice3_0_5b, zonos_v0_1, oute_tts_1_0_1b."
+      },
+      "extract": {
+        "type": "string",
+        "description": "Identifiant extrait audio (snake_case). Exemples : A (narration courte), B (dialogue court), C (narration longue)."
+      },
+      "seed": {
+        "type": "integer",
+        "description": "Graine de generation (determinisme reproductibilite)."
+      },
+      "wer": {
+        "type": ["number", "null"],
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "description": "Word Error Rate (Levenshtein normalise). Null si ASR non charge au run."
+      },
+      "rtf": {
+        "type": ["number", "null"],
+        "minimum": 0.0,
+        "description": "Real-Time Factor = wallclock / duration_s. <1 = plus rapide que wall-clock."
+      },
+      "vram_mb": {
+        "type": ["integer", "null"],
+        "minimum": 0,
+        "description": "VRAM pic en MB pendant le run. Null si CPU-only."
+      },
+      "duration_s": {
+        "type": "number",
+        "minimum": 0.0,
+        "description": "Duree du clip rendu en secondes."
+      },
+      "voice_stable": {
+        "type": ["boolean", "null"],
+        "description": "Verdict subjectif stabilite vocale (DRIFTING detecte par 3ASR). Null si non evalue."
+      },
+      "hallu_per_100_syl": {
+        "type": ["number", "null"],
+        "minimum": 0.0,
+        "description": "Hallucinations par 100 syllabes (mots inseres par l'ASR sur hyp non-reference). Null si non evalue."
+      },
+      "inserted_words": {
+        "type": ["integer", "null"],
+        "minimum": 0,
+        "description": "Nombre de mots inseres par l'ASR (faux positifs). Detecte par Levenshtein sur le run. Cumul cross-ASR si asr_models contient plusieurs modeles."
+      },
+      "omitted_segments": {
+        "type": ["integer", "null"],
+        "minimum": 0,
+        "description": "Segments de >=3 mots absents de >=2 ASR sur 3 (defaut CosyVoice3 / Chatterbox). Detecte par measure_3asr.py::_detect_omissions."
+      },
+      "asr_models": {
+        "type": ["array", "null"],
+        "items": {
+          "type": "string",
+          "enum": ["tiny", "base", "small", "medium", "large-v1", "large-v2", "large-v3", "distil-large-v3"]
+        },
+        "description": "Modeles ASR utilises pour le WER (subset de faster-whisper)."
+      },
+      "notes": {
+        "type": ["string", "null"],
+        "description": "Notes libres (ex : 'CPU run, Whisper-tiny non charge', 'DRIFTING detecte')."
+      }
+    }
+  },
+  "uniqueness": {
+    "description": "Cle d'unicite d'un run : (motor, extract, seed). Re-append avec meme cle = upsert (remplace l'ancien), pas de doublon.",
+    "key": ["motor", "extract", "seed"]
+  }
+}

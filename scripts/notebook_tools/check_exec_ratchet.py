@@ -126,10 +126,26 @@ def verdict_at_base(base, path, cwd=None):
 
 
 def verdict_at_head(path, cwd=None):
-    """Verdict of the working-tree notebook."""
+    """Verdict of the working-tree notebook.
+
+    MISSING: the file is absent from the working tree. That is a WORKSPACE
+    defect (amputed checkout, persistent runner slot carrying a leftover
+    sparse-checkout pattern), never a content defect (#20174). Naming it
+    apart is the whole point: conflated into PARSE_ERROR, the verdict tells
+    a lane "your notebook is corrupt" and sends it hunting a defect the file
+    does not carry -- measured twice on 2026-10-10 (#20158, #20118), where
+    the notebooks were valid JSON and identical to origin/main.
+
+    PARSE_ERROR: the file is present but its content is not usable JSON."""
     try:
-        ec = code_exec_counts(json.loads(
-            (Path(cwd or ".") / path).read_text(encoding="utf-8")))
+        text = (Path(cwd or ".") / path).read_text(encoding="utf-8")
+    except (FileNotFoundError, NotADirectoryError, IsADirectoryError):
+        return "MISSING", []
+    except OSError:
+        # Permission denied, transient I/O: no readable file either, same class.
+        return "MISSING", []
+    try:
+        ec = code_exec_counts(json.loads(text))
     except Exception:
         return "PARSE_ERROR", []
     return sequence_verdict(ec), ec
@@ -204,17 +220,35 @@ def main():
 
     if regressions:
         for r in regressions:
-            print(f"::error file={r['notebook']}::sequence was CLEAN at "
-                  f"{args.base}, is {r['head']} in this PR — re-execute the "
-                  f"notebook end-to-end on a fresh kernel before commit",
+            if r["head"] == "MISSING":
+                # #20174 : un arbre ampute n'est pas un carnet casse. L'annotation
+                # doit le dire, sinon la lane cherche un defaut de contenu que le
+                # fichier ne porte pas.
+                print(f"::error file={r['notebook']}::notebook absent from the "
+                      f"working tree (CLEAN at {args.base}) — incomplete "
+                      f"checkout, NOT a content defect: re-run the job on a "
+                      f"clean workspace", file=sys.stderr)
+            else:
+                print(f"::error file={r['notebook']}::sequence was CLEAN at "
+                      f"{args.base}, is {r['head']} in this PR — re-execute the "
+                      f"notebook end-to-end on a fresh kernel before commit",
+                      file=sys.stderr)
+        if any(r["head"] != "MISSING" for r in regressions):
+            print("If this is an acknowledged single-cell re-exec (RECOVERABLE-"
+                  "MACHINE, gitignored downstream artifact): never hand-edit "
+                  "execution_count — document the degraded sequence in the PR "
+                  "body with the template from docs/reference/regles-validation-"
+                  "detail.md 'Ratchet exec-sequence fail-by-design' (#11577) and "
+                  "get an explicit reviewer ack before merge.",
                   file=sys.stderr)
-        print("If this is an acknowledged single-cell re-exec (RECOVERABLE-"
-              "MACHINE, gitignored downstream artifact): never hand-edit "
-              "execution_count — document the degraded sequence in the PR "
-              "body with the template from docs/reference/regles-validation-"
-              "detail.md 'Ratchet exec-sequence fail-by-design' (#11577) and "
-              "get an explicit reviewer ack before merge.",
-              file=sys.stderr)
+        else:
+            # Servir l'avis « fail-by-design » sur un arbre ampute ferait signer
+            # un accord pour un defaut inexistant -- c'est ainsi qu'un faux rouge
+            # devient un faux accord.
+            print("Every regression above is a MISSING file: the working tree is "
+                  "incomplete. Do not open a fail-by-design ack for a file that "
+                  "is not on disk — repair the workspace (#20174).",
+                  file=sys.stderr)
         sys.exit(1)
     sys.exit(0)
 

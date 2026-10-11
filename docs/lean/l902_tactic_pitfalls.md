@@ -5,7 +5,7 @@
 **Portée :** cross-lake — tout lemme « trivial » sur les fields d'une structure
 polymorphe d'univers (équivalences de catégories, foncteurs, topologies, sieves).
 
----
+***
 
 ## Résumé
 

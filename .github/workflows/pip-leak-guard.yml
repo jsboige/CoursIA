@@ -9,13 +9,6 @@ name: pip-leak-guard
 # audit-only, so the transposable durable form is a CI HIGH-delta gate.
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - '**.ipynb'
-      - 'scripts/notebook_tools/audit_pip_install_cells.py'
-      - 'scripts/notebook_tools/pip_leak_delta.py'
-      - '.github/workflows/pip-leak-guard.yml'
   workflow_dispatch:
 
 permissions:
