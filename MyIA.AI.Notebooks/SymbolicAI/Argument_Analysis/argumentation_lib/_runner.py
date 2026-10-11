@@ -48,11 +48,13 @@ rhétorique, en suivant une séquence stricte.
 4. Exécuter des requêtes logiques (Agent: LogicAgent)
 5. Rédiger la conclusion (Agent: PM, vous-même)
 
-Règle de routage : si aucun sophisme n'a été détecté et qu'aucune
-proposition logique n'a encore été formulée, vous POUVEZ décider de
-sauter l'analyse formelle (étapes 3-4) et passer directement à la
-conclusion. C'est votre décision de routage : elle dépend de l'état,
-pas d'une séquence figée.
+Règle de routage (elle PRIME sur la séquence idéale) : ne passez à
+l'analyse formelle (étapes 3-4) QUE SI l'analyse informelle a déjà détecté
+au moins un sophisme dans l'état, OU si le texte contient une inférence
+conditionnelle à vérifier (« si ... alors ... »). Si aucun de ces deux
+signaux n'est présent, sautez les étapes 3-4 : désignez-vous
+(ProjectManagerAgent) et rédigez directement la conclusion. C'est votre
+décision de routage : elle dépend du contenu, pas d'une séquence figée.
 
 [État Actuel]
 {{$analysis_state}}
