@@ -122,7 +122,9 @@ def _gather_metrics_files() -> list[tuple[Path, str, str | None, str]]:
     """Scanne les sources et retourne (path, source_tag, extract, motor).
 
     `bake_results.json` contient un tableau `results` (1 entrée par extrait) :
-    expansé en N tuples partageant le même path.
+    UN tuple par fichier (extract=None) ; l'expansion par extrait se fait
+    dans main() via _expand_per_extract — l'émettre aussi ici fait ingérer
+    chaque extrait N fois (N*N appels).
     """
     out: list[tuple[Path, str, str | None, str]] = []
     for source_tag, root in SOURCES:
@@ -135,11 +137,8 @@ def _gather_metrics_files() -> list[tuple[Path, str, str | None, str]]:
                 except Exception as e:
                     print(f"  [SKIP] bake_results illisible : {p} : {e}", file=sys.stderr)
                     continue
-                motor = data.get("cell") or _detect_motor(p)
-                for r in data.get("results", []):
-                    ex = r.get("extract")
-                    if ex:
-                        out.append((p, source_tag, ex, motor))
+                out.append((p, source_tag, None,
+                            data.get("cell") or _detect_motor(p)))
                 continue
             ex = _detect_extract(p)
             mo = _detect_motor(p)

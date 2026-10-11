@@ -425,6 +425,54 @@ def test_bootstrap_gdrive_flatten() -> None:
     print("[OK] test_bootstrap_gdrive_flatten")
 
 
+def test_bootstrap_main_single_expansion() -> None:
+    """Non-régression expansion : main() sur un conteneur bake_results.json à
+    deux extraits doit produire exactement 2 appels d'ingestion (un par
+    extrait), dans l'ordre du conteneur — pas 2*N appels (double expansion
+    gather + main)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "bootstrap_bank_under_test", THIS_DIR / "bootstrap_bank.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    with tempfile.TemporaryDirectory() as td:
+        tdp = Path(td)
+        src_root = tdp / "results"
+        src_root.mkdir()
+        (src_root / "bake_results.json").write_text(json.dumps({
+            "cell": "test_motor_2x", "license": "MIT", "size": "0.5B",
+            "results": [
+                {"extract": "A", "wer": 0.10, "duration_s": 5.0, "rtf": 0.8},
+                {"extract": "B", "wer": 0.20, "duration_s": 6.0, "rtf": 0.9},
+            ],
+        }), encoding="utf-8")
+
+        calls: list[tuple[str, str]] = []
+
+        def fake_ingest(bank, run, dry_run):
+            calls.append((run["motor"], run["extract"]))
+            return 0, ""
+
+        mod._ingest_run = fake_ingest
+        mod.SOURCES = [("fixture", src_root)]
+        mod._gdrive_metrics_files = lambda: []
+
+        old_argv = sys.argv
+        sys.argv = ["bootstrap_bank.py",
+                    "--bank", str(tdp / "bank.json"), "--dry-run"]
+        try:
+            rc = mod.main()
+        finally:
+            sys.argv = old_argv
+
+    assert_eq("main() rc", rc, 0)
+    assert_eq("appels d'ingestion (un par extrait)", len(calls), 2)
+    assert_eq("séquence extraits", [e for _, e in calls], ["A", "B"])
+    assert_eq("moteur passé à l'ingestion", calls[0][0], "test_motor_2x")
+    print("[OK] test_bootstrap_main_single_expansion")
+
+
 def main() -> int:
     tests = [
         test_schema_valid,
@@ -441,6 +489,7 @@ def main() -> int:
         test_bootstrap_metrics_to_run,
         test_bootstrap_gdrive_decoders,
         test_bootstrap_gdrive_flatten,
+        test_bootstrap_main_single_expansion,
     ]
     print(f"Running {len(tests)} tests...\n")
     failed = 0

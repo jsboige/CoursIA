@@ -25,10 +25,10 @@ Chaque campagne de mesure TTS (`bakeoff_small/measure_*.py`, `bakeoff_large/banc
 | `motor_license` | string SPDX | Licence (Apache-2.0, MIT, Research-Only, etc.). |
 | `extract` | enum A-E | Identifiant du passage de référence (A=erreur narratif, B=dramatique, C-E=à venir). |
 | `extract_text_sha256_prefix` | hex 16 | Verrou anti-réécriture silencieuse du texte. |
-| `seed` | int ou null | Graine de sampling (null si non applicable). |
+| `seed` | int | Graine de sampling (le schéma exige un entier ; défaut 42 à l'ingestion). |
 | `wer` | float | Word Error Rate mesuré (0.0 = parfait). |
 | `wer_model` | string | Modèle ASR utilisé (`openai/whisper-large-v3`, etc.). |
-| `rtf` | float | Real-Time Factor (audio/wallclock). |
+| `rtf` | float | Real-Time Factor (wallclock/duration_s ; <1 = plus rapide que le temps réel). |
 | `vram_mb` | float | Pic VRAM (Mo). |
 | `duration_s` | float | Durée audio synthétisée. |
 | `fidelity_added_words` | int | Mots ajoutés au-delà du ref (0 = pass). |
@@ -96,7 +96,7 @@ python MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_ba
 
 Script autonome (exit 0/1), collecté par la jambe `Scripts Tests (CPU)` de `.github/workflows/scripts-tests.yml` — ses fichiers-sujets (`bake_append.py`, `bake_report.py`, `bootstrap_bank.py`, `bank_schema_v1.json`) sont dans ses déclencheurs `paths:`. Pas de nouveau workflow CI bloquant (décision ai-01).
 
-13 cas : schéma valide, dry-run valide, échecs de validation (champs manquants, type, enum union), idempotence, upsert, tri du rapport (WER, chrono `--sort ts`), ingestion bakeoff_small, **couche #19722** (champs étendus optionnels au schéma, mapping `bootstrap_bank._metrics_to_run`, décodeurs GDrive).
+15 cas : schéma valide, dry-run valide, échecs de validation (champs manquants, type, enum union), idempotence, upsert, tri du rapport (WER, chrono `--sort ts`), ingestion bakeoff_small, **couche #19722** (champs étendus optionnels au schéma, mapping `bootstrap_bank._metrics_to_run`, décodeurs GDrive, non-régression expansion unique de `main()` sur conteneur multi-extraits).
 
 ## Hook best-effort dans p7_verify
 
