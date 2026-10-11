@@ -97,39 +97,6 @@ does not create a demonstrated advantage.
   ten stocks that only TrendStocks holds (622 to 875 per stock under `base`, 238
   to 284 under `intent`).
 
-## Fix #20264: the midnight slice no longer consumes the monthly rebalance
-
-In daily data, dividend and distribution notices arrive in a slice stamped
-midnight with no trade bar at all. In the reference modes (`spy`, `sixty40`), the
-month guard (`_ref_month`) could be consumed by that empty slice: the rebalance
-went out with no data, before the first bar of the month. The fix adds a
-bar-presence guard at the top of `on_data` (same pattern as #20261 on
-`EMA-Cross-Stocks`), pre-registered protocol #20264 (c.6103501482 and sixty40
-addendum c.6103596939), source window 2018-01-01 → 2025-01-01, QC nodes of
-project 28911253:
-
-| Mode | Variant | Orders | Sharpe | CAGR | Worst drawdown | Total profit | Backtest |
-|---|---|---|---|---|---|---|---|
-| `spy` | orig (`74f19134`) | 1 | 0.495 | 13.547 % | 33.600 % | 143.495 % | `a770ce13a7ccf71055ce91510f329578` |
-| `spy` | fix (`c4db76e7`) | 1 | 0.495 | 13.547 % | 33.600 % | 143.495 % | `42d5457727f1fc44c2acd94955ebec0d` |
-| `sixty40` | orig (`74f19134`) | 143 | 0.378 | 8.423 % | 21.100 % | 76.200 % | `a167439bf6512278b34316a0296395eb` |
-| `sixty40` | fix (`c4db76e7`) | **148** | **0.383** | **8.487 %** | 21.100 % | **76.928 %** | `bf7f3e741fdfc3368643c667d327b59f` |
-
-Reading: in `spy` mode (constant `SPY 1.0` target), the month guard was never
-consumed in any observable way — pairs identical to the last digit, defect with
-no effect, row classified as untouched for that mode. In `sixty40` mode
-(SPY 0.6 / IEF 0.4, monthly IEF dividends), the variants **diverge**: 5 more
-orders, +0.73 pt total profit under the fix — the measured trace of monthly
-rebalances consumed by bar-less slices under `orig`, shifted to the first bar of
-the month under `fix`. Individual order timestamps are not extracted here (the
-MCP exposes aggregate statistics); the causal divergence — the guard as the only
-difference between compiled snapshots — is the reported proof. The sha256 name
-the exact `main.py` files backtested.
-
-No strategy verdict: a measured defect correction on a single already-seen
-window; the 0.378 → 0.383 gap is not a "BEATS" (no pre-registered
-out-of-sample period).
-
 ## Figures from before #19759
 
 The two sections below date from before the measurement; they are kept for the

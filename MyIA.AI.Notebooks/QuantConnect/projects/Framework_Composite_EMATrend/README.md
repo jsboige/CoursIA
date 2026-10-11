@@ -120,9 +120,25 @@ individuels ne sont pas extraits ici (le MCP expose les statistiques agrégées)
 divergence causale — garde seule différence entre snapshots compilés — est la preuve
 rapportée. Les sha256 désignent les `main.py` exacts backtestés.
 
-Pas de verdict de stratégie : correction d'un défaut mesurée sur une seule fenêtre déjà
-vue ; l'écart 0.378 → 0.383 n'est pas un « BEATS » (aucune période hors échantillon
-pré-enregistrée).
+### Fenêtre hors échantillon #20264 (§G) : 2025-01-01 → 2026-10-09
+
+Fenêtre distincte de la fenêtre source (arbitrage ai-01 du 11/10, msg-20261011T085024) :
+mêmes snapshots `orig` (`74f19134`) et `fix` (`c4db76e7`), projet 28911253, 381 dates
+négociables :
+
+| Mode | Variante | Ordres | Sharpe | CAGR | Pire baisse | Profit total | Backtest |
+|---|---|---|---|---|---|---|---|
+| `sixty40` | orig (`74f19134`) | 30 | 0.558 | 12.793 % | 10.500 % | 20.231 % | `842dac4406fbd80bb8c37169d8506e8e` |
+| `sixty40` | fix (`c4db76e7`) | 31 | 0.557 | 12.765 % | 10.500 % | 20.186 % | `c6bc74f7d4a5f6f91184b5b301f48ebf` |
+
+Lecture : la divergence d'ordres persiste hors échantillon (30 contre 31 — même mécanisme,
+les rééquilibrages mensuels consommés par des tranches sans barres sous `orig` restent
+décalés à la première barre du mois sous `fix`), mais l'écart de profit de la fenêtre
+source (+0,73 pt sur 7 ans) ne se retrouve pas : −0,045 pt sur 21 mois, dans le bruit.
+
+Pas de verdict de stratégie : correction d'un défaut d'exécution, mesurée sur la fenêtre
+source puis confirmée sans effet de performance hors échantillon ; les écarts 0.378 →
+0.383 (source) et 0.558 → 0.557 (OOS) ne sont pas des « BEATS ».
 
 ## Chiffres antérieurs à #19759
 
