@@ -374,7 +374,7 @@ jobs:
           # 13 factor_geometry (cette PR, mesure isolee re-verifiee : 13) +
           # drift ascendant main post-972 (humor_typology et suivants,
           # non decompose -- la mesure fait foi) = 1039.
-          - suite-name: "ict/tests/ (65 package)"
+          - suite-name: "ict/tests/ (69 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
             test-parallel: ""
@@ -407,7 +407,21 @@ jobs:
             # 65 fichiers test_*.py, 1054 items (py3.11 local ; le CI py3.9
             # ne change pas la collection, aucun parametrize ni skip de
             # collecte dans le fichier).
-            test-floor: 1054
+            # Floor 1054 -> 1137 (2026-10-10, port S6-B #7742) : +24 items
+            # ict/tests/test_extracts_tiers.py (cette PR -- corpus a tiers :
+            # classification, loaders public/references, round-trip chiffre
+            # .json.gz.enc, gardes vie privee / anti-depot) + rattrapage du
+            # drift ascendant main (1113 items / 68 fichiers mesures sur
+            # origin/main@750184a6, le floor 1054 datait de l'arbre a 65
+            # fichiers). Decomposition : 1113 (main pur @750184a6) + 24
+            # (collecte isolee du fichier, verifiee) = 1137. Mesure :
+            # pytest --collect-only -q depuis ict/tests/, venv ict-py39
+            # (py3.9.23, sans torch -- la forme de l'env CI), 69 fichiers
+            # test_*.py, 1137 items, 0 erreur de collection. Label 65 -> 69.
+            # NOTE dep : cette PR ajoute cryptography>=3.4,<44 aux deps coeur
+            # du pyproject (contrat .json.gz.enc) -- les tests chiffres
+            # s'executent reellement en CI, pas en skip.
+            test-floor: 1137
 
     steps:
       - uses: actions/checkout@v4

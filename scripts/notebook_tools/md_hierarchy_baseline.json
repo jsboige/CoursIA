@@ -1,28 +1,13 @@
 {
  "_comment": "Per-notebook finding counts of scan_md_hierarchy.py. BURNDOWN, do not grow: a PR that increases any count is flagged by scan-md-hierarchy-drift.yml (#11831). Regenerate (same commit as any scanner rule change) with: python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ --update-baseline",
- "generated_at": "2026-09-28T04:35:56+00:00",
- "total_findings": 50,
+ "generated_at": "2026-10-09T20:22:04+00:00",
+ "total_findings": 43,
  "notebooks": {
   "MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb": {
    "H1-DEEP": 1
   },
-  "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb": {
-   "HINT-AS-HEADING": 1
-  },
-  "MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-2-Creative-Workflows.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb": {
-   "HINT-AS-HEADING": 2
-  },
-  "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb": {
-   "HINT-AS-HEADING": 2
+  "MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb": {
+   "HINT-AS-HEADING": 4
   },
   "MyIA.AI.Notebooks/ML/ML.Net/ML-11-MatrixProfile-Multidim-Python.ipynb": {
    "H1-DEEP": 7,

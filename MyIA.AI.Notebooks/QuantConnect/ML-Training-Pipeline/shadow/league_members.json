@@ -1,0 +1,22 @@
+{
+ "about": "Membres de la matrice de correlation hebdomadaire de la ligue (#19821 brique 4, protocole #20083). Une variante par strategie mesuree : celle que la PR de mesure declare par defaut. `trace` est relatif au dossier des traces QC (hors depot) ; `series` vaut `b` pour une reference detenue tracee dans b0..b4.",
+ "members": [
+  {"id": "four-sleeve-774", "role": "candidate", "trace": "18904-four-sleeve-774/base", "issue": 18904, "pr": 19139},
+  {"id": "multi-horizon-676", "role": "candidate", "trace": "19174-multi-horizon-676/base", "issue": 19174, "pr": 19182},
+  {"id": "split-events-lo", "role": "candidate", "trace": "19242-split-events/lo", "issue": 19242, "pr": 19247},
+  {"id": "trendweather-pit", "role": "candidate", "trace": "19393-trendweather/pit", "issue": 19393, "pr": 19396},
+  {"id": "leveraged-etf-momentum", "role": "candidate", "trace": "19587-leveraged-etf-momentum/base", "issue": 19587, "pr": 19599},
+  {"id": "famafrench-allweather", "role": "candidate", "trace": "19621-famafrench-allweather/intent", "issue": 19621, "pr": 19633},
+  {"id": "capm-alpha-ranking", "role": "candidate", "trace": "19680-capm-alpha-ranking/article", "issue": 19680, "pr": 19690},
+  {"id": "momentumregime", "role": "candidate", "trace": "19740-momentumregime/intent", "issue": 19740, "pr": 19758},
+  {"id": "adaptiveweights", "role": "candidate", "trace": "19759-adaptiveweights/intent", "issue": 19759, "pr": 19900},
+  {"id": "ematrend", "role": "candidate", "trace": "19759-ematrend/intent", "issue": 19759, "pr": 19780},
+  {"id": "dynamicvix", "role": "candidate", "trace": "19825-dynamicvix/lag", "issue": 19825, "pr": 19838},
+  {"id": "longshortharvest", "role": "candidate", "trace": "19837-lsh-vix-lag/lag_full", "issue": 19837, "pr": 20034},
+  {"id": "bitcoin-regime-gate", "role": "candidate", "trace": "19929-bitcoin-regime/gate", "issue": 19929, "pr": 19931},
+  {"id": "ema-cross-crypto", "role": "candidate", "trace": "20054-ema-cross-crypto/base", "issue": 20054, "pr": 20056},
+  {"id": "spy", "role": "reference", "trace": "19587-leveraged-etf-momentum/spy", "issue": 19587, "pr": 19599},
+  {"id": "sixty40", "role": "reference", "trace": "19621-famafrench-allweather/sixty40", "issue": 19621, "pr": 19633},
+  {"id": "btc", "role": "reference", "trace": "20054-ema-cross-crypto/base", "series": "b", "issue": 20054, "pr": 20056}
+ ]
+}

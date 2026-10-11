@@ -80,8 +80,12 @@ def absorbed_guards():
     Categories d'exemption :
     - `source == FAST_LANE_NATIVE` : aucun workflow d'origine, exemptes
       par declaration (cf `native_exemptions`).
-    - Gardes du lot `PILOT` (programme #12567, #11835) : absorption par
-      declaration sans alignement byte-identique.
+    - Gardes du lot `PILOT` NON absorbes (programme #12567, #11835) :
+      absorption par declaration sans alignement byte-identique. Depuis
+      l'etape 3 de #12856, un garde PILOT absorbe (`absorbed=True`) EST
+      exige byte-identique : son workflow source a ete renomme et retire
+      de `pull_request` dans le meme commit -- l'exempter laisserait le
+      rename non verifie.
     - Gardes des tranches `TRANCHE_ALIGNMENT_EN_COURS` (programme #12567) : absorption
       faite mais le `name:` du job source n'a pas ete renomme byte-identique.
       Le filet les signale en sortie mais ne les exige pas.
@@ -93,7 +97,7 @@ def absorbed_guards():
     for guard in all_guards():
         if guard.source == FAST_LANE_NATIVE:
             continue
-        if id(guard) in pilot_set:
+        if id(guard) in pilot_set and not guard.absorbed:
             continue
         if id(guard) in align_set:
             continue
@@ -164,12 +168,14 @@ def native_exemptions() -> list[str]:
 
 
 def pilot_exemptions() -> list[str]:
-    """Exemptions declarees du lot pilote (programme #12567).
+    """Exemptions declarees du lot pilote NON absorbe (programme #12567).
 
-    Le lot PILOT est absorbe par declaration : le workflow d'origine porte
-    encore le declencheur `pull_request`, donc le renommage byte-identique
-    n'a pas ete fait. Le filet ne peut verifier que le garde est absorbe,
-    pas que le nom est aligne -- la bascule est dans le programme #12567.
+    Un garde PILOT non absorbe reste en ombre : le workflow d'origine porte
+    encore le declencheur `pull_request`, c'est lui qui bloque, et le
+    renommage byte-identique n'a pas ete fait. Les gardes PILOT absorbes
+    (etape 3 de #12856) ne sont PAS exemptes : leur identite est exigee par
+    `absorbed_guards()` ci-dessus -- la bascule des non-absorbes reste dans
+    le programme #12567.
     """
     pilot_set = set(map(id, getattr(reg, reg.PILOT_LOT_NAME, [])))
     return [
@@ -178,6 +184,7 @@ def pilot_exemptions() -> list[str]:
         for guard in all_guards()
         if guard.source != FAST_LANE_NATIVE
         and id(guard) in pilot_set
+        and not guard.absorbed
     ]
 
 

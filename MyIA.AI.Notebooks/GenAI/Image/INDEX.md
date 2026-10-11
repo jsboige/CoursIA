@@ -122,7 +122,8 @@ MyIA.AI.Notebooks/GenAI/
     │   ├── 01-3-Basic-Image-Operations.ipynb
     │   ├── 01-4-Forge-SD-XL-Turbo.ipynb
     │   ├── 01-5-Qwen-Image-Edit.ipynb
-    │   └── 01-5b-Qwen-Image-Edit-2509.ipynb
+    │   ├── 01-5b-Qwen-Image-Edit-2509.ipynb
+    │   └── 01-5c-Qwen-Image-21-Workflows.ipynb
     │
     ├── 02-Advanced/                  # 🟠 Avancé (Docker)
     │   ├── 02-2-FLUX-1-Advanced-Generation.ipynb
@@ -133,13 +134,20 @@ MyIA.AI.Notebooks/GenAI/
     ├── 03-Orchestration/             # 🔴 Orchestration (Docker)
     │   ├── 03-1-Multi-Model-Comparison.ipynb
     │   ├── 03-2-Workflow-Orchestration.ipynb
-    │   └── 03-3-Performance-Optimization.ipynb
+    │   ├── 03-3-Performance-Optimization.ipynb
+    │   └── 03-4-VLM-Character-Design-Workflow.ipynb
     │
     ├── 04-Applications/              # 🔴 Applications Métier
     │   ├── 04-1-Educational-Content-Generation.ipynb
     │   ├── 04-2-Creative-Workflows.ipynb
     │   ├── 04-3-Production-Integration.ipynb
-    │   └── 04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb
+    │   ├── 04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb
+    │   └── 04-5-MiniMax-Cloud-Image.ipynb
+    │
+    ├── 05-History/                   # 📜 Racines pré-Stable-Diffusion
+    │   ├── 05-0-Generateurs-Symboliques.ipynb
+    │   ├── 05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb
+    │   └── 05-2-CLIPasso-Semantic-Sketching.ipynb
     │
     ├── examples/                     # 🎯 Exemples Sectoriels
     │   ├── science-diagrams.ipynb
@@ -192,6 +200,7 @@ MyIA.AI.Notebooks/GenAI/
 | Notebook | Modèle | Temps | Difficulté | Prérequis Docker |
 |----------|--------|-------|------------|------------------|
 | **01-5b-Qwen-Image-Edit-2509** | Qwen 2.5 | 3h | ⭐⭐ | ✅ Requis |
+| **01-5c-Qwen-Image-21-Workflows** | Qwen-Image 2.1 | — | ⭐⭐ | ✅ Requis (instance comfyui-qwen) |
 | **02-2-FLUX-1-Advanced-Generation** | FLUX.1 | 3h | ⭐⭐ | ✅ Requis |
 | **02-3-Stable-Diffusion-3-5** | SD 3.5 | 3h | ⭐⭐ | ✅ Requis |
 | **02-4-Z-Image-Lumina2** | Z-Image (Lumina-2) | — | ⭐⭐ | ✅ Requis (ComfyUI) |
@@ -214,6 +223,7 @@ MyIA.AI.Notebooks/GenAI/
 | **03-1-Multi-Model-Comparison** | Benchmarking | 2h | ⭐⭐⭐ | Docker, ComfyUI |
 | **03-2-Workflow-Orchestration** | Pipelines | 2h30 | ⭐⭐⭐ | Docker, Async |
 | **03-3-Performance-Optimization** | Scaling | 2h | ⭐⭐⭐ | Docker, Queue |
+| **03-4-VLM-Character-Design-Workflow** | Character design VLM | 50min | ⭐⭐⭐ | ComfyUI, VLM in-graph |
 
 **Status** : 🚧 Infrastructure Docker en cours
 
@@ -233,6 +243,7 @@ MyIA.AI.Notebooks/GenAI/
 | **04-2-Creative-Workflows** | Workflows créatifs | 3h | ⭐⭐⭐ | ✅ Production |
 | **04-3-Production-Integration** | Intégration systèmes | 2h30 | ⭐⭐⭐ | ✅ Production |
 | **04-4-Cross-Stitch-Pattern-Maker-Legacy** | Patron de point de croix | — | ⭐⭐⭐ | ✅ Production (legacy) |
+| **04-5-MiniMax-Cloud-Image** | Images par API cloud Hailuo | — | ⭐⭐⭐ | ✅ Production |
 
 **Status APIs Externes** : ✅ 100% Opérationnel
 

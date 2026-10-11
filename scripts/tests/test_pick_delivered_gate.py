@@ -442,6 +442,52 @@ def test_has_delivered_signal_est_tri_etat(monkeypatch):
     assert has_delivered_signal(1) is None
 
 
+def test_marker_partial_is_not_a_full_delivery(monkeypatch):
+    """#20008 (FP) : `candidate-delivered-partial` ne doit pas etre lu comme
+    une livraison PLEINE. Instance mesuree : #14549 c.5645287892 -- la lane
+    porteuse y documente une livraison PARTIELLE (3.5/4, residu Wan Video
+    ouvert) et a retire le label ; si la voie commentaire dit "livre", le
+    candidat sort de l'urne `grain` sur un faux positif. Le fermeur est un
+    lookahead `(?![-_\\w])` : un `\\b` ne suffit pas, le tiret qui suit
+    `delivered` FORME une frontiere de mot (mesure : la variante `\\b` rend
+    True sur `-partial`)."""
+    class _Proc:
+        def __init__(self, payload):
+            self.stdout = payload
+
+    partial = json.dumps({"comments": [
+        {"body": "[INFO] candidate-delivered-partial -- myia-po-2023:CoursIA-2,"
+                 " c.488 : 3.5/4 livre + parite mesuree. Wan Video reste ouvert"}]})
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(partial))
+    assert has_delivered_signal(1) is False
+
+    # Variante espacee : meme discrimination par le meme lookahead.
+    partial_espace = json.dumps({"comments": [
+        {"body": "[INFO candidate-delivered-partial -- residu explicite]"}]})
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(partial_espace))
+    assert has_delivered_signal(1) is False
+
+
+def test_marker_space_form_with_inner_content_is_recognized(monkeypatch):
+    """#20008 (FN) : la forme espacee a contenu INTERNE
+    (`[INFO candidate-delivered <contenu>]`) est une livraison. Avant le
+    fix, la 2e alternative exigeait le `]` immediatement apres le mot --
+    cette forme n'etait reconnue par aucune des trois, et le candidat
+    restait servi comme grain neuf."""
+    class _Proc:
+        def __init__(self, payload):
+            self.stdout = payload
+
+    body = json.dumps({"comments": [
+        {"body": "[INFO candidate-delivered -- 70/81 creneaux verifies, "
+                 "preuve firsthand sur main]"}]})
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(body))
+    assert has_delivered_signal(1) is True
+
+
 # --- surface 3 : la PR OUVERTE couvrante, meme rang (#16589) ---------------
 
 def _cover_probe(*covered):
