@@ -420,9 +420,12 @@ def cech_obstruction_verdict(
       sign_floor``).
 
     Témoins mesurés (``n_windows=60``, seeds 0-11) : le banc affine porte
-    ``mean_cocycle = 0.0000`` et ``sign_consistency = 0.0000`` ; le banc
-    multi-dimensionnel porte ``mean_cocycle`` dans [0.93, 1.18] et
-    ``sign_consistency`` dans [0.517, 0.550].
+    ``mean_cocycle = 0.0000`` et ``sign_consistency = 0.0000`` sur les douze
+    graines ; le banc multi-dimensionnel porte ``mean_cocycle`` dans
+    [0.8662, 1.2527] et ``sign_consistency`` dans [0.5000, 0.5667]. Les douze
+    graines sortent ``NON_TRIVIAL`` ; les graines 1, 2 et 7 touchent le
+    plancher ``sign_floor = 0.5`` sans le franchir (la comparaison en vigueur
+    est ``sign < sign_floor``, donc 0.5000 est retenu).
     """
     if report["n_proxies"] < 3:
         return "INCONCLUSIVE"
