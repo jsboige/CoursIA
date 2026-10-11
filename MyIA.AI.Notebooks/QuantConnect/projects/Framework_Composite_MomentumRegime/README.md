@@ -83,17 +83,19 @@ Le Sharpe affiché par QC bouge au plus de 0,004, sous le seuil de 0,05 fixé d'
 
 #### Complément hors échantillon (arbitrage #20264 → #20310)
 
-Mesure du 2026-10-11 sur la fenêtre OOS disjointe 2026-01-02 → 2026-09-30 (131 dates tradables), exigée par l'arbitrage de [#20264](https://github.com/jsboige/CoursIA/issues/20264) et pré-enregistrée avant les runs (commentaire `c.6109598714`). Mêmes projets cloud que la mesure ci-dessus, fenêtres passées par paramètres `start`/`end`, code inchangé. Fenêtre courte (la fenêtre codée court jusqu'au 2025-12-31) : les premières semaines portent le warm-up du lookback momentum, à l'identique pour les deux variantes.
+Mesure du 2026-10-11 sur la fenêtre OOS disjointe 2026-01-02 → 2026-07-13 (131 dates tradables), exigée par l'arbitrage de [#20264](https://github.com/jsboige/CoursIA/issues/20264) et pré-enregistrée avant les runs (commentaire `c.6109598714`). Mêmes projets cloud que la mesure ci-dessus, fenêtres passées par paramètres `start`/`end`, code inchangé. La fin demandée était le 2026-09-30 : les nœuds de calcul QC utilisés retiennent les 90 derniers jours et l'ont ramenée au 2026-07-13, sans erreur ; avant et après tournent sur les mêmes séances. Fenêtre courte (la fenêtre codée court jusqu'au 2025-12-31) : les premières semaines portent le warm-up du lookback momentum, à l'identique pour les deux variantes.
 
 | | `spy` avant | `spy` après | `sixty40` avant | `sixty40` après |
 |---|---|---|---|---|
 | Ordres | 2 | 2 | 13 | 13 |
+| Ordres de minuit | 1 | 0 | 11 | 0 |
 | Sharpe (QC) | 0,860 | 0,861 | 0,482 | 0,483 |
 | CAGR | 19,08 % | 19,09 % | 10,43 % | 10,45 % |
 | Pire baisse | −8,8 % | −8,8 % | −5,9 % | −5,9 % |
 | Backtest | `4b8005f1` | `f3ca6eb1` | `443bc016` | `196a80fd` |
 
-Verdict `NO DEGRADATION` : écarts ≤ 0,001 partout — les deux variantes ne divergent sur aucun mois de la fenêtre.
+Verdict `NO DEGRADATION` : écarts ≤ 0,001 partout. Les deux variantes passent le même nombre d'ordres ; l'« après » les passe tous à la clôture, l'« avant » en passait 12 sur 15 à minuit.
+
 ### Chiffres antérieurs à #19740
 
 Le tableau ci-dessous date d'avant la mesure ; il est conservé pour l'historique (backtest 2015-01-01 → 2025-12-31).

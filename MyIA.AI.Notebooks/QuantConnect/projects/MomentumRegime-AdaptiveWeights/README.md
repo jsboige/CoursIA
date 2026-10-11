@@ -169,17 +169,19 @@ l'historique.
 
 ### Complément hors échantillon (arbitrage #20264 → #20310)
 
-Mesure du 2026-10-11 sur la fenêtre OOS disjointe 2025-01-02 → 2026-09-30 (381 dates tradables), exigée par l'arbitrage de [#20264](https://github.com/jsboige/CoursIA/issues/20264) et pré-enregistrée avant les runs (commentaire `c.6109598714`). Mêmes projets cloud que la mesure ci-dessus, fenêtres passées par paramètres `start`/`end`, code inchangé.
+Mesure du 2026-10-11 sur la fenêtre OOS disjointe 2025-01-02 → 2026-07-13 (381 dates tradables), exigée par l'arbitrage de [#20264](https://github.com/jsboige/CoursIA/issues/20264) et pré-enregistrée avant les runs (commentaire `c.6109598714`). Mêmes projets cloud que la mesure ci-dessus, fenêtres passées par paramètres `start`/`end`, code inchangé. La fin demandée était le 2026-09-30 : les nœuds de calcul QC utilisés retiennent les 90 derniers jours et l'ont ramenée au 2026-07-13, sans erreur ; avant et après tournent sur les mêmes séances.
 
 | | `spy` avant | `spy` après | `sixty40` avant | `sixty40` après |
 |---|---|---|---|---|
 | Ordres | 1 | 1 | 30 | 31 |
+| Ordres de minuit | 0 | 0 | 28 | 0 |
 | Sharpe (QC) | 0,649 | 0,649 | 0,560 | 0,558 |
 | CAGR | 18,50 % | 18,50 % | 12,82 % | 12,79 % |
 | Pire baisse | −18,7 % | −18,7 % | −10,5 % | −10,5 % |
 | Backtest | `ea1d1429` | `45187727` | `2a90bd34` | `d4981eef` |
 
 Verdict `NO DEGRADATION` : avant et après identiques en `spy` (buy-and-hold canonique de SPY) ; en `sixty40`, pire écart Sharpe −0,002 et un ordre de plus après — le mois ne se consomme plus sur la tranche de dividende. Marges respectées partout.
+
 ### Résultats de backtest
 
 | Métrique | Baseline (T60/RS40) | Cette variante (T85/RS15) | Delta |

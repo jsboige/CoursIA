@@ -70,17 +70,19 @@ Le Sharpe affiché par QC bouge au plus de 0,008, sous le seuil de 0,05 fixé d'
 
 #### Complément hors échantillon (arbitrage #20264 → #20310)
 
-Mesure du 2026-10-11 sur la fenêtre OOS disjointe 2025-01-02 → 2026-09-30 (558 dates tradables), exigée par l'arbitrage de [#20264](https://github.com/jsboige/CoursIA/issues/20264) et pré-enregistrée avant les runs (commentaire `c.6109598714`). Mêmes projets cloud que la mesure ci-dessus, fenêtres passées par paramètres `start`/`end`, code inchangé.
+Mesure du 2026-10-11 sur la fenêtre OOS disjointe 2025-01-02 → 2026-07-13 (558 dates tradables), exigée par l'arbitrage de [#20264](https://github.com/jsboige/CoursIA/issues/20264) et pré-enregistrée avant les runs (commentaire `c.6109598714`). Mêmes projets cloud que la mesure ci-dessus, fenêtres passées par paramètres `start`/`end`, code inchangé. La fin demandée était le 2026-09-30 : les nœuds de calcul QC utilisés retiennent les 90 derniers jours et l'ont ramenée au 2026-07-13, sans erreur ; avant et après tournent sur les mêmes séances.
 
 | | `spy` avant | `spy` après | `sixty40` avant | `sixty40` après |
 |---|---|---|---|---|
 | Ordres | 2 | 1 | 29 | 31 |
+| Ordres de minuit | 2 | 0 | 29 | 0 |
 | Sharpe (QC) | 0,665 | 0,649 | 0,578 | 0,558 |
 | CAGR | 18,21 % | 18,50 % | 12,66 % | 12,79 % |
 | Pire baisse | −18,7 % | −18,7 % | −10,5 % | −10,5 % |
 | Backtest | `50f183cf` | `0212b1f6` | `185b4535` | `d9851249` |
 
-Verdict `NO DEGRADATION` : pire écart Sharpe −0,020, CAGR +0,14 pt dans le pire cas, pire baisse inchangée — toutes les marges pré-enregistrées sont respectées. C'est le seul projet du lot où le code d'avant déviait du buy-and-hold canonique en `spy` (Sharpe 0,665, un ordre de plus) : un mois consommé sur la tranche de dividende ; l'« après » retrouve la référence canonique (0,649, un seul ordre).
+Verdict `NO DEGRADATION` : pire écart Sharpe −0,020, CAGR +0,14 pt dans le pire cas, pire baisse inchangée — toutes les marges pré-enregistrées sont respectées. C'est le seul projet du lot où le code d'avant s'écartait de façon visible du buy-and-hold canonique en `spy` (Sharpe 0,665, un ordre de plus) : une tranche de minuit (donnée VIX ou dividende) consommait le mois ; l'« après » retrouve la référence canonique (0,649, un seul ordre). Les ordres de minuit tombent à zéro dans les deux livres.
+
 ### Chiffres antérieurs à #19825
 
 Le tableau ci-dessous date d'avant la mesure ; il est conservé pour l'historique.
