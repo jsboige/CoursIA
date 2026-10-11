@@ -342,6 +342,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/15159-wan-video-inv.md](ledgers/15159-wan-video-inv.md) | Issue #15159 — axe Vidéo Wan 2.1/2.2 sur TensorSharp .NET — ledger d'investigation |
 | [ledgers/15573-cadrage-granulaire.md](ledgers/15573-cadrage-granulaire.md) | Ledger — Issue #15573 (cadrage granulaire) |
 | [ledgers/15615-gradation-foundations.md](ledgers/15615-gradation-foundations.md) | Ledger — Issue #15615 (gradation GameTheory, strate "Fondations") |
+| [ledgers/15615-gradation-fournee-a.md](ledgers/15615-gradation-fournee-a.md) | Ledger — Issue #15615 (gradation GameTheory, fournée A : blocs 01/04/05) |
 | [ledgers/16473-consolidation-acceptance-2-log.md](ledgers/16473-consolidation-acceptance-2-log.md) | EPIC #16473 acceptance 2 — suivi des rattachements nominatifs des sous-grains des axes A-F, par lot livré (snapshots de compteur réconciliés dans le document) |
 | [ledgers/17375-md-content-loss-justified.md](ledgers/17375-md-content-loss-justified.md) | Ledger #17375 -- md-content-loss justification |
 | [ledgers/18493-counter-scan-classification.md](ledgers/18493-counter-scan-classification.md) | Issue #18493 — Scan des compteurs littéraux dans commentaires code |
