@@ -1,30 +1,32 @@
 #!/usr/bin/env python3
-"""Convertit les liens `](X.ipynb)` -> `](X.html)` dans les READMEs rendus.
+"""Convertit les liens `](X.html)` -> `](X.ipynb)` dans les READMEs rendus.
 
-Pourquoi
---------
-Le site Pages sert des liens `.html` pour les notebooks rendus par Quarto.
-Les READMEs rendus continuent de lier le `.ipynb` brut -> 404 sur Pages
-(defaut #13025, 2024-09 ; ~2428 violations mesure 2026-10-03, worktree #18423).
+Pourquoi (doctrine inversee par #18911, geste 2, 2026-10-09)
+------------------------------------------------------------
+La navigation de reference est celle de **github.com** : un lien `.ipynb` y
+ouvre le notebook dans le viewer. Les rendus Quarto ne sont **pas** committes
+(ils n'existent que sur le deploiement Pages), donc un lien `.html` dans un
+README de main rend un **404** sur github.com. C'est ce lien-la qui est le
+defaut, et c'est au **site** de reecrire les liens `.ipynb` vers leur rendu
+(geste 3), pas aux READMEs de s'adapter au site.
 
-L'instrument `scripts/regen_quarto_render.py --check-readme-links` rend la liste
-des violations en 3 classes :
-- STALE_LINK : le `.ipynb` cible EST dans la render-list ; le `.html` sibling
-  existe. Le README doit pointer vers le `.html`.
-- BROKEN : le `.ipynb` cible n'existe pas du tout -> lien mort a corriger
-  separement (ne pas auto-convertir en `.html`).
-- DEAD_RENDER : un `.html` lie une source qui n'est pas rendue -> le rendu
-  n'existera pas, garder en l'etat n'est pas un defaut de conversion.
+Historique : l'outil faisait exactement l'inverse avant le 2026-10-09 (il
+convertissait `.ipynb` -> `.html`, classe `STALE_LINK` de #13025/#18970,
+~2428 violations). L'arbitrage du user (Concern du 2026-10-08 sur #19897,
+decision c.6076029168) a renverse la politique.
 
-Cet outil NE convertit QUE les STALE_LINK. Les BROKEN et DEAD_RENDER ne sont
-pas du ressort de la conversion de masse.
+Classes actuelles de `scripts/regen_quarto_render.py --check-readme-links` :
+- HTML_404 : le lien `.html` pointe une cible absente du depot -> 404 sur
+  github.com. **C'est la classe que cet outil corrige**, en repointant vers le
+  `.ipynb` sibling quand il existe.
+- BROKEN : la cible du lien n'existe pas du tout -> lien mort a corriger
+  separement (ne pas auto-convertir).
 
 Ce que l'outil NE touche PAS
 ----------------------------
 - Les liens absolus (`http://`, `https://`, `mailto:`) ou ancrage (`#`) ;
-- Les liens `.html` deja corrects (DEAD_RENDER traite separement) ;
-- Les liens vers un `.ipynb` hors render-list (population source brute
-  documentee par `#11451` / `#11451-archive` ; ne pas convertir) ;
+- Les liens `.html` dont le `.ipynb` sibling n'est pas un notebook suivi
+  (page HTML autonome, index de site : conversion impossible, hors perimetre) ;
 - Les cellules code, blocs de fence (triple backticks), le YAML frontmatter.
 
 Distinction avec `regen_quarto_render.py --check-readme-links`
@@ -38,7 +40,7 @@ Usage
     python scripts/notebook_tools/fix_ipynb_links.py --apply MyIA.AI.Notebooks/SymbolicAI/Tweety
 
 Sortie : 0 si rien a convertir (--check) ou conversion faite (--apply),
-1 si des STALE_LINK restent (--check), 2 en cas d'erreur.
+1 si des HTML_404 restent (--check), 2 en cas d'erreur.
 """
 from __future__ import annotations
 
@@ -47,8 +49,8 @@ import re
 import sys
 from pathlib import Path
 
-# Reprend les memes regex que regen_quarto_render.py : capture stricte des
-# cibles `.ipynb` ou `.html` dans un lien markdown standard.
+# Memes regex que regen_quarto_render.py : capture stricte des cibles `.ipynb`
+# ou `.html` dans un lien markdown standard.
 _IPYNB_LINK_RE = re.compile(r"\]\(([^)#\s]+\.ipynb)\)")
 _HTML_LINK_RE = re.compile(r"\]\(([^)#\s]+\.html)\)")
 
@@ -73,18 +75,34 @@ def _is_inside_fence(text: str, pos: int) -> bool:
     return in_fence
 
 
-def fix_readme_links(readme_path: Path, rendered: set[str]) -> tuple[int, int]:
-    """Convertit les STALE_LINK dans un README.
+def _html_404_hrefs(text: str, base: Path, notebooks: set[str]):
+    """Rend les (match, href, sibling) des liens `.html` corrigeables.
+
+    Un lien est corrigeable s'il est relatif, hors fence, et que son `.ipynb`
+    sibling est un notebook suivi (`notebooks` = ensemble repo-relative rendu
+    par `git_tracked_notebooks()`).
+    """
+    for m in _HTML_LINK_RE.finditer(text):
+        href = m.group(1)
+        if href.startswith(("http://", "https://", "#", "mailto:")):
+            continue
+        if _is_inside_fence(text, m.start()):
+            continue
+        sibling = href[:-len(".html")] + ".ipynb"
+        if _normalise_readme_target(base, sibling) in notebooks:
+            yield m, href, sibling
+
+
+def fix_readme_links(readme_path: Path, notebooks: set[str]) -> tuple[int, int]:
+    """Convertit les liens HTML_404 corrigeables dans un README.
 
     Rend (nb_conversions, nb_violations_apres_legacy). Lis le fichier en mode
     binaire pour preserver les fins de ligne (LF/CRLF), re-ecrit en mode
     binaire apres substitutions.
 
-    Une violation STALE_LINK = un href `.ipynb` qui pointe vers un fichier
-    qui EST dans la render-list (donc un `.html` sibling existe).
-
-    On ne touche PAS aux hrefs `.ipynb` hors render-list (UNRENDERED, source
-    brute documentee par `#11451`).
+    Une violation HTML_404 corrigeable = un href `.html` dont le `.ipynb`
+    sibling est un notebook suivi : le README doit pointer vers le `.ipynb`
+    (le viewer github.com), pas vers un rendu qui n'est pas dans le depot.
     """
     try:
         raw_bytes = readme_path.read_bytes()
@@ -98,25 +116,13 @@ def fix_readme_links(readme_path: Path, rendered: set[str]) -> tuple[int, int]:
         return 0, 0
 
     base = Path(readme_path).parent
-    nb_conversions = 0
 
     # On collecte les edits (start, end, replacement) en parcourant les matchs,
     # puis on applique de la fin vers le debut pour ne pas invalider les offsets.
     edits: list[tuple[int, int, str]] = []
-    for m in _IPYNB_LINK_RE.finditer(text):
-        href = m.group(1)
-        if href.startswith(("http://", "https://", "#", "mailto:")):
-            continue
-        if _is_inside_fence(text, m.start()):
-            continue
-        norm = _normalise_readme_target(base, href)
-        if norm in rendered:
-            # STALE_LINK : on convertit le href
-            new_href = href[:-len(".ipynb")] + ".html"
-            # L'edition porte sur le href UNIQUEMENT (pas les `](` autour)
-            href_start = m.start(1)
-            href_end = m.end(1)
-            edits.append((href_start, href_end, new_href))
+    for m, _href, sibling in _html_404_hrefs(text, base, notebooks):
+        # L'edition porte sur le href UNIQUEMENT (pas les `](` autour)
+        edits.append((m.start(1), m.end(1), sibling))
 
     if not edits:
         return 0, 0
@@ -132,8 +138,8 @@ def fix_readme_links(readme_path: Path, rendered: set[str]) -> tuple[int, int]:
     return nb_conversions, 0
 
 
-def count_stale_links(readme_path: Path, rendered: set[str]) -> int:
-    """Compte les STALE_LINK dans un README sans rien ecrire."""
+def count_html_404_links(readme_path: Path, notebooks: set[str]) -> int:
+    """Compte les liens HTML_404 corrigeables dans un README sans rien ecrire."""
     try:
         raw_bytes = readme_path.read_bytes()
     except OSError:
@@ -144,17 +150,7 @@ def count_stale_links(readme_path: Path, rendered: set[str]) -> int:
         return 0
 
     base = Path(readme_path).parent
-    nb = 0
-    for m in _IPYNB_LINK_RE.finditer(text):
-        href = m.group(1)
-        if href.startswith(("http://", "https://", "#", "mailto:")):
-            continue
-        if _is_inside_fence(text, m.start()):
-            continue
-        norm = _normalise_readme_target(base, href)
-        if norm in rendered:
-            nb += 1
-    return nb
+    return sum(1 for _ in _html_404_hrefs(text, base, notebooks))
 
 
 def iter_readmes(targets: list[str]):
@@ -180,23 +176,26 @@ def main(argv=None) -> int:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from regen_quarto_render import git_tracked_notebooks
 
-    rendered = set(git_tracked_notebooks())
+    # `notebooks` = les notebooks suivis (repo-relative). Depuis l'inversion
+    # (#18911), l'ensemble sert a valider le SIBLING `.ipynb` d'un lien `.html`,
+    # plus la cible d'un lien `.ipynb`.
+    notebooks = set(git_tracked_notebooks())
 
     files = 0
     conv = 0
     for readme in iter_readmes(args.targets):
         if args.apply:
-            n, _ = fix_readme_links(readme, rendered)
+            n, _ = fix_readme_links(readme, notebooks)
         else:
-            n = count_stale_links(readme, rendered)
+            n = count_html_404_links(readme, notebooks)
         if n:
             files += 1
             conv += n
             verbe = "converti" if args.apply else "a convertir"
-            print(f"  {readme.as_posix()} : {n} STALE_LINK {verbe}")
+            print(f"  {readme.as_posix()} : {n} HTML_404 {verbe}")
 
     verbe = "convertis" if args.apply else "a convertir"
-    print(f"{conv} STALE_LINK {verbe} dans {files} README(s)")
+    print(f"{conv} HTML_404 {verbe} dans {files} README(s)")
     if args.check and conv:
         return 1
     return 0

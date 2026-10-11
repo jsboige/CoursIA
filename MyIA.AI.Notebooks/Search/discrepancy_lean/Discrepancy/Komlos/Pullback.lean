@@ -45,16 +45,34 @@ convexité s'ouvre ensuite sur une base déjà vérifiée :
   appliqué à `convex_convexHull`, l.83 chez Dahia) : une combinaison convexe
   finie de points d'une enveloppe reste dans l'enveloppe.
 
-**`pullback` reste reporté, et son bloqueur est désormais mesuré** : chez
-Dahia il s'énonce sur `E →₀ ℝ` avec `E` un `ℝ`-module, l'enveloppe étant
-prise dans `convexHull ℝ (P.support : Set E)`. La base de ce lake est
-`Fin d → ℤ`, qui **n'est pas** un `ℝ`-module — `convexHull ℝ` n'y a pas de
-sens sans plongement coordonnée-par-coordonnée dans `Fin d → ℝ` (le
-« transport de dimension » de `FORMAL_STATUS.md`). L'état détaillé vit dans
-`FORMAL_STATUS.md`.
+**Brique k2.4 (le pas complet)** — `pullback` livré dans le cadre du lake,
+sur le transport de dimension k2.3 qui a levé le bloqueur mesuré en k2.2 :
+
+- `toRealProd` + `toRealProd_injective` — l'embedding **produit** : la
+  grille entière × hauteur `Bool` dans la grille réelle × `ℝ` (la hauteur
+  `false ↦ 0`, `true ↦ 1` — c'est là que la hauteur du lake, un `Bool`,
+  devient la coordonnée réelle `(y, β)` de l'oracle) ;
+- `split_apply_zero_ne_iff` / `split_apply_one_ne_iff` — les
+  **caractérisations de support** de la scission sous `P ≥ 0`, lues point
+  par point (l'oracle les a gratuitement via `Finsupp.support` :
+  `mk_zero_mem_support_split` / `mk_one_mem_support_split` ; le cadre Finset
+  explicite du lake les exige comme hypothèses d'exactitude sur le support
+  `SQ` passé) ;
+- `pullback` — **le pas complet** : si `(z, β)` est dans l'enveloppe du
+  support transporté de `split v P` avec `v = 3·w` coordonnée par
+  coordonnée et `β ≥ 1/3`, un signe `e ∈ {±1}` ramène `z + e • toReal w`
+  dans l'enveloppe du support transporté de `P`. Transposé de
+  `Komlos/Pullback.lean` l.55-92, les trois ingrédients livrés en k2.1/k2.2
+  (`exists_sign_mul_add_eq`, `add_smul_mem_convexHull`,
+  `sum_smul_mem_convexHull`) et les ponts k2.3 (`toReal_mem_map_iff`)
+  étant consommés nommément.
+
+L'état détaillé vit dans `FORMAL_STATUS.md`.
 -/
 
 import Discrepancy.Basic
+import Discrepancy.Komlos.Split
+import Discrepancy.Komlos.Transport
 
 /-!
 # Algèbre du pas de pullback (Lemme 1.4, Karingula–Lovett)
@@ -198,5 +216,300 @@ lemma sum_smul_mem_convexHull {E : Type*} [AddCommGroup E] [Module ℝ E]
     (hmem : ∀ y ∈ T, f y ∈ convexHull ℝ s) :
     ∑ y ∈ T, R y • f y ∈ convexHull ℝ s :=
   (convex_convexHull ℝ s).sum_mem hR0 hR1 hmem
+
+/-! ### Brique k2.4 : l'embedding produit et les caractérisations de support
+
+Le pas complet de `pullback` exige deux ingrédients de cadre que k2.1-k2.3
+n'ont pas encore rencontrés : l'embedding **produit** (grille × hauteur →
+grille réelle × `ℝ`, là où la hauteur `Bool` devient la coordonnée `β` de
+l'oracle) et les caractérisations de **support** de la scission (que
+l'oracle obtient gratuitement via `Finsupp.support` et que le cadre Finset
+explicite du lake doit énoncer comme hypothèses). -/
+
+/-- **Embedding produit.** La grille entière munie de sa hauteur `Bool` se
+plonge dans la grille réelle × `ℝ` : la composante spatiale par `toReal`
+(le transport de dimension de la brique k2.3), la hauteur `false ↦ 0`,
+`true ↦ 1`.
+
+C'est ce plongement qui fait de la hauteur du lake — un `Bool` — la
+coordonnée réelle `(y, β)` de l'oracle : l'enveloppe de la conclusion du
+`pullback` oracle vit dans `E × ℝ`, et c'est dans `(Fin d → ℝ) × ℝ` que le
+lake la rejoint.
+
+L'injectivité est le papier de l'`Finset.map` du support transporté : sans
+elle, `SQ.map toRealProdEmb` pourrait contracter des points et l'hypothèse
+d'exactitude `hSQ` du théorème `pullback` perdrait des informations. La
+composante spatiale est injective par `toReal_injective` (k2.3) ; la
+composante hauteur sépare `false` de `true` par `0 ≠ 1`. -/
+def toRealProd {d : ℕ} : ((Fin d → ℤ) × Bool) → ((Fin d → ℝ) × ℝ) :=
+  fun y => (toReal y.1, if y.2 then (1 : ℝ) else 0)
+
+lemma toRealProd_injective {d : ℕ} : Function.Injective (toRealProd (d := d)) := by
+  rintro ⟨x₁, b₁⟩ ⟨x₂, b₂⟩ h
+  simp only [toRealProd, Prod.mk.injEq] at h
+  obtain ⟨hxe, hbe⟩ := h
+  cases b₁ <;> cases b₂ <;> simp_all [toReal_injective.eq_iff]
+
+/-- La version `Finset.Embedding` de `toRealProd`, pour les `Finset.map`
+des supports transportés. -/
+def toRealProdEmb {d : ℕ} : ((Fin d → ℤ) × Bool) ↪ ((Fin d → ℝ) × ℝ) :=
+  ⟨toRealProd, toRealProd_injective⟩
+
+/-- **Hauteur d'un point du support transporté.** Tout point de l'image
+`SQ.map toRealProdEmb` porte une hauteur dans `{0, 1}` — la traduction
+finie de `snd_eq_zero_or_one_of_mem_support_split` chez l'oracle. -/
+lemma mem_map_toRealProd_snd {d : ℕ} {y : (Fin d → ℝ) × ℝ}
+    {SQ : Finset ((Fin d → ℤ) × Bool)} (hy : y ∈ SQ.map toRealProdEmb) :
+    y.2 = 0 ∨ y.2 = 1 := by
+  rw [Finset.mem_map] at hy
+  obtain ⟨y', -, hye⟩ := hy
+  have h2 : (if y'.2 then (1 : ℝ) else 0) = y.2 := congrArg Prod.snd hye
+  cases b : y'.2 <;> rw [b] at h2 <;> simp_all
+
+/-- **Caractérisation du support, tranche basse.** Sous `P ≥ 0`, la tranche
+`false` de la scission porte une masse non nulle exactement quand l'une des
+deux translatées `P (x ± v)` est non nulle.
+
+C'est la lecture point-par-point de `mk_zero_mem_support_split` chez
+l'oracle (`(x, 0) ∈ (split v P).support ↔ x + v ∈ P.support ∨ x - v ∈
+P.support`) : le cadre `Finsupp` de l'oracle la donne via le support, le
+cadre Finset explicite du lake l'énonce sur la valeur. Sous `P ≥ 0`,
+`½ · max a b ≠ 0` équivaut à `a ≠ 0 ∨ b ≠ 0` : c'est la positivité qui fait
+traverser le `max`. -/
+lemma split_apply_zero_ne_iff {d : ℕ} {P : (Fin d → ℤ) → ℝ} (hP : ∀ x, 0 ≤ P x)
+    (v x : Fin d → ℤ) :
+    split v P (x, false) ≠ 0 ↔ P (x + v) ≠ 0 ∨ P (x - v) ≠ 0 := by
+  rw [split_apply_zero]
+  constructor
+  · intro h
+    by_contra hcon
+    obtain ⟨h1, h2⟩ := not_or.mp hcon
+    rw [not_not.mp h1, not_not.mp h2, max_self] at h
+    norm_num at h
+  · rintro (h | h)
+    · intro hcon
+      have hlt : (0 : ℝ) < P (x + v) := lt_of_le_of_ne (hP _) (Ne.symm h)
+      exact absurd hcon (ne_of_gt (mul_pos one_half_pos
+        (lt_of_lt_of_le hlt (le_max_left _ _))))
+    · intro hcon
+      have hlt : (0 : ℝ) < P (x - v) := lt_of_le_of_ne (hP _) (Ne.symm h)
+      exact absurd hcon (ne_of_gt (mul_pos one_half_pos
+        (lt_of_lt_of_le hlt (le_max_right _ _))))
+
+/-- **Caractérisation du support, tranche haute.** Sous `P ≥ 0`, la tranche
+`true` de la scission porte une masse non nulle exactement quand les deux
+translatées `P (x ± v)` sont non nulles — le `min` exige la conjonction,
+là où le `max` de la tranche basse exige la disjonction.
+
+Lecture point-par-point de `mk_one_mem_support_split` chez l'oracle
+(`(x, 1) ∈ (split v P).support ↔ x + v ∈ P.support ∧ x - v ∈ P.support`). -/
+lemma split_apply_one_ne_iff {d : ℕ} {P : (Fin d → ℤ) → ℝ} (hP : ∀ x, 0 ≤ P x)
+    (v x : Fin d → ℤ) :
+    split v P (x, true) ≠ 0 ↔ P (x + v) ≠ 0 ∧ P (x - v) ≠ 0 := by
+  rw [split_apply_one]
+  constructor
+  · intro hcon
+    constructor
+    · intro hzero
+      apply hcon
+      rw [hzero, min_eq_left (hP (x - v)), mul_zero]
+    · intro hzero
+      apply hcon
+      rw [hzero, min_eq_right (hP (x + v)), mul_zero]
+  · rintro ⟨h, h'⟩
+    have hlt : (0 : ℝ) < P (x + v) := lt_of_le_of_ne (hP _) (Ne.symm h)
+    have hlt' : (0 : ℝ) < P (x - v) := lt_of_le_of_ne (hP _) (Ne.symm h')
+    exact ne_of_gt (mul_pos one_half_pos (lt_min hlt hlt'))
+
+/-! ### Brique k2.4 : le pas complet -/
+
+/-- **Le pas de pullback (Lemme 1.4).** Si la distribution `P` sur la
+grille entière est non négative, de support contenu dans `SP`, et si
+`(z, β)` appartient à l'enveloppe convexe du support **transporté** de la
+scission `split v P` — transporté par l'embedding produit `toRealProd` —
+avec `v = 3 · w` coordonnée par coordonnée et `β ≥ 1/3`, alors un signe
+`e ∈ {±1}` ramène `z + e • toReal w` dans l'enveloppe convexe du support
+transporté de `P`.
+
+C'est la transposition du théorème `pullback` de Dahia
+(`Komlos/Pullback.lean`, l.55-92) au cadre du lake. Trois écarts de cadre
+sont arbitrés :
+
+- **le point `z` vit côté `ℝ`** : chez l'oracle, l'hypothèse d'induction
+  produit un point de `E × ℝ` quelconque dans l'enveloppe ; ici le
+  consommateur final (le Lemme 1.4) produit un barycentre côté grille
+  réelle, d'où `z : Fin d → ℝ` et l'hypothèse sur l'enveloppe **dans
+  l'image transportée**, pas dans la grille entière ;
+- **`hSQ` est une hypothèse, pas un calcul** : chez l'oracle le support
+  `(split v P).support` est calculé (`mk_zero_mem_support_split`) ; le
+  cadre Finset explicite du lake exige de connaître le support `SQ` de la
+  scission et son exactitude (`∀ y ∈ SQ, split v P y ≠ 0`) — c'est la
+  contrepartie de l'absence de `Finsupp` ;
+- **`hPsupp` relaie le support de `P`** : de même, `SP` doit contenir le
+  support de `P` pour que les extrémités des segments y atterrissent.
+
+La preuve est celle de l'oracle, décomposée sur les ingrédients livrés en
+k2.1-k2.3 : `Finset.mem_convexHull'` décompose l'appartenance de `(z, β)`
+en poids `R` ; `abs_sum_le_sum_abs` borne la part des poids hauteurs `0` ;
+`exists_sign_mul_add_eq` (k2.1) produit le signe `e` et le coefficient
+`c` ; chaque point de la combinaison est ramené dans l'enveloppe du
+support transporté de `P` par `add_smul_mem_convexHull` (k2.2, tranches
+hautes) ou par l'appartenance directe d'une extrémité (tranches basses,
+via `toReal_mem_map_iff` de k2.3) ; `sum_smul_mem_convexHull` (k2.2)
+referme. -/
+theorem pullback {d : ℕ} {P : (Fin d → ℤ) → ℝ} (hP : ∀ x, 0 ≤ P x)
+    {SP : Finset (Fin d → ℤ)} (hPsupp : ∀ x, P x ≠ 0 → x ∈ SP)
+    {v w : Fin d → ℤ} (hv : ∀ i, v i = 3 * w i)
+    {SQ : Finset ((Fin d → ℤ) × Bool)} (hSQ : ∀ y ∈ SQ, split v P y ≠ 0)
+    {β : ℝ} (hβ : 3⁻¹ ≤ β) {z : Fin d → ℝ}
+    (hmem : (z, β) ∈ convexHull ℝ
+      (↑(SQ.map toRealProdEmb) : Set ((Fin d → ℝ) × ℝ))) :
+    ∃ e : ℝ, (e = 1 ∨ e = -1) ∧
+      z + e • toReal w ∈ convexHull ℝ
+        (↑(SP.map ⟨⇑toReal, toReal_injective⟩) : Set (Fin d → ℝ)) := by
+  classical
+  -- la direction du transport : toReal v = 3 • toReal w
+  have hvR : toReal v = (3 : ℝ) • toReal w := by
+    funext i
+    simp only [toReal_apply, hv i, Int.cast_mul, Pi.smul_apply, smul_eq_mul]
+    push_cast
+    ring
+  -- décomposition de l'appartenance en poids
+  obtain ⟨R, hR0, hR1, hRc⟩ := Finset.mem_convexHull'.1 hmem
+  have hz : ∑ y ∈ SQ.map toRealProdEmb, R y • y.1 = z := by
+    have h := congrArg Prod.fst hRc
+    rw [Prod.fst_sum] at h
+    exact h
+  have hb : ∑ y ∈ SQ.map toRealProdEmb, R y * y.2 = β := by
+    have h := congrArg Prod.snd hRc
+    rw [Prod.snd_sum] at h
+    exact h
+  -- les hauteurs du support transporté sont dans {0, 1}
+  have hsnd : ∀ y ∈ SQ.map toRealProdEmb, y.2 = 0 ∨ y.2 = 1 :=
+    fun y hy => mem_map_toRealProd_snd hy
+  -- chaque point du support transporté provient d'un point de SQ
+  have hpre : ∀ y ∈ SQ.map toRealProdEmb, ∃ y' ∈ SQ, toRealProd y' = y := by
+    intro y hy
+    rw [Finset.mem_map] at hy
+    obtain ⟨y', hy', hye⟩ := hy
+    exact ⟨y', hy', hye⟩
+  -- les extrémités des tranches basses atterrissent dans le support de P
+  have hfalse : ∀ y ∈ SQ.map toRealProdEmb, y.2 = 0 →
+      y.1 + toReal v ∈ (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ)) ∨
+      y.1 - toReal v ∈ (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ)) := by
+    intro y hy y0
+    obtain ⟨y', hy', hye⟩ := hpre y hy
+    obtain ⟨x', b'⟩ := y'
+    cases b' with
+    | false =>
+      have hx := (split_apply_zero_ne_iff hP v x').1 (hSQ (x', false) hy')
+      have hy1 : toReal x' = y.1 := congrArg Prod.fst hye
+      rcases hx with h | h
+      · left
+        have hmem' := (toReal_mem_map_iff (x' + v) SP).2 (hPsupp _ h)
+        rwa [map_add, hy1] at hmem'
+      · right
+        have hmem' := (toReal_mem_map_iff (x' - v) SP).2 (hPsupp _ h)
+        rwa [map_sub, hy1] at hmem'
+    | true =>
+      exfalso
+      have h1 : y.2 = 1 := by
+        have := congrArg Prod.snd hye
+        simpa [toRealProd] using this.symm
+      rw [y0] at h1
+      norm_num at h1
+  -- les extrémités des tranches hautes atterrissent dans le support de P
+  have htrue : ∀ y ∈ SQ.map toRealProdEmb, y.2 = 1 →
+      y.1 + toReal v ∈ (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ)) ∧
+      y.1 - toReal v ∈ (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ)) := by
+    intro y hy y1
+    obtain ⟨y', hy', hye⟩ := hpre y hy
+    obtain ⟨x', b'⟩ := y'
+    cases b' with
+    | true =>
+      obtain ⟨h, h'⟩ := (split_apply_one_ne_iff hP v x').1 (hSQ (x', true) hy')
+      have hy1 : toReal x' = y.1 := congrArg Prod.fst hye
+      constructor
+      · have hmem' := (toReal_mem_map_iff (x' + v) SP).2 (hPsupp _ h)
+        rwa [map_add, hy1] at hmem'
+      · have hmem' := (toReal_mem_map_iff (x' - v) SP).2 (hPsupp _ h')
+        rwa [map_sub, hy1] at hmem'
+    | false =>
+      exfalso
+      have h0 : y.2 = 0 := by
+        have := congrArg Prod.snd hye
+        simpa [toRealProd] using this.symm
+      rw [y1] at h0
+      norm_num at h0
+  -- la borne sur la part des poids de hauteur 0 : |σ y| = 1 dans les deux branches
+  have ha : |∑ y ∈ SQ.map toRealProdEmb, R y * ((1 - y.2) *
+      (if y.1 + toReal v ∈ (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ))
+        then (1 : ℝ) else -1))| ≤ 1 - β := by
+    refine (Finset.abs_sum_le_sum_abs _ _).trans
+      ((Finset.sum_le_sum (g := fun y => R y * (1 - y.2)) ?_).trans_eq ?_)
+    · intro y hy
+      rcases hsnd y hy with h | h
+      · rw [h, sub_zero, mul_one, abs_mul, abs_of_nonneg (hR0 y hy)]
+        by_cases hyv : y.1 + toReal v ∈
+            (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ))
+        · rw [if_pos hyv]; simp
+        · rw [if_neg hyv]; simp
+      · rw [h, sub_self, mul_zero, zero_mul, mul_zero, abs_zero]
+    · simp only [mul_sub, mul_one, Finset.sum_sub_distrib]
+      rw [hR1, hb]
+  -- le signe e et le coefficient c
+  obtain ⟨e, c, he, hc, hce⟩ := exists_sign_mul_add_eq hβ ha
+  refine ⟨e, he, ?_⟩
+  -- l'identité de barycentre
+  have hsum : ∑ y ∈ SQ.map toRealProdEmb,
+      R y * (y.2 * c + (1 - y.2) *
+        (if y.1 + toReal v ∈ (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ))
+          then (1 : ℝ) else -1)) = e / 3 := by
+    rw [← hce, ← hb, Finset.mul_sum, ← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun y _ => ?_
+    ring
+  have hzw : ∑ y ∈ SQ.map toRealProdEmb, R y •
+      (y.1 + (y.2 * c + (1 - y.2) *
+        (if y.1 + toReal v ∈ (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ))
+          then (1 : ℝ) else -1)) • toReal v) = z + e • toReal w := by
+    simp only [smul_add, smul_smul, Finset.sum_add_distrib]
+    rw [← Finset.sum_smul, hsum, hvR, smul_smul]
+    have hkey : (e / 3) * (3 : ℝ) = e := div_mul_cancel₀ e (by norm_num)
+    rw [hkey, hz]
+  rw [← hzw]
+  -- chaque point de la combinaison est dans l'enveloppe du support de P
+  refine sum_smul_mem_convexHull _ R
+    (fun y => y.1 + (y.2 * c + (1 - y.2) *
+      (if y.1 + toReal v ∈ (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ))
+        then (1 : ℝ) else -1)) • toReal v) hR0 hR1 ?_
+  intro y hy
+  rcases hsnd y hy with h | h
+  · -- tranche basse : le coefficient vaut ±1, l'extrémité correspondante est dans le support
+    have hcoef : (y.2 * c + (1 - y.2) *
+        (if y.1 + toReal v ∈ (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ))
+          then (1 : ℝ) else -1)) • toReal v
+        = (if y.1 + toReal v ∈ (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ))
+          then (1 : ℝ) else -1) • toReal v := by
+      simp only [h, zero_mul, sub_zero, one_mul, zero_add]
+    rw [hcoef]
+    by_cases hyv : y.1 + toReal v ∈ (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ))
+    · rw [if_pos hyv, one_smul]
+      exact subset_convexHull ℝ _ hyv
+    · rw [if_neg hyv]
+      have hyv' : y.1 - toReal v ∈
+          (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ)) :=
+        ((hfalse y hy h).resolve_left hyv)
+      have hconv : y.1 + (-1 : ℝ) • toReal v = y.1 - toReal v := by
+        rw [neg_one_smul, sub_eq_add_neg]
+      rw [hconv]
+      exact subset_convexHull ℝ _ hyv'
+  · -- tranche haute : le coefficient vaut c, les deux extrémités sont dans le support
+    have hcoef : (y.2 * c + (1 - y.2) *
+        (if y.1 + toReal v ∈ (SP.map ⟨⇑toReal, toReal_injective⟩ : Finset (Fin d → ℝ))
+          then (1 : ℝ) else -1)) • toReal v = c • toReal v := by
+      simp only [h, one_mul, sub_self, zero_mul, add_zero]
+    rw [hcoef]
+    obtain ⟨hplus, hminus⟩ := htrue y hy h
+    exact add_smul_mem_convexHull hminus hplus hc
 
 end Discrepancy.Komlos

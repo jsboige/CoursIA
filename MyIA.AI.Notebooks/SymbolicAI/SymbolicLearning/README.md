@@ -195,7 +195,7 @@ Modalite de la séance : chaque groupe choisit **un exercice** dans la table ci-
 | 4 | [SL-1](SL-1-LogicalLearning.ipynb) | Ex. 4 — Réflexion sur le biais conjonctif | Un domaine où ce biais est idéal, un où il est catastrophique (no free lunch) |
 | 5 | [SL-1](SL-1-LogicalLearning.ipynb) | Ex. 5 — La consistance sans Occam (aima) | Echantillonner les graines ne prouve pas la minimalité : quel algorithme exact le ferait ? |
 | 6 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 1 — EBL differentiation symbolique | Exhiber une variabilisation trop agressive qui produit une règle compilee fausse |
-| 7 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 2 — Filtrage des règles (opérationnalité) | Deux distributions de requêtes qui inversent le classement d'utilite des règles |
+| 7 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 2 — RBL, robustesse au bruit | Une colonne bruitée qui « détermine » accidentellement la cible : régularité accidentelle ou véritable détermination ? |
 | 8 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 3 — Speedup EBL | Le *utility problem* (Minton 1990) : pourquoi apprendre plus finit par ralentir |
 | 9 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 1 — Déterminations meteo | Une observation bruitee : quelle détermination minimale survit ? |
 | 10 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 2 — RBL vs sélection aleatoire | Trouver le point de croisement ou la sélection statistique bat le RBL |

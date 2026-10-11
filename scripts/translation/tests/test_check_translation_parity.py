@@ -707,7 +707,14 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # FT-01-Introduction-FineTuning + FT-03-Supervised-FineTuning. Total apres fusion : 7.
 # 2026-10-05 (#1650 tranche FT-02, QLoRA-Quantization): +1 paire T4 --
 # FineTuning/FT-02-QLoRA-Quantization. Total apres fusion : 8.
-EXPECTED_PAIR_COUNT = 8
+# 2026-10-09 (PR #19996, pli 5 Origami famille 155, #19993): +1 paire --
+# jumeau _en d'un carnet Lean : SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique_en.
+# Ce n'est PAS une paire rendue par T4 : la declaration compte le perimetre
+# decouvert par discover_pairs(), pas une famille de rendu. La paire est arrivee
+# sur main avec son carnet et sans mettre a jour cette ligne, ce qui a rougi
+# `test_full_repo_state_passes_parity` (found 9, declared 8) sur toute PR
+# path-filtree scripts/**. Total apres fusion : 9.
+EXPECTED_PAIR_COUNT = 9
 
 
 def _collect_parity_failures(repo_root: Path,

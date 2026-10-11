@@ -17,6 +17,11 @@
 6. send the allowed orders, unless ``dry_run`` -- the default;
 7. append one JSON line to the journal and save the gate state.
 
+En cas d'échec pendant la boucle d'ordres, les écritures du journal et de
+l'état de risque sont tentées séparément, puis l'exception initiale se propage.
+L'ordre dont l'envoi a levé reste sans identifiant : son sort est inconnu et
+nécessite une réconciliation. Aucun ordre n'est réessayé automatiquement.
+
 The broker is anything that implements :class:`Broker`; prices, positions
 and equity must share one currency. The IBKR adapter lives in
 :mod:`paper_harness.ibkr_broker`; :mod:`paper_harness.ibkr_cycle` runs one
@@ -25,6 +30,7 @@ cycle with it from the command line.
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -84,10 +90,43 @@ class CycleReport:
     alert: str | None
     weights: dict[str, float]
     orders: list[OrderRecord] = field(default_factory=list)
+    # Exception type name when the cycle died mid-flight (send failure or
+    # interruption). The message stays out of the journal: it can carry
+    # secrets. None once the cycle completed.
+    interruption: str | None = None
 
     @property
     def sent(self) -> list[OrderRecord]:
         return [o for o in self.orders if o.order_id is not None]
+
+
+def _append_journal(journal_path: Path, report: CycleReport) -> None:
+    journal_path = Path(journal_path)
+    journal_path.parent.mkdir(parents=True, exist_ok=True)
+    with journal_path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(asdict(report)) + "\n")
+
+
+def _persist_interrupted_cycle(
+    journal_path: Path, report: CycleReport, gate: RiskGate, state_path: Path
+) -> None:
+    """Tente les deux persistances sans masquer l'exception initiale.
+
+    Une écriture échouée n'empêche pas l'autre. Son type est signalé sur stderr,
+    sans recopier le message potentiellement sensible de l'exception.
+    """
+    failures: list[str] = []
+    try:
+        _append_journal(journal_path, report)
+    except Exception as exc:
+        failures.append(f"journal append failed ({type(exc).__name__})")
+    try:
+        gate.save(state_path)
+    except Exception as exc:
+        failures.append(f"risk state save failed ({type(exc).__name__})")
+    if failures:
+        print(f"run_cycle interrupted ({report.interruption}); " + "; ".join(failures),
+              file=sys.stderr)
 
 
 def run_cycle(
@@ -144,28 +183,36 @@ def run_cycle(
         weights=weights,
     )
     after = {s: float(q) for s, q in held.items()}
-    for order in plan:
-        current = after.get(order.symbol, 0.0)
-        shrinks = current > 0 and order.quantity < 0 and -order.quantity <= current
-        trial = dict(after)
-        trial[order.symbol] = current + order.quantity
-        gross = sum(abs(q) * prices[s] for s, q in trial.items() if q)
-        decision = gate.check_order(
-            sleeve_capital=equity,
-            order_notional=order.notional,
-            gross_exposure_after=gross,
-            reduces_exposure=shrinks,
-        )
-        record = OrderRecord(order.symbol, order.quantity, order.price, decision.allowed, decision.reason)
-        if decision.allowed:
-            after = trial
-            if not dry_run:
-                record.order_id = broker.place(order.symbol, order.quantity)
-        report.orders.append(record)
+    try:
+        for order in plan:
+            current = after.get(order.symbol, 0.0)
+            shrinks = current > 0 and order.quantity < 0 and -order.quantity <= current
+            trial = dict(after)
+            trial[order.symbol] = current + order.quantity
+            gross = sum(abs(q) * prices[s] for s, q in trial.items() if q)
+            decision = gate.check_order(
+                sleeve_capital=equity,
+                order_notional=order.notional,
+                gross_exposure_after=gross,
+                reduces_exposure=shrinks,
+            )
+            record = OrderRecord(order.symbol, order.quantity, order.price, decision.allowed, decision.reason)
+            # Appended before the send: if place() dies, the journal still
+            # shows the attempt as an unknown outcome (order_id None) --
+            # never an invented id, never a second try.
+            report.orders.append(record)
+            if decision.allowed:
+                after = trial
+                if not dry_run:
+                    record.order_id = broker.place(order.symbol, order.quantity)
+    except BaseException as exc:
+        # The cycle dies mid-flight: the journal keeps what was already sent
+        # and the attempt that died, the gate keeps its equity mark, and the
+        # caller still sees the original exception.
+        report.interruption = type(exc).__name__
+        _persist_interrupted_cycle(journal_path, report, gate, state_path)
+        raise
 
-    journal_path = Path(journal_path)
-    journal_path.parent.mkdir(parents=True, exist_ok=True)
-    with journal_path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(asdict(report)) + "\n")
+    _append_journal(journal_path, report)
     gate.save(state_path)
     return report

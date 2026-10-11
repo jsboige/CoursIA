@@ -15,7 +15,10 @@ classes observed:
     of ``[1.0, 1.0, ...]`` even when the cell computes the same values.
   - Float format drift: NumPy 1.x prints ``[1.0, 1.0, 1.0]``; NumPy 2.x
     prints ``[1.0, 0.9999999999999999, 1.0]``. The values are within
-    1 ULP but the textual signature differs.
+    1 ULP; since #19961 (bruit assume, cf ``_signatures_equivalent``)
+    such numerically-equal-within-1-ULP signatures are NOT drift. Only a
+    numeric difference beyond the tolerance -- or a signature that does
+    not parse as numbers and differs textually -- is flagged.
   - Machine path leak: a fresh execution under a different temp dir
     injects new ``MACHINE_PATH`` strings (covered by
     check_output_failure_text.py, not this gate).
@@ -38,10 +41,17 @@ Exclusions: same as check_papermill_ratchet.py (notebooks in
 
 Exit code: 0 if no regression, 1 if at least one changed notebook
 shows kernel or float-format drift without a documented justification.
+
+A base that cannot be READ is not a drift: the organ refetches the base
+branch once and retries (#15553 partial-clone race), and if the base is
+still unreadable it fails closed with an ``[infrastructure][fail-closed]``
+marker and a JSON document carrying ``infrastructure_error`` -- so a
+reader of the rollup never mistakes it for a measured regression.
 """
 
 import argparse
 import json
+import math
 import os
 import re
 import subprocess
@@ -78,14 +88,99 @@ def git_fail_closed(*args, cwd=None):
     return git(*args, cwd=cwd)
 
 
+class BaseUnreadable(RuntimeError):
+    """The base ref could not be read: an infrastructure failure, not a drift.
+
+    Kept distinct from a drift verdict on purpose. #15553 (fast-lane organ)
+    established that an organ failing to READ its input must not look, in the
+    rollup, like an organ that MEASURED a defect -- the reader would chase a
+    content regression that does not exist.
+    """
+
+
+def _refetch_base(base, cwd=None):
+    """Refetch a remote-tracking base into the exact ref merge-base reads.
+
+    Partial-clone race (#15553, measured here 2026-10-09): the checkout is
+    ``fetch-depth: 0`` + ``filter: blob:none``, and ``main`` can advance while
+    the job runs. The promisor then cannot resolve a commit that IS on the
+    remote, and ``merge-base`` fails with ``Could not read <sha>`` on an
+    otherwise readable base. An explicit refetch of the branch repairs the
+    race before the organ concludes anything.
+
+    It ALIGNS the base, it does not FREEZE it: the ref moves to the CURRENT
+    remote head, so if ``main`` advances between the first read and the
+    retry the target changes mid-run. Harmless for the verdict -- the
+    comparison uses the SHA returned by ``merge-base``, not the ref -- but
+    the race is real and the next organ copying this pattern should know
+    (review #20161, minor).
+    """
+    prefix = "origin/"
+    if not base.startswith(prefix) or base == prefix:
+        return subprocess.CompletedProcess(
+            args=[], returncode=2, stdout="",
+            stderr=f"base ref non refetchable: {base!r}",
+        )
+    branch = base[len(prefix):]
+    refspec = f"+refs/heads/{branch}:refs/remotes/origin/{branch}"
+    return subprocess.run(
+        ["git", "fetch", "--refetch", "--filter=blob:none", "origin", refspec],
+        cwd=cwd, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+
+
 def resolve_base(base, cwd=None):
-    out = git("merge-base", base, "HEAD", cwd=cwd)
+    try:
+        out = git("merge-base", base, "HEAD", cwd=cwd)
+    except RuntimeError as first:
+        print("[kernel-drift][infrastructure] merge-base illisible contre "
+              f"{base}; refetch cible de la branche de base", file=sys.stderr)
+        fetched = _refetch_base(base, cwd=cwd)
+        if fetched.returncode != 0:
+            raise BaseUnreadable(
+                "[kernel-drift][infrastructure][fail-closed] base illisible; "
+                "aucun verdict de drift n'a ete calcule. "
+                f"base={base}; erreur initiale={first}; "
+                f"refetch={fetched.stderr.strip() or f'exit {fetched.returncode}'}"
+            ) from first
+        try:
+            out = git("merge-base", base, "HEAD", cwd=cwd)
+        except RuntimeError as second:
+            raise BaseUnreadable(
+                "[kernel-drift][infrastructure][fail-closed] base toujours "
+                "illisible apres refetch; aucun verdict de drift n'a ete "
+                f"calcule. base={base}; erreur initiale={first}; "
+                f"nouvelle lecture={second}"
+            ) from second
+        print("[kernel-drift][infrastructure] base reparee; merge-base relu "
+              "apres refetch cible", file=sys.stderr)
     return out.strip() if out.strip() else base
 
 
+def _infrastructure_failure(what, exc):
+    """Mark an unreadable git read as infrastructure, not a drift verdict.
+
+    #20161 (review): the promisor race is a property of the PARTIAL CLONE,
+    not of ``merge-base`` alone -- any object read can hit it, and the
+    ``--filter=blob:none`` refetch brings commits, while ``diff`` reads
+    trees and ``show`` reads blobs. Left unmarked, such a failure produced
+    the very empty-artifact signature this organ exists to remove.
+    """
+    return BaseUnreadable(
+        "[kernel-drift][infrastructure][fail-closed] lecture git illisible; "
+        "aucun verdict de drift n'a ete calcule. "
+        f"lecture={what}; erreur={exc}"
+    )
+
+
 def changed_notebooks(base, cwd=None):
-    out = git("diff", "--name-only", "--diff-filter=ACMR",
-              base, "HEAD", "--", "*.ipynb", cwd=cwd)
+    try:
+        out = git("diff", "--name-only", "--diff-filter=ACMR",
+                  base, "HEAD", "--", "*.ipynb", cwd=cwd)
+    except RuntimeError as e:
+        raise _infrastructure_failure(
+            f"diff --name-only {base}..HEAD", e) from e
     paths = []
     for line in out.splitlines():
         posix = line.strip().replace("\\", "/")
@@ -105,7 +200,7 @@ def read_blob(commit_ref, nb_path, cwd=None):
     except RuntimeError as e:
         if "exists on disk, but not in" in str(e) or "does not exist" in str(e) or "bad revision" in str(e):
             return None
-        raise
+        raise _infrastructure_failure(f"show {commit_ref}:{nb_path}", e) from e
     if not out:
         return None
     try:
@@ -163,6 +258,87 @@ def float_signatures(nb):
         joined = "".join(text_parts)
         sigs.append(tuple(FLOAT_ARRAY_RE.findall(joined)))
     return tuple(sigs)
+
+
+def _parse_array_values(array_text):
+    """Parse one matched array string into a tuple of numbers.
+
+    Returns None when ANY token fails to parse (fail-closed: the caller
+    then falls back to textual comparison, never to a false equivalence).
+    Complex tokens (trailing ``j``) are parsed with ``complex()``.
+    """
+    inner = array_text.strip().lstrip("[(").rstrip("])")
+    values = []
+    for token in inner.split(","):
+        token = token.strip()
+        try:
+            values.append(complex(token) if token.endswith("j") else float(token))
+        except ValueError:
+            return None
+    return tuple(values)
+
+
+def _within_ulp(a, b, max_ulp=1):
+    """Vrai quand a et b sont egaux a ``max_ulp`` ULP pres (#19961).
+
+    Reels : marche ``nextafter`` bornee a ``max_ulp`` pas (exactitude de la
+    mesure, pas une approximation ``isclose``). Complexes : chaque partie
+    dans la meme tolerance. NaN == NaN est accepte (deux executions du meme
+    calcul non-branche produisent NaN toutes deux) ; infini exige l'egalite
+    exacte et le meme signe.
+    """
+    if isinstance(a, complex) or isinstance(b, complex):
+        try:
+            ar, ai = (a.real, a.imag) if isinstance(a, complex) else (a, 0.0)
+            br, bi = (b.real, b.imag) if isinstance(b, complex) else (b, 0.0)
+        except AttributeError:
+            return False
+        return (_within_ulp(ar, br, max_ulp) and _within_ulp(ai, bi, max_ulp))
+    if math.isnan(a) and math.isnan(b):
+        return True
+    if math.isnan(a) or math.isnan(b):
+        return False
+    if math.isinf(a) or math.isinf(b):
+        return a == b
+    if a == b:
+        return True
+    lo, hi = (a, b) if a < b else (b, a)
+    # La marche nextafter couvre aussi les sous-normaux depuis 0.0 :
+    # nextafter(0.0, inf) est le plus petit sous-normal, et chaque pas
+    # suivant avance d'un sous-normal -- pas de cas special.
+    current = lo
+    for _ in range(max_ulp):
+        current = math.nextafter(current, math.inf)
+        if current >= hi:
+            return True
+    return current >= hi
+
+
+def _signatures_equivalent(base_sig, head_sig, max_ulp=1):
+    """Compare deux signatures float au sens de la decision #19961.
+
+    Bruit assume : deux signatures dont les valeurs sont egales a 1 ULP pres
+    ne sont PAS un drift -- c'est l'extension a la signature float de la
+    doctrine #17371 (le drift de patch ne change pas la semantique, les
+    re-execs cross-machines de la flotte produisent des byte-repr differents
+    a 1 ULP pres, mesure #19961 : base 3.13.13 vs head 3.13.3 sur ICT-23).
+    Un token qui ne parse pas retombe sur l'egalite TEXTUELLE de la paire
+    (fail-closed) : on ne fabrique jamais une equivalence non mesuree.
+    """
+    if len(base_sig) != len(head_sig):
+        return False
+    for b_text, h_text in zip(base_sig, head_sig):
+        if b_text == h_text:
+            continue
+        b_vals = _parse_array_values(b_text)
+        h_vals = _parse_array_values(h_text)
+        if b_vals is None or h_vals is None:
+            return False
+        if len(b_vals) != len(h_vals):
+            return False
+        if not all(_within_ulp(b, h, max_ulp) for b, h in zip(b_vals, h_vals)):
+            return False
+    return True
 
 
 def kernel_info(nb):
@@ -396,7 +572,7 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
             h_idx = head_ids[cid]
             b = base_sig[b_idx] if b_idx < len(base_sig) else ()
             h = head_sig[h_idx] if h_idx < len(head_sig) else ()
-            if b != h:
+            if b != h and not _signatures_equivalent(b, h):
                 diffs.append(cid)
         # Added code cells (only in head), reported ONLY when they actually
         # carry a float-array signature (#17232). An added cell with no
@@ -422,7 +598,7 @@ def _diff_signatures_ordinal(base_sig, head_sig):
     for i in range(n):
         b = base_sig[i] if i < len(base_sig) else ()
         h = head_sig[i] if i < len(head_sig) else ()
-        if b != h:
+        if b != h and not _signatures_equivalent(b, h):
             diffs.append(i)
     return diffs
 
@@ -479,7 +655,26 @@ def canonical_env_hint(nb_path, root="."):
 
 def _run(args_obj):
     """Core logic shared between CLI and tests. Returns dict or prints."""
-    base = resolve_base(args_obj.base_ref)
+    try:
+        base = resolve_base(args_obj.base_ref)
+    except BaseUnreadable as e:
+        # Fail-closed, but WITHOUT the empty artifact that made this class
+        # indistinguishable from a drift verdict in the rollup: the JSON
+        # document is emitted and carries the cause.
+        return {"findings": [], "base": args_obj.base_ref,
+                "body_exempts": False, "infrastructure_error": str(e)}
+    try:
+        return _measure(base, args_obj)
+    except BaseUnreadable as e:
+        # Same marking for the reads that FOLLOW the base resolution
+        # (review #20161): the refetch does not close this door, so the
+        # diff and the blob reads must be distinguishable too.
+        return {"findings": [], "base": base,
+                "body_exempts": False, "infrastructure_error": str(e)}
+
+
+def _measure(base, args_obj):
+    """Read the changed notebooks and measure drift against `base`."""
     notebooks = changed_notebooks(base)
 
     # Defect 1: read PR body for exemption
@@ -571,7 +766,31 @@ def _run(args_obj):
                 finding["probable_causes"] = causes
             findings.append(finding)
 
-    return {"findings": findings, "base": base, "body_exempts": body_exempts}
+    return {"findings": findings, "base": base, "body_exempts": body_exempts,
+            "changed_notebooks": len(notebooks)}
+
+
+def _infrastructure_rc(result, as_json):
+    """Emit the infrastructure artifact and return the fail-closed rc.
+
+    Returns None when the run measured something -- the caller then applies
+    the drift verdict as usual. The JSON document is printed even on failure:
+    an empty artifact is exactly what made this class unreadable in the
+    rollup (#15553 acceptance 2).
+
+    Scope of the guarantee (review #20161): the non-empty artifact is
+    emitted ONLY under ``--json``, i.e. it is carried by the CI invocation
+    (the workflow passes the flag), not by the script on every entry point.
+    A manual caller without the flag still gets the cause on stderr -- it
+    is named here so the contract is not read as wider than it is.
+    """
+    err = result.get("infrastructure_error")
+    if not err:
+        return None
+    if as_json:
+        print(json.dumps(result, indent=2))
+    print(err, file=sys.stderr)
+    return 1
 
 
 def main():
@@ -585,6 +804,9 @@ def main():
     args = p.parse_args()
 
     result = _run(args)
+    infra_rc = _infrastructure_rc(result, args.json)
+    if infra_rc is not None:
+        return infra_rc
     findings = result["findings"]
 
     if args.json:
@@ -594,7 +816,7 @@ def main():
     else:
         if not findings:
             print(f"OK: 0 kernel-drift regression across "
-                  f"{len(changed_notebooks(result['base']))} changed notebooks "
+                  f"{result.get('changed_notebooks', 0)} changed notebooks "
                   f"(base={result['base']}).")
             return 0
         print(f"FAIL: kernel-drift regression in {len(findings)} notebook(s):",
@@ -622,13 +844,18 @@ def main_with_args(argv):
     p.add_argument("--explain", action="store_true")
     args = p.parse_args(argv)
     result = _run(args)
+    infra_rc = _infrastructure_rc(result, args.json)
+    if infra_rc is not None:
+        return infra_rc
     findings = result["findings"]
     if args.json:
         # Single JSON emission
         print(json.dumps(result, indent=2))
         return 0 if not findings or all(f.get("acknowledged") for f in findings) else 1
     if not findings:
-        print(f"OK: 0 kernel-drift regression across 0 changed notebooks (base={result['base']}).")
+        print(f"OK: 0 kernel-drift regression across "
+              f"{result.get('changed_notebooks', 0)} changed notebooks "
+              f"(base={result['base']}).")
         return 0
     print(f"FAIL: {len(findings)} drift(s)", file=sys.stderr)
     return 1

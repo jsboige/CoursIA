@@ -25,7 +25,7 @@ Ce laboratoire ouvre la **Journée 3** côté data. Il part du constat classique
 
 ## Notebook
 
-- [Lab4-DataWrangling.ipynb](Lab4-DataWrangling.ipynb) — notebook étudiant (5 étapes guidées + 3 exercices : analyse temporelle, détection d'anomalies par méthode IQR, correction de doublons)
+- [Lab4-DataWrangling.ipynb](Lab4-DataWrangling.html) — notebook étudiant (5 étapes guidées + 3 exercices : analyse temporelle, détection d'anomalies par méthode IQR, correction de doublons)
 
 ## Suite
 

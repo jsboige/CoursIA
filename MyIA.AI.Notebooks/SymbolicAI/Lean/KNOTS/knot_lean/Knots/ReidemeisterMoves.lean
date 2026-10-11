@@ -646,4 +646,265 @@ example : verifyR1
     { crossings := [⟨1,2,3,4⟩, ⟨1,5,6,6⟩, ⟨5,2,3,4⟩], numEdges := 6 }
     = false := by decide
 
+/-! ## 8. Théorème du plancher conditionné (#18611) — la four-distinctness ferme les pas descendants
+
+Le diagnostic de #18611 établit que la chirurgie des moves connectés est
+**append-only** en R1/R2 (`d₁.crossings.set i Y' ++ [kink(s)]`) et **en place**
+en R3 (triple `List.set`) : un croisement d'origine n'est jamais retiré, il est
+réécrit (R1/R2 sur l'index `i`, R3 sur trois indices consécutifs) ou suffixé.
+La mesure mécanique (réplique Python fidèle aux defs + run provenance borné 14 :
+400 000 états par orbite, 0 violation, `min_crossings = 11`) le confirme sur le
+diagramme 11n102.
+
+Ce que le noyau peut établir, et **sous quelle condition**, est le contenu de
+cette section :
+
+> un pas de Reidemeister reliant deux diagrammes dont TOUS les croisements
+> portent quatre labels deux à deux distincts ne peut pas diminuer le nombre de
+> croisements.
+
+La raison est structurelle et courte : les moves qui retirent un croisement
+(R1/R2 inverses) exigent un kink `⟨a, b, c, c⟩` (`e3 = e4`) ou un bigon
+`⟨a, u, u, o⟩` (`e2 = e3`) en **fin de liste** — deux silhouettes qui violent la
+four-distinctness. La condition n'est donc pas décorative : c'est exactement ce
+qui ferme les moves descendants (voir le témoin négatif en fin de section).
+
+**Pourquoi la condition porte sur TOUS les croisements et non sur les `n`
+premiers** (forme qu'employait le diagnostic pour parler du « noyau ») : l'invariant
+« les `n` premiers croisements sont four-distincts » n'est PAS préservé par R1/R2
+inverse. Le renommage inverse peut rendre non-distinct un croisement qui était
+distinct — `c = ⟨1,1,2,3⟩` donne `Y' = ⟨5,1,2,3⟩` sous R1, donc le retour `Y' → c`
+casse la distinctness du noyau — et côté R2, `Reidemeister2Connected` n'exige même
+pas que l'arc `a` soit propre, si bien que la parité `wf` ne rattrape pas ce cas
+(les deux bigons `⟨a, u₁, u₁, o₁⟩`, `⟨a, u₂, u₂, o₂⟩` portent à eux seuls les deux
+occurrences de `a`). C'est la forme « tous les croisements » qui se démontre sans
+saut de raisonnement ; elle seule est invoquée ci-dessous.
+-/
+
+/-- Un croisement dont les quatre labels sont deux à deux distincts. C'est la
+    forme qui interdit les silhouettes kink (`e3 = e4`) et bigon (`e2 = e3`) sur
+    lesquelles s'appuient les chirurgies R1/R2 descendantes. -/
+def PDCrossing.fourDistinct (c : PDCrossing) : Prop :=
+  c.e1 ≠ c.e2 ∧ c.e1 ≠ c.e3 ∧ c.e1 ≠ c.e4 ∧
+  c.e2 ≠ c.e3 ∧ c.e2 ≠ c.e4 ∧ c.e3 ≠ c.e4
+
+/-- Tous les croisements du diagramme sont four-distincts. C'est l'hypothèse du
+    théorème du plancher. -/
+def allFourDistinct (d : KnotDiagram) : Prop := ∀ c ∈ d.crossings, c.fourDistinct
+
+/-- `fourDistinct` est décidable (les six inégalités portent sur `Nat`). Sans
+    cette instance, un `def` de Prop n'est pas dépliable par la recherche
+    d'instance et `decide` échoue sur un croisement littéral — c'est le même
+    piège que documente le témoin R1 de `Reidemeister.lean` pour `isRenameOf`. -/
+instance : DecidablePred PDCrossing.fourDistinct := fun c => by
+  unfold PDCrossing.fourDistinct
+  infer_instance
+
+/-- Un kink `⟨a, b, c, c⟩` n'est jamais four-distinct : ses deux derniers slots
+    coïncident. Témoin négatif local de la chirurgie R1 descendante. -/
+theorem not_fourDistinct_kink (a b c : Nat) :
+    ¬ (⟨a, b, c, c⟩ : PDCrossing).fourDistinct := by
+  intro h
+  unfold PDCrossing.fourDistinct at h
+  exact h.2.2.2.2.2 rfl
+
+/-- Un bigon `⟨a, u, u, o⟩` n'est jamais four-distinct : ses slots 2 et 3
+    coïncident. Témoin négatif local de la chirurgie R2 descendante. -/
+theorem not_fourDistinct_bigon (a u o : Nat) :
+    ¬ (⟨a, u, u, o⟩ : PDCrossing).fourDistinct := by
+  intro h
+  unfold PDCrossing.fourDistinct at h
+  exact h.2.2.2.1 rfl
+
+/-- `changeCrossing` (permutation `e2 ↔ e4`) préserve la four-distinctness : les
+    six inégalités deux à deux se réordonnent, aucune ne se perd. Véhicule des
+    témoins « plis » de la borne supérieure (`Knot.changeCrossingAt`). -/
+theorem changeCrossing_fourDistinct {c : PDCrossing} (h : c.fourDistinct) :
+    (changeCrossing c).fourDistinct := by
+  obtain ⟨h12, h13, h14, h23, h24, h34⟩ := h
+  unfold PDCrossing.fourDistinct changeCrossing
+  exact ⟨h14, h13, h12, h34.symm, h24.symm, h23.symm⟩
+
+/-- `List.modify` préserve une propriété ponctuelle des éléments : la liste ne
+    change qu'en un seul index, et l'élément réécrit y passe par `f`, dont la
+    stabilité est l'hypothèse `hf`. -/
+private theorem modify_forall_mem {f : PDCrossing → PDCrossing}
+    (hf : ∀ c, c.fourDistinct → (f c).fourDistinct) :
+    ∀ (l : List PDCrossing) (i : Nat) (c : PDCrossing),
+      (∀ d ∈ l, d.fourDistinct) → c ∈ l.modify i f → c.fourDistinct := by
+  intro l
+  induction l with
+  | nil => intro i c _ hc; simp at hc
+  | cons x xs ih =>
+    intro i c hl hc
+    cases i with
+    | zero =>
+      simp only [List.modify_zero_cons, List.mem_cons] at hc
+      rcases hc with rfl | hc
+      · exact hf x (hl x (by simp))
+      · exact hl c (by simp [hc])
+    | succ i' =>
+      simp only [List.modify_succ_cons, List.mem_cons] at hc
+      rcases hc with hcx | hc
+      · exact hl c (by simp [hcx])
+      · exact ih i' c (fun d hd => hl d (by simp [hd])) hc
+
+/-- Changer le croisement d'indice `i` préserve la four-distinctness du
+    diagramme : `List.modify` ne réécrit qu'un croisement et `changeCrossing` la
+    préserve ponctuellement. -/
+theorem changeCrossingAt_allFourDistinct (k : Knot) (i : Nat)
+    (h : allFourDistinct k.diagram) :
+    allFourDistinct (k.changeCrossingAt i).diagram := by
+  intro c hc
+  exact modify_forall_mem (f := changeCrossing)
+    (fun c hc => changeCrossing_fourDistinct hc) k.diagram.crossings i c h hc
+
+/-- Le pli des changements de croisement préserve la four-distinctness : la
+    propriété vaut donc sur **tout** candidat d'unknotting de la borne supérieure
+    (les plis `indices.foldl Knot.changeCrossingAt` de `Knot.UnknottableIn`), pas
+    seulement sur la table de départ. -/
+theorem foldl_changeCrossingAt_allFourDistinct (indices : List Nat) (k : Knot)
+    (h : allFourDistinct k.diagram) :
+    allFourDistinct (indices.foldl Knot.changeCrossingAt k).diagram := by
+  induction indices generalizing k with
+  | nil => simpa using h
+  | cons i is ih => exact ih _ (changeCrossingAt_allFourDistinct k i h)
+
+/-- **Théorème du plancher conditionné (#18611)** : un pas de Reidemeister reliant
+    deux diagrammes tous deux entièrement four-distincts ne diminue jamais le
+    nombre de croisements.
+
+    Preuve par cas sur le pas. R1/R2 en direction AVANT agrandissent la liste de
+    croisements (`set i Y' ++ [kink(s)]`, longueur `+1`/`+2`). R1/R2 en direction
+    INVERSE exigeraient que le diagramme de départ porte le kink
+    `⟨a, m+1, m+2, m+2⟩` ou les bigons `⟨a, m+1, m+1, m+2⟩` en fin de liste : ces
+    formes violent la four-distinctness, donc `hd` les réfute. R3 conserve la
+    longueur (champ de la définition, dans les deux orientations). Aucun `wf` ni
+    argument de parité n'est nécessaire : la condition d'hypothèse suffit. -/
+theorem reidemeisterStep_length_le_of_allFourDistinct {d d' : KnotDiagram}
+    (hstep : ReidemeisterStep d d')
+    (hd : allFourDistinct d) (_hd' : allFourDistinct d') :
+    d.crossings.length ≤ d'.crossings.length := by
+  cases hstep with
+  | r1 h =>
+    rcases h with h | h
+    · obtain ⟨_, _, _, _, _, _, _, _, _, _, _, hsurg, _⟩ := h
+      rw [hsurg]
+      simp only [List.length_append, List.length_set]
+      omega
+    · obtain ⟨_, _, _, a, _, _, _, _, _, _, _, hsurg, _⟩ := h
+      exfalso
+      have hk : (⟨a, d'.numEdges + 1, d'.numEdges + 2, d'.numEdges + 2⟩ : PDCrossing)
+          ∈ d.crossings := by
+        rw [hsurg]
+        simp
+      exact not_fourDistinct_kink a (d'.numEdges + 1) (d'.numEdges + 2) (hd _ hk)
+  | r2 h =>
+    rcases h with h | h
+    · obtain ⟨_, _, _, _, _, _, _, _, _, _, hsurg, _⟩ := h
+      rw [hsurg]
+      simp only [List.length_append, List.length_set]
+      omega
+    · obtain ⟨_, _, _, a, _, _, _, _, _, _, hsurg, _⟩ := h
+      exfalso
+      have hb : (⟨a, d'.numEdges + 3, d'.numEdges + 3, d'.numEdges + 4⟩ : PDCrossing)
+          ∈ d.crossings := by
+        rw [hsurg]
+        simp
+      exact not_fourDistinct_bigon a (d'.numEdges + 3) (d'.numEdges + 4) (hd _ hb)
+  | r3 h =>
+    rcases h with h | h
+    · obtain ⟨_, _, hlen, _, _⟩ := h
+      omega
+    · obtain ⟨_, _, hlen, _, _⟩ := h
+      omega
+
+/-- Version chaînée du plancher conditionné, sur le langage **certifié** de
+    #18611 (point 2) : si chaque maillon d'un certificat `movesConnects` a ses
+    deux diagrammes four-distincts, la longueur de départ minore celle d'arrivée.
+    C'est la forme qui couvre une suite de mouvements explicite (celle qu'un
+    prouveur construirait), par opposition au seul pas élémentaire. -/
+theorem movesConnects_length_le_of_allFourDistinct {ms : List ReidemeisterMove}
+    {d₂ : KnotDiagram} :
+    ∀ (d₁ : KnotDiagram), movesConnects ms d₁ d₂ →
+      (∀ m ∈ ms, allFourDistinct m.source ∧ allFourDistinct m.target) →
+      d₁.crossings.length ≤ d₂.crossings.length := by
+  induction ms with
+  | nil =>
+    intro d₁ h _
+    simp only [movesConnects, verifyMoves] at h
+    rw [of_decide_eq_true h]
+  | cons m ms ih =>
+    intro d₁ h hall
+    simp only [movesConnects, verifyMoves, Bool.and_eq_true] at h
+    obtain ⟨⟨hsrc, hmove⟩, hrest⟩ := h
+    have hsrc' : m.source = d₁ := of_decide_eq_true hsrc
+    have hm := hall m (by simp)
+    have h₁ : d₁.crossings.length ≤ m.target.crossings.length := by
+      rw [← hsrc']
+      exact reidemeisterStep_length_le_of_allFourDistinct (verifyMove_sound hmove) hm.1 hm.2
+    have h₂ : m.target.crossings.length ≤ d₂.crossings.length :=
+      ih m.target hrest (fun m' hm' => hall m' (by simp [hm']))
+    omega
+
+/-- Corollaire : aucun certificat dont tous les diagrammes sont four-distincts ne
+    peut relier un diagramme à `n > 0` croisements au diagramme trivial (dont la
+    liste de croisements est vide). C'est la forme « route fermée » du théorème,
+    celle qui intéresse #18611 : la langue des moves connectés ne relie pas un
+    diagramme entièrement four-distinct au nœud trivial **le long d'un chemin
+    restant four-distinct**. -/
+theorem movesConnects_not_unknot_of_allFourDistinct {ms : List ReidemeisterMove}
+    {d₁ : KnotDiagram} (hn : 0 < d₁.crossings.length)
+    (h : movesConnects ms d₁ unknotDiagram)
+    (hall : ∀ m ∈ ms, allFourDistinct m.source ∧ allFourDistinct m.target) :
+    False := by
+  have hl := movesConnects_length_le_of_allFourDistinct (d₂ := unknotDiagram) d₁ h hall
+  have h0 : unknotDiagram.crossings.length = 0 := rfl
+  omega
+
+/-! ### 8.1 Témoin négatif — la condition n'est pas décorative
+
+La paire satisfiable du lake (`reidemeister1Connected_satisfiable`,
+`Reidemeister.lean`) est un pas R1 de 2 vers 3 croisements. Lue **à l'envers**,
+c'est un pas **descendant** 3 → 2, que le vérificateur Bool accepte — donc un
+contre-exemple apparent au plancher. Ce qui le désamorce est exactement
+l'hypothèse : le diagramme de départ porte le kink `⟨1,5,6,6⟩`, non
+four-distinct, donc `reidemeisterStep_length_le_of_allFourDistinct` ne s'y
+applique pas. Les trois théorèmes ci-dessous sont les trois faces de cette
+constatation (le pas passe ; l'hypothèse échoue ; le théorème est inapplicable
+plutôt que faux).
+-/
+
+/-- Le pas descendant 3 → 2 est **certifié** : la paire satisfiable R1 du lake,
+    lue à l'envers, passe `verifyMove` et forme une chaîne `movesConnects`. -/
+theorem reidemeister1Connected_descent_is_certified :
+    movesConnects
+      [ReidemeisterMove.r1
+        { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 }
+        { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }]
+      { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 }
+      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 } := by
+  unfold movesConnects
+  decide
+
+/-- … et son diagramme de **départ** n'est pas entièrement four-distinct : le
+    kink `⟨1,5,6,6⟩` a `e3 = e4`. C'est par cette hypothèse manquante, et non par
+    une faille du théorème, que le pas descendant échappe au plancher. -/
+theorem not_allFourDistinct_reidemeister1Connected_witness :
+    ¬ allFourDistinct
+      { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 } := by
+  intro h
+  exact not_fourDistinct_kink 1 5 6 (h ⟨1,5,6,6⟩ (by simp))
+
+/-- Contrôle positif jumeau du témoin négatif : le diagramme d'ARRIVÉE du même
+    pas (2 croisements) est, lui, entièrement four-distinct. La condition sépare
+    donc bien les deux rives du pas — elle n'est ni toujours vraie ni toujours
+    fausse sur cette paire. -/
+theorem allFourDistinct_reidemeister1Connected_witness_small :
+    allFourDistinct
+      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 } := by
+  intro c hc
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
+  rcases hc with rfl | rfl <;> decide
+
 end Knots

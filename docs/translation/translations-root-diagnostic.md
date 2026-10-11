@@ -5,7 +5,7 @@
 > **Issues de référence** : [#6949](https://github.com/jsboige/CoursIA/issues/6949) (T3 moteur fork Argumentum, **OUVERTE** par décision coordinateur) ; [#4957](https://github.com/jsboige/CoursIA/issues/4957) (CLOSED, Phase 1 infra) ; [#1650](https://github.com/jsboige/CoursIA/issues/1650) (OPEN, Epic traduction multilingue).
 > **Date** : 2026-08-06 (c.1252, lane `myia-po-2025:CoursIA-2`).
 
----
+***
 
 ## 1. Pourquoi ce document
 

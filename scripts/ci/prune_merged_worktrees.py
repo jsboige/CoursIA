@@ -45,9 +45,12 @@ Ce script est cet organe.
 
 Critères de retrait (cf issue #14195 acceptance) :
 
-1. **Worktree avec commits non poussés** (`git rev-list --count @{u}..HEAD > 0`) :
-   REFUSE, jamais d'exception. Aucune branche n'est mergee alors qu'elle a
-   du travail non publie.
+1. **Worktree avec commits non poussés** (avance vs le ref distant homonyme
+   `refs/remotes/origin/<branche>`, repli `@{u}` hors `*/main` -- #20009) :
+   REFUSE. Exception : si HEAD est un ancêtre de `origin/main`, l'avance est
+   un artefact de bookkeeping (branche soeur en `@{u}`, aucun commit propre)
+   et le flot normal tranche. Aucune branche n'est mergee alors qu'elle a du
+   travail non publie.
 2. **Worktree avec une PR OPEN** : REFUSE. Le retrait casserait l'iteration
    en cours.
 3. **Worktree avec une PR MERGED ou CLOSED (non-merged)** : REMOVE.
@@ -84,11 +87,35 @@ Critères de retrait (cf issue #14195 acceptance) :
    6 h) fait REFUSER le retrait (`reason=recent_activity:<age>h`). Des que
    le marqueur depasse la fenetre, le worktree redevient retirable : le
    refus protege la phase de travail, il ne conserve rien indefiniment.
+8. **Contenu deja integre par PATCH-ID (#20067)** : la garde de contenu a
+   deux jambes, et elles ne sont pas equivalentes. La jambe **ascendance**
+   (predicat 5) exige que `HEAD` soit ancetre de `origin/main` ; la jambe
+   **patch-id** (`git cherry origin/main HEAD`) compare les patchs et voit
+   le cas que la premiere rate *par construction* : un **squash-merge**
+   dont la **branche distante a ete supprimee**. La tete n'est alors
+   atteignable depuis aucun ref, donc la resolution de PR rend `None` et
+   l'ascendance est fausse -- alors que le contenu, lui, est bien sur
+   `main`. Meme fenetre « agent vivant » qu'au point 7, meme forme
+   fail-closed : `minus > 0` (il y a un commit a comparer) **et**
+   `plus == 0` (aucun patch hors amont -- un seul `+` disqualifie), et une
+   lecture git en echec refuse. Le champ `content_on_main_by`
+   (`"ancestor"` / `"patch_id"` / `"branch_patch_id"`) porte la jambe dans
+   le rapport, pour qu'un squash-merge ne se lise pas comme une ascendance.
+   La jambe patch-id ne voit qu'un squash **d'un seul commit** (le
+   patch-id se calcule sur le diff d'un commit, reserve Hermes 09/10) ;
+   le cas **multi-commit** releve de la jambe elargie
+   `content_delivered_by_branch_patch_id`, qui fabrique le commit que le
+   squash aurait produit (`git commit-tree HEAD^{tree} -p <merge-base>`)
+   et le donne a `git cherry` -- patch-id du patch de branche entiere,
+   calcule par la machinerie git, sans scan `git log -p`. Elle n'est
+   tentee que quand la jambe per-commit ne tranche pas deja.
 
 Ancre PR : `gh pr list --state all --search "head:<branch>"` (autoritative,
 cf matrice a 4 ancres de `.claude/rules/git-workflow.md` §orphan-branch-scan).
 Ni `--is-ancestor` seul ni `commits/<oid>/pulls` ne suffisent : le premier
-rate les squash-merges, le second a des faux negatifs mesures.
+rate les squash-merges, le second a des faux negatifs mesures. C'est
+exactement ce trou que la seconde jambe du point 8 ferme, par le contenu
+plutot que par un ref.
 
 ## Observabilite des refus (#3895, roo-extensions)
 
@@ -195,6 +222,15 @@ Exit codes:
       `--ignored=matching`)
 - [x] Registre `blocking_untracked` (untracked non-ignores NON toleres)
       expose sur chaque verdict pour la decision humaine
+
+## Acceptance criteria (depuis #20067, jambe patch-id du contenu sur main)
+
+- [x] `git cherry` comme second temoin de contenu, fail-closed
+      (`minus > 0` **et** `plus == 0`, lecture en echec -> REFUSE)
+- [x] Meme fenetre « agent vivant » que le predicat d'ascendance (#18494)
+- [x] Jambe exposee dans le rapport (`content_on_main(ancestor|patch_id|branch_patch_id)`)
+- [x] Mesure avant cablage sur ferme reelle : 31 refuses de la classe,
+      6 franchissables, 25 restes refuses (2026-10-09, po-2025)
 """
 from __future__ import annotations
 
@@ -205,6 +241,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import traceback
@@ -289,6 +326,15 @@ class WorktreeStatus:
     # Champ #17771 (additif) : REMOVE motive par contenu deja integre a
     # main (tete ancetre de origin/main), sans PR rattachable.
     content_on_main: bool = False
+    # Champ #20067 (additif) : *quelle jambe* a etabli `content_on_main`.
+    # "ancestor" = le predicat 5 (#17771, ascendance) ; "patch_id" = le
+    # predicat 6 (#20067, `git cherry` per-commit) ; "branch_patch_id" =
+    # la jambe elargie (squash multi-commit, reserve Hermes 09/10). Trois
+    # preuves differentes, et le rapport doit dire laquelle a tire -- un
+    # squash-merge n'est pas une ascendance, et confondre les deux rend
+    # la classe `no_pr_match` indiscernable d'une garde qui n'aurait rien
+    # franchi.
+    content_on_main_by: Optional[str] = None
     # Champ #3895 (additif) : lane proprietaire lue dans le marqueur
     # `.lane-owner` a la racine du worktree (None si absent). Attribue les
     # refus pour le rapport -- jamais une autorite de decision.
@@ -663,30 +709,46 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
     branch_raw = branch_proc.stdout.strip()
     branch = None if branch_raw in ("HEAD", "") else branch_raw
 
-    # Ahead count : commits non pousses vs @{u}. Si @{u} n'est pas
-    # configure (branche feature sans `set-upstream-to`, frequente avec
-    # `git worktree add -b`), @{u} retombe sur origin/main ce qui compare
-    # la branche feature a main -- un faux positif massif. On verifie
-    # d'abord la resolution explicite : si l'upstream specifique est la
-    # branche elle-meme, on compte les commits en avance. Sinon (upstream
-    # = main), on considere 0 unpushed et on laisse le verdict PR trancher.
+    # Ahead count : commits non pousses. L'instrument #20009 : quand le ref
+    # distant homonyme refs/remotes/origin/<branche> existe localement, c'est
+    # LUI qui porte le bookkeeping de la branche. @{u} peut pointer une
+    # branche soeur (base d'une pile au moment de la creation du worktree) ;
+    # `@{u}..HEAD` mesure alors l'ecart a une branche tierce, pas du travail
+    # non pousse (mesure po-2024 : 5 worktrees refuses unpushed_commits:210
+    # avec 0 commit propre et SHA identique au ref distant homonyme).
+    # Repli @{u} historique quand le homonyme est absent : si l'upstream
+    # retombe sur origin/main (branche feature sans `set-upstream-to`),
+    # comparer la branche feature a main serait un faux positif massif --
+    # on considere 0 unpushed et on laisse le verdict PR trancher. Un ref
+    # homonyme stale en retard sur-counte (echec vers le refus), jamais
+    # l'inverse.
     ahead_count = 0
     if branch:
-        upstream_proc = run_git(
-            wt_path, "rev-parse", "--abbrev-ref",
-            f"{branch}@{{u}}", check=False,
+        base_ref = None
+        homonym_proc = run_git(
+            wt_path, "rev-parse", "--verify",
+            f"refs/remotes/origin/{branch}", check=False,
         )
-        if upstream_proc.returncode == 0:
-            upstream = upstream_proc.stdout.strip()
-            if upstream and not upstream.endswith("/main"):
-                ahead_proc = run_git(
-                    wt_path, "rev-list", "--count", "@{u}..HEAD", check=False
-                )
-                if ahead_proc.returncode == 0:
-                    try:
-                        ahead_count = int(ahead_proc.stdout.strip())
-                    except ValueError:
-                        ahead_count = 0
+        if homonym_proc.returncode == 0:
+            base_ref = f"refs/remotes/origin/{branch}"
+        else:
+            upstream_proc = run_git(
+                wt_path, "rev-parse", "--abbrev-ref",
+                f"{branch}@{{u}}", check=False,
+            )
+            if upstream_proc.returncode == 0:
+                upstream = upstream_proc.stdout.strip()
+                if upstream and not upstream.endswith("/main"):
+                    base_ref = "@{u}"
+        if base_ref:
+            ahead_proc = run_git(
+                wt_path, "rev-list", "--count", f"{base_ref}..HEAD", check=False
+            )
+            if ahead_proc.returncode == 0:
+                try:
+                    ahead_count = int(ahead_proc.stdout.strip())
+                except ValueError:
+                    ahead_count = 0
 
     # Untracked / gitignores / tracked-modifies : une seule passe, avec
     # --ignored=matching pour signaler les gitignores non-cache (#14509).
@@ -994,6 +1056,102 @@ def head_is_ancestor_of_main(wt_path: str) -> bool:
     return proc.returncode == 0
 
 
+def content_delivered_by_patch_id(wt_path: str) -> Optional[tuple]:
+    """Teste le contenu livre par **patch-id**, pas par ascendance (#20067).
+
+    ``git cherry <main> HEAD`` compare chaque commit propre du worktree a
+    l'amont par *patch-id* : ``-`` = le patch est deja en amont, ``+`` = il
+    ne l'est pas. C'est la voie qui voit un **squash-merge d'un seul
+    commit** suivi de la suppression de la branche -- cas ou plus aucun
+    ref distant ne porte la tete, donc ou le predicat d'ascendance
+    (#17771) refuse *par construction*, quelle que soit la realite du
+    contenu. **Limite mesuree (reserve Hermes 09/10)** : le patch-id se
+    calcule sur le diff d'*un* commit, donc un squash de branche a N
+    commits produit un patch qui n'egale celui d'aucun commit d'origine --
+    cette jambe rend alors ``plus == N`` et ne tire pas. Ce cas
+    multi-commit releve de la jambe elargie
+    ``content_delivered_by_branch_patch_id``, tentee juste apres.
+
+    Mesure du 2026-10-09 sur la ferme po-2025 (133 worktrees enregistres,
+    31 refuses en ``no_pr_match``/``detached_no_match``) : **6 franchissent**
+    (``minus>0, plus==0``) et **25 restent refuses** (un seul ``+``
+    disqualifie). La classe est donc franchissable *et* la garde reste
+    fail-closed.
+
+    Retourne ``(minus, plus)``, ou None si git echoue : l'appelant REFUSE
+    alors (echec de lecture = jamais un feu vert).
+    """
+    proc = run_git(wt_path, "cherry", MAIN_REF, "HEAD", check=False)
+    if proc.returncode != 0:
+        return None
+    minus = plus = 0
+    for line in proc.stdout.splitlines():
+        if line.startswith("-"):
+            minus += 1
+        elif line.startswith("+"):
+            plus += 1
+    return minus, plus
+
+
+def content_delivered_by_branch_patch_id(wt_path: str) -> Optional[tuple]:
+    """Voit le squash-merge **multi-commit** (#20067, reserve Hermes 09/10).
+
+    ``content_delivered_by_patch_id`` compare le patch-id d'**un** commit a
+    l'amont. Une branche a N commits squashee sur ``main`` produit un commit
+    dont le patch est la **concatenation** des N diffs, donc un patch-id qui
+    n'egale celui d'aucun commit d'origine : ``git cherry`` rend alors
+    ``plus == N`` et refuse un contenu pourtant livre -- le defaut meme que
+    #20067 vise. Mesure de la reserve (Hermes, 09/10, depots jetables git
+    2.43) : branche a 1 commit -> ``minus=1 plus=0`` (franchit) ; branche a
+    2 commits -> ``minus=0 plus=2`` (refuse). Les 6 franchissements de la
+    mesure du 09/10 sont **tous** ``minus=1 plus=0`` -- aucun multi-commit.
+
+    Plutot que de recalculer a la main le patch-id du diff de branche puis
+    de parcourir les patchs de ``main`` (``git log -p`` sur des centaines de
+    commits, capturee en memoire, pour un resultat identique), on **fabrique
+    le commit que le squash aurait produit** -- arbre de ``HEAD``, parent =
+    merge-base -- et on le donne a la meme machinerie ``git cherry``. Son
+    patch-id est exactement celui du patch de branche, et c'est git qui
+    compare, avec son propre index de patch-ids.
+
+    Le commit synthetique est **detache** (aucun ref ne le porte) : il est
+    collecte par le prochain ``git gc``. Aucune ecriture sur les refs, sur
+    l'index ou sur le worktree.
+
+    Cout : trois commandes triviales (``rev-parse``, ``merge-base``,
+    ``commit-tree``) plus le meme ``git cherry`` que la jambe precedente.
+    L'appelant ne la tente **que** lorsque la jambe per-commit n'a pas
+    tranche, donc ce cout ne s'ajoute pas au chemin ou elle decide deja.
+
+    Retourne ``(minus, plus)``, ou None si git echoue : l'appelant REFUSE
+    alors (echec de lecture = jamais un feu vert).
+    """
+    tree = run_git(wt_path, "rev-parse", "HEAD^{tree}", check=False)
+    if tree.returncode != 0 or not tree.stdout.strip():
+        return None
+    base = run_git(wt_path, "merge-base", MAIN_REF, "HEAD", check=False)
+    if base.returncode != 0 or not base.stdout.strip():
+        return None
+    synth = run_git(
+        wt_path, "commit-tree", tree.stdout.strip(),
+        "-p", base.stdout.strip(), "-m", "squash-probe (#20067)",
+        check=False,
+    )
+    if synth.returncode != 0 or not synth.stdout.strip():
+        return None
+    proc = run_git(wt_path, "cherry", MAIN_REF, synth.stdout.strip(),
+                   check=False)
+    if proc.returncode != 0:
+        return None
+    minus = plus = 0
+    for line in proc.stdout.splitlines():
+        if line.startswith("-"):
+            minus += 1
+        elif line.startswith("+"):
+            plus += 1
+    return minus, plus
+
+
 def detached_head_is_on_main(wt_path: str) -> bool:
     """Vrai si le HEAD detache est un ancetre de ``origin/main`` (#17684).
 
@@ -1223,8 +1381,18 @@ def diagnose_worktree(wt_path: str, current_path: str,
             lane_owner=info.get("lane_owner"),
         )
 
-    # Predicat 1 : commits non poussés -> REFUSE inconditionnel
-    if info["branch"] and info["ahead_count"] > 0:
+    # Predicat 1 : commits non poussés -> REFUSE, sauf artefact de
+    # bookkeeping #20009 : HEAD ancetre de origin/main = aucun commit
+    # propre ici, l'« avance » mesure alors l'ecart a un ref tiers
+    # (branche soeur @{u} ou homonyme absent), pas du travail non pousse.
+    # On laisse le flot trancher (verdict PR, puis predicat content_on_main
+    # et sa fenetre d'activite #18494). Fail-CLOSED : ancetre
+    # indeterminable -> refus conserve.
+    if (
+        info["branch"]
+        and info["ahead_count"] > 0
+        and not head_is_ancestor_of_main(wt_path)
+    ):
         return WorktreeStatus(
             path=wt_path,
             branch=info["branch"],
@@ -1401,8 +1569,9 @@ def diagnose_worktree(wt_path: str, current_path: str,
     # rattachable (ni par nom local, ni par tete distante), mais HEAD est
     # un ancetre de origin/main : chaque commit du worktree est deja sur
     # main. Les gardes en amont garantissent deja les deux autres
-    # conditions de l'issue -- 0 commit non pousse (sinon
-    # ``unpushed_commits`` serait sorti) et aucune edition source non
+    # conditions de l'issue -- 0 commit propre non publie (le predicat 1,
+    # ou sa garde ancestor-of-main #20009 quand l'avance est un artefact
+    # @{u}) et aucune edition source non
     # committee ni untracked non tolere (sinon ``uncommitted_source_changes``
     # / ``untolerated_untracked`` seraient sortis). Le worktree ne porte
     # plus rien que main ne contienne deja.
@@ -1435,6 +1604,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
                 ignored_extra=info.get("ignored_extra", []),
                 lane_owner=info.get("lane_owner"),
                 content_on_main=True,
+                content_on_main_by="ancestor",
             )
         return WorktreeStatus(
             path=wt_path,
@@ -1453,7 +1623,84 @@ def diagnose_worktree(wt_path: str, current_path: str,
             ignored_extra=info.get("ignored_extra", []),
             lane_owner=info.get("lane_owner"),
             content_on_main=True,
+            content_on_main_by="ancestor",
         )
+
+    # Predicat 6 (#20067) : contenu deja integre a main **par patch-id**.
+    # Le predicat 5 teste l'ascendance ; il est structurellement aveugle au
+    # squash-merge suivi de la suppression de la branche -- la tete n'est
+    # alors atteignable depuis aucun ref distant, donc sa jambe
+    # « tete atteignable » est fausse par construction, quelle que soit la
+    # realite du contenu. `git cherry` compare les *patch-id*, ce qui voit
+    # ce cas.
+    #
+    # Fail-CLOSED, et c'est le point : `minus > 0` garantit qu'il y a un
+    # commit a comparer (un worktree vide n'ouvre pas le retrait), et
+    # `plus == 0` exige que **tous** les patchs soient en amont -- un seul
+    # `+` disqualifie. Mesure du 2026-10-09 : 6 franchissent sur 31 refuses
+    # de la classe, 25 restent refuses.
+    #
+    # Meme fenetre « agent vivant » que le predicat 5 (#18494) : le critere
+    # est un critere de CONTENU, pas d'ACTIVITE, et un agent vivant
+    # traverse necessairement l'etat « worktree propre, branche sans commit
+    # propre ». Comme le predicat 5, ce predicat est **branche-only** : un
+    # HEAD detache releve de `detached_head_is_on_main` (#17684).
+    if info["branch"]:
+        leg = None
+        cherry = content_delivered_by_patch_id(wt_path)
+        if cherry is not None and cherry[0] > 0 and cherry[1] == 0:
+            leg = "patch_id"
+        else:
+            # Jambe elargie (#20067, reserve Hermes du 09/10) : la precedente
+            # ne voit qu'un squash a **un seul** commit, et rend `plus == N`
+            # sur une branche a N commits squashee. Elle n'est tentee que
+            # lorsqu'il reste quelque chose a trancher, donc son cout ne
+            # s'ajoute pas au chemin ou la jambe per-commit decide deja.
+            branch_cherry = content_delivered_by_branch_patch_id(wt_path)
+            if (branch_cherry is not None
+                    and branch_cherry[0] > 0 and branch_cherry[1] == 0):
+                leg = "branch_patch_id"
+        if leg is not None:
+            age_h = recent_activity_age_hours(wt_path)
+            if age_h < activity_window_h:
+                return WorktreeStatus(
+                    path=wt_path,
+                    branch=info["branch"],
+                    is_current=False,
+                    pr_state=None,
+                    pr_number=None,
+                    pr_url=None,
+                    ahead_count=info["ahead_count"],
+                    has_source_dirty=info["has_source_dirty"],
+                    untracked_paths=info["untracked"],
+                    decision="REFUSE",
+                    refusal_reason=f"recent_activity:{age_h:.1f}h",
+                    has_submodules=info["has_submodules"],
+                    blocking_untracked=info.get("blocking_untracked", []),
+                    ignored_extra=info.get("ignored_extra", []),
+                    lane_owner=info.get("lane_owner"),
+                    content_on_main=True,
+                    content_on_main_by=leg,
+                )
+            return WorktreeStatus(
+                path=wt_path,
+                branch=info["branch"],
+                is_current=False,
+                pr_state=None,
+                pr_number=None,
+                pr_url=None,
+                ahead_count=info["ahead_count"],
+                has_source_dirty=info["has_source_dirty"],
+                untracked_paths=info["untracked"],
+                decision="REMOVE",
+                refusal_reason=None,
+                has_submodules=info["has_submodules"],
+                blocking_untracked=info.get("blocking_untracked", []),
+                ignored_extra=info.get("ignored_extra", []),
+                lane_owner=info.get("lane_owner"),
+                content_on_main=True,
+                content_on_main_by=leg,
+            )
 
     # Pas de PR trouvee : HEAD detaché sans correspondance, ou branche
     # non pushée qu'on ne peut pas relier. REFUSE conservatrice.
@@ -1497,6 +1744,42 @@ def list_worktrees() -> list[dict]:
     return out
 
 
+def is_link_like(p: Path) -> bool:
+    """True pour un lien symbolique ET pour une jonction Windows (#20007).
+
+    `Path.is_symlink()` ne reconnaît que les liens de type *name surrogate* :
+    une jonction NTFS (reparse point `IO_REPARSE_TAG_MOUNT_POINT`, le geste
+    courant pour partager un `node_modules` ou un cache entre worktrees) rend
+    **False** sur les trois voies (`is_symlink`, `os.path.islink`,
+    `S_ISLNK(st_mode)`) alors qu'elle porte bien
+    `FILE_ATTRIBUTE_REPARSE_POINT`. Mesuré sur une jonction `mklink /J` :
+    `st_file_attributes == 0x410` (reparse point + directory).
+
+    Conséquence de l'aveuglement : la cible tombait dans la branche
+    `is_dir()`, où `shutil.rmtree` lève « Cannot call rmtree on a symbolic
+    link » — un `OSError` avalé par `ignore_errors=True`. L'artefact n'était
+    donc ni retiré ni listé, et le `git worktree remove` qui suit échouait
+    sur l'untracked restant : le rapport annonçait REMOVE pour un `--apply`
+    qui ne pouvait pas aboutir (#14619, même classe que l'incident jonctions
+    po-2023 c.525).
+
+    `os.unlink` retire une jonction sans suivre sa cible (mesuré : la cible
+    et son contenu survivent), donc le geste de la branche lien convient aux
+    deux formes — seul le prédicat devait changer.
+
+    Le repli `False` couvre les plateformes sans `st_file_attributes`
+    (POSIX) et un `lstat` impossible : on retombe alors sur le comportement
+    d'avant, jamais sur une suppression.
+    """
+    if p.is_symlink():
+        return True
+    try:
+        attrs = os.lstat(p).st_file_attributes
+    except (OSError, AttributeError):
+        return False
+    return bool(attrs & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+
+
 def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
     """Supprime les SEULS artefacts tolérés du worktree, avant retrait.
 
@@ -1510,6 +1793,8 @@ def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
     - seuls les chemins untracked qui matchent la liste tolérée sont visés ;
     - chaque cible doit résoudre DANS le worktree (défense en profondeur
       contre une entrée porcelain inattendue) ;
+    - les liens symboliques ET les jonctions Windows partent par `unlink`,
+      jamais par `rmtree`, qui lève sur les deux (`is_link_like`, #20007) ;
     - jamais de `--force` : le retrait reste `git worktree remove` nu. Si un
       résidu hors liste survient entre le diagnostic et l'apply, git refuse
       et le statut FAILED rend la cause (fail-closed).
@@ -1529,9 +1814,10 @@ def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
                 continue
         except OSError:
             continue
-        if target.is_symlink():
-            # rmtree sur un lien symbolique leve OSError ; unlink est le
-            # geste correct et ne touche pas la cible.
+        if is_link_like(target):
+            # rmtree sur un lien symbolique -- ou sur une jonction Windows --
+            # leve OSError ; unlink est le geste correct et ne touche pas la
+            # cible (cf is_link_like, #20007).
             try:
                 target.unlink()
                 removed.append(rel)
@@ -1609,7 +1895,12 @@ def render_text(
                 if s.pr_state and s.pr_number else ""
             )
             if not pr_part and s.content_on_main:
-                pr_part = "content_on_main"
+                # #20067 : dire *quelle jambe* a franchi la garde. Les deux
+                # preuves ne sont pas equivalentes -- une ascendance et un
+                # patch-id sont deux faits distincts, et un lecteur qui les
+                # confond lit un squash-merge comme une ascendance.
+                leg = s.content_on_main_by or "?"
+                pr_part = f"content_on_main({leg})"
             if dry_run:
                 lines.append(
                     f"WOULD REMOVE {s.path}  {branch_part}  {pr_part}"

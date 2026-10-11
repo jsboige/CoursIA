@@ -128,18 +128,21 @@ jobs:
         ./elan-init -y --default-toolchain none
         echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
-    - name: Cache Lake build artifacts
-      uses: actions/cache@v4
+    - name: Restore Lake build artifacts
+      id: lake-cache
+      uses: actions/cache/restore@v4
       with:
         path: ${{ inputs.project-path }}/.lake
-        # Key is IDENTICAL to lean-build's (workflows/lean-build.yml l.213 and
-        # actions/lean-build/action.yml l.141): same path, same hashed file set
+        # Key is IDENTICAL to lean-build's (workflows/lean-build.yml and
+        # actions/lean-build/action.yml, etape `Restore Lake build artifacts`): same path, same hashed file set
         # {lakefile.lean|toml, lean-toolchain}. Callers run `needs: ci`, so the
         # ci job of the SAME run has already saved this exact key — here it is
         # an exact HIT and the `lake -R build` below is a no-op trace, not a
         # rebuild. One cache entry per lake instead of two (footprint /2,
         # See #14921 option 1). Legacy `-axiom-` keys do not prefix-match the
         # new restore-keys, so they expire by LRU without ever being served.
+        # RESTORE SEUL (#19658) : le SAVE appartient au job `ci` du meme run
+        # (et, hors run, a `main` seul) -- cette jambe ne fait que consommer.
         key: lake-${{ inputs.display-name }}-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
         restore-keys: lake-${{ inputs.display-name }}-${{ runner.os }}-
 
@@ -301,3 +304,13 @@ jobs:
       run: |
         rm -rf .lake/packages/mathlib/.lake/build
         du -sh .lake 2>/dev/null || true
+
+    # SAVE EXPLICITE, main only (#19658). Les refs de PR restaurent mais
+    # n'ecrivent plus : une PR qui manque la cle repart du cache de main via
+    # `restore-keys` (prefixe), au lieu d'ajouter sa propre copie de ~650 Mo.
+    - name: Save Lake build artifacts (main only)
+      if: github.ref == 'refs/heads/main' && steps.lake-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ inputs.project-path }}/.lake
+        key: ${{ steps.lake-cache.outputs.cache-primary-key }}

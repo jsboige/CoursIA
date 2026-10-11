@@ -6865,3 +6865,162 @@ def test_implicit_multiple_prs_all_named(monkeypatch, capsys):
     brace = captured.out.find("{")
     data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
     assert [e["number"] for e in data["implicit_occupation"]] == [14293, 14301]
+
+
+# --- #19971 : payload JSON comme corps -- lecture defensive du transport ------
+#
+# La classe de transport #16866/#17270 publie parfois le payload COMPLET
+# (`{"body": "..."}`) comme corps du commentaire. Le marqueur `[CLAIMED]` vit
+# alors dans une VALEUR de chaine, precede de `  "body": "`, ses sauts de ligne
+# echappes en `\n` litteraux : `_MARKER_RE` (ancre `(?m)^`) ne matche rien,
+# l'organe rend CLEAR, et un worker qui suit la regle prend un grain occupe.
+#
+# Les trois corps ci-dessous sont les corps REELS des commentaires mesures
+# (recopies verbatim, id + horodatage serveur cites) -- pas des corps inventes
+# qui auraient la bonne forme sans avoir eu le defaut.
+
+# https://github.com/jsboige/CoursIA/issues/19727#issuecomment-6048058597
+# (po-2024:CoursIA-2, 2026-10-07T22:22:10Z)
+_PAYLOAD_19727 = (
+    '{\n  "body": "[CLAIMED] lane myia-po-2024:CoursIA-2 -- deps(slides,#19727):'
+    ' reproduire localement le build Slidev 53 sur un deck, nommer la cause exacte'
+    ' (theme/addon/layout/katex), trancher entre migrer les 19 decks ou epingler'
+    ' <52 avec motif ecrit + issue de suivi. Strategie c.107 : grain MED/docs'
+    ' (contenu adjacent, hors G-VAR-1 deja tenu par DEEP/research-code c.103'
+    ' #19766)."\n}\n'
+)
+
+# https://github.com/jsboige/CoursIA/issues/19796#issuecomment-6048415126
+# (po-2024:CoursIA-2, 2026-10-07T22:47:11Z)
+_PAYLOAD_19796 = (
+    '{\n  "body": "[CLAIMED] lane myia-po-2024:CoursIA-2 -- Origami Wolfram pli 2'
+    ' carnet (DEEP/notebook-python) : ICT-18b Wolframe / 4 classes vs'
+    ' thermodynamique.\\n\\nStrategie c.108 : narrow-cache break dans EPIC #19742'
+    ' (pli 1 DELIVERED c.103, pli 1-bis c.104, pli 2 organ `ict.wolfram_step`'
+    ' livre via PR #19793 OPEN).\\n\\nLe carnet sera developpe sur worktree branche'
+    ' du head de #19793 (organe + carnet sur la meme branche) puis rebase apres'
+    ' merge de #19793. Plancher G-VAR-1 DEEP/CONTENU."\n}\n'
+)
+
+# https://github.com/jsboige/CoursIA/issues/19796#issuecomment-6050609088
+# (po-2023:CoursIA-2, 2026-10-08T01:58:36Z) -- le TEMOIN POSITIF : meme phrase,
+# postee en clair, donc lue avant comme apres le correctif.
+_CLEAR_19796 = (
+    "[CLAIMED] lane myia-po-2023:CoursIA-2 -- paths:"
+    " MyIA.AI.Notebooks/ICT/ICT-18b-WolframClasses-ThermoSignature-Python.ipynb"
+    "\n\nGrain: DEEP/research-code -- prev: DEEP/research-code c.1159 #19843"
+    " (Gorard Lean-34, MED re-qualifié)\n\nPris en releve du pool tapis (picker"
+    " hung Tell c.19246, fallback manuel). Plan : carnet ICT-18b confrontant les"
+    " 4 classes Wolfram (I/II/III/IV) à la signature thermodynamique via"
+    " `ict.wolfram_step` (organe pli 2 #19793) et `ict.time_arrow` (organe"
+    " ICT-18). 4 exercices : génération trajectoires-types, discrimination"
+    " spatiale III vs IV, signature thermodynamique, calibration n_cells/seed."
+    " Verdict attendu : III ~ IV indiscernables sur densité (cf Exo 2 pour la"
+    " discrimination).\n\nC.1 (pas de NotImplementedError, stubs pass/print),"
+    " C.2 (commit AVEC outputs), H.3 (pre-commit execution_count != null).\n"
+)
+
+_ICT_18B = "MyIA.AI.Notebooks/ICT/ICT-18b-WolframClasses-ThermoSignature-Python.ipynb"
+
+
+def test_raw_payload_hides_the_marker_from_line_anchored_regex():
+    """Le mecanisme, epingle : dans le corps BRUT, aucune ligne ne porte le
+    marqueur -- c'est pourquoi le `(?m)^` ne peut pas le voir, et pourquoi le
+    correctif appartient a l'ENTREE (unwrap) et non au filet de detection."""
+    assert clc._MARKER_RE.search(_PAYLOAD_19727) is None
+    assert clc._MARKER_RE.search(_PAYLOAD_19796) is None
+    # le marqueur est pourtant bien present dans le texte -- c'est le parsing
+    # qui echoue, pas la donnee qui manque.
+    assert "[CLAIMED]" in _PAYLOAD_19727
+    assert "[CLAIMED]" in _PAYLOAD_19796
+
+
+def test_unwrap_returns_the_real_body_of_a_trapped_payload():
+    assert clc._unwrap_trapped_body(_PAYLOAD_19727).startswith("[CLAIMED] lane myia-po-2024:CoursIA-2")
+    # les `\n` LITTERAUX du payload deviennent de vrais sauts de ligne
+    unwrapped = clc._unwrap_trapped_body(_PAYLOAD_19796)
+    assert "\n\n" in unwrapped
+    assert "\\n\\n" not in unwrapped
+
+
+def test_unwrap_is_identity_on_a_plain_body():
+    body = _CLEAR_19796
+    assert clc._unwrap_trapped_body(body) == body
+    assert clc._unwrap_trapped_body("") == ""
+    # un corps qui CONTIENT du JSON sans ETRE le payload (prose autour) n'est
+    # pas unwrape : pas de faux positif sur un diagnostic qui cite un payload.
+    prose = 'Le corps publie etait :\n\n```json\n{"body": "x"}\n```\n\nDonc CLEAR.'
+    assert clc._unwrap_trapped_body(prose) == prose
+
+
+def test_trapped_payload_yields_the_claim_event_19727():
+    """Fixture sur le corps REEL de #19727 : la lane et le marqueur sont lus."""
+    ev = clc.parse_claim_event(comment(_PAYLOAD_19727, "2026-10-07T22:22:10Z"))
+    assert ev is not None
+    assert ev.marker == "CLAIMED"
+    assert ev.lane == "myia-po-2024:CoursIA-2"
+
+
+def test_trapped_payload_yields_the_claim_event_19796():
+    ev = clc.parse_claim_event(comment(_PAYLOAD_19796, "2026-10-07T22:47:11Z"))
+    assert ev is not None
+    assert ev.lane == "myia-po-2024:CoursIA-2"
+
+
+def test_trapped_payload_still_feeds_the_paths_clause():
+    """Le corps unwrape alimente AUSSI la clause `paths:` -- sinon un claim
+    scope reduit a epic-wide par accident (#19971 attendu 1)."""
+    trapped = json.dumps({"body": _CLEAR_19796}, ensure_ascii=False)
+    ev = clc.parse_claim_event(comment(trapped, "2026-10-08T01:58:36Z"))
+    assert ev is not None
+    assert ev.lane == "myia-po-2023:CoursIA-2"
+    assert ev.paths == [_ICT_18B]
+
+
+def test_trapped_payload_blocks_an_other_lane_end_to_end(capsys):
+    """Le cas mesure : avant le correctif, l'organe rendait CLEAR (rc=0) sur
+    un grain occupe ; apres, la lane bloquante est nommee (rc=1)."""
+    p = payload(comment(_PAYLOAD_19727, "2026-10-07T22:22:10Z", author="jsboige"),
+                number=19727)
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2", my_paths=["scripts/anything.py"])
+    assert rc == 1
+    captured = capsys.readouterr()
+    assert "BLOCKED" in captured.err
+    assert "myia-po-2024:CoursIA-2" in captured.out
+
+
+def test_trapped_scoped_payload_blocks_with_its_paths_clause(capsys):
+    """Une claim SCOPEE publiee en payload bloque la lane qui edite le fichier
+    couvert, et la clause `paths:` unwrapee apparait dans la sortie."""
+    trapped = json.dumps({"body": _CLEAR_19796}, ensure_ascii=False)
+    p = payload(comment(trapped, "2026-10-08T01:58:36Z"), number=19796)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", my_paths=[_ICT_18B])
+    assert rc == 1
+    captured = capsys.readouterr()
+    assert "BLOCKED" in captured.err
+    assert "myia-po-2023:CoursIA-2" in captured.err
+    assert _ICT_18B in captured.out
+
+
+def test_clear_body_is_the_positive_control():
+    """Temoin positif (#19971 attendu 2) : la MEME phrase postee en clair etait
+    deja couverte -- le correctif ne change pas ce chemin."""
+    p = payload(comment(_CLEAR_19796, "2026-10-08T01:58:36Z"), number=19796)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", my_paths=[_ICT_18B])
+    assert rc == 1
+
+
+def test_payload_without_marker_opens_nothing():
+    """Un payload dont le corps interne ne porte aucun marqueur ne fabrique pas
+    d'evenement : l'unwrap ne cree pas de faux positif."""
+    trapped = json.dumps({"body": "un commentaire ordinaire, sans marqueur."})
+    assert clc.parse_claim_event(comment(trapped, "2026-10-08T02:00:00Z")) is None
+
+
+def test_unwrap_reuses_the_traps_organ_predicate():
+    """Organe-first (#19971 attendu 4) : le predicat n'est pas re-ecrit ici, il
+    est celui de `scripts/ci/check_gh_comment_traps.py`."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+    from check_gh_comment_traps import classify_payload_body  # noqa: PLC0415
+    assert classify_payload_body(_PAYLOAD_19727) is not None
+    assert clc._unwrap_trapped_body(_PAYLOAD_19727) == classify_payload_body(_PAYLOAD_19727)

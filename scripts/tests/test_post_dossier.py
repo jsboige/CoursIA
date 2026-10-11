@@ -92,15 +92,21 @@ def _closure_body() -> str:
 class GhRouter:
     """gh_json simule : route pr view / api comments et enregistre les appels."""
 
-    def __init__(self, head: str = HEAD, published_body: str | None = None):
+    def __init__(
+        self,
+        head: str = HEAD,
+        published_body: str | None = None,
+        pr_body: str | None = None,
+    ):
         self.head = head
         self.published_body = published_body
+        self.pr_body = pr_body
         self.calls: list[list[str]] = []
 
     def __call__(self, args: list[str]):
         self.calls.append(list(args))
         if args[0] == "pr":
-            return {"headRefOid": self.head}
+            return {"headRefOid": self.head, "body": self.pr_body or ""}
         if args[0] == "api":
             assert args[1].endswith("/comments"), f"unexpected endpoint: {args[1]}"
             assert "--input" in args, "POST must go through --input, never -f body=@"
@@ -290,6 +296,64 @@ def test_double_stamp_rc0_with_supersedes_refused(tmp_path, monkeypatch, capsys)
     assert "anti-double-stamp" in err
     # Le message est l'ancien (rc 0) -- pas le nouveau (rc 3).
     assert "a re-stamp is licite only for its own lane" in err
+
+
+SECRETARIAT_LANE = "myia-po-2026:CoursIA-3"
+DEEP_PR_BODY = (
+    "Grain: DEEP/lean -- lane myia-po-2024:CoursIA -- prev: MED/guard #19800\n\n"
+    "## Summary\n\nDossier de domaine."
+)
+MED_PR_BODY = (
+    "Grain: MED/guard -- lane myia-po-2024:CoursIA -- prev: DEEP/lean #19800\n\n"
+    "## Summary\n\nDossier de domaine."
+)
+
+
+def test_rc0_secretariat_deep_with_supersedes_posts_through(tmp_path, monkeypatch, capsys):
+    """#19922, controle positif (rejeu causal du refus #19801) : gate rc 0,
+    dossier intact du SECRETARIAT, PR ``Grain: DEEP``, refute explicite --
+    le re-stamp de la lane qualifiee passe et le POST part."""
+    router = GhRouter(pr_body=DEEP_PR_BODY)
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=0, lane=SECRETARIAT_LANE))
+    monkeypatch.setattr(mod, "rerun_gate", lambda family, repo, target: 0)
+    body = _adjoint_body(
+        supersedes="5",
+        **{"supersedes-why": "dossier de domaine requis pour un DEEP (#19922)"},
+    )
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == 0
+    assert any(call[0] == "api" for call in router.calls)
+    assert "anti-double-stamp" not in capsys.readouterr().err
+
+
+def test_rc0_secretariat_med_with_supersedes_refused(tmp_path, monkeypatch, capsys):
+    """#19922, controle negatif : la porte est reservee au DEEP -- un re-stamp
+    tiers sur un dossier MED du secretariat reste refuse."""
+    router = GhRouter(pr_body=MED_PR_BODY)
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=0, lane=SECRETARIAT_LANE))
+    body = _adjoint_body(
+        supersedes="5",
+        **{"supersedes-why": "dossier de domaine requis pour un DEEP (#19922)"},
+    )
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert not any(call[0] == "api" for call in router.calls)
+    assert "anti-double-stamp" in capsys.readouterr().err
+
+
+def test_rc0_secretariat_deep_without_supersedes_refused(tmp_path, monkeypatch, capsys):
+    """#19922 -- DEEP sur dossier secretariat mais SANS refute explicite :
+    refus conserve (la porte exige supersedes + supersedes-why, comme le
+    rc 3 de #19420)."""
+    router = GhRouter(pr_body=DEEP_PR_BODY)
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=0, lane=SECRETARIAT_LANE))
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, _adjoint_body())), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert not any(call[0] == "api" for call in router.calls)
+    assert "anti-double-stamp" in capsys.readouterr().err
 
 
 def test_gate_unknown_refused(tmp_path, monkeypatch):

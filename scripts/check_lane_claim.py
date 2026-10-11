@@ -294,6 +294,19 @@ def _mask_fenced_blocks(body: str) -> str:
 # deliberate, fail-CLOSED: an amendment that names no scope is not permissive.
 _OPEN = {"CLAIMED", "CLAIMED-AMEND"}
 _CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE", "DELIVERED"}
+# #20128 -- vocabulaire de RECONNAISSANCE, distinct de `_CLOSE` ci-dessus (celui
+# que le reduceur LIT). Il sert au seul AVERTISSEMENT (#12624/#15982) : reconnaitre
+# qu'un token veut LEVER, synonymes compris, pour le DIRE a son auteur.
+#
+# Mesure 2026-10-09 : `[CLAIMED-RETRACT]` (lane po-2027:CoursIA-2, issue #20083) est
+# vu par `_find_suspected_typo_markers` (`kind='compose'`) mais `is_release_shaped`
+# rendait False, donc l'avertissement etait SAUTE en silence : la lane croyait avoir
+# rendu le grain, le reduceur gardait son claim vivant, et la PR #20084 d'une AUTRE
+# lane est restee bloquee par un mot absent d'un ensemble de cinq.
+#
+# Ce vocabulaire n'enacte RIEN -- `_MARKER_RE` (l'alternation qui decide) et `_CLOSE`
+# restent byte-identiques. Doctrine #12624 : on signale, on n'enacte pas.
+_CLOSE_SHAPED = frozenset(_CLOSE) | {"RETRACT", "RETRACTED"}
 # `[OVERRIDE] lane <machine:workspace>` (#10223): coordinator adjudication --
 # GRANTS the claim to the named lane and CLOSES every other lane's claim in one
 # gesture. Distinct from CLAIMED (grants to one) and RELEASED/DONE (closes one):
@@ -556,6 +569,46 @@ def _intent_from_line(line: str | None) -> str | None:
     return text
 
 
+def _unwrap_trapped_body(body: str) -> str:
+    """Le corps REEL quand la publication a piege son propre payload (#19971).
+
+    La classe de transport #16866/#17270 a une victime que l'organe ne voyait
+    pas : quand le corps publie est l'objet `{"body": "..."}` COMPLET, le
+    marqueur `[CLAIMED]` vit dans une VALEUR de chaine -- precede de
+    `  "body": "`, ses sauts de ligne echappes en `\\n` litteraux. `_MARKER_RE`
+    est ancre en debut de ligne (`(?m)^`) : il n'existe alors aucune ligne ou
+    ancrer le marqueur, l'organe rend `CLEAR` et le lecteur croit le grain
+    libre. Trois instances mesurees (#19727, #19796, #19915), dont deux grains
+    reellement en cours de traitement (po-2024 sur #19727, po-2023 sur #19796).
+
+    Ce n'est PAS un elargissement de `_MARKER_RE` : le contrat de l'organe
+    reste cote EMISSION (`.claude/rules/gh-posting-hygiene.md`), la lecture
+    DEFENSIVE du transport appartient a l'ENTREE. Le corps unwrape -- la
+    valeur de la cle `body`, exactement ce que l'auteur a ecrit -- est celui
+    que `_MARKER_RE` ET la clause `paths:` doivent lire ; sans lui, un claim
+    scope reduit a epic-wide par accident.
+
+    Organe-first : le predicat n'est pas re-ecrit ici, il est REUTILISE de
+    `scripts/ci/check_gh_comment_traps.py::classify_payload_body` -- l'organe
+    qui nomme deja ce payload `TRAPPED [json-payload]`. Un corps d'une autre
+    forme traverse inchange (la fonction rend `None`, jamais une devinette).
+    Import tardif et defensif : si le module est injoignable, le comportement
+    d'avant ce correctif est preserve -- une exception ici ferait passer un
+    blocage pour une absence, ce qui est precisement le defaut repare.
+    """
+    if not body:
+        return body
+    try:
+        ci_dir = Path(__file__).resolve().parent / "ci"
+        if str(ci_dir) not in sys.path:
+            sys.path.insert(0, str(ci_dir))
+        from check_gh_comment_traps import classify_payload_body  # noqa: PLC0415
+    except Exception:  # noqa: BLE001 -- organe optionnel : repli sur le corps brut
+        return body
+    inner = classify_payload_body(body)
+    return inner if inner is not None else body
+
+
 def _parse_claim_events(comment: dict,
                         tracked: list[str] | None = None) -> list[ClaimEvent]:
     """One ClaimEvent per bracketed marker line -- the #10881 reducer fix.
@@ -579,7 +632,10 @@ def _parse_claim_events(comment: dict,
     (open then close). Per-marker fields keep the #10342/#10419 scope, the
     #10395 Variante-1 fallback and the #10597 hardener semantics.
     """
-    body = comment.get("body") or ""
+    # #19971 -- lecture defensive du transport AVANT tout parsing : un corps
+    # publie sous forme de payload JSON est unwrape une fois, ici, et c'est le
+    # corps REEL qui alimente `_MARKER_RE`, la clause `paths:` et `_body`.
+    body = _unwrap_trapped_body(comment.get("body") or "")
     author = (comment.get("author") or {}).get("login")
     created_at = comment.get("createdAt")
     url = comment.get("url")
@@ -1003,8 +1059,115 @@ def compute_active_claims(
 
 # --- gh plumbing -------------------------------------------------------------
 
+def _repo_slug() -> str:
+    """Slug `owner/repo` depuis le remote `origin` -- local, hors transport.
+
+    #17038 -- le repli REST a besoin du slug explicite (`gh api repos/...`),
+    la ou `gh issue view` l'infere du cwd. Le resoudre par git local evite
+    d'appeler un transport *pour* pouvoir appeler l'autre : sous panne GraphQL,
+    `gh repo view --json nameWithOwner` serait mort aussi.
+    """
+    proc = subprocess.run(
+        ["git", "remote", "get-url", "origin"],
+        capture_output=True, text=True, shell=False, encoding="utf-8",
+        errors="replace",
+    )
+    url = proc.stdout.strip() if proc.returncode == 0 else ""
+    # git@github.com:owner/repo.git OU https://github.com/owner/repo.git
+    # (+ variantes .git/ slash final) : le slug est les DEUX derniers
+    # segments de chemin, sans suffixe .git.
+    m = re.search(r"[:/]([^/:]+/[^/]+?)(?:\.git)?/?$", url) if url else None
+    if not m:
+        raise RuntimeError(
+            f"slug de repo illisible depuis origin ({url!r}) -- "
+            f"repli REST impossible"
+        )
+    return m.group(1)
+
+
+def _rest_issue_payload(issue: str, repo: str | None = None) -> dict:
+    """Meme forme que `_gh_issue_comments`, lue par REST (`gh api`).
+
+    #17038 -- `gh issue view` passe par GraphQL ; `gh api repos/...` passe par
+    REST, et leurs quotas sont DISTINCTS. Sous 403 secondary rate-limit du
+    bucket GraphQL, cette voie sert le meme contenu. Reutilisee par la sonde
+    de tete du picker (`latest_claim_stamp`) : une seule implementation du
+    mapping REST -> forme `gh issue view --json`.
+
+    Cartographie des champs : le parser (`_parse_claim_events`) lit
+    `body`, `author.login`, `createdAt`, `url` ; REST rend `body`,
+    `user.login`, `created_at`, `html_url`. `--paginate` couvre les fils
+    longs, comme `--json comments` le fait cote GraphQL.
+
+    ``repo`` -- slug `owner/repo` explicite (reserve NanoClaw du 2026-10-10
+    sur #20248). Les deux transports d'un meme appelant doivent viser le MEME
+    depot : le picker passe `--repo REPO` sur sa voie GraphQL, donc son repli
+    REST doit recevoir le meme slug. Sans cet argument le slug est infere du
+    remote `origin` du **cwd** (`_repo_slug`), ce qui sert silencieusement les
+    claims d'un autre depot quand le picker tourne depuis un worktree ou un
+    clone etranger -- la panne serait alors un mauvais verdict, pas une absence
+    de verdict. Les appelants qui n'epinglent pas de cible (la CLI de
+    `check_lane_claim`, dont la voie GraphQL inferre aussi le slug du cwd)
+    gardent le defaut, et restent donc coherents entre leurs deux transports.
+    """
+    slug = repo or _repo_slug()
+    def _api(path: str, paginate: bool = False) -> object:
+        cmd = ["gh", "api"]
+        if paginate:
+            # Flag CLI de gh : pagination cote client, pages concatenees.
+            cmd.append("--paginate")
+        cmd.append(f"repos/{slug}/{path}")
+        proc = subprocess.run(
+            cmd,
+            capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"gh api {path} failed (exit {proc.returncode}): "
+                f"{proc.stderr.strip()}"
+            )
+        return json.loads(proc.stdout)
+
+    core = _api(f"issues/{issue}")
+    if not isinstance(core, dict):
+        raise RuntimeError(f"gh api issues/{issue}: payload inattendu")
+    raw_comments = _api(f"issues/{issue}/comments?per_page=100", paginate=True)
+    if not isinstance(raw_comments, list):
+        raise RuntimeError(
+            f"gh api issues/{issue}/comments: payload inattendu")
+    comments = [
+        {
+            "body": c.get("body") or "",
+            "createdAt": c.get("created_at"),
+            "author": {"login": (c.get("user") or {}).get("login")},
+            "url": c.get("html_url"),
+        }
+        for c in raw_comments
+        if isinstance(c, dict)
+    ]
+    return {
+        "number": core.get("number"),
+        "title": core.get("title") or "",
+        "labels": [
+            {"name": (lb or {}).get("name")}
+            for lb in core.get("labels") or []
+            if isinstance(lb, dict)
+        ],
+        "comments": comments,
+    }
+
+
 def _gh_issue_comments(issue: str) -> dict:
-    """Fetch issue metadata + comments as JSON via `gh`. Raises on failure."""
+    """Fetch issue metadata + comments as JSON via `gh`. Raises on failure.
+
+    #17038 -- deux transports, un seul contrat. GraphQL d'abord (chemin
+    historique) ; s'il tombe, bascule REST en NOMMANT le transport. Si les
+    deux tombent, l'erreur nomme les DEUX : une lecture morte ne doit jamais
+    se confondre avec un verdict lu (le message porte ``NON MESURABLE``,
+    vocabulaire distinct de tout verdict de claim -- le picker propage cette
+    distinction jusqu'au bandeau du tapis).
+    """
     proc = subprocess.run(
         [
             "gh", "issue", "view", str(issue),
@@ -1023,10 +1186,20 @@ def _gh_issue_comments(issue: str) -> dict:
         encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
-        raise RuntimeError(
-            f"gh issue view {issue} failed (exit {proc.returncode}): "
-            f"{proc.stderr.strip()}"
+        graphql_err = proc.stderr.strip().splitlines()[0][:120] if proc.stderr.strip() else f"exit {proc.returncode}"
+        print(
+            f"[TRANSPORT] gh issue view (GraphQL) indisponible ({graphql_err})"
+            f" -- bascule REST, quota distinct.",
+            file=sys.stderr,
         )
+        try:
+            return _rest_issue_payload(issue)
+        except Exception as rest_exc:  # noqa: BLE001 - on nomme les deux morts
+            raise RuntimeError(
+                f"gh issue view {issue}: GraphQL puis REST tous deux tombes "
+                f"(GraphQL: {graphql_err} ; REST: {rest_exc}) -- claim NON "
+                f"MESURABLE, ce n'est pas un verdict libre"
+            ) from rest_exc
     return json.loads(proc.stdout)
 
 
@@ -1353,7 +1526,11 @@ def _find_open_prs_referencing_issue(
         prs = _gh_open_prs_with_files()
     out: list[dict] = []
     for pr in prs:
-        body = pr.get("body") or ""
+        # #19971 -- meme lecture defensive du transport qu'a l'entree des
+        # commentaires : un body de PR piege en payload JSON cache le `lane`
+        # et la reference `#N` exactement de la meme facon (instance fondatrice
+        # #17270, mesuree sur un body de PR).
+        body = _unwrap_trapped_body(pr.get("body") or "")
         if not _pr_body_references_issue(body, issue_number):
             continue
         lane = extract_lane(body)
@@ -1408,7 +1585,10 @@ def _find_open_pr_for_issue_by_lane(
         prs = _gh_open_prs_with_files()
     matches: list[int] = []
     for pr in prs:
-        body = (pr.get("body") or "")
+        # #19971 -- meme unwrap qu'a l'entree des commentaires et qu'a la
+        # lecture de collision : le `lane` d'un body de PR piege n'est lisible
+        # qu'apres unwrap.
+        body = _unwrap_trapped_body(pr.get("body") or "")
         # Per #9485 single-reader: use the SAME `extract_lane` the rest
         # of the file uses. `extract_lane(body)` returns the first lane
         # token it finds, accepting both `lane myia-po-2023:CoursIA-2`
@@ -2131,22 +2311,45 @@ def _close_keyword(quasi: dict) -> "str | None":
     qu'elle doit attraper -- et pire, recommanderait de reposter `[CLAIMED]`, donc
     de reprendre le grain que l'auteur vient de rendre.
 
-    Le vocabulaire reste `_CLOSE`, la constante du reduceur : une seconde liste
-    locale deriverait en silence. Distinguer une quasi-LEVEE d'une quasi-PRISE
+    Le vocabulaire est `_CLOSE_SHAPED`, et non `_CLOSE` : un SYNONYME de levee
+    (`RETRACT`) doit produire le meme avertissement que la forme canonique, sinon
+    l'auteur n'apprend jamais que son geste n'a pas ete lu (#20128). La liste reste
+    UNE seule source pour la reconnaissance -- c'est l'appelant qui ramene le mot
+    reconnu a une forme que le reduceur lit (`_canonical_release_form`), de sorte
+    que reconnaitre large ne puisse pas recommander une forme large.
+
+    Distinguer une quasi-LEVEE d'une quasi-PRISE
     sert au BLOCAGE -- les deux sont invisibles a l'organe, mais seule la
     premiere explique qu'une lane attende ; lui conseiller de « lever » sur une
     quasi-prise serait un conseil que son auteur n'a pas a suivre.
     """
     for part in re.split(r"[-_\s]+", quasi.get("token") or ""):
-        if part.upper() in _CLOSE:
+        if part.upper() in _CLOSE_SHAPED:
             return part.upper()
     nearest = (quasi.get("nearest") or "").upper()
-    return nearest if nearest in _CLOSE else None
+    return nearest if nearest in _CLOSE_SHAPED else None
 
 
 def is_release_shaped(quasi: dict) -> bool:
     """Ce quasi-marqueur ressemble-t-il a une LEVEE plutot qu'a une prise ?"""
     return _close_keyword(quasi) is not None
+
+
+def _canonical_release_form(seen: "str | None") -> "str | None":
+    """Ramene un mot de fermeture RECONNU a une forme que le reduceur LIT (#20128).
+
+    Reconnaitre large ne doit pas faire recommander large : conseiller `[RETRACT]`
+    a l'auteur de `[CLAIMED-RETRACT]` lui ferait reposter une forme tout aussi
+    invisible que la sienne. Le seul mot de levee que `_MARKER_RE` enacte est
+    `RELEASED`, donc tout synonyme reconnu est ramene a lui.
+
+    `None` (aucun mot de fermeture reconnu) est rendu tel quel : l'appelant
+    retombe alors sur `nearest`, comportement inchange des quasi-marqueurs de
+    PRISE.
+    """
+    if seen is None:
+        return None
+    return seen if seen in _CLOSE else "RELEASED"
 
 
 def _composed_keyword(word: str) -> "str | None":
@@ -2220,8 +2423,12 @@ def _find_suspected_typo_markers(payload: dict) -> list[dict]:
             # Forme a RECOMMANDER dans le WARN : pour un compose c'est le mot de
             # fermeture porte par le token, jamais sa tete -- conseiller
             # `[CLAIMED]` a l'auteur de `[CLAIMED-RELEASED]` lui ferait reprendre
-            # le grain qu'il vient de rendre (#15982).
-            canonical = _close_keyword({"token": m.group(1), "nearest": nearest}) or nearest
+            # le grain qu'il vient de rendre (#15982). Et ce mot est lui-meme
+            # ramene a une forme LUE par le reduceur (#20128) : reconnaitre le
+            # synonyme `RETRACT` ne doit pas le recommander tel quel.
+            canonical = _canonical_release_form(
+                _close_keyword({"token": m.group(1), "nearest": nearest})
+            ) or nearest
             found.append({
                 "nearest": nearest,
                 "canonical": canonical,
