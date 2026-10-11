@@ -89,6 +89,19 @@ En `spy`, le livre ne passe qu'un ordre, l'achat initial : un mois consommé à 
 
 Le Sharpe affiché par QC bouge au plus de 0,005, sous le seuil de 0,05 fixé d'avance : les lignes `spy` et `sixty40` de la mesure ci-dessus, calculées avec le code d'avant, ne sont pas réécrites, et le verdict ne change pas.
 
+#### Complément hors échantillon (arbitrage #20264 → #20310)
+
+Mesure du 2026-10-11 sur la fenêtre OOS disjointe 2025-01-02 → 2026-09-30 (381 dates tradables), exigée par l'arbitrage de [#20264](https://github.com/jsboige/CoursIA/issues/20264) et pré-enregistrée avant les runs (commentaire `c.6109598714`). Mêmes projets cloud que la mesure ci-dessus, fenêtres passées par paramètres `start`/`end`, code inchangé.
+
+| | `spy` avant | `spy` après | `sixty40` avant | `sixty40` après |
+|---|---|---|---|---|
+| Ordres | 1 | 1 | 30 | 31 |
+| Sharpe (QC) | 0,649 | 0,649 | 0,560 | 0,558 |
+| CAGR | 18,50 % | 18,50 % | 12,82 % | 12,79 % |
+| Pire baisse | −18,7 % | −18,7 % | −10,5 % | −10,5 % |
+| Backtest | `15cd4eda` | `7ebc1164` | `52d0675f` | `73bc60b2` |
+
+Verdict `NO DEGRADATION` : avant et après identiques en `spy` (buy-and-hold canonique de SPY) ; en `sixty40`, pire écart Sharpe −0,002 et un ordre de plus après — le mois ne se consomme plus sur la tranche de dividende. Marges respectées partout.
 ### Chiffres antérieurs à #19621
 
 Les tableaux ci-dessous datent d'avant la mesure ; ils sont conservés pour l'historique.

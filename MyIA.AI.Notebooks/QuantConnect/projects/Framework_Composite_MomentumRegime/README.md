@@ -81,6 +81,19 @@ Les livres `spy` et `sixty40` se rééquilibrent à la première barre journali�
 
 Le Sharpe affiché par QC bouge au plus de 0,004, sous le seuil de 0,05 fixé d'avance : les lignes `spy` et `sixty40` de la mesure ci-dessus, calculées avec le code d'avant, ne sont pas réécrites, et le verdict ne change pas.
 
+#### Complément hors échantillon (arbitrage #20264 → #20310)
+
+Mesure du 2026-10-11 sur la fenêtre OOS disjointe 2026-01-02 → 2026-09-30 (131 dates tradables), exigée par l'arbitrage de [#20264](https://github.com/jsboige/CoursIA/issues/20264) et pré-enregistrée avant les runs (commentaire `c.6109598714`). Mêmes projets cloud que la mesure ci-dessus, fenêtres passées par paramètres `start`/`end`, code inchangé. Fenêtre courte (la fenêtre codée court jusqu'au 2025-12-31) : les premières semaines portent le warm-up du lookback momentum, à l'identique pour les deux variantes.
+
+| | `spy` avant | `spy` après | `sixty40` avant | `sixty40` après |
+|---|---|---|---|---|
+| Ordres | 2 | 2 | 13 | 13 |
+| Sharpe (QC) | 0,860 | 0,861 | 0,482 | 0,483 |
+| CAGR | 19,08 % | 19,09 % | 10,43 % | 10,45 % |
+| Pire baisse | −8,8 % | −8,8 % | −5,9 % | −5,9 % |
+| Backtest | `4b8005f1` | `f3ca6eb1` | `443bc016` | `196a80fd` |
+
+Verdict `NO DEGRADATION` : écarts ≤ 0,001 partout — les deux variantes ne divergent sur aucun mois de la fenêtre.
 ### Chiffres antérieurs à #19740
 
 Le tableau ci-dessous date d'avant la mesure ; il est conservé pour l'historique (backtest 2015-01-01 → 2025-12-31).
