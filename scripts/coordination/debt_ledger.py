@@ -1034,6 +1034,64 @@ def records_from_snapshot(snapshot: dict[str, Any], ledger: str) -> list[Record]
     return records
 
 
+def record_views_from_snapshot(snapshot: dict[str, Any], ledger: str) -> list[Record]:
+    """One record per row, carrying that row's FULL current field set.
+
+    ``records_from_snapshot`` emits one record per (field, history entry) -- the
+    right grain to re-fold a checkpoint without losing provenance, and the wrong
+    grain for a verdict. ``evaluate_gpu_pending`` reads ``state``, ``holder``,
+    ``started_at`` and ``expected_end`` off ONE record; fed per-field records it
+    sees a single key, so ``holder`` is always ``None``, the ownership branch
+    cannot fire, and the gate answers ``OK_TO_RUN`` to every lane (#20077).
+
+    The row already holds the merged view, so take it whole and date it by the
+    newest provenance entry it carries.
+    """
+    records: list[Record] = []
+    for row in snapshot.get("rows", []):
+        try:
+            entity = _validate_entity(row.get("entity"), ledger)
+        except ObservationError:
+            continue  # a corrupt row is dropped, never allowed to poison a verdict
+        fields = row.get("fields")
+        if not isinstance(fields, dict) or not fields:
+            continue
+        provenance = row.get("provenance") or {}
+        observed_at: str | None = None
+        actor, confidence, evidence = "snapshot", "medium", "snapshot row"
+        for name in fields:
+            entry = provenance.get(name)
+            if not isinstance(entry, dict):
+                continue
+            stamp = entry.get("observed_at")
+            if isinstance(stamp, str) and (observed_at is None or stamp > observed_at):
+                observed_at = stamp
+                actor = str(entry.get("actor") or actor)
+                confidence = str(entry.get("confidence") or confidence)
+                evidence = str(entry.get("evidence") or evidence)
+        if observed_at is None:
+            # The row carries a current state but nothing dates it; an undated
+            # record cannot be ordered against the others, so drop it rather
+            # than invent a stamp that would win or lose the sort by accident.
+            continue
+        raw_observation = {
+            "schema": OBSERVATION_SCHEMA,
+            "ledger": ledger,
+            "actor": actor,
+            "observed_at": observed_at,
+            "confidence": confidence,
+            "evidence": evidence,
+            "entity": dict(entity),
+            "fields": dict(fields),
+        }
+        try:
+            observation = parse_observation(raw_observation, ledger)
+        except ObservationError:
+            continue  # a row that no longer validates is dropped, not merged
+        records.append(record_from_observation(observation, "snapshot"))
+    return records
+
+
 def records_from_baseline(baseline: dict[str, Any], ledger: str) -> list[Record]:
     if baseline.get("schema") != BASELINE_SCHEMA:
         raise LedgerError(
@@ -2397,7 +2455,10 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
         return 0
 
     snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
-    records = records_from_snapshot(snapshot, args.ledger)
+    # A verdict needs the CURRENT state of the entity, and reads several fields
+    # off one record -- so it must be fed the merged row, not the per-field
+    # checkpoint records (#20077).
+    records = record_views_from_snapshot(snapshot, args.ledger)
 
     if args.now is not None:
         now = parse_utc_timestamp(args.now, where="--now")
