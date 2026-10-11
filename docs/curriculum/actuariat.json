@@ -60,7 +60,7 @@
       "description": "Détour méthodologique cross-series : séries classiques, filtrage de Kalman et ruptures de régime. Ces notebooks n'estiment pas automatiquement un risque d'assurance.",
       "branch": "actuariat",
       "notebooks": [
-        "ML/ML.Net/ML-5b-Series-Temporelles-Classiques-Python.ipynb",
+        "ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb",
         "Probas/PyMC/PyMC-17-Kalman-Filter.ipynb",
         "Probas/PyMC/PyMC-18-Change-Point.ipynb"
       ]

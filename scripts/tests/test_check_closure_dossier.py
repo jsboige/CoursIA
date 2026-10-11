@@ -697,3 +697,23 @@ def test_merged_referring_prs_ignore_les_cross_ref_non_merged(monkeypatch):
     out = _merged_referring_prs("o/r", 15578)
     assert out == []
 
+
+
+def test_delivering_lanes_refuse_le_point_final_de_phrase():
+    """#15864 (mesure #14549, 2026-10-09) -- un marqueur ponctue doit reduire a
+    la lane REELLE : sinon une lane nommee uniquement sous forme ponctuee est
+    absente de l'ensemble d'exclusion et son dossier d'auto-attestation passe
+    le gate. Instance mesuree : `myia-po-2023:CoursIA-2.` dans delivering_lanes."""
+    snap = _snapshot(
+        comments=[_comment("[DELIVERED] lane myia-po-2023:CoursIA-2. "
+                           "Tranche livree, voir PR.")],
+        merged_prs=[
+            {"number": 17901, "merged_at": "2026-09-19T10:00:00Z",
+             "body": "Grain: DEEP/notebook-python — lane myia-po-2024:CoursIA. "
+                     "-- See #17900."},
+        ],
+    )
+    lanes = ccd.delivering_lanes(snap)
+    assert "myia-po-2023:CoursIA-2" in lanes
+    assert "myia-po-2024:CoursIA" in lanes
+    assert not any(ln.endswith(".") for ln in lanes), sorted(lanes)

@@ -77,6 +77,13 @@ def test_posed_temporal_still_live_and_blocks():
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
 
 
+def test_posed_temporal_still_live_and_blocks_bracketed():
+    """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
+    body = "Le scope des notebooks est a revoir [BEFORE-MERGE]."
+    assert mod.has_live_marker(body, MARKERS) is True
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
 def test_negated_lift_before_merge_stays_dead_as_before():
     """« n'est pas leve avant merge » : deja morte sur main via _is_cited
     (negation dans la fenetre de citation) — le fix ne l'affaiblit ni ne
@@ -90,11 +97,21 @@ def test_infinitive_lever_before_merge_still_live():
     assert mod.has_live_marker("Il reste un point a lever avant merge.", MARKERS) is True
 
 
+def test_infinitive_lever_before_merge_still_live_bracketed():
+    """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
+    assert mod.has_live_marker("Il reste un point a lever [BEFORE-MERGE].", MARKERS) is True
+
+
 def test_participle_without_punctuation_still_live():
     """Residu assume (#15651, sur-bloquant donc sans danger) : participe
     SANS ponctuation — la virgule est le discriminant qui separe le
     timing d'une negation voisine ; sans elle on ne neutralise pas."""
     assert mod.has_live_marker("Le point 3 doit etre leve avant merge.", MARKERS) is True
+
+
+def test_participle_without_punctuation_still_live_bracketed():
+    """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
+    assert mod.has_live_marker("Le point 3 doit etre leve [BEFORE-MERGE].", MARKERS) is True
 
 
 # --- Comportement : la phrase de levee ne bloque PLUS toute seule ---------

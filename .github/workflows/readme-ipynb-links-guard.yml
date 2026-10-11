@@ -1,32 +1,29 @@
 name: readme-ipynb-links-guard
 
-# Durable guard for the #13025 / #18911 defect class: README files in rendered
-# subtrees (those that participate in the Quarto build per `scripts/regen_quarto_render.py`)
-# linking raw `.ipynb` paths when a sibling `.html` render exists. The raw link
-# 404s on the GitHub Pages deployment, while the sibling render is served there.
+# Durable guard for the #18911 defect class: README files in rendered subtrees
+# (those that participate in the Quarto build per `scripts/regen_quarto_render.py`)
+# linking a `.html` page whose render is NOT committed. Renders live only on the
+# GitHub Pages deployment, so on github.com -- the reference navigation -- such a
+# link 404s. The reference form is the `.ipynb` link, which opens the notebook
+# viewer; the site adapts by rewriting project-target `.ipynb` links to their
+# render at build time (gesture 3 of the #18911 arbitration, 2026-10-09).
 #
-# Detection reuses `scripts/regen_quarto_render.py --check-readme-links` :
-# the file already enumerates the violations in three classes (STALE_LINK,
-# BROKEN, DEAD_RENDER) and documents the bright lines. This workflow fails
-# the PR if any STALE_LINK is introduced -- new violations are never allowed,
-# and the merge-gate does not see the legacy backlog (2428 violations already
-# committed, see #18911 -- they are sweep material for follow-up PRs).
+# History: this workflow previously failed a PR introducing a raw `.ipynb` link
+# when a sibling render existed (`STALE_LINK`, from #13025/#18970). The user
+# arbitration of 2026-10-08 (Concern on #19897, decision c.6076029168) reversed
+# the policy: `.ipynb` links are correct, `.html` links to uncommitted renders
+# are the defect. The guard now protects the inverse.
 #
-# Scope: main-repo READMEs and the `regen_quarto_render.py` + new fixer only.
+# Detection reuses `scripts/regen_quarto_render.py --check-readme-links`: the
+# file enumerates the violations (HTML_404, BROKEN). This workflow fails the PR
+# if any new HTML_404 is introduced -- new violations are never allowed, and the
+# merge-gate does not see the legacy backlog (616 HTML_404 measured 2026-10-09;
+# they are sweep material for gesture 4).
+#
+# Scope: main-repo READMEs and the `regen_quarto_render.py` + fixer only.
 # Submodules are separate repos with their own CI.
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/README.md'
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - '_quarto.yml'
-      - 'scripts/regen_quarto_render.py'
-      - 'scripts/notebook_tools/fix_ipynb_links.py'
-      - 'scripts/notebook_tools/tests/test_fix_ipynb_links.py'
-      - 'scripts/notebook_tools/tests/test_readme_links_guard_workflow.py'
-      - '.github/workflows/readme-ipynb-links-guard.yml'
   push:
     branches: [ main ]
     paths:
@@ -35,7 +32,12 @@ on:
       - '_quarto.yml'
       - 'scripts/regen_quarto_render.py'
       - 'scripts/notebook_tools/fix_ipynb_links.py'
+      - 'scripts/notebook_tools/dump_readme_link_violations.py'
+      - 'scripts/notebook_tools/diff_readme_link_violations.py'
+      - 'scripts/notebook_tools/tests/test_fix_ipynb_links.py'
+      - 'scripts/notebook_tools/tests/test_readme_link_violations.py'
       - 'scripts/notebook_tools/tests/test_readme_links_guard_workflow.py'
+      - 'scripts/tests/test_regen_quarto_render.py'
   workflow_dispatch:
 
 # Annule les runs obsolètes (memes PR / push en rafale). Forme fix de
@@ -86,12 +88,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      # La PR ne doit PAS introduire de nouvelle violation STALE_LINK
-      # (defaut fondateur #13025). On compare la PR (head) a la base (main)
+      # La PR ne doit PAS introduire de nouvelle violation HTML_404
+      # (#18911 geste 2, 2026-10-09). On compare la PR (head) a la base (main)
       # et on rougit UNIQUEMENT sur les violations NOUVELLES -- le backlog
-      # historique (2428 violations mesure 2026-10-03) reste au sweep par
+      # historique (616 HTML_404 mesure 2026-10-09) reste au sweep par
       # famille en aval (#18911 acceptation #2).
-      - name: Compute delta (new STALE_LINK on this PR vs base)
+      - name: Compute delta (new HTML_404 on this PR vs base)
         run: |
           set -euo pipefail
           # Base de comparaison calculee au RUN, pas figee a l'ouverture de
@@ -107,14 +109,13 @@ jobs:
             BASE_SHA=$(git rev-parse HEAD^1)
           fi
           echo "BASE_SHA calcule: ${BASE_SHA}"
-          # F8 (#19631) -- les fichiers ajoutés par la PR doivent être
-          # reconnus comme cibles valides par l'audit (faux-positif fondateur
-          # #19368 : CB-00 notebook + lien README ajoutés ensemble, l'audit
-          # rapportait STALE_LINK parce que la cible n'était pas sur main
-          # au moment du check). On calcule la liste une seule fois ici,
-          # et on la passe aux DEUX passes (PR + base) via --pr-added-files,
-          # pour que les deux scans soient d'accord (delta = 0 sur ces
-          # cibles-là). Le fichier n'est pas commit : /tmp sur le runner.
+          # F8 (#19631, retained) -- la liste des fichiers ajoutes par la PR
+          # servait a exempter les liens `.ipynb` vers des notebooks ajoutes
+          # par la meme PR de la classe STALE_LINK (faux-positif fondateur
+          # #19368). Cette classe est retiree (#18911) : la liste reste
+          # calculee et passee a la passe PR (cf. F8b) pour la trace, mais
+          # elle ne change plus l'ensemble des violations. Le fichier n'est
+          # pas commit : /tmp sur le runner.
           # Pas de `|| true` (cf. F3) : un git diff qui rate cache une vraie
           # panne (BASE_SHA invalide, depot corrompu) -- on veut rougir.
           set +e
@@ -129,17 +130,17 @@ jobs:
           fi
           PR_ADDED_COUNT=$(wc -l < /tmp/pr_added_files.txt | tr -d ' ')
           echo "PR_ADDED count=${PR_ADDED_COUNT}"
-          # F1 (Tell c.16866 / Hermes review 09:33Z) -- les violations
-          # `::error::STALE_LINK` partent sur STDERR (regen_quarto_render.py
+          # F1 (Hermes review 09:33Z) -- les violations
+          # `::error::HTML_404` partent sur STDERR (regen_quarto_render.py
           # l.503 `print(..., file=sys.stderr)`), le `grep` du round 1 ne
           # capturait que stdout et rendait `NEW=0` alors qu'une violation
           # etait presente. Fautes fondateures mesurees : run 37109571492
           # du 2026-10-03 -- 1 violation reelle dans le log, 0 dans le delta.
           # Fix : `2>&1` fusionne stdout+stderr AVANT le grep, dans les DEUX
           # passes (PR + base). Le temoin est la run suivant ce commit :
-          # une STALE_LINK injectee doit faire `NOUVELLES >= 1` (=exit 1).
+          # une HTML_404 injectee doit faire `NOUVELLES >= 1` (=exit 1).
           #
-          # F3 (Tell c.16866 / adjoint review 24) -- les `|| true` aux
+          # F3 (adjoint review 24) -- les `|| true` aux
           # lignes 84, 86, 89, 91 mangeaient les pannes scanner / checkout :
           # un `grep` qui ne matche pas (parce que le scanner est tombe)
           # rendait `pr_violations.txt` VIDE avec exit 0 ; un `git checkout`
@@ -163,15 +164,15 @@ jobs:
           : > /tmp/scan_status.txt
           : > /tmp/scan_kind.txt
           set +e
-          # F1 (Hermes review af2a967985) : les violations ::error::STALE_LINK
+          # F1 (Hermes review af2a967985) : les violations ::error::HTML_404
           # partent sur STDERR (regen_quarto_render.py:504) -- 2>&1 les fusionne
           # dans le pipe pour que grep les voie (sinon faux vert structurel).
-          # F8 (#19631) : --pr-added-files /tmp/pr_added_files.txt exempt les
-          # fichiers ajoutés par la PR du flag STALE_LINK (cf. ci-dessus).
+          # F8 (#19631, retained) : la liste PR-added ne change plus la classe
+          # bloquante (cf. ci-dessus) ; elle reste passée aux deux passes.
           python scripts/regen_quarto_render.py --check-readme-links \
                --pr-added-files /tmp/pr_added_files.txt 2>&1 \
             | tee /tmp/python_stdout.txt \
-            | grep -E '^::error::STALE_LINK ' \
+            | grep -E '^::error::HTML_404 ' \
             | sort -u > /tmp/pr_violations.txt
           PYPIPE_RC=("${PIPESTATUS[@]}")
           PY_RC=${PYPIPE_RC[0]}
@@ -185,7 +186,7 @@ jobs:
             cat /tmp/python_stdout.txt
             exit 1
           fi
-          # F6 (Tell c.4 / adjoint c26) -- PY_RC=1 sans resume stdout = crash
+          # F6 (adjoint c26) -- PY_RC=1 sans resume stdout = crash
           if [ "${PY_RC}" -eq 1 ]; then
             if grep -q "README-link audit:" /tmp/python_stdout.txt; then
               : # resume present -- l'audit a echoue normalement (violations)
@@ -196,7 +197,7 @@ jobs:
               exit 1
             fi
           fi
-          # F7 (Tell c.4 / adjoint c26) -- grep rc=2 (regex malformee ou
+          # F7 (adjoint c26) -- grep rc=2 (regex malformee ou
           # fichier absent) doit etre refuse, pas ignore. Avant V4, seul
           # rc=1 etait distingue de rc=0 -- rc=2 passait inapercu.
           if [ "${GREP_RC}" -ge 2 ]; then
@@ -217,7 +218,8 @@ jobs:
             echo "propre" >> /tmp/scan_kind.txt
           fi
           # Sortie de la base (main)
-          git checkout "${BASE_SHA}" -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null
+          # NB (#18911) : le script n'est PAS restaure -- cf. F8b.
+          git checkout "${BASE_SHA}" -- MyIA.AI.Notebooks _quarto.yml 2>/dev/null
           CHECKOUT_BASE_RC=$?
           echo "CHECKOUT_BASE rc=${CHECKOUT_BASE_RC}" >> /tmp/scan_status.txt
           if [ "${CHECKOUT_BASE_RC}" -ne 0 ]; then
@@ -225,21 +227,19 @@ jobs:
             echo "::error::git checkout base en panne (rc=${CHECKOUT_BASE_RC}) -- la comparaison delta est invalide."
             exit 1
           fi
-          # F8b (#19631) : on NE passe PAS `--pr-added-files` ici. La passe
-          # base restaure le script de la base (qui ne supporte pas cet
-          # argument -- cf. round precedent), donc on laisse la base scanner
-          # ses propres violations SANS exemption. La passe PR seule utilise
-          # le fichier /tmp/pr_added_files.txt pour ignorer les fichiers
-          # qu'elle ajoute elle-meme (cf. fondateur #19368 CB-00). Le delta
-          # PR \ base reste coherent : un lien vers un fichier PR-added
-          # n'apparait que sur la PR (pas sur la base), et les DEUX scans
-          # le voient comme STALE_LINK, donc NEW = 0 sur ce lien-la (la
-          # passe PR l'a ignoree, la passe base l'a vue -- mais comme le
-          # fichier PR-added n'est pas sur la base, le lien n'est PAS dans
-          # la sortie de la base). Verifie par les tests temoins.
+          # F8b (#19631, revise #18911) : la passe base restaure le CONTENU
+          # de la base (READMEs + _quarto.yml) mais GARDE le script de la PR.
+          # C'est necessaire depuis que la classe a change : la classe
+          # bloquante est definie par le script de la PR (HTML_404), et une
+          # passe base qui restaurerait le script de la base mesurerait la
+          # classe RETIREE (STALE_LINK) -- le grep HTML_404 ne matcherait
+          # rien, le backlog apparaitrait entierement nouveau et toute PR
+          # touchant un README rougirait. Mesurer le MEME predicat sur les
+          # deux contenus est la condition du delta. `--pr-added-files`
+          # n'est pas passe ici : la base n'ajoute aucun fichier.
           python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
             | tee /tmp/python_stdout_base.txt \
-            | grep -E '^::error::STALE_LINK ' \
+            | grep -E '^::error::HTML_404 ' \
             | sort -u > /tmp/base_violations.txt
           PYPIPE_RC=("${PIPESTATUS[@]}")
           BASE_PY_RC=${PYPIPE_RC[0]}
@@ -283,7 +283,7 @@ jobs:
             echo "propre" >> /tmp/scan_kind.txt
           fi
           # Retour au working tree PR
-          git checkout HEAD -- MyIA.AI.Notebooks scripts/regen_quarto_render.py _quarto.yml 2>/dev/null
+          git checkout HEAD -- MyIA.AI.Notebooks _quarto.yml 2>/dev/null
           CHECKOUT_BACK_RC=$?
           echo "CHECKOUT_BACK rc=${CHECKOUT_BACK_RC}" >> /tmp/scan_status.txt
           if [ "${CHECKOUT_BACK_RC}" -ne 0 ]; then
@@ -300,22 +300,22 @@ jobs:
           NEW=$(wc -l < /tmp/delta_violations.txt | tr -d ' ')
           BASE_N=$(wc -l < /tmp/base_violations.txt | tr -d ' ')
           PR_N=$(wc -l < /tmp/pr_violations.txt | tr -d ' ')
-          echo "STALE_LINK base (${BASE_SHA:0:7}): ${BASE_N}"
-          echo "STALE_LINK head (PR): ${PR_N}"
-          echo "STALE_LINK NOUVELLES sur cette PR: ${NEW}"
+          echo "HTML_404 base (${BASE_SHA:0:7}): ${BASE_N}"
+          echo "HTML_404 head (PR): ${PR_N}"
+          echo "HTML_404 NOUVELLES sur cette PR: ${NEW}"
           if [ "${NEW}" -gt 0 ]; then
-            echo "::error::Nouvelle violation STALE_LINK sur cette PR (defaut #13025, PR-body #18911) :"
+            echo "::error::Nouvelle violation HTML_404 sur cette PR (arbitrage #18911, 2026-10-09) :"
             cat /tmp/delta_violations.txt
             exit 1
           fi
-          echo "Aucune nouvelle violation STALE_LINK sur cette PR."
+          echo "Aucune nouvelle violation HTML_404 sur cette PR."
 
       - name: Smoke test the new fixer (#18911)
         # Verifie que `fix_ipynb_links.py` reste fonctionnel -- c'est l'outil
         # canonique qui sera utilise pour les vagues de sweep en aval -- et
         # rejoue les temoins du bloc delta ci-dessus (test_readme_links_guard_
         # workflow.py extrait le bloc run: VERBATIM et le rejoue sur un depot
-        # sandbox : propre rc0, backlog 2/2/0 rc0, nouvelle STALE_LINK stderr
+        # sandbox : propre rc0, backlog 2/2/0 rc0, nouvelle HTML_404 stderr
         # 2/3/1 rc1, traceback rc1, scanner rc2 refuse, checkout base refuse).
         # Le runner Ubuntu n'a pas pytest par defaut (#18970 -- "No module
         # named pytest") : on l'installe avant d'executer les tests.
@@ -324,7 +324,7 @@ jobs:
           python -m pytest scripts/notebook_tools/tests/test_fix_ipynb_links.py \
             scripts/notebook_tools/tests/test_readme_links_guard_workflow.py -v
 
-      - name: Audit total (advisory -- backlog connu de 2428)
+      - name: Audit total (advisory -- backlog connu de 618 HTML_404)
         # Audit SANS gating : rend le compteur global pour information. Le delta
         # ci-dessus a deja rougi ou pas sur les NOUVELLES violations, le backlog
         # historique reste un travail de sweep en aval (voir #18911 acceptation #2).

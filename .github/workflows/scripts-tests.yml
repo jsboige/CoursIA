@@ -70,6 +70,17 @@ on:
       # change to the verdict policy could land un-rattled. Mirrored under
       # pull_request: below.
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
+      # #19695 banc de reference TTS : test_bake_bank.py (sous prosody_lab/) est
+      # collecte par la jambe pytest ci-dessous, mais ni ses sources
+      # (bake_append.py, bake_report.py, bank_schema_v1.json) ni lui-meme ne
+      # declenchaient cette jambe -- exactement l'angle mort de l'entree #1028
+      # ci-dessus (un test dont le SUJET vit hors scripts/**). Les fichiers cites
+      # portent l'objet du test ; la suite est stdlib-only (subprocess), donc
+      # aucun cout de dependance pour le runner. Miroir sous pull_request:
+      # ci-dessous.
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bake_*.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bank_schema_v1.json'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py'
       # #11835 no-op guard: scripts/tests/test_pr_gate_rerun_noop_guard.py pins
       # the job-level if: of pr-gate-rerun.yml. Without this entry a PR touching
       # ONLY the workflow fires no scripts-tests run -- the guard is blind to
@@ -149,6 +160,10 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
       # #1028 melody verdict (mirror of the push path above).
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
+      # #19695 banc de reference TTS (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bake_*.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bank_schema_v1.json'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py'
       # #11835 no-op guard (mirror of the push path above).
       - '.github/workflows/pr-gate-rerun.yml'
       # Mirror the push path above so fork workflow-only PRs execute the policy.
@@ -396,6 +411,7 @@ jobs:
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py \
+            MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
@@ -565,6 +581,21 @@ jobs:
         if: always()
         run: |
           python scripts/ci/guard_test_root.py
+
+      # #20181 : parite de couverture des gardes absorbes (review NanoClaw,
+      # CONCERNE 1 -- l'organe doit veiller, pas rester un instrument de banc).
+      # Le retrait du declencheur pull_request d'un garde absorbe n'est legal
+      # que si les `paths` du registre fast-lane couvrent les motifs retires :
+      # la voie rapide REMPLACE le workflow, un motif perdu eteint le garde en
+      # silence. Fail-closed : source de base illisible ou non parsable est un
+      # finding. Les `paths` de ce workflow couvrent deja `scripts/**` et
+      # `.github/workflows/**` -- le garde s'allume sur toute PR qui touche le
+      # registre ou retire un declencheur. Mesure locale 2026-10-10 :
+      # PARITY_OK (1 garde verifie, 19 ecartes deja consolides).
+      - name: absorbed-path-parity (#20181)
+        if: always()
+        run: |
+          python scripts/ci/check_absorbed_path_parity.py --base origin/main
 
   adk-contracts:
     name: ADK runtime contracts (18)
