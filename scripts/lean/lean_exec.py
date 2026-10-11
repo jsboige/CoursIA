@@ -79,7 +79,8 @@ Tout run passe par l'admission sous verrou machine-wide, impose un parallelisme
 borne aux enfants (``LEAN_NUM_THREADS``, ``-Kjobs=N`` pour ``lake build``) et
 publie ses metriques en JSON.
 
-Interface operateur (case 8 de #15666) — premier volet, le diagnostic :
+Interface operateur (case 8 de #15666) — diagnostic, arret d'urgence et
+recuperation :
 
 5. **Trois commandes de diagnostic, lecture seule** : ``status`` rapporte la
    population, le cap, la file, les leases et l'admission courante ; ``doctor``
@@ -94,20 +95,31 @@ Interface operateur (case 8 de #15666) — premier volet, le diagnostic :
    commune aux deux dernieres : la creation idempotente du state dir, que la
    mesure disque exige pour lire l'espace libre.
 
-   Reste ouvert dans ce meme case 8 : l'**arret d'urgence** des runs possedes
-   par l'organe (inspecter puis arreter, sans tuer aveuglement un travail
-   etranger) et la **procedure de recuperation apres crash** du superviseur.
-   ``status`` et ``doctor`` exposent deja les runs vivants et les leases sur
-   lesquels ces deux volets s'appuieront.
+6. **``stop`` — arret d'urgence des runs possedes par l'organe** : defaut =
+   INSPECT (lister les runs vivants de CET host, leur pid, leur caller),
+   ``--yes`` seul arrete. Le pid tue ne vient jamais d'un scan de table de
+   processus mais exclusivement du run record — on n'arrete pas un travail
+   non possede — et un run d'un host etranger est liste puis saute, jamais
+   tue (pids non comparables entre namespaces). Les records de runs deja
+   morts ne sont retires qu'en mode action : inspect reste lecture seule.
+
+7. **``recover`` — recuperation apres crash du superviseur** : le
+   confinement fait deja mourir l'arbre avec le superviseur ; ce qui survit
+   a un crash, c'est l'ETAT (run records, leases d'arbre, entrees de file
+   au pid mort). Defaut = inspect ; ``--yes`` balaye les TROIS familles en
+   reutilisant les balayages existants (jamais une seconde semantique de
+   peremption) — items d'un host etranger et records illisibles conserves.
 
 Codes de sortie stables :
   0    succes (commande terminee, nettoyage prouve ; ``doctor`` et ``dry-run``
        rendent un diagnostic — leur verdict est dans la sortie, jamais dans le
        code de retour, y compris quand il predit un refus)
-  1    echec de la commande enfant (code reel dans le JSON)
+  1    echec de la commande enfant (code reel dans le JSON) ; ``stop`` :
+       echec de l'arret d'un run vivant
   124  timeout (arbre tue, nettoyage prouve)
   125  admission refusee (cap atteint / environnement non mesurable /
-       backend epingle en conflit avec la demande)
+       backend epingle en conflit avec la demande) ; ``stop`` : run record
+       inconnu
   126  cleanup incomplet : orphelins detectes apres termination
   127  erreur interne a l'organe
   130  interruption (SIGINT) : arbre tue, nettoyage prouve
@@ -202,7 +214,8 @@ def trees_dir() -> Path:
 
 # ---------------------------------------------------------------------------
 # Liveness pid — reprise de tree_lock.py:51-74 (jamais os.kill(pid, 0) sur
-# Windows : CPython y TERMINE le processus cible ; probe ctypes a la place).
+# Windows : CPython y TERMINE le processus cible ; probe ctypes a la place),
+# avec UNE divergence deliberee cote POSIX : le zombie est mort (#20016).
 # ---------------------------------------------------------------------------
 
 _STILL_ACTIVE = 259
@@ -215,8 +228,32 @@ def host_id() -> str:
     return f"{platform.node()}/{os.name}"
 
 
+def _posix_state(pid: int) -> str | None:
+    """Champ 3 (etat) de ``/proc/<pid>/stat``, ou ``None`` si illisible.
+
+    Le nom du processus (champ 2) peut contenir espaces ET parentheses :
+    l'ancre est la DERNIERE parenthese fermante, l'etat suit. ``None``
+    couvre les deux cas ou l'appelant a deja sa reponse (procfs absent —
+    macOS — ou pid disparu entre les deux sondes)."""
+    try:
+        with open(f"/proc/{pid}/stat", "rb") as fh:
+            data = fh.read().decode("utf-8", "replace")
+    except OSError:
+        return None
+    close = data.rfind(")")
+    return data[close + 2] if 0 <= close < len(data) - 2 else None
+
+
 def pid_alive(pid: int) -> bool:
-    """True si ``pid`` est vivant sur CE host (tree_lock.py:51-74)."""
+    """True si ``pid`` est vivant sur CE host (tree_lock.py:51-74).
+
+    Divergence POSIX assumee vs le jumeau : ``os.kill(pid, 0)`` REUSSIT sur
+    un zombie (l'entree de table survit jusqu'au reap par le parent), et un
+    zombie ne vit pas — il n'execute plus rien, ne tient ni budget ni lease.
+    Sans cette lecture, ``stop`` rendait ``failed: pid survit au kill`` sur
+    un kill REUSSI (mesure sous POSIX : state=Z pendant tout le poll) et les
+    sweeps lisaient un run mort comme vivant. Procfs illisible -> on garde
+    le verdict de ``kill(pid, 0)`` (fail-safe vers « vivant »)."""
     if pid <= 0:
         return False
     if os.name == "nt":
@@ -238,7 +275,7 @@ def pid_alive(pid: int) -> bool:
         return False
     except PermissionError:
         return True
-    return True
+    return _posix_state(pid) != "Z"
 
 
 # ---------------------------------------------------------------------------
@@ -669,20 +706,12 @@ def queue_enter(
     run_id: str, cmd: list[str], caller: str, max_entries: int
 ) -> tuple[Path | None, str]:
     """Entre en file si elle n'est pas pleine. Les entrants morts du meme
-    host ne comptent pas (memes regles de peremption que les runs/). A
-    appeler SOUS le verrou d'admission."""
+    host ne comptent pas (memes regles de peremption que les runs/, et
+    UNE seule implementation : `_sweep_stale_queue`, #20016). A appeler
+    SOUS le verrou d'admission."""
     queue_dir().mkdir(parents=True, exist_ok=True)
-    occupied = 0
-    for path, entry in queue_entries():
-        if entry.get("host") == host_id() and not pid_alive(
-            int(entry.get("pid") or -1)
-        ):
-            try:
-                path.unlink()
-            except OSError:
-                pass
-            continue
-        occupied += 1
+    _sweep_stale_queue()
+    occupied = sum(1 for _ in queue_entries())
     if occupied >= max_entries:
         return None, f"{occupied} waiters >= queue_max {max_entries}"
     path = queue_dir() / f"{run_id}.json"
@@ -2375,6 +2404,249 @@ def doctor(as_json: bool = False) -> int:
     return EXIT_OK
 
 
+def _kill_run_tree(pid: int) -> str:
+    """Tue l'arbre du pid enregistre. Retourne 'killed' | 'already_dead' |
+    'failed: <cause>'. Le pid ne vient JAMAIS d'un scan de table de processus :
+    uniquement du run record (spec #15666 case 8 — on n'arrete pas un travail
+    non possede par l'organe)."""
+    if not pid_alive(pid):
+        return "already_dead"
+    try:
+        if os.name == "nt":
+            # /T arbre entier, /F force : l'urgence n'a pas de phase gracieuse.
+            proc = subprocess.run(
+                ["taskkill", "/PID", str(pid), "/T", "/F"],
+                capture_output=True, text=True, timeout=15,
+                encoding="utf-8", errors="replace",
+            )
+            if proc.returncode != 0 and pid_alive(pid):
+                return f"failed: taskkill rc={proc.returncode}"
+        else:
+            try:
+                os.killpg(os.getpgid(pid), signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                os.kill(pid, signal.SIGKILL)
+    except OSError as exc:
+        if pid_alive(pid):
+            return f"failed: {exc}"
+    # Le verdict se mesure sur le pid, pas sur le rc de l'outil de kill :
+    # taskkill rend nonzero pour un processus deja mort entre-temps.
+    for _ in range(20):  # <=2 s : l'urgence n'attend pas la reap lente
+        if not pid_alive(pid):
+            return "killed"
+        time.sleep(0.1)
+    return "failed: pid survit au kill" if pid_alive(pid) else "killed"
+
+
+def _classify_state_dir(directory: Path) -> dict:
+    """Partitionne un state dir (runs/trees/queue) par peremption : vivant
+    (notre host, pid vivant — du travail ACTIF, rien a recuperer), mort
+    (notre host, pid mort — recuperable), etranger (host different, JAMAIS
+    touche), illisible (rien d'attribuable, jamais retire)."""
+    live, dead, foreign, unreadable = [], [], [], []
+    try:
+        paths = sorted(directory.glob("*.json"))
+    except OSError:
+        paths = []
+    for path in paths:
+        record = read_run(path)
+        if not record:
+            unreadable.append(path.stem)
+        elif record.get("host") != host_id():
+            foreign.append(path.stem)
+        elif pid_alive(int(record.get("pid") or -1)):
+            live.append(path.stem)
+        else:
+            dead.append(path.stem)
+    return {"live": live, "dead": dead, "foreign": foreign,
+            "unreadable": unreadable}
+
+
+def _sweep_stale_queue() -> list[str]:
+    """Retire les entrants de file morts sur CE host. Semantique extraite
+    de queue_enter (memes regles de peremption), pour que la recuperation
+    apres crash couvre les TROIS familles d'etat et pas deux."""
+    swept = []
+    for path, entry in queue_entries():
+        if entry.get("host") == host_id() and not pid_alive(
+            int(entry.get("pid") or -1)
+        ):
+            try:
+                path.unlink()
+                swept.append(path.stem)
+            except OSError:
+                pass
+    return swept
+
+
+def recover(confirm: bool, as_json: bool) -> int:
+    """Case 8 volet 2b — recuperation apres crash du superviseur.
+
+    Le confinement fait deja mourir l'arbre avec le superviseur (Job
+    Object kill-on-close sous Windows ; scope/setsid sous POSIX) : ce qui
+    survit a un crash, c'est l'ETAT — run records, leases d'arbre et
+    entrees de file dont le pid est mort. `recover` rend cet etat residuel
+    visible (defaut = inspect), puis le balaie sur --yes en REUTILISANT
+    les balayages existants — la recuperation n'invente pas une seconde
+    semantique de peremption. Un item d'un host etranger n'est jamais
+    touche (pids non comparables entre namespaces). Le code de retour est
+    EXIT_OK dans tous les cas : comme doctor, le verdict vit dans la
+    sortie, pas dans le rc."""
+    families = {
+        "runs": _classify_state_dir(runs_dir()),
+        "tree_leases": _classify_state_dir(trees_dir()),
+        "queue": _classify_state_dir(queue_dir()),
+    }
+    swept: dict[str, list[str]] = {}
+    if confirm:
+        swept = {
+            "runs": sweep_stale_runs(),
+            "tree_leases": sweep_stale_tree_leases(),
+            "queue": _sweep_stale_queue(),
+        }
+    payload = {
+        "action": "recover",
+        "mode": "act" if confirm else "inspect",
+        "host": host_id(),
+        "stale" if not confirm else "swept": {
+            name: (fam["dead"] if not confirm else swept.get(name, []))
+            for name, fam in families.items()
+        },
+        "live": {k: v["live"] for k, v in families.items()},
+        "skipped_foreign_host": {
+            k: v["foreign"] for k, v in families.items()
+        },
+        "unreadable": {k: v["unreadable"] for k, v in families.items()},
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        mode = "BALAYAGE" if confirm else "INSPECTION (ajouter --yes pour agir)"
+        print(f"recover [{mode}] host={host_id()}")
+        for name, fam in families.items():
+            stale = swept.get(name, fam["dead"])
+            print(f"  {name}: {len(fam['live'])} vivant(s), "
+                  f"{len(stale)} "
+                  f"{'balaye(s)' if confirm else 'recuperable(s)'}, "
+                  f"{len(fam['foreign'])} etranger(s) (jamais touches), "
+                  f"{len(fam['unreadable'])} illisible(s)")
+            for sid in stale:
+                print(f"    {'balaie' if confirm else 'stale'} : {sid}")
+            for fid in fam["foreign"]:
+                print(f"    etranger : {fid} -- JAMAIS touche")
+            for uid in fam["unreadable"]:
+                print(f"    illisible : {uid} -- conserve (rien a attribuer)")
+    return EXIT_OK
+
+
+def emergency_stop(run_ids: list[str], confirm: bool, as_json: bool) -> int:
+    """Case 8 volet 2a — arret d'urgence des runs possedes par l'organe.
+
+    Defaut = INSPECT : lister ce qui serait arrete, ne rien tuer. L'action
+    exige --yes. Un run d'un host etranger n'est JAMAIS tue ni retire (pids
+    non comparables entre namespaces, cf sweep_stale_runs) : il est liste et
+    saute. Les records de runs deja morts sont retires seulement en mode
+    action — inspect reste lecture seule comme doctor."""
+    our_host = host_id()
+    paths = sorted(runs_dir().glob("*.json"))
+    if run_ids:
+        wanted = {f"{r}.json" for r in run_ids}
+        unknown = [r for r in run_ids if not (runs_dir() / f"{r}.json").exists()]
+        paths = [p for p in paths if p.name in wanted]
+    else:
+        unknown = []
+
+    to_stop, dead, foreign = [], [], []
+    for path in paths:
+        record = read_run(path)
+        if not record:
+            dead.append({"run": path.stem, "pid": None,
+                         "note": "record illisible"})
+            continue
+        entry = {
+            "run": path.stem,
+            "pid": record.get("pid"),
+            "cmd": record.get("cmd"),
+            "caller": record.get("caller"),
+            "started_utc": record.get("started_utc"),
+        }
+        if record.get("host") != our_host:
+            foreign.append({**entry, "host": record.get("host")})
+        elif pid_alive(record.get("pid") or 0):
+            to_stop.append(entry)
+        else:
+            dead.append(entry)
+
+    stopped, failed = [], []
+    if confirm:
+        for entry in to_stop:
+            outcome = _kill_run_tree(entry["pid"])
+            if outcome == "killed":
+                # Le superviseur vivant retirera lui-meme son record ; le
+                # retirer ici aussi est idempotent et couvre le superviseur
+                # mort (scenario recuperation). Double unlink = sans effet.
+                _remove_run_record(entry["run"])
+                stopped.append(entry)
+            elif outcome == "already_dead":
+                _remove_run_record(entry["run"])
+                dead.append(entry)
+            else:
+                failed.append({**entry, "error": outcome})
+        for entry in dead:
+            # Un record illisible ne se retire pas a l'aveugle : sans pid ni
+            # host lisibles, on ne peut rien lui attribuer — il est rapporte.
+            if "note" not in entry:
+                _remove_run_record(entry["run"])
+
+    payload = {
+        "action": "stop",
+        "mode": "act" if confirm else "inspect",
+        "host": our_host,
+        "would_stop": [e["run"] for e in to_stop] if not confirm else [],
+        "stopped": [e["run"] for e in stopped],
+        "already_dead": [
+            {"run": e["run"], "pid": e.get("pid"),
+             **({"note": e["note"]} if "note" in e else {})}
+            for e in dead
+        ],
+        "skipped_foreign_host": foreign,
+        "failed": failed,
+        "unknown_runs": unknown,
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        mode = "ARRET" if confirm else "INSPECTION (ajouter --yes pour agir)"
+        print(f"stop [{mode}] host={our_host}")
+        for e in to_stop:
+            print(f"  vivant  : {e['run']} pid={e['pid']} "
+                  f"caller={e.get('caller')} cmd={shlex.join(e['cmd'] or [])}")
+        for e in dead:
+            pid = e.get("pid")
+            print(f"  mort    : {e['run']} pid={pid}"
+                  + (" (record illisible)" if pid is None else ""))
+        for e in foreign:
+            print(f"  etranger: {e['run']} pid={e.get('pid')} "
+                  f"host={e.get('host')} -- JAMAIS touche")
+        for e in failed:
+            print(f"  echec   : {e['run']} pid={e.get('pid')} -- {e['error']}")
+        for r in unknown:
+            print(f"  inconnu : {r} (aucun run record de ce nom)")
+        if confirm:
+            print(f"resultat: {len(stopped)} arrete(s), {len(dead)} record(s) "
+                  f"retire(s), {len(failed)} echec(s)")
+        else:
+            print(f"a arreter sous --yes : {len(to_stop)}")
+    if failed:
+        return EXIT_CHILD
+    if unknown:
+        # Un run record inconnu est une demande refusee (operateur), pas un
+        # echec de la commande enfant : le code stable 1 reste reserve a
+        # l'echec d'arret d'un run reel.
+        return EXIT_REFUSED
+    return EXIT_OK
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -2443,6 +2715,31 @@ def main(argv: list[str] | None = None) -> int:
         "doctor", help="Diagnostic de l'organe (lecture seule, ne balaie pas)")
     p_doctor.add_argument("--json", action="store_true")
 
+    p_stop = sub.add_parser(
+        "stop",
+        help="Arret d'urgence des runs de CET host — defaut : inspecter "
+             "seulement ; --yes pour arreter. Un run d'un host etranger "
+             "n'est jamais tue")
+    p_stop.add_argument("--run", action="append", default=None,
+                        metavar="ID",
+                        help="Limiter a ce run record (repetable)")
+    p_stop.add_argument("--yes", action="store_true",
+                        help="Agir : tuer les runs vivants listes et retirer "
+                             "les records morts. Sans ce drapeau : inspection.")
+    p_stop.add_argument("--json", action="store_true")
+
+    p_rec = sub.add_parser(
+        "recover",
+        help="Recuperation apres crash du superviseur — etat residuel "
+             "(runs morts, leases perimes, file) : defaut inspecter, "
+             "--yes pour balayer. Un item d'un host etranger n'est "
+             "jamais touche")
+    p_rec.add_argument("--yes", action="store_true",
+                       help="Agir : balayer l'etat residuel de CET host "
+                            "(les balayages existants, pas une seconde "
+                            "semantique).")
+    p_rec.add_argument("--json", action="store_true")
+
     args = parser.parse_args(argv)
     try:
         if args.action == "status":
@@ -2456,6 +2753,12 @@ def main(argv: list[str] | None = None) -> int:
             )
         if args.action == "doctor":
             return doctor(as_json=args.json)
+        if args.action == "stop":
+            return emergency_stop(
+                run_ids=args.run or [], confirm=args.yes, as_json=args.json,
+            )
+        if args.action == "recover":
+            return recover(confirm=args.yes, as_json=args.json)
         if args.action == "run":
             cmd = args.cmd
             if cmd and cmd[0] == "--":

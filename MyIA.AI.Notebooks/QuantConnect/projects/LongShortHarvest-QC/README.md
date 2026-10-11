@@ -115,6 +115,10 @@ La lecture du jour même ne gonflait pas le résultat : sur cette fenêtre, la c
 
 Les traces des runs (plans, empreintes, graphiques, statistiques, compteurs) sont conservées hors dépôt, sous `QC-traces/19837-lsh-vix-lag/`.
 
+### Suivi en ombre
+
+Le point 6 de #19450 demandait le gel de `base` à la date du verdict. `base` lisant le VIX du jour même, c'est la variante `lag`, défaut du code depuis #19837, qui est gelée à sa place, à la date de son verdict. Le commit gelé est celui de `main` qui porte ce `main.py` (empreinte revérifiée : `09918b3f087c…`, celle des runs du verdict). Elle est inscrite au [registre du suivi en ombre](../../ML-Training-Pipeline/shadow/registry.json) (#18923) sous l'identifiant `lsh-lag`, sans paramètre, gelée au 2026-10-09 ; premier passage à la première séance de novembre.
+
 ## Figures du notebook de recherche
 
 Ces figures sortent du moteur simplifié `backtest_lsh()` (SPY à la place des 4 titres, pas de vente à découvert) : elles décrivent le régime VIX/SPY, pas le code de `main.py` (voir la section précédente). Le notebook [`research.ipynb`](research.ipynb) documente l'analyse complète : backtest de référence sur SPY/GLD/VIX, sensibilité aux hyperparamètres (sweep `score_threshold` H1, `ext_k` H2), validation walk-forward et performance par régime de marché. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
