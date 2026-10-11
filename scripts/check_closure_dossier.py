@@ -77,9 +77,11 @@ from os.path import dirname, abspath
 from typing import Any
 
 try:
+    import gh_identity
     from check_adjoint_prevalidation import QUALIFYING_LANES, GRAIN_LANE_RE
 except ImportError:  # charge depuis scripts/ en invocation directe
     sys.path.insert(0, dirname(abspath(__file__)))
+    import gh_identity  # type: ignore[no-redef]
     from check_adjoint_prevalidation import (  # type: ignore[no-redef]
         QUALIFYING_LANES,
         GRAIN_LANE_RE,
@@ -332,8 +334,16 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any],
 
     if f.get("schema") != "1":
         errors.append("schema must be '1'")
-    if dossier.author != SHARED_GITHUB_LOGIN:
-        errors.append(f"comment author must be {SHARED_GITHUB_LOGIN!r}")
+    # #17437: same accepted-author set as the adjoint gate, read from the
+    # identity organ -- a lane posting its closure dossier under its GitHub App
+    # identity must not be refused here after being accepted there.
+    if dossier.author not in gh_identity.ACCEPTED_DOSSIER_AUTHORS:
+        errors.append(
+            f"comment author {dossier.author!r} is not an accepted dossier author "
+            f"(expected {SHARED_GITHUB_LOGIN!r} or a fleet App identity "
+            f"{gh_identity.APP_LOGIN_PREFIX}<lane>[bot] with <lane> in "
+            f"{', '.join(gh_identity.APP_DOSSIER_LANES)})"
+        )
     if snapshot.get("state") != "OPEN" and not replay:
         errors.append(f"issue state must be OPEN, live={snapshot.get('state')}")
 

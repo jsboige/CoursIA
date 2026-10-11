@@ -418,7 +418,7 @@ Trois sous-dossiers complètent la série sans être des notebooks :
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 264
-breakdown: Texte=41, Audio=38, Plateformes-Conversationnelles=28, SemanticKernel=23, Image=22, Video=22, PostTraining=21, Integrations-DotNet=15, FineTuning=14, RAG-et-Memoire-Semantique=10, Vibe-Coding=8, 00-GenAI-Environment=6, Security=6, CaseStudies=5, FallacyDetection=5
-maturity: BETA=221, ALPHA=23, DRAFT=17, TEMPLATE=3
+pedagogical_count: 267
+breakdown: Texte=42, Audio=38, Plateformes-Conversationnelles=28, Image=23, SemanticKernel=23, Video=22, PostTraining=21, Integrations-DotNet=15, FineTuning=14, RAG-et-Memoire-Semantique=10, Vibe-Coding=8, 00-GenAI-Environment=7, Security=6, CaseStudies=5, FallacyDetection=5
+maturity: BETA=223, ALPHA=23, DRAFT=18, TEMPLATE=3
 -->

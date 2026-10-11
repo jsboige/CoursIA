@@ -135,6 +135,25 @@ public sealed class GoGame
         _captured = new int[3];
     }
 
+    /// <summary>
+    /// Copie profonde et independante du plateau. Le contrat fonctionnel
+    /// <c>IGame.Result</c> de la tranche 3 exige qu'un resultat ne mute pas son
+    /// origine : chaque noeud de l'arbre de recherche est un clone, aucune
+    /// mutation partagee. Toute l'information de partie y survit -- trait, ko,
+    /// passes consecutifs, prisonniers.
+    /// </summary>
+    public GoGame Clone()
+    {
+        GoGame copy = new(Size, Komi);
+        Array.Copy(_board, copy._board, _board.Length);
+        Array.Copy(_captured, copy._captured, _captured.Length);
+        copy._koIndex = _koIndex;
+        copy._consecutivePasses = _consecutivePasses;
+        copy.ToPlay = ToPlay;
+        copy.IsOver = IsOver;
+        return copy;
+    }
+
     /// <summary>Couleur posee a ce point.</summary>
     public GoColor ColorAt(GoPoint p) => _board[IndexOf(p)];
 

@@ -66,7 +66,41 @@ Updated: 2026-10-04 — M5 HMM regime-switching HAR revalidé cluster 7 actifs a
 
 Updated: 2026-10-07 — M5 lu comme couche de dimensionnement (stratégie, #19725 fille de #18907, lane myia-po-2023:CoursIA, pré-enregistré c.6040355929 **avant** tout calcul) : **VOIDE_FUITE** — le placebo M5 péréimé de 5 j bat HAR sur la graine 42 (+0,272, p=0,034) : la performance du bloc gelé 2022-07→2023-12 est dominée par le bruit, la machine seule rend INCONCLUSIVE (diffs M5−HAR −0,037 à +0,070, aucune p<0,23). Finding contextuel : **les deux jambes prévision sont sous RV63 (+0,727) et sous buy & hold (+0,685)**, 4/4 graines — l'edge de prédiction ETH h=1 ne se convertit pas en valeur de stratégie par vol-targeting sur ce bloc (convergence L5/L6 du Curriculum). Aucun re-jeu de CE résultat sans nouveau pré-enregistrement. Détail `docs/M5_STRATEGY_VOLTARGET.md` + manifeste `scripts/results/m5_strategy_vol_targeting.json` + 16 tests contractuels.
 
+Updated: 2026-10-08 — P15294 re-run probe GRPO sur Hermes-function-calling-v1 (issue #15294 acceptance 2 partielle, lane myia-po-2024:CoursIA) : **Qwen3.5-0.8B produit du signal RL net sur la tâche calibrée** — Δ reward eval held-out (40 prompts × 4 générations, pré/post 100 steps, même recette GRPO+QLoRA non-thinking que M19) : **+0,2500 ± 0,1875**, 2/2 seeds progressent (0,2063→0,2688 et 0,1688→0,6063), pas d'effondrement de longueur — contre **+0,0063 ± 0,0063** (plat, courbes erratiques) du même backbone sur DAPO-Math-17k : la platitude DAPO du 0.8B était un artefact de casting, pas une propriété du backbone. Côté MiniCPM5-2B : 2 runs en chaîne détachée sur RTX 3070, verdict de comparaison 2B vs 0.8B différé à leur livraison. Manifestes `scripts/results/p15294_hermes_grpo/`.
+
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
+
+## P15294 Hermes GRPO — Qwen3.5-0.8B 2/2 seeds (2026-10-08) — issue #15294
+
+Re-run de la probe B (#15099) sur le substitut calibré Hermes-function-calling-v1
+(singleturn, Apache-2.0, non gated — le dataset xlam retenu par la veille étant
+gated). Harnais `scripts/probe_15099_dapo_grpo.py run --dataset hermes`,
+protocole inchangé : GRPO (TRL) + QLoRA NF4 r16, 100 steps, 32 completions/step,
+non-thinking, eval held-out 40 prompts × 4 générations pré/post, reward
+structurel JSON (match du bloc `<tool_call>`). RTX 3070 Laptop 8 Go (étage
+pionnier #1454), wallclock 47 050 s (seed 0) et 23 666 s (seed 1). Adapters hors
+repo (`D:/Dev/probe15099_runs`). Manifestes par run :
+`scripts/results/p15294_hermes_grpo/qwen35_seed{0,1}.json`.
+
+| | pre | post | Δ | longueur eval |
+|---|---|---|---|---|
+| Qwen3.5-0.8B seed 0 | 0,2063 | 0,2688 | +0,0625 | 399 → 402 (stable) |
+| Qwen3.5-0.8B seed 1 | 0,1688 | 0,6063 | +0,4375 | 393 → 538 (+37 %) |
+
+Verdict (partiel — côté 0.8B) : **signal RL confirmé sur tâche calibrée**. Le même
+backbone, la même recette et le même budget qui rendaient +0,0063 ± 0,0063 sur
+DAPO-Math-17k (M19, courbes erratiques) rendent +0,2500 ± 0,1875 sur Hermes :
+l'écart mesure l'artefact de casting dénoncé par la review user — la tâche
+olympiaque masquait le signal, elle ne mesurait pas une absence de trainabilité.
+L'accessibilité pré-éval mesurée (0,17-0,21) colle à la prédiction « borderline »
+de la matrice d'accessibilité (#15531).
+
+Réserves honnêtes : n=2 seeds, dispersion inter-seeds large (+0,0625 vs
++0,4375) ; la seed 1 gagne +37 % de longueur moyenne de completion (croissance,
+pas effondrement — le critère santé du harnais est respecté) ; le classement
+2B > 0.8B observé sur DAPO reste **non tranché** jusqu'aux runs MiniCPM5-2B
+(chaîne détachée armée le 2026-10-08, seed 0 puis seed 1 enchaînés
+automatiquement ; `summarize` exige ≥ 2 modèles pour le verdict de paire).
 
 ## M18 TimesFM 2.5 — revalidation cluster 7 actifs (2026-10-03) — Epic #1454
 

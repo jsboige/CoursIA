@@ -195,6 +195,7 @@ Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; D
 | Gibbard (1973) / Satterthwaite (1975) | Théorème de manipulabilité (SC-05) |
 | Harsanyi (1959) ; Curiel, *Cooperative Game Theory and Applications* (1997) | Dividendes de coalition, jeux de vote pondérés (SC-06) |
 | Becker, Greger & Peters, "Existence of the Core in Approval-Based Committee Elections" (arXiv 2609.11912) | Core non vide, quotas Hare/Droop, certificats (SC-07) |
+| **Brandt, Conitzer, Endriss, Lang, Procaccia, *Handbook of Computational Social Choice* (CUP, 2016, ISBN 978-1-107-06043-2)** | **L'ouvrage-ancrage de la sous-série** — 554 p. couvrent le programme commun des sept carnets : ch. 1-2 (impossibilités, règles de vote polynomiales, Zwicker), ch. 4-5 (Kemeny §2.7+4.1-4.2, ranked pairs §2.4+3, Dodgson §5.3 winner-NP-dur), ch. 6 (barrières computationnelles à la manipulation Gibbard-Satterthwaite, encodage SAT/Z3). Source biblio cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf`. |
 
 ## Conclusion / Prochaines étapes
 

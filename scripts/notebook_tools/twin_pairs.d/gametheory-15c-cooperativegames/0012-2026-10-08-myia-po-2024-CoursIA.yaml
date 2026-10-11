@@ -1,0 +1,7 @@
+date: '2026-10-08'
+by: myia-po-2024:CoursIA
+python_sha: d6ec89e10901353674c65bdb50f9da24ae193d58
+csharp_sha: dae0f0370c455bf32365a434ed5d4a4a67344184
+content_python_sha: c7986ef3538f6e354414eb0725eea2b6906d989023e9ac50d18314fc3492a8e5
+content_csharp_sha: 6cb3cf3d6c93d06b42c8be055798535ec0ac1e35b64bda84532554ef0f902e0b
+reason: "Redressement densite #17040 (tranche GameTheory) : les DEUX jumeaux retouches en markdown-only -- C# preuve du Core vide consolidee (ancree a la banniere reelle), Py 3 retitres marker-unfold. Cellules code byte-identiques."

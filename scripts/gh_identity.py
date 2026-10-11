@@ -23,6 +23,15 @@ helper renonce ALORS en imprimant un avertissement fort sur stderr (jamais en
 silence), et ``detect_shared_login.py`` continue de les nommer comme tournant
 sous le login partage. La Creation des comptes (Phase B) et le provisionnement
 des jetons (Phase C) ferment cette echappatoire.
+
+Identites d'AUTEUR (#17437) : le module porte aussi l'ensemble des logins
+acceptes comme auteurs d'un dossier (``ACCEPTED_DOSSIER_AUTHORS``) — le login
+partage d'aujourd'hui, et les identites GitHub App par lane qui le remplacent.
+Il vit ici plutot que dans chacun des gates parce que DEUX d'entre eux
+comparent l'auteur d'un dossier (``check_adjoint_prevalidation.py``,
+``check_closure_dossier.py``) : deux copies du meme ensemble divergeraient au
+premier changement de lanes, et l'une des deux refuserait alors des dossiers
+legitimes sans que personne ne le voie.
 """
 
 from __future__ import annotations
@@ -49,6 +58,38 @@ HOST_ACCOUNTS = {
     "myia-po-2027": "myia-po-2027",
     "myia-web1": "MyIA-Web1",
 }
+
+# --- Identites d'auteur des dossiers (#17437) -------------------------------
+#
+# Un dossier (prevalidation adjointe, fermeture d'issue) est un acte de
+# verification tierce : le gate qui le lit verifie QUI l'a signe. Aujourd'hui
+# toutes les lanes signent sous ``SHARED_LOGIN``. #17437 provisionne une GitHub
+# App par lane (``coursia-lane-po-2024[bot]``), les comptes machine etant brides
+# au tarif anonyme ; le jour ou une lane poste sous son App, un gate qui compare
+# l'auteur au seul ``SHARED_LOGIN`` refuse un dossier pourtant legitime — et le
+# refuse pour TOUTES les lanes d'un coup, sans message qui designe la cause.
+#
+# Source de verite des noms : ``scripts/secrets/github_app_manifest.py``
+# (``APP_PREFIX`` + ``LANES``), plus le pilote ``coursia-lane-ai-01``. La liste
+# est FIGEE ici plutot que derivee a l'execution : ``github_app_manifest``
+# importe ``webbrowser``/``http.server`` et lit ``.secrets/``, ce qu'un gate
+# appele en CI ne peut pas se permettre. Un login absent de cette table est
+# refuse (echec FERME) : l'ensemble s'elargit par une edition consciente, jamais
+# par une correspondance de forme.
+APP_LOGIN_PREFIX = "coursia-lane-"
+APP_DOSSIER_LANES = (
+    "po-2023",
+    "po-2024",
+    "po-2025",
+    "po-2026",
+    "po-2027",
+    "web1",
+    "ai-01",
+)
+ACCEPTED_DOSSIER_AUTHORS = frozenset(
+    (SHARED_LOGIN,)
+    + tuple(f"{APP_LOGIN_PREFIX}{lane}[bot]" for lane in APP_DOSSIER_LANES)
+)
 
 RATE_LIMIT_RE = re.compile(r"rate limit", re.IGNORECASE)
 

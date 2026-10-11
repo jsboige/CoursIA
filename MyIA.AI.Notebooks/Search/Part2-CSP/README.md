@@ -166,6 +166,18 @@ CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
 | [SymbolicAI/SMT/Z3-Linq2Z3](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md) | Solveur SMT | CSP-6 (LCG) et automates symboliques |
 | [Probas/Infer](../../Probas/Infer/) | Infer.NET | Modèles graphiques et contraintes |
 
+## Au-delà de CP : le pont CP ↔ SAT ↔ SMT
+
+La programmation par contraintes n'est pas un paradigme isolé : elle partage ses fondations avec deux familles voisines du dépôt, qui attaquent le même problème déclaratif sous un autre angle.
+
+- **SAT** (satisfiabilité booléenne) — décider si une formule propositionnelle admet un modèle ; solveurs DPLL/CDCL.
+- **SMT** (SAT Modulo Theories) — SAT enrichi de théories (arithmétique, tableaux, bit-vectors, chaînes) ; voir la série [SymbolicAI/SMT/Z3-Linq2Z3](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md).
+- **CP** (programmation par contraintes) — cette partie : domaines finis, contraintes globales, propagation.
+
+**Bardin, S., Bjørner, N. & Cadar, C. (2019), *Bringing CP, SAT and SMT together: Next Challenges in Constraint Solving* (Dagstuhl Seminar 19062), Dagstuhl Reports 9(2):27** — [doi:10.4230/DagRep.9.2.27](https://doi.org/10.4230/DagRep.9.2.27) — est la référence commune qui pose ce pont : identifier les confluences et les angles morts entre les trois communautés. C'est un rapport de séminaire, ni tutoriel ni article de recherche ; sa fonction est de cartographier ce que les trois paradigmes partagent déjà.
+
+La série l'illustre dans le code : **CSP-6 (Hybridization)** décrit la *Lazy Clause Generation*, où un solveur CP apprend des clauses SAT en cours de résolution — la frontière CP/SAT n'y est pas une analogie, elle y est franchie.
+
 ## Références
 
 Couverture par notebook des sources fondatrices de la programmation par contraintes :
@@ -177,6 +189,13 @@ Couverture par notebook des sources fondatrices de la programmation par contrain
 | CSP-2 (Consistency) | Mackworth, A. K. (1977) — « Consistency in Networks of Relations », *Artificial Intelligence* 8(1). Origine de l'arc-consistency (AC-3). |
 | CSP-3 (Advanced) | Régin, J.-C. (1994) — « A filtering algorithm for constraints of difference in CSPs », *AAAI-94*. Le propagateur global AllDifferent. |
 | CSP-6 (Hybridization) | Ohrimenko, I., Stuckey, P. J., & Codish, M. (2009) — « Propagation via Lazy Clause Generation », *Constraints* 14(3). Origine de la Lazy Clause Generation. |
+| CSP-1, CSP-2, CSP-8 | Dechter, R. (2003) — *Constraint Processing*. Morgan Kaufmann. Socle de la propagation de contraintes et des niveaux de consistance, en amont de la série. |
+| CSP-3 à CSP-8 | Krupke, D. et al. (2023) — *The CP-SAT Primer: Using and Understanding Google OR-Tools' CP-SAT Solver* (CC-BY). Le manuel du solveur CP-SAT, aval de la série. |
+| CSP-3, CSP-5, CSP-7 | Rossi, F., van Beek, P. & Walsh, T. (dir., 2006) — *Handbook of Constraint Programming*. Elsevier. Ouvrage de référence organisé par thème (propagation, contraintes globales, contraintes souples, temporel) — le découpage que suit la série. |
+| CSP-9 (Distributed) | **Distributed Constraint Processing** (support de cours, 2018) — `2018 - lecture-Distributed Constraint Processing.pdf`, rayon *Constraint Programming* du gisement documentaire (auteur non lisible : PDF non hydraté). Série homonyme en ligne : [G. Picard, Mines Saint-Étienne](https://www.gauthier-picard.info/files/lecture-DCSP-2025.pdf). Passage du CSP centralisé aux formulations distribuées (DisCSP, DCOP). |
+| Toute la série | Bardin, S., Bjørner, N. & Cadar, C. (2019) — *Bringing CP, SAT and SMT together: Next Challenges in Constraint Solving* (Dagstuhl Seminar 19062), Dagstuhl Reports 9(2):27. Le pont CP↔SAT↔SMT. |
+
+Le socle glisse de Dechter vers le *CP-SAT Primer* à partir de CSP-3 ; les deux cohabitent ensuite — CSP-8 relève des deux, ce qui explique sa présence dans les deux lignes de couverture.
 
 ---
 

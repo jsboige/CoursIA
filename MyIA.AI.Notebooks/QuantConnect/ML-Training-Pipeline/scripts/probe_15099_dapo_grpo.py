@@ -62,6 +62,15 @@ MODELS: dict[str, dict[str, str]] = {
     "minicpm5": {
         "path_glob": "models--openbmb--MiniCPM5-2B/snapshots/*",
         "label": "MiniCPM5-2B",
+        # eos_token du tokenizer = </s> (id 1) mais le template de chat
+        # termine les tours par <|im_end|> (id 130073, present dans
+        # generation_config, absent de special_tokens_map). TRL 1.12 lit
+        # l'EOS de generation, la detection de troncature ET le masque de
+        # perte depuis tokenizer.eos_token_id uniquement : sans alignement,
+        # aucune completion n'est vue "terminee" -> clipped_ratio=1 et
+        # mask_truncated_completions annule la perte (smoke 08/10 :
+        # loss/grad/entropy = 0).
+        "eos_token": "<|im_end|>",
     },
     "qwen35": {
         "path_glob": "models--Qwen--Qwen3.5-0.8B/snapshots/*",
@@ -431,6 +440,10 @@ def build_trainer(
 
     model_path = find_hf_snapshot(MODELS[model_key]["path_glob"])
     tokenizer = AutoTokenizer.from_pretrained(str(model_path))
+    eos_override = MODELS[model_key].get("eos_token")
+    if eos_override is not None:
+        # aligne l'EOS tokenizer sur le terminateur reel du template (cf MODELS)
+        tokenizer.eos_token = eos_override
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -647,6 +660,9 @@ def mode_baseline(model_key: str, dataset_key: str) -> dict[str, Any]:
 def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False,
              dataset_key: str = "dapo") -> dict[str, Any]:
     ds = DATASETS[dataset_key]
+    # Self-describing : le budget est la variable du diagnostic de troncature
+    # (#15294), il doit etre lisible dans run.log a cote de clipped_ratio.
+    print(f"[{model_key} seed{seed}] budget de completion = {MAX_COMPLETION} tokens")
     train_rows, eval_rows = ds["load"]()
     t0 = time.time()
     trainer, model_path = build_trainer(model_key, seed, steps, train_rows,
@@ -695,15 +711,21 @@ def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False,
     return result
 
 
-def mode_summarize() -> int:
+def mode_summarize(dataset_key: str = "dapo") -> int:
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    runs = sorted(REPO_RESULTS.glob("*_seed*.json"))
+    # Meme regle de repertoire que mode run (l.689) : le mode run ecrit deja
+    # dans p15294_<dataset>_grpo, mais summarize ne lisait que REPO_RESULTS
+    # (m19_minicpm5_grpo, dataset dapo) -- le verdict de paire hermes (#15294)
+    # etait inaccessible sans wrapper qui patche la constante.
+    results_dir = (REPO_RESULTS if dataset_key == "dapo"
+                   else REPO_RESULTS.parent / f"p15294_{dataset_key}_grpo")
+    runs = sorted(results_dir.glob("*_seed*.json"))
     if not runs:
-        print("aucun run trouve dans", REPO_RESULTS)
+        print("aucun run trouve dans", results_dir)
         return 1
     loaded = [json.loads(p.read_text(encoding="utf-8")) for p in runs]
     by_model: dict[str, list[dict[str, Any]]] = {}
@@ -713,6 +735,11 @@ def mode_summarize() -> int:
     summary: dict[str, Any] = {"runs": [r["model_key"] + f"_seed{r['seed']}" for r in loaded],
                                "per_model": {}, "verdict": None}
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+    # Le trainer nomme la serie d'apres la fn de reward : dapo/gsm8k loggent
+    # rewards/dapo_reward/mean, hermes/xlam loggent rewards/xlam_reward/mean.
+    # La cle codee en dur (dapo) faisait echouer le plot sur un dir hermes
+    # (steps_r vide vs 100 longueurs de completion -> ValueError matplotlib).
+    reward_key = f"rewards/{DATASETS[dataset_key]['reward'].__name__}/mean"
     for model_key, rs in by_model.items():
         deltas = [r["post_eval"]["reward_mean"] - r["pre_eval"]["reward_mean"] for r in rs]
         pre = [r["pre_eval"]["reward_mean"] for r in rs]
@@ -729,14 +756,14 @@ def mode_summarize() -> int:
             "deltas": deltas,
         }
         for r in rs:
-            steps_r = [e["step"] for e in r["log_history"] if "rewards/dapo_reward/mean" in e]
-            rew = [e["rewards/dapo_reward/mean"] for e in r["log_history"]
-                   if "rewards/dapo_reward/mean" in e]
+            steps_r = [e["step"] for e in r["log_history"] if reward_key in e]
+            rew = [e[reward_key] for e in r["log_history"]
+                   if reward_key in e]
             ln = [e["completions/mean_length"] for e in r["log_history"]
                   if "completions/mean_length" in e]
             axes[0].plot(steps_r, rew, alpha=0.7, label=f"{model_key} s{r['seed']}")
             axes[1].plot(steps_r[: len(ln)], ln, alpha=0.7)
-    axes[0].set_title("Reward train (dapo_reward/mean)")
+    axes[0].set_title(f"Reward train ({reward_key})")
     axes[0].set_xlabel("step")
     axes[1].set_title("Longueur moyenne des completions")
     axes[1].set_xlabel("step")
@@ -793,9 +820,9 @@ def mode_summarize() -> int:
                          "ET delta eval moyen > qwen avec intervalles ±1std disjoints (≥2 seeds par modèle)"),
             }
     fig.tight_layout()
-    png = REPO_RESULTS / "curves.png"
+    png = results_dir / "curves.png"
     fig.savefig(png, dpi=130)
-    summary_json = REPO_RESULTS / "summary.json"
+    summary_json = results_dir / "summary.json"
     summary_json.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps({k: v for k, v in summary.items() if k != "runs"}, indent=2)[:1500])
     print(f"courbes -> {png} | summary -> {summary_json}")
@@ -815,19 +842,34 @@ def main() -> int:
         action="store_true",
         help="mode thinking (enable_thinking=True laisse au template, budget completion 1024)",
     )
+    ap.add_argument(
+        "--max-completion",
+        type=int,
+        default=None,
+        help="budget de completion en tokens (defaut : 384 non-thinking, 1024 avec --thinking) ; "
+             "pilote clipped_ratio (fraction de completions tronquees) et, via "
+             "mask_truncated_completions, la part du loss qui survit",
+    )
     args = ap.parse_args()
 
+    global MAX_COMPLETION
     if not args.thinking:
         CHAT_KWARGS.clear()
         CHAT_KWARGS["enable_thinking"] = False
     else:
-        global MAX_COMPLETION
         MAX_COMPLETION = 1024
+    if args.max_completion is not None:
+        # Le budget n'est pas cosmetique : avec mask_truncated_completions=True,
+        # une completion qui atteint la borne est RETIREE du loss (#15294 : a
+        # 384 tokens, clipped_ratio ~0.94-0.97 laissait un signal quasi nul).
+        # Parametrable, le balayage du budget est une commande, pas une edition
+        # du source a chaque point de diagnostic.
+        MAX_COMPLETION = args.max_completion
 
     if args.mode == "selftest":
         return mode_selftest()
     if args.mode == "summarize":
-        return mode_summarize()
+        return mode_summarize(args.dataset)
     if args.mode == "baseline":
         mode_baseline(args.model, args.dataset)
         return 0

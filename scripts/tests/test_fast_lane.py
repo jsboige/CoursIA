@@ -909,6 +909,57 @@ def test_every_tranche_in_the_registry_is_run_by_the_engine():
             f"ses gardes ne tournent jamais")
 
 
+def test_no_module_level_name_is_assigned_twice_in_the_registry():
+    """Incident #19374 (suivi d'integration, mesure 2026-10-08) : la tranche
+    eol-blob a pris le nom module-level ``TRANCHE18`` deja porte plus bas
+    par la tranche docs-index (#19260). Python execute le module de haut en
+    bas : la seconde affectation ecrasait la premiere, ``eol-blob-guard``
+    etait enregistree mais muette -- et
+    ``test_every_tranche_in_the_registry_is_run_by_the_engine`` passait
+    quand meme, car ``vars()`` ne voit que la valeur FINALE du nom. Ce test
+    ferme la classe : aucun nom du registre n'est affecte deux fois au
+    niveau module (TRANCHE ou constante -- l'ecrasement d'une constante
+    serait le meme defaut, plus silencieux encore). Seules les formes qui
+    RE-LIENT le nom comptent (``Assign``/``AnnAssign``) : ``X += [...]``
+    etend la valeur au lieu de la remplacer, ce n'est pas l'ombre
+    silencieuse mesuree ici."""
+    import ast
+    import fast_lane_registry as registry
+
+    def double_assignments(tree):
+        seen = {}
+        for node in tree.body:
+            targets = []
+            if isinstance(node, ast.Assign):
+                targets = node.targets
+            elif isinstance(node, ast.AnnAssign):
+                targets = [node.target]
+            for target in targets:
+                if isinstance(target, ast.Name):
+                    seen.setdefault(target.id, []).append(target.lineno)
+        return {n: lines for n, lines in seen.items() if len(lines) > 1}
+
+    src = Path(registry.__file__).read_text(encoding="utf-8")
+    duplicates = double_assignments(ast.parse(src))
+    assert not duplicates, (
+        f"noms module-level affectes plusieurs fois dans "
+        f"fast_lane_registry.py (lignes {duplicates}) : la derniere "
+        f"affectation ecrase les precedentes -- garde enregistree, muette "
+        f"(incident #19374)")
+
+    # Controle positif du detecteur sur la forme exacte de l'incident
+    # (deux affectations du meme nom annote, la seconde gagne) : sans lui,
+    # un futur refactor du collecteur pourrait rendre le filet muet sans
+    # jamais rougir -- un motif de detection se valide par ses faux
+    # negatifs.
+    synthetic = ast.parse(
+        "TRANCHE18: list[int] = [1]\n"
+        "TRANCHE18: list[int] = [2]\n"
+        "SINGLE: int = 3\n"
+    )
+    assert set(double_assignments(synthetic)) == {"TRANCHE18"}
+
+
 def test_smartcontract_guards_are_native_blocking_deltas():
     assert {guard.name for guard in TRANCHE8} == {
         "Smart-contract engine proof ratchet",

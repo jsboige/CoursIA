@@ -1486,6 +1486,224 @@ def test_unreadable_registry_fail_closed_not_overwritten():
 # Runner direct (convention des tests scripts/lean)
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Interface operateur (case 8 de #15666) : `dry-run` et `doctor`
+#
+# Les deux commandes se revendiquent LECTURE SEULE, et c'est ce que ces tests
+# mesurent : l'invariant n'est pas « la sortie est jolie », c'est « rien n'a
+# bouge sur le disque ». Un diagnostic qui ecrit n'est plus un diagnostic —
+# il devient une decision dont on ne sait plus si elle a precede ou suivi la
+# mesure. Chaque test ci-dessous compare donc l'etat du state dir AVANT/APRES.
+# ---------------------------------------------------------------------------
+
+DEAD_PID = 999999999
+
+
+def test_resolve_backend_dry_decision_identical_without_writing():
+    """Le mode dry rend la MEME decision que le mode reel sur un lake non
+    epingle (default-policy) mais n'ecrit aucun epinglage.
+
+    C'est la propriete qui autorise `dry-run` a previsualiser sans consommer
+    la decision : l'epinglage premier-ecrivain est precisement ce que le run
+    reel doit encore poser, donc une previsualisation qui l'ecrirait
+    laisserait le run reel avec un choix qu'il n'a pas fait."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "drylake")
+        with _state_env(state):
+            os.environ["LEAN_EXEC_FORCE_BACKENDS"] = "native"
+            try:
+                dry_backend, dry_detail = le.resolve_backend(
+                    proj.resolve(), "auto", dry=True)
+                assert dry_backend == "native", (dry_backend, dry_detail)
+                assert "dry-run" in dry_detail, dry_detail
+                assert not le.backends_registry_path().exists(), (
+                    "dry=True a ecrit le registre des epinglages")
+                assert _registry(state) == {}, _registry(state)
+
+                wet_backend, wet_detail = le.resolve_backend(
+                    proj.resolve(), "auto")
+                assert wet_backend == dry_backend, (dry_backend, wet_backend)
+                assert "dry-run" not in wet_detail, wet_detail
+                assert le._lake_key(proj.resolve()) in _registry(state), (
+                    _registry(state))
+            finally:
+                os.environ.pop("LEAN_EXEC_FORCE_BACKENDS", None)
+
+
+def test_resolve_backend_dry_repin_preserves_existing_pin():
+    """`dry-run --repin` simule la bascule sans re-ecrire l'epinglage : le
+    registre rendu apres l'appel est byte-identique a celui d'avant."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "drylake")
+        key = le._lake_key(proj.resolve())
+        with _state_env(state):
+            le.save_backends({key: {
+                "backend": "native", "pinned_at": "2026-09-14T00:00:00Z",
+                "origin": "fixture",
+            }})
+            before = _registry(state)
+            os.environ["LEAN_EXEC_FORCE_BACKENDS"] = "native,wsl"
+            try:
+                backend, detail = le.resolve_backend(
+                    proj.resolve(), "wsl", repin=True, dry=True)
+            finally:
+                os.environ.pop("LEAN_EXEC_FORCE_BACKENDS", None)
+            assert backend == "wsl", (backend, detail)
+            assert "dry-run" in detail, detail
+            assert _registry(state) == before, (
+                "dry repin a reecrit le registre", _registry(state))
+
+
+def test_dry_run_cli_reports_and_leaves_no_trace():
+    """`dry-run` rend la decision complete (backend, ressources, budget,
+    verdict) et ne laisse AUCUNE trace : ni epinglage, ni entree de file,
+    ni lease d'arbre, ni run enregistre."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "drylake")
+        rc = _run(state, ["dry-run", "--json", "--cwd", str(proj)],
+                  timeout=90, LEAN_EXEC_FORCE_BACKENDS="native",
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=2)
+        assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
+        payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert payload["backend"]["chosen"] == "native", payload["backend"]
+        assert payload["backend"]["available"] == ["native"]
+        assert payload["backend"]["would_write_pin"] is True, payload["backend"]
+        assert payload["verdict"].startswith("ADMIS"), payload["verdict"]
+        assert payload["refusal"] is None, payload["refusal"]
+        assert payload["granted_jobs"] >= 1, payload["granted_jobs"]
+        assert payload["telemetry_ok"] is True
+        assert payload["resources"]["cpu"]["ok"] is True
+
+        assert _registry(state) == {}, "dry-run a epingle un backend"
+        for sub in ("queue", "trees", "runs"):
+            d = state / sub
+            lingering = list(d.glob("*.json")) if d.exists() else []
+            assert lingering == [], (sub, lingering)
+
+
+def test_dry_run_cli_refuses_orphan_cache_without_pinning():
+    """Cache `.lake/build` present sans epingle connue : la politique
+    premier-ecrivain ne tranche PAS (bascule = 1-2 h de Mathlib). `dry-run`
+    doit le DIRE — verdict REFUS — et surtout ne pas epingler pour
+    « debloquer » : ce serait prendre la decision qu'il previsualise."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "drylake")
+        (proj / ".lake" / "build").mkdir(parents=True, exist_ok=True)
+        rc = _run(state, ["dry-run", "--json", "--cwd", str(proj)],
+                  timeout=90, LEAN_EXEC_FORCE_BACKENDS="native")
+        assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
+        payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert payload["backend"]["chosen"] is None, payload["backend"]
+        assert payload["backend"]["would_write_pin"] is False
+        assert payload["verdict"].startswith("REFUS"), payload["verdict"]
+        assert "cache" in payload["backend"]["detail"], payload["backend"]
+        assert _registry(state) == {}, "dry-run a epingle malgre le refus"
+
+
+def test_dry_run_budget_agrees_with_status_admission():
+    """Le budget predit par `dry-run` doit etre CELUI que `status` mesure sur
+    la meme machine au meme moment : deux commandes de diagnostic qui
+    divergent enverraient l'operateur arbitrer entre deux chiffres, ce qui
+    est exactement ce qu'un organe existe pour eviter."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "drylake")
+        caps = dict(LEAN_EXEC_FORCE_BACKENDS="native",
+                    LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=2)
+        dry = _run(state, ["dry-run", "--json", "--cwd", str(proj)],
+                   timeout=90, **caps)
+        st = _run(state, ["status", "--json"], timeout=90, **caps)
+        assert dry.returncode == 0, dry.stderr
+        assert st.returncode == 0, st.stderr
+        dp = json.loads(dry.stdout[dry.stdout.index("{"):])
+        sp = json.loads(st.stdout[st.stdout.index("{"):])
+        if dp["population"]["native"] != sp["population"]["native"]:
+            pytest.skip(
+                "population native a bouge entre les deux mesures "
+                f"({dp['population']['native']} -> "
+                f"{sp['population']['native']}) : runner actif, "
+                "comparaison non concluante ici")
+        assert dp["granted_jobs"] == sp["granted_now"]["jobs"], (
+            dp["granted_jobs"], sp["granted_now"])
+        assert dp["population"]["native"] == sp["population"]["native"]
+        assert dp["headroom"] == sp["headroom"]
+
+
+def test_doctor_cli_reports_ok_with_named_verdict():
+    """`doctor` rend un verdict NOMME, problemes vides sur une installation
+    saine. L'absence d'epingle est une NOTE, pas une degradation : un
+    diagnostic qui crie au loup sur un state dir neuf ne sert a rien."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        rc = _run(state, ["doctor", "--json"], timeout=90,
+                  LEAN_EXEC_FORCE_BACKENDS="native",
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=2)
+        assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
+        payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert payload["verdict"] == "OK", payload["problems"]
+        assert payload["problems"] == [], payload["problems"]
+        assert payload["state_writable"] is True
+        assert payload["probes"]["native"]["available"] is True
+        assert payload["probes"]["wsl"]["available"] is False
+        assert any("aucun lake epingle" in n for n in payload["notes"]), \
+            payload["notes"]
+        assert payload["granted_now"]["jobs"] >= 1, payload["granted_now"]
+        assert payload["granted_now"]["telemetry_ok"] is True
+
+
+def test_doctor_cli_degrades_when_no_backend_available():
+    """Aucun backend disponible : `doctor` le NOMME en probleme et passe
+    DEGRADE, tout en rendant 0. Le code de retour ne doit pas se confondre
+    avec le verdict — un diagnostic qui sort en erreur quand il constate une
+    panne est inutilisable dans un script."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        rc = _run(state, ["doctor", "--json"], timeout=90,
+                  LEAN_EXEC_FORCE_BACKENDS="")
+        assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
+        payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert payload["verdict"] == "DEGRADE", payload
+        assert any("aucun backend" in p for p in payload["problems"]), \
+            payload["problems"]
+        assert payload["probes"]["native"]["available"] is False
+        assert payload["probes"]["wsl"]["available"] is False
+
+
+def test_doctor_does_not_sweep_where_status_does():
+    """Differentiel `doctor` / `status` sur le meme state dir : un run
+    perime SURVIT a `doctor` et DISPARAIT sous `status`.
+
+    C'est l'invariant qui separe un diagnostic d'une reparation. Le volet
+    « status » du controle est indispensable : sans lui, le test passerait
+    aussi si le balayage etait casse des deux cotes, et ne discriminerait
+    rien."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        runs = state / "runs"
+        runs.mkdir(parents=True)
+        (runs / "stale.json").write_text(json.dumps({
+            "pid": DEAD_PID, "host": le.host_id(), "budget": 2,
+            "cmd": ["lake", "build"], "caller": "c8-stale-probe",
+        }), encoding="utf-8")
+
+        doc = _run(state, ["doctor", "--json"], timeout=90,
+                   LEAN_EXEC_FORCE_BACKENDS="native")
+        assert doc.returncode == 0, (doc.returncode, doc.stdout, doc.stderr)
+        assert (runs / "stale.json").exists(), (
+            "doctor a balaye un run perime — il ne doit rien supprimer")
+
+        st = _run(state, ["status", "--json"], timeout=90,
+                  LEAN_EXEC_FORCE_BACKENDS="native")
+        assert st.returncode == 0, (st.returncode, st.stdout, st.stderr)
+        assert not (runs / "stale.json").exists(), (
+            "status n'a pas balaye le run perime : le differentiel ne "
+            "discrimine plus rien, le controle est vacant")
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

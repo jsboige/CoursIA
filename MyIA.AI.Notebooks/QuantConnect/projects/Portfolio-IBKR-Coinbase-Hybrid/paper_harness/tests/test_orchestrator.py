@@ -201,3 +201,67 @@ def test_a_cycle_never_buys_more_than_its_cash_plus_its_sells(tmp_path):
     assert sum(report.weights.values()) == pytest.approx(1.0)
     assert broker.cash >= 0.002 * 10_000.0 - 1e-9
     assert all(o.allowed for o in report.orders)
+
+
+class DyingBroker(FakeBroker):
+    """Raises from ``place`` once its attempts exceed ``fail_after``."""
+
+    def __init__(self, equity, positions, prices, fail_after, error):
+        super().__init__(equity, positions, prices)
+        self.fail_after, self.error = fail_after, error
+        self.attempts = 0
+
+    def place(self, symbol, quantity):
+        self.attempts += 1
+        if self.attempts > self.fail_after:
+            raise self.error("the gateway died mid-order: outcome unknown")
+        return super().place(symbol, quantity)
+
+
+def test_broker_failure_mid_cycle_keeps_the_journal_and_the_risk_state(tmp_path):
+    broker = DyingBroker(11_000.0, {}, {"SXR8": 50.0, "IUSM": 20.0},
+                         fail_after=1, error=RuntimeError)
+    with pytest.raises(RuntimeError):
+        _run(tmp_path, broker, dry_run=False)
+    assert broker.attempts == 2  # the failing send is attempted once, never retried
+    [line] = (tmp_path / "journal.jsonl").read_text(encoding="utf-8").splitlines()
+    record = json.loads(line)
+    assert record["interruption"] == "RuntimeError"
+    sent, unknown = record["orders"]  # buys go out in symbol order: IUSM first
+    assert sent["symbol"] == "IUSM" and sent["order_id"] == "id-1"
+    # the order whose send died is journaled as an unknown outcome: no invented id
+    assert unknown["symbol"] == "SXR8" and unknown["order_id"] is None
+    assert RiskGate.load(RISK, tmp_path / "risk.json", 10_000.0).peak_equity == 11_000.0
+
+
+def test_keyboard_interrupt_mid_cycle_keeps_the_journal_and_the_risk_state(tmp_path):
+    broker = DyingBroker(11_000.0, {}, {"SXR8": 50.0, "IUSM": 20.0},
+                         fail_after=0, error=KeyboardInterrupt)
+    with pytest.raises(KeyboardInterrupt):
+        _run(tmp_path, broker, dry_run=False)
+    [line] = (tmp_path / "journal.jsonl").read_text(encoding="utf-8").splitlines()
+    record = json.loads(line)
+    assert record["interruption"] == "KeyboardInterrupt"
+    assert all(o["order_id"] is None for o in record["orders"])  # attempted, unknown outcome
+    assert RiskGate.load(RISK, tmp_path / "risk.json", 10_000.0).peak_equity == 11_000.0
+
+
+def test_interruption_persistence_failure_neither_masks_the_send_failure_nor_skips_the_gate(
+        tmp_path, capsys):
+    (tmp_path / "blocker").write_text("not a directory", encoding="utf-8")
+    broker = DyingBroker(11_000.0, {}, {"SXR8": 50.0, "IUSM": 20.0},
+                         fail_after=0, error=RuntimeError)
+    with pytest.raises(RuntimeError):  # the send failure, not the journal failure
+        run_cycle(broker, SIGNALS, RISK, CFG,
+                  state_path=tmp_path / "risk.json",
+                  journal_path=tmp_path / "blocker" / "journal.jsonl",
+                  starting_capital=10_000.0, now=NOW, dry_run=False)
+    # the risk state is attempted even though the journal append failed
+    assert RiskGate.load(RISK, tmp_path / "risk.json", 10_000.0).peak_equity == 11_000.0
+    assert "journal append failed" in capsys.readouterr().err
+
+
+def test_completed_cycle_journals_no_interruption(tmp_path):
+    _run(tmp_path, FakeBroker(10_000.0, {}, {"SXR8": 50.0, "IUSM": 20.0}))
+    [line] = (tmp_path / "journal.jsonl").read_text(encoding="utf-8").splitlines()
+    assert json.loads(line)["interruption"] is None

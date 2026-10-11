@@ -39,6 +39,30 @@ Bras contrôle optionnel : GSM8K train (intermédiaire DAPO ↔ TinyGSM en diffi
 - GPU : étage moyen po-2026 (16 Go, ~6,7 Go libres au claim) — suffisant pour 0.8-2B en QLoRA.
 - Verdict attendu : le classement 2B > 0.8B **tient-il** sur tâche calibrée ? Si oui sur xlam mais pas sur TinyGSM, la « trainabilité RL » mesurée sur DAPO était bien un artefact de difficulté, pas une propriété des backbones.
 
+## Résultats — runs GRPO Hermes (2026-10-08, acceptance 2 partielle)
+
+Premiers runs du plan ci-dessus, côté Qwen3.5-0.8B (2/2 seeds). Harnais inchangé,
+`run --dataset hermes` (substitut documenté de xlam, cf « Décision »). Manifestes :
+`scripts/results/p15294_hermes_grpo/qwen35_seed{0,1}.json` ; entrée REGISTRY
+« P15294 Hermes GRPO — Qwen3.5-0.8B 2/2 seeds ».
+
+| seed | pre | post | Δ | longueur eval |
+|---|---|---|---|---|
+| 0 | 0,2063 | 0,2688 | +0,0625 | 399 → 402 |
+| 1 | 0,1688 | 0,6063 | +0,4375 | 393 → 538 |
+
+**Ce que cela répond (acceptance 3, côté 0.8B)** : le même backbone, la même
+recette et le même budget qui rendaient +0,0063 ± 0,0063 (plat, courbes erratiques)
+sur DAPO-Math-17k rendent **+0,2500 ± 0,1875** sur Hermes, 2/2 seeds post>pre,
+sans effondrement de longueur. Le verdict M19 côté 0.8B était donc bien un
+artefact de casting : la tâche olympiaque masquait le signal RL du petit modèle
+au lieu de le mesurer.
+
+**Ce qui reste ouvert (acceptance 2, côté 2B)** : les runs MiniCPM5-2B × hermes ×
+2 seeds sont en chaîne détachée sur le 3070 (~13 h/run, seed 0 puis seed 1
+enchaînés automatiquement) ; le classement 2B > 0.8B ne se prononce qu'à leur
+livraison — `summarize` exige ≥ 2 modèles pour le verdict de paire.
+
 ## Hors périmètre
 
 - #15293 (retest ≥ 8-9B) : route explicitement vers po-2024/ai-01 (24 Go) — pas ce grain.

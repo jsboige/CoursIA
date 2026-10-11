@@ -14,7 +14,7 @@ store partage. Deux outils courants mentent silencieusement dessus :
   disparu. Teste avant la detection du lien, il classe une jonction **pendante**
   en « pas de checkout » — et l'affichage la rend `reel`, c'est-a-dire l'exact
   contraire de la verite. Mesure po-2025 (2026-10-08) : 14 jonctions pendantes
-  lues `absent`/`reel`. Detail : `docs/lean/junctions-scan-po-2025.md`.
+  lues `absent`/`reel`. Detail : `docs/lean/junctions-scan-po-2024.md` §4 « Seconde occurrence consolidée (po-2025) » (mesure intégrale préservée sur le dashboard RooSync workspace-CoursIA, 08/10).
 
 Ensemble, les trois fabriquent un verdict « cache purge, cold-build 30 min requis »
 a partir d'un cache parfaitement sain. Cette confusion a immobilise une lane Lean
@@ -93,7 +93,7 @@ def analyse_lake(lake: Path, cache: dict[str, int]) -> dict:
     # La detection du lien precede le test d'existence : `exists()` SUIT le lien et
     # rend False des que la CIBLE a disparu. Teste en premier, il classait une
     # jonction pendante en `absent`, et l'affichage ligne ~158 la rendait `reel` --
-    # l'inverse de la verite (14 jonctions po-2025, cf junctions-scan-po-2025.md).
+    # l'inverse de la verite (14 jonctions po-2025, cf junctions-scan-po-2024.md §4, seconde occurrence).
     # `islink()` est False sur une junction Windows : c'est la divergence de chemin
     # qui la revele, pas l'API dediee (`is_junction()` n'existe qu'a partir de 3.12).
     real = Path(os.path.realpath(mathlib))

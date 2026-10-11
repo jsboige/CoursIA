@@ -112,8 +112,6 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 
 Les notebooks NON EXÉCUTÉS doivent être exécutés (kernel local pour les indépendants, QC Cloud pour ceux qui requièrent QuantBook) avant de pouvoir être marqués EXÉCUTÉ. Aucun raccourci toléré.
 
----
-
 ## Aperçu — le trading quantitatif en images
 
 Chaque notebook de la série rend visible un geste quantitatif distinct, dans une figure extraite des sorties réelles des notebooks. Plutôt qu'une galerie séparée du propos, ces figures sont replacées ci-dessous dans leur progression pédagogique — du premier backtest QuantBook aux agents de renforcement profond — au plus près du concept qu'elles illustrent. La provenance détaillée (cellule, poids, alt-text) est documentée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).

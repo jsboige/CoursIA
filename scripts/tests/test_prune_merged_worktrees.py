@@ -2562,3 +2562,77 @@ class TestScanRootMultiFarms:
         expected = pmw._ancestor_repo_root(
             Path(pmw.__file__).resolve().parent)
         assert pmw.current_repo_root() == expected
+
+
+# ---------------------------------------------------------------------------
+# #20007 -- jonctions NTFS : predicat is_link_like + retrait sans suivre la cible
+# ---------------------------------------------------------------------------
+
+
+def _make_junction(link: Path, target: Path) -> None:
+    """Cree une jonction NTFS `link -> target`.
+
+    `mklink /J` ne demande aucun privilege (contrairement a un symlink, qui
+    exige Developer Mode ou une elevation) : c'est ce qui rend la jonction
+    courante pour partager un `node_modules` entre worktrees, et ce qui rend
+    le defaut #20007 atteignable sans configuration particuliere.
+    """
+    proc = subprocess.run(
+        ["cmd", "/c", "mklink", "/J", str(link), str(target)],
+        capture_output=True, text=True, check=False,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        pytest.skip(f"mklink indisponible : {(proc.stderr or '').strip()[:120]}")
+
+
+class TestIsLinkLike:
+    """Predicat pur, sans plateforme : il ne doit pas elargir la branche
+    `unlink` au-dela des liens."""
+
+    def test_plain_dir_file_and_missing_are_not_links(self, tmp_path):
+        d = tmp_path / "plain_dir"
+        d.mkdir()
+        f = tmp_path / "plain.txt"
+        f.write_text("x", encoding="utf-8")
+        assert pmw.is_link_like(d) is False
+        assert pmw.is_link_like(f) is False
+        assert pmw.is_link_like(tmp_path / "absent") is False
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="#20007 : jonction NTFS")
+class TestWindowsJunctionIsLinkLike:
+    def test_junction_is_seen_though_is_symlink_is_false(self, tmp_path):
+        """Le controle negatif qui fonde #20007 : le predicat d'origine ne
+        voit PAS une jonction -- et c'est precisement ce qui rendait le
+        defaut silencieux, la cible tombant dans la branche `is_dir()`."""
+        target = tmp_path / "real"
+        target.mkdir()
+        link = tmp_path / "node_modules"
+        _make_junction(link, target)
+
+        assert link.is_symlink() is False      # le predicat d'origine
+        assert os.path.islink(link) is False   # et son equivalent os.path
+        assert link.is_dir() is True           # d'ou la mauvaise branche
+        assert pmw.is_link_like(link) is True  # celui qui repond
+
+    def test_clean_removes_junction_and_spares_target(self, tmp_path):
+        """Le defaut mesure : `rmtree` leve, `ignore_errors=True` l'avale,
+        la jonction reste et `removed` la tait -- puis `git worktree remove`
+        echoue sur l'untracked restant (#14619)."""
+        target = tmp_path / "real"
+        target.mkdir()
+        (target / "marker.txt").write_text("x", encoding="utf-8")
+        link = tmp_path / "node_modules"
+        _make_junction(link, target)
+
+        wt = _make_status(path=str(tmp_path),
+                          untracked_paths=["node_modules/"])
+        removed = pmw.clean_tolerated_artifacts(wt)
+
+        assert "node_modules/" in removed, \
+            "la jonction doit etre retiree ET listee (#20007)"
+        assert not link.exists()
+        # Garde de surete : on retire le LIEN, jamais la cible.
+        assert target.is_dir(), "la cible de la jonction doit survivre"
+        assert (target / "marker.txt").read_text(encoding="utf-8") == "x"

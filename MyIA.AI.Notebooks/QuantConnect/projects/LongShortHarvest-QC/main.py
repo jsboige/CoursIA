@@ -1,6 +1,6 @@
 #region imports
 from AlgorithmImports import *
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -17,6 +17,12 @@ from sklearn.preprocessing import StandardScaler
 # capitalisations a poids egaux, sans GLD, sans stop, sans ML, sans jambe courte),
 # fee_mult (1 = frais inchanges). Valeur du portefeuille a chaque cloture dans le
 # graphique "shadow" (contrat de rejeu en ombre, #18923).
+#
+# Date du VIX (#19837) : la ligne CBOE du jour D est publiee apres la cloture. Datee
+# Time = D sans heure de fin, Lean la livre a D 00:00 et une decision prise pendant la
+# seance de D lit la cloture de D. Le mode lag (defaut) la date a D + 1 ; le mode base
+# garde la lecture du jour meme du code d'origine, pour la mesure. Les compteurs
+# "VIX same day" et "Train VIX ahead" sont publies en fin de run.
 
 
 class _ScaledFeeModel(FeeModel):
@@ -44,8 +50,8 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
         self.SetCash(100000)
         self.SetBrokerageModel(BrokerageName.InteractiveBrokersBrokerage, AccountType.Margin)
 
-        self.mode = self.GetParameter("mode") or "base"
-        if self.mode not in ("base", "top4"):
+        self.mode = self.GetParameter("mode") or "lag"
+        if self.mode not in ("base", "lag", "top4"):
             raise ValueError(f"mode inconnu : {self.mode}")
         self.fee_mult = float(self.GetParameter("fee_mult") or 1)
         if self.fee_mult != 1.0:
@@ -59,6 +65,8 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
 
         self.gld = self.AddEquity("GLD", Resolution.Daily).Symbol
 
+        # Decalage de livraison du VIX, fixe avant AddData (0 = lecture du jour meme).
+        VolatilityHarvestML_LongShort.CBOE.lag_days = 0 if self.mode == "base" else 1
         self.vix = self.AddData(self.CBOE, "VIX", Resolution.Daily).Symbol
 
         self.long_gross = float(self.GetParameter("long_gross") or 0.9)
@@ -105,6 +113,12 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
         self.min_training = 504
 
         self.AddUniverse(self.CoarseSelection, self.FineSelection)
+
+        # Compteurs de la date du VIX (#19837)
+        self.n_decisions = 0
+        self.n_vix_same_day = 0
+        self.n_train = 0
+        self.n_train_vix_ahead = 0
 
         # Comptes du graphique shadow (contrat #18923)
         self.start_value = 100000.0
@@ -185,6 +199,12 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
         self.Plot("shadow", "fees", self.Portfolio.TotalFees / self.start_value)
         self.Plot("shadow", "turnover", self.traded)
         self.closes += 1
+
+    def OnEndOfAlgorithm(self):
+        self.SetRuntimeStatistic("Decisions", str(self.n_decisions))
+        self.SetRuntimeStatistic("VIX same day", str(self.n_vix_same_day))
+        self.SetRuntimeStatistic("Trainings", str(self.n_train))
+        self.SetRuntimeStatistic("Train VIX ahead", str(self.n_train_vix_ahead))
 
     def _safe_set_holdings(self, symbol, target_weight):
         pv = float(self.Portfolio.TotalPortfolioValue)
@@ -402,6 +422,10 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
         if len(vix_closes) < self.min_training or len(spy_closes) < self.min_training:
             return
 
+        self.n_train += 1
+        if self.LastVixDay(vix_hist) > spy_hist.loc[self.spy].index[-1].date().toordinal():
+            self.n_train_vix_ahead += 1
+
         X, y = [], []
         for i in range(200, len(spy_closes) - 21):
             feats = self.GetFeatures(vix_closes[:i], spy_closes[:i])
@@ -423,6 +447,10 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
         self.trained = True
 
     class CBOE(PythonData):
+        # Jours de decalage entre le jour de bourse d'une ligne et sa livraison (0 = code
+        # d'origine ; 1 en mode lag, fixe par Initialize avant AddData).
+        lag_days = 0
+
         def GetSource(self, config, date, isLive):
             return SubscriptionDataSource(
                 "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
@@ -437,8 +465,10 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
             try:
                 bar = VolatilityHarvestML_LongShort.CBOE()
                 bar.Symbol = config.Symbol
-                bar.Time = datetime.strptime(data[0], "%m/%d/%Y")
+                tradeday = datetime.strptime(data[0], "%m/%d/%Y")
+                bar.Time = tradeday + timedelta(days=VolatilityHarvestML_LongShort.CBOE.lag_days)
                 bar.Value = float(data[4])
+                bar["tradeday"] = float(tradeday.toordinal())
                 bar["close"] = float(data[4])
                 bar["open"] = float(data[1])
                 bar["high"] = float(data[2])
@@ -446,6 +476,13 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
                 return bar
             except:
                 return None
+
+    def LastVixDay(self, vix_hist):
+        # Jour de bourse de la derniere ligne VIX visible (colonne tradeday).
+        frame = vix_hist.loc[self.vix]
+        if "tradeday" in frame.columns:
+            return int(frame["tradeday"].values[-1])
+        return frame.index[-1].date().toordinal()
 
     def CheckSignal_Long(self):
         if self.IsWarmingUp:
@@ -466,6 +503,10 @@ class VolatilityHarvestML_LongShort(QCAlgorithm):
 
         if len(vix_closes) < 50 or len(spy_closes) < 200:
             return
+
+        self.n_decisions += 1
+        if self.LastVixDay(vix_hist) == self.Time.date().toordinal():
+            self.n_vix_same_day += 1
 
         current_vix = float(vix_closes[-1])
         vix_sma = float(np.mean(vix_closes[-20:]))
