@@ -21,6 +21,7 @@ with the corresponding test name visible in the diff.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -57,6 +58,75 @@ def _run_diff(base: dict, head: dict, tmp_path: Path) -> subprocess.CompletedPro
         text=True,
         encoding="utf-8",
         errors="replace",
+    )
+
+
+def _git(repo: Path, *args: str) -> None:
+    proc = subprocess.run(
+        ["git", *args], cwd=str(repo), capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 0, f"git {args} failed: {proc.stderr}"
+
+
+def _make_repo(
+    tmp_path: Path,
+    moves: list[tuple[str, str]],
+    deletions: list[str] = (),
+    additions: list[str] = (),
+) -> Path:
+    """Mini-repo Git a deux commits : base (branche main) puis tete.
+
+    Les `moves` passent par `git mv` (renames enregistres), les `deletions`
+    par `git rm` (suppressions sans rename), les `additions` par creation
+    (fichiers sans relation). C'est la verite Git que le comparateur exige
+    depuis la reserve #20274 : l'absence sur disque ne prouve pas la
+    relation, seul le rename enregistre la prouve.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _git(repo, "config", "user.name", "test")
+    _git(repo, "config", "user.email", "test@example.com")
+    for path in [old for old, _ in moves] + list(deletions):
+        f = repo / path
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text("base\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "base")
+    _git(repo, "checkout", "-q", "-b", "head")
+    for old, new in moves:
+        # rename(2) exige le repertoire destination : git mv ne le cree pas.
+        (repo / new).parent.mkdir(parents=True, exist_ok=True)
+        _git(repo, "mv", old, new)
+    for path in deletions:
+        _git(repo, "rm", "-q", path)
+    for path in additions:
+        f = repo / path
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text("fresh\n", encoding="utf-8")
+        _git(repo, "add", path)
+    _git(repo, "commit", "-qm", "head")
+    return repo
+
+
+def _run_diff_in(
+    base: dict, head: dict, repo: Path, tmp_path: Path
+) -> subprocess.CompletedProcess:
+    """_run_diff avec cwd=mini-repo et FAST_LANE_BASE=main (la base du repo)."""
+    base_p = tmp_path / "base.json"
+    head_p = tmp_path / "head.json"
+    base_p.write_text(json.dumps(base), encoding="utf-8")
+    head_p.write_text(json.dumps(head), encoding="utf-8")
+    env = {**os.environ, "FAST_LANE_BASE": "main"}
+    return subprocess.run(
+        [sys.executable, str(DIFF), str(base_p), str(head_p)],
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
     )
 
 
@@ -114,41 +184,75 @@ def test_diff_fails_on_injected_html_404(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # #20274 -- appariement des renames (T2-01). Un `git mv` de dossier re-keye
 # chaque violation : l'ancienne cle part en CORRIGEES, la nouvelle arrive en
-# NOUVELLES, sans aucun changement du backlog (mesure T2-01 : 12/12). Le
-# comparator apparie un couple (class, href) identique dont le README de
-# base a disparu du disque (cwd = racine au state head). Les 2 temoins
-# ci-dessous sont les deux cotes du discriminant.
+# NOUVELLES, sans aucun changement du backlog (mesure T2-01 : 12/12).
+# Reserve de review sur #20274 : l'appariement ne se prouve plus par absence
+# sur disque (une suppression + une introduction unrelated passent le meme
+# temoin disque), mais par le MAPPING GIT des renommages -- seul un rename
+# enregistre par Git prouve la relation. Chaque temoin construit un mini-repo
+# a deux commits (base = branche main, tete = branche head) ou la verite Git
+# est controlee : moves par `git mv`, temoins negatifs par suppression sans
+# rename ou creation sans relation.
 # ---------------------------------------------------------------------------
 
 
 def test_diff_pairs_violation_moved_by_rename(tmp_path: Path) -> None:
-    """Temoin positif : re-key par rename => DEPLACEES, exit 0.
+    """Temoin positif : re-key par VRAI rename Git => DEPLACEES, exit 0.
 
-    base porte la violation sur un chemin invente (absent du disque au cwd),
-    head la porte sur un autre chemin : couple (class, href) identique +
-    README de base disparu => deplacement, pas introduction.
+    base porte la violation sur zz-old-dir/README.md, head la porte sur
+    zz-new-dir/README.md ; le mini-repo enregistre le rename entre les deux
+    par `git mv`. Couple (class, href) identique + rename Git exact =>
+    deplacement, pas introduction.
     """
+    repo = _make_repo(tmp_path, moves=[("zz-old-dir/README.md", "zz-new-dir/README.md")])
     base = {"violations": [
         {"class": "HTML_404", "readme": "zz-old-dir/README.md", "href": "notebooks/1.1-X.html"}
     ], "n_violations": 1}
     head = {"violations": [
         {"class": "HTML_404", "readme": "zz-new-dir/README.md", "href": "notebooks/1.1-X.html"}
     ], "n_violations": 1}
-    proc = _run_diff(base, head, tmp_path)
+    proc = _run_diff_in(base, head, repo, tmp_path)
     assert proc.returncode == 0, f"diff exit={proc.returncode}\nstdout={proc.stdout}\nstderr={proc.stderr}"
     assert "NOUVELLES=0" in proc.stdout
     assert "DEPLACEES=1" in proc.stdout
     assert "MOVED" in proc.stdout
 
 
+def test_diff_refuses_pairing_without_git_rename(tmp_path: Path) -> None:
+    """Temoin negatif (reserve #20274) : suppression + introduction unrelated.
+
+    Le README de base est SUPPRIME (git rm) et le nouveau README est un
+    fichier CREE sans relation : l'ancien chemin est bien absent du disque --
+    c'est exactement le faux temoin que l'absence seule blanchissait -- mais
+    aucun rename Git ne mappe l'ancien sur le nouveau. La violation re-keyee
+    reste une NOUVELLE (exit 1).
+    """
+    repo = _make_repo(
+        tmp_path,
+        moves=[],
+        deletions=["zz-old-dir/README.md"],
+        additions=["zz-new-dir/README.md"],
+    )
+    base = {"violations": [
+        {"class": "HTML_404", "readme": "zz-old-dir/README.md", "href": "notebooks/1.1-X.html"}
+    ], "n_violations": 1}
+    head = {"violations": [
+        {"class": "HTML_404", "readme": "zz-new-dir/README.md", "href": "notebooks/1.1-X.html"}
+    ], "n_violations": 1}
+    proc = _run_diff_in(base, head, repo, tmp_path)
+    assert proc.returncode == 1, f"diff aurait du exit=1, exit={proc.returncode}\nstdout={proc.stdout}"
+    assert "NOUVELLES=1" in proc.stdout
+    assert "DEPLACEES=0" in proc.stdout
+
+
 def test_diff_refuses_pairing_when_base_readme_still_exists(tmp_path: Path) -> None:
     """Temoin negatif : le README de base EXISTE encore au cwd => pas d'appariement.
 
     Re-key d'une violation reelle (son chemin existe au REPO_ROOT par
-    construction) vers un chemin invente : la disparition n'est pas prouvee,
-    la violation re-keyee reste une NOUVELLE (exit 1). C'est ce temoin qui
-    empeche l'appariement de blanchir un simple copier-coller de lien casse
-    vers un nouveau fichier.
+    construction) vers un chemin invente : ni le rename Git (absent du
+    mapping) ni la disparition sur disque ne sont prouves, la violation
+    re-keyee reste une NOUVELLE (exit 1). C'est ce temoin qui empeche
+    l'appariement de blanchir un simple copier-coller de lien casse vers un
+    nouveau fichier.
     """
     payload = _run_dump()
     real = next(v for v in payload["violations"])
@@ -163,22 +267,54 @@ def test_diff_refuses_pairing_when_base_readme_still_exists(tmp_path: Path) -> N
 
 
 def test_diff_pairs_href_rekey_in_unchanged_readme(tmp_path: Path) -> None:
-    """Temoin positif passe 2 : le href suit un dossier deplace, README identique.
+    """Temoin positif passe 2 : le href suit une cible renommee par Git.
 
     Le README n'a pas bouge, le href change parce que sa cible a demenage :
-    l'ancien parent (invente, absent du disque au cwd) a disparu, le nouveau
-    parent (repertoire reel du depot) existe => deplacement, pas introduction.
+    le mini-repo enregistre le rename zz-gone-dir/notebooks/1.1-X.html ->
+    real-target/1.1-X.html par `git mv`. Rename Git sur les chemins resolus
+    + nouveau parent present => deplacement, pas introduction.
     """
+    repo = _make_repo(
+        tmp_path,
+        moves=[("zz-gone-dir/notebooks/1.1-X.html", "real-target/1.1-X.html")],
+    )
     base = {"violations": [
         {"class": "HTML_404", "readme": "docs/README.md", "href": "../zz-gone-dir/notebooks/1.1-X.html"}
     ], "n_violations": 1}
     head = {"violations": [
-        {"class": "HTML_404", "readme": "docs/README.md", "href": "../scripts/notebook_tools/1.1-X.html"}
+        {"class": "HTML_404", "readme": "docs/README.md", "href": "../real-target/1.1-X.html"}
     ], "n_violations": 1}
-    proc = _run_diff(base, head, tmp_path)
+    proc = _run_diff_in(base, head, repo, tmp_path)
     assert proc.returncode == 0, f"diff exit={proc.returncode}\nstdout={proc.stdout}\nstderr={proc.stderr}"
     assert "NOUVELLES=0" in proc.stdout
     assert "DEPLACEES=1" in proc.stdout
+
+
+def test_diff_refuses_href_rekey_without_git_rename(tmp_path: Path) -> None:
+    """Temoin negatif (reserve #20274) : re-key de href sans relation Git.
+
+    La cible ancienne est SUPPRIMEE (git rm) et la cible nouvelle est CREEE
+    independamment : l'ancien parent a bien disparu du disque -- le faux
+    temoin que l'absence seule blanchissait -- mais aucun rename Git ne mappe
+    la cible resolue ancienne sur la nouvelle. Introduction, pas deplacement
+    (exit 1).
+    """
+    repo = _make_repo(
+        tmp_path,
+        moves=[],
+        deletions=["zz-gone-dir/1.1-X.html"],
+        additions=["real-target/1.1-X.html"],
+    )
+    base = {"violations": [
+        {"class": "HTML_404", "readme": "docs/README.md", "href": "../zz-gone-dir/1.1-X.html"}
+    ], "n_violations": 1}
+    head = {"violations": [
+        {"class": "HTML_404", "readme": "docs/README.md", "href": "../real-target/1.1-X.html"}
+    ], "n_violations": 1}
+    proc = _run_diff_in(base, head, repo, tmp_path)
+    assert proc.returncode == 1, f"diff aurait du exit=1, exit={proc.returncode}\nstdout={proc.stdout}"
+    assert "NOUVELLES=1" in proc.stdout
+    assert "DEPLACEES=0" in proc.stdout
 
 
 def test_diff_refuses_href_rekey_when_old_target_dir_exists(tmp_path: Path) -> None:

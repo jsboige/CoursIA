@@ -19,19 +19,29 @@ touching it, in two shapes -- the identical triple under a new README path
 unchanged README (violations in referent READMEs pointing INTO the renamed
 folder). Both leave the backlog count unchanged (measured on the T2-01
 rename: NOUVELLES=12, CORRIGEES=12, strictly symmetric; 8 of shape 1,
-4 of shape 2). Pairing rules, each proven on disk at head state (cwd =
-repo root, the fast-lane context):
+4 of shape 2).
+
+Pairing requires a GIT rename mapping (review reserve on #20274: absence
+on disk proves nothing about the relation -- only a rename recorded by
+Git does). The mapping is `git diff --name-status --find-renames
+--diff-filter=R $FAST_LANE_BASE...HEAD` resolved at the repo root (cwd),
+the same base convention as the fast-lane engine (env `FAST_LANE_BASE`,
+default `origin/main`). Fail-closed: if git is unavailable, the ref is
+unknown or the diff fails, the mapping is EMPTY and no pairing happens --
+every new violation stays a NEW violation.
 
   shape 1 -- a "new" (class, readme, href) whose exact (class, href) twin
-  sits in the fixed set AND whose base-side README no longer exists on
+  sits in the fixed set AND whose base-side README maps to it by Git
+  rename (old readme path -> new readme path) AND no longer exists on
   disk is a MOVED violation.
   shape 2 -- a "new" (class, readme, href') in the SAME readme as a fixed
-  (class, readme, href), where the resolved old href's parent directory
-  has vanished and the resolved new href's parent exists: the link
-  tracked a folder that moved.
+  (class, readme, href), where the resolved old href maps to the resolved
+  new href by Git rename (old target -> new target) AND the new target's
+  parent directory exists: the link tracked a folder that moved.
 
-The disk checks keep the pairing honest -- a re-key whose base-side file
-or directory still exists is NOT a move and stays a NEW violation.
+The Git mapping keeps the pairing honest -- a re-key whose base-side file
+was deleted without a rename, or whose new target is an unrelated fresh
+file, is NOT a move and stays a NEW violation.
 
 Usage:
     python diff_readme_link_violations.py <base.json> <head.json>
@@ -40,7 +50,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import posixpath
+import subprocess
 import sys
 from pathlib import Path
 
@@ -53,13 +65,69 @@ def _resolve_href(readme: str, href: str) -> str:
     return posixpath.normpath(posixpath.join(posixpath.dirname(readme), href))
 
 
+def _resolve_base_ref() -> str:
+    """Base du delta pour le mapping Git (meme convention que le fast-lane).
+
+    FAST_LANE_BASE si posee, sinon origin/main. Sur un PUSH main
+    (origin/main == HEAD, le runner checkout la tete poussee), le delta
+    pertinent est le commit pousse : HEAD^ -- sinon le mapping serait vide
+    et un rename merge par push rougirait le garde a tort.
+    """
+    ref = os.environ.get("FAST_LANE_BASE", "origin/main")
+    if ref == "origin/main":
+        try:
+            head = subprocess.run(["git", "rev-parse", "HEAD"],
+                                  capture_output=True, text=True, timeout=15,
+                                  encoding="utf-8", errors="replace")
+            origin = subprocess.run(["git", "rev-parse", "origin/main"],
+                                    capture_output=True, text=True, timeout=15,
+                                    encoding="utf-8", errors="replace")
+        except (subprocess.SubprocessError, OSError):
+            return ref
+        if (head.returncode == 0 and origin.returncode == 0
+                and head.stdout == origin.stdout):
+            return "HEAD^"
+    return ref
+
+
+def _git_renames(base_ref: str) -> dict[str, str]:
+    """Git rename mapping base...HEAD : ancien chemin -> nouveau chemin.
+
+    Fail-closed (reserve #20274) : toute defaillance (git absent, pas de
+    depot, ref inconnue, timeout) rend une map VIDE -- aucun appariement
+    MOVED n'est alors autorise, chaque violation nouvelle reste une
+    NOUVELLE. L'absence sur disque ne prouve pas la relation ; seul un
+    rename enregistre par Git la prouve.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "diff", "--name-status", "--find-renames",
+             "--diff-filter=R", f"{base_ref}...HEAD"],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=30,
+        )
+    except (subprocess.SubprocessError, OSError):
+        return {}
+    if proc.returncode != 0:
+        return {}
+    renames: dict[str, str] = {}
+    for line in proc.stdout.splitlines():
+        parts = line.split("\t")
+        if len(parts) == 3 and parts[0].startswith("R"):
+            renames[parts[1]] = parts[2]
+    return renames
+
+
 def _pair_renames(
-    new: list[tuple[str, str, str]], fixed: list[tuple[str, str, str]]
+    new: list[tuple[str, str, str]], fixed: list[tuple[str, str, str]],
+    renames: dict[str, str],
 ) -> tuple[list[tuple[str, str, str, str, str]], list[tuple[str, str, str]]]:
     """Split `new` into (moved, still_new) against `fixed`.
 
     moved entries are (class, old_readme, old_href, new_readme, new_href);
-    each fixed entry pairs at most once.
+    each fixed entry pairs at most once. Chaque appariement exige le mapping
+    Git de renommages (reserve #20274) : l'absence sur disque seule n'apparie
+    plus rien.
     """
     fixed_by_ch: dict[tuple[str, str], list[str]] = {}
     fixed_by_cr: dict[tuple[str, str], list[str]] = {}
@@ -69,15 +137,21 @@ def _pair_renames(
     moved: list[tuple[str, str, str, str, str]] = []
     still_new: list[tuple[str, str, str]] = []
     for cls, readme, href in new:
-        # shape 1 -- le README lui-meme a demenage, href inchangé.
+        # shape 1 -- le README lui-meme a demenage, href inchangé : le
+        # rename Git doit mapper l'ancien README exactement sur le nouveau.
         candidates = fixed_by_ch.get((cls, href), [])
-        source = next((r for r in candidates if not Path(r).is_file()), None)
+        source = next(
+            (r for r in candidates
+             if renames.get(r) == readme and not Path(r).is_file()),
+            None,
+        )
         if source is not None:
             candidates.remove(source)
             fixed_by_cr.get((cls, source), []).remove(href)
             moved.append((cls, source, href, readme, href))
             continue
-        # shape 2 -- README inchangé, le href suit un dossier deplacé.
+        # shape 2 -- README inchangé, le href suit une cible deplacee : le
+        # rename Git doit mapper la cible resolue ancienne sur la nouvelle.
         paired_href = None
         for h_old in fixed_by_cr.get((cls, readme), []):
             if h_old == href:
@@ -86,7 +160,7 @@ def _pair_renames(
             p_new = _resolve_href(readme, href)
             if p_old == p_new:
                 continue
-            if not Path(p_old).parent.is_dir() and Path(p_new).parent.is_dir():
+            if renames.get(p_old) == p_new and Path(p_new).parent.is_dir():
                 paired_href = h_old
                 break
         if paired_href is not None:
@@ -121,13 +195,15 @@ def main() -> int:
     new = sorted(head_set - base_set)
     fixed = sorted(base_set - head_set)
 
-    moved, still_new = _pair_renames(new, fixed)
+    base_ref = _resolve_base_ref()
+    renames = _git_renames(base_ref)
+    moved, still_new = _pair_renames(new, fixed, renames)
     consumed = {(cls, old_readme, old_href) for cls, old_readme, old_href, _, _ in moved}
     fixed = [t for t in fixed if t not in consumed]
 
     print(f"README-link delta: base={len(base_set)} head={len(head_set)} "
           f"NOUVELLES={len(still_new)} CORRIGEES={len(fixed)} "
-          f"DEPLACEES={len(moved)}")
+          f"DEPLACEES={len(moved)} git-renames={len(renames)} (base {base_ref})")
     for cls, readme, href in still_new:
         print(f"  + {cls}  {readme}  ->  {href}")
     for cls, old_readme, old_href, new_readme, new_href in moved:
