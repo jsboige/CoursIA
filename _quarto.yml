@@ -2160,6 +2160,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-07c-ERC20-Lean.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-08b-MEV-LP-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb"
