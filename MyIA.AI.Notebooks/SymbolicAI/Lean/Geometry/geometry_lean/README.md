@@ -11,6 +11,7 @@ du programme gradué #17544 (« que garantit "prouvé par Gröbner" ? »).
 | Module | Contenu | Notebook Python doublé |
 |---|---|---|
 | `Geometry.MidpointHypotenuse` | Théorème du milieu de l'hypoténuse : équidistance du milieu aux trois sommets, rayon = hypoténuse/2 | `Geometry-01-From-Figure-To-Equation.ipynb` (fil rouge) |
+| `Geometry.WuMethod` | Ce que le test de Wu garantit : certificat idéal T1 (milieu de l'hypoténuse, `MvPolynomial`), théorème de Ceva T3 par identité maîtresse (deux directions), témoin négatif et piège des rapports dirigés réfutés | `Geometry-03-Wu-Method-Python.ipynb` |
 
 L'escalier d'entrée de la sous-série — [`Lean-38-Capstone-Geometry-Lean-Python.ipynb`](../../Lean-38-Capstone-Geometry-Lean-Python.ipynb), carnet de la série parente — est le consommateur pédagogique de ce premier module : il part de la figure du 01, calcule avec `sympy`, puis monte jusqu'à la preuve formelle ci-dessus.
 
@@ -29,7 +30,6 @@ sur chaque PR touchant le lac.
 
 ## Feuille de route
 
-- Companion du 03 (méthode de Wu) : s'appuyer sur `MvPolynomial` de Mathlib.
 - Companion du 02 (bases de Gröbner) : interroger ce que Mathlib sait des
   idéaux et de l'appartenance (`Ideal` membership) — c'est précisément la
   question pédagogique de la position 05.
