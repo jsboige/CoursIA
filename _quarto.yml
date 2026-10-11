@@ -2085,6 +2085,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21b-MIMO-Converse-Native.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21c-Descente-Budget.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-04-Capstone-Digestion-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23b-Lean-ERC20-Native-Companion.ipynb"
