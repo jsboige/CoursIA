@@ -38,6 +38,7 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-05 | [05-Gibbard-Satterthwaite](05-Gibbard-Satterthwaite.ipynb) | Gibbard-Satterthwaite sans mystère : la manipulation comme témoin (ex-GT-22, re-slot #12375) | 30 min | COMPLET |
 | SC-06 | [06-Mobius-Aggregation-Pouvoir-Manipulation](06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Möbius sur le treillis des coalitions : dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée (See #12204) | 40 min | COMPLET |
 | SC-07 | [07-Committees-Core](07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas Hare/Droop, certificats de paiement et règle de l'entropie harmonique (arXiv 2609.11912, See #16848) | 40 min | COMPLET |
+| SC-08 | [08-Kemeny-RankedPairs-Dodgson](08-Kemeny-RankedPairs-Dodgson.ipynb) | Kemeny, Ranked Pairs et Dodgson : trois règles computationnellement dures — énumération des m! permutations contre formulation Z3 Optimize, la détermination du vainqueur NP-dure exhibée sur instances pédagogiques (Handbook of Computational Social Choice, See #19263) | 50 min | COMPLET |
 | SC-09 | [09-Committees-STV-Monroe-ChamberlinCourant](09-Committees-STV-Monroe-ChamberlinCourant.ipynb) | Comités multi-vainqueurs par classement : STV (Hare 1857, polynomial), Monroe (1995, NP-dur, quotas équilibrés floor/ceil par élu) et Chamberlin-Courant (1983, NP-dur), confrontation Z3 Optimize et profil discriminant (Handbook of Computational Social Choice ch. 6, See #19371) | 50 min | COMPLET |
 
 **Durée totale** : ~6h05
