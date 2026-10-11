@@ -3507,6 +3507,19 @@ def _stack_entry(pr, subjects):
     )
 
 
+def _patch_ids(mapping):
+    """Fake ``mod._patch_id`` : sha -> id, hors mapping -> None.
+
+    Le repli par sujets corrobore par le patch-id (#20263, controle negatif
+    de l'adjoint c6105057753) : les tests du repli patchent la mesure pour
+    rester hermetiques -- sans cela, la vraie mesure shellerait ``git`` sur
+    des SHA synthetiques et rendrait ``None`` (repli desactive de fait).
+    """
+    def fake(sha):
+        return mapping.get(sha)
+    return fake
+
+
 def _stack_index(*entries):
     return {e.number: e for e in entries}
 
@@ -3604,9 +3617,13 @@ def test_stack_top_rebased_is_detected(monkeypatch):
     Un rebase reecrit tous les SHA : pre-fix, l'intersection vide
     ecartait la candidate et la porte rendait READY le bas de pile
     perime -- exactement le cas que le contrat promet d'attraper
-    (« par sujet, jamais par SHA »).
+    (« par sujet, jamais par SHA »). Les patchs, eux, survivent au
+    rebase : la corroboration par patch-id (a<->x, b<->y) tient.
     """
     monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod, "_patch_id", _patch_ids({"a": "pA", "x": "pA", "b": "pB", "y": "pB"})
+    )
     index = _stack_index(
         _stack_entry(19548, {"a": "A", "b": "B"}),
         _stack_entry(19556, {"x": "A", "y": "B",
@@ -3622,6 +3639,57 @@ def test_stack_top_rebased_is_detected(monkeypatch):
     assert any("D: correctif absent du bas de pile" in r for r in reasons), reasons
 
 
+def test_stack_fortuitous_subject_collision_is_not_blocked(monkeypatch):
+    """#20263 (controle negatif de l'adjoint, dossier c6105057753) --
+    collision de titres GENGIN-FORTUITE : pas de pile, pas de blocage.
+
+    Deux branches INDEPENDANTES depuis main, chacune un commit « Fix:
+    validation » de contenu DIFFERENT (patch-ids distincts) et un apport
+    propre : le sujet partage seul ne corrobore rien. Pre-fix, la porte
+    appariait les deux dans CHAQUE sens et derive_verdict rendait BlocAGE
+    mutuel -- reproduit en git reel par le driver de la reserve. Post-fix,
+    le repli exige l'egalite de patch-id : aucune paire, verdict READY des
+    deux cotes.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod, "_patch_id", _patch_ids({"a": "pidA", "x": "pidX"})
+    )
+    index = _stack_index(
+        _stack_entry(19548, {"a": "Fix: validation", "b": "Add: apport A"}),
+        _stack_entry(19556, {"x": "Fix: validation", "y": "Add: apport B"}),
+    )
+    for target in (19548, 19556):
+        snapshot = _base_snapshot()
+        snapshot["number"] = target
+        verdict, reasons = mod.derive_verdict(
+            snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+        )
+        assert verdict == mod.VERDICT_READY, (target, reasons)
+        assert reasons == [], (target, reasons)
+
+
+def test_stack_subject_match_unmeasured_patch_does_not_block(monkeypatch):
+    """#20263 -- mesure de patch-id impossible : jamais de blocage fabrique.
+
+    Sujets partages mais patch-id incalculable des deux cotes (SHA
+    disparus, commits vides) : ``None`` ne corrobore pas -- la porte ne
+    refuse pas sur une mesure impossible.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(mod, "_patch_id", _patch_ids({}))
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"x": "A", "y": "B", "z": "C"}),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+
+
 def test_stack_rebased_linear_base_stays_silent(monkeypatch):
     """#20263 -- bas de pile rebati LINEAIRE : le silence d'ancetre tient.
 
@@ -3632,6 +3700,9 @@ def test_stack_rebased_linear_base_stays_silent(monkeypatch):
     bottom = mod.STACK_REF_PREFIX + "19548"
     top = mod.STACK_REF_PREFIX + "19556"
     monkeypatch.setattr(mod, "_git", _synthetic_git({(bottom, top)}))
+    monkeypatch.setattr(
+        mod, "_patch_id", _patch_ids({"a": "pA", "x": "pA", "b": "pB", "y": "pB"})
+    )
     index = _stack_index(
         _stack_entry(19548, {"a": "A", "b": "B"}),
         _stack_entry(19556, {"x": "A", "y": "B", "z": "C"}),
@@ -3652,6 +3723,9 @@ def test_stack_rebased_without_new_subject_is_not_blocked(monkeypatch):
     porte aucun sujet nouveau n'est pas un sommet perime.
     """
     monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod, "_patch_id", _patch_ids({"a": "pA", "x": "pA", "b": "pB", "y": "pB"})
+    )
     index = _stack_index(
         _stack_entry(19548, {"a": "A", "b": "B"}),
         _stack_entry(19556, {"x": "A", "y": "B"}),

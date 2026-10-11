@@ -1103,6 +1103,64 @@ def _subjects_of(entry: StackEntry) -> set[str]:
     return set(entry.subjects.values())
 
 
+_PATCH_ID_CACHE: dict[str, str | None] = {}
+
+
+def _patch_id(sha: str) -> str | None:
+    """``git patch-id --stable`` du commit, ou ``None`` si incalculable.
+
+    Le patch-id est l'identite de CONTENU d'un commit : il survit au rebase
+    (un rebase reecrit les SHA, pas les patchs). C'est la corroboration que
+    le repli par sujets exige -- cf ``_stack_partners``. Vide de diff (commit
+    de re-declenchement), fusion ou SHA absent : ``None``, jamais une
+    exception -- une mesure impossible ne doit pas fabriquer de refus.
+    """
+    if sha in _PATCH_ID_CACHE:
+        return _PATCH_ID_CACHE[sha]
+    # Pipeline unique : diff-tree produit le patch, patch-id le hache. Les
+    # deux vivent dans le meme sous-processus pour ne pas vehiculer le patch
+    # en Python (taille, encodage).
+    proc = subprocess.run(
+        f'git diff-tree -p {sha} | git patch-id --stable',
+        shell=True, capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
+    )
+    pid = proc.stdout.split()[0] if (proc.returncode == 0 and proc.stdout.split()) else None
+    _PATCH_ID_CACHE[sha] = pid
+    return pid
+
+
+def _subjects_corroborated(
+    mine: StackEntry, other: StackEntry, shared_subjects: set[str]
+) -> bool:
+    """Le repli par sujets est-il corrobore par le CONTENU des commits ?
+
+    Sujets partages seul = collision de titres, pas une pile : deux branches
+    independantes depuis ``main`` portent souvent le meme prefixe canonique
+    (« Fix: validation ... »). Un sujet ne compte que si AU MOINS une paire
+    de commits (un de chaque cote, meme sujet) partage le meme patch-id --
+    l'egalite qui survit au rebase. Un rebase a conflits resolu change le
+    patch : ce cas tres particulier n'est plus vu par la porte par sujets
+    (il est indiscernable d'une collision fortuite a ce niveau d'information
+    ; l'organe exact-head du dossier reste le filet). ``None`` (mesure
+    impossible) ne corrobore JAMAIS : echec de mesure => pas de blocage
+    fabrique.
+    """
+    other_by_subject: dict[str, list[str]] = {}
+    for sha, subject in other.subjects.items():
+        other_by_subject.setdefault(subject, []).append(sha)
+    for sha, subject in mine.subjects.items():
+        if subject not in shared_subjects:
+            continue
+        mine_pid = _patch_id(sha)
+        if mine_pid is None:
+            continue
+        for other_sha in other_by_subject.get(subject, []):
+            if _patch_id(other_sha) == mine_pid:
+                return True
+    return False
+
+
 def _is_stack_noise(subject: str) -> bool:
     return subject.startswith("Merge ") or any(
         token in subject for token in STACK_NOISE_SUBJECTS
@@ -1132,12 +1190,21 @@ def _stack_partners(target: int, index: dict[int, StackEntry]) -> list[int]:
             # signature du sommet de pile rebati que la porte existe pour
             # attraper. Repli sur les SUJETS partages (hors bruit), comme
             # le contrat publie le promet : « par sujet, jamais par SHA ».
-            # Les controles aval (ancetre lineaire, apport reel) restent
-            # appliques -- le repli n'elargit que la detection du candidat.
-            if not [
+            # #20263 ( controle negatif de l'adjoint, dossier c6105057753)
+            # -- un sujet partage seul ne prouve pas non plus la parente :
+            # deux branches INDEPENDANTES depuis main portent souvent le
+            # meme prefixe canonique, et la porte les appariait en BlocAGE
+            # mutuel. Le repli exige la corroboration de CONTENU : au moins
+            # un sujet partage dont les commits des deux cotes ont le MEME
+            # patch-id (egalite qui survit au rebase). Les controles aval
+            # (ancetre lineaire, apport reel) restent appliques.
+            shared = [
                 s for s in (mine & _subjects_of(other))
                 if not _is_stack_noise(s)
-            ]:
+            ]
+            if not shared:
+                continue
+            if not _subjects_corroborated(entry, other, set(shared)):
                 continue
         # Bas de pile lineaire : la tete de `target` est un ancetre de celle
         # de `other`, donc merger `target` d'abord est l'ordre correct.
