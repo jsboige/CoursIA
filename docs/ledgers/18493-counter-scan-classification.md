@@ -138,7 +138,7 @@ rougirait sur des equivalences correctes partout dans le depot.
 | `research_vrp_putwrite.ipynb` | c7 | 21 | `tilde_count` | **KEEP** | equivalence unitaire definitionnelle : conversion exacte d'une constante du code (252 jours ouvres/an, 4,184 kJ/kcal, 10 min/bloc) -- ne derive pas |
 | `Lean-10-LeanDojo.ipynb` | c2 | 22 | `config_dict_doc` | **KEEP** | borne unilaterale (`>100k`) sur une quantite qui ne decroit pas -- ne peut pas deriver faux ; doc de chois de preset |
 | `Lean-10-LeanDojo.ipynb` | c6 | 6 | `NOTE_runtime` | **EDIT** | litteral non derivable d'une mesure du carnet -- retire, mecanisme conserve |
-| `Lean-21-MIMO-Detection-Flips.ipynb` | c3 | 27 | `gt_runtime_threshold` | **KEEP** | logique operationnelle (`> 0 si ...`), pas un compteur -- faux positif de l'organe |
+| `MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb` | c3 | 27 | `gt_runtime_threshold` | **KEEP** | logique operationnelle (`> 0 si ...`), pas un compteur -- faux positif de l'organe |
 | `Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb` | c14 | 2 | `tilde_count` | **KEEP** | equivalence unitaire definitionnelle : conversion exacte d'une constante du code (252 jours ouvres/an, 4,184 kJ/kcal, 10 min/bloc) -- ne derive pas |
 | `Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb` | c14 | 3 | `tilde_count` | **KEEP** | equivalence unitaire definitionnelle : conversion exacte d'une constante du code (252 jours ouvres/an, 4,184 kJ/kcal, 10 min/bloc) -- ne derive pas |
 | `SC-20-Bitcoin-Scripting-Python.ipynb` | c27 | 24 | `tilde_count` | **KEEP** | equivalence unitaire definitionnelle : conversion exacte d'une constante du code (252 jours ouvres/an, 4,184 kJ/kcal, 10 min/bloc) -- ne derive pas |
