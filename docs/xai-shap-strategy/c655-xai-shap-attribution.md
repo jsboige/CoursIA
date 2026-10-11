@@ -146,7 +146,7 @@ Si build WSL Knots.Basic SUCCESS et quiescence narrow-cache hostile :
 - Code squelette + exécution locale `XAI-Shap-Attribution.ipynb` — cycle 2/3.
 - Sinon, pivot vers un autre grain DEEP de contenu narrow-cache hostile résolu.
 
----
+***
 
 ## Amendement c.741 (2026-09-20) — [CLAUDE.md § G.1](../../CLAUDE.md) vérif first-hand biblio
 
