@@ -22,10 +22,12 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 
 from fallacy_detection.align_academic_to_argumentum import (  # noqa: E402
     ARGUMENTUM_FAMILIES,
+    LOGIC_LABELS,
+    LOGIC_SOURCE,
+    MAFALDA_L2,
+    MAFALDA_SOURCE,
     Alignment,
     ArgumentumEntry,
-    LOGIC_13,
-    MAFALDA_L2,
     _jaccard,
     _norm,
     _tokens,
@@ -170,10 +172,10 @@ def test_align_not_found_when_no_overlap(argum: list[ArgumentumEntry]):
 
 def test_build_returns_alignments_and_report(taxo_path: Path):
     alignments, report = build(taxo_path)
-    # Logic-13 (15 entrees encodees) + MAFALDA-L2 (23) = 38 alignements.
-    assert len(alignments) == len(LOGIC_13) + len(MAFALDA_L2)
-    assert "Logic13" in report["by_source"]
-    assert "MAFALDA-L2" in report["by_source"]
+    # LOGIC (15 entrees encodees) + MAFALDA-L2 (23) = 38 alignements.
+    assert len(alignments) == len(LOGIC_LABELS) + len(MAFALDA_L2)
+    assert LOGIC_SOURCE in report["by_source"]
+    assert MAFALDA_SOURCE in report["by_source"]
     assert report["argumentum_total_leaves"] == 3
 
 
@@ -213,7 +215,7 @@ def test_main_writes_outputs(tmp_path: Path, taxo_path: Path):
     # Le CSV a un header + au moins 38 lignes de donnees.
     text = out_csv.read_text(encoding="utf-8")
     assert "academic_label" in text.splitlines()[0]
-    assert len(text.splitlines()) >= 1 + len(LOGIC_13) + len(MAFALDA_L2)
+    assert len(text.splitlines()) >= 1 + len(LOGIC_LABELS) + len(MAFALDA_L2)
 
 
 def test_main_report_to_stdout(taxo_path: Path, capsys):
@@ -221,8 +223,8 @@ def test_main_report_to_stdout(taxo_path: Path, capsys):
     assert rc == 0
     captured = capsys.readouterr()
     assert "Couverture academique" in captured.out
-    assert "Logic13" in captured.out
-    assert "MAFALDA-L2" in captured.out
+    assert LOGIC_SOURCE in captured.out
+    assert MAFALDA_SOURCE in captured.out
     assert "Familles Argumentum touchees" in captured.out
 
 
@@ -230,11 +232,11 @@ def test_main_report_to_stdout(taxo_path: Path, capsys):
 # Sanity : les listes academiques encodees sont conformes aux papiers.
 # ---------------------------------------------------------------------------
 
-def test_logic_13_has_core_types():
-    labels = {l for l, _ in LOGIC_13}
+def test_logic_labels_has_core_types():
+    labels = {l for l, _ in LOGIC_LABELS}
     # Les types les plus cites du papier Jin 2021 doivent etre presents.
     for core in ["Ad hominem", "Straw man", "Slippery slope", "Red herring"]:
-        assert core in labels, f"Logic-13 missing core type: {core}"
+        assert core in labels, f"inventaire LOGIC : type noyau manquant : {core}"
 
 
 def test_mafalda_l2_has_23_distinct_and_l1_categories():
