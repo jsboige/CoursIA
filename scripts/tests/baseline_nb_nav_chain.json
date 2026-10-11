@@ -167,7 +167,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -526,7 +526,7 @@
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
-      "kind": "orphan_entry",
+      "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15d-CechObstruction-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
@@ -1922,7 +1922,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     }
   ],
