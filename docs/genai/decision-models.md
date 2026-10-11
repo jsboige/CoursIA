@@ -32,7 +32,7 @@ changera, et ces valeurs datent le relevé.
 
 ### 0.1 Ce que l'index ne publie pas
 
-Le corps de #18204 demande de relever « la licence, y compris celle du modèle de base ; la disponibilité des poids ; le contrat servi ; la voie de service ». Mesure : **l'index ne porte aucun de ces champs** — `license`, `choice` et `noul` y comptent **0 occurrence**, et 36 dépôts seulement sur 115 publient un `weights_repo` explicite. Ces colonnes se relèvent **hors index**, par l'API Hugging Face : c'est le geste que la section 8.1 déclarait dû, et il est fait.
+Le corps de #18204 demande de relever « la licence, y compris celle du modèle de base ; la disponibilité des poids ; le contrat servi ; la voie de service ». Mesure : **l'index ne porte aucun de ces champs** — `license`, `choice` et `noul` y comptent **0 occurrence**, et 36 dépôts seulement sur 115 publient un `weights_repo` explicite. Ces colonnes ne se valent pas, et la mise à jour les qualifie selon leur source réelle. **Licence** : relevée **hors index** par l'API Hugging Face, une requête par dépôt — c'est le geste que la section 8.1 déclarait dû, et il est fait ; la sonde y surface aussi les constats d'accès (`HTTP 401`, `gated`) comme valeurs de la colonne licence. **Poids ouverts** : *attestation de l'index* — la colonne dit que l'index référence un `weights_repo`/`model_url`, elle ne consulte ni `gated` ni le code HTTP du dépôt ; un modèle attesté peut être à accès refusé (cf. `Jet v6.2` ci-dessous). **Voie de service** : *heuristique plausible non testée* — déduite de la taille servie et du tag GGUF, aucune disponibilité ni servabilité n'est mesurée.
 
 ### 0.2 Classement par palier, licences relevées firsthand
 
@@ -81,7 +81,7 @@ Le corps de #18204 demande de relever « la licence, y compris celle du modèle 
 | Ce que les sections ci-dessous avaient retenu | Ce qui est mesuré au 2026-10-10 |
 |---|---|
 | `JPT-9B` (46,9) et `JPT-4B` (43,0), « shortlistoire candidat » | Les deux sont **`cc-by-nc-4.0`** : non commercial. Contrainte réelle pour l'usage CI/coordination visé au Pli 4. |
-| `Jet v6.2` (42,6), candidat n°3 | `michaljach/jet` rend **HTTP 401** — poids non distribués publiquement. **Non servable.** |
+| `Jet v6.2` (42,6), candidat n°3 | `michaljach/jet` rend **HTTP 401** — accès public refusé dans cette sonde ; le service sous autorisation n'est pas testé, et la colonne poids ouverts de l'index l'atteste malgré tout (limite §0.5). |
 | `Surogate Rune 26B-A4B` (57,4) | `apache-2.0` mais dépôt **`gated: auto`** : l'accès demande une acceptation, donc une étape manuelle en CI. |
 | absent de la shortlistoire | **`Perplexity Decider v1.1 (27B)` — 62,75, `apache-2.0`, non gated** : tête de l'index *et* permissive. |
 | absent de la shortlistoire | **`Blink v0.3 26B-A4B (NVFP4)` — 57,76, `apache-2.0`** : palier 26B déjà en 4 bits, servable sur 24 Go sans quantification à produire. |
@@ -103,6 +103,11 @@ Les variantes à meilleur score de leur palier (`ezjev 4B s2` 46,95, `Bespoke Ni
 ### 0.5 Ce qui reste non vérifié
 
 La **mesure locale** (§5 ci-dessous) : rejouer 2-3 tranches de benchmarks chez nous. Elle demande une carte 24 Go et sort de cette mise à jour ; le verdict `RECOVERABLE-MACHINE` de §5.2 est inchangé. La qualité de présentation (§3) reste relevée au Pli 2.
+
+Deux limites propres aux colonnes ajoutées par cette mise à jour (déjà nommées par la review NanoClaw du 10/10, points 3 et 5) :
+
+1. **Poids ouverts = attestation de l'index, pas un accès vérifié.** La colonne est dérivée de `weights_repo`/`weights_note`/`model_url` sans consulter `gated` ni le code HTTP : `Jet v6.2` y est attesté alors que le dépôt rend `HTTP 401` à la sonde publique, et `Surogate Rune` est `gated: auto`. « Ouvert » se lit « référencé par l'index », jamais « accès public vérifié ».
+2. **Voie de service = heuristique, non mesurée.** `llama.cpp`/`vLLM` sont proposés d'après la taille servie et le tag GGUF ; aucune tentative de service, aucune mesure de disponibilité n'a été faite. Un `HTTP 401` ou un `gated` n'établit pas l'impossibilité de servir sous autorisation — l'unicité de la voie relève du plausible.
 
 ## 1. Périmètre de mesure
 
