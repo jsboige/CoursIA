@@ -2,7 +2,7 @@
 
 Détail déporté de [`.claude/rules/variation-protocol.md`](../../.claude/rules/variation-protocol.md) (harness-hygiene : la règle reste succincte et auto-chargée, le détail vit ici et se lit à la demande).
 
----
+***
 
 ## 1. Pourquoi un tag déclaré plutôt qu'une simple exhortation
 
