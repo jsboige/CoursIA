@@ -292,13 +292,13 @@ L'agrégation des préférences (Arrow, vote, manipulation) se poursuit dans la 
 
 La lettre 17c est portée par deux notebooks ; la passe de renommage leur donnera des lettres distinctes.
 
-### Autour de 23 — biens publics et dilemmes N-personnes
+### Escalier Dynamics — biens publics et dilemmes N-personnes
 
 Palier extrait de la série 3 (accretion `03e-Plan-de-deformation` d'avant la renumérotation) : la table périodique de Robinson-Goforth reste l'épigraphe, mais le passage à N agents et à des fonctions de bénéfice non-linéaires constitue un objet mathématique distinct — il ne varie plus la géométrie de l'espace des jeux 2×2, il en sort.
 
-| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+| Carnet | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
-| 23a | [Biens publics non-linéaires](GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb) | Archetti-Scheuring 2012 (JTB 299 : 9-20) : sans assortiment, un équilibre polymorphe stable coexiste ; les 78 profils 2×2 de Rapoport-Guyer servent de carte d'entrée, le plan `(k, s)` de déformation porte la dynamique N-personnes. | Python | Licence |
+| Dynamics-09 | [Biens publics non-linéaires](Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) | Archetti-Scheuring 2012 (JTB 299 : 9-20) : sans assortiment, un équilibre polymorphe stable coexiste ; les 78 profils 2×2 de Rapoport-Guyer servent de carte d'entrée, le plan `(k, s)` de déformation porte la dynamique N-personnes. | Python | Licence |
 ## Parcours transverses
 
 Quatre itinéraires qui traversent paliers et lettres pour un public précis.
