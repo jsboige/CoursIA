@@ -138,8 +138,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 |---|----------|----------|------------|
 | 1 | [ML-1 (Python) : Introduction au Machine Learning avec…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb) | BETA | Oui |
 | 2 | [ML-1 : Introduction au Machine Learning avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb) | BETA | Oui |
-| 3 | [ML-10 (Python) : l'illusion de progression en détection…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | BETA | Oui |
-| 4 | [ML-11 : le Matrix Profile multidimensionnel, une…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb) | BETA | Oui |
+| 3 | [ML-09b (Python) : l'illusion de progression en détection…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | BETA | Oui |
+| 4 | [ML-09c : le Matrix Profile multidimensionnel, une…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb) | BETA | Oui |
 | 5 | [ML-2 : Préparation des données et ingénierie des…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data%26Features-Python.ipynb) | BETA | Oui |
 | 6 | [ML-2 : Préparation des données et ingénierie des…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data%26Features.ipynb) | BETA | Oui |
 | 7 | [ML-3 : Entraînement et AutoML](../../MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement%26AutoML.ipynb) | BETA | Oui |
