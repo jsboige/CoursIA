@@ -11401,17 +11401,17 @@ Ce notebook a parcouru ce panorama puis **execute les preuves Lean reelles** de 
 - L. Piccirillo, ""The Conway knot is not slice"", *Annals of Mathematics*, 2020.
 - S. Roberts, *Genius at Play: The Curious Mind of John Horton Conway*, 2015.
 - V. Hernandez Palacios, [`vihdzp/combinatorial-games`](https://github.com/vihdzp/combinatorial-games), 2025-2026.",,,,,,,,51ce027b27ea3531,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,intro-title,markdown,fr,f75674abea690d2b,"# Lean-16b : Hommage a John Conway — Game of Life as Computation
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,intro-title,markdown,fr,a462428c8f42eb96,"# Lean-16b : Hommage a John Conway — Game of Life as Computation
 
-**Navigation** : [<< Lean-15 Grothendieck](Lean-15-Grothendieck-Tribute.ipynb) | [Index](README.md) | [Lean-16c Compagnon Golly >>](Lean-16c-Conway-Game-of-Life-Golly.ipynb)
+**Navigation** : [<< Lean-16a Conway, l'homme et l'oeuvre](Lean-16a-Conway-Man-and-Work.ipynb) | [Index](README.md) | [Lean-16c Compagnon Golly >>](Lean-16c-Conway-Game-of-Life-Golly.ipynb)
 
-**Kernel** : Python 3 (illustrations visuelles + simulations) + Lean 4 via WSL (source de verite formelle, sections 9-11)
+**Kernel** : `python3-lean` — CPython 3.13 canonique serie Lean (#17476) + Lean 4 via WSL (source de verite formelle, sections 6-7 et annexes D-G)
 
----
+***
 
 ## Introduction
 
-John Horton Conway (1937 - 2020) est sans doute le mathematicien qui aura le plus brouille la frontiere entre les jeux et les structures profondes des mathematiques. Cambridge puis Princeton, il a invente le **Game of Life** en 1970 avec un groupe d'etudiants autour de lui : Michael Guy, Richard Guy, et plusieurs joueurs d'Othello. Sa mort en avril 2020, foudroyee par la COVID, a fait basculer la communaute combinatoire en deuil et accelere les hommages formels.
+John Horton Conway (1937 - 2020) est sans doute le mathematicien qui aura le plus brouille la frontiere entre les jeux et les structures profondes des mathematiques. Cambridge puis Princeton, il a invente le **Game of Life** en 1970 avec un groupe d'étudiants autour de lui : Michael Guy, Richard Guy, et plusieurs joueurs d'Othello. Sa mort en avril 2020, foudroyee par la COVID, a fait basculer la communaute combinatoire en deuil et accelere les hommages formels.
 
 L'Epic #1151 a ouvert 5 noix moins celebres de Conway en Lean 4 : l'algorithme du Doomsday, la suite Look-and-Say, le langage FRACTRAN, les positions de Nim, le problème de l'ange. Mais **l'oeuvre la plus iconique de Conway manquait au catalogue** : le Game of Life lui-même.
 
@@ -11419,25 +11419,24 @@ Ce notebook couvre les phases initiales de l'Epic #1647 (""Hommage Conway : Life
 
 ### Une seule source de verite : `Life.lean`
 
-Le coeur de Life — la règle B3/S23, les patterns, leurs invariants — est défini **une seule fois**, formellement, dans les modules Lean `conway_lean/Conway/Life*.lean`. Les simulations Python `numpy`/`matplotlib` de ce notebook ne sont **pas** une seconde definition concurrente : ce sont des **illustrations** qui donnent l'intuition visuelle (animations, grilles, contours). Quand on veut une **certitude** (et non une intuition), on interroge directement le `.lean` : la section 9.7 lance `#eval` sur les predicats Lean reels, et la section 10 lance `lake build`. Règle de lecture : **le notebook illustre, `Life.lean` prouve.**
+Le coeur de Life — la règle B3/S23, les patterns, leurs invariants — est défini **une seule fois**, formellement, dans les modules Lean `conway_lean/Conway/Life*.lean`. Les simulations Python `numpy`/`matplotlib` de ce notebook ne sont **pas** une seconde définition concurrente : ce sont des **illustrations** qui donnent l'intuition visuelle (animations, grilles, contours). Quand on veut une **certitude** (et non une intuition), on interroge directement le `.lean` : la section 6.1 lance `#eval` sur les predicats Lean réels, et la section 7 lance `lake build`. Règle de lecture : **le notebook illustre, `Life.lean` prouve.**
 
 ### Plan
 
-1. Tour des 5 noix Phase 1 (Doomsday, FRACTRAN, Look-and-Say, Nim, Ange) - `#check` Lean
-2. La règle Game of Life B3/S23 - definition Python (illustration) + simulation
-3. Visualisation : still-lifes, oscillateurs, vaisseaux (blinker, glider, etc.)
-4. Spartan logic, gating sur cells stationnaires, flux de gliders
-5. Intuition hashlife : macrocells, canonicalisation, complexite logarithmique
-6. Les 3 piliers communautaires (Gemini, OTCA, Beluchenko CPU digital)
-7. Turing-completude : Conway 1982, Rendell 2000, Springer 2016
-8. Demo : blinker (periode 2) et glider (periode 4) en Python animes
-9. Le port Lean : `Life.lean`, definitions, theoremes, et **`#eval` du zoo A4 (9.7)**
-10. Verification : `lake build` des modules Life + grep sorry honnete
-11. Pont vers les phases ulterieures de l'Epic
+1. La règle Game of Life B3/S23 - définition Python (illustration) + simulation
+2. Patterns canoniques : still-lifes, oscillateurs, vaisseaux (blinker, glider)
+3. **Les 3 piliers communautaires** - l'histoire en trois actes (OTCA, machine de Turing, Gemini) et leurs witnesses
+4. Demonstration pas-a-pas : blinker et glider animes
+5. Turing-completude : Conway 1982, Rendell 2000, Springer 2016
+6. La source de vérité Lean : `#eval` du zoo de patterns, parseur RLE prouvé
+7. Vérification : `lake build` des modules Life + grep sorry honnete
+8. Conclusion
+
+**Annexes A-G** (approfondissements optionnels, en fin de notebook) : les noix Phase 1 déjà portées (A), la logique constructive Spartan (B), l'intuition Hashlife (C), le port Lean en détail — encodage, step, microproofs (D), la limite des string literals (E), le scaffold `Pillars.lean` (F), la feuille de route de l'Epic #1647 (G).
 
 ### Exercices
 
-Trois exercices jalonnent le notebook (après les sections 2, 3 et 9) : compter les voisins de Moore (le coeur de B3/S23), classifier un pattern par sa periode, et faire **verifier un still-life de votre choix par Lean**. Chaque stub est a completer ; le notebook s'execute de bout en bout même sans les completer.
+Quatre exercices jalonnent le notebook : compter les voisins de Moore (section 1), classifier un pattern par sa période (section 2), parser un RLE et compter sa population (section 3), et faire **vérifier un still-life de votre choix par Lean** (section 6). Chaque stub est a completer ; le notebook s'exécute de bout en bout même sans les completer.
 
 ### Prerequis
 
@@ -11445,12 +11444,12 @@ Trois exercices jalonnent le notebook (après les sections 2, 3 et 9) : compter 
 - Notebooks Lean-1 a Lean-7 pour les aspects formels (recommande)
 - Lean-12 pour le pattern Lake build + WSL
 
-### Duree estimee : 60 minutes",,,,,,,,f75674abea690d2b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-1-phase1-recap,markdown,fr,c1049e344e285ab4,"## 1. Rappel Phase 1 : les 5 noix de Conway déjà portees
+### Duree estimée : 60 minutes",,,,,,,,a462428c8f42eb96,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-1-phase1-recap,markdown,fr,fa5ec888ffb75a99,"### Annexe A — Rappel Phase 1 : les noix de Conway déjà portees
 
-L'Epic #1151 (Phase 1, mergee mai 2026) a porte en Lean 4 cinq résultats moins celebres mais elegants de John Conway. Tous vivent dans `conway_lean/Conway/` avec **0 sorry de production**. Voici un rapide `#check` de chacun.
+L'Epic #1151 (Phase 1, mergee mai 2026) a porte en Lean 4 des résultats moins celebres mais élégants de John Conway. Tous vivent dans `conway_lean/Conway/`, sans sorry de production. Voici un rapide `#check` de chacun.
 
-| Module | Résultat | Theoreme phare |
+| Module | Résultat | Théorème phare |
 |--------|----------|----------------|
 | `Conway.Doomsday` | Algorithme du Doomsday | `dayOfWeek 2020 4 11 = saturday` (Conway est mort un samedi) |
 | `Conway.LookAndSay` | Suite audioactive | `lookAndSay [1] = [1,1]` etc. (Cosmological theorem deferred) |
@@ -11458,8 +11457,8 @@ L'Epic #1151 (Phase 1, mergee mai 2026) a porte en Lean 4 cinq résultats moins 
 | `Conway.Nim` | Sprague-Grundy | `isWinningNim [3,4,5] = true` |
 | `Conway.Angel` | Problème de l'ange | `(angelMoves 1).card = 8` (king moves) |
 
-**Verification en sub-process Lean** : on appelle `lean --search` pour confirmer que les definitions existent dans le module Conway.",,,,,,,,c1049e344e285ab4,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,subprocess-setup,code,fr,ad1df875a7a2eed9,"import sys
+**Vérification en sub-process Lean** : on appelle `lean --search` pour confirmer que les définitions existent dans le module Conway.",,,,,,,,fa5ec888ffb75a99,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,subprocess-setup,code,fr,3506224cfda7e18c,"import sys
 from pathlib import Path
 
 # Cross-platform Lean utilities (Epic #2314)
@@ -11474,15 +11473,23 @@ WIN_LEAN_PROJECT = find_lean_project('conway_lean')
 LEAN_PROJECT = get_lean_project_path('conway_lean')
 
 def wsl(cmd, timeout=60):
-    """"""Execute a bash command inside WSL Ubuntu (backward-compatible wrapper).""""""
+    """"""Exécute a bash command inside WSL Ubuntu (backward-compatible wrapper).""""""
     return run_lake(LEAN_PROJECT, cmd, timeout=timeout) if False else _wsl_raw(cmd, timeout)
 
 def _wsl_raw(cmd, timeout=60):
-    """"""Raw WSL execution for arbitrary bash commands.""""""
+    """"""Raw WSL exécution for arbitrary bash commands.""""""
     import subprocess
-    full = ['wsl', '-d', 'Ubuntu', '--', 'bash', '-lc', cmd]
+    # --exec : argv 1:1 vers le process Linux (issue #19613). Via `--`, wsl.exe
+    # re-joit les argv en une chaine que le shell de la distro expanse lui-meme :
+    # tout $var / $? / ${PIPESTATUS[...]} y lit l'etat du shell EXTERNE (vide / 0),
+    # pas celui du bash invoque -- mesure 07/10, sondage 3/3 cf #19613.
+    # pipefail (#17616) : sans lui, le rc d'un pipeline `lake ... 2>&1 | tail -N`
+    # est celui de tail (toujours 0) et le gate rc == 0 de la cellule de build
+    # afficherait SUCCESS sur un echec.
+    full = ['wsl', '-d', 'Ubuntu', '--exec', '/bin/bash', '-lc', 'set -o pipefail; ' + cmd]
     try:
-        r = subprocess.run(full, capture_output=True, text=True, timeout=timeout)
+        r = subprocess.run(full, capture_output=True, text=True,
+                           encoding=""utf-8"", timeout=timeout)
         return r.returncode, r.stdout, r.stderr
     except subprocess.TimeoutExpired:
         return -1, '', f'TIMEOUT after {timeout}s'
@@ -11491,7 +11498,7 @@ def _wsl_raw(cmd, timeout=60):
 assert (WIN_LEAN_PROJECT / 'lakefile.lean').exists(), 'conway_lean/lakefile.lean not found'
 print('Setup OK : Lean project detecte automatiquement (via lean_notebook_utils)')
 print(f'WSL path: .../conway_lean (lettre drive: {WIN_LEAN_PROJECT.drive[0]})')
-print(f'Windows path: .../conway_lean')",,,,,,,,ad1df875a7a2eed9,,,,,,,,
+print(f'Windows path: .../conway_lean')",,,,,,,,3506224cfda7e18c,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,phase1-files-list,code,fr,343a83ad79958ee7,"# Lister les fichiers Phase 1 + Phase 2 du module Conway
 modules = sorted([p.name for p in (WIN_LEAN_PROJECT / 'Conway').glob('*.lean')])
 life_modules = sorted([p.name for p in (WIN_LEAN_PROJECT / 'Conway' / 'Life').glob('*.lean')])
@@ -11507,24 +11514,24 @@ for m in life_modules:
     path = WIN_LEAN_PROJECT / 'Conway' / 'Life' / m
     lines = len(path.read_text(encoding='utf-8').splitlines())
     print(f'  {m:<30s} {lines:>5d} lignes')",,,,,,,,343a83ad79958ee7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-1b-interp,markdown,fr,820095c83d1b73fc,"### Interpretation : modules Conway en Lean 4
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-1b-interp,markdown,fr,f8fd6df1a3d9ce88,"### Interpretation : modules Conway en Lean 4
 
-Les 5 modules Phase 1 (Doomsday, LookAndSay, Fractran, Nim, Angel) + 2 modules de lemmes (DoomsdayLemmas, LookAndSayLemmas) + le nouveau **Life.lean** que nous introduisons dans ce notebook. KochenSpecker.lean est un module distinct (Pilier 1 de l'Epic #1651, Conway Free Will Theorem) — desormais **0 sorry** (PR #2019, argument de parite). FreeWillTheorem.lean (PR #2026) complete le theoreme de libre arbitre avec 0 sorry.
+Les modules Phase 1 (Doomsday, LookAndSay, Fractran, Nim, Angel) + les modules de lemmes (DoomsdayLemmas, LookAndSayLemmas) + le nouveau **Life.lean** que nous introduisons dans ce notebook. KochenSpecker.lean est un module distinct (Pilier 1 de l'Epic #1651, Conway Free Will Theorem) — desormais **sans sorry** (PR #2019, argument de parite). FreeWillTheorem.lean (PR #2026) complète le théorème de libre arbitre, sans sorry.
 
-**Statut sorry** : 0 sur Doomsday/LookAndSay/Fractran/Nim/Angel/Life/KochenSpecker/FreeWillTheorem. Une cible globale `lake build Conway` compile avec SUCCESS (3331 jobs).",,,,,,,,820095c83d1b73fc,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-2-rule,markdown,fr,210a583502897a57,"## 2. La règle Game of Life : B3/S23
+**Statut sorry** : aucun sur Doomsday/LookAndSay/Fractran/Nim/Angel/Life/KochenSpecker/FreeWillTheorem. Une cible globale `lake build Conway` compile avec SUCCESS.",,,,,,,,f8fd6df1a3d9ce88,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-2-rule,markdown,fr,93bb34ab37da5c2b,"## 1. La règle Game of Life : B3/S23
 
-Le Game of Life est un automate cellulaire déterministe sur le plan infini $\mathbb{Z}^2$. Chaque cellule a un etat binaire (vivante ou morte) et evolue en parallele selon une règle dite **B3/S23** :
+Le Game of Life est un automate cellulaire déterministe sur le plan infini $\mathbb{Z}^2$. Chaque cellule a un état binaire (vivante ou morte) et évolue en parallele selon une règle dite **B3/S23** :
 
 - **Birth (B3)** : une cellule morte avec exactement 3 voisins vivants devient vivante.
 - **Survival (S23)** : une cellule vivante avec 2 ou 3 voisins vivants survit ; sinon elle meurt.
 
 Le voisinage utilise est le voisinage de **Moore** : les 8 cellules entourant directement la cellule consideree (king-move).
 
-Conway a teste plusieurs règles avant de fixer B3/S23 : il cherchait l'equilibre entre extinction rapide et explosion divergente. La règle finale produit un ""univers"" très riche : motifs stables, oscillateurs, vaisseaux mobiles, générateurs infinis (canons), et finalement universalite Turing.
+Conway a teste plusieurs règles avant de fixer B3/S23 : il cherchait l'équilibre entre extinction rapide et explosion divergente. La règle finale produit un ""univers"" très riche : motifs stables, oscillateurs, vaisseaux mobiles, générateurs infinis (canons), et finalement universalite Turing.
 
-Implementons-le en Python d'abord, sur un torus fini pour visualisation.",,,,,,,,210a583502897a57,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,gol-python-impl,code,fr,5c87e9a52cb70538,"import numpy as np
+Implementons-le en Python d'abord, sur un torus fini pour visualisation.",,,,,,,,93bb34ab37da5c2b,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,gol-python-impl,code,fr,bbbc12c9af145b39,"import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -11551,34 +11558,34 @@ print()
 print('Generation 1 (blinker vertical apres step B3/S23) :')
 print(g1)
 print()
-# Illustration numerique : apres 2 generations on retrouve le blinker horizontal
+# Illustration numérique : apres 2 generations on retrouve le blinker horizontal
 g2 = step_gol(g1)
-print(f'Generation 2 retombe sur generation 0 : {np.array_equal(g2, g0)}')",,,,,,,,5c87e9a52cb70538,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-2b-interp,markdown,fr,242c2a3e413220b9,"### Interpretation : le blinker comme oscillateur periode 2
+print(f'Generation 2 retombe sur generation 0 : {np.array_equal(g2, g0)}')",,,,,,,,bbbc12c9af145b39,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-2b-interp,markdown,fr,dadb8219712ae1f5,"### Interpretation : le blinker comme oscillateur période 2
 
-Le **blinker** est le plus petit oscillateur non-trivial de Life : 3 cellules alignees. Toutes les 2 generations, il oscille entre orientation horizontale et verticale. La verification `g2 == g0` ci-dessus est une **illustration numérique** sur grille bornee : elle *montre* la periodicite sur un cas concret, elle ne la *prouve* pas (une seule grille, finie).
+Le **blinker** est le plus petit oscillateur non-trivial de Life : 3 cellules alignees. Toutes les 2 generations, il oscille entre orientation horizontale et verticale. La vérification `g2 == g0` ci-dessus est une **illustration numérique** sur grille bornee : elle *montre* la periodicite sur un cas concret, elle ne la *prouve* pas (une seule grille, finie).
 
-$$\text{step}^2(\text{blinker}) = \text{blinker} \quad \text{(propriete illustree ici, prouvee en Lean)}$$
+$$\text{step}^2(\text{blinker}) = \text{blinker} \quad \text{(propriété illustree ici, prouvée en Lean)}$$
 
-Le **theoreme** correspondant — la verite formelle, valable sur le plan infini $\mathbb{Z}^2$ — vit dans la **source unique** `conway_lean/Conway/Life.lean` :
+Le **théorème** correspondant — la verite formelle, valable sur le plan infini $\mathbb{Z}^2$ — vit dans la **source unique** `conway_lean/Conway/Life.lean` :
 
 ```lean
 theorem blinker_period_two : isOscillator blinker_h 2 = true := by native_decide
 ```
 
-Le predicat `isOscillator g n := evolve n g == g` retourne un `Bool` sur le type `List (Int x Int)` ; `native_decide` le compile en code natif et tranche `true` en un eclair (cf section 9 pour le choix `List` plutot que `Finset`). **Le notebook illustre ; `Life.lean` prouve.**",,,,,,,,242c2a3e413220b9,,,,,,,,
+Le predicat `isOscillator g n := evolve n g == g` retourne un `Bool` sur le type `List (Int x Int)` ; `native_decide` le compile en code natif et tranche `true` en un éclair (cf section 9 pour le choix `List` plutot que `Finset`). **Le notebook illustre ; `Life.lean` prouve.**",,,,,,,,dadb8219712ae1f5,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,8998c242,markdown,fr,1ab0e2aeb938c98c,"### Exercice 1 : compter les voisins de Moore
 
 Le coeur de la règle B3/S23, c'est le **comptage des voisins vivants** dans le voisinage de Moore (les 8 cellules adjacentes, king-move). La fonction `step_gol` ci-dessus delegue ce comptage a `scipy.signal.convolve2d` ; pour bien comprendre la règle, on le refait **a la main**.
 
 **A vous** : implementez `count_live_neighbors(grid, i, j)` qui compte les voisins vivants de la cellule `(i, j)` sans convolution, en traitant les cellules hors grille comme mortes. Une fois cette brique en place, naissance (`== 3`) et survie (`== 2 or == 3`) en decoulent directement.",,,,,,,,1ab0e2aeb938c98c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,70f39299,code,fr,8936ccf3ee43c322,"import numpy as np
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,70f39299,code,fr,5811873b581e2374,"import numpy as np
 
 def count_live_neighbors(grid, i, j):
     """"""Compte les voisins vivants (voisinage de Moore, king-move) de la cellule (i, j).
 
     Les cellules hors de la grille comptent comme mortes (bord absorbant).
-    C'est l'operation fondamentale dont decoulent naissance (B3) et survie (S23).
+    C'est l'opération fondamentale dont decoulent naissance (B3) et survie (S23).
 
     Args:
         grid: np.ndarray 2D de 0/1
@@ -11586,30 +11593,30 @@ def count_live_neighbors(grid, i, j):
     Returns:
         int : nombre de voisins vivants parmi les 8 cellules adjacentes
     """"""
-    # TODO etudiant : parcourir les 8 offsets de Moore et sommer les cellules vivantes
+    # TODO étudiant : parcourir les 8 offsets de Moore et sommer les cellules vivantes
     # Indice : for di in (-1, 0, 1): for dj in (-1, 0, 1): ... ignorer (0, 0)
     # Indice : ne compter que si 0 <= i+di < n_rows et 0 <= j+dj < n_cols (sinon hors grille = mort)
-    return None  # TODO etudiant : remplacer par le compte des voisins vivants
+    return None  # TODO étudiant : remplacer par le compte des voisins vivants
 
-# Verification (a activer une fois implemente) :
+# Vérification (a activer une fois implemente) :
 # g = np.array([[1, 1, 0], [0, 1, 0], [0, 0, 1]], dtype=np.int8)
 # print(""Voisins vivants de (1,1) :"", count_live_neighbors(g, 1, 1), ""(attendu : 3)"")
 _demo = count_live_neighbors(np.zeros((3, 3), dtype=np.int8), 1, 1)
-print(""Exercice 1 a completer"" if _demo is None else f""count_live_neighbors implemente : {_demo}"")",,,,,,,,8936ccf3ee43c322,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-3-patterns,markdown,fr,3e8ba375bbb4fa84,"## 3. Patterns canoniques du Game of Life
+print(""Exercice 1 a completer"" if _demo is None else f""count_live_neighbors implemente : {_demo}"")",,,,,,,,5811873b581e2374,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-3-patterns,markdown,fr,31fc7f9d9d24e9ab,"## 2. Patterns canoniques du Game of Life
 
 Trois grandes familles de patterns ont ete identifiees des les premières semaines après l'invention de Life (octobre 1970, Cambridge) :
 
-| Famille | Definition | Exemples |
+| Famille | Définition | Exemples |
 |---------|------------|----------|
 | **Still life** | `step(g) = g` | Block, beehive, loaf, boat, ship |
 | **Oscillator** | `step^n(g) = g` pour un certain `n > 0` | Blinker (n=2), toad (n=2), beacon (n=2), pulsar (n=3), pentadecathlon (n=15) |
 | **Spaceship** | `step^n(g) = shift_v(g)` pour `v != 0` | Glider (n=4, v=(1,-1)), LWSS / MWSS / HWSS, Gemini (n=33 699 586) |
 
-Le **glider** (Richard Guy, 1970) est le plus iconique : 5 cellules qui se deplacent en diagonale, periode 4, vitesse $c/4$ ou $c$ est la vitesse limite de propagation de Life. C'est le ""photon"" de l'univers de Conway.
+Le **glider** (Richard Guy, 1970) est le plus iconique : 5 cellules qui se deplacent en diagonale, période 4, vitesse $c/4$ ou $c$ est la vitesse limite de propagation de Life. C'est le ""photon"" de l'univers de Conway.
 
-Visualisons quelques generations.",,,,,,,,3e8ba375bbb4fa84,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,patterns-viz,code,fr,1ec7c13c2cab82e7,"def plot_grid(ax, grid, title, gen):
+Visualisons quelques generations.",,,,,,,,31fc7f9d9d24e9ab,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,patterns-viz,code,fr,8b0a53568cfbe2d1,"def plot_grid(ax, grid, title, gen):
     """"""Affiche une grille binaire dans un axe matplotlib.""""""
     ax.imshow(grid, cmap='Greys', interpolation='nearest', vmin=0, vmax=1)
     ax.set_title(f'{title}\nGen {gen}', fontsize=10)
@@ -11657,10 +11664,12 @@ for i, frame in enumerate(glider_frames[:5]):
     plot_grid(axes[2, i], frame, 'Glider (period 4, diag)', i)
 
 plt.tight_layout()
-out = '/tmp/lean14_patterns.png'
-plt.savefig(out, dpi=80, bbox_inches='tight')
-plt.close()
-print(f'Figure sauvee : {out.rsplit(""/"", 1)[-1]}')
+import io
+from IPython.display import Image, display
+buf = io.BytesIO()
+fig.savefig(buf, format='png', dpi=80, bbox_inches='tight')
+plt.close(fig)
+display(Image(data=buf.getvalue()))
 print()
 print('Illustrations numeriques (grille bornee) :')
 print(f'  Block      : step(block)   == block         ? {np.array_equal(block_frames[0], block_frames[1])}')
@@ -11672,67 +11681,67 @@ def live_offsets(g):
         return set()
     miny, minx = ys.min(), xs.min()
     return set(zip(ys - miny, xs - minx))
-print(f'  Glider     : step^4(glider) ~= shift(glider) ? {live_offsets(glider_frames[0]) == live_offsets(glider_frames[4])}')",,,,,,,,1ec7c13c2cab82e7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-3b-interp,markdown,fr,a112873e2064fb69,"### Interpretation : 3 invariants illustres numeriquement
+print(f'  Glider     : step^4(glider) ~= shift(glider) ? {live_offsets(glider_frames[0]) == live_offsets(glider_frames[4])}')",,,,,,,,8b0a53568cfbe2d1,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-3b-interp,markdown,fr,d89111d77711a446,"### Interpretation : 3 invariants illustres numeriquement
 
-| Pattern | Type | Propriete illustree (verif. numpy, grille bornee) |
+| Pattern | Type | Propriété illustree (verif. numpy, grille bornee) |
 |---------|------|------------------|
 | Block (2x2) | Still life | $\text{step}(\text{block}) = \text{block}$ |
-| Blinker (1x3) | Oscillator periode 2 | $\text{step}^2(\text{blinker}) = \text{blinker}$ |
-| Glider (3x3 L-shape) | Spaceship periode 4 | $\text{step}^4(\text{glider}) = \text{shift}_v(\text{glider})$ |
+| Blinker (1x3) | Oscillator période 2 | $\text{step}^2(\text{blinker}) = \text{blinker}$ |
+| Glider (3x3 L-shape) | Spaceship période 4 | $\text{step}^4(\text{glider}) = \text{shift}_v(\text{glider})$ |
 
-Ces verifications numpy **illustrent** le comportement sur une grille finie ; les **theoremes formels** correspondants (`block_still_life`, `blinker_period_two`, `glider_spaceship`) sont prouves par `native_decide` dans la **source unique** `conway_lean/Conway/Life.lean` (section 9). Le notebook donne l'intuition visuelle ; le `.lean` porte la certitude mathematique sur le plan infini.
+Ces vérifications numpy **illustrent** le comportement sur une grille finie ; les **théorèmes formels** correspondants (`block_still_life`, `blinker_period_two`, `glider_spaceship`) sont prouves par `native_decide` dans la **source unique** `conway_lean/Conway/Life.lean` (section 6, détails en Annexe D). Le notebook donne l'intuition visuelle ; le `.lean` porte la certitude mathematique sur le plan infini.
 
-**Phase 2 (PR #1975)** : les modules `Spaceships.lean` et `Oscillators.lean` ajoutent 10 theoremes supplementaires, dont le **pulsar** (periode 3, 48 cellules) et le **pentadecathlon** (periode 15, 12 cellules) — deux patterns initialement consideres ""borderline"" pour `native_decide` mais qui passent avec succes. On les **evalue directement** en section 9.7.
+**Phase 2 (PR #1975)** : les modules `Spaceships.lean` et `Oscillators.lean` ajoutent de nouveaux théorèmes, dont le **pulsar** (période 3) et le **pentadecathlon** (période 15) — deux patterns initialement consideres ""borderline"" pour `native_decide` mais qui passent avec succes. On les **évalue directement** en section 6.1.
 
-**Patterns plus grands explores en Phases ulterieures** : Gosper glider gun (genere des gliders a l'infini), pufferfishes, LWSS/MWSS/HWSS (déjà prouves), Gemini replicator, OTCA Metapixel. Voir [LifeWiki](https://conwaylife.com/wiki/) pour le catalogue complet.",,,,,,,,a112873e2064fb69,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,ea418142,markdown,fr,6bd63e8e7c461320,"### Exercice 2 : classifier un pattern par sa periode
+**Patterns plus grands explores en Phases ulterieures** : Gosper glider gun (genere des gliders a l'infini), pufferfishes, LWSS/MWSS/HWSS (déjà prouves), Gemini replicator, OTCA Metapixel. Voir [LifeWiki](https://conwaylife.com/wiki/) pour le catalogue complet.",,,,,,,,d89111d77711a446,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,ea418142,markdown,fr,bbfccb48963f4e11,"### Exercice 2 : classifier un pattern par sa période
 
-Les trois familles de la section 3 se distinguent par leur **periode** : un still-life a la periode 1 (`step(g) == g`), un oscillateur a une periode `n > 1` fixe, et un vaisseau ne revient *jamais* a sa position d'origine (il se deplace).
+Les trois familles de la section 2 se distinguent par leur **période** : un still-life a la période 1 (`step(g) == g`), un oscillateur a une période `n > 1` fixe, et un vaisseau ne revient *jamais* a sa position d'origine (il se deplace).
 
-**A vous** : implementez `detect_period(pattern, max_period=20)` qui simule le pattern et retourne la plus petite periode `n` telle que la grille redevienne identique *a position fixe*, ou `None` si elle ne revient pas (cas du vaisseau). Reutilisez `simulate_pattern` et `step_gol`. C'est l'analogue empirique Python du predicat formel `isOscillator` de `Life.lean`.",,,,,,,,6bd63e8e7c461320,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,4deed899,code,fr,f1ff5275579339ca,"def detect_period(pattern, max_period=20, padding=4):
-    """"""Detecte la periode d'un pattern a position fixe (still-life = 1, oscillateur = n).
+**A vous** : implementez `detect_period(pattern, max_period=20)` qui simule le pattern et retourne la plus petite période `n` telle que la grille redevienne identique *a position fixe*, ou `None` si elle ne revient pas (cas du vaisseau). Reutilisez `simulate_pattern` et `step_gol`. C'est l'analogue empirique Python du predicat formel `isOscillator` de `Life.lean`.",,,,,,,,bbfccb48963f4e11,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,4deed899,code,fr,09589ed519199c2e,"def detect_period(pattern, max_period=20, padding=4):
+    """"""Detecte la période d'un pattern a position fixe (still-life = 1, oscillateur = n).
 
     Un vaisseau (glider) ne revient jamais a sa position d'origine : on attend `None`.
-    Reutilise `simulate_pattern` et `step_gol` definis en section 3.
+    Reutilise `simulate_pattern` et `step_gol` definis en section 2.
 
     Args:
         pattern: np.ndarray 2D de 0/1
-        max_period: borne superieure de recherche de periode
+        max_period: borne supérieure de recherche de période
         padding: marge autour du pattern (evite le bord absorbant)
     Returns:
-        int : periode minimale n in [1, max_period] telle que step^n(g) == g, sinon None
+        int : période minimale n in [1, max_period] telle que step^n(g) == g, sinon None
     """"""
     frames = simulate_pattern(pattern, max_period, padding=padding)
-    # TODO etudiant : trouver le plus petit n >= 1 tel que frames[n] soit identique a frames[0]
+    # TODO étudiant : trouver le plus petit n >= 1 tel que frames[n] soit identique a frames[0]
     # Indice : for n in range(1, max_period + 1): if np.array_equal(frames[n], frames[0]): return n
-    return None  # TODO etudiant : remplacer par la periode detectee (ou None si aucune)
+    return None  # TODO étudiant : remplacer par la période detectee (ou None si aucune)
 
-# Verifications (a activer une fois implemente) :
+# Vérifications (a activer une fois implemente) :
 # print(""Block   ->"", detect_period(block),   ""(attendu : 1, still-life)"")
 # print(""Blinker ->"", detect_period(blinker), ""(attendu : 2, oscillateur)"")
 # print(""Glider  ->"", detect_period(glider),  ""(attendu : None, c'est un vaisseau qui se deplace)"")
 _p = detect_period(blinker)
-print(""Exercice 2 a completer"" if _p is None else f""detect_period(blinker) = {_p}"")",,,,,,,,f1ff5275579339ca,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-4-spartan,markdown,fr,a9756ed3127c6c66,"## 4. Spartan logic + flux de gliders = logique constructive
+print(""Exercice 2 a completer"" if _p is None else f""detect_period(blinker) = {_p}"")",,,,,,,,09589ed519199c2e,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-4-spartan,markdown,fr,9a4837fc598d38f0,"### Annexe B — Spartan logic + flux de gliders = logique constructive
 
-Le pari de l'Epic #1647 est qu'on peut prouver formellement la **calculabilite universelle** du Game of Life par un argument de **construction**. L'argument moderne (Wade 2010, Goucher 2014) procede en trois etages :
+Le pari de l'Epic #1647 est qu'on peut prouver formellement la **calculabilite universelle** du Game of Life par un argument de **construction**. L'argument moderne (Wade 2010, Goucher 2014) procede en trois étages :
 
-1. **Spartan logic** : on isole des configurations statiques (still lifes ou patterns stables) qui jouent le rôle de ""transistors"" ou ""portes logiques"". Le gating - decider si un signal passe ou non - se fait par presence ou absence d'un still life a un endroit donne.
+1. **Spartan logic** : on isole des configurations statiques (still lifes ou patterns stables) qui jouent le rôle de ""transistors"" ou ""portes logiques"". Le gating - decider si un signal passe ou non - se fait par presence ou absence d'un still life a un endroit donné.
 
-2. **Glider streams** : les signaux sont transportes par des flux de gliders, periodiques et orientes. Un glider stream represente un bit (la cellule est presente ou absente a un instant fixe modulo la periode).
+2. **Glider streams** : les signaux sont transportes par des flux de gliders, periodiques et orientes. Un glider stream represente un bit (la cellule est presente ou absente a un instant fixe modulo la période).
 
-3. **Composition** : la composition d'une porte NAND universelle suffit pour realiser tout calcul booléen, donc tout calcul Turing (theoreme classique).
+3. **Composition** : la composition d'une porte NAND universelle suffit pour realiser tout calcul booléen, donc tout calcul Turing (théorème classique).
 
 **L'analogie ribosome / ARN du mandat utilisateur** (mai 2026) :
 
 > *""logique constructive spartian pour le ribosome, et flux de gliders pour le brin d'ARN""*
 
-Le **ribosome** = la machine fixe qui lit l'instruction ; en Life, c'est le sous-circuit Spartan. Le **brin d'ARN** = la sequence d'instructions, ici un flux de gliders periodique. La construction de **Gemini** (section 6) suit exactement ce paradigme : un ribosome stationnaire interprete un flux de gliders qui construit une copie de lui-même un peu plus loin.
+Le **ribosome** = la machine fixe qui lit l'instruction ; en Life, c'est le sous-circuit Spartan. Le **brin d'ARN** = la sequence d'instructions, ici un flux de gliders periodique. La construction de **Gemini** (section 3) suit exactement ce paradigme : un ribosome stationnaire interprete un flux de gliders qui construit une copie de lui-même un peu plus loin.
 
-Cette **periodicite spatio-temporelle forte** est ce qui rend hashlife efficace sur Gemini.",,,,,,,,a9756ed3127c6c66,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-5-hashlife,markdown,fr,24f7534af6680b7f,"## 5. Intuition Hashlife (Gosper 1984)
+Cette **periodicite spatio-temporelle forte** est ce qui rend hashlife efficace sur Gemini.",,,,,,,,9a4837fc598d38f0,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-5-hashlife,markdown,fr,fa51292543affb93,"### Annexe C — Intuition Hashlife (Gosper 1984)
 
 Le **problème de tractabilite** des piliers communautaires : Gemini fait 33 699 586 generations pour se repliquer une fois. Une simulation cellule-par-cellule O(N x T) ou N ~ 10^5 et T ~ 10^7 demande 10^12 opérations - intractable.
 
@@ -11742,18 +11751,18 @@ Le **problème de tractabilite** des piliers communautaires : Gemini fait 33 699
 
 2. **Macrocells** : on encode l'univers sous forme **arborescente** :
    - Niveau 0 : cellule unique
-   - Niveau 1 : 4 cellules (2x2)
+   - Niveau 1 : la grille 2x2
    - Niveau n+1 : 4 macrocells de niveau n (un nord-ouest, nord-est, sud-ouest, sud-est)
 
-Avec **canonicalisation** par hash : deux macrocells identiques en memoire ne sont stockees qu'une seule fois.
+Avec **canonicalisation** par hash : deux macrocells identiques en mémoire ne sont stockees qu'une seule fois.
 
-### Step récursif et compression exponentielle
+#### Step récursif et compression exponentielle
 
-Un macrocell de niveau $n$ couvre une zone $2^n \times 2^n$. Hashlife calcule l'evolution du **centre $2^{n-1} \times 2^{n-1}$** après $2^{n-2}$ generations en **un seul appel récursif** memoise. La memoization sur les hashes fait que le nombre d'appels distincts est borne par la **diversite spatiale** du pattern, **pas** par $T$.
+Un macrocell de niveau $n$ couvre une zone $2^n \times 2^n$. Hashlife calcule l'évolution du **centre $2^{n-1} \times 2^{n-1}$** après $2^{n-2}$ generations en **un seul appel récursif** memoise. La memoization sur les hashes fait que le nombre d'appels distincts est borne par la **diversite spatiale** du pattern, **pas** par $T$.
 
 Pour un pattern hautement periodique (comme Gemini), la diversite spatiale est polylog(T) - donc le step ""fast-forward"" de $2^k$ generations devient effectivement $O(k)$ après warmup, **factor de compression exponentiel**.
 
-### Theoreme central de correction
+#### Théorème central de correction
 
 Une fois hashlife implemente en Lean (Phase 3 de l'Epic #1647), il faut prouver la **correction** :
 
@@ -11762,27 +11771,27 @@ theorem hashlife_correct : forall n mc,
   expand (hashlife_step mc) = step^[2^n] (center_region (expand mc))
 ```
 
-Cette preuve est l'invariant central de l'Epic : tout le reste (Gemini, OTCA, Beluchenko CPU digital) en derive par `native_decide` sur des temoins concrets. La preuve elle-même se fait par induction sur le niveau $n$ + analyse de cas du step central 4x4 (decide pour $n = 2$, induction pour $n + 1$).",,,,,,,,24f7534af6680b7f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-6-pillars,markdown,fr,49b27ab8484d7ff5,"## 6. Les 3 piliers communautaires : une histoire en trois actes
+Cette preuve est l'invariant central de l'Epic : tout le reste (Gemini, OTCA, Beluchenko CPU digital) en derive par `native_decide` sur des temoins concrets. La preuve elle-même se fait par induction sur le niveau $n$ + analyse de cas du step central 4x4 (decide pour $n = 2$, induction pour $n + 1$).",,,,,,,,fa51292543affb93,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-6-pillars,markdown,fr,b128970d2321d94c,"## 3. Les 3 piliers communautaires : une histoire en trois actes
 
 L'Epic #1647 est autant un hommage a Conway qu'a la communaute Life. Depuis cinquante ans, des amateurs et des chercheurs ont construit dans cet automate des objets de plus en plus ambitieux. Trois d'entre eux forment une **belle histoire**, qu'on peut raconter comme une montee en puissance autour d'une seule question : *jusqu'ou Life peut-elle se prendre elle-même pour objet ?*
 
 - **Acte I - se refleter.** Une cellule geante qui *est* une cellule de Life : l'**OTCA Metapixel**. Life calcule Life.
-- **Acte II - se reproduire.** Un motif qui fabrique sa propre copie a partir d'un plan : **Gemini**. Life se replique.
-- **Acte III - calculer.** Un motif qui execute un programme : le **CPU digital de Beluchenko/Stearns** (2016), puis le **CPU 8 bits de Carlini** (2020). Life calcule.
+- **Acte II - calculer.** Un motif qui exécute un programme : la **machine de Turing de Rendell** (2000), le **CPU digital de Beluchenko/Stearns** (2016), puis le **CPU 8 bits de Carlini** (2020). Life calcule.
+- **Acte III - se reproduire.** Un motif qui fabrique sa propre copie a partir d'un plan : **Gemini** (Wade, 2010). Life se replique.
 
 Mises bout a bout, ces trois étapes donnent la cascade vertigineuse de la fin de section : *Life calcule Life qui calcule un CPU*.
 
-Chaque acte est associe a un **witness** concret : un fichier RLE (Run-Length Encoded), le format standard de la communaute, qu'on va telecharger et regarder pour de vrai. Un fichier RLE tient en trois parties :
+Chaque acte est associe a un **witness** concret : un fichier RLE (Run-Length Encoded), le format standard de la communaute, qu'on va télécharger et regarder pour de vrai. Un fichier RLE tient en trois parties :
 
 - des lignes de **commentaire** prefixees `#` : `#N` le nom, `#O` l'auteur et l'annee, `#C` une description ;
 - une ligne d'**en-tete** `x = <largeur>, y = <hauteur>, rule = B3/S23` ;
 - un **corps** compresse : `o` = cellule vivante, `b` = cellule morte, un entier prefixe une repetition, `$` termine une rangee, `!` termine le motif.
 
-On lit ces witnesses depuis le miroir public `copy.sh/life/examples/`. Tout le code reseau ci-dessous est protege : si un telechargement echoue, le notebook l'annonce et continue sans erreur.
+On lit ces witnesses depuis le miroir public `copy.sh/life/examples/`. Tout le code reseau ci-dessous est protege : si un téléchargement echoue, le notebook l'annonce et continue sans erreur.
 
-Chargeons d'abord la boite a outils, puis levons le rideau sur l'Acte I.",,,,,,,,49b27ab8484d7ff5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,pillars-toolbox,code,fr,59606e5da8b2e6ee,"# Boite a outils RLE : telecharger, parser et afficher les witnesses de la communaute Life.
+Chargeons d'abord la boite a outils, puis levons le rideau sur l'Acte I.",,,,,,,,b128970d2321d94c,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,pillars-toolbox,code,fr,8c512f9c4291a598,"# Boite a outils RLE : télécharger, parser et afficher les witnesses de la communaute Life.
 import os, re, tempfile, urllib.request
 import io
 import numpy as np
@@ -11896,35 +11905,35 @@ _W, _H, _xs, _ys, _ = parse_rle(_glider)
 print(""Boite a outils RLE prete."")
 print(f""Test parser sur un planeur : en-tete {_W}x{_H}, {len(_xs)} cellules vivantes ""
       f""aux coordonnees {sorted(zip(_xs.tolist(), _ys.tolist()))}"")
-",,,,,,,,59606e5da8b2e6ee,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,acte1-otca,markdown,fr,b98fc66abe5356d9,"### Acte I - SELF-EMULATION : OTCA Metapixel (Brice Due, 2006)
+",,,,,,,,8c512f9c4291a598,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,acte1-otca,markdown,fr,1e03ad80677b55e1,"### Acte I - SELF-EMULATION : OTCA Metapixel (Brice Due, 2006)
 
 - **Auteur / annee** : Brice Due, 2006
 - **Taille** : 2048 x 2048 cellules par metapixel
 - **Tick interne** : 35 328 generations = 1 ""OTCA-tick"" = 1 generation au niveau macro
 - **Source** : [conwaylife.com/wiki/OTCA_metapixel](https://conwaylife.com/wiki/OTCA_metapixel)
 
-Le premier prodige, c'est l'**auto-emulation**. Brice Due construit une *cellule geante* : un carre de plusieurs millions de cellules ordinaires qui, vu de loin, se comporte **exactement** comme une seule cellule de Life. Elle a deux etats (allumee / eteinte), elle observe ses huit voisines geantes, et toutes les 35 328 generations elle applique la règle B3/S23 a l'echelle macro. Pavez le plan de metapixels et vous obtenez un Game of Life *a l'interieur* d'un Game of Life, a une echelle 2048 fois plus grande et 35 328 fois plus lente.
+Le premier prodige, c'est l'**auto-emulation**. Brice Due construit une *cellule geante* : un carré de plusieurs millions de cellules ordinaires qui, vu de loin, se comporte **exactement** comme une seule cellule de Life. Elle a deux états (allumee / eteinte), elle observe ses huit voisines geantes, et toutes les 35 328 generations elle applique la règle B3/S23 a l'échelle macro. Pavez le plan de metapixels et vous obtenez un Game of Life *a l'interieur* d'un Game of Life, a une échelle 2048 fois plus grande et 35 328 fois plus lente.
 
-C'est **Life calcule Life** : une self-similarite formelle, l'analogue cellulaire d'un interpreteur qui s'execute lui-même. C'est aussi la cle de voute de l'Epic, car combinee a l'Acte II elle donne *Life calcule Life qui calcule un CPU* - une Turing-completude par construction, en cascade.
+C'est **Life calcule Life** : une self-similarite formelle, l'analogue cellulaire d'un interpreteur qui s'exécute lui-même. C'est aussi la cle de voute de l'Epic, car combinee a l'Acte II elle donne *Life calcule Life qui calcule un CPU* - une Turing-completude par construction, en cascade.
 
 | Caractéristique | Valeur |
 |-----------------|--------|
 | Auteur / annee | Brice Due, 2006 |
 | Pattern RLE | `otcametapixel.rle` |
-| Taille (en-tete) | 2 048 x 2 048 |
+| Taille (en-tête du fichier `.rle`) | 2 058 x 2 058 |
 | Generations par tick | 35 328 |
-| Niveau quadtree (estime) | ~9 |
-| Population (initiale) | ~50 000 cellules |
-| Ce qu'il demontre | Life emule Life : chaque metapixel = 1 cellule B3/S23 macro |
+| Niveau quadtree (estimé) | ~9 |
+| Population (initiale, mesurée dans le witness) | 64 691 |
+| Ce qu'il démontre | Life emule Life : chaque metapixel = 1 cellule B3/S23 macro |
 
-**Theoreme cible Lean** (Phase 7, Epic #1647) :
+**Théorème cible Lean** (Phase 7, Epic #1647) :
 ```lean
 theorem otca_self_emulates : forall g, is_bounded g ->
     step^[35328] (zoom_otca g) = zoom_otca (step g) := by native_decide
 ```
 
-Regardons le witness : un metapixel, soit une cellule de Life faite de cellules de Life.",,,,,,,,b98fc66abe5356d9,,,,,,,,
+Regardons le witness : un metapixel, soit une cellule de Life faite de cellules de Life.",,,,,,,,1e03ad80677b55e1,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,render-otca,code,fr,c02ca0e6306bf295,"# Acte I : OTCA Metapixel (Brice Due, 2006) - la cellule qui est une cellule.
 txt = fetch_rle(""otcametapixel.rle"")
 if txt is not None:
@@ -11932,32 +11941,32 @@ if txt is not None:
     show_header(""otcametapixel.rle"", W, H, xs, ys, com)
     render_pattern(xs, ys, ""OTCA Metapixel (Brice Due, 2006) - une cellule B3/S23 geante"")
 ",,,,,,,,c02ca0e6306bf295,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,acte2-cpu,markdown,fr,46466894c2afdf90,"### Acte II - CALCUL : machine de Turing (Rendell, 2000) et calculateurs numériques
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,acte2-cpu,markdown,fr,430ccee4eac2e056,"### Acte II - CALCUL : machine de Turing (Rendell, 2000) et calculateurs numériques
 
 - **Paul Rendell, avril 2000** : la première machine de Turing explicite construite dans Life - le witness telechargeable ci-dessous.
 - **Nicolay Beluchenko / Andy Stearns, 2016** : un **CPU digital** programmable construit a partir d'OTCA metapixels, executant un cycle en 1 048 576 generations. Ce CPU est le temoin `cpu_witness` declare dans `Conway.Life.Pillars.lean` (Phase 8 cible).
-- **Nicholas Carlini, 2020** : un CPU 8 bits complet (ROM, RAM, ALU, registres, horloge), de l'ordre de $10^6$ cellules - indépendant du CPU de Beluchenko/Stearns. Trop massif pour etre rendu ou decide ici, c'est le sommet de la discipline.
+- **Nicholas Carlini, 2020** : un CPU 8 bits complet (ROM, RAM, ALU, registres, horloge), de l'ordre de $10^6$ cellules - indépendant du CPU de Beluchenko/Stearns. Trop massif pour être rendu ou decide ici, c'est le sommet de la discipline.
 - **Adam P. Goucher, additionneur Spartan** : environ 5 000 cellules, cible pragmatique pour la preuve Lean.
 
-Le deuxieme prodige, c'est le **calcul** proprement dit. Des 1970, Conway conjecturait que Life etait Turing-complete ; Paul Rendell l'a prouve *par construction* en 2000 en batissant une vraie machine de Turing - ruban, tete de lecture, table de transitions - entierement en cellules B3/S23. Vingt ans plus tard, Carlini est alle au bout de l'idee avec un microprocesseur 8 bits fonctionnel.
+Le deuxieme prodige, c'est le **calcul** proprement dit. Des 1970, Conway conjecturait que Life était Turing-complète ; Paul Rendell l'a prouve *par construction* en 2000 en batissant une vraie machine de Turing - ruban, tete de lecture, table de transitions - entierement en cellules B3/S23. Vingt ans plus tard, Carlini est alle au bout de l'idee avec un microprocesseur 8 bits fonctionnel.
 
 | Caractéristique | Machine de Turing (Rendell) | CPU digital (Beluchenko/Stearns) |
 |-----------------|------------------------------|----------------------------------|
 | Auteur / annee | Paul Rendell, 2000 | Beluchenko / Stearns, 2016 |
 | Pattern RLE | `turingmachine.rle` | (integre dans OTCA metapixels) |
 | Generations par cycle | Variable (depend du programme) | 1 048 576 |
-| Niveau quadtree (estime) | ~10 | ~12 |
-| Ce qu'il demontre | Turing-completude constructive | CPU programmable dans Life |
+| Niveau quadtree (estimé) | ~10 | ~12 |
+| Ce qu'il démontre | Turing-completude constructive | CPU programmable dans Life |
 
-Pour la preuve formelle, on ne vise pas le CPU complet (le binaire `native_decide` n'y tiendrait pas) : on commence par l'**additionneur Spartan** de Goucher, assez petit pour etre decide, et on remonte si la machine suit.
+Pour la preuve formelle, on ne vise pas le CPU complet (le binaire `native_decide` n'y tiendrait pas) : on commence par l'**additionneur Spartan** de Goucher, assez petit pour être decide, et on remonte si la machine suit.
 
-**Theoreme cible Lean** (additionneur, Phase 8) :
+**Théorème cible Lean** (additionneur, Phase 8) :
 ```lean
 theorem spartan_adder_correct : forall (a b : Fin 256),
     read_output (step^[adder_cycle] (adder_init a b)) = a + b := by native_decide
 ```
 
-Le witness ci-dessous est la machine de Rendell : un objet qu'on peut tenir dans une grille et regarder.",,,,,,,,46466894c2afdf90,,,,,,,,
+Le witness ci-dessous est la machine de Rendell : un objet qu'on peut tenir dans une grille et regarder.",,,,,,,,430ccee4eac2e056,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,render-cpu,code,fr,46f3786c59e15a54,"# Acte II : machine de Turing de Paul Rendell (2000) - le calcul rendu visible.
 txt = fetch_rle(""turingmachine.rle"")
 if txt is not None:
@@ -11965,10 +11974,10 @@ if txt is not None:
     show_header(""turingmachine.rle"", W, H, xs, ys, com)
     render_pattern(xs, ys, ""Machine de Turing dans Life (Paul Rendell, 2000)"")
 ",,,,,,,,46f3786c59e15a54,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,acte3-gemini,markdown,fr,7150788bb465adaa,"### Acte III - REPLICATION : Gemini (Andrew Wade, 2010)
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,acte3-gemini,markdown,fr,8e231a077982ec2f,"### Acte III - REPLICATION : Gemini (Andrew Wade, 2010)
 
 - **Auteur / annee** : Andrew J. Wade, 30 juillet 2010
-- **Periode** : 33 699 586 generations pour produire une copie complete
+- **Période** : 33 699 586 generations pour produire une copie complète
 - **Deplacement** : knightship oblique, direction (5, 1)
 - **Source** : [conwaylife.com/wiki/Gemini](https://conwaylife.com/wiki/Gemini)
 
@@ -11982,17 +11991,17 @@ Sa structure se lit directement sur le witness. L'essentiel de sa masse n'est pa
 | Pattern RLE | `gemini.rle` |
 | Generations par replication | 33 699 586 |
 | Deplacement | Knightship oblique, direction (5, 1) |
-| Niveau quadtree (estime) | ~14 |
+| Niveau quadtree (estimé) | ~14 |
 | Population (initiale) | ~846 000 cellules |
-| Ce qu'il demontre | Auto-replication : Gemini construit sa copie, detruit l'original, recommence |
+| Ce qu'il démontre | Auto-replication : Gemini construit sa copie, detruit l'original, recommence |
 
-**Theoreme cible Lean** (Phase 6, Epic #1647) :
+**Théorème cible Lean** (Phase 6, Epic #1647) :
 ```lean
 theorem gemini_replicates :
     evolve 33699586 gemini = shift (5, 1) gemini := by native_decide
 ```
 
-Le witness est trop vaste pour une grille dense : on l'affiche en nuage de points.",,,,,,,,7150788bb465adaa,,,,,,,,
+Le witness est trop vaste pour une grille dense : on l'affiche en nuage de points.",,,,,,,,8e231a077982ec2f,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,render-gemini,code,fr,c3162b4a1e71b3be,"# Acte III : Gemini (Andrew Wade, 2010) - le self-replicator oblique.
 txt = fetch_rle(""gemini.rle"")
 if txt is not None:
@@ -12000,7 +12009,7 @@ if txt is not None:
     show_header(""gemini.rle"", W, H, xs, ys, com)
     render_pattern(xs, ys, ""Gemini (Andrew Wade, 2010) - self-replicator oblique"")
 ",,,,,,,,c3162b4a1e71b3be,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,synthese-piliers,markdown,fr,58f714ddfbaa64c0,"### La cascade : Life calcule Life qui calcule un CPU
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,synthese-piliers,markdown,fr,187a8f19613b7e9a,"### La cascade : Life calcule Life qui calcule un CPU
 
 Remettons les trois actes dans l'ordre ou on vient de les voir :
 
@@ -12012,32 +12021,35 @@ Remettons les trois actes dans l'ordre ou on vient de les voir :
 
 La beaute de l'histoire tient a leur **emboitement**, et l'ordre est une montee en puissance. L'Acte I prouve que Life peut faire tourner Life. L'Acte II prouve que Life peut faire tourner un ordinateur. En composant les deux, on obtient un ordinateur *a l'interieur d'un metapixel* : **Life calcule Life qui calcule un CPU**. Et l'Acte III, le bouquet final, garantit qu'une telle construction peut se **reproduire** toute seule - on tient la, en cellules vivantes, les trois ingredients de von Neumann d'une machine auto-reproductrice et universelle.
 
-C'est pourquoi ces trois witnesses sont les *piliers* de l'Epic #1647 : chacun est une preuve par construction, et leur composition est l'argument de Turing-completude le plus tangible qu'on puisse donner du Game of Life.
+C'est pourquoi ces witnesses sont les *piliers* de l'Epic #1647 : chacun est une preuve par construction, et leur composition est l'argument de Turing-completude le plus tangible qu'on puisse donner du Game of Life.
 
-### Noms de theoremes : narration vs implementation
+### Noms de théorèmes : narration vs implémentation
 
-Les theoremes cibles ci-dessus (`otca_self_emulates`, `spartan_adder_correct`, `gemini_replicates`) sont des **noms prospectifs** qui servent le recit pedagogique. Les noms reels dans le code Lean suivent la convention `<pattern>_witness` :
+Les théorèmes cibles ci-dessus (`otca_self_emulates`, `spartan_adder_correct`, `gemini_replicates`) sont des **noms prospectifs** qui servent le recit pedagogique. Les noms réels dans le code Lean suivent la convention `<pattern>_witness` :
 
-| Nom prospectif (section 6) | Nom reel dans `Pillars.lean` | Statut |
+| Nom prospectif (section 3) | Nom réel dans `Pillars.lean` | Statut |
 |----------------------------|------------------------------|--------|
-| `otca_self_emulates` | `otca_metapixel_witness` | prouve (vide) - Phase 7 reel |
-| `spartan_adder_correct` | `cpu_witness` (Beluchenko/Stearns) | prouve (vide) - Phase 8 reel |
-| `gemini_replicates` | `gemini_witness` | prouve (vide) - Phase 6 reel |
-| — | `unitcell_witness` (Beluchenko 2011) | prouve (vide) - Phase 8 reel |
+| `otca_self_emulates` | `otca_metapixel_witness` | prouve (vide) - Phase 7 réel |
+| `spartan_adder_correct` | `cpu_witness` (Beluchenko/Stearns) | prouve (vide) - Phase 8 réel |
+| `gemini_replicates` | `gemini_witness` | prouve (vide) - Phase 6 réel |
+| — | `unitcell_initial_population` + `unitcell_initial_nonempty` | **prouve sur une grille REELLE** (RLE charge par `include_str`) |
 
-> **Statut compile = prouve contre grilles vides.** Les quatre temoins compilent **sans `sorry`** : `otcaInitial` / `otcaTarget` etc. sont des grilles vides (`([] : Grid)`), donc `evolveHashlifeFastMemo N [] = []` est prouve trivialement par le lemme `evolveHashlifeFastMemo_empty`. Aucun axiome n'est admis. La **preuve reelle** - le pattern RLE charge (OTCA 70 KB, Gemini plusieurs MB) pousse dans `native_decide` - reste l'objectif des Phases 6-8 une fois la memoization Hashlife en place.
+> **Statut compile.** Les temoins compilent **sans `sorry`** et aucun axiome n'est admis. **Trois** d'entre eux (`otca_metapixel_witness`, `gemini_witness`, `cpu_witness`) portent encore sur des grilles **vides** : `otcaInitial` / `otcaTarget` valent `([] : Grid)`, donc `evolveHashlifeFastMemo N [] = []` se prouve par le lemme `evolveHashlifeFastMemo_empty`. Le **quatrieme** a franchi l'etape : l'UnitCell charge son RLE reel (`include_str ""../../patterns/p5760unitlifecell.rle""` + `RLE.parseRLE!`) et ses theoremes portent sur une grille **RLE reelle chargee par `include_str`**. La preuve reelle des trois autres - le pattern RLE charge (l'OTCA pese **164 976 octets** mesure, Gemini plusieurs MB) pousse dans `native_decide` - reste l'objectif des Phases 6-8 une fois la memoization Hashlife en place.
 
-Le quatrieme temoin (`unitcell_witness`, UnitCell de Beluchenko, 4096 generations) n'apparait pas dans le recit des trois actes : c'est un metapixel plus petit que l'OTCA, plus accessible comme première cible `native_decide`. Il est integrallement défini dans `Pillars.lean` et constitue un jalon intermediaire naturel avant l'OTCA complete.
+Le temoin UnitCell (`unitcell_initial_population`, `unitcell_initial_nonempty`) n'apparait pas dans le recit des trois actes : c'est un metapixel plus petit que l'OTCA, plus accessible comme premiere cible. Il est **charge** depuis le fichier communautaire `patterns/p5760unitlifecell.rle` (`include_str`, en-tete 499 x 499, **14 792 octets**, population **4761**) et non recopie en litteral dans `Pillars.lean`. `unitcellGens := 5760` **declare** sa periode, mais **aucun theoreme ne la prouve** - et c'est coherent avec la nature du motif : la cellule p5760 est un systeme **ouvert** qui emet des planeurs sans fin, donc une preuve du type `evolveHashlifeFastMemo N unitcellInitial = unitcellInitial` n'est pas la bonne cible (elle n'aurait de sens que sur un tore). C'est un resultat **documente**, pas un oubli. La **paternite** n'est pas tranchee par la mesure : `patterns/README.md` attribue le fichier present a **David Bell**, tandis que l'UnitCell de **Beluchenko (2011, 4 096 generations)** est un **autre** motif, absent de l'archive.
 
-Chaque preuve reelle est prevue comme un seul `by native_decide` une fois la memoization Hashlife en place.
-",,,,,,,,58f714ddfbaa64c0,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,50dcfe8c,code,fr,84109318af83dd08,"# La source de verite des 3 piliers : Pillars.lean en direct.
+Chaque preuve réelle est prevue comme un seul `by native_decide` une fois la memoization Hashlife en place.
+",,,,,,,,187a8f19613b7e9a,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,50dcfe8c,code,fr,1c09448aa88613a0,"# La source de verite des 3 piliers : Pillars.lean en direct.
 # L'Epic #1647 ne se contente pas de raconter l'histoire des piliers : il les encode
-# dans le module Conway.Life.Pillars.lean, avec 4 temoins declares comme theoremes
-# (otca_metapixel_witness, unitcell_witness, gemini_witness, cpu_witness).
-# Chaque temoin est PROUVE (sans sorry) contre des grilles vides placeholders :
+# dans le module Conway.Life.Pillars.lean : TROIS temoins declares comme theoremes
+# (otca_metapixel_witness, gemini_witness, cpu_witness) et l'UnitCell par DEUX
+# theoremes sur une grille REELLE (unitcell_initial_population, _nonempty).
+# Les trois premiers sont PROUVÉS (sans sorry) contre des grilles vides placeholders :
 # evolveHashlifeFastMemo N [] = [] est resolu par le lemme evolveHashlifeFastMemo_empty.
-# La preuve REELLE (pattern RLE charge, native_decide) attend la memoization Hashlife.
+# L'UnitCell, lui, charge son RLE reel (include_str) : sa preuve ne
+# porte PAS sur une grille vide. La preuve RÉELLE des trois autres (pattern RLE
+# charge, native_decide) attend la memoization Hashlife.
 # L'import RLE.lean est actif, permettant de charger des patterns RLE directement dans
 # les defs. Verifions le fichier et ses declarations cles.
 import re
@@ -12045,7 +12057,7 @@ import re
 _SORRY_RE = re.compile(r'^\s*sorry\b')  # baseline anti-regression (cf lean-ci-sorry-filter)
 
 def real_sorry(path):
-    """"""Compte les sorry REELS (axiomes implicites), exclut commentaires et prose.""""""
+    """"""Compte les sorry RÉELS (axiomes implicites), exclut commentaires et prose.""""""
     if not path.exists():
         return -1
     return sum(1 for l in path.read_text(encoding='utf-8').splitlines() if _SORRY_RE.match(l))
@@ -12058,7 +12070,7 @@ lines = content.splitlines()
 print(f'Fichier : Conway/Life/Pillars.lean ({len(lines)} lignes)')
 print()
 
-# Verifier l'import RLE
+# Vérifier l'import RLE
 has_rle_import = any('import Conway.Life.RLE' in l for l in lines)
 print(f'Import Conway.Life.RLE active : {has_rle_import}')
 print()
@@ -12069,19 +12081,20 @@ for i, line in enumerate(lines, 1):
     stripped = line.strip()
     if any(kw in stripped for kw in ['otcaGens', 'unitcellGens', 'geminiGens', 'cpuGens',
                                        'otcaInitial', 'unitcellInitial', 'geminiInitial', 'cpuInitial',
-                                       'otca_metapixel_witness', 'unitcell_witness',
+                                       'otca_metapixel_witness',
+                                       'unitcell_initial_population', 'unitcell_initial_nonempty',
                                        'gemini_witness', 'cpu_witness',
                                        'pulsarGrid', 'pulsar_period3']):
         print(f'  L{i:>3d}: {line.rstrip()[:100]}')
 
 print()
-# Compter les sorry REELS dans Pillars.lean (regex baseline, exclut commentaires/prose)
+# Compter les sorry RÉELS dans Pillars.lean (regex baseline, exclut commentaires/prose)
 n_pillars_sorry = real_sorry(pillars_path)
 print(f'Sorry reels dans Pillars.lean : {n_pillars_sorry} '
-      f'(les 4 temoins sont prouves trivialement contre grilles vides)')
+      f'(trois temoins sur grilles vides, l\'UnitCell sur une grille reelle)')
 print()
 
-# Verifier la theorem RLE prouvee
+# Vérifier la theorem RLE prouvée
 has_pulsar = 'pulsar_period3' in content
 print(f'Temoin RLE prouve (pulsar_period3, via native_decide) : {has_pulsar}')
 if has_pulsar:
@@ -12094,7 +12107,7 @@ if has_pulsar:
                     print(f'  L{i+2:>3d}: {lines[i+1].rstrip()[:100]}')
 
 print()
-# Compter les sorry reels dans les modules Phase 3b/3c (source de verite live)
+# Compter les sorry réels dans les modules Phase 3b/3c (source de verite live)
 memo_path = WIN_LEAN_PROJECT / 'Conway' / 'Life' / 'HashlifeMemo.lean'
 n_memo_sorry = real_sorry(memo_path)
 print(f'Sorry reels dans HashlifeMemo.lean : {n_memo_sorry} (bridge theoremes prouves)')
@@ -12106,15 +12119,16 @@ print(f'Sorry reels dans HashlifeCorrectness.lean : {n_corr_sorry} (P5 = hashlif
 total_phase3 = n_pillars_sorry + n_memo_sorry + n_corr_sorry
 print()
 print(f'Total sorry Phase 3 (Pillars + Memo + Correctness) : {total_phase3}')
-print('Les 4 piliers (OTCA/CPU/Gemini/UnitCell) sont PROUVES contre grilles vides ;')
-print('leur preuve reelle (pattern RLE charge) attend la memoization Hashlife.')
+print('Les temoins OTCA/CPU/Gemini sont PROUVES contre grilles vides ; l\'UnitCell')
+print('porte sur une grille REELLE (RLE charge par include_str).')
+print('La preuve de pattern complete des trois premiers attend la memoization Hashlife.')
 print('Le seul sorry restant est P5 dans HashlifeCorrectness.lean (theoreme principal).')
 print('Le temoin pulsar_period3, prouve par native_decide sur RLE.pulsar_parsed')
-print('(48 cellules), demontre que le pipeline RLE -> Grid -> evolve fonctionne deja.')
-",,,,,,,,84109318af83dd08,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,de4e4b3a,markdown,fr,bb562dd971de33bb,"### Interpretation : le scaffold Lean des piliers (0 sorry)
+print('demontre que le pipeline RLE -> Grid -> evolve fonctionne deja.')
+",,,,,,,,1c09448aa88613a0,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,de4e4b3a,markdown,fr,7b2b169b6acb4bcd,"### Interpretation : le scaffold Lean des piliers (sans sorry)
 
-Le fichier `Pillars.lean` encode les 4 temoins communautaires comme des **theoremes prouves** (0 sorry). L'import `Conway.Life.RLE` est actif, et un **temoin prouve non trivial** (`pulsar_period3`) demontre que le pipeline RLE -> Grid -> evolve fonctionne de bout en bout sur un vrai pattern.
+Le fichier `Pillars.lean` encode les temoins communautaires comme des **théorèmes prouves** (sans sorry). L'import `Conway.Life.RLE` est actif, et un **temoin prouve non trivial** (`pulsar_period3`) démontre que le pipeline RLE -> Grid -> evolve fonctionne de bout en bout sur un vrai pattern.
 
 Structure de chaque temoin :
 
@@ -12128,22 +12142,22 @@ theorem otca_metapixel_witness :
   evolveHashlifeFastMemo_empty otcaGens    -- prouve : evolveHashlifeFastMemo N [] = []
 ```
 
-Les `Initial` et `Target` sont des grilles vides (`[]`) : comme `otcaInitial = otcaTarget = []`, le theoreme se reduit a `evolveHashlifeFastMemo N [] = []`, resolu par le lemme `evolveHashlifeFastMemo_empty`. **Aucun `sorry`, aucun axiome admis** - le module compile a 0 sorry. Les RLE reels (OTCA = 70 KB, Gemini = plusieurs MB) depassent la taille maximale d'un string literal Lean ; leur chargement via un mécanisme de fichier externe est l'étape qui transformera cette preuve triviale en preuve reelle.
+Les `Initial` et `Target` sont des grilles vides (`[]`) : comme `otcaInitial = otcaTarget = []`, le théorème se reduit a `evolveHashlifeFastMemo N [] = []`, resolu par le lemme `evolveHashlifeFastMemo_empty`. **Aucun `sorry`, aucun axiome admis** - le module compile sans sorry. Les RLE réels des trois autres (OTCA = 164 976 octets mesurés, Gemini = plusieurs MB) depassent la taille maximale d'un string literal Lean ; leur chargement via un mécanisme de fichier externe est l'étape qui transformera cette preuve triviale en preuve réelle.
 
-#### Les 4 temoins : prouves contre grilles vides
+#### Les temoins : trois sur grilles vides, l'UnitCell sur une grille reelle
 
-| Temoin | Generations | Niveau quadtree (estime) | Roadmap Phase | Ce que la preuve reelle etablira |
+| Temoin | Generations | Niveau quadtree (estimé) | Roadmap Phase | Ce que la preuve réelle etablira |
 |--------|-------------|--------------------------|---------------|-----------------------------------|
 | `otca_metapixel_witness` | 35 328 | ~9 | Phase 7 | Life emule Life (1 OTCA-tick = 1 generation macro) |
-| `unitcell_witness` | 4 096 | ~7 | Phase 8 | Metapixel compact (Beluchenko 2011) |
+| `unitcell_initial_population` + `unitcell_initial_nonempty` | — | — | Phase 3c **franchi** | UnitCell charge par `include_str` (**RLE reel embarque**) |
 | `gemini_witness` | 33 699 586 | ~14 | Phase 6 | Auto-replication oblique (knightship) |
 | `cpu_witness` | 1 048 576 | ~12 | Phase 8 | CPU digital programmable (Beluchenko/Stearns 2016) |
 
-> **Statut compile vs statut mathematique.** Les quatre theoremes sont *syntaxiquement prouves* (0 sorry, pas d'axiome) parce qu'ils portent sur des grilles vides. La **preuve substantielle** - le pattern RLE reel charge puis pousse dans `native_decide` - reste l'objectif des Phases 6-8. Le notebook distingue donc soigneusement « compile a 0 sorry » de « preuve du pattern reel ».
+> **Statut compile vs statut mathematique.** Les théorèmes sont *syntaxiquement prouves* (sans sorry, pas d'axiome) parce qu'ils portent sur des grilles vides. La **preuve substantielle** - le pattern RLE réel charge puis pousse dans `native_decide` - reste l'objectif des Phases 6-8. Le notebook distingue donc soigneusement « compile sans sorry » de « preuve du pattern réel ».
 
 #### Le temoin prouve non trivial : `pulsar_period3`
 
-Le pipeline est déjà valide sur un pattern reel de taille moderee :
+Le pipeline est déjà valide sur un pattern réel de taille moderee :
 
 ```lean
 theorem pulsar_period3 :
@@ -12151,47 +12165,47 @@ theorem pulsar_period3 :
   native_decide
 ```
 
-Ce theoreme utilise `RLE.pulsar_parsed` (48 cellules reelles) et prouve la periodicite du pulsar par `native_decide`. Contrairement aux 4 piliers (grilles vides), `pulsar_period3` porte sur un **vrai pattern** : il constitue la **preuve de concept** que le pipeline RLE -> Grid -> evolveHashlifeFast fonctionne de bout en bout sur données reelles.
+Ce théorème utilise `RLE.pulsar_parsed` (pattern réel, non vide) et prouve la periodicite du pulsar par `native_decide`. Contrairement aux trois piliers restants sur grilles vides, `pulsar_period3` porte sur un **vrai pattern** : il constitue la **preuve de concept** que le pipeline RLE -> Grid -> evolveHashlifeFast fonctionne de bout en bout sur données réelles.
 
-#### Roadmap : des preuves triviales aux preuves reelles
+#### Roadmap : des preuves triviales aux preuves réelles
 
 | Étape | Module | Description | Statut |
 |-------|--------|-------------|--------|
-| 1 | `HashlifeMemo.lean` | Memoization operationnelle (`hashlifeResultMemo`) | API posee, 0 sorry (bridge theoremes prouves) |
-| 2 | `Pillars.lean` | Chargement RLE reels dans `Initial`/`Target` | 0 sorry (placeholders vides) ; RLE reels en attente (fichiers trop grands pour string literal) |
-| 3 | `HashlifeCorrectness.lean` | Theoreme central P4 (`hashlifeResultAux_correct`) | P4 PROUVE ; seul P5 (`hashlife_correct`) reste en sorry |
-| 4 | Chaque temoin | `by native_decide` sur le pattern reel | En attente des étapes 1-3 |
+| 1 | `HashlifeMemo.lean` | Memoization operationnelle (`hashlifeResultMemo`) | API posee, sans sorry (bridge théorèmes prouves) |
+| 2 | `Pillars.lean` | Chargement RLE réels dans `Initial`/`Target` | sans sorry ; l'UnitCell charge deja son RLE (`include_str`), les trois autres gardent un placeholder vide (fichiers trop grands pour string literal) |
+| 3 | `HashlifeCorrectness.lean` | Théorème central P4 (`hashlifeResultAux_correct`) | P4 PROUVE ; P5 (`hashlife_correct`) reste en sorry |
+| 4 | Chaque temoin | `by native_decide` sur le pattern réel | En attente des étapes 1-3 |
 
-Le chemin vers les preuves reelles est donc : **HashlifeMemo operationnel -> chargement RLE -> native_decide -> temoin prouve sur pattern reel**. Le temoin pulsar confirme que l'infrastructure RLE -> Grid est prete ; il reste a rendre la memoization tractable pour les patterns geants.
-",,,,,,,,bb562dd971de33bb,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,exercice-3-md,markdown,fr,f1328349faece804,"### Exercice 3 : parser un RLE et compter sa population
+Le chemin vers les preuves réelles est donc : **HashlifeMemo operationnel -> chargement RLE -> native_decide -> temoin prouve sur pattern réel**. Le temoin pulsar confirme que l'infrastructure RLE -> Grid est prete ; il reste a rendre la memoization tractable pour les patterns geants.
+",,,,,,,,7b2b169b6acb4bcd,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,exercice-3-md,markdown,fr,b1b115894ef6b766,"### Exercice 3 : parser un RLE et compter sa population
 
 Les trois piliers (OTCA, Turing, Gemini) ne sont que les sommets les plus emblematiques d'un catalogue immense. Des centaines d'autres patterns celebres vivent sur [LifeWiki](https://conwaylife.com/wiki/) et le miroir `copy.sh/life/examples/` : canons a planeurs, spacefillers, grow-by-tail patterns...
 
-**A vous** : implementez `explorer_witness(nom_rle)` qui telecharge un witness, le parse avec la boite a outils de la section 6, puis retourne un tuple `(population, (largeur_bbox, hauteur_bbox))` decrivant le motif. La fonction doit gerer le cas ou le telechargement echoue (reseau indisponible) en retournant `None`.
+**A vous** : implementez `explorer_witness(nom_rle)` qui telecharge un witness, le parse avec la boite a outils de la section 3, puis retourne un tuple `(population, (largeur_bbox, hauteur_bbox))` decrivant le motif. La fonction doit gerer le cas ou le téléchargement echoue (reseau indisponible) en retournant `None`.
 
 **Étapes** :
 1. Appeler `fetch_rle(nom_rle)` pour obtenir le texte RLE.
 2. Appeler `parse_rle(texte)` pour extraire les coordonnees des cellules vivantes.
 3. Calculer la population (`len(xs)`) et les dimensions de la bounding box (`maxx - minx + 1`, `maxy - miny + 1`).
-4. Retourner `(population, (largeur_bbox, hauteur_bbox))` ou `None` si le telechargement echoue.
+4. Retourner `(population, (largeur_bbox, hauteur_bbox))` ou `None` si le téléchargement echoue.
 
-**Idees de witnesses** : `""gosperglidergun.rle""` (canon a planeurs de Gosper, 1970), `""spacefiller.rle""` (remplit le plan a vitesse lineaire), `""max.rle""` (machine ""Max"" de Callahan, croissance quadratique).",,,,,,,,f1328349faece804,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,exercice-3,code,fr,42f9e4bdcb2ef72e,"# Exercice 3 : parser un RLE et compter sa population + bounding box.
-# TODO etudiant : utilisez fetch_rle et parse_rle de la section 6.
-# Etape 1 : telecharger le witness avec fetch_rle(nom).
+**Idees de witnesses** : `""gosperglidergun.rle""` (canon a planeurs de Gosper, 1970), `""spacefiller.rle""` (remplit le plan a vitesse linéaire), `""max.rle""` (machine ""Max"" de Callahan, croissance quadratique).",,,,,,,,b1b115894ef6b766,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,exercice-3,code,fr,daadcaa6c7353f44,"# Exercice 3 : parser un RLE et compter sa population + bounding box.
+# TODO étudiant : utilisez fetch_rle et parse_rle de la section 3.
+# Etape 1 : télécharger le witness avec fetch_rle(nom).
 # Etape 2 : le parser avec parse_rle(texte) -> (W, H, xs, ys, comments).
 # Etape 3 : calculer population et bbox.
 
 def explorer_witness(nom_rle: str) -> dict:
-    result = None  # TODO etudiant
+    result = None  # TODO étudiant
     return result
 
 print(""Exercice a completer"")
-",,,,,,,,42f9e4bdcb2ef72e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-7-turing,markdown,fr,1e45849f327642c2,"## 7. Turing-completude du Game of Life
+",,,,,,,,daadcaa6c7353f44,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-7-turing,markdown,fr,85faade9fd8e620c,"## 5. Turing-completude du Game of Life
 
-La **Turing-completude** du Game of Life a ete conjecturee par Conway lui-même des 1970 et prouvee constructivement par Paul Rendell en 2000.
+La **Turing-completude** du Game of Life a ete conjecturee par Conway lui-même des 1970 et prouvée constructivement par Paul Rendell en 2000.
 
 ### Sequence historique
 
@@ -12213,25 +12227,25 @@ L'argument formel se decompose ainsi :
    theorem nand_gate_correct :
        forall a b, evolve N (nand_pattern a b) contains output (¬(a ∧ b))
    ```
-2. Admettre comme axiome documente (avec reference Sipser/Rendell) que **NAND universel + composition => Turing-complete** :
+2. Admettre comme axiome documente (avec reference Sipser/Rendell) que **NAND universel + composition => Turing-complète** :
    ```lean
    axiom nand_universal_implies_turing_complete :
        (forall a b, computes_nand (g a b)) -> turing_complete Grid step
    ```
-3. En deduire le theoreme final :
+3. En deduire le théorème final :
    ```lean
    theorem game_of_life_turing_complete :
        turing_complete Grid step :=
      nand_universal_implies_turing_complete nand_gate_correct
    ```
 
-**Note** : Pilier 2 (OTCA Metapixel) donne déjà une **forme constructive** de Turing-completude (Life simule Life qui simule un CPU), donc le axiom NAND est redondant mais pedagogiquement utile.",,,,,,,,1e45849f327642c2,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-8-demo,markdown,fr,05e66722531fa1e7,"## 8. Demonstration : simulation pas-a-pas du blinker et du glider
+**Note** : Pilier 2 (OTCA Metapixel) donne déjà une **forme constructive** de Turing-completude (Life simule Life qui simule un CPU), donc le axiom NAND est redondant mais pedagogiquement utile.",,,,,,,,85faade9fd8e620c,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-8-demo,markdown,fr,60265a14394d4d8b,"## 4. Demonstration : simulation pas-a-pas du blinker et du glider
 
-Affichage explicite de toutes les generations sur 8 steps, pour bien visualiser la periodicite (blinker periode 2) et le deplacement (glider periode 4).",,,,,,,,05e66722531fa1e7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,demo-blinker-glider,code,fr,8c2b09e305941de4,"# Blinker - 8 generations
+Affichage explicite de toutes les generations sur 8 steps, pour bien visualiser la periodicite (blinker période 2) et le deplacement (glider période 4).",,,,,,,,60265a14394d4d8b,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,demo-blinker-glider,code,fr,37ca8a2bb5be8c3b,"# Blinker - 8 generations
 blinker8 = simulate_pattern(blinker, 8, padding=2)
-# Glider - 8 generations (= 2 periodes complete)
+# Glider - 8 generations (= 2 périodes complète)
 glider8 = simulate_pattern(glider, 8, padding=5)
 
 fig, axes = plt.subplots(2, 9, figsize=(15, 4))
@@ -12240,12 +12254,12 @@ for i in range(9):
     plot_grid(axes[1, i], glider8[i], 'Glider', i)
 plt.suptitle('Blinker (period 2) vs Glider (period 4, shift (1,1))', fontsize=11)
 plt.tight_layout()
-out2 = '/tmp/lean14_blinker_glider.png'
-plt.savefig(out2, dpi=80, bbox_inches='tight')
-plt.close()
-print(f'Figure sauvee : {out2.rsplit(""/"", 1)[-1]}')
+buf2 = io.BytesIO()
+fig.savefig(buf2, format='png', dpi=80, bbox_inches='tight')
+plt.close(fig)
+display(Image(data=buf2.getvalue()))
 print()
-# Illustrations numeriques (les preuves formelles sont dans Life.lean)
+# Illustrations numériques (les preuves formelles sont dans Life.lean)
 print('Illustrations de periodicite :')
 for k in [2, 4, 6, 8]:
     eq = np.array_equal(blinker8[k], blinker8[0])
@@ -12254,19 +12268,19 @@ print()
 print('Illustrations de deplacement :')
 for k in [4, 8]:
     eq_offsets = (live_offsets(glider8[k]) == live_offsets(glider8[0]))
-    print(f'  step^{k}(glider) ~= shift(glider) (memes offsets) ? {eq_offsets}')",,,,,,,,8c2b09e305941de4,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-8b-interp,markdown,fr,12d9954fb4132348,"### Interpretation : structure spatio-temporelle
+    print(f'  step^{k}(glider) ~= shift(glider) (memes offsets) ? {eq_offsets}')",,,,,,,,37ca8a2bb5be8c3b,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-8b-interp,markdown,fr,4fa812168caca02c,"### Interpretation : structure spatio-temporelle
 
-Le blinker reproduit **exactement** sa configuration toutes les 2 generations - c'est la definition d'un oscillateur. Le glider reproduit **sa silhouette** (mêmes offsets relatifs entre cellules) toutes les 4 generations, mais translatee de $(1, 1)$ - c'est un vaisseau de vitesse $c/4$ ou $c$ est la vitesse limite de Life.
+Le blinker reproduit **exactement** sa configuration toutes les 2 generations - c'est la définition d'un oscillateur. Le glider reproduit **sa silhouette** (mêmes offsets relatifs entre cellules) toutes les 4 generations, mais translatee de $(1, 1)$ - c'est un vaisseau de vitesse $c/4$ ou $c$ est la vitesse limite de Life.
 
-Ces deux patterns sont les **briques elementaires** des constructions ulterieures :
+Ces deux patterns sont les **briques élémentaires** des constructions ulterieures :
 - Les blinkers et autres oscillateurs servent d'**horloges** dans le CPU digital (Beluchenko/Stearns) ou le ribosome Gemini.
-- Les gliders servent de **signaux** (bits) transportes sur des canaux periodiques.",,,,,,,,12d9954fb4132348,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-9-lean,markdown,fr,d66cb594ca6b78cc,"## 9. Le port Lean 4 : `conway_lean/Conway/Life.lean`
+- Les gliders servent de **signaux** (bits) transportes sur des canaux periodiques.",,,,,,,,4fa812168caca02c,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-9-lean,markdown,fr,c7d7c09ee6f9d7b5,"### Annexe D — Le port Lean 4 en détail : `conway_lean/Conway/Life.lean`
 
-Le fichier `conway_lean/Conway/Life.lean` est la **Phase 1** de l'Epic #1647 : les fondations Lean du Game of Life. Cible : 0 sorry, `lake build Conway.Life` SUCCESS local.
+Le fichier `conway_lean/Conway/Life.lean` est la **Phase 1** de l'Epic #1647 : les fondations Lean du Game of Life. Cible : sans sorry, `lake build Conway.Life` SUCCESS local.
 
-### 9.1 Encodage : `List (Int × Int)` et non `Finset`
+#### D.1 Encodage : `List (Int × Int)` et non `Finset`
 
 Le choix crucial de la representation a ete guide par la compatibilite avec `native_decide` :
 
@@ -12274,11 +12288,11 @@ Le choix crucial de la representation a ete guide par la compatibilite avec `nat
 abbrev Grid := List (Int × Int)
 ```
 
-Pourquoi `List` plutot que `Finset (Int × Int)` ? L'egalite `Finset` fait intervenir `Quot.lift` (le type est un quotient de listes par permutation). Quand le kernel Lean essaie de reduire `Finset` equality construit via `image`/`biUnion`/`filter`, il doit traverser cette couche de quotients — ca explose le budget de reduction.
+Pourquoi `List` plutot que `Finset (Int × Int)` ? L'égalité `Finset` fait intervenir `Quot.lift` (le type est un quotient de listes par permutation). Quand le kernel Lean essaie de reduire `Finset` equality construit via `image`/`biUnion`/`filter`, il doit traverser cette couche de quotients — ca explose le budget de reduction.
 
-En revanche, l'egalite de `List` est une **comparaison structurelle** (cons par cons). En stockant les cellules dans l'ordre lexicographique trie, le `step` produit une liste dans le même ordre, et `native_decide` verifie `true/false` en un eclair.
+En revanche, l'égalité de `List` est une **comparaison structurelle** (cons par cons). En stockant les cellules dans l'ordre lexicographique trie, le `step` produit une liste dans le même ordre, et `native_decide` vérifie `true/false` en un éclair.
 
-### 9.2 Le step B3/S23 sur List
+#### D.2 Le step B3/S23 sur List
 
 ```lean
 def mooreNeighbors (p : Int × Int) : List (Int × Int) := ...
@@ -12295,9 +12309,9 @@ def step (g : Grid) : Grid :=
 def evolve (n : Nat) (g : Grid) : Grid := step^[n] g
 ```
 
-Note cle : **tous les predicats retournent `Bool`**, pas `Prop`. Cela permet a `native_decide` de compiler vers du code natif et de verifier par exécution directe.
+Note cle : **tous les predicats retournent `Bool`**, pas `Prop`. Cela permet a `native_decide` de compiler vers du code natif et de vérifier par exécution directe.
 
-### 9.3 Predicats (Bool-valued pour native_decide)
+#### D.3 Predicats (Bool-valued pour native_decide)
 
 ```lean
 def isStillLife (g : Grid) : Bool := step g == g
@@ -12308,7 +12322,7 @@ def isSpaceship (g : Grid) (n : Nat) (v : Int × Int) : Bool :=
 
 Les trois retournent `Bool` et sont utilisables directement avec `native_decide` pour prouver `... = true`.
 
-### 9.4 Patterns canoniques (Phase 1)
+#### D.4 Patterns canoniques (Phase 1)
 
 ```lean
 def block : Grid := [(0, 0), (0, 1), (1, 0), (1, 1)]
@@ -12317,7 +12331,7 @@ def glider : Grid := [(0, 0), (1, 0), (1, 2), (2, 0), (2, 1)]
 -- + beehive, blinker_v, toad, beacon
 ```
 
-### 9.5 Microproofs Phase 1
+#### D.5 Microproofs Phase 1
 
 ```lean
 theorem block_still_life : isStillLife block = true := by native_decide
@@ -12328,9 +12342,9 @@ theorem beacon_period_two : isOscillator beacon 2 = true := by native_decide
 theorem glider_spaceship : isSpaceship glider 4 (1, -1) = true := by native_decide
 ```
 
-### 9.6 Phase 2 : Spaceships + Oscillateurs (PR #1975)
+#### D.6 Phase 2 : Spaceships + Oscillateurs (PR #1975)
 
-Deux nouveaux modules etendent les fondations :
+De nouveaux modules etendent les fondations :
 
 **`Conway/Life/Spaceships.lean`** — vaisseaux period-4, displacement (0, 2) :
 ```lean
@@ -12339,23 +12353,23 @@ theorem mwss_spaceship : isSpaceship mwss 4 (0, 2) = true := by native_decide
 theorem hwss_spaceship : isSpaceship hwss 4 (0, 2) = true := by native_decide
 ```
 
-**`Conway/Life/Oscillators.lean`** — still-lifes supplementaires + oscillateurs majeurs :
+**`Conway/Life/Oscillators.lean`** — still-lifes supplémentaires + oscillateurs majeurs :
 ```lean
--- 5 still-lifes supplementaires
+-- still-lifes supplémentaires
 theorem loaf_still_life : isStillLife loaf = true := by native_decide
 theorem boat_still_life : isStillLife boat = true := by native_decide
 theorem tub_still_life : isStillLife tub = true := by native_decide
 theorem pond_still_life : isStillLife pond = true := by native_decide
 theorem ship_still_life : isStillLife ship = true := by native_decide
--- 2 oscillateurs ""borderline"" qui passent native_decide !
+-- oscillateurs ""borderline"" qui passent native_decide !
 theorem pulsar_period_three : isOscillator pulsar 3 = true := by native_decide
 theorem pentadecathlon_period_15 : isOscillator pentadecathlon 15 = true := by native_decide
 ```
 
-**Total : 17 theoremes, 0 sorry** sur les modules Life (`Life.lean` + `Spaceships.lean` + `Oscillators.lean`).
+**Total : tous les théorèmes prouves, sans sorry** sur les modules Life (`Life.lean` + `Spaceships.lean` + `Oscillators.lean`).
 
-Verifions les statistiques.",,,,,,,,d66cb594ca6b78cc,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,life-lean-stats,code,fr,70b112a28cd12e24,"# Statistiques des 3 modules Life
+Verifions les statistiques.",,,,,,,,c7d7c09ee6f9d7b5,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,life-lean-stats,code,fr,038fde986f26c53f,"# Statistiques des modules Life
 life_dir = WIN_LEAN_PROJECT / 'Conway' / 'Life'
 life_files = {
     'Life.lean': life_dir.parent / 'Life.lean',
@@ -12389,51 +12403,51 @@ for name, path in life_files.items():
 print('-' * 55)
 print(f'  {""TOTAL"":<30s} {total_lines:>4d} lignes | {total_defs:>2d} defs | {total_theorems:>2d} thms | sorry={total_sorry}')
 print()
-print(f'Cible Phase 1+2 : sorry = 0 ... {""ATTEINT"" if total_sorry == 0 else ""ECHEC""}')",,,,,,,,70b112a28cd12e24,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-9b-interp,markdown,fr,4d8ff69542ad0b73,"### Interpretation : statut Phase 1 + Phase 2
+print(f'Cible Phase 1+2 : sorry = 0 ... {""ATTEINT"" if total_sorry == 0 else ""ECHEC""}')",,,,,,,,038fde986f26c53f,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-9b-interp,markdown,fr,d39915d670de2a9f,"### Interpretation : statut Phase 1 + Phase 2
 
-Les modules Life sont compacts (lignes non tenues en prose, 17 theoremes, 31 definitions) mais couvrent **toutes les briques fondamentales** du Game of Life :
+Les modules Life sont compacts (lignes non tenues en prose) mais couvrent **toutes les briques fondamentales** du Game of Life :
 
-| Module | Theoremes | Patterns |
+| Module | Théorèmes | Patterns |
 |--------|-----------|----------|
-| `Life.lean` | 7 (block, beehive, blinker, toad, beacon, glider) | Fondations B3/S23 |
-| `Spaceships.lean` | 3 (LWSS, MWSS, HWSS) | Vaisseaux period-4 |
-| `Oscillators.lean` | 7 (loaf, boat, tub, pond, ship + pulsar p3, pentadecathlon p15) | Still-lifes + oscillateurs |
+| `Life.lean` | block, beehive, blinker, toad, beacon, glider | Fondations B3/S23 |
+| `Spaceships.lean` | LWSS, MWSS, HWSS | Vaisseaux period-4 |
+| `Oscillators.lean` | loaf, boat, tub, pond, ship + pulsar p3, pentadecathlon p15 | Still-lifes + oscillateurs |
 
-**`sorry` = 0** sur les modules Life. L'ensemble `lake build Conway` compile avec SUCCESS (3331 jobs). Les theoremes ""borderline"" (pulsar 48 cells, pentadecathlon period 15) passent `native_decide` sans timeout.
+**Aucun `sorry`** sur les modules Life. L'ensemble `lake build Conway` compile avec SUCCESS. Les théorèmes ""borderline"" (pulsar (population 48), pentadecathlon (periode 15)) passent `native_decide` sans timeout.
 
-La verification finale s'effectue par `lake build` dans la section suivante.",,,,,,,,4d8ff69542ad0b73,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-9-7-eval-md,markdown,fr,98a05a1878aae55b,"### 9.7 Interroger la source de verite : `#eval` du zoo A4
+La vérification finale s'effectue par `lake build` dans la section suivante.",,,,,,,,d39915d670de2a9f,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-9-7-eval-md,markdown,fr,f4ca7f0f78143c08,"### 6.1 Interroger la source de verite : `#eval` du zoo A4
 
 Les sections précédentes ont *illustre* numeriquement (numpy) le comportement des patterns. Ici on interroge **directement la source de verite Lean** : les predicats `isSpaceship`, `isStillLife` et `isOscillator` définis dans `Conway.Life`, `Conway.Life.Spaceships` et `Conway.Life.Oscillators`.
 
-Ces predicats sont des fonctions **booleennes** sur `Grid = List (Int x Int)`. Ce sont *exactement* les mêmes definitions que celles fermees par les theoremes `native_decide` du port Lean (issue A4) : un `#eval p = true` ici correspond a un theoreme `p = true := by native_decide` la-bas. La cellule ci-dessous ecrit un fichier `.lean` qui importe les trois modules, evalue le **zoo de patterns produit par A4**, et execute via `lake env lean` :
+Ces predicats sont des fonctions **booleennes** sur `Grid = List (Int x Int)`. Ce sont *exactement* les mêmes définitions que celles fermees par les théorèmes `native_decide` du port Lean (issue A4) : un `#eval p = true` ici correspond a un théorème `p = true := by native_decide` la-bas. La cellule ci-dessous ecrit un fichier `.lean` qui importe les modules, évalue le **zoo de patterns produit par A4**, et exécute via `lake env lean` :
 
-- **Vaisseaux** (`Spaceships.lean`) : LWSS, MWSS, HWSS — `isSpaceship _ 4 (0, 2)` (periode 4, deplacement de 2 cellules).
-- **Still-lifes supplementaires** (`Oscillators.lean`) : loaf, boat, pond — `isStillLife _`.
-- **Oscillateur** : pulsar (periode 3, 48 cellules) — `isOscillator pulsar 3`.
+- **Vaisseaux** (`Spaceships.lean`) : LWSS, MWSS, HWSS — `isSpaceship _ 4 (0, 2)` (période 4, deplacement de 2 cellules).
+- **Still-lifes supplémentaires** (`Oscillators.lean`) : loaf, boat, pond — `isStillLife _`.
+- **Oscillateur** : pulsar (période 3) — `isOscillator pulsar 3`.
 
-> **`#eval` interprete vs `native_decide`.** Le `#eval` ci-dessus exerce l'**interprete** Lean : il convient aux predicats peu profonds (quelques generations). Le pentadecathlon, lui, demande 15 generations : son `#eval` interprete serait lent, alors que le theoreme `pentadecathlon_period_15 : isOscillator pentadecathlon 15 = true := by native_decide` (section 10) **compile** la decision en code natif — c'est tout l'intérêt de `native_decide`. On laisse donc ce cas a la preuve compilee de la section 10.
+> **`#eval` interprete vs `native_decide`.** Le `#eval` ci-dessus exerce l'**interprete** Lean : il convient aux predicats peu profonds (quelques generations). Le pentadecathlon, lui, demande 15 generations : son `#eval` interprete serait lent, alors que le théorème `pentadecathlon_period_15 : isOscillator pentadecathlon 15 = true := by native_decide` (section 7) **compile** la decision en code natif — c'est tout l'intérêt de `native_decide`. On laisse donc ce cas a la preuve compilee de la section 7.
 
-Contrairement aux verifications numpy (qui *illustrent* sur une grille bornee), ces `#eval` exercent le code formellement verifie : si l'un retournait `false`, le theoreme correspondant serait faux. C'est la différence entre « le notebook montre » et « Life.lean prouve ».",,,,,,,,98a05a1878aae55b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,13a8ea0a,code,fr,fe4728906999650d,"# Interroge la source de verite : #eval direct sur les predicats Lean reels du zoo A4.
-# On ecrit un fichier .lean qui importe les 3 modules Life et evalue chaque pattern,
-# puis on l'execute via `lake env lean`. Chaque `true` = sortie de la fonction Bool
-# (les memes definitions que ferment les theoremes `native_decide` du port Lean).
+Contrairement aux vérifications numpy (qui *illustrent* sur une grille bornee), ces `#eval` exercent le code formellement vérifié : si l'un retournait `false`, le théorème correspondant serait faux. C'est la différence entre « le notebook montre » et « Life.lean prouve ».",,,,,,,,f4ca7f0f78143c08,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,13a8ea0a,code,fr,f3d00e10c2a6128f,"# Interroge la source de verite : #eval direct sur les predicats Lean réels du zoo A4.
+# On ecrit un fichier .lean qui importe les modules Life et évalue chaque pattern,
+# puis on l'exécute via `lake env lean`. Chaque `true` = sortie de la fonction Bool
+# (les memes définitions que ferment les théorèmes `native_decide` du port Lean).
 # Le chargement de l'environnement Lean (imports Mathlib) prend quelques minutes.
 snippet = """"""import Conway.Life
 import Conway.Life.Spaceships
 import Conway.Life.Oscillators
 open Conway.Life
--- Vaisseaux (Spaceships.lean) : periode 4, deplacement (0, 2)
+-- Vaisseaux (Spaceships.lean) : période 4, deplacement (0, 2)
 #eval isSpaceship lwss 4 (0, 2)
 #eval isSpaceship mwss 4 (0, 2)
 #eval isSpaceship hwss 4 (0, 2)
--- Still-lifes supplementaires (Oscillators.lean)
+-- Still-lifes supplémentaires (Oscillators.lean)
 #eval isStillLife loaf
 #eval isStillLife boat
 #eval isStillLife pond
--- Oscillateur pulsar : periode 3, 48 cellules
+-- Oscillateur pulsar : période 3, 48 cellules
 #eval isOscillator pulsar 3""""""
 
 labels = [
@@ -12451,7 +12465,7 @@ print(""Chargement de l'environnement Lean + #eval interprete (peut prendre 2-6 
 print(""-"" * 70)
 rc, out, err = wsl(
     ""cat > /tmp/_nb_eval.lean <<'LEANEOF'\n"" + snippet + ""\nLEANEOF\n""
-    f""source ~/.elan/env 2>/dev/null; cd {LEAN_PROJECT} && lake env lean /tmp/_nb_eval.lean 2>&1; rm -f /tmp/_nb_eval.lean"",
+    f""source ~/.elan/env 2>/dev/null; cd {LEAN_PROJECT} && lake env lean /tmp/_nb_eval.lean 2>&1; rc=$?; rm -f /tmp/_nb_eval.lean; exit $rc"",
     timeout=900,
 )
 # Parsing robuste : lignes finissant par 'true'/'false' (avec ou sans prefixe file:line:col:)
@@ -12467,7 +12481,7 @@ if len(results) == len(labels):
     print(f""  {n_true}/{len(labels)} predicats du zoo A4 evalues a `true`"")
     print(""  (memes definitions Bool que les theoremes prouves par native_decide)."")
     print(""  Note : pentadecathlon (periode 15) est prouve par native_decide en"")
-    print(""  section 10 ; le #eval interprete serait lent sur 15 generations, alors"")
+    print(""  section 7 ; le #eval interprete serait lent sur 15 generations, alors"")
     print(""  que native_decide compile la decision (rapide a la preuve)."")
 else:
     # Sortie inattendue : afficher le brut pour diagnostic (jamais de verdict creux)
@@ -12475,17 +12489,17 @@ else:
     print(out if out.strip() else ""(aucune sortie)"")
     print(f""  (rc={rc}, {len(results)} verdicts true/false parses sur {len(labels)} attendus)"")
     if err and err.strip() and ""TIMEOUT"" not in err:
-        print(""STDERR:"", err[-300:])",,,,,,,,fe4728906999650d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,exercice-4-md,markdown,fr,4d60759be2a4cb89,"### Exercice 4 : faites verifier un still-life par Lean
+        print(""STDERR:"", err[-300:])",,,,,,,,f3d00e10c2a6128f,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,exercice-4-md,markdown,fr,e955256f8254f2f2,"### Exercice 4 : faites vérifier un still-life par Lean
 
-Vous venez de voir (9.7) comment `#eval isStillLife loaf` interroge **directement** la source de verite `Life.lean`. A votre tour : choisissez un still-life — ou inventez des coordonnees — et demandez a Lean de trancher, formellement.
+Vous venez de voir (6.1) comment `#eval isStillLife loaf` interroge **directement** la source de verite `Life.lean`. A votre tour : choisissez un still-life — ou inventez des coordonnees — et demandez a Lean de trancher, formellement.
 
-**A vous** : completez `coords` avec les cellules d'un still-life de votre choix (le **block** : `[(0,0), (0,1), (1,0), (1,1)]`, ou essayez le **tub**, le **boat**...). La cellule lance alors `#eval isStillLife <vos coords>` dans le vrai projet Lean via `lake env lean`. Si Lean repond `true`, votre pattern est formellement un still-life ; sinon, ce n'en est pas un. C'est vous qui pilotez la source de verite.",,,,,,,,4d60759be2a4cb89,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,exercice-4,code,fr,4d1edec321d52b82,"# TODO etudiant : remplacez None par les coordonnees d'un still-life de VOTRE choix.
+**A vous** : completez `coords` avec les cellules d'un still-life de votre choix (le **block** : `[(0,0), (0,1), (1,0), (1,1)]`, ou essayez le **tub**, le **boat**...). La cellule lance alors `#eval isStillLife <vos coords>` dans le vrai projet Lean via `lake env lean`. Si Lean repond `true`, votre pattern est formellement un still-life ; sinon, ce n'en est pas un. C'est vous qui pilotez la source de verite.",,,,,,,,e955256f8254f2f2,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,exercice-4,code,fr,3092da8e8e9a8e46,"# TODO étudiant : remplacez None par les coordonnees d'un still-life de VOTRE choix.
 # Format Lean d'une Grid = liste de paires d'entiers.
 #   Exemple (block 2x2) : ""[(0, 0), (0, 1), (1, 0), (1, 1)]""
-#   Indice : un still-life verifie step(g) == g ; block, beehive, tub, pond en sont.
-coords = None  # TODO etudiant : ex. ""[(0, 0), (0, 1), (1, 0), (1, 1)]""
+#   Indice : un still-life vérifie step(g) == g ; block, beehive, tub, pond en sont.
+coords = None  # TODO étudiant : ex. ""[(0, 0), (0, 1), (1, 0), (1, 1)]""
 
 if coords is None:
     print(""Exercice 4 a completer : definissez `coords` (liste de cellules au format Lean) ci-dessus."")
@@ -12495,7 +12509,7 @@ open Conway.Life
 #eval isStillLife {coords}""""""
     rc, out, err = wsl(
         ""cat > /tmp/_ex3_eval.lean <<'LEANEOF'\n"" + snippet + ""\nLEANEOF\n""
-        f""source ~/.elan/env 2>/dev/null; cd {LEAN_PROJECT} && lake env lean /tmp/_ex3_eval.lean 2>&1; rm -f /tmp/_ex3_eval.lean"",
+        f""source ~/.elan/env 2>/dev/null; cd {LEAN_PROJECT} && lake env lean /tmp/_ex3_eval.lean 2>&1; rc=$?; rm -f /tmp/_ex3_eval.lean; exit $rc"",
         timeout=300
     )
     verdicts = [l.rstrip().split()[-1] for l in out.splitlines()
@@ -12504,25 +12518,25 @@ open Conway.Life
     print(out.strip() or ""(pas de sortie)"")
     if verdicts:
         val = verdicts[-1]
-        print(f""=> Verdict Lean : {val} ({'still-life confirme par la source de verite !' if val == 'true' else 'PAS un still-life'})"")",,,,,,,,4d1edec321d52b82,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-9-8-rle-eval-md,markdown,fr,9fa37e7287920883,"### 9.8 Le parseur RLE *prouve* : `#eval parseRLE` (source de verite vs re-implementation Python)
+        print(f""=> Verdict Lean : {val} ({'still-life confirme par la source de verite !' if val == 'true' else 'PAS un still-life'})"")",,,,,,,,3092da8e8e9a8e46,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-9-8-rle-eval-md,markdown,fr,5ee4afa18dcd7103,"### 6.2 Le parseur RLE *prouve* : `#eval parseRLE` (source de verite vs re-implémentation Python)
 
-A la section 6, pour *afficher* les trois piliers, nous avons parse leurs fichiers RLE avec une petite fonction Python (`parse_rle`). C'est commode pour la visualisation matplotlib, mais ce n'est qu'une *illustration* : rien ne garantit que ce parseur Python soit correct.
+A la section 3, pour *afficher* les trois piliers, nous avons parse leurs fichiers RLE avec une petite fonction Python (`parse_rle`). C'est commode pour la visualisation matplotlib, mais ce n'est qu'une *illustration* : rien ne garantit que ce parseur Python soit correct.
 
-Le port Lean, lui, fournit un parseur RLE **entierement prouve** : `Conway.Life.RLE.parseRLE : String -> Except String Grid` (fichier `conway_lean/Conway/Life/RLE.lean`, **0 `sorry`**). Mieux : le module accompagne le parseur de **theoremes de correction** fermes par `native_decide` :
+Le port Lean, lui, fournit un parseur RLE **entierement prouve** : `Conway.Life.RLE.parseRLE : String -> Except String Grid` (fichier `conway_lean/Conway/Life/RLE.lean`, **sans `sorry`**). Mieux : le module accompagne le parseur de **théorèmes de correction** fermes par `native_decide` :
 
-- `glider_parse_ok`, `lwss_parse_ok`, `pulsar_parse_ok`, `gosper_gun_parse_ok` : les quatre RLE phares parsent sans erreur.
+- `glider_parse_ok`, `lwss_parse_ok`, `pulsar_parse_ok`, `gosper_gun_parse_ok` : les RLE phares parsent sans erreur.
 - `lwss_rle_roundtrip : lwss_parsed = lwss` et `pulsar_rle_roundtrip : pulsar_parsed = pulsar` : le `Grid` produit par `parseRLE` est *exactement egal* a la constante ecrite a la main dans `Conway.Life` — un **round-trip prouve**, pas une coincidence observee a l'oeil.
 - `gosper_gun_cell_count : gosper_gun.length = 36` : le canon de Gosper a exactement 36 cellules.
 
-La cellule ci-dessous interroge directement cette source de verite : on `#eval` le vrai `parseRLE` sur les chaînes RLE des patterns (glider, LWSS, pulsar, canon de Gosper) et on retrouve les comptes de cellules attendus (5, 9, 48, 36) ainsi que l'egalite round-trip. C'est la différence entre « le notebook parse en Python pour dessiner » et « Lean parse et *prouve* que le parse est correct ».",,,,,,,,9fa37e7287920883,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,rle-parse-eval,code,fr,1705eee3e43adf45,"# Source de verite : #eval du PARSEUR RLE PROUVE de Lean (Conway.Life.RLE.parseRLE).
-# Contraste avec le `parse_rle` Python de la section 6 (qui n'illustre que pour matplotlib) :
-# ici parseRLE est entierement prouve (0 sorry) et accompagne de theoremes native_decide
+La cellule ci-dessous interroge directement cette source de verite : on `#eval` le vrai `parseRLE` sur les chaînes RLE des patterns (glider, LWSS, pulsar, canon de Gosper) et on retrouve les comptes de cellules attendus (5, 9, 48, 36) ainsi que l'égalité round-trip. C'est la différence entre « le notebook parse en Python pour dessiner » et « Lean parse et *prouve* que le parse est correct ».",,,,,,,,5ee4afa18dcd7103,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,rle-parse-eval,code,fr,7a714c421e699bb6,"# Source de verite : #eval du PARSEUR RLE PROUVÉ de Lean (Conway.Life.RLE.parseRLE).
+# Contraste avec le `parse_rle` Python de la section 3 (qui n'illustre que pour matplotlib) :
+# ici parseRLE est entierement prouvé (0 sorry) et accompagne de théorèmes native_decide
 # (glider/lwss/pulsar/gosper_gun_parse_ok, lwss/pulsar_rle_roundtrip, gosper_gun_cell_count).
 snippet = """"""import Conway.Life.RLE
 open Conway.Life Conway.Life.RLE
--- parseRLE : String -> Except String Grid (entierement prouve, 0 sorry, RLE.lean)
+-- parseRLE : String -> Except String Grid (entierement prouvé, 0 sorry, RLE.lean)
 #eval (parseRLE glider_RLE).toOption.isSome   -- le glider parse sans erreur
 #eval glider_parsed.length                     -- 5 cellules vivantes
 #eval lwss_parsed.length                        -- 9 cellules (LWSS)
@@ -12547,10 +12561,10 @@ print(""Chargement de l'environnement Lean + #eval interprete (peut prendre 2-6 
 print(""-"" * 70)
 rc, out, err = wsl(
     ""cat > /tmp/_nb_rle.lean <<'LEANEOF'\n"" + snippet + ""\nLEANEOF\n""
-    f""source ~/.elan/env 2>/dev/null; cd {LEAN_PROJECT} && lake env lean /tmp/_nb_rle.lean 2>&1; rm -f /tmp/_nb_rle.lean"",
+    f""source ~/.elan/env 2>/dev/null; cd {LEAN_PROJECT} && lake env lean /tmp/_nb_rle.lean 2>&1; rc=$?; rm -f /tmp/_nb_rle.lean; exit $rc"",
     timeout=900,
 )
-# Parsing robuste : lignes qui sont exactement un resultat #eval (entier ou true/false)
+# Parsing robuste : lignes qui sont exactement un résultat #eval (entier ou true/false)
 RES = re.compile(r""^(true|false|\d+)$"")
 results = [l.strip() for l in out.splitlines() if RES.match(l.strip())]
 
@@ -12564,23 +12578,23 @@ if len(results) == len(labels):
     print(""-"" * 70)
     print(f""  {n_ok}/{len(labels)} #eval du parseur RLE conformes aux valeurs attendues."")
     print(""  parseRLE est entierement prouve (0 sorry) ; les round-trips lwss/pulsar sont"")
-    print(""  fermes par native_decide. Le `parse_rle` Python de la section 6 n'est qu'une"")
+    print(""  fermes par native_decide. Le `parse_rle` Python de la section 3 n'est qu'une"")
     print(""  illustration pour matplotlib : ici, Lean *prouve* la correction du parse."")
 else:
     print(""Sortie brute de lake env lean (parse incomplet) :"")
     print(out if out.strip() else ""(aucune sortie)"")
     print(f""  (rc={rc}, {len(results)} verdicts parses sur {len(labels)} attendus)"")
     if err and err.strip() and ""TIMEOUT"" not in err:
-        print(""STDERR:"", err[-300:])",,,,,,,,1705eee3e43adf45,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,de0111f4,markdown,fr,cc8252270f58d292,"### 9.9 Pourquoi les piliers ne sont pas dans Lean : la limite des string literals
+        print(""STDERR:"", err[-300:])",,,,,,,,7a714c421e699bb6,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,de0111f4,markdown,fr,56bc8b7b88b365ab,"### Annexe E — Pourquoi les piliers ne sont pas dans Lean : la limite des string literals
 
-Le parseur RLE Lean (`parseRLE`) est entierement prouve et fonctionne parfaitement sur les patterns de taille moderee (glider 5 cells, pulsar 48 cells, canon de Gosper 36 cells). Mais les RLE des **3 piliers communautaires** sont d'un tout autre ordre de grandeur : l'OTCA Metapixel pese ~70 KB, Gemini plusieurs megaoctets.
+Le parseur RLE Lean (`parseRLE`) est entierement prouvé et fonctionne parfaitement sur les patterns de taille moderee (glider : population 5, pulsar : population 48, canon de Gosper : population 36). Mais les RLE des **piliers communautaires** sont d'un tout autre ordre de grandeur : l'OTCA Metapixel pese **164 976 octets** (mesure du fichier `patterns/otcametapixel.rle`), la machine de Turing 103 625, et Gemini plusieurs megaoctets.
 
-Un **string literal Lean 4** est pratique pour les patterns jusqu'a ~65 KB environ. Au-dela, le compilateur devient extremement lent ou echoue. C'est pourquoi `Pillars.lean` utilise des placeholders vides (`([] : Grid)`) pour les `Initial` et `Target` des 4 temoins, accompagnes d'un sorry roadmap documentant le plan de chargement futur (fichier externe ou generation de code).
+Un **string literal Lean 4** est pratique pour les patterns jusqu'a ~65 KB environ. Au-dela, le compilateur devient extremement lent ou echoue. C'est pourquoi `Pillars.lean` garde des placeholders vides (`([] : Grid)`) pour les `Initial` et `Target` de **trois** temoins - OTCA, Gemini et CPU, dont les RLE pesent de 165 Ko a plusieurs megaoctets. Le **quatrieme**, l'UnitCell, ne passe pas par un litteral : son RLE (`p5760unitlifecell.rle`, **14 792 octets**) est embarque a la compilation par `include_str`, ce qui contourne la limite sans jamais ecrire le motif dans le source. **Aucun `sorry` n'est pose** : les trois placeholders sont accompagnes d'une preuve sur grille vide (`evolveHashlifeFastMemo_empty`), pas d'une dette.
 
-La cellule ci-dessous telecharge les 3 RLE et mesure leur taille pour confirmer empiriquement cette limitation. Le parseur Python `parse_rle` (section 6) les traite sans problème et fournit les populations et bounding boxes, servant de **visualisation complementaire** en attendant que le pipeline Lean puisse les accueillir.",,,,,,,,cc8252270f58d292,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,d8678121,code,fr,66b6d3030a982e71,"# Pourquoi les piliers ne sont pas dans Lean : demonstration par la taille.
-# Le parseur RLE Lean (Conway.Life.RLE.parseRLE) est entierement prouve (0 sorry),
+La cellule ci-dessous telecharge les 3 RLE et mesure leur taille pour confirmer empiriquement cette limitation. Le parseur Python `parse_rle` (section 3) les traite sans problème et fournit les populations et bounding boxes, servant de **visualisation complementaire** en attendant que le pipeline Lean puisse les accueillir.",,,,,,,,56bc8b7b88b365ab,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,d8678121,code,fr,ff977e9986d95c65,"# Pourquoi les piliers ne sont pas dans Lean : demonstration par la taille.
+# Le parseur RLE Lean (Conway.Life.RLE.parseRLE) est entierement prouvé (0 sorry),
 # mais il ne peut pas traiter les RLE des 3 piliers car ils sont beaucoup trop
 # volumineux pour un string literal Lean. Verifions-le empiriquement.
 import sys
@@ -12622,38 +12636,40 @@ for label, filename in pillar_files.items():
     print(f""    tiendrait dans un string Lean ? {fits}"")
     print()
 
-# Verifier que le parse_rle Python est coherent avec les gen counts de Pillars.lean
-print(""Cohurence avec Pillars.lean (gen counts declares) :"")
+# Vérifier que le parse_rle Python est coherent avec les gen counts de Pillars.lean
+print(""Cohérence avec Pillars.lean (gen counts declares) :"")
 pillar_gens = {
     ""OTCA Metapixel"": 35328,
     ""Gemini"": 33699586,
 }
-# On ne peut pas verifier les gen counts directement (il faudrait simuler),
-# mais on peut verifier que les populations sont plausibles pour ces patterns.
+# On ne peut pas vérifier les gen counts directement (il faudrait simuler),
+# mais on peut vérifier que les populations sont plausibles pour ces patterns.
 txt = fetch_rle(""otcametapixel.rle"")
 if txt:
     _, _, xs_o, ys_o, _ = parse_rle(txt)
     print(f""  OTCA : population = {len(xs_o):,} cellules (pattern 2048x2048, 35 328 gen/tick)"")
 print()
 print(""Conclusion : les RLE des piliers sont beaucoup trop volumineux pour"")
-print(""des string literals Lean. Pillars.lean utilise donc des placeholders vides"")
-print(""([] : Grid) avec sorry roadmap, et la boite a outils Python sert de"")
-print(""visualisation pratique. Le pipeline est valide sur des patterns plus"")
-print(""petits (pulsar 48 cells, canon de Gosper 36 cells)."")",,,,,,,,66b6d3030a982e71,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-10-build,markdown,fr,e38702414c0dca08,"## 10. Verification : `lake build` des modules Life
+print(""des string literals Lean. Pillars.lean garde donc des placeholders vides"")
+print(""([] : Grid) pour OTCA, Gemini et CPU -- mais PAS pour l'UnitCell, dont le"")
+print(""RLE est embarque par include_str et dont les theoremes"")
+print(""portent sur une grille REELLE. Aucun sorry n'est pose."")
+print(""La boite a outils Python sert de visualisation pratique, et le pipeline"")
+print(""Lean est valide sur des patterns plus petits (pulsar, canon de Gosper)."")",,,,,,,,ff977e9986d95c65,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-10-build,markdown,fr,f8bd1d1b2581a52c,"## 7. Vérification : `lake build` des modules Life
 
-On verifie que la **fondation Life** — `Conway/Life.lean` + `Conway/Life/Spaceships.lean` + `Conway/Life/Oscillators.lean`, la source de verite unique de ce notebook — compile avec SUCCESS (exit code 0), puis on compte les sorrys de maniere honnete (cellule suivante).
+On vérifie que la **fondation Life** — `Conway/Life.lean` + `Conway/Life/Spaceships.lean` + `Conway/Life/Oscillators.lean`, la source de verite unique de ce notebook — compile avec SUCCESS (exit code 0), puis on compte les sorrys de maniere honnete (cellule suivante).
 
-On cible explicitement les modules Life (`lake build Conway.Life Conway.Life.Spaceships Conway.Life.Oscillators`) plutot que le `Conway` complet : cela concentre la verification sur ce que le notebook met en avant. Les modules Phase 3b (Hashlife) ont leurs propres sorries de roadmap, traces en section 11 et hors-scope ici.
+On cible explicitement les modules Life (`lake build Conway.Life Conway.Life.Spaceships Conway.Life.Oscillators`) plutot que le `Conway` complet : cela concentre la vérification sur ce que le notebook met en avant. Les modules Phase 3b (Hashlife) ont leurs propres sorries de roadmap, traces en Annexe G et hors-scope ici.
 
-**Note** : le build de Mathlib peut prendre plusieurs minutes au premier lancement (cache cold). Pour cette exécution Papermill, on utilise un timeout large (1500s).",,,,,,,,e38702414c0dca08,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,lake-build-life,code,fr,31656d8a7cacc89a,"import subprocess
+**Note** : le build de Mathlib peut prendre plusieurs minutes au premier lancement (cache cold). Pour cette exécution Papermill, on utilise un timeout large (1500s).",,,,,,,,f8bd1d1b2581a52c,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,lake-build-life,code,fr,6ce1734f742e43bf,"import subprocess
 
-# On build EXPLICITEMENT les 3 modules Life = la source de verite unique du notebook.
+# On build EXPLICITEMENT les modules Life = la source de verite unique du notebook.
 # (Build cible plutot que `lake build Conway` complet : focus sur la fondation Life,
 #  les modules Hashlife/Phase-3b avec leurs sorries de roadmap restent hors-scope ici.)
 targets = 'Conway.Life Conway.Life.Spaceships Conway.Life.Oscillators'
-print(f'Lancement de lake build des 3 modules Life ... (timeout 1500s)')
+print(f'Lancement de lake build des modules Life ... (timeout 1500s)')
 print(f'  cible : {targets}')
 print('-' * 60)
 
@@ -12674,8 +12690,8 @@ try:
     else:
         print('ECHEC : voir log ci-dessus.')
 except Exception as e:
-    print(f'Exception : {e}')",,,,,,,,31656d8a7cacc89a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,grep-sorry-life,code,fr,c23b40e251659a22,"# Verification du nombre de sorrys REELS dans les 3 modules Life (source de verite unique)
+    print(f'Exception : {e}')",,,,,,,,6ce1734f742e43bf,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,grep-sorry-life,code,fr,6ef789512686a0bb,"# Vérification du nombre de sorrys RÉELS dans les 3 modules Life (source de verite unique)
 life_modules = [
     'Conway/Life.lean',
     'Conway/Life/Spaceships.lean',
@@ -12704,90 +12720,90 @@ for l in line.splitlines():
     print(f'   {l.strip()}')
 print('   => occurrence dans un COMMENTAIRE (pas un `:= by sorry`). La fondation Life est a 0 sorry.')
 print('   Les modules Hashlife (Phase 3b) ont leurs propres sorries de roadmap documentes,')
-print('   hors-scope de la fondation Life couverte par ce notebook (cf section 11).')",,,,,,,,c23b40e251659a22,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-11-roadmap,markdown,fr,bd3cfb5ad383cff8,"## 11. Feuille de route : phases ulterieures de l'Epic #1647
+print('   hors-scope de la fondation Life couverte par ce notebook (cf Annexe G).')",,,,,,,,6ef789512686a0bb,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-11-roadmap,markdown,fr,141617d55fb968cd,"### Annexe G — Feuille de route : phases ultérieures de l'Epic #1647
 
 Ce notebook + `Life.lean` + `Spaceships.lean` + `Oscillators.lean` + `MacroCell.lean` + `Hashlife.lean` + `HashlifeCorrectness.lean` + `HashlifeMemo.lean` + `Pillars.lean` constituent les **Phases 0, 1, 3a, 3b et 5** de l'Epic #1647. Les phases suivantes (dispatch sur cycles futurs) :
 
 | Phase | Fichier(s) Lean | Thème | Statut |
 |-------|------------------|-------|--------|
 | **Phase 0** | (notebook) | Hommage + showcase | **FAIT** |
-| **Phase 1** | `Life.lean` | Fondations B3/S23, 7 microproofs | **FAIT** |
-| **Phase 5** | `Life/Spaceships.lean` + `Life/Oscillators.lean` | 3 vaisseaux + 7 still-lifes/oscillateurs | **FAIT (PR #1975)** |
+| **Phase 1** | `Life.lean` | Fondations B3/S23, microproofs | **FAIT** |
+| **Phase 5** | `Life/Spaceships.lean` + `Life/Oscillators.lean` | vaisseaux + still-lifes/oscillateurs | **FAIT (PR #1975)** |
 | **Phase 2** | `Life/RLE.lean` | Parser RLE + chargement de patterns communautaires | **FAIT** |
 | **Phase 3a** | `Life/MacroCell.lean` | Encodage quadtree arborescent | **FAIT** |
-| **Phase 3b** | `Life/Hashlife.lean` + `Life/HashlifeCorrectness.lean` | Step récursif + correction light-cone | **1 sorry restant** (P5 `hashlife_correct`). P1 ferme par PR #2173, P2/P3 par PRs #2097/#2107, **P4 PROUVE** |
-| **Phase 3c** | `Life/HashlifeMemo.lean` + `Life/Pillars.lean` | Memoization + 4 temoins communautaires | **SCAFFOLD POSE - 0 sorry** (4 temoins prouves contre grilles vides) |
+| **Phase 3b** | `Life/Hashlife.lean` + `Life/HashlifeCorrectness.lean` | Step récursif + correction light-cone | **sorry restant** (P5 `hashlife_correct`). P1 ferme par PR #2173, P2/P3 par PRs #2097/#2107, **P4 PROUVE** |
+| **Phase 3c** | `Life/HashlifeMemo.lean` + `Life/Pillars.lean` | Memoization + temoins communautaires | **SCAFFOLD POSE - sans sorry** (trois temoins prouves contre grilles vides ; l'UnitCell sur une grille **reelle**) |
 | Phase 4 | `Life/Omniperiodic.lean` | $\forall n \le 64, \exists P, \text{period}(P) = n$ | A venir |
-| Phase 6 | (theoreme `gemini_witness` dans Pillars) | Gemini self-replication (33M gen) | Phase 3c dépendance |
-| Phase 7 | (theoreme `otca_metapixel_witness` dans Pillars) | OTCA self-emulation (35K gen) | Phase 3c dépendance |
-| Phase 8 | (theoreme `unitcell_witness` + `cpu_witness` dans Pillars) | UnitCell 4096 gen + Digital CPU 1M gen | Phase 3c dépendance |
+| Phase 6 | (théorème `gemini_witness` dans Pillars) | Gemini self-replication (33M gen) | Phase 3c dépendance |
+| Phase 7 | (théorème `otca_metapixel_witness` dans Pillars) | OTCA self-emulation (35K gen) | Phase 3c dépendance |
+| Phase 8 | (théorème `cpu_witness` dans Pillars ; UnitCell **deja franchi**) | Digital CPU 1M gen ; UnitCell **charge par `include_str`** (periode declaree, RLE embarque) | Phase 3c dépendance |
 | Phase 9 | `Life/LogicGates.lean` | NAND gate + axiome Turing-completude | A venir |
 
-### Phase 3b - 1 sorry restant (P5, theoreme principal)
+#### Phase 3b - le sorry restant (P5, théorème principal)
 
-Le module `HashlifeCorrectness.lean` contient 5 sous-objectifs de correction, numerotes P1 a P5 dans le docstring :
+Le module `HashlifeCorrectness.lean` contient des sous-objectifs de correction, numerotes P1 a P5 dans le docstring :
 
 - **P1** (`hashlifeResultAux_correct_base`) : **FERME** par PR #2173 - cas de base du step 4x4.
 - **P2** (containment niveau 2) : **FERME** par PR #2097 - lemme de confinement spatial.
 - **P3** (containment step central) : **FERME** par PR #2107 - lemme de confinement du step central.
-- **P4** (theoreme central de correction `hashlifeResultAux_correct`) : **PROUVE** - preuve par induction sur le niveau du MacroCell. Après plusieurs itérations du prover (itérations F6-F11), cette cible est desormais fermee : plus de sorry sur P4.
-- **P5** (L1058, theoreme principal `hashlife_correct`) : **SEUL SORRY RESTANT** - composition de P2-P4. P4 est desormais prouve ; P5 reste l'unique cible ouverte de cette Phase 3b.
+- **P4** (théorème central de correction `hashlifeResultAux_correct`) : **PROUVE** - preuve par induction sur le niveau du MacroCell. Après plusieurs itérations du prover (itérations F6-F11), cette cible est desormais fermee : plus de sorry sur P4.
+- **P5** (L1058, théorème principal `hashlife_correct`) : **SORRY RESTANT** - composition de P2-P4. P4 est desormais prouvé ; P5 reste la cible ouverte de cette Phase 3b.
 
 Cette cible (P5) est independante du scaffold Phase 3c et ne bloque pas la pose des temoins.
 
-### Phase 3c - Scaffolding pose (0 sorry)
+#### Phase 3c - Scaffolding pose (sans sorry)
 
-Les fichiers `Conway/Life/HashlifeMemo.lean` et `Conway/Life/Pillars.lean` sont desormais presents avec leur API declaree et **compilent a 0 sorry**. Ce que le scaffold etablit :
+Les fichiers `Conway/Life/HashlifeMemo.lean` et `Conway/Life/Pillars.lean` sont desormais presents avec leur API declaree et **compilent sans sorry**. Ce que le scaffold etablit :
 
 1. **`MacroCellId` + `MemoCache`** : identifiant content-addresse + `Std.HashMap MacroCellId MacroCell` pour le cache de hash-consing.
-2. **`hashlifeResultMemo : MacroCell -> StateM MemoCache MacroCell`** : version memoisee de `hashlifeResultAux`. Theoreme bridge `hashlifeResultMemo_correct` **prouve** (extraction d'un lemme auxiliaire valide `cacheOK_empty`, 0 sorry).
-3. **`evolveHashlifeFastMemo`** : entree top-level pour le chemin rapide memoise. Theoreme `evolveHashlifeFastMemo_eq_evolveHashlifeFast` **prouve** (même mécanisme, 0 sorry).
-4. **4 theoremes-temoins** dans `Pillars.lean` - tous **prouves** via le lemme `evolveHashlifeFastMemo_empty` contre grilles vides :
+2. **`hashlifeResultMemo : MacroCell -> StateM MemoCache MacroCell`** : version memoisee de `hashlifeResultAux`. Théorème bridge `hashlifeResultMemo_correct` **prouve** (extraction d'un lemme auxiliaire valide `cacheOK_empty`, sans sorry).
+3. **`evolveHashlifeFastMemo`** : entrée top-level pour le chemin rapide memoise. Théorème `evolveHashlifeFastMemo_eq_evolveHashlifeFast` **prouve** (même mécanisme, sans sorry).
+4. **Des théorèmes-temoins** dans `Pillars.lean` - **trois** prouves via le lemme `evolveHashlifeFastMemo_empty` contre grilles vides, et **un** sur une grille reelle :
    - `otca_metapixel_witness` (35 328 gen)
-   - `unitcell_witness` (4 096 gen)
+   - `unitcell_initial_population` (**grille REELLE**, non vide) - RLE reel charge par `include_str` ; remplace l'ancien `unitcell_witness` et son compte de 4 096 gen
    - `gemini_witness` (33 699 586 gen)
    - `cpu_witness` (1 048 576 gen)
 
-   Chaque preuve est *trivialement vraie* (grilles vides : `evolveHashlifeFastMemo N [] = []`). La preuve **reelle** - pattern RLE charge, `by native_decide` - est l'objectif des Phases 6-8 une fois la memoization operationnelle.
+   Les **trois** premiers sont *trivialement vrais* (grilles vides : `evolveHashlifeFastMemo N [] = []`) ; le quatrieme porte sur un motif reel charge par `include_str`. La preuve **reelle** des trois autres - pattern RLE charge, `by native_decide` - est l'objectif des Phases 6-8 une fois la memoization operationnelle.
 
-> **0 sorry mais preuve triviale.** Les 4 temoins compilent sans sorry parce qu'ils portent sur des grilles vides. Aucun axiome n'est admis (le module est coherent), mais la preuve substantielle du pattern reel reste a faire. A contraster avec `pulsar_period3` (section 9.8), seul temoin prouve sur un **vrai** pattern (48 cellules).
+> **Preuve sur grille vide, mais sans sorry.** Les trois temoins OTCA/Gemini/CPU compilent sans sorry parce qu'ils portent sur des grilles vides. Aucun axiome n'est admis (le module est coherent), mais la preuve substantielle de leur pattern reel reste a faire. L'UnitCell, lui, porte desormais sur un **vrai** motif. A contraster avec `pulsar_period3` (section 6.2), seul temoin dont la periode est prouvee sur un pattern reel - et le seul accompagne de **temoins negatifs apparies** (`pulsar_period1_negative`, `pulsar_period2_negative`), qui etablissent que la periode vaut **exactement** 3 et non un diviseur.
 
-**Total des sorries Lean Life** : 1 sorry (P5 `hashlife_correct` dans HashlifeCorrectness) sur les modules `Conway.Life.*`. Les modules fondamentaux (Life + Spaceships + Oscillators) et tout le scaffold Phase 3c (HashlifeMemo + Pillars) sont a **0 sorry**.
+**Total des sorries Lean Life** : P5 (`hashlife_correct` dans `HashlifeCorrectness`) reste en sorry sur les modules `Conway.Life.*`. Les modules fondamentaux (Life + Spaceships + Oscillators) et tout le scaffold Phase 3c (HashlifeMemo + Pillars) sont **sans sorry**.
 
-**Jalon cle** : Phase 3c (memoization + temoins sur patterns reels). Sans memoization, le facteur de compression `9^k` de `hashlifeResultAux` rend Gemini (level ~14) intraitable. Avec memoization, les patterns realistes (peu de sous-arbres distincts) tiennent dans le budget `native_decide`.
+**Jalon cle** : Phase 3c (memoization + temoins sur patterns réels). Sans memoization, le facteur de compression `9^k` de `hashlifeResultAux` rend Gemini (level ~14) intraitable. Avec memoization, les patterns realistes (peu de sous-arbres distincts) tiennent dans le budget `native_decide`.
 
-### Stratégie ""fichiers precieux mis en avant""
+#### Stratégie ""fichiers precieux mis en avant""
 
-Pour chaque pattern (Gemini, OTCA, UnitCell, Digital CPU, Goucher adder, NAND Rendell), import verbatim depuis LifeWiki en tant que constante Lean publique avec docstring complete (auteur + date + URL source). Pas d'alteration des fichiers communautaires - juste un import propre.
+Pour chaque pattern (Gemini, OTCA, UnitCell, Digital CPU, Goucher adder, NAND Rendell), import verbatim depuis LifeWiki en tant que constante Lean publique avec docstring complète (auteur + date + URL source). Pas d'alteration des fichiers communautaires - juste un import propre.
 
-### Lien avec les autres Epics Conway
+#### Lien avec les autres Epics Conway
 
 - **#1151 (CLOSED)** : modules Lean sur des résultats moins connus de Conway (Doomsday, FRACTRAN, LookAndSay, Nim, Angel) - dans `conway_lean/Conway/`
 - **#1647 (CETTE EPIC)** : Life-as-Computation (ce notebook Lean-16b + Life.lean + Spaceships + Oscillators + MacroCell + Hashlife + HashlifeCorrectness + HashlifeMemo + Pillars)
-- **#1651** : Theoreme de Libre Arbitre Conway-Kochen (notebook Lean-13 + KochenSpecker.lean) - **FAIT (PR #2026)**
+- **#1651** : Théorème de Libre Arbitre Conway-Kochen (notebook Lean-13 + KochenSpecker.lean) - **FAIT (PR #2026)**
 - **#1646** : Tribute Grothendieck (notebook Lean-15, parallele structurel)
-",,,,,,,,bd3cfb5ad383cff8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-12-conclusion,markdown,fr,5c1796ceb3a63c56,"## 12. Conclusion
+",,,,,,,,141617d55fb968cd,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-12-conclusion,markdown,fr,35cf6aabe94ff8fa,"## 8. Conclusion
 
 Ce notebook clot la **Phase 0** de l'Epic #1647 et accompagne les phases 1+5 mergees (`Life.lean` + `Spaceships.lean` + `Oscillators.lean`). Resume de la livraison :
 
 | Élément | Statut | Detail |
 |---------|--------|--------|
-| Notebook `Lean-16b-Conway-Game-of-Life-Lean.ipynb` | LIVRE | 12 sections, demo Python, statistiques Lean, feuille de route |
-| Module `Conway/Life.lean` | LIVRE | 7 theoremes, 0 sorry |
-| Module `Conway/Life/Spaceships.lean` | LIVRE (PR #1975) | 3 theoremes (LWSS/MWSS/HWSS), 0 sorry |
-| Module `Conway/Life/Oscillators.lean` | LIVRE (PR #1975) | 7 theoremes (5 still-lifes + pulsar + pentadecathlon), 0 sorry |
-| `lake build Conway` | SUCCESS | 3331 jobs, 0 sorry |
+| Notebook `Lean-16b-Conway-Game-of-Life-Lean.ipynb` | LIVRE | demo Python, statistiques Lean, feuille de route |
+| Module `Conway/Life.lean` | LIVRE | théorèmes prouves, sans sorry |
+| Module `Conway/Life/Spaceships.lean` | LIVRE (PR #1975) | théorèmes (LWSS/MWSS/HWSS), sans sorry |
+| Module `Conway/Life/Oscillators.lean` | LIVRE (PR #1975) | théorèmes (still-lifes + pulsar + pentadecathlon), sans sorry |
+| `lake build Conway` | SUCCESS | sans sorry |
 | Roadmap Phases 2-9 | TRACEE | Hashlife en cours (Phases 3a/3b) |
 
-**Total provable : 17 theoremes, 0 sorry, modules Life.**
+**Total provable : tous les théorèmes des modules Life, sans sorry.**
 
 Le prochain jalon clef est **Hashlife** (Phases 3a+3b) : une fois le quadtree MacroCell et le step récursif implantes et prouves corrects, les 3 piliers communautaires (OTCA, CPU, Gemini) deviennent accessibles via le facteur de compression exponentiel.
 
 ### L'histoire en trois actes, et ce qu'il reste a prouver
 
-Ce notebook a raconte une montee en puissance : une cellule qui se reflete (OTCA Metapixel), une grille qui calcule (la machine de Rendell, puis le CPU de Carlini), un motif qui se reproduit (Gemini). Cette progression - **emulation, calcul, reproduction** - n'est pas qu'une jolie narration : c'est exactement la feuille de route formelle de l'Epic #1647. Chaque acte attend son `native_decide` (`otca_self_emulates`, `spartan_adder_correct`, `gemini_replicates`), et tous reposent sur le même verrou technique, la correction de Hashlife (Phases 3a/3b), sans laquelle aucun temoin a $10^7$ generations n'est decidable. Porter ces trois theoremes, c'est transformer la belle histoire de la communaute Life en certificat verifie par machine.
+Ce notebook a raconte une montee en puissance : une cellule qui se reflete (OTCA Metapixel), une grille qui calcule (la machine de Rendell, puis le CPU de Carlini), un motif qui se reproduit (Gemini). Cette progression - **emulation, calcul, reproduction** - n'est pas qu'une jolie narration : c'est exactement la feuille de route formelle de l'Epic #1647. Chaque acte attend son `native_decide` (`otca_self_emulates`, `spartan_adder_correct`, `gemini_replicates`), et tous reposent sur le même verrou technique, la correction de Hashlife (Phases 3a/3b), sans laquelle aucun temoin a $10^7$ generations n'est decidable. Porter ces théorèmes, c'est transformer la belle histoire de la communaute Life en certificat vérifié par machine.
 
 ### Reconnaissances
 
@@ -12807,9 +12823,9 @@ Ce notebook a raconte une montee en puissance : une cellule qui se reflete (OTCA
 3. LifeWiki : [conwaylife.com/wiki/](https://conwaylife.com/wiki/) - catalogue communautaire complet.
 4. Gonthier, *Formal proof - the four-color theorem*, Notices of the AMS, 2008. Modèle de preuve par reflexion.
 
----
+***
 
-**Navigation** : [<< Lean-15 Grothendieck](Lean-15-Grothendieck-Tribute.ipynb) | [Index](README.md) | [Lean-16c Compagnon Golly >>](Lean-16c-Conway-Game-of-Life-Golly.ipynb)",,,,,,,,5c1796ceb3a63c56,,,,,,,,
+**Navigation** : [<< Lean-15 Grothendieck](Lean-15-Grothendieck-Tribute.ipynb) | [Index](README.md) | [Lean-16c Compagnon Golly >>](Lean-16c-Conway-Game-of-Life-Golly.ipynb)",,,,,,,,35cf6aabe94ff8fa,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Game-of-Life-Golly.ipynb,md1,markdown,fr,3a46e4b8d6a9b095,"# Lean-16c - Conway Game of Life : les 3 piliers, en images (compagnon Golly)
 
 **Navigation** : [<< Lean-16b : Hommage Conway (Lean)](Lean-16b-Conway-Game-of-Life-Lean.ipynb) | [Index](README.md) | [Lean-16d GOL natif >>](Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb)
@@ -33573,3 +33589,14 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,1753dad9,markdow
 *Série hommage James R. Munkres (1930-2026) : 1/3 l'algoriste · 2/3 le musicien · **3/3 le topologue
 (ce notebook)**. Sources : MIT Mathematics (2026-08-13), obituaires Boston Globe/Legacy et Douglass
 Funeral Home (Bedford, MA).*",,,,,,,,b47513a769fc8a6b,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,section-6-lean,markdown,fr,292e187eff5ce5dc,"## 6. La source de vérité : le port Lean 4
+
+Tout ce que les sections précédentes ont *illustre* en Python vit formellement dans `conway_lean/Conway/Life.lean` et ses modules : la règle B3/S23 (`step`), les prédicats `isStillLife` / `isOscillator` / `isSpaceship` (tous `Bool`, pour `native_decide`), les patterns canoniques et leurs microproofs — block, blinker, glider, LWSS/MWSS/HWSS, pulsar, pentadecathlon — **tous prouvés, sans sorry**.
+
+Cette section interroge la source de vérité en direct : statistiques des modules (ci-dessous), `#eval` du zoo de patterns (6.1), le parseur RLE prouvé (6.2), puis `lake build` en section 7. Le détail de l'encodage — pourquoi `List (Int × Int)` plutôt que `Finset`, le step sur liste triée, les microproofs ligne à ligne — est en **Annexe D**.",,,,,,,,292e187eff5ce5dc,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,annexes-header,markdown,fr,921899c9958a12d3,"## Annexes — approfondissements optionnels
+
+La lecture simple s'arrête à la conclusion. Les annexes regroupent les approfondissements, sans aucune suppression de contenu : le rappel des noix Phase 1 (A), la logique constructive Spartan (B), l'intuition Hashlife (C), le port Lean en détail (D), la limite des string literals (E), le scaffold `Pillars.lean` (F) et la feuille de route de l'Epic #1647 (G). Chaque annexe est autonome et préserve l'intégralité du texte des sections d'origine.",,,,,,,,921899c9958a12d3,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb,annexe-f-header,markdown,fr,2b9bc03e6715bc33,"### Annexe F — Pillars.lean : le scaffold des témoins communautaires
+
+La synthèse de la section 3 opposait les noms « prospectifs » du récit aux théorèmes réels de `Pillars.lean`. Cette annexe ouvre le vrai fichier : déclarations des 4 témoins, compte des `sorry` réels (regex du filtre CI, pas un grep nu), et statut exact du scaffold — ce qui est prouvé aujourd'hui, ce qui attend la mémoization Hashlife.",,,,,,,,2b9bc03e6715bc33,,,,,,,,
