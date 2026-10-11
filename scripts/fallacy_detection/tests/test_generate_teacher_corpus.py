@@ -235,6 +235,28 @@ def test_generate_one_ne_regenere_pas_une_sortie_conforme():
     assert verdict is True
 
 
+def test_generate_one_accepte_un_texte_sous_le_plancher_quand_les_retries_sont_epuises():
+    """Le plancher est un declencheur de regeneration, pas une garantie (R1, #17578).
+
+    Deux tirages courts et les retries epuises : le texte court **entre** dans le
+    corpus, et ``attempts`` montre que la regeneration a bien ete tentee. C'est ce
+    cas que ``n_below_floor`` doit rendre visible -- ``n_empty`` ne le voit pas.
+    """
+    import random
+    texts = _texts()
+    teacher = FakeTeacher([
+        _reply("Court.", tokens=4), _reply("Court.", tokens=4),
+        _oracle("Sophisme A"),
+    ])
+    record, verdict, _picks = G.generate_one(
+        _pair(), texts, teacher, lang="fr", rng=random.Random(0),
+        votes=1, distractors=1, min_tokens=25, retries=1)
+    assert record.text == "Court."
+    assert record.completion_tokens == 4
+    assert record.attempts == 2        # la regeneration a bien eu lieu
+    assert verdict is True             # le texte court est tout de meme vote
+
+
 def test_generate_one_rend_non_mesure_si_la_generation_est_vide():
     texts = _texts()
     teacher = FakeTeacher([_reply("", tokens=0)] * 3)
@@ -346,6 +368,27 @@ def test_summarise_compte_les_vides_le_recouvrement_et_le_non_mesure():
     assert summary["by_family"]["B"]["measured"] == 0
 
 
+def test_summarise_nomme_les_denominateurs_et_publie_le_plancher():
+    """R1/R4 (#17578) : le plancher se publie, les moyennes nomment leur population.
+
+    ``n_pairs`` et ``by_family`` comptent les 3 paires ; ``mean_completion_tokens``
+    et ``example_overlap`` ne portent que sur les 2 **generees** -- un texte vide
+    n'a ni longueur ni recouvrement a moyenner.
+    """
+    _texts, records = _records_and_verdicts()
+    records[1].completion_tokens = 8          # genere, mais sous le plancher
+    summary = G.summarise(records, [True, False, None], min_tokens=25)
+    assert summary["n_pairs"] == 3
+    assert summary["n_generated"] == 2
+    assert summary["n_below_floor"] == 1
+    assert summary["below_floor_pairs"] == ["p2"]
+    # La moyenne porte sur les 2 generees (50 et 8), pas sur les 3 paires.
+    assert summary["mean_completion_tokens"] == 29.0
+    assert summary["example_overlap"] == 1
+    # Le plancher par defaut est celui du module : 8 < 25 y est compte aussi.
+    assert G.summarise(records, [True, False, None])["n_below_floor"] == 1
+
+
 def test_run_ecrit_un_checkpoint_et_reprend_sans_refaire(tmp_path):
     import random
     texts = _texts()
@@ -368,6 +411,31 @@ def test_run_ecrit_un_checkpoint_et_reprend_sans_refaire(tmp_path):
     assert len(records2) == 1 and verdicts2 == [True]
     assert second.calls == []
     assert len(checkpoint.read_text(encoding="utf-8").strip().splitlines()) == 1
+
+
+def test_run_publie_la_reprise_et_le_nombre_de_paires_rejouees(tmp_path):
+    """R3 (#17578) : une reprise n'est pas un run neuf.
+
+    Le tirage des distracteurs consomme ``rng`` dans l'ordre des paires traitees ;
+    une reprise repart d'un ``Random(seed)`` neuf et ne rejoue que les manquantes,
+    donc les distracteurs different d'un run ininterrompu a ``seed`` egal. Le
+    rapport doit le dire plutot que de laisser croire a un tirage unique.
+    """
+    texts = _texts()
+    pairs = [_pair("fallacy", 1)]
+    checkpoint = tmp_path / "val_fr.jsonl"
+
+    fresh: dict = {}
+    first = FakeTeacher([_reply("Un texte en deux phrases.", 60), _oracle("Sophisme A")])
+    G.run(pairs, texts, first, lang="fr", seed=0, votes=1, distractors=1,
+          checkpoint=checkpoint, stats=fresh)
+    assert fresh == {"resumed": False, "n_resumed": 0, "n_todo": 1}
+
+    resumed: dict = {}
+    second = FakeTeacher([])
+    G.run(pairs, texts, second, lang="fr", seed=0, votes=1, distractors=1,
+          checkpoint=checkpoint, stats=resumed)
+    assert resumed == {"resumed": True, "n_resumed": 1, "n_todo": 0}
 
 
 # --------------------------------------------------------------------------
