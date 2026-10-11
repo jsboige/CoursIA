@@ -131,3 +131,13 @@ class TestDeterminisme:
         source = Path(zsf.__file__).read_text(encoding="utf-8")
         assert "enable_thinking=False" in source
         assert "do_sample" not in source  # aucune generation echantillonnee : passe avant seule
+
+    def test_la_revision_du_checkpoint_est_consignee_et_epinglable(self):
+        # Critere 1 de #20244 (amend dossier #20245) : nom ET sha du checkpoint.
+        # L'epinglage --revision traverse from_pretrained, et le rapport consigne
+        # la revision resolue au run -- un run ne s'attribue plus a une revision
+        # inconnue.
+        source = Path(zsf.__file__).read_text(encoding="utf-8")
+        assert "from_pretrained(model_name, revision=revision" in source
+        assert '"model_revision": revision_resolved' in source
+        assert '"model_revision_pinned": revision' in source

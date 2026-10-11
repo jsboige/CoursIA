@@ -114,12 +114,15 @@ def sha256_of(path: Path) -> str:
     return digest.hexdigest()
 
 
-def load_model(model_name: str):
+def load_model(model_name: str, revision: str | None = None):
     """Charge le modele en inference CPU ; torch/transformers en import tardif.
 
     L'import tardif garde le module importable sans torch (les tests hermetiques n'en
     ont pas besoin) ; l'absence de la bibliotheque est une erreur nominale, pas un
-    traceback.
+    traceback. ``revision`` epingle explicitement le commit HF du modele ; sans
+    epinglage, la revision resolue est TOUJOURS relue depuis ``config._commit_hash``
+    et consignee au rapport -- un run ne peut plus s'attribuer a une revision
+    inconnue (critere 1 de #20244 : nom ET sha du checkpoint).
     """
     try:
         import torch
@@ -129,10 +132,12 @@ def load_model(model_name: str):
             f"Inference zero-shot indisponible : {exc}. Installer torch et transformers "
             "dans l'environnement d'execution ; le depot n'ajoute aucune dependance."
         ) from exc
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(model_name, dtype=torch.float32)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, revision=revision)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name, revision=revision, dtype=torch.float32)
     model.eval()
-    return tokenizer, model
+    resolved = getattr(getattr(model, "config", None), "_commit_hash", None)
+    return tokenizer, model, resolved
 
 
 def letter_token_ids(tokenizer, ordered_labels: list[str]) -> dict[str, int]:
@@ -251,7 +256,8 @@ def agreement_rate(log_path: Path) -> float | None:
 
 
 def run(corpus_path: Path, out_dir: Path, level: str, folds_count: int, seed: int,
-        model_name: str, limit: int | None = None) -> dict:
+        model_name: str, limit: int | None = None,
+        revision: str | None = None) -> dict:
     """Mesure le plancher zero-shot sur le corpus de reference des baselines."""
     items = load_corpus(corpus_path, level)
     if limit:
@@ -262,7 +268,7 @@ def run(corpus_path: Path, out_dir: Path, level: str, folds_count: int, seed: in
     log_path = out_dir / "predictions_zero_shot.jsonl"
     log_path.write_text("", encoding="utf-8")
 
-    tokenizer, model = load_model(model_name)
+    tokenizer, model, revision_resolved = load_model(model_name, revision=revision)
     predict = predictor_zeroshot(tokenizer, model, labels, seed=seed, log_path=log_path)
     result = evaluate(predict, items, folds)
 
@@ -274,6 +280,8 @@ def run(corpus_path: Path, out_dir: Path, level: str, folds_count: int, seed: in
             "rows": len(items),
         },
         "model": model_name,
+        "model_revision": revision_resolved,
+        "model_revision_pinned": revision,
         "level": level,
         "seed": seed,
         "folds": folds_count,
@@ -306,10 +314,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, default=42,
                         help="Graine protocolaire (plis groupes et rotations d'options).")
     parser.add_argument("--model", default="Qwen/Qwen3-0.6B")
+    parser.add_argument("--revision", default=None,
+                        help="Commit HF epingle pour le modele (ex. le run #20244 : "
+                             "c1899de289a04d12100db370d81485cdf75e47ca). Sans epinglage, "
+                             "la revision resolue est quand meme consignee au rapport.")
     parser.add_argument("--limit", type=int, default=None,
                         help="Borne de fumee (mesure partielle, a declarer non conclusive).")
     args = parser.parse_args(argv)
-    run(args.corpus, args.out_dir, args.level, args.folds, args.seed, args.model, args.limit)
+    run(args.corpus, args.out_dir, args.level, args.folds, args.seed, args.model,
+        args.limit, revision=args.revision)
     return 0
 
 
