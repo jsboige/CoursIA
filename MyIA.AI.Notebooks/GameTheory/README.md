@@ -562,8 +562,8 @@ La série aligne simulation numérique et preuve formelle : les notebooks motive
 | `game_theory_lean` (module CooperativeGames) | Bondareva-Shapley sans `sorry` (#3954), Core non vide sous équilibrage | 15, 15b |
 | `game_theory_lean` (module StableMarriage) | Gale-Shapley : existence et optimalité côté proposant | 15b, 16 |
 | `game_theory_lean` (module RepeatedGames) | Grim trigger certifié sans `sorry` (#4880) ; le Folk Theorem complet reste ouvert (`Folk.lean`) | Dynamics 01, 02 |
-| `game_theory_lean` (module ProgramGames) | Bornes sur les agents à programme (Bounded) ; FairBot (aucun consommateur encore) | Dynamics 05, 06 |
-| `game_theory_lean` (module Abstraction) | Hiérarchie d'abstraction des jeux — module orphelin, consommateur naturel : Metajeux-03 (à câbler) | — |
+| `game_theory_lean` (module ProgramGames) | Bornes sur les agents à programme (Bounded) ; FairBot (sans consommateur — See #20379) | Dynamics 05, 06 |
+| `game_theory_lean` (module Abstraction) | Hiérarchie d'abstraction des jeux — module orphelin, consommateur naturel : Metajeux-03 (See #20380) | — |
 | `game_theory_lean` (module Swaps) | Certificat du plus court chemin de swaps | 03a |
 | `minimax_lean` | Théorème minimax de von Neumann, via Sion | 05b |
 | `lean_game_defs`, `lean_game_defs_ext` | Types de jeux partagés ; Vickrey sans `sorry` | 02b, 08b, 11b, 17d |

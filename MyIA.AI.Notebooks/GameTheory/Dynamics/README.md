@@ -50,7 +50,7 @@ Le saut de la porte 06 (tournoi de stratégies : on observe le comportement de l
 |---|---|
 | [`RepeatedGames`](../game_theory_lean/RepeatedGames.lean) | Marches 01-02 : grim trigger certifié sans `sorry` ; Folk complet ouvert (`Folk.lean`) |
 | [`ProgramGames/Bounded`](../game_theory_lean/ProgramGames/Bounded.lean) | Marches 05-06 : bornes sur les agents à programme (`import ProgramGames.Bounded` dans les deux 06f d'origine) |
-| [`ProgramGames/FairBot`](../game_theory_lean/ProgramGames/FairBot.lean) | **Pièce non consommée** : nommé 75× en prose dans les anciens 06e/06j sans jamais être importé — soit les marches l'appellent, soit elle cherche sa marche |
-| [`Abstraction`](../game_theory_lean/Abstraction/Basic.lean) | **Module orphelin** : le consommateur naturel est le carnet 19 « Abstraction à dette » (Metajeux-03), qui n'appelle rien — à câbler |
+| [`ProgramGames/FairBot`](../game_theory_lean/ProgramGames/FairBot.lean) | **Pièce non consommée** : nommé 75× en prose dans les anciens 06e/06j sans jamais être importé — soit les marches l'appellent, soit elle cherche sa marche (See #20379) |
+| [`Abstraction`](../game_theory_lean/Abstraction/Basic.lean) | **Module orphelin** : le consommateur naturel est le carnet 19 « Abstraction à dette » (Metajeux-03), qui n'appelle rien — à câbler (See #20380) |
 
 La table des lakes de la série, dans le [README racine](../README.md#formalisations-lean), reprend ces deux groupes. L'inventaire complet (toolchains, `sorry` résiduels) vit dans [LEAN_INVENTORY.md](../LEAN_INVENTORY.md).
