@@ -70,10 +70,14 @@ def _tmp_repo_with_rename(tmp_path: Path) -> tuple[Path, str, str]:
 
     base : zz-old-dir (sera RENOMME via git mv -- preuve reelle),
     zz-deleted-dir (sera SUPPRIME -- pas un renommage), zz-other/README.md
-    (sera SUPPRIME -- pas un renommage), docs/README.md referent.
+    (sera SUPPRIME -- pas un renommage), zz-part-old (sera PARTIELLEMENT
+    demenage : seul a.txt bouge, le README est supprime et un README au
+    contenu radical different est cree -- FN 3), docs/README.md referent.
     head : git mv zz-old-dir zz-new-dir ; zz-deleted-dir parti et
     zz-unrelated-dir cree sans lien ; zz-other parti et zz-unrelated/
-    README.md cree sans lien. Rend (repo_cwd, base_sha, head_sha).
+    README.md cree sans lien ; git mv zz-part-old/a.txt zz-part-new/a.txt
+    puis zz-part-old supprime, zz-part-new/README.md (contenu different)
+    et zz-part-new/deep/y.html crees. Rend (repo_cwd, base_sha, head_sha).
     """
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -99,6 +103,12 @@ def _tmp_repo_with_rename(tmp_path: Path) -> tuple[Path, str, str]:
                                                              encoding="utf-8")
     (repo / "zz-other").mkdir()
     (repo / "zz-other" / "README.md").write_text("z", encoding="utf-8")
+    (repo / "zz-part-old").mkdir()
+    (repo / "zz-part-old" / "a.txt").write_text("pa", encoding="utf-8")
+    (repo / "zz-part-old" / "README.md").write_text("part-base", encoding="utf-8")
+    (repo / "zz-part-old" / "deep").mkdir()
+    (repo / "zz-part-old" / "deep" / "b.txt").write_text(
+        "contenu long et clairement distinct de la cible", encoding="utf-8")
     (repo / "docs").mkdir()
     (repo / "docs" / "README.md").write_text("ref", encoding="utf-8")
     g("add", "-A")
@@ -113,6 +123,15 @@ def _tmp_repo_with_rename(tmp_path: Path) -> tuple[Path, str, str]:
     g("rm", "-r", "-q", "zz-other")
     (repo / "zz-unrelated").mkdir()
     (repo / "zz-unrelated" / "README.md").write_text("v", encoding="utf-8")
+    (repo / "zz-part-new").mkdir()
+    g("mv", "zz-part-old/a.txt", "zz-part-new/a.txt")
+    g("rm", "-r", "-q", "zz-part-old")
+    (repo / "zz-part-new" / "README.md").write_text(
+        "README radicalement different du precedant : sections et liens sans rapport",
+        encoding="utf-8")
+    (repo / "zz-part-new" / "deep").mkdir()
+    (repo / "zz-part-new" / "deep" / "y.html").write_text("py",
+                                                          encoding="utf-8")
     g("add", "-A")
     g("commit", "-qm", "head")
     head_sha = sha()
@@ -287,6 +306,56 @@ def test_diff_refuses_deleted_readme_vs_unrelated_readme(tmp_path: Path) -> None
     assert proc.returncode == 1, f"diff exit={proc.returncode}\nstdout={proc.stdout}"
     assert "NOUVELLES=1" in proc.stdout
     assert "DEPLACEES=0" in proc.stdout
+
+
+def test_diff_refuses_sibling_rename_acquitting_new_readme(tmp_path: Path) -> None:
+    """Faux negatif 3 reproduit (revue adjointe 14:00, #20357) : le
+    renommage d'un fichier VOISIN ne prouve pas celui du README.
+
+    git rapporte R100 zz-part-old/a.txt -> zz-part-new/a.txt (d'ou un
+    mapping de dossier) mais le README lui-meme en delete+add : contenu
+    radicalement different, aucun statut R. L'ancienne branche
+    « dossier prouve renomme + meme basename » acquittait ce couple en
+    MOVED ; sans entree R portant sur CE README, la violation re-keyee
+    reste NOUVELLE (exit 1).
+    """
+    repo, base_sha, head_sha = _tmp_repo_with_rename(tmp_path)
+    base = {"violations": [
+        {"class": "HTML_404", "readme": "zz-part-old/README.md", "href": "missing.html"}
+    ], "n_violations": 1}
+    head = {"violations": [
+        {"class": "HTML_404", "readme": "zz-part-new/README.md", "href": "missing.html"}
+    ], "n_violations": 1}
+    proc = _run_diff(base, head, tmp_path, cwd=repo, shas=(base_sha, head_sha))
+    assert proc.returncode == 1, f"diff aurait du exit=1, exit={proc.returncode}\nstdout={proc.stdout}\nstderr={proc.stderr}"
+    assert "NOUVELLES=1" in proc.stdout
+    assert "DEPLACEES=0" in proc.stdout
+
+
+def test_diff_shape2_partial_dir_mapping_pairs_rekeyed_link(tmp_path: Path) -> None:
+    """Frontiere mesuree (revue adjointe 14:00 : « verifier shape 2 contre
+    un mapping partiel ») : un SEUL fichier demenage (a.txt) suffit a
+    prouver le renommage du dossier zz-part-old -> zz-part-new, et le lien
+    casse preexistant, re-adresse vers le nouveau dossier, reste le MEME
+    lien casse => MOVED (exit 0).
+
+    Pourquoi ce n'est pas le FN de la shape 1 : le document (docs/README.md)
+    est inchange, seul le prefixe du lien suit un renommage reel prouve par
+    git ; et une cible HTML_404 est absente du depot par definition, donc
+    son propre renommage ne peut JAMAIS etre prouve -- l'exiger
+    fabriquerait un faux positif sur chaque rename reel.
+    """
+    repo, base_sha, head_sha = _tmp_repo_with_rename(tmp_path)
+    base = {"violations": [
+        {"class": "HTML_404", "readme": "docs/README.md", "href": "../zz-part-old/deep/x.html"}
+    ], "n_violations": 1}
+    head = {"violations": [
+        {"class": "HTML_404", "readme": "docs/README.md", "href": "../zz-part-new/deep/x.html"}
+    ], "n_violations": 1}
+    proc = _run_diff(base, head, tmp_path, cwd=repo, shas=(base_sha, head_sha))
+    assert proc.returncode == 0, f"diff exit={proc.returncode}\nstdout={proc.stdout}\nstderr={proc.stderr}"
+    assert "NOUVELLES=0" in proc.stdout
+    assert "DEPLACEES=1" in proc.stdout
 
 
 def test_diff_refuses_pairing_when_base_readme_still_exists(tmp_path: Path) -> None:

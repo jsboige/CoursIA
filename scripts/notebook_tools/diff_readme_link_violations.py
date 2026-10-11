@@ -23,26 +23,33 @@ rename: NOUVELLES=12, CORRIGEES=12, strictly symmetric; 8 of shape 1,
 
 A pair classifies as MOVED only against RENAMES PROVEN BY GIT
 (`--base-sha`/`--head-sha`, evidence from `git diff --name-status
---find-renames`), never from circumstantial disk signals alone. Two
+--find-renames`), never from circumstantial disk signals alone. Three
 reproduced false negatives motivated the proof requirement (adjoint review
 of #20274, 2026-10-11): (1) an old href into a deleted directory plus a
 NEW href into an unrelated existing directory satisfied the old
 "old parent gone + new parent exists" heuristic without any rename
 existing; (2) a deleted README plus an unrelated new README sharing the
-same href satisfied the old "base-side README gone" heuristic. Deletion
-is not renaming. Pairing rules:
+same href satisfied the old "base-side README gone" heuristic; (3) the
+rename of a SIBLING file (a.txt) induced a directory mapping that
+acquitted a README that git itself reports as delete+add -- the mapping
+of a neighbour is not a proof about the document. Deletion is not
+renaming. Pairing rules:
 
   shape 1 -- a "new" (class, readme, href) whose exact (class, href) twin
   sits in the fixed set, whose base-side README no longer exists on disk
-  AND whose README move is git-proven: either the exact file rename
-  old_readme -> new_readme, or a directory rename old_dir -> new_dir
-  (deduced from renamed files sharing a path suffix) with the same
-  basename on both sides.
+  AND whose README move is git-proven by the README's OWN R* entry
+  (old_readme -> new_readme in the rename map). A directory mapping
+  deduced from other files does NOT acquit a README that git reports as
+  delete+add: a rewritten README is a new document, and its links are new
+  links (#20357, adjoint 14:00).
   shape 2 -- a "new" (class, readme, href') in the SAME readme as a fixed
   (class, readme, href), where the resolved targets differ exactly by a
   git-proven directory rename (same suffix under old_dir/new_dir) and the
   resolved old href's parent directory has vanished while the new one
-  exists.
+  exists. The dir-level proof is deliberate here: an HTML_404 target is
+  absent from the repo by definition, so its own rename can NEVER be
+  proven -- requiring it would false-positive every real re-key. The
+  re-addressed broken link is the SAME broken link, not a new one.
 
 Fail-closed: without --base-sha/--head-sha, or on any git failure, the
 rename map is empty and NOTHING classifies as MOVED -- every re-keyed
@@ -121,16 +128,13 @@ def _readme_move_proven(
     old_readme: str, new_readme: str,
     file_renames: dict[str, str], dir_renames: dict[str, str],
 ) -> bool:
-    """Le demenagement du README lui-meme est-il prouve par git ?
-    Renommage exact du fichier, OU renommage de son dossier (deduit des
-    fichiers renommes) avec le meme basename des deux cotes."""
-    if file_renames.get(old_readme) == new_readme:
-        return True
-    if posixpath.basename(old_readme) != posixpath.basename(new_readme):
-        return False
-    d_old = posixpath.dirname(old_readme)
-    d_new = posixpath.dirname(new_readme)
-    return bool(d_old) and dir_renames.get(d_old) == d_new
+    """Le demenagement du README lui-meme est-il prouve par git ? Seule
+    preuve admise : l'entree R* exacte old_readme -> new_readme. Un mapping
+    de dossier deduit d'un fichier VOISIN (FN 3, #20357) n'acquitte pas un
+    README que git rapporte comme delete+add -- un README reecrit est un
+    nouveau document, et ses liens sont des liens nouveaux. `dir_renames`
+    reste parameter (consomme par la shape 2) mais ne participe plus ici."""
+    return file_renames.get(old_readme) == new_readme
 
 
 def _targets_differ_by_dir_rename(
