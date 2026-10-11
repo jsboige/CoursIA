@@ -526,7 +526,7 @@
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
-      "kind": "orphan_entry",
+      "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15d-CechObstruction-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
