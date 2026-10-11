@@ -12,6 +12,7 @@ Cette deuxième sous-série de code (SC-7 a SC-11) quitte la syntaxe pour les **
 |---|----------|-------|---------|
 | 7 | [SC-07-Token-Standards-Python](SC-07-Token-Standards-Python.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155, contrats OpenZeppelin |
 | 8 | [SC-08-DeFi-Primitives-Python](SC-08-DeFi-Primitives-Python.ipynb) | 55 min | AMM, formule x*y=k, liquidity pools, price impact, slippage |
+| 8b | [SC-08b-MEV-LP-Python](SC-08b-MEV-LP-Python.ipynb) | 40 min | Compagnon de SC-8 (hors chaîne) : frais du déposant contre perte non-permanente, sandwich et backrun chiffrés |
 | 9 | [SC-09-DAO-Governance-Python](SC-09-DAO-Governance-Python.ipynb) | 45 min | Vote pondéré, propositions, timelock |
 | 10 | [SC-10-Account-Abstraction-Python](SC-10-Account-Abstraction-Python.ipynb) | 50 min | ERC-4337, UserOperations, Smart Account, Paymasters |
 | 11 | [SC-11-LLM-Assisted-Python](SC-11-LLM-Assisted-Python.ipynb) | 45 min | LLMs (Claude/GPT) pour générer, auditer, documenter du Solidity |
@@ -29,6 +30,8 @@ Implémentation des trois standards fondateurs : **ERC-20** (tokens fongibles), 
 ### Étape 2 : Primitives DeFi (SC-8, 55 min)
 
 Le coeur de la finance décentralisée : les **Automated Market Makers** et la formule a produit constant **x*y=k**. On construit un liquidity pool simple, puis on mesure concrètement le **price impact** et le **slippage** d'un swap. Cette étape mobilise les interfaces et appels externes Solidity vus en SC-5.
+
+**Compagnon [SC-08b-MEV-LP-Python](SC-08b-MEV-LP-Python.ipynb)** (40 min, hors chaîne) : le même pool, mais du point de vue de l'économie plutôt que du swap. On y chiffre ce que le déposant **gagne** (frais, en fonction du volume) et ce qu'il **perd** (perte non-permanente, retrouvée par simulation *et* par la formule fermée), puis les deux extractions canoniques -- **sandwich** et **backrun** -- avec le profit de l'attaquant, la perte de la victime, et les deux bords où l'attaque cesse d'être rentable. Aucune chaîne locale n'est requise : le carnet réutilise le noyau de swap de SC-8 (copie déclarée) et vérifie son équivalence contre la sortie déjà committée de SC-8. Trois exercices non résolus.
 
 ### Étape 3 : Gouvernance on-chain (SC-9, 45 min)
 

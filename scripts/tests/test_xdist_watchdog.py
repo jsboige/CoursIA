@@ -355,3 +355,130 @@ def test_kill_tree_posix_fallback_mono_processus():
     finally:
         if proc.poll() is None:
             proc.kill()
+
+
+# Mode 3 (#19915) : crash de collecte xdist (KeyError: <WorkerController>).
+# Distinction d'avec le mode 1 (silence) : pytest emet en continu
+# "replacing crashed worker gwN" (sortie NON muette) mais aucun progres de
+# test n'est jamais vu. Le verdict doit etre COLLECT_CRASH, distinct de
+# BLOQUE, et doit nommer le worker en collision.
+
+
+def test_collect_crash_sans_progres_est_tue_avec_verdict_dedie():
+    # Reproduction de la signature #19915 : la sortie porte
+    # "replacing crashed worker gw8" puis INTERNALERROR> KeyError:
+    # <WorkerController gw8>, sans aucune ligne de progres pytest. Le
+    # mode 1 (silence) ne peut pas la detecter -- la sortie n'est pas
+    # muette. Le mode 3 doit la tuer avec EXIT_COLLECT_CRASH et un
+    # verdict dedie qui nomme le worker en collision.
+    code, out, verdict = _run_watchdog(
+        _child("""
+            import sys
+            print("[gw7] node down: Not properly terminated", flush=True)
+            print("replacing crashed worker gw7", flush=True)
+            print("[gw8] node down: Not properly terminated", flush=True)
+            print("replacing crashed worker gw8", flush=True)
+            print("INTERNALERROR> Traceback (most recent call last):", flush=True)
+            print("INTERNALERROR> KeyError: <WorkerController gw8>", flush=True)
+            import time
+            time.sleep(300)
+        """),
+        idle_limit=480.0,
+    )
+    assert code == wd.EXIT_COLLECT_CRASH
+    assert "COLLECT_CRASH" in verdict
+    assert "gw8" in verdict
+
+
+def test_collect_crash_apres_progres_ne_declenche_pas_le_mode_3():
+    # Si une ligne de progres pytest a ete observee AVANT le KeyError,
+    # ce n'est plus un crash de collecte -- c'est un test defectueux
+    # qui a produit une collision tardive. Le mode 3 ne doit PAS tuer :
+    # on laisse le run finir normalement (mode 1 ou pas de kill du tout).
+    code, out, verdict = _run_watchdog(
+        _child("""
+            print(".... [ 10%]", flush=True)
+            import time
+            time.sleep(0.2)
+            print("INTERNALERROR> KeyError: <WorkerController gw8>", flush=True)
+            time.sleep(0.2)
+            print(".... [ 11%]", flush=True)
+            time.sleep(0.2)
+            print("ok")
+        """),
+        idle_limit=480.0,
+    )
+    # Pas de kill mode 3 -- on laisse pytest finir.
+    assert code != wd.EXIT_COLLECT_CRASH
+    # Pas de verdict mode 3 dans la sortie.
+    assert "COLLECT_CRASH" not in verdict
+
+
+def test_collect_crash_workers_multiples_tous_nommes():
+    # Plusieurs workers en collision sur la meme trace : le verdict doit
+    # tous les nommer pour le triage.
+    code, out, verdict = _run_watchdog(
+        _child("""
+            print("replacing crashed worker gw8", flush=True)
+            print("replacing crashed worker gw9", flush=True)
+            print("INTERNALERROR> KeyError: <WorkerController gw8>", flush=True)
+            print("INTERNALERROR> KeyError: <WorkerController gw9>", flush=True)
+            import time
+            time.sleep(300)
+        """),
+        idle_limit=480.0,
+    )
+    assert code == wd.EXIT_COLLECT_CRASH
+    assert "gw8" in verdict
+    assert "gw9" in verdict
+
+
+def test_collect_crash_enfant_sort_juste_apres_la_signature():
+    # Course de cadence (revue Hermes du 2026-10-08, PR #19917). La
+    # detection vit dans la boucle, qui teste tous les 0,5 s et `break`
+    # des que le fils est mort. Sur le corpus, l'ecart entre la ligne
+    # `KeyError` et la sortie du processus va de 0,21 a 0,75 s : le fils
+    # sort AVANT la premiere evaluation et le wrapper rendait le code du
+    # fils sans verdict. Les trois tests precedents ne peuvent pas voir ce
+    # cas -- leurs enfants dorment 300 s, donc la boucle mord toujours.
+    # Ici l'enfant sort juste apres la signature, ce qui est le regime
+    # reel. La conjonction doit etre re-testee apres la boucle.
+    for delay in (0.0, 0.2):
+        code, out, verdict = _run_watchdog(
+            _child(f"""
+                print("replacing crashed worker gw8", flush=True)
+                print("INTERNALERROR> KeyError: <WorkerController gw8>", flush=True)
+                import time
+                time.sleep({delay})
+            """),
+            idle_limit=480.0,
+        )
+        assert code == wd.EXIT_COLLECT_CRASH, f"delay={delay}: code={code}"
+        assert "COLLECT_CRASH" in verdict, f"delay={delay}: aucun verdict"
+        assert "gw8" in verdict, f"delay={delay}: worker non nomme"
+
+
+def test_regex_collect_crash_matche_et_ancre_gwN():
+    # La regex doit capturer le nom du worker et ignorer le bruit autour.
+    assert wd.COLLECT_CRASH_RE.search("INTERNALERROR> KeyError: <WorkerController gw8>")
+    assert wd.COLLECT_CRASH_RE.search("KeyError: <WorkerController gw12>")
+    # Pas de faux positif sur un KeyError d'un autre type
+    assert not wd.COLLECT_CRASH_RE.search("KeyError: 'gw8'")
+    assert not wd.COLLECT_CRASH_RE.search("KeyError: 42")
+
+
+def test_exit_collect_crash_mappe_vers_1_via_main(capsys):
+    # main() doit mapper EXIT_COLLECT_CRASH (4) vers 1, comme EXIT_BLOCKED (3).
+    # La CI ne distingue pas par exit code ; c'est le verdict log qui dit
+    # la difference. C'est volontaire (cf docstring de EXIT_COLLECT_CRASH).
+    import xdist_watchdog
+    # Monkeypatch run() pour qu'il rende EXIT_COLLECT_CRASH sans spawner
+    # un sous-processus -- on verifie juste le mapping.
+    orig_run = xdist_watchdog.run
+    xdist_watchdog.run = lambda *a, **kw: xdist_watchdog.EXIT_COLLECT_CRASH
+    try:
+        code = xdist_watchdog.main([sys.executable, "-c", "pass"])
+    finally:
+        xdist_watchdog.run = orig_run
+    assert code == 1
+
