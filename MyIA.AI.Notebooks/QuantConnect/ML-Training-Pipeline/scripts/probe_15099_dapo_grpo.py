@@ -62,6 +62,15 @@ MODELS: dict[str, dict[str, str]] = {
     "minicpm5": {
         "path_glob": "models--openbmb--MiniCPM5-2B/snapshots/*",
         "label": "MiniCPM5-2B",
+        # eos_token du tokenizer = </s> (id 1) mais le template de chat
+        # termine les tours par <|im_end|> (id 130073, present dans
+        # generation_config, absent de special_tokens_map). TRL 1.12 lit
+        # l'EOS de generation, la detection de troncature ET le masque de
+        # perte depuis tokenizer.eos_token_id uniquement : sans alignement,
+        # aucune completion n'est vue "terminee" -> clipped_ratio=1 et
+        # mask_truncated_completions annule la perte (smoke 08/10 :
+        # loss/grad/entropy = 0).
+        "eos_token": "<|im_end|>",
     },
     "qwen35": {
         "path_glob": "models--Qwen--Qwen3.5-0.8B/snapshots/*",
@@ -431,6 +440,10 @@ def build_trainer(
 
     model_path = find_hf_snapshot(MODELS[model_key]["path_glob"])
     tokenizer = AutoTokenizer.from_pretrained(str(model_path))
+    eos_override = MODELS[model_key].get("eos_token")
+    if eos_override is not None:
+        # aligne l'EOS tokenizer sur le terminateur reel du template (cf MODELS)
+        tokenizer.eos_token = eos_override
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -647,6 +660,9 @@ def mode_baseline(model_key: str, dataset_key: str) -> dict[str, Any]:
 def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False,
              dataset_key: str = "dapo") -> dict[str, Any]:
     ds = DATASETS[dataset_key]
+    # Self-describing : le budget est la variable du diagnostic de troncature
+    # (#15294), il doit etre lisible dans run.log a cote de clipped_ratio.
+    print(f"[{model_key} seed{seed}] budget de completion = {MAX_COMPLETION} tokens")
     train_rows, eval_rows = ds["load"]()
     t0 = time.time()
     trainer, model_path = build_trainer(model_key, seed, steps, train_rows,
@@ -826,14 +842,29 @@ def main() -> int:
         action="store_true",
         help="mode thinking (enable_thinking=True laisse au template, budget completion 1024)",
     )
+    ap.add_argument(
+        "--max-completion",
+        type=int,
+        default=None,
+        help="budget de completion en tokens (defaut : 384 non-thinking, 1024 avec --thinking) ; "
+             "pilote clipped_ratio (fraction de completions tronquees) et, via "
+             "mask_truncated_completions, la part du loss qui survit",
+    )
     args = ap.parse_args()
 
+    global MAX_COMPLETION
     if not args.thinking:
         CHAT_KWARGS.clear()
         CHAT_KWARGS["enable_thinking"] = False
     else:
-        global MAX_COMPLETION
         MAX_COMPLETION = 1024
+    if args.max_completion is not None:
+        # Le budget n'est pas cosmetique : avec mask_truncated_completions=True,
+        # une completion qui atteint la borne est RETIREE du loss (#15294 : a
+        # 384 tokens, clipped_ratio ~0.94-0.97 laissait un signal quasi nul).
+        # Parametrable, le balayage du budget est une commande, pas une edition
+        # du source a chaque point de diagnostic.
+        MAX_COMPLETION = args.max_completion
 
     if args.mode == "selftest":
         return mode_selftest()

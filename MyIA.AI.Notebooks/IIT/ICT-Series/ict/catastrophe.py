@@ -141,6 +141,125 @@ def bifurcation_curve(a_grid) -> Tuple[np.ndarray, np.ndarray]:
     return -b, b
 
 
+def cusp_polar_torus(
+    n_cusps: int, n_samples: int = 400, R: float = 2.0, r: float = 1.0
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Cubique cuspidale ``y**2 = x**3`` en polaires, fermee sur le tore (R, r).
+
+    Parametrisation de la famille des **liens toriques** ``T(2, n_cusps)``
+    (par convention ``T(p, q)`` avec ``p = 2`` meridiens, ``q = n_cusps``
+    longitudinaux ; ``theta in [0, 4 pi]`` referme la courbe pour
+    ``n_cusps`` impair, et la parcourt **deux fois** sur la meme geometrie
+    pour ``n_cusps`` pair). La relation ``2 phi = n_cusps theta`` definit
+    l'image.
+
+    **Attention** : pour ``n_cusps`` **pair**, ``gcd(2, n_cusps) = 2`` et la
+    courbe ``T(2, n_cusps)`` est un **lien a 2 composantes** (link au sens
+    de Rolfsen), pas un noeud. La parametrisation ci-dessous ne trace
+    geometriquement qu'**une seule composante parcourue deux fois** : la
+    condition ``gamma(theta + 2 pi) = gamma(theta)`` est verifiee
+    numeriquement (``< 1e-14``) pour tout ``n_cusps`` pair (n = 2, 4, 6),
+    pas seulement ``n_cusps = 2``. Les cas ``n_cusps = 4, 6`` sont donc
+    **dégénérés** pour le compteur ``torus_knot_crossings`` au meme titre
+    que ``n_cusps = 2``.
+
+    Pour ``n_cusps`` **impair >= 3**, on obtient les **vrais nœuds toriques** :
+
+    * ``n_cusps = 3`` -> **trèfle** ``3_1`` (3 croisements minimaux)
+    * ``n_cusps = 5`` -> **cinquefoil** ``5_1`` (5 croisements minimaux)
+    * ``n_cusps = 7`` -> **septfoil** ``7_1`` (7 croisements minimaux)
+
+    Renvoie les coordonnees 3D ``(x, y, z)`` d'un echantillonnage regulier
+    de la trace sur la surface du tore.
+    """
+    if n_cusps < 2:
+        raise ValueError("n_cusps doit etre >= 2 (n=1 ne ferme pas)")
+    theta = np.linspace(0.0, 4.0 * np.pi, n_samples)
+    phi = n_cusps * theta / 2.0
+    x = (R + r * np.cos(theta)) * np.cos(phi)
+    y = (R + r * np.cos(theta)) * np.sin(phi)
+    z = r * np.sin(theta)
+    return x, y, z
+
+
+def torus_knot_crossings(
+    n_cusps: int, n_samples: int = 2000, R: float = 2.0, r: float = 1.0
+) -> int:
+    """Compte les **auto-croisements de la projection (x, y)** de la trace.
+
+    **ATTENTION** : ce compteur mesure le nombre d'auto-croisements de la
+    projection particuliere ``(x, y)`` livree par ``cusp_polar_torus``, ce
+    n'est **pas un invariant topologique** du nœud ou du lien. Il depend
+    du choix de projection (ici, l'axe du tore est projete orthogonalement
+    sur le plan equatorial). Un meme nœud peut avoir des projections
+    differentes avec des nombres de croisements tres differents ; le
+    **nombre minimal** de croisements sur toutes les projections (le
+    *crossing number*) est l'invariant topologique, et il faut un algorithme
+    dedie (e.g. SnapPy, Regina) pour le mesurer ou le borner.
+
+    **Portee de la formule** ``2 (n - 1)`` : la formule standard
+    ``p (q - 1)`` (avec ``p = 2``, ``q = n``) donne le nombre de croisements
+    **d'un diagramme regulier** du nœud torique ``T(2, n)``. **Elle n'est
+    verifiee numeriquement ici que pour ``n impair >= 3``** (noeuds
+    toriques reels : trèfle, cinquefoil, septfoil, etc.). Pour ``n pair``
+    (n = 2, 4, 6, ...), la parametrisation ``2 phi = n theta`` produit
+    ``gcd(2, n) = 2``, soit un **lien a 2 composantes**, et la
+    parametrisation ne trace qu'**une seule composante parcourue deux
+    fois** (cf. ``cusp_polar_torus``). Le compteur surcompte alors
+    massivement les paires : pour n_samples = 400 et ``n = 4`` on lit
+    ~403 croisements (au lieu des 6 attendus), pour ``n = 6`` ~407 (au
+    lieu de 10). Ce surcomptage est la **signature de la degenerescence**
+    de la parametrisation, pas un comptage legitime du link.
+
+    Temoin negatif (portee restreinte aux ``n impairs >= 3``) :
+    ``n = 3`` -> **4 croisements** (trefle, pas 3 ni 5) ; ``n = 5`` ->
+    **8 croisements** (cinquefoil, pas 3 ni 10) ; ``n = 7`` ->
+    **12 croisements**. C'est la signature qui distingue trèfle et
+    cinquefoil **sans interpreter visuellement** une figure 3D -- le
+    **témoin negatif** specifie par le ticket #19352.
+
+    Algorithme : la trace forme une boucle fermee de ``n_samples`` segments,
+    le segment ``i`` etant ``(i, (i+1) mod n_samples)``. On enumere les
+    paires de segments **non adjacents** ``(i, j)`` avec ``j > i + 1`` ; deux
+    segments se croisent si l'orientation du quadruplet change de signe sur
+    les deux diagonales. On decompte les paires ``(i, j)`` qui verifient
+    cette condition : chaque croisement est vu une fois (la paire
+    ``(i, j)`` avec ``i < j``), pas deux.
+    """
+    if n_cusps < 2:
+        raise ValueError("n_cusps doit etre >= 2")
+    theta = np.linspace(0.0, 4.0 * np.pi, n_samples)
+    phi = n_cusps * theta / 2.0
+    px = (R + r * np.cos(theta)) * np.cos(phi)
+    py = (R + r * np.cos(theta)) * np.sin(phi)
+
+    n = n_samples
+
+    def seg_intersect(i: int, j: int) -> bool:
+        ai, bi = i, (i + 1) % n
+        ci, di = j, (j + 1) % n
+        ax, ay = px[ai], py[ai]
+        bx, by = px[bi], py[bi]
+        cx, cy = px[ci], py[ci]
+        dx, dy = px[di], py[di]
+        d1 = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+        d2 = (bx - ax) * (dy - ay) - (by - ay) * (dx - ax)
+        d3 = (dx - cx) * (ay - cy) - (dy - cy) * (ax - cx)
+        d4 = (dx - cx) * (by - cy) - (dy - cy) * (bx - cx)
+        return ((d1 > 0 and d2 < 0) or (d1 < 0 and d2 > 0)) and (
+            (d3 > 0 and d4 < 0) or (d3 < 0 and d4 > 0)
+        )
+
+    n_cross = 0
+    for i in range(n):
+        for j in range(i + 2, n):
+            # La paire (i=0, j=n-1) : segments (0,1) et (n-1,0) -- non
+            # adjacents en boucle fermee, donc a tester.
+            if seg_intersect(i, j):
+                n_cross += 1
+    return n_cross
+
+
 # --------------------------------------------------------------------------- #
 #  Relaxation gradient et lacet d'hysteresis (le lacet de predation)           #
 # --------------------------------------------------------------------------- #

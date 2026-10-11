@@ -19,9 +19,17 @@ These RLE files correspond to the witness theorems scaffolded in
 | Pillar theorem | RLE file | Generation count |
 |----------------|----------|-----------------|
 | `otca_metapixel_witness` | `otcametapixel.rle` | 35 328 |
-| `unitcell_witness` | `p5760unitlifecell.rle` (closest available) | 4 096 |
+| `unitcell_initial_population` | `p5760unitlifecell.rle` | 5 760 (measured period) |
 | `gemini_witness` | `gemini.rle` | 33 699 586 |
 | `cpu_witness` | not yet available | 1 048 576 |
+
+**The "Unit cell" pillar and the file present here are not the same pattern.**
+`Pillars.lean` targeted Beluchenko's UnitCell (2011, period 4 096); the archive
+holds only the p5760 of David Bell, kept as the "closest available". The 5 760
+period of the file present here was measured on 2026-10-09 (500 × 500 torus,
+first repetition generation 11324 == 5564). Beluchenko's pattern remains absent
+from the archive; the authorship of the file present here (David Bell in this
+file, Beluchenko 2011 in `Pillars.lean`) is **not** settled by the measurement.
 
 ## Download
 
