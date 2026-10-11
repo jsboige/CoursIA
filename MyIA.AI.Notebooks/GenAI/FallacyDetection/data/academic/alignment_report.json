@@ -1,0 +1,35 @@
+{
+  "by_source": {
+    "LOGIC": {
+      "total": 15,
+      "DIRECT": 12,
+      "PARTIAL": 3,
+      "NOT_FOUND": 0,
+      "labels_not_found": []
+    },
+    "MAFALDA-L2": {
+      "total": 23,
+      "DIRECT": 17,
+      "PARTIAL": 4,
+      "NOT_FOUND": 2,
+      "labels_not_found": [
+        "Appeal to values",
+        "Fallacy of logic"
+      ]
+    }
+  },
+  "argumentum_families_hit": {
+    "Influence": 7,
+    "Tricherie": 1,
+    "Insuffisance": 6,
+    "Obstruction": 6,
+    "Erreur mathématique": 7,
+    "Erreur de raisonnement": 4,
+    "Abus de langage": 5
+  },
+  "argumentum_families_never_hit": [],
+  "argumentum_family_count": 7,
+  "argumentum_total_leaves": 1407,
+  "argumentum_csv": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv",
+  "argumentum_csv_sha256": "fc8e90fea501c33330ae575a27c6c0c8ba828a10904b380a9b23c637f2887cf5"
+}

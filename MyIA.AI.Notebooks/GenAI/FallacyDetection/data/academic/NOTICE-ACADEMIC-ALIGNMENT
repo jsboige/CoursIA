@@ -1,0 +1,71 @@
+NOTICE — CoursIA `data/academic/` (tranche C de l'issue #17578, EPIC #10355)
+==============================================================================
+
+Contenu
+-------
+
+`logic_mafalda_to_argumentum.csv` : table d'alignement des taxonomies
+académiques vers la taxonomie Argumentum, produite par l'organe
+`scripts/fallacy_detection/align_academic_to_argumentum.py` (aucune
+édition manuelle — regénérer par la commande ci-dessous).
+`alignment_report.json` : rapport de couverture de la même exécution.
+
+Provenance des taxonomies alignées
+----------------------------------
+
+Les listes académiques (LOGIC de Jin et al. 2021 ; MAFALDA-L2 de
+Helwe et al. 2023) sont les constantes de l'organe (`LOGIC_LABELS`,
+`MAFALDA_L2`), sourcées des publications :
+
+- Jin, Bhargava, Brew, Durrett, Klein, *Logical Fallacy Detection*,
+  Findings EMNLP 2021, arXiv:2202.13758. **Le papier dénombre 13 types**
+  (+ LogicClimate) ; l'inventaire encodé ici en porte **15** — les deux
+  de plus sont des variantes nominales rencontrées dans les datasets
+  dérivés. Le libellé de source (`LOGIC`) et le nom de la constante ne
+  portent donc **aucun cardinal** : le compte qui fait foi est le champ
+  `total` de `alignment_report.json` (revue NanoClaw 5469985194).
+- Helwe, Calamai, Paris, Clavel, Suchanek, *MAFALDA: A Benchmark and
+  Comprehensive Study of Fallacy Detection and Classification*,
+  NAACL 2024, arXiv:2311.09761 — L2 = **23** classes fines, encodées ici
+  au même compte.
+
+**Aucun corpus académique n'est commis dans ce dépôt.** La table
+n'aligne que des listes de labels, pas des données annotées.
+
+Licences — mesure firsthand du 2026-10-09 (lane myia-po-2026:CoursIA)
+---------------------------------------------------------------------
+
+| Source | Dépôt | Fichier LICENSE | Licence réelle |
+|---|---|---|---|
+| MAFALDA | `ChadiHelwe/MAFALDA` | absent (API `license: null`, aucune mention README) | CC-BY-SA **déclarée dans le papier seulement** |
+| LOGIC | `causalNLP/logical-fallacy` | absent (idem) | **aucune licence vérifiable à la source** |
+
+Conséquences (critères tranche C, commentaire du 2026-10-09 sur #17578) :
+
+- MAFALDA : corpus **non commis ici** ; si une phase ultérieure (FT/PT)
+  le consomme, la copie devra porter une NOTICE citant **le papier**
+  comme support de licence (pas un fichier LICENSE inexistant), avec
+  attribution et ShareAlike sur les dérivés.
+- LOGIC : corpus **non committable** dans ce dépôt public (absence de
+  licence vérifiable) — lecture hors dépôt (GDrive privé) ou `fetch`
+  déterministe épinglé par commit + sha1, jamais commis.
+
+Reproduction
+------------
+
+```
+python scripts/fallacy_detection/align_academic_to_argumentum.py \
+  --out-csv  MyIA.AI.Notebooks/GenAI/FallacyDetection/data/academic/logic_mafalda_to_argumentum.csv \
+  --out-json MyIA.AI.Notebooks/GenAI/FallacyDetection/data/academic/alignment_report.json \
+  --report
+```
+
+La taxonomie Argumentum cible est la copie in-repo
+(`data/argumentum_fallacies_taxonomy.csv`, cf. son NOTICE propre).
+
+`alignment_report.json` porte son ancre de reproductibilité sous deux
+formes : `argumentum_csv` (chemin **relatif au dépôt** — jamais un chemin
+machine-dépendant) et `argumentum_csv_sha256` (empreinte du CSV cible,
+qui reste vérifiable même si le chemin devient illisible). La table commise
+et ce rapport sont **rejoués par le test** : toute divergence avec une
+exécution fraîche rougit (`test_align_academic_payload_pins.py`).
