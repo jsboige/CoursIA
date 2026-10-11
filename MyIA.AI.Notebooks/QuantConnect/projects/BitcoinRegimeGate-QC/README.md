@@ -50,6 +50,67 @@ Défaut d'ordre **confirmé** (`orders.json`, exécution `gate`) : 250 ordres = 
 
 Corrélations hebdomadaires au gate : hold-qqq 0.567, spy 0.497, sixty40 0.516.
 
+## Exécution séparée #20006 — mesure du 2026-10-09
+
+Le paramètre `execution=base` reste le défaut et conserve la mesure précédente.
+`execution=settled` garde le même signal et la même décision hebdomadaire : il mémorise
+la cible avant de liquider l'autre ETF, puis demande l'achat depuis une barre ultérieure,
+seulement quand cette autre position est nulle et qu'aucun ordre QQQ/SHY n'est ouvert.
+L'intention est effacée avant soumission ; aucun achat ne part d'un callback d'ordre.
+Une vente refusée ou annulée peut être retentée à la décision suivante, jamais dans les
+barres intermédiaires. Ce bras est une variante d'exécution, pas une bascule simultanée.
+
+Cinq backtests QC Cloud terminés, même compilation et empreinte `a73a6fe144a7`, sur
+2016-01-04 → 2026-06-30 : 2 636 rendements communs, aucune troncature. Le rejeu `base`
+reproduit les métriques de #19929 et ses 17 achats refusés.
+
+| Exécution | Sharpe sans taux sans risque | CAGR | Pire baisse | Exposition moyenne | Rotation annuelle |
+|---|---|---|---|---|---|
+| `base` | 1,3139 | 16,54 % | −15,21 % | 0,966 | 22,154 |
+| `settled` | 1,3283 | 16,22 % | −16,28 % | 0,908 | 22,554 |
+
+**Défaut corrigé sur cette fenêtre, sans avantage démontré.** Le journal complet donne
+237 ordres remplis sur 237 sous `settled`, zéro refus et zéro annulation. La reconstruction
+chronologique des événements vérifie les 119 demandes d'achat : aucune avant extinction
+de l'autre position ni pendant un ordre ouvert ; aucune position courte. Les scénarios
+partiels/annulés/refusés sont testés localement, mais ne se sont pas produits dans ce
+backtest : leur couverture n'est pas une observation de courtage.
+
+**Coût du délai.** Le compteur donne 238 clôtures sans position et 1,3 jour moyen entre
+décision et **soumission**, pas remplissage. Le journal des ordres ajoute 1,009 jour moyen
+entre soumission et remplissage (minimum 1 jour, maximum 2,125). Par exemple, la première
+décision du 4 janvier 2016 à 08:00 ET mène à une soumission le 5 à la clôture, puis un
+remplissage le 6 à la clôture. Le rendement mesure ce délai journalier, pas un échange
+instantané. Les 119 tentatives sous `settled` ne doivent pas être comparées aux 134 de
+`base` comme si le signal avait changé : `base` retente aussi après ses passages en cash.
+
+**NO BEATS**, selon le même bootstrap préinscrit (21 séances, 10 000 tirages, graine
+18921, correction de Holm sur trois références) :
+
+| Référence | Écart de Sharpe `settled − référence` | p Holm | IC 95 % |
+|---|---|---|---|
+| QQQ détenu | +0,3675 | 0,2907 | [−0,1997 ; +0,9175] |
+| SPY détenu | +0,4445 | 0,2907 | [−0,2086 ; +1,0519] |
+| 60/40 SPY/IEF | +0,3933 | 0,2907 | [−0,2527 ; +1,0136] |
+
+L'écart `settled − base` est descriptif, hors Holm : +0,0145, IC95
+[−0,1701 ; +0,2079], p unilatérale 0,45. Cela ne prouve **pas** une non-infériorité.
+La grille et les frais doublés ne sont pas lancés : leur condition de significativité
+n'est pas satisfaite. Le mode `base` demeure le défaut ; aucun choix de performance
+n'est tiré de cette correction mécanique.
+
+Validation : 25 tests de transitions et d'initialisation, compilation QC réussie et
+cinq exécutions complètes. Le premier lancement a échoué à l'initialisation parce que
+`self.execution` collisionnait avec la propriété native Lean `Execution` ; l'état privé
+est désormais `_execution_mode`, avec une garde dans les tests. Le lancement échoué
+est conservé, pas assimilé à une mesure. Les fenêtres 2016-2019 / 2020-2022 / 2023-2026
+sont des découpages descriptifs ; ni le signal publié ni la réparation choisie après
+constat du défaut ne constituent une validation prospective indépendante.
+
+Traces : `G:\\Mon Drive\\MyIA\\IA\\QC-traces\\20006-bitcoin-settled\\run2`
+(plans, identifiants, empreintes, séries, ordres, `results_settled.json`,
+`execution_audit.json`).
+
 ## Claims de l'article confrontés — mesures du dépôt (QC Cloud, 2026-09-30)
 
 | Claim auteur (2014-2026) | Valeur |

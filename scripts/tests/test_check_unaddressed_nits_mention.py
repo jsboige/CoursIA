@@ -452,6 +452,13 @@ def test_13559_approve_a_corriger_avant_bloque_toujours():
     assert len(_blocking(body)) == 1
 
 
+def test_13559_approve_a_corriger_avant_bloque_toujours_bracketed():
+    """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
+    body = ("**[Hermes]** APPROVE sous reserve de la correction du typo "
+            "du docstring [BEFORE-MERGE], CONCERNS mineur.")
+    assert len(_blocking(body)) == 1
+
+
 def test_13559_etats_non_approved_intacts():
     """Non-regression : le correctif est borne a `state == APPROVED`. Un
     COMMENT_WITH_CONCERNS sous COMMENTED ou CHANGES_REQUESTED bloque comme

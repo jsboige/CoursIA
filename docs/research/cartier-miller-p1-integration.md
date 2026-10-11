@@ -6,7 +6,7 @@
 **Précédents :** P0 cartography (#19487), P1 elliptic_prefix (#19488), P1 pilot (#19493), P1 point_count (#19499), P1 pseudocode C++ (#19504). Ce mémo est le 6e et dernier volet P1 — il consomme les 5 volets précédents en synthèse.
 **Statut dépôt :** distillation didactique d'un manuscrit non-référé. Lecture seule, aucun verdict de nouveauté mathématique.
 
----
+***
 
 ## 1. Sortie canonique et 4 colonnes de validation
 
@@ -37,7 +37,7 @@ Le benchmark au quarter-point produit 4 colonnes constantes sur les 4 backends :
 - `U = 4B + (9/4)·a = 4·33 + (9·inv(4,97))·79 = 132 + (9·73)·79 mod 97` (où 4⁻¹ = 73 mod 97) — vérification Python interactive.
 - `τ = p+1 - #E(𝔽_p) = -18` ⟹ `#E(𝔽_97) = 115` (cf P0 §2 manuscrit, l. 50 : Theorem 1, M = p+1−τ = 115).
 
----
+***
 
 ## 2. Confrontation des 4 algorithmes au quarter-point
 
@@ -72,7 +72,7 @@ Le benchmark au quarter-point produit 4 colonnes constantes sur les 4 backends :
 **Complexité** : `Õ(√p)` (BGS). Pour p = 10⁸, ~10⁴ multiplications ≪ Harvey kernel ≪ 1s.
 **Fails closed** : `repeat mismatch` (l. 80) ⟹ throw si a/B/U varient inter-reps. Garde triangulaire l. 39-40.
 
----
+***
 
 ## 3. Démonstration d'équivalence au quarter-point (esquisse)
 
@@ -86,7 +86,7 @@ Le benchmark au quarter-point produit 4 colonnes constantes sur les 4 backends :
 
 **Pont formel** (P2.c, hors P1) : la démonstration théorique que les 4 formules sont équivalentes au quarter-point — c'est la formalisation du théorème du manuscrit l. 488 (récurrence (32)).
 
----
+***
 
 ## 4. Notes critiques (≠ régressions)
 
@@ -129,7 +129,7 @@ Le benchmark au quarter-point produit 4 colonnes constantes sur les 4 backends :
 
 6. **Lemma 3 (cas exceptionnel `τ = ±1`) NON implémenté** dans `elliptic_prefix.quarter` (P1 elliptic_prefix §8). Si un premier `p` au quarter-point a `|τ| = 1`, les 4 backends **doivent** converger au même `(B, a, U)` (Lemma 3 dit que la récurrence (32) gère ce cas, mais l'implémentation Python ne le fait pas). **Non testé empiriquement** sur les 7 premiers du papier : tous ont `|τ| ∈ {6, 18, 30, 430, 1826, 2522, 19972}`, aucun à 1.
 
----
+***
 
 ## 5. Bilan P1 integration
 
@@ -150,7 +150,7 @@ Le benchmark au quarter-point produit 4 colonnes constantes sur les 4 backends :
 
 **Risques résiduels :** aucun. L'équivalence empirique est solidement établie (361+28 cross-checks) et les 4 algorithmes sont **fails closed** individuellement. Le pont formel (P2.c) est une garantie supplémentaire, pas un blocker pour l'usage du dépôt.
 
----
+***
 
 ## 6. P2+ — état global de la distillation Cartier-Miller
 
@@ -172,7 +172,7 @@ Le benchmark au quarter-point produit 4 colonnes constantes sur les 4 backends :
 
 **Cible globale** : la distillation didactique d'un manuscrit non-référé en **6 volets P1** + **3 volets P2** Lean + **reproduction exécution** P4. **Cycle de vie de cette distillation** : 6 PRs de recherche + 3 PRs Lean (autre lane) + 1 PR P4 (règle F). Total estimé : 8-12 PRs, multi-cycle.
 
----
+***
 
 ## 7. HORS scope (intentionnel)
 
@@ -181,7 +181,7 @@ Le benchmark au quarter-point produit 4 colonnes constantes sur les 4 backends :
 - **Modification de code (Python ou C++)** : dépôt externe en GPL-2.0-or-later, lecture seule.
 - **Nouveauté mathématique** : **PAS** tranché. Le manuscrit est non-référé, AI-assisted. La distillation ne statue pas sur la correction du théorème, elle cartographie le code.
 
----
+***
 
 ## 8. Refs
 
