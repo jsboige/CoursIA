@@ -15,11 +15,15 @@
   Reference: Lidman (2026), arXiv:2606.12431
 
   Epic #2874. This file hosts TWO distinct results:
-    1. `unknotting_11n102_upper`: upper bound u(11n102) ≤ 2. ATTACKABLE
-       in condition via the native `ReidemeisterCombinatorial` organ (theorem
-       `verifyMoves_sound` proved at l.235 + `unknottingWitness` contract l.264-268).
-       The `sorry` will be lifted once the prover pass explicitly constructs the
-       unknotting witness for this diagram — see Epic #1453 / issue #18611.
+    1. `unknotting_11n102_upper`: upper bound u(11n102) ≤ 2. Sorry. An earlier
+       wording of this header announced that this `sorry` would be lifted as
+       soon as "the prover pass explicitly constructs the witness": that
+       expectation is NOT supported by the measured state. The unknotting
+       certificate is inexpressible under the current connected Reidemeister
+       machine (§4), and the conditioned floor theorem of
+       `Knots.ReidemeisterMoves` §8 — wired to this diagram in §5 — closes the
+       route that maintains the "all crossings four-distinct" hypothesis step by
+       step. See Epic #1453 / issue #18611.
     2. `unknotting_11n102`: Lidman's theorem u(11n102) = 2. Sorry EFFECTIVELY
        PERMANENT: the proof relies on Heegaard Floer homology (d-invariants,
        HFred, Gainullin mapping cone formula), outside Mathlib 4 — decade(s) of
@@ -36,6 +40,7 @@
 import Knots.Basic_en
 import Knots.Invariant_en
 import Knots.Conway_en
+import Knots.ReidemeisterMoves_en
 
 /-
   English mirror of `Lidman.lean` (FR canonical). Convention EPIC #4980
@@ -85,26 +90,45 @@ def knot_11n102 : Knot where
 KnotInfo gives u(11n102) ∈ {1, 2}. Lidman shows it is exactly 2.
 
 **Dichotomy between the two results:**
-  - Upper bound u(11n102) ≤ 2: ATTACKABLE via the native organ
-    `ReidemeisterCombinatorial` — the `UnknottingWitness` contract + the
-    theorem `verifyMoves_sound` (l.235) + witness documentation (l.264-268)
-    suffice, modulo the explicit witness construction by the prover.
+  - Upper bound u(11n102) ≤ 2: the `sorry` remains, and the reason is not a
+    tooling gap. The "connected machine" form of the bound (§4) and the
+    conditioned floor (§5) converge: the route that keeps every diagram
+    four-distinct is closed by the kernel, and a creating move (R1/R2 forward)
+    introduces the kink/bigon that invalidates the hypothesis at the next link.
+    Reopening this sorry first requires a move language that allows crossings to
+    disappear without leaving the certificate — a distinct subject, carried by
+    #18611.
   - Lower bound u(11n102) ≥ 2 (i.e. u = 2, given the upper bound): OUT OF
     REACH. Lidman's proof needs Némethi's algorithm for HF, Ozsváth-Szabó
     d-invariants, Ni-Wu's formula, and Gainullin's mapping cone formula —
     all outside Mathlib 4.
 -/
 
-/-- The unknotting number of 11n102 is at most 2
-(obvious from a diagram with appropriate crossing changes).
+/-- The unknotting number of 11n102 is at most 2 (obvious from a diagram with
+appropriate crossing changes).
 
-**Formal status:** this `sorry` is **conditionally solvable** via the native
-organ `ReidemeisterCombinatorial`. The theorem `verifyMoves_sound` (proof:
-l.235) provides Reidemeister move correctness; the `unknottingWitness`
-contract (l.264-268) documents the expected witness shape. The remaining
-work is for the prover pass to construct the witness explicitly for this
-diagram — see Epic #1453 / issue #18611. Lifting this sorry is gated by the
-availability of that witness, not by any library gap. -/
+**Formal status (corrected 2026-10-09, #18611):** the earlier wording announced
+this `sorry` as "conditionally solvable" through the mere construction of the
+witness by the prover pass. That hope is not supported by what is measured:
+
+  - the unknotting certificate is **inexpressible** under the current connected
+    Reidemeister machine (§4: append-only moves, fresh labels at the tail);
+  - `Knots.ReidemeisterMoves` §8 proves the **conditioned floor** — a
+    Reidemeister step between two entirely four-distinct diagrams never removes
+    a crossing, because the descending moves would require a kink `⟨a,b,c,c⟩` or
+    a bigon `⟨a,u,u,o⟩` that the hypothesis forbids — and §5 below wires it to
+    this diagram: the 11 crossings of the PD-code are four-distinct
+    (`knot_11n102_allFourDistinct`), crossing changes keep them so
+    (`knot_11n102_crossing_changes_keep_fourDistinct`), hence no certified
+    sequence that **maintains** the hypothesis can reach the trivial diagram
+    (`no_fourDistinct_certificate_unknots_11n102`).
+
+This `sorry` therefore does not lift through a prover pass on the current
+language: it requires a language whose descending moves do not leave the
+certificate. Exact scope of what is proved here: the *route* that maintains the
+hypothesis is closed; the existence of a witness is not refuted — a creating
+move introduces precisely the kink or bigon that invalidates the hypothesis at
+the next link. See Epic #1453 / issue #18611. -/
 theorem unknotting_11n102_upper : Knot.unknottingNumber knot_11n102 ≤ 2 := by
   rw [Knot.unknottingNumber]
   apply Nat.sInf_le
@@ -1075,5 +1099,94 @@ theorem alexander_11n102_eval_neg_one :
   simp only [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
     Polynomial.eval_pow, Polynomial.eval_X]
   norm_num
+
+/-! ## 5. Witness for the conditioned floor (#18611)
+
+The body of #18611 is the **conditioned floor theorem** of
+`Knots.ReidemeisterMoves` (§8): a Reidemeister step relating two diagrams whose
+crossings are ALL four-distinct cannot remove a crossing. The reason is
+structural — the descending moves (R1/R2 inverse) would require a kink
+`⟨a,b,c,c⟩` (`e3 = e4`) or a bigon `⟨a,u,u,o⟩` (`e2 = e3`) at the end of the
+list, and those two shapes violate four-distinctness, so the hypothesis refutes
+them without any `wf` parity argument being needed.
+
+This section wires that theorem to the knot of §1. It reproves nothing: it
+supplies the two sides of the wiring, plus the negative witness showing the
+condition is not decorative.
+
+1. **The 11n102 diagram satisfies the hypothesis** at the start
+   (`knot_11n102_allFourDistinct`): the 11 crossings of the PD-code are all
+   four-distinct, checked by the kernel.
+2. **Crossing changes preserve it**
+   (`knot_11n102_crossing_changes_keep_fourDistinct`): whatever the fold of
+   indices, the resulting diagram stays four-distinct. The fold of the upper
+   bound's witnesses therefore never leaves the hypothesis, and it does not
+   change the length either (`foldl_changeCrossingAt_crossings_length`: 11
+   crossings remain 11).
+
+It follows that `no_fourDistinct_certificate_unknots_11n102`: no `movesConnects`
+certificate whose diagrams all stay four-distinct relates 11n102 — or any of its
+crossing-change folds — to the trivial diagram.
+
+**Exact scope, no overstatement.** The theorem does NOT say that no unknotting
+witness exists for 11n102: it says the route that **maintains** the hypothesis
+step by step is closed. A creating move (R1/R2 forward) introduces precisely the
+kink or bigon that invalidates the hypothesis at the next link — the result
+therefore bears on the *route* taken, not on the existence of a witness. The §4
+diagnosis (certificate inexpressible under the current connected Reidemeister
+machine) and the #18611 provenance measurement (reachable-state search: excursions
+≤ +2 crossings, diagrams ≤ 13 crossings, 138,623 states from the 67 n-changed
+starts — `unknotDiagram` never reached, the 11 original crossings present in
+every reached state) point the same way, but remain a **finite** measurement: what the
+kernel proves here is only the conditioned version.
+-/
+
+/-- **Positive witness of the hypothesis**: the 11 crossings of the 11n102
+    PD-code (§1) are all four-distinct — none is a kink or a bigon. Checked by
+    the kernel on the literal list (`List.all` + `decide`). -/
+theorem knot_11n102_allFourDistinct : allFourDistinct knot_11n102_diagram := by
+  intro c hc
+  have hall : knot_11n102_diagram.crossings.all (fun x => decide x.fourDistinct) = true := by
+    unfold knot_11n102_diagram
+    decide
+  exact of_decide_eq_true (List.all_eq_true.mp hall c hc)
+
+/-- A crossing change preserves the length of the crossing list: `List.modify`
+    rewrites a slot, it neither adds nor removes one. -/
+theorem changeCrossingAt_crossings_length (k : Knot) (i : Nat) :
+    (k.changeCrossingAt i).diagram.crossings.length = k.diagram.crossings.length := by
+  simp [Knot.changeCrossingAt]
+
+/-- The fold of crossing changes preserves the length: 11 crossings remain 11
+    under the upper bound's witnesses, so the resulting diagram is never the
+    trivial diagram (which has 0). -/
+theorem foldl_changeCrossingAt_crossings_length (indices : List Nat) (k : Knot) :
+    (indices.foldl Knot.changeCrossingAt k).diagram.crossings.length =
+      k.diagram.crossings.length := by
+  induction indices generalizing k with
+  | nil => rfl
+  | cons i is ih =>
+    exact (ih (Knot.changeCrossingAt k i)).trans (by simp [Knot.changeCrossingAt])
+
+/-- **Wiring the witness onto the floor theorem**: whatever the fold of indices,
+    the 11n102 diagram stays entirely four-distinct. -/
+theorem knot_11n102_crossing_changes_keep_fourDistinct (indices : List Nat) :
+    allFourDistinct (indices.foldl Knot.changeCrossingAt knot_11n102).diagram :=
+  foldl_changeCrossingAt_allFourDistinct indices knot_11n102 knot_11n102_allFourDistinct
+
+/-- **The route that maintains the hypothesis is closed.** No `movesConnects`
+    certificate whose diagrams all stay four-distinct relates a crossing-change
+    fold of 11n102 to the trivial diagram — the conditioned floor forbids the
+    conclusion. The corollary bears on *every* starting point, not only the §1
+    diagram: crossing changes never leave the hypothesis. -/
+theorem no_fourDistinct_certificate_unknots_11n102 (indices : List Nat)
+    {ms : List ReidemeisterMove}
+    (h : movesConnects ms (indices.foldl Knot.changeCrossingAt knot_11n102).diagram
+      unknotDiagram)
+    (hall : ∀ m ∈ ms, allFourDistinct m.source ∧ allFourDistinct m.target) :
+    False := by
+  refine movesConnects_not_unknot_of_allFourDistinct ?_ h hall
+  rw [foldl_changeCrossingAt_crossings_length]
+  decide
 
 end Knots_en

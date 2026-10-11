@@ -78,13 +78,14 @@ from typing import Any
 
 try:
     import gh_identity
-    from check_adjoint_prevalidation import QUALIFYING_LANES, GRAIN_LANE_RE
+    from check_adjoint_prevalidation import QUALIFYING_LANES, GRAIN_LANE_RE, LANE_TOKEN
 except ImportError:  # charge depuis scripts/ en invocation directe
     sys.path.insert(0, dirname(abspath(__file__)))
     import gh_identity  # type: ignore[no-redef]
     from check_adjoint_prevalidation import (  # type: ignore[no-redef]
         QUALIFYING_LANES,
         GRAIN_LANE_RE,
+        LANE_TOKEN,
     )
 
 REPO = "jsboige/CoursIA"
@@ -121,9 +122,13 @@ _RESIDUE_NONE_RE = re.compile(r"^none$")
 _RESIDUE_FOLLOWUP_RE = re.compile(r"^followup\s+#(\d+)$")
 _RESIDUE_WAIVER_RE = re.compile(r"^waiver:\s+\S.+")
 
-#: ``[DELIVERED] lane <machine:workspace> ...`` -- protocole lane-claim.
+#: ``[DELIVERED] lane <machine:workspace> ...`` -- protocole lane-claim. Le
+#: token reprend ``LANE_TOKEN`` (voir check_adjoint_prevalidation) : un point
+#: final de phrase n'entre plus dans la lane capturee (#15864, mesure #14549) --
+#: sinon une lane marquee uniquement sous forme ponctuee echappe a
+#: ``delivering_lanes`` et son dossier d'auto-attestation passe le gate.
 _DELIVERED_LANE_RE = re.compile(
-    r"\[DELIVERED\][^\n]*?\blane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)"
+    r"\[DELIVERED\][^\n]*?\blane\s+(" + LANE_TOKEN + r")"
 )
 
 #: Un item d'acceptance : ``<critere> -> <preuve>``.
