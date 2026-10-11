@@ -93,6 +93,53 @@ pas d'avantage démontré.
   reconstruction. La reconstruction se lit dans la rotation et dans les ordres sur les dix titres
   propres à TrendStocks (de 622 à 875 par titre sous `base`, de 238 à 284 sous `intent`).
 
+## Correctif #20264 : la tranche de minuit ne consomme plus le rééquilibrage mensuel
+
+En données journalières, les avis de dividende et de distribution arrivent dans une tranche
+datée de minuit sans aucune barre de cotation. Dans les modes référence (`spy`, `sixty40`),
+la garde mois (`_ref_month`) pouvait être consommée par cette tranche vide : le
+rééquilibrage partait sans donnée, avant la première barre du mois. Le correctif ajoute un
+garde de présence de barres en tête de `on_data` (même motif que #20261 sur
+`EMA-Cross-Stocks`), protocole de pré-enregistrement #20264 (c.6103501482 et complément
+sixty40 c.6103596939), fenêtre source 2018-01-01 → 2025-01-01, nœuds QC du projet 28911253 :
+
+| Mode | Variante | Ordres | Sharpe | CAGR | Pire baisse | Profit total | Backtest |
+|---|---|---|---|---|---|---|---|
+| `spy` | orig (`74f19134`) | 1 | 0.495 | 13.547 % | 33.600 % | 143.495 % | `a770ce13a7ccf71055ce91510f329578` |
+| `spy` | fix (`c4db76e7`) | 1 | 0.495 | 13.547 % | 33.600 % | 143.495 % | `42d5457727f1fc44c2acd94955ebec0d` |
+| `sixty40` | orig (`74f19134`) | 143 | 0.378 | 8.423 % | 21.100 % | 76.200 % | `a167439bf6512278b34316a0296395eb` |
+| `sixty40` | fix (`c4db76e7`) | **148** | **0.383** | **8.487 %** | 21.100 % | **76.928 %** | `bf7f3e741fdfc3368643c667d327b59f` |
+
+Lecture : en mode `spy` (cible constante `SPY 1.0`), la garde mois n'était jamais consommée
+de manière observable — paires identiques au dernier chiffre, défaut sans effet, ligne
+classée non touchée pour ce mode. En mode `sixty40` (SPY 0.6 / IEF 0.4, dividendes IEF
+mensuels), les variantes **divergent** : 5 ordres de plus, +0.73 pt de profit total sous le
+correctif — trace mesurée de rééquilibrages mensuels consommés par des tranches sans barres
+sous `orig`, décalés à la première barre du mois sous `fix`. Les horodatages d'ordres
+individuels ne sont pas extraits ici (le MCP expose les statistiques agrégées) ; la
+divergence causale — garde seule différence entre snapshots compilés — est la preuve
+rapportée. Les sha256 désignent les `main.py` exacts backtestés.
+
+### Fenêtre hors échantillon #20264 (§G) : 2025-01-01 → 2026-10-09
+
+Fenêtre distincte de la fenêtre source (arbitrage ai-01 du 11/10, msg-20261011T085024) :
+mêmes snapshots `orig` (`74f19134`) et `fix` (`c4db76e7`), projet 28911253, 381 dates
+négociables :
+
+| Mode | Variante | Ordres | Sharpe | CAGR | Pire baisse | Profit total | Backtest |
+|---|---|---|---|---|---|---|---|
+| `sixty40` | orig (`74f19134`) | 30 | 0.558 | 12.793 % | 10.500 % | 20.231 % | `842dac4406fbd80bb8c37169d8506e8e` |
+| `sixty40` | fix (`c4db76e7`) | 31 | 0.557 | 12.765 % | 10.500 % | 20.186 % | `c6bc74f7d4a5f6f91184b5b301f48ebf` |
+
+Lecture : la divergence d'ordres persiste hors échantillon (30 contre 31 — même mécanisme,
+les rééquilibrages mensuels consommés par des tranches sans barres sous `orig` restent
+décalés à la première barre du mois sous `fix`), mais l'écart de profit de la fenêtre
+source (+0,73 pt sur 7 ans) ne se retrouve pas : −0,045 pt sur 21 mois, dans le bruit.
+
+Pas de verdict de stratégie : correction d'un défaut d'exécution, mesurée sur la fenêtre
+source puis confirmée sans effet de performance hors échantillon ; les écarts 0.378 →
+0.383 (source) et 0.558 → 0.557 (OOS) ne sont pas des « BEATS ».
+
 ## Chiffres antérieurs à #19759
 
 Les deux sections ci-dessous datent d'avant la mesure ; elles sont conservées pour
