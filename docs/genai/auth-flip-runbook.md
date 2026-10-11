@@ -20,7 +20,7 @@ seul des 3 dont le compose est **dans CoursIA** (`docker-configurations/services
 > (bindings, blast-radius, mécanisme d'auth disponible). Ce runbook en est la
 > déclinaison opérationnelle, vérifiée contre le code source.
 
----
+***
 
 ## 0. Faits vérifiés contre le code source (SDDD, 2026-06-14)
 
@@ -32,7 +32,7 @@ d'env + redémarrer**, sans développement, **réversible**.
 | `claudish-proxy` :3000 | `D:\Dev\claudish\docker-compose.yml` | `CLAUDISH_PROXY_KEY` (→ champ config `proxyKey`) | oui (vider + restart) |
 | `myia-qdrant` :6333-6334 | `D:\Dev\roo-extensions\docker\docker-compose.yml` | `QDRANT__SERVICE__API_KEY` (native Qdrant, **double `_`**) | oui (idem) |
 
----
+***
 
 ## Phase 1 — Claudish (d'abord, blast plus contenu)
 
@@ -90,7 +90,7 @@ Vider `CLAUDISH_PROXY_KEY=` dans `D:\Dev\claudish\.env` + `docker compose ... up
 → `proxyKey` vide → middleware non monté → retour à l'état ouvert. Aucune donnée
 perdue.
 
----
+***
 
 ## Phase 2 — Qdrant (après validation Claudish, blast cluster-wide)
 
@@ -148,7 +148,7 @@ Vider `QDRANT__SERVICE__API_KEY=` dans `D:\Dev\roo-extensions\docker\.env` +
 `docker compose ... up -d myia-qdrant` → retour no-auth. Les clés client propagées
 deviennent noop. Aucune collection perdue (Qdrant garde ses données).
 
----
+***
 
 ## Ordre recommandé
 
@@ -161,7 +161,7 @@ deviennent noop. Aucune collection perdue (Qdrant garde ses données).
    priorité de sécurité la plus haute une fois deblocked). Exécutable dès merge
    #4566.
 
----
+***
 
 ## Phase 3 — tts-gateway (deblocked 2026-06-28, compose dans CoursIA)
 
@@ -278,7 +278,7 @@ Vider `TTS_GATEWAY_API_KEY=` dans `master.env` + `render_envs.py` +
 > aussi qu'un consommateur externe non-mis-à-jour casserait immédiatement — d'où la
 > vérification blast-radius ci-dessus (GenAI-only, tous key-aware).
 
----
+***
 
 ## Durcissement futur (P3, basse priorité)
 

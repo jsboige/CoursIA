@@ -40,12 +40,20 @@ Tranche Origami pli 3 (#19742, EPIC Origami Wolfram) ajoute :
    le cadrage zlib (~11 octets/fenêtre vs 8 octets d'état) : toute
    discrimination y est un artefact.
 
+Tranche Origami pli 4 (#19766, EPIC Origami Wolfram) ajoute :
+7. Mode `--mode wolfram-4classes` : mesure K_trajectory sur les 4 classes
+   canoniques de Wolframe (0/I, 4/II, 30/III, 110/IV). Même organe, même
+   plancher de mesure concluante (n_cells >= 512, cf. WOLFRAM_MIN_N_CELLS) :
+   sous ce seuil, `wolfram_class_verdict` rend SATURATED et le verdict
+   cross-classes est INCONCLUSIVE. Cf. WOLFRAM-VERDICT-CROSS-CLASSES.md.
+
 Usage :
     python scripts/hashlife/k_trajectory.py --mode measure
     python scripts/hashlife/k_trajectory.py --mode verify-corpus
     python scripts/hashlife/k_trajectory.py --mode bounds --json-in results.json
     python scripts/hashlife/k_trajectory.py --mode wolfram --rule 30 --n-cells 1024
     python scripts/hashlife/k_trajectory.py --mode wolfram --all
+    python scripts/hashlife/k_trajectory.py --mode wolfram-4classes --n-cells 1024
 """
 from __future__ import annotations
 
@@ -818,11 +826,595 @@ def cmd_wolfram(args: argparse.Namespace) -> int:
     return 0
 
 
+"""Extension pli 4 cross-classes pour k_trajectory.py -- a inserer apres wolfram_cross_verdict()."""
+
+# ---------------- Pli 4 : cross-classes 4 regles ----------------
+
+
+# Seuils partages avec wolfram_verdict()
+_FRAGILE = 0.7
+_ENTRENED = 0.95
+
+# Plancher de mesure concluante pour l'automate 1-D : sous n_cells = 512, la
+# fenetre packee reste sous le plancher de cadrage zlib, toutes les regles
+# rendent la meme constante et la classification ne mesure plus le contenu.
+# Mesure 2026-10-09 : a n_cells = 64, R30 et R110 rendent un ratio identique
+# de 0.510 (K(W=1) = 1026, K(W=64) = 523 = 512 + 11).
+WOLFRAM_MIN_N_CELLS = 512
+
+
+WOLFRAM_CLASS_MAP = {
+    0: ("I", "uniforme"),
+    4: ("II", "periodique"),
+    30: ("III", "chaotique"),
+    110: ("IV", "Turing-complet"),
+}
+
+
+def measure_wolfram_4classes(
+    n_cells: int = 64, n_steps: int = 64, seed: int = 33
+) -> list[dict]:
+    """Mesure K_trajectory sur les 4 classes canoniques de Wolframe.
+
+    Regles : 0 (I, uniforme), 4 (II, periodique), 30 (III, chaotique),
+    110 (IV, Turing-complet). Le verdict attendu :
+
+    - I/II (R0/R4) : COLLAPSED (LZ capture la structure simple).
+    - III/IV (R30/R110) : WEAK-COLLAPSE ou ENTROPIE PARTIELLE.
+
+    Si la discrimination fine III vs IV emerge (ratio R30 != ratio R110
+    au-dela du bruit), c'est un resultat falsifiable positif. Sinon, le
+    discriminant K_trajectory est confirme comme insuffisant pour
+    discriminer Turing vs chaos 1-D (cf. WOLFRAM-VERDICT-CROSS-CLASSES.md).
+    """
+    n_values = [0, 1, 2, 3, 4, 5, 6]  # W = 1, 2, 4, 8, 16, 32, 64
+    all_results = []
+    for rule in (0, 4, 30, 110):
+        all_results.extend(
+            measure_wolfram_trajectory(
+                rule=rule,
+                n_cells=n_cells,
+                n_steps=n_steps,
+                seed=seed,
+                n_values=n_values,
+            )
+        )
+    return all_results
+
+
+def wolfram_class_verdict(results: list[dict]) -> dict:
+    """Verdict par regle, calibre pour les 4 classes Wolframe.
+
+    Pour chaque regle, calcule le ratio K(t, W_last) / K(t, W_first) et
+    classifie en utilisant les conventions de WOLFRAM :
+
+    - WOLFRAM-COLLAPSED : ratio < _FRAGILE (LZ collapse : I/II attendu).
+    - WOLFRAM-WEAK-COLLAPSE : _FRAGILE <= ratio < _ENTRENED
+      (entropie partielle, III/IV attendu).
+    - WOLFRAM-ENTRENED : ratio >= _ENTRENED
+      (LZ ne collapse pas, entropie maximale).
+
+    Cas particuliers :
+    - Si rule in {0, 4} et verdict WOLFRAM-ENTRENED : VERDICT-REFUTED
+      (les classes I/II doivent collapse ; non-collapse contredit la
+      classification Wolframe).
+    - Si rule in {30, 110} et verdict WOLFRAM-COLLAPSED : VERDICT-REFUTED
+      (les classes III/IV ne doivent pas collapse ; ce serait un signal
+      qu'on n'instrumente pas correctement le regime attendu).
+    """
+    by_name: dict[str, list[dict]] = {}
+    for r in results:
+        by_name.setdefault(r["trajectory"], []).append(r)
+
+    verdicts = {}
+    for name, runs in by_name.items():
+        runs_sorted = sorted(runs, key=lambda r: r["n"])
+        if len(runs_sorted) < 2:
+            verdicts[name] = "INCONCLUSIVE (insufficient data points)"
+            continue
+        first_k = runs_sorted[0]["k_trajectory"]
+        last_k = runs_sorted[-1]["k_trajectory"]
+        ratio = last_k / first_k if first_k > 0 else float("inf")
+
+        # Identifier la regle depuis le nom (format: wolfram_R<N>_n<NC>_seed<S>)
+        try:
+            rule = int(name.split("_R")[1].split("_")[0])
+        except (IndexError, ValueError):
+            verdicts[name] = f"INCONCLUSIVE (parse fail, ratio {ratio:.3f})"
+            continue
+
+        try:
+            n_cells = int(name.split("_n")[1].split("_")[0])
+        except (IndexError, ValueError):
+            n_cells = None
+
+        if n_cells is not None and n_cells < WOLFRAM_MIN_N_CELLS:
+            verdicts[name] = (
+                f"WOLFRAM-SATURATED (n_cells={n_cells} < {WOLFRAM_MIN_N_CELLS} : "
+                f"la fenetre packee est sous le plancher de cadrage zlib, "
+                f"ratio {ratio:.3f} mesure le cadrage, pas le contenu)"
+            )
+            continue
+
+        klass = WOLFRAM_CLASS_MAP.get(rule)
+        if klass is None:
+            verdicts[name] = f"INCONCLUSIVE (regle {rule} hors 4 classes, ratio {ratio:.3f})"
+            continue
+
+        klass_label, klass_name = klass
+        if ratio < _FRAGILE:
+            raw = f"WOLFRAM-COLLAPSED (ratio {ratio:.3f} < {_FRAGILE})"
+        elif ratio < _ENTRENED:
+            raw = f"WOLFRAM-WEAK-COLLAPSE (ratio {ratio:.3f} in [{_FRAGILE},{_ENTRENED}))"
+        else:
+            raw = f"WOLFRAM-ENTRENED (ratio {ratio:.3f} >= {_ENTRENED})"
+
+        # Calibrer par classe
+        if klass_label in ("I", "II"):
+            if ratio < _ENTRENED:
+                verdicts[name] = f"CLASS-{klass_label}-CONFIRMED ({raw})"
+            else:
+                verdicts[name] = (
+                    f"CLASS-{klass_label}-REFUTED ({raw} -- "
+                    f"{klass_name} doit collapse sous LZ)"
+                )
+        else:  # III, IV
+            if ratio >= _FRAGILE:
+                verdicts[name] = f"CLASS-{klass_label}-CONFIRMED ({raw})"
+            else:
+                verdicts[name] = (
+                    f"CLASS-{klass_label}-REFUTED ({raw} -- "
+                    f"{klass_name} doit avoir entropie partielle)"
+                )
+
+    return verdicts
+
+
+def wolfram_4classes_cross_verdict(cv: dict) -> str:
+    """Verdict final sur les 4 classes Wolframe vs K_trajectory.
+
+    Renvoie un verdict falsifiable en fonction du pattern observe :
+
+    - ALL-EXPECTED : I/II collapse, III/IV WEAK-COLLAPSE ou ENTREPRED.
+      C'est le resultat attendu selon la classification Wolframe 2002.
+
+    - I/II-INVERSE : I ou II reste WEAK ou ENTREPRED alors qu'il devrait
+      collapse. Le discriminant detecte une entropie dans une trajectoire
+      qui n'en a pas -- faux positif.
+
+    - III/IV-INVERSE : III ou IV collapse alors qu'il devrait garder de
+      l'entropie. Faux negatif -- le K_trajectory manque l'information
+      structurelle.
+
+    - PARTIAL : une ou plusieurs classes confirment, une ou plusieurs
+      contredisent. Resultat mixte.
+
+    - INDETERMINATE : donnees insuffisantes (donnees manquantes ou
+      ratio bruite).
+    """
+    saturated = [n for n, v in cv.items() if "SATURATED" in v]
+    if saturated and len(saturated) == len(cv):
+        return (
+            f"WOLFRAM-4CLASSES-SATURATED ({len(saturated)}/{len(cv)} classes sous "
+            f"le plancher de cadrage zlib -- aucune classification n'y est concluante)"
+        )
+
+    confirmed = []
+    refuted = []
+    for name, verdict_str in cv.items():
+        if "CONFIRMED" in verdict_str:
+            confirmed.append(name)
+        elif "REFUTED" in verdict_str:
+            refuted.append(name)
+        # INCONCLUSIVE et SATURATED ignores
+
+    if not confirmed and not refuted:
+        return "WOLFRAM-4CLASSES-INDETERMINATE (donnees insuffisantes)"
+    if not refuted:
+        return f"WOLFRAM-4CLASSES-ALL-EXPECTED ({len(confirmed)}/{len(cv)} classes confirment)"
+
+    refuted_classes = set()
+    for n in refuted:
+        try:
+            rule = int(n.split("_R")[1].split("_")[0])
+            klass = WOLFRAM_CLASS_MAP.get(rule, ("?",))[0]
+            refuted_classes.add(klass)
+        except (IndexError, ValueError):
+            pass
+
+    if refuted_classes.issubset({"I", "II"}):
+        return f"WOLFRAM-4CLASSES-I/II-INVERSE ({len(refuted)}/{len(cv)} contredisent -- faux positif sur structure simple)"
+    if refuted_classes.issubset({"III", "IV"}):
+        return f"WOLFRAM-4CLASSES-III/IV-INVERSE ({len(refuted)}/{len(cv)} contredisent -- faux negatif sur entropie)"
+    return f"WOLFRAM-4CLASSES-PARTIAL ({len(confirmed)} confirm / {len(refuted)} refute)"
+
+
+def cmd_wolfram_4classes(args: argparse.Namespace) -> int:
+    """Mode wolfram-4classes : mesure K_trajectory sur les 4 classes Wolframe.
+
+    Mesure R0 (I), R4 (II), R30 (III), R110 (IV) et produit un verdict
+    par classe + un verdict cross-classes falsifiable.
+
+    Usage :
+        python scripts/hashlife/k_trajectory.py --mode wolfram-4classes \\
+            --n-cells 64 --n-steps 64 --seed 33
+    """
+    n_values = [0, 1, 2, 3, 4, 5, 6]
+    results = measure_wolfram_4classes(
+        n_cells=args.n_cells, n_steps=args.n_cells, seed=args.seed
+    )
+
+    # Affichage par regle
+    print(f"{'Trajectory':35s}  {'Class':>5s}  {'n':>3s}  {'W':>4s}  {'K(t,W)':>8s}  {'K/n':>8s}")
+    print("-" * 90)
+    by_rule: dict[int, list[dict]] = {}
+    for r in results:
+        try:
+            rule = int(r["trajectory"].split("_R")[1].split("_")[0])
+            by_rule.setdefault(rule, []).append(r)
+        except (IndexError, ValueError):
+            pass
+    for rule in (0, 4, 30, 110):
+        runs = sorted(by_rule.get(rule, []), key=lambda r: r["n"])
+        klass_label = WOLFRAM_CLASS_MAP.get(rule, ("?",))[0]
+        for run in runs:
+            print(
+                f"{run['trajectory']:35s}  {klass_label:>5s}  {run['n']:>3d}  "
+                f"{run['W']:>4d}  {run['k_trajectory']:>8d}  {run['k_over_n']:>8.2f}"
+            )
+
+    # Verdicts
+    print()
+    print("=== Verdict Wolframe par regle ===")
+    cv = wolfram_class_verdict(results)
+    for name, status in cv.items():
+        print(f"  {name:35s}  {status}")
+    print()
+    final = wolfram_4classes_cross_verdict(cv)
+    print(f"=== Verdict final cross-classes ===")
+    print(f"  {final}")
+
+    # Sortie JSON
+    if args.json_out:
+        out = {
+            "results": results,
+            "per_class_verdicts": cv,
+            "cross_classes_verdict": final,
+            "n_cells": args.n_cells,
+            "n_steps": args.n_cells,
+            "seed": args.seed,
+            "rules": (0, 4, 30, 110),
+            "class_map": {str(k): v for k, v in WOLFRAM_CLASS_MAP.items()},
+        }
+        Path(args.json_out).write_text(json.dumps(out, indent=2, ensure_ascii=False))
+        print(f"\n[INFO] resultats ecrits dans {args.json_out}")
+    return 0
+
+
+# ---------------- Pli 7 : Kolmogorov structure function ----------------
+
+
+# Plancher de mesure concluante : sous n_cells = 512, la fenetre packee
+# (W+1 etats) reste trop courte pour que zlib distingue contenu et cadrage,
+# et R30 / R110 rendent la meme constante. Mesure 2026-10-09 : a n_cells = 64
+# les deux regles rendent KSF = 8.000 (= n_cells / 8 octets, plancher exact).
+WOLFRAM_KSF_MIN_N_CELLS = 512
+
+# Landmarks asymptotiques (KSF mesuree a grand contexte), en BITS par cellule
+WOLFRAM_KSF_LANDMARKS = {
+    0: ("I", "uniforme", 0.0),
+    4: ("II", "periodique", 0.0),
+    30: ("III", "chaotique", 0.85),
+    110: ("IV", "Turing-complet", 0.20),
+}
+
+
+def pack_states_1d(states: Sequence[Sequence[Cell]]) -> bytes:
+    """Pack une liste d'etats 1-D Wolframe en bytes (MSB first par cellule).
+
+    Chaque etat est une sequence de 0/1 de longueur n_cells ; packe en
+    l'octet au bit le plus significatif (MSB-first), 8 cellules par octet.
+    Padding MSB=0 sur le dernier octet si n_cells n'est pas multiple de 8.
+    """
+    if not states:
+        return b""
+    n_cells = len(states[0])
+    bits = []
+    for s in states:
+        bits.extend(int(b) for b in s)
+    out = bytearray()
+    for i in range(0, len(bits), 8):
+        chunk = bits[i:i + 8]
+        byte = 0
+        for j, b in enumerate(chunk):
+            byte |= (int(b) & 1) << (7 - j)
+        out.append(byte)
+    return bytes(out)
+
+
+def ksf_trajectory(
+    rule: int,
+    n_cells: int = 64,
+    n_steps: int = 64,
+    seed: int = 33,
+    context_sizes: Sequence[int] = (1, 2, 4, 8, 16, 32),
+) -> list[dict]:
+    """Mesure la Kolmogorov structure function (KSF) d'une trajectoire Wolframe.
+
+    Pour chaque taille de contexte W' dans `context_sizes`, calcule
+    K(W_t | W_{t-W'+1..t}) = len(LZ(pack_states([W_t-W'+1..t+1]))) -
+    len(LZ(pack_states([W_t-W'+1..t]))), moyenne sur tous les pas t >= W'.
+
+    Les valeurs rendues sont en **octets** ; l'echelle comparable aux
+    landmarks est `ksf_bits_per_cell` = ksf_mean * 8 / n_cells.
+
+    Une trajectoire **aleatoire** (entropie maximale) a ksf_mean -> n_cells/8
+    octets, soit 1.0 bit par cellule (le contexte n'aide pas, le pas suivant
+    a entropie totale). Une trajectoire **structuree** tend vers 0 bit par
+    cellule (le contexte suffit a determiner le pas suivant).
+
+    Differenciation R30 (chaotique) vs R110 (Turing-complet) :
+    - R30 est statistiquement uniforme -> KSF reste elevee, contexte n'aide
+      pas.
+    - R110 a des structures (gliders, reactions) -> KSF decroit quand le
+      contexte capture une partie du "programme". Discrimination falsifiable.
+
+    Reference : Vereshchagin & Vitanyi (2004) IEEE Trans. Info. Theory 50(12).
+    """
+    try:
+        from ict.wolfram_step import wolfram_trajectory  # pli 2 PR #19793
+    except ImportError as e:
+        raise RuntimeError(
+            "ict.wolfram_step introuvable. L'organe (PR #19793) doit etre "
+            "present dans MyIA.AI.Notebooks/IIT/ICT-Series/ict/wolfram_step.py "
+            f"et ce dossier doit etre dans sys.path. Erreur: {e}"
+        )
+
+    traj_1d = wolfram_trajectory(
+        rule=rule, n_cells=n_cells, n_steps=n_steps, seed=seed, record_densities=False
+    )
+    # traj_1d : Sequence[Sequence[Cell]] = liste d'etats successifs
+
+    if len(traj_1d) < max(context_sizes) + 1:
+        raise ValueError(
+            f"n_steps={n_steps} insuffisant pour context_sizes={list(context_sizes)}. "
+            f"Il faut au moins max(context_sizes) + 1 = {max(context_sizes) + 1} etats."
+        )
+
+    results = []
+    for W in context_sizes:
+        ksf_values: list[int] = []
+        k_ctx_values: list[int] = []
+        for t in range(W, len(traj_1d)):
+            ctx_states = traj_1d[t - W:t]
+            cur_state = traj_1d[t]
+            ctx_bytes = pack_states_1d(ctx_states)
+            ctx_plus_cur_bytes = pack_states_1d(ctx_states + [cur_state])
+            k_ctx = lz_compressed_length(ctx_bytes)
+            k_full = lz_compressed_length(ctx_plus_cur_bytes)
+            # K(W_t | context) = K(ctx || W_t) - K(ctx)
+            ksf = k_full - k_ctx
+            ksf_values.append(ksf)
+            k_ctx_values.append(k_ctx)
+
+        if ksf_values:
+            ksf_mean = sum(ksf_values) / len(ksf_values)
+            ksf_min = min(ksf_values)
+            ksf_max = max(ksf_values)
+            k_ctx_mean = sum(k_ctx_values) / len(k_ctx_values)
+        else:
+            ksf_mean = ksf_min = ksf_max = k_ctx_mean = 0.0
+
+        results.append({
+            "trajectory": f"wolfram_R{rule}_n{n_cells}_seed{seed}",
+            "rule": rule,
+            "n_cells": n_cells,
+            "W_context": W,
+            "ksf_mean": round(ksf_mean, 4),
+            "ksf_min": ksf_min,
+            "ksf_max": ksf_max,
+            # ksf_mean est en OCTETS ; les landmarks sont en BITS par cellule.
+            # Sans cette normalisation, R30 (incompressible) rend ksf_mean =
+            # n_cells/8, lu a tort comme des bits -- facteur 8.
+            "ksf_bits_per_cell": round(ksf_mean * 8.0 / n_cells, 4),
+            "k_context_mean": round(k_ctx_mean, 4),
+            "n_measurements": len(ksf_values),
+        })
+
+    return results
+
+
+def measure_wolfram_ksf(
+    n_cells: int = 64,
+    n_steps: int = 64,
+    seed: int = 33,
+) -> list[dict]:
+    """Mesure KSF sur les 4 classes canoniques Wolframe (R0, R4, R30, R110).
+
+    4 regles x 6 context_sizes = 24 mesures (une par paire regle/contexte).
+    Permet la discrimination fine III/IV via comparaison KSF(W=32).
+    """
+    context_sizes = (1, 2, 4, 8, 16, 32)
+    all_results = []
+    for rule in (0, 4, 30, 110):
+        all_results.extend(
+            ksf_trajectory(
+                rule=rule, n_cells=n_cells, n_steps=n_steps, seed=seed,
+                context_sizes=context_sizes,
+            )
+        )
+    return all_results
+
+
+def wolfram_ksf_verdict(results: list[dict]) -> dict:
+    """Verdict par regle : la KSF asymptotique (W=32) est-elle conforme au landmark ?
+
+    Pour chaque regle, extrait la mesure au plus grand contexte (W=32) et
+    la compare au landmark canonique (cf. WOLFRAM_KSF_LANDMARKS). Si la
+    mesure observee s'ecarte significativement du landmark, REFUTE ;
+    sinon CONFIRME.
+
+    La comparaison se fait sur ksf_bits_per_cell (bits par cellule), la
+    seule echelle commensurable aux landmarks ci-dessous.
+
+    Hypothese de discrimination R30 vs R110 (a falsifier ou confirmer) :
+    - R30 KSF(W=32) ~ 0.85 (chaos, contexte n'aide pas).
+    - R110 KSF(W=32) ~ 0.20 (Turing-complet, contexte capture gliders).
+
+    Sous n_cells < WOLFRAM_KSF_MIN_N_CELLS, la mesure est declaree
+    `WOLFRAM-SATURATED` : la fenetre packee est sous le plancher de cadrage
+    zlib et les deux regles rendent la meme constante.
+    """
+    verdicts = {}
+    by_rule: dict[int, list[dict]] = {}
+    for r in results:
+        by_rule.setdefault(r["rule"], []).append(r)
+
+    for rule, runs in by_rule.items():
+        landmark = WOLFRAM_KSF_LANDMARKS.get(rule)
+        if landmark is None:
+            verdicts[f"KSF_R{rule}"] = f"INCONCLUSIVE (regle {rule} hors 4 classes)"
+            continue
+        klass, klass_name, expected_ksf = landmark
+        runs_sorted = sorted(runs, key=lambda r: r["W_context"])
+        max_run = runs_sorted[-1]
+        n_cells = max_run["n_cells"]
+        if n_cells < WOLFRAM_KSF_MIN_N_CELLS:
+            verdicts[f"KSF_R{rule}"] = (
+                f"WOLFRAM-SATURATED (n_cells={n_cells} < "
+                f"{WOLFRAM_KSF_MIN_N_CELLS} : la fenetre packee est sous le "
+                f"plancher de cadrage zlib, KSF mesure le cadrage, pas le contenu)"
+            )
+            continue
+        # Comparaison sur l'echelle normalisee (bits par cellule), seule
+        # comparable aux landmarks : ksf_mean est en octets.
+        observed_ksf = max_run["ksf_bits_per_cell"]
+        delta = abs(observed_ksf - expected_ksf)
+        # Tolerance : 0.20 bit/cellule (fenetre pour bruit statistique)
+        if delta < 0.20:
+            verdicts[f"KSF_R{rule}"] = (
+                f"CLASS-{klass}-CONFIRMED (KSF(W={max_run['W_context']}) = "
+                f"{observed_ksf:.3f} ~= landmark {expected_ksf:.3f}, delta {delta:.3f})"
+            )
+        else:
+            verdicts[f"KSF_R{rule}"] = (
+                f"CLASS-{klass}-DEVIATION (KSF(W={max_run['W_context']}) = "
+                f"{observed_ksf:.3f} eloigne du landmark {expected_ksf:.3f}, "
+                f"delta {delta:.3f})"
+            )
+
+    return verdicts
+
+
+def wolfram_ksf_discrimination_verdict(verdicts: dict, results: list[dict]) -> str:
+    """Verdict final : KSF discrimine-t-elle R30 de R110 ?
+
+    Compare les KSF(W=32) observees de R30 et R110. Si elles sont
+    significativement differentes (delta > 0.10), KSF DISCRIMINE
+    Turing vs chaos 1-D (vs pli 4 LZ qui ne discriminait pas).
+
+    Si elles sont similaires (delta < 0.10), KSF ne discrimine pas non
+    plus -- extension du constat pli 4 que les complexites de trajectoire
+    1-D sont insuffisantes pour Turing vs chaos.
+    """
+    by_rule: dict[int, dict] = {}
+    for r in results:
+        if r["W_context"] == 32:
+            by_rule[r["rule"]] = r
+
+    r30 = by_rule.get(30)
+    r110 = by_rule.get(110)
+    if r30 is None or r110 is None:
+        return "WOLFRAM-KSF-INDETERMINATE (donnees R30/R110 W=32 manquantes)"
+
+    n_cells = r30["n_cells"]
+    if n_cells < WOLFRAM_KSF_MIN_N_CELLS:
+        return (
+            f"WOLFRAM-KSF-SATURATED (n_cells={n_cells} < "
+            f"{WOLFRAM_KSF_MIN_N_CELLS} : les deux regles rendent la meme "
+            f"constante de cadrage, toute (non)discrimination y est un artefact)"
+        )
+
+    ksf_30 = r30["ksf_bits_per_cell"]
+    ksf_110 = r110["ksf_bits_per_cell"]
+    delta = abs(ksf_30 - ksf_110)
+
+    if delta >= 0.10:
+        return (
+            f"WOLFRAM-KSF-DISCRIMINANT (R30 KSF(W=32)={ksf_30:.3f} bits/cellule, "
+            f"R110 KSF(W=32)={ksf_110:.3f} bits/cellule, delta={delta:.3f} >= 0.10)"
+        )
+    return (
+        f"WOLFRAM-KSF-NONDISCRIMINANT (R30 KSF(W=32)={ksf_30:.3f} bits/cellule, "
+        f"R110 KSF(W=32)={ksf_110:.3f} bits/cellule, delta={delta:.3f} < 0.10)"
+    )
+
+
+def cmd_wolfram_ksf(args: argparse.Namespace) -> int:
+    """Mode wolfram-ksf : mesure KSF sur les 4 classes Wolframe.
+
+    Usage :
+        python scripts/hashlife/k_trajectory.py --mode wolfram-ksf \\
+            --n-cells 64 --n-steps 64 --seed 33
+    """
+    results = measure_wolfram_ksf(
+        n_cells=args.n_cells, n_steps=args.n_steps, seed=args.seed,
+    )
+
+    # Affichage par regle
+    print(f"{'Trajectory':35s}  {'Class':>5s}  {'W_ctx':>5s}  {'KSF_octets':>10s}  {'KSF_b/cell':>10s}  {'K_ctx':>8s}  {'n_meas':>7s}")
+    print("-" * 105)
+    by_rule: dict[int, list[dict]] = {}
+    for r in results:
+        by_rule.setdefault(r["rule"], []).append(r)
+    for rule in (0, 4, 30, 110):
+        runs = sorted(by_rule.get(rule, []), key=lambda r: r["W_context"])
+        klass_label = WOLFRAM_KSF_LANDMARKS.get(rule, ("?",))[0]
+        for run in runs:
+            print(
+                f"{run['trajectory']:35s}  {klass_label:>5s}  {run['W_context']:>5d}  "
+                f"{run['ksf_mean']:>10.4f}  {run['ksf_bits_per_cell']:>10.4f}  "
+                f"{run['k_context_mean']:>8.2f}  {run['n_measurements']:>7d}"
+            )
+
+    # Verdicts
+    print()
+    print("=== Verdict KSF par regle ===")
+    verdicts = wolfram_ksf_verdict(results)
+    for name, status in verdicts.items():
+        print(f"  {name:15s}  {status}")
+
+    # Verdict discrimination
+    final = wolfram_ksf_discrimination_verdict(verdicts, results)
+    print()
+    print("=== Verdict final discrimination R30 vs R110 ===")
+    print(f"  {final}")
+
+    # Sortie JSON
+    if args.json_out:
+        out = {
+            "results": results,
+            "per_class_verdicts": verdicts,
+            "discrimination_verdict": final,
+            "n_cells": args.n_cells,
+            "n_steps": args.n_steps,
+            "seed": args.seed,
+            "rules": (0, 4, 30, 110),
+            "ksf_landmarks": {
+                str(k): {"klass": v[0], "name": v[1], "expected_ksf": v[2]}
+                for k, v in WOLFRAM_KSF_LANDMARKS.items()
+            },
+        }
+        Path(args.json_out).write_text(json.dumps(out, indent=2, ensure_ascii=False))
+        print(f"\n[INFO] resultats ecrits dans {args.json_out}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else "K_trajectory")
     parser.add_argument(
         "--mode",
-        choices=["measure", "verify-corpus", "bounds", "wolfram"],
+        choices=["measure", "verify-corpus", "bounds", "wolfram", "wolfram-4classes", "wolfram-ksf"],
         default="measure",
         help="Mode d'exécution (défaut: measure)",
     )
@@ -850,6 +1442,12 @@ def main() -> int:
         "concluante : 512 (en dessous, cadrage zlib dominant, verdict SATURATED). Defaut: 1024",
     )
     parser.add_argument(
+        "--n-steps",
+        type=int,
+        default=64,
+        help="Mode wolfram : nombre de pas de simulation. Defaut: 64",
+    )
+    parser.add_argument(
         "--seed",
         type=int,
         default=33,
@@ -867,6 +1465,10 @@ def main() -> int:
         return cmd_bounds(args)
     if args.mode == "wolfram":
         return cmd_wolfram(args)
+    if args.mode == "wolfram-4classes":
+        return cmd_wolfram_4classes(args)
+    if args.mode == "wolfram-ksf":
+        return cmd_wolfram_ksf(args)
     return cmd_verify_corpus(args)
 
 

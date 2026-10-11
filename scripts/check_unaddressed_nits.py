@@ -4418,12 +4418,19 @@ def _names_author(body: str, author: str) -> bool:
 # lift est signe par la lane de la PR SI ET SEULEMENT SI l'extraction lit
 # la meme chaine canonique dans les deux sources (le format `CoursIA` vs
 # `CoursIA-2` discriminne -- la lane ne peut signer QUE la sienne).
+# #15864 (mesure #14549) : un point final de phrase ne peut plus terminer le
+# token de lane -- `lane myia-po-2023:CoursIA-2.` etait capture comme une lane
+# qui ne matche rien. Les points internes survivent (hostnames). Le meme
+# fragment vit dans check_adjoint_prevalidation.LANE_TOKEN ; copie locale pour
+# ne pas coupler le gate B.0 au gate d'adjoint. Voie (a) ci-dessous hors
+# perimetre : sa lane est delimitee par des crochets, pas suivie de prose.
+_LANE_TOKEN = r"[A-Za-z0-9_.-]*[A-Za-z0-9_-]:[A-Za-z0-9_.-]*[A-Za-z0-9_-]"
 _PR_LANE_FROM_BODY_RE = re.compile(
     # `Grain: ... -- lane <machine>:<workspace>` (corps PR) ; on capture
     # la lane canonique ; un prefixe optionnel avant n'est pas admis (la
     # balise est en tete de ligne apres decoration markdown).
     r"(?m)^[#>*+\-\s]*Grain:[^\n]*?\blane\s+"
-    r"([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)")
+    r"(" + _LANE_TOKEN + r")")
 _LIFT_LANE_SIGNATURE_RE = re.compile(
     # Voie (a) -- `[machine:workspace]` en tete de paragraphe.
     r"(?m)^[#>*+\-\s]*\[\s*([A-Za-z][\w.\-]*:[A-Za-z][\w.\-]*(?:\s+[^\]]+)?)\]"
@@ -4433,8 +4440,8 @@ _LIFT_LANE_FOOTER_RE = re.compile(
     # commentaire. Deux formes observees : `-- lane myia-po-XXXX:...`
     # (declaration finale separee par `--`) et `lane myia-po-XXXX:...
     # -- ...` (dans la meme ligne que le commentaire precedent).
-    r"(?m)(?:^|\s)--\s*lane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)\s*$"
-    r"|^lane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)(?:\s*--|\s*$)")
+    r"(?m)(?:^|\s)--\s*lane\s+(" + _LANE_TOKEN + r")\.?\s*$"
+    r"|^lane\s+(" + _LANE_TOKEN + r")\.?(?:\s*--|\s*$)")
 
 
 def _lift_signed_by_pr_lane(lift_body: str, pr_body: str) -> bool:
