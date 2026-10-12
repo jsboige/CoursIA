@@ -2800,7 +2800,7 @@ Le do-calculus **est la capacité distinctive** de la causalité — il n'existe
 | PR | #20435 |
 | Verdict agrégé | **SOTA-OK (périmètre jouet déclaré)** — copie pédagogique déclarée, organe natif = grain B de #20408 |
 
-### Synthèse (1 notebook, 22 cellules, 9 cellules code)
+### Synthèse
 
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
 |-----|-------|------|------|-----|-----------|--------|-------------|---------|
@@ -2817,7 +2817,7 @@ Le do-calculus **est la capacité distinctive** de la causalité — il n'existe
 
 ### Copie pédagogique déclarée (organ-first)
 
-Motif : montrer le patron 3 briques (policy-value self-play / croyances génératives / update equivalence au temps de test) en ~300 lignes lisibles sur le plus petit jeu d'information imparfaite non trivial. La sémantique n'existe dans aucune autre série (`git grep -iE "update.equiv|tts_policy|ataraxos" origin/main -- MyIA.AI.Notebooks/` = 0 hit). L'organe officiel du papier (`AtaraxosAI`, entraîné doudizhu à grande échelle) est le **grain B** de #20408, explicitement différé — déclaré dans le body de la PR.
+Motif : montrer le patron 3 briques (policy-value self-play / croyances génératives / update equivalence au temps de test) en environ trois cents lignes lisibles sur le plus petit jeu d'information imparfaite non trivial. La sémantique n'existe dans aucune autre série (`git grep -iE "update.equiv|tts_policy|ataraxos" origin/main -- MyIA.AI.Notebooks/` = 0 hit). L'organe officiel du papier (`AtaraxosAI`, entraîné doudizhu à grande échelle) est le **grain B** de #20408, explicitement différé — déclaré dans le body de la PR.
 
 ### Prong B — honnêteté mesurée
 
@@ -2871,4 +2871,4 @@ Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Tout
 | 030 | Probas/PyMC-05-Causal-Inference (1 nb) | po-2025 strict | 2026-07-16 | SOTA-OK 1/1 | #6808 MERGED |
 | 031 | GameTheory/13f-Ataraxos-Patron-Python (1 nb) | po-2027 | 2026-10-12 | SOTA-OK 1/1 (copie pédagogique déclarée) | #20435 |
 
-**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **31** (verifie le 2026-10-12). Ce tableau unique remplace les deux tableaux dupliques (8 lignes, entry #005 ; 22 lignes, entry #008) supprimes par #14562.
+**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **31** (verifie le 2026-10-12). Ce tableau unique remplace les deux tableaux dupliques (huit lignes, entry #005 ; vingt-deux lignes, entry #008) supprimes par #14562.
