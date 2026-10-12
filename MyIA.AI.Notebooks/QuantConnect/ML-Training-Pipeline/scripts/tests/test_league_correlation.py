@@ -138,6 +138,29 @@ def test_member_returns_reads_held_reference_series(tmp_path):
     assert all(v > 0 for v in e.values()) and all(v < 0 for v in b.values())
 
 
+def test_member_returns_reads_a_local_series(tmp_path):
+    # un membre local (le cœur actions, #20365) : series.csv au format de shadow_replay --series-dir
+    dates = _days("2026-01-05", 60)
+    rets = [0.01 if i % 2 else -0.004 for i in range(60)]
+    folder = tmp_path / "20365-league-core" / "core-equity"
+    folder.mkdir(parents=True)
+    rows = ["date,net_return,turnover"] + [f"{d},{r!r},0.0" for d, r in zip(dates, rets)]
+    (folder / lc.LOCAL_SERIES).write_text("\n".join(rows) + "\n", encoding="utf-8")
+    got = lc.member_returns(tmp_path, {"id": "core", "trace": "20365-league-core/core-equity",
+                                       "kind": "local"})
+    equity = list(np.cumprod(1.0 + np.asarray(rets)))
+    assert got == pytest.approx(lc.weekly_returns(dates, equity))
+    # la même courbe tracée dans un chart.json QC rend les mêmes rendements hebdomadaires
+    (folder / "chart.json").write_text(json.dumps(_chart(dates, equity)), encoding="utf-8")
+    assert got == pytest.approx(lc.member_returns(tmp_path, {"id": "q", "trace":
+                                                             "20365-league-core/core-equity"}))
+
+
+def test_member_returns_rejects_an_unknown_kind(tmp_path):
+    with pytest.raises(ValueError, match="kind"):
+        lc.member_returns(tmp_path, {"id": "z", "trace": "a/b", "kind": "csv"})
+
+
 def test_members_file_is_well_formed():
     members = lc.load_members()
     ids = [m["id"] for m in members]
@@ -145,6 +168,10 @@ def test_members_file_is_well_formed():
     for m in members:
         assert m["role"] in {"candidate", "reference", "core"}
         assert m["trace"].count("/") == 1 and m.get("series", "e") in {"e", "b"}
+        assert m.get("kind", "qc") in lc.KINDS
+        assert m.get("kind", "qc") == "qc" or "series" not in m
+    # chaque cœur du panier est dans la matrice (#20365)
+    assert any(m["role"] == "core" for m in members)
 
 
 def test_active_share_counts_invested_weeks():
