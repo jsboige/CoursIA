@@ -401,19 +401,27 @@ from check_run_state import fold_latest  # noqa: E402
 # la lane « pas le votre », c'est-a-dire de ne rien faire, alors que la cause
 # est dans le diff de la PR. La declaration de la borne est portee par le
 # registre de la voie rapide (Guard.argv contient `--diff {base_ref}...HEAD`,
-# ou Guard.delta_argv porte la comparaison base/head) -- pas une liste de
-# noms recopiee dans le picker. C'est cette indirection qui maintient la
-# liste a jour quand la voie rapide absorbe un nouveau garde.
+# Guard.delta_argv porte la comparaison base/head, ou Guard.diff_bounded est
+# declare explicitement quand l'argv absorbe a perdu l'information de
+# bornage -- suite c.1503, nav-chain/navlinks) -- pas une liste de noms
+# recopiee dans le picker. C'est cette indirection qui maintient la liste a
+# jour quand la voie rapide absorbe un nouveau garde.
 def _diff_bounded_check_names() -> set[str]:
     """Noms de checks declares bornes au diff dans le registre de la voie rapide.
 
-    Trois sources couvrent les trois formes d'un garde borne au diff :
+    Quatre sources couvrent les formes d'un garde borne au diff :
     - ``argv`` contient un drapeau ``--diff {base_ref}...HEAD`` (le garde ne
       lit que les lignes AJOUTEES par la PR -- cas fondateur ``prose-counts-guard``) ;
     - ``delta_argv`` porte une comparaison explicite base/head (le verdict
       est delta, jamais un verdict de base) ;
     - ``swap_paths`` non vide (le fast-lane runner bascule un sous-arbre a
-      la base pour la phase 2 -- la sortie n'a de sens qu'en delta).
+      la base pour la phase 2 -- la sortie n'a de sens qu'en delta) ;
+    - ``Guard.diff_bounded`` declare au registre (source EXPLICITE, #19645
+      suite c.1503) : couvre les gardes dont l'argv absorbe a PERDU
+      l'information de bornage -- ``check-nav-chain``/``check-navlinks``
+      scopaient au diff dans leur workflow d'origine, l'argv absorbe dit
+      seulement ``--check``, et une 4e heuristique d'argv ne detecterait
+      rien puisque le drapeau n'y est plus.
 
     Echec d'import (CI minimale sans la voie rapide) : on rend un set vide
     fail-closed, comme avant #19645 -- l'imputation reste la voie par defaut.
@@ -437,7 +445,12 @@ def _diff_bounded_check_names() -> set[str]:
             has_diff_flag = "--diff" in argv_join and "base_ref" in argv_join
             has_delta = bool(getattr(guard, "delta_argv", None))
             has_swap = bool(getattr(guard, "swap_paths", None))
-            if has_diff_flag or has_delta or has_swap:
+            # 4e source (#19645 suite c.1503) : declaration EXPLICITE au
+            # registre, pour les gardes dont l'argv absorbe a perdu le
+            # drapeau de bornage (nav-chain/navlinks disent `--check` alors
+            # que leur verdict est un delta NEW vs baseline).
+            has_declared = bool(getattr(guard, "diff_bounded", False))
+            if has_diff_flag or has_delta or has_swap or has_declared:
                 names.add(guard.name)
     return names
 
