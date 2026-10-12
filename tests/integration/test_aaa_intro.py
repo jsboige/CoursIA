@@ -37,17 +37,19 @@ def get_cell_outputs(nb, idx: int):
 # Module-level globals (set by setUpModule)
 nb = None
 cell0_src = None
+cell2_src = None
 cell3_src = None
 cell12_src = None
 cell21_src = None
 
 
 def setUpModule():
-    global nb, cell0_src, cell3_src, cell12_src, cell21_src
+    global nb, cell0_src, cell2_src, cell3_src, cell12_src, cell21_src
     if not NB_PATH.exists():
         raise unittest.SkipTest(f'Notebook not found: {NB_PATH}')
     nb = json.load(open(NB_PATH, 'r', encoding='utf-8'))
     cell0_src = get_cell_src(nb, 0)
+    cell2_src = get_cell_src(nb, 2)
     cell3_src = get_cell_src(nb, 3)
     cell12_src = get_cell_src(nb, 12)
     cell21_src = get_cell_src(nb, 21)
@@ -79,6 +81,18 @@ class TestIntroCodeAlignment(unittest.TestCase):
             any(word in cell0_src for word in ('Docker', 'dropna', 'disponibilit')),
             'Cell 0 must explain the universe/period constraint (Docker/dropna/disponibilite)'
         )
+
+    def test_chargement_says_five_etfs_not_ten(self):
+        """Cell 2 (Chargement des donnees) must say 5 ETFs, not 10.
+
+        Closes the gap flagged by NanoClaw review: the intro/cell 0 said 5 ETFs
+        but cell 2 still said 'On charge les 10 ETFs', a contradiction that
+        no test previously caught.
+        """
+        self.assertIn('5 ETFs', cell2_src,
+                      'Cell 2 must say 5 ETFs (effective count after dropna)')
+        self.assertNotIn('10 ETFs', cell2_src,
+                         'Cell 2 must NOT say 10 ETFs (contradicts effective 5-asset universe)')
 
     def test_code_loads_five_tickers(self):
         """Cell 3 must load exactly 5 tickers (the effective count)."""
