@@ -147,12 +147,12 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [IIT - Introduction à PyPhi et Integrated Information…](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) | BETA | Oui |
-| 2 | [IIT - Sujets Avances : Partitionnement, Repertoires…](../../MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb) | BETA | Oui |
-| 3 | [IIT-3. Coarse-graining, blackboxing et l'échelle du…](../../MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb) | BETA | Oui |
-| 4 | [IIT-4. Le problème de frontière — qui décide où sont…](../../MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb) | BETA | Oui |
-| 5 | [IIT-5. Les lentilles de conscience comme bancs de…](../../MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb) | BETA | Oui |
-| 6 | [IIT-6. L'objet qui a mordu IIT — l'expander à Φ énorme,…](../../MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb) | BETA | Oui |
+| 1 | [IIT - Introduction à PyPhi et Integrated Information…](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb) | BETA | Oui |
+| 2 | [IIT - Sujets Avances : Partitionnement, Repertoires…](../../MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb) | BETA | Oui |
+| 3 | [IIT-3. Coarse-graining, blackboxing et l'échelle du…](../../MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb) | BETA | Oui |
+| 4 | [IIT-4. Le problème de frontière — qui décide où sont…](../../MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb) | BETA | Oui |
+| 5 | [IIT-5. Les lentilles de conscience comme bancs de…](../../MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb) | BETA | Oui |
+| 6 | [IIT-6. L'objet qui a mordu IIT — l'expander à Φ énorme,…](../../MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb) | BETA | Oui |
 
 ## IIT/ICT-Series (79 notebooks)
 

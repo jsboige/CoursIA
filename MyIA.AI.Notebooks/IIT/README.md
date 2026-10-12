@@ -28,12 +28,12 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [IIT-01-IntroToPyPhi](IIT-01-IntroToPyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation, complexe majeur | 60-90 min |
-| 2 | [IIT-02-AdvancedTopics](IIT-02-AdvancedTopics.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
-| 3 | [IIT-03-CoarseGrainingMacroPhi](IIT-03-CoarseGrainingMacroPhi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
-| 4 | [IIT-04-Le-Probleme-de-Frontiere](IIT-04-Le-Probleme-de-Frontiere.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, complexe majeur (`major_complex`), double dissociation Φ vs EI | 45-60 min |
-| 5 | [IIT-05-Lentilles-et-Dissociations](IIT-05-Lentilles-et-Dissociations.ipynb) | Six théories de la conscience (GWT, GNW, FEP, AST, SMT, HOT) comme mesures exécutables sur un même substrat : dissociation accès vs autoréférence, orthogonalité AST/SMT, contre-claim FEP | 60-75 min |
-| 6 | [IIT-06-L-Objet-qui-a-Mordu-IIT](IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb) | L'échange Aaronson/Tononi (2014) exécuté : Vandermonde et le hack W en Φ_DM sur F_p, grille/ligne/feedforward en Φ 3.0 (PyPhi), les deux positions citées avec leurs grades | 75-90 min |
+| 1 | [IIT-01-IntroToPyPhi-Python](IIT-01-IntroToPyPhi-Python.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation, complexe majeur | 60-90 min |
+| 2 | [IIT-02-AdvancedTopics-Python](IIT-02-AdvancedTopics-Python.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
+| 3 | [IIT-03-CoarseGrainingMacroPhi-Python](IIT-03-CoarseGrainingMacroPhi-Python.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
+| 4 | [IIT-04-Le-Probleme-de-Frontiere-Python](IIT-04-Le-Probleme-de-Frontiere-Python.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, complexe majeur (`major_complex`), double dissociation Φ vs EI | 45-60 min |
+| 5 | [IIT-05-Lentilles-et-Dissociations-Python](IIT-05-Lentilles-et-Dissociations-Python.ipynb) | Six théories de la conscience (GWT, GNW, FEP, AST, SMT, HOT) comme mesures exécutables sur un même substrat : dissociation accès vs autoréférence, orthogonalité AST/SMT, contre-claim FEP | 60-75 min |
+| 6 | [IIT-06-L-Objet-qui-a-Mordu-IIT-Python](IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb) | L'échange Aaronson/Tononi (2014) exécuté : Vandermonde et le hack W en Φ_DM sur F_p, grille/ligne/feedforward en Φ 3.0 (PyPhi), les deux positions citées avec leurs grades | 75-90 min |
 
 ## Parcours recommandés
 
@@ -172,7 +172,7 @@ flowchart TD
 
 ## Contenu détaillé
 
-### IIT-01-IntroToPyPhi.ipynb
+### IIT-01-IntroToPyPhi-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -186,7 +186,7 @@ flowchart TD
 | Causation actuelle | Liens causaux d'une transition (`account`), mécanisme d'un concept |
 | Macro-sous-systèmes | Coarse-graining, blackboxing (section conceptuelle) |
 
-### IIT-02-AdvancedTopics.ipynb
+### IIT-02-AdvancedTopics-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -199,7 +199,7 @@ flowchart TD
 | Performance | Timing du calcul de CES, module `pyphi.macro` |
 | IIT 4.0 | Concept-Style SIA, limites computationnelles, débats |
 
-### IIT-03-CoarseGrainingMacroPhi.ipynb
+### IIT-03-CoarseGrainingMacroPhi-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -210,7 +210,7 @@ flowchart TD
 | Comparaison micro/macro | $\Phi$ macro vs $\Phi$ micro, interprétation honnête de l'emergence |
 | Causal emergence | Hoel 2013 : pourquoi l'emergence positive n'est ni automatique ni garantie |
 
-### IIT-04-Le-Probleme-de-Frontiere.ipynb
+### IIT-04-Le-Probleme-de-Frontiere-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -222,7 +222,7 @@ flowchart TD
 | Double dissociation | Φ privilégie les frontières transversales, EI le tout — et les favorites de Φ sont hors du domaine de l'EI (frontières coupantes) |
 | Boundary problem | Gómez Emilsson cité comme proposition, jamais comme réponse établie |
 
-### IIT-05-Lentilles-et-Dissociations.ipynb
+### IIT-05-Lentilles-et-Dissociations-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -234,7 +234,7 @@ flowchart TD
 | Exercice 3 | Contre-claim exécuté : la lentille FEP sort de son domaine (précision maximale ≠ conscience) |
 | Conclusion | Les lentilles comme instruments de dissociation, pas comme théories unifiées — limites honnêtement documentées |
 
-### IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb
+### IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -348,12 +348,12 @@ IIT propose un changement de regard radical : ne plus demander « qu'est-ce que 
 
 ```
 IIT/
-├── IIT-01-IntroToPyPhi.ipynb           # Notebook 1 : introduction
-├── IIT-02-AdvancedTopics.ipynb         # Notebook 2 : sujets avances
-├── IIT-03-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
-├── IIT-04-Le-Probleme-de-Frontiere.ipynb # Notebook 4 : qui décide des bords — Φ vs EI selon la frontière
-├── IIT-05-Lentilles-et-Dissociations.ipynb # Notebook 5 : six théories de la conscience comme bancs de dissociation
-├── IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb # Notebook 6 : l'échange Aaronson/Tononi exécuté (Φ_DM + PyPhi)
+├── IIT-01-IntroToPyPhi-Python.ipynb           # Notebook 1 : introduction
+├── IIT-02-AdvancedTopics-Python.ipynb         # Notebook 2 : sujets avances
+├── IIT-03-CoarseGrainingMacroPhi-Python.ipynb # Notebook 3 : coarse-graining & échelle du Φ
+├── IIT-04-Le-Probleme-de-Frontiere-Python.ipynb # Notebook 4 : qui décide des bords — Φ vs EI selon la frontière
+├── IIT-05-Lentilles-et-Dissociations-Python.ipynb # Notebook 5 : six théories de la conscience comme bancs de dissociation
+├── IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb # Notebook 6 : l'échange Aaronson/Tononi exécuté (Φ_DM + PyPhi)
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
