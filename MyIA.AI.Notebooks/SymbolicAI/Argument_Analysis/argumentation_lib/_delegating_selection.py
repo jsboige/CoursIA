@@ -7,8 +7,9 @@
 # Source commit: ecfd9b9 (2026-10) — ref pinned by issue #18393.
 # Verbatim import rationale: see NOTICE-EPITA at the root of this directory.
 #
-# Deliberate adaptation perimeter (no other modification — the class body
-# below mirrors the upstream logic):
+# Deliberate adaptation perimeter (the class body mirrors the upstream logic
+# modulo the items listed below — see also NOTICE-EPITA at the root of this
+# directory for the verbatim import contract and PR #20338 review for context):
 # 1. `record_unresolved_designation` is absent from the vendored state
 #    perimeter (#14026) — an unresolved designation is recorded via
 #    `state.log_error` instead, preserving the #1751 contract: a log line
@@ -17,6 +18,14 @@
 #    who was designated and who spoke, per turn (#18393 verification).
 # 3. `next()` also honours `initial_agent` semantics through the default
 #    agent fallback (unchanged upstream behaviour).
+# 4. The default agent name is `ProjectManagerAgent` here (L51 / L61) where
+#    the upstream `strategies.py:134-246` reads `ProjectManager` — the
+#    extended form is what the rest of this vendored library already uses
+#    (`_runner.py:40`, `_informal_definitions.py:898-902`) and what the
+#    notebook pipeline expects to designate; passing the short form would
+#    misroute the orchestrator. Mechanical 1-token rename, surface documented
+#    in NOTICE-EPITA `## Volet B etape 4 sub-tranche C186g` (forward
+#    reference, applied per PR #20338 review).
 
 from __future__ import annotations
 
