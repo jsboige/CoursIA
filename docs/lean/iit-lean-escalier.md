@@ -19,7 +19,7 @@ Le carnet `IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb` porte la moitié **empirique** 
 
 ## 1. Inventaire du lake
 
-Le lake est un **module unique** plus sa racine et son jumeau i18n : `IIT/Integration.lean` (220 lignes, docstrings FR), `IIT/Integration_en.lean` (219 lignes, namespace `IIT_en`), `IIT.lean` (racine qui importe les deux). **Sans dépendance Mathlib** : `lake build` se fait en secondes, sans `lake exe cache get`. `sorry` baseline `0` (`scripts/lean/ci_lakes.json`).
+Le lake est un **module unique** plus sa racine et son jumeau i18n : `IIT/Integration.lean` (avec docstrings FR), `IIT/Integration_en.lean` (namespace `IIT_en`), `IIT.lean` (racine qui importe les deux). **Sans dépendance Mathlib** : `lake build` se fait en secondes, sans `lake exe cache get`. `sorry` baseline `0` (`scripts/lean/ci_lakes.json`).
 
 **19 déclarations**, toutes **non exposées** (aucun `.ipynb` du dépôt ne cite le lake) :
 
@@ -71,7 +71,7 @@ Trois marches. Chaque marche est un carnet ; chaque carnet suit la grammaire de 
 ## 3. Le capstone — ce qu'il consomme, ce qu'il montre, sa place
 
 - **Consomme** : le verdict (marche 1) pour énoncer `integrated` sans le redéfinir ; la parité (marche 2) pour lire `broadcast` ; et, hors lake, les mesures Φ_DM du carnet Python `IIT-06-L`.
-- **Montre** : que la critique d'Aaronson est **formalement tenable** — un système peut maximiser le proxy d'intégration et n'avoir qu'une dynamique à deux pas. C'est exactement la posture défendue par le lake, et c'est ce que 20 lignes de Lean montrent plus sûrement qu'un paragraphe.
+- **Montre** : que la critique d'Aaronson est **formalement tenable** — un système peut maximiser le proxy d'intégration et n'avoir qu'une dynamique à deux pas. C'est exactement la posture défendue par le lake, et c'est ce que quelques dizaines de lignes de Lean montrent plus sûrement qu'un paragraphe.
 - **Grade honnête, porté par le carnet lui-même** : le proxy mesure la décomposition déterministe de l'**image** ; il ne capture ni l'information effective sous perturbation, ni la partition minimale au sens MIP, ni une valeur numérique de Φ. Le carnet Python mesure Φ ; le lake formalise un **proxy**. Les deux ne se comparent pas terme à terme — le capstone le dit au lieu de le laisser croire.
 - **Sa place dans la mère** : série `IIT/`, après `IIT-06-L` (dont il est la moitié formelle). La marche 1 et la marche 2 peuvent vivre dans la même série ou dans `SymbolicAI/Lean/` — c'est la décision de placement ci-dessous.
 
