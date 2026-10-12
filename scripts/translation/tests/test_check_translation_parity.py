@@ -714,7 +714,12 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # sur main avec son carnet et sans mettre a jour cette ligne, ce qui a rougi
 # `test_full_repo_state_passes_parity` (found 9, declared 8) sur toute PR
 # path-filtree scripts/**. Total apres fusion : 9.
-EXPECTED_PAIR_COUNT = 9
+# 2026-10-12 (PR #20392, #20184 pli ANALYSE-06 Sensibilite): +1 paire --
+# jumeau _en d'un carnet Lean : SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python_en.
+# Meme classe que l'entree #19996 ci-dessus : la paire arrive avec son carnet,
+# la declaration l'enregistre dans la meme PR (rouge mesure a tete constante,
+# 1 failed / 34 passed, avant cet enregistrement). Total apres fusion : 10.
+EXPECTED_PAIR_COUNT = 10
 
 
 def _collect_parity_failures(repo_root: Path,

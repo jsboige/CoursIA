@@ -1,4 +1,4 @@
-"""Build IIT-02-AdvancedTopics.ipynb programmatically."""
+"""Build IIT-02-AdvancedTopics-Python.ipynb programmatically."""
 import json
 
 cells = []
@@ -12,14 +12,14 @@ cells.append({
         "\n",
         "## Navigation\n",
         "\n",
-        "Ce notebook est le **deuxieme volet** de la serie IIT. Il approfondit les concepts introduits dans [IIT-01-IntroToPyPhi](IIT-01-IntroToPyPhi.ipynb).\n",
+        "Ce notebook est le **deuxieme volet** de la serie IIT. Il approfondit les concepts introduits dans [IIT-01-IntroToPyPhi-Python](IIT-01-IntroToPyPhi-Python.ipynb).\n",
         "\n",
         "| Notebook | Contenu | Duree |\n",
         "|----------|---------|-------|\n",
-        "| [1. IIT-01-IntroToPyPhi](IIT-01-IntroToPyPhi.ipynb) | Reseaux, Phi, CES, macro-subsystemes | 60-90 min |\n",
+        "| [1. IIT-01-IntroToPyPhi-Python](IIT-01-IntroToPyPhi-Python.ipynb) | Reseaux, Phi, CES, macro-subsystemes | 60-90 min |\n",
         "| **2. AdvancedTopics** (ce notebook) | Partitions MIP, repertoires, MICE, reseaux elargis | 60-90 min |\n",
         "\n",
-        "**Prerequis** : avoir complete le notebook 1 (IIT-01-IntroToPyPhi).\n",
+        "**Prerequis** : avoir complete le notebook 1 (IIT-01-IntroToPyPhi-Python).\n",
         "\n",
         "---\n",
         "\n",
@@ -754,7 +754,7 @@ nb = {
     "nbformat_minor": 4
 }
 
-outpath = "MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb"
+outpath = "MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb"
 with open(outpath, "w", encoding="utf-8") as f:
     json.dump(nb, f, indent=1, ensure_ascii=False)
 
