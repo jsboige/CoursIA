@@ -2,12 +2,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/jsboige/CoursIA/MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bank_schema_v1.json",
   "title": "bake_bank_v1",
-  "description": "Schéma v1 du banc de référence persistant des moteurs TTS (issue #19695, dispatch ai-01 07/10 09:08Z). Cumul cross-campagne wer/RTF/VRAM par (motor, extract, seed). Champs de fidélité ajoutes par cadrage coordinateur : inserted_words, omitted_segments, asr_models.",
+  "description": "Schema v1 du banc de reference persistant des moteurs TTS (issue #19695). Cumul cross-campagne wer/RTF/VRAM par (motor, extract, seed). Deux vocabulaires de fidelite coexistent : celui du socle merge (#19820 : inserted_words, omitted_segments, voice_stable, hallu_per_100_syl) et les champs etendus optionnels du banc TTS (#19722 : fidelity_added_words, fidelity_omitted_segments_3plus, voice_consistent, prosody_*, traceabilite moteur). Les champs etendus sont OPTIONNELS : un run du socle seul reste valide.",
   "type": "array",
   "items": {
     "type": "object",
     "additionalProperties": true,
-    "required": ["ts", "machine", "motor", "extract", "seed", "duration_s"],
+    "required": [
+      "ts",
+      "machine",
+      "motor",
+      "extract",
+      "seed",
+      "duration_s"
+    ],
     "properties": {
       "ts": {
         "type": "string",
@@ -16,7 +23,15 @@
       },
       "machine": {
         "type": "string",
-        "enum": ["myia-po-2027", "myia-ai-01", "myia-po-2024", "myia-po-2025", "myia-po-2026", "myia-po-2023", "other"],
+        "enum": [
+          "myia-po-2027",
+          "myia-ai-01",
+          "myia-po-2024",
+          "myia-po-2025",
+          "myia-po-2026",
+          "myia-po-2023",
+          "other"
+        ],
         "description": "Lane de la machine qui a execute le run."
       },
       "motor": {
@@ -32,18 +47,27 @@
         "description": "Graine de generation (determinisme reproductibilite)."
       },
       "wer": {
-        "type": ["number", "null"],
+        "type": [
+          "number",
+          "null"
+        ],
         "minimum": 0.0,
         "maximum": 1.0,
         "description": "Word Error Rate (Levenshtein normalise). Null si ASR non charge au run."
       },
       "rtf": {
-        "type": ["number", "null"],
+        "type": [
+          "number",
+          "null"
+        ],
         "minimum": 0.0,
         "description": "Real-Time Factor = wallclock / duration_s. <1 = plus rapide que wall-clock."
       },
       "vram_mb": {
-        "type": ["integer", "null"],
+        "type": [
+          "integer",
+          "null"
+        ],
         "minimum": 0,
         "description": "VRAM pic en MB pendant le run. Null si CPU-only."
       },
@@ -53,40 +77,206 @@
         "description": "Duree du clip rendu en secondes."
       },
       "voice_stable": {
-        "type": ["boolean", "null"],
+        "type": [
+          "boolean",
+          "null"
+        ],
         "description": "Verdict subjectif stabilite vocale (DRIFTING detecte par 3ASR). Null si non evalue."
       },
       "hallu_per_100_syl": {
-        "type": ["number", "null"],
+        "type": [
+          "number",
+          "null"
+        ],
         "minimum": 0.0,
         "description": "Hallucinations par 100 syllabes (mots inseres par l'ASR sur hyp non-reference). Null si non evalue."
       },
       "inserted_words": {
-        "type": ["integer", "null"],
+        "type": [
+          "integer",
+          "null"
+        ],
         "minimum": 0,
         "description": "Nombre de mots inseres par l'ASR (faux positifs). Detecte par Levenshtein sur le run. Cumul cross-ASR si asr_models contient plusieurs modeles."
       },
       "omitted_segments": {
-        "type": ["integer", "null"],
+        "type": [
+          "integer",
+          "null"
+        ],
         "minimum": 0,
         "description": "Segments de >=3 mots absents de >=2 ASR sur 3 (defaut CosyVoice3 / Chatterbox). Detecte par measure_3asr.py::_detect_omissions."
       },
       "asr_models": {
-        "type": ["array", "null"],
+        "type": [
+          "array",
+          "null"
+        ],
         "items": {
           "type": "string",
-          "enum": ["tiny", "base", "small", "medium", "large-v1", "large-v2", "large-v3", "distil-large-v3"]
+          "enum": [
+            "tiny",
+            "base",
+            "small",
+            "medium",
+            "large-v1",
+            "large-v2",
+            "large-v3",
+            "distil-large-v3"
+          ]
         },
         "description": "Modeles ASR utilises pour le WER (subset de faster-whisper)."
       },
       "notes": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "Notes libres (ex : 'CPU run, Whisper-tiny non charge', 'DRIFTING detecte')."
+      },
+      "schema_version": {
+        "type": "string",
+        "const": "v1",
+        "description": "Version du schéma (figé à v1 pour cette ligne)."
+      },
+      "motor_size_b": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "description": "Taille du moteur en milliards de paramètres (null si non applicable)."
+      },
+      "motor_license": {
+        "type": "string",
+        "description": "Licence SPDX (Apache-2.0, MIT, Research-Only, etc.)."
+      },
+      "extract_text_sha256_prefix": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{16}$",
+        "description": "Préfixe 16-hex du sha256 du texte de référence (verrou anti-réécriture silencieuse)."
+      },
+      "extract_text_chars": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 0,
+        "description": "Nombre de caractères du texte de référence."
+      },
+      "speaker": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Identifiant de la voix (modèles multi-locuteurs)."
+      },
+      "instruct": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Prompt d'instruction (pour les moteurs qui en acceptent)."
+      },
+      "language": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Code langue BCP-47 (fr, en, etc.)."
+      },
+      "wer_model": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Identifiant du modèle ASR (openai/whisper-large-v3, faster-whisper-tiny, etc.)."
+      },
+      "load_s": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "minimum": 0.0,
+        "description": "Temps de chargement du modèle (secondes)."
+      },
+      "wallclock_total_s": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "minimum": 0.0,
+        "description": "Wallclock total du banc (incluant WER et prosodie)."
+      },
+      "prosody_st_range": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "description": "Prosodie: ST-spread (semitones range, F0). null si non mesuré."
+      },
+      "prosody_cv": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "minimum": 0.0,
+        "description": "Prosodie: coefficient of variation F0."
+      },
+      "prosody_velocity": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "minimum": 0.0,
+        "description": "Prosodie: vitesse (Hz/s)."
+      },
+      "prosody_verdict": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "EXPRESSIVE",
+          "INSUFFICIENT",
+          "FLAT",
+          null
+        ]
+      },
+      "fidelity_added_words": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 0,
+        "description": "Fidélité (gate pré-UAT #17586): nombre de mots ajoutés par le moteur au-delà du ref. 0 = pass."
+      },
+      "fidelity_omitted_segments_3plus": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 0,
+        "description": "Fidélité: nombre de segments de 3+ mots omis sous au moins 2 ASR sur 3. 0 = pass."
+      },
+      "voice_consistent": {
+        "type": [
+          "boolean",
+          "null"
+        ],
+        "description": "Fidélité: voix CONSISTENT sur tout le passage (true), DRIFTING / ERRATIC / FADING (false). null si non testé."
+      },
+      "source_path": {
+        "type": "string",
+        "description": "Chemin du metrics.json source ingéré (traçabilité bootstrap)."
       }
     }
   },
   "uniqueness": {
     "description": "Cle d'unicite d'un run : (motor, extract, seed). Re-append avec meme cle = upsert (remplace l'ancien), pas de doublon.",
-    "key": ["motor", "extract", "seed"]
+    "key": [
+      "motor",
+      "extract",
+      "seed"
+    ]
   }
 }
