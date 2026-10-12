@@ -20,6 +20,9 @@ for the pilot on `Utility.lean`).
 import Mathlib.CategoryTheory.Sites.Grothendieck
 import Mathlib.CategoryTheory.Sites.SheafOfTypes
 import Mathlib.AlgebraicGeometry.Scheme
+import Mathlib.AlgebraicGeometry.Morphisms.Etale
+import Mathlib.AlgebraicGeometry.Morphisms.Smooth
+import Mathlib.AlgebraicGeometry.Morphisms.Separated
 import Mathlib.Topology.Sheaves.Sheaf
 
 namespace Grothendieck_en
@@ -82,6 +85,15 @@ Mathlib 4 has a rich category theory library built on these ideas.
 -- Forgetful functors
 #check Scheme.forgetToTop       -- Scheme ⥤ TopCat
 #check Scheme.forgetToLocallyRingedSpace  -- Scheme ⥤ LocallyRingedSpace
+
+/-!
+## Algebraic geometry: local properties of morphisms
+-/
+
+-- Local properties of scheme morphisms
+#check @AlgebraicGeometry.Etale         -- etale morphism
+#check @AlgebraicGeometry.Smooth        -- smooth morphism
+#check @AlgebraicGeometry.IsSeparated   -- separated morphism
 
 /-!
 ## What Mathlib does NOT have yet (as of 2026-07)

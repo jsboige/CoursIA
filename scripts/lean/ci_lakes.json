@@ -63,6 +63,7 @@
       "display-name": "assignment_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
       "paths": [
         "MyIA.AI.Notebooks/GameTheory/assignment_lean/**.lean",
         "MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.lean",

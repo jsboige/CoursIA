@@ -5,10 +5,14 @@ Tranche finale observationnelle : ICT-35b a mesure l'agregat des 30 paires a
 la couche 12/24, ICT-35c aux profondeurs early/mid/late -- toutes deux sur le
 pairing complet. Le critere 4 du protocole exige la stabilite **inter-formes**
 (pun, sociale/non-topical, topical) et le critere d'acceptance des effets
-rapportes avec IC et taille d'effet. Ce module porte l'annotation typologique
-(figuree AVANT toute mesure par type) et les jambes d'inference additionnelles
-(IC bootstrap, d de Cohen, controle familial du max |z|) -- les statistiques
-de detection pre-registrees restent celles de ``humor_pairs.measure_humor_differential``.
+rapportes avec IC et taille d'effet. Ce module porte les jambes d'inference
+additionnelles (IC bootstrap, d de Cohen, controle familial du max |z|) --
+les statistiques de detection pre-registrees restent celles de
+``humor_pairs.measure_humor_differential``.
+
+L'annotation typologique vit dans l'organe depuis l'extraction #20316 :
+``GameTheory/humour_banc/humour_typology.json``, figuree AVANT toute mesure
+par type (c. de claim 14035, 2026-09-23) et chargee ci-dessous.
 
 Regle d'annotation (mecanisme comique PRINCIPAL, la connaissance requise pour
 que la blague fonctionne) :
@@ -32,53 +36,14 @@ from typing import Any
 
 import numpy as np
 
-from .humor_pairs import _common_prefix_len, _zone_vec
+from .humor_pairs import _common_prefix_len, _zone_vec, load_typology
 
-TYPES = ("pun", "topical", "sociale")
+_typology = load_typology()
 
-# Annotation figee avant mesure (c. de claim 14035, 2026-09-23).
-PAIR_TYPES: dict[str, str] = {
-    "joke-p02": "pun",       # Oct 31 == Dec 25 : calque de notation
-    "joke-p03": "pun",       # 10 = binaire : calque de notation
-    "joke-p04": "topical",   # SQL, tables : reference d'ecosysteme
-    "joke-p05": "sociale",   # ingenieurs/ampoule : stereotype de metier
-    "joke-p06": "pun",       # racines : double sens math/religion
-    "joke-p07": "topical",   # null vs undefined : reference JS
-    "joke-p08": "pun",       # UDP/savoir : double sens
-    "joke-p09": "sociale",   # pere Noel/piles : situation universelle
-    "joke-p10": "pun",       # moulu : double sens moulu/ecrase
-    "joke-p11": "pun",       # yield : double sens coroutine/renoncer
-    "joke-p12": "topical",   # stack DevOps : reference d'ecosysteme
-    "joke-p13": "sociale",   # relation stable/pleurer : comedie de couple
-    "joke-p14": "pun",       # palindrome/differencier : double sens
-    "joke-p15": "topical",   # regex : reference technique
-    "joke-p16": "sociale",   # trois savants : comedie de personnages
-    "joke-p18": "topical",   # Objective-C/messages : reference technique
-    "joke-p19": "pun",       # doublement : double sens
-    "joke-p20": "pun",       # photon/attendre : double sens relativiste
-    "joke-p21": "pun",       # matrices/hors de portee : double sens
-    "joke-p22": "topical",   # chat roug/serveurs : argot d'incident
-    "joke-p23": "sociale",   # plongeurs : absurdite situationnelle
-    "joke-p24": "topical",   # HTML pas un langage : debat d'ecosysteme
-    "joke-p25": "topical",   # logs Git : reference technique
-    "joke-p26": "topical",   # debug d'avion : reference de metier technique
-    "joke-p27": "pun",       # git pull/deux tu l'auras : calembour
-    "joke-p28": "topical",   # Python/exceptions : reference technique
-    "joke-p29": "topical",   # submodules Git : reference technique
-    "joke-p30": "topical",   # UTF-8/BOM : reference technique
-    "edge-04": "pun",        # eyebrows/surprised : double sens EN
-    "edge-05": "pun",        # whiskey diet/lost : double sens EN
-}
-
-BORDERLINE = frozenset({
-    "joke-p10",  # pun retenu (moulu), lisible aussi comme sociale (cafe boulot)
-    "joke-p13",  # sociale retenu (comedie de couple), requiert aussi "compiler"
-    "joke-p16",  # sociale retenu (personnages), reference scientifique reelle
-    "joke-p20",  # pun retenu (attendre), presuppose aussi la relativite
-    "joke-p22",  # topical retenu (argot d'incident), l'absurde animal est aussi sociale
-})
-
-MIN_PER_TYPE = 5  # plancher declare : sous 5 paires, la jambe est non concluante
+TYPES: tuple[str, ...] = tuple(_typology["types"])
+PAIR_TYPES: dict[str, str] = dict(_typology["pair_types"])
+BORDERLINE = frozenset(_typology["borderline"])
+MIN_PER_TYPE = _typology["min_per_type"]  # plancher declare : sous 5 paires, jambe non concluante
 
 
 def validate_typology(pairs: list[dict[str, str]]) -> None:
