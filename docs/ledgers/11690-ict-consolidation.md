@@ -28,6 +28,42 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
+## Passe d'arbitrage du mainteneur — séance du 2026-10-11 (case 3 de l'acceptance)
+
+Séance de relecture tenue avec le mainteneur le 2026-10-11 ; décisions consignées par la lane `myia-ai-01:CoursIA` ([#11690 c.6103450933](https://github.com/jsboige/CoursIA/issues/11690#issuecomment-6103450933)). Le mainteneur a accepté les recommandations du dossier de séance et posé un cadre élargi pour la suite (#20298–#20301, #17545, #5081). Conformément à la réserve 2 (péremption), chaque correction décidée invalide la ligne correspondante au moment de son exécution.
+
+**Correction de compte** : le dossier de séance couvrait 62 carnets — 37 sur `main` (strands 1 à 6) plus les 25 de la tranche B (#19316). Les strands 1 à 5 comptent **28 carnets** avec un seul « À MUSCLER » (ICT-15d) ; le second « À MUSCLER », ICT-11, appartient à la tranche B (strand 7). Ceci corrige le décompte publié le 2026-10-05 pour les strands 1-5 : 29 annoncés, 28 mesurés sur ce fichier (3+5+4+1+15).
+
+### Décisions par point
+
+| # | Objet | Décision (séance du 2026-10-11) | Grain qui l'exécute |
+|---|---|---|---|
+| 1 | ICT-15d | Verdict porté par le **cocycle**, plus par la SVD ; la matrice cesse de citer l'artefact périmé (deux endroits, dont la rangée ICT-15d) ; la construction du vrai nerf (H¹) devient une greffe à part, ré-outillée avec les organes canoniques des autres séries | Fille de correction (case 4) pour le correctif court — **à faire avant** la greffe #20298 point 4 |
+| 2 | ICT-11 | Au moins 16 essais par échelle ; intervalles bootstrap sur les corrélations | Fille de correction (case 4) |
+| 3 | Renumérotation | Attend la lecture complète des tranches C, D, E, en une seule passe, dans le cadre de #20298 | Phase 0 de #20298 (lecture C/D/E + inventaire des graines ICT dans les autres séries) ; phase 1 = carte cible soumise au mainteneur ; **aucun renommage avant validation** |
+| 4 | Familles fonctionnelles (Dissociations, Greffes, Annexe) | Noms conservés **à titre transitoire** ; cible (sous-série, ou accrétion du premier numéro qui manipule le concept, avec marchepied) fixée par #20298 | #20298 |
+| 5 | Famille ICT-15 (15b→15l) | Traitée par #20298 : sous-série « escalier » + un capstone dans la numérotation principale | #20298 |
+| 6 | Ordres internes | Confirmés, en attendant #20298 | — |
+| 7 | Renvois internes | Les renvois par numéro de cellule passent à des **ancres de section** | Retouche, par carnet (documentée strand 4 action b et tranche 2 finding 5) |
+| 8 | Tegmark (ICT-41/41b/44) | Redescente acceptée (#16741 c.6103436506) | Exécution `myia-po-2027:CoursIA` — hors case 4 de l'adjoint |
+| 9 | ICT-19 | Gate ENJEU-1 ré-exprimé sur `repair_gain` ; l'échec scalaire gardé comme note pédagogique | Fille de correction (case 4) |
+| 10 | ICT-25 §5.2 | Plafond saturant retiré au §5.2 ; re-exécution des deux bras sur le GPU d'expériences d'ai-01 | Routée `myia-ai-01:CoursIA-2` — pas une fille ordinaire |
+| 11 | ICT-25 run 2B | Attente levée ; lancement après le point 10 | Routée `myia-ai-01:CoursIA-2` |
+| 12 | ICT-21b | La sonde J-lens s'exécute (CPU, traces existantes) | Fille de correction (case 4) |
+| 13 | ICT-23 | Cellule de lecture qui dit que P1 n'est pas réalisée, plus un seuil sur l'indicateur d'alerte précoce | Fille de correction (case 4) |
+| 14 | ICT-24 | Phase 2 du Gate 24 exécutée ; seuil de Gini recalibré | Fille de correction (case 4) — la phase 2 requiert l'extraction GPU ; distincte de #19335 (Gate 23, n_shuffles) |
+| 15 | Matrice de synthèse | Nouvelles rangées Greffe2, Greffe4, Annexe, Synthèse ; 21c y entre comme **même jeu de mesures** que 21 | Fille de correction (case 4) — un seul artefact (`docs/ict/dissociations-matrix.md`) |
+| 16 | Format de référence | ICT-29 devient le format de référence, appliqué à chaque nouvelle retouche, **sans passe de masse** | Décision de méthode, pas une fille ; s'applique aux grains futurs |
+| 17 | Preuve partagée 21/21c | Jamais présentée comme une réplication indépendante | Couvert par la rangée 21c (point 15) et le finding tranche 1 n°2 |
+
+### Retouches mineures (strands 1 à 7)
+
+Approuvées en bloc, livrées en petits grains vers la lane ICT : les dettes LIGHT listées par les findings transverses — phrases de lecture (ICT-26 graine 7 ; ICT-28 sweep N et plateau de force), pont d'une phrase 18↔18b, retitrage (ou re-exécution) du smoke GPU d'ICT-21, dettes de la tranche A (strand 6, finding 7 : exo 3 d'ICT-07, variance de la TPM 24×24 d'ICT-06, contraste Spearman d'ICT-08, borne de temps de l'exo coûteux d'ICT-09, sortie texte du sweep par taille d'ICT-07, sortie de rappel des stubs d'ICT-02/04), dettes de la tranche B (finding 6 : lectures par graine 14b/15/17b, 4 seeds en 15f/15h, fenêtrage 17b) et les renvois par ancres (point 7). **Groupées par carnet** en filles de correction, pas une issue par phrase.
+
+### Cadre pour la suite (issues au tapis, non dispatchées)
+
+Quatre issues : #20298 (consolidation par escaliers : numérotation principale rassemblée, sous-séries d'historique, capstones), #20299 (stratification par taille de modèle), #20300 (dégénérescence des modèles jouets), #20301 (humour : dataset massif annoté). Le même effort de structuration vaut pour la série Lean (#17545) et, plus largement, pour les séries de #5081.
+
 ***
 
 ## Strand 1 — Life + Čech (rang 1)

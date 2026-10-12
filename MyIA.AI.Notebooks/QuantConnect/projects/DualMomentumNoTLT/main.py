@@ -46,6 +46,10 @@ class DualMomentumNoTLT(QCAlgorithm):
         # Monthly rebalance
         if self.time.month == self.rebalance_month:
             return
+        # A dividend notice arrives alone in a midnight slice, with no bar (#20264):
+        # it must not consume the month's rebalance.
+        if not any(data.bars.contains_key(s) for s in self.symbols.values()):
+            return
         self.rebalance_month = self.time.month
 
         # Compute 12M momentum for each asset
