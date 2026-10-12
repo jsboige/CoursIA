@@ -62,7 +62,11 @@ class SectorMomentumETFRotation(QCAlgorithm):
         self.set_warm_up(self.lookback + 30, Resolution.DAILY)
 
     def _momentum_score(self, symbol):
-        history = self.history(symbol, self.lookback + 5, Resolution.DAILY)
+        # On the 13:00 close slice of a US half-session, a daily history request
+        # by bar count comes back about 21 bars short (measured in #20286). Ask
+        # for twice the bars and keep the most recent ones.
+        history = self.history(symbol, 2 * (self.lookback + 5), Resolution.DAILY)
+        history = history.iloc[-(self.lookback + 5):]
         if len(history) < self.lookback:
             return None
 
