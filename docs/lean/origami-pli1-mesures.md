@@ -21,7 +21,7 @@ amont n'est recopiée : le lake **déclare une dépendance**, il ne la forke pas
 | Sub-grain du Pli 1 | Couvert ici |
 |---|---|
 | 1. Petites fermetures — build Morse / de Rham / Bonnet–Myers + `#print axioms` | **OUI** — objet de ce journal |
-| 2. Build témoin de Poincaré (machine forte, hors CI) | **NON** — reste ouvert ; 14 197 modules, c'est lui qui décide si Poincaré entre dans un carnet exécuté |
+| 2. Build témoin de Poincaré (machine forte, hors CI) | **NON** — reste ouvert ; c'est lui qui décide si Poincaré entre dans un carnet exécuté (ampleur citée dans l'EPIC #18205) |
 | 3. Sources tierces (NOTICE, conformité) | non — livré par #18978, [`origami-reconnaissance.md`](origami-reconnaissance.md) |
 | 4. Emplacement dans le dépôt | non — livré par #18978 |
 
@@ -34,7 +34,7 @@ disent pourquoi elle ne peut pas être un job CI.
 
 ```bash
 cd MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean
-lake exe cache get                     # oleans Mathlib (8689 fichiers)
+lake exe cache get                     # oleans Mathlib
 lake build                             # cible par défaut : DifferentialTour + DifferentialTour_en
 lake env lean DifferentialTour.lean    # second interrogatoire du témoin, hors du build
 ```
@@ -58,7 +58,7 @@ journée a duré **16 h 28**, dont ~9 h 23 d'interruption (VM arrêtée).
 
 | Étape | rc | Durée | Détail (littéral) |
 |---|---:|---:|---|
-| `lake exe cache get` | 0 | 3 249 s | « No files to download / Already decompressed 8690 file(s) » |
+| `lake exe cache get` | 0 | 3 249 s | « No files to download » — cache déjà en place |
 | `lake build` | 0 | **10 039 s (2 h 47)** | « Build completed successfully (4223 jobs). » — cible par défaut, les deux siblings |
 | `lake env lean DifferentialTour.lean` | 0 | 329 s | les trois `#print axioms` (section suivante) |
 | **Total des trois étapes** | 0 | **13 617 s (3 h 47)** | de 15:44:03Z à 19:34:02Z, relevés compris (3 h 50 de mur) |
