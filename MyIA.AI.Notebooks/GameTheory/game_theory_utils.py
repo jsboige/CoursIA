@@ -1040,6 +1040,15 @@ class VCGAuction:
         """
         Multi-item allocation with VCG payments.
 
+        Scope (#20306): exact VCG for ADDITIVE independent valuations
+        only -- each item j is awarded independently to the highest
+        bidder (valuations[i][j]) and payments are the Clarke
+        externalities of that per-item allocation. This is NOT a
+        combinatorial auction solver: bundle valuations
+        (v(A + B) != v(A) + v(B)) are not expressible in this
+        signature, and per-item argmax would be neither efficient
+        nor truthful for them.
+
         Args:
             valuations: valuations[i][j] = agent i's value for item j
 
