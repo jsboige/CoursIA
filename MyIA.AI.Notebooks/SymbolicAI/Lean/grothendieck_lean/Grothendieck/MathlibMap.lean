@@ -25,6 +25,9 @@ seuls les commentaires diffèrent).
 import Mathlib.CategoryTheory.Sites.Grothendieck
 import Mathlib.CategoryTheory.Sites.SheafOfTypes
 import Mathlib.AlgebraicGeometry.Scheme
+import Mathlib.AlgebraicGeometry.Morphisms.Etale
+import Mathlib.AlgebraicGeometry.Morphisms.Smooth
+import Mathlib.AlgebraicGeometry.Morphisms.Separated
 import Mathlib.Topology.Sheaves.Sheaf
 
 namespace Grothendieck
@@ -88,6 +91,15 @@ open AlgebraicGeometry CategoryTheory
 -- Foncteurs d'oubli
 #check Scheme.forgetToTop       -- Scheme ⥤ TopCat
 #check Scheme.forgetToLocallyRingedSpace  -- Scheme ⥤ LocallyRingedSpace
+
+/-!
+## Géométrie algébrique : propriétés locales des morphismes
+-/
+
+-- Propriétés locales des morphismes de schémas
+#check @AlgebraicGeometry.Etale         -- morphisme étale
+#check @AlgebraicGeometry.Smooth        -- morphisme lisse
+#check @AlgebraicGeometry.IsSeparated   -- morphisme séparé
 
 /-!
 ## Ce que Mathlib n'a PAS ENCORE (état 2026-07)

@@ -127,6 +127,19 @@ RENAME_VERBS: tuple[str, ...] = (
     "repackage",
 )
 
+# Marqueurs d'un commit qui documente SA PROPRE re-execution des outputs
+# (sujet du commit, lowercase). Un tel commit invalide la premisse D5 : le
+# changement de signature des sorties est le produit attendu du commit, pas
+# une anomalie. Famille de FP mesuree le 2026-10-11 (EPIC #9768, tranches 10
+# a 10-quater : ex chore(smt,#14169) "reexecute ... after .deploy DLL bump").
+REEXEC_MARKERS: tuple[str, ...] = (
+    "reexec",    # reexecute, reexecution, reexecuted
+    "re-exec",   # re-execute, re-execution
+    "réexec",    # réexecution (graphie sans accent interne)
+    "réexécut",  # réexécution, réexécuté, réexécuter
+    "re-exécut", # re-exécution
+)
+
 # Seuil de saut relatif sur la mediane des outputs pour D5.
 RELATIVE_JUMP_THRESHOLD: float = 0.20  # 20%
 
@@ -214,7 +227,9 @@ class NumericSignature:
 @dataclass
 class ForensicFinding:
     """Un finding individuel d'un des 4 detecteurs."""
-    category: str  # "D1" / "D3" / "D4" / "D5"
+    # "D1" / "D3" / "D4" / "D5" / "D5-EXEC" (saut attendu sous commit de
+    # re-execution documente -- visible dans le rapport, NON pathologique).
+    category: str
     sha: str
     subject: str
     detail: str
@@ -225,7 +240,8 @@ class NotebookForensic:
     """Verdict complet d'un notebook sur l'ensemble de ses revisions."""
     path: str
     total_revisions: int
-    verdict: str  # "SAIN" / "D1+" / "D3+" / "D4+" / "D5+" / "MIXED" / "INDETERMINE"
+    # "SAIN" / "D1+" / "D3+" / "D4+" / "D5+" / "D5-EXEC+" / "MIXED" / "INDETERMINE"
+    verdict: str
     findings: list[ForensicFinding] = field(default_factory=list)
     notes: str = ""
 
@@ -236,6 +252,10 @@ class NotebookForensic:
         D1+ (provenance orpheline) est pathologique MEME sur verdict global
         INDETERMINE, car il ne depend pas de l'historique du notebook -- un
         seul commit suffit pour le signaler.
+
+        "D5-EXEC+" seul n'est PAS pathologique : le saut observe est le
+        produit attendu d'un commit qui documente sa propre re-execution.
+        Un vrai D5 a cote le fait passer MIXED -> pathologique (fail-closed).
         """
         if self.verdict in ("D3+", "D4+", "D5+", "MIXED"):
             return True
@@ -460,6 +480,19 @@ def _has_rename_verb(subject: str) -> bool:
     return any(v in s for v in RENAME_VERBS)
 
 
+def _documents_reexecution(subject: str) -> bool:
+    """Vrai si le sujet du commit documente SA PROPRE re-execution des outputs.
+
+    Ex : "chore(smt,#14169): reexecute ... after .deploy DLL bump". Un tel
+    commit void la premisse D5 ("un commit non-substantiel ne devrait pas
+    changer la signature des sorties") : le saut observe est le produit
+    attendu du commit. Le finding devient D5-EXEC (visible, non pathologique)
+    -- jamais supprime silencieusement.
+    """
+    s = subject.lower().strip()
+    return any(m in s for m in REEXEC_MARKERS)
+
+
 # --------------------------------------------------------------------------- #
 #  Detecteurs (D1, D3, D4, D5)
 # --------------------------------------------------------------------------- #
@@ -630,14 +663,27 @@ def detect_d5(revisions: list[NotebookRevision]) -> list[ForensicFinding]:
             continue
         rel = abs(cur_median - prev_median) / abs(prev_median)
         if rel >= RELATIVE_JUMP_THRESHOLD:
+            # Un commit qui documente SA PROPRE re-execution rend le saut
+            # attendu : la premisse "non-substantiel ne touche pas aux
+            # outputs" est voide par le commit lui-meme. Le finding reste
+            # visible (categorie D5-EXEC) mais n'est pas pathologique --
+            # un vrai D5 sur une autre revision fait passer le verdict MIXED.
+            is_reexec = _documents_reexecution(cur.subject)
+            category = "D5-EXEC" if is_reexec else "D5"
+            suffix = (
+                " -- re-execution documentee dans le commit, saut attendu"
+                if is_reexec
+                else ""
+            )
             findings.append(
                 ForensicFinding(
-                    category="D5",
+                    category=category,
                     sha=cur.sha,
                     subject=cur.subject,
                     detail=(
                         f"Saut mediane {prev_median:.4g} -> {cur_median:.4g} "
                         f"(relatif {rel:.1%}) sous commit non-substantiel"
+                        f"{suffix}"
                     ),
                 )
             )

@@ -32,6 +32,30 @@ Toutes les valeurs ci-dessous proviennent de l'historique d'itérations mesuré 
 
 **Conclusion mesurée** : plafond ~0.48 pour la rotation mensuelle d'ETF sectoriels (`main.py`, docstring). Cf « Why Expansion Doesn't Improve » dans `ARCHIVE.md` (plafond d'univers : 11 ETF corrélés ; alternatives risk-off épuisées ; top_n=2 surajusté).
 
+## Demi-séances (#20286)
+
+Quand le 3 juillet tombe un lundi, c'est à la fois le premier jour de cotation du mois et une demi-séance qui ferme à 13:00, heure de New York. Sur la fenêtre 2015-2024, c'est le cas en 2017 et en 2023. Sur la tranche de clôture d'une demi-séance, `history()` rend environ 21 barres journalières de moins que demandé (mesuré dans #20286 sur un autre projet). `_momentum_score` demandait `lookback + 5` barres et rejetait le titre sous `lookback`. Il restait moins de `top_n` scores, et `rebalance` sortait sans rien écrire dans le journal. Juillet 2017 et juillet 2023 passaient sans rééquilibrage : 118 mois sur 120.
+
+Correctif dans `main.py` : `_momentum_score` demande le double de barres et garde les `lookback + 5` dernières. Sur une séance pleine, ce sont les mêmes barres qu'avant. Aucune ligne du journal ne montre l'historique court : la cause se déduit du code, et le retour des mois manquants avec ce seul changement la confirme.
+
+Mesure sur les nœuds QC, frais de courtage inclus, protocole fixé avant les backtests ([#20286, c.6115594357](https://github.com/jsboige/CoursIA/issues/20286#issuecomment-6115594357)) :
+
+| Fenêtre | Variante | Mois rééquilibrés | Sharpe | CAGR | Pire baisse | Ordres | Backtest |
+|---|---|---|---|---|---|---|---|
+| 2015-01-01 → 2024-12-31 | avant | 118 / 120 | 0.501 | 11.177 % | 25.8 % | 460 | `b583034cbc894ea49c2a1731cc957676` |
+| | après | 120 / 120 | 0.516 | 11.471 % | 25.8 % | 471 | `0037e172a9db4f2df5e400c71ce3add3` |
+| 2025-01-01 → 2026-07-10 (hors échantillon) | avant | 19 / 19 | 0.050 | 5.961 % | 12.6 % | 85 | `c37efdbb5015a261ee967300dff55a0d` |
+| | après | 19 / 19 | 0.050 | 5.961 % | 12.6 % | 85 | `8393d375f5277864dbe2e8ad386bae2b` |
+
+Sharpe calculé par QC, taux sans risque inclus. Les quatre prédictions fixées d'avance ont tenu :
+
+- les rééquilibrages du 2017-07-03 et du 2023-07-03 reviennent, et leurs ordres partent à la clôture de 13:00 ;
+- avant le 2017-07-03, les ordres sont identiques (date, titre, quantité) ;
+- les dates de rééquilibrage sont celles d'avant, plus les deux lundis ;
+- hors échantillon, aucun mois ne commence par une demi-séance, et les deux variantes sont identiques au centime.
+
+À partir de juillet 2017, la trajectoire diverge : les mois suivants rééquilibrent depuis d'autres positions. L'écart de Sharpe (+0.015) reste sous le seuil de 0.05 fixé d'avance, et le chiffre de v4.0 du tableau ci-dessus n'est pas réécrit. Ce n'est pas un verdict : la stratégie reste archivée.
+
 ## Logique (implémentée dans `main.py`)
 
 1. **Univers** : 11 ETF sectoriels — pas de coarse/fine filter actions
