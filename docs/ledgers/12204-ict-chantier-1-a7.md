@@ -1,7 +1,7 @@
 # Chantier 1 — tranche A7 : relecture froide — statuations (ops 2, 6), verdict catalogue, quatrième loi
 
 **EPIC** : [#12204](https://github.com/jsboige/CoursIA/issues/12204) · **lane** `myia-po-2023:CoursIA` · **date de mesure** 2026-10-12
-**Tranches sœurs** : [A2](12204-ict-chantier-1-a2.md) (op 1) · [A3](12204-ict-chantier-1-a3.md) (ops 3, 9) · [A4](12204-ict-chantier-1-a4.md) (op 4) · [A5](12204-ict-chantier-1-a5.md) (ops 2, 6, 10) · [A6](12204-ict-chantier-1-a6.md) (statuation 11-13 + file d'attente) · [audit froid](12204-ict-chantier-1-audit-froid.md) (les 14 opérations, trois axes)
+**Tranches sœurs** : [A2](12204-ict-chantier-1-a2.md) (op 1) · [A3](12204-ict-chantier-1-a3.md) (ops 3, 9) · [A4](12204-ict-chantier-1-a4.md) (op 4) · [A5](12204-ict-chantier-1-a5.md) (ops 2, 6, 10) · [A6](12204-ict-chantier-1-a6.md) (statuation 11-13 + file d'attente) · [audit froid](../transients/2026-08-24-12204-ict-chantier-1-audit-froid.md) (les 14 opérations, trois axes)
 
 ## Ce que cette tranche fait
 
@@ -18,7 +18,7 @@ Les deux attestations in-repo, indépendantes par le domaine :
 
 **Re-mesures firsthand de ce cycle** (une statuation ne s'appuie pas sur la mesure d'un autre sans relire — G.1) :
 
-- Search-03f : **22/22 cellules code exécutées avec sorties, 0 erreur** (lecture JSON du carnet) ; témoins présents (`8/8` concordances ×2, `12 expansions` ×7, `garantie` ×25) ;
+- Search-03f : **cellules code toutes exécutées avec sorties, 0 erreur** (lecture JSON du carnet) ; témoins présents (`8/8` concordances ×2, `12 expansions` ×7, `garantie` ×25) ;
 - **Indépendance par construction confirmée : 0 occurrence de `Sandholm`/`Kroer` dans Search-03f** (grep insensible à la casse) — le carnet ne cite pas le cadre théorique dont l'attestation jumelle est issue ; l'indépendance n'est pas une allégation de la réconciliation, elle est mesurée dans le texte de l'artefact.
 
 **Verdict : l'op 6 rejoint la TABLE.** Deux endroits du dépôt (`GameTheory/`, `Search/`), témoins mesurés, indépendance par construction. La réserve de la réconciliation (même source Sandholm) est levée par l'attestation qui ne la mentionne pas.
@@ -89,5 +89,5 @@ Les grains restants du chantier sont tous de type A5-final : des **secondes atte
 ## Références
 
 - EPIC : [#12204](https://github.com/jsboige/CoursIA/issues/12204) · claim : [issuecomment-6120275820](https://github.com/jsboige/CoursIA/issues/12204#issuecomment-6120275820)
-- Précédent de non-indépendance par le stimulus : tranche c.1308 du [ledger audit-froid](12204-ict-chantier-1-audit-froid.md) (op 3, Infer-20)
+- Précédent de non-indépendance par le stimulus : tranche c.1308 du [ledger audit-froid](../transients/2026-08-24-12204-ict-chantier-1-audit-froid.md) (op 3, Infer-20)
 - Refus de double comptage : [A6 §Op 12](12204-ict-chantier-1-a6.md)
