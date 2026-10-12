@@ -1825,7 +1825,7 @@ project:
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9-EdgeDetection.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb"
-    - "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb"
+    - "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb"
