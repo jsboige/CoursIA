@@ -213,6 +213,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/bach-self-model-pre-enregistrement.md](ict/bach-self-model-pre-enregistrement.md) | Case 8d — self-model causal vs cache descriptif (H_b), ré-attribution option (c) Bach 2009 ; dette IIT-05 #12215 DOCUMENTÉE et OUVERTE (livre non archivé en GDrive) |
 | [ict/inoculation-rl-experimental-conditions.md](ict/inoculation-rl-experimental-conditions.md) | Distillation des conditions expérimentales de l'*Inoculation Prompting* (Anthropic, arXiv 2511.18397) confrontée au protocole ICT-25 — source canonique citée et vérifiée en HTML |
 | [ict/strates-as-adjunctions-prototype.md](ict/strates-as-adjunctions-prototype.md) | Prototype **grade C** : les strates ICT comme adjonctions — conjecture du jalon 3 de #8182 (TOE ↔ conscience), explicitement non démontrée |
+| [ict/butlin-indicators-pre-enregistrement.md](ict/butlin-indicators-pre-enregistrement.md) | Case 19 — le mot « using » de RPT-1 (Butlin et al. 2023) : protocole scellé avant écriture du banc, dissociation procédurale entre inspection structurelle et sonde causale |
 
 ## Curriculum (docs/curriculum/)
 
@@ -345,6 +346,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/15615-gradation-foundations.md](ledgers/15615-gradation-foundations.md) | Ledger — Issue #15615 (gradation GameTheory, strate "Fondations") |
 | [ledgers/15615-gradation-fournee-a.md](ledgers/15615-gradation-fournee-a.md) | Ledger — Issue #15615 (gradation GameTheory, fournée A : blocs 01/04/05) |
 | [ledgers/15615-gradation-fournee-b.md](ledgers/15615-gradation-fournee-b.md) | Ledger — Issue #15615 (gradation GameTheory, fournée B : blocs 06-10) |
+| [ledgers/15615-gradation-fournee-c.md](ledgers/15615-gradation-fournee-c.md) | Ledger — Issue #15615 (gradation GameTheory, fournée C : blocs 11-15) |
 | [ledgers/16473-consolidation-acceptance-2-log.md](ledgers/16473-consolidation-acceptance-2-log.md) | EPIC #16473 acceptance 2 — suivi des rattachements nominatifs des sous-grains des axes A-F, par lot livré (snapshots de compteur réconciliés dans le document) |
 | [ledgers/17375-md-content-loss-justified.md](ledgers/17375-md-content-loss-justified.md) | Ledger #17375 -- md-content-loss justification |
 | [ledgers/18493-counter-scan-classification.md](ledgers/18493-counter-scan-classification.md) | Issue #18493 — Scan des compteurs littéraux dans commentaires code |
