@@ -158,6 +158,10 @@ class FrameworkCompositeEMATrend(QCAlgorithm):
     def on_data(self, data):
         if self.is_warming_up:
             return
+        if not any(data.bars.contains_key(sym) for sym in self.symbols.values()):
+            # Midnight dividend/distribution slices carry no bars (#20264):
+            # consuming the month guard here would rebalance on stale prices.
+            return
         if self.mode in REFERENCE_WEIGHTS and self.time.month != self._ref_month:
             # Held reference, rebalanced on the first daily bar of each month.
             self._ref_month = self.time.month

@@ -119,6 +119,35 @@ def test_conventions_differ_when_the_fx_moves(harness):
     assert u["net_returns"] != pytest.approx(f["net_returns"])
 
 
+def test_usd_account_does_not_see_the_fx(harness):
+    # convention U: the weights come from the USD closes, and a USD account earns USD
+    # returns, so two FX paths (without bad prints) give the same series (#20365)
+    closes, fx = _market()
+    other = pd.Series(1.15, index=fx.index)
+    a = siv.replay(closes, fx, "2026-03-02", "2026-12-01", "U", 0.025, harness, account="USD")
+    b = siv.replay(closes, other, "2026-03-02", "2026-12-01", "U", 0.025, harness, account="USD")
+    assert a["dates"] == b["dates"]
+    assert a["net_returns"] == pytest.approx(b["net_returns"], rel=1e-12, abs=1e-15)
+    assert a["turnover"] == pytest.approx(b["turnover"], rel=1e-12, abs=1e-15)
+
+
+def test_usd_account_holds_the_same_weights_as_the_euro_one(harness):
+    closes, fx = _market()
+    e = siv.replay(closes, fx, "2026-03-02", "2026-12-01", "U", 0.025, harness)
+    u = siv.replay(closes, fx, "2026-03-02", "2026-12-01", "U", 0.025, harness, account="USD")
+    assert e["dates"] == u["dates"]
+    # same opening allocation and fee; only the returns earned afterwards differ
+    assert u["turnover"][0] == pytest.approx(e["turnover"][0])
+    assert u["net_returns"][0] == pytest.approx(e["net_returns"][0])
+    assert u["net_returns"] != pytest.approx(e["net_returns"])
+
+
+def test_unknown_account_raises(harness):
+    closes, fx = _market()
+    with pytest.raises(ValueError, match="account"):
+        siv.replay(closes, fx, "2026-06-03", "2026-09-01", "U", 0.025, harness, account="GBP")
+
+
 def test_not_enough_history_raises(harness):
     closes, fx = _market(start="2026-06-01")
     with pytest.raises(ValueError, match="closes up to"):
