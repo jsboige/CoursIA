@@ -58,8 +58,10 @@ def test_budget_matches_house_pass17(bench):
 
 def test_rung_statement_is_round_trip(bench):
     assert bench.RUNG_NAME == "CALIBRATION_CONWAY_LAS_ROUND_TRIP"
+    # Identifiants qualifies : le REPL Pantograph ne charge pas le namespace
+    # Conway (mesure du 2026-10-12, "Unknown identifier digitsToNat").
     assert bench.RUNG_STATEMENT == (
-        "forall (n : Nat), digitsToNat (natToDigits n) = n"
+        "forall (n : Nat), Conway.digitsToNat (Conway.natToDigits n) = n"
     )
 
 

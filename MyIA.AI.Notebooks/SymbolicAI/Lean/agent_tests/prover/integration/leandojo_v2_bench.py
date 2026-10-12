@@ -64,7 +64,13 @@ HOUSE_MODEL = "anthropic/claude-opus-4.7"
 # Budget aligne sur la passe 17 maison : 1 800 s de raisonnement.
 HOUSE_REASONING_BUDGET_S = 1800.0
 
-RUNG_STATEMENT = "forall (n : Nat), digitsToNat (natToDigits n) = n"
+# Identifiants pleinement qualifies : le REPL de Pantograph charge le module
+# mais pas le namespace -- `digitsToNat` nu leve `Unknown identifier`
+# (mesure du 2026-10-12). Le forall ne met pas `n` dans le contexte local :
+# le premier pas du mode pas-a-pas est `intro n`.
+RUNG_STATEMENT = (
+    "forall (n : Nat), Conway.digitsToNat (Conway.natToDigits n) = n"
+)
 RUNG_NAME = "CALIBRATION_CONWAY_LAS_ROUND_TRIP"
 
 
@@ -233,6 +239,9 @@ async def bench_step_by_step(
 
     t0 = time.monotonic()
     state = await server.goal_start_async(RUNG_STATEMENT)
+    # Pas mecanique deterministe (pas un appel LLM) : le forall ne met pas
+    # `n` dans le contexte local -- `intro n` avant la boucle generate.
+    state = await server.goal_tactic_async(state, "intro n")
     result.tactics_tried.append(f"<initial: {str(state)[:80]}>")
 
     while True:
@@ -284,8 +293,8 @@ async def bench_whole_proof(
 
     t0 = time.monotonic()
     theorem = (
-        f"theorem digitsToNat_natToDigits_bench (n : Nat) : "
-        f"digitsToNat (natToDigits n) = n := by\n"
+        "theorem digitsToNat_natToDigits_bench (n : Nat) : "
+        "Conway.digitsToNat (Conway.natToDigits n) = n := by\n"
     )
     proof = gen.generate_whole_proof(theorem)
     result.llm_calls = gen.calls
