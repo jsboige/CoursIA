@@ -1202,12 +1202,12 @@ This use case illustrates several advanced Semantic Kernel concepts:
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,7a16c5fb,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,24f0e13f,markdown,fr,b1f5bd83b925e4a6,"# Générateur de Recettes PDF
-## Introduction - receipe maker
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,24f0e13f,markdown,fr,51d902e944fe5d18,"# Générateur de Recettes PDF
+## Introduction - recipe maker
 
 **Navigation** : [Index](../README.md)
 
-Ce notebook couvre les concepts et techniques principaux de receipe maker. Les objectifs pedagogiques incluent la comprehension des fondamentaux, la mise en pratique via des exercices, et analyse de résultats.
+Ce notebook couvre les concepts et techniques principaux de recipe maker. Les objectifs pedagogiques incluent la comprehension des fondamentaux, la mise en pratique via des exercices, et analyse de résultats.
 
 **Prerequis** : notions de base en Python et en algorithmique.
 ","# PDF Recipe Generator
@@ -1217,7 +1217,7 @@ Ce notebook couvre les concepts et techniques principaux de receipe maker. Les o
 
 This notebook covers the main concepts and techniques of receipe maker. The educational objectives include understanding the fundamentals, hands-on practice through exercises, and analysis of results.
 
-**Prerequisites**: basic knowledge of Python and algorithms.",,,,,,,b1f5bd83b925e4a6,7cb8a3487c589e05,,,,,,,
+**Prerequisites**: basic knowledge of Python and algorithms.",,,,,,,51d902e944fe5d18,7cb8a3487c589e05,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,75e5f73c,markdown,fr,16d73e913af0445e,"
 Ce notebook orchestre une collaboration multi-agents pour :
 1. Collecter des contraintes utilisateur
@@ -1240,10 +1240,10 @@ Ce notebook orchestre une collaboration multi-agents pour :
 - `PDFGenerator` → Generates the final document
 
 ---",,,,,,,16d73e913af0445e,4c86de0038c622f6,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,348b305b,markdown,fr,40dc4809315fd66b,"### Installation des bibliothèques
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,348b305b,markdown,fr,d2d5c1388f395a4c,"### Bibliothèques et garde-fous d'import
 
-**Pourquoi ce notebook s'appuie sur Semantic Kernel et non sur un simple appel d'API** : générer une recette structurée (titre, ingrédients listés, étapes numérotées, respect des contraintes diététiques) en une seule requête LLM produit un résultat au format libre et souvent incohérent. Semantic Kernel orchestre **plusieurs agents spécialisés** (collecteur de critères, générateur de recette, validateur de contraintes) qui se passent un état partagé — c'est l'architecture *multi-agent* qui garantit que la recette finale respecte toutes les contraintes (végétarien, sans champignons, 6 convives). Les *import guards* de la cellule suivante rendent chaque dépendance optionnelle explicite : le notebook fonctionne en mode dégradé sans crasher si une librairie manque, ce qui est la robustesse attendue d'un cas d'étude exécutable sur des environnements hétérogènes.",### Installing libraries,,,,,,,40dc4809315fd66b,37ae75552eece061,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,139e9aae,code,fr,1ef759b02fa5ca5c,"# Import guards - availability flags for external dependencies
+**Pourquoi ce notebook s'appuie sur Semantic Kernel et non sur un simple appel d'API** : générer une recette structurée (titre, ingrédients listés, étapes numérotées, respect des contraintes diététiques) en une seule requête LLM produit un résultat au format libre et souvent incohérent. Semantic Kernel orchestre **plusieurs agents spécialisés** (collecteur de critères, générateur de recette, producteur du PDF) qui se passent un état partagé — c'est l'architecture *multi-agent* qui garantit que la recette finale respecte toutes les contraintes (végétarien, sans champignons, 6 convives). Les *import guards* de la cellule suivante rendent explicites les deux dépendances optionnelles (`dotenv`, `semantic_kernel`) : si l'une manque, le notebook l'imprime et poursuit en mode dégradé. Les autres dépendances (`reportlab`, `openai`, `pypdf`) s'importent sans garde : elles sont requises pour la partie génération, et leur absence se lira sur l'`ImportError` de leur cellule.",### Installing libraries,,,,,,,d2d5c1388f395a4c,37ae75552eece061,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,139e9aae,code,fr,98e8009ebbbf579d,"# Import guards - availability flags for external dependencies
 
 try:
     from dotenv import load_dotenv
@@ -1258,13 +1258,11 @@ try:
 except ImportError:
     SEMANTIC_KERNEL_AVAILABLE = False
     print(f'  semantic_kernel non disponible - certaines fonctionnalites seront limitees')
+",,,,,,,,98e8009ebbbf579d,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,02378d10,markdown,fr,9708bac105b90cfd,"## État Global & Configuration
 
-# Cell 1 - Installation
-",,,,,,,,1ef759b02fa5ca5c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,02378d10,markdown,fr,1a95c48f238e0bec,"## État Global & Configuration
-
-**Pourquoi un état global partagé est indispensable en multi-agent** : chaque agent (collecteur, générateur, validateur) traite une **partie** du problème mais doit voir l'**ensemble** des contraintes. La classe `RecipeState` est cet état partagé — elle porte le régime alimentaire, les ingrédients exclus, le nombre de convives, et la recette en cours de construction. Sans état global, chaque agent devrait re-passer toutes les contraintes dans son prompt (redondant, coûteux en tokens, source d'oublis) ; avec état global, un agent lit `state.regime` et agit en conséquence. C'est le pattern *blackboard* de l'IA classique modernisé : les agents ne communiquent pas directement entre eux, ils communiquent **à travers l'état** — ce qui découple les agents et permet d'en ajouter (un agent nutritionniste) sans modifier les autres.",## Global State & Configuration,,,,,,,1a95c48f238e0bec,682f14eb4ae2a158,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,bc1a675a,code,fr,0e94d64476bc179f,"class RecipeState:
+**Pourquoi un état global partagé est indispensable en multi-agent** : chaque agent (collecteur, générateur, producteur du PDF) traite une **partie** du problème mais doit voir l'**ensemble** des contraintes. La classe `RecipeState` est cet état partagé — elle porte le régime alimentaire, les ingrédients exclus, le nombre de convives, et la recette en cours de construction. Sans état global, chaque agent devrait re-passer toutes les contraintes dans son prompt (redondant, coûteux en tokens, source d'oublis) ; avec état global, un agent lit `state.diet` et agit en conséquence. C'est le pattern *blackboard* de l'IA classique modernisé : les agents ne communiquent pas directement entre eux, ils communiquent **à travers l'état** — ce qui découple les agents et permet d'en ajouter (un agent nutritionniste) sans modifier les autres.",## Global State & Configuration,,,,,,,9708bac105b90cfd,682f14eb4ae2a158,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,bc1a675a,code,fr,d1237ca87b413567,"class RecipeState:
     def __init__(self):
         self.diet: str = """"
         self.excluded_ingredients: list[str] = []
@@ -1276,8 +1274,7 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,bc1a675a,co
         self.pdf_path: str = """"
 
 print(""Classe RecipeState définie"")
-print(""Classe RecipeState definie"")
-",,,,,,,,0e94d64476bc179f,,,,,,,,
+",,,,,,,,d1237ca87b413567,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,9227aa4c,markdown,fr,e3057c4d9e6e52a7,"### Exercice 1 : Enrichir l'etat partage avec des préférences culinaires
 
 La classe `RecipeState` stocke le regime, les ingredients exclus et le nombre de convives. L'objectif est de l'enrichir avec de nouveaux champs : **niveau de difficulte** (debutant, intermediaire, expert), **temps de preparation maximum**, et **cuisine preferee** (francaise, italienne, asiatique, etc.).
@@ -1319,9 +1316,9 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,26b00761,co
         return result  # TODO etudiant : retourner confirmation
 
 print(""Exercice a completer : ExtendedRecipeState"")",,,,,,,,147a59853e1b4967,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,d0827941,markdown,fr,607d10e5f8e10a65,"### Plugins d'agents et fonctions de modification d'état
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,d0827941,markdown,fr,cbee62c69c0fb640,"### Plugins d'agents et fonctions de modification d'état
 
-**Pourquoi les agents modifient l'état via des fonctions (plugins) plutôt qu'en générant du texte libre** : si un agent écrivait « régime = végétarien » en prose, les autres agents devraient *parser* cette phrase pour extraire la contrainte — fragile et error-prone. Les plugins exposent des **fonctions typées** (`set_regime`, `add_excluded_ingredient`, `set_convives`) que le kernel appelle de manière structurée : la contrainte atterrit directement dans le bon champ de `RecipeState`, sans ambiguïté de parsing. C'est l'écart entre un agent qui *décrit* une action (« je note que l'utilisateur est végétarien ») et un agent qui *exécute* une action (`state.regime = vegetarien`) — le second est reproductible et vérifiable, le premier dépend de l'interprétation du lecteur.",### Agent plugins and state modification functions,,,,,,,607d10e5f8e10a65,78241911f1e94dce,,,,,,,
+**Pourquoi les agents modifient l'état via des fonctions (plugins) plutôt qu'en générant du texte libre** : si un agent écrivait « régime = végétarien » en prose, les autres agents devraient *parser* cette phrase pour extraire la contrainte — fragile et error-prone. Les plugins exposent des **fonctions typées** (`set_diet`, `exclude_ingredient`, `set_guests`) que le kernel appelle de manière structurée : la contrainte atterrit directement dans le bon champ de `RecipeState`, sans ambiguïté de parsing. C'est l'écart entre un agent qui *décrit* une action (« je note que l'utilisateur est végétarien ») et un agent qui *exécute* une action (`state.diet = vegetarien`) — le second est reproductible et vérifiable, le premier dépend de l'interprétation du lecteur.",### Agent plugins and state modification functions,,,,,,,cbee62c69c0fb640,78241911f1e94dce,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,fa663c16,code,fr,82543881b601fc73,"import textwrap
 from semantic_kernel.functions import kernel_function
 from reportlab.pdfgen import canvas
@@ -1452,9 +1449,9 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,2772b5c3,co
         return result  # TODO etudiant : retourner la description nutritionnelle
 
 print(""Exercice a completer : NutritionPlugin"")",,,,,,,,5d667c20e03d1d49,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,50c033b4,markdown,fr,30d10b129e562990,"### Création des agents
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,50c033b4,markdown,fr,38b199ea1ca7d7d6,"### Création des agents
 
-**Pourquoi distinguer plusieurs agents plutôt qu'un seul prompt « génère une recette »** : un agent unique devrait gérer simultanément la **collecte** des critères, la **génération** de la recette, et la **validation** des contraintes — trois rôles cognitivement différents, chacun avec son propre prompt et son système de raisonnement. La séparation en agents spécialisés (un collecteur empathique qui pose les bonnes questions, un générateur créatif qui propose, un validateur strict qui vérifie) suit le principe de **responsabilité unique** appliqué au LLM : chaque agent a un rôle clair, un prompt ciblé, et un critère de réussite mesurable. C'est aussi ce qui rend le système debuggable — si une recette ne respecte pas une contrainte, on sait quel agent a fauté.",### Creating agents,,,,,,,30d10b129e562990,87ae1b10d70e08a9,,,,,,,
+**Pourquoi distinguer plusieurs agents plutôt qu'un seul prompt « génère une recette »** : un agent unique devrait gérer simultanément la **collecte** des critères, la **génération** de la recette, et la **production** du livrable PDF — trois rôles cognitivement différents, chacun avec son propre prompt et son système de raisonnement. La séparation en agents spécialisés (un collecteur empathique qui pose les bonnes questions, un générateur créatif qui propose, un producteur du PDF qui finalise le livrable) suit le principe de **responsabilité unique** appliqué au LLM : chaque agent a un rôle clair, un prompt ciblé, et un critère de réussite mesurable. C'est aussi ce qui rend le système debuggable — si une recette ne respecte pas une contrainte, on sait interroger le prompt et les fonctions de l'agent concerné (ici, le générateur).",### Creating agents,,,,,,,38b199ea1ca7d7d6,87ae1b10d70e08a9,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,f6e42299,code,fr,f313112351482375,"import os
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
@@ -1538,9 +1535,9 @@ pdf_agent = ChatCompletionAgent(
 
 print(""Imports et configuration OK"")
 ",,,,,,,,f313112351482375,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,da55fb35,markdown,fr,9792301bf2e20842,"### création de la conversation avec critères de terminaison et/ou de sélection
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,da55fb35,markdown,fr,1db50c69fdcd34c0,"### Création de la conversation avec critères de terminaison et/ou de sélection
 
-**Pourquoi la conversation a besoin de critères de terminaison explicites** : sans règle d'arrêt, les agents pourraient boucler indéfiniment (le validateur demande une amélioration, le générateur propose, le validateur demande encore…). Les critères de terminaison définissent **quand la conversation s'arrête** — typiquement quand le validateur confirme que toutes les contraintes sont satisfaites, ou après un nombre maximal d'échanges. Les critères de sélection, eux, définissent **quel agent parle ensuite** (après le collecteur → le générateur ; après le générateur → le validateur). Ces deux mécanismes transforment un flot potentiellement chaotique d'échanges LLM en un **protocole ordonné** avec un début, un milieu et une fin garantis.",### creating the conversation with termination and/or selection criteria,,,,,,,9792301bf2e20842,06574cd66127188d,,,,,,,
+**Pourquoi la conversation a besoin de critères de terminaison explicites** : sans règle d'arrêt, les agents pourraient boucler indéfiniment (un agent redemande une précision, l’autre répond, le premier redemande encore…). Les critères de terminaison définissent **quand la conversation s'arrête** — ici : dès que le livrable PDF est produit (la stratégie interroge l'état partagé), ou après un nombre maximal d'échanges. Les critères de sélection, eux, définissent **quel agent parle ensuite** — ce notebook n'en définit pas : la sélection par défaut donne la parole aux agents à tour de rôle, dans l'ordre de la liste, ce que la conversation exécutée montre (`InputCollector` puis `RecipeGenerator` puis `PDFGenerator`). Ces deux mécanismes transforment un flot potentiellement chaotique d'échanges LLM en un **protocole ordonné** avec un début, un milieu et une fin garantis.",### creating the conversation with termination and/or selection criteria,,,,,,,1db50c69fdcd34c0,06574cd66127188d,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,a81079d4,code,fr,d04e20e472851961,"from semantic_kernel.agents import AgentGroupChat
 from pydantic import PrivateAttr
 
@@ -1567,9 +1564,9 @@ group_chat = AgentGroupChat(
 
 print(""Imports agents OK"")
 ",,,,,,,,d04e20e472851961,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,0ec46974,markdown,fr,a92ebda8216dd064,"### Boucle principale
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,0ec46974,markdown,fr,db9a93cc3809a3e7,"### Boucle principale
 
-**Pourquoi la boucle principale orchestre plutôt que d'exécuter séquentiellement** : les agents ne s'enchaînent pas dans un ordre fixe (collecteur puis générateur puis validateur, toujours) — la boucle permet au validateur de **redemander** au générateur si une contrainte n'est pas respectée, créant un cycle de raffinement. C'est la différence entre un *pipeline* (une seule passe, pas de retour) et une *conversation* (itérative, avec feedback). La boucle principale est le chef d'orchestre : elle lit l'état, décide du prochain agent selon les critères de sélection, exécute l'agent, vérifie les critères de terminaison, et recommence jusqu'à convergence. C'est ce qui permet au système de **corriger** ses propres erreurs au lieu de les propager.",### Main loop,,,,,,,a92ebda8216dd064,b78f6c6bcb9776e6,,,,,,,
+**Pourquoi la boucle principale orchestre plutôt que d'exécuter séquentiellement** : la boucle ne s'arrête pas après un tour par agent — tant que le livrable n'est pas produit (et jusqu'au maximum d'itérations), la conversation reprend : un agent peut reprendre la main au tour suivant pour compléter ce qui manque. C'est la différence entre un *pipeline* (une seule passe, pas de retour) et une *conversation* (itérative, avec feedback). La boucle principale est le chef d'orchestre : elle lit l'état, donne la parole à l'agent suivant (sélection par défaut : tour de rôle), exécute l'agent, vérifie les critères de terminaison, et recommence jusqu'à convergence. C'est ce qui permet au système de **corriger** ses propres erreurs au lieu de les propager.",### Main loop,,,,,,,db9a93cc3809a3e7,b78f6c6bcb9776e6,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,d34da44f,code,fr,67d733bc3b89be48,"# Fallback: s'assurer que group_chat est défini
 try:
     group_chat
@@ -1665,18 +1662,7 @@ if shared_state.pdf_path and os.path.exists(shared_state.pdf_path):
     print(f""PDF présent sur le disque : {shared_state.pdf_path} ({taille} octets)"")
 else:
     print(""Aucun PDF produit : ni par l'agent, ni par le filet de sécurité."")",,,,,,,,82390aead8a159ba,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,345efbaf,code,fr,e364180594525fb6,"# Tell c.adjoint-c24 : la cellule 26 lit Maintenant le contenu reel du PDF (extraction pypdf)
-# Tell c.adjoint-c25 : assertion stricte -- TOUS les ingredients et TOUTES les etapes
-# doivent etre retrouves dans le PDF, pas seulement 1.
-# Tell c.adjoint-c26 : V8 -- la logique V4 etait laxiste (split("","")[0] et s[:30]
-# laissaient passer un PDF dont la moitie de la recette etait absente). Le temoin
-# de l'adjoint : ingredients=['riz, 500 g', 'oignon, 2 pieces'] + steps=['Cuire le
-# riz puis ajouter les oignons pendant vingt minutes.'] + pdf='vegetarien riz oignon
-# Cuire le riz puis ajouter les ' -> V4 disait OK alors que 'oignon, 2 pieces' et
-# 'les oignons pendant vingt minutes' etaient absents. V8 normalise espaces/retours
-# ligne/casse, exige (a) la chaine complete OU (b) ingredient+quantite separes
-# presents, (c) overlap mots >= 0.4 ET 2 derniers mots de l'etape presents dans le PDF.
-import pypdf
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,345efbaf,code,fr,9dfa12f05c2f5bc7,"import pypdf
 import re
 
 pdf_path = shared_state.pdf_path
@@ -1759,7 +1745,7 @@ if missing:
         + "" / "".join(missing)
     )
 print(""OK : PDF exporte la recette complete (regime + tous ingredients + toutes etapes)."")
-",,,,,,,,e364180594525fb6,,,,,,,,
+",,,,,,,,9dfa12f05c2f5bc7,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,644bdc70,markdown,fr,0935ba5b54f06f58,"## Conclusion
 
 Ce notebook a mis en oeuvre une collaboration multi-agents pour generer une recette personnalisee et produire un PDF.
@@ -1930,3 +1916,9 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,49c585d3,ma
 ",,,,,,,,6e1e0d698887ab32,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,1d1b334b,markdown,fr,29aaa283cadb33f8,"Le fichier PDF **recette_generee.pdf** est confirmé présent sur le disque avec un poids de quelques kilo-octets (la taille varie avec la recette générée), validant que la génération a produit un fichier exploitable.
 ",,,,,,,,29aaa283cadb33f8,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,63290f8e,code,fr,d7a1ea74a47bcb51,"# Parameters
+BATCH_MODE = True
+",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,ceeeb248,code,fr,d7a1ea74a47bcb51,"# Parameters
+BATCH_MODE = True
+",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
