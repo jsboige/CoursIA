@@ -509,7 +509,12 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,48b0b79
 Le **Kernel** est le cœur de Semantic Kernel : un conteneur d'injection de dépendances qui regroupe les services d'IA et les fonctions (plugins) qu'un agent peut invoquer. Avant de créer un agent, il faut donc lui brancher un service de complétion de chat — ici `OpenAIChatCompletion`, paramétré par le modèle et la clé API lus depuis l'environnement (jamais codés en dur, cf. règle secrets-hygiene).
 
 Cette cellule fixe aussi `MOT_A_DEVINER`, le mot secret que le Père Fouras fera deviner à Laurent Jalabert tout au long de la partie.
-",## Agent configuration,,,,,## Конфигурация агентов,,eaafd847b50fbf9f,aee146d02afdc881,,,,,ad386dd3873b49b3,,
+","## Agent configuration
+
+The **Kernel** is the heart of Semantic Kernel: a dependency-injection container that gathers the AI services and the functions (plugins) an agent can invoke. Before creating an agent, a chat-completion service must therefore be wired to it — here `OpenAIChatCompletion`, parameterized by the model and the API key read from the environment (never hard-coded, cf. the secrets-hygiene rule).
+
+This cell also sets `MOT_A_DEVINER`, the secret word that Père Fouras will make Laurent Jalabert guess throughout the game.
+",,,,,## Конфигурация агентов,,eaafd847b50fbf9f,1579cb5e3d8cf6a6,,,,,ad386dd3873b49b3,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,85411416,code,fr,f831efcb9bbeae84,"# Bloc 2 - Création du kernel
 MOT_A_DEVINER = ""anticonstitutionnellement""
 
@@ -554,7 +559,12 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,f0496c5
 Chaque agent conversationnel est piloté par un **prompt système** (ses *instructions*) qui définit son rôle, sa personnalité et les règles qu'il doit respecter. Ces instructions conditionnent tout le comportement de l'agent au fil du dialogue : un même Kernel peut produire deux interlocuteurs radicalement différents selon le prompt qu'on lui donne.
 
 Ici, le prompt du Père Fouras injecte le mot secret via une f-string (`{MOT_A_DEVINER}`) et lui interdit de le révéler directement : il doit guider par des charades. Celui de Laurent Jalabert le contraint à poser des **questions fermées** (Oui/Non), ce qui transforme la devinette en un problème de réduction d'incertitude tour par tour.
-",## Definition of prompts,,,,,## Определение промптов,,d11675550b6a8613,8252f726aa184d8f,,,,,0d4ea0d0b716dd96,,
+","## Definition of prompts
+
+Each conversational agent is driven by a **system prompt** (its *instructions*) that defines its role, its personality and the rules it must follow. These instructions shape the whole behaviour of the agent over the dialogue: the same Kernel can produce two radically different interlocutors depending on the prompt it is given.
+
+Here, Père Fouras's prompt injects the secret word through an f-string (`{MOT_A_DEVINER}`) and forbids him to reveal it directly: he must guide with charades. Laurent Jalabert's prompt forces him to ask **closed questions** (Yes/No), which turns the guessing game into a problem of reducing uncertainty turn by turn.
+",,,,,## Определение промптов,,d11675550b6a8613,55bb5324dc7336b3,,,,,0d4ea0d0b716dd96,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,9bedfe8b,code,fr,7f877f1f31e39469,"# Bloc 3 - Prompts des agents
 PERE_FOURAS_PROMPT = f""""""
 Tu es le Père Fouras de Fort Boyard. 
@@ -594,9 +604,10 @@ The current prompts define Père Fouras as enigmatic and Laurent Jalabert as per
 **Objective**: write the system instructions for these two new characters and configure the corresponding agents.
 
 **Hints**:
-- # Step 1: Write the Witness prompt (role, rules, prohibitions)
-- # Step 2: Write the Detective prompt (questioning strategy)
-- # Hint: the Witness must never reveal the word directly, but may give indirect clues",,,,,"### Упражнение 1: Настроить персонажей дуэли
+- `# Step 1`: Write the Witness prompt (role, rules, prohibitions)
+- `# Step 2`: Write the Detective prompt (questioning strategy)
+- `# Hint`: the Witness must never reveal the word directly, but may give indirect clues
+",,,,,"### Упражнение 1: Настроить персонажей дуэли
 
 Текущие промпты определяют Отца Фура как загадочного, а Лорана Жалабера — как проницательного. Цель — создать вариант игры с двумя другими персонажами: **Детективом** (который задаёт дедуктивные вопросы) и **Свидетелем** (который отвечает уклончиво, не раскрывая слово).
 
@@ -605,7 +616,7 @@ The current prompts define Père Fouras as enigmatic and Laurent Jalabert as per
 **Подсказки**:
 - # Шаг 1: Написать промпт Свидетеля (роль, правила, запреты)
 - # Шаг 2: Написать промпт Детектива (стратегия задавания вопросов)
-- # Подсказка: Свидетель никогда не должен раскрывать слово напрямую, но может давать косвенные намёки",,f85a9ba7239d19b5,702065354fbe0277,,,,,3295a1f8a4a7068b,,
+- # Подсказка: Свидетель никогда не должен раскрывать слово напрямую, но может давать косвенные намёки",,f85a9ba7239d19b5,862ca468490efd24,,,,,3295a1f8a4a7068b,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ac94f4f0,code,fr,fb5c1ca4effe98b3,"# Exercice 1 : Personnaliser les personnages du duel
 # TODO etudiant : definir les prompts et creer les agents
 
@@ -622,7 +633,12 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,6a8dbe2
 Un `ChatCompletionAgent` concrétise l'association entre un Kernel (le moteur), un `name` (son identité dans le dialogue) et des `instructions` (son prompt système). Une fois instanciés, les deux agents peuvent produire des messages, mais ils ne savent pas encore *quand* parler ni *quand* s'arrêter — c'est le groupe de discussion qui le décidera (voir plus bas).
 
 Notez que chaque agent reçoit son propre Kernel via `create_kernel()` : ils partagent le même service OpenAI mais restent des entités indépendantes, ce qui laisse la porte ouverte à les brancher plus tard sur des modèles ou des plugins différents.
-",## Creating agents with custom strategies,,,,,## Создание агентов с пользовательскими стратегиями,,8dce0df794c9d197,3df7b0d53f835e5f,,,,,e871958e3a650083,,
+","## Creating agents with custom strategies
+
+A `ChatCompletionAgent` embodies the association between a Kernel (the engine), a `name` (its identity in the dialogue) and `instructions` (its system prompt). Once instantiated, the two agents can produce messages, but they do not yet know *when* to speak or *when* to stop — the discussion group will decide that (see below).
+
+Note that each agent receives its own Kernel through `create_kernel()`: they share the same OpenAI service but remain independent entities, which leaves the door open to wiring them later to different models or plugins.
+",,,,,## Создание агентов с пользовательскими стратегиями,,8dce0df794c9d197,7efc76cd9d75d075,,,,,e871958e3a650083,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,83e35526,code,fr,1884ec56d5922898,"# Bloc 4 - Définition des agents
 pere_fouras = ChatCompletionAgent(
     kernel=create_kernel(),
@@ -649,7 +665,12 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,4a00c81
 Dans un dialogue multi-agent, il faut décider **quand s'arrêter**. Semantic Kernel délègue cette décision à une `TerminationStrategy` : après chaque tour, la méthode asynchrone `should_agent_terminate` est invoquée et renvoie un booléen qui détermine si la boucle se clôt.
 
 Notre stratégie métier est simple : la partie se termine dès que le mot secret apparaît dans le dernier message — c'est-à-dire quand Laurent Jalabert a deviné correctement. On ne teste la terminaison que sur l'agent concerné (le devineur), pas sur le Père Fouras qui n'a pas vocation à révéler la solution.
-",## Custom termination strategy,,,,,## Пользовательская стратегия завершения,,02b7ed50c96b72d7,70592e9073db4b12,,,,,c5fec7e663057808,,
+","## Custom termination strategy
+
+In a multi-agent dialogue, one must decide **when to stop**. Semantic Kernel delegates that decision to a `TerminationStrategy`: after each turn, the asynchronous method `should_agent_terminate` is invoked and returns a boolean determining whether the loop closes.
+
+Our business strategy is simple: the game ends as soon as the secret word appears in the last message — that is, when Laurent Jalabert has guessed correctly. Termination is only tested on the agent concerned (the guesser), not on Père Fouras, whose role is not to reveal the solution.
+",,,,,## Пользовательская стратегия завершения,,02b7ed50c96b72d7,2abd2d4b7add84c4,,,,,c5fec7e663057808,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,a86ac80f,code,fr,c41a211f227072d5,"from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
 from semantic_kernel.contents.chat_message_content import ChatMessageContent
 
@@ -685,9 +706,10 @@ The current strategy stops the game only if the word is guessed. But Laurent Jal
 **Objective**: implement `RenoncementTerminationStrategy` which combines detection of the secret word with detection of giving-up phrases.
 
 **Hints**:
-- # Step 1: Define a list of typical giving-up phrases
-- # Step 2: Check whether the last message contains one of these phrases (in lowercase)
-- # Hint: combine the two conditions with `or` in `should_agent_terminate`",,,,,"### Упражнение 2 : Завершение с обнаружением отказа
+- `# Step 1`: Define a list of typical giving-up phrases
+- `# Step 2`: Check whether the last message contains one of these phrases (in lowercase)
+- `# Hint`: combine the two conditions with `or` in `should_agent_terminate`
+",,,,,"### Упражнение 2 : Завершение с обнаружением отказа
 
 Текущая стратегия останавливает игру только если слово угадано. Но Лоран Жалабер также может сдаться. Цель — создать гибридную стратегию, которая останавливает игру, если слово угадано **или** если Лоран выражает отказ (""je donne ma langue au chat"", ""j'abandonne"").
 
@@ -696,7 +718,7 @@ The current strategy stops the game only if the word is guessed. But Laurent Jal
 **Подсказки** :
 - # Шаг 1 : Определить список типичных фраз отказа
 - # Шаг 2 : Проверить, содержит ли последнее сообщение одну из этих фраз (в нижнем регистре)
-- # Подсказка : объединить два условия с помощью `or` в `should_agent_terminate`",,5636696f2d83887e,e3514d8d5c1a8cd7,,,,,95bd36831fc14824,,
+- # Подсказка : объединить два условия с помощью `or` в `should_agent_terminate`",,5636696f2d83887e,157448c151147789,,,,,95bd36831fc14824,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,0e96e11d,code,fr,9a91cbf579858a4b,"from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
 from semantic_kernel.contents.chat_message_content import ChatMessageContent
 
@@ -715,7 +737,12 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,c61e7f5
 `AgentGroupChat` est l'orchestrateur multi-agent : il fait tourner les agents à tour de rôle selon une **stratégie de sélection** (quel agent parle ensuite) et s'arrête selon une **stratégie de terminaison** (quand arrêter). Par défaut, la sélection alterne simplement les agents dans l'ordre de la liste.
 
 On lui passe ici les deux agents et notre `FortBoyardTerminationStrategy`, bornée à `maximum_iterations=20` : c'est le filet de sécurité qui empêche une partie de boucler indéfiniment si le mot n'est jamais trouvé. La stratégie de terminaison ne s'applique qu'à `laurent_jalabert` — c'est lui le devineur, c'est donc son tour qui peut clore la partie.
-",## Discussion group configuration,,,,,## Настройка дискуссионной группы,,9270af3e7f1c1541,4ee9c831bd3ea9fd,,,,,94489997a64019af,,
+","## Discussion group configuration
+
+`AgentGroupChat` is the multi-agent orchestrator: it runs the agents in turn according to a **selection strategy** (which agent speaks next) and stops according to a **termination strategy** (when to stop). By default, the selection simply alternates the agents in list order.
+
+Here it is given the two agents and our `FortBoyardTerminationStrategy`, bounded by `maximum_iterations=20`: this is the safety net that prevents a game from looping indefinitely if the word is never found. The termination strategy applies only to `laurent_jalabert` — he is the guesser, so it is his turn that can close the game.
+",,,,,## Настройка дискуссионной группы,,9270af3e7f1c1541,d71f1be9bf0ed749,,,,,94489997a64019af,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,fc868e1b,code,fr,e3c965a025256976,"# Bloc 6 - Configuration corrigée
 chat = AgentGroupChat(
     agents=[pere_fouras, laurent_jalabert],
@@ -737,7 +764,12 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ada9868
 Le groupe est configuré, on peut lancer la partie. On sème le dialogue avec un **message utilisateur initial** (`add_chat_message`) — sinon les agents n'ont rien à quoi réagir — puis on itère asynchronement sur `chat.invoke()`, qui produit chaque message tour à tour.
 
 L'itération s'arrêtera automatiquement soit quand Laurent aura trouvé le mot (terminaison métier), soit au bout de 20 itérations (garde-fou). `await` est obligatoire car les appels au LLM sont asynchrones : chaque tour effectue une véritable requête HTTP vers l'API OpenAI, dont on voit la latence dans les logs (plusieurs secondes par réponse).
-",## Starting the game!,,,,,## Запуск части!,,9894be02bbc84b15,a8c508175a334806,,,,,43600140a62ebbb9,,
+","## Starting the game!
+
+The group is configured, the game can start. The dialogue is seeded with an **initial user message** (`add_chat_message`) — otherwise the agents have nothing to react to — then we iterate asynchronously over `chat.invoke()`, which yields each message in turn.
+
+The iteration stops automatically either when Laurent has found the word (business termination) or after 20 iterations (safety net). `await` is mandatory because the LLM calls are asynchronous: each turn performs a real HTTP request to the OpenAI API, whose latency is visible in the logs (several seconds per response).
+",,,,,## Запуск части!,,9894be02bbc84b15,b4f3d889e27e45ca,,,,,43600140a62ebbb9,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,bad1ce48,code,fr,62bb9d8c5d80b76b,"from semantic_kernel.contents import AuthorRole, ChatMessageContent
 
 # Bloc 7 - Exécution du jeu
@@ -788,9 +820,10 @@ Currently, the game simply stops when the word is guessed or after 20 iterations
 **Objective**: write a function `evaluer_partie` that takes the message history and returns a dictionary containing the number of questions asked, whether the word was found, and a score (fewer questions = better score).
 
 **Hints**:
-- # Step 1: Count the messages where the role is that of Laurent Jalabert
-- # Step 2: Check whether the secret word appears in the last message
-- # Hint: the score can be `max(0, 100 - nb_questions * 10)`",,,,,"### Упражнение 3 : Система подсчета очков для партии
+- `# Step 1`: Count the messages where the role is that of Laurent Jalabert
+- `# Step 2`: Check whether the secret word appears in the last message
+- `# Hint`: the score can be `max(0, 100 - nb_questions * 10)`
+",,,,,"### Упражнение 3 : Система подсчета очков для партии
 
 В настоящее время партия просто останавливается, когда слово угадано или после 20 итераций. Цель — добавить **систему подсчета очков**, которая считает количество вопросов, заданных Laurent Jalabert, и отображает итоговый счет.
 
@@ -799,7 +832,7 @@ Currently, the game simply stops when the word is guessed or after 20 iterations
 **Подсказки** :
 - # Шаг 1 : Посчитать сообщения, где роль принадлежит Laurent Jalabert
 - # Шаг 2 : Проверить, появляется ли секретное слово в последнем сообщении
-- # Подсказка : счет может быть `max(0, 100 - nb_questions * 10)`",,c31399d55a9d3ca0,c822d0052a5eb4da,,,,,f3277f163627f847,,
+- # Подсказка : счет может быть `max(0, 100 - nb_questions * 10)`",,c31399d55a9d3ca0,1ef25963c540f75d,,,,,f3277f163627f847,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,df0d3126,code,fr,c67bed915c276918,"def evaluer_partie(history_messages: list) -> dict:
     # TODO etudiant : implementer le systeme de score
     nb_questions = 0     # Etape 1 : compter les questions de Laurent
