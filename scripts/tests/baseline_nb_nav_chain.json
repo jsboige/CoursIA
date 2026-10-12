@@ -1912,6 +1912,16 @@
     },
     {
       "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12b-Lean-Sensitivity-Theorem.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12c-Tensor-Product-Representations-Lean.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
