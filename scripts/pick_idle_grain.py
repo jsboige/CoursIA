@@ -81,6 +81,10 @@ Trois urnes, parce que le pool n'est pas homogene
                   marqueurs anterieurs, et une livraison jugee partielle
                   remet l'issue sur le tapis des lanes worker -- sans quoi
                   le marqueur etait permanent et l'issue ecartee a vie.
+                  Les deux sondes de commentaire (voie ponderee et tapis)
+                  partagent cet etat ordonne ; le LABEL `candidate-delivered`
+                  ne se retracte pas, lui : il est retire par le sweep, pas
+                  revoque par un commentaire.
 
 Reprendre ses PRs AVANT de piocher (mandats user 2026-08-22 et 2026-08-24)
 --------------------------------------------------------------------------
@@ -1356,6 +1360,13 @@ def has_delivered_signal(issue_number: int,
     (`_issue_comment_bodies_rest`), qui ne partage pas le bucket tombe. Le
     tri-etat est preserve -- ``None`` seulement si les DEUX transports
     echouent.
+
+    Le marqueur est RELEVABLE, au meme titre que `_has_delivered_marker` : les
+    deux sondes de commentaire partagent `_delivered_state`, donc une ligne
+    `[NOT-DELIVERED]` / `[INFO] candidate-delivered-revoked` posterieure
+    remet l'issue sur le tapis, et un marqueur repose apres elle rearme. Le
+    chemin LABEL, lui, ne se retracte pas (`delivered_signal_reason` : un
+    label est retire par le sweep, pas revoque par un commentaire).
     """
     try:
         out = subprocess.run(
@@ -1377,17 +1388,16 @@ def has_delivered_signal(issue_number: int,
         bodies = _issue_comment_bodies_rest(issue_number)
         if bodies is None:
             return None
-        return any(_DELIVERED_MARKER_RE.search(b) for b in bodies)
-    for comment in comments:
-        # Grammaire `_DELIVERED_MARKER_RE`, pas la sous-chaine nue (#19390,
-        # controle negatif) : une mention discursive -- « sans [INFO]
-        # candidate-delivered », « [INFO] absent dans ce fil » -- porte la
-        # sous-chaine sans etre un en-tete de marqueur, et retirerait le
-        # candidat sur un faux positif. La voie ponderee et le tapis
-        # partagent cette seule grammaire.
-        if _DELIVERED_MARKER_RE.search(comment.get("body") or ""):
-            return True
-    return False
+        return _delivered_state(bodies)
+    # Grammaire `_DELIVERED_MARKER_RE`, pas la sous-chaine nue (#19390,
+    # controle negatif) : une mention discursive -- « sans [INFO]
+    # candidate-delivered », « [INFO] absent dans ce fil » -- porte la
+    # sous-chaine sans etre un en-tete de marqueur, et retirerait le
+    # candidat sur un faux positif. La voie ponderee et le tapis
+    # partagent cette seule grammaire -- et depuis la retractation, le meme
+    # parcours ordonne que `_has_delivered_marker`.
+    return _delivered_state([(c.get("body") or "") if isinstance(c, dict)
+                             else "" for c in comments])
 
 
 def delivered_probe_inert(issue_number: int, lane: str | None = None) -> bool:

@@ -1196,6 +1196,81 @@ def test_belt_does_not_withdraw_umbrella_on_marker():
     assert withheld == []
 
 
+# Retractation du marqueur, cote TAPIS : la sonde que `main` injecte dans
+# cette boucle est `has_delivered_signal`, une implementation SEPAREE de
+# `_has_delivered_marker`. Sans la symetrie, le marqueur restait permanent
+# pour le tapis : l'issue relevee par le coordinateur -- mesure du 12/10, 20
+# des 80 issues marquees livrees l'etaient partiellement -- restait ecartee a
+# chaque cycle. Ces tests injectent la sonde REELLE et stubbent son transport :
+# c'est la seule facon de prouver que c'est la BOUCLE, pas seulement la sonde,
+# qui rend l'issue au tapis.
+
+
+_DELIVERED_BODY = ("[INFO] candidate-delivered — verification first-hand du "
+                   "geste 1 sur origin/main, MERGE 6d0bd02093.")
+_REVOKED_BODY = "[NOT-DELIVERED] verification first-hand : 2 cellules sur 5."
+
+
+def _patch_issue_comments(monkeypatch, bodies_by_issue):
+    """Stub du transport `gh issue view N --json comments`, corps en ordre."""
+    def fake_run(cmd, *args, **kwargs):
+        assert cmd[:3] == ["gh", "issue", "view"], f"transport inattendu : {cmd}"
+        bodies = bodies_by_issue[int(cmd[3])]
+
+        class _R:
+            stdout = json.dumps({"comments": [{"body": b} for b in bodies]})
+
+        return _R()
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+def test_belt_serves_a_candidate_whose_marker_was_revoked(monkeypatch):
+    """Marqueur retracte par un commentaire POSTERIEUR -> le candidat est
+    SERVI, jamais ecarte en LIVRAISON."""
+    item = _make_item(19010, age_days=90, idle=8, last=None)
+    _patch_issue_comments(monkeypatch,
+                          {19010: [_DELIVERED_BODY, _REVOKED_BODY]})
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [item], _free_claims([item]), _belt_args(grains=1), probe_budget=8,
+        delivered_probe=pig.has_delivered_signal,
+        merged_pr_probe=lambda n, lane=None: False)
+    assert [p["number"] for p in picks] == [19010], (
+        "un marqueur retracte ne peut plus ecarter le candidat")
+    assert withheld == []
+    assert state["failures"] == []
+
+
+def test_belt_still_withholds_a_live_delivered_marker(monkeypatch):
+    """Controle positif de la meme boucle : SANS retractation, le marqueur
+    ecarte toujours le candidat (cause LIVRAISON)."""
+    item = _make_item(19012, age_days=90, idle=8, last=None)
+    _patch_issue_comments(monkeypatch, {19012: [_DELIVERED_BODY]})
+    picks, withheld, _ = pig.belt_pick_with_replacements(
+        [item], _free_claims([item]), _belt_args(grains=1), probe_budget=8,
+        delivered_probe=pig.has_delivered_signal,
+        merged_pr_probe=lambda n, lane=None: False)
+    assert picks == []
+    assert [w[0]["number"] for w in withheld] == [19012]
+    assert withheld[0][1].startswith("LIVRAISON")
+
+
+def test_belt_rewithholds_when_a_marker_follows_the_revocation(monkeypatch):
+    """Le sens est porte par l'ORDRE : un marqueur repose APRES la
+    retractation rearme l'ecartement."""
+    item = _make_item(19013, age_days=90, idle=8, last=None)
+    _patch_issue_comments(
+        monkeypatch,
+        {19013: [_DELIVERED_BODY, _REVOKED_BODY, _DELIVERED_BODY]})
+    picks, withheld, _ = pig.belt_pick_with_replacements(
+        [item], _free_claims([item]), _belt_args(grains=1), probe_budget=8,
+        delivered_probe=pig.has_delivered_signal,
+        merged_pr_probe=lambda n, lane=None: False)
+    assert picks == []
+    assert [w[0]["number"] for w in withheld] == [19013]
+    assert withheld[0][1].startswith("LIVRAISON")
+
+
 def test_belt_probe_budget_is_bounded_and_fail_open_when_exhausted():
     """Cout borne : le budget de sondes vaut la fenetre de tete. Au-dela,
     plus personne n'est sonde -- fail-OPEN rapporte (budget_hit), jamais
