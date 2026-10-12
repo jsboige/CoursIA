@@ -97,10 +97,25 @@ class TestBacktestAccounting(unittest.TestCase):
         self.assertRegex(func_src, r'notional\s*=\s*0\.0[0-9]', 'notional must be a small ratio (e.g. 0.05)')
 
     def test_function_debits_cash_at_entry(self):
-        self.assertIn('cash -= cost', func_src, 'cash must be debited at position entry')
+        # Le debit cash ne porte que sur la jambe longue (la short est
+        # financee par le produit de la vente) -- c'est la correction du
+        # bug mark-to-market du short : ne pas immobiliser 2x le notionnel
+        # a l'entree d'une paire (une jambe longue + une jambe short).
+        self.assertRegex(
+            func_src,
+            r'cash\s*-=\s*cash_debit',
+            'cash must be debited by cash_debit (long leg only) at position entry',
+        )
 
     def test_function_credits_notional_plus_pnl_at_exit(self):
         self.assertRegex(func_src, r'cash\s*\+=\s*\S*cost\S*', 'cash must be credited notional at exit')
+
+    def test_function_long_leg_only_cash_debit(self):
+        # Le debit cash a l'entree = |qty_long * price_long| UNIQUEMENT,
+        # pas |qty|*price| des deux jambes (ce qui immobiliserait 2x le
+        # notionnel et creuserait le portefeuille de ~10% par paire).
+        self.assertIn('cash_debit = abs(qty1 * current_prices[etf1])', func_src)
+        self.assertIn('cash_debit = abs(qty2 * current_prices[etf2])', func_src)
 
     def test_function_computes_cum_returns_as_cumprod(self):
         self.assertIn('.cumprod()', func_src, 'cum_returns must be computed via .cumprod()')
