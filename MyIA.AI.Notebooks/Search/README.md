@@ -178,7 +178,7 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 Part1-Foundations/              Part2-CSP/                  Applications/
 Search-1  StateSpace     ───>  CSP-1  Fundamentals   ───>  App-1 NQueens, App-2 GraphColoring
 Search-2  Uninformed     ───>  CSP-2  Consistency    ───>  App-6 Minesweeper, App-7 Wordle
-Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-14b ConnectFour
+Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-12b ConnectFour
        │                        CSP-3  Advanced      ───>  App-3 NurseScheduling, App-4 JobShop
        │                        CSP-4  Scheduling    ───>  App-3, App-4, App-5 Timetabling
        └──> Search-6 (Adversarial)
