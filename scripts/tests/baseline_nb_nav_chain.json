@@ -717,17 +717,17 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb",
+      "notebook": "MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb",
+      "notebook": "MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb",
+      "notebook": "MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT"
     },
     {
@@ -1257,7 +1257,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Search"
     },
     {
