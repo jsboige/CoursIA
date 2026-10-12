@@ -572,18 +572,46 @@ def _classify_context(cells: list[dict], idx: int) -> tuple[str, str]:
     return role(prev), role(nxt)
 
 
+_PURE_FENCE_RE = re.compile(r"```[^\n]*\n.*?```\Z", re.DOTALL)
+
+
+def _is_pure_fence(cell: dict) -> bool:
+    """Vrai si la cellule markdown est reduite a UN bloc fence, sans prose.
+
+    C'est le gabarit exact d'une conversion code->markdown (pseudo-code fige,
+    #18602) : ouverture ```` ``` ````, corps, fermeture -- rien avant, rien
+    apres. Ce n'est ni une lecture ni de la prose : la cellule represente le
+    code qu'elle etait. La lecture qui la suit commentait SA sortie (disparue
+    avec la conversion), pas celle du code au-dessus -- la remontee s'arrete
+    donc sur elle comme sur un exercice. Une cellule faite uniquement de
+    fences (une ou plusieurs conversions) l'est aussi : chaque fence fige un
+    code dont la sortie a disparu. Seule la cellule qui MELANGE prose et
+    fence n'est pas une pure fence : ses lectures restent rattachees au code
+    au-dessus.
+    """
+    if cell.get("cell_type") != "markdown":
+        return False
+    src = cell_source(cell).strip()
+    if not src.startswith("```"):
+        return False
+    return bool(_PURE_FENCE_RE.match(src))
+
+
 def _output_key_above(cells: list[dict], idx: int) -> str | None:
     """Source de la cellule de code dont ``cells[idx]`` commente la sortie.
 
     La sortie est identifiee par la **source de sa cellule de code** (#17044,
     decision ai-01 c.5836401913). La remontee s'arrete a la premiere cellule de
     code : c'est elle, et elle seule, que la lecture commente. ``None`` s'il n'y
-    a rien a lire -- aucun code au-dessus, code d'exercice, ou code jamais
-    execute.
+    a rien a lire -- aucun code au-dessus, code d'exercice, code jamais
+    execute, ou pure fence de conversion (#18602) -- la lecture sous la fence
+    commentait la sortie du code converti, pas celle du code au-dessus.
     """
     for j in range(idx - 1, -1, -1):
         c = cells[j]
         if c.get("cell_type") != "code":
+            if _is_pure_fence(c):
+                return None
             continue
         if is_exercise_cell(c):
             return None
@@ -599,12 +627,14 @@ def readings_by_output(nb: dict) -> Counter[str]:
     C'est ce compte, et lui seul, que le mode diff compare entre la base et la
     tete (#17044, decision c.5836401913) : une cellule markdown dont la source
     est neuve n'est pas, a elle seule, un ajout -- une fusion, une revision ou
-    un deplacement laissent ce compte inchange.
+    un deplacement laissent ce compte inchange. Une pure fence de conversion
+    code->markdown (#18602) n'est pas une lecture : elle ne gonfle le compte
+    d'aucune sortie.
     """
     cells = nb.get("cells", [])
     counts: Counter[str] = Counter()
     for i, c in enumerate(cells):
-        if not is_reading_or_prose(c):
+        if not is_reading_or_prose(c) or _is_pure_fence(c):
             continue
         key = _output_key_above(cells, i)
         if key is not None:

@@ -122,6 +122,12 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_*_taxonomy.csv -t
 # l'EPIC #10355) : il est en CRLF pur, mais sans `-text` le blob stocke serait
 # normalise en LF sous `core.autocrlf=true` et differerait de l'amont.
 MyIA.AI.Notebooks/GenAI/FallacyDetection/data/argumentum_scenarii_cards.csv -text
+# Snapshot Scenarii du banc humour GameTheory (extraction #20316) : meme
+# provenance amont, capture au HEAD master 80dccece49, posterieure au pin
+# de FallacyDetection ci-dessus. Le temoin de derivation seed 42 exige cet
+# etat exact (la copie au pin 0ab05d66 fait echouer le temoin : 24/60
+# instances divergentes -- voir humour_banc/NOTICE-SCENARII). CRLF pur.
+MyIA.AI.Notebooks/GameTheory/humour_banc/argumentum_scenarii.csv -text
 # Tranche C de l'EPIC #10355 (issue #17578) : corpus academique MAFALDA,
 # recopie octet pour octet depuis ChadiHelwe/MAFALDA. Les `.jsonl` amont sont
 # en LF purs ; sans `-text`, la normalisation CRLF sur une machine
