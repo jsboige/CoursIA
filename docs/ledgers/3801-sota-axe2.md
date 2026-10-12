@@ -2800,7 +2800,7 @@ Le do-calculus **est la capacité distinctive** de la causalité — il n'existe
 | PR | #20446 |
 | Verdict agrégé | **SOTA-OK** — organe natif installé, validé par sa suite de tests, entraîné et invoqué à échelle réduite ; la limite PerfectDou de la brique evaluations est mesurée et documentée, pas contournée |
 
-### Synthèse (1 notebook, 16 cellules, 8 cellules code)
+### Synthèse
 
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
 |-----|-------|------|------|-----|-----------|--------|-------------|---------|
@@ -2875,4 +2875,4 @@ Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Tout
 | 030 | Probas/PyMC-05-Causal-Inference (1 nb) | po-2025 strict | 2026-07-16 | SOTA-OK 1/1 | #6808 MERGED |
 | 032 | GameTheory/13g-Ataraxos-Organe-Natif (1 nb) | po-2027 | 2026-10-12 | SOTA-OK 1/1 (organe natif invoqué, limite PerfectDou documentée) | #20446 |
 
-**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **31** (verifie le 2026-10-12 ; l'entree #031 vit sur #20435 et portera le compte a 32 a son merge). Ce tableau unique remplace les deux tableaux dupliques (8 lignes, entry #005 ; 22 lignes, entry #008) supprimes par #14562.
+**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **31** (verifie le 2026-10-12 ; l'entree #031 vit sur #20435 et portera le compte a 32 a son merge). Ce tableau unique remplace les deux tableaux dupliques (huit lignes, entry #005 ; vingt-deux lignes, entry #008) supprimes par #14562.
