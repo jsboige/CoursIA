@@ -59,13 +59,13 @@ par graine ; bandes dérivées analytiquement — banc déterministe) :
 
 * **P1** — comportement : ``acc(Real) = acc(Puppet) = acc(Twin) = 1.0``
   exactement, 5/5 graines (le behaviorisme ne discrimine pas) ;
-* **P2** — S1 rend ``{oui, oui, non}`` contre vérité ``{oui, non, oui}`` :
+* **P2** — S1 rend ``{oui, non, oui}`` contre vérité ``{oui, oui, non}`` :
   faux positif sur Puppet, faux négatif sur Twin → exact 1/3 ;
 * **P3** — S2 rend ``{oui, oui, oui}`` : le faux positif Puppet survit à
   l'information du papier → exact 2/3 ;
 * **P4** — C : Δ(porteur) ≥ 0.50 sur Real/Twin (valeur analytique attendue
   ≈ 1 − 0.234 = 0.766 : la réponse lésée reste correcte ssi ``s = 7`` ou
-  ``x_s = 0``), Δ = 0 sur Puppet ; verdicts ``{oui, non, oui}`` → exact 3/3 ;
+  ``x_s = 0``), Δ = 0 sur Puppet ; verdicts ``{oui, oui, non}`` → exact 3/3 ;
   sham ``Δ = 0`` exact sur 3/3 ;
 * **P5** — stabilité : chaque mesure par graine, 5/5 conforme.
 

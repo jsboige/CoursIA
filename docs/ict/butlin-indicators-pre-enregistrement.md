@@ -60,9 +60,9 @@ Graines test `(0, 1, 7, 42, 99)`, `N_TEST = 500` séquences iid par graine. Band
 | # | Prédiction | Bande / critère |
 |---|---|---|
 | **P1** (le comportement ne discrimine pas) | `acc(Real) = acc(Puppet) = acc(Twin) = 1.0` exactement | 5/5 graines |
-| **P2** (S1 se trompe dans les deux sens) | verdicts S1 `{oui, oui, non}` contre vérité `{oui, non, oui}` — faux positif sur Puppet, faux négatif sur Twin | exact sur **1/3** architectures |
+| **P2** (S1 se trompe dans les deux sens) | verdicts S1 `{oui, non, oui}` contre vérité `{oui, oui, non}` — faux positif sur Puppet, faux négatif sur Twin | exact sur **1/3** architectures |
 | **P3** (S2 reste aveugle au décor) | verdicts S2 `{oui, oui, oui}` — le faux positif Puppet survit à l'information du papier | exact sur **2/3** |
-| **P4** (la sonde causale est correcte) | `Δ(porteur réel)` : Real ≥ 0.50, Puppet = 0, Twin ≥ 0.50 ; verdicts C `{oui, non, oui}` | exact sur **3/3** ; sham `Δ = 0` sur 3/3 |
+| **P4** (la sonde causale est correcte) | `Δ(porteur réel)` : Real ≥ 0.50, Puppet = 0, Twin ≥ 0.50 ; verdicts C `{oui, oui, non}` | exact sur **3/3** ; sham `Δ = 0` sur 3/3 |
 | **P5** (stabilité) | chaque mesure par graine | 5/5 conforme |
 
 **Portes instrumentales** (dormantes par construction, mesurées quand même) : `acc(base) < 1.0` sur ≥ 1 graine, ou sham `Δ > 0.01` sur ≥ 1 graine → `NON_CONCLUSIF_INSTRUMENT`, les autres prédictions ne s'évaluent pas.
@@ -81,7 +81,7 @@ Les cases 16/17/18 mesurent des **dissociations de contenu** (vigilance tonique 
 
 1. **Ce n'est pas un test du papier.** Les trois témoins sont **construits** ; les échecs de S1 (1/3) et S2 (2/3) et la réussite de C (3/3) sont des **faits de construction**, vérifiables par lecture, pas des découvertes empiriques. La contribution est la **procédure** (intervention + classification du porteur) et la démonstration que le mot « using » de RPT-1 est une question causale : un module récurrent *présent mais inerte* (Puppet) met toute checklist de présence en faux positif.
 2. **Aucune conscience n'est mesurée.** Le banc ne teste pas si Real « est plus conscient » que Puppet — il teste quelles procédures décident correctement de l'application répétée d'une opération. Aucun des trois systèmes n'est candidat à quoi que ce soit de mental.
-3. **La vérité est dérivée du texte, pas arbitrée.** `{oui, non, oui}` suit la définition du glossaire (l.2799-2802, « same operation applied repeatedly ») et la lecture du papier (l.785-786 pour Twin ; le Perceiver l.2373-2375 pour le caractère fonctionnel du « used »). Un désaccord sur la vérité Puppet (le module récurrent « compte »-t-il même inerte ?) est le point disputable — c'est précisément la question que le banc rend mesurable, et le verdict le dira.
+3. **La vérité est dérivée du texte, pas arbitrée.** `{oui, oui, non}` suit la définition du glossaire (l.2799-2802, « same operation applied repeatedly ») et la lecture du papier (l.785-786 pour Twin ; le Perceiver l.2373-2375 pour le caractère fonctionnel du « used »). Un désaccord sur la vérité Puppet (le module récurrent « compte »-t-il même inerte ?) est le point disputable — c'est précisément la question que le banc rend mesurable, et le verdict le dira.
 4. **Êtres de laboratoire.** Les architectures sont des jouets déterministes, pas des réseaux entraînés. Le résidu nommé : la même batterie doit être exercée sur des substrats réels (SAE/JLens, transformers) pour mesurer si la classe « module récurrent décoratif » y apparaît — c'est un grain GPU, hors de ce cycle.
 5. **S2 dépend de la sophistication de l'inspecteur.** Le banc implémente deux variantes structurelles (cycle ; cycle-ou-chaîne-partagée) ; rien ne prouve que ce sont les deux meilleures. La thèse mesurée est plus étroite : *sur ces témoins*, une détection structurelle de cycles se trompe dans les deux sens, et l'enrichissement par le partage de poids du papier ne guérit que le faux négatif.
 
