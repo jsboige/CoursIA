@@ -87,6 +87,19 @@ lean_lib «MathUniverse» where
   (`no such file or directory: .../MathUniverse`). -/
   globs := #[`MathUniverse, `MathUniverse_en]
 
+/-- Module `Renaming` — tranche 2 de l'issue #16753 : l'équivalence de
+structures sous renommage (R16 §III « baggage »), suite de `MathUniverse` —
+EquivStruct est une équivalence à travers les types porteurs, invariants de
+cardinalité et de taille des tableaux (`relFinset`), énumération des
+permutations (`m!` vs `m^m`, `equivStruct_iff_perm`), torseur des renommages
+sous Aut(S) et transport par conjugaison — corollaire `aut_trivial_of_equiv_bool8`
+(pont vers `EffectiveTheory.InfoBits`). -/
+@[default_target]
+lean_lib «Renaming» where
+  /- Module plat, meme forme que MathUniverse : pas d'arborescence
+  `Renaming/`. -/
+  globs := #[`Renaming, `Renaming_en]
+
 /-- Module `MutualGen` — digestion #16741/arc B (issue #16753, tranche 4) :
 génération mutuelle générale de l'Annexe A de R16 — termes sur signature
 quelconque (le tuple d'arité quelconque, multi-générateurs) et le théorème

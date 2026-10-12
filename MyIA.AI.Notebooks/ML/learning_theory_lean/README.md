@@ -1,4 +1,4 @@
-# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + EffectiveTheory + MathUniverse / Tegmark MUH), Lean 4
+# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + EffectiveTheory + MathUniverse + Renaming + MutualGen / Tegmark MUH), Lean 4
 
 Lake Lean 4 (Mathlib) à la racine de la série **ML**, mutualisant des résultats
 fondamentaux de **théorie de l'apprentissage** sous un même umbrella généraliste
@@ -71,7 +71,25 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    `nand_and`, `nand_or`, `nand_implies`, `nand_iff`), puis
    `equivStruct_bool8_nand8` (le témoin est l'identité), et la confirmation par
    l'algorithme de décision lui-même, à qui le témoin n'est **pas** donné.
-6. **Module `MutualGen`** — digestion #16741/arc B (issue #16753, tranche 4) : la
+6. **Module `Renaming`** — tranche 2 de l'issue #16753 : l'équivalence de
+   structures **sous renommage**, ce que le §III de R16 appelle le
+   *baggage* — les noms des entités ne font pas partie de la structure.
+   Quatre volets : **`EquivStruct` est une équivalence** à travers les types
+   porteurs (`equivStruct_refl`/`_symm`/`_trans`) ; **invariants** —
+   équipotence des porteurs (`equivStruct_card_eq`, d'où C₂ ≇ C₃) et taille
+   de chaque tableau préservée (`equivStruct_rel_card` via `relFinset` :
+   C₃ ≇ point3, 9 contre 1 ; C₂ ≇ diag2, 4 contre 2) ; **renommage =
+   énumération de permutations** (`equivStruct_iff_perm` : `m!` candidats
+   et non `m^m`) ; **torseur des renommages sous Aut(S)** — deux
+   isomorphismes diffèrent d'un automorphisme (`iso_symm_mul_aut`), Aut(S)
+   agit à droite (`iso_mul_aut`), l'appartenance à Aut se transporte par
+   conjugaison (`mem_aut_conj_iff`), corollaire `aut_trivial_of_equiv_bool8`
+   : toute structure équivalente à l'algèbre de Boole à deux éléments a un
+   groupe d'automorphismes trivial — le pont vers
+   `EffectiveTheory.InfoBits` (`b = log₂(n!/|Aut G|)` est un invariant du
+   renommage). Les discriminations sont confirmées par le noyau
+   (`decide +kernel`, sans témoin fourni).
+7. **Module `MutualGen`** — digestion #16741/arc B (issue #16753, tranche 4) : la
    **génération mutuelle générale** du §A.2 de l'Annexe A — « two structure
    definitions are equivalent if they generate each other ». Le terme `TermSig`
    porte une **signature quelconque** `σ : Fin n → ℕ` (`n` symboles d'arités
@@ -112,10 +130,18 @@ argument ERM dans `ERM`).
   (`flow_sumsq0_constant`, `flow_deriv_sum_apply` ; côté `GrokkingLemmas` :
   `C_conserved_l0`, `meanZero_invariant`, `Z0_conserved`) sont 0-sorry. Côté
   MathUniverse, `mem_aut_iff`, `aut_bool8_trivial`, les sept lemmes `nand_*`,
-  `equivStruct_iff_functions` et `equivStruct_bool8_nand8` sont 0-sorry.
+  `equivStruct_iff_functions` et `equivStruct_bool8_nand8` sont 0-sorry. Côté
+  Renaming, les lois d'équivalence (`equivStruct_refl`/`_symm`/`_trans`), les
+  invariants (`equivStruct_card_eq`, `equivStruct_rel_card`),
+  `equivStruct_iff_perm`, le torseur (`iso_mul_aut`, `iso_symm_mul_aut`,
+  `mem_aut_conj_iff`) et `aut_trivial_of_equiv_bool8` sont 0-sorry. Côté
+  MutualGen, `eval_subst`, `eval_translate`, `mutual_gen_iff`,
+  `nand_generates_and2`, `nand_generates_and3` et `notAnd_generates_or2` sont
+  0-sorry (les témoins d'arité quelconque sont clos par `decide` au noyau).
 - **Build** : `lake build Perceptron` / `lake build PacLearning` /
   `lake build GradientFlow` / `lake build EffectiveTheory` /
-  `lake build MathUniverse` (dépend de Mathlib4)
+  `lake build MathUniverse` / `lake build Renaming` / `lake build MutualGen`
+  (dépend de Mathlib4)
 
 ## Ce qui est formalisé
 
@@ -284,6 +310,30 @@ avec `<formule> = false` pour les deux constantes, l'équivalence (A1)/(A2) éta
 Les lignes R₁/R₂ de `nand8` sont donc `t 0 = <formule>`, et c'est `decide` qui a
 révélé l'erreur avant toute publication.
 
+### Module `Renaming` (digestion #16741/arc B — le renommage, R16 §III « baggage »)
+
+`MathUniverse` décide l'équivalence de deux définitions finies ; `Renaming`
+formalise **ce que cette équivalence veut dire** : le §III de R16 appelle
+*baggage* les noms des entités — renommer les entités d'une définition donne *la
+même* structure. Le module établit les propriétés structurelles de
+`EquivStruct` que l'algorithme haltant de l'Annexe A exploite : c'est une
+équivalence à travers les types porteurs, elle conserve des invariants
+mesurables (cardinalité des porteurs, taille de chaque tableau), et sur un
+porteur fixé elle se réduit à l'énumération des `m!` permutations.
+
+**Relation déclarée à l'organe frère** : `SymbolicAI/Lean/tegmark_muh_lean/`
+(MUH, série Lean-36, noyau seul) décide l'égalité **stricte** des tables — son
+propre en-tête nomme ses bornes (« ce cas particulier ne couvre ni le renommage
+des éléments ni la génération mutuelle »). La tranche renommage est précisément
+la part qu'il exclut : elle vit ici, côté Mathlib, où `Equiv.Perm`,
+`Fintype.card_congr` et `Finset.card_image_of_injOn` portent les invariants
+(copie pédagogique déclarée, même motif que `MathUniverse` — cf ci-dessus).
+
+| Fichier | sorry | Contenu |
+|---------|-------|---------|
+| `Renaming.lean` | 0 | **§1 Équivalence** : `equivStruct_refl`/`_symm`/`_trans` — `EquivStruct` est réflexive, symétrique, transitive à travers les types porteurs `α`, `β`, `γ`. **§2 Invariants** : `equivStruct_card_eq` (le témoin EST une équipotence — d'où `not_equivStruct_c2_c3` : 2 ≠ 3) ; `relFinset` (le tableau d'une relation comme ensemble fini d'uplets, champ `rel_dec` passé explicitement) et `equivStruct_rel_card` (la taille de chaque tableau est invariante — preuve par double inclusion d'images via `Finset.card_image_of_injOn`), avec les discriminations **C₃ ≇ point3** (structure pointée, 9 triplets contre 1) et **C₂ ≇ diag2** (structure diagonale, 4 contre 2), paires équipotentes de même signature distinguées par la seule taille du tableau. **§3 Permutations** : `equivStruct_iff_perm` — sur un porteur fixé, l'équivalence revient à exister parmi les `m!` permutations et non les `m^m` applications. **§4 Torseur** : `IsoWit` (témoin déplié), `iso_mul_aut` (Aut(S) agit à droite sur les isomorphismes), `iso_symm_mul_aut` (deux isomorphismes diffèrent d'un automorphisme), `mem_aut_conj_iff` (l'appartenance à Aut se transporte par conjugaison), corollaire **`aut_trivial_of_equiv_bool8`** — toute structure équivalente à l'algèbre de Boole à deux éléments a un Aut trivial : le « 1 bit » de `EffectiveTheory.InfoBits` est un invariant du renommage. **§5 Exemples** : les quatre discriminations ci-dessus, toutes confirmées par `decide +kernel` (le noyau, sans témoin fourni). |
+| `Renaming_en.lean` | 0 | Sibling anglais (Epic #4980) — code byte-identique, docstrings et commentaires traduits. |
+
 ### Module `MutualGen` (digestion #16741/arc B — Annexe A de R16, tranche 4)
 
 Le critère partiel nommé dans la table `MathUniverse` (la génération par
@@ -308,11 +358,11 @@ Chaque module est doublé d'un **sibling anglais** `Foo_en.lean` (namespace
 `GradientFlow` ↔ `GradientFlow_en`,
 `EffectiveTheory.GrokkingLemmas` ↔ `EffectiveTheory.GrokkingLemmas_en`
 (le reste d'`EffectiveTheory` attend son twin, #17481),
-`MathUniverse` ↔ `MathUniverse_en`, imports
+`MathUniverse` ↔ `MathUniverse_en`, `Renaming` ↔ `Renaming_en`, imports
 `_en`-suffixés, **byte-identical hors docstrings/commentaires**) — livré sous
 l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les twins
 `_en` couvrent PacLearning, Perceptron, GradientFlow, `GrokkingLemmas`,
-`MathUniverse` et `MutualGen` :
+`MathUniverse` et `Renaming` : ; MutualGen` :
 
 `PacLearning_en.lean`, `PacLearning/{Agnostic,BernoulliMGF,Concentration,Data,
 ERM,Hoeffding,MGF,PacFiniteBound,Sample,SampleExpect,UniformConcentration,
@@ -320,7 +370,7 @@ UnionBound}_en.lean`, `Perceptron_en.lean`,
 `Perceptron/{Convergence,Data,Perceptron,Tightness}_en.lean`,
 `GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`,
 `EffectiveTheory/GrokkingLemmas_en.lean`, `MathUniverse_en.lean`,
-`MutualGen_en.lean`.
+`Renaming_en.lean`, `MutualGen_en.lean`.
 
 **Conséquence** : les futurs raffinements doivent conserver la symétrie FR/EN
 (les deux fichiers évoluent ensemble ou pas du tout). La CI `check_i18n_siblings`
@@ -335,6 +385,7 @@ lake build Perceptron    # théorème de Novikoff
 lake build PacLearning   # cadre PAC (modèle + propriétés élémentaires)
 lake build EffectiveTheory # corpus Tegmark : grokking + conservation + R06/R10
 lake build MathUniverse  # Annexe A de R16 : structure finie, Aut(S), equivalence decidable
+lake build Renaming      # R16 §III : equivalence sous renommage, invariants, torseur Aut(S)
 lake build MutualGen     # Annexe A de R16 : generation mutuelle generale, arite quelconque
 # Dépend de Mathlib4 — le premier build est lourd, les builds suivants utilisent le cache
 ```
@@ -390,6 +441,6 @@ déclaration dans un notebook :
 - **Issue #4293** — renommage `perceptron_lean → learning_theory_lean` + module PacLearning (mutualisation, cf `decision_theory_lean`)
 - **EPIC #13106** — digestion : le module `GradientFlow` en est la tranche « forme formalisation » (grille 10 points dans `GradientFlow.lean`)
 - **Issue #16752 / EPIC #16741** — module `EffectiveTheory` : base `Grokking.lean` (#16794) + module frère `GrokkingLemmas.lean` (recadrage ai-01 2026-09-23 : delta propre du grain R02, arc « ouverte, responsable, prouvable, explicable »)
-- **Issue #16753 / EPIC #16741** — module `MathUniverse` (arc B) : Annexe A de R16 — `FinRelStruct` (signature + relations décidables), `aut` (Aut(S) est un groupe, témoin `aut_bool8_trivial`), `EquivStruct` et son instance `Decidable` (l'algorithme haltant rendu exécutable), exemples §A.2 (C₂, C₃, algèbre de Boole engendrée par NAND seul) ; module `MutualGen` (tranche 4) : génération mutuelle générale — `TermSig` sur signature quelconque, `mutual_gen_iff` (se générer l'un l'autre ⟺ mêmes fonctions engendrées), témoins `decide` (arité 3 par NAND seul, De Morgan sur ¬/∧)
+- **Issue #16753 / EPIC #16741** — module `MathUniverse` (arc B) : Annexe A de R16 — `FinRelStruct` (signature + relations décidables), `aut` (Aut(S) est un groupe, témoin `aut_bool8_trivial`), `EquivStruct` et son instance `Decidable` (l'algorithme haltant rendu exécutable), exemples §A.2 (C₂, C₃, algèbre de Boole engendrée par NAND seul) ; tranche 2 : module `Renaming` — l'équivalence sous renommage (R16 §III « baggage ») : lois d'équivalence à travers les porteurs, invariants de cardinalité et de taille des tableaux, énumération des permutations, torseur des renommages sous Aut(S) ; module `MutualGen` (tranche 4) : génération mutuelle générale — `TermSig` sur signature quelconque, `mutual_gen_iff` (se générer l'un l'autre ⟺ mêmes fonctions engendrées), témoins `decide` (arité 3 par NAND seul, De Morgan sur ¬/∧)
 - **`ML/`** — série Machine Learning (ML.NET C#, Data Science with Agents Python)
 - **Epic #2651** — prose pédagogique README
