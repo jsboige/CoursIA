@@ -144,6 +144,10 @@ motifs sont rendus, aucun ne masque l'autre. `--wip-cap N` ajuste le plafond
 justification PROPRE au plafond : reutiliser `--admit-reason` leverait du
 meme geste le garde d'admission (claims, DWELL), qu'on n'a pas demande.
 
+Depuis la decision user du 2026-10-12, le plafond est DESACTIVE par defaut
+(`WIP_CAP_DEFAULT = 0`) : aucun mecanisme ne doit freiner la productivite des
+agents, c'est au debit de merge de suivre. `--wip-cap N` le reactive en opt-in.
+
 Ardoise de lane : la mesure qui rend un faux "rien livre" impossible (L721)
 --------------------------------------------------------------------------
 Mesure du 2026-09-12 : une lane a envoye une escalation URGENT claimant
@@ -2663,7 +2667,12 @@ RED_COUNT_DEFAULT = 3
 # l'ENCOURS, et un brouillon est de l'encours). Comptage par TAG de lane
 # (`Grain: ... lane <machine:workspace>`), jamais par auteur (L721 / #9485).
 # 0 desactive le garde (meme convention que --dwell-hours 0).
-WIP_CAP_DEFAULT = 15
+# Decision user 2026-10-12 : aucun mecanisme ne doit freiner la productivite
+# des agents. Le plafond est donc DESACTIVE par defaut : une lane chargee de
+# PRs vertes en attente de merge continue de produire, et c'est au debit de
+# merge de suivre. Le compte WIP reste mesure et rendu (`wip_count`,
+# `wip_prs`) ; `--wip-cap N` reactive le garde en opt-in, sur demande.
+WIP_CAP_DEFAULT = 0
 
 # CANCELLED / SKIPPED / NEUTRAL sont volontairement absents : un run annule
 # par `concurrency` n'est pas un echec, et le confondre avec un rouge est le
