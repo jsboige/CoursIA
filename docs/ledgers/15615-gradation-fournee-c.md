@@ -36,17 +36,17 @@ Identique aux ledgers précédents : prérequis déclarés (section dédiée ou 
 | 15f | [GameTheory-15f-Shapley-Groupes-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-15f-Shapley-Groupes-Python.ipynb) | Aucune déclarée — article distillé Flores/Molina/Tejeda 2019 (4OR) | **Shapley de groupe** : jeu fusionné, axiome G-SPB, exemple 1 en arithmétique exacte, profitabilité/complémentarité, mariages florentins (Médicis), club de karaté de Zachary, estimation Monte Carlo quand 2^n explose | 44 (17 code) | Haute | Non |
 | 15g | [GameTheory-15g-AssistanceGames-2026-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-15g-AssistanceGames-2026-Python.ipynb) | Aucune déclarée | Assistance games (résultat 2026) : modèle formel §3, instance jouet, politique jointe optimale oracle, **EXP3** (no-regret) pour l'assistant, bench empirique √T vs T^(3/4) | 15 (8 code) | Haute | Non |
 
-**Totaux** : 21 carnets, 825 cellules dont 326 code. Répartition difficulté : 7 Très haute (11b, 13, 14, 14-cs, 15, 15-cs, 15b), 14 Haute, aucune Moyenne ni Basse — la série y atteint son plateau maximal.
+**Totaux** : 21 carnets. Répartition difficulté : 7 Très haute (11b, 13, 14, 14-cs, 15, 15-cs, 15b), 14 Haute, aucune Moyenne ni Basse — la série y atteint son plateau maximal.
 
 ## Observations
 
 ### Le bloc 13 est le sommet algorithmique de la série
 
-Le 13-Python (64 cellules, 26 code) est **le plus gros carnet de la fournée** : CFR complet jusqu'aux circuits de regret et au treeplex (théorème 4.1), Deep CFR, OpenSpiel, Leduc. Il porte quatre side-tracks dont deux objets pédagogiques uniques dans la série : la paire **13b/13c « qui vérifie, puis qui casse »** (le twin C# audite son modèle Python — double comptage, fausse best-response — puis corrige l'énumération), et 13d qui enseigne le **verdict honnête** (l'optimisme aide en théorie, le champion empirique est DCFR).
+Le 13-Python est **le plus gros carnet de la fournée** : CFR complet jusqu'aux circuits de regret et au treeplex (théorème 4.1), Deep CFR, OpenSpiel, Leduc. Il porte quatre side-tracks dont deux objets pédagogiques uniques dans la série : la paire **13b/13c « qui vérifie, puis qui casse »** (le twin C# audite son modèle Python — double comptage, fausse best-response — puis corrige l'énumération), et 13d qui enseigne le **verdict honnête** (l'optimisme aide en théorie, le champion empirique est DCFR).
 
 ### Le bloc 15 est le second continent de la série
 
-9 carnets sur 21 — derrière le bloc 06 (13 carnets, fournée B) mais devant tout le reste. Trois langages (Python, C#, Lean 4) autour de la valeur de Shapley, plus quatre extensions : Möbius (15d), SMT comme instrument de preuve (15e), Shapley de groupe sur réseaux (15f), assistance games résultat 2026 (15g). Le 15-Python (69 cellules) et son twin C# (65) sont les deux plus gros carnets de la fournée après le 13.
+9 carnets sur 21 — derrière le bloc 06 (13 carnets, fournée B) mais devant tout le reste. Trois langages (Python, C#, Lean 4) autour de la valeur de Shapley, plus quatre extensions : Möbius (15d), SMT comme instrument de preuve (15e), Shapley de groupe sur réseaux (15f), assistance games résultat 2026 (15g). Le 15-Python et son twin C# (65) sont les deux plus gros carnets de la fournée après le 13.
 
 ### Les twins C# portent les ponts SOTA et la parité de solveurs
 
