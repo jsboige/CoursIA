@@ -38,12 +38,16 @@ silence). Un XFAIL persistant est attendu tant que le bug est present.
 Cycle c.1001 : main (commit ``24511147e`` / PR #18604) a fixe le bug
 pour ``detect_added_readings`` et la topologie reelle Lean-10 c.63 (les
 tests 1 et 3 passent donc en regression). Le test 2
-(``readings_by_output``, helper single-notebook) reste en xfail strict :
-le helper a un bug separe que le carve-out principal ne touche pas (cf
-message commit ``24511147e``). A chaque XPASS sur test 2 = signal que
-le helper a ete corrige -> retirer ce xfail.
+(``readings_by_output``, helper single-notebook) restait en xfail strict :
+le helper avait un bug separe que le carve-out principal ne touchait pas
+(cf message commit ``24511147e``).
+
+Cycle suivant (residuel #18602, c.935) : le helper est corrige -- une
+pure fence de conversion code->markdown n'est plus comptee comme lecture
+et borne la remontee ``_output_key_above`` (la lecture sous la fence
+commentait la sortie du code converti, disparue). Le xfail du test 2 est
+retire : les trois tests sont des regressions.
 """
-import pytest
 import sys
 from pathlib import Path
 
@@ -89,7 +93,6 @@ def test_code_to_md_conversion_not_second_reading():
     assert mod.detect_added_readings(head_nb, base_nb) == []
 
 
-@pytest.mark.xfail(reason="REPRODUCTION c.970 du bug split-reading code->md ; le cliquet rattache a tort -- cf docstring", strict=True)
 def test_code_to_md_keeps_legitimate_reading_count():
     """La conversion code->fence ne doit faire monter le compte de lectures
     d'AUCUNE sortie : la lecture legitime reste rattachee a la sortie du
@@ -125,6 +128,22 @@ def test_code_to_md_keeps_legitimate_reading_count():
     }
     assert mod.readings_by_output(head_nb) == {"print(100)": 1}
     assert mod.readings_by_output(base_nb) == {"print(100)": 1, "print(42)": 1}
+
+
+def test_prose_mixed_fence_is_not_a_boundary():
+    """Controle negatif de la borne pure-fence : une cellule qui MELANGE prose
+    et fence n'est pas une conversion figee -- la lecture titree qui la suit
+    reste rattachee au code execute au-dessus (le melange ne borne pas la
+    remontee). La prose melangee est comptee comme lecture, comportement
+    preexistant d'``is_reading_or_prose`` que ce fix ne change pas."""
+    nb = {
+        "cells": [
+            code("print(100)", "c0", output="100\n"),
+            md("Exemple de reglage :\n```python\nprint(42)\n```\nOn voit la valeur.", "mix"),
+            md("### Interpretation : resultat", "m2"),
+        ]
+    }
+    assert mod.readings_by_output(nb) == {"print(100)": 2}
 
 
 def test_minimal_repro_pr_18440():

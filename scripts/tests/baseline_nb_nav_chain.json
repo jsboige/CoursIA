@@ -167,7 +167,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -717,17 +717,17 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb",
+      "notebook": "MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb",
+      "notebook": "MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb",
+      "notebook": "MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT"
     },
     {
@@ -1257,7 +1257,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Search"
     },
     {
@@ -1889,6 +1889,16 @@
       "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-04-DD-AR-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
+    },
+    {
+      "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12b-Lean-Sensitivity-Theorem.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12c-Tensor-Product-Representations-Lean.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
     {
       "kind": "unreachable",

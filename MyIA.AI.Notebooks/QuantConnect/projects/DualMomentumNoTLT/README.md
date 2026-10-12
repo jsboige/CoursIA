@@ -46,6 +46,25 @@ La stratégie **bat le benchmark SPY** en rendement absolu (CAGR 16.91 % vs ~12-
 
 **Conclusion honnête** : ne PAS présenter cette stratégie comme génératrice d'alpha statistiquement significatif. C'est un **beta de momentum géré** avec un **drawdown élevé** — l'exemple pédagogique de la limite du momentum dual « rotation pure » sans overlay de protection. Le companion naturel est la DualMomentum (avec TLT) — un contre-exemple documenté (TLT a saboté 2020-2023) — cf. [DualMomentum/README](../DualMomentum/README.md). Les deux illustrent le **même compromis** : un diversifiant qui aide dans un régime nuit dans l'autre.
 
+## Variante standalone (`main.py`) : rééquilibrage déplacé hors de la tranche de minuit (#20264)
+
+En données journalières, Lean livre les avis de dividende dans une tranche datée de minuit, qui ne porte aucune barre de cotation. IEF verse un dividende chaque mois, et son avis tombe souvent le premier jour de cotation. La garde de mois de `main.py` était alors consommée sur cette tranche : le rééquilibrage décidait sur les cours de la veille, et ses ordres partaient à minuit pour être exécutés à l'ouverture. Sur la fenêtre codée, 109 rééquilibrages sur 120 tombaient à minuit.
+
+Correctif dans `main.py` : le mois n'est consommé que sur une tranche qui porte une barre d'un titre de l'univers. Mesure sur les nœuds QC, frais de courtage inclus, protocole fixé avant les backtests ([#20264, c.6115262186](https://github.com/jsboige/CoursIA/issues/20264#issuecomment-6115262186)) :
+
+| Fenêtre | Variante | Ordres de minuit | Sharpe | CAGR | Drawdown max | Ordres | Backtest |
+|---|---|---|---|---|---|---|---|
+| 2015-01-01 → 2024-12-31 (codée) | avant | 210 (101 jours) | 0.339 | 8.08 % | 23.6 % | 233 | `a09a48809bcb4dc878e84f511dc00d65` |
+| | après | 0 | 0.441 | 9.96 % | 21.4 % | 234 | `b2ff070974e440f64029c69473bb7af7` |
+| 2025-01-01 → 2026-07-10 (hors échantillon) | avant | 38 (17 jours) | 1.094 | 28.02 % | 14.1 % | 42 | `a5a68f401f9cca13dda2a39dfd02d416` |
+| | après | 0 | 1.203 | 30.23 % | 14.0 % | 42 | `bbf5126ce1eac446800cedc56c04f546` |
+
+Sharpe calculé par QC, taux sans risque inclus. Hors échantillon, la règle fixée d'avance donne **pas de dégradation**.
+
+**Limite connue.** Le correctif fait décider le rééquilibrage sur la première barre du mois. En juillet 2017 et en juillet 2023, cette barre est celle du lundi 3 juillet, une demi-séance qui ferme à 13:00. Ces deux mois passent sans rééquilibrage : le code sort sans rien faire quand l'historique est trop court pour tous les titres. Ce défaut des demi-séances est suivi dans [#20286](https://github.com/jsboige/CoursIA/issues/20286) et n'est pas corrigé ici. La variante avant faisait ces deux rééquilibrages, sur la tranche de minuit.
+
+Ces chiffres portent sur la variante standalone, pas sur la variante Framework mesurée plus haut. Ils ne sont pas un verdict de stratégie : il s'agit de la correction d'un défaut, mesurée sur une fenêtre déjà vue. La variante Framework (`alpha_model.py`) porte la même garde de mois et n'est pas mesurée ici.
+
 ## Comment exécuter
 
 **Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/DualMomentumNoTLT"`
