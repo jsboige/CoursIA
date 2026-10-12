@@ -2,16 +2,16 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory-SocialChoice
-pedagogical_count: 11
-breakdown: SocialChoice=11
-maturity: BETA=8, ALPHA=3
+pedagogical_count: 12
+breakdown: SocialChoice=12
+maturity: BETA=8, ALPHA=4
 -->
 
 La théorie du choix social étudie comment agréger des préférences individuelles en une décision collective. Ses résultats les plus célèbres sont des **théorèmes d'impossibilité** : le théorème d'Arrow (1951) montre qu'aucune règle de vote ne peut satisfaire simultanément des axiomes "raisonnables" (Pareto, IIA, non-dictature) dès que 3 alternatives ou plus sont en jeu ; le théorème de Sen (1970) démontre un conflit fondamental entre liberté individuelle et efficacité collective.
 
-Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats sous sept angles complémentaires : la simulation Python des axiomes, la formalisation en Lean 4 (preuve formelle), les méthodes de vote concrète, l'encodage SAT/Z3 pour la vérification mécanique, la manipulation stratégique comme témoin (Gibbard-Satterthwaite), l'agrégation coopérative par la décomposition de Möbius — dividendes de Harsanyi, poids contre pouvoir (SC-06) — et les élections de comité par approbation, où le core existe toujours (quotas Hare/Droop, certificats de paiement, SC-07).
+Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats sous huit angles complémentaires : la simulation Python des axiomes, l'**appariement bilatéral par Gale-Shapley** (mariage stable, deferred acceptance, optimalité du proposant, SC-02), la formalisation en Lean 4 (preuve formelle), les méthodes de vote concrète, l'encodage SAT/Z3 pour la vérification mécanique, la manipulation stratégique comme témoin (Gibbard-Satterthwaite), l'agrégation coopérative par la décomposition de Möbius — dividendes de Harsanyi, poids contre pouvoir (SC-06) — et les élections de comité par approbation, où le core existe toujours (quotas Hare/Droop, certificats de paiement, SC-07).
 
-**À qui s'adresse cette série** : étudiants en économie, informatique, sciences politiques et mathématiques appliquées. Les notebooks 01, 03, 06 et 07 ne nécessitent que Python (le 06 se contente de la bibliothèque standard). Les notebooks 02 (Lean) et 04 (SAT/Z3) requièrent des installations supplémentaires décrites dans le [README parent](../README.md). Aucun prérequis en théorie du choix social : les concepts sont introduits progressivement.
+**À qui s'adresse cette série** : étudiants en économie, informatique, sciences politiques et mathématiques appliquées. Les notebooks 01, 02, 03, 06 et 07 ne nécessitent que Python (le 06 se contente de la bibliothèque standard). Les notebooks 02b (Lean) et 04 (SAT/Z3) requièrent des installations supplémentaires décrites dans le [README parent](../README.md). Aucun prérequis en théorie du choix social : les concepts sont introduits progressivement.
 
 > **Hommage — Richard E. Stearns (1936-2026).** Le tout premier article publié par Richard E.
 > Stearns — alors étudiant à Carleton College — portait sur le **paradoxe d'Arrow** (*The American
@@ -30,7 +30,8 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 |---|----------|-------|-------|--------|
 | SC-01 | [01-Arrow-Impossibility-Theorem](01-Arrow-Impossibility-Theorem.ipynb) | Théorème d'Arrow : Preuve Formelle et Simulation | 45 min | COMPLET |
 | SC-01 (C#) | [01-Arrow-Impossibility-Theorem-Csharp](01-Arrow-Impossibility-Theorem-Csharp.ipynb) | **Jumeau C#** — parité .NET du SC-01 (théorème d'Arrow) implémenté from-scratch en C# (.NET Interactive) (See #4956) | 45 min | PARITÉ |
-| SC-02 | [01b-Lean-SocialChoice-Formal](01b-Lean-SocialChoice-Formal.ipynb) | Choix Social Formel en Lean 4 (Arrow, Sen, Électeur Médian, Tour Peters) | 80 min | COMPLET |
+| SC-02 | [02-Stable-Marriage-Gale-Shapley-Python](02-Stable-Marriage-Gale-Shapley-Python.ipynb) | Mariage Stable et Algorithme de Gale-Shapley : binôme Python/Lean sur le problème de l'appariement bilatéral (deferred acceptance, optimalité du proposant, pessimalité du côté non-proposant) | 35 min | ALPHA |
+| SC-02b | [01b-Lean-SocialChoice-Formal](01b-Lean-SocialChoice-Formal.ipynb) | Choix Social Formel en Lean 4 (Arrow, Sen, Électeur Médian, Tour Peters) | 80 min | COMPLET |
 | SC-03 | [03-Voting-Methods](03-Voting-Methods.ipynb) | Méthodes de Vote et Paradoxes (Condorcet, Borda, Copeland, Downs) | 35 min | COMPLET |
 | SC-03 (C#) | [03-Voting-Methods-Csharp](03-Voting-Methods-Csharp.ipynb) | **Jumeau C#** — parité .NET du SC-03 (méthodes de vote) implémenté from-scratch en C# (.NET Interactive) (See #4956) | 35 min | PARITÉ |
 | SC-04 | [04-Computational-Aggregation-SAT-Z3](04-Computational-Aggregation-SAT-Z3.ipynb) | Agrégation Computationnelle : SAT et Z3 | 45 min | COMPLET |
@@ -40,13 +41,13 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-07 | [07-Committees-Core](07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas Hare/Droop, certificats de paiement et règle de l'entropie harmonique (arXiv 2609.11912, See #16848) | 40 min | COMPLET |
 | SC-09 | [09-Committees-STV-Monroe-ChamberlinCourant](09-Committees-STV-Monroe-ChamberlinCourant.ipynb) | Comités multi-vainqueurs par classement : STV (Hare 1857, polynomial), Monroe (1995, NP-dur, quotas équilibrés floor/ceil par élu) et Chamberlin-Courant (1983, NP-dur), confrontation Z3 Optimize et profil discriminant (Handbook of Computational Social Choice ch. 6, See #19371) | 50 min | COMPLET |
 
-**Durée totale** : ~6h05
+**Durée totale** : ~6h40
 
 > **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) et [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ces trois jumeaux C# sont comptés dans le `pedagogical_count` de la sous-série mais arborent le statut `PARITÉ` dans le tableau ci-dessus pour les distinguer des sept notebooks d'origine dont ils sont les retranscriptions .NET.
 
 ## Parcours d'apprentissage
 
-Les cinq premiers notebooks attaquent les mêmes résultats d'impossibilité sous des angles complémentaires -- l'intuition par la simulation, la pratique électorale, la certitude formelle, la vérification automatique et la manipulation stratégique -- qui convergent vers une cartographie des relaxations possibles ; le SC-06 ouvre la face coopérative du problème : agréger non plus des préférences mais des valeurs de coalition ; le SC-07 change une seconde fois d'objet — élire non plus un gagnant unique mais un comité, et y transférer la notion de stabilité : le core existe toujours (Becker, Greger & Peters).
+Les cinq premiers notebooks attaquent les mêmes résultats d'impossibilité sous des angles complémentaires -- l'intuition par la simulation, l'appariement bilatéral stable (Gale-Shapley, SC-02), la pratique électorale, la certitude formelle, la vérification automatique et la manipulation stratégique -- qui convergent vers une cartographie des relaxations possibles ; le SC-06 ouvre la face coopérative du problème : agréger non plus des préférences mais des valeurs de coalition ; le SC-07 change une seconde fois d'objet — élire non plus un gagnant unique mais un comité, et y transférer la notion de stabilité : le core existe toujours (Becker, Greger & Peters).
 
 ```mermaid
 flowchart TD
@@ -54,12 +55,15 @@ flowchart TD
 
     E1["SC-01 · Simulation Python<br/>test empirique des axiomes (Geanakoplos)<br/>→ intuition"]
     E2["SC-03 · Méthodes de vote<br/>Condorcet · Borda · électeur médian<br/>→ pratique électorale"]
-    E3["SC-02 · Preuve formelle Lean 4<br/>infinité des cas couverte · 0 sorry<br/>→ certitude"]
+    E2b["SC-02 · Mariage stable<br/>Gale-Shapley · deferred acceptance<br/>→ appariement bilatéral"]
+    E3["SC-02b · Preuve formelle Lean 4<br/>infinité des cas couverte · 0 sorry<br/>→ certitude"]
     E4["SC-04 · Vérification SAT/Z3<br/>impossibilité = UNSAT<br/>→ vérification automatique"]
     E5["SC-05 · Gibbard-Satterthwaite<br/>manipulation comme témoin<br/>→ comportement stratégique"]
 
     E1 --> Result
     E2 --> Result
+    E2b --> Match["Appariement bilatéral<br/>stabilité · optimalité<br/>Gale-Shapley (1962)"]
+    Match -.- ME["SC-02b · Preuve formelle Lean 4<br/>invariants prouvés · 0 sorry<br/>→ certitude"]
     E3 --> Result
     E4 --> Result
     E5 --> Result
@@ -81,7 +85,7 @@ La conclusion du notebook montre alors pourquoi la preuve formelle couvre une in
 
 ### Étape 2 : Méthodes de vote et paradoxes (SC-03, 35 min)
 
-Le notebook SC-03 implémente les règles de vote classiques (pluralité, Borda, Copeland) et déroule les paradoxes qui les minent, avant de montrer les conditions sous lesquelles un vainqueur cohérent réapparaît. Ce notebook est le compagnon Python du formalisme Lean du SC-02.
+Le notebook SC-03 implémente les règles de vote classiques (pluralité, Borda, Copeland) et déroule les paradoxes qui les minent, avant de montrer les conditions sous lesquelles un vainqueur cohérent réapparaît. Ce notebook est le compagnon Python du formalisme Lean du SC-02b.
 
 Le premier paradoxe est celui de **Condorcet** : la comparaison par paires à la majorité peut produire un cycle, si bien qu'aucune alternative ne bat toutes les autres.
 
@@ -107,11 +111,15 @@ Le modèle de **Downs** (1957) en tire une prédiction politique : deux partis e
 
 *Sortie du SC-03, deux panneaux : à gauche, la distribution des électeurs avec les positions initiales (Gauche = 2, Droite = 8) et finales (toutes deux ≈ 4,8) des partis ; à droite, les trajectoires du parti de gauche (bleu, montant) et de droite (rouge, descendant) qui convergent en une vingtaine de rounds vers la médiane (vert pointillé). La compétition électorale aspire les deux partis vers le centre.*
 
-### Étape 3 : Preuve formelle en Lean 4 (SC-02, 80 min)
+### Étape 3 : Mariage stable et algorithme de Gale-Shapley (SC-02, 35 min)
 
-Le notebook SC-02 formalise les préférences, les axiomes d'Arrow et de Sen, et le théorème de l'électeur médian en Lean 4. Il inclut un tour de la librairie SocialChoiceLean de DominikPeters (Gibbard-Satterthwaite, Split Cycle, 12 règles de vote, théorème de Duggan-Schwartz). Les définitions sont compatibles avec le projet Lake `game_theory_lean/SocialChoice/` (0 sorry sur Arrow, Sen et Voting).
+Le notebook SC-02 change d'objet : on n'agrège plus des préférences sur un ensemble d'alternatives, on **apparie** deux populations (n hommes et n femmes) sous des préférences bilatérales. L'**algorithme de Gale-Shapley** (1962, *deferred acceptance*) résout le problème en O(n^2) propositions et produit un matching qui est **stable** (aucun couple mixte ne préfère être ensemble), **man-optimal** (chaque homme obtient la meilleure partenaire possible parmi tous les mariages stables) et **woman-pessimal** (la duale). Le notebook implémente l'algorithme en Python, déroule la trace pas-à-pas sur un exemple n=3, vérifie la stabilité par énumération des couples bloquants, et confronte la sortie aux invariants prouvés dans le lac Lean [`game_theory_lean/StableMarriage/`](../../game_theory_lean/StableMarriage/) — port de [mmaaz-git/stable-marriage-lean](https://github.com/mmaaz-git/stable-marriage-lean), 4574 lignes FR+EN, 0 sorry.
 
-### Étape 4 : Vérification mécanique par SAT et Z3 (SC-04, 45 min)
+### Étape 4 : Preuve formelle en Lean 4 (SC-02b, 80 min)
+
+Le notebook SC-02b formalise les préférences, les axiomes d'Arrow et de Sen, et le théorème de l'électeur médian en Lean 4. Il inclut un tour de la librairie SocialChoiceLean de DominikPeters (Gibbard-Satterthwaite, Split Cycle, 12 règles de vote, théorème de Duggan-Schwartz). Les définitions sont compatibles avec le projet Lake `game_theory_lean/SocialChoice/` (0 sorry sur Arrow, Sen et Voting).
+
+### Étape 5 : Vérification mécanique par SAT et Z3 (SC-04, 45 min)
 
 Le notebook SC-04 encode les théorèmes d'Arrow et de Sen comme des problèmes SAT (PySAT) et SMT (Z3). Le résultat UNSAT des solveurs constitue une preuve mécanique de l'impossibilité. Il compare les approches SAT (variables booléennes, clauses CNF) et SMT (variables entières, rangs sociaux), et analyse la relaxation des axiomes (chaque paire d'axiomes est réalisable). L'impossibilité se lit alors de deux façons complémentaires — conceptuellement comme une intersection vide de contraintes, et concrètement comme une explosion du nombre de profils à vérifier.
 
@@ -119,19 +127,19 @@ Le notebook SC-04 encode les théorèmes d'Arrow et de Sen comme des problèmes 
 
 *Illustration conceptuelle du SC-04 (et non une sortie du solveur), deux panneaux : à gauche, le diagramme de Venn des trois contraintes Pareto / IIA / Non-dictature dont l'intersection centrale est marquée « VIDE » ; à droite, la courbe semi-log du nombre de profils `(m!)^k` croissant avec le nombre d'alternatives `m` et d'électeurs `k` — 36 profils pour 2 électeurs et 3 alternatives, 216 pour 3 électeurs — avec l'annotation « Arrow ne s'applique pas » au point m = 2, seuil en deçà duquel le théorème est muet.*
 
-### Étape 5 : Gibbard-Satterthwaite, la manipulation comme témoin (SC-05, 30 min)
+### Étape 6 : Gibbard-Satterthwaite, la manipulation comme témoin (SC-05, 30 min)
 
-Le notebook SC-05 retourne la question des quatre premières étapes : au lieu de demander quelle règle agrège honnêtement, il demande laquelle peut être **instrumentée par un électeur stratégique**. Une règle est manipulable s'il existe un profil et un électeur qui, avec un bulletin insincère, obtient un résultat strictement préféré — et le notebook **exhibe ce témoin d'exploitation par le code** (3 votants, 3 candidats, recherche explicite sur les bulletins), au lieu de le postuler. Le théorème de Gibbard-Satterthwaite (1973/1975) en donne la version générale : toute règle non-dictatoriale sur 3+ alternatives est manipulable ; sa formalisation Lean figure dans le tour de la librairie SocialChoiceLean du SC-02. Re-slot depuis `GameTheory-22` (doctrine #5081, geste 1).
+Le notebook SC-05 retourne la question des cinq premières étapes : au lieu de demander quelle règle agrège honnêtement, il demande laquelle peut être **instrumentée par un électeur stratégique**. Une règle est manipulable s'il existe un profil et un électeur qui, avec un bulletin insincère, obtient un résultat strictement préféré — et le notebook **exhibe ce témoin d'exploitation par le code** (3 votants, 3 candidats, recherche explicite sur les bulletins), au lieu de le postuler. Le théorème de Gibbard-Satterthwaite (1973/1975) en donne la version générale : toute règle non-dictatoriale sur 3+ alternatives est manipulable ; sa formalisation Lean figure dans le tour de la librairie SocialChoiceLean du SC-02b. Re-slot depuis `GameTheory-22` (doctrine #5081, geste 1).
 
-### Étape 6 : Möbius sur le treillis des coalitions (SC-06, 40 min)
+### Étape 7 : Möbius sur le treillis des coalitions (SC-06, 40 min)
 
 Le notebook SC-06 ouvre la face coopérative de l'agrégation : ce que l'on agrège n'est plus un classement mais une **valeur de coalition** $v : 2^N \to \mathbb{R}$. La loi centrale est l'**inversion de Möbius** — $v(S) = \sum_{T \subseteq S} m(T)$, où le dividende de Harsanyi $m(T)$ mesure la synergie pure de $T$ au-delà de ses sous-coalitions — vérifiée par reconstruction exacte puis mise au travail comme instrument de lecture du **pouvoir** (valeur de Shapley via les dividendes, calculée deux fois par des voies indépendantes ; indice de Banzhaf ; dummy du Luxembourg au Conseil européen de 1958) et de la **manipulation pondérée** (Gibbard-Satterthwaite sur un Borda à électeurs pondérés). La loi est attestée sur deux substrats indépendants : exécutée en Python (miroir de `Mobius.mobiusCoeff` / `Mobius.mobiusReconstruction`) et prouvée formellement dans le lac Lean du dépôt ([`Shapley.lean`](../game_theory_lean/CooperativeGames/Shapley.lean), `phi_weightedUnanimity` + `shapley_uniqueness`, 0 sorry).
 
-### Étape 7 : Élections de comité par approbation (SC-07, 40 min)
+### Étape 8 : Élections de comité par approbation (SC-07, 40 min)
 
 Le notebook SC-07 change d'objet une seconde fois : on n'élit plus un gagnant unique mais un **comité** de k sièges, sur des bulletins d'approbation. La notion de stabilité s'y transfère sous la forme du **core** : un comité W est dans le core si aucun groupe de votants (suffisamment gros au regard du **quota Hare**, confronté au **quota Droop**) ne peut lui opposer un ensemble de candidats qu'il approuverait unanimement. Le résultat central distillé — le théorème d'existence de Becker, Greger & Peters (arXiv 2609.11912) — est mis en machine sur le fil rouge n=4 votants, k=2 sièges : le comité favori des majoritaires n'est PAS dans le core (coalition bloquante exhibée), le comité proportionnel l'est, et un **certificat de paiement** (paiements + réserve) l'atteste. Trois règles concrètes — AV, PAV, règle de l'entropie harmonique — sont ensuite comparées sur 25 instances : leur taux de retour dans le core distingue ce qu'une règle simple garantit de ce qu'exige la stabilité.
 
-### Étape 8 : Comités multi-vainqueurs par classement — STV, Monroe, Chamberlin-Courant (SC-09, 50 min)
+### Étape 9 : Comités multi-vainqueurs par classement — STV, Monroe, Chamberlin-Courant (SC-09, 50 min)
 
 Le notebook SC-09 change d'objet une troisième fois : aux comités par **approbation** du SC-07 succèdent les comités par **bulletins de classement** (rankings), alignés sur le chapitre 6 du *Handbook of Computational Social Choice* (Brandt, Conitzer, Endriss & Lang 2016). Trois règles classiques d'élection à k sièges sont implémentées en Python pur puis confrontées à une formulation ILP Z3 : **STV** (Hare 1857, élimination itérative au quota de Droop, polynomial), **Monroe** (1995, NP-dur — chaque élu doit représenter entre floor(n/k) et ceil(n/k) votants, résolu par backtracking sur les affectations équilibrées) et **Chamberlin-Courant** (1983, NP-dur — chaque votant attribué à son meilleur élu, énumération brute sur les C(m, k) comités).
 
@@ -139,9 +147,9 @@ La confrontation Z3 (mode `Optimize`, variables binaires `y_c` pour le comité e
 
 ## Prerequisites
 
-- Python 3.10+ avec numpy, matplotlib, networkx (notebooks 01, 03, 04, 05, 07 — le 07 ajoute scipy) ; bibliothèque standard suffisante pour le 06
+- Python 3.10+ avec numpy, matplotlib, networkx (notebooks 01, 02, 03, 04, 05, 07 — le 07 ajoute scipy) ; bibliothèque standard suffisante pour les notebooks 02 et 06
 - pysat et z3-solver pour le notebook 04
-- Lean 4 + kernel WSL pour le notebook 02 (cf [README parent](../README.md))
+- Lean 4 + kernel WSL pour le notebook 02b (cf [README parent](../README.md))
 
 ## Installation
 
@@ -150,17 +158,20 @@ pip install -r ../requirements.txt
 pip install pysat z3-solver
 ```
 
-Pour le notebook 02 (Lean 4) : suivre les instructions dans [README parent](../README.md#notebooks-lean-4-2b-4b-8b-15b).
+Pour le notebook 02b (Lean 4) : suivre les instructions dans [README parent](../README.md#notebooks-lean-4-2b-4b-8b-15b).
 
 ## Formalisations Lean
 
-Les notebooks SC-01 et SC-02 renvoient au projet Lake `game_theory_lean/SocialChoice/` qui contient les preuves complètes :
+Les notebooks SC-01, SC-02 et SC-02b renvoient au projet Lake `game_theory_lean/` qui contient les preuves complètes :
 
 | Résultat | Fichier | sorry | Statut |
 |----------|---------|-------|--------|
-| Théorème d'Arrow | `Arrow.lean` | 0 | Prouvé |
-| Théorème de Sen | `Sen.lean` | 0 | Prouvé |
-| Modèles de vote | `Voting.lean` | 0 | Banks, STV, Median Voter |
+| Théorème d'Arrow | `SocialChoice/Arrow.lean` | 0 | Prouvé |
+| Théorème de Sen | `SocialChoice/Sen.lean` | 0 | Prouvé |
+| Modèles de vote | `SocialChoice/Voting.lean` | 0 | Banks, STV, Median Voter |
+| Algorithme Gale-Shapley | `StableMarriage/GaleShapley.lean` | 0 | Stabilité, optimalité, terminaison |
+| Lemmes d'invariant GS | `StableMarriage/Lemmas.lean` | 0 | Cohérence, monotonie, propositions |
+| Treillis des mariages | `StableMarriage/Lattice.lean` | 0 | Argument du poids minimal |
 
 Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; DominikPeters, Lean 4 + Mathlib) formalise 12 règles de vote et 4 théorèmes d'impossibilité supplémentaires (Gibbard-Satterthwaite, Condorcet Participation, Condorcet Reinforcement, Duggan-Schwartz). Inventaire détaillé : [LEAN_INVENTORY.md](../LEAN_INVENTORY.md).
 
@@ -179,6 +190,8 @@ Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; D
 | **Split Cycle** | Règle de vote la plus fine satisfaisant Condorcet + acyclicité |
 | **Core d'une élection de comité** | Comité qu'aucune coalition (au quota Hare/Droop) ne peut bloquer par un ensemble unanimement approuvé — toujours non vide (SC-07) |
 | **Certificat de paiement** | Preuve constructive d'appartenance au core : paiements aux votants + réserve, budget égal au coût du comité (SC-07) |
+| **Mariage stable** | Couplage parfait sans couple bloquant — Gale-Shapley (1962) le construit en O(n^2) propositions (SC-02) |
+| **Algorithme de Gale-Shapley** | *Deferred acceptance* : le proposant a l'avantage informationnel, l'algorithme est DSIC pour le proposant, le receveur est pessimal (SC-02) |
 
 > Les six figures de cette sous-série sont intégrées ci-dessus dans le **Parcours d'apprentissage**, chacune adjacente à l'étape qui traite le concept qu'elle illustre (Arrow en Étape 1 ; Condorcet, Sen, électeur médian et Downs en Étape 2 ; agrégation SAT/Z3 en Étape 4). Provenance, dimensions et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
@@ -196,31 +209,35 @@ Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; D
 |-----------|------------|
 | Arrow, *Social Choice and Individual Values* (1951) | Théorème d'impossibilité |
 | Sen, *Collective Choice and Social Welfare* (1970) | Paradoxe liberal |
-| Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005) | Preuve utilisée dans SC-01 et SC-02 |
+| Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005) | Preuve utilisée dans SC-01 et SC-02b |
 | Moulin, "Condorcet's Principle Implies the No Show Paradox" (1988) | Paradoxe de la non-participation |
 | Holliday & Pacuit, "Split Cycle" (2023) | Règle de vote optimale |
 | Peters, [SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) | Formalisation Lean 4 de 12 règles + 4 théorèmes |
 | Gibbard (1973) / Satterthwaite (1975) | Théorème de manipulabilité (SC-05) |
 | Harsanyi (1959) ; Curiel, *Cooperative Game Theory and Applications* (1997) | Dividendes de coalition, jeux de vote pondérés (SC-06) |
 | Becker, Greger & Peters, "Existence of the Core in Approval-Based Committee Elections" (arXiv 2609.11912) | Core non vide, quotas Hare/Droop, certificats (SC-07) |
-| **Brandt, Conitzer, Endriss, Lang, Procaccia, *Handbook of Computational Social Choice* (CUP, 2016, ISBN 978-1-107-06043-2)** | **L'ouvrage-ancrage de la sous-série** — 554 p. couvrent le programme commun des sept carnets : ch. 1-2 (impossibilités, règles de vote polynomiales, Zwicker), ch. 4-5 (Kemeny §2.7+4.1-4.2, ranked pairs §2.4+3, Dodgson §5.3 winner-NP-dur), ch. 6 (barrières computationnelles à la manipulation Gibbard-Satterthwaite, encodage SAT/Z3). Source biblio cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf`. |
+| **Brandt, Conitzer, Endriss, Lang, Procaccia, *Handbook of Computational Social Choice* (CUP, 2016, ISBN 978-1-107-06043-2)** | **L'ouvrage-ancrage de la sous-série** — 554 p. couvrent le programme commun des huit carnets : ch. 1-2 (impossibilités, règles de vote polynomiales, Zwicker), ch. 4-5 (Kemeny §2.7+4.1-4.2, ranked pairs §2.4+3, Dodgson §5.3 winner-NP-dur), ch. 6 (barrières computationnelles à la manipulation Gibbard-Satterthwaite, encodage SAT/Z3). Source biblio cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf`. |
+| Gale & Shapley (1962), "College Admissions and the Stability of Marriage", *American Mathematical Monthly* 69(1):9-15 | Algorithme de deferred acceptance, optimalité du proposant, pessimalité du receveur (SC-02) |
+| Roth (1982), "The Economics of Matching: Stability and Incentives", *Mathematics of Operations Research* 7(4):617-628 | Équivalence game-théorique de la stabilité, lien avec le core (SC-02) |
+| Gusfield & Irving (1989), *The Stable Marriage Problem: Structure and Algorithms* (MIT Press) | Tour de l'algorithme, extensions, complexité (SC-02) |
 
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
 
-Cette sous-série vous a fait saisir pourquoi le **choix social** est l'un des résultats intellectuels les plus troublants de la théorie de la décision : il existe des limites *mathématiquement prouvées* à ce qu'une collectivité peut décider de manière cohérente. L'arc pédagogique repose sur **sept angles complémentaires** — cinq braqués sur les mêmes résultats d'impossibilité, les deux derniers changeant d'objet : la face coopérative puis l'élection de comité :
+Cette sous-série vous a fait saisir pourquoi le **choix social** est l'un des résultats intellectuels les plus troublants de la théorie de la décision : il existe des limites *mathématiquement prouvées* à ce qu'une collectivité peut décider de manière cohérente. L'arc pédagogique repose sur **huit angles complémentaires** — six braqués sur les mêmes résultats d'impossibilité et l'appariement bilatéral, les deux derniers changeant d'objet : la face coopérative puis l'élection de comité :
 
 - **Le résultat fondateur** — le théorème d'Arrow (1951) : aucune règle d'agrégation ne peut, simultanément et dès que 3 alternatives sont en jeu, satisfaire Pareto, l'indépendance vis-à-vis des alternatives non pertinentes (IIA) et la non-dictature. Le théorème de Sen (1970) étend le constat : liberté minimale et efficacité parétienne sont incompatibles. Ces théorèmes ne disent pas « la démocratie est impossible » ; ils délimitent précisément *quels compromis* toute règle de vote doit accepter.
-- **La quadruple convergence, délibérément juxtaposée** — un même énoncé est attaqué par cinq méthodes, chacune révélant une facette différente. La **simulation Python** (SC-01) teste les axiomes sur des règles concrètes et suit la preuve de Geanakoplos (lemme extrémal, pivot, dictateur partiel) ; la **preuve formelle Lean 4** (SC-02) couvre l'infinité des cas que la simulation ne peut qu'échantillonner, avec 0 sorry sur Arrow et Sen ; les **méthodes de vote** (SC-03) incarnent les paradoxes dans des règles réelles (Condorcet, Borda, Copeland, électeur médian de Downs) ; la **vérification mécanique SAT/Z3** (SC-04) fait émerger l'impossibilité comme un résultat UNSAT des solveurs ; la **manipulation stratégique** (SC-05) exhibe le témoin d'exploitation que Gibbard-Satterthwaite promet. Le sixième angle change d'objet : la **décomposition de Möbius** (SC-06) agrège des valeurs de coalition — dividendes de Harsanyi, poids contre pouvoir — et réatteste la loi manipulation sur un électorat pondéré. Le septième change d'échelle : les **élections de comité** (SC-07) élisent k sièges sur bulletins d'approbation, et là où aucune règle unique n'est stable, le **core** existe toujours — quoté Hare/Droop, certifié par paiements. Comprendre les sept, c'est comprendre qu'une *même vérité* se laisse approcher par l'expérience, la déduction formelle, la pratique électorale, la recherche combinatoire, le comportement stratégique, la coopération décomposée et la représentation proportionnelle.
-- **L'instrument** — les outils qui opérationnalisent chaque angle : numpy/matplotlib pour la simulation, Lean 4 + la librairie SocialChoiceLean de Peters (12 règles de vote, Gibbard-Satterthwaite, Split Cycle, Duggan-Schwartz) pour la preuve, PySAT (clauses CNF) et Z3 (rangs entiers SMT) pour la vérification mécanique. Chaque outil éclaire un aspect que les autres laissent dans l'ombre : la simulation donne l'intuition, Lean donne la certitude, SAT/Z3 donnent la vérification automatique.
-- **La finesse** — qu'un théorème d'impossibilité n'est pas une impasse mais une **cartographie des relaxations possibles**. SC-04 montre que chaque *paire* d'axiomes d'Arrow est réalisable ; Split Cycle (Holliday & Pacuit) satisfait Condorcet sans tomber dans l'acyclicité totale ; le théorème de l'électeur médian (Downs) restaure l'existence d'un vainqueur sous l'hypothèse d'unimodalité. La leçon pratique : on ne contourne pas Arrow, on *choisit* quel axiome relâcher selon le contexte.
+- **La convergence délibérément juxtaposée** — un même énoncé est attaqué par plusieurs méthodes, chacune révélant une facette différente. La **simulation Python** (SC-01) teste les axiomes sur des règles concrètes et suit la preuve de Geanakoplos (lemme extrémal, pivot, dictateur partiel) ; le **mariage stable** (SC-02) déplace la question sur l'appariement bilatéral où l'algorithme de Gale-Shapley résout en O(n^2) propositions et garantit stabilité + man-optimalité + woman-pessimalité ; la **preuve formelle Lean 4** (SC-02b) couvre l'infinité des cas que la simulation ne peut qu'échantillonner, avec 0 sorry sur Arrow et Sen ; les **méthodes de vote** (SC-03) incarnent les paradoxes dans des règles réelles (Condorcet, Borda, Copeland, électeur médian de Downs) ; la **vérification mécanique SAT/Z3** (SC-04) fait émerger l'impossibilité comme un résultat UNSAT des solveurs ; la **manipulation stratégique** (SC-05) exhibe le témoin d'exploitation que Gibbard-Satterthwaite promet. L'avant-dernier angle change d'objet : la **décomposition de Möbius** (SC-06) agrège des valeurs de coalition — dividendes de Harsanyi, poids contre pouvoir — et réatteste la loi manipulation sur un électorat pondéré. Le dernier change d'échelle : les **élections de comité** (SC-07) élisent k sièges sur bulletins d'approbation, et là où aucune règle unique n'est stable, le **core** existe toujours — quoté Hare/Droop, certifié par paiements. Comprendre les huit, c'est comprendre qu'une *même vérité* se laisse approcher par l'expérience, l'appariement bilatéral, la déduction formelle, la pratique électorale, la recherche combinatoire, le comportement stratégique, la coopération décomposée et la représentation proportionnelle.
+- **L'instrument** — les outils qui opérationnalisent chaque angle : numpy/matplotlib pour la simulation, Lean 4 + la librairie SocialChoiceLean de Peters (12 règles de vote, Gibbard-Satterthwaite, Split Cycle, Duggan-Schwartz) et le port [mmaaz-git/stable-marriage-lean](https://github.com/mmaaz-git/stable-marriage-lean) pour la preuve, PySAT (clauses CNF) et Z3 (rangs entiers SMT) pour la vérification mécanique. Chaque outil éclaire un aspect que les autres laissent dans l'ombre : la simulation donne l'intuition, Lean donne la certitude, SAT/Z3 donnent la vérification automatique, et le **binôme Python/Lean** sur l'appariement (SC-02 + SC-02b) montre qu'un même algorithme gagne à être exécuté ET prouvé.
+- **La finesse** — qu'un théorème d'impossibilité n'est pas une impasse mais une **cartographie des relaxations possibles**. SC-04 montre que chaque *paire* d'axiomes d'Arrow est réalisable ; Split Cycle (Holliday & Pacuit) satisfait Condorcet sans tomber dans l'acyclicité totale ; le théorème de l'électeur médian (Downs) restaure l'existence d'un vainqueur sous l'hypothèse d'unimodalité ; l'algorithme de Gale-Shapley (SC-02) garantit la stabilité mais pas la Pareto-optimalité sociale, et l'écart entre les deux concepts trace une frontière précise. La leçon pratique : on ne contourne pas Arrow, on *choisit* quel axiome relâcher selon le contexte.
 
 La thèse est puissante et honnêtement présentée : il n'existe pas de règle de vote idéale, mais un *paysage* de règles aux compromis clairement cartographiés — et la rigueur exige de les confronter simultanément à l'expérience, à la preuve formelle et à la vérification mécanique avant de prétendre les comprendre.
 
 ### Prochaines étapes
 
-- **Design de mécanismes** : le notebook [GameTheory-16-MechanismDesign-Python](../GameTheory-16-MechanismDesign-Python.ipynb) est le prolongement naturel — il retourne la question d'Arrow (« quelle règle agréger ? ») en « comment *concevoir* les règles du jeu pour que les agents révèlent honnêtement leurs préférences ? » (enchères VCG, appariement Gale-Shapley, Myerson-Satterthwaite).
+- **Design de mécanismes** : le notebook [GameTheory-16-MechanismDesign-Python](../GameTheory-16-MechanismDesign-Python.ipynb) est le prolongement naturel — il retourne la question d'Arrow (« quelle règle agréger ? ») en « comment *concevoir* les règles du jeu pour que les agents révèlent honnêtement leurs préférences ? » (enchères VCG, Myerson-Satterthwaite). Le SC-02 a déjà posé l'appariement Gale-Shapley sous l'angle algorithmique et la stabilité ; le GT-16 le relie au **design de mécanismes** (DSIC, core sélectif, allocations Pareto-efficaces).
+- **Lac StableMarriage** : pour approfondir la version formelle de l'appariement, le projet Lake [`game_theory_lean/StableMarriage/`](../../game_theory_lean/StableMarriage/) (port de [mmaaz-git/stable-marriage-lean](https://github.com/mmaaz-git/stable-marriage-lean), 4574 lignes FR+EN, 0 sorry) donne le pendant prouvé du SC-02.
 - **Jeux coopératifs et valeur de Shapley** : [GameTheory-15-CooperativeGames-Python](../GameTheory-15-CooperativeGames-Python.ipynb) introduit une autre forme d'agrégation — non plus des préférences mais des *contributions* — où la valeur de Shapley offre l'unique répartition équitable vérifiant des axiomes analogues à ceux d'Arrow ; le SC-06 en a déjà posé la décomposition en dividendes de Harsanyi, et le SC-07 la version comité (core, quotas Hare/Droop).
 - **Approfondir la formalisation Lean 4** : [SymbolicAI/Lean](../../SymbolicAI/Lean/README.md) pour les prérequis et la méthodologie des preuves formelles, et l'inventaire [LEAN_INVENTORY.md](../LEAN_INVENTORY.md) pour la cartographie complète des théorèmes de choix social prouvés dans le projet Lake `game_theory_lean/SocialChoice/`.
 - Pour la pratique : reprenez [04-Computational-Aggregation-SAT-Z3](04-Computational-Aggregation-SAT-Z3.ipynb) et relaxez un *autre* couple d'axiomes que ceux étudiés — encodez-le en SAT et observez si le solveur retourne SAT (une règle existe) ou UNSAT (nouvelle impossibilité). C'est l'exercice le plus formateur pour saisir comment la vérification mécanique transforme une conjecture en théorème.
