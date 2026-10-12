@@ -167,7 +167,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -526,7 +526,7 @@
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
-      "kind": "orphan_entry",
+      "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15d-CechObstruction-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
@@ -1889,6 +1889,16 @@
       "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-04-DD-AR-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
+    },
+    {
+      "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12b-Lean-Sensitivity-Theorem.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "unreachable",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12c-Tensor-Product-Representations-Lean.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
     {
       "kind": "unreachable",
