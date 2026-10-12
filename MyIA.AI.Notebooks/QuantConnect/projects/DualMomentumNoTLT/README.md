@@ -50,7 +50,7 @@ La stratégie **bat le benchmark SPY** en rendement absolu (CAGR 16.91 % vs ~12-
 
 En données journalières, Lean livre les avis de dividende dans une tranche datée de minuit, qui ne porte aucune barre de cotation. IEF verse un dividende chaque mois, et son avis tombe souvent le premier jour de cotation. La garde de mois de `main.py` était alors consommée sur cette tranche : le rééquilibrage décidait sur les cours de la veille, et ses ordres partaient à minuit pour être exécutés à l'ouverture. Sur la fenêtre codée, 109 rééquilibrages sur 120 tombaient à minuit.
 
-Correctif (`main.py`, 4 lignes) : le mois n'est consommé que sur une tranche qui porte une barre d'un titre de l'univers. Mesure sur les nœuds QC, frais de courtage inclus, protocole fixé avant les backtests ([#20264, c.6115262186](https://github.com/jsboige/CoursIA/issues/20264#issuecomment-6115262186)) :
+Correctif dans `main.py` : le mois n'est consommé que sur une tranche qui porte une barre d'un titre de l'univers. Mesure sur les nœuds QC, frais de courtage inclus, protocole fixé avant les backtests ([#20264, c.6115262186](https://github.com/jsboige/CoursIA/issues/20264#issuecomment-6115262186)) :
 
 | Fenêtre | Variante | Ordres de minuit | Sharpe | CAGR | Drawdown max | Ordres | Backtest |
 |---|---|---|---|---|---|---|---|
