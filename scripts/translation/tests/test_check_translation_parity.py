@@ -714,7 +714,11 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # sur main avec son carnet et sans mettre a jour cette ligne, ce qui a rougi
 # `test_full_repo_state_passes_parity` (found 9, declared 8) sur toute PR
 # path-filtree scripts/**. Total apres fusion : 9.
-EXPECTED_PAIR_COUNT = 9
+# 2026-10-12 (#1650 tranche Image 01-Foundation PR1, serie Image axe E) : +2
+# paires T4 -- Image/01-Foundation/01-1-OpenAI-DALL-E-3_en + 01-2-GPT-5-
+# Image-Generation_en (37 cellules md traduites, rendu --require-translated
+# 0 fallback). Total apres fusion : 11.
+EXPECTED_PAIR_COUNT = 11
 
 
 def _collect_parity_failures(repo_root: Path,
