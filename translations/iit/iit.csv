@@ -9356,7 +9356,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,a309752b,markd
 *ICT-Synthèse — un seul appareil de mesure, cinq substrats. Epic #4588. Voir
 [ICT-0-Framing](ICT-0-Framing.md) pour le cadrage de la série.*
 ",,,,,,,,754ed67779e7583f,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,3653fac8,markdown,fr,9d9369847748e1bc,"# IIT - Introduction à PyPhi et Integrated Information Theory
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,3653fac8,markdown,fr,9d9369847748e1bc,"# IIT - Introduction à PyPhi et Integrated Information Theory
 
 ## Navigation
 **Série** : [IIT](./README.md) | **Partie** : Fondements
@@ -9429,7 +9429,7 @@ pip install pyphi
 ```
 
 Sélectionner l'environnement nouvellement créé comme noyau.",,,,,,,,9d9369847748e1bc,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,903f487f,code,fr,a7dd6c38475c47fb,"import warnings
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,903f487f,code,fr,a7dd6c38475c47fb,"import warnings
 # pyemd (importe par pyphi) emet un avertissement de deprecation pkg_resources qui fuite le chemin site-packages.
 warnings.filterwarnings(""ignore"", message="".*pkg_resources is deprecated.*"", category=UserWarning)
 
@@ -9443,15 +9443,15 @@ else:
     import pyphi
     print(f""pyphi deja installe ({pyphi.__version__})."")
 ",,,,,,,,a7dd6c38475c47fb,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,75ba5ca1,markdown,fr,4e783c71fc61cda2,"Une fois PyPhi installe, importons la librairie et verifions la version disponible.",,,,,,,,4e783c71fc61cda2,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,058309e0,code,fr,4f90508f213d7545,"import warnings
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,75ba5ca1,markdown,fr,4e783c71fc61cda2,"Une fois PyPhi installe, importons la librairie et verifions la version disponible.",,,,,,,,4e783c71fc61cda2,,,,,,,,
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,058309e0,code,fr,4f90508f213d7545,"import warnings
 # pyemd (importe par pyphi) emet un avertissement de deprecation pkg_resources qui fuite le chemin site-packages.
 warnings.filterwarnings(""ignore"", message="".*pkg_resources is deprecated.*"", category=UserWarning)
 
 import pyphi
 
 print(""PyPhi version:"", pyphi.__version__)",,,,,,,,4f90508f213d7545,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,91886d72,markdown,fr,44b2e001b4634bfe,"<a id=""sec3""></a>
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,91886d72,markdown,fr,44b2e001b4634bfe,"<a id=""sec3""></a>
 ## 3. Création d’un réseau simple (Network)
 
 ### 3.1. Structure d’un réseau
@@ -9467,7 +9467,7 @@ Nous allons créer un réseau (circuit) minimaliste à 3 nœuds (A, B, C) :
 - **A** : passerelle logique, reçoit des entrées de B et C  
 - **B** : un XOR des entrées de A et C  
 - **C** : identique à B ou un AND/OR, selon l’exemple souhaité ",,,,,,,,44b2e001b4634bfe,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,5e296ce8,code,fr,82a847613c23d5d7,"import numpy as np
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,5e296ce8,code,fr,82a847613c23d5d7,"import numpy as np
 import pyphi
 
 # Exemple d'un petit réseau XOR
@@ -9479,7 +9479,7 @@ network = pyphi.examples.xor_network()
 print(""Nodes:"", network.node_labels)
 print(""TPM shape:"", network.tpm.shape)
 print(""Connectivity matrix:\n"", network.cm)",,,,,,,,82a847613c23d5d7,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,eb86b36c,markdown,fr,918c48be08d93142,"**Comment ça marche ?**  
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,eb86b36c,markdown,fr,918c48be08d93142,"**Comment ça marche ?**  
 - `pyphi.examples.xor_network()` renvoie un réseau (Network) de taille 3, où chaque nœud est un XOR à deux entrées (sans auto-connexion).  
 - La **TPM** est stockée dans `network.tpm`, et chaque dimension correspond à un état binaire (`0/1`). La `TPM` est un tableau multidimensionnel de taille (2, 2, 2, 3), reflétant les états binaires pour 3 nœuds.
 La matrice de connectivité montre les liens (XOR signifie que chaque nœud dépend des deux autres sans boucles sur soi-même).
@@ -9491,7 +9491,7 @@ La matrice de connectivité montre les liens (XOR signifie que chaque nœud dép
 
 Pour mieux comprendre le fonctionnement du réseau, vous pouvez examiner directement les valeurs de la matrice de transition (TPM). Celle-ci peut être soit en _state-by-state_ (SBS) ou _state-by-node_ (SBN) selon votre cas. PyPhi propose des utilitaires de conversion.
 ",,,,,,,,918c48be08d93142,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,62301b90,code,fr,f76874f8875d5929,"import pyphi.convert
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,62301b90,code,fr,f76874f8875d5929,"import pyphi.convert
 
 sbn_tpm = network.tpm
 print(""TPM (state-by-node) shape:"", sbn_tpm.shape)
@@ -9504,7 +9504,7 @@ sbs_tpm = pyphi.convert.state_by_node2state_by_state(sbn_tpm)
 print(""\nTPM (state-by-state) shape:"", sbs_tpm.shape)
 print(""Quelques lignes du TPM:\n"", sbs_tpm[:4])
 ",,,,,,,,f76874f8875d5929,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,7a35fb70,markdown,fr,bd3a8f0d34e95fb5,"<a id=""sec4""></a>
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,7a35fb70,markdown,fr,bd3a8f0d34e95fb5,"<a id=""sec4""></a>
 ## 4. Définition d’un Subsystem et calcul de $\Phi$
 
 ### 4.1. Sous-système (Subsystem)
@@ -9515,7 +9515,7 @@ Un **Subsystem** se définit en spécifiant :
 3. Les indices de nœuds internes qu’on considère comme faisant partie du sous-système.
 
 Ensuite, PyPhi peut calculer la valeur de $\Phi$ pour ce sous-système.",,,,,,,,bd3a8f0d34e95fb5,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,phi-def-intuitive,markdown,fr,cad95e9a01d1fb4c,"### Le Calcul de $\Phi$ : Définition Intuitive
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,phi-def-intuitive,markdown,fr,cad95e9a01d1fb4c,"### Le Calcul de $\Phi$ : Définition Intuitive
 
 $\Phi$ mesure à quel point le système est ""plus que la somme de ses parties"".
 
@@ -9524,7 +9524,7 @@ $\Phi$ mesure à quel point le système est ""plus que la somme de ses parties""
 - $\Phi$ est la quantité d'information perdue au niveau de cette coupe la plus faible.
 - Si $\Phi > 0$, le système est irréductible (conscient selon l'IIT).
 ",,,,,,,,cad95e9a01d1fb4c,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,cfb3a7f7,code,fr,0f5f72abc7d618ed,"# État de départ
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,cfb3a7f7,code,fr,0f5f72abc7d618ed,"# État de départ
 state = (0, 0, 0)
 
 # Créons un Subsystem pour l’ensemble des nœuds (0, 1, 2)
@@ -9534,7 +9534,7 @@ subsystem = pyphi.Subsystem(network, state, (0, 1, 2))
 phi_value = pyphi.compute.phi(subsystem)
 
 print(""Φ pour le sous-système (0,1,2) à l’état (0,0,0) :"", phi_value)",,,,,,,,0f5f72abc7d618ed,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,388d4d94,markdown,fr,205c0e0443ca775c,"### 4.2. States inaccessibles et validation (`StateUnreachableError`)
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,388d4d94,markdown,fr,205c0e0443ca775c,"### 4.2. States inaccessibles et validation (`StateUnreachableError`)
 
 C'est une erreur fréquente rencontrée dans PyPhi.
 
@@ -9545,7 +9545,7 @@ C'est une erreur fréquente rencontrée dans PyPhi.
 2. Ou désactiver la validation (pour l'exercice) : `pyphi.config.VALIDATE_SUBSYSTEM_STATES = False`.
 
 PyPhi, par défaut, peut émettre des erreurs (`StateUnreachableError`) si l'état que vous définissez n'est pas accessible depuis la TPM. Ci-dessous, on montre comment désactiver temporairement la validation pour s'assurer que PyPhi ne bloque pas le calcul.",,,,,,,,205c0e0443ca775c,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,1748a54f,code,fr,6bfb0b9fa3411e68,"# Configurer PyPhi pour ignorer les inaccessibilités d’états
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,1748a54f,code,fr,6bfb0b9fa3411e68,"# Configurer PyPhi pour ignorer les inaccessibilités d’états
 pyphi.config.VALIDATE_SUBSYSTEM_STATES = False
 
 # Réessayer un état arbitraire
@@ -9557,14 +9557,14 @@ try:
 except pyphi.exceptions.StateUnreachableError:
     print(""État inaccessible, PyPhi a lancé une exception !"")
 ",,,,,,,,6bfb0b9fa3411e68,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,d1e8755b,markdown,fr,175d4694c8d1a5c9,On peut également calculer $\Phi$ pour d'autres états accessibles:,,,,,,,,175d4694c8d1a5c9,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,8be318a7,code,fr,c1f1d97c7200ed57,"# Exemple d'états stables pour éviter StateUnreachableError
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,d1e8755b,markdown,fr,175d4694c8d1a5c9,On peut également calculer $\Phi$ pour d'autres états accessibles:,,,,,,,,175d4694c8d1a5c9,,,,,,,,
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,8be318a7,code,fr,c1f1d97c7200ed57,"# Exemple d'états stables pour éviter StateUnreachableError
 for s in [(0,0,0), (0,1,1), (1,1,0)]:
     subsys = pyphi.Subsystem(network, s, (0,1,2))
     val = pyphi.compute.phi(subsys)
     print(f""État {s} -> Φ = {val:.5f}"")
 ",,,,,,,,c1f1d97c7200ed57,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,c91e98c8,markdown,fr,eb42ba9f71d923cd,"### Exercice 1 : Phi d'un sous-système partiel
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,c91e98c8,markdown,fr,eb42ba9f71d923cd,"### Exercice 1 : Phi d'un sous-système partiel
 
 Le calcul de Phi ci-dessus utilise les 3 noeuds (0,1,2). Que se passe-t-il si on ne considère
 qu'un sous-ensemble de noeuds, par exemple (0,1) uniquement ?
@@ -9578,7 +9578,7 @@ et comparez sa valeur Phi avec celle du système complet.
 
 **Indice** : `pyphi.Subsystem(network, state, (0, 1))` crée le sous-système partiel.
 Puis `pyphi.compute.phi(...)` pour le Phi et `pyphi.compute.ces(...)` pour la CES.",,,,,,,,eb42ba9f71d923cd,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,42dafeb5,code,fr,a8cce4ed4bd0d5c9,"# Exercice 1 : Phi d'un sous-systeme partiel (noeuds 0 et 1 uniquement)
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,42dafeb5,code,fr,a8cce4ed4bd0d5c9,"# Exercice 1 : Phi d'un sous-systeme partiel (noeuds 0 et 1 uniquement)
 # TODO etudiant : creer un sous-systeme avec (0, 1) a l'etat (0,0,0)
 # et calculer phi + nombre de concepts dans la CES
 # Indice : pyphi.Subsystem(network, (0,0,0), (0, 1))
@@ -9591,20 +9591,20 @@ if result is not None:
 else:
     print(""Exercice a completer"")
 ",,,,,,,,a8cce4ed4bd0d5c9,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,63af95b4,markdown,fr,dd5d997bb5406898,"<a id=""sec5""></a>
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,63af95b4,markdown,fr,dd5d997bb5406898,"<a id=""sec5""></a>
 ## 5. Concepts, mécanismes, et structure cause-effet (CES)
 
 PyPhi peut également détailler la structure de cause-effet (CES) :
 
 - Chaque *concept* correspond à un **mécanisme** (ex. nœud simple ou sous-groupe de nœuds) et à son purview (cause et/ou effet).",,,,,,,,dd5d997bb5406898,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,57501e53,code,fr,6aec6f496b37af2a,"ces = pyphi.compute.ces(subsystem)
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,57501e53,code,fr,6aec6f496b37af2a,"ces = pyphi.compute.ces(subsystem)
 print(""Nombre de concepts dans la CES :"", len(ces))
 print(""Liste des mécanismes :"", ces.labeled_mechanisms)",,,,,,,,6aec6f496b37af2a,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,560d96b0,markdown,fr,8992a4bbfb31a0d4,"### 5.1. Analyse d’un concept spécifique
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,560d96b0,markdown,fr,8992a4bbfb31a0d4,"### 5.1. Analyse d’un concept spécifique
 
 Chaque concept est défini par un mécanisme (un ensemble de nœuds) et un purview (un ensemble de nœuds qui subissent ses effets ou le causent). Explorons le premier concept dans la CES, pour comprendre sa cause / effet et son petit phi ($\\varphi$).
 ",,,,,,,,8992a4bbfb31a0d4,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,1083ab9d,code,fr,f823b5327707d70e,"# Prenons le premier concept dans la CES
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,1083ab9d,code,fr,f823b5327707d70e,"# Prenons le premier concept dans la CES
 first_concept = ces[0]
 print(""Mécanisme:"", first_concept.mechanism)
 print(""Cause purview:"", first_concept.cause.purview)
@@ -9613,7 +9613,7 @@ print(""Effect purview:"", first_concept.effect.purview)
 print(""Effect repertoire:\n"", first_concept.effect.repertoire)
 print(""Petit phi (φ) ="", first_concept.phi)
 ",,,,,,,,f823b5327707d70e,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,a9a149d4,markdown,fr,d28710cee7eb8e7e,"### Exercice 2 : Comparer les concepts de la CES
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,a9a149d4,markdown,fr,d28710cee7eb8e7e,"### Exercice 2 : Comparer les concepts de la CES
 
 Le premier concept analysé (mécanisme {A,B}) a un petit phi de 0.5 et un effect purview sur C uniquement.
 Les autres concepts de la CES peuvent avoir des structures très différentes.
@@ -9623,7 +9623,7 @@ et analysez son cause/effect purview et son petit phi.
 
 **Indice** : Utilisez `ces[1]` pour accéder au deuxième concept. Comparez les purviews avec le premier concept.
 Les purviews sont-ils les mêmes ? Pourquoi ?",,,,,,,,d28710cee7eb8e7e,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,5658a6b5,code,fr,a0877ac78b29c3a8,"# Exercice 2 : Analyser le deuxieme concept de la CES (mecanisme {A,C})
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,5658a6b5,code,fr,a0877ac78b29c3a8,"# Exercice 2 : Analyser le deuxieme concept de la CES (mecanisme {A,C})
 # TODO etudiant : acceder a ces[1] et afficher :
 #   - le mecanisme
 #   - le cause purview et repertoire
@@ -9637,7 +9637,7 @@ if result is not None:
 else:
     print(""Exercice a completer"")
 ",,,,,,,,a0877ac78b29c3a8,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,50f14939,markdown,fr,08f81eec97cf37ef,"### Interpretation : structure causale du premier concept
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,50f14939,markdown,fr,08f81eec97cf37ef,"### Interpretation : structure causale du premier concept
 
 Le mécanisme {A, B} (noeuds 0 et 1) produit un concept avec :
 
@@ -9648,7 +9648,7 @@ Le mécanisme {A, B} (noeuds 0 et 1) produit un concept avec :
 | **Petit phi** | 0.5 | L'information integree par ce mécanisme spécifique |
 
 Le **repertoire de cause** montre que l'etat passe le plus probable etait (0,0,0) ou (1,1,1) avec probabilite 0.5 chacun. Le **repertoire d'effet** indique que C passera a l'etat 0 avec certitude (probabilite 1.0), ce qui est coherent avec le XOR : si A=0 et B=0, alors C = A XOR B = 0.",,,,,,,,08f81eec97cf37ef,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,5d067a10,markdown,fr,b6bd49d481e0afa1,"
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,5d067a10,markdown,fr,b6bd49d481e0afa1,"
 <a id=""sec6""></a>
 ## 6. Exemple avancé : analyse de causalité et macro-subsystems
 
@@ -9657,13 +9657,13 @@ MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,5d067a10,markdown,fr,b6bd49d481e
 PyPhi offre `pyphi.actual` pour analyser la causalité effective (""What caused what?""). On définit un `Transition` : état avant, état après, et on cherche les liens causaux irréductibles.
 
 Cette extension de la théorie permet de comprendre non plus ""combien de conscience"" (système) mais ""qui a causé quoi"" (causalité événementielle). C'est utile pour analyser des séquences temporelles spécifiques.",,,,,,,,b6bd49d481e0afa1,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,0f04c796,markdown,fr,9e64a6c32a8e30de,"### Interpretation : liens causaux de la transition (1,1,1) vers (0,0,0)
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,0f04c796,markdown,fr,9e64a6c32a8e30de,"### Interpretation : liens causaux de la transition (1,1,1) vers (0,0,0)
 
 L'analyse revele **10 liens causaux irreductibles**, tous avec une force **alpha = 1.0**. Cette saturation uniforme n'est PAS le signe d'une ""structure riche"" : elle reflete au contraire une **limite du reseau XOR pour la causalite evenementielle**. Le reseau XOR est **deterministe** (chaque noeud = XOR exact de ses deux voisins), donc toute transition valide est parfaitement determinee — chaque mecanisme cause son purview avec la force maximale alpha = 1.0, sans aucune nuance.
 
 En d'autres termes : sur un reseau deterministe, la causalite evenementielle **ne discrimine pas** — elle attribue la meme force maximale a tous les liens. Pour voir `pyphi.actual` exercer sa capacite distinctive (distinguer les causes fortes des causes faibles), il faut un reseau **probabiliste**, dont les transitions ne sont pas parfaitement determinees. C'est l'objet de la cellule suivante.
 ",,,,,,,,9e64a6c32a8e30de,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,e55f113d,code,fr,4a55108979be8f0a,"import pyphi
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,e55f113d,code,fr,4a55108979be8f0a,"import pyphi
 import pyphi.actual
 
 pyphi.config.VALIDATE_SUBSYSTEM_STATES = False
@@ -9684,13 +9684,13 @@ print(""Nombre de causal links :"", len(account))
 for link in account:
     print(link)
 ",,,,,,,,4a55108979be8f0a,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,ad58565a,markdown,fr,c4563bd14a7a50bf,"### 6.2 Macro-subsystems (coarse-graining, blackboxing)
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,ad58565a,markdown,fr,c4563bd14a7a50bf,"### 6.2 Macro-subsystems (coarse-graining, blackboxing)
 
 Le module `pyphi.macro` permet d'agréger des nœuds (coarse-grain) ou de blackboxer certains éléments. 
 On peut ainsi recalculer $\Phi$ à une échelle différente, ce qui rejoint l’idée de l’ICT qu’on peut analyser l’information intégrée à divers niveaux.
 
 ",,,,,,,,c4563bd14a7a50bf,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,0b0d592b,markdown,fr,4239d993524c04c6,"***
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,0b0d592b,markdown,fr,4239d993524c04c6,"***
 
 ## Exercice : Exploration de la structure cause-effet
 
@@ -9708,7 +9708,7 @@ MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,0b0d592b,markdown,fr,4239d993524
 2. **Question** : Pour le réseau XOR, analysez comment Φ change selon l'état du système. Existe-t-il des états où Φ = 0 ?
 
 3. **Question** : Explorez la CES d'un sous-système à 2 nœuds vs le système complet. Comment le nombre de concepts évolue-t-il ?",,,,,,,,4239d993524c04c6,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,53ad8dc0,code,fr,d449a9305642d4d9,"# Exercice - Exploration de la structure cause-effet
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,53ad8dc0,code,fr,d449a9305642d4d9,"# Exercice - Exploration de la structure cause-effet
 # 1. Créer un réseau AND et comparer Φ avec XOR
 # 2. Analyser Φ selon l'état
 # 3. Comparer CES 2-noeuds vs 3-noeuds
@@ -9721,7 +9721,7 @@ MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,53ad8dc0,code,fr,d449a9305642d4d
 
 print(""Exercice a completer"")  # todo etudiant: implementer
 ",,,,,,,,d449a9305642d4d9,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,67e8f08a,markdown,fr,84426af38f823e4c,"## Conclusion
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,67e8f08a,markdown,fr,84426af38f823e4c,"## Conclusion
 
 Ce notebook a introduit l'**Integrated Information Theory** (IIT) et son implementation de reference, **PyPhi**, en suivant le fil qui mene des données brutes d'un système a une mesure de son integration causale.
 
@@ -9750,7 +9750,7 @@ Le calcul de $\Phi$ est **combinatoirement explosif** (toutes les partitions, to
 
 > **A retenir** : l'IIT propose de mesurer la conscience comme l'**integration causale irreductible** d'un système sur lui-même. PyPhi rend cette definition operationnelle : on declare une dynamique (TPM), on choisit un decoupage (Subsystem), et le moteur calcule a la fois *combien* ($\Phi$) et *quoi* (CES) le système integre.
 ",,,,,,,,84426af38f823e4c,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,d0948bcb,markdown,fr,abd00e26f56287e8,"<a id=""sec7""></a>
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,d0948bcb,markdown,fr,abd00e26f56287e8,"<a id=""sec7""></a>
 ## 7. Ressources complémentaires
 
 - [Documentation PyPhi](https://pyphi.readthedocs.io/en/stable/)
@@ -9760,7 +9760,7 @@ MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,d0948bcb,markdown,fr,abd00e26f56
 
 **Fin du notebook**. 
 Merci pour votre attention !",,,,,,,,abd00e26f56287e8,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,3cab92ae,markdown,fr,807cb3cd154dd445,"# IIT - Sujets Avances : Partitionnement, Repertoires Cause-Effet et Reseaux Elargis
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,3cab92ae,markdown,fr,807cb3cd154dd445,"# IIT - Sujets Avances : Partitionnement, Repertoires Cause-Effet et Reseaux Elargis
 
 ## Navigation
 
@@ -9785,7 +9785,7 @@ Ce notebook est le **deuxieme volet** de la serie IIT. Il approfondit les concep
 6. **Reseaux elargis** - Systèmes a 4+ noeuds et interpretation
 7. **Performance et coarse-graining** - Stratégies pour traiter de grands systèmes
 8. **Vers IIT 4.0** - Apercu des evolutions recentes de la théorie",,,,,,,,807cb3cd154dd445,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,bb121255,markdown,fr,4a6db1d50e9760b8,"<a id=""sec1""></a>
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,bb121255,markdown,fr,4a6db1d50e9760b8,"<a id=""sec1""></a>
 ## 1. Rappels et configuration
 
 Dans le notebook précédent, nous avons vu :
@@ -9797,7 +9797,7 @@ Dans le notebook précédent, nous avons vu :
 - **Concept** : un mécanisme avec son cause et son effet maximalement irreductibles
 
 Reprenons avec notre reseau XOR et configurons PyPhi.",,,,,,,,4a6db1d50e9760b8,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,00e5af6c,code,fr,f5bd28910c45c2a3,"import warnings
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,00e5af6c,code,fr,f5bd28910c45c2a3,"import warnings
 warnings.filterwarnings(""ignore"", message="".*pkg_resources is deprecated.*"", category=UserWarning)
 
 import os
@@ -9810,7 +9810,7 @@ pyphi.config.VALIDATE_SUBSYSTEM_STATES = False
 
 print(""PyPhi version:"", pyphi.__version__)
 print(""Configuration prete."")",,,,,,,,f5bd28910c45c2a3,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,a81c90c7,code,fr,ef4fe4b300f5705f,"# Creation du reseau XOR (3 noeuds) - identique au notebook 1
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,a81c90c7,code,fr,ef4fe4b300f5705f,"# Creation du reseau XOR (3 noeuds) - identique au notebook 1
 network = pyphi.examples.xor_network()
 state = (0, 0, 0)
 subsystem = pyphi.Subsystem(network, state)
@@ -9820,7 +9820,7 @@ print(""Etat initial :"", state)
 print(""Noeuds du sous-systeme :"", subsystem.node_indices)
 print(""Connectivite (CM) :"")
 print(network.cm)",,,,,,,,ef4fe4b300f5705f,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,d0b16bff,markdown,fr,6f0fb797a1687bf8,"<a id=""sec2""></a>
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,d0b16bff,markdown,fr,6f0fb797a1687bf8,"<a id=""sec2""></a>
 ## 2. Partitionnement et MIP (Minimum Information Partition)
 
 Le coeur du calcul de $\Phi$ repose sur la recherche de la **partition minimale d'information (MIP)**. La MIP est la facon de couper le système en deux qui **detruit le moins d'information**. Si cette coupe minimale detruit beaucoup d'information, c'est que le système est fortement integre.
@@ -9833,7 +9833,7 @@ PyPhi supporte plusieurs types de partitions :
 - **K-partition** : couper en K parties
 
 Pour chaque partition, on mesure l'information detruite par la coupe. La MIP est celle qui minimise cette perte.",,,,,,,,6f0fb797a1687bf8,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,4daea783,code,fr,d72ad2b95a0cd77e,"# Calculer l'analyse d'irreductibilite du systeme (SIA)
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,4daea783,code,fr,d72ad2b95a0cd77e,"# Calculer l'analyse d'irreductibilite du systeme (SIA)
 sia = pyphi.compute.sia(subsystem)
 
 print(""=== System Irreducibility Analysis (SIA) ==="")
@@ -9841,7 +9841,7 @@ print(f""Big Phi: {sia.phi}"")
 print(f""Coupe (MIP): {sia.cut}"")
 print(f""Partie from: {sia.cut.from_nodes}"")
 print(f""Partie to: {sia.cut.to_nodes}"")",,,,,,,,d72ad2b95a0cd77e,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,5f61aeeb,markdown,fr,fa1302194e1d3125,"### 2.2. Interpretation de la MIP
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,5f61aeeb,markdown,fr,fa1302194e1d3125,"### 2.2. Interpretation de la MIP
 
 La MIP nous dit **ou le système est le plus faiblement integre**. Dans notre reseau XOR :
 
@@ -9854,7 +9854,7 @@ La MIP nous dit **ou le système est le plus faiblement integre**. Dans notre re
 Le calcul exact de $\Phi$ est **intractable** pour de grands reseaux, à cause d'une **explosion combinatoire**. Pour chaque mécanisme possible (sous-ensemble d'éléments — il y en a $2^n - 1$ pour un système à $n$ noeuds), PyPhi doit énumérer toutes les **bipartitions** du purview pour trouver la coupe minimisante (la MIP). Un ensemble à $n$ éléments admet $2^{n-1}$ bipartitions : c'est exactement ce que compte la cellule suivante (4 pour $n=3$).
 
 La même cellule affiche aussi les **nombres de Bell**, qui comptent *toutes* les partitions (en 2, 3, 4... parties), pas seulement les bipartitions. C'est pourquoi, pour $n=3$, on observe **4 bipartitions** mais **5 partitions de Bell** : la partition en trois singletons $\{0\}|\{1\}|\{2\}$ est comptée par Bell mais n'est pas une bipartition (une coupe sépare le système en deux parties, pas davantage). Les nombres de Bell croissent plus vite que les bipartitions, mais le MIP de l'IIT 3.0 ne parcourt que des bipartitions — l'intractabilité réelle provient surtout du produit « nombre de mécanismes $\times$ bipartitions », répété pour chaque mécanisme.",,,,,,,,fa1302194e1d3125,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,2b5a3aa3,code,fr,56468687797cf5b9,"# Enumerer toutes les bipartitions possibles du sous-systeme
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,2b5a3aa3,code,fr,56468687797cf5b9,"# Enumerer toutes les bipartitions possibles du sous-systeme
 from pyphi.partition import bipartition
 
 nodes = subsystem.node_indices
@@ -9869,7 +9869,7 @@ bell = [1, 1, 2, 5, 15, 52, 203]
 print(f""\nNombres de Bell (nombre total de partitions):"")
 for n in range(len(bell)):
     print(f""  {n} noeuds -> {bell[n]} partitions"")",,,,,,,,56468687797cf5b9,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,68b8975d,markdown,fr,ef3b84f6cc3bccb7,"<a id=""sec3""></a>
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,68b8975d,markdown,fr,ef3b84f6cc3bccb7,"<a id=""sec3""></a>
 ## 3. Repertoires cause-effet
 
 Les **repertoires cause et effet** sont les distributions de probabilite qui decrivent comment un mécanisme contraint les etats passes (cause) et futurs (effet) d'un purview.
@@ -9877,7 +9877,7 @@ Les **repertoires cause et effet** sont les distributions de probabilite qui dec
 ### 3.1. Repertoire cause
 
 Le repertoire cause repond a la question : etant donne le mécanisme dans son etat actuel, quelles sont les probabilites des etats anterieurs possibles du purview ?",,,,,,,,ef3b84f6cc3bccb7,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,57384b10,code,fr,925ba982c9506b9d,"# Calculer le repertoire cause pour le mecanisme {A, B} et le purview {A}
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,57384b10,code,fr,925ba982c9506b9d,"# Calculer le repertoire cause pour le mecanisme {A, B} et le purview {A}
 mechanism = (0, 1)
 purview = (0,)
 
@@ -9886,7 +9886,7 @@ print(f""Repertoire cause pour mecanisme {mechanism} -> purview {purview}:"")
 print(f""  Shape: {cause_rep.shape}"")
 print(f""  Valeurs: {cause_rep.flatten()}"")
 print(f""  Somme: {cause_rep.sum():.4f} (doit etre 1.0)"")",,,,,,,,925ba982c9506b9d,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,fcf92c26,code,fr,2ef57f9cdd9f903b,"# Calculer le repertoire effet pour le meme mecanisme
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,fcf92c26,code,fr,2ef57f9cdd9f903b,"# Calculer le repertoire effet pour le meme mecanisme
 effect_rep = subsystem.effect_repertoire(mechanism, purview)
 print(f""Repertoire effet pour mecanisme {mechanism} -> purview {purview}:"")
 print(f""  Shape: {effect_rep.shape}"")
@@ -9898,7 +9898,7 @@ for i, label in enumerate(['A=0', 'A=1']):
     c_val = cause_rep.flatten()[i]
     e_val = effect_rep.flatten()[i]
     print(f""  {label}: cause={c_val:.3f}, effet={e_val:.3f}"")",,,,,,,,2ef57f9cdd9f903b,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,2f73fae8,markdown,fr,1df22d4c9924b39c,"### Interpretation : un mécanisme qui ne specifie aucune information
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,2f73fae8,markdown,fr,1df22d4c9924b39c,"### Interpretation : un mécanisme qui ne specifie aucune information
 
 Les deux repertoires sont **uniformes** (`[0.5, 0.5]`) : le mécanisme {A, B} dans son etat actuel ne contraint **ni** le passe **ni** le futur du purview {A}.
 
@@ -9908,10 +9908,10 @@ Les deux repertoires sont **uniformes** (`[0.5, 0.5]`) : le mécanisme {A, B} da
 Autrement dit, ce couple (mécanisme, purview) **ne specifie aucune information** : son repertoire contraint est identique au repertoire non-perturbe (uniforme). C'est exactement ce que la section suivante va quantifier — la distance EMD entre le repertoire contraint et le repertoire non-perturbe sera **nulle**, confirmant l'absence d'information specifiee.
 
 > A l'inverse, un purview informatif produirait une distribution **non uniforme** (par exemple `[0.75, 0.25]`), revelant que le mécanisme penche vers un etat particulier du purview. C'est ce contraste qui fonde la notion de *small phi* ($\varphi$) etudiee plus loin.",,,,,,,,1df22d4c9924b39c,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,657313aa,markdown,fr,6a1430d9a25a38a5,"### 3.2. Repertoire non-perturbe (unconstrained)
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,657313aa,markdown,fr,6a1430d9a25a38a5,"### 3.2. Repertoire non-perturbe (unconstrained)
 
 Le repertoire **non-perturbe** est la distribution uniforme - ce qu'on attendrait sans aucune contrainte. La différence entre le repertoire contraint et le repertoire non-perturbe mesure **l'information specifiee** par le mécanisme.",,,,,,,,6a1430d9a25a38a5,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,df6b5078,code,fr,6debafc98d61bd8f,"# Repertoire non-perturbe (uniforme)
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,df6b5078,code,fr,6debafc98d61bd8f,"# Repertoire non-perturbe (uniforme)
 unconstrained = subsystem.unconstrained_cause_repertoire(purview)
 print(f""Repertoire non-perturbe pour purview {purview}:"")
 print(f""  Valeurs: {unconstrained.flatten()}"")
@@ -9920,7 +9920,7 @@ from pyphi.distance import hamming_emd
 distance = hamming_emd(cause_rep, unconstrained)
 print(f""\nDistance EMD (cause contrainte vs non-perturbe): {distance:.4f}"")
 print(""Cette valeur mesure l'information cause specifiee par le mecanisme."")",,,,,,,,6debafc98d61bd8f,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,37ab70b5,markdown,fr,e0bbf6254d7a7d02,"### Exercice 1 : Explorer les repertoires d'un mécanisme différent
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,37ab70b5,markdown,fr,e0bbf6254d7a7d02,"### Exercice 1 : Explorer les repertoires d'un mécanisme différent
 
 Calculez les repertoires cause et effet pour le mécanisme `{A, C}` (noeuds 0 et 2) avec le purview `{B, C}` (noeuds 1 et 2).
 
@@ -9933,7 +9933,7 @@ Calculez les repertoires cause et effet pour le mécanisme `{A, C}` (noeuds 0 et
 - Utilisez `subsystem.cause_repertoire(mechanism, purview)` et `subsystem.effect_repertoire(mechanism, purview)`
 - Les noeuds sont indices par des tuples d'entiers : `(0, 2)` pour {A, C}
 - Pour identifier l'etat le plus probable, utilisez `np.argmax(rep.flatten())`",,,,,,,,e0bbf6254d7a7d02,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,d2e2ca39,code,fr,529fc133f4283138,"# Exercice 1 : Repertoires cause-effet pour le mecanisme {A, C} et purview {B, C}
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,d2e2ca39,code,fr,529fc133f4283138,"# Exercice 1 : Repertoires cause-effet pour le mecanisme {A, C} et purview {B, C}
 # TODO etudiant : remplacez les valeurs None par votre code
 
 mechanism_ex1 = None  # TODO : definir le mecanisme {A, C}
@@ -9951,13 +9951,13 @@ if mechanism_ex1 is not None and purview_ex1 is not None:
     print(f""Etat le plus probable (effet): {np.argmax(effect_rep_ex1.flatten())}"")
 else:
     print(""Exercice a completer : definissez mechanism_ex1 et purview_ex1"")",,,,,,,,529fc133f4283138,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,794af9b1,markdown,fr,3801909cd4407c56,"<a id=""sec4""></a>
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,794af9b1,markdown,fr,3801909cd4407c56,"<a id=""sec4""></a>
 ## 4. MICE et Concepts
 
 Un **MICE** (Maximally Irreducible Cause or Effect) est un couple (mécanisme, purview) qui maximise l'information irreductible. Un **concept** est forme d'un MICE cause et d'un MICE effet pour le même mécanisme.
 
 ### 4.1. Trouver le MICE pour un mécanisme",,,,,,,,3801909cd4407c56,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,db338713,code,fr,8e27f22ddc890989,"# Trouver le MICE (cause et effet) pour le mecanisme {A, B}
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,db338713,code,fr,8e27f22ddc890989,"# Trouver le MICE (cause et effet) pour le mecanisme {A, B}
 mechanism = (0, 1)
 
 mice_cause = subsystem.find_mice(pyphi.Direction.CAUSE, mechanism)
@@ -9972,7 +9972,7 @@ print(""\nMICE Effet:"")
 print(f""  Purview: {mice_effect.purview}"")
 print(f""  Phi (small): {mice_effect.phi}"")
 print(f""  Direction: {mice_effect.direction}"")",,,,,,,,8e27f22ddc890989,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,75240176,code,fr,4a0ef6f2aaeaef1e,"# Construire les concepts a partir de la CES
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,75240176,code,fr,4a0ef6f2aaeaef1e,"# Construire les concepts a partir de la CES
 ces = pyphi.compute.ces(subsystem)
 print(f""Nombre total de concepts dans la CES: {len(ces)}"")
 print(""\nDetails de chaque concept :"")
@@ -9984,7 +9984,7 @@ for i, concept in enumerate(ces):
     if concept.effect:
         print(f""    Effet purview: {concept.effect.purview}, phi={concept.effect.phi:.4f}"")
     print(f""    Phi du concept: {concept.phi:.4f}"")",,,,,,,,4a0ef6f2aaeaef1e,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,65b3f11e,markdown,fr,2fba258194cbe22b,"### 4.2. Interpretation des MICE
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,65b3f11e,markdown,fr,2fba258194cbe22b,"### 4.2. Interpretation des MICE
 
 Chaque concept decrit une **unite d'information cause-effet** :
 - Le **mécanisme** est l'ensemble de noeuds qui specifie de l'information
@@ -9993,7 +9993,7 @@ Chaque concept decrit une **unite d'information cause-effet** :
 - Le **small phi** ($\varphi$) mesure la quantite d'information irreductible du concept
 
 Un concept avec $\varphi > 0$ existe dans la CES du système. La somme de tous les $\varphi$ des concepts ne donne PAS le big $\Phi$.",,,,,,,,2fba258194cbe22b,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,05b9d9f3,markdown,fr,a5e8a27426fecf5e,"<a id=""sec5""></a>
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,05b9d9f3,markdown,fr,a5e8a27426fecf5e,"<a id=""sec5""></a>
 ## 5. Big Phi vs Small Phi
 
 La distinction entre **big Phi** ($\Phi$) et **small phi** ($\varphi$) est fondamentale :
@@ -10004,7 +10004,7 @@ La distinction entre **big Phi** ($\Phi$) et **small phi** ($\varphi$) est fonda
 | **Mesure** | Integration irreductible du système | Information irreductible d'un concept |
 | **Question** | Le système est-il integre ? | Ce mécanisme specifie-t-il de l'information ? |
 | **Calcul** | SIA sur toutes les partitions | EMD entre repertoire contraint et partitionne |",,,,,,,,a5e8a27426fecf5e,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,ff8235a8,code,fr,c30ecf378f211aad,"# Comparaison Big Phi vs Small Phi
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,ff8235a8,code,fr,c30ecf378f211aad,"# Comparaison Big Phi vs Small Phi
 print(""=== Big Phi (niveau systeme) ==="")
 print(f""  Phi du systeme (SIA): {sia.phi:.4f}"")
 print(f""  Coupe minimale: {sia.cut}"")
@@ -10018,7 +10018,7 @@ for i, c in enumerate(ces):
 
 print(f""\nBig Phi ({sia.phi:.4f}) != somme des small phi ({total_small_phi:.4f})"")
 print(""Ce sont deux mesures differentes a des niveaux differents."")",,,,,,,,c30ecf378f211aad,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,66feddff,markdown,fr,0ad66ccd8c9784b4,"### Exercice 2 : Comparer Phi pour deux etats du reseau
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,66feddff,markdown,fr,0ad66ccd8c9784b4,"### Exercice 2 : Comparer Phi pour deux etats du reseau
 
 Calculez le big Phi et la CES pour le reseau XOR dans l'etat `(1, 1, 1)` et comparez avec l'etat `(0, 0, 0)`.
 
@@ -10031,7 +10031,7 @@ Calculez le big Phi et la CES pour le reseau XOR dans l'etat `(1, 1, 1)` et comp
 - `pyphi.Subsystem(network, state)` pour créer le sous-système
 - `pyphi.compute.sia(subsystem)` pour le big Phi
 - `pyphi.compute.ces(subsystem)` pour les concepts",,,,,,,,0ad66ccd8c9784b4,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,061f5587,code,fr,990a726ba5189a47,"# Exercice 2 : Comparer Phi pour deux etats
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,061f5587,code,fr,990a726ba5189a47,"# Exercice 2 : Comparer Phi pour deux etats
 # TODO etudiant : remplacez les valeurs None par votre code
 
 state_2 = None  # TODO : definir l'etat (1, 1, 1)
@@ -10046,13 +10046,13 @@ if state_2 is not None:
     print(f""\nDifference Big Phi: {abs(sia.phi - sia_2.phi):.4f}"")
 else:
     print(""Exercice a completer : definissez state_2 = (1, 1, 1)"")",,,,,,,,990a726ba5189a47,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,f7ad96c3,markdown,fr,f9a6e33b448fa21c,"### 6.1. Reseau recurrent non-lineaire (4 noeuds)
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,f7ad96c3,markdown,fr,f9a6e33b448fa21c,"### 6.1. Reseau recurrent non-lineaire (4 noeuds)
 
 Nous construisons un reseau a 4 noeuds en anneau ou chaque noeud depend de ses voisins via des portes **non-lineaires** (AND, OR). C'est l'occasion d'illustrer un point theorique central de l'IIT.
 
 **Pourquoi munir le 4-noeuds de portes AND/OR ?** Écartons d'abord une idee recue : « un reseau purement XOR implique $\Phi = 0$ » n'est **pas** une regle generale. L'anneau XOR a 3 noeuds du §1 est bien une application **lineaire** sur $GF(2)$ (le XOR = addition modulo 2), mais il est recurrent et entierement connecte, donc **non decomposable** : PyPhi lui attribue $\Phi = 1{,}875$ (cf. cellule 5 et le notebook IIT-1). La linearite sur $GF(2)$ n'implique donc pas mecaniquement $\Phi = 0$.
 ",,,,,,,,f9a6e33b448fa21c,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,7c3636e5,code,fr,2e92fa7df724acfa,"# Reseau 4 noeuds en anneau avec portes NON-LINEAIRES (AND/OR).
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,7c3636e5,code,fr,2e92fa7df724acfa,"# Reseau 4 noeuds en anneau avec portes NON-LINEAIRES (AND/OR).
 # NB : un anneau purement XOR serait lineaire sur GF(2) -> parfaitement
 # decomposable -> Big Phi = 0 a tous les etats. Les portes AND/OR melangent
 # l'information et rendent le reseau irreductiblement integre (Big Phi > 0).
@@ -10080,7 +10080,7 @@ print(""Reseau 4 noeuds en anneau (portes AND/OR, non-lineaire)"")
 print(""Labels:"", labels_4)
 print(""Connectivite:"")
 print(cm_4)",,,,,,,,2e92fa7df724acfa,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,6a77f701,code,fr,33c1af909d2013ea,"# Analyser le reseau 4 noeuds. On choisit un etat NON fixe (1, 1, 0, 0) :
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,6a77f701,code,fr,33c1af909d2013ea,"# Analyser le reseau 4 noeuds. On choisit un etat NON fixe (1, 1, 0, 0) :
 # au pas suivant le reseau evolue vers (0, 1, 0, 1), ce qui illustre concretement
 # la dynamique recurrente de l'anneau (la ""recurrence""). Etat fixe ou non, les
 # portes non-lineaires AND/OR garantissent un Big Phi > 0 (cf. §6.1).
@@ -10097,14 +10097,14 @@ for i, c in enumerate(ces_4):
     effect_p = c.effect.purview if c.effect else None
     print(f""  Concept {i+1}: mech={c.mechanism}, cause_p={cause_p}, ""
           f""effect_p={effect_p}, phi={c.phi:.4f}"")",,,,,,,,33c1af909d2013ea,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,8d85f950,code,fr,6d26f852c736e32d,"# Big Phi pour le reseau 4 noeuds
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,8d85f950,code,fr,6d26f852c736e32d,"# Big Phi pour le reseau 4 noeuds
 sia_4 = pyphi.compute.sia(sub_4)
 print(f""Big Phi (4 noeuds): {sia_4.phi:.4f}"")
 print(f""Coupe MIP: {sia_4.cut}"")
 print(f""\nComparaison:"")
 print(f""  3 noeuds (XOR): Big Phi = {sia.phi:.4f}"")
 print(f""  4 noeuds (anneau non-lineaire): Big Phi = {sia_4.phi:.4f}"")",,,,,,,,6d26f852c736e32d,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,3b319dc9,markdown,fr,e84201b19477b112,"### 6.2. Interpreter les résultats
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,3b319dc9,markdown,fr,e84201b19477b112,"### 6.2. Interpreter les résultats
 
 Quelques observations importantes :
 
@@ -10113,7 +10113,7 @@ Quelques observations importantes :
 3. **Les reseaux recurrents peuvent avoir Phi > 0** : notre anneau non-lineaire exhibe une integration irreductible — CES non-vide, $\Phi > 0$, et une vraie coupe MIP (pas un `NullCut`)
 4. **Decomposabilite topologique et effondrement de $\Phi$** : a l'inverse du 3-noeuds ($\Phi = 1{,}875$), l'anneau 4-noeuds de cette section a une connectivite **bipartite** ({A, D} d'un cote, {B, C} de l'autre). Muni de portes XOR pures, cette topologie serait **lineaire sur GF(2)** et donc **parfaitement decomposable** : son Big Phi s'effondrerait **theoriquement a 0**, sans information irreductible. C'est precisement pour eviter ce piege que cette section emploie des portes **AND/OR non-lineaires**, qui preservent l'irreductibilite (Big Phi empirique = **0,2569**, calcule ci-dessus). La lecon : ce n'est pas la linearite *en soi* qui detruit l'integration (le XOR 3-noeuds l'atteint a 1.875), c'est la **decomposabilite topologique** qu'elle autorise sur certaines structures — d'ou l'interet des portes non-lineaires AND/OR sur ce 4-noeuds.
 5. **La symetrie** de la connectivite influence la distribution des concepts",,,,,,,,e84201b19477b112,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,cb35e6b0,markdown,fr,5bfaaff58fad3f8b,"<a id=""sec7""></a>
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,cb35e6b0,markdown,fr,5bfaaff58fad3f8b,"<a id=""sec7""></a>
 ## 7. Performance et coarse-graining
 
 Le calcul exact de $\Phi$ croit de maniere **super-exponentielle** avec la taille du reseau. Pour des reseaux de plus de ~6-8 noeuds, le calcul devient intractable.
@@ -10126,14 +10126,14 @@ Le calcul exact de $\Phi$ croit de maniere **super-exponentielle** avec la taill
 | **Blackboxing** | Ignorer certains noeuds | Se concentrer sur les noeuds pertinents |
 | **Parallelisation** | Repartir les calculs | Accelerer sur multi-coeur |
 | **Caching** | Stocker les résultats intermediaires | Eviter les recalculs |",,,,,,,,5bfaaff58fad3f8b,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,9b87e0b1,code,fr,b9969faecb57c142,"# Demonstration du module macro
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,9b87e0b1,code,fr,b9969faecb57c142,"# Demonstration du module macro
 print(""=== Module pyphi.macro ==="")
 print(""Le module macro offre des outils pour le coarse-graining et blackboxing."")
 print(""\nFonctions disponibles:"")
 macro_funcs = [f for f in dir(pyphi.macro) if not f.startswith('_')]
 for f in macro_funcs[:12]:
     print(f""  - {f}"")",,,,,,,,b9969faecb57c142,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,cb65035f,code,fr,df912de888f1f009,"# Pourquoi le calcul exact de Phi est-il si couteux ? Explosion combinatoire.
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,cb65035f,code,fr,df912de888f1f009,"# Pourquoi le calcul exact de Phi est-il si couteux ? Explosion combinatoire.
 #
 # Le calcul de la CES (Cause-Effect Structure, concepts / petit phi) confronte,
 # pour un sous-systeme de n elements :
@@ -10170,7 +10170,7 @@ print(""ou le cout combinatoire domine ; la courbe ne devient lisible qu'a n >= 
 p7, p8 = comptes[7][1], comptes[8][1]
 print(f""\nDe n=7 a n=8, les paires mecanisme/purview passent de {p7} a {p8} (facteur x{p8 / p7:.0f}) :"")
 print(""croissance super-lineaire, confirmee par les comptes combinatoires (source reelle du cout)."")",,,,,,,,df912de888f1f009,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,ef98cea9,markdown,fr,a467db7203992a7b,"### 7.2. Implications pour la recherche en neuroscience
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,ef98cea9,markdown,fr,a467db7203992a7b,"### 7.2. Implications pour la recherche en neuroscience
 
 Cette complexite computationnelle a des implications directes :
 
@@ -10178,7 +10178,7 @@ Cette complexite computationnelle a des implications directes :
 - Les **approximations** (coarse-graining, echantillonnage) sont necessaires
 - Le **Perturbational Complexity Index (PCI)** est une approximation clinique inspiree de $\Phi$
 - Le debat entre **exactitude mathematique** et **applicabilite pratique** est central",,,,,,,,a467db7203992a7b,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,3c659a56,markdown,fr,5088f23677d2876c,"<a id=""sec8""></a>
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,3c659a56,markdown,fr,5088f23677d2876c,"<a id=""sec8""></a>
 ## 8. Vers IIT 4.0
 
 ### 8.1. D'IIT 3.0 a IIT 4.0
@@ -10189,7 +10189,7 @@ MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,3c659a56,markdown,fr,5088f2367
 | **Existence intrinseque** | Via les concepts | Axiome fondamental |
 | **Coupes** | Bipartitions | Coupes directionnelles |
 | **Extension** | Potentiel a Phi maximal | Ensemble des systèmes qui existent |",,,,,,,,5088f23677d2876c,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,0a3f0486,code,fr,999d356a918155ed,"# Apercu : le concept-style (vers IIT 4.0)
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,0a3f0486,code,fr,999d356a918155ed,"# Apercu : le concept-style (vers IIT 4.0)
 try:
     cs_sia = pyphi.compute.sia_concept_style(subsystem)
     print(""=== Concept-Style SIA (vers IIT 4.0) ==="")
@@ -10200,7 +10200,7 @@ try:
     print(""Le concept-style utilise un schema de partition different."")
 except Exception as e:
     print(f""Concept-style non disponible: {e}"")",,,,,,,,999d356a918155ed,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,c27d7dde,markdown,fr,4e087a7b32234e98,"### Exercice 3 : Explorer un reseau feed-forward
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,c27d7dde,markdown,fr,4e087a7b32234e98,"### Exercice 3 : Explorer un reseau feed-forward
 
 Construisez un reseau feed-forward a 3 noeuds (A -> B -> C) et verifiez que son big Phi est egal a 0.
 
@@ -10213,7 +10213,7 @@ Construisez un reseau feed-forward a 3 noeuds (A -> B -> C) et verifiez que son 
 - La matrice de connectivite est triangulaire : `[[0,1,0], [0,0,1], [0,0,0]]`
 - Pour la TPM : B_next = A, C_next = B, A_next = A (ou une constante)
 - Utilisez `pyphi.compute.sia(subsystem)` pour calculer big Phi",,,,,,,,4e087a7b32234e98,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,49e7ee5e,code,fr,583d753ff3235640,"# Exercice 3 : Reseau feed-forward (Phi attendu = 0)
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,49e7ee5e,code,fr,583d753ff3235640,"# Exercice 3 : Reseau feed-forward (Phi attendu = 0)
 # TODO etudiant : construisez le reseau et verifiez Phi = 0
 
 # Etape 1 : Definir la TPM (8 etats -> 3 noeuds)
@@ -10231,7 +10231,7 @@ if tpm_ff is not None and cm_ff is not None:
     print(""Un reseau sans boucle causale n'a pas d'integration."")
 else:
     print(""Exercice a completer : definissez tpm_ff et cm_ff"")",,,,,,,,583d753ff3235640,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,887aaea8,markdown,fr,af7f9323a6681094,"### 8.2. Limites et debats
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,887aaea8,markdown,fr,af7f9323a6681094,"### 8.2. Limites et debats
 
 L'IIT est une théorie active et debattue :
 
@@ -10241,7 +10241,7 @@ L'IIT est une théorie active et debattue :
 - **Enjeu IA** : l'IIT predit que les reseaux feed-forward (comme les LLMs) ont $\Phi = 0$
 
 Ces debats illustrent la tension entre **rigueur mathematique** et **applicabilite empirique**.",,,,,,,,af7f9323a6681094,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,3363b7ca,markdown,fr,18ac1565242efdf8,"***
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,3363b7ca,markdown,fr,18ac1565242efdf8,"***
 
 ## Bilan et perspectives
 
@@ -10261,7 +10261,7 @@ Dans ce deuxieme notebook, nous avons approfondi :
 - **Article fondateur** : Oizumi, Albantakis, Tononi (2014). *From the Phenomenology to the Mechanisms of Consciousness*
 - **IIT 4.0** : Albantakis et al. (2023). *Integrated information theory (IIT) 4.0*
 - **Series connexes** : [Probas](../Probas/README.md), [GameTheory](../GameTheory/README.md)",,,,,,,,18ac1565242efdf8,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,title,markdown,fr,4fca7bc0010288f2,"# IIT-3. Coarse-graining, blackboxing et l'échelle du $\Phi$ — le module `pyphi.macro`
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,title,markdown,fr,4fca7bc0010288f2,"# IIT-3. Coarse-graining, blackboxing et l'échelle du $\Phi$ — le module `pyphi.macro`
 
 Les notebooks [Intro](IIT-01-IntroToPyPhi.ipynb) et [Sujets avancés](IIT-02-AdvancedTopics.ipynb) ont calculé $\Phi$ à l'**échelle micro** : un réseau de $N$ éléments binaires, et l'on partitionne, mesure la cause-effet structure, etc. Mais l'IIT pose une question plus profonde : **à quelle échelle spatiale l'information intégrée est-elle maximale ?** Un système de neurones microscopiques, une population neuronale coarse-grainée, ou une région macroscopique ?
 
@@ -10272,10 +10272,10 @@ Ce notebook introduit le module `pyphi.macro`, qui permet de :
 - comparer l'**information efficace (EI)** et le **$\Phi$** entre l'échelle micro et l'échelle macro.
 
 **Avertissement honnête (Prong-B).** L'IIT prédit que le $\Phi$ macro peut *dépasser* le $\Phi$ micro (c'est la *causal emergence* de Hoel 2013, Albantakis & Tononi). Cette prédiction est **réelle et documentée** sur des réseaux probabilistes spécifiques. Mais elle n'est **pas automatique** : sur des réseaux déterministes simples, le coarse-grain ne crée pas d'emergence (le $\Phi$ macro $\approx$ le $\Phi$ micro). Ce notebook démontre donc la **méthode** (comment coarse-grainer, comment comparer les échelles) de manière fidèle, sans prétendre exhiber une emergence positive que le toy ne produit pas.",,,,,,,,4fca7bc0010288f2,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,setup-md,markdown,fr,bc5ab96f3f1f255e,"## 0. Setup — configuration de `pyphi`
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,setup-md,markdown,fr,bc5ab96f3f1f255e,"## 0. Setup — configuration de `pyphi`
 
 Le module `pyphi.macro` peut lancer des calculs parallèles. En notebook interactif, on force le mono-cœur pour des exécutions déterministes et reproductibles. On désactive aussi les barres de progression pour garder des sorties propres.",,,,,,,,bc5ab96f3f1f255e,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,setup-code,code,fr,9293a1461a97a662,"import warnings
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,setup-code,code,fr,9293a1461a97a662,"import warnings
 # pyemd (dependance de pyphi) emet un UserWarning de deprecation pkg_resources
 # sur Python 3.9 ; on le filtre pour garder des sorties propres (source-fix, pas scrub).
 warnings.filterwarnings(""ignore"", message=""pkg_resources is deprecated"")
@@ -10290,7 +10290,7 @@ pyphi.config.WELCOME_OFF = True
 
 print(""pyphi"", pyphi.__version__)
 print(""module macro disponible :"", [x for x in dir(pyphi.macro) if not x.startswith(""_"")][:12], ""..."")",,,,,,,,9293a1461a97a662,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,micro-md,markdown,fr,1df31c856f209a1b,"## 1. L'échelle micro : information efficace et $\Phi$
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,micro-md,markdown,fr,1df31c856f209a1b,"## 1. L'échelle micro : information efficace et $\Phi$
 
 On reprend un petit réseau toy (3 nœuds logiques) et on mesure deux quantités :
 
@@ -10298,7 +10298,7 @@ On reprend un petit réseau toy (3 nœuds logiques) et on mesure deux quantités
 - le **$\Phi$** d'un sous-système dans un état donné (mesure d'intégration, dépend de l'état).
 
 Ces deux valeurs serviront de **référence micro** : on les comparera à leurs homologues macro après coarse-grain.",,,,,,,,1df31c856f209a1b,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,micro-code,code,fr,593a6afad25f17d3,"# Reseau micro toy : 3 noeuds, chacun copie l'etat du noeud 0 (reseau redondant deterministe)
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,micro-code,code,fr,593a6afad25f17d3,"# Reseau micro toy : 3 noeuds, chacun copie l'etat du noeud 0 (reseau redondant deterministe)
 # TPM state-by-node : lignes = etats courants (000..111), colonnes = prochain etat de chaque noeud.
 def tpm_copy3():
     tpm = np.zeros((8, 3))
@@ -10321,7 +10321,7 @@ print(f""EI(micro) = {ei_micro:.4f}"")
 sub_micro = pyphi.Subsystem(net_micro, (1, 1, 1))
 phi_micro = pyphi.compute.phi(sub_micro)
 print(f""Phi(micro, etat 111) = {phi_micro:.4f}"")",,,,,,,,593a6afad25f17d3,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,micro-interp,markdown,fr,7a50384a4d2cb2ea,"### Interprétation
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,micro-interp,markdown,fr,7a50384a4d2cb2ea,"### Interprétation
 
 Sur ce réseau toy déterministe (chaque nœud copie le nœud 0), on observe :
 
@@ -10329,23 +10329,23 @@ Sur ce réseau toy déterministe (chaque nœud copie le nœud 0), on observe :
 - **$\Phi$ micro = 0** : comme tous les nœuds sont identiques et déterministes, il n'y a pas d'**intégration** au sens de l'IIT (le système se réduit à une seule copie redondante). C'est attendu — un toy dégénéré n'est pas ""conscient"" au sens de l'IIT.
 
 Ce n'est pas un échec de la démo : c'est précisément le point de départ pour comprendre **pourquoi** le coarse-grain ne crée pas toujours d'emergence (cf. §4).",,,,,,,,7a50384a4d2cb2ea,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,grain-md,markdown,fr,515f903ba9c119b2,"## 2. La méthode du coarse-graining
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,grain-md,markdown,fr,515f903ba9c119b2,"## 2. La méthode du coarse-graining
 
 **Coarse-grainer** = regrouper plusieurs éléments micro en un seul élément macro, avec une règle de mapping d'états (ex. : ""deux nœuds micro à 1 → un nœud macro à 1""). Le module `pyphi.macro` expose `all_groupings` pour **énumérer** les regroupements possibles d'un ensemble de nœuds.
 
 Sur 3 nœuds, les regroupements possibles vont de ""tout séparé"" (3 macro-nœuds = échelle micro identique) à ""tout groupé"" (1 macro-nœud). Chaque regroupement définit une **échelle** différente à laquelle on peut recalculer $\Phi$.",,,,,,,,515f903ba9c119b2,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,grain-code,code,fr,8bf79465024d1c5b,"# Enumerer les partitions (regroupements de noeuds) possibles pour 3 noeuds
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,grain-code,code,fr,8bf79465024d1c5b,"# Enumerer les partitions (regroupements de noeuds) possibles pour 3 noeuds
 partitions = list(pyphi.macro.all_partitions([0, 1, 2]))
 print(f""{len(partitions)} partitions possibles pour 3 noeuds :"")
 for p in partitions:
     print("" "", p)",,,,,,,,8bf79465024d1c5b,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,grain-interp,markdown,fr,267254ac8d05f765,"Chaque tuple ci-dessus est un **particionnement** des nœuds micro : `((0, 1), (2,))` signifie ""les nœuds 0 et 1 forment un macro-nœud, le nœud 2 reste seul"". Pour chacun de ces regroupements, on pourrait reconstruire la TPM macro (en marginalisant les états internes du groupe) et recalculer $\Phi$.
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,grain-interp,markdown,fr,267254ac8d05f765,"Chaque tuple ci-dessus est un **particionnement** des nœuds micro : `((0, 1), (2,))` signifie ""les nœuds 0 et 1 forment un macro-nœud, le nœud 2 reste seul"". Pour chacun de ces regroupements, on pourrait reconstruire la TPM macro (en marginalisant les états internes du groupe) et recalculer $\Phi$.
 
 L'énumération exhaustive (via `pyphi.macro.phi_by_grain` ou `emergence`) **explose combinatoirement** : sur 4 nœuds elle dépasse largement la minute. C'est pourquoi, en notebook pédagogique, on se concentre sur un **regroupement spécifique** plutôt que sur l'énumération complète.",,,,,,,,267254ac8d05f765,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,macro-md,markdown,fr,304053437db555c7,"## 3. L'échelle macro : exemple canonique de `pyphi`
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,macro-md,markdown,fr,304053437db555c7,"## 3. L'échelle macro : exemple canonique de `pyphi`
 
 Plutôt que de reconstruire manuellement une TPM macro (verbeux et sujet à la validation `ConditionallyDependentError`), on utilise l'**exemple canonique** fourni par les auteurs de pyphi : `pyphi.examples.macro_network()` et `macro_subsystem()`. Cet exemple est conçu pour illustrer précisément le module macro.",,,,,,,,304053437db555c7,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,macro-code,code,fr,58d2b84daab83b53,"# Exemple canonique du module macro (concu par les auteurs de pyphi).
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,macro-code,code,fr,58d2b84daab83b53,"# Exemple canonique du module macro (concu par les auteurs de pyphi).
 # NOTE : macro_network() est un reseau MICRO ""qui a une integrated information
 # plus grande APRES coarse-graining"" (docstring). macro_subsystem() renvoie le
 # sous-systeme MICRO (tous les noeuds) de ce reseau -- ce n'est PAS un sous-systeme
@@ -10361,7 +10361,7 @@ print(f""EI(reseau canonique) = {ei_macro:.4f}"")
 micro_sub_canonical = pyphi.examples.macro_subsystem()
 phi_micro_canonical = pyphi.compute.phi(micro_sub_canonical)
 print(f""Phi MICRO (sous-systeme tous-noeuds, etat {micro_sub_canonical.state}) = {phi_micro_canonical:.4f}"")",,,,,,,,58d2b84daab83b53,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,compare-code,code,fr,47731f7bab303d11,"# Verification de coherence : examples.macro_subsystem() et Subsystem(macro_network)
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,compare-code,code,fr,47731f7bab303d11,"# Verification de coherence : examples.macro_subsystem() et Subsystem(macro_network)
 # sont le MEME sous-systeme micro (tous les noeuds) -- leurs Phi coincident par
 # construction. Ce n'est PAS une comparaison macro vs micro (cf. note cellule
 # precedente : macro_subsystem() n'est pas coarse-grained).
@@ -10375,7 +10375,7 @@ print()
 print(""Le PHI MACRO (coarse-grained) > PHI MICRO est ATTENDU sur ce reseau :"")
 print(""  sa docstring precise 'greater integrated information after coarse"")
 print(""  graining'. Le mesurer exige pyphi.macro.emergence(), trop lent en cellule"")",,,,,,,,47731f7bab303d11,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,compare-interp,markdown,fr,63bd688f291fdcd0,"### Interprétation honnête
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,compare-interp,markdown,fr,63bd688f291fdcd0,"### Interprétation honnête
 
 `pyphi.examples.macro_subsystem()` n'est **pas** un sous-système coarse-grained : c'est le sous-système **micro** (tous les nœuds) du réseau canonique. Les deux valeurs de $\Phi$ ci-dessus coïncident donc par construction (même calcul micro) -- cet écart nul est un **contrôle de cohérence**, pas une comparaison macro vs micro.
 
@@ -10384,10 +10384,10 @@ MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,compare-interp,markdow
 **Ce que dit le design du réseau.** La docstring de `macro_network()` précise qu'il s'agit d'un réseau micro *qui a une integrated information plus grande après coarse-graining*. Autrement dit, l'émergence positive (Hoel 2013) y est **attendue** -- le coarse-grain augmente le $\Phi$ en moyennant du bruit ou en réduisant la dégénérescence. Ce notebook montre la **méthode** et l'**API** (`pyphi.macro.effective_info`, `all_partitions`, `emergence`), mais exhiber un $\Phi$ macro > $\Phi$ micro concret exige soit un réseau plus petit, soit une exécution hors-cellule (script) tolérante au coût combinatoire.
 
 Le résultat **qualitatif** à retenir : l'échelle macro est une vraie dimension de l'analyse IIT, et `pyphi.macro` fournit les outils, mais l'émergence positive n'est ni triviale ni gratuite à calculer.",,,,,,,,63bd688f291fdcd0,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,exo-md,markdown,fr,dc37021ceb47d0d1,"## 4. Travaux pratiques
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,exo-md,markdown,fr,dc37021ceb47d0d1,"## 4. Travaux pratiques
 
 Trois exercices pour explorer le module `pyphi.macro`. Les deux premiers sont accessibles ; le troisième invite à tester une hypothèse d'emergence.",,,,,,,,dc37021ceb47d0d1,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,exo1-md,markdown,fr,99d8f9cdb94de1f7,"### Exercice 1 : information efficace d'un réseau AND
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,exo1-md,markdown,fr,99d8f9cdb94de1f7,"### Exercice 1 : information efficace d'un réseau AND
 
 Construire un réseau toy 3-nœuds où chaque nœud calcule un **AND** de ses deux entrées (et non une copie). Mesurer son `effective_info` et son $\Phi$ dans l'état `(1,1,1)`. Comparer à EI=1.0 du réseau copy ci-dessus : un réseau AND est-il plus ou moins dégénéré ?
 
@@ -10395,7 +10395,7 @@ Construire un réseau toy 3-nœuds où chaque nœud calcule un **AND** de ses de
 > **Étape 1 :** construire la TPM (8 lignes, 3 colonnes).
 > **Étape 2 :** pyphi.Network(tpm_and, cm) puis pyphi.macro.effective_info(net).
 > **Étape 3 :** pyphi.Subsystem(net, (1,1,1)) puis pyphi.compute.phi(sub).",,,,,,,,99d8f9cdb94de1f7,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,exo1-code,code,fr,6543c64c94067dc2,"# TODO etudiant : reseau AND 3-noeuds, mesurer EI et Phi
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,exo1-code,code,fr,6543c64c94067dc2,"# TODO etudiant : reseau AND 3-noeuds, mesurer EI et Phi
 # Indices ci-dessus.
 def tpm_and3():
     return None  # TODO etudiant : votre TPM AND
@@ -10403,20 +10403,20 @@ def tpm_and3():
 resultat_ei_and = None   # TODO etudiant
 resultat_phi_and = None  # TODO etudiant
 print(""Exercice a completer : reseau AND, EI et Phi"")",,,,,,,,6543c64c94067dc2,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,exo2-md,markdown,fr,148de53b20123b4d,"### Exercice 2 : énumérer les regroupements d'un réseau à 4 nœuds
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,exo2-md,markdown,fr,148de53b20123b4d,"### Exercice 2 : énumérer les regroupements d'un réseau à 4 nœuds
 
 Sur un réseau à 4 nœuds (ex. l'exemple canonique `pyphi.examples.macro_network()`), lister tous les regroupements possibles via `pyphi.macro.all_groupings(range(4))`. Compter combien il y en a. Quel regroupement correspond à ""tout grouper en un seul macro-nœud"" ?
 
 > **Indice :** all_partitions renvoie des tuples de tuples. Le regroupement ""tout groupé"" = ((0,1,2,3),).
 > **Étape 1 :** parts = list(pyphi.macro.all_partitions([0,1,2,3])).
 > **Étape 2 :** len(parts) donne le nombre. Chercher celui egal a ((0,1,2,3),).",,,,,,,,148de53b20123b4d,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,exo2-code,code,fr,dcff84ad0ca38785,"# TODO etudiant : numerer les regroupements d'un reseau 4-noeuds
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,exo2-code,code,fr,dcff84ad0ca38785,"# TODO etudiant : numerer les regroupements d'un reseau 4-noeuds
 def regroupements_4noeuds():
     return None  # TODO etudiant : (nombre_total, regroupement_tout_groupe)
 
 resultat_exo2 = None  # TODO etudiant
 print(""Exercice a completer : regroupements 4-noeuds"")",,,,,,,,dcff84ad0ca38785,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,exo3-md,markdown,fr,aba6e7200a1ec072,"### Exercice 3 (ouvert) : tester une hypothèse d'emergence
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,exo3-md,markdown,fr,aba6e7200a1ec072,"### Exercice 3 (ouvert) : tester une hypothèse d'emergence
 
 Sur le réseau copy 3-nœuds du §1, on a vu $\Phi$ micro = 0. Formulez une hypothèse : si l'on coarse-graine les 3 nœuds copy en un seul macro-nœud, le $\Phi$ macro sera-t-il strictement positif ? Construisez le macro-nœud (TPM 1-nœud identique, copie) et mesurez-le pour confirmer/réfuter.
 
@@ -10424,13 +10424,13 @@ Sur le réseau copy 3-nœuds du §1, on a vu $\Phi$ micro = 0. Formulez une hypo
 > **Étape 1 :** macro_net = pyphi.Network(np.array([[0.0],[1.0]]), np.array([[1]])).
 > **Étape 2 :** pyphi.Subsystem(macro_net, (1,)) puis pyphi.compute.phi(sub).
 > **Question :** phi macro = 0 aussi ? Pourquoi (cf. interpretation §4) ?",,,,,,,,aba6e7200a1ec072,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,exo3-code,code,fr,e81f4cf569a6304c,"# TODO etudiant : tester l'hypothese d'emergence sur le copy-network coarse-graine
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,exo3-code,code,fr,e81f4cf569a6304c,"# TODO etudiant : tester l'hypothese d'emergence sur le copy-network coarse-graine
 def phi_macro_copy():
     return None  # TODO etudiant : phi du macro-noeud copy
 
 resultat_exo3 = None  # TODO etudiant
 print(""Exercice a completer : hypothese d'emergence (copy-network coarse-graine)"")",,,,,,,,e81f4cf569a6304c,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,conclusion-md,markdown,fr,c70ebf6585ffa4af,"## Conclusion
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,conclusion-md,markdown,fr,c70ebf6585ffa4af,"## Conclusion
 
 On a démontré la **méthode** du coarse-graining en IIT :
 
@@ -10441,7 +10441,7 @@ On a démontré la **méthode** du coarse-graining en IIT :
 C'est précisément cette nuance — l'existence d'une dimension d'échelle dans l'IIT, sans prétendre que tout coarse-grain crée de l'emergence — qui distingue une démo méthodologique honnête d'une démonstration forcée.
 
 **Suite** : revoir [IIT-01-IntroToPyPhi](IIT-01-IntroToPyPhi.ipynb) §6 (macro-subsystems) et [IIT-02-AdvancedTopics](IIT-02-AdvancedTopics.ipynb) §7 (performance et coarse-graining comme stratégie de gestion de complexité).",,,,,,,,c70ebf6585ffa4af,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,refs-md,markdown,fr,3954627c0f130fb4,"## Références
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,refs-md,markdown,fr,3954627c0f130fb4,"## Références
 
 - Hoel, E. P. (2017). *Agentive behavior and the causal powers of information*. (Causal emergence, effective information).
 - Albantakis, L., Marshall, W., Hoel, E., & Tononi, G. (2019). *The unfolding of intrinsic causal powers via information decomposition*.
@@ -22220,10 +22220,10 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie.ipynb,b38c18de,code,f
     return None  # TODO etudiant
 
 print(""Exercice a completer : collision_deux_gliders"")",,,,,,,,e4a8f2861769de0c,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,ict-bridge-cadrage,markdown,fr,c6db608467baa392,"**Cadre.** Ce notebook établit le calcul opérationnel de $\Phi$ (petite *phi*) sur un réseau *toy* avec PyPhi : construction du sous-système, mécanisme d'information minimale irréductible (MIP), puis cause-effect structure (CES). C'est le socle mécanique de toute la série IIT.
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,ict-bridge-cadrage,markdown,fr,c6db608467baa392,"**Cadre.** Ce notebook établit le calcul opérationnel de $\Phi$ (petite *phi*) sur un réseau *toy* avec PyPhi : construction du sous-système, mécanisme d'information minimale irréductible (MIP), puis cause-effect structure (CES). C'est le socle mécanique de toute la série IIT.
 
 **Du côté ICT.** L'Epic [#4588](https://github.com/jsboige/CoursIA/issues/4588) demande : *qu'est-ce qu'une « strate » mesure quand on parle d'information intégrée ?* Le $\Phi$ calculé ici en est l'instrument. Le fil ICT qui prolonge cette mécanique — la [dissolution des scalaires](../../docs/ict/dissolution-scalaires.md) — suit ce qui arrive à $\Phi$, F, K quand on les pousse hors de leur substrat d'origine (ICT-1 → ICT-22).",,,,,,,,c6db608467baa392,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,1645edeb,markdown,fr,0a1064f3501ff36e,"### Interprétation : pourquoi ces trois états donnent-ils le même $\Phi$ ?
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,1645edeb,markdown,fr,0a1064f3501ff36e,"### Interprétation : pourquoi ces trois états donnent-ils le même $\Phi$ ?
 
 Vous venez de calculer $\Phi$ pour trois états distincts — (0,0,0), (0,1,1) et (1,1,0) — et les trois donnent **exactement la même valeur $\Phi = 1.87500$**. Ce n'est ni une coïncidence numérique ni un bug de PyPhi : c'est une propriété profonde de la mesure.
 
@@ -22232,13 +22232,13 @@ Vous venez de calculer $\Phi$ pour trois états distincts — (0,0,0), (0,1,1) e
 **La leçon conceptuelle est essentielle** : $\Phi$ quantifie une propriété *intrinsèque au sous-système et à sa connectivité*, évaluée relativement à un état mais non réductible à lui seul. Deux états différents peuvent porter la même « expérience » informationnelle dès lors que leur structure cause-effet coïncide. C'est précisément ce qui distingue $\Phi$ d'une simple entropie de l'état ou d'un compte de corrélations : il capte l'**organisation causale**, pas la configuration instantanée.
 
 > **À retenir** : sur un réseau *bruité* ou *asymétrique*, la structure cause-effet varierait d'un état à l'autre et $\Phi$ en différerait. L'invariance observée ici est la signature d'un réseau déterministe symétrique — elle disparaîtrait dès qu'on introduit du hasard ou une asymétrie dans la matrice de transition (TPM). Ce point sera réexploré au paragraphe suivant sur les sous-systèmes partiels.",,,,,,,,0a1064f3501ff36e,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,iit1-asym-lead,markdown,fr,043457c0217abaf0,"### Démonstration : une asymétrie de la TPM brise l'invariance de $\Phi$
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,iit1-asym-lead,markdown,fr,043457c0217abaf0,"### Démonstration : une asymétrie de la TPM brise l'invariance de $\Phi$
 
 L'interprétation précédente énonçait un fait fort : sur le réseau XOR **symétrique**, $\Phi = 1{,}875$ est invariant sur les états atteignables, et cette invariance est la signature d'une dynamique déterministe symétrique. Mais elle ajoutait une prédiction — *« l'invariance disparaîtrait dès qu'on introduit une asymétrie dans la TPM »* — qui, jusqu'ici, restait non démontrée.
 
 Vérifions-le empiriquement. Nous construisons un réseau **quasi identique** au XOR canonique, sauf sur **un seul noeud** : nous conservons `node0 = XOR(b, c)` et `node1 = XOR(a, c)`, mais nous remplaçons `node2 = XOR(a, b)` par la fonction booléenne asymétrique `node2 = OR(a, AND(b, c))`. La connectivité reste complète. Cette unique perturbation suffit-elle à faire varier $\Phi$ d'un état à l'autre ? PyPhi va trancher.
 ",,,,,,,,043457c0217abaf0,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,iit1-asym-code,code,fr,ae90a20c814326a6,"# Démonstration : une asymétrie de la TPM brise l'invariance de Phi
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,iit1-asym-code,code,fr,ae90a20c814326a6,"# Démonstration : une asymétrie de la TPM brise l'invariance de Phi
 # Le réseau XOR canonique (cellule précédente) est parfaitement symétrique :
 # chaque noeud calcule le XOR des deux autres, donc la structure cause-effet
 # coïncide sur les 4 états atteignables -> Phi = 1.875 invariant (cellule 14).
@@ -22286,7 +22286,7 @@ print(f""  CONSTAT : l'asymétrie d'un seul noeud suffit à briser l'invariance.
 print(f""  Phi passe de 1.875 (unique, symétrique) à [{min(vals):.4f} .. {max(vals):.4f}]"")
 print(f""  ({len(vals)} valeurs distinctes sur {len(phis_asym)} états atteignables)."")
 ",,,,,,,,ae90a20c814326a6,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,iit1-asym-interp,markdown,fr,1a9cb722bc1f7c0f,"### Interprétation : la symétrie, condition de l'invariance de $\Phi$
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,iit1-asym-interp,markdown,fr,1a9cb722bc1f7c0f,"### Interprétation : la symétrie, condition de l'invariance de $\Phi$
 
 Le verdict de PyPhi est net et confirme la prédiction :
 
@@ -22301,11 +22301,11 @@ Le verdict de PyPhi est net et confirme la prédiction :
 
 > **À retenir** : l'invariance de $\Phi$ sur le XOR canonique n'est pas une propriété générale de la mesure — c'est un effet de la symétrie parfaite du réseau. La briser, même partiellement, suffit à restaurer la dépendance de $\Phi$ vis-à-vis de l'état.
 ",,,,,,,,1a9cb722bc1f7c0f,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,ict-bridge-transition,markdown,fr,8549bccf57b79d13,"**Où va la suite.** [IIT-2](IIT-02-AdvancedTopics.ipynb) approfondit le partitionnement (MIP/SIA), les répertoires cause-effet et la comparaison Big $\Phi$ / Small $\Phi$ ; [IIT-3](IIT-03-CoarseGrainingMacroPhi.ipynb) traite le coarse-graining et l'échelle du $\Phi$. Pour relier cette mécanique à la question ICT plus large de la représentation interne et des dissociations : [`synthese-invariants-dissociations-obstructions.md`](../../docs/ict/synthese-invariants-dissociations-obstructions.md).",,,,,,,,8549bccf57b79d13,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,ict-bridge-cadrage,markdown,fr,0f780f9fd2e7c87a,"**Cadre.** Ce notebook approfondit l'analyse : partitionnement du sous-système (MIP, SIA — system irreducibility analysis), répertoires cause-effet d'un mécanisme, construction des concepts (MICE/CES), et comparaison Big $\Phi$ vs Small $\Phi$.
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,ict-bridge-transition,markdown,fr,8549bccf57b79d13,"**Où va la suite.** [IIT-2](IIT-02-AdvancedTopics.ipynb) approfondit le partitionnement (MIP/SIA), les répertoires cause-effet et la comparaison Big $\Phi$ / Small $\Phi$ ; [IIT-3](IIT-03-CoarseGrainingMacroPhi.ipynb) traite le coarse-graining et l'échelle du $\Phi$. Pour relier cette mécanique à la question ICT plus large de la représentation interne et des dissociations : [`synthese-invariants-dissociations-obstructions.md`](../../docs/ict/synthese-invariants-dissociations-obstructions.md).",,,,,,,,8549bccf57b79d13,,,,,,,,
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,ict-bridge-cadrage,markdown,fr,0f780f9fd2e7c87a,"**Cadre.** Ce notebook approfondit l'analyse : partitionnement du sous-système (MIP, SIA — system irreducibility analysis), répertoires cause-effet d'un mécanisme, construction des concepts (MICE/CES), et comparaison Big $\Phi$ vs Small $\Phi$.
 
 **Du côté ICT.** Le partitionnement est précisément l'outil qui *dissocie* un mécanisme de ses purviews. La [matrice des dissociations](../../docs/ict/dissociations-matrix.md) de l'ICT s'appuie sur cette gymnastique cause-effet pour croiser chaque notebook, claim et proxy — comprendre MIP et répertoires ici rend la matrice ICT lisible.",,,,,,,,0f780f9fd2e7c87a,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,iit2-md-ring-lecture,markdown,fr,f1f4cc18144ca843,"### Lecture du reseau 4 noeuds : un anneau NON-LINEAIRE
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,iit2-md-ring-lecture,markdown,fr,f1f4cc18144ca843,"### Lecture du reseau 4 noeuds : un anneau NON-LINEAIRE
 
 La matrice de connectivite decrit un **anneau a 4 noeuds** : chaque noeud a exactement deux voisins (A est relie a {B, C}, B a {A, D}, C a {A, D}, D a {B, C}). La subtilite est dans le choix des **portes logiques** :
 
@@ -22313,7 +22313,7 @@ La matrice de connectivite decrit un **anneau a 4 noeuds** : chaque noeud a exac
 - B et D utilisent une porte **OR** (`b_next = A or D`, `d_next = B or C`)
 
 Pourquoi pas du XOR pur ? Un anneau XOR est **lineaire sur GF(2)** : chaque sortie est une combinaison lineaire des entrees, le reseau est alors parfaitement decomposable et son Big $\Phi$ vaut **0 a tous les etats**. Les portes AND/OR introduisent de la **non-linearite** : elles melangent l'information de facon irreductible, ce qui garantit un Big $\Phi > 0$. C'est ce que nous allons mesurer maintenant, en deux temps : d'abord la **structure cause-effet** (CES = l'ensemble des concepts du systeme), puis le **Big $\Phi$** (l'integration irreductible du systeme entier, via la partition MIP).",,,,,,,,f1f4cc18144ca843,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,iit2-md-interpretation-62,markdown,fr,f7556b95ba90d745,"### Lecture : non-lineaire OUI, mais faiblement integre
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,iit2-md-interpretation-62,markdown,fr,f7556b95ba90d745,"### Lecture : non-lineaire OUI, mais faiblement integre
 
 Les trois cellules ci-dessus livrent un resultat **contre-intuitif**, qu'il faut decomposer en deux niveaux.
 
@@ -22331,7 +22331,7 @@ Comment un reseau **non-lineaire** peut-il etre si peu integre face a un reseau 
 **3. La CES confirme cette symetrie.** Les 4 concepts se groupent en deux paires identiques : les concepts de A et D (mecanismes $(0,)$ et $(3,)$) ont tous deux $\varphi = 0.25$ avec cause et effect portes sur {B, C} ; ceux de B et C ($(1,)$ et $(2,)$) ont $\varphi = 0.1667$ avec cause et effect portes sur {A, D}. Cette symetrie {A, D} $\leftrightarrow$ {B, C} est la ligne de faille geometrique que la MIP exploite pour couper le reseau a bas cout.
 
 **Lecon IIT** : **plus de noeuds n'implique pas plus d'integration.** Ce n'est ni la taille du reseau, ni meme la non-linearite de ses portes, qui determine $\Phi$, mais la **robustesse de l'integration face au partitionnement**. Un petit reseau densement connecte peut etre bien plus integre qu'un grand reseau a topologie d'anneau, ou une bipartition naturelle existe. C'est pourquoi IIT definit $\Phi$ comme le *minimum* sur toutes les partitions possibles : la MIP revele le maillon le plus faible, et c'est ce maillon qui borne l'integration du systeme entier.",,,,,,,,f7556b95ba90d745,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,5b8188fe,markdown,fr,88ad4b7c416edd18,"### Lecture : pourquoi on mesure des comptes (et non un simple chronometre)
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,5b8188fe,markdown,fr,88ad4b7c416edd18,"### Lecture : pourquoi on mesure des comptes (et non un simple chronometre)
 
 La cellule precedente illustre le cout du calcul exact de $\Phi$ par **l'explosion combinatoire** (comptes de mecanismes, de paires mecanisme/purview, de bipartitions) plutot que par un simple chronometrage. C'est un choix **honnête** :
 
@@ -22340,11 +22340,11 @@ La cellule precedente illustre le cout du calcul exact de $\Phi$ par **l'explosi
 - **Consequence** : au-dela de ~6-8 noeuds, le calcul exact devient intractable (des minutes, puis des heures). C'est ce qui motive les strategies de la section 7.1 (coarse-graining, blackboxing) et, en neuroscience, les approximations cliniques comme le PCI.
 
 > **Honnêteté methodologique** : affirmer une croissance « super-exponentielle » en s'appuyant sur le chronometrage de jouets dont le rapport est du bruit serait trompeur. Les comptes combinatoires ci-dessus sont la source **reelle et mesurable** du cout ; ils justifient rigoureusement l'intractabilite evoquee dans l'introduction de cette section.",,,,,,,,88ad4b7c416edd18,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb,ict-bridge-transition,markdown,fr,c0b2128460eb8e6a,"**Où va la suite.** [IIT-3](IIT-03-CoarseGrainingMacroPhi.ipynb) passe à l'échelle : coarse-graining, blackboxing, et la question de savoir si $\Phi$ survit au changement de résolution. Côté ICT, la [cartographie en tresse](../../docs/ict/tresse-cartographie.md) articule Thom / Grothendieck / Schmidhuber / Friston — les quatre lentilles entre lesquelles le partitionnement navigue.",,,,,,,,c0b2128460eb8e6a,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,ict-bridge-cadrage,markdown,fr,1cf8f8e2ca23cac9,"**Cadre.** Ce notebook est le pont vers l'échelle : coarse-graining (regroupement de nœuds micro en macro-nœuds), blackboxing, et la question décisive — *$\Phi$ survive-t-il au changement de résolution ?* On mesure l'information efficace et $\Phi$ au niveau micro, puis on compare à la macro après regroupement.
+MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb,ict-bridge-transition,markdown,fr,c0b2128460eb8e6a,"**Où va la suite.** [IIT-3](IIT-03-CoarseGrainingMacroPhi.ipynb) passe à l'échelle : coarse-graining, blackboxing, et la question de savoir si $\Phi$ survit au changement de résolution. Côté ICT, la [cartographie en tresse](../../docs/ict/tresse-cartographie.md) articule Thom / Grothendieck / Schmidhuber / Friston — les quatre lentilles entre lesquelles le partitionnement navigue.",,,,,,,,c0b2128460eb8e6a,,,,,,,,
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,ict-bridge-cadrage,markdown,fr,1cf8f8e2ca23cac9,"**Cadre.** Ce notebook est le pont vers l'échelle : coarse-graining (regroupement de nœuds micro en macro-nœuds), blackboxing, et la question décisive — *$\Phi$ survive-t-il au changement de résolution ?* On mesure l'information efficace et $\Phi$ au niveau micro, puis on compare à la macro après regroupement.
 
 **Du côté ICT — le cas le plus net.** Le coarse-graining est *la* mécanique de changement d'échelle dont l'ICT se sert pour parler de [dissolution des scalaires](../../docs/ict/dissolution-scalaires.md) : ce qui arrive à $\Phi$, F, K quand on change de strate. La [cartographie en tresse](../../docs/ict/tresse-cartographie.md) situe ce geste parmi les quatre lentilles (Thom / Grothendieck / Schmidhuber / Friston).",,,,,,,,1cf8f8e2ca23cac9,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb,ict-bridge-transition,markdown,fr,ca2a5a01a5dcb119,"**Où va la suite côté ICT.** Les calculs PyPhi s'arrêtent ici ; le fil ICT continue dans la documentation. Entrée recommandée : l'[index ICT](../../docs/ict/README.md) et ses distillations, en partant de [`dissolution-scalaires.md`](../../docs/ict/dissolution-scalaires.md) (le fil qui prolonge directement ce notebook) puis [`tresse-cartographie.md`](../../docs/ict/tresse-cartographie.md) (la carte des quatre lentilles).",,,,,,,,ca2a5a01a5dcb119,,,,,,,,
+MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb,ict-bridge-transition,markdown,fr,ca2a5a01a5dcb119,"**Où va la suite côté ICT.** Les calculs PyPhi s'arrêtent ici ; le fil ICT continue dans la documentation. Entrée recommandée : l'[index ICT](../../docs/ict/README.md) et ses distillations, en partant de [`dissolution-scalaires.md`](../../docs/ict/dissolution-scalaires.md) (le fil qui prolonge directement ce notebook) puis [`tresse-cartographie.md`](../../docs/ict/tresse-cartographie.md) (la carte des quatre lentilles).",,,,,,,,ca2a5a01a5dcb119,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb,96aa2f7a,markdown,fr,01c173b864cf9209,> **Statut épistémique** — **Établi** : La trajectoire de Φ oscille sans asymptote unique sur l'attracteur. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,01c173b864cf9209,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb,c03dd6c7,markdown,fr,d11aa9658ad510fb,"> **Statut épistémique** — **Établi** : Le tri auto-organisé exhibe une *compétence for free* (auto-réparation, délai de gratification). Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,d11aa9658ad510fb,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb,e7aa6b3b,markdown,fr,1ed02d3e6cb1e35a,> **Statut épistémique** — **Établi** : La dégradation gracieuse et le délai de gratification sont quantifiables. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,1ed02d3e6cb1e35a,,,,,,,,
@@ -38561,7 +38561,7 @@ SCRIPTS_DIR = ICT_ROOT / ""scripts""
 print(f""racine ict : {ICT_ROOT.name}"")
 ",,,,,,,,74a7173355b5413a,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,statut-epistemique,markdown,fr,a88d5e2e485da886,"> **Statut épistémique** — **Établi** (Gate 4) : Φ/F/K ordonnent les substrats différemment — Φ-F covarient (τ de Kendall = +1.00), K diverge ; l'invariant est dans la méthode, pas dans le nombre. **Établi** (Gate 5) : la réversibilisation (σ, distance à P_rev) discrimine orthogonalement aux jambes Φ/F/K — l'asymétrie temporelle est la jambe manquante du triplet. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,a88d5e2e485da886,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,ff2b833b,markdown,fr,d626b8b0a081cfbf,"### Le complexe majeur : la recherche de frontière intégrée
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,ff2b833b,markdown,fr,d626b8b0a081cfbf,"### Le complexe majeur : la recherche de frontière intégrée
 
 Jusqu'ici, **nous** avons choisi la frontière : chaque `Subsystem(network, state, nodes)` fixe
 des bords à la main. PyPhi embarque aussi la recherche de la frontière qui maximise $\Phi$ —
@@ -38577,7 +38577,7 @@ Le problème « qui décide des bords ? » reçoit ici sa réponse moteur : la b
 les candidats et tranche. [IIT-4](IIT-04-Le-Probleme-de-Frontiere.ipynb) consacre un notebook
 entier à ce choix de frontière — y compris le cas où le complexe majeur n'est **pas** le réseau
 entier.",,,,,,,,d626b8b0a081cfbf,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,b45ade57,code,fr,a4cce560966e2df6,"# --- Le moteur tranche lui-meme : recherche du complexe majeur sur le reseau XOR ---
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,b45ade57,code,fr,a4cce560966e2df6,"# --- Le moteur tranche lui-meme : recherche du complexe majeur sur le reseau XOR ---
 pyphi.config.PROGRESS_BARS = False   # sorties propres (les cellules precedentes laissent les barres)
 complexe_majeur = pyphi.compute.major_complex(network, state)
 noeuds_cm = tuple(network.node_labels[i] for i in complexe_majeur.subsystem.node_indices)
@@ -38591,11 +38591,11 @@ for sia in pyphi.compute.complexes(network, state):
 print()
 print(""Sur ce reseau XOR, le complexe majeur est le systeme ENTIER (maximiseur unique) ;"")
 print(""les trois paires sont ex aequo a Phi = 1.0 — sous le maximum, pas au sommet."")",,,,,,,,a4cce560966e2df6,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,57023831,markdown,fr,029f2e1ed11fa397,"### 6.1bis Causalite evenementielle sur un reseau probabiliste (discrimination)
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,57023831,markdown,fr,029f2e1ed11fa397,"### 6.1bis Causalite evenementielle sur un reseau probabiliste (discrimination)
 
 Pour voir la causalite evenementielle **discriminer** entre liens forts et faibles, nous construisons un reseau **noisy-AND** : meme connectivite que le XOR (anneau complet a 3 noeuds A, B, C), mais chaque porte AND est bruitee — la transition n'est plus deterministe. La probabilite qu'un noeud s'allume vaut `p` si ses deux entrees sont allumees, sinon une petite probabilite de bruit. Avec `p = 0.9`, certains mecanismes causent leur purview de maniere forte (alpha eleve) et d'autres de maniere faible (alpha faible) : la machinerie `pyphi.actual` peut alors **distinguer les vraies causes des causes marginales**, ce qu'elle ne pouvait pas faire sur le reseau XOR sature.
 ",,,,,,,,029f2e1ed11fa397,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,e45e368c,code,fr,d20453bf84a3c94c,"import numpy as np
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,e45e368c,code,fr,d20453bf84a3c94c,"import numpy as np
 import pyphi.actual
 
 pyphi.config.VALIDATE_SUBSYSTEM_STATES = False
@@ -38632,7 +38632,7 @@ for lien in compte_noisy:
 print()
 print(f""Force alpha : min={min(alphas)}, max={max(alphas)}, valeurs distinctes={sorted(set(alphas))}"")
 ",,,,,,,,d20453bf84a3c94c,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb,13e02a02,markdown,fr,ec85ad8b7195d522,"### Interpretation : la causalite evenementielle discrimine
+MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb,13e02a02,markdown,fr,ec85ad8b7195d522,"### Interpretation : la causalite evenementielle discrimine
 
 Contrairement au reseau XOR (ou alpha = 1.0 pour tous les liens), le reseau probabiliste produit des **forces alpha variees** — ici de l'ordre de 0.13 a 0.92. La causalite evenementielle exerce enfin sa capacite distinctive :
 
@@ -38641,7 +38641,7 @@ Contrairement au reseau XOR (ou alpha = 1.0 pour tous les liens), le reseau prob
 
 Cette discrimination est la raison d'etre de `pyphi.actual` : quantifier **qui a cause quoi** avec une nuance graduee, ce qu'un reseau deterministe (XOR) masque en saturant toutes les forces a la valeur maximale. C'est l'analogue, en causalite evenementielle, du constat deja fait en section 4 sur les etats inaccessibles : la richesse du calcul emergent depend de la structure probabiliste du reseau, pas seulement de sa connectivite.
 ",,,,,,,,ec85ad8b7195d522,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,0e07d473,markdown,fr,8b0ab9403d76d3a2,"# IIT-4. Le problème de frontière — qui décide où sont les bords ?
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,0e07d473,markdown,fr,8b0ab9403d76d3a2,"# IIT-4. Le problème de frontière — qui décide où sont les bords ?
 
 **Série** : Integrated Information Theory avec PyPhi (suite de [IIT-3 — coarse-graining et échelle du $\Phi$](IIT-03-CoarseGrainingMacroPhi.ipynb))
 **Outil** : PyPhi 1.2.0 — le vrai moteur IIT (identification, MIP, $\Phi$), pas une ré-implémentation.
@@ -38668,13 +38668,13 @@ programme de ce notebook est de faire de ce choix un **objet mesurable** au lieu
 3. **Le désaccord** — deux mesures privilégient-elles la même frontière ? Si non, c'est une
    dissociation à enregistrer.
 ",,,,,,,,8b0ab9403d76d3a2,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,0f7339ea,markdown,fr,e3b3bd58540be8d4,"## 0. Setup — configuration de `pyphi`
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,0f7339ea,markdown,fr,e3b3bd58540be8d4,"## 0. Setup — configuration de `pyphi`
 
 Conventions de la série (cf. IIT-3) : mono-cœur pour des exécutions déterministes, barres de
 progression désactivées pour des sorties propres. On coupe aussi l'évaluation parallèle des
 partitions : sur Windows, le *spawn* multiprocessing d'un moteur `pyphi` parallèle échoue en
 exécution de notebook (`__main__` non protégé) — et nos réseaux de 4 nœuds n'en ont pas besoin.",,,,,,,,e3b3bd58540be8d4,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,09d95c41,code,fr,d9aa7ee5fac0fdfc,"import warnings
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,09d95c41,code,fr,d9aa7ee5fac0fdfc,"import warnings
 warnings.filterwarnings(""ignore"", message=""pkg_resources is deprecated"")
 
 import itertools
@@ -38688,7 +38688,7 @@ pyphi.config.PROGRESS_BARS = False
 pyphi.config.WELCOME_OFF = True
 
 print(""pyphi"", pyphi.__version__)",,,,,,,,d9aa7ee5fac0fdfc,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,2cafa7ea,markdown,fr,a6d185ead2879ed3,"## 1. Le substrat — un réseau 4 nœuds, le même pour tout le notebook
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,2cafa7ea,markdown,fr,a6d185ead2879ed3,"## 1. Le substrat — un réseau 4 nœuds, le même pour tout le notebook
 
 Quatre nœuds logiques $A, B, C, D$ organisés en **deux paires d'échange** :
 
@@ -38701,7 +38701,7 @@ cette évidence est un **présupposé de frontière** — et que la mesure $\Phi
 Le substrat est la chose physique — cette TPM, ces quatre nœuds. Il ne bougera plus d'une section
 à l'autre ; seule la **frontière** (le choix des nœuds admis dans le sous-système) variera. C'est
 le point méthodologique : on sépare le *substrat* (donné) du *découpage* (choisi).",,,,,,,,a6d185ead2879ed3,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,b13bfadb,code,fr,c762b00fbc2459ed,"def tpm_deux_paires():
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,b13bfadb,code,fr,c762b00fbc2459ed,"def tpm_deux_paires():
     """"""TPM 4-noeuds : A<->B et C<->D s'echangeant leurs etats.""""""
     tpm = np.zeros((16, 4))
     for s in range(16):
@@ -38717,18 +38717,18 @@ ETAT = (1, 1, 1, 1)                     # etat du reseau pour toutes les mesures
 print(""Substrat : 4 noeuds en deux paires d'echange (A<->B, C<->D)"")
 print(""Exemples de lignes TPM : (A,B,C,D)=(1,0,1,0) ->"", TPM[int(""1010"", 2)].astype(int),
       "" ; (1,0,0,1) ->"", TPM[int(""1001"", 2)].astype(int))",,,,,,,,c762b00fbc2459ed,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,dac7ac3c,markdown,fr,8cbeb939a9372a13,"## 2. La frontière est un choix — l'énumérer
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,dac7ac3c,markdown,fr,8cbeb939a9372a13,"## 2. La frontière est un choix — l'énumérer
 
 `pyphi.Subsystem(network, state, nodes)` matérialise une frontière : `nodes` dedans, le reste
 dehors (conditionné, pas supprimé). Pour 4 nœuds, les frontières **non triviales** (au moins 2
 nœuds — un nœud seul n'a rien à intégrer) sont au nombre de 11 : 6 paires, 4 triplets, le tout.
 Les énumérer, c'est déjà admettre que « le système » n'est pas une donnée.",,,,,,,,8cbeb939a9372a13,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,c97c49f2,code,fr,633e47d4895317c1,"NOMS = ""ABCD""
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,c97c49f2,code,fr,633e47d4895317c1,"NOMS = ""ABCD""
 combos = [c for r in (2, 3, 4) for c in itertools.combinations(range(4), r)]
 frontieres = ["""".join(NOMS[i] for i in c) for c in combos]
 print(f""{len(frontieres)} frontieres candidates (>= 2 noeuds) :"")
 print("", "".join(frontieres))",,,,,,,,633e47d4895317c1,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,fee240bc,markdown,fr,3f5f123e096585e8,"## 3. Faire varier la frontière — ce qui change, ce qui reste
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,fee240bc,markdown,fr,3f5f123e096585e8,"## 3. Faire varier la frontière — ce qui change, ce qui reste
 
 Pour chaque frontière, deux mesures sont calculées **sur le même substrat, dans le même état** :
 
@@ -38741,7 +38741,7 @@ Pour chaque frontière, deux mesures sont calculées **sur le même substrat, da
   condensable — l'EI est **non définie** pour cette frontière (c'est déjà une donnée sur le bord).
 
 C'est la table centrale du notebook : onze frontières, un seul substrat.",,,,,,,,3f5f123e096585e8,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,17470d5b,code,fr,8e7b6d7c02781f3b,"def phi_frontiere(noeuds_idx):
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,17470d5b,code,fr,8e7b6d7c02781f3b,"def phi_frontiere(noeuds_idx):
     """"""Phi IIT 3.0 du sous-systeme delimite par noeuds_idx, dans ETAT.""""""
     sub = pyphi.Subsystem(substrat, ETAT, tuple(noeuds_idx))
     return pyphi.compute.phi(sub)
@@ -38779,7 +38779,7 @@ for c in combos:
 
 table = pd.DataFrame(lignes)
 table",,,,,,,,8e7b6d7c02781f3b,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,f5307c43,markdown,fr,b0e2b52c02871cfb,"**Ce qui change** : les deux colonnes — la frontière n'est pas une valeur neutre, elle
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,f5307c43,markdown,fr,b0e2b52c02871cfb,"**Ce qui change** : les deux colonnes — la frontière n'est pas une valeur neutre, elle
 détermine ce qu'on voit. **Ce qui reste** : le substrat (TPM inchangée), l'état, la structure
 causale. Le tableau est la preuve **calculée**, pas discutée, que des découpages distincts du même
 substrat donnent des lectures différentes.
@@ -38794,7 +38794,7 @@ Trois faits saillants, tous mesurés :
   sont même pas lisibles comme réseaux autonomes. Le domaine des deux mesures n'est pas le même —
   l'écart fait partie du résultat.
 ",,,,,,,,b0e2b52c02871cfb,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,c1599ef8,markdown,fr,aa06055e95c33bb9,"## 4. La frontière qui maximise
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,c1599ef8,markdown,fr,aa06055e95c33bb9,"## 4. La frontière qui maximise
 
 L'**exclusion** est le postulat qui répond au problème de frontière en IIT : parmi les frontières
 candidates, celle qui porte l'expérience est celle qui **maximise** $\Phi$ (le *complex*). Ce
@@ -38806,7 +38806,7 @@ reste ouvert entre plusieurs bords, et c'est un résultat, pas un échec.
 
 Le § 4bis montre comment le moteur PyPhi tranche lui-même ce maximiseur : le **complexe
 majeur** (`pyphi.compute.major_complex`), mise en œuvre du postulat d'exclusion.",,,,,,,,aa06055e95c33bb9,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,dfc7b72f,code,fr,7191ac820337e33f,"col_phi = ""Phi (IIT 3.0, etat fixe)""
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,dfc7b72f,code,fr,7191ac820337e33f,"col_phi = ""Phi (IIT 3.0, etat fixe)""
 col_ei = ""EI induit (Hoel)""
 
 meilleur_phi = table[col_phi].max()
@@ -38821,7 +38821,7 @@ print(f""Max Phi = {meilleur_phi:.4f} atteint par : {gagnants_phi}""
 print(f""Max EI  = {meilleur_ei:.4f} atteint par : {gagnants_ei}""
       f""{'  (EX AEQUO — la mesure ne tranche pas)' if len(gagnants_ei) > 1 else ''}"")
 print(f""Domaine EI : {len(lisibles)}/{len(table)} frontieres lisibles comme reseaux autonomes"")",,,,,,,,7191ac820337e33f,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,cc36ab02,markdown,fr,5987a40a019b6c08,"## 4bis. Le complexe majeur — quand la théorie tranche elle-même
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,cc36ab02,markdown,fr,5987a40a019b6c08,"## 4bis. Le complexe majeur — quand la théorie tranche elle-même
 
 Le § 4 a mesuré l'ex æquo et l'a enregistré comme un résultat : la mesure ne tranche pas. Mais
 la théorie, elle, doit trancher. Le **postulat d'exclusion** (Oizumi, Albantakis & Tononi 2014,
@@ -38842,7 +38842,7 @@ et l'**état** — la frontière est précisément ce que la recherche décide. 
 [pyphi.readthedocs.io](https://pyphi.readthedocs.io), module `compute`.)
 
 Appliquées au même substrat, dans le même `ETAT` que la table de la section 3 :",,,,,,,,5987a40a019b6c08,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,99247918,code,fr,c3abcc0f1f8e6688,"# --- Le moteur tranche : recherche du complexe majeur sur le MEME substrat, MEME ETAT ---
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,99247918,code,fr,c3abcc0f1f8e6688,"# --- Le moteur tranche : recherche du complexe majeur sur le MEME substrat, MEME ETAT ---
 complexe_majeur = pyphi.compute.major_complex(substrat, ETAT)
 noms_cm = """".join(NOMS[i] for i in complexe_majeur.subsystem.node_indices)
 
@@ -38857,7 +38857,7 @@ for sia in pyphi.compute.complexes(substrat, ETAT):
 print()
 phi_abcd = pyphi.compute.phi(pyphi.Subsystem(substrat, ETAT, (0, 1, 2, 3)))
 print(f""big-Phi du substrat ENTIER (ABCD) : {phi_abcd:.4f} -> absent de complexes() car nul"")",,,,,,,,c3abcc0f1f8e6688,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,20ffceec,code,fr,3f98e21165452f2a,"# --- Confrontation programmatique : notre table (sec. 3-4) vs la recherche du moteur ---
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,20ffceec,code,fr,3f98e21165452f2a,"# --- Confrontation programmatique : notre table (sec. 3-4) vs la recherche du moteur ---
 complexes_table = set(gagnants_phi)          # l'ex aequo Phi de la section 4 : AC, BD
 complexes_moteur = set(complexes_non_nuls)   # ce que complexes() rend
 print(""complexes de la table :"", sorted(complexes_table))
@@ -38866,7 +38866,7 @@ print(""egalite des deux sources :"", complexes_table == complexes_moteur)
 print()
 print(""le majeur est dans l'ex aequo de la table :"", noms_cm in complexes_table)
 print(""le tout (Phi = 0) est bien ecarte         :"", ""ABCD"" not in complexes_moteur)",,,,,,,,3f98e21165452f2a,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,b7b101e5,markdown,fr,dfce40f17353fe63,"### Lecture : l'exclusion à l'œuvre — et son arbitrage
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,b7b101e5,markdown,fr,dfce40f17353fe63,"### Lecture : l'exclusion à l'œuvre — et son arbitrage
 
 Trois faits, par ordre d'importance :
 
@@ -38887,13 +38887,13 @@ Trois faits, par ordre d'importance :
    donc toujours (l'ex æquo est un résultat) ; ce que ce § 4bis ajoute, c'est le fait moteur :
    sur une égalité dégénérée, l'outil tranche par convention d'énumération — il faut le savoir
    avant de lire un `major_complex` comme un choix théorique.",,,,,,,,dfce40f17353fe63,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,b3092a6f,markdown,fr,050d32f14408c7b0,"## 5. Le désaccord — deux mesures, deux bords ?
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,b3092a6f,markdown,fr,050d32f14408c7b0,"## 5. Le désaccord — deux mesures, deux bords ?
 
 Deux mesures, deux verdicts possibles sur la **même** question (où est la frontière qui compte ?).
 Si elles privilégient la même frontière, elles concordent — résultat à enregistrer comme tel. Si
 elles divergent, la dissociation est le résultat : le bord n'est pas dans le substrat, il est dans
 la mesure qu'on choisit d'appliquer.",,,,,,,,050d32f14408c7b0,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,9d7e4b17,code,fr,d4258413c5238211,"if set(gagnants_phi) & set(gagnants_ei):
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,9d7e4b17,code,fr,d4258413c5238211,"if set(gagnants_phi) & set(gagnants_ei):
     if set(gagnants_phi) == set(gagnants_ei):
         verdict = f""MEME FRONTIERE : Phi et EI induit privilegient {gagnants_phi}""
     else:
@@ -38914,7 +38914,7 @@ print(table.sort_values(col_phi, ascending=False)[[""Frontiere"", col_phi]].to_s
 print()
 print(""Classement EI (frontieres lisibles seules) :"")
 print(lisibles.sort_values(col_ei, ascending=False)[[""Frontiere"", col_ei]].to_string(index=False))",,,,,,,,d4258413c5238211,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,09631787,markdown,fr,5b5eaa432504c1a1,"Le verdict de ce substrat est une **double dissociation**, et c'est le résultat le plus
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,09631787,markdown,fr,5b5eaa432504c1a1,"Le verdict de ce substrat est une **double dissociation**, et c'est le résultat le plus
 instructif du notebook :
 
 1. **Verdicts opposés** : $\Phi$ privilégie les frontières transversales ($AC$, $BD$), l'EI
@@ -38931,17 +38931,17 @@ n'est pas dans le substrat : il est dans la **mesure qu'on choisit d'appliquer**
 personne ne le fait à notre place. C'est exactement ce que le problème de frontière voulait rendre
 visible.
 ",,,,,,,,5b5eaa432504c1a1,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,1839fa47,markdown,fr,87592f111d2d6554,"## 6. Exercices
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,1839fa47,markdown,fr,87592f111d2d6554,"## 6. Exercices
 
 Quatre exercices sur le même socle méthodologique — chacun sur **votre** substrat. Les stubs
 s'exécutent sans erreur (consigne imprimée) ; compléter, pas remplacer.
 ",,,,,,,,87592f111d2d6554,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,e98f6fd5,markdown,fr,68af303586cb75d8,"### Exercice 1 — Faire varier la frontière, sur votre substrat
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,e98f6fd5,markdown,fr,68af303586cb75d8,"### Exercice 1 — Faire varier la frontière, sur votre substrat
 
 Construire un autre réseau 4 nœuds (autre topologie : chaîne, deux paires, anneau...) et refaire
 la table de la section 3 : au moins trois frontières calculées, avec $\Phi$ et EI induit. Noter
 ce qui change par rapport au noyau majoritaire + suiveur.",,,,,,,,68af303586cb75d8,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,04471cbc,code,fr,5991f8ef482ec5bd,"# Exercice 1 : votre substrat
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,04471cbc,code,fr,5991f8ef482ec5bd,"# Exercice 1 : votre substrat
 # Etape 1 : definir tpm_votre() (4 noeuds, autre logique que majoritaire+suiveur).
 # Etape 2 : choisir 3+ frontieres et calculer phi_frontiere / ei_induit dessus.
 # Indice : reprendre la cellule de la section 3 en changeant seulement la TPM.
@@ -38951,31 +38951,31 @@ def tpm_votre():
     return None
 
 print(""Exercice a completer : tpm_votre() + table de 3+ frontieres (Phi, EI induit)."")",,,,,,,,5991f8ef482ec5bd,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,75d299c7,markdown,fr,eab8c59910401ad8,"### Exercice 2 — La frontière qui maximise, sur votre substrat
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,75d299c7,markdown,fr,eab8c59910401ad8,"### Exercice 2 — La frontière qui maximise, sur votre substrat
 
 Sur votre substrat : quelles frontières maximisent $\Phi$ ? Le maximiseur est-il unique, ou y
 a-t-il ex æquo ? Que se passe-t-il si vous changez l'état (`ETAT`) — le maximiseur bouge-t-il ?",,,,,,,,eab8c59910401ad8,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,2d221b36,code,fr,5fea402c148b0b2d,"# Exercice 2 : le maximiseur
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,2d221b36,code,fr,5fea402c148b0b2d,"# Exercice 2 : le maximiseur
 # Etape 1 : reprendre votre table et extraire argmax(Phi) comme la section 4.
 # Etape 2 : refaire le calcul dans un autre etat (ex. (0,0,0,0) puis (1,0,1,0)).
 # Indice : Phi depend de l'etat ; EI non. Un maximiseur qui bouge avec l'etat
 #          dit que la frontiere privilegiee n'est meme pas stable dans le temps.
 
 print(""Exercice a completer : argmax(Phi) dans 2 etats distincts, verdict unicite/stabilite."")",,,,,,,,5fea402c148b0b2d,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,f5542d1a,markdown,fr,7034866e9671cd1d,"### Exercice 3 — Le désaccord, verdict explicite
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,f5542d1a,markdown,fr,7034866e9671cd1d,"### Exercice 3 — Le désaccord, verdict explicite
 
 Sur votre substrat : $\Phi$ et EI induit privilégient-ils la même frontière ? Conclure par un
 verdict explicite parmi : **même frontière / frontières différentes / indécidable dans ce
 budget**. Si frontières différentes : enregistrer la dissociation (frontière $\Phi$, frontière
 EI, écart des classements).",,,,,,,,7034866e9671cd1d,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,567a13ed,code,fr,26bf4334943c7d0d,"# Exercice 3 : le verdict
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,567a13ed,code,fr,26bf4334943c7d0d,"# Exercice 3 : le verdict
 # Etape 1 : extraire gagnants_phi et gagnants_ei de VOTRE table (section 4).
 # Etape 2 : produire le verdict — meme frontiere / frontieres differentes / indecidable.
 # Indice : ""indecidable"" est legitime si les calculs ne tiennent pas dans le budget ;
 #          mais il faut l'avoir tente pour le dire.
 
 print(""Exercice a completer : verdict explicite (meme frontiere / differentes / indecidable)."")",,,,,,,,26bf4334943c7d0d,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,8e359a34,markdown,fr,637cd9b35604f756,"### Exercice 4 — Le complexe majeur, sur votre substrat
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,8e359a34,markdown,fr,637cd9b35604f756,"### Exercice 4 — Le complexe majeur, sur votre substrat
 
 Le § 4bis a laissé le moteur chercher le complexe majeur et a confronté le résultat à la table.
 Sur **votre** substrat de l'Exercice 1 : prédisez d'abord le complexe majeur **à partir de votre
@@ -38990,7 +38990,7 @@ table** (maximum de $\Phi$ et ses ex æquo éventuels), puis vérifiez avec
 - *Etape 1* : la prédiction (une chaîne, AVANT d'exécuter la recherche) ; *Etape 2* : la
   recherche ; *Etape 3* : le verdict — confirmé ? ex æquo ? comment le moteur a-t-il
   départagé ?",,,,,,,,637cd9b35604f756,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,7852faf3,code,fr,135350cceeb885f8,"# Exercice 4 : complexe majeur sur VOTRE substrat (celui de l'Exercice 1)
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,7852faf3,code,fr,135350cceeb885f8,"# Exercice 4 : complexe majeur sur VOTRE substrat (celui de l'Exercice 1)
 # TODO etudiant : predire le maximiseur depuis la table, puis verifier avec le moteur
 # Etape 1 : prediction = ""...""  (AVANT de lancer la recherche)
 # Etape 2 : sia = pyphi.compute.major_complex(votre_reseau, votre_etat)
@@ -39001,7 +39001,7 @@ if prediction is None:
     print(""Exercice a completer : complexe majeur prediction + verification"")
 else:
     print(""Prediction :"", prediction)",,,,,,,,135350cceeb885f8,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,bae5a296,markdown,fr,27505682a1e6cddc,"## Conclusion
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,bae5a296,markdown,fr,27505682a1e6cddc,"## Conclusion
 
 | Question | Réponse de ce notebook | Où |
 |---|---|---|
@@ -39017,7 +39017,7 @@ chaque mesure répond à sa manière, et l'écart entre les réponses est une pr
 en amont d'elle-même (cf. #12206) : mesurer un défaut de recollement mesure aussi le choix
 arbitraire du découpage — sauf à rendre ce choix visible d'abord.
 ",,,,,,,,27505682a1e6cddc,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,ccd6e5bb,markdown,fr,c4fa48333f3ae718,"## Références
+MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb,ccd6e5bb,markdown,fr,c4fa48333f3ae718,"## Références
 
 - Mayner WGP, Marshall W, Albantakis L, Findlay G, Marchman R, Tononi G. (2018). *PyPhi: A
   toolbox for integrated information theory.* PLOS Computational Biology 14(7): e1006343.
@@ -39030,7 +39030,7 @@ MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb,ccd6e5bb,markdown,fr
   piste à évaluer, pas comme résultat établi — le présent notebook mesure le **problème**, il
   n'adopte aucune de ses réponses candidates.
 ",,,,,,,,c4fa48333f3ae718,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,9581c328,markdown,fr,579df62d2ed98a2b,"# IIT-5. Les lentilles de conscience comme bancs de dissociation — pas comme galerie de portraits
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,9581c328,markdown,fr,579df62d2ed98a2b,"# IIT-5. Les lentilles de conscience comme bancs de dissociation — pas comme galerie de portraits
 
 Le risque que la serie IIT-ICT devienne une **soupe de noms celebres** est reel.
 Le remede n'est pas de citer moins, c'est de n'admettre une theorie que **par une dissociation qu'elle rend mesurable**.
@@ -39046,7 +39046,7 @@ Le remede n'est pas de citer moins, c'est de n'admettre une theorie que **par un
   la divergence GWT/GNW au sein de la famille acces, la sensibilite de HOT a l'echelle du self-model, et la robustesse des verdicts sous 20 seeds ;
 
 **Ce que ce notebook ne fait PAS** : re-prouver les theories ; trancher entre elles ; pretendre que la conscience est resolue. Les sources non lues firsthand sont marquees **RAPORTE**.",,,,,,,,579df62d2ed98a2b,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,d3dcbde6,markdown,fr,0b78e06aa50e0def,"## Cadre — la discipline des cinq champs
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,d3dcbde6,markdown,fr,0b78e06aa50e0def,"## Cadre — la discipline des cinq champs
 
 Pour qu'une lentille soit admissible dans la serie, elle porte dans son markdown les cinq champs suivants :
 
@@ -39059,7 +39059,7 @@ Pour qu'une lentille soit admissible dans la serie, elle porte dans son markdown
 | **Mesure falsifiable** | le code qui decide si la lentille tient ou pas sur un cas |
 
 Une lentille sans contre-claim est **incomplete** et doit etre retirees (cf acceptance du grain). Une lentille sans mesure falsifiable est **decorative** et doit etre retirees aussi.",,,,,,,,0b78e06aa50e0def,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,734f9cf0,markdown,fr,0e01f57a31e72f67,"## Les six lentilles retenues
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,734f9cf0,markdown,fr,0e01f57a31e72f67,"## Les six lentilles retenues
 
 Six modeles, six disciplines differentes, et une question partagee : **qu'est-ce qui, dans le cerveau, correspond au rapport subjectif d'etre conscient ?**
 
@@ -39071,10 +39071,10 @@ Six modeles, six disciplines differentes, et une question partagee : **qu'est-ce
 6. **Higher-Order Theories** (Rosenthal 2005, *Consciousness and Mind*; Lau & Brown 2019) -- un etat mental est conscient s'il fait l'objet d'une meta-representation (HOT) ou d'une meta-perception (HOP).
 
 Le detail suit, avec les cinq champs pour chacune. Pas de re-derivation : rapportes fidelement, contestees la ou le contre-claim s'applique.",,,,,,,,0e01f57a31e72f67,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,925d46c3,markdown,fr,5e467cdfa0721578,"### Cadrage executable -- les six lentilles sous forme de donnees
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,925d46c3,markdown,fr,5e467cdfa0721578,"### Cadrage executable -- les six lentilles sous forme de donnees
 
 On formalise les six lentilles comme des dataclasses avec les cinq champs. Les claims et contre-claims sont **RAPORTE** sauf mention contraire explicite -- aucune theorie n'est acceptee comme acquise.",,,,,,,,5e467cdfa0721578,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,58e25f4e,code,fr,f7da7ef50f7d4993,"from dataclasses import dataclass, field
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,58e25f4e,code,fr,f7da7ef50f7d4993,"from dataclasses import dataclass, field
 from typing import Callable, Any
 
 @dataclass
@@ -39173,10 +39173,10 @@ print(f'{len(LENTILLES)} lentilles chargees :')
 for nom, L_obj in LENTILLES.items():
     print(f""  - {nom:30s} | objet : {L_obj.objet_formel[:50]}..."")
 ",,,,,,,,f7da7ef50f7d4993,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,2cb060e0,markdown,fr,54ba5f2ff351859f,"### Le substrat abstrait -- un graphe dynamique minimal
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,2cb060e0,markdown,fr,54ba5f2ff351859f,"### Le substrat abstrait -- un graphe dynamique minimal
 
 Pour faire travailler les lentilles, on definit un **substrat jouet** : un graphe dynamique de `n` noeuds avec une couche 'peripherique', une couche 'integration', et eventuellement une meta-couche. Chaque methode de mesure est une facette du substrat, pas un modele biologique.",,,,,,,,54ba5f2ff351859f,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,55317b4f,code,fr,50dc6574c288e099,"import warnings
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,55317b4f,code,fr,50dc6574c288e099,"import warnings
 warnings.filterwarnings(""ignore"", message=""invalid value encountered in divide"", category=RuntimeWarning)
 import numpy as np
 
@@ -39270,12 +39270,12 @@ sub_full = Substrat(n_periph=6, n_integ=2, has_meta=True, seed=42)
 print(f""Banc 1 (broadcast only, sans meta) : {sub_broadcast_only.n_periph} periph + {sub_broadcast_only.n_integ} integ, meta={sub_broadcast_only.has_meta}"")
 print(f""Banc 2 (full, avec meta-couche) : {sub_full.n_periph} periph + {sub_full.n_integ} integ, meta={sub_full.has_meta}"")
 ",,,,,,,,50dc6574c288e099,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,bf4d2944,markdown,fr,297bdc860323dcc0,"## Exemple guide 1 -- Dissociation acces (broadcast) vs autoreference (boucle meta)
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,bf4d2944,markdown,fr,297bdc860323dcc0,"## Exemple guide 1 -- Dissociation acces (broadcast) vs autoreference (boucle meta)
 
 **Question** : peut-on avoir un systeme avec **broadcast** (GWT, GNW, PP mesurent toutes 'conscience = oui') mais **sans** boucle autoreferente (HOT, AST, SMT mesurent 'conscience = non') ?
 
 **Dissociation executee** : on prend le banc 1 (`sub_broadcast_only`, sans meta-couche) et on mesure les SIX lentilles. Si la dissociation tient, trois lentilles-mesures sont elevees et trois sont nulles, sur le MEME substrat.",,,,,,,,297bdc860323dcc0,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,exo1-fixed,code,fr,8010301ded1ecaeb,"# Exo 1 : dissociation acces vs autoreference
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,exo1-fixed,code,fr,8010301ded1ecaeb,"# Exo 1 : dissociation acces vs autoreference
 # Iteration sur le substrat pour stabiliser les mesures (avant la mesure)
 for _ in range(20):
     sub_broadcast_only.step()
@@ -39302,7 +39302,7 @@ acces = sum(1 for n in ('GWT', 'GNW', 'PP_FEP') if resultats_exo1[n] > 0.3)
 autoref = sum(1 for n in ('AST', 'SMT', 'HOT') if resultats_exo1[n] > 0)
 print(f""Dissociation : {acces} lentilles-acces > 0.3 ; {autoref} lentilles-autoref > 0"")
 print(f""=> {'DISSOCIATION OBSERVEE' if acces >= 2 and autoref == 0 else 'PAS DE DISSOCIATION NETTE'}"")",,,,,,,,8010301ded1ecaeb,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,9a4a9262,markdown,fr,7b88028011670db3,"### Interprétation -- ce que la dissociation executee dit
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,9a4a9262,markdown,fr,7b88028011670db3,"### Interprétation -- ce que la dissociation executee dit
 
 **Resultat attendu** : GWT (broadcast_score) > 0.3, GNW (ignition_late) > 0.3, PP (precision) > 0, tandis que AST, SMT, HOT valent 0 (la meta-couche est absente, `has_meta=False`).
 
@@ -39314,7 +39314,7 @@ MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,9a4a9262,markdown,
 **Limites honnetement documentees** :
 - Ce banc ne pretend pas que la conscience se reduit a un seuil binaire -- les mesures sont des proxies continus. Ce qui est mesure ici est la **capacite du substrat a porter la mesure**, pas la conscience elle-meme.
 - L'absence de meta-couche est un cas extreme. Sur un vrai cerveau, la meta-couche est partielle (certaines aires seulement), pas totale ou nulle.",,,,,,,,7b88028011670db3,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,bf233c60,markdown,fr,b32f4b1e034d47f4,"## Exercice 1 -- Dissociation DANS la famille acces : GWT oui, GNW non
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,bf233c60,markdown,fr,b32f4b1e034d47f4,"## Exercice 1 -- Dissociation DANS la famille acces : GWT oui, GNW non
 
 **Question** : l'Exemple guide 1 dissociait les familles acces et autoreference. Peut-on aller plus loin et dissocier **deux lentilles de la meme famille** -- un substrat ou GWT dit OUI et GNW dit NON ?
 
@@ -39329,7 +39329,7 @@ MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,bf233c60,markdown,
 
 **Resultat attendu** (solution de reference, verifiee hors notebook) : `gwt_conscience = log(6) ~ 1.79 > 0.3` (OUI) et `gnw_ignition = 0.0 <= 0.3` (NON) -- deterministe.
 ",,,,,,,,b32f4b1e034d47f4,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,4a827028,code,fr,4b677b6d639e63f2,"# Exercice 1 : GWT oui, GNW non -- dissociation intra-famille acces
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,4a827028,code,fr,4b677b6d639e63f2,"# Exercice 1 : GWT oui, GNW non -- dissociation intra-famille acces
 # Etape 1 : construire Substrat(n_periph=6, n_integ=2, has_meta=False, seed=42)
 #           puis fixer integ_W a des lignes equilibrees en magnitude.
 # Etape 2 : fixer periph_state pour desaligner l'ignition (signe uniforme).
@@ -39339,12 +39339,12 @@ MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,4a827028,code,fr,4
 resultats_gwt_gnw = None  # TODO etudiant : dict {lentille: mesure} sur votre substrat
 print('Exercice 1 a completer : GWT OUI / GNW NON sur un meme substrat')
 ",,,,,,,,4b677b6d639e63f2,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,ecb2c1e3,markdown,fr,63058af4e087c989,"## Exemple guide 2 -- Deux lentilles sur le meme substrat : Graziano vs Metzinger
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,ecb2c1e3,markdown,fr,63058af4e087c989,"## Exemple guide 2 -- Deux lentilles sur le meme substrat : Graziano vs Metzinger
 
 **Question** : les lentilles AST (Graziano) et SMT (Metzinger) operent toutes deux sur le meme genre d'objet -- un modele interne de l'etat du systeme. Mais que mesurent-elles de **different** ?
 
 **Banc** : substrat `sub_full` (avec meta-couche). On declenche 100 pas dynamiques et on mesure, pour chaque lentille, sa trace temporelle. Si elles mesurent la meme chose, leurs traces sont correlees. Si elles mesurent des choses differentes, elles decorrelent -- possiblement negatif.",,,,,,,,63058af4e087c989,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,exo2-fixed,code,fr,37ca6c918552811b,"# Exo 2 : Graziano (AST) vs Metzinger (SMT)
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,exo2-fixed,code,fr,37ca6c918552811b,"# Exo 2 : Graziano (AST) vs Metzinger (SMT)
 # Regenerer le substrat et le faire tourner (stabilisation)
 rng = np.random.default_rng(42)
 sub_full = Substrat(n_periph=6, n_integ=2, has_meta=True, seed=42)
@@ -39383,7 +39383,7 @@ else:
     else:
         verdict = f'CORRELEES (corr={corr:.3f})'
 print(f""\n=> {verdict}"")",,,,,,,,37ca6c918552811b,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,de0737fc,markdown,fr,f78dff59481a9c0b,"### Interprétation -- AST et SMT mesurent-elles la meme chose ?
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,de0737fc,markdown,fr,f78dff59481a9c0b,"### Interprétation -- AST et SMT mesurent-elles la meme chose ?
 
 **Mesure cle** : la correlation entre la trace temporelle d'AST (presence du schema) et celle de SMT (transparence du self-model). 
 
@@ -39398,7 +39398,7 @@ MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,de0737fc,markdown,
 - Sur un meme substrat, deux lentilles differentes peuvent repondre **oui** ou **non** independamment -- ce qui infirme la these 'toutes les theories disent la meme chose en fait'.
 
 **Limite honnete** : la mesure AST utilisee ici est binaire par construction (presence/absence du meta-noeud). Une mesure plus fine pourrait decomposer 'schema partiel', 'schema distribue', etc.",,,,,,,,f78dff59481a9c0b,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,123f462f,markdown,fr,fd4e04084439da25,"## Exercice 2 -- Le seuil de HOT : le verdict depend-il de l'echelle du self-model ?
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,123f462f,markdown,fr,fd4e04084439da25,"## Exercice 2 -- Le seuil de HOT : le verdict depend-il de l'echelle du self-model ?
 
 **Question** : la contre-claim de HOT dit qu'une meta-couche peut exister sans conscience du contenu de premier ordre. On execute ici une variante : le verdict de HOT depend-il de la **magnitude** du self-model, ou seulement de sa presence ?
 
@@ -39412,7 +39412,7 @@ MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,123f462f,markdown,
 
 **Resultat attendu** (solution de reference, verifiee hors notebook) : HOT bascule entre `alpha = 1e-7` et `alpha = 1e-6` (le pointeur exige `|meta_out| > 1e-6`), tandis que SMT repond OUI des que `meta_out != 0` et AST des que `has_meta` -- le seuil de HOT est un artefact d'echelle, pas un fait de structure.
 ",,,,,,,,fd4e04084439da25,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,d5028d16,code,fr,6d64151718366efe,"# Exercice 2 : seuil de HOT sous mise a l'echelle du self-model
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,d5028d16,code,fr,6d64151718366efe,"# Exercice 2 : seuil de HOT sous mise a l'echelle du self-model
 # Etape 1 : construire un substrat has_meta=True a integ_W et periph_state uniformes.
 # Etape 2 : balayer meta_W = alpha * ones(n_integ), alpha dans np.logspace(-9, 0, 10).
 # Etape 3 : pour chaque alpha, relever les verdicts AST / SMT / HOT.
@@ -39421,14 +39421,14 @@ MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,d5028d16,code,fr,6
 sweep_seuil_hot = None  # TODO etudiant : liste de (alpha, verdict_hot, verdict_smt)
 print('Exercice 2 a completer : trouver la bascule de HOT, montrer SMT invariant')
 ",,,,,,,,6d64151718366efe,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,d6ee2cc5,markdown,fr,c3680e21a70b6bc8,"## Exemple guide 3 -- Un contre-claim execute : la lentille FEP sort de son domaine
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,d6ee2cc5,markdown,fr,c3680e21a70b6bc8,"## Exemple guide 3 -- Un contre-claim execute : la lentille FEP sort de son domaine
 
 **Rappel du contre-claim FEP** : Friston lui-meme a rappele (entretien Jaimungal) que le FEP N'EST PAS une theorie de la conscience. C'est une **lentille predictive/actionnelle** -- sa mesure de 'precision' est utile, mais elle ne tranche pas la question 'ce systeme est-il conscient ?'.
 
 **Demonstration** : on prend un substrat ou la precision est **maximale** (par construction, l'integration capture parfaitement les peripheriques). Si PP_FEP disait 'conscience = oui' des que la precision est haute, ce substrat serait 'conscient'. Mais ce n'est pas le cas dans le contre-claim du FEP -- la precision elevee ne suffit pas.
 
 **Banc** : substrat `sub_precision_max` avec une integration parfaitement alignee sur les peripheriques. Mesure PP (precision) elevee. Mesure GWT (broadcast) aussi. Mais : **pas de meta-couche** -> AST, SMT, HOT mesurent toutes 0. La 'conscience' du substrat depend donc de la lentille qu'on choisit.",,,,,,,,c3680e21a70b6bc8,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,exo3-fixed,code,fr,718a4da63fae56e5,"# Exo 3 : contre-claim execute
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,exo3-fixed,code,fr,718a4da63fae56e5,"# Exo 3 : contre-claim execute
 class SubstratPrecisionMax(Substrat):
     '''Substrat特意: integration = moyenne des peripheriques (precision maximale).'''
     def __init__(self, n_periph=6, n_integ=2, has_meta=False, seed=0):
@@ -39474,7 +39474,7 @@ print(f""Verdict : {acces_oui} lentilles-acces disent OUI, {autoref_oui} lentill
 print(""Conclusion : la precision FEP elevee (proxy valide) ne SUFFIT PAS a conclure"")
 print(""que le substrat est 'conscient' -- les lentilles-autoref restent negatives."")
 print(""Le contre-claim du FEP tient : precision n'est pas conscience."")",,,,,,,,718a4da63fae56e5,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,59820269,markdown,fr,bf7094b77ee7ecf8,"## Exercice 3 -- Robustesse des verdicts : le banc 1 tient-il sous d'autres seeds ?
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,59820269,markdown,fr,bf7094b77ee7ecf8,"## Exercice 3 -- Robustesse des verdicts : le banc 1 tient-il sous d'autres seeds ?
 
 **Question** : l'Exemple guide 1 mesurait UNE instance du banc broadcast-only (`seed=42`). Les verdicts OUI/NON sont-ils stables quand on reconstruit le substrat avec d'autres seeds, ou l'un des verdicts vacille-t-il ?
 
@@ -39488,7 +39488,7 @@ MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,59820269,markdown,
 
 **Resultat attendu** (solution de reference, verifiee hors notebook) : GWT 20/20 OUI, PP_FEP 20/20 OUI, AST/SMT/HOT 0/20 -- et **GNW 18/20 seulement** : l'ignition est la seule mesure dont le verdict vacille d'un seed a l'autre.
 ",,,,,,,,bf7094b77ee7ecf8,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,d6e38376,code,fr,89b3d45bd323dec1,"# Exercice 3 : robustesse des verdicts du banc broadcast-only sous 20 seeds
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,d6e38376,code,fr,89b3d45bd323dec1,"# Exercice 3 : robustesse des verdicts du banc broadcast-only sous 20 seeds
 # Etape 1 : pour seed in range(20), construire le substrat sans meta et iterer 20 pas.
 # Etape 2 : mesurer les six lentilles et compter les OUI par lentille (seuils du notebook).
 # Etape 3 : identifier la ou les lentilles au verdict instable et l'expliquer.
@@ -39497,7 +39497,7 @@ MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,d6e38376,code,fr,8
 table_robustesse = None  # TODO etudiant : dict {lentille: nb de seeds OUI sur 20}
 print('Exercice 3 a completer : tableau lentille -> OUI sur N/20 seeds')
 ",,,,,,,,89b3d45bd323dec1,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,25f9a9c3,markdown,fr,9e590380abe09fb9,"## Conclusion -- les lentilles comme instruments de dissociation, pas comme theories unifiees
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,25f9a9c3,markdown,fr,9e590380abe09fb9,"## Conclusion -- les lentilles comme instruments de dissociation, pas comme theories unifiees
 
 **Ce que ce notebook a etabli** :
 
@@ -39516,7 +39516,7 @@ MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,25f9a9c3,markdown,
 - Lecture firsthand de Solms (affect, valence) et Joscha Bach (world-model, self-model) -- **dette explicite** mentionnee dans le grain #12215.
 - Six autres lentilles (IIT au sens strict, Integrated Information, Phenomenal Consciousness theories) pour completer le panorama.
 - Vers ICT-5 (la serie ICT a un 5e notebook ?) -- voir si l'angle 'dissociation' merite une serie dediee.",,,,,,,,9e590380abe09fb9,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,d046143c,markdown,fr,9085338488ed9fd1,"## Références
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,d046143c,markdown,fr,9085338488ed9fd1,"## Références
 
 - Baars, B. J. (1988). *A Cognitive Theory of Consciousness*. Cambridge University Press. **RAPORTE**.
 - Dehaene, S., & Changeux, J.-P. (2011). *Experimental and Theoretical Approaches to Conscious Processing*. Neuron. **RAPORTE**.
@@ -39528,7 +39528,7 @@ MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb,d046143c,markdown,
 - Hohwy, J. (2013). *The Predictive Mind*. Oxford University Press. **RAPORTE**.
 - Jaimungal, S. (2024-2026). Entretiens *The Unexpected AI Stack* avec Friston, Graziano, Metzinger, Solms, Bach. **RAPORTE** (corpus non lu firsthand ; le contre-claim du FEP est cite d'apres le resume de l'entretien Friston par d'autres sources secondaires).
 - Hoel, E. P. (2017). *Agentive behavior and the causal powers of information*. **RAPORTE** (mentionne comme antecedent pour la notion de precision).",,,,,,,,9085338488ed9fd1,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,57a330c0,markdown,fr,614e1edda10e6efd,"# IIT-6. L'objet qui a mordu IIT — l'expander à Φ énorme, la grille qui assume, l'échange mesuré
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,57a330c0,markdown,fr,614e1edda10e6efd,"# IIT-6. L'objet qui a mordu IIT — l'expander à Φ énorme, la grille qui assume, l'échange mesuré
 
 ## Navigation
 **Série** : [IIT](./README.md) | **Partie** : Débats
@@ -39559,7 +39559,7 @@ MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,57a330c0,markdown,fr,
 
 ***
 ",,,,,,,,614e1edda10e6efd,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,2bfa10d2,markdown,fr,5e92d08e0fb33bfc,"**Cadre.** Ce notebook mesure, sur des instances réelles, l'objet au centre de l'échange
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,2bfa10d2,markdown,fr,5e92d08e0fb33bfc,"**Cadre.** Ce notebook mesure, sur des instances réelles, l'objet au centre de l'échange
 Aaronson/Tononi de mai 2014 : des systèmes à intégration informationnelle énorme et comportement
 trivial. Deux jambes de mesure, deux formalisations — la $\Phi$ « à la Tononi 2008 » visée par
 l'objection (notée $\Phi_{DM}$ ici), et la $\Phi$ d'IIT 3.0 calculée par PyPhi.
@@ -39571,7 +39571,7 @@ formelles posées ici préparent le terrain d'une future borne inférieure d'int
 [ICT #4588](https://github.com/jsboige/CoursIA/issues/4588) traverse ce notebook : $\Phi$ est
 l'instrument, l'objet qui le sature en est le banc d'essai.
 ",,,,,,,,5e92d08e0fb33bfc,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,b5326637,markdown,fr,2533666d93ae9685,"<a id=""sec1""></a>
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,b5326637,markdown,fr,2533666d93ae9685,"<a id=""sec1""></a>
 ## 1. Le débat : deux positions, leurs grades
 
 **Objectif** : présenter l'échange de mai 2014 en citant chaque position avec son grade —
@@ -39678,7 +39678,7 @@ qu'il défend est à **portes majorité** (« fire if the majority of the inputs
 **pas mesurable** — aucune mesure indépendante de la conscience n'existe ; il est cité
 comme position, jamais évalué.
 ",,,,,,,,2533666d93ae9685,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,c53585ca,markdown,fr,163d33bc4055da7a,"### 1.4 Les quatre contre-arguments d'Aaronson (p=1823)
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,c53585ca,markdown,fr,163d33bc4055da7a,"### 1.4 Les quatre contre-arguments d'Aaronson (p=1823)
 
 Face à l'essai de Tononi, Aaronson répond argument par argument. Nature de chacun —
 aucun n'est computationnel, tous sont philosophiques ; ils sont cités pour la complétude
@@ -39731,7 +39731,7 @@ Ce notebook exécute donc **deux jambes** :
 **Aucune jambe ne mesure la conscience** — chacune mesure une quantité informationnelle.
 C'est toute la question de l'échange, et elle reste ouverte.
 ",,,,,,,,163d33bc4055da7a,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,2d022a60,markdown,fr,0af8780a509b47f8,"<a id=""sec2""></a>
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,2d022a60,markdown,fr,0af8780a509b47f8,"<a id=""sec2""></a>
 ## 2. La jambe Φ_DM : l'arithmétique de l'objection, exécutée
 
 ### 2.1 Principe : l'information efficace d'une application linéaire se lit au rang
@@ -39759,7 +39759,7 @@ is not necessary in 3.0 »).
 fidèle au post ; ce n'est **pas** PyPhi, et PyPhi n'est pas ceci. Les deux jambs se lisent
 l'une à côté de l'autre, jamais l'une dans l'autre.
 ",,,,,,,,0af8780a509b47f8,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,edc92015,code,fr,551bf7bbe88d3d59,"import warnings
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,edc92015,code,fr,551bf7bbe88d3d59,"import warnings
 # pyemd (importe par pyphi) emet un avertissement de deprecation pkg_resources qui fuite
 # le chemin site-packages -- meme garde que IIT-01.
 warnings.filterwarnings(""ignore"", message="".*pkg_resources is deprecated.*"", category=UserWarning)
@@ -39774,7 +39774,7 @@ pyphi.config.VALIDATE_SUBSYSTEM_STATES = False
 
 print(""PyPhi version:"", pyphi.__version__)
 print(""NumPy version:"", np.__version__)",,,,,,,,551bf7bbe88d3d59,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,249c7a03,code,fr,1fb8e80a5da84289,"def inverse_mod(a, p):
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,249c7a03,code,fr,1fb8e80a5da84289,"def inverse_mod(a, p):
     """"""Inverse de a dans F_p (p premier) -- petit theoreme de Fermat.""""""
     return pow(int(a) % p, p - 2, p)
 
@@ -39815,7 +39815,7 @@ assert rang_mod_p([[2, 4], [1, 2]], 7) == 1          # lignes proportionnelles
 assert rang_mod_p([[3, 1], [0, 0]], 7) == 1
 assert rang_mod_p(np.zeros((3, 3), dtype=int), 7) == 0
 print(""Contrles de rang_mod_p : OK"")",,,,,,,,1fb8e80a5da84289,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,e0d496f9,code,fr,4ab7457cb47cc16f,"def EI(M, A, B, p):
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,e0d496f9,code,fr,4ab7457cb47cc16f,"def EI(M, A, B, p):
     """"""EI(A -> B) en bits pour f(x) = Mx sur F_p : rang(M[B, A]) * log2(p).
 
     M : matrice n x n (entiers, lus mod p). A, B : tuples d'indices de coordonnees
@@ -39869,7 +39869,7 @@ def phi_dm(M, p):
 
 
 print(""Definitions en place : EI, phi_bipartition, phi_dm"")",,,,,,,,4ab7457cb47cc16f,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,1dd9959c,markdown,fr,c5a4d1d8d14631d8,"### 2.2 Vandermonde : l'égalité partout, et le Φ indéfini
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,1dd9959c,markdown,fr,c5a4d1d8d14631d8,"### 2.2 Vandermonde : l'égalité partout, et le Φ indéfini
 
 La matrice de Vandermonde $V_{ij} = i^{\,j-1} \pmod p$ (bases $i = 1..n$,
 exposants $j = 0..n-1$). Le post : « for p large enough, the Vandermonde matrix is
@@ -39882,7 +39882,7 @@ La valeur **normalisée** est la même (maximale) partout — le minimum n'exist
 unique, et la valeur non normalisée $\Phi(A,B)$ varie de $2\log_2 p$ à
 $n \log_2 p$ selon la bipartition choisie. **Φ est indéfini** sur cet objet.
 ",,,,,,,,c5a4d1d8d14631d8,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,a9406a30,code,fr,da11c7db268c7c07,"def vandermonde(n, p):
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,a9406a30,code,fr,da11c7db268c7c07,"def vandermonde(n, p):
     """"""Matrice de Vandermonde n x n sur F_p : V[i, j] = (i+1)^j mod p
     (bases 1..n, exposants 0..n-1 -- convention du post).""""""
     return np.array([[(i + 1) ** j % p for j in range(n)] for i in range(n)], dtype=int)
@@ -39904,7 +39904,7 @@ for taille_A in range(1, n // 2 + 1):
         B = tuple(j for j in range(n) if j not in A)
         norms.append(phi_bipartition(V, A, B, p) / min(len(A), len(B)))
 print(f""  valeurs normalisees distinctes : {sorted(set(round(x, 6) for x in norms))}"")",,,,,,,,da11c7db268c7c07,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,47ab169a,markdown,fr,5ae27b627308057a,"**Lecture du résultat.** Toutes les bipartitions réalisent la même valeur normalisée
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,47ab169a,markdown,fr,5ae27b627308057a,"**Lecture du résultat.** Toutes les bipartitions réalisent la même valeur normalisée
 maximale $2\log_2 p$ : le minimum n'est pas unique, et la valeur non normalisée
 $\Phi(A,B)$ dépend de la bipartition — de $2\log_2 p$ ($|A| = 1$) à
 $n \log_2 p$ ($|A| = n/2$). Sur cette instance, $\Phi_{DM}$ est **indéfini**,
@@ -39930,7 +39930,7 @@ $$\Phi = \frac{n}{2} \log_2 p$$
 soit « half of its entire information content » — la moitié du contenu informationnel
 total du système.
 ",,,,,,,,5ae27b627308057a,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,bd609a18,code,fr,4cd6fabe367495e0,"def matrice_W(n, p):
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,bd609a18,code,fr,4cd6fabe367495e0,"def matrice_W(n, p):
     """"""W = les n/2 premieres lignes de la Vandermonde, chacune repetee deux fois.""""""
     V = vandermonde(n, p)
     W = []
@@ -39953,7 +39953,7 @@ print(f""  bipartition naturelle {{0..3}} | {{4..7}} au minimum :"",
 print(f""  PHI final (mesure)        : {res_W['phi_final']:.4f} bits"")
 print(f""  PHI attendu (post)        : {(n / 2) * math.log2(p):.4f} = (n/2)*log2(p)"")
 print(f""  contenu total n*log2(p)   : {n * math.log2(p):.4f} bits -> PHI = 50 % du total"")",,,,,,,,4cd6fabe367495e0,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,e69e5471,markdown,fr,19937c4804b10709,"**Lecture du résultat.** Mesuré sur instance réelle : la bipartition naturelle est bien
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,e69e5471,markdown,fr,19937c4804b10709,"**Lecture du résultat.** Mesuré sur instance réelle : la bipartition naturelle est bien
 l'unique minimum (aux réordonnements triviaux de lignes près), et le Φ rendu vaut
 exactement $(n/2)\log_2 p$ — la moitié du contenu informationnel du système. Tout ça
 pour un système qui ne fait **que** appliquer une application linéaire de rang $n/2$
@@ -39973,7 +39973,7 @@ pas l'inversibilité (l'identité est inversible et donne Φ = 0), c'est la prop
 maximalement corrélé à chaque sous-ensemble d'entrées. L'identité est le contre-exemple
 interne : même taille, inversible, et zéro intégration.
 ",,,,,,,,19937c4804b10709,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,c8eb1a4a,code,fr,597e337254c05221,"n, p = 8, 1009
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,c8eb1a4a,code,fr,597e337254c05221,"n, p = 8, 1009
 I = np.identity(n, dtype=int)
 
 res_I = phi_dm(I, p)
@@ -39981,7 +39981,7 @@ print(f""Matrice identite n={n}, p={p}"")
 print(f""  valeur normalisee minimale : {res_I['normalise_min']:.6f}"")
 print(f""  PHI final                  : {res_I['phi_final']:.6f} bits"")
 print(f""  attendu (mise a jour 4 du post) : PHI = 0 -- inversible != integre"")",,,,,,,,597e337254c05221,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,a3b6b4c4,markdown,fr,f2150b9830ed367c,"**Lecture du résultat.** $\Phi_{DM}(\mathrm{Id}) = 0$ exactement : inversible et
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,a3b6b4c4,markdown,fr,f2150b9830ed367c,"**Lecture du résultat.** $\Phi_{DM}(\mathrm{Id}) = 0$ exactement : inversible et
 totalement décomposable. Le contraste Id / W borne l'espace de la construction — deux
 matrices inversibles de même taille, l'une à Φ nul, l'autre à Φ = moitié du contenu total.
 
@@ -39992,7 +39992,7 @@ système W dépasserait « any plausible upper bound on the integrated informati
 of the human brain ». Mesurons la tendance — le Φ exact reste un calcul de rang, donc
 tractable bien plus loin que PyPhi (c'est tout l'intérêt de cette jambe).
 ",,,,,,,,f2150b9830ed367c,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,1efc0d0f,code,fr,822fa6378811768d,"p = 1009
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,1efc0d0f,code,fr,822fa6378811768d,"p = 1009
 print(f""{'n':>4} {'PHI = (n/2)log2(p)':>20} {'total n*log2(p)':>16} {'rapport':>8} {'bipartitions':>13}"")
 print(""-"" * 68)
 for n in (4, 8, 12, 16):
@@ -40005,7 +40005,7 @@ for n in (4, 8, 12, 16):
 print()
 print(""Croissance : PHI lineaire en n, rapport 50 % constant -- la famille W sature"")
 print(""la mesure a toutes les tailles mesurables (et au-dela : le calcul est un rang)."")",,,,,,,,822fa6378811768d,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,358ad073,markdown,fr,95ce3704f9f1d901,"### 2.6 Grade de la jambe Φ_DM
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,358ad073,markdown,fr,95ce3704f9f1d901,"### 2.6 Grade de la jambe Φ_DM
 
 - **Ce qui est mesuré** : des valeurs **exactes** (calculs de rang sur $\mathbb{F}_p$),
   sur des instances réelles — l'égalité Vandermonde, l'unique minimum de W, le Φ = 0 de
@@ -40048,7 +40048,7 @@ d'IIT 3.0 via `pyphi.compute.phi` (le moteur de référence du laboratoire Tonon
 | `grid6_xor` | 6 | XOR | grille 2×3 | la grille, cadrage Aaronson |
 | `rich6` | 6 | hétérogènes | irrégulière | le contraste « comportement riche » |
 ",,,,,,,,95ce3704f9f1d901,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,32d4f889,code,fr,ef2196d42c91c4f1,"def build_network(gates, labels=None):
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,32d4f889,code,fr,ef2196d42c91c4f1,"def build_network(gates, labels=None):
     """"""'gates' : liste de (fonction, tuple_indices_parents). Construit TPM + CM.
 
     La fonction recoit l'etat (tuple) des parents et rend 0/1 (deterministe)
@@ -40092,7 +40092,7 @@ ff4 = build_network([
 ])
 
 print(""Reseaux n=3-4 construits : ring3, line4, ring4, ff4"")",,,,,,,,ef2196d42c91c4f1,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,3d8d73c9,code,fr,87508c8a8589c8d7,"def mesure_phi(net, nom, etat=None):
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,3d8d73c9,code,fr,87508c8a8589c8d7,"def mesure_phi(net, nom, etat=None):
     """"""Phi d'IIT 3.0 du systeme entier, a l'etat tout-zeros par defaut.""""""
     n = len(net.node_labels)
     etat = etat or (0,) * n
@@ -40110,7 +40110,7 @@ print(""n=4 -- ligne, anneau pair, feedforward :"")
 phi_line4 = mesure_phi(line4, ""line4"")
 phi_ring4 = mesure_phi(ring4, ""ring4"")
 phi_ff4 = mesure_phi(ff4, ""ff4"")",,,,,,,,87508c8a8589c8d7,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,7dacea0c,markdown,fr,6655c16aa3db2919,"**Lecture des résultats n=3-4.**
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,7dacea0c,markdown,fr,6655c16aa3db2919,"**Lecture des résultats n=3-4.**
 
 - **`ring3` (XOR, impair)** : on retrouve le $\Phi = 1{,}875$ de IIT-01 — la référence
   de la série, anneau récursif non décomposable.
@@ -40134,7 +40134,7 @@ général : la grille 2×3 de la famille n=6 (nœuds de degré 3) montrera l'aut
 la parité. Tononi, lui, instancie sa grille à portes **majorité** dès l'essai — la
 famille n=6 mesure donc les deux cadrages sur la même topologie.
 ",,,,,,,,6655c16aa3db2919,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,a049ce52,code,fr,3a178cd90d3ed33a,"# -- n=6 : ligne / anneau / grille, portes majorite (Tononi) et XOR (Aaronson) --
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,a049ce52,code,fr,3a178cd90d3ed33a,"# -- n=6 : ligne / anneau / grille, portes majorite (Tononi) et XOR (Aaronson) --
 
 def voisins_ligne(i, n=6):
     return [j for j in (i - 1, i + 1) if 0 <= j < n]
@@ -40178,13 +40178,13 @@ rich6 = build_network([
 print(""Reseaux n=6 construits : line6, ring6, grid6, grid6_xor, rich6"")
 print(""Connectivite grille 2x3 (voisins par noeud) :"",
       [len(voisins_grille(i)) for i in range(6)])",,,,,,,,3a178cd90d3ed33a,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,6af6968a,code,fr,d20c239b602cb34d,"print(""n=6 -- la famille de l'echange, Phi d'IIT 3.0 a l'etat tout-zeros :"")
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,6af6968a,code,fr,d20c239b602cb34d,"print(""n=6 -- la famille de l'echange, Phi d'IIT 3.0 a l'etat tout-zeros :"")
 phi_line6 = mesure_phi(line6, ""line6"")
 phi_ring6 = mesure_phi(ring6, ""ring6"")
 phi_grid6 = mesure_phi(grid6, ""grid6"")
 phi_grid6xor = mesure_phi(grid6_xor, ""grid6_xor"")
 phi_rich6 = mesure_phi(rich6, ""rich6"")",,,,,,,,d20c239b602cb34d,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,389a8aa9,code,fr,81a74e2ec044f081,"import matplotlib
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,389a8aa9,code,fr,81a74e2ec044f081,"import matplotlib
 import matplotlib.pyplot as plt
 
 donnees = [
@@ -40207,7 +40207,7 @@ ax.set_ylim(0, max(vals) * 1.25 if max(vals) > 0 else 0.5)
 plt.xticks(rotation=45, ha=""right"")
 plt.tight_layout()
 plt.show()",,,,,,,,81a74e2ec044f081,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,da0bb1c4,markdown,fr,f60d204ad68a91fb,"**Lecture des résultats n=6 — quatre lectures, sur valeurs mesurées.**
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,da0bb1c4,markdown,fr,f60d204ad68a91fb,"**Lecture des résultats n=6 — quatre lectures, sur valeurs mesurées.**
 
 1. **L'objet XOR d'Aaronson porte le Φ maximal de la table.** La grille XOR (`grid6_xor`,
    Φ = 3,25) domine toutes les autres instances mesurées — l'intuition centrale de la
@@ -40276,7 +40276,7 @@ MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,da0bb1c4,markdown,fr,
 
 ***
 ",,,,,,,,f60d204ad68a91fb,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,130a03d3,markdown,fr,7533f9e40086c768,"<a id=""sec5""></a>
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,130a03d3,markdown,fr,7533f9e40086c768,"<a id=""sec5""></a>
 ## 5. Exercices
 
 ### Exercice 1 : le contre-éclairage — identité et autres corps
@@ -40290,7 +40290,7 @@ instances : reconstruisez `phi_dm` sur l'identité en n=12, puis sur une matrice
 `P = np.eye(n, dtype=int)[:, np.random.permutation(n)]` (fixez la graine pour la
 reproductibilité).
 ",,,,,,,,7533f9e40086c768,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,1afbfc33,code,fr,f25a2c853d718bcc,"# Exercice 1 : identite et permutation en n=12 -- que vaut leur Phi_DM ?
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,1afbfc33,code,fr,f25a2c853d718bcc,"# Exercice 1 : identite et permutation en n=12 -- que vaut leur Phi_DM ?
 # TODO etudiant : construire I12 (identite) et P12 (permutation fixee),
 # calculer phi_dm pour chacune, et expliquer le resultat en une phrase.
 # Indice : res_I = phi_dm(np.identity(12, dtype=int), 1009)
@@ -40301,7 +40301,7 @@ if resultat_ex1 is not None:
     print(f""Resultat: {resultat_ex1}"")
 else:
     print(""Exercice a completer"")",,,,,,,,f25a2c853d718bcc,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,297a5fe1,markdown,fr,1f09cc14ed924ce9,"### Exercice 2 : votre propre W — le hack à une autre échelle
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,297a5fe1,markdown,fr,1f09cc14ed924ce9,"### Exercice 2 : votre propre W — le hack à une autre échelle
 
 Le post suppose n multiple de 4. Construisez W pour n=12, p=2003, et vérifiez :
 (1) la valeur normalisée minimale vaut bien $\log_2 p$ ; (2) le Φ final vaut
@@ -40312,7 +40312,7 @@ normalisée du minimum change-t-elle ? Le Φ final ?
 **Indice** : pour (3), écrire une variante qui empile chaque ligne de Vandermonde trois
 fois — attention, n doit rester multiple de 3 pour que la matrice reste carrée.
 ",,,,,,,,1f09cc14ed924ce9,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,b9d0e405,code,fr,8f7430efe7056998,"# Exercice 2 : W a n=12, p=2003, puis la variante ""lignes tripletees""
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,b9d0e405,code,fr,8f7430efe7056998,"# Exercice 2 : W a n=12, p=2003, puis la variante ""lignes tripletees""
 # TODO etudiant : verifier les trois points, puis construire matrice_W3 et comparer.
 # Indice : res_W = phi_dm(matrice_W(12, 2003), 2003)
 # Indice : attendu (1) log2(2003) ~ 10.97, (2) 6*log2(2003), (3) 50 %
@@ -40322,7 +40322,7 @@ if resultat_ex2 is not None:
     print(f""Resultat: {resultat_ex2}"")
 else:
     print(""Exercice a completer"")",,,,,,,,8f7430efe7056998,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,fe727bba,markdown,fr,280725681cb104d2,"### Exercice 3 : la corde et le mur — fermer la boucle change-t-il Φ ?
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,fe727bba,markdown,fr,280725681cb104d2,"### Exercice 3 : la corde et le mur — fermer la boucle change-t-il Φ ?
 
 L'argument IV oppose la ligne 1D à la grille 2D. Une question plus fine : à portes
 **majorité** et n=5, que fait le passage **ligne → anneau** (fermer la chaîne) sur le
@@ -40338,7 +40338,7 @@ bout de ligne pour la ligne, MAJ ailleurs), mesurez à l'état tout-zéros, et c
 **Indice** : réutiliser `build_network`, `voisins_ligne`, `voisins_anneau`,
 `porte_de_voisinage` et `mesure_phi` (adapter le voisinage à n=5).
 ",,,,,,,,280725681cb104d2,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,3a44c912,code,fr,170424c3f4c69e07,"# Exercice 3 : line5 vs ring5 (portes majorite), Phi a deux etats
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,3a44c912,code,fr,170424c3f4c69e07,"# Exercice 3 : line5 vs ring5 (portes majorite), Phi a deux etats
 # TODO etudiant : construire les deux reseaux, mesurer Phi a (0,0,0,0,0) et (1,1,1,1,1)
 # Indice : line5 = build_network([porte_de_voisinage(voisins_ligne(i, 5), MAJ) for i in range(5)])
 # Indice : mesure_phi(net, ""nom"", etat=(1,)*5)
@@ -40348,7 +40348,7 @@ if resultat_ex3 is not None:
     print(f""Resultat: {resultat_ex3}"")
 else:
     print(""Exercice a completer"")",,,,,,,,170424c3f4c69e07,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,12753003,markdown,fr,d35c71d7db73af75,"### Exercice 4 : la grille bruitée — le déterminisme est-il nécessaire ?
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,12753003,markdown,fr,d35c71d7db73af75,"### Exercice 4 : la grille bruitée — le déterminisme est-il nécessaire ?
 
 La grille de Tononi est décrite déterministe (« fire if the majority of the inputs are
 on »), mais IIT ne requiert pas le déterminisme. Bruitez `grid6` : chaque porte passe
@@ -40361,7 +40361,7 @@ structure cause-effet d'une porte probabiliste diffère-t-elle de sa version dé
 **Indice** : `build_network` accepte des fonctions qui rendent une probabilité
 (cf. `bruit` du feedforward). Définir `MAJ_BRUITEE = lambda s: 0.9 if MAJ(s) else 0.1`.
 ",,,,,,,,d35c71d7db73af75,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,f6f72d4d,code,fr,e46cac02eaf0c5d2,"# Exercice 4 : grid6 bruitee (p=0.9) vs grid6 deterministe
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,f6f72d4d,code,fr,e46cac02eaf0c5d2,"# Exercice 4 : grid6 bruitee (p=0.9) vs grid6 deterministe
 # TODO etudiant : construire grid6_bruitee et mesurer son Phi a l'etat tout-zeros
 # Indice : MAJ_BRUITEE = lambda s: 0.9 if MAJ(s) else 0.1
 # Indice : grid6_b = build_network([porte_de_voisinage(voisins_grille(i), MAJ_BRUITEE) for i in range(6)])
@@ -40371,7 +40371,7 @@ if resultat_ex4 is not None:
     print(f""Resultat: {resultat_ex4}"")
 else:
     print(""Exercice a completer"")",,,,,,,,e46cac02eaf0c5d2,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb,4e7ad281,markdown,fr,b7faa1eac8a7046c,"<a id=""sec6""></a>
+MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb,4e7ad281,markdown,fr,b7faa1eac8a7046c,"<a id=""sec6""></a>
 ## 6. Conclusion
 
 Ce notebook a exécuté l'objet au centre de l'échange Aaronson/Tononi de mai 2014, des
