@@ -4459,10 +4459,10 @@ saved for the forward pass).
 **Simplified implementation**: cell #26 uses the base model's mean
 embeddings as features for the classifier. It is a lightweight
 proxy (not a production classifier).",,,,,,,befb6f2add5931b9,cf6e4c0e60f0e943,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,75aa5a19,markdown,fr,208d48606e6ace2d,"### Interpretation : Routeur — et l'arbitrage contre la baseline
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,75aa5a19,markdown,fr,425601cc5a39bfcb,"### Interpretation : Routeur — et l'arbitrage contre la baseline
 
 L'arbitrage leave-one-out parle par lui-même : **routeur appris 13/14 (92,9 %) vs
-centroïde trivial 12/14 (85,7 %)** — le classifieur entraîné apporte **+7,2 points
+centroïde trivial 12/14 (85,7 %)** — le classifieur entraîné apporte **+7,1 points
 hors échantillon** sur la baseline la plus naïve qui existe. Et l'in-sample à
 100 % masquait entièrement ce gain comme sa fragilité : sur 14 points
 linéairement séparables, 13 vs 12 réussites, c'est un pli de différence — l'écart
@@ -4492,7 +4492,7 @@ space and tens to hundreds of queries. Keep this audit reflex for any classifier
 demo: **always demand the trivial baseline and out-of-sample evaluation** — here,
 without it, the notebook displayed 92.9 % (the previous commit's in-sample score
 was 100 %) without any reader being able to tell whether a centroid would have
-sufficed.",,,,,,,208d48606e6ace2d,c931c0892c2aeda0,,,,,,,
+sufficed.",,,,,,,425601cc5a39bfcb,c931c0892c2aeda0,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,bf51c29a,markdown,fr,56bce685daaf101a,"### Comparaison : Merging vs Routing
 
 Maintenant que nous avons implemente toutes les approches, comparons-les systematiquement.
