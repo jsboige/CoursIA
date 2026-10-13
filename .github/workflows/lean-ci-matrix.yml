@@ -153,6 +153,7 @@ on:
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
@@ -287,6 +288,7 @@ on:
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
