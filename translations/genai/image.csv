@@ -1285,9 +1285,6 @@ generate_alt_text = True           # Generer descriptions accessibilite
 educational_level = ""university""   # ""elementary"", ""secondary"", ""university""
 language = ""francais""              # Langue des explications
 include_examples = True            # Inclure exemples pratiques",,,,,,,,67bdbb608fac2cb4,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,17aab9f8,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,yz3v2xhzft,markdown,fr,ac5a1198eb931bae,"## Setup de l'environnement
 
 Chargeons les dependances, configurons l'API OpenRouter pour acceder a GPT-5, et preparons les fonctions utilitaires pour le traitement d'images.","## Environment setup
@@ -21704,7 +21701,15 @@ Synthèse des deux exemples précédents : la fonction `analyse_complete()` ench
 **Points clés** :
 - Un seul appel de fonction produit les **trois niveaux** de description — le résultat est un dictionnaire réutilisable, pas trois affichages séparés
 - Le prompt éducatif est **construit à partir du domaine** : changer `domain` en tête de cellule adapte l'analyse à une autre discipline
-",,,,,,,,b667b1b68a05e661,,,,,,,,
+","### Guided example: three-mode custom analysis for a domain
+
+*Contribution from a group of EPF students (TP2, PR #20551), integrated as a guided example.*
+
+A synthesis of the two previous examples: the `analyse_complete()` function chains three analyses of the same image — a short factual description, a detailed description for screen readers, and an educational summary contextualized by the domain — and returns the whole set in a dictionary displayed with `pprint`. The domain (`Géographie`), the level (`university`) and the image are parameterized at the top of the cell.
+
+**Key points**:
+- A single function call produces the **three levels** of description — the result is a reusable dictionary, not three separate displays
+- The educational prompt is **built from the domain**: changing `domain` at the top of the cell adapts the analysis to another discipline",,,,,,,b667b1b68a05e661,ee04db53c22e64b5,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exemple-3modes-code,code,fr,9c488597d8da6e0b,"# Exemple guide : analyse personnalisee a trois modes pour un domaine
 # (contribution d'un groupe d'etudiants EPF, TP2, PR #20551)
 
@@ -21769,7 +21774,18 @@ Une même image analysée par GPT-5 peut produire des réponses très différent
 5. Concluez en une phrase : quelle formulation sert quel usage pédagogique ?
 
 **Indice** : ne changez QUE la consigne d'orientation entre les deux prompts — si le format de sortie diffère aussi, la comparaison ne mesure plus la formulation.
-",,,,,,,,6f2e3887c3ff7ae7,,,,,,,,
+","### Exercise 1: Neutral prompt vs oriented prompt — measuring the sensitivity of the wording
+
+The same image analyzed by GPT-5 can produce very different answers depending on how the prompt is worded. The goal is to **measure** this sensitivity instead of putting up with it: two prompts that differ only in their angle (neutral vs oriented toward a reading frame), same image, same output format.
+
+**Steps**:
+1. Choose an image from `example_images`
+2. Write a `prompt_neutre`: an objective description, with no theoretical orientation
+3. Write a `prompt_oriente`: same output format, but steering the analysis toward a frame (historical, aesthetic, technical...)
+4. Run both analyses and compare: elements cited, vocabulary, structure
+5. Conclude in one sentence: which wording serves which educational use?
+
+**Hint**: change ONLY the orientation instruction between the two prompts — if the output format also differs, the comparison no longer measures the wording.",,,,,,,6f2e3887c3ff7ae7,5703e4b9f56688dc,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo1-code,code,fr,5fb17155d5ea3bc3,"# Exercice 1 : Prompt neutre vs prompt oriente -- mesurer la sensibilite de la formulation
 # TODO etudiant : comparer deux analyses de la MEME image sous deux formulations
 
@@ -21805,7 +21821,17 @@ L'exemple guidé d'accessibilité a généré trois **longueurs** de description
 4. Générez les trois textes et vérifiez : chacun ≤ 125 caractères, et les trois textes sont bien **distincts**
 
 **Indice** : posez-vous la question « que vient faire le lecteur sur cette page ? » — c'est elle qui détermine quoi garder dans les 125 caractères.
-",,,,,,,,00cd7ee3c99af9d4,,,,,,,,
+","### Exercise 2: Contextual alt text — one image, three contexts
+
+The accessibility guided example generated three description **lengths** for the same image. The next level: the same image published in three different **contexts** calls for three different alt texts, even though the 125-character limit stays the same. A relevant alt text depends on what the reader came looking for.
+
+**Steps**:
+1. Choose an image from `example_images` (or your own URL)
+2. Define three publication contexts: popular-science article, social network, school textbook
+3. Write one prompt per context: same ≤ 125-character limit, but the angle of information adapts to the context
+4. Generate the three texts and check: each one ≤ 125 characters, and the three texts are indeed **distinct**
+
+**Hint**: ask yourself ""what does the reader come to this page to do?"" — that question decides what to keep in the 125 characters.",,,,,,,00cd7ee3c99af9d4,35d8a648dae9922f,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo2-code,code,fr,a82719dd72ed6dd5,"# Exercice 2 : Alt text contextuel -- une image, trois contextes
 # TODO etudiant : produire trois alt texts DIFFERENTS pour la meme image
 
@@ -21846,4 +21872,20 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv
 - Indice 1 : `analyze_image_with_gpt5()` accepte n'importe quelle URL — appelez-la une fois par image
 - Indice 2 : pour croiser, injectez le texte de la première analyse dans le prompt de la seconde — GPT-5 comparera l'image visible au texte fourni
 - Indice 3 : un même format de sortie pour les deux analyses rend la comparaison mécanique
-",,,,,,,,275eaceb6f66a2d9,,,,,,,,
+","### Exercise 3: Image comparator — two images from the same domain side by side
+
+**Estimated duration:** 15-20 minutes
+
+**Objective**: compare two images from the same category in a single workflow — individual analyses with an identical format, then a cross-reading of the results.
+
+**Instructions**:
+1. **Choose a domain** among the educational use cases presented above
+2. **Select two images** relevant to that domain (public URLs or local images)
+3. **Write an analysis prompt** that imposes an identical structure for both images
+4. **Implement `compare_images()`**: analysis of each image, then cross-reading — common points, differences, verdict
+5. **Display the result** in a readable way (dictionary + `pprint`)
+
+> **Hints:**
+- Hint 1: `analyze_image_with_gpt5()` accepts any URL — call it once per image
+- Hint 2: to cross the results, inject the text of the first analysis into the prompt of the second — GPT-5 will compare the visible image with the text provided
+- Hint 3: the same output format for both analyses makes the comparison mechanical",,,,,,,275eaceb6f66a2d9,2ace3e8afd6ee5eb,,,,,,,
