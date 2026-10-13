@@ -57,6 +57,32 @@ Identifiants de backtest QC, avant / après :
 - hors échantillon : `5df75d4a31c556aeca917cc0b0d2540e` / `db52460299013407854f1a83940d37fa`
 - tableau historique : `c696e01af0a4feb63ea32fac06fa8507` / `b307b836ccde0930031371b122fc3af8`
 
+### Demi-séances (#20286)
+
+Quand le 3 juillet tombe un lundi, c'est à la fois le premier jour de cotation du mois et une demi-séance qui ferme à 13:00, heure de New York : en 2017 et en 2023 sur les fenêtres ci-dessus. Sur la tranche de clôture d'une demi-séance, `history()` rend environ 21 barres journalières de moins que demandé (mesuré dans #20286 sur un autre projet). `_composite_momentum` demandait `max_lookback` barres (252) et rendait `None` en dessous. Le mois était déjà marqué comme traité, et `on_data` sortait sans rien écrire dans le journal : juillet 2017 et juillet 2023 passaient sans rééquilibrage. La sortie quotidienne SMA200 appelle la même fonction pour TLT et GLD : sur une demi-séance, elle était reportée à la séance suivante.
+
+Correctif dans `main.py` : `_composite_momentum` demande le double de barres et garde les 252 dernières. Sur une séance pleine, ce sont les mêmes barres qu'avant. Aucune ligne du journal ne montre l'historique court : la cause se déduit du code, et le retour des mois manquants avec ce seul changement la confirme.
+
+Mesure sur les nœuds QC, frais de courtage inclus, protocole fixé avant les backtests ([#20286, c.6117521094](https://github.com/jsboige/CoursIA/issues/20286#issuecomment-6117521094)). La variante avant reprend les backtests « après » de la section précédente, dont le code est celui de `main` (empreintes comparées) :
+
+| Fenêtre | Variante | Mois rééquilibrés | Sharpe | CAGR | Pire baisse | Ordres | Backtest |
+|---|---|---|---|---|---|---|---|
+| 2015-01-01 → 2024-12-31 (codée) | avant | 118 / 120 | −0,096 | 0,53 % | 38,2 % | 111 | `d1169673f6ec0f798cb1cd644de0993b` |
+| | après | 120 / 120 | −0,081 | 0,78 % | 38,2 % | 112 | `a90623a7e25fe53321d26d9228d4a3a1` |
+| 2025-01-01 → 2026-07-10 (hors échantillon) | avant | 19 / 19 | 1,261 | 40,83 % | 19,2 % | 6 | `db52460299013407854f1a83940d37fa` |
+| | après | 19 / 19 | 1,261 | 40,83 % | 19,2 % | 6 | `bbf4f63bc43a7e460835b39057542615` |
+| 2015-01-01 → 2026-07-10 (tableau historique) | avant | 137 / 139 | 0,157 | 5,26 % | 38,2 % | 118 | `b307b836ccde0930031371b122fc3af8` |
+| | après | 139 / 139 | 0,169 | 5,49 % | 38,2 % | 119 | `c62cedc7e6b7a29582d9a3c6bb2fb933` |
+
+Sharpe calculé par QC, taux sans risque inclus. Les quatre prédictions fixées d'avance ont tenu :
+
+- les rééquilibrages des lundis 3 juillet 2017 et 2023 reviennent sur les deux fenêtres qui les contiennent, en `[RISK ON]` les deux fois ;
+- avant le 2017-07-03, les ordres sont identiques (date, titre, quantité : 38 sur 38) ; l'exception admise pour une sortie SMA200 sur une demi-séance n'a pas servi, les 11 sorties SMA200 ont les mêmes dates avant et après ;
+- les dates de rééquilibrage sont celles d'avant, plus les deux lundis ;
+- hors échantillon, aucun mois ne commence par une demi-séance, et les deux variantes sont identiques au centime.
+
+Le rééquilibrage du 2017-07-03 n'envoie aucun ordre : le livre est déjà investi en SPY. Celui du 2023-07-03 achète du SPY. Avant le correctif, le livre restait en liquidités depuis l'achat refusé du 2023-06-01 (#20388) et ne rachetait du SPY que le 2023-08-01 : le défaut de demi-séance prolongeait d'un mois une période en liquidités ouverte par le défaut de pouvoir d'achat. Les ordres ne diffèrent qu'à partir de ce lundi. Le nombre d'achats refusés ne change pas (10, 1 et 11). L'écart de Sharpe (+0,015 sur la fenêtre codée, +0,012 sur celle du tableau historique) reste sous le seuil de 0,05 fixé d'avance : les chiffres de la section précédente ne sont pas réécrits. Ce n'est pas un verdict de stratégie : il s'agit de la correction d'un défaut, mesurée sur des fenêtres déjà vues.
+
 ## Fichiers
 
 - `main.py` - Stratégie (v3.2, confirmée comme la meilleure)
