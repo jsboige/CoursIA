@@ -692,19 +692,19 @@ else:
     vram_before = 0
 
 print(f""VRAM avant chargement : {vram_before:.2f} Go"")",,,,,,,,4610db9bb7117f8a,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,872b697a,markdown,fr,e477a39db914f66f,"## 5. QLoRA : quantized base + LoRA adapters
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,872b697a,markdown,fr,c31458a81472b717,"## 5. QLoRA : quantized base + LoRA adapters
 
 Chargeons OPT-1.3B en 4-bit et comparons avec le chargement FP16 classique.
 
 
-**Comment lire la sortie committée** : le chargement 4-bit d'OPT-1.3B occupe 1,25 Go de VRAM mesurés, contre 0,36 Go théoriques pour les seuls poids — l'écart (activations résiduelles, tampons de déquantization, tables d'embeddings parfois conservées en 16 bits) est le prix du passage à l'échelle réel. Notez aussi l'artefact de comptage : la cellule affiche « 711 778 304 params (0.71B) » alors que le comptage canonique d'OPT-1.3B est 1 318 903 808 (1,32 Md, confirmé par PEFT à la cellule suivante). Sommer `numel()` sur un modèle déjà quantifié ne retourne pas les tailles denses d'origine — un `Params4bit` ne se compte pas comme un tenseur FP16. Retenez le chiffre de PEFT : c'est le dénominateur honnête, celui sur lequel les pourcentages suivants doivent se lire.
+**Comment lire la sortie committée** : le chargement 4-bit d'OPT-1.3B occupe 1,25 Go de VRAM mesurés, contre 0,36 Go théoriques pour les seuls poids — l'écart (activations résiduelles, tampons de déquantization, tables d'embeddings parfois conservées en 16 bits) est le prix du passage à l'échelle réel. Notez aussi l'artefact de comptage : la cellule affiche « 711 778 304 params (0.71B) » alors que le comptage canonique d'OPT-1.3B est 1 318 903 808 (1,32 Md, confirmé par PEFT à la cellule suivante). Sommer `numel()` sur un modèle déjà quantifié ne retourne pas les tailles denses d'origine — un `Params4bit` ne se compte pas comme un tenseur FP16. Retenez le chiffre de PEFT : c'est le dénominateur honnête, celui sur lequel les pourcentages suivants doivent se lire. Le même sous-compte contamine les lignes théoriques : « Théorie 4-bit : 0.36 Go » ci-dessous et « FP16 = 1.42 Go » en section 8 multiplient 711 M par 0,5 et 2 octets. En dénominateur canonique, les poids seuls feraient ~0,66 Go en 4-bit et ~2,6 Go en FP16 — l'exemple guidé 1 de la section 10 mesure d'ailleurs l'empreinte FP16 réelle à 2,63 Go. Le ratio théorique 4× tient dans les deux lectures.
 ","## 5. QLoRA: quantized base + LoRA adapters
 
 Let's load OPT-1.3B in 4-bit and compare it with standard FP16 loading.
 
 
 **How to read the committed output**: the 4-bit loading of OPT-1.3B occupies 1.25 GB of measured VRAM, against 0.36 GB theoretical for the weights alone -- the gap (residual activations, dequantization buffers, embedding tables sometimes kept in 16 bits) is the price of real scaling. Note also the counting artefact: the cell displays ""711,778,304 params (0.71B)"" whereas the canonical count for OPT-1.3B is 1,318,903,808 (1.32B, confirmed by PEFT in the next cell). Summing `numel()` over an already quantized model does not return the original dense sizes -- a `Params4bit` does not count like an FP16 tensor. Keep PEFT's number: it is the honest denominator, the one the following percentages must be read against.
-",,,,,,,e477a39db914f66f,dba66cc720fb5ccb,,,,,,,
+",,,,,,,c31458a81472b717,dba66cc720fb5ccb,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,c18d2f35,code,fr,987ed8bcd8ae989b,"from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
