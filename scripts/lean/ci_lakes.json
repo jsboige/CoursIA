@@ -325,6 +325,20 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain"
       ]
+    },
+    {
+      "lake": "sensitivity",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean",
+      "display-name": "sensitivity_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lean-toolchain"
+      ]
     }
   ]
 }
