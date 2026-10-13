@@ -63,7 +63,7 @@ Les séries thématiques de GenAI démontent chaque composant ; ces quatre proje
 
 **[Recipe-Maker](Recipe-Maker/README.md)** fait collaborer plusieurs agents pour produire une recette personnalisée et l'exporter en PDF. Son intérêt est la chaîne complète : de la conversation entre agents jusqu'au livrable final, en passant par la division du travail entre rôles.
 
-**[Medical-Chatbot](Medical-Chatbot/README.md)** est le plus proche d'un système de production : ses plugins de vérification, de journalisation et de terminaison intelligente montrent comment on encadre un LLM dans un domaine sensible. La leçon dépasse le cas médical — la valeur n'est pas dans la réponse du modèle, mais dans les garde-fous qui l'entourent.
+**[Medical-Chatbot](Medical-Chatbot/README.md)** est le plus proche d'un système de production : ses plugins de vérification, de journalisation et de terminaison par limite d'échanges montrent comment on encadre un LLM dans un domaine sensible. La leçon dépasse le cas médical — la valeur n'est pas dans la réponse du modèle, mais dans les garde-fous qui l'entourent.
 
 ## Objectifs d'apprentissage
 
@@ -80,7 +80,7 @@ Les séries thématiques de GenAI démontent chaque composant ; ces quatre proje
 |---|--------|----------|-------------|---------|
 | 1 | [Barbie-Schreck](Barbie-Schreck/README.md) | [barbie-schreck.ipynb](Barbie-Schreck/barbie-schreck.ipynb) | Semantic Kernel, OpenAI DALL-E | Duel verbal contraint entre Barbie et l'Âne de Shrek avec génération d'images |
 | 2 | [Recipe-Maker](Recipe-Maker/README.md) | [receipe_maker.ipynb](Recipe-Maker/receipe_maker.ipynb) | Semantic Kernel, OpenAI, PDF | Collaboration multi-agents pour générer une recette personnalisée avec export PDF |
-| 3 | [Medical-Chatbot](Medical-Chatbot/README.md) | [medical_chatbot.ipynb](Medical-Chatbot/medical_chatbot.ipynb) | Semantic Kernel, OpenAI, plugins | Chatbot médical avec plugins de vérification, logging et terminaison intelligente |
+| 3 | [Medical-Chatbot](Medical-Chatbot/README.md) | [medical_chatbot.ipynb](Medical-Chatbot/medical_chatbot.ipynb) | Semantic Kernel, OpenAI, plugins | Chatbot médical avec plugins de vérification, logging et terminaison par limite d'échanges |
 | 4 | [Fort-Boyard](Fort-Boyard/README.md) | [fort-boyard-python.ipynb](Fort-Boyard/fort-boyard-python.ipynb) | Semantic Kernel, OpenAI | Jeu de devinettes entre le Père Fouras et un candidat, avec stratégies de terminaison |
 
 Chaque projet contient 3 exercices permettant d'étendre le système (ajout de contraintes, nouveaux agents, stratégies de terminaison personnalisées).
@@ -103,7 +103,7 @@ Les 4 projets nécessitent `OPENAI_API_KEY` et utilisent Semantic Kernel pour l'
 
 ### Peut-on exécuter Medical-Chatbot sans Semantic Kernel ?
 
-Medical-Chatbot utilise Semantic Kernel pour l'orchestration des plugins (requête vers API, parsing, formatage de réponse). Pour le faire sans SK, remplacer les appels `kernel.invoke()` par des appels directs `openai.chat.completions.create()` -- la logique métier reste la même, seule la couche d'orchestration change.
+Medical-Chatbot utilise Semantic Kernel pour faire dialoguer trois `ChatCompletionAgent` dans un `AgentGroupChat`, et expose les fonctions médicales par des plugins `@kernel_function`. Pour le faire sans SK, remplacer la boucle `chat.invoke()` de l'`AgentGroupChat` par des appels directs `openai.chat.completions.create()` qui font alterner les trois rôles, et appeler directement les fonctions des plugins -- la logique métier reste la même, seule la couche d'orchestration change.
 
 ### Quelle différence avec les autres séries GenAI ?
 
