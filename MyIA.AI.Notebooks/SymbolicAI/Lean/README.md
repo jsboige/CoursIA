@@ -137,6 +137,12 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 17b | [Lean-17b-Knots-Invariants-Companion](KNOTS/KNOTS-02-Invariants-Python.ipynb) | Invariants de nœuds : PD-codes, mouvements de Reidemeister, tricolorabilité de Fox, diagrammes bien formés - companion `knot_lean` (Epic #2874, transfer forward #3000 sorry-free + backward #3124 partiel) | 60 min |
 | 17c | [Lean-17c-Knots-Companion-Formel](KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb) | Companion formel du lake `knot_lean` en kernel python3 (kernel lean4-wsl gelé #11874) : les modules que Lean-17 ne cite pas (Basic, Invariant, Reidemeister) interrogés par leurs déclarations réelles, murs nommés R2/R3, sorries réels (14) vs prose, miroir i18n byte-identique attesté par l'instrument canonique - Epic #2874 / #11703 | 40 min |
 
+### Annexe méthodologique : banc d'essai Hoeffding (détection MIMO)
+
+| # | Notebook | Contenu | Durée |
+|---|----------|---------|-------|
+| 19 | [Lean-19-Detection-MIMO-Index-Python](Lean-19-Detection-MIMO-Index-Python.ipynb) | Banc d'essai Hoeffding pour la détection MIMO : vérification empirique de la loi de Bernoulli composée (p_hat ≈ p) sur 20 instances BSC, rapport écart/borne Hoeffding 0.016 à 0.698 (5/5 = 100 % des instances sous la borne) — étalon de référence pour la sous-série MIMO (PR #20371) qui consumera Lean-19 comme baseline — kernel `python3`, 3 exercices | 20 min |
+
 ### Partie 6 : Recherche pondérée et optimalité (A*)
 
 | # | Notebook | Contenu | Durée |
