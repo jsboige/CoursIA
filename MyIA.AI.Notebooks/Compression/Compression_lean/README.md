@@ -75,6 +75,17 @@ quand il reconstruit un code depuis une table de longueurs :
    `(1, 2, 3, 3)` redonne `a=0, b=10, c=110, d=111` (Kraft saturé), le code
    fixe 2 bits remplit tout l'espace.
 
+## Carnet compagnon
+
+`Compression-01b-Kraft-McMillan-Lean.ipynb` (kernel `lean4-wsl`) importe les
+trois modules **réels** du lake et les fait travailler : ancres `#eval` de
+Kraft (`sf4`, `full k`), round-trip de décodage, construction `canon` /
+`mass`, `#print axioms` des quatre théorèmes piliers (propext,
+Classical.choice, Quot.sound — aucun `sorryAx`, aucun `native_decide`).
+Placé dans `Compression_lean/` car le kernel détecte le `lakefile.lean`
+ancêtre : son répertoire est son environnement. Exécution depuis la racine
+du lake (`papermill -k lean4-wsl`).
+
 ## Build
 
 ```bash
