@@ -47,7 +47,11 @@ class SectorDualMomentumStrategy(QCAlgorithm):
         self.set_warm_up(timedelta(self.max_lookback + 30))
 
     def _composite_momentum(self, symbol, current_price):
-        history = self.history(symbol, self.max_lookback, Resolution.DAILY)
+        # On the 13:00 close slice of a US half-session, a daily history request
+        # by bar count comes back about 21 bars short (measured in #20286). Ask
+        # for twice the bars and keep the most recent ones.
+        history = self.history(symbol, 2 * self.max_lookback, Resolution.DAILY)
+        history = history.iloc[-self.max_lookback:]
         if len(history) < self.max_lookback:
             return None
         score = 0.0
