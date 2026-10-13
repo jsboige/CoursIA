@@ -31,7 +31,7 @@ protocole organ-first :
    prouveur qu'on mesure — le comparer via NOTRE runner mesurerait notre
    runner, pas lui.
 2. **Peut-on invoquer son module réel ?** Oui : `pip install pantograph==0.3.15`
-   (pin du smoke test `test_leandojo_v2_smoke.py`), `Server(project_path=...)`
+   (pin du smoke test `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/tests/test_leandojo_v2_smoke.py`), `Server(project_path=...)`
    + `goal_start_async`/`goal_tactic_async`/`check_compile_async`. Aucun
    refactor requis côté série source.
 3. **Sinon, qu'exporter/refactorer ?** Non applicable — l'organe est
@@ -90,7 +90,7 @@ maison (FAILED 1 925,1 s / timeout raisonnement) est **rapporté** dans le fil
 ## 5. Reproduction (machine po-2024)
 
 ```bash
-# WSL, venv dédié (smoke 6/6 : scripts/tests/test_leandojo_v2_smoke.py)
+# WSL, venv dédié (smoke 6/6 : `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/tests/test_leandojo_v2_smoke.py`)
 set -a; . /mnt/d/Dev/CoursIA/.secrets/master.env; set +a   # OPENROUTER_API_KEY
 export GITHUB_ACCESS_TOKEN="$(gh auth token)"             # requis constants.py
 ~/venvs/leandojo-v2/bin/python leandojo_v2_bench.py --mode both \

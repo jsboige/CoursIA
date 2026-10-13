@@ -22,6 +22,12 @@ de raisonnement, plafond d'appels LLM), en deux modes :
      (chaque tactique appliquee et verifiee par Lean) ;
   2. preuve entiere : ``generate_whole_proof`` -> ``check_compile``.
 
+Le budget est applique **de bout en bout** : le transport HTTP porte le temps
+restant comme timeout (``transport_timeout_s``), un budget epuise arrete
+l'appel avant qu'il ne parte (``budget_hit``), et une preuve nee hors budget
+est un echec ``budget_s_timeout`` -- jamais une reussite retardee (mesure
+adjoint 2026-10-13, c.6143211874).
+
 Ecart de protocole documente (mesure du 2026-10-12, po-2024) : le repl
 Pantograph 0.3.15 **refuse une toolchain de projet differente de la sienne**
 -- conway_lean porte v4.33.0, le wheel Pantograph embarque ``lean-toolchain``
@@ -64,6 +70,11 @@ HOUSE_MODEL = "anthropic/claude-opus-4.7"
 # Budget aligne sur la passe 17 maison : 1 800 s de raisonnement.
 HOUSE_REASONING_BUDGET_S = 1800.0
 
+# Plafond du transport HTTP par appel, aligne sur le timeout Pantograph par
+# appel (--timeout, defaut 120 s) : la deadline residuelle ne peut pas
+# lever ce plafond, seulement l'abaisser.
+REQUEST_TIMEOUT_CAP_S = 120.0
+
 # Identifiants pleinement qualifies : le REPL de Pantograph charge le module
 # mais pas le namespace -- `digitsToNat` nu leve `Unknown identifier`
 # (mesure du 2026-10-12). Le forall ne met pas `n` dans le contexte local :
@@ -86,6 +97,27 @@ def _openrouter_key() -> str:
             "exporter depuis .secrets/master.env avant le banc"
         )
     return key
+
+
+def deadline_remaining(deadline: Optional[float]) -> Optional[float]:
+    """Temps restant avant la deadline (monotonic) ; None sans deadline."""
+    if deadline is None:
+        return None
+    return deadline - time.monotonic()
+
+
+def transport_timeout_s(remaining: Optional[float]) -> Optional[float]:
+    """Timeout ``requests`` borne par le temps restant du budget.
+
+    None = pas de borne (deadline absente). Une valeur <= 0 signifie budget
+    epuise : l'appel ne doit pas partir du tout. Mesure fondatrice (adjoint
+    2026-10-13, dossier c.6143211874) : ``requests.post`` sans timeout et le
+    budget controle seulement avant l'appel synchrone -- une generation
+    pendante pouvait depasser ``budget_s`` sans limite.
+    """
+    if remaining is None:
+        return None
+    return min(remaining, REQUEST_TIMEOUT_CAP_S)
 
 
 def lake_lean_path(project: str) -> str:
@@ -111,8 +143,13 @@ def lake_lean_path(project: str) -> str:
     raise ConfigError("LEAN_PATH introuvable dans la sortie de `lake env printenv`")
 
 
-def _make_openrouter_generator():
+def _make_openrouter_generator(deadline: Optional[float] = None):
     """Construit le generateur de tactiques branche openrouter.
+
+    ``deadline`` (monotonic) borne le transport : chaque ``_post`` reçoit un
+    timeout egal au temps restant du budget (plafonne par
+    ``REQUEST_TIMEOUT_CAP_S``), et un budget epuise arrete l'appel avant
+    qu'il ne parte -- ``budget_hit`` signale la coupure aux deux modes.
 
     Sous-classe documentee (mesure #18430 volet C, ai-01 2026-10-04) :
     ``HFTacticGenerator.generate`` code en dur l'URL
@@ -138,12 +175,23 @@ def _make_openrouter_generator():
 
         API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-        def __init__(self, model_name: str = HOUSE_MODEL) -> None:
+        def __init__(
+            self, model_name: str = HOUSE_MODEL,
+            deadline: Optional[float] = None,
+        ) -> None:
             super().__init__(model_name=model_name)
             self.model = model_name
             self.calls = 0
+            self.deadline = deadline
+            self.budget_hit = False
 
         def _post(self, prompt: str, n: int, max_tokens: int) -> list[str]:
+            timeout = transport_timeout_s(deadline_remaining(self.deadline))
+            if timeout is not None and timeout <= 0:
+                # Budget epuise avant l'appel : la requete synchrone ne part
+                # pas, et la coupure remonte aux modes via budget_hit.
+                self.budget_hit = True
+                return []
             headers = {"Authorization": f"Bearer {_openrouter_key()}"}
             payload = {
                 "messages": [{"role": "user", "content": prompt}],
@@ -153,7 +201,9 @@ def _make_openrouter_generator():
                 "top_p": 0.9,
                 "n": n,
             }
-            data = requests.post(self.API_URL, headers=headers, json=payload).json()
+            data = requests.post(
+                self.API_URL, headers=headers, json=payload, timeout=timeout
+            ).json()
             if data.get("error"):
                 logger.error(f"erreur openrouter: {data['error']}")
                 return []
@@ -233,11 +283,11 @@ async def bench_step_by_step(
         budget_s=budget_s,
         success=False,
     )
-    gen = _make_openrouter_generator()
+    t0 = time.monotonic()
+    gen = _make_openrouter_generator(deadline=t0 + budget_s)
 
     server = await _start_server(project, timeout_s)
 
-    t0 = time.monotonic()
     state = await server.goal_start_async(RUNG_STATEMENT)
     # Pas mecanique deterministe (pas un appel LLM) : le forall ne met pas
     # `n` dans le contexte local -- `intro n` avant la boucle generate.
@@ -255,6 +305,12 @@ async def bench_step_by_step(
 
         tactic = gen.generate(str(state))
         result.llm_calls = gen.calls
+        if gen.budget_hit:
+            # Distinction chargee : une coupure de budget ne se deguise pas
+            # en generator_exhausted (le rapport maison distingue deja les
+            # deux terminaisons).
+            result.termination = "budget_s_timeout"
+            break
         if tactic in ("sorry", ""):
             result.termination = "generator_exhausted"
             break
@@ -287,11 +343,11 @@ async def bench_whole_proof(
         budget_s=budget_s,
         success=False,
     )
-    gen = _make_openrouter_generator()
+    t0 = time.monotonic()
+    gen = _make_openrouter_generator(deadline=t0 + budget_s)
 
     server = await _start_server(project, timeout_s)
 
-    t0 = time.monotonic()
     theorem = (
         "theorem digitsToNat_natToDigits_bench (n : Nat) : "
         "Conway.digitsToNat (Conway.natToDigits n) = n := by\n"
@@ -299,6 +355,14 @@ async def bench_whole_proof(
     proof = gen.generate_whole_proof(theorem)
     result.llm_calls = gen.calls
     result.proof_mode_output = str(proof)[:2000]
+    # Deadline de bout en bout : une preuve nee hors budget est un echec de
+    # budget, pas une reussite retardee (mesure adjoint 2026-10-13,
+    # c.6143211874 : budget_s=0.001 rendait success=True en 0.1 s). Le
+    # check_compile ne part pas -- il n'y a rien a verifier.
+    if gen.budget_hit or (time.monotonic() - t0) > budget_s:
+        result.elapsed_s = round(time.monotonic() - t0, 1)
+        result.termination = "budget_s_timeout"
+        return result
     code = theorem + proof if proof != "sorry" else theorem + "  sorry"
 
     units = await server.check_compile_async(code)

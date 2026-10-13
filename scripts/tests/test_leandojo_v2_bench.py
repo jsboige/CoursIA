@@ -13,9 +13,11 @@ drift leve ici avant de fausser une mesure.
 
 Run: python -m pytest scripts/tests/test_leandojo_v2_bench.py
 """
+import asyncio
 import importlib.util
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -130,3 +132,136 @@ def test_no_secrets_in_source():
     assert "sk-" not in src
     assert "OPENROUTER_API_KEY" in src  # lu de l'env, jamais en dur
     assert 'os.environ.get("OPENROUTER_API_KEY"' in src
+
+
+# --- Deadline de bout en bout (mesure adjoint 2026-10-13, c.6143211874) ---
+# bench_whole_proof n'appliquait jamais budget_s (budget 0.001 s rendait
+# success=True en 0.1 s), et requests.post dans _post n'avait pas de timeout :
+# le budget etait controle seulement avant un appel synchrone non borne.
+
+
+def test_transport_timeout_none_without_deadline(bench):
+    assert bench.transport_timeout_s(None) is None
+
+
+def test_transport_timeout_bounded_by_remaining_and_cap(bench):
+    # borne par le temps restant...
+    assert bench.transport_timeout_s(0.05) == 0.05
+    # ...et par le plafond transport, jamais au-dela
+    assert bench.transport_timeout_s(1e9) == bench.REQUEST_TIMEOUT_CAP_S
+
+
+def test_transport_timeout_negative_means_budget_exhausted(bench):
+    # <= 0 : l'appel ne doit pas partir du tout (budget_hit dans _post)
+    assert bench.transport_timeout_s(-1.0) <= 0
+
+
+def test_post_passes_timeout_pin(bench):
+    # Pin structurel : l'appel requests doit porter le timeout calcule --
+    # sans lui, la deadline residuelle ne borne rien.
+    import inspect
+
+    src = inspect.getsource(bench)
+    assert "timeout=timeout" in src
+
+
+class _FakeStepServer:
+    """Serveur factice : goal_start_async dort 0.05 s pour rendre la boucle
+    step deterministement hors budget (budget_s=0.001)."""
+
+    async def goal_start_async(self, _stmt):
+        await asyncio.sleep(0.05)
+        return "state0"
+
+    async def goal_tactic_async(self, state, _tac):
+        return state
+
+
+def test_step_mode_budget_timeout(monkeypatch, bench):
+    async def fake_start(*_a, **_k):
+        return _FakeStepServer()
+
+    monkeypatch.setattr(bench, "_start_server", fake_start)
+    monkeypatch.setattr(
+        bench, "_make_openrouter_generator",
+        lambda **_k: type("G", (), {
+            "calls": 0, "budget_hit": False,
+            "generate": lambda self, _s: "rwcommute",
+        })(),
+    )
+    result = asyncio.run(
+        bench.bench_step_by_step("/proj", budget_s=0.001, max_calls=10, timeout_s=1)
+    )
+    # goal_start a deja consomme 0.05 s > budget 0.001 s : la boucle casse
+    # en tete, avant tout appel LLM.
+    assert result.success is False
+    assert result.termination == "budget_s_timeout"
+    assert result.llm_calls == 0
+
+
+class _FakeWholeGen:
+    calls = 1
+    budget_hit = True
+
+    def generate_whole_proof(self, _thm):
+        return "induction n with k ih; simp"
+
+
+def test_whole_proof_budget_hit_never_compiles(monkeypatch, bench):
+    # budget_hit pendant la generation : pas de check_compile, pas de
+    # reussite -- termination budget_s_timeout (le cas du dossier adjoint :
+    # budget 0.001 s, generation 0.05 s, success=True attendu casse).
+    compiled = []
+
+    class _Srv:
+        async def check_compile_async(self, _code):
+            compiled.append(1)
+            return []
+
+    async def fake_start(*_a, **_k):
+        return _Srv()
+
+    monkeypatch.setattr(bench, "_start_server", fake_start)
+    monkeypatch.setattr(
+        bench, "_make_openrouter_generator", lambda **_k: _FakeWholeGen()
+    )
+    result = asyncio.run(
+        bench.bench_whole_proof("/proj", budget_s=0.001, timeout_s=1)
+    )
+    assert result.success is False
+    assert result.termination == "budget_s_timeout"
+    assert compiled == []  # la verification ne part pas : rien a verifier
+
+
+def test_whole_proof_elapsed_over_budget_fails(monkeypatch, bench):
+    # budget_hit faux, mais la generation a dure plus que le budget : la
+    # preuve est nee hors budget -> echec, pas de compilation.
+    compiled = []
+
+    class _Srv:
+        async def check_compile_async(self, _code):
+            compiled.append(1)
+            return []
+
+    async def fake_start(*_a, **_k):
+        return _Srv()
+
+    class _SlowGen:
+        calls = 1
+        budget_hit = False
+
+        def generate_whole_proof(self, _thm):
+            time.sleep(0.05)  # 50x le budget
+            return "sorry"
+
+    monkeypatch.setattr(bench, "_start_server", fake_start)
+    monkeypatch.setattr(
+        bench, "_make_openrouter_generator", lambda **_k: _SlowGen()
+    )
+    result = asyncio.run(
+        bench.bench_whole_proof("/proj", budget_s=0.001, timeout_s=1)
+    )
+    assert result.success is False
+    assert result.termination == "budget_s_timeout"
+    assert compiled == []
+    assert result.elapsed_s >= 0.05
