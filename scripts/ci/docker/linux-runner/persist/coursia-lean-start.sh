@@ -77,7 +77,7 @@ mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 # Les trois jambes doivent annoncer le meme nombre : assert_memory_budget
 # somme les familles entre elles, une divergence refuserait des slots sans
 # nommer sa cause.
-export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-15}"
+export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-21}"
 
 # AUCUN SWAP POUR LA JAMBE LEAN (2026-10-08) -- memory-swap = memory.
 # Le defaut de supervise.sh est `LEAN_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY_SWAP:-12g}"`,

@@ -82,8 +82,12 @@ la Gemini publie une auto-réplication complète en 33 699 586).
   — le témoin de période `evolveHashlifeFastMemo 35328 otcaInitial =
   otcaInitial` reste une **hypothèse ouverte** : ni la période exacte
   sur le motif isolé ni la faisabilité ne sont confirmées (test de
-  performance du Hashlife mémoïsé à 64 691 cellules) : c'est la tranche
-  suivante. La prédiction « un métapixel isolé sur grille sans bord
+  performance du Hashlife mémoïsé à 64 691 cellules). La tranche 4 a
+  **mesuré** le coût de cette faisabilité : l'évaluation `native_decide`
+  du témoin ne termine pas en 2 h sur cette machine (double tentative,
+  replays du lake consommés en quelques secondes puis silence jusqu'au
+  délai, aucun `.olean` produit) — plafond de l'organe **mesuré ici**,
+  levable sur une machine plus dotée. La prédiction « un métapixel isolé sur grille sans bord
   n'est pas périodique non plus » est donc **ni confirmée ni
   réfutée** pour l'OTCA.
 - **Témoins négatifs appariés** (critère 2 de #19989) : `pulsar_period1_negative`
@@ -260,8 +264,8 @@ pour le pilier correspondant. La preuve est conçue comme un simple
     sont visibles. Le cycle ON→OFF→ON publié dure 35 328 générations
     (source : conwaylife.com/wiki/OTCA_metapixel).
 
-    **Il n'y a pas de témoin de période ici — mais contrairement à
-    l'UnitCell, c'est un report, pas une impossibilité.** Mesure
+    **Il n'y a toujours pas de témoin de période ici — mais le report
+    est désormais mesuré, pas seulement motivé.** Mesure motivante
     (simulateur dense, 1 800 générations) : l'étendue reste strictement
     2058 × 2058, aucune cellule ne quitte la boîte aux relevés, la
     population oscille en [63 955, 64 798] — confinement **observé**
@@ -270,7 +274,9 @@ pour le pilier correspondant. La preuve est conçue comme un simple
     hypothèse ouverte (récurrence éventuelle et retour à l'état initial
     non mesurés) ; il attend (a) la confirmation de la période exacte
     35 328 sur le motif isolé et (b) un test de performance du Hashlife
-    mémoïsé sur une grille de 64 691 cellules.
+    mémoïsé sur une grille de 64 691 cellules — dont la tranche 4 a fait
+    une **première tentative, non concluante** en 2 h sur cette machine
+    (aucun `.olean` produit ; plafond levable sur une machine plus dotée).
 
     Ce qui est prouvé ici, et **non vacuous**, c'est que la grille chargée
     est réelle : 165 Ko de RLE passés par le même `include_str` +

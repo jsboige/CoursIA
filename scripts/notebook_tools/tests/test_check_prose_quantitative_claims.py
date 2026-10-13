@@ -510,7 +510,10 @@ def test_ipynb_output_lines_maps_payloads_not_sources(tmp_path):
 
 
 def _git(cwd: Path, *args: str) -> None:
-    subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True)
+    subprocess.run(
+        ["git", *args], cwd=cwd, check=True, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
 
 
 def _commit_all(repo: Path, message: str) -> None:
@@ -552,3 +555,55 @@ def test_scan_diff_skips_output_payloads_but_flags_source_prose(tmp_path, monkey
         output_cell], "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
     found = cqc.scan_diff("HEAD", {"artifact"})
     assert [snippet for _loc, _klass, snippet in found] == ["65 lignes"]
+
+
+# --------------------------------------------------------------------------- #
+#  #20194 : un git diff en echec n'est pas une ardoise propre (fail-closed)
+# --------------------------------------------------------------------------- #
+
+
+def test_scan_diff_raises_on_unresolvable_range(tmp_path, monkeypatch):
+    """Cas 3 de l'issue (mesure po-2024) : une revision introuvable rend
+    rc=128 avec une sortie vide -- l'organe doit LEVER, pas rendre []."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "core.autocrlf", "false")
+    (repo / "f.txt").write_text("base\n", encoding="utf-8")
+    _commit_all(repo, "base")
+    monkeypatch.chdir(repo)
+
+    with pytest.raises(cqc.DiffUnreadable, match="rc=128"):
+        cqc.scan_diff("0000000000000000000000000000000000000000...HEAD", {"artifact"})
+
+
+def test_scan_diff_raises_on_subprocess_error(monkeypatch):
+    """Branche except (timeout, binaire absent) : meme garantie -- lever,
+    jamais retourner [] (l'ancien chemin imprimait [ERREUR] puis rendait 0)."""
+
+    def _boom(*_a, **_k):
+        raise OSError("git introuvable")
+
+    monkeypatch.setattr(cqc.subprocess, "run", _boom)
+    with pytest.raises(cqc.DiffUnreadable, match="git introuvable"):
+        cqc.scan_diff("origin/main...HEAD", {"artifact"})
+
+
+def test_main_diff_failure_returns_two_and_never_ok(tmp_path, monkeypatch, capsys):
+    """Controle du revert (#20194 acceptance) : un git diff rc!=0 a sortie
+    VIDE doit rendre rc=2 et une sortie sans [OK]. Si l'on remet
+    ``.stdout`` sans lire le code retour, ce test ROUGIT : le retour serait
+    [] -> [OK] -> rc=0."""
+
+    class _FakeProc:
+        returncode = 129  # hors depot git
+        stdout = ""       # vide : indistinguable d'un diff propre sans le rc
+        stderr = "fatal: not a git repository"
+
+    monkeypatch.setattr(cqc.subprocess, "run", lambda *_a, **_k: _FakeProc())
+    monkeypatch.setattr(sys, "argv", ["cqc", "--diff", "origin/main...HEAD", "--strict"])
+    rc = cqc.main()
+    out = capsys.readouterr().out
+    assert rc == 2, "un diff non mesurable doit rendre rc=2, pas 0"
+    assert "[OK]" not in out, "jamais [OK] sur un diff non mesure"
+    assert "[NON-MESURABLE]" in out

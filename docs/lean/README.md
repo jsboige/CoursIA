@@ -34,6 +34,13 @@ Pour la pédagogie Lean (notebooks étudiants), voir [`MyIA.AI.Notebooks/Symboli
 | [i18n-inventory-cycle-38.md](i18n-inventory-cycle-38.md) | Inventaire FR/EN + proposition de convention (cycle 38, décision user 2026-07-02). |
 | [i18n-sibling-patterns.md](i18n-sibling-patterns.md) | Patterns de paires FR/EN (`Foo.lean` / `Foo_en.lean`) et discipline du checker `check_i18n_siblings.py`. |
 
+## Origami — géométrie différentielle (EPIC #18205)
+
+| Document | Sujet |
+|---|---|
+| [origami-reconnaissance.md](origami-reconnaissance.md) | Pli 1, sub-grains 3 (sources tierces, conformité) et 4 (emplacement) — reconnaissance préalable. |
+| [origami-pli1-mesures.md](origami-pli1-mesures.md) | Pli 1, sub-grain 1 — journal du build **hors CI** de l'enveloppe `differential_lean` : les trois petites fermetures, le témoin `#print axioms`, temps, mémoire et pièges de mesure (relevé du 2026-10-08). |
+
 ## Toolchain
 
 | Document | Sujet |
