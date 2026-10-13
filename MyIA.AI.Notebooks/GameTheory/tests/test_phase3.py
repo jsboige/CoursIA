@@ -174,6 +174,66 @@ class TestVCGAuction:
         # Utility should be the same (can't gain by lying)
         assert truthful_utility == lie_utility
 
+    def test_multi_item_additive_case_hand_computed(self):
+        """Exact hand-computed Clarke payments on 2 agents x 2 items:
+        item 0 -> agent 0 (10 > 8), item 1 -> agent 1 (6 > 4);
+        p_0 = SW(others w/o 0) - SW(others with 0) = (8+6) - 6 = 8;
+        p_1 = (10+4) - 10 = 4."""
+        vcg = VCGAuction(n_items=2)
+        valuations = [[10.0, 4.0], [8.0, 6.0]]
+        allocations, payments = vcg.allocate_multi(valuations)
+        assert allocations == [[1.0, 0.0], [0.0, 1.0]]
+        assert payments == pytest.approx([8.0, 4.0])
+
+    def test_single_agent_takes_all_items_at_zero_payment(self):
+        """Degenerate 1-agent auction: no other agent to impose an
+        externality on, so every payment is zero."""
+        vcg = VCGAuction(n_items=3)
+        allocations, payments = vcg.allocate_multi([[5.0, 0.0, 7.0]])
+        assert allocations == [[1.0, 1.0, 1.0]]
+        assert payments == pytest.approx([0.0])
+
+    def test_tie_breaks_to_lowest_agent_index_deterministically(self):
+        """Equal bids: np.argmax awards to the first index. The
+        tie-break is deterministic and worth pinning (ties multiply
+        equilibria across the tests of #20306)."""
+        vcg = VCGAuction(n_items=1)
+        allocations, _ = vcg.allocate_multi([[5.0], [5.0]])
+        assert allocations == [[1.0], [0.0]]
+
+    @pytest.mark.parametrize("seed", [0, 1, 7, 42, 99])
+    def test_truthful_bidding_weakly_dominant_sampled(self, seed):
+        """The VCG guarantee itself, verified on random ADDITIVE
+        families (2-4 agents, 1-3 items, 20 draws per seed): with the
+        others truthful, no sampled misreport (under/over-bid factors)
+        yields a strictly higher utility than truthful reporting --
+        utilities measured against TRUE valuations. Scope: this holds
+        for the additive per-item valuations this method implements
+        (#20306); it is not claimed for bundle valuations."""
+        rng = np.random.default_rng(seed)
+        for _ in range(20):
+            n_agents = int(rng.integers(2, 5))
+            n_items = int(rng.integers(1, 4))
+            vcg = VCGAuction(n_items=n_items)
+            valuations = rng.integers(
+                1, 20, size=(n_agents, n_items)
+            ).astype(float).tolist()
+
+            def utility_of(report, i):
+                alloc, pays = vcg.allocate_multi(report)
+                return (
+                    sum(alloc[i][j] * valuations[i][j]
+                        for j in range(n_items))
+                    - pays[i]
+                )
+
+            for i in range(n_agents):
+                truthful_utility = utility_of(valuations, i)
+                for factor in (0.0, 0.5, 0.75, 1.5, 2.0):
+                    lie = [row[:] for row in valuations]
+                    lie[i] = [factor * v for v in valuations[i]]
+                    assert truthful_utility >= utility_of(lie, i) - 1e-9
+
 
 class TestGaleShapley:
     """Tests for stable matching."""

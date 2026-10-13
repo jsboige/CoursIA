@@ -16,6 +16,14 @@
     - `Geometry.MidpointHypotenuse` — le théorème du milieu de l'hypoténuse,
       fil rouge de la série Python et première marche du pont formel
       (position 05 du programme gradué #17544).
+    - `Geometry.FromFigureToEquation` — la traduction figure vers équations du
+      notebook 01 : encodage, famille paramétrique des triangles rectangles,
+      témoin négatif, tirage biaisé, instance de Schwartz–Zippel.
+    - `Geometry.WuMethod` — companion du `Geometry-03` : ce que le test de
+      Wu garantit (certificats d'appartenance idéale T1, identité maîtresse
+      de Ceva T3, témoins négatifs).
 -/
 
 import Geometry.MidpointHypotenuse
+import Geometry.FromFigureToEquation
+import Geometry.WuMethod
