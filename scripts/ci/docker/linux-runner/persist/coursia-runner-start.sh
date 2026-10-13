@@ -77,10 +77,10 @@ export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 # somme les conteneurs label `coursia-ci=1` de TOUTES les familles : deux jambes
 # qui divergeraient refuseraient leurs slots l'une contre l'autre, et le message
 # d'erreur ne nommerait pas la divergence -- il parlerait de memoire en vol.
-# Les trois jambes de po-2024 portent 15 : celle-ci, la jambe lean, et la jambe
+# Les trois jambes de po-2024 portent 21 : celle-ci, la jambe lean, et la jambe
 # waiters (par le drop-in persist/po-2024/coursia-waiters.service.d/10-sizing.conf,
 # dont le wrapper appartient a ai-01 et ne declare aucun budget).
-export COURSIA_RUNNER_BUDGET_GB=15
+export COURSIA_RUNNER_BUDGET_GB=21
 
 # PARENT CGROUP -- LE MUR KERNEL QUI MANQUAIT A CETTE MACHINE (2026-10-08).
 # supervise.sh pose `--cgroup-parent=$COURSIA_RUNNER_CGROUP_PARENT` sur chaque

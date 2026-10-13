@@ -244,12 +244,18 @@ class SparseIndexTrackingAlgorithm(QCAlgorithm):
         self._rebalances = 0
         self._skipped = 0
         self._total_turnover = 0.0
+        self._postponed = 0
 
     def _security_initializer(self, security):
         security.set_fee_model(PercentFeeModel(self.fee_bps / 10000.0))
 
     def on_data(self, data):
         if self.is_warming_up:
+            return
+        # Count trading sessions only. At daily resolution on_data also fires on
+        # midnight slices (dividend notices) that carry no bar (#20264); counting
+        # them would shorten the 63-session quarter.
+        if not data.bars.contains_key(self.spy_symbol):
             return
         self._day_count += 1
         if self._day_count % REBALANCE_DAYS != 1:
@@ -262,12 +268,17 @@ class SparseIndexTrackingAlgorithm(QCAlgorithm):
         Assets with missing data in the window are dropped (no forward-fill
         gambling); the frame is defensive about pandas level ordering.
         """
-        hist = self.history(self.all_symbols, TOTAL_BARS, Resolution.DAILY)
+        # On a half-session close slice (13:00 New York) a daily history request
+        # returns about 21 bars too few (#20286): ask for twice the window and
+        # keep the last TOTAL_BARS rows, before dropping incomplete assets.
+        hist = self.history(self.all_symbols, 2 * TOTAL_BARS, Resolution.DAILY)
         close = hist["close"].unstack(level=0)
         if len(close.index) > 0 and not hasattr(close.index[0], "date"):
             # level 0 carried timestamps (lean index ordering varies) -> swap
             close = hist["close"].unstack(level=1)
-        close = close.dropna(axis=1)
+        close = close.iloc[-TOTAL_BARS:].dropna(axis=1)
+        self.log(f"history {self.time:%Y-%m-%d %H:%M} session={self._day_count} "
+                 f"rows={close.shape[0]} assets={close.shape[1]}")
         if close.shape[0] < TOTAL_BARS:
             return None
         returns = close.pct_change().dropna(axis=0)
@@ -295,6 +306,7 @@ class SparseIndexTrackingAlgorithm(QCAlgorithm):
     def _rebalance(self):
         data = self._get_returns()
         if data is None:
+            self._postponed += 1
             self.debug(f"[{self.mode}] insufficient history at {self.time}, postponing")
             return
         X, y, asset_cols = data
@@ -371,6 +383,8 @@ class SparseIndexTrackingAlgorithm(QCAlgorithm):
 
     def on_end_of_algorithm(self):
         avg_turnover = self._total_turnover / self._rebalances if self._rebalances else 0.0
+        self.log(f"done sessions={self._day_count} rebalances={self._rebalances} "
+                 f"skipped={self._skipped} postponed={self._postponed}")
         self.debug(
             f"[{self.mode.upper()}] done: rebalances={self._rebalances} skipped={self._skipped} "
             f"avg_turnover={avg_turnover:.1%} total_turnover={self._total_turnover:.0%} "

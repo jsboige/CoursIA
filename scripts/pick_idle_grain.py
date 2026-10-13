@@ -401,19 +401,27 @@ from check_run_state import fold_latest  # noqa: E402
 # la lane « pas le votre », c'est-a-dire de ne rien faire, alors que la cause
 # est dans le diff de la PR. La declaration de la borne est portee par le
 # registre de la voie rapide (Guard.argv contient `--diff {base_ref}...HEAD`,
-# ou Guard.delta_argv porte la comparaison base/head) -- pas une liste de
-# noms recopiee dans le picker. C'est cette indirection qui maintient la
-# liste a jour quand la voie rapide absorbe un nouveau garde.
+# Guard.delta_argv porte la comparaison base/head, ou Guard.diff_bounded est
+# declare explicitement quand l'argv absorbe a perdu l'information de
+# bornage -- suite c.1503, nav-chain/navlinks) -- pas une liste de noms
+# recopiee dans le picker. C'est cette indirection qui maintient la liste a
+# jour quand la voie rapide absorbe un nouveau garde.
 def _diff_bounded_check_names() -> set[str]:
     """Noms de checks declares bornes au diff dans le registre de la voie rapide.
 
-    Trois sources couvrent les trois formes d'un garde borne au diff :
+    Quatre sources couvrent les formes d'un garde borne au diff :
     - ``argv`` contient un drapeau ``--diff {base_ref}...HEAD`` (le garde ne
       lit que les lignes AJOUTEES par la PR -- cas fondateur ``prose-counts-guard``) ;
     - ``delta_argv`` porte une comparaison explicite base/head (le verdict
       est delta, jamais un verdict de base) ;
     - ``swap_paths`` non vide (le fast-lane runner bascule un sous-arbre a
-      la base pour la phase 2 -- la sortie n'a de sens qu'en delta).
+      la base pour la phase 2 -- la sortie n'a de sens qu'en delta) ;
+    - ``Guard.diff_bounded`` declare au registre (source EXPLICITE, #19645
+      suite c.1503) : couvre les gardes dont l'argv absorbe a PERDU
+      l'information de bornage -- ``check-nav-chain``/``check-navlinks``
+      scopaient au diff dans leur workflow d'origine, l'argv absorbe dit
+      seulement ``--check``, et une 4e heuristique d'argv ne detecterait
+      rien puisque le drapeau n'y est plus.
 
     Echec d'import (CI minimale sans la voie rapide) : on rend un set vide
     fail-closed, comme avant #19645 -- l'imputation reste la voie par defaut.
@@ -437,7 +445,12 @@ def _diff_bounded_check_names() -> set[str]:
             has_diff_flag = "--diff" in argv_join and "base_ref" in argv_join
             has_delta = bool(getattr(guard, "delta_argv", None))
             has_swap = bool(getattr(guard, "swap_paths", None))
-            if has_diff_flag or has_delta or has_swap:
+            # 4e source (#19645 suite c.1503) : declaration EXPLICITE au
+            # registre, pour les gardes dont l'argv absorbe a perdu le
+            # drapeau de bornage (nav-chain/navlinks disent `--check` alors
+            # que leur verdict est un delta NEW vs baseline).
+            has_declared = bool(getattr(guard, "diff_bounded", False))
+            if has_diff_flag or has_delta or has_swap or has_declared:
                 names.add(guard.name)
     return names
 
@@ -6204,9 +6217,19 @@ def belt_probe_budget(belt_check_window: int) -> int:
     return belt_check_window * 3 + 12
 
 
+def recent_marker_probe_inert(number):
+    """Defaut inerte du filtre recent du tapis (doctrine #19913, #19768).
+
+    Rend ``None`` = « lecture en echec » : la boucle enchaine sur la sonde
+    pleine sans ecarter le candidat -- fail-OPEN, comme partout.
+    """
+    return None
+
+
 def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 delivered_probe=None, claims_probe=None,
-                                merged_pr_probe=None):
+                                merged_pr_probe=None,
+                                recent_marker_probe=None):
     """La boucle de service du tapis : claims, livraison, remplacement.
 
     Extraite de ``main`` (#19390) pour etre testable sans harnais complet :
@@ -6223,7 +6246,10 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     lecture (#19969). Epuisement = fail-OPEN (``DELIVERED_SIGNAL_UNPROBED``),
     rapporte dans l'etat de retour. ``delivered_probe`` et ``merged_pr_probe``
     (tests) remplacent les sondes reseau ; ``claims_probe`` (tests) remplace
-    la verification au fil de l'eau des items hors fenetre.
+    la verification au fil de l'eau des items hors fenetre ;
+    ``recent_marker_probe`` (tests) remplace le filtre bon marche du dernier
+    commentaire (#19768) -- HORS budget de sonde, il ecarte les clotures
+    marquees sans consommer une unite : l'epuisement ne peut plus les servir.
 
     Defauts INERTES (doctrine ``delivered_probe_inert`` / #19913) : un test
     qui appelle cette boucle sans injecter ses sondes n'emet AUCUNE requete
@@ -6247,6 +6273,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # cout ne serait testable qu'avec le reseau reel.
     user_probe = delivered_probe or delivered_probe_inert
     user_merged_pr_probe = merged_pr_probe or merged_pr_probe_inert
+    user_recent_marker_probe = (recent_marker_probe
+                                or recent_marker_probe_inert)
 
     def counted_probe(number, lane_name):
         if budget[0] <= 0:
@@ -6304,6 +6332,23 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         # umbrella n'est jamais ecartee sur un marqueur (decision
         # mesuree du canal label).
         if it.get("klass") == "grain" and not args.include_delivered:
+            # #19768 (perimetre restant, NOT-DELIVERED du 12/10) : filtre
+            # RECENT du tapis -- le meme que l'urne grain (draw_unclaimed),
+            # absent de cette boucle au merge de #19770. Mesure po-2023 du
+            # 10-09 : les 5 candidats servis non prenables du tapis
+            # portaient TOUS un marqueur identifiable ; le budget de sonde
+            # pleine eteint, chaque candidat au-dela etait servi SANS
+            # lecture (fail-OPEN). Le filtre recent coute 1 requete HORS
+            # budget et ecarte la cloture marquee AVANT la sonde pleine ;
+            # lecture en echec (None) = fail-OPEN, la sonde pleine suit.
+            recent = user_recent_marker_probe(n)
+            if recent is True:
+                state["recent_filtered"] += 1
+                belt_withheld.append(
+                    (it, "LIVRAISON (recent) : marqueur de cloture sur le "
+                     "dernier commentaire ([DELIVERED] / [RELEASED] / "
+                     "[FROZEN]). Candidat remplace hors budget de sonde."))
+                continue
             reason = delivered_signal_reason(
                 it, args.lane, counted_probe, state["failures"],
                 counted_merged_pr_probe)
@@ -7073,7 +7118,9 @@ def main(argv: list[str] | None = None) -> int:
             belt_pick_with_replacements(belt_pool, belt_claims, args,
                                         belt_probe_budget(belt_check_window),
                                         delivered_probe=has_delivered_signal,
-                                        merged_pr_probe=merged_pr_signal))
+                                        merged_pr_probe=merged_pr_signal,
+                                        recent_marker_probe=(
+                                            has_recent_delivery_marker)))
         belt_delivered_failures = belt_pick_state["failures"]
         belt_probe_budget_hit = [belt_pick_state["budget_hit"]]
         # Geste 5 #18203 : consigner le tirage du tapis -- candidats servis
@@ -7097,8 +7144,23 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"   BLOQUE par une autre lane (skip + replacement) : {held}")
             # Volet livraison (#19390) : ligne propre, distincte du BLOQUE --
             # le motif n'est pas une collision mais un travail deja rendu.
+            # #19768 : le filtre recent a sa ligne a lui, HORS budget -- ne
+            # pas le fondre dans « Signal de livraison », la distinction est
+            # la mesure (un candidat ecarte hors budget n'a pas consomme de
+            # sonde ; un candidat ecarte par la sonde en a consomme une).
+            recent_held = [(it, c) for it, c in belt_withheld
+                           if c.startswith("LIVRAISON (recent)")]
+            if recent_held:
+                numbers = ", ".join(f"#{it['number']}"
+                                    for it, _ in recent_held[:5])
+                print(f"   Filtre recent (#19768) : {len(recent_held)} "
+                      f"candidat(s) ECARTE(S) HORS BUDGET : {numbers}.")
+                print("   Marqueur de cloture sur le DERNIER commentaire "
+                      "([DELIVERED] / [RELEASED] / [FROZEN]) -- ecarte sans "
+                      "consommer de sonde de livraison.")
             delivered_held = [(it, c) for it, c in belt_withheld
-                              if c.startswith("LIVRAISON")]
+                              if c.startswith("LIVRAISON")
+                              and not c.startswith("LIVRAISON (recent)")]
             if delivered_held:
                 numbers = ", ".join(f"#{it['number']}"
                                     for it, _ in delivered_held[:5])
@@ -7178,6 +7240,15 @@ def main(argv: list[str] | None = None) -> int:
                 "delivered_signal": {
                     "withheld": [it["number"] for it, c in belt_withheld
                                  if c.startswith("LIVRAISON")],
+                    # #19768 : les exclusions du filtre recent sont HORS
+                    # budget -- les nommer separement, sinon la distinction
+                    # « ecarte sans consommer de sonde » disparait du JSON.
+                    # ``withheld`` reste le SURSET (toutes causes LIVRAISON)
+                    # pour les consommateurs existants.
+                    "recent_withheld": [it["number"] for it, c in belt_withheld
+                                        if c.startswith("LIVRAISON (recent)")],
+                    "recent_filtered": belt_pick_state.get(
+                        "recent_filtered", 0),
                     "unread": sorted(set(belt_delivered_failures)),
                     "budget_hit": belt_probe_budget_hit[0],
                 },

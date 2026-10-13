@@ -221,6 +221,8 @@ La pire baisse de `lrs` va du 2022-01-03 au 2023-03-14 (−36,5 %), sommet retro
 
 **Suivi en ombre.** Seul un BEATS déclenche l'inscription au registre du suivi en ombre (#18923). Aucune des deux candidates n'est gelée.
 
+**Place dans la matrice de la ligue.** `ucits` est inscrite dans la matrice de corrélation hebdomadaire de la ligue (`ML-Training-Pipeline/shadow/league_members.json`, #19821) sous l'identifiant `leveraged-etf-ucits`. Sa série est celle du run ci-dessus, lue dans sa trace sans nouveau backtest. Sur 755 semaines communes (2012-01-13 → 2026-06-26), sa corrélation au cœur actions (#20365) vaut 0,64, avec un intervalle à 95 % de [0,58 ; 0,70] par bootstrap par blocs. L'intervalle s'arrête juste sous le seuil de 0,7 de la règle d'entrée du panier (borne haute 0,696). Sa corrélation à `base` (`leveraged-etf-momentum`) vaut 0,77. Ces chiffres ne décident pas de l'entrée au panier.
+
 Les traces des runs (graphiques, statistiques, empreinte du code envoyé à QC, résultats du calcul) sont conservées hors dépôt, sous `QC-traces/20141-leveraged-etf-ucits/`.
 
 ## Comment exécuter
