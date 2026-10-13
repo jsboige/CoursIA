@@ -7,7 +7,7 @@ Ce répertoire contient les anciennes versions des notebooks Python qui se trouv
 ### `CSPs_Intro.ipynb`
 
 - **Date d'archivage** : 2026-07-03
-- **Raison** : Remplacé par la sous-série `Part2-CSP/` (9 notebooks dédiés : `CSP-1-Fundamentals.ipynb` à `CSP-9-Advanced-Topics.ipynb`) qui introduit les concepts progressivement (contraintes, propagation, backtracking, AC-3, recherche locale) plutôt qu'en un seul document monolithique.
+- **Raison** : Remplacé par la sous-série `Part2-CSP/` (notebooks dédiés : `CSP-1-Fundamentals.ipynb` à `CSP-9-Distributed.ipynb`) qui introduit les concepts progressivement (contraintes, propagation, backtracking, AC-3, recherche locale) plutôt qu'en un seul document monolithique.
 - **Contenu original** : introduction aux CSPs (Constraint Satisfaction Problems) — définitions, formalisme, exemples jouets.
 - **Nouvelle structure** : `Part2-CSP/CSP-1-Fundamentals.ipynb` couvre les mêmes bases avec un cadre unifié (variables/domaines/contraintes), puis les notebooks 2 à 9 développent chaque technique.
 
@@ -17,13 +17,13 @@ Ce répertoire contient les anciennes versions des notebooks Python qui se trouv
 - **Raison** : Remplacé par la sous-série `Part1-Foundations/` qui sépare clairement exploration non-informée (`Search-02-Uninformed.ipynb` : BFS, DFS, UCS, IDS, profondeur itérative) et exploration informée (`Search-03-Informed.ipynb` : greedy best-first, A*, variantes pondérées) en deux notebooks distincts plutôt qu'un document mêlant les deux familles.
 - **Contenu original** : survol des algorithmes d'exploration non-informée (BFS/DFS) et informée (A*) en un seul notebook.
 - **Nouvelle structure** :
-  - `Part1-Foundations/Search-1-Landscape.ipynb` — panorama
+  - `Part1-Foundations/Search-01-StateSpace.ipynb` — formalisation de l'espace d'états (le « panorama » annoncé n'a pas de carnet homonyme)
   - `Part1-Foundations/Search-02-Uninformed.ipynb` — exploration non-informée
   - `Part1-Foundations/Search-03-Informed.ipynb` — exploration informée et heuristiques
 
 ## Vérification de la migration
 
-- **Part1-Foundations/** : 11 notebooks (Search-1 à Search-11), couverture exhaustive incluant uninformed + informed + variantes (IDA*, SMA*, RBFS) + benchmarks.
+- **Part1-Foundations/** : séries Search-1 à Search-11 et leurs accrétions, couverture des algorithmes non informés et informés (BFS, DFS, UCS, IDDFS, A*, IDA*) et des benchmarks de métaheuristiques.
 - **Part2-CSP/** : 9 notebooks (CSP-1 à CSP-9), couverture CSPs du fondamental aux techniques avancées (AC-3, forward checking, MAC, recherche locale).
 - **Recherche linéaire dans la racine** : `find MyIA.AI.Notebooks/Search/ -maxdepth 1 -name "*.ipynb" -not -path "*/archive/*"` ne renvoie plus que les sous-répertoires `Part1-Foundations/`, `Part2-CSP/`, `Part4-Metaheuristics/`, `search_lean/`, `archive/` (C204-PR #5187) et (C205-PR #5193) ont déjà migré les autres familles.
 
