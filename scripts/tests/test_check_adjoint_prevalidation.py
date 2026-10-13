@@ -3098,6 +3098,51 @@ def test_queue_comment_after_dossier_is_stale():
     snapshot["comments"].append(_comment("late concern"))
     entry = _classified(snapshot)
     assert entry.verdict == mod.QUEUE_VERDICT_STALE
+    # Le commentaire humain tardif fait echouer le GATE : la queue relaye le
+    # refus, elle n'a plus de compte brut propre a contredire (c2151).
+    assert "discussion changed after dossier" in entry.reject_cause
+
+
+def test_queue_bot_advisory_after_dossier_is_ready():
+    """#16480-c2151 (controle positif, queue) : la pose consultative d'un bot
+    apres le dossier ne rend PAS la file STALE. Le gate neutralise deja ces
+    poses (#17818 marker-guards, #18637 sticky/resumes) ; la queue comptait
+    le tail en brut et reintroduisait exactement ce que ces correctifs avaient
+    retire. Mesure fondatrice : #20094 et #20372 STALE sur la seule pose
+    PATH-COLLISION de ``github-actions[bot]`` (11/10, 6 PR sur 102 a 18:21Z).
+    """
+    bot_forms = (
+        "<!-- PR-PATH-COLLISION:START -->\n## Path-collision (organ #1)\npaire: X / Y",
+        _STICKY_STALE,
+    )
+    for body in bot_forms:
+        snapshot = _reviewed_snapshot()
+        snapshot["comments"].append(_comment(body, login="github-actions[bot]"))
+        entry = _classified(snapshot)
+        assert entry.verdict == mod.VERDICT_READY, body
+        # Le compte brut survit en information : la ligne reste a relire.
+        assert entry.tail_to_read == 1, body
+
+
+def test_queue_coordinator_late_comment_after_dossier_is_ready():
+    """Voix du coordinateur apres le dossier : neutre pour le gate
+    (``_is_own_later_act``, horodatee apres le dossier), neutre pour la
+    queue -- meme predicat partage (_foreign_tail_rows).
+    """
+    snapshot = _reviewed_snapshot()
+    snapshot["comments"][-1] = {
+        "author": {"login": "jsboige"},
+        "body": snapshot["comments"][-1]["body"],
+        "createdAt": "2026-10-08T18:00:00Z",
+    }
+    snapshot["comments"].append({
+        "author": {"login": "myia-ai-01"},
+        "body": "reserve levee par ecrit sur la tete exacte",
+        "createdAt": "2026-10-08T19:00:00Z",
+    })
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.tail_to_read == 1
 
 
 def test_queue_dossier_older_than_stale_after_is_stale():

@@ -6204,9 +6204,19 @@ def belt_probe_budget(belt_check_window: int) -> int:
     return belt_check_window * 3 + 12
 
 
+def recent_marker_probe_inert(number):
+    """Defaut inerte du filtre recent du tapis (doctrine #19913, #19768).
+
+    Rend ``None`` = « lecture en echec » : la boucle enchaine sur la sonde
+    pleine sans ecarter le candidat -- fail-OPEN, comme partout.
+    """
+    return None
+
+
 def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 delivered_probe=None, claims_probe=None,
-                                merged_pr_probe=None):
+                                merged_pr_probe=None,
+                                recent_marker_probe=None):
     """La boucle de service du tapis : claims, livraison, remplacement.
 
     Extraite de ``main`` (#19390) pour etre testable sans harnais complet :
@@ -6223,7 +6233,10 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     lecture (#19969). Epuisement = fail-OPEN (``DELIVERED_SIGNAL_UNPROBED``),
     rapporte dans l'etat de retour. ``delivered_probe`` et ``merged_pr_probe``
     (tests) remplacent les sondes reseau ; ``claims_probe`` (tests) remplace
-    la verification au fil de l'eau des items hors fenetre.
+    la verification au fil de l'eau des items hors fenetre ;
+    ``recent_marker_probe`` (tests) remplace le filtre bon marche du dernier
+    commentaire (#19768) -- HORS budget de sonde, il ecarte les clotures
+    marquees sans consommer une unite : l'epuisement ne peut plus les servir.
 
     Defauts INERTES (doctrine ``delivered_probe_inert`` / #19913) : un test
     qui appelle cette boucle sans injecter ses sondes n'emet AUCUNE requete
@@ -6247,6 +6260,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # cout ne serait testable qu'avec le reseau reel.
     user_probe = delivered_probe or delivered_probe_inert
     user_merged_pr_probe = merged_pr_probe or merged_pr_probe_inert
+    user_recent_marker_probe = (recent_marker_probe
+                                or recent_marker_probe_inert)
 
     def counted_probe(number, lane_name):
         if budget[0] <= 0:
@@ -6304,6 +6319,23 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         # umbrella n'est jamais ecartee sur un marqueur (decision
         # mesuree du canal label).
         if it.get("klass") == "grain" and not args.include_delivered:
+            # #19768 (perimetre restant, NOT-DELIVERED du 12/10) : filtre
+            # RECENT du tapis -- le meme que l'urne grain (draw_unclaimed),
+            # absent de cette boucle au merge de #19770. Mesure po-2023 du
+            # 10-09 : les 5 candidats servis non prenables du tapis
+            # portaient TOUS un marqueur identifiable ; le budget de sonde
+            # pleine eteint, chaque candidat au-dela etait servi SANS
+            # lecture (fail-OPEN). Le filtre recent coute 1 requete HORS
+            # budget et ecarte la cloture marquee AVANT la sonde pleine ;
+            # lecture en echec (None) = fail-OPEN, la sonde pleine suit.
+            recent = user_recent_marker_probe(n)
+            if recent is True:
+                state["recent_filtered"] += 1
+                belt_withheld.append(
+                    (it, "LIVRAISON (recent) : marqueur de cloture sur le "
+                     "dernier commentaire ([DELIVERED] / [RELEASED] / "
+                     "[FROZEN]). Candidat remplace hors budget de sonde."))
+                continue
             reason = delivered_signal_reason(
                 it, args.lane, counted_probe, state["failures"],
                 counted_merged_pr_probe)
@@ -7073,7 +7105,9 @@ def main(argv: list[str] | None = None) -> int:
             belt_pick_with_replacements(belt_pool, belt_claims, args,
                                         belt_probe_budget(belt_check_window),
                                         delivered_probe=has_delivered_signal,
-                                        merged_pr_probe=merged_pr_signal))
+                                        merged_pr_probe=merged_pr_signal,
+                                        recent_marker_probe=(
+                                            has_recent_delivery_marker)))
         belt_delivered_failures = belt_pick_state["failures"]
         belt_probe_budget_hit = [belt_pick_state["budget_hit"]]
         # Geste 5 #18203 : consigner le tirage du tapis -- candidats servis
@@ -7097,8 +7131,23 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"   BLOQUE par une autre lane (skip + replacement) : {held}")
             # Volet livraison (#19390) : ligne propre, distincte du BLOQUE --
             # le motif n'est pas une collision mais un travail deja rendu.
+            # #19768 : le filtre recent a sa ligne a lui, HORS budget -- ne
+            # pas le fondre dans « Signal de livraison », la distinction est
+            # la mesure (un candidat ecarte hors budget n'a pas consomme de
+            # sonde ; un candidat ecarte par la sonde en a consomme une).
+            recent_held = [(it, c) for it, c in belt_withheld
+                           if c.startswith("LIVRAISON (recent)")]
+            if recent_held:
+                numbers = ", ".join(f"#{it['number']}"
+                                    for it, _ in recent_held[:5])
+                print(f"   Filtre recent (#19768) : {len(recent_held)} "
+                      f"candidat(s) ECARTE(S) HORS BUDGET : {numbers}.")
+                print("   Marqueur de cloture sur le DERNIER commentaire "
+                      "([DELIVERED] / [RELEASED] / [FROZEN]) -- ecarte sans "
+                      "consommer de sonde de livraison.")
             delivered_held = [(it, c) for it, c in belt_withheld
-                              if c.startswith("LIVRAISON")]
+                              if c.startswith("LIVRAISON")
+                              and not c.startswith("LIVRAISON (recent)")]
             if delivered_held:
                 numbers = ", ".join(f"#{it['number']}"
                                     for it, _ in delivered_held[:5])
@@ -7178,6 +7227,15 @@ def main(argv: list[str] | None = None) -> int:
                 "delivered_signal": {
                     "withheld": [it["number"] for it, c in belt_withheld
                                  if c.startswith("LIVRAISON")],
+                    # #19768 : les exclusions du filtre recent sont HORS
+                    # budget -- les nommer separement, sinon la distinction
+                    # « ecarte sans consommer de sonde » disparait du JSON.
+                    # ``withheld`` reste le SURSET (toutes causes LIVRAISON)
+                    # pour les consommateurs existants.
+                    "recent_withheld": [it["number"] for it, c in belt_withheld
+                                        if c.startswith("LIVRAISON (recent)")],
+                    "recent_filtered": belt_pick_state.get(
+                        "recent_filtered", 0),
                     "unread": sorted(set(belt_delivered_failures)),
                     "budget_hit": belt_probe_budget_hit[0],
                 },
