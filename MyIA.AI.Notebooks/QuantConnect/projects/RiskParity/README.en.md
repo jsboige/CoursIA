@@ -11,6 +11,21 @@
 | Max Drawdown | 20.9% |
 | Period | 2015-2026 |
 
+## Refused buy, re-sent at the next session
+
+The figures in this section come from the QC Cloud backtest of `main.py`; the Performance table above is a separate computation.
+
+At daily resolution every order goes out as `MarketOnClose`: submitted at 10:00 New York time, filled at the close. Lean checks the buying power of a buy before any sell of the same rebalance has filled, and charges it the margin of the buys already accepted that day. On 2015-02-02 the portfolio leaves a 100% BND position: the SPY and GLD buys go through, the TLT buy is refused (status `Invalid`) for a margin shortfall of 110 dollars, and it was never re-sent. The TLT line stayed empty until the March rebalance.
+
+`main.py` now re-sends a refused buy at the next session: `on_order_event` records the refusal, a daily event calls `set_holdings` towards the last rebalance target, and each re-send writes a `RETRY` log line. Before/after measurement, under a protocol posted before the runs (#20523):
+
+| Window | Refused buys | Re-sent and filled | Sharpe | Compounded annual return | Max drawdown |
+|---|---|---|---|---|---|
+| 2015-01-01 -> 2024-12-31 (coded) | 1 before, 1 after | 0 before, 1 after (TLT, 2015-02-03) | 0.373 -> 0.360 | 7.45% -> 7.29% | 18.4% -> 18.4% |
+| 2025-01-01 -> 2026-07-10 (out of sample) | none | — | 0.643, unchanged | 15.08%, unchanged | 10.9%, unchanged |
+
+Out of sample, with no refusal, the fix changes no order. On the coded window the gap comes from February 2015 alone and carries no sign worth keeping. What the fix brings is a backtest that measures the strategy as described.
+
 ## Why This Strategy Hit a Ceiling
 
 ### Root Cause: Anti-Pattern in Bull Markets
