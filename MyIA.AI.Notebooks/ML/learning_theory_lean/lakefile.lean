@@ -99,3 +99,12 @@ lean_lib «Renaming» where
   /- Module plat, meme forme que MathUniverse : pas d'arborescence
   `Renaming/`. -/
   globs := #[`Renaming, `Renaming_en]
+
+/-- Module `MutualGen` — digestion #16741/arc B (issue #16753, tranche 4) :
+génération mutuelle générale de l'Annexe A de R16 — termes sur signature
+quelconque (le tuple d'arité quelconque, multi-générateurs) et le théorème
+« se générer l'un l'autre ⇒ mêmes fonctions engendrées » (`mutual_gen_iff`).
+Frère de `MathUniverse` dans le lake. -/
+@[default_target]
+lean_lib «MutualGen» where
+  globs := #[`MutualGen, `MutualGen_en]
