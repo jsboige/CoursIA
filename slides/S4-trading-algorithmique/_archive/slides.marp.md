@@ -1857,7 +1857,7 @@ Documentation officielle QuantConnect
 
 # Pour aller plus loin : Notebooks
 
-**Notebooks QuantConnect (~27 notebooks disponibles)**
+**Notebooks QuantConnect disponibles**
 - Strategies de base: `QuantConnect/BasicTemplateAlgorithm.ipynb`
 - Moyennes mobiles: `QuantConnect/MovingAverageCrossover.ipynb`
 - RSI Strategy: `QuantConnect/RSIStrategy.ipynb`
@@ -1880,5 +1880,5 @@ Documentation officielle QuantConnect
 Jean-Sylvain Boige
 jsboige@myia.org
 
-> **Notebooks associes:** `QuantConnect/` (~27 notebooks)
+> **Notebooks associes:** `QuantConnect/`
 > Strategies de trading, backtesting, optimisation, machine learning

@@ -504,7 +504,7 @@ class TestUnreadableNotebookSkipped:
         files_with_findings, and is not silently dropped).
         """
         # v4 notebook valide dont on retire la cle `metadata` (== cas reel
-        # Sudoku-15-Infer-Csharp.ipynb : `ValidationError` a la lecture).
+        # Sudoku-15-Infer-CSharp.ipynb : `ValidationError` a la lecture).
         nb_bytes = nbformat.writes(nbformat.v4.new_notebook())
         bad = tmp_path / "bad.ipynb"
         no_meta = nbformat.reads(nb_bytes, as_version=4)

@@ -304,7 +304,7 @@ STUDENT_PACING_RE = re.compile(
     # humain entre parentheses -- « 45 min (lecture + execution sequentielle) ».
     # C'est le meme signal que le pacing ci-dessus (effort demande a l'etudiant,
     # arbitrage jsboige 14:05:37Z #9434), mais la duree PRECEDE la parenthese au
-    # lieu de s'y trouver (ex ICT-19-EnjeuBattery cell[0], ICT-19b cell[0]).
+    # lieu de s'y trouver (ex ICT-19-EnjeuBattery-Python cell[0], ICT-19b cell[0]).
     # NB : on cible le qualificatif d'effort (lecture/cours/tp) precisement -- la
     # forme « moins de N » / « plus de N » est un signal de borne runtime OU de
     # probabilite de domaine (P(trajet < 18 min)), PAS de pacing, et ne doit PAS

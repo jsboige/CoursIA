@@ -130,7 +130,7 @@ Stratégies ML/AI implémentées avec `sklearn` (compatible QC Cloud). Basées s
 - [Stoploss-Volatility-ML](Stoploss-Volatility-ML/) : Lasso stop-loss optimization. BROKEN (CBOE data unavailable).
 - [TradingCosts-Optimization](TradingCosts-Optimization/) : DecisionTree crypto cost optimization. Quasi flat.
 - [ML-HeadShoulders-CNN](ML-HeadShoulders-CNN/) : CNN Head & Shoulders detection USDCAD. Échec de généralisation synthétique → réel.
-- [ML-FinBERT-Sentiment](ML-FinBERT-Sentiment/) : FinBERT sentiment. TF unavailable on QC Cloud, 0 trades.
+- [ML-FinBERT-Sentiment](ML-FinBERT-Sentiment/) : FinBERT sentiment (portage Ex19 du livre). Inférence in-algo sur QC Cloud (PyTorch) ; l'historique « 0 trade » venait de `add_data(TiingoNews, ticker en chaîne)` — un Symbol mappé est requis.
 
 ### Consolidated (code merged)
 
@@ -190,6 +190,7 @@ Projets présents sur le disque sans entrée dans les sections thématiques ci-d
 - [RL-Options-Hedging](RL-Options-Hedging/) : RL couverture d'options (Ch07-01) — vérifié tranche 12 (backtests QC Cloud MCP)
 - [Research-Executor](Research-Executor/) : harness d'exécution de recherche (main.py + runner.ipynb + MockQB) — pas une stratégie
 - [Sparse-Index-Tracking-QC](Sparse-Index-Tracking-QC/) : réplication creuse d'indice (fiche squelette)
+- [ShortTermReversalFutures-QC](ShortTermReversalFutures-QC/) : vérification de l'article « Short Term Reversal With Futures » (qc-research 15366, draft) — 2 bras QC Cloud sous frais IBKR : longue 2016-2026 Sharpe **−0.474** (net −31.7 %, MaxDD 44.9 %), alignée 2018-2025 Sharpe **−0.345** (net −9.9 %) → **NO BEATS** contre le cash, aucun chiffre article à battre (liens morts) (See #18466)
 - [TFT-Crypto-Ranking](TFT-Crypto-Ranking/) : recherche DL TFT ranking crypto — pas de main.py (research)
 - [Vol-Ensemble-Conservative](Vol-Ensemble-Conservative/) : ensemble volatilité conservateur — Needs-improvement (Sharpe 0.265)
 - [Vol-GARCH-Target](Vol-GARCH-Target/) : vol targeting GARCH — Needs-improvement (Sharpe 0.325)

@@ -16,7 +16,7 @@
 
 ## Etat par sous-serie
 
-### 00-Foundations (3 notebooks, ~2h10)
+### 00-Foundations (~2h10)
 
 | Notebook | Cells | Exec | Errors | Derniere modif |
 |----------|-------|------|--------|----------------|
@@ -27,7 +27,7 @@
 **Deps**: pycryptodome (SC-0), Foundry forge/anvil (SC-1), web3.py + py-solc-x (SC-2)
 **Re-exec Papermill**: Necessite Foundry + web3.py installés. SC-0 re-executable avec pycryptodome seul.
 
-### 01-Solidity-Foundation (4 notebooks, ~2h30)
+### 01-Solidity-Foundation (~2h30)
 
 | Notebook | Cells | Exec | Errors | Derniere modif |
 |----------|-------|------|--------|----------------|
@@ -39,7 +39,7 @@
 **Deps**: web3.py, py-solc-x, Foundry (anvil pour deploiement local)
 **Note**: Modifies le 2026-05-26 (probablement par ai-01 ce jour)
 
-### 02-Solidity-Advanced (5 notebooks, ~4h30)
+### 02-Solidity-Advanced (~4h30)
 
 | Notebook | Cells | Exec | Errors | Derniere modif |
 |----------|-------|------|--------|----------------|
@@ -51,7 +51,7 @@
 
 **Deps**: web3.py, py-solc-x, Foundry, OpenAI API (SC-11, mock fallback disponible)
 
-### 03-Foundry-Testing (3 notebooks, ~2h15)
+### 03-Foundry-Testing (~2h15)
 
 | Notebook | Cells | Exec | Errors | Derniere modif |
 |----------|-------|------|--------|----------------|
@@ -61,7 +61,7 @@
 
 **Deps**: Foundry (forge), Certora (SC-14, optionnel)
 
-### 04-Privacy-Cryptography (3 notebooks, ~3h)
+### 04-Privacy-Cryptography (~3h)
 
 | Notebook | Cells | Exec | Errors | Derniere modif |
 |----------|-------|------|--------|----------------|
@@ -71,7 +71,7 @@
 
 **Deps**: pycryptodome, py_ecc, phe, tenseal, mpyc
 
-### 05-Alternative-Chains (5 notebooks, ~4h)
+### 05-Alternative-Chains (~4h)
 
 | Notebook | Cells | Exec | Errors | Derniere modif |
 |----------|-------|------|--------|----------------|
@@ -84,7 +84,7 @@
 **Deps**: vyper, xrpl-py, python-bitcoinlib
 **Note**: Plus anciens (16-17 mai) — re-exécution recommandée si possible
 
-### 06-Real-World (4 notebooks, ~3h45)
+### 06-Real-World (~3h45)
 
 | Notebook | Cells | Exec | Errors | Derniere modif |
 |----------|-------|------|--------|----------------|

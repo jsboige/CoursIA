@@ -38,6 +38,7 @@ L'IA générative a transformé la création de contenu en 2024-2026. Un dévelo
 | 11 | Plateformes-Conversationnelles - OWUI & AI-Engine | [README catégorie](Plateformes-Conversationnelles/README.md) | ~14h+ | Tour OWUI + Playwright E2E (30+ tests) + AI-Engine WordPress |
 | 12 | CaseStudies - Projets étudiants | [README complet](CaseStudies/README.md) | (durée libre) | Barbie/Shrek, recettes, chatbot médical, Fort Boyard |
 | 13 | Security - Oversight, contrôle et surface d'attaque des outils | [README complet](Security/README.md) | (durée libre) | Scaling laws d'oversight, interprétabilité du refus, attaques/défenses MCP |
+| 14 | 3D - Neural rendering : NeRF et ses limites | [README complet](3D/README.md) | ~3h | NeRF from scratch + cinq limitations mesurées (Pli 2 Epic #18605) |
 
 ## Activités de cours
 
@@ -418,7 +419,7 @@ Trois sous-dossiers complètent la série sans être des notebooks :
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 247
-breakdown: Audio=38, Texte=34, Plateformes-Conversationnelles=28, Video=22, Image=21, PostTraining=20, SemanticKernel=20, Integrations-DotNet=15, FineTuning=10, RAG-et-Memoire-Semantique=10, Vibe-Coding=8, 00-GenAI-Environment=6, CaseStudies=5, FallacyDetection=5, Security=5
-maturity: BETA=208, ALPHA=21, DRAFT=15, TEMPLATE=3
+pedagogical_count: 269
+breakdown: Texte=42, Audio=38, Plateformes-Conversationnelles=28, Image=23, SemanticKernel=23, Video=22, PostTraining=21, Integrations-DotNet=15, FineTuning=14, RAG-et-Memoire-Semantique=10, Vibe-Coding=8, 00-GenAI-Environment=7, Security=6, CaseStudies=5, FallacyDetection=5, 3D=2
+maturity: BETA=224, ALPHA=23, DRAFT=19, TEMPLATE=3
 -->

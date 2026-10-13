@@ -46,6 +46,44 @@ La stratégie **bat le benchmark SPY** en rendement absolu (CAGR 16.91 % vs ~12-
 
 **Conclusion honnête** : ne PAS présenter cette stratégie comme génératrice d'alpha statistiquement significatif. C'est un **beta de momentum géré** avec un **drawdown élevé** — l'exemple pédagogique de la limite du momentum dual « rotation pure » sans overlay de protection. Le companion naturel est la DualMomentum (avec TLT) — un contre-exemple documenté (TLT a saboté 2020-2023) — cf. [DualMomentum/README](../DualMomentum/README.md). Les deux illustrent le **même compromis** : un diversifiant qui aide dans un régime nuit dans l'autre.
 
+## Variante standalone (`main.py`) : rééquilibrage déplacé hors de la tranche de minuit (#20264)
+
+En données journalières, Lean livre les avis de dividende dans une tranche datée de minuit, qui ne porte aucune barre de cotation. IEF verse un dividende chaque mois, et son avis tombe souvent le premier jour de cotation. La garde de mois de `main.py` était alors consommée sur cette tranche : le rééquilibrage décidait sur les cours de la veille, et ses ordres partaient à minuit pour être exécutés à l'ouverture. Sur la fenêtre codée, 109 rééquilibrages sur 120 tombaient à minuit.
+
+Correctif dans `main.py` : le mois n'est consommé que sur une tranche qui porte une barre d'un titre de l'univers. Mesure sur les nœuds QC, frais de courtage inclus, protocole fixé avant les backtests ([#20264, c.6115262186](https://github.com/jsboige/CoursIA/issues/20264#issuecomment-6115262186)) :
+
+| Fenêtre | Variante | Ordres de minuit | Sharpe | CAGR | Drawdown max | Ordres | Backtest |
+|---|---|---|---|---|---|---|---|
+| 2015-01-01 → 2024-12-31 (codée) | avant | 210 (101 jours) | 0.339 | 8.08 % | 23.6 % | 233 | `a09a48809bcb4dc878e84f511dc00d65` |
+| | après | 0 | 0.441 | 9.96 % | 21.4 % | 234 | `b2ff070974e440f64029c69473bb7af7` |
+| 2025-01-01 → 2026-07-10 (hors échantillon) | avant | 38 (17 jours) | 1.094 | 28.02 % | 14.1 % | 42 | `a5a68f401f9cca13dda2a39dfd02d416` |
+| | après | 0 | 1.203 | 30.23 % | 14.0 % | 42 | `bbf5126ce1eac446800cedc56c04f546` |
+
+Sharpe calculé par QC, taux sans risque inclus. Hors échantillon, la règle fixée d'avance donne **pas de dégradation**.
+
+### Demi-séances : les deux mois manquants (#20286)
+
+Le correctif ci-dessus fait décider le rééquilibrage sur la première barre du mois. En juillet 2017 et en juillet 2023, cette barre est celle du lundi 3 juillet, une demi-séance qui ferme à 13:00. Sur cette tranche, une demande d'historique journalier par nombre de barres rend environ 21 barres de moins que demandé. La garde de longueur écartait alors les cinq titres, et ces deux mois passaient sans rééquilibrage.
+
+`main.py` demande désormais deux fois plus de barres et garde les plus récentes. Sur une séance pleine, ce sont les mêmes barres qu'avant. Mesure sur les nœuds QC, protocole et prédictions fixés avant les backtests ([#20286, c.6131650205](https://github.com/jsboige/CoursIA/issues/20286#issuecomment-6131650205)). La ligne « avant » est la ligne « après » du tableau précédent :
+
+| Fenêtre | Variante | Mois rééquilibrés | Sharpe | CAGR | Drawdown max | Ordres | Backtest |
+|---|---|---|---|---|---|---|---|
+| 2015-01-01 → 2024-12-31 (codée) | avant | 118 / 120 | 0.441 | 9.96 % | 21.4 % | 234 | `b2ff070974e440f64029c69473bb7af7` |
+| | après | 120 / 120 | 0.446 | 10.05 % | 21.4 % | 239 | `a32a1a24f317c96e5d0fe2bbb00ca583` |
+| 2025-01-01 → 2026-07-10 (hors échantillon) | avant | 19 / 19 | 1.203 | 30.23 % | 14.0 % | 42 | `bbf5126ce1eac446800cedc56c04f546` |
+| | après | 19 / 19 | 1.203 | 30.23 % | 14.0 % | 42 | `91eae7e7741ff46af96b5cd83dbccc5a` |
+
+Les quatre prédictions tiennent :
+
+- les deux lundis de juillet ont désormais leur ligne `REBAL`, et ce sont les seules dates ajoutées ;
+- jusqu'au 30 juin 2017, les ordres sont identiques à ceux d'avant ;
+- hors échantillon, aucune première barre de mois n'est une demi-séance, et le résultat est identique au centime (mêmes ordres, mêmes statistiques).
+
+Le 3 juillet 2017, la sélection ne change pas (QQQ et SPY) : le rééquilibrage ne fait qu'ajuster les quantités. Le 3 juillet 2023, il vend l'or et passe sur QQQ et SPY un mois plus tôt que la variante avant. L'écart de Sharpe (+0,005) reste sous le seuil de 0,05 fixé d'avance.
+
+Ces chiffres portent sur la variante standalone, pas sur la variante Framework mesurée plus haut. Ils ne sont pas un verdict de stratégie : il s'agit de la correction de deux défauts, mesurée sur des fenêtres déjà vues. La variante Framework (`alpha_model.py`) porte la même garde de mois et le même appel d'historique. Elle n'est ni corrigée ni mesurée ici.
+
 ## Comment exécuter
 
 **Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/DualMomentumNoTLT"`

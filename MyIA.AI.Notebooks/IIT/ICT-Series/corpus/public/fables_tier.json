@@ -1,0 +1,74 @@
+{
+  "schema": "coursia_corpus_manifest_v1",
+  "tier": "public_clear",
+  "description": "Tier public en clair du corpus strate 6 : oeuvres du domaine public (La Fontaine), texte versionne. Ids opaques fable_* ; transcription modernisee (s long -> s, accents modernes) de l'edition Barbin 1678 relue sur Wikisource, texte valide.",
+  "sources": [
+    {
+      "source_name": "fable_loup_et_l_agneau",
+      "source_type": "fable",
+      "schema": "extract_definition_v1",
+      "tier": "public_clear",
+      "deposit_form": "clear_text",
+      "public_domain": true,
+      "host_parts": ["corpus", "fables_tier", "fable_001"],
+      "path": "corpus/public/fables_tier.json",
+      "bibliographie": {
+        "auteur": "Jean de La Fontaine",
+        "oeuvre": "Fables",
+        "livre": "I",
+        "fable": 10,
+        "titre": "Le Loup et l'Agneau",
+        "annee_publication": 1668,
+        "edition_source": "Fables choisies, mises en vers, Denys Thierry et Claude Barbin, 1678 (Wikisource, texte valide)",
+        "transcription": "modernisee (s long -> s, accents modernes)"
+      },
+      "codage_notebook": {
+        "notebook": "ICT-Argumentation-BeliefTrajectories.ipynb",
+        "section": "8bis",
+        "af_enonces": 7,
+        "role": "specimen englobement (tier fables)"
+      },
+      "extracts": [
+        {
+          "extract_id": "fable_001_ext_0",
+          "host_parts": ["corpus", "fables_tier", "fable_001_ext_0"],
+          "langue": "fr",
+          "text": "La raison du plus fort est toujours la meilleure :\nNous l'allons montrer tout à l'heure.\nUn Agneau se désaltérait\nDans le courant d'une onde pure.\nUn Loup survient à jeun qui cherchait aventure,\nEt que la faim en ces lieux attirait.\nQui te rend si hardi de troubler mon breuvage ?\nDit cet animal plein de rage :\nTu seras châtié de ta témérité.\nSire, répond l'Agneau, que votre Majesté\nNe se mette pas en colère ;\nMais plutôt qu'elle considère\nQue je me vas désaltérant\nDans le courant,\nPlus de vingt pas au-dessous d'elle ;\nEt que par conséquent en aucune façon\nJe ne puis troubler sa boisson.\nTu la troubles, reprit cette bête cruelle,\nEt je sais que de moi tu médis l'an passé.\nComment l'aurais-je fait si je n'étais pas né ?\nReprit l'Agneau, je tète encore ma mère.\nSi ce n'est toi, c'est donc ton frère :\nJe n'en ai point. C'est donc quelqu'un des tiens :\nCar vous ne m'épargnez guère,\nVous, vos bergers, et vos chiens.\nOn me l'a dit : il faut que je me vange.\nLà-dessus, au fond des forêts\nLe Loup l'emporte, et puis le mange,\nSans autre forme de procès."
+        }
+      ]
+    },
+    {
+      "source_name": "fable_loup_et_le_chien",
+      "source_type": "fable",
+      "schema": "extract_definition_v1",
+      "tier": "public_clear",
+      "deposit_form": "clear_text",
+      "public_domain": true,
+      "host_parts": ["corpus", "fables_tier", "fable_002"],
+      "path": "corpus/public/fables_tier.json",
+      "bibliographie": {
+        "auteur": "Jean de La Fontaine",
+        "oeuvre": "Fables",
+        "livre": "I",
+        "fable": 5,
+        "titre": "Le Loup et le Chien",
+        "annee_publication": 1668,
+        "edition_source": "Fables choisies, mises en vers, Denys Thierry et Claude Barbin, 1678 (Wikisource, texte valide)",
+        "transcription": "modernisee (s long -> s, accents modernes ; haires -> heres selon note Wikisource)"
+      },
+      "codage_notebook": {
+        "notebook": "ICT-Argumentation-BeliefTrajectories.ipynb",
+        "section": "8ter",
+        "role": "contre-cas : l'englobement déjoué (tier fables)"
+      },
+      "extracts": [
+        {
+          "extract_id": "fable_002_ext_0",
+          "host_parts": ["corpus", "fables_tier", "fable_002_ext_0"],
+          "langue": "fr",
+          "text": "Un Loup n'avait que les os et la peau,\nTant les Chiens faisaient bonne garde.\nCe Loup rencontre un Dogue aussi puissant que beau,\nGras, poli, qui s'était fourvoyé par mégarde.\nL'attaquer, le mettre en quartiers,\nSire Loup l'eût fait volontiers.\nMais il fallait livrer bataille ;\nEt le Mâtin était de taille\nÀ se défendre hardiment.\nLe Loup donc l'aborde humblement,\nEntre en propos, et lui fait compliment\nSur son embonpoint qu'il admire :\nIl ne tiendra qu'à vous, beau Sire,\nD'être aussi gras que moi, lui repartit le Chien.\nQuittez les bois, vous ferez bien :\nVos pareils y sont misérables,\nCancres, hères, et pauvres diables,\nDont la condition est de mourir de faim.\nCar quoi ? Rien d'assuré ; point de franche lipée ;\nTout à la pointe de l'épée.\nSuivez-moi ; vous aurez bien un meilleur destin.\nLe Loup reprit : Que me faudra-t-il faire ?\nPresque rien, dit le Chien, donner la chasse aux gens\nPortant bâtons, et mendiant ;\nFlâter ceux du logis ; à son Maître complaire ;\nMoyennant quoi votre salaire\nSera force reliefs de toutes les façons ;\nOs de poulets, os de pigeons :\nSans parler de mainte caresse.\nLe Loup déjà se forge une félicité\nQui le fait pleurer de tendresse.\nChemin faisant il vit le col du Chien pelé.\nQu'est-ce là, lui dit-il ? Rien. Quoi rien ? Peu de chose.\nMais encor ? Le collier dont je suis attaché\nDe ce que vous voyez est peut-être la cause.\nAttaché ? dit le Loup, vous ne courez donc pas\nOù vous voulez ? Pas toujours ; mais qu'importe ?\nIl importe si bien, que de tous vos repas\nJe ne veux en aucune sorte ;\nEt ne voudrais pas même à ce prix un trésor.\nCela dit, Maître Loup s'enfuit, et court encor."
+        }
+      ]
+    }
+  ]
+}

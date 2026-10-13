@@ -24,7 +24,7 @@
 | P9 | Legibility | Rapports [DONE], lignée de grains, harnais 3 tiers | RENFORCE |
 | P10 | Human Oversight | Registre user-question, gouvernance l.87, autonomie graduée | RENFORCE |
 
----
+***
 
 ## P1 — Least Privilege → harnais serré et verrous de lane
 
@@ -148,14 +148,14 @@ C'est exactement notre problème quotidien : un worker renaît toutes les 30 min
 **Définition** : décisions humaines structurées à des points d'intervention définis, calibrées au risque/réversibilité ; **autonomie gagnée**, pas accordée par défaut.
 
 **Mesuré** :
-- **Registre user-question** (#3656) : l'utilisateur arbitre **par pull** — chaque entrée porte « ce qui est attendu du user » et « comment vérifier qu'elle est morte » ; une question répondue sort des ouvertes, sinon elle se représente au cycle suivant. Exemple vivant : arbitrage de seuil densité en attente (#16673, [ASK Emerjesse]).
+- **Registre user-question** (#3656) : l'utilisateur arbitre **par pull** — chaque entrée porte « ce qui est attendu du user » et « comment vérifier qu'elle est morte » ; une question répondue sort des ouvertes, sinon elle se représente au cycle suivant. Exemple vivant : arbitrage de seuil densité en attente (#16673, [ASK Jean-Sylvain]).
 - **Gouvernance l.87** : toute règle du harnais ajoutant une obligation HARD exige PR + sign-off utilisateur avant merge — le harnais ne s'auto-durcit pas.
 - **Autonomie graduée vécue** : workers (exécutent) < coordinateur (merge via compte dédié, jamais le sien) < utilisateur (force-push, secrets, arbitrage). L'équivalent des quatre déclencheurs IMDA se lit dans nos règles : actions à enjeu (merge), irréversibles (force-push interdit sur `main`), comportement aberrant (G.9 culture du doute avant verdict/close), limites définies par l'utilisateur (HARD stops, ex. Lean interdit sur po-2023).
 - **Résistance à la fatigue d'approbation** : le companion cite (DeepMind Agent Traps) l'approval-fatigue comme vecteur d'attaque de l'humain — notre registre par pull est précisément la réponse structurelle : zéro interruption, restitution groupée, questions mortes retirées.
 
 **Écart** : la charge de review humaine finale reste concentrée sur une personne (l'utilisateur) pour tout ce qui est subjectif — le batch review du registre atténue mais ne supprime pas le goulot. ÉTAT : **RENFORCE**.
 
----
+***
 
 ## Lecture critique inverse
 

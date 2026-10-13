@@ -1,16 +1,16 @@
 # Théorie de la Décision Bayésienne (Infer.NET)
 
-[← Série Probas](../../README.md) | [↑ Arc Théorie de la Décision](../README.md) | [Corpus bayésien Infer (C#) →](../../Infer/README.md) | [Lake Lean `decision_theory_lean` →](../../decision_theory_lean/)
+[← Série Probas](../../README.md) | [↑ Arc Théorie de la Décision](../README.md) | [Corpus bayésien Infer (C#) →](../../Infer/README.md) | [Lake Lean `decision_theory_lean` →](../decision_theory_lean/)
 
 Arc autonome de **théorie de la décision bayésienne** en Infer.NET : les notebooks 1-10 et l'accrétion Lean 2b prolongent la modélisation probabiliste (le corpus bayésien [`../../Infer/`](../../Infer/README.md)) jusqu'au **choix d'action sous incertitude**. Un posterior n'est pas une fin — c'est l'**input** d'une politique optimale. Cette série formalise ce passage, de l'utilité espérée aux processus markoviens, jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
 
 **Prérequis** : le corpus bayésien [`../../Infer/`](../../Infer/README.md) (notamment [Infer-4-Bayesian-Networks](../../Infer/Infer-4-Bayesian-Networks.ipynb), [Infer-7-Skills-IRT](../../Infer/Infer-7-Skills-IRT.ipynb) pour les posteriors Beta). Aucun prérequis en théorie de la décision : les axiomes de Von Neumann-Morgenstern sont introduits ex nihilo.
 
-**Stack** : Infer.NET (.NET 9.0 + dotnet-interactive), EP/VMP par défaut. Les notebooks companions (2, 2b, 9) utilisent le **kernel Lean 4** (WSL) et le lake [`decision_theory_lean`](../../decision_theory_lean/).
+**Stack** : Infer.NET (.NET 9.0 + dotnet-interactive), EP/VMP par défaut. Les notebooks companions (2, 2b, 8b) utilisent le **kernel Lean 4** (WSL) et le lake [`decision_theory_lean`](../decision_theory_lean/).
 
 ## Pourquoi un arc autonome
 
-Jusqu'à la restructuration de la série, la théorie de la décision était imbriquée dans le corpus bayésien Infer, ce qui masquait la **dualité des deux fils** : *modéliser l'incertitude* (inférence bayésienne) vs *décider face à l'incertitude* (théorie de la décision). L'extraction dans [`DecisionTheory/DecInfer/`](./) rend ces deux arcs **physiquement indépendants** tout en préservant le continuum pédagogique (le fil décision s'appuie sur les posteriors du corpus bayésien). Le lake [`decision_theory_lean`](../../decision_theory_lean/), à la **racine de la série Probas**, reste visible des deux pistes (Infer.NET et PyMC).
+Jusqu'à la restructuration de la série, la théorie de la décision était imbriquée dans le corpus bayésien Infer, ce qui masquait la **dualité des deux fils** : *modéliser l'incertitude* (inférence bayésienne) vs *décider face à l'incertitude* (théorie de la décision). L'extraction dans [`DecisionTheory/DecInfer/`](./) rend ces deux arcs **physiquement indépendants** tout en préservant le continuum pédagogique (le fil décision s'appuie sur les posteriors du corpus bayésien). Le lake [`decision_theory_lean`](../decision_theory_lean/), à la **racine de la série Probas**, reste visible des deux pistes (Infer.NET et PyMC).
 
 ## Vue d'ensemble
 
@@ -25,7 +25,7 @@ Jusqu'à la restructuration de la série, la théorie de la décision était imb
 | 6 | [DecInfer-06-Value-Information](DecInfer-06-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
 | 7 | [DecInfer-07-Expert-Systems](DecInfer-07-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
 | 8 | [DecInfer-08-Sequential](DecInfer-08-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique |
-| 9 | [DecInfer-09-Lean-Gittins](DecInfer-09-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
+| 08b | [DecInfer-08b-Lean-Gittins](DecInfer-08b-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
 | 10 | [DecInfer-10-Thompson-Sampling](DecInfer-10-Thompson-Sampling.ipynb) | 60 min | Thompson Sampling bayésien, posterior Beta-Bernoulli par le moteur, regret vs ε-greedy/UCB1 |
 
 **Durée totale** : ~8h
@@ -40,7 +40,7 @@ flowchart TD
     D["<b>Séquentiel</b> (8)<br/>MDPs · Bellman"]
     E["<b>Preuve & bandits</b> (9-10)<br/>Gittins (Lean) · Thompson Sampling"]
     BAY["Corpus bayésien<br/>../Infer/ (posteriors)"]
-    LAKE["Lake decision_theory_lean<br/>(companions 2, 9)"]
+    LAKE["Lake decision_theory_lean<br/>(companions 2, 2b, 8b)"]
     BAY -->|"posterior = input"| A
     A --> B --> C --> D --> E
     E -.->|"formalisation"| LAKE
@@ -63,13 +63,13 @@ Les loteries comme représentation des choix stochastiques ; les **axiomes de Vo
 
 **Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-01, bases Lean 4
 
-**Companion natif** de [DecInfer-01](DecInfer-01-Utility-Foundations.ipynb) : preuve formelle **0-sorry** de la direction *sound* du théorème de représentation vNM (représentation ⟹ rationalité) dans le lake [`decision_theory_lean`](../../decision_theory_lean/) (lib `Utility`). Vérification in-kernel via `#check` + `#print axioms`. Les sections 7-8 d'origine — la **cohérence de de Finetti** (lib `Coherence`, EPIC #11703) : prix incohérents ⟹ Dutch Book à quatre tickets, et la caractérisation mono-livret `SingleCoherent q ↔ ProbBounds q` — ont été extraites vers le companion dédié [DecInfer-02b-Lean-Coherence](DecInfer-02b-Lean-Coherence.ipynb) (G4b, #14873).
+**Companion natif** de [DecInfer-01](DecInfer-01-Utility-Foundations.ipynb) : preuve formelle **0-sorry** de la direction *sound* du théorème de représentation vNM (représentation ⟹ rationalité) dans le lake [`decision_theory_lean`](../decision_theory_lean/) (lib `Utility`). Vérification in-kernel via `#check` + `#print axioms`. Les sections 7-8 d'origine — la **cohérence de de Finetti** (lib `Coherence`, EPIC #11703) : prix incohérents ⟹ Dutch Book à quatre tickets, et la caractérisation mono-livret `SingleCoherent q ↔ ProbBounds q` — ont été extraites vers le companion dédié [DecInfer-02b-Lean-Coherence](DecInfer-02b-Lean-Coherence.ipynb) (G4b, #14873).
 
 ### DecInfer-02b : Companion Lean — cohérence de de Finetti (Dutch Book)
 
 **Durée** : 20 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-02, bases Lean 4
 
-**Companion natif** extrait des sections 7-8 de [DecInfer-02](DecInfer-02-Lean-ExpectedUtility.ipynb) (G4b, #14873) : la **cohérence de de Finetti** (1937) dans la lib `Coherence` du lake [`decision_theory_lean`](../../decision_theory_lean/). Un système de prix arbitrage-incohérent est exploitable par un **Dutch Book** à quatre tickets (`non_additive_implies_dutch_book`, witness constructif) ; dans le cadre mono-livret, la cohérence coïncide exactement avec les **bornes de probabilité** (`single_coherent_iff_prob_bounds`, quatre témoins explicites — un par borne violée). Vérification in-kernel via `#check` + `#print axioms`, 0 sorry.
+**Companion natif** extrait des sections 7-8 de [DecInfer-02](DecInfer-02-Lean-ExpectedUtility.ipynb) (G4b, #14873) : la **cohérence de de Finetti** (1937) dans la lib `Coherence` du lake [`decision_theory_lean`](../decision_theory_lean/). Un système de prix arbitrage-incohérent est exploitable par un **Dutch Book** à quatre tickets (`non_additive_implies_dutch_book`, witness constructif) ; dans le cadre mono-livret, la cohérence coïncide exactement avec les **bornes de probabilité** (`single_coherent_iff_prob_bounds`, quatre témoins explicites — un par borne violée). Vérification in-kernel via `#check` + `#print axioms`, 0 sorry.
 
 ### DecInfer-03 : Utilité de l'argent et aversion au risque
 
@@ -113,11 +113,11 @@ Systèmes experts (architecture, historique) ; décision sous **incertitude sév
 
 **Processus de Décision Markoviens** (MDPs) ; équation de Bellman `V(s) = max_a [R(s,a) + γ·Σ P(s'|s,a)·V(s')]` ; **itération de valeur** et **itération de politique** ; alternatives (LP, Expectimax, RTDP) ; reward shaping ; POMDPs. Pont vers la série [RL](../../../RL/README.md).
 
-### DecInfer-09 : Companion Lean — indice de Gittins
+### DecInfer-08b : Companion Lean — indice de Gittins
 
 **Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-08, bases Lean 4
 
-**Companion natif** de [DecInfer-08](DecInfer-08-Sequential.ipynb) : preuves formelles en Lean 4. Formalisation du cadre **SFABP** (Simple Family of Alternative Bandit Processes), optimalité de l'indice de Gittins via l'argument des prevailing charges, limitations (geometric discount, NP-difficulté du calcul exact). Le théorème d'optimalité est énoncé dans le lake [`decision_theory_lean`](../../decision_theory_lean/) ; sa preuve complète exige une formalisation des MDP qui manque encore à Mathlib.
+**Companion natif** de [DecInfer-08](DecInfer-08-Sequential.ipynb) : preuves formelles en Lean 4. Formalisation du cadre **SFABP** (Simple Family of Alternative Bandit Processes), optimalité de l'indice de Gittins via l'argument des prevailing charges, limitations (geometric discount, NP-difficulté du calcul exact). Le théorème d'optimalité est énoncé dans le lake [`decision_theory_lean`](../decision_theory_lean/) ; sa preuve complète exige une formalisation des MDP qui manque encore à Mathlib.
 
 ### DecInfer-10 : Thompson Sampling bayésien
 
@@ -133,12 +133,12 @@ Applications : A/B testing adaptatif, recommandation en ligne, essais cliniques 
 | --- | --- | --- |
 | [Corpus bayésien Infer](../../Infer/README.md) | Posteriors (Beta, gaussianes) | Le posterior est l'input de la politique de décision |
 | [PyMC](../DecPyMC/README.md) | DecPyMC-1 à DecPyMC-7 | Même arc décision en Python/NUTS (Thompson MCMC, diagnostics ArviZ) |
-| [Lake `decision_theory_lean`](../../decision_theory_lean/) | Companions 2, 2b, 9 | Preuves formelles Lean 4 (vNM, de Finetti, Gittins) |
+| [Lake `decision_theory_lean`](../decision_theory_lean/) | Companions 2, 2b, 8b | Preuves formelles Lean 4 (vNM, de Finetti, Gittins) |
 | [GameTheory](../../../GameTheory/README.md) | Décision sous incertitude | Miroir : adversaire rationnel vs processus stochastique |
 | [RL](../../../RL/README.md) | MDPs (DecInfer-08) | L'agent apprend la politique par interaction |
 
 ## Conclusion
 
-La théorie de la décision bayésienne ferme la boucle ouverte par le corpus bayésien : un posterior n'est utile que s'il informe une **action**. De l'**utilité espérée** (DecInfer-01) aux **MDPs** (DecInfer-08), cet arc montre que décider sous incertitude est un calcul rigoureux — et les companions Lean 4 (DecInfer-02, DecInfer-02b, DecInfer-09) ancrent ce calcul dans la **preuve formelle** : l'indice de Gittins n'est pas une heuristique, c'est un théorème.
+La théorie de la décision bayésienne ferme la boucle ouverte par le corpus bayésien : un posterior n'est utile que s'il informe une **action**. De l'**utilité espérée** (DecInfer-01) aux **MDPs** (DecInfer-08), cet arc montre que décider sous incertitude est un calcul rigoureux — et les companions Lean 4 (DecInfer-02, DecInfer-02b, DecInfer-08b) ancrent ce calcul dans la **preuve formelle** : l'indice de Gittins n'est pas une heuristique, c'est un théorème.
 
 Bonne exploration de la théorie de la décision bayésienne !

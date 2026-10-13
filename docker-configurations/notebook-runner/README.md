@@ -30,6 +30,7 @@ The runner auto-detects the kernel from notebook metadata:
 |-------------|----------|-------|
 | `python3` | Papermill | Standard Python notebooks |
 | `python3` (QuantConnect) | nbconvert `--allow-errors` | Detects `QuantBook` in source |
+| `global-3.13` | Papermill (kernelspec natif) | Python 3.13 (env conda-forge) — notebooks serie Lean (#16262) |
 | `.net-csharp` | nbconvert via .NET Interactive | C# notebooks |
 | `.net-fsharp` | nbconvert via .NET Interactive | F# notebooks |
 | `lean4` / `lean4-wsl` | elan + lake | Lean 4 formal verification |

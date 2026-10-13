@@ -1,0 +1,7 @@
+date: '2026-09-27'
+by: myia-po-2024:CoursIA-2
+python_sha: afc8aff933e88c4202e6c9f9718164556fa6050d
+csharp_sha: c460086f37cb1288e108a65a0d3f7860ec2e7b7f
+content_python_sha: 65f295a4b5132f4936b541af6f2252844bb325952750ab0b3697b59e681a7a36
+content_csharp_sha: 5bfc273cff6d6f0ffe89a2490d67949e4294ab129281e26fe76b0f666105825d
+reason: 'chains=4 rendu explicite sur les appels pm.sample de la serie (#18028) : la valeur effective etait deja 4 (les sorties committee portent la banniere "4 chains in 4 jobs"), donc changement de source seul, sans effet sur les resultats ; jumeau C# non touche.'

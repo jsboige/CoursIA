@@ -19,7 +19,7 @@
       + arg.dung 1.21 + causal 1.30). Pipeline: javac (release 8) produces
       bytecode major 52 from sources-extracted/*; jar cf shades all classes
       into a single JAR; IKVM 8.14 compiles to org.tweetyproject.tweety-causal.dll
-      consumable from Tweety-11-Causal-Csharp.ipynb via #r "libs/<shade>.dll".
+      consumable from Tweety-11-Causal-CSharp.ipynb via #r "libs/<shade>.dll".
 
       See rebuild-causal.sh at MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/
       for the exact build recipe. Output DLL: ~50-80 KB / ~50-80 types.

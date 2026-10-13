@@ -198,6 +198,58 @@ n'est donc pas une corroboration indépendante — c'est le même calcul — mai
 l'instrumentation de biais ajoutée ici est câblée comme celle de la famille, et cela rend les edges
 M5 et M4 directement comparables sur BTC.
 
+## Revalidation cluster 7 actifs appariée par origine (2026-10-04, port #18190)
+
+La grille #14359 n'auditait que BTC/ETH. Le protocole #18190 (initié M17, porté M4 #18650, M15
+#18664, M12 #16009) est ici appliqué à M5 sur l'univers cluster **7 actifs appariés par origine** :
+BTC (Bitstamp local), ETH (Binance local), SOL/LTC/XRP/ADA/DOT (yfinance) — la même liste que
+#18650/#18664, les verdicts se lisent ligne à ligne. Grille 7×3×4 = 84 walk-forwards, checkpoint
+par combo, 622 s CPU.
+
+**Spécificité M5 du port** : les deux jambes (HAR à commutation de régime et HAR classique)
+sortent de la **même boucle** walk-forward, donc le join par date attendu est l'**identité** —
+la garde fail-closed de `joined_pair_errors` n'y corrige rien, elle est la **preuve** que le
+harnais n'a jamais comparé positionnellement. Sur chaque cellule : `dm_n_aligned == n_preds`
+partout, `dm_target_gap_max = 0.0`, **zéro** `TARGET_MISMATCH` (test dédié
+`test_hmm_regime_cluster_origin_pairing.py`, 6 tests).
+
+### Verdicts (mse, refit 22, HMM K=2, 4 seeds — brut / dé-biaisé)
+
+| Actif | h=1 | h=5 | h=10 |
+|---|---|---|---|
+| BTC | INCONCLUSIVE / INCONCLUSIVE | INCONCLUSIVE / NO BEATS | INCONCLUSIVE / NO BEATS (−99,0 % ; brut −28,3 %) |
+| ETH | **BEATS / BEATS (+8,7 %)** | INCONCLUSIVE / NO BEATS | NO BEATS / NO BEATS (−66,2 %) |
+| SOL | INCONCLUSIVE / **BEATS (+5,7 %)** | INCONCLUSIVE / INCONCLUSIVE | NO BEATS / NO BEATS |
+| LTC | **BEATS / BEATS (+11,7 %)** | INCONCLUSIVE / INCONCLUSIVE | NO BEATS / NO BEATS |
+| XRP | **BEATS / BEATS (+11,8 %)** | INCONCLUSIVE / INCONCLUSIVE | NO BEATS / NO BEATS (−100,9 %) |
+| ADA | **BEATS / BEATS (+11,3 %)** | INCONCLUSIVE / INCONCLUSIVE | NO BEATS / NO BEATS |
+| DOT | **BEATS / BEATS (+10,1 %)** | INCONCLUSIVE / INCONCLUSIVE | NO BEATS / NO BEATS |
+
+Lecture en trois lignes :
+
+1. **h=1 : 6/7 BEATS après dé-biais** (ETH, SOL, LTC, XRP, ADA, DOT, gains +5,7 % à +11,8 %).
+   BTC reste INCONCLUSIVE — cohérent avec l'analyse de biais ci-dessus : la HAR BTC porte le
+   biais OOS le plus fort du cluster (−0,227 à h=1, −0,450 à h=10), l'edge brut y était porté
+   par la correction de cette baseline mal calée. SOL bascule INCONCLUSIVE → BEATS sur la jambe
+   de précision : son modèle de régime est *plus* biaisé que sa baseline (+0,115 vs +0,071),
+   et le recentrage rend l'avantage de précision significatif.
+2. **h=5 : uniformément INCONCLUSIVE** (7/7, sauf BTC/ETH dé-biaisés NO BEATS qui amorcent la
+   dégradation longue). Aucun actif ne paie le modèle de régime à cet horizon.
+3. **h=10 : NO BEATS uniforme (7/7), dégradations −42,9 % à −100,9 %** après dé-biais. La
+   conclusion « le modèle de régime est nuisible aux horizons longs » n'était pas un artefact
+   BTC/ETH : elle est **structurelle sur l'univers cluster**.
+
+**Rapport de biais** (biais OOS moyen par cellule, modèle vs baseline) : BTC est le seul actif
+où le régime réduit le biais (−0,181 vs −0,227 à h=1) ; sur les 5 actifs yfinance le modèle de
+régime est systématiquement *plus* biaisé que sa baseline (ex. SOL +0,218 vs +0,163 à h=10) —
+leurs edges h=1 sont donc portés par la **précision**, pas par le biais, ce que la jambe
+recentrée confirme (dm_centered_p < 0,012 sur toutes les cellules BEATS).
+
+**Artefacts** — manifeste compact in-repo `scripts/results/m5_hmm_regime_cluster_aligned.json`
+(verdicts, alignement, SHA-256 par cellule) ; JSON complet et séries par
+observation hors dépôt : `G:\Mon Drive\MyIA\Dev\Trading\ML-Training-Pipeline\m5_hmm_regime_cluster_full.json`
+(+ `m5_hmm_regime_series.csv`), précédent #18664.
+
 ## Key findings
 
 *(Lecture d'origine, Cycle 25, sur MSE bruts. Conservée telle quelle ; la section « Re-validation

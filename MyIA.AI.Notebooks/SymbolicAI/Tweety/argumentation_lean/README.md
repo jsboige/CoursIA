@@ -127,7 +127,7 @@ lake build Argumentation
 
 ## Notebook compagnon
 
-[`Tweety-5-Abstract-Argumentation.ipynb`](../Tweety-5-Abstract-Argumentation.ipynb)
+[`Tweety-05-Abstract-Argumentation-Python.ipynb`](../Tweety-05-Abstract-Argumentation-Python.html)
 — présentation pédagogique Python (tweety) des cadres de Dung et de leurs
 extensions, dont cette formalisation est le pendant prouvé. Paire Lean + Python
 côte à côte.

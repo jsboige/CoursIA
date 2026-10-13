@@ -23,7 +23,7 @@ This is the formal core of the Tweety series and a **direct bridge to the Argume
 
 Model: an argumentation framework `AF α` equips an argument type `α` with an attack relation `attacks : α → α → Prop` (the universe of arguments is the entire type `α`, standard encoding). The **characteristic function** `F(S) = { a | S defends a }` is a monotone `OrderHom` on `Set α`; the **grounded** extension is its least fixed point `F.lfp`.
 
-Companion notebook (`Tweety-5-Abstract-Argumentation.ipynb`, Tweety series): pedagogical presentation of Dung frameworks side-by-side Python (tweety) / Lean. The notebook wiring belongs to the Tweety series owner.
+Companion notebook (`Tweety-05-Abstract-Argumentation-Python.ipynb`, Tweety series): pedagogical presentation of Dung frameworks side-by-side Python (tweety) / Lean. The notebook wiring belongs to the Tweety series owner.
 
 ---
 
@@ -49,7 +49,7 @@ A library formalizing **Dung's abstract argumentation theory**: argumentation fr
 
 **Cross-references.**
 
-- Companion notebook `Tweety-5-Abstract-Argumentation.ipynb` (Tweety series): Python (tweety) presentation of Dung frameworks, of which this is the proven counterpart.
+- Companion notebook `Tweety-05-Abstract-Argumentation-Python.ipynb` (Tweety series): Python (tweety) presentation of Dung frameworks, of which this is the proven counterpart.
 - Issue #4046 (roadmap Lean #4038), Epic Argumentum #2137.
 
 ### `ArgLattice` — abbrev
@@ -71,7 +71,7 @@ Two foundational notions:
 Defense is **monotone** in the defending set (more defenders ⇒ more defended arguments) — the key property that makes the characteristic function `F(S) = {a | S defends a}` an `OrderHom` (see `Characteristic.lean`).
 
 Cross-reference:
-- Notebook `Tweety-5-Abstract-Argumentation.ipynb` (Tweety series): Python presentation of Dung frameworks, of which this formalization is the proven counterpart.
+- Notebook `Tweety-05-Abstract-Argumentation-Python.ipynb` (Tweety series): Python presentation of Dung frameworks, of which this formalization is the proven counterpart.
 - Epic Argumentum #2137.
 
 ### `AF` — structure

@@ -14,6 +14,17 @@ formalisée par `coeffHeckeT` avec ses deux lemmes de lecture
 `coeffHeckeT_of_dvd` / `coeffHeckeT_of_not_dvd`, plus des exemples
 calculables (poids 12, `p ∈ {2, 3}`).
 
+Le module **`DeltaTau`** (grain 5 de l'Epic Langlands #17969) relie cette
+formule au discriminant modulaire : Δ tronqué comme produit d'Euler
+explicite `X ⬝ ∏ (1 - Xᵐ)²⁴` — représenté par **convolution de listes de
+coefficients ℤ**, l'instance `Mul (Polynomial ℤ)` étant `noncomputable`
+au pin du lake — τ de Ramanujan lu sur
+les coefficients (table **vérifiée par le noyau**, aucune valeur codée en
+dur), multiplicativité τ(6) = τ(2)τ(3), lacunarité τ(25) ≠ 0 — et
+l'**identité propre** `T_p Δ = τ(p) Δ` vérifiée coefficient par
+coefficient pour `p ∈ {2, 3}` sur bornes (`n ≤ 12` / `n ≤ 8`) via la
+lecture entière `coeffHeckeT_twelve_int`.
+
 Le lake porte aussi les théorèmes **`seven_pid`**, **`eleven_pid`** et
 **`thirteen_pid`** : les anneaux d'entiers `𝓞 ℚ(ζ₇) = ℤ[ζ₇]`,
 `𝓞 ℚ(ζ₁₁) = ℤ[ζ₁₁]` et `𝓞 ℚ(ζ₁₃) = ℤ[ζ₁₃]` des 7-ième, 11-ième et 13-ième
@@ -60,6 +71,8 @@ Aucun `sorry`, aucun `native_decide` ; axiomes des déclarations phares :
 | `Hecke/ElevenPid_en.lean` | Sibling anglais, namespace `CyclotomicPID_en` |
 | `Hecke/ThirteenPid.lean` | `ℤ[ζ₁₃]` est principal (docstrings FR) |
 | `Hecke/ThirteenPid_en.lean` | Sibling anglais, namespace `CyclotomicPID_en` |
+| `Hecke/DeltaTau.lean` | Δ, τ de Ramanujan, identité propre `T_p Δ = τ(p) Δ` (#17969) |
+| `Hecke/DeltaTau_en.lean` | Sibling anglais, namespace `ModularForm_en` |
 | `Hecke.lean` / `Hecke_en.lean` | Agrégateurs racines |
 
 ## Suites

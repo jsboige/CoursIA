@@ -61,7 +61,7 @@ Pour une vague parallèle de `corrective-auditor`, passer explicitement `model: 
 
 ## Skills `.claude/skills/` — slash-commands mandatés
 
-17 skills (16 slash-commands actives + 1 module de référence : `qc-helpers.md`). Là où un skill couvre une tâche récurrente, **l'utiliser plutôt que de réimproviser le workflow** (mandat user 2026-05-23 : catalogue clair pour encourager l'usage).
+Les skills sont les slash-commands de `.claude/skills/`, plus un module de référence, `qc-helpers.md`. Là où un skill couvre une tâche récurrente, **l'utiliser plutôt que de réimproviser le workflow** (mandat user 2026-05-23 : catalogue clair pour encourager l'usage).
 
 ### Workflows actionnables (slash-commands)
 

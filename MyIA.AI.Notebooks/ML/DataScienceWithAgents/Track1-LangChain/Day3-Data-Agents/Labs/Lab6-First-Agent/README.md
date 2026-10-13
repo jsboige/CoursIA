@@ -21,7 +21,7 @@ Après avoir utilisé des chaînes LangChain "fil tendu" dans les Labs 2 et 3, c
 
 ## Notebook
 
-- [Lab6-First-Agent.ipynb](Lab6-First-Agent.ipynb) - notebook étudiant
+- [Lab6-First-Agent.ipynb](Lab6-First-Agent.html) - notebook étudiant
 - `Lab6-First-Agent_output.ipynb` - version exécutée de référence
 
 ## Suite

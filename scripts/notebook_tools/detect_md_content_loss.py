@@ -779,9 +779,58 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
         for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_residue, head_residue):
             _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings, drop_threshold)
     else:
-        # IDs absents ou ensembles differents : appariement par index (legacy).
-        for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_md, head_md):
+        # IDs absents OU ensembles differents (#19870 substitution pure) : on
+        # ne peut pas apparier par ID. Avant l'appariement par index legacy,
+        # on retire l'**intersection multiset** des contenus normalises : pour
+        # chaque chaine presente cote base ET cote head, on enleve ``min(count_base,
+        # count_head)`` exemplaires de chaque cote. Ces cellules-la etaient
+        # byte-identiques apres normalisation et ne peuvent pas etre une perte
+        # de contenu (issue #19870 PyMC-04 : 6 cellules intactes sur 36
+        # declenchaient 15 faux positifs TRUNCATED_CELL parce que
+        # l'index-legacy croisait des cellules sans rapport apres la
+        # substitution `fuse-16 -> lecture-marginales`). Le residu qui reste
+        # n'est compose QUE de cellules reellement modifiees (les 8 reductions
+        # + la cellule creee) ; l'appariement par index sur ce residu, devenu
+        # trivial, ne produit plus de faux positifs croises.
+        #
+        # Garde anti-blanc-seing (review #19893) : le court-circuit
+        # ci-dessus epingle le MULTISET DES CHAINES, PAS les TOTAUX de
+        # caracteres. ``test_zero_id_equal_totals_truncation_compensated_signals``
+        # est le temoin : totaux normalises egaux (vraie troncature d'une
+        # cellule compensee par l'expansion d'une autre) mais multiset
+        # different -- le court-circuit ne s'arme pas, l'intersection ne
+        # retire rien (4 chaines distinctes), l'appariement index residual
+        # signale la troncature. Une substitution MEME-LONGUEUR preservee,
+        # elle, ne signale pas (ratio 1.0) : voir
+        # ``test_zero_id_same_length_substitution_preserved_no_signal``.
+        from collections import Counter
+        base_counter: Counter[str] = Counter(_normalize(b_src) for _, _, b_src in base_md)
+        head_counter: Counter[str] = Counter(_normalize(h_src) for _, _, h_src in head_md)
+        # Cles presentes des deux cotes (count > 0 base ET count > 0 head).
+        shared_keys = set(base_counter) & set(head_counter)
+
+        def _residue(items: list[tuple[int, str | None, str]]) -> list[tuple[int, str | None, str]]:
+            seen: Counter[str] = Counter()
+            out: list[tuple[int, str | None, str]] = []
+            for tup in items:
+                n = _normalize(tup[2])
+                if n in shared_keys and seen[n] < min(base_counter[n], head_counter[n]):
+                    seen[n] += 1
+                    continue
+                out.append(tup)
+            return out
+
+        base_residue = _residue(base_md)
+        head_residue = _residue(head_md)
+        # Si la multiset est differente (donc court-circuit ci-dessus n'a pas
+        # arme) mais les residus sont de meme longueur, on apparie par index
+        # sur le residu -- c'est l'appariement trivial : seules les cellules
+        # reellement modifiees y figurent, dans l'ordre du notebook.
+        for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_residue, head_residue):
             _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings, drop_threshold)
+        # Comptes inegaux apres intersection : la difference releve de la
+        # comparaison fichier (deja faite par l'appelant au-dela de
+        # ``_compare_cells``) -- ici on ne double-compte pas.
     return findings
 
 

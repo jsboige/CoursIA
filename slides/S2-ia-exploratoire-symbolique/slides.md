@@ -1093,7 +1093,7 @@ layout: section
 - **Algorithmes génétiques** : `Sudoku/Sudoku-02-Genetic.ipynb`
   - `Search/Portfolio_Optimization_GeneticSharp.ipynb`
 - **Z3 / SMT** : `Sudoku/Sudoku-04-Z3.ipynb`
-- **Logique formelle** : `SymbolicAI/Lean/` (10 notebooks)
+- **Logique formelle** : `SymbolicAI/Lean/`
 - **CSP** : `Search/CSPs_Intro.ipynb`, `Sudoku/Sudoku-03-ORTools.ipynb`
 
 

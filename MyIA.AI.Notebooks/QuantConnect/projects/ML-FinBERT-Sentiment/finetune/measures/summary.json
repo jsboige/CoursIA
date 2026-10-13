@@ -1,0 +1,437 @@
+{
+  "modele": "ProsusAI/finbert",
+  "graines": [
+    1,
+    2,
+    3,
+    42
+  ],
+  "mois_entrainement": [
+    "2015-02",
+    "2015-03",
+    "2015-04",
+    "2015-05",
+    "2015-06",
+    "2015-07",
+    "2015-08",
+    "2015-09",
+    "2015-10",
+    "2015-11",
+    "2015-12",
+    "2016-01",
+    "2016-02",
+    "2016-03",
+    "2016-04",
+    "2016-05",
+    "2016-06",
+    "2016-07",
+    "2016-08",
+    "2016-09",
+    "2016-10",
+    "2016-11",
+    "2016-12",
+    "2017-01",
+    "2017-02",
+    "2017-03",
+    "2017-04",
+    "2017-05",
+    "2017-06",
+    "2017-07",
+    "2017-08",
+    "2017-09",
+    "2017-10",
+    "2017-11",
+    "2017-12",
+    "2018-01",
+    "2018-02",
+    "2018-03",
+    "2018-04",
+    "2018-05",
+    "2018-06",
+    "2018-07",
+    "2018-08",
+    "2018-09",
+    "2018-10",
+    "2018-11",
+    "2018-12",
+    "2019-01",
+    "2019-02",
+    "2019-03",
+    "2019-04",
+    "2019-05",
+    "2019-06"
+  ],
+  "mois_hors_echantillon": [
+    "2019-07",
+    "2019-08",
+    "2019-09",
+    "2019-10",
+    "2019-11",
+    "2019-12"
+  ],
+  "n_entrainement": 1680,
+  "n_hors_echantillon": 268,
+  "id2label_base": {
+    "0": "positive",
+    "1": "negative",
+    "2": "neutral"
+  },
+  "accuracy_base": 0.45149253731343286,
+  "accuracy_finetuned_moyenne": 0.3460820895522388,
+  "delta_moyen": -0.10541044776119404,
+  "delta_ecart_type": 0.036096447415252364,
+  "edge_sigma": -2.9202443816300163,
+  "graines_gagnantes": 0,
+  "par_graine": [
+    {
+      "seed": 1,
+      "accuracy_base": 0.45149253731343286,
+      "accuracy_finetuned": 0.2947761194029851,
+      "delta": -0.15671641791044777,
+      "mcnemar": {
+        "b": 79,
+        "c": 37,
+        "n": 116,
+        "p_value": 0.00012034422931947828
+      },
+      "pred_base": [
+        70,
+        105,
+        93
+      ],
+      "pred_finetuned": [
+        109,
+        14,
+        145
+      ],
+      "vrai": [
+        90,
+        75,
+        103
+      ],
+      "par_mois": {
+        "2019-07": {
+          "n": 63,
+          "symbole": "MU",
+          "exactitude_base": 0.42857142857142855,
+          "exactitude_finetuned": 0.38095238095238093,
+          "retour_base": -0.05415104548060723,
+          "retour_finetuned": -0.05415104548060723
+        },
+        "2019-08": {
+          "n": 38,
+          "symbole": "MU",
+          "exactitude_base": 0.3684210526315789,
+          "exactitude_finetuned": 0.2894736842105263,
+          "retour_base": 0.013431673822974943,
+          "retour_finetuned": 0.013431673822974943
+        },
+        "2019-09": {
+          "n": 25,
+          "symbole": "MU",
+          "exactitude_base": 0.64,
+          "exactitude_finetuned": 0.28,
+          "retour_base": 0.0018912427231083662,
+          "retour_finetuned": -0.007564970892433465
+        },
+        "2019-10": {
+          "n": 92,
+          "symbole": "MU",
+          "exactitude_base": 0.4673913043478261,
+          "exactitude_finetuned": 0.25,
+          "retour_base": -0.004780543208655841,
+          "retour_finetuned": -0.004780543208655841
+        },
+        "2019-11": {
+          "n": 26,
+          "symbole": "MU",
+          "exactitude_base": 0.4230769230769231,
+          "exactitude_finetuned": 0.2692307692307692,
+          "retour_base": 0.006251293375404976,
+          "retour_finetuned": 0.006251293375404976
+        },
+        "2019-12": {
+          "n": 24,
+          "symbole": "MU",
+          "exactitude_base": 0.4166666666666667,
+          "exactitude_finetuned": 0.2916666666666667,
+          "retour_base": NaN,
+          "retour_finetuned": NaN
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "accuracy_base": 0.45149253731343286,
+      "accuracy_finetuned": 0.3694029850746269,
+      "delta": -0.08208955223880599,
+      "mcnemar": {
+        "b": 69,
+        "c": 47,
+        "n": 116,
+        "p_value": 0.050729556682883294
+      },
+      "pred_base": [
+        70,
+        105,
+        93
+      ],
+      "pred_finetuned": [
+        20,
+        6,
+        242
+      ],
+      "vrai": [
+        90,
+        75,
+        103
+      ],
+      "par_mois": {
+        "2019-07": {
+          "n": 63,
+          "symbole": "MU",
+          "exactitude_base": 0.42857142857142855,
+          "exactitude_finetuned": 0.42857142857142855,
+          "retour_base": -0.05415104548060723,
+          "retour_finetuned": -0.05415104548060723
+        },
+        "2019-08": {
+          "n": 38,
+          "symbole": "MU",
+          "exactitude_base": 0.3684210526315789,
+          "exactitude_finetuned": 0.39473684210526316,
+          "retour_base": 0.013431673822974943,
+          "retour_finetuned": 0.013431673822974943
+        },
+        "2019-09": {
+          "n": 25,
+          "symbole": "MU",
+          "exactitude_base": 0.64,
+          "exactitude_finetuned": 0.4,
+          "retour_base": 0.0018912427231083662,
+          "retour_finetuned": -0.007564970892433465
+        },
+        "2019-10": {
+          "n": 92,
+          "symbole": "MU",
+          "exactitude_base": 0.4673913043478261,
+          "exactitude_finetuned": 0.30434782608695654,
+          "retour_base": -0.004780543208655841,
+          "retour_finetuned": -0.004780543208655841
+        },
+        "2019-11": {
+          "n": 26,
+          "symbole": "MU",
+          "exactitude_base": 0.4230769230769231,
+          "exactitude_finetuned": 0.34615384615384615,
+          "retour_base": 0.006251293375404976,
+          "retour_finetuned": -0.025005173501619904
+        },
+        "2019-12": {
+          "n": 24,
+          "symbole": "MU",
+          "exactitude_base": 0.4166666666666667,
+          "exactitude_finetuned": 0.4166666666666667,
+          "retour_base": NaN,
+          "retour_finetuned": NaN
+        }
+      }
+    },
+    {
+      "seed": 3,
+      "accuracy_base": 0.45149253731343286,
+      "accuracy_finetuned": 0.373134328358209,
+      "delta": -0.07835820895522388,
+      "mcnemar": {
+        "b": 69,
+        "c": 48,
+        "n": 117,
+        "p_value": 0.063995910646795
+      },
+      "pred_base": [
+        70,
+        105,
+        93
+      ],
+      "pred_finetuned": [
+        36,
+        0,
+        232
+      ],
+      "vrai": [
+        90,
+        75,
+        103
+      ],
+      "par_mois": {
+        "2019-07": {
+          "n": 63,
+          "symbole": "MU",
+          "exactitude_base": 0.42857142857142855,
+          "exactitude_finetuned": 0.4444444444444444,
+          "retour_base": -0.05415104548060723,
+          "retour_finetuned": -0.05415104548060723
+        },
+        "2019-08": {
+          "n": 38,
+          "symbole": "MU",
+          "exactitude_base": 0.3684210526315789,
+          "exactitude_finetuned": 0.42105263157894735,
+          "retour_base": 0.013431673822974943,
+          "retour_finetuned": 0.013431673822974943
+        },
+        "2019-09": {
+          "n": 25,
+          "symbole": "MU",
+          "exactitude_base": 0.64,
+          "exactitude_finetuned": 0.28,
+          "retour_base": 0.0018912427231083662,
+          "retour_finetuned": -0.007564970892433465
+        },
+        "2019-10": {
+          "n": 92,
+          "symbole": "MU",
+          "exactitude_base": 0.4673913043478261,
+          "exactitude_finetuned": 0.32608695652173914,
+          "retour_base": -0.004780543208655841,
+          "retour_finetuned": -0.004780543208655841
+        },
+        "2019-11": {
+          "n": 26,
+          "symbole": "MU",
+          "exactitude_base": 0.4230769230769231,
+          "exactitude_finetuned": 0.38461538461538464,
+          "retour_base": 0.006251293375404976,
+          "retour_finetuned": -0.025005173501619904
+        },
+        "2019-12": {
+          "n": 24,
+          "symbole": "MU",
+          "exactitude_base": 0.4166666666666667,
+          "exactitude_finetuned": 0.375,
+          "retour_base": NaN,
+          "retour_finetuned": NaN
+        }
+      }
+    },
+    {
+      "seed": 42,
+      "accuracy_base": 0.45149253731343286,
+      "accuracy_finetuned": 0.34701492537313433,
+      "delta": -0.10447761194029853,
+      "mcnemar": {
+        "b": 79,
+        "c": 51,
+        "n": 130,
+        "p_value": 0.017541695301202188
+      },
+      "pred_base": [
+        70,
+        105,
+        93
+      ],
+      "pred_finetuned": [
+        203,
+        4,
+        61
+      ],
+      "vrai": [
+        90,
+        75,
+        103
+      ],
+      "par_mois": {
+        "2019-07": {
+          "n": 63,
+          "symbole": "MU",
+          "exactitude_base": 0.42857142857142855,
+          "exactitude_finetuned": 0.3492063492063492,
+          "retour_base": -0.05415104548060723,
+          "retour_finetuned": 0.013537761370151807
+        },
+        "2019-08": {
+          "n": 38,
+          "symbole": "MU",
+          "exactitude_base": 0.3684210526315789,
+          "exactitude_finetuned": 0.34210526315789475,
+          "retour_base": 0.013431673822974943,
+          "retour_finetuned": -0.003357918455743736
+        },
+        "2019-09": {
+          "n": 25,
+          "symbole": "MU",
+          "exactitude_base": 0.64,
+          "exactitude_finetuned": 0.32,
+          "retour_base": 0.0018912427231083662,
+          "retour_finetuned": 0.0018912427231083662
+        },
+        "2019-10": {
+          "n": 92,
+          "symbole": "MU",
+          "exactitude_base": 0.4673913043478261,
+          "exactitude_finetuned": 0.3804347826086957,
+          "retour_base": -0.004780543208655841,
+          "retour_finetuned": 0.0011951358021639602
+        },
+        "2019-11": {
+          "n": 26,
+          "symbole": "MU",
+          "exactitude_base": 0.4230769230769231,
+          "exactitude_finetuned": 0.3076923076923077,
+          "retour_base": 0.006251293375404976,
+          "retour_finetuned": 0.006251293375404976
+        },
+        "2019-12": {
+          "n": 24,
+          "symbole": "MU",
+          "exactitude_base": 0.4166666666666667,
+          "exactitude_finetuned": 0.2916666666666667,
+          "retour_base": NaN,
+          "retour_finetuned": NaN
+        }
+      }
+    }
+  ],
+  "strategie_par_mois": [
+    {
+      "month": "2019-07",
+      "symbol": "MU",
+      "retour_base": -0.05415104548060723,
+      "retour_finetuned_moyenne": -0.03722884376791747
+    },
+    {
+      "month": "2019-08",
+      "symbol": "MU",
+      "retour_base": 0.013431673822974943,
+      "retour_finetuned_moyenne": 0.009234275753295274
+    },
+    {
+      "month": "2019-09",
+      "symbol": "MU",
+      "retour_base": 0.0018912427231083662,
+      "retour_finetuned_moyenne": -0.005200917488548007
+    },
+    {
+      "month": "2019-10",
+      "symbol": "MU",
+      "retour_base": -0.004780543208655841,
+      "retour_finetuned_moyenne": -0.0032866234559508906
+    },
+    {
+      "month": "2019-11",
+      "symbol": "MU",
+      "retour_base": 0.006251293375404976,
+      "retour_finetuned_moyenne": -0.009376940063107464
+    },
+    {
+      "month": "2019-12",
+      "symbol": "MU",
+      "retour_base": NaN,
+      "retour_finetuned_moyenne": NaN
+    }
+  ],
+  "strategie_cumul_base": -0.037357378767774785,
+  "strategie_cumul_finetuned": -0.04585904902222856,
+  "device": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+  "torch": "2.8.0+cu126"
+}

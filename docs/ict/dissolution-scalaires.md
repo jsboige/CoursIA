@@ -31,13 +31,13 @@ Chaque palier marque une **rupture** dans la carrière d'un scalaire fondateur �
 
 ### Palier 2 — ICT-14 : F comme scalaire-complémentaire (jambe 2)
 
-[`ICT-14-FreeEnergySurprise`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise.ipynb) (strate 4, cellule [12] verdict) ajoute **F** (énergie libre) à l'appareil. Le verdict est **complémentaire-suffisant** : à précision fixe, F̄ est une transformation monotone de MSE (Gate 1) ; à précision adaptative, F ajoute un contenu prédictif propre (Gate 2) ; sur substrat bistable, F est une coordonnée de la catastrophe (Gate 3). **Statut** : F est ici **construit** (formule explicite `accuracy + complexity`) et **mesuré** (sur trajectoire sinus et modèle de pâturage de May).
+[`ICT-14-FreeEnergySurprise-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb) (strate 4, cellule [12] verdict) ajoute **F** (énergie libre) à l'appareil. Le verdict est **complémentaire-suffisant** : à précision fixe, F̄ est une transformation monotone de MSE (Gate 1) ; à précision adaptative, F ajoute un contenu prédictif propre (Gate 2) ; sur substrat bistable, F est une coordonnée de la catastrophe (Gate 3). **Statut** : F est ici **construit** (formule explicite `accuracy + complexity`) et **mesuré** (sur trajectoire sinus et modèle de pâturage de May).
 
 **Ce que ce palier ne dit pas.** F **s'ajoute** à Φ sans le dissoudre : la strate 4 introduit **trois jambes** (Φ / F / K) qui sont présentées comme **compatibles** (ICT-15 va le vérifier).
 
 ### Palier 3 — ICT-15 : le moment de dissolution explicite
 
-[`ICT-15-IntegratedComplexity`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity.ipynb) (capstone strate 4, cellule [9] Interprétation du Gate 4) est le **premier moment où la dissolution est dite** : « *les trois scalaires partagent le même contrôle mais ne mesurent pas la même chose* — Φ est une mesure d'intégration, F est une énergie libre, K est une mesure de compression ». La triade **converge sur le contrôle** (Kendall τ par paire, Gate 4) mais **divergence sur le contenu** : chaque scalaire capture un aspect distinct de l'émergence.
+[`ICT-15-IntegratedComplexity-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity-Python.ipynb) (capstone strate 4, cellule [9] Interprétation du Gate 4) est le **premier moment où la dissolution est dite** : « *les trois scalaires partagent le même contrôle mais ne mesurent pas la même chose* — Φ est une mesure d'intégration, F est une énergie libre, K est une mesure de compression ». La triade **converge sur le contrôle** (Kendall τ par paire, Gate 4) mais **divergence sur le contenu** : chaque scalaire capture un aspect distinct de l'émergence.
 
 **Conséquence.** La phrase « Φ mesure l'émergence » devient **insuffisante** : dire « Φ » sans préciser le substrat, le régime et le gate, c'est déjà sous-spécifier. Le **Gate 5** (cellules [11]-[13]) ajoute un niveau : la catastrophe (pli de Thom) joue le rôle de **système de coordonnées** où les trois scalaires sont **rejoués** — mais Φ_dyn, le proxy intégral documenté en cellule [10], est explicitement noté `INTRINSIC` (verdict `sota-not-workaround` Prong A) : la formule intégrale canonique n'est pas reproductible numériquement. **Premier proxy** Φ_dyn reconnu et nommé avec verdict honnête.
 
@@ -47,25 +47,25 @@ Chaque palier marque une **rupture** dans la carrière d'un scalaire fondateur �
 
 Trois notebooks frères appliquent à la triade Φ/F/K des **proxys alternatifs** qui, espérés comme **équivalents**, échouent :
 
-- [`ICT-15b-SensitivityCanonicity`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity.ipynb) : la **sensibilité** (variation du gain sous bruit additif contrôlé) est testée comme proxy de la convergence. Verdict ICT-15b : `s_max >= sqrt(deg_proxy)` retourne **3/4 consistent, 0 inconsistent, 1 inconclusive** sur les mêmes substrats qu'ICT-15. La sensibilité **discrimine par-substrat** là où Φ/F/K discriminaient **globalement**. Premier cas documenté de **discrimination par proxy alternatif**.
+- [`ICT-15b-SensitivityCanonicity-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity-Python.ipynb) : la **sensibilité** (variation du gain sous bruit additif contrôlé) est testée comme proxy de la convergence. Verdict ICT-15b : `s_max >= sqrt(deg_proxy)` retourne **3/4 consistent, 0 inconsistent, 1 inconclusive** sur les mêmes substrats qu'ICT-15. La sensibilité **discrimine par-substrat** là où Φ/F/K discriminaient **globalement**. Premier cas documenté de **discrimination par proxy alternatif**.
 
-- [`ICT-15c-MetaProxyObstruction`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15c-MetaProxyObstruction.ipynb) (PR #9328) : les proxys spectraux (`sens_mean`, `sens_max`, `spectral`) sont testés comme **méta-proxy** unificateur. Verdict ICT-15c : `NOISE` sur les 4 substrats (3-proxys collapsent). Le méta-proxy spectral **échoue à unifier** la triade là où ICT-15 laissait penser qu'une unification était possible.
+- [`ICT-15c-MetaProxyObstruction-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15c-MetaProxyObstruction-Python.ipynb) (PR #9328) : les proxys spectraux (`sens_mean`, `sens_max`, `spectral`) sont testés comme **méta-proxy** unificateur. Verdict ICT-15c : `NOISE` sur les 4 substrats (3-proxys collapsent). Le méta-proxy spectral **échoue à unifier** la triade là où ICT-15 laissait penser qu'une unification était possible.
 
-- [`ICT-15d-CechObstruction`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15d-CechObstruction.ipynb) (PR #9334) : la **stabilité Čech** sur les sections du faisceau Φ/F/K est testée comme proxy topologique. Verdict ICT-15d : sections **colinéaires par construction** (SVD rang 1), donc Čech verdict `TRIVIAL` — l'instrument Čech est **mort** sur cet input (3/4 substrats). Le proxy topologique **échoue par construction**.
+- [`ICT-15d-CechObstruction-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15d-CechObstruction-Python.ipynb) (PR #9334) : la **stabilité Čech** sur les sections du faisceau Φ/F/K est testée comme proxy topologique. Verdict ICT-15d : sections **colinéaires par construction** (SVD rang 1), donc Čech verdict `TRIVIAL` — l'instrument Čech est **mort** sur cet input (3/4 substrats). Le proxy topologique **échoue par construction**.
 
 **Statut (palier 4).** Le mouvement est ici **anti-régression** : la dissolution de la triade Φ/F/K en **faisceau de proxys non-équivalents** est elle-même **falsifiée** par les tentatives de méta-proxy. La dissolution **résiste** à la réunification. C'est le **résultat central** du palier 4.
 
 ### Palier 5 — ICT-16 / ICT-17 : K se dissout en deux jambes computationnelles
 
-[`ICT-16-MDLTwoPartCode`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode.ipynb) (strate 5, cellule [8] Bosse complexité-entropie) montre que K (compression) **n'est pas un scalaire** : la bosse Crutchfield-Feldman (complexité statistique vs taux d'entropie) impose un **plan à deux dimensions** pour décrire K sur des données réelles. K est dissous en `(H_rate, model_bits)` ou, opérationnellement, `(entropy_rate_estimate, tpm_description_length)`.
+[`ICT-16-MDLTwoPartCode-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb) (strate 5, cellule [8] Bosse complexité-entropie) montre que K (compression) **n'est pas un scalaire** : la bosse Crutchfield-Feldman (complexité statistique vs taux d'entropie) impose un **plan à deux dimensions** pour décrire K sur des données réelles. K est dissous en `(H_rate, model_bits)` ou, opérationnellement, `(entropy_rate_estimate, tpm_description_length)`.
 
-[`ICT-17-EpsilonMachine`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine.ipynb) (strate 5, cellule [23] Bilan) ajoute une **troisième jambe** : `C_μ` (entropie statistique de l'ε-machine de Crutchfield), **plafond** pour n'importe quel estimateur `p̂` (Gate 9, cellule [15]). K n'est plus seulement compressé (bits) ni même descriptif (bits + résiduel) : il est **structurellement contraint** par la causalité de la séquence.
+[`ICT-17-EpsilonMachine-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb) (strate 5, cellule [23] Bilan) ajoute une **troisième jambe** : `C_μ` (entropie statistique de l'ε-machine de Crutchfield), **plafond** pour n'importe quel estimateur `p̂` (Gate 9, cellule [15]). K n'est plus seulement compressé (bits) ni même descriptif (bits + résiduel) : il est **structurellement contraint** par la causalité de la séquence.
 
 **Statut (palier 5).** K est passé de **scalaire** (ICT-15) à **bipolaire** (ICT-16 : `model_bits + résiduel`) à **tri-polaire** (ICT-17 : `C_μ + model_bits + résiduel`). Chaque polarité capture un **invariant différent** : la complexité statistique (C_μ), la compressibilité algorithmique (model_bits), l'adéquation aux données (résiduel). La dissolution est **technique** : c'est la **bosse Crutchfield-Feldman** qui force deux dimensions.
 
 ### Palier 6 — ICT-17b : K dissous en positif vs négatif sur le grokking
 
-[`ICT-17b-Grokking-CompressionProgress`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress.ipynb) (strate 5, cellule [13] Interprétation honnête) pousse K sur le substrat training (multiplication modulaire `a*b mod p`, transformer 1-couche) :
+[`ICT-17b-Grokking-CompressionProgress-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (strate 5, cellule [13] Interprétation honnête) pousse K sur le substrat training (multiplication modulaire `a*b mod p`, transformer 1-couche) :
 
 - **Proxy positif** : `K_compression_progress` (Schmidhuber) — la **compression progressive des poids** accompagne le grokking, **résultat positif et robuste** (cellule [8] §2).
 - **Proxy négatif** : `K_rang_effectif` (cellule [17] exercice 2) — le **rang effectif** ne capture pas la transition, **résultat négatif**.
@@ -75,7 +75,7 @@ Trois notebooks frères appliquent à la triade Φ/F/K des **proxys alternatifs*
 
 ### Palier 7 — ICT-21 / ICT-22 : Φ/F/K sur substrat S4 — dissolution continue
 
-[`ICT-21-SAETrajectoires`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21-SAETrajectoires.ipynb) (strate 5, cellule [19] Lecture honnête) ajoute le substrat S4 (LLM + SAE features) :
+[`ICT-21-SAETrajectoires-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21-SAETrajectoires-Python.ipynb) (strate 5, cellule [19] Lecture honnête) ajoute le substrat S4 (LLM + SAE features) :
 
 - **Φ/F/K restent concluants** (Gate 13 ICT-22, cellule [13]) — la triade tient sur 4 substrats (S1/S2/S3/S4).
 - **Mais l'émergence créditée est régime-dépendante** (Gate 12 ICT-22, cellule [11]) — vs shuffle, le verdict est **nuancé et majoritairement négatif** : S4 affiche le `ec_gain` le plus bas, **renforce** la convergence (triade) mais **affaiblit** la discrimination (émergence). Le LLM **ne casse pas** la triade mais **ajoute une strate de nuance** : la triade mesure **la convergence**, pas **l'émergence**.

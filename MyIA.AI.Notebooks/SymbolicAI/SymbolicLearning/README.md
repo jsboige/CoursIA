@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SymbolicLearning
-pedagogical_count: 26
-breakdown: SymbolicLearning=26
-maturity: BETA=24, ALPHA=2
+pedagogical_count: 27
+breakdown: SymbolicLearning=27
+maturity: BETA=25, ALPHA=2
 -->
 
 ## Présentation
@@ -195,7 +195,7 @@ Modalite de la séance : chaque groupe choisit **un exercice** dans la table ci-
 | 4 | [SL-1](SL-1-LogicalLearning.ipynb) | Ex. 4 — Réflexion sur le biais conjonctif | Un domaine où ce biais est idéal, un où il est catastrophique (no free lunch) |
 | 5 | [SL-1](SL-1-LogicalLearning.ipynb) | Ex. 5 — La consistance sans Occam (aima) | Echantillonner les graines ne prouve pas la minimalité : quel algorithme exact le ferait ? |
 | 6 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 1 — EBL differentiation symbolique | Exhiber une variabilisation trop agressive qui produit une règle compilee fausse |
-| 7 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 2 — Filtrage des règles (opérationnalité) | Deux distributions de requêtes qui inversent le classement d'utilite des règles |
+| 7 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 2 — RBL, robustesse au bruit | Une colonne bruitée qui « détermine » accidentellement la cible : régularité accidentelle ou véritable détermination ? |
 | 8 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 3 — Speedup EBL | Le *utility problem* (Minton 1990) : pourquoi apprendre plus finit par ralentir |
 | 9 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 1 — Déterminations meteo | Une observation bruitee : quelle détermination minimale survit ? |
 | 10 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 2 — RBL vs sélection aleatoire | Trouver le point de croisement ou la sélection statistique bat le RBL |
@@ -712,7 +712,7 @@ Le **capstone SL-11** est l'un des rares pipelines neuro-symboliques bout-en-bou
 | [SemanticWeb](../SemanticWeb/README.md) | Représentation de connaissances | RDFS/OWL formalisent les déterminations et les hiérarchies de généralité |
 | [Planners](../Planners/README.md) | Planification | EBL compile les théories en règles opérationnelles, similaire aux heuristiques de planification |
 | [Lean](../Lean/README.md) | Preuves formelles | L'arbre de preuve EBL est analogue aux arbres de preuve Lean 4 |
-| Lecture transversale | [La mer qui monte](../../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de représentation, certification A/B/C |
+| Lecture transversale | [La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de représentation, certification A/B/C |
 
 **Version 1.4.0** — Septembre 2026 — ajout SL-13 (diagnostic DISCOVER / TPR, EPIC #14366 grain G6) : table de pioche 55 exercices, phase 5 étendue au versant structurel (TPR approximative vs exacte), parenté cross-lane complétée. Total : 24 notebooks (BETA=22, ALPHA=2, réconciliés par le catalog-cron). EPIC #3975 tranche symboliclearning.
 

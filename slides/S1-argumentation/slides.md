@@ -725,7 +725,7 @@ _Programme de français de première des voies générale et technologique_
 
 # Pour aller plus loin : Notebooks
 
-- **Tweety Framework** : `SymbolicAI/Argument_Analysis/` (5 notebooks)
+- **Tweety Framework** : `SymbolicAI/Argument_Analysis/`
   - Argumentation abstraite, Dung semantics
   - Argument schemes, argument mining
 - **Logique formelle** : `SymbolicAI/Lean/` - preuves et tactiques

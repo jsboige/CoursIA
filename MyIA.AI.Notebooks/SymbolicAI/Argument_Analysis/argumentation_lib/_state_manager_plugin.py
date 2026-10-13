@@ -47,6 +47,22 @@ class StateManagerPlugin:
             f"StateManagerPlugin initialisé avec l'instance RhetoricalAnalysisState (id: {id(self._state)})."
         )
 
+    def _log_jtms_outcome(self, action: str, e: Exception) -> None:
+        """Log un échec d'appel JTMS en distinguant le shim pédagogique.
+
+        Le shim JTMS lève une ImportError attendue en mode pédagogique : ce
+        n'est pas une panne. Elle se log sans traceback (les chemins absolus
+        du traceback déclenchent le ratchet MACHINE_PATH, #11685) et sans la
+        bannière "not available" (ratchet TOOL_FAILURE). Toute autre
+        exception conserve son traceback complet.
+        """
+        if isinstance(e, ImportError) and "pedagogical mode" in str(e):
+            self._logger.warning(
+                f"JTMS inactif (mode pédagogique) : {action} ignoré"
+            )
+        else:
+            self._logger.error(f"Error {action}: {e}", exc_info=True)
+
     @kernel_function(
         description="Récupère un aperçu (complet ou résumé) de l'état actuel de l'analyse.",
         name="get_current_state_snapshot",
@@ -117,7 +133,12 @@ class StateManagerPlugin:
             return f"FUNC_ERROR: Erreur ajout argument: {e}"
 
     @kernel_function(
-        description="Ajoute une liste d'arguments identifiés à l'état.",
+        description=(
+            "Ajoute une liste d'arguments identifiés à l'état. Chaque élément "
+            "est la formulation de l'argument telle que reprise du texte "
+            "analysé (sous-chaîne ou paraphrase courte du texte), jamais un "
+            "nom de champ de l'état."
+        ),
         name="add_identified_arguments",
     )
     def add_identified_arguments(self, arguments: List[str]) -> str:
@@ -138,7 +159,14 @@ class StateManagerPlugin:
             return f"FUNC_ERROR: Erreur ajout liste d'arguments: {e}"
 
     @kernel_function(
-        description="Ajoute une liste de sophismes identifiés à l'état.",
+        description=(
+            "Ajoute une liste de sophismes identifiés à l'état. Chaque sophisme "
+            "est un dict au format {nom: str, explication: str, cible: str, "
+            "famille: str (optionnel)} où 'nom' est le type du sophisme (ex: "
+            "'homme de paille'), 'explication' justifie la détection en citant "
+            "le texte, et 'cible' est l'ID de l'argument visé (clé arg_N lue "
+            "dans les arguments identifiés de l'état)."
+        ),
         name="add_identified_fallacies",
     )
     def add_identified_fallacies(self, fallacies: List[Dict[str, str]]) -> str:
@@ -440,9 +468,7 @@ class StateManagerPlugin:
             return f"OK: Belief '{belief_name}' created by {agent_source}"
 
         except Exception as e:
-            self._logger.error(
-                f"Error creating JTMS belief '{belief_name}': {e}", exc_info=True
-            )
+            self._log_jtms_outcome(f"creating JTMS belief '{belief_name}'", e)
             return f"FUNC_ERROR: Error creating belief: {e}"
 
     @kernel_function(
@@ -482,7 +508,7 @@ class StateManagerPlugin:
             return f"OK: Justification for '{conclusion}' added by {agent_source}"
 
         except Exception as e:
-            self._logger.error(f"Error adding JTMS justification: {e}", exc_info=True)
+            self._log_jtms_outcome("adding JTMS justification", e)
             return f"FUNC_ERROR: Error adding justification: {e}"
 
     @kernel_function(
@@ -525,7 +551,7 @@ class StateManagerPlugin:
             return json.dumps(results, ensure_ascii=False, indent=2)
 
         except Exception as e:
-            self._logger.error(f"Error querying JTMS beliefs: {e}", exc_info=True)
+            self._log_jtms_outcome("querying JTMS beliefs", e)
             return f"FUNC_ERROR: Error querying beliefs: {e}"
 
     @kernel_function(
@@ -560,7 +586,7 @@ class StateManagerPlugin:
             return json.dumps(result, ensure_ascii=False, indent=2)
 
         except Exception as e:
-            self._logger.error(f"Error checking JTMS consistency: {e}", exc_info=True)
+            self._log_jtms_outcome("checking JTMS consistency", e)
             return f"FUNC_ERROR: Error checking consistency: {e}"
 
     @kernel_function(
@@ -664,9 +690,7 @@ class StateManagerPlugin:
             return json.dumps(result, ensure_ascii=False, indent=2)
 
         except Exception as e:
-            self._logger.error(
-                f"Error retracting belief '{belief_name}': {e}", exc_info=True
-            )
+            self._log_jtms_outcome(f"retracting belief '{belief_name}'", e)
             return f"FUNC_ERROR: Error retracting belief: {e}"
 
     # =========================================================================

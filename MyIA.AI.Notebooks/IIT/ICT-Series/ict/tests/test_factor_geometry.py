@@ -1,7 +1,7 @@
 """Tests unitaires pour :mod:`ict.factor_geometry` (F-Lens, extraction #15943).
 
 Le module porte les 7 primitives numpy-only de geometrie factorisee deplacees
-a l'identique depuis ``ICT-36-FLens-FactoredGeometry.ipynb`` (PR #15514,
+a l'identique depuis ``ICT-36-FLens-FactoredGeometry-Python.ipynb`` (PR #15514,
 cellules 5, 7, 14). L'acceptance #15943 exige des **resultats inchanges** :
 ces tests figent donc les contrats EXACTS du code deplace, y compris le
 comportement artefactuel documente de :func:`null_overlap_distribution`

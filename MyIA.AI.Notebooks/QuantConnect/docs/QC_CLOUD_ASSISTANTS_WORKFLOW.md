@@ -23,7 +23,7 @@ QC Cloud offre 8 assistants IA qui executent des recherches, backtests, et valid
 **URL** : `https://www.quantconnect.com/organization/{org-id}/assistants`
 **Org ESGF** : `d600793ee4caecb03441a09fc2d00f7f`
 **Credits restants** : ~3457 QCC (a verifier avant chaque deployment)
-**Coût estime par session Research** : 800-1200 QCC (14 cells)
+**Coût estime par session Research** : 800-1200 QCC
 
 ## Méthode préférée vs Fallbacks
 
