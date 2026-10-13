@@ -3350,9 +3350,9 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,a7b8c
 | **Trade-off** | Merge = 1 model (cheaper) vs Routing = N models (better quality) |
 | **Tools** | Mergekit (production), manual PyTorch implementation (this notebook) |
 
----
+***
 
-**Navigation**: [FT-01](./FT-01-Introduction-FineTuning-Python.ipynb) | [FT-02](./FT-02-QLoRA-Quantization-Python.ipynb) | [FT-03](./FT-03-Supervised-FineTuning-SFT-Python.ipynb) | [FT-04](./FT-04-RLHF-DPO-Python.ipynb) | **FT-05**",,,,,,,8c516df6d85df896,38eb18359981410d,,,,,,,
+**Navigation**: [FT-01](./FT-01-Introduction-FineTuning-Python.ipynb) | [FT-02](./FT-02-QLoRA-Quantization-Python.ipynb) | [FT-03](./FT-03-Supervised-FineTuning-SFT-Python.ipynb) | [FT-04](./FT-04-RLHF-DPO-Python.ipynb) | **FT-05**",,,,,,,8c516df6d85df896,39d6b2aef4e7bba0,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ift02-gen,markdown,fr,46e0b0c56f1f78cc,"### Lecture du résultat : la greffe stylistique du fine-tuning
 
 La génération `« Dans les rues sombres de Paris, Jean Valjean restait dans son bain de boulon… »` prouve que le fine-tuning QLoRA a **modifié le comportement** du modèle. L'OPT-1.3B de base, entraîné sur un corpus anglophone générique, produit désormais du français qui réemploie le **lexique des *Misérables*** (`Jean Valjean`, `rues sombres de Paris`) — la greffe du dataset de classiques français a pris. Mais observez aussi les **limites** : `« son bain de boulon »` (image absurde assemblée sur des noms réels), `« il dormait sur le floor »` (anglicisme — le lexique anglais du pré-entraîné ressort sous le vernis français) sont des fragments grammaticalement incohérents. C'est le compromis attendu d'un modèle de **1,3 Md paramètres** fine-tuné sur **seulement 10 extraits** : l'imprégnation stylistique prend, la cohérence syntaxique profonde ne suit pas. C'est précisément ce déséquilibre que la cellule de comparaison suivante quantifie (qualité `~97-99%` du full fine-tuning).
@@ -3553,9 +3553,11 @@ des task vectors est une addition vectorielle homogène (~3.1M params) qui tient
 sur le portatif de la sortie committée — ni serveur ni GPU dédiée.
 ","# FT-05: Model Merging and Routing -- Combining Expertises
 
+**Navigation** : [Index](README.md) | [<< 04 — RLHF/DPO](FT-04-RLHF-DPO-Python.ipynb) | [06 — Vision-Language >>](FT-06-Vision-Language-LoRA-Python.ipynb)
+
 **Objective**: Understand how to merge several fine-tuned models into a single, more capable model, from weight merging to dynamic routing.
 
-**Prerequisites**: FT-01 (LoRA), FT-02 (QLoRA), FT-03 (SFT), FT-04 (DPO)
+**Prerequisites**: FT-01 (fine-tuning overview), FT-02 (QLoRA quantization), FT-03 (SFT), FT-04 (DPO)
 
 **Estimated duration**: ~35 min
 
@@ -3587,9 +3589,12 @@ hyperparameter or implement a variant.
 **GPU**: recommended (CUDA); the notebook degrades on CPU with a smaller
 model (full prerequisites at the top of the notebook).
 
-**Measured cost-benefit**: ~5 min on an RTX 3090 (25.8 GB peak VRAM, 1.3B
-base params × 2 LoRA adapters of 3.1M params). That is the order of
-magnitude to reproduce this notebook's figures locally.",,,,,,,92bca6772937db7d,4c5287b0d0e96e44,,,,,,,
+**Cost-benefit**: this notebook is committed with outputs produced
+on an **8 GB GPU** (`NVIDIA GeForce RTX 3070 Laptop GPU, 8.6 GB
+VRAM`, cf. cell #1). The real cost sits in fine-tuning the adapters
+(FT-02/03/04); the **merge** of the task vectors is a homogeneous
+vector addition (~3.1M params) that fits on the laptop of the
+committed output — no server or dedicated GPU needed.",,,,,,,92bca6772937db7d,69b9beb0947275cb,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,7975df42,markdown,fr,9c16f6f13ab22790,"## 1. Pourquoi fusionner des modèles ?
 
 Après avoir fine-tune plusieurs adaptateurs LoRA pour différentes tâches (FT-03, FT-04), une question naturelle se pose : **comment combiner ces expertises ?**
@@ -4728,18 +4733,19 @@ prefer distillation; (3) very large models > 13B (use with unified
 memory management); (4) the need for **per-token dynamic selection** —
 prefer a true MoE (Mixtral, DeepSeek-MoE).
 
-**Measured cost-benefit**: for 2 LoRA adapters on a 1.3B base, the
-full merge (DARE drop_rate=0.3) runs in **~10 seconds** on an RTX
-3090. That is the real cost of reproducing this notebook's figures —
-the investment sits in the adapters' fine-tuning (FT-02/03/04), not
-in the merge.
+**Cost-benefit**: for 2 LoRA adapters on a 1.3B base, the full
+merge (DARE drop_rate=0.3) is a vector addition over ~3.1M params —
+negligible next to fine-tuning the adapters (FT-02/03/04), whatever
+the hardware; its exact cost depends on the GPU and versions (not
+measured here). The investment sits in the fine-tuning, not in the
+merge.
 
 **Assumed limitations**: (1) the **quality metrics** (perplexity,
-lm-eval-harness) are **manual** in this notebook — for publishable
+lm-eval-harness) are **not computed** in this notebook — for publishable
 conclusions, one would need 4+ seeds and a confidence interval;
 (2) the **router** is a lightweight proxy (mean embeddings), not a
 production classifier; (3) **DARE drop_rate = 0.3** is a reasonable
-default, not a universal optimum.",,,,,,,32a8916be1e6c971,08c4bd218a455004,,,,,,,
+default, not a universal optimum.",,,,,,,32a8916be1e6c971,bb10213618e6e858,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,bdb9f05d,markdown,fr,b6efc805442009f5,"### Lecture du résultat : les trois lignes qui décident de la mémoire
 
 La cellule précédente a construit la configuration de quantization en trois lignes, et chacune joue un rôle **orthogonal** dans l'économie de VRAM. Il vaut la peine de les décortiquer, parce que c'est exactement ce triplet qui décide si oui ou non votre fine-tuning **tiendra dans la mémoire de votre GPU** :
