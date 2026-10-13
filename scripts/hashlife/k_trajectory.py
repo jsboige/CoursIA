@@ -1100,7 +1100,10 @@ def cmd_wolfram_4classes(args: argparse.Namespace) -> int:
 # les deux regles rendent KSF = 8.000 (= n_cells / 8 octets, plancher exact).
 WOLFRAM_KSF_MIN_N_CELLS = 512
 
-# Landmarks asymptotiques (KSF mesuree a grand contexte), en BITS par cellule
+# Ancres operationnelles par classe, en BITS par cellule -- derivees de la
+# classe (0 pour deterministe, plancher d'entropie 1.0 approche par l'ancre
+# conservative 0.85, intermediaire pour IV), pas des valeurs publiees ;
+# W=32 est le plus grand contexte mesure, pas une asymptote.
 WOLFRAM_KSF_LANDMARKS = {
     0: ("I", "uniforme", 0.0),
     4: ("II", "periodique", 0.0),
@@ -1290,7 +1293,10 @@ def wolfram_ksf_verdict(results: list[dict]) -> dict:
         # comparable aux landmarks : ksf_mean est en octets.
         observed_ksf = max_run["ksf_bits_per_cell"]
         delta = abs(observed_ksf - expected_ksf)
-        # Tolerance : 0.20 bit/cellule (fenetre pour bruit statistique)
+        # Tolerance : 0.20 bit/cellule -- fenetre operationnelle (bruit zlib
+        # ~3 % entre postes, variation d'echelle), numeriquement egale a
+        # l'ancre R110 : le verdict de R110 y est sensible (n=512 ->
+        # DEVIATION), choix d'instrument assume (cf. WOLFRAM-VERDICT-KSF.md).
         if delta < 0.20:
             verdicts[f"KSF_R{rule}"] = (
                 f"CLASS-{klass}-CONFIRMED (KSF(W={max_run['W_context']}) = "

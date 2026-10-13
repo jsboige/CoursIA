@@ -80,8 +80,12 @@ the published Gemini self-replication completes in 33 699 586).
   state** — the period witness
   `evolveHashlifeFastMemo 35328 otcaInitial = otcaInitial` remains an
   **open hypothesis**: neither the exact period on the isolated pattern
-  nor feasibility is confirmed (performance test of the memoized
-  Hashlife at 64 691 cells): that is the next tranche. The prediction
+  nor feasibility is confirmed. Tranche 4 **measured** the cost of that
+  feasibility: the `native_decide` evaluation of the witness does not
+  terminate within 2 h on this machine (two attempts, the lake's
+  replays consumed within seconds then silence until the timeout, no
+  `.olean` produced) — a ceiling of the organ **measured here**, liftable
+  on a better-endowed machine. The prediction
   "an isolated metapixel on a borderless grid is not periodic either"
   is therefore **neither confirmed nor refuted** for the OTCA.
 - **Paired negative witnesses** (criterion 2 of #19989):
@@ -268,7 +272,9 @@ for the corresponding pillar. The proof is intended to be a single
     open hypothesis (eventual recurrence and return to the initial
     state unmeasured); it awaits (a) confirmation of the exact period
     35 328 on the isolated pattern and (b) a performance test of the
-    memoized Hashlife on a 64 691-cell grid.
+    memoized Hashlife on a 64 691-cell grid — of which tranche 4 made a
+    **first, inconclusive attempt** within 2 h on this machine (no
+    `.olean` produced; ceiling liftable on a better-endowed machine).
 
     What is proven here, and **non-vacuously**, is that the loaded grid
     is real: 165 KB of RLE through the same `include_str` +

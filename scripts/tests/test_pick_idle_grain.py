@@ -1146,6 +1146,51 @@ def test_diff_bounded_none_preserve_comportement_avant_19645(monkeypatch):
     assert "prose-counts-guard" in undecided
 
 
+def test_nav_guards_declares_bornes_au_diff_registre_19645_c1503():
+    """#19645 suite c.1503 : nav-chain/navlinks sortent du registre, sans monkeypatch.
+
+    Leur workflow d'origine scopait au diff (`git diff $BASE...HEAD`), mais
+    l'argv absorbe (`--check`) ne porte plus ce drapeau : aucune heuristique
+    d'argv ne peut les detecter (c'est la mesure c.1503). La declaration
+    explicite `diff_bounded` du registre est le canal -- ce test mesure le
+    cablage REEL de bout en bout (pas un monkeypatch de la fonction), et
+    echoue si la declaration disparait ou si l'import du registre casse.
+    """
+    names = pig._diff_bounded_check_names()
+    assert "check-nav-chain" in names
+    assert "check-navlinks" in names
+
+
+def test_nav_chain_corrobore_absent_de_main_sort_de_base_c1503():
+    """#19645 suite c.1503 : le scenario fondateur, de bout en bout.
+
+    `check-nav-chain` rouge et corrobore par deux PR de lanes differentes
+    (#20044/#20062, notebooks distincts -- aucun rouge partage possible),
+    ABSENT du rollup de `main` (l'agregateur ne tourne que sur
+    `pull_request`). Avant la declaration : `undecided` + repli fail-closed
+    en `base` -> le tapis disait « pas le votre » et la lane ne cherchait
+    pas son `orphan_entry`. Apres : `undecided` SEUL -- la lane garde la
+    main. Controle negatif : un check non declare, meme scenario, reste
+    impute a la base (le filtre est un ensemble clos, il n'elargit pas la
+    classe des acquittes).
+    """
+    diff_bounded = pig._diff_bounded_check_names()
+    assert "check-nav-chain" in diff_bounded, "cablage registre absent"
+    corroborated = {"check-nav-chain": [20044, 20062],
+                    "Scripts Tests (CPU)": [20044, 20062]}
+    names_by_key = {"check-nav-chain": {"check-nav-chain"},
+                    "Scripts Tests (CPU)": {"Scripts Tests (CPU)"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names_by_key, _probe(),  # rollup de main sans les nav
+        diff_bounded=diff_bounded)
+    assert "check-nav-chain" not in base
+    assert "check-nav-chain" in undecided
+    # Controle negatif : non declare -> repli fail-closed inchange.
+    assert "Scripts Tests (CPU)" in base
+    assert "Scripts Tests (CPU)" in undecided
+    assert infra == {}
+
+
 def test_geste_infra_n_invente_pas_d_id_de_run():
     """L'id du check-run n'est pas un id de workflow run : le picker n'en donne aucun.
 
