@@ -30,6 +30,15 @@ py -3.11 sk_orchestration_modes_pilot.py   # T4 — les 5 modes d'orchestration
 py -3.11 maf_workflow_pilot.py             # T5 — graphe typé MAF
 ```
 
+Le pilote T7 (MAF couche agents) est mesuré sur une **ligne de versions alignée**
+différente de T5 : `agent-framework-core` 1.21.0 + `agent-framework-orchestrations`
+1.3.1, sous le venv projet (core 1.15.0 + orchestrations 1.1.1, l'état antérieur
+de l'env, est incompatible sur le protocole request-info du handoff) :
+
+```bash
+<venv>/Scripts/python maf_agents_handoff_pilot.py   # T7 — handoff, budget dur 40 appels
+```
+
 Le pilote T3 (Google ADK) vit dans la série Track2 :
 
 ```bash
