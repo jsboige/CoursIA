@@ -15,6 +15,7 @@
   {"id": "longshortharvest", "role": "candidate", "trace": "19837-lsh-vix-lag/lag_full", "issue": 19837, "pr": 20034},
   {"id": "bitcoin-regime-gate", "role": "candidate", "trace": "19929-bitcoin-regime/gate", "issue": 19929, "pr": 19931},
   {"id": "ema-cross-crypto", "role": "candidate", "trace": "20054-ema-cross-crypto/base", "issue": 20054, "pr": 20056},
+  {"id": "leveraged-etf-ucits", "role": "candidate", "trace": "20141-leveraged-etf-ucits/ucits", "issue": 20141, "pr": 20143},
   {"id": "adaptive-momentum-775", "role": "candidate", "trace": "20168-adaptive-momentum-775/base", "issue": 20168, "pr": 20171},
   {"id": "btc-eth-rotation", "role": "candidate", "trace": "20189-btc-eth-rotation/base", "issue": 20189, "pr": 20192},
   {"id": "crypto-momentum-topn", "role": "candidate", "trace": "20214-crypto-momentum-topn/L14N2", "issue": 20214, "pr": 20216},
