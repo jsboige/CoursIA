@@ -23,35 +23,81 @@ import pytest
 class TestConvertUiToApi:
     """Tests for WorkflowManager.convert_ui_to_api."""
 
-    def test_filters_reroute_nodes(self):
-        """Reroute nodes are excluded from API output."""
-        from core.comfyui_client import WorkflowManager
-        ui = {"nodes": [{"type": "Reroute", "id": 1}, {"type": "KSampler", "id": 2}]}
-        result = WorkflowManager.convert_ui_to_api(ui)
-        # Reroute filtered, KSampler kept (but inputs are placeholder TODO)
-        # Current impl: returns empty dict because `pass` in the loop body
-        # but node IS iterated. Verify Reroute is skipped.
-        assert isinstance(result, dict)
+    # `object_info` minimal : quatre entrees de widget + des entrees de lien.
+    OBJECT_INFO = {
+        'KSampler': {'input': {'required': {
+            'model': ['MODEL'], 'seed': ['INT', {}], 'steps': ['INT', {}],
+            'cfg': ['FLOAT', {}], 'sampler_name': [['euler'], {}],
+            'scheduler': [['simple'], {}], 'positive': ['CONDITIONING'],
+            'negative': ['CONDITIONING'], 'latent_image': ['LATENT'],
+            'denoise': ['FLOAT', {}]}}},
+        'EmptyLatentImage': {'input': {'required': {
+            'width': ['INT', {}], 'height': ['INT', {}], 'batch_size': ['INT', {}]}}},
+    }
 
-    def test_filters_note_nodes(self):
+    def test_note_nodes_are_excluded(self):
         """Note nodes are excluded from API output."""
         from core.comfyui_client import WorkflowManager
-        ui = {"nodes": [{"type": "Note", "id": 1}]}
-        result = WorkflowManager.convert_ui_to_api(ui)
-        assert isinstance(result, dict)
+        ui = {"nodes": [{"type": "Note", "id": 1, "widgets_values": []}]}
+        assert WorkflowManager.convert_ui_to_api(ui, {}) == {}
+
+    def test_reroute_is_resolved_not_dropped(self):
+        """Un Reroute disparait mais le lien qu'il portait vise la source reelle."""
+        from core.comfyui_client import WorkflowManager
+        ui = {
+            "nodes": [
+                {"id": 1, "type": "EmptyLatentImage", "widgets_values": [8, 8, 1]},
+                {"id": 2, "type": "Reroute", "inputs": [{"name": "", "link": 5}]},
+                {"id": 3, "type": "KSampler", "inputs": [{"name": "latent_image", "link": 6}],
+                 "widgets_values": [1, 20, 1.0, "euler", "simple", 1.0]},
+            ],
+            "links": [[5, 1, 0, 2, 0, "LATENT"], [6, 2, 0, 3, 0, "LATENT"]],
+        }
+        api = WorkflowManager.convert_ui_to_api(ui, self.OBJECT_INFO)
+        assert "2" not in api
+        assert api["3"]["inputs"]["latent_image"] == ["1", 0]
+
+    def test_widgets_values_are_mapped_positionally(self):
+        """Les valeurs suivent l'ordre declare, les liens ecrasent la valeur restee."""
+        from core.comfyui_client import WorkflowManager
+        ui = {"nodes": [{"id": 1, "type": "EmptyLatentImage",
+                         "inputs": [{"name": "width", "link": 7}],
+                         "widgets_values": [512, 512, 1]}],
+              "links": [[7, 4, 0, 1, 0, "INT"]]}
+        api = WorkflowManager.convert_ui_to_api(ui, self.OBJECT_INFO)
+        assert api["1"]["inputs"]["width"] == ["4", 0]      # le lien prime
+        assert api["1"]["inputs"]["height"] == 512
+        assert api["1"]["inputs"]["batch_size"] == 1
+
+    def test_seed_widget_keeps_its_control_value(self):
+        """Un widget seed consomme deux valeurs : la graine et son mode."""
+        from core.comfyui_client import WorkflowManager
+        ui = {"nodes": [{"id": 1, "type": "KSampler",
+                         "widgets_values": [12345, "fixed", 25, 1.0, "euler", "simple", 1.0]}]}
+        api = WorkflowManager.convert_ui_to_api(ui, self.OBJECT_INFO)
+        assert api["1"]["inputs"]["seed"] == 12345
+        assert api["1"]["inputs"]["control_after_generate"] == "fixed"
+        assert api["1"]["inputs"]["steps"] == 25
+
+    def test_mismatched_widget_count_fails_closed(self):
+        """Un appariement impossible leve, il ne produit pas un graphe faux."""
+        from core.comfyui_client import WorkflowManager
+        ui = {"nodes": [{"id": 1, "type": "EmptyLatentImage", "widgets_values": [8]}]}
+        with pytest.raises(ValueError):
+            WorkflowManager.convert_ui_to_api(ui, self.OBJECT_INFO)
 
     def test_empty_nodes_returns_empty(self):
         """Empty nodes list returns empty dict."""
         from core.comfyui_client import WorkflowManager
         ui = {"nodes": []}
-        result = WorkflowManager.convert_ui_to_api(ui)
+        result = WorkflowManager.convert_ui_to_api(ui, {})
         assert result == {}
 
     def test_no_nodes_key_returns_empty(self):
         """Missing 'nodes' key returns empty dict."""
         from core.comfyui_client import WorkflowManager
         ui = {"links": []}
-        result = WorkflowManager.convert_ui_to_api(ui)
+        result = WorkflowManager.convert_ui_to_api(ui, {})
         assert result == {}
 
 

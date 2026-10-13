@@ -11,7 +11,12 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from fix_string_cells import convert_string_to_list, fix_list_newlines, fix_notebook
+from fix_string_cells import (
+    convert_string_to_list,
+    fix_list_newlines,
+    fix_notebook,
+    is_exploded_character_list,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -116,11 +121,17 @@ class TestFixListNewlines:
         assert result == ["line1\n", "line2\n", "line3"]
 
     def test_empty_line_in_middle(self):
-        """Empty string in middle of list (no \\n to add)."""
+        """Empty element in the middle -> left untouched (#17550).
+
+        Un element vide n'est pas un terminateur de ligne : le remplacer par
+        '\\n' fabriquerait une ligne blanche absente du rendu ('line1line3' ->
+        'line1\\n\\nline3'). Le saut se materialise sur la ligne de GAUCHE, deja
+        servie ici par la frontiere k=0. L'ancienne attente ('\\n') etait la
+        classe de doublement rapporte par #17550."""
         src = ["line1", "", "line3"]
         result = fix_list_newlines(src)
-        # Empty line has nothing to append \n to
-        assert result == ["line1\n", "\n", "line3"]
+        assert result == ["line1\n", "", "line3"]
+        assert "".join(result).count("\n\n") == "".join(src).count("\n\n")
 
     def test_last_line_has_newline_unchanged(self):
         """If last line has \\n, non-last lines correct -> unchanged."""
@@ -255,3 +266,71 @@ class TestFixNotebook:
         with open(nb_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         assert data["cells"][0]["source"] == ["print('héllo\n", "wörld')"]
+
+
+# ---------------------------------------------------------------------------
+# non-doublement des sauts (issue #17550)
+# ---------------------------------------------------------------------------
+
+class TestNonDoubling:
+    """Le saut deja rendu par la liste ne doit pas etre double.
+
+    Motif mesure sur origin/main : un element sans '\\n' dont le SUIVANT est le
+    saut lui-meme, par exemple ['> **Indice :**', '\\n', ...]. Rendu d'origine
+    '> **Indice :**\\n' ; la forme globale rendait '> **Indice :**\\n\\n'.
+    """
+
+    def test_supplied_junction_left_untouched(self):
+        src = ["> **Indice :**", "\n", "Suite du texte."]
+        assert fix_list_newlines(src) == src
+
+    def test_supplied_junction_does_not_double(self):
+        """Le rendu est identique avant/apres (aucun blanc ajoute)."""
+        src = ["Fin du paragraphe.", "\n", "Paragraphe suivant."]
+        out = fix_list_newlines(src)
+        assert "".join(out) == "".join(src)
+        assert "".join(out).count("\n\n") == "".join(src).count("\n\n")
+
+    def test_whitespace_junction_left_untouched(self):
+        """Une espace d'un cote rend deja correctement (predicat #5094)."""
+        src = ["Fin de ligne.", " debut avec espace."]
+        assert fix_list_newlines(src) == src
+
+    def test_glued_junction_still_fixed(self):
+        """Frontiere reellement collee : la correction reste faite."""
+        src = ["Ligne une", "Ligne deux", "Ligne trois"]
+        assert fix_list_newlines(src) == ["Ligne une\n", "Ligne deux\n", "Ligne trois"]
+
+    def test_mixed_cell_fixes_only_the_glued_side(self):
+        """Une frontiere collee corrigee, une frontiere deja rendue intacte."""
+        src = ["Ligne collee", "Ligne suivante", "Indice :", "\n", "Corps"]
+        out = fix_list_newlines(src)
+        assert out == ["Ligne collee\n", "Ligne suivante\n", "Indice :", "\n", "Corps"]
+
+
+class TestExplodedCharacters:
+    """Cellule deserialisee caractere par caractere : non reecrite (#17550)."""
+
+    def test_exploded_list_refused(self):
+        src = list("import os\nprint('hello world')")  # 29 elements d'un caractere
+        assert len(src) > 20
+        assert fix_list_newlines(src) == src
+
+    def test_exploded_predicate_threshold(self):
+        assert is_exploded_character_list(list("a" * 25)) is True
+        # Sous le seuil, une liste courte ecrite a la main reste corrigee.
+        assert is_exploded_character_list(["a", "b"]) is False
+        assert fix_list_newlines(["a", "b"]) == ["a\n", "b"]
+
+    def test_exploded_cell_not_written(self, tmp_path):
+        """fix_notebook laisse la cellule intacte et ne signale pas de modification."""
+        exploded = list("import os\nprint('hello world')")
+        nb_path = tmp_path / "exploded.ipynb"
+        nb_path.write_text(json.dumps({
+            "cells": [{"cell_type": "code", "source": exploded,
+                       "outputs": [], "execution_count": 1}],
+            "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+        }), encoding="utf-8")
+        before = nb_path.read_text(encoding="utf-8")
+        assert fix_notebook(nb_path) is False
+        assert nb_path.read_text(encoding="utf-8") == before

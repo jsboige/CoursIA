@@ -105,7 +105,7 @@ _ANCHOR_RE = re.compile(r"\bcode\[(\d+)\]")
 
 # --- TODO / exercise markers (class h) --------------------------------------
 
-_TODO_RE = re.compile(r"(TODO[_ ]etudiant|TODO[_ ]student|à compléter|a completer|\bsorry\b)", re.I)
+_TODO_RE = re.compile(r"(TODO[_ ]étudiant|TODO[_ ]etudiant|TODO[_ ]student|à compléter|a completer|\bsorry\b)", re.I)
 
 # A fenced block line that reads like implementation, not like a skeleton.
 # Skeletons end on `;` / `{` / `...` and carry no body; solutions have
@@ -127,6 +127,10 @@ _ARITH_RE = re.compile(
 _MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 _HTML_HREF_RE = re.compile(r"<a\s[^>]*href=\"([^\"]+)\"", re.I)
 _SKIP_TARGET_PREFIXES = ("http://", "https://", "mailto:", "#", "data:", "/")
+# Code-span inline : markdown n'interpette PAS son contenu comme des liens --
+# une formule modale `[]((p => q))` dans une table n'est pas un href (#17187,
+# 8 FP HREF_MISSING mesures sur #17122, verdict Hermes po-2026).
+_CODESPAN_RE = re.compile(r"`+[^`\n]*`+")
 
 # --- accents (class c) ------------------------------------------------------
 
@@ -222,6 +226,20 @@ def _fenced_blocks(text: str) -> list[tuple[str, str]]:
     return blocks
 
 
+def _md_link_surface(text: str) -> str:
+    """Surface du texte markdown INTERPRETEE comme liens : blocs fences
+    retires, code-spans neutralises. Markdown ne lie pas le contenu d'un
+    code-span -- le scanner ne doit pas non plus (#17187)."""
+    out, in_fence = [], False
+    for ln in text.splitlines():
+        if _FENCE_RE.match(ln):
+            in_fence = not in_fence
+            continue
+        if not in_fence:
+            out.append(ln)
+    return _CODESPAN_RE.sub(" ", "\n".join(out))
+
+
 def scan_anchors(cells: list[dict]) -> list[dict]:
     """Class (f): code[N] must resolve to a code cell in the HEAD layout."""
     findings = []
@@ -237,7 +255,15 @@ def scan_anchors(cells: list[dict]) -> list[dict]:
                 continue
             seen.add(idx)
             if idx >= n_code:
-                abs_state = "markdown" if idx < n and cells[idx].get("cell_type") == "markdown" else "out of notebook"
+                # Libelle exact (#17875, second defaut) : la cellule absolue
+                # peut EXISTER et etre du code -- dire "out of notebook" pour
+                # une cellule presente gonfle l'alarme au-dela du fait.
+                if idx >= n:
+                    abs_state = "out of notebook"
+                elif cells[idx].get("cell_type") == "markdown":
+                    abs_state = "markdown"
+                else:
+                    abs_state = "a code cell"
                 findings.append({
                     "cell_index": i, "category": "ANCHOR_OOR", "severity": "HIGH",
                     "evidence": m.group(0),
@@ -362,7 +388,8 @@ def scan_href(notebook: Path, cells: list[dict], repo_root: Path) -> list[dict]:
     findings = []
     nb_dir = notebook.parent
     for i, cell in _md_cells(cells):
-        targets = _MD_LINK_RE.findall(_src(cell)) + _HTML_HREF_RE.findall(_src(cell))
+        surface = _md_link_surface(_src(cell))
+        targets = _MD_LINK_RE.findall(surface) + _HTML_HREF_RE.findall(surface)
         seen = set()
         for t in targets:
             t = unquote(t).strip()

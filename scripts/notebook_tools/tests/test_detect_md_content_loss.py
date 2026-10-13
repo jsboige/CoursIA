@@ -262,28 +262,160 @@ class TestReorderSafeByCellID:
         assert findings[0]["kind"] == "TRUNCATED_CELL"
         assert findings[0]["cell_idx"] == 1
 
-    def test_zero_id_same_length_substitution_still_signals(self):
-        # #10873 garde anti-blanc-seing des TOTAUX : substitution + reorder.
+    def test_zero_id_same_length_substitution_preserved_no_signal(self):
+        # #19870 : substitution meme-longueur + reorder, substance preservee.
         # base = [X (L), Y (S)], head = [Y (S), X' (L)] ou X' est DISTINCT de
-        # X mais de MEME longueur normalisee (mots de meme longueur). Les
-        # TOTAUX sont egaux au caractere pres -- un critere sur les totaux
-        # disculperait a tort (blanc-seing). Le critere implemente est le
-        # MULTISET des chaines : il differe, le court-circuit ne s'arme pas,
-        # l'appariement index signale le desalignement (X perdu, X' apparu).
+        # X mais de MEME longueur normalisee (mots de meme longueur).
+        # L'appariement par intersection multiset des contenus normalises
+        # retire Y (present des deux cotes), apparie X <-> X' par contenu ;
+        # longueurs normalisees egales -> ratio 1.0 -> 0 finding. C'est le
+        # **comportement desire** : la substance est preservee au caractere
+        # pres, le garde n'a pas vocation a juger la qualite d'une
+        # reformulation.
+        #
+        # #10873 (reprise review #19893) : ce test n'epingle PLUS le critere
+        # multiset-contre-totaux -- son assertion est desormais ``== []``.
+        # Le critere MULTISET DES CHAINES (pas les TOTAUX de caracteres)
+        # est desormais epingle par
+        # ``test_zero_id_equal_totals_truncation_compensated_signals``
+        # ci-dessous : le cas totaux egaux + vraie troncature compensee par
+        # l'expansion d'une autre cellule, ou un critere de totaux
+        # rendrait 0 finding (blanc-seing).
+        #
+        # Pour verifier qu'une **vraie** perte est toujours signalee dans
+        # ce regime, voir `test_substitution_with_real_truncation_signals`
+        # ci-dessous (la cellule `X_prime` est plus courte que `X` et
+        # signale un TRUNCATED_CELL).
         x = "## Analyse technique\n\n" + ("Regarder la volatilite. " * 20)
         x_prime = "## Analyse technique\n\n" + ("Analyser la volatilite. " * 20)
         y = "## Section breve\n\n" + ("Rappel court. " * 12)
         assert len(dml._normalize(x)) == len(dml._normalize(x_prime)), (
             "fixtures: X et X' doivent totaliser la meme longueur normalisee "
-            "pour que ce test prouve multiset != totaux"
+            "(substitution preservee au caractere pres)"
         )
         base = _nb(_md(x), _md(y))
         head = _nb(_md(y), _md(x_prime))  # X substitue par X' + reorder
         findings = dml._compare_cells(dml.extract_md_cells(base),
                                       dml.extract_md_cells(head))
-        assert len(findings) >= 1, (
-            "une substitution meme-longueur + reorder doit signaler (multiset "
-            f"different, totaux egaux -- trouve: {findings!r})"
+        # L'appariement par intersection retire Y (present des deux cotes),
+        # apparie X <-> X' par contenu. Longueurs normalisees egales -> 0
+        # finding. C'est correct : on a preserve la substance.
+        assert findings == [], (
+            "une substitution meme-longueur preservee au caractere pres ne "
+            "doit PAS signaler (appariement par intersection, contenu "
+            f"preserve). Trouve: {findings!r}"
+        )
+
+    def test_zero_id_equal_totals_truncation_compensated_signals(self):
+        # #10873 / review #19893 -- CE test epingle le critere multiset
+        # contre le critere des TOTAUX de caracteres. Cas exact de la
+        # review : base = [A (~700c), B (~150c)], head = [A tronquee
+        # (~150c), B etendue (~700c)]. Les TOTAUX normalises sont egaux au
+        # caractere pres -- un court-circuit sur les totaux rendrait 0
+        # finding (blanc-seing : une vraie troncature masquee par
+        # l'expansion d'une AUTRE cellule). Le MULTISET des chaines
+        # different (4 chaines deux a deux distinctes) : le court-circuit
+        # ne s'arme pas, l'intersection ne retire rien, l'appariement index
+        # residual apparie A <-> A_trunc (ratio ~0.2) et signale, pendant
+        # que B <-> B_ext (expansion, ratio > 1) ne signale pas.
+        a = "## Section A\n\n" + ("Regarder la volatilite. " * 30)
+        b = "## Section B\n\n" + ("Rappel court. " * 9)
+        a_trunc = "## Section A\n\n" + ("Analyse breve. " * 9)
+        # B_ext : extension de B jusqu'a egaliser les TOTAUX normalises au
+        # caractere pres (remplissage deterministe -- la normalisation
+        # retire les espaces, chaque mot ajoute sa longueur en lettres).
+        b_ext = "## Section B\n\n"
+        deficit = (dml._norm_len(a) + dml._norm_len(b)
+                   - dml._norm_len(a_trunc) - dml._norm_len(b_ext))
+        filler = "developpement"
+        while deficit >= len(filler):
+            b_ext += filler + " "
+            deficit -= len(filler)
+        b_ext += "d" * deficit
+        assert (dml._norm_len(a) + dml._norm_len(b)
+                == dml._norm_len(a_trunc) + dml._norm_len(b_ext)), (
+            "fixtures: les TOTAUX normalises doivent etre egaux pour que ce "
+            "test prouve multiset != totaux"
+        )
+        assert len({dml._normalize(a), dml._normalize(b),
+                    dml._normalize(a_trunc), dml._normalize(b_ext)}) == 4, (
+            "fixtures: les 4 chaines normalisees doivent etre distinctes "
+            "(sinon l'intersection pourrait retirer le signal)"
+        )
+        base = _nb(_md(a), _md(b))
+        head = _nb(_md(a_trunc), _md(b_ext))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert findings[0]["cell_idx"] == 0  # A tronquee, position head
+        assert findings[0]["ratio"] < 0.5
+
+    def test_substitution_with_real_truncation_signals(self):
+        # #19870 garde anti-blanc-seing du fix : une substitution pure (IDs
+        # distincts, compte constant) avec une VRAIE perte de substance
+        # (X_prime est beaucoup plus court que X) doit toujours signaler.
+        # C'est l'equivalent du `test_zero_id_real_truncation_still_signals`
+        # pour le regime substitution-a-IDs-differents : l'appariement par
+        # intersection ne peut pas blanchir une reduction reelle.
+        long_x = "## Section\n\n" + ("Phrase pedagogique substantielle. " * 30)  # ~700c
+        short_x_prime = "## Section\n\n"  # ~14c (frontmatter H2 + newline)
+        y = "## Section breve\n\n" + ("Rappel court. " * 12)  # ~150c
+        base = _nb(_md(long_x), _md(y))
+        head = _nb(_md(y), _md(short_x_prime))  # X reduit a 2% + reorder
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        # Y apparie en intersection (present des deux cotes) -> retire.
+        # Residu [long_x] vs [short_x_prime] : longueur 700 -> 14, ratio 0.02
+        # -> 1 finding TRUNCATED_CELL.
+        assert len(findings) == 1
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert findings[0]["ratio"] < 0.1
+
+    def test_substitution_keeps_unchanged_cells_no_false_positive(self):
+        # #19870 cas fondateur (PR #19831 PyMC-04) : sur 36 cellules md,
+        # 6 byte-identiques, 8 reellement reduites, 1 creee. La PR supprime
+        # la cellule campagne `fuse-16` et cree `lecture-marginales`. Le
+        # multiset des contenus normalises differe (la nouvelle cellule a
+        # un contenu distinct), les IDs different (cellule creee, pas
+        # d'ancien ID) : on tombe dans la branche `else` de
+        # `_compare_cells`. AVANT #19870, l'index-legacy croisait les
+        # cellules et produisait 15 faux positifs TRUNCATED_CELL. APRES
+        # #19870, l'intersection multiset retire les 6 cellules
+        # byte-identiques avant l'appariement, le residu est trivial, et
+        # seules les VRAIES reductions apparaissent.
+        body_long = "## Section pedagogique\n\n" + ("Contenu substantiel. " * 30)  # ~700c
+        body_intact_a = "## Cellule intacte A\n\n" + ("Detail pedagogique. " * 30)  # ~700c
+        body_intact_b = "## Cellule intacte B\n\n" + ("Autre detail. " * 30)  # ~700c
+        body_intact_c = "## Cellule intacte C\n\n" + ("Encore un detail. " * 30)  # ~700c
+        body_intact_d = "## Cellule intacte D\n\n" + ("Suite. " * 30)  # ~700c
+        body_intact_e = "## Cellule intacte E\n\n" + ("Plus. " * 30)  # ~700c
+        body_intact_f = "## Cellule intacte F\n\n" + ("Encore. " * 30)  # ~700c
+        body_truncated = "## Cellule reduite\n\n" + ("Tronquee. " * 5)  # ~80c
+        body_new = "## Cellule creee\n\n" + ("Substance nouvelle. " * 20)  # ~400c
+        # base : 6 cellules intactes, 1 reduite, 1 longue (substituee en head)
+        base = _nb(
+            _md(body_intact_a), _md(body_intact_b), _md(body_intact_c),
+            _md(body_intact_d), _md(body_intact_e), _md(body_intact_f),
+            _md(body_long),        # X : longue, sera substituee en head
+            _md(body_truncated),   # Y : tronquee dans la PR (idx reel)
+        )
+        # head : 6 intactes (meme ordre), 1 nouvelle (au lieu de X), 1 tronquee
+        head = _nb(
+            _md(body_intact_a), _md(body_intact_b), _md(body_intact_c),
+            _md(body_intact_d), _md(body_intact_e), _md(body_intact_f),
+            _md(body_new),        # X' : substituee a la place de X
+            _md(body_truncated),
+        )
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        # Les 6 cellules intactes sont retirees par l'intersection multiset.
+        # body_truncated est present des deux cotes (meme contenu) -> retire.
+        # Residu [body_long] vs [body_new] : 700c -> 400c, ratio ~0.57 < 0.75
+        # -> 1 finding TRUNCATED_CELL.
+        assert len(findings) == 1, (
+            "6 cellules intactes retirees, 1 vraie reduction signalee. "
+            f"Trouve: {findings!r}"
         )
         assert findings[0]["kind"] == "TRUNCATED_CELL"
 
@@ -372,6 +504,238 @@ class TestLostMotifs:
         head = _nb(_md("**Navigation** : [Index](README.md) | [Suivant](2.ipynb)"))
         findings = dml._compare_motifs(dml._collect_motifs(base), dml._collect_motifs(head))
         assert all(f["kind"] != "LOST_MOTIF" for f in findings)
+
+
+# ---------------------------------------------------------------------------
+# 6b. Liens de navigation : cibles distinctes vivantes (#17392)
+# ---------------------------------------------------------------------------
+class TestNavLinkDistinctLiveTargets:
+    """#17392 : l'identite d'un lien de navigation est sa CIBLE normalisee
+    (ancre ignoree), pas son occurrence. Une cible de base absente de la tete
+    n'est PERDUE que si trois excuses ecrites ne s'appliquent aucune :
+    (e1) cible MORTE en base (reparation), (e2) libelle REELLEMENT deplace
+    (appariement libelle->cible change ; un libelle generique qui survit
+    sur une cible deja pointee en base n'excuse pas -- decision ai-01
+    2026-09-24, option a), (e3) cibles nouvelles compensant les perdues a
+    1:1 (reconstruction bornee). Cas fondateur : PR dedoublonnant un bloc
+    de nav legacy -- 7 instances -> 4, 4 cibles -> 3 ; la cible perdue
+    (README de serie, VIVANT depuis 7e69518092) garde un libelle Index
+    en tete, mais SUR UNE CIBLE DEJA POINTEE EN BASE -> ROUGE : la perte
+    est visible, a justifier dans le body de la PR qui la fait."""
+
+    def _lab6_fixture(self, tmp_path):
+        # Reproduit la geometrie reelle de Lab6-First-Agent : dossier du
+        # notebook a 5 niveaux ; ../../README.md = README du Day3 (VIVANT,
+        # cree) ; ../../../../README.md = README de serie DataScienceWithAgents
+        # (VIVANT aussi : existe depuis 7e69518092, 2026-07-21 -- verifie
+        # `git cat-file -e` origin/main et merge-base #17392 ; re-audite par
+        # l'adjoint 2026-09-23, corrige ici).
+        lab6 = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Labs" / "Lab6-First-Agent"
+        lab6.mkdir(parents=True)
+        (tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "README.md").write_text(
+            "day3", encoding="utf-8")
+        (tmp_path / "README.md").write_text("serie", encoding="utf-8")
+        nb = lab6 / "Lab6-First-Agent.ipynb"
+        nb.write_text(json.dumps(_nb(_md("# Lab6"))), encoding="utf-8")
+        return nb
+
+    _LAB6_BASE = _nb(
+        _md("[Index](../../../../README.md)\n"
+            "[<< Lab5](../Lab5-Viz-ML/Lab5-Viz-ML.ipynb)\n"
+            "[Lab7 >>](../Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb)"),
+        _md("[Lab 5 <<](../Lab5-Viz-ML/Lab5-Viz-ML.ipynb)\n"
+            "[Index](../../README.md)\n"
+            "[>> Lab 7](../Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb)"),
+        _md("Corps pedagogique substantiel du lab. " * 8),
+        _md("[Index ML](../../../../README.md)"),
+    )
+    _LAB6_HEAD = _nb(
+        _md("[Lab 5 <<](../Lab5-Viz-ML/Lab5-Viz-ML.ipynb)\n"
+            "[Index](../../README.md)\n"
+            "[>> Lab 7](../Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb)"),
+        _md("Corps pedagogique substantiel du lab. " * 8),
+        _md("[Journee 3](../../README.md)"),
+    )
+
+    def test_lab6_dedup_generic_surviving_label_still_signals(self, tmp_path):
+        # FIGE le cas reel #17392 (decision ai-01 2026-09-24, option a) :
+        # base 7 instances / 4 cibles, tete 4 instances / 3 cibles. La cible
+        # disparue (README de serie) est VIVANTE en base -- e1 ne s'applique
+        # PAS. Le libelle Index survit bien en tete, mais sur ../../README.md
+        # qu'il pointait DEJA en base (cellule 2) : l'appariement n'a pas
+        # change, ce n'est pas un deplacement -> e2 ne l'excuse PAS. La perte
+        # est SIGNALEE : la PR qui deplace vraiment ce lien le justifie dans
+        # son body.
+        nb = self._lab6_fixture(tmp_path)
+        findings = dml._compare_motifs(
+            dml._collect_motifs(self._LAB6_BASE), dml._collect_motifs(self._LAB6_HEAD),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        nav = [f for f in findings if f["kind"] == "LOST_NAV_LINKS"]
+        assert len(nav) == 1, findings
+        assert nav[0]["lost_targets"] == ["../../../../README.md"]
+        assert nav[0]["repaired_dead_targets"] == []
+
+    def test_lab6_case_end_to_end_scan(self, tmp_path):
+        # Meme cas, via scan_notebook complet : la liveness passe par
+        # path_exists_at_ref (ref git). Toutes les cibles sont vivantes
+        # (le README de serie est cree dans la fixture) ; le verdict ROUGE
+        # repose sur e2 restreinte (libelle non deplace), pas sur une
+        # mortalite de cible.
+        nb = self._lab6_fixture(tmp_path)
+        nb.write_text(json.dumps(self._LAB6_HEAD), encoding="utf-8")
+        with mock.patch.object(dml, "read_notebook_at_ref",
+                               return_value=self._LAB6_BASE), \
+             mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref",
+                               return_value=True):
+            r = dml.scan_notebook(nb, base_ref="MOCK_BASE", head_ref=None)
+        nav = [f for f in r["findings"] if f["kind"] == "LOST_NAV_LINKS"]
+        assert len(nav) == 1, r["findings"]
+        assert nav[0]["lost_targets"] == ["../../../../README.md"]
+
+    def test_live_target_loss_still_signals(self, tmp_path):
+        # CONTROLE POSITIF : une cible VIVANTE en base, absente de la tete,
+        # sans libelle survivant ni cible gagnee -> LOST_NAV_LINKS. La tete
+        # garde un lien (perte PARTIELLE : le regime LOST_NAV_LINKS, pas le
+        # LOST_MOTIF de la disparition totale).
+        nb = self._lab6_fixture(tmp_path)
+        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras.mkdir()
+        (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
+        base = _nb(_md("[Extras](../../Extras/Extras.ipynb) [Index](../../README.md)"))
+        head = _nb(_md("[Index](../../README.md)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        nav = [f for f in findings if f["kind"] == "LOST_NAV_LINKS"]
+        assert len(nav) == 1, findings
+        assert nav[0]["lost_targets"] == ["../../Extras/Extras.ipynb"]
+
+    def test_dead_repair_does_not_mask_live_loss(self, tmp_path):
+        # Transparence : un meme diff qui repare une cible morte ET perd une
+        # cible vivante -> seule la vivante compte, la morte est listee comme
+        # reparee (audit) dans le finding.
+        nb = self._lab6_fixture(tmp_path)
+        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras.mkdir()
+        (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
+        base = _nb(_md("[Mort](../../Old/README.md) [Vivant](../../Extras/Extras.ipynb) [Index](../../README.md)"))
+        head = _nb(_md("[Index](../../README.md)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        nav = [f for f in findings if f["kind"] == "LOST_NAV_LINKS"]
+        assert len(nav) == 1, findings
+        assert nav[0]["lost_targets"] == ["../../Extras/Extras.ipynb"]
+        assert nav[0]["repaired_dead_targets"] == ["../../Old/README.md"]
+
+    def test_retarget_same_label_excused(self, tmp_path):
+        # (e2) RETARGET, regle ecrite : le libelle du lien survit en tete en
+        # pointant ailleurs -> l'affleurement de navigation garde son
+        # etiquette, ce n'est pas une perte (cf. note NAV_LINK_RE : re-cible
+        # notebook -> README de serie, convention majoritaire).
+        nb = self._lab6_fixture(tmp_path)
+        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras.mkdir()
+        (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
+        base = _nb(_md("[Index](../../README.md) [Notes](../../Extras/Extras.ipynb)"))
+        head = _nb(_md("[Index](../../README.md) [Notes](../../README.md)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        assert all(f["kind"] != "LOST_NAV_LINKS" for f in findings), findings
+
+    def test_e2_generic_label_on_kept_target_does_not_excuse(self, tmp_path):
+        # Le piege Lab6 en isole : le libelle Index survit en tete, mais sur
+        # une cible qu'il pointait DEJA en base -- l'appariement libelle->
+        # cible n'a pas change, ce n'est pas un deplacement. La perte de la
+        # cible vivante reste signalee (frontiere option a, ai-01 2026-09-24).
+        nb = self._lab6_fixture(tmp_path)
+        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras.mkdir()
+        (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
+        base = _nb(_md("[Index](../../Extras/Extras.ipynb) [Index](../../README.md)"))
+        head = _nb(_md("[Index](../../README.md)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        nav = [f for f in findings if f["kind"] == "LOST_NAV_LINKS"]
+        assert len(nav) == 1, findings
+        assert nav[0]["lost_targets"] == ["../../Extras/Extras.ipynb"]
+
+    def test_e2_label_repointed_to_new_target_excused(self, tmp_path):
+        # L'autre cote de la frontiere : le libelle du lien perdu pointe en
+        # tete une cible NOUVELLE pour lui (appariement change) -> deplacement
+        # REEL, excuse e2.
+        nb = self._lab6_fixture(tmp_path)
+        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras.mkdir()
+        (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
+        base = _nb(_md("[Index](../../Extras/Extras.ipynb)"))
+        head = _nb(_md("[Index](../../README.md)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        assert all(f["kind"] != "LOST_NAV_LINKS" for f in findings), findings
+
+    def test_unresolvable_context_stays_conservative(self, tmp_path):
+        # Sans contexte de resolution (nav_base_path=None, fixtures sans
+        # depot), la liveness est reputee VIVE : une cible absente de la
+        # tete reste signalee. Le garde ne se desarme pas faute de contexte.
+        base = _nb(_md("[a](1.ipynb) [b](2.ipynb)"))
+        head = _nb(_md("[a](1.ipynb)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=None, nav_base_ref=None,
+        )
+        assert any(f["kind"] == "LOST_NAV_LINKS" for f in findings)
+
+    def test_e3_bounded_one_gain_cannot_excuse_three_losses(self, tmp_path):
+        # (e3) BORNEE 1:1, probe P2 de l'audit : 3 cibles vivantes perdues,
+        # 1 gagnee -> ROUGE. L'ancien `if gained: continue` non borne
+        # laissait ce cas propre (moins detecteur que le garde d'origine).
+        nb = self._lab6_fixture(tmp_path)
+        day3 = tmp_path / "Track1-LangChain" / "Day3-Data-Agents"
+        extras = day3 / "Extras"
+        extras.mkdir()
+        (extras / "E.ipynb").write_text("{}", encoding="utf-8")
+        lab5 = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Labs" / "Lab5-Viz-ML"
+        lab5.mkdir()
+        (lab5 / "Lab5-Viz-ML.ipynb").write_text("{}", encoding="utf-8")
+        base = _nb(_md("[Prev](../../README.md) [Next](../../Extras/E.ipynb) "
+                       "[Sommaire](../../../../README.md)"))
+        head = _nb(_md("[Voir aussi](../Lab5-Viz-ML/Lab5-Viz-ML.ipynb)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        nav = [f for f in findings if f["kind"] == "LOST_NAV_LINKS"]
+        assert len(nav) == 1, findings
+        assert set(nav[0]["lost_targets"]) == {
+            "../../README.md", "../../Extras/E.ipynb", "../../../../README.md"}
+        assert nav[0]["delta"] == 3
+
+    def test_e3_one_for_one_still_excused(self, tmp_path):
+        # (e3) au pair : 1 cible vivante perdue, 1 cible nouvelle gagnee ->
+        # la barre est reconstruite a l'identique -> vert.
+        nb = self._lab6_fixture(tmp_path)
+        day3 = tmp_path / "Track1-LangChain" / "Day3-Data-Agents"
+        extras = day3 / "Extras"
+        extras.mkdir()
+        (extras / "E.ipynb").write_text("{}", encoding="utf-8")
+        base = _nb(_md("[Prev](../../README.md)"))
+        head = _nb(_md("[Voir aussi](../../Extras/E.ipynb)"))
+        findings = dml._compare_motifs(
+            dml._collect_motifs(base), dml._collect_motifs(head),
+            nav_base_path=nb, nav_base_ref=None,
+        )
+        assert all(f["kind"] != "LOST_NAV_LINKS" for f in findings), findings
 
 
 # ---------------------------------------------------------------------------
@@ -1038,3 +1402,47 @@ class TestTranslationAwareMode:
         with mock.patch.object(dml, "ref_resolves", return_value=True), \
              mock.patch.object(dml, "path_exists_at_ref", return_value=True):
             assert dml.main([str(pair), "--base", "MOCK", "--check"]) == 1
+
+
+# ---------------------------------------------------------------------------
+# 6b. Motifs ancres aux formes de section, jamais a la prose (#17473)
+# ---------------------------------------------------------------------------
+class TestAnchoredMotifs:
+    def test_real_section_lost_while_prose_mentions_word_signals(self):
+        # Faux negatif d'avant #17473 : la vraie section disparait pendant qu'une
+        # phrase ajoutee ailleurs contient le mot. L'ancien compte restait a 1
+        # des deux cotes et la perte passait inapercue.
+        base = _nb(_md("## Prérequis\n\n- Python 3.10\n- numpy"), _md("Texte."))
+        head = _nb(_md("Texte. L'installation sert de prérequis au reste."))
+        findings = dml._compare_motifs(dml._collect_motifs(base), dml._collect_motifs(head))
+        assert any(f["kind"] == "LOST_MOTIF" and f["motif"] == "Prerequis" for f in findings)
+
+    def test_prose_cell_removed_is_not_a_lost_motif(self):
+        # Faux positif mesure sur #17460 (10a-SemanticKernel-NotebookMaker-batch) :
+        # la seule occurrence etait un nom commun dans une lecture retiree.
+        base = _nb(_md("Titre."), _md("L'installation sert alors de prérequis aux réutilisations."))
+        head = _nb(_md("Titre."))
+        findings = dml._compare_motifs(dml._collect_motifs(base), dml._collect_motifs(head))
+        assert all(f["kind"] != "LOST_MOTIF" for f in findings)
+
+    def test_objective_word_in_prose_removed_is_not_a_lost_motif(self):
+        # Seconde instance mesuree sur #17463 (Serre100/08) : « L'objectif imprime : ... ».
+        base = _nb(_md("Titre."), _md("L'objectif imprimé : `ssc_iff_coprime` compile."))
+        head = _nb(_md("Titre."))
+        findings = dml._compare_motifs(dml._collect_motifs(base), dml._collect_motifs(head))
+        assert all(f["kind"] != "LOST_MOTIF" for f in findings)
+
+    @pytest.mark.parametrize(
+        "src",
+        [
+            "## Objectifs pédagogiques\n\nComprendre la mesure.",
+            "### 1. Prérequis",
+            "**Navigation** : [Index](README.md)",
+            "> **Prérequis :** Python 3.10",
+            "> Prerequis conseilles : [ICT-0](ICT-0-Framing.md)",
+            "Objectif : mesurer la derive.",
+        ],
+    )
+    def test_structural_forms_are_counted(self, src):
+        counts = dml._collect_motifs(_nb(_md(src)))
+        assert sum(counts[k] for k in ("Navigation", "Objectif(s)", "Prerequis")) == 1

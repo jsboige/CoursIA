@@ -67,11 +67,11 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames-Csharp.ipynb` | 27 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames-CSharp.ipynb` | 27 |
 | `MyIA.AI.Notebooks\GameTheory\SocialChoice\04-Computational-Aggregation-SAT-Z3-Csharp.ipynb` | 22 |
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames.ipynb` | 19 |
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-15b-Lean-CooperativeGames.ipynb` | 13 |
-| `MyIA.AI.Notebooks\GameTheory\GameTheory-07-ExtensiveForm-Csharp.ipynb` | 13 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-08-CombinatorialGames-Python.ipynb` | 19 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-15b-Lean-CooperativeGames-Lean.ipynb` | 13 |
+| `MyIA.AI.Notebooks\GameTheory\GameTheory-07-ExtensiveForm-CSharp.ipynb` | 13 |
 
 ### GenAI (drainable total = 1776)
 
@@ -87,11 +87,11 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-25-InoculationRL.ipynb` | 37 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-21-SAETrajectoires.ipynb` | 13 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-13-AxelrodStrategicMorphodynamics.ipynb` | 10 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15e-Bridge2-RecoverabilityAgency.ipynb` | 9 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15c-MetaProxyObstruction.ipynb` | 8 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-25-InoculationRL-Python.ipynb` | 37 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-21-SAETrajectoires-Python.ipynb` | 13 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb` | 10 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb` | 9 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15c-MetaProxyObstruction-Python.ipynb` | 8 |
 
 ### ML (drainable total = 433)
 
@@ -137,18 +137,18 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\RL\rl_4_multi_armed_bandits.ipynb` | 24 |
-| `MyIA.AI.Notebooks\RL\rl_6d_sac_from_scratch.ipynb` | 16 |
-| `MyIA.AI.Notebooks\RL\rl_10_reward_shaping.ipynb` | 12 |
-| `MyIA.AI.Notebooks\RL\rl_6c_ppo_from_scratch.ipynb` | 12 |
-| `MyIA.AI.Notebooks\RL\rl_8_model_based_dyna_q.ipynb` | 11 |
+| `MyIA.AI.Notebooks\RL\RL-04-Bandits-Manchots-Python.ipynb` | 24 |
+| `MyIA.AI.Notebooks\RL\RL-06d-SAC-Depuis-Zero-Python.ipynb` | 16 |
+| `MyIA.AI.Notebooks\RL\RL-10-Reward-Shaping-Curriculum-Python.ipynb` | 12 |
+| `MyIA.AI.Notebooks\RL\RL-06c-PPO-Depuis-Zero-Python.ipynb` | 12 |
+| `MyIA.AI.Notebooks\RL\RL-08-Dyna-Q-Planification-Python.ipynb` | 11 |
 
 ### Search (drainable total = 1464)
 
 | Notebook | Drainable |
 |---|---|
 | `MyIA.AI.Notebooks\Search\Applications\Search\App-14-ConnectFour-Adversarial.ipynb` | 58 |
-| `MyIA.AI.Notebooks\Search\Part2-CSP\CSP-5-Optimization-Csharp.ipynb` | 38 |
+| `MyIA.AI.Notebooks\Search\Part2-CSP\CSP-5-Optimization-CSharp.ipynb` | 38 |
 | `MyIA.AI.Notebooks\Search\Part1-Foundations\Search-11-Metaheuristics.ipynb` | 34 |
 | `MyIA.AI.Notebooks\Search\Part1-Foundations\Search-09-LinearProgramming.ipynb` | 34 |
 | `MyIA.AI.Notebooks\Search\Part2-CSP\CSP-3-Advanced.ipynb` | 30 |
@@ -158,8 +158,8 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 | Notebook | Drainable |
 |---|---|
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-03-Genetic-Python.ipynb` | 70 |
-| `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-Csharp.ipynb` | 64 |
-| `MyIA.AI.Notebooks\Sudoku\Sudoku-13-SymbolicAutomata-Csharp.ipynb` | 61 |
+| `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-CSharp.ipynb` | 64 |
+| `MyIA.AI.Notebooks\Sudoku\Sudoku-13-SymbolicAutomata-CSharp.ipynb` | 61 |
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-Python.ipynb` | 53 |
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-04-SimulatedAnnealing-Python.ipynb` | 51 |
 

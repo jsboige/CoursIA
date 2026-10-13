@@ -95,7 +95,7 @@ jobs:
 
           # Helper: ensure a label exists (idempotent), then add/remove it.
           ensure_label() {
-            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+            gh label create "$1" --description "$2" --color "$3" --force || true
           }
           set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
           unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
@@ -123,7 +123,7 @@ jobs:
           # when its count > 0 and cleared otherwise (a stale label from an
           # earlier push must not stick).
           ensure_label "$LABEL_CONSECUTIVE" \
-            "A modified notebook has a run of >=2 consecutive code cells (opportunity for an intermediate markdown cell, or a merge pattern) (#12797)" "C4A64C"
+            "Modified notebook has >=2 consecutive code cells (#12797)" "C4A64C"
           ensure_label "$LABEL_UNMEASURED" \
             "A modified notebook could not be measured -- NOT verified (#8819)" "BFD4F2"
 

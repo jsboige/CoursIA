@@ -91,17 +91,17 @@ CUDA_VISIBLE_DEVICES=0  # Utilise nvidia-smi GPU 1 = RTX 3090 ✅
 
 ## Livrables Créés
 
-### Scripts Production (15 fichiers)
+### Scripts Production
 
 #### 1. Démarrage & Monitoring
 
-- [`docs/suivis/genai-image/2025-10-14_12A_start-comfyui-watchdog.ps1`](2025-10-14_12A_start-comfyui-watchdog.ps1) (137 lignes)
+- [`docs/suivis/genai-image/2025-10-14_12A_start-comfyui-watchdog.ps1`](2025-10-14_12A_start-comfyui-watchdog.ps1)
   - Watchdog avec auto-restart et monitoring continu
   - Détection crash + relance automatique
   - Logs CSV avec timestamps
   - Alertes température GPU et VRAM
 
-- [`docs/suivis/genai-image/2025-10-14_12A_monitor-gpu-performance.ps1`](2025-10-14_12A_monitor-gpu-performance.ps1) (167 lignes)
+- [`docs/suivis/genai-image/2025-10-14_12A_monitor-gpu-performance.ps1`](2025-10-14_12A_monitor-gpu-performance.ps1)
   - Monitoring temps réel GPU
   - Export CSV pour analyse
   - Statistiques agrégées (min/max/avg)
@@ -121,7 +121,7 @@ CUDA_VISIBLE_DEVICES=0  # Utilise nvidia-smi GPU 1 = RTX 3090 ✅
 
 #### 2. Configuration IIS & SSL
 
-- [`docs/suivis/genai-image/2025-10-15_13_create-iis-site-comfyui.ps1`](2025-10-15_13_create-iis-site-comfyui.ps1) (56 lignes)
+- [`docs/suivis/genai-image/2025-10-15_13_create-iis-site-comfyui.ps1`](2025-10-15_13_create-iis-site-comfyui.ps1)
   - Création automatique site IIS
   - Configuration bindings HTTP/HTTPS
   - Association certificat SSL
@@ -140,7 +140,7 @@ CUDA_VISIBLE_DEVICES=0  # Utilise nvidia-smi GPU 1 = RTX 3090 ✅
 
 #### 3. Tests & Validation
 
-- [`docs/suivis/genai-image/2025-10-15_13_test-playwright-ui.ps1`](2025-10-15_13_test-playwright-ui.ps1) (145 lignes)
+- [`docs/suivis/genai-image/2025-10-15_13_test-playwright-ui.ps1`](2025-10-15_13_test-playwright-ui.ps1)
   - Installation environnement Playwright
   - Tests navigateurs (Chromium/Firefox/WebKit)
   - Capture screenshots automatique
@@ -160,7 +160,7 @@ CUDA_VISIBLE_DEVICES=0  # Utilise nvidia-smi GPU 1 = RTX 3090 ✅
 
 #### 4. Documentation
 
-- [`docs/suivis/genai-image/2025-10-14_12A_README-PRODUCTION.md`](2025-10-14_12A_README-PRODUCTION.md) (687 lignes)
+- [`docs/suivis/genai-image/2025-10-14_12A_README-PRODUCTION.md`](2025-10-14_12A_README-PRODUCTION.md)
   - Guide opérationnel complet
   - Architecture détaillée
   - Commandes administration
@@ -168,13 +168,13 @@ CUDA_VISIBLE_DEVICES=0  # Utilise nvidia-smi GPU 1 = RTX 3090 ✅
   - Métriques et monitoring
   - Procédures maintenance
 
-- [`docs/suivis/genai-image/2025-10-15_13_guide-installation-iis-ssl.md`](2025-10-15_13_guide-installation-iis-ssl.md) (559 lignes)
+- [`docs/suivis/genai-image/2025-10-15_13_guide-installation-iis-ssl.md`](2025-10-15_13_guide-installation-iis-ssl.md)
   - Guide step-by-step création site IIS
   - Configuration certificat SSL
   - Tests validation complets
   - Checklist exécution
 
-- [`docs/suivis/genai-image/2025-10-15_13_rapport-final-iis-ssl-comfyui.md`](2025-10-15_13_rapport-final-iis-ssl-comfyui.md) (473 lignes)
+- [`docs/suivis/genai-image/2025-10-15_13_rapport-final-iis-ssl-comfyui.md`](2025-10-15_13_rapport-final-iis-ssl-comfyui.md)
   - État infrastructure complète
   - Actions nécessaires avec admin
   - Métriques performance attendues
@@ -194,22 +194,22 @@ CUDA_VISIBLE_DEVICES=0  # Utilise nvidia-smi GPU 1 = RTX 3090 ✅
 
 ### Statistiques Globales
 
-- **Lignes de code:** ~1,000 lignes (PowerShell + Bash)
-  - PowerShell: ~800 lignes (scripts Windows)
-  - Bash: ~200 lignes (scripts WSL)
+- **Lignes de code:** PowerShell + Bash
+  - PowerShell: scripts Windows
+  - Bash: scripts WSL
   
-- **Lignes documentation:** ~2,700 lignes Markdown
-  - README Production: 687 lignes
-  - Guide Installation IIS: 559 lignes
-  - Rapport Final IIS: 473 lignes
-  - Rapport Debug: 350+ lignes
-  - Rapport Déploiement: 300+ lignes
-  - Checkpoints précédents: 400+ lignes
+- **Lignes documentation Markdown**
+  - README Production
+  - Guide Installation IIS
+  - Rapport Final IIS
+  - Rapport Debug
+  - Rapport Déploiement
+  - Checkpoints précédents
 
-- **Total fichiers créés:** 15 fichiers (scripts + docs)
-  - Scripts production: 8 fichiers
-  - Documentation: 5 fichiers
-  - Configuration: 2 fichiers (web.config, .env)
+- **Total fichiers créés:** scripts + docs
+  - Scripts production
+  - Documentation
+  - Configuration: web.config, .env
 
 - **Durée Phase 12A:** ~4 heures (vs 6-9 jours Docker estimé)
   - Investigation infrastructure: 1h
@@ -255,8 +255,8 @@ CUDA_VISIBLE_DEVICES=0  # Utilise nvidia-smi GPU 1 = RTX 3090 ✅
   - Scripts admin: Prêts à exécuter
 
 - [x] **Documentation Complète**
-  - Guide installation: 559 lignes
-  - README production: 687 lignes
+  - Guide installation
+  - README production
   - Rapports détaillés: 3 documents
   - Checkpoints sémantiques: Phase 11 + 12A
 
@@ -508,10 +508,10 @@ print(torch.cuda.get_device_properties(0).total_memory / 1e9)
   - WebSockets: Support natif activé
 
 - [x] **Documentation complète créée**
-  - README production: 687 lignes
-  - Guides installation: 559 lignes
+  - README production
+  - Guides installation
   - Rapports: 3 documents détaillés
-  - Scripts: 15 fichiers commentés
+  - Scripts commentés
 
 ### 🔄 Tests en Attente (Post-Admin)
 
@@ -927,7 +927,7 @@ Phase 12A a **dépassé les objectifs** en créant une infrastructure production
 
 **Accomplissements Majeurs:**
 
-1. **Infrastructure Complete:** 15 fichiers créés (scripts + documentation), 2,700+ lignes de documentation, 1,000+ lignes de code
+1. **Infrastructure Complete:** fichiers créés (scripts + documentation), documentation et code
 2. **ComfyUI Opérationnel:** Backend actif sur port 8188, GPU RTX 3090 correctement utilisé, modèle Qwen 54GB chargé
 3. **Scripts Automatisation:** Watchdog avec auto-restart, monitoring GPU temps réel, tests validation complets
 4. **Configuration IIS:** Reverse proxy préparé, web.config validé, certificats SSL plan défini

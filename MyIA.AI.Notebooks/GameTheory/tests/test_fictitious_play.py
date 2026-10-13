@@ -5,7 +5,7 @@ apprentissage (Brown 1949 / Robinson 1951) pour jeux matriciels zero-sum.
 
 Chaque joueur joue la meilleure reponse a la distribution empirique de
 l'adversaire (best-response to empirical play). La classe est le companion
-du notebook GameTheory-17-MultiAgent-RL.ipynb.
+du notebook GameTheory-17-MultiAgent-RL-Python.ipynb.
 
 Avant le garde d'entree ``iterations <= 0``, ``train(iterations)`` faisait
 ``for _ in range(iterations)`` : un compte <= 0 produit une boucle VIDE, donc

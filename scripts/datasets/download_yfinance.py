@@ -38,7 +38,13 @@ def _download(symbol: str, start: str, end: str, interval: str, use_cache: bool)
     cache = _cache_path(symbol, start, end, interval)
     if use_cache and cache.exists():
         print(f"  Cache hit: {cache.name}")
-        return pd.read_parquet(cache)
+        # use_threads=False : le pool de threads natif d'Arrow est le siege du
+        # crash observe sous xdist (#16288 -- Fatal Python error: Aborted dans
+        # pyarrow.parquet.core.read_table, worker gw0 mort, jambe bloquee
+        # jusqu'au plafond). Un cache yfinance fait quelques Ko : le thread
+        # pool n'apporte rien (mesure : +0,18 ms/lecture de 70 Ko), le retirer
+        # supprime la seule concurrence interne de ce read.
+        return pd.read_parquet(cache, use_threads=False)
 
     import yfinance as yf
 

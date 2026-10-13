@@ -21,6 +21,14 @@ needed to decide ``close / keep / triage``:
                   ``permanent`` (per c.301 L2 ★ on #10918). These are
                   deliberately re-opened slots for periodic reports; the
                   label here is an advisory false-positive.
+  - CONTAINER   : the issue is a container of many work targets (audit
+                  partition title ``[Audit #N] ... partition``, EPIC by
+                  title/label, or a task list naming >= 2 sub-issues -- cf
+                  ``issue_containers.py``, #17956). One merged PR delivers at
+                  most one tranche of it, so it NEVER reaches READY.
+                  Measured 2026-09-26: 7 of 29 READY verdicts were partition
+                  audits of series -- the dominant failure class of the
+                  crible (ai-01 constat on #17956).
   - AMBIGUOUS   : multiple merged PRs reference the issue, or activity after
                   the latest merge, or body criteria not all met. Hand off to
                   a verifier with the evidence attached.
@@ -53,6 +61,8 @@ import json
 import subprocess
 import sys
 from typing import Any
+
+import issue_containers
 
 LABEL = "candidate-delivered"
 
@@ -140,18 +150,41 @@ def get_open_pr_refs(repo: str, number: int) -> list[int]:
     return [int(item["number"]) for item in (out or []) if item.get("number")]
 
 
-def get_last_comment_date(repo: str, number: int) -> str | None:
-    """Return ISO date of the last comment on the issue, or None."""
-    comments = _gh_json([
+def get_issue_body(repo: str, number: int) -> str:
+    """Body of the issue (empty string on failure -- title signals decide then).
+
+    Pas de ``--jq`` : gh l'ecrit en TEXTE BRUT, que ``json.loads`` refuse
+    (defaut mesure c.5849500517 -- le body vivait toujours vide, le volet
+    CONTAINER ne voyait jamais une task-list du body). On requete l'objet
+    JSON complet et on lit la cle ``body``.
+    """
+    row = _gh_json([
         "issue", "view", str(number), "--repo", repo,
-        "--json", "comments", "--jq", ".comments[-1].createdAt",
+        "--json", "body",
     ])
-    # The --jq above returns a scalar string OR an empty string. gh returns
-    # an empty string when there are no comments, which json.loads parses as
-    # ``""`` -- not None. Normalise both to None.
+    if isinstance(row, dict) and isinstance(row.get("body"), str):
+        return row["body"]
+    return ""
+
+
+def get_last_comment_date(repo: str, number: int) -> str | None:
+    """Return ISO date of the last comment on the issue, or None.
+
+    Meme defaut de classe que ``get_issue_body`` : ``--jq
+    .comments[-1].createdAt`` rend un scalaire BRUT (non JSON), donc la
+    lecture echouait toujours silencieusement en None. On lit la liste
+    ``comments`` complete et la derniere ``createdAt`` en Python.
+    """
+    row = _gh_json([
+        "issue", "view", str(number), "--repo", repo,
+        "--json", "comments",
+    ])
+    comments = row.get("comments") if isinstance(row, dict) else None
     if not comments:
         return None
-    return str(comments) if comments else None
+    last = comments[-1]
+    created = last.get("createdAt") if isinstance(last, dict) else None
+    return str(created) if created else None
 
 
 def is_registry(title: str) -> bool:
@@ -176,6 +209,26 @@ def classify_one(repo: str, issue: dict) -> dict:
         return {
             "number": number, "title": title, "verdict": "REGISTRY",
             "evidence": evidence, "reason": "title carries registry/permanent marker",
+        }
+
+    # CONTAINER precedes any PR analysis: a container NEVER reaches READY,
+    # whatever the merge evidence -- one merged PR delivers one tranche of a
+    # 27-82 notebook partition (#17956).
+    labels = [lab.get("name") or "" for lab in (issue.get("labels") or [])]
+    if issue_containers.looks_container(title, labels):
+        return {
+            "number": number, "title": title, "verdict": "CONTAINER",
+            "evidence": evidence,
+            "reason": "container (audit partition / EPIC / sub-issue task list) -- "
+                      "one PR delivers one tranche at most",
+        }
+    body = get_issue_body(repo, number)
+    if issue_containers.looks_container(title, labels, body):
+        return {
+            "number": number, "title": title, "verdict": "CONTAINER",
+            "evidence": evidence,
+            "reason": "container by body task list naming sub-issues -- "
+                      "one PR delivers one tranche at most",
         }
 
     events = get_issue_timeline(repo, number)

@@ -1,0 +1,306 @@
+- id: ia1-001
+  theme: ia-1-introduction-agents
+  type: matching
+  source: MSMEM4EN08 2018
+  enonce: Classez les jeux suivants par ordre de difficulté.
+  appariements:
+  - gauche: Morpion
+    droite: Trivial
+  - gauche: Puissance Quatre
+    droite: Facile - résolu de longue date
+  - gauche: Dames
+    droite: Moyen - résolu récemment
+  - gauche: Echecs
+    droite: Difficile - peut-être bientôt résolu
+  - gauche: Jeu de Go
+    droite: Très difficile - probablement loin dêtre résolu
+- id: ia1-002
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Parmi ces définitions de l'intelligence artificielle, laquelle correspond le plus à notre approche?
+  choix_unique: true
+  options:
+  - texte: La tentative nouvelle et passionnante d'amener des ordinateurs à penser.
+    correcte: false
+  - texte: L'automatisation d'activités que nous associons à la pensée humaine.
+    correcte: false
+  - texte: L'étude des facultés mentales grâce à des modèles informatiques.
+    correcte: false
+  - texte: L'étude des moyens informatiques qui rendent possibles la perception, le raisonnement, puis
+      l'action.
+    correcte: false
+  - texte: L'art de créer des machines capables de prendre en charge des fonctions exigeant de l'intelligence
+      quand elles sont réalisées par des gens.
+    correcte: false
+  - texte: L'étude des moyens à mettre en oeuvre pour faire en sorte que des ordinateurs accomplissent
+      des choses pour lesquelles il est préférable de recourir à des personnes pour le moment.
+    correcte: false
+  - texte: L'étude et la conception d'agents rationnels.
+    correcte: true
+- id: ia1-003
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Parmi les systèmes suivants composant un taxi autonome, lequel ne fait pas partie de ses effecteurs?
+  choix_unique: true
+  options:
+  - texte: Accéléromètre
+    correcte: true
+  - texte: Volant
+    correcte: false
+  - texte: Frein
+    correcte: false
+  - texte: Clignotants
+    correcte: false
+  - texte: Klaxon
+    correcte: false
+  - texte: Phares
+    correcte: false
+  - texte: Dégivrage
+    correcte: false
+- id: ia1-004
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Parmi les activités suivantes, laquelle possède un environnement de tâche épisodique?
+  choix_unique: true
+  options:
+  - texte: Jouer au football
+    correcte: false
+  - texte: Explorer des fonds marins
+    correcte: false
+  - texte: Faire du shopping
+    correcte: false
+  - texte: Jouer au Tennis
+    correcte: true
+  - texte: Tricoter un pull
+    correcte: false
+  - texte: Participer à une enchère
+    correcte: false
+- id: ia1-005
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Parmi les affirmations suivantes, laquelle est correcte?
+  choix_unique: true
+  options:
+  - texte: Un agent qui ne capte qu'une information partielle sur l'état courant ne peut pas être parfaitement
+      rationnel.
+    correcte: false
+  - texte: Quelque soit l'environnement de tâche, on peut toujours concevoir un agent réflexe rationnel.
+    correcte: false
+  - texte: Il n'existe pas d'environnement de tâche dans lequel tous les agents sont rationnels.
+    correcte: false
+  - texte: Tout agent est rationnel dans un environnement non observable.
+    correcte: false
+  - texte: Un agent ne peut être rationnel dans plusieurs environnements de tâches distincts.
+    correcte: false
+  - texte: Un agent parfaitement rationnel peut perdre dans un jeu stochastique
+    correcte: true
+- id: ia1-006
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Laquelle des affirmations suivantes est correcte?
+  choix_unique: true
+  options:
+  - texte: Un réflexe n'est pas une action rationnelle
+    correcte: false
+  - texte: Les réseaux de neurones artificiels modélisent au plus près les neurones biologiques
+    correcte: false
+  - texte: Un ordinateur ne peut faire que ce que ses programmeurs connaissent
+    correcte: false
+  - texte: L'évolution naturelle n'est pas liée à la rationalité
+    correcte: false
+  - texte: L'introspection est une méthode d'investigation limitée
+    correcte: true
+- id: ia1-007
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Lequel des systèmes suivants ne nécessite pas l'utilisation de l'intelligence artificielle telle
+    que nous en avons défini les contours?
+  choix_unique: true
+  options:
+  - texte: Lecteur de code barres
+    correcte: true
+  - texte: Moteur de recherche
+    correcte: false
+  - texte: Serveur téléphonique à commande vocal
+    correcte: false
+  - texte: Système radar
+    correcte: false
+  - texte: Navigateur GPS
+    correcte: false
+  - texte: Planificateur logistique
+    correcte: false
+  - texte: Logiciel de diagnostique médical
+    correcte: false
+- id: ia1-008
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Parmi les compétences suivantes, laquelle n'est pas mobilisée par le test de Turing?
+  choix_unique: true
+  options:
+  - texte: Langage
+    correcte: false
+  - texte: Représentation de connaissances
+    correcte: false
+  - texte: Raisonnement
+    correcte: false
+  - texte: Apprentissage
+    correcte: false
+  - texte: Vision
+    correcte: true
+- id: ia1-009
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: MSMEM4EN08 2018
+  enonce: Parmi les environnements suivants, lequel est entièrement observable et stochastique?
+  choix_unique: true
+  options:
+  - texte: Backgammon
+    correcte: true
+  - texte: Poker
+    correcte: false
+  - texte: Echecs
+    correcte: false
+  - texte: Puissance quatre
+    correcte: false
+  - texte: Conduite autonome
+    correcte: false
+  - texte: Mots croisés
+    correcte: false
+  - texte: Reconnaissance d'images
+    correcte: false
+  - texte: Reconnaissance de la parole
+    correcte: false
+  explication: 'Feedback par option :
+
+    - Diagnostique médical'
+- id: ia1-010
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Laquelle de ces architectures d'agents n'est pas incompatible avec chacune des autres?
+  choix_unique: true
+  options:
+  - texte: Agent réflexe
+    correcte: false
+  - texte: Agent réflexe fondé sur un modèle
+    correcte: false
+  - texte: Agent fondé sur des buts
+    correcte: false
+  - texte: Agent apprenant
+    correcte: true
+  - texte: Agent fondé sur l'utilité
+    correcte: false
+- id: ia1-011
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Laquelle de ces architectures d'agents permet de gérer un niveau de succès?
+  choix_unique: true
+  options:
+  - texte: Agent réflexe
+    correcte: false
+  - texte: Agent réflexe fondé sur un modèle
+    correcte: false
+  - texte: Agent fondé sur des buts
+    correcte: false
+  - texte: Agent apprenant
+    correcte: false
+  - texte: Agent fondé sur l'utilité
+    correcte: true
+- id: ia1-012
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Parmi les activités suivantes, lesquelles possèdent un environnement de tâche épisodique?
+  choix_unique: false
+  options:
+  - texte: Assembler des pièces sur une chaîne de montage
+    correcte: true
+  - texte: Explorer des fonds marins
+    correcte: false
+  - texte: Faire du shopping
+    correcte: false
+  - texte: Jouer au Tennis
+    correcte: true
+  - texte: Tricoter un pull
+    correcte: false
+  - texte: Participer à une enchère
+    correcte: false
+- id: ia1-013
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Comment appelle-t-on un type d'environnement qui change pendant la délibération de l'agent?
+  choix_unique: true
+  options:
+  - texte: Stochastique
+    correcte: false
+  - texte: Séquentiel
+    correcte: false
+  - texte: Episodique
+    correcte: false
+  - texte: Continu
+    correcte: false
+  - texte: Discret
+    correcte: false
+  - texte: Inconnu
+    correcte: false
+  - texte: Dynamique
+    correcte: true
+  - texte: Partiellement observable
+    correcte: false
+- id: ia1-014
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Comment appelle-t-on un type d'environnement dont le modèle de transition n'est pas entièrement
+    accessible à l'agent?
+  choix_unique: true
+  options:
+  - texte: Stochastique
+    correcte: false
+  - texte: Séquentiel
+    correcte: false
+  - texte: Episodique
+    correcte: false
+  - texte: Continu
+    correcte: false
+  - texte: Discret
+    correcte: false
+  - texte: Inconnu
+    correcte: true
+  - texte: Dynamique
+    correcte: false
+  - texte: Partiellement observable
+    correcte: false
+- id: ia1-015
+  theme: ia-1-introduction-agents
+  type: multichoice
+  source: INGPA-FIN4000 2020
+  enonce: Comment appelle-t-on un type d'environnement dont certaines caractéristiques de l'état ne sont
+    pas accessibles à l'agent?
+  choix_unique: true
+  options:
+  - texte: Stochastique
+    correcte: false
+  - texte: Séquentiel
+    correcte: false
+  - texte: Episodique
+    correcte: false
+  - texte: Continu
+    correcte: false
+  - texte: Discret
+    correcte: false
+  - texte: Inconnu
+    correcte: false
+  - texte: Dynamique
+    correcte: false
+  - texte: Partiellement observable
+    correcte: true

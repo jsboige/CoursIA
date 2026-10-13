@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-00-GenAI-Environment
-pedagogical_count: 6
-breakdown: 00-GenAI-Environment=6
-maturity: BETA=6
+pedagogical_count: 7
+breakdown: 00-GenAI-Environment=7
+maturity: BETA=7
 -->
 
 [← GenAI](../README.md) | [↑ ..](../README.md) | [→ Image](../Image/README.md)
@@ -31,6 +31,7 @@ Ce module configure l'environnement technique avant toute exploration GenAI. Les
 | 4 | [00-4-Environment-Validation](00-4-Environment-Validation.ipynb) | Tests et validation setup | 30 min |
 | 5 | [00-5-ComfyUI-Local-Test](00-5-ComfyUI-Local-Test.ipynb) | Test local des services ComfyUI | 25 min |
 | 6 | [00-6-Local-Docker-Deployment](00-6-Local-Docker-Deployment.ipynb) | Déploiement Docker local complet | 45 min |
+| 7 | [00-7-Terminal-Long-Runs](00-7-Terminal-Long-Runs.ipynb) | tmux + tunnels SSH pour les jobs longs | 30 min |
 
 ## Prérequis & environnement
 

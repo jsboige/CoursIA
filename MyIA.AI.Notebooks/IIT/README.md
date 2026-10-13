@@ -28,11 +28,12 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [IIT-01-IntroToPyPhi](IIT-01-IntroToPyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation, complexe majeur | 60-90 min |
-| 2 | [IIT-02-AdvancedTopics](IIT-02-AdvancedTopics.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
-| 3 | [IIT-03-CoarseGrainingMacroPhi](IIT-03-CoarseGrainingMacroPhi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
-| 4 | [IIT-04-Le-Probleme-de-Frontiere](IIT-04-Le-Probleme-de-Frontiere.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, complexe majeur (`major_complex`), double dissociation Φ vs EI | 45-60 min |
-| 5 | [IIT-05-Lentilles-et-Dissociations](IIT-05-Lentilles-et-Dissociations.ipynb) | Six théories de la conscience (GWT, GNW, FEP, AST, SMT, HOT) comme mesures exécutables sur un même substrat : dissociation accès vs autoréférence, orthogonalité AST/SMT, contre-claim FEP | 60-75 min |
+| 1 | [IIT-01-IntroToPyPhi-Python](IIT-01-IntroToPyPhi-Python.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation, complexe majeur | 60-90 min |
+| 2 | [IIT-02-AdvancedTopics-Python](IIT-02-AdvancedTopics-Python.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
+| 3 | [IIT-03-CoarseGrainingMacroPhi-Python](IIT-03-CoarseGrainingMacroPhi-Python.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
+| 4 | [IIT-04-Le-Probleme-de-Frontiere-Python](IIT-04-Le-Probleme-de-Frontiere-Python.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, complexe majeur (`major_complex`), double dissociation Φ vs EI | 45-60 min |
+| 5 | [IIT-05-Lentilles-et-Dissociations-Python](IIT-05-Lentilles-et-Dissociations-Python.ipynb) | Six théories de la conscience (GWT, GNW, FEP, AST, SMT, HOT) comme mesures exécutables sur un même substrat : dissociation accès vs autoréférence, orthogonalité AST/SMT, contre-claim FEP | 60-75 min |
+| 6 | [IIT-06-L-Objet-qui-a-Mordu-IIT-Python](IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb) | L'échange Aaronson/Tononi (2014) exécuté : Vandermonde et le hack W en Φ_DM sur F_p, grille/ligne/feedforward en Φ 3.0 (PyPhi), les deux positions citées avec leurs grades | 75-90 min |
 
 ## Parcours recommandés
 
@@ -50,6 +51,9 @@ Notebook 4 (Le problème de frontière)
     |
     v
 Notebook 5 (Les lentilles de conscience)
+    |
+    v
+Notebook 6 (L'objet qui a mordu IIT)
 ```
 
 | Objectif | Parcours |
@@ -60,6 +64,7 @@ Notebook 5 (Les lentilles de conscience)
 | Focus emergence & échelle | Notebook 1 + Notebook 3 (causal emergence de Hoel) |
 | Focus frontières & dissociation | Notebook 1 + Notebook 4 (Φ vs EI selon le découpage, complexe majeur) |
 | Focus théories rivales | Notebook 1 + Notebook 5 (six lentilles, contre-claims exécutés) |
+| Focus controverse fondatrice | Notebook 1 + Notebook 6 (l'objection Aaronson exécutée, la réponse assumée mesurée) |
 
 ### Parcours d'apprentissage
 
@@ -82,6 +87,10 @@ Le quatrième notebook pose la question d'avant toute analyse de recollement : q
 **Phase 5 : Les lentilles de conscience (~75 min, notebook 5)**
 
 Le cinquième notebook quitte la mesure de $\Phi$ pour la **comparaison des théories** : six modèles de la conscience (GWT de Baars, GNW de Dehaene, FEP de Friston, AST de Graziano, SMT de Metzinger, HOT de Rosenthal) deviennent des mesures exécutables sur un même substrat jouet, chacune soumise à la discipline des cinq champs (source primaire, objet formel, claim exact, contre-claim, mesure falsifiable) — une lentille sans contre-claim ou sans mesure est incomplète et retirée. Trois bancs de dissociation : l'accès sans autoréférence (trois lentilles mesurent OUI, trois NON sur le même substrat), l'orthogonalité AST/SMT (capacité structurelle vs accès fonctionnel — traces non corrélées), et le contre-claim FEP exécuté (un substrat à précision maximale n'est « conscient » que pour les lentilles prédictives). Les 3 exercices mesurent chaque dissociation sur le substrat, jamais en prose.
+
+**Phase 6 : L'objet qui a mordu IIT (~90 min, notebook 6)**
+
+Le sixième notebook exécute l'échange Aaronson/Tononi de mai 2014 des deux côtés de la frontière entre formalisations. En jambe $\Phi_{DM}$ (l'implémentation NumPy de la définition visée par l'objection, sur corps finis $\mathbb{F}_p$) : la matrice de Vandermonde rend $\Phi$ **indéfini** (égalité normalisée maximale sur toutes les bipartitions), le « hack » W obtient son minimum unique et un $\Phi = (n/2)\log_2 p$ — la moitié du contenu informationnel total —, l'identité mesure 0, la croissance est linéaire. En jambe PyPhi ($\Phi$ d'IIT 3.0) : la grille de Tononi à portes majorité mesure positivement à l'état tout éteint (le scénario assumé existe), la tendance ligne < anneau < grille soutient l'argument du mur et de la corde à petite échelle, et la grille **XOR** porte le $\Phi$ maximal de la table pendant que le réseau « riche » hétérogène mesure zéro — la dissociation intégration/richesse comportementale, mesurée dans IIT 3.0 lui-même. Les deux positions sont citées avec leurs grades (l'essai firsthand de Tononi, archivé au gisement, y corrige même le souvenir de Porto Rico rapporté par Aaronson) ; les 4 exercices font varier corps, permutations, fermeture de boucle et bruit.
 
 ## Prérequis
 
@@ -163,7 +172,7 @@ flowchart TD
 
 ## Contenu détaillé
 
-### IIT-01-IntroToPyPhi.ipynb
+### IIT-01-IntroToPyPhi-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -177,7 +186,7 @@ flowchart TD
 | Causation actuelle | Liens causaux d'une transition (`account`), mécanisme d'un concept |
 | Macro-sous-systèmes | Coarse-graining, blackboxing (section conceptuelle) |
 
-### IIT-02-AdvancedTopics.ipynb
+### IIT-02-AdvancedTopics-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -190,7 +199,7 @@ flowchart TD
 | Performance | Timing du calcul de CES, module `pyphi.macro` |
 | IIT 4.0 | Concept-Style SIA, limites computationnelles, débats |
 
-### IIT-03-CoarseGrainingMacroPhi.ipynb
+### IIT-03-CoarseGrainingMacroPhi-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -201,7 +210,7 @@ flowchart TD
 | Comparaison micro/macro | $\Phi$ macro vs $\Phi$ micro, interprétation honnête de l'emergence |
 | Causal emergence | Hoel 2013 : pourquoi l'emergence positive n'est ni automatique ni garantie |
 
-### IIT-04-Le-Probleme-de-Frontiere.ipynb
+### IIT-04-Le-Probleme-de-Frontiere-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -213,7 +222,7 @@ flowchart TD
 | Double dissociation | Φ privilégie les frontières transversales, EI le tout — et les favorites de Φ sont hors du domaine de l'EI (frontières coupantes) |
 | Boundary problem | Gómez Emilsson cité comme proposition, jamais comme réponse établie |
 
-### IIT-05-Lentilles-et-Dissociations.ipynb
+### IIT-05-Lentilles-et-Dissociations-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -224,6 +233,19 @@ flowchart TD
 | Exercice 2 | Graziano (AST) vs Metzinger (SMT) sur le même substrat : traces non corrélées — capacité structurelle vs accès fonctionnel |
 | Exercice 3 | Contre-claim exécuté : la lentille FEP sort de son domaine (précision maximale ≠ conscience) |
 | Conclusion | Les lentilles comme instruments de dissociation, pas comme théories unifiées — limites honnêtement documentées |
+
+### IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| Le débat | L'échange Aaronson/Tononi (mai 2014) : les deux positions citées et graduées — ce qui est mesurable sur machine, ce qui ne l'est pas |
+| Φ_DM : Vandermonde | Toutes sous-matrices de rang plein → valeur normalisée maximale sur toutes les bipartitions → Φ **indéfini** (mesuré sur instance n=8, F_1009) |
+| Φ_DM : le hack W | Lignes de Vandermonde dupliquées → minimum unique à la bipartition naturelle, Φ = (n/2)·log₂p = 50 % du contenu total ; identité : Φ = 0 ; croissance linéaire jusqu'à n=16 |
+| PyPhi : ligne/anneau/feedforward | ring3 (1,875, référence IIT-01), ring4 XOR bipartite (0 — linéarité GF(2)), feedforward à sources de bruit (0) |
+| PyPhi : la famille n=6 | Grille majorité de Tononi à l'état tout éteint : Φ > 0 (scénario assumé mesuré) ; ligne < anneau < grille ; grille XOR : Φ **maximal** de la table ; réseau hétérogène « riche » : 0 |
+| Sobriété | Φ exact aux tailles mesurées seulement (explosion combinatoire au-delà de ~8 nœuds) ; la conscience n'est mesurée par aucune jambe |
+| L'après | Relance Griffith, fertilité pour PyPhi/IIT 4.0, le test falsifiable proposé par Tononi (doubler une grille corticale) |
+| Exercices | Identité/permutation en Φ_DM, W à autre échelle, ligne vs anneau n=5 en PyPhi, grille bruitée |
 
 ## Théorie IIT
 
@@ -263,7 +285,7 @@ flowchart TD
 L'IIT n'est pas qu'une spéculation philosophique : elle a engendré des outils utilisés en clinique et alimente l'un des débats les plus vifs des neurosciences.
 
 - **Mesure clinique de la conscience.** Le *Perturbational Complexity Index* (PCI), inspiré des principes de l'IIT, est utilisé pour évaluer la conscience chez des patients non communicants (coma, état végétatif, anesthésie). Le protocole "zap-and-zip" (stimulation TMS + EEG, compression de la réponse) distingue empiriquement les états conscients des états inconscients — une retombée concrète et reproductible d'une théorie de la conscience.
-- **Une théorie concurrente.** L'IIT s'oppose frontalement aux théories de type *Global Workspace* (Dehaene, Baars), qui font de la conscience une diffusion globale de l'information plutôt qu'une intégration causale locale. Des programmes de tests adversariaux (collaboration Templeton) confrontent leurs prédictions sur des données réelles. La série [ICT](ICT-Series/README.md) (strate 5) opérationnalise ce débat dans le dépôt : un pont **IIT ↔ GWT falsifiable** testé sur traces d'activations réelles de LLM (module `ict/workspace.py`, mesures d'espace de travail global sur trajectoires SAE) — [ICT-24](ICT-Series/ICT-24-WorkspaceIgnition.ipynb) (Gates 22-23, #5875) conclut à une **dissociation** : les pics d'intégration créditée et les événements d'ignition workspace ne co-localisent pas sur S4, les deux théories capturant des choses différentes (négatif honnête tout aussi informatif qu'une co-localisation).
+- **Une théorie concurrente.** L'IIT s'oppose frontalement aux théories de type *Global Workspace* (Dehaene, Baars), qui font de la conscience une diffusion globale de l'information plutôt qu'une intégration causale locale. Des programmes de tests adversariaux (collaboration Templeton) confrontent leurs prédictions sur des données réelles. La série [ICT](ICT-Series/README.md) (strate 5) opérationnalise ce débat dans le dépôt : un pont **IIT ↔ GWT falsifiable** testé sur traces d'activations réelles de LLM (module `ict/workspace.py`, mesures d'espace de travail global sur trajectoires SAE) — [ICT-24](ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) (Gates 22-23, #5875) conclut à une **dissociation** : les pics d'intégration créditée et les événements d'ignition workspace ne co-localisent pas sur S4, les deux théories capturant des choses différentes (négatif honnête tout aussi informatif qu'une co-localisation).
 - **Enjeu pour l'IA.** L'IIT prédit qu'un réseau purement *feed-forward* (comme l'inférence d'un LLM classique) a un Phi nul : il calcule sans "être" conscient, faute de boucles causales intégrées. Cette thèse est centrale dans les discussions sur la conscience artificielle.
 - **Controverse.** Le calcul exact de Phi est computationnellement intractable au-delà de petits réseaux (d'où le coarse-graining du notebook), et la théorie a fait l'objet d'une critique publique retentissante (lettre ouverte de 2023 la qualifiant de "pseudoscience") — un cas d'école pour discuter des critères de scientificité d'une théorie de l'esprit.
 
@@ -326,17 +348,23 @@ IIT propose un changement de regard radical : ne plus demander « qu'est-ce que 
 
 ```
 IIT/
-├── IIT-01-IntroToPyPhi.ipynb           # Notebook 1 : introduction
-├── IIT-02-AdvancedTopics.ipynb         # Notebook 2 : sujets avances
-├── IIT-03-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
-├── IIT-04-Le-Probleme-de-Frontiere.ipynb # Notebook 4 : qui décide des bords — Φ vs EI selon la frontière
-├── IIT-05-Lentilles-et-Dissociations.ipynb # Notebook 5 : six théories de la conscience comme bancs de dissociation
+├── IIT-01-IntroToPyPhi-Python.ipynb           # Notebook 1 : introduction
+├── IIT-02-AdvancedTopics-Python.ipynb         # Notebook 2 : sujets avances
+├── IIT-03-CoarseGrainingMacroPhi-Python.ipynb # Notebook 3 : coarse-graining & échelle du Φ
+├── IIT-04-Le-Probleme-de-Frontiere-Python.ipynb # Notebook 4 : qui décide des bords — Φ vs EI selon la frontière
+├── IIT-05-Lentilles-et-Dissociations-Python.ipynb # Notebook 5 : six théories de la conscience comme bancs de dissociation
+├── IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb # Notebook 6 : l'échange Aaronson/Tononi exécuté (Φ_DM + PyPhi)
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
-│   ├── ICT-*.ipynb             # Notebooks numérotés (ICT-1 à ICT-30) + raffinement/extension (suffixes lettrés + non-numérotés), 7 strates — cf son README pour la liste complète (Epic #4588)
-│   ├── ict/                    # Package Python autonome (simulations + mesures)
-│   ├── tests/                  # Suite pytest de validation des modules ict/
+│   ├── ICT-*.ipynb             # Notebooks numérotés (ICT-1 à ICT-39) + raffinement/extension (suffixes lettrés + non-numérotés), 7 strates — cf son README pour la liste complète (Epic #4588)
+│   ├── ict/                    # Package Python autonome (simulations + mesures, 88 modules — pip install -e .)
+│   ├── assets/                 # Figures in-situ du README + MANIFEST de provenance
+│   ├── runs/                   # Artefacts d'exécution (ex. scale-up GRPO d'ICT-25)
+│   ├── scripts/                # Extraction des traces GPU (SAE, J-Lens) et scripts pilotes
+│   ├── tests/                  # Suite pytest principale de validation des modules ict/
+│   ├── traces/                 # Fixtures .npz pré-extraites (notebooks GPU-free de la strate 5)
+│   ├── pyproject.toml          # Installation editable du package ict/ (issue #8076)
 │   └── README.md               # Documentation de la série ICT
 ├── requirements.txt            # Dépendances Python (partagées IIT + ICT)
 ├── scripts/
@@ -365,23 +393,27 @@ La série IIT étudie des structures causales **à un instant donné**. Une exte
 **ICT** (Integrated Causal Trajectories, Epic #4588), prolonge ce regard vers les **trajectoires**
 de structures causales : comment une organisation se maintient, se transforme, se répare, change
 d'échelle et traverse un espace de possibles ($C_0 \rightarrow C_1 \rightarrow \dots \rightarrow C_n$).
-Elle progresse en **sept strates** — le **tri auto-organisé** transparent (strate 1, ICT-0 à ICT-7), la
+Elle progresse en **sept strates** — le **tri auto-organisé** transparent (strate 1, ICT-1 à ICT-7), la
 **morphogenèse dynamique** à paysages d'attracteurs engendrés (strate 2, ICT-8 à ICT-10), les
 **trajectoires intégrées** régime-dépendantes (strate 3, ICT-11 à ICT-13), la jambe
-**représentationnelle** énergie libre / surprise (strate 4, ICT-14), la **théorie fondatrice**
-cross-substrat et la réversibilisation outillée (strate 5, ICT-15 à ICT-25), un **socle théorique
-transverse** distillant la sémiophysique de René Thom (strate 6), puis la **coopération comme
-opérateur** — conventions, invention de symboles, adoption collective, inoculation de concept
-(strate 7, ICT-26 à ICT-30).
+**représentationnelle** énergie libre / surprise puis la **théorie fondatrice** cross-substrat et la
+réversibilisation outillée (strate 4, ICT-14 à ICT-20, prolongée par le banc de recollement ICT-34),
+et le **LLM comme substrat** — SAE, persona, workspace, inoculation RL (strate 5, ICT-21 à ICT-25,
+prolongée par ICT-35 à ICT-39). Les strates 6 (**argumentation**) et 7 (**freebits d'ordre 2**) sont
+**cadrées et non livrées**. Deux objets relèvent de l'**axe transverse** et non de l'échelle des
+strates (arbitrage [#13908](https://github.com/jsboige/CoursIA/issues/13908)) : le **socle théorique**
+distillant la sémiophysique de René Thom, et la **coopération comme opérateur** — conventions,
+invention de symboles, adoption collective, inoculation de concept (**dimension D2**, cinq
+expériences ICT-26 à ICT-30).
 
 Chaque strate est **complétée par des notebooks de raffinement / extension** (suffixes lettrés
 `b`/`c`/`d`… ou titres non-numérotés) qui approfondissent un aspect ou appliquent l'instrumentation
 d'un notebook principal à un nouveau cas. Quelques exemples représentatifs :
-[ICT-15b-SensitivityCanonicity](ICT-Series/ICT-15b-SensitivityCanonicity.ipynb)
+[ICT-15b-SensitivityCanonicity-Python](ICT-Series/ICT-15b-SensitivityCanonicity-Python.ipynb)
 (sensibilité du verdict Φ/F/K d'ICT-15 aux perturbations contrôlées du substrat, re-mesure multi-graines),
-[ICT-15c-MetaProxyObstruction](ICT-Series/ICT-15c-MetaProxyObstruction.ipynb) (obstructions adversariales au verdict
+[ICT-15c-MetaProxyObstruction-Python](ICT-Series/ICT-15c-MetaProxyObstruction-Python.ipynb) (obstructions adversariales au verdict
 de convergence — exploration des faux-positifs quand le triplet co-varie par construction),
-[ICT-17b-Grokking-CompressionProgress](ICT-Series/ICT-17b-Grokking-CompressionProgress.ipynb) (grokking comme
+[ICT-17b-Grokking-CompressionProgress-Python](ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (grokking comme
 cas d'application de l'instrumentation ε-machine d'ICT-17 à la compression post-généralisation tardive, Power
 et al. 2022), et [ICT-Argumentation-BeliefTrajectories](ICT-Series/ICT-Argumentation-BeliefTrajectories.ipynb)
 (Phase B du zoo ICT — application de l'instrumentation Φ-trajectoires d'ICT-1 aux trajectoires de croyances
@@ -392,7 +424,7 @@ La strate 5 est désormais **ancrée sur un substrat réel** : ICT-21 extrait de
 (*sparse autoencoders*) sur les activations d'un LLM (Qwen), et le module `ict/workspace.py` réalise
 un **pont falsifiable IIT ↔ GWT** — mesurer un « espace de travail global »
 (*ignition*, *broadcast*) sur les mêmes traces que celles où l'on mesure l'intégration. La
-confrontation empirique est livrée : [ICT-24](ICT-Series/ICT-24-WorkspaceIgnition.ipynb) (Gates 22-23,
+confrontation empirique est livrée : [ICT-24](ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) (Gates 22-23,
 #5875) conclut à une **dissociation** — les deux théories rivales de la section « Portée scientifique »
 ci-dessus ne co-localisent pas leurs prédictions sur S4 (négatif honnête).
 
@@ -426,10 +458,10 @@ les arcs entrants de `X`, brisant les chemins de confusion — de sorte que
 
 | Paradigme | Notebook | Instanciation de `do(·)` | Résultat-signature |
 |-----------|----------|---------------------------|--------------------|
-| **Symbolique** (logique propositionnelle, Java/Tweety) | [Tweety-11-Causal](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | `scm.intervene(p, b)` → nouveau SCM dont l'équation de `p` devient une constante | `P(rain\|drops)=True ≠ P(rain\|do(drops))=False` (baromètre) |
+| **Symbolique** (logique propositionnelle, Java/Tweety) | [Tweety-11-Causal-Python](../SymbolicAI/Tweety/Tweety-11-Causal-Python.html) | `scm.intervene(p, b)` → nouveau SCM dont l'équation de `p` devient une constante | `P(rain\|drops)=True ≠ P(rain\|do(drops))=False` (baromètre) |
 | **Bayésien par message passing** (Infer.NET, EP/VMP — Gibbs disponible) | [Infer-5](../Probas/Infer/Infer-5-Causal-Inference.ipynb) | mutilation de graphe `Variable.Bernoulli(1.0)` ; backdoor / front-door | paradoxe de Simpson résolu, identifiabilité par ajustement |
 | **Bayésien MCMC** (PyMC) | [PyMC-5](../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) | opérateur natif `pm.do(model, {X:x})` ; backdoor / front-door | contrefactuel par abduction (postérieur sur les exogènes) |
-| **Théorie de l'information / émergence** (ICT) | [ICT-5-CausalEmergence](ICT-Series/ICT-5-CausalEmergence.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
+| **Théorie de l'information / émergence** (ICT) | [ICT-05-CausalEmergence-Python](ICT-Series/ICT-05-CausalEmergence-Python.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
 
 **Le pont le plus profond — ICT-5 lève le do-calculus au niveau des échelles.** Dans la théorie
 de l'émergence causale (Hoel, *Causal Emergence 2.0* ; Jansma & Hoel, *Engineering Emergence*,
@@ -443,11 +475,11 @@ L'**émergence** apparaît quand une description **macro** (gros-grain) réalise
 causal que le micro — l'`effectiveness` monte sous coarse-graining.
 
 **Parcours de lecture conseillé** : commencer par le **symbolique qualitatif**
-([Tweety-11](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb)) pour *voir* `observe` vs `do` sans
+([Tweety-11](../SymbolicAI/Tweety/Tweety-11-Causal-Python.html)) pour *voir* `observe` vs `do` sans
 nombres ; passer au **quantitatif distributionnel** ([Infer-5](../Probas/Infer/Infer-5-Causal-Inference.ipynb)
 message passing, [PyMC-5](../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) MCMC) pour *calculer* les effets
 et lever le paradoxe de Simpson ; finir par l'**information-théorique**
-([ICT-5](ICT-Series/ICT-5-CausalEmergence.ipynb)) où le même `do` mesure le travail causal **à travers les
+([ICT-5](ICT-Series/ICT-05-CausalEmergence-Python.ipynb)) où le même `do` mesure le travail causal **à travers les
 échelles**.
 
 **Articles d'ancrage** : Pearl, *Causality* (2009) ; Hoel, *Causal Emergence 2.0*
@@ -465,7 +497,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 72
-breakdown: ICT-Series=67, root=5
-maturity: BETA=63, DRAFT=8, ALPHA=1
+pedagogical_count: 99
+breakdown: ICT-Series=93, root=6
+maturity: BETA=83, DRAFT=14, ALPHA=2
 -->

@@ -4,13 +4,13 @@
 **Machine:** myia-po-2026
 **Status:** 6 sorrys remaining (all INTRACTABLE until new formalization)
 
----
+***
 
 ## Summary
 
 47 prover-related commits over 12 days. The multi-agent Lean 4 prover successfully proved 4 sorrys (hP_conv, hP_closed, hP_nonempty, hK_empty) while agent-guided manual proofs closed 10+ targets. The prover architecture went through 7 iterations (F6–F11, B3). All remaining sorrys require new mathematical formalization (rural hospitals theorem, Bondareva-Shapley core) that the prover cannot invent.
 
----
+***
 
 ## 1. Prover Session Timeline
 
@@ -76,7 +76,7 @@
 | 2026-05-17 | GaleShapley L97 (F8+Director) | multi | 15 | INTRACTABLE (Director 2×) |
 | 2026-05-18 | GaleShapley L97 (F8+Director) | multi | 15 | INTRACTABLE (9080s timeout) |
 
----
+***
 
 ## 2. BUILD-FAIL Pattern Categories
 
@@ -102,7 +102,7 @@ From 20 prover history files containing 89 tactic attempts:
 
 5. **rcases before subst**: `subst` on reflexive equality (after prior unification) fails. Fix: `rcases` first, then `subst`.
 
----
+***
 
 ## 3. Successful Proof Techniques
 
@@ -133,7 +133,7 @@ From 20 prover history files containing 89 tactic attempts:
 4. `mod_cast` for Fin/Nat coercion before `omega`
 5. Explicit `@` for implicit-heavy API calls
 
----
+***
 
 ## 4. Failed Targets
 
@@ -147,7 +147,7 @@ From 20 prover history files containing 89 tactic attempts:
 
 **Director (GPT-5.5) confirmation:** The missing piece is mathematical formalization, not search depth. The prover architecture functions correctly but cannot invent new theorems.
 
----
+***
 
 ## 5. Prover Architecture Evolution
 
@@ -204,6 +204,20 @@ Forensic systématique de 34 traces `agent_tests/prover/traces/*_result.json` + 
 
 **Résiduel** : la cible BG suivante est `p4_nw_supercell_agree` L2910 (bras NW supercell, whnf-hard). Launch différé : `miniforge3` conda WSL cassé (`cannot execute: required file not found`) → env `epita_symbolic_ai` inaccessible. Repair conda WSL = prérequis ai-01 avant prochaine passe BG. Pas de fake-launch.
 
+### Itération calibration 2026-09-19 (po-2024, gradient DEMOS 39-52 post-#13907)
+
+Première exécution du gradient calibration Conway sur une lane **sans clés externes** (po-2024 : ni `ZAI_API_KEY` ni `OPENROUTER_API_KEY` ; provider local = Ollama qwen2.5:7b sur `:11434`). Cibles : 45 (Doomsday easy), 41 (Nim medium), 52 (LAS hard), 8 itérations chacune. Cinq findings :
+
+| # | Finding | Mesure | Décision |
+|---|---------|--------|----------|
+| **C1** | **Misroute topologique silencieux** : `--provider local` ne couvre que reasoning/fast — Coordinator/Tactic gardent leur défaut `openrouter` (provers.py) et Search/Critic partent sur `zai` via p6_routing. Sur lane sans clés : 3×401 → `provider_outage_breaker` en <60 s, **après** stub de la cible et prise du tree lock. | Passes 1 : 3 runs morts à `attempts=0`, exit « provider_outage » | **Fix fail-fast** : gate des credentials dans `run_prover_bg.py` (exit 5, `[BG] PROVIDER_GATE` par rôle + var d'env), AVANT lock/stub. Reproduit + validé dans les deux sens (keyless → 4 rôles nommés, exit 5, cible intacte ; all-local → gate franchi, lock+stub+workflow). |
+| **C2** | **Cycle de vie #13907 validé de bout en bout sur cibles réelles** : `CALIBRATION_STUB` → `PRE_FILE_SORRY_COUNT 1` (≠ `already_solved`) → run → `CALIBRATION_RESTORE`, arbre git propre après chaque passe (y compris sur échec/timeout). | 6 runs (2 passes × 3 demos), 0 divergence | Le gradient est désormais **jouable tel quel** — la valeur diagnostique annoncée par le body #1453 est récoltable. |
+| **C3** | **Profil freeze-loop du 7B local** : TacticAgent (qwen2.5:7b) émet ses tool-calls en **prose** (JSON fencé en réponse finale) au lieu du canal tools ; le harness lui renvoie son propre texte en `[receive]` → boucle d'auto-écho. `empty_response_guard` + `freeze_loop_guard` (×6, `consecutive_no_tool_call` 3→6) fonctionnent comme conçus mais consument **tout le budget d'itérations** avant `iteration_cap`. `RESULT_ATTEMPTS 0` sur 8/8 itérations × 3 demos (114-193 s). | Passe 2 : 3 runs complets, sorry 1→1 | Les guards P1-P6 tiennent ; un `result_kind: freeze_loop` typé (terminaison anticipée après N détections au lieu de brûler le budget) est un candidat d'amélioration — non livré cette passe. |
+| **C4** | **Leftovers d'exécution** : `_GoalExtract.lean` (sonde GoalExtract) et `Nim.lean.<rand>.sandbox` (sandbox compile) restent sur disque dans `conway_lean/Conway/` après les runs. | 2 fichiers untracked constatés, nettoyés à la main | Candidat nettoyage en `finally` au côté du restore — non livré cette passe. |
+| **C5** | **Localisation réelle des traces** : `prover/baselines/traces/` (events `multi_*.json` + spans `*.spans.jsonl`), **pas** `agent_tests/prover/traces/` ni `agent_tests/traces/`. | `ls` des trois répertoires | Correction factuelle du body #1453 (« zéro fichier de trace sous agent_tests/prover/traces » — vrai, mais le répertoire vivant est ailleurs ; machine-local confirmé). |
+
+**Limite déclarée** : passe 2 exécutée sur qwen2.5:7b (classe smoke) — les verdicts C1/C2/C4/C5 sont indépendants du modèle ; le profil C3 est **spécifique au 7B** et devra être re-mesuré avec le provider glm (clé `ZAI_API_KEY` demandée à ai-01 par DM privé, msg-20260919T062157-n3cq5q).
+
 ### Dual-Track Workflow (established May 11)
 
 1. **ORIENT** — Identify target, check HONEST_SORRIES registry
@@ -212,7 +226,7 @@ Forensic systématique de 34 traces `agent_tests/prover/traces/*_result.json` + 
 4. **REVIEW** — Check traces at intervals (not event-by-event)
 5. **ITERATE** — Improve based on postmortem
 
----
+***
 
 ## 6. Statistics
 
@@ -221,9 +235,9 @@ Forensic systématique de 34 traces `agent_tests/prover/traces/*_result.json` + 
 - **Proofs proved manually (agent-guided):** 15+ (including all GS invariants, lattice, Bondareva forward/backward)
 - **Prover infrastructure iterations:** 7 (F6–F11, B3)
 - **Remaining sorrys:** 6 (5 rural hospitals cluster + 1 Bondareva hCore)
-- **Prover history files:** 20 JSON files in `agent_tests/prover/`
+- **Prover history files:** JSON files in `agent_tests/prover/`
 
----
+***
 
 ## 7. Files
 

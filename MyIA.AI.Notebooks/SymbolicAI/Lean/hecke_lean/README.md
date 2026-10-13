@@ -14,14 +14,40 @@ formalisée par `coeffHeckeT` avec ses deux lemmes de lecture
 `coeffHeckeT_of_dvd` / `coeffHeckeT_of_not_dvd`, plus des exemples
 calculables (poids 12, `p ∈ {2, 3}`).
 
+Le module **`DeltaTau`** (grain 5 de l'Epic Langlands #17969) relie cette
+formule au discriminant modulaire : Δ tronqué comme produit d'Euler
+explicite `X ⬝ ∏ (1 - Xᵐ)²⁴` — représenté par **convolution de listes de
+coefficients ℤ**, l'instance `Mul (Polynomial ℤ)` étant `noncomputable`
+au pin du lake — τ de Ramanujan lu sur
+les coefficients (table **vérifiée par le noyau**, aucune valeur codée en
+dur), multiplicativité τ(6) = τ(2)τ(3), lacunarité τ(25) ≠ 0 — et
+l'**identité propre** `T_p Δ = τ(p) Δ` vérifiée coefficient par
+coefficient pour `p ∈ {2, 3}` sur bornes (`n ≤ 12` / `n ≤ 8`) via la
+lecture entière `coeffHeckeT_twelve_int`.
+
+Le lake porte aussi les théorèmes **`seven_pid`**, **`eleven_pid`** et
+**`thirteen_pid`** : les anneaux d'entiers `𝓞 ℚ(ζ₇) = ℤ[ζ₇]`,
+`𝓞 ℚ(ζ₁₁) = ℤ[ζ₁₁]` et `𝓞 ℚ(ζ₁₃) = ℤ[ζ₁₃]` des 7-ième, 11-ième et 13-ième
+corps cyclotomiques sont principaux — premiers paliers au-delà des
+`three_pid` / `five_pid` de Mathlib, via le critère de Marcus (chaque idéal
+premier `P` au-dessus d'un `p` avec `p ^ f ≤ ⌊M K⌋₊` est principal). Pour
+`11`, la borne `⌊M K⌋₊ = 58` laisse deux cas explicites : le premier ramifié
+`11` (idéal engendré par `ζ₁₁ - 1`) et les idéaux au-dessus de `23`
+(générateur explicite via `ζ₁₁ ↦ 4` dans `ZMod 23`). Pour `13`, la borne
+`⌊M K⌋₊ < 307` laisse six cas explicites : `3` (lemme `F₂₇` : noyau du
+morphisme vers `AdjoinRoot (X³ - X - 1)` engendré par `1 + ζ - ζ³`) et les
+certificats `13` / `53` / `79` / `131` / `157` (générateurs explicites via
+`span_mem_primesOver_of_cert`).
+
 ## Origine
 
 Sous-grain de #14771 (cartographie du dépôt `anthropics/fermats-last-theorem`
-pour CoursIA), livré sous #14784. Le module est un port pédagogique du
-fichier amont `Definitions/Def_ModularForm_HeckeOperator.lean` (commit
-`aa2d8b34692b`) : énoncés et preuves repris tels quels, docstrings FR +
-sibling EN (`ModularForm_en`), exemples calculables ajoutés — voir
-`NOTICE.md` pour l'attribution Apache-2.0.
+pour CoursIA), livré sous #14784. Les modules sont des ports pédagogiques des
+fichiers amont (commit `aa2d8b34692b`) : énoncés et preuves repris tels
+quels, docstrings FR + sibling EN (`ModularForm_en`, `CyclotomicPID_en`),
+exemples calculables ajoutés — voir `NOTICE.md` pour l'attribution Apache-2.0.
+`seven_pid` : tranche 1 de #16557, `eleven_pid` : tranche 2,
+`thirteen_pid` : tranche 3 (l'EPIC est alors couverte en entier).
 
 ## Compilation
 
@@ -39,6 +65,14 @@ Aucun `sorry`, aucun `native_decide` ; axiomes des déclarations phares :
 |---------|---------|
 | `Hecke/HeckeOperator.lean` | Module principal (docstrings FR) |
 | `Hecke/HeckeOperator_en.lean` | Sibling anglais, namespace `ModularForm_en` |
+| `Hecke/SevenPid.lean` | `ℤ[ζ₇]` est principal (docstrings FR) |
+| `Hecke/SevenPid_en.lean` | Sibling anglais, namespace `CyclotomicPID_en` |
+| `Hecke/ElevenPid.lean` | `ℤ[ζ₁₁]` est principal (docstrings FR) |
+| `Hecke/ElevenPid_en.lean` | Sibling anglais, namespace `CyclotomicPID_en` |
+| `Hecke/ThirteenPid.lean` | `ℤ[ζ₁₃]` est principal (docstrings FR) |
+| `Hecke/ThirteenPid_en.lean` | Sibling anglais, namespace `CyclotomicPID_en` |
+| `Hecke/DeltaTau.lean` | Δ, τ de Ramanujan, identité propre `T_p Δ = τ(p) Δ` (#17969) |
+| `Hecke/DeltaTau_en.lean` | Sibling anglais, namespace `ModularForm_en` |
 | `Hecke.lean` / `Hecke_en.lean` | Agrégateurs racines |
 
 ## Suites
@@ -46,4 +80,5 @@ Aucun `sorry`, aucun `native_decide` ; axiomes des déclarations phares :
 Le produit de Petersson et les cusp forms forment un grain aval
 (cf. #14784). Les autres sous-grains FLT (complétions adiques #14783,
 groupes de ramification #14786…) vivent dans `galois_lean` après la
-migration #14773 — ce lake est autonome et n'en dépend pas.
+migration #14773 — ce lake est autonome et n'en dépend pas. #16557 est
+couverte en entier (`seven_pid`, `eleven_pid`, `thirteen_pid`).

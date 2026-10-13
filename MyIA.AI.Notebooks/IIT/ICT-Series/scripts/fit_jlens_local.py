@@ -1,11 +1,13 @@
 """Fit local J-lens par taille (sous-grain (c) #8236).
 
 Reproduit la construction du lens publie 9B (neuronpedia/jacobian-lens,
-Salesforce-wikitext n=458, min_chars 600) sur Qwen3-1.7B-Base et
-Qwen3.5-2B-Base, aux profondeurs de calibration SAE (frac 0.25/0.5) :
+Salesforce-wikitext n=458, min_chars 600) sur Qwen3-1.7B-Base,
+Qwen3.5-2B-Base et Qwen3.5-9B-Base, aux profondeurs de calibration SAE
+(frac 0.25/0.5) :
 
   1.7B (28 couches) : source_layers [7, 14]
   2B   (24 couches) : source_layers [6, 12]
+  9B   (32 couches) : source_layers [8, 16]
 
 target = logits finaux (defaut). Le checkpoint de fit est resumable
 (checkpoint_path + resume=True) ; le lens final est sauvegarde via
@@ -20,6 +22,7 @@ Usage :
 import argparse
 import hashlib
 import json
+import logging
 import time
 from pathlib import Path
 
@@ -28,6 +31,7 @@ import torch
 MODELS = {
     "Qwen/Qwen3-1.7B-Base": [7, 14],  # 28 couches : frac 0.25 / 0.5
     "Qwen/Qwen3.5-2B-Base": [6, 12],  # 24 couches : frac 0.25 / 0.5
+    "Qwen/Qwen3.5-9B-Base": [8, 16],  # 32 couches : frac 0.25 / 0.5
 }
 FITS_DIR = Path("C:/dev/jlens_fits")
 
@@ -44,6 +48,10 @@ def main() -> None:
         "--fresh", action="store_true", help="ignorer un checkpoint existant"
     )
     args = ap.parse_args()
+
+    # Progression per-prompt du fitter jlens (sinon WARNING seul = silence
+    # pendant des heures sur un fit 9B ~15 h).
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
     import jlens
     from jlens.examples import load_wikitext_prompts

@@ -12,8 +12,11 @@ import sys
 import tempfile
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from scan_md_hierarchy import scan_notebook, _has_collapsed_markdown, main  # noqa: E402
+from scan_md_hierarchy import (  # noqa: E402
+    iter_notebooks, scan_notebook, _has_collapsed_markdown, main)
 
 
 # ---------------------------------------------------------------------------
@@ -294,6 +297,35 @@ def test_titled_step_no_colon_with_glued_colon_not_hint():
     assert "HINT-AS-HEADING" not in _kinds(_write_nb(cells))
 
 
+def test_titled_piste_not_hint():
+    """`### Piste N : Titre (niveau)` is a real numbered exercise section.
+
+    Regression guard for #16472 (2026-10-11): the four `### Piste 1..4 : ...`
+    headings of GenAI/Texte/11_Quantization.ipynb cell 46 open real exercise
+    sections (numbered instructions, GPU-scope preamble) and were re-confirmed
+    false positives 22 consecutive feeder wakes. Corpus-bounded: they are the
+    only `Piste` headings in MyIA.AI.Notebooks/.
+    """
+    cells = [_md("# Titre\n"), _md("### Piste 1 : Quantification avec llmcompressor (intermediaire)\n")]
+    assert "HINT-AS-HEADING" not in _kinds(_write_nb(cells))
+
+
+def test_titled_piste_no_colon_not_hint():
+    """`### Piste 2 Deploiement vLLM` (no colon) — same class as Step-no-colon."""
+    cells = [_md("# Titre\n"), _md("### Piste 2 Deploiement vLLM\n")]
+    assert "HINT-AS-HEADING" not in _kinds(_write_nb(cells))
+
+
+def test_bare_piste_aside_still_hint():
+    """`## Piste` (bare, no number, no title) remains a bare aside, still flagged.
+
+    Regression guard: extending TITLED_STEP_RE to `piste` must not relax the
+    bare-aside rule — only the numbered+titled form is a real section header.
+    """
+    cells = [_md("# Titre\n"), _md("## Piste\n")]
+    assert "HINT-AS-HEADING" in _kinds(_write_nb(cells))
+
+
 # ---------------------------------------------------------------------------
 # CLI contract — an EMPTY scan is never reported as a CLEAN scan
 #
@@ -353,3 +385,47 @@ def test_summary_is_the_last_stdout_line(capsys):
     _run([nb])
     assert capsys.readouterr().out.rstrip().splitlines()[-1] == (
         "=== 1/1 notebooks flagged ===")
+
+
+# ---------------------------------------------------------------------------
+# #16633 — gitignore-aware walk (canonical notebook_walk, #8650)
+# ---------------------------------------------------------------------------
+
+def test_walk_skips_untracked_executed_artifacts(tmp_path):
+    """Fondateur #16633 : le `+1 H1-DEEP` portait sur un `*_executed.ipynb`
+    UNTRACKED dans un worktree de lane. Le rglob local le comptait ; le
+    marche canonique (git ls-files) ne doit rendre que le notebook tracke.
+    Defaut de l'EMETTEUR, pas du .gitignore (c.16633-1)."""
+    import subprocess
+    try:
+        subprocess.run(["git", "--version"], capture_output=True, check=True)
+    except (OSError, subprocess.CalledProcessError):
+        pytest.skip("git indisponible")
+    clean = {"cells": [_md("# Titre\n"), _md("Texte.\n")],
+             "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    (tmp_path / "Serie-1-Source.ipynb").write_text(
+        json.dumps(clean), encoding="utf-8")
+    # Copie artefact de run : meme contenu, suffixe _executed, NON commitee.
+    (tmp_path / "Serie-1-Source_executed.ipynb").write_text(
+        json.dumps(clean), encoding="utf-8")
+    for cmd in (
+        ["git", "init", "-q"],
+        ["git", "add", "Serie-1-Source.ipynb"],
+        ["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "x"],
+    ):
+        subprocess.run(cmd, cwd=tmp_path, capture_output=True, check=True)
+    found = [p.name for p in iter_notebooks([str(tmp_path)])]
+    assert found == ["Serie-1-Source.ipynb"]
+
+
+def test_walk_degrades_to_disk_scan_without_git(tmp_path):
+    """Hors repo git (fixtures tmp, tarball) : degrace a l'ancien rglob --
+    les deux fichiers sont vus, avec le warning stderr documente (#8650).
+    Le comportement pre-#16633 est preserve hors repo, pas silencieusement
+    change."""
+    clean = {"cells": [_md("# Titre\n")], "metadata": {},
+             "nbformat": 4, "nbformat_minor": 5}
+    (tmp_path / "A.ipynb").write_text(json.dumps(clean), encoding="utf-8")
+    (tmp_path / "B_executed.ipynb").write_text(json.dumps(clean), encoding="utf-8")
+    found = sorted(p.name for p in iter_notebooks([str(tmp_path)]))
+    assert found == ["A.ipynb", "B_executed.ipynb"]

@@ -47,20 +47,25 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Tarball runner epingle par SHA-256 (meme discipline que les profils
-# self_hosted_runner_profiles.json).
+# self_hosted_runner_profiles.json). Extraction vers /opt/runner-dist (source
+# vierge), puis copie vers /opt/runner : en mode persistent (#14329), un volume
+# de config monte sur /opt/runner masque les binaires -- l'entrypoint les
+# restaure depuis runner-dist au boot. En ephemeral, le layout est inchangé.
 ADD https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz /tmp/runner.tar.gz
 RUN echo "${RUNNER_SHA256}  /tmp/runner.tar.gz" | sha256sum -c - \
-    && mkdir -p /opt/runner \
-    && tar xzf /tmp/runner.tar.gz -C /opt/runner \
+    && mkdir -p /opt/runner-dist /opt/runner \
+    && tar xzf /tmp/runner.tar.gz -C /opt/runner-dist \
+    && cp -a /opt/runner-dist/. /opt/runner/ \
     && rm /tmp/runner.tar.gz
 
 # /opt/hostedtoolcache : point de montage du volume persistant (supervise.sh).
 # Cree ET possede par runner ici pour que le volume nomme herite cette
 # propriete a sa premiere creation -- sinon il serait root:root et les
 # actions setup-* echoueraient en EACCES sous l'utilisateur non-root.
+# Idem /opt/runner-dist : restaure par l'entrypoint dans un volume runner:runner.
 RUN useradd -m -u 1001 runner \
     && mkdir -p /home/runner/_work /opt/hostedtoolcache \
-    && chown -R runner:runner /opt/runner /home/runner /opt/hostedtoolcache
+    && chown -R runner:runner /opt/runner /opt/runner-dist /home/runner /opt/hostedtoolcache
 
 # gh CLI : requis par les guards metadata (check_pr_perimeter POST sa label
 # via gh ; sans gh, les organs sous `2>/dev/null || true` rendent exit 0 SANS
@@ -121,8 +126,12 @@ WORKDIR /opt/runner
 
 # work_cache_health.sh : moitie executante de #15105, sourcee par l'entrypoint
 # au demarrage de chaque conteneur (controle du cache _work persistant).
+# Copie dans runner-dist AUSSI : un volume persistent restaure tout le layout
+# depuis la source, entrypoint inclus (#14329).
 COPY --chown=runner:runner work_cache_health.sh /opt/runner/work_cache_health.sh
 COPY --chown=runner:runner entrypoint.sh /opt/runner/entrypoint.sh
-RUN chmod +x /opt/runner/entrypoint.sh
+COPY --chown=runner:runner work_cache_health.sh /opt/runner-dist/work_cache_health.sh
+COPY --chown=runner:runner entrypoint.sh /opt/runner-dist/entrypoint.sh
+RUN chmod +x /opt/runner/entrypoint.sh /opt/runner-dist/entrypoint.sh
 
 ENTRYPOINT ["/opt/runner/entrypoint.sh"]

@@ -41,11 +41,11 @@ class ProviderConfig(BaseModel):
             "base_url": "https://generativelanguage.googleapis.com/v1beta"
         },
         ProviderType.OPENAI: {
-            "model": "gpt-4o",
+            "model": "gpt-5.6-sol",
             "base_url": "https://api.openai.com/v1"
         },
         ProviderType.OPENROUTER: {
-            "model": "anthropic/claude-3.5-sonnet",
+            "model": "openai/gpt-5.6-sol",
             "base_url": "https://openrouter.ai/api/v1"
         },
         ProviderType.QWEN: {
@@ -82,12 +82,16 @@ class Settings(BaseSettings):
     # OpenAI
     openai_api_key: Optional[str] = None
     openai_base_url: str = "https://api.openai.com/v1"
-    openai_model: str = "gpt-4o"
+    openai_model: str = "gpt-5.6-sol"
 
     # OpenRouter (multi-modeles)
+    # Doit rester aligne sur ProviderConfig.DEFAULTS[OPENROUTER]["model"] : les deux
+    # divergent silencieusement sinon, car get_provider_config fait
+    # `settings.openrouter_model or defaults["model"]` et le repli n'est donc
+    # jamais exerce tant que la variable d'environnement porte une valeur.
     openrouter_api_key: Optional[str] = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    openrouter_model: str = "openai/gpt-4.1"
+    openrouter_model: str = "openai/gpt-5.6-sol"
 
     # Qwen Cloud (API OpenAI-compatible)
     qwen_api_key: Optional[str] = None

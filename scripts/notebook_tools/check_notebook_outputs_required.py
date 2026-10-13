@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check every code cell of a Jupyter notebook carries a well-typed `outputs` key.
 
-Cause (c.1084): PR #15631 shipped GameTheory-06g-Bounded-Agents-Lean.ipynb whose
+Cause (c.1084): PR #15631 shipped GameTheory-06f-Bounded-Agents-Lean.ipynb whose
 9 code cells were MISSING the `outputs` key entirely (not `outputs: []` empty -
 the key was absent from the cell dict). `nbformat` 5.10.4 strict schema
 validator rejects this as a hard error:

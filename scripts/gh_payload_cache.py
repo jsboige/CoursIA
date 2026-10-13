@@ -25,13 +25,22 @@ DEFAULT_MAX_ENTRIES = 32
 
 @dataclass(frozen=True)
 class CacheResult:
-    """Payload plus the observable cache decision that produced it."""
+    """Payload plus the observable cache decision that produced it.
+
+    ``verified`` says whether the payload was *measured* current, not merely
+    believed current: a live fetch, or a TTL-valid entry whose freshness probe
+    confirmed that the remote has not moved past ``fetched_at``. An unverified
+    hit is a normal outcome (no probe was supplied, or the probe could not
+    measure) -- but it must never be reported as if it had been checked.
+    """
 
     payload: Any
     status: str
     fetched_at: float | None
     age_seconds: float | None
     error: str | None = None
+    verified: bool = False
+    probe_delta_seconds: float | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -39,7 +48,32 @@ class CacheResult:
             "fetched_at": self.fetched_at,
             "age_seconds": self.age_seconds,
             "error": self.error,
+            "verified": self.verified,
+            "probe_delta_seconds": self.probe_delta_seconds,
         }
+
+
+def _measure(probe: Callable[[], float | None] | None) -> tuple[float | None, bool]:
+    """Run a freshness probe, returning ``(newest_remote_timestamp, measured)``.
+
+    A probe is a *cheap* question asked to the remote ("what is the timestamp of
+    the most recently updated item?") whose answer is compared against the
+    snapshot's ``fetched_at``. It is the only sound staleness detector: a cached
+    payload can never prove its own staleness, because every field it carries --
+    ``updatedAt`` included -- was read at fetch time, so ``updatedAt <=
+    fetched_at`` holds by construction. A probe that raises, or that answers
+    with something that is not a timestamp, is *unmeasured*, not fatal: the
+    caller keeps a usable payload and loses only the verification.
+    """
+    if probe is None:
+        return None, False
+    try:
+        value = probe()
+    except Exception:
+        return None, False
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value), True
+    return None, False
 
 
 def default_cache_dir(platform_name: str | None = None) -> pathlib.Path:
@@ -149,25 +183,50 @@ class PayloadCache:
         fetch: Callable[[], Any],
         *,
         mode: str = "auto",
+        probe: Callable[[], float | None] | None = None,
     ) -> CacheResult:
         """Read or refresh one entry.
 
         ``off`` bypasses disk entirely. ``refresh`` always calls ``fetch`` but
         can still return an explicitly stale entry if that call fails.
+
+        ``probe`` is an optional cheap freshness measurement (see ``_measure``).
+        Without it, ``auto`` is a pure TTL bet: a fresh-looking entry is served
+        with ``verified=False``, and the caller is expected to say so instead of
+        letting an unchecked payload circulate as if it had been checked (#17096).
+        With it, a TTL-valid entry that the probe proves outdated is refreshed
+        without operator intervention.
         """
         if mode not in {"auto", "off", "refresh"}:
             raise ValueError(f"unsupported cache mode: {mode}")
         if mode == "off":
             payload = fetch()
-            return CacheResult(payload, "bypass", None, None)
+            return CacheResult(payload, "bypass", None, None, verified=True)
 
         now = self.clock()
         cached = self._read(key)
+        probe_value: float | None = None
+        measured = False
         if cached is not None:
             payload, fetched_at = cached
             age = max(0.0, now - fetched_at)
             if mode == "auto" and age <= ttl_seconds:
-                return CacheResult(payload, "hit", fetched_at, age)
+                probe_value, measured = _measure(probe)
+                if not measured or probe_value <= fetched_at:
+                    # Soit le distant n'a pas bouge depuis notre snapshot (mesure),
+                    # soit on n'a pas su le mesurer (pas de sonde, ou sonde muette).
+                    return CacheResult(
+                        payload,
+                        "hit",
+                        fetched_at,
+                        age,
+                        verified=measured,
+                        probe_delta_seconds=(
+                            probe_value - fetched_at if measured else None
+                        ),
+                    )
+                # La sonde PROUVE que le distant a bouge apres notre snapshot :
+                # on rafraichit sans intervention, au lieu de servir du perime.
         else:
             payload, fetched_at, age = None, None, None
 
@@ -182,6 +241,12 @@ class PayloadCache:
                 fetched_at,
                 age,
                 f"{type(exc).__name__}: {exc}",
+                # `fetched_at` est garanti non None ici (on vient de lire une
+                # entree), donc la seule condition est la mesure elle-meme :
+                # tester la valeur de l'horodatage serait faux a l'epoque 0.
+                probe_delta_seconds=(
+                    probe_value - fetched_at if measured else None
+                ),
             )
 
         try:
@@ -193,6 +258,18 @@ class PayloadCache:
                 now,
                 0.0,
                 f"{type(exc).__name__}: {exc}",
+                verified=True,
             )
         status = "refresh" if mode == "refresh" else "miss"
-        return CacheResult(fresh, status, now, 0.0)
+        return CacheResult(
+            fresh,
+            status,
+            now,
+            0.0,
+            verified=True,
+            probe_delta_seconds=(
+                probe_value - fetched_at
+                if measured and fetched_at is not None
+                else None
+            ),
+        )

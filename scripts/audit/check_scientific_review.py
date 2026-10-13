@@ -10,14 +10,16 @@ generated catalogue (COURSE_CATALOG.generated.json). Validates:
 3. review_scope is in the valid enum {factual, algo, proba, demo, correctness, full}.
 4. reviewer != last_validator of the notebook (auto-review rejection — c.997 #14831 voie 1).
 5. evidence_pr (#NNNN) is in MERGED state via `gh pr view` (best-effort: skip if gh unavailable).
-6. Cross-check: catalogue entries that the registry should promote (UNREVIEWED -> AUTHOR_REVIEWED/PEER_REVIEWED).
+6. Cross-check: catalogue entries that the registry apprecies (UNASSESSED -> ESTABLISHED/ADVANCED/RESEARCH),
+   et peremption de l'appreciation quand le CODE a bouge (#14831).
 
 Exit codes:
   0 = no errors (warnings allowed)
   1 = errors found (DRIFT/INVALID/MISSING/etc.) — only with --check flag
 
 Anti-FP strategy (cf scientific-review-registry.md §3.3):
-- AUTO_REVIEW: reviewer == last_validator du notebook (bloquant pour PEER_REVIEWED, OK pour AUTHOR_REVIEWED self-attesté).
+- AUTO_REVIEW: reviewer == last_validator. Depuis #14831 le relecteur ne PILOTE plus la grade
+  (il est rendu comme preuve a cote) : ce n'est donc plus un motif de rejet, seulement un fait.
 - DRIFT_REVIEWER_ALIAS: reviewer est substring du owner_logique (heuristic best-effort).
 - DRIFT_PR_NOT_TOUCHING: PR diff ne touche pas le notebook path (TODO c.997+).
 - WARN_PR_STATE_UNKNOWN: gh CLI indisponible (CI sans auth).
@@ -40,6 +42,16 @@ from pathlib import Path
 
 REVIEW_SCOPES = {"factual", "algo", "proba", "demo", "correctness", "full"}
 PROMOTING_SCOPES = REVIEW_SCOPES  # all promote in c.997 voie 1
+
+# Echelle de confiance scientifique (#14831, sign-off user 2026-09-21). Ce que le
+# registre a le droit d'ecrire dans `confidence` ; tout le reste retombe sur
+# UNASSESSED cote catalogue (fail-CLOSED), ce qui doit se VOIR ici.
+CONFIDENCE_VALUES = {"established", "advanced", "research"}
+_CONFIDENCE_GRADE = {
+    "established": "ESTABLISHED",
+    "advanced": "ADVANCED",
+    "research": "RESEARCH",
+}
 
 
 def parse_registry(registry_path: Path) -> list[dict]:
@@ -190,22 +202,32 @@ def check_entry(entry: dict, catalogue: list[dict], repo: str = "jsboige/CoursIA
 
 
 def check_promotions(entries: list[dict], catalogue: list[dict]) -> list[str]:
-    """Cross-check: catalogue entries that the registry should promote.
+    """Croise le registre et le catalogue sur l'axe 3 — nouvelle echelle (#14831).
 
-    This checks that each whitelisted notebook (with scope in PROMOTING_SCOPES
-    and a non-empty reviewer) has scientific_review != UNREVIEWED in the catalogue.
+    Trois classes, qui ne disent pas la meme chose :
 
-    If the catalogue is from BEFORE the classifier extension (c.997), it won't
-    have the scientific_review field — in that case, we emit an INFO note rather
-    than an error.
+    - ``DRIFT_NOT_APPRECIATED`` — le registre declare une ``confidence`` et le
+      catalogue rend UNASSESSED. C'est un cablage casse : le signal existe et
+      n'arrive pas. **Erreur.**
+    - ``STALE_APPRECIATION`` — le catalogue rend ``scientific_review_stale``. Le
+      code a bouge depuis la relecture, l'appreciation ne porte plus sur ce qui
+      est la, une nouvelle revue est due. C'est le regime d'audit permanent
+      voulu par le sign-off : **un signal de travail, pas un defaut**, donc une
+      note, jamais une erreur.
+    - ``WARN_NO_CODE_ANCHOR`` — le registre declare une ``confidence`` sans
+      ``reviewed_code_sha``. L'appreciation ne pourra jamais se perimer : elle
+      est immortelle par omission. Les entrees anterieures a #14831 sont
+      legitimement dans cet etat, d'ou l'avertissement plutot que l'erreur.
+
+    Pourquoi ce recablage : la version precedente testait ``sr == "UNREVIEWED"``,
+    une valeur que la nouvelle echelle n'emet plus. Elle aurait rendu 0 finding
+    sur un corpus entierement non apprecie — et un zero d'instrument aveugle se
+    lit comme un feu vert.
     """
     notes = []
     cat_paths = {nb["path"]: nb for nb in catalogue}
     for entry in entries:
         nb_path = entry.get("notebook_path")
-        scope = entry.get("review_scope")
-        if scope not in PROMOTING_SCOPES:
-            continue
         nb = cat_paths.get(nb_path)
         if nb is None:
             continue
@@ -213,10 +235,36 @@ def check_promotions(entries: list[dict], catalogue: list[dict]) -> list[str]:
         if sr is None:
             notes.append(f"INFO_NO_FIELD: {nb_path} -- catalogue lacks scientific_review field")
             continue
-        if sr == "UNREVIEWED":
+
+        confidence = (entry.get("confidence") or "").strip().lower()
+        if confidence and confidence not in CONFIDENCE_VALUES:
             notes.append(
-                f"DRIFT_NOT_PROMOTED: {nb_path} -- scientific_review=UNREVIEWED "
-                f"despite registry signal (c.997 voie 1)"
+                f"INVALID_CONFIDENCE: {nb_path} -- confidence={entry.get('confidence')!r} "
+                f"hors de {sorted(CONFIDENCE_VALUES)} (le catalogue retombera sur UNASSESSED)"
+            )
+            continue
+
+        if confidence:
+            attendu = _CONFIDENCE_GRADE[confidence]
+            if sr == "UNASSESSED":
+                notes.append(
+                    f"DRIFT_NOT_APPRECIATED: {nb_path} -- scientific_review=UNASSESSED "
+                    f"alors que le registre declare confidence={confidence} (attendu {attendu})"
+                )
+            elif sr != attendu:
+                notes.append(
+                    f"DRIFT_GRADE_MISMATCH: {nb_path} -- catalogue={sr}, registre={attendu}"
+                )
+            if not (entry.get("reviewed_code_sha") or "").strip():
+                notes.append(
+                    f"WARN_NO_CODE_ANCHOR: {nb_path} -- confidence={confidence} sans "
+                    f"reviewed_code_sha : l'appreciation ne pourra jamais se perimer"
+                )
+
+        if nb.get("scientific_review_stale"):
+            notes.append(
+                f"STALE_APPRECIATION: {nb_path} -- le code a change depuis la revue "
+                f"(grade {sr} conservee, nouvelle revue due)"
             )
     return notes
 

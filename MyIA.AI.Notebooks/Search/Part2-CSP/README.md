@@ -70,15 +70,15 @@ Les neuf notebooks de cette partie existent en **binôme bilingue** : une versio
 
 | # | Python (OR-Tools CP-SAT) | .NET (C#) | Solveur .NET |
 |---|--------------------------|-----------|--------------|
-| 1 | [CSP-1-Fundamentals](CSP-1-Fundamentals.html) | [CSP-1-Fundamentals-Csharp](CSP-1-Fundamentals-Csharp.html) | Choco-solver via IKVM |
-| 2 | [CSP-2-Consistency](CSP-2-Consistency.html) | [CSP-2-Consistency-Csharp](CSP-2-Consistency-Csharp.html) | Choco-solver via IKVM (propagation native) |
-| 3 | [CSP-3-Advanced](CSP-3-Advanced.html) | [CSP-3-Advanced-Csharp](CSP-3-Advanced-Csharp.ipynb) | Choco-solver via IKVM |
-| 4 | [CSP-4-Scheduling](CSP-4-Scheduling.html) | [CSP-4-Scheduling-Csharp](CSP-4-Scheduling-Csharp.html) | OR-Tools CP-SAT natif (+ section Choco comparative) |
-| 5 | [CSP-5-Optimization](CSP-5-Optimization.html) | [CSP-5-Optimization-Csharp](CSP-5-Optimization-Csharp.html) | Choco-solver via IKVM (contrainte globale `binPacking`) |
-| 6 | [CSP-6-Hybridization](CSP-6-Hybridization.html) | [CSP-6-Hybridization-Csharp](CSP-6-Hybridization-Csharp.html) | OR-Tools CP-SAT natif (LCG, CP+SAT) |
-| 7 | [CSP-7-Soft](CSP-7-Soft.html) | [CSP-7-Soft-Csharp](CSP-7-Soft-Csharp.html) | Choco-solver via IKVM (réification `reifyWith` / `ifThen`) |
-| 8 | [CSP-8-Temporal](CSP-8-Temporal.html) | [CSP-8-Temporal-Csharp](CSP-8-Temporal-Csharp.html) | OR-Tools CP-SAT natif (IntervalVar temporels) |
-| 9 | [CSP-9-Distributed](CSP-9-Distributed.html) | [CSP-9-Distributed-Csharp](CSP-9-Distributed-Csharp.html) | ABT multi-agent (port from scratch, Yokoo 1992) |
+| 1 | [CSP-1-Fundamentals](CSP-1-Fundamentals.html) | [CSP-1-Fundamentals-CSharp](CSP-1-Fundamentals-CSharp.html) | Choco-solver via IKVM |
+| 2 | [CSP-2-Consistency](CSP-2-Consistency.html) | [CSP-2-Consistency-CSharp](CSP-2-Consistency-CSharp.html) | Choco-solver via IKVM (propagation native) |
+| 3 | [CSP-3-Advanced](CSP-3-Advanced.html) | [CSP-3-Advanced-CSharp](CSP-3-Advanced-CSharp.ipynb) | Choco-solver via IKVM |
+| 4 | [CSP-4-Scheduling](CSP-4-Scheduling.html) | [CSP-4-Scheduling-CSharp](CSP-4-Scheduling-CSharp.html) | OR-Tools CP-SAT natif (+ section Choco comparative) |
+| 5 | [CSP-5-Optimization](CSP-5-Optimization.html) | [CSP-5-Optimization-CSharp](CSP-5-Optimization-CSharp.html) | Choco-solver via IKVM (contrainte globale `binPacking`) |
+| 6 | [CSP-6-Hybridization](CSP-6-Hybridization.html) | [CSP-6-Hybridization-CSharp](CSP-6-Hybridization-CSharp.html) | OR-Tools CP-SAT natif (LCG, CP+SAT) |
+| 7 | [CSP-7-Soft](CSP-7-Soft.html) | [CSP-7-Soft-CSharp](CSP-7-Soft-CSharp.html) | Choco-solver via IKVM (réification `reifyWith` / `ifThen`) |
+| 8 | [CSP-8-Temporal](CSP-8-Temporal.html) | [CSP-8-Temporal-CSharp](CSP-8-Temporal-CSharp.html) | OR-Tools CP-SAT natif (IntervalVar temporels) |
+| 9 | [CSP-9-Distributed](CSP-9-Distributed.html) | [CSP-9-Distributed-CSharp](CSP-9-Distributed-CSharp.html) | ABT multi-agent (port from scratch, Yokoo 1992) |
 
 > **Quel solveur .NET pour quel terrain ?** CSP-4 (ordonnancement `IntervalVar`, `NoOverlap`, `Cumulative`), CSP-6 (Lazy Clause Generation, CP+SAT) et CSP-8 (intervalles temporels) sont routés vers **OR-Tools CP-SAT natif** — le terrain où CP-SAT excelle, cf. *vrai outil SOTA pour le problème* (#3801). Les binômes 1, 2, 3, 5 et 7 illustrent **Choco via IKVM** comme levier de parité .NET pour une lib Java — y compris `binPacking`, contrainte globale dont la propagation surpasse la linéarisation BoolVar manuelle. CSP-9 (DisCSP) n'a pas de solveur off-the-shelf : l'algorithme ABT (Yokoo 1992) y est porté **from scratch** en C# multi-agent.
 
@@ -166,6 +166,18 @@ CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
 | [SymbolicAI/SMT/Z3-Linq2Z3](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md) | Solveur SMT | CSP-6 (LCG) et automates symboliques |
 | [Probas/Infer](../../Probas/Infer/) | Infer.NET | Modèles graphiques et contraintes |
 
+## Au-delà de CP : le pont CP ↔ SAT ↔ SMT
+
+La programmation par contraintes n'est pas un paradigme isolé : elle partage ses fondations avec deux familles voisines du dépôt, qui attaquent le même problème déclaratif sous un autre angle.
+
+- **SAT** (satisfiabilité booléenne) — décider si une formule propositionnelle admet un modèle ; solveurs DPLL/CDCL.
+- **SMT** (SAT Modulo Theories) — SAT enrichi de théories (arithmétique, tableaux, bit-vectors, chaînes) ; voir la série [SymbolicAI/SMT/Z3-Linq2Z3](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md).
+- **CP** (programmation par contraintes) — cette partie : domaines finis, contraintes globales, propagation.
+
+**Bardin, S., Bjørner, N. & Cadar, C. (2019), *Bringing CP, SAT and SMT together: Next Challenges in Constraint Solving* (Dagstuhl Seminar 19062), Dagstuhl Reports 9(2):27** — [doi:10.4230/DagRep.9.2.27](https://doi.org/10.4230/DagRep.9.2.27) — est la référence commune qui pose ce pont : identifier les confluences et les angles morts entre les trois communautés. C'est un rapport de séminaire, ni tutoriel ni article de recherche ; sa fonction est de cartographier ce que les trois paradigmes partagent déjà.
+
+La série l'illustre dans le code : **CSP-6 (Hybridization)** décrit la *Lazy Clause Generation*, où un solveur CP apprend des clauses SAT en cours de résolution — la frontière CP/SAT n'y est pas une analogie, elle y est franchie.
+
 ## Références
 
 Couverture par notebook des sources fondatrices de la programmation par contraintes :
@@ -177,6 +189,13 @@ Couverture par notebook des sources fondatrices de la programmation par contrain
 | CSP-2 (Consistency) | Mackworth, A. K. (1977) — « Consistency in Networks of Relations », *Artificial Intelligence* 8(1). Origine de l'arc-consistency (AC-3). |
 | CSP-3 (Advanced) | Régin, J.-C. (1994) — « A filtering algorithm for constraints of difference in CSPs », *AAAI-94*. Le propagateur global AllDifferent. |
 | CSP-6 (Hybridization) | Ohrimenko, I., Stuckey, P. J., & Codish, M. (2009) — « Propagation via Lazy Clause Generation », *Constraints* 14(3). Origine de la Lazy Clause Generation. |
+| CSP-1, CSP-2, CSP-8 | Dechter, R. (2003) — *Constraint Processing*. Morgan Kaufmann. Socle de la propagation de contraintes et des niveaux de consistance, en amont de la série. |
+| CSP-3 à CSP-8 | Krupke, D. et al. (2023) — *The CP-SAT Primer: Using and Understanding Google OR-Tools' CP-SAT Solver* (CC-BY). Le manuel du solveur CP-SAT, aval de la série. |
+| CSP-3, CSP-5, CSP-7 | Rossi, F., van Beek, P. & Walsh, T. (dir., 2006) — *Handbook of Constraint Programming*. Elsevier. Ouvrage de référence organisé par thème (propagation, contraintes globales, contraintes souples, temporel) — le découpage que suit la série. |
+| CSP-9 (Distributed) | **Distributed Constraint Processing** (support de cours, 2018) — `2018 - lecture-Distributed Constraint Processing.pdf`, rayon *Constraint Programming* du gisement documentaire (auteur non lisible : PDF non hydraté). Série homonyme en ligne : [G. Picard, Mines Saint-Étienne](https://www.gauthier-picard.info/files/lecture-DCSP-2025.pdf). Passage du CSP centralisé aux formulations distribuées (DisCSP, DCOP). |
+| Toute la série | Bardin, S., Bjørner, N. & Cadar, C. (2019) — *Bringing CP, SAT and SMT together: Next Challenges in Constraint Solving* (Dagstuhl Seminar 19062), Dagstuhl Reports 9(2):27. Le pont CP↔SAT↔SMT. |
+
+Le socle glisse de Dechter vers le *CP-SAT Primer* à partir de CSP-3 ; les deux cohabitent ensuite — CSP-8 relève des deux, ce qui explique sa présence dans les deux lignes de couverture.
 
 ---
 

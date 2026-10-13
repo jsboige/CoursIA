@@ -144,7 +144,7 @@ La cause tombe dans l'un de TROIS cas (le scanner ne les distingue PAS — c'est
 
 
 
----
+***
 
 
 
@@ -404,9 +404,71 @@ reproduit sur son auteur pendant qu'elle attendait d'etre mergee.
 Enchainer avec [[handover-must-disarm-outgoing-cron]] : **desarmer la cadence sortante d'abord**,
 armer ensuite.
 
+### 2.7 Registre re-parcouru des arbitrages user en attente (Regle 7)
+
+Source : convergence des harnais roo-extensions <-> CoursIA (Epic roo-extensions#3111 candidat n°5, VERIFIE passe 3 du 2026-08-20 ; livraison roo-extensions#3677, 2026-09-15). Le raffinement de l'audit : ce n'est pas un formalisme qui manquait a CoursIA, c'est un **registre re-parcouru**.
+
+**Preuve mesuree** (audit passe 3, VERIFIE — dashboards live 20/08 + archives 13-15/08) :
+
+- roo-extensions : section recurree par cycle coordinateur « En attente d'arbitrage user (aucune action prise) » — ~31 % des archives dashboard en portent une mention ; un item ne peut pas disparaitre silencieusement.
+- CoursIA : le coordinateur auto-arbitre d'abord (atout de debit, CONSERVE — non-but explicite de la convergence) mais la trace des demandes user en attente vivait en dette personnelle en texte libre. Verbatim ai-01 (archives 13-14/08) : « les 4 arbitrages restes en l'air (#7257, #7266, #7298, #6711) — un [ASK USER] jamais arrive pre-merge [...] c'est ma dette, pas celle des lanes ». Un [ASK USER] « jamais arrive » est precisement la panne que le format roo-ext previent.
+
+**Le mandat user du 15/09 demandait deja la moitie du patron** — donne dans CE workspace (machine ai-01) : « je prefere que tu gardes tes questions pour la fin de session, et si jamais le cron reprend, que tu les gardes tant qu'elles sont pas repondues dans une memoire que tu dois restituer en fin de session. Ca va demander une MAJ du harnais global en coordination avec roo-extensions » (roo-extensions#3656). Cote roo-ext, la moitie registre est codifiee (registre open-questions, roo-extensions#3657) ; cette regle en est le portage CoursIA, augmentee de la moitie roo-ext historique : la **liste re-parcourue par cycle**.
+
+#### Les 3 invariants
+
+1. **Registre persistant** — fichier `.claude/local/arbitrations-user.md` sur ai-01 (gitignore : `.claude/local/`). Format d'entree :
+
+   ```markdown
+   ## 2026-09-15 — sign-off regle convergence candidat n°5
+   - Demande : [ASK] poste cycle du 15/09 (dashboard CoursIA + DM user)
+   - Bloque : merge de la PR concernee (gate pre-merge) ; 2 options A/B
+   - Relances : 15/09 · 16/09
+   - Sortie : TRANCHEE option B le 17/09 (reponse DM user) — archivee
+   ```
+
+2. **Re-parcours chaque cycle** — section recurree du bilan `/coordinate`, sur LES DEUX dashboards (Regle 3) :
+
+   ```markdown
+   ### En attente d'arbitrage user (aucune action prise)
+   - sign-off regle X (depuis 15/09, 2 cycles) · arbitrage sauvegarde Y (depuis 13/09, 5 cycles)
+   ```
+
+   Le dashboard se re-condense ; le registre est la **source**, la section n'en est que la representation. La demande survit a la condensation parce qu'elle ne vit pas uniquement dedans.
+
+3. **Sortie sur reponse user explicite uniquement** — jamais auto-expiree (l'age d'un item est un signal de RELANCE, pas de purge : plus il vieillit, plus le re-parcours le met sous les yeux du user), jamais retiree silencieusement. La reponse est datee et tracee dans l'entree, puis l'entree descend en fin de fichier (section archive). Rien n'est efface.
+
+#### Frontiere exacte (non-buts)
+
+- **L'auto-arbitrage coordinateur reste la norme** (Regle 5.3 : decider, ne pas deferer). Le registre ne couvre QUE les decisions qui EXIGENT le user : sign-offs de regles, arbitrages de politique, approbations que le mandat reserve au user, blocages budget/permissions. Tout le reste se tranche dans le cycle, comme avant.
+- La Regle 2 couvre l'entrant (demandes user -> action) ; la Regle 7 couvre le sortant (escalades coord -> user). Ensemble : « aucune demande user ne pourrit > 1 cycle » **dans les deux sens**.
+
+#### Verification apres N cycles (critere R2)
+
+- **Chaque fin de cycle (rapide)** : comparer la section « En attente d'arbitrage user » du bilan precedent au registre — tout ecart non justifie par une reponse user tracee = violation.
+- **Convergence (apres N cycles d'application)** : dans les archives dashboard, aucun item ne doit disparaitre de la section sans ligne de sortie datee dans le registre. C'est le critere de reussite de roo-extensions#3677 (checkbox 3) : a verifier et rapporter sur cette issue.
 
 
 
+
+
+### 2.8 Déporté depuis la règle — justifications, récits mesurés et provenances (tranche #15204, 2026-10-06)
+
+Déporté depuis `.claude/rules/coordinator-discipline.md` (tranche 2 du slimming #15204 ; sources citées = lignes du fichier avant déport, commit 70b0932df5). La règle garde chaque prescription ; ce qui suit est le détail en lecture différée.
+
+**Mécanisme de la mesure 3 (unicité de session), anciennes lignes 32-40.** L'organe écrit `uniqueness_measured: false` dans chacun de ses verdicts. Les noms de session (`coursia-0f`) **n'encodent pas la lane**, seule une réponse du pair la qualifie. Deux sessions lancées du **même** clone rendent toutes deux `exit 0` et le rôle COORDINATOR — `clone_ok` ne sépare que des clones *distincts*. L'organe porte la racine canonique et **rétrograde en worker** (fail-CLOSED) une session lancée depuis un clone jumeau, mais il ne tranche jamais l'unicité.
+
+**Pourquoi le perdant de l'arbitrage passe en `git worktree add`, ancienne ligne 47.** Deux sessions d'un même clone partagent HEAD, l'index et le stash, et aucune garde ne rougit sur cette corruption-là ([[concurrent-sessions-share-the-working-tree]]).
+
+**Lisibilité des deux critères de défaut, anciennes lignes 51-52.** Les deux critères de défaut de la table de décision sont choisis pour être **lisibles des deux côtés** : chaque session peut rendre son `CronList` et son heure de démarrage.
+
+**Mesure « champ de vision », ancienne ligne 73.** Mesure du 2026-09-12 : **71 des 76 PRs ouvertes (93 %) n'attendaient aucun geste de lane** — 26 prêtes à merger, 45 en attente de review coord.
+
+**Incident fondateur #15828 (rouge = requête sur ma file), ancienne ligne 75.** Le 2026-09-12, ai-01 a diagnostiqué lui-même un test d'inventaire rouge (lecture du script, du test, du générateur, d'un workflow ligne à ligne) puis délégué sa correction à un sous-agent — alors que **PR #15828 portait déjà ce fix, livrée par po-2023 dès le cycle c.507 et garée dans sa propre file**, avec 174 non-lus en inbox. Le geste correct était `gh pr list` + la lecture de l'inbox, pas `Read` sur `build_inventory`.
+
+**Provenances des mandats de l'adjoint, ancienne ligne 136.** Preflight : #13605 `issuecomment-5467391147` ; cas `ADJOINT PREFLIGHT` de `check_unaddressed_nits.py` : PR #13883 ; recalculs firsthand : DM `msg-20260904T043716-lo9ryu`.
+
+**Limites de l'organe `check_adjoint_prevalidation.py`, ancienne ligne 146.** GitHub ne permet pas à cet organe stateless de prouver un événement ensuite supprimé ou reverté. Son format canonique est généré par `--template` (hash inclus ; `--fingerprint` reste disponible). Le login GitHub étant partagé, `lane: myia-po-2025:CoursIA-2` est une déclaration de protocole fail-closed, pas une authentification cryptographique.
 
 ## 3. Secrets via RooSync — recits et justification datee
 

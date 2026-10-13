@@ -39,6 +39,22 @@
     {
       "arm": "Np",
       "model": "Qwen/Qwen2.5-14B-Instruct",
+      "seed": 7,
+      "steps": 120,
+      "train_s": 2543.923091173172,
+      "vram_load_gb": 3.103972352,
+      "vram_peak_gb": 3.494526976,
+      "n_records": 240,
+      "hack_early": 0.725,
+      "hack_late": 0.7083333333333334,
+      "mc_early": 0.6833333333333333,
+      "mc_late": 0.6833333333333333,
+      "reward_early": 1.5666666666666667,
+      "reward_late": 1.5583333333333333
+    },
+    {
+      "arm": "Np",
+      "model": "Qwen/Qwen2.5-14B-Instruct",
       "seed": 42,
       "steps": 120,
       "train_s": 1840.1525654792786,

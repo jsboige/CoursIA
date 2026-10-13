@@ -1,6 +1,6 @@
 # Delegation a des sous-agents — modele explicite obligatoire (sonnet/haiku par defaut)
 
-S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` tool), quel que soit le role (coordinateur ai-01 ou worker po-*). Source : mandat user 2026-06-09 (« tout sous-agent doit avoir un modele explicite, sonnet ou haiku typiquement, et uniquement Opus dans des cas exceptionnels qui le justifient »), consolide avec le mandat 2026-06-07 sur la delegation read-heavy. Les angles morts observes par classe de tache sont synthetises ci-dessous (section « Angles morts connus »).
+S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` tool), quel que soit le role (coordinateur ai-01 ou worker po-*). Source : mandat user 2026-06-09 (« tout sous-agent doit avoir un modele explicite, sonnet ou haiku typiquement, et uniquement Opus dans des cas exceptionnels qui le justifient »), consolide avec le mandat 2026-06-07 sur la delegation read-heavy, **resserre le 2026-10-10 (« Pas du tout ») : sur les postes po-*, plus aucun cas exceptionnel** (cf point 3). Les angles morts observes par classe de tache sont synthetises ci-dessous (section « Angles morts connus »).
 
 ## Regle HARD — modele explicite obligatoire
 
@@ -10,12 +10,9 @@ S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` to
    - **`"sonnet"`** : taches intermediaires (audit, recensement, diagnostic, redaction, enrichissement notebook, review structurelle)
    - **`"haiku"`** : taches simples (comptage, extraction format-impose, grep/scan, verification mecanique, listing)
 
-3. **`"opus"` UNIQUEMENT sur justification explicite.** Un sous-agent opus est acceptable **uniquement** si le prompt de l'Agent tool contient une justification en anglais d'une ligne (ex: `// opus justified: needs cross-file architectural judgment beyond sonnet capability`). Les cas typiques justifies :
-   - Decision architecturale cross-fichier complexe
-   - Synthese multi-sources contradictoires necessitant un jugement nuance
-   - Investigation de regression profonde ou un sonnet pourrait manquer des subtilites
+3. **`"opus"` : jamais sur les postes po-*, meme justifie (mandat user 2026-10-10).** Une tache qui paraissait justifier l'Opus **remonte a ai-01** — le coordinateur l'execute lui-meme ou obtient une autorisation user nommee pour la lane. Sur ai-01 et les lanes autorisees nommement par le user (a ce jour : `myia-po-2024:CoursIA-3`, autorisee le 04/10, rappel du 10/10), l'Opus sous-agent reste possible sur justification ecrite d'une ligne dans le prompt (ex: `// opus justified: needs cross-file architectural judgment beyond sonnet capability`).
 
-   **Non justifies** (opus interdit) : read-heavy borne, comptage, audit d'issues, verification de diffs, labeling, extraction, listing, generation de rapports structures.
+   **Origine (mesure, 10/10)** : 6 requetes sous-agent Opus parties de po-2027 entre 10:54 et 11:08Z, toutes avec le parametre `model` explicite — l'ordre de resolution (`model` de l'appel > `model:` du fichier agent > env > modele de session) fait que la justification ecrite n'etait pas un detournement de la regle, c'etait la regle ; le user l'a retiree (« Pas du tout »). Sur ai-01, la justification ecrite reste requise ; les cas typiques (decision architecturale cross-fichier, synthese multi-sources, investigation de regression profonde) ne changent pas de threshold, seulement de siege.
 
 4. **Deleguer le READ-HEAVY borne et verifiable, garder la DECISION.** Les taches a fort volume de lecture mais a critere de sortie objectif — recensement, audit d'issues, verification de diffs, diagnostic, comptage, extraction format-impose — vont a un sous-agent `sonnet` ou `haiku`. L'agent appelant garde : les **jugements** (labeling exercice/exemple, scope-vs-titre, WIP-acceptable, anti-regression Lean/preuve), les **merges/closes/dispatches**, et le **cross-check G.1** systematique.
 
@@ -38,7 +35,22 @@ S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` to
 
 ## Capacite vision — router le QA visuel, jamais le verifier text-only (HARD)
 
-Toute tache dont la valeur depend du **rendu visuel** (galeries de figures README, plots de notebook, sorties d'images GenAI, layout de slides, diagrammes) voit son **QA visuel** route vers une lane **qui voit** — MiniMax (lanes CoursIA-2) ou ai-01. **Jamais** valide text-only sur une lane GLM : elle ne voit pas, et un `test -f` confirme l'**existence**, PAS le **rendu**. Routage **capability-driven**, pas token-driven : c'est « meilleur outil pour la tache », pas un fallback degrade.
+Toute tache dont la valeur depend du **rendu visuel** (galeries de figures README, plots de notebook, sorties d'images GenAI, layout de slides, diagrammes) voit son **QA visuel** confie a un agent **qui voit**. **Jamais** valide text-only : un `test -f` confirme l'**existence**, PAS le **rendu**.
+
+**La capacite appartient au MODELE, pas a la machine (correction user 2026-09-18).** La formulation precedente routait « vers les lanes CoursIA-2 ou ai-01 » : c'est faux, et c'est faux d'une maniere qui coute. Une lane n'est pas un materiel, c'est un modele qui l'anime — et ce modele change. En l'etat mesure :
+
+| Modele animant la lane | Vision |
+|---|---|
+| GLM (sous Sonnet/CoursIA) | **non** |
+| MiniMax (notamment CoursIA-2) | oui |
+| Sonnet, y compris les **failovers** | oui |
+| les autres du parc | oui |
+
+Consequence operationnelle : **c'est a l'agent de juger s'il peut prendre le grain**, sur ce dont il dispose a cet instant. Ni une table de routage par machine, ni un coordinateur distant ne le savent mieux que lui — et une table par machine se perime silencieusement au premier changement de modele. Un agent qui ne voit pas **le dit et passe la main** ; il ne valide pas text-only, et il n'est pas fautif de rendre le grain.
+
+Routage **capability-driven**, pas token-driven : c'est « meilleur outil pour la tache », pas un fallback degrade.
+
+**`sk-agent` comme vision indirecte : possible, mais on s'y est deja brule.** Ce n'est pas une voie de contournement pour une lane sans vision — au mieux un complement, jamais la preuve qui remplace un regard. Avant de s'en servir, verifier ce qu'il rend reellement sur l'artefact vise ; un verdict de vision indirecte non corrobore ne vaut pas validation.
 
 Le defaut a attraper (cf [sota-not-workaround.md](sota-not-workaround.md) Prong A) : figure reduite a des blocs plats / image blanche / placeholder / render casse **alors que le vrai outil etait invocable** → RECOVERABLE-MACHINE ou -LOCAL, **regenerer**, jamais consacrer.
 

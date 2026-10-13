@@ -13,6 +13,7 @@ paths: MyIA.AI.Notebooks/**/*.ipynb
 - Insertions multiples : travailler BAS vers HAUT (evite index shift)
 - Re-read le notebook apres chaque edit (indices changent)
 - `git diff` apres modifs : enrichissement = insertions > deletions
+- Ne pas substituer un séparateur horizontal par un autre (`---`, `***`, `* * *`, `___`) dans une cellule existante sans le déclarer dans le body de la PR ; organe : `scripts/ci/check_hr_substitution.py` (#14683).
 
 ## Structure pedagogique
 
@@ -21,6 +22,8 @@ paths: MyIA.AI.Notebooks/**/*.ipynb
 - Interpretation APRES chaque output significatif
 - Introduction de section AVANT le code qu'elle introduit
 - Conclusion avec table recap en fin de section majeure
+- **Le carnet présente l'état final corrigé, pas l'histoire de sa correction** (Epic #20250). Corrigenda, identifiants de cycle (`c.NNNN`), lanes et machines, DM, réserves de review, horodatages, « cellule N corrigée » : leur place est le corps de la PR, l'issue et l'historique git. Une mention isolée de provenance reste admise ; le défaut est la **part** de la prose qu'occupe ce récit, en-tête compris. Organe : `scripts/notebook_tools/check_activity_leak.py` (`--diff` sur les passages ajoutés, `--notebook` pour le détail).
+- **Série en finition** (régime #19297) : README de série avec `## Objectifs d'apprentissage` ; chaque carnet du chemin principal finit par `## À retenir`, `## Vérifiez votre compréhension` (questions tirées du carnet, réponse repliée) et `## Pour aller plus loin` ; capstone là où il vient naturellement. Série par série, jamais en reprise de masse ; markdown seul, donc sans ré-exécution (C.2/C.3). Détail : [finition-de-serie.md](../../docs/reference/finition-de-serie.md).
 
 ## Enchainement et ordre canonique des cellules (Epic #3240)
 

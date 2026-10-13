@@ -14,7 +14,7 @@ Long-only top-2 momentum currencies vs USD, monthly rebalance. Signal is inverte
 
 ## Figures du notebook de recherche
 
-Le notebook [`research.ipynb`](research.ipynb) teste six hypothèses sur le momentum FX : momentum pur (H1), long-only vs long/short (H3), réduction à 4 paires pour limiter la corrélation (H4), filtre DXY vs SPY SMA200 (H5), filtre de volatilité par régime (H6), puis synthèse de la configuration optimale. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+Le notebook [`research.ipynb`](research.ipynb) teste six hypothèses sur le momentum FX : momentum pur (H1), optimisation des lookbacks momentum — 21/63/126/252 jours (H2), long-only vs long/short (H3), réduction à 4 paires pour limiter la corrélation (H4), filtre DXY vs SPY SMA200 (H5), filtre de volatilité par régime (H6), puis synthèse de la configuration optimale. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ### Diagnostic préalable — corrélation inter-paires et rendements normalisés (cellule 3)
 
@@ -125,6 +125,7 @@ lean backtest --project .
 
 - `main.py` - Strategy (v4.0, baseline L/S) — migration v3e à étudier hors-scope PR
 - `research.ipynb` - FX momentum signal analysis (H1-H6 + synthèse)
+- `quantbook.ipynb` - Reproduction de l'analyse FX momentum sous QuantConnect Research (données natives QC)
 
 ## References
 

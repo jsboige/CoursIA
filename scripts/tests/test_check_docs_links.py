@@ -726,19 +726,19 @@ class TestDeckScope:
         repo = tmp_path
         nb = repo / "MyIA.AI.Notebooks" / "GameTheory"
         nb.mkdir(parents=True)
-        (nb / "GameTheory-02-NormalForm.ipynb").write_text("{}", encoding="utf-8")
+        (nb / "GameTheory-02-NormalForm-Python.ipynb").write_text("{}", encoding="utf-8")
         deck_dir = repo / "slides" / "05-theorie-des-jeux"
         deck_dir.mkdir(parents=True)
         deck = deck_dir / "slides.md"
         deck.write_text(
-            "*Notebooks : [GameTheory-02-NormalForm]"
-            "(../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb).*\n"
+            "*Notebooks : [GameTheory-02-NormalForm-Python]"
+            "(../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb).*\n"
             "[mort](../../MyIA.AI.Notebooks/GameTheory/GameTheory-99-Absent.ipynb)\n",
             encoding="utf-8",
         )
         refs = scan_file(deck)
         assert [r.target for r in refs] == [
-            "../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb",
+            "../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb",
             "../../MyIA.AI.Notebooks/GameTheory/GameTheory-99-Absent.ipynb",
         ]
         assert check_link(refs[0].target, deck, root=repo) is True

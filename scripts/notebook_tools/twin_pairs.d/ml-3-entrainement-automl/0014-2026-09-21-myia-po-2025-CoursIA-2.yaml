@@ -1,0 +1,13 @@
+reason: 're-attestation apres retitrage #17066 des deux sections
+  Interpretation (markdown-only : seule la ligne de titre de chaque cellule
+  change, pour distinguer Ex1 donnees lineaires vs AutoML sinusoidales ;
+  experiences distinctes, aucune consolidation). Audit firsthand : cellules
+  code byte-identiques au HEAD precedent (8/8, garde-fou programmatique),
+  cote C# non touche (content_csharp_sha inchange) ; parite native-both du
+  code inchangee.'
+date: '2026-09-21'
+by: myia-po-2025:CoursIA-2
+python_sha: 1b7d93eb5f701a3334ca67f2bca211a11e7bb8ea
+csharp_sha: 5d9d69fb41977cd3aae53dec4b5396df8dcdb058
+content_python_sha: 68bcf0e4d5942192e5cde44709b1815ad3a3e434619443129d3934757420f802
+content_csharp_sha: bf6f3e9401c4c56edb4024506e4c06e9580fc791513b289bf0f0b0cab4e7b19d

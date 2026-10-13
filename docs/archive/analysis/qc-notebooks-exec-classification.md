@@ -38,7 +38,7 @@ Indicateurs QC Cloud detectes : `QuantBook`, `qb.`, `QCAlgorithm`, `AlgorithmImp
 - `[5]` LOCAL - Commande shell commentee (`lean data download`)
 - `[6]` LOCAL - Commande shell commentee (`lean backtest`)
 
-**Note**: Les 3 cellules LOCAL sont des commandes shell entourees de commentaires (`#`). Elles ne produisent aucun output si executees en Python.
+**Note**: Les cellules LOCAL sont des commandes shell entourees de commentaires (`#`). Elles ne produisent aucun output si executees en Python.
 
 ---
 
@@ -107,7 +107,7 @@ Indicateurs QC Cloud detectes : `QuantBook`, `qb.`, `QCAlgorithm`, `AlgorithmImp
 - `[19]` QC CLOUD - Classe `ResearchStrategy(QCAlgorithm)` pour backtest
 
 **Chaines de dependance**:
-Les 19 cellules LOCAL et 1 AMBIGU dependent de la variable `history` produite par la cellule [3] (`qb.History()`). Sans QuantBook, aucune de ces cellules ne peut s'executer car elles manipulent des DataFrames QC.
+Les cellules LOCAL et AMBIGU dependent de la variable `history` produite par la cellule [3] (`qb.History()`). Sans QuantBook, aucune de ces cellules ne peut s'executer car elles manipulent des DataFrames QC.
 
 **Note**: Ce notebook est le meilleur candidat pour une execution locale *si* on remplace les cellules QC Cloud par un stub qui genere un DataFrame pandas equivalent (telechargement via yfinance par exemple).
 
@@ -124,14 +124,14 @@ Les 19 cellules LOCAL et 1 AMBIGU dependent de la variable `history` produite pa
 
 ### Conclusion
 
-**Aucun des 4 notebooks n'est executable localement.** Tous necessitent QuantConnect Cloud (QuantBook / Lean engine).
+**Aucun des notebooks n'est executable localement.** Tous necessitent QuantConnect Cloud (QuantBook / Lean engine).
 
 - **QC-Py-02** et **QC-Py-03** sont 100% codes QC (QCAlgorithm, LEAN).
-- **QC-Py-01** a 3 cellules "local" mais ce sont des commandes shell commentees.
+- **QC-Py-01** a des cellules "local" mais ce sont des commandes shell commentees.
 - **QC-Py-04** est le seul avec une logique d'analyse potentiellement locale (pandas/matplotlib/sklearn), mais toutes les cellules dependent de donnees fetched via `qb.History()`.
 
 ### Recommandations
 
 1. **Execution QC Cloud** : Utiliser le MCP `qc-mcp` ou Playwright pour injecter les outputs reels depuis QuantConnect Cloud.
-2. **QC-Py-04 stub** : Creer une version locale avec `yfinance` comme substitut de `qb.History()` pour permettre l'execution des 19 cellules d'analyse hors QC.
+2. **QC-Py-04 stub** : Creer une version locale avec `yfinance` comme substitut de `qb.History()` pour permettre l'execution des cellules d'analyse hors QC.
 3. **CI** : Mettre en place une validation syntaxique des notebooks QC via `nbformat` (verifie la structure JSON valide) en attendant l'integration QC Cloud.

@@ -58,6 +58,8 @@ _AUTH_VAR_RENAMES: dict[str, str] = {
     # ComfyUI services: compose uses the same name on both sides.
     "COMFYUI_API_TOKEN": "COMFYUI_API_TOKEN",
     "COMFYUI_VIDEO_TOKEN": "COMFYUI_VIDEO_TOKEN",
+    # Retired pre-#14382 name: kept so service dirs deployed before the
+    # file-based rewiring still parse instead of flagging as unmanaged.
     "COMFYUI_BEARER_TOKEN": "COMFYUI_BEARER_TOKEN",
 }
 
@@ -140,6 +142,7 @@ def _mask(value: str) -> str:
 #                    does NOT trigger exit 1 -- a sleeping service cannot drift)
 #   MASTER_MISSING = master.env has no value for this key (informational;
 #                    e.g. per-instance password like COMFYUI_BEARER_TOKEN
+#                    (retired pre-#14382 name, kept for older deployments)
 #                    that's intentionally non-centralized -- not an error)
 #   NO_AUTH_VAR    = compose has no $-reference for centralized auth vars
 #                    (service likely does not need auth, e.g. an internal UI)
@@ -182,8 +185,9 @@ def audit_service(
         container_val = env.get(container_var, "<missing>")
         if master_val == "":
             # Master doesn't carry this key -- informational only.
-            # COMFYUI_BEARER_TOKEN is the canonical case (per-instance,
-            # not centralized per secrets-hygiene.md). Not a drift.
+            # COMFYUI_BEARER_TOKEN is the legacy case (retired pre-#14382,
+            # per-instance and not centralized per secrets-hygiene.md;
+            # kept so pre-#14382 deployments don't flag). Not a drift.
             details.append({
                 "master_key": master_key,
                 "container_var": container_var,

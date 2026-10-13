@@ -132,7 +132,7 @@ For each VALID exercise (skip if `--dry-run`):
    Co-Authored-By: Claude-Code <noreply@anthropic.com>
    ```
 
-5. **Push** to main (after all PRs for the session are processed)
+5. **Push** to the main branch of the **target student repository** (the `repo-url` argument), after all PRs for the session are processed. That repository's charter governs this push. If the integration lands in `jsboige/CoursIA`, never push to `main`: open one PR for the session instead (CLAUDE.md §A, `git-workflow.md`).
 
 ### Phase 5 - Cleanup
 

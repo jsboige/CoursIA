@@ -2083,6 +2083,31 @@ class TacticTools:
                 # Skip blank lines within replacement
 
             old_line = lines[sorry_line - 1]
+            inline_decl = re.match(
+                r"^(\s*(?:theorem|lemma)\s+[^\n]*?\s*:=\s*)(?:by\s+)?sorry\s*(?:--.*)?$",
+                old_line,
+            )
+            if inline_decl:
+                if not replacement_lines or re.match(
+                    r"(?:theorem|lemma|def|abbrev|instance|axiom)\b",
+                    replacement_lines[0].lstrip(),
+                ):
+                    return json.dumps({
+                        "error": "BLOCKED: replace the inline sorry with proof tactics, not a declaration",
+                        "replaced": old_line.strip(),
+                    }, ensure_ascii=False)
+                if replacement_lines[0] == "by":
+                    replacement_lines = replacement_lines[1:]
+                elif replacement_lines[0].startswith("by "):
+                    replacement_lines[0] = replacement_lines[0][3:]
+                if not replacement_lines:
+                    return json.dumps({"error": "BLOCKED: inline sorry requires proof tactics"})
+                body_indent = min(len(line) - len(line.lstrip()) for line in replacement_lines)
+                proof_indent = " " * (indent + 2)
+                replacement_lines = [
+                    inline_decl.group(1).rstrip() + " by",
+                    *(proof_indent + line[body_indent:] for line in replacement_lines),
+                ]
             lines[sorry_line - 1:sorry_line] = replacement_lines
             new_content = "\n".join(lines)
 
@@ -2328,6 +2353,15 @@ class TacticTools:
         success = result.get("success", False)
         cached = result.get("cached", False)
 
+        # #18432: propagate the wall-clock timeout marker set by
+        # ``LeanVerifier._run_lake_build``. Without this the marker died here:
+        # compile() re-parses ``raw_output`` (empty on timeout) and rebuilds
+        # ``errors`` from it (also empty), so the downstream JSON looked
+        # EXACTLY like a zero-error outcome and every consumer lost the
+        # "no verdict exists" signal.
+        wall_clock_timeout = bool(result.get("wall_clock_timeout", False))
+        timeout_s = result.get("timeout_s")
+
         errors = _parse_lean_errors(raw_output)  # #6790: authoritative parser
 
         # P5a (#7477 forensic): latch a maxHeartbeats exhaustion so the run is
@@ -2504,6 +2538,13 @@ class TacticTools:
             "compile_time_s": round(duration, 1),
             "cached": cached,
             "raw_output_preview": raw_output[:500],
+            # #18432: wall-clock exhaustion is the ABSENCE of a compile
+            # verdict. ``success``/``level_1_build`` stay False, but the
+            # parsed ``error_count`` is 0 — consumers MUST distinguish
+            # "timed out, unknown" from "0 errors, clean" via this marker,
+            # never via error_count alone.
+            "wall_clock_timeout": wall_clock_timeout,
+            "timeout_s": timeout_s,
         }, ensure_ascii=False)
 
     def verify_sorry_replacement(self, tactic: str) -> str:

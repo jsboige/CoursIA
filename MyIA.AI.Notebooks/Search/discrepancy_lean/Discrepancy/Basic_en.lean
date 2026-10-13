@@ -120,8 +120,10 @@ at most `2k - 1`.
 
 This is the "nut" targeted by tier P1 of issue #12823: proof by *floating
 variables* and partial coloring, split into bricks `b1`–`b4` (see
-`FORMAL_STATUS.md`). Until the proof is assembled, the statement lives as a
-named `Prop`; brick `b4` will convert it into a `theorem`. -/
+`FORMAL_STATUS.md`). **PROVED**: the `b4` assembly shipped in #13427 —
+`theorem beck_fiala_classic : BeckFialaClassic` in
+`Discrepancy/BeckFiala.lean`. The target remains a named `Prop` by the
+lake's convention (statements as `Prop`, proofs as separate theorems). -/
 def BeckFialaClassic : Prop :=
   ∀ (n k : ℕ) (F : Finset (Finset (Fin n))) (_hk : maxDegree F ≤ k) (_hk1 : 1 ≤ k),
     ∃ c : Fin n → ℤ, IsColoring c ∧ (discrepancy F c : ℤ) ≤ 2 * (k : ℤ) - 1

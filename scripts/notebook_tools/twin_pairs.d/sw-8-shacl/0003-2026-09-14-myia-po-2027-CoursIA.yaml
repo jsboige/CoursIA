@@ -1,0 +1,16 @@
+date: '2026-09-14'
+by: myia-po-2027:CoursIA
+python_sha: 47c1d39f90a290ae586eb8ee1dcdd1d0045e908b
+csharp_sha: 49c6da29031213de9be4a4bcf1319d3cc6e8d5a4
+content_python_sha: cdc00a8d41757b7d3a33e23c1a9b74cd5f5b3f08b2e257ad2ad0a7f64d00f54e
+content_csharp_sha: 0788d5a327d66944852621c746c5f08465c3a3443eb9e051133f6dd1d19124ad
+reason: >-
+  LES DEUX COTES convertees. Python (SW-8-Python-SHACL, 40 cellules md, 13 sep) : md 2, 4, 5, 6, 9,
+  14, 18, 20, 23, 27, 33, 38, 39 (1 chacun). C# (SW-8-CSharp-SHACL, 24 cellules md, 16 sep) : md 2,
+  4, 5, 6, 9, 12, 14, 15, 17, 18, 20, 21, 23 (1 chacun), md 24/24, derniere (3). Re-attestation de
+  parite -- hr_separator vague 2 (#15611, lane myia-po-2027:CoursIA), markdown-only, passage devant
+  la regle famille #14209 trace au claim et au body PR. Converti par
+  scripts/notebook_tools/fix_hr_separator.py dans son allowlist (hors frontmatter, bloc cloture,
+  setext). Diff = 1 ligne de source JSON par separateur ; cellules code, outputs, execution_count et
+  metadata byte-identiques. Aucun strip outille posterieur : le blob atteste ici est celui du HEAD
+  de la PR.

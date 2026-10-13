@@ -24,7 +24,7 @@ Ce laboratoire fait suite au [Lab 4](../Lab4-DataWrangling/README.md) : il repar
 
 ## Notebook
 
-- [Lab5-Viz-ML.ipynb](Lab5-Viz-ML.ipynb) — notebook étudiant (exemple guidé + exercices : prix moyen par catégorie, distribution des prix, matrice de confusion, courbe ROC / AUC)
+- [Lab5-Viz-ML.ipynb](Lab5-Viz-ML.html) — notebook étudiant (exemple guidé + exercices : prix moyen par catégorie, distribution des prix, matrice de confusion, courbe ROC / AUC)
 
 ## Suite
 

@@ -78,7 +78,9 @@ theorem infoHurts_reduction :
       gNoInfo.u2 ⟨0, by decide⟩ ⟨0, by decide⟩ a1 a2 =
         gInfo.u2 ⟨0, by decide⟩ ⟨0, by decide⟩ a1 a2 +
         gInfo.u2 ⟨0, by decide⟩ ⟨1, by decide⟩ a1 a2 := by
-  decide
+  intro a1 a2
+  refine ⟨?_, ?_⟩ <;> simp only [gNoInfo, gInfo] <;>
+    repeat (first | rfl | split)
 
 /-! ### Canonical strategy constructors (informed game) -/
 

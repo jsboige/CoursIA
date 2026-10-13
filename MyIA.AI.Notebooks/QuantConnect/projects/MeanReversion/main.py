@@ -67,7 +67,10 @@ class ShortTermMeanReversion(QCAlgorithm):
 
     def _get_3m_return(self, symbol):
         hist = self.history(symbol, self.rs_lookback + 5, Resolution.DAILY)
-        if len(hist) < self.rs_lookback * 0.8:
+        # Garde a rs_lookback barres, pas 0,8 x rs_lookback : un ETF jeune (XLC en 2018,
+        # XLRE en 2015) a entre 51 et 62 barres, passait l'ancienne garde et sortait de
+        # l'index sur iloc[-rs_lookback] (#20346). Historique court : 0.0, comme avant.
+        if len(hist) < self.rs_lookback:
             return 0.0
         return float(hist["close"].iloc[-1] / hist["close"].iloc[-self.rs_lookback] - 1)
 

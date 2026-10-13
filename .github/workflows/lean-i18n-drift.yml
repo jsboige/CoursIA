@@ -64,4 +64,4 @@ jobs:
         run: |
           set -eu
           python scripts/lean/check_i18n_siblings.py --all \
-            --allow-unbuilt MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/PetersTour_en.lean
+            --allow-unbuilt MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/PetersTour_en.lean

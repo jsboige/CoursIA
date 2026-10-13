@@ -56,7 +56,7 @@ if str(_PARENT_DIR) not in sys.path:
 
 import dowhy_sensitivity_organs as dso
 
-NB_PATH = _PARENT_DIR / "DoWhy-4-Sensibilite-Confounder-Cache.ipynb"
+NB_PATH = _PARENT_DIR / "CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb"
 
 
 # ---------------------------------------------------------------------------
@@ -353,14 +353,14 @@ def test_notebook_cellule_dgp_byte_identique_module():
 
 
 def test_notebook_cellule_robustesse_consomme_lorgane():
-    src = _lire_cellule(NB_PATH, 9)
+    src = _lire_cellule(NB_PATH, 10)
     assert "dso.robustesse_partielle_r2" in src
 
 
 def test_notebook_cellule_evalue_consomme_lorgane():
-    src = _lire_cellule(NB_PATH, 23)
+    src = _lire_cellule(NB_PATH, 30)
     assert "dso.sensibilite_e_value" in src
-    verdict_src = _lire_cellule(NB_PATH, 25)
+    verdict_src = _lire_cellule(NB_PATH, 33)
     assert "dso.verdict_e_value" in verdict_src
 
 

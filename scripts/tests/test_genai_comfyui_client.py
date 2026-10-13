@@ -422,27 +422,31 @@ class TestWorkflowManagerValidate:
 
 
 class TestWorkflowManagerConvertUiToApi:
+    """`object_info` est requis par le convertisseur : c'est lui qui donne
+    l'ordre des widgets par classe de noeud. Ces cas structurels n'ont aucun
+    widget a apparier, donc un `object_info` vide suffit."""
+
     def test_empty_nodes(self):
-        result = WorkflowManager.convert_ui_to_api({"nodes": []})
+        result = WorkflowManager.convert_ui_to_api({"nodes": []}, {})
         assert result == {}
 
     def test_no_nodes_key(self):
-        result = WorkflowManager.convert_ui_to_api({})
+        result = WorkflowManager.convert_ui_to_api({}, {})
         assert result == {}
 
     def test_skips_reroute_nodes(self):
         wf = {"nodes": [{"id": 1, "type": "Reroute"}]}
-        result = WorkflowManager.convert_ui_to_api(wf)
+        result = WorkflowManager.convert_ui_to_api(wf, {})
         assert result == {}
 
     def test_skips_note_nodes(self):
         wf = {"nodes": [{"id": 1, "type": "Note"}]}
-        result = WorkflowManager.convert_ui_to_api(wf)
+        result = WorkflowManager.convert_ui_to_api(wf, {})
         assert result == {}
 
     def test_returns_dict(self):
         wf = {"nodes": [{"id": 1, "type": "KSampler"}]}
-        result = WorkflowManager.convert_ui_to_api(wf)
+        result = WorkflowManager.convert_ui_to_api(wf, {})
         assert isinstance(result, dict)
 
 

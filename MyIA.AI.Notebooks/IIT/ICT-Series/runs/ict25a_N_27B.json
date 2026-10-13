@@ -1,0 +1,72 @@
+{
+  "model": "Qwen/Qwen3.5-27B",
+  "arm": "N",
+  "steps": 120,
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "seeds": [
+    {
+      "arm": "N",
+      "model": "Qwen/Qwen3.5-27B",
+      "seed": 0,
+      "steps": 120,
+      "train_s": 3511.0493943691254,
+      "vram_load_gb": 5.686882304,
+      "vram_peak_gb": 6.274874368,
+      "n_records": 240,
+      "hack_early": 0.18333333333333332,
+      "hack_late": 0.18333333333333332,
+      "mc_early": 0.45,
+      "mc_late": 0.525,
+      "reward_early": 0.725,
+      "reward_late": 0.8
+    },
+    {
+      "arm": "N",
+      "model": "Qwen/Qwen3.5-27B",
+      "seed": 1,
+      "steps": 120,
+      "train_s": 3033.357335329056,
+      "vram_load_gb": 5.703282688,
+      "vram_peak_gb": 6.273907712,
+      "n_records": 240,
+      "hack_early": 0.23333333333333334,
+      "hack_late": 0.18333333333333332,
+      "mc_early": 0.475,
+      "mc_late": 0.49166666666666664,
+      "reward_early": 0.85,
+      "reward_late": 0.7666666666666667
+    },
+    {
+      "arm": "N",
+      "model": "Qwen/Qwen3.5-27B",
+      "seed": 7,
+      "steps": 120,
+      "train_s": 3054.6149191856384,
+      "vram_load_gb": 5.703282688,
+      "vram_peak_gb": 6.273907712,
+      "n_records": 240,
+      "hack_early": 0.21666666666666667,
+      "hack_late": 0.2,
+      "mc_early": 0.43333333333333335,
+      "mc_late": 0.4583333333333333,
+      "reward_early": 0.7583333333333333,
+      "reward_late": 0.7833333333333333
+    },
+    {
+      "arm": "N",
+      "model": "Qwen/Qwen3.5-27B",
+      "seed": 42,
+      "steps": 120,
+      "train_s": 5365.680500745773,
+      "vram_load_gb": 5.703282688,
+      "vram_peak_gb": 6.273338368,
+      "n_records": 240,
+      "hack_early": 0.21666666666666667,
+      "hack_late": 0.23333333333333334,
+      "mc_early": 0.4666666666666667,
+      "mc_late": 0.5083333333333333,
+      "reward_early": 0.7833333333333333,
+      "reward_late": 0.8666666666666667
+    }
+  ]
+}

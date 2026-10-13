@@ -31,7 +31,7 @@ from dataclasses import dataclass, field, asdict
 # Configuration
 # =============================================================================
 
-NOTEBOOK_PATH = Path(__file__).parent.parent / "Lean-9-SK-Multi-Agents.ipynb"
+NOTEBOOK_PATH = Path(__file__).parent.parent / "Lean-09-SK-Multi-Agents-Lean-Python.ipynb"
 
 # Cell indices in the notebook (0-indexed)
 CELL_INDICES = {

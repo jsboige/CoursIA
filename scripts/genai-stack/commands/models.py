@@ -4,6 +4,7 @@ commands/models.py - Gestion des modeles GenAI
 
 Sous-commandes :
     genai.py models download-qwen       # Telecharger modeles Qwen FP8 (~29GB)
+    genai.py models download-qwen-image-21  # Telecharger Qwen-Image 2.1 INT8 (~16GB)
     genai.py models download-nunchaku   # Telecharger modeles Nunchaku INT4 (~4GB)
     genai.py models setup-zimage        # Configurer Z-Image/Lumina
     genai.py models list-checkpoints    # Lister checkpoints ComfyUI
@@ -14,6 +15,7 @@ import os
 import sys
 import json
 import time
+import shutil
 import subprocess
 import ssl
 import urllib.request
@@ -55,6 +57,44 @@ QWEN_MODELS = [
     },
 ]
 
+# --- Modeles Qwen-Image 2.1 (palier INT8 convrot) ---
+#
+# Palier INT8 et NON BF16, sur mesure du 2026-09-21 : le BF16 demande
+# 14.23 + 17.53 + 0.68 = 32,4 GB de VRAM et ne tient PAS sur la RTX 3090
+# (24 576 Mio, ~21 Go libres) sans offload, la ou l'INT8 demande 16,1 Go.
+#
+# Les noms de fichiers sont ceux du depot, verifies par HEAD le 2026-09-21
+# (HTTP 200 + content-length concordant). ATTENTION :
+# `Comfy-Org/Qwen-Image-2.1` ne porte PAS le prefixe `split_files/` des
+# entrees Qwen-Image-Edit ci-dessus -- le copier rend un 404 (controle
+# negatif mesure, #17234).
+QWEN_IMAGE_21_MODELS = [
+    {
+        "name": "Diffusion Model (INT8 convrot)",
+        "repo_id": "Comfy-Org/Qwen-Image-2.1",
+        "filename": "diffusion_models/qwen_image_2.1_int8_convrot.safetensors",
+        "local_name": "qwen_image_2.1_int8_convrot.safetensors",
+        "subdir": "diffusion_models",
+        "size_gb": 6.758,
+    },
+    {
+        "name": "Text Encoder (INT8 convrot)",
+        "repo_id": "Comfy-Org/Qwen-Image-2.1",
+        "filename": "text_encoders/qwen3vl_8b_int8_convrot.safetensors",
+        "local_name": "qwen3vl_8b_int8_convrot.safetensors",
+        "subdir": "text_encoders",
+        "size_gb": 8.709,
+    },
+    {
+        "name": "VAE",
+        "repo_id": "Comfy-Org/Qwen-Image-2.1",
+        "filename": "vae/qwen_image_2.1_vae_bf16.safetensors",
+        "local_name": "qwen_image_2.1_vae_bf16.safetensors",
+        "subdir": "vae",
+        "size_gb": 0.629,
+    },
+]
+
 # --- Modeles Nunchaku INT4 ---
 
 NUNCHAKU_MODELS = {
@@ -77,15 +117,32 @@ ZIMAGE_VAE_CONFIG = {
 }
 
 
+def _repo_root() -> Path:
+    """Racine du depot, independante du repertoire courant (#17268).
+
+    `commands/models.py` vit a `<racine>/scripts/genai-stack/commands/`, donc
+    trois `parents` au-dessus du fichier.
+    """
+    return Path(__file__).resolve().parents[3]
+
+
 def _get_hf_token() -> Optional[str]:
-    """Recupere le token HuggingFace."""
+    """Recupere le token HuggingFace.
+
+    Les chemins sont ancres sur la RACINE DU DEPOT, jamais sur le cwd. La CLI
+    s'invoque naturellement depuis `scripts/genai-stack` -- exactement le
+    repertoire ou un `.secrets/` relatif ne resout plus, ce qui faisait perdre
+    le jeton en silence (`huggingface_hub` retombait alors en requetes
+    anonymes, sans autre signal qu'un WARNING dans le log applicatif).
+    """
     token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
     if token:
         return token
 
+    root = _repo_root()
     secrets_paths = [
-        Path(".secrets/.env.huggingface"),
-        Path("docker-configurations/.secrets/.env.huggingface"),
+        root / ".secrets" / ".env.huggingface",
+        root / "docker-configurations" / ".secrets" / ".env.huggingface",
         Path.home() / ".huggingface" / "token",
     ]
     for path in secrets_paths:
@@ -116,24 +173,63 @@ def _ensure_huggingface_hub():
 
 # --- Sous-commande download-qwen ---
 
-def download_qwen(dest: Optional[str] = None, docker: bool = False, container: str = "comfyui-qwen"):
-    """Telecharge les modeles Qwen FP8."""
+def _free_gb(path: Path) -> float:
+    """Espace libre (GiB) du volume qui porte `path`.
+
+    Remonte au premier parent existant : la destination peut ne pas exister
+    encore au premier appel. Rend 0.0 quand la mesure echoue -- une garde de
+    capacite ne s'ouvre pas parce qu'elle n'a pas pu mesurer (meme regle que
+    le gate de merge, #17262).
+    """
+    probe = path
+    while not probe.exists() and probe.parent != probe:
+        probe = probe.parent
+    try:
+        return shutil.disk_usage(str(probe)).free / (1024 ** 3)
+    except OSError:
+        return 0.0
+
+
+def download_qwen(dest: Optional[str] = None, docker: bool = False,
+                  container: str = "comfyui-qwen",
+                  models: Optional[List[Dict]] = None):
+    """Telecharge un jeu de modeles Qwen.
+
+    `models` par defaut = QWEN_MODELS (Qwen-Image-Edit FP8). Passer
+    QWEN_IMAGE_21_MODELS pour le palier INT8 de Qwen-Image 2.1.
+    """
+    models = QWEN_MODELS if models is None else models
     if not _ensure_huggingface_hub():
         return False
     from huggingface_hub import hf_hub_download
 
-    total_gb = sum(m["size_gb"] for m in QWEN_MODELS)
-    print(f"Modeles Qwen FP8: {len(QWEN_MODELS)} fichiers, ~{total_gb:.1f} GB")
+    total_gb = sum(m["size_gb"] for m in models)
+    print(f"Modeles Qwen: {len(models)} fichiers, ~{total_gb:.1f} GB")
 
     token = _get_hf_token()
     dest_base = Path(dest) if dest else SHARED_MODELS_DIR
 
     if docker:
-        return _download_qwen_docker(container, token)
+        return _download_qwen_docker(container, token, models)
 
     print(f"Destination: {dest_base.absolute()}")
+
+    # Garde de capacite (#17234) : le 2026-09-21, `shared/models` vivait sur
+    # `D:` avec 57 Go libres quand le jeu Qwen-Image-2.1 en pese 74,3 -- un
+    # telechargement lance sans garde remplit le volume. On refuse AVANT
+    # d'ecrire, en ne comptant que ce qui manque reellement.
+    needed = sum(
+        m["size_gb"] for m in models
+        if not (dest_base / m["subdir"] / m["local_name"]).exists()
+    )
+    free_gb = _free_gb(dest_base)
+    if needed > free_gb:
+        print(f"  [REFUS] capacite insuffisante : {needed:.2f} GB requis, "
+              f"{free_gb:.2f} GB libres sur {dest_base}")
+        return False
+
     success = True
-    for model in QWEN_MODELS:
+    for model in models:
         dest_dir = dest_base / model["subdir"]
         dest_dir.mkdir(parents=True, exist_ok=True)
         dest_file = dest_dir / model["local_name"]
@@ -163,8 +259,10 @@ def download_qwen(dest: Optional[str] = None, docker: bool = False, container: s
     return success
 
 
-def _download_qwen_docker(container: str, token: Optional[str]) -> bool:
+def _download_qwen_docker(container: str, token: Optional[str],
+                          models: Optional[List[Dict]] = None) -> bool:
     """Telecharge les modeles dans un container Docker."""
+    models = QWEN_MODELS if models is None else models
     result = subprocess.run(
         ["docker", "ps", "-a", "--filter", f"name={container}", "--format", "{{{{.Names}}}}"],
         capture_output=True, text=True,
@@ -173,12 +271,20 @@ def _download_qwen_docker(container: str, token: Optional[str]) -> bool:
         print(f"Container '{container}' non trouve")
         return False
 
-    temp_dir = Path("./temp_qwen_models")
+    # Ancre sur la RACINE du depot, jamais sur le cwd (#17268, meme classe que
+    # `_get_hf_token` juste au-dessus). Ce repertoire est un scratch de
+    # telechargements de plusieurs Go : resolu contre le cwd, il atterrissait
+    # sous `scripts/genai-stack/temp_qwen_models/` quand la CLI est invoquee
+    # depuis son repertoire canonique (`cd scripts/genai-stack && python
+    # genai.py ...`) -- exactement la forme que le mode d'emploi prescrit.
+    # Il ne figurait dans aucun `.gitignore` a cet emplacement, donc le
+    # scratch apparaissait en plus comme bruit untracked.
+    temp_dir = _repo_root() / "temp_qwen_models"
     temp_dir.mkdir(exist_ok=True)
 
     from huggingface_hub import hf_hub_download
 
-    for model in QWEN_MODELS:
+    for model in models:
         dest_dir = temp_dir / model["subdir"]
         dest_dir.mkdir(parents=True, exist_ok=True)
         dest_file = dest_dir / model["local_name"]
@@ -413,6 +519,11 @@ def register(subparsers):
     p_qwen.add_argument('--docker', action='store_true', help='Telecharger dans container Docker')
     p_qwen.add_argument('--container', type=str, default='comfyui-qwen')
 
+    # download-qwen-image-21
+    p_q21 = sub.add_parser('download-qwen-image-21',
+                           help='Telecharger Qwen-Image 2.1 INT8 (~16.1 GB)')
+    p_q21.add_argument('--dest', type=str, help='Repertoire destination')
+
     # download-nunchaku
     p_nunchaku = sub.add_parser('download-nunchaku', help='Telecharger modeles Nunchaku INT4 (~4GB)')
     p_nunchaku.add_argument('--model', '-m', type=str, default='lightning-4step-r128',
@@ -436,6 +547,11 @@ def execute(args) -> int:
 
     if action == 'download-qwen':
         ok = download_qwen(dest=args.dest, docker=args.docker, container=args.container)
+        return 0 if ok else 1
+
+    elif action == 'download-qwen-image-21':
+        ok = download_qwen(dest=getattr(args, 'dest', None),
+                           models=QWEN_IMAGE_21_MODELS)
         return 0 if ok else 1
 
     elif action == 'download-nunchaku':

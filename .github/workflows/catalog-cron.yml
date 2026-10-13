@@ -5,6 +5,12 @@ name: Catalog Auto-Regen (main, scheduled)
 # Keep COURSE_CATALOG.generated.{json,md} + README CATALOG-STATUS markers
 # CANONICAL ON MAIN without any human or agent regenerating them by hand.
 #
+# Since #19901 (arbitration ai-01, review 5469480925) this job also refreshes
+# the `project.render` list of `_quarto.yml` -- same defect class, same model:
+# a generated file that rots on `main` when nothing regenerates it on a
+# cadence. The per-PR detector for that file (`quarto-render-list-freshness.yml`)
+# is ADVISORY and stays a detector; freshness is owned here.
+#
 # Why a scheduled job is needed:
 #   The catalog embeds git-derived fields (last_validation, issue_pr_associee...)
 #   and a maturity heuristic that drift purely as commits land on main -- even
@@ -18,6 +24,11 @@ name: Catalog Auto-Regen (main, scheduled)
 #   - catalog-drift.yml         : per-PR sync (auto-regen+commit on same-repo PR
 #                                 branches; informational annotation on forks).
 #   - stale-base-warning.yml    : labels PRs whose base is >14d behind main.
+#   - quarto-render-list-freshness.yml : ADVISORY per-PR DETECTOR for the
+#                                 `_quarto.yml` render list (#19901). It reads
+#                                 the PR head tree, so it can report drift but
+#                                 cannot guarantee freshness of `main` -- it
+#                                 does not regenerate or commit anything.
 #
 # Governance rule (.claude/rules/catalog-pr-hygiene.md):
 #   Agents MUST NOT regenerate or commit COURSE_CATALOG.generated.* nor the
@@ -66,6 +77,9 @@ on:
 permissions:
   contents: write
   pull-requests: write   # open/update the refresh PR via github-script
+  actions: write         # approve the runs this push parks (see "Release the
+                         # parked runs" below -- without this the delivery PR
+                         # stays BLOCKED forever)
 
 concurrency:
   group: catalog-cron-main
@@ -133,13 +147,20 @@ jobs:
           # under docs/curriculum/ from the freshly-regenerated catalog so
           # they never drift again (See #7422).
           python scripts/notebook_tools/generate_parcours.py
+          # `_quarto.yml` `project.render`: same defect class as the catalogue
+          # -- a generated file that drifts on `main` because nothing refreshes
+          # it on a cadence. Owned by THIS automation since #19901 (arbitration
+          # ai-01, review 5469480925): a per-PR guard cannot guarantee
+          # freshness, it reads the PR head tree and never sees the merge, so
+          # it was made advisory instead of mandatory.
+          python scripts/regen_quarto_render.py
 
       - name: Commit + push to chore/catalog-refresh-pending if the catalog drifted
         id: drift
         run: |
           set -euo pipefail
           BRANCH="chore/catalog-refresh-pending"
-          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md docs/archive/reference/HEALTH_DASHBOARD.md
+          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md docs/archive/reference/HEALTH_DASHBOARD.md _quarto.yml
           # Stage the 5 generated curriculum (parcours) pages if they drifted.
           mapfile -t changed_parcours < <(git ls-files -m -- 'docs/curriculum/*.md')
           if [ "${#changed_parcours[@]}" -gt 0 ]; then
@@ -183,16 +204,33 @@ jobs:
           # (measured firsthand, see #10421 acceptance note).
           #
           # Even after the `[skip ci]` removal, the bot push still
-          # produces a head that the `PR gate` doesn't accept: that gate
-          # runs on `pull_request` events, and a push with `GITHUB_TOKEN`
-          # never emits one (GitHub anti-recursion guard). The result is
-          # a head with 5 default-Setup CodeQL checks (all green) and no
-          # repo-owned check, which `mergeStateStatus` reports as
-          # `BLOCKED`. See #11202 -- the cause is `GITHUB_TOKEN`, not
-          # `[skip ci]`, and removing the latter only fixed the
-          # symbolic half. The empty-commit wake-up gesture
-          # (carved out below, alongside the "agents are forbidden"
-          # sentence) is the canonical fix on the consumer side.
+          # produces a head that `mergeStateStatus` reports as `BLOCKED`,
+          # carrying 5 default-Setup CodeQL checks (all green) and no
+          # repo-owned check.
+          #
+          # CORRECTED 2026-09-21 -- the recorded cause was wrong, and it
+          # cost 8 days of stale catalog on main. #11202 concluded that
+          # "a push with GITHUB_TOKEN never emits a pull_request event
+          # (GitHub anti-recursion guard)", so the repo-owned workflows
+          # simply never start. Measurement refutes it: they DO start.
+          #
+          #   gh run list --branch chore/catalog-refresh-pending --limit 60
+          #   -> 40 runs, event=pull_request, conclusion=action_required
+          #
+          # The runs are created and then PARKED awaiting manual approval.
+          # A parked run is neither green nor red: it never executed, so
+          # the required check it carries does not exist at the head, and
+          # the PR sits `BLOCKED` with nothing red to explain it. That is
+          # a different defect with a different fix -- the runs have to be
+          # APPROVED, which the step below now does. The "empty-commit
+          # wake-up" that #11202 designated as canonical is a manual
+          # gesture that nobody performed on 8 consecutive days; it is
+          # kept documented but it is no longer the remedy.
+          #
+          # The standing witness is `scripts/ci/check_catalog_freshness.py`
+          # (`--delivery`), which counts the parked runs and the age of the
+          # delivery PR. A cron that succeeds while main freezes is silent
+          # by construction; that organ is what makes it loud.
           #
           # The push MUST be a force-with-lease, and that is not a shortcut:
           # this job re-roots the branch on fresh main every run
@@ -247,8 +285,9 @@ jobs:
               '## Purpose',
               '',
               'Long-lived PR refreshed daily by `catalog-cron.yml` (schedule cron 03:37 UTC) to keep',
-              '`COURSE_CATALOG.generated.{json,md}` + `CATALOG-STATUS` markers + the curriculum (`docs/curriculum/*.md`)',
-              'and health dashboard (`docs/archive/reference/HEALTH_DASHBOARD.md`) canonical on `main`.',
+              '`COURSE_CATALOG.generated.{json,md}` + `CATALOG-STATUS` markers + the curriculum (`docs/curriculum/*.md`),',
+              'the health dashboard (`docs/archive/reference/HEALTH_DASHBOARD.md`) and the `project.render` list of',
+              '`_quarto.yml` canonical on `main`.',
               '',
               '**Maintainer review only — no direct push to `main`** (issue #10136). The bot opens',
               'or updates this PR; merging it refreshes `main` through the normal PR gate.',
@@ -258,6 +297,9 @@ jobs:
               '- Catalog totals (`notebook_count`, per-family counts) drift only if new notebooks landed on `main` since the last merge.',
               '- README `<!-- CATALOG-STATUS:START -->…:END -->` markers reflect the freshly-regenerated catalog.',
               '- Curriculum pages under `docs/curriculum/` and `docs/archive/reference/HEALTH_DASHBOARD.md` stay consistent.',
+              '- `_quarto.yml` `project.render` stays in sync with the notebooks / READMEs / `docs/*.md` on `main`.',
+              '  There are no counter lines in it any more (#19901): a total in a generated file either conflicts',
+              '  between two concurrent PRs or merges a false value cleanly.',
               '',
               '## Close policy',
               '',
@@ -266,6 +308,11 @@ jobs:
               'drift reopens it under the same branch.',
               '',
               'See `.claude/rules/catalog-pr-hygiene.md` and #2433, #10136.',
+              '',
+              // Third-party prevalidation (check_adjoint_prevalidation.py) resolves the
+              // carrying lane from this tag. Without it the gate answers NO_DOSSIER with
+              // "carrying lane cannot be established" and no lane can prevalidate the PR.
+              'Grain: MED/refactor -- lane myia-ai-01:CoursIA',
             ].join('\n');
 
             // Look for an existing open PR on this branch (HEAD_REF exact).
@@ -302,3 +349,43 @@ jobs:
               labels: ['catalog-refresh', 'automation'],
             });
             core.info(`Opened new PR #${created.data.number} (${created.data.html_url})`);
+
+      # Release the runs this push just parked.
+      #
+      # A same-repo push by github-actions[bot] creates the `pull_request`
+      # workflow runs and leaves them in `action_required` -- waiting for a
+      # manual approval that, measured over 8 consecutive days, never came.
+      # A parked run never executes, so the required check it carries is
+      # ABSENT at the head (not failing -- absent), and the delivery PR stays
+      # `BLOCKED` with every visible check green. That is the whole reason
+      # main's catalog went 9 days stale while this workflow reported
+      # `success` every morning.
+      #
+      # Approving them here closes the loop the workflow header promises.
+      # If the token is not allowed to approve its own runs, this step says
+      # so and does NOT fail the job: the catalog refresh itself succeeded,
+      # and `check_catalog_freshness.py --delivery` is the organ that will
+      # keep the unfinished delivery visible rather than silent.
+      - name: Release the parked runs on the delivery branch
+        if: steps.drift.outputs.drift_detected == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: chore/catalog-refresh-pending
+          # Delai entre deux approbations. Mesure du 2026-09-21 : 16 runs
+          # approuves en rafale sur un pool de runners deja sature ont tenu les
+          # checks en `queued` 19 minutes, pendant lesquelles le job "PR gate"
+          # a sonde l'API toutes les ~31 s jusqu'a epuiser le quota du jeton
+          # d'installation (HTTP 403) -- et il echoue fail-closed. Le debit
+          # total ne change pas ; ce qui change est le taux d'ARRIVEE, donc le
+          # nombre de runs simultanement en file pendant que le gate sonde.
+          RELEASE_STAGGER_SECONDS: "15"
+          # Soupape, pas un plafond de debit : au-dela, c'est que quelque chose
+          # d'autre est casse (runs qui s'empilent sans jamais s'executer), et
+          # approuver 200 runs n'y repondrait pas. Le depassement est ECRIT.
+          RELEASE_CEILING: "40"
+          # Fenetre de sonde (x 15 s) : laisser GitHub creer les runs du head.
+          RELEASE_SETTLE_POLLS: "8"
+        # Implementation partagee avec qc-research-monitor.yml :
+        # scripts/ci/release_parked_runs.py (#17668).
+        run: python3 scripts/ci/release_parked_runs.py --tag Catalog

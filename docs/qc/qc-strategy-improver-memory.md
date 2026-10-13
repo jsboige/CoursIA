@@ -236,7 +236,13 @@ Aucune de ces options ne respecte le principe "1 param a la fois" facilement.
 **Plafond Sharpe 2015-2026**: 0.350 est honnete. Bull market quasi-uninterrompu = peu de
 periodes de tendance negative durable. Dual Momentum brille sur periodes 1970-2010.
 
-## AllWeather Lessons -> voir allweather-lessons.md
+## AllWeather Lessons
+
+Synthese partielle : les lignes qui suivent reprennent les lecons porteuses (TLT/XLP/
+drift/SMA) ; le detail historique complet -- dont le rejet de DBC (contango : Sharpe
+0.691 avec vs 0.817 sans) et la correlation TIP/IEF (double exposition bonds
+intermediaires) -- reste dans le blob historique du fichier detracke par #13739 :
+`git show d46d3f5259d^:.claude/agent-memory/qc-strategy-improver/allweather-lessons.md`
 
 Iter 4 (2026-03-08): v4.0 = TLT 0%, IEF 40%, GLD 20%, XLP 10%. Research H5 confirme
 TLT monotonement negatif. Vol targeting (H7) rejete. TIP (H6) marginal.

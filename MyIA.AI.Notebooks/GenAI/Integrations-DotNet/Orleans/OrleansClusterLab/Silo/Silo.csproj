@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Meme version que les labs 01 a 03 : le runtime et le generateur de code. -->
+    <PackageReference Include="Microsoft.Orleans.Server" Version="10.3.1" />
+    <!-- Les deux fournisseurs Redis que la configuration injectee par Aspire va designer :
+         la table d'appartenance (clustering) et le stockage de l'etat des grains. -->
+    <PackageReference Include="Microsoft.Orleans.Clustering.Redis" Version="10.3.1" />
+    <PackageReference Include="Microsoft.Orleans.Persistence.Redis" Version="10.3.1" />
+    <!-- Le client Redis enregistre sous la cle "redis", celle que la configuration cite. -->
+    <PackageReference Include="Aspire.StackExchange.Redis" Version="13.4.6" />
+  </ItemGroup>
+
+</Project>

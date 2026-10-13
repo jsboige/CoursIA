@@ -249,7 +249,7 @@ def validate_windows():
     else:
         print_warning(f"Composants OK: {success}/{total}")
         print("\nPour installer les composants manquants:")
-        print("  1. Ouvrir Lean-1-Setup.ipynb")
+        print("  1. Ouvrir Lean-01-Setup-Lean-Python.ipynb")
         print("  2. Executer toutes les cellules")
         return False
 

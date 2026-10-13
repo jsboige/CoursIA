@@ -1917,10 +1917,17 @@ def _fix_source_newlines(src):
     """Surgically fix a nbformat ``source`` list at GENUINELY-glued boundaries only.
 
     A boundary between ``src[k]`` and ``src[k+1]`` is genuinely corrupt when
-    ``''.join`` glues two tokens with no separator at all: ``src[k]`` does not end in
-    ``'\\n'`` or whitespace AND ``src[k+1]`` does not start in ``'\\n'`` or whitespace.
-    Trailing/leading spaces (mid-paragraph chunks) or an existing ``'\\n'`` on either
-    side already render correctly and are cosmetic false positives -- left untouched.
+    ``''.join`` glues two tokens with no separator at all: ``src[k]`` is non-empty and
+    does not end in ``'\\n'`` or whitespace AND ``src[k+1]`` does not start in ``'\\n'``
+    or whitespace. Trailing/leading spaces (mid-paragraph chunks) or an existing
+    ``'\\n'`` on either side already render correctly and are cosmetic false positives
+    -- left untouched.
+
+    ``src[k]`` must also be non-empty: a break materialises as the terminator of the
+    line to its LEFT, so an empty element is never a terminator. Promoting ``''`` to
+    ``'\\n'`` manufactures a blank line that the render did not have (measured on 4
+    cells of the repo, +7 blank lines, one of them a 76-element code cell going from
+    0 to 7 blanks between code lines). See #17550.
 
     Returns ``(new_src, changed)``: ``new_src`` is the (possibly fixed) source list,
     ``changed`` is True iff at least one boundary was fixed. When unchanged, ``new_src``
@@ -1931,7 +1938,7 @@ def _fix_source_newlines(src):
     _WS = (' ', '\t')
     genuine = [
         k for k in range(len(src) - 1)
-        if not src[k].endswith('\n') and not src[k].endswith(_WS)
+        if src[k] and not src[k].endswith('\n') and not src[k].endswith(_WS)
         and not src[k + 1].startswith('\n') and not src[k + 1].startswith(_WS)
     ]
     if not genuine:
@@ -1955,15 +1962,16 @@ def cmd_normalize_source_newlines(args):
     counts, or outputs.
 
     A boundary src[k]/src[k+1] is treated as genuine ONLY when neither side carries a
-    separator -- src[k] does not end in '\\n' or whitespace AND src[k+1] does not
-    start in '\\n' or whitespace. Boundaries with a trailing/leading space (mid-
-    paragraph chunks) or an existing '\\n' on either side render correctly already and
-    are left untouched (cosmetic false positives). The earlier blanket form added
-    '\\n' to every non-last element unconditionally, which doubled existing newlines
-    ('\\n\\n' -> '\\n\\n\\n\\n') and broke flowing markdown prose; this surgical form
-    touches only the genuinely-glued boundaries and preserves everything else
+    separator -- src[k] is non-empty and does not end in '\\n' or whitespace AND
+    src[k+1] does not start in '\\n' or whitespace. Boundaries with a trailing/leading
+    space (mid-paragraph chunks) or an existing '\\n' on either side render correctly
+    already and are left untouched (cosmetic false positives). The earlier blanket form
+    added '\\n' to every non-last element unconditionally, which doubled existing
+    newlines ('\\n\\n' -> '\\n\\n\\n\\n') and broke flowing markdown prose; this surgical
+    form touches only the genuinely-glued boundaries and preserves everything else
     byte-identical. See #5005 (root cause), #5094 (tool fix), #5093 (closed, the
-    corruption the blanket form caused), #4956 (.NET/Python parity marathon).
+    corruption the blanket form caused), #4956 (.NET/Python parity marathon), #17550
+    (the non-empty condition: an empty element is not a line terminator).
     """
     repo_root = get_repo_root()
     notebooks = discover_notebooks(

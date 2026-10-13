@@ -10,16 +10,19 @@ name: prose-counts-guard
 # « re-drift post #6914 ».
 #
 # Le guard ne juge que les lignes AJOUTEES : le stock existant (#9377) ne fait
-# echouer personne. ADVISORY tant que le stock n'est pas resorbe -- il ne peut
-# donc pas rougir aujourd'hui, et c'est assume : son role immediat est de poser
-# le label sur les PR qui rouvrent la veine, pas de bloquer la flotte. Le
-# passage en `--strict` est conditionne au critere de sortie de #9377.
+# echouer personne. BLOQUANT depuis #17636 (critere de sortie de #9377 : « le
+# guard est passe en bloquant », mandat user 2026-08-04) -- la seconde moitie
+# du critere (stock a 0) se resorbe separemment, par tranches de serie. Une PR
+# qui ajoute un compteur quantitatif en prose rougit ; l'echec du check-run
+# EST le signalement, visible sans ouvrir les logs.
+#
+# Historique #17636 : la phase advisory etait MUE -- le checker rendait rc=0
+# avec ses findings noyes dans le log, le workflow ne posait aucun label (il
+# n'a jamais eu la permission `issues: write`), et le commentaire d'origine
+# promettait ce label. #17029 a fusionne ainsi, revertee par #17632.
 
 on:
-  pull_request:
-    paths:
-      - '**/*.ipynb'
-      - '**/*.md'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -40,9 +43,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Shallow checkout (fetch-depth: 2) instead of full history. The
-          # base ref is then fetched explicitly with depth=1, so the diff
-          # below still works. Issue #11835 — saves the bulk of CI time
+          # Shallow checkout (fetch-depth: 2) instead of full history. La
+          # base du diff est HEAD^1 (premier parent du merge ref), present
+          # par construction -- aucun fetch supplementaire de la base.
+          # Issue #11835 — saves the bulk of CI time
           # on the 2.1 Go repo (was ~120 s of clone-time per push).
           fetch-depth: 2
 
@@ -52,11 +56,14 @@ jobs:
 
       - name: Compteurs quantitatifs ajoutes en prose
         run: |
-          # `checkout@v4` avec `fetch-depth: 2` ne tire que le HEAD et son
-          # parent -- `origin/<base_ref>` n'est PAS present. Un fetch
-          # explicite depth=1 le ramene. Le commentaire anterieur precisait
-          # qu'un `--depth=0` etait invalide (entier positif exige) ; ce
-          # fetch est depth=1, donc legal, et tient en quelques Ko.
-          git fetch --depth=1 origin "${{ github.base_ref }}" -q
+          # Base du diff : HEAD^1, le premier parent du merge commit pose par
+          # checkout@v4 (refs/pull/N/merge, fetch-depth: 2) -- present par
+          # construction, merge-base resolu en parent direct, diff = plateau
+          # exact de la PR. L'ancienne forme `origin/<base_ref>...HEAD`
+          # exigeait un fetch depth=1 de la base et mourait en course quand
+          # main bougeait entre la construction du merge ref et ce fetch :
+          # bornes shallow sans ancetre commun, `no merge base` (exit 128),
+          # faux rouge bloquant sur des PRs sans defaut de prose (#18629).
+          # Fix identique a docs-transients-guard (#18595, tete 41af837).
           python scripts/notebook_tools/check_prose_quantitative_claims.py \
-            --diff "origin/${{ github.base_ref }}...HEAD"
+            --diff "HEAD^1...HEAD" --strict

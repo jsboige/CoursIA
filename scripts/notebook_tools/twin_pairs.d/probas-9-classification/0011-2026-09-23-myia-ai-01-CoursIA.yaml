@@ -1,0 +1,7 @@
+date: '2026-09-23'
+by: myia-ai-01:CoursIA
+reason: 'Restauration lecture unique (#17040, PR #17463 commit 65be7312ae) : PyMC-09 recoit 2 cellules markdown de lecture (lecture-data-extra-020 apres p9-cal-data, h1cb63da646 apres p9-cal-metrics), chaque nombre cite verifie dans la sortie courante. Audit firsthand : cellules code, outputs, execution_count et metadata identiques a HEAD~1 (13 cellules code). Jumeau C# Infer-9 non touche (csharp_sha inchange).'
+python_sha: 747bd7cc0377deeabee53ccdc6215e3c15030d70
+csharp_sha: 750e1ac5e3beded312fbbadca07868d18ec81c43
+content_python_sha: 51972388f495eefaabbafa4f3419cf5e54db99d5de6450bf05103ed926c78ea2
+content_csharp_sha: 04e774d05b152982c2b2cb0b350cd40cbf070be697b30e88427d1410f25d3e33

@@ -53,6 +53,16 @@ class Guard:
                 statut.
     needs_base  Le garde compare HEAD a la base : le runner lui garantit que
                 `origin/<base_ref>` est joignable.
+    diff_bounded  Le verdict du garde est un DELTA (comparaison base/head, ou
+                lignes ajoutees par la PR) : un rouge corrobore ne peut pas
+                heriter de `main`. Lu par le picker (`_diff_bounded_check_names`,
+                #19645) -- la declaration est EXPLICITE et distincte de
+                `needs_base`, parce que l'information de bornage peut manquer
+                a l'argv absorbe (cas `check-nav-chain`/`check-navlinks`,
+                suite c.1503 du 2026-10-09 : leur workflow d'origine scopait
+                au diff via `git diff $BASE...HEAD`, l'argv absorbe dit
+                seulement `--check`) et que les ~20 gardes `needs_base` ne
+                sont PAS un delta borne au diff par defaut.
     delta_argv  Present => le garde est un DELTA en trois temps : `argv` est
                 execute sur HEAD (sa sortie standard est capturee comme
                 `head.json`), puis sur l'arbre bascule a la base
@@ -76,10 +86,23 @@ class Guard:
     paths: list[str] = field(default_factory=list)
     blocking: bool = True
     needs_base: bool = False
+    # #19645 suite c.1503 : verdict DELTA lu par le picker (voir la docstring
+    # du champ). Declare sur les gardes dont l'argv absorbe a perdu
+    # l'information de bornage -- une heuristique d'argv ne peut pas la voir.
+    diff_bounded: bool = False
     delta_argv: list[str] = field(default_factory=list)
     swap_paths: list[str] = field(default_factory=list)
     iterates_paths: bool = False  # voir `run_iter` dans fast_lane.py
     absorbed: bool = False  # tranche d'absorption #12567 : nom canonique + conclusion reelle, meme en lane ombre
+    # Motif d'ombre DECLARE (#19168). Un garde `blocking=True` qui n'est pas
+    # absorbe n'est pas compte par `blocking_failed` et emet sous
+    # `fast-lane (ombre): ` avec une conclusion neutre : son `blocking=True`
+    # est alors une declaration sans effet. Deux etats sont legitimes --
+    # absorbe (il bloque vraiment), ou volontairement en ombre, et dans ce
+    # second cas le motif ET le critere de bascule s'ecrivent ICI. Sans cette
+    # declaration, la classe entiere est invisible : `test_fast_lane.py`
+    # rougit des qu'un garde bloquant n'est ni absorbe ni declare.
+    shadow_reason: str = ""
     # Codes de retour traites comme SUCCES au-dela de 0. Les detecteurs de
     # la serie figure/texte rendent rc=1 sur defaut et rc=2 sur fichier
     # INTROUVABLE (mesure firsthand : un JSON corrompu rend rc=0 avec une
@@ -128,9 +151,69 @@ class Guard:
 # admise comme "pas de workflow d'origine".
 FAST_LANE_NATIVE = "(garde natif de la voie rapide : aucun workflow d'origine)"
 
+# Le lot pilote (#11835) est exempte par declaration du controle d'identité
+# byte-a-byte (#19193). Raison mesuree le 2026-10-05 : les noms dans le
+# registre (ex `banner-guard`) n'etaient pas alignes avec les noms des jobs
+# dans les workflows d'origine (ex `probeAddresses banner guard`), car le
+# renommage byte-identique n'avait pas ete fait a l'absorption (le workflow
+# d'origine portait encore le declencheur `pull_request`, c'est lui qui
+# bloquait, la voie rapide observait).
+#
+# L'etape 3 de #12856 (programme #12567, cycle c.360 du 2026-10-09) a aligne
+# les NEUF gardes qui declenchaient encore sur `pull_request` : leur job est
+# renomme byte-identique et leur declencheur retire, donc ils sont desormais
+# VERIFIES et non plus exemptes. L'exemption declared ne couvre plus que le
+# residu : `solution-leak-guard`, `perimeter-review-guard`,
+# `self-hosted-runner-policy` -- dont le workflow d'origine ne declenche pas
+# sur `pull_request` (cf PILOT_SHADOW_SANS_EMETTEUR).
+PILOT_LOT_NAME = "PILOT"
+
+# Gardes absorbes apres #19168 dont le byte-a-byte-identique n'est pas encore
+# aligne. Mesuree le 2026-10-05 : la voie rapide les a absorbes par
+# declaration (absorbed=True, source=workflow.yml) mais le `name:` du job
+# dans le workflow source n'a pas ete renomme byte-identique au `guard.name`.
+# Programme #12567 est le geste de bascule ; en attendant, le filet
+# d'identite les signale sans les exiger.
+TRANCHE_ALIGNMENT_EN_COURS = frozenset({"TRANCHE10"})
+
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
 
 # ---------------------------------------------------------------------------
+# Motifs d'ombre declares du lot pilote (#19168). Deux situations distinctes,
+# mesurees le 2026-10-05, et non des variantes de redaction :
+#   - 2 gardes ont un workflow d'origine qui ne declenche PAS sur `pull_request`
+#     (`perimeter-review-guard`, `self-hosted-runner-policy`) : aucun autre
+#     emetteur de leur nom de check-run ;
+#   - 4 gardes sont natives de la voie rapide : meme situation, sans workflow.
+# Ces deux categories sont donc inertes aujourd'hui -- c'est declare ici, pas
+# repare, parce que leur bascule n'apporte rien tant qu'aucun workflow ne porte
+# leur declencheur.
+#
+# La TROISIEME situation mesuree le 2026-10-05 -- « 9 gardes dont le workflow
+# d'origine declenche encore sur `pull_request` : le blocage est porte par lui,
+# la voie rapide ne fait qu'observer » -- a ete TRAITEE a l'etape 3 de #12856
+# (programme #12567, cycle c.360 du 2026-10-09). Pour ces neuf gardes, le
+# declencheur `pull_request` a ete retire du workflow source ET le `name:` du
+# job renomme byte-identique au `guard.name`, dans le meme commit. Le blocage
+# est desormais porte par la voie rapide, et le filet d'identite les VERIFIE
+# au lieu de les exempter (cf check_absorbed_check_run_identity.py).
+#
+# ATTENTION a la migration d'un garde absorbe : retirer le declencheur du
+# workflow source ne suffit pas, il faut aussi que les `paths` du registre
+# COUVRENT les `paths` du declencheur retire -- sinon le garde cesse d'etre
+# selectionne pour les fichiers qu'il surveillait (mesure c.360 :
+# `pip-leak-guard` ne portait que `**/*.ipynb`, ses trois autres motifs ont
+# ete ajoutes dans le meme commit).
+PILOT_SHADOW_SANS_EMETTEUR = (
+    "phase pilote #11835, aucun autre emetteur : le workflow d'origine ne "
+    "declenche pas sur `pull_request`. Critere de bascule : absorber, ou retirer "
+    "la garde.")
+PILOT_SHADOW_NATIF = (
+    "phase pilote #11835, garde natif : aucun workflow d'origine, donc aucun autre "
+    "emetteur du nom de check-run. Critere de bascule : absorber (convention des "
+    "tranches depuis TRANCHE8).")
+
+
 # Lot pilote (#11835). Dix gardes choisis pour couvrir les formes que le
 # moteur doit savoir traiter, et non pour leur nombre :
 #
@@ -138,7 +221,8 @@ NOTEBOOK_GLOBS = ["**/*.ipynb"]
 #   - pip-leak-guard      : bloquant, delta HEAD-vs-base
 #   - solution-leak-guard : ADVISORY, delta HEAD-vs-base (verifie qu'un
 #                           advisory ne peut pas rougir par accident)
-#   - prose-counts-guard  : advisory, diff-range direct
+#   - prose-counts-guard  : bloquant (#17636), diff-range direct, lignes
+#                           AJOUTEES seules (le stock #9377 ne rougit pas)
 #   - perimeter-review    : bloquant, appelle l'API GitHub (a besoin de
 #                           GH_TOKEN, pas seulement de l'arbre)
 #   - bare-cross-dir-load-gate : bloquant, EXECUTION PAR FICHIER (Pattern 1)
@@ -158,7 +242,7 @@ NOTEBOOK_GLOBS = ["**/*.ipynb"]
 # ---------------------------------------------------------------------------
 PILOT: list[Guard] = [
     Guard(
-        name="banner-guard",
+        name="probeAddresses banner guard (main-repo notebooks)",
         source="banner-guard.yml",
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/strip_probe_banner.py",
@@ -169,11 +253,21 @@ PILOT: list[Guard] = [
             "--scan-all", "--check", "--exclude-submodules",
         ],
         blocking=True,
+        absorbed=True,
     ),
     Guard(
-        name="pip-leak-guard",
+        name="!pip install HIGH delta guard (#6314)",
         source="pip-leak-guard.yml",
-        paths=NOTEBOOK_GLOBS,
+        # Les trois motifs non-ipynb viennent du declencheur `pull_request`
+        # retire a l'absorption (#12856 etape 3). Sans eux, une PR qui ne
+        # touche que le detecteur ne declencherait plus ce garde -- et le
+        # workflow source n'a AUCUN declencheur `push` pour rattraper, donc
+        # la couverture serait perdue et non deplacee.
+        paths=NOTEBOOK_GLOBS + [
+            ".github/workflows/pip-leak-guard.yml",
+            "scripts/notebook_tools/audit_pip_install_cells.py",
+            "scripts/notebook_tools/pip_leak_delta.py",
+        ],
         argv=["python", "scripts/notebook_tools/audit_pip_install_cells.py",
               "--scan-all", "--json"],
         delta_argv=["python", "scripts/notebook_tools/pip_leak_delta.py",
@@ -181,6 +275,7 @@ PILOT: list[Guard] = [
         swap_paths=["MyIA.AI.Notebooks"],
         blocking=True,
         needs_base=True,
+        absorbed=True,
     ),
     Guard(
         name="solution-leak-guard",
@@ -194,13 +289,16 @@ PILOT: list[Guard] = [
         needs_base=True,
     ),
     Guard(
-        name="prose-counts-guard",
+        name="prose-counts",
         source="prose-counts-guard.yml",
         paths=["**/*.ipynb", "**/*.md"],
         argv=["python", "scripts/notebook_tools/check_prose_quantitative_claims.py",
-              "--diff", "{base_ref}...HEAD"],
-        blocking=False,          # ADVISORY tant que #9377 n'est pas resorbe
+              "--diff", "{base_ref}...HEAD", "--strict"],
+        blocking=True,           # BLOQUANT #17636 : critere de sortie #9377 ;
+                                 # le stock ne rougit personne (lignes AJOUTEES
+                                 # seules), une PR qui rouvre la veine rougit
         needs_base=True,
+        absorbed=True,
     ),
     Guard(
         name="perimeter-review-guard",
@@ -209,6 +307,28 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/check_pr_perimeter.py", "{pr_number}",
               "--scan-thread"],
         blocking=True,
+        shadow_reason=PILOT_SHADOW_SANS_EMETTEUR,
+    ),
+    # Issue #14683 : garde substitution hr silencieuse. L'organe
+    # `scripts/ci/check_hr_substitution.py` detecte les 4 notations CommonMark
+    # (`---`, `***`, `* * *`, `___`) en `+`/`-` sur les `.ipynb` et exige une
+    # declaration explicite dans le body. Aucun workflow d'origine -> source
+    # FAST_LANE_NATIVE. Le script sort rc=0/1 sur son verdict ET rc=2 sur
+    # incident d'entree (`gh pr diff`/`gh pr view`/`git diff` en echec,
+    # l.59-60/74-75/85) -- l'ancien commentaire ici affirmait l'inverse.
+    # #17941 (option a, recommandation ai-01) : l'incident est un verdict
+    # INCONNU, pas une faute de la PR ni un quitus -- warn_rc=(2,) le rend
+    # neutre au check-run, titre distinct, non bloquant. Un depot sans verdict
+    # reste un depot sans garde : le neutral est LEISIBLE dans le check-run,
+    # pas silencieux.
+    Guard(
+        name="hr-substitution-guard",
+        source=FAST_LANE_NATIVE,
+        paths=["**/*.ipynb"],
+        argv=["python", "scripts/ci/check_hr_substitution.py", "{pr_number}"],
+        blocking=True,
+        warn_rc=(2,),
+        shadow_reason=PILOT_SHADOW_NATIF,
     ),
     # -- extension pilote (5 -> 9) ------------------------------------------
     # Pattern 1 : execute une fois par chemin matchant (boucle bash d'origine
@@ -216,7 +336,7 @@ PILOT: list[Guard] = [
     # a la fois ; le verdict agrege est failure si l'une des iterations
     # echoue avec un code `failure` (rc=1 pour les detecteurs deterministes).
     Guard(
-        name="bare-cross-dir-load-gate",
+        name="No bare cross-dir #load in changed notebooks",
         source="bare-cross-dir-load-gate.yml",
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/detect_bare_cross_dir_load.py",
@@ -228,9 +348,10 @@ PILOT: list[Guard] = [
         ],
         blocking=True,
         iterates_paths=True,
+        absorbed=True,
     ),
     Guard(
-        name="notebook-navlink-check",
+        name="check-navlinks",
         source="notebook-navlink-check.yml",
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/check_notebook_navlinks.py",
@@ -239,10 +360,99 @@ PILOT: list[Guard] = [
         ],
         argv=["python", "scripts/notebook_tools/check_notebook_navlinks.py",
               "--check"],
+        # #19645 (suite c.1503) : verdict DELTA -- NEW vs baseline committe,
+        # le workflow d'origine scopait au diff (`git diff $BASE...HEAD` ->
+        # `--diff-files`). L'argv absorbe ne porte plus ce drapeau : la borne
+        # se declare ici, lue par le picker (`_diff_bounded_check_names`).
+        # `needs_base` suit l'arbitrage ai-01 du 2026-10-12 (declaration de
+        # coherence : mesure du meme jour, aucun consommateur operationnel ne
+        # lit `needs_base` dans scripts/ ou .github/ ; le canal operant de
+        # l'imputation reste `diff_bounded`).
+        needs_base=True,
+        diff_bounded=True,
         blocking=True,
+        absorbed=True,
     ),
     Guard(
-        name="notebook-interp-positioning-guard",
+        name="check-nav-chain",
+        source="notebook-nav-chain-guard.yml",
+        paths=NOTEBOOK_GLOBS + [
+            "MyIA.AI.Notebooks/**/README.md",
+            "scripts/notebook_tools/check_notebook_nav_chain.py",
+            "scripts/tests/baseline_nb_nav_chain.json",
+            ".github/workflows/notebook-nav-chain-guard.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
+              "--check"],
+        # Meme classe que `check-navlinks` ci-dessus : verdict DELTA (NEW vs
+        # baseline), workflow d'origine scope au diff, borne perdue par
+        # l'argv absorbe -- declaration explicite (#19645 suite c.1503).
+        needs_base=True,
+        diff_bounded=True,
+        blocking=True,
+        absorbed=True,
+    ),
+    # F2 #18970, classe inversee par #18911 (geste 2, 2026-10-09) --
+    # garde delta-only sur les violations HTML_404 / BROKEN. L'audit BRUT
+    # de `regen_quarto_render.py --check-readme-links` rend 618 violations
+    # au 2026-10-09 : un argv qui enverrait cette commande en blocking=True
+    # rougirait systematiquement toute PR touchant un README de serie ou un
+    # notebook rendu. Le delta argv (3-temps : HEAD capture -> base capture
+    # -> comparateur) ne rougit QUE sur les violations NOUVELLES introduites
+    # par la PR, laissant le backlog historique au sweep par famille en aval
+    # (#18911 acceptation #2). Temoin verifie localement : une HTML_404
+    # injectee dans HEAD fait `NOUVELLES=1` (=exit 1), un PR sans nouvelle
+    # violation passe (exit 0) sur le meme depot.
+    #
+    # `scripts/regen_quarto_render.py` n'est VOLONTAIREMENT pas dans
+    # `swap_paths` : la phase base doit mesurer le MEME predicat que la
+    # phase head sur le contenu de base. Restaurer le script de la base
+    # ferait mesurer la classe retiree (STALE_LINK) et le comparator
+    # verrait tout le backlog comme nouveau.
+    Guard(
+        name="Audit README -> .ipynb links",
+        source="readme-ipynb-links-guard.yml",
+        # Parite de couverture avec le declencheur `pull_request` retire a
+        # l'absorption (#12856 etape 3) : les cinq derniers motifs viennent de
+        # ce declencheur et ne sont pas couverts par son `push` residuel --
+        # sans eux, une PR qui ne touche que le fixeur ou ses tests ne
+        # declencherait plus ce garde. Les deux tests supplementaires
+        # (test_readme_link_violations, test_regen_quarto_render) viennent de
+        # la reecriture #18911 arrivee sur main apres l'absorption -- le
+        # rebase sur main les a fait entrer dans le perimetre du declencheur
+        # retire.
+        paths=[
+            "MyIA.AI.Notebooks/**/README.md",
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "_quarto.yml",
+            "scripts/regen_quarto_render.py",
+            "scripts/notebook_tools/dump_readme_link_violations.py",
+            "scripts/notebook_tools/diff_readme_link_violations.py",
+            "scripts/notebook_tools/fix_ipynb_links.py",
+            "scripts/notebook_tools/tests/test_fix_ipynb_links.py",
+            "scripts/notebook_tools/tests/test_readme_link_violations.py",
+            "scripts/notebook_tools/tests/test_readme_links_guard_workflow.py",
+            "scripts/tests/test_regen_quarto_render.py",
+            ".github/workflows/readme-ipynb-links-guard.yml",
+        ],
+        # Le dump imprime le JSON sur stdout ; le moteur fast-lane le
+        # capture via payload_of() et l'ecrit dans {name}.head.json (puis
+        # base.json apres bascule phase 2). Le comparator recoit les deux.
+        argv=["python",
+              "scripts/notebook_tools/dump_readme_link_violations.py"],
+        delta_argv=["python",
+                    "scripts/notebook_tools/diff_readme_link_violations.py",
+                    "{base_json}", "{head_json}"],
+        swap_paths=[
+            "MyIA.AI.Notebooks",
+            "_quarto.yml",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+    Guard(
+        name="check_interp_positioning.py",
         source="notebook-interp-positioning.yml",
         paths=NOTEBOOK_GLOBS + [
             "scripts/notebook_tools/check_interp_positioning.py",
@@ -253,9 +463,10 @@ PILOT: list[Guard] = [
               "--check",
               "--baseline", "scripts/notebook_tools/interp_positioning_baseline.json"],
         blocking=True,
+        absorbed=True,
     ),
     Guard(
-        name="markdown-rendering-guard",
+        name="markdown-rendering guard (main-repo notebooks)",
         source="markdown-rendering-guard.yml",
         paths=[
             "**/*.ipynb",
@@ -270,6 +481,7 @@ PILOT: list[Guard] = [
               "--baseline",
               "scripts/notebook_tools/markdown_rendering_baseline.json"],
         blocking=True,
+        absorbed=True,
     ),
     Guard(
         name="self-hosted-runner-policy",
@@ -284,6 +496,7 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
               "--check"],
         blocking=True,
+        shadow_reason=PILOT_SHADOW_SANS_EMETTEUR,
     ),
     # -- extension c.1339 (10 -> 11) ----------------------------------------
     # Ferme un angle mort du merge-gate mesure le 2026-08-24 (#12753) : aucun
@@ -314,6 +527,7 @@ PILOT: list[Guard] = [
               "--base", "{base_ref}", "--head", "HEAD"],
         blocking=True,
         needs_base=True,
+        shadow_reason=PILOT_SHADOW_NATIF,
     ),
 
     # Defaut 3 de #15489 : "aucun garde dedie n'impose la casse canonique
@@ -342,15 +556,21 @@ PILOT: list[Guard] = [
             "scripts/notebook_tools/check_kernel_suffix_canon.py",
             "scripts/notebook_tools/kernel_suffix_canon.json",
             # Liste partagee des suffixes de noyau : l'en retirer un rend le
-            # garde muet sur cette famille, l'y ajouter rouvre les exclusions
-            # mesurees (`-Lean` marque le contenu, pas le moteur).
+            # garde muet sur cette famille. Depuis l'arbitrage 25/09
+            # (#17784/#16231) elle porte -lean et -lean-python comme noyaux.
             "scripts/notebook_tools/naming_canon.py",
         ],
         argv=["python", "scripts/notebook_tools/check_kernel_suffix_canon.py",
               "--base", "{base_ref}", "--head", "HEAD"],
         blocking=True,
         needs_base=True,
+        shadow_reason=PILOT_SHADOW_NATIF,
     ),
+    # Cliquet #17784, phase ADVISORY : le meme organe liste en advisory les
+    # notebooks AJOUTES sans suffixe de noyau (grammaire #16231 : le suffixe
+    # est desormais cense etre toujours present). Le passage bloquant se fait
+    # en ajoutant --require-suffix a l'argv ci-dessus, APRES mesure des faux
+    # positifs -- pas en durcissant le garde par defaut.
     # Defaut 4 de #15489 (suite du meme claim de lane) : un slot peut etre libre
     # sur `main` et deja tenu ailleurs. Deux trous mesures ont fonde ce garde --
     # deux notebooks neufs au MEME index dans une MEME revision (l'organe frere
@@ -390,6 +610,36 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/notebook_tools/check_slot_reservation.py",
               "--base", "{base_ref}", "--head", "HEAD", "--offline"],
         blocking=True,
+        needs_base=True,
+        shadow_reason=PILOT_SHADOW_NATIF,
+    ),
+    # Advisory d'accretion (#19144) : le MEME organe, lu par son autre bout. Le
+    # garde ci-dessus repond « ce nom est-il libre ? » et rougit ; celui-ci repond
+    # « ce nom respecte-t-il la regle d'accretion ? » et ne rougit jamais. Le
+    # corpus de la regle avait un trou mesure -- #19109 et #19112 ajoutaient `03g`
+    # puis `03h` a une branche plafonnee a `f`, tous checks verts et un dossier
+    # READY -- parce que les organes existants lisaient la GRAMMAIRE du nom
+    # (#17784) ou sa COLLISION (#15489), jamais sa PROFONDEUR.
+    #
+    # `--accretion-only` : sans lui, ce second check-run redirait le verdict de
+    # slot du premier, et deux check-runs rougiraient ensemble pour une seule
+    # cause. Ici la conclusion `neutral` porte le SEUL signal d'accretion, et le
+    # code retour reste 0 quel que soit le nombre de constats.
+    #
+    # Les trois constats d'accretion se lisent tous sur des sources git (base,
+    # revision, table `slot_reservations.json`) : aucun ne depend du corps de la
+    # PR, donc l'argv de la voie rapide suffit.
+    Guard(
+        name="accretion-advisory",
+        source=FAST_LANE_NATIVE,
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/notebook_tools/check_slot_reservation.py",
+            "scripts/notebook_tools/slot_reservations.json",
+            "scripts/notebook_tools/naming_canon.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_slot_reservation.py",
+              "--base", "{base_ref}", "--head", "HEAD", "--offline", "--accretion-only"],
+        blocking=False,
         needs_base=True,
     ),
 ]
@@ -446,6 +696,9 @@ TRANCHE1: list[Guard] = [
             # `scripts/check_docs_links.py`; pinned by
             # `test_deck_scope_is_wired_into_the_fast_lane`.
             "slides/**",
+            # Book inventory (#18899): scanned as a single file, so the gate
+            # must fire when it changes. Mirror of SCAN_SCOPES.
+            "MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md",
             "scripts/check_docs_links.py",
         ],
         argv=["python", "scripts/check_docs_links.py", "--check",
@@ -1138,7 +1391,7 @@ TRANCHE9: list[Guard] = [
 #   'Invalid Notebook / outputs is a required property /
 #    Using nbformat v5.10.4 and nbconvert v7.17.0'
 #
-# Le c.1082 fabrication de GameTheory-06g-Bounded-Agents-Lean.ipynb a omis
+# Le c.1082 fabrication de GameTheory-06f-Bounded-Agents-Lean.ipynb a omis
 # la cle `outputs` de 9/9 cellules code. Papermill (validator permissif) a
 # accepte, le kernel lean4-wsl n'a rien produit (hang faute de `.lake/`), la
 # cle n'a jamais ete injectee -- resultat : un notebook structurellement
@@ -1146,8 +1399,7 @@ TRANCHE9: list[Guard] = [
 #
 # Renomme TRANCHE9 -> TRANCHE10 pour eviter la collision avec l'interval-kind
 # mergé sur main via PR #15624 (3342d97342, 2026-09-12T02:57:59+02:00 -- anterieur
-# a ce rebase). Collision signalee par le rebase c.1090 (Tell c.1065-L3 ★★
-# fondateur `rebase-vers-une-cible-NOMMEE-herite-de-sa-peremption`).
+# a ce rebase). Collision signalee par le rebase c.1090.
 #
 # Ce garde verifie la PRESENCE + le TYPE de `outputs` sur chaque cellule
 # code. `outputs: []` est PASS (la forme canonique d'une cellule non executee
@@ -1193,7 +1445,7 @@ TRANCHE10: list[Guard] = [
 # `notebook-source-collapse-ratchet.yml` a absorber.
 #
 # Le defaut fondeur est #15862 : la cellule `c989_independent_v2` de
-# GameTheory-06e-Open-Source-Game-Theory.ipynb a perdu 3116 caracteres de
+# GameTheory-06e-Open-Source-Game-Theory-Python.ipynb a perdu 3116 caracteres de
 # source (8425 -> 5309, -37.0 %) -- une table declarative et un `assert` ont
 # disparu -- et AUCUN des ~30 ratchets n'a bronche, parce que tous mesurent
 # des SORTIES, des sequences ou de la structure. Aucun ne mesurait la
@@ -1250,6 +1502,558 @@ TRANCHE11: list[Guard] = [
         ],
         blocking=False,
         needs_base=True,
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 13 -- reading-anchor advisory (#16695).
+#
+# Garde NATIF absorbant le workflow d'origine (needs_base=True, delta vs base,
+# self-test pre-control #11685). Advisory non bloquant a zero FP mesure.
+# ---------------------------------------------------------------------------
+TRANCHE13: list[Guard] = [
+    Guard(
+        name="Reading-anchor advisory (lecture sans output, #16695)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_reading_anchor.py",
+            "scripts/notebook_tools/tests/test_check_reading_anchor.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_reading_anchor.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_reading_anchor.py",
+            "--base", "{base_ref}",
+            "--head", "HEAD",
+            "--fail", "--json",
+        ],
+        blocking=False,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 12 -- link-label agreement advisory (#16645).
+#
+# Garde NATIF : comme TRANCHE6/9/11, il n'absorbe aucun workflow d'origine --
+# il ferme une classe de defaut (le predicat "le LIBELLE nomme un notebook
+# different de la CIBLE", cf incident fondateur #13645 et la discussion
+# #15867 sur le scope decks). Aucune absorption possible parce qu'aucun
+# workflow dedie n'existait pour ce script au moment de l'issue #16645.
+#
+# Pourquoi advisory, pas bloquant : la dette repo-wide mesuree au cablage
+# est de 0 finding sur main (scan 2198 fichiers, cf body #16645 "0 desaccord
+# / 2182 fichiers"). Demarrer en blocking serait strict sur du vide ; un
+# garde qui protege un invariant deja tenu demarre ADVISORY pour calibration
+# avant promotion (cf TRANCHE11 source-collapse qui suivait la meme voie).
+# Cout CI : ~5 s par scan global (`scripts/notebook_tools/check_link_label_agreement.py
+# --fail` rend 0 en 4-5 s sur 2198 fichiers mesures le 2026-09-20) -- dans
+# le budget de la voie rapide.
+#
+# Forme moteur : scan global simple, sans base (le script compare libelle a
+# cible dans chaque document, ne confronte pas a une base). Meme contrat
+# que TRANCHE1 forme 1 (check-links), en advisory.
+#
+# Le nom porte `advisory` pour que le filtre pr_gate (`is_advisory` matche
+# le mot-cle dans le nom de check-run) le traite comme tel et ne le compte
+# jamais comme defaut bloquant. Le check-run apparait en `neutral` sur la
+# PR -- signal visible, jamais rougissant.
+# ---------------------------------------------------------------------------
+TRANCHE12: list[Guard] = [
+    Guard(
+        name="Link-label agreement (per-notebook, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "MyIA.AI.Notebooks/**/README.md",
+            "docs/**/*.md",
+            "slides/**/slides.md",
+            "scripts/notebook_tools/check_link_label_agreement.py",
+            "scripts/notebook_tools/tests/test_check_link_label_agreement.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_link_label_agreement.py",
+            "--fail",
+        ],
+        blocking=False,  # advisory : signale le desaccord label/cible, ne rougit jamais
+        absorbed=True,
+    ),
+]
+
+
+# TRANCHE 13 -- cellules de lecture scindees « Lecture » + « Lecture
+# chiffree » (#16762, parapluie user). Forme moteur : iterate_paths
+# per-notebook, MEME CABINE que TRANCHE6/7 (rc=2 findings sur
+# --fail-on-findings, rc=1 illisible/vacuue).
+#
+# Origine : nit user sur #16554 (2026-09-17) -- « Pourquoi Lecture puis
+# Lecture chiffree. Il aurait fallu fusionner les 2, pas rajouter une
+# interpretation derriere une autre avec recouvrement partiel ». L'organe a
+# ete livre par le recensement #16786 ; cette tranche le cable. Mandat user
+# 2026-09-20 (body #13410 section STOP) : « Une sortie de cellule a UNE
+# cellule de lecture. Si elle en a deja une, on la REECRIT. On n'en ajoute
+# jamais une seconde. »
+#
+# Pourquoi advisory, pas bloquant : la dette corpus heritee mesuree au
+# cablage est de 109 findings sur origin/main @545d9ec639 (98 generic_pair,
+# 8 separated_by_code, 3 named_split -- ces derniers fusionnes par la PR
+# soeur #17025). Un garde bloquant rougirait chaque PR touchant un notebook
+# porteur de dette heritee. Passage en blocking a trancher par le
+# coordinateur apres resorption de la dette par serie (precedent TRANCHE6
+# #14325, TRANCHE7).
+# ---------------------------------------------------------------------------
+#
+# Renomme TRANCHE12 -> TRANCHE14 au merge de #17031 : la PR soeur #16645
+# (link-label agreement) a pris TRANCHE12 sur main entre-temps, et TRANCHE13
+# etait deja pris par reading-anchor (#16695) -- la premiere version de ce
+# renommage reutilisait TRANCHE13 et le second binding ecrasait le premier :
+# reading-anchor disparaissait du registre et Scripts Tests rougissait sur
+# toute PR (test_tranche13_reading_anchor_advisory_guard_is_wired). Meme
+# classe de collision que le renommage TRANCHE9 -> TRANCHE10 plus haut -- le
+# POSTERIEUR cede l'index, jamais l'inverse (deux affectations du meme nom se
+# remplaceraient silencieusement et un garde disparaitrait du registre).
+#
+# PROMOTION EN CLIQUET (#17044, 2026-09-24). Le garde naissait advisory : la
+# dette corpus heritee au cablage (109 findings) aurait rougi toute PR
+# touchant un carnet porteur, ce qui punit le voisin, pas l'auteur. Le
+# cliquet leve exactement cette objection sans renoncer au mandat user
+# 2026-09-20 (« une sortie de cellule a UNE cellule de lecture ; si elle en a
+# deja une, on la REECRIT, on n'en ajoute jamais une seconde ») : il ne
+# regarde QUE ce que la PR change -- lectures AJOUTEES (detect_added_readings)
+# ou compte de paires qui MONTE sur un carnet touche. Les 91 findings herites
+# restent donc grandfathered, et le cliquet ne rougit que l'augmentation.
+# Mesure avant cablage : 0/11 faux positifs sur les 11 dernieres PR notebook
+# mergees, controle positif fondateur 26+16 intact (organe
+# scripts/ci/check_17464_positive_control.py), self-test 5/5.
+TRANCHE14: list[Guard] = [
+    Guard(
+        name="Split-reading ratchet (base vs PR)",
+        source="split-reading-advisory.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_split_reading_cells.py",
+            "scripts/tests/test_check_split_reading_cells.py",
+            ".github/workflows/split-reading-advisory.yml",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_split_reading_cells.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_split_reading_cells.py",
+            "--base-ref", "{base_ref}", "--head", "HEAD",
+            "--json", "--fail-on-findings",
+        ],
+        blocking=True,  # cliquet : rougit l'AJOUT de lecture scindee, jamais la dette heritee
+        needs_base=True,
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 15 -- garde natif anti-invocation-directe lake (#15666, T4).
+#
+# L'epic #15666 impose un organe canonique d'exécution Lean
+# (``scripts/lean/lean_exec.py`` : admission machine-wide fail-closed, budget
+# min-des-sources, backend epingle par lake) et exige pour sa tranche T4 :
+# « un garde CI qui refuse toute nouvelle invocation directe de
+# ``lake build``/``lake env lean`` dans du code d'orchestration hors
+# allowlist documentée ». Le défaut fondateur (2026-09-12 : ~30 processus
+# ``lean.exe`` à 95 % du CPU, DriveFS et Claudish étouffés) est réintroduit
+# par CHAQUE voie directe qui échappe au budget commun -- ce garde ferme la
+# porte d'entrée, l'allowlist documente la dette de migration (ratchet
+# descendant : une entrée devenue stérile est signalée, jamais ignorée).
+#
+# Détection AST (pas grep) : docstrings, sondes ``which``, tests
+# d'appartenance et prose d'erreur ne comptent pas. Calibration mesurée sur
+# le corpus : 6 fichiers en dette, 0 faux positif -- chaque classe de FP
+# rencontrée a son négatif dans test_check_lake_direct_invocation.py.
+# ---------------------------------------------------------------------------
+# Renomme TRANCHE12 -> TRANCHE15 au merge : les PR #16645 (link-label),
+# #17031 (split-reading) puis #17485 (dedupe TRANCHE13) ont pris
+# TRANCHE12/TRANCHE13/TRANCHE14 sur main entre-temps.
+# Regle registry : le POSTERIEUR cede l'index (cf renommage TRANCHE9 -> TRANCHE10).
+TRANCHE15: list[Guard] = [
+    Guard(
+        name="lake-direct-invocation-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.py",
+            "scripts/lean/check_lake_direct_invocation.py",
+            "scripts/lean/lake_direct_allowlist.json",
+            "scripts/lean/tests/test_check_lake_direct_invocation.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/lean/check_lake_direct_invocation.py",
+            "--all", "--check",
+        ],
+        blocking=True,
+        # `absorbed=True` (#19168) : sans lui le garde emettait
+        # `fast-lane (ombre): lake-direct-invocation-guard` avec une
+        # conclusion neutre et n'entrait pas dans `blocking_failed` -- son
+        # `blocking=True` ne bloquait rien. Verifie vert sur `main` avant
+        # absorption (`--all --check` -> rc=0, 6 fichiers en dette tous
+        # allowlistes), donc l'absorption ne rougit aucune PR existante.
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 16 (#18048) -- garde caracteres de controle dans les sources de
+# cellules. Un outil d'ecriture qui interprete les echappements Python
+# transforme ``\a``, ``\b``, ``\f`` ou ``\v`` d'une source en caractere de
+# controle : le JSON reste valide (controles echappes \u0007/\b/\f), le
+# notebook s'execute, aucun organe ne rougissait -- mais le rendu est casse
+# (LaTeX illisible, regex affichee fausse).
+#
+# Temoins fondateurs (body #18048, tous deux en test dans
+# scripts/tests/test_check_control_chars_in_cells.py) :
+#   - POSITIF : tete f19ca6ff91 de la PR #17919 (MGS-01-Introduction
+#     cellule 10) -- 3x U+0007 dans ``$\sigma\<BEL>pprox 12$`` (intention
+#     : ``\approx``) ;
+#   - NEGATIF : main post-fix -- la cellule 18 markdown de
+#     auditer-la-conformite-visuelle.ipynb porte le texte LITERAL ``\b``
+#     (frontiere de regex, backslash + b en clair), qui ne doit JAMAIS
+#     rougir ; son U+0008 herite est repare dans la meme PR.
+#
+# Forme : delta base-vs-head sur les cellules AJOUTEES ou MODIFIEES (le
+# stock herite ne rougit pas -- une source identique a l'identique dans la
+# base est exempee), bloquant. rc=2 = incident d'entree (git/JSON), pas
+# une faute de la PR : warn_rc=(2,) le rend neutre au check-run, titre
+# distinct, non silencieux (forme hr-substitution-guard, #17941).
+# ---------------------------------------------------------------------------
+TRANCHE16: list[Guard] = [
+    Guard(
+        name="control-chars-in-cells-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/ci/check_control_chars_in_cells.py",
+            "scripts/tests/test_check_control_chars_in_cells.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/ci/check_control_chars_in_cells.py",
+            "--diff", "{base_ref}...HEAD",
+        ],
+        blocking=True,
+        # `absorbed=True` (#19168) : mesure de l'issue sur la tete
+        # `34e045d3` de #19098 -- le check-run sortait sous
+        # `fast-lane (ombre): control-chars-in-cells-guard`, conclusion
+        # neutre, hors `blocking_failed`. Verifie vert sur `main` avant
+        # absorption (`--diff origin/main...HEAD` -> rc=0), donc l'absorption
+        # ne rougit aucune PR par dette heritee.
+        absorbed=True,
+        needs_base=True,
+        warn_rc=(2,),
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 17 (#19116) -- garde de parite jumeau FR/<lang> scopee au diff.
+# Une PR notebook-only qui casse la parite d'un jumeau ``xxx_<lang>.ipynb``
+# (re-execution native au lieu du re-rendu T4, #18844) n'etait vue par
+# AUCUNE jambe : Scripts Tests (CPU) filtre sur ``scripts/**``,
+# ``translation-parity.yml`` ne tourne que sur schedule/dispatch. Le défaut
+# atterrissait sur ``main`` vert puis rougissait la PR de scripts suivante.
+#
+# Temoins fondateurs (rejoues en developpement du garde) :
+#   - POSITIF : diff complet de #18844 (``origin/main...c4c53386af``) --
+#     4 notebooks modifies, 1 paire touchee (medical_chatbot en), rouge
+#     CODE_DRIFT cellule ``d0d7a23d`` (48 sorties FR vs 41 EN), exit 1 ;
+#   - NEGATIF : tete de #19115 (``f43225aeef``, re-rendu T4 du meme
+#     jumeau) -- meme paire touchee, 0 bloquant, exit 0.
+#
+# Forme : le garde calcule lui-meme son diff (``{base_ref}...HEAD``),
+# evalue uniquement les paires dont UN membre change (re-executer seulement
+# le FR casse aussi la parite), bloquant. rc=2 = incident d'entree
+# (git/JSON), neutre au check-run (forme control-chars-in-cells-guard).
+# ---------------------------------------------------------------------------
+TRANCHE17: list[Guard] = [
+    Guard(
+        name="twin-parity-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/translation/check_translation_parity.py",
+            "scripts/translation/check_twin_parity_changed.py",
+            "scripts/translation/tests/test_check_twin_parity_changed.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/translation/check_twin_parity_changed.py",
+            "--diff", "{base_ref}...HEAD",
+        ],
+        blocking=True,
+        # `absorbed=True` (#19118, reserve de revue) : le job always-on lance
+        # `fast_lane.py --shadow`, et `effective_shadow = args.shadow and not
+        # guard.absorbed`. Sans absorption, ce garde emettait
+        # `fast-lane (ombre): twin-parity-guard` avec une conclusion neutre et
+        # n'entrait pas dans `blocking_failed` : `blocking=True` etait une
+        # declaration sans effet, et une PR de la forme #18844 (CODE_DRIFT
+        # d0d7a23d) serait passee. Meme convention que les autres gardes natifs
+        # absorbes (TRANCHE8/9/10/14) : un garde sans workflow d'origine n'a
+        # aucun autre emetteur de son nom de check-run.
+        absorbed=True,
+        needs_base=True,
+        warn_rc=(2,),
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 19 (#19374) -- garde CI contre les blobs CRLF ou mixtes sous
+# attribut ``eol=lf`` (classe de #19287). Un blob CRLF ou mixte sous un
+# attribut ``text eol=lf`` fait paraitre le fichier modifie apres chaque
+# checkout, sur toutes les machines : git renormalise a la lecture mais
+# ne reecrit jamais le blob. ``merge_ready`` et ``check_clean_cycle_exit``
+# voient alors sale le clone principal de chaque lane. Le correctif
+# ponctuel est ``git add --renormalize <fichier>`` (cf #19373) ; ce garde
+# empeche la prochaine de la classe.
+#
+# Renomme TRANCHE18 -> TRANCHE19 au suivi d'integration : cette tranche
+# (2026-10-08) avait pris le nom ``TRANCHE18`` deja porte plus bas dans le
+# module par la tranche docs-index (#19260, 2026-10-06) -- Python execute
+# le module de haut en bas, la seconde affectation ecrasait la premiere,
+# et ``eol-blob-guard`` etait enregistree mais muette (ni dans l'agregat
+# du moteur, ni dans ``absorbed_guards`` : ``vars()`` ne voit que la
+# valeur finale). Regle registry : le POSTERIEUR cede l'index (cf
+# renommages TRANCHE9 -> TRANCHE10 puis TRANCHE12 -> TRANCHE15). Le test
+# qui ferme la classe :
+# ``test_fast_lane.py::test_no_module_level_name_is_assigned_twice_in_the_registry``.
+#
+# Detection : ``git diff --name-only --diff-filter=AM origin/main...HEAD``
+# puis ``git ls-files --eol -- <path>`` par chemin, awk-equivalent en
+# Python. Un blob CRLF voulu (.bat, fixture) se declare par ``eol=crlf``
+# ou ``-text`` dans ``.gitattributes``, jamais par exemption.
+#
+# `absorbed=True` (#19374, suivi d'integration) : ce garde n'a pas de
+# workflow d'origine -- le job always-on lance `fast_lane.py --shadow`,
+# et `effective_shadow = args.shadow and not guard.absorbed`. Sans
+# absorption, le garde sortait sous `fast-lane (ombre): eol-blob-guard`
+# avec une conclusion NEUTRE et n'entrait pas dans `blocking_failed` :
+# `blocking=True` etait une declaration sans effet. C'est la classe de
+# defaut que `test_aucun_garde_bloquant_n_est_inert_sans_declaration`
+# ferme dans `test_fast_lane.py`. Verifie vert sur `main` avant
+# absorption (`--diff origin/main...HEAD` -> rc=0) ; l'absorption ne
+# rougit aucune PR par dette heritee.
+# ---------------------------------------------------------------------------
+TRANCHE19: list[Guard] = [
+    Guard(
+        name="eol-blob-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[],
+        argv=["python", "scripts/ci/check_eol_blobs.py"],
+        blocking=True,
+        absorbed=True,
+        needs_base=True,
+        warn_rc=(2,),
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 18 -- couverture de l'index `docs/` (organe #13748).
+#
+# Origine : reserve de revue Hermes sur #19260 -- « l'organe n'est cable nulle
+# part ». Le README de `docs/` reecrit par cette PR remplace le compte ecrit
+# (146) par l'invariant lui-meme, en citant `python scripts/check_docs_index.py`
+# et son `exit 1`. Or `grep -rln check_docs_index .github/workflows/
+# scripts/ci/` rendait vide des deux cotes : l'invariant n'existait que quand un
+# humain pensait a l'executer. Si une revision supprimait une ligne d'index,
+# rien ne rougissait. Meme classe de defaut que TRANCHE17 (#19118).
+#
+# Forme moteur : garde ABSOLU, non-delta, et c'est delibere. Il mesure l'arbre
+# de HEAD, pas une difference base/PR : « tout doc vivant est-il atteignable
+# depuis l'index ? » n'a pas de sens en delta, et un `--expect-unreachable N`
+# (controle in-band positif, qui rend rc=2 si le chemin de detection est mort)
+# n'a pas sa place sur un arbre de PR -- il mesure une propriete de la
+# DETECTION, pas de la PR. D'ou l'absence de `needs_base` et de `swap_paths` :
+# aucun sous-arbre n'est bascule, lire l'arbre courant est exactement le geste
+# voulu.
+#
+# `absorbed=True` : sans absorption, le job always-on lance `fast_lane.py
+# --shadow`, donc `effective_shadow = args.shadow and not guard.absorbed` reste
+# vrai, et le garde emet une conclusion NEUTRE sous `fast-lane (ombre): ` -- un
+# `blocking=True` sans effet, soit exactement le defaut que la reserve
+# signalait. Un garde sans workflow d'origine n'a aucun autre emetteur de son
+# nom de check-run (meme convention que TRANCHE8/9/10/14/17).
+#
+# Chemin de retour : rc=1 sur doc inatteignable, 0 si tout est atteignable,
+# 2 sur echec du controle -- pas de `warn_rc` ici, l'organe est net.
+# ---------------------------------------------------------------------------
+TRANCHE18: list[Guard] = [
+    Guard(
+        name="docs-index-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "docs/**",
+            "scripts/check_docs_index.py",
+            "scripts/tests/test_check_docs_index.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=["python", "scripts/check_docs_index.py"],
+        blocking=True,
+        absorbed=True,
+    ),
+    # Issue #17444 / Q35 : ratchet de migration "python nu sans setup-python".
+    # Mesure firsthand c.199 : 14 jobs GitHub Actions matchent la classe
+    # (`python` nu sans `actions/setup-python` sur runners self-hosted, y
+    # compris configures `ubuntu-latest` mais routables). Mode `advisory
+    # --baseline 14` : exit 0 sur main, exit 1 si le compte depasse 14
+    # (regression). Le sweep #17470 a nettoie 9 jobs Linux ; l'organe ferme
+    # la boucle (cf. c.199 PR #19497). `blocking=False` parce que l'etat
+    # actuel (14) est une migration en cours, pas un defaut -- une PR qui
+    # AUGMENTE le compte (>14) sort en `failure` (rc=1), une PR qui le
+    # REDUIT reste en `neutral` (rc=0, mais le ratchet protege). Une fois
+    # le compte a 0, basculer en `blocking=True` (PR dediee future). Meme
+    # convention FAST_LANE_NATIVE + absorbed=True que hr-substitution-guard
+    # (l'organe n'a pas de workflow d'origine, c'est la tranche pilote).
+    Guard(
+        name="detect-python-nu-jobs",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            ".github/workflows/**",
+            "scripts/ci/detect_python_nu_jobs.py",
+            "scripts/tests/test_detect_python_nu_jobs.py",
+        ],
+        argv=[
+            "python", "scripts/ci/detect_python_nu_jobs.py",
+            "--mode", "advisory", "--baseline", "14", "--json",
+        ],
+        blocking=False,
+        warn_rc=(2,),
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 20 -- fraicheur des cellules LIVE-READ (#20049).
+#
+# Garde NATIF, tranche propre pour la meme raison que TRANCHE11 : il n'absorbe
+# aucun workflow d'origine (le stub `live-read-freshness.yml` est cree par
+# cette PR, dispatch-only, aucun trigger `pull_request` a retirer) et il ferme
+# une CLASSE de defaut. Le ranger dans TRANCHE2 (a cote de ses freres
+# `check_output_collapse.py` / `check_source_collapse.py`) rendrait l'en-tete
+# de TRANCHE2 faux.
+#
+# Defaut ferme : une cellule code peut LIRE un fichier du depot et en
+# committer la sortie (compte de lignes du fichier, declarations, numeros de
+# ligne). Rien ne la relie ensuite a ce fichier. Le jour ou une tranche le
+# reecrit, la sortie committee devient un temoignage du PASSE -- et aucun
+# organe ne le voit. Les ratchets d'absorption comparent une BASE a une TETE ;
+# ceux de structure mesurent un carnet. Aucun ne compare la sortie COMMITTEE
+# d'une cellule a l'etat COURANT du fichier qu'elle lit : c'est un troisieme
+# axe, invisible par construction.
+#
+# Donnee de declaration : `scripts/notebook_tools/live_read_registry.json`.
+# Le carnet declare ses cellules live-read et le fichier lu ; l'organe derive
+# de la sortie elle-meme ses invariants (compte de lignes accole au fichier,
+# citations ``L<n>: <texte>``) et les confronte a la source. Une re-execution
+# fraiche du carnet les satisfait -- c'est le geste de reparation attendu
+# (Stop & Repair), jamais une edition a la main de la sortie.
+#
+# Forme moteur : garde ABSOLU, non-delta (meme raison que TRANCHE18) -- il
+# mesure l'arbre de HEAD, pas une difference base/PR. Le pre-controle
+# `--self-test` epingle le discriminant en fixture (5 cas verts, 4 rouges, dont
+# le reflow nom/compte de la reserve 2 de #20076) et gate le garde comme le
+# ferait un step distinct du workflow d'origine.
+#
+# Controle positif MESURE a la pose : `feature/otca-real-grid` (#20019,
+# ouverte) porte Pillars.lean a 348 lignes quand la cellule `50dcfe8c` de
+# Lean-16b atteste « 246 lignes » et cite L88/L126 ; cette branche ne touche
+# PAS Lean-16b, donc le rouge est authentique, pas fabrique. Sur `main` au
+# meme instant, l'organe est vert (controle negatif). Un organe resterait vert
+# sur le controle positif ne prouverait rien -- c'est la seule chose qui
+# separe un invariant d'un blanc-seing.
+#
+# `absorbed=True` : sans absorption, le job always-on lance `fast_lane.py
+# --shadow`, donc `effective_shadow = args.shadow and not guard.absorbed` reste
+# vrai et le garde emet une conclusion NEUTRE sous `fast-lane (ombre): ` -- un
+# `blocking=True` sans effet. Un garde sans workflow d'origine n'a aucun autre
+# emetteur de son nom de check-run (meme convention que TRANCHE8/9/10/11/14/17/
+# 18/19).
+# ---------------------------------------------------------------------------
+TRANCHE20: list[Guard] = [
+    Guard(
+        name="Live-read freshness (committed output vs current source)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_live_read_freshness.py",
+            "scripts/notebook_tools/live_read_registry.json",
+            "scripts/notebook_tools/tests/test_live_read_freshness.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_live_read_freshness.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_live_read_freshness.py",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
+]
+
+# TRANCHE 21 -- fuite du recit d'activite dans la prose des carnets (Epic
+# #20250, phase 0).
+#
+# Le recit de coordination (corrigenda, identifiants de cycle `c.NNNN`, noms
+# de machine ou de lane, verdicts de review, annonces de tranche) vit dans
+# git et les PR : il n'a rien a faire dans le carnet servi a l'apprenant.
+# Le critere n'est PAS la presence d'un mot -- une mention isolee de
+# provenance reste admise -- mais la PART de prose markdown occupee par des
+# passages a densite de marqueurs elevee, mesuree par carnet.
+#
+# Le mode `--diff` ne juge que les passages AJOUTES : le stock mesure
+# (11 carnets au-dessus de 15 % de part, SC-09 a 48,1 %) reste visible en
+# audit sans rougir aucune PR, et une PR qui ajoute un passage dense rougit.
+#
+# Aucun workflow d'origine -> source FAST_LANE_NATIVE, convention
+# absorbed=True (cf TRANCHE19 et hr-substitution-guard) : sans absorption,
+# `effective_shadow = args.shadow and not guard.absorbed` laisserait le
+# garde sortir en conclusion NEUTRE et `blocking=True` serait une
+# declaration sans effet.
+#
+# `warn_rc=(2,)` : rc=2 est l'incident de mesure (plage de diff illisible,
+# blob de base absent d'un clone partiel), pas une faute de la PR. L'organe
+# distingue une base ABSENTE (fichier ajoute : tous ses paragraphes sont
+# legitimement neufs) d'une base ILLISIBLE (incident) -- les confondre
+# fabriquait un refus fantome sur du contenu preexistant.
+# ---------------------------------------------------------------------------
+TRANCHE21: list[Guard] = [
+    Guard(
+        name="activity-leak",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_activity_leak.py",
+            "scripts/tests/test_check_activity_leak.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_activity_leak.py",
+              "--diff", "{base_ref}...HEAD", "--strict"],
+        blocking=True,           # BLOQUANT sur les AJOUTS seuls
+        needs_base=True,
+        warn_rc=(2,),
         absorbed=True,
     ),
 ]

@@ -67,7 +67,18 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ---
 
-**Total** : 5 figures, 224 Ko. **Politique** (#5654) : ≤200 Ko/fichier, downscale ≤1200 px max, WebP fallback quand le gain est net. Les grilles de photos générées (séquentiel, comparaison, variations) compressent mal en PNG (472-524 Ko) — WebP q88 les ramène sous le plafond (32-54 Ko, ~10 % du PNG) sans perte visuelle sensible. Le pipeline conditionnel reste en PNG natif (diagramme en barres peu dense = 16 Ko).
+## img3-workflow5.webp
+
+- **Source** : notebook `03-4-VLM-Character-Design-Workflow.ipynb` (output cellule 15 = rendu avec LoRA 1273×904, exec 8 ; output cellule 17 = rendu sans LoRA 1589×807, exec 9) + référence d'entrée `assets/krea2-character/reference_robot.png` — triptyque assemblé à la livraison depuis ces bytes exacts (WebP 1524×618).
+- **Description visuelle** : Triptyque côte-à-côte 1524×618 intitulé « le style vit dans le LoRA » : (1) **référence d'entrée** — robot photoréaliste blanc aux yeux cyan jouant aux échecs dans un parc (Z-Image/Qwen Image Edit) ; (2) **sortie avec LoRA** `banjiesock_Krea2` (seed 20260917) — character sheet multi-vues esthétique blueprint/croquis technique du personnage créé par le VLM depuis le robot ; (3) **même prompt VLM, même seed, sans LoRA** — le même personnage en rendu générique, l'esthétique blueprint absente : la séparation design (prompt VLM) / style (LoRA) rendue visible.
+- **Contenu réel vérifié** : structure vérifiée par extraction à la livraison — les 3 panneaux proviennent des outputs commités du notebook (cellules 15 et 17 exécutées, counts 8/9, 0 erreur) et de la référence d'entrée ; WebP 95 592 octets, 1524×618. La QA visuelle du rendu final (lisibilité des panneaux, alt-text vs pixels) est **déléguée au merge-gate vision** (ai-01/MiniMax — la lane livreuse est sans vision, doctrine figures-readme-vision-gated).
+- **Alt-text (FR)** : Triptyque démontrant la séparation design/style du pipeline VLM in-graph — une référence (robot photoréaliste) devient une character sheet blueprint (avec LoRA banjiesock_Krea2) puis le même personnage en rendu neutre (sans LoRA), même seed.
+- **Poids** : 93 Ko (WebP, 1524×618, depuis PNG sources 1128 + 1467 Ko)
+- **Provenance pipeline** : ComfyUI local (RTX 3090), UNet `krea2_turbo_int8_convrot` (er_sde, 8 steps, CFG 1.0), VLM/encodeur `qwen3vl_4b_bf16` (TextGenerate natif in-graph, system prompt « visual DNA » 11 235 chars, temp 0.7, seed 0), VAE `qwen_image_vae`, 1280×1856. Timings réels : VLM ~50 s / diffusion avec LoRA ~160 s / sans LoRA ~120 s.
+
+---
+
+**Total** : 6 figures, 317 Ko. **Politique** (#5654) : ≤200 Ko/fichier, downscale ≤1200 px max, WebP fallback quand le gain est net. Les grilles de photos générées (séquentiel, comparaison, variations) compressent mal en PNG (472-524 Ko) — WebP q88 les ramène sous le plafond (32-54 Ko, ~10 % du PNG) sans perte visuelle sensible. Le pipeline conditionnel reste en PNG natif (diagramme en barres peu dense = 16 Ko).
 
 **⚠️ Limitations de ce MANIFEST** :
 - Aucune figure ne montre de limitation manifeste du pipeline (contrairement à img1-qwen-edit2.png 01-Foundation qui montrait des blocs bleus plats). Tous les outputs de 03-Orchestration ont produit du contenu visible et utilisable.

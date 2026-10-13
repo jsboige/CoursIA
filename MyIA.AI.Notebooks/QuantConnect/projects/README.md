@@ -1,6 +1,6 @@
 # QuantConnect Algorithmic Trading Projects
 
-**112 projets** de trading algorithmique sur QuantConnect Cloud. Chaque stratégie illustre un concept pédagogique ; les performances varient volontairement pour montrer ce qui survive au backtest réaliste.
+**Catalogue de projets** de trading algorithmique sur QuantConnect Cloud. Chaque stratégie illustre un concept pédagogique ; les performances varient volontairement pour montrer ce qui survive au backtest réaliste. Le compte exact et le statut de chaque dossier sont portés par le catalogue régénéré (`CATALOG-STATUS`) et par `STRATEGIES_DETAIL.md`.
 
 > **Visiteur ?** Lire le [Quick Tour](../QUICK_TOUR.md) (2 min) pour comprendre l'ensemble.
 
@@ -81,6 +81,8 @@ Voir [STRATEGIES_DETAIL.md](STRATEGIES_DETAIL.md#qc-strategy-library-clones-avan
 
 > **TrendFollowing** (catalogue 1.072) n'est **pas reproductible** depuis le `main.py` du dépôt : le baseline-clone (2015-2024, IBKR) donne un Sharpe bien inférieur (~0.36-0.41, PSR < 9%). Le 1.072 provient d'un état du code cloud antérieur — à citer avec ce caveat (diagnostic finding #18).
 
+> **Framework_Composite_TrendWeather** (catalogue 1.155) se reproduit sur sa fenêtre : QC Cloud rend 1,15 sur 2015-01-01 → 2025-12-31 (#19393). Mais sa liste de 15 titres a été écrite en 2026 et porte une information que l'algorithme ne pouvait pas avoir. Avec les 15 plus grandes capitalisations connues à chaque date, le verdict préinscrit est `NO BEATS` contre SPY et 60/40 : voir [TrendWeatherPointInTime](TrendWeatherPointInTime/).
+
 ### Le discriminateur (leçon durable)
 
 La résistance aux frais **n'est pas** l'asset-class ni ML-vs-indicateur : c'est le **realized-turnover** = fréquence × taille par trade × homogénéité des frais du panier. Un composite equity-only fee-homogeneous en rebalancement mensuel (**c2 0.574**) tient là où un multi-asset rotationnel (**AllWeather 0.47**) s'effondre — même architecture, c'est l'univers qui décide.
@@ -110,7 +112,7 @@ MonProjet/
 
 ### Ce que vous avez appris
 
-Ce catalogue de **112 projets** est un **zoo de stratégies backtestées**, organisé non pas par thème mais par **robustesse** (Robuste / Historique / Exploratoire). La classification elle-même est la leçon :
+Ce catalogue est un **zoo de stratégies backtestées**, organisé non pas par thème mais par **robustesse** (Robuste / Historique / Exploratoire). Le compte exact et la classification à jour sont portés par `STRATEGIES_DETAIL.md` (catalogue complémentaire inclus). La classification elle-même est la leçon :
 
 - **La robustesse prime sur le Sharpe brut** : une stratégie à Sharpe 1.6 qui s'effondre hors-échantillon vaut moins qu'une stratégie à Sharpe 0.6 stable à travers les régimes. Le label *Robuste* (> 0.5 soutenu) est la barre pédagogique, pas le chiffre spectaculaire.
 - **Les contre-exemples sont aussi importants que les succès** : les stratégies *Exploratoire* (Sharpe < 0) et *Historique* (0-0.5) sont conservées **délibérément** pour montrer *ce qui ne marche pas* et pourquoi — PairsTrading sur ETF corrélés, ForexCarry, MeanReversion naïf. On apprend autant d'un edge négatif bien diagnostiqué que d'un edge positif.
@@ -125,7 +127,7 @@ Le fil rouge : **chaque projet est reproductible** — `main.py` (ou `Main.cs`) 
 3. **Consulter le détail** : `STRATEGIES_DETAIL.md` donne le contexte complet de chaque stratégie (catégorie, ML/DL/RL, clones QC Library).
 4. **Reproduire sur QC Cloud** : créer un projet, copier le `main.py`, lancer le backtest, et comparer vos métriques au tableau ci-dessus.
 5. **Étendre un projet Robuste** : choisir une stratégie *Robuste* (ex. `RegimeSwitching`, `SectorMomentum`) et itérer — changer l'univers, ajouter un filtre de risque, tester la sensibilité aux coûts de transaction.
-6. **Voir les leçons transversales** : `docs/qc/quantconnect.md` recense les 20 patterns confirmés et les anti-patterns observés à travers ces 112 projets.
+6. **Voir les leçons transversales** : `docs/qc/quantconnect.md` recense les 20 patterns confirmés et les anti-patterns observés à travers l'ensemble du catalogue (cf. `STRATEGIES_DETAIL.md` pour le détail projet par projet).
 
 > **Rappel honnête** : un Sharpe de backtest, même *Robuste*, n'est pas une garantie live. Les coûts de transaction réels, le slippage et l'impact de marché dégradent systématiquement la performance paper. La barre *Robuste* (> 0.5 soutenu sur la période) est nécessaire mais pas suffisante — le walk-forward et l'out-of-sample strict restent obligatoires avant tout déploiement.
 

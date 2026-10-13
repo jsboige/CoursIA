@@ -18,6 +18,7 @@ Run:
     python -m pytest scripts/tests/test_fetch_merged_prs_since.py
 """
 import io
+import math
 import shutil
 import subprocess
 import sys
@@ -57,10 +58,14 @@ def test_fetch_walks_the_window_in_date_slices_and_dedupes():
     prs = fmps.fetch("2026-08-01", run=fake_run, slice_days=3,
                      today=date(2026, 8, 8))
 
-    # 2026-08-01 -> 2026-08-09 (today+1) in 3-day slices: 01-04, 04-07, 07-09
-    assert calls == [("2026-08-01", "2026-08-04"),
-                     ("2026-08-04", "2026-08-07"),
-                     ("2026-08-07", "2026-08-09")]
+    # 2026-08-01 -> 2026-08-09 (today+1), bornes interieures alignees sur
+    # SLICE_ANCHOR (#19236) : la premiere tranche est partielle jusqu'a la
+    # premiere borne alignee (08-03, car 08-01 n'est pas aligne), puis
+    # 08-03/08-06/08-09. Couverture et compte identiques a l'ancienne grille
+    # ancree a `since` -- seule la position des bornes interieures change.
+    assert calls == [("2026-08-01", "2026-08-03"),
+                     ("2026-08-03", "2026-08-06"),
+                     ("2026-08-06", "2026-08-09")]
     nums = [p["number"] for p in prs]
     assert nums == [1, 2, 3], "le doublon inter-tranches n'a pas ete dedoublonne"
 
@@ -194,3 +199,71 @@ def test_run_gh_argv_is_accepted_by_gh():
     assert not unknown, (
         "run_gh passe des options que `gh pr list` n'a pas : {} "
         "(c'est exactement la faute `--page`)".format(unknown))
+
+
+def test_run_gh_raises_timeout_expired_when_gh_does_not_finish(monkeypatch):
+    """#19643: a stuck `gh` (secondary rate limit, backoff silencieux) must
+    raise ``TimeoutExpired`` so the picker's `fetch_visits` can render the
+    vocabulary « tirage NON mesure » instead of a partial corpus labelled
+    complete. The default bound is `RUN_GH_TIMEOUT_S`; it is overridable.
+    """
+    # 1) le default applique la borne module
+    def too_slow(*a, **kw):
+        raise subprocess.TimeoutExpired(cmd=kw.get("args", a[0] if a else []),
+                                        timeout=kw.get("timeout"))
+    monkeypatch.setattr(subprocess, "run", too_slow)
+    with pytest.raises(subprocess.TimeoutExpired):
+        fmps.run_gh("2026-10-01", "2026-10-02")
+    # 2) l'appelant peut serrer la borne
+    with pytest.raises(subprocess.TimeoutExpired):
+        fmps.run_gh("2026-10-01", "2026-10-02", timeout=0.001)
+    # 3) math.inf desactive -- la borne n'est pas posee, l'appelant sait ce qu'il fait
+    captured = {}
+
+    def capture(*a, **kw):
+        captured["timeout"] = kw.get("timeout")
+        raise SystemExit  # ne touche pas le reseau
+
+    monkeypatch.setattr(subprocess, "run", capture)
+    try:
+        fmps.run_gh("2026-10-01", "2026-10-02", timeout=math.inf)
+    except SystemExit:
+        pass
+    assert captured["timeout"] is math.inf, (
+        f"timeout=inf doit etre transmis tel quel, pas coerce en {captured['timeout']!r}")
+
+
+def _bounds(start, end, k=3):
+    return [(a.isoformat(), b.isoformat())
+            for a, b in fmps.aligned_boundaries(start, end, k)]
+
+
+def test_the_grid_tiles_the_window_without_gap_or_overlap():
+    """Couverture exacte : les tranches se touchent, sans trou ni recouvrement."""
+    for start, end in [(date(2026, 9, 26), date(2026, 10, 6)),
+                       (date(2026, 8, 1), date(2026, 8, 9)),
+                       (date(2026, 10, 5), date(2026, 10, 6))]:
+        bs = _bounds(start, end)
+        assert bs[0][0] == start.isoformat(), bs
+        assert bs[-1][1] == end.isoformat(), bs
+        for (a, b), (c, d) in zip(bs, bs[1:]):
+            assert b == c, (a, b, c, d)
+
+
+def test_interior_slice_bounds_are_stable_from_one_day_to_the_next():
+    """#19236 : la grille est ancree, donc une tranche close garde SA cle.
+
+    Sans ancrage, `since` avance d'un jour par jour et TOUTES les tranches se
+    re-calent -- un cache par tranche ne vivrait alors qu'une journee, et le
+    corpus entier serait re-telecharge chaque matin.
+    """
+    d1 = _bounds(date(2026, 9, 26), date(2026, 10, 6))
+    d2 = _bounds(date(2026, 9, 27), date(2026, 10, 7))
+    assert d1 == [("2026-09-26", "2026-09-29"), ("2026-09-29", "2026-10-02"),
+                  ("2026-10-02", "2026-10-05"), ("2026-10-05", "2026-10-06")], d1
+    # Les tranches interieures sont IDENTIQUES au jour suivant : memes cles,
+    # donc servies par le cache. Ne se re-calent que la partielle d'entree et
+    # la tranche vive, qui grandit avec le jour.
+    assert set(d1) & set(d2) == {("2026-09-29", "2026-10-02"),
+                                 ("2026-10-02", "2026-10-05")}, (d1, d2)
+    assert len(set(d2) - set(d1)) == 2, (d1, d2)

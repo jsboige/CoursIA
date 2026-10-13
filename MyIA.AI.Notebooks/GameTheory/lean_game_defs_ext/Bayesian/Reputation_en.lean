@@ -122,7 +122,8 @@ theorem gNoRep_restriction :
         gRep.u1 ⟨0, by decide⟩ ⟨0, by decide⟩ a1 a2 ∧
       gNoRep.u2 ⟨0, by decide⟩ ⟨0, by decide⟩ a1 a2 =
         gRep.u2 ⟨0, by decide⟩ ⟨0, by decide⟩ a1 a2 := by
-  decide
+  intro a1 a2
+  exact ⟨rfl, rfl⟩
 
 /-! ### Credibility refinement
 

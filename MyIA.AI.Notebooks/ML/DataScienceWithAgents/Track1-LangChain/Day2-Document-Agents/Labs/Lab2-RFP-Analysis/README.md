@@ -24,7 +24,7 @@ Ce laboratoire ouvre la **Journée 2** sur l'IA agentique appliquée à la pré-
 
 ## Notebook
 
-- [Lab2-RFP-Analysis.ipynb](Lab2-RFP-Analysis.ipynb) - notebook étudiant
+- [Lab2-RFP-Analysis.ipynb](Lab2-RFP-Analysis.html) - notebook étudiant
 - `Lab2-RFP-Analysis_output.ipynb` - version exécutée de référence
 
 ## Navigation

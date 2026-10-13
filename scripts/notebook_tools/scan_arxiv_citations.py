@@ -30,6 +30,28 @@ ARXIV_RE_LEGACY = re.compile(
 )
 
 
+def id_key(arxiv_id):
+    """Clé de correspondance d'un ID arXiv (jamais l'ID interrogé).
+
+    Le préfixe de catégorie et le suffixe de version varient selon **qui écrit
+    l'ID** — la citation dans un notebook, le ledger de couverture, l'API —
+    alors qu'ils désignent le même article. Comparer les formes brutes fait
+    donc échouer l'appariement **en silence** : mesuré le 2026-09-21, un ledger
+    de 121 IDs écrits sous forme nue n'appariait que **119** clés du scan, et le
+    delta annoncé sortait à **33** au lieu de **31** (les deux clés manquées,
+    `cs/0011047` et `quant-ph/0604079`, portent un préfixe que le ledger omet).
+
+    La correspondance se fait donc sur le **segment numérique terminal**, sans
+    version, en minuscules.
+
+    Le préfixe n'est PAS retiré de l'ID lui-même : l'API arXiv rejette (400) un
+    identifiant legacy réduit à ses 7 chiffres, donc `cs/0011047` doit rester
+    entier pour l'interrogation (cf ARXIV_RE_LEGACY ci-dessus).
+    """
+    tail = (arxiv_id or "").strip().lower().rsplit("/", 1)[-1]
+    return re.sub(r"v\d+$", "", tail)
+
+
 def iter_markdown_cells(nb_path: Path):
     """Yield (cell_index, source_text) pour les cellules markdown d'un notebook."""
     try:
@@ -76,7 +98,7 @@ def find_notebooks(workspace: Path, excludes: list[str]) -> list[Path]:
     return sorted(notebooks)
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--workspace", default="MyIA.AI.Notebooks", help="Racine du scan")
     ap.add_argument(
@@ -94,7 +116,7 @@ def main():
         default=None,
         help="Chemin JSON de sortie (rapport structuré)",
     )
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
     workspace = Path(args.workspace).resolve()
     excludes = [s.strip() for s in args.exclude.split(",") if s.strip()]
     notebooks = find_notebooks(workspace, excludes)
@@ -109,7 +131,7 @@ def main():
             notebooks_with_ids += 1
         for cell_idx, arxiv_id in recs:
             occurrences[arxiv_id].append((nb, cell_idx))
-    # charge covered
+    # charge covered -- normalisé, comme les clés du scan (cf id_key)
     covered = set()
     if args.covered:
         cov_path = Path(args.covered)
@@ -117,17 +139,20 @@ def main():
             for line in cov_path.read_text(encoding="utf-8").splitlines():
                 line = line.strip()
                 if line and not line.startswith("#"):
-                    covered.add(line)
-    # delta
-    not_covered = {k: v for k, v in occurrences.items() if k not in covered}
-    # résumé
+                    covered.add(id_key(line))
+    # delta -- appariement sur la clé normalisée, jamais sur la forme brute
+    not_covered = {k: v for k, v in occurrences.items() if id_key(k) not in covered}
+    # Deux formes brutes peuvent désigner le même article (préfixe legacy, version) :
+    # les compter séparément gonflerait `unique_arxiv_ids` en silence.
+    keys = {id_key(k) for k in occurrences}
     summary = {
         "scan_workspace": str(workspace),
         "notebooks_scanned": len(notebooks),
         "notebooks_with_arxiv": notebooks_with_ids,
         "unique_arxiv_ids": len(occurrences),
-        "covered_count": sum(1 for k in occurrences if k in covered),
-        "not_covered_count": len(not_covered),
+        "unique_arxiv_ids_normalised": len(keys),
+        "covered_count": len(keys) - len({id_key(k) for k in not_covered}),
+        "not_covered_count": len({id_key(k) for k in not_covered}),
         "excludes": excludes,
     }
     print("[scan]", json.dumps(summary, indent=2))
@@ -161,7 +186,13 @@ def main():
                 ]
                 for aid, occs in sorted(occurrences.items())
             },
-            "delta_not_covered": sorted(not_covered.keys()),
+            # Forme canonique (normalisée, dédoublonnée) : c'est elle qui se
+            # compare à un ledger et qui se transmet entre passes. Les clés
+            # brutes restent publiées pour la traçabilité -- deux d'entre elles
+            # peuvent désigner le même article.
+            "delta_not_covered": sorted({id_key(k) for k in not_covered}),
+            "delta_raw_keys": sorted(not_covered.keys()),
+            "delta_keys_collapsed": len(not_covered) - len({id_key(k) for k in not_covered}),
         }
         out_path.write_text(json.dumps(out_data, indent=2, ensure_ascii=False), encoding="utf-8")
         print(f"[scan] -> {out_path}")

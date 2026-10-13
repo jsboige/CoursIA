@@ -123,3 +123,58 @@ def test_defaut3_ensure_utf8_stdout_silencieux_si_non_reconfigurable():
         mod._ensure_utf8_stdout()  # ne doit pas lever
     finally:
         sys.stdout = old
+
+
+# ---------------------------------------------------------------------------
+# Defaut 4 (#16103, ai-01 2026-09-14T11:56Z, mesure sur 39 PRs ouvertes) --
+# has_live_lift creait des levees qui n'existent pas : negation lue comme
+# affirmation (forme A), identifiant de test lu comme phrase (forme B).
+# Polarite INVERSE des defauts 1-3 : faux DEBLOCAGE, pas faux blocage.
+# Trois gardes dans `_live_lift_positions` (symetrie `_override_scopes_
+# reserve`) : plages citees neutralisees en iso-longueur, hit en AVAL d'un
+# match de `_SCOPE_NEGATION_RE` dans sa phrase rejete, hit colle a un
+# underscore rejete (le `_` est un caractere de mot, #15849 -- les formes
+# flechies par LETTRE restent legitimes).
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("body", [
+    "Je ne declare pas cette reserve levee pour autant.",
+    "Je ne déclare pas cette réserve levée pour autant.",
+    "C'est une voie 3 de B.0 — un report assumé, nommé avant le merge, "
+    "pas une levée. Je ne declare pas cette reserve levee pour autant.",
+    "py::test_15837_candidat_refuse_levee_devant_le_marqueur",
+    "le cas `py::test_15837_candidat_refuse_levee_devant_le_marqueur` echoue",
+    "```\npy::test_15837_candidat_refuse_levee_devant_le_marqueur\n```",
+])
+def test_16103_defaut4_refus_et_identifiants_ne_sont_pas_des_levees(body):
+    """Formes A (negation = refus de lever) et B (identifiant pytest) :
+    le verbatim du reproducteur d'ai-01 -- les 6 rendaient True."""
+    assert not mod.has_live_lift(body), (
+        "has_live_lift compte un refus/nom de test comme une levee "
+        "(defaut n°4 #16103)")
+
+
+def test_16103_defaut4_controles_vraie_levee_et_prose_neutre():
+    """Les deux controles du reproducteur restent intacts."""
+    assert mod.has_live_lift("Je leve la reserve de clusterManager-Myia.")
+    assert not mod.has_live_lift(
+        "Le notebook a ete re-execute et les sorties sont commitees.")
+
+
+def test_16103_defaut4_negation_valide_levee_amont():
+    """L'invalidation va du match de negation vers la FIN de la phrase
+    seulement : une levee AFFIRMEE en amont d'une negation portant sur un
+    autre etat survit (granularite aval -- le residuel #13622 documente
+    reste vrai)."""
+    assert mod.has_live_lift(
+        "Reserve levee il y a longtemps, "
+        "mais la reserve n'est pas levee vraiment")
+
+
+def test_16103_defaut4_formes_flechies_pas_tuees_par_la_garde_underscore():
+    """La garde (3) ne rejette que l'adherence a `_` : les formes flechies
+    francaises vivent de matchs prefixes (« Mergé » dans « **Mergée.** »),
+    l'adherence a une LETTRE ne doit pas les rejeter."""
+    assert mod.has_live_lift("**Mergée.**")
+    assert mod.has_live_lift("La reserve est levée.")
+    assert not mod.has_live_lift("candidat_refuse_levee_devant")

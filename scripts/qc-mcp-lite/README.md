@@ -12,12 +12,23 @@ Replaces the heavy `quantconnect/mcp-server` Docker container (~40k tokens) for 
 | `read_compile` | Read compile status |
 | `create_backtest` | Create a backtest from compiled project |
 | `read_backtest` | Read backtest results (Sharpe, CAGR, MaxDD) |
+| `read_backtest_chart` | Écrit un graphique de backtest (equity, exposition, rotation, graphique personnalisé) dans un fichier JSON ; rend le nombre de points par série, jamais les valeurs |
 | `list_backtests` | List backtests for a project |
 | `list_projects` | List all QC projects |
-| `read_project` | Read project details and files |
+| `read_project` | Read project details and files (liste lue via `/files/read`) |
 | `read_file` | Read file(s) from a project |
 | `update_file_contents` | Update a file in a project |
 | `create_file` | Create a new file in a project |
+
+### Séries d'un backtest
+
+`read_backtest` ne rend que le résumé. Pour comparer des variantes jour par jour, `read_backtest_chart` lit les graphiques enregistrés par QC :
+
+- les graphiques par défaut (`Strategy Equity` avec `Equity` et `Return`, `Exposure` avec `Equity - Long Ratio` et `Equity - Short Ratio`, `Portfolio Turnover`) ne sont **pas** journaliers sur une longue période : sur 2007-2026, ils sont stockés sur une grille uniforme d'environ 1,32 jour, week-ends compris (5 433 points pour 4 946 séances, mesuré). Une moyenne d'exposition s'y lit, pas un rendement par séance ;
+- un graphique personnalisé (`self.plot`) dont les points sont espacés de plus d'un pas de grille garde ses vraies dates. Pour une série par séance, tracer **cinq séries entrelacées**, chacune recevant un point toutes les 5 séances : l'expérience #18921 retrouve ainsi les 4 946 clôtures, toutes à des dates de séance ;
+- l'ObjectStore n'est pas une alternative : son export par l'API est réservé aux comptes Institutional (« Due to data licensing restrictions »).
+
+Les fichiers JSON écrits restent hors dépôt quand ils portent des séries complètes (cf. `.claude/rules/results-artifact-policy.md`).
 
 ## Setup
 

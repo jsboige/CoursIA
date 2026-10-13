@@ -19,12 +19,16 @@ Le fil conducteur de cette partie est le passage du problème *informel* (« je 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 1 | [Planners-1-Introduction](Planners-1-Introduction.ipynb) | 30 min | Triptyque État-Action-But, hypothèses STRIPS (1971), taxonomie des paradigmes de planification |
+| 1 (C#) | [Planners-1-Introduction-Csharp](Planners-1-Introduction-Csharp.ipynb) | 30 min | Jumeau C# du 1 : la planification automatique from-scratch en .NET 9, triptyque État-Action-But réimplémenté sans lib de planification (See #4956) |
 | 2 | [Planners-2-PDDL-Basics](Planners-2-PDDL-Basics.ipynb) | 40 min | Syntaxe PDDL : domaines, problèmes, types, prédicats, actions, préconditions, effets |
+| 2 (C#) | [Planners-2-PDDL-Basics-Csharp](Planners-2-PDDL-Basics-Csharp.ipynb) | 40 min | Jumeau C# du 2 : planificateur STRIPS from-scratch (modèle typé, grounding, BFS forward), domaines Logistics + Gripper (See #4956) |
 | 3 | [Planners-3-State-Space](Planners-3-State-Space.ipynb) | 35 min | Recherche dans l'espace d'états, explosion combinatoire $O(2^n)$, nécessité des heuristiques |
+| 3 (C#) | [Planners-3-State-Space-Csharp](Planners-3-State-Space-Csharp.ipynb) | 35 min | Jumeau C# du 3 : BFS/DFS/Greedy/A* from-scratch sur terrain pondéré (See #4956) |
 
 ## Prérequis
 
 - **Python 3.9+** : programmation orientée objet, types, dataclasses
+- **.NET 9 (jumeaux C# uniquement)** : les notebooks `-Csharp` s'exécutent sous .NET Interactive, sans prérequis Python
 - **Algorithmique de base** : graphes (BFS, DFS), parcours
 - **Logique propositionnelle** : prédicats, connecteurs
 

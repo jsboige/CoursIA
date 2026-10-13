@@ -12,16 +12,22 @@ Les tests verrouillent les COMPORTEMENTS DOCUMENTES :
 - le gate ``stochastic`` exige la co-occurrence mot-clef + nombre (meme ligne) ;
 - l'exemption ``generated`` (un fichier qui se declare genere porte legitimement
   des chiffres) ;
-- la fonction ``_resolve_classes`` et le gate seed notebook.
+- la fonction ``_resolve_classes`` et le gate seed notebook ;
+- la carte ``_ipynb_output_lines`` et la frontiere du mode diff (#17729) : une
+  charge utile de SORTIE ajoutee n'est pas de la prose, une ligne de source
+  markdown portant le meme compteur l'est.
 
 Pattern herite de ``test_audit_c1_c3.py`` : sys.path.insert module-level,
-helpers synthetiques, fonctions pures. Aucun appel git/subprocess (on ne teste
-pas scan_diff, qui delegue a ``git diff``).
+helpers synthetiques, fonctions pures. Les tests de ``scan_diff`` montent un
+depot git jetable **hors** du depot de travail (``tmp_path``), avec
+``core.autocrlf=false`` pour que l'arbre et le blob commite soient comparables
+octet a octet.
 """
 
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -449,3 +455,155 @@ def test_findings_in_text_stochastic_needs_keyword_on_same_line():
     assert cqc._findings_in_text("fitness 41.71 final", "loc", {"stochastic"}) == [
         ("loc", "stochastic", "41.71")]
     assert cqc._findings_in_text("41.71 final sans contexte", "loc", {"stochastic"}) == []
+
+
+# --------------------------------------------------------------------------- #
+#  _ipynb_output_lines : carte des charges utiles de SORTIE (#17729)
+# --------------------------------------------------------------------------- #
+
+
+def _dump_nb(path: Path, nb: dict) -> Path:
+    """Ecrit un carnet au format pretty-print de nbformat (indent=1), en LF."""
+    path.write_text(
+        json.dumps(nb, indent=1, ensure_ascii=False) + "\n",
+        encoding="utf-8", newline="\n",
+    )
+    return path
+
+
+def test_ipynb_output_lines_maps_payloads_not_sources(tmp_path):
+    """Une charge utile de sortie et une valeur de source sont, ligne a ligne, la
+    meme chose (une chaine nue). Seul le bloc ``outputs`` les separe."""
+    nb = {
+        "cells": [
+            {"cell_type": "markdown", "source": ["On a 140 lignes.\n"]},
+            {"cell_type": "code", "source": ["print('x')\n"], "execution_count": 3,
+             "outputs": [{"output_type": "stream", "name": "stdout",
+                          "text": ["  Angel.lean   65 lignes\n"]}]},
+            {"cell_type": "code", "source": ["y = 1\n"], "execution_count": 4,
+             "outputs": []},
+            {"cell_type": "code", "source": ["z = 2\n"]},
+        ],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    path = _dump_nb(tmp_path / "mapped.ipynb", nb)
+    lines = path.read_text(encoding="utf-8").splitlines()
+    inside = cqc._ipynb_output_lines(str(path))
+
+    def _ln(needle: str) -> int:
+        hits = [n for n, raw in enumerate(lines, 1) if needle in raw]
+        assert len(hits) == 1, f"{needle!r} apparait {len(hits)} fois"
+        return hits[0]
+
+    assert _ln("On a 140 lignes") not in inside        # source markdown
+    assert _ln("print('x')") not in inside             # source code
+    assert _ln("Angel.lean") in inside                 # charge utile de sortie
+    # `"outputs": []` se referme sur sa propre ligne : l'ouvrir avalerait la
+    # cellule suivante, et avec elle toutes les sources du reste du fichier.
+    assert _ln("z = 2") not in inside
+    assert _ln('"outputs": []') not in inside
+
+
+# --------------------------------------------------------------------------- #
+#  scan_diff : la frontiere sortie/source, mesuree de bout en bout (#17729)
+# --------------------------------------------------------------------------- #
+
+
+def _git(cwd: Path, *args: str) -> None:
+    subprocess.run(
+        ["git", *args], cwd=cwd, check=True, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+
+
+def _commit_all(repo: Path, message: str) -> None:
+    _git(repo, "add", "-A")
+    _git(repo, "-c", "user.email=tests@invalid", "-c", "user.name=tests",
+         "commit", "-m", message)
+
+
+def test_scan_diff_skips_output_payloads_but_flags_source_prose(tmp_path, monkeypatch):
+    """Meme compteur, meme forme : en charge utile de sortie il est legitime
+    (« une cellule code qui compte et affiche... on ne la regarde pas »), en
+    source markdown il est la prose que l'organe refuse."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    # Sans ce reglage, un arbre CRLF face a un blob LF ferait apparaitre TOUT le
+    # fichier comme ajoute : le test mesurerait un artefact de checkout.
+    _git(repo, "config", "core.autocrlf", "false")
+
+    nb_path = repo / "carnet.ipynb"
+    output_cell = {"cell_type": "code", "source": ["print('x')\n"], "execution_count": 1,
+                   "outputs": [{"output_type": "stream", "name": "stdout",
+                                "text": ["  Angel.lean   65 lignes\n"]}]}
+    _dump_nb(nb_path, {"cells": [{"cell_type": "code", "source": ["print('x')\n"],
+                                  "outputs": [], "execution_count": None}],
+                       "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
+    _commit_all(repo, "base")
+
+    monkeypatch.chdir(repo)
+
+    # 1) La re-execution remplace la sortie vide : rien n'est de la prose.
+    _dump_nb(nb_path, {"cells": [output_cell],
+                       "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
+    assert cqc.scan_diff("HEAD", {"artifact"}) == []
+
+    # 2) On ajoute EN PLUS une ligne de prose markdown portant le meme compteur.
+    _dump_nb(nb_path, {"cells": [
+        {"cell_type": "markdown", "source": ["Le module fait 65 lignes.\n"]},
+        output_cell], "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
+    found = cqc.scan_diff("HEAD", {"artifact"})
+    assert [snippet for _loc, _klass, snippet in found] == ["65 lignes"]
+
+
+# --------------------------------------------------------------------------- #
+#  #20194 : un git diff en echec n'est pas une ardoise propre (fail-closed)
+# --------------------------------------------------------------------------- #
+
+
+def test_scan_diff_raises_on_unresolvable_range(tmp_path, monkeypatch):
+    """Cas 3 de l'issue (mesure po-2024) : une revision introuvable rend
+    rc=128 avec une sortie vide -- l'organe doit LEVER, pas rendre []."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "core.autocrlf", "false")
+    (repo / "f.txt").write_text("base\n", encoding="utf-8")
+    _commit_all(repo, "base")
+    monkeypatch.chdir(repo)
+
+    with pytest.raises(cqc.DiffUnreadable, match="rc=128"):
+        cqc.scan_diff("0000000000000000000000000000000000000000...HEAD", {"artifact"})
+
+
+def test_scan_diff_raises_on_subprocess_error(monkeypatch):
+    """Branche except (timeout, binaire absent) : meme garantie -- lever,
+    jamais retourner [] (l'ancien chemin imprimait [ERREUR] puis rendait 0)."""
+
+    def _boom(*_a, **_k):
+        raise OSError("git introuvable")
+
+    monkeypatch.setattr(cqc.subprocess, "run", _boom)
+    with pytest.raises(cqc.DiffUnreadable, match="git introuvable"):
+        cqc.scan_diff("origin/main...HEAD", {"artifact"})
+
+
+def test_main_diff_failure_returns_two_and_never_ok(tmp_path, monkeypatch, capsys):
+    """Controle du revert (#20194 acceptance) : un git diff rc!=0 a sortie
+    VIDE doit rendre rc=2 et une sortie sans [OK]. Si l'on remet
+    ``.stdout`` sans lire le code retour, ce test ROUGIT : le retour serait
+    [] -> [OK] -> rc=0."""
+
+    class _FakeProc:
+        returncode = 129  # hors depot git
+        stdout = ""       # vide : indistinguable d'un diff propre sans le rc
+        stderr = "fatal: not a git repository"
+
+    monkeypatch.setattr(cqc.subprocess, "run", lambda *_a, **_k: _FakeProc())
+    monkeypatch.setattr(sys, "argv", ["cqc", "--diff", "origin/main...HEAD", "--strict"])
+    rc = cqc.main()
+    out = capsys.readouterr().out
+    assert rc == 2, "un diff non mesurable doit rendre rc=2, pas 0"
+    assert "[OK]" not in out, "jamais [OK] sur un diff non mesure"
+    assert "[NON-MESURABLE]" in out

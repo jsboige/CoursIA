@@ -39,7 +39,7 @@ documentees, les fonctions ne les exposent que par kwargs par defaut.
 References
 ----------
 
-- Notebook consommateur : ``DoWhy-2-Contrefactuel-Individuel.ipynb``.
+- Notebook consommateur : ``CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb``.
 - Precedent d'architecture : issue #14051 / ``causal_organs.py``.
 - API dowhy 0.14 : ``gcm.InvertibleStructuralCausalModel``,
   ``gcm.AdditiveNoiseModel``, ``gcm.counterfactual_samples``.

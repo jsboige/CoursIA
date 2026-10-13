@@ -28,8 +28,14 @@
 # jamais en argv).
 set -uo pipefail
 
-MASTER_ENV="${COURSIA_MASTER_ENV:-/mnt/c/dev/CoursIA/.secrets/master.env}"
-REPO_DIR="${COURSIA_REPO_DIR:-/mnt/c/dev/CoursIA}"
+# Le defaut de chemin a DEJA demenage : la migration du 2026-09-17 a deplace le
+# depot `C:\dev\CoursIA` -> `D:\Dev\CoursIA`, et ce fichier pointait encore
+# l'arborescence purgee. Ce n'etait pas cosmetique : `[ -r "$MASTER_ENV" ]`
+# echoue AVANT la lecture du token, donc le lanceur sortait en `exit 1` et le
+# pool lean restait a ZERO jusqu'a intervention -- exactement l'incident du
+# 2026-09-09 que ce fichier existe pour fermer (#16578).
+MASTER_ENV="${COURSIA_MASTER_ENV:-/mnt/d/Dev/CoursIA/.secrets/master.env}"
+REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/Dev/CoursIA}"
 ARG="${1:-2}"
 
 [ -r "$MASTER_ENV" ] || { echo "master.env illisible : $MASTER_ENV" >&2; exit 1; }
@@ -45,6 +51,80 @@ export DOCKER_HOST="${DOCKER_HOST:-unix:///var/run/docker-ce.sock}"
 export COURSIA_LEAN_RUNNER_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-myia-po-2024-lean-docker}"
 export COURSIA_RUNNER_STATE_DIR="${COURSIA_RUNNER_STATE_DIR:-/var/lib/coursia-lean}"
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
+
+# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 15 Go depuis le
+# 2026-10-08, amendement J+7 (le 42 etait devenu faux deux fois : VM revenue
+# de 40 110 a 24 032 Mo, et son arithmetique comptait « 12x1536 waiters »
+# pour des waiters a 512 Mo -- detail complet en tete de coursia-runner-start.sh).
+#
+# CETTE JAMBE EST CELLE QUI REND LE BUDGET VISIBLE, et c'est pour ca qu'elle
+# doit le declarer : son slot a 6 Go demande 6 144 Mo a lui seul. Sous
+# un budget trop court, le garde refuse son demarrage -- ce qui est CORRECT,
+# et c'est l'incident fondateur ecrit ici : sous l'ancien budget 12 Go, les
+# slots lean ne demarraient JAMAIS tant que les autres familles etaient en vol.
+# Un budget qui ne couvre pas la composition complete ne protege rien : il
+# empeche une jambe entiere de tourner.
+#
+# L'AMENDEMENT J+7 DESCEND CETTE JAMBE DE 2 A 1 SLOT (verdict
+# characterize_runner_variance.py --days 7 du 2026-10-08 : 5 runners docker
+# sur 6 au-dessus du seuil p90/mediane 5x -- ratios 9,3 / 5,1 / 14,5 / 4,0 /
+# 23,3 / 15,4) : la regle #15574 item 3 tranche le passage CPU 24 -> 18, le
+# right-sizing etant ce slot unique (cap unitaire 6 Go / 6 vCPU INCHANGE --
+# on reduit un nombre de slots, jamais un cap). Le volume chaud
+# coursia-runner-work-lean-2 reste en place, non supprime : remettre le
+# second slot est un `ExecStart ... 2` + restart, pas une reconstruction.
+#
+# Les trois jambes doivent annoncer le meme nombre : assert_memory_budget
+# somme les familles entre elles, une divergence refuserait des slots sans
+# nommer sa cause.
+export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-21}"
+
+# AUCUN SWAP POUR LA JAMBE LEAN (2026-10-08) -- memory-swap = memory.
+# Le defaut de supervise.sh est `LEAN_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY_SWAP:-12g}"`,
+# soit 6 Go de RAM PLUS 6 Go de swap par slot. On l'aligne ici sur LEAN_MEMORY :
+# le conteneur dispose de 6 Go en tout, et d'aucune page sur disque.
+#
+# POURQUOI CE CHOIX, ALORS QUE LE COMMENTAIRE DE supervise.sh DIT LE CONTRAIRE.
+# Le bloc LEAN de supervise.sh argumente que le swap n'est pas un dogme mais un
+# curseur : « supprimer le swap ne retire pas le pic de Hashlife, il transforme
+# un build qui deborde en un exit 137 ». C'est exact, et c'est le but recherche
+# ici. Le swap d'une VM WSL est un FICHIER SUR LE DISQUE WINDOWS : chaque page
+# poussee la retarde DriveFS, puis `G:`, puis RooSync -- la chaine qui a gele
+# ai-01 quatre fois et qui a fait ecrire 104 GiB en 11 h a cette machine le
+# 2026-10-08. Un build Lean qui deborde doit mourir (exit 137, echec local,
+# retryable, un job perdu) plutot que d'emporter la coordination de la flotte.
+#
+# CONSEQUENCE NOMMEE : le build Hashlife de conway_lean depassait 16 Go a
+# froid ; a 6 Go sans swap il ne passera PAS. La reponse est de router ce lake
+# vers un runner hosted (32 Go de fallocate swap, lean-axiom.yml) -- exactement
+# la conclusion que le commentaire de supervise.sh tire deja, et non de
+# remonter le swap de cette machine.
+# La valeur est ecrite ici pour ce qu'elle EST, pas referencee par le nom
+# qu'elle porte dans supervise.sh : `LEAN_MEMORY` est une constante de
+# supervise.sh, elle n'existe pas dans ce wrapper -- et ce fichier tourne sous
+# `set -u`, donc `$LEAN_MEMORY` y serait une erreur de variable non definie,
+# pas un defaut silencieux. La coherence avec le cap est gardee en lisant la
+# MEME variable d'environnement que supervise.sh (COURSIA_LEAN_RUNNER_MEMORY),
+# avec le meme defaut 6g : memory-swap = memory, y compris si le cap est
+# surcharge un jour.
+export COURSIA_LEAN_RUNNER_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY:-6g}"
+
+# BUDGET CPU INTER-FAMILLES (#15574 item 3, arbitrage coordinateur du
+# 2026-10-01, comment 5933689033) -- MEME NOMBRE que coursia-runner-start.sh.
+# assert_cpu_budget somme les familles d'EXECUTION (start + lean ; les
+# waiters, oisifs, en sont excludes) et refuse le demarrage au depassement.
+# Valeur 18 depuis l'amendement J+7 du 2026-10-08 : docker 4x3 + lean 1x6 =
+# 18. C'etait 24 avec 2 slots lean (4x3 + 2x6), 30 avec 6 slots docker ;
+# le budget a suivi la composition, il ne l'a pas precedee. Le garde est
+# inerte a 0 ou absent (etat anterieur de la machine).
+export COURSIA_RUNNER_CPU_BUDGET="${COURSIA_RUNNER_CPU_BUDGET:-18}"
+
+# PARENT CGROUP -- meme valeur que coursia-runner-start.sh, meme raison : les
+# trois familles doivent entrer dans la MEME slice pour que ses limites
+# s'appliquent a leur somme. C'est la jambe lean qui rendait l'absence
+# de mur visible (12 288 Mo de caps pour ses 2 slots d'alors, contre une VM
+# de 24 032) ; elle est desormais sous MemorySwapMax=0 comme le reste de la CI.
+export COURSIA_RUNNER_CGROUP_PARENT="coursia-ci.slice"
 
 cd "$REPO_DIR" || exit 1
 

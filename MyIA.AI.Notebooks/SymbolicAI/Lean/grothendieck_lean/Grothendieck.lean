@@ -1,3 +1,11 @@
+/-
+Invariant d'index (#16154) : cet umbrella est un index de lecture **FR-only**.
+Chaque module FR de `Grothendieck/` y figure ; les siblings `_en` (miroir
+anglais, EPIC #4980) n'y figurent jamais — ils restent construits par les
+`globs := #[`Grothendieck.*`]` du lakefile, qui auto-découvrent les deux
+langues. Un index bilingue de 150 entrées ne serait plus un index. Tenu par
+`scripts/lean/tests/test_grothendieck_umbrella.py`.
+-/
 import Grothendieck.Adjunction
 import Grothendieck.Calibration
 import Grothendieck.CanonicalProps
@@ -11,35 +19,38 @@ import Grothendieck.Cover
 import Grothendieck.CoverageGen
 import Grothendieck.CoversArrow
 import Grothendieck.CoversAtomicArrow
-import Grothendieck.CoversAtomicArrow_en
 import Grothendieck.CoversBind
 import Grothendieck.CoversCoherentArrow
-import Grothendieck.CoversCoherentArrow_en
 import Grothendieck.CoversCoverageArrow
-import Grothendieck.CoversCoverageArrow_en
 import Grothendieck.CoversEtaleArrow
-import Grothendieck.CoversEtaleArrow_en
 import Grothendieck.CoversExtensiveArrow
-import Grothendieck.CoversExtensiveArrow_en
 import Grothendieck.CoversLattice
 import Grothendieck.CoversOrder
 import Grothendieck.CoversPrecoverageArrow
-import Grothendieck.CoversPrecoverageArrow_en
 import Grothendieck.CoversPretopologyArrow
-import Grothendieck.CoversPretopologyArrow_en
 import Grothendieck.CoversPullback
 import Grothendieck.CoversPushforward
 import Grothendieck.CoversRegularArrow
-import Grothendieck.CoversRegularArrow_en
 import Grothendieck.CoversTopologies
 import Grothendieck.CoversZariskiArrow
-import Grothendieck.CoversZariskiArrow_en
 import Grothendieck.DenseTopology
 import Grothendieck.DirectImage
 import Grothendieck.ExceptionalDirect
 import Grothendieck.ExceptionalTriple
 import Grothendieck.Equivalences
+import Grothendieck.Flasque
+import Grothendieck.FlasqueStability
+import Grothendieck.FlasqueRetract
+import Grothendieck.FlasqueExact
+import Grothendieck.FlasqueQuotient
 import Grothendieck.Fppf
+import Grothendieck.Godement
+import Grothendieck.GodementFunctor
+import Grothendieck.GodementMono
+import Grothendieck.GodementAcyclicity
+import Grothendieck.GodementResolution
+import Grothendieck.GodementCanonicalDiff
+import Grothendieck.GodementExactness
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney
 import Grothendieck.LeftExact
@@ -49,46 +60,38 @@ import Grothendieck.MathlibMap
 import Grothendieck.MayerVietorisSquare
 import Grothendieck.Monads
 import Grothendieck.PlusConstruction
-import Grothendieck.PlusConstruction_en
 import Grothendieck.MonoidalCategories
 import Grothendieck.PullbackCoversLaws
 import Grothendieck.PullbackFunctor
 import Grothendieck.PullbackFunctorLaws
 import Grothendieck.SchemesTour
+import Grothendieck.SerreMap
 import Grothendieck.SheafBasics
 import Grothendieck.SheafCohomology.Basic
 import Grothendieck.SheafCohomology.Cech
 import Grothendieck.SheafCohomology.MayerVietoris
 import Grothendieck.SheafCondition
-import Grothendieck.SheafCondition_en
 import Grothendieck.SheafConditionCharacterization
-import Grothendieck.SheafConditionCharacterization_en
 import Grothendieck.SheafConditionInvariance
-import Grothendieck.SheafConditionInvariance_en
 import Grothendieck.SheafHom
 import Grothendieck.Sheafification
 import Grothendieck.SheafTopologySpectrum
-import Grothendieck.SheafTopologySpectrum_en
 import Grothendieck.SieveGenerate
 import Grothendieck.SieveLattice
 import Grothendieck.SieveOps
 import Grothendieck.SitePoints
 import Grothendieck.SitesComparison
-import Grothendieck.SitesComparison_en
 import Grothendieck.Skyscraper
-import Grothendieck.Skyscraper_en
 import Grothendieck.Spaces
 import Grothendieck.SpacesMathlib
 import Grothendieck.SpacesSubcanonical
 import Grothendieck.StalkCharacterization
-import Grothendieck.StalkCharacterization_en
 import Grothendieck.StalkGluing
 import Grothendieck.StalkPoints
 import Grothendieck.StalkSeparated
 import Grothendieck.Stalks
 import Grothendieck.Subcanonical
 import Grothendieck.TopologyDictionary
-import Grothendieck.TopologyDictionary_en
 import Grothendieck.TopologyLattice
 import Grothendieck.YonedaLemma
 import Grothendieck.ZariskiSite
@@ -131,6 +134,10 @@ Substance réelle :
   structural, propriétés locales.
 - `Grothendieck.MathlibMap` : table de correspondance entre les concepts
   formalisés ici et les modules Mathlib 4 sous-jacents.
+- `Grothendieck.SerreMap` : le miroir Serre de `MathlibMap` — index vivant
+  du versant Serre du pont Serre–Grothendieck dans Mathlib (classes de
+  Serre, construction de Serre, dérivée de Serre, domaine fondamental,
+  perfection, DVR) et des grands absents (GAGA, dualité, FAC). #16334.
 - `Grothendieck.Calibration` : calibration track (Epic #1453) - quelques
   lemmes volontairement laissés en `sorry`s pour le gradient de difficulté du prouveur
   multi-agent.
@@ -179,6 +186,65 @@ Substance réelle :
 - `Grothendieck.YonedaLemma` : lemme de Yoneda — plongement pleinement
   fidèle d'une catégorie C dans la catégorie de foncteurs [C^op, Ens],
   c_{x} ↦ Hom_C(-, x) (Grothendieck 1960, CatAlg).
+- `Grothendieck.Godement` (Partie 84) : le faisceau C⁰ = produit des tiges ;
+  flasque sans hypothèse sur F, faisceau, unité injective sur les faisceaux.
+- `Grothendieck.GodementFunctor` (Partie 85) : endofoncteur C⁰ sur les préfaisceaux
+  de groupes abéliens, unité naturelle `F → C⁰F` ; la préservation des monos
+  est reportée à la Partie 86.
+- `Grothendieck.GodementMono` (Partie 86) : C⁰ préserve les monomorphismes
+  (instance `PreservesMonomorphisms`) — prérequis nommé par la Partie 85,
+  fil du complexe de Godement.
+- `Grothendieck.GodementResolution` (Partie 87) : la **suite des unités
+  itérées** `F → C⁰F → C⁰²F` est posée (`godementUnitIter`, l'unité de `C⁰`
+  réappliquée), avec le **témoin** `godementUnit_comp_injective` : sur les
+  faisceaux, le composé `μ ≫ μ(C⁰F)` est injectif, donc cette suite de
+  morphismes n'est **pas un complexe** — `μ ≫ d⁰ = 0` est faux pour ce
+  morphisme, ce n'est pas un énoncé différé. L'exactitude en F (`0 → F → C⁰F`,
+  mono sur les faisceaux) est le seul fait d'exactitude posé. La vraie
+  différentielle de la résolution canonique (conoyau de l'unité, God58 II.4.1)
+  et l'acyclicité aux degrés supérieurs sont la Partie 89.
+- `Grothendieck.GodementAcyclicity` (Partie 88) : l'**allongement de la suite
+  des unités au maillon suivant** — le morphisme `C⁰²F → C⁰³F`
+  (`godementUnitIter_at_iterate`) est l'unité réappliquée au préfaisceau
+  itéré `C⁰F` ; égalité de définition (`godementUnitIter_at_iterate_def`) et
+  extension structurelle de la suite de deux à trois flèches
+  (`godementUnitChain_extends`). Aucune propriété de complexe, de
+  null-composition ni d'**acyclicité** `H^n(C⁰F) = 0` n'est posée ni promise :
+  elles exigent d'abord la vraie différentielle (conoyau de l'unité,
+  God58 II.4.1), **frontière nommée** traitée en Partie 89 (calibration
+  `#1453`).
+- `Grothendieck.GodementCanonicalDiff` (Partie 89) : le **pas canonique de
+  Godement** — la frontière nommée par les Parties 87-88 est traitée. Pour
+  tout morphisme `f : A ⟶ B`, le pas canonique `godementStep` est la composée
+  `B ⟶ C⁰(coker f)` (projection du conoyau puis unité du conoyau), et la
+  **null-composition** `f ≫ godementStep f = 0` est **prouvée**
+  (`comp_godementStep_zero`, condition universelle du conoyau). La
+  différentielle de degré 0 `godementCanonicalDZero = godementStep μ` donne
+  `μ ≫ d⁰ = 0` (`toGodement_comp_godementCanonicalDZero`) : le début de la
+  résolution augmentée `0 → F → C⁰F → C⁰(coker μ)` **est un complexe** — le
+  contraire exact du témoin de la Partie 87 pour l'itération. L'exactitude en
+  `C⁰F`, l'itération du pas aux degrés suivants et l'**acyclicité**
+  `H^n(C⁰F) = 0` restent la frontière nommée de la Partie 90.
+- `Grothendieck.GodementExactness` (Partie 90) : le **complexe au-delà du
+  degré 0 et le mono catégorique de l'unité**. La différentielle de degré 1
+  `godementCanonicalDOne = godementStep d⁰ : C¹F ⟶ C²F` est posée, et la
+  null-composition `d⁰ ≫ d¹ = 0`
+  (`godementCanonicalDZero_comp_godementCanonicalDOne`) est une **instance
+  directe de `comp_godementStep_zero`** (P89) — le complexe s'étend à tous
+  les degrés par le même argument. L'unité de Godement est un
+  **monomorphisme catégorique** sur les faisceaux
+  (`mono_toGodement_of_isSheaf`, montée de l'injectivité section-par-section
+  de P84 par `NatTrans.mono_iff_mono_app` + `AddCommGrpCat.mono_iff_injective`)
+  — l'exactitude de `0 → F → C⁰F` en F dans le langage des complexes.
+  L'**énoncé de réduction** de l'exactitude en `C⁰F` au mono de l'unité du
+  conoyau (`exact_toGodement_godementCanonicalDZero_of_mono`, [God58] II.4.1)
+  est **retiré de cette Partie** et reporté à la Partie 91 : le draft r65
+  portait un `sorry` tactique sur sa preuve (réconciliation defeq des `X₂`,
+  instance `IsIso` non inférée) que le gate `proof-integrity` du caller
+  workflow élève en `sorryAx` transitif à l'import — classe `forbidden`
+  (pr-review-discipline §B). La **séparéité du conoyau** par recollement sur
+  faisceau, qui ferme la boucle, est la frontière nommée de la Partie 91,
+  qui posera l'énoncé ET sa preuve.
 
 Tous les `sorry`s ne sont pas comblés — la plupart sont des échafaudages
 intentionnels pour le prouveur multi-agent (cf. Epic #1453).
@@ -223,6 +289,11 @@ Substance (English):
   standard cover by D(f) = Spec R_f, structure functor, local properties.
 - `Grothendieck.MathlibMap`: correspondence table between the formalized
   concepts and the underlying Mathlib 4 modules.
+- `Grothendieck.SerreMap`: the Serre mirror of `MathlibMap` — living index
+  of the Serre side of the Serre–Grothendieck bridge in Mathlib (Serre
+  classes, Serre construction, Serre derivative, fundamental domain,
+  perfectness, DVRs) and of the major absentees (GAGA, duality, FAC).
+  #16334.
 - `Grothendieck.Calibration`: calibration track (Epic #1453) - intentional
   these `sorry`s form a difficulty gradient for the multi-agent prover.
 - `Grothendieck.SieveLattice`: lattice of sieves on an object — closures,
@@ -269,16 +340,75 @@ Substance (English):
 - `Grothendieck.YonedaLemma`: Yoneda lemma — fully faithful embedding of a
   category C into the functor category [C^op, Set], c_{x} ↦ Hom_C(-, x)
   (Grothendieck 1960, CatAlg).
+- `Grothendieck.Godement` (Part 84): the C⁰ sheaf = product of stalks;
+  flasque without hypothesis on F, sheaf, unit injective on sheaves.
+- `Grothendieck.GodementFunctor` (Part 85): endofunctor C⁰ on presheaves of
+  abelian groups, natural unit `F → C⁰F`; preservation of monos is deferred to
+  Part 86.
+- `Grothendieck.GodementMono` (Part 86): C⁰ preserves monomorphisms
+  (instance `PreservesMonomorphisms`) — prerequisite named by Part 85,
+  thread of the Godement complex.
+- `Grothendieck.GodementResolution` (Part 87): the **iterated unit
+  sequence** `F → C⁰F → C⁰²F` is posed (`godementUnitIter`, the unit of `C⁰`
+  re-applied), together with the **witness** `godementUnit_comp_injective`:
+  on sheaves, the composite `μ ≫ μ(C⁰F)` is injective, so this sequence of
+  morphisms is **not a complex** — `μ ≫ d⁰ = 0` is false for this morphism,
+  not a deferred statement. Exactness at F (`0 → F → C⁰F`, mono on sheaves)
+  is the only exactness fact posed. The true differential of the canonical
+  resolution (cokernel of the unit, God58 II.4.1) and acyclicity at higher
+  degrees are Part 89.
+- `Grothendieck.GodementAcyclicity` (Part 88): the **lengthening of the unit
+  sequence by one link** — the morphism `C⁰²F → C⁰³F`
+  (`godementUnitIter_at_iterate`) is the unit re-applied at the iterated
+  presheaf `C⁰F`; definitional equality (`godementUnitIter_at_iterate_def`)
+  and structural extension of the sequence from two to three arrows
+  (`godementUnitChain_extends`). No complex property, no null-composition
+  and no **acyclicity** `H^n(C⁰F) = 0` is posed or promised: they first
+  require the true differential (cokernel of the unit, God58 II.4.1),
+  **named frontier** to be treated in Part 89 (calibration `#1453`).
+- `Grothendieck.GodementCanonicalDiff` (Part 89): the **Godement canonical
+  step** — the named frontier of Parts 87-88 is treated. For every morphism
+  `f : A ⟶ B`, the canonical step `godementStep` is the composite
+  `B ⟶ C⁰(coker f)` (cokernel projection then unit of the cokernel), and the
+  **null-composition** `f ≫ godementStep f = 0` is **proved**
+  (`comp_godementStep_zero`, universal condition of the cokernel). The
+  degree-0 differential `godementCanonicalDZero = godementStep μ` yields
+  `μ ≫ d⁰ = 0` (`toGodement_comp_godementCanonicalDZero`): the start of the
+  augmented resolution `0 → F → C⁰F → C⁰(coker μ)` **is a complex** — the
+  exact opposite of the Part 87 witness for the iterated unit. Exactness at
+  `C⁰F`, iteration of the step at higher degrees, and **acyclicity**
+  `H^n(C⁰F) = 0` remain the named frontier of Part 91.
+- `Grothendieck.GodementExactness` (Part 90) : the **complex beyond degree 0
+  and the categorical mono of the unit**. The degree-1 differential
+  `godementCanonicalDOne = godementStep d⁰ : C¹F ⟶ C²F` is posed, and the
+  null-composition `d⁰ ≫ d¹ = 0`
+  (`godementCanonicalDZero_comp_godementCanonicalDOne`) is a **direct instance
+  of `comp_godementStep_zero`** (P89) — the complex extends to all degrees by
+  the same argument. The Godement unit is a **categorical monomorphism** on
+  sheaves (`mono_toGodement_of_isSheaf`, the categorical ascent of Part 84's
+  pointwise injectivity via `NatTrans.mono_iff_mono_app` +
+  `AddCommGrpCat.mono_iff_injective`) — the exactness of `0 → F → C⁰F` at F
+  in the language of complexes. The **reduction statement** of exactness at
+  `C⁰F` to the mono of the cokernel's unit
+  (`exact_toGodement_godementCanonicalDZero_of_mono`, [God58] II.4.1) is
+  **withdrawn from this Part** and deferred to Part 91 : the r65 draft
+  carried a `sorry` tactical proof (defeq reconciliation of the two `X₂`,
+  the `IsIso` instance not inferred) which the `proof-integrity` gate of the
+  caller workflow elevates to a `sorryAx` transitive at import — `forbidden`
+  class (pr-review-discipline §B). The **separatedness of the cokernel** by
+  gluing on sheaves, which closes the loop, is the named frontier of Part
+  91, which will pose the statement AND its proof.
 
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).
 
-Convention i18n (EPIC #4980 ratifiée user 2026-07-04) : ce fichier root
-aggregator est bilingue inline (FR canonique d'abord, EN en miroir),
-conformément au pattern canonique `CooperativeGames.lean` (PR #5883,
-pilote EPIC), `Utility.lean` (PR #6045), `RepeatedGames.lean` (PR #6048),
-`Minimax.lean` (PR #6101), `SocialChoice.lean` (PR #6106), `Conway.lean`
-(PR #6111). Les modules substantiels vivent dans des fichiers siblings (cf.
-structure lake ci-dessous), auto-découverts par le
-`lean_lib «Grothendieck»` du lakefile (cf. `globs` glob par défaut).
+Convention i18n (EPIC #4980 ratifiée user 2026-07-04) : contrairement aux
+agrégateurs racines bilingues inline (`CooperativeGames.lean` PR #5883,
+pilote EPIC ; `Utility.lean` PR #6045 ; `RepeatedGames.lean` PR #6048 ;
+`Minimax.lean` PR #6101 ; `SocialChoice.lean` PR #6106 ; `Conway.lean`
+PR #6111), ce fichier root aggregator est un index **FR-only** (#16154) :
+il importe chaque module FR et jamais un sibling `_en`. Les modules
+substantiels vivent dans des fichiers siblings (cf. structure lake
+ci-dessous), auto-découverts par le `lean_lib «Grothendieck»` du lakefile
+(cf. `globs` glob par défaut).
 -/

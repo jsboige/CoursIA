@@ -2,7 +2,7 @@
 """
 Tests pour le module examples/kuhn_poker_cfr.py (Counterfactual Regret
 Minimization sur Kuhn Poker). Module companion du notebook
-GameTheory-13-ImperfectInfo-CFR.ipynb.
+GameTheory-13-ImperfectInfo-CFR-Python.ipynb.
 
 Kuhn Poker (Kuhn 1950) est le jeu de poker a information incomplete le plus
 simple : 3 cartes (J < Q < K), ante de 1, P1 agit (Check/Bet) puis P2 repond.

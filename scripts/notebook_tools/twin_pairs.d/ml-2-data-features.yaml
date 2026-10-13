@@ -1,11 +1,12 @@
 - name: "ML-2 Data&Features"
   family: ML.NET/Python
-  python: MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features-Python.ipynb
-  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features.ipynb
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, chacun prod) : C# = Microsoft.ML (NuGet officiel Microsoft.ML, native .NET : Microsoft.ML.Transforms/Regression/Clustering/TimeSeries) et Python = scikit-learn (pip sklearn, native Python) -- chaque cote atteint le moteur SOTA ML de son ecosysteme, ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML refs + execution_count, Python sklearn imports."
   known_differences:
+    - "2026-10-09 (renommage canonique #19482, lane myia-po-2023:CoursIA-2) : padding du numero (ML-N -> ML-0N) et normalisation du suffixe de noyau, des deux cotes du couple. Le contenu pedagogique et la parite sont inchanges (meme concept, memes sorties) ; le rebaseline des content SHA enregistre le nouveau chemin, pas un nouveau contenu."
     - "2026-08-15 : correction d'auteurs falsifies (issue #11044, tranche W3C SPARQL / ML.NET KDD) — citations remises a leurs auteurs reels (Amizadeh S., DOI KDD, Protocol et al., etc.), markdown-only, aucun changement d'engine/outputs. Parite semantique conservee ; rebaseline content SHA (re-audit 2026-08-15, myia-po-2026:CoursIA-2)."
     - "Socle pedagogique commun : featurization (encodage categoriel one-hot, normalisation, imputation) sur donnees tabulaires."
     - "Idiomes framework : C# = `mlContext.Transforms.Categorical.OneHotEncoding` (OutputKind.Binary) sur IDataView (LoadFromEnumerable). Python = `sklearn.preprocessing` (OneHotEncoder, StandardScaler, SimpleImputer) composes via `ColumnTransformer` + `Pipeline`."

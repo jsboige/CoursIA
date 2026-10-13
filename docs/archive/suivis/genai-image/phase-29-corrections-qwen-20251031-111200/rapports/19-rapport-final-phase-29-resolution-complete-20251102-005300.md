@@ -146,17 +146,17 @@ Authorization: Bearer $2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYdGw5BFmcZ52bGfwf5
 
 ### Scripts Consolidés (3 nouveaux scripts)
 
-1. **[`install_comfyui_login.py`](../../../scripts/genai-auth/install_comfyui_login.py)** (313 lignes)
+1. **[`install_comfyui_login.py`](../../../scripts/genai-auth/install_comfyui_login.py)**
    - Installation automatisée ComfyUI-Login
    - Synchronisation credentials
    - Test authentification intégré
 
-2. **[`test_comfyui_auth_simple.py`](../../../scripts/genai-auth/test_comfyui_auth_simple.py)** (98 lignes)
+2. **[`test_comfyui_auth_simple.py`](../../../scripts/genai-auth/test_comfyui_auth_simple.py)**
    - Test rapide authentification
    - Affichage informations système
    - Diagnostic clair (HTTP 200/401)
 
-3. **[`test_comfyui_image_simple.py`](../../../scripts/genai-auth/test_comfyui_image_simple.py)** (188 lignes)
+3. **[`test_comfyui_image_simple.py`](../../../scripts/genai-auth/test_comfyui_image_simple.py)**
    - Test génération d'image
    - Suivi exécution avec timeout
    - Validation image générée
@@ -233,8 +233,8 @@ Authorization: Bearer $2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYdGw5BFmcZ52bGfwf5
 - **Scripts transients** : 14 scripts créés
 - **Scripts consolidés** : 3 nouveaux scripts finaux
 - **Rapports produits** : 19 rapports (dont 3 critiques)
-- **Lignes de code Python** : ~2500 lignes (scripts transients + consolidés)
-- **Lignes de documentation** : ~3000 lignes (rapports markdown)
+- **Lignes de code Python** : (scripts transients + consolidés)
+- **Lignes de documentation** : (rapports markdown)
 
 ### Tests Validés
 
@@ -314,17 +314,17 @@ scripts/genai-auth/
 
 ### Rapports de Référence
 
-1. **[Rapport 17 - Archéologie Authentification](17-archeologie-authentification-comfyui-SDDD-20251101-235600.md)** (580 lignes)
+1. **[Rapport 17 - Archéologie Authentification](17-archeologie-authentification-comfyui-SDDD-20251101-235600.md)**
    - Investigation archéologique complète
    - Triple Grounding SDDD appliqué
    - Découverte de la perte du système d'authentification
 
-2. **[Rapport 18 - Résolution Finale ComfyUI-Login](18-resolution-finale-authentification-comfyui-login-20251101-232000.md)** (441 lignes)
+2. **[Rapport 18 - Résolution Finale ComfyUI-Login](18-resolution-finale-authentification-comfyui-login-20251101-232000.md)**
    - Solution finale documentée
    - Scripts consolidés créés
    - Tests de validation réussis
 
-3. **[Guide Référence Credentials ComfyUI](12-guide-reference-credentials-comfyui-20251031-234429.md)** (350 lignes)
+3. **[Guide Référence Credentials ComfyUI](12-guide-reference-credentials-comfyui-20251031-234429.md)**
    - Architecture complète d'authentification
    - Configuration détaillée
    - Troubleshooting
@@ -506,7 +506,7 @@ La Phase 29 a permis de :
 ### Impact du Travail
 
 - **Système opérationnel** : Prêt pour utilisation en production
-- **Documentation exhaustive** : 3000+ lignes de documentation
+- **Documentation exhaustive**
 - **Scripts maintenables** : 3 scripts consolidés testés
 - **Connaissance archivée** : Découverte critique documentée
 

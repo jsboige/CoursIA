@@ -2,12 +2,22 @@
 
 S'applique à **tous les workers du cluster CoursIA** (po-2023/2024/2025/2026) et au **coordinateur ai-01**. Source : mandat user 2026-05-23, durci 2026-06-30 → 2026-07-19.
 
-**Détail (backlog 8 sources, mapping machines→tracks, cadence, anti-patterns, incidents, leçons L721/L1356 complètes, picker, veine)** : [docs/reference/proactive-coordination-detail.md](../../docs/reference/proactive-coordination-detail.md).
+**Détail (backlog 8 sources, cadence, anti-patterns, incidents, leçons L721/L1356 complètes, picker, veine)** : [docs/reference/proactive-coordination-detail.md](../../docs/reference/proactive-coordination-detail.md).
 
 ## Règles HARD
 
+0. **Avant de TIRER un grain neuf : faire avancer tout ce qui peut avancer (HARD, mandat user 2026-09-19).** L'ordre de session est ferme — **(a)** toutes tes PRs ouvertes qui peuvent bouger : réserve à lever, nit à traiter, rebase, dossier `[ADJOINT PREFLIGHT]` à refabriquer, check rouge à réparer ; **(b) ensuite seulement** le tirage du picker. Cette règle est **en amont** de la règle 5 : elle ne remplace pas le tirage, elle le conditionne.
+
+   **Pourquoi un ORDRE, pas seulement un plancher** : la règle 1 compte les grains *livrés* — un compte qu'on satisfait en empilant du neuf par-dessus du non-fini (mesure 213 PRs + verbatim user 2026-09-19 : [détail, §Ordre de session](../../docs/reference/proactive-coordination-detail.md)).
+
+   **Trier par COÛT DE DOSSIER, pas par ancienneté seule** : CLEAN-sans-review (attestation tierce seule = grain le moins cher) avant BLOCKED (diagnostic) ; l'ancienneté ordonne **à l'intérieur** de chaque sous-ensemble, elle ne le choisit pas.
+
+   **N PRs portant la MÊME classe de défaut = une cause, pas N grains.** Traiter la cause une fois plutôt que d'ouvrir N allers-retours.
+
+   **Un script exécuté sur la branche remplace plusieurs allers-retours de commentaires.** Quand le défaut est **mécanique** — fixer canonique existant, geste déterministe, diff vérifiable — l'exécuter sur la branche de la PR plutôt que poster un commentaire qui coûte une session entière à son porteur. Quatre bornes, toutes requises : la PR est à **lane unique** (un `[CLAIMED]` vivant d'une autre lane renvoie au commentaire, cf [lane-claim-protocol.md](lane-claim-protocol.md)) · le commentaire ou le dossier **nomme le script et le commit** (un commit muet sur la branche d'autrui est indiscernable d'un détournement) · ça **ne lève aucune réserve de tiers** (B.0 : une phrase lève, pas un SHA) · si une cellule source de notebook est touchée, **la re-exécution redevient due** (C.2).
+
 1. **≥2 grains livrés entre 2 wakeups, dont ≥1 DEEP portant un genre de CONTENU = PLANCHER, jamais plafond.** Une PR livrée ne **clôt pas** la session : re-pioche **immédiatement** et enchaîne autant de PRs que la fenêtre le permet (débit nominal ~2 PR/h). S'arrêter après 1 PR alors qu'il reste du temps **et** 60+ issues ouvertes = **sous-régime**, pas « cycle terminé ». Le plancher est **pluriel et durci** (mandat user 2026-09-12) : un cycle dont le plat principal est MED ou META **n'a pas de plancher tenu**, même avec plusieurs PR livrées. La mesure qui motive ce durcissement — 15 % de DEEP sur 7 j, et sur 48 h le META passant devant le CONTENU — est déposée datée dans [détail, section Plancher durci](../../docs/reference/proactive-coordination-detail.md) ; le tier et le genre se tranchent en [variation-protocol.md](variation-protocol.md) (G-VAR-1).
-2. **2 tracks en flight minimum** : une **track principale** (dispatchée, Epic) + une **side-track autonome** que le worker avance **même si le coordinateur s'absente 1-2 jours**.
+2. **2 tracks en flight minimum** : une **track principale** (mission dispatchée, sinon la tête du tapis) + une **side-track autonome** que le worker avance **même si le coordinateur s'absente 1-2 jours**.
 3. **Side-tracks → sous-agents spécialistes async (HARD).** Quand un specialist `.claude/agents/` couvre la side-track, la déléguer en **`run_in_background: true`** pendant que le worker interactif tient la main track. Roster : [docs/reference/subagents-reference.md](../../docs/reference/subagents-reference.md).
 4. **Backlog pickup au wakeup vide (HARD).** Sans nouveau feedback / directive / tâche : **ne pas s'arrêter** — piocher dans le backlog et produire la PR du cycle.
 
@@ -18,14 +28,14 @@ S'applique à **tous les workers du cluster CoursIA** (po-2023/2024/2025/2026) e
 **Le pool ne se scanne plus à la main — il se TIRE, et le tirage est le PREMIER GESTE DE CHAQUE CYCLE (HARD, mandats user 2026-08-14 et 2026-08-20).** `gh issue list` plafonne à **30 résultats** triés par récence : un scan manuel ne voit que le récent et referme la boucle de monoculture — la troncature demande un organe, pas plus de vigilance (mesures : [détail, section Picker](../../docs/reference/proactive-coordination-detail.md)). Un steering nommé du coordinateur est **un grain de plus dans la main de la lane**, jamais une condition de départ : on le brûle s'il est déjà là, on ne constate pas son absence. Son équilibrage entre familles et genres reste dû au coordinateur (§4 de [variation-protocol.md](variation-protocol.md)).
 
 ```bash
-python scripts/pick_idle_grain.py --lane <machine:workspace> --prev-genre <genre du grain précédent>
+python scripts/pick_idle_grain.py --belt --lane <machine:workspace>
 ```
 
-Tirage pondéré dans **trois urnes** : **grain** (issue unitaire → la livrer) · **umbrella** (un EPIC → piocher ou **créer un sous-grain dedans**, jamais claimer l'EPIC entier) · **delivered** (une `candidate-delivered` → **réservée au coordinateur et à l'adjoint**, mandat user 2026-09-07 [#15069, garde `DELIVERED_URN_LANES` dans `pick_idle_grain.py`] : une lane worker qui en rencontre une poste `[INFO] candidate-delivered` avec sa preuve et rend la main). Pondération deux axes (âge de création + délaissement) : [détail, section Picker](../../docs/reference/proactive-coordination-detail.md).
+**Le tapis roulant** (`--belt`, #18832, mandat user 2026-10-02) sert l'ouvert entier par **dernière visite** : la plus ancienne en tête, une issue servie repart en queue, ni pondération ni refus. Les urnes restent un **filtre** : **grain** (issue unitaire → la livrer) · **umbrella** (un EPIC → piocher ou **créer un sous-grain dedans**, jamais claimer l'EPIC entier) · **delivered** (une `candidate-delivered` → **réservée au coordinateur et à l'adjoint**, mandat user 2026-09-07 [#15069, garde `DELIVERED_URN_LANES` dans `pick_idle_grain.py`] : une lane worker qui en rencontre une poste `[INFO] candidate-delivered` avec sa preuve et rend la main). Le tirage pondéré historique (âge de création + délaissement : [détail, section Picker](../../docs/reference/proactive-coordination-detail.md)) ne sert plus qu'au diagnostic.
 
-**Le picker ne décide pas.** Il propose ; l'agent tranche selon les critères de variété de sa lane et pose son `[CLAIMED]` (`check_lane_claim.py` avant d'**éditer**, cf [lane-claim-protocol.md](lane-claim-protocol.md)). Plutôt que rejouer aveuglément : demander davantage de candidats et passer les exclusions factuelles (`--exclude-issue`, labels, bornes age/inactivité, `--urns`) ; `--reroll` reste le dernier recours ; le cache ne touche jamais les organes minute-sensitive ([détail §Cache](../../docs/reference/proactive-coordination-detail.md)). **Aucun résultat vide filtré ne justifie un `[ASK coordinator]` ni un statut idle.**
+**Le tapis ordonne, l'agent ne re-trie pas.** Il prend les candidats dans l'ordre et pose son `[CLAIMED]` (`check_lane_claim.py` avant d'**éditer**, cf [lane-claim-protocol.md](lane-claim-protocol.md)) ; un candidat sauté l'est pour une barrière réelle (GPU-only, vision-only, second LIGHT du même genre d'affilée selon G-VAR-3 de [variation-protocol.md](variation-protocol.md)), dite dans le rapport de cycle. Les exclusions factuelles (`--exclude-issue`, labels, `--urns`) restent disponibles. **Aucun résultat vide filtré ne justifie un `[ASK coordinator]` ni un statut idle.**
 
-**Sur un tirage d'urne `umbrella`, confronter le body au réel AVANT de juger l'actionnabilité (HARD, #11900).** Un body est daté de sa rédaction, jamais de sa lecture — et le picker pondère le **délaissement**, donc plus une EPIC est ancienne, plus son body a de chances d'être faux : **plus le picker fait son travail, plus il remonte d'impasses apparentes.** Le paragraphe bloquant y a souvent survécu à sa propre résolution (mesuré sur #2874 et #7357, dont les deux conditions étaient levées depuis 68 j et 31 j). Sans ce réflexe, le régime produit des rerolls en boucle et la lane conclut à tort que le pool est saturé — l'inverse exact de l'intention de la règle 5.
+**Sur un tirage d'urne `umbrella`, confronter le body au réel AVANT de juger l'actionnabilité (HARD, #11900).** Un body est daté de sa **rédaction**, jamais de sa lecture — plus une EPIC est ancienne, plus son body a de chances d'être faux : **plus le picker fait son travail, plus il remonte d'impasses apparentes**, dont le paragraphe bloquant a survécu à sa propre résolution. Conclure « bloquée sur autrui » sans mesurer, c'est reposer un grain disponible et croire le pool saturé — l'inverse exact de l'intention de la règle 5. Le **geste** obligatoire et ses trois organes (l'artefact sur `main`, le plateau `gh pr list --search head:`, le commentaire de fermeture) sont portés par [verify-before-claiming.md](verify-before-claiming.md) règle 5, auto-chargée ; récits mesurés et **précondition toxique** : [picker-delaisse-detail.md](../../docs/reference/picker-delaisse-detail.md).
 
 Trois surfaces mentent vite, et **deux sont décidables mécaniquement** :
 
@@ -39,11 +49,9 @@ Trois surfaces mentent vite, et **deux sont décidables mécaniquement** :
 python scripts/ci/check_umbrella_freshness.py <N> [<N>...]   # exit 1 = SATURATED, ne pas piocher ici
 ```
 
-`SATURATED` (tous les enfants cités sont fermés) est le **seul** verdict qui prend la sortie **1** — c'est la seule lecture non ambiguë. Un chemin cité introuvable sort en **avertissement**, jamais en rouge : il a pu légitimement déménager. `UNRESOLVED` (aucun enfant cité) reste **advisory** et renvoie à la surface 3.
+Seul `SATURATED` (tous les enfants cités fermés) prend la sortie **1** ; chemin introuvable = avertissement, `UNRESOLVED` = advisory (sémantique complète : [détail, §Umbrella #11900](../../docs/reference/proactive-coordination-detail.md)).
 
-**Ce que l'organe ne dit pas** : il mesure la vacuité du **conteneur**, pas la viabilité du **grain**. Une EPIC `FRESH` peut n'avoir que du résiduel `INTRINSIC` — mesuré le 2026-09-15 : les 8 `sorry` distincts de `knot_lean`, que #1453 désigne comme « le grain DEEP de cet EPIC », portent chacun, dans le fichier, l'annotation qui les déclare hors d'atteinte (`decades` away / *not in Mathlib*). La lecture du contenu reste due.
-
-**Précondition toxique** : une condition de reprise que *rien ne mesure* ne peut jamais être constatée atteinte — elle diffère indéfiniment contre la volonté de qui l'a posée. La rendre observable est **plus petit** que le travail différé, et le débloque entièrement.
+**Ce que l'organe ne dit pas** : il mesure la vacuité du **conteneur**, pas la viabilité du **grain** — une EPIC `FRESH` peut n'avoir que du résiduel `INTRINSIC` (mesure `knot_lean` 2026-09-15 : [détail, §Umbrella #11900](../../docs/reference/proactive-coordination-detail.md)). La lecture du contenu reste due.
 
 **Réparation d'un body périmé** : préfixer d'un bloc `> Etat mesure au <date>` (« ce que le body dit » / « ce qui est mesuré », préconditions et leur état, ce qu'une lane peut faire), **conserver l'historique intact en dessous**, écrire la **portée** de ce qui n'a pas été vérifié. Jamais de réécriture en place : le lecteur suivant doit voir ce qui a changé.
 
@@ -57,7 +65,7 @@ python scripts/ci/check_umbrella_freshness.py <N> [<N>...]   # exit 1 = SATURATE
 - **Portée écrite** : une PR sans tag `Grain:` lisible n'est imputable à aucune lane et reste invisible à ce garde. Son tag manquant est lui-même le défaut à corriger — c'est au coordinateur de les reprendre.
 
 6. **Variété obligatoire — le tarissement est structurellement interdit (HARD).** Les règles 1-5 interdisent l'idle ; celle-ci interdit la **monotonie**, et pose l'auto-alimentation comme **principe**, pas comme rattrapage du coordinateur. Une lane ne PEUT PAS se tarir : le worker pioche **de lui-même**, **varié**, même si le coordinateur est absent plusieurs cycles.
-   - **Substance en plat principal** : chaque cycle, viser un grain d'EPIC de fond (preuve Lean, backtest/training, série notebook, moteur SOTA, sécu/infra).
+   - **Substance en plat principal** : chaque cycle, viser un grain de fond (preuve Lean, backtest/training, série notebook, moteur SOTA, sécu/infra).
    - **Nettoyage/doc = à-côté plafonné** (budget G-VAR-2, cf [variation-protocol.md](variation-protocol.md)) : nécessaire, jamais le plat unique. Une journée entière sur un seul registre monotone = sous-régime à corriger **de soi-même**.
    - **Rotation genres ET familles** : alterner Lean / .NET / Python / QC / GenAI / docs ; le pool global rend la variété toujours accessible ; ne jamais tunneliser un mono-thème.
 
@@ -87,7 +95,7 @@ python scripts/ci/check_umbrella_freshness.py <N> [<N>...]   # exit 1 = SATURATE
 
 ## Règle de sélection
 
-Prendre **un item à la fois** (`[CLAIMED]` avant), livrer, **re-piocher aussitôt** — G.5 interdit N deep-tracks **parallèles**, pas N PRs **séquentielles**. **Anti-pattern interdit** : auditer la tranche étroite de SA famille puis poster un `[ASK coordinator]` alors que le pool offrait des grains cross-lane — c'est le silo (incident fondateur R5/R7, [détail §Incident fondateur R5/R7](../../docs/reference/proactive-coordination-detail.md)). **Le coordinateur n'est PAS un distributeur de grains** : il merge, scoper les issues, déconflitter les claims.
+Prendre **un item à la fois** (`[CLAIMED]` avant), livrer, **re-piocher aussitôt** — G.5 interdit N deep-tracks **parallèles**, pas N PRs **séquentielles**. **Anti-pattern interdit** : auditer la tranche étroite de sa famille puis poster un `[ASK coordinator]` alors que le pool offrait des grains cross-lane — c'est le silo (incident fondateur R5/R7, [détail §Incident fondateur R5/R7](../../docs/reference/proactive-coordination-detail.md)). **Le coordinateur n'est PAS un distributeur de grains** : il merge, scoper les issues, déconflitter les claims.
 
 ## Voir aussi
 

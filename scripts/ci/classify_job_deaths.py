@@ -20,8 +20,24 @@ lit et rend le motif comptable sans intervention manuelle :
     suivantes en ``null`` : l'agent a perdu la connexion en cours de route.
   * ``TIMEOUT``              -- "has exceeded the maximum execution time"
     (``timeout-minutes`` du workflow).
-  * ``REAL_STEP_FAILURE``    -- au moins une etape en ``failure`` : le vrai
-    rouge de contenu, le seul qui exige une correction du code.
+  * ``OOM``                  -- "Out of memory." Job failure, runner assigne,
+    etape courante en ``null`` (jamais resolue), aucune etape en ``failure`` :
+    le parc a manque de memoire et le job est mort en cours d'execution. La
+    cause est le PARC, pas le diff.
+  * ``WORKER_DEATH``         -- mort du parc qui se manifeste en ``failure``
+    d'ETAPE : le worker xdist meurt (famine de ressources), le pool se detruit,
+    pytest sort en ``INTERNALERROR`` ou laisse une exception de teardown ;
+    l'etape conclud ``failure`` et l'annotation reste **generique**
+    ("Process completed with exit code 1."). RIEN, cote check-run, ne distingue
+    ce cas d'un rouge de contenu -- le LOG est la seule surface qui les separe,
+    et il faut l'avoir pour trancher. Mesure 2026-09-21 sur trois jobs de la
+    meme suite, trois runners du meme hote : deux morts de worker (aucun test
+    nomme au log, signature de mort presente) et un vrai rouge de contenu
+    (``short test summary`` avec le test nomme). Classe deliberement
+    **conservatrice** : ``short test summary`` present -> jamais reclasse.
+  * ``REAL_STEP_FAILURE``    -- au moins une etape en ``failure`` ET aucun
+    signe de mort de session au log : le vrai rouge de contenu, le seul qui
+    exige une correction du code.
   * ``CANCELLED_OTHER``      -- cancelled sans annotation d'acquisition :
     concurrence (``cancel-in-progress`` inconditionnel, ex. quarto), annulation
     manuelle ou supersession.
@@ -34,8 +50,14 @@ Acceptance #15055 couverte par cette tranche :
 
 Usage :
   python scripts/ci/classify_job_deaths.py --created 2026-09-06..2026-09-07
+  python scripts/ci/classify_job_deaths.py --hours 24 --report census.md
   python scripts/ci/classify_job_deaths.py --sha <SHA complet 40 chars> --json
   python scripts/ci/classify_job_deaths.py --run 34066220916
+
+``--hours N`` est la forme periodique (fenetre glissante des N dernieres
+heures) : c'est celle que porte le census planifie
+(``.github/workflows/job-deaths-census-advisory.yml``). Elle est exclusive de
+``--created``, dont elle est le raccourci calcule.
 
 Note : ``actions/runs?head_sha=`` exige le SHA complet -- un prefixe de 12
 caracteres rend 0 run, zero propre indiscernable d'une absence reelle
@@ -48,7 +70,7 @@ import json
 import re
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 REPO_SLUG = "jsboige/CoursIA"
 
@@ -58,8 +80,110 @@ ANNOTATION_CLASSES: list[tuple[str, str]] = [
     ("not acquired by Runner", "NO_RUNNER_ACQUIRED"),
     ("lost communication with the server", "RUNNER_LOST_COMM"),
     ("exceeded the maximum execution time", "TIMEOUT"),
+    # Mesure 2026-09-21 (job 106270875399, runner myia-ai-01-wsl-8) : GitHub
+    # pose l'annotation "Out of memory." sur un job tue par le parc. Sans
+    # cette entree la classe tombait en UNCATEGORIZED_FAILURE et le rapport
+    # annoncait "morts infrastructurelles : 0" -- l'instrument rendait la mort
+    # indistinguable d'un rouge de contenu, soit exactement ce qu'il existe
+    # pour supprimer.
+    ("Out of memory", "OOM"),
     ("The runner has received a shutdown signal", "RUNNER_LOST_COMM"),
 ]
+
+# Classes dont la cause est le PARC et non le diff. Source unique : la somme
+# ``infra`` et son detail sont tous deux derives de cette constante, pour
+# qu'une classe ajoutee ici ne puisse pas rester hors du total. La forme
+# precedente nommait ces classes DEUX fois -- la somme dans un tuple, le
+# detail dans une f-string -- et une troisieme classe n'aurait ete comptee
+# que si les deux sites etaient edites (c'est par la que OOM est passe :
+# classable, mais hors somme).
+INFRA_DEATH_CLASSES: tuple[str, ...] = (
+    "NO_RUNNER_ACQUIRED",
+    "RUNNER_LOST_COMM",
+    "OOM",
+    "WORKER_DEATH",
+    "GIT_OBJECT_MISSING",
+)
+
+# Signatures de mort de SESSION, lues au LOG (pas a l'annotation). Deux sont
+# mesurees firsthand le 2026-09-21 sur des jobs de la meme suite, meme hote :
+#   * "can't start new thread"        -- job 106268236606 (runner wsl-7) :
+#     `pthread_create` rend EAGAIN, stack dans le teardown d'execnet
+#     (multi.py termkill -> gateway_base.py _thread.start_new_thread).
+#   * "KeyError: <WorkerController"   -- job 106253882998 (runner wsl-8) :
+#     le worker `gw5` meurt en cours de session, le scheduleur loadscope
+#     d'xdist leve sur un worker encore enregistre (loadscope.py _assign_work_unit).
+# La troisieme est RAPPORTEE (triage po-2025, job 106258931264) et non relue
+# par moi : abort natif de la roue Linux de HiGHS.
+WORKER_DEATH_SIGNATURES: tuple[str, ...] = (
+    "can't start new thread",
+    "KeyError: <WorkerController",
+    "Fatal Python error: Aborted",
+)
+
+# Signatures de la famille GIT_OBJECT_MISSING (issue #18312, mesuree le
+# 2026-09-28 sur 13 jobs) : l'hote ne trouve pas un objet du depot au
+# checkout ou a la comparaison de base. Le clone est incomplet, git va
+# chercher l'objet a la demande et le transfert echoue. Trois signatures,
+# toutes lues a l'ANNOTATION du check-run (c'est la surface qu'avait
+# balayee la mesure fondatrice) :
+#   * "fatal: Could not read <sha>" puis exit 128 -- jobs 108750636316
+#     (ai-01-wsl-5, MD Hierarchy Drift Advisory) et 109081425089
+#     (ai-01-wsl-2, Notebook Kernel Drift Guard).
+#   * "could not fetch <sha> from promisor remote" puis "fetch-pack:
+#     invalid index-pack output" -- job 108953753880 (ai-01-wsl-10,
+#     Translation Drift Check, etape Checkout PR).
+#   * "Process completed with exit code 128." pose sur l'etape de CHECKOUT
+#     elle-meme -- jobs 108980481356 (ai-01-wsl-4) et 108947216571
+#     (po-2024-linux-docker-4).
+# Ce qui n'est PAS en cause : le diff (ces jobs repassent verts au rejeu a
+# tete constante, 8 jambes mesurees par po-2025) -- d'ou le classement infra.
+GIT_OBJECT_MISSING_NEEDLES: tuple[str, ...] = (
+    "from promisor remote",
+    "invalid index-pack output",
+)
+
+# "Could not read " exige un SHA adjacent : le verbe seul se rencontre dans
+# des messages de contenu (fichier illisible par un test), seul le couple
+# verbe + hexa designe l'operation git sur un objet du depot.
+GIT_OBJECT_READ_RE = re.compile(r"Could not read [0-9a-fA-F]{7,40}")
+
+
+def git_object_missing(job: dict, annotations: list[dict]) -> bool:
+    """L'annotation designe-t-elle un objet git introuvable (issue #18312) ?
+
+    Conservateur par construction, comme worker_death_from_log : les deux
+    premieres signatures sont non ambigues (un fetch promisor ou un
+    index-pack invalide ne vient jamais d'un rouge de contenu). La troisieme
+    -- exit 128 nu -- n'est retenue QUE si les etapes en echec sont toutes
+    des checkouts : un exit 128 sur une etape de test reste un rouge de
+    contenu, l'organe ne doit pas offrir de blanchiment.
+    """
+    messages = [a.get("message", "") for a in annotations]
+    if any(needle in m for needle in GIT_OBJECT_MISSING_NEEDLES for m in messages):
+        return True
+    if any(GIT_OBJECT_READ_RE.search(m) for m in messages):
+        return True
+    if any("exit code 128" in m for m in messages):
+        failed = [
+            s for s in (job.get("steps") or [])
+            if s.get("conclusion") == "failure"
+        ]
+        if failed and all(
+            "checkout" in (s.get("name") or "").lower() for s in failed
+        ):
+            return True
+    return False
+
+# Marqueur du bloc que pytest imprime quand il a NOMME des tests en echec. Sa
+# presence est ce qui rend une reclassification impossible : si pytest a
+# nomme un test, c'est un rouge de contenu, meme si un teardown echoue ensuite.
+TEST_SUMMARY_MARKER = "short test summary"
+
+# Cap de lecture du log : les logs mesures font 74-467 Ko ; au-dela de cette
+# borne on lit quand meme (le motif chercher est court) mais on garde une
+# limite pour ne pas charger un log aberrant en memoire.
+LOG_CAP_BYTES = 8_000_000
 
 
 def gh_api(path: str, params: str = "") -> dict | list:
@@ -128,6 +252,68 @@ def fetch_annotations(job_id: int) -> list[dict]:
     return data if isinstance(data, list) else []
 
 
+def fetch_job_log(job_id: int) -> str:
+    """Log brut d'un job, ou "" quand le blob est absent.
+
+    Le log est la SEULE surface qui separe une mort de worker d'un rouge de
+    contenu des lors que l'etape conclud ``failure`` avec une annotation
+    generique. Un job tue avant l'upload rend ``BlobNotFound`` : c'est un
+    resultat legitime (la mort est alors deja nommee par l'annotation), pas
+    une erreur -- mais tout autre echec doit remonter bruyamment, sinon
+    l'instrument perdrait precisement la cause qu'il doit nommer.
+    """
+    url = f"repos/{REPO_SLUG}/actions/jobs/{job_id}/logs"
+    # `--allow-escape-sequences` : les logs de job contiennent regulierement
+    # des sequences d'echappement ANSI (couleurs de steps), et les gh >= 2.63
+    # refusent de les sortir sans ce drapeau — c'est la panne qui tuait le
+    # census a chaque tir depuis le 22/09 (#19095, run 37202480910). Le repli
+    # couvre les gh anterieurs au garde-fou, qui sortaient le log sans rien
+    # demander et rejetteraient le drapeau inconnu.
+    result = subprocess.run(
+        ["gh", "api", "--allow-escape-sequences", url],
+        capture_output=True,
+        timeout=120,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if result.returncode != 0 and "unknown flag" in (result.stderr or ""):
+        result = subprocess.run(
+            ["gh", "api", url],
+            capture_output=True,
+            timeout=120,
+            encoding="utf-8",
+            errors="replace",
+        )
+    body = result.stdout or ""
+    if result.returncode != 0:
+        if "BlobNotFound" in body or "BlobNotFound" in (result.stderr or ""):
+            return ""
+        raise RuntimeError(
+            f"gh api {url} failed: {(result.stderr or '').strip()[:200]}"
+        )
+    if "BlobNotFound" in body:
+        return ""
+    return body[:LOG_CAP_BYTES]
+
+
+def worker_death_from_log(log_text: str) -> bool:
+    """Le log montre-t-il une mort de session plutot qu'un rouge de test ?
+
+    Conservateur PAR CONSTRUCTION, sur deux conditions mesurees le 2026-09-21 :
+      * une SIGNATURE de mort de session est presente ; ET
+      * pytest n'a NOMME aucun test en echec (pas de bloc
+        ``short test summary``).
+    Le second point est le garde-fou : un rouge de contenu peut preceder un
+    teardown qui echoue, et ce cas doit RESTER un rouge de contenu. Un log
+    absent ne reclasse rien (on garde le verdict de l'etape).
+    """
+    if not log_text:
+        return False
+    if TEST_SUMMARY_MARKER in log_text:
+        return False
+    return any(sig in log_text for sig in WORKER_DEATH_SIGNATURES)
+
+
 SHA_RE = re.compile(r"[0-9a-fA-F]{40}")
 
 
@@ -144,16 +330,45 @@ def parse_created(created: str) -> str:
     return created
 
 
+def window_from_hours(hours: int, now: datetime | None = None) -> str:
+    """Fenetre glissante START..END sur les ``hours`` dernieres heures.
+
+    Le census est un rapport PERIODIQUE : exiger de l'appelant qu'il calcule
+    deux bornes ISO a chaque execution est ce qui a laisse l'instrument
+    dormir (rien ne l'invoquait). ``--hours 24`` est la forme qu'un cron peut
+    porter tel quel.
+
+    ``now`` est injectable pour que la borne soit testable sans horloge
+    reelle — le calcul est la seule chose que ce helper fait, il doit etre
+    deterministic dans un test.
+    """
+    if hours <= 0:
+        raise SystemExit("--hours exige un entier strictement positif")
+    end = now or datetime.now(timezone.utc)
+    start = end - timedelta(hours=hours)
+    fmt = "%Y-%m-%dT%H:%M:%SZ"
+    return f"{start.strftime(fmt)}..{end.strftime(fmt)}"
+
+
 def iter_red_runs(
     branch: str, event: str, created: str, max_runs: int
 ) -> list[dict]:
-    """Runs non-verts de la fenetre, en deux passes (failure puis cancelled)."""
+    """Runs non-verts de la fenetre, en deux passes (failure puis cancelled).
+
+    ``branch`` vide omet le filtre : sur l'evenement ``pull_request`` le
+    parametre API ``branch`` designe la branche HEAD de la PR, pas sa base
+    (mesure #18312 : ``branch=main&event=pull_request`` rend 0 run, zero
+    propre indiscernable d'une absence reelle). La mesure du critere de
+    fermeture de #18312 exige toutes branches -- c'est ce que balayait la
+    mesure fondatrice des 414 runs du 28/09.
+    """
     runs: list[dict] = []
+    branch_param = f"branch={branch}&" if branch else ""
     for status in ("failure", "cancelled"):
         page = 1
         while True:
             params = (
-                f"?branch={branch}&event={event}&status={status}"
+                f"?{branch_param}event={event}&status={status}"
                 f"&created={created}&per_page=100&page={page}"
             )
             data = gh_api("actions/runs", params)
@@ -215,7 +430,26 @@ def analyse_runs(runs: list[dict]) -> dict:
             )
             continue
         for job in jobs:
-            klass = classify_job(job, fetch_annotations(job["id"]))
+            annotations = fetch_annotations(job["id"])
+            klass = classify_job(job, annotations)
+            if klass == "REAL_STEP_FAILURE" and git_object_missing(
+                job, annotations
+            ):
+                # Famille #18312 : l'etape a conclu `failure` (checkout ou
+                # comparaison de base) mais l'ANNOTATION porte une signature
+                # d'objet git introuvable -- c'est le clone de l'hote, pas le
+                # contenu. Teste AVANT worker_death : les annotations sont
+                # deja chargees, ce test ne coute aucun fetch de log.
+                klass = "GIT_OBJECT_MISSING"
+            if klass == "REAL_STEP_FAILURE" and worker_death_from_log(
+                fetch_job_log(job["id"])
+            ):
+                # Le fetch du log est borne a cette SEULE classe ambigue : une
+                # etape a conclu `failure`, mais le log ne nomme aucun test et
+                # porte une signature de mort de session -- c'est le parc, pas
+                # le contenu. Les autres classes sont tranchees par
+                # l'annotation, sans cout reseau supplementaire.
+                klass = "WORKER_DEATH"
             if klass in ("SUCCESS", "SKIPPED"):
                 continue
             steps = job.get("steps") or []
@@ -245,16 +479,16 @@ def analyse_runs(runs: list[dict]) -> dict:
 def render_markdown(payload: dict) -> str:
     counts = payload["counts"]
     total = sum(counts.values())
-    infra = sum(
-        counts.get(k, 0) for k in ("NO_RUNNER_ACQUIRED", "RUNNER_LOST_COMM")
+    infra = sum(counts.get(k, 0) for k in INFRA_DEATH_CLASSES)
+    breakdown = ", ".join(
+        f"{k}={counts.get(k, 0)}" for k in INFRA_DEATH_CLASSES
     )
     out = ["# Audit job deaths (issue #15055)", ""]
     timeout = counts.get("TIMEOUT", 0)
     out.append(
         f"Jobs morts non-skips analyses : **{total}** | "
         f"morts infrastructurelles : **{infra}** "
-        f"(NO_RUNNER_ACQUIRED={counts.get('NO_RUNNER_ACQUIRED', 0)}, "
-        f"RUNNER_LOST_COMM={counts.get('RUNNER_LOST_COMM', 0)}) | "
+        f"({breakdown}) | "
         f"REAL_STEP_FAILURE={counts.get('REAL_STEP_FAILURE', 0)} | "
         f"TIMEOUT={timeout} (config timeout-minutes, hors sante du parc) | "
         f"AUTRES={total - infra - counts.get('REAL_STEP_FAILURE', 0) - timeout}"
@@ -277,15 +511,24 @@ def render_markdown(payload: dict) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--branch", default="main", help="branche analysee (defaut main)"
+        "--branch", default="main", help="branche analysee (defaut main) ; "
+        "chaine vide = toutes branches (requis pour la mesure #18312 : sur "
+        "pull_request le filtre branch designe la HEAD de la PR)"
     )
     parser.add_argument(
         "--event", default="push", help="evenement (defaut push)"
     )
-    parser.add_argument(
+    window = parser.add_mutually_exclusive_group()
+    window.add_argument(
         "--created",
         type=parse_created,
         help="fenetre ISO START..END, ex. 2026-09-06..2026-09-07",
+    )
+    window.add_argument(
+        "--hours",
+        type=int,
+        help="fenetre glissante des N dernieres heures (ex. 24), "
+        "exclusif de --created",
     )
     parser.add_argument(
         "--sha",
@@ -330,10 +573,11 @@ def main() -> int:
             for r in data.get("workflow_runs", [])
             if r.get("conclusion") not in ("success", "skipped")
         ]
-    elif args.created:
-        runs = iter_red_runs(args.branch, args.event, args.created, args.max_runs)
+    elif args.created or args.hours:
+        created = args.created or window_from_hours(args.hours)
+        runs = iter_red_runs(args.branch, args.event, created, args.max_runs)
     else:
-        parser.error("--created, --sha ou --run requis")
+        parser.error("--created, --hours, --sha ou --run requis")
         return 2
 
     payload = analyse_runs(runs)

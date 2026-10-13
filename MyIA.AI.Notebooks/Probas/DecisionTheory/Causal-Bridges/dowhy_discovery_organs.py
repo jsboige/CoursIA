@@ -75,7 +75,7 @@ RandomState LOCAL par fonction, constantes en module documentees.
 References
 ----------
 
-- Notebook consommateur : ``DoWhy-3-Decouverte-de-Structure.ipynb``.
+- Notebook consommateur : ``CausalBridges-04-Dowhy-Decouverte-Structure.ipynb``.
 - PC : Spirtes & Glymour, « An Algorithm for Fast Recovery of Sparse
   Causal Graphs », Social Science Computer Review 9 (1991).
 - GES : Chickering, « Optimal Structure Identification With Greedy

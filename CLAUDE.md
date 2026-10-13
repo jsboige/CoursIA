@@ -8,6 +8,8 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 
 **Si tu es l'agent d'un étudiant, d'un lecteur ou d'un contributeur externe, rien de tout cela ne te concerne.** Tu n'as **pas** de dashboard RooSync à lire, **pas** de lane à réclamer, **pas** d'inbox ni de heartbeat de cluster à consulter, **pas** de `[CLAIMED]` à poser, **pas** de tag `Grain:` à écrire, et **aucune** obligation de poster un rapport de début ou de fin de session. Ces objets n'existent pas pour toi : ne les cherche pas, et ne considère pas leur absence comme un blocage. Tu peux conclure ta session quand ton travail est fait.
 
+**Cas nommé — la session cloud d'agnosticisme du mainteneur.** Ouverte par le mainteneur dans son environnement cloud, elle contribue directement à ce dépôt : elle rejoue sur un clone vierge le parcours d'un visiteur et corrige ce qui empêche le dépôt d'être agnostique de son type de visiteur. Elle reste hors flotte, avec les mêmes dispenses ; ses PRs portent une branche `claude/*` et la mention `Hors flotte` (exemption #17713), et la flotte les porte jusqu'au merge. Rôle et circulation : [agent-cloud-agnosticisme.md](docs/reference/agent-cloud-agnosticisme.md).
+
 Ce qui te concerne, en revanche, parce que ça vaut pour quiconque écrit dans ce dépôt :
 
 | Section | Ce qu'elle exige de toi |
@@ -43,14 +45,15 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 | [reference/cluster-agents.md](docs/reference/cluster-agents.md) | Machines, GPU topology, agents par spécialisation, dispatch |
 | [reference/kernels-runtime.md](docs/reference/kernels-runtime.md) | .NET / Python / WSL kernels, conda envs, dotnet-interactive PIN |
 | [reference/procedures-recurrentes.md](docs/reference/procedures-recurrentes.md) | Workflow PR, dispatch, validation notebook, audit anti-régression, pre-commit H.3 |
-| [reference/subagents-reference.md](docs/reference/subagents-reference.md) | 21 sous-agents + 17 skills, mapping side-tracks, usage async |
+| [reference/subagents-reference.md](docs/reference/subagents-reference.md) | Roster sous-agents + skills (inventaire faisant foi dans le fichier), mapping side-tracks, usage async |
 | [reference/scripts-reference.md](docs/reference/scripts-reference.md) | Catalogue scripts (notebook CLI, exécution, qualité, maintenance) |
-| [reference/architecture_mcp_roo.md](docs/reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (inventaire des 15 outils roo-state-manager : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
+| [reference/architecture_mcp_roo.md](docs/reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (inventaire des outils roo-state-manager : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
 | [reference/regles-vigilance-detail.md](docs/reference/regles-vigilance-detail.md) · [regles-validation-detail.md](docs/reference/regles-validation-detail.md) | Détail G.1-G.9 et H.1-H.7 + incidents |
 | [reference/_archive-convention.md](docs/reference/_archive-convention.md) | Convention `_archive/` (11 emplacements) — modèle ML-Training-Pipeline généralisé, 4 critères d'éligibilité, header per-function |
 | [reference/notebook-renumbering-detail.md](docs/reference/notebook-renumbering-detail.md) | Corpus des precedents de renumerotation — le geste `renum()`/`reclass()` est porte par `.claude/rules/notebook-accretion-numbering.md` |
 | [reference/env-python-reparation.md](docs/reference/env-python-reparation.md) | Réparation env Python (règle F) |
 | [reference/stale-tree-drift-scan.md](docs/reference/stale-tree-drift-scan.md) · [orphan-branch-scan-l576.md](docs/reference/orphan-branch-scan-l576.md) | Scans anti-phantom (drift, branche orpheline) |
+| [reference/agent-cloud-agnosticisme.md](docs/reference/agent-cloud-agnosticisme.md) | Session cloud d'agnosticisme du mainteneur : mission, méthode, identification des PRs, circulation |
 | [lean/](docs/lean/) | Prover iteration history, intractable diagnosis, LLM endpoints, pièges tactiques (propagation d'instance `Decidable`) |
 
 Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](GradeBookApp/configs/README.md) ; **pipelines + données par cohorte = privés sur GDrive** `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` (PII, hors repo public).
@@ -78,11 +81,13 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 
 **Coordination cross-machine = RooSync uniquement.** Dashboard workspace CoursIA + messages directs. GitHub = code, **jamais** de `*_TEST_REPORT.md` / `*_COORDINATION.md` / rapports d'audit dans le repo.
 
-**Tour de coordination type** : (1) lire le dashboard **complet** (`Read` sur le fichier persisté si tronqué), (2) inbox RooSync non-lus, (3) heartbeat cluster, (4) sans mission assignée : envoyer un message à ai-01, ne pas attendre passivement.
+**Trois têtes de coordination** : le coordinateur `myia-ai-01:CoursIA`, le titulaire `myia-po-2025:CoursIA-2` et le secrétaire `myia-po-2026:CoursIA-3`, dont l'artefact est le dashboard `workspace-CoursIA-3` (« le secrétariat », « le troisième dashboard »). Rôles et circulation : [tricephale-circulation.md](docs/reference/tricephale-circulation.md).
+
+**Tour de coordination type** : (1) **drainer l'inbox RooSync** (`status:"unread", deep:true` — sans `deep`, le compte de non-lus peut être un faux zéro) — elle porte souvent le **DM nominatif qui change la priorité du cycle** ; (2) **énumérer** les dashboards (`roosync_dashboard(action:"list")`) puis lire en `section:"all"` **chaque clé pertinente**, en entier (`Read` sur le fichier persisté si tronqué) — jamais une liste apprise par cœur, qui serait **structurellement aveugle** à une clé forkée (mesure fondatrice #17197 : `workspace-CoursIA (2)`, 23 messages vivants jamais lus) ; (3) heartbeat cluster ; (4) sans mission assignée : envoyer un message à ai-01, ne pas attendre passivement.
 
 **Reporting dashboard** : poster au minimum début/livraison/fin de session. > 30 min sans post = signe d'isolement. Posts `[INFO]` courts > silence.
 
-**Git** : pas de push direct sur `main`. **Force push** : interdit sur `main` (porté par `allow_force_pushes: false`), autorisé sur une branche de PR qu'une **seule** lane manipule (`--force-with-lease`, l'alternative merge d'abord) — décision user 2026-08-08. Pas de `reset --hard` sur `main` ni sur une branche partagée. Branches `feature/<sujet>` ou `fix/<sujet>`, un sujet par PR. Le coordinateur (ai-01) review et merge ; les agents ne mergent pas eux-mêmes. Cf [git-workflow.md](.claude/rules/git-workflow.md).
+**Git** : pas de push direct sur `main`. **Force push** : interdit sur `main` (porté par `allow_force_pushes: false`), autorisé sur une branche de PR qu'une **seule** lane manipule (`--force-with-lease`, l'alternative merge d'abord) — décision user 2026-08-08. Pas de `reset --hard` sur `main` ni sur une branche partagée. Branches `feature/<sujet>` ou `fix/<sujet>`, un sujet par PR. Le coordinateur (ai-01) review et merge ; les agents ne mergent pas eux-mêmes. **Exception outillée** (mandat user 2026-09-22, resserré le 2026-09-28) : l'organe `scripts/coordination/merge_ready.py`, exécuté sous l'identité ai-01, merge sans attendre le cycle coordinateur une PR **hors harnais** (ni `.claude/`, ni `CLAUDE.md`, ni `.github/`) et **hors `DEEP`** **que le coordinateur a approuvée** — review `APPROVED` de `myia-ai-01` qui couvre le contenu de la tête (posée sur elle, ou séparée d'elle par des seuls rafraîchissements de base sans conflit) — et qui passe gate rc=0 + B.0 rc=0 + `b0: clear` au dossier + `mergeable_state: clean` à la tête exacte. L'organe ne remplace pas la lecture du coordinateur : il évite seulement qu'un dossier se périme entre cette lecture et le merge. Tout le reste reste au coordinateur. Cf [git-workflow.md](.claude/rules/git-workflow.md).
 
 **Gouvernance des règles** : tout changement normatif substantiel du harnais (`CLAUDE.md`, `.claude/rules/**`) exige une PR et un sign-off user avant merge. Est substantiel ce qui ajoute une obligation ou une interdiction, crée une règle HARD, durcit ou élargit une prescription, change une autorité, un droit d'action ou une escalade, ou transforme une recommandation en gate. Un mandat user direct vaut sign-off. Une correction de typo ou de lien, une clarification qui ne change aucune prescription, un déplacement fidèle du détail vers `docs/`, ou un slimming qui préserve exactement la règle n'exige pas de sign-off supplémentaire ; la PR et la review restent obligatoires dans tous les cas.
 
@@ -107,6 +112,7 @@ Avant **tout** `gh pr merge`, énumérer les **trois** surfaces et vérifier que
 **Une levée porte un AUTEUR et une HEURE — sans les deux, ce n'est pas une levée.**
 
 - **Qui** : une phrase écrite par **l'auteur de la PR** ne lève pas une réserve posée par **un tiers**. Se lever soi-même une réserve d'autrui n'est pas y répondre, c'est la déclarer répondue.
+- **Sous le login partagé, seul le coordinateur lève par une phrase.** Toutes les lanes écrivent sous `jsboige` : sur une PR `jsboige`, une phrase de levée signée `jsboige` est indiscernable d'une auto-levée, et l'organe la refuse quelle que soit la lane qui l'a écrite (#13316, #13495). La levée par phrase se fait sous `myia-ai-01`, avec `[OVERRIDE] lane myia-ai-01:CoursIA` en tête de ligne, et **elle nomme l'auteur de la réserve par son login** (ou par la persona Hermes). Une lane qui a traité une réserve le dit sur la PR et le signale au coordinateur. Elle garde les voies 2 et 3 ci-dessus.
 - **Quand** : tout ce qui lève doit exister **avant** `gh pr merge`. Un commentaire de merge est un compte-rendu, **jamais une porte**.
 
 **Un commit poussé après la remarque ne la lève PAS à lui seul.** Un push muet est indiscernable d'un push qui répond : ce qui lève une remarque est **une phrase**, pas un SHA.
@@ -239,7 +245,7 @@ docs/                       # Documentation déportée de ce fichier
 
 **Collision** : sous-agents read-only en parallèle OK ; sous-agents **éditeurs = un seul à la fois par notebook/série**.
 
-**Modèle explicite obligatoire** : tout `Agent()` DOIT spécifier `model: "sonnet"` ou `"haiku"`. `"opus"` uniquement sur justification écrite dans le prompt. Sous-agent sans `model` explicite = hérite d'opus = violation. Cf [model-delegation.md](.claude/rules/model-delegation.md).
+**Modèle explicite obligatoire** : tout `Agent()` DOIT spécifier `model: "sonnet"` ou `"haiku"`. `"opus"` **jamais sur les postes po-\***, sauf lane autorisée nommément (cf point 3, `myia-po-2024:CoursIA-3`) (mandat user 2026-10-10) — la tâche qui le justifierait remonte à ai-01 ; sur ai-01, justification écrite dans le prompt. Sous-agent sans `model` explicite = hérite d'opus = violation. Cf [model-delegation.md](.claude/rules/model-delegation.md).
 
 ---
 

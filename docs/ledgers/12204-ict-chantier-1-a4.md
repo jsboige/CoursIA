@@ -1,7 +1,7 @@
 # Chantier 1 — tranche A4 : l'opération 4 (*Décomposer localement — poser un recouvrement*) passe de `RAPPORTE` à `FIRSTHAND`
 
 **EPIC** : [#12204](https://github.com/jsboige/CoursIA/issues/12204) · **lane** `myia-po-2027:CoursIA` · **date de mesure** 2026-09-03
-**Tranches sœurs** : [A2](12204-ict-chantier-1-a2.md) (opération 1) · [A3](12204-ict-chantier-1-a3.md) (opérations 3, 9) · [audit froid](12204-ict-chantier-1-audit-froid.md) (les 14 opérations, trois axes)
+**Tranches sœurs** : [A2](12204-ict-chantier-1-a2.md) (opération 1) · [A3](12204-ict-chantier-1-a3.md) (opérations 3, 9) · [audit froid](../transients/2026-08-24-12204-ict-chantier-1-audit-froid.md) (les 14 opérations, trois axes)
 
 ## Ce que cette tranche fait, et ce qu'elle ne fait pas
 
@@ -51,7 +51,7 @@ Le notebook détecte l'obstruction de cochaînes de Čech sur des **trajectoires
 
 L'audit froid listait une troisième attestation : l'« orchestration EPITA ». Une première passe de cette tranche l'avait déclarée introuvable — **identification fausse, rétractée le 2026-09-03** : le grep était borné aux docs du harnais (`docs/reference/teaching-context.md`, `cluster-agents.md`) et ne couvrait ni les notebooks des séries ni les manifestes de vendoring. Témoins vérifiés firsthand, tous committés dans le dépôt :
 
-- `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-3-orchestration.ipynb` — un notebook **entièrement dédié** à l'orchestration (deux paradigmes de composition), référencé depuis le rung 0-init ;
+- `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07-Orchestration-Python.ipynb` — un notebook **entièrement dédié** à l'orchestration (deux paradigmes de composition), référencé depuis le rung 0-init ;
 - `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-0-init_agent.ipynb` — ses outputs committés portent **11 occurrences** des logs `[Orchestration.Setup]` (dépendances `jpype` + `semantic_kernel`, configuration LLM). Les trois autres notebooks `_agent` de la série n'en portent aucune : le témoin est ce notebook-là, pas la série ;
 - `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/NOTICE-EPITA` — le manifeste qui épingle fichier par fichier le code vendré du projet `argumentation_analysis` **Epita 2025** (l'objet de #14026).
 

@@ -89,11 +89,11 @@
         "scripts/check_arxiv_attributions.py",
         "scripts/tests/test_check_arxiv_attributions.py",
         ".github/workflows/arxiv-attributions-guard.yml",
-        "MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving.ipynb",
+        "MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.5-Phenomenes-de-Generalisation.ipynb",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb",
         "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/research_l4_decision_transformer.ipynb",
-        "MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb",
+        "MyIA.AI.Notebooks/RL/RL-06c-PPO-Depuis-Zero-Python.ipynb",
         "MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb"
       ],
       "pr_target_filter_excludes_main": false

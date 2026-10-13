@@ -1,4 +1,4 @@
-"""Generate SC-2-Setup-Web3py.ipynb - web3.py + py-solcx + anvil pattern."""
+"""Generate SC-02-Setup-Web3py-Python.ipynb - web3.py + py-solcx + anvil pattern."""
 import json
 import os
 
@@ -29,9 +29,9 @@ cells = []
 
 # === HEADER ===
 cells.append(md(
-"# SC-2-Setup-Web3py - Python et la Blockchain\n"
+"# SC-02-Setup-Web3py-Python - Python et la Blockchain\n"
 "\n"
-"**Navigation** : [Index](../README.md) | [<< Setup Foundry](SC-1-Setup-Foundry.ipynb) | [Solidity Basics >>](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb)\n"
+"**Navigation** : [Index](../README.md) | [<< Setup Foundry](SC-01-Setup-Foundry-Python.ipynb) | [Solidity Basics >>](../01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb)\n"
 "\n"
 "---\n"
 "\n"
@@ -45,7 +45,7 @@ cells.append(md(
 "\n"
 "### Prerequis\n"
 "\n"
-"- [SC-1-Setup-Foundry](SC-1-Setup-Foundry.ipynb) complete (anvil installe)\n"
+"- [SC-01-Setup-Foundry-Python](SC-01-Setup-Foundry-Python.ipynb) complete (anvil installe)\n"
 "- Python 3.10+ avec pip\n"
 "- `pip install web3 py-solc-x`\n"
 "\n"
@@ -551,7 +551,7 @@ cells.append(md(
 "\n"
 "---\n"
 "\n"
-"**Notebook suivant** : [SC-3-Solidity-Basics](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb) - Types, variables et structures Solidity (avec deploiement reel)",
+"**Notebook suivant** : [SC-03-Solidity-Basics-Python](../01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb) - Types, variables et structures Solidity (avec deploiement reel)",
 "summary"))
 
 # === BUILD ===
@@ -571,7 +571,7 @@ notebook = {
 
 output_path = os.path.join(
     "d:", os.sep, "CoursIA", "MyIA.AI.Notebooks", "SymbolicAI",
-    "SmartContracts", "00-Foundations", "SC-2-Setup-Web3py.ipynb"
+    "SmartContracts", "00-Foundations", "SC-02-Setup-Web3py-Python.ipynb"
 )
 with open(output_path, 'w', encoding='utf-8', newline='\n') as f:
     json.dump(notebook, f, ensure_ascii=False, indent=1)

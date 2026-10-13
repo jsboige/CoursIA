@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Microsoft.Orleans.Sdk embarque le generateur de code (proxys/invokers,
+         Orleans 7+ : generation a la compilation, plus de codegen runtime). -->
+    <PackageReference Include="Microsoft.Orleans.Sdk" Version="10.3.1" />
+  </ItemGroup>
+
+</Project>

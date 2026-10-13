@@ -52,9 +52,24 @@ Signals -- a CONJUNCTION, and that is the whole design:
 All three hold -> verdict `trivial` -> ::warning + label (advisory,
 blocking=False). The user asked for « lever un warning », not a block.
 
-Verdict states: `trivial` | `ok` | `unknown`. Unknown = no Grain tag (the
-tag-required blocking guard owns that defect) or missing diff stats
-(#14849: never decide on absent data). Unknown warns NOTHING.
+#17359 -- a SECOND verdict, `empty`, on ONE leg and independent of genre:
+
+    changed_files == 0
+
+A PR that delivers zero files has nothing to squash whatever its genre, its
+domain or its author, so the conjunction above does not apply: smallness is
+ambiguous (that is why `trivial` needs three legs), emptiness is not. Four
+such PRs (#16966/#16975/#16976/#16978) sat open for ~36h with every gate
+returning rc=1 for a DIFFERENT reason -- a stale adjoint dossier, an unraised
+nit -- and `trivial_diff` itself returned `ok`, because its genre leg
+requires a light genre and those were `fix(lean,...)`. Measured class, with a
+positive control: 4 empty out of 328 open PRs. An `empty` PR is named by
+nobody else, so this organ says it. The sentence that extinguishes `trivial`
+does NOT apply here: there is no residue to scope, the diff is null.
+
+Verdict states: `empty` | `trivial` | `ok` | `unknown`. Unknown = missing diff
+stats (#14849: never decide on absent data) or no Grain tag (the
+tag-required blocking guard owns that defect). Unknown warns NOTHING.
 
 Input:
   --pr-json <file>          CI mode: the payload of
@@ -134,6 +149,42 @@ def assess(body: str | None, additions: int | None, deletions: int | None,
            changed_files: int | None) -> dict:
     """Render the triviality verdict. Never raises on assessable input."""
     tag = parse_grain_tag(body)
+
+    # `empty` is checked BEFORE the tag gate on purpose (#17359): the
+    # predicate is genre-independent, and a tagless empty PR routed to
+    # `unknown` would be masked by exactly the kind of nobody-names-it
+    # silence this verdict exists to break. The missing tag stays owned by
+    # its own blocking guard, which is not this organ's job to re-signal.
+    #
+    # `changed_files is None` skips the leg rather than forcing `unknown`:
+    # a payload that simply omits the field still supports the triviality
+    # verdict (which never reads it), and `unknown` there would silence the
+    # #15740 warning that this organ already owes.
+    if changed_files is not None and int(changed_files) == 0:
+        return {
+            "verdict": "empty",
+            "signals": {"empty_diff": True},
+            "tier": (tag or {}).get("tier"),
+            "genre": (tag or {}).get("genre"),
+            "lane": (tag or {}).get("lane"),
+            "changed_files": 0,
+            "changed_lines": (
+                int(additions) + int(deletions)
+                if additions is not None and deletions is not None else None
+            ),
+            "reason": (
+                "la PR ne livre RIEN : changed_files=0, le diff net contre le "
+                "merge-base est vide, quel que soit le genre, le domaine ou "
+                "l'auteur. Un commit qui annule integralement un precedent "
+                "laisse un diff nul : les organes de volume ne le nomment pas "
+                "(la petitesse est ambigue, le vide ne l'est pas) et un rc=1 de "
+                "gate se lit comme « il y a des soucis a regler », jamais comme "
+                "« cette PR n'a plus d'objet ». Deux sorties legitimes : "
+                "restaurer le livrable, OU fermer la PR en l'ecrivant. "
+                "Le verdict est ADVISORY (#15740 : « lever un warning »)."
+            ),
+        }
+
     if tag is None or tag.get("genre") is None:
         return {
             "verdict": "unknown",

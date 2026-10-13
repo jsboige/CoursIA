@@ -19,7 +19,7 @@ détenteurs potentiels), les soldes `Address → ℕ`, l'offre totale un `ℕ`.
 `supplyInvariant s := ∑ a, s.balances a = s.totalSupply`. Les opérations sont des
 transitions gardées (solde suffisant pour `transfer`/`burn`, pas d'underflow).
 
-Notebook compagnon (`SC-7-Token-Standards.ipynb`, série SmartContract) :
+Notebook compagnon (`SC-07-Token-Standards-Python.ipynb`, série SmartContract) :
 présentation pédagogique du jeton + vérification formelle côte à côte avec
 l'implémentation Solidity. Le câblage du notebook revient au propriétaire de la
 série SmartContract.

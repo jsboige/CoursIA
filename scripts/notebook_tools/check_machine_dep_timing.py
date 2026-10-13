@@ -304,7 +304,7 @@ STUDENT_PACING_RE = re.compile(
     # humain entre parentheses -- « 45 min (lecture + execution sequentielle) ».
     # C'est le meme signal que le pacing ci-dessus (effort demande a l'etudiant,
     # arbitrage jsboige 14:05:37Z #9434), mais la duree PRECEDE la parenthese au
-    # lieu de s'y trouver (ex ICT-19-EnjeuBattery cell[0], ICT-19b cell[0]).
+    # lieu de s'y trouver (ex ICT-19-EnjeuBattery-Python cell[0], ICT-19b cell[0]).
     # NB : on cible le qualificatif d'effort (lecture/cours/tp) precisement -- la
     # forme « moins de N » / « plus de N » est un signal de borne runtime OU de
     # probabilite de domaine (P(trajet < 18 min)), PAS de pacing, et ne doit PAS
@@ -373,7 +373,7 @@ def _is_detached_approximate(line: str, match_start: int) -> bool:
     Le ``MACHINE_RE`` accolé ``~2 min`` est deja gere (le ``~?`` optionnel
     inclus dans le match -> ``snippet.startswith('~')`` -> skip). Ce helper
     couvre la forme avec espace, ou le ``~`` (ou ``≈``) precede le chiffre
-    d'une espace -- cas reel SC-23-Cross-Chain : « 12 blocs Ethereum ~ 2 min »
+    d'une espace -- cas reel SC-23-Cross-Chain-Python : « 12 blocs Ethereum ~ 2 min »
     (residu 2 #10169). Conforme au mandat #9434 : ordre de grandeur, pas
     mesure precise -> on ne signale pas.
     """

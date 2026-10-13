@@ -27,7 +27,8 @@ from datetime import UTC, date, datetime, timedelta
 
 EPIC_TITLE_RE = re.compile(r"\bepic\b", re.IGNORECASE)
 ISSUE_REF_RE = re.compile(r"(?<![\w])#(\d+)\b")
-OPEN_ISSUE_LIMIT = 500
+OPEN_ISSUE_PROBE_START = 500
+OPEN_ISSUE_PROBE_CEILING = 20000
 SEARCH_RESULT_CAP = 1000
 MERGED_SLICE_DAYS = 3
 MAX_LOOKBACK_DAYS = 3650
@@ -73,7 +74,20 @@ STATUS_CONTEXT_RE = re.compile(
     r"(?:^|\b)(?:statut|status|priorit[ée]|priority)\b",
     re.IGNORECASE,
 )
-ACTIVE_OVERRIDE_RE = re.compile(r"\bstatut\s+corrig[ée]\b", re.IGNORECASE)
+# A rectification header that explicitly withdraws the stale stance suppresses
+# the stance signal: the historical prose below it is preserved by design (the
+# #13906 repair pattern), so its dormant wording is no longer a live stance.
+# Markers are the phrases that pattern actually produces, measured on #1210,
+# #11690, #13902 and #13906 (2026-10-01).
+RETRACTION_MARKER_RE = re.compile(
+    r"(?:"
+    r"statut\s+corrig[ée]"  # explicit status correction (#1210)
+    r"|ne\s+d[ée]criv\w+\s+plus\s+(?:leur\s+|son\s+)?[ée]tat"  # #11690 header
+    r"|ne\s+tient\s+plus"  # #13902 measured block
+    r"|faux\s+positif\s+du\s+signal"  # #13906 measured block
+    r")",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -120,13 +134,21 @@ class MergedPullRequest:
 
 @dataclass(frozen=True)
 class EpicStaleness:
-    """Triage signals for one EPIC."""
+    """Triage signals for one EPIC.
+
+    ``citation_breadth`` is the largest number of examined EPICs that any single
+    ``unrecorded_merged`` PR cites. A PR quoting many issue numbers at once (a
+    belt dump, a dispatch list) is attributed to every EPIC it names, so a
+    breadth well above 1 marks a citation-list rather than a delivery: such a
+    finding is a candidate for human review, never for a body rewrite.
+    """
 
     number: int
     title: str
     unrecorded_merged: tuple[int, ...]
     stance_contradicted: bool
     stance_pattern: str | None
+    citation_breadth: int = 0
 
 
 def is_epic(row: dict) -> bool:
@@ -171,7 +193,7 @@ def prose_lines_for_stance(title: str, body: str) -> list[str]:
 
 def dormant_stance(title: str, body: str) -> str | None:
     """Return the first live dormant-stance pattern, if any."""
-    if ACTIVE_OVERRIDE_RE.search(body):
+    if RETRACTION_MARKER_RE.search(body):
         return None
     lines = prose_lines_for_stance(title, body)
     prose = "\n".join(lines)
@@ -201,6 +223,11 @@ def analyze_epics(
         for issue_number in pr.cited_issues() & cited_by_epic.keys():
             cited_by_epic[issue_number].append(pr)
 
+    breadth: dict[int, int] = {}
+    for citing_epic in cited_by_epic.values():
+        for pr in citing_epic:
+            breadth[pr.number] = breadth.get(pr.number, 0) + 1
+
     findings: list[EpicStaleness] = []
     for epic in epics:
         citing = cited_by_epic[epic.number]
@@ -222,6 +249,9 @@ def analyze_epics(
                     unrecorded_merged=unrecorded,
                     stance_contradicted=stance is not None,
                     stance_pattern=stance,
+                    citation_breadth=max(
+                        (breadth[number] for number in unrecorded), default=0
+                    ),
                 )
             )
 
@@ -294,26 +324,51 @@ def _default_repo() -> str:
     return result.stdout.strip() or "jsboige/CoursIA"
 
 
-def list_open_epics(repo: str) -> list[Epic]:
-    rows = _gh_json(
-        [
-            "issue",
-            "list",
-            "--repo",
-            repo,
-            "--state",
-            "open",
-            "--limit",
-            str(OPEN_ISSUE_LIMIT),
-            "--json",
-            "number,title,body,labels",
-        ]
-    ) or []
-    if len(rows) >= OPEN_ISSUE_LIMIT:
-        raise RuntimeError(
-            f"open-issue corpus reached its {OPEN_ISSUE_LIMIT}-issue fetch limit"
+def _fetch_open_issues(repo: str) -> list[dict]:
+    """Return every open issue, proving the corpus is exhausted and not capped.
+
+    A single ``--limit`` both bounds the corpus and hides the bound: asking for
+    exactly N rows cannot tell "this repository has N open issues" apart from
+    "the fetch stopped at N". The probe therefore raises the request until a
+    reply comes back **shorter** than requested -- the only observable that
+    proves exhaustion -- and refuses at the ceiling rather than reporting a
+    truncated corpus as a complete one.
+
+    The ceiling is not decoration. The corpus outgrew a fixed 500 and the
+    analyzer then raised on every run, measuring nothing at all: a fail-closed
+    guard whose bound sits below the data is an off switch, not a guard.
+    """
+    limit = OPEN_ISSUE_PROBE_START
+    while True:
+        payload = _gh_json(
+            [
+                "issue",
+                "list",
+                "--repo",
+                repo,
+                "--state",
+                "open",
+                "--limit",
+                str(limit),
+                "--json",
+                "number,title,body,labels",
+            ]
         )
-    return [Epic.from_gh_dict(row) for row in rows if is_epic(row)]
+        if not isinstance(payload, list):
+            raise RuntimeError(
+                f"open-issue fetch returned {type(payload).__name__}, not a list"
+            )
+        if len(payload) < limit:
+            return payload
+        if limit >= OPEN_ISSUE_PROBE_CEILING:
+            raise RuntimeError(
+                f"open-issue corpus still full at its {limit}-issue fetch ceiling"
+            )
+        limit = min(limit * 2, OPEN_ISSUE_PROBE_CEILING)
+
+
+def list_open_epics(repo: str) -> list[Epic]:
+    return [Epic.from_gh_dict(row) for row in _fetch_open_issues(repo) if is_epic(row)]
 
 
 def _merged_pr_slice(repo: str, since: date, until: date) -> list[dict]:

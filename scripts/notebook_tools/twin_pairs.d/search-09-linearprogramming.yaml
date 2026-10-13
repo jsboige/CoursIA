@@ -1,7 +1,7 @@
 - name: "Search-09 LinearProgramming"
   family: Search/Part1-Foundations
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming-Csharp.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |

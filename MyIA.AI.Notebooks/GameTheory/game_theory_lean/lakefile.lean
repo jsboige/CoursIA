@@ -8,7 +8,7 @@ package «game_theory_lean» where
   ]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.1"
+  "https://github.com/leanprover-community/mathlib4.git" @ "db584cd6d46c92f209a44c0f1c829460d327499d"
 
 -- EPIC #4365 — anti-proliferation GameTheory (6->2) : cible « game_theory_lean »
 -- regroupera `social_choice` + `cooperative_games` + `stable_marriage` +
@@ -18,7 +18,7 @@ require mathlib from git
 -- module. Les absorptions de modules suivront en PR dediees (c.300+).
 --
 -- c.306 (po-2026) : ajout d'un second `lean_lib CooperativeGames` qui suit
--- le pattern `decision_theory_lean` (cf `Probas/decision_theory_lean/lakefile.lean`
+-- le pattern `decision_theory_lean` (cf `Probas/DecisionTheory/decision_theory_lean/lakefile.lean`
 -- ou `Gittins`/`Utility`/`Coherence` cohabitent comme libs distinctes du
 -- meme package `decision_theory_lean`). Cela valide la structure multi-lib
 -- du lake cible sans coupler `StableMarriage` et `CooperativeGames`
@@ -128,3 +128,21 @@ lean_lib Abstraction where
 @[default_target]
 lean_lib ProgramGames where
   globs := #[`ProgramGames.*]
+
+-- Tranche L2 (po-2025) : `ProgramGames/FairBot.lean` (+ sibling `_en`) —
+-- EPIC #15062, FairBot par le théorème de Löb. Interface
+-- `ModalProvability box` (D1 nécessitation, D2 distribution, D3
+-- introspection positive, + schéma de Löb en CHAMP de structure),
+-- point fixe coordonné `loeb_mutual_fixedpoint` (la dérivation de
+-- Barasz et al. 2014), `fairBot_fairBot_cooperation` (FairBot × FairBot
+-- = (C,C)), inexploitabilité sous fiabilité locale explicite
+-- (`fairBot_unexploitable`). AUCUN axiome ad hoc : l'indépendance du
+-- schéma vis-à-vis de D1/D2/D3 est mesurée dans le module
+-- (`bump_loeb_fails`), et le champ `loeb` reste une hypothèse explicite
+-- de l'interface — sa non-vacuité est attestée par le témoin
+-- noyau-vérifié `FormalLogic.GLBridge.loeb_schema` (lake voisin
+-- `formal_logic_lean` v4.33.1, PR #15923), cité par RÉFÉRENCE et jamais
+-- importé ; ce module ne définit aucune instance de `ModalProvability` —
+-- conformément au gate L3 de
+-- l'EPIC : « sans forcer ces dépendances dans game_theory_lean 4.32.1 »
+-- (split toolchain 4.32.1/4.33.1 mesuré). 0 sorry ajouté.
