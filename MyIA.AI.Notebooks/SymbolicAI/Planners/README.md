@@ -252,6 +252,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 1 | [Planners-1-Introduction](01-Foundation/Planners-1-Introduction.ipynb) | Python | Concepts, modèle STRIPS, triptyque État-Action-But | 30 min |
+| 1 (C#) | [Planners-1-Introduction-Csharp](01-Foundation/Planners-1-Introduction-Csharp.ipynb) | .NET (C#) | Twin C# du 1 : tranche 1 from-scratch (triptyque État-Action-But, BFS), tranche 2 Fast Downward via l'API Docker (See #4956) | 30 min |
 | 2 | [Planners-2-PDDL-Basics](01-Foundation/Planners-2-PDDL-Basics.ipynb) | Python | Syntaxe PDDL, domaines, problèmes, prédicats, actions | 40 min |
 | 2 (C#) | [Planners-2-PDDL-Basics-Csharp](01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb) | .NET (C#) | Twin C# du 2 : planificateur STRIPS from-scratch (modèle typé, grounding, BFS forward), domaines Logistics + Gripper (See #4956) | 40 min |
 | 3 | [Planners-3-State-Space](01-Foundation/Planners-3-State-Space.ipynb) | Python | Espaces d'états, graphes de recherche, explosion combinatoire | 35 min |
