@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-CaseStudies
-pedagogical_count: 5
-breakdown: CaseStudies=5
-maturity: BETA=3, ALPHA=2
+pedagogical_count: 6
+breakdown: CaseStudies=6
+maturity: BETA=3, DRAFT=2, ALPHA=1
 -->
 
 [← GenAI](../README.md)

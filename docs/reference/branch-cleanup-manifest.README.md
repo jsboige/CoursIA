@@ -1,9 +1,11 @@
 # Manifeste de préservation des branches distantes — issue #14238 (tranches 1+2)
 
+> **Statut v3 (2026-10-12, lane `myia-po-2025:CoursIA`) : tranche 2 CLOSE PAR ATTRITION — les 622 branches classe C restantes du manifeste v2 sont absentes du remote (mesure `git ls-remote --heads` du 2026-10-12, 4566 têtes totales ; jointure manifeste × remote = 0 survivante, contrôles positifs cités sur l'issue). Marquées `vanished_2026-10-12_tranche2_attrition`, sha préservé — restauration possible ligne par ligne.**
+>
 > **Statut v2 (2026-10-06, cycle 31) : manifeste v2, 204 branches classe C supprimees effective (tranche 2, lane `myia-po-2024:CoursIA-2`).
 > Dry-run tranche 2 poste sur issue #14238 (commentaire 6005880152). Tranche 3 (classe E, 72 branches) lue par L576, dry-run poste (commentaire 6006262463) -- triage diff obligatoire, hors scope cycle unique.**
 >
-> Tranche 1 (PR #15093 MERGEE) : **manifeste seul, AUCUNE suppression** a l'epoque. Tranche 2 (PR en cours) : suppression effective des 204 premieres branches classe C validees par echantillon. Tranche 3 : 72 branches classe E lues par L576 (16 LIVREE, 56 INCONNU, 0 INTEGREE), triage diff obligatoire pour les 72.
+> Tranche 1 (PR #15093 MERGEE) : **manifeste seul, AUCUNE suppression** a l'epoque. Tranche 2 (CLOSE) : 204 branches classe C supprimees effectivement (v2) + 622 disparues par attrition (v3) = 826/826 tracees. Tranche 3 : 72 branches classe E lues par L576 (16 LIVREE, 56 INCONNU, 0 INTEGREE), triage diff obligatoire pour les 72.
 
 ## Source
 
