@@ -20,19 +20,19 @@ Projet 30821748. Téléverser `main.py`, compiler et lancer un backtest. Périod
 
 ## Métriques de backtest
 
-Mesure du 2026-10-10 sur les nœuds QC, fenêtre codée 2018-01-01 → 2025-01-01, **avant et après** le correctif de la tranche de minuit (#20264). Le protocole a été pré-enregistré sur l'issue avant les deux runs (commentaire `c.6099402027`). La colonne « avant » est le code de `main` au commit `a492cda2b3`, exécuté tel quel.
+Mesure du 2026-10-10 sur les nœuds QC, fenêtre codée 2018-01-01 → 2025-01-01, **avant et après** le correctif de la tranche de minuit (#20264). Le protocole a été pré-enregistré sur l'issue avant les deux runs (commentaire `c.6099402027`). La colonne « avant » est le code de `main` au commit `a492cda2b3`, exécuté tel quel. La troisième colonne, mesurée le 2026-10-11, est le code actuel : il corrige en plus les demi-séances (#20286, protocole pré-enregistré sur l'issue, commentaires `c.6105254259` et `c.6105308987`).
 
-| Indicateur | Avant correctif | Code corrigé |
-|---|---|---|
-| Ratio de Sharpe | −0,026 | **0,224** |
-| CAGR | 2,141 % | **6,837 %** |
-| Drawdown max | 42,600 % | **27,600 %** |
-| Profit net total | 15,998 % | **58,917 %** |
-| PSR (Probabilistic Sharpe Ratio) | 0,052 % | **0,637 %** |
-| Ordres | 343 | 309 |
-| Frais | 447,94 USD | 377,80 USD |
-| Ordres datés de minuit, heure de New York | **27**, sur 5 jours | **0** |
-| Backtest QC | `a772737bfde57dad91cb64801eb0939c` (projet 37630569) | `a8e7809afb021ce8b42e8b59d61e9e1b` (projet 37630571) |
+| Indicateur | Avant correctif | Après #20264 | Code actuel (#20286) |
+|---|---|---|---|
+| Ratio de Sharpe | −0,026 | 0,224 | **0,196** |
+| CAGR | 2,141 % | 6,837 % | **6,291 %** |
+| Drawdown max | 42,600 % | 27,600 % | **27,600 %** |
+| Profit net total | 15,998 % | 58,917 % | **53,316 %** |
+| PSR (Probabilistic Sharpe Ratio) | 0,052 % | 0,637 % | **0,496 %** |
+| Ordres | 343 | 309 | 307 |
+| Frais | 447,94 USD | 377,80 USD | 360,43 USD |
+| Ordres datés de minuit, heure de New York | **27**, sur 5 jours | **0** | **0** |
+| Backtest QC | `a772737bfde57dad91cb64801eb0939c` (projet 37630569) | `a8e7809afb021ce8b42e8b59d61e9e1b` (projet 37630571) | `5661dc625175652677c63daa90074862` (projet 37654337) |
 
 La colonne « avant » reproduit le run publié auparavant (2026-08-07, `SectorRotation-honest-read-2026-08` : Sharpe −0,029, CAGR 2,118 %, drawdown 42,700 %, 345 ordres). L'écart de deux ordres vient des révisions de données entre les deux dates.
 
@@ -47,30 +47,42 @@ Le correctif ajoute, en tête de `on_data` et avant l'incrément du compteur, un
 
 ### Ce que l'écart mesure, et ce qu'il ne mesure pas
 
-L'écart entre les deux colonnes **n'est pas le coût des cinq liquidations seules**. Le calendrier corrigé déplace aussi tous les rééquilibrages, et pour une rotation mensuelle la date seule pèse lourd. L'écart se concentre sur 2018-2020, alors que les années suivantes restent proches (rendements annuels lus sur la courbe d'équité QC) :
+L'écart entre les deux premières colonnes **n'est pas le coût des cinq liquidations seules**. Le calendrier corrigé déplace aussi tous les rééquilibrages, et pour une rotation mensuelle la date seule pèse lourd. L'écart se concentre sur 2018-2020, alors que les années suivantes restent proches (rendements annuels lus sur la courbe d'équité QC) :
 
 | Année | 2018 | 2019 | 2020 | 2021 | 2022 | 2023 | 2024 |
 |---|---|---|---|---|---|---|---|
 | Avant correctif | −16,8 % | −1,8 % | +1,1 % | +20,7 % | −19,6 % | +22,2 % | +18,2 % |
-| Code corrigé | −2,5 % | +7,1 % | +22,1 % | +20,5 % | −25,6 % | +20,3 % | +15,5 % |
+| Après #20264 | −2,5 % | +7,1 % | +22,1 % | +20,5 % | −25,6 % | +20,3 % | +15,5 % |
+| Code actuel (#20286) | −2,5 % | +3,4 % | +22,0 % | +20,4 % | −25,6 % | +20,3 % | +15,5 % |
 
 En mars 2020, par exemple, le code avant correctif rééquilibrait le 20/03 (passage en SHY près du point bas) puis le 16/04 ; le code corrigé le fait le 04/03 puis le 02/04. C'est une différence de date, pas de règle : **aucun verdict de stratégie ne se tire de cet écart**, conformément au pré-enregistrement.
 
-### Défaut résiduel connu (#20286)
+### Demi-séances (#20286)
 
-Dans les deux runs, un rééquilibrage tombé sur une demi-séance (clôture à 13:00, heure de New York) passe aussi tout en SHY alors que le marché monte : le 2019-11-29 avant correctif, le 2019-07-03 après. Une garde sur la longueur de l'historique est suspectée, sans encore être vérifiée. Ce défaut n'est pas corrigé ici (un sujet par PR) : les chiffres « code corrigé » comprennent donc encore un mois passé en SHY à tort, juillet 2019.
+Une demi-séance US ferme à 13:00, heure de New York : le 3 juillet, le lendemain de Thanksgiving et le 24 décembre. Ces jours-là, `history()` rend 104 à 106 barres journalières pour 126 demandées, et l'historique commence environ un mois trop tard. Sur 2018-2024, c'est le cas des 15 demi-séances, et d'aucune séance pleine. La garde `len(closes) < momentum_lookback` écartait alors les cinq titres. `_go_defensive()` passait tout en SHY alors que le marché montait : le 2019-11-29 avant #20264, le 2019-07-03 après. Pourquoi Lean raccourcit la requête n'est pas établi ici. Seul l'effet est mesuré.
 
-**Verdict : NO-BEATS**, rendu le 2026-08-07 sur le code avant correctif. Cette mesure n'en rend pas de nouveau. À titre descriptif, le code corrigé reste loin de SPY détenu sur la même fenêtre en rendement (CAGR à deux chiffres pour SPY, contre 6,8 % ici). Son drawdown max de 27,6 % n'est en revanche plus supérieur à celui de SPY, de l'ordre de 34 % au krach de 2020.
+Le correctif demande deux fois la fenêtre et garde les 126 dernières clôtures. Sur une séance pleine, ce sont les mêmes barres qu'avant.
+
+Une première version, qui demandait 5 barres de plus, n'a rien changé : elle recevait encore moins de 126 barres, et son run était identique à celui d'avant. La version retenue a été pré-enregistrée avant son run, avec quatre prédictions, qui ont toutes tenu :
+
+- les ordres antérieurs au 2019-07-03 sont identiques ;
+- le 2019-07-03, le portefeuille s'investit dans les cinq titres au lieu de SHY ;
+- aucun achat de SHY ne tombe sur une demi-séance ;
+- les 83 rééquilibrages tombent aux mêmes dates.
+
+Seule l'année 2019 change vraiment (+7,1 % → +3,4 %) : le passage en SHY à tort de juillet 2019 avait fait mieux que la position investie. L'écart de Sharpe (−0,028) reste sous le seuil de 0,05 fixé d'avance. C'est un effet de trajectoire, pas un verdict.
+
+**Verdict : NO-BEATS**, rendu le 2026-08-07 sur le code avant correctif. Ces mesures n'en rendent pas de nouveau. À titre descriptif, le code actuel reste loin de SPY détenu sur la même fenêtre en rendement (CAGR à deux chiffres pour SPY, contre 6,3 % ici). Son drawdown max de 27,6 % n'est en revanche plus supérieur à celui de SPY, de l'ordre de 34 % au krach de 2020.
 
 ## Lecture honnête
 
-Sur le code corrigé, le double filtre (SMA200 + momentum 126 j positif) et la pondération proportionnelle au momentum ne protègent toujours pas dans les régimes adverses du 2018-2025. La pire baisse va du 2021-12-28 au 2022-12-29 :
+Sur le code actuel, le double filtre (SMA200 + momentum 126 j positif) et la pondération proportionnelle au momentum ne protègent toujours pas dans les régimes adverses du 2018-2025. La pire baisse va du 2021-12-28 au 2022-12-29 :
 
 - **Concentration.** Quand un seul titre passe le double filtre, il reçoit 100 % du portefeuille. En 2022, la position est entièrement en SPY en février, entièrement en GLD en mars, puis en mai et juin. De février à décembre 2022, le portefeuille ne détient jamais plus de deux lignes.
 - **Défensif tardif.** Le repli sur SHY ne se produit que lorsqu'**aucun** actif ne passe le double filtre. En 2022, il n'arrive que le 05/07, après la baisse de SPY du premier semestre. La sortie, le 01/12 vers SPY et IWM, précède de peu la baisse de décembre.
-- **PSR ≈ 0.** Avec un PSR de 0,637 %, le Sharpe observé n'est pas statistiquement significatif : on ne peut pas distinguer ce résultat d'un tirage aléatoire. Tout claim de bord serait trompeur (règle C, PR-review-discipline §C).
+- **PSR ≈ 0.** Avec un PSR de 0,496 %, le Sharpe observé n'est pas statistiquement significatif : on ne peut pas distinguer ce résultat d'un tirage aléatoire. Tout claim de bord serait trompeur (règle C, PR-review-discipline §C).
 
-**Pas de re-tuning.** Re-optimiser les paramètres (lookback momentum, période de rebalancement, univers) pour récupérer un Sharpe sur cette seule fenêtre serait du surapprentissage jusqu'à preuve du contraire, le biais dénoncé dans l'EPIC #9768 (D2 « fenêtre non figée »). Le correctif de #20264 n'est pas un réglage : il fait faire au code ce que sa description annonce (rééquilibrer toutes les 21 séances), sans toucher aux paramètres.
+**Pas de re-tuning.** Re-optimiser les paramètres (lookback momentum, période de rebalancement, univers) pour récupérer un Sharpe sur cette seule fenêtre serait du surapprentissage jusqu'à preuve du contraire, le biais dénoncé dans l'EPIC #9768 (D2 « fenêtre non figée »). Les correctifs de #20264 et #20286 ne sont pas des réglages : ils font faire au code ce que sa description annonce (rééquilibrer toutes les 21 séances, sur 126 jours de momentum), sans toucher aux paramètres.
 
 ## Fichiers
 

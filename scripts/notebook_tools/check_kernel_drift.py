@@ -448,19 +448,42 @@ CANONICAL_LANGUAGE_TRANSITIONS = {
         "Python 3.12 -> 3.13 : convergence vers le canon d'execution 3.13 (#19181, anticipation -- pas de carnet `python3` a 3.12 mesure)",
 }
 
+# #19181 (cas par cas, decision coordinateur du 11/10) : les transitions
+# 3.8/3.9 -> 3.13 restent rouges GLOBALEMENT pour proteger la serie ICT
+# (epinglee <3.10 via pyphi). Seul le carnet nomme ci-dessous a un
+# traitement nominatif : sa re-execution selective sous 3.13 du
+# sous-ensemble local (les cellules REF QC Cloud ne sont pas executables
+# localement) est la convergence attendue, pas une derive. Une entree
+# scoped ne vaut QUE pour son chemin -- QC-Py-03, 100% cellules REF,
+# n'en porte pas : sa metadonnee fossile ne peut bouger que par
+# hand-edit, ce que personne ne doit faire.
+CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
+    ("MyIA.AI.Notebooks/QuantConnect/Python/"
+     "QC-Py-16-Alternative-Data.ipynb",
+     "python3", "3.8", "3.13"):
+        "Python 3.8 -> 3.13 : re-execution selective du sous-ensemble local "
+        "de QC-Py-16 (#19181, cas par cas)",
+}
 
-def accepted_canonical_transition(base_info, head_info):
+
+def accepted_canonical_transition(base_info, head_info, nb_path=None):
     """Vrai quand la derive de version EST une transition canon (#17679).
 
     Exige le meme ``kernelspec.name`` (un changement de kernel reste rouge
     par construction) et la direction exacte de la table : ``12.0 ->
     13.0`` est accepte, ``13.0 -> 12.0`` ne l'est pas.
+
+    ``nb_path`` active en plus les transitions scopées (#19181) : une
+    entree nominative ne vaut que pour son chemin.
     """
     if base_info["kernelspec_name"] != head_info["kernelspec_name"]:
         return False
     key = (base_info["kernelspec_name"],
            _version_prefix(base_info["language_version"]),
            _version_prefix(head_info["language_version"]))
+    if nb_path is not None and (nb_path,) + key in (
+            CANONICAL_LANGUAGE_TRANSITIONS_SCOPED):
+        return True
     return key in CANONICAL_LANGUAGE_TRANSITIONS
 
 
@@ -704,8 +727,8 @@ def _measure(base, args_obj):
         # #17679 : la transition canon C# 12.0 -> 13.0 est attendue (option
         # 1, decision coordinateur) -- seule, elle ne fait pas finding.
         canonical_transition = False
-        if kernel_diffs and accepted_canonical_transition(base_kernel,
-                                                          head_kernel):
+        if kernel_diffs and accepted_canonical_transition(
+                base_kernel, head_kernel, nb_path=nb_path):
             canonical_transition = True
             kernel_diffs = []
         # Defect 2: pass notebooks for id-based alignment

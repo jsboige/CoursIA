@@ -53,6 +53,16 @@ class Guard:
                 statut.
     needs_base  Le garde compare HEAD a la base : le runner lui garantit que
                 `origin/<base_ref>` est joignable.
+    diff_bounded  Le verdict du garde est un DELTA (comparaison base/head, ou
+                lignes ajoutees par la PR) : un rouge corrobore ne peut pas
+                heriter de `main`. Lu par le picker (`_diff_bounded_check_names`,
+                #19645) -- la declaration est EXPLICITE et distincte de
+                `needs_base`, parce que l'information de bornage peut manquer
+                a l'argv absorbe (cas `check-nav-chain`/`check-navlinks`,
+                suite c.1503 du 2026-10-09 : leur workflow d'origine scopait
+                au diff via `git diff $BASE...HEAD`, l'argv absorbe dit
+                seulement `--check`) et que les ~20 gardes `needs_base` ne
+                sont PAS un delta borne au diff par defaut.
     delta_argv  Present => le garde est un DELTA en trois temps : `argv` est
                 execute sur HEAD (sa sortie standard est capturee comme
                 `head.json`), puis sur l'arbre bascule a la base
@@ -76,6 +86,10 @@ class Guard:
     paths: list[str] = field(default_factory=list)
     blocking: bool = True
     needs_base: bool = False
+    # #19645 suite c.1503 : verdict DELTA lu par le picker (voir la docstring
+    # du champ). Declare sur les gardes dont l'argv absorbe a perdu
+    # l'information de bornage -- une heuristique d'argv ne peut pas la voir.
+    diff_bounded: bool = False
     delta_argv: list[str] = field(default_factory=list)
     swap_paths: list[str] = field(default_factory=list)
     iterates_paths: bool = False  # voir `run_iter` dans fast_lane.py
@@ -346,6 +360,16 @@ PILOT: list[Guard] = [
         ],
         argv=["python", "scripts/notebook_tools/check_notebook_navlinks.py",
               "--check"],
+        # #19645 (suite c.1503) : verdict DELTA -- NEW vs baseline committe,
+        # le workflow d'origine scopait au diff (`git diff $BASE...HEAD` ->
+        # `--diff-files`). L'argv absorbe ne porte plus ce drapeau : la borne
+        # se declare ici, lue par le picker (`_diff_bounded_check_names`).
+        # `needs_base` suit l'arbitrage ai-01 du 2026-10-12 (declaration de
+        # coherence : mesure du meme jour, aucun consommateur operationnel ne
+        # lit `needs_base` dans scripts/ ou .github/ ; le canal operant de
+        # l'imputation reste `diff_bounded`).
+        needs_base=True,
+        diff_bounded=True,
         blocking=True,
         absorbed=True,
     ),
@@ -360,6 +384,11 @@ PILOT: list[Guard] = [
         ],
         argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
               "--check"],
+        # Meme classe que `check-navlinks` ci-dessus : verdict DELTA (NEW vs
+        # baseline), workflow d'origine scope au diff, borne perdue par
+        # l'argv absorbe -- declaration explicite (#19645 suite c.1503).
+        needs_base=True,
+        diff_bounded=True,
         blocking=True,
         absorbed=True,
     ),
@@ -408,12 +437,15 @@ PILOT: list[Guard] = [
         ],
         # Le dump imprime le JSON sur stdout ; le moteur fast-lane le
         # capture via payload_of() et l'ecrit dans {name}.head.json (puis
-        # base.json apres bascule phase 2). Le comparator recoit les deux.
+        # base.json apres bascule phase 2). Le comparator recoit les deux,
+        # plus les SHA base/head : l'appariement MOVED exige la preuve de
+        # renommage git (fail-closed sans elle, #20274).
         argv=["python",
               "scripts/notebook_tools/dump_readme_link_violations.py"],
         delta_argv=["python",
                     "scripts/notebook_tools/diff_readme_link_violations.py",
-                    "{base_json}", "{head_json}"],
+                    "{base_json}", "{head_json}",
+                    "--base-sha", "{base_sha}", "--head-sha", "{head_sha}"],
         swap_paths=[
             "MyIA.AI.Notebooks",
             "_quarto.yml",
@@ -1981,6 +2013,50 @@ TRANCHE20: list[Guard] = [
             "python", "scripts/notebook_tools/check_live_read_freshness.py",
         ],
         blocking=True,
+        absorbed=True,
+    ),
+]
+
+# TRANCHE 21 -- fuite du recit d'activite dans la prose des carnets (Epic
+# #20250, phase 0).
+#
+# Le recit de coordination (corrigenda, identifiants de cycle `c.NNNN`, noms
+# de machine ou de lane, verdicts de review, annonces de tranche) vit dans
+# git et les PR : il n'a rien a faire dans le carnet servi a l'apprenant.
+# Le critere n'est PAS la presence d'un mot -- une mention isolee de
+# provenance reste admise -- mais la PART de prose markdown occupee par des
+# passages a densite de marqueurs elevee, mesuree par carnet.
+#
+# Le mode `--diff` ne juge que les passages AJOUTES : le stock mesure
+# (11 carnets au-dessus de 15 % de part, SC-09 a 48,1 %) reste visible en
+# audit sans rougir aucune PR, et une PR qui ajoute un passage dense rougit.
+#
+# Aucun workflow d'origine -> source FAST_LANE_NATIVE, convention
+# absorbed=True (cf TRANCHE19 et hr-substitution-guard) : sans absorption,
+# `effective_shadow = args.shadow and not guard.absorbed` laisserait le
+# garde sortir en conclusion NEUTRE et `blocking=True` serait une
+# declaration sans effet.
+#
+# `warn_rc=(2,)` : rc=2 est l'incident de mesure (plage de diff illisible,
+# blob de base absent d'un clone partiel), pas une faute de la PR. L'organe
+# distingue une base ABSENTE (fichier ajoute : tous ses paragraphes sont
+# legitimement neufs) d'une base ILLISIBLE (incident) -- les confondre
+# fabriquait un refus fantome sur du contenu preexistant.
+# ---------------------------------------------------------------------------
+TRANCHE21: list[Guard] = [
+    Guard(
+        name="activity-leak",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_activity_leak.py",
+            "scripts/tests/test_check_activity_leak.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_activity_leak.py",
+              "--diff", "{base_ref}...HEAD", "--strict"],
+        blocking=True,           # BLOQUANT sur les AJOUTS seuls
+        needs_base=True,
+        warn_rc=(2,),
         absorbed=True,
     ),
 ]

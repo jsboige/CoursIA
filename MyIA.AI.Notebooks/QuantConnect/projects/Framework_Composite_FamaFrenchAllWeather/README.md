@@ -69,6 +69,41 @@ Sur près de douze ans, l'avance du composite reste indiscernable du bruit.
 
 **Limite.** La fenêtre de mesure est incluse dans celle du balayage d'allocation (2010-2026) : il n'y a pas de période hors échantillon. Ce défaut favorisait la candidate, ce qui renforce le `NO BEATS`.
 
+### Livre de référence : tranche de minuit (#20264)
+
+Mesure du 2026-10-11 sur les nœuds QC, fenêtre codée 2018-01-01 → 2025-01-01, avant et après le correctif de la tranche de minuit ([#20264](https://github.com/jsboige/CoursIA/issues/20264)). Le protocole a été pré-enregistré sur l'issue avant les runs (commentaire `c.6103552152`) ; la colonne « avant » est le code de `main` au commit `bb89b25ab5`, exécuté tel quel.
+
+Les livres `spy` et `sixty40` se rééquilibrent à la première barre journalière du mois. En résolution journalière, Lean livre un avis de dividende seul, dans une tranche datée de minuit, sans barre de cotation : cette tranche consommait le rééquilibrage du mois. L'ordre partait alors à minuit et s'exécutait à l'ouverture du jour même ; les autres mois, il partait à la clôture de la première séance et s'exécutait à l'ouverture de la suivante. Le correctif ne consomme le mois que sur une tranche portant une barre d'un titre du livre : tous les mois suivent désormais le second calendrier. Les modes Framework ne passent pas par ce test et ne changent pas.
+
+| | `spy` avant | `spy` après | `sixty40` avant | `sixty40` après |
+|---|---|---|---|---|
+| Ordres datés de minuit, heure de New York | 0 | 0 | 129, sur 67 mois | 0 |
+| Ordres | 1 | 1 | 143 | 148 |
+| Sharpe (QC) | 0,495 | 0,495 | 0,378 | 0,383 |
+| CAGR | 13,55 % | 13,55 % | 8,42 % | 8,49 % |
+| Pire baisse | −33,6 % | −33,6 % | −21,1 % | −21,1 % |
+| Frais, part du capital initial | 0,002 % | 0,002 % | 0,145 % | 0,150 % |
+| Backtest | `031fde8b` | `7f2fdb33` | `d8cc6b49` | `b13cb64c` |
+
+En `spy`, le livre ne passe qu'un ordre, l'achat initial : un mois consommé à minuit sans écart à corriger ne laisse aucune trace dans le journal des ordres. Le zéro de cette colonne ne prouve donc pas l'absence du défaut.
+
+Le Sharpe affiché par QC bouge au plus de 0,005, sous le seuil de 0,05 fixé d'avance : les lignes `spy` et `sixty40` de la mesure ci-dessus, calculées avec le code d'avant, ne sont pas réécrites, et le verdict ne change pas.
+
+#### Complément hors échantillon (arbitrage #20264 → #20310)
+
+Mesure du 2026-10-11 sur la fenêtre OOS disjointe 2025-01-02 → 2026-07-13 (381 dates tradables), exigée par l'arbitrage de [#20264](https://github.com/jsboige/CoursIA/issues/20264) et pré-enregistrée avant les runs (commentaire `c.6109598714`). Mêmes projets cloud que la mesure ci-dessus, fenêtres passées par paramètres `start`/`end`, code inchangé. La fin demandée était le 2026-09-30 : les nœuds de calcul QC utilisés retiennent les 90 derniers jours et l'ont ramenée au 2026-07-13, sans erreur ; avant et après tournent sur les mêmes séances.
+
+| | `spy` avant | `spy` après | `sixty40` avant | `sixty40` après |
+|---|---|---|---|---|
+| Ordres | 1 | 1 | 30 | 31 |
+| Ordres de minuit | 0 | 0 | 28 | 0 |
+| Sharpe (QC) | 0,649 | 0,649 | 0,560 | 0,558 |
+| CAGR | 18,50 % | 18,50 % | 12,82 % | 12,79 % |
+| Pire baisse | −18,7 % | −18,7 % | −10,5 % | −10,5 % |
+| Backtest | `15cd4eda` | `7ebc1164` | `52d0675f` | `73bc60b2` |
+
+Verdict `NO DEGRADATION` : avant et après identiques en `spy` (buy-and-hold canonique de SPY) ; en `sixty40`, pire écart Sharpe −0,002 et un ordre de plus après — le mois ne se consomme plus sur la tranche de dividende. Marges respectées partout.
+
 ### Chiffres antérieurs à #19621
 
 Les tableaux ci-dessous datent d'avant la mesure ; ils sont conservés pour l'historique.
