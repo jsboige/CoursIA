@@ -262,7 +262,7 @@ Marche 1 de l'escalier qui expose le lake [`iit_lean`](../SymbolicAI/Lean/iit_le
 | Systèmes | `State`/`System` comme fonctions (`Fin n → Bool`), état one-hot, système à décalage, déterminisme par composition |
 | Coupe et motifs | `Cut` (non-trivialité `ha`/`hb` close par `rfl`), `projT`/`projF` calculés sur un état concret — marchepied avant `cutIndep` |
 | Verdict | `cutIndep` lu comme produit d'images, `decomposable`/`integrated` par `#print`, force de l'ordre des quantificateurs |
-| Théorème A | `cutIndep_of_sides_independent` → `product_decomposable`, `#print axioms` (aucun axiome), instance `echange_decomposable` prouvée sans énumération |
+| Théorème A | `cutIndep_of_sides_independent` → `product_decomposable`, `#print axioms` (`propext`, `Quot.sound` — les deux axiomes du core, aucun `Classical.choice`), instance `echange_decomposable` prouvée sans énumération |
 | Butée du broadcast | `parity`/`broadcast` sur les 8 états de n=3, table des couples de motifs : (A=vrai, B=faux) réalisable séparément, jamais ensemble — prépare la marche 3 |
 | Grade | le proxy relationnel contre Φ (MIP, perturbation, valeur numérique) — ce que le carnet ne claim pas |
 | Exercices | écrire une coupe (`selPairs`), reconstruire le motif d'un côté (`motifA`), reconstruire la parité (`pariteA4`) |
