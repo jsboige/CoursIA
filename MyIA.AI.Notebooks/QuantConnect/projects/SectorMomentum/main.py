@@ -42,6 +42,7 @@ class SectorDualMomentumStrategy(QCAlgorithm):
         self.spy_sma = self.SMA(self.spy, 200, Resolution.DAILY)
         self.rebalance_month = -1
         self.in_spy = False
+        self._refused = 0
 
         self.set_benchmark("SPY")
         self.set_warm_up(timedelta(self.max_lookback + 30))
@@ -62,15 +63,29 @@ class SectorDualMomentumStrategy(QCAlgorithm):
                 score += weight * momentum
         return score
 
+    def _rotate_to(self, target):
+        # Hold `target` alone at 98 % of the portfolio. At daily resolution every
+        # order becomes MarketOnOpen, and a buy is checked for buying power twice:
+        # when it is sent, and again at the next open, in the order the orders
+        # were sent. At a 100 % target the buy was refused about one month in ten
+        # (#20388): checked at the open against the old position, not yet sold,
+        # or already at sending time, short by less than 1 % of the margin it
+        # required. The quantity is computed before any sell, as set_holdings
+        # did, the sells go out first, and the 2 % left in cash covers the check
+        # at sending time.
+        quantity = self.calculate_order_quantity(target, 0.98)
+        for symbol in (self.spy, self.tlt, self.gld):
+            if symbol != target:
+                self.liquidate(symbol)
+        if quantity != 0:
+            self.market_order(target, quantity)
+
     def _rotate_defensive(self, tlt_score, gld_score):
-        self.liquidate(self.spy)
         if tlt_score >= gld_score:
-            self.set_holdings(self.tlt, 1.0)
-            self.liquidate(self.gld)
+            self._rotate_to(self.tlt)
             self.log(f"[RISK OFF] TLT={tlt_score:.3f} > GLD={gld_score:.3f}")
         else:
-            self.liquidate(self.tlt)
-            self.set_holdings(self.gld, 1.0)
+            self._rotate_to(self.gld)
             self.log(f"[RISK OFF] GLD={gld_score:.3f} > TLT={tlt_score:.3f}")
         self.in_spy = False
 
@@ -114,10 +129,16 @@ class SectorDualMomentumStrategy(QCAlgorithm):
             return
 
         if spy_score > 0 and spy_above_sma and spy_score > max(tlt_score, gld_score):
-            self.set_holdings(self.spy, 1.0)
-            self.liquidate(self.tlt)
-            self.liquidate(self.gld)
+            self._rotate_to(self.spy)
             self.in_spy = True
             self.log(f"[RISK ON] SPY={spy_score:.3f}")
         else:
             self._rotate_defensive(tlt_score, gld_score)
+
+    def on_order_event(self, order_event):
+        if order_event.status == OrderStatus.INVALID:
+            self._refused += 1
+            self.log(f"REFUSED {order_event.symbol.value} {order_event.quantity:.0f}")
+
+    def on_end_of_algorithm(self):
+        self.log(f"done refused={self._refused}")

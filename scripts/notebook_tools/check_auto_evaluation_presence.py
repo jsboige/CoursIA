@@ -98,7 +98,10 @@ def bilan(carnets):
     """Liste de verdicts par carnet : les trois moments sont-ils présents ?"""
     resultats = []
     for chemin in carnets:
-        absolu = chemin if os.path.isabs(chemin) else os.path.join(SERIE, chemin)
+        absolu = chemin
+        normalise = chemin.replace("\\", "/")
+        if not os.path.isabs(absolu) and "MyIA.AI.Notebooks" not in normalise.split("/"):
+            absolu = os.path.join(SERIE, chemin)
         try:
             relatif = os.path.relpath(absolu, RACINE).replace("\\", "/")
         except ValueError:  # chemin sur un autre lecteur (self-test en dossier temporaire)
