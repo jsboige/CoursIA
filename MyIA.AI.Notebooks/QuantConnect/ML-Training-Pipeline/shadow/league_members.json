@@ -1,5 +1,5 @@
 {
- "about": "Membres de la matrice de correlation hebdomadaire de la ligue (#19821 brique 4, protocole #20083). Une variante par strategie mesuree : celle que la PR de mesure declare par defaut. `trace` est relatif au dossier des traces QC (hors depot) ; `series` vaut `b` pour une reference detenue tracee dans b0..b4.",
+ "about": "Membres de la matrice de correlation hebdomadaire de la ligue (#19821 brique 4, protocole #20083). Une variante par strategie mesuree : celle que la PR de mesure declare par defaut. `trace` est relatif au dossier des traces QC (hors depot) ; `series` vaut `b` pour une reference detenue tracee dans b0..b4 ; `kind` vaut `local` pour une serie calculee hors QC (`series.csv`), comme le coeur actions de #20365, tenu sur un compte en USD.",
  "members": [
   {"id": "four-sleeve-774", "role": "candidate", "trace": "18904-four-sleeve-774/base", "issue": 18904, "pr": 19139},
   {"id": "multi-horizon-676", "role": "candidate", "trace": "19174-multi-horizon-676/base", "issue": 19174, "pr": 19182},
@@ -15,6 +15,12 @@
   {"id": "longshortharvest", "role": "candidate", "trace": "19837-lsh-vix-lag/lag_full", "issue": 19837, "pr": 20034},
   {"id": "bitcoin-regime-gate", "role": "candidate", "trace": "19929-bitcoin-regime/gate", "issue": 19929, "pr": 19931},
   {"id": "ema-cross-crypto", "role": "candidate", "trace": "20054-ema-cross-crypto/base", "issue": 20054, "pr": 20056},
+  {"id": "leveraged-etf-ucits", "role": "candidate", "trace": "20141-leveraged-etf-ucits/ucits", "issue": 20141, "pr": 20143},
+  {"id": "adaptive-momentum-775", "role": "candidate", "trace": "20168-adaptive-momentum-775/base", "issue": 20168, "pr": 20171},
+  {"id": "btc-eth-rotation", "role": "candidate", "trace": "20189-btc-eth-rotation/base", "issue": 20189, "pr": 20192},
+  {"id": "crypto-momentum-topn", "role": "candidate", "trace": "20214-crypto-momentum-topn/L14N2", "issue": 20214, "pr": 20216},
+  {"id": "ema-cross-stocks", "role": "candidate", "trace": "20258-ema-cross-stocks/pit-ema", "issue": 20258, "pr": 20261},
+  {"id": "core-equity", "role": "core", "kind": "local", "trace": "20365-league-core/core-equity", "issue": 20365},
   {"id": "spy", "role": "reference", "trace": "19587-leveraged-etf-momentum/spy", "issue": 19587, "pr": 19599},
   {"id": "sixty40", "role": "reference", "trace": "19621-famafrench-allweather/sixty40", "issue": 19621, "pr": 19633},
   {"id": "btc", "role": "reference", "trace": "20054-ema-cross-crypto/base", "series": "b", "issue": 20054, "pr": 20056}

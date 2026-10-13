@@ -150,6 +150,13 @@ python scripts/league_correlation.py --traces-root <dossier des traces> --agains
 
 `--against` rapporte chaque série à un membre et la place par rapport au seuil de 0,7 de la règle d'entrée du panier, sans décider de l'entrée. La colonne « Investies » donne la part de semaines où la stratégie n'était pas en liquide : une corrélation proche de zéro se lit sur ces seules semaines.
 
+Le cœur actions n'a pas de trace QC : c'est la règle de volatilité inverse du harnais paper (#19072). `scripts/league_core_series.py` calcule sa série hors QC, par le point d'entrée de l'ombre, et l'écrit dans `series.csv` ; le membre `core-equity` la lit avec `"kind": "local"`. La règle y est tenue sur un compte en USD, comme les autres membres : compté en euros, le cœur porterait le change EUR/USD sur sa liquidité, et sa corrélation aux autres membres baisserait de 0,19 en moyenne (#20365).
+
+```bash
+python scripts/league_core_series.py --out <traces>/20365-league-core/core-equity \
+    --closes-dir <traces>/20365-league-core/closes
+```
+
 ## Cadence
 
 Un passage par mois, à la première séance du mois. Chaque passage est une PR qui ne touche que `passes.csv`. Elle cite la sortie de `validate` et le dossier des séries.
