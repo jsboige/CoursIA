@@ -26,7 +26,7 @@ la propriété qui distingue A* d'une simple recherche en largeur.
 Le notebook compagnon historique
 [`Exploration_non_informée_et_informée_intro.ipynb`](../_archive/Exploration_non_informée_et_informée_intro.ipynb)
 (archivé en 2026-07-03, tranche 8/8 du plan #5081) puis ses successeurs officiels
-[`Search-02-Uninformed.ipynb`](../Part1-Foundations/Search-02-Uninformed.html)
+[`Search-02-Uninformed.ipynb`](../Part1-Foundations/Search-02-Uninformed.ipynb)
 et [`Search-03-Informed.ipynb`](../Part1-Foundations/Search-03-Informed.ipynb)
 illustrent ceci en Python sur un terrain pondéré où A* exploite
 l'heuristique pour explorer moins de nœuds que BFS.
@@ -244,4 +244,4 @@ Phases suivantes (suivi #4048) :
   archivé `G:\Mon Drive\MyIA\IA\Bibliographie IA\NumberTheory\` — carnet compagnon
   [`App-32-Szpiro-Pasten-2026.ipynb`](../App-32-Szpiro-Pasten-2026.ipynb).
 - S. Russell, P. Norvig, *Artificial Intelligence: A Modern Approach*, §3.5 (A* Search).
-- Notebooks compagnons : [`Search-02-Uninformed.ipynb`](../Part1-Foundations/Search-02-Uninformed.html), [`Search-03-Informed.ipynb`](../Part1-Foundations/Search-03-Informed.ipynb) (le notebook historique [`Exploration_non_informée_et_informée_intro.ipynb`](../_archive/Exploration_non_informée_et_informée_intro.ipynb) est archivé depuis 2026-07-03).
+- Notebooks compagnons : [`Search-02-Uninformed.ipynb`](../Part1-Foundations/Search-02-Uninformed.ipynb), [`Search-03-Informed.ipynb`](../Part1-Foundations/Search-03-Informed.ipynb) (le notebook historique [`Exploration_non_informée_et_informée_intro.ipynb`](../_archive/Exploration_non_informée_et_informée_intro.ipynb) est archivé depuis 2026-07-03).

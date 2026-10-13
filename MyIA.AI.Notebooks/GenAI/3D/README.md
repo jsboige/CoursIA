@@ -14,7 +14,7 @@ L'objectif fil rouge de la série est de **comprendre NeRF de l'intérieur** —
 
 À l'issue de la série, l'apprenant sait :
 
-- **Écrire un pipeline NeRF complet** : encodage positionnel $\gamma$ (pont avec les Fourier features de [`3.4d`](../../ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.html)), MLP à sauts de connexion, échantillonnage stratifié le long des rayons, compositing alpha différentiable, quadrature de l'équation de rendu.
+- **Écrire un pipeline NeRF complet** : encodage positionnel $\gamma$ (pont avec les Fourier features de [`3.4d`](../../ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb)), MLP à sauts de connexion, échantillonnage stratifié le long des rayons, compositing alpha différentiable, quadrature de l'équation de rendu.
 - **Relier représentation continue et biais spectral** : pourquoi un MLP brut ne peut pas apprendre les hautes fréquences d'une scène, et ce que l'encodage positionnel change.
 - **Mesurer les limites d'une architecture** : temps d'entraînement par scène, effondrement sans Fourier features, sensibilité aux poses, échelle unique du rayon, coût de l'échantillonnage volumique.
 - **Situer les successeurs** : Mip-NeRF (frustum conique), Instant-NGP (tables de hachage), 3DGS (gaussiennes explicites) — et pourquoi chaque correctif change de représentation plutôt que de régler le MLP.
@@ -28,7 +28,7 @@ L'objectif fil rouge de la série est de **comprendre NeRF de l'intérieur** —
 
 ## Prérequis et exécution
 
-- **Prérequis conceptuel** : biais spectral et Fourier features ([`3.4d-Fourier-Features`](../../ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.html), Pli 1 de l'Epic #18605).
+- **Prérequis conceptuel** : biais spectral et Fourier features ([`3.4d-Fourier-Features`](../../ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb), Pli 1 de l'Epic #18605).
 - **Exécution** : PyTorch (CPU jouable pour la scène jouet ; GPU recommandé — ~2-3 min pour 3D-01, ~10-12 min pour 3D-02 sur RTX 3090). Les seeds sont fixés : les résultats sont reproductibles.
 - **Dataset** : `tiny_nerf_data.npz` (scène Blender « Lego » 100×100, © les auteurs de NeRF) téléchargé au premier lancement depuis la page projet UCSD des auteurs, mis en cache dans `data/` (hors dépôt).
 

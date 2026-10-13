@@ -99,3 +99,23 @@ lean_lib «Renaming» where
   /- Module plat, meme forme que MathUniverse : pas d'arborescence
   `Renaming/`. -/
   globs := #[`Renaming, `Renaming_en]
+/-- Module `Generators` — suite de #16753 : réifie le critère « générateurs
++ composition » que `MathUniverse` laissait en exhibition concrète — syntaxe
+de termes `Term ν` sur un générateur binaire, évaluation `Term.eval`,
+prédicat `Generates`, l'équation (A2) comme DONNÉE (les huit termes
+`termA2`), et le pont prouvé vers les tables de `bool8`/`nand8`
+(`relA1_iff_generated`, `relA2_iff_generated`, `relA1_iff_relA2`). Frère
+cadet de `MathUniverse` dans le lake ML généraliste. -/
+@[default_target]
+lean_lib «Generators» where
+  /- Module plat, même leçon que MathUniverse : pas de `.submodules`. -/
+  globs := #[`Generators, `Generators_en]
+
+/-- Module `MutualGen` — digestion #16741/arc B (issue #16753, tranche 4) :
+génération mutuelle générale de l'Annexe A de R16 — termes sur signature
+quelconque (le tuple d'arité quelconque, multi-générateurs) et le théorème
+« se générer l'un l'autre ⇒ mêmes fonctions engendrées » (`mutual_gen_iff`).
+Frère de `MathUniverse` dans le lake. -/
+@[default_target]
+lean_lib «MutualGen» where
+  globs := #[`MutualGen, `MutualGen_en]
