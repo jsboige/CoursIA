@@ -5470,22 +5470,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "fdfcbb4416b0b477d2b7a5529c854781c2f0a19968b218c5bfb1832945994af2",
+      "code_sha": "79cf7b7ce88bf3a96f250c059a6c002eca1affd9ec3ea8958a72b4fe8cc500dc",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "cbb550a5d",
-    "executed_at": "2026-10-09T04:41:27+02:00",
+    "last_success_sha": "465eea63f",
+    "executed_at": "2026-10-12T04:17:35+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "1h",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 23.5,
+        "wall_seconds": 8.9,
         "cells_timed": 30,
         "cells_code": 30,
         "coverage": "FULL",
@@ -5494,20 +5494,20 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 5,
+        "revisions": 7,
         "authors": 1,
         "first_commit": "2026-09-30",
-        "span_days": 9
+        "span_days": 12
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-09",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17550, #17780, #19944",
-    "cells_total": 69,
+    "issue_pr_associee": "#20307, #20311",
+    "cells_total": 72,
     "cells_code": 30,
-    "cells_markdown": 39,
-    "cells_with_outputs": 24,
+    "cells_markdown": 42,
+    "cells_with_outputs": 23,
     "cells_without_outputs": 0,
     "requires_api": false,
     "requires_gpu": false,
@@ -7070,22 +7070,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "a9eb9d75e5b304db4b5486e6fb383f04fbeae18698eb313461c78a8930310a0f",
+      "code_sha": "2beb95df6af4a673be86c7b2d47d8fb668e29d5b05485aa9c37cefb08f18469f",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "60a38bce4",
-    "executed_at": "2026-10-05T00:20:30+02:00",
+    "last_success_sha": "62b079df9",
+    "executed_at": "2026-10-12T00:22:09+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "1h",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "MODERATE",
-        "wall_seconds": 98.8,
+        "wall_seconds": 89.0,
         "cells_timed": 33,
         "cells_code": 33,
         "coverage": "FULL",
@@ -7094,18 +7094,18 @@
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-30",
-        "span_days": 5
+        "span_days": 12
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-05",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#14032, #19040",
+    "issue_pr_associee": "#20316, #20375",
     "cells_total": 65,
     "cells_code": 33,
     "cells_markdown": 32,
@@ -8786,6 +8786,69 @@
     "cells_with_outputs": 13,
     "cells_without_outputs": 0,
     "requires_api": true,
+    "requires_gpu": true,
+    "requires_cloud": false,
+    "requires_wsl": false,
+    "executable_locally": false
+  },
+  {
+    "path": "GenAI/3D/3D-03-Gaussian-Splats-Concepts.ipynb",
+    "title": "3D-03 — Gaussian Splats : la transition du volume continu au nuage explicite",
+    "serie": "GenAI",
+    "sous_serie": "3D",
+    "kernel": "Python 3",
+    "status": "DEMO",
+    "pedagogical_role": "",
+    "maturity": "ALPHA",
+    "editorial": "ALPHA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "987658a6b0ef18ca4f1982030e17362171d269ee93ce8a8466ab49545907c529",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "52aa6b3cf",
+    "executed_at": "2026-10-12T10:59:20+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "45min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "UNKNOWN",
+        "wall_seconds": null,
+        "cells_timed": 0,
+        "cells_code": 15,
+        "coverage": "NONE",
+        "external": [
+          "gpu"
+        ]
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-10-12",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2025",
+    "last_validation": "2026-10-12",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#20390, #20393",
+    "cells_total": 34,
+    "cells_code": 15,
+    "cells_markdown": 19,
+    "cells_with_outputs": 12,
+    "cells_without_outputs": 0,
+    "requires_api": false,
     "requires_gpu": true,
     "requires_cloud": false,
     "requires_wsl": false,
@@ -11269,9 +11332,9 @@
     "kernel": "Python 3",
     "status": "DEMO",
     "pedagogical_role": "",
-    "maturity": "ALPHA",
+    "maturity": "DRAFT",
     "editorial": "ALPHA",
-    "reproducibility": "EXECUTED",
+    "reproducibility": "REPRODUCED",
     "scientific_review": "UNASSESSED",
     "scientific_review_stale": false,
     "scientific_review_detail": {
@@ -11284,8 +11347,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "be69f38f8",
-    "executed_at": "2026-09-10T00:22:22+02:00",
+    "last_success_sha": "a43440b6b",
+    "executed_at": "2026-10-13T11:35:04+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -11303,16 +11366,79 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 12,
+        "revisions": 13,
         "authors": 1,
         "first_commit": "2026-05-10",
-        "span_days": 123
+        "span_days": 156
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-10",
+    "last_validation": "2026-10-13",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#15244",
+    "issue_pr_associee": "#1650, #20453",
+    "cells_total": 31,
+    "cells_code": 11,
+    "cells_markdown": 20,
+    "cells_with_outputs": 1,
+    "cells_without_outputs": 1,
+    "requires_api": true,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": false,
+    "executable_locally": false
+  },
+  {
+    "path": "GenAI/CaseStudies/Fort-Boyard/fort-boyard-python_en.ipynb",
+    "title": "Overview: an agent duel between Père Fouras and Laurent Jalabert",
+    "serie": "GenAI",
+    "sous_serie": "CaseStudies",
+    "kernel": "Python 3",
+    "status": "DEMO",
+    "pedagogical_role": "",
+    "maturity": "DRAFT",
+    "editorial": "ALPHA",
+    "reproducibility": "REPRODUCED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "87d6e1a0f1d2aa60a1c635fc951b1e936c56fc99bf1b2ec4e186713839bce424",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "a43440b6b",
+    "executed_at": "2026-10-13T11:35:04+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "30min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "LIGHT",
+        "wall_seconds": 27.5,
+        "cells_timed": 11,
+        "cells_code": 11,
+        "coverage": "FULL",
+        "external": [
+          "api"
+        ]
+      },
+      "creation": {
+        "class": "MODERATE",
+        "history": "COMPLETE",
+        "revisions": 3,
+        "authors": 1,
+        "first_commit": "2026-08-10",
+        "span_days": 64
+      }
+    },
+    "owner_logique": "po-2025",
+    "last_validation": "2026-10-13",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#1650, #20453",
     "cells_total": 31,
     "cells_code": 11,
     "cells_markdown": 20,
@@ -12768,6 +12894,69 @@
     "executable_locally": false
   },
   {
+    "path": "GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3_en.ipynb",
+    "title": "OpenAI DALL-E 3 - Image Generation",
+    "serie": "GenAI",
+    "sous_serie": "Image",
+    "kernel": "Python 3",
+    "status": "DEMO",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "2efe671c33b40c269d8e22ff685ed721b8c0b59213e6288350ab9dc8d9e54694",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "f35a009f2",
+    "executed_at": "2026-10-12T20:57:25+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "45min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "MODERATE",
+        "wall_seconds": 150.2,
+        "cells_timed": 16,
+        "cells_code": 16,
+        "coverage": "FULL",
+        "external": [
+          "api"
+        ]
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-10-12",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2025",
+    "last_validation": "2026-10-12",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#1650, #20449",
+    "cells_total": 37,
+    "cells_code": 16,
+    "cells_markdown": 21,
+    "cells_with_outputs": 11,
+    "cells_without_outputs": 0,
+    "requires_api": true,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": false,
+    "executable_locally": false
+  },
+  {
     "path": "GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb",
     "title": "GPT-5 Multimodal - Analyse et Génération d'Images",
     "serie": "GenAI",
@@ -12790,8 +12979,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "2e36fdfb9",
-    "executed_at": "2026-09-18T12:32:22+02:00",
+    "last_success_sha": "f35a009f2",
+    "executed_at": "2026-10-12T20:57:25+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -12809,16 +12998,79 @@
       "creation": {
         "class": "VERY_HEAVY",
         "history": "COMPLETE",
-        "revisions": 50,
+        "revisions": 51,
         "authors": 2,
         "first_commit": "2026-01-23",
-        "span_days": 238
+        "span_days": 262
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-18",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16472, #16485",
+    "issue_pr_associee": "#1650, #20449",
+    "cells_total": 30,
+    "cells_code": 14,
+    "cells_markdown": 16,
+    "cells_with_outputs": 9,
+    "cells_without_outputs": 0,
+    "requires_api": true,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": false,
+    "executable_locally": false
+  },
+  {
+    "path": "GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation_en.ipynb",
+    "title": "GPT-5 Multimodal - Image Analysis and Generation",
+    "serie": "GenAI",
+    "sous_serie": "Image",
+    "kernel": "Python 3",
+    "status": "DEMO",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "fc16dd8087b17e91508a976083205a6c7c3c7d063190b8cf9641ccdffdc19d6c",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "f35a009f2",
+    "executed_at": "2026-10-12T20:57:25+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "30min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "MODERATE",
+        "wall_seconds": 80.1,
+        "cells_timed": 14,
+        "cells_code": 14,
+        "coverage": "FULL",
+        "external": [
+          "api"
+        ]
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-10-12",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2025",
+    "last_validation": "2026-10-12",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#1650, #20449",
     "cells_total": 30,
     "cells_code": 14,
     "cells_markdown": 16,
@@ -12979,8 +13231,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "9955f9e03",
-    "executed_at": "2026-09-16T01:42:15+02:00",
+    "last_success_sha": "f35a009f2",
+    "executed_at": "2026-10-12T20:57:25+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -12999,16 +13251,16 @@
       "creation": {
         "class": "VERY_HEAVY",
         "history": "COMPLETE",
-        "revisions": 48,
+        "revisions": 49,
         "authors": 2,
         "first_commit": "2026-01-23",
-        "span_days": 236
+        "span_days": 262
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-16",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#2161, #16330",
+    "issue_pr_associee": "#1650, #20449",
     "cells_total": 33,
     "cells_code": 15,
     "cells_markdown": 18,
@@ -17913,8 +18165,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "1b2c4619f",
-    "executed_at": "2026-09-24T11:10:40+02:00",
+    "last_success_sha": "0f59a9ad7",
+    "executed_at": "2026-10-13T00:15:13+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -17930,22 +18182,146 @@
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-23",
-        "span_days": 1
+        "span_days": 20
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-24",
+    "last_validation": "2026-10-13",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#11168, #17622",
+    "issue_pr_associee": "#16741, #20318",
     "cells_total": 21,
     "cells_code": 11,
     "cells_markdown": 10,
     "cells_with_outputs": 7,
+    "cells_without_outputs": 0,
+    "requires_api": false,
+    "requires_gpu": true,
+    "requires_cloud": false,
+    "requires_wsl": false,
+    "executable_locally": false
+  },
+  {
+    "path": "GenAI/PostTraining/PT_15b_geometrie_features_sae.ipynb",
+    "title": "PT-15b — Géométrie des features SAE : galaxy, atome, dense — R04 × R09 sur nos traces",
+    "serie": "GenAI",
+    "sous_serie": "PostTraining",
+    "kernel": "Python 3",
+    "status": "READY",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "RESEARCH",
+    "scientific_review_stale": true,
+    "scientific_review_detail": {
+      "grade": "RESEARCH",
+      "stale": true,
+      "code_sha": "7f13879343188097f6a9075efeaf64cc4b3a4ebfa77294f712c75d403632b34d",
+      "reviewed_code_sha": "84dbbee96c234cd6872de20c3632bf546b9b4acfa8c19ecbe3e0c4646402e8c2",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "0f59a9ad7",
+    "executed_at": "2026-10-13T00:15:13+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "30min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "HEAVY",
+        "wall_seconds": 905.0,
+        "cells_timed": 13,
+        "cells_code": 13,
+        "coverage": "FULL",
+        "external": []
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-10-13",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2025",
+    "last_validation": "2026-10-13",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#16741, #20318",
+    "cells_total": 39,
+    "cells_code": 13,
+    "cells_markdown": 26,
+    "cells_with_outputs": 10,
+    "cells_without_outputs": 0,
+    "requires_api": false,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": false,
+    "executable_locally": true
+  },
+  {
+    "path": "GenAI/PostTraining/PT_15c_crosscoder_distillation.ipynb",
+    "title": "PT-15c — Crosscoder : diffuser deux modèles, distilled reasoning vs base",
+    "serie": "GenAI",
+    "sous_serie": "PostTraining",
+    "kernel": "coursia-ml-training",
+    "status": "READY",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "e9c4efae1c0d1ac63903ee9b7275e6688440848e1cf5a2b27b6243d9c0299df3",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "0f59a9ad7",
+    "executed_at": "2026-10-13T00:15:13+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "45min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "HEAVY",
+        "wall_seconds": 743.1,
+        "cells_timed": 16,
+        "cells_code": 16,
+        "coverage": "FULL",
+        "external": [
+          "gpu"
+        ]
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-10-13",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2025",
+    "last_validation": "2026-10-13",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#16741, #20318",
+    "cells_total": 37,
+    "cells_code": 16,
+    "cells_markdown": 21,
+    "cells_with_outputs": 13,
     "cells_without_outputs": 0,
     "requires_api": false,
     "requires_gpu": true,
@@ -18824,6 +19200,67 @@
     "requires_cloud": false,
     "requires_wsl": false,
     "executable_locally": false
+  },
+  {
+    "path": "GenAI/Security/Oversight/Backdoor-Code-From-Scratch.ipynb",
+    "title": "Backdoor Code — Houdini a trois etages contre un Guard a vote majoritaire",
+    "serie": "GenAI",
+    "sous_serie": "Security",
+    "kernel": "Python 3",
+    "status": "READY",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "a95c614a08705e5c8dc2653fb1c89accb2d98283468f11e61c15e59a3b043988",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "0932209ff",
+    "executed_at": "2026-10-12T00:24:44+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "30min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "LIGHT",
+        "wall_seconds": 0.3,
+        "cells_timed": 8,
+        "cells_code": 8,
+        "coverage": "FULL",
+        "external": []
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-10-12",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2025",
+    "last_validation": "2026-10-12",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#16754, #20031",
+    "cells_total": 24,
+    "cells_code": 8,
+    "cells_markdown": 16,
+    "cells_with_outputs": 8,
+    "cells_without_outputs": 0,
+    "requires_api": false,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": false,
+    "executable_locally": true
   },
   {
     "path": "GenAI/Security/Oversight/Oversight-Scaling-Laws-Analytics.ipynb",
@@ -25125,8 +25562,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "4c09c0e67",
-    "executed_at": "2026-10-06T08:23:24+02:00",
+    "last_success_sha": "f42b5704a",
+    "executed_at": "2026-10-12T11:10:38+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -25142,16 +25579,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-09-18",
-        "span_days": 18
+        "span_days": 24
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-06",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17185, #19395",
+    "issue_pr_associee": "#16231, #20400",
     "cells_total": 26,
     "cells_code": 10,
     "cells_markdown": 16,
@@ -25186,8 +25623,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "ed1e2c1da",
-    "executed_at": "2026-09-25T07:43:54+02:00",
+    "last_success_sha": "f42b5704a",
+    "executed_at": "2026-10-12T11:10:38+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -25203,16 +25640,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-09-18",
-        "span_days": 7
+        "span_days": 24
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-25",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17183, #17288",
+    "issue_pr_associee": "#16231, #20400",
     "cells_total": 27,
     "cells_code": 9,
     "cells_markdown": 18,
@@ -25369,8 +25806,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "4c09c0e67",
-    "executed_at": "2026-10-06T08:23:24+02:00",
+    "last_success_sha": "f42b5704a",
+    "executed_at": "2026-10-12T11:10:38+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -25386,16 +25823,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 6,
+        "revisions": 7,
         "authors": 1,
         "first_commit": "2026-09-18",
-        "span_days": 18
+        "span_days": 24
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-06",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17185, #19395",
+    "issue_pr_associee": "#16231, #20400",
     "cells_total": 27,
     "cells_code": 10,
     "cells_markdown": 17,
@@ -26517,26 +26954,26 @@
     "editorial": "BETA",
     "reproducibility": "EXECUTED",
     "scientific_review": "RESEARCH",
-    "scientific_review_stale": false,
+    "scientific_review_stale": true,
     "scientific_review_detail": {
       "grade": "RESEARCH",
-      "stale": false,
-      "code_sha": "acbce2cbd8bd0cefa0ae06251f4c2062c5f9f3409db8e0f798188c48996784d2",
+      "stale": true,
+      "code_sha": "a7e943f46f6ade7fd5b718685ce4785d5fb0b25e1899b5168f9dff0b55bbde25",
       "reviewed_code_sha": "acbce2cbd8bd0cefa0ae06251f4c2062c5f9f3409db8e0f798188c48996784d2",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "6aa8452e7",
-    "executed_at": "2026-10-02T12:22:16+02:00",
+    "last_success_sha": "659c57d7b",
+    "executed_at": "2026-10-11T20:23:53+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 9.1,
+        "wall_seconds": 2.5,
         "cells_timed": 9,
         "cells_code": 9,
         "coverage": "FULL",
@@ -26545,16 +26982,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-10-02",
-        "span_days": 0
+        "span_days": 9
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-02",
+    "last_validation": "2026-10-11",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #18649",
+    "issue_pr_associee": "#20319, #20361",
     "cells_total": 22,
     "cells_code": 9,
     "cells_markdown": 13,
@@ -27371,26 +27808,26 @@
     "editorial": "BETA",
     "reproducibility": "EXECUTED",
     "scientific_review": "RESEARCH",
-    "scientific_review_stale": false,
+    "scientific_review_stale": true,
     "scientific_review_detail": {
       "grade": "RESEARCH",
-      "stale": false,
-      "code_sha": "66d81b8d05d75489fa4faf5f1ccb7f4a880d1efb290e4c6f5c652e2560242ebe",
+      "stale": true,
+      "code_sha": "c84660b997c2ac6068f87d82b8157ff6f43cf6ac526f53f46d86e616e0ebbd23",
       "reviewed_code_sha": "66d81b8d05d75489fa4faf5f1ccb7f4a880d1efb290e4c6f5c652e2560242ebe",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "6aa8452e7",
-    "executed_at": "2026-10-02T12:22:16+02:00",
+    "last_success_sha": "b34d086d7",
+    "executed_at": "2026-10-12T10:55:43+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 1.3,
+        "wall_seconds": 12.1,
         "cells_timed": 11,
         "cells_code": 11,
         "coverage": "FULL",
@@ -27399,16 +27836,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-10-02",
-        "span_days": 0
+        "span_days": 10
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-02",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #18649",
+    "issue_pr_associee": "#20321, #20334",
     "cells_total": 33,
     "cells_code": 11,
     "cells_markdown": 22,
@@ -27695,8 +28132,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "6880d04ad",
-    "executed_at": "2026-10-10T04:37:13+02:00",
+    "last_success_sha": "0f59a9ad7",
+    "executed_at": "2026-10-13T00:15:13+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -27712,18 +28149,18 @@
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-10-02",
-        "span_days": 8
+        "span_days": 11
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-10",
+    "last_validation": "2026-10-13",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16750, #20074",
+    "issue_pr_associee": "#16741, #20318",
     "cells_total": 35,
     "cells_code": 13,
     "cells_markdown": 22,
@@ -27885,8 +28322,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "0fda33f10",
-    "executed_at": "2026-10-11T02:05:39+02:00",
+    "last_success_sha": "0f59a9ad7",
+    "executed_at": "2026-10-13T00:15:13+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -27904,16 +28341,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-10-11",
-        "span_days": 0
+        "span_days": 2
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-11",
+    "last_validation": "2026-10-13",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16760, #20219",
+    "issue_pr_associee": "#16741, #20318",
     "cells_total": 35,
     "cells_code": 13,
     "cells_markdown": 22,
@@ -27941,31 +28378,31 @@
     "scientific_review_detail": {
       "grade": "RESEARCH",
       "stale": true,
-      "code_sha": "dd388731322c2130ba8fa229027e6aba14bc93c1f5af7da28bf2a4c311e869bb",
+      "code_sha": "49bfdbaea96c8a638cdd43d442165402d793a0cc758420a1eaf48fae9c9c830f",
       "reviewed_code_sha": "3f8486094a815e35a0125779eccf46f747d9085f9a693d138cf868686e7d613b",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "80f5ecb30",
-    "executed_at": "2026-10-11T00:32:55+02:00",
+    "last_success_sha": "92cd4dd44",
+    "executed_at": "2026-10-11T20:34:32+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "LIGHT",
-        "wall_seconds": 28.9,
-        "cells_timed": 11,
-        "cells_code": 11,
+        "class": "MODERATE",
+        "wall_seconds": 83.5,
+        "cells_timed": 12,
+        "cells_code": 12,
         "coverage": "FULL",
         "external": []
       },
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 5,
+        "revisions": 6,
         "authors": 1,
         "first_commit": "2026-10-02",
         "span_days": 9
@@ -27974,11 +28411,11 @@
     "owner_logique": "po-2025",
     "last_validation": "2026-10-11",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19333, #19590",
-    "cells_total": 29,
-    "cells_code": 11,
-    "cells_markdown": 18,
-    "cells_with_outputs": 11,
+    "issue_pr_associee": "#20323, #20372",
+    "cells_total": 32,
+    "cells_code": 12,
+    "cells_markdown": 20,
+    "cells_with_outputs": 12,
     "cells_without_outputs": 0,
     "requires_api": false,
     "requires_gpu": false,
@@ -28739,22 +29176,22 @@
     "scientific_review_detail": {
       "grade": "RESEARCH",
       "stale": true,
-      "code_sha": "cbc3a2ea2e3ace3c762ed5b86339b8c450fc8b6d833ff1b9b6d4ee6f9c731f49",
+      "code_sha": "55659e45956d5640aa31e373870ea985439e888cb26c37cde01a9a31c93ee938",
       "reviewed_code_sha": "837c4e864c1edb7c79312362060e03c770f048f9f0d702f8e6db6e94781017b7",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "60a38bce4",
-    "executed_at": "2026-10-05T00:20:30+02:00",
+    "last_success_sha": "62b079df9",
+    "executed_at": "2026-10-12T00:22:09+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 7.9,
+        "wall_seconds": 2.1,
         "cells_timed": 12,
         "cells_code": 12,
         "coverage": "FULL",
@@ -28763,18 +29200,18 @@
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-10-02",
-        "span_days": 3
+        "span_days": 10
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-05",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#14032, #19040",
+    "issue_pr_associee": "#20316, #20375",
     "cells_total": 22,
     "cells_code": 12,
     "cells_markdown": 10,
@@ -28802,22 +29239,22 @@
     "scientific_review_detail": {
       "grade": "RESEARCH",
       "stale": true,
-      "code_sha": "e61aa6e8b8e3cc392314b861430da2a34f082cf4cb6e2f2f0ee89dfd77eb51eb",
+      "code_sha": "b55c638ea087dca82df8a5d5e9fcf833422589f7b2a14c1630f3449ce164f012",
       "reviewed_code_sha": "9848440cfce428e34d3542c00471197235b2db632cc893426dbbdb15d6e8e1fb",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "46c48317a",
-    "executed_at": "2026-10-07T16:23:43+02:00",
+    "last_success_sha": "62b079df9",
+    "executed_at": "2026-10-12T00:22:09+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 41.0,
+        "wall_seconds": 38.7,
         "cells_timed": 9,
         "cells_code": 9,
         "coverage": "FULL",
@@ -28829,16 +29266,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 1,
         "first_commit": "2026-10-02",
-        "span_days": 5
+        "span_days": 10
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-07",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19689",
+    "issue_pr_associee": "#20316, #20375",
     "cells_total": 18,
     "cells_code": 9,
     "cells_markdown": 9,
@@ -28866,22 +29303,22 @@
     "scientific_review_detail": {
       "grade": "RESEARCH",
       "stale": true,
-      "code_sha": "34d3c366e32811e8c5abb55f2ff6fc03acc0ebf155e245ec83b75b8c7c81e03f",
+      "code_sha": "263767e65fe5e0d85a3e592d4e61aeeb9d5f2eefd1f53aed716dbc378455ddea",
       "reviewed_code_sha": "4bfea9bf8a989868b48734958d5346c01c69918af914c04ea12b356b73b6df64",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "6aa8452e7",
-    "executed_at": "2026-10-02T12:22:16+02:00",
+    "last_success_sha": "62b079df9",
+    "executed_at": "2026-10-12T00:22:09+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "MODERATE",
-        "wall_seconds": 102.1,
+        "wall_seconds": 124.7,
         "cells_timed": 9,
         "cells_code": 9,
         "coverage": "FULL",
@@ -28890,16 +29327,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-10-02",
-        "span_days": 0
+        "span_days": 10
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-02",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #18649",
+    "issue_pr_associee": "#20316, #20375",
     "cells_total": 15,
     "cells_code": 9,
     "cells_markdown": 6,
@@ -28917,7 +29354,7 @@
     "serie": "IIT",
     "sous_serie": "ICT-Series",
     "kernel": "Python 3",
-    "status": "DEMO",
+    "status": "READY",
     "pedagogical_role": "",
     "maturity": "BETA",
     "editorial": "BETA",
@@ -28927,52 +29364,50 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "481c3b0a9beff17452c0d54915f8936007a93bf9dec2b534e97a86ca41153a77",
+      "code_sha": "43592b47037354a616256e46de9c755a6d8c4851f86a62835160f5d76d676ce6",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "60a38bce4",
-    "executed_at": "2026-10-05T00:20:30+02:00",
+    "last_success_sha": "62b079df9",
+    "executed_at": "2026-10-12T00:22:09+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "MODERATE",
-        "wall_seconds": 235.9,
+        "wall_seconds": 151.2,
         "cells_timed": 11,
         "cells_code": 11,
         "coverage": "FULL",
-        "external": [
-          "api"
-        ]
+        "external": []
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-10-02",
-        "span_days": 3
+        "span_days": 10
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-05",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#14032, #19040",
+    "issue_pr_associee": "#20316, #20375",
     "cells_total": 22,
     "cells_code": 11,
     "cells_markdown": 11,
     "cells_with_outputs": 7,
     "cells_without_outputs": 0,
-    "requires_api": true,
+    "requires_api": false,
     "requires_gpu": false,
     "requires_cloud": false,
     "requires_wsl": false,
-    "executable_locally": false
+    "executable_locally": true
   },
   {
     "path": "IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb",
@@ -28990,44 +29425,44 @@
     "scientific_review_detail": {
       "grade": "RESEARCH",
       "stale": true,
-      "code_sha": "a007848872b32fb4eb52d55adb79e5e055086ef2d24e60907610e4c2a5880881",
+      "code_sha": "c8f887346e6c7fa25fb17d9932755a9724e75af36e1abe2894b11da72f2b4586",
       "reviewed_code_sha": "c1da486357cf298755b24eeff56245494aa5e0c2ca2caa11de92abb17db09112",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "ae6e5cc46",
-    "executed_at": "2026-10-09T17:31:37+02:00",
+    "last_success_sha": "52c4d1e94",
+    "executed_at": "2026-10-12T04:11:00+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "MODERATE",
-        "wall_seconds": 107.2,
-        "cells_timed": 18,
-        "cells_code": 18,
+        "wall_seconds": 597.0,
+        "cells_timed": 21,
+        "cells_code": 21,
         "coverage": "FULL",
         "external": []
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-10-02",
-        "span_days": 7
+        "span_days": 10
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-09",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#15478, #20072",
-    "cells_total": 39,
-    "cells_code": 18,
-    "cells_markdown": 21,
-    "cells_with_outputs": 15,
+    "issue_pr_associee": "#20071, #20091",
+    "cells_total": 45,
+    "cells_code": 21,
+    "cells_markdown": 24,
+    "cells_with_outputs": 18,
     "cells_without_outputs": 0,
     "requires_api": false,
     "requires_gpu": false,
@@ -29347,130 +29782,6 @@
     "executable_locally": false
   },
   {
-    "path": "IIT/ICT-Series/ICT-41-SAE-GeometrieFeatures-Python.ipynb",
-    "title": "Geometrie des features SAE : galaxy, atome, dense -- R04 x R09 sur nos traces",
-    "serie": "IIT",
-    "sous_serie": "ICT-Series",
-    "kernel": "Python 3",
-    "status": "READY",
-    "pedagogical_role": "",
-    "maturity": "BETA",
-    "editorial": "BETA",
-    "reproducibility": "EXECUTED",
-    "scientific_review": "RESEARCH",
-    "scientific_review_stale": true,
-    "scientific_review_detail": {
-      "grade": "RESEARCH",
-      "stale": true,
-      "code_sha": "02830621082904e25b457d44c28616399f0480202f2adf235cb1a022ba3695ee",
-      "reviewed_code_sha": "84dbbee96c234cd6872de20c3632bf546b9b4acfa8c19ecbe3e0c4646402e8c2",
-      "reviewed_by": "",
-      "peer": false,
-      "sorry_free": false
-    },
-    "production_signed": false,
-    "last_success_sha": "6aa8452e7",
-    "executed_at": "2026-10-02T12:22:16+02:00",
-    "forensic_category": "A_ALL_EXEC_OK",
-    "duree_estimee": "30min",
-    "resource_cost": {
-      "schema": 1,
-      "execution": {
-        "class": "HEAVY",
-        "wall_seconds": 870.4,
-        "cells_timed": 13,
-        "cells_code": 13,
-        "coverage": "FULL",
-        "external": []
-      },
-      "creation": {
-        "class": "LIGHT",
-        "history": "COMPLETE",
-        "revisions": 1,
-        "authors": 1,
-        "first_commit": "2026-10-02",
-        "span_days": 0
-      }
-    },
-    "owner_logique": "po-2025",
-    "last_validation": "2026-10-02",
-    "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #18649",
-    "cells_total": 39,
-    "cells_code": 13,
-    "cells_markdown": 26,
-    "cells_with_outputs": 10,
-    "cells_without_outputs": 0,
-    "requires_api": false,
-    "requires_gpu": false,
-    "requires_cloud": false,
-    "requires_wsl": false,
-    "executable_locally": true
-  },
-  {
-    "path": "IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb",
-    "title": "ICT-41b — Crosscoder : diffuser deux modèles, distilled reasoning vs base",
-    "serie": "IIT",
-    "sous_serie": "ICT-Series",
-    "kernel": "coursia-ml-training",
-    "status": "READY",
-    "pedagogical_role": "",
-    "maturity": "BETA",
-    "editorial": "BETA",
-    "reproducibility": "EXECUTED",
-    "scientific_review": "UNASSESSED",
-    "scientific_review_stale": false,
-    "scientific_review_detail": {
-      "grade": "UNASSESSED",
-      "stale": false,
-      "code_sha": "e9c4efae1c0d1ac63903ee9b7275e6688440848e1cf5a2b27b6243d9c0299df3",
-      "reviewed_code_sha": "",
-      "reviewed_by": "",
-      "peer": false,
-      "sorry_free": false
-    },
-    "production_signed": false,
-    "last_success_sha": "d38ad816e",
-    "executed_at": "2026-10-09T00:57:56+02:00",
-    "forensic_category": "A_ALL_EXEC_OK",
-    "duree_estimee": "45min",
-    "resource_cost": {
-      "schema": 1,
-      "execution": {
-        "class": "HEAVY",
-        "wall_seconds": 743.1,
-        "cells_timed": 16,
-        "cells_code": 16,
-        "coverage": "FULL",
-        "external": [
-          "gpu"
-        ]
-      },
-      "creation": {
-        "class": "LIGHT",
-        "history": "COMPLETE",
-        "revisions": 2,
-        "authors": 1,
-        "first_commit": "2026-10-04",
-        "span_days": 5
-      }
-    },
-    "owner_logique": "po-2025",
-    "last_validation": "2026-10-09",
-    "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19654, #19887",
-    "cells_total": 37,
-    "cells_code": 16,
-    "cells_markdown": 21,
-    "cells_with_outputs": 13,
-    "cells_without_outputs": 0,
-    "requires_api": false,
-    "requires_gpu": true,
-    "requires_cloud": false,
-    "requires_wsl": false,
-    "executable_locally": false
-  },
-  {
     "path": "IIT/ICT-Series/ICT-42-InoculationBifurcation-Pilot-Python.ipynb",
     "title": "ICT-42 — Inoculation et bifurcation représentationnelle (pilote multi-échelle)",
     "serie": "IIT",
@@ -29493,8 +29804,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "6aa8452e7",
-    "executed_at": "2026-10-02T12:22:16+02:00",
+    "last_success_sha": "adc75eb05",
+    "executed_at": "2026-10-12T08:57:11+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -29510,16 +29821,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-10-02",
-        "span_days": 0
+        "span_days": 10
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-02",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #18649",
+    "issue_pr_associee": "#8236, #20253",
     "cells_total": 31,
     "cells_code": 13,
     "cells_markdown": 18,
@@ -29585,6 +29896,67 @@
     "cells_code": 15,
     "cells_markdown": 24,
     "cells_with_outputs": 15,
+    "cells_without_outputs": 0,
+    "requires_api": false,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": false,
+    "executable_locally": true
+  },
+  {
+    "path": "IIT/ICT-Series/ICT-42c-InoculationHysteresis-Python.ipynb",
+    "title": "ICT-42c — Hystérésis de l'inoculation (insertion contrastive séquentielle)",
+    "serie": "IIT",
+    "sous_serie": "ICT-Series",
+    "kernel": "Python 3",
+    "status": "READY",
+    "pedagogical_role": "",
+    "maturity": "ALPHA",
+    "editorial": "ALPHA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "e30c165c57751eac1deee03095b484520a75687752db5761b8f18cf25ca651d9",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "adc75eb05",
+    "executed_at": "2026-10-12T08:57:11+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "30min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "LIGHT",
+        "wall_seconds": 4.2,
+        "cells_timed": 8,
+        "cells_code": 8,
+        "coverage": "FULL",
+        "external": []
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-10-12",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2025",
+    "last_validation": "2026-10-12",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#8236, #20253",
+    "cells_total": 21,
+    "cells_code": 8,
+    "cells_markdown": 13,
+    "cells_with_outputs": 5,
     "cells_without_outputs": 0,
     "requires_api": false,
     "requires_gpu": false,
@@ -30823,7 +31195,7 @@
     "executable_locally": false
   },
   {
-    "path": "IIT/IIT-01-IntroToPyPhi.ipynb",
+    "path": "IIT/IIT-01-IntroToPyPhi-Python.ipynb",
     "title": "IIT - Introduction à PyPhi et Integrated Information Theory",
     "serie": "IIT",
     "sous_serie": "",
@@ -30845,8 +31217,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "fdc0e2719",
-    "executed_at": "2026-09-28T10:39:00+02:00",
+    "last_success_sha": "f42b5704a",
+    "executed_at": "2026-10-12T11:10:38+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -30860,18 +31232,18 @@
         "external": []
       },
       "creation": {
-        "class": "MODERATE",
+        "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 1,
         "authors": 1,
-        "first_commit": "2026-09-04",
-        "span_days": 24
+        "first_commit": "2026-10-12",
+        "span_days": 0
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-28",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#18053, #18107",
+    "issue_pr_associee": "#16231, #20400",
     "cells_total": 43,
     "cells_code": 16,
     "cells_markdown": 27,
@@ -30884,7 +31256,7 @@
     "executable_locally": true
   },
   {
-    "path": "IIT/IIT-02-AdvancedTopics.ipynb",
+    "path": "IIT/IIT-02-AdvancedTopics-Python.ipynb",
     "title": "IIT - Sujets Avances : Partitionnement, Repertoires Cause-Effet et Reseaux Elargis",
     "serie": "IIT",
     "sous_serie": "",
@@ -30906,8 +31278,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "8355b4466",
-    "executed_at": "2026-09-26T02:56:29+02:00",
+    "last_success_sha": "f42b5704a",
+    "executed_at": "2026-10-12T11:10:38+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -30921,18 +31293,18 @@
         "external": []
       },
       "creation": {
-        "class": "MODERATE",
+        "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 1,
         "authors": 1,
-        "first_commit": "2026-09-04",
-        "span_days": 22
+        "first_commit": "2026-10-12",
+        "span_days": 0
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-26",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17040, #17060",
+    "issue_pr_associee": "#16231, #20400",
     "cells_total": 50,
     "cells_code": 19,
     "cells_markdown": 31,
@@ -30945,7 +31317,7 @@
     "executable_locally": true
   },
   {
-    "path": "IIT/IIT-03-CoarseGrainingMacroPhi.ipynb",
+    "path": "IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb",
     "title": "IIT-3. Coarse-graining, blackboxing et l'échelle du $\\Phi$ — le module pyphi.macro",
     "serie": "IIT",
     "sous_serie": "",
@@ -30967,8 +31339,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "7f5fa2040",
-    "executed_at": "2026-09-04T03:10:59+02:00",
+    "last_success_sha": "f42b5704a",
+    "executed_at": "2026-10-12T11:10:38+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -30986,14 +31358,14 @@
         "history": "COMPLETE",
         "revisions": 1,
         "authors": 1,
-        "first_commit": "2026-09-04",
+        "first_commit": "2026-10-12",
         "span_days": 0
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-04",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#11840, #14491",
+    "issue_pr_associee": "#16231, #20400",
     "cells_total": 24,
     "cells_code": 8,
     "cells_markdown": 16,
@@ -31006,7 +31378,7 @@
     "executable_locally": true
   },
   {
-    "path": "IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb",
+    "path": "IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb",
     "title": "IIT-4. Le problème de frontière — qui décide où sont les bords ?",
     "serie": "IIT",
     "sous_serie": "",
@@ -31028,8 +31400,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "7f5fa2040",
-    "executed_at": "2026-09-04T03:10:59+02:00",
+    "last_success_sha": "f42b5704a",
+    "executed_at": "2026-10-12T11:10:38+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -31047,14 +31419,14 @@
         "history": "COMPLETE",
         "revisions": 1,
         "authors": 1,
-        "first_commit": "2026-09-04",
+        "first_commit": "2026-10-12",
         "span_days": 0
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-04",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#11840, #14491",
+    "issue_pr_associee": "#16231, #20400",
     "cells_total": 30,
     "cells_code": 12,
     "cells_markdown": 18,
@@ -31067,7 +31439,7 @@
     "executable_locally": true
   },
   {
-    "path": "IIT/IIT-05-Lentilles-et-Dissociations.ipynb",
+    "path": "IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb",
     "title": "IIT-5. Les lentilles de conscience comme bancs de dissociation — pas comme galerie de portraits",
     "serie": "IIT",
     "sous_serie": "",
@@ -31089,8 +31461,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "fd448bcf1",
-    "executed_at": "2026-10-11T00:07:55+02:00",
+    "last_success_sha": "f42b5704a",
+    "executed_at": "2026-10-12T11:10:38+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -31104,18 +31476,18 @@
         "external": []
       },
       "creation": {
-        "class": "MODERATE",
+        "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 1,
         "authors": 1,
-        "first_commit": "2026-09-04",
-        "span_days": 37
+        "first_commit": "2026-10-12",
+        "span_days": 0
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-11",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17926, #20225",
+    "issue_pr_associee": "#16231, #20400",
     "cells_total": 25,
     "cells_code": 8,
     "cells_markdown": 17,
@@ -31128,7 +31500,7 @@
     "executable_locally": true
   },
   {
-    "path": "IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb",
+    "path": "IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb",
     "title": "IIT-6. L'objet qui a mordu IIT — l'expander à Φ énorme, la grille qui assume, l'échange mesuré",
     "serie": "IIT",
     "sous_serie": "",
@@ -31150,8 +31522,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "17233e56a",
-    "executed_at": "2026-09-24T15:26:36+02:00",
+    "last_success_sha": "f42b5704a",
+    "executed_at": "2026-10-12T11:10:38+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -31169,14 +31541,14 @@
         "history": "COMPLETE",
         "revisions": 1,
         "authors": 1,
-        "first_commit": "2026-09-24",
+        "first_commit": "2026-10-12",
         "span_days": 0
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-09-24",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17378, #17380",
+    "issue_pr_associee": "#16231, #20400",
     "cells_total": 33,
     "cells_code": 16,
     "cells_markdown": 17,
@@ -34016,15 +34388,15 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "3b923c978e98f0fc1117787bbefcfb7ddb840e9651175f0ee182a6b4224b2ffe",
+      "code_sha": "7b6807430d8be9cd4efc445281e03af9323a34c15f2125cd2c8600879d132927",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "675d990f3",
-    "executed_at": "2026-09-28T23:46:18+02:00",
+    "last_success_sha": "145611bbe",
+    "executed_at": "2026-10-12T04:18:54+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -34042,16 +34414,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-09-15",
-        "span_days": 13
+        "span_days": 27
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-09-28",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#18210",
+    "issue_pr_associee": "#17379, #20336",
     "cells_total": 29,
     "cells_code": 14,
     "cells_markdown": 15,
@@ -34079,15 +34451,15 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "8d0860959a5756ed72cb0df3592c27099dcd7cc351b00808f3e0262173e010eb",
+      "code_sha": "a0356cbc26a277ff99ea755fd3e2505487ac645cd62ecf5efefb48bb8eca9914",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "74c2f5d28",
-    "executed_at": "2026-09-29T03:24:14+02:00",
+    "last_success_sha": "145611bbe",
+    "executed_at": "2026-10-12T04:18:54+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "1h",
     "resource_cost": {
@@ -34105,16 +34477,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 1,
         "first_commit": "2026-09-28",
-        "span_days": 1
+        "span_days": 14
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-09-29",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "",
+    "issue_pr_associee": "#17379, #20336",
     "cells_total": 42,
     "cells_code": 20,
     "cells_markdown": 22,
@@ -34149,8 +34521,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "098ecca17",
-    "executed_at": "2026-10-02T00:27:51+02:00",
+    "last_success_sha": "145611bbe",
+    "executed_at": "2026-10-12T04:18:54+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -34168,16 +34540,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 5,
+        "revisions": 6,
         "authors": 1,
         "first_commit": "2026-09-28",
-        "span_days": 4
+        "span_days": 14
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-02",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13504, #18698",
+    "issue_pr_associee": "#17379, #20336",
     "cells_total": 23,
     "cells_code": 10,
     "cells_markdown": 13,
@@ -34399,8 +34771,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "f224f8101",
-    "executed_at": "2026-10-04T16:42:48+02:00",
+    "last_success_sha": "07a0d98d5",
+    "executed_at": "2026-10-12T04:00:39+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -34416,16 +34788,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-08-24",
-        "span_days": 41
+        "span_days": 49
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-04",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17284, #19039",
+    "issue_pr_associee": "#17379, #20335",
     "cells_total": 33,
     "cells_code": 11,
     "cells_markdown": 22,
@@ -34460,8 +34832,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "f224f8101",
-    "executed_at": "2026-10-04T16:42:48+02:00",
+    "last_success_sha": "07a0d98d5",
+    "executed_at": "2026-10-12T04:00:39+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -34477,16 +34849,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-08-26",
-        "span_days": 39
+        "span_days": 47
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-04",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17284, #19039",
+    "issue_pr_associee": "#17379, #20335",
     "cells_total": 32,
     "cells_code": 13,
     "cells_markdown": 19,
@@ -34521,8 +34893,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "f224f8101",
-    "executed_at": "2026-10-04T16:42:48+02:00",
+    "last_success_sha": "07a0d98d5",
+    "executed_at": "2026-10-12T04:00:39+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -34538,16 +34910,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-08-28",
-        "span_days": 37
+        "span_days": 45
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-04",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17284, #19039",
+    "issue_pr_associee": "#17379, #20335",
     "cells_total": 44,
     "cells_code": 17,
     "cells_markdown": 27,
@@ -36006,22 +36378,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "58851710e6f33d05bce868cc25565ce7067a31d7bea043fbd04c391b53cb3630",
+      "code_sha": "d2bec1d6b094c49652f18addca505873c0a2d5c183ccd38c74e9e17e4e49ed78",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "750184a69",
-    "executed_at": "2026-10-10T05:57:00+02:00",
+    "last_success_sha": "fa94a55d7",
+    "executed_at": "2026-10-12T05:16:55+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 20.8,
+        "wall_seconds": 34.8,
         "cells_timed": 17,
         "cells_code": 17,
         "coverage": "FULL",
@@ -36030,18 +36402,18 @@
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-10-08",
-        "span_days": 2
+        "span_days": 4
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-10",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19754, #19953",
+    "issue_pr_associee": "#19984, #20329",
     "cells_total": 34,
     "cells_code": 17,
     "cells_markdown": 17,
@@ -36132,22 +36504,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "99cd943bc874317ad9f88a87d480159e5a313e161248ade7b1dbc5eb08aac14f",
+      "code_sha": "8277521f6770b7472a0cd4224a9a482b63bcd351a9128388ed067ee21e76fced",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "750184a69",
-    "executed_at": "2026-10-10T05:57:00+02:00",
+    "last_success_sha": "fa94a55d7",
+    "executed_at": "2026-10-12T05:16:55+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "MODERATE",
-        "wall_seconds": 434.5,
+        "class": "HEAVY",
+        "wall_seconds": 744.6,
         "cells_timed": 16,
         "cells_code": 16,
         "coverage": "FULL",
@@ -36156,18 +36528,18 @@
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-10-08",
-        "span_days": 2
+        "span_days": 4
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-10",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19754, #19953",
+    "issue_pr_associee": "#19984, #20329",
     "cells_total": 30,
     "cells_code": 16,
     "cells_markdown": 14,
@@ -36202,40 +36574,40 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "750184a69",
-    "executed_at": "2026-10-10T05:57:00+02:00",
+    "last_success_sha": "fa94a55d7",
+    "executed_at": "2026-10-12T05:16:55+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "MODERATE",
-        "wall_seconds": 457.3,
-        "cells_timed": 15,
+        "class": "UNKNOWN",
+        "wall_seconds": null,
+        "cells_timed": 0,
         "cells_code": 15,
-        "coverage": "FULL",
+        "coverage": "NONE",
         "external": [
           "gpu"
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-10-08",
-        "span_days": 2
+        "span_days": 4
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-10",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19754, #19953",
+    "issue_pr_associee": "#19984, #20329",
     "cells_total": 29,
     "cells_code": 15,
     "cells_markdown": 14,
-    "cells_with_outputs": 14,
-    "cells_without_outputs": 1,
+    "cells_with_outputs": 13,
+    "cells_without_outputs": 2,
     "requires_api": false,
     "requires_gpu": true,
     "requires_cloud": false,
@@ -36265,35 +36637,35 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "750184a69",
-    "executed_at": "2026-10-10T05:57:00+02:00",
+    "last_success_sha": "fa94a55d7",
+    "executed_at": "2026-10-12T05:16:55+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "MODERATE",
-        "wall_seconds": 126.6,
-        "cells_timed": 7,
+        "class": "UNKNOWN",
+        "wall_seconds": null,
+        "cells_timed": 0,
         "cells_code": 7,
-        "coverage": "FULL",
+        "coverage": "NONE",
         "external": [
           "gpu"
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-10-08",
-        "span_days": 2
+        "span_days": 4
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-10",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19754, #19953",
+    "issue_pr_associee": "#19984, #20329",
     "cells_total": 16,
     "cells_code": 7,
     "cells_markdown": 9,
@@ -36321,22 +36693,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "a847ae051a15b4fc6ff65da39ec1d93e8f0cc467bd9088ba923fb69cbe741705",
+      "code_sha": "488bc981a83eaf538500fdae726e58b5305ffe4a51d5d23552ed8c1285b04bba",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "750184a69",
-    "executed_at": "2026-10-10T05:57:00+02:00",
+    "last_success_sha": "fa94a55d7",
+    "executed_at": "2026-10-12T05:16:55+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "MODERATE",
-        "wall_seconds": 380.1,
+        "wall_seconds": 404.1,
         "cells_timed": 14,
         "cells_code": 14,
         "coverage": "FULL",
@@ -36345,18 +36717,18 @@
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-10-08",
-        "span_days": 2
+        "span_days": 4
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-10",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19754, #19953",
+    "issue_pr_associee": "#19984, #20329",
     "cells_total": 30,
     "cells_code": 14,
     "cells_markdown": 16,
@@ -36384,22 +36756,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "5176fdfc3c640dd7d9d6889a6b1c9a50f22152fdcf79e9490e3ea9f6c861f43a",
+      "code_sha": "a21c7a7ee02506e0fcebd52e4f156f2e6c4a061577550a9db6501f88ff4f2ee8",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "750184a69",
-    "executed_at": "2026-10-10T05:57:00+02:00",
+    "last_success_sha": "fa94a55d7",
+    "executed_at": "2026-10-12T05:16:55+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "MODERATE",
-        "wall_seconds": 232.8,
+        "wall_seconds": 238.8,
         "cells_timed": 13,
         "cells_code": 13,
         "coverage": "FULL",
@@ -36408,18 +36780,18 @@
         ]
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-10-08",
-        "span_days": 2
+        "span_days": 4
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-10",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19754, #19953",
+    "issue_pr_associee": "#19984, #20329",
     "cells_total": 27,
     "cells_code": 13,
     "cells_markdown": 14,
@@ -36517,18 +36889,18 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "750184a69",
-    "executed_at": "2026-10-10T05:57:00+02:00",
+    "last_success_sha": "fa94a55d7",
+    "executed_at": "2026-10-12T05:16:55+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "1h",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "HEAVY",
-        "wall_seconds": 1349.7,
-        "cells_timed": 20,
+        "class": "UNKNOWN",
+        "wall_seconds": null,
+        "cells_timed": 0,
         "cells_code": 20,
-        "coverage": "FULL",
+        "coverage": "NONE",
         "external": [
           "api",
           "gpu"
@@ -36537,16 +36909,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-10-07",
-        "span_days": 3
+        "span_days": 5
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-10",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19754, #19953",
+    "issue_pr_associee": "#19984, #20329",
     "cells_total": 49,
     "cells_code": 20,
     "cells_markdown": 29,
@@ -57469,67 +57841,6 @@
     "executable_locally": true
   },
   {
-    "path": "Search/Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb",
-    "title": "App-14-ConnectFour-Adversarial-CSharp — Jumeau C# : recherche adversariale from-scratch",
-    "serie": "Search",
-    "sous_serie": "Applications",
-    "kernel": ".NET (C#)",
-    "status": "READY",
-    "pedagogical_role": "",
-    "maturity": "BETA",
-    "editorial": "BETA",
-    "reproducibility": "EXECUTED",
-    "scientific_review": "UNASSESSED",
-    "scientific_review_stale": false,
-    "scientific_review_detail": {
-      "grade": "UNASSESSED",
-      "stale": false,
-      "code_sha": "c5254330aa79fc5eaaad63965046a05d9a06c205f2d1d836f6d201a7e1f4914e",
-      "reviewed_code_sha": "",
-      "reviewed_by": "",
-      "peer": false,
-      "sorry_free": false
-    },
-    "production_signed": false,
-    "last_success_sha": "37d9bb504",
-    "executed_at": "2026-10-01T16:16:39+02:00",
-    "forensic_category": "A_ALL_EXEC_OK",
-    "duree_estimee": "45min",
-    "resource_cost": {
-      "schema": 1,
-      "execution": {
-        "class": "LIGHT",
-        "wall_seconds": 9.5,
-        "cells_timed": 10,
-        "cells_code": 10,
-        "coverage": "FULL",
-        "external": []
-      },
-      "creation": {
-        "class": "MODERATE",
-        "history": "COMPLETE",
-        "revisions": 5,
-        "authors": 1,
-        "first_commit": "2026-07-07",
-        "span_days": 86
-      }
-    },
-    "owner_logique": "po-2025",
-    "last_validation": "2026-10-01",
-    "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#18421, #18429",
-    "cells_total": 22,
-    "cells_code": 10,
-    "cells_markdown": 12,
-    "cells_with_outputs": 9,
-    "cells_without_outputs": 1,
-    "requires_api": false,
-    "requires_gpu": false,
-    "requires_cloud": false,
-    "requires_wsl": false,
-    "executable_locally": true
-  },
-  {
     "path": "Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb",
     "title": "App-14 - Connect Four : Benchmark Adversarial Search",
     "serie": "Search",
@@ -57584,6 +57895,67 @@
     "cells_markdown": 31,
     "cells_with_outputs": 12,
     "cells_without_outputs": 0,
+    "requires_api": false,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": false,
+    "executable_locally": true
+  },
+  {
+    "path": "Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb",
+    "title": "App-14-ConnectFour-Adversarial-CSharp — Jumeau C# : recherche adversariale from-scratch",
+    "serie": "Search",
+    "sous_serie": "Applications",
+    "kernel": ".NET (C#)",
+    "status": "READY",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "c5254330aa79fc5eaaad63965046a05d9a06c205f2d1d836f6d201a7e1f4914e",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "d7250f794",
+    "executed_at": "2026-10-12T11:12:14+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "45min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "LIGHT",
+        "wall_seconds": 9.5,
+        "cells_timed": 10,
+        "cells_code": 10,
+        "coverage": "FULL",
+        "external": []
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-10-12",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2025",
+    "last_validation": "2026-10-12",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#18256, #20436",
+    "cells_total": 22,
+    "cells_code": 10,
+    "cells_markdown": 12,
+    "cells_with_outputs": 9,
+    "cells_without_outputs": 1,
     "requires_api": false,
     "requires_gpu": false,
     "requires_cloud": false,
@@ -63178,8 +63550,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "f92765dee",
-    "executed_at": "2026-10-02T01:02:09+02:00",
+    "last_success_sha": "b12a90132",
+    "executed_at": "2026-10-11T20:29:32+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -63195,16 +63567,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
-        "authors": 1,
+        "revisions": 5,
+        "authors": 2,
         "first_commit": "2026-09-02",
-        "span_days": 30
+        "span_days": 39
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-02",
-    "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #18634",
+    "last_validation": "2026-10-11",
+    "last_validator": "338729601+coursia-lane-po-2027[bot]@users.noreply.github.com",
+    "issue_pr_associee": "#1203, #50, #20271",
     "cells_total": 24,
     "cells_code": 10,
     "cells_markdown": 14,
@@ -63361,33 +63733,33 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "5b621d2b0",
-    "executed_at": "2026-10-03T16:44:25+02:00",
+    "last_success_sha": "c32b4a945",
+    "executed_at": "2026-10-11T15:57:09+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "LIGHT",
-        "wall_seconds": 21.3,
-        "cells_timed": 9,
+        "class": "UNKNOWN",
+        "wall_seconds": null,
+        "cells_timed": 0,
         "cells_code": 9,
-        "coverage": "FULL",
+        "coverage": "NONE",
         "external": []
       },
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-09-02",
-        "span_days": 31
+        "span_days": 39
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-03",
+    "last_validation": "2026-10-11",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13959, #18894",
+    "issue_pr_associee": "#13778, #20268",
     "cells_total": 19,
     "cells_code": 9,
     "cells_markdown": 10,
@@ -63483,33 +63855,33 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "5b621d2b0",
-    "executed_at": "2026-10-03T16:44:25+02:00",
+    "last_success_sha": "c32b4a945",
+    "executed_at": "2026-10-11T15:57:09+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "LIGHT",
-        "wall_seconds": 26.4,
-        "cells_timed": 9,
+        "class": "UNKNOWN",
+        "wall_seconds": null,
+        "cells_timed": 0,
         "cells_code": 9,
-        "coverage": "FULL",
+        "coverage": "NONE",
         "external": []
       },
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 2,
         "first_commit": "2026-09-02",
-        "span_days": 31
+        "span_days": 39
       }
     },
     "owner_logique": "po-2025",
-    "last_validation": "2026-10-03",
+    "last_validation": "2026-10-11",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#13959, #18894",
+    "issue_pr_associee": "#13778, #20268",
     "cells_total": 19,
     "cells_code": 9,
     "cells_markdown": 10,
@@ -64515,22 +64887,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "fc082ec28082572acddf26966973359cae1b7a1448546a1e80adc9aa30ce7087",
+      "code_sha": "141863783cc6bcfb9fb50b61fdaf145742e743a65c9ed016fef3f52171873265",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "ca3081903",
-    "executed_at": "2026-10-06T04:36:46+02:00",
+    "last_success_sha": "26df2d9e5",
+    "executed_at": "2026-10-12T04:17:32+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 10.7,
+        "wall_seconds": 18.5,
         "cells_timed": 13,
         "cells_code": 13,
         "coverage": "FULL",
@@ -64539,16 +64911,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 5,
+        "revisions": 6,
         "authors": 1,
         "first_commit": "2026-08-29",
-        "span_days": 38
+        "span_days": 44
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-06",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#11259, #19346",
+    "issue_pr_associee": "#20356, #20360",
     "cells_total": 33,
     "cells_code": 13,
     "cells_markdown": 20,
@@ -64637,22 +65009,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "d7c7bc7e742b8edae049d38f3b230612de066f4e4af16d8ec9285f7d62aae15f",
+      "code_sha": "7be6bc747689ffae6254040160b0778cfd44f4e3866e761557e1c99ec83364da",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "f92765dee",
-    "executed_at": "2026-10-02T01:02:09+02:00",
+    "last_success_sha": "26df2d9e5",
+    "executed_at": "2026-10-12T04:17:32+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 0.4,
+        "wall_seconds": 0.2,
         "cells_timed": 12,
         "cells_code": 12,
         "coverage": "FULL",
@@ -64661,16 +65033,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-08-29",
-        "span_days": 34
+        "span_days": 44
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-02",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #18634",
+    "issue_pr_associee": "#20356, #20360",
     "cells_total": 33,
     "cells_code": 12,
     "cells_markdown": 21,
@@ -65003,22 +65375,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "51ac8c128480889d908e879cbf634b415d53f42e88158be6e0c622d6418a40a3",
+      "code_sha": "4796b3336d1bfd6492112c5d826d79269cdd528730086ab7f1c8f17e5e6e2579",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "cf2c6c604",
-    "executed_at": "2026-10-08T03:52:00+02:00",
+    "last_success_sha": "26df2d9e5",
+    "executed_at": "2026-10-12T04:17:32+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "MODERATE",
-        "wall_seconds": 61.7,
+        "wall_seconds": 67.6,
         "cells_timed": 16,
         "cells_code": 16,
         "coverage": "FULL",
@@ -65027,16 +65399,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 6,
+        "revisions": 7,
         "authors": 1,
         "first_commit": "2026-08-29",
-        "span_days": 40
+        "span_days": 44
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-08",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19240, #19244",
+    "issue_pr_associee": "#20356, #20360",
     "cells_total": 48,
     "cells_code": 16,
     "cells_markdown": 32,
@@ -65613,22 +65985,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "dd0450901fa38e66345b283675903f902fcf914b6840d60bc8bbd0013d124044",
+      "code_sha": "da3cd79489f607cd31ccfb9129880f1c719d2e1de676b281631970e1fef1c168",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "f92765dee",
-    "executed_at": "2026-10-02T01:02:09+02:00",
+    "last_success_sha": "26df2d9e5",
+    "executed_at": "2026-10-12T04:17:32+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 1.2,
+        "wall_seconds": 3.9,
         "cells_timed": 13,
         "cells_code": 13,
         "coverage": "FULL",
@@ -65637,16 +66009,16 @@
       "creation": {
         "class": "VERY_HEAVY",
         "history": "COMPLETE",
-        "revisions": 42,
+        "revisions": 43,
         "authors": 3,
         "first_commit": "2026-02-25",
-        "span_days": 219
+        "span_days": 229
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-02",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #18634",
+    "issue_pr_associee": "#20356, #20360",
     "cells_total": 30,
     "cells_code": 13,
     "cells_markdown": 17,
@@ -65863,40 +66235,40 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "6e708071bd1e6c00d7cf6467b19e0c01eefa4f1fa47ebf5ed4b6914998c0c3fe",
+      "code_sha": "309e1fd92bd8d53d0dbac04dccd66028e93437a61c930c72819de5db933afc92",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "f92765dee",
-    "executed_at": "2026-10-02T01:02:09+02:00",
+    "last_success_sha": "26df2d9e5",
+    "executed_at": "2026-10-12T04:17:32+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 5.3,
-        "cells_timed": 9,
+        "wall_seconds": 31.4,
+        "cells_timed": 11,
         "cells_code": 11,
-        "coverage": "PARTIAL",
+        "coverage": "FULL",
         "external": []
       },
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 33,
+        "revisions": 34,
         "authors": 3,
         "first_commit": "2026-02-25",
-        "span_days": 219
+        "span_days": 229
       }
     },
     "owner_logique": "po-2023",
-    "last_validation": "2026-10-02",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #18634",
+    "issue_pr_associee": "#20356, #20360",
     "cells_total": 35,
     "cells_code": 11,
     "cells_markdown": 24,
@@ -67704,25 +68076,25 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "dba62962f070075ce1a0403c867d8191dd70fec10b7f022f7746a5ad452fda1b",
+      "code_sha": "d8014def63a8881d52163746dbd7894fa6a3e0792183137a99af301fdbe5f966",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "2992158eb",
-    "executed_at": "2026-10-03T17:04:13+02:00",
+    "last_success_sha": "1bcdca3ee",
+    "executed_at": "2026-10-13T00:16:52+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "MODERATE",
-        "wall_seconds": 500.7,
-        "cells_timed": 10,
-        "cells_code": 10,
-        "coverage": "FULL",
+        "class": "UNKNOWN",
+        "wall_seconds": null,
+        "cells_timed": 0,
+        "cells_code": 11,
+        "coverage": "NONE",
         "external": [
           "api"
         ]
@@ -67730,20 +68102,20 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 1,
         "first_commit": "2026-09-25",
-        "span_days": 8
+        "span_days": 18
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-03",
+    "last_validation": "2026-10-13",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#18393, #18979",
-    "cells_total": 28,
-    "cells_code": 10,
-    "cells_markdown": 18,
-    "cells_with_outputs": 7,
+    "issue_pr_associee": "#18393, #20338",
+    "cells_total": 31,
+    "cells_code": 11,
+    "cells_markdown": 20,
+    "cells_with_outputs": 8,
     "cells_without_outputs": 0,
     "requires_api": true,
     "requires_gpu": false,
@@ -67952,22 +68324,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "56e197c695e32bf8c745bf5a02c531253c43e67e97e3cde0ac85de89205f7cf1",
+      "code_sha": "0147d2b5f17ac41220e2898250caa37f1bfd16738222e2585eda4c1f6e036f4a",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "47bf3a2fa",
-    "executed_at": "2026-10-10T16:36:17+02:00",
+    "last_success_sha": "e994ed518",
+    "executed_at": "2026-10-12T11:05:30+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "MODERATE",
-        "wall_seconds": 100.5,
+        "wall_seconds": 82.6,
         "cells_timed": 10,
         "cells_code": 10,
         "coverage": "FULL",
@@ -67978,16 +68350,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 7,
+        "revisions": 8,
         "authors": 1,
         "first_commit": "2026-09-25",
-        "span_days": 15
+        "span_days": 17
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-10",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#18776, #20057",
+    "issue_pr_associee": "#18395, #20344",
     "cells_total": 34,
     "cells_code": 10,
     "cells_markdown": 24,
@@ -68444,44 +68816,44 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "cf26f76161a3684a8b9f493a91c6a4b8a67a8980308130ca030e054d9de8472e",
+      "code_sha": "080fbf382c0fc22927935739adadab2607d516cde48d17993f123deae49e5956",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "35ae334a4",
-    "executed_at": "2026-10-07T12:15:17+02:00",
+    "last_success_sha": "9f825b1ff",
+    "executed_at": "2026-10-12T20:20:31+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 1.7,
-        "cells_timed": 19,
-        "cells_code": 19,
+        "wall_seconds": 1.3,
+        "cells_timed": 20,
+        "cells_code": 20,
         "coverage": "FULL",
         "external": []
       },
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 6,
+        "revisions": 7,
         "authors": 1,
         "first_commit": "2026-09-25",
-        "span_days": 12
+        "span_days": 17
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-07",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#15719, #19595",
-    "cells_total": 52,
-    "cells_code": 19,
-    "cells_markdown": 33,
-    "cells_with_outputs": 14,
+    "issue_pr_associee": "#18387, #20461",
+    "cells_total": 55,
+    "cells_code": 20,
+    "cells_markdown": 35,
+    "cells_with_outputs": 15,
     "cells_without_outputs": 0,
     "requires_api": false,
     "requires_gpu": false,
@@ -68940,24 +69312,24 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "814d010c06c724f86ac3d1da909e8c97a0613efb9f885cd3a1018d1b843c5df6",
+      "code_sha": "e4e88778bbd1e0eb28c10b4fc7a3dc6e24cb6cad3b19d66e013ec54048ee2ac3",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "097932bbc",
-    "executed_at": "2026-10-09T07:14:06+02:00",
+    "last_success_sha": "85603d243",
+    "executed_at": "2026-10-12T03:51:42+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 22.6,
-        "cells_timed": 10,
-        "cells_code": 10,
+        "wall_seconds": 22.5,
+        "cells_timed": 12,
+        "cells_code": 12,
         "coverage": "FULL",
         "external": [
           "wsl"
@@ -68966,20 +69338,146 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-10-08",
-        "span_days": 1
+        "span_days": 4
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-09",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19729",
-    "cells_total": 28,
+    "issue_pr_associee": "#19765, #19834",
+    "cells_total": 34,
+    "cells_code": 12,
+    "cells_markdown": 22,
+    "cells_with_outputs": 10,
+    "cells_without_outputs": 0,
+    "requires_api": false,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": true,
+    "executable_locally": false
+  },
+  {
+    "path": "SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb",
+    "title": "ANALYSE-06 : Sensibilité 2026 — Huang, le décideur qui réfute, et ce que le dépôt openai/math a bougé",
+    "serie": "SymbolicAI",
+    "sous_serie": "Lean",
+    "kernel": "Python 3 (ipykernel)",
+    "status": "READY",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "71c646dd75676302e306dc076aa1f0565892c7174e3b4cbdecd48be1d3b29f58",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "66476759b",
+    "executed_at": "2026-10-12T08:59:55+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "30min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "MODERATE",
+        "wall_seconds": 190.5,
+        "cells_timed": 10,
+        "cells_code": 10,
+        "coverage": "FULL",
+        "external": [
+          "wsl"
+        ]
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-10-12",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2024",
+    "last_validation": "2026-10-12",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#20184, #19898, #20392",
+    "cells_total": 29,
     "cells_code": 10,
-    "cells_markdown": 18,
-    "cells_with_outputs": 8,
+    "cells_markdown": 19,
+    "cells_with_outputs": 7,
+    "cells_without_outputs": 0,
+    "requires_api": false,
+    "requires_gpu": false,
+    "requires_cloud": false,
+    "requires_wsl": true,
+    "executable_locally": false
+  },
+  {
+    "path": "SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python_en.ipynb",
+    "title": "ANALYSE-06: Sensitivity 2026 — Huang, the refuting decider, and what the openai/math repository moved",
+    "serie": "SymbolicAI",
+    "sous_serie": "Lean",
+    "kernel": "Python 3 (ipykernel)",
+    "status": "READY",
+    "pedagogical_role": "",
+    "maturity": "BETA",
+    "editorial": "BETA",
+    "reproducibility": "EXECUTED",
+    "scientific_review": "UNASSESSED",
+    "scientific_review_stale": false,
+    "scientific_review_detail": {
+      "grade": "UNASSESSED",
+      "stale": false,
+      "code_sha": "71c646dd75676302e306dc076aa1f0565892c7174e3b4cbdecd48be1d3b29f58",
+      "reviewed_code_sha": "",
+      "reviewed_by": "",
+      "peer": false,
+      "sorry_free": false
+    },
+    "production_signed": false,
+    "last_success_sha": "66476759b",
+    "executed_at": "2026-10-12T08:59:55+02:00",
+    "forensic_category": "A_ALL_EXEC_OK",
+    "duree_estimee": "30min",
+    "resource_cost": {
+      "schema": 1,
+      "execution": {
+        "class": "MODERATE",
+        "wall_seconds": 190.5,
+        "cells_timed": 10,
+        "cells_code": 10,
+        "coverage": "FULL",
+        "external": [
+          "wsl"
+        ]
+      },
+      "creation": {
+        "class": "LIGHT",
+        "history": "COMPLETE",
+        "revisions": 1,
+        "authors": 1,
+        "first_commit": "2026-10-12",
+        "span_days": 0
+      }
+    },
+    "owner_logique": "po-2024",
+    "last_validation": "2026-10-12",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#20184, #19898, #20392",
+    "cells_total": 29,
+    "cells_code": 10,
+    "cells_markdown": 19,
+    "cells_with_outputs": 7,
     "cells_without_outputs": 0,
     "requires_api": false,
     "requires_gpu": false,
@@ -70327,15 +70825,15 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "6dcf7fd25c7adf413f4f0780ed68c7d76189caa3d46b7b6675fa68ceb9501908",
+      "code_sha": "9c2e32d16e320b22f73226b9a8fe4fcacfe57f6ee724242f76b3ab3dfb8927b4",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "a513438ea",
-    "executed_at": "2026-09-29T18:22:58+02:00",
+    "last_success_sha": "c36ec4bc4",
+    "executed_at": "2026-10-11T16:56:54+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -70354,16 +70852,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
-        "authors": 1,
+        "revisions": 2,
+        "authors": 2,
         "first_commit": "2026-09-29",
-        "span_days": 0
+        "span_days": 12
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-29",
-    "last_validator": "myia.ai.01.myia@gmail.com",
-    "issue_pr_associee": "#16231, #18199",
+    "last_validation": "2026-10-11",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#17357, #20158",
     "cells_total": 39,
     "cells_code": 18,
     "cells_markdown": 21,
@@ -70398,8 +70896,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "c82d0c552",
-    "executed_at": "2026-10-08T12:24:46+02:00",
+    "last_success_sha": "c36ec4bc4",
+    "executed_at": "2026-10-11T16:56:54+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -70418,16 +70916,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 2,
         "first_commit": "2026-09-29",
-        "span_days": 9
+        "span_days": 12
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-08",
+    "last_validation": "2026-10-11",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#18053, #19878",
+    "issue_pr_associee": "#17357, #20158",
     "cells_total": 40,
     "cells_code": 11,
     "cells_markdown": 29,
@@ -70582,22 +71080,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "feee7d3a6610b2122f8aa6d25468afc0dfaccd80c5bd31c38146978035eaea61",
+      "code_sha": "1e4f1c15bf05d11a9fd59028cdf76942abdf45523bca66d11246631ec668d585",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "a513438ea",
-    "executed_at": "2026-09-29T18:22:58+02:00",
+    "last_success_sha": "c36ec4bc4",
+    "executed_at": "2026-10-11T16:56:54+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "MODERATE",
-        "wall_seconds": 501.0,
+        "wall_seconds": 540.2,
         "cells_timed": 24,
         "cells_code": 24,
         "coverage": "FULL",
@@ -70609,16 +71107,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
-        "authors": 1,
+        "revisions": 2,
+        "authors": 2,
         "first_commit": "2026-09-29",
-        "span_days": 0
+        "span_days": 12
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-29",
-    "last_validator": "myia.ai.01.myia@gmail.com",
-    "issue_pr_associee": "#16231, #18199",
+    "last_validation": "2026-10-11",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#17357, #20158",
     "cells_total": 59,
     "cells_code": 24,
     "cells_markdown": 35,
@@ -70646,15 +71144,15 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "d7ccaf39fc220de1f7c49ff2da2ba6b58e82e3d6c294aefe9842fbf9df9c2b71",
+      "code_sha": "766f2569544f692949b1a24d663fc6100cdeba695ca2474920a38913b924599e",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "d18001a7e",
-    "executed_at": "2026-10-10T23:37:21+02:00",
+    "last_success_sha": "c36ec4bc4",
+    "executed_at": "2026-10-11T16:56:54+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -70673,16 +71171,16 @@
       "creation": {
         "class": "VERY_HEAVY",
         "history": "COMPLETE",
-        "revisions": 35,
+        "revisions": 36,
         "authors": 3,
         "first_commit": "2026-01-30",
-        "span_days": 253
+        "span_days": 254
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-10",
+    "last_validation": "2026-10-11",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#18493, #20226",
+    "issue_pr_associee": "#17357, #20158",
     "cells_total": 73,
     "cells_code": 26,
     "cells_markdown": 47,
@@ -71467,25 +71965,25 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "0bb693e8c202bc6e6c4fc32331817854e022b58e5bb94dce0363161754e4133e",
+      "code_sha": "fd89421b6cef85792d983204322196a612155899f2e4a20a4c3a9689f7a3d6e6",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "4a475fcf8",
-    "executed_at": "2026-10-09T08:57:59+02:00",
+    "last_success_sha": "1b966f62e",
+    "executed_at": "2026-10-12T08:56:10+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "HEAVY",
-        "wall_seconds": 846.4,
-        "cells_timed": 12,
+        "class": "UNKNOWN",
+        "wall_seconds": null,
+        "cells_timed": 0,
         "cells_code": 12,
-        "coverage": "FULL",
+        "coverage": "NONE",
         "external": [
           "wsl"
         ]
@@ -71493,16 +71991,16 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 21,
+        "revisions": 22,
         "authors": 2,
         "first_commit": "2026-06-22",
-        "span_days": 109
+        "span_days": 112
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-09",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19480, #19957",
+    "issue_pr_associee": "#17357, #20164",
     "cells_total": 32,
     "cells_code": 12,
     "cells_markdown": 20,
@@ -71530,25 +72028,25 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "48e89695092eefeeb5287584aa6b57d44b91309de61f758c7cab507fb3b51720",
+      "code_sha": "9b9ce5f48cc84cc9d139a6a16b71875a2075a8fb88ef820e9f18f503b5eea276",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "c64b87e95",
-    "executed_at": "2026-09-29T23:57:52+02:00",
+    "last_success_sha": "0d7487cec",
+    "executed_at": "2026-10-11T20:38:53+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "MODERATE",
-        "wall_seconds": 87.7,
-        "cells_timed": 18,
+        "class": "UNKNOWN",
+        "wall_seconds": null,
+        "cells_timed": 0,
         "cells_code": 18,
-        "coverage": "FULL",
+        "coverage": "NONE",
         "external": [
           "wsl"
         ]
@@ -71556,16 +72054,16 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 14,
+        "revisions": 15,
         "authors": 2,
         "first_commit": "2026-06-22",
-        "span_days": 99
+        "span_days": 111
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-29",
+    "last_validation": "2026-10-11",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17636, #18452",
+    "issue_pr_associee": "#17357, #20163",
     "cells_total": 41,
     "cells_code": 18,
     "cells_markdown": 23,
@@ -71600,8 +72098,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "f8c1ffe50",
-    "executed_at": "2026-10-09T08:22:02+02:00",
+    "last_success_sha": "0d7487cec",
+    "executed_at": "2026-10-11T20:38:53+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -71619,16 +72117,16 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 13,
+        "revisions": 14,
         "authors": 1,
         "first_commit": "2026-08-19",
-        "span_days": 51
+        "span_days": 53
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-09",
+    "last_validation": "2026-10-11",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#11703, #19439",
+    "issue_pr_associee": "#17357, #20163",
     "cells_total": 51,
     "cells_code": 19,
     "cells_markdown": 32,
@@ -71789,15 +72287,15 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "07593d0bd",
-    "executed_at": "2026-10-10T08:58:31+02:00",
+    "last_success_sha": "85c755430",
+    "executed_at": "2026-10-13T08:17:24+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "MODERATE",
-        "wall_seconds": 408.7,
+        "class": "LIGHT",
+        "wall_seconds": 41.5,
         "cells_timed": 20,
         "cells_code": 20,
         "coverage": "FULL",
@@ -71808,16 +72306,16 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 15,
+        "revisions": 17,
         "authors": 1,
         "first_commit": "2026-06-22",
-        "span_days": 110
+        "span_days": 113
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-10",
+    "last_validation": "2026-10-13",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#20173, #20207",
+    "issue_pr_associee": "#19989, #20043",
     "cells_total": 53,
     "cells_code": 20,
     "cells_markdown": 33,
@@ -72286,15 +72784,15 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "5d4fc4f76f591c457ea5643e087b871beee225c5b3bc69ebd10e932a0384bf82",
+      "code_sha": "823667c3e5c227f14fc5653e3f6a6899ac6606474b75d06c1b924ae1fbf92f7a",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "455b8bf9c",
-    "executed_at": "2026-10-10T13:11:11+02:00",
+    "last_success_sha": "dab85a4c1",
+    "executed_at": "2026-10-12T11:03:56+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -72312,16 +72810,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 5,
+        "revisions": 6,
         "authors": 2,
         "first_commit": "2026-08-28",
-        "span_days": 43
+        "span_days": 45
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-10",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17357, #20146",
+    "issue_pr_associee": "#9768, #20326",
     "cells_total": 49,
     "cells_code": 15,
     "cells_markdown": 34,
@@ -72727,25 +73225,25 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "726ce48ee2f63d031ccaeb25557b8f95bb1ede83ff2b5929137a8bdacea357fb",
+      "code_sha": "95c6adde73400431ea393b57c3beffeb4697e04154215ab5f02201de48d5f888",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "532d3ccef",
-    "executed_at": "2026-09-29T15:39:11+02:00",
+    "last_success_sha": "e98fd9079",
+    "executed_at": "2026-10-11T20:33:06+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "15min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "LIGHT",
-        "wall_seconds": 0.1,
-        "cells_timed": 7,
+        "class": "UNKNOWN",
+        "wall_seconds": null,
+        "cells_timed": 0,
         "cells_code": 7,
-        "coverage": "FULL",
+        "coverage": "NONE",
         "external": [
           "wsl"
         ]
@@ -72753,16 +73251,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-09-13",
-        "span_days": 16
+        "span_days": 28
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-29",
+    "last_validation": "2026-10-11",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #17545, #18015",
+    "issue_pr_associee": "#17357, #20094",
     "cells_total": 21,
     "cells_code": 7,
     "cells_markdown": 14,
@@ -72860,8 +73358,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "0196cc22b",
-    "executed_at": "2026-10-09T08:31:05+02:00",
+    "last_success_sha": "6516143a8",
+    "executed_at": "2026-10-11T20:27:07+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -72879,16 +73377,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 8,
+        "revisions": 9,
         "authors": 2,
         "first_commit": "2026-09-13",
-        "span_days": 26
+        "span_days": 28
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-09",
+    "last_validation": "2026-10-11",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17040, #19849",
+    "issue_pr_associee": "#17357, #20099",
     "cells_total": 30,
     "cells_code": 14,
     "cells_markdown": 16,
@@ -73175,8 +73673,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "5dec50e74",
-    "executed_at": "2026-10-07T15:44:30+02:00",
+    "last_success_sha": "9ba6e40a3",
+    "executed_at": "2026-10-12T03:55:53+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -73194,16 +73692,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 1,
         "first_commit": "2026-09-13",
-        "span_days": 24
+        "span_days": 29
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-07",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19480, #19489",
+    "issue_pr_associee": "#17357, #20103",
     "cells_total": 28,
     "cells_code": 12,
     "cells_markdown": 16,
@@ -73231,22 +73729,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "0dbe7c2c623279fc8aeaf93ef96820594f322835330747f26ce6282004b2a3d8",
+      "code_sha": "f347a4f98a383b5788f565650145396d8375b8b88336f438b0b9276cd2fc477a",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "c6272b78e",
-    "executed_at": "2026-10-09T04:29:59+02:00",
+    "last_success_sha": "26bd13a67",
+    "executed_at": "2026-10-12T04:11:44+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
-        "class": "LIGHT",
-        "wall_seconds": 19.5,
+        "class": "MODERATE",
+        "wall_seconds": 402.4,
         "cells_timed": 19,
         "cells_code": 19,
         "coverage": "FULL",
@@ -73257,16 +73755,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 5,
+        "revisions": 6,
         "authors": 2,
         "first_commit": "2026-09-13",
-        "span_days": 26
+        "span_days": 29
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-09",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17969, #19998",
+    "issue_pr_associee": "#17357, #20133",
     "cells_total": 54,
     "cells_code": 19,
     "cells_markdown": 35,
@@ -74051,22 +74549,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "413d8017b0f080f31eeda5f680ffe0026faa1321af67d65a1603d566c981df3c",
+      "code_sha": "c5f7abf0b6210c53401a91557b77ee312553ce7b260135b5086ade2c942f28b5",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "72cb6fa0b",
-    "executed_at": "2026-09-29T20:14:58+02:00",
+    "last_success_sha": "0d19af065",
+    "executed_at": "2026-10-12T04:13:35+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 1.6,
+        "wall_seconds": 2.6,
         "cells_timed": 16,
         "cells_code": 16,
         "coverage": "FULL",
@@ -74077,16 +74575,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 2,
         "first_commit": "2026-09-19",
-        "span_days": 10
+        "span_days": 23
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-29",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17601, #18374",
+    "issue_pr_associee": "#17357, #20199",
     "cells_total": 34,
     "cells_code": 16,
     "cells_markdown": 18,
@@ -74114,22 +74612,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "ec394fa13eec4762335f70fc1906c41e1ac3dcb9a22345fbc305cb1db3a72499",
+      "code_sha": "8f89285e5a1d4ff421b8790d720411260441ad499fe998b80a2122ca74534711",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "dfd4b3484",
-    "executed_at": "2026-10-08T12:46:00+02:00",
+    "last_success_sha": "0d19af065",
+    "executed_at": "2026-10-12T04:13:35+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 1.1,
+        "wall_seconds": 1.3,
         "cells_timed": 10,
         "cells_code": 10,
         "coverage": "FULL",
@@ -74140,16 +74638,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 5,
+        "revisions": 6,
         "authors": 2,
         "first_commit": "2026-09-19",
-        "span_days": 19
+        "span_days": 23
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-08",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#19741, #19753",
+    "issue_pr_associee": "#17357, #20199",
     "cells_total": 27,
     "cells_code": 10,
     "cells_markdown": 17,
@@ -74184,8 +74682,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "a492cda2b",
-    "executed_at": "2026-10-10T16:37:11+02:00",
+    "last_success_sha": "0d19af065",
+    "executed_at": "2026-10-12T04:13:35+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -74203,16 +74701,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 6,
+        "revisions": 7,
         "authors": 1,
         "first_commit": "2026-09-19",
-        "span_days": 21
+        "span_days": 23
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-10",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#20201, #20223",
+    "issue_pr_associee": "#17357, #20199",
     "cells_total": 52,
     "cells_code": 20,
     "cells_markdown": 32,
@@ -80192,8 +80690,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "bfce31f53",
-    "executed_at": "2026-09-25T06:55:32+02:00",
+    "last_success_sha": "ddc5cdf85",
+    "executed_at": "2026-10-12T09:37:04+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -80209,16 +80707,16 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 17,
+        "revisions": 18,
         "authors": 2,
         "first_commit": "2026-02-21",
-        "span_days": 216
+        "span_days": 233
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-25",
-    "last_validator": "myia.ai.01.myia@gmail.com",
-    "issue_pr_associee": "#17066, #17069",
+    "last_validation": "2026-10-12",
+    "last_validator": "jsboige@gmail.com",
+    "issue_pr_associee": "#17782, #20333",
     "cells_total": 42,
     "cells_code": 16,
     "cells_markdown": 26,
@@ -80253,8 +80751,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "da72a8e9c",
-    "executed_at": "2026-09-17T22:49:33+02:00",
+    "last_success_sha": "ddc5cdf85",
+    "executed_at": "2026-10-12T09:37:04+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -80270,16 +80768,16 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 20,
+        "revisions": 21,
         "authors": 1,
         "first_commit": "2026-02-21",
-        "span_days": 208
+        "span_days": 233
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-17",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#15719, #15795",
+    "issue_pr_associee": "#17782, #20333",
     "cells_total": 62,
     "cells_code": 20,
     "cells_markdown": 42,
@@ -80862,22 +81360,22 @@
     "scientific_review_detail": {
       "grade": "UNASSESSED",
       "stale": false,
-      "code_sha": "d134db2633a2b88b0fbf9bf69125f89521307c74a8fe4511036cce2db066eb0f",
+      "code_sha": "c483ad526ed72fc31f472706b4218a320ccb2cc2d7217ce2c3536e86d7afeded",
       "reviewed_code_sha": "",
       "reviewed_by": "",
       "peer": false,
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "6567611fa",
-    "executed_at": "2026-10-02T04:36:03+02:00",
+    "last_success_sha": "ddc5cdf85",
+    "executed_at": "2026-10-12T09:37:04+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "1h",
     "resource_cost": {
       "schema": 1,
       "execution": {
         "class": "LIGHT",
-        "wall_seconds": 13.0,
+        "wall_seconds": 3.9,
         "cells_timed": 37,
         "cells_code": 37,
         "coverage": "FULL",
@@ -80886,16 +81384,16 @@
       "creation": {
         "class": "HEAVY",
         "history": "COMPLETE",
-        "revisions": 28,
+        "revisions": 29,
         "authors": 2,
         "first_commit": "2026-02-21",
-        "span_days": 223
+        "span_days": 233
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-02",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17040, #18689",
+    "issue_pr_associee": "#17782, #20333",
     "cells_total": 107,
     "cells_code": 37,
     "cells_markdown": 70,
@@ -84622,8 +85120,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "a3c5742cd",
-    "executed_at": "2026-10-07T17:23:31+02:00",
+    "last_success_sha": "9d775640c",
+    "executed_at": "2026-10-12T04:14:36+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -84639,16 +85137,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 3,
+        "revisions": 4,
         "authors": 1,
         "first_commit": "2026-09-15",
-        "span_days": 22
+        "span_days": 27
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-07",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #19502",
+    "issue_pr_associee": "#20250, #20282",
     "cells_total": 20,
     "cells_code": 10,
     "cells_markdown": 10,
@@ -85667,8 +86165,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "a3c5742cd",
-    "executed_at": "2026-10-07T17:23:31+02:00",
+    "last_success_sha": "9d775640c",
+    "executed_at": "2026-10-12T04:14:36+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -85684,16 +86182,16 @@
       "creation": {
         "class": "LIGHT",
         "history": "COMPLETE",
-        "revisions": 1,
+        "revisions": 2,
         "authors": 1,
         "first_commit": "2026-10-07",
-        "span_days": 0
+        "span_days": 5
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-07",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #19502",
+    "issue_pr_associee": "#20250, #20282",
     "cells_total": 30,
     "cells_code": 14,
     "cells_markdown": 16,
@@ -86100,8 +86598,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "a3c5742cd",
-    "executed_at": "2026-10-07T17:23:31+02:00",
+    "last_success_sha": "9d775640c",
+    "executed_at": "2026-10-12T04:14:36+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "45min",
     "resource_cost": {
@@ -86117,16 +86615,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 5,
+        "revisions": 6,
         "authors": 1,
         "first_commit": "2026-09-15",
-        "span_days": 22
+        "span_days": 27
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-07",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #19502",
+    "issue_pr_associee": "#20250, #20282",
     "cells_total": 48,
     "cells_code": 18,
     "cells_markdown": 30,
@@ -86161,8 +86659,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "e4f840f40",
-    "executed_at": "2026-09-29T03:50:13+02:00",
+    "last_success_sha": "9d775640c",
+    "executed_at": "2026-10-12T04:14:36+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -86176,18 +86674,18 @@
         "external": []
       },
       "creation": {
-        "class": "LIGHT",
+        "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 2,
+        "revisions": 3,
         "authors": 1,
         "first_commit": "2026-09-15",
-        "span_days": 14
+        "span_days": 27
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-09-29",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#17636, #10450, #18283",
+    "issue_pr_associee": "#20250, #20282",
     "cells_total": 38,
     "cells_code": 12,
     "cells_markdown": 26,
@@ -86527,8 +87025,8 @@
       "sorry_free": false
     },
     "production_signed": false,
-    "last_success_sha": "a3c5742cd",
-    "executed_at": "2026-10-07T17:23:31+02:00",
+    "last_success_sha": "9d775640c",
+    "executed_at": "2026-10-12T04:14:36+02:00",
     "forensic_category": "A_ALL_EXEC_OK",
     "duree_estimee": "30min",
     "resource_cost": {
@@ -86544,16 +87042,16 @@
       "creation": {
         "class": "MODERATE",
         "history": "COMPLETE",
-        "revisions": 4,
+        "revisions": 5,
         "authors": 1,
         "first_commit": "2026-09-15",
-        "span_days": 22
+        "span_days": 27
       }
     },
     "owner_logique": "po-2024",
-    "last_validation": "2026-10-07",
+    "last_validation": "2026-10-12",
     "last_validator": "jsboige@gmail.com",
-    "issue_pr_associee": "#16231, #19502",
+    "issue_pr_associee": "#20250, #20282",
     "cells_total": 26,
     "cells_code": 9,
     "cells_markdown": 17,
