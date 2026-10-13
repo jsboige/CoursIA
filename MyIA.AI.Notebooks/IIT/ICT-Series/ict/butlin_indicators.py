@@ -45,7 +45,8 @@ Procédures d'inspection comparées (le banc les rend exécutables)
 ----------------------------------------------------------------
 * **S1** (structurelle naïve) : « le graphe contient-il un cycle ? » ;
 * **S2** (structurelle informée par le papier) : « cycle **ou** chaîne à
-  poids partagés (≥ 2 nœuds portant l'opération ``shift``) ? » ;
+  poids partagés (≥ 2 nœuds ``shift`` **reliés** par une arête du graphe
+  déclaré — une chaîne, pas une collection de nœuds disjoints) ? » ;
 * **C** (causale) : lésion de chaque module candidat → porteur =
   ``argmax_λ Δ_λ`` ; verdict = ``iterative_reuse(porteur)`` (aucun porteur si
   ``max Δ < 0.5``). Modules : ``loop``/``chain`` (report coupé),
@@ -106,6 +107,10 @@ BAND_COLLAPSE = 0.50   # Δ ≥ 0.50 = le porteur est identifié
 BAND_INERT = 0.01      # |Δ| ≤ 0.01 = inertie (sham)
 ACC_LESION_LO = 0.10   # fenêtre analytique de l'accuracy lésée (≈ 0.234)
 ACC_LESION_HI = 0.35
+# Valeur théorique de l'accuracy lésée (loop/chain) : la réponse lésée vaut 0
+# sauf si s = 7 (lecture en tête correcte) ou x_s = 0 — P = 1/8 + (7/8)·(1/8)
+# = 15/64.
+ACC_LESION_THEORETICAL = 0.234375
 
 
 def _shift(m: np.ndarray, x: np.ndarray) -> np.ndarray:
@@ -259,8 +264,11 @@ def has_cycle(nodes: dict, edges: list) -> bool:
 
 
 def has_shared_weight_chain(nodes: dict, edges: list) -> bool:
-    """S2 (volet partage) — ≥ 2 nœuds distincts portant la même opération."""
-    return sum(1 for op in nodes.values() if op == "shift") >= 2
+    """S2 (volet partage) — ≥ 2 nœuds distincts portant la même opération ET
+    reliés par une arête du graphe déclaré : une **chaîne**, pas une simple
+    collection — deux nœuds ``shift`` disjoints ne suffisent pas."""
+    return any(a != b and nodes.get(a) == "shift" and nodes.get(b) == "shift"
+               for a, b in edges)
 
 
 def causal_probe(arch: dict, seqs: np.ndarray, targets: np.ndarray) -> dict:
@@ -308,7 +316,11 @@ def calibrate() -> dict:
 # --- Run principal ---
 
 def run_protocol() -> dict:
-    """Run principal : graines test, procédures S1/S2/C, prédictions scellées."""
+    """Run principal : graines test, procédures S1/S2/C, prédictions scellées.
+
+    L'artefact embarque le bloc ``calibration`` (graines disjointes 11/22/33) :
+    les valeurs de calibration sont rejouables depuis le seul JSON committé,
+    sans relancer ``--calibrate`` (#20412)."""
     truth = {name: a["truth"] for name, a in ARCHITECTURES.items()}
     s1 = {name: has_cycle(a["nodes"], a["edges"]) for name, a in ARCHITECTURES.items()}
     s2 = {name: (s1[name] or has_shared_weight_chain(a["nodes"], a["edges"]))
@@ -346,6 +358,8 @@ def run_protocol() -> dict:
     else:
         verdict = "NOT_SUPPORTED"
 
+    cal = calibrate()
+
     return {
         "case": "19-butlin-rpt1-using",
         "seeds": list(SEEDS_TEST),
@@ -378,6 +392,14 @@ def run_protocol() -> dict:
         "verdict": verdict,
         "bands": {"collapse": BAND_COLLAPSE, "inert": BAND_INERT,
                   "acc_lesion_window": [ACC_LESION_LO, ACC_LESION_HI]},
+        "calibration": {
+            "seeds": list(SEEDS_CALIB),
+            "n_test": N_TEST,
+            "acc_lesion_window": [ACC_LESION_LO, ACC_LESION_HI],
+            "acc_lesion_theoretical": ACC_LESION_THEORETICAL,
+            "bands_ok": cal["bands_ok"],
+            "rows": cal["rows"],
+        },
     }
 
 

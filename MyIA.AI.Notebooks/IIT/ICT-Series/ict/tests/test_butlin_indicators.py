@@ -129,6 +129,20 @@ def test_s2_verdicts_still_blind_to_puppet():
     assert sum(s2[n] == truth[n] for n in truth) == 2
 
 
+def test_shared_weight_chain_requires_connected_shift_nodes():
+    """La chaîne à poids partagés exige des nœuds ``shift`` **reliés** par une
+    arête : deux nœuds disjoints ne suffisent pas (le faux positif de
+    l'ancien compteur de nœuds, #20412 item 2), une self-loop seule non plus
+    (un seul nœud distinct — c'est le cycle de S1, pas la chaîne de S2)."""
+    nodes = {"a": "shift", "b": "shift", "out": "output"}
+    # deux shift disjoints : pas une chaîne
+    assert has_shared_weight_chain(nodes, [("out", "a"), ("out", "b")]) is False
+    # chaîne reliée : le mimique Twin (h1 -> h2)
+    assert has_shared_weight_chain(nodes, [("a", "b"), ("b", "out")]) is True
+    # self-loop seule : un seul nœud distinct, pas une chaîne
+    assert has_shared_weight_chain({"a": "shift"}, [("a", "a")]) is False
+
+
 def test_causal_probe_identifies_carriers():
     """La sonde causale : porteurs {loop, chain, selector}, verdicts
     {oui, oui, non} — exact 3/3 ; Δ(sham) exactement nul."""
@@ -153,6 +167,25 @@ def test_calibrate_bands_ok():
     cal = calibrate()
     assert cal["bands_ok"] is True
     assert all(SEEDS_CALIB[i] not in (0, 1, 7, 42, 99) for i in range(len(SEEDS_CALIB)))
+
+
+def test_protocol_artifact_carries_calibration_block():
+    """L'artefact est rejouable depuis le seul JSON committé : le bloc
+    ``calibration`` vit dans le run principal — graines disjointes, fenêtre,
+    valeur théorique 15/64, rows par graine (#20412 item 1)."""
+    out = run_protocol()
+    cal = out["calibration"]
+    assert cal["seeds"] == [11, 22, 33]
+    assert cal["bands_ok"] is True
+    assert cal["acc_lesion_window"] == [0.10, 0.35]
+    assert cal["acc_lesion_theoretical"] == 0.234375
+    assert len(cal["rows"]) == 3
+    for row in cal["rows"]:
+        assert row["acc_base_real"] == 1.0
+        assert row["acc_base_twin"] == 1.0
+        assert 0.10 <= row["acc_lesion_real"] <= 0.35
+        assert 0.10 <= row["acc_lesion_twin"] <= 0.35
+        assert abs(row["delta_sham"]) <= 0.01
 
 
 def test_protocol_verdict_supported():
