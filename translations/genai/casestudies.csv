@@ -433,6 +433,20 @@ print(""Exercice a completer : SurrenderTerminationStrategy"")",,,,,,,,c652ac2f7
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,3dbb1aca,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,12da34db,markdown,fr,190bb4d8cdc25f60,"### Vue d'ensemble : un duel d'agents Père Fouras vs Laurent Jalabert
+
+Ce notebook implémente une simulation multi-agent du jeu télévisé **Fort Boyard** : le Père Fouras pose des énigmes à un personnage célèbre (ici, le cycliste **Laurent Jalabert**), et l'agent doit résoudre l'énigme en mobilisant un **mot à deviner** (par défaut `""anticonstitutionnellement""`, l'un des plus longs mots français). L'orchestration repose sur un `AgentGroupChat` Semantic Kernel avec une **stratégie de renoncement** (l'agent abandonne après N tentatives) et un **système de score** en fin de partie. Le notebook couvre les patterns : kernel partagé, `ChatCompletionAgent`, persona engineering via prompts structurés, et termination strategy custom. C'est un cas d'usage type pour les **game-theoretic agent simulations** où deux LLM agents s'affrontent dans un dialogue structuré.
+ L'architecture du notebook — kernel partagé, deux agents à prompts asymétriques, groupe de chat avec stratégies custom — est volontairement minimale pour rester **lisible** : un étudiant peut suivre la dynamique du duel sans se perdre dans une forêt de plugins. C'est l'opposé des cas industriels à 10+ agents où l'orchestration devient illisible.
+ Pattern reproductible.
+","### Overview: an agent duel between Père Fouras and Laurent Jalabert
+
+This notebook implements a multi-agent simulation of the TV game show **Fort Boyard**: Père Fouras poses riddles to a celebrity (here, the cyclist **Laurent Jalabert**), and the agent must solve the riddle by working with a **secret word to guess** (by default `""anticonstitutionnellement""`, one of the longest French words). The orchestration relies on a Semantic Kernel `AgentGroupChat` with a **give-up strategy** (the agent quits after N attempts) and a **scoring system** at the end of the game. The notebook covers the patterns: shared kernel, `ChatCompletionAgent`, persona engineering via structured prompts, and custom termination strategy. This is a typical use case for **game-theoretic agent simulations** where two LLM agents face off in a structured dialogue.
+ The notebook architecture — shared kernel, two agents with asymmetric prompts, chat group with custom strategies — is deliberately minimal to stay **readable**: a student can follow the dynamics of the duel without getting lost in a forest of plugins. It is the opposite of industrial cases with 10+ agents where the orchestration becomes unreadable.
+ Reproducible pattern.
+",,,,,,,190bb4d8cdc25f60,ea79edb0c7f2d830,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,d9a88198,markdown,fr,1a0ecd10cacd22b8,"> **Adapté d'une production étudiante EPF** ([#890](https://github.com/jsboige/CoursIA/pull/890)) — groupe d'origine non préservé par le refactor.
+","> **Adapted from a student production at EPF** ([#890](https://github.com/jsboige/CoursIA/pull/890)) — the original group is not preserved by the refactor.
+",,,,,,,1a0ecd10cacd22b8,708961621cdfff6b,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,7a5a944e,markdown,fr,d90def923e958323,"# Jeu de devinette : Père Fouras vs Laurent Jalabert
 
 **Navigation** : [Index](../README.md)
@@ -495,7 +509,12 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,48b0b79
 Le **Kernel** est le cœur de Semantic Kernel : un conteneur d'injection de dépendances qui regroupe les services d'IA et les fonctions (plugins) qu'un agent peut invoquer. Avant de créer un agent, il faut donc lui brancher un service de complétion de chat — ici `OpenAIChatCompletion`, paramétré par le modèle et la clé API lus depuis l'environnement (jamais codés en dur, cf. règle secrets-hygiene).
 
 Cette cellule fixe aussi `MOT_A_DEVINER`, le mot secret que le Père Fouras fera deviner à Laurent Jalabert tout au long de la partie.
-",## Agent configuration,,,,,## Конфигурация агентов,,eaafd847b50fbf9f,aee146d02afdc881,,,,,ad386dd3873b49b3,,
+","## Agent configuration
+
+The **Kernel** is the heart of Semantic Kernel: a dependency-injection container that gathers the AI services and the functions (plugins) an agent can invoke. Before creating an agent, a chat-completion service must therefore be wired to it — here `OpenAIChatCompletion`, parameterized by the model and the API key read from the environment (never hard-coded, cf. the secrets-hygiene rule).
+
+This cell also sets `MOT_A_DEVINER`, the secret word that Père Fouras will make Laurent Jalabert guess throughout the game.
+",,,,,## Конфигурация агентов,,eaafd847b50fbf9f,1579cb5e3d8cf6a6,,,,,ad386dd3873b49b3,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,85411416,code,fr,f831efcb9bbeae84,"# Bloc 2 - Création du kernel
 MOT_A_DEVINER = ""anticonstitutionnellement""
 
@@ -509,12 +528,43 @@ def create_kernel():
     ))
     return kernel
 ",,,,,,,,f831efcb9bbeae84,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,2adf4585,markdown,fr,1ea6574bb144c029,"### Lecture du résultat : pourquoi ce choix de mot est pédagogique
+
+Le mot `""anticonstitutionnellement""` (25 lettres, Grand Robert) cumule plusieurs difficultés : longueur (force des indices progressifs), composition morphologique (`anti-+constitution+nelle+ment` — l'agent peut deviner par décomposition), et rareté (vocabulaire juridique peu courant). Pour un **jeu d'énigmes LLM**, c'est un excellent stress-test : si l'agent devine ce mot en moins de 10 essais, le prompt Père Fouras est bien calibré. L'étudiant peut **mesurer le taux de réussite** sur 100 parties avec `evaluer_partie()` puis comparer avec un mot plus simple (ex. `""kayak""`, 5 lettres) pour isoler l'effet longueur du mot.
+ Le contrat doit être testé.
+ Référence Grand Robert.
+ Référence.
+","### Reading the result: why this word choice is pedagogical
+
+The word `""anticonstitutionnellement""` (25 letters, Grand Robert) combines several difficulties: length (strength of the progressive hints), morphological composition (`anti-+constitution+nelle+ment` — the agent can guess by decomposition), and rarity (an uncommon legal vocabulary). For an **LLM riddle game**, it is an excellent stress test: if the agent guesses this word in fewer than 10 attempts, the Père Fouras prompt is well calibrated. The student can **measure the success rate** over 100 games with `evaluer_partie()` and then compare with a simpler word (e.g. `""kayak""`, 5 letters) to isolate the effect of the word's length.
+ The contract must be tested.
+ Grand Robert reference.
+ Reference.
+",,,,,,,1ea6574bb144c029,8f5af9edc3274d33,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,fdc6262b,markdown,fr,2c2b72dcc3220ca5,"### Lecture du résultat : kernel Semantic Kernel instancié
+
+La cellule 4 crée le kernel et stocke `MOT_A_DEVINER = ""anticonstitutionnellement""` (25 lettres, l'un des plus longs mots français standards). Cette constante est ce que **l'agent va devoir deviner** au cours du duel via une stratégie d'énigmes posée par le Père Fouras. Le choix du mot est pédagogique : sa longueur force l'agent à mobiliser des **stratégies d'indice indirect** (rime, contexte, longueur) plutôt qu'une description directe. L'étudiant peut substituer un mot plus court pour des parties plus rapides (`""kayak""` pour un palindrome).
+ Force la progression.
+ Plus.
+ Progression.
+","### Reading the result: Semantic Kernel kernel instantiated
+
+Cell 4 creates the kernel and stores `MOT_A_DEVINER = ""anticonstitutionnellement""` (25 letters, one of the longest standard French words). This constant is what **the agent will have to guess** during the duel through a riddle strategy set by Père Fouras. The choice of word is pedagogical: its length forces the agent to mobilize **indirect hint strategies** (rhyme, context, length) rather than a direct description. The student can substitute a shorter word for faster games (`""kayak""` for a palindrome).
+ Forces progression.
+ More.
+ Progression.
+",,,,,,,2c2b72dcc3220ca5,c9048e7dca7f986a,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,f0496c5b,markdown,fr,d11675550b6a8613,"## Définition des prompts
 
 Chaque agent conversationnel est piloté par un **prompt système** (ses *instructions*) qui définit son rôle, sa personnalité et les règles qu'il doit respecter. Ces instructions conditionnent tout le comportement de l'agent au fil du dialogue : un même Kernel peut produire deux interlocuteurs radicalement différents selon le prompt qu'on lui donne.
 
 Ici, le prompt du Père Fouras injecte le mot secret via une f-string (`{MOT_A_DEVINER}`) et lui interdit de le révéler directement : il doit guider par des charades. Celui de Laurent Jalabert le contraint à poser des **questions fermées** (Oui/Non), ce qui transforme la devinette en un problème de réduction d'incertitude tour par tour.
-",## Definition of prompts,,,,,## Определение промптов,,d11675550b6a8613,8252f726aa184d8f,,,,,0d4ea0d0b716dd96,,
+","## Definition of prompts
+
+Each conversational agent is driven by a **system prompt** (its *instructions*) that defines its role, its personality and the rules it must follow. These instructions shape the whole behaviour of the agent over the dialogue: the same Kernel can produce two radically different interlocutors depending on the prompt it is given.
+
+Here, Père Fouras's prompt injects the secret word through an f-string (`{MOT_A_DEVINER}`) and forbids him to reveal it directly: he must guide with charades. Laurent Jalabert's prompt forces him to ask **closed questions** (Yes/No), which turns the guessing game into a problem of reducing uncertainty turn by turn.
+",,,,,## Определение промптов,,d11675550b6a8613,55bb5324dc7336b3,,,,,0d4ea0d0b716dd96,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,9bedfe8b,code,fr,7f877f1f31e39469,"# Bloc 3 - Prompts des agents
 PERE_FOURAS_PROMPT = f""""""
 Tu es le Père Fouras de Fort Boyard. 
@@ -528,6 +578,15 @@ Tu es Laurent Jalabert.
 Tu dois deviner le mot en posant des questions fermées (Oui/Non).
 Sois perspicace et stratégique dans tes questions.
 """"""",,,,,,,,7f877f1f31e39469,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,3e19b11c,markdown,fr,3f0577550fc753d8,"### Lecture du résultat : prompts Père Fouras et cycliste configurés
+
+La cellule 6 définit deux `PERE_FOURAS_PROMPT` et `CYCLISTE_PROMPT` structurés via `f""""""...""""""`. Le prompt du Père Fouras encode la **persona + la mécanique** : pose énigme, attend réponse, valide, propose indice suivant. Le prompt du cycliste encode la **stratégie de devinette** : extraire lettres, longueur, contexte, demander indice. Cette séparation persona/mécanique est cruciale — sans persona explicite, le LLM répondrait en mode Q&A générique sans le **cadre narratif Fort Boyard**. L'exercice 1 invite l'étudiant à ajouter un 3ᵉ personnage (Détective, Témoin) — extension classique du **multi-agent cast**.
+ Le format `f""""""...""""""` permet l'interpolation de variables runtime (mot à deviner, score actuel).
+","### Reading the result: Père Fouras and cyclist prompts configured
+
+Cell 6 defines two structured `PERE_FOURAS_PROMPT` and `CYCLISTE_PROMPT` via `f""""""...""""""`. The Père Fouras prompt encodes the **persona + the mechanics**: pose a riddle, wait for an answer, validate, offer the next hint. The cyclist prompt encodes the **guessing strategy**: extract letters, length, context, ask for a hint. This persona/mechanics separation is crucial — without an explicit persona, the LLM would answer in generic Q&A mode without the **Fort Boyard narrative frame**. Exercise 1 invites the student to add a 3rd character (Detective, Witness) — a classic extension of the **multi-agent cast**.
+ The `f""""""...""""""` format allows the interpolation of runtime variables (word to guess, current score).
+",,,,,,,3f0577550fc753d8,396c67a0eed4eb12,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,649ac34e,markdown,fr,f85a9ba7239d19b5,"### Exercice 1 : Personnaliser les personnages du duel
 
 Les prompts actuels definissent le Pere Fouras comme enigmatique et Laurent Jalabert comme perspicace. L'objectif est de créer une variante du jeu avec deux personnages différents : un **Detective** (qui pose des questions deductives) et un **Temoin** (qui repond de maniere evasive sans reveler le mot).
@@ -545,9 +604,10 @@ The current prompts define Père Fouras as enigmatic and Laurent Jalabert as per
 **Objective**: write the system instructions for these two new characters and configure the corresponding agents.
 
 **Hints**:
-- # Step 1: Write the Witness prompt (role, rules, prohibitions)
-- # Step 2: Write the Detective prompt (questioning strategy)
-- # Hint: the Witness must never reveal the word directly, but may give indirect clues",,,,,"### Упражнение 1: Настроить персонажей дуэли
+- `# Step 1`: Write the Witness prompt (role, rules, prohibitions)
+- `# Step 2`: Write the Detective prompt (questioning strategy)
+- `# Hint`: the Witness must never reveal the word directly, but may give indirect clues
+",,,,,"### Упражнение 1: Настроить персонажей дуэли
 
 Текущие промпты определяют Отца Фура как загадочного, а Лорана Жалабера — как проницательного. Цель — создать вариант игры с двумя другими персонажами: **Детективом** (который задаёт дедуктивные вопросы) и **Свидетелем** (который отвечает уклончиво, не раскрывая слово).
 
@@ -556,7 +616,7 @@ The current prompts define Père Fouras as enigmatic and Laurent Jalabert as per
 **Подсказки**:
 - # Шаг 1: Написать промпт Свидетеля (роль, правила, запреты)
 - # Шаг 2: Написать промпт Детектива (стратегия задавания вопросов)
-- # Подсказка: Свидетель никогда не должен раскрывать слово напрямую, но может давать косвенные намёки",,f85a9ba7239d19b5,702065354fbe0277,,,,,3295a1f8a4a7068b,,
+- # Подсказка: Свидетель никогда не должен раскрывать слово напрямую, но может давать косвенные намёки",,f85a9ba7239d19b5,862ca468490efd24,,,,,3295a1f8a4a7068b,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ac94f4f0,code,fr,fb5c1ca4effe98b3,"# Exercice 1 : Personnaliser les personnages du duel
 # TODO etudiant : definir les prompts et creer les agents
 
@@ -573,7 +633,12 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,6a8dbe2
 Un `ChatCompletionAgent` concrétise l'association entre un Kernel (le moteur), un `name` (son identité dans le dialogue) et des `instructions` (son prompt système). Une fois instanciés, les deux agents peuvent produire des messages, mais ils ne savent pas encore *quand* parler ni *quand* s'arrêter — c'est le groupe de discussion qui le décidera (voir plus bas).
 
 Notez que chaque agent reçoit son propre Kernel via `create_kernel()` : ils partagent le même service OpenAI mais restent des entités indépendantes, ce qui laisse la porte ouverte à les brancher plus tard sur des modèles ou des plugins différents.
-",## Creating agents with custom strategies,,,,,## Создание агентов с пользовательскими стратегиями,,8dce0df794c9d197,3df7b0d53f835e5f,,,,,e871958e3a650083,,
+","## Creating agents with custom strategies
+
+A `ChatCompletionAgent` embodies the association between a Kernel (the engine), a `name` (its identity in the dialogue) and `instructions` (its system prompt). Once instantiated, the two agents can produce messages, but they do not yet know *when* to speak or *when* to stop — the discussion group will decide that (see below).
+
+Note that each agent receives its own Kernel through `create_kernel()`: they share the same OpenAI service but remain independent entities, which leaves the door open to wiring them later to different models or plugins.
+",,,,,## Создание агентов с пользовательскими стратегиями,,8dce0df794c9d197,7efc76cd9d75d075,,,,,e871958e3a650083,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,83e35526,code,fr,1884ec56d5922898,"# Bloc 4 - Définition des agents
 pere_fouras = ChatCompletionAgent(
     kernel=create_kernel(),
@@ -586,12 +651,26 @@ laurent_jalabert = ChatCompletionAgent(
     name=""Laurent_Jalabert"",
     instructions=LAURENT_JALABERT_PROMPT,
 )",,,,,,,,1884ec56d5922898,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,2bbc1e0f,markdown,fr,a1583059833a8010,"### Lecture du résultat : agents conversationnels créés
+
+La cellule 10 instancie `pere_fouras` et `jalabert` via `ChatCompletionAgent(kernel=..., name=..., instructions=..., description=...)`. Le paramètre `description` est souvent sous-exploité : il sert au **selection_strategy** pour choisir l'agent actif quand le groupe de chat doit décider qui parle. Sans description explicite, l'orchestrateur risquerait d'alterner arbitrairement. La cellule 12 (après agents) importe `TerminationStrategy` — base class pour les stratégies de fin custom. L'étudiant doit observer la **différence entre agents et kernel** : les agents utilisent le kernel mais ne le possèdent pas, et chaque agent peut avoir un prompt différent.
+ C'est un paramètre.
+","### Reading the result: conversational agents created
+
+Cell 10 instantiates `pere_fouras` and `jalabert` via `ChatCompletionAgent(kernel=..., name=..., instructions=..., description=...)`. The `description` parameter is often underused: it serves the **selection_strategy** to choose the active agent when the chat group must decide who speaks. Without an explicit description, the orchestrator would risk alternating arbitrarily. Cell 12 (after agents) imports `TerminationStrategy` — the base class for custom termination strategies. The student must observe the **difference between agents and the kernel**: agents use the kernel but do not own it, and each agent can have a different prompt.
+ It is a parameter.
+",,,,,,,a1583059833a8010,c7367a24ca55d879,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,4a00c813,markdown,fr,02b7ed50c96b72d7,"## Stratégie de terminaison personnalisée
 
 Dans un dialogue multi-agent, il faut décider **quand s'arrêter**. Semantic Kernel délègue cette décision à une `TerminationStrategy` : après chaque tour, la méthode asynchrone `should_agent_terminate` est invoquée et renvoie un booléen qui détermine si la boucle se clôt.
 
 Notre stratégie métier est simple : la partie se termine dès que le mot secret apparaît dans le dernier message — c'est-à-dire quand Laurent Jalabert a deviné correctement. On ne teste la terminaison que sur l'agent concerné (le devineur), pas sur le Père Fouras qui n'a pas vocation à révéler la solution.
-",## Custom termination strategy,,,,,## Пользовательская стратегия завершения,,02b7ed50c96b72d7,70592e9073db4b12,,,,,c5fec7e663057808,,
+","## Custom termination strategy
+
+In a multi-agent dialogue, one must decide **when to stop**. Semantic Kernel delegates that decision to a `TerminationStrategy`: after each turn, the asynchronous method `should_agent_terminate` is invoked and returns a boolean determining whether the loop closes.
+
+Our business strategy is simple: the game ends as soon as the secret word appears in the last message — that is, when Laurent Jalabert has guessed correctly. Termination is only tested on the agent concerned (the guesser), not on Père Fouras, whose role is not to reveal the solution.
+",,,,,## Пользовательская стратегия завершения,,02b7ed50c96b72d7,2abd2d4b7add84c4,,,,,c5fec7e663057808,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,a86ac80f,code,fr,c41a211f227072d5,"from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
 from semantic_kernel.contents.chat_message_content import ChatMessageContent
 
@@ -627,9 +706,10 @@ The current strategy stops the game only if the word is guessed. But Laurent Jal
 **Objective**: implement `RenoncementTerminationStrategy` which combines detection of the secret word with detection of giving-up phrases.
 
 **Hints**:
-- # Step 1: Define a list of typical giving-up phrases
-- # Step 2: Check whether the last message contains one of these phrases (in lowercase)
-- # Hint: combine the two conditions with `or` in `should_agent_terminate`",,,,,"### Упражнение 2 : Завершение с обнаружением отказа
+- `# Step 1`: Define a list of typical giving-up phrases
+- `# Step 2`: Check whether the last message contains one of these phrases (in lowercase)
+- `# Hint`: combine the two conditions with `or` in `should_agent_terminate`
+",,,,,"### Упражнение 2 : Завершение с обнаружением отказа
 
 Текущая стратегия останавливает игру только если слово угадано. Но Лоран Жалабер также может сдаться. Цель — создать гибридную стратегию, которая останавливает игру, если слово угадано **или** если Лоран выражает отказ (""je donne ma langue au chat"", ""j'abandonne"").
 
@@ -638,7 +718,7 @@ The current strategy stops the game only if the word is guessed. But Laurent Jal
 **Подсказки** :
 - # Шаг 1 : Определить список типичных фраз отказа
 - # Шаг 2 : Проверить, содержит ли последнее сообщение одну из этих фраз (в нижнем регистре)
-- # Подсказка : объединить два условия с помощью `or` в `should_agent_terminate`",,5636696f2d83887e,e3514d8d5c1a8cd7,,,,,95bd36831fc14824,,
+- # Подсказка : объединить два условия с помощью `or` в `should_agent_terminate`",,5636696f2d83887e,157448c151147789,,,,,95bd36831fc14824,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,0e96e11d,code,fr,9a91cbf579858a4b,"from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
 from semantic_kernel.contents.chat_message_content import ChatMessageContent
 
@@ -657,7 +737,12 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,c61e7f5
 `AgentGroupChat` est l'orchestrateur multi-agent : il fait tourner les agents à tour de rôle selon une **stratégie de sélection** (quel agent parle ensuite) et s'arrête selon une **stratégie de terminaison** (quand arrêter). Par défaut, la sélection alterne simplement les agents dans l'ordre de la liste.
 
 On lui passe ici les deux agents et notre `FortBoyardTerminationStrategy`, bornée à `maximum_iterations=20` : c'est le filet de sécurité qui empêche une partie de boucler indéfiniment si le mot n'est jamais trouvé. La stratégie de terminaison ne s'applique qu'à `laurent_jalabert` — c'est lui le devineur, c'est donc son tour qui peut clore la partie.
-",## Discussion group configuration,,,,,## Настройка дискуссионной группы,,9270af3e7f1c1541,4ee9c831bd3ea9fd,,,,,94489997a64019af,,
+","## Discussion group configuration
+
+`AgentGroupChat` is the multi-agent orchestrator: it runs the agents in turn according to a **selection strategy** (which agent speaks next) and stops according to a **termination strategy** (when to stop). By default, the selection simply alternates the agents in list order.
+
+Here it is given the two agents and our `FortBoyardTerminationStrategy`, bounded by `maximum_iterations=20`: this is the safety net that prevents a game from looping indefinitely if the word is never found. The termination strategy applies only to `laurent_jalabert` — he is the guesser, so it is his turn that can close the game.
+",,,,,## Настройка дискуссионной группы,,9270af3e7f1c1541,d71f1be9bf0ed749,,,,,94489997a64019af,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,fc868e1b,code,fr,e3c965a025256976,"# Bloc 6 - Configuration corrigée
 chat = AgentGroupChat(
     agents=[pere_fouras, laurent_jalabert],
@@ -667,12 +752,24 @@ chat = AgentGroupChat(
     )
 )
 ",,,,,,,,e3c965a025256976,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,cb4bd6c9,markdown,fr,a76c8caea282abf3,"### Lecture du résultat : groupe de chat configuré
+
+La cellule 16 construit `AgentGroupChat(agents=[pere_fouras, jalabert], termination_strategy=..., selection_strategy=...)`. C'est l'**objet central** qui orchestre le duel : à chaque tour, le `selection_strategy` choisit qui parle (par défaut round-robin), le `termination_strategy` détecte la fin (renoncement ou score). Sans ce wrapper, les deux agents parleraient en parallèle. La **spécificité Fort Boyard** est que la stratégie de renoncement (cellule 14, exercice) doit laisser l'agent abandonner après N tentatives infructueuses — émulation du stress télévisé.
+","### Reading the result: chat group configured
+
+Cell 16 builds `AgentGroupChat(agents=[pere_fouras, jalabert], termination_strategy=..., selection_strategy=...)`. This is the **central object** that orchestrates the duel: at each turn, the `selection_strategy` chooses who speaks (round-robin by default), the `termination_strategy` detects the end (give-up or score). Without this wrapper, both agents would speak in parallel. The **Fort Boyard specificity** is that the give-up strategy (cell 14, exercise) must let the agent abandon after N unsuccessful attempts — an emulation of the TV stress.
+",,,,,,,a76c8caea282abf3,4c11018e55bbbd8b,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ada98689,markdown,fr,9894be02bbc84b15,"## Lancement de la partie !
 
 Le groupe est configuré, on peut lancer la partie. On sème le dialogue avec un **message utilisateur initial** (`add_chat_message`) — sinon les agents n'ont rien à quoi réagir — puis on itère asynchronement sur `chat.invoke()`, qui produit chaque message tour à tour.
 
 L'itération s'arrêtera automatiquement soit quand Laurent aura trouvé le mot (terminaison métier), soit au bout de 20 itérations (garde-fou). `await` est obligatoire car les appels au LLM sont asynchrones : chaque tour effectue une véritable requête HTTP vers l'API OpenAI, dont on voit la latence dans les logs (plusieurs secondes par réponse).
-",## Starting the game!,,,,,## Запуск части!,,9894be02bbc84b15,a8c508175a334806,,,,,43600140a62ebbb9,,
+","## Starting the game!
+
+The group is configured, the game can start. The dialogue is seeded with an **initial user message** (`add_chat_message`) — otherwise the agents have nothing to react to — then we iterate asynchronously over `chat.invoke()`, which yields each message in turn.
+
+The iteration stops automatically either when Laurent has found the word (business termination) or after 20 iterations (safety net). `await` is mandatory because the LLM calls are asynchronous: each turn performs a real HTTP request to the OpenAI API, whose latency is visible in the logs (several seconds per response).
+",,,,,## Запуск части!,,9894be02bbc84b15,b4f3d889e27e45ca,,,,,43600140a62ebbb9,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,bad1ce48,code,fr,62bb9d8c5d80b76b,"from semantic_kernel.contents import AuthorRole, ChatMessageContent
 
 # Bloc 7 - Exécution du jeu
@@ -692,6 +789,20 @@ async def jouer_partie():
     logger.info(""Partie terminee !"")
 
 await jouer_partie()",,,,,,,,62bb9d8c5d80b76b,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,3aa490d9,markdown,fr,1e96786b35e46b23,"### Lecture du résultat : début du duel Père Fouras vs Jalabert
+
+Le log `""Depart du duel Pere Fouras vs Laurent Jalabert""` marque l'entrée dans la boucle asynchrone. À partir de cette cellule, **l'étudiant observe** : (1) l'alternance Père Fouras (énigme) ↔ Jalabert (réponse), (2) la convergence vers un mot deviné ou un renoncement, (3) l'évaluation finale par `evaluer_partie()`. Le **logging structuré** (timestamp + niveau INFO + préfixe événement) est essentiel dans un chat asynchrone multi-agent : sans lui, l'étudiant ne peut pas distinguer **qui parle** dans la sortie, ni **quand une étape se termine**. C'est ce logging qui rend le notebook pédagogique — rejouable.
+","### Reading the result: start of the duel Père Fouras vs Jalabert
+
+The log `""Depart du duel Pere Fouras vs Laurent Jalabert""` marks the entry into the asynchronous loop. From this cell on, **the student observes**: (1) the alternation Père Fouras (riddle) ↔ Jalabert (answer), (2) the convergence toward a guessed word or a give-up, (3) the final evaluation by `evaluer_partie()`. **Structured logging** (timestamp + INFO level + event prefix) is essential in an asynchronous multi-agent chat: without it, the student cannot distinguish **who speaks** in the output, nor **when a step ends**. It is this logging that makes the notebook pedagogical — replayable.
+",,,,,,,1e96786b35e46b23,bc3eb9742b305e6c,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,5306a243,markdown,fr,75a432c09c4e169f,"### Lecture du résultat : sélection d'agent par description
+
+Quand le `selection_strategy` du `AgentGroupChat` doit choisir le prochain locuteur, il lit la **description** de chaque agent (paramètre `description=""Le Père Fouras pose des énigmes...""` cellule 10) et compare au contexte du dernier message. C'est ce mécanisme qui décide si Jalabert pose une question (turn cycliste) ou si Père Fouras valide (turn maître du jeu). Sans description explicite, l'orchestrateur risque de tomber dans un **pattern round-robin** rigide qui ne s'adapte pas au flux conversationnel. Le pattern **role-based selection** est un raffinement important pour des simulations multi-agent crédibles.
+","### Reading the result: agent selection by description
+
+When the `selection_strategy` of `AgentGroupChat` must choose the next speaker, it reads the **description** of each agent (`description=""Le Père Fouras pose des énigmes...""` cell 10) and compares it with the context of the last message. This mechanism decides whether Jalabert asks a question (cyclist turn) or whether Père Fouras validates (game master turn). Without an explicit description, the orchestrator risks falling into a rigid **round-robin pattern** that does not adapt to the conversational flow. The **role-based selection** pattern is an important refinement for credible multi-agent simulations.
+",,,,,,,75a432c09c4e169f,f50748791d4079a7,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,9c2a66c0,markdown,fr,c31399d55a9d3ca0,"### Exercice 3 : Système de score pour la partie
 
 Actuellement, la partie s'arrete simplement quand le mot est devine ou après 20 itérations. L'objectif est d'ajouter un **système de score** qui compte le nombre de questions posees par Laurent Jalabert et affiche un score final.
@@ -709,9 +820,10 @@ Currently, the game simply stops when the word is guessed or after 20 iterations
 **Objective**: write a function `evaluer_partie` that takes the message history and returns a dictionary containing the number of questions asked, whether the word was found, and a score (fewer questions = better score).
 
 **Hints**:
-- # Step 1: Count the messages where the role is that of Laurent Jalabert
-- # Step 2: Check whether the secret word appears in the last message
-- # Hint: the score can be `max(0, 100 - nb_questions * 10)`",,,,,"### Упражнение 3 : Система подсчета очков для партии
+- `# Step 1`: Count the messages where the role is that of Laurent Jalabert
+- `# Step 2`: Check whether the secret word appears in the last message
+- `# Hint`: the score can be `max(0, 100 - nb_questions * 10)`
+",,,,,"### Упражнение 3 : Система подсчета очков для партии
 
 В настоящее время партия просто останавливается, когда слово угадано или после 20 итераций. Цель — добавить **систему подсчета очков**, которая считает количество вопросов, заданных Laurent Jalabert, и отображает итоговый счет.
 
@@ -720,7 +832,7 @@ Currently, the game simply stops when the word is guessed or after 20 iterations
 **Подсказки** :
 - # Шаг 1 : Посчитать сообщения, где роль принадлежит Laurent Jalabert
 - # Шаг 2 : Проверить, появляется ли секретное слово в последнем сообщении
-- # Подсказка : счет может быть `max(0, 100 - nb_questions * 10)`",,c31399d55a9d3ca0,c822d0052a5eb4da,,,,,f3277f163627f847,,
+- # Подсказка : счет может быть `max(0, 100 - nb_questions * 10)`",,c31399d55a9d3ca0,1ef25963c540f75d,,,,,f3277f163627f847,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,df0d3126,code,fr,c67bed915c276918,"def evaluer_partie(history_messages: list) -> dict:
     # TODO etudiant : implementer le systeme de score
     nb_questions = 0     # Etape 1 : compter les questions de Laurent
@@ -731,6 +843,13 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,df0d312
     return {""nb_questions"": nb_questions, ""mot_trouve"": mot_trouve, ""score"": score}
 
 print(""Exercice a completer : systeme de score"")",,,,,,,,c67bed915c276918,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,d2a4bdca,markdown,fr,ed18f6b84da694d6,"### Lecture du résultat : système de score en fin de partie
+
+La cellule 20 expose `evaluer_partie(history_messages: list) -> dict` — l'étudiant doit implémenter cette fonction (exercice 4). Le contrat typique : compter les tentatives, attribuer un score basé sur la longueur du mot deviné vs nombre d'essais, et retourner un dict sérialisable. Ce **scoring** est ce qui transforme le duel en **jeu avec issue mesurable** — sans score, le notebook serait une simple conversation sans fin. C'est aussi ce qui ouvre la porte à des **expériences reproductibles** : l'étudiant peut comparer deux configurations de prompts en mesurant le score moyen sur 100 parties.
+","### Reading the result: scoring system at the end of the game
+
+Cell 20 exposes `evaluer_partie(history_messages: list) -> dict` — the student must implement this function (exercise 4). The typical contract: count the attempts, assign a score based on the length of the guessed word vs the number of attempts, and return a serializable dict. This **scoring** is what turns the duel into a **game with a measurable outcome** — without a score, the notebook would be a simple endless conversation. It is also what opens the door to **reproducible experiments**: the student can compare two prompt configurations by measuring the average score over 100 games.
+",,,,,,,ed18f6b84da694d6,4c726fbc1bb22b78,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,068a6d38,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
@@ -1202,12 +1321,12 @@ This use case illustrates several advanced Semantic Kernel concepts:
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,7a16c5fb,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,24f0e13f,markdown,fr,b1f5bd83b925e4a6,"# Générateur de Recettes PDF
-## Introduction - receipe maker
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,24f0e13f,markdown,fr,51d902e944fe5d18,"# Générateur de Recettes PDF
+## Introduction - recipe maker
 
 **Navigation** : [Index](../README.md)
 
-Ce notebook couvre les concepts et techniques principaux de receipe maker. Les objectifs pedagogiques incluent la comprehension des fondamentaux, la mise en pratique via des exercices, et analyse de résultats.
+Ce notebook couvre les concepts et techniques principaux de recipe maker. Les objectifs pedagogiques incluent la comprehension des fondamentaux, la mise en pratique via des exercices, et analyse de résultats.
 
 **Prerequis** : notions de base en Python et en algorithmique.
 ","# PDF Recipe Generator
@@ -1217,7 +1336,7 @@ Ce notebook couvre les concepts et techniques principaux de receipe maker. Les o
 
 This notebook covers the main concepts and techniques of receipe maker. The educational objectives include understanding the fundamentals, hands-on practice through exercises, and analysis of results.
 
-**Prerequisites**: basic knowledge of Python and algorithms.",,,,,,,b1f5bd83b925e4a6,7cb8a3487c589e05,,,,,,,
+**Prerequisites**: basic knowledge of Python and algorithms.",,,,,,,51d902e944fe5d18,7cb8a3487c589e05,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,75e5f73c,markdown,fr,16d73e913af0445e,"
 Ce notebook orchestre une collaboration multi-agents pour :
 1. Collecter des contraintes utilisateur
@@ -1240,10 +1359,10 @@ Ce notebook orchestre une collaboration multi-agents pour :
 - `PDFGenerator` → Generates the final document
 
 ---",,,,,,,16d73e913af0445e,4c86de0038c622f6,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,348b305b,markdown,fr,40dc4809315fd66b,"### Installation des bibliothèques
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,348b305b,markdown,fr,d2d5c1388f395a4c,"### Bibliothèques et garde-fous d'import
 
-**Pourquoi ce notebook s'appuie sur Semantic Kernel et non sur un simple appel d'API** : générer une recette structurée (titre, ingrédients listés, étapes numérotées, respect des contraintes diététiques) en une seule requête LLM produit un résultat au format libre et souvent incohérent. Semantic Kernel orchestre **plusieurs agents spécialisés** (collecteur de critères, générateur de recette, validateur de contraintes) qui se passent un état partagé — c'est l'architecture *multi-agent* qui garantit que la recette finale respecte toutes les contraintes (végétarien, sans champignons, 6 convives). Les *import guards* de la cellule suivante rendent chaque dépendance optionnelle explicite : le notebook fonctionne en mode dégradé sans crasher si une librairie manque, ce qui est la robustesse attendue d'un cas d'étude exécutable sur des environnements hétérogènes.",### Installing libraries,,,,,,,40dc4809315fd66b,37ae75552eece061,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,139e9aae,code,fr,1ef759b02fa5ca5c,"# Import guards - availability flags for external dependencies
+**Pourquoi ce notebook s'appuie sur Semantic Kernel et non sur un simple appel d'API** : générer une recette structurée (titre, ingrédients listés, étapes numérotées, respect des contraintes diététiques) en une seule requête LLM produit un résultat au format libre et souvent incohérent. Semantic Kernel orchestre **plusieurs agents spécialisés** (collecteur de critères, générateur de recette, producteur du PDF) qui se passent un état partagé — c'est l'architecture *multi-agent* qui garantit que la recette finale respecte toutes les contraintes (végétarien, sans champignons, 6 convives). Les *import guards* de la cellule suivante rendent explicites les deux dépendances optionnelles (`dotenv`, `semantic_kernel`) : si l'une manque, le notebook l'imprime et poursuit en mode dégradé. Les autres dépendances (`reportlab`, `openai`, `pypdf`) s'importent sans garde : elles sont requises pour la partie génération, et leur absence se lira sur l'`ImportError` de leur cellule.",### Installing libraries,,,,,,,d2d5c1388f395a4c,37ae75552eece061,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,139e9aae,code,fr,98e8009ebbbf579d,"# Import guards - availability flags for external dependencies
 
 try:
     from dotenv import load_dotenv
@@ -1258,13 +1377,11 @@ try:
 except ImportError:
     SEMANTIC_KERNEL_AVAILABLE = False
     print(f'  semantic_kernel non disponible - certaines fonctionnalites seront limitees')
+",,,,,,,,98e8009ebbbf579d,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,02378d10,markdown,fr,9708bac105b90cfd,"## État Global & Configuration
 
-# Cell 1 - Installation
-",,,,,,,,1ef759b02fa5ca5c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,02378d10,markdown,fr,1a95c48f238e0bec,"## État Global & Configuration
-
-**Pourquoi un état global partagé est indispensable en multi-agent** : chaque agent (collecteur, générateur, validateur) traite une **partie** du problème mais doit voir l'**ensemble** des contraintes. La classe `RecipeState` est cet état partagé — elle porte le régime alimentaire, les ingrédients exclus, le nombre de convives, et la recette en cours de construction. Sans état global, chaque agent devrait re-passer toutes les contraintes dans son prompt (redondant, coûteux en tokens, source d'oublis) ; avec état global, un agent lit `state.regime` et agit en conséquence. C'est le pattern *blackboard* de l'IA classique modernisé : les agents ne communiquent pas directement entre eux, ils communiquent **à travers l'état** — ce qui découple les agents et permet d'en ajouter (un agent nutritionniste) sans modifier les autres.",## Global State & Configuration,,,,,,,1a95c48f238e0bec,682f14eb4ae2a158,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,bc1a675a,code,fr,0e94d64476bc179f,"class RecipeState:
+**Pourquoi un état global partagé est indispensable en multi-agent** : chaque agent (collecteur, générateur, producteur du PDF) traite une **partie** du problème mais doit voir l'**ensemble** des contraintes. La classe `RecipeState` est cet état partagé — elle porte le régime alimentaire, les ingrédients exclus, le nombre de convives, et la recette en cours de construction. Sans état global, chaque agent devrait re-passer toutes les contraintes dans son prompt (redondant, coûteux en tokens, source d'oublis) ; avec état global, un agent lit `state.diet` et agit en conséquence. C'est le pattern *blackboard* de l'IA classique modernisé : les agents ne communiquent pas directement entre eux, ils communiquent **à travers l'état** — ce qui découple les agents et permet d'en ajouter (un agent nutritionniste) sans modifier les autres.",## Global State & Configuration,,,,,,,9708bac105b90cfd,682f14eb4ae2a158,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,bc1a675a,code,fr,d1237ca87b413567,"class RecipeState:
     def __init__(self):
         self.diet: str = """"
         self.excluded_ingredients: list[str] = []
@@ -1276,8 +1393,7 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,bc1a675a,co
         self.pdf_path: str = """"
 
 print(""Classe RecipeState définie"")
-print(""Classe RecipeState definie"")
-",,,,,,,,0e94d64476bc179f,,,,,,,,
+",,,,,,,,d1237ca87b413567,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,9227aa4c,markdown,fr,e3057c4d9e6e52a7,"### Exercice 1 : Enrichir l'etat partage avec des préférences culinaires
 
 La classe `RecipeState` stocke le regime, les ingredients exclus et le nombre de convives. L'objectif est de l'enrichir avec de nouveaux champs : **niveau de difficulte** (debutant, intermediaire, expert), **temps de preparation maximum**, et **cuisine preferee** (francaise, italienne, asiatique, etc.).
@@ -1319,9 +1435,9 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,26b00761,co
         return result  # TODO etudiant : retourner confirmation
 
 print(""Exercice a completer : ExtendedRecipeState"")",,,,,,,,147a59853e1b4967,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,d0827941,markdown,fr,607d10e5f8e10a65,"### Plugins d'agents et fonctions de modification d'état
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,d0827941,markdown,fr,cbee62c69c0fb640,"### Plugins d'agents et fonctions de modification d'état
 
-**Pourquoi les agents modifient l'état via des fonctions (plugins) plutôt qu'en générant du texte libre** : si un agent écrivait « régime = végétarien » en prose, les autres agents devraient *parser* cette phrase pour extraire la contrainte — fragile et error-prone. Les plugins exposent des **fonctions typées** (`set_regime`, `add_excluded_ingredient`, `set_convives`) que le kernel appelle de manière structurée : la contrainte atterrit directement dans le bon champ de `RecipeState`, sans ambiguïté de parsing. C'est l'écart entre un agent qui *décrit* une action (« je note que l'utilisateur est végétarien ») et un agent qui *exécute* une action (`state.regime = vegetarien`) — le second est reproductible et vérifiable, le premier dépend de l'interprétation du lecteur.",### Agent plugins and state modification functions,,,,,,,607d10e5f8e10a65,78241911f1e94dce,,,,,,,
+**Pourquoi les agents modifient l'état via des fonctions (plugins) plutôt qu'en générant du texte libre** : si un agent écrivait « régime = végétarien » en prose, les autres agents devraient *parser* cette phrase pour extraire la contrainte — fragile et error-prone. Les plugins exposent des **fonctions typées** (`set_diet`, `exclude_ingredient`, `set_guests`) que le kernel appelle de manière structurée : la contrainte atterrit directement dans le bon champ de `RecipeState`, sans ambiguïté de parsing. C'est l'écart entre un agent qui *décrit* une action (« je note que l'utilisateur est végétarien ») et un agent qui *exécute* une action (`state.diet = vegetarien`) — le second est reproductible et vérifiable, le premier dépend de l'interprétation du lecteur.",### Agent plugins and state modification functions,,,,,,,cbee62c69c0fb640,78241911f1e94dce,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,fa663c16,code,fr,82543881b601fc73,"import textwrap
 from semantic_kernel.functions import kernel_function
 from reportlab.pdfgen import canvas
@@ -1452,9 +1568,9 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,2772b5c3,co
         return result  # TODO etudiant : retourner la description nutritionnelle
 
 print(""Exercice a completer : NutritionPlugin"")",,,,,,,,5d667c20e03d1d49,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,50c033b4,markdown,fr,30d10b129e562990,"### Création des agents
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,50c033b4,markdown,fr,38b199ea1ca7d7d6,"### Création des agents
 
-**Pourquoi distinguer plusieurs agents plutôt qu'un seul prompt « génère une recette »** : un agent unique devrait gérer simultanément la **collecte** des critères, la **génération** de la recette, et la **validation** des contraintes — trois rôles cognitivement différents, chacun avec son propre prompt et son système de raisonnement. La séparation en agents spécialisés (un collecteur empathique qui pose les bonnes questions, un générateur créatif qui propose, un validateur strict qui vérifie) suit le principe de **responsabilité unique** appliqué au LLM : chaque agent a un rôle clair, un prompt ciblé, et un critère de réussite mesurable. C'est aussi ce qui rend le système debuggable — si une recette ne respecte pas une contrainte, on sait quel agent a fauté.",### Creating agents,,,,,,,30d10b129e562990,87ae1b10d70e08a9,,,,,,,
+**Pourquoi distinguer plusieurs agents plutôt qu'un seul prompt « génère une recette »** : un agent unique devrait gérer simultanément la **collecte** des critères, la **génération** de la recette, et la **production** du livrable PDF — trois rôles cognitivement différents, chacun avec son propre prompt et son système de raisonnement. La séparation en agents spécialisés (un collecteur empathique qui pose les bonnes questions, un générateur créatif qui propose, un producteur du PDF qui finalise le livrable) suit le principe de **responsabilité unique** appliqué au LLM : chaque agent a un rôle clair, un prompt ciblé, et un critère de réussite mesurable. C'est aussi ce qui rend le système debuggable — si une recette ne respecte pas une contrainte, on sait interroger le prompt et les fonctions de l'agent concerné (ici, le générateur).",### Creating agents,,,,,,,38b199ea1ca7d7d6,87ae1b10d70e08a9,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,f6e42299,code,fr,f313112351482375,"import os
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
@@ -1538,9 +1654,9 @@ pdf_agent = ChatCompletionAgent(
 
 print(""Imports et configuration OK"")
 ",,,,,,,,f313112351482375,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,da55fb35,markdown,fr,9792301bf2e20842,"### création de la conversation avec critères de terminaison et/ou de sélection
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,da55fb35,markdown,fr,1db50c69fdcd34c0,"### Création de la conversation avec critères de terminaison et/ou de sélection
 
-**Pourquoi la conversation a besoin de critères de terminaison explicites** : sans règle d'arrêt, les agents pourraient boucler indéfiniment (le validateur demande une amélioration, le générateur propose, le validateur demande encore…). Les critères de terminaison définissent **quand la conversation s'arrête** — typiquement quand le validateur confirme que toutes les contraintes sont satisfaites, ou après un nombre maximal d'échanges. Les critères de sélection, eux, définissent **quel agent parle ensuite** (après le collecteur → le générateur ; après le générateur → le validateur). Ces deux mécanismes transforment un flot potentiellement chaotique d'échanges LLM en un **protocole ordonné** avec un début, un milieu et une fin garantis.",### creating the conversation with termination and/or selection criteria,,,,,,,9792301bf2e20842,06574cd66127188d,,,,,,,
+**Pourquoi la conversation a besoin de critères de terminaison explicites** : sans règle d'arrêt, les agents pourraient boucler indéfiniment (un agent redemande une précision, l’autre répond, le premier redemande encore…). Les critères de terminaison définissent **quand la conversation s'arrête** — ici : dès que le livrable PDF est produit (la stratégie interroge l'état partagé), ou après un nombre maximal d'échanges. Les critères de sélection, eux, définissent **quel agent parle ensuite** — ce notebook n'en définit pas : la sélection par défaut donne la parole aux agents à tour de rôle, dans l'ordre de la liste, ce que la conversation exécutée montre (`InputCollector` puis `RecipeGenerator` puis `PDFGenerator`). Ces deux mécanismes transforment un flot potentiellement chaotique d'échanges LLM en un **protocole ordonné** avec un début, un milieu et une fin garantis.",### creating the conversation with termination and/or selection criteria,,,,,,,1db50c69fdcd34c0,06574cd66127188d,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,a81079d4,code,fr,d04e20e472851961,"from semantic_kernel.agents import AgentGroupChat
 from pydantic import PrivateAttr
 
@@ -1567,9 +1683,9 @@ group_chat = AgentGroupChat(
 
 print(""Imports agents OK"")
 ",,,,,,,,d04e20e472851961,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,0ec46974,markdown,fr,a92ebda8216dd064,"### Boucle principale
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,0ec46974,markdown,fr,db9a93cc3809a3e7,"### Boucle principale
 
-**Pourquoi la boucle principale orchestre plutôt que d'exécuter séquentiellement** : les agents ne s'enchaînent pas dans un ordre fixe (collecteur puis générateur puis validateur, toujours) — la boucle permet au validateur de **redemander** au générateur si une contrainte n'est pas respectée, créant un cycle de raffinement. C'est la différence entre un *pipeline* (une seule passe, pas de retour) et une *conversation* (itérative, avec feedback). La boucle principale est le chef d'orchestre : elle lit l'état, décide du prochain agent selon les critères de sélection, exécute l'agent, vérifie les critères de terminaison, et recommence jusqu'à convergence. C'est ce qui permet au système de **corriger** ses propres erreurs au lieu de les propager.",### Main loop,,,,,,,a92ebda8216dd064,b78f6c6bcb9776e6,,,,,,,
+**Pourquoi la boucle principale orchestre plutôt que d'exécuter séquentiellement** : la boucle ne s'arrête pas après un tour par agent — tant que le livrable n'est pas produit (et jusqu'au maximum d'itérations), la conversation reprend : un agent peut reprendre la main au tour suivant pour compléter ce qui manque. C'est la différence entre un *pipeline* (une seule passe, pas de retour) et une *conversation* (itérative, avec feedback). La boucle principale est le chef d'orchestre : elle lit l'état, donne la parole à l'agent suivant (sélection par défaut : tour de rôle), exécute l'agent, vérifie les critères de terminaison, et recommence jusqu'à convergence. C'est ce qui permet au système de **corriger** ses propres erreurs au lieu de les propager.",### Main loop,,,,,,,db9a93cc3809a3e7,b78f6c6bcb9776e6,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,d34da44f,code,fr,67d733bc3b89be48,"# Fallback: s'assurer que group_chat est défini
 try:
     group_chat
@@ -1665,18 +1781,7 @@ if shared_state.pdf_path and os.path.exists(shared_state.pdf_path):
     print(f""PDF présent sur le disque : {shared_state.pdf_path} ({taille} octets)"")
 else:
     print(""Aucun PDF produit : ni par l'agent, ni par le filet de sécurité."")",,,,,,,,82390aead8a159ba,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,345efbaf,code,fr,e364180594525fb6,"# Tell c.adjoint-c24 : la cellule 26 lit Maintenant le contenu reel du PDF (extraction pypdf)
-# Tell c.adjoint-c25 : assertion stricte -- TOUS les ingredients et TOUTES les etapes
-# doivent etre retrouves dans le PDF, pas seulement 1.
-# Tell c.adjoint-c26 : V8 -- la logique V4 etait laxiste (split("","")[0] et s[:30]
-# laissaient passer un PDF dont la moitie de la recette etait absente). Le temoin
-# de l'adjoint : ingredients=['riz, 500 g', 'oignon, 2 pieces'] + steps=['Cuire le
-# riz puis ajouter les oignons pendant vingt minutes.'] + pdf='vegetarien riz oignon
-# Cuire le riz puis ajouter les ' -> V4 disait OK alors que 'oignon, 2 pieces' et
-# 'les oignons pendant vingt minutes' etaient absents. V8 normalise espaces/retours
-# ligne/casse, exige (a) la chaine complete OU (b) ingredient+quantite separes
-# presents, (c) overlap mots >= 0.4 ET 2 derniers mots de l'etape presents dans le PDF.
-import pypdf
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,345efbaf,code,fr,9dfa12f05c2f5bc7,"import pypdf
 import re
 
 pdf_path = shared_state.pdf_path
@@ -1759,7 +1864,7 @@ if missing:
         + "" / "".join(missing)
     )
 print(""OK : PDF exporte la recette complete (regime + tous ingredients + toutes etapes)."")
-",,,,,,,,e364180594525fb6,,,,,,,,
+",,,,,,,,9dfa12f05c2f5bc7,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,644bdc70,markdown,fr,0935ba5b54f06f58,"## Conclusion
 
 Ce notebook a mis en oeuvre une collaboration multi-agents pour generer une recette personnalisee et produire un PDF.
@@ -1930,3 +2035,9 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,49c585d3,ma
 ",,,,,,,,6e1e0d698887ab32,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,1d1b334b,markdown,fr,29aaa283cadb33f8,"Le fichier PDF **recette_generee.pdf** est confirmé présent sur le disque avec un poids de quelques kilo-octets (la taille varie avec la recette générée), validant que la génération a produit un fichier exploitable.
 ",,,,,,,,29aaa283cadb33f8,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,63290f8e,code,fr,d7a1ea74a47bcb51,"# Parameters
+BATCH_MODE = True
+",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,ceeeb248,code,fr,d7a1ea74a47bcb51,"# Parameters
+BATCH_MODE = True
+",,,,,,,,d7a1ea74a47bcb51,,,,,,,,

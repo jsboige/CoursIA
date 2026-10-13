@@ -71,11 +71,16 @@ class SectorRotationMomentum(QCAlgorithm):
             if price <= sma_val:
                 continue
 
-            history = self.history([symbol], self.momentum_lookback, Resolution.DAILY)
+            # Sur une demi-seance (cloture a 13:00, New York), history() rend environ
+            # 105 barres pour 126 demandees (mesure #20286) : la garde de longueur
+            # ecartait alors les cinq titres et _go_defensive() passait tout en SHY.
+            # Demander le double et garder les 126 dernieres ; une seance pleine
+            # rend les memes 126 barres qu'avant.
+            history = self.history([symbol], 2 * self.momentum_lookback, Resolution.DAILY)
             if history is None or history.empty:
                 continue
             try:
-                closes = history.loc[symbol, "close"]
+                closes = history.loc[symbol, "close"].iloc[-self.momentum_lookback:]
             except KeyError:
                 continue
             if len(closes) < self.momentum_lookback:

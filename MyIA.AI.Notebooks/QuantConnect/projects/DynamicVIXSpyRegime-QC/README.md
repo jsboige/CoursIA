@@ -48,6 +48,41 @@ Par sous-période (2015-2018, 2019-2022, 2023 → 2026-07), `base` ne devance le
 - Les seuils (VIX 13 et 20, percentile 80, 3 %, 1,2) et la fenêtre de 2015 viennent de la bibliothèque QC, publiée après une partie de la période : il n'y a pas de période hors échantillon. Ce biais favorisait la candidate, ce qui renforce le `NO BEATS`.
 - Les backtests demandaient une fin plus tardive ; les nœuds de calcul utilisés retiennent les 90 derniers jours et ont ramené la fin au 2026-07-08, sans erreur. Toutes les versions ont tourné sur les mêmes nœuds : les comparaisons portent sur les mêmes séances.
 
+### Livre de référence : tranche de minuit (#20264)
+
+Mesure du 2026-10-11 sur les nœuds QC, fenêtre codée 2015-01-01 → 2024-12-31, avant et après le correctif de la tranche de minuit ([#20264](https://github.com/jsboige/CoursIA/issues/20264)). Le protocole a été pré-enregistré sur l'issue avant les runs (commentaire `c.6103552152`) ; la colonne « avant » est le code de `main` au commit `bb89b25ab5`, exécuté tel quel.
+
+Les livres `spy` et `sixty40` se rééquilibrent à la première barre journalière du mois. En résolution journalière, Lean livre un avis de dividende seul, dans une tranche datée de minuit, sans barre de cotation : cette tranche consommait le rééquilibrage du mois. L'ordre partait alors à minuit et s'exécutait à l'ouverture du jour même ; les autres mois, il partait à la clôture de la première séance et s'exécutait à l'ouverture de la suivante. Le correctif ne consomme le mois que sur une tranche portant une barre d'un titre du livre : tous les mois suivent désormais le second calendrier. Les modes Framework ne passent pas par ce test et ne changent pas.
+
+| | `spy` avant | `spy` après | `sixty40` avant | `sixty40` après |
+|---|---|---|---|---|
+| Ordres datés de minuit, heure de New York | 2, sur 2 mois | 0 | 194, sur 103 mois | 0 |
+| Ordres | 2 | 2 | 194 | 201 |
+| Sharpe (QC) | 0,530 | 0,536 | 0,444 | 0,452 |
+| CAGR | 12,91 % | 13,04 % | 8,19 % | 8,28 % |
+| Pire baisse | −33,7 % | −33,7 % | −21,2 % | −21,1 % |
+| Frais, part du capital initial | 0,004 % | 0,004 % | 0,196 % | 0,203 % |
+| Backtest | `5a6e5bf2` | `ce5399f2` | `500f75bd` | `5ddbfe50` |
+
+Ici, la tranche de minuit vient surtout de la donnée VIX, livrée chaque jour à minuit : avant le correctif, tous les ordres des livres de référence partaient à minuit, achat initial compris (2015-01-02). Une ligne VIX datée d'un jour férié américain (2024-09-02, Labor Day) a même consommé le mois de septembre 2024 ; ses deux ordres se sont exécutés le lendemain.
+
+Le Sharpe affiché par QC bouge au plus de 0,008, sous le seuil de 0,05 fixé d'avance : les lignes `spy` et `sixty40` de la mesure ci-dessus, calculées avec le code d'avant, ne sont pas réécrites, et le verdict ne change pas.
+
+#### Complément hors échantillon (arbitrage #20264 → #20310)
+
+Mesure du 2026-10-11 sur la fenêtre OOS disjointe 2025-01-02 → 2026-07-13 (558 dates tradables), exigée par l'arbitrage de [#20264](https://github.com/jsboige/CoursIA/issues/20264) et pré-enregistrée avant les runs (commentaire `c.6109598714`). Mêmes projets cloud que la mesure ci-dessus, fenêtres passées par paramètres `start`/`end`, code inchangé. La fin demandée était le 2026-09-30 : les nœuds de calcul QC utilisés retiennent les 90 derniers jours et l'ont ramenée au 2026-07-13, sans erreur ; avant et après tournent sur les mêmes séances.
+
+| | `spy` avant | `spy` après | `sixty40` avant | `sixty40` après |
+|---|---|---|---|---|
+| Ordres | 2 | 1 | 29 | 31 |
+| Ordres de minuit | 2 | 0 | 29 | 0 |
+| Sharpe (QC) | 0,665 | 0,649 | 0,578 | 0,558 |
+| CAGR | 18,21 % | 18,50 % | 12,66 % | 12,79 % |
+| Pire baisse | −18,7 % | −18,7 % | −10,5 % | −10,5 % |
+| Backtest | `50f183cf` | `0212b1f6` | `185b4535` | `d9851249` |
+
+Verdict `NO DEGRADATION` : pire écart Sharpe −0,020, CAGR +0,14 pt dans le pire cas, pire baisse inchangée — toutes les marges pré-enregistrées sont respectées. C'est le seul projet du lot où le code d'avant s'écartait de façon visible du buy-and-hold canonique en `spy` (Sharpe 0,665, un ordre de plus) : une tranche de minuit (donnée VIX ou dividende) consommait le mois ; l'« après » retrouve la référence canonique (0,649, un seul ordre). Les ordres de minuit tombent à zéro dans les deux livres.
+
 ### Chiffres antérieurs à #19825
 
 Le tableau ci-dessous date d'avant la mesure ; il est conservé pour l'historique.
