@@ -197,7 +197,7 @@ Chaque module associe un fichier `.spec.ts` (le moteur de test) à un notebook J
 
 ```bash
 # Se placer dans le répertoire
-cd GenAI/Playwright-OWUI
+cd MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI
 
 # Installer les dépendances
 npm install
