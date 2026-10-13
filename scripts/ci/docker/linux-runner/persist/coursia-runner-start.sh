@@ -39,24 +39,29 @@ export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 # rend auditable : la valeur effective vit dans un fichier que l'operateur ouvre,
 # pas dans un defaut de shell que personne ne lit.
 #
-# 15 POUR po-2024 (2026-10-08, amendement J+7) -- LE 42 EST TOMBE, ET IL
-# ETAIT DEVENU FAUX DEUX FOIS. Il avait ete pose le 2026-09-21 pour une VM de
-# 40 110 Mo (.wslconfig memory=40GB, arbitrage user, mission
-# msg-20260921T203652-qxg3en). Depuis, la VM est revenue a 24 Go : `.wslconfig
-# memory=24GB` et `free -m` (24 032 Mo) le mesurent tous les deux. Et son
-# arithmetique de 43 008 Mo n'a jamais ete la vraie : elle comptait
-# « 12x1536 waiters » alors que WAITER_MEMORY vaut 512m (supervise.sh l.180).
-# La composition REELLE etait 6x1536 + 12x512 + 2x6144 = 27 648 Mo de caps sur
-# une VM de 24 032 -- une somme de caps superieure a la RAM, qui se paie en
-# swap. Mesure du jour : 6 285 Mo de swap consommes, 104 GiB ecrits depuis le
-# boot en moins de 11 h, DriveFS et la coordination de la flotte en premier.
+# 21 POUR po-2024 (2026-10-12, arbitrage c2153 d'ai-01) -- la composition
+# persist n'avait pas ete comptee depuis le J+7. Historique complet : le 42
+# du 2026-09-21 (VM de 40 110 Mo) etait devenu faux deux fois (VM revenuee a
+# 24 Go ; arithmetique comptant « 12x1536 waiters » pour des waiters a
+# 512 Mo) ; le J+7 du 2026-10-08 a pose 15 pour la composition
+# 4x1536 + 6x512 + 1x6144 = 15 360 Mo. Puis #20174 (2026-10-10) a reetiquete
+# 4 slots persist -- la famille docker est revenuee a 8 slots de 1536 Mo SANS
+# que le budget suive : la somme des caps vivants (21 504 Mo) depassait le
+# budget declare (15 360), et assert_memory_budget refusait de DEMARRER tout
+# nouveau slot. C'est la famine CI constatee au cycle du 2026-10-12 : le
+# garde ne jugeait plus la composition, il la bloquait.
 #
 # LA COMPOSITION QUE CE BUDGET DECLARE, ET CE QU'ELLE LAISSE :
-#     4 slots docker x 1536 Mo = 6 144 Mo   (cap unitaire INCHANGE)
-#     6 waiters      x  512 Mo = 3 072 Mo   (cap unitaire INCHANGE)
-#     1 slot lean    x 6144 Mo = 6 144 Mo   (2 -> 1, verdict J+7 ci-dessous)
+#     8 slots docker x 1536 Mo = 12 288 Mo  (4 docker + 4 persist, #20174)
+#     6 waiters      x  512 Mo =  3 072 Mo  (cap unitaire INCHANGE)
+#     1 slot lean    x 6144 Mo =  6 144 Mo  (2 -> 1, verdict J+7)
 #     --------------------------------------
-#     total CAPS                15 360 Mo   sur 24 032 -> marge 8 672 Mo
+#     total CAPS                21 504 Mo   sur 24 032 -> marge 2 528 Mo
+#
+# La regle de #19802 tranche la valeur : LE BUDGET EST LA SOMME DES CAPS de
+# la composition vive. 21 504 Mo = 21 Go, deja valide par #19802 sur cette VM
+# de 24 Go (marge 2,5 Go, swap 0 -- la marge etroite est payee par le mur
+# kernel MemorySwapMax=0, qui tue le job debordant au lieu de swapper).
 #
 # ON REDUIT DES NOMBRES DE SLOTS, JAMAIS DES CAPS. Mesure du 2026-10-08 :
 # 3 des 6 conteneurs docker touchaient leur cap de 1536 Mo a 99 %, donc le cap
@@ -67,20 +72,25 @@ export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 # ne l'abaisse nulle part.
 #
 # LE BUDGET RESTE UN PLAFOND D'ADMISSION, PAS UN MUR. Il refuse de DEMARRER un
-# slot au-dela de 15 Go ; il ne borne pas ce qu'un slot deja lance consomme.
+# slot au-dela de 21 Go ; il ne borne pas ce qu'un slot deja lance consomme.
 # Le mur kernel est desormais pose sur cette machine : voir
-# persist/po-2024/coursia-ci.slice (MemoryHigh=14G, MemoryMax=16G,
-# MemorySwapMax=0), et COURSIA_RUNNER_CGROUP_PARENT plus bas, qui y fait entrer
-# les conteneurs.
+# persist/po-2024/coursia-ci.slice (MemoryHigh=20G, MemoryMax=22G,
+# MemorySwapMax=0 -- REMONTE en meme temps que ce budget, arbitrage c2153 : un
+# mur 14G/16G sous une composition de 21 504 Mo de caps tuerait au kernel des
+# jobs que le budget d'admission laisse partir), et COURSIA_RUNNER_CGROUP_PARENT
+# plus bas, qui y fait entrer les conteneurs.
 #
 # LES TROIS JAMBES DOIVENT ANNONCER LE MEME NOMBRE. `assert_memory_budget`
 # somme les conteneurs label `coursia-ci=1` de TOUTES les familles : deux jambes
 # qui divergeraient refuseraient leurs slots l'une contre l'autre, et le message
 # d'erreur ne nommerait pas la divergence -- il parlerait de memoire en vol.
-# Les trois jambes de po-2024 portent 15 : celle-ci, la jambe lean, et la jambe
-# waiters (par le drop-in persist/po-2024/coursia-waiters.service.d/10-sizing.conf,
-# dont le wrapper appartient a ai-01 et ne declare aucun budget).
-export COURSIA_RUNNER_BUDGET_GB=15
+# La divergence a existe de fait (mesure du 2026-10-12 : process docker/lean a
+# 15 herite d'avant l'edition des wrappers, waiters a 21 redemarre a 04:06 --
+# la composition a bouge sous des processus vivants). Les trois jambes de
+# po-2024 portent 21 : celle-ci, la jambe lean, et la jambe waiters (par le
+# drop-in persist/po-2024/coursia-waiters.service.d/10-sizing.conf, dont le
+# wrapper appartient a ai-01 et ne declare aucun budget).
+export COURSIA_RUNNER_BUDGET_GB=21
 
 # PARENT CGROUP -- LE MUR KERNEL QUI MANQUAIT A CETTE MACHINE (2026-10-08).
 # supervise.sh pose `--cgroup-parent=$COURSIA_RUNNER_CGROUP_PARENT` sur chaque

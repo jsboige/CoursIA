@@ -98,8 +98,17 @@ HINT_RE = re.compile(
 # (G.1 firsthand on GenAI/SemanticKernel/dotnet/notebooks/00-AI-settings.ipynb
 # cells 1/3/5/7 — `### Step 1 Import configuration...` is a real section
 # header with prose body, same pattern as `### Step 4: Save Configuration`).
+# `Piste N : Titre` joins the same class (2026-10-11, #16472): the four
+# `### Piste 1..4 : ... (intermediaire/avance)` headings of
+# GenAI/Texte/11_Quantization.ipynb cell 46 open REAL numbered exercise
+# sections (prose body with numbered instructions, GPU-scope preamble), and
+# were re-confirmed false positives 22 consecutive feeder wakes in a row
+# (worktree g1-residu-petits-domaines). Corpus-bounded by measurement: these
+# are the ONLY `Piste` headings in MyIA.AI.Notebooks/, so the extension
+# un-flags exactly these 4 and nothing else; a bare `## Piste` aside stays
+# flagged (no number, no title).
 TITLED_STEP_RE = re.compile(
-    r'^(step|etape|étape)\s+\d+(?:\s*:\s*|\s+)\S',
+    r'^(step|etape|étape|piste)\s+\d+(?:\s*:\s*|\s+)\S',
     re.IGNORECASE)
 # A hint word that is the FIRST PART of a hyphenated compound noun
 # (`Aide-mémoire des commandes`) is a real titled section, not a bare aside:

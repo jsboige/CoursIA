@@ -27,9 +27,11 @@ class SectorRotationMomentum(QCAlgorithm):
         # Universe: equity growth, broad, intl, gold, small cap
         self.tickers = ["QQQ", "SPY", "EFA", "GLD", "IWM"]
         self.sma_dict = {}
+        self.symbols = {}
 
         for ticker in self.tickers:
             symbol = self.add_equity(ticker, Resolution.DAILY).symbol
+            self.symbols[ticker] = symbol
             self.sma_dict[ticker] = self.sma(symbol, 200, Resolution.DAILY)
 
         self.shy = self.add_equity("SHY", Resolution.DAILY).symbol
@@ -43,6 +45,13 @@ class SectorRotationMomentum(QCAlgorithm):
 
     def on_data(self, data):
         if self.is_warming_up:
+            return
+
+        # En journalier, Lean livre les avis de dividende et de division dans une
+        # tranche datee de minuit, sans barre de cotation (#20264). Sans ce garde,
+        # elle avancait le compteur et pouvait porter le reequilibrage : aucun titre
+        # n'y a de donnee, la liste qualifiee est vide et _go_defensive() liquidait.
+        if not any(data.bars.contains_key(sym) for sym in self.symbols.values()):
             return
 
         self.days_since_rebalance += 1
@@ -62,11 +71,16 @@ class SectorRotationMomentum(QCAlgorithm):
             if price <= sma_val:
                 continue
 
-            history = self.history([symbol], self.momentum_lookback, Resolution.DAILY)
+            # Sur une demi-seance (cloture a 13:00, New York), history() rend environ
+            # 105 barres pour 126 demandees (mesure #20286) : la garde de longueur
+            # ecartait alors les cinq titres et _go_defensive() passait tout en SHY.
+            # Demander le double et garder les 126 dernieres ; une seance pleine
+            # rend les memes 126 barres qu'avant.
+            history = self.history([symbol], 2 * self.momentum_lookback, Resolution.DAILY)
             if history is None or history.empty:
                 continue
             try:
-                closes = history.loc[symbol, "close"]
+                closes = history.loc[symbol, "close"].iloc[-self.momentum_lookback:]
             except KeyError:
                 continue
             if len(closes) < self.momentum_lookback:

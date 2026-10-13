@@ -23,7 +23,10 @@ rapporte sans décider : il place l'estimation sous ou au-dessus du seuil, et ma
 « fragile » une estimation dont l'intervalle chevauche le seuil.
 
 Les membres sont listés dans `shadow/league_members.json`, une variante par stratégie
-mesurée, et les séries restent dans les traces QC hors dépôt (`--traces-root`) :
+mesurée, et les séries restent dans les traces QC hors dépôt (`--traces-root`). Un membre
+`"kind": "local"` n'a pas de trace QC : sa série est un `series.csv` (colonnes `date`,
+`net_return`, format de `shadow_replay.py --series-dir`) calculé hors QC, comme le cœur
+actions écrit par `league_core_series.py` (#20365) :
 
     python league_correlation.py --traces-root <dossier des traces> \\
         --against spy --against btc --json matrice.json
@@ -32,6 +35,7 @@ mesurée, et les séries restent dans les traces QC hors dépôt (`--traces-root
 from __future__ import annotations
 
 import argparse
+import csv
 import datetime as dt
 import json
 import math
@@ -49,6 +53,8 @@ DRAWS = 10_000
 SEED = 0
 ENTRY_MAX_CORR = 0.7
 MEMBERS = Path(__file__).resolve().parents[1] / "shadow" / "league_members.json"
+LOCAL_SERIES = "series.csv"
+KINDS = ("qc", "local")
 
 
 def week_key(date: str) -> str:
@@ -136,8 +142,27 @@ def active_share(returns: dict[str, float]) -> float:
     return float((np.abs(v) > 1e-12).mean()) if v.size else 0.0
 
 
+def local_daily_equity(path: Path) -> tuple[list[str], list[float]]:
+    """Capital par séance d'une série locale : produit des `1 + net_return`, base 1."""
+    dates, equity, level = [], [], 1.0
+    with path.open(encoding="utf-8", newline="") as fh:
+        for row in csv.DictReader(fh):
+            level *= 1.0 + float(row["net_return"])
+            dates.append(row["date"])
+            equity.append(level)
+    if not dates:
+        raise ValueError(f"no row in {path}")
+    return dates, equity
+
+
 def member_returns(root: Path, member: dict) -> dict[str, float]:
-    """Rendements hebdomadaires d'un membre, lus dans `chart.json` de sa trace."""
+    """Rendements hebdomadaires d'un membre, lus dans `chart.json` de sa trace QC, ou
+    dans son `series.csv` pour un membre `"kind": "local"`."""
+    kind = member.get("kind", "qc")
+    if kind not in KINDS:
+        raise ValueError(f"member {member['id']}: kind must be one of {KINDS}, got {kind!r}")
+    if kind == "local":
+        return weekly_returns(*local_daily_equity(root / member["trace"] / LOCAL_SERIES))
     chart = json.loads((root / member["trace"] / "chart.json").read_text(encoding="utf-8"))
     prefix = member.get("series", "e")
     if prefix != "e":
@@ -172,7 +197,8 @@ def report(members: list[dict], returns: dict[str, dict[str, float]],
     for m in members:
         w = sorted(returns[m["id"]])
         lines.append(f"| `{m['id']}` | {m['role']} | `{m['trace']}`"
-                     f"{' (' + m['series'] + ')' if m.get('series', 'e') != 'e' else ''} | "
+                     f"{' (' + m['series'] + ')' if m.get('series', 'e') != 'e' else ''}"
+                     f"{' (local)' if m.get('kind') == 'local' else ''} | "
                      f"{'#' + str(m['issue']) if m.get('issue') else ''} | "
                      f"{'#' + str(m['pr']) if m.get('pr') else ''} | {len(w)} | "
                      f"{active_share(returns[m['id']]):.0%} | {w[0]} | {w[-1]} |")

@@ -71,43 +71,34 @@ def _missing_word_spans(
 ) -> list[dict]:
     """Passages of >=min_words consecutive words missing from the hypothesis.
 
-    Omission control of #19692 phase 1: the mean WER hides a render that
-    drops whole sentences (measured on CosyVoice3 A0C, #17586 c.6035598289 —
-    two segments absent under 3/3 ASRs while WER stayed ~0.12). Method =
-    the bench's trigram alignment: normalized 3-consecutive-word shingles of
-    the reference absent from the hypothesis, grouped into maximal spans; a
-    span of >=3 words means the passage is gone, not mispronounced.
+    Omission control of #19692: the mean WER hides a render that drops whole
+    sentences (measured on CosyVoice3 A0C, #17586 c.6035598289 — two
+    segments absent under 3/3 ASRs while WER stayed ~0.12). Method = word
+    alignment (difflib): a `delete` run of >=min_words reference words, or
+    a `replace` run whose reference side exceeds the hypothesis side by
+    >=min_words words, means the passage is gone, not mispronounced.
 
-    Known false positives, accepted: an ASR inflection drift ("Tout semblait
-    accablé" vs "Tous semblaient accablés") breaks every trigram it touches
-    and can flag a passage the render actually spoke. The per-segment detail
-    (omission_report.json) exists to be read before acting on a span.
+    Replaces the phase-1 trigram primitive, which over-flagged: one
+    substituted word breaks every trigram it touches, producing a ~5-word
+    halo around a single bad word (Zonos chunked measured 11 spans by
+    trigrams vs 0 by alignment, #19695 c.6115711862). The alignment emits
+    exact boundaries instead.
     """
+    import difflib
+
     ref_words = _normalize_words(reference)
     hyp_words = _normalize_words(hypothesis)
-    if len(ref_words) < min_words:
-        return []
-
-    hyp_trigrams = {
-        " ".join(hyp_words[i : i + 3]) for i in range(len(hyp_words) - 2)
-    }
-    missing_idx = [
-        i
-        for i in range(len(ref_words) - 2)
-        if " ".join(ref_words[i : i + 3]) not in hyp_trigrams
-    ]
 
     spans: list[tuple[int, int]] = []
-    for i in missing_idx:
-        if spans and i == spans[-1][1] + 1:
-            spans[-1] = (spans[-1][0], i)
-        else:
-            spans.append((i, i))
-    # An interval (i..j) makes words i..j+2 suspect (trigram window).
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(
+        None, ref_words, hyp_words, autojunk=False
+    ).get_opcodes():
+        if tag == "delete" and i2 - i1 >= min_words:
+            spans.append((i1, i2))
+        elif tag == "replace" and (i2 - i1) - (j2 - j1) >= min_words:
+            spans.append((i1, i2))
     return [
-        {"start": a, "end": b + 3, "words": " ".join(ref_words[a : b + 3])}
-        for a, b in spans
-        if b + 3 - a >= min_words
+        {"start": a, "end": b, "words": " ".join(ref_words[a:b])} for a, b in spans
     ]
 
 
@@ -116,14 +107,19 @@ def _voted_missing_spans(
 ) -> list[dict]:
     """Keep the spans missing under >=min_models distinct ASRs.
 
-    The single-ASR primitive over-flags: a substituted word breaks every
-    trigram it touches, producing a halo span of ~5 words around one bad
-    word. On the A0C bench (#17586) the 2-of-3 vote is what separated real
-    omissions from ASR noise — a passage the render dropped is missing under
-    every model, a passage the model spoke but one ASR misheard is not. Two
-    spans from different models support the same omission when they overlap
-    by >=3 words (halos shift by a word or two between models); the reported
-    span is the covering one, with its supporting models recorded.
+    A single ASR mishears: the 2-of-3 vote separates real omissions from
+    ASR noise (a passage the render dropped is missing under every model, a
+    passage one ASR misheard is not — measured on the A0C bench, #17586).
+    Two spans from different models support the same omission when they
+    overlap by >=3 words (alignment boundaries shift by a word or two
+    between models); the reported span is the covering one, with its
+    supporting models recorded.
+
+    Voted spans that overlap each other describe the same omission (one
+    long drop can align differently under each ASR and land in neighbouring
+    clusters): they are merged into the covering span with the union of
+    their supporting models — the reference method of #19695 c.6115711862,
+    which this vote now reproduces exactly on the four A0C controls.
     """
     clusters: list[dict] = []
     for model, spans in spans_by_model.items():
@@ -151,7 +147,21 @@ def _voted_missing_spans(
             continue
         covering = max(cluster["spans"], key=lambda s: s["end"] - s["start"])
         voted.append({**covering, "absent_sous": sorted(models)})
-    return sorted(voted, key=lambda s: s["start"])
+    voted.sort(key=lambda s: s["start"])
+    merged: list[dict] = []
+    for span in voted:
+        if merged and span["start"] < merged[-1]["end"]:
+            prev = merged[-1]
+            covering = max((prev, span), key=lambda s: s["end"] - s["start"])
+            merged[-1] = {
+                **covering,
+                "absent_sous": sorted(
+                    set(prev["absent_sous"]) | set(span["absent_sous"])
+                ),
+            }
+        else:
+            merged.append(span)
+    return merged
 
 
 def run(force: bool = False) -> Path:
@@ -298,14 +308,16 @@ def run(force: bool = False) -> Path:
                 json.dumps(
                     {
                         "method": (
-                            "trigram alignment + 2-of-3 ASR vote (#19692 "
-                            "phase 1, method of the A0C bench #17586): "
-                            "normalized 3-consecutive-word shingles of the "
-                            "source absent from each ASR hypothesis, grouped "
-                            "into maximal spans; a span counts as an omission "
-                            "when missing under >=2 of {tiny, large-v3, "
-                            "large-v3-turbo} (halos of single-word ASR errors "
-                            "do not survive the vote)"
+                            "word alignment + 2-of-3 ASR vote (#19692): "
+                            "difflib word alignment of each ASR hypothesis "
+                            "against the source; a delete run of >=3 words "
+                            "(or a replace run with >=3 words of reference "
+                            "excess) is a missing span; a span counts as an "
+                            "omission when missing under >=2 of {tiny, "
+                            "large-v3, large-v3-turbo} (overlap >=3 words), "
+                            "overlapping voted spans merged into the "
+                            "covering span (method of the A0C reference, "
+                            "#19695 c.6115711862)"
                         ),
                         "sampled_segments": len(sample_indices),
                         "segments_with_omissions": len(omission_records),
