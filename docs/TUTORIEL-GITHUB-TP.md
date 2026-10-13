@@ -1,6 +1,6 @@
 # Tutoriel GitHub — soumettre une correction d'exercice pas à pas
 
-Ce tutoriel s'adresse à ceux qui n'ont **jamais utilisé GitHub** et doivent rendre une correction d'exercice d'un notebook de ce dépôt ([CoursIA](https://github.com/jsboige/CoursIA)). Il couvre tout le parcours : créer un compte, récupérer le notebook, le travailler, et ouvrir la Pull Request. Suivez les étapes dans l'ordre ; chacune prend quelques minutes. Le parcours est **100 % navigateur** : aucune ligne de commande, aucune installation de Git — seulement l'outil que vous utilisez déjà pour les notebooks (Jupyter ou Google Colab).
+Ce tutoriel s'adresse à ceux qui n'ont **jamais utilisé GitHub** et doivent rendre une correction d'exercice d'un notebook de ce dépôt ([CoursIA](https://github.com/jsboige/CoursIA)). Il couvre tout le parcours : créer un compte, récupérer le notebook, le travailler, et ouvrir la Pull Request. Suivez les étapes dans l'ordre ; chacune prend quelques minutes. Le parcours de base est **100 % navigateur** : aucune ligne de commande, aucune installation de Git — seulement l'outil que vous utilisez déjà pour les notebooks (Jupyter ou Google Colab). Ceux qui préfèrent travailler dans **VS Code** (extensions Jupyter ou Polyglot Notebooks) trouveront en fin de page la [variante locale](#variante-vs-code--travailler-localement-avec-les-extensions-jupyter-ou-polyglot), elle aussi sans ligne de commande.
 
 Le flux général et les conventions du dépôt sont décrits dans [CONTRIBUTING.md](../CONTRIBUTING.md) ; ce tutoriel en est la version « clic par clic » pour débutants. Votre cours peut préciser des consignes supplémentaires (notebooks autorisés, échéance, travail en groupe) : suivez-les en priorité.
 
@@ -59,8 +59,9 @@ Le sélecteur affiche désormais votre branche. **Vérifiez-le avant chaque dép
 
 Ouvrez le fichier `.ipynb` téléchargé dans votre outil habituel :
 
-- **Jupyter** (Anaconda, VS Code...) : ouvrez le fichier directement ;
-- **Google Colab** : *Fichier > Importer un notebook*, puis travaillez directement.
+- **Jupyter** (Anaconda...) : ouvrez le fichier directement ;
+- **Google Colab** : *Fichier > Importer un notebook*, puis travaillez directement ;
+- **VS Code** (extensions Jupyter ou Polyglot Notebooks) : voir la [variante VS Code](#variante-vs-code--travailler-localement-avec-les-extensions-jupyter-ou-polyglot) en fin de page.
 
 Puis :
 
@@ -107,6 +108,36 @@ Votre PR est relue ; des ajustements peuvent être demandés — c'est normal, c
 - Le dépôt lance des contrôles automatiques sur la PR. S'ils passent au rouge pour une raison d'environnement qui vous dépasse, signalez-le simplement dans la conversation ; concentrez-vous sur les remarques humaines.
 - Une fois la remarque traitée, le relecteur clôt le fil lui-même : pas d'inquiétude si un fil reste ouvert quelques jours.
 
+## Variante VS Code — travailler localement avec les extensions Jupyter ou Polyglot
+
+Le parcours ci-dessus vit entièrement dans le navigateur. Si vous préférez travailler dans **VS Code**, les mêmes étapes se font localement, toujours sans ligne de commande. Deux usages, du plus simple au plus confortable.
+
+### VS Code comme éditeur de notebook (remplace l'étape 5)
+
+1. Installez [VS Code](https://code.visualstudio.com/), puis l'extension adaptée au notebook visé (onglet Extensions dans la barre de gauche, recherchez, installez) :
+   - **Jupyter** — pour les notebooks Python du dépôt ;
+   - **Polyglot Notebooks** — pour les notebooks .NET Interactive (C#, F#) du dépôt.
+2. Ouvrez le fichier `.ipynb` téléchargé à l'étape 4 : *Fichier > Ouvrir le fichier...*.
+3. Cliquez sur **Select Kernel** en haut à droite du notebook :
+   - notebook Python : choisissez un des interpréteurs Python proposés. Si la liste est vide, installez Python depuis [python.org](https://www.python.org/downloads/), puis rouvrez VS Code ;
+   - notebook .NET : choisissez le kernel C# (ou F#) proposé par Polyglot. S'il n'apparaît pas, installez le [SDK .NET](https://dotnet.microsoft.com/download), puis rouvrez VS Code.
+4. Exécutez tout le notebook avec le bouton **Run All** en haut de la liste de cellules. Les sorties s'affichent sous chaque cellule ; aucune ne doit rester en erreur.
+5. Enregistrez avec **Ctrl+S** : le fichier `.ipynb` conserve les sorties — c'est la preuve que votre correction tourne.
+
+Le dépôt sur votre branche reste celui de l'étape 6 (*Add file > Upload files* dans le navigateur).
+
+### VS Code avec le Git intégré (remplace aussi les étapes 4 et 6)
+
+Pour éviter l'aller-retour téléchargement/dépôt à chaque review :
+
+1. Dans VS Code, ouvrez la vue **Source Control** (icône de la barre de gauche) et cliquez **Clone Repository** : collez l'URL de **votre fork**, `https://github.com/votre-compte/CoursIA`, choisissez un dossier local et rouvrez ce dossier quand VS Code le propose. Si VS Code signale que Git est absent, suivez son invite d'installation.
+2. Créez votre branche : cliquez sur le nom de branche dans la barre de statut (en bas à gauche, il affiche `main`), puis *+ Create new branch...*, avec le même genre de nom qu'à l'étape 3 (par exemple `exercice-<notebook>-<votre-nom>`).
+3. Ouvrez le notebook depuis l'explorateur de VS Code, travaillez-le et exécutez-le comme ci-dessus, puis **Ctrl+S**.
+4. De retour dans la vue **Source Control** : le notebook modifié apparaît dans *Changes*. Cliquez le bouton **+** qui apparaît au survol du fichier, écrivez un message explicite (par exemple `Correction de l'exercice 2 de <notebook>`), puis **Commit** et **Sync Changes** — c'est l'équivalent de l'étape 6, directement depuis VS Code.
+5. L'ouverture de la Pull Request (étape 7) se fait toujours dans le navigateur : le bandeau *Compare & pull request* apparaît après votre premier envoi.
+
+À la première synchronisation, VS Code demande de vous identifier : suivez l'invite *Sign in with GitHub* (un clic).
+
 ## Pièges classiques
 
 | Symptôme | Cause probable | Que faire |
@@ -117,6 +148,8 @@ Votre PR est relue ; des ajustements peuvent être demandés — c'est normal, c
 | *This branch has no changes* à l'ouverture de la PR | Dépôt sur une autre branche que celle comparée | Vérifier le sélecteur **compare** à l'étape 7.2 |
 | Conflits signalés | Le dépôt d'origine a bougé sur le même fichier | Ouvrir une issue — ne pas cliquer sur *Resolve conflicts* en aveugle |
 | Deux contributions sur le même exercice | PRs ouvertes non vérifiées | Vérifier les PR ouvertes avant de choisir l'exercice |
+| *Select Kernel* ne propose rien (VS Code) | Interpréteur ou kernel non installé | Installer Python ou le SDK .NET, rouvrir VS Code (variante ci-dessus, point 3) |
+| Sorties absentes du fichier déposé | Notebook exécuté mais non sauvegardé | *Run All* puis **Ctrl+S** avant le dépôt |
 
 ## Rappel sécurité
 
