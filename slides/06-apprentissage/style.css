@@ -69,6 +69,40 @@
   object-fit: contain;
 }
 
+/* 5b. Variante 3 colonnes pour les stacks nombreux (>= 5 images) :
+ *     2 colonnes feraient 4 rangees x 118 px, qui debordent sous un
+ *     titre + texte. Mesure : scan_slidev_overflow, lot L3 #11508. */
+.slidev-layout .img-grid.cols3 img {
+  width: 31%;
+  max-height: 96px;
+}
+
+/* 5d. Variante rang unique : quand meme 2 rangees en cols3 debordent
+ *     sous le texte (slides ResNets 6 imgs / regret 4 imgs), on force
+ *     TOUTES les images sur une seule rangee, hauteur cappee a 90 px.
+ *     Mesure vision + scan_slidev_overflow, lot L3 #11508. */
+.slidev-layout .img-grid.onerow img {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  max-height: 90px;
+}
+
+/* 5c. Image isolee sous du texte : budget de hauteur explicite.
+ *     max-width:100% seul laisse l'image prendre sa hauteur naturelle
+ *     et rogner le bas de la slide (clip par le conteneur, invisible
+ *     a la bbox DOM -- mesure export PNG, lot L3 #11508). 100 px :
+ *     190 puis 140 laissaient la derniere tranche de la grille de
+ *     visages GAN coupee sous la liste xl-dense (47, deficit mesure
+ *     31 px a 140). */
+.slidev-layout .img-fit {
+  display: block;
+  margin: 8px auto;
+  max-width: 100%;
+  max-height: 100px;
+  object-fit: contain;
+}
+
 /* 6. Variante ultra-dense pour la slide « Généralisation et
  *    surapprentissage » (longues lignes qui se replient deux fois). */
 .slidev-layout .dense-list.xl-dense ul {
