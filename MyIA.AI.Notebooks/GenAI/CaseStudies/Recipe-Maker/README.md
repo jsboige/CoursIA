@@ -28,7 +28,7 @@ Générateur automatisé de recettes culinaires utilisant des agents IA.
 ## Prérequis
 
 ```bash
-pip install openai semantic-kernel python-dotenv reportlab pypdf
+pip install openai semantic-kernel python-dotenv pydantic reportlab pypdf
 ```
 
 ---
