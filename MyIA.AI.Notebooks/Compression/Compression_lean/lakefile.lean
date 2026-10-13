@@ -21,12 +21,15 @@ package «compression_lean» where
 require mathlib from git
   "https://github.com/leanprover-community/mathlib4.git" @ "db584cd6d46c92f209a44c0f1c829460d327499d"
 
-/-- Module `PrefixCodes` — codes préfixes et inégalité de Kraft (pli 1/2 de
-#18706) : arbres de codes binaires, mots des feuilles, code préfixe, somme de
-Kraft ≤ 1, arbre complet de profondeur k (2^k feuilles, Kraft = 1 exactement),
-ancres numériques des carnets Python frères. Sibling EN : `PrefixCodes_en`. -/
+/-- Modules racine du lake : `PrefixCodes` — codes préfixes et inégalité de
+Kraft (pli 1/2 de #18706) : arbres de codes binaires, mots des feuilles, code
+préfixe, somme de Kraft ≤ 1, arbre complet de profondeur k (2^k feuilles,
+Kraft = 1 exactement), ancres numériques des carnets Python frères (sibling
+EN : `PrefixCodes_en`) ; `Decode` — décodage préfixe et table de décodage
+(pli 2 de #18706) : un pas de décodage le long de l'arbre, correction et
+complétude du pas, décodage complet du flux, théorème de round-trip. -/
 @[default_target]
 lean_lib «PrefixCodes» where
-  -- Module plat (deux fichiers racine, aucune arborescence `PrefixCodes/`) :
+  -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`) :
   -- pas de `.submodules`, cf la note `MathUniverse` de `learning_theory_lean`.
-  globs := #[`PrefixCodes, `PrefixCodes_en]
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode]
