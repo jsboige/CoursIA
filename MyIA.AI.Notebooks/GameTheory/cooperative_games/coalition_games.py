@@ -21,6 +21,7 @@ Key concepts:
 
 from typing import Callable, Set, FrozenSet, List, Dict, Optional, Union
 from itertools import combinations
+import warnings
 import numpy as np
 
 
@@ -209,6 +210,11 @@ class WeightedVotingGame(CoalitionGame):
     Each player i has a weight w_i. A coalition S wins if
     the sum of weights exceeds the quota q.
 
+    Weights are required to be non-negative: the class relies on the game
+    being monotone (adding a player to a coalition can never make it lose),
+    which is what makes a zero marginal contribution equivalent to "never
+    makes a difference". A negative weight breaks that assumption.
+
     Common examples:
     - UN Security Council: [39; 7,7,7,7,7, 1,1,1,1,1,1,1,1,1,1]
     - EU Council of Ministers: Various weighted voting schemes
@@ -233,11 +239,23 @@ class WeightedVotingGame(CoalitionGame):
         Initialize a weighted voting game.
 
         Args:
-            weights: List of player weights [w1, w2, ..., wn]
+            weights: List of player weights [w1, w2, ..., wn]. Must be
+                non-negative.
             quota: Minimum total weight to win
             player_names: Optional player names
+
+        Raises:
+            ValueError: If any weight is negative.
         """
         self.weights = np.array(weights)
+        if np.any(self.weights < 0):
+            raise ValueError(
+                "Weighted voting game weights must be non-negative, got "
+                f"{list(weights)}. A negative weight lets a player make a "
+                "coalition LOSE by joining it, which the monotonicity the "
+                "rest of this class assumes (is_dummy, is_veto_player, "
+                "banzhaf_index) does not model."
+            )
         self.quota = quota
 
         def v(coalition: Set[int]) -> float:
@@ -323,6 +341,14 @@ class WeightedVotingGame(CoalitionGame):
         is critical (their removal changes a winning coalition to losing),
         normalized by total critical counts.
 
+        When no player is critical in any winning coalition - which happens
+        when the quota is unreachable by the grand coalition, so there is no
+        winning coalition at all - the normalized index is the undefined
+        ratio 0/0. This method then returns the uniform distribution
+        ``1/n`` for every player as a documented fallback, and emits a
+        ``UserWarning`` so the degenerate case is not mistaken for a real
+        power measurement.
+
         Returns:
             Array of Banzhaf indices (sum = 1)
         """
@@ -337,6 +363,14 @@ class WeightedVotingGame(CoalitionGame):
 
         total = critical_counts.sum()
         if total == 0:
+            warnings.warn(
+                "banzhaf_index: no player is critical in any winning "
+                f"coalition (quota {self.quota} vs total weight "
+                f"{float(self.weights.sum())}). The normalized Banzhaf index "
+                "is the undefined ratio 0/0 here; returning the uniform "
+                "distribution as the documented fallback.",
+                stacklevel=2,
+            )
             return np.ones(self.n_players) / self.n_players
         return critical_counts / total
 

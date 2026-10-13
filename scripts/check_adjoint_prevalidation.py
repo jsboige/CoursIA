@@ -57,6 +57,22 @@ each one. A green gate therefore no longer hides a red B.0. It still does not
 dispense with reading the surfaces: the organ only sees its markers, and who
 lifted a remark, when, and on what substance are read by hand (CLAUDE.md §B.0).
 
+The same derivation carries a STACK door (#20251), and it closes the third
+blind spot: the gate judges ONE pull request against `main` and could not see
+that another OPEN pull request carries a newer version of the same commits. A
+stack top came out READY, was merged first, and `main` received the version
+that predated the corrections its own base branch had received hours earlier.
+The door compares commit SUBJECTS (a rebase rewrites SHAs and leaves subjects
+alone -- a stack top is precisely a rebased branch), skips pairs where this
+head is an ancestor of the other's (a linear stack bottom merges first
+correctly, so the door stays silent), and ignores re-trigger subjects. A
+measurement it cannot complete removes the door and says so on stderr; it
+never fabricates a refusal. `--stack-index` prints what the door reads.
+Because `derive_verdict` is also reached by `refute_ready_verdict`, the door
+covers the path the merge organ takes (`merge_ready.run_gate` shells out to
+this gate), not only the emitting lane's: what it prevents is a MERGE, and a
+gate that only guarded emission would have let the founding incident through.
+
 Exit codes -- dossier INTEGRITY and PR MERGEABILITY are two questions, and
 conflating them is what this gate used to do (#16800):
 
@@ -91,6 +107,32 @@ pull request, then lifting one's own reserve -- expires the dossier the gate
 required, and a pull request blocked solely by a coordinator reserve could never
 be merged without a full adjoint round-trip. A row from any other author, or a
 coordinator row predating the dossier, still expires it.
+
+Modes queue (#16480) -- au-dessus du contrat single-PR, sans le modifier :
+
+    --queue <PRs...>  derive une file de consommation oldest-first, en JSON,
+                      SANS etat persistant : chaque appel relit le plateau.
+                      Verdicts par entree : READY (consommable maintenant) ·
+                      REVIEW_READY (dossier et gardes verts, seule manque la
+                      review qualifiante sur la tete exacte) · DWELL_PENDING
+                      (seul rouge = plancher DWELL non ecoule, ``dwell_until``
+                      porte l'echeance) · BLOCKED (cause nommee : B.0, jambe
+                      rouge hors DWELL, rollup en vol, CHANGES_REQUESTED
+                      recent, campagne gelee, dossier BLOCKED atteste) ·
+                      STALE (mutation du fil apres le dossier, dossier trop
+                      ancien, ou empreinte cassee). Les PR illisibles vont
+                      dans ``unknown`` ; exit 2 uniquement si AUCUNE entree
+                      n'a pu etre derivee.
+    --consume <PR>    revalide UNE candidate a l'instant-T pour un merge
+                      exact-head : relecture fraiche, refus de toute mutation
+                      ou anciennete. Exit 0 ssi READY, sinon 1/2/3 selon la
+                      cause (meme semantique que le mode single-PR).
+
+La queue ne substitue jamais son verdict au 2ter de ``merge_ready``
+(approbation coordinateur au merge) : ``review_qualifying`` est une porte
+informee, l'autorite reste l'organe de merge. Le plancher DWELL se lit sur
+la jambe PR gate vivante via ``merge_dwell.parse_pending_message`` (la forme
+du message vit chez l'emetteur -- jamais de copie locale, #15910).
 """
 
 from __future__ import annotations
@@ -103,15 +145,18 @@ import re
 import subprocess
 import sys
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Sequence
 
 try:
     import gh_identity
     import check_unaddressed_nits
+    import grain_tag
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gh_identity  # type: ignore[no-redef]
     import check_unaddressed_nits  # type: ignore[no-redef]
+    import grain_tag  # type: ignore[no-redef]
 
 # Campagnes gelees par veto user (#17040) : definition PARTAGEE avec
 # merge_ready dans scripts/coordination/frozen_campaigns.py. Ce gate ne peut
@@ -156,8 +201,21 @@ QUALIFYING_LANES = frozenset({
     "myia-po-2027:CoursIA-2",
 })
 # `Grain: <genre> -- lane <machine:workspace>` in the pull request body names the
-# lane that carries the work. Same grammar as scripts/check_lane_claim.py.
-GRAIN_LANE_RE = re.compile(r"Grain:[^\n]*?\blane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)")
+# lane that carries the work. The canonical reader is `grain_tag.extract_lane`,
+# the one `scripts/check_lane_claim.py` uses; the patterns below are `findall`
+# variants of it, kept because the consumers need EVERY marker of a body, not
+# just the first.
+#
+# #15864 (4th variant of the self-block class) -- a sentence period is admitted
+# by the token class (hostnames need it), so `lane myia-po-2023:CoursIA-2.` used
+# to be captured as the lane `myia-po-2023:CoursIA-2.` -- a lane no cluster lane
+# matches. A token can no longer END on a period; periods INSIDE it survive
+# (`Foo.Bar:CoursIA-2` is unchanged), so the constraint only removes prose
+# punctuation. Measured on #14549, 2026-10-09: `delivering_lanes` returned
+# `myia-po-2023:CoursIA-2.`, and a lane named ONLY under the punctuated form is
+# absent from the set -- its own self-attesting dossier then passes the gate.
+LANE_TOKEN = r"[A-Za-z0-9_.-]*[A-Za-z0-9_-]:[A-Za-z0-9_.-]*[A-Za-z0-9_-]"
+GRAIN_LANE_RE = re.compile(r"Grain:[^\n]*?\blane\s+(" + LANE_TOKEN + r")")
 SHARED_GITHUB_LOGIN = "jsboige"
 # The gate's only consumer. Every worker lane signs SHARED_GITHUB_LOGIN, so this
 # login is the one surface author the coordinator can recognise as itself.
@@ -269,7 +327,7 @@ class Dossier:
 API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0}
 
 
-def gh_json(args: list[str]) -> Any:
+def _gh_invoke(args: list[str]) -> str:
     proc = subprocess.run(
         ["gh", *args], capture_output=True, text=True, encoding="utf-8"
     )
@@ -283,7 +341,21 @@ def gh_json(args: list[str]) -> Any:
         API_USAGE["rest"] += 1
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or "gh command failed")
-    return json.loads(proc.stdout)
+    return proc.stdout
+
+
+def gh_json(args: list[str]) -> Any:
+    return json.loads(_gh_invoke(args))
+
+
+def gh_lines(args: list[str]) -> list[str]:
+    """Lignes non vides d'une sortie ``gh`` brute.
+
+    Existe pour les appels pagines a ``--jq`` scalaire (``.[].number``) :
+    ``--paginate`` concatene un document par page et ``--slurp`` est refuse
+    avec ``--jq``, donc la sortie n'est pas un JSON unique.
+    """
+    return [line for line in _gh_invoke(args).splitlines() if line.strip()]
 
 
 def parse_dossier(
@@ -478,6 +550,28 @@ def _is_bot_advisory_pose(row: dict[str, Any]) -> bool:
     if _login(row) != BOT_ADVISORY_LOGIN:
         return False
     return _bot_advisory_key(row) is not None
+
+
+def _foreign_tail_rows(
+    comments: list[dict[str, Any]], dossier: Dossier
+) -> list[dict[str, Any]]:
+    """Commentaires posterieurs au dossier qui periment reellement le fil.
+
+    Predicat canonique partage par le gate et la queue : une row tardive
+    n'est etrangere que si elle n'est ni la voix du coordinateur
+    (``_is_own_later_act``) ni la pose consultative d'un bot marker-garde
+    (``_is_bot_advisory_pose``). La queue comptait ces lignes en brut avant
+    #16480-c2151 et reintroduisait, par un simple ``len``, exactement ce que
+    #17818/#18637 avaient neutralise cote gate (mesure 11/10 : #20094 et
+    #20372 STALE sur la seule pose PATH-COLLISION de ``github-actions[bot]``,
+    6 PR sur 102 a 18:21Z).
+    """
+    return [
+        row
+        for row in comments[dossier.comment_index + 1:]
+        if not _is_own_later_act(row, "createdAt", dossier.created_at)
+        and not _is_bot_advisory_pose(row)
+    ]
 
 
 def _review_body_has_reserve_marker(author: str, body: str) -> bool:
@@ -875,8 +969,333 @@ def refute_ready_b0(
     return verdict, [], dossier
 
 
+# ---------------------------------------------------------------------------
+# Porte « pile » (#20251)
+#
+# L'organe juge UNE PR contre `main`, a sa tete exacte. Il ne voyait pas qu'une
+# AUTRE PR ouverte porte une version plus recente des memes fichiers : un sommet
+# de pile pouvait donc sortir READY alors que les PRs du bas portaient des
+# corrections qu'il n'avait pas.
+#
+# Instance fondatrice (2026-10-10) : la pile Percolation #19548 -> #19556 ->
+# #19567, les trois de base `main`. #19567 avait ete rebatie AVANT les
+# corrections poussees ensuite sur #19548 et #19556 (enonce en `Phi_iso(n)`,
+# instrument R2 et verdict INCONCLUSIVE, re-execution C.2, reponse a un
+# REQUEST_CHANGES). Le gate a rendu READY, #19567 a ete mergee en premier, et
+# `main` a recu les versions anterieures aux corrections.
+#
+# Les commits sont apparies par SUJET, jamais par SHA : un rebase change les
+# SHA sans changer ce qu'une PR apporte -- et un sommet de pile est justement
+# une PR rebatie.
+# ---------------------------------------------------------------------------
+
+STACK_REF_PREFIX = "refs/remotes/prh/"
+STACK_FETCH_TRIES = 6
+# Sujets de re-declenchement : ils ne portent aucun contenu, et ne doivent pas,
+# a eux seuls, faire passer une PR pour un sommet de pile.
+STACK_NOISE_SUBJECTS = ("empty commit", "regenerer", "render-list")
+
+
+@dataclass
+class StackEntry:
+    """Ce qu'une PR ouverte apporte par rapport a `main`."""
+
+    number: int
+    ref: str
+    commits: list[str]
+    # sha -> sujet. Le sujet est ce qui s'apparie entre deux versions d'une PR
+    # rebatie ; le sha, lui, ne survit pas au rebase.
+    subjects: dict[str, str]
+
+
+def _git(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
+    proc = subprocess.run(
+        ["git", *args], capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
+    )
+    if check and proc.returncode != 0:
+        raise RuntimeError(f"git {' '.join(args[:3])} -> {proc.stderr.strip()[:200]}")
+    return proc
+
+
+def _own_ref_content(ref: str) -> tuple[list[str], dict[str, str]]:
+    """``(commits, sha -> sujet)`` propres a ``ref`` : hors `main`, sans fusion.
+
+    Un seul appel git par ref : les SHA et les sujets viennent du meme
+    ``log``. Deux appels par PR doubleraient le cout d'une passe qui touche
+    toutes les PR ouvertes.
+    """
+    proc = _git(
+        ["log", "--no-merges", "--format=%H\t%s", ref, "--not", "origin/main"],
+        check=False,
+    )
+    if proc.returncode != 0:
+        return [], {}
+    commits: list[str] = []
+    subjects: dict[str, str] = {}
+    for line in proc.stdout.splitlines():
+        sha, _, subject = line.partition("\t")
+        sha = sha.strip()
+        if sha:
+            commits.append(sha)
+            subjects[sha] = subject.strip()
+    return commits, subjects
+
+
+def _fetch_pr_heads(numbers: list[int]) -> tuple[list[int], list[str]]:
+    """Recupere les tetes des PR ouvertes en refs locales, plus `main`.
+
+    Un lot dont une seule ref a disparu (branche de fork supprimee) echoue
+    entierement : on retire la ref fautive et on relance, jusqu'a
+    ``STACK_FETCH_TRIES``. Une ref de tete disparue n'est pas une candidate de
+    pile, elle est simplement ecartee -- ce n'est pas un incident.
+
+    `main` voyage dans le MEME lot, et c'est deliberé : ``own_commits`` se
+    mesure ``--not origin/main``, donc un clone en retard ferait apparaitre
+    comme « propres » des commits deja merges -- la porte inventerait des piles.
+    Une passe qui rafraichit sa reference ne depend pas de la fraicheur de
+    l'appelant.
+    """
+    remaining = list(numbers)
+    for _ in range(STACK_FETCH_TRIES):
+        specs = ["main:refs/remotes/origin/main"]
+        specs += [f"pull/{p}/head:{STACK_REF_PREFIX}{p}" for p in remaining]
+        proc = _git(["fetch", "-q", "origin", *specs], check=False)
+        if proc.returncode == 0:
+            return remaining, []
+        gone = set(re.findall(r"remote ref pull/(\d+)/head", proc.stderr or ""))
+        if not gone:
+            detail = (proc.stderr or "").strip()[:200] or f"rc={proc.returncode}"
+            return [], [f"recuperation des tetes de PR impossible : {detail}"]
+        remaining = [p for p in remaining if str(p) not in gone]
+    return [], [
+        "recuperation des tetes de PR : tentatives epuisees "
+        "(des refs disparaissent a chaque passe)"
+    ]
+
+
+def _prune_stack_refs(keep: list[int]) -> None:
+    """Retire les refs de tetes qui ne correspondent plus a une PR ouverte.
+
+    La passe ECRIT dans le clone de l'appelant (une ref par PR ouverte) : sans
+    elagage, elle y laisserait une ref par PR jamais nettoyee, pour toujours.
+    Une ref hors de l'ensemble courant n'est pas une mesure -- c'est un residu
+    d'une passe precedente, et elle se supprime. Le cout est nul quand rien n'a
+    ferme depuis la derniere passe.
+    """
+    proc = _git(["for-each-ref", "--format=%(refname)", STACK_REF_PREFIX])
+    if proc.returncode != 0:
+        return
+    keep_refs = {f"{STACK_REF_PREFIX}{n}" for n in keep}
+    for ref in proc.stdout.split():
+        if ref and ref not in keep_refs:
+            _git(["update-ref", "-d", ref], check=False)
+
+
+def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
+    """Une passe : ce que chaque PR ouverte apporte par rapport a `main`.
+
+    Renvoie ``(None, incidents)`` quand la mesure n'est pas possible. Un
+    incident ne fabrique JAMAIS un refus : il prive seulement l'organe d'une
+    porte (cf la porte B.0, dont l'echec de mesure est fail-closed a l'inverse,
+    parce qu'elle infirme une affirmation -- ici on ne peut que constater).
+    """
+    try:
+        numbers = [
+            int(line) for line in gh_lines([
+                "api", "--paginate", f"repos/{REPO}/pulls?state=open&per_page=100",
+                "--jq", ".[].number",
+            ])
+        ]
+    except Exception as exc:  # noqa: BLE001 -- mesure impossible, pas un crash
+        return None, [f"enumeration des PR ouvertes impossible : {exc}"]
+    fetched, incidents = _fetch_pr_heads(numbers)
+    if incidents:
+        return None, incidents
+    index: dict[int, StackEntry] = {}
+    for p in fetched:
+        ref = f"{STACK_REF_PREFIX}{p}"
+        commits, subjects = _own_ref_content(ref)
+        index[p] = StackEntry(p, ref, commits, subjects)
+    _prune_stack_refs(fetched)
+    return index, []
+
+
+def _subjects_of(entry: StackEntry) -> set[str]:
+    return set(entry.subjects.values())
+
+
+_PATCH_ID_CACHE: dict[str, str | None] = {}
+
+
+def _patch_id(sha: str) -> str | None:
+    """``git patch-id --stable`` du commit, ou ``None`` si incalculable.
+
+    Le patch-id est l'identite de CONTENU d'un commit : il survit au rebase
+    (un rebase reecrit les SHA, pas les patchs). C'est la corroboration que
+    le repli par sujets exige -- cf ``_stack_partners``. Vide de diff (commit
+    de re-declenchement), fusion ou SHA absent : ``None``, jamais une
+    exception -- une mesure impossible ne doit pas fabriquer de refus.
+    """
+    if sha in _PATCH_ID_CACHE:
+        return _PATCH_ID_CACHE[sha]
+    # Pipeline unique : diff-tree produit le patch, patch-id le hache. Les
+    # deux vivent dans le meme sous-processus pour ne pas vehiculer le patch
+    # en Python (taille, encodage).
+    proc = subprocess.run(
+        f'git diff-tree -p {sha} | git patch-id --stable',
+        shell=True, capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
+    )
+    pid = proc.stdout.split()[0] if (proc.returncode == 0 and proc.stdout.split()) else None
+    _PATCH_ID_CACHE[sha] = pid
+    return pid
+
+
+def _subjects_corroborated(
+    mine: StackEntry, other: StackEntry, shared_subjects: set[str]
+) -> bool:
+    """Le repli par sujets est-il corrobore par le CONTENU des commits ?
+
+    Sujets partages seul = collision de titres, pas une pile : deux branches
+    independantes depuis ``main`` portent souvent le meme prefixe canonique
+    (« Fix: validation ... »). Un sujet ne compte que si AU MOINS une paire
+    de commits (un de chaque cote, meme sujet) partage le meme patch-id --
+    l'egalite qui survit au rebase. Un rebase a conflits resolu change le
+    patch : ce cas tres particulier n'est plus vu par la porte par sujets
+    (il est indiscernable d'une collision fortuite a ce niveau d'information
+    ; l'organe exact-head du dossier reste le filet). ``None`` (mesure
+    impossible) ne corrobore JAMAIS : echec de mesure => pas de blocage
+    fabrique.
+    """
+    other_by_subject: dict[str, list[str]] = {}
+    for sha, subject in other.subjects.items():
+        other_by_subject.setdefault(subject, []).append(sha)
+    for sha, subject in mine.subjects.items():
+        if subject not in shared_subjects:
+            continue
+        mine_pid = _patch_id(sha)
+        if mine_pid is None:
+            continue
+        for other_sha in other_by_subject.get(subject, []):
+            if _patch_id(other_sha) == mine_pid:
+                return True
+    return False
+
+
+def _is_stack_noise(subject: str) -> bool:
+    return subject.startswith("Merge ") or any(
+        token in subject for token in STACK_NOISE_SUBJECTS
+    )
+
+
+def _stack_partners(target: int, index: dict[int, StackEntry]) -> list[int]:
+    """PRs ouvertes dont ``target`` est un sommet de pile (cf ``stack_reasons``).
+
+    Predicat unique, partage par la porte et par ``--stack-index`` : deux
+    enonces du meme critere divergeraient au premier amendement.
+    """
+    entry = index.get(target)
+    if entry is None or not entry.commits:
+        return []
+    mine = _subjects_of(entry)
+    partners: list[int] = []
+    for number in sorted(index):
+        if number == target:
+            continue
+        other = index[number]
+        if not other.commits:
+            continue
+        if not set(entry.commits) & set(other.commits):
+            # #20263 -- un rebase reecrit les SHA : une intersection vide
+            # ne prouve PAS l'independance, elle est exactement la
+            # signature du sommet de pile rebati que la porte existe pour
+            # attraper. Repli sur les SUJETS partages (hors bruit), comme
+            # le contrat publie le promet : « par sujet, jamais par SHA ».
+            # #20263 ( controle negatif de l'adjoint, dossier c6105057753)
+            # -- un sujet partage seul ne prouve pas non plus la parente :
+            # deux branches INDEPENDANTES depuis main portent souvent le
+            # meme prefixe canonique, et la porte les appariait en BlocAGE
+            # mutuel. Le repli exige la corroboration de CONTENU : au moins
+            # un sujet partage dont les commits des deux cotes ont le MEME
+            # patch-id (egalite qui survit au rebase). Les controles aval
+            # (ancetre lineaire, apport reel) restent appliques.
+            shared = [
+                s for s in (mine & _subjects_of(other))
+                if not _is_stack_noise(s)
+            ]
+            if not shared:
+                continue
+            if not _subjects_corroborated(entry, other, set(shared)):
+                continue
+        # Bas de pile lineaire : la tete de `target` est un ancetre de celle
+        # de `other`, donc merger `target` d'abord est l'ordre correct.
+        if _git(
+            ["merge-base", "--is-ancestor", entry.ref, other.ref], check=False
+        ).returncode == 0:
+            continue
+        if not [
+            s for s in (_subjects_of(other) - mine) if not _is_stack_noise(s)
+        ]:
+            continue
+        partners.append(number)
+    return partners
+
+
+def stack_reasons(target: int, index: dict[int, StackEntry]) -> list[str]:
+    """Cause nommee quand ``target`` est un sommet de pile perime.
+
+    ``target`` partage des commits avec une PR ouverte ``p`` qui en porte
+    d'autres, absents de ``target``, et sa tete n'est PAS un ancetre de celle
+    de ``p``. Deux cas :
+
+    - **bas de pile lineaire** (tete de ``target`` ancetre de celle de ``p``) :
+      merger ``target`` d'abord est l'ordre correct -- aucune raison, et c'est
+      le controle negatif qui distingue la porte d'un simple « deux PRs se
+      ressemblent » ;
+    - **sommet de pile** : ``p`` porte des corrections que ``target`` n'a pas.
+      Merger ``target`` d'abord ferait atterrir sur `main` la version
+      anterieure.
+    """
+    entry = index.get(target)
+    if entry is None:
+        return []
+    mine = _subjects_of(entry)
+    reasons: list[str] = []
+    for number in _stack_partners(target, index):
+        other = index[number]
+        shared = set(entry.commits) & set(other.commits)
+        missing = sorted(
+            s for s in (_subjects_of(other) - mine) if not _is_stack_noise(s)
+        )
+        reasons.append(
+            f"stack top: shares {len(shared)} commit(s) with OPEN #{number}, which "
+            f"carries {len(missing)} commit(s) absent here -- merging this one first "
+            f"would land the earlier version on main (e.g. {missing[0][:90]!r})"
+        )
+    return reasons
+
+
+_STACK_INDEX_CACHE: dict[str, Any] = {"built": False, "index": None}
+# Sentinelle : distingue « pas d'argument » (mesure live, mise en cache) de
+# ``stack=None`` (desactivee explicitement, usage des tests).
+_STACK_AUTO = object()
+
+
+def default_stack_index() -> dict[int, StackEntry] | None:
+    if not _STACK_INDEX_CACHE["built"]:
+        index, incidents = build_stack_index()
+        _STACK_INDEX_CACHE.update(built=True, index=index)
+        for incident in incidents:
+            # Un incident se DIT et ne bloque pas : sortie stderr, verdict
+            # inchange. C'est la meme frontiere que l'organe #20250, ou une
+            # base illisible ne fabrique aucun finding.
+            print(f"STACK (WARN, mesure incomplete): {incident}", file=sys.stderr)
+    return _STACK_INDEX_CACHE["index"]
+
+
 def derive_verdict(
-    snapshot: dict[str, Any], probe: Any = None
+    snapshot: dict[str, Any], probe: Any = None, stack: Any = _STACK_AUTO
 ) -> tuple[str, list[str]]:
     """#18933 -- le verdict DERIVE de l'organe, pas ecrit par l'emetteur.
 
@@ -919,6 +1338,11 @@ def derive_verdict(
     reasons.extend(
         b0_claim_contradictions("clear", (probe or probe_b0)(snapshot["number"]))
     )
+    # Porte « pile » (#20251) : dernier ajout, pour ne pas deplacer l'ordre des
+    # raisons deja produites par les portes precedentes.
+    index = default_stack_index() if stack is _STACK_AUTO else stack
+    if index:
+        reasons.extend(stack_reasons(snapshot["number"], index))
     if reasons:
         return VERDICT_BLOCKED, reasons
     return VERDICT_READY, []
@@ -971,8 +1395,10 @@ def recheck_blocked_b0(
     Only the b0-ONLY case expires, and only toward a re-stamp: the answer
     becomes the no-dossier outcome (exit 1), which routes the pull request to
     a third-party lane for a fresh dossier -- never back to the author as
-    mergeable. Any other blocking field (checks, scope, domain) keeps the
-    dossier standing: its reason may still hold.
+    mergeable. Any other blocking field keeps the dossier standing HERE: the
+    ``checks`` field has its own recheck (``recheck_blocked_checks``), and
+    ``scope``/``domain`` are judgments about a diff, which cannot move without
+    a push -- and a push already expires the stamp.
     """
     if verdict != VERDICT_BLOCKED or dossier is None:
         return verdict, [], dossier
@@ -987,6 +1413,56 @@ def recheck_blocked_b0(
         "dossier's stated reason is extinguished, a re-stamp is required: "
         "a third-party lane must post a fresh dossier (never merge on "
         "this one)"
+    ], None
+
+
+def recheck_blocked_checks(
+    snapshot: dict[str, Any],
+    verdict: str,
+    dossier: Dossier | None,
+) -> tuple[str, list[str], Dossier | None]:
+    """Expire a BLOCKED dossier whose only blocking field, ``checks``, no longer blocks.
+
+    Third of the family, after ``refute_ready_b0`` and ``recheck_blocked_b0``
+    (#19093). ``checks`` is the ONE blocking field whose value moves without a
+    head mutation: a check concludes asynchronously, so a dossier stamped while
+    a leg was still running attests ``checks: BLOCKED`` for a state a later
+    verdict extinguishes on the very same head. Measured instances: #19906
+    (dossier BLOCKED at 2026-10-08T10:42:32Z, ``PR gate`` success at
+    11:21:46Z on the same head ``4d3eb7f67a3f`` -- 95/95 legs green and the
+    gate still answering rc=3) and #20058 (reported BLOCKED at 09:35:37Z, green
+    at 10:00:36Z, still read as unmergeable 25 min later). ``scope`` and
+    ``domain`` cannot move without a push, and a push already expires the
+    stamp; ``checks`` can, and did.
+
+    Unlike ``recheck_blocked_b0`` this costs no probe: ``checkRuns`` is already
+    on the snapshot (``_head_check_runs``), so the comparison is local. The
+    predicate is the one that refutes a false ``latest-wins-green`` claim --
+    every latest-wins conclusion green AND every required check present -- read
+    in the other direction.
+
+    Only the checks-ONLY case expires, and only toward a re-stamp: the answer
+    becomes the no-dossier outcome (exit 1), which routes the pull request to a
+    third-party lane for a fresh dossier -- never back to the author as
+    mergeable.
+    """
+    if verdict != VERDICT_BLOCKED or dossier is None:
+        return verdict, [], dossier
+    if blocking_fields(dossier) != ["checks"]:
+        return verdict, [], dossier
+    check_runs = snapshot.get("checkRuns")
+    # `None` means "not measured", and a failure to measure is never a pass.
+    # An empty list IS measured, and the required-check rule refutes it below.
+    if check_runs is None:
+        return verdict, [], dossier
+    if check_claim_contradictions("latest-wins-green", check_runs):
+        return verdict, [], dossier
+    return "", [
+        "dossier BLOCKED for checks only, but the live latest-wins state of the "
+        f"head no longer blocks PR #{snapshot.get('number')} -- every conclusion "
+        "is green and every required check is present, so the dossier's stated "
+        "reason is extinguished and a re-stamp is required: a third-party lane "
+        "must post a fresh dossier (never merge on this one)"
     ], None
 
 
@@ -1098,6 +1574,36 @@ def dossier_self_consistency_errors(
     return errors
 
 
+def base_ref_error(base: Any, liveness: Any) -> str:
+    """Le refus d'une base non-`main` nomme LEQUEL des deux cas s'applique (#19014).
+
+    Une lane qui lit « retarget the PR » sur une PR empilee cherche une mort
+    de branche qui n'existe pas : la base est vivante, il faut attendre le
+    merge de la PR porteuse. Les deux motifs reprennent le vocabulaire de
+    ``merge_ready.base_ref_liveness`` (une seule lecture, deux lecteurs) :
+    ``base-live-not-main`` dit d'attendre, ``base-gone`` dit de recibler.
+    Sans mesure exploitable (``unreadable``, ou un snapshot anterieur a
+    #19014 qui ne porte pas le champ), le message generique reste --
+    fail-CLOSED : le gate ne nomme pas un etat qu'il n'a pas lu.
+    """
+    if liveness == "live":
+        return (
+            f"base-live-not-main:{base} -- la base est une PR ouverte : "
+            f"attendre son merge, puis recibler sur {CANONICAL_BASE!r} avant "
+            f"de poser un nouveau dossier"
+        )
+    if liveness == "gone":
+        return (
+            f"base-gone:{base} -- la PR porteuse est mergee ou fermee : "
+            f"recibler sur {CANONICAL_BASE!r} et rebaser avant de poser un "
+            f"nouveau dossier"
+        )
+    return (
+        f"baseRefName must be {CANONICAL_BASE!r} when verdict is READY "
+        f"(got {base!r}); retarget the PR before stamping a new dossier"
+    )
+
+
 def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
     """Validate a parsed dossier against one live PR snapshot."""
     f = dossier.fields
@@ -1131,10 +1637,7 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any]) -> list[str]:
         # L898 collision guard).
         base = snapshot.get("baseRefName")
         if base != CANONICAL_BASE:
-            errors.append(
-                f"baseRefName must be {CANONICAL_BASE!r} when verdict is READY "
-                f"(got {base!r}); retarget the PR before stamping a new dossier"
-            )
+            errors.append(base_ref_error(base, snapshot.get("baseLiveness")))
     elif verdict == VERDICT_BLOCKED and not blocking_fields(dossier):
         # Un BLOCKED qui ne nomme aucun champ bloquant est inerte : il occupe la
         # surface de gate sans dire quoi reparer, et ai-01 ne peut ni merger ni
@@ -1383,12 +1886,7 @@ def evaluate_with_dossier(
     # wrote it, which it cannot be unaware of (see _is_own_later_act), or it
     # is the first pose of a consultative marker-guarded bot comment, which
     # attests nothing about the PR's substance (see _is_bot_advisory_pose).
-    foreign = [
-        row
-        for row in comments[dossier.comment_index + 1:]
-        if not _is_own_later_act(row, "createdAt", dossier.created_at)
-        and not _is_bot_advisory_pose(row)
-    ]
+    foreign = _foreign_tail_rows(comments, dossier)
     if foreign:
         errors.append(
             "discussion changed after dossier: a fresh adjoint preflight is required"
@@ -1406,6 +1904,450 @@ def evaluate(snapshot: dict[str, Any]) -> tuple[str, list[str]]:
     """
     verdict, errors, _ = evaluate_with_dossier(snapshot)
     return verdict, errors
+
+
+# ---------------------------------------------------------------------------
+# #16480 -- queue derivation (``--queue``) and exact-head consumption
+# (``--consume``). Sans etat persistant : chaque appel relit le plateau.
+# ---------------------------------------------------------------------------
+
+#: Verdicts specifiques a la queue, au-dessus de READY/BLOCKED du gate.
+QUEUE_VERDICT_REVIEW_READY = "REVIEW_READY"
+QUEUE_VERDICT_DWELL_PENDING = "DWELL_PENDING"
+QUEUE_VERDICT_STALE = "STALE"
+
+#: Un dossier de plus de 24 h ne peut plus attester une tete exacte : la
+#: conversation a trop bouge pour qu'un humain ne re-lise pas la queue.
+STALE_AFTER_MINUTES_DEFAULT = 1440
+
+#: Ancre de partition des raisons de ``derive_verdict`` : le prefixe exact que
+#: ``check_claim_contradictions`` construit pour une jambe PR gate rouge. La
+#: classe DWELL vit dans le ``output.title`` du run, jamais dans le predicat --
+#: la queue le re-parse au travers de ``merge_dwell.parse_pending_message``
+#: (la forme du message vit chez l'emetteur, une copie deriverait en silence).
+_PR_GATE_CONTRADICTION_PREFIX = (
+    "checks claim 'latest-wins-green' is contradicted by live check 'PR gate'"
+)
+
+#: Voix dont un APPROVED sur la tete exacte ouvre la porte du merge. La queue
+#: expose cette porte a titre d'information : l'autorite de merge reste le
+#: 2ter de ``merge_ready`` (approbation coordinateur), jamais ce champ.
+COORDINATOR_REVIEW_LOGINS = frozenset({"myia-ai-01", "jsboige"})
+
+
+def _parse_ts(value: Any) -> datetime | None:
+    """ISO-8601 GitHub (``...Z``) vers datetime UTC aware, ou None."""
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _dwell_pending_message(run: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Champs du plancher NON ecoule lu sur la jambe PR gate, ou None.
+
+    Délègue le parsing à ``merge_dwell.parse_pending_message`` -- l'inverse
+    canonique du message que le gate émet. Si l'import du module échoue, la
+    fonction rend ``None`` : un rouge DWELL non parsable reste un BLOCKED
+    ordinaire (fail-closed), jamais un READY ni un DWELL_PENDING inventé.
+    """
+    if not run:
+        return None
+    output = run.get("output") or {}
+    message = (output.get("title") or "").strip()
+    if not message:
+        message = (output.get("summary") or "").strip()
+    if not message:
+        return None
+    try:
+        from ci.merge_dwell import parse_pending_message
+    except Exception:  # noqa: BLE001 - lecteur optionnel, fail-closed
+        return None
+    return parse_pending_message(message)
+
+
+def _in_flight_names(
+    check_runs: list[dict[str, Any]] | None,
+) -> list[str]:
+    """Noms des jambes sans conclusion sur la tete (en vol, en file, annulées?)."""
+    if not check_runs:
+        return []
+    return sorted({
+        (row.get("name") or "?")
+        for row in check_runs
+        if (row.get("status") or "") != "completed"
+    })
+
+
+def _review_disposition(
+    snapshot: dict[str, Any],
+) -> tuple[str, bool]:
+    """(disposition de la dernière voix de review, porte coordinateur ouverte).
+
+    La disposition lit la review la plus récente par ``submittedAt`` (latest
+    voice wins, même règle que le 2ter de ``merge_ready``). Un CHANGES_REQUESTED
+    récent n'est pas « une review manquante » : c'est une réserve à lever, la
+    candidate va au dispatch, pas à la file de review -- divergence assumée
+    du design #16483, motivée par le piège « réserve en prose libre » (#14658)
+    qu'aucun marqueur ne couvre. Champ informatif : le 2ter reste l'autorité.
+    """
+    reviews = snapshot.get("reviews") or []
+    if not reviews:
+        return "unreviewed", False
+    latest = max(reviews, key=lambda row: row.get("submittedAt") or "")
+    state = (latest.get("state") or "").upper()
+    if state == "CHANGES_REQUESTED":
+        return "changes-requested", False
+    if state == "APPROVED":
+        oid = ((latest.get("commit") or {}).get("oid")) or ""
+        if oid != (snapshot.get("headRefOid") or ""):
+            return "approval-not-on-head", False
+        login = (latest.get("author") or {}).get("login", "")
+        return "approved-exact-head", login in COORDINATOR_REVIEW_LOGINS
+    return "reviewed-without-disposition", False
+
+
+@dataclass
+class QueueEntry:
+    """Une candidate de la queue, dérivée à l'instant de l'appel (#16480)."""
+
+    pr: int
+    verdict: str
+    created_at: str = ""
+    head: str = ""
+    dossier_comment_id: str = ""
+    dossier_created_at: str = ""
+    surfaces_sha256: str = ""
+    b0_rc: str = ""
+    checks: str = ""
+    domain: str = ""
+    review_qualifying: bool = False
+    review_disposition: str = ""
+    grain_tag: dict[str, Any] | None = None
+    last_comment_is_dossier: bool = False
+    tail_to_read: int = 0
+    dossier_age_minutes: int | None = None
+    dwell_until: str = ""
+    reject_cause: str = ""
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "pr": self.pr,
+            "verdict": self.verdict,
+            "created_at": self.created_at,
+            "head": self.head,
+            "dossier_comment_id": self.dossier_comment_id,
+            "dossier_created_at": self.dossier_created_at,
+            "surfaces_sha256": self.surfaces_sha256,
+            "b0_rc": self.b0_rc,
+            "checks": self.checks,
+            "domain": self.domain,
+            "review_qualifying": self.review_qualifying,
+            "review_disposition": self.review_disposition,
+            "grain_tag": self.grain_tag,
+            "last_comment_is_dossier": self.last_comment_is_dossier,
+            "tail_to_read": self.tail_to_read,
+            "dossier_age_minutes": self.dossier_age_minutes,
+            "dwell_until": self.dwell_until,
+            "reject_cause": self.reject_cause,
+        }
+
+
+def _last_dossier_candidate(snapshot: dict[str, Any]) -> Dossier | None:
+    """Dernier commentaire-dossier parse, SANS validation (selection du gate).
+
+    Utilise par l'interception DWELL de la queue : le gate refuse un dossier
+    dont la claim ``checks:`` est contredite, donc le dossier DWELL n'arrive
+    jamais jusqu'a la classification -- la queue le re-connait pour annoter
+    l'entree, sans jamais retablir un dossier que le gate a refuse.
+    """
+    last = None
+    for index, comment in enumerate(snapshot.get("comments") or []):
+        parsed, _ = parse_dossier(
+            comment.get("body") or "",
+            index,
+            _login(comment),
+            comment.get("createdAt") or "",
+        )
+        if parsed is not None:
+            last = parsed
+    return last
+
+
+def classify_snapshot(
+    snapshot: dict[str, Any],
+    *,
+    now: datetime,
+    stale_after_minutes: int = STALE_AFTER_MINUTES_DEFAULT,
+    probe: Any = None,
+) -> QueueEntry:
+    """Classifie une PR pour la queue -- REFUSE, STALE, DWELL, review, READY.
+
+    Réutilise la chaîne du gate (``evaluate_with_dossier`` puis les mesures
+    vivantes de ``derive_verdict``) et n'ajoute que ce que la queue demande :
+    partition DWELL du rouge PR gate, détection du rollup en vol, porte de
+    review qualifiante, gel de campagne, péremption par mutation du fil ou
+    ancienneté du dossier. ``now`` est injecté pour les tests.
+    """
+    pr = snapshot.get("number") or 0
+    check_runs = snapshot.get("checkRuns")
+    in_flight = _in_flight_names(check_runs)
+    verdicts = latest_wins_check_runs(check_runs)
+    dwell = _dwell_pending_message(verdicts.get("PR gate"))
+    disposition, qualifying = _review_disposition(snapshot)
+    tag = grain_tag.parse_grain_tag(snapshot.get("body") or "")
+    comments = snapshot.get("comments") or []
+
+    verdict, errors, dossier = evaluate_with_dossier(snapshot)
+    # Annotation des dossiers REFUSES (#16480) : quand le gate refuse le
+    # dossier, la queue re-connait le dernier candidat pour exposer ses
+    # champs (domaine, empreinte, age) -- jamais son verdict : le refus du
+    # gate reste la seule verite, la queue ne retablit rien.
+    refused = (
+        None if dossier is not None else _last_dossier_candidate(snapshot)
+    )
+    record = dossier or refused
+
+    def entry(verdict_value: str, cause: str = "") -> QueueEntry:
+        tail = max(0, len(comments) - 1 - record.comment_index) if record else 0
+        age = None
+        if record and record.created_at:
+            stamp = _parse_ts(record.created_at)
+            if stamp is not None and now is not None:
+                age = max(0, int((now - stamp).total_seconds() // 60))
+        comment_id = ""
+        if record:
+            row = comments[record.comment_index] if (
+                record and 0 <= record.comment_index < len(comments)
+            ) else {}
+            comment_id = str(row.get("id") or row.get("databaseId") or "")
+        checks_label = (
+            "in-flight" if in_flight
+            else "latest-wins-green" if not check_claim_contradictions(
+                "latest-wins-green", check_runs
+            )
+            else "not-green"
+        )
+        return QueueEntry(
+            pr=pr,
+            verdict=verdict_value,
+            created_at=snapshot.get("createdAt") or "",
+            head=snapshot.get("headRefOid") or "",
+            dossier_comment_id=comment_id,
+            dossier_created_at=record.created_at if record else "",
+            surfaces_sha256=record.fields.get("surfaces-sha256", "") if record else "",
+            b0_rc=record.fields.get("b0", "") if record else "",
+            checks=checks_label,
+            domain=record.fields.get("domain", "") if record else "",
+            review_qualifying=qualifying,
+            review_disposition=disposition,
+            grain_tag=tag,
+            last_comment_is_dossier=bool(record) and record.comment_index == (
+                len(comments) - 1
+            ),
+            tail_to_read=tail,
+            dossier_age_minutes=age,
+            dwell_until=(dwell or {}).get("lift_at", "") if dwell else "",
+            reject_cause=cause,
+        )
+
+    if dossier is None:
+        stale = any(
+            "head is stale" in reason or "discussion changed after dossier" in reason
+            for reason in errors
+        )
+        if stale:
+            return entry(QUEUE_VERDICT_STALE, "; ".join(errors))
+        # Interception DWELL (#16480) : le gate REFUSE le dossier dont la
+        # claim ``checks:`` est contredite par la jambe PR gate -- mais un
+        # rouge de classe DWELL est un minuteur, pas un defaut de dossier.
+        # Si c'est la SEULE erreur, la queue re-connait le dossier refuse et
+        # l'annote au lieu de l'enterrer en BLOCKED anonyme ; toute autre
+        # erreur garde le refus integral (fail-closed).
+        if dwell:
+            candidate = _last_dossier_candidate(snapshot)
+            if candidate is not None and not [
+                reason for reason in errors
+                if not reason.startswith(_PR_GATE_CONTRADICTION_PREFIX)
+            ]:
+                dossier = candidate
+                if in_flight:
+                    return entry(
+                        VERDICT_BLOCKED,
+                        "checks in-flight on the head: " + ", ".join(in_flight),
+                    )
+                lift = _parse_ts(dwell.get("lift_at"))
+                if lift is not None and now < lift:
+                    return entry(
+                        QUEUE_VERDICT_DWELL_PENDING,
+                        f"DWELL floor not elapsed until {dwell.get('lift_at')}",
+                    )
+                return entry(
+                    VERDICT_BLOCKED,
+                    f"DWELL floor elapsed at {dwell.get('lift_at')} -- replay the "
+                    "leg (gh run rerun) or let the sweep conclude, then re-consume",
+                )
+        return entry(
+            VERDICT_BLOCKED,
+            "no dossier worth trusting: " + "; ".join(errors) if errors
+            else "no dossier on this pull request",
+        )
+
+    tail = max(0, len(comments) - 1 - dossier.comment_index)
+    foreign = _foreign_tail_rows(comments, dossier)
+    age_minutes: int | None = None
+    if dossier.created_at:
+        stamp = _parse_ts(dossier.created_at)
+        if stamp is not None:
+            age_minutes = max(0, int((now - stamp).total_seconds() // 60))
+    if foreign:
+        # #16480-c2151 : le gate vient de valider ce dossier contre les
+        # memes predicats, donc un STALE ici ne leve que sur des lignes NON
+        # neutralisees -- le compte brut perimait des dossiers valides sur
+        # la seule pose consultative d'un bot (mesure 11/10 : #20094,
+        # #20372). ``tail`` reste le compte brut, a titre d'information.
+        return entry(
+            QUEUE_VERDICT_STALE,
+            f"{len(foreign)} foreign comment(s) posted after the dossier "
+            f"({tail} total) -- re-read the tail, "
+            "the exact-head contract no longer holds",
+        )
+    if age_minutes is not None and age_minutes > stale_after_minutes:
+        return entry(
+            QUEUE_VERDICT_STALE,
+            f"dossier is {age_minutes} min old (> {stale_after_minutes}) -- "
+            "a fresh adjoint preflight is required",
+        )
+
+    frozen_cause = frozen_umbrella_exclusion(
+        snapshot.get("title") or "",
+        snapshot.get("body") or "",
+        snapshot.get("headRefName") or "",
+    )
+    if frozen_cause:
+        return entry(VERDICT_BLOCKED, f"frozen campaign: {frozen_cause}")
+
+    if verdict == VERDICT_READY:
+        derived, reasons = derive_verdict(snapshot, probe)
+        if derived != VERDICT_READY:
+            # NB : une contradiction checks fait deja refuser le dossier par
+            # ``validate_dossier`` -- le cas DWELL est traite par
+            # l'interception du chemin de refus ci-dessus ; ce qui reste ici
+            # (B.0 refute, thread ouvert, draft) est une demotion a nommer.
+            return entry(
+                VERDICT_BLOCKED,
+                "verdict READY no longer derived at the head: "
+                + "; ".join(reasons),
+            )
+        if in_flight:
+            return entry(
+                VERDICT_BLOCKED,
+                "checks in-flight on the head: " + ", ".join(in_flight),
+            )
+        if disposition == "changes-requested":
+            return entry(
+                VERDICT_BLOCKED,
+                "latest review voice is CHANGES_REQUESTED -- lift the remark or "
+                "obtain a re-review before consuming",
+            )
+        if not qualifying:
+            return entry(
+                QUEUE_VERDICT_REVIEW_READY,
+                "only the qualifying review door is missing: "
+                f"disposition={disposition}",
+            )
+        return entry(VERDICT_READY)
+
+    # Dossier present, verdict BLOCKED atteste.
+    _, expiry, refreshed = recheck_blocked_b0(pr, verdict, dossier, probe)
+    if refreshed is None:
+        return entry(
+            VERDICT_BLOCKED,
+            "dossier BLOCKED for b0 only, but the live B.0 organ no longer "
+            "blocks -- a fresh third-party dossier is required: "
+            + "; ".join(expiry),
+        )
+    return entry(
+        VERDICT_BLOCKED,
+        "dossier attests BLOCKED -- fields not at their READY value: "
+        + ", ".join(blocking_fields(dossier)),
+    )
+
+
+def build_queue(
+    prs: list[int],
+    *,
+    now: datetime | None = None,
+    stale_after_minutes: int = STALE_AFTER_MINUTES_DEFAULT,
+    probe: Any = None,
+    loader: Any = None,
+) -> dict[str, Any]:
+    """Queue oldest-first sur les PRs demandees, sans etat persistant.
+
+    Chaque PR est relue depuis le reseau au moment de l'appel ; une PR dont
+    la lecture echoue (reseau, mutation pendant la lecture) part dans
+    ``unknown`` -- la queue partielle reste exploitable et nomme son trou.
+    """
+    now = now or datetime.now(timezone.utc)
+    load = loader or load_snapshot
+    seen: set[int] = set()
+    entries: list[QueueEntry] = []
+    unknown: list[dict[str, Any]] = []
+    for pr in prs:
+        if pr in seen:
+            continue
+        seen.add(pr)
+        try:
+            entries.append(classify_snapshot(
+                load(pr),
+                now=now,
+                stale_after_minutes=stale_after_minutes,
+                probe=probe,
+            ))
+        except Exception as exc:  # noqa: BLE001 - une PR ne tue pas la queue
+            unknown.append({"pr": pr, "error": str(exc)[:300]})
+    entries.sort(key=lambda item: (
+        _parse_ts(item.created_at) or datetime.max.replace(tzinfo=timezone.utc),
+        item.pr,
+    ))
+    metrics: dict[str, int] = {}
+    for item in entries:
+        metrics[item.verdict] = metrics.get(item.verdict, 0) + 1
+    return {
+        "schema": "1",
+        "stale_after_minutes": stale_after_minutes,
+        "requested": sorted(seen),
+        "queue": [item.to_json() for item in entries],
+        "unknown": unknown,
+        "metrics": metrics,
+    }
+
+
+def consume_pr(
+    pr: int,
+    *,
+    now: datetime | None = None,
+    stale_after_minutes: int = STALE_AFTER_MINUTES_DEFAULT,
+    probe: Any = None,
+    loader: Any = None,
+) -> QueueEntry:
+    """Revalide UNE candidate a l'instant-T pour consommation exact-head.
+
+    Relecture fraiche garantie (aucun cache n'existe, la fonction ne partage
+    rien avec un eventuel ``--queue`` precedent) et refus de toute mutation :
+    un commentaire poste apres le dossier, une jambe en vol, un plancher non
+    ecoule ou le moindre point de review non leve rendent la sortie non-READY.
+    """
+    now = now or datetime.now(timezone.utc)
+    load = loader or load_snapshot
+    return classify_snapshot(
+        load(pr),
+        now=now,
+        stale_after_minutes=stale_after_minutes,
+        probe=probe,
+    )
 
 
 def blocking_fields(dossier: Dossier) -> list[str]:
@@ -1626,6 +2568,38 @@ def _head_check_runs(head_sha: str) -> list[dict[str, Any]]:
         page += 1
 
 
+def _base_liveness(base_ref_name: Any) -> str:
+    """Vivacite d'une base non-`main` (#19014).
+
+    `main` n'a pas besoin de la mesure. Un `base` absent est ``unreadable``
+    -- fail-CLOSED : le gate ne nomme pas un etat qu'il n'a pas lu, et le
+    refus generique reste en place. Sinon, la liste ``gh pr list --state all
+    --search head:<base>`` tranche, avec le meme vocabulaire que
+    ``merge_ready.base_ref_liveness`` : une PR OPEN sur cette tete est
+    ``live`` (attendre son merge, puis recibler), tout le reste est ``gone``
+    (la PR porteuse est mergee ou fermee : recibler sur `main` et rebaser).
+    Une erreur `gh` rend ``unreadable``, jamais un etat devine.
+    """
+    if not base_ref_name:
+        return "unreadable"
+    if base_ref_name == CANONICAL_BASE:
+        return "main"
+    try:
+        rows = gh_json([
+            "pr", "list", "--repo", REPO, "--state", "all",
+            "--search", f"head:{base_ref_name}",
+            "--json", "number,state", "--limit", "5",
+        ])
+    except RuntimeError:
+        return "unreadable"
+    if not isinstance(rows, list):
+        return "unreadable"
+    for row in rows:
+        if isinstance(row, dict) and str(row.get("state") or "").upper() == "OPEN":
+            return "live"
+    return "gone"
+
+
 def _pr_metadata(pr: int) -> dict[str, Any]:
     # Scalar fields come from REST (`repos/.../pulls/N`) -- the whole snapshot
     # bracket no longer touches GraphQL (#17315): the check rollup it used to
@@ -1636,6 +2610,10 @@ def _pr_metadata(pr: int) -> dict[str, Any]:
     if not isinstance(row, dict):
         raise RuntimeError("pull request response is not an object")
     state = row.get("state") or ""
+    # Read once: the base feeds both the field and the liveness measure.
+    # A REST row without `base` yields None, which `_base_liveness` renders
+    # `unreadable` -- the fail-closed half of acceptance #19014.
+    base_ref_name = (row.get("base") or {}).get("ref")
     return {
         "number": row.get("number"),
         "title": row.get("title"),
@@ -1645,13 +2623,24 @@ def _pr_metadata(pr: int) -> dict[str, Any]:
         # the fingerprint payload hashes this field verbatim.
         "state": "MERGED" if row.get("merged") else state.upper(),
         "isDraft": row.get("draft"),
-        "baseRefName": (row.get("base") or {}).get("ref"),
+        "baseRefName": base_ref_name,
+        # Rides for the READY refusal only (#19014). NOT in the fingerprint
+        # payload, which `_fingerprint_payload` builds from explicit keys --
+        # adding this field cannot expire a stamp that says nothing about it.
+        # It IS in the stability identity, deliberately: the gate reads it,
+        # so a base that goes live->gone while we read must abort the
+        # snapshot like any other surface that moved.
+        "baseLiveness": _base_liveness(base_ref_name),
         "headRefOid": (row.get("head") or {}).get("sha"),
         # Rides for the frozen-campaign check only (merge_ready reads it via
         # the same shared module). NOT in the fingerprint payload, which uses
         # explicit keys -- adding this field must not change surfaces-sha256.
         "headRefName": (row.get("head") or {}).get("ref"),
         "updatedAt": row.get("updated_at"),
+        # #16480 : la queue triera les candidates par anciennete de PR. Meme
+        # statut que headRefName -- hors empreinte (cles explicites), donc
+        # l'ajouter n'invalide aucun dossier vivant.
+        "createdAt": row.get("created_at"),
         "changedFiles": row.get("changed_files"),
         "additions": row.get("additions"),
         "deletions": row.get("deletions"),
@@ -1874,7 +2863,28 @@ def main() -> int:
     except gh_identity.GhIdentityError as exc:
         print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("pr", type=int, help="pull request number")
+    parser.add_argument(
+        "pr", type=int, nargs="?", default=None, help="pull request number"
+    )
+    parser.add_argument(
+        "--queue", type=int, nargs="+", default=None, metavar="PR",
+        help="#16480: derive a merge queue for the given pull requests -- "
+        "oldest-first JSON, no persistent state. Verdicts per entry: "
+        "READY / REVIEW_READY / DWELL_PENDING / BLOCKED / STALE, plus "
+        "metrics and an `unknown` list for unreadable pull requests.",
+    )
+    parser.add_argument(
+        "--consume", type=int, default=None, metavar="PR",
+        help="#16480: revalidate ONE candidate at instant-T for an exact-head "
+        "merge -- refuses any mutation (comment after the dossier, checks "
+        "in-flight, DWELL floor not elapsed, unlifted review point). "
+        "Exit 0 iff READY.",
+    )
+    parser.add_argument(
+        "--stale-after-minutes", type=int, default=STALE_AFTER_MINUTES_DEFAULT,
+        help=f"dossier age beyond which a queue entry is STALE "
+        f"(default: {STALE_AFTER_MINUTES_DEFAULT})",
+    )
     parser.add_argument("--json", action="store_true", help="emit machine-readable output")
     parser.add_argument(
         "--lane",
@@ -1910,7 +2920,71 @@ def main() -> int:
         "(organ/organ-command/organ-rc). Only the reading acts "
         "(complete/body/scope/domain) stay for the emitting lane to fill.",
     )
+    parser.add_argument(
+        "--stack-index",
+        action="store_true",
+        help="#20251: print the open-PR stack index the stack door reads "
+        "(per PR: own commits off main, and the PRs it is a stack top of). "
+        "Read-only, no PR argument; exits 2 when the measurement itself "
+        "fails, which is the same policy the door applies.",
+    )
     args = parser.parse_args()
+    if args.stack_index:
+        index, incidents = build_stack_index()
+        if index is None:
+            for incident in incidents:
+                print(f"STACK (WARN, mesure incomplete): {incident}",
+                      file=sys.stderr)
+            return EXIT_UNKNOWN
+        payload = {
+            "open_prs": len(index),
+            "entries": {
+                str(n): {
+                    "own_commits": len(e.commits),
+                    "stack_top_of": _stack_partners(n, index),
+                    "reasons": stack_reasons(n, index),
+                }
+                for n, e in sorted(index.items())
+            },
+        }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return EXIT_READY
+    modes = sum(bool(m) for m in (args.pr, args.queue, args.consume))
+    if modes != 1:
+        parser.error(
+            "exactly one of <pr>, --queue <PRs...>, --consume <PR> is required"
+        )
+    if args.queue is not None:
+        result = build_queue(
+            args.queue,
+            stale_after_minutes=args.stale_after_minutes,
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        # File partielle = exploitable (les trous sont nommes dans `unknown`) ;
+        # seule l'illegibilite TOTALE rend la queue inutilisable.
+        return (
+            EXIT_UNKNOWN
+            if not result["queue"] and result["unknown"]
+            else EXIT_READY
+        )
+    if args.consume is not None:
+        try:
+            item = consume_pr(
+                args.consume,
+                stale_after_minutes=args.stale_after_minutes,
+            )
+        except Exception as exc:  # noqa: BLE001 - UNKNOWN, pas un crash
+            print(json.dumps(
+                {"pr": args.consume, "verdict": "UNKNOWN", "error": str(exc)[:300]},
+                ensure_ascii=False,
+            ))
+            return EXIT_UNKNOWN
+        print(json.dumps(item.to_json(), ensure_ascii=False, indent=2))
+        return EXIT_READY if item.verdict == VERDICT_READY else (
+            EXIT_NO_DOSSIER
+            if item.verdict == VERDICT_BLOCKED and "no dossier" in item.reject_cause
+            else EXIT_BLOCKED_WITH_SUBSTANCE
+        )
     try:
         snapshot = load_snapshot(args.pr)
         if args.derive_verdict:
@@ -1963,6 +3037,10 @@ def main() -> int:
             )
         if not errors:
             verdict, errors, dossier = recheck_blocked_b0(args.pr, verdict, dossier)
+        if not errors:
+            verdict, errors, dossier = recheck_blocked_checks(
+                snapshot, verdict, dossier
+            )
     except (
         RuntimeError,
         KeyError,
@@ -1992,33 +3070,66 @@ def main() -> int:
     # Veto user sur campagne gelee (#17040) : un dossier READY n'autorise pas
     # a merger une PR gelee. Le veto ne vit sur AUCUNE surface que le dossier
     # couvre -- le gate le lit au moment de se prononcer, via le module
-    # partage frozen_campaigns (meme lecteur que merge_ready). Applique
-    # seulement au verdict READY : un dossier refuse ou BLOCKED est deja non
-    # mergeable, le gel n'y ajoute rien.
-    frozen_reason = None
-    if verdict == VERDICT_READY:
-        frozen_reason = frozen_umbrella_exclusion(
-            snapshot.get("title"),
-            snapshot.get("body"),
-            snapshot.get("headRefName"),
-        )
+    # partage frozen_campaigns (meme lecteur que merge_ready).
+    #
+    # Avant #19630 : le gel n'etait evalue que si `verdict == VERDICT_READY`.
+    # Une PR sans dossier sortait en `NO-DOSSIER` (rc=1) et le gel n'etait
+    # jamais lu, alors qu'il etait detectable depuis le snapshot des la
+    # recuperation. Le fix evalue le gel systematiquement (le snapshot est
+    # toujours disponible, on l'a sous la main pour le verdict) ; sa
+    # detection N'INVERSE PAS le verdict existant (un NO-DOSSIER reste
+    # NO-DOSSIER, un BLOCKED reste BLOCKED) mais AJOUTE la mention du gel
+    # dans la sortie. Le gel reste bloquant ; il devient lisible. Une lane
+    # qui consulte le gate avant de porter une PR au coord voit la verite
+    # complete.
+    frozen_reason = frozen_umbrella_exclusion(
+        snapshot.get("title"),
+        snapshot.get("body"),
+        snapshot.get("headRefName"),
+    )
     ready = verdict == VERDICT_READY and frozen_reason is None
     result = build_result(args.pr, snapshot, verdict, errors, dossier)
     if frozen_reason is not None:
         # Le dossier reste intact et publie : ce que le gate refuse est le
         # MERGE, pas la lecture de la PR -- meme action documentee que rc=3.
-        result["ready"] = False
-        result["verdict"] = "FROZEN"
+        # En mode --json, on enrichit le payload avec le motif sans changer
+        # le verdict fonctionnel (un NO-DOSSIER reste NO-DOSSIER cote
+        # verdict, mais le champ frozen informe le caller).
         result["frozen"] = frozen_reason
+        if verdict == VERDICT_READY:
+            result["ready"] = False
+            result["verdict"] = "FROZEN"
     # #17315 : le cout de l'invocation est publie avec le verdict -- le
     # compteur distingue les deux buckets (REST core vs GraphQL partage).
     result["api_usage"] = dict(API_USAGE)
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
-    elif frozen_reason is not None:
+    elif frozen_reason is not None and verdict == VERDICT_READY:
         print(
             f"FROZEN -- PR #{args.pr} belongs to a frozen campaign "
             f"({frozen_reason}); do not merge, dispatch to the lane author."
+        )
+    elif frozen_reason is not None:
+        # Gel sur NO-DOSSIER ou BLOCKED : on COMPLETE la sortie du verdict
+        # fonctionnel avec la mention du gel, sans la remplacer (#19630).
+        if verdict == VERDICT_BLOCKED:
+            print(
+                f"BLOCKED-WITH-SUBSTANCE -- PR #{args.pr} has an intact adjoint dossier at "
+                f"{snapshot['headRefOid']} attesting it is NOT mergeable."
+            )
+            print("  Do not open its surfaces: dispatch from the dossier's stated reason.")
+            attested = ", ".join(
+                f"{key}={dossier.fields.get(key, '')}" for key, _ in BLOCKING_FIELDS
+            )
+            blocked = ",".join(blocking_fields(dossier)) or "none named by the contract"
+            print(f"  attested reason: {attested} (blocking: {blocked})")
+        else:
+            print(f"NO-DOSSIER -- PR #{args.pr} is not adjoint-prevalidated")
+            for error in errors:
+                print(f"  - {error}")
+        print(
+            f"  note: PR also belongs to a frozen campaign "
+            f"({frozen_reason}); do not merge even if a dossier is added later."
         )
     elif ready:
         print(f"READY -- PR #{args.pr} prevalidated by adjoint at {snapshot['headRefOid']}")
@@ -2042,11 +3153,13 @@ def main() -> int:
         print(f"NO-DOSSIER -- PR #{args.pr} is not adjoint-prevalidated")
         for error in errors:
             print(f"  - {error}")
-    if frozen_reason is not None:
-        code = EXIT_BLOCKED_WITH_SUBSTANCE
-    elif ready:
+    if ready:
         code = EXIT_READY
-    elif verdict == VERDICT_BLOCKED:
+    elif dossier is not None:
+        # Dossier atteste : verdict fonctionnel (READY ou BLOCKED) tient.
+        # BLOCKED+gel ou READY+gel -> rc=3 (le gate refuse le MERGE, le
+        # gel COMPLETE la sortie). Un NO-DOSSIER+gel garde rc=1 : ce que le
+        # gate refuse est le MERGE, pas la lecture de la PR (#19630).
         code = EXIT_BLOCKED_WITH_SUBSTANCE
     else:
         code = EXIT_NO_DOSSIER

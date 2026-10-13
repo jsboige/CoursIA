@@ -73,7 +73,11 @@ class FactorETFRotation(QCAlgorithm):
         penalizes high-volatility momentum (which tends to crash harder).
         Ref: Barroso & Santa-Clara (2015), Daniel & Moskowitz (2016)
         """
-        history = self.history(symbol, self.lookback + 5, Resolution.DAILY)
+        # On the 13:00 close slice of a US half-session, a daily history request
+        # by bar count comes back about 21 bars short (measured in #20286). Ask
+        # for twice the bars and keep the most recent ones.
+        history = self.history(symbol, 2 * (self.lookback + 5), Resolution.DAILY)
+        history = history.iloc[-(self.lookback + 5):]
         if len(history) < self.lookback:
             return None
 

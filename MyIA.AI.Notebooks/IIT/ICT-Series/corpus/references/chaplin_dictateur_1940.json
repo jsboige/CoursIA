@@ -1,0 +1,35 @@
+{
+  "schema": "coursia_fetch_reference_v1",
+  "tier": "reference_fetch_runtime",
+  "description": "Tier reference + fetch runtime : fiches de source des deux temoins Chaplin. Le texte n'est JAMAIS vendore -- droits Roy Export S.A.S. (arbitrage #7742) ; seule la methode de recuperation et sa cible sont decrites ici. Miroir des FICHES_TEMOINS du notebook ICT-Argumentation-BeliefTrajectories.ipynb (cellule 31).",
+  "items": [
+    {
+      "reference_id": "witness_discours_final_1940",
+      "film": "Le Dictateur (The Great Dictator), 1940",
+      "scene": "discours final du barbier, pris pour Hynkel",
+      "ayant_droit": "Roy Export S.A.S.",
+      "url": "https://www.charliechaplin.com/en/articles/29-the-final-speech-from-the-great-dictator-",
+      "fetch_method": "transcription publiee par l'ayant droit, fetch runtime + cache local gitignore (.cache_temoins/)",
+      "etiquette": null,
+      "plan_experience": {
+        "forme": "englobement",
+        "contenu_propositionnel": "inversé",
+        "prediction_preregistree": "même structure, signe inversé — rien détecté = détecteur de mots-clés ; même signe que les cas réels = lecture du décor"
+      }
+    },
+    {
+      "reference_id": "witness_fragment_hynkel_1940",
+      "film": "Le Dictateur (The Great Dictator), 1940",
+      "scene": "meeting d'ouverture : discours de Hynkel en pseudo-allemand, doublé d'un interprète radio",
+      "ayant_droit": "Roy Export S.A.S.",
+      "url": null,
+      "fetch_method": "aucune transcription canonique -- matériau vidéo chez l'ayant droit ; entrée de test étiquetée",
+      "etiquette": "fragment, pas reconstitution",
+      "plan_experience": {
+        "forme": "agression",
+        "contenu_propositionnel": "nul, et contredit par le canal traduit",
+        "prediction_preregistree": "sortie dégénérée, refus de mesurer — toute sortie non dégénérée nomme le canal réellement lu (prosodie)"
+      }
+    }
+  ]
+}
