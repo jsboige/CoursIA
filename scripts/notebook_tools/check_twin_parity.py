@@ -89,6 +89,8 @@ Usage
     python check_twin_parity.py --check
     # restreindre a une famille
     python check_twin_parity.py --family SMT/Z3-API
+    # une seule paire (ne parcourt que celle-ci ; nom inconnu = rc 2, #20197)
+    python check_twin_parity.py --check --pair "SW-9 JSON-LD"
     # rebaseline apres audit firsthand (ecrit les SHAs courants).
     # --pair + --by obligatoires en pratique : le selecteur evite de rebaseliner
     # les 116 paires, --by evite d'heriter de l'auteur de l'audit precedent.
@@ -126,7 +128,10 @@ Exit codes
     1 -- un ou plusieurs DRIFT / MISSING (mode --check fleet-wide)
          OU nouveau(s) DRIFT introduit(s) par la PR (mode --check --per-pair)
          OU un ou plusieurs drift legacy/content/missing en --ci-strict --check
-    2 -- erreur (registre illisible, pas un depot git)
+    2 -- erreur (registre illisible, pas un depot git, paire ou famille inconnue
+         pour --check / --verify-recorded-sha)
+    3 -- mesure interrompue : un appel git a depasse `_GIT_TIMEOUT_S` (#20197).
+         Aucun verdict n'est rendu : ni vert, ni drift.
 
 Voir aussi
 ----------
@@ -173,11 +178,30 @@ def _is_fork_pressure(exc: OSError) -> bool:
     return exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK)
 
 
+# --- borne de delai par appel git (#20197) -----------------------------------
+# Sans borne, un appel git bloque lit comme un gel de l'organe. Au-dela de la
+# borne, la mesure est interrompue et AUCUN verdict n'est rendu (ni vert, ni
+# drift) : un resultat vide se lirait « rien a signaler ».
+# Calibrage mesure : `ls-tree` / `show` durent de quelques ms a ~3 s (fetch
+# paresseux sur clone partiel, po-2024). `rev-list --objects HEAD`
+# (`_blob_ancestor_in`) parcourt tout l'historique et a depasse 60 s sous charge
+# (load ~7 sur 4 coeurs, clone de 722 packs) : une borne de 60 s la prenait pour
+# un blocage. 300 s laisse passer cet appel legitime et rend tout de meme un
+# blocage reel visible en rc 3 au lieu d'un silence.
+_GIT_TIMEOUT_S = 300
+
+
+class GitTimeoutError(RuntimeError):
+    """Un appel git a depasse `_GIT_TIMEOUT_S` : la mesure est interrompue."""
+
+
 def _run_git(args: list[str], *, cwd=None, text: bool = True) -> subprocess.CompletedProcess:
     """`subprocess.run` de git, avec repli borne sur la pression de fork.
 
     Seul `EAGAIN` est retente ; toute autre `OSError` remonte inchangee, pour
     qu'une panne reelle reste visible au lieu d'etre diluee en trois essais.
+    Un appel qui depasse `_GIT_TIMEOUT_S` leve `GitTimeoutError` (jamais avale,
+    jamais retente : un remote lent ne se repare pas en relancant).
     """
     last_exc = None
     for attempt in range(_EAGAIN_ATTEMPTS):
@@ -185,7 +209,14 @@ def _run_git(args: list[str], *, cwd=None, text: bool = True) -> subprocess.Comp
             time.sleep(_EAGAIN_BACKOFF[attempt - 1])
         options = {"encoding": "utf-8", "errors": "replace"} if text else {}
         try:
-            return subprocess.run(args, cwd=cwd, capture_output=True, text=text, **options)
+            return subprocess.run(args, cwd=cwd, capture_output=True, text=text,
+                                  timeout=_GIT_TIMEOUT_S, **options)
+        except subprocess.TimeoutExpired as exc:
+            raise GitTimeoutError(
+                f"mesure interrompue : `{' '.join(args)}` n'a pas repondu en "
+                f"{_GIT_TIMEOUT_S} s (remote lent ou fetch paresseux bloque). "
+                f"Aucun verdict n'est rendu pour ce controle."
+            ) from exc
         except OSError as exc:
             if not _is_fork_pressure(exc):
                 raise
@@ -1625,7 +1656,28 @@ def _classify_per_pair(base_status: str, head_status: str) -> str:
     return "DRIFT_PRE_EXISTING"
 
 
+def _paire_inconnue(nom: str, pairs: list) -> None:
+    """Message d'erreur pour un `--pair` qui ne nomme aucune paire (#20197)."""
+    names = sorted({pp.get("name", "?") for pp in pairs})
+    print(
+        f"Aucune paire nommee '{nom}'. "
+        f"Noms connus : {', '.join(names[:10])}{'...' if len(names) > 10 else ''}",
+        file=sys.stderr,
+    )
+
+
 def main(argv=None) -> int:
+    """Point d'entree CLI. Un appel git qui depasse `_GIT_TIMEOUT_S` interrompt la
+    mesure : message explicite sur stderr et rc 3 (distinct de 1 = drift et de
+    2 = erreur de registre ou d'usage), jamais une trace brute ni un verdict vide."""
+    try:
+        return _main(argv)
+    except GitTimeoutError as exc:
+        print(f"ERREUR : {exc}", file=sys.stderr)
+        return 3
+
+
+def _main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--registry", default=str(DEFAULT_REGISTRY),
                    help=f"Chemin du registre YAML (defaut: {DEFAULT_REGISTRY.name})")
@@ -1673,8 +1725,10 @@ def main(argv=None) -> int:
                         "QUEL drift (vs la semantique 'DRIFT_or_MISSING only' historique). "
                         "Distingue erreur d'outil vs constat de drift (cf L948/L949, c.1240).")
     p.add_argument("--pair", default=None,
-                   help="Restreindre --update a une paire nommee (ex. 'Search-9-LP'). "
-                        "Impossible a combiner avec --family.")
+                   help="Restreindre a une paire nommee (ex. 'Search-9-LP') : applique par "
+                        "--update, --migrate-audits, --check et --verify-recorded-sha (#20197) ; "
+                        "ignore par --per-pair, --coverage et --summary-by-verdict. Nom inconnu "
+                        "= rc 2. Impossible a combiner avec --family.")
     p.add_argument("--yes-all-pairs", action="store_true",
                    help="Opt-in explicite pour rebaseline TOUTES les paires du registre "
                         "avec --update. Sans ce flag (ou --family/--pair), --update refuse.")
@@ -2205,6 +2259,13 @@ def main(argv=None) -> int:
         # en CI on cible generalement tout le registre, mais un audit local peut
         # vouloir borner a une famille.
         target_pairs = pairs
+        if args.pair is not None:
+            # #20197 : --pair etait accepte puis ignore ici aussi. Nom inconnu = rc 2.
+            selection = [pp for pp in target_pairs if pp.get("name") == args.pair]
+            if not selection:
+                _paire_inconnue(args.pair, target_pairs)
+                return 2
+            target_pairs = selection
         if args.family:
             target_pairs = [pp for pp in target_pairs if pp.get("family") == args.family]
             if not target_pairs:
@@ -2265,6 +2326,20 @@ def main(argv=None) -> int:
             return 1
         return 0
 
+    # --pair (#20197) : restreint --check a la paire nommee. Avant ce correctif il
+    # etait accepte puis ignore : les 157 paires etaient parcourues (628 appels git
+    # pour le controle d'une seule). Un nom inconnu echoue en nommant les noms
+    # connus, jamais en retombant sur le registre entier.
+    if args.pair is not None:
+        selection = [pp for pp in pairs if pp.get("name") == args.pair]
+        if not selection:
+            _paire_inconnue(args.pair, pairs)
+            return 2
+        pairs = selection
+    # Selecteur sans paire (--family inconnue, deja signalee plus haut) : rien a
+    # mesurer. C'est une erreur d'usage, jamais un succes sur zero paire (#20197).
+    if not pairs and (args.pair is not None or args.family):
+        return 2
     results = [check_pair(repo_root, pp) for pp in pairs]
     n_ok = sum(1 for r in results if r["status"] == "OK")
     n_drift = sum(1 for r in results if r["status"] == "DRIFT")
