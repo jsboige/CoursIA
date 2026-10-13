@@ -26,7 +26,9 @@ Window and schedule:
 
 Both conventions hold the same assets and earn the returns of a euro investor
 (closes converted to EUR): only the volatility measure changes, as in H2 of
-#19072.
+#19072. ``replay(..., account="USD")`` holds the same weights on a USD account
+(USD returns, cash in dollars): the series of the core in the league matrix
+(``league_core_series.py``, #20365). The shadow candidate keeps the EUR default.
 
 Data: Yahoo daily closes through ``panier_loader.ensure_symbol``, downloaded into
 a temporary folder at each pass (``auto_adjust=True``: a dividend adjusts the past
@@ -45,6 +47,7 @@ import pandas as pd
 import inverse_vol_currency as ivc
 
 CONVENTIONS = ("U", "F")
+ACCOUNTS = ("EUR", "USD")
 HISTORY_DAYS = 120   # calendar days of closes before ``start``: LOOKBACK + 1 sessions, with room
 
 
@@ -60,10 +63,18 @@ def schedule_dates(index: pd.DatetimeIndex, start: str, end: str) -> pd.Datetime
 
 
 def replay(us_closes: dict[str, pd.Series], fx: pd.Series, start: str, end: str,
-           convention: str, target: float, harness=None) -> dict:
-    """Daily net returns in EUR of the rule opened on ``start``, over ``[start, end)``."""
+           convention: str, target: float, harness=None, account: str = "EUR") -> dict:
+    """Daily net returns of the rule opened on ``start``, over ``[start, end)``.
+
+    ``account`` is the currency of the account that holds the lines: ``"EUR"`` (the
+    shadow candidate, a euro investor) or ``"USD"`` (the same weights on a USD
+    account, whose cash is in dollars: the league matrix of #20365 correlates USD
+    accounts). The weights do not depend on it, only the returns they earn.
+    """
     if convention not in CONVENTIONS:
         raise ValueError(f"convention must be one of {CONVENTIONS}, got {convention!r}")
+    if account not in ACCOUNTS:
+        raise ValueError(f"account must be one of {ACCOUNTS}, got {account!r}")
     harness = harness or ivc.load_harness()
     panel = ivc.build_panel(us_closes, fx)
     keep = panel["usd"].index < pd.Timestamp(end)
@@ -74,8 +85,8 @@ def replay(us_closes: dict[str, pd.Series], fx: pd.Series, start: str, end: str,
 
     prices = usd if convention == "U" else eur
     schedule = {d: ivc.target_weights(harness, prices, d, target) for d in rebal}
-    eur_ret = eur.pct_change().fillna(0.0)
-    sim = ivc.simulate(eur_ret[eur_ret.index >= rebal[0]], schedule)
+    held_ret = (eur if account == "EUR" else usd).pct_change().fillna(0.0)
+    sim = ivc.simulate(held_ret[held_ret.index >= rebal[0]], schedule)
 
     rets, turnover = sim["returns"], sim["turnover"]
     # fee of each session in fraction of the starting equity: the equity before the fee times its rate
