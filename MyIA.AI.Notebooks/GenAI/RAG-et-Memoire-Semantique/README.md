@@ -210,7 +210,7 @@ Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`
 - [Notebook pratique — Tokenisation from scratch](04-Tokenisation-From-Scratch.ipynb)
 - [Notebook pratique — Stockage vectoriel](05-Stockage-Vectoriel.ipynb)
 - [Notebook pratique — Stockage vectoriel, serveur](05b-Stockage-Vectoriel-Serveur.ipynb)
-- [Notebook pratique — Kernel Memory in-process (.NET 9)](06-KernelMemory-InProcess.ipynb)
+- [Notebook pratique — Kernel Memory in-process (.NET 10)](06-KernelMemory-InProcess.ipynb)
 - [Notebook pratique — Kernel Memory Python, mode service](07-KernelMemory-Python-Quickstart.ipynb)
 - [Notebook pratique — Kernel Memory hybride BM25+dense](08-KernelMemory-Hybrid-Search.ipynb)
 - [Notebook pratique — Kernel Memory multimodal, pont vision](09-KernelMemory-Multimodal.ipynb)
