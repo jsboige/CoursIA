@@ -87,6 +87,7 @@ Modes (convention check_notebook_navlinks.py / check_docs_links.py)
     python check_notebook_nav_chain.py                  # scan complet, exit 1 si findings
     python check_notebook_nav_chain.py --baseline       # ecrit scripts/tests/baseline_nb_nav_chain.json
     python check_notebook_nav_chain.py --check          # check vs baseline (exit 1 si NEW)
+    python check_notebook_nav_chain.py --check --diff-base origin/main  # NEW bloquent seulement s'ils sont imputables au diff
     python check_notebook_nav_chain.py --family Sharp   # limiter le RAPPORT a une famille
     python check_notebook_nav_chain.py NB.ipynb         # limiter le rapport a la serie de ce notebook
     python check_notebook_nav_chain.py --json           # sortie machine
@@ -107,6 +108,7 @@ Voir aussi
 """
 import argparse
 import json
+import subprocess
 import sys
 from collections import defaultdict, deque
 from pathlib import Path
@@ -552,6 +554,26 @@ def _load_diff_files(path):
         return set()
 
 
+def _changed_since(base):
+    """Chemins changes entre `base` et HEAD (`git diff --name-only base...HEAD`).
+
+    Meme diff que le workflow d'origine (`pr_files.txt`). C'est le checker qui
+    le calcule a partir de la base, comme les gardes soeurs (`--base` du
+    cliquet split-reading, `--diff` de prose-counts) : la voie rapide n'a donc
+    pas de jeton de liste a fournir. Git en echec = diff inconnu = ensemble vide,
+    fail-closed comme un fichier absent.
+    """
+    proc = subprocess.run(
+        ["git", "-c", "core.quotePath=false", "diff", "--name-only", f"{base}...HEAD"],
+        cwd=REPO_ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        print(f"WARN: git diff {base}...HEAD en echec, diff inconnu (fail-closed) : "
+              f"{proc.stderr.strip()}", file=sys.stderr)
+        return set()
+    return {line.strip() for line in proc.stdout.splitlines() if line.strip()}
+
+
 def _partition_new_by_diff(new, diff):
     """(blocking, warning) sur les NEW findings selon l'imputabilite au diff.
 
@@ -597,13 +619,19 @@ def main(argv=None):
                         help="Ecrire le baseline (snapshot des findings actuels)")
     parser.add_argument("--check", action="store_true",
                         help="Comparer au baseline ; exit 1 si NEW finding (regression)")
-    parser.add_argument("--diff-files", metavar="FILE", dest="diff_files",
-                        help="Avec --check : fichier des chemins changes par la PR "
-                             "(un par ligne, repo-relatifs POSIX). Seuls les NEW "
-                             "findings IMPUTABLES au diff blocquent (notebook du "
-                             "diff, ou serie dont le README est touche) ; les autres "
-                             "deviennent avertissements. Fichier absent/vide = "
-                             "fail-closed : tout NEW blocque (decision c.5854935546).")
+    scope = parser.add_mutually_exclusive_group()
+    scope.add_argument("--diff-files", metavar="FILE", dest="diff_files",
+                       help="Avec --check : fichier des chemins changes par la PR "
+                            "(un par ligne, repo-relatifs POSIX). Seuls les NEW "
+                            "findings IMPUTABLES au diff blocquent (notebook du "
+                            "diff, ou serie dont le README est touche) ; les autres "
+                            "deviennent avertissements. Fichier absent/vide = "
+                            "fail-closed : tout NEW blocque (decision c.5854935546).")
+    scope.add_argument("--diff-base", metavar="REF", dest="diff_base",
+                       help="Avec --check : meme portee que --diff-files, mais le "
+                            "diff est calcule ici (`git diff --name-only REF...HEAD`). "
+                            "C'est la forme de la voie rapide, qui fournit la base "
+                            "via {base_ref}.")
     parser.add_argument("--json", action="store_true", help="Sortie JSON machine-readable")
     parser.add_argument("--quiet", action="store_true", help="Sortie minimale (CI)")
     parser.add_argument("--include-untracked", action="store_true", default=False,
@@ -666,13 +694,14 @@ def main(argv=None):
         current = _finding_keys(report)
         new = sorted(current - known)
         fixed = sorted(known - current)
-        if args.diff_files:
+        if args.diff_files or args.diff_base:
             # Decision c.5854935546 : la jambe ne rougit que sur un NEW finding
             # IMPUTABLE a la PR — notebook du diff, ou serie dont le README est
             # touche. Un NEW sur un notebook hors diff est un avertissement : il
             # n'est pas le fait de cette PR (typiquement un orphelin ne du merge
             # d'une AUTRE PR entre-temps).
-            diff = _load_diff_files(args.diff_files)
+            diff = (_load_diff_files(args.diff_files) if args.diff_files
+                    else _changed_since(args.diff_base))
             blocking, warning = _partition_new_by_diff(new, diff)
             if warning and not args.quiet:
                 print(f"WARN: {len(warning)} NEW finding(s) hors diff "
@@ -684,7 +713,8 @@ def main(argv=None):
         if new:
             if not args.quiet:
                 print(f"FAIL: {len(new)} NEW finding(s) vs baseline"
-                      + (" (imputables au diff)" if args.diff_files else "") + ":")
+                      + (" (imputables au diff)" if args.diff_files or args.diff_base else "")
+                      + ":")
                 for kind, notebook, target in new:
                     extra = f" -> {target}" if target else ""
                     print(f"  [{kind}] {notebook}{extra}")
