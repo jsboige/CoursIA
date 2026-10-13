@@ -56,7 +56,11 @@ class DualMomentumNoTLT(QCAlgorithm):
         scores = {}
         for ticker in self.tickers:
             symbol = self.symbols[ticker]
-            history = self.history(symbol, self.lookback + 5, Resolution.DAILY)
+            # On the 13:00 close slice of a US half-session, a daily history request
+            # by bar count comes back about 21 bars short (measured in #20286). Ask
+            # for twice the bars and keep the most recent ones.
+            history = self.history(symbol, 2 * (self.lookback + 5), Resolution.DAILY)
+            history = history.iloc[-(self.lookback + 5):]
             if len(history) < self.lookback:
                 continue
 
