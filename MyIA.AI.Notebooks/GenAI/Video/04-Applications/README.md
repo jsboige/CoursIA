@@ -75,13 +75,6 @@ OPENAI_API_KEY=sk-...
 MINIMAX_GENAI_API_KEY=...   # 04-5 (H3/v2 HD/2K + audio) et 04-5b (video-01/v1 muet) : même clé, services cloud Hailuo (5 générations HD/jour)
 ```
 
-### Docker Services (optionnel)
-```bash
-cd docker-configurations/services/comfyui-qwen
-docker-compose up -d
-```
-Accès : http://localhost:8188
-
 ### Dépendances
 ```bash
 pip install -r requirements.txt
@@ -140,5 +133,5 @@ Batch → Queue → Processing → QC → Distribution → Analytics
 ## Ressources
 
 - [Documentation Video principale](../README.md)
-- [Guide ComfyUI](../../00-GenAI-Environment/README.md)
+- [Guide de l'environnement GenAI](../../00-GenAI-Environment/README.md)
 - [GenAI Services](../../../../docs/genai/genai-services.md)
