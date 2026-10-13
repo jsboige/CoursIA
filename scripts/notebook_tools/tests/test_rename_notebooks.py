@@ -228,6 +228,26 @@ class TestMappingGrammarOnBasename(unittest.TestCase):
             self.assertEqual(rc, 0)
             self.assertNotIn("hors grammaire", out.getvalue())
 
+    def test_target_violation_ignores_posix_path_prefix(self):
+        """Site l.364 (#18450) : un chemin complet passe a target_violation
+        ne doit pas tomber sur la raison generique « hors grammaire » alors
+        que le basename est canonique."""
+        full = "MyIA.AI.Notebooks/Probas/Applications/Infer-20-Quotients-Python.ipynb"
+        self.assertIsNone(rn.target_violation(full))
+
+    def test_target_violation_ignores_windows_path_prefix(self):
+        full = "MyIA.AI.Notebooks\\Probas\\Applications\\Infer-20-Quotients-Python.ipynb"
+        self.assertIsNone(rn.target_violation(full))
+
+    def test_target_violation_full_path_still_flags_real_violation(self):
+        """L'extraction du basename ne doit pas avaler une vraie violation :
+        un basename hors grammaire (separateur _) garde sa raison propre,
+        pas la raison generique d'un chemin complet."""
+        full = "MyIA.AI.Notebooks/Probas/Applications/Infer_20_Quotients_Python.ipynb"
+        viol = rn.target_violation(full)
+        self.assertIsNotNone(viol)
+        self.assertIn("hors grammaire", viol)
+
 
 class TestDeclaredFixturesExist(unittest.TestCase):
     """Une declaration perimee (fichier deplace ou supprime) protegerait un

@@ -68,7 +68,7 @@ layout: dense
 
 <img src="./images/img_001.png" alt="Environnement multi-agent : plusieurs decideurs en interaction, exemple du jeu de Morra" style="display:block; margin:4px auto 0; max-height:88px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebook : [GameTheory-01-Setup](../../MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup.ipynb) — environnement multi-agent, jeu de Morra.*
+*Notebook : [GameTheory-01-Setup-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup-Python.ipynb) — environnement multi-agent, jeu de Morra.*
 
 ---
 layout: section
@@ -113,7 +113,7 @@ layout: dense
 <img src="./images/img_005.png" alt="Meilleure reponse aux strategies des autres joueurs" style="width:100%; height:28px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-02-NormalForm](../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb) (matrices, dilemme du prisonnier, IESDS) · [GameTheory-04-NashEquilibrium](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium.ipynb) (Nash, meilleure reponse) · [GameTheory-02b-Lean-Definitions](../../MyIA.AI.Notebooks/GameTheory/GameTheory-02b-Lean-Definitions.ipynb) (definitions formelles en Lean).*
+*Notebooks : [GameTheory-02-NormalForm-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb) (matrices, dilemme du prisonnier, IESDS) · [GameTheory-04-NashEquilibrium-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb) (Nash, meilleure reponse) · [GameTheory-02b-Lean-Definitions-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-02b-Lean-Definitions-Lean.ipynb) (definitions formelles en Lean).*
 
 ---
 layout: dense
@@ -144,7 +144,7 @@ layout: dense
 <img src="./images/img_008.png" alt="Calcul des gains esperes : bataille des sexes" style="width:100%; height:130px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-05-ZeroSum-Minimax](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax.ipynb) (support mixte, somme nulle) · [GameTheory-04c-NashExistence-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb) (existence calculee).*
+*Notebooks : [GameTheory-05-ZeroSum-Minimax-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) (support mixte, somme nulle) · [GameTheory-04c-NashExistence-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb) (existence calculee).*
 
 ---
 layout: dense
@@ -160,12 +160,12 @@ layout: dense
 
 ## Existence de Nash
 
-- [GameTheory-04b-Lean-NashExistence](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04b-Lean-NashExistence.ipynb)
+- [GameTheory-04b-Lean-NashExistence-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04b-Lean-NashExistence-Lean.ipynb)
   - Simplexe standard (compact, convexe) -> point fixe -> equilibre mixte
 
 ## Von Neumann / minimax
 
-- [GameTheory-05b-Lean-Minimax](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05b-Lean-Minimax.ipynb)
+- [GameTheory-05b-Lean-Minimax-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb)
   - Point de selle via le theoreme de Sion (Mathlib), zero `sorry`
 
 ---
@@ -201,7 +201,7 @@ layout: dense
 <img src="./images/img_012.png" alt="Regle impaire : nombre d'equilibres d'un jeu" style="width:100%; height:120px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) (dominance faible, regle impaire) · [GameTheory-20-Chemin-Minimal-Robinson-Goforth](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth.ipynb) · [GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite.ipynb).*
+*Notebooks : [GameTheory-03-Topology2x2-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) (dominance faible, regle impaire) · [GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb) · [GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb).*
 
 ---
 layout: dense
@@ -236,7 +236,7 @@ layout: dense
 <img src="./images/img_015.png" alt="Equilibre parfait de sous-jeu (SPE) : menaces credibles" style="width:100%; height:72px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-07-ExtensiveForm](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm.ipynb) (arbres, tours successifs) · [GameTheory-09-BackwardInduction](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction.ipynb) (mille-pattes) · [GameTheory-10-ForwardInduction-SPE](../../MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb).*
+*Notebooks : [GameTheory-07-ExtensiveForm-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb) (arbres, tours successifs) · [GameTheory-09-BackwardInduction-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb) (mille-pattes) · [GameTheory-10-ForwardInduction-SPE-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb).*
 
 ---
 layout: dense
@@ -253,7 +253,7 @@ layout: dense
   - Autres: jouer equilibres de Nash = 1 equilibre de sous-jeu
   - Mais autres equilibres de sous-jeu possibles (cooperation)
 
-*Notebook : [GameTheory-10-ForwardInduction-SPE](../../MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb) (equilibres de sous-jeu, induction sur plusieurs manches).*
+*Notebook : [GameTheory-10-ForwardInduction-SPE-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb) (equilibres de sous-jeu, induction sur plusieurs manches).*
 
 ---
 layout: dense
@@ -274,7 +274,7 @@ layout: dense
 
 <img src="./images/img_017.png" alt="Se lier les mains : bruler le pont rend la menace credible" style="display:block; margin:6px auto 2px; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-09b-Commitment-Stackelberg](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg.ipynb) (se lier les mains, menace credible) · [GameTheory-06c-RepeatedGames-FolkTheorem](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (strategies de punition).*
+*Notebooks : [GameTheory-09b-Commitment-Stackelberg-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb) (se lier les mains, menace credible) · [GameTheory-06c-RepeatedGames-FolkTheorem-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb) (strategies de punition).*
 
 ---
 layout: dense
@@ -302,7 +302,7 @@ layout: dense
 <img src="./images/img_021.png" alt="Jeux repetes : punition perpetuelle et evolution de la confiance" style="width:100%; height:90px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-06c-RepeatedGames-FolkTheorem](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (folk theorem) · [GameTheory-06-EvolutionTrust](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust.ipynb) (evolution de la confiance).*
+*Notebooks : [GameTheory-06c-RepeatedGames-FolkTheorem-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb) (folk theorem) · [GameTheory-06-EvolutionTrust-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb) (evolution de la confiance).*
 
 ---
 layout: dense
@@ -312,7 +312,7 @@ layout: dense
 
 ## Grim trigger certifie
 
-- [GameTheory-06b-Lean-RepeatedGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames.ipynb) : compagnon formel du 06c
+- [GameTheory-06b-Lean-RepeatedGames-Lean-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames-Lean-Python.ipynb) : compagnon formel du 06c
   - Jeu de stage, flux actualises, `grim_trigger_is_NE`
   - Seuil de credibilite `delta >= (T-R)/(T-P)` certifie, zero `sorry`
 
@@ -334,7 +334,7 @@ layout: dense
   - Position perdante (P-position) ssi Grundy = 0 -- l'induction arrière devient un calcul
 - Compagnons formels du corpus : port Lean « from scratch », puis lake natif dédié
 
-*Notebooks : [GameTheory-08-CombinatorialGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames.ipynb) (Nim, Grundy) · [GameTheory-08b-Lean-CombinatorialGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08b-Lean-CombinatorialGames.ipynb) (port Lean from scratch) · [GameTheory-08c-CombinatorialGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb) · [GameTheory-08d-Lean-CGT-Native](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08d-Lean-CGT-Native.ipynb) (lake `conway_cgt_lean`).*
+*Notebooks : [GameTheory-08-CombinatorialGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb) (Nim, Grundy) · [GameTheory-08b-Lean-CombinatorialGames-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) (port Lean from scratch) · [GameTheory-08c-CombinatorialGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb) · [GameTheory-08d-Lean-CGT-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08d-Lean-CGT-Lean.ipynb) (lake `conway_cgt_lean`).*
 
 ---
 layout: dense
@@ -361,7 +361,7 @@ layout: dense
 
 <img src="./images/img_025.png" alt="Equilibre de lame de couteau : instabilite autour de x=0" style="display:block; margin:4px auto; width:100%; max-height:36px; object-fit:contain;">
 
-*Notebook : [GameTheory-03-Topology2x2](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) — topologie complete des jeux 2x2, cf slide suivante.*
+*Notebook : [GameTheory-03-Topology2x2-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) — topologie complete des jeux 2x2, cf slide suivante.*
 
 ---
 layout: dense
@@ -390,7 +390,7 @@ layout: dense
 <img src="./images/img_028.png" alt="Resolution de pierre-papier-ciseaux : support des strategies mixtes" style="width:100%; height:100px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-03d-Plan-de-deformation](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb) (deformation, pierre-papier-ciseaux) · [GameTheory-05-ZeroSum-Minimax](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax.ipynb) (somme nulle, EU = 0).*
+*Notebooks : [GameTheory-03e-Plan-de-deformation-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Plan-de-deformation-Python.ipynb) (deformation, pierre-papier-ciseaux) · [GameTheory-05-ZeroSum-Minimax-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) (somme nulle, EU = 0).*
 
 ---
 layout: dense
@@ -400,18 +400,18 @@ layout: dense
 
 ## De la matrice au paysage ordinal
 
-- [GameTheory-03a-Chemins-de-Swaps](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03a-Chemins-de-Swaps.ipynb) : relier les jeux par echanges de preferences
-- [GameTheory-03b-Chambres-et-Murs](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-et-Murs.ipynb) : partitionner l'espace des jeux 2x2
+- [GameTheory-03b-Chemins-de-Swaps-Lean-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb) : relier les jeux par echanges de preferences
+- [GameTheory-03c-Chambres-et-Murs-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03c-Chambres-et-Murs-Python.ipynb) : partitionner l'espace des jeux 2x2
 
 ## Deformations et quotient
 
-- [GameTheory-03d-Plan-de-deformation](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb) : chemins continus entre classes
-- [GameTheory-03-Topology2x2 (§9)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb) : deriver la structure quotient (absorbé depuis l'ex-03g)
+- [GameTheory-03e-Plan-de-deformation-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Plan-de-deformation-Python.ipynb) : chemins continus entre classes
+- [GameTheory-03-Topology2x2-Python (§9)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) : deriver la structure quotient (absorbé depuis l'ex-03g)
 
 ## Parcours et extensions
 
-- [GameTheory-03e-Meta-Actions-Tarifees (§4-8)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees.ipynb) : versant d'integration (absorbé depuis l'ex-03f)
-  - [GameTheory-03e-Meta-Actions-Tarifees](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees.ipynb) · [GameTheory-03h-Deux-Especes-de-Fleches](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03h-Deux-Especes-de-Fleches.ipynb) · [GameTheory-03c-Le-Joueur-LLM](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03c-Le-Joueur-LLM.ipynb)
+- [GameTheory-03f-Meta-Actions-Tarifees-Python (§4-8)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb) : versant d'integration (absorbé depuis l'ex-03f)
+  - [GameTheory-03f-Meta-Actions-Tarifees-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb) · [GameTheory-03g-Deux-Especes-de-Fleches-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03g-Deux-Especes-de-Fleches-Python.ipynb) · [GameTheory-03d-Le-Joueur-LLM-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Le-Joueur-LLM-Python.ipynb)
 
 ---
 layout: default
@@ -481,7 +481,7 @@ layout: dense
 
 <img src="./images/img_032.png" alt="Formalisation Bayesienne : joueurs, etats, types et croyances" style="display:block; margin:4px auto; max-height:30px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebook : [GameTheory-11-BayesianGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb) (types, croyances, formalisation).*
+*Notebook : [GameTheory-11-BayesianGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Python.ipynb) (types, croyances, formalisation).*
 
 ---
 layout: dense
@@ -505,7 +505,7 @@ layout: dense
 
 <img src="./images/img_034.png" alt="Dilemme du Sheriff : seuil p>1/3 pour tirer" style="display:block; margin:4px auto; max-height:70px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-11-BayesianGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb) (types, Nash bayesien) · [GameTheory-11b-Lean-BayesianGamesExt](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11b-Lean-BayesianGamesExt.ipynb) (extension Lean).*
+*Notebooks : [GameTheory-11-BayesianGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Python.ipynb) (types, Nash bayesien) · [GameTheory-11b-Lean-BayesianGamesExt-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) (extension Lean).*
 
 ---
 layout: dense
@@ -526,7 +526,7 @@ layout: dense
 
 - Profile stratégique et système de croyance consistant tels que les stratégies sont sequentiellement rationnelles
 
-*Notebook : [GameTheory-17b-Asymmetric-Information](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information.ipynb) — croyances consistantes et rationalite sequentielle.*
+*Notebook : [GameTheory-17b-Asymmetric-Information-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb) — croyances consistantes et rationalite sequentielle.*
 
 ---
 layout: dense
@@ -552,7 +552,7 @@ layout: dense
 
 <img src="./images/img_037.png" alt="Exemples de PBE : pooling, separating et semi-separation" style="display:block; margin:4px auto; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-12-ReputationGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb) (pooling/separating) · [GameTheory-17d-Lean-Screening-Signaling](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling.ipynb) (screening formalise).*
+*Notebooks : [GameTheory-12-ReputationGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Python.ipynb) (pooling/separating) · [GameTheory-17d-Lean-Screening-Signaling-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) (screening formalise).*
 
 ---
 layout: dense
@@ -568,7 +568,7 @@ layout: dense
   - Convergence vers l'équilibre de Nash -- la famille qui a révolutionné la résolution du poker
   - Safe subgame solving : recoller une sous-partie sans supposer les croyances (le mauvais recollement produit un témoin adversarial)
 
-*Notebooks : [GameTheory-13-ImperfectInfo-CFR](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb) (CFR, Kuhn) · [GameTheory-13b-Safe-Subgame-Solving](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving.ipynb) · [GameTheory-13c-Safe-Subgame-Solving-Csharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13c-Safe-Subgame-Solving-Csharp.ipynb) (jumeau C#) · [GameTheory-13d-Optimistic-CFR](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR.ipynb).*
+*Notebooks : [GameTheory-13-ImperfectInfo-CFR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) (CFR, Kuhn) · [GameTheory-13b-Safe-Subgame-Solving-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) · [GameTheory-13c-Safe-Subgame-Solving-CSharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13c-Safe-Subgame-Solving-CSharp.ipynb) (jumeau C#) · [GameTheory-13d-Optimistic-CFR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb).*
 
 ---
 layout: section
@@ -612,7 +612,7 @@ layout: dense
 - Structures de coalition optimales: NP-Hard
   - Bons résultats avec exploration du graphe de structure
 
-*Notebooks : [GameTheory-15-CooperativeGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames.ipynb) (Shapley, noyau) · [GameTheory-15b-Lean-CooperativeGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb) (axiomes de Shapley prouves en Lean) · [GameTheory-15d-Mobius-Coalitions](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Mobius-Coalitions.ipynb).*
+*Notebooks : [GameTheory-15-CooperativeGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) (Shapley, noyau) · [GameTheory-15b-Lean-CooperativeGames-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) (axiomes de Shapley prouves en Lean) · [GameTheory-15d-Mobius-Coalitions-Lean-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Mobius-Coalitions-Lean-Python.ipynb).*
 
 ---
 layout: section
@@ -647,7 +647,7 @@ layout: dense
   - **DSIC**: Implementation en stratégies dominantes
   - **BNIC**: Equilibre de Nash Bayesien (plus faible)
 
-*Notebooks : [GameTheory-16-MechanismDesign](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign.ipynb) (revelation, DSIC/BNIC) · [GameTheory-16b-Automated-Mechanism-Design](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design.ipynb) (AMD) ; `amd_star_DSIC/IR` prouves en Lean.*
+*Notebooks : [GameTheory-16-MechanismDesign-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb) (revelation, DSIC/BNIC) · [GameTheory-16b-Automated-Mechanism-Design-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) (AMD) ; `amd_star_DSIC/IR` prouves en Lean.*
 
 ---
 layout: dense
@@ -678,7 +678,7 @@ layout: dense
 
 <img src="./images/img_038.png" alt="Taxe VCG : T_i = U_max(sans i) - U_max(sans i, sans ressource j)" style="display:block; margin:6px auto 2px; max-height:68px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-16-MechanismDesign](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign.ipynb) (Vickrey, VCG, equivalence de revenu) · [GameTheory-16c-Extraction-de-Revenu-DSIC-IR](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR.ipynb) ; `vickrey_truthful` prouve en Lean. Bien commun : pas de notebook dedie.*
+*Notebooks : [GameTheory-16-MechanismDesign-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb) (Vickrey, VCG, equivalence de revenu) · [GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) ; `vickrey_truthful` prouve en Lean. Bien commun : pas de notebook dedie.*
 
 ---
 layout: dense
@@ -808,7 +808,7 @@ layout: default
 
 <img src="./images/img_048.png" alt="Negociation a offres alternees : fenetre d'accord et partage a l'equilibre" style="display:block; margin:10px auto; max-height:200px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-04d-Marchandage-Asymetrique](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique.ipynb) (offres alternees, discompte) · [GameTheory-07-ExtensiveForm](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm.ipynb) (ultimatum).*
+*Notebooks : [GameTheory-04d-Marchandage-Asymetrique-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) (offres alternees, discompte) · [GameTheory-07-ExtensiveForm-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb) (ultimatum).*
 
 ---
 layout: dense
@@ -909,7 +909,7 @@ layout: dense
 - Possibilite de dialogue -> maximisation commune
 - Division en partie cooperative et partie competitive (valeur co-co)
 
-*Notebook : [GameTheory-14-DifferentialGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb) (point de selle, Stackelberg differentiel).*
+*Notebook : [GameTheory-14-DifferentialGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb) (point de selle, Stackelberg differentiel).*
 
 ---
 layout: dense
@@ -962,7 +962,7 @@ layout: default
 
 - Details mathematiques dans les references du cours
 
-*Notebooks : [GameTheory-14-DifferentialGames](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb) (equilibres, LQ) · [GameTheory-09c-Stackelberg-SecurityGame](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame.ipynb) (Stackelberg). Poursuite-evasion par RRT : pas de notebook dedie.*
+*Notebooks : [GameTheory-14-DifferentialGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb) (equilibres, LQ) · [GameTheory-09c-Stackelberg-SecurityGame-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) (Stackelberg). Poursuite-evasion par RRT : pas de notebook dedie.*
 
 ---
 layout: dense
@@ -978,7 +978,7 @@ layout: dense
   - PSRO (Policy-Space Response Oracles) : population de meilleures reponses imbriquees, l'echelle ou FP s'essouffle
 - La serie se decline en jumeau C# pour les TP .NET
 
-*Notebooks : [GameTheory-17-MultiAgent-RL](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL.ipynb) (self-play, FP, NFSP, PSRO) · [GameTheory-17-MultiAgent-RL-Csharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb) (jumeau C#).*
+*Notebooks : [GameTheory-17-MultiAgent-RL-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Python.ipynb) (self-play, FP, NFSP, PSRO) · [GameTheory-17-MultiAgent-RL-CSharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb) (jumeau C#).*
 
 ---
 layout: dense
@@ -995,7 +995,7 @@ layout: dense
 - Compagnon formel : module `ProgramGames.Bounded` du lake `game_theory_lean` -- code public, budget, interprete `act`
 - Oracles reflexifs (Fallenstein, Taylor, Christiano 2015) : decider sur sa propre decision sans paradoxe
 
-*Notebooks : [GameTheory-06e-Open-Source-Game-Theory](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory.ipynb) · [GameTheory-06f-Bounded-Agents-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Python.ipynb) · [GameTheory-06f-Bounded-Proofs-Reasoning-Costs](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Proofs-Reasoning-Costs.ipynb) (preuves bornees) · [GameTheory-06g-Bounded-Agents-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06g-Bounded-Agents-Lean.ipynb) · [GameTheory-06g-Simulation-Based-Program-Equilibria](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06g-Simulation-Based-Program-Equilibria.ipynb) · [GameTheory-04e-Reflective-Oracles](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04e-Reflective-Oracles.ipynb).*
+*Notebooks : [GameTheory-06e-Open-Source-Game-Theory-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb) · [GameTheory-06f-Bounded-Agents-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Python.ipynb) · [GameTheory-06j-Bounded-Proofs-Reasoning-Costs-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06j-Bounded-Proofs-Reasoning-Costs-Python.ipynb) (preuves bornees) · [GameTheory-06f-Bounded-Agents-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Lean.ipynb) · [GameTheory-06g-Simulation-Based-Program-Equilibria-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06g-Simulation-Based-Program-Equilibria-Python.ipynb) · [GameTheory-04e-Reflective-Oracles-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04e-Reflective-Oracles-Python.ipynb).*
 
 ---
 layout: dense
@@ -1011,7 +1011,7 @@ layout: dense
 - Casser la composition : deux surfaces d'attaque ou la meilleure reponse composee cesse d'etre l'equilibre du jeu compose
 - Abstraction a dette mesurable (Kroer & Sandholm) : resoudre le jeu abstrait puis retransporter la strategie -- avec une borne sur ce que le detour coute au pire cas
 
-*Notebooks : [GameTheory-18-Open-Games-et-Lentilles](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18-Open-Games-et-Lentilles.ipynb) (lentilles, Hedges) · [GameTheory-18b-Casser-la-Composition](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18b-Casser-la-Composition.ipynb) (attaques) · [GameTheory-19-Abstraction-a-Dette](../../MyIA.AI.Notebooks/GameTheory/GameTheory-19-Abstraction-a-Dette.ipynb) (bornes d'abstraction).*
+*Notebooks : [GameTheory-18-Open-Games-et-Lentilles-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18-Open-Games-et-Lentilles-Python.ipynb) (lentilles, Hedges) · [GameTheory-18b-Casser-la-Composition-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18b-Casser-la-Composition-Python.ipynb) (attaques) · [GameTheory-19-Abstraction-a-Dette-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-19-Abstraction-a-Dette-Python.ipynb) (bornes d'abstraction).*
 
 ---
 layout: section

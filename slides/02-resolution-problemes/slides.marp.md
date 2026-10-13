@@ -1537,7 +1537,7 @@ Problèmes à satisfaction de contraintes
 > - `Sudoku/Sudoku-04-Z3.ipynb`
 
 > **Jeux combinatoires :**
-> - `GameTheory/GameTheory-08-CombinatorialGames.ipynb`
+> - `GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb`
 
 > **Sudoku (fil rouge) :**
 > - `Sudoku/Sudoku-01-Backtracking.ipynb` à `Sudoku-06-Infer.ipynb`

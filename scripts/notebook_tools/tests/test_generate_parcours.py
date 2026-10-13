@@ -358,7 +358,7 @@ class TestActuariatManifest:
         game_branch = next(group for group in manifest["branches"]
                            if group["id"] == "theorie-des-jeux")
         game_branch["notebooks"][0] = (
-            "GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb"
+            "GameTheory/GameTheory-15-CooperativeGames-CSharp.ipynb"
         )
         catalog = _catalog_with_pending_renames(manifest)
         compiled = gp.compile_parcours(
@@ -401,9 +401,9 @@ class TestActuariatManifest:
         ]
         assert compiled["groups"][3]["prerequisites"] == ["actuariat"]
         assert [notebook["path"] for notebook in compiled["groups"][3]["notebooks"]] == [
-            "GameTheory/GameTheory-15-CooperativeGames.ipynb",
-            "GameTheory/GameTheory-15f-Shapley-Groupes.ipynb",
-            "GameTheory/GameTheory-17b-Asymmetric-Information.ipynb",
+            "GameTheory/GameTheory-15-CooperativeGames-Python.ipynb",
+            "GameTheory/GameTheory-15f-Shapley-Groupes-Python.ipynb",
+            "GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb",
         ]
         assert all(notebook["execution_constraints"] for group in compiled["groups"]
                    for notebook in group["notebooks"])

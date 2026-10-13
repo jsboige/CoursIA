@@ -61,7 +61,7 @@ attributions:
 
   # ===== Passe 3 — GameTheory / RL / Sudoku (PR #12838) =====
   - arxiv_id: "1705.02955"
-    notebook: "MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving.ipynb"
+    notebook: "MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb"
     cell_index: 0
     expected_citation: "Brown & Sandholm (2017, arXiv:1705.02955) construisent quand meme le geste"
     source_pr: "#12838"

@@ -41,7 +41,7 @@ def series(tmp_path: Path) -> Path:
 
 
 def test_serie_propre_passe(series: Path):
-    for name in ["GameTheory-01-Setup.ipynb", "GameTheory-03a-X.ipynb",
+    for name in ["GameTheory-01-Setup-Python.ipynb", "GameTheory-03a-X.ipynb",
                  "GameTheory-08d-Y.lean", "GameTheory-26-Z.ipynb"]:
         (series / name).write_text("x", encoding="utf-8")
     assert violations(series) == []
@@ -62,7 +62,7 @@ def test_chiffre_unique_avec_tiret_est_violation(series: Path):
 
 def test_deux_chiffres_puis_lettre_passe(series: Path):
     # le 0 de 08d est suivi d'un chiffre -> pas une violation
-    (series / "GameTheory-08d-Lean-CGT-Native.ipynb").write_text("x",
+    (series / "GameTheory-08d-Lean-CGT-Lean.ipynb").write_text("x",
                                                                  encoding="utf-8")
     assert violations(series) == []
 

@@ -48,7 +48,7 @@ def _pad_track(track):
     return track
 
 def get_notebook_filename(num, name):
-    return f"GameTheory-{num:02d}-{name}.ipynb"
+    return f"GameTheory-{num:02d}-{name}-Python.ipynb"
 
 def get_side_track_filename(track_id):
     return f"GameTheory-{track_id}.ipynb"
@@ -200,23 +200,23 @@ def main():
 
     # Mapping of old names to new names for reference updates
     old_to_new = {
-        "GameTheory-8-BackwardInduction": "GameTheory-09-BackwardInduction",
-        "GameTheory-9-ForwardInduction-SPE": "GameTheory-10-ForwardInduction-SPE",
-        "GameTheory-10-BayesianGames": "GameTheory-11-BayesianGames",
-        "GameTheory-11-ReputationGames": "GameTheory-12-ReputationGames",
-        "GameTheory-12-ImperfectInfo-CFR": "GameTheory-13-ImperfectInfo-CFR",
-        "GameTheory-13-DifferentialGames": "GameTheory-14-DifferentialGames",
-        "GameTheory-14-CooperativeGames": "GameTheory-15-CooperativeGames",
-        "GameTheory-15-MechanismDesign": "GameTheory-16-MechanismDesign",
-        "GameTheory-16-MultiAgent-RL": "GameTheory-17-MultiAgent-RL",
-        "GameTheory-17-Lean-Definitions": "GameTheory-02b-Lean-Definitions",
-        "GameTheory-18-Lean-NashExistence": "GameTheory-04b-Lean-NashExistence",
+        "GameTheory-8-BackwardInduction": "GameTheory-09-BackwardInduction-Python",
+        "GameTheory-9-ForwardInduction-SPE": "GameTheory-10-ForwardInduction-SPE-Python",
+        "GameTheory-10-BayesianGames": "GameTheory-11-BayesianGames-Python",
+        "GameTheory-11-ReputationGames": "GameTheory-12-ReputationGames-Python",
+        "GameTheory-12-ImperfectInfo-CFR": "GameTheory-13-ImperfectInfo-CFR-Python",
+        "GameTheory-13-DifferentialGames": "GameTheory-14-DifferentialGames-Python",
+        "GameTheory-14-CooperativeGames": "GameTheory-15-CooperativeGames-Python",
+        "GameTheory-15-MechanismDesign": "GameTheory-16-MechanismDesign-Python",
+        "GameTheory-16-MultiAgent-RL": "GameTheory-17-MultiAgent-RL-Python",
+        "GameTheory-17-Lean-Definitions": "GameTheory-02b-Lean-Definitions-Lean",
+        "GameTheory-18-Lean-NashExistence": "GameTheory-04b-Lean-NashExistence-Lean",
         "GameTheory-18b-NashExistence-Python": "GameTheory-04c-NashExistence-Python",
-        "GameTheory-19-Lean-CombinatorialGames": "GameTheory-08b-Lean-CombinatorialGames",
+        "GameTheory-19-Lean-CombinatorialGames": "GameTheory-08b-Lean-CombinatorialGames-Lean",
         "GameTheory-19b-CombinatorialGames-Python": "GameTheory-08c-CombinatorialGames-Python",
         "GameTheory-20-Lean-SocialChoice": "GameTheory-16b-Lean-SocialChoice",
         "GameTheory-20b-SocialChoice-Python": "GameTheory-16c-SocialChoice-Python",
-        "GameTheory-21-Lean-CooperativeGames": "GameTheory-15b-Lean-CooperativeGames",
+        "GameTheory-21-Lean-CooperativeGames": "GameTheory-15b-Lean-CooperativeGames-Lean",
         "GameTheory-21b-CooperativeGames-Python": "GameTheory-15c-CooperativeGames-Python",
     }
 

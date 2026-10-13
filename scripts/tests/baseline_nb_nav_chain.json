@@ -67,62 +67,67 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-02c-Travelers-Dilemma-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-02c-Travelers-Dilemma-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03a-Chemins-de-Swaps.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Plan-de-deformation.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Plan-de-deformation-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-05b-Lean-Minimax.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames-Lean-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06d-Sympathie-vs-Engagement.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06d-Sympathie-vs-Engagement-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/GameTheory"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -132,67 +137,62 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06g-Bounded-Agents-Lean.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06h-Transparent-Institutions-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06h-Transparent-Institutions.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -202,82 +202,82 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16d-Echange-de-Reins.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16d-Echange-de-Reins-Lean-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16e-LLM-Players-Othman-Sandholm.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16e-LLM-Players-Othman-Sandholm-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16f-Lean-Assignment-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-17c-Lean-Lemons-Certificat.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-17c-Market-to-Balance-Sheet.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-18-Open-Games-et-Lentilles.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-17e-Bayesian-Persuasion-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-20c-Chemin-Minimal-3x2-Ordinal.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-18-Open-Games-et-Lentilles-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-23b-Lean-Assignment-Native.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-24-Humour-Banc.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-18d-Humour-Banc-Dur-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-24b-Humour-Banc-Dur.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-25-Bayesian-Persuasion.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {

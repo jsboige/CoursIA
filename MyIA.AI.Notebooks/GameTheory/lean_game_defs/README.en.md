@@ -19,8 +19,8 @@ Shared Lean 4 type definitions used by multiple GameTheory Lean projects. A **se
 - [Nash.lean](Nash.lean) — 139 lines. Best response, pure/mixed Nash equilibrium, strict dominance. Source: `GameTheory-16-Lean-Definitions.ipynb`.
 - [Combinatorial.lean](Combinatorial.lean) — 113 lines. `GameTree`, minimax evaluation, win/loss determination. Source: `GameTheory-18-Lean-CombinatorialGames.ipynb`.
 - [SocialChoice.lean](SocialChoice.lean) — 126 lines. `Preference`, `StrictPref`, Arrow's axioms (statements). Source: `GameTheory-19-Lean-SocialChoice.ipynb`.
-- [Bayesian.lean](Bayesian.lean) — Bayesian games with incomplete information: `BayesianGame`, `TypeStrategy`, `BayesianNashEquilibrium`, `InformationSet`, `SignalingGame`, `FirstPriceAuction`, Kuhn poker definitions. Source: `GameTheory-11-BayesianGames.ipynb`, `GameTheory-13-ImperfectInfo-CFR.ipynb`.
-- [Regret.lean](Regret.lean) — Regret minimization and CFR: `CumulativeRegret`, `regretMatchingStrategy`, `CounterfactualRegret`, `CFRState`, `FictitiousPlayState`. Source: `GameTheory-13-ImperfectInfo-CFR.ipynb`, `GameTheory-17-MultiAgent-RL.ipynb`.
+- [Bayesian.lean](Bayesian.lean) — Bayesian games with incomplete information: `BayesianGame`, `TypeStrategy`, `BayesianNashEquilibrium`, `InformationSet`, `SignalingGame`, `FirstPriceAuction`, Kuhn poker definitions. Source: `GameTheory-11-BayesianGames-Python.ipynb`, `GameTheory-13-ImperfectInfo-CFR-Python.ipynb`.
+- [Regret.lean](Regret.lean) — Regret minimization and CFR: `CumulativeRegret`, `regretMatchingStrategy`, `CounterfactualRegret`, `CFRState`, `FictitiousPlayState`. Source: `GameTheory-13-ImperfectInfo-CFR-Python.ipynb`, `GameTheory-17-MultiAgent-RL-Python.ipynb`.
 
 ## Usage
 

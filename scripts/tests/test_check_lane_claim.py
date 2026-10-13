@@ -2246,7 +2246,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
         "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed-CSharp.ipynb",
         "MyIA.AI.Notebooks/Search/Part1-Foundations/"
         "Search-05-GeneticAlgorithms-CSharp.ipynb",
-        "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Csharp.ipynb",
+        "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-CSharp.ipynb",
     ]
     for relpath in fixture_paths:
         resolved = repo_root / relpath
@@ -2275,7 +2275,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
                 "2026-08-11T04:05:00Z"),
         comment("[CLAIMED] lane myia-po-2026:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/GameTheory/"
-                "GameTheory-04-NashEquilibrium-Csharp.ipynb",
+                "GameTheory-04-NashEquilibrium-CSharp.ipynb",
                 "2026-08-11T04:07:00Z"),
     )
     for lane in (
