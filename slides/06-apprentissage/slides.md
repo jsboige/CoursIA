@@ -487,6 +487,8 @@ layout: two-cols
 - **Sinon l’ensemble de test a « fuité »**
   - dans l’apprentissage.
 </div>
+</div>
+<!-- fermeture dense-list AVANT ::right:: : un div ouvert qui traverse le separateur de colonnes atterrit dans deux conteneurs Slidev et casse le template Vue (Element is missing end tag, build head 22472d3c1828). -->
 
 
 <p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb">2.13-Analyse-Erreurs.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.ipynb">2.9-Grokking-Generalisation.ipynb</a> (double-descente).</p>
@@ -496,7 +498,6 @@ layout: two-cols
 
 <img src="./images/img_011.png" width="380">
 <img src="./images/img_012.png" width="380">
-</div>
 ---
 layout: two-cols
 ---
@@ -829,7 +830,7 @@ layout: two-cols
 - Inverse = pavage (similaire à l’apprentissage de listes de décision)
 - Les hypothèses sont assez opaques
 
-<img src="./images/img_032.png" alt="img_032.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_032.png" alt="img_032.png" class="img-fit">
 
 
 ---
