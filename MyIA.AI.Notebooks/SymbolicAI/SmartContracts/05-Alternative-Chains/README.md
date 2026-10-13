@@ -11,12 +11,12 @@ Cette cinquieme sous-série (SC-18 a SC-22) élargit le horizon au-dela de la EV
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 18 | [SC-18-Vyper-Python](SC-18-Vyper-Python.ipynb) | 45 min | Philosophie Vyper vs Solidity, syntaxe, contrats de stockage et token, déploiement web3.py |
-| 19 | [SC-19-Ripple-XRP-Python](SC-19-Ripple-XRP-Python.ipynb) | 45 min | XRP Ledger, consensus UNL, comptes/transactions `xrpl-py`, trust lines, DEX, payment channels, Hooks |
+| 19 | [SC-19-Ripple-XRP-Python](SC-19-Ripple-XRP-Python.ipynb) | 50 min | XRP Ledger, consensus UNL, comptes/transactions `xrpl-py`, trust lines, DEX, payment channels, Hooks |
 | 20 | [SC-20-Bitcoin-Scripting-Python](SC-20-Bitcoin-Scripting-Python.ipynb) | 50 min | Modèle UTXO, Bitcoin Script (langage a pile), mini-interpréteur Python, multisig, timelock, P2SH |
-| 21 | [SC-21-Move-Sui-Python](SC-21-Move-Sui-Python.ipynb) | 40 min | Langage Move, modèle objet de Sui, module Move, abilities (key/store/copy/drop) |
-| 22 | [SC-22-Solana-Anchor-Python](SC-22-Solana-Anchor-Python.ipynb) | 45 min | Architecture Solana, framework Anchor (Rust), PDAs, CPIs |
+| 21 | [SC-21-Move-Sui-Python](SC-21-Move-Sui-Python.ipynb) | 50 min | Langage Move, modèle objet de Sui, module Move, abilities (key/store/copy/drop) |
+| 22 | [SC-22-Solana-Anchor-Python](SC-22-Solana-Anchor-Python.ipynb) | 55 min | Architecture Solana, framework Anchor (Rust), PDAs, CPIs |
 
-**Total** : 5 notebooks, ~3h45.
+Le décompte des carnets de cette sous-série est tenu par le [catalogue des cours](../../../../COURSE_CATALOG.generated.md), régénéré automatiquement.
 
 ---
 
@@ -26,7 +26,7 @@ Cette cinquieme sous-série (SC-18 a SC-22) élargit le horizon au-dela de la EV
 
 La **philosophie de conception** de Vyper : volontairement restrictif (pas d'héritage, pas d'inline assembly) pour reduire la surface d'attaque. Syntaxe des types de base, fonctions et decorateurs, ecriture d'un contrat de stockage et d'un token, déploiement via web3.py, et comparaison Vyper/Solidity sur des exemples equivalents.
 
-### Étape 2 : XRP Ledger (SC-19, 45 min)
+### Étape 2 : XRP Ledger (SC-19, 50 min)
 
 L'**architecture du XRP Ledger** et son consensus **UNL** (Unique Node List). Manipulation des comptes et transactions via `xrpl-py`, exploration des **trust lines**, **offers** et du **DEX integre**, découverte des **payment channels** pour les micropaiements, et des **Hooks** comme equivalent smart contract du XRPL.
 
@@ -34,11 +34,11 @@ L'**architecture du XRP Ledger** et son consensus **UNL** (Unique Node List). Ma
 
 Le **modèle UTXO** de Bitcoin (vs le modèle Account d'Ethereum), **Bitcoin Script** comme langage a pile non-Turing-complet, implémentation d'un **mini-interpréteur Bitcoin Script** en Python, construction et signature manuelle de transactions, et scripts avancés (**multisig**, **timelock**, **P2SH**).
 
-### Étape 4 : Move et Sui (SC-21, 40 min)
+### Étape 4 : Move et Sui (SC-21, 50 min)
 
 Le langage **Move** (ne chez Meta/Diem) et sa programmation **orientée ressources**. Le **modèle objet** de Sui, création d'un module Move simple, et utilisation des **abilities** (`key`, `store`, `copy`, `drop`) qui controlent la linearite et la copie des ressources.
 
-### Étape 5 : Solana et Anchor (SC-22, 45 min)
+### Étape 5 : Solana et Anchor (SC-22, 55 min)
 
 L'**architecture Solana** (accounts, programs) et le framework **Anchor** (Rust). Création de **PDAs** (Program Derived Addresses) deterministes et implémentation de **CPIs** (Cross-Program Invocations).
 
