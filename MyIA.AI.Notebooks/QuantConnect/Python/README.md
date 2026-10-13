@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-Python
-pedagogical_count: 61
-breakdown: Python=61
-maturity: DRAFT=33, BETA=21, ALPHA=7
+pedagogical_count: 62
+breakdown: Python=62
+maturity: DRAFT=34, BETA=21, ALPHA=7
 -->
 
 # QuantConnect Python Notebooks
@@ -82,6 +82,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-32-RL-DQN-Trading | EXÉCUTÉ | |
 | QC-Py-40-PaperTrading-Binance | EXÉCUTÉ | |
 | QC-Py-41-PaperTrading-IBKR | EXÉCUTÉ | |
+| QC-Py-42-Alpha-Mining-Evolution | EXÉCUTÉ | cellules exécutées sur le panier crypto local (10 actifs ; fenêtre effective 2020-09 → 2025-03) — verdict hors-échantillon `INCONCLUSIVE` |
 | QC-Py-Cloud-01-FinBERT-Sentiment | EXÉCUTÉ | |
 | QC-Py-Cloud-02-ML-Classification | EXÉCUTÉ | |
 | QC-Py-Cloud-12-SectorRotation-Momentum | doc cloud | markdown-only — backtest sur QC Cloud |
@@ -101,6 +102,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-34-RL-SAC-A2C-Trading | EXÉCUTÉ | |
 | QC-Py-35-RL-Portfolio-Construction | EXÉCUTÉ | |
 | QC-Py-Dataset-Workflow | NON EXÉCUTÉ | |
+| QC-Py-43-Diffusion-Series-Synthetiques | EXÉCUTÉ | cellules exécutées localement sur SPY (yfinance, 2 515 rendements log) — diffusion vs bootstrap i.i.d., augmentation `INCONCLUSIF` |
 
 **Récapitulatif** : la majorité des notebooks sont NON EXÉCUTÉS (code réel, exécution kernel ou QC Cloud à faire) ; une part croissante est EXÉCUTÉE et 10 sont des `doc cloud` (markdown-only). Le décompte précis relève du catalogue généré.
 
@@ -196,7 +198,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-27-Production-Deployment](QC-Py-27-Production-Deployment.ipynb) | Déploiement live, monitoring |
 | [QC-Py-28-Market-Regime-Detection](QC-Py-28-Market-Regime-Detection.ipynb) | Détection de régimes de marché |
 | [QC-Py-28b-Macro-Cycle-Regimes](QC-Py-28b-Macro-Cycle-Regimes.ipynb) | Macro et régimes : diagnostic composite borné, indicateurs → budget de risque |
-| [QC-Py-28c-Factor-Preprocessing-Regime](QC-Py-28c-Factor-Preprocessing-Regime.html) | Prétraitement de facteurs (FFD, standardisation, ACP) pour la détection de régime — port du livre 06/02, comparaison à la classe majoritaire |
+| [QC-Py-28c-Factor-Preprocessing-Regime](QC-Py-28c-Factor-Preprocessing-Regime.ipynb) | Prétraitement de facteurs (FFD, standardisation, ACP) pour la détection de régime — port du livre 06/02, comparaison à la classe majoritaire |
 | [QC-Py-29-Derivatives-Valuation](QC-Py-29-Derivatives-Valuation.ipynb) | Valorisation d'un dérivé : Black-Scholes, arbre binomial et Monte-Carlo sur le même contrat — précision, convergence, flexibilité, coût, liquidité |
 
 ## Entraînement ML (QC-Py-30 à 32)
@@ -226,6 +228,22 @@ Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, application p
 | [QC-Py-40-PaperTrading-Binance](QC-Py-40-PaperTrading-Binance.ipynb) | Binance |
 | [QC-Py-41-PaperTrading-IBKR](QC-Py-41-PaperTrading-IBKR.ipynb) | Interactive Brokers |
 
+## Recherche — alpha mining par évolution (QC-Py-42)
+
+Recherche *from scratch* : plutôt que de coder un facteur à la main, on **fait évoluer des
+expressions alpha** (arbres d'opérateurs sur des features de base) avec `deap`, puis on les
+confronte à une baseline de facteurs fixes. C'est le pont entre la série `Search/`
+(algorithmes évolutionnaires) et la série `QuantConnect` (validation financière).
+
+| Notebook | Méthode | Ce qu'il démontre |
+|----------|---------|-------------------|
+| [QC-Py-42-Alpha-Mining-Evolution](QC-Py-42-Alpha-Mining-Evolution.ipynb) | Évolution génétique d'expressions (`deap`), walk-forward 5 blocs, 4 seeds, Diebold-Mariano à critère directionnel | Un moteur de recherche peut **produire** des alphas plausibles — et le verdict hors-échantillon dit s'il bat la baseline. Ici : non (`INCONCLUSIVE`), ce qui est le résultat, pas l'échec |
+
+Le carnet tourne sur les données **locales** du dépôt (panier crypto, 10 actifs) : aucune
+dépendance réseau, exécution reproductible. Sa fonction de fitness applique la doctrine de
+validation du dépôt (walk-forward, multi-seed, Diebold-Mariano sur une perte de précision) —
+l'objectif pédagogique est autant la **méthode de validation** que le résultat.
+
 ## Stratégies Cloud (QC-Py-Cloud-*)
 
 Notebooks de recherche et stratégies exécutées sur QuantConnect Cloud.
@@ -247,6 +265,21 @@ Notebooks de recherche et stratégies exécutées sur QuantConnect Cloud.
 | [QC-Py-Cloud-09-OptionWheel](QC-Py-Cloud-09-OptionWheel.ipynb) | Option Wheel (risk education) |
 | [QC-Py-Cloud-10-RL-DQN-Trading](QC-Py-Cloud-10-RL-DQN-Trading.ipynb) | RL DQN (advanced) |
 | [QC-Py-Cloud-12-SectorRotation-Momentum](QC-Py-Cloud-12-SectorRotation-Momentum.ipynb) | Sector Rotation & Multi-Asset Momentum |
+
+## Recherche — données synthétiques par diffusion (QC-Py-43)
+
+Recherche *from scratch* : un modèle de **diffusion** (DDPM écrit en `torch`, pas une
+bibliothèque) apprend la distribution de fenêtres de rendements et en **engendre** de
+nouvelles. Ce qui compte n'est pas la perte d'entraînement mais la **fidélité aux faits
+stylisés** de la série réelle, et l'utilité mesurée des données engendrées.
+
+| Notebook | Méthode | Ce qu'il démontre |
+|----------|---------|-------------------|
+| [QC-Py-43-Diffusion-Series-Synthetiques](QC-Py-43-Diffusion-Series-Synthetiques.ipynb) | DDPM `torch` sur fenêtres de 32 rendements (SPY 2015-2024), contrôle négatif bootstrap i.i.d., augmentation mesurée sur 5 folds et 4 graines | Un générateur se juge **contre des statistiques de la série engendrée**, pas contre la perte. Ici : il bat le bootstrap sur le vol clustering (`acf_r2_1` +0,206 contre -0,018) sans égaler le réel (+0,460), et l'augmentation reste `INCONCLUSIF` (edge/σ = -0,44, Diebold-Mariano non significatif) |
+
+Le carnet prend ses données sur **yfinance** (SPY, 2 515 rendements log quotidiens) : il
+requiert un accès réseau à l'exécution. Sa conclusion transférable est méthodologique — une
+perte de débruitage qui décroît ne dit rien de la qualité du générateur.
 
 ## Utilitaires
 

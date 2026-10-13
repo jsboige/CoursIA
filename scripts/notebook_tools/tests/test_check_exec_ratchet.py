@@ -128,6 +128,37 @@ class TestRatchetVerdicts:
         commit(repo, "head")
         assert ratchet.ratchet(base, cwd=repo) == []
 
+    def test_absent_file_is_missing_not_parse_error(self, repo):
+        # #20174 : un fichier absent n'est pas un fichier casse.
+        assert ratchet.verdict_at_head("absent.ipynb", cwd=repo) == ("MISSING", [])
+
+    def test_invalid_json_stays_parse_error(self, repo):
+        (repo / "broken.ipynb").write_text("{not json", encoding="utf-8")
+        assert ratchet.verdict_at_head("broken.ipynb", cwd=repo)[0] == "PARSE_ERROR"
+
+    def test_readable_notebook_reports_its_sequence(self, repo):
+        write_nb(repo, "ok.ipynb", make_nb([1, 2, 3]))
+        assert ratchet.verdict_at_head("ok.ipynb", cwd=repo) == ("CLEAN", [1, 2, 3])
+
+    def test_amputed_working_tree_is_missing_not_corruption(self, repo):
+        """#20174, contre-exemple mesure le 2026-10-10.
+
+        Le carnet est dans le diff base..HEAD (donc liste par
+        ``changed_notebooks``, qui lit l'INDEX) mais absent du DISQUE : c'est
+        la position exacte d'un arbre ampute par un slot de runner persistant.
+        Avant ce fix, le verdict etait ``PARSE_ERROR`` et accusait le contenu --
+        deux diagnostics partis chercher une corruption inexistante (#20158,
+        #20118), sur des carnets valides et identiques a ``origin/main``."""
+        write_nb(repo, "a.ipynb", make_nb([1, 2, 3]))
+        base = commit(repo, "base")
+        write_nb(repo, "a.ipynb", make_nb([1, 2, 3, 4]))
+        commit(repo, "head")
+        (repo / "a.ipynb").unlink()  # checkout incomplet, HEAD intact
+        recs = ratchet.ratchet(base, cwd=repo)
+        assert recs[0]["base"] == "CLEAN"
+        assert recs[0]["head"] == "MISSING"
+        assert recs[0]["regression"] is True
+
 
 class TestBaseAdvancedMeanwhile:
     """A branch behind its base is judged on ITS diff, not on the gap.
@@ -223,6 +254,24 @@ class TestCli:
         assert "fail-by-design" in out.stderr
         assert "regles-validation-detail.md" in out.stderr
         assert "never hand-edit" in out.stderr
+
+    def test_missing_file_annotation_names_the_workspace(self, repo):
+        """#20174 : l'annotation doit dire « arbre incomplet », pas « carnet casse »,
+        et ne pas reclamer un ack fail-by-design pour un fichier absent du disque."""
+        write_nb(repo, "a.ipynb", make_nb([1, 2, 3]))
+        base = commit(repo, "base")
+        write_nb(repo, "a.ipynb", make_nb([1, 2, 3, 4]))
+        commit(repo, "head")
+        (repo / "a.ipynb").unlink()
+        out = self.run_cli(repo, base)
+        assert out.returncode == 1
+        assert "incomplete checkout" in out.stderr
+        assert "NOT a content defect" in out.stderr
+        # le bloc de protocole fail-by-design n'est PAS servi (il repond a une
+        # degradation de contenu) ; on teste ses marqueurs, pas le mot, que la
+        # consigne de remplacement reprend dans sa negation.
+        assert "regles-validation-detail.md" not in out.stderr
+        assert "never hand-edit" not in out.stderr
 
     def test_stderr_verdict_survives_cp1252_child(self, repo):
         """#17427 -- le verdict ne doit pas dependre de la page de code de la

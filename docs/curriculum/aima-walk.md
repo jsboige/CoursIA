@@ -48,7 +48,7 @@ imparfait, un agent RL entraîné, et un pipeline LLM complet (prompting → RAG
 Vous savez surtout **où le corpus dépasse AIMA** (théorie des jeux formelle, IIT,
 métaheuristiques composées) — l'épilogue le nomme.
 
----
+***
 
 ## Le fil — AIMA comme ossature, chapitre par chapitre
 
@@ -136,12 +136,12 @@ métaheuristiques composées) — l'épilogue le nomme.
 
 ### Épilogue — Où le corpus dépasse AIMA, ~45 min
 
-25. **[`IIT-01-IntroToPyPhi.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb)** (45 min) — théorie de l'information intégrée :
+25. **[`IIT-01-IntroToPyPhi-Python.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb)** (45 min) — théorie de l'information intégrée :
     hors AIMA, propre au dépôt. Prolongements nommés : [`Search-09e-Komlos-Lean.ipynb`](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09e-Komlos-Lean.ipynb)
     (recherche **formelle**, compagnon Lean de la phase 2), la série IIT complète (59
     notebooks de la famille la plus dense du dépôt, cf [`recherche.md`](recherche.md)).
 
----
+***
 
 ## Ce que chaque étape suppose — règle de lecture
 
