@@ -13,6 +13,7 @@ Deux comptes, selon le filtre CI :
 | Fichier | sorry réels | sorry (prose, CI) |
 |---------|------------|-------------------|
 | `Knots/Basic.lean` | 0 | 3 |
+| `Knots/Tangle.lean` | 0 | 0 |
 | `Knots/Reidemeister.lean` | 2 | 2 |
 | `Knots/Invariant.lean` | **0** | 5 |
 | `Knots/Slice.lean` | 4 | 9 |
@@ -358,6 +359,7 @@ Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Bo
 | Fichier | Contenu | sorry réels |
 |---------|---------|-------------|
 | `Knots/Basic.lean` | Définitions (Knot, Link, PD-code, nœuds nommés), `KnotDiagram.wf` | 0 |
+| `Knots/Tangle.lean` | Tangles à quatre extrémités (Phase 3 de l'EPIC) : tangle nul/infini/`1`/miroir + `wf` (parité par étiquette, sans contiguïté), rotation (involution, préserve `wf`), relabel2/shift, compositions verticale/horizontale (comptages), clôtures numérateur/dénominateur avec compression canonique des étiquettes (exemples `wf` par `decide`) | 0 |
 | `Knots/Reidemeister.lean` | Mouvements R1/R2/R3 (modèle Phase 5), `ReidemeisterEquiv`, symétries | 2 |
 | `Knots/Invariant.lean` | 3-colorabilité (Fox), crossing number, contre-exemple PR1, bi-implication R1 connectée (#3000 + #3124/#11227), transfer R2-up + murs nommés (#11276), marquee `tricolorable_invariant` (#11958), `unknottingNumber` via `Nat.sInf` (#15082) | 0 |
 | `Knots/Conway.lean` | Nœud de Conway (11n34), mutation, codes PD Conway/KT, arcPartition, Alexander trivial | 0 |

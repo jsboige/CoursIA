@@ -12,6 +12,7 @@ Two counts, depending on the filter:
 | File | real sorries | sorry (prose, CI) |
 |------|-------------|-------------------|
 | `Knots/Basic.lean` | 0 | 3 |
+| `Knots/Tangle.lean` | 0 | 0 |
 | `Knots/Reidemeister.lean` | 2 | 2 |
 | `Knots/Invariant.lean` | **0** | 5 |
 | `Knots/Conway.lean` | 4 | 9 |
@@ -349,6 +350,7 @@ Reference: Fox (1962), *A quick trip through knot theory*; Adams,
 | File | Contents | real sorries |
 |------|----------|-------------|
 | `Knots/Basic.lean` | Definitions (Knot, Link, PD-code, named knots), `KnotDiagram.wf` | 0 |
+| `Knots/Tangle.lean` | Four-ended tangles (EPIC Phase 3): zero/infinity/`1`/mirror tangles + `wf` (per-label parity, no contiguity), rotation (involution, preserves `wf`), relabel2/shift, vertical/horizontal compositions (counting lemmas), numerator/denominator closures with canonical label compression (`wf` examples by `decide`) | 0 |
 | `Knots/Reidemeister.lean` | R1/R2/R3 moves (Phase 5 model), `ReidemeisterEquiv`, symmetries | 2 |
 | `Knots/Invariant.lean` | 3-colorability (Fox), crossing number, PR1 counter-example, connected R1 bi-implication (#3000 + #3124/#11227), R2-up transfer + named walls (#11276), master `tricolorable_invariant` (#11958), `unknottingNumber` via `Nat.sInf` (#15082) | 0 |
 | `Knots/Conway.lean` | Conway knot (11n34), mutation, Conway/KT PD codes, arcPartition, trivial Alexander | 0 |
