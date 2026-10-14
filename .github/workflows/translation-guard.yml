@@ -258,7 +258,7 @@ jobs:
 
           See #10332 for the override protocol.
           EOF
-          )" 2>/dev/null || true
+          )" || echo "::warning title=Translation guard::commentaire de violation non poste (gh pr comment en echec) ; le verdict ci-dessus reste la reference."
           exit 1
 
       - name: Journalise accepted override (#10332)
