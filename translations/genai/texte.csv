@@ -3895,7 +3895,7 @@ MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,31932452,code,fr,badaa2
 # Test rapide de connectivite (1 appel economique)
 _ping = chat(""Reponds uniquement par : OK"", model=FAST_MODEL, max_tokens=10)
 print(""Ping FAST_MODEL :"", repr(_ping[:40]))",,,,,,,,badaa20457fcdc21,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,91b2a4cb,markdown,fr,7fffdd847c4aec5e,"## Le benchmark : generation de code avec verite d'exécution
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,91b2a4cb,markdown,fr,e16a2ec2de43b086,"## Le benchmark : generation de code avec verite d'exécution
 
 Pour mesurer le test-time scaling, il nous faut une tâche avec une **verite objective**. Les problemes de mots (word problems) ne conviennent plus : tous les modèles 2026 les saturent. Nous utilisons une **generation de code** ou la verite = **executer des tests**.
 
@@ -3915,8 +3915,15 @@ Pour mesurer le test-time scaling, il nous faut une tâche avec une **verite obj
 | p5 | sous_ensembles | combinatoire, recursion |
 | p6 | chemins dans un graphe | parcours, backtracking |
 
-> Les modèles 2026 saturent p1-p4. Le **vrai signal** se situe sur p5 (cout) et p6 (erreur systématique).",,,,,,,,7fffdd847c4aec5e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,b19c8063,code,fr,61420655b5d15914,"import re
+> Les modèles 2026 saturent p1-p4. Le **vrai signal** se situe sur p5 (cout) et p6 (erreur systématique).
+
+> **Confinement (pont [13_Agentic_Orchestration](13_Agentic_Orchestration.ipynb))** :
+> `executer_tests` exécute ci-dessous le code **généré par le modèle** dans un
+> sous-processus confiné — builtins restreints (ni `open`, ni `eval`, ni `exec` libre),
+> imports en liste blanche, borne de temps réelle (`subprocess.run(timeout=...)`, effective
+> sous Windows). Le pourquoi complet — injection de prompt, OWASP LLM01 — et la
+> démonstration mesurée de la borne sont dans NB-13.",,,,,,,,e16a2ec2de43b086,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,b19c8063,code,fr,78e46d73502fedcf,"import re
 
 PROBLEMES = [
     {""id"": ""p1_carre"", ""diff"": 1,
@@ -3952,25 +3959,101 @@ def extraire_code(texte):
     return texte
 
 
-def executer_tests(code_gen, probleme):
-    """"""Execute le code dans un espace isole, evalue chaque test.
-    Renvoie (nb_passes, nb_total). Une exception = 0 pour ce test.""""""
-    ns = {}
+import subprocess, sys, json
+
+# --- Bac a sable : le code genere par le modele s'execute en SOUS-PROCESSUS confine ---
+_NOMS_BUILTINS_SURS = (
+    ""abs"", ""all"", ""any"", ""bool"", ""chr"", ""dict"", ""divmod"", ""enumerate"", ""filter"",
+    ""float"", ""format"", ""frozenset"", ""hasattr"", ""hash"", ""int"", ""isinstance"", ""len"",
+    ""list"", ""map"", ""max"", ""min"", ""next"", ""oct"", ""ord"", ""pow"", ""print"", ""range"",
+    ""repr"", ""reversed"", ""round"", ""set"", ""slice"", ""sorted"", ""str"", ""sum"", ""tuple"", ""zip"",
+    ""Exception"", ""ValueError"", ""TypeError"", ""IndexError"", ""KeyError"",
+    ""ZeroDivisionError"", ""ArithmeticError"", ""AttributeError"", ""RuntimeError"",
+    ""StopIteration"", ""NotImplementedError"", ""OverflowError"", ""RecursionError"",
+    ""AssertionError"", ""OSError"",
+)
+_MODULES_SURS = (""math"", ""itertools"", ""functools"", ""collections"", ""string"",
+                 ""heapq"", ""re"", ""statistics"", ""random"", ""datetime"")
+
+
+def _runner_source(code, tests):
+    """"""Source du processus ENFANT. Le runner lui-meme tourne en confiance pleine ;
+    seule la portion exec(code, ...) voit le dictionnaire de builtins restreint.
+    Le resultat transite par une ligne __RESULT__ sur stdout (les print du code
+    genere ne polluent pas le canal).""""""
+    return (
+        ""import json, builtins as _b, importlib\n""
+        ""_MODULES_SURS = "" + repr(_MODULES_SURS) + ""\n""
+        ""def _import_sur(nom, *a, **k):\n""
+        ""    if nom not in _MODULES_SURS:\n""
+        ""        raise ImportError('module non autorise dans le bac a sable : ' + str(nom))\n""
+        ""    return importlib.import_module(nom)\n""
+        ""_surs = {n: getattr(_b, n) for n in "" + repr(_NOMS_BUILTINS_SURS) + ""}\n""
+        ""_surs['__import__'] = _import_sur\n""
+        ""ns = {'__builtins__': _surs}\n""
+        ""res = {'passes': 0, 'fails': [], 'erreur': None}\n""
+        ""try:\n""
+        ""    exec("" + repr(code) + "", ns)\n""
+        ""except BaseException as e:\n""
+        ""    res['erreur'] = type(e).__name__ + ': ' + str(e)\n""
+        ""if res['erreur'] is None:\n""
+        ""    for _t in "" + repr(list(tests)) + "":\n""
+        ""        try:\n""
+        ""            if eval(_t, ns):\n""
+        ""                res['passes'] += 1\n""
+        ""            else:\n""
+        ""                res['fails'].append(_t)\n""
+        ""        except BaseException:\n""
+        ""            res['fails'].append(_t)\n""
+        ""print('__RESULT__' + json.dumps(res))\n""
+    )
+
+
+def executer_tests_detaille(code, probleme, timeout=5):
+    """"""Execute `code` genere par le modele dans un sous-processus confine.
+
+    Ce qui est reellement garanti (et demontre sur sortie committee plus bas) :
+    - builtins restreints : ni open, ni eval, ni exec, ni __import__ libre ;
+    - imports limites a une liste blanche de modules de calcul ;
+    - borne de temps REELLE : subprocess.run(timeout=...) tue le processus enfant,
+      y compris sous Windows (ou signal.alarm n'existe pas).
+
+    Ce qui n'est PAS garanti : ce n'est pas une frontiere de securite dure — c'est une
+    ceinture de securite pedagogique pour du code de benchmark ; du code reellement
+    non fiable demande un conteneur jetable ou un interpreteur WASM.
+
+    Renvoie (passes, total, fails, erreur).""""""
+    tests = probleme[""tests""]
+    total = len(tests)
+    if not code.strip():
+        return 0, total, [], ""code vide""
     try:
-        exec(code_gen, ns)
-    except Exception:
-        return 0, len(probleme[""tests""])
-    passes = 0
-    for cond in probleme[""tests""]:
-        try:
-            if eval(cond, ns):
-                passes += 1
-        except Exception:
-            pass
-    return passes, len(probleme[""tests""])
+        proc = subprocess.run(
+            [sys.executable, ""-c"", _runner_source(code, tests)],
+            capture_output=True, text=True, encoding=""utf-8"", errors=""replace"",
+            timeout=timeout,
+            stdin=subprocess.DEVNULL)
+    except subprocess.TimeoutExpired:
+        return 0, total, list(tests), f""timeout {timeout}s : execution interrompue de force""
+    for ligne in proc.stdout.splitlines():
+        if ligne.startswith(""__RESULT__""):
+            res = json.loads(ligne[len(""__RESULT__""):])
+            if res[""erreur""] is not None:
+                return 0, total, list(tests), ""echec de chargement intercepte : "" + res[""erreur""]
+            return res[""passes""], total, res[""fails""], None
+    return 0, total, list(tests), ""pas de resultat (sortie anormale du bac a sable)""
 
 
-print(f""{len(PROBLEMES)} problemes charges, difficultes : {[p['diff'] for p in PROBLEMES]}"")",,,,,,,,61420655b5d15914,,,,,,,,
+def executer_tests(code, probleme, timeout=5):
+    """"""(API inchangee) Renvoie (nb_tests_passes, nb_tests_total).
+    Confinement effectif : voir executer_tests_detaille et la demonstration committee.
+    Le parametre timeout est APPLIQUE (subprocess.run(timeout=...)).""""""
+    passes, total, _, _ = executer_tests_detaille(code, probleme, timeout=timeout)
+    return passes, total
+
+
+
+print(f""{len(PROBLEMES)} problemes charges, difficultes : {[p['diff'] for p in PROBLEMES]}"")",,,,,,,,78e46d73502fedcf,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,3788f1b7,code,fr,09cd4a8b51161899,"def gen_code(probleme, model=FAST_MODEL, temperature=0.0, max_tokens=2000):
     """"""Genere le code pour un probleme, en demandant UNIQUEMENT du code.
     Renvoie (code_extrait, tokens_estimes).""""""
@@ -4115,7 +4198,7 @@ MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,ace04a06,markdown,fr,02
 C'est le mode **""Contextual""** d'ICR : 3 agents (générateur, critiqueur, memoire) en boucle. Contrairement au Best-of-N qui vote, la Reflexion **utilise le feedback** pour corriger la cause de l'erreur.
 
 **Hypothese** : sur p6 (erreur systématique), la Reflexion devrait reussir la ou BoN echouait.",,,,,,,,027c0ea9337da3d8,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,5dd31d64,code,fr,e369a4eca4ce4d06,"def reflexion_code(probleme, model=FAST_MODEL, iterations=3, max_tokens=2000):
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,5dd31d64,code,fr,14bd51ea6642af49,"def reflexion_code(probleme, model=FAST_MODEL, iterations=3, max_tokens=2000):
     """"""Boucle generateur -> execution -> critique -> regeneration.
     A chaque iteration : on genere le code, on l'execute, et si des tests
     echouent on demande au modele de corriger en lui montrant lesquels.
@@ -4154,26 +4237,18 @@ MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,5dd31d64,code,fr,e369a4
         if passes == total:
             break  # tout passe, on arrete
 
-        # 3. Construction du feedback (memoire) : quels tests echouent ?
-        diagnostics = []
-        ns = {}
-        try:
-            exec(code_courant, ns)
-        except Exception as exc:
-            diagnostics.append(f""ERREUR d'execution : {exc}"")
+        # 3. Construction du feedback (memoire) : quels tests echouent ? (bac a sable)
+        _, _, fails_diag, err_diag = executer_tests_detaille(code_courant, probleme)
+        if err_diag:
+            diagnostics = [f""ERREUR d'execution interceptee : {err_diag}""]
         else:
-            for cond in probleme[""tests""]:
-                try:
-                    if not eval(cond, ns):
-                        diagnostics.append(f""  ECHEC : {cond}"")
-                except Exception as exc:
-                    diagnostics.append(f""  EXCEPTION sur '{cond}' : {exc}"")
+            diagnostics = [f""  ECHEC : {c}"" for c in fails_diag]
         feedback = ""\n"".join(diagnostics)
 
     return meilleur_passes, total, total_tokens
 
 
-print(""reflexion_code defini."")",,,,,,,,e369a4eca4ce4d06,,,,,,,,
+print(""reflexion_code defini."")",,,,,,,,14bd51ea6642af49,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,745c8f26,code,fr,e59657cba4d67c64,"# Reflexion sur p6 (la ou BoN a echoue : erreur systematique)
 _pbs_reflex = [p for p in PROBLEMES if p[""diff""] == 6]
 if BATCH_MODE:
@@ -4387,41 +4462,52 @@ Le tableau ci-dessous resume les resultats mesures (d'apres les sorties committe
 3. **Le gain depend de la structure d'erreur -- qu'il faut mesurer, pas supposer.** Erreur *systematique* non-corrigible -> aucune technique n'aide (p6 : 2/3 partout). Erreur *aleatoire* -> le BoN aiderait en theorie (les tirages s'annulent), mais **ce benchmark n'en fournit aucun exemple** : les problemes faciles sont satures, le dur est systematique. La fenetre de benefice du BoN y est vide. Conclusion methodologique : avant de depenser du calcul de vote, **verifier empiriquement** que le modele echoue de maniere aleatoire (parfois oui, parfois non) et non systematique.
 
 > **Conclusion** : optimiser un LLM, c'est naviguer un **espace 2D** (taille du modele x calcul a l'inference). Les deux axes **ne sont pas equivalents** et ne se substituent pas librement. Un modele bon marche bien orchestre peut battre un modele gros pour une fraction du cout - *sur certaines taches* (p6). Mais le test-time scaling n'est pas magique : il est inutile sur les taches saturees, impuissant face aux erreurs que le modele ne comprend pas, et -- comme le montrent p4 et p5 -- purement destructeur de cout lorsqu'il n'y a pas d'erreur aleatoire a moyenner.",,,,,,,,efde522c7d788016,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,38dd3ac1,markdown,fr,bfe193c7723ae55d,"## Exercice 1 - Best-of-N pondere
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,38dd3ac1,markdown,fr,6119e266674c2c20,"## Exemple guide - Best-of-N pondere (contribution : un groupe d'etudiants EPF, TP2, PR #20674)
 
-Le Best-of-N classique vote a egalite. Mais toutes les solutions ne se valent pas : celles qui passent **plus de tests** meritent plus de poids.
+Le Best-of-N de la section precedente (`best_of_n_code`) ne renvoie que le **score** du meilleur tirage. Pour exploiter le resultat, il faut aussi garder le **code** de la solution qui passe le plus de tests.
 
-**Objectif** : implementer `best_of_n_pondere(problème, model, n)` qui genere N solutions et renvoie celle qui passe le **maximum de tests** (et, a egalite, la première trouvee).
+`best_of_n_pondere(probleme, model, n)` genere jusqu'a N solutions a temperature elevee, execute chacune sur les tests du benchmark et conserve celle qui en passe le plus (a egalite, la premiere trouvee). Deux details de mise en oeuvre :
 
-**Indice** : reutilisez `gen_code` et `executer_tests`. La différence avec `best_of_n_code` : renvoyez aussi le *code* de la meilleure solution, pas seulement le score.",,,,,,,,bfe193c7723ae55d,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,c4c525ac,code,fr,fc90298128714d09,"def best_of_n_pondere(probleme, model=FAST_MODEL, n=5):
+- la condition `not meilleur_code` memorise au moins le premier code genere, meme s'il ne passe aucun test ;
+- l'**arret anticipe** (`meilleur_passes == total`) evite de payer des tirages inutiles : sur un probleme sature, un seul appel suffit.",,,,,,,,6119e266674c2c20,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,c4c525ac,code,fr,813d86f4f2795ce9,"def best_of_n_pondere(probleme, model=FAST_MODEL, n=5):
     """"""Best-of-N qui renvoie la solution passant le plus de tests.
-    Renvoie (meilleur_code, meilleur_passes, total, tokens).
-    TODO etudiant : completez la boucle.""""""
+    Renvoie (meilleur_code, meilleur_passes, total, tokens).""""""
     meilleur_code = """"
     meilleur_passes = 0
     total = len(probleme[""tests""])
     tokens = 0
-    # TODO etudiant : generer n solutions, executer chacune, garder la meilleure
-    # Etape 1 : boucle for i in range(n)
-    # Etape 2 : code_gen, tok = gen_code(...)
-    # Etape 3 : passes, _ = executer_tests(...)
-    # Etape 4 : si passes > meilleur_passes : memoriser le code et le score
-    result = None  # TODO etudiant
+    # Etape 1 : boucle sur les n tirages
+    for _i in range(n):
+        # Etape 2 : generation a temperature elevee pour diversifier les tirages
+        code_gen, tok = gen_code(probleme, model=model, temperature=0.8)
+        tokens += tok
+        # Etape 3 : execution des tests (verite objective)
+        passes, _ = executer_tests(code_gen, probleme)
+        # Etape 4 : on garde la meilleure. '>' strict => a egalite, la premiere trouvee.
+        # (not meilleur_code : on memorise au moins le premier code non vide)
+        if passes > meilleur_passes or not meilleur_code:
+            meilleur_code = code_gen
+            meilleur_passes = passes
+        # Arret anticipe : inutile de payer d'autres tirages si tout passe deja
+        if meilleur_passes == total:
+            break
     return meilleur_code, meilleur_passes, total, tokens
 
 
-# Test (renvoie des valeurs nulles tant que l'exercice n'est pas complete)
 _code, _p, _t, _tok = best_of_n_pondere(PROBLEMES[2], model=FAST_MODEL, n=3)
-print(f""Exercice 1 - resultat actuel : {_p}/{_t} tests, ~{_tok} tokens (a completer)"")",,,,,,,,fc90298128714d09,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,da5b3aed,markdown,fr,936068601ad35dff,"## Exercice 2 - Diversite dans le pool BoN
+print(f""Exemple guide - {PROBLEMES[2]['id']} : {_p}/{_t} tests, ~{_tok} tokens"")
+print(""--- meilleure solution ---"")
+print(_code[:400])
+",,,,,,,,813d86f4f2795ce9,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,da5b3aed,markdown,fr,e1ee2aedf33b5dfe,"## Exercice 1 - Diversite dans le pool BoN
 
 Si les N solutions generees sont **trop similaires**, le vote perd de son intérêt. On penalise les solutions proches de celles déjà selectionnees.
 
 **Objectif** : implementer `best_of_n_divers(problème, model, n)` qui selectionne des solutions diversifiees. On fournit `similarite(a, b)` (recouvrement de mots entre deux codes).
 
-**Indice** : pour chaque candidat, calculez sa similarite max avec les déjà-selectionnes ; ne le gardez que si cette similarite est inferieure au seuil.",,,,,,,,936068601ad35dff,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,e62422fb,code,fr,e8603dbfb2278c0f,"def similarite(a, b):
+**Indice** : pour chaque candidat, calculez sa similarite max avec les déjà-selectionnes ; ne le gardez que si cette similarite est inferieure au seuil.",,,,,,,,e1ee2aedf33b5dfe,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,e62422fb,code,fr,af196fb6c106b863,"def similarite(a, b):
     """"""Recouvrement de mots entre deux codes (0 a 1). Deja fourni.""""""
     mots_a = set(a.split())
     mots_b = set(b.split())
@@ -4448,15 +4534,15 @@ def best_of_n_divers(probleme, model=FAST_MODEL, n=5, seuil=0.8):
 
 
 _codes, _p, _t, _tok = best_of_n_divers(PROBLEMES[2], model=FAST_MODEL, n=3)
-print(f""Exercice 2 - {len(_codes)} solution(s) selectionnee(s), meilleur {_p}/{_t} (a completer)"")",,,,,,,,e8603dbfb2278c0f,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,e3bddbdb,markdown,fr,15f5b3e53ac4ebec,"## Exercice 3 - Double verification (code + tests generes)
+print(f""Exercice 1 - {len(_codes)} solution(s) selectionnee(s), meilleur {_p}/{_t} (a completer)"")",,,,,,,,af196fb6c106b863,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,e3bddbdb,markdown,fr,d6c69727b0c26909,"## Exercice 2 - Double verification (code + tests generes)
 
 Jusqu'ici les tests sont **fixes** (fournis par le benchmark). Une approche plus robuste : faire generer au LLM **a la fois** le code ET une suite de tests supplementaires, puis croiser les deux.
 
 **Objectif** : implementer `reflexion_double_verif(problème, model, itérations)` qui, a chaque tour, genere le code **et** une fonction de test, execute les deux, et s'en sert comme feedback croise.
 
-**Indice** : demandez au modèle deux blocs (un pour le code, un pour une fonction `tests_supplementaires()` renvoyant une liste de booléens). C'est l'exercice le plus avance : commencez par generer seulement la fonction de test supplementaire et l'executer.",,,,,,,,15f5b3e53ac4ebec,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,83632a26,code,fr,dea4e11dd1a7b28e,"def reflexion_double_verif(probleme, model=FAST_MODEL, iterations=2):
+**Indice** : demandez au modèle deux blocs (un pour le code, un pour une fonction `tests_supplementaires()` renvoyant une liste de booléens). C'est l'exercice le plus avance : commencez par generer seulement la fonction de test supplementaire et l'executer.",,,,,,,,d6c69727b0c26909,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,83632a26,code,fr,b55e4b0c080d4ddd,"def reflexion_double_verif(probleme, model=FAST_MODEL, iterations=2):
     """"""Reflexion avec code + tests generes croises.
     Renvoie (meilleur_passes, total, tokens).
     TODO etudiant : c'est l'exercice le plus avance.""""""
@@ -4473,7 +4559,7 @@ MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,83632a26,code,fr,dea4e1
 
 
 _mp, _mt, _mtok = reflexion_double_verif(PROBLEMES[5], model=FAST_MODEL, iterations=2)
-print(f""Exercice 3 - double verification : {_mp}/{_mt} tests, ~{_mtok} tokens (a completer)"")",,,,,,,,dea4e11dd1a7b28e,,,,,,,,
+print(f""Exercice 2 - double verification : {_mp}/{_mt} tests, ~{_mtok} tokens (a completer)"")",,,,,,,,b55e4b0c080d4ddd,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,bb56f7ad,markdown,fr,dd2eea505e26a73f,"## Conclusion
 
 Nous avons reconstruit les **4 moteurs** de test-time scaling et mesure leurs compromis :
@@ -4493,7 +4579,7 @@ Nous avons reconstruit les **4 moteurs** de test-time scaling et mesure leurs co
 - Courbes de scaling test-time (Snell 2024) ;
 - Test-time scaling vs modèles raisonnants natifs (gpt-5-nano) ;
 - Encapsulation des moteurs en plugin Semantic Kernel.",,,,,,,,dd2eea505e26a73f,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,700d2c98,markdown,fr,4115d17c8294b365,"## References
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,700d2c98,markdown,fr,460d67e06dec91a5,"## References
 
 - **Snell, Charikar, Xu (2024)** - *Scaling LLM Test-Time Compute Optimally*. Formalise le second axe de scaling (calcul a l'inference).
 - **Wang et al. (2022)** - *Self-Consistency Improves Chain of Thought Reasoning*. Best-of-N par vote.
@@ -4502,9 +4588,9 @@ MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,700d2c98,markdown,fr,41
 - **Yao et al. (2023)** - *Tree of Thoughts: Deliberate Problem Solving with Large Language Models*. Recherche sur etats.
 - **Projet ICR** - https://github.com/ryoiki-tokuiten/Iterative-Contextual-Refinements (modes Contextual, Deepthink, Adaptive).
 
----
+***
 
-**Navigation** : [Index](README.md) | [<< Précédent](11_Quantization.ipynb) | [Suivant >>](13_Agentic_Orchestration.ipynb)",,,,,,,,4115d17c8294b365,,,,,,,,
+**Navigation** : [Index](README.md) | [<< Précédent](11_Quantization.ipynb) | [Suivant >>](13_Agentic_Orchestration.ipynb)",,,,,,,,460d67e06dec91a5,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb,37079b89,markdown,fr,43670be428b0e544,"# 13. Orchestration agentique du test-time scaling
 
 **Navigation** : [Index](README.md) | [<< Précédent](12_Test_Time_Scaling.ipynb) | [Suivant >>](14_Persistent_Memory.ipynb)
@@ -17964,3 +18050,35 @@ MyIA.AI.Notebooks/GenAI/Texte/8_Reasoning_Models.ipynb,cost-fm-8,markdown,fr,fe6
 ",,,,,,,,fe62fdac3b2f9b8c,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/9_Production_Patterns.ipynb,cost-fm-9,markdown,fr,49cd02cc8a6d1426,"# 9. Production Patterns
 ",,,,,,,,49cd02cc8a6d1426,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,ddb191a1,markdown,fr,9aa33e338c553a25,"## Exercice 3 - Escalade cheap -> big
+
+La synthese a montre que les deux axes de scaling ne se substituent pas librement. Une strategie pratique les combine : on tente d'abord **quelques tirages bon marche**, et on ne paie le **gros modele** que si le modele bon marche n'a pas resolu le probleme.
+
+**Objectif** : implementer `escalade_cheap_big(probleme, k)` qui :
+
+1. lance au plus `k` tirages de `FAST_MODEL` (vous pouvez reutiliser `best_of_n_pondere` de l'exemple guide) ;
+2. si tous les tests passent, s'arrete et renvoie la solution bon marche ;
+3. sinon, fait **un seul** appel a `BIG_MODEL` (temperature 0) et garde la meilleure des deux solutions.
+
+La fonction renvoie un dict `{modele_final, passes, total, tokens_cheap, tokens_big}`.
+
+**Indice** : comparez ensuite, sur p4 et p6, le cout total de l'escalade a celui d'un appel direct au gros modele. Sur quel probleme l'escalade est-elle rentable, et pourquoi ?",,,,,,,,9aa33e338c553a25,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,cfe0a50d,code,fr,d15a70ec9c62d2e0,"def escalade_cheap_big(probleme, k=3):
+    """"""Escalade : k tirages cheap, puis un appel big seulement en cas d'echec.
+    Renvoie un dict {modele_final, passes, total, tokens_cheap, tokens_big}.
+    TODO etudiant : completez l'escalade.""""""
+    total = len(probleme[""tests""])
+    resultat = {""modele_final"": None, ""passes"": 0, ""total"": total,
+                ""tokens_cheap"": 0, ""tokens_big"": 0}
+    # TODO etudiant
+    # Etape 1 : code_c, passes_c, _, tok_c = best_of_n_pondere(probleme, model=FAST_MODEL, n=k)
+    # Etape 2 : si passes_c == total -> modele_final = ""cheap"", renvoyer le resultat
+    # Etape 3 : sinon code_b, tok_b = gen_code(probleme, model=BIG_MODEL, temperature=0.0)
+    #           puis passes_b, _ = executer_tests(code_b, probleme)
+    # Etape 4 : garder le meilleur des deux et renseigner modele_final (""cheap"" ou ""big"")
+    return resultat
+
+
+_r = escalade_cheap_big(PROBLEMES[5], k=3)
+print(f""Exercice 3 - escalade : modele final = {_r['modele_final']}, ""
+      f""{_r['passes']}/{_r['total']} tests, ~{_r['tokens_cheap']} + {_r['tokens_big']} tokens (a completer)"")",,,,,,,,d15a70ec9c62d2e0,,,,,,,,
