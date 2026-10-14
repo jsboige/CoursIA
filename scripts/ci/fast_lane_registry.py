@@ -437,12 +437,15 @@ PILOT: list[Guard] = [
         ],
         # Le dump imprime le JSON sur stdout ; le moteur fast-lane le
         # capture via payload_of() et l'ecrit dans {name}.head.json (puis
-        # base.json apres bascule phase 2). Le comparator recoit les deux.
+        # base.json apres bascule phase 2). Le comparator recoit les deux,
+        # plus les SHA base/head : l'appariement MOVED exige la preuve de
+        # renommage git (fail-closed sans elle, #20274).
         argv=["python",
               "scripts/notebook_tools/dump_readme_link_violations.py"],
         delta_argv=["python",
                     "scripts/notebook_tools/diff_readme_link_violations.py",
-                    "{base_json}", "{head_json}"],
+                    "{base_json}", "{head_json}",
+                    "--base-sha", "{base_sha}", "--head-sha", "{head_sha}"],
         swap_paths=[
             "MyIA.AI.Notebooks",
             "_quarto.yml",

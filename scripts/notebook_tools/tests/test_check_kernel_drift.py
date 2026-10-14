@@ -371,7 +371,9 @@ def test_canonical_transition_python_38_to_313_refused():
     # mesure #19160 ; sans scope par chemin/série, ajouter la transition
     # ferait passer vert un carnet ICT rejoue par erreur -- reserve Hermes
     # PRR_kwDOH2Odns8AAAABQnPfEQ, 2026-10-05). Les 2 rescapes 3.8.10/3.9.0
-    # sont traites au cas par cas.
+    # sont traites au cas par cas : QC-Py-16 via la table scoped
+    # (tests ci-dessous), QC-Py-03 verdict INTRINSIC (metadonnee fossile,
+    # aucune cellule executable localement).
     a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
     assert ckd.accepted_canonical_transition(a, b) is False
@@ -382,6 +384,38 @@ def test_canonical_transition_python_39_to_313_refused():
     a = {"language_version": "3.9.0", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
     assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_scoped_qcpy16_38_to_313_accepted():
+    # Cas par cas #19181 (decision coordinateur du 11/10) : le seul carnet
+    # nominatif porte sa transition -- QC-Py-16, re-execution selective du
+    # sous-ensemble local (cellules REF QC Cloud non executables
+    # localement) sous le canon d'execution 3.13.
+    a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    path = ("MyIA.AI.Notebooks/QuantConnect/Python/"
+            "QC-Py-16-Alternative-Data.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+
+
+def test_canonical_transition_scoped_does_not_leak_to_other_paths():
+    # La meme transition 3.8 -> 3.13 reste rouge ailleurs : le scope protege
+    # la serie ICT (<3.10) -- c'est la raison d'etre de la table scoped.
+    a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+    assert ckd.accepted_canonical_transition(
+        a, b, nb_path="MyIA.AI.Notebooks/IIT/ICT-47.ipynb") is False
+
+
+def test_canonical_transition_scoped_reverse_still_refused():
+    # Direction inverse : rouge meme sur le chemin scope (le cliquet ne
+    # descend pas).
+    a = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    b = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    path = ("MyIA.AI.Notebooks/QuantConnect/Python/"
+            "QC-Py-16-Alternative-Data.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
 
 
 def test_canonical_transition_python_313_to_311_refused():
