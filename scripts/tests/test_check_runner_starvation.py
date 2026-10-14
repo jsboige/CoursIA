@@ -44,7 +44,7 @@ def test_healthy_inventory_is_ok():
 
 
 def test_partial_loss_warns_but_does_not_error():
-    inv = inventory(["r1"], ["r2", "r3"])
+    inv = inventory(["r-1"], ["r-2", "r-3"])
     v = rs.evaluate(inv, rs.Starvation(), warn_floor=2)
     assert v.status == "OK"
     assert len(v.warnings) == 1 and "perte partielle" in v.warnings[0]
@@ -515,3 +515,124 @@ def test_missing_run_after_failed_listing_is_preserved(monkeypatch):
     monkeypatch.setattr(rs, "_gh_json", fake_gh)
     st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
     assert len(st.starved) == 1
+
+
+# --- POOL LOSS PAR HOTE (#20697 point 4) ------------------------------------
+#
+# Le predicat global EXTINCTION ne rougit que si TOUS les online tombent
+# (les slots etaient OFFLINE cote GitHub pendant ~2 jours, mais d'autres hotes
+# du label restaient online ; l'extinction globale n'a jamais tire). La
+# detection par hote comble ce trou en alertant quand UN hote a online==0 et
+# offline>0, signe de la disjonction superviseur mort / conteneurs vivants
+# sur ce seul hote.
+
+def test_host_of_strips_numeric_suffix():
+    """Le format canonique est `<host>-<slot>` (suffixe '-N' jete)."""
+    assert rs._host_of("myia-ai-01-wsl-1") == "myia-ai-01-wsl"
+    assert rs._host_of("myia-po-2024-linux-docker-3") == "myia-po-2024-linux-docker"
+    assert rs._host_of("myia-po-2024-linux-docker-10") == "myia-po-2024-linux-docker"
+
+
+def test_host_of_keeps_unsuffixed_name_unchanged():
+    """Les noms qui ne portent pas le suffixe numerique (futur format) restent
+    tels quels -- la detection par hote est best-effort, le predicat EXTINCTION
+    global reste la borne dure."""
+    assert rs._host_of("myia-ai-01-wsl") == "myia-ai-01-wsl"
+    assert rs._host_of("po-2024-docker") == "po-2024-docker"
+    assert rs._host_of("") == ""
+
+
+def test_host_of_handles_single_digit_and_multi_digit():
+    """Tous les chiffres au-dela de 1 doivent etre jetes (re-#2 du test_1
+    quand le pool grandit) -- le suffixe est le DERNIER token numerique, pas
+    seulement 1 chiffre."""
+    assert rs._host_of("host-a-1") == "host-a"
+    assert rs._host_of("host-a-42") == "host-a"
+    assert rs._host_of("host-a-999") == "host-a"
+
+
+def test_evaluate_host_loss_founder_case():
+    """Cas fondateur (#20697, 12:45Z) : tous les slots d'UN hote offline,
+    AUCUN en ligne -> une alerte nommant cet hote, la seule."""
+    inv = inventory(
+        online=["myia-po-2024-linux-docker-1", "myia-po-2024-linux-docker-2"],
+        offline=[
+            "myia-ai-01-wsl-1", "myia-ai-01-wsl-2", "myia-ai-01-wsl-3",
+            "myia-ai-01-wsl-4", "myia-ai-01-wsl-5",
+        ],
+    )
+    warnings = rs.evaluate_host_loss(inv)
+    assert len(warnings) == 1
+    assert "myia-ai-01-wsl" in warnings[0]
+    assert "0 runner online" in warnings[0]
+    assert "5 offline" in warnings[0]
+    # L'hote en ligne ne doit PAS apparaitre dans les alertes.
+    assert "myia-po-2024-linux-docker" not in warnings[0]
+
+
+def test_evaluate_host_loss_partial_online_no_alert():
+    """Garde anti-FP : un hote avec online>0 ET offline>0 n'est PAS une perte
+    de pool -- certains slots sont en cours de redemarrage et le pool rend
+    des jobs. Mesure du jour : 1 online + 1 offline sur le meme hote -> 0
+    alerte."""
+    inv = inventory(
+        online=["myia-po-2024-linux-docker-1"],
+        offline=["myia-po-2024-linux-docker-3"],
+    )
+    warnings = rs.evaluate_host_loss(inv)
+    assert warnings == []
+
+
+def test_evaluate_host_loss_inventory_unavailable_returns_empty():
+    """Pas d'inventaire (pas de PAT) -> pas d'alerte de perte par hote. Le
+    predicat est strictement unaire sur l'inventaire, comme EXTINCTION."""
+    inv = rs.InventoryUnavailable(reason="pas de PAT")
+    warnings = rs.evaluate_host_loss(inv)
+    assert warnings == []
+
+
+def test_evaluate_host_loss_one_lost_host_among_healthy():
+    """Deux hotes, un seul perdu : l'alerte ne nomme QUE le perdu, pas
+    l'autre. Mesure : myia-ai-01-wsl 4 offline / 0 online, myia-po-2024
+    2 online / 0 offline -> 1 alerte ciblant le wsl."""
+    inv = inventory(
+        online=["myia-po-2024-linux-docker-1", "myia-po-2024-linux-docker-2"],
+        offline=[
+            "myia-ai-01-wsl-1", "myia-ai-01-wsl-2",
+            "myia-ai-01-wsl-3", "myia-ai-01-wsl-4",
+        ],
+    )
+    warnings = rs.evaluate_host_loss(inv)
+    assert len(warnings) == 1
+    assert "myia-ai-01-wsl" in warnings[0]
+    # L'hote sain NE doit PAS apparaitre dans l'alerte du perdu.
+    assert "myia-po-2024-linux-docker" not in warnings[0]
+
+
+def test_evaluate_host_loss_multiple_lost_hosts_each_named():
+    """Deux hotes perdus simultanement : 2 alertes distinctes, chacune nomme
+    son hote."""
+    inv = inventory(
+        online=[],
+        offline=[
+            "myia-ai-01-wsl-1", "myia-ai-01-wsl-2",
+            "myia-po-2024-linux-docker-1", "myia-po-2024-linux-docker-2",
+        ],
+    )
+    warnings = rs.evaluate_host_loss(inv)
+    assert len(warnings) == 2
+    hosts_named = {w.split("host ")[1].split(" ")[0] for w in warnings}
+    assert hosts_named == {"myia-ai-01-wsl", "myia-po-2024-linux-docker"}
+
+
+def test_evaluate_wires_host_loss_warnings():
+    """L'integration evaluate() doit etendre v.warnings avec les alertes de
+    pool loss, sans les faire passer en erreur -- un hote perdu reste un
+    WARN, pas un ERROR (le pool global n'est pas mort)."""
+    inv = inventory(
+        online=["po-2024-1"],
+        offline=["ai-01-wsl-1", "ai-01-wsl-2"],
+    )
+    v = rs.evaluate(inv, rs.Starvation(), warn_floor=2)
+    assert v.status == "OK"
+    assert any("POOL LOSS" in w and "ai-01-wsl" in w for w in v.warnings)

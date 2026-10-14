@@ -89,6 +89,35 @@ echo "1234567890123456789012345678901234567890" > "$REPO_POISONED/.git/refs/remo
   else ko "T3 le clone a ete purge (historique absent)"; fi
 )
 
+# --- Test 4 : prune des refs pull/* (#20697 point 2) ------------------------
+# Le fetch EXPLICITE de actions/checkout (refspec +<sha>:refs/remotes/pull/N/...)
+# depose une ref `refs/remotes/<remote>/pull/N/{head,merge}` par PR vue. Ces
+# refs ne sont JAMAIS prunees auto et s'accumulent (~4 600 mesure du jour).
+# La borne `update-ref --stdin` doit retirer les pull/*, en preservant les
+# autres refs (notamment main, qui passe par refs/remotes/<remote>/main --
+# pas par pull/*).
+REPO_PULL="$TEST_DIR/_work/jsboige/PullRepo"
+make_fixture "$REPO_PULL"
+head_sha="$(git -C "$REPO_PULL" rev-parse HEAD)"
+mkdir -p "$REPO_PULL/.git/refs/remotes/origin/pull/12345"
+echo "$head_sha" > "$REPO_PULL/.git/refs/remotes/origin/pull/12345/head"
+echo "$head_sha" > "$REPO_PULL/.git/refs/remotes/origin/pull/12345/merge"
+echo "$head_sha" > "$REPO_PULL/.git/refs/remotes/origin/main"
+
+(
+  out="$(ACTIONS_RUNNER_INPUT_WORK="$TEST_DIR/_work" bash "$TEST_DIR/block.sh" 2>&1)"; rc=$?
+  if [ "$rc" -ne 0 ]; then ko "T4 le bloc doit sortir 0 (rc=$rc)"; else ok "T4 bloc exit 0"; fi
+  if git -C "$REPO_PULL" rev-parse --verify -q refs/remotes/origin/pull/12345/head >/dev/null; then
+    ko "T4 la ref pull/N/head doit etre supprimee"
+  else ok "T4 ref pull/N/head supprimee"; fi
+  if git -C "$REPO_PULL" rev-parse --verify -q refs/remotes/origin/pull/12345/merge >/dev/null; then
+    ko "T4 la ref pull/N/merge doit etre supprimee"
+  else ok "T4 ref pull/N/merge supprimee"; fi
+  if git -C "$REPO_PULL" rev-parse --verify -q refs/remotes/origin/main >/dev/null; then
+    ok "T4 ref main survit (n'est pas un pull/*)"
+  else ko "T4 ref main injustement supprimee"; fi
+)
+
 # --- Verdict agrege -----------------------------------------------------------
 n_pass="$(grep -c '^PASS' "$RESULTS" || true)"
 n_fail="$(grep -c '^FAIL' "$RESULTS" || true)"

@@ -431,6 +431,14 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int) -> Verdict:
     else:
         v.notes.append("ni queue affamee ni job en cours -- OK")
 
+    # Alertes de perte de pool par hote (#20697 point 4) -- disjointes de
+    # EXTINCTION globale : un hote peut perdre tous ses online pendant que le
+    # pool global reste vert (les autres hotes du label tournent). Cas
+    # fondateur : myia-ai-01-wsl 0 online / 10 offline pendant ~2 jours,
+    # EXTINCTION muette car d'autres hotes du label restaient online.
+    if inv.available:
+        v.warnings.extend(evaluate_host_loss(inv))
+
     v.status = "ERROR" if v.errors else "OK"
     return v
 
@@ -524,7 +532,6 @@ def main() -> int:
         window_max_minutes=args.window_max_minutes,
     )
     v = evaluate(inv, st, args.warn_floor)
-    v.warnings.extend(evaluate_host_loss(inv))
     if args.self_workflow:
         cad = evaluate_cadence(
             fetch_scheduled_runs(args.repo, args.self_workflow),
