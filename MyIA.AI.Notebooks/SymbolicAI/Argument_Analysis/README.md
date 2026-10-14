@@ -86,6 +86,7 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | 08c | [Argumentation-08c-UI-Configuration-Python](Argumentation-08c-UI-Configuration-Python.ipynb) | Interface utilisateur widgets | Interaction |
 | 08d | [Argumentation-08d-Restitution-3-Actes-Python](Argumentation-08d-Restitution-3-Actes-Python.ipynb) | Restitution honnête en 3 actes : scaffold déterministe pur stdlib (evidence réel-en-état, bande de verdict *gated*, gate de lisibilité §4, renderer *fail-loud*) + narration LLM **réelle** (SDK OpenAI, clé via `GenAI/.env`) *gated* — prompts conduits, callable injectable, fail-loud sans clé | Restitution / honnêteté |
 | 08e | [Argumentation-08e-Argument-Profile-Python](Argumentation-08e-Argument-Profile-Python.ipynb) | Vue agrégée par argument (`ArgumentProfile`) : réunit les 5 dimensions (sophismes, qualité, contre-arguments, JTMS, formel) en une fiche exploitable, et trie un débat par force (arguments faibles / fallacieux). Démontre l'**indépendance des dimensions** (valide formellement ≠ non fallacieux). Auto-contenu, déterministe, sans LLM | Vue agrégée / multidimensionnelle |
+| 08f | [Argumentation-08f-Synthese-Multidimensionnelle-Python](Argumentation-08f-Synthese-Multidimensionnelle-Python.ipynb) | Synthèse par niveaux via le catalogue light/standard/full (organe `workflow_levels`, étape 5 volet B #4960) : 9 dimensions dont 7 exécutées réellement (PL `SimplePlReasoner`, sophismes `fallacy_rules` #17348, Dung `Simple*Reasoner`, décision dérivée, synthèse 3 actes) et 2 **déclarées indisponibles avec preuve** (FOL/modale : inventaire du jar 7a, dépendances non vendues) ; gradation fill 0,71/0,86/1,00 croisée avec les fill LLM du sas (`07c`) sans prétendre à une parité d'échelle | Synthèse / catalogue de niveaux |
 | 0* | [Agentic-0-init_agent](_archive/Argument_Analysis_Agentic-0-init_agent.ipynb) | *(legacy, archivé)* Configuration LLM/OpenAI (semantic_kernel) | Setup |
 | 1* | [Agentic-1-informal_agent](_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb) | *(legacy, archivé)* Agent analyse informelle | Détection d'arguments |
 | 2* | [Agentic-2-pl_agent](_archive/Argument_Analysis_Agentic-2-pl_agent.ipynb) | *(legacy, archivé)* Agent logique propositionnelle | Formalisation |
@@ -434,7 +435,7 @@ Le titre annonce l'analyse d'arguments. Mais le geste que cette série enseigne 
 - [Semantic Kernel Docs](https://learn.microsoft.com/en-us/semantic-kernel/)
 - [TweetyProject](https://tweetyproject.org/)
 
-## Ordre partiel et prérequis — mapping exhaustif (34/34, version consolidée)
+## Ordre partiel et prérequis — mapping exhaustif (version consolidée ; le périmètre à jour vit dans le catalogue régénéré)
 
 Cette section pose un **ordre partiel** sur l'ensemble des notebooks du
 répertoire, fondé sur les déclarations de prérequis et les chaînes de
@@ -460,6 +461,9 @@ sous `groupe-I2-contre-arguments-aspic/`) : `Obs-02-Initiation`
 `Communication_Channels` — mesure re-vérifiée au 2026-09-23 (`git ls-tree` :
 27 → 32 à la racine, aucune disparition). Chaque
 notebook est balisé dans un des trois arcs ou déclaré hors-arc avec sa raison.
+Puis `Argumentation-08f-Synthese-Multidimensionnelle` (étape 5 volet B #4960,
+organe `workflow_levels`) rejoint la série comme transverse de synthèse — le
+compte à jour du répertoire vit dans le catalogue régénéré.
 La présente section consolide la version c.1030 (livrée par session antérieure)
 et le mapping exhaustif 28/28 (PR #15371) — les deux contributions sont
 fusionnées sans doublon, le verdict renum (#15283) reste préservé ci-dessous.
@@ -537,7 +541,7 @@ Dung_AF_Semantics ──→ Value_Based_AF
 Toulmin_Model  (indépendant, racine propre)
 ```
 
-### Hors-arc (14/34) — chaque notebook restant, avec sa raison
+### Hors-arc — chaque notebook restant, avec sa raison
 
 | Notebook | Raison du hors-arc |
 |----------|--------------------|
@@ -549,6 +553,7 @@ Toulmin_Model  (indépendant, racine propre)
 | `Argumentation-Obs-03-Recollement-Lectures-Python.ipynb` | **Transverse (consolidation)** : lectures croisées de la série |
 | `Argumentation-Obs-04-Recollement-Strate6-Python.ipynb` | **Transverse (consolidation)** : strate 6 du récollement |
 | `Argumentation-08e-Argument-Profile-Python.ipynb` | **Transverse (vue agrégée)** : fiche réunissant les 5 dimensions (sophismes, qualité, contre-arguments, JTMS, formel) — consomme les arcs 1, 2 et 3 |
+| `Argumentation-08f-Synthese-Multidimensionnelle-Python.ipynb` | **Transverse (synthèse)** : catalogue de niveaux light/standard/full (organe `workflow_levels`, #4960 étape 5) — exécute 7 dimensions réelles (PL, sophismes `fallacy_rules`, Dung, décision) et prouve les 2 indisponibles (FOL/modale) ; après `07c` et `08e` |
 | `Argumentation-08c-UI-Configuration-Python.ipynb` | **Transverse (interaction)** : interface utilisateur widgets, parcours alternatif « 0 → 1 → UI_configuration » |
 | `Argumentation-02b-Argumentum-Cards-Python.ipynb` | **Hors-arc (production)** : deck imprimable du jeu Argumentum (176 cartes depuis la taxonomie) — consomme le socle ontologique, n'est pas un jalon de progression |
 | `Argumentation-Onto-01-AIF-OWL2-Python.ipynb` | **Fondation (socle ontologique)** : lecture de l'OWL upstream (1 513 classes / 1 509 concepts, 6,8 MB) — outillage, pas un jalon d'apprentissage |
@@ -571,7 +576,8 @@ sont des **ordres partiels** :
    est explicitement cité par `05 §6`, et `06` cite Dung 1995 dans
    son introduction. Les **transverses** (`Executor`, `Multi_Backend_Routing`,
    `Communication_Channels`, `Formal_Richness_Matrix`, `Restitution_3_Actes`,
-   `Recollement_*`, `ArgumentProfile`, `UI_configuration`) se croisent avec les arcs sans chaîne
+   `Recollement_*`, `ArgumentProfile`, `UI_configuration`,
+   `Synthese_Multidimensionnelle`) se croisent avec les arcs sans chaîne
    de prérequis stricte — voir « Limites » ci-dessous.
 
 ### Arithmétique (résolution du désaccord 14 vs 15 de #15283)
