@@ -1021,11 +1021,11 @@ else:
             }
     print(f""{len(audio_samples)} echantillons existants trouves"")
 ",,,,,,,,94ab4b52dbca3395,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,30fca44d,markdown,fr,e12103b95fcd424e,"### Interpretation : Generation d'echantillons audio
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,30fca44d,markdown,fr,b20940cf01970ee6,"### Interpretation : Generation d'echantillons audio
 
 | Aspect | Valeur | Signification |
 |--------|--------|---------------|
-| Taille fichiers | 88-185 KB | Compression MP3 efficace pour la qualite vocale |
+| Taille fichiers | 84-177 KB | Compression MP3 efficace pour la qualite vocale |
 | Synthese TTS | voix ""nova"" | Modèle polyvalent, adapte aux textes courts |
 | Round-trip | TTS → STT | Permet de valider la fidelite de la chaîne audio |
 
@@ -1034,7 +1034,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,30fca4
 2. Les echantillons multilingues testent la robustesse de la detection de langue
 3. La taille du fichier MP3 depend de la duree et de la complexite du texte
 
-> **Note technique** : La voix ""nova"" du modèle tts-1 est optimisee pour les textes courts et la conversation. Pour des textes plus longs, considerer tts-1-hd pour une meilleure qualite audio.",,,,,,,,e12103b95fcd424e,,,,,,,,
+> **Note technique** : La voix ""nova"" du modèle tts-1 est optimisee pour les textes courts et la conversation. Pour des textes plus longs, considerer tts-1-hd pour une meilleure qualite audio.",,,,,,,,b20940cf01970ee6,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-section2-intro,markdown,fr,407efcae6576ed07,"## Section 2 : Transcription avec Whisper API
 
 L'API Whisper accepte un fichier audio et retourne la transcription. Les paramètres principaux :
@@ -1046,16 +1046,16 @@ L'API Whisper accepte un fichier audio et retourne la transcription. Les paramè
 | `language` | Langue source | Code ISO 639-1 (`fr`, `en`, etc.) ou None |
 | `response_format` | Format de sortie | `json`, `text`, `srt`, `vtt`, `verbose_json` |
 | `timestamp_granularities` | Precision timestamps | `[""word""]`, `[""segment""]`, `[""word"", ""segment""]` |",,,,,,,,407efcae6576ed07,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,2f2757c2,markdown,fr,a0f4d59bc3a2137e,"### Synthese de la Section 1
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,2f2757c2,markdown,fr,ec494eabe3e8255e,"### Synthese de la Section 1
 
 Cette section a initialise notre environnement de test en generant des echantillons audio contrôles via l'API TTS.
 
 **Résultats obtenus** :
 - 3 echantillons audio generes (francais, anglais, multilingue)
-- Fichiers MP3 de 88 a 185 KB stockes dans `outputs/audio/samples/`
+- Fichiers MP3 de 84 a 177 KB stockes dans `outputs/audio/samples/`
 - Textes de reference connus pour validation de la transcription
 
-**Transition** : Nous disposons maintenant de fichiers audio de qualite connue pour tester les capacites de transcription de Whisper. La section suivante explore l'API de transcription dans ses différents formats de sortie.",,,,,,,,a0f4d59bc3a2137e,,,,,,,,
+**Transition** : Nous disposons maintenant de fichiers audio de qualite connue pour tester les capacites de transcription de Whisper. La section suivante explore l'API de transcription dans ses différents formats de sortie.",,,,,,,,ec494eabe3e8255e,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-transcription,code,fr,8d1ee53032030a3e,"# Transcription de base
 print(""TRANSCRIPTION WHISPER"")
 print(""="" * 45)
@@ -1189,21 +1189,21 @@ Whisper supporte des formats standards pour le sous-titrage :
 | `srt` | SubRip Subtitle | Lecteurs video, YouTube |
 | `vtt` | WebVTT | Navigateurs web, HTML5 video |
 | `text` | Texte brut | Traitement de texte, NLP |",,,,,,,,08d73fc01573d02c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,62062a0c,markdown,fr,815735e2ec5017fd,"### Synthese de la Section 2
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,62062a0c,markdown,fr,286e686a77fdb925,"### Synthese de la Section 2
 
 Cette section a demontre les capacites fondamentales de transcription de Whisper.
 
 **Résultats obtenus** :
 - Transcription fidele (texte original reproduit avec precision)
 - Detection automatique de langue (french identifiee sans paramètre)
-- Timestamps a deux niveaux (segments de 3-4s, mots individuels)
-- Metadonnees completes (duree 11.8s, 28 mots, 3 segments)
+- Timestamps a deux niveaux (segments de 2 a 4 s, mots individuels)
+- Metadonnees completes (duree 11.2s, 28 mots, 3 segments)
 
 **Formats de sortie explores** :
 - `json` : Texte simple, usage general
 - `verbose_json` : Metadonnees completes (timestamps, langue, duree)
 
-**Transition** : Après avoir maitrise la transcription de base, nous allons explorer les formats specialises pour le sous-titrage (SRT, VTT) qui sont essentiels pour les applications video.",,,,,,,,815735e2ec5017fd,,,,,,,,
+**Transition** : Après avoir maitrise la transcription de base, nous allons explorer les formats specialises pour le sous-titrage (SRT, VTT) qui sont essentiels pour les applications video.",,,,,,,,286e686a77fdb925,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-subtitle-formats,code,fr,c04ebf7ef1f18950,"# Formats de sous-titrage
 print(""FORMATS DE SOUS-TITRAGE"")
 print(""="" * 45)
@@ -1329,13 +1329,14 @@ L'API Whisper offre un endpoint de traduction (`translations`) qui traduit l'aud
 |----------|--------|--------|
 | `transcriptions` | Audio (n'importe quelle langue) | Texte dans la langue source |
 | `translations` | Audio (n'importe quelle langue) | Texte en anglais |",,,,,,,,6d6523794ad52b5e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,11633633,markdown,fr,4dd249ef4eb071b2,"### Synthese de la Section 3
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,11633633,markdown,fr,445ceb95e8f07463,"### Synthese de la Section 3
 
 Cette section a explore les formats de sortie specialises pour le sous-titrage.
 
 **Résultats obtenus** :
 - 3 formats generes automatiquement (text, SRT, VTT)
 - SRT : 3 sous-titres avec timestamps HH:MM:SS,ms
+- Découpage manuel sur les pauses (exemple guidé 2 bis) : 5 blocs sans aucune violation, contre trois violations pour le découpage fixe de six mots ; trois blocs restent au-dessus de 17 caractères par seconde
 - VTT : Format Web avec header WEBVTT
 - Fichiers sauvegardes dans `outputs/audio/stt/`
 
@@ -1344,7 +1345,7 @@ Cette section a explore les formats de sortie specialises pour le sous-titrage.
 - VTT : Integation web, HTML5 video, plateformes de streaming
 - Text : Traitement NLP, indexation, analyse de contenu
 
-**Transition** : Maintenant que nous maitrisons les formats de sortie, nous allons explorer les capacites de traduction et de detection multilingue de Whisper, qui permettent de traiter des audio dans n'importe quelle langue.",,,,,,,,4dd249ef4eb071b2,,,,,,,,
+**Transition** : Maintenant que nous maitrisons les formats de sortie, nous allons explorer les capacites de traduction et de detection multilingue de Whisper, qui permettent de traiter des audio dans n'importe quelle langue.",,,,,,,,445ceb95e8f07463,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-translation,code,fr,9a48f6b85d365a52,"# Traduction et detection multilingue
 print(""TRADUCTION ET DETECTION MULTILINGUE"")
 print(""="" * 45)
@@ -1481,7 +1482,7 @@ if ""fr"" in audio_samples:
 else:
     print(""Aucun echantillon audio disponible"")
 ",,,,,,,,ff9f11a59b57b3f7,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,a851d984,markdown,fr,18e936e95758d084,"### Interpretation : Comparaison des modèles
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,a851d984,markdown,fr,7393ff83c0e50493,"### Interpretation : Comparaison des modèles
 
 *Correction de @pierre-ingrachen (PR #18569) : la cellule demandait le format `verbose_json`, que `gpt-4o-transcribe` refuse (erreur 400). Elle utilise désormais `json`, accepté par les deux modèles, et compte les mots au lieu d'afficher la langue et la durée, que seul `verbose_json` fournit.*
 
@@ -1489,16 +1490,16 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,a851d9
 |--------|-----------|-------------------|
 | Fin de la seconde phrase | `mots-prononces` | `mots prononcés` |
 | Nombre de mots | 27 | 28 |
-| Temps d'appel (cette exécution) | 1.16 s | 0.90 s |
+| Temps d'appel (cette exécution) | 1.50 s | 0.85 s |
 
 **Points clés** :
 1. Les deux transcriptions sont identiques, sauf sur les deux derniers mots.
 2. **Le texte source contient lui-même une coquille** : la cellule de génération des échantillons écrit « les mots prononces », sans accent, et la synthèse vocale a pu le lire autrement que « prononcés ». `whisper-1` rend « mots-prononces » ; `gpt-4o-transcribe` écrit « mots prononcés », la forme que la phrase appelle. C'est la « compréhension contextuelle » annoncée : le modèle corrige vers le sens. C'est un avantage pour la lecture, mais un risque quand on attend une transcription fidèle à ce qui a été dit.
 3. **L'écart de 27 à 28 mots vient du tiret**, pas d'un mot manquant : compter les mots mesure le découpage, pas la justesse. Le taux d'erreur par mot contre le texte de référence (exercice 1) est une mesure plus sûre.
-4. **Une seule mesure ne départage pas les deux modèles** : les temps d'appel incluent le réseau et varient d'une exécution à l'autre (de 0.9 à 2.5 s sur les deux exécutions du 30/09).
+4. **Une seule mesure ne départage pas les deux modèles** : les temps d'appel incluent le réseau et varient d'une exécution à l'autre (de 0.85 à 2.5 s selon les exécutions).
 5. `gpt-4o-transcribe` refuse `verbose_json` : pour les timestamps et les sous-titres, `whisper-1` reste nécessaire.
 
-> **Note technique** : l'exemple guidé 3 fait lire la même phrase, **avec** l'accent, par la même voix, et `whisper-1` y écrit correctement « mots prononcés ». L'écart observé ici tient donc plus probablement au texte source qu'au modèle. Les deux modèles ont le même tarif ($0.006/minute) ; le choix se fait sur le besoin : formats et timestamps (`whisper-1`) ou compréhension contextuelle (`gpt-4o-transcribe`).",,,,,,,,18e936e95758d084,,,,,,,,
+> **Note technique** : l'exemple guidé 3 fait lire la même phrase, **avec** l'accent, par la même voix, et `whisper-1` y écrit correctement « mots prononcés ». L'écart observé ici tient donc plus probablement au texte source qu'au modèle. Les deux modèles ont le même tarif ($0.006/minute) ; le choix se fait sur le besoin : formats et timestamps (`whisper-1`) ou compréhension contextuelle (`gpt-4o-transcribe`).",,,,,,,,7393ff83c0e50493,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,qpnrjon30ij,markdown,fr,d8c019c3912afb8c,"La comparaison des modèles etant complete, le mode interactif permet d'experimenter librement la transcription sur vos propres fichiers audio en ajustant les paramètres en temps reel.",,,,,,,,d8c019c3912afb8c,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-interactive,code,fr,e76769c542e940d7,"# Mode interactif
 if notebook_mode == ""interactive"" and not skip_widgets:
@@ -1589,14 +1590,14 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-p
 |--------|------|------------|
 | `whisper-1` | $0.006 / minute | ~$0.36 / heure |
 | `gpt-4o-transcribe` | $0.006 / minute | ~$0.36 / heure |",,,,,,,,5f7cee641372299b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,fb5f063f,markdown,fr,0d4118b5e2c65450,"### Synthese de la Section 5
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,fb5f063f,markdown,fr,9ea1949593e7c782,"### Synthese de la Section 5
 
 Cette section a compare les deux modèles STT disponibles dans l'API OpenAI.
 
 **Résultats obtenus** :
 - `whisper-1` : Modèle polyvalent, stable, compatible avec tous les formats
 - `gpt-4o-transcribe` : Meilleure comprehension contextuelle mais restrictions de format
-- Temps d'appel : de 0.9 à 2.5 s selon le modèle et l'exécution, réseau compris ; une seule mesure ne départage pas les deux modèles
+- Temps d'appel : de 0.85 à 2.5 s selon le modèle et l'exécution, réseau compris ; une seule mesure ne départage pas les deux modèles
 - Cout identique : $0.006/minute pour les deux modèles
 
 **Critères de choix** :
@@ -1608,7 +1609,7 @@ Cette section a compare les deux modèles STT disponibles dans l'API OpenAI.
 | Formats sorties multiples | whisper-1 |
 | Comprehension contextuelle | gpt-4o-transcribe |
 
-**Transition** : Après avoir explore toutes les fonctionnalites de l'API Whisper, nous allons maintenant examiner les bonnes pratiques, les couts et les prochaines étapes pour approfondir vos connaissances en reconnaissance vocale.",,,,,,,,0d4118b5e2c65450,,,,,,,,
+**Transition** : Après avoir explore toutes les fonctionnalites de l'API Whisper, nous allons maintenant examiner les bonnes pratiques, les couts et les prochaines étapes pour approfondir vos connaissances en reconnaissance vocale.",,,,,,,,9ea1949593e7c782,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-stats,code,fr,0c14c7375bf02234,"# Statistiques de session et prochaines etapes
 print(""STATISTIQUES DE SESSION"")
 print(""="" * 45)
@@ -31001,12 +31002,12 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb,den
 
 **Sur la reproductibilité** : les valeurs citées tout au long de ce notebook (2427-7302 ms, 195-334 KB) sont celles d'un run unique sur une machine donnée — ré-exécuter le notebook chez vous produira des chiffres différents dans les mêmes proportions relatives. C'est la **méthode** qui est réutilisable (comparaison appariée intra-run, health-check avant mesure, dégradation propre de Qwen3 à merci de son backend), pas le classement entre moteurs — celui-ci a basculé d'un run à l'autre. Le tableau des spécifications de la section 9 conserve les fourchettes architecturales, et `benchmark_results.json` conserve votre run.
 ",,,,,,,,92a18da2948235e9,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg1-lecture,markdown,fr,f70558976c9e49d4,"### Lecture du résultat — exemple guidé 1 (paramètres avancés)
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg1-lecture,markdown,fr,fc20f0c2f445f982,"### Lecture du résultat — exemple guidé 1 (paramètres avancés)
 
 - **`Les deux résultats sont identiques : True`** : imposer `language=""fr""` n'a rien changé sur cet échantillon, parce que la détection automatique trouvait déjà `french` (transcription de base ci-dessus). Le paramètre `language` sert quand la détection peut se tromper : audio très court, accent marqué, langues mélangées. L'exercice 1 le met à l'épreuve sur l'échantillon `multi`.
 - **`Type des reponses : json -> Transcription, text -> str`** : le format `text` ne renvoie pas d'objet, `ex1_text` est directement la chaîne. C'est pourquoi le code écrit `ex1_text.strip()` sans `.text`. Changer de format de réponse oblige à changer la façon de lire la réponse.
-- **Les deux temps de réponse** : `json : 1.05s | text : 1.07s` à cette exécution, soit 0.02 s d'écart ; dans le rendu d'origine, c'était l'appel `json` le plus lent. Avec un seul appel par format, l'écart relève du réseau, pas du format : pour comparer des latences, il faut répéter les appels et comparer des médianes.
-- **Le texte lui-même n'est pas celui de la source** : Whisper écrit `réseaux` et `mots-prononces`, alors que le texte synthétisé en section 1 porte `reseaux` et `mots prononces`. Les deux transcriptions sont identiques entre elles ; savoir si elles sont fidèles est une autre question, que l'exercice 1 mesure.",,,,,,,,f70558976c9e49d4,,,,,,,,
+- **Les deux temps de réponse** : `json : 1.27s | text : 1.65s` à cette exécution. Avec un seul appel par format, l'écart relève du réseau, pas du format : d'une exécution à l'autre, l'ordre des deux temps s'inverse. Pour comparer des latences, il faut répéter les appels et comparer des médianes.
+- **Le texte lui-même n'est pas celui de la source** : Whisper écrit `réseaux` et `mots-prononces`, alors que le texte synthétisé en section 1 porte `reseaux` et `mots prononces`. Les deux transcriptions sont identiques entre elles ; savoir si elles sont fidèles est une autre question, que l'exercice 1 mesure.",,,,,,,,fc20f0c2f445f982,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex1-wer-md,markdown,fr,73f941efbb72479b,"### Exercice 1 : Mesurer la fidélité d'une transcription (taux d'erreur par mot)
 
 L'exemple guidé 1 a comparé deux transcriptions **entre elles** et les a trouvées identiques. Il ne dit pas si elles sont **fidèles** au texte prononcé. La mesure standard est le **taux d'erreur par mot** (WER, *Word Error Rate*) : le nombre minimal de substitutions, de suppressions et d'insertions de mots qui transforment la référence en transcription, divisé par le nombre de mots de la référence.
@@ -31049,60 +31050,133 @@ wer_multi_auto = None  # TODO etudiant
 wer_multi_fr = None  # TODO etudiant
 
 print(""Exercice a completer"")",,,,,,,,44a810c849e4ac15,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg2-lecture,markdown,fr,e237e55443c40d39,"### Lecture du résultat — exemple guidé 2 (sous-titres SRT)
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg2-lecture,markdown,fr,b1c17946d96605f8,"### Lecture du résultat — exemple guidé 2 (sous-titres SRT)
 
 - **`28 mots recus` → `5 blocs`** : 28 = 4 × 6 + 4, soit quatre blocs de six mots et un dernier de quatre. L'affichage s'arrête au milieu du bloc 5 parce que le code n'imprime que `srt_content[:300]` ; le fichier `ex2_custom.srt` est complet.
-- **Les blocs sont jointifs** : le bloc 1 finit à `00:00:02,380`, fin de « convertir », et le bloc 2 commence au même instant, début de « la ». Dans une parole continue, Whisper donne à chaque mot un début égal à la fin du mot précédent.
-- **Le bloc 2 enjambe la fin de la première phrase** : `la parole en texte Cette technologie` reste affiché de 2,38 s à 5,44 s. Or la liste des mots de la transcription de base montre un silence de plus d'une seconde entre « texte » (fin à 3,60 s) et « Cette » (début à 4,70 s), et c'est exactement là que Whisper clôt son premier segment (`[0.0s - 3.6s]`) et ouvre le deuxième (`[4.7s - 7.6s]`). Le découpage fixe de six mots ignore cette pause.
-- **La ponctuation a disparu** : `texte Cette` n'a plus de point. Les timestamps mot par mot ne portent pas la ponctuation, que seul le texte complet conserve. Le découpage ne peut donc s'appuyer que sur le temps. C'est l'objet de l'exercice 2 : couper sur les pauses et borner la durée.",,,,,,,,e237e55443c40d39,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex2-pauses-md,markdown,fr,9e6f59ab6d33be90,"### Exercice 2 : Sous-titres lisibles — couper sur les pauses, borner la durée
+- **Les blocs sont jointifs** : le bloc 1 finit à `00:00:02,400`, fin de « convertir », et le bloc 2 commence au même instant, début de « la ». Dans une parole continue, Whisper donne à chaque mot un début égal à la fin du mot précédent.
+- **Le bloc 2 enjambe la fin de la première phrase** : `la parole en texte Cette technologie` reste affiché de 2,40 s à 5,66 s. Or la liste des mots de la transcription de base montre un silence de près d'une seconde entre « texte » (fin à 4,00 s) et « Cette » (début à 4,96 s), et c'est exactement là que Whisper clôt son premier segment (`[0.0s - 4.0s]`) et ouvre le deuxième (`[5.0s - 7.3s]`). Le découpage fixe de six mots ignore cette pause.
+- **La ponctuation a disparu** : `texte Cette` n'a plus de point. Les timestamps mot par mot ne portent pas la ponctuation, que seul le texte complet conserve. Le découpage ne peut donc s'appuyer que sur le temps. C'est l'objet de l'exemple guidé 2 bis : couper sur les pauses et borner la durée.",,,,,,,,b1c17946d96605f8,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex2-pauses-md,markdown,fr,19def356d7588afb,"### Exemple guidé 2 bis : Sous-titres lisibles — couper sur les pauses, borner la durée
 
-L'exemple guidé 2 regroupe les mots **six par six**, sans regarder le temps qui les sépare. Un bloc peut donc enjamber la fin d'une phrase, et la ponctuation, absente des timestamps mot par mot, ne peut plus signaler la coupure. Un sous-titre professionnel se coupe au contraire sur les **pauses** de la parole, avec une **durée** et une **longueur** bornées.
+*Contribution d'un groupe d'étudiants EPF en apprentissage (PR #20693), intégrée comme exemple guidé.*
+
+L'exemple guidé 2 regroupe les mots **six par six**, sans regarder le temps qui les sépare. Un bloc peut donc enjamber la fin d'une phrase, et la ponctuation, absente des timestamps mot par mot, ne peut plus signaler la coupure. Un sous-titre professionnel se coupe au contraire sur les **pauses** de la parole, avec une **durée** et une **longueur** bornées. Cet exemple construit ce découpage et le compare au découpage fixe.
 
 **Contexte** : trois contraintes courantes de lisibilité — couper dès qu'un silence atteint `PAUSE_MIN` secondes, ne pas afficher un sous-titre plus de `DUREE_MAX` secondes, ne pas dépasser `CARACTERES_MAX` caractères. La vitesse de lecture sert ensuite de contrôle : au-delà d'environ 17 caractères par seconde, un sous-titre défile trop vite pour être lu.
 
 **Étapes** :
-1. Écrire `decouper(mots, pause_min, duree_max, caracteres_max)` qui parcourt `ex2_words` (exemple guidé 2) et ouvre un nouveau bloc dès qu'une des trois contraintes l'exige
-2. Compter, pour les blocs de l'exemple guidé 2 **et** pour les vôtres, les violations de chaque contrainte (pause interne, durée, longueur)
-3. Calculer la vitesse de lecture (caractères par seconde) de chaque bloc et signaler ceux qui dépassent `VITESSE_MAX`
-4. Sauvegarder vos blocs au format SRT dans `ex2_pauses.srt`, en réutilisant `seconds_to_srt_time`
+1. `grouper` parcourt `ex2_words` (exemple guidé 2) et ferme le bloc courant dès qu'une des trois contraintes l'exige ; `decouper` transforme chaque groupe en `(debut, fin, texte)`
+2. `compter_violations` compte, pour les blocs de l'exemple guidé 2 **et** pour les nouveaux blocs, les violations de chaque contrainte (pause interne, durée, longueur)
+3. `vitesse` calcule la vitesse de lecture (caractères par seconde) de chaque bloc ; les blocs au-dessus de `VITESSE_MAX` sont listés
+4. Les nouveaux blocs sont sauvegardés au format SRT dans `ex2_pauses.srt`, avec `seconds_to_srt_time`
 
-**Indices** :
-- `# Indice` : la pause entre deux mots consécutifs vaut `mot.start - mot_precedent.end`
-- `# Indice` : les blocs de l'exemple guidé 2 sont les tranches `ex2_words[i:i + MAX_WORDS_PER_LINE]` ; les recalculer donne accès aux mots de chaque bloc
-- `# Indice` : un mot seul qui dépasse une contrainte forme son propre bloc ; la boucle ne doit jamais produire de bloc vide",,,,,,,,9e6f59ab6d33be90,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex2-pauses-code,code,fr,eab8a1d5037bfde0,"# Exercice 2 : Sous-titres lisibles -- decoupage sur les pauses, duree bornee
-# TODO etudiant : regrouper les mots en respectant pauses, duree et longueur
+**Points clés du code** :
+- la décision se prend **avant** d'ajouter le mot : on teste la pause qui le précède, puis la durée et la longueur qu'aurait le bloc s'il l'accueillait (`duree_si_ajout`, `texte_si_ajout`)
+- un mot qui ferait déborder le bloc **ouvre** le suivant : la boucle ne produit jamais de bloc vide, et le dernier bloc est ajouté après la boucle
+- `vitesse` renvoie l'infini pour un bloc de durée nulle plutôt que de diviser par zéro
+- les trois `assert` finaux vérifient le cas de la liste vide, l'absence de texte vide et l'absence de toute violation dans les nouveaux blocs",,,,,,,,19def356d7588afb,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex2-pauses-code,code,fr,5af331e22721b50e,"# Exemple guide 2 bis : Sous-titres lisibles -- decoupage sur les pauses, duree bornee
+# Contribution d'un groupe d'etudiants EPF en apprentissage (PR #20693)
 
 PAUSE_MIN = 0.25       # silence (s) qui impose une coupure
 DUREE_MAX = 3.0        # duree maximale d'un sous-titre (s)
 CARACTERES_MAX = 42    # longueur maximale d'un sous-titre (caracteres)
 VITESSE_MAX = 17       # vitesse de lecture maximale (caracteres par seconde)
 
+def texte_mot(mot):
+    """"""Texte d'un mot (adapter .word si l'attribut a un autre nom).""""""
+    return mot.word.strip()
+
 # Etape 1 : Decoupage guide par les trois contraintes
+def grouper(mots, pause_min, duree_max, caracteres_max):
+    """"""Retourne une liste de groupes de mots (liste de listes).""""""
+    groupes = []
+    courant = []
+    for mot in mots:
+        if not courant:  # premier mot : on ouvre un bloc
+            courant = [mot]
+            continue
+        pause = mot.start - courant[-1].end
+        duree_si_ajout = mot.end - courant[0].start
+        texte_si_ajout = "" "".join(texte_mot(m) for m in courant + [mot])
+        if (pause >= pause_min
+                or duree_si_ajout > duree_max
+                or len(texte_si_ajout) > caracteres_max):
+            groupes.append(courant)  # on ferme le bloc courant
+            courant = [mot]          # le mot ouvre le suivant (jamais de bloc vide)
+        else:
+            courant.append(mot)
+    if courant:  # ne pas oublier le dernier bloc
+        groupes.append(courant)
+    return groupes
+
 def decouper(mots, pause_min, duree_max, caracteres_max):
     """"""Retourne une liste de (debut, fin, texte) respectant les trois contraintes.""""""
-    # Indice : ouvrir un nouveau bloc si la pause atteint pause_min,
-    # ou si ajouter le mot ferait depasser duree_max ou caracteres_max
-    return []  # TODO etudiant
+    groupes = grouper(mots, pause_min, duree_max, caracteres_max)
+    return [(g[0].start, g[-1].end, "" "".join(texte_mot(m) for m in g))
+            for g in groupes]
 
 blocs_pauses = decouper(ex2_words, PAUSE_MIN, DUREE_MAX, CARACTERES_MAX)
 
-# Etape 2 : Violations de chaque contrainte -- exemple guide 2 contre vos blocs
-violations = None  # TODO etudiant
+# Etape 2 : Violations de chaque contrainte -- exemple guide 2 contre les blocs sur pauses
+def compter_violations(groupes):
+    """"""Compte les blocs qui violent chaque contrainte.""""""
+    v = {""pause interne"": 0, ""duree"": 0, ""longueur"": 0}
+    for g in groupes:
+        pauses = [b.start - a.end for a, b in zip(g, g[1:])]
+        if any(p >= PAUSE_MIN for p in pauses):
+            v[""pause interne""] += 1
+        if g[-1].end - g[0].start > DUREE_MAX:
+            v[""duree""] += 1
+        if len("" "".join(texte_mot(m) for m in g)) > CARACTERES_MAX:
+            v[""longueur""] += 1
+    return v
+
+# Blocs de l'exemple guide 2 : tranches de MAX_WORDS_PER_LINE mots
+groupes_guide = [ex2_words[i:i + MAX_WORDS_PER_LINE]
+                 for i in range(0, len(ex2_words), MAX_WORDS_PER_LINE)]
+groupes_pauses = grouper(ex2_words, PAUSE_MIN, DUREE_MAX, CARACTERES_MAX)
+
+violations = {
+    ""exemple guide 2"": compter_violations(groupes_guide),
+    ""blocs sur pauses"": compter_violations(groupes_pauses),
+}
+for nom, groupes in [(""exemple guide 2"", groupes_guide), (""blocs sur pauses"", groupes_pauses)]:
+    print(f""{nom} ({len(groupes)} blocs) : {violations[nom]}"")
 
 # Etape 3 : Vitesse de lecture (caracteres par seconde) de chaque bloc
-vitesses = None  # TODO etudiant
+def vitesse(bloc):
+    debut, fin, texte = bloc
+    duree = fin - debut
+    return len(texte) / duree if duree > 0 else float(""inf"")  # evite la division par zero
+
+vitesses = [vitesse(b) for b in blocs_pauses]
+trop_rapides = [(b, v) for b, v in zip(blocs_pauses, vitesses) if v > VITESSE_MAX]
+print(f""\n{len(trop_rapides)} bloc(s) au-dessus de {VITESSE_MAX} car/s :"")
+for (debut, fin, texte), v in trop_rapides:
+    print(f""  [{debut:.2f}-{fin:.2f}] {v:.1f} car/s : {texte}"")
 
 # Etape 4 : Sauvegarde SRT (reutiliser seconds_to_srt_time) dans OUTPUT_DIR / ""ex2_pauses.srt""
+chemin_srt = OUTPUT_DIR / ""ex2_pauses.srt""
+with open(chemin_srt, ""w"", encoding=""utf-8"") as f:
+    for i, (debut, fin, texte) in enumerate(blocs_pauses, start=1):
+        f.write(f""{i}\n"")
+        f.write(f""{seconds_to_srt_time(debut)} --> {seconds_to_srt_time(fin)}\n"")
+        f.write(f""{texte}\n\n"")
 
-print(""Exercice a completer"")",,,,,,,,eab8a1d5037bfde0,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg3-lecture,markdown,fr,00167e46a4e2845f,"### Lecture du résultat — exemple guidé 3 (pipeline de traduction)
+print(f""\n{len(blocs_pauses)} blocs ecrits dans {chemin_srt.name}"")
+
+# Verifications : cas limite (liste vide) et contraintes respectees
+assert decouper([], PAUSE_MIN, DUREE_MAX, CARACTERES_MAX) == []
+assert all(t.strip() for _, _, t in blocs_pauses)
+assert all(x == 0 for x in compter_violations(groupes_pauses).values())
+print(""Verifications OK"")",,,,,,,,5af331e22721b50e,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg3-lecture,markdown,fr,2641ecfed184c97a,"### Lecture du résultat — exemple guidé 3 (pipeline de traduction)
 
 - **`Langue detectee : french`** : en `verbose_json`, Whisper renvoie le **nom** de la langue, en anglais, et non son code. Le paramètre `language` attend au contraire un code ISO (`""fr""`, exemple guidé 1) : les deux valeurs ne se comparent pas directement.
 - **La transcription est exacte** : elle reproduit mot pour mot le texte de base, accent de « prononcés » compris. Sur l'échantillon de la section 1, lu par la même voix, la transcription plus haut rendait « mots-prononces » : le texte de cet échantillon écrit « prononces », sans accent.
 - **La traduction est littérale** : « Vocal recognition » calque « reconnaissance vocale », là où l'anglais dit *speech recognition*, et « identify pronounced words » traduit mot à mot. L'endpoint `translations` passe directement de l'audio à l'anglais, sans consigne possible sur le vocabulaire : c'est la limite qu'explore l'exercice 3.
-- **Les temps ne départagent rien** : 0.90 s pour la transcription et 1.52 s pour la traduction à cette exécution, contre 1.78 s et 1.92 s à l'exécution de l'étudiant. Le rapport passe de 1.08 à 1.68 : un seul appel par opération, réseau compris, ne suffit pas à conclure. Il faudrait répéter chaque appel et comparer des médianes.",,,,,,,,00167e46a4e2845f,,,,,,,,
+- **Les temps ne départagent rien** : 1.05 s pour la transcription et 0.85 s pour la traduction à cette exécution, soit un rapport de 0.80 ; d'autres exécutions donnent l'ordre inverse, avec un rapport allant jusqu'à 1.68. Un seul appel par opération, réseau compris, ne suffit pas à conclure. Il faudrait répéter chaque appel et comparer des médianes.",,,,,,,,2641ecfed184c97a,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex3b-md,markdown,fr,1eb7f49ebf7ef911,"### Exercice 3 : Traduction directe ou en deux étapes — que perd-on en route ?
 
 L'exemple guidé 3 traduit l'audio **directement** vers l'anglais avec l'endpoint `translations`. Une autre voie existe : transcrire d'abord en français, puis faire traduire le **texte** par un modèle de langage. Elle coûte un appel de plus, mais elle permet de choisir la langue cible et de donner des consignes au traducteur.
@@ -31261,3 +31335,48 @@ else:
     print(""Exercice a completer : calculer_horaires() renvoie une liste vide"")
     print(f""Repliques : {len(dialogue)}, segments (repliques et silences) : {len(audio_segments)}"")
 ",,,,,,,,18ef933cdffda622,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,eg2bis-lecture,markdown,fr,25600af0668affaf,"### Lecture du résultat — exemple guidé 2 bis (sous-titres sur les pauses)
+
+- **Le découpage fixe viole les trois contraintes, une fois chacune** : `{'pause interne': 1, 'duree': 1, 'longueur': 1}`. La pause interne et la durée tiennent au même bloc, le bloc 2 de l'exemple guidé 2 (`la parole en texte Cette technologie`, de 2,40 s à 5,66 s, soit 3,26 s), qui enjambe le silence entre les deux phrases. La longueur vient du bloc 1 : `La reconnaissance vocale permet de convertir` compte 44 caractères, pour 42 autorisés.
+- **Le découpage sur les pauses donne aussi 5 blocs, sans aucune violation** : le nombre de blocs ne change pas, ce sont les coupures qui se déplacent. Le premier bloc s'arrête avant « convertir », qui le porterait à 44 caractères. La coupure sur le silence tombe bien entre « texte » (fin à 4,00 s) et « Cette » (début à 4,96 s) : le troisième bloc de la liste commence à `4.96`.
+- **Trois blocs sur cinq dépassent 17 caractères par seconde, de 21,3 à 23,5 car/s** : ce sont les trois blocs de la seconde phrase. Elle est prononcée sans silence, si bien qu'ils sont coupés sur la **longueur** et se touchent : `[4.96-6.66]`, `[6.66-8.56]`, `[8.56-10.34]`, la fin de l'un est le début du suivant. Respecter la longueur ne suffit donc pas : chaque bloc reste affiché exactement le temps de sa diction, trop court pour une quarantaine de caractères.
+- **Les deux premiers blocs n'apparaissent pas dans la liste** : ils restent sous la limite. Le premier va de « La » (début à 0,00 s) à « de » (fin à 2,00 s), d'après la liste des mots de la transcription de base : 34 caractères en 2,00 s, soit 17,0 car/s, exactement la limite. Les trois `assert` confirment le cas de la liste vide, l'absence de texte vide et l'absence de violation. L'exercice 2 cherche à rendre du temps de lecture aux blocs trop rapides.",,,,,,,,25600af0668affaf,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex2-allonger-md,markdown,fr,091526b8df20dc57,"### Exercice 2 : Laisser le temps de lire — allonger l'affichage dans la pause suivante
+
+L'exemple guidé 2 bis coupe sur les pauses, mais chaque sous-titre reste affiché **exactement** le temps où ses mots sont prononcés. Un bloc dense dépasse alors `VITESSE_MAX`, et un bloc très court disparaît avant d'avoir été lu. La pratique du sous-titrage consiste à **prolonger l'affichage** au-delà du dernier mot, dans le silence qui suit, sans jamais empiéter sur le sous-titre suivant.
+
+**Contexte** : deux nouvelles constantes — `DUREE_MIN`, la durée d'affichage minimale (1 s), et `ECART_MIN`, l'écart minimal entre deux sous-titres (0,08 s, environ deux images à 25 images par seconde). La fin d'un bloc peut reculer, jamais avancer : un sous-titre n'est jamais raccourci.
+
+**Étapes** :
+1. Écrire `allonger(blocs, vitesse_max, duree_min, duree_max, ecart_min)` qui, pour chaque bloc `(debut, fin, texte)` de `blocs_pauses`, calcule la fin souhaitée `debut + max(duree_min, len(texte) / vitesse_max)`, la borne par `debut + duree_max` et par `debut_suivant - ecart_min`, et ne la retient que si elle dépasse la fin d'origine
+2. Comparer avant et après : nombre de blocs au-dessus de `VITESSE_MAX`, nombre de blocs plus courts que `DUREE_MIN`
+3. Pour chaque bloc encore trop rapide, afficher le temps d'affichage qui lui manque et la pause disponible après lui, puis expliquer en une phrase pourquoi l'allongement n'a pas suffi
+4. Sauvegarder les blocs allongés au format SRT dans `ex2_lisible.srt`, en réutilisant `seconds_to_srt_time`
+
+**Indices** :
+- `# Indice` : le dernier bloc n'a pas de suivant ; seule `duree_max` borne son allongement
+- `# Indice` : la pause disponible après le bloc `i` vaut `blocs[i + 1][0] - blocs[i][1]` ; quand le découpage a coupé sur la durée ou la longueur, et non sur un silence, elle est nulle et aucun allongement n'est possible
+- `# Indice` : vérifier qu'aucun bloc allongé ne chevauche le suivant (`fin + ecart_min <= debut_suivant`), sauf là où les blocs d'origine se touchaient déjà",,,,,,,,091526b8df20dc57,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,ex2-allonger-code,code,fr,52f0f1f4ea224a2d,"# Exercice 2 : Laisser le temps de lire -- allonger l'affichage dans la pause suivante
+# TODO etudiant : prolonger les sous-titres trop rapides sans chevaucher le suivant
+
+DUREE_MIN = 1.0     # duree d'affichage minimale d'un sous-titre (s)
+ECART_MIN = 0.08    # ecart minimal entre deux sous-titres (s), environ 2 images a 25 i/s
+
+# Etape 1 : Allongement borne par DUREE_MAX et par le debut du bloc suivant
+def allonger(blocs, vitesse_max, duree_min, duree_max, ecart_min):
+    """"""Retourne une liste de (debut, fin, texte) ou chaque fin a pu reculer, jamais avancer.""""""
+    # Indice : fin souhaitee = debut + max(duree_min, len(texte) / vitesse_max)
+    return []  # TODO etudiant
+
+blocs_allonges = allonger(blocs_pauses, VITESSE_MAX, DUREE_MIN, DUREE_MAX, ECART_MIN)
+
+# Etape 2 : Comparaison avant / apres -- blocs trop rapides, blocs trop courts
+comparaison = None  # TODO etudiant
+
+# Etape 3 : Blocs encore trop rapides -- temps manquant et pause disponible
+restants = None  # TODO etudiant
+
+# Etape 4 : Sauvegarde SRT (reutiliser seconds_to_srt_time) dans OUTPUT_DIR / ""ex2_lisible.srt""
+
+print(""Exercice a completer"")",,,,,,,,52f0f1f4ea224a2d,,,,,,,,
