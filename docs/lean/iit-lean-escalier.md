@@ -1,107 +1,151 @@
-# Escalier du lake `iit_lean` — note de conception
+# Escalier `iit_lean` — note de conception
 
-**Statut** : étape 0 de l'escalier (aucun carnet consommateur n'existe encore).
-**Lake** : `MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/`, livré par #18599 (veine 5 de l'Epic Aaronson #16781, moitié formelle).
-**Sous-grain** : #20414.
-**Mesures** : 2026-10-12, sur `main`, lane `myia-po-2024:CoursIA`.
+**Issue** : #20414 · **Epic** : #16781 (Aaronson, veine 5 — « l'objet qui a mordu IIT, en Lean ») ·
+**Lake livré par** : #18599 · **Carte Lean phase 1** : #17545 (c.6108479114 : « chaque tranche
+commence par une note de conception » ; rattachement c.6108531719).
+**Mesure d'origine** : `git grep -l "iit_lean" -- "*.ipynb"` → 0 hit sur `main` au 2026-10-12 —
+le lake n'a aucun carnet consommateur, et la carte le range explicitement hors de ses tranches
+(« lakes sans carnet consommateur : à traiter à part, hors carte »).
 
-## Pourquoi cette note existe
+Cette note suit les quatre points du mandat : inventaire, escalier, capstone, modules non
+exposés. Elle est vérifiable ligne à ligne contre
+[`IIT/Integration.lean`](../MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/IIT/Integration.lean)
+(19 déclarations, 0 `sorry`, sans dépendance Mathlib, paire i18n FR/EN pattern A).
 
-Le mainteneur a posé la règle pour toute tranche Lean : « **Chaque tranche commence par une note de conception** », structurée en quatre points — inventaire du lake, escalier, capstone, modules non exposés (#17545, c.6108479114). La carte Lean phase 1 range ce lake **hors de ses tranches** : « Lakes sans carnet consommateur (`differential_lean`, `iit_lean`) : à traiter à part, hors carte ».
+## 1. Inventaire nominatif — quoi est exposé, où
 
-Le constat qui motive la note, mesuré et non supposé :
+L'inventaire mécanique (`grep -E "^(abbrev|structure|def|theorem)"`) rend 19 déclarations,
+regroupées ici en 13 items pédagogiques. « Exposé » signifie : un carnet de l'escalier importe
+l'item et le fait travailler (pas seulement le mentionner).
 
-```bash
-git grep -l "iit_lean" -- "*.ipynb"      # main @ 2026-10-12 : 0 hit
-```
+| # | Item (noms) | Lignes | Rôle dans le lake | Exposition |
+| --- | --- | --- | --- | --- |
+| 1 | `State`, `System` | 37, 40 | valuation booléenne `Fin n → Bool` ; système = fonction d'états | Marche 1 |
+| 2 | `Cut` (+ champs `sel`, `ha`, `hb`) | 43-49 | coupe non triviale : deux côtés non vides | Marche 1 |
+| 3 | `projT`, `projF` | 52, 56 | motifs d'un côté (bits de l'autre à `false`) | Marche 1 |
+| 4 | `cutIndep` | 62 | indépendance : tout couple de motifs séparément réalisables est réalisable ensemble | Marche 1 |
+| 5 | `decomposable`, `integrated` | 67, 70 | existence / absence de coupe indépendante | Marche 1 |
+| 6 | `cutIndep_of_sides_independent` | 80 | **Théorème A** : dynamiques latérales indépendantes ⇒ coupe indépendante (témoin constructif : le mélange des entrées) | Marche 1 |
+| 7 | `product_decomposable` | 102 | alias de A sous le **nom figé n° 1 de #18599** | Marche 1 (mentionné comme contrat d'issue, pas exposé en propre) |
+| 8 | `parity` | 119 | parité par récurrence sur `n` (tête + queue décalée) | Marche 2 |
+| 9 | `broadcast` | 125 | le système broadcast-parité : l'état suivant est uniformément la parité | Marche 2 (aperçu mesuré en marche 1, § teaser) |
+| 10 | `parity_allFalse`, `parity_allTrue`, `parity_oneHot_zero`, `parity_const` | 129-174 | escalier interne de la preuve de B | Marche 2 (lus comme les marches de la preuve, pas de carnet propre) |
+| 11 | `broadcast_integrated` | 183 | **Théorème B** : le broadcast est intégré pour toute coupe | Marche 2 |
+| 12 | `broadcast_two_cycle` | 206 | **Théorème C** : toute orbite atteint un point fixe en deux pas | Capstone |
+| 13 | `broadcast_trivial_dynamics` | 216 | alias de C sous le **nom figé n° 3 de #18599** | Capstone (mention, idem 7) |
 
-Le carnet `IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb` porte la moitié **empirique** de la veine 5 (Φ_DM sur `F_p`, grilles et anneaux sous PyPhi) et n'importe pas le lake. La moitié formelle — l'objet d'Aaronson **énoncé en théorèmes** — n'a aujourd'hui aucune porte d'entrée pédagogique. Cette note décide la forme de cette porte avant qu'on écrive la première marche.
+Le jumeau EN `IIT/Integration_en.lean` (namespace `IIT_en`) est byte-identique hors docstrings
+(paire sibling pattern A) : il n'a pas d'exposition séparée — un carnet consomme le module FR,
+l'existence du jumeau est rappelée en marche 1.
 
-## 1. Inventaire du lake
+## 2. L'escalier — trois marches
 
-Le lake est un **module unique** plus sa racine et son jumeau i18n : `IIT/Integration.lean` (avec docstrings FR), `IIT/Integration_en.lean` (namespace `IIT_en`), `IIT.lean` (racine qui importe les deux). **Sans dépendance Mathlib** : `lake build` se fait en secondes, sans `lake exe cache get`. `sorry` baseline `0` (`scripts/lean/ci_lakes.json`).
+Le fil directeur : la critique d'Aaronson (« construire un objet à intégration énorme et à
+comportement trivial ») ne devient un énoncé mathématique qu'après avoir posé **ce que coupe
+veut dire**. La marche 1 paie ce vocabulaire ; la marche 2 construit l'objet ; le capstone lit
+les deux ensemble. Chaque marche est un grain distinct (#20414 : note + marche 1 ; les
+suivantes en grains séparés).
 
-**19 déclarations**, toutes **non exposées** (aucun `.ipynb` du dépôt ne cite le lake) :
+### Marche 1 — Coupe et décomposabilité (théorème A)
 
-| # | Déclaration | Genre | Ligne | Énoncé | Carnet qui l'expose |
-|---|---|---|---|---|---|
-| 1 | `State n` | `abbrev` | 37 | valuation booléenne des `n` éléments | **non exposé** |
-| 2 | `System n` | `abbrev` | 40 | fonction d'états (déterministe) | **non exposé** |
-| 3 | `Cut n` | `structure` | 43 | coupe non triviale : `sel`, `ha` (A non vide), `hb` (B non vide) | **non exposé** |
-| 4 | `projT` | `def` | 52 | motif du côté A (bits B mis à `false`) | **non exposé** |
-| 5 | `projF` | `def` | 56 | motif du côté B (bits A mis à `false`) | **non exposé** |
-| 6 | `cutIndep` | `def` | 62 | l'image du système est le produit des images des deux parties | **non exposé** |
-| 7 | `decomposable` | `def` | 67 | il existe une coupe indépendante | **non exposé** |
-| 8 | `integrated` | `def` | 70 | aucune coupe n'est indépendante | **non exposé** |
-| 9 | `cutIndep_of_sides_independent` | `theorem` | 80 | dynamiques latérales indépendantes ⟹ coupe indépendante (témoin : mélange des entrées) | **non exposé** |
-| 10 | `product_decomposable` | `theorem` | 102 | *énoncé figé n° 1 de #18599* — alias de 9, conclusion `decomposable f` | **non exposé** |
-| 11 | `parity` | `def` | 119 | parité d'un état, par récurrence sur `n` | **non exposé** |
-| 12 | `broadcast` | `def` | 125 | système broadcast-parité : l'état suivant est uniformément la parité de l'état courant | **non exposé** |
-| 13 | `parity_allFalse` | `theorem` | 129 | parité d'un état tout-faux = `false` | **non exposé** |
-| 14 | `parity_allTrue` | `theorem` | 139 | parité d'un état tout-vrai = imparité de `n` | **non exposé** |
-| 15 | `parity_oneHot_zero` | `theorem` | 159 | le bit unique d'indice 0 rend la parité impaire, pour `n > 0` | **non exposé** |
-| 16 | `parity_const` | `theorem` | 170 | parité d'un état constant : `false` si le bit est faux, parité de `n` sinon | **non exposé** |
-| 17 | `broadcast_integrated` | `theorem` | 183 | **l'objet qui a mordu IIT** : le broadcast-parité est intégré pour toute coupe | **non exposé** |
-| 18 | `broadcast_two_cycle` | `theorem` | 206 | toute orbite du broadcast atteint un point fixe en deux pas | **non exposé** |
-| 19 | `broadcast_trivial_dynamics` | `theorem` | 216 | *énoncé figé n° 3 de #18599* — alias de 18 | **non exposé** |
+**Carnet** : [`IIT-07-Coupe-et-Decomposabilite-Lean.ipynb`](../MyIA.AI.Notebooks/IIT/IIT-07-Coupe-et-Decomposabilite-Lean.ipynb) · kernel `lean4-wsl`.
 
-**Les six théorèmes et leurs alias forment trois familles** : le verdict de décomposition (9, 10), la parité comme outil (13-16), et le couple qui porte la critique d'Aaronson (17, 18, 19). Les définitions 1-8 sont le vocabulaire de la famille 1 ; 11 et 12 celui de la famille 3.
+- **Marchepieds** : aucun carnet Lean préalable exigé — le carnet est autonome pour un lecteur
+  du 06 ou d'IIT-01 ; les définitions sont relues sur des instances `Fin`/`Bool` calculées
+  (`#eval`), la syntaxe Lean introduite au fil de l'eau.
+- **Ce qu'elle ajoute** : les items 1-7 du tableau — un état, un système, une coupe, le motif
+  d'un côté, l'indépendance comme produit d'images relire sur instance, décomposable/intégré ;
+  puis le théorème A et son **témoin constructif** (le mélange `z` des entrées) exhibé sur un
+  système concret à deux moitiés indépendantes ; l'alias figé `product_decomposable` lu comme
+  contrat d'issue.
+- **Teaser mesuré pour la marche 2** : vérification exhaustive (énumération finie, `n = 2`)
+  que le broadcast est intégré — une preuve par énumération qui motive la preuve générale
+  (comment prouver pour **tout** `n` et **toute** coupe ?).
+- **3 exercices C.1** : construire une coupe et ses motifs ; appliquer A sur un nouveau système
+  local (écrire `hA`/`hB` soi-même) ; montrer que l'identité est décomposable (l'insight :
+  A s'applique, la localité y est triviale).
 
-## 2. L'escalier
+### Marche 2 — Le broadcast-parité (théorème B)
 
-Trois marches. Chaque marche est un carnet ; chaque carnet suit la grammaire de nommage (`<Préfixe>-<NN><lettre?>-<Titre>-<Noyau>`, noyau obligatoire et dernier, cf `notebook-accretion-numbering.md`).
+**Carnet** : `IIT-08-*` (à créer en son grain). Items 8-11.
 
-### Marche 1 — « La coupe et le verdict »
+- **Marchepieds** : marche 1 (le vocabulaire de coupe est acquis).
+- **Ce qu'elle ajoute** : `parity` par récurrence sur `n` ; `broadcast` et son image (deux
+  états constants) ; les quatre lemmes de parité lus comme **l'escalier interne de la preuve**
+  (pourquoi la récurrence sur `n` seule ne généralise pas `s`, pourquoi `omega` ferme la
+  bascule modulo 2) ; le théorème B — le couple de motifs (côté A diffusé vrai, côté B diffusé
+  faux) n'est jamais réalisé ensemble alors que chaque motif l'est séparément.
 
-**Expose** : 1-10 (vocabulaire + verdict de décomposition).
-**Ce qu'elle ajoute** : le lecteur tient un système déterministe fini comme un objet Lean, écrit une coupe, et **fait rendre un verdict** (`decomposable` / `integrated`). Un système-produit instancié prouve `decomposable` en invoquant `product_decomposable` ; la même machinerie, appliquée au broadcast-parité, bute sur `integrated` — ce qui prépare la marche 3 sans la consommer.
-**Marchepied** : les définitions `projT`/`projF` sont montrées comme motifs (ce qu'elles projettent, sur un état concret) avant d'être utilisées dans `cutIndep` — sinon la définition 6 se lit comme une formule opaque.
+### Capstone — L'objet qui a mordu IIT, en théorèmes (A ∧ B ∧ C)
 
-### Marche 2 — « La parité, de bout en bout »
+**Carnet** : `IIT-09-*` (à créer en son grain).
 
-**Expose** : 11-16.
-**Ce qu'elle ajoute** : la parité est **calculée** sur des états concrets (`n = 3`, `n = 4`, tout-faux, tout-vrai, bit unique), et les quatre lemmes cessent d'être des obligations de preuve pour devenir des faits vérifiables à la main. C'est la marche qui rend la marche 3 lisible : sans elle, `broadcast` tombe du ciel.
-**Marchepied** : `parity_oneHot_zero` est le seul lemme de la famille qui **exige** l'hypothèse `0 < n` ; la marche le dit, et c'est l'occasion de montrer pourquoi `n = 0` est un cas dégénéré du lake (aucun élément à couper).
-
-### Marche 3 — « L'objet qui a mordu IIT, en théorèmes » (capstone)
-
-**Expose** : 17-19, et renvoie à `IIT-06-L`.
-**Ce qu'elle ajoute** : le couple de théorèmes qui **est** la critique d'Aaronson sous forme formelle — « intégration maximale au sens du proxy » (`broadcast_integrated`) **et** « comportement trivial » (`broadcast_two_cycle` / `broadcast_trivial_dynamics`), les deux sur le **même** système. Le carnet met ce couple en regard des mesures Φ_DM du carnet Python, et conclut sur ce que le proxy **ne** capture pas.
+- **Marchepieds** : marches 1 et 2.
+- **Ce qu'il ajoute** : le théorème C (dynamique triviale) et la **lecture conjointe** —
+  intégration pour toute coupe + comportement trivial = le contenu formel de la critique
+  d'Aaronson, en deux théorèmes rendus par le noyau. Dialogue avec la moitié empirique
+  ([`IIT-06`](../MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb) :
+  Vandermonde et le hack W en Φ_DM, grille XOR en Φ 3.0) : le lake formalise la *classe* de
+  l'objet, le 06 mesure des *instances* numériques. Le grade du proxy (sur-montée interdite :
+  pas d'information sous perturbation, pas de MIP, pas de Φ numérique — Phase 2 renvoyée)
+  et les portes ouvertes.
 
 ## 3. Le capstone — ce qu'il consomme, ce qu'il montre, sa place
 
-- **Consomme** : le verdict (marche 1) pour énoncer `integrated` sans le redéfinir ; la parité (marche 2) pour lire `broadcast` ; et, hors lake, les mesures Φ_DM du carnet Python `IIT-06-L`.
-- **Montre** : que la critique d'Aaronson est **formalement tenable** — un système peut maximiser le proxy d'intégration et n'avoir qu'une dynamique à deux pas. C'est exactement la posture défendue par le lake, et c'est ce que quelques dizaines de lignes de Lean montrent plus sûrement qu'un paragraphe.
-- **Grade honnête, porté par le carnet lui-même** : le proxy mesure la décomposition déterministe de l'**image** ; il ne capture ni l'information effective sous perturbation, ni la partition minimale au sens MIP, ni une valeur numérique de Φ. Le carnet Python mesure Φ ; le lake formalise un **proxy**. Les deux ne se comparent pas terme à terme — le capstone le dit au lieu de le laisser croire.
-- **Sa place dans la mère** : série `IIT/`, après `IIT-06-L` (dont il est la moitié formelle). La marche 1 et la marche 2 peuvent vivre dans la même série ou dans `SymbolicAI/Lean/` — c'est la décision de placement ci-dessous.
+- **Consomme** : le théorème A (marche 1) comme contrepoint — A dit qu'un système vraiment
+  modulaire est décomposable ; B dit que le broadcast ne l'est pour **aucune** coupe ; C dit
+  que sa dynamique est triviale. Le capstone n'apporte pas de nouveau théorème du lake : il
+  apporte la **conjonction** et son acuité — c'est précisément le couple B ∧ C qui « mord ».
+- **Montre** : que l'objection de 2014 (« Φ énorme, comportement trivial ») est un théorème
+  dans un proxy relationnel déterministe — avec le grade honnête : le proxy mesure la
+  décomposition déterministe de l'image, il ne capture ni l'information effective sous
+  perturbation, ni la partition minimale au sens MIP, ni une valeur numérique de Φ. La source
+  est un billet de blog (2014), pas une publication formelle : le lake **crée** l'objet
+  formel, il n'en est pas une transcription.
+- **Place dans la série mère (IIT)** : suite directe du 06 — même veine critique, l'autre
+  moitié de la frontière entre formalisations. Le 06 exécute l'échange Aaronson/Tononi sur
+  instances numériques ; l'escalier 07-09 le formalise. Placement détaillé au §4.
 
-## 4. Modules non exposés — ce qui mérite un carnet, ce qui reste interne
+## 4. Placement et nommage — décision tranchée
 
-Les 19 déclarations sont non exposées ; toutes ne méritent pas de devenir des marches :
+**Décision** : les carnets de l'escalier vivent dans la **série IIT**
+(`MyIA.AI.Notebooks/IIT/`), numérotés à la suite du 06 : `IIT-07-Coupe-et-Decomposabilite-Lean`,
+puis `IIT-08-*` (broadcast), puis `IIT-09-*` (capstone). Suffixe de langue `-Lean` (kernel
+`lean4-wsl`), cohérent avec le `-Python` des carnets 01-06.
 
-| Destin | Déclarations | Motif |
+**Motifs** :
+
+1. **Le carnet est la moitié formelle du 06** — le 06 porte la moitié empirique (Φ_DM sur
+   F_p, grilles PyPhi) et n'importe pas le lake ; l'issue #20414 appelle explicitement sa
+   « porte d'entrée pédagogique ». La porte d'entrée d'une série, c'est la série.
+2. **Le risque nommé par l'acceptance ne s'applique pas** : la renumérotation en cours (tranche
+   T7 de la carte #17545) vise les carnets numérotés `Lean-NN` de `SymbolicAI/Lean/` ; la
+   série IIT (01-06 stable, extension `ICT-Series/` numérotée à part) n'est pas sous
+   renumérotation. Poser `IIT-07` n'entre pas dans le risque « numéro nu pendant T7 ».
+3. **Précédent de structure** : `game_theory_lean` a ses carnets consommateurs dans la série
+   GameTheory (06k), pas dans le lake ; le lake reste la formalisation, la série porte la
+   pédagogie.
+
+**Non-décision explicite** : le nom définitif des marches 2 et 3 (`IIT-08-*`, `IIT-09-*`) est
+proposé ici mais chaque marche reste un grain distinct — son nom se fige au moment de son
+carnet, pas avant.
+
+## Modules non exposés — décisions explicites
+
+| Module | Décision | Motif |
 |---|---|---|
-| **Deviennent des marches** | 1-10 (marche 1), 11-16 (marche 2), 17-19 (capstone) | chacune est soit un concept (une définition qui se lit sur un exemple), soit un résultat (un théorème qui se vérifie) |
-| **Restent internes comme objets d'exposition, mais apparaissent en exercice** | `projT`, `projF` (4, 5), `parity_oneHot_zero` (15) | ce sont des rouages : les exposer comme marches ferait un carnet d'implémentation, pas d'idées. Ils se montrent sur un état concret, à l'intérieur de la marche qui les utilise |
-| **Restent internes, non exposés** | aucun | — |
+| `product_decomposable`, `broadcast_trivial_dynamics` (noms figés #18599) | **pas d'exposition en propre** | alias de A et C sous des noms de contrat d'issue ; mentionnés dans la marche qui expose leur cible (1 et capstone), en nommant leur statut de nom figé |
+| `parity_allFalse`, `parity_allTrue`, `parity_oneHot_zero`, `parity_const` | **pas de carnet propre** | escalier **interne** de la preuve de B : leur intérêt pédagogique est exactement leur rôle dans la preuve — ils se lisent dans la marche 2, en situation |
+| `IIT/Integration_en.lean` | **pas d'exposition séparée** | jumeau i18n byte-identique hors docstrings ; consommer le module FR suffit, l'existence du jumeau est rappelée |
 
-Les deux alias figés (10, 19) n'ont pas de marche propre : ils sont nommés comme **noms d'issue** dans la marche qui porte leur théorème, parce que c'est la forme sous laquelle le lake s'est engagé à les livrer.
+Tout le reste du lake (items 1-6, 8, 9, 11, 12) est couvert nominativement par l'escalier :
+après livraison du capstone, l'inventaire ci-dessus n'aura plus aucune ligne « non exposé ».
 
-## 5. Décisions de placement et de nommage — et ce qui reste à trancher
+## État de livraison
 
-**Ce que la note tranche** : la série d'accueil est `IIT/` (le carnet d'exposition appartient à la veine 5 de l'Epic Aaronson, comme la note de rattachement du 11/10 l'établit — c.6108531719), et le noyau est `lean4-wsl`, donc le nom se termine par `-Lean`.
-
-**Ce que la note ne tranche pas, et le dit** : le **numéro**. Deux raisons, toutes deux mesurables :
-
-1. La tranche **T7** de la carte Lean phase 1 exécute une renumérotation compacte (la file 20-38 devient les paliers 18 à 25, « exécutée en dernier »). Poser un numéro nu dans une série pendant que la carte le réécrit, c'est se condamner à renommer deux fois.
-2. Le préfixe de la série `IIT/` porte déjà un cas qui ne suit pas la grammaire : `IIT-06-L-…` lit `L` comme une **lettre d'accrétion majuscule**, alors que la convention constate des lettres minuscules et que le noyau va en dernier. Le carnet à écrire hérite de cette anomalie s'il se nomme `IIT-07-L-…`.
-
-**Proposition, à confirmer** : nommer la marche 1 `IIT-07-L-Integration-Par-Coupes-Lean.ipynb`, le noyau `-Lean` en dernier, et **ne pas** reconduire le `L` comme lettre d'accrétion — soit en le retirant, soit en le documentant comme le marqueur de la paire formelle de la série. Le geste de nommage est un acte pédagogique (il déclare ce qui est canonique et ce qui est approfondissement) : il revient au mainteneur ou au coordinateur, et le premier carnet ne s'écrit pas avant cette réponse.
-
-## Portée non vérifiée
-
-- L'inventaire a été lu dans `IIT/Integration.lean` **sur `main`** (lignes citées), pas dans le jumeau `_en` — les 19 déclarations y sont par construction (paire sibling, byte-identité hors docstrings, vérifiée par `scripts/lean/check_i18n_siblings.py`), mais je ne l'ai pas recompté.
-- L'absence de consommateur est mesurée par `git grep` sur `main` au 2026-10-12 ; une PR ouverte non encore mergée qui citerait le lake ne serait pas vue.
-- Je n'ai **pas** exécuté `lake build` sur ce lake dans ce cycle ; le « build en secondes » est repris du README du lake, pas remesuré ici.
-
-See #20414, See #16781, See #18599.
+| Livrable | État | Trace |
+|---|---|---|
+| Note de conception (ce document) | livré | PR #20414 |
+| Marche 1 — `IIT-07-Coupe-et-Decomposabilite-Lean` | livré | PR #20414 |
+| Marche 2 — `IIT-08-*` | à créer | grain distinct |
+| Capstone — `IIT-09-*` | à créer | grain distinct |

@@ -42,7 +42,7 @@ jumeau EN `#4980`), sans refresh complet des autres lignes.
 | `mathlib_examples` | v4.33.0 | 0 | 4 | 0 | REF | référence |
 | `hecke_lean` | v4.33.0 | 0 | 4 | 0 | PEDA/REF | #14784, #14771 |
 | `formal_groups_lean` | v4.33.0 | 0 | 10 | 0 | PEDA/REF | #14785, #14771 |
-| `iit_lean` | v4.33.0 | 0 | 3 | 0 | REF | #18599, #16781 |
+| `iit_lean` | v4.33.0 | 0 | 3 | 1 | REF | #18599, #16781, #20414 |
 | **Total** | — | **9** | **263** | — | — | — |
 
 ¹ `conway_lean` : **1 distinct** sorry (cible de prover intentionnelle dans

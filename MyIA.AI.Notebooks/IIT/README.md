@@ -34,6 +34,7 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 | 4 | [IIT-04-Le-Probleme-de-Frontiere-Python](IIT-04-Le-Probleme-de-Frontiere-Python.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, complexe majeur (`major_complex`), double dissociation Φ vs EI | 45-60 min |
 | 5 | [IIT-05-Lentilles-et-Dissociations-Python](IIT-05-Lentilles-et-Dissociations-Python.ipynb) | Six théories de la conscience (GWT, GNW, FEP, AST, SMT, HOT) comme mesures exécutables sur un même substrat : dissociation accès vs autoréférence, orthogonalité AST/SMT, contre-claim FEP | 60-75 min |
 | 6 | [IIT-06-L-Objet-qui-a-Mordu-IIT-Python](IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb) | L'échange Aaronson/Tononi (2014) exécuté : Vandermonde et le hack W en Φ_DM sur F_p, grille/ligne/feedforward en Φ 3.0 (PyPhi), les deux positions citées avec leurs grades | 75-90 min |
+| 7 | [IIT-07-Coupe-et-Decomposabilite-Lean](IIT-07-Coupe-et-Decomposabilite-Lean.ipynb) | La critique en Lean, marche 1 : coupe, motifs, indépendance comme produit d'images, théorème A et son témoin constructif — oracle exécutable par énumération (kernel `lean4-wsl`, lake `iit_lean`) | 45-60 min |
 
 ## Parcours recommandés
 
@@ -54,6 +55,9 @@ Notebook 5 (Les lentilles de conscience)
     |
     v
 Notebook 6 (L'objet qui a mordu IIT)
+    |
+    v
+Notebook 7 (Coupe et décomposabilité — la moitié formelle)
 ```
 
 | Objectif | Parcours |
@@ -64,7 +68,7 @@ Notebook 6 (L'objet qui a mordu IIT)
 | Focus emergence & échelle | Notebook 1 + Notebook 3 (causal emergence de Hoel) |
 | Focus frontières & dissociation | Notebook 1 + Notebook 4 (Φ vs EI selon le découpage, complexe majeur) |
 | Focus théories rivales | Notebook 1 + Notebook 5 (six lentilles, contre-claims exécutés) |
-| Focus controverse fondatrice | Notebook 1 + Notebook 6 (l'objection Aaronson exécutée, la réponse assumée mesurée) |
+| Focus controverse fondatrice | Notebook 1 + Notebook 6 (l'objection Aaronson exécutée, la réponse assumée mesurée), puis Notebook 7 (la formalisation Lean — marche 1 de l'escalier `iit_lean`) |
 
 ### Parcours d'apprentissage
 
@@ -91,6 +95,10 @@ Le cinquième notebook quitte la mesure de $\Phi$ pour la **comparaison des thé
 **Phase 6 : L'objet qui a mordu IIT (~90 min, notebook 6)**
 
 Le sixième notebook exécute l'échange Aaronson/Tononi de mai 2014 des deux côtés de la frontière entre formalisations. En jambe $\Phi_{DM}$ (l'implémentation NumPy de la définition visée par l'objection, sur corps finis $\mathbb{F}_p$) : la matrice de Vandermonde rend $\Phi$ **indéfini** (égalité normalisée maximale sur toutes les bipartitions), le « hack » W obtient son minimum unique et un $\Phi = (n/2)\log_2 p$ — la moitié du contenu informationnel total —, l'identité mesure 0, la croissance est linéaire. En jambe PyPhi ($\Phi$ d'IIT 3.0) : la grille de Tononi à portes majorité mesure positivement à l'état tout éteint (le scénario assumé existe), la tendance ligne < anneau < grille soutient l'argument du mur et de la corde à petite échelle, et la grille **XOR** porte le $\Phi$ maximal de la table pendant que le réseau « riche » hétérogène mesure zéro — la dissociation intégration/richesse comportementale, mesurée dans IIT 3.0 lui-même. Les deux positions sont citées avec leurs grades (l'essai firsthand de Tononi, archivé au gisement, y corrige même le souvenir de Porto Rico rapporté par Aaronson) ; les 4 exercices font varier corps, permutations, fermeture de boucle et bruit.
+
+**Phase 7 : La moitié formelle (~60 min, notebook 7)**
+
+Le septième notebook ouvre la **formalisation Lean** de la même controverse : il consomme le lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.md) (sans Mathlib, kernel `lean4-wsl`) et paie le vocabulaire de la coupe — état, système, coupe non triviale, motifs `projT`/`projF`, indépendance lue comme produit d'images — avec un **oracle exécutable** qui teste la définition de `cutIndep` par énumération exhaustive ($2^n$ états). Le théorème A (dynamiques latérales indépendantes ⇒ décomposable) et son témoin constructif (le mélange des entrées) sont rendus par le noyau, appliqués à l'identité, et l'alias figé `product_decomposable` (#18599) est lu comme contrat d'issue. Un teaser mesuré ferme le broadcast-parité en taille 2 par épuisement et motive le théorème B (toutes tailles, toutes coupes) — marche 2 de l'[escalier `iit_lean`](../../docs/lean/iit-lean-escalier.md). Les 3 exercices font construire une coupe, appliquer A à un système local, et confronter une coupe croisée à l'oracle.
 
 ## Prérequis
 
@@ -247,6 +255,20 @@ flowchart TD
 | L'après | Relance Griffith, fertilité pour PyPhi/IIT 4.0, le test falsifiable proposé par Tononi (doubler une grille corticale) |
 | Exercices | Identité/permutation en Φ_DM, W à autre échelle, ligne vs anneau n=5 en PyPhi, grille bruitée |
 
+### IIT-07-Coupe-et-Decomposabilite-Lean.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| Import | `IIT.Integration` (lake `iit_lean`, sans Mathlib) : `#check` du théorème A, `#print axioms` — `[propext, Quot.sound]` seulement |
+| État, système | `State n := Fin n → Bool`, `System n` sur instances n=3 calculées : identité, majorité globale |
+| Coupe | `Cut n` : sélecteur booléen + témoins de non-vacuité (`ha`/`hb`), coupe `{0} \| {1,2}` |
+| Motifs | `projT`/`projF` : les bits d'un côté préservés, l'autre masqué — lus sur états concrets |
+| cutIndep | La définition relue (tout couple de motifs séparément réalisables est réalisable ensemble) + **oracle exécutable** par énumération de $2^n$ états |
+| Décomposable/intégré | Le piège des quantificateurs : un témoin pour l'un, fermer toutes les coupes pour l'autre |
+| Théorème A | Énoncé, hypothèses de localité, application rendue par le noyau à l'identité, alias figé `product_decomposable` (#18599) |
+| Teaser broadcast | Oracle en taille 2 : image `{00, 11}`, couples croisés jamais réalisés → intégré par épuisement, et pourquoi l'épuisement ne suffit plus |
+| Exercices | Coupe complémentaire et motifs ; appliquer A à `fLoc` (hypothèses `hA`/`hB` réelles) ; coupe croisée `{0,2} \| {1,3}` face à l'oracle |
+
 ## Théorie IIT
 
 La Théorie de l'Information Intégrée (IIT) propose une approche mathématique de la conscience :
@@ -354,6 +376,7 @@ IIT/
 ├── IIT-04-Le-Probleme-de-Frontiere-Python.ipynb # Notebook 4 : qui décide des bords — Φ vs EI selon la frontière
 ├── IIT-05-Lentilles-et-Dissociations-Python.ipynb # Notebook 5 : six théories de la conscience comme bancs de dissociation
 ├── IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb # Notebook 6 : l'échange Aaronson/Tononi exécuté (Φ_DM + PyPhi)
+├── IIT-07-Coupe-et-Decomposabilite-Lean.ipynb  # Notebook 7 : la moitié formelle (lake iit_lean, marche 1 de l'escalier)
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
