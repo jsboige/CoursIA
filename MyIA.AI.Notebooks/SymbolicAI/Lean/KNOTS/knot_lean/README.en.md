@@ -352,6 +352,7 @@ Reference: Fox (1962), *A quick trip through knot theory*; Adams,
 | `Knots/Reidemeister.lean` | R1/R2/R3 moves (Phase 5 model), `ReidemeisterEquiv`, symmetries | 2 |
 | `Knots/Invariant.lean` | 3-colorability (Fox), crossing number, PR1 counter-example, connected R1 bi-implication (#3000 + #3124/#11227), R2-up transfer + named walls (#11276), master `tricolorable_invariant` (#11958), `unknottingNumber` via `Nat.sInf` (#15082) | 0 |
 | `Knots/Conway.lean` | Conway knot (11n34), mutation, Conway/KT PD codes, arcPartition, trivial Alexander | 0 |
+| `Knots/ConwayKTMutation.lean` | Combinatorial mutants of Conway (window 5-11, Klein rotations), window-normalisation lemmas, Conway/KT one-shot impossibility — the NOTE of `Mutation.lean` turned into a proof (EPIC #2874, slice 1) | 0 |
 | `Knots/Slice.lean` | Slice knots, Piccirillo, Freedman, smooth/topological dichotomy (extracted from Conway, #18397) | 4 |
 | `Knots/Lidman.lean` | 11n102, unknotting number = 2 | 2 |
 | `Knots/MathlibPrerequisites.lean` | Index of missing Mathlib prerequisites by tier | 0 |

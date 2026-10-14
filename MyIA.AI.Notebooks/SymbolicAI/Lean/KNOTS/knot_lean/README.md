@@ -361,6 +361,7 @@ Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Bo
 | `Knots/Reidemeister.lean` | Mouvements R1/R2/R3 (modèle Phase 5), `ReidemeisterEquiv`, symétries | 2 |
 | `Knots/Invariant.lean` | 3-colorabilité (Fox), crossing number, contre-exemple PR1, bi-implication R1 connectée (#3000 + #3124/#11227), transfer R2-up + murs nommés (#11276), marquee `tricolorable_invariant` (#11958), `unknottingNumber` via `Nat.sInf` (#15082) | 0 |
 | `Knots/Conway.lean` | Nœud de Conway (11n34), mutation, codes PD Conway/KT, arcPartition, Alexander trivial | 0 |
+| `Knots/ConwayKTMutation.lean` | Mutants combinatoires de Conway (fenêtre 5-11, rotations de Klein), lemmes de normalisation des fenêtres, impossibilité one-shot Conway/KT — la NOTE de `Mutation.lean` devenue preuve (EPIC #2874, tranche 1) | 0 |
 | `Knots/Slice.lean` | Nœuds slice, Piccirillo, Freedman, dichotomie lisse/topologique (extrait de Conway, #18397) | 4 |
 | `Knots/Lidman.lean` | 11n102, unknotting number = 2 | 2 |
 | `Knots/MathlibPrerequisites.lean` | Index des prérequis Mathlib manquants par tier | 0 |
