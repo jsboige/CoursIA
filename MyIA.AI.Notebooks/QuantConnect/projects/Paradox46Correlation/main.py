@@ -213,7 +213,8 @@ class Paradox46Correlation(QCAlgorithm):
         # Copie conforme de Paradox46VolScaledMomentum._rotate_to (#20388) :
         # ordres MarketOnClose remplis dans l'ordre d'envoi, ventes d'abord,
         # cible 98 %, complement sous 97 %, ordres ouverts deduits, achat
-        # plafonne a la marge libre a l'envoi.
+        # plafonne a la marge libre a l'envoi, et reporte tant que la cible
+        # n'a pas de prix (premiere seance).
         pending = {s: self._open_quantity(s) for s in self._symbols}
         sells = {s: -self.portfolio[s].quantity - pending[s]
                  for s in self._symbols if s != target}
@@ -223,10 +224,12 @@ class Paradox46Correlation(QCAlgorithm):
                     + pending[target] * self.securities[target].price)
             if held >= TOP_UP_BELOW * self.portfolio.total_portfolio_value:
                 return
-        quantity = self.calculate_order_quantity(target, TARGET_WEIGHT) - pending[target]
         security = self.securities[target]
-        room = 0.97 * self.portfolio.margin_remaining * security.leverage
-        quantity = min(quantity, int(room / security.price))
+        quantity = 0
+        if security.price > 0:
+            quantity = self.calculate_order_quantity(target, TARGET_WEIGHT) - pending[target]
+            room = 0.97 * self.portfolio.margin_remaining * security.leverage
+            quantity = min(quantity, int(room / security.price))
         for symbol, q in sells.items():
             self.market_order(symbol, q)
         if quantity > 0:

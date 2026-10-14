@@ -245,16 +245,22 @@ class Paradox46VolScaledMomentum(QCAlgorithm):
                     + pending[target] * self.securities[target].price)
             if held >= TOP_UP_BELOW * self.portfolio.total_portfolio_value:
                 return
-        quantity = self.calculate_order_quantity(target, TARGET_WEIGHT) - pending[target]
-        # Plafond de marge a l'envoi : les ventes ne liberent leur marge qu'a
-        # leur remplissage. La quantite est calculee sur la cloture de la veille
-        # et remplie a celle du jour : sur un ETF x3, une hausse de plus de 2 %
-        # dans la seance porte la ligne au-dela de 100 % du portefeuille, et
-        # l'achat suivant entier serait refuse. Il est plafonne a la marge
-        # libre, frais compris, et complete a la revue suivante.
+        # La revue est planifiee, pas declenchee par une barre : a la premiere
+        # seance, aucune barre n'est encore arrivee et le prix vaut 0. L'achat
+        # attend alors la revue suivante.
         security = self.securities[target]
-        room = 0.97 * self.portfolio.margin_remaining * security.leverage
-        quantity = min(quantity, int(room / security.price))
+        quantity = 0
+        if security.price > 0:
+            quantity = self.calculate_order_quantity(target, TARGET_WEIGHT) - pending[target]
+            # Plafond de marge a l'envoi : les ventes ne liberent leur marge
+            # qu'a leur remplissage. La quantite est calculee sur la cloture de
+            # la veille et remplie a celle du jour : sur un ETF x3, une hausse
+            # de plus de 2 % dans la seance porte la ligne au-dela de 100 % du
+            # portefeuille, et l'achat suivant entier serait refuse. Il est
+            # plafonne a la marge libre, frais compris, et complete a la revue
+            # suivante.
+            room = 0.97 * self.portfolio.margin_remaining * security.leverage
+            quantity = min(quantity, int(room / security.price))
         for symbol, q in sells.items():
             self.market_order(symbol, q)
         if quantity > 0:
