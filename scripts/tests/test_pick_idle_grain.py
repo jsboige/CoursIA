@@ -265,12 +265,19 @@ def test_several_open_prs_named_with_count(monkeypatch):
 
 
 def _state(*, checks=(), mergeable="MERGEABLE", reviews=()):
-    """Etat GraphQL d'une PR, forme rendue par fetch_pr_states."""
+    """Etat GraphQL d'une PR, forme rendue par fetch_pr_states.
+
+    `reviews` : tuples ``(state, login)`` ou ``(state, login, body)`` -- le
+    3e element, optionnel, sert aux cas #16926 (verdict de corps sous
+    COMMENTED).
+    """
     return {
         "number": 1, "mergeable": mergeable,
         "reviews": {"nodes": [
-            {"state": s, "submittedAt": "2026-08-20T00:00:00Z", "author": {"login": a}}
-            for s, a in reviews
+            {"state": r[0], "submittedAt": "2026-08-20T00:00:00Z",
+             "author": {"login": r[1]},
+             **({"body": r[2]} if len(r) > 2 else {})}
+            for r in reviews
         ]},
         "commits": {"nodes": [{"commit": {"statusCheckRollup": {"contexts": {"nodes": [
             {"name": t[0], "conclusion": t[1], "isRequired": t[2],
@@ -319,6 +326,66 @@ def test_changes_requested_lifted_by_a_third_party_is_not_a_cause():
     """
     state = _state(reviews=[("CHANGES_REQUESTED", "clusterManager-Myia")])
     assert pig.blocking_causes(state, review_points_clear=True) == []
+
+
+def test_body_verdict_concerns_is_a_cause():
+    """#16926 : le verdict CONCERNS vit dans le CORPS d'une review COMMENTED,
+    invisible a reviews[].state -- le picker ouvrait une file de reparation
+    seulement sur l'etat natif.
+
+    Le corps suit la convention du depot (prefixe de verdict, persona Hermes
+    en en-tete) ; la lecture est celle de l'organe pool_review_verdicts,
+    importe par blocking_causes.
+    """
+    state = _state(reviews=[(
+        "COMMENTED", "clusterManager-Myia",
+        "[Hermes] — VERDICT: CONCERNS\n\nReserve sur la validation post-fix.",
+    )])
+    expected = ["verdict de corps non leve : CONCERNS (clusterManager-Myia)"
+                " -- organe pool_review_verdicts (#16926)"]
+    assert pig.blocking_causes(state) == expected
+    assert pig.blocking_causes(state, review_points_clear=False) == expected
+    # Meme regle de primaute que l'etat natif (#18829) : si l'organe B.0 a
+    # evalue les surfaces et n'a rien trouve de non leve, le verdict de corps
+    # est un residu, pas une file a ouvrir.
+    assert pig.blocking_causes(state, review_points_clear=True) == []
+
+
+def test_body_verdict_lgtm_and_plain_body_are_not_causes():
+    """Contre-cas #16926 : un LGTM de corps n'est pas une reserve, et un corps
+    de lane sans marqueur de persona ni VERDICT n'est pas une voix de review.
+    """
+    state = _state(reviews=[
+        ("COMMENTED", "clusterManager-Myia",
+         "**[Hermes]** — VERDICT: LGTM\n\nRien a signaler."),
+        ("COMMENTED", "myia-po-2025",
+         "Nit traite au commit abc1234, reponse postee sur le fil."),
+    ])
+    assert pig.blocking_causes(state) == []
+
+
+def test_body_verdict_latest_wins_per_author():
+    """Latest-wins par auteur, la semantique du triage : la voix la plus
+    recente d'un meme auteur gouverne (CONCERNS puis LGTM -> rien ; LGTM puis
+    CONCERNS -> cause).
+    """
+    state = _state(reviews=[
+        ("COMMENTED", "clusterManager-Myia",
+         "[Hermes] — VERDICT: CONCERNS\n\nAncienne reserve."),
+        ("COMMENTED", "clusterManager-Myia",
+         "[Hermes] — VERDICT: LGTM\n\nLevee par la reponse ecrite."),
+    ])
+    # _state pose le meme submittedAt partout : departager a la main, la
+    # deuxieme review est la plus recente.
+    state["reviews"]["nodes"][0]["submittedAt"] = "2026-08-19T00:00:00Z"
+    state["reviews"]["nodes"][1]["submittedAt"] = "2026-08-20T00:00:00Z"
+    assert pig.blocking_causes(state) == []
+
+    state["reviews"]["nodes"][0]["submittedAt"] = "2026-08-20T00:00:00Z"
+    state["reviews"]["nodes"][1]["submittedAt"] = "2026-08-19T00:00:00Z"
+    expected = ["verdict de corps non leve : CONCERNS (clusterManager-Myia)"
+                " -- organe pool_review_verdicts (#16926)"]
+    assert pig.blocking_causes(state) == expected
 
 
 def test_unaddressed_review_points_records_evaluated_clear_as_zero(monkeypatch):
