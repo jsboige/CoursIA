@@ -29,6 +29,7 @@ from typing import Dict, List, Any, Optional, Callable, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from _dotnet_env import sdk_bearing_dotnet_root
 from _papermill_meta import strip_stale_papermill_metadata
 
 
@@ -923,9 +924,21 @@ class NotebookExecutor:
         # Bound OpenMP/BLAS pools: native training cells oversubscribe many-core
         # hosts and look frozen (#11111). Kernel inherits env.
         bound_native_thread_pools()
+        # .NET kernels restore `#r "nuget:"` through the DOTNET_ROOT host: a
+        # root without an SDK cannot restore at all (#17361). Repair it for
+        # the kernel subprocess only, and say so -- a silent repair is
+        # indistinguishable from an env that was fine.
+        launch_kwargs = {}
+        if ".net" in kernel_name or kernel_name in ("csharp", "fsharp"):
+            sdk_root = sdk_bearing_dotnet_root()
+            if sdk_root:
+                import os as _os
+                launch_kwargs["env"] = {**_os.environ, "DOTNET_ROOT": sdk_root}
+                print(f"  DOTNET_ROOT for the kernel: {_os.environ['DOTNET_ROOT']} "
+                      f"-> {sdk_root} (configured root has no SDK)")
         try:
             km = jupyter_client.KernelManager(kernel_name=kernel_name)
-            km.start_kernel()
+            km.start_kernel(**launch_kwargs)
             kc = km.client()
             kc.start_channels()
             kc.wait_for_ready(timeout=startup_timeout)
@@ -1051,9 +1064,18 @@ class NotebookExecutor:
         # Bound OpenMP/BLAS pools: native training cells oversubscribe many-core
         # hosts and look frozen (#11111). Kernel inherits env.
         bound_native_thread_pools()
+        # Same DOTNET_ROOT repair as the single-cell path above (#17361).
+        launch_kwargs = {}
+        if ".net" in kernel_name or kernel_name in ("csharp", "fsharp"):
+            sdk_root = sdk_bearing_dotnet_root()
+            if sdk_root:
+                import os as _os
+                launch_kwargs["env"] = {**_os.environ, "DOTNET_ROOT": sdk_root}
+                print(f"  DOTNET_ROOT for the kernel: {_os.environ['DOTNET_ROOT']} "
+                      f"-> {sdk_root} (configured root has no SDK)")
         try:
             km = jupyter_client.KernelManager(kernel_name=kernel_name)
-            km.start_kernel()
+            km.start_kernel(**launch_kwargs)
             kc = km.client()
             kc.start_channels()
             kc.wait_for_ready(timeout=startup_timeout)

@@ -70,6 +70,15 @@ jobs:
       - name: Detector self-test (positive + negative control)
         run: python scripts/notebook_tools/check_output_failure_text.py --self-test
 
+      # `python -m pytest` needs pytest, and `setup-python` does not provide it:
+      # the documented tool-cache seeding (docs/ci/self-hosted-runners.md,
+      # option a2) copies a bare python.org interpreter whose acceptance witness
+      # is `python --version` + `pip --version`, never pytest. Without this step
+      # the guard is green or red according to WHICH runner slot picks the job
+      # up, not according to the PR.
+      - name: Install test dependency
+        run: python -m pip install --quiet pytest
+
       - name: Capability-downgrade axis unit tests (#14603)
         run: python -m pytest scripts/notebook_tools/tests/test_check_output_failure_text.py -q
 

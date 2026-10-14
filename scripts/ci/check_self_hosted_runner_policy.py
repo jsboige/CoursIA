@@ -100,6 +100,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "hooks-parity.yml",
     "notebook-exec-sequence-ratchet.yml",
     "notebook-navlink-check.yml",
+    "notebook-nav-chain-guard.yml",
     "notebook-papermill-ratchet.yml",
     # tranche 3b (#14283, meme decision, meme owner) : suite des gardes PR
     #   pure-Python. Fondue dans la meme PR que 3a -- les scinder aurait produit
@@ -136,6 +137,12 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   choice/build (merite un pool a cache Mathlib chaud, cf #14337),
     #   notebook-execution-required/golden-set-execute (execution lourde).
     "bash-syntax-advisory.yml",
+    # #10643 item 3 (owner myia-po-2024:CoursIA, 2026-10-05) : garde
+    #   pure-Python de couverture compagnons bi-OS (.ps1 -> .sh, README
+    #   croise, carnets Setup). Trigger pull_request paths + garde same-repo
+    #   au niveau job + runs-on STATIQUE -- meme profil que ses voisins 3c.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "bios-companion-coverage.yml",
     "lean-social-choice.yml",
     "notebook-execution-required.yml",
     "secret-scan.yml",
@@ -168,7 +175,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Aucun trigger pull_request -> aucune garde same-repo requise (tranche
     #   4 #14283, meme profil que pr-gate-stale-sweep). Rollback = revert de
     #   la PR (l'entree disparait de l'allowlist).
-    "adjacency-stale-sweep.yml",
     "ascii-flowchart-advisory.yml",
     "candidate-delivered-advisory.yml",
     "catalog-cron.yml",
@@ -189,7 +195,15 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   meme profil que candidate-delivered-advisory). Rollback = revert de
     #   la PR (l'entree disparait de l'allowlist).
     "lane-claim-epic-wide-advisory.yml",
-    "leaky-fixture-sweep.yml",
+    # leaky-fixture-sweep.yml : RETIREE le 2026-09-14 (#16141). Elle etait
+    #   entree ici avec la tranche 4 (#14283) comme ses sœurs `schedule`-only,
+    #   mais son profil n'est PAS celui des autres : elle installe
+    #   `libfaketime` par `sudo apt-get`, donc elle exige root/apt que le pool
+    #   ne fournit pas (uid 1001, no-new-privileges, sans sudo ni dpkg).
+    #   C'est la meme exclusion que slides-composition-advisory
+    #   (`playwright --with-deps` exige root) et pr-gate.yml. Cout mesure de
+    #   l'erreur : 12 runs, 12 `failure`, du 2026-09-03 au 2026-09-14, zero
+    #   balayage effectif. Le job est repasse sur `ubuntu-latest`.
     "machine-dep-timing-advisory.yml",
     "machine-dep-timing-inventory.yml",
     "mermaid-fill-color-advisory.yml",
@@ -200,8 +214,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # repliee comme etape du sweep ci-dessous (design-gate ai-01 : "meme
     # population, meme requete ; seule la branche de remediation differe.
     # Ne pas creer un troisieme organe").
-    "pr-gate-sweep-health-advisory.yml",
-    "pr-path-collision-advisory.yml",
+    # pr-path-collision-advisory.yml : migre ubuntu-latest par Q35 etape 2
+    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows agregateurs,
+    # 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme
+    # commit. Precedent : #17443 (po-2023, 4 agregateurs).
+
     # queue-ghost-watch.yml (#14367, owner myia-po-2023:CoursIA-2) : sonde cron
     #   04:17 UTC (offset anti-stampede, hors-:00) sur les 18 zombies QUEUED
     #   du 2026-08-19. Meme profil que runner-starvation-advisory : advisory
@@ -215,11 +232,13 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "queue-ghost-watch.yml",
     "qc-research-monitor.yml",
-    "repo-size-advisory.yml",
+    # repo-size-advisory.yml : migre ubuntu-latest par Q35 etape 2 (#17397,
+    # PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows agregateurs,
+    # 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme
+    # commit. Precedent : #17443 (po-2023, 4 agregateurs).
     "review-coverage-advisory.yml",
     "slides-build-advisory.yml",
     "slow-lane.yml",
-    "stale-guard-red-sweep.yml",
     "translation-parity.yml",
     "twin-parity-cron.yml",
     "twin-parity-drift-audit.yml",
@@ -235,7 +254,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (tarball, voir l'entree dediee) ; seul `deploy` reste exclu (Pages/OIDC).
     "bare-cross-dir-load-gate.yml",
     "base-not-main-advisory.yml",
-    "concurrency-conj-guard.yml",
+    # concurrency-conj-guard.yml : migre ubuntu-latest par Q35 etape 2
+    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
+    # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
+    # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
     "degenerate-figure-gate.yml",
     "docs-link-check.yml",
     "exercise-leak-ci.yml",
@@ -297,7 +319,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "notebook-validation.yml",
     "owui-playwright-check.yml",
     "perimeter-review-guard.yml",
-    "pr-gate-rerun.yml",
     "regression-guard.yml",
     "render-volume-delta-advisory.yml",
     # registre TRANCHE7 (demande user 2026-09-05, owner myia-po-2023:CoursIA)
@@ -307,9 +328,24 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   intra-notebook (detect_repeated_prose.py), advisory pur-Python
     #   stdlib-only, label signe, jamais exit != 0, aucun secret.
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
-    "repeated-prose-advisory.yml",
+    # repeated-prose-advisory.yml : migre ubuntu-latest par Q35 etape 2
+    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
+    # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
+    # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
     "scripts-tests.yml",
     "series-naming-gate.yml",
+    # registre TRANCHE14 (issue #16762, owner myia-po-2023:CoursIA) : meme
+    #   profil que repeated-prose-advisory.yml (TRANCHE7) ci-dessus --
+    #   vehicule workflow_dispatch-ONLY servant de cible d'identite au
+    #   check-run absorbe par fast-lane (registre TRANCHE14) et de re-run
+    #   manuel du recensement sur main. Detecteur de paires de cellules de
+    #   lecture scindees (check_split_reading_cells.py), pur-Python
+    #   stdlib-only, aucun secret. Promu en cliquet BLOQUANT par #17044 : le
+    #   verdict de PR est rendu par le garde absorbe, PAS par ce workflow, qui
+    #   ne tourne jamais sur un pull_request (dispatch-only) -- l'entree reste
+    #   justifiee telle quelle. Rollback = revert de la PR (l'entree
+    #   disparait de l'allowlist).
+    "split-reading-advisory.yml",
     "stale-base-warning.yml",
     # fin de chantier #14283 (feu vert ai-01 2026-09-02) : les jobs
     #   quarto-pages-deploy `build` et `validate-pr` passent au pool — le
@@ -322,7 +358,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "svg-decimal-comma-gate.yml",
     "svg-empty-display-gate.yml",
     "svg-offscreen-flat-gate.yml",
-    "testpaths-coverage-guard.yml",
+    # testpaths-coverage-guard.yml : migre ubuntu-latest par Q35 etape 2
+    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
+    # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
+    # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
     "translation-drift.yml",
     "translation-sync.yml",
     "variation-light-genre.yml",
@@ -376,6 +415,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   tranche 1 #13378). Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist).
     "notebook-latex-control-chars.yml",
+    # #17380 (owner myia-po-2023:CoursIA) : garde advisory sur la syntaxe
+    #   math non rendable des cellules markdown -- 4 classes (delimiteurs
+    #   LaTeX purs \(..\)/\[..\], dollars impairs par paragraphe, commandes
+    #   LaTeX nues hors scopes, scopes que KaTeX refuse). Reponse au
+    #   commentaire user du 2026-09-22 sur IIT-06 : le notebook mesurait
+    #   propre (62/62 scopes rendables), la cause etait le visualiseur --
+    #   l'organe rend la question mesurable a l'echelle du corpus.
+    #   pull_request/push filtrant **.ipynb + detecteur + workflow ; jambe
+    #   KaTeX active en CI via npm install katex --no-save (node requis par
+    #   le runner ephemeral, saut dite a voix haute sinon, #14849) ;
+    #   occurrences = ::warning:: + exit 0 (jamais bloquant), exit 2 =
+    #   warning UNKNOWN nomme + exit 1. Aucun secret, aucun GITHUB_TOKEN
+    #   cote job, garde same-repo parenthesee au niveau job (#13874).
+    #   Runner = jambe Linux containerisee (LINUX_RUNNER_LABELS, meme
+    #   profil que notebook-latex-control-chars). Rollback = revert de la
+    #   PR (l'entree disparait de l'allowlist).
+    "notebook-math-render.yml",
     # #14532 item 1 (owner myia-po-2026:CoursIA-2) : garde PR pure-Python sur
     #   les disparitions de section au plan des notebooks pedagogiques.
     #   workflow_dispatch-only ce cycle (anti-panic-deploiement, idem
@@ -429,6 +485,77 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (acceptance reprise #14598). Rollback = revert de la PR (l'entree
     #   disparait de l'allowlist).
     "ict-tests-profile.yml",
+    # #16081 / c.559 (owner myia-po-2023:CoursIA-2, PR #16082) : kernel-drift
+    #   guard -- detecte la re-execution d'un notebook sous un kernel Python
+    #   ou une signature float-repr differente de la base. Pure-Python, pas
+    #   de secret, pas de GITHUB_TOKEN cote job. Garde same-repo universelle
+    #   au niveau job (#13874) -- fork PRs skipped. Pull-request filtre par
+    #   paths `**.ipynb` + 3 fichiers du garde (auto-couverture) + workflow
+    #   lui-meme : declenche seulement quand un notebook est touche OU le
+    #   garde evolue. workflow_dispatch pour re-run manuel avec base_ref
+    #   parametrable. runs-on STATIQUE jambe Linux containerisee (meme
+    #   routage que notebook-papermill-ratchet.yml, tranche 1 #13378).
+    #   Concurrency cancel-in-progress (le balayage de kernel sur N notebooks
+    #   peut etre rejoue sans frais). Pas de label pose. Rollback = revert
+    #   de la PR (l'entree disparait de l'allowlist).
+    "notebook-kernel-drift-guard.yml",
+    # #16776 (owner myia-po-2023:CoursIA, PR #16801) : organ-duplication
+    #   advisory -- signale les symboles ajoutes qui collident avec l'organ
+    #   API d'une autre serie (scripts/audit/organ_api_index.yaml, regle
+    #   organ-first). Pure-Python stdlib, garde same-repo au niveau job
+    #   (#13874) -- fork PRs skipped, pull_request filtre par paths en
+    #   auto-couverture des fichiers de l'organe (#8822), workflow_dispatch
+    #   pour re-run manuel. runs-on STATIQUE jambe Linux containerisee
+    #   (routage #14283 tranche 3). Advisory non-bloquant (sticky comment).
+    #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED signale
+    #   par Hermes (CONCERNS 19/09) : la PR routait le job self-hosted sans
+    #   toucher cette allowlist fail-closed. Rollback = revert de la PR.
+    "organ-duplication-advisory.yml",
+    # #14623 (owner myia-po-2024:CoursIA, PR #18595) : docs-transients
+    #   guard -- detecteur de fichiers transients (rapports/coordination)
+    #   qui doivent vivre sur le dashboard, pas dans le repo (regle
+    #   harness-hygiene, tier Ephemere). Pure-Python stdlib, garde
+    #   same-repo au niveau job (#13874, if head.repo == repository),
+    #   pull_request filtre par paths en auto-couverture des fichiers
+    #   de l'organe, workflow_dispatch pour re-run manuel. runs-on
+    #   STATIQUE jambe Linux containerisee (routage #14283 tranche 3).
+    #   Entree ajoutee au repair du rouge WORKFLOW_NOT_ALLOWED (relecture
+    #   ai-01 c.5917276825) : la PR routait le job self-hosted sans
+    #   toucher cette allowlist fail-closed. Rollback = revert de la PR.
+    "docs-transients-guard.yml",
+    # #19290 (owner myia-po-2026:CoursIA-2, PR #19296) : lean-formal-logic
+    #   proof-integrity workflow pour le lake consumer FFL
+    #   formal_logic_lean (Tweety <-> Lean, EPIC #15066). Le job
+    #   `target-coverage` est advisory (exit 0 toujours) et tourne sur
+    #   la jambe Linux containerisee (meme profil que
+    #   docs-transients-guard / organ-duplication-advisory -- tranche 3).
+    #   Les jobs `ci` et `proof-integrity` reutilisent lean-build.yml /
+    #   lean-axiom.yml (GitHub-hosted), donc ne sont pas concernes par
+    #   cette allowlist. Garde same-repo universelle parenthesee au
+    #   niveau job (`if: head.repo.full_name == repository`).
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "lean-formal-logic.yml",
+    # #20049 (owner myia-po-2024:CoursIA-2, PR #20076) : live-read-freshness --
+    #   troisieme axe des ratchets de carnet : la coherence entre la sortie
+    #   COMMITTEE d'une cellule et l'etat COURANT du fichier qu'elle lit. Les
+    #   ratchets existants comparent une base a une tete
+    #   (check_output_collapse / check_source_collapse) ou mesurent la
+    #   structure d'un carnet ; aucun ne relie une sortie committee a sa
+    #   source vivante. Detecteur scripts/notebook_tools/
+    #   check_live_read_freshness.py, stdlib-only, self-test a controle
+    #   positif ET negatif. Le verdict par-PR est rendu par
+    #   fast-lane-shadow.yml (entree TRANCHE2 de fast_lane_registry.py) ; ce
+    #   fichier ne garde que workflow_dispatch (relance manuelle + cible
+    #   d'identite). Aucun secret, aucun GITHUB_TOKEN cote job, garde
+    #   same-repo universelle parenthesee au niveau job (#13874). Runner =
+    #   jambe Linux containerisee (LINUX_RUNNER_LABELS, meme profil que
+    #   translation-hot-drift-advisory.yml / notebook-plan-loss-gate.yml).
+    #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED remonte par
+    #   `Scripts Tests (CPU)` (run 37931243189) : la PR routait le job
+    #   self-hosted sans toucher cette allowlist fail-closed -- meme classe que
+    #   organ-duplication-advisory.yml et docs-transients-guard.yml.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "live-read-freshness.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

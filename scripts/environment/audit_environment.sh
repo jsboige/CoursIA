@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# CI-CHECK:
+#   ^ Read-only audit: no installer, and no file is written without
+#     --export-json, so the CI advisory guard executes it as-is (#10643).
 # =============================================================================
 # AUDIT TECHNIQUE ENVIRONNEMENT NOTEBOOKS - CoursIA (Linux / macOS)
 # =============================================================================
@@ -147,7 +150,7 @@ if command -v dotnet >/dev/null 2>&1; then
     write_check ".NET Interactive" "OK" "Installé globalement"
   else
     write_check ".NET Interactive" "WARNING" "Non installé globalement"
-    RECOMMENDATIONS+=("Installer .NET Interactive: dotnet tool install -g Microsoft.dotnet-interactive")
+    RECOMMENDATIONS+=("Installer .NET Interactive: dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.617701")
     TOTAL_WARNINGS=$((TOTAL_WARNINGS + 1))
   fi
 else

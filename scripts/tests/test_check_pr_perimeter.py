@@ -14,6 +14,12 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from _gh_availability import (  # noqa: E402
+    skip_if_gh_exhausted,
+    skip_if_output_rate_limited,
+)
 
 from check_pr_perimeter import (  # noqa: E402
     BaselineMove,
@@ -265,6 +271,38 @@ def test_extract_skips_scope_word_inside_a_longer_word():
     assert extract_perimeter_assertions(changer) == []
     assert not _has_strong_scope(loadscope.lower())
     assert not _has_strong_scope(changer.lower())
+
+
+def test_issue_15950_strong_scope_word_boundary_control():
+    """Issue #15950: validation par les faux negatifs.
+
+    Corpus de controle passe sous les deux portes (5 doivent firer, 3 doivent
+    se taire) pour verifier que _has_strong_scope() teste bien les mots en
+    entier et non en sous-chaine.
+
+    See #15950, #15833, #15846, #12718, #11800.
+    """
+    # Cas positifs: doivent etre detectes comme assertions de perimetre
+    positive_cases = [
+        "Aucune autre modification.",
+        "Perimetre : uniquement 3 fichiers modifies.",
+        "Le scope est uniquement ce fichier.",
+        "**Perimetre** : aucune autre modification que celles listees.",
+        "Only the workflow changed -- no other modification.",
+    ]
+    for line in positive_cases:
+        result = extract_perimeter_assertions(line)
+        assert result, f"Expected assertion, got none for: {line!r}"
+
+    # Cas negatifs: ne doivent PAS etre detectes (faux positifs a eviter)
+    negative_cases = [
+        "--dist loadscope sur uniquement grace a ce groupement",
+        "permissions read-only inchangees, uniquement",
+        "Ce point est out-of-scope, traite uniquement dans l'issue fille.",
+    ]
+    for line in negative_cases:
+        result = extract_perimeter_assertions(line)
+        assert result == [], f"Unexpected assertion for: {line!r}"
 
 
 def test_whole_word_scope_still_extracts_real_declarations():
@@ -2159,6 +2197,11 @@ def test_founding_incident_11227_criteria_met_on_main():
     )
     if auth_probe.returncode != 0:
         pytest.skip("gh CLI present but unauthenticated")
+    # A shared account budget (GraphQL) can be exhausted while `auth status`
+    # is perfectly green: the scan then returns exit 2 with an empty body.
+    # That is not a regression of the tool -- skip instead of a false red
+    # (#17201 triage: this test was the 5th intermittent red of the class).
+    skip_if_gh_exhausted()
     # Run against PR #11227 with the exact phrase from the founder review.
     # The script will reach out to gh API; if the PR is missing or
     # permissions fail, it returns non-zero AND stdout/stderr lack the
@@ -2173,6 +2216,9 @@ def test_founding_incident_11227_criteria_met_on_main():
         encoding="utf-8", errors="replace",
     )
     output = proc.stdout + proc.stderr
+    # Budget may die between the probe above and this run: the scan then
+    # reports the refusal instead of a verdict. Same class, same remedy.
+    skip_if_output_rate_limited(output)
     # The tool surfaces the FAIL either in stdout (normal) or via a
     # non-zero exit. A green pass without the founding assertion listed
     # is a regression -- assert at least one of the founder signatures.
@@ -3768,6 +3814,125 @@ def test_pr_diff_text_fails_closed_on_other_gh_error(monkeypatch):
         cpp._pr_diff_text(101)
 
 
+# --- #16085 : cardinal anaphorique delimite + provenance relayee en SHA ------
+
+FILES_16085_A = [
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/Knots/Invariant.lean"},
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/Knots/Invariant_en.lean"},
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/Knots/README.md"},
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/README.md"},
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/Knots/TaitColor.lean"},
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/Knots/Matrix.lean"},
+    {"path": "MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/Knots/Smooth.lean"},
+]
+
+BODY_16085_A = (
+    "La migration Mathlib 4.33.0 porte sur `Knots/Invariant.lean` et son "
+    "sibling `Knots/Invariant_en.lean` : les instances sont fournies a la "
+    "forme exacte du sous-but.\n"
+    "\n"
+    "Les occurrences des mots `sorry` / `native_decide` dans ces deux "
+    "fichiers sont de la prose de docstring, pas des trous de preuve."
+)
+
+
+def test_16085_cas_a_cardinal_anaphorique_ne_rouge_pas():
+    """#16085 cas A (founder #16075) : « dans ces deux fichiers » ou
+    l'antecedent -- les deux modules NOMMES au paragraphe precedent -- porte
+    la reference (deixse anaphorique, pas assertion de perimetre). La PR
+    touche 7 fichiers, la phrase est vraie, le rouge etait un faux positif
+    bloquant."""
+    problems = check_assertion(FILES_16085_A, BODY_16085_A)
+    assert problems == [], repr(problems)
+
+
+def test_16085_cas_a_fn_antecedent_anonyme_reste_rouge():
+    """Controle FN 1 : sans antecedent nomme au paragraphe precedent, la
+    forme reste ambigue -- fail-loud, le rouge tient."""
+    body = (
+        "La migration porte sur les deux modules d'origine.\n"
+        "\n"
+        "Les occurrences des mots `sorry` / `native_decide` dans ces deux "
+        "fichiers sont de la prose."
+    )
+    problems = check_assertion(FILES_16085_A, body)
+    assert any("l'assertion pretend 2 fichier" in p for p in problems), repr(problems)
+
+
+def test_16085_cas_a_fn_mot_de_scope_reste_rouge():
+    """Controle FN 2 : une ligne porteuse d'un mot de scope fort reste
+    bloquante meme sous demonstratif -- le garde ne masque pas une vraie
+    revendication de perimetre."""
+    body = (
+        "La migration porte sur `Knots/Invariant.lean` et "
+        "`Knots/Invariant_en.lean`.\n"
+        "\n"
+        "Perimetre : dans ces deux fichiers uniquement."
+    )
+    problems = check_assertion(FILES_16085_A, body)
+    assert any("l'assertion pretend 2 fichier" in p for p in problems), repr(problems)
+
+
+def test_16085_cas_a_fn_demonstratif_absent_reste_rouge():
+    """Controle FN 3 : sans demonstratif, « deux fichiers » nu reste un
+    compte confronte -- c'est l'anaphore qui porte le masquage, pas le
+    cardinal."""
+    body = (
+        "La migration porte sur `Knots/Invariant.lean` et "
+        "`Knots/Invariant_en.lean`.\n"
+        "\n"
+        "deux fichiers sont de la prose."
+    )
+    problems = check_assertion(FILES_16085_A, body)
+    assert any("l'assertion pretend 2 fichier" in p for p in problems), repr(problems)
+
+
+BODY_16085_B = (
+    "La provenance citée (19 findings → 13 après restauration, 8 fichiers "
+    "de `fe04e1f37`, ~793 lignes de contexte de fence) : relayée, non "
+    "re-mesurée depuis mon siège."
+)
+
+
+def test_16085_cas_b_provenance_sha_est_incidentale():
+    """#16085 cas B (founder #15983, PR BODY -- le log du run 34758737057
+    montre le rouge body-sourced « pretend 8, liste 1 ») : « N fichiers de
+    `<sha>` » attribue la population a une REVISION PASSEE, relayee. Meme
+    famille que PAST_REFERENCE : mauvaise surface, pas mauvais compte. La
+    consequence passe au routage incidental #11712 (signal, pas blocage)."""
+    assert _is_incidental_assertion(BODY_16085_B) is True
+
+
+def test_16085_cas_b_fn_sha_trop_court_reste_bloquant():
+    """Controle FN : un suffixe < 7 hex n'est pas un SHA -- la forme n'est
+    pas une provenance, le compte reste confronte."""
+    line = "8 fichiers de `fe04e` dans la restauration"
+    assert _is_incidental_assertion(line) is False
+
+
+def test_16085_cas_b_fn_non_hex_reste_bloquant():
+    """Controle FN : un backtick non-hex (`main.yml`) n'est pas un SHA."""
+    line = "8 fichiers de `main.yml` cites pour memoire"
+    assert _is_incidental_assertion(line) is False
+
+
+def test_16085_cas_b_fn_vrai_perimetre_reste_bloquant():
+    """Controle FN : une vraie enumeration de perimetre reste bloquante --
+    le masque ne doit couvrir QUE la forme « de <sha> »."""
+    line = "8 fichiers : a.py, b.py, c.py"
+    assert _is_incidental_assertion(line) is False
+
+
+def test_16085_cas_b_additive_ninclut_pas_la_provenance():
+    """La somme additive (#12103) lit le corps comme la selection : un
+    compte exonere ne joint jamais la somme."""
+    line = (
+        "La provenance citée (19 findings → 13 après restauration, 8 "
+        "fichiers de `fe04e1f37`, ~793 lignes) : relayée."
+    )
+    assert _additive_line_sum(line) == 0
+
+
 # ---------------------------------------------------------------------------
 # #16162 — un compte sous negation ou portant sur une AUTRE PR n'est pas
 # un perimetre. Fondateurs mesures par ai-01 sur deux PRs ouvertes :
@@ -3873,3 +4038,226 @@ def test_16162_scan_thread_extracts_founders_without_blocking():
     files = [{"path": f"f{i}.py"} for i in range(4)]
     for c in cands:
         assert check_assertion(files, c.text, block=c.block, body_hint=c.body_text) == []
+
+
+# ---------------------------------------------------------------------------
+# #17262-classe (3e surface) — un quota d'API epuise est une NON-MESURE, pas
+# une contradiction de perimetre.
+#
+# Mesure fondatrice du 2026-09-21 : quatre runs `perimeter review guard` sur
+# quatre tetes distinctes en trois heures, tous refuses par
+# `gh error: GraphQL: API rate limit already exceeded for site ID
+# installation.` -- et tous rapportes a l'auteur comme « a perimeter
+# assertion ... contradicts the effective file list », un verdict que le
+# garde n'avait jamais mesure. `#14576` avait deja ratifie la consequence
+# pour la cause « liste vide » (verdict nomme, exit 0) ; la lecture refusee
+# est la meme absence par une autre cause.
+# ---------------------------------------------------------------------------
+
+# Les trois orthographes mesurees, une par surface : #17229 (`user ID`),
+# les runs de ce fichier (`site ID installation`), et la forme `installation`.
+RATE_LIMITS_MESURES = [
+    "gh error: GraphQL: API rate limit already exceeded for site ID installation.",
+    "gh: API rate limit exceeded for installation. If you reach out to GitHub Support for help, please.",
+    "gh error: GraphQL: API rate limit already exceeded for user ID 3159389.",
+]
+
+
+def test_rate_limit_signatures_recognised():
+    """Les trois orthographes mesurees sont reconnues."""
+    import check_pr_perimeter as cpp
+
+    for stderr in RATE_LIMITS_MESURES:
+        assert cpp._is_transient_gh_failure(stderr), stderr
+
+
+def test_unrecognised_error_is_not_transient():
+    """CONTROLE NEGATIF de la fonction : un echec NON reconnu ne downgrade
+    pas. Sans ce controle, « ne bloque plus » serait indistinguable d'un
+    garde debranche."""
+    import check_pr_perimeter as cpp
+
+    for stderr in [
+        "gh: Not Found (HTTP 404)",
+        "gh: could not resolve host github.com",
+        "gh error: GraphQL: Something went wrong while executing your query.",
+        "",
+    ]:
+        assert not cpp._is_transient_gh_failure(stderr), stderr
+
+
+def test_rate_limit_read_exits_zero_with_named_verdict(monkeypatch, capsys):
+    """Une lecture refusee par quota rend PERIMETRE NON MESURABLE + exit 0,
+    et n'ecrit JAMAIS une contradiction de perimetre."""
+    import check_pr_perimeter as cpp
+
+    monkeypatch.setattr(
+        cpp, "_run_gh_rc",
+        lambda args: (1, "", RATE_LIMITS_MESURES[0]),
+    )
+    with pytest.raises(SystemExit) as exc:
+        cpp._run_gh(["pr", "view", "17269", "--json", "body"])
+    assert exc.value.code == 0, "une non-mesure ne doit pas tenir la PR"
+    out = capsys.readouterr().out
+    assert "PERIMETRE NON MESURABLE" in out
+    assert "budget d'API GitHub est epuise" in out
+    assert "contradiction" in out, "le verdict doit se nommer comme tel"
+
+
+def test_unrecognised_transport_failure_stays_fail_closed(monkeypatch, capsys):
+    """CONTROLE NEGATIF du garde : un echec de transport NON reconnu garde
+    le fail-closed (exit 2) et ne rend PAS le verdict de non-mesure. C'est
+    la propriete que le downgrade ne doit pas emporter avec lui."""
+    import check_pr_perimeter as cpp
+
+    monkeypatch.setattr(
+        cpp, "_run_gh_rc",
+        lambda args: (1, "", "gh: could not resolve host github.com"),
+    )
+    with pytest.raises(SystemExit) as exc:
+        cpp._run_gh(["pr", "view", "17269", "--json", "body"])
+    assert exc.value.code == 2, "un echec indetermine reste fail-closed"
+    out = capsys.readouterr().out
+    assert "PERIMETRE NON MESURABLE" not in out
+
+
+def test_diff_rate_limit_also_unmeasurable(monkeypatch, capsys):
+    """Le second site (`_pr_diff_text`) applique la meme doctrine : sans lui,
+    le quota epuise y ressuscitait un exit 2."""
+    import check_pr_perimeter as cpp
+
+    monkeypatch.setattr(
+        cpp, "_run_gh_rc",
+        lambda args: (1, "", RATE_LIMITS_MESURES[1]),
+    )
+    with pytest.raises(SystemExit) as exc:
+        cpp._pr_diff_text(17269)
+    assert exc.value.code == 0
+    assert "PERIMETRE NON MESURABLE" in capsys.readouterr().out
+
+
+def test_no_workflow_collapses_the_three_outcomes():
+    """#17273, controle de regression DURABLE.
+
+    Le defaut vivait au niveau du WRAPPER shell, pas du script : un
+    `cmd || { echo <conclusion>; exit 1; }` ecrase les trois issues (0 mesure
+    faite, 1 contradiction, 2 mesure impossible) dans le message de
+    contradiction. Deux sites le portaient (perimeter-review-guard.yml et
+    always-on-guards.yml) ; le second, sur la surface `pull_request`, se
+    declenche le plus souvent et avait ete manque au premier passage.
+
+    Une relecture a la main ne tient pas ce controle d'un cycle a l'autre :
+    on le rend executables. Le troisieme site (fast_lane_registry.py) lit le
+    rc via `conclusion_for`, qui mappe deja 2 -> failure et 0 -> success ;
+    il n'a donc pas de wrapper a corriger.
+    """
+    import re as _re
+    from pathlib import Path as _Path
+
+    root = _Path(__file__).resolve().parents[2]
+    offenders = []
+    for wf in sorted((root / ".github" / "workflows").glob("*.yml")):
+        text = wf.read_text(encoding="utf-8")
+        for i, line in enumerate(text.splitlines(), 1):
+            if "check_pr_perimeter.py" not in line:
+                continue
+            # Le `||` sur la MEME ligne, ou l'amorce d'un bloc `|| {` qui suit.
+            if "||" in line:
+                offenders.append(f"{wf.name}:{i}: {line.strip()[:120]}")
+    assert not offenders, (
+        "un `||` sur l'invocation du garde ecrase ses trois issues dans le "
+        "message de contradiction (#17273) :\n  " + "\n  ".join(offenders)
+    )
+
+
+def test_both_invoking_workflows_branch_on_rc():
+    """Controle positif : les DEUX sites qui portent le garde distinguent
+    rc=1 (contradiction) de rc=2 (mesure impossible). Sans ce controle, un
+    troisieme site pourrait reapparaitre sans que rien ne le remarque."""
+    from pathlib import Path as _Path
+
+    root = _Path(__file__).resolve().parents[2]
+    for name in ("perimeter-review-guard.yml", "always-on-guards.yml"):
+        text = (root / ".github" / "workflows" / name).read_text(encoding="utf-8")
+        assert "check_pr_perimeter.py" in text, f"{name} ne porte plus le garde ?"
+        assert '"$rc" -eq 1' in text, (
+            f"{name} ne distingue plus rc=1 : le message de contradiction "
+            "serait rendu pour un echec de mesure (#17273)"
+        )
+
+
+# --- #20086 : prose descriptive chiffree ouverte par un verbe de constatation
+
+
+def _count_exempt(line: str) -> bool:
+    m = COUNT_CLAIM.search(line)
+    assert m is not None, f"aucun COUNT_CLAIM dans la ligne sonde : {line!r}"
+    return _count_is_exempt(line, m)
+
+
+def test_issue_20086_descriptive_attestation_is_exempt():
+    """Founder #20076 (body avant correction) : le compte ouvre sur ce que
+    l'auteur a LU ou ATTESTE, pas sur le perimetre de la PR."""
+    assert _count_exempt(
+        "- `life-lean-stats` (exec 12) atteste 4 fichiers (`Life.lean` 253, "
+        "`Life_en.lean` 254, `Hashlife.lean` 700, `Hashlife_en.lean` 701)"
+    )
+    assert _count_exempt("`phase1-files-list` (exec 18) atteste ~80 fichiers `.lean`")
+
+
+def test_issue_20086_canonical_colon_declaration_still_fails():
+    """Controle positif exige par l'issue : la forme canonique de declaration
+    de perimetre -- « N fichiers : a, b, c » -- n'est ouverte par aucun verbe
+    de constatation et DOIT continuer de rougir."""
+    assert not _count_exempt(
+        "7 fichiers : a.py, b.py, c.py, d.py, e.py, f.py, g.py"
+    )
+
+
+def test_issue_20086_colon_guard_survives_a_constatation_verb():
+    """Le verbe ne blanchit pas une assertion declaree par deux-points : c'est
+    la garde qui separe l'exemption du blanc-seing."""
+    assert not _count_exempt(
+        "j'atteste 7 fichiers : a.py, b.py, c.py, d.py, e.py, f.py, g.py"
+    )
+
+
+def test_issue_20086_bare_assertion_without_verb_still_fails():
+    """Sans verbe de constatation, la phrase reste une revendication."""
+    assert not _count_exempt("Le perimetre de cette PR est de 3 fichiers uniquement.")
+
+
+def test_issue_20125_perimeter_verbs_do_not_exempt():
+    """Review #20125 : `couvre/couvrent/covers/lists` sont des verbes de
+    PERIMETRE, pas de constatation -- l'annonce de perimetre la plus courante
+    doit rester bloquante, sinon l'exemption est un blanc-seing."""
+    assert not _count_exempt("Cette PR couvre 4 fichiers.")
+    assert not _count_exempt("This PR covers 4 files.")
+
+
+def _body_candidates(body: str, n_files: int):
+    items = [{"kind": "body", "author": "lane", "body": body, "source": "body", "ts": ""}]
+    return select_candidates(items, n_files)[0]
+
+
+def test_issue_20086_end_to_end_founder_body_is_signal_not_blocking():
+    """Bout en bout, au niveau ou #20076 rougissait : la ligne fondatrice
+    reste EXTRAITE et CONFRONTEE (#12201 : l'exemption ne retire pas le compte
+    de la selection), mais elle ne BLOQUE plus -- c'est la propriete
+    `blocking` du candidat qui porte le verdict."""
+    body = (
+        "- `life-lean-stats` (exec 12) atteste 4 fichiers (`Life.lean` 253, "
+        "`Life_en.lean` 254, `Hashlife.lean` 700, `Hashlife_en.lean` 701)\n"
+        "- `phase1-files-list` (exec 18) atteste ~80 fichiers `.lean`\n"
+    )
+    cands = _body_candidates(body, 7)
+    assert cands, "les lignes doivent rester des candidates (extraction inchangee)"
+    assert all(not c.blocking for c in cands), [c.text for c in cands if c.blocking]
+
+
+def test_issue_20086_end_to_end_colon_declaration_still_blocks():
+    """Controle positif bout en bout : la declaration canonique de perimetre
+    reste BLOQUANTE sur la meme liste de 7 fichiers."""
+    body = "Perimetre : 4 fichiers : Life.lean, Life_en.lean, Hashlife.lean, Hashlife_en.lean\n"
+    cands = _body_candidates(body, 7)
+    assert any(c.blocking for c in cands), "la declaration canonique doit bloquer"

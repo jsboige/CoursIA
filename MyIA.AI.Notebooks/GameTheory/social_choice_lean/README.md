@@ -69,7 +69,7 @@ Résultats formalisés par Peters :
 
 **Intégration dans notre projet** (3 phases) :
 1. **Phase 1** (ce dépôt) : Citations et références croisées
-2. **Phase 2** : Projet Lake séparé ([`social_choice_lean_peters/`](../social_choice_lean_peters/)) ; notebook compagnon de tour prévu (pas encore créé)
+2. **Phase 2** : Projet Lake séparé ([`social_choice_lean_peters/`](../SocialChoice/social_choice_lean_peters/)) ; notebook compagnon de tour prévu (pas encore créé)
 3. **Phase 3** : Portage sélectif dans notre framework `PrefOrder` (impossibilités Condorcet, règles de scoring)
 
 **Différences de framework** :
@@ -188,7 +188,7 @@ social_choice_lean/                     (tombstone documentaire — plus un lake
     └── SortedListCounting.lean      # Lemmes de comptage médian (noyau du median voter)
 ```
 
-Le projet `social_choice_lean_peters/` (adjacent) contient un projet Lake séparé qui importe DominikPeters/SocialChoiceLean en dépendance. Il sert de vérification de build et de référence pour le notebook [SC-02](../SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) (qui inclut un tour du code `social_choice_lean`).
+Le projet `social_choice_lean_peters/` (désormais sous `SocialChoice/`) contient un projet Lake séparé qui importe DominikPeters/SocialChoiceLean en dépendance. Il sert de vérification de build et de référence pour le notebook [SC-02](../SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) (qui inclut un tour du code `social_choice_lean`).
 
 ## Choix de design
 
@@ -261,7 +261,7 @@ Ces formalisations Lean sont les bases théoriques pour les notebooks de la sous
 
 - [`01b-Lean-SocialChoice-Formal.ipynb`](../SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) : applications pratiques des formalisations (kernel Lean 4)
 - [`03-Voting-Methods.ipynb`](../SocialChoice/03-Voting-Methods.ipynb) : simulations numériques des méthodes de vote (Python)
-- Le tour des résultats de DominikPeters/SocialChoiceLean — backend [`social_choice_lean_peters/`](../social_choice_lean_peters/) (notebook compagnon prévu, pas encore créé)
+- Le tour des résultats de DominikPeters/SocialChoiceLean — backend [`social_choice_lean_peters/`](../SocialChoice/social_choice_lean_peters/) (notebook compagnon prévu, pas encore créé)
 
 ## Liens utiles
 

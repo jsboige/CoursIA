@@ -76,10 +76,16 @@ from pathlib import Path
 # Must match the i18n #4980 out-of-scope list (code-style.md).
 EXCLUDE_DIR_PARTS = (
     ".lake",            # Mathlib + build artifacts
+    ".mathlib-cache",   # shared Mathlib store, at the REPO ROOT (not under a lake)
     "_peters",          # external lake
     "reference_docs",   # agent_tests/prover/session_state/reference_docs/
     "foundry-lib",      # vendored lib
 )
+# Note on ".mathlib-cache": the store introduced by the junction migration
+# (scripts/lean/setup_shared_mathlib.ps1, #13962/#16969) lives at
+# ``<repo>/.mathlib-cache/<toolchain>-<rev>/mathlib/`` -- it is NOT under any
+# lake, so without this part a walk of the repo root counts Mathlib's own
+# debt as the repository's (~19k files vs ~627 first-party, #17016).
 
 # Declaration keywords whose header opens a new named scope.
 DECL_KEYWORDS = (
@@ -318,7 +324,11 @@ def scan_file(path: Path, root: Path) -> tuple[list[Declaration], int, int]:
         hdr = _DECL_RE.match(line) or _INSTANCE_ANON_RE.match(line)
         if hdr:
             _flush_vacuous()
-            kw = hdr.group("kw")
+            # ``_INSTANCE_ANON_RE`` carries only ``indent``: an anonymous
+            # ``instance`` header ending the line (the multi-line Mathlib style)
+            # has no keyword-group the way ``_DECL_RE`` does, and no name to
+            # read. Read both fields through ``groupdict`` (#17016).
+            kw = hdr.groupdict().get("kw") or "instance"
             name = hdr.groupdict().get("name") or ""
             current = Declaration(kind=kw, name=name, line=idx, file=rel,
                                   is_marker=bool(name and _MARKER_NAME_RE.match(name)))

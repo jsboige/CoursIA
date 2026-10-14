@@ -12,6 +12,11 @@ G=8 + backward LoRA), pas l'apprentissage -- le verifier SymPy est CPU-side et
 n'affecte pas la VRAM. Aucun resultat d'entrainement n'est claimable ici.
 
 Un sous-processus par modele : un OOM CUDA n'empoisonne pas les tailles suivantes.
+
+Extension mur-reel (issue #15639, tranche 8 Go) : argv optionnels [num_generations]
+[max_completion_length] (defauts 8/96 = recipe exacte ci-dessus) pour balayer
+l'enveloppe a modele fixe -- chasser l'OOM nominal de la carte la ou la
+campagne de tailles s'est arretee sur un FIT.
 Sortie : une ligne JSON par modele (append au fichier passe en 2e argument).
 """
 import json
@@ -20,7 +25,7 @@ import time
 import gc
 
 
-def probe(model_id: str) -> dict:
+def probe(model_id: str, num_generations: int = 8, max_completion_length: int = 96) -> dict:
     import torch
     from datasets import Dataset
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
@@ -29,6 +34,8 @@ def probe(model_id: str) -> dict:
 
     result = {
         "model": model_id,
+        "num_generations": num_generations,
+        "max_completion_length": max_completion_length,
         "torch": torch.__version__,
         "gpu": torch.cuda.get_device_name(0),
         "vram_total_gb": round(torch.cuda.get_device_properties(0).total_memory / 2**30, 2),
@@ -71,13 +78,13 @@ def probe(model_id: str) -> dict:
             target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
         )
         cfg = GRPOConfig(
-            num_generations=8,
+            num_generations=num_generations,
             beta=0.0,
             per_device_train_batch_size=8,
             gradient_accumulation_steps=4,
             learning_rate=5e-6,
             max_steps=3,
-            max_completion_length=96,
+            max_completion_length=max_completion_length,
             logging_steps=1,
             save_strategy="no",
             output_dir="./vram_probe_out",
@@ -129,7 +136,9 @@ def probe(model_id: str) -> dict:
 if __name__ == "__main__":
     model_id = sys.argv[1]
     out_path = sys.argv[2]
-    r = probe(model_id)
+    num_gens = int(sys.argv[3]) if len(sys.argv) > 3 else 8
+    completion = int(sys.argv[4]) if len(sys.argv) > 4 else 96
+    r = probe(model_id, num_gens, completion)
     with open(out_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(r) + "\n")
     print(json.dumps(r, indent=2))

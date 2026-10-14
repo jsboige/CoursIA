@@ -13,9 +13,9 @@ hors `_en` ; bascule #11688 — historiquement `standalone-tactic` ; les mention
 
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
-| `search_lean` | v4.32.1 | 0 | 5 | 1¹ | PEDA/REF | #4048, #4038, #3801 |
-| `discrepancy_lean` | v4.32.1 | 0 | 8 | 0² | PEDA/REF | #12823 |
-| **Total** | — | **0** | **13** | **1** | — | — |
+| `search_lean` | v4.33.0 | 0 | 5 | 1¹ | PEDA/REF | #4048, #4038, #3801 |
+| `discrepancy_lean` | v4.33.0 | 0 | 8 | 1² | PEDA/REF | #12823 |
+| **Total** | — | **0** | **13** | **2** | — | — |
 
 ¹ Notebook câblé : **Search-03e-AStar-Optimality.ipynb**
 (`Search/Part1-Foundations/`, descente tranche 1 #13662 depuis
@@ -25,9 +25,16 @@ A* vs BFS sur terrain pondéré — convention sibling-lake). Répond aussi au p
 problème non-trivial (heuristique discriminante), pas un graphe à coût uniforme où A*
 dégénère en BFS.
 
-² Notebook compagnon prévu : `Search-15-CombinatorialDiscrepancy` (livrable A de
-[#12823](https://github.com/jsboige/CoursIA/issues/12823)) — Beck–Fiala 2k−1 implémenté +
-CP-SAT en oracle exact. Pas encore câblé.
+² Notebook câblé : **Search-09e-Komlos-Lean.ipynb** (`Search/Part1-Foundations/`, kernel
+`lean4-wsl`, descendu le 2026-10-04 de l'ancien chemin
+`Search/Part1-Foundations/Search-09d-Lean-Discrepancy-Komlos.ipynb` par #19151) — `#check` des
+énoncés du lake (Komlós, Beck–Fiala, régimes Bansal–Jiang 2025) et
+témoins coloriés ±1 énumérés exhaustivement sur des instances jouet.
+
+Le livrable A de [#12823](https://github.com/jsboige/CoursIA/issues/12823) (Beck–Fiala 2k−1
+implémenté + CP-SAT en oracle exact) est livré en **Search-09d-BeckFiala-Lean-Python.ipynb**
+(kernel `python3`) : c'est un **pont Python vers le lake**, sans Lean au runtime — il ne compte
+donc pas dans la colonne *Notebook câblé*, qui mesure l'invocation effective du lake.
 
 ---
 
@@ -39,12 +46,12 @@ CP-SAT en oracle exact. Pas encore câblé.
 **consistante**. Lake de la série Search (roadmap #4038 Tier 1, #4048), déployé en 3 phases
 (phase-1 modélisation, phase-2 admissibilité, phase-3 consistance).
 
-- **Toolchain** : v4.32.1 · **Dépendance** : Mathlib4
+- **Toolchain** : v4.33.0 · **Dépendance** : Mathlib4
 - **lib** : `Astar` (`globs := #[.submodules \`Astar]`)
 - **Modules** : `Astar/Graph.lean`, `Astar/Heuristic.lean`, `Astar/Optimality.lean`,
   `Astar/Consistency.lean` + umbrella `Astar.lean`
 - **sorry (production)** : **0** (real-mode). CI verte sur main
-  (`lean-search.yml`, dernier run 2026-08-18).
+  (`lean-ci-matrix.yml`, clé `search`).
 
 #### Théorèmes prouvés (0 sorry)
 
@@ -80,7 +87,7 @@ systèmes d'ensembles de degré `≤ k`, bornes de la pire somme colorée.
 Première formalisation du sujet (dépôt + Mathlib : 0 hit, vérifié 2026-08-24).
 Désambiguïsation : sans rapport avec la Limited Discrepancy Search de Search-13.
 
-- **Toolchain** : v4.32.1 · **Dépendance** : Mathlib4 (`520045ab`) +
+- **Toolchain** : v4.33.0 · **Dépendance** : Mathlib4 (rev `db584cd6`) +
   cross-lake `learning_theory_lean` (kernel `PacLearning.Hoeffding` importé, P2)
 - **lib** : `Discrepancy` (`globs := #[.submodules \`Discrepancy, \`Discrepancy]`)
 - **Modules** : `Discrepancy/Basic.lean`, `Discrepancy/Komlos.lean`,
@@ -118,7 +125,7 @@ Désambiguïsation : sans rapport avec la Limited Discrepancy Search de Search-1
   `head?`/`getLast?` non nommés → `simp`/`simp_all` plutôt que lemme nommé ; warnings
   `simp only [..]` unused-arg → préférer `linarith`/`rw` ; le glob `.submodules Astar` build
   les sous-modules, PAS l'umbrella `.olean`.
-- CI : `.github/workflows/lean-search.yml` (`sorry-filter-mode: real`, baseline `"0"` ;
+- CI : `.github/workflows/lean-ci-matrix.yml` (clé `search` ; `sorry-filter-mode: real`, baseline `"0"` ;
   historiquement `lean-astar.yml` en `standalone-tactic`, renommé, bascule mode #11688).
 - **EPIC #3801 prong-B** : le lake pose un graphe pondéré où l'heuristique discrimine, en
   réponse au grief BFS-vs-A* sur terrain à coût uniforme (commit `8905f8845`).

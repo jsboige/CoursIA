@@ -29,9 +29,10 @@ namespace MyIA.Trading.Backtester.Tests.Core
         [Fact]
         public void ConvertToUnixTimestamp_LocalTimeIsNormalizedToUtc()
         {
-            // Une DateTime en Unspecified OU Local doit etre convertie en UTC avant epoch.
-            // Local time UTC+1 de 2024-01-01 01:00:00 == 2024-01-01 00:00:00 UTC == 1704067200.
-            var local = new DateTime(2024, 1, 1, 1, 0, 0, DateTimeKind.Local);
+            // Construire une heure locale depuis un instant UTC connu : le fuseau
+            // du runner peut differer sans changer la seconde Unix attendue.
+            var local = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc).ToLocalTime();
+            Assert.Equal(DateTimeKind.Local, local.Kind);
             Assert.Equal(1704067200L, UnixTime.ConvertToUnixTimestamp(local));
         }
 

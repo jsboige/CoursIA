@@ -20,6 +20,13 @@
   Source EN verbatim : c097d66cb (= 2d16a7b28^, parent du commit pilote
   FR-first Option A c.210 = `aaaf0c52a`). Resolution #4980 (2026-07-04) :
   supersede de l'Option A FR-only in-place.
+
+  Reference: L.S. Shapley, "A Value for N-Person Games" (1953); the
+  canonical textbook of the cluster (Maschler, Solan & Zamir, "Game
+  Theory", Cambridge UP, 2013 -- ch. 15 *The Shapley Value* and
+  ch. 17 *The Core*; **anchorages to be confirmed** against the book,
+  the PDF not being available on this machine) is the textbook-anchor
+  for reading the definitions and theorems of this lake.
 -/
 
 
@@ -567,8 +574,8 @@ lemma marginalVector_dominates (h : G.Convex) :
       have hpref_succ :
           (prefixCoalition (enumIndex i) ∪ {i} : Finset N) =
             prefixCoalition (enumIndex i + 1) := by
-        have heq : (Fintype.equivFin N).symm ⟨enumIndex i, hi_idx_lt⟩ = i := by
-          unfold enumIndex; simp
+        have heq : (Fintype.equivFin N).symm ⟨enumIndex i, hi_idx_lt⟩ = i :=
+          (Fintype.equivFin N).symm_apply_apply i
         rw [prefixCoalition_succ_eq (enumIndex i) hi_idx_lt, heq]
       have hmv_i : G.marginalVector i =
           G.v (prefixCoalition (enumIndex i) ∪ {i}) -

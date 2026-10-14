@@ -1,0 +1,7 @@
+date: '2026-09-25'
+by: myia-po-2024:CoursIA
+python_sha: a990e8f5a2891fab649d94c9d0353668323490cb
+csharp_sha: f7b2dc738b1f83450c563895d999f54f2e353a55
+content_python_sha: 55d5d645c34d71dacc782f712f635376514ecd9c701bacb47b452b602bebcbec
+content_csharp_sha: e2c167fe851809563895c511060ad989faa1bcbee3c36a47e5567e544060b5e6
+reason: 'G4a #14873 (arbitrage c.5830481267) : stem swap markdown-only PyMC-06-Debugging -> PyMC-02b-Debugging-Python (2 lignes de prose), cote Python seul.'

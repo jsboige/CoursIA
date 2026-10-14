@@ -1,4 +1,7 @@
 #!/bin/bash
+# CI-CHECK: --check
+#   ^ `--check` verifies elan / Lean 4 and exits; it never installs. Declared
+#     for the CI advisory guard (#10643).
 # Setup script for Lean 4 on macOS / Linux (native, no WSL)
 # Installs elan, Lean 4 stable, lean4_jupyter, and REPL
 #
@@ -239,6 +242,6 @@ echo ""
 echo "Next steps:"
 echo "  1. Restart VSCode / Jupyter"
 echo "  2. Select kernel 'Lean 4 (Native)'"
-echo "  3. Open GameTheory-01-Setup.ipynb"
+echo "  3. Open GameTheory-01-Setup-Python.ipynb"
 echo ""
 echo "Verify anytime: bash setup_lean4_native.sh --check"

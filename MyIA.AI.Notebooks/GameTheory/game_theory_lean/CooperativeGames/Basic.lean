@@ -8,7 +8,12 @@
   - Propriétés de superadditivité et convexité
   - Le noyau (Core) d'un jeu
 
-  Référence : L.S. Shapley, « A Value for N-Person Games » (1953)
+  Référence : L.S. Shapley, « A Value for N-Person Games » (1953) ; le
+  traité canonique du cluster (Maschler, Solan & Zamir, « Game Theory »,
+  Cambridge UP, 2013 — ch. 15 *The Shapley Value* et ch. 17 *The Core* ;
+  **ancrages à confirmer** sur l'ouvrage, le PDF n'étant pas acquis
+  sur cette machine) sert d'ouvrage-ancrage pour la lecture des
+  définitions et théorèmes de cette lake.
 
   Convention i18n (EPIC #4980, cycle 39, PR pilote) : FR-first appliqué sur les
   en-têtes, titres de section, et docstrings publics. Le code tactique et les
@@ -567,8 +572,8 @@ lemma marginalVector_dominates (h : G.Convex) :
       have hpref_succ :
           (prefixCoalition (enumIndex i) ∪ {i} : Finset N) =
             prefixCoalition (enumIndex i + 1) := by
-        have heq : (Fintype.equivFin N).symm ⟨enumIndex i, hi_idx_lt⟩ = i := by
-          unfold enumIndex; simp
+        have heq : (Fintype.equivFin N).symm ⟨enumIndex i, hi_idx_lt⟩ = i :=
+          (Fintype.equivFin N).symm_apply_apply i
         rw [prefixCoalition_succ_eq (enumIndex i) hi_idx_lt, heq]
       have hmv_i : G.marginalVector i =
           G.v (prefixCoalition (enumIndex i) ∪ {i}) -

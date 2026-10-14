@@ -70,7 +70,7 @@ La mission ComfyUI-Login visait à résoudre définitivement les problèmes d'au
 | **Authentification** | Tokens unifiés, système bcrypt stable | Élimination des erreurs 401 |
 | **Scripts** | Structure consolidée avec 12+ utilitaires | Maintenance facilitée |
 | **Docker** | Configuration organisée et documentée | Déploiement simplifié |
-| **Documentation** | 2000+ lignes de documentation technique | Transmission des connaissances |
+| **Documentation** | Documentation technique | Transmission des connaissances |
 | **Performance** | GPU RTX 3090 optimisé avec modèles FP8 | Génération 8-12 secondes |
 
 ### Livrables Principaux
@@ -129,12 +129,12 @@ Le `token_synchronizer.py` garantit la cohérence entre :
 
 ### Utilitaires Spécialisés
 
-| Utilitaire | Description | Lignes |
-|-----------|-------------|---------|
-| `comfyui_client_helper.py` | Client HTTP ComfyUI complet | 1305 |
-| `workflow_utils.py` | Manipulation de workflows | 489 |
-| `diagnostic_utils.py` | Utilitaires de diagnostic | 426 |
-| `benchmark.py` | Benchmark de performance | - |
+| Utilitaire | Description |
+|-----------|-------------|
+| `comfyui_client_helper.py` | Client HTTP ComfyUI complet |
+| `workflow_utils.py` | Manipulation de workflows |
+| `diagnostic_utils.py` | Utilitaires de diagnostic |
+| `benchmark.py` | Benchmark de performance |
 
 ---
 
@@ -341,7 +341,7 @@ L'écosystème ComfyUI-Qwen représente une solution **complète, sécurisée et
 ✅ **Authentification sécurisée** : Tokens bcrypt unifiés et synchronisés  
 ✅ **Architecture consolidée** : Scripts organisés et documentés  
 ✅ **Performance optimisée** : GPU RTX 3090 avec modèles FP8  
-✅ **Documentation exhaustive** : 2000+ lignes de documentation technique  
+✅ **Documentation exhaustive** : Documentation technique  
 ✅ **Production ready** : Solution testée et validée  
 
 ### Impact Transformationnel

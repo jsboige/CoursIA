@@ -197,7 +197,7 @@ class TestConstants:
         assert len(vl.LEAN_NOTEBOOKS) == 8
 
     def test_lean_notebooks_start_with_setup(self):
-        assert vl.LEAN_NOTEBOOKS[0] == "Lean-1-Setup.ipynb"
+        assert vl.LEAN_NOTEBOOKS[0] == "Lean-01-Setup-Lean-Python.ipynb"
 
     def test_python_notebooks_subset_of_lean_notebooks(self):
         for nb in vl.PYTHON_NOTEBOOKS:
@@ -210,9 +210,9 @@ class TestConstants:
     def test_python_notebooks_are_1_7_8(self):
         # 1=setup/diagnostic, 7=LLM, 8=agentic — documented in module
         assert set(vl.PYTHON_NOTEBOOKS) == {
-            "Lean-1-Setup.ipynb",
-            "Lean-7-LLM-Integration.ipynb",
-            "Lean-8-Agentic-Proving.ipynb",
+            "Lean-01-Setup-Lean-Python.ipynb",
+            "Lean-07-LLM-Integration-Lean-Python.ipynb",
+            "Lean-08-Agentic-Proving-Python.ipynb",
         }
 
     def test_support_files_includes_examples(self):
@@ -240,7 +240,7 @@ class TestPathDiscovery:
         lean_dir = vl.get_lean_directory(vl.get_repo_root())
         assert isinstance(lean_dir, Path)
         # verify_lean.py runs from this directory's scripts/ — get_lean_directory
-        # prefers the local Lean-1-Setup check, so the dir should be the real one
+        # prefers the local Lean-01-Setup-Lean-Python check, so the dir should be the real one
         assert lean_dir.exists()
 
 
@@ -312,7 +312,7 @@ class TestValidateNotebook:
             {"cell_type": "code", "source": ["#eval 2"], "metadata": {}},
         ]
         nb = {"cells": cells, "metadata": _well_formed_kernel()}
-        nb_path = _write_nb(tmp_path, "Lean-1-Setup.ipynb", nb)
+        nb_path = _write_nb(tmp_path, "Lean-01-Setup-Lean-Python.ipynb", nb)
         result = vl.validate_notebook(nb_path)
         assert result.status in ("WARNING", "ERROR")
         assert any("markdown cells" in w for w in result.warnings)
@@ -326,27 +326,27 @@ class TestValidateNotebook:
             {"cell_type": "code", "source": ["#eval 1"], "metadata": {}},
         ]
         nb = {"cells": cells, "metadata": _well_formed_kernel()}
-        nb_path = _write_nb(tmp_path, "Lean-2-Dependent-Types.ipynb", nb)
+        nb_path = _write_nb(tmp_path, "Lean-02-Dependent-Types-Lean.ipynb", nb)
         result = vl.validate_notebook(nb_path)
         assert any("code cells" in w for w in result.warnings)
 
     def test_lean4_kernel_correct(self, tmp_path):
         nb = {"cells": _well_formed_cells(), "metadata": _well_formed_kernel()}
-        nb_path = _write_nb(tmp_path, "Lean-2-Dependent-Types.ipynb", nb)
+        nb_path = _write_nb(tmp_path, "Lean-02-Dependent-Types-Lean.ipynb", nb)
         result = vl.validate_notebook(nb_path)
         assert result.kernel_correct is True
 
     def test_lean_kernel_name_also_accepted(self, tmp_path):
         kernel = {"kernelspec": {"name": "lean", "language": "lean", "display_name": "Lean"}}
         nb = {"cells": _well_formed_cells(), "metadata": kernel}
-        nb_path = _write_nb(tmp_path, "Lean-3-Propositions-Proofs.ipynb", nb)
+        nb_path = _write_nb(tmp_path, "Lean-03-Propositions-Proofs-Lean.ipynb", nb)
         result = vl.validate_notebook(nb_path)
         assert result.kernel_correct is True
 
     def test_python_kernel_on_lean7_accepted_with_warning(self, tmp_path):
         kernel = {"kernelspec": {"name": "python3", "language": "python", "display_name": "Python 3"}}
         nb = {"cells": _well_formed_cells(), "metadata": kernel}
-        nb_path = _write_nb(tmp_path, "Lean-7-LLM-Integration.ipynb", nb)
+        nb_path = _write_nb(tmp_path, "Lean-07-LLM-Integration-Lean-Python.ipynb", nb)
         result = vl.validate_notebook(nb_path)
         assert result.kernel_correct is True
         assert any("Python kernel" in w for w in result.warnings)
@@ -354,7 +354,7 @@ class TestValidateNotebook:
     def test_unexpected_kernel_on_lean2_warns(self, tmp_path):
         kernel = {"kernelspec": {"name": "iruby", "language": "ruby", "display_name": "Ruby"}}
         nb = {"cells": _well_formed_cells(), "metadata": kernel}
-        nb_path = _write_nb(tmp_path, "Lean-2-Dependent-Types.ipynb", nb)
+        nb_path = _write_nb(tmp_path, "Lean-02-Dependent-Types-Lean.ipynb", nb)
         result = vl.validate_notebook(nb_path)
         assert result.kernel_correct is False
         assert any("Expected lean4" in w for w in result.warnings)
@@ -370,7 +370,7 @@ class TestValidateNotebook:
             {"cell_type": "code", "source": ["-- nothing actionable"], "metadata": {}},
         ]
         nb = {"cells": cells, "metadata": _well_formed_kernel()}
-        nb_path = _write_nb(tmp_path, "Lean-1-Setup.ipynb", nb)
+        nb_path = _write_nb(tmp_path, "Lean-01-Setup-Lean-Python.ipynb", nb)
         result = vl.validate_notebook(nb_path)
         assert any("installation/verification code" in w for w in result.warnings)
 
@@ -387,7 +387,7 @@ class TestValidateNotebook:
             {"cell_type": "code", "source": ["-- nothing useful"], "metadata": {}},
         ]
         nb = {"cells": cells, "metadata": _well_formed_kernel()}
-        nb_path = _write_nb(tmp_path, "Lean-2-Dependent-Types.ipynb", nb)
+        nb_path = _write_nb(tmp_path, "Lean-02-Dependent-Types-Lean.ipynb", nb)
         result = vl.validate_notebook(nb_path)
         assert any("#check examples" in w for w in result.warnings)
 
@@ -401,14 +401,14 @@ class TestValidateNotebook:
             {"cell_type": "code", "source": ["-- nothing useful here"], "metadata": {}},
         ]
         nb = {"cells": cells, "metadata": _well_formed_kernel()}
-        nb_path = _write_nb(tmp_path, "Lean-5-Tactics.ipynb", nb)
+        nb_path = _write_nb(tmp_path, "Lean-05-Tactics-Lean.ipynb", nb)
         result = vl.validate_notebook(nb_path)
         assert any("'by' keyword" in w for w in result.warnings)
 
     def test_cell_counts_accurate(self, tmp_path):
         cells = _well_formed_cells()
         nb = {"cells": cells, "metadata": _well_formed_kernel()}
-        nb_path = _write_nb(tmp_path, "Lean-3-Propositions-Proofs.ipynb", nb)
+        nb_path = _write_nb(tmp_path, "Lean-03-Propositions-Proofs-Lean.ipynb", nb)
         result = vl.validate_notebook(nb_path)
         assert result.total_cells == len(cells)
         assert result.markdown_cells == 4
@@ -470,16 +470,16 @@ class TestCheckSupportFiles:
 class TestGetNotebookKernel:
     """Test kernel-routing for Python notebooks (1, 7, 8) vs Lean4 (others)."""
 
-    @pytest.mark.parametrize("name", ["Lean-1-Setup.ipynb", "Lean-7-LLM-Integration.ipynb", "Lean-8-Agentic-Proving.ipynb"])
+    @pytest.mark.parametrize("name", ["Lean-01-Setup-Lean-Python.ipynb", "Lean-07-LLM-Integration-Lean-Python.ipynb", "Lean-08-Agentic-Proving-Python.ipynb"])
     def test_python_notebooks_route_to_python3(self, name):
         assert vl.get_notebook_kernel(Path(name)) == "python3"
 
     @pytest.mark.parametrize("name", [
-        "Lean-2-Dependent-Types.ipynb",
-        "Lean-3-Propositions-Proofs.ipynb",
-        "Lean-4-Quantifiers.ipynb",
-        "Lean-5-Tactics.ipynb",
-        "Lean-6-Mathlib-Essentials.ipynb",
+        "Lean-02-Dependent-Types-Lean.ipynb",
+        "Lean-03-Propositions-Proofs-Lean.ipynb",
+        "Lean-04-Quantifiers-Lean.ipynb",
+        "Lean-05-Tactics-Lean.ipynb",
+        "Lean-06-Mathlib-Essentials-Lean.ipynb",
     ])
     def test_lean_notebooks_route_to_lean4(self, name):
         assert vl.get_notebook_kernel(Path(name)) == "lean4"
@@ -502,17 +502,17 @@ class TestFilterNotebooks:
 
     def test_filter_by_single_name(self):
         result = vl.filter_notebooks(vl.LEAN_NOTEBOOKS, "Lean-2")
-        assert result == ["Lean-2-Dependent-Types.ipynb"]
+        assert result == ["Lean-02-Dependent-Types-Lean.ipynb"]
 
     def test_filter_by_multiple_names(self):
         result = vl.filter_notebooks(vl.LEAN_NOTEBOOKS, "Lean-2,Lean-5")
-        assert "Lean-2-Dependent-Types.ipynb" in result
-        assert "Lean-5-Tactics.ipynb" in result
+        assert "Lean-02-Dependent-Types-Lean.ipynb" in result
+        assert "Lean-05-Tactics-Lean.ipynb" in result
         assert len(result) == 2
 
     def test_filter_is_case_insensitive(self):
         result = vl.filter_notebooks(vl.LEAN_NOTEBOOKS, "lean-2")
-        assert "Lean-2-Dependent-Types.ipynb" in result
+        assert "Lean-02-Dependent-Types-Lean.ipynb" in result
 
     def test_filter_name_with_python_only_combo(self):
         # Filter "Lean-1" + python_only → still only python notebooks match
@@ -520,7 +520,7 @@ class TestFilterNotebooks:
             vl.LEAN_NOTEBOOKS, "Lean-1", python_only=True
         )
         # Lean-1 is in PYTHON_NOTEBOOKS, so it passes both filters
-        assert result == ["Lean-1-Setup.ipynb"]
+        assert result == ["Lean-01-Setup-Lean-Python.ipynb"]
 
     def test_filter_with_no_matches_returns_empty(self):
         result = vl.filter_notebooks(vl.LEAN_NOTEBOOKS, "Nonexistent-99")

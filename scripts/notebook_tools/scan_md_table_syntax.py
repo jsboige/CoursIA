@@ -105,10 +105,20 @@ import pathlib
 # A fence delimiter (``` or ~~~), possibly indented. Lines inside a fence are
 # code -- a `|` there is a shell/pipe operator, NOT a table column, and must
 # not be analyzed. We track fence state linearly (a ``` opens, the next ```
-# closes; ~~~ mirrors). Indented ``` (4+ spaces) is an indented code block, not
-# a fence, but GitHub treats fenced blocks tolerantly -- we open on any leading
-# fence run for simplicity (matches scan_md_hierarchy.py's FENCE_RE).
-FENCE_OPEN_RE = re.compile(r'^\s{0,3}(`{3,}|~{3,})')
+# closes; ~~~ mirrors). The opener may carry an info string (```javascript)
+# and may be indented to a list item's content indent: GFM fences live inside
+# list items at 4-8 spaces (structure-presentation.md charts, #15719), and a
+# 4+-space ``` that is NOT a list fence opens an indented code block whose
+# lines are code all the same -- opening on any indentation is therefore safe
+# for pipe analysis either way.
+FENCE_OPEN_RE = re.compile(r'^\s*(`{3,}|~{3,})')
+
+# The closing fence: a bare fence run, whitespace only. CommonMark forbids an
+# info string on a closer, so a ```` ```javascript ```` line inside an open
+# fence is CONTENT, not a close. Closing on info strings inverted the state
+# for the rest of the file (bonnes-pratiques.md #15719: the JS ``||`` lines
+# after the phantom close were scanned as table blocks).
+FENCE_CLOSE_RE = re.compile(r'^\s*(`{3,}|~{3,})\s*$')
 
 # A line that "looks like a table row": contains a pipe. We do not require
 # leading/trailing `|` (GFM tables may omit the outer borders). A lone `|`
@@ -209,9 +219,13 @@ NAV_LINK_LINE_RE = re.compile(
 )
 NAV_VOCAB_RE = re.compile(
     r'Pr[ée]c[ée]dent|Suivant|Retour|Sommaire|\bIndex\b|\bNext\b|\bPrev\b|'
-    r'\bPrevious\b|\bBack\b|\bHome\b',
+    r'\bPrevious\b|\bBack\b|\bHome\b|<\s*\]|\[\s*>',
     re.I,
 )
+# The arrow forms cover the wordless series footer ``[Risk Parity <](x.ipynb) |
+# [MLP Forecasting >](y.ipynb)`` (QC-Py-Cloud-10, #15719 residual): the link
+# text's trailing ``<`` / leading ``>`` carries the prev/next semantics that
+# the vocabulary words carry elsewhere.
 
 # #15719 names this class explicitly ("métadonnées de forme
 # ``**Durée estimée** : ... | **Prérequis** : ...``"). The colon is required
@@ -276,7 +290,7 @@ def _find_table_blocks(lines):
         stripped = line.strip()
         # Fence state transitions
         if in_fence:
-            m = FENCE_OPEN_RE.match(line)
+            m = FENCE_CLOSE_RE.match(line)
             if m and m.group(1)[0] == fence_marker:
                 in_fence = False
                 fence_marker = None
@@ -342,7 +356,7 @@ def _build_fence_state(lines):
     for i in range(n):
         if in_fence:
             state[i] = True
-            m = FENCE_OPEN_RE.match(lines[i])
+            m = FENCE_CLOSE_RE.match(lines[i])
             if m and m.group(1)[0] == marker:
                 in_fence = False
                 marker = None

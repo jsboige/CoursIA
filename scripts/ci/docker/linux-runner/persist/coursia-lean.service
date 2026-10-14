@@ -16,8 +16,13 @@
 # (check-run 102437210604), et deux jobs lean de PR sont restes en queue
 # toute l'apres-midi (diagnostic po-2027, 14:23Z).
 #
-# N slots porte par l'argument ExecStart (po-2024 -> 2, l'effectif
-# d'avant la chute : volumes _work chauds coursia-runner-work-lean-{1,2}).
+# N slots porte par l'argument ExecStart (po-2024 -> 1 depuis l'amendement
+# J+7 du 2026-10-08 : verdict characterize_runner_variance.py --days 7,
+# 5 runners docker sur 6 au-dessus du seuil p90/mediane 5x, la regle
+# #15574 item 3 tranche le passage CPU 24 -> 18 avec right-sizing lean
+# 2 -> 1 -- cap unitaire 6 Go / 6 vCPU INCHANGE. Le volume chaud
+# coursia-runner-work-lean-2 reste en place, non supprime : remettre le
+# second slot est un `ExecStart ... 2` + restart, pas une reconstruction).
 [Unit]
 Description=CoursIA Lean runners pool (coursia-lean slots)
 # Wants= et non Requires= (meme raison que coursia-runner.service, #14347) :
@@ -32,7 +37,7 @@ StartLimitBurst=5
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/coursia-lean-start.sh 2
+ExecStart=/usr/local/bin/coursia-lean-start.sh 1
 ExecStop=/usr/local/bin/coursia-lean-start.sh stop
 Restart=always
 RestartSec=30
@@ -44,8 +49,10 @@ TimeoutStopSec=900
 
 # Nice=10 gouverne le CPU ; l'I/O du pool cede sous contention comme les
 # autres (IOWeight=50), cf #15091. Les caps durs par conteneur (cpus=6,
-# memory=8g, memory-swap=24g) sont portes par supervise.sh lui-meme via
-# LEAN_CPUS/LEAN_MEMORY/LEAN_MEMORY_SWAP -- l'unite ne les re-encode pas.
+# memory=6g, memory-swap=6g -- le swap lean est aligne sur la memoire depuis
+# le 2026-10-08, detail en tete de coursia-lean-start.sh) sont portes par
+# supervise.sh lui-meme via LEAN_CPUS/LEAN_MEMORY/LEAN_MEMORY_SWAP -- l'unite
+# ne les re-encode pas.
 IOAccounting=yes
 IOWeight=50
 

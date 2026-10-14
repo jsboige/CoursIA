@@ -29,7 +29,7 @@ Analyser un notebook enrichi et corriger les problemes de placement et de struct
 **CRITIQUE - AVANT TOUTE ACTION** :
 1. Si le notebook est bien structure (intro -> code -> interpretation), NE RIEN MODIFIER
 2. Si les problemes sont mineurs, les corriger UN PAR UN avec NotebookEdit
-3. **JAMAIS** faire `git checkout -- notebook.ipynb` sauf corruption MAJEURE (voir section dediee)
+3. **JAMAIS** `git checkout -- notebook.ipynb` : il efface tout le non-commite du fichier. En cas de corruption MAJEURE, restaurer la copie de base (voir section dediee)
 
 Un notebook enrichi correctement ne doit PAS etre "nettoye" si sa structure est coherente.
 
@@ -91,6 +91,7 @@ Pour chaque section du notebook, l'ordre doit etre :
 
 ### Phase 1 : Analyse globale
 
+0. **Copie de base AVANT toute edition**, hors du depot (scratchpad) : `cp notebook.ipynb <fichier_base.ipynb>`
 1. **Lire le notebook entierement** avec Read pour comprendre la structure
 2. **Lister les cellules** avec leurs types, positions ET CONTENUS (premiers mots)
 3. **Identifier les problemes** :
@@ -301,11 +302,11 @@ NotebookEdit(
 )
 ```
 
-## QUAND GIT CHECKOUT EST ACCEPTABLE
+## QUAND RESTAURER LA COPIE DE BASE
 
 **UNIQUEMENT en cas de CORRUPTION MAJEURE** :
 
-| Situation | Git checkout ? | Alternative |
+| Situation | Restaurer ? | Alternative |
 |-----------|----------------|-------------|
 | 1 cellule mal placee | NON | Corriger avec NotebookEdit |
 | 2-3 cellules a repositionner | NON | Corriger une par une |
@@ -315,16 +316,18 @@ NotebookEdit(
 | **Notebook illisible/corrompu** | OUI | Structure cassee |
 | **Erreurs en cascade impossibles a demeler** | OUI | Trop complexe |
 
-**AVANT de faire git checkout**, se demander :
+**AVANT de restaurer**, se demander :
 1. Puis-je identifier les cellules affectees ?
 2. Puis-je les corriger une par une ?
 3. Le contenu original est-il recuperable avec git show ?
 
-Si OUI a ces 3 questions -> **CORRIGER**, pas checkout.
+Si OUI a ces 3 questions -> **CORRIGER**, pas restaurer.
 
 ```bash
 # DERNIER RECOURS UNIQUEMENT - corruption majeure confirmee
-git checkout -- notebook.ipynb
+# Copie prise en phase 1. Jamais `git checkout --` : il restaure depuis l'index
+# et efface tout le non-commite du fichier, pas seulement la passe ratee.
+cp <fichier_base.ipynb> notebook.ipynb
 ```
 
 ## REGLES SPECIFIQUES : SERIES GENAI (Texte et SemanticKernel)
@@ -441,7 +444,7 @@ Task(
     4. Identifie les cellules par leur CONTENU, pas leur indice
     5. Les indices changent apres chaque operation !
     6. Une operation a la fois, verification, puis suivante
-    7. JAMAIS git checkout sauf corruption MAJEURE (5+ cellules code ecrasees)
+    7. JAMAIS git checkout -- ; en cas de corruption MAJEURE (5+ cellules code ecrasees), restaurer la copie de base
 
     REGLES GENAI (si applicable):
     8. Migrer gpt-4o/gpt-4o-mini vers gpt-5-mini

@@ -175,3 +175,11 @@ htmlcov/
 # - Backtest results
 # - Trained ML models (unless small & educational)
 # - Logs
+
+# ===============================
+# Cloud-first: liens locaux par machine (lean-cli)
+# config.json = etat machine (org-id/projet cloud), jamais tracke --
+# voir #8574 (retrait "regle morte") et la mesure de retombee 2026-10-05 :
+# 23 config.json non tracks rendus visibles sur chaque machine lean-cli.
+# ===============================
+projects/*/config.json

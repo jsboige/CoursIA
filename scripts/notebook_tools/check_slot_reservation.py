@@ -136,6 +136,35 @@ DIFFERE : un chemin identique est la reservation la plus forte qui soit, jamais
 un soi-meme. Le pendant est teste symetriquement (une cible que MA propre
 revision porte reste a moi).
 
+TROIS DIAGNOSTICS D'ACCRETION (advisory, #19144)
+------------------------------------------------
+Le meme organe porte depuis #19144 trois lectures de la regle
+`notebook-accretion-numbering.md`, toutes **informatives** : elles ne changent
+JAMAIS le code retour (main() ne rend 1 que sur les conflits de slot
+pre-existants) et n'empechent aucun merge. Elles rendent lisible, avant
+l'arbitrage humain, ce qu'une PR fait a la numerotation d'une branche :
+
+    DEPTH          une lettre d'accretion au-dela du plafond `f` (regle §4 :
+                   au-dela, fusionner en notebooks plus lourds, pas etendre)
+    NO_BASE        une lettre posee sur un numero qui n'a AUCUN notebook de
+                   base (sans lettre) -- la base occupe le slot `a` (regle §2) ;
+                   les trois defauts anciens (`GameTheory-03`, `Lean-16`,
+                   `Tweety-7`) ne sont signales QUE si cette PR y pose une
+                   lettre, jamais au titre de l'etat herite
+    PENDING_TABLE  la revision ajoute un notebook (ou edite le README) d'un
+                   repertoire dont la table de renommage est publiee et NON
+                   appliquee -- source : les entrees `reserved` de la table
+                   declaree portant le marqueur `pending_table` (regle §5.5)
+
+**§7 -- les twins ne sont jamais une accretion.** Un `-CSharp` ajoute au slot de
+son jumeau Python n'introduit ni lettre ni numero : `same_item` l'ecarte de tout
+diagnostic. Un test le prouve en falsifiabilite (cf `test_check_slot_reservation.py`).
+
+**Source indisponible.** La base illisible fait deja remonter `RuntimeError` ->
+sortie 2 (cf `main`) : l'accretion est calculee dans le meme bloc `try`, donc elle
+ne peut pas « ne rien trouver » la ou elle n'a rien pu lire. Les trois constats se
+lisent sur des sources git ; aucun ne depend d'une entree fournie par l'auteur.
+
 Sortie : 0 = tous les slots examines sont libres (ou exempts) ; 1 = au moins un
 conflit ; 2 = erreur d'invocation, ou controle de self-test non satisfait (le
 detecteur est casse -- distinct d'une collision reelle, qui sort 1).
@@ -154,6 +183,9 @@ Usage
     # Sans reseau (CI, voie rapide) : sources arbre + revision + declarees
     python scripts/notebook_tools/check_slot_reservation.py --offline
 
+    # Advisory SEUL (check-run dedie, ne redit pas le verdict de slot)
+    python scripts/notebook_tools/check_slot_reservation.py --offline --accretion-only
+
     python scripts/notebook_tools/check_slot_reservation.py --self-test
 """
 from __future__ import annotations
@@ -167,13 +199,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 # Grammaire de nom partagee (#5081) : `index_key` normalise le zero-pad et les
-# separateurs de niveau (04-2 et 4.2 sont le meme slot) et `strip_lang` apparie
-# les rendus alternatifs d'un meme item (-Csharp, _en, -Lean). Redefinir un
-# motif ici rouvrirait le defaut 2 de #15489 : deux lectures du meme nom.
+# separateurs de niveau (04-2 et 4.2 sont le meme slot), `strip_lang` apparie
+# les rendus alternatifs d'un meme item (-Csharp, _en, -Lean) et `parse_name`
+# expose le numero ET la lettre d'accretion d'un nom a prefixe de serie
+# (`Search-03g` -> number `03`, accr `g`) sans qu'un second motif soit ecrit
+# ici. Redefinir un motif rouvrirait le defaut 2 de #15489 : deux lectures du
+# meme nom.
 _here = str(Path(__file__).resolve().parent)
 if _here not in sys.path:
     sys.path.insert(0, _here)
-from naming_canon import index_key, strip_lang  # noqa: E402
+from naming_canon import index_key, parse_name, strip_lang  # noqa: E402
 
 # Reprise bornee sur la pression de fork (#16213) : sous `pytest-xdist -n 4`, le
 # spawn de `git` est refuse par intermittence (`EAGAIN`). Meme raison de
@@ -188,6 +223,7 @@ SOURCE_REVISION = "revision"
 SOURCE_OPEN_PRS = "open_prs"
 SOURCE_OPEN_PRS_REMOVED = "open_prs_removed"
 SOURCE_DECLARED = "declared"
+SOURCE_ACCRETION = "accretion"
 
 # Precedence du verdict quand plusieurs sources se disputent le meme slot. Du
 # plus local au plus lointain : ce que la revision fait a elle-meme d'abord
@@ -237,6 +273,23 @@ def removed_notebooks(base, head):
 
 def notebooks_at(ref):
     return _ipynb(_git(["ls-tree", "-r", "--name-only", ref]).splitlines())
+
+
+def changed_readmes_at(base, head):
+    """README de serie AJOUTES ou MODIFIES par la revision (diagnostic PENDING_TABLE).
+
+    Une table de renommage publiee se materialise par des `git mv` ET par la mise
+    a jour des liens du README de la serie : le README est donc la seconde moitie
+    de l'evenement, et une PR qui ne touche que lui doit sortir le diagnostic
+    autant qu'une PR qui ajoute un notebook (cf accretion_findings).
+    """
+    out = []
+    for line in _git(["diff", "--name-only", "--diff-filter=AM",
+                      "%s...%s" % (base, head)]).splitlines():
+        p = line.strip()
+        if split_dir(p)[1].lower() == "readme.md":
+            out.append(p)
+    return out
 
 
 def split_dir(path):
@@ -450,6 +503,149 @@ def examine(targets, occupants, releases):
     return [verdict_for(t, occupants, releases) for t in targets]
 
 
+# --------------------------------------------------------------- accretion
+#
+# Les trois diagnostics d'accretion (#19144). Ils lisent la regle
+# `notebook-accretion-numbering.md` sur les notebooks AJOUTES par la revision et
+# rendent des **constats**, jamais un verdict : `main` ne lit pas cette liste pour
+# son code retour (cf docstring -- un constat mal fonde coute une phrase a
+# refuter, un constat tu coute la regle entiere).
+
+ACCRETION_DEPTH = "DEPTH"
+ACCRETION_NO_BASE = "NO_BASE"
+ACCRETION_PENDING_TABLE = "PENDING_TABLE"
+
+# Plafond de branche de la regle §4. C'est une LETTRE, pas un compte : `03f` est
+# la derniere accretion licite de la branche `03`, et la mesure fondatrice est
+# exactement `03g` puis `03h` ajoutes a une branche portant deja `03b`..`03f`.
+ACCRETION_MAX_LETTER = "f"
+
+# Marqueur d'une entree `declared` annoncant une table de renommage publiee et NON
+# appliquee (les deux sources citees par #19144 sont les tables de #16231 pour
+# Tweety et de #17802 pour Search). Une telle entree ne porte pas d'`index` : elle
+# ne reserve aucun slot, elle declare un ETAT de la serie. C'est pourquoi
+# `declared_claims` l'ignore, et pourquoi ce diagnostic la relit pour son compte
+# plutot que de lui inventer un index.
+PENDING_TABLE_KIND = "pending_table"
+
+
+def _accretion_of(path):
+    """(serie, numero, lettre) d'un chemin a prefixe de serie alphabetique, sinon None.
+
+    Passe par `parse_name` -- la grammaire #5081 partagee. Redefinir `Search-(\\d+)`
+    ici ferait deux lectures du meme nom, le defaut 2 de #15489.
+    """
+    name = parse_name(split_dir(path)[1])
+    if not name.series or not name.number:
+        return None
+    return (name.series, name.number, name.accr)
+
+
+def _same_render(a, b):
+    """Meme repertoire et meme stem delangue : deux rendus du MEME item (§7)."""
+    return (split_dir(a)[0] == split_dir(b)[0]
+            and strip_lang(split_dir(a)[1]).lower() == strip_lang(split_dir(b)[1]).lower())
+
+
+def _twin_in_base(path, base_files):
+    """Le rendu alternatif de cet item existait DEJA dans la base (§7).
+
+    Exiger la BASE -- et non l'ensemble base+revision -- est ce qui separe deux
+    situations que le nom seul confond : « j'ajoute le jumeau C# d'un carnet
+    Python existant » (ni lettre ni numero neufs : pas une accretion) et « j'ajoute
+    les deux rendus d'un item neuf » (la lettre et le numero sont bel et bien
+    introduits par cette PR, et l'exemption les taire tous les deux).
+    """
+    return any(_same_render(path, b) for b in base_files)
+
+
+def _has_base(d, series, number, everything):
+    """Un notebook sans lettre porte-t-il deja ce numero dans ce repertoire ? (§2)"""
+    for o in everything:
+        if split_dir(o)[0] != d:
+            continue
+        info = _accretion_of(o)
+        if info and info[0] == series and info[1] == number and info[2] is None:
+            return True
+    return False
+
+
+def pending_tables(doc):
+    """Repertoires dont une table de renommage est publiee et NON appliquee."""
+    out = []
+    for entry in (doc or {}).get("reserved") or []:
+        if (entry.get("kind") or "").strip().lower() != PENDING_TABLE_KIND:
+            continue
+        d = (entry.get("dir") or "").strip("/")
+        if d:
+            out.append((d, (entry.get("note") or "").strip()))
+    return out
+
+
+def _finding(kind, path, detail, slot=None, d=None):
+    return {"kind": kind, "path": path, "dir": d if d is not None else split_dir(path)[0],
+            "slot": slot, "detail": detail}
+
+
+def accretion_findings(added, base_files, readmes, doc):
+    """Les trois constats d'accretion sur les notebooks ajoutes/renommes (#19144).
+
+    `--no-renames` cote appelant (comme le garde de slot) : un rename arrive donc
+    ici comme un ajout, et c'est voulu -- la modification du nom est precisement ce
+    que la regle borne.
+    """
+    base_files = list(base_files or [])
+    added = list(added or [])
+    everything = base_files + [p for p in added if p not in base_files]
+    findings = []
+
+    # PENDING_TABLE -- le seul diagnostic qui porte sur le REPERTOIRE et non sur un
+    # slot. Une PR qui n'edite QUE le README d'une serie en renommage doit sortir
+    # autant qu'une PR qui y ajoute un carnet : le README est la seconde moitie de
+    # l'evenement (les liens qui pointent les noms neufs).
+    for d, note in pending_tables(doc):
+        touched = [p for p in added + list(readmes or []) if p == d or p.startswith(d + "/")]
+        if touched:
+            findings.append(_finding(
+                ACCRETION_PENDING_TABLE, touched[0], d=d,
+                detail=("serie en renommage publie et non applique (%s) : lire la table "
+                        "avant d'ajouter un nom ici" % (note or d))))
+
+    # Les constats par carnet, dedoublonnes par ITEM : deux rendus neufs du meme
+    # item ne disent pas deux fois la meme chose (`Search-03g-...-Python` et son
+    # jumeau `-CSharp` ne font qu'une accretion).
+    seen = set()
+    for p in added:
+        if _twin_in_base(p, base_files):
+            continue
+        info = _accretion_of(p)
+        if info is None:
+            continue
+        series, number, accr = info
+        d = split_dir(p)[0]
+        item = (d, strip_lang(split_dir(p)[1]).lower())
+        if item in seen:
+            continue
+        seen.add(item)
+        slot = "%s-%s%s" % (series, number, accr or "")
+
+        if accr and accr.lower() > ACCRETION_MAX_LETTER:
+            findings.append(_finding(
+                ACCRETION_DEPTH, p, slot=slot,
+                detail=("lettre `%s` au-dela du plafond `%s` (regle §4) : au-dela, la regle "
+                        "demande de FUSIONNER en notebooks plus lourds, pas d'allonger la branche"
+                        % (accr, ACCRETION_MAX_LETTER))))
+
+        if accr and not _has_base(d, series, number, everything):
+            findings.append(_finding(
+                ACCRETION_NO_BASE, p, slot=slot,
+                detail=("aucun `%s-%s-*.ipynb` sans lettre dans le repertoire : la base occupe "
+                        "le slot `a` (regle §2), une lettre sans base ouvre une branche fantome"
+                        % (series, number))))
+
+    return findings
+
+
 # ---------------------------------------------------------------- sources
 
 def load_open_pr_claims(limit, repo, exclude_pr, offline, status):
@@ -483,17 +679,31 @@ def load_open_pr_claims(limit, repo, exclude_pr, offline, status):
     return pr_claims(prs, load_removed_paths(ambiguous_pr_numbers(prs), repo, status))
 
 
-def load_declared(path, status):
+def read_declared_doc(path, status):
+    """Le document publie, ou None -- en ECRIVANT dans `status` pourquoi.
+
+    La table est lue UNE fois et sert deux lecteurs : `declared_claims` (les slots
+    reserves) et `accretion_findings` (les series en renommage publie). Deux
+    lectures du meme fichier pourraient diverger sur un fichier qui change entre
+    les deux, et surtout rendre deux motifs d'indisponibilite differents.
+    """
     if path is None or not Path(path).exists():
         status[SOURCE_DECLARED] = {"status": "absent", "path": str(path) if path else ""}
-        return {}
+        return None
     try:
-        doc = json.loads(Path(path).read_text(encoding="utf-8"))
+        return json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as e:
         status[SOURCE_DECLARED] = {"status": "unavailable", "reason": str(e)[:160]}
-        return {}
+        return None
+
+
+def load_declared(doc, status):
+    """Slots reserves par la table publiee, a partir du document DEJA lu."""
     claims = declared_claims(doc)
-    status[SOURCE_DECLARED] = {"status": "ok", "reserved": sum(len(v) for v in claims.values())}
+    if status.get(SOURCE_DECLARED, {}).get("status") not in ("absent", "unavailable"):
+        status[SOURCE_DECLARED] = {"status": "ok",
+                                   "reserved": sum(len(v) for v in claims.values()),
+                                   "pending_tables": len(pending_tables(doc))}
     return claims
 
 
@@ -515,6 +725,45 @@ _SLOT_CASES = [
 def _scenario(targets, occupants, releases, want):
     got = [v["state"] for v in examine(targets, occupants, releases)]
     return got == list(want), got
+
+
+# Chaque cas porte la FORME qui a produit le defaut reel, pas une forme inventee :
+# `Search-03g` (la tete de #19109 avant reparation), `Search-12a` (lettre sans
+# base, mesure du 04/10), le twin C# de `GT-02c` (negatif §7). Les temoins sont
+# rejoues sur l'historique par `scripts/tests/test_check_slot_reservation.py`.
+_ACCRETION_CASES = [
+    # (label, added, base, readmes, doc, want)
+    ("VRAI POSITIF  DEPTH : lettre au-dela de `f`",
+     ["s/Search-03g-Neuf.ipynb"],
+     ["s/Search-03-A.ipynb", "s/Search-03f-B.ipynb"], [], None,
+     ["DEPTH"]),
+    ("NEGATIF       DEPTH : `03f` est la derniere lettre licite",
+     ["s/Search-03f-B.ipynb"],
+     ["s/Search-03-A.ipynb", "s/Search-03e-C.ipynb"], [], None, []),
+    ("VRAI POSITIF  NO_BASE : lettre posee sans base dans la serie",
+     ["s/Search-12a-Neuf.ipynb"],
+     ["s/Search-11-A.ipynb"], [], None, ["NO_BASE"]),
+    ("NEGATIF       NO_BASE : la base existe (lettre legitime)",
+     ["s/Search-12a-Neuf.ipynb"],
+     ["s/Search-12-A.ipynb"], [], None, []),
+    ("NEGATIF       §7 twin : le -CSharp d'un Python DEJA dans la base",
+     ["g/GT-02c-Twins-Csharp.ipynb"],
+     ["g/GT-02c-Twins-Python.ipynb"], [], None, []),
+    ("VRAI POSITIF  §7 twins NEUFS : la lettre est bien introduite (UN constat)",
+     ["s/Search-03g-Neuf-Python.ipynb", "s/Search-03g-Neuf-CSharp.ipynb"],
+     ["s/Search-03-A.ipynb"], [], None, ["DEPTH"]),
+    ("VRAI POSITIF  PENDING_TABLE : carnet ajoute dans une serie en renommage",
+     ["t/Tweety-09-Neuf.ipynb"], [], [],
+     {"reserved": [{"kind": "pending_table", "dir": "t", "note": "#16231"}]},
+     ["PENDING_TABLE"]),
+    ("VRAI POSITIF  PENDING_TABLE : PR qui n'edite QUE le README de la serie",
+     [], [], ["t/README.md"],
+     {"reserved": [{"kind": "pending_table", "dir": "t", "note": "#16231"}]},
+     ["PENDING_TABLE"]),
+    ("NEGATIF       PENDING_TABLE : un `index` reserve n'active PAS le diagnostic",
+     ["t/Tweety-09-Neuf.ipynb"], [], [],
+     {"reserved": [{"index": "9", "dir": "t", "holder": "lane x"}]}, []),
+]
 
 
 def self_test():
@@ -634,7 +883,18 @@ def self_test():
         print("  %-4s %-62s -> %s (attendu %s)"
               % ("OK" if ok else "KO", label, got, want))
 
-    total = len(_SLOT_CASES) + len(scenarios) + len(amb_cases)
+    print("")
+    print("--- accretion (advisory #19144) : trois constats, positifs ET negatifs ---")
+    for label, added, base, readmes, doc, want in _ACCRETION_CASES:
+        got = sorted({f["kind"] for f in accretion_findings(
+            added, base, readmes, doc)})
+        ok = got == sorted(want)
+        ko += 0 if ok else 1
+        print("  %-4s %-66s -> %s (attendu %s)"
+              % ("OK" if ok else "KO", label, got, sorted(want)))
+
+    total = (len(_SLOT_CASES) + len(scenarios) + len(amb_cases)
+             + len(_ACCRETION_CASES))
     print("")
     print("%s : %d cas, %d echec(s)" % ("ECHEC" if ko else "SUCCES", total, ko))
     return 2 if ko else 0
@@ -661,12 +921,23 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=500,
                     help="plafond de PRs lues (defaut 500 ; le defaut de gh est 30)")
     ap.add_argument("--repo", default=None, help="override du depot pour gh")
+    ap.add_argument("--no-accretion", action="store_true",
+                    help="desactiver les trois constats d'accretion (advisory, #19144)")
+    ap.add_argument("--accretion-only", action="store_true",
+                    help="ne rendre QUE les constats d'accretion (code retour 0) -- "
+                         "le mode du check-run advisory, qui ne doit pas redire le "
+                         "verdict de slot deja porte par le garde bloquant")
     ap.add_argument("--json", action="store_true", help="sortie machine")
     ap.add_argument("--self-test", action="store_true", help="controles positifs et negatifs")
     a = ap.parse_args(argv)
 
     if a.self_test:
         return self_test()
+
+    if a.accretion_only and a.no_accretion:
+        print("ERREUR : --accretion-only et --no-accretion s'excluent.",
+              file=sys.stderr)
+        return 2
 
     mode = "target" if a.target else "revision"
     status: dict[str, dict] = {}
@@ -694,12 +965,31 @@ def main(argv=None):
     status[SOURCE_BASE] = {"status": "ok", "notebooks": len(base_files),
                            "ref": a.base}
 
+    # Une seule lecture de la table publiee, deux lecteurs (slots reserves et
+    # series en renommage) : deux lectures pourraient diverger sur un fichier qui
+    # change entre les deux.
+    declared_doc = read_declared_doc(None if a.no_reservations else a.reservations, status)
+
     occ = merge(group_by_slot(base_files, SOURCE_BASE), rev_occ,
                 load_open_pr_claims(a.limit, a.repo, a.exclude_pr, a.offline, status),
-                load_declared(None if a.no_reservations else a.reservations, status))
+                load_declared(declared_doc, status))
 
     verdicts = examine(targets, occ, releases)
     conflicts = [v for v in verdicts if v["verdict"] == "conflict"]
+
+    # Les constats d'accretion sont calcules AVANT le retour anticipe « aucune
+    # cible » : une PR qui n'edite que le README d'une serie en renommage n'a
+    # aucune cible et doit pourtant sortir son PENDING_TABLE.
+    if a.no_accretion:
+        accretion = []
+    else:
+        try:
+            readmes = changed_readmes_at(a.base, a.head)
+        except RuntimeError:
+            readmes = []          # le README est une source de confort, jamais un motif d'echec
+        accretion = accretion_findings(rev_added, base_files, readmes, declared_doc)
+    status[SOURCE_ACCRETION] = {"status": "disabled" if a.no_accretion else "ok",
+                                "count": len(accretion)}
 
     if a.json:
         print(json.dumps({
@@ -710,7 +1000,15 @@ def main(argv=None):
                        for s in sorted({v["state"] for v in verdicts})},
             "verdicts": verdicts,
             "conflicts": len(conflicts),
+            "accretion": accretion,
+            "accretion_count": len(accretion),
         }, indent=2, ensure_ascii=False))
+        # `--accretion-only` vaut aussi en JSON : le mode advisory ne porte aucun
+        # verdict, et un consommateur machine qui lirait un code retour 1 ici
+        # croirait a un echec de l'advisory alors qu'il lit un conflit de slot --
+        # c'est-a-dire le verdict de l'AUTRE garde.
+        if a.accretion_only:
+            return 0
         return 1 if conflicts else 0
 
     # Le denombrement de CHAQUE source est imprime, y compris quand il vaut
@@ -737,9 +1035,31 @@ def main(argv=None):
         print("  open_prs  : INDISPONIBLE (%s)" % pr_status.get("reason", "?"))
     dec_status = status.get(SOURCE_DECLARED, {})
     if dec_status.get("status") == "ok":
-        print("  declared  : %d reservation(s) publiee(s)" % dec_status.get("reserved", 0))
+        print("  declared  : %d reservation(s) publiee(s), %d serie(s) en renommage"
+              % (dec_status.get("reserved", 0), dec_status.get("pending_tables", 0)))
     else:
         print("  declared  : %s" % dec_status.get("status", "?"))
+
+    # Accretion -- imprimee AVANT le retour anticipe « aucune cible » : une PR qui
+    # n'edite que le README d'une serie en renommage n'a aucune cible et sort
+    # pourtant son PENDING_TABLE.
+    print("")
+    if a.no_accretion:
+        print("accretion : desactivee (--no-accretion)")
+    else:
+        print("accretion (advisory -- n'affecte AUCUN code retour) :")
+        if not accretion:
+            print("  aucun constat sur les notebooks ajoutes")
+        for f in accretion:
+            print("  %-14s %s" % (f["kind"], f["path"]))
+            print("      %s" % f["detail"])
+
+    # Le mode advisory du check-run : les constats d'accretion sont le SEUL
+    # signal, et ils sont informatifs -- redire ici le verdict de slot deja porte
+    # par le garde bloquant produirait deux check-runs qui rougissent ensemble
+    # pour une seule cause.
+    if a.accretion_only:
+        return 0
 
     if not targets:
         print("")

@@ -12,8 +12,12 @@ Modes :
     --install [--repo PATH] [--time HH:MM]   cree la tache planifiee (idempotent)
     --status                                  etat de la tache
     --uninstall                               supprime la tache
+    --dry-run (--install | --uninstall)       affiche argv schtasks sans l'executer
     --run                                     execute la purge (invoqué PAR la tache) :
-                                              journal horodate, jamais de couleur/TTY
+                                              journal horodate, jamais de couleur/TTY ;
+                                              relaie --warn-threshold (defaut 20, #3895)
+                                              a l'organe : ligne [WARN][prune-task] en
+                                              journal au-dela du seuil de refus
 
 Garde de securite (#14476) : --install REFUSE de cabler --apply si le script
 cible ne contient pas encore les deux voies du fix PR #14481 (resolution
@@ -22,6 +26,9 @@ d'intersection de jetons deploierait l'attribution fausse (et destructive)
 TOUS LES JOURS.
 
 Journal : %LOCALAPPDATA%\CoursIA\prune_task\logs\prune_YYYYMMDD.log
+
+#3895 (roo-extensions) : les REFUS de l'organe ne sont plus un echec (rc=0) ;
+le rc de la tache ne rougit plus que sur panne gh/git ou echec d'application.
 """
 from __future__ import annotations
 
@@ -86,13 +93,16 @@ def task_command(repo: Path) -> list[str]:
 def build_schtasks_install(cmd: list[str], time: str) -> list[str]:
     """Ligne schtasks /Create : quotidienne, contexte utilisateur courant
     (gh auth vit au niveau utilisateur), fenêtre masquee."""
-    tr = " ".join(cmd)
+    # Quoter chaque element, jamais la ligne entiere : un /TR "python.exe script.py
+    # --run" enregistre la ligne comme NOM d'executable, et la tache echoue
+    # a chaque tour avec 0x80070002 (fichier introuvable) sans rien journaliser.
+    tr = subprocess.list2cmdline(cmd)
     return [
         "schtasks", "/Create", "/F",
         "/TN", TASK_NAME,
         "/SC", "DAILY",
         "/ST", time,
-        "/TR", f'"{tr}"',
+        "/TR", tr,
     ]
 
 
@@ -105,14 +115,19 @@ def task_exists() -> bool:
     return _run(["schtasks", "/Query", "/TN", TASK_NAME]).returncode == 0
 
 
-def cmd_install(repo: Path, time: str) -> int:
+def cmd_install(repo: Path, time: str, dry_run: bool = False) -> int:
     ok, msg = check_prune_fix_present(repo)
     if not ok:
         print(f"REFUSE : {msg}", file=sys.stderr)
         return 2
     print(f"garde OK : {msg}")
+    command = build_schtasks_install(task_command(repo), time)
+    if dry_run:
+        print(f"schtasks argv : {command!r}")
+        print(f"schtasks commande : {subprocess.list2cmdline(command)}")
+        return 0
     LOG_DIR.mkdir(parents=True, exist_ok=True)
-    proc = _run(build_schtasks_install(task_command(repo), time))
+    proc = _run(command)
     if proc.returncode != 0:
         print(f"schtasks /Create echoue (rc={proc.returncode}) : "
               f"{proc.stdout.strip()} {proc.stderr.strip()}", file=sys.stderr)
@@ -134,8 +149,13 @@ def cmd_status() -> int:
     return 0
 
 
-def cmd_uninstall() -> int:
-    proc = _run(["schtasks", "/Delete", "/TN", TASK_NAME, "/F"])
+def cmd_uninstall(dry_run: bool = False) -> int:
+    command = ["schtasks", "/Delete", "/TN", TASK_NAME, "/F"]
+    if dry_run:
+        print(f"schtasks argv : {command!r}")
+        print(f"schtasks commande : {subprocess.list2cmdline(command)}")
+        return 0
+    proc = _run(command)
     if proc.returncode != 0:
         print(f"suppression echouee : {proc.stdout.strip()} "
               f"{proc.stderr.strip()}", file=sys.stderr)
@@ -144,8 +164,15 @@ def cmd_uninstall() -> int:
     return 0
 
 
-def cmd_run(repo: Path) -> int:
-    """Invoque par la tache planifiee : journal horodate, pas de TTY."""
+def cmd_run(repo: Path, warn_threshold: int = 20) -> int:
+    """Invoque par la tache planifiee : journal horodate, pas de TTY.
+
+    `--warn-threshold` (#3895) est relaie a l'organe : au-dela, il emet sa
+    ligne [WARN][prune-task] (stderr, fusionne ici dans le journal) -- le
+    rapport detaille des refus ne vit plus seulement en fin de journal, il
+    porte un marqueur qu'une lane peut relever et poster sur le dashboard
+    workspace au cycle suivant.
+    """
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     log = log_path_for()
     stamp = _dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -154,12 +181,15 @@ def cmd_run(repo: Path) -> int:
         fh.flush()
         proc = subprocess.run(
             [sys.executable, str(prune_script_path(repo)),
-             "--path", str(repo), "--apply"],
+             "--path", str(repo), "--apply",
+             "--warn-threshold", str(warn_threshold)],
             stdout=fh, stderr=subprocess.STDOUT,
         )
         fh.write(f"=== {_dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')} "
                  f"run end rc={proc.returncode} ===\n")
-    # exit code non zero si l'organe a echoue -- visible dans le journal
+    # exit code non zero si l'organe a echoue -- visible dans le journal.
+    # Depuis #3895, les REFUS de l'organe ne comptent plus comme echec :
+    # rc!=0 = panne gh/git ou echec d'application, uniquement.
     return proc.returncode
 
 
@@ -168,24 +198,31 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--install", action="store_true")
     p.add_argument("--status", action="store_true")
     p.add_argument("--uninstall", action="store_true")
+    p.add_argument("--dry-run", action="store_true",
+                   help="affiche la commande schtasks sans l'executer (install/uninstall)")
     p.add_argument("--run", action="store_true",
                    help="mode interne (invoque par la tache planifiee)")
     p.add_argument("--repo", type=Path,
-                   default=Path(r"C:\dev\CoursIA"),
-                   help="checkout principal du depot (defaut C:\\dev\\CoursIA)")
+                   default=Path(r"D:\Dev\CoursIA-2"),
+                   help="checkout principal du depot (defaut D:\\Dev\\CoursIA-2)")
     p.add_argument("--time", default="03:17",
                    help="heure quotidienne HH:MM (defaut 03:17, hors heures ouvrables)")
+    p.add_argument("--warn-threshold", type=int, default=20, metavar="N",
+                   help="seuil refused > N pour l'emission [WARN][prune-task] "
+                        "de l'organe en mode --run (defaut 20, #3895)")
     args = p.parse_args(argv)
 
+    if args.dry_run and (args.install == args.uninstall or args.status or args.run):
+        p.error("--dry-run requiert exactement --install ou --uninstall")
     repo = args.repo.resolve()
     if args.install:
-        return cmd_install(repo, args.time)
+        return cmd_install(repo, args.time, dry_run=args.dry_run)
     if args.status:
         return cmd_status()
     if args.uninstall:
-        return cmd_uninstall()
+        return cmd_uninstall(dry_run=args.dry_run)
     if args.run:
-        return cmd_run(repo)
+        return cmd_run(repo, warn_threshold=args.warn_threshold)
     p.print_help()
     return 1
 

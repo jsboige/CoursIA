@@ -1,10 +1,24 @@
 #!/bin/bash
-# Setup script for Lean 4 in WSL Ubuntu
+# Setup script for Lean 4 in WSL Ubuntu, or natively on Linux / macOS
 # This script installs Lean 4 and lean4_jupyter for the GameTheory notebooks
 #
 # Usage: bash setup_wsl_lean4.sh
+#
+# Sous WSL, le kernel Jupyter `lean4-wsl` est enregistre cote Windows par
+# setup_lean4_kernel.ps1. Hors WSL (Linux ou macOS natif), ce script
+# l'enregistre lui-meme a l'etape 8 : les notebooks Lean declarent ce nom de
+# kernel, qui doit donc exister sous ce nom sur toutes les plateformes.
 
 set -e
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+# Version de Lean des lakes du depot, lue dans game_theory_lean/lean-toolchain
+# (la version epinglee par la grande majorite des lakes). Le REPL doit etre
+# compile avec cette version : un REPL d'une autre version ne charge pas les
+# .olean des lakes, et la branche master du REPL suit la derniere toolchain.
+LEAN_TOOLCHAIN="$(tr -d '[:space:]' < "$SCRIPT_DIR/../game_theory_lean/lean-toolchain")"
+LEAN_TAG="${LEAN_TOOLCHAIN##*:}"
 
 echo "=============================================="
 echo "   INSTALLATION DE LEAN 4 DANS WSL"
@@ -53,9 +67,9 @@ if ! grep -q "elan/env" ~/.bashrc 2>/dev/null; then
     log_info "elan ajoute au .bashrc"
 fi
 
-# 3. Install Lean 4 stable
-log_info "Installation de Lean 4 (version stable)..."
-elan default leanprover/lean4:stable
+# 3. Install Lean 4 (version des lakes du depot)
+log_info "Installation de Lean 4 ($LEAN_TOOLCHAIN, version des lakes du depot)..."
+elan default "$LEAN_TOOLCHAIN"
 
 # Verify installation
 LEAN_VERSION=$(lean --version)
@@ -74,9 +88,15 @@ fi
 source "$VENV_PATH/bin/activate"
 
 # 5. Install lean4_jupyter and dependencies
-log_info "Installation de lean4_jupyter et dependances..."
+# Fork du depot plutot que la version PyPI : le lean4_jupyter publie (0.0.2)
+# echoue des la premiere cellule (sortie REPL vide, JSONDecodeError), et le
+# fork lance le REPL directement avec le LEAN_PATH du lake, ce qui permet
+# d'importer ses modules. Source de verite de l'URL et du tag :
+# FORK_URL / FORK_TAG dans scripts/lean/setup_native_lean4_import.py.
+LEAN4_JUPYTER_SPEC="lean4_jupyter @ git+https://github.com/jsboige/lean4_jupyter.git@v0.0.1-native-import"
+log_info "Installation de lean4_jupyter (fork du depot) et dependances..."
 pip install --upgrade pip
-pip install lean4_jupyter ipykernel pyyaml
+pip install ipykernel pyyaml "$LEAN4_JUPYTER_SPEC"
 
 # 6. Install REPL (required by lean4_jupyter)
 log_info "Installation du REPL Lean..."
@@ -85,12 +105,18 @@ REPL_DIR="$HOME/repl"
 if [ -d "$REPL_DIR" ]; then
     log_warn "REPL existe deja. Mise a jour..."
     cd "$REPL_DIR"
-    git pull || true
 else
     cd "$HOME"
     git clone https://github.com/leanprover-community/repl.git
     cd "$REPL_DIR"
 fi
+# Tag du REPL aligne sur la version des lakes (voir LEAN_TOOLCHAIN plus haut)
+git fetch --tags --quiet || true
+if ! git checkout --quiet "$LEAN_TAG"; then
+    log_error "Tag $LEAN_TAG introuvable dans le depot du REPL"
+    exit 1
+fi
+log_info "REPL au tag $LEAN_TAG"
 
 # Build REPL
 log_info "Compilation du REPL (peut prendre quelques minutes)..."
@@ -110,140 +136,47 @@ fi
 # 7. Create the kernel wrapper script
 log_info "Creation du wrapper pour le kernel..."
 
-cat > "$HOME/.lean4-kernel-wrapper.py" << 'WRAPPER_EOF'
-#!/usr/bin/env python3
-# Lean 4 Jupyter Kernel Wrapper for WSL
-# Converts Windows paths to WSL paths and launches lean4_jupyter kernel.
-import sys
-import subprocess
-import os
-import re
+CANONICAL_WRAPPER="$SCRIPT_DIR/../../SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py"
+if [ ! -f "$CANONICAL_WRAPPER" ]; then
+    log_error "Source canonique du wrapper absente: $CANONICAL_WRAPPER"
+    exit 1
+fi
 
-
-def convert_windows_path(path):
-    """Convert Windows path to WSL path, handling various formats."""
-    if not path:
-        return path
-
-    # Already a Unix path
-    if path.startswith("/"):
-        return path
-
-    # Handle ~ shorthand (tilde followed by backslash or forward slash)
-    if len(path) >= 2 and path[0] == "~" and path[1] in ["/", "\\"]:
-        rest = path[2:].replace("\\", "/")
-        # Try to find WSL username
-        wsl_user = os.environ.get("USER", "jsboi")
-        return "/mnt/c/Users/{}/{}".format(wsl_user, rest)
-
-    # Check for mangled path (backslashes eaten by WSL shell)
-    # Pattern: c:UsersjsboiAppDataRoamingjupyterruntimekernel-xxx.json
-    if len(path) >= 2 and path[1] == ":":
-        # nbclient place le connection file dans %LOCALAPPDATA%\Temp (tmp*.json),
-        # pas dans le runtime dir Roaming couvert ci-dessous. Cas mangle :
-        # c:Users<u>AppDataLocalTemp<name>.json
-        m_local = re.match(
-            r"([a-zA-Z]):Users([a-zA-Z0-9_]+)AppDataLocalTemp(kernel-[a-f0-9-]+|tmp[a-z0-9_]+)\.json$",
-            path, re.IGNORECASE)
-        if m_local:
-            return "/mnt/{}/Users/{}/AppData/Local/Temp/{}.json".format(
-                m_local.group(1).lower(), m_local.group(2), m_local.group(3))
-        if "Users" in path and "\\" not in path and "/" not in path[2:]:
-            match = re.match(r"([a-zA-Z]):Users([a-z0-9_]+)AppDataRoaming(.+)", path, re.IGNORECASE)
-            if match:
-                drive = match.group(1).lower()
-                user = match.group(2)
-                rest = match.group(3)
-                rest = rest.replace("jupyter", "/jupyter").replace("runtime", "/runtime")
-                rest = rest.replace("kernel-", "/kernel-")
-                rest = rest.lstrip("/")
-                return "/mnt/{}/Users/{}/AppData/Roaming/{}".format(drive, user, rest)
-
-        # Standard Windows path - use wslpath
-        try:
-            result = subprocess.run(["wslpath", "-a", path], capture_output=True, text=True, timeout=5)
-            if result.returncode == 0:
-                return result.stdout.strip()
-        except:
-            pass
-        # Fallback
-        drive = path[0].lower()
-        rest = path[2:].replace("\\", "/").lstrip("/")
-        return "/mnt/{}/{}".format(drive, rest)
-
-    return path
-
-
-def main():
-    log_file = os.path.expanduser("~/.lean4-wrapper.log")
-
-    def log(msg):
-        try:
-            with open(log_file, "a") as f:
-                f.write(msg + "\n")
-        except:
-            pass
-
-    log("=== Lean4 Wrapper started ===")
-    log("sys.argv: " + str(sys.argv))
-
-    # Process arguments
-    args = sys.argv[1:]
-    for i, arg in enumerate(args):
-        if arg == "-f" and i + 1 < len(args):
-            original = args[i + 1]
-            converted = convert_windows_path(args[i + 1])
-            args[i + 1] = converted
-            log("Original: " + str(original))
-            log("Converted: " + str(converted))
-
-            if os.path.exists(converted):
-                log("Connection file EXISTS")
-            else:
-                log("Connection file MISSING - waiting...")
-                import time
-                for _ in range(20):
-                    time.sleep(0.1)
-                    if os.path.exists(converted):
-                        log("Connection file appeared")
-                        break
-            break
-
-    # Set up clean environment
-    home = os.path.expanduser("~")
-    os.environ["PATH"] = "{}/.elan/bin:{}/.lean4-venv/bin:/usr/local/bin:/usr/bin:/bin".format(home, home)
-    os.chdir(home)
-    log("PATH: " + os.environ["PATH"])
-    log("Launching kernel with args: " + str(args))
-
-    try:
-        sys.argv = ["lean4_jupyter"] + args
-        log("sys.argv set to: " + str(sys.argv))
-
-        from ipykernel.kernelapp import IPKernelApp
-        from lean4_jupyter.kernel import Lean4Kernel
-
-        log("Starting kernel...")
-        IPKernelApp.launch_instance(kernel_class=Lean4Kernel)
-        log("Kernel exited normally")
-    except SystemExit as e:
-        log("SystemExit: " + str(e))
-        sys.exit(e.code if e.code is not None else 0)
-    except Exception as e:
-        log("Exception: " + str(e))
-        import traceback
-        log(traceback.format_exc())
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-WRAPPER_EOF
+# Le wrapper est canonique : copie directe depuis le depot. Aucun heredoc
+# mort ne doit reintroduire de logique obsolete ; le source est versionne
+# et revu dans MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py.
+cp "$CANONICAL_WRAPPER" "$HOME/.lean4-kernel-wrapper.py"
+log_info "Wrapper canonique copie depuis le depot"
 
 chmod +x "$HOME/.lean4-kernel-wrapper.py"
 log_info "Wrapper cree: ~/.lean4-kernel-wrapper.py"
 
-# 8. Verify installation
+# 8. Hors WSL : enregistrer le kernel Jupyter `lean4-wsl` pointant vers le venv
+#    et le wrapper (sous WSL, c'est setup_lean4_kernel.ps1 qui l'enregistre cote Windows)
+IS_WSL=0
+if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
+    IS_WSL=1
+fi
+if [ "$IS_WSL" -eq 0 ]; then
+    log_info "Plateforme native (hors WSL) : enregistrement du kernel lean4-wsl..."
+    KERNEL_SRC="$(mktemp -d)"
+    cat > "$KERNEL_SRC/kernel.json" <<KERNEL_EOF
+{
+  "argv": [
+    "$VENV_PATH/bin/python3",
+    "$HOME/.lean4-kernel-wrapper.py",
+    "-f", "{connection_file}"
+  ],
+  "display_name": "Lean 4",
+  "language": "lean4"
+}
+KERNEL_EOF
+    jupyter kernelspec install --user --name lean4-wsl "$KERNEL_SRC"
+    rm -rf "$KERNEL_SRC"
+    log_info "Kernel lean4-wsl enregistre pour l'utilisateur courant"
+fi
+
+# 9. Verify installation
 log_info "Verification de l'installation..."
 
 echo ""
@@ -259,9 +192,15 @@ echo "=============================================="
 echo -e "${GREEN}   INSTALLATION TERMINEE !${NC}"
 echo "=============================================="
 echo ""
-echo "Etape suivante: Executez le script PowerShell Windows:"
-echo "  cd C:\\dev\\CoursIA\\MyIA.AI.Notebooks\\GameTheory\\scripts"
-echo "  .\\setup_lean4_kernel.ps1"
-echo ""
-echo "Puis redemarrez VSCode et selectionnez le kernel 'Lean 4 (WSL)'"
+if [ "$IS_WSL" -eq 1 ]; then
+    echo "Etape suivante: Executez le script PowerShell Windows:"
+    echo "  cd C:\\dev\\CoursIA\\MyIA.AI.Notebooks\\GameTheory\\scripts"
+    echo "  .\\setup_lean4_kernel.ps1"
+    echo ""
+    echo "Puis redemarrez VSCode et selectionnez le kernel 'Lean 4 (WSL)'"
+else
+    echo "Kernel 'Lean 4' (nom lean4-wsl) enregistre : ouvrez un notebook Lean"
+    echo "depuis son lake (repertoire contenant lakefile.lean ou lakefile.toml)."
+    echo "Pour un lake qui depend de Mathlib : 'lake exe cache get' dans ce lake."
+fi
 echo ""

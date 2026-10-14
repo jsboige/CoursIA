@@ -19,7 +19,7 @@ files: the durable state is the registry (editorial-review-registry.md) and the
 scope (production-scope.md), both read here, neither written.
 
 Usage:
-    python generate_review_dossier.py MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Csharp.ipynb
+    python generate_review_dossier.py MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-CSharp.ipynb
     python generate_review_dossier.py <path> --output dossier.md
 
 Exit codes: 0 always (advisory by design, like pedagogy_density: the signal is

@@ -1,0 +1,601 @@
+{
+ "schema": 1,
+ "date": "2026-09-21",
+ "epic": "#11168",
+ "objet": "Rescan des citations arXiv des carnets : delta non couvert par le ledger, et verdict d'existence pour chaque identifiant.",
+ "reconciliation": {
+  "regle": "ids_uniques_cites = couverts_par_le_ledger + delta_non_couvert",
+  "ids_uniques_cites": 152,
+  "couverts_par_le_ledger": 121,
+  "delta_non_couvert": 31,
+  "verifiee": true
+ },
+ "corpus": {
+  "arbre_propre_worktree": {
+   "carnets_scannes": 1362,
+   "carnets_citant_arxiv": 133,
+   "ids_uniques": 152
+  },
+  "arbre_partage_temoin": {
+   "carnets_scannes": 1619,
+   "carnets_citant_arxiv": 136,
+   "ids_uniques": 152
+  },
+  "exclusions": [
+   "_archives",
+   ".ipynb_checkpoints",
+   ".lake/packages"
+  ],
+  "note": "Deux corpus differents (1619 carnets partages contre 1362 dans l'arbre propre, 3 carnets citants de plus dans le partage) rendent le MEME ensemble de 152 identifiants uniques : l'ecart de corpus ne deplace pas le delta. Les `-output.ipynb` sont exclus (copies de sortie, pas des sources)."
+ },
+ "delta": {
+  "total": 31,
+  "mesures": 31,
+  "non_mesures": 0,
+  "non_mesures_ids": [],
+  "par_regime": {
+   "DECLARE": 7,
+   "ASSERTE": 24
+  },
+  "verdicts": [
+   {
+    "arxiv_id": "1401.5577",
+    "regime": "ASSERTE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Robust Cooperation in the Prisoner's Dilemma: Program Equilibrium via Provability Logic",
+    "authors": [
+     "Barasz, Mihaly",
+     "Christiano, Paul",
+     "Fallenstein, Benja",
+     "Herreshoff, Marcello",
+     "LaVictoire, Patrick",
+     "Yudkowsky, Eliezer"
+    ],
+    "published": "2014/01/22"
+   },
+   {
+    "arxiv_id": "1806.08049",
+    "regime": "ASSERTE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "On the Robustness of Interpretability Methods",
+    "authors": [
+     "Alvarez-Melis, David",
+     "Jaakkola, Tommi S."
+    ],
+    "published": "2018/06/21"
+   },
+   {
+    "arxiv_id": "1908.04734",
+    "regime": "ASSERTE",
+    "sites_citants": 2,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Reward Tampering Problems and Solutions in Reinforcement Learning: A Causal Influence Diagram Perspective",
+    "authors": [
+     "Everitt, Tom",
+     "Hutter, Marcus",
+     "Kumar, Ramana",
+     "Krakovna, Victoria"
+    ],
+    "published": "2019/08/13"
+   },
+   {
+    "arxiv_id": "2103.00065",
+    "regime": "ASSERTE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Gradient Descent on Neural Networks Typically Occurs at the Edge of Stability",
+    "authors": [
+     "Cohen, Jeremy M.",
+     "Kaur, Simran",
+     "Li, Yuanzhi",
+     "Kolter, J. Zico",
+     "Talwalkar, Ameet"
+    ],
+    "published": "2021/02/26"
+   },
+   {
+    "arxiv_id": "2202.01854",
+    "regime": "ASSERTE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Causal emergence is widespread across measures of causation",
+    "authors": [
+     "Comolatti, Renzo",
+     "Hoel, Erik"
+    ],
+    "published": "2022/02/03"
+   },
+   {
+    "arxiv_id": "2202.05822",
+    "regime": "ASSERTE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "CLIPasso: Semantically-Aware Object Sketching",
+    "authors": [
+     "Vinker, Yael",
+     "Pajouheshgar, Ehsan",
+     "Bo, Jessica Y.",
+     "Bachmann, Roman Christian",
+     "Bermano, Amit Haim",
+     "Cohen-Or, Daniel",
+     "Zamir, Amir",
+     "Shamir, Ariel"
+    ],
+    "published": "2022/02/11"
+   },
+   {
+    "arxiv_id": "2208.07006",
+    "regime": "ASSERTE",
+    "sites_citants": 4,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Cooperative and uncooperative institution designs: Surprises and problems in open-source game theory",
+    "authors": [
+     "Critch, Andrew",
+     "Dennis, Michael",
+     "Russell, Stuart"
+    ],
+    "published": "2022/08/15"
+   },
+   {
+    "arxiv_id": "2212.04089",
+    "regime": "ASSERTE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Editing Models with Task Arithmetic",
+    "authors": [
+     "Ilharco, Gabriel",
+     "Ribeiro, Marco Tulio",
+     "Wortsman, Mitchell",
+     "Gururangan, Suchin",
+     "Schmidt, Ludwig",
+     "Hajishirzi, Hannaneh",
+     "Farhadi, Ali"
+    ],
+    "published": "2022/12/08"
+   },
+   {
+    "arxiv_id": "2305.00493",
+    "regime": "ASSERTE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Estimation of collision centrality in terms of the number of participating nucleons in heavy-ion collisions using deep learning",
+    "authors": [
+     "Basak, Dipankar",
+     "Dey, Kalyan"
+    ],
+    "published": "2023/04/30"
+   },
+   {
+    "arxiv_id": "2311.05762",
+    "regime": "ASSERTE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "On a conjecture of Marton",
+    "authors": [
+     "Gowers, W. T.",
+     "Green, Ben",
+     "Manners, Freddie",
+     "Tao, Terence"
+    ],
+    "published": "2023/11/09"
+   },
+   {
+    "arxiv_id": "2402.05916",
+    "regime": "ASSERTE",
+    "sites_citants": 2,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "GenEFT: Understanding Statics and Dynamics of Model Generalization via Effective Theory",
+    "authors": [
+     "Baek, David D.",
+     "Liu, Ziming",
+     "Tegmark, Max"
+    ],
+    "published": "2024/02/08"
+   },
+   {
+    "arxiv_id": "2404.02244",
+    "regime": "DECLARE",
+    "sites_citants": 2,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Marton's Conjecture in abelian groups with bounded torsion",
+    "authors": [
+     "Gowers, W. T.",
+     "Green, Ben",
+     "Manners, Freddie",
+     "Tao, Terence"
+    ],
+    "published": "2024/04/02"
+   },
+   {
+    "arxiv_id": "2405.14860",
+    "regime": "ASSERTE",
+    "sites_citants": 2,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Not All Language Model Features Are One-Dimensionally Linear",
+    "authors": [
+     "Engels, Joshua",
+     "Michaud, Eric J.",
+     "Liao, Isaac",
+     "Gurnee, Wes",
+     "Tegmark, Max"
+    ],
+    "published": "2024/05/23"
+   },
+   {
+    "arxiv_id": "2405.15943",
+    "regime": "ASSERTE",
+    "sites_citants": 4,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Transformers represent belief state geometry in their residual stream",
+    "authors": [
+     "Shai, Adam S.",
+     "Marzen, Sarah E.",
+     "Teixeira, Lucas",
+     "Oldenziel, Alexander Gietelink",
+     "Riechers, Paul M."
+    ],
+    "published": "2024/05/24"
+   },
+   {
+    "arxiv_id": "2410.19750",
+    "regime": "ASSERTE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "The Geometry of Concepts: Sparse Autoencoder Feature Structure",
+    "authors": [
+     "Li, Yuxiao",
+     "Michaud, Eric J.",
+     "Baek, David D.",
+     "Engels, Joshua",
+     "Sun, Xiaoqing",
+     "Tegmark, Max"
+    ],
+    "published": "2024/10/10"
+   },
+   {
+    "arxiv_id": "2412.14570",
+    "regime": "ASSERTE",
+    "sites_citants": 2,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Characterising Simulation-Based Program Equilibria",
+    "authors": [
+     "Cooper, Emery",
+     "Oesterheld, Caspar",
+     "Conitzer, Vincent"
+    ],
+    "published": "2024/12/19"
+   },
+   {
+    "arxiv_id": "2502.00873",
+    "regime": "ASSERTE",
+    "sites_citants": 2,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Language Models Use Trigonometry to Do Addition",
+    "authors": [
+     "Kantamneni, Subhash",
+     "Tegmark, Max"
+    ],
+    "published": "2025/02/02"
+   },
+   {
+    "arxiv_id": "2505.10559",
+    "regime": "ASSERTE",
+    "sites_citants": 2,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Neural Thermodynamic Laws for Large Language Model Training",
+    "authors": [
+     "Liu, Ziming",
+     "Liu, Yizhou",
+     "Gore, Jeff",
+     "Tegmark, Max"
+    ],
+    "published": "2025/05/15"
+   },
+   {
+    "arxiv_id": "2506.15679",
+    "regime": "ASSERTE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Dense SAE Latents Are Features, Not Bugs",
+    "authors": [
+     "Sun, Xiaoqing",
+     "Stolfo, Alessandro",
+     "Engels, Joshua",
+     "Wu, Ben",
+     "Rajamanoharan, Senthooran",
+     "Sachan, Mrinmaya",
+     "Tegmark, Max"
+    ],
+    "published": "2025/06/18"
+   },
+   {
+    "arxiv_id": "2509.14185",
+    "regime": "DECLARE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Discovery of Unstable Singularities",
+    "authors": [
+     "Wang, Yongji",
+     "Bennani, Mehdi",
+     "Martens, James",
+     "Racanière, Sébastien",
+     "Blackwell, Sam",
+     "Matthews, Alex",
+     "Nikolov, Stanislav",
+     "Cao-Labora, Gonzalo",
+     "Park, Daniel S.",
+     "Arjovsky, Martin",
+     "Worrall, Daniel",
+     "Qin, Chongli",
+     "Alet, Ferran",
+     "Kozlovskii, Borislav",
+     "Tomašev, Nenad",
+     "Davies, Alex",
+     "Kohli, Pushmeet",
+     "Buckmaster, Tristan",
+     "Georgiev, Bogdan",
+     "Gómez-Serrano, Javier",
+     "Jiang, Ray",
+     "Lai, Ching-Yao"
+    ],
+    "published": "2025/09/17"
+   },
+   {
+    "arxiv_id": "2601.13953",
+    "regime": "ASSERTE",
+    "sites_citants": 11,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Differentiable Logic Synthesis: Spectral Coefficient Selection via Sinkhorn-Constrained Composition",
+    "authors": [
+     "Pavlov, Gorgi"
+    ],
+    "published": "2026/01/20"
+   },
+   {
+    "arxiv_id": "2602.02385",
+    "regime": "ASSERTE",
+    "sites_citants": 9,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Transformers learn factored representations",
+    "authors": [
+     "Shai, Adam",
+     "Amdahl-Culleton, Loren",
+     "Christensen, Casper L.",
+     "Bigelow, Henry R.",
+     "Rosas, Fernando E.",
+     "Boyd, Alexander B.",
+     "Alt, Eric A.",
+     "Ray, Kyle J.",
+     "Riechers, Paul M."
+    ],
+    "published": "2026/02/02"
+   },
+   {
+    "arxiv_id": "2603.03257",
+    "regime": "DECLARE",
+    "sites_citants": 2,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Supercritical sharpness of percolation",
+    "authors": [
+     "Diskin, Sahar",
+     "Easo, Philip",
+     "Radhakrishnan, Ritvik Ramanan",
+     "Sudakov, Benny",
+     "Tassion, Vincent"
+    ],
+    "published": "2026/03/03"
+   },
+   {
+    "arxiv_id": "2605.09184",
+    "regime": "DECLARE",
+    "sites_citants": 3,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Open Ontologies: Tool-Augmented Ontology Engineering with Stable Matching Alignment",
+    "authors": [
+     "Rovai, Fabio"
+    ],
+    "published": "2026/05/09"
+   },
+   {
+    "arxiv_id": "2605.13171",
+    "regime": "ASSERTE",
+    "sites_citants": 2,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Formal Conjectures: An Open and Evolving Benchmark for Verified Discovery in Mathematics",
+    "authors": [
+     "Firsching, Moritz",
+     "Lezeau, Paul",
+     "Mercuri, Salvatore",
+     "Horváth, Miklós Z.",
+     "Dillies, Yaël",
+     "Sönne, Calle",
+     "Wieser, Eric",
+     "Zhang, Fred",
+     "Hubert, Thomas",
+     "Arcas, Blaise Agüera y",
+     "Kohli, Pushmeet"
+    ],
+    "published": "2026/05/13"
+   },
+   {
+    "arxiv_id": "2607.15459",
+    "regime": "DECLARE",
+    "sites_citants": 3,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "From Black Box to Executable Logic: Explainable Reinforcement Learning through Prolog Expert Systems",
+    "authors": [
+     "Garrido-Merchán, Eduardo C."
+    ],
+    "published": "2026/07/16"
+   },
+   {
+    "arxiv_id": "2608.29530",
+    "regime": "ASSERTE",
+    "sites_citants": 4,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "The Emergent Symbolic Structure of Artificial Neural Networks",
+    "authors": [
+     "McCoy, R. Thomas",
+     "Soulos, Paul",
+     "Linzen, Tal",
+     "Smolensky, Paul"
+    ],
+    "published": "2026/08/30"
+   },
+   {
+    "arxiv_id": "2609.11189",
+    "regime": "DECLARE",
+    "sites_citants": 6,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Vector Balancing via Directional Total Variation",
+    "authors": [
+     "Guo, Shengtao",
+     "Fang, Ethan X.",
+     "Lu, Junwei"
+    ],
+    "published": "2026/09/10"
+   },
+   {
+    "arxiv_id": "2609.14555",
+    "regime": "ASSERTE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "The Matroid Secretary Conjecture is True",
+    "authors": [
+     "Singla, Sahil"
+    ],
+    "published": "2026/09/13"
+   },
+   {
+    "arxiv_id": "2609.14858",
+    "regime": "DECLARE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "Dream-RSI: Recursive Self-Improvement through Evolving Worlds",
+    "authors": [
+     "Zheng, Tong",
+     "Wu, Xidong",
+     "Zhang, Zheng",
+     "He, Zhankui",
+     "Zhang, Chaoyi",
+     "Coleman, Benjamin",
+     "Wei, Ruoqiao",
+     "Bai, Di",
+     "Liu, Haolin",
+     "Liu, Rui",
+     "Wang, Xue",
+     "Zhuan, Yue",
+     "Kang, Wang-Cheng",
+     "Xiang, Renkai",
+     "Huang, Heng",
+     "Cheng, Xinwu",
+     "Guo, Yunsong"
+    ],
+    "published": "2026/09/14"
+   },
+   {
+    "arxiv_id": "2609.15979",
+    "regime": "ASSERTE",
+    "sites_citants": 1,
+    "verdict": "ok",
+    "source": "abs_page",
+    "title": "The $k$-server conjecture is true",
+    "authors": [
+     "Coester, Christian",
+     "Koutsoupias, Elias",
+     "Zbysiński, Marek"
+    ],
+    "published": "2026/09/14"
+   }
+  ]
+ },
+ "confrontation": {
+  "methode": "pour chaque identifiant : le titre et les noms d'auteurs rendus par arXiv sont confrontes a la prose des cellules citantes (jetons distinctifs du titre, noms de famille)",
+  "attributions_concordantes": 30,
+  "identifiants_faux": 1,
+  "faux_positifs_ecartes": [
+   {
+    "arxiv_id": "2212.04089",
+    "motif": "la prose cite « un task vector (Ilharco et al. 2022, arXiv:2212.04089) » : auteur, annee et sujet concordent, elle ne reprend simplement pas le titre. Aucun defaut."
+   }
+  ],
+  "defauts": [
+   {
+    "arxiv_id_cite": "2305.00493",
+    "arxiv_id_reel": "2301.05217",
+    "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9d-Features-Circulaires-Helice-Nombres.ipynb",
+    "cell_index": 53,
+    "cell_type": "markdown",
+    "prose": "Nanda, N., Chan, L., et al. (2023). Progress Measures for Grokking via Mechanistic Interpretability. [arXiv:2305.00493]",
+    "ce_que_l_id_cite_est": "Estimation of collision centrality in terms of the number of participating nucleons in heavy ion collisions (Basak, 2023) -- physique nucleaire",
+    "ce_que_l_id_reel_est": "Progress measures for grokking via mechanistic interpretability (Nanda et al., 2023/01/12)",
+    "classe": "MAUVAISE-ATTRIBUTION -- titre et auteurs justes, identifiant faux",
+    "corroboration_independante": {
+     "methode": "l'identifiant correct est deja employe par 4 autres carnets du depot (recherche plein-texte)",
+     "carnets": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress.ipynb",
+      "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.ipynb",
+      "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9b-GenEFT-Theorie-Effective.ipynb",
+      "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.5-Phenomenes-de-Generalisation.ipynb"
+     ]
+    },
+    "portee": "1 carnet, 1 cellule, 2 occurrences (libelle + URL) ; aucune autre occurrence de l'identifiant fautif dans le depot",
+    "correction": "2305.00493 -> 2301.05217 (markdown seul, aucune re-execution due)",
+    "re_execution_requise": false
+   }
+  ]
+ },
+ "instruments": {
+  "verificateur": {
+   "chemin": "scripts/notebook_tools/verify_arxiv_ids.py",
+   "contrat": "trois etats -- ok / notfound / transport ; sortie 2 des qu'un identifiant n'a pas ete mesure",
+   "preuve": "13 tests, dont `test_absent_id_is_notfound_not_a_guard_failure`"
+  },
+  "scan": {
+   "chemin": "scripts/notebook_tools/scan_arxiv_citations.py",
+   "appariement": "cles normalisees des DEUX cotes (`id_key`) ; les deux formes sont publiees (`delta_raw_keys`, `delta_keys_collapsed`)",
+   "preuve": "13 tests",
+   "defaut_repare": "en chaine brute, 119 des 121 cles du ledger s'appariaient et le delta annoncait 33 au lieu de 31"
+  },
+  "source_de_mesure": {
+   "voie_principale": "API Atom `export.arxiv.org/api/query`",
+   "repli_employe": "page `arxiv.org/abs/<id>` (balises `citation_title` / `citation_author` / `citation_date`), hote distinct",
+   "part_du_repli": "31/31 -- l'API n'a rendu AUCUN verdict exploitable. La passe API du 2026-09-21 a mesure 90 identifiants et rendu 90 `406 Not Acceptable`, sans champ `verdict` : c'est la forme de l'ancien instrument, celui qui sortait 0 sans avoir rien mesure. Les 31 du delta sont inclus dans ces 90.",
+   "preuve_du_caractere_temporel": "l'identifiant `1401.5577` est `406` par l'API et `ok` par la page abs 33 minutes plus tard -- meme identifiant, meme client, memes en-tetes. Le `406` n'est ni par identifiant, ni par client, ni par en-tete.",
+   "motif": "le repli est arXiv elle-meme, servie par un autre hote ; `source` est porte par identifiant, donc la provenance de chaque ligne est verifiable"
+  }
+ },
+ "limite": "Les attributions concordantes le sont sur le titre et les auteurs ; une prose qui citerait un identifiant exact pour un contenu different et sans rapport lexical n'est pas detectable par cette confrontation. Les 7 identifiants en regime DECLARE (le carnet annonce lui-meme ne pas avoir pu verifier) ne sont pas des defauts meme si l'attribution est fausse."
+}

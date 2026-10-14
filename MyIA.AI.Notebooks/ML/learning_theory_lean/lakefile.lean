@@ -34,7 +34,7 @@ package «learning_theory_lean» where
   leanOptions := #[⟨`autoImplicit, false⟩]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.1"
+  "https://github.com/leanprover-community/mathlib4.git" @ "db584cd6d46c92f209a44c0f1c829460d327499d"
 
 @[default_target]
 lean_lib «Perceptron» where
@@ -58,3 +58,64 @@ lean_lib «GradientFlow» where
   -- racine : sans le glob nu, `lake build` ne produit jamais GradientFlow.olean
   -- et un `import GradientFlow` (kernel/repl) échoue en env vide silencieux.
   globs := #[.submodules `GradientFlow, `GradientFlow, `GradientFlow_en]
+
+/-- Module `EffectiveTheory` — digestion #16741/arc B (issue #16752) :
+théorie effective de la représentation (Tegmark & co) — R02 parallélogrammes
+du grokking + identités de conservation (App. F), R06 clustering par classe
+(décodeur injectif) + quantité conservée hyperbolique `dC/dt = 0` + contenu
+informationnel `b = log₂(n!/|Aut G|)` sur groupes ET graphes (Section III :
+orbit-stabilizer + `descLength`, Eq. 16 : autonomie de la séparation, migrés
+du module dissous `GenEFT.lean` #17480), R10 cercle des jours =
+représentation irréductible 2D de `C₇`. Frère de `Perceptron`, `PacLearning`
+et `GradientFlow`. -/
+@[default_target]
+lean_lib «EffectiveTheory» where
+  globs := #[.submodules `EffectiveTheory, `EffectiveTheory]
+
+/-- Module `MathUniverse` — digestion #16741/arc B (issue #16753) : Annexe A de
+R16 (*The Mathematical Universe*, Tegmark) — structures mathématiques finies
+(signature + relations décidables), Aut(S) comme groupe, décidabilité de
+l'équivalence de deux définitions finies (« simple algorithme haltant » rendu
+comme instance `Decidable`), et les exemples §A.2 : C₂, C₃, algèbre de Boole à
+deux éléments (A1) et sa génération par NAND seul (A2). Frère de
+`Perceptron`, `PacLearning`, `GradientFlow` et `EffectiveTheory`. -/
+@[default_target]
+lean_lib «MathUniverse» where
+  /- Pas de `.submodules` : MathUniverse est un module plat (deux fichiers
+  racine, aucune arborescence `MathUniverse/`). Un glob `.submodules` sur un
+  module sans repertoire fait echouer la resolution de la cible bibliotheque
+  (`no such file or directory: .../MathUniverse`). -/
+  globs := #[`MathUniverse, `MathUniverse_en]
+
+/-- Module `Renaming` — tranche 2 de l'issue #16753 : l'équivalence de
+structures sous renommage (R16 §III « baggage »), suite de `MathUniverse` —
+EquivStruct est une équivalence à travers les types porteurs, invariants de
+cardinalité et de taille des tableaux (`relFinset`), énumération des
+permutations (`m!` vs `m^m`, `equivStruct_iff_perm`), torseur des renommages
+sous Aut(S) et transport par conjugaison — corollaire `aut_trivial_of_equiv_bool8`
+(pont vers `EffectiveTheory.InfoBits`). -/
+@[default_target]
+lean_lib «Renaming» where
+  /- Module plat, meme forme que MathUniverse : pas d'arborescence
+  `Renaming/`. -/
+  globs := #[`Renaming, `Renaming_en]
+/-- Module `Generators` — suite de #16753 : réifie le critère « générateurs
++ composition » que `MathUniverse` laissait en exhibition concrète — syntaxe
+de termes `Term ν` sur un générateur binaire, évaluation `Term.eval`,
+prédicat `Generates`, l'équation (A2) comme DONNÉE (les huit termes
+`termA2`), et le pont prouvé vers les tables de `bool8`/`nand8`
+(`relA1_iff_generated`, `relA2_iff_generated`, `relA1_iff_relA2`). Frère
+cadet de `MathUniverse` dans le lake ML généraliste. -/
+@[default_target]
+lean_lib «Generators» where
+  /- Module plat, même leçon que MathUniverse : pas de `.submodules`. -/
+  globs := #[`Generators, `Generators_en]
+
+/-- Module `MutualGen` — digestion #16741/arc B (issue #16753, tranche 4) :
+génération mutuelle générale de l'Annexe A de R16 — termes sur signature
+quelconque (le tuple d'arité quelconque, multi-générateurs) et le théorème
+« se générer l'un l'autre ⇒ mêmes fonctions engendrées » (`mutual_gen_iff`).
+Frère de `MathUniverse` dans le lake. -/
+@[default_target]
+lean_lib «MutualGen» where
+  globs := #[`MutualGen, `MutualGen_en]

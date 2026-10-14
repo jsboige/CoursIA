@@ -104,6 +104,27 @@ def test_paragraph_break_not_doubled():
     assert "".join(new_src) == "First paragraph.\n\nSecond paragraph flows."
 
 
+def test_empty_element_is_not_promoted_to_blank_line():
+    # An empty element is not a line terminator: '' -> '\n' would manufacture a
+    # blank line the render did not have. The break belongs to the non-empty line
+    # on its LEFT (boundary 0), so only that one is touched. See #17550.
+    src = ["line1", "", "line3"]
+    new_src, changed = _fix_source_newlines(src)
+    assert changed is True
+    assert "".join(new_src) == "line1\nline3"
+    assert "".join(new_src).count("\n\n") == 0
+
+
+def test_empty_element_after_terminated_line_is_untouched():
+    # Here line 0 already ends in '\n', so nothing is glued: the empty element and
+    # the break it would become must both stay out. (Measured on the repo: this
+    # shape produced +7 blank lines, incl. a 76-element code cell.)
+    src = ["line0\n", "", "**Why** : text"]
+    new_src, changed = _fix_source_newlines(src)
+    assert changed is False
+    assert new_src == src
+
+
 # --- no-op cases ---
 
 

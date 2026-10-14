@@ -6,10 +6,13 @@ L'organe vit depuis #14057 (Vague 2 tranche 1, patron #13384) dans
 ``base-not-main-advisory.yml`` reste DORMANT (declencheur pull_request
 retire, job conserve verbatim pour la tracabilite).
 
-The organ reads PR-level metadata via the ``gh`` API ONLY
-(``scripts/base_not_main.py`` uses ``gh pr view --json baseRefName,title``)
-and never inspects the working tree. Its verdict therefore depends on
-PR METADATA, not the DIFF. Per the criterion ai-01 wrote in #13232:
+The organ reads TWO sources, and neither is the CONTENT of the diff:
+PR-level metadata via the ``gh`` API (``baseRefName`` + ``title`` for the
+verdict, then ``files``/``changedFiles`` for the paths the PR touches), and --
+since #16194 -- the checkout's ``.github/workflows`` as read from disk, to
+measure which workflows a stacked base silently switches off. Its verdict
+therefore depends on PR METADATA plus the workflow definitions present in the
+tree, never on the diff's patches. Per the criterion ai-01 wrote in #13232:
 
     > Le verdict du garde depend-il du DIFF, ou des METADONNEES de la PR ?
     > - diff (regression, translation, ...)            -> paths: legitime
@@ -65,8 +68,9 @@ def test_no_paths_filter_under_pull_request():
         f"always-on-metadata-guards.yml (umbrella de l'organe base-not-main "
         f"depuis #14057) MUST NOT carry paths: under "
         f"on.pull_request (decision ai-01 #13232, 2026-08-27). "
-        f"Organ reads PR METADATA only via gh api (baseRefName, "
-        f"title). Got: {sorted(pr_block.keys())}"
+        f"Organ reads PR METADATA via gh api (baseRefName, title, files) "
+        f"and the checkout's .github/workflows (#16194), never diff "
+        f"content. Got: {sorted(pr_block.keys())}"
     )
 
 

@@ -1,0 +1,65 @@
+{
+ "projectId": 36854709,
+ "arms": {
+  "article": {
+   "backtestId": "c2f7f72af7bbb7f032a4cf1c96394c39",
+   "parameterSet": {
+    "arm": "article"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.623",
+    "Probabilistic Sharpe Ratio": "2.386%",
+    "Compounding Annual Return": "13.007%",
+    "Drawdown": "36.000%",
+    "Annual Standard Deviation": "0.124",
+    "Alpha": "0.01",
+    "Beta": "0.758",
+    "Total Fees": "$1923415.26",
+    "Total Orders": "153285",
+    "Portfolio Turnover": "2.16%",
+    "Net Profit": "668.105%",
+    "End Equity": "76810459.40"
+   }
+  },
+  "bab": {
+   "backtestId": "adc09dac2d31396c085b034b15ac03c8",
+   "parameterSet": {
+    "arm": "bab"
+   },
+   "statistics": {
+    "Sharpe Ratio": "-0.455",
+    "Probabilistic Sharpe Ratio": "0.000%",
+    "Compounding Annual Return": "-0.214%",
+    "Drawdown": "16.200%",
+    "Annual Standard Deviation": "0.044",
+    "Alpha": "-0.018",
+    "Beta": "-0.027",
+    "Total Fees": "$246422.80",
+    "Total Orders": "94168",
+    "Portfolio Turnover": "0.72%",
+    "Net Profit": "-3.505%",
+    "End Equity": "9649544.69"
+   }
+  },
+  "spy": {
+   "backtestId": "4aaf269a4ce08fe4020cf3551320a5f4",
+   "parameterSet": {
+    "arm": "spy"
+   },
+   "statistics": {
+    "Sharpe Ratio": "0.615",
+    "Probabilistic Sharpe Ratio": "1.986%",
+    "Compounding Annual Return": "14.126%",
+    "Drawdown": "33.700%",
+    "Annual Standard Deviation": "0.142",
+    "Alpha": "-0.001",
+    "Beta": "0.998",
+    "Total Fees": "$591.40",
+    "Total Orders": "1",
+    "Portfolio Turnover": "0.02%",
+    "Net Profit": "805.298%",
+    "End Equity": "90529781.62"
+   }
+  }
+ }
+}

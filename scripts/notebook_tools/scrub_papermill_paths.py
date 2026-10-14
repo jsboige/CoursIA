@@ -173,7 +173,7 @@ _HOME_RES = [
     # Bare Linux home root printed by WSL/POSIX-executed notebooks:
     #   /home/<user>  -> ~  (diagnostic tail preserved)
     # e.g. Lean4 kernel-wrapper deployment 'Wrapper robuste deploye:
-    # /home/jesse/.lean4-kernel-wrapper.py' (Lean-1-Setup, regression: the
+    # /home/jesse/.lean4-kernel-wrapper.py' (Lean-01-Setup-Lean-Python, regression: the
     # detect-only companion sees bare /home/<user> but this scrubber missed it,
     # so a /home leak stayed in the committed output while the Windows home
     # alongside it was anonymized). The (?<![\w.:/-]) lookbehind requires

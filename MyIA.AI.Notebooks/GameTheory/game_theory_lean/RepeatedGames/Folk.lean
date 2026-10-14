@@ -45,6 +45,16 @@ import Mathlib.Tactic
 import RepeatedGames.Stage
 import RepeatedGames.Discounting
 import RepeatedGames.GrimTrigger
+import Mathlib.Topology.Algebra.InfiniteSum.Defs
+import Mathlib.Topology.Algebra.InfiniteSum.Basic
+import Mathlib.Topology.Algebra.InfiniteSum.Constructions
+import Mathlib.Topology.Algebra.GroupWithZero
+import Mathlib.Topology.NhdsWithin
+import Mathlib.Order.Filter.Tendsto
+import Mathlib.Topology.Basic
+
+open scoped Topology
+open Filter
 
 namespace RepeatedGames
 
@@ -111,6 +121,240 @@ noncomputable def discountedPayoff (g : PrisonersDilemma) (δ : ℝ)
     (a : ℕ → PDAction × PDAction) : ℝ :=
   ∑' n : ℕ, δ^n * stagePayoff g (a n).1 (a n).2
 
+/-- Equivalence division euclidienne : `n` se decompose en quotient et reste,
+    vue comme `ℕ ≃ Σ _ : Fin T, ℕ` (l'indice de fibre est le reste `n % T`,
+    l'indice interne le quotient `n / T`). Charriere du changement d'ordre de
+    sommation du lemme d'Abel periodique : la serie inconditionnelle sur `ℕ`
+    se relit fibre par fibre sur les restes modulo `T`. -/
+private def natSigmaFinEquiv {T : ℕ} (hT : 0 < T) : ℕ ≃ Σ _ : Fin T, ℕ where
+  toFun n := ⟨⟨n % T, Nat.mod_lt n hT⟩, n / T⟩
+  invFun p := p.2 * T + p.1
+  left_inv n := by
+    show n / T * T + n % T = n
+    rw [mul_comm, Nat.div_add_mod n T]
+  right_inv p := by
+    obtain ⟨⟨k, hk⟩, q⟩ := p
+    have h1 : (q * T + k) % T = k := by
+      rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hk]
+    have h2 : (q * T + k) / T = q := by
+      rw [Nat.mul_comm q T, Nat.mul_add_div hT, Nat.div_eq_of_lt hk, Nat.add_zero]
+    have hfin : (⟨(q * T + k) % T, Nat.mod_lt (q * T + k) hT⟩ : Fin T) = ⟨k, hk⟩ :=
+      Fin.ext h1
+    dsimp only
+    rw [hfin, h2]
+
+set_option maxHeartbeats 1000000 in
+/-- **Lemme d'Abel periodique -- forme close** (brique « delta vers 1 » du
+    theoreme de Folk, fil #15655) : pour une trajectoire periodique de periode
+    `T` et un facteur d'escompte `δ` dans `(0, 1)`, le paiement actualise
+    NORMALISE `(1 - δ) * discountedPayoff` s'ecrit comme le quotient du bloc de
+    periode par la somme geometrique finie du denominateur. La decomposition
+    par blocs `n = q * T + r` fait apparaitre la serie geometrique de raison
+    `δ ^ T` sur les blocs et le facteur `δ ^ r` intra-bloc : theorematique
+    d'Abel discrete, jambe « moyenne » du theoreme verbal de
+    Fudenberg-Maskin. Preuve : la serie sur `ℕ` se transporte par l'equivalence
+    division euclidienne sur `Σ _ : Fin T, ℕ`, ou chaque fibre (reste fixe,
+    quotient croissant) est une serie geometrique de raison `δ ^ T` multipliee
+    par le stage du reste ; l'agregat sur les `T` restes est une somme finie. -/
+theorem discountedPayoff_periodic_eq (g : PrisonersDilemma) {T : ℕ} (hT : 0 < T)
+    (a : ℕ → PDAction × PDAction) (ha : ∀ n, a (n + T) = a n)
+    {δ : ℝ} (h0 : 0 < δ) (h1 : δ < 1) :
+    (1 - δ) * discountedPayoff g δ a =
+      (∑ n ∈ Finset.range T, δ ^ n * stagePayoff g (a n).1 (a n).2) /
+        ∑ i ∈ Finset.range T, δ ^ i := by
+  -- (A) periodicite generalisee des stages aux multiples de T
+  have hper : ∀ q r : ℕ,
+      stagePayoff g (a (q * T + r)).1 (a (q * T + r)).2
+        = stagePayoff g (a r).1 (a r).2 := by
+    intro q r
+    induction q with
+    | zero => simp
+    | succ q ih =>
+        have hrw : (q + 1) * T + r = q * T + r + T := by ring
+        rw [hrw, ha (q * T + r)]
+        exact ih
+  -- (B) series geometriques de raison delta et delta ^ T
+  have h0T : 0 ≤ δ ^ T := pow_nonneg (le_of_lt h0) T
+  have h1T : δ ^ T < 1 := pow_lt_one₀ (le_of_lt h0) h1 hT.ne'
+  have hgeoT : HasSum (fun m : ℕ => (δ ^ T) ^ m) ((1 - δ ^ T)⁻¹) :=
+    hasSum_geometric_of_lt_one h0T h1T
+  have hgeoδ : HasSum (fun n : ℕ => δ ^ n) ((1 - δ)⁻¹) :=
+    hasSum_geometric_of_lt_one (le_of_lt h0) h1
+  -- (C) bornage des stages : stagePayoff ne prend que quatre valeurs
+  have hC : ∀ n : ℕ,
+      |stagePayoff g (a n).1 (a n).2| ≤ |g.R| + |g.S| + |g.T| + |g.P| := by
+    intro n
+    rcases a n with ⟨x, y⟩
+    cases x <;> cases y <;> simp only [stagePayoff] <;>
+      linarith [abs_nonneg g.R, abs_nonneg g.S, abs_nonneg g.T, abs_nonneg g.P]
+  -- (D) sommabilite de la serie entiere, par comparaison geometrique
+  have hsumS : Summable (fun n : ℕ => δ ^ n * stagePayoff g (a n).1 (a n).2) := by
+    refine Summable.of_norm_bounded
+      ⟨(1 - δ)⁻¹ * (|g.R| + |g.S| + |g.T| + |g.P|),
+        HasSum.mul_right (|g.R| + |g.S| + |g.T| + |g.P|) hgeoδ⟩ ?_
+    intro n
+    rw [Real.norm_eq_abs, abs_mul, abs_of_pos (pow_pos h0 n)]
+    exact mul_le_mul_of_nonneg_left (hC n) (pow_nonneg (le_of_lt h0) n)
+  -- (E) transport du sigma type vers ℕ : la fibre du reste r est geometrique
+  have hFe : ∀ n : ℕ,
+      (δ ^ T) ^ ((natSigmaFinEquiv hT) n).2 *
+          (δ ^ (((natSigmaFinEquiv hT) n).1 : ℕ) *
+            stagePayoff g (a (((natSigmaFinEquiv hT) n).1).val).1
+              (a (((natSigmaFinEquiv hT) n).1).val).2)
+      = δ ^ n * stagePayoff g (a n).1 (a n).2 := by
+    intro n
+    have hdivmod := Nat.div_add_mod n T
+    have hcomm : (n / T) * T + n % T = T * (n / T) + n % T := by ring
+    show (δ ^ T) ^ (n / T) * (δ ^ (n % T) *
+        stagePayoff g (a (n % T)).1 (a (n % T)).2)
+      = δ ^ n * stagePayoff g (a n).1 (a n).2
+    have hn : δ ^ n = (δ ^ T) ^ (n / T) * δ ^ (n % T) := by
+      rw [← pow_mul, ← pow_add, hdivmod]
+    have hst : stagePayoff g (a n).1 (a n).2
+        = stagePayoff g (a (n % T)).1 (a (n % T)).2 := by
+      have hper' := hper (n / T) (n % T)
+      rw [hcomm, hdivmod] at hper'
+      exact hper'
+    rw [hn, ← mul_assoc, hst]
+  -- (F) fibres : pour chaque reste r, serie geometrique de raison delta ^ T
+  have hfiber : ∀ r : Fin T, HasSum (fun b : ℕ =>
+        (δ ^ T) ^ b * (δ ^ (r : ℕ) * stagePayoff g (a r).1 (a r).2))
+      ((1 - δ ^ T)⁻¹ * (δ ^ (r : ℕ) * stagePayoff g (a r).1 (a r).2)) :=
+    fun r => HasSum.mul_right _ hgeoT
+  -- (G) agregat sur les T restes (somme finie sur Fin T)
+  have hg : HasSum (fun r : Fin T =>
+        (1 - δ ^ T)⁻¹ * (δ ^ (r : ℕ) * stagePayoff g (a r).1 (a r).2))
+      ((1 - δ ^ T)⁻¹ *
+        ∑ r : Fin T, δ ^ (r : ℕ) * stagePayoff g (a r).1 (a r).2) := by
+    have hg1 := hasSum_fintype (fun r : Fin T =>
+      (1 - δ ^ T)⁻¹ * (δ ^ (r : ℕ) * stagePayoff g (a r).1 (a r).2))
+    rw [Finset.mul_sum]
+    exact hg1
+  -- (H) sommabilite sur le sigma type, par transport de (D)
+  have hsumF : Summable (fun p : Σ _ : Fin T, ℕ =>
+      (δ ^ T) ^ (p.2) *
+        (δ ^ ((p.1 : ℕ)) * stagePayoff g (a (p.1 : ℕ)).1 (a (p.1 : ℕ)).2)) := by
+    rcases hsumS with ⟨A, hA⟩
+    refine ⟨A, ((natSigmaFinEquiv hT).hasSum_iff).mp ?_⟩
+    show HasSum (fun n : ℕ => (δ ^ T) ^ ((natSigmaFinEquiv hT) n).2 *
+        (δ ^ (((natSigmaFinEquiv hT) n).1 : ℕ) *
+          stagePayoff g (a (((natSigmaFinEquiv hT) n).1).val).1
+            (a (((natSigmaFinEquiv hT) n).1).val).2)) A
+    rw [funext hFe]
+    exact hA
+  -- (I) theoreme de sommation par fibres (Abel discret)
+  have hsigma : HasSum (fun p : Σ _ : Fin T, ℕ =>
+        (δ ^ T) ^ (p.2) *
+          (δ ^ ((p.1 : ℕ)) * stagePayoff g (a (p.1 : ℕ)).1 (a (p.1 : ℕ)).2))
+      ((1 - δ ^ T)⁻¹ *
+        ∑ r : Fin T, δ ^ (r : ℕ) * stagePayoff g (a r).1 (a r).2) :=
+    HasSum.sigma_of_hasSum hg hfiber hsumF
+  -- (J) transport final vers ℕ et identification des tsum
+  have hE : HasSum (fun n : ℕ =>
+        (δ ^ T) ^ ((natSigmaFinEquiv hT) n).2 *
+          (δ ^ (((natSigmaFinEquiv hT) n).1 : ℕ) *
+            stagePayoff g (a (((natSigmaFinEquiv hT) n).1).val).1
+              (a (((natSigmaFinEquiv hT) n).1).val).2))
+      ((1 - δ ^ T)⁻¹ *
+        ∑ r : Fin T, δ ^ (r : ℕ) * stagePayoff g (a r).1 (a r).2) :=
+    ((natSigmaFinEquiv hT).hasSum_iff).mpr hsigma
+  rw [funext hFe] at hE
+  have htsum := hE.tsum_eq
+  -- (K) somme geometrique finie du denominateur
+  have hden : (1 - δ) * (∑ i ∈ Finset.range T, δ ^ i) = 1 - δ ^ T := by
+    rw [mul_comm]
+    exact geom_sum_mul_neg δ T
+  -- (L) conclusion
+  have hDenpos : 0 < ∑ i ∈ Finset.range T, δ ^ i :=
+    Finset.sum_pos (fun i _ => pow_pos h0 i) (⟨0, Finset.mem_range.mpr hT⟩)
+  have hne : ∑ i ∈ Finset.range T, δ ^ i ≠ 0 := ne_of_gt hDenpos
+  have hfin : (∑ r : Fin T, δ ^ (r : ℕ) * stagePayoff g (a r).1 (a r).2)
+      = ∑ n ∈ Finset.range T, δ ^ n * stagePayoff g (a n).1 (a n).2 :=
+    Fin.sum_univ_eq_sum_range (fun n : ℕ => δ ^ n * stagePayoff g (a n).1 (a n).2) T
+  have hne2 : 1 - δ ^ T ≠ 0 := by linarith
+  rw [show discountedPayoff g δ a =
+      ∑' n : ℕ, δ ^ n * stagePayoff g (a n).1 (a n).2 from rfl,
+    htsum, hfin]
+  rw [eq_div_iff hne]
+  have hrearr : (1 - δ) * ((1 - δ ^ T)⁻¹ *
+        ∑ n ∈ Finset.range T, δ ^ n * stagePayoff g (a n).1 (a n).2) *
+      ∑ i ∈ Finset.range T, δ ^ i
+      = ∑ n ∈ Finset.range T, δ ^ n * stagePayoff g (a n).1 (a n).2 := by
+    calc (1 - δ) * ((1 - δ ^ T)⁻¹ *
+            ∑ n ∈ Finset.range T, δ ^ n * stagePayoff g (a n).1 (a n).2) *
+          ∑ i ∈ Finset.range T, δ ^ i
+        = ((1 - δ ^ T)⁻¹ *
+            ∑ n ∈ Finset.range T, δ ^ n * stagePayoff g (a n).1 (a n).2) *
+            ((1 - δ) * ∑ i ∈ Finset.range T, δ ^ i) := by ring
+      _ = ((1 - δ ^ T)⁻¹ *
+            ∑ n ∈ Finset.range T, δ ^ n * stagePayoff g (a n).1 (a n).2) *
+          (1 - δ ^ T) := by rw [hden]
+      _ = (1 - δ ^ T)⁻¹ * ((1 - δ ^ T) *
+            ∑ n ∈ Finset.range T, δ ^ n * stagePayoff g (a n).1 (a n).2) := by
+          ring
+      _ = ∑ n ∈ Finset.range T, δ ^ n * stagePayoff g (a n).1 (a n).2 := by
+          rw [inv_mul_cancel_left₀ hne2]
+  rw [hrearr]
+
+set_option maxHeartbeats 1000000 in
+/-- **Lemme d'Abel periodique -- convergence vers la moyenne de temps**
+    (brique « delta vers 1 » du theoreme de Folk, fil #15655) : quand le
+    facteur d'escompte tend vers 1 par valeurs inferieures, le paiement
+    actualise normalise d'une trajectoire periodique converge vers la moyenne
+    arithmetique des stages sur une periode. C'est la lecture quantitative du
+    passage a la limite du theoreme de Folk : les equilibres sustentes par des
+    trajectoires periodiques atteignent exactement leur moyenne de temps. -/
+theorem discountedPayoff_periodic_tendsto_timeAverage (g : PrisonersDilemma)
+    {T : ℕ} (hT : 0 < T) (a : ℕ → PDAction × PDAction) (ha : ∀ n, a (n + T) = a n) :
+    Filter.Tendsto (fun δ : ℝ => (1 - δ) * discountedPayoff g δ a)
+      (nhdsWithin (1:ℝ) {δ : ℝ | 0 < δ ∧ δ < 1})
+      (nhds ((∑ n ∈ Finset.range T, stagePayoff g (a n).1 (a n).2) / T)) := by
+  -- continuite polynomiale du denominateur et du numerateur
+  have hDaux : ∀ T : ℕ, Filter.Tendsto (fun δ : ℝ => ∑ i ∈ Finset.range T, δ ^ i)
+      (nhds (1:ℝ)) (nhds (∑ i ∈ Finset.range T, (1:ℝ) ^ i)) := by
+    intro T
+    induction T with
+    | zero => simp
+    | succ T ih =>
+        simp only [Finset.sum_range_succ]
+        exact ih.add ((continuous_id.pow T).tendsto 1)
+  have hNaux : ∀ T : ℕ, Filter.Tendsto
+      (fun δ : ℝ => ∑ n ∈ Finset.range T, δ ^ n * stagePayoff g (a n).1 (a n).2)
+      (nhds (1:ℝ))
+      (nhds (∑ n ∈ Finset.range T, (1:ℝ) ^ n * stagePayoff g (a n).1 (a n).2)) := by
+    intro T
+    induction T with
+    | zero => simp
+    | succ T ih =>
+        simp only [Finset.sum_range_succ]
+        exact ih.add (((continuous_id.pow T).tendsto 1).mul tendsto_const_nhds)
+  have hD1 : (∑ i ∈ Finset.range T, (1:ℝ) ^ i) = T := by simp
+  have hDne : (∑ i ∈ Finset.range T, (1:ℝ) ^ i) ≠ 0 := by
+    rw [hD1]
+    exact_mod_cast hT.ne'
+  -- limite du quotient (continuite de la division, denominateur non nul en 1)
+  have hquot : Filter.Tendsto (fun δ : ℝ =>
+        (∑ n ∈ Finset.range T, δ ^ n * stagePayoff g (a n).1 (a n).2) /
+          ∑ i ∈ Finset.range T, δ ^ i)
+      (nhdsWithin (1:ℝ) {δ : ℝ | 0 < δ ∧ δ < 1})
+      (nhds ((∑ n ∈ Finset.range T, (1:ℝ) ^ n * stagePayoff g (a n).1 (a n).2) /
+          ∑ i ∈ Finset.range T, (1:ℝ) ^ i)) :=
+    ((hNaux T).div (hDaux T) hDne).mono_left nhdsWithin_le_nhds
+  -- sur ce filtre, delta est dans (0, 1) : la forme close s'applique
+  have heq : (fun δ : ℝ => (1 - δ) * discountedPayoff g δ a)
+      =ᶠ[nhdsWithin (1:ℝ) {δ : ℝ | 0 < δ ∧ δ < 1}]
+      (fun δ : ℝ =>
+        (∑ n ∈ Finset.range T, δ ^ n * stagePayoff g (a n).1 (a n).2) /
+          ∑ i ∈ Finset.range T, δ ^ i) := by
+    filter_upwards [self_mem_nhdsWithin] with δ hδ
+    exact discountedPayoff_periodic_eq g hT a ha hδ.1 hδ.2
+  -- transport de la limite du quotient vers la fonction d'origine
+  have hfinal : Filter.Tendsto (fun δ : ℝ => (1 - δ) * discountedPayoff g δ a)
+      (nhdsWithin (1:ℝ) {δ : ℝ | 0 < δ ∧ δ < 1})
+      (nhds ((∑ n ∈ Finset.range T, (1:ℝ) ^ n * stagePayoff g (a n).1 (a n).2) / T)) := by
+    have h := (tendsto_congr' heq).mpr hquot
+    rwa [hD1] at h
+  simpa only [one_pow, one_mul] using hfinal
 /-- Témoin de réfutation (#15655) : le DP `T = 3, R = 2, P = 1, S = 0` —
 lecture positionnelle de `(3, 2, 1, 0)` dans l'ordre des champs `(T, R, P, S)`.
 Les quatre axiomes de `PrisonersDilemma` se vérifient par `norm_num` (aucune

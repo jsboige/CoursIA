@@ -38,7 +38,7 @@ Trois gestes, dans cet ordre, et **le premier est une conservation** :
 
 **Un "Exemple guide" est TERMINAL.** Il ne redeclenche ni le cas 1 (son titre n'est plus "Exercice") ni le cas 2 (son code n'est pas un stub). Ne pas inventer un cas 3 pour le re-traiter : c'est l'etat cible, pas une etape.
 
-**Precedent dans le depot** : `Texte/4_Function_Calling.ipynb` c45/c52, "EXEMPLE CORRIGE — Assistant de Planification Multi-Outils" — resolution conservee et titree, exercices maintenus a cote.
+**Precedent dans le depot** : `GenAI/Texte/04_Function_Calling.ipynb` (cellules `jrf33gd4drb`/`618da34f`), "EXEMPLE CORRIGE — Assistant de Planification Multi-Outils" — resolution conservee et titree, exercices maintenus a cote.
 
 **Pourquoi ce remede et pas le stub** : le protocole de TP (correction user 2026-09-07, EPIC #15035) veut que **chaque groupe rende au moins un exercice corrige, different d'une session a l'autre**. La digestion est le mecanisme qui rend ce cycle soutenable — le catalogue s'enrichit d'un exemple attribue et d'un exercice neuf a chaque rendu. Stubber la resolution effacerait le travail etudiant que ce cycle produit, et [anti-regression.md](anti-regression.md) le classe deja en regression de contenu.
 
@@ -58,6 +58,14 @@ Trois gestes, dans cet ordre, et **le premier est une conservation** :
 ## Rappel C.1 (notebook-conventions)
 
 Le stub d'exercice n'utilise **jamais** `raise NotImplementedError` / `assert False` / `1/0`. Patterns corrects : `pass`, `print("Exercice a completer")`, `return None`, `result = None  # TODO etudiant`. Le notebook doit s'executer de bout en bout meme exercices non completes.
+
+## Indice commente sans preuve complete (durcissement #8053, #17714)
+
+Un scaffold d'exercice **commente** (bloc `-- TODO etudiant`, indice) ne contient **jamais la preuve complete** : ni la tactique finale, ni les valeurs concretes qui constituent la reponse. L'enonce, le squelette et les etapes a trous restent ; la derniere marche reste a l'etudiant. Un indice qui livre `simp [foo]` final, un `decide` de cloture ou l'affectation demandee est une solution de-leakable en commentaire — a degrader comme #18119 l'a fait, pas un cas assumable.
+
+**Ce que l'organe couvre, et sa limite** : depuis #18161 (pour #18121, mergee le 2026-09-28), `detect_solution_leaks.py` porte `is_leaky_stub` — une cellule classee stub qui porte **en plus** une preuve commentee (ligne de definition, ou marqueur de tactique de preuve) leve un **LOW/advisory** « Leaky stub ... Reviewer decision needed ». Sonde controlee du 07/10 : la cellule stub + tactique commentee leve bien le LOW, la cellule stub simple reste muette (pas de faux positif), et `--check` rend rc=0 malgre le LOW. La limite est donc double : un advisory ne bloque pas la CI, et le test de preuve est une regex *definition-ou-tactique* — un indice commente qui ne livre que des **valeurs concretes**, sans declaration ni tactique, passe inapercu. La convention ecrite reste donc necessaire : l'organe rend l'asymetrie audible, il ne l'interdit pas. La mesure #17714 du 25/09 (0 finding avant ET apres) est anterieure a #18161 : elle constatait l'absence d'un organe qui n'existait pas encore, elle ne decrit pas le detecteur actuel.
+
+**Precedent** : Lean-36-Structures-Finies-MUH (#18119, see #17714) — les trois indices commentes perdaient le `simp [sameBinaryTable]` final, les cibles concretes de `shift3` et le `decide` final ; enonce + squelette + etapes a trous conserves, re-execution 9/9 (C.2), densite 1620 c/cell au-dela du plancher 1200.
 
 ## Incidents de reference
 

@@ -11,6 +11,7 @@ idle), the timeout branch, and ``batch_execute`` glob/skip handling.
 No live kernel, no network, no .NET runtime. Fast (``time.sleep`` is patched out).
 """
 import json
+import os
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -19,6 +20,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import dotnet_executor  # noqa: E402
+import _dotnet_env  # noqa: E402
 
 
 # --- fixtures ---------------------------------------------------------------
@@ -603,3 +605,87 @@ def test_no_papermill_metadata_untouched(tmp_path):
     nb = {"cells": [], "metadata": {"language_info": {"name": ".net-csharp"}}}
     dotnet_executor.strip_stale_papermill_metadata(nb)
     assert nb["metadata"] == {"language_info": {"name": ".net-csharp"}}
+
+
+# --- DOTNET_ROOT SDK repair (#17361) ----------------------------------------
+
+def _make_root(base: Path, name: str, with_sdk: bool) -> Path:
+    """Build a fake dotnet root; ``with_sdk`` adds a versioned ``sdk/`` entry."""
+    root = base / name
+    (root / "sdk").mkdir(parents=True)
+    if with_sdk:
+        (root / "sdk" / "10.0.400").mkdir()
+    return root
+
+
+def test_has_sdk_requires_a_versioned_directory(tmp_path):
+    """An empty ``sdk/`` is not an SDK -- an install mid-flight or a stray
+    folder must not pass for a restorable root."""
+    assert _dotnet_env.has_sdk(_make_root(tmp_path, "good", True)) is True
+    assert _dotnet_env.has_sdk(_make_root(tmp_path, "empty", False)) is False
+    assert _dotnet_env.has_sdk(tmp_path / "absent") is False
+
+
+def test_no_repair_when_dotnet_root_unset(monkeypatch):
+    """Without DOTNET_ROOT the host resolves itself; nothing to repair."""
+    monkeypatch.delenv("DOTNET_ROOT", raising=False)
+    assert _dotnet_env.sdk_bearing_dotnet_root() is None
+
+
+def test_no_repair_when_configured_root_has_sdk(monkeypatch, tmp_path):
+    good = _make_root(tmp_path, "good", True)
+    monkeypatch.setenv("DOTNET_ROOT", str(good))
+    assert _dotnet_env.sdk_bearing_dotnet_root() is None
+
+
+def test_repair_finds_the_dotnet_on_path(monkeypatch, tmp_path):
+    """The runtime-only root is swapped for the root of the ``dotnet`` on PATH
+    (the one the CLI itself uses)."""
+    runtime_only = _make_root(tmp_path, "runtime-only", False)
+    good = _make_root(tmp_path, "good", True)
+    monkeypatch.setenv("DOTNET_ROOT", str(runtime_only))
+    monkeypatch.setattr(_dotnet_env.shutil, "which",
+                        lambda name: str(good / "dotnet"))
+    assert _dotnet_env.sdk_bearing_dotnet_root() == str(good)
+
+
+def test_no_repair_when_no_candidate_carries_an_sdk(monkeypatch, tmp_path):
+    """No discoverable SDK => None. The repair never invents a root: a wrong
+    DOTNET_ROOT is worse than the one already configured."""
+    runtime_only = _make_root(tmp_path, "runtime-only", False)
+    other = _make_root(tmp_path, "other", False)
+    monkeypatch.setenv("DOTNET_ROOT", str(runtime_only))
+    monkeypatch.setattr(_dotnet_env, "sdk_root_candidates", lambda: [str(other)])
+    assert _dotnet_env.sdk_bearing_dotnet_root() is None
+
+
+def test_kernel_gets_the_repaired_root_and_says_so(
+        tmp_path, monkeypatch, _patch_kernelmanager, capsys):
+    """A runtime-only DOTNET_ROOT reaches the kernel repaired, and the repair
+    is announced -- a silent repair is indistinguishable from a healthy env."""
+    runtime_only = _make_root(tmp_path, "runtime-only", False)
+    good = _make_root(tmp_path, "good", True)
+    monkeypatch.setenv("DOTNET_ROOT", str(runtime_only))
+    monkeypatch.setattr(_dotnet_env, "sdk_root_candidates", lambda: [str(good)])
+
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("1+1")])
+    km, _ = _patch_kernelmanager([[_msg("status", execution_state="idle")]])
+    dotnet_executor.execute_notebook(nb, cell_timeout=1)
+
+    env = km.start_kernel.call_args.kwargs["env"]
+    assert env["DOTNET_ROOT"] == str(good)
+    # The whole environment is forwarded, not just the repaired variable.
+    assert env["PATH"] == os.environ["PATH"]
+    assert str(runtime_only) in capsys.readouterr().out
+
+
+def test_kernel_launch_unchanged_when_root_is_healthy(
+        tmp_path, monkeypatch, _patch_kernelmanager):
+    """A healthy DOTNET_ROOT leaves the launch call exactly as it was: no
+    ``env`` argument, so the kernel keeps inheriting the parent env."""
+    good = _make_root(tmp_path, "good", True)
+    monkeypatch.setenv("DOTNET_ROOT", str(good))
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("1+1")])
+    km, _ = _patch_kernelmanager([[_msg("status", execution_state="idle")]])
+    dotnet_executor.execute_notebook(nb, cell_timeout=1)
+    assert "env" not in km.start_kernel.call_args.kwargs

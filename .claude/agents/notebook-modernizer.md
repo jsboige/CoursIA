@@ -310,6 +310,7 @@ Le modernizer s'integre dans le workflow iteratif :
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt=f"""
     Tu es un agent notebook-modernizer.
     Lis les instructions dans .claude/agents/notebook-modernizer.md

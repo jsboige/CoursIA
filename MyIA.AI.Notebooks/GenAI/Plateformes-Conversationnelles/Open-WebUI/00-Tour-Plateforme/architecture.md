@@ -167,6 +167,6 @@ cours. Voir la [politique du dossier ombrelle](../README.md#sécurité--pas-de-s
 
 ---
 
-*Architecture — Tour de la plateforme (Epic #4433, sous #4427). FR-first.
+*Architecture — Tour de la plateforme (Epic #4433, fermée — parcours livré ; parent #4427). FR-first.
 Édition **v0.10** (dossiers d'équipe + config d'authentification ajoutés au RBAC).
 Diagrammes Mermaid (rendus nativement par GitHub).*

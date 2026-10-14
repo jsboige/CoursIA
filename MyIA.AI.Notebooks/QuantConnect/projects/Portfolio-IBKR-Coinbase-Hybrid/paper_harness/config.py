@@ -8,6 +8,7 @@ never ``repr()`` the config in logs.
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -26,8 +27,21 @@ def _load_env_file(path: Path) -> dict[str, str]:
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, value = line.partition("=")
-        env[key.strip()] = value.strip()
+        env[key.strip()] = _strip_value(value)
     return env
+
+
+def _strip_value(value: str) -> str:
+    # Same rule as python-dotenv: a quoted value is taken between its quotes; an unquoted
+    # one ends at a "#" that opens it or follows whitespace. Without it, the template's own
+    # "COINBASE_SANDBOX=true   # ..." read as False and "RISK_MAX_DD_PCT=0.25  # ..." fell
+    # back to the default.
+    value = value.strip()
+    if value[:1] in {'"', "'"}:
+        end = value.find(value[0], 1)
+        if end > 0:
+            return value[1:end]
+    return re.split(r"(?:^|\s)#", value, maxsplit=1)[0].strip()
 
 
 def _get(env: dict[str, str], key: str, default: str = "") -> str:
@@ -49,6 +63,18 @@ def _get_float(env: dict[str, str], key: str, default: float) -> float:
         return float(raw) if raw else default
     except ValueError:
         return default
+
+
+def _get_optional_fraction(env: dict[str, str], key: str) -> float | None:
+    # Unlike _get_float, a malformed value raises: a typo must not silently switch a
+    # loss alert off.
+    raw = _get(env, key, "").strip()
+    if not raw:
+        return None
+    value = float(raw)
+    if not 0.0 < value < 1.0:
+        raise ValueError(f"{key} must be a fraction in (0, 1), got {raw!r}")
+    return value
 
 
 def _get_int(env: dict[str, str], key: str, default: int) -> int:
@@ -127,6 +153,13 @@ class RiskConfig:
     vol_spike_threshold: float   # 2.0 = 2 sigma vs 30d baseline
     max_position_pct: float = 0.25   # max single position / sleeve capital
     max_gross_exposure: float = 1.0   # max gross exposure / sleeve capital
+    alert_dd_pct: float | None = None   # first loss threshold (drawdown from peak); None = off
+    alert_halves: bool = False          # False: alert only; True: halve exposure until dd <= alert/2
+
+    def __post_init__(self) -> None:
+        # A first threshold at or past the second never fires before the halt.
+        if self.alert_dd_pct is not None and self.alert_dd_pct >= self.max_dd_pct:
+            raise ValueError(f"alert_dd_pct {self.alert_dd_pct} must be below max_dd_pct {self.max_dd_pct}")
 
 
 @dataclass(frozen=True)
@@ -181,6 +214,8 @@ def load_config(env_path: Path | None = None) -> HarnessConfig:
             vol_spike_threshold=_get_float(env, "RISK_VOL_SPIKE_THRESHOLD", 2.0),
             max_position_pct=_get_float(env, "RISK_MAX_POSITION_PCT", 0.25),
             max_gross_exposure=_get_float(env, "RISK_MAX_GROSS_EXPOSURE", 1.0),
+            alert_dd_pct=_get_optional_fraction(env, "RISK_ALERT_DD_PCT"),
+            alert_halves=_get_bool(env, "RISK_ALERT_HALVES", False),
         ),
         env_path=path,
     )

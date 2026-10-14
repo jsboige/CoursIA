@@ -12786,7 +12786,7 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,41d4daeba16c,markd
 - **Backdoor et front-door rendent l'effet causal identifiable** a partir de données observationnelles, sous conditions graphiques — formalisees par le do-calculus (Pearl 1995), complet (Shpitser & Pearl 2006).
 
 ### Pour aller plus loin
-- **[Notebook-pont — du graphe causal au do-calculus](../DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb)** : l'armature formelle unifiée de Pearl (échelle + 3 règles) exécutée sur l'outil de référence `dowhy` (identification backdoor/front-door + estimation + réfutation), qui relie cette série à Tweety-11, PyMC-5 et ICT-5.
+- **[Notebook-pont — du graphe causal au do-calculus](../DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb)** : l'armature formelle unifiée de Pearl (échelle + 3 règles) exécutée sur l'outil de référence `dowhy` (identification backdoor/front-door + estimation + réfutation), qui relie cette série à Tweety-11, PyMC-5 et ICT-5.
 
 - **Pont symbolique** : [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) traite le `do()` et les contrefactuels en **Java/Tweety** (raisonnement propositionnel) — même echelle de Pearl, paradigme différent.
 - **Pont Python** : [PyMC-4-Bayesian-Networks](../PyMC/PyMC-4-Bayesian-Networks.ipynb) demontre la même distinction `P(Cloudy|Rain)` vs `P(Cloudy|do(Rain))` en MCMC.

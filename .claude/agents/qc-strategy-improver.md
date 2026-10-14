@@ -44,7 +44,7 @@ Charger via ToolSearch("qc-mcp ...") avant utilisation:
 
 ```
 OBLIGATOIRE avant toute iteration:
-1. Lire projects/OPTIMIZATION_BACKLOG.md
+1. Lire projects/_docs/OPTIMIZATION_BACKLOG.md
    -> Verifier si la strategie a un plafond confirme (NE PLUS ITERER)
    -> Lire les hypotheses deja testees et rejetees (NE PAS RETESTER)
    -> Appliquer les regles universelles (section "Regles universelles confirmees")

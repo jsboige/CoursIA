@@ -25,7 +25,8 @@ Output format (parseable by harvest scripts):
     [BG] EXIT code=<rc>            (always printed, even on exception path)
 
 Exit codes: 0 success, 2 bad demo_id, 3 tree locked (#6790), 4 target refused
-(DO NOT TARGET, #7477 P2b), 130 died before returning (#6790).
+(DO NOT TARGET, #7477 P2b), 5 provider credential gate (#1453, 2026-09-19),
+130 died before returning (#6790).
 
 Launch WITHOUT piping through `tail`/`head`: `... | tee log | tail -30`
 makes the task exit code tail's (0) and loses python's real one (run-6
@@ -68,7 +69,11 @@ from target_guard import (  # noqa: E402
     DO_NOT_TARGET_EXIT,
     resolve_target_line,
 )
-from prover.config import DEMOS  # noqa: E402
+from prover.config import DEMOS, PROVIDERS  # noqa: E402
+from prover.provider_gate import (  # noqa: E402  (#18709: gate partage)
+    effective_agent_providers,
+    validate_provider_credentials,
+)
 from prover.provers import MultiAgentSorryProver  # noqa: E402
 from prover.trace import TraceLogger  # noqa: E402
 from prover.lean_utils import (  # noqa: E402  (#9402: real-token counter)
@@ -97,6 +102,38 @@ def _peek_sorry_count(filepath: str) -> int:
         return count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
     except OSError:
         return -1
+
+
+def _effective_agent_providers(args: argparse.Namespace) -> dict:
+    """Resolve the per-role provider map exactly as the prover will.
+
+    Thin ``args`` adapter over the shared ``prover.provider_gate``
+    implementation (#18709) — the resolution logic lives there so the inner
+    launcher (``prover/run_prover_bg.py``) gates identically instead of
+    discovering a keyless P6-pinned agent 45 min into a run. Backward-
+    compatible signature for ``tests/test_run_prover_bg_gate.py``.
+    """
+    return effective_agent_providers(
+        args.provider,
+        args.local_provider,
+        coordinator_provider=getattr(args, "coordinator_provider", None),
+        tactic_provider=getattr(args, "tactic_provider", None),
+        search_provider=getattr(args, "search_provider", None),
+        critic_provider=getattr(args, "critic_provider", None),
+        diagnosis_provider=getattr(args, "diagnosis_provider", None),
+        director_provider=getattr(args, "director_provider", None),
+    )
+
+
+def _validate_provider_credentials(eff: dict) -> list:
+    """#1453 forensic (2026-09-19): fail-fast credential gate.
+
+    Keyless localhost endpoints pass by design; a routed provider without
+    credentials names the role + env var instead of burning a run. The
+    implementation is shared with the inner launcher via
+    ``prover.provider_gate`` (#18709).
+    """
+    return validate_provider_credentials(eff, PROVIDERS)
 
 
 async def main(args: argparse.Namespace) -> int:
@@ -149,6 +186,21 @@ async def main(args: argparse.Namespace) -> int:
         f"max_iter={args.max_iter} workflow_timeout={args.workflow_timeout}s"
     )
 
+    # #1453 fail-fast: refuse to launch when a routed provider has no
+    # credentials, BEFORE stubbing the target or taking the tree lock.
+    _gate_problems = _validate_provider_credentials(
+        _effective_agent_providers(args)
+    )
+    if _gate_problems:
+        for _p in _gate_problems:
+            _bg(f"PROVIDER_GATE {_p}")
+        _bg(
+            "PROVIDER_GATE refusing to launch — set the listed keys or pass "
+            "explicit --coordinator-provider/--tactic-provider/"
+            "--search-provider/--critic-provider overrides"
+        )
+        return 5
+
     # One prover per tree (#6790): lock the lake root the run will mutate.
     tree_root = None
     if demo.get("file"):
@@ -194,6 +246,12 @@ async def _run_locked(
     ):
         target_path = Path(demo["file"])
         original = target_path.read_bytes()
+        # #17433: capture the COMMITTED sorry count BEFORE the stub write
+        # and stash it on a demo COPY — provers.py's FX-6 guard measures
+        # against the committed statement, not the stubbed file. Copy, not
+        # mutation: DEMOS entries are module-level dicts shared across runs.
+        demo = {**demo, "pre_stub_sorry_count": count_real_sorries(
+            original.decode("utf-8"))}
         stubbed = stub_theorem_proof(
             original.decode("utf-8"), demo["theorem_name"]
         )
@@ -240,6 +298,7 @@ async def _run_calibration_ready(
         tactic_provider=getattr(args, "tactic_provider", None),
         search_provider=getattr(args, "search_provider", None),
         critic_provider=getattr(args, "critic_provider", None),
+        diagnosis_provider=getattr(args, "diagnosis_provider", None),
     )
 
     t0 = time.time()
@@ -273,6 +332,8 @@ async def _run_calibration_ready(
     _bg(f"RESULT_BEST_SORRY {result.get('best_sorry')}")
     _bg(f"RESULT_ITERATIONS {result.get('iterations')}")
     _bg(f"RESULT_ATTEMPTS {result.get('attempts')}")
+    _bg(f"RESULT_FREEZE_LOOP {result.get('freeze_loop')} "
+        f"escalations={result.get('freeze_loop_escalations')}")
     _bg(f"RESULT_SORRY_EVOLUTION {result.get('sorry_evolution')}")
     if result.get("skipped"):
         _bg(f"RESULT_SKIPPED reason={result.get('reason')} detail={result.get('detail')}")
@@ -323,6 +384,10 @@ def parse_args() -> argparse.Namespace:
                         "(measured firsthand on demo 39, #1453).")
     p.add_argument("--critic-provider", default=None,
                    help="Provider for CriticAgent (see --search-provider).")
+    p.add_argument("--diagnosis-provider", default=None,
+                   help="Provider for DiagnosisAgent (see --search-provider). "
+                        "Only consumed when the diagnosis lane is enabled; "
+                        "the P6 pin applies otherwise (#18709).")
     p.add_argument("--force-lock", action="store_true",
                    help="Break an existing .prover.lock even if its holder "
                         "looks alive or is on a foreign host (WSL<->Windows). "

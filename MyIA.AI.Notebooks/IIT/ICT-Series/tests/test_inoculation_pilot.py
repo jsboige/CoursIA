@@ -1,0 +1,434 @@
+"""Garde-fous du mode inoculation (pilote #8236, jalon 3).
+
+Tests du CONTRAT des organes introduits par le pilote, sur cas synthetique a
+verite connue par construction :
+
+- ``trace_filename`` : suffixe ``_s{alpha}`` conditionnel — retro-compatible
+  a l'octet quand alpha vaut 1 ou quand aucun clamp n'est applique ;
+- ``ClampHook`` : h' = h - alpha * delta EXACT (annulation a alpha=1,
+  neutralite byte-identique a alpha=0, interpolation lineaire en alpha) ;
+- ``CaptureHook`` : capture le resid_post sans le modifier.
+
+``ClampHook``/``CaptureHook`` vivent dans le script GPU et exigent torch
+(CPU suffit ici). Le module est charge PAR CHEMIN : l'import package
+``scripts.*`` depend du rootdir pytest (defaut connu, cf le rouge
+base-inherited de ``test_sae_2b_l100_...`` sur ``fetch_sae_config``).
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from ict.sae_traces import trace_filename  # noqa: E402
+
+_SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "extract_sae_traces.py"
+
+
+def _load_script_module():
+    # Convention de la serie (cf test_causal_hooks.py) : le script importe
+    # torch au niveau module ; sans torch (job CI "ICT tests/"), ces tests
+    # sautent au lieu d'echouer -- ils courent integres partout ou torch
+    # existe (16/16 verifies localement avant commit).
+    pytest.importorskip("torch")
+    spec = importlib.util.spec_from_file_location("extract_sae_traces_pilot", _SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+# --- trace_filename : suffixe d'intensite conditionnel -----------------------
+
+def test_filename_sans_clamp_scale_byte_identique():
+    # alpha=1 = comportement historique : aucun suffixe, nom inchange.
+    assert trace_filename("trained", 16, n_clamp=8) == \
+           trace_filename("trained", 16, n_clamp=8, clamp_scale=1.0)
+    assert trace_filename("trained", 16, n_clamp=8) == \
+           "ict21_sae_layer16_trained_clamp8.npz"
+
+
+def test_filename_suffixe_seulement_si_alpha_different_de_1():
+    assert trace_filename("trained", 16, n_clamp=8, clamp_scale=0.5) == \
+           "ict21_sae_layer16_trained_clamp8_s0.5.npz"
+    # slug trace_filename : lower SANS points ("Qwen3.5-2B" -> "qwen35-2b"),
+    # convention distincte du slug calib_ ("qwen3-5-2b") d'extract_sae_fidelity.
+    assert trace_filename("trained", 12, model="Qwen/Qwen3.5-2B-Base",
+                          default_model="Qwen/Qwen3.5-9B-Base", n_layers=24,
+                          n_clamp=8, clamp_scale=0.25) == \
+           "ict21_sae_qwen35-2b-base_layer12of24_trained_clamp8_s0.25.npz"
+
+
+def test_filename_scale_sans_clamp_ne_suffixe_pas():
+    # clamp_scale sans clamp_ids : aucun clamp applique, aucun suffixe — le
+    # nom ne doit pas pretendre une inoculation qui n'a pas eu lieu.
+    assert trace_filename("trained", 16, n_clamp=0, clamp_scale=0.5) == \
+           "ict21_sae_layer16_trained.npz"
+
+
+# --- ClampHook : contrat sur SAE synthetique --------------------------------
+
+def _fake_sae(d_model=8, d_sae=16, seed=0):
+    torch = pytest.importorskip("torch")
+    g = torch.Generator().manual_seed(seed)
+    return {
+        "W_enc": torch.randn(d_sae, d_model, generator=g),
+        "b_enc": torch.randn(d_sae, generator=g),
+        "W_dec": torch.randn(d_sae, d_model, generator=g),
+        "b_dec": None,
+    }
+
+
+def _expected_clamp(h, sae, ids, alpha):
+    torch = pytest.importorskip("torch")
+    acts = torch.relu(h @ sae["W_enc"][ids].T + sae["b_enc"][ids])
+    return h - alpha * (acts @ sae["W_dec"][ids])
+
+
+def test_clamp_hook_neutralite_alpha_zero():
+    # alpha=0 : le hook rend la sortie ELLE-MEME (pas de copie superflue) —
+    # c'est le contrat qui fonde le controle de plomberie du notebook.
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    hook = mod.ClampHook(_fake_sae(), [1, 3, 5], 0.0)
+    out = torch.randn(1, 10, 8)
+    assert hook(None, None, out) is out
+
+
+def test_clamp_hook_annulation_exacte_alpha_un():
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    torch.manual_seed(1)
+    sae = _fake_sae(seed=1)
+    ids = [0, 2, 4, 6]
+    hook = mod.ClampHook(sae, ids, 1.0)
+    h = torch.randn(1, 12, 8)
+    got = hook(None, None, h)
+    assert isinstance(got, torch.Tensor)
+    assert torch.allclose(got, _expected_clamp(h, sae, ids, 1.0), atol=1e-5)
+
+
+def test_clamp_hook_interpolation_lineaire_en_alpha():
+    # Le delta est lineaire en alpha : clamp a 0.5 = moyenne exacte du
+    # residu intact et du clamp plein. Sans cette linearite, le balayage
+    # d'intensite ne mesurerait pas ce qu'il pretend mesurer.
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    sae = _fake_sae(seed=2)
+    ids = [1, 4, 7]
+    h = torch.randn(1, 9, 8)
+    half = mod.ClampHook(sae, ids, 0.5)(None, None, h)
+    full = mod.ClampHook(sae, ids, 1.0)(None, None, h)
+    assert torch.allclose(half, (h + full) / 2, atol=1e-5)
+
+
+def test_clamp_hook_exige_w_dec():
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    sae = _fake_sae()
+    sae["W_dec"] = None
+    with pytest.raises(SystemExit):
+        mod.ClampHook(sae, [1], 1.0)
+
+
+def test_clamp_hook_sortie_tuple_preservee():
+    # Le hook d'une couche dont la sortie est un tuple doit rendre un tuple
+    # de meme arite, la position 0 remplacee.
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    sae = _fake_sae(seed=3)
+    hook = mod.ClampHook(sae, [2], 1.0)
+    h = torch.randn(1, 5, 8)
+    extra = torch.randn(5, 3)
+    out = hook(None, None, (h, extra))
+    assert isinstance(out, tuple) and len(out) == 2
+    assert out[1] is extra
+    assert torch.allclose(out[0], _expected_clamp(h, sae, [2], 1.0), atol=1e-5)
+
+
+# --- CaptureHook : lecture sans modification -------------------------------
+
+def test_capture_hook_ne_modifie_pas_la_sortie():
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    cap = mod.CaptureHook()
+    out = torch.randn(1, 7, 8)
+    ret = cap(None, None, out)
+    assert ret is out
+    assert cap.hidden is not None
+    assert cap.hidden.shape == (7, 8)
+    assert torch.allclose(cap.hidden, out[0])
+
+
+# --- ResidCapture : capture du residu ABLATE quand le clamp est actif --------
+
+def test_resid_capture_sans_clamp_capture_le_residu_entrant():
+    # Sans clamp, le contrat est inchange : le residu enregistre est l'entree.
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    cap = mod.ResidCapture(sae=_fake_sae(), clamp_ids=[], clamp_scale=1.0)
+    out = torch.randn(1, 6, 8)
+    ret = cap(None, None, out)
+    assert ret is out
+    assert torch.allclose(cap.hidden, out[0].to(torch.float32), atol=1e-6)
+
+
+def test_resid_capture_avec_clamp_capture_le_residu_ablate():
+    # Le residu enregistre est celui du modele ablate (h - alpha*delta), pas
+    # l'etat entrant. Capturer avant le clamp rendait le clamp same-layer
+    # invisible dans la trace -- les traces "clampees" sortaient
+    # byte-identiques aux intactes (mesure Gate 24 #5635 : 0/134950 valeurs
+    # differentes), donc Gates 22-23 mesuraient le modele intact.
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    sae = _fake_sae(seed=5)
+    ids = [1, 4, 7]
+    cap = mod.ResidCapture(sae=sae, clamp_ids=ids, clamp_scale=1.0)
+    out = torch.randn(1, 9, 8)
+    ret = cap(None, None, out)
+    h = out[0].to(torch.float32)
+    expected = _expected_clamp(h, sae, ids, 1.0)
+    assert not torch.allclose(cap.hidden, h, atol=1e-6)     # le clamp est visible
+    assert torch.allclose(cap.hidden, expected, atol=1e-5)  # et exact
+    assert torch.allclose(ret[0].to(torch.float32), expected, atol=1e-5)
+
+
+def test_resid_capture_clamp_exige_w_dec():
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    sae = _fake_sae()
+    sae["W_dec"] = None
+    with pytest.raises(SystemExit):
+        mod.ResidCapture(sae=sae, clamp_ids=[1], clamp_scale=1.0)
+
+
+# --- random_panel_control : controle permute du panel (phase 6) -------------
+
+def test_random_panel_meme_taille_hors_panel():
+    mod = _load_script_module()
+    panel = [7, 101, 4096, 21004]
+    drawn = mod.random_panel_control(panel, d_sae=32768, seed=42)
+    assert len(drawn) == len(panel)
+    assert set(drawn).isdisjoint(panel)      # aucun id du panel differentiel
+    assert all(0 <= i < 32768 for i in drawn)
+
+
+def test_random_panel_seed_reproductible():
+    mod = _load_script_module()
+    panel = [7, 101, 4096, 21004]
+    a = mod.random_panel_control(panel, 32768, seed=7)
+    b = mod.random_panel_control(panel, 32768, seed=7)
+    c = mod.random_panel_control(panel, 32768, seed=8)
+    assert a == b                            # seed => tirage identique
+    assert a != c                            # un autre seed deplace le tirage
+
+
+def test_random_panel_refuse_panel_saturant():
+    # Le tirage exige des candidats hors panel : un panel de la taille de
+    # d_sae doit etre refuse explicitement, pas silencieusement vide.
+    mod = _load_script_module()
+    with pytest.raises(ValueError):
+        mod.random_panel_control(list(range(10)), d_sae=10, seed=1)
+
+
+# --- controle apparie en norme (phase 6b #8236) ------------------------------
+
+def test_matched_panel_bande_et_exclusion():
+    # Le tirage doit rester dans la bande d'activite du panel ET hors du
+    # panel : c'est l'appariement en norme qui distingue ce controle du
+    # tirage uniforme de la phase 6.
+    mod = _load_script_module()
+    import numpy as np
+    activity = np.full(50, 0.1)          # hors bande par defaut
+    activity[[20, 21, 22, 23, 24, 25]] = 2.5   # dans [m/2, 2m]
+    panel = [5, 10]
+    activity[panel] = [1.0, 3.0]         # m = 2.0 -> bande [1.0, 4.0]
+    drawn, stats = mod.matched_activity_panel(panel, activity, seed=42, band=2.0)
+    assert len(drawn) == len(panel)
+    assert set(drawn).isdisjoint(panel)
+    assert all(1.0 <= activity[i] <= 4.0 for i in drawn)
+    assert stats["pool"] == 6
+
+
+def test_matched_panel_seed_reproductible():
+    mod = _load_script_module()
+    import numpy as np
+    activity = np.linspace(0.5, 2.0, 64)
+    panel = [0, 63]
+    a, _ = mod.matched_activity_panel(panel, activity, seed=7)
+    b, _ = mod.matched_activity_panel(panel, activity, seed=7)
+    c, _ = mod.matched_activity_panel(panel, activity, seed=8)
+    assert a == b                            # seed => tirage identique
+    assert a != c                            # un autre seed deplace le tirage
+
+
+def test_matched_panel_refuse_pool_insuffisant():
+    # Si seules les features du panel vivent dans la bande, le tirage doit
+    # echouer explicitement (jamais revenir au tirage uniforme non apparie).
+    mod = _load_script_module()
+    import numpy as np
+    activity = np.zeros(30)
+    panel = [4, 9, 14]
+    activity[panel] = 1.0                    # bande [0.5, 2.0] : pool vide
+    with pytest.raises(ValueError):
+        mod.matched_activity_panel(panel, activity, seed=1)
+
+
+def test_ref_activity_aggregate_les_deux_jeux(tmp_path):
+    # Verite connue par construction : moyenne des moyennes par jeu, |act|
+    # accumulee par token. Un jeu absent doit etre refuse (pas d'appariement
+    # sur une activite silencieusement moitie moins informee).
+    mod = _load_script_module()
+    import json
+    import numpy as np
+    arrays = {
+        "__meta__": np.array(json.dumps({"d_sae": 6, "layer": 3})),
+        "code_python__0__topk_ids": np.array([[0, 1]]),
+        "code_python__0__topk_vals": np.array([[2.0, 4.0]]),
+        "prose_fr__0__topk_ids": np.array([[2, 2]]),
+        "prose_fr__0__topk_vals": np.array([[3.0, 5.0]]),
+    }
+    p = tmp_path / "ref.npz"
+    np.savez(p, **arrays)
+    act, meta = mod.ref_activity(p)
+    assert meta["d_sae"] == 6 and meta["layer"] == 3
+    # mean_code = [1, 2, 0, ...] (2 tokens), mean_prose = [0, 0, 4, ...]
+    expected = np.array([0.5, 1.0, 2.0, 0.0, 0.0, 0.0])
+    assert np.allclose(act, expected)
+    # Un jeu manquant : refus explicite.
+    np.savez(p, __meta__=arrays["__meta__"],
+             code_python__0__topk_ids=arrays["code_python__0__topk_ids"],
+             code_python__0__topk_vals=arrays["code_python__0__topk_vals"])
+    with pytest.raises(ValueError):
+        mod.ref_activity(p)
+
+
+# --- Hysteresis multi-passes (limite 1 du pilote ICT-42, #8236) ---------------
+
+def test_ramp_alpha_forme_triangulaire_periodique():
+    # Verite connue par construction : 20 tokens, 2 cycles d'amplitude 1 ->
+    # 0,.2,.4,.6,.8,1,.8,...,0 puis identique. Chaque prompt vit ses cycles
+    # complets, la phase est relative au prompt.
+    import numpy as np
+    from ict.sae_traces import ramp_alpha
+    a = ramp_alpha(20, cycles=2, peak=1.0)
+    expected = np.array([0, .2, .4, .6, .8, 1, .8, .6, .4, .2] * 2,
+                        dtype=np.float32)
+    assert np.allclose(a, expected, atol=1e-6)
+    assert a.dtype == np.float32
+
+
+def test_ramp_alpha_bornes_et_neutralite_aux_extremites():
+    # Le prompt DEMARRE et FINIT non inocule (alpha=0 au premier token,
+    # retour a ~0 en fin de descente) : l'etat final mesure le retour ou le
+    # non-retour a l'etat initial — c'est le contrat du protocole.
+    import numpy as np
+    from ict.sae_traces import ramp_alpha
+    T = 64
+    for cycles in (1, 2, 3):
+        a = ramp_alpha(T, cycles=cycles, peak=0.75)
+        assert a[0] == 0.0
+        assert a.max() == pytest.approx(0.75)
+        assert a.min() >= 0.0
+        # Chaque cycle monte jusqu'a (au moins) un pas d'echantillonnage du
+        # pic et redescend jusqu'a un pas du creux : le sommet exact n'est
+        # PAS garanti (phase t*cycles/T non divisible), le maximum PAR CYCLE
+        # l'est — c'est la verite connue par construction.
+        step = 2.0 * 0.75 * cycles / T
+        seg = T // cycles
+        for c in range(cycles):
+            assert a[c * seg:(c + 1) * seg].max() >= 0.75 - step - 1e-6
+            assert a[c * seg:(c + 1) * seg].min() <= step + 1e-6
+
+
+def test_ramp_alpha_refuse_parametres_hors_protocole():
+    from ict.sae_traces import ramp_alpha
+    with pytest.raises(ValueError):
+        ramp_alpha(0, cycles=1)                     # aucun token
+    with pytest.raises(ValueError):
+        ramp_alpha(10, cycles=0)                    # pas de cycle complet
+    with pytest.raises(ValueError):
+        ramp_alpha(10, cycles=1.5)                  # cycles entier exigee
+    with pytest.raises(ValueError):
+        ramp_alpha(10, cycles=1, peak=0.0)          # pic nul = hook muet faux
+    with pytest.raises(ValueError):
+        ramp_alpha(10, cycles=1, peak=1.2)          # >1 sur-clampe (signe inverse)
+
+
+def test_filename_suffixe_ramp_discriminant_et_exclusif_du_s():
+    # La rampe suffixe APRES _clamp{n} et REMPLACE le suffixe _s : deux
+    # rampes differentes ne partagent jamais un nom, et une rampe ne doit
+    # pas cumuler les deux marqueurs d'intensite.
+    from ict.sae_traces import trace_filename
+    assert trace_filename("trained", 27, model="Qwen/Qwen3-1.7B-Base",
+                          default_model="Qwen/Qwen3-8B-Base_q8", n_layers=28,
+                          n_clamp=16, clamp_ramp=(2, 1.0),
+                          prefix="inoc") == \
+        "inoc_qwen3-17b-base_layer27of28_trained_clamp16_ramp2p1.npz"
+    # clamp_ramp + clamp_scale simultanes : la rampe gagne (le garde CLI
+    # interdit deja le combo ; le nom ne doit pas mentir sur la seconde).
+    both = trace_filename("trained", 27, n_clamp=16, clamp_scale=0.5,
+                          clamp_ramp=(2, 0.5))
+    assert "_ramp2p0.5" in both and "_s0.5" not in both
+    # rampe sans clamp : aucun suffixe (meme regle que clamp_scale seul).
+    assert trace_filename("trained", 16, n_clamp=0, clamp_ramp=(2, 1.0)) == \
+        "ict21_sae_layer16_trained.npz"
+
+
+def test_clamp_hook_alpha_fn_lineaire_et_symetrique():
+    # alpha(t) par token : le delta reste lineaire en alpha — a un instant t
+    # donne, h'(t) = h(t) - alpha(t) * delta(t). Verite connue par
+    # construction sur un profil rampe reel.
+    torch = pytest.importorskip("torch")
+    import numpy as np
+    mod = _load_script_module()
+    from ict.sae_traces import ramp_alpha
+    sae = _fake_sae(seed=3)
+    ids = [0, 1, 5]
+    T, d = 12, 8
+    h = torch.randn(1, T, d)
+    alpha = ramp_alpha(T, cycles=1, peak=1.0)
+    hook = mod.ClampHook(sae, ids, 1.0, alpha_fn=lambda n: ramp_alpha(
+        n, cycles=1, peak=1.0))
+    got = hook(None, None, h)
+    # Token par token contre la formule exacte.
+    acts = torch.relu(h[0] @ sae["W_enc"][ids].T + sae["b_enc"][ids])
+    delta = acts @ sae["W_dec"][ids]
+    expected = h[0] - torch.from_numpy(alpha)[:, None] * delta
+    assert torch.allclose(got[0], expected, atol=1e-5)
+    # Le profil effectif est expose pour la trace.
+    assert np.allclose(hook.last_alpha, alpha)
+
+
+def test_clamp_hook_alpha_fn_sommet_egale_clamp_constant():
+    # Au token sommet de la rampe (alpha=peak), la sortie DOIT coincider
+    # avec le ClampHook constant a peak sur ce meme token : la rampe n'est
+    # pas une autre physique, c'est le meme clamp module dans le temps.
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    from ict.sae_traces import ramp_alpha
+    sae = _fake_sae(seed=4)
+    ids = [2, 6]
+    h = torch.randn(1, 11, 8)
+    peak = 0.6
+    alpha = ramp_alpha(11, cycles=1, peak=peak)
+    top = int(alpha.argmax())
+    hook = mod.ClampHook(sae, ids, peak, alpha_fn=lambda n: ramp_alpha(
+        n, cycles=1, peak=peak))
+    got_ramp = hook(None, None, h)[0, top]
+    got_const = mod.ClampHook(sae, ids, peak)(None, None, h)[0, top]
+    assert torch.allclose(got_ramp, got_const, atol=1e-5)
+
+
+def test_clamp_hook_alpha_fn_last_alpha_reset_sans_fn():
+    # Sans alpha_fn, last_alpha reste None : la trace ne doit pas porter de
+    # profil fantome d'un run precedent.
+    torch = pytest.importorskip("torch")
+    mod = _load_script_module()
+    hook = mod.ClampHook(_fake_sae(), [1], 1.0)
+    hook(None, None, torch.randn(1, 6, 8))
+    assert hook.last_alpha is None

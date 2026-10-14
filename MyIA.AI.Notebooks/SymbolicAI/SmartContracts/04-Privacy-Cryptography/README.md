@@ -1,6 +1,6 @@
 # 04-Privacy-Cryptography - Preuves Zero-Knowledge, Chiffrement Homomorphe et Vote Vérifiable
 
-**Navigation** : [Sommaire de la série](../README.md) | [<< SC-14 Formal Verification](../03-Foundry-Testing/SC-14-Formal-Verification.ipynb) | [SC-18 Vyper >>](../05-Alternative-Chains/SC-18-Vyper.ipynb)
+**Navigation** : [Sommaire de la série](../README.md) | [<< SC-14 Formal Verification](../03-Foundry-Testing/SC-14-Formal-Verification-Python.ipynb) | [SC-18 Vyper >>](../05-Alternative-Chains/SC-18-Vyper-Python.ipynb)
 
 Cette quatrième sous-série (SC-15 a SC-17) explore la cryptographie avancée au service de la confidentialite sur blockchain : les **preuves a divulgation nulle** (Zero-Knowledge Proofs), le **chiffrement homomorphe** (calcul sur données chiffrees), et le **vote électronique de bout en bout vérifiable** (E2E). Ces notebooks implementent les protocoles cryptographiques pour de vrai en Python (`pycryptodome`, `phe`, `tenseal`), avec la crypto Paillier et Schnorr reelement executee dans les outputs committes.
 
@@ -10,9 +10,9 @@ Cette quatrième sous-série (SC-15 a SC-17) explore la cryptographie avancée a
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 15 | [SC-15-Zero-Knowledge-Proofs](SC-15-Zero-Knowledge-Proofs.ipynb) | 60 min | ZKP, protocole de Schnorr from scratch, Fiat-Shamir, Sigma protocols, Chaum-Pedersen |
-| 16 | [SC-16-Homomorphic-Encryption](SC-16-Homomorphic-Encryption.ipynb) | 50 min | Chiffrement homomorphe (PHE/SHE/FHE), Paillier (`phe`), CKKS (`tenseal`), partage de secrets de Shamir |
-| 17 | [SC-17-E2E-Vérifiable-Voting](SC-17-E2E-Verifiable-Voting.ipynb) | 45 min | Paradoxe du vote électronique, vote a la main (Paillier + ZKP), bulletin board, ElectionGuard |
+| 15 | [SC-15-Zero-Knowledge-Proofs-Python](SC-15-Zero-Knowledge-Proofs-Python.ipynb) | 60 min | ZKP, protocole de Schnorr from scratch, Fiat-Shamir, Sigma protocols, Chaum-Pedersen |
+| 16 | [SC-16-Homomorphic-Encryption-Python](SC-16-Homomorphic-Encryption-Python.ipynb) | 50 min | Chiffrement homomorphe (PHE/SHE/FHE), Paillier (`phe`), CKKS (`tenseal`), partage de secrets de Shamir |
+| 17 | [SC-17-E2E-Vérifiable-Voting](SC-17-E2E-Verifiable-Voting-Python.ipynb) | 45 min | Paradoxe du vote électronique, vote a la main (Paillier + ZKP), bulletin board, ElectionGuard |
 
 **Total** : 3 notebooks, ~2h35.
 
@@ -55,7 +55,7 @@ Le **paradoxe du vote électronique** : concilier **anonymat** et **vérifiabili
 |----------|---------------------|-------------|
 | SC-15 Zero-Knowledge-Proofs | Arithmetique modulaire de base ; Python | `pycryptodome` (nombres premiers), `hashlib` (stdlib) |
 | SC-16 Homomorphic-Encryption | Python ; notions de crypto | `phe` (python-paillier), `tenseal` (optionnel), `mpyc` (optionnel) |
-| SC-17 E2E-Vérifiable-Voting | [SC-15](SC-15-Zero-Knowledge-Proofs.ipynb) + [SC-16](SC-16-Homomorphic-Encryption.ipynb) complètes | `phe`, `pycryptodome`, `electionguard` (optionnel SOTA) |
+| SC-17 E2E-Vérifiable-Voting | [SC-15](SC-15-Zero-Knowledge-Proofs-Python.ipynb) + [SC-16](SC-16-Homomorphic-Encryption-Python.ipynb) complètes | `phe`, `pycryptodome`, `electionguard` (optionnel SOTA) |
 
 ### Configuration requise
 
@@ -74,9 +74,9 @@ Le **paradoxe du vote électronique** : concilier **anonymat** et **vérifiabili
 | Série | Lien | Relation |
 |-------|------|----------|
 | [SmartContracts (parent)](../README.md) | Vue d'ensemble | Contexte, parcours global, glossaire |
-| [03-Foundry-Testing](../03-Foundry-Testing/SC-12-Foundry-Testing.ipynb) | Predecesseur | SC-12..14 (tests Foundry, fuzzing, vérification formelle) |
-| [05-Alternative-Chains](../05-Alternative-Chains/SC-18-Vyper.ipynb) | Suite | SC-18..22 (Vyper, XRP, Bitcoin, Move, Solana) |
-| [06-Real-World](../06-Real-World/SC-23-Cross-Chain.ipynb) | Capstone | SC-23..26 mobilisent ZKP + chiffrement homomorphe (projet final) |
+| [03-Foundry-Testing](../03-Foundry-Testing/SC-12-Foundry-Testing-Python.ipynb) | Predecesseur | SC-12..14 (tests Foundry, fuzzing, vérification formelle) |
+| [05-Alternative-Chains](../05-Alternative-Chains/SC-18-Vyper-Python.ipynb) | Suite | SC-18..22 (Vyper, XRP, Bitcoin, Move, Solana) |
+| [06-Real-World](../06-Real-World/SC-23-Cross-Chain-Python.ipynb) | Capstone | SC-23..26 mobilisent ZKP + chiffrement homomorphe (projet final) |
 
 ---
 
@@ -117,7 +117,7 @@ La crypto `pycryptodome` et `phe` est réellement exécutée dans les outputs co
 ### Prochaines étapes
 
 - **Quitter la EVM** : la suite est [05-Alternative-Chains](../05-Alternative-Chains/README.md) (SC-18 à SC-22), qui élargit le horizon à Vyper, XRP, Bitcoin, Move et Solana.
-- **Le capstone** : [06-Real-World / SC-26](../06-Real-World/SC-26-Final-Project.ipynb) réutilisera directement ZKP (SC-15) et Paillier (SC-16) dans une DApp de vote complète — ces primitives prennent tout leur sens assemblées.
+- **Le capstone** : [06-Real-World / SC-26](../06-Real-World/SC-26-Final-Project-Python.ipynb) réutilisera directement ZKP (SC-15) et Paillier (SC-16) dans une DApp de vote complète — ces primitives prennent tout leur sens assemblées.
 - **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries — celle-ci est le socle cryptographique.
 
 ### Le fil rouge

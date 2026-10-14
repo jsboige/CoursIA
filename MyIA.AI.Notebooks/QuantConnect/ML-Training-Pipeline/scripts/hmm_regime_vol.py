@@ -12,7 +12,9 @@ Approach v2 (regime-switching):
 - Walk-forward 5-fold expanding window, 4 seeds for HMM init
 - DM test vs classic (single) HAR
 
-Coins: BTC-USD (Bitstamp, ~2278 RV days) and ETH-USD (Binance, ~1495 RV days).
+Coins: BTC-USD (Bitstamp, ~2278 RV days) and ETH-USD (Binance, ~1495 RV days);
+the cluster revalidation (#18190 port) extends the panel to the family's
+7-asset universe (SOL/LTC/XRP/ADA/DOT via yfinance, paired by data origin).
 Horizons: h=1, 5, 10 days. Seeds: 0, 7, 42, 99.
 
 References:
@@ -25,6 +27,7 @@ References:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 import time
@@ -37,9 +40,18 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from dm_test import dm_verdict
-from bias_metrics import _dm_centered_mse, _mse_decomposition  # noqa: E402
+# `_aggregate_state`/`_is_beats`/`_is_beaten` are re-exported from here:
+# `tests/test_hmm_regime_vol.py` imports them from this module (#14388).
+from bias_metrics import (  # noqa: E402, F401
+    _aggregate_state,
+    _dm_centered_mse,
+    _is_beats,
+    _is_beaten,
+    _mse_decomposition,
+    joined_pair_errors,
+)
 from har_model import HARModel, _make_split_indices
-from intraday_loader import load_binance_eth, load_bitstamp_btc
+from intraday_loader import load_binance_eth, load_bitstamp_btc, load_yf_intraday
 from realized_variance import daily_realized_variance, har_lag_features, realized_variance_to_log
 
 _HMMLEARN_MISSING = "hmmlearn not found. Install with: pip install hmmlearn"
@@ -69,90 +81,31 @@ REFIT_EVERY = 22
 N_HMM_STATES = 2
 RESULTS_DIR = SCRIPTS_DIR / "results"
 
+# Cluster universe of the #18190 revalidation family: the same 7 assets,
+# paired by data origin (BTC=Bitstamp, ETH=Binance local files; the five
+# others via yfinance). M4 (#18650) and M15 (#18664) ran this exact list;
+# M5 joins them so the family's cluster verdicts are comparable line by line.
+CLUSTER_REMOTE_TICKERS = ["SOL-USD", "LTC-USD", "XRP-USD", "ADA-USD", "DOT-USD"]
 
-# `_mse_decomposition` and `_dm_centered_mse` are the canonical bias/precision
-# helpers introduced by PR #12742 in `btc_vol.py`. They are duplicated here for
-# the reason `btc_m15.py` states verbatim -- "keep this PR self-contained until
-# a shared module is extracted (TODO post-merge)" -- with one M5-specific
-# reason on top: `btc_vol` imports `dlinear_vol`, which imports `torch` at
-# module level. M5 is HMM + OLS and runs on CPU with no deep-learning stack;
-# importing it for two pure numpy functions would drag torch into a script that
-# does not need it. M5 is now the THIRD duplication site, which is the argument
-# for finally extracting them -- filed separately rather than folded in here.
-def _is_beats(verdict: str) -> bool:
-    """True only for `dm_verdict`'s winning verdict.
 
-    `dm_verdict` emits exactly three strings: "BEATS baseline",
-    "BEATEN BY baseline" and "INCONCLUSIVE". A bare `"BEATS" in verdict`
-    also matches "BEATEN BY baseline" under a substring test on some
-    tokenisations, hence the explicit exclusion kept from the original code.
+def _joined_or_sentinel(series_pair, row_extra: dict) -> dict | None:
+    """`joined_pair_errors` wrapper that records the refusal instead of dying.
+
+    Cluster protocol #18190 (same wrapper contract as `dlinear_vol.py`): a
+    shared-target mismatch returns ``None`` and the row records the refusal --
+    the aggregate then counts `n_target_mismatch` instead of losing the run.
     """
-    return "BEATS" in verdict and "BEATEN" not in verdict
+    try:
+        return joined_pair_errors(*series_pair)
+    except ValueError as exc:
+        row_extra["dm_target_refusal"] = str(exc)
+        return None
 
 
-def _is_beaten(verdict: str) -> bool:
-    """True only for `dm_verdict`'s losing verdict ("BEATEN BY baseline").
-
-    The mirror of `_is_beats`. "BEATEN" appears in exactly one of the three
-    strings `dm_verdict` emits, so no exclusion clause is needed here -- but
-    the guard rails of `_is_beats` still apply the other way round: the two
-    sentinel verdicts this module adds ("SHAPE_MISMATCH", "INSUFFICIENT_DATA")
-    contain neither token and are therefore counted as neither win nor loss.
-    """
-    return "BEATEN" in verdict
-
-
-def _aggregate_state(
-    n_beats: int,
-    n_beaten: int,
-    n_seeds: int,
-    dm_p_median: float,
-    *,
-    n_beats_parent: int | None = None,
-) -> str:
-    """Single state machine shared by the raw and the de-biased (precision) legs.
-
-    Before #14388 the runner carried two aggregation conventions: a raw leg
-    with two states ("BEATS" iff 4/4 seeds BEATS, else "INCONCLUSIVE") and a
-    de-biased leg with four states (BEATS / NO BEATS / refuted-de-biased /
-    INCONCLUSIVE). Two consumers reading the same artefact closed the gap
-    manually with different rules; the two configs the doc publishes as
-    "NO BEATS on the raw leg" were silently persisted as INCONCLUSIVE, and
-    the executable could not reproduce its own published verdict.
-
-    The unified machine is the four-state precedence, decided once here and
-    sealed by tests (the raw leg simply never triggers the refuted branch,
-    since there is no parent leg above it).
-
-    1. unanimous BEATS + significant median  -> "BEATS"
-    2. unanimous BEATEN + significant median -> "NO BEATS"
-    3. the parent leg was unanimous BEATS   -> "refuted-de-biased"
-    4. otherwise                             -> "INCONCLUSIVE"
-
-    `NO BEATS` deliberately outranks `refuted-de-biased` when both apply (a raw
-    win that the precision leg significantly reverses). "Refuted" states that a
-    claim was not confirmed; the measurement in that case says more than that --
-    it says the model loses. Reporting the weaker of the two would soften a
-    measured loss, and the refutation stays legible anyway because every summary
-    row prints the raw and the de-biased verdict side by side.
-
-    The significance clause is redundant under unanimity (each per-seed BEATS /
-    BEATEN already carries p < alpha, so the median of them does too) and is
-    kept explicit only because the pre-existing BEATS branch stated it: an
-    asymmetric pair of conditions would read as a deliberate difference.
-
-    `n_seeds == 0` yields "INCONCLUSIVE" rather than a vacuous unanimity.
-    `n_beats_parent is None` disables the refuted branch (raw-leg callsite).
-    """
-    if n_seeds <= 0:
-        return "INCONCLUSIVE"
-    if n_beats == n_seeds and dm_p_median < 0.05:
-        return "BEATS"
-    if n_beaten == n_seeds and dm_p_median < 0.05:
-        return "NO BEATS"
-    if n_beats_parent is not None and n_beats_parent == n_seeds:
-        return "refuted-de-biased"
-    return "INCONCLUSIVE"
+# The bias/precision helpers (_mse_decomposition, _dm_centered_mse) and the
+# four-state aggregate machine (_aggregate_state, #14388) live in
+# bias_metrics.py since dlinear_vol.py became the third consumer; they are
+# imported (and re-exported for the tests) at the top of this module.
 
 
 def fit_hmm_regimes(log_rv_train: np.ndarray, seed: int) -> "GaussianHMM":
@@ -343,12 +296,46 @@ def walk_forward_regime_switching(
     classic_preds = np.asarray(classic_preds)
     truths_arr = np.asarray(truths)
 
+    # Cluster protocol (#18190 port): every DM leg joins the two OOS series on
+    # their common ORIGIN DATES and refuses on shared-target mismatch, never
+    # positional truncation. Both legs of this harness are produced by the
+    # same walk-forward loop, so the join is expected to be the identity --
+    # the guard is the proof, not the correction: a future edit that drops or
+    # skips an origin on one leg only (dropna, fold guard, refit boundary)
+    # would otherwise silently compare different days.
+    row_extra: dict = {}
+    dates_idx = pd.DatetimeIndex(pred_dates)
+    joined = _joined_or_sentinel(
+        (
+            pd.Series(regime_preds, index=dates_idx, name="regime"),
+            pd.Series(truths_arr, index=dates_idx, name="target"),
+            pd.Series(classic_preds, index=dates_idx, name="classic"),
+            pd.Series(truths_arr, index=dates_idx, name="target"),
+        ),
+        row_extra,
+    )
+    if joined is not None:
+        regime_errors = joined["a_errors"]
+        classic_errors = joined["b_errors"]
+        dm_n_aligned = joined["n_joined"]
+        dm_target_gap_max = joined["target_gap_max"]
+    else:
+        # Refused pairing: keep the positional arrays purely as inspectable
+        # diagnostics; every DM leg below then carries the TARGET_MISMATCH
+        # sentinel, which the aggregate machine counts as neither BEATS nor
+        # BEATEN -- a refused comparison never contributes a verdict.
+        regime_errors = regime_preds - truths_arr
+        classic_errors = classic_preds - truths_arr
+        dm_n_aligned = 0
+        dm_target_gap_max = float("nan")
+
     regime_mse = float(np.mean((regime_preds - truths_arr) ** 2)) if len(truths_arr) else float("nan")
     classic_mse = float(np.mean((classic_preds - truths_arr) ** 2)) if len(truths_arr) else float("nan")
 
-    regime_errors = regime_preds - truths_arr
-    classic_errors = classic_preds - truths_arr
-    dm = dm_verdict(regime_errors, classic_errors, horizon=horizon)
+    if joined is not None:
+        dm = dm_verdict(regime_errors, classic_errors, horizon=horizon)
+    else:
+        dm = {"dm_statistic": float("nan"), "p_value": float("nan"), "verdict": "TARGET_MISMATCH"}
 
     # --- Bias instrumentation (#1454 sub-grain; family pattern of #12742/#12745)
     #
@@ -385,12 +372,20 @@ def walk_forward_regime_switching(
     classic_decomp_debiased = _mse_decomposition(classic_errors_debiased)
     classic_mse_debiased = classic_decomp_debiased["mse"]
 
-    dm_centered = _dm_centered_mse(regime_errors, classic_errors, horizon=horizon)
+    if joined is not None:
+        dm_centered = _dm_centered_mse(regime_errors, classic_errors, horizon=horizon)
+    else:
+        dm_centered = {
+            "dm_stat": float("nan"), "dm_pvalue": float("nan"),
+            "dm_verdict": "TARGET_MISMATCH", "mean_loss_diff": float("nan"),
+        }
 
-    return {
+    result = {
         "seed": seed,
         "horizon": horizon,
         "n_preds": len(truths_arr),
+        "dm_n_aligned": dm_n_aligned,
+        "dm_target_gap_max": dm_target_gap_max,
         "regime_mse": regime_mse,
         "classic_mse": classic_mse,
         "mse_reduction_pct": (
@@ -434,10 +429,19 @@ def walk_forward_regime_switching(
             "target": [float(x) for x in truths_arr],
         },
     }
+    if row_extra:
+        result.update(row_extra)
+    return result
 
 
-def load_panel() -> dict[str, pd.Series]:
-    """Load BTC and ETH daily RV series."""
+def load_panel(skip_remote: bool = False, extra_coins: list[str] | None = None) -> dict[str, pd.Series]:
+    """Load the cluster universe's daily RV series (7 assets, paired by origin).
+
+    BTC-USD from the local Bitstamp file and ETH-USD from the local Binance
+    file; SOL/LTC/XRP/ADA/DOT via yfinance -- the same origin pairing as the
+    M4 (#18650) and M15 (#18664) cluster revalidations, so the family's
+    cluster verdicts stay comparable line by line.
+    """
     panels: dict[str, pd.Series] = {}
     try:
         btc = load_bitstamp_btc()
@@ -457,7 +461,107 @@ def load_panel() -> dict[str, pd.Series]:
     except FileNotFoundError as e:
         print(f"ETH data not found: {e}")
 
+    if not skip_remote:
+        for ticker in CLUSTER_REMOTE_TICKERS + list(extra_coins or []):
+            try:
+                ds = load_yf_intraday(ticker)
+                ret = np.log(ds.df["close"]).diff().dropna()
+                rv = daily_realized_variance(ret)
+                if len(rv) < 200:
+                    print(f"[WARN] {ticker} skipped ({len(rv)} RV days < 200 minimum)")
+                    continue
+                panels[ticker] = rv
+                print(f"{ticker}: {len(rv)} RV days ({rv.index[0].date()} to {rv.index[-1].date()})")
+            except Exception as exc:
+                print(f"[WARN] {ticker} skipped ({exc.__class__.__name__}: {exc})")
+
     return panels
+
+
+def _sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _write_cluster_manifest(
+    manifest_path: Path,
+    all_rows: list[dict],
+    aggregate_rows: list[dict],
+    out_path: Path,
+    horizons_run: list[int],
+    seeds_run: list[int],
+    elapsed_s: float,
+) -> None:
+    """Compact in-repo cluster manifest (results-artifact-policy #15890).
+
+    Same shape and SHA canonicalization as the M4 (#18650) and M15 (#18664)
+    cluster manifests: verdicts, per-cell alignment diagnostics and per-coin
+    SHA-256 anchors of the full rows stay falsifiable in-repo; the full run
+    JSON lives outside the repository.
+    """
+    per_coin: dict[str, list[dict]] = {}
+    for r in all_rows:
+        per_coin.setdefault(r["coin"], []).append(r)
+
+    alignment = []
+    for agg in aggregate_rows:
+        rows = [
+            r for r in per_coin.get(agg["coin"], [])
+            if r.get("horizon") == agg["horizon"]
+        ]
+        n_joined = [r.get("dm_n_aligned") for r in rows if r.get("dm_n_aligned") is not None]
+        gaps = [
+            r.get("dm_target_gap_max") for r in rows
+            if r.get("dm_target_gap_max") is not None
+            and np.isfinite(r["dm_target_gap_max"])
+        ]
+        alignment.append({
+            "cell": f"{agg['coin']}|h={agg['horizon']}",
+            "n_seeds": agg.get("n_seeds"),
+            "dm_n_aligned_min": min(n_joined) if n_joined else None,
+            "dm_n_aligned_max": max(n_joined) if n_joined else None,
+            "dm_target_gap_max": max(gaps) if gaps else None,
+            "n_target_mismatch": sum(1 for r in rows if "dm_target_refusal" in r),
+            "aggregate_verdict": agg["aggregate_verdict"],
+            "aggregate_verdict_debiased": agg["aggregate_verdict_debiased"],
+            "mean_reduction_pct": agg["mean_reduction_pct"],
+            "mean_reduction_pct_vs_debiased_classic": agg["mean_reduction_pct_vs_debiased_classic"],
+            "dm_p_median": agg["dm_p_median"],
+            "dm_centered_p_median": agg["dm_centered_p_median"],
+            "mean_regime_bias_oos": agg["mean_regime_bias_oos"],
+            "mean_classic_bias_oos": agg["mean_classic_bias_oos"],
+        })
+
+    full_text = out_path.read_text(encoding="utf-8")
+    manifest = {
+        "protocol": (
+            "paired-origin cluster revalidation (#18190 port): DM legs join "
+            "walk-forwards on common origin dates and refuse on shared-target "
+            "mismatch, never positional truncation"
+        ),
+        "config": {
+            "coins": sorted(per_coin.keys()),
+            "horizons": horizons_run,
+            "seeds": seeds_run,
+            "n_splits": N_SPLITS,
+            "refit_every": REFIT_EVERY,
+            "n_hmm_states": N_HMM_STATES,
+            "loss_fn": "mse",
+        },
+        "elapsed_s": elapsed_s,
+        "total_rows": len(all_rows) + len(aggregate_rows),
+        "artifact": {
+            "path": out_path.name,
+            "bytes": out_path.stat().st_size,
+            "sha256": _sha256_text(full_text),
+        },
+        "per_coin_sha256": {
+            coin: _sha256_text(json.dumps(rows, sort_keys=True, default=str))
+            for coin, rows in sorted(per_coin.items())
+        },
+        "alignment": alignment,
+    }
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -477,6 +581,14 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="results JSON path (default: results/m5_hmm_regime.json)")
     p.add_argument("--dump-series", default=None,
                    help="also write the per-observation forecast series to this CSV")
+    p.add_argument("--skip-remote", action="store_true",
+                   help="load only the local BTC/ETH panels, skip yfinance tickers")
+    p.add_argument("--extra-coins", nargs="+", default=None,
+                   help="additional yfinance tickers beyond the 7-asset cluster")
+    p.add_argument("--manifest-out", type=Path, default=None,
+                   help=("Write the compact cluster manifest (verdicts + alignment "
+                         "diagnostics + per-coin SHA-256 anchors of the full rows) "
+                         "to this path, per the results-artifact policy #15890."))
     return p.parse_args(argv)
 
 
@@ -494,7 +606,7 @@ def main(argv: list[str] | None = None) -> None:
     print(f"Approach: regime-switching (separate HAR per decoded regime)")
     print("=" * 70)
 
-    panels = load_panel()
+    panels = load_panel(skip_remote=args.skip_remote, extra_coins=args.extra_coins)
     if args.coins:
         panels = {c: rv for c, rv in panels.items() if c in set(args.coins)}
     if not panels:
@@ -502,7 +614,25 @@ def main(argv: list[str] | None = None) -> None:
 
     t0 = time.time()
     all_results: list[dict] = []
+    aggregate_rows: list[dict] = []
     series_rows: list[dict] = []
+
+    # Checkpoint/resume (per (coin, horizon, seed) combo, dlinear_vol pattern):
+    # the cluster grid is 7 coins x 3 horizons x 4 seeds = 84 walk-forwards;
+    # a process death must not lose the completed ones. Each finished combo is
+    # appended to a JSONL beside the out JSON and skipped on restart.
+    out_path = Path(args.out) if args.out else RESULTS_DIR / "m5_hmm_regime.json"
+    checkpoint_path = out_path.with_name(out_path.name + ".checkpoint.jsonl")
+    checkpoint_rows: dict[tuple[str, int, int], dict] = {}
+    if checkpoint_path.exists():
+        with open(checkpoint_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                row = json.loads(line)
+                checkpoint_rows[(row["coin"], row["horizon"], row["seed"])] = row
+        print(f"[checkpoint] {len(checkpoint_rows)} completed combo(s) resumed from {checkpoint_path.name}")
 
     for coin, rv in panels.items():
         print(f"\n{'=' * 50}")
@@ -524,6 +654,14 @@ def main(argv: list[str] | None = None) -> None:
             print(f"\n  h={horizon}:")
             seed_results = []
             for seed in seeds:
+                ck = checkpoint_rows.get((coin, horizon, seed))
+                if ck is not None:
+                    print(f"    seed={seed:2d}: [checkpoint] "
+                          f"DM p={ck['dm_p_value']:.4f} {ck['dm_verdict']} "
+                          f"| de-biased {ck['dm_centered_verdict']}")
+                    all_results.append(ck)
+                    seed_results.append(ck)
+                    continue
                 t1 = time.time()
                 res = walk_forward_regime_switching(rv, horizon, seed)
                 elapsed = time.time() - t1
@@ -556,6 +694,9 @@ def main(argv: list[str] | None = None) -> None:
                         })
                 all_results.append(res)
                 seed_results.append(res)
+                with open(checkpoint_path, "a", encoding="utf-8") as fck:
+                    fck.write(json.dumps(res, default=str) + "\n")
+                checkpoint_rows[(coin, horizon, seed)] = res
 
             n_seeds = len(seed_results)
             n_beats = sum(1 for r in seed_results if _is_beats(r["dm_verdict"]))
@@ -625,6 +766,7 @@ def main(argv: list[str] | None = None) -> None:
                 ),
                 "aggregate_verdict_debiased": agg_verdict_centered,
             })
+            aggregate_rows.append(all_results[-1])
 
     elapsed_total = time.time() - t0
     print(f"\n{'=' * 70}")
@@ -632,7 +774,6 @@ def main(argv: list[str] | None = None) -> None:
     print(f"{'=' * 70}")
 
     RESULTS_DIR.mkdir(exist_ok=True)
-    out_path = Path(args.out) if args.out else RESULTS_DIR / "m5_hmm_regime.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as f:
         json.dump({
@@ -656,6 +797,18 @@ def main(argv: list[str] | None = None) -> None:
         series_path.parent.mkdir(parents=True, exist_ok=True)
         pd.DataFrame(series_rows).to_csv(series_path, index=False)
         print(f"Forecast series ({len(series_rows)} rows) saved to {series_path}")
+
+    if args.manifest_out is not None:
+        _write_cluster_manifest(
+            Path(args.manifest_out),
+            all_results,
+            aggregate_rows,
+            out_path,
+            horizons,
+            seeds,
+            elapsed_total,
+        )
+        print(f"Cluster manifest written to {args.manifest_out}")
 
     print("\n## M5 HMM Regime-Switching HAR Summary")
     header = "| Coin | " + " | ".join(f"h={h}" for h in horizons) + " |"

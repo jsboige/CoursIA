@@ -63,4 +63,4 @@ Anomalies attendues (T3 non livré) :
 
 ## Note de maintenance (smell signalé, hors-scope)
 
-`ICT-19` a un compagnon de raffinement désormais distingué : `ICT-19-EnjeuBattery.ipynb` (principal) + `ICT-19b-EnjeuBattery-Raffinement.ipynb` (compagnon, ex-`ICT-19-...-Raffinement`, renommé #7260 pour lever l'ancienne duplication de numéro). Les deux sont extraits tels quels dans le seed (le CSV suit la réalité du dépôt).
+`ICT-19` a un compagnon de raffinement désormais distingué : `ICT-19-EnjeuBattery-Python.ipynb` (principal) + `ICT-19b-EnjeuBattery-Raffinement-Python.ipynb` (compagnon, ex-`ICT-19-...-Raffinement`, renommé #7260 pour lever l'ancienne duplication de numéro). Les deux sont extraits tels quels dans le seed (le CSV suit la réalité du dépôt).

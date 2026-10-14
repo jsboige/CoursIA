@@ -11,7 +11,7 @@ CLI usage
 ---------
     python render_notebook.py \\
         --csv translations/genai/finetuning.csv \\
-        --notebook MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning.ipynb \\
+        --notebook MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb \\
         --lang en --out /tmp/FT-01_en.ipynb [--dry-run] [--verbose]
 
 The output language's column in the CSV (``text_<lang>``) supplies the

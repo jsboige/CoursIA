@@ -12,9 +12,17 @@
 #   conda activate pyphi
 #   pip install -r requirements.txt
 #
-# Note: setup_pyphi_env.ps1 installe sa propre liste (pyphi/numpy/scipy/ipykernel)
-# et ignore ce fichier ; ce requirements.txt est la source de verite complete
-# pour un install manuel ou `pip install -e .` (cf. ICT-Series/pyproject.toml).
+# Note: setup_pyphi_env.ps1 installe sa propre liste
+# (pyphi/numpy/scipy/ipykernel/matplotlib) et ignore ce fichier ; ce requirements.txt
+# est la source de verite complete pour un install manuel ou `pip install -e .`
+# (cf. ICT-Series/pyproject.toml).
+#
+# ATTENTION (mesure 2026-09-21, #17185) : un env cree SANS matplotlib ne peut pas
+# executer la serie. La re-execution d'un notebook ICT s'arrete au premier import
+# matplotlib (`ModuleNotFoundError`), et comme `nbconvert --inplace` n'ecrit le
+# fichier QU'EN CAS DE SUCCES, l'artefact reste byte-identique a la version
+# committe : qui compare ensuite les signatures lit un « aucune derive » VACUE.
+# Verifier la completude de l'env AVANT d'interpreter une comparaison de drift.
 # Dependance declaree MAIS non importee : networkx (mention prose README only,
 # aucun `import networkx` dans ict/ ni les notebooks) -> retiree d'ici.
 

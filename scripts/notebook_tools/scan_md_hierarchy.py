@@ -50,6 +50,14 @@ the second mouth of the same trap.
 import argparse, json, re, sys, pathlib
 from datetime import datetime, timezone
 
+# #16633 — marche canonique centralise (#8650) : tracked_only via `git ls-files`
+# + SKIP_DIRS + filtre artefacts papermill. Le rglob local comptait les
+# artefacts de run non trackes (`*_executed.ipynb`, `*_output.ipynb`) presentes
+# dans les worktrees de lane : le finding `+1 H1-DEEP` de #16633 porte sur un
+# fichier untracked — defaut de l'EMETTEUR, pas du .gitignore (cf c.16633-1).
+# Degrade a l'ancien scan quand git est indisponible (fixtures tmp, tarball).
+from notebook_walk import iter_notebooks as _walk_notebooks  # noqa: E402
+
 BASELINE_DEFAULT = pathlib.Path(__file__).with_name('md_hierarchy_baseline.json')
 
 HEADING_RE = re.compile(r'^(#{1,6})\s+(.*\S)\s*$')
@@ -90,8 +98,17 @@ HINT_RE = re.compile(
 # (G.1 firsthand on GenAI/SemanticKernel/dotnet/notebooks/00-AI-settings.ipynb
 # cells 1/3/5/7 — `### Step 1 Import configuration...` is a real section
 # header with prose body, same pattern as `### Step 4: Save Configuration`).
+# `Piste N : Titre` joins the same class (2026-10-11, #16472): the four
+# `### Piste 1..4 : ... (intermediaire/avance)` headings of
+# GenAI/Texte/11_Quantization.ipynb cell 46 open REAL numbered exercise
+# sections (prose body with numbered instructions, GPU-scope preamble), and
+# were re-confirmed false positives 22 consecutive feeder wakes in a row
+# (worktree g1-residu-petits-domaines). Corpus-bounded by measurement: these
+# are the ONLY `Piste` headings in MyIA.AI.Notebooks/, so the extension
+# un-flags exactly these 4 and nothing else; a bare `## Piste` aside stays
+# flagged (no number, no title).
 TITLED_STEP_RE = re.compile(
-    r'^(step|etape|étape)\s+\d+(?:\s*:\s*|\s+)\S',
+    r'^(step|etape|étape|piste)\s+\d+(?:\s*:\s*|\s+)\S',
     re.IGNORECASE)
 # A hint word that is the FIRST PART of a hyphenated compound noun
 # (`Aide-mémoire des commandes`) is a real titled section, not a bare aside:
@@ -250,13 +267,25 @@ def iter_notebooks(args):
     for a in args:
         p = pathlib.Path(a)
         if p.is_dir():
-            yield from sorted(p.rglob('*.ipynb'))
+            yield from _walk_notebooks(p)
         elif p.suffix == '.ipynb' and p.is_file():
             yield p
         else:
             unresolved.append(a)
     if unresolved:
-        raise ValueError('not a notebook nor a directory: ' + ', '.join(unresolved))
+        # Les appelants passent AUSSI des pathlib.Path (le mode diff resout ses
+        # tetes contre la racine du depot) : sans str(), un PosixPath ici levait
+        # `TypeError: sequence item 0: expected str instance, PosixPath found` et
+        # enterrait le diagnostic sous un crash (#14801, run 36457091976 -- un
+        # notebook absent de l'arbre du runner, checkout incomplet).
+        missing = [a for a in unresolved if pathlib.Path(a).suffix == '.ipynb']
+        msg = ('not a notebook nor a directory: '
+               + ', '.join(str(a) for a in unresolved))
+        if missing:
+            msg += ('\n  hint: ' + ', '.join(str(a) for a in missing)
+                    + ' end(ent) en .ipynb mais sont absents de l\'arbre de '
+                      'travail -- checkout incomplet, pas un constat de derive')
+        raise ValueError(msg)
 
 
 # --- Drift mode (#11831) ------------------------------------------------------

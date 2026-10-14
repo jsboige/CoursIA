@@ -2,7 +2,7 @@
 
 [↑ Série Search](../README.md) | [← Partie 1 : Fondations](../Part1-Foundations/README.md) | [Notebooks MGS →](MGS-01-Introduction.ipynb)
 
-Comment passer de l'application *d'une* métaheuristique à la **composition** de plusieurs ? Cette partie ouvre la voie à [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — une bibliothèque .NET qui reconstruit les métaheuristiques publiées (Whale Optimization, Equilibrium Optimizer, Differential Evolution, Bare-Bones PSO, modèle insulaire...) à partir de **primitives réutilisables** plutôt que comme des monolithes opaques. Trente-cinq notebooks .NET Interactive (C#) en sont le fil conducteur : un algorithme doit pouvoir s'énoncer en quelques lignes déclaratives, et chaque brique (sélection, croisement, mutation, réinsertion) doit pouvoir être interceptée et recomposée.
+Comment passer de l'application *d'une* métaheuristique à la **composition** de plusieurs ? Cette partie ouvre la voie à [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — une bibliothèque .NET qui reconstruit les métaheuristiques publiées (Whale Optimization, Equilibrium Optimizer, Differential Evolution, Bare-Bones PSO, modèle insulaire...) à partir de **primitives réutilisables** plutôt que comme des monolithes opaques. Les notebooks .NET Interactive (C#) de la partie en sont le fil conducteur : un algorithme doit pouvoir s'énoncer en quelques lignes déclaratives, et chaque brique (sélection, croisement, mutation, réinsertion) doit pouvoir être interceptée et recomposée.
 
 L'arc part de la grammaire fluente (composition, MGS-1..5), caractérise les biais de l'optimiseur (centrage MGS-10, rotation MGS-12, synergie d'îles MGS-11/14), puis culmine sur le **No-Free-Lunch** : quatre capstones réunissent ses réponses classiques — mesurer le paysage (MGS-15), sélectionner l'algorithme (MGS-16), contrôler le paramètre pendant la course (MGS-17), éprouver le tout sur le banc CEC standard shift+rotate combiné (MGS-18) — avant un **démontage** : MGS-19 débranche l'opérateur de recuit du compound SA et l'éprouve isolé, montrant qu'un composant *fonctionne* détaché mais ne porte pas seul le bénéfice du tout ; puis une **inversion de la question** : MGS-21 croise représentation × algorithme sur le Sudoku et mesure que le choix de l'espace de recherche peut peser plus que le choix du moteur ; enfin une **confrontation externe systématique** : les dix notebooks MGS-22 à MGS-31 (campagne **[MGS vs mealpy](MGS-vs-mealpy/README.md)**) opposent la bibliothèque à mealpy 3.0.2 (Python/NumPy) sur un protocole apparié dans une seule exécution kernel .NET — ex æquo ou séparation totale selon la paire, fitness C# 5,72× plus rapide engloutie par la mécanique moteur, et le verdict final (MGS-31) tranche en deux axes que chaque paire mêlait : **coût systématique** (mealpy plus cher par évaluation 8/9) vs **qualité spécifique** (mealpy 6/9, MGS 3/9, écarts −6,5 à +17 conflits médians).
 
@@ -17,7 +17,7 @@ Contrairement aux Parties 1 et 2 (notebooks Python avec OR-Tools, DEAP, mealpy),
 Les Parties 1-2 enseignent à *choisir* une métaheuristique face à un problème ; cette partie enseigne à en *construire* et en *combiner*. La motivation est double :
 
 - **Pédagogique.** Reconstruire WOA ou EO à partir de primitives (`Match`, `Container`, `Scoped`, contrôle-flux géométrique) force à comprendre *pourquoi* chaque étape existe — là où importer `mealpy` ou `scipy` masque le mécanisme derrière un appel de fonction. C'est le même réflexe qu'écrire un A* à la main avant d'utiliser `networkx`.
-- **Ingénierie.** La composition ouvre des configurations qu'aucune bibliothèque monolithique n'offre directement : sous-populations spécialisées (Eukaryote), migration entre îles (Islands), métaheuristiques hybrides assemblées par grammaire fluente. Ces patterns existent dans la littérature mais sont rares dans les libs grand public.
+- **Ingénierie.** La composition ouvre des configurations qu'aucune bibliothèque monolithique n'offre directement : partition du génome en chromosomes composites (Eukaryote — analogie caryotype, chaque sous-chromosome porte sa métaheuristique), partition de la population en îles migratoires (Islands), métaheuristiques hybrides assemblées par grammaire fluente. Ces patterns existent dans la littérature mais sont rares dans les libs grand public.
 
 L'enseignement transversal rejoint celui des Parties 1-2 : aucune métaheuristique ne domine partout (cf [Search-11](../Part1-Foundations/Search-11-Metaheuristics.ipynb)), et la bonne réponse à un problème d'optimisation est rarement « l'algorithme X » mais plutôt « la bonne composition de primitives pour ce paysage de fitness ».
 
@@ -38,46 +38,72 @@ MetaGeneticSharp vise le point que les autres n'occupent pas : **l'expressivité
 
 1. **Reconstruire** une métaheuristique publiée (WOA, EO) à partir de primitives composables plutôt que d'en importer une boîte noire
 2. **Composer** des métaheuristiques via la grammaire fluente (`Match`, `Container`, `Scoped`) pour assembler des configurations hybrides
-3. **Structurer** une population en sous-populations spécialisées (Eukaryote) ou en îles migratoires (Islands)
+3. **Structurer** une recherche par partition du génome en chromosomes composites (Eukaryote — chaque sous-chromosome porte une métaheuristique) ou par partition de la population en îles migratoires (Islands)
 4. **Évaluer** quand une composition custom bat une métaheuristique monolithique sur un paysage de fitness donné
 
-## Notebooks
+## Comment lire ce README
 
-Cette partie se compose de trente-cinq notebooks .NET Interactive (C#), hébergés dans ce répertoire et consommant le sous-module voisin [`MetaGeneticSharp/`](../MetaGeneticSharp/) :
+Cette partie se lit à trois vitesses, comme l'annonce la racine du dépôt ([Choisir sa vitesse de lecture](../../../README.md#choisir-sa-vitesse-de-lecture)).
 
-| # | Notebook | Concept clé | Primitives introduites | Durée |
-|---|----------|-------------|------------------------|-------|
-| 1 | [MGS-01-Introduction](MGS-01-Introduction.ipynb) | Moteur autonome `MetaGeneticAlgorithm` | `DefaultMetaHeuristic`, `NoOp`, fitness quadratique | ~40 min |
-| 2 | [MGS-02-Composition](MGS-02-Composition.ipynb) | Assemblage déclaratif | `Match`, contrôle-flux, grammaire fluente | ~45 min |
-| 3 | [MGS-03-Eukaryote](MGS-03-Eukaryote.ipynb) | Sous-populations spécialisées | chromosomes composites, partitionnement | ~50 min |
-| 4 | [MGS-04-Islands](MGS-04-Islands.ipynb) | Modèle insulaire | populations structurées, migration entre îles | ~50 min |
-| 5 | [MGS-05-CompoundMetaheuristics](MGS-05-CompoundMetaheuristics.ipynb) | Reconstruire les composés publiés (WOA/EO/FBI) | `MetaHeuristicsService`, `WhaleOptimisationAlgorithm`, `EquilibriumOptimizer`, factory `CreateMetaHeuristicByName` | ~50 min |
-| 6 | [MGS-06-Benchmarks](MGS-06-Benchmarks.ipynb) | Comparaison honnête | `KnownFunctions`, composé WOA vs Uniform vs Islands | ~50 min |
-| 7 | [MGS-07-TSP](MGS-07-TSP.ipynb) | Grammaire agnostique à la représentation | `TspFitness`, `OrderedCrossover`, permutation + `Islands` | ~45 min |
-| 7b | [MGS-07b-LandscapeMultidim](MGS-07b-LandscapeMultidim.ipynb) | Projection N-D des paysages (voir en dimension ≥ 5) | surcharge `RenderHeatmap` N-D de `KnownFunctionLandscape`, projection MAX sur les coordonnées cachées (opérateur Gtk# verbatim) ; Sphere 2-D vs 5-D, Rastrigin n=2/5/10/30, Schwefel n=5/30 | ~30 min |
-| 7c | [MGS-07c-RosenbrockGriewank](MGS-07c-RosenbrockGriewank.ipynb) | Projection N-D : Rosenbrock (vallée banane) + Griewank (produit-cosinus) | `RosenbrockFitness`, `GriewankFitness` sur la surcharge N-D de `RenderHeatmap` ; dims $n=2/5/30$ ; la vallée étroite de Rosenbrock (largeur $\sim 10^{-2}$) disparaît en MAX-projection 30-D, Griewank produit-cosinus $\prod \cos(x_i/\sqrt{i})$ vs Ackley somme-cosinus | ~30 min |
-| 7d | [MGS-07d-MichalewiczDixonPrice](MGS-07d-MichalewiczDixonPrice.ipynb) | Projection N-D : Michalewicz (crêtes raides) + Dixon-Price (vallée non-scalable) | `MichalewiczFitness` (paramètre $m=10$), `DixonPriceFitness` sur la surcharge N-D de `RenderHeatmap` ; dims $n=2/5/30$ ; crêtes quasi-binaires de Michalewicz ($m=10$ sature l'amplitude), vallée parabolique-croisée non-rectiligne de Dixon-Price | ~30 min |
-| 8 | [MGS-08-LandscapeExplorer](MGS-08-LandscapeExplorer.ipynb) | Visualiser la surface de fitness | heatmaps PNG graphiques, 3 modes (fonction / carte d'altitude / image), trajectoire de convergence | ~50 min |
-| 9 | [MGS-09-EverestRelief](MGS-09-EverestRelief.ipynb) | Relief terrestre réel comme paysage | `DemGrid` (wrapper `ImageHeightMapFunction`), cartes `KnownHeightMap` de jsboige, GA/WOA/EO vs PSO, flipbook de convergence | ~55 min |
-| 10 | [MGS-10-CenterBias](MGS-10-CenterBias.ipynb) | Biais central vs robustesse au déplacement | banc `CenterBiasBenchmark` (Kudela 2022), composés WOA/EO/FBI/DE/BBPSO/SA vs GA/Random, signature $\Delta$ | ~45 min |
-| 11 | [MGS-11-IslandSynergy](MGS-11-IslandSynergy.ipynb) | Synergie d'îles complémentaires (verdict mesuré) | `IslandCompoundMetaheuristic`, archipel hétérogène DE+BBPSO, dé-biais `ShiftedFitness`, GIF multicolore par île | ~45 min |
-| 12 | [MGS-12-AxisAlignment](MGS-12-AxisAlignment.ipynb) | Biais d'alignement d'axes (rotation) | décorateur `RotatedFitness` ($M x$, Givens orthogonale), séparabilité vs rotation, optimum relocalisé, signature $\Delta$ | ~45 min |
-| 13 | [MGS-13-LandscapeDebias](MGS-13-LandscapeDebias.ipynb) | Pourquoi la rotation casse la séparabilité (visuel) | heatmaps 2-D des fonctions dé-biaisées `ShiftedFitness`/`RotatedFitness`, Sphere invariante vs Rosenbrock/Rastrigin rotatées, composition CEC | ~40 min |
-| 14 | [MGS-14-IslandSynergyFound](MGS-14-IslandSynergyFound.ipynb) | Une synergie d'îles *trouvée* (et un cas négatif) | archipel `DE+BB-3:1` (3 îles DE + 1 île BBPSO), migration douce, banc multi-seed à contrôle propre, synergie robuste sur Ackley / absente sur Rastrigin | ~45 min |
-| 15 | [MGS-15-LandscapeAnalysis](MGS-15-LandscapeAnalysis.ipynb) | Le *nombre* derrière la heatmap — FDC globale + rugosité locale | deux métriques complémentaires : FDC (Jones & Forrest 1995, Pearson fitness–distance, nuage SVG inline) + autocorrélation de marche aléatoire (Weinberger 1990, longueur de corrélation) + neutralité ; Sphere FDC 0,97 & lisse vs Rastrigin FDC 0,71 & rugueux (L≈1 pas) | ~40 min |
-| 16 | [MGS-16-AlgorithmSelection](MGS-16-AlgorithmSelection.ipynb) | **Capstone** — sélectionner le bon optimiseur selon le paysage (Rice 1976) | No-Free-Lunch (Wolpert & Macready 1997) + cadre de Rice (features → portfolio → performance) ; réutilise les 8 optimiseurs de MGS-10 et les features FDC/ρ₁/neutralité de MGS-15 ; sélecteur heuristique validé puis testé sur un 4ᵉ paysage inconnu (Rosenbrock) | ~70 min |
-| 17 | [MGS-17-ParameterControl](MGS-17-ParameterControl.ipynb) | **Deuxième réponse au No-Free-Lunch** — adapter les paramètres pendant la course (Eiben 1999) | taxonomie Eiben (tuning vs control : déterministe / adaptatif / self-adaptatif) via le vrai moteur du fork `ProbabilityConfig.DynamicProbability` ; schedule de décroissance, contrôle adaptatif par diversité, self-adaptatif hétérogène ; No-Free-Lunch au niveau du *paramètre* (l'ordre s'inverse entre Rastrigin et Sphere) | ~50 min |
-| 17b | [MGS-17b-Empirical-Algorithm-Selection](MGS-17b-Empirical-Algorithm-Selection.ipynb) | **Distillation Theodore Deguest L4 EPITA SCIA 2026** — squelette : cadre theorique (Rice 1976, Wolpert 1996, Smith-Miles 2009) + setup env execute | introduction, attribution, plan en 4 tranches (cadre / protocole 3 terrains / Pareto+discriminant / ponts series) ; noyau execute via kernel `coursia-ml-training` ; PR Theodore Deguest [jsboigeEpita/2026-Epita-Intelligence-Symbolique#42](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/pull/42) | ~30 min (tranches 1+2+3 livrees ; tranche 4 benchmarks reels Theodore par ai-01 ou lane GPU) |
-| 18 | [MGS-18-CecBanc](MGS-18-CecBanc.ipynb) | **Consolidation du banc CEC** — shift+rotate combinés (le protocole standard de dé-biais) | décorateurs composés `RotatedFitness(ShiftedFitness(inner, offset), M)` (Givens orthogonale) ; banc à 4 variantes (plain/shifted/rotated/combined), étend `CenterBiasBenchmark` ; 8 optimiseurs sous shift+rotate sur Ackley+Rosenbrock ; les biais isolés (WOA central MGS-10, GA axe MGS-12) se composent — effet sub-additif ou super-additif selon le paysage | ~50 min |
-| 19 | [MGS-19-MetropolisReinsertion](MGS-19-MetropolisReinsertion.ipynb) | **Recuit simulé décomposé** — l'opérateur de Metropolis débranché de SA et greffé seul sur un GA | `MetropolisReinsertion` isolé du compound `SimulatedAnnealing` et injecté via `MetaGeneticAlgorithm.Reinsertion` ; banc 5 configs (pairwise greedy contrôle, 3 températures Metropolis, élitiste référence) sur Sphere/Rastrigin/Ackley + limite frozen ; verdict honnête **négatif** — l'acceptation `exp(Δ/T)` détachée du couplage perturbation+acceptation ne porte pas le bénéfice du recuit | ~45 min |
-| 21 | [MGS-21-Representation-vs-Algorithme](MGS-21-Representation-vs-Algorithme.ipynb) | **Représentation × algorithme : le plan croisé Sudoku** — quel facteur pèse le plus ? | deux représentations (R1 vecteur continu + décodage arrondi, R2 grille à permutations de lignes via l'algèbre de swaps) × deux moteurs (PSO composé, GA permutation), budget ~8 000 évaluations, 4 graines {0,1,7,42}, critère de verdict pré-enregistré ; verdict en deux temps — la représentation domine la colonne PSO (−39 conflits vs −34,5/−6 pour l'algorithme), comparable sur la colonne GA ; 4/4 résolutions en R2/GA, aucune en R1 ; cause mesurée : 100 % des candidats R1 décodés tombent hors de l'espace admissible | ~40 min |
-| 22 → 31 | [Campagne **MGS vs mealpy**](MGS-vs-mealpy/README.md) — **10 notebooks** (PSO, DE, SA, WOA, EO, FBI, BBPSO, GA, Scatter Search, synthèse) | **Confrontation externe systématique** — la même expérience (protocole apparié Sudoku-Easy[0], budget ~8 000 évals, graines {0,1,7,42}, déterminisme 8/8 ou 12/12), deux bibliothèques (MGS C# .NET 9 vs mealpy 3.0.2 Python/NumPy via PythonNet dans le kernel .NET), un verdict quantitatif. Chaque paire isole un mécanisme (sélection greedy vs réinsertion de population, bruit A1 N(0,1) vs uniforme, écart d'ancrage, ablation de couche mémétique) et tranche sur la question « le moteur ou la stratégie ? » | voir [table des paires](MGS-vs-mealpy/README.md#table-des-paires) | |
+- **Vous découvrez** : lisez le [parcours principal](#parcours-principal) dans l'ordre — les numéros nus suffisent à suivre l'arc complet, de la composition d'une métaheuristique jusqu'à la représentation du problème.
+- **Vous creusez un palier** : ouvrez ses [approfondissements](#approfondissements) — un notebook à lettre ajoute un angle à son numéro d'ancrage et n'est pas nécessaire au fil.
+- **Vous cherchez la recherche en cours** : la [sous-série MGS vs mealpy](#sous-série-mgs-vs-mealpy), puis le [parcours détaillé](#parcours-détaillé) et les [références](#références).
+
+Cette partie se compose de notebooks .NET Interactive (C#), hébergés dans ce répertoire et consommant le sous-module voisin [`MetaGeneticSharp/`](../MetaGeneticSharp/) ; les deux notebooks Python de la série (MGS-17b et MGS-20) font exception et le disent dans leur propre ligne. Les comptes sont délégués au [catalogue vivant](../../../COURSE_CATALOG.generated.md).
+
+## Parcours principal
+
+Cette table ne porte que des **numéros nus** : qui la lit de haut en bas suit le parcours complet de la partie. Les notebooks à lettre d'un même palier sont regroupés sous [Approfondissements](#approfondissements), et rappelés ici par un lien court dans la dernière colonne.
+
+| # | Notebook | Concept clé | Primitives introduites | Durée | Pour approfondir |
+|---|----------|-------------|------------------------|-------|------------------|
+| 1 | [MGS-01-Introduction](MGS-01-Introduction.ipynb) | Moteur autonome `MetaGeneticAlgorithm` | `DefaultMetaHeuristic`, `NoOp`, fitness quadratique | ~40 min | — |
+| 2 | [MGS-02-Composition](MGS-02-Composition.ipynb) | Assemblage déclaratif | `Match`, contrôle-flux, grammaire fluente | ~45 min | — |
+| 3 | [MGS-03-Eukaryote](MGS-03-Eukaryote.ipynb) | Partition du génome en chromosomes composites | `EukaryoteChromosome` (caryotype), sous-chromosomes, métaheuristique par compartiment | ~50 min | — |
+| 4 | [MGS-04-Islands](MGS-04-Islands.ipynb) | Modèle insulaire | populations structurées, migration entre îles | ~50 min | — |
+| 5 | [MGS-05-CompoundMetaheuristics](MGS-05-CompoundMetaheuristics.ipynb) | Reconstruire les composés publiés (WOA/EO/FBI) | `MetaHeuristicsService`, `WhaleOptimisationAlgorithm`, `EquilibriumOptimizer`, factory `CreateMetaHeuristicByName` | ~50 min | — |
+| 6 | [MGS-06-Benchmarks](MGS-06-Benchmarks.ipynb) | Comparaison honnête | `KnownFunctions`, composé WOA vs Uniform vs Islands | ~50 min | — |
+| 7 | [MGS-07-TSP](MGS-07-TSP.ipynb) | Grammaire agnostique à la représentation | `TspFitness`, `OrderedCrossover`, permutation + `Islands` | ~45 min | [7b](MGS-07b-LandscapeMultidim.ipynb) · [7c](MGS-07c-RosenbrockGriewank.ipynb) · [7d](MGS-07d-MichalewiczDixonPrice.ipynb) |
+| 8 | [MGS-08-LandscapeExplorer](MGS-08-LandscapeExplorer.ipynb) | Visualiser la surface de fitness | heatmaps PNG graphiques, 3 modes (fonction / carte d'altitude / image), trajectoire de convergence | ~50 min | — |
+| 9 | [MGS-09-EverestRelief](MGS-09-EverestRelief.ipynb) | Relief terrestre réel comme paysage | `DemGrid` (wrapper `ImageHeightMapFunction`), cartes `KnownHeightMap` de jsboige, GA/WOA/EO vs PSO, flipbook de convergence | ~55 min | — |
+| 10 | [MGS-10-CenterBias](MGS-10-CenterBias.ipynb) | Biais central vs robustesse au déplacement | banc `CenterBiasBenchmark` (Kudela 2022), composés WOA/EO/FBI/DE/BBPSO/SA vs GA/Random, signature $\Delta$ | ~45 min | — |
+| 11 | [MGS-11-IslandSynergy](MGS-11-IslandSynergy.ipynb) | Synergie d'îles complémentaires (verdict mesuré) | `IslandCompoundMetaheuristic`, archipel hétérogène DE+BBPSO, dé-biais `ShiftedFitness`, GIF multicolore par île | ~45 min | — |
+| 12 | [MGS-12-AxisAlignment](MGS-12-AxisAlignment.ipynb) | Biais d'alignement d'axes (rotation) | décorateur `RotatedFitness` ($M x$, Givens orthogonale), séparabilité vs rotation, optimum relocalisé, signature $\Delta$ | ~45 min | — |
+| 13 | [MGS-13-LandscapeDebias](MGS-13-LandscapeDebias.ipynb) | Pourquoi la rotation casse la séparabilité (visuel) | heatmaps 2-D des fonctions dé-biaisées `ShiftedFitness`/`RotatedFitness`, Sphere invariante vs Rosenbrock/Rastrigin rotatées, composition CEC | ~40 min | — |
+| 14 | [MGS-14-IslandSynergyFound](MGS-14-IslandSynergyFound.ipynb) | Une synergie d'îles *trouvée* (et un cas négatif) | archipel `DE+BB-3:1` (3 îles DE + 1 île BBPSO), migration douce, banc multi-seed à contrôle propre, synergie robuste sur Ackley / absente sur Rastrigin | ~45 min | — |
+| 15 | [MGS-15-LandscapeAnalysis](MGS-15-LandscapeAnalysis.ipynb) | Le *nombre* derrière la heatmap — FDC globale + rugosité locale | deux métriques complémentaires : FDC (Jones & Forrest 1995, Pearson fitness–distance, nuage SVG inline) + autocorrélation de marche aléatoire (Weinberger 1990, longueur de corrélation) + neutralité ; Sphere FDC 0,97 & lisse vs Rastrigin FDC 0,71 & rugueux (L≈1 pas) | ~40 min | — |
+| 16 | [MGS-16-AlgorithmSelection](MGS-16-AlgorithmSelection.ipynb) | **Capstone** — sélectionner le bon optimiseur selon le paysage (Rice 1976) | No-Free-Lunch (Wolpert & Macready 1997) + cadre de Rice (features → portfolio → performance) ; réutilise les 8 optimiseurs de MGS-10 et les features FDC/ρ₁/neutralité de MGS-15 ; sélecteur heuristique validé puis testé sur un 4ᵉ paysage inconnu (Rosenbrock) | ~70 min | — |
+| 17 | [MGS-17-ParameterControl](MGS-17-ParameterControl.ipynb) | **Deuxième réponse au No-Free-Lunch** — adapter les paramètres pendant la course (Eiben 1999) | taxonomie Eiben (tuning vs control : déterministe / adaptatif / self-adaptatif) via le vrai moteur du fork `ProbabilityConfig.DynamicProbability` ; schedule de décroissance, contrôle adaptatif par diversité, self-adaptatif hétérogène ; No-Free-Lunch au niveau du *paramètre* (l'ordre s'inverse entre Rastrigin et Sphere) | ~50 min | [17b](MGS-17b-Empirical-Algorithm-Selection.ipynb) |
+| 18 | [MGS-18-CecBanc](MGS-18-CecBanc.ipynb) | **Consolidation du banc CEC** — shift+rotate combinés (le protocole standard de dé-biais) | décorateurs composés `RotatedFitness(ShiftedFitness(inner, offset), M)` (Givens orthogonale) ; banc à 4 variantes (plain/shifted/rotated/combined), étend `CenterBiasBenchmark` ; 8 optimiseurs sous shift+rotate sur Ackley+Rosenbrock ; les biais isolés (WOA central MGS-10, GA axe MGS-12) se composent — effet sub-additif ou super-additif selon le paysage | ~50 min | — |
+| 19 | [MGS-19-MetropolisReinsertion](MGS-19-MetropolisReinsertion.ipynb) | **Recuit simulé décomposé** — l'opérateur de Metropolis débranché de SA et greffé seul sur un GA | `MetropolisReinsertion` isolé du compound `SimulatedAnnealing` et injecté via `MetaGeneticAlgorithm.Reinsertion` ; banc 5 configs (pairwise greedy contrôle, 3 températures Metropolis, élitiste référence) sur Sphere/Rastrigin/Ackley + limite frozen ; verdict honnête **négatif** — l'acceptation `exp(Δ/T)` détachée du couplage perturbation+acceptation ne porte pas le bénéfice du recuit | ~45 min | — |
+| 20 | [MGS-20-Langage-de-Composition](MGS-20-Langage-de-Composition.ipynb) | **Langage de composition** — décrire le comportement voulu, puis rechercher la composition d'opérateurs qui le réalise | mini-DSL (primitives + combinateurs) et boucle évolutionnaire paramétrique sur les compositions ; notebook Python | — | — |
+| 21 | [MGS-21-Representation-vs-Algorithme](MGS-21-Representation-vs-Algorithme.ipynb) | **Représentation × algorithme : le plan croisé Sudoku** — quel facteur pèse le plus ? | deux représentations (R1 vecteur continu + décodage arrondi, R2 grille à permutations de lignes via l'algèbre de swaps) × deux moteurs (PSO composé, GA permutation), budget ~8 000 évaluations, 4 graines {0,1,7,42}, critère de verdict pré-enregistré ; verdict en deux temps — la représentation domine la colonne PSO (−39 conflits vs −34,5/−6 pour l'algorithme), comparable sur la colonne GA ; 4/4 résolutions en R2/GA, aucune en R1 ; cause mesurée : 100 % des candidats R1 décodés tombent hors de l'espace admissible | ~40 min | — |
+
+## Approfondissements
+
+Un palier est un numéro qui a reçu des lettres : on lit le numéro, on ouvre une lettre quand on veut creuser ce palier-là. Aucune lettre n'est nécessaire pour suivre le parcours principal, et aucune n'est perdue de vue — chacune figure ci-dessous sous son numéro d'ancrage.
+
+### Autour de 7 — la projection N-D des paysages
+
+MGS-07 a établi l'agnosticisme de la grammaire à la représentation ; ses trois lettres montrent ce que la **dimension** fait à un paysage qu'on croyait connaître.
+
+| # | Notebook | Ce qu'elle ajoute au palier | Primitives introduites | Prérequis en plus | Durée |
+|---|----------|-----------------------------|------------------------|-------------------|-------|
+| 7b | [MGS-07b-LandscapeMultidim](MGS-07b-LandscapeMultidim.ipynb) | Projection N-D des paysages (voir en dimension ≥ 5) | surcharge `RenderHeatmap` N-D de `KnownFunctionLandscape`, projection MAX sur les coordonnées cachées (opérateur Gtk# verbatim) ; Sphere 2-D vs 5-D, Rastrigin n=2/5/10/30, Schwefel n=5/30 | MGS-06 (les dix fonctions), MGS-07 (représentation agnostique) | ~30 min |
+| 7c | [MGS-07c-RosenbrockGriewank](MGS-07c-RosenbrockGriewank.ipynb) | Projection N-D : Rosenbrock (vallée banane) + Griewank (produit-cosinus) | `RosenbrockFitness`, `GriewankFitness` sur la surcharge N-D de `RenderHeatmap` ; dims $n=2/5/30$ ; la vallée étroite de Rosenbrock (largeur $\sim 10^{-2}$) disparaît en MAX-projection 30-D, Griewank produit-cosinus $\prod \cos(x_i/\sqrt{i})$ vs Ackley somme-cosinus | MGS-07b (la surcharge N-D de `RenderHeatmap`) | ~30 min |
+| 7d | [MGS-07d-MichalewiczDixonPrice](MGS-07d-MichalewiczDixonPrice.ipynb) | Projection N-D : Michalewicz (crêtes raides) + Dixon-Price (vallée non-scalable) | `MichalewiczFitness` (paramètre $m=10$), `DixonPriceFitness` sur la surcharge N-D de `RenderHeatmap` ; dims $n=2/5/30$ ; crêtes quasi-binaires de Michalewicz ($m=10$ sature l'amplitude), vallée parabolique-croisée non-rectiligne de Dixon-Price | MGS-07b (la même surcharge N-D) | ~30 min |
 
 Les 8 figures MGS-7b (heatmaps de la projection N-D des paysages Sphere/Rastrigin/Schwefel) sont cataloguées dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md) avec leurs **descriptions visuelles** verbatim (audit vision MiniMax M3 c.755, doctrine #5780) — voir notamment la note disclosed sur la convergence visuelle des heatmaps Rastrigin-d2/d10/d30 en projection MAX (moyennes RGB identiques à 2 décimales près).
 
-### Applications spécialisées
+### Autour de 17 — la sélection empirique d'algorithme
 
-Les notebooks d'application GA (détection de bords, optimisation de portefeuille — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Applications/Hybrid/`](../Applications/README.md) : **App-9 / App-9b** (EdgeDetection) et **App-10 / App-10b** (Portfolio). La série MGS numérotée (MGS-1 à MGS-19, MGS-21, plus la trilogie de ponts MGS-7b/7c/7d de projection N-D ; MGS-20, langage de composition, est en préparation) constitue le cœur propre à la Partie 4. La **campagne MGS vs mealpy** (MGS-22 à MGS-31, 10 notebooks comparatifs) vit dans la sous-série dédiée [`MGS-vs-mealpy/`](MGS-vs-mealpy/README.md), avec son sommaire, son protocole commun et sa synthèse croisée.
+MGS-17 contrôle les paramètres d'un algorithme fixé ; sa lettre aborde la question en amont, par la **sélection** de l'algorithme à partir de mesures.
+
+| # | Notebook | Ce qu'elle ajoute au palier | Primitives introduites | Prérequis en plus | Durée |
+|---|----------|-----------------------------|------------------------|-------------------|-------|
+| 17b | [MGS-17b-Empirical-Algorithm-Selection](MGS-17b-Empirical-Algorithm-Selection.ipynb) | **Distillation Theodore Deguest L4 EPITA SCIA 2026** — squelette : cadre theorique (Rice 1976, Wolpert 1996, Smith-Miles 2009) + setup env execute | introduction, attribution, plan en 4 tranches (cadre / protocole 3 terrains / Pareto+discriminant / ponts series) ; noyau execute via kernel `coursia-ml-training` ; PR Theodore Deguest [jsboigeEpita/2026-Epita-Intelligence-Symbolique#42](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/pull/42) | MGS-16 (sélection d'algorithme) ; noyau exécuté via le kernel `coursia-ml-training` | ~30 min (tranches 1+2+3 livrees ; tranche 4 benchmarks reels Theodore par ai-01 ou lane GPU) |
+
+## L'arc de la série
 
 La série suit un fil continu plutôt qu'un catalogue : on **reconstruit** les composés publiés depuis leurs primitives (MGS-5), on les **confronte** honnêtement (MGS-6, MGS-7), puis on apprend à *voir* le paysage (MGS-8, MGS-9), à *mesurer* ses biais (MGS-10 à MGS-14), à le *quantifier* (MGS-15), à *raisonner* sur le choix de l'algorithme (MGS-16), de ses paramètres (MGS-17), du protocole d'évaluation (MGS-18), la démontabilité d'un composé (MGS-19) — et enfin à *questionner la représentation elle-même* (MGS-21 : le croisement représentation × algorithme montre que le choix de l'espace peut dominer le choix du moteur). Le déroulé notebook par notebook figure dans le « Parcours détaillé » plus bas, et la Conclusion reprend les enseignements transversaux. Feuille de route du fork : [ROADMAP.md](https://github.com/jsboige/MetaGeneticSharp/blob/main/ROADMAP.md).
 
@@ -86,7 +112,7 @@ L'arc se résume en onze vagues conceptuelles, chacune posant la brique que la s
 ```mermaid
 flowchart LR
     W1["<b>Socle &amp; composition</b><br/>MGS-1 — Moteur autonome<br/>MGS-2 — Grammaire fluente<br/>(Match, Container, Scoped)"]
-    W2["<b>Structuration de population</b><br/>MGS-3 — Eukaryote<br/>(sous-populations)<br/>MGS-4 — Islands (migration)"]
+    W2["<b>Structuration de population</b><br/>MGS-3 — Eukaryote<br/>(partition du génome en chromosomes<br/>composites, analogie caryotype)<br/>MGS-4 — Islands (migration)"]
     W3["<b>Composés publiés &amp; confrontation</b><br/>MGS-5 — Reconstruire WOA/EO/FBI<br/>MGS-6 — Benchmarks<br/>(No-Free-Lunch)<br/>MGS-7 — TSP combinatoire"]
     W4["<b>Paysages de fitness</b><br/>MGS-7b/7c/7d — Projection N-D<br/>MGS-8 — Landscape Explorer<br/>MGS-9 — Everest (relief réel)"]
     W5["<b>Biais &amp; mesure falsifiable</b><br/>MGS-10 — Biais central<br/>(Kudela 2022)<br/>MGS-11 — Synergie d'îles<br/>(verdict négatif)"]
@@ -99,44 +125,60 @@ flowchart LR
     W1 --> W2 --> W3 --> W4 --> W5 --> W6 --> W7 --> W8 --> W9 --> W10 --> W11
 ```
 
+## Applications spécialisées
+
+Les notebooks d'application GA (détection de bords, optimisation de portefeuille — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Applications/Hybrid/`](../Applications/README.md) : **App-9 / App-9b** (EdgeDetection) et **App-10 / App-10b** (Portfolio). La série MGS numérotée (MGS-1 à MGS-21, plus la trilogie de ponts MGS-7b/7c/7d de projection N-D) constitue le cœur propre à la Partie 4. La **campagne MGS vs mealpy** (notebooks comparatifs MGS-22 à MGS-31) vit dans la sous-série dédiée [`MGS-vs-mealpy/`](MGS-vs-mealpy/README.md), avec son sommaire, son protocole commun et sa synthèse croisée.
+
+## Sous-série MGS vs mealpy
+
+La campagne oppose la bibliothèque à **mealpy 3.0.2** (Python/NumPy) sur un protocole apparié tenu dans une seule exécution kernel .NET : chaque paire isole un mécanisme (sélection greedy contre réinsertion de population, bruit gaussien contre uniforme, écart d'ancrage, ablation de couche mémétique) et tranche la question « le moteur ou la stratégie ? ». Le détail des paires est dans la [table du sommaire](MGS-vs-mealpy/README.md#table-des-paires) ; la ligne d'origine du tableau, qui portait cette campagne, est reprise ici :
+
+| # | Notebook | Concept clé | Primitives introduites | Durée |
+|---|----------|-------------|------------------------|-------|
+| 22 → 31 | [Campagne **MGS vs mealpy**](MGS-vs-mealpy/README.md) — les optimiseurs comparés — PSO, DE, SA, WOA, EO, FBI, BBPSO, GA, Scatter Search, synthèse | **Confrontation externe systématique** — la même expérience (protocole apparié Sudoku-Easy[0], budget ~8 000 évals, graines {0,1,7,42}, déterminisme 8/8 ou 12/12), deux bibliothèques (MGS C# .NET 9 vs mealpy 3.0.2 Python/NumPy via PythonNet dans le kernel .NET), un verdict quantitatif. Chaque paire isole un mécanisme (sélection greedy vs réinsertion de population, bruit A1 N(0,1) vs uniforme, écart d'ancrage, ablation de couche mémétique) et tranche sur la question « le moteur ou la stratégie ? » | voir [table des paires](MGS-vs-mealpy/README.md#table-des-paires) |  |
+
 ## Configuration requise
 
-Le kernel `dotnet-interactive` installé (**1.0.707101**, hôte .NET moderne) **charge nativement les assemblies `net9.0`** — vérifié par exécution : MGS-6 (qui référence `MetaGeneticSharp.Extensions` net9.0), MGS-18, MGS-19 et MGS-21 s'exécutent verts sur ce kernel. Les notebooks MGS se répartissent sur deux TFM :
+Le kernel `dotnet-interactive` **charge nativement les assemblies `net9.0`** du fork : vérifié sur la version épinglée du dépôt (**1.0.617701**, cf. [kernels-runtime.md](../../../docs/reference/kernels-runtime.md)) avec MGS-01 et MGS-06 sous Linux, et auparavant sur 1.0.707101 avec MGS-6, MGS-18, MGS-19 et MGS-21. Tous les chargements `#r` sont relatifs (`../MetaGeneticSharp/src/...`) et visent des DLL `net9.0` produites par un `dotnet build` du fork :
 
-- **MGS-1 à MGS-5** (Introduction, Composition, Eukaryote, Islands, Compound) ne consomment que `MetaGeneticSharp.Domain` + `Infrastructure` + `GeneticSharp`. Ils référencent les **DLL `net8.0`**, chargées par rétro-compat sur le kernel actuel (qui supporte net8.0/net9.0/net10).
-- **MGS-6 à MGS-9** (Benchmarks, TSP, Landscape, Everest) dépendent en plus de `MetaGeneticSharp.Extensions` (SkiaSharp / `System.Drawing.Common`). Ils référencent les DLL `net9.0` et **s'exécutent sur le kernel actuel** (MGS-6 vérifié vert). *Sur l'ancien kernel 1.0.552801 (hôte net8.0-only), ils restaient bloqués* (follow-up historique désormais non requis sur le kernel actuel).
+- `src/MetaGeneticSharp.Domain/bin/Debug/net9.0/` — `MetaGeneticSharp.Domain`, `Infrastructure` et `GeneticSharp` ;
+- `src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/` — les mêmes, plus `MetaGeneticSharp.Extensions`, SkiaSharp et `System.Drawing.Common`, pour les notebooks graphiques ;
+- `src/MetaGeneticSharp.Domain/bin/Release/net9.0/` — seulement pour [Search-05](../Part1-Foundations/Search-05-GeneticAlgorithms-CSharp.ipynb) (Partie 1), d'où le build `Release` ci-dessous.
 
 Règle : pas de contournement, installer l'environnement complet :
 
-```powershell
-# 1. .NET SDK (9.0 requis pour le fork source ; 8.0/10.0 optionnels)
+```bash
+# 1. .NET SDK 9.0 (cible du fork)
 dotnet --version
 
-# 2. dotnet-interactive (kernel Jupyter pour C#, hôte .NET moderne >= 1.0.707101)
-dotnet tool install --global Microsoft.dotnet-interactive
+# 2. dotnet-interactive, à la version épinglée du dépôt
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701
 dotnet interactive jupyter install
 
-# 3. Sous-modules + build du fork (les notebooks chargent les DLL par #r absolu)
+# 3. Sous-module, depuis la racine du dépôt (--recursive : il contient GeneticSharp), puis build
+git submodule update --init --recursive MyIA.AI.Notebooks/Search/MetaGeneticSharp
 cd MyIA.AI.Notebooks/Search/MetaGeneticSharp
-git submodule update --init --recursive
-dotnet build                      # build net9.0 (fork source ; DLLs pour MGS-6..18)
+dotnet build                      # bin/Debug/net9.0 : notebooks MGS
+dotnet build -c Release           # bin/Release/net9.0 : Search-05
 ```
 
-> **Bins `net8.0` pour MGS-1..5.** Le fork est actuellement single-TFM `net9.0`, donc `-p:TargetFramework=net8.0` échoue (le `project.assets.json` restauré ne contient que la cible net9.0). Pour produire `Domain` + `Infrastructure` en `net8.0` (référencés par MGS-1..5, chargés par rétro-compat sur le kernel actuel), il faut soit retargeter temporairement le `.csproj` en `net8.0` puis `dotnet build`, soit — solution propre — multi-targeter le fork en `<TargetFrameworks>net8.0;net9.0</TargetFrameworks>` (follow-up sur le fork, `Extensions`/SkiaSharp restant net9.0-only). Les bins référencés par MGS-1..5 doivent exister sous `src/MetaGeneticSharp.Domain/bin/Debug/net8.0/`.
+> **Limite connue sous Linux** ([#17654](https://github.com/jsboige/CoursIA/issues/17654)). Deux causes, mesurées sur un clone vierge : (1) MGS-08, MGS-09, MGS-11, MGS-13 et MGS-14 écrivent leurs `#r` avec des séparateurs `\` (`..\MetaGeneticSharp\...`), que Linux ne reconnaît pas (`CS0006: Metadata file ... could not be found`, mesuré sur MGS-08) ; (2) les notebooks graphiques MGS-04, MGS-08, MGS-09, MGS-11, MGS-13, MGS-14 et MGS-15 préchargent le natif SkiaSharp depuis `runtimes/win-*/native/libSkiaSharp.dll`, et le build du fork ne produit aucun `libSkiaSharp.so` (pas de référence à `SkiaSharp.NativeAssets.Linux`) : `DllNotFoundException`, mesuré sur MGS-04 et MGS-15. Les autres notebooks MGS ne sont pas concernés (MGS-01 et MGS-06 passent).
 
-Les notebooks chargent les DLL via `#r "c:/dev/MetaGeneticSharp/..."` (chemin du checkout de travail du fork). **MGS-1..5** pointent sur `src/MetaGeneticSharp.Domain/bin/Debug/net8.0/` (4 DLL : GeneticSharp.Domain, GeneticSharp.Infrastructure.Framework, MetaGeneticSharp.Domain, MetaGeneticSharp.Infrastructure) ; **MGS-6..14** pointent sur `src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/` (Extensions + SkiaSharp + System.Drawing.Common) ; **MGS-21..28** pointent sur `src/MetaGeneticSharp.Domain/bin/Debug/net9.0/` (GeneticSharp.Infrastructure.Framework + MetaGeneticSharp.Infrastructure + MetaGeneticSharp.Domain, chemins relatifs `../MetaGeneticSharp/...`).
-
-**Reproductibilité.** Les résultats numériques de MGS-1 à MGS-9 sont **stochastiques** (le RNG du framework n'y est pas seedé) : les outputs committés sont une exécution valide, les valeurs varient d'une exécution à l'autre. À partir de MGS-10, les bancs sont seedés pour devenir **reproduisibles** :
+**Reproductibilité.** Le corpus est **seedé** : `MGS-01` à `MGS-09` initialisent explicitement le RNG avant la création de la population initiale (`FastRandomRandomization.ResetSeed` ; `SeededRandomization` pour `MGS-09`) — campagne [#17863](https://github.com/jsboige/CoursIA/issues/17863), contrôles deux-exécutions à l'appui — et les bancs à partir de `MGS-10` sont seedés pour devenir **reproduisibles** :
 
 | Notebook | Strategy | Verdict |
 |----------|----------|---------|
 | **MGS-10** | `ResetSeed(masterSeed)` une fois avant la suite | reproduisible (biais central) |
 | **MGS-11** | `ResetSeed(42)` avant chaque banc | reproductible (caveat : graine unique, pas multi-graines) |
 | **MGS-12** | reseed avant chaque paire optimiseur | reproductible (caveat : dim 2, budget large → $\Delta \approx 0$ pour tous ; cf exercice 2) |
+| **MGS-13** | rotations/décalages par `RotationMatrices.Seeded(n, seed)` / `ShiftedFitness.Seeded(...)` | reproductible (seul écart résiduel = blob bootstrap du kernel — [#17863](https://github.com/jsboige/CoursIA/issues/17863)) |
 | **MGS-14** | multi-seed (5 graines) avant chaque archipel | reproduisible (synergie robuste sur Ackley, absente sur Rastrigin) |
+| **MGS-15** | `SampleLandscape(..., seed = 42)` / `RandomWalk(..., seed = 7)` | reproductible (seul écart résiduel = blob bootstrap du kernel — [#17863](https://github.com/jsboige/CoursIA/issues/17863)) |
 | **MGS-17** | multi-seed (5 graines {7,42,99,123,777}) | reproduisible (`DynamicProbability` déterministe, pas de RNG interne) |
 | **MGS-19** | multi-seed (3 graines {7,42,99}) avant chaque course | reproduisible (banc Metropolis-vs-Pairwise + limite frozen) |
 | **MGS-21** | multi-seed (4 graines {0,1,7,42}) par cellule du plan croisé, `FastRandomRandomization.ResetSeed(seed)` avant création de population | reproduisible (croisement 2×2, 4/4 résolutions en R2/GA, déterminisme vérifié sur 3 exécutions) |
+
+Le contrôle « deux exécutions → sorties identiques » vaut hors le seul blob de bootstrap du kernel (adresse/PID éphémères), et à condition de bâtir les DLL `#r` depuis le gitlink courant du fork : un `bin/` antérieur au correctif de seed par pixel rend les rendus N-D non déterministes (avertissement mesuré le 2026-10-02, cf. #18820).
 
 Règle C.2 : les notebooks sont committés **avec leurs outputs** (exécution réelle, kernel .NET).
 
@@ -152,7 +194,7 @@ Le cœur de la thèse « composants > métaphores ». On introduit `Match` (disp
 
 ### 3 — Eukaryote
 
-On cesse de traiter la population comme un sac homogène. Le modèle eucaryote partitionne la population en sous-populations spécialisées portées par des chromosomes composites — chaque compartiment peut avoir sa propre métaheuristique. C'est une configuration qu'aucune bibliothèque monolithique grand public n'offre directement, et qui devient naturelle une fois la composition maîtrisée.
+On cesse de traiter la population comme un sac homogène. Le modèle eucaryote partitionne le génome en chromosomes composites (analogie caryotype — chaque sous-chromosome porte sa métaheuristique) ; les N individus restent présents dans chaque compartiment via leur tranche de gène. C'est une configuration qu'aucune bibliothèque monolithique grand public n'offre directement, et qui devient naturelle une fois la composition maîtrisée.
 
 ### 4 — Islands
 
@@ -270,7 +312,7 @@ MGS-16/17 répondaient au No-Free-Lunch en changeant *d'algorithme* ou *de param
 
 **Verdict honnête en deux temps (G.9)** : sur la colonne PSO, la représentation domine — la médiane passe de 45,0 à 6,0 conflits (−39), davantage que le meilleur effet algorithme ne le rapproche (−34,5) ; sur la colonne GA, les deux facteurs pèsent du même ordre (10,5 → 0,0 côté représentation, ×4,3 côté algorithme) — et seule leur **combinaison** R2×GA résout : **4/4 graines à 0 conflit**, aucune cellule R1 ne s'approchant de la solution (minimum 4). La cellule de **cause** explique pourquoi l'écart est structurel et non dynamique : 200 candidats R1 sur 200 (100 %) tombent hors de l'espace admissible après décodage (l'arrondi est une projection discontinue qui détruit l'information de proximité), contre 0/200 pour R2 par construction ; un candidat R1 aléatoire part à 67,9 conflits en moyenne contre 37,4 en R2 — les conflits de lignes que R2 rend *impossibles*, R1 les porte presque tous dès le tirage. C'est la version mesurée du geste « changer de représentation plutôt qu'insister » : avant de régler `w`, `c1` ou `c2`, demander ce que le décodage détruit. Trois exercices prolongent (rejouer le croisement sur une seconde grille, recuit simulé sur les deux représentations, diversité effective par grille décodée distincte).
 
-> Numérotation : MGS-20 (langage de composition, [#12224](https://github.com/jsboige/CoursIA/issues/12224)) est en préparation — MGS-21 a été livré indépendamment car le plan croisé ne dépend pas du langage de composition.
+> Numérotation : MGS-21 a été livré avant MGS-20 (langage de composition, [#12224](https://github.com/jsboige/CoursIA/issues/12224)), car le plan croisé ne dépend pas du langage de composition.
 
 ## Conventions
 
@@ -311,10 +353,10 @@ Les métaheuristiques reconstruites dans cette partie suivent les articles fonda
 
 ### Ce que vous avez appris
 
-Cette quatrième partie a changé la question : non plus *« quelle métaheuristique choisir »* (Parties 1-2), mais *« comment construire et combiner des métaheuristiques à partir de primitives »*. L'arc pédagogique, porté par trente-cinq notebooks C# .NET 9 au-dessus de [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp), démontre la thèse **composants > métaphores** :
+Cette quatrième partie a changé la question : non plus *« quelle métaheuristique choisir »* (Parties 1-2), mais *« comment construire et combiner des métaheuristiques à partir de primitives »*. L'arc pédagogique, porté par les notebooks C# .NET 9 de la série au-dessus de [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp), démontre la thèse **composants > métaphores** :
 
 - **Le moteur autonome** (MGS-1, MGS-2) — un `MetaGeneticAlgorithm` qui pilote l'évolution sans dépendre de la classe `GeneticAlgorithm` amont, et la grammaire fluente (`Match`, `Container`, `Scoped`) qui permet d'assembler une métaheuristique en quelques lignes déclaratives lisibles. C'est le socle : tout le reste compose au-dessus.
-- **La structuration de population** (MGS-3, MGS-4) — le modèle eucaryote (sous-populations spécialisées portées par des chromosomes composites) et le modèle insulaire (îles migratoires) : deux configurations qu'aucune bibliothèque monolithique grand public n'offre directement, et qui deviennent naturelles une fois la composition maîtrisée.
+- **La structuration de population** (MGS-3, MGS-4) — le modèle eucaryote (partition du génome en chromosomes composites, analogie caryotype — chaque sous-chromosome porte sa propre métaheuristique) et le modèle insulaire (îles migratoires) : deux configurations qu'aucune bibliothèque monolithique grand public n'offre directement, et qui deviennent naturelles une fois la composition maîtrisée.
 
 - **La reconstruction des composés publiés** (MGS-5) — WOA, EO, FBI : pour chaque algorithme du catalogue, le parcours en trois temps (description → reconstruction depuis les primitives `BuildMainHeuristic()` → raccourci factory prouvant l'équivalence). C'est l'argument poussé jusqu'à la **preuve** : reconstruire un algorithme bio-inspiré *démontre* son mécanisme au lieu de le cacher derrière une métaphore animale (critique de Sørensen, 2015).
 
@@ -339,7 +381,6 @@ Cette quatrième partie a changé la question : non plus *« quelle métaheurist
 - **Le démontage du recuit simulé : l'opérateur de Metropolis isolé** (MGS-19) — la thèse « composants > métaphores » éprouvée dans son sens le plus exigeant : non seulement on **reconstruit** un composé (MGS-5), mais on peut en **débrancher** un ingrédient et le rebrancher ailleurs. Le notebook isole `MetropolisReinsertion` du compound `SimulatedAnnealing` et l'injecte seul sur un GA de recombinaison (`ga.Reinsertion = reins`), à appariement constant avec un contrôle greedy pairwise. Verdict honnête **négatif** (G.9) : l'acceptation `exp(Δ/T)` détachée de la perturbation **n'aide pas** un GA à franchir les cols (sur Rastrigin/Ackley, tous les réglages Metropolis sous-performent le greedy, le plus chaud est le pire) — car l'enfant recombinant n'est pas un « voisin » du parent, donc accepter un moins bon enfant n'est quasiment que du bruit. Le bénéfice du recuit est dans le **couplage** perturbation+acceptation, pas dans l'acceptation seule. Démonter révèle la leçon finale : on PEUT décomposer un algorithme, l'opérateur isolé FONCTIONNE — mais le tout est plus que la somme de ses pièces, et c'est précisément en démontant qu'on le prouve.
 
 - **La représentation au-dessus de l'algorithme** (MGS-21) — la question du No-Free-Lunch posée un niveau *au-dessus* du choix d'algorithme : à budget d'évaluations et fonction de coût égaux, un plan croisé 2×2 (représentation continue+arrondi vs permutations de lignes ; PSO vs GA) sur le Sudoku montre que le changement d'espace rapporte au PSO davantage que tout changement de moteur (−39 conflits contre −34,5), que seule la combinaison R2×GA résout (4/4 graines à 0 conflit, aucune cellule continue n'approchant la solution), et pourquoi : l'arrondi est une projection discontinue dont **100 % des candidats décodés** tombent hors de l'espace admissible. Avant de régler les paramètres d'un moteur, demander ce que le décodage détruit — la bonne réponse à un problème d'optimisation commence par la représentation, avant l'algorithme (MGS-16) et avant le paramètre (MGS-17).
-
 
 Le véritable enseignement rejoint celui des Parties 1-2 : aucune métaheuristique ne domine partout, et la bonne réponse à un problème d'optimisation est rarement « l'algorithme X » mais plutôt « **la bonne composition de primitives pour ce paysage de fitness** ».
 

@@ -19,8 +19,13 @@ name: Bash Syntax Advisory
 #     inheritance + one known-broken teaching artefact tracked separately.
 #   - shebang-dry-run-advisory: continue-on-error -- never fails the PR;
 #     warns + posts a PR comment when a shebang / executable-bit issue is
-#     found, and dry-runs the one script that exposes a no-build `check`
-#     mode (build_advisory.sh check).
+#     found, and EXECUTES every companion that declares a no-build dry mode
+#     with a `# CI-CHECK:` header line (declare-dry-run step). `bash -n`
+#     above proves a companion parses; this step proves it still runs --
+#     the "execute rather than parse" half of acceptance criterion 4, which
+#     was met in appearance only while one script was hardcoded here (#10643,
+#     relecture 2026-10-05 : 10 of 64 in-scope companions expose a dry mode,
+#     one was wired).
 
 on:
   push:
@@ -126,9 +131,75 @@ jobs:
             fi
           done < <(git ls-files '*.sh' | grep -v -E '^(MyIA.AI.Notebooks/GenAI/Vibe-Coding/|docs/archive/)|(^|/)_archive/' | sort)
           echo "warnings=$WARN" >> "$GITHUB_OUTPUT"
-      - name: Dry-run build_advisory.sh check (no build)
+      - name: Execute every companion declaring a dry mode (# CI-CHECK:)
         run: |
-          bash scripts/slides/build_advisory.sh check
+          set -uo pipefail
+          # Declared, not guessed. A companion opts in with a header line at
+          # column 0:
+          #     # CI-CHECK:             <- no argument (check-only default)
+          #     # CI-CHECK: --check      <- arguments forwarded verbatim
+          # Discovery, not a hardcoded list: the guard cannot go stale on the
+          # next companion, and no script is executed on a guess -- only on its
+          # author's declaration.
+          #
+          # Safety: every wired declaration was READ before wiring, and each
+          # says below what it really does -- verified against the script
+          # bodies, not against their own comments.
+          #   setup_environment.sh --check
+          #                             dry probe: reports missing pip
+          #                             packages without installing (install
+          #                             refused under --check), writes no
+          #                             checkpoint and no log file, implies no
+          #                             --auto-fix. The BARE default (no
+          #                             argument) installs missing packages
+          #                             for real -- that is why the
+          #                             declaration carries --check.
+          #   audit_environment.sh      read-only toward the system; appends
+          #                             its own audit_<timestamp>.log to the
+          #                             job CWD (untracked) -- the only write
+          #                             of the set.
+          #   setup_lean4_native.sh --check / h7_p3_notebook_runner.sh
+          #                             --check-env verify then exit.
+          #   build_advisory.sh check   denominator check, no build.
+          # Companions whose only mode mutates the host or the tree stay OUT on
+          # purpose: install-ffmpeg.sh (sudo apt-get), z3-build-deploy.sh and
+          # automata-build-deploy.sh (rm -rf + cp into the tracked .deploy/), and
+          # the three ML-Training-Pipeline launchers (their --dry-run still runs
+          # the training entry point, so it needs the ML environment).
+          #
+          # A non-zero exit is REPORTED, never fatal: these checks measure a HOST
+          # state, and the CI runner is not a notebook host -- exit 1 here means
+          # "this host is not provisioned", which is expected. The signal bought
+          # is that a declared dry mode can no longer rot unseen: a companion
+          # whose check starts crashing shows up in this log.
+          mapfile -t DECLARED < <(
+            git ls-files '*.sh' \
+              | grep -v -E '^(MyIA.AI.Notebooks/GenAI/Vibe-Coding/|docs/archive/)|(^|/)_archive/' \
+              | sort \
+              | while IFS= read -r f; do
+                  grep -qE '^# CI-CHECK:' "$f" && echo "$f"
+                done
+          )
+          echo "companions declaring a dry mode: ${#DECLARED[@]}"
+          RAN=0; BAD=0
+          for f in "${DECLARED[@]}"; do
+            args="$(sed -n 's/^# CI-CHECK:[[:space:]]*//p' "$f" | head -1)"
+            echo "== $f [args: ${args:-none}]"
+            rc=0
+            # shellcheck disable=SC2086 -- the declaration carries its own argv
+            bash "$f" $args || rc=$?
+            if [ "$rc" -eq 0 ]; then
+              echo "   OK (exit 0)"
+            else
+              echo "::notice::declared dry mode exited $rc: $f"
+              BAD=$((BAD + 1))
+            fi
+            RAN=$((RAN + 1))
+          done
+          echo "executed: $RAN companion(s), non-zero: $BAD"
+          if [ "$RAN" -eq 0 ]; then
+            echo "::warning::no companion declares '# CI-CHECK:' -- this path is inert"
+          fi
       - name: Post advisory comment on PR
         if: steps.audit.outputs.warnings == '1' && github.event_name == 'pull_request'
         env:

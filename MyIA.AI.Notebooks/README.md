@@ -1,18 +1,18 @@
 # MyIA.AI.Notebooks - Ecosysteme de Notebooks CoursIA
 
-CoursIA est un curriculum d'intelligence artificielle pensé comme un parcours continu, des fondations jusqu'aux frontières de la recherche. Plutôt qu'une collection d'exemples isolés, il tisse un même fil conducteur à travers onze domaines : on y apprend autant à **faire** — générer des images et de l'audio, entraîner et déployer des modèles, backtester des stratégies de trading, résoudre des problèmes de contraintes — qu'à **comprendre et prouver** : formaliser un théorème en Lean 4, raisonner sur l'incertitude, vérifier qu'un smart contract ou un algorithme se comporte comme attendu.
+CoursIA est un curriculum d'intelligence artificielle pensé comme un parcours continu, des fondations jusqu'aux frontières de la recherche. Plutôt qu'une collection d'exemples isolés, il tisse un même fil conducteur à travers douze domaines : on y apprend autant à **faire** — générer des images et de l'audio, entraîner et déployer des modèles, backtester des stratégies de trading, résoudre des problèmes de contraintes — qu'à **comprendre et prouver** : formaliser un théorème en Lean 4, raisonner sur l'incertitude, vérifier qu'un smart contract ou un algorithme se comporte comme attendu.
 
 Deux partis pris structurent l'ensemble. D'abord une **double culture technique** : Python (PyTorch, Diffusers, PyMC, OpenSpiel) et .NET / C# (Semantic Kernel, Infer.NET, ML.NET) cohabitent au sein de notebooks exécutables, parce que l'IA appliquée se pratique dans les deux écosystèmes. Ensuite une **dualité simulation / preuve** : un concept est d'abord illustré numériquement, puis — quand c'est possible — formalisé et vérifié mécaniquement (Lean 4, Z3, vérification formelle). Chaque notebook est rédigé en français, exécutable de bout en bout, et accompagné d'exemples guidés et d'exercices pour un apprentissage en autonomie.
 
-Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répartis sur les onze domaines ci-dessous — le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue ci-dessous, régénéré quotidiennement, qui fait foi. Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
+Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répartis sur les douze domaines ci-dessous — le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue ci-dessous, régénéré quotidiennement, qui fait foi. Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
 
 > **À propos des nombres cités dans ce hub** : les **volumes** (notebooks par série, maturité, breakdown) sont *uniquement* ceux du marqueur `CATALOG-STATUS` ci-dessous — c'est lui qui fait foi, pas la prose (leçon #2572 : un compte en dur qui dérive avec le temps est une source de désalignement silencieux). En revanche, les **claims techniques précis** — exemples du livre *Hands-On AI Trading* implémentés, nombre d'architectures testées dans le Ladder ML-Training-Pipeline, lake phare par famille, volumétrie Lean — restent *dans la prose* parce qu'ils sont **spécifiques et stables**, vérifiés à la main dans les README de série correspondants ; un renvoi explicite est ajouté quand c'est utile.
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1137
-breakdown: SymbolicAI=268, GenAI=215, Search=150, QuantConnect=110, GameTheory=101, ML=81, IIT=72, Probas=69, Sudoku=38, RL=26, CaseStudies=6, cross-series=1
-maturity: BETA=1003, DRAFT=70, ALPHA=60, TEMPLATE=4
+total: 1415
+breakdown: SymbolicAI=329, GenAI=276, Search=157, ML=137, QuantConnect=121, GameTheory=113, IIT=98, Probas=83, Sudoku=38, RL=35, Complexity=14, CaseStudies=6, NLP=5, cross-series=2, Compression=1
+maturity: BETA=1232, DRAFT=104, ALPHA=75, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -23,7 +23,7 @@ Dernière mise à jour : 2026-08-05
 
 **[GenAI](GenAI/README.md)** — Tout ce qui se génère : images (SDXL, Flux, Qwen), audio — du TTS au pipeline complet d'audiobook —, vidéo, et le travail des LLMs (RAG, raisonnement, fine-tuning LoRA). La série a un parti pris d'atelier : on ne se contente pas d'appeler des APIs, on héberge les modèles soi-même sur une stack Docker dédiée ([00-GenAI-Environment](GenAI/00-GenAI-Environment/README.md)), ce qui change tout à ce qu'on comprend de leurs coûts et de leurs limites. Elle culmine avec l'orchestration Semantic Kernel, quatre études de cas étudiantes et les ateliers de vibe-coding (Claude Code, Roo Code).
 
-**[QuantConnect](QuantConnect/README.md)** — Le ML appliqué à un domaine qui ne pardonne pas : les marchés. Un cours Python progressif mène du premier backtest à un portefeuille de stratégies cataloguées (cf. breakdown `QuantConnect=105` du marqueur et l'inventaire [`docs/qc/qc-strategies-status.md`](../docs/qc/qc-strategies-status.md) pour la classification 4-types + statut best-guess de chaque projet). Les algorithmes emblématiques — GARCH, Kelly, ensembles — y côtoient les **22 exemples** (sections 06 Applied ML + 07 RL + 08 Risk Mgmt) du livre *Hands-On AI Trading* — **20 fermes + 2 ⚠️ partiels** (section 06 ex.01 Trend Scanning + section 08 ex.02 AI corrective, cf. [`docs/HANDSON_AI_TRADING_MAPPING.md`](QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md) pour le statut détaillé de chaque exemple). La leçon transversale vaut bien au-delà de la finance : une discipline de validation — walk-forward, multi-seed, coûts de transaction — sans laquelle tout résultat de ML est une illusion d'optique. Le pipeline d'entraînement associé (ML-Training-Pipeline) en est la démonstration grandeur nature : un **Ladder** d'architectures testées (cf. [QC README — section ML-Training-Pipeline](QuantConnect/README.md)) dont seule une fraction bat le baseline après validation multi-seed — un verdict d'honnêteté que la série assume comme résultat pédagogique à part entière.
+**[QuantConnect](QuantConnect/README.md)** — Le ML appliqué à un domaine qui ne pardonne pas : les marchés. Un cours Python progressif mène du premier backtest à un portefeuille de stratégies cataloguées (cf. breakdown `QuantConnect=105` du marqueur et l'inventaire [`docs/qc/qc-strategies-status.md`](../docs/qc/qc-strategies-status.md) pour la classification 4-types + statut best-guess de chaque projet). Les algorithmes emblématiques — GARCH, Kelly, ensembles — y côtoient les exemples du livre *Hands-On AI Trading*, rattachés aux notebooks et aux projets de la série dans l'[inventaire du livre](QuantConnect/BOOK_MAPPING.md), qui donne le statut de chaque exemple. La leçon transversale vaut bien au-delà de la finance : une discipline de validation — walk-forward, multi-seed, coûts de transaction — sans laquelle tout résultat de ML est une illusion d'optique. Le pipeline d'entraînement associé (ML-Training-Pipeline) en est la démonstration grandeur nature : un **Ladder** d'architectures testées (cf. [QC README — section ML-Training-Pipeline](QuantConnect/README.md)) dont seule une fraction bat le baseline après validation multi-seed — un verdict d'honnêteté que la série assume comme résultat pédagogique à part entière.
 
 **[SymbolicAI](SymbolicAI/README.md)** — Le pôle « comprendre et prouver » du dépôt, et sa série la plus vaste : preuves formelles Lean 4 (théorème d'Arrow, Kochen-Specker, hommages à Grothendieck et Conway), smart contracts Solidity testés et déployés sur testnet, Web sémantique RDF/SPARQL, logiques d'argumentation (Tweety), planification PDDL et apprentissage symbolique (ILP, automates, neuro-symbolique). C'est ici que la dualité simulation / preuve prend sa forme la plus aboutie : ce que les autres séries calculent, celle-ci cherche à le certifier.
 
@@ -32,6 +32,8 @@ Dernière mise à jour : 2026-08-05
 **[Probas](Probas/README.md)** — Raisonner avec l'incertitude plutôt que contre elle. La série a une particularité unique dans le dépôt : les mêmes modèles probabilistes y vivent deux fois, en Infer.NET (graphes de facteurs, C#) et en PyMC (MCMC, Python) — deux langues pour une même théorie bayésienne, dont la comparaison est elle-même instructive. Un **arc décision** de dix notebooks (utilité espérée vNM → bandits → indice de Gittins → Thompson Sampling), lui aussi doublé Infer.NET/PyMC, pousse jusqu'à la preuve avec deux compagnons Lean 4 (axiomes vNM, Gittins).
 
 **[Sudoku](Sudoku/README.md)** — Et si l'on prenait un seul problème et qu'on lui appliquait toutes les méthodes ? Backtracking, propagation de contraintes, Dancing Links, jusqu'aux réseaux de neurones (CNN et MLP comparés à budget de paramètres comparable) : le Sudoku sert de banc d'essai contrôlé où approches symboliques et neuronales se mesurent sur exactement le même terrain.
+
+**[Complexity](Complexity/README.md)** — Série d'hommage aux fondateurs et aux moments fondateurs de la théorie de la complexité : chaque notebook prend un texte fondateur et le **fait tourner** — machines de Turing construites pas à pas avec comptage exact des pas, algorithme online implémenté, permanente confrontée au déterminant en opérations comptées et chronos encadrés (le BosonSampling d'Aaronson–Arkhipov, avec la formule de Ryser réemployée du Sudoku) — puis sonde l'état de Mathlib : ce qui y existe, ce qui manque, et pourquoi.
 
 **[GameTheory](GameTheory/README.md)** — Que devient l'optimisation quand les autres aussi optimisent ? Jeux combinatoires avec OpenSpiel, équilibres à la von Neumann, et un volet formel singulier : les théorèmes du choix social (Arrow, Sen, la valeur de Shapley) portés en Lean 4 — démontrés mécaniquement, pas seulement énoncés.
 
@@ -43,7 +45,7 @@ Dernière mise à jour : 2026-08-05
 
 **[IIT](IIT/README.md)** — La plus spéculative : la théorie de l'information intégrée et la mesure Phi (PyPhi) appliquées à des réseaux logiques — où l'on calcule, littéralement, des candidats quantitatifs à une mesure de la conscience. La série prolonge le Phi *statique* vers les **trajectoires** causales avec l'extension **ICT** (*Integrated Causal Trajectories*) : tri auto-organisé comme morphogenèse, émergence causale multi-échelles (Hoel, *Causal Emergence 2.0*). Le banc cross-substrat de l'ICT atteint désormais un **transformer réel** : les activations d'un LLM, lues à travers un autoencodeur parcimonieux (SAE), deviennent un quatrième substrat mesurable aux côtés du tri, de la réaction-diffusion (Gray-Scott) et de la morphodynamique stratégique (Axelrod). Le **Jeu de la Vie** les a rejoints comme cinquième substrat — 2-D discret à information localisée transportée, et le **seul au moteur de calcul prouvé** : le pont Lean `hashlife_correct` (track `conway_lean`, 0 sorry) garantit que l'évaluation Hashlife calcule la même chose que la simulation naïve, avant calibration certifiée, contraste mesuré à trois substrats et stratification causale ([#5726](https://github.com/jsboige/CoursIA/issues/5726)). Un axe *Global Workspace* (broadcast, ignition — module `ict/workspace.py`) confronte désormais empiriquement IIT et GWT sur ces mêmes traces, faisant du pont entre les deux grandes théories de la conscience une question **falsifiable** plutôt qu'un débat d'école. La série rejoint ainsi le fil rouge **causalité** du dépôt, où le même opérateur `do(·)` de Pearl s'instancie à travers quatre paradigmes — symbolique (Tweety), message passing (Infer.NET), MCMC (PyMC) et théorie de l'information (ICT).
 
-**[cross-series](cross-series/README.md)** (projets-capstones) — Annexe transversale, distincte des onze domaines ci-dessus : non pas une famille de notebooks supplémentaire, mais des **projets capstones** qui rejouent plusieurs séries sur une même application de bout en bout (ex. [`matching-cv`](cross-series/matching-cv/) : appariement CV ↔ poste par mots-clés, embeddings sémantiques et appariement stable de Gale-Shapley, mobilisant ML, GenAI et GameTheory).
+**[cross-series](cross-series/README.md)** (projets-capstones) — Annexe transversale, distincte des douze domaines ci-dessus : non pas une famille de notebooks supplémentaire, mais des **projets capstones** qui rejouent plusieurs séries sur une même application de bout en bout (ex. [`matching-cv`](cross-series/matching-cv/) : appariement CV ↔ poste par mots-clés, embeddings sémantiques et appariement stable de Gale-Shapley, mobilisant ML, GenAI et GameTheory).
 
 ### Progression pédagogique
 
@@ -88,25 +90,27 @@ Search
 Probas
 ├── Infer/ - notebooks Infer.NET (graphes de facteurs, C#)
 ├── PyMC/ - notebooks PyMC (MCMC, Python) — miroir Infer
-├── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causal-Bridges (do(·) Pearl cross-paradigmes)
-└── decision_theory_lean/ - Axiomes VNM + Gittins (Lean 4)
+└── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causal-Bridges (do(·) Pearl cross-paradigmes) + lake decision_theory_lean (axiomes VNM + Gittins)
 
 Sudoku
 └── (à plat) - 19 problèmes × N méthodes : Backtracking → CNN/LLM
     ├── 1..9 méthodologies (Python + C# jumeaux)
     └── 10..19 spécialisations (Z3, OR-Tools, Choco, Lean, LLM, NN)
 
+Complexity
+└── (à plat) - hommages fondateurs exécutés : Hartmanis-Stearns (hiérarchie temps, machines comptées), conjectures online (secrétaire matroïdal, k-server), Aaronson-Arkhipov (permanente/BosonSampling, Ryser réemployé de Sudoku-15)
+
 GameTheory
 ├── (à plat) - Nash, Minimax, Coopétition, MARL, Mechanism Design
 ├── SocialChoice/ - Arrow, Sen, Condorcet (Lean 4)
-└── *_lean/ + lean_game_defs(_ext)/ - 8 lakes (game_theory_lean [Arrow, Shapley, Stable Marriage], conway_cgt_lean, minimax_lean, repeated_games_lean, social_choice_lean, social_choice_lean_peters [lake de référence externe], lean_game_defs, lean_game_defs_ext — ces deux derniers en `lakefile.toml`, pas `.lean`)
+└── *_lean/ + lean_game_defs(_ext)/ - 9 lakes (game_theory_lean [Arrow, Shapley, Stable Marriage], conway_cgt_lean, minimax_lean, assignment_lean, asymmetric_information_lean, social_choice_lean, social_choice_lean_peters [lake de référence externe, sous SocialChoice/], lean_game_defs, lean_game_defs_ext — ces deux derniers en `lakefile.toml`, pas `.lean`)
 
 ML
 ├── ML.Net/ - Tutoriels ML.NET C# (classification, régression, clustering)
 └── DataScienceWithAgents/ - Agents Python sklearn + ONNX jumeaux
 
 RL
-└── (à plat) - rl_1..13 : DQN, PPO, SAC, GRPO (DeepSeek-R1) from scratch
+└── (à plat) - RL-01..13 : DQN, PPO, SAC, GRPO (DeepSeek-R1) from scratch
 
 CaseStudies
 ├── Diagnostic-Medical/ - LLM-assisted diagnosis
@@ -123,7 +127,7 @@ cross-series/
 
 ## Galerie de rendus — un aperçu visuel du dépôt
 
-Les onze familles ci-dessus ne sont pas seulement des collections de notebooks : elles produisent des **sorties vérifiables** (figures matplotlib, heatmaps, schémas). Cette galerie en présente quatre emblématiques — choisies pour couvrir quatre paradigmes distincts (choix social formel, morphogenèse, équilibre coopératif, apprentissage multi-agent) et pour montrer ce que la **dualité simulation / preuve** produit concrètement : chaque figure est issue d'un notebook exécuté, et celles qui correspondent à un *théorème-phare* (Arrow, Shapley) ont leur **contrepartie formelle** dans un *lake* Lean 4 de la même famille.
+Les douze familles ci-dessus ne sont pas seulement des collections de notebooks : elles produisent des **sorties vérifiables** (figures matplotlib, heatmaps, schémas). Cette galerie en présente quatre emblématiques — choisies pour couvrir quatre paradigmes distincts (choix social formel, morphogenèse, équilibre coopératif, apprentissage multi-agent) et pour montrer ce que la **dualité simulation / preuve** produit concrètement : chaque figure est issue d'un notebook exécuté, et celles qui correspondent à un *théorème-phare* (Arrow, Shapley) ont leur **contrepartie formelle** dans un *lake* Lean 4 de la même famille.
 
 | Famille | Figure | Ce qu'elle montre | Contrepartie formelle |
 |---|---|---|---|
@@ -146,6 +150,7 @@ Le dépôt pratique **explicitement** la double culture IA : Python (PyTorch, Di
 | Search | ● | ● | ◐ | Parité CSP livrée — marathon jumeaux accompli (EPIC #4956) |
 | Probas | ● | ● | ◐ | Infer.NET + PyMC sur mêmes modèles ; `decision_theory_lean` (VNM + Gittins) |
 | Sudoku | ● | ● | ◐ | Backtracking/DLX Python + propagation C# + lake exact-cover |
+| Complexity | ● | — | — | Machines comptées pas à pas, Ryser réemployé de Sudoku ; verdict Mathlib mesuré par notebook |
 | GameTheory | ● | ◐ | ● | OpenSpiel Python + jumeau C# (MARL) ; `game_theory_lean` (Arrow + Bondareva-Shapley) |
 | ML | ● | ● | ◐ | ML.NET (tutoriels) + jumeaux Python (sklearn, ONNX) + `learning_theory_lean` |
 | RL | ● | — | — | Stable-Baselines3 / Gym |
@@ -180,7 +185,7 @@ Le dépôt sert ainsi doublement de support de cours : par son contenu, et comme
 - **LEAN Engine**: Backtesting, live trading, optimisation
 - **sklearn / XGBoost / PyTorch**: Modèles ML financiers
 - **QuantConnect Cloud**: projets et backtests cloud (volume exact → [CATALOG-STATUS](#catalog-status) ci-dessus + [hub QuantConnect](QuantConnect/README.md))
-- **Hands-On AI Trading**: les **22 exemples** (sections 06 Applied ML + 07 RL + 08 Risk Mgmt) sont mappés aux notebooks de la série — **20 fermes + 2 ⚠️ partiels** (section 06 ex.01 Trend Scanning + section 08 ex.02 AI corrective, cf. [QC README](QuantConnect/README.md) + [`docs/HANDSON_AI_TRADING_MAPPING.md`](QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md) pour le détail périmètre et le statut ferme/partiel de chaque exemple)
+- **Hands-On AI Trading**: les exemples du livre (chapitres 04 à 08) sont rattachés aux notebooks et aux projets de la série, avec le statut de chaque exemple (couvert, partiel, ébauche, absent) : [inventaire du livre](QuantConnect/BOOK_MAPPING.md)
 
 ### Infrastructure
 - **Docker**: services GenAI (cf. [00-GenAI-Environment](GenAI/00-GenAI-Environment/README.md) pour la stack complète)
@@ -295,7 +300,7 @@ Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette
 | **SymbolicAI** (Lean) | `knot_lean` (tricolorabilité Fox GF(3) + Piccirillo), `conway_lean` (Free Will Theorem 0 sorry), `grothendieck_lean` | Nœud trinôme / sliceness, théorème du libre arbitre (Kochen-Specker), visite catégorielle | SymbolicAI/Lean-16a (Conway) + 17a/b (Nœuds) + 15b (Grothendieck) |
 | **SymbolicAI** (SC) | `erc20_lean` | Pas de réentrance ERC-20 (cf. `#4047`) | SmartContracts/Erc20 |
 | **Search** | `search_lean` | Consistance + heuristique admissible = optimalité (cf. `#4048`) | Search-3 (A*) + Search-03d, Part1-Foundations |
-| **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | DecisionTheory/DecInfer-01..02 (VNM) + DecInfer-09 (Gittins) |
+| **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | DecisionTheory/DecInfer-01..02 (VNM) + DecInfer-08b (Gittins) |
 | **QuantConnect** | `kelly_lean` | Kelly `g(f) ≤ g(f*)` + unicité (cf. `#4052`) | QuantConnect QC-Py-10 Risk Management |
 | **GameTheory** | `game_theory_lean` (SocialChoice + CooperativeGames, absorption `#4365`) | Impossibilité d'Arrow + Bondareva-Shapley (0 sorry) | GameTheory/16b-* Choix social |
 

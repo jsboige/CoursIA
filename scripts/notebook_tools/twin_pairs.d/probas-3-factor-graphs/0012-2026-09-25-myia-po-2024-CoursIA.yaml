@@ -1,0 +1,7 @@
+date: '2026-09-25'
+by: myia-po-2024:CoursIA
+python_sha: 6e3e0cf905f93c46ebeec8ad2677ee4ff92f7f7b
+csharp_sha: 1d71902f691751a1722d19b3c92f498900b67165
+content_python_sha: d20141bd1e438c4a021fdfdc92aaf9f622d2a2626dfa22094cf4d1c8fcab102f
+content_csharp_sha: 580e6da433cf218b95ffe2e479c953314996c3b70189aa56dddb22e3df8fb22a
+reason: 'G4a #14873 : stem swap markdown-only (1 ligne), cote Python seul.'

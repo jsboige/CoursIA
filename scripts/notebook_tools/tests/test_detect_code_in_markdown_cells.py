@@ -244,6 +244,36 @@ def test_json_stdout_is_pure_and_identity_on_stderr():
         "la ligne d'identite ne doit pas prefixer stdout en mode json"
 
 
+def test_hash_survives_cell_insertion():
+    """#16971 : le hash d'une violation baselinee ne doit pas bouger quand
+    une PR insere des cellules AVANT elle. Mesure fondatrice : PR de densite
+    sur Pyro_RSA_Hyperbole.ipynb -- contenu byte-identique, cellule pasee de
+    l'index 38 a 42, --check rouge uniquement parce que la cle de baseline
+    portait l'index. Le id nbformat >= 4.5 est stable ; le repli sans id
+    reste l'index (comportement d'avant, pince par le second bloc)."""
+    nl = chr(10)
+    cell = _mk_md([
+        "def approx(x, b=10.):" + nl,
+        "    # arrondir x au multiple de b" + nl,
+    ])
+    cell["id"] = "9c7547cf"
+    before = dcm.scan_cell(cell, 38)[0]
+    after = dcm.scan_cell(cell, 42)[0]
+    before["file"] = after["file"] = "n.ipynb"
+    assert dcm._finding_hash(before) == dcm._finding_hash(after), (
+        "inserer une cellule avant la cellule fautive ne doit pas changer "
+        "le hash d'une violation existante (cle = id, pas index)"
+    )
+    # repli sans id (nbformat < 4.5) : l'index reprend la main -- inchange
+    no_id = {k: v for k, v in cell.items() if k != "id"}
+    x = dcm.scan_cell(no_id, 38)[0]
+    y = dcm.scan_cell(no_id, 42)[0]
+    x["file"] = y["file"] = "n.ipynb"
+    assert dcm._finding_hash(x) != dcm._finding_hash(y), (
+        "sans id, le repli sur l'index doit rester l'ancien comportement"
+    )
+
+
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))

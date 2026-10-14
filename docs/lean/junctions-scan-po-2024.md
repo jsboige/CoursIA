@@ -134,6 +134,16 @@ Deux lignes du script sont des **déplacements**, pas des purges, et ne figurent
 
 **Proposition** (hors périmètre de cette PR, grain `guard`/`tooling` à dispatcher) : donner à `Invoke-Scan` trois états au lieu d'un — `JUNCTION-OK` / `JUNCTION-COLD` / `JUNCTION-MISMATCH` — en résolvant la cible (`realpath`) et en comparant le `rev8` du manifest à celui du nom du store, plus un comptage d'oleans. `check_mathlib_cache.py` porte déjà les primitives (`MATHLIB_OLEAN_FLOOR = 1000`) ; l'y brancher éviterait de réécrire l'instrument.
 
+### Seconde occurrence consolidée (po-2025, 2026-10-08)
+
+Le scan po-2025 — mesure intégrale préservée sur le dashboard RooSync `workspace-CoursIA` (post `[INFO] PRESERVATION INTEGRALE`, 08/10) — confirme les deux cécités et en mesure une **troisième, propre à l'organe dédié** :
+
+1. **Même cécité de cible** (`JUNCTIONED` terminal) : 18 jonctions, **0 utilisable** — dont **14 pendantes** (classe absente de po-2024, qui n'avait que des jonctions vivantes vers store vide) et 4 `MISMATCH` vers `v4.32.1-520045ab`.
+2. **Même cécité de classement** : `game_theory`/`percolation`/`knot`/`argumentation` listés sous le groupe déclaré `v4.33.0-db584cd6` alors que leur cible réelle est `v4.32.1-520045ab`.
+3. **`check_mathlib_cache.py` classe les pendantes en `reel`** : retour anticipé l.88 (`if not mathlib.exists(): status = "absent"; return` — `exists()` **suit** le lien vers une cible absente) avant la détection de jonction l.93-96, puis l.158 affiche `reel`. `Path.is_junction()` (Python ≥ 3.12) et `Path.resolve()` voient juste ; c'est l'**ordre des tests** qui perd l'information. Le verdict global d'atteignabilité reste exact — seule la classe de panne est faussée.
+
+**Méthode durable** (une jonction ne se juge pas sur son libellé) : résoudre la cible ET énumérer **à travers** le lien — `fsutil reparsepoint query` (balise `0xa0000003`), `Test-Path` sur le chemin résolu, énumération `\\?\` à travers la jonction (un `0` rendu par `find`/`islink` sur le chemin du lien ne prouve rien), `lean-toolchain` du lac vs groupe du `share-state.json`. La proposition ci-dessus s'élargit à **quatre** états : `JUNCTION-OK` / `JUNCTION-COLD` / `JUNCTION-MISMATCH` / `JUNCTION-DANGLING`.
+
 ## 5. Correction du tableau multi-machine
 
 `docs/lean/junctions-scan-po-2027.md` porte une ligne po-2024 reprise de #14296 **sans re-mesure** (son §« Provenance des colonnes » le dit explicitement). Re-mesurée :

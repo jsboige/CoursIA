@@ -11,8 +11,14 @@ Pour les commandes spécifiques aux machines du cluster (paths `C:\Users\MYIA\..
 Le SDK .NET et `dotnet-interactive` sont cross-OS : les notebooks `.net-csharp` s'exécutent à l'identique.
 
 ```bash
-# Linux (Ubuntu/Debian) : dépôt Microsoft
-sudo apt update && sudo apt install -y dotnet-sdk-9.0
+# Linux : script officiel Microsoft (installation dans ~/.dotnet, sans sudo).
+# Les dépôts d'Ubuntu 24.04 LTS ne fournissent que dotnet-sdk-8.0 :
+# `sudo apt install dotnet-sdk-9.0` y échoue (« Couldn't find any package »).
+curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
+bash dotnet-install.sh --channel 9.0
+bash dotnet-install.sh --channel 10.0   # requis par `dotnet restore MyIA.CoursIA.sln` (projets net10.0)
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$DOTNET_ROOT:$DOTNET_ROOT/tools:$PATH"   # à reporter dans ~/.bashrc
 # macOS : Homebrew Cask
 brew install --cask dotnet-sdk
 
@@ -25,7 +31,7 @@ dotnet interactive --version   # 1.0.617701 (pin, cf kernels-runtime.md)
 jupyter kernelspec list | grep ".net"   # .net-csharp, .net-fsharp
 ```
 
-Le pin de version **1.0.617701** s'applique cross-OS (1.0.712001 casse `#!import` partout, pas seulement Windows).
+Le pin de version **1.0.617701** s'applique cross-OS. La casse de `#!import` sous 1.0.712001, constatée sur ai-01, n'est pas reproduite partout : ni sur po-2024, ni sous Linux (Ubuntu 24.04, `#!import` exécuté sous les deux versions, [#17654](https://github.com/jsboige/CoursIA/issues/17654)). Le pin reste le standard tant que le dé-pin n'est pas décidé ([kernels-runtime.md](kernels-runtime.md)).
 
 ## Python 3.10+ + Conda
 
@@ -47,17 +53,21 @@ Sur Mac, préférer **Miniforge** à Miniconda : les wheels conda-forge sont nat
 
 Lean 4 s'installe via `elan` (cross-OS), équivalent de `rustup` pour Lean. **Pas besoin de WSL sur Mac/Linux** (WSL n'est qu'un contournement Windows).
 
+Le script d'installation est le même que sous WSL. Il pose elan, la toolchain épinglée par les lakes du dépôt (lue dans `game_theory_lean/lean-toolchain`), le REPL au tag de même version, le venv `~/.lean4-venv` avec `lean4_jupyter` et le wrapper `~/.lean4-kernel-wrapper.py`. Hors WSL, il enregistre aussi le kernel Jupyter :
+
 ```bash
-curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
-source $HOME/.cargo/env   # ou relancer le shell
-
-elan toolchain install stable
-lean --version
-
-# Kernel Jupyter Lean 4
-pip install lean4-jupyter
-python -m lean4_jupyter.kernel install
+bash MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh
+source $HOME/.elan/env        # ou relancer le shell
+jupyter kernelspec list        # doit afficher lean4-wsl
 ```
+
+Le kernel s'appelle `lean4-wsl` sur toutes les plateformes, parce que c'est le nom que déclarent les notebooks Lean ; son nom d'affichage est « Lean 4 ». Le wrapper démarre le REPL depuis la racine du lake (répertoire qui contient `lakefile.lean` ou `lakefile.toml`) : un notebook compagnon rangé hors de son lake s'exécute avec `--cwd <lake>`, et un lake qui dépend de Mathlib demande `lake exe cache get` dans ce lake avant la première exécution.
+
+```bash
+python scripts/notebook_tools/notebook_tools.py execute <notebook.ipynb> --cwd <lake>
+```
+
+> **Portée de la vérification ([#17654](https://github.com/jsboige/CoursIA/issues/17654), D1).** Chaîne mesurée sous Linux (Ubuntu 24.04) sur un lake sans Mathlib : installation, enregistrement du kernel, démarrage et exécution de cellules Lean. Les lakes Mathlib n'ont pas été mesurés hors de la flotte, et quelques notebooks déclarent des kernels propres à une machine de la flotte (`lean4-wsl-conway`, `lean4-wsl-perc`, `lean4-wsl-groth16200`) qui n'existent pas ailleurs.
 
 ## Packages système courants
 
@@ -111,7 +121,7 @@ python3 -m pip install --force-reinstall <pkg>
 ```bash
 dotnet --list-sdks
 dotnet interactive --version
-jupyter kernelspec list   # .net-csharp, python3, lean4
+jupyter kernelspec list   # .net-csharp, python3, lean4-wsl
 lean --version
 python3 --version
 conda env list

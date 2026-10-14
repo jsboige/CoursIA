@@ -9,6 +9,14 @@ Usage:
     python generate_parcours.py --check               # Verify coverage
     python generate_parcours.py --parcours ia-classique  # Single path
     python generate_parcours.py --dry-run             # Preview without writing
+    python generate_parcours.py --manifest branches.json --branch search --accretion csp
+
+Composition manifest (explicit catalog paths, no automatic numbering inference):
+    {"branches": [{"id": "search", "notebooks": ["Search/Part1/Search-1.ipynb"]}],
+     "accretions": [{"id": "csp", "branch": "search",
+                     "notebooks": ["Search/Part2/CSP-1.ipynb"]}]}
+    Each group may specify "prerequisites": ["another-selected-id"]. Composition
+    writes JSON to stdout and never modifies the five generated curriculum pages.
 
 Parcours definitions:
     ia-classique    — Search/CSP/Sudoku + heuristics + classical algorithms
@@ -20,6 +28,7 @@ Parcours definitions:
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from urllib.parse import quote
@@ -261,6 +270,133 @@ def check_coverage(entries: list[dict]) -> None:
         print("100% PRODUCTION/BETA covered!")
 
 
+def compile_parcours(
+    entries: list[dict], manifest: dict, branches: list[str],
+    accretions: list[str] | None = None,
+) -> dict:
+    """Compose an explicit subset of canonical branches and optional accretions.
+
+    The manifest owns pedagogical grouping and prerequisites: filename numbering
+    alone cannot distinguish twins, missing bases or cross-series dependencies.
+    Missing catalog metadata remains unknown rather than being inferred.
+    """
+    accretions = accretions or []
+    if not isinstance(manifest, dict):
+        raise TypeError("Manifest must be a JSON object")
+    if (not branches or len(branches) != len(set(branches))
+            or len(accretions) != len(set(accretions))):
+        raise ValueError("Select at least one branch, without duplicate selections")
+
+    groups: dict[str, dict] = {}
+    for kind in ("branches", "accretions"):
+        definitions = manifest.get(kind, [])
+        if not isinstance(definitions, list):
+            raise TypeError(f"Manifest {kind} must be a list")
+        for group in definitions:
+            if not isinstance(group, dict) or not isinstance(group.get("id"), str):
+                raise TypeError(f"Invalid {kind} definition")
+            group_id = group["id"]
+            if not group_id or group_id in groups:
+                raise ValueError(f"Duplicate or empty group id: {group_id!r}")
+            paths = group.get("notebooks")
+            if not isinstance(paths, list) or not paths or any(
+                not isinstance(path, str) or not path for path in paths
+            ) or len(paths) != len(set(paths)):
+                raise ValueError(f"Group {group_id} needs distinct explicit notebook paths")
+            prerequisites = group.get("prerequisites", [])
+            if not isinstance(prerequisites, list) or any(
+                not isinstance(dep, str) for dep in prerequisites
+            ):
+                raise ValueError(f"Invalid prerequisites for {group_id}")
+            groups[group_id] = {**group, "kind": kind}
+
+    selected = branches + accretions
+    for group_id in selected:
+        if group_id not in groups or (groups[group_id]["kind"] == "branches") != (group_id in branches):
+            raise ValueError(f"Unknown or misclassified selection: {group_id}")
+    for group_id in accretions:
+        parent = groups[group_id].get("branch")
+        if parent not in branches:
+            raise ValueError(f"Accretion {group_id} requires selected branch {parent}")
+
+    catalog = {entry["path"]: entry for entry in entries}
+    if len(catalog) != len(entries):
+        raise ValueError("Duplicate paths in catalog")
+    seen_paths: set[str] = set()
+    ordered: list[str] = []
+    visiting: set[str] = set()
+
+    def visit(group_id: str) -> None:
+        if group_id in visiting:
+            raise ValueError(f"Prerequisite cycle at {group_id}")
+        if group_id in ordered:
+            return
+        visiting.add(group_id)
+        group = groups[group_id]
+        dependencies = group.get("prerequisites", [])
+        if group["kind"] == "accretions":
+            dependencies = [group["branch"], *dependencies]
+        for dep in dependencies:
+            if dep not in selected:
+                raise ValueError(f"Missing selected prerequisite {dep} for {group_id}")
+            visit(dep)
+        visiting.remove(group_id)
+        ordered.append(group_id)
+
+    for group_id in selected:
+        visit(group_id)
+
+    result = []
+    total_minutes = 0
+    duration_known = True
+    for group_id in ordered:
+        group = groups[group_id]
+        notebooks = []
+        for path in group["notebooks"]:
+            if not isinstance(path, str) or path not in catalog:
+                raise ValueError(f"Notebook absent from catalog: {path!r}")
+            if path in seen_paths:
+                raise ValueError(f"Notebook selected twice: {path}")
+            seen_paths.add(path)
+            entry = catalog[path]
+            if entry.get("status") == "BROKEN":
+                raise ValueError(f"Broken notebook selected: {path}")
+            duration = entry.get("duree_estimee")
+            match = (
+                re.fullmatch(r"(\d+)\s*min|(\d+)h(?:(\d{1,2}))?", duration.strip(),
+                             re.IGNORECASE)
+                if isinstance(duration, str) else None
+            )
+            minutes = (
+                int(match[1]) if match[1] else 60 * int(match[2]) + int(match[3] or 0)
+            ) if match else None
+            if minutes is None:
+                duration_known = False
+            else:
+                total_minutes += minutes
+            notebooks.append({
+                "path": path,
+                "title": entry.get("title", path),
+                "duration_minutes": minutes,
+                "kernel": entry.get("kernel"),
+                "execution_constraints": {
+                    key: entry.get(key) for key in (
+                        "requires_api", "requires_gpu", "requires_cloud", "requires_wsl",
+                        "executable_locally",
+                    )
+                },
+            })
+        result.append({
+            "id": group_id,
+            "kind": group["kind"],
+            "prerequisites": ([group["branch"]] if group["kind"] == "accretions" else [])
+            + group.get("prerequisites", []),
+            "notebooks": notebooks,
+        })
+    return {"groups": result, "duration_minutes": total_minutes if duration_known else None,
+            "known_duration_minutes": total_minutes}
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Generate CoursIA student learning paths (parcours)"
@@ -278,7 +414,31 @@ def main():
         "--dry-run", action="store_true",
         help="Preview output without writing files",
     )
+    parser.add_argument(
+        "--manifest", type=Path,
+        help="JSON manifest defining canonical branches and optional accretions",
+    )
+    parser.add_argument(
+        "--branch", action="append", default=[],
+        help="Canonical branch id to include (repeat for multiple branches)",
+    )
+    parser.add_argument(
+        "--accretion", action="append", default=[],
+        help="Optional accretion id to include (repeat as needed)",
+    )
     args = parser.parse_args()
+
+    if args.manifest or args.branch or args.accretion:
+        if not args.manifest or not args.branch or args.check or args.parcours or args.dry_run:
+            parser.error("Composition requires --manifest and --branch; incompatible with legacy options")
+        entries = load_catalog()
+        try:
+            manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+            result = compile_parcours(entries, manifest, args.branch, args.accretion)
+        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+            parser.error(str(exc))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
 
     entries = load_catalog()
 

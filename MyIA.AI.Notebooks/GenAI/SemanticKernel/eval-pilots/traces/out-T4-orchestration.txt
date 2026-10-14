@@ -1,0 +1,39 @@
+probe gpt-4o-mini: OK -> OK
+
+===== MODE sequentiel =====
+  run 1: tours=3 agents=['redacteur', 'critique', 'arbitre']
+    apercu: La phrase est trop longue et manque de clarté.
+  run 2: tours=3 agents=['redacteur', 'critique', 'arbitre']
+    apercu: La phrase doit être simplifiée pour plus de clarté.
+  STRUCTURE STABLE: OK | TOURS dans [3, 3]: OK
+
+===== MODE concurrent =====
+  run 1: tours=3 agents=['redacteur', 'critique', 'arbitre']
+    apercu: La distillation d'un modèle de langage e | La phrase manque de clarté 
+  run 2: tours=3 agents=['critique', 'arbitre', 'redacteur']
+    apercu: La phrase manque de clarté en ne précisa | La distillation d'un modèle
+  STRUCTURE STABLE: OK | TOURS dans [3, 3]: OK
+
+===== MODE group_chat =====
+  run 1: tours=3 agents=['redacteur', 'critique', 'redacteur']
+    apercu: La distillation d'un modèle de langage est le processus de simplificat
+  run 2: tours=3 agents=['redacteur', 'critique', 'redacteur']
+    apercu: La distillation d'un modèle de langage est le processus de simplificat
+  STRUCTURE STABLE: OK | TOURS dans [3, 3]: OK
+
+===== MODE magentic =====
+  run 1: tours=2 agents=['redacteur', 'critique']
+    apercu: La définition manque de précision sur le mécanisme de distillation et 
+  run 2: tours=2 agents=['redacteur', 'critique']
+    apercu: La définition manque de précision sur les méthodes spécifiques utilisé
+  STRUCTURE STABLE: OK | TOURS dans [2, 6]: OK
+
+===== SYNTHESE =====
+  sequentiel   tours=3 (attendu [3,3]) stable=True couverture=True
+  concurrent   tours=3 (attendu [3,3]) stable=True couverture=True
+  group_chat   tours=3 (attendu [3,3]) stable=True couverture=True
+  magentic     tours=2 (attendu [2,6]) stable=True couverture=True
+MULTI-AGENTS PAR MODE: OK
+ROUTING DETERMINISM: OK
+LLM CALLS: 31/110
+PILOT OK sk=1.41.3 modes=4

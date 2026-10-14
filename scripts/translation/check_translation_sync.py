@@ -22,6 +22,14 @@ Verdicts par ligne CSV (cf. #4957 §2) :
                  (non traduite, francais leaké dans la colonne en/es/pt/...).
                  Miroir Argumentum multilingual-drift-audit.py : val == fr_val,
                  garde len >= 4 (#6949 harmonisation 5-classes, 4e classe).
+    PIVOT_HASH_MISMATCH  l'invariant de construction du pivot est violé :
+                 hash_<src_lang> != src_hash, ou cell_hash(text_<src_lang>)
+                 != hash_<src_lang>. extract_cells_to_csv.py (T1) pose les
+                 trois égaux par construction ; un verdict était nécessaire
+                 car SRC_DRIFT compare src_hash à la source notebook et la
+                 boucle TARGET_LANGS saute le pivot : hash_fr n'était lu par
+                 personne (#17677, mesuré sur #17649 — un resync manuel aux
+                 colonnes décalées passait tous les checks au vert).
 
     Note taxonomie Argumentum (#6949) : la 5e classe COGNATE (noms propres /
     faux-amis legitiment repetes, kind == "name", informationnelle — hors
@@ -184,6 +192,35 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
             if not nb_rel or not cell_id:
                 continue
 
+            csv_src_hash = row.get("src_hash", "")
+
+            # PIVOT_HASH_MISMATCH (#17677) : invariant de construction du pivot.
+            # T1 pose row[hash_{src_lang}] = row["src_hash"] et
+            # row[text_{src_lang}] = text (avec src_hash = cell_hash(text)) : les
+            # trois doivent coïncider. Vérification ROW-INTERNE, placée AVANT le
+            # chargement du notebook : elle ne dépend ni de sa présence ni de sa
+            # lisibilité (une ligne corrompue reste signalée même en ORPHAN_ROW).
+            # Sans elle, hash_fr n'était lu par aucun verdict — SRC_DRIFT compare
+            # src_hash à la source, et la boucle TARGET_LANGS saute le pivot.
+            row_lang = row.get("src_lang", "") or PIVOT_LANG
+            csv_pivot_hash = row.get(f"hash_{row_lang}", "") or ""
+            pivot_text = row.get(f"text_{row_lang}", "") or ""
+            if csv_pivot_hash and csv_src_hash and csv_pivot_hash != csv_src_hash:
+                anomalies.append(
+                    {"csv": str(csv_path), "notebook": nb_rel, "cell_id": cell_id,
+                     "verdict": "PIVOT_HASH_MISMATCH",
+                     "detail": f"hash_{row_lang}={csv_pivot_hash} != src_hash={csv_src_hash} "
+                               f"(invariant de construction violé — resync manuel décalé ?)"}
+                )
+            elif pivot_text and csv_pivot_hash and cell_hash(pivot_text) != csv_pivot_hash:
+                anomalies.append(
+                    {"csv": str(csv_path), "notebook": nb_rel, "cell_id": cell_id,
+                     "verdict": "PIVOT_HASH_MISMATCH",
+                     "detail": f"cell_hash(text_{row_lang})={cell_hash(pivot_text)} "
+                               f"!= hash_{row_lang}={csv_pivot_hash} (texte pivot incohérent "
+                               f"avec son hash déclaré)"}
+                )
+
             # Notebook source (cache par chemin).
             if nb_rel not in source_cache:
                 source_cache[nb_rel] = load_notebook_cells(repo_root / nb_rel)
@@ -203,7 +240,6 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
 
             # SRC_DRIFT : le source a-t-il bougé depuis la dernière synchro ?
             current_src = src_cells[cell_id]
-            csv_src_hash = row.get("src_hash", "")
             if csv_src_hash and current_src != csv_src_hash:
                 anomalies.append(
                     {"csv": str(csv_path), "notebook": nb_rel, "cell_id": cell_id,

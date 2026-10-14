@@ -374,12 +374,19 @@ namespace MyIA.Trading.Backtester.Tests.Strategies
         /// <summary>
         /// Le test déterministe fr-FR minimal : sous culture "fr-FR" (DecimalSeparator
         /// par défaut "," — donc "." est un séparateur de milliers, pas un séparateur
-        /// décimal), l'expression "Price + 0.10" doit produire 100.10m EXACT (decimal),
-        /// pas un double approximatif. L'adaptateur Flee force DecimalSeparator = "."
-        /// et RealLiteralDataType = Decimal, donc la culture du thread ne doit pas
-        /// affecter le résultat — c'est précisément ce que ce test vérifie. Restauration
-        /// de la culture d'origine dans finally (Tell ai-01 strict : pas de bibliothèque
-        /// UseCulture supposée existante, sauvegarde/restauration inline).
+        /// décimal), l'expression "Price + 0.10" doit être parsée indépendamment de la
+        /// culture du thread : l'adaptateur Flee force DecimalSeparator = "." et
+        /// RealLiteralDataType = Decimal, donc ni le parse du littéral ni le résultat
+        /// ne doivent dépendre de la culture courante — c'est précisément ce que ce
+        /// test vérifie. Portée : indépendance culture/parse démontrée. Il ne démontre
+        /// pas la decimal-ness du chemin interne : un double intermédiaire passerait
+        /// par Convert.ChangeType (arrondi à 15 chiffres significatifs), que
+        /// l'égalité à 100.10m ne discrimine pas — la discrimination du chemin
+        /// decimal vs double est portée par
+        /// SimpleExpression_ArithmeticBoxing_DiscriminatesLiteralType (S2, #15760).
+        /// Restauration de la culture d'origine dans finally (Tell ai-01 strict : pas
+        /// de bibliothèque UseCulture supposée existante, sauvegarde/restauration
+        /// inline).
         /// </summary>
         [Fact]
         public void SimpleExpression_PricePlus010_StaysDecimalUnderFrenchCulture()
@@ -394,12 +401,15 @@ namespace MyIA.Trading.Backtester.Tests.Strategies
                 // test ne prouve rien (régression silencieuse possible).
                 Assert.Equal(",", CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator);
 
-                // Vérification 2 : "Price + 0.10" sous fr-FR donne 100.10m exact (decimal).
+                // Vérification 2 : "Price + 0.10" sous fr-FR est parsé avec le
+                // séparateur "." forcé par l'adaptateur (100.10m), pas avec le
+                // séparateur "," de la culture du thread.
                 var result = new SimpleExpression<decimal>("Price + 0.10").Evaluate(context);
                 Assert.Equal(100.10m, result);
                 Assert.IsType<decimal>(result);
 
-                // Vérification 3 : le membre résolu est bien decimal (pas double).
+                // Vérification 3 : le champ context.Price est bien decimal (type statique
+                // du membre de contexte, pas un test de la résolution Flee).
                 Assert.IsType<decimal>(context.Price);
             }
             finally
@@ -414,9 +424,13 @@ namespace MyIA.Trading.Backtester.Tests.Strategies
         /// formule est la plus complexe du backtester : elle combine (1) DecimalSeparator,
         /// (2) RealLiteralDataType (les littéraux "1", "100" sont decimal), (3) chemins
         /// de membres (CurrentOrders.HighestAsk.Value, LowestAskLimitPrice, Price) et
-        /// (4) arithmétique strictement decimal (aucune coercion double). Le test
-        /// vérifie que le résultat est decimal — c'est précisément ce qui ferait échouer
-        /// une configuration Flee incorrecte (résultat promu en double = montant dérive).
+        /// (4) arithmétique entièrement en decimal. Portée réelle de ce test : la
+        /// formule complète compile et s'évalue sous fr-FR avec un résultat positif
+        /// typé decimal. Il ne détecte pas une configuration Flee qui promouvrait le
+        /// chemin interne en double : ConvertResult absorberait la promotion via
+        /// Convert.ChangeType (arrondi à 15 chiffres significatifs) — la
+        /// discrimination du chemin réel est portée par
+        /// SimpleExpression_ArithmeticBoxing_DiscriminatesLiteralType (S2, #15760).
         /// Restauration culture dans finally.
         /// </summary>
         [Fact]
@@ -445,7 +459,11 @@ namespace MyIA.Trading.Backtester.Tests.Strategies
 
                 var result = new SimpleExpression<decimal>(realAskFormula).Evaluate(bandContext);
 
-                // Type decimal strict (pas double — c'est la moitié du piège n°3 RealLiteralDataType).
+                // Type statique du résultat (signature Evaluate) — ne prouve pas le
+                // chemin interne : un double intermédiaire serait absorbé par
+                // ConvertResult (ChangeType arrondit à 15 chiffres significatifs).
+                // La discrimination du chemin real est portée par
+                // SimpleExpression_ArithmeticBoxing_DiscriminatesLiteralType (S2, #15760).
                 Assert.IsType<decimal>(result);
                 // Montant strictement positif (escalier d'asks cohérent).
                 Assert.True(result > 0m, $"AskOrderAmountExpression sous fr-FR a renvoyé {result}, attendu > 0");
@@ -462,12 +480,13 @@ namespace MyIA.Trading.Backtester.Tests.Strategies
 
         /// <summary>
         /// Test déterministe fr-FR sur la formule réelle de BidOrderAmountExpression
-        /// (extraite verbatim de TradingStrategy.cs:196) sous culture "fr-FR". Cette
-        /// formule inclut la bidouille documentée au commit c.988 : la parens autour de
-        /// "(Strategy.LimitOrderValueRate / 100 - 1)" — Tell bug parens Flee, où la
-        /// forme "((X) - 1)" lève ExpressionCompileException alors que "(X - 1)" est
-        /// acceptée. Le test confirme que la formule parente (la forme corrigée) passe
-        /// sous fr-FR et que le résultat est strictement decimal.
+        /// (extraite verbatim de TradingStrategy.cs:196) sous culture "fr-FR". La forme
+        /// "(Strategy.LimitOrderValueRate / 100 - 1)" est la forme courante de la
+        /// formule. Le label "bug parens Flee" du commit c.988 est REFUTE (repro
+        /// minimale Flee 2.0.0, config SimpleExpression, 2026-09-17 — S3 #15141) :
+        /// "((X) - 1)" compile et s'évalue à l'identique, formule complète incluse.
+        /// Le test confirme que la formule parente passe sous fr-FR et que le résultat
+        /// est strictement decimal.
         /// Restauration culture dans finally.
         /// </summary>
         [Fact]
@@ -488,9 +507,9 @@ namespace MyIA.Trading.Backtester.Tests.Strategies
                 context.Price = 100m;
                 var bandContext = new BandTradingContext(context) { Price = 100m };
 
-                // Formule réelle verbatim (TradingStrategy.cs:196) — la forme corrigée
-                // (X - 1) sans parens externes autour du terme de soustraction, qui
-                // contourne le bug parens Flee documenté au commit c.988.
+                // Formule réelle verbatim (TradingStrategy.cs:196). La forme (X - 1) est
+                // équivalente à ((X) - 1) : le label "bug parens Flee" du commit c.988
+                // est REFUTE (repro minimale Flee 2.0.0, 2026-09-17 — S3 #15141).
                 const string realBidFormula =
                     "(CurrentOrders.LowestBid.Value * (Strategy.LimitOrderValueRate / 100 - 1) / BidSpan) " +
                     "+ ((CurrentOrders.LowestBid.Value * Strategy.LimitOrderValueRate / 100) " +
@@ -498,7 +517,8 @@ namespace MyIA.Trading.Backtester.Tests.Strategies
 
                 var result = new SimpleExpression<decimal>(realBidFormula).Evaluate(bandContext);
 
-                // Type decimal strict.
+                // Type statique du résultat (signature Evaluate) — ne discrimine pas
+                // un chemin interne double (cf. S1 #15141).
                 Assert.IsType<decimal>(result);
                 // Encadrement plausible (la formule peut donner une valeur négative quand
                 // LimitOrderValueRate < 100 — c'est le comportement attendu upstream).

@@ -5926,7 +5926,7 @@ Ce notebook clôt l'arc du planificateur de repas : [06](06_Meal_Planner_Modelis
 ",,,,,,,,28d74ba97d49c886,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb,13e003ad,markdown,fr,d891ef0b9964822d,"# 10 — Générer un témoin depuis `A & ~B` (fork Automata vivant)
 
-`<<` [06 — Meal Planner hiérarchique](06_Meal_Planner_Modelisation.ipynb) | [Sudoku-13 — Automates symboliques `>>`](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb)
+`<<` [06 — Meal Planner hiérarchique](06_Meal_Planner_Modelisation.ipynb) | [Sudoku-13 — Automates symboliques `>>`](../../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb)
 
 ---
 
@@ -6182,7 +6182,7 @@ using (var ctx = new Context())
 }",,,,,,,,da4e7c5d7be63150,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb,veanes-z3-monadic,markdown,fr,e7f88d97b926aba8,"## 7c. Quand `re.inter` tient l'echelle - la decomposition monadique
 
-Le 7b resout `A & ~B` sur de **petits** langages (un caractère, une trentaine). Mais `re.inter` **materialise l'espace croise** des langages intersectes, et cet espace **explose** quand les contraintes se chevauchent. Le notebook [Sudoku-13](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) le mesure : l'intersection 10-way d'une ligne, emise en `re.inter` *fondu*, fait `unknown` ; la **même** contrainte eclatee en `str.contains` par chiffre **atterrit** la grille 9x9.
+Le 7b resout `A & ~B` sur de **petits** langages (un caractère, une trentaine). Mais `re.inter` **materialise l'espace croise** des langages intersectes, et cet espace **explose** quand les contraintes se chevauchent. Le notebook [Sudoku-13](../../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb) le mesure : l'intersection 10-way d'une ligne, emise en `re.inter` *fondu*, fait `unknown` ; la **même** contrainte eclatee en `str.contains` par chiffre **atterrit** la grille 9x9.
 
 La théorie qui tranche est la **decomposition monadique** de Veanes (*Monadic Decomposition*, CAV 2014). Une formule a plusieurs variables est **monadiquement decomposable** si elle equivaut a une combinaison booleenne de predicats a **une seule variable**. Quand elle l'est, on remplace le produit (`re.inter`) par une **conjonction de tests independants** - sans jamais construire l'automate croise.
 
@@ -6220,7 +6220,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb
 
 La machinerie de témoin historique d'AutomataDotNet plafonnait en pratique vers **~21 caractères** pour les automates non triviaux (au-delà, elle explosait ou bouclait). Le fork sous net8.0 lève ce plafond : on génère ici un témoin de **30 caractères** sans difficulté.
 
-> **Honnêteté — la portée exacte.** Le fork lève le **mur du témoin** (longueur). Il ne lève **pas** le **mur de l'explosion d'automate** : intersecter des dizaines de contraintes (p. ex. les 81 cases d'un Sudoku) fait exploser le produit cartésien des états. Pour le Sudoku à l'échelle, **Z3 `Distinct` reste le résolveur de production** (~27 ms). Le verdict mesuré est au §6b du [Sudoku-13](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb). Le vrai payoff de ce notebook est la **génération de témoin générale** `A & ~B`, pas le Sudoku.",,,,,,,,47f7d0509bf91467,,,,,,,,
+> **Honnêteté — la portée exacte.** Le fork lève le **mur du témoin** (longueur). Il ne lève **pas** le **mur de l'explosion d'automate** : intersecter des dizaines de contraintes (p. ex. les 81 cases d'un Sudoku) fait exploser le produit cartésien des états. Pour le Sudoku à l'échelle, **Z3 `Distinct` reste le résolveur de production** (~27 ms). Le verdict mesuré est au §6b du [Sudoku-13](../../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb). Le vrai payoff de ce notebook est la **génération de témoin générale** `A & ~B`, pas le Sudoku.",,,,,,,,47f7d0509bf91467,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb,2a81aba6,code,fr,65ef77d187a8b120,"// [a-z]{30} : plus long que l'ancien plafond ~21. Mesure du temps.
 var long30 = engine.CreateFromRegexes(""^[a-z]{30}$"");
 var sw = Stopwatch.StartNew();
@@ -6322,13 +6322,13 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb
 - **Algèbre partagée** : construisez l'automate via le moteur (`CreateFromRegexes`).
 - **Émettre puis résoudre** : le SMT-LIB du fork est le dialecte réel de Z3 — `ParseSMTLIB2String` ferme la boucle et produit un témoin par résolution de contraintes.
 - **Portée honnête** : le fork lève le mur du témoin, pas l'explosion d'automate. À l'échelle (Sudoku 81), **Z3 reste le résolveur de production**.
-- **Décomposition monadique** (Veanes, CAV'14) : le critère théorique qui décide si `re.inter` tient l'échelle. Un tous-distincts est décomposable (éclatable par chiffre, cf 7c) ; un ordre `x < y` ne l'est pas. C'est la frontière entre "" émettre "" et "" émettre dans la bonne forme "" du [Sudoku-13](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb).
+- **Décomposition monadique** (Veanes, CAV'14) : le critère théorique qui décide si `re.inter` tient l'échelle. Un tous-distincts est décomposable (éclatable par chiffre, cf 7c) ; un ordre `x < y` ne l'est pas. C'est la frontière entre "" émettre "" et "" émettre dans la bonne forme "" du [Sudoku-13](../../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb).
 
 > **Source du programme.** Margus Veanes, *Symbolic Automata* - [Dagstuhl Seminar 17142](https://www.dagstuhl.de/17142) (2017) : SFA sur algèbre de Boole, minimisation symbolique (POPL'14), logique M2L-str vers SFA (POPL'17), décomposition monadique (CAV'14).
 
 ---
 
-`<<` [06 — Meal Planner hiérarchique](06_Meal_Planner_Modelisation.ipynb) | [Sudoku-13 — Automates symboliques `>>`](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb)",,,,,,,,bbe092c9fb96dd56,,,,,,,,
+`<<` [06 — Meal Planner hiérarchique](06_Meal_Planner_Modelisation.ipynb) | [Sudoku-13 — Automates symboliques `>>`](../../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb)",,,,,,,,bbe092c9fb96dd56,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb,f4109dfc,markdown,fr,124b2dea4ecac0a2,"← [06 — Planificateur de repas hiérarchique](06_Meal_Planner_Modelisation.ipynb) | [README Z3](README.md)
 
 ---

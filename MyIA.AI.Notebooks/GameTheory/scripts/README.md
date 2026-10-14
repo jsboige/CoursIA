@@ -105,16 +105,16 @@ Les notebooks Lean natifs sont suffixés `-b` (kernel Lean 4) ; les notebooks Py
 | Notebook | Kernel | Description |
 |----------|--------|-------------|
 | `GameTheory-1` à `GameTheory-12`, `-14`, `-16` | Python (Windows) | Notebooks Python classiques (Nashpy, sympy, networkx) |
-| `GameTheory-02b-Lean-Definitions` | **Lean 4 (WSL)** | Définitions formelles, cellules Lean natives |
-| `GameTheory-04b-Lean-NashExistence` | Python (WSL) | Lecture guidée, orchestration via `lean_runner.py` |
+| `GameTheory-02b-Lean-Definitions-Lean` | **Lean 4 (WSL)** | Définitions formelles, cellules Lean natives |
+| `GameTheory-04b-Lean-NashExistence-Lean` | Python (WSL) | Lecture guidée, orchestration via `lean_runner.py` |
 | `GameTheory-04c-NashExistence-Python` | Python (Windows) | Miroir numérique (sympy, scipy) |
-| `GameTheory-08b-Lean-CombinatorialGames` | **Lean 4 (WSL)** | PGame mathlib, cellules Lean natives |
+| `GameTheory-08b-Lean-CombinatorialGames-Lean` | **Lean 4 (WSL)** | PGame mathlib, cellules Lean natives |
 | `GameTheory-08c-CombinatorialGames-Python` | Python (Windows) | Miroir Sprague-Grundy en Python |
-| `GameTheory-13-ImperfectInfo-CFR` | Python (WSL) | OpenSpiel CFR (WSL requis : pas de wheel Windows) |
-| `GameTheory-15-CooperativeGames` | Python (Windows) | Solutions coopératives (Shapley, core, nucleolus) |
-| `GameTheory-15b-Lean-CooperativeGames` | **Lean 4 (WSL)** | Formalisation Shapley (Lean 4) |
+| `GameTheory-13-ImperfectInfo-CFR-Python` | Python (WSL) | OpenSpiel CFR (WSL requis : pas de wheel Windows) |
+| `GameTheory-15-CooperativeGames-Python` | Python (Windows) | Solutions coopératives (Shapley, core, nucleolus) |
+| `GameTheory-15b-Lean-CooperativeGames-Lean` | **Lean 4 (WSL)** | Formalisation Shapley (Lean 4) |
 | `GameTheory-15c-CooperativeGames-Python` | Python (Windows) | Miroir Python du calcul Shapley |
-| `GameTheory-17-MultiAgent-RL` | Python (WSL) | OpenSpiel multi-agent RL (idem GT-13, WSL requis) |
+| `GameTheory-17-MultiAgent-RL-Python` | Python (WSL) | OpenSpiel multi-agent RL (idem GT-13, WSL requis) |
 | `SocialChoice/01b-Lean-SocialChoice-Formal` | **Lean 4 (WSL)** | Arrow, Sen, électeur médian |
 
 ## Troubleshooting

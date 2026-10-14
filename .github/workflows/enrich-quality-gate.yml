@@ -47,6 +47,11 @@ jobs:
           python-version: '3.11'
 
       - name: Gate changed notebooks
+        env:
+          # Body marker channel (#17744). Payload-at-event-time like the sibling
+          # gates (md-content-loss / plan-loss): a marker added to the body is
+          # visible to the runs triggered by the NEXT push, not to reruns.
+          ENRICH_QUALITY_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           set -uo pipefail
           BASE="origin/${{ github.base_ref }}"
@@ -68,6 +73,12 @@ jobs:
 
           tmp=$(mktemp -d)
           fail=0
+          # Body marker canal (#17744, meme politique que MD_CONTENT_LOSS_PR_BODY) :
+          # l'env var evite le pattern CodeQL actions/code-injection d'un printf
+          # du body dans le shell. Les marqueurs 'enrich-quality: reecriture
+          # assumee' ne couvrent QUE les categories base-vs-head (MD_REWRITE /
+          # MD_SURVIVAL_LOW) du notebook nomme.
+          printf '%s' "${ENRICH_QUALITY_PR_BODY:-}" > "$tmp/pr_body.txt"
           echo "## Enrich-quality gate" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           # Rows are TAB-separated: "R099<TAB>old<TAB>new" for renames,
@@ -82,7 +93,8 @@ jobs:
               basef="$tmp/base.ipynb"
               git show "$BASE:$base_nb" > "$basef" 2>/dev/null || basef="NONE"
             fi
-            out=$(python scripts/notebook_tools/enrich_quality_ci.py --base "$basef" --head "$nb") && rc=0 || rc=$?
+            out=$(ENRICH_QUALITY_PR_BODY_FILE="$tmp/pr_body.txt" \
+                  python scripts/notebook_tools/enrich_quality_ci.py --base "$basef" --head "$nb") && rc=0 || rc=$?
             if [ $rc -ne 0 ]; then
               echo "::error title=Enrich-quality regression::$nb introduces new HIGH enrich-quality finding(s)."
               echo "$out"

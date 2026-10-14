@@ -1,0 +1,117 @@
+{
+  "meta": {
+    "source_module": "argumentation_analysis.agents.core.debate.protocols",
+    "classes": ["DialogueType", "SpeechAct", "InquiryProtocol", "PersuasionProtocol"],
+    "note": "Exemples synthétiques domaine-public. Source de vérité unique partagée entre le notebook dialogue_protocols.ipynb et la garde round-trip tests/unit/coursia/dialogue_protocols/. transitions : is_valid_move(from, to) doit rendre allowed. terminations : is_terminal_state(history construite sur acts) doit rendre terminal.",
+    "created_for": "#1961 Phase 5"
+  },
+  "transitions": [
+    {
+      "dialogue": "inquiry",
+      "from": "QUESTION",
+      "to": "CLAIM",
+      "allowed": true,
+      "why": "En inquiry, une question peut recevoir une affirmation directe."
+    },
+    {
+      "dialogue": "inquiry",
+      "from": "CLAIM",
+      "to": "CONCEDE",
+      "allowed": false,
+      "why": "Asymétrie clé : en inquiry on ne concède pas une affirmation — on la soutient, la conteste ou la questionne."
+    },
+    {
+      "dialogue": "inquiry",
+      "from": "CHALLENGE",
+      "to": "ARGUE",
+      "allowed": true,
+      "why": "Une contestation appelle un argument."
+    },
+    {
+      "dialogue": "inquiry",
+      "from": "UNDERSTAND",
+      "to": "UNDERSTAND",
+      "allowed": true,
+      "why": "La compréhension mutuelle peut s'enchaîner."
+    },
+    {
+      "dialogue": "persuasion",
+      "from": "CLAIM",
+      "to": "CONCEDE",
+      "allowed": true,
+      "why": "En persuasion au contraire, concéder une affirmation est la sortie normale — l'objectif du dialogue."
+    },
+    {
+      "dialogue": "persuasion",
+      "from": "CHALLENGE",
+      "to": "RETRACT",
+      "allowed": true,
+      "why": "Contesté, le locuteur peut retirer sa position."
+    },
+    {
+      "dialogue": "persuasion",
+      "from": "ARGUE",
+      "to": "REFUTE",
+      "allowed": true,
+      "why": "Un argument peut être réfuté de front."
+    },
+    {
+      "dialogue": "persuasion",
+      "from": "QUESTION",
+      "to": "CHALLENGE",
+      "allowed": false,
+      "why": "Une question n'appelle pas une contestation directe — d'abord une réponse (claim/argue/support)."
+    },
+    {
+      "dialogue": "persuasion",
+      "from": "CONCEDE",
+      "to": "ARGUE",
+      "allowed": false,
+      "why": "Après une concession, on reformule une position ou on questionne, on ne relance pas un argument."
+    }
+  ],
+  "terminations": [
+    {
+      "dialogue": "inquiry",
+      "acts": ["UNDERSTAND", "UNDERSTAND", "UNDERSTAND"],
+      "terminal": true,
+      "why": "Trois compréhensions/consécutions consécutives en fin d'historique : dialogue clos."
+    },
+    {
+      "dialogue": "inquiry",
+      "acts": ["CLAIM", "QUESTION", "UNDERSTAND", "UNDERSTAND"],
+      "terminal": true,
+      "why": "Deux compréhensions consécutives en position 4 : condition de convergence atteinte."
+    },
+    {
+      "dialogue": "inquiry",
+      "acts": ["CLAIM", "SUPPORT", "CLAIM", "SUPPORT", "CLAIM", "SUPPORT"],
+      "terminal": true,
+      "why": "Boucle de motif (claim, support) répétée trois fois : le dialogue tourne en rond, on coupe."
+    },
+    {
+      "dialogue": "inquiry",
+      "acts": ["QUESTION", "CLAIM", "SUPPORT", "CHALLENGE", "ARGUE"],
+      "terminal": false,
+      "why": "Historique sain et mixte : aucune condition de terminaison ne s'applique."
+    },
+    {
+      "dialogue": "persuasion",
+      "acts": ["CLAIM", "CHALLENGE", "ARGUE", "CONCEDE"],
+      "terminal": true,
+      "why": "Une concession en dernière position termine la persuasion — l'objectif est atteint."
+    },
+    {
+      "dialogue": "persuasion",
+      "acts": ["CLAIM", "CHALLENGE", "RETRACT", "RETRACT"],
+      "terminal": true,
+      "why": "Deux retraits consécutifs : plus rien à persuader."
+    },
+    {
+      "dialogue": "persuasion",
+      "acts": ["CLAIM", "CHALLENGE", "ARGUE"],
+      "terminal": false,
+      "why": "Persuasion en cours, pas de concession ni retrait final."
+    }
+  ]
+}

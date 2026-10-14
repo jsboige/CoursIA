@@ -1,0 +1,36 @@
+# Environnement de la serie 02-ML-Cours -- CPython 3.13 (canon serie, cf docs/reference/kernels-runtime.md).
+# Dependances relevees par grep des imports de TOUS les notebooks de la serie (issue #18331), pas au juge.
+# Verification : venv neuf + pip install -r + execution Papermill 2.10 / 2.14 / 2.14b / 2.15 (cf PR).
+
+# Socle commun (33 notebooks numpy, 29 scikit-learn)
+numpy
+pandas
+scipy==1.14.1
+scikit-learn==1.5.2
+matplotlib
+statsmodels              # 2.3-Regression-lineaire-logistique
+
+# 2.6-Clustering-KMeans-PCA
+umap-learn
+
+# 2.9-Grokking / 2.9b-GenEFT / 2.9c / 2.9d / 2.9e (apprentissage profond jouet, CPU suffisant)
+torch
+torchvision
+
+# 2.10-Optimisation-Hyperparametres
+optuna
+
+# 2.11b / 2.11d / 2.11e / 2.11f (optimisation convexe)
+cvxpy
+
+# 2.12-Donnees-Desequilibrees
+imbalanced-learn
+
+# 2.14-Explicabilite / 2.14b-XAI
+shap
+lime
+dice-ml
+
+# 2.15-Donnee-Comme-Responsabilite-Python
+# pins mesurees sous py3.13 (PR #18247) : diffprivlib 0.6.6 exige scipy 1.14.1 + scikit-learn 1.5.2 (pins ci-dessus)
+diffprivlib==0.6.6

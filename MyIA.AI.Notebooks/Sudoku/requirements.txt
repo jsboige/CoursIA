@@ -22,6 +22,10 @@ mealpy>=3.0                  # PSO and other metaheuristics (Sudoku-05)
 # Graph
 networkx>=3.1                # Graph coloring (Sudoku-09)
 
+# Automates symboliques (Sudoku-13)
+regex>=2023.0                # Recursion (?&rec) absente du module re
+dd>=0.6                      # Diagrammes de decision binaires (dd.autoref)
+
 # Deep Learning (Sudoku-16)
 torch>=2.0
 

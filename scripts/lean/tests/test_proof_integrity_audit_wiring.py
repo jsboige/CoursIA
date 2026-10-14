@@ -189,7 +189,49 @@ def test_audit_allowlists_native_decide_axioms():
     it: no native_decide), so the general claim is NOT hollowed out. The
     pre-existing isolated witness `jumpCaptured_block` stays allow-listed;
     `jumpCaptured_block_of_class.ax_1_*` is a distinct re-derivation via the
-    class theorem."""
+    class theorem.
+
+    **Widened to 77 by #20004** (`feat(lean,#19989)`, tranche 2 of #19989):
+    the UnitCell pillar stopped being a placeholder. `unitcellInitial` moved
+    from `([] : Grid)` to the real RLE-loaded grid, which changed the axiom
+    footprint of the ALREADY covered `Conway.Life.Pillars` by 4 names (x2 for
+    the `_en` twin). This is the #11349 shape -- new theorems in a covered
+    module -- not the #9341 shape (newly covered module), so the criterion
+    applied is the operative one this docstring states: **attributable AND
+    non-hollowing**, verified per name before raising the pin.
+
+    * `unitcell_initial_population` (`unitcellInitial.length = 4761`) and
+      `unitcell_initial_nonempty` (`unitcellInitial ≠ []`) are concrete
+      finite propositions witnessing that the loaded grid is REAL. That is
+      precisely what CLOSED the `evolveHashlifeFastMemo_empty` route the
+      three sibling witnesses (`otca_metapixel_witness`, `gemini_witness`,
+      `cpu_witness`) still use -- so these two do not hollow those; they are
+      the evidence the route is unavailable for THIS pillar.
+    * `pulsar_period1_negative` / `pulsar_period2_negative` are the paired
+      negatives the #19989 criterion 2 asks for: `pulsar_period3` alone
+      pinned only a DIVISOR of 3, the pair pins the period to exactly 3.
+    * `git grep` over the lake finds ZERO references outside each theorem's
+      own declaration (the only other hits are a docstring bullet and a
+      markdown table row in `Pillars.lean` / `Pillars_en.lean`). Nothing
+      derives from them, so no general theorem of the module is emptied.
+
+    **Widened to 81 by the OTCA tranche 3 of #19989**: same shape, same
+    module, same criterion. `otcaInitial` moved from `([] : Grid)` to the
+    real 165 KB RLE-loaded grid (the largest `include_str` load in the
+    lake), retiring the vacuous `otca_metapixel_witness` in favour of the
+    state-witness pair `otca_initial_population`
+    (`otcaInitial.length = 64691`) and `otca_initial_nonempty` (x2 for the
+    `_en` twin). Attributable (each a concrete finite proposition, zero
+    references outside its own declaration) and non-hollowing (nothing
+    derives from them; `gemini_witness` / `cpu_witness` still close on
+    `evolveHashlifeFastMemo_empty`).
+
+    **This widening still needs a second reading.** By this docstring's own
+    rule (#11349), an attribution written by the same hand that widens cannot
+    self-certify. Here the second reading is the coordinator's B.0 pass. Each
+    of the 12 ratchet names is `._native.native_decide.ax_1_1` on a finite
+    proposition, all are enumerated, and the no-wildcard property is
+    unchanged."""
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
@@ -199,13 +241,15 @@ def test_audit_allowlists_native_decide_axioms():
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
     names = [a.strip() for a in allow.split(",") if a.strip()]
-    assert len(names) == 69, (
-        f"audit allow-list must carry the 69 native_decide axioms of the whole "
+    assert len(names) == 81, (
+        f"audit allow-list must carry the 81 native_decide axioms of the whole "
         f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
         f"footprint + 21 build-enumerated entries of the newly covered "
         f"modules + 2 P4-At standalone witnesses from grain 3a #11303 + 8 "
         f"class-witness entries from the #6724 criterion-3 characterization "
-        f"[PR #11910], each attributed in the workflow comment); got {len(names)}")
+        f"[PR #11910] + 8 Pillars entries from #20004 [tranche 2 of #19989] "
+        f"+ 4 Pillars entries from the OTCA tranche 3 of #19989, "
+        f"each attributed in the workflow comment); got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges, plus one
     # #10889-widening family: the _en twins under Conway_en.*).

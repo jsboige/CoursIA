@@ -163,6 +163,14 @@ SECRET_KEYS: frozenset[str] = frozenset({
     "CIVITAI_TOKEN", "GITHUB_TOKEN", "GITHUB_ACCESS_TOKEN",
     # Per-service client API keys (server defines the value; clients must match)
     "WHISPER_API_KEY", "VLLM_API_KEY", "TTS_API_KEY",
+    # Direct backend key for the hosted "medium" vLLM endpoint (ai-01 :5002,
+    # qwen3.6-35b-a3b), provisioned 2026-09-24 via RooSync private DM
+    # (ai01-vllm-medium-key-po2026-20260924, #16755). Distinct from
+    # CLAUDISH_PROXY_KEY, which authenticates the proxy path; this one is the
+    # server-side vLLM API key and must match the backend's --api-key.
+    # Consumers read it under TGWUI_MEDIUM_API_KEY (see ALIASES) -- the pair
+    # naming mirrors TGWUI_MEDIUM_API_URL in the GenAI .env.
+    "VLLM_API_KEY_MEDIUM", "TGWUI_MEDIUM_API_KEY",
     "QWEN_ASR_API_KEY", "MUSICGEN_API_KEY", "DEMUCS_API_KEY",
     "FUNASR_API_KEY",
     # Qdrant vector DB -- CLIENT side (notebooks RAG / SemanticKernel / Argument).
@@ -234,6 +242,12 @@ ALIASES: dict[str, str] = {
     # credential the middleware validates). A stale non-empty AUTH_TOKEN
     # shadows the correct API_TOKEN in the ``or`` fallback chain -> 401.
     "COMFYUI_AUTH_TOKEN": "COMFYUI_API_TOKEN",
+    # Hosted "medium" vLLM backend key. Direction matters: the canonical
+    # (target-side) name is TGWUI_MEDIUM_API_KEY -- what GenAI consumers read,
+    # mirroring TGWUI_MEDIUM_API_URL. VLLM_API_KEY_MEDIUM is ai-01's DM-side
+    # name and is also kept in master.env so both spellings exist there; a
+    # rotation is edit-master (either name) + render. #16755.
+    "VLLM_API_KEY_MEDIUM": "TGWUI_MEDIUM_API_KEY",
 }
 
 # Per-target REQUIRED keys (#15145). sync() only rewrites lines that already
@@ -254,6 +268,60 @@ REQUIRED_KEYS: dict[str, frozenset[str]] = {
     # same file). A missing line = None -> empty bearer -> 401.
     "MyIA.AI.Notebooks/GenAI/.env": frozenset({"VLLM_API_KEY"}),
 }
+
+
+# URL de la passerelle claudish (modèle myia.io, #14926). Toute cible dont le
+# .env pointe cette URL doit porter CLAUDISH_PROXY_KEY -- sans la cle, le
+# proxy renvoie 401 sur l'endpoint OpenAI derriere l'URL. La constante est
+# lue par derived_required() qui complete REQUIRED_KEYS par une regle
+# derivee : on declare la cle requise sans enumerer statiquement les 3
+# cibles, ce qui reagit aux futures series ajoutees a TARGET_ENVS qui
+# adoptent la passerelle.
+CLAUDISH_PROXY_URL = "models.myia.io"
+CLAUDISH_PROXY_KEY_NAME = "CLAUDISH_PROXY_KEY"
+
+
+def derived_required(env: Path, target_keys: set[str]) -> frozenset[str]:
+    """Regle derivee issue de l'etat OBSERVE du .env, pas d'une table
+    statique. Une cible qui pointe la passerelle claudish
+    (OPENAI_BASE_URL contient ``CLAUDISH_PROXY_URL``) doit porter la cle
+    d'authentification correspondante -- sinon 401. Issue #19462 (Q6
+    option b, decision user) : preferer une regle derivee a 3 entrees
+    statiques pour qu'une cible ajoutee demain herite du couplage sans
+    qu'on y pense.
+    Couvre aussi le cas ``.env`` absent : la fonction n'est appelee que
+    dans la branche ``if not env.exists(): continue`` de sync(), donc
+    un worktree frais sans la cible ne declenche pas la regle.
+    Une ligne commentee (``# OPENAI_BASE_URL=...``) NE declenche PAS
+    la regle : la cle n'est pas portee en subject, l'utilisateur
+    l'a explicitement mise hors service.
+    """
+    if CLAUDISH_PROXY_KEY_NAME in target_keys:
+        # Deja provisionnee -- rien a signaler.
+        return frozenset()
+    if "OPENAI_BASE_URL" not in target_keys:
+        return frozenset()
+    # Re-lire la valeur depuis le fichier (read_env a parse_kv qui strippe
+    # les commentaires inline ; ici on veut la valeur brute pour detecter
+    # la presence de l'URL dans une ligne non commentee).
+    try:
+        for line in env.read_text(encoding="utf-8").splitlines():
+            stripped = line.lstrip()
+            if stripped.startswith("#") or stripped.startswith("export "):
+                # On accepte 'export OPENAI_BASE_URL=...' (gate forward) mais
+                # pas '# OPENAI_BASE_URL=...' (desactive par l'utilisateur).
+                pass
+            m = _LINE_RE.match(line)
+            if not m or m.group(1) != "OPENAI_BASE_URL":
+                continue
+            if parse_kv(m.group(2)).strip().startswith("#"):
+                continue  # commentaire inline
+            value = parse_kv(m.group(2))
+            if CLAUDISH_PROXY_URL in value:
+                return frozenset({CLAUDISH_PROXY_KEY_NAME})
+    except OSError:
+        pass
+    return frozenset()
 
 
 def env_label(env: Path) -> str:
@@ -291,6 +359,45 @@ def read_env(path: Path) -> dict[str, str]:
         if m:
             out[m.group(1)] = parse_kv(m.group(2))
     return out
+
+
+# --------------------------------------------------------------------------- #
+# Couplage passerelle claudish : l'endpoint implique la cle d'authentification
+# --------------------------------------------------------------------------- #
+# Un .env qui porte l'endpoint de la passerelle (OPENAI_BASE_URL vers
+# models.myia.io) SANS CLAUDISH_PROXY_KEY part avec une adresse valide et le
+# credential qui l'authentifie absent -> 401 "invalid proxy authentication".
+#
+# Le piege est exactement celui que REQUIRED_KEYS rend mesurable (#15145) : la
+# cle EST dans master.env et EST dans SECRET_KEYS, donc tous les rapports la
+# disaient diffusee -- mais une cle absente d'une cible est rapportee "not
+# provisioned", indiscernable de "pas necessaire". La question "atteint-elle un
+# consommateur reel ?" n'avait donc pas de reponse mesurable ; mesuree, elle
+# rendait : aucun des consommateurs de la passerelle.
+#
+# Derive plutot que trois entrees statiques : une cible ajoutee demain a
+# TARGET_ENVS qui pointe la passerelle herite du couplage sans qu'on y pense, et
+# une cible dont le .env est absent ne fabrique aucun faux rouge sur un clone
+# neuf (la derivation ne voit que les fichiers PRESENTS).
+GATEWAY_HOST = "models.myia.io"
+GATEWAY_ENDPOINT_KEY = "OPENAI_BASE_URL"
+GATEWAY_AUTH_KEY = "CLAUDISH_PROXY_KEY"
+
+
+def _gateway_consumers() -> dict[str, frozenset[str]]:
+    """Targets whose .env points OPENAI_BASE_URL at the claudish gateway."""
+    out: dict[str, frozenset[str]] = {}
+    for env in TARGET_ENVS:
+        if GATEWAY_HOST in read_env(env).get(GATEWAY_ENDPOINT_KEY, ""):
+            out[env_label(env)] = frozenset({GATEWAY_AUTH_KEY})
+    return out
+
+
+# Additive: a static REQUIRED_KEYS entry for the same target keeps its own keys.
+REQUIRED_KEYS.update({
+    lbl: REQUIRED_KEYS.get(lbl, frozenset()) | keys
+    for lbl, keys in _gateway_consumers().items()
+})
 
 
 def mask(value: str) -> str:
@@ -453,7 +560,14 @@ def sync(check_only: bool, strict: bool = False) -> int:
                 f"  {label}: {len(gap)} master key(s) have no line here "
                 f"(not provisioned): {gap}")
         # #15145 geste 3 : les cles DECLAREES requisent deviennent mesurables.
-        required = REQUIRED_KEYS.get(label)
+        # Issue #19462 (Q6 option b) : la regle statique REQUIRED_KEYS est
+        # augmentee par derived_required(), qui regarde l'etat observe du
+        # .env (presence de OPENAI_BASE_URL -> models.myia.io) pour declarer
+        # CLAUDISH_PROXY_KEY comme requise. Le couplage reste une regle, pas
+        # une liste de cibles, ce qui reagit aux ajouts de TARGET_ENVS.
+        required_static = REQUIRED_KEYS.get(label, frozenset())
+        required_derived = derived_required(env, target_keys)
+        required = required_static | required_derived
         if required:
             missing_req = sorted(k for k in required
                                  if k not in target_keys

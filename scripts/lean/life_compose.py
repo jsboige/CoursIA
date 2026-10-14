@@ -223,17 +223,32 @@ def cells_at(catalog: Catalog, h: Handle, t: int) -> Grid:
         phase(t)    = (p0 + t - t0) mod P
         position(t) = anchor + coin(phase) + T * ((t - t0) // P)
     Exact, pas approché : la certification replay le vérifie pas à pas.
+
+    La trajectoire est une fonction pure du contenu (perf #16031) : le
+    resultat est memoise par (_handle_content_key, t) et une copie fraiche
+    est rendue -- le type de retour et la mutabilite observes sont inchanges.
     """
+    key = (_handle_content_key(h), t)
+    cached = _CELLS_AT_CACHE.get(key)
+    if cached is not None:
+        return set(cached)
     if isinstance(h, StaticProduct):
-        return set(h.cells) if t >= h.t0 else set()
-    if isinstance(h, Spawn):
-        motif_id, p0, t0, anchor = h.motif_id, h.phase0, 0, h.anchor
+        result = frozenset(h.cells) if t >= h.t0 else frozenset()
     else:
-        motif_id, p0, t0, anchor = h.motif_id, h.phase0, h.t0, h.anchor
-    if t < t0:
-        return set()
-    (dx, dy), phase = _phase_position(catalog, motif_id, anchor, p0, t0, t)
-    return {(x + dx, y + dy) for (x, y) in _motif_phases(catalog, motif_id)[phase]}
+        if isinstance(h, Spawn):
+            motif_id, p0, t0, anchor = h.motif_id, h.phase0, 0, h.anchor
+        else:
+            motif_id, p0, t0, anchor = h.motif_id, h.phase0, h.t0, h.anchor
+        if t < t0:
+            result = frozenset()
+        else:
+            (dx, dy), phase = _phase_position(catalog, motif_id, anchor, p0, t0, t)
+            result = frozenset(
+                (x + dx, y + dy) for (x, y) in _motif_phases(catalog, motif_id)[phase]
+            )
+    _cache_guard()
+    _CELLS_AT_CACHE[key] = result
+    return set(result)
 
 
 def anchor_at(catalog: Catalog, h: Handle, t: int) -> tuple[int, int] | None:
@@ -280,16 +295,46 @@ def swept_rect(
 
     Conservateur : union des cellules aux instants extrêmes et médian (la
     dérive est linéaire par période, donc monotone par axe).
+
+    Fonction pure du contenu (perf #16031) : memoise par (contenu, bornes),
+    la valeur None est un resultat cacheable comme les autres.
     """
+    key = (_handle_content_key(h), t_from, t_to)
+    if key in _SWEPT_RECT_CACHE:
+        return _SWEPT_RECT_CACHE[key]
     if isinstance(h, StaticProduct):
-        return _rect_of(h.cells)
-    if t_to < t_start(h):
-        return None
-    t_from = max(t_from, t_start(h))
-    union: Grid = set()
-    for t in {t_from, t_to, (t_from + t_to) // 2}:
-        union |= cells_at(catalog, h, t)
-    return _rect_of(union)
+        rect = _rect_of(h.cells)
+    elif t_to < t_start(h):
+        rect = None
+    else:
+        t0 = max(t_from, t_start(h))
+        union: Grid = set()
+        for t in {t0, t_to, (t0 + t_to) // 2}:
+            union |= cells_at(catalog, h, t)
+        rect = _rect_of(union)
+    _cache_guard()
+    _SWEPT_RECT_CACHE[key] = rect
+    return rect
+
+
+def _window_ever_rect(
+    catalog: Catalog, reaction: Reaction, offset: tuple[int, int]
+) -> tuple[int, int, int, int] | None:
+    """Rectangle englobant de toutes les images de la fenêtre d'une réaction.
+
+    Pur par (reaction.id, offset) -- les fenêtres elles-mêmes sont déjà
+    mémoïsées par reaction_window_cells (perf #16031 : ce rectangle était
+    reconstruit pour chaque candidat dans _surface_ok et _spatial_ok).
+    """
+    key = (reaction.id, offset)
+    if key in _WINDOW_EVER_CACHE:
+        return _WINDOW_EVER_CACHE[key]
+    ever: Grid = set()
+    for cells in reaction_window_cells(catalog, reaction, offset):
+        ever |= cells
+    rect = _rect_of(ever)
+    _WINDOW_EVER_CACHE[key] = rect
+    return rect
 
 
 def _grown(
@@ -323,11 +368,95 @@ def _min_chebyshev(a: Grid, b: Grid) -> int:
     return best
 
 
+def _pair_chebyshev(catalog: Catalog, a: Handle, b: Handle, t: int) -> int:
+    """_min_chebyshev(cells_at(a, t), cells_at(b, t)), memoise par contenu.
+
+    La meme paire geometrique est recontrolee pour CHAQUE candidat suivant
+    (profil #16031 : 376k appels sur la variante libre pour un petit nombre
+    de paires distinctes) -- la distance ne peut pas changer entre deux
+    controles de la meme paire au meme instant.
+    """
+    key = (_handle_content_key(a), _handle_content_key(b), t)
+    cached = _PAIR_CHEB_CACHE.get(key)
+    if cached is not None:
+        return cached
+    d = _min_chebyshev(cells_at(catalog, a, t), cells_at(catalog, b, t))
+    _cache_guard()
+    _PAIR_CHEB_CACHE[key] = d
+    return d
+
+
+def _window_pair_chebyshev(
+    catalog: Catalog,
+    h: Handle,
+    reaction_id: str,
+    offset: tuple[int, int],
+    frame: Grid,
+    k: int,
+    t: int,
+) -> int:
+    """Distance handle/fenêtre au pas k, memoisee comme _pair_chebyshev.
+
+    La clé porte (reaction_id, offset, k) : les images de fenêtre sont déjà
+    mémoïsées par reaction_window_cells sous cette même clé de contenu.
+    """
+    key = (_handle_content_key(h), ("win", reaction_id, offset, k), t)
+    cached = _PAIR_CHEB_CACHE.get(key)
+    if cached is not None:
+        return cached
+    d = _min_chebyshev(cells_at(catalog, h, t), frame)
+    _cache_guard()
+    _PAIR_CHEB_CACHE[key] = d
+    return d
+
+
 # ---------------------------------------------------------------------------
 # Fenêtres de réaction : replay solo (mémoïsé)
 # ---------------------------------------------------------------------------
 
 _WINDOW_CACHE: dict[tuple[str, tuple[int, int]], list[Grid]] = {}
+
+
+# ---------------------------------------------------------------------------
+# Caches de trajectoire (perf #16031) : fonctions PURES du contenu
+#
+# Toutes les cles ci-dessous portent le CONTENU dont la valeur calculee
+# depend (motif, ancre, phase, naissance, cellules) -- jamais l'identite de
+# bookkeeping (event_idx exclue : deux produits nes au meme endroit au meme
+# instant ont la meme trajectoire, quel que soit l'episode qui les a crees).
+# Meme convention que _PHASE_OFFSET_CACHE et _WINDOW_CACHE : le catalogue
+# fixture est stable par motif_id/reaction_id dans le process.
+# Garde de taille : au-dela, on vide -- la recompute d'une entree evictee
+# redonne la meme valeur, jamais un autre resultat.
+# ---------------------------------------------------------------------------
+
+_CELLS_AT_CACHE: dict[tuple, frozenset] = {}
+_SWEPT_RECT_CACHE: dict[tuple, tuple[int, int, int, int] | None] = {}
+_WINDOW_EVER_CACHE: dict[tuple[str, tuple[int, int]], tuple[int, int, int, int] | None] = {}
+_PAIR_CHEB_CACHE: dict[tuple, int] = {}
+_CACHE_GUARD = 400_000
+
+
+def _handle_content_key(h: Handle) -> tuple:
+    """Cle de contenu maximale : TOUT ce dont la trajectoire depend.
+
+    Contrairement a _handle_desc (cle d'isomorphisme d'etat, volontairement
+    plus grossiere), la cle de cache doit distinguer deux produits nes au
+    meme endroit au meme instant avec des phases initiales differentes.
+    """
+    if isinstance(h, Spawn):
+        return ("spawn", h.motif_id, h.anchor, h.phase0)
+    if isinstance(h, ProductBirth):
+        return ("product", h.motif_id, h.anchor, h.phase0, h.t0)
+    return ("static", h.cells, h.t0)
+
+
+def _cache_guard() -> None:
+    total = len(_CELLS_AT_CACHE) + len(_SWEPT_RECT_CACHE) + len(_PAIR_CHEB_CACHE)
+    if total > _CACHE_GUARD:
+        _CELLS_AT_CACHE.clear()
+        _SWEPT_RECT_CACHE.clear()
+        _PAIR_CHEB_CACHE.clear()
 
 
 def reaction_initial_cells(catalog: Catalog, reaction: Reaction) -> Grid:
@@ -739,11 +868,7 @@ class Searcher:
                 rects.append(r)
         for event in events:
             reaction = self.catalog.reactions[event.reaction_id]
-            window = reaction_window_cells(self.catalog, reaction, event.offset)
-            ever: Grid = set()
-            for cells in window:
-                ever |= cells
-            r = _rect_of(ever)
+            r = _window_ever_rect(self.catalog, reaction, event.offset)
             if r is not None:
                 rects.append(r)
         if not rects:
@@ -788,9 +913,7 @@ class Searcher:
                 reacting_pair = ka in consumed and kb in consumed
                 if reacting_pair:
                     for t in range(max(t_start(a), t_start(b)), event.t_fire):
-                        if _min_chebyshev(
-                            cells_at(catalog, a, t), cells_at(catalog, b, t)
-                        ) < 2:
+                        if _pair_chebyshev(catalog, a, b, t) < 2:
                             return False
                 else:
                     t_end = min(ends[ka], ends[kb])
@@ -803,9 +926,7 @@ class Searcher:
                         # seulement) coexiste et sera tranchée par le replay de
                         # certification.
                         for t in range(max(t_start(a), t_start(b)), t_end + 1):
-                            if _min_chebyshev(
-                                cells_at(catalog, a, t), cells_at(catalog, b, t)
-                            ) < 2:
+                            if _pair_chebyshev(catalog, a, b, t) < 2:
                                 return False
         for h in handles:
             if handle_key(h) in consumed:
@@ -818,10 +939,7 @@ class Searcher:
                     continue
                 reaction = catalog.reactions[ev.reaction_id]
                 window = windows[ev.idx]
-                ever: Grid = set()
-                for cells in window:
-                    ever |= cells
-                wrect = _rect_of(ever)
+                wrect = _window_ever_rect(catalog, reaction, ev.offset)
                 if wrect is None:
                     continue
                 r = swept_rect(catalog, h, 0, ends[handle_key(h)])
@@ -833,7 +951,9 @@ class Searcher:
                 for k, cells in enumerate(window):
                     t = ev.t_fire + k
                     hc = cells_at(catalog, h, t)
-                    if hc and _min_chebyshev(hc, cells) < 2:
+                    if hc and _window_pair_chebyshev(
+                        catalog, h, ev.reaction_id, ev.offset, cells, k, t
+                    ) < 2:
                         return False
                 for rect in reaction.clearance:
                     x0, y0, w, hgt = rect
@@ -853,6 +973,15 @@ class Searcher:
         goal = self.goal
         counters = self.counters
         ablate = self.ablations
+        # hoists perf #16031 : _extent_grid et le compte de gliders ne
+        # dependent QUE de state -- constant sur toute l'enumeration (le
+        # profil les recalculait a chaque combo de phases / candidat).
+        extent_offsets = self._extent_grid(state)
+        state_gliders = sum(
+            1
+            for s in state.spawns
+            if catalog.motifs[s.motif_id].kind == "spaceship"
+        )
         for reaction_id in sorted(catalog.reactions):
             reaction = catalog.reactions[reaction_id]
             if "r2" not in ablate and not reaction_useful(catalog, goal, reaction_id):
@@ -903,6 +1032,7 @@ class Searcher:
                         for i, (kind, _) in enumerate(combo)
                         if kind == "spawn"
                     ]
+                    spawn_pos = {slot: j for j, slot in enumerate(spawn_slots)}
                     phase_domains = []
                     for i in spawn_slots:
                         decl = reaction.reactants[i]
@@ -933,16 +1063,18 @@ class Searcher:
                                 break
                         if not consistent:
                             continue
-                        # matérialisation de l'itérateur d'offsets (1 fois)
-                        offset_iter: Iterator[tuple[int, int]]
+                        # matérialisation des offsets (1 fois) ; la branche
+                        # extent réutilise le hoist d'en-tête (perf #16031) :
+                        # la liste n'est jamais mutée, seul len() et
+                        # l'itération la lisent
+                        offsets: list[tuple[int, int]]
                         if offset is not None:
-                            offset_iter = iter([offset])
+                            offsets = [offset]
                         elif depth == 0 and "r1" not in ablate:
                             counters["r1_anchor_collapsed"] += 1
-                            offset_iter = iter([(0, 0)])
+                            offsets = [(0, 0)]
                         else:
-                            offset_iter = iter(self._extent_grid(state))
-                        offsets = list(offset_iter)
+                            offsets = extent_offsets
                         # -- R4 HOIST (#15635 T6) ----------------------------------
                         # Le check R4 (congruence de phase) ne dépend PAS de `e` ni
                         # de `p0` après évaluation : forced = (decl.phase - t_fire)
@@ -988,7 +1120,7 @@ class Searcher:
                             if not ok:
                                 continue
                             bindings = tuple(
-                                h if kind == "bind" else spawns[spawn_slots.index(i)]
+                                h if kind == "bind" else spawns[spawn_pos[i]]
                                 for i, (kind, h) in enumerate(combo)
                             )
                             consumed = {handle_key(b) for b in bindings}
@@ -999,15 +1131,14 @@ class Searcher:
                                 t_fire=t_fire,
                                 bindings=bindings,
                             )
-                            # budgets
-                            total_spawns = tuple(state.spawns) + tuple(spawns)
-                            gliders = sum(
+                            # budgets (state_gliders hoisté en tête, perf #16031)
+                            gliders = state_gliders + sum(
                                 1
-                                for s in total_spawns
+                                for s in spawns
                                 if catalog.motifs[s.motif_id].kind == "spaceship"
                             )
                             if (
-                                len(total_spawns) > goal.max_components
+                                len(state.spawns) + len(spawns) > goal.max_components
                                 or gliders > goal.max_gliders
                             ):
                                 counters["budget"] += 1
@@ -1076,11 +1207,14 @@ class Searcher:
             return
         if depth >= self.goal.max_events:
             return
-        for event, spawns, _consumed in self._enumerate_events(state, depth):
+        for event, spawns, consumed in self._enumerate_events(state, depth):
             if self.witness is not None:
                 return
+            # perf #16031 : consumed est exactement {handle_key(b) pour les
+            # bindings}, deja construit par l'enumerateur -- le reconstruire
+            # dans la condition re-evaluait le set pour CHAQUE handle vivant
             new_live = tuple(
-                h for h in state.live if handle_key(h) not in {handle_key(b) for b in event.bindings}
+                h for h in state.live if handle_key(h) not in consumed
             ) + tuple(product_handles(self.catalog, event))
             new_state = SearchState(
                 spawns=state.spawns + spawns,
@@ -1171,12 +1305,15 @@ def certify(
             if ev.t_fire <= t < ev.t_fire + reaction.stabilization_time:
                 for (x0, y0, w, h) in reaction.clearance:
                     abs_rect = (x0 + ev.offset[0], y0 + ev.offset[1], w, h)
-                    hit = sorted(
-                        tuple(c)
-                        for c in scene
-                        if _rect_contains_cell(abs_rect, c)
-                    )
-                    if hit:
+                    # perf #16031 : any() d'abord -- le scan complet + tri ne
+                    # sert que dans le cas (rare) d'une violation ; le contenu
+                    # de l'entree produite est inchange
+                    if any(_rect_contains_cell(abs_rect, c) for c in scene):
+                        hit = sorted(
+                            tuple(c)
+                            for c in scene
+                            if _rect_contains_cell(abs_rect, c)
+                        )
                         clearance_violations.append({"t": t, "rect": abs_rect, "hit": hit[:4]})
         final_cells = set(scene)
         if t < goal.horizon:
@@ -1276,7 +1413,13 @@ def run_compositional(
     """
     runs = []
     for _ in range(reps):
+        # caches de trajectoire vidés par rep (perf #16031) : chaque rep reste
+        # la mesure d'une recherche froide, comme pour _WINDOW_CACHE
         _WINDOW_CACHE.clear()
+        _WINDOW_EVER_CACHE.clear()
+        _CELLS_AT_CACHE.clear()
+        _SWEPT_RECT_CACHE.clear()
+        _PAIR_CHEB_CACHE.clear()
         if measure_memory:
             tracemalloc.start()
         t0 = time.perf_counter()
