@@ -4234,3 +4234,137 @@ def test_stack_door_is_silent_on_the_merge_path_when_not_a_stack_top(monkeypatch
 
     assert verdict == mod.VERDICT_READY, errors
     assert errors == [] and dossier is not None
+
+
+# --- #20641 : test direct du mecanisme `_author_ref` (NanoClaw review 5503...) --
+# La review NanoClaw (c.469) a releve que les trois tests #20641 posaient
+# `author_ref` manuellement sur l'index et patchaient le test preexistant
+# l.3743 en identite : `_synthetic_git` ne repond qu'aux questions
+# `merge-base`, et la logique de saut content-free (4eme bloc de
+# `_author_ref` : derive du premier parent, et uniquement quand la fusion
+# est content-free) n'avait aucun test direct. Le couple auto-coherent
+# par construction, c'est precisement ce qu'il faut fermer.
+
+
+def _author_ref_synthetic_git(*, parents=(), ancestors=(), trees=(), auto_merges=()):
+    """`git` simule repondant aux 4 questions de `_author_ref`.
+
+    `parents` : sha -> "<first> <second>" (sortie de `log -1 --format=%P`).
+    `ancestors` : paires (second, base) pour lesquelles merge-base rc=0.
+    `trees` : sha -> tree_sha (sortie de `log -1 --format=%T`).
+    `auto_merges` : (first, second) -> tree_sha (sortie de
+    `merge-tree --write-tree`).
+    """
+    anc = set(ancestors)
+    par = dict(parents)
+    tre = dict(trees)
+    auto = dict(auto_merges)
+
+    def fake(args, check=True):
+        if args[:3] == ["log", "-1", "--format=%P"]:
+            return subprocess.CompletedProcess(
+                ["git", *args], 0, par.get(args[3], ""), ""
+            )
+        if args[:2] == ["merge-base", "--is-ancestor"]:
+            rc = 0 if (args[2], args[3]) in anc else 1
+            return subprocess.CompletedProcess(["git", *args], rc, "", "")
+        if args[:3] == ["log", "-1", "--format=%T"]:
+            return subprocess.CompletedProcess(
+                ["git", *args], 0, tre.get(args[3], ""), ""
+            )
+        if args[:2] == ["merge-tree", "--write-tree"]:
+            tree = auto.get((args[2], args[3]), "")
+            return subprocess.CompletedProcess(["git", *args], 0, tree, "")
+        return subprocess.CompletedProcess(["git", *args], 1, "", "")
+
+    return fake
+
+
+def test_author_ref_skips_content_free_merge(monkeypatch):
+    """#20641 (controle direct positif) -- une fusion content-free est sautee.
+
+    `top` est un commit de fusion : `parents[0]` = la branche ou on
+    etait (feature), `parents[1]` = la branche mergee (main). C'est la
+    disposition de `gh pr update-branch` (merge main dans la branche
+    de la PR). Le second parent est donc l'ancetre de la base, et
+    l'arbre de `top` est identique a l'arbre de l'auto-merge des
+    parents : `_author_ref` doit deriver sur `feature` (le premier
+    parent). C'est le saut qui rend muette la porte pile dans le cas
+    fondateur #20521/#20525 (base rafraichie content-free).
+    """
+    base = "refs/remotes/origin/main"
+    main_sha = "1" * 40
+    feature_sha = "2" * 40
+    top = "3" * 40
+    monkeypatch.setattr(
+        mod,
+        "_git",
+        _author_ref_synthetic_git(
+            parents={top: f"{feature_sha} {main_sha}"},
+            ancestors={(main_sha, base)},
+            trees={top: "tree_top"},
+            auto_merges={(feature_sha, main_sha): "tree_top"},
+        ),
+    )
+    assert mod._author_ref(top, base_ref=base) == feature_sha
+
+
+def test_author_ref_stops_at_conflict_resolution(monkeypatch):
+    """#20641 (controle direct negatif) -- une fusion avec conflit N'EST PAS sautee.
+
+    Meme forme que le test positif, mais l'arbre de `top` differe de
+    l'arbre de l'auto-merge : c'est une resolution manuelle de conflit
+    (contenu d'auteur). `_author_ref` doit rendre `top` inchange, et la
+    remontee first-parent ne deriver pas. Le predicat du
+    `last_authoritative_sha` de `merge_dwell.py` est ici transpose :
+    le contenu d'auteur se mesure, et il bloque la remontee.
+    """
+    base = "refs/remotes/origin/main"
+    main_sha = "1" * 40
+    feature_sha = "2" * 40
+    top = "3" * 40
+    monkeypatch.setattr(
+        mod,
+        "_git",
+        _author_ref_synthetic_git(
+            parents={top: f"{feature_sha} {main_sha}"},
+            ancestors={(main_sha, base)},
+            trees={top: "tree_resolved"},
+            auto_merges={(feature_sha, main_sha): "tree_auto"},
+        ),
+    )
+    assert mod._author_ref(top, base_ref=base) == top
+
+
+def test_author_ref_returns_on_non_merge_commit(monkeypatch):
+    """#20641 (controle direct) -- un commit non-fusion n'est pas une cible de saut.
+
+    `top` n'a qu'un seul parent : `_author_ref` rend `top` inchange
+    (la remontee n'a rien a sauter). Le test ferme le trou des
+    4 conditions de la remontee (parents != 2, second non-ancetre,
+    arbre vide, arbre != auto-merge) : ce sont les sorties de
+    remontee que le code tient.
+    """
+    base = "refs/remotes/origin/main"
+    top = "3" * 40
+    monkeypatch.setattr(
+        mod,
+        "_git",
+        _author_ref_synthetic_git(
+            parents={top: "1" * 40},
+            trees={top: "tree_top"},
+        ),
+    )
+    assert mod._author_ref(top, base_ref=base) == top
+
+
+def test_author_ref_returns_on_git_failure(monkeypatch):
+    """#20641 (controle direct) -- un echec de mesure ne leve pas d'exception.
+
+    Le `_git` synthetique minimal rend rc=1 sur tout (defaut de la
+    derniere branche) : `_author_ref` doit rendre `ref` inchange
+    (fail-closed). Une mesure impossible ne fabrique jamais de refus.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    ref = "refs/pull/12345/head"
+    assert mod._author_ref(ref) == ref
