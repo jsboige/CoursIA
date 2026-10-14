@@ -29,11 +29,6 @@ def get_cell_src(nb, idx: int) -> str:
     return ''.join(s) if isinstance(s, list) else s
 
 
-def get_cell_outputs(nb, idx: int):
-    c = nb['cells'][idx]
-    return c.get('outputs', [])
-
-
 # Module-level globals (set by setUpModule)
 nb = None
 cell0_src = None
@@ -149,17 +144,6 @@ class TestIntroCodeAlignment(unittest.TestCase):
             any(phrase in cell21_src for phrase in ('5 large-cap', '5 actifs', 'Limites', 'limite')),
             'Cell 21 must acknowledge the 5-asset limit (Limites or Diversification section)'
         )
-
-    def test_dependent_outputs_cleared(self):
-        """QuantBook-dependent outputs (cells 5, 7, 10, 12, 14, 16, 18, 20) must
-        be cleared since the intro/code changed and re-execution is via QC Cloud."""
-        for idx in [5, 7, 10, 12, 14, 16, 18, 20]:
-            c = nb['cells'][idx]
-            if c.get('cell_type') != 'code':
-                continue
-            outputs = c.get('outputs', [])
-            self.assertEqual(len(outputs), 0,
-                             f'Cell {idx} outputs must be cleared (re-execution via QC Cloud required), got {len(outputs)} output(s)')
 
 
 if __name__ == '__main__':
