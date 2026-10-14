@@ -4103,23 +4103,24 @@ if kokoro_loaded:
 else:
     print(""Modele Kokoro non charge"")
 ",,,,,,,,b9fce0a9425bb123,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,49a95f2c,markdown,fr,21258384c67d75be,"### Interpretation : Première generation
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,49a95f2c,markdown,fr,f9eddb80a4b9e16b,"### Interprétation : première génération
 
-La première generation TTS avec Kokoro illustre le pipeline complet de synthese vocale.
+Le pipeline complet tient en quatre étapes : entrée texte brut → tokenisation et encodage phonétique → génération de la forme d'onde par le modèle → sortie `(array float32, sample rate)`.
 
-| Étape | Description |
-|-------|-------------|
-| **Entree** | Texte brut (chaîne de caractères) |
-| **Traitement** | Tokenization + encodage phonetique |
-| **Synthese** | Generation waveform par le modèle |
-| **Sortie** | Array numpy (float32) + sample rate |
+**Métriques mesurées** par la cellule ci-dessus :
 
-**Metriques cles** :
-- **Sample rate** : 24000 Hz (qualite telephonique HD)
-- **Ratio temps reel** : 5-20x sur GPU (generation plus rapide que la lecture)
-- **Taille** : ~4 KB/seconde (format float32 non compresse)
+| Métrique | Valeur mesurée | Lecture |
+|----------|---------------|---------|
+| Durée audio | 10.6 s | Conforme au texte d'entrée |
+| Sample rate | 24000 Hz | Bande passante ~11 kHz, suffisante pour la parole |
+| Temps de génération | 5.02 s | |
+| Ratio temps réel | **2.1x** | Génère deux fois plus vite qu'il ne se lit |
+| Taille | 994.0 KB (float32) | soit **~94 KB par seconde** d'audio |
 
-> **Note technique** : Le premier appel est plus lent en raison de la compilation JIT (Just-In-Time). Les appels suivants beneficient du cache et sont significativement plus rapides.",,,,,,,,21258384c67d75be,,,,,,,,
+Le débit de ~94 KB/s se déduit du format et se vérifie sur la mesure : 24000 échantillons par seconde × 4 octets par `float32` = 96 000 octets/s, et 994.0 KB pour 10.6 s donnent 93.8 KB/s. C'est l'empreinte du WAV non compressé — un encodage diffusé comme Opus la réduit d'un ordre de grandeur (cf. le carnet OpenAI TTS de la série, qui mesure ce rapport).
+
+**Sur le ratio temps réel** : la valeur mesurée ici (2.1x) caractérise *cette* machine et *ce* réglage. Les fiches du modèle annoncent 5-20x sur GPU et 1-3x sur CPU ; un chiffre de fiche n'est pas une mesure. Le premier appel paie en plus la compilation JIT, les suivants bénéficient du cache — c'est pourquoi un run court sous-estime systématiquement le débit de croisière.
+",,,,,,,,f9eddb80a4b9e16b,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-section2-interpretation,markdown,fr,2811c86d5d298470,"### Interpretation : Première generation
 
 | Aspect | Valeur typique | Signification |
@@ -4129,73 +4130,67 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-sec
 | Qualite | Bonne | Moins naturelle qu'OpenAI TTS mais acceptable |
 
 > **Note technique** : Le premier appel est plus lent (compilation JIT). Les appels suivants beneficient du cache.",,,,,,,,2811c86d5d298470,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,6297a58c,markdown,fr,6aa5978ee50e3b97,"### Exercice 1 : Étude de l'impact du paramètre speed sur la qualite TTS
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,6297a58c,markdown,fr,898c3fa5d80265b0,"### Exemple guidé 1 : Impact du paramètre `speed` sur la génération
 
-**Contexte** : Le paramètre `speed` de Kokoro contrôle la vitesse de parole. Une vitesse trop rapide degrade l'intelligibilite, une vitesse trop lente rend la parole artificielle. Vous souhaitez trouver le compromis optimal.
+*Contribution d'un groupe d'étudiants EPF (TP2, PR #20681), intégrée comme exemple guidé.*
 
-**Objectif** : Créer une fonction `benchmark_speed()` qui genere un même texte a différentes vitesses (0.5, 0.75, 1.0, 1.25, 1.5) et retourne un tableau comparatif avec les metriques cles pour chaque vitesse.
+Cet exemple synthétise la même phrase à cinq vitesses (0.5, 0.75, 1.0, 1.25, 1.5) et mesure pour chacune la durée de l'audio, le temps de génération et leur rapport.
+
+**Objectif** : observer ce que `speed` change dans la sortie de Kokoro et dans le coût de calcul.
 
 **Étapes** :
-1. Définir la fonction avec les paramètres : `text`, `voice`, `speeds` (liste de floats)
-2. Pour chaque vitesse, generer l'audio avec Kokoro et mesurer le temps de generation
-3. Calculer les metriques : duree audio, ratio temps reel, nombre d'echantillons
-4. Retourner un dictionnaire structure avec les résultats et la vitesse ""optimale"" (ratio le plus eleve)
-5. Sauvegarder les fichiers audio pour ecoute comparative
+1. Pour chaque vitesse, appeler `kokoro.create(text, voice=voice, speed=speed)` en chronométrant l'appel
+2. Calculer la durée audio (`len(samples) / sample_rate`) et le rapport durée audio / temps de génération
+3. Sauvegarder chaque version (`speed_<vitesse>_<voix>.wav`) pour une écoute comparative
+4. Retenir la vitesse dont le rapport est le plus élevé
 
-**Indices** :
-- L'API ONNX : `kokoro.create(text, voice=voice, speed=speed)` accepte le paramètre `speed`
-- Le ratio temps reel = `duree_audio / temps_generation`
-- Une vitesse de 1.0 est la reference ""normale""
-- Les vitesses extremes (0.5 ou 1.5) peuvent produire des artefacts audio",,,,,,,,6aa5978ee50e3b97,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,6b39cba1,code,fr,1f83e6ffe3aeee50,"def benchmark_speed(text, voice=""af_heart"", speeds=None):
-    """"""
-    Genere un texte a differentes vitesses et compare les metriques.
-    
-    Parametres :
-        text (str) : texte a synthetiser
-        voice (str) : voix Kokoro
-        speeds (list) : liste des vitesses a tester (defaut: [0.5, 0.75, 1.0, 1.25, 1.5])
-    
-    Retourne :
-        dict : resultats par vitesse, meilleure vitesse identifiee
-    """"""
+**Points clés du code** :
+- `speed` agit sur la durée de l'audio, à peu près en raison inverse : à 0.5, la phrase dure environ deux fois plus longtemps qu'à 1.0
+- le temps de génération suit la durée produite, si bien que le rapport temps réel varie peu d'une vitesse à l'autre : il mesure le coût de calcul, pas la qualité de la parole
+- le critère « rapport le plus élevé » désigne donc une vitesse au gré de petites fluctuations de mesure ; l'exercice 1 propose un critère qui tient compte de ce que l'auditeur comprend",,,,,,,,898c3fa5d80265b0,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,6b39cba1,code,fr,05d93abbed491c08,"def benchmark_speed(text, voice=""af_heart"", speeds=None):
+    """"""Genere un texte a differentes vitesses et compare les metriques.""""""
     if speeds is None:
         speeds = [0.5, 0.75, 1.0, 1.25, 1.5]
-    
-    # TODO etudiant : implementer le benchmark
+
     results = {}
-    
+
     for speed in speeds:
-        # Etape 1 : Generer l'audio avec cette vitesse
-        # Indice : kokoro.create(text, voice=voice, speed=speed)
-        samples, sample_rate = None, None
-        
-        # Etape 2 : Calculer les metriques
-        # Indice : duration = len(samples) / sample_rate
-        gen_time = None  # mesurer avec time.time()
-        duration = None
-        
+        # Generer l'audio et mesurer le temps
+        debut = time.time()
+        samples, sample_rate = kokoro.create(text, voice=voice, speed=speed)
+        gen_time = time.time() - debut
+
+        # Calculer les metriques
+        duration = len(samples) / sample_rate
+
         results[speed] = {
             ""duration"": duration,
             ""gen_time"": gen_time,
             ""samples"": samples,
             ""sample_rate"": sample_rate,
-            ""ratio"": None  # duration / gen_time
+            ""ratio"": duration / gen_time
         }
-        
-        # Etape 3 : Sauvegarder le fichier pour ecoute
-        # Indice : OUTPUT_DIR / f""speed_{speed}_{voice}.wav""
-    
-    # Etape 4 : Identifier la meilleure vitesse (ratio le plus eleve)
+
+        # Sauvegarder le fichier pour ecoute
+        sf.write(str(OUTPUT_DIR / f""speed_{speed}_{voice}.wav""), samples, sample_rate)
+
+    # Meilleure vitesse = ratio temps reel le plus eleve
     best_speed = None
-    
+    for speed in results:
+        if best_speed is None or results[speed][""ratio""] > results[best_speed][""ratio""]:
+            best_speed = speed
+
     return {""results"": results, ""best_speed"": best_speed}
 
 # Test avec un texte court
 test_text = ""The quick brown fox jumps over the lazy dog. This sentence contains every letter of the alphabet.""
 speed_result = benchmark_speed(test_text, voice=""af_heart"")
-print(""Exercice a completer"")
-",,,,,,,,1f83e6ffe3aeee50,,,,,,,,
+
+print(f""{'Vitesse':<10} {'Duree (s)':<12} {'Temps gen (s)':<15} {'Ratio':<8}"")
+for speed, r in speed_result[""results""].items():
+    print(f""{speed:<10} {r['duration']:<12.2f} {r['gen_time']:<15.2f} {r['ratio']:<8.1f}"")
+print(f""Meilleure vitesse (ratio le plus eleve) : {speed_result['best_speed']}"")",,,,,,,,05d93abbed491c08,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-section3-intro,markdown,fr,1f0e8c16411665fb,"## Section 3 : Voix et langues
 
 Kokoro propose plusieurs voix organisees par langue :
@@ -4413,59 +4408,53 @@ if comparison_results:
     print(f""  OpenAI tts-1-hd : ${chars_1h * 0.030 / 1000:.2f}"")
 else:
     print(""\nAucun resultat de comparaison disponible (ni local ni API)"")",,,,,,,,07f4ac3d95b7ab0b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,92855a9d,markdown,fr,1650e7d6a475d0c0,"### Exercice 2 : Pipeline de lecture TTS batch avec gestion de file d'attente
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,92855a9d,markdown,fr,6af8cdffc8ea8485,"### Exemple guidé 2 : Pipeline de synthèse par lot
 
-**Contexte** : Vous devez convertir un ensemble d'articles (titres et resumes) en fichiers audio pour un flux de type ""podcast actualites"". Chaque article doit etre synthetise avec une voix coherente, et les fichiers doivent etre nommes de maniere systématique.
+*Contribution d'un groupe d'étudiants EPF (TP2, PR #20681), intégrée comme exemple guidé.*
 
-**Objectif** : Créer une fonction `batch_tts_pipeline()` qui prend une liste de textes, les synthetise un par un avec Kokoro, et sauvegarde chaque fichier audio avec un nom structure.
+Cet exemple convertit une petite liste d'articles (titre et résumé) en fichiers audio, un fichier par article, comme pour un flux de type « podcast actualités ».
+
+**Objectif** : enchaîner les synthèses, nommer les fichiers de façon systématique et produire le bilan du lot.
 
 **Étapes** :
-1. Définir la fonction avec les paramètres : `articles` (liste de dict `{""id"", ""title"", ""summary""}`), `voice`, `output_dir`
-2. Pour chaque article, synthetiser le texte `title + "". "" + summary` avec Kokoro
-3. Sauvegarder chaque fichier sous le nom `article_{id}_{voice}.wav`
-4. Collecter les metriques pour chaque article (duree audio, temps de generation, ratio)
-5. Retourner un resume complet : nombre d'articles traites, duree totale, temps total
+1. Construire le texte de chaque article : `title + "". "" + summary`
+2. Le synthétiser avec `kokoro.create(...)` en chronométrant l'appel
+3. Sauvegarder `article_<id>_<voix>.wav` dans `OUTPUT_DIR`
+4. Cumuler durées et temps de génération, en isolant les erreurs article par article (`try/except`)
+5. Renvoyer un résumé : nombre d'articles, durée totale, temps total, erreurs
 
-**Indices** :
-- Pour le backend ONNX : `kokoro.create(text, voice=voice, speed=1.0)` retourne `(samples, sample_rate)`
-- Pour le backend standard : iterer sur `pipeline(text, voice=voice)` et concatener les chunks
-- La duree audio = `len(samples) / sample_rate`
-- Gerer les erreurs par article avec try/except (un article qui echoue ne doit pas arreter le pipeline)",,,,,,,,1650e7d6a475d0c0,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ef4ce5c7,code,fr,ca9d4a3750eb229d,"def batch_tts_pipeline(articles, voice=""af_heart"", output_dir=None):
-    """"""
-    Synthetise un batch d'articles en fichiers audio.
-    
-    Parametres :
-        articles (list) : liste de dicts {""id"", ""title"", ""summary""}
-        voice (str) : voix Kokoro a utiliser
-        output_dir (Path) : repertoire de sortie
-    
-    Retourne :
-        dict : resume du batch (nb_articles, duree_totale, temps_total, erreurs)
-    """"""
-    # TODO etudiant : implementer le pipeline batch
-    # Etape 1 : Initialiser les compteurs
+**Points clés du code** :
+- l'isolement des erreurs par article rend le lot robuste : un texte vide ou un caractère non géré ne coûte qu'un fichier, pas le lot entier
+- les articles sont en français, mais la voix `af_heart` est anglaise et `kokoro.create()` phonémise par défaut selon les règles de l'anglais (`lang=""en-us""`) : l'audio est produit sans erreur, avec une prononciation anglaise. L'exercice 2 mesure cet effet",,,,,,,,6af8cdffc8ea8485,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ef4ce5c7,code,fr,73fc72e274422cc9,"def batch_tts_pipeline(articles, voice=""af_heart"", output_dir=None):
+    """"""Synthetise un batch d'articles en fichiers audio.""""""
     total_duration = 0
     total_gen_time = 0
     errors = []
-    
-    # Etape 2 : Iterer sur les articles
+
     for article in articles:
-        # Indice : construire le texte complet = title + "". "" + summary
-        text = None
-        
-        # Etape 3 : Generer l'audio avec Kokoro
-        # Indice : kokoro.create(text, voice=voice, speed=1.0) pour ONNX
-        samples, sample_rate = None, None
-        
-        # Etape 4 : Sauvegarder le fichier
-        # Indice : sf.write(str(filepath), samples, sample_rate)
-        # Nom : article_{id}_{voice}.wav
-        
-        # Etape 5 : Collecter les metriques
-        pass
-    
-    # Retourner le resume
+        try:
+            # Texte complet = titre + resume
+            text = article[""title""] + "". "" + article[""summary""]
+
+            # Generer l'audio
+            debut = time.time()
+            samples, sample_rate = kokoro.create(text, voice=voice, speed=1.0)
+            gen_time = time.time() - debut
+
+            # Sauvegarder le fichier
+            filepath = output_dir / f""article_{article['id']}_{voice}.wav""
+            sf.write(str(filepath), samples, sample_rate)
+
+            # Metriques
+            duration = len(samples) / sample_rate
+            total_duration += duration
+            total_gen_time += gen_time
+            print(f""Article {article['id']} : {duration:.1f}s d'audio en {gen_time:.2f}s (ratio {duration / gen_time:.1f}x)"")
+        except Exception as e:
+            errors.append((article[""id""], str(e)))
+            print(f""Article {article['id']} : erreur {e}"")
+
     return {
         ""nb_articles"": len(articles),
         ""total_duration"": total_duration,
@@ -4483,7 +4472,8 @@ test_articles = [
 # Test du pipeline
 output_dir = OUTPUT_DIR
 result = batch_tts_pipeline(test_articles, voice=""af_heart"", output_dir=OUTPUT_DIR)
-print(""Exercice a completer"")",,,,,,,,ca9d4a3750eb229d,,,,,,,,
+print(f""\nResume : {result['nb_articles']} articles, {result['total_duration']:.1f}s d'audio, ""
+      f""{result['total_gen_time']:.2f}s de generation, {len(result['errors'])} erreur(s)"")",,,,,,,,73fc72e274422cc9,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-section4-interpretation,markdown,fr,c06fb81e37948f26,"### Interpretation : Comparaison Kokoro vs OpenAI
 
 | Critere | Kokoro | OpenAI tts-1 | OpenAI tts-1-hd |
@@ -4587,7 +4577,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-pra
 | Backend ONNX | Vitesse +30-50% | Inference optimisee sans PyTorch |
 | Batch generation | Debit +50% | Regrouper les textes courts |
 | GPU | Vitesse 5-10x vs CPU | Recommande pour la production |",,,,,,,,cc1abaa4e3c1ff0c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,da1cd8d2,markdown,fr,ac6de385bdeace2b,"### Interpretation : Statistiques de session
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,da1cd8d2,markdown,fr,0f69cec1aef52ce0,"### Interpretation : Statistiques de session
 
 L'exécution de ce notebook a permis de mesurer les performances de Kokoro TTS dans différentes configurations.
 
@@ -4598,7 +4588,9 @@ L'exécution de ce notebook a permis de mesurer les performances de Kokoro TTS d
 | **VRAM** | 0.00 GB (observe, CPU) ; ~2 GB sur GPU pour le modèle 82M |
 | **Fichiers** | Sauvegardes dans `outputs/audio/kokoro/` |
 
-> **Note technique** : La liberation explicite de la memoire (`del`, `gc.collect()`, `torch.cuda.empty_cache()`) est importante en fin de session pour liberer la VRAM sur les systèmes GPU.",,,,,,,,ac6de385bdeace2b,,,,,,,,
+> **Note technique** : La liberation explicite de la memoire (`del`, `gc.collect()`, `torch.cuda.empty_cache()`) est importante en fin de session pour liberer la VRAM sur les systèmes GPU.
+***
+",,,,,,,,0f69cec1aef52ce0,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-stats,code,fr,8fb9f2a7cc561921,"# Statistiques de session et prochaines etapes
 print(""STATISTIQUES DE SESSION"")
 print(""="" * 45)
@@ -4638,43 +4630,24 @@ print(f""4. Construire un pipeline vocal complet (03-2)"")
 
 print(f""\nNotebook Kokoro TTS termine - {datetime.now().strftime('%H:%M:%S')}"")
 ",,,,,,,,8fb9f2a7cc561921,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,m94fgnro0cm,markdown,fr,8af09dd80adf2a96,"---
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,m94fgnro0cm,markdown,fr,46acade1ed537764,"### Exemple guidé 3 : Dialogue synthétique à deux voix
 
-### Exercice 3 : Synthese Audio Multi-Voix avec Dialogue
+*Contribution d'un groupe d'étudiants EPF (TP2, PR #20681), intégrée comme exemple guidé.*
 
-**Duree estimee :** 15-20 minutes
+Les voix testées en section 3 servent ici à construire un dialogue : deux interlocuteurs, une voix chacun, une pause entre deux répliques. La même technique sert aux podcasts générés, aux livres audio à plusieurs personnages et aux assistants vocaux à personnalités distinctes.
 
-**Objectif**
-
-Créer un système de generation de dialogue synthetique en utilisant différentes voix de Kokoro, avec alternance automatique des interlocuteurs et gestion des pauses naturelles.
-
-**Contexte**
-
-Dans la **Section 3**, vous avez teste différentes voix Kokoro (`af_heart`, `af_bella`, `am_adam`, `ff_siwis`). 
-
-Dans cet exercice, vous allez combiner ces voix pour créer un dialogue realiste entre :
-- **Speaker A** : Voix feminine anglaise (ex: `af_heart`)
-- **Speaker B** : Voix masculine anglaise (ex: `am_adam`)
-
-Cette technique est utilisee pour :
-- Generation de podcasts automatiques
-- Livres audio avec personnages multiples
-- Chatbots vocaux avec personnalites distinctes
+**Objectif** : assembler un seul fichier audio à partir de répliques synthétisées séparément.
 
 **Étapes** :
-1. Définir un dialogue avec 4-6 interventions alternées (A-B-A-B...)
-2. Pour chaque ligne de dialogue :
-   - Generer l'audio avec Kokoro en utilisant la voix appropriee
-   - Ajouter une pause naturelle entre les interventions (ex: 500ms de silence)
-3. Concatener tous les segments audio dans l'ordre
-4. Sauvegarder le résultat et afficher les statistiques (duree totale, nombre de tours)
+1. Écrire le dialogue comme une liste de couples `(interlocuteur, réplique)`, en alternance A-B
+2. Associer une voix à chaque interlocuteur : `af_heart` pour A, `am_adam` pour B
+3. Synthétiser chaque réplique, puis insérer 500 ms de silence (`np.zeros(int(sample_rate * 0.5))`) entre deux répliques
+4. Concaténer les segments avec `np.concatenate`, sauvegarder `synthetic_dialogue.wav` et afficher les statistiques
 
-**Indices** :
-- Pour generer du silence : `numpy.zeros(int(sample_rate * duration))`
-- Pour concatener : `numpy.concatenate([audio1, silence, audio2, ...])`
-- Pour l'API ONNX : `kokoro.create(text, voice=voice, speed=1.0)` retourne `(samples, sample_rate)`
-- Pour l'API standard : iterer sur le generator et concatener les chunks
-- Le sample rate Kokoro est généralement 24000 Hz",,,,,,,,8af09dd80adf2a96,,,,,,,,
+**Points clés du code** :
+- la cellule de statistiques plus haut libère le modèle (`del kokoro`) : l'exemple le recharge depuis le cache local avant de synthétiser
+- toutes les voix Kokoro produisent du 24 000 Hz, ce qui permet de concaténer les segments sans rééchantillonnage
+- la liste `audio_segments` alterne répliques et silences : sa structure garde la trace de qui parle à quel moment, ce que l'exercice 3 exploite",,,,,,,,46acade1ed537764,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,94541c05,markdown,fr,0ac8c8923c75fd14,"## Conclusion
 
 Ce notebook a explore les capacites de Kokoro TTS, une solution de synthese vocale legere et open-source.
@@ -4846,7 +4819,7 @@ except Exception as e:
     print(f""Inflect-Nano indisponible sur cette machine : {str(e)[:120]}"")
     print(""Demonstration sautee - voir l'output de reference dans le notebook version main."")
 ",,,,,,,,6856bfa0c2eb12d9,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,d1419666,markdown,fr,6813b49b93c2b7df,"### Interpretation : le compromis taille vs qualite
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,d1419666,markdown,fr,42c99659d2279092,"### Interpretation : le compromis taille vs qualite
 
 L'exécution locale (CPU, RTF < 1) confirme les deux proprietes cles d'Inflect-Nano :
 
@@ -4867,56 +4840,53 @@ L'exécution locale (CPU, RTF < 1) confirme les deux proprietes cles d'Inflect-N
 
 > **Lecon pedagogique** : un TTS ""fonctionnel"" demande un minimum structural (acoustique + vocodeur, ~5M). En dessous, on produit encore du bruit structure mais plus de la parole. Inflect-Nano se place juste au-dessus de ce seuil, ce qui en fait un excellent cas d'étude pour comprendre l'anatomie minimale d'un système TTS. La serie continue vers Chatterbox (02-1) et XTTS (02-2) pour observer comment les ~460M supplementaires se traduisent en naturel, expressivite et clonage.
 
----
+***
 
 *Source : modèle [owensong/Inflect-Nano-v1](https://huggingface.co/owensong/Inflect-Nano-v1) (Apache-2.0). Comparaison effectuee en exécution locale CPU.*
-",,,,,,,,6813b49b93c2b7df,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,c989hb1iv4,code,fr,8c2147a091f6327c,"import numpy as np
+",,,,,,,,42c99659d2279092,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,c989hb1iv4,code,fr,0a78ab2fcf22f1e1,"import numpy as np
 import soundfile as sf
+from kokoro_onnx import Kokoro
 
-# TODO: Definir le dialogue (alternance A-B)
-# Indice : creer une liste de tuples (speaker, texte)
+# Le modele a ete libere dans la cellule de statistiques : on le recharge
+cache_dir = Path.home() / '.cache' / 'kokoro-onnx'
+kokoro = Kokoro(str(cache_dir / 'kokoro-v1.0.onnx'), str(cache_dir / 'voices-v1.0.bin'))
+
+# Dialogue (alternance A-B)
 dialogue = [
     (""A"", ""Hello, welcome to this synthetic dialogue.""),
     (""B"", ""Thank you, it's great to be here.""),
-    (""A"", ""Let's explore text-to-s synthesis together.""),
+    (""A"", ""Let's explore text-to-speech synthesis together.""),
     (""B"", ""I agree, this technology is fascinating.""),
-    # Ajouter 1-2 interventions supplementaires
+    (""A"", ""Do you think it will replace human voices?""),
+    (""B"", ""Not completely, but it will be very useful.""),
 ]
 
-# TODO: Associer chaque speaker a une voix Kokoro
-# Indice : utiliser les voix testees dans la Section 3
+# Une voix Kokoro par speaker
 voices = {
-    ""A"": None,  # ex: ""af_heart""
-    ""B"": None   # ex: ""am_adam""
+    ""A"": ""af_heart"",
+    ""B"": ""am_adam""
 }
 
-# TODO: Generer l'audio pour chaque ligne
 audio_segments = []
 pause_duration = 0.5  # 500ms de pause entre les interventions
 
-for speaker, text in dialogue:
+for i, (speaker, text) in enumerate(dialogue):
     print(f""Generating {speaker}: {text[:30]}..."")
-    
-    # TODO: Generer l'audio avec Kokoro
-    # Indice: kokoro.create(text, voice=voices[speaker], speed=1.0) pour ONNX
-    # Ou: iterer sur pipeline(text, voice=voices[speaker]) pour standard
-    samples, sample_rate = None, None
-    
-    # TODO: Ajouter le segment a la liste
+
+    # Generer l'audio avec la voix du speaker
+    samples, sample_rate = kokoro.create(text, voice=voices[speaker], speed=1.0)
+
     audio_segments.append(samples)
-    
-    # TODO: Ajouter une pause apres chaque intervention (sauf la derniere)
-    if speaker != dialogue[-1][0]:
-        # TODO: Generer du silence
-        silence = None  # np.zeros(...)
+
+    # Pause apres chaque intervention sauf la derniere
+    if i < len(dialogue) - 1:
+        silence = np.zeros(int(sample_rate * pause_duration))
         audio_segments.append(silence)
 
-# TODO: Concatener tous les segments
-# Indice: np.concatenate(audio_segments)
-full_dialogue_audio = None
+# Concatener tous les segments
+full_dialogue_audio = np.concatenate(audio_segments)
 
-# TODO: Calculer les statistiques
 if full_dialogue_audio is None:
     print(""Dialogue non genere (exercice a completer ou service indisponible)"")
     print(f""Nombre de tours definis: {len(dialogue)}"")
@@ -4928,33 +4898,30 @@ else:
     print(f""  Number of turns: {num_turns}"")
     print(f""  Average turn length: {total_duration/num_turns:.1f}s"")
 
-    # TODO: Sauvegarder le resultat
+    # Sauvegarder le resultat
     output_path = OUTPUT_DIR / ""synthetic_dialogue.wav""
-    # sf.write(...)
+    sf.write(str(output_path), full_dialogue_audio, sample_rate)
 
     print(f""\nSaved: {output_path.name}"")
 
-    # TODO: Ecouter le resultat
+    # Ecouter le resultat
     from IPython.display import Audio
-    display_audio_array(full_dialogue_audio, sample_rate)",,,,,,,,8c2147a091f6327c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,3amkq7mw2xp,markdown,fr,70e240e87d2304b7,"## Critères de succes
+    display_audio_array(full_dialogue_audio, sample_rate)",,,,,,,,0a78ab2fcf22f1e1,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,3amkq7mw2xp,markdown,fr,6ee195761103439e,"### Exercice 3 : Sous-titres exacts et troisième voix
 
-- [ ] Dialogue avec au moins 4 interventions (alternance A-B)
-- [ ] Generation audio reussie pour chaque intervention
-- [ ] Pauses insertes correctement entre les interventions
-- [ ] Fichier audio final sauvegarde et lisible
-- [ ] Statistiques affichees (duree totale, nombre de tours)
+Pour produire des sous-titres, le carnet 01-2 devait **estimer** les instants de parole à partir d'une transcription Whisper. Ici, le dialogue est synthétisé réplique par réplique : la durée de chaque segment est connue **exactement**, à l'échantillon près. Les sous-titres se calculent, ils ne s'estiment pas.
 
-## Extensions (bonus)
+**Étapes** :
+1. À partir de `dialogue` et `audio_segments` (exemple guidé 3), calculer l'instant de début et de fin de chaque réplique en secondes, en cumulant les longueurs des segments, silences compris
+2. Écrire `dialogue.srt` : une entrée par réplique, préfixée de l'interlocuteur (`A :`, `B :`)
+3. Vérifier la cohérence : la fin de la dernière réplique doit coïncider avec la durée totale de `full_dialogue_audio`
+4. Ajouter un troisième interlocuteur C avec une voix britannique (`bf_emma` ou `bm_george`) et deux répliques, puis régénérer le dialogue et ses sous-titres
+5. Faire varier `speed` selon l'intention de la réplique (une question un peu plus lente, une exclamation un peu plus rapide) et vérifier que les sous-titres restent alignés
 
-- [ ] Ajouter un troisieme speaker avec une voix différente
-- [ ] Varier la vitesse (`speed` parameter) pour exprimer des emotions
-- [ ] Generer un fichier de sous-titres synchronise (format SRT)
-- [ ] Visualiser la waveform avec des marqueurs pour chaque speaker
-
----
-
-**Soumission** : PR avec titre ""Exercice #2 - [Votre Nom]"" sur le repo GenAI_Series",,,,,,,,70e240e87d2304b7,,,,,,,,
+**Indices** :
+- `# Indice` : un instant en secondes vaut `nombre_d_echantillons / sample_rate` ; dans `audio_segments`, les répliques occupent les positions paires et les silences les positions impaires
+- `# Indice` : le format SRT d'un instant est `HH:MM:SS,mmm` ; calculez-le en millisecondes entières avec des `divmod` successifs
+- `# Indice` : `speed` reste entre 0.5 et 2.0 (borne de `kokoro.create()`)",,,,,,,,6ee195761103439e,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,cell-header,markdown,fr,38bc1b73a1134ac0,"# Chatterbox TTS - Synthese Vocale Expressive
 
 **Module :** 02-Audio-Advanced  
@@ -31175,3 +31142,122 @@ temps_deux_etapes = None  # TODO etudiant : duree totale des deux appels
 elements_perdus = None  # TODO etudiant : {""directe"": [...], ""deux_etapes"": [...]}
 
 print(""Exercice a completer"")",,,,,,,,8b33b8fd7bca42a4,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex1-intelligibilite-md,markdown,fr,2b4c9c425a2f8161,"### Exercice 1 : Vitesse et intelligibilité
+
+L'exemple guidé 1 a choisi une vitesse d'après le coût de calcul. Pour l'auditeur, la question est autre : la parole accélérée reste-t-elle compréhensible ? Une mesure objective consiste à faire transcrire chaque version par un moteur de reconnaissance vocale (Whisper, vu dans le carnet 01-2) et à compter les mots perdus avec le **taux d'erreur par mot** (WER, *Word Error Rate*) : le nombre minimal de substitutions, de suppressions et d'insertions de mots qui transforment la référence en transcription, divisé par le nombre de mots de la référence.
+
+**Contexte** : une transcription automatique n'est qu'un indicateur de l'intelligibilité humaine. Whisper reconstitue parfois un mot mal prononcé grâce au contexte, si bien que le WER donne une estimation optimiste ; il reste utile pour comparer les vitesses entre elles.
+
+**Étapes** :
+1. Écrire `normaliser(texte)` : minuscules, ponctuation retirée, découpage en mots
+2. Écrire `wer(mots_reference, mots_hypothese)` par programmation dynamique (distance d'édition au niveau des mots)
+3. Transcrire chacun des fichiers `speed_<vitesse>_af_heart.wav` produits par l'exemple guidé 1 et calculer son WER contre `test_text`
+4. Ajouter les vitesses 1.75 et 2.0 (2.0 est la borne haute acceptée par `kokoro.create()`), puis un second texte plus difficile (noms propres, nombres, sigles)
+5. Afficher un tableau vitesse / durée / WER et retenir la vitesse la plus rapide dont le WER reste sous `SEUIL_WER` : à partir de quelle vitesse la parole se dégrade-t-elle, et le texte difficile se dégrade-t-il plus tôt ?
+
+**Indices** :
+- `# Indice` : avec l'API OpenAI, créez un client `OpenAI()` (la clé `OPENAI_API_KEY` est chargée depuis le `.env` en début de carnet), puis `client.audio.transcriptions.create(model=""whisper-1"", file=f, language=""en"")` sur un fichier ouvert en binaire
+- `# Indice` : sans clé, un modèle local fait l'affaire : `pip install faster-whisper`, puis `WhisperModel(""small"").transcribe(str(chemin), language=""en"")`
+- `# Indice` : imposer `language=""en""` évite que Whisper se trompe de langue sur un audio très rapide, ce qui fausserait le WER",,,,,,,,2b4c9c425a2f8161,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex1-intelligibilite-code,code,fr,fb17ac7b3c35f9e6,"# Exercice 1 : vitesse et intelligibilite
+# TODO etudiant : completer normaliser(), wer() et transcrire(), puis les etapes 4 et 5
+
+SEUIL_WER = 0.10  # au-dela de 10 % de mots perdus, la vitesse est rejetee
+
+def normaliser(texte):
+    """"""Liste des mots du texte : minuscules, sans ponctuation.""""""
+    # Etape 1 : minuscules, ponctuation retiree, decoupage en mots
+    # Indice : re.sub(r""[^\w\s']"", "" "", texte.lower()).split()
+    return texte.lower().split()
+
+def wer(mots_reference, mots_hypothese):
+    """"""Taux d'erreur par mot entre deux listes de mots.""""""
+    # Etape 2 : distance d'edition au niveau des mots, divisee par len(mots_reference)
+    # Indice : d[i][j] = min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (ref[i-1] != hyp[j-1]))
+    return None
+
+def transcrire(chemin_audio):
+    """"""Transcrit un fichier audio et renvoie le texte reconnu.""""""
+    # Etape 3 : appeler Whisper (API OpenAI ou faster-whisper en local)
+    return None
+
+mesures_intelligibilite = {}
+for vitesse in speed_result[""results""]:
+    chemin = OUTPUT_DIR / f""speed_{vitesse}_af_heart.wav""
+    transcription = transcrire(chemin)
+    if transcription is None:
+        continue
+    mesures_intelligibilite[vitesse] = wer(normaliser(test_text), normaliser(transcription))
+
+if mesures_intelligibilite:
+    # Etapes 4 et 5 : vitesses 1.75 et 2.0, texte difficile, tableau et vitesse retenue
+    pass
+else:
+    print(""Exercice a completer : transcrire() renvoie None pour l'instant"")
+    print(f""Fichiers a transcrire : {len(speed_result['results'])} (vitesses {list(speed_result['results'])})"")
+",,,,,,,,fb17ac7b3c35f9e6,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex2-phonemes-md,markdown,fr,815dac0657e5a4d8,"### Exercice 2 : Phonémisation — la bonne langue et les accents
+
+Avant de générer un son, Kokoro convertit le texte en **phonèmes** avec espeak-ng, selon la langue passée dans le paramètre `lang` de `kokoro.create()` (par défaut `""en-us""`). L'exemple guidé 2 a donc fait lire des résumés français avec des règles de prononciation anglaises. Le défaut ne lève aucune erreur : il s'entend à l'écoute, et il se lit dans les phonèmes.
+
+**Contexte** : les textes de l'exemple sont écrits sans accents (`sante`, `vehicules`, `europeennes`). Même en `""fr-fr""`, cela produit deux défauts de nature différente :
+- un mot absent du dictionnaire français est traité comme un mot étranger : espeak-ng **bascule de langue** en plein mot, ce que la chaîne de phonèmes signale par des marqueurs `(en)` … `(fr)` ;
+- d'autres mots restent en français mais sont **mal prononcés sans aucun marqueur** : `sante` devient « sant », `medical` perd son « é ».
+
+**Étapes** :
+1. Pour le texte de chaque article de l'exemple guidé 2, afficher les phonèmes produits par `kokoro.tokenizer.phonemize(texte, ""en-us"")` puis par `""fr-fr""`, et les comparer
+2. Compter dans la version `""fr-fr""` les bascules vers l'anglais (marqueurs `(en)`)
+3. Réécrire les textes avec leurs accents (`santé`, `révolutionne`, `véhicules`, `européennes`, `avancées`…), puis comparer leurs phonèmes à ceux de l'étape 1 : les bascules disparaissent-elles, et quels mots changent de prononciation sans en avoir signalé ?
+4. Le sigle « IA » est lu comme un mot d'une syllabe : trouver une écriture qui le fait épeler, et vérifier dans les phonèmes
+5. Relancer la synthèse du lot avec la voix française `ff_siwis` et `lang=""fr-fr""` sur les textes corrigés, puis écrire un manifeste `episode.json` qui décrit l'épisode : pour chaque article, le fichier, la voix, la langue, la durée et l'instant de début dans l'épisode concaténé (avec une pause d'une seconde entre deux articles)
+
+**Indices** :
+- `# Indice` : `kokoro.tokenizer.phonemize(texte, lang)` renvoie une chaîne ; `chaine.count(""(en)"")` compte les bascules
+- `# Indice` : `kokoro.get_voices()` liste les voix disponibles ; `ff_siwis` est la seule voix française
+- `# Indice` : l'instant de début d'un article est la somme des durées des articles précédents et des pauses qui les séparent",,,,,,,,815dac0657e5a4d8,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex2-phonemes-code,code,fr,bd19c8f3df15e3bf,"# Exercice 2 : phonemisation, langue et accents
+# TODO etudiant : completer les etapes 1 a 5
+
+def compter_bascules(phonemes):
+    """"""Nombre de passages vers l'anglais signales par espeak-ng dans une chaine de phonemes.""""""
+    # Etape 2 : compter les marqueurs ""(en)""
+    return None
+
+# Etape 1 : phonemes en-us et fr-fr pour chaque article de l'exemple guide 2
+for article in test_articles:
+    texte = article[""title""] + "". "" + article[""summary""]
+    # Indice : kokoro.tokenizer.phonemize(texte, ""en-us"") puis kokoro.tokenizer.phonemize(texte, ""fr-fr"")
+    phonemes_en, phonemes_fr = None, None
+
+# Etapes 3 et 4 : textes reecrits avec leurs accents, sigle IA epele
+articles_corriges = [dict(article) for article in test_articles]  # TODO etudiant : corriger les textes
+
+# Etape 5 : synthese ff_siwis / fr-fr, puis manifeste episode.json
+manifeste = None
+
+if manifeste is None:
+    print(""Exercice a completer : phonemes a comparer, textes a corriger, manifeste a ecrire"")
+    print(f""Articles de l'exemple guide 2 : {len(test_articles)}"")
+",,,,,,,,bd19c8f3df15e3bf,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex3-srt-code,code,fr,18ef933cdffda622,"# Exercice 3 : sous-titres exacts du dialogue
+# TODO etudiant : completer les etapes 1 a 5
+
+def instant_srt(secondes):
+    """"""Formate un instant en HH:MM:SS,mmm.""""""
+    # Indice : millisecondes = round(secondes * 1000), puis divmod successifs
+    return None
+
+def calculer_horaires(dialogue, audio_segments, sample_rate):
+    """"""Liste de (interlocuteur, replique, debut_s, fin_s) pour chaque replique.""""""
+    # Etape 1 : cumuler len(segment) / sample_rate, silences compris
+    return []
+
+horaires = calculer_horaires(dialogue, audio_segments, sample_rate)
+
+if horaires:
+    # Etapes 2 et 3 : ecrire dialogue.srt et verifier la fin de la derniere replique
+    pass
+else:
+    print(""Exercice a completer : calculer_horaires() renvoie une liste vide"")
+    print(f""Repliques : {len(dialogue)}, segments (repliques et silences) : {len(audio_segments)}"")
+",,,,,,,,18ef933cdffda622,,,,,,,,
