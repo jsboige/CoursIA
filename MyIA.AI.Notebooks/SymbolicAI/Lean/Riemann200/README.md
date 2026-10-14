@@ -16,7 +16,7 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 | 06 | *(à venir)* | Surfaces de Riemann — sqrt(z), log(z) : la monodromie rendue visible | Python stdlib |
 | 07 | *(à venir)* | Géométrie riemannienne — l'habilitation de 1854 : distances, géodésiques (désendroit [#19333](https://github.com/jsboige/CoursIA/issues/19333)) | Python stdlib |
 | 08 | *(à venir)* | Riemann mapping — toute région simplement connexe ≠ ℂ est conforme au disque | Python stdlib |
-| 09 | *(à venir)* | Riemann–Lebesgue et Fourier — noyau de Dirichlet, phénomène de Gibbs | Python stdlib + matplotlib |
+| 09 | [09-riemann-lebesgue-fourier.ipynb](09-riemann-lebesgue-fourier.ipynb) | Riemann–Lebesgue et Fourier — coefficients en 1/n mesurés (produit n·c_n borné), noyau de Dirichlet (identité + intégrale 2π), phénomène de Gibbs (overshoot 1.17898 → 2Si(π)/π, position π/(N+1/2)), contre-témoin triangle (erreur en 1/N), régularité contre décroissance ; hypothèses H1/H2 pré-enregistrées | Python stdlib |
 
 Le versant **preuves** vivra dans le lake compagnon `riemann200_lean/`, à créer au premier grain Lean de la série (même maison que [`serre100_lean/`](../Serre100/serre100_lean/)).
 
