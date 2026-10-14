@@ -28,7 +28,7 @@ Duel verbal multi-agents Semantic Kernel entre Barbie et l'Âne de Shrek, avec i
 ## Prérequis
 
 ```bash
-pip install semantic-kernel openai jupyter
+pip install semantic-kernel python-dotenv ipython jupyter
 ```
 
 ---
