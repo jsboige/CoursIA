@@ -12,6 +12,14 @@ name: EPIC neglect sweep
 # blocking: the job always exits 0, closes nothing, assigns nothing -- it
 # NAMES, the coordinator slices (G.9: read the EPIC body before concluding).
 #
+# "Never blocking" porte sur le VERDICT, pas sur la capacite de l'organe a
+# publier (#19211). Un echec d'ECRITURE qui persiste (>= 2 jours sans
+# publication alors que le balayage est quotidien) sort en 2 et rougit le
+# run : sans ca, cet organe est reste vert 35 jours d'affilee sans jamais
+# publier son rapport, et rien nulle part ne le disait. Rougir ici ne bloque
+# aucun merge : merge_dwell ne surveille que scripts-tests.yml en
+# `event=push`, et ce workflow ne tourne qu'en `schedule`/`dispatch`.
+#
 # Standalone organ by design: the picker selects a grain FOR a lane; this
 # sweep measures EPIC neglect FLEET-wide -- different cadence, different
 # consumer, no picker state.
@@ -73,3 +81,23 @@ jobs:
             ARGS="$ARGS --apply-comment 13653"
           fi
           python scripts/epic_neglect_sweep.py $ARGS
+
+      - name: Detect stale EPIC bodies (advisory)
+        # #18203 geste 4: the analyzer exists but nothing scheduled it -- a
+        # stale body stayed invisible between two manual looks. Wired here so
+        # the daily sweep surfaces it. ADVISORY by the same contract as the
+        # neglect report: findings (and a failed fetch) never red the job;
+        # the payload goes to the run summary, the slicing stays human (G.9).
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          if ! python scripts/epic_body_staleness.py --pretty > "${RUNNER_TEMP}/stale_epic_bodies.json"; then
+            echo "WARN: epic_body_staleness fetch failed; summary section omitted"
+          fi
+          {
+            echo "## Corps d'EPIC perimes (advisory)"
+            echo '```json'
+            cat "${RUNNER_TEMP}/stale_epic_bodies.json" || true
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"

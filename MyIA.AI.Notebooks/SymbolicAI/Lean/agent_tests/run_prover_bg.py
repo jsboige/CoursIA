@@ -48,7 +48,6 @@ import os
 import sys
 import time
 from pathlib import Path
-from urllib.parse import urlparse
 
 # Dump native tracebacks on fatal signals (SIGSEGV/SIGABRT...) so a future
 # run-6-style silent death leaves a signature in the log (#6790).
@@ -71,7 +70,10 @@ from target_guard import (  # noqa: E402
     resolve_target_line,
 )
 from prover.config import DEMOS, PROVIDERS  # noqa: E402
-from prover.p6_routing import _expected_provider  # noqa: E402
+from prover.provider_gate import (  # noqa: E402  (#18709: gate partage)
+    effective_agent_providers,
+    validate_provider_credentials,
+)
 from prover.provers import MultiAgentSorryProver  # noqa: E402
 from prover.trace import TraceLogger  # noqa: E402
 from prover.lean_utils import (  # noqa: E402  (#9402: real-token counter)
@@ -105,71 +107,33 @@ def _peek_sorry_count(filepath: str) -> int:
 def _effective_agent_providers(args: argparse.Namespace) -> dict:
     """Resolve the per-role provider map exactly as the prover will.
 
-    Mirrors ``MultiAgentSorryProver.__init__`` (provers.py: openrouter
-    defaults for coordinator/tactic) and p6_routing's ``_expected_provider``
-    (zai for Search/Critic) so the gate below can never drift from what
-    the workflow actually dials.
+    Thin ``args`` adapter over the shared ``prover.provider_gate``
+    implementation (#18709) — the resolution logic lives there so the inner
+    launcher (``prover/run_prover_bg.py``) gates identically instead of
+    discovering a keyless P6-pinned agent 45 min into a run. Backward-
+    compatible signature for ``tests/test_run_prover_bg_gate.py``.
     """
-    eff = {
-        "reasoning": args.provider,
-        "fast": args.local_provider,
-        "coordinator": getattr(args, "coordinator_provider", None) or "openrouter",
-        "tactic": getattr(args, "tactic_provider", None) or "openrouter",
-        "search": getattr(args, "search_provider", None)
-        or _expected_provider("SearchAgent")
-        or "local",
-        "critic": getattr(args, "critic_provider", None)
-        or _expected_provider("CriticAgent")
-        or "local",
-    }
-    if getattr(args, "director_provider", None):
-        eff["director"] = args.director_provider
-    return eff
-
-
-PROVIDER_ENV_KEYS = {
-    "zai": "ZAI_API_KEY",
-    "openrouter": "OPENROUTER_API_KEY",
-    "mistral": "MISTRAL_API_KEY",
-    "local": "LOCAL_LLM_API_KEY",
-}
+    return effective_agent_providers(
+        args.provider,
+        args.local_provider,
+        coordinator_provider=getattr(args, "coordinator_provider", None),
+        tactic_provider=getattr(args, "tactic_provider", None),
+        search_provider=getattr(args, "search_provider", None),
+        critic_provider=getattr(args, "critic_provider", None),
+        diagnosis_provider=getattr(args, "diagnosis_provider", None),
+        director_provider=getattr(args, "director_provider", None),
+    )
 
 
 def _validate_provider_credentials(eff: dict) -> list:
     """#1453 forensic (2026-09-19): fail-fast credential gate.
 
-    Founder case (measured firsthand, calibration DEMOS 45/41/52 pass 1 on a
-    keyless lane): ``--provider local`` alone leaves Coordinator/Tactic on
-    their ``openrouter`` default and Search/Critic on the p6_routing ``zai``
-    default. The run stubs the calibration target, takes the tree lock, then
-    dies 3x401 -> ``provider_outage_breaker`` without a single attempt.
-    Refusing to launch names the missing keys instead of burning a run.
-
-    Keyless by design: localhost endpoints (Ollama/vLLM). An empty base_url
-    on provider ``local`` (LOCAL_LLM_BASE_URL unset) targets the OpenAI
-    default endpoint with an empty key and is equally refused.
+    Keyless localhost endpoints pass by design; a routed provider without
+    credentials names the role + env var instead of burning a run. The
+    implementation is shared with the inner launcher via
+    ``prover.provider_gate`` (#18709).
     """
-    problems = []
-    for role, name in eff.items():
-        cfg = PROVIDERS.get(name)
-        if cfg is None:
-            problems.append(f"{role}: unknown provider '{name}'")
-            continue
-        base = (cfg.get("base_url") or "").strip()
-        key = (cfg.get("api_key") or "").strip()
-        host = urlparse(base).hostname or ""
-        if host in ("localhost", "127.0.0.1", "::1"):
-            continue
-        env = PROVIDER_ENV_KEYS.get(name, f"{name.upper()}_API_KEY")
-        if not base:
-            problems.append(
-                f"{role} -> '{name}': base_url vide ({env} / base non configurés)"
-            )
-        elif not key:
-            problems.append(
-                f"{role} -> '{name}': {env} absent/vide pour {base}"
-            )
-    return problems
+    return validate_provider_credentials(eff, PROVIDERS)
 
 
 async def main(args: argparse.Namespace) -> int:
@@ -334,6 +298,7 @@ async def _run_calibration_ready(
         tactic_provider=getattr(args, "tactic_provider", None),
         search_provider=getattr(args, "search_provider", None),
         critic_provider=getattr(args, "critic_provider", None),
+        diagnosis_provider=getattr(args, "diagnosis_provider", None),
     )
 
     t0 = time.time()
@@ -419,6 +384,10 @@ def parse_args() -> argparse.Namespace:
                         "(measured firsthand on demo 39, #1453).")
     p.add_argument("--critic-provider", default=None,
                    help="Provider for CriticAgent (see --search-provider).")
+    p.add_argument("--diagnosis-provider", default=None,
+                   help="Provider for DiagnosisAgent (see --search-provider). "
+                        "Only consumed when the diagnosis lane is enabled; "
+                        "the P6 pin applies otherwise (#18709).")
     p.add_argument("--force-lock", action="store_true",
                    help="Break an existing .prover.lock even if its holder "
                         "looks alive or is on a foreign host (WSL<->Windows). "

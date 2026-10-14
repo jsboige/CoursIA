@@ -133,6 +133,28 @@ existe pour un cas nomme : `main` est rouge et le correctif ne doit pas
 attendre 2 h. Le module dit **dans le message** que la derogation a joue, pour
 qu'elle reste lisible dans le log du gate et pas seulement dans la liste des
 labels.
+
+#18686 -- la derogation est VERIFIEE, pas crue
+----------------------------------------------
+
+Le login `jsboige` etant partage par toutes les lanes et par le user, aucun
+controle par auteur de l'evenement ne distingue personne : le 01/10, une lane
+a pose le label elle-meme sur deux PRs de contenu sans aucun rapport avec un
+`main` rouge. Le gate verifie desormais lui-meme la condition que cette
+section nommait deja : le label ne joue QUE si la tete de la branche par
+defaut porte un check-run COMPLETE en conclusion `failure` (un rouge de `main`,
+quelle que soit la suite qui le porte -- on ne re-resout pas « la suite que la
+PR repare » : c'est une lecture de plus par PR labellisee, et un rouge est un
+rouge). Le motif releve (nom du check en echec) est rendu dans le message.
+
+Sinon le message dit « label present, condition non remplie » et le plancher
+s'applique normalement. Une couleur de `main` ILLISIBLE ne vaut pas rouge :
+la derogation ne franchise jamais sur une absence de preuve -- fail-closed,
+comme l'exemption de rafraichissement plus haut. Le cas « issue de rouge main
+citee dans le body » de l'organe n'est PAS implante : une citation d'issue
+ouverte est porte par la moitie des PRs du depot, l'accepter rendrait la
+derogation atteignable par n'importe quel body -- exactement le bypass que
+l'organe vient de subir. Arbitrage documente dans la PR.
 """
 
 from __future__ import annotations
@@ -216,6 +238,7 @@ def evaluate(
     now: datetime,
     dwell_min: float,
     waived: bool = False,
+    waiver_motif: str = "",
 ) -> tuple[bool, float, str]:
     """Decide si le plancher est ecoule. Fonction PURE (testable sans reseau).
 
@@ -225,13 +248,21 @@ def evaluate(
     ou date de committer forgee -- rend l'age negatif : le plancher n'est alors
     PAS ecoule, et le message le dit. Traiter le futur comme « tres vieux »
     serait la seule facon de transformer ce garde en passe-plat.
+
+    `waiver_motif` (#18686) : quand la derogation est VERIFIEE, le motif releve
+    (le check de `main` en echec) est rendu dans le message pour rester lisible
+    dans le log du gate -- une derogation sans motif publie serait une ligne de
+    label que rien ne justifie au moment de la relire.
     """
     if dwell_min <= 0:
         return True, 0.0, "dwell desactive (--dwell-min <= 0)"
     if waived:
+        suffix = " -- {}".format(waiver_motif) if waiver_motif else ""
         return True, 0.0, (
-            "dwell leve par le label `{}` "
-            "(plancher {:.0f} min non applique)".format(WAIVER_LABEL, dwell_min)
+            "dwell leve par le label `{}`{} "
+            "(plancher {:.0f} min non applique)".format(
+                WAIVER_LABEL, suffix, dwell_min
+            )
         )
 
     age_min = (now - committed_at).total_seconds() / 60.0
@@ -570,8 +601,169 @@ def is_waived(repo: str, pr_number: int, fetch=_gh_json) -> bool:
     Un echec de lecture n'est PAS une derogation : il remonte en `DwellError`
     et le gate refuse (rule 1). Lire « pas de label » d'une API muette est
     exactement le zero propre que le harnais interdit de croire.
+
+    #18686 : ceci ne dit PAS que la derogation JOUE -- seulement que le label
+    est pose. La condition (main rouge) est verifiee par `_main_red_motif`,
+    consommee par `check`.
     """
     return _labels_carry_waiver(_pr_payload(repo, pr_number, fetch))
+
+
+def _default_branch(repo: str, fetch=_gh_json) -> str:
+    payload = fetch("repos/{}".format(repo))
+    branch = payload.get("default_branch") if isinstance(payload, dict) else None
+    if not branch:
+        raise DwellError("pas de default_branch sur {}".format(repo))
+    return branch
+
+
+#: Liste des workflows dont un rouge sur `main` peut legitimer la derogation
+#: `merge-dwell-waived`. Chaque entree est le couple (yml_path, display_name) :
+#: le `yml_path` est l'identifiant du fichier sous `.github/workflows/` (utilise
+#: dans l'API `actions/workflows/{file}/runs`) ; le `display_name` est le nom
+#: GitHub visible dans la liste des workflow-runs (celui qu'on retrouve dans
+#: la reponse `workflow_runs[].name`). La liste reste explicite et documentee
+#: pour qu'une derive silencieuse d'un nom GitHub ne fausse pas le verdict.
+#:
+#: Pourquoi cette liste : un workflow path-filtre `scripts/**` peut etre
+#: rouge sur main sans rougir la PR candidate -- sauf a toucher les memes
+#: paths, la PR ne declenche pas le workflow et ne voit donc jamais ce
+#: rouge. C'est precisement le cas que la derogation vise : main est
+#: reellement rouge, mais la PR n'a aucun moyen de le voir. A ce jour
+#: (2026-10-04) le seul workflow repondant a ce critere est `Scripts &
+#: Notebook-Tools Tests` (scripts-tests.yml : declencheurs push main ET
+#: pull_request, tous deux filtres par la MEME liste de chemins -- les deux
+#: incluent `tests/**`, `pytest.ini`, `.github/workflows/**` et une poignee
+#: de sujets hors `scripts/` (registre d'attributions, `conway_lean/**`,
+#: `prosody_lab/syllable_pitch.py`, `Track2-GoogleADK/**`, ...). Une PR qui
+#: ne touche AUCUN de ces chemins ne le declenche sur aucun des deux. #19069
+#: corrige ici deux mentions erronees successives : « pas de trigger
+#: pull_request » (version initiale) puis « une PR hors `scripts/**` », qui
+#: ignorait `tests/**` et `.github/workflows/**` (releve Hermes).
+MAIN_RED_WORKFLOWS = (
+    # (yml_path, display_name)
+    ("scripts-tests.yml", "Scripts & Notebook-Tools Tests"),
+)
+
+#: #19180 : conclusions qui portent un verdict ROUGE sur main. `timed_out`
+#: (le workflow a epuise son temps) et `startup_failure` (il n'a pas pu
+#: demarrer) sont des rouges reels : main n'a pas rendu de vert. Seules les
+#: conclusions SANS verdict -- `cancelled`, `skipped`, et toute autre valeur
+#: hors des deux tuples -- se sautent (#19069).
+MAIN_RED_CONCLUSIONS = ("failure", "timed_out", "startup_failure")
+MAIN_VERDICT_CONCLUSIONS = ("success",) + MAIN_RED_CONCLUSIONS
+
+
+def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
+    """#18686 + #18790 + #18796 : motif de rouge observable sur la branche
+    par defaut, ou None si vert.
+
+    Pour chaque workflow de `MAIN_RED_WORKFLOWS`, lit le DERNIER run
+    REELLEMENT CONCLU sur `main` via l'API workflow-directe
+    `repos/{repo}/actions/workflows/{yml_path}/runs?branch={branch}&event=push
+    &status=completed&per_page=10`, puis saute cote client les runs sans
+    verdict (`cancelled`, `skipped` : `status=completed` les inclut, et en
+    passe de merge en rafale la concurrence du workflow annule les runs
+    intermediaires -- le dernier run rendu masquait alors le rouge reel,
+    #19069). Le premier run a verdict rendu -- `success`, ou un rouge de
+    `MAIN_RED_CONCLUSIONS` (#19180 : `timed_out` et `startup_failure` en
+    sont) -- est le verdict le plus frais de ce workflow sur main,
+    **independamment de son anciennete**
+    (limite de la fenetre globale du commit de tete : un merge non lie aux
+    paths du workflow peut evict le run hors de la fenetre de 100 -- CR
+    ai-01 2026-10-02 18:55Z sur #18796).
+
+    Pli latest-wins par `created_at` parmi les workflows consideres : un seul
+    verdict de rouge suffit, le plus frais gagne. La liste explicite reste
+    documentee plus haut ; un nom GitHub derive rend `latest` vide, jamais
+    un faux positif.
+
+    Renvoie le motif releve (nom GitHub du workflow en echec + id du run)
+    pour que le message de derogation reste justifiable a la relecture.
+
+    Pourquoi PAS les check-runs du commit de tete (l'ancienne approche) :
+    `.github/workflows/pr-gate.yml` ne tourne que sur `pull_request`, donc
+    il n'y a aucun check-run `PR gate` sur la tete de main -- `latest`
+    reste `None`, et la derogation ne s'ouvrait jamais, meme quand main
+    etait reellement rouge (mesure du 2026-10-02 par myia-ai-01, tete
+    `d8b7bb9628`, aucun check-run `PR gate`).
+
+    Pourquoi PAS `actions/runs?branch=main&per_page=100` (l'approche
+    fenetre globale, 32968cb51) : la fenetre de 100 runs sur main couvre
+    typiquement 30-40 minutes, et chaque merge ajoute une vingtaine de
+    runs d'autres workflows. Apres 35 a 40 minutes sans merge sous
+    `scripts/**`, le dernier run de `Scripts & Notebook-Tools Tests` sort
+    de la fenetre -- `latest` redevient `None`, et un main reellement
+    rouge redevient invisible (mesure du 2026-10-02 18:55Z, tete
+    `32968cb51` : 100 runs sur main couvraient 35 minutes seulement).
+
+    Une couleur ILLISIBLE ne vaut PAS rouge : None, la derogation ne
+    franchise jamais sur une absence de preuve -- fail-closed, comme
+    l'exemption de rafraichissement de base. Pas de DwellError ici : un
+    label dont la condition ne peut pas etre prouvee retombe sur le
+    plancher NORMAL, le gate continue de mesurer sans refuser.
+    """
+    try:
+        branch = _default_branch(repo, fetch)
+    except DwellError:
+        return None
+    latest = None
+    for _yml, display_name in MAIN_RED_WORKFLOWS:
+        try:
+            payload = fetch(
+                "repos/{}/actions/workflows/{}/runs"
+                "?branch={}&event=push&status=completed&per_page=10".format(
+                    repo, _yml, branch
+                )
+            )
+        except DwellError:
+            return None
+        entries = (
+            payload.get("workflow_runs") if isinstance(payload, dict) else None
+        )
+        if not isinstance(entries, list) or not entries:
+            continue
+        # #19069 : `status=completed` inclut les runs `cancelled`/`skipped`.
+        # En passe de merge en rafale, la concurrence du workflow annule les
+        # runs intermediaires et le dernier run rendu n'a alors AUCUN
+        # verdict : la derogation restait fermee alors que le dernier run
+        # reellement conclu sur main etait rouge. On saute les runs sans
+        # verdict et on prend le premier reellement conclu. #19180 : un
+        # `timed_out` ou un `startup_failure` EST un verdict (rouge) ; le
+        # sauter remontait jusqu'au vert precedent et declarait main vert.
+        run = next(
+            (
+                r
+                for r in entries
+                if isinstance(r, dict)
+                and r.get("conclusion") in MAIN_VERDICT_CONCLUSIONS
+            ),
+            None,
+        )
+        if run is None:
+            continue
+        # Garde-fou : le display_name GitHub doit matcher le display_name
+        # canonique de l'entree. Un changement de nom cote GitHub ne fait
+        # PAS evoluer silencieusement le verdict : on ignore le run.
+        if run.get("name") != display_name:
+            continue
+        if run.get("conclusion") not in MAIN_RED_CONCLUSIONS:
+            continue
+        created = run.get("created_at") or ""
+        if latest is None or created > (latest.get("created_at") or ""):
+            latest = run
+    if latest is None:
+        return None
+    conclusion = latest.get("conclusion")
+    # Le motif nomme la conclusion quand ce n'est pas un `failure` ordinaire,
+    # pour que la derogation reste justifiable a la relecture (#19180).
+    qualifier = "" if conclusion == "failure" else " ({})".format(conclusion)
+    return "main rouge: workflow `{}` en echec{} sur {} (run {})".format(
+        latest.get("name") or "?",
+        qualifier,
+        branch,
+        (latest.get("html_url") or "").rsplit("/", 1)[-1] or "?",
+    )
 
 
 def check(
@@ -590,11 +782,29 @@ def check(
     commit de la branche par defaut et ne peut de toute facon pas bouger le
     `mergeState` d'une PR (documente en tete de `pr-gate.yml`). Y appliquer
     un plancher rougirait la branche par defaut sans rien gater.
+
+    #18686 : le label `merge-dwell-waived` ne leve le plancher que si `main`
+    est VERIFIE rouge (`_main_red_motif`). Sinon le message le dit
+    (« label present, condition non remplie ») et le plancher s'applique.
     """
     if dwell_min <= 0 or pr_number is None:
         return True, "dwell non applicable (hors contexte de PR ou desactive)"
     pr = _pr_payload(repo, pr_number, fetch=fetch)
     waived = _labels_carry_waiver(pr)
+    waiver_motif = ""
+    unmet_note = ""
+    if waived:
+        motif = _main_red_motif(repo, fetch)
+        if motif is None:
+            waived = False
+            unmet_note = (
+                " -- label `{}` present mais condition non remplie "
+                "(main vert ou couleur illisible) : plancher applique".format(
+                    WAIVER_LABEL
+                )
+            )
+        else:
+            waiver_motif = motif
     base_sha = ((pr.get("base") or {}).get("sha") or "")
     if not base_sha:
         raise DwellError("pas de base.sha sur la PR #{}".format(pr_number))
@@ -602,6 +812,7 @@ def check(
         repo, sha, base_sha, fetch=fetch, run_git=run_git
     )
     ok, _remaining, message = evaluate(
-        committed, now or datetime.now(timezone.utc), dwell_min, waived
+        committed, now or datetime.now(timezone.utc), dwell_min, waived,
+        waiver_motif=waiver_motif,
     )
-    return ok, message
+    return ok, message + unmet_note

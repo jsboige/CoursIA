@@ -41,6 +41,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # #17407 / #17444 : `python` nu n'est pas expose par les slots natifs du
+      # parc coursia-linux (contrat image seulement). Sans interpreteur, le scan
+      # ne tourne pas -- et `rc=127` n'est teste par AUCUNE branche du script
+      # ci-dessous (seuls 1 et 2 le sont), qui conclut alors "No drift" en
+      # sortant 0 : le garde mentirait vert au lieu de rougir. setup-python
+      # aligne ce job sur les workflows sains du depot et le rend insensible au
+      # placement.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Drift check vs baseline
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

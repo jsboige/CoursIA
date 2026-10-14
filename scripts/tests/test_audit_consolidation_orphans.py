@@ -87,6 +87,67 @@ def test_classify_axes_matches():
     assert classify_axes("Backtest strategie X", "Sharpe, CAGR") == []
 
 
+def test_suggest_chaperon_single_axis():
+    from audit_consolidation_orphans import suggest_chaperon
+    # A -> #5081 (notebook canon)
+    assert suggest_chaperon(["A"]) == [5081]
+    # B -> #13737 (structurel)
+    assert suggest_chaperon(["B"]) == [13737]
+    # C -> #4362 (Lean lakes)
+    assert suggest_chaperon(["C"]) == [4362]
+    # D -> #9535 (menage)
+    assert suggest_chaperon(["D"]) == [9535]
+    # E -> #13737 (structurel) par defaut
+    assert suggest_chaperon(["E"]) == [13737]
+    # F -> #16473 (parapluie)
+    assert suggest_chaperon(["F"]) == [16473]
+
+
+def test_suggest_chaperon_unclassified():
+    from audit_consolidation_orphans import suggest_chaperon
+    assert suggest_chaperon([]) == []
+
+
+def test_suggest_chaperon_multi_axis_dedup():
+    from audit_consolidation_orphans import suggest_chaperon
+    # A+B: A->5081, B->13737, deux chaperons distincts, ordre A-F preserve
+    assert suggest_chaperon(["A", "B"]) == [5081, 13737]
+    # B+E: B->13737, E->13737 (meme chaperon), dedup
+    assert suggest_chaperon(["B", "E"]) == [13737]
+    # A+F: A->5081, F->16473, ordre A-F preserve
+    assert suggest_chaperon(["A", "F"]) == [5081, 16473]
+
+
+def test_audit_suggest_rattachement_adds_field():
+    from audit_consolidation_orphans import audit
+    issues = [
+        _issue(5001, title="Doublon detecte par ratchet", body="jumeaux collidant"),
+        _issue(5002, title="Backtest strategie X", body="Sharpe, CAGR"),  # unclassified
+        _issue(5003, title="Renommer les kernels", body="accretion du suffixe"),  # A
+    ]
+    report_no = audit(issues, {}, None, suggest=False)
+    orphans_no = report_no["orphans_by_axis"]
+    for axis_list in orphans_no.values():
+        for orphan in axis_list:
+            assert "suggested_chaperon" not in orphan
+    report_yes = audit(issues, {}, None, suggest=True)
+    orphans_yes = report_yes["orphans_by_axis"]
+    # Find issue 5001 (axis B -> #13737) and 5003 (axis A -> #5081)
+    found_5001 = False
+    found_5003 = False
+    for axis_list in orphans_yes.values():
+        for orphan in axis_list:
+            if orphan["number"] == 5001:
+                assert orphan["suggested_chaperon"] == [13737]
+                found_5001 = True
+            if orphan["number"] == 5003:
+                assert orphan["suggested_chaperon"] == [5081]
+                found_5003 = True
+            if orphan["number"] == 5002:
+                assert orphan["suggested_chaperon"] == []  # UNCLASSIFIED
+    assert found_5001 and found_5003
+
+
 def test_audit_tri_and_chaperone_exclusion(tmp_path):
     issues = [
         _issue(5081, title="chaperon lui-meme", body=CHAP_body),

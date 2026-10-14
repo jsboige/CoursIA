@@ -32,6 +32,7 @@ from check_closure_dossier import (  # noqa: E402
     render_template,
     validate_dossier,
     main,
+    _merged_referring_prs,
 )
 
 
@@ -85,6 +86,37 @@ def test_close_integre():
     assert verdict == "CLOSE"
     assert errors == []
     assert dossier.fields["lane"] == "myia-po-2025:CoursIA-2"
+
+
+def test_fleet_app_identity_is_an_accepted_dossier_author():
+    """#17437: this gate accepts the same dossier authors as the adjoint gate.
+
+    Both read the AUTHOR of the same kind of dossier, from the same organ
+    (``gh_identity.ACCEPTED_DOSSIER_AUTHORS``). Widening only one would let a
+    lane's merge dossier through while its closure dossier is refused -- a
+    half-migration whose failure surfaces at the last step, on the issue that
+    was about to be closed.
+    """
+    for lane in ccd.gh_identity.APP_DOSSIER_LANES:
+        login = f"{ccd.gh_identity.APP_LOGIN_PREFIX}{lane}[bot]"
+        snap = _snapshot(comments=[_comment(_dossier_body(), login=login)])
+        verdict, errors, _ = evaluate(snap)
+        assert verdict == "CLOSE", f"{login}: {errors}"
+        assert errors == [], f"{login}: {errors}"
+
+
+def test_app_shaped_login_outside_the_frozen_lanes_is_refused():
+    """The set is CLOSED: a login that only looks like a fleet App is refused."""
+    for login in (
+        "coursia-lane-po-2099[bot]",  # unknown lane
+        "coursia-lane-po-2024",       # right lane, no App suffix
+        "coursia-lane-po-204[bot]",   # prefix of a real lane
+    ):
+        snap = _snapshot(comments=[_comment(_dossier_body(), login=login)])
+        _, errors, _ = evaluate(snap)
+        assert any(
+            "is not an accepted dossier author" in e for e in errors
+        ), f"{login}: {errors}"
 
 
 def test_keep_integre(monkeypatch):
@@ -386,6 +418,24 @@ def test_template_rend_les_champs_mecaniques():
     assert "REPLACE_WITH_CLOSE_OR_KEEP" in out
 
 
+def test_template_rempli_tel_quel_se_parse():
+    """Remplir chaque REPLACE_WITH sur place doit donner un dossier valide :
+    l'item d'acceptation est rendu sous `acceptance:`, pas apres
+    `comments-reviewed` (#18480 : le gabarit rempli sur place etait refuse)."""
+    snap = _snapshot(comments=[_comment("x")])
+    out = render_template(snap, "myia-po-2026:CoursIA-3")
+    filled = (out
+              .replace("REPLACE_WITH_CLOSE_OR_KEEP", "CLOSE")
+              .replace("REPLACE_WITH_none_OR_followup_#M_OR_waiver:_<motif daté>",
+                       "none")
+              .replace("REPLACE_WITH <critère du body> -> <PR#/commit/fichier:ligne>",
+                       "critere du body -> #17901"))
+    assert "REPLACE" not in filled
+    dossier, errors = parse_dossier(filled, 0, "jsboige")
+    assert errors == []
+    assert dossier.fields["verdict"] == "CLOSE"
+
+
 def test_main_rc_close_0_keep_3_refuse_1_inconnu_2(monkeypatch, capsys):
     close_snap = _snapshot(comments=[_comment(_dossier_body())])
     keep_snap = _snapshot(comments=[
@@ -569,3 +619,101 @@ def test_pr_cross_repo_ne_satisfait_pas_le_raccourci_des_prs_citees(monkeypatch)
     verdict, errors, _ = evaluate(snap)
     assert verdict == "REFUSED"
     assert any("cited PR #31 is not MERGED" in e for e in errors)
+
+
+# --- _merged_referring_prs : body depuis timeline -----------------------------
+
+def test_merged_referring_prs_lit_body_depuis_timeline(monkeypatch):
+    """Le body d'une PR mergée doit être lu depuis la timeline (source.issue.body)
+    quand il est présent, sans `gh pr view` supplémentaire.
+
+    Mesure : sur #15578, 555 references = 4 min de latence eliminees (1 appel
+    gh api de moins par referencee). Ce test verifie le fast-path.
+    """
+    timeline = [
+        {"event": "cross-referenced",
+         "source": {"type": "issue",
+                    "issue": {"number": 17901,
+                              "body": "Grain: DEEP/notebook-python -- lane X",
+                              "pull_request": {"merged_at": "2026-09-19T10:00:00Z"},
+                              "repository": {"full_name": "o/r"}}}},
+    ]
+    def fake_gh_json(args):
+        assert args[0] == "api", f"appel inattendu: {args}"
+        return timeline
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    out = _merged_referring_prs("o/r", 15578)
+    assert len(out) == 1
+    assert out[0]["number"] == 17901
+    assert out[0]["merged_at"] == "2026-09-19T10:00:00Z"
+    assert out[0]["repo"] == "o/r"
+    assert out[0]["body"] == "Grain: DEEP/notebook-python -- lane X"
+
+
+def test_merged_referring_prs_fallback_gh_pr_view_si_body_absent(monkeypatch):
+    """Si la timeline ne porte pas le body (PR tres ancienne ou depot soeur
+    tronque), fallback explicite vers `gh pr view --json body`.
+    Defense en profondeur : ne JAMAIS perdre un body qu'on avait avant ce fix.
+    """
+    timeline = [
+        {"event": "cross-referenced",
+         "source": {"type": "issue",
+                    "issue": {"number": 17901,
+                              "pull_request": {"merged_at": "2026-09-19T10:00:00Z"},
+                              "repository": {"full_name": "o/r"}}}}  # body absent
+    ]
+    calls = []
+    def fake_gh_json(args):
+        calls.append(args[:2])
+        if args[0] == "api":
+            return timeline
+        if args[:2] == ["pr", "view"]:
+            return {"body": "Body depuis fallback"}
+        raise AssertionError(f"appel inattendu: {args}")
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    out = _merged_referring_prs("o/r", 15578)
+    assert len(out) == 1
+    assert out[0]["body"] == "Body depuis fallback"
+    # On a bien appele gh pr view en fallback
+    assert ["pr", "view"] in [c[:2] for c in calls]
+
+
+def test_merged_referring_prs_ignore_les_cross_ref_non_merged(monkeypatch):
+    """Un cross-reference sans pull_request.merged_at ne doit pas être inclus.
+    Verifie qu'on ne perd pas le filtre existant en ajoutant le fast-path.
+    """
+    timeline = [
+        {"event": "cross-referenced",
+         "source": {"type": "issue",
+                    "issue": {"number": 17901,
+                              "body": "Pas mergé",
+                              "pull_request": {"merged_at": None},
+                              "repository": {"full_name": "o/r"}}}},
+        {"event": "commented"},  # autre event, ignoré
+    ]
+    def fake_gh_json(args):
+        return timeline
+    monkeypatch.setattr(ccd, "gh_json", fake_gh_json)
+    out = _merged_referring_prs("o/r", 15578)
+    assert out == []
+
+
+
+def test_delivering_lanes_refuse_le_point_final_de_phrase():
+    """#15864 (mesure #14549, 2026-10-09) -- un marqueur ponctue doit reduire a
+    la lane REELLE : sinon une lane nommee uniquement sous forme ponctuee est
+    absente de l'ensemble d'exclusion et son dossier d'auto-attestation passe
+    le gate. Instance mesuree : `myia-po-2023:CoursIA-2.` dans delivering_lanes."""
+    snap = _snapshot(
+        comments=[_comment("[DELIVERED] lane myia-po-2023:CoursIA-2. "
+                           "Tranche livree, voir PR.")],
+        merged_prs=[
+            {"number": 17901, "merged_at": "2026-09-19T10:00:00Z",
+             "body": "Grain: DEEP/notebook-python — lane myia-po-2024:CoursIA. "
+                     "-- See #17900."},
+        ],
+    )
+    lanes = ccd.delivering_lanes(snap)
+    assert "myia-po-2023:CoursIA-2" in lanes
+    assert "myia-po-2024:CoursIA" in lanes
+    assert not any(ln.endswith(".") for ln in lanes), sorted(lanes)

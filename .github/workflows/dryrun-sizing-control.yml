@@ -61,6 +61,10 @@ jobs:
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/workflows/dryrun-sizing-control.yml
+            scripts/ci/docker/linux-runner/persist/ai-01/
 
       - name: Syntaxe des deux scripts
         run: |

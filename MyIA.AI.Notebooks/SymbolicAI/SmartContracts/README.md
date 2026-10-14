@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SmartContracts
-pedagogical_count: 31
-breakdown: SmartContracts=31
-maturity: BETA=30, ALPHA=1
+pedagogical_count: 32
+breakdown: SmartContracts=32
+maturity: BETA=30, ALPHA=1, DRAFT=1
 -->
 
 Série de notebooks éducatifs couvrant les fondements cryptographiques, le développement Solidity, les tests, la cryptographie avancée (ZKP, HE, vote vérifiable), et les blockchains alternatives.
@@ -211,6 +211,7 @@ SmartContracts/
 |---|----------|-------|---------|
 | 7 | [SC-07-Token-Standards-Python](02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155 |
 | 8 | [SC-08-DeFi-Primitives-Python](02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb) | 55 min | AMM, lending, oracles |
+| 8b | [SC-08b-MEV-LP-Python](02-Solidity-Advanced/SC-08b-MEV-LP-Python.ipynb) | 40 min | Compagnon hors chaîne : frais du déposant, perte non-permanente, sandwich, backrun |
 | 9 | [SC-09-DAO-Governance-Python](02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb) | 45 min | Votes, gouvernance on-chain |
 | 10 | [SC-10-Account-Abstraction-Python](02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb) | 50 min | ERC-4337 |
 | 11 | [SC-11-LLM-Assisted-Python](02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb) | 45 min | LLM pour smart contracts |
@@ -429,7 +430,7 @@ La gestion des incertitudes on-chain (réserves DeFi, slippage, garanties) s'app
 
 ### Lecture transversale
 
-[La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot (changement de représentation, certification A/B/C).
+[La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot (changement de représentation, certification A/B/C).
 
 ## FAQ / Troubleshooting
 

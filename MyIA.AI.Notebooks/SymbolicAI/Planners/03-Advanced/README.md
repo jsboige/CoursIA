@@ -19,17 +19,18 @@ Le fil conducteur : chaque notebook introduit un changement de représentation �
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 7 | [Planners-7-OR-Tools](Planners-7-OR-Tools.ipynb) | 45 min | Programmation par contraintes avec CP-SAT (Google OR-Tools) : all-different, cumulative, table ; scheduling ; optimisation multi-objectif |
-| 7 (C#) | [Planners-7-OR-Tools-Csharp](Planners-7-OR-Tools-Csharp.ipynb) | 45 min | Jumeau C# du 7 : solveur CP from-scratch (propagation + backtracking) sur Job-Shop, sans OR-Tools (See #4956) |
+| 7 (C#) | [Planners-7-OR-Tools-Csharp](Planners-7-OR-Tools-Csharp.ipynb) | 45 min | Jumeau C# du 7 : tranche 1 from-scratch, solveur CP à propagation et backtracking sur Job-Shop, sans OR-Tools ; tranche 2 : même exemple job-shop via Google.OrTools CP-SAT (paquet NuGet `Google.OrTools`) (See #4956) |
 | 8 | [Planners-8-Temporal](Planners-8-Temporal.ipynb) | 40 min | PDDL 2.1 : durées d'actions, parallélisme, contraintes temporelles simples et denses, ordonnancement de tâches |
-| 8 (C#) | [Planners-8-Temporal-Csharp](Planners-8-Temporal-Csharp.ipynb) | 40 min | Jumeau C# du 8 : algèbre d'Allen + réseau temporel simple (STN) + RCPSP-lite from-scratch (See #4956) |
+| 8 (C#) | [Planners-8-Temporal-Csharp](Planners-8-Temporal-Csharp.ipynb) | 40 min | Jumeau C# du 8 : tranche 1 from-scratch (algèbre d'Allen, réseau temporel simple STN, RCPSP-lite) ; tranche 2 : RCPSP résolu par Google.OrTools CP-SAT (paquet NuGet `Google.OrTools`) (See #4956) |
 | 9 | [Planners-9-HTN](Planners-9-HTN.ipynb) | 45 min | Planification hiérarchique (Hierarchical Task Networks) : tâches primitives/abstraites, méthodes de décomposition, HDDL, solveur inspiré de SHOP2 |
-| 9 (C#) | [Planners-9-HTN-Csharp](Planners-9-HTN-Csharp.ipynb) | 45 min | Jumeau C# du 9 : solveur HTN inspiré de SHOP2 from-scratch, décomposition de tâches en .NET 9 (See #4956) |
+| 9 (C#) | [Planners-9-HTN-Csharp](Planners-9-HTN-Csharp.ipynb) | 45 min | Jumeau C# du 9 : tranche 1 from-scratch, solveur HTN inspiré de SHOP2 (décomposition de tâches en .NET 9) ; tranche 2 : le même problème via unified_planning + aries, par pont .NET vers CPython (paquet NuGet `pythonnet` 3.0.5, paquets Python `unified-planning` et `up-aries`) (See #4956) |
 
 ## Prérequis
 
 - **Parties 1 et 2** : modélisation PDDL et planification classique (notebooks 1-6)
 - **Notebook 7 (OR-Tools)** : goût pour la programmation par contraintes (variables, domaines, contraintes)
 - **Notebooks 8-9** : connaissance de PDDL (domaines, problèmes), étendue à HDDL pour le HTN
+- **Jumeaux C# (7-9)** : .NET 9 Interactive. Les tranches 2 tirent des paquets NuGet (`Google.OrTools` pour 7 et 8, `pythonnet` 3.0.5 pour 9), donc un accès réseau à NuGet. Le jumeau 9 exige en plus un Python avec `unified-planning` et `up-aries` (chargeur `Config/PythonNetLoader.cs`). Aucun jumeau 7-9 n'utilise Docker
 
 ## À l'issue de cette partie
 

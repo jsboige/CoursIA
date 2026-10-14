@@ -77,12 +77,15 @@ from os.path import dirname, abspath
 from typing import Any
 
 try:
-    from check_adjoint_prevalidation import QUALIFYING_LANES, GRAIN_LANE_RE
+    import gh_identity
+    from check_adjoint_prevalidation import QUALIFYING_LANES, GRAIN_LANE_RE, LANE_TOKEN
 except ImportError:  # charge depuis scripts/ en invocation directe
     sys.path.insert(0, dirname(abspath(__file__)))
+    import gh_identity  # type: ignore[no-redef]
     from check_adjoint_prevalidation import (  # type: ignore[no-redef]
         QUALIFYING_LANES,
         GRAIN_LANE_RE,
+        LANE_TOKEN,
     )
 
 REPO = "jsboige/CoursIA"
@@ -119,9 +122,13 @@ _RESIDUE_NONE_RE = re.compile(r"^none$")
 _RESIDUE_FOLLOWUP_RE = re.compile(r"^followup\s+#(\d+)$")
 _RESIDUE_WAIVER_RE = re.compile(r"^waiver:\s+\S.+")
 
-#: ``[DELIVERED] lane <machine:workspace> ...`` -- protocole lane-claim.
+#: ``[DELIVERED] lane <machine:workspace> ...`` -- protocole lane-claim. Le
+#: token reprend ``LANE_TOKEN`` (voir check_adjoint_prevalidation) : un point
+#: final de phrase n'entre plus dans la lane capturee (#15864, mesure #14549) --
+#: sinon une lane marquee uniquement sous forme ponctuee echappe a
+#: ``delivering_lanes`` et son dossier d'auto-attestation passe le gate.
 _DELIVERED_LANE_RE = re.compile(
-    r"\[DELIVERED\][^\n]*?\blane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)"
+    r"\[DELIVERED\][^\n]*?\blane\s+(" + LANE_TOKEN + r")"
 )
 
 #: Un item d'acceptance : ``<critere> -> <preuve>``.
@@ -241,13 +248,19 @@ def _merged_referring_prs(repo: str, number: int) -> list[dict[str, Any]]:
         # sinon gh rend "Could not resolve to a PullRequest" et l'organe crashe
         # (mesure 2026-09-28, blocage Lot D #18140 sur #17301).
         src_repo = ((src.get("repository") or {}).get("full_name")) or repo
-        # Pas de --jq : gh l'ecrit en TEXTE BRUT, que json.loads refuse
-        # (defaut mesure c.5849452860 -- tout temoin rendait UNKNOWN rc=2).
-        row = gh_json([
-            "pr", "view", str(src["number"]), "--repo", src_repo,
-            "--json", "body",
-        ])
-        body = row.get("body") if isinstance(row, dict) else None
+        # Body preferentiellement lu depuis la timeline (source.issue.body),
+        # ce qui economise un appel `gh pr view` par PR mergee referencee.
+        # Mesure #15578 : 555 references = 4 min de latence eliminees.
+        # Fallback `gh pr view` si le champ body est absent de la timeline
+        # (defense en profondeur : payload timeline peut etre tronque sur PRs
+        # tres anciennes ou via depot soeur).
+        body = src.get("body")
+        if body is None:
+            row = gh_json([
+                "pr", "view", str(src["number"]), "--repo", src_repo,
+                "--json", "body",
+            ])
+            body = row.get("body") if isinstance(row, dict) else None
         out.append({"number": src["number"], "merged_at": pr["merged_at"],
                     "repo": src_repo,
                     "body": str(body) if body else ""})
@@ -326,8 +339,16 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any],
 
     if f.get("schema") != "1":
         errors.append("schema must be '1'")
-    if dossier.author != SHARED_GITHUB_LOGIN:
-        errors.append(f"comment author must be {SHARED_GITHUB_LOGIN!r}")
+    # #17437: same accepted-author set as the adjoint gate, read from the
+    # identity organ -- a lane posting its closure dossier under its GitHub App
+    # identity must not be refused here after being accepted there.
+    if dossier.author not in gh_identity.ACCEPTED_DOSSIER_AUTHORS:
+        errors.append(
+            f"comment author {dossier.author!r} is not an accepted dossier author "
+            f"(expected {SHARED_GITHUB_LOGIN!r} or a fleet App identity "
+            f"{gh_identity.APP_LOGIN_PREFIX}<lane>[bot] with <lane> in "
+            f"{', '.join(gh_identity.APP_DOSSIER_LANES)})"
+        )
     if snapshot.get("state") != "OPEN" and not replay:
         errors.append(f"issue state must be OPEN, live={snapshot.get('state')}")
 
@@ -487,8 +508,15 @@ def render_template(snapshot: dict[str, Any], lane: str) -> str:
         ("open-prs", str(len(snapshot["open_prs"]))),
         ("comments-reviewed", str(n_comments)),
     )
-    lines = [START, *(f"{key}: {value}" for key, value in fields)]
-    lines.append("  - REPLACE_WITH <critère du body> -> <PR#/commit/fichier:ligne>")
+    lines = [START]
+    for key, value in fields:
+        lines.append(f"{key}: {value}".rstrip())
+        if key == "acceptance":
+            # Les items vivent SOUS `acceptance:` : poses apres
+            # `comments-reviewed`, ils sont lus comme lignes malformees et le
+            # dossier rempli tel quel est refuse (mesure sur #18480).
+            lines.append(
+                "  - REPLACE_WITH <critère du body> -> <PR#/commit/fichier:ligne>")
     lines.append(END)
     return "\n".join(lines)
 

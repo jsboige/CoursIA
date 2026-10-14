@@ -56,6 +56,45 @@ Chaque stratégie inclut un notebook de recherche (QuantBook) documentant les it
 
 **Meilleur backtest** : Sharpe 0.376, CAGR 7.60 %, MaxDD 20.6 %, Win Rate 80 %
 
+`main.py` accepte deux paramètres optionnels, sans effet par défaut :
+
+| Paramètre | Défaut | Rôle |
+|---|---|---|
+| `pcm_mode` | `base` | `base` garde le comportement d'origine ; `intent` additionne les deux tranches sur `XLU` (voir ci-dessous) |
+| `trace` | `0` | `1` trace chaque séance la valeur du portefeuille et la clôture de SPY dans un graphique `shadow` (séries entrelacées `e0`..`e4` et `b0`..`b4`, format de la ligue de stratégies #19821) ; aucun ordre ne change |
+
+#### `XLU` dans les deux tranches : mesure QC Cloud (#20188), 2026-10-10
+
+`XLU` appartient aux deux tranches : `SectorMomentum` (70 %) et `Defensive` (30 %). Le modèle de construction de base de Lean ne transmet à `determine_target_percent` qu'un insight actif par titre. Une tranche peut donc masquer l'autre sur `XLU`.
+
+La mesure montre que le masquage joue toujours dans le même sens. Les deux modèles émettent au même instant, et l'insight transmis pour `XLU` est, à chaque appel, celui de `Defensive`. En mode `base`, `XLU` ne reçoit donc que la part défensive : 10 % du portefeuille quand SPY est sous sa SMA200, rien sinon. Le vote de `SectorMomentum` sur `XLU` n'est jamais appliqué, alors qu'il est UP dans 68 % des appels. Sa part ne reste pas en liquidités pour autant : les 70 % de la tranche se répartissent sur les autres secteurs retenus.
+
+Le mode `intent` reprend le correctif additif de #19740 : il reconstruit le dernier insight actif par couple (titre, tranche), puis additionne les poids par titre. La cible moyenne de `XLU` passe de 1,8 % à 10,5 % du portefeuille.
+
+La règle de mesure a été inscrite dans #20188 avant le premier backtest. Trois runs couvrent la fenêtre du kit, du 2015-01-01 au 2024-12-31 :
+- `orig` : le `main.py` d'avant ces paramètres ;
+- `base` et `intent` : le nouveau `main.py`, avec `trace=1`.
+
+**Non-régression.** `base` reproduit `orig` à l'identique : les 27 statistiques QC, dont la rotation cumulée, et les 2149 ordres, comparés un à un. Le résultat du kit se retrouve : Sharpe QC 0.377, CAGR 7.59 %, MaxDD 20.6 %.
+
+| Run | Sharpe | CAGR | Pire baisse | Ordres | Frais cumulés, en % du capital de départ |
+|---|---|---|---|---|---|
+| `base` | 0,72 | 7,6 % | −20,6 % | 2149 | 3,0 % |
+| `intent` | 0,71 | 7,4 % | −21,9 % | 2320 | 3,3 % |
+| SPY détenu (référence, sans frais) | 0,78 | 13,0 % | −33,7 % | — | — |
+
+Le Sharpe de ce tableau est calculé sur les rendements journaliers, à taux sans risque nul, annualisé sur 252 séances. Le Sharpe affiché par QC (0.377 pour `base`, 0.366 pour `intent`) retranche un taux sans risque.
+
+| `intent` − `base`, différence de Sharpe | Écart | IC 95 % | p unilatérale | 2015-2018 | 2019-2021 | 2022-2024 |
+|---|---|---|---|---|---|---|
+| toute la fenêtre | −0,01 | [−0,21 ; 0,19] | 0,51 | +0,16 | −0,34 | +0,04 |
+
+Le test est un bootstrap circulaire par blocs de 21 séances (10 000 tirages, graine 18921), donné à titre descriptif.
+
+**Lecture.** Le défaut existe bien : en mode `base`, `XLU` est presque absent du portefeuille alors que la tranche momentum le retient. Son effet sur le résultat, en revanche, n'est pas mesurable sur cette fenêtre. L'écart de Sharpe est nul à l'échelle de son intervalle, et son signe change d'une sous-période à l'autre. Le correctif ajoute des ordres et des frais. Le défaut reste `pcm_mode=base` ; changer le défaut du kit relève d'une issue du kit.
+
+Les traces des runs (plans, empreintes, graphiques, ordres, statistiques, `results.json`) sont conservées hors dépôt, sous `QC-traces/20188-kit03-xlu-shared/`.
+
 ## Structure
 
 ```

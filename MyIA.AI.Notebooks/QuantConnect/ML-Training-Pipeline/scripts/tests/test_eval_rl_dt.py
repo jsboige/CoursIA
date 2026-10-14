@@ -48,7 +48,10 @@ class TestComputeSharpe:
 
 
 class TestComputeMaxDrawdown:
-    """Max drawdown computation tests."""
+    """Max drawdown computation tests.
+
+    The input is the returns series (a cumulative-sum path until #19016).
+    """
 
     def test_empty(self):
         assert compute_max_drawdown(np.array([])) == 0.0
@@ -57,18 +60,18 @@ class TestComputeMaxDrawdown:
         assert compute_max_drawdown(np.array([1.0])) == 0.0
 
     def test_monotonic_increase(self):
-        cum = np.cumsum(np.array([0.01] * 50))
-        assert compute_max_drawdown(cum) == 0.0
+        returns = np.full(50, 0.01)
+        assert compute_max_drawdown(returns) == 0.0
 
     def test_drawdown_detected(self):
-        cum = np.array([0.0, 0.1, 0.2, 0.1, 0.0, -0.1])
-        dd = compute_max_drawdown(cum)
+        returns = np.array([0.01] * 5 + [-0.5] + [0.01] * 5)
+        dd = compute_max_drawdown(returns)
         assert dd < 0
 
     def test_small_drawdown_on_dip(self):
-        cum = np.array([0.0, 0.1, 0.2, 0.15, 0.2, 0.3])
-        dd = compute_max_drawdown(cum)
-        assert dd < 0  # dip from 0.2 to 0.15
+        # wealth 1 -> 1.2 -> 1.14 -> 1.368: the dip from the 1.2 peak is -5 %.
+        dd = compute_max_drawdown(np.array([0.2, -0.05, 0.2]))
+        assert dd == pytest.approx(-0.05)
         assert dd > -0.5  # but not catastrophic
 
 

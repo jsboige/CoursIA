@@ -88,6 +88,10 @@ def default_view(
         "isDraft": draft,
         "body": body if body is not None else GRAIN_MED,
         "headRefOid": head,
+        # baseRefName is the branch the PR is targeting. The merge-ready
+        # defense-in-depth check (#19002) refuses anything other than
+        # `main`. Tests that need a non-`main` base override this field.
+        "baseRefName": "main",
         "baseRefOid": BASE,
         "files": [{"path": p} for p in files],
         "changedFiles": len(files),
@@ -148,8 +152,11 @@ class ScriptedRunner:
         gate_stderr: str = "",
         fetch_rc: int = 0,
         twin_rc: int = 0,
+        twin_stdout: str = "",
         commits: dict[str, dict] | None = None,
         auto_tree: str | None = None,
+        base_search: dict[str, list[dict]] | None = None,
+        base_search_rc: int = 0,
     ):
         self.token = token
         self.token_rc = token_rc
@@ -165,10 +172,21 @@ class ScriptedRunner:
         self.gate_stderr = gate_stderr
         self.fetch_rc = fetch_rc
         self.twin_rc = twin_rc
+        # stdout de l'organe twin : porte le JSON classifie quand twin_rc=1.
+        # Vide par defaut (les tests historiques ``twin-index-collision``
+        # n'attendent pas de classification).
+        self.twin_stdout = twin_stdout
         # Remontee first-parent de merge_dwell (etape 2ter) : payloads de
         # ``repos/.../commits/<sha>`` et arbre rendu par ``git merge-tree``.
         self.commits = commits or {}
         self.auto_tree = auto_tree
+        # #19014 : reponses scriptees pour ``gh pr list --search head:<base>``.
+        # Cle = la valeur de ``--search head:<base>`` (avec le prefixe),
+        # valeur = la liste JSON de PRs (avec etat) que gh rendrait. La
+        # cle absente rend [] ; ``base_search_rc`` non nul fait echouer
+        # la commande pour tester le chemin ``unreadable``.
+        self.base_search = base_search or {}
+        self.base_search_rc = base_search_rc
         self.calls: list[tuple[list[str], dict | None]] = []
         self.sleeps: list[float] = []
 
@@ -189,6 +207,18 @@ class ScriptedRunner:
             if self.token_rc != 0:
                 return mr.RunResult(self.token_rc, "", "auth failed")
             return mr.RunResult(0, self.token + "\n", "")
+        if c[:3] == ["gh", "pr", "list"] and "--search" in c:
+            # #19014 : ``gh pr list --search head:<branche>`` -- liveness
+            # de la base. Le ScriptedRunner regarde la cle correspondante
+            # dans ``self.base_search`` et rend cette liste (ou [] si
+            # non scriptee). ``base_search_rc != 0`` simule un crash gh.
+            search_key = next(
+                (arg for arg in c if arg.startswith("head:")), None
+            )
+            if self.base_search_rc != 0:
+                return mr.RunResult(self.base_search_rc, "", "gh failed")
+            rows = self.base_search.get(search_key or "", [])
+            return mr.RunResult(0, json.dumps(rows), "")
         if c[:3] == ["gh", "pr", "list"]:
             return mr.RunResult(
                 0, json.dumps([{"number": n} for n in self.prs]), ""
@@ -234,7 +264,7 @@ class ScriptedRunner:
         if c[:1] == ["git"] and "fetch" in c:
             return mr.RunResult(self.fetch_rc, "", "")
         if len(c) > 1 and "check_twin_index_collisions.py" in c[1]:
-            return mr.RunResult(self.twin_rc, "", "")
+            return mr.RunResult(self.twin_rc, self.twin_stdout, "")
         raise AssertionError("commande non scriptee : " + " ".join(c))
 
     def sleep(self, seconds: float) -> None:
@@ -297,26 +327,30 @@ def test_skip_file_under_github_dir(tmp_path):
 
 def test_skip_frozen_umbrella_in_title(tmp_path):
     # #17021 : mergee sous le veto densite #17040 sur un dossier READY.
-    view = default_view(title="fix(pedagogy,#13410): g59-search-1 — 9 lectures")
+    # #13410 ROUVERT le 2026-10-07 : le skip se mesure sur #11601, seul gele.
+    view = default_view(title="enrich(qc,#11601): densite QC-Py-06b — tranche g2")
     runner = ScriptedRunner(views={123: view})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    assert lines[-1]["reason"] == "frozen:#13410(veto #17040)"
+    assert lines[-1]["reason"] == "frozen:#11601(veto #17040)"
     assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
     assert not any(" merge " in f" {flat} " for flat in runner.flat())
 
 
 def test_skip_frozen_umbrella_in_body(tmp_path):
-    view = default_view(body=GRAIN_MED + "\n\nSee #13410 (densite).")
+    view = default_view(body=GRAIN_MED + "\n\nSee #11601 (densite QC).")
     runner = ScriptedRunner(views={123: view})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    assert lines[-1]["reason"] == "frozen:#13410(veto #17040)"
+    assert lines[-1]["reason"] == "frozen:#11601(veto #17040)"
 
 
 def test_frozen_umbrella_prefix_number_not_matched():
-    assert mr.frozen_umbrella_exclusion("fix: #134100", "voir #134101") is None
-    assert mr.frozen_umbrella_exclusion("fix: #13410.", None) is not None
+    # #13410 ne gele plus (reouverture user 2026-10-07) ; le garde-fou (?!\d)
+    # se mesure sur #11601, seul parapluie gele en vie.
+    assert mr.frozen_umbrella_exclusion("fix: #13410.", None) is None
+    assert mr.frozen_umbrella_exclusion("fix: #116010", "voir #116011") is None
+    assert mr.frozen_umbrella_exclusion("fix: #11601.", None) is not None
 
 
 def test_frozen_umbrella_qc_density_round2():
@@ -667,25 +701,28 @@ def test_precheck_dossier_illisible_laisse_decider_le_gate(tmp_path):
     assert lines[-1]["verdict"] == "merged"
 
 
-def test_frozen_branch_prefix_without_umbrella_reference():
-    # Relais g-XX de #13410 : ni le titre ni le body ne citent le parapluie.
+def test_wt_vibe_prefix_lifted_with_13410_reopening():
+    # Reouverture user du 2026-10-07 : les relais g-XX de #13410 ne gelent
+    # plus, meme muets -- le prefixe n'etait gele que pour cette campagne.
     assert (
         mr.frozen_umbrella_exclusion(
             "fix(search,g77): relocate 12 lectures", "Grain: MED/notebook", "wt/vibe-g77-search-26"
         )
-        == "frozen:#13410(veto #17040,branch wt/vibe-*)"
+        is None
     )
     assert mr.frozen_umbrella_exclusion("fix(x): ordinaire", None, "fix/vibe-check") is None
     assert mr.frozen_umbrella_exclusion("fix(x): ordinaire", None, None) is None
 
 
-def test_skip_frozen_branch_before_gate(tmp_path):
-    view = default_view(title="fix(search,g71): lectures reprises")
-    view["headRefName"] = "wt/vibe-g71-search-20"
+def test_skip_frozen_umbrella_before_gate(tmp_path):
+    # Le skip de perimetre precede le gate : la PR gelee n'y est pas passee.
+    # (Forme branche wt/vibe-* levee avec la reouverture de #13410, 2026-10-07.)
+    view = default_view(title="enrich(qc,#11601): densite QC-Py-07")
+    view["headRefName"] = "feature/densite-qc-7"
     runner = ScriptedRunner(views={123: view})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    assert lines[-1]["reason"] == "frozen:#13410(veto #17040,branch wt/vibe-*)"
+    assert lines[-1]["reason"] == "frozen:#11601(veto #17040)"
     assert not any("check_adjoint_prevalidation.py" in flat for flat in runner.flat())
 
 
@@ -953,6 +990,66 @@ def test_twin_fetch_failure_is_fail_closed(tmp_path):
     assert not any("check_twin_index_collisions.py" in f for f in runner.flat())
 
 
+def test_twin_mixed_multipr_and_unknown_then_fails_closed(tmp_path):
+    """#18823 : un mix MULTI-PR + verdict absent/inconnu doit refuser, pas
+    laisser passer comme avertissement seul. La classification d'UNE
+    collision illisible ne peut pas se deduire des autres."""
+    view = default_view(files=(TWIN_FILE,))
+    twin_stdout = json.dumps({
+        "cross_ref": [
+            {"pair": "sw-5-linked-data", "index": "0012",
+             "verdict": "MULTI-PR"},
+            {"pair": "sw-5-linked-data", "index": "0012",
+             "verdict": None},
+        ],
+        "base_ref": "origin/main",
+    })
+    runner = ScriptedRunner(views={123: view}, twin_rc=1,
+                            twin_stdout=twin_stdout)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-index-collision"
+
+
+def test_twin_pure_multipr_warns_only(tmp_path):
+    """Quand toutes les collisions portent MULTI-PR, l'organe laisse passer
+    avec avertissement seul (la premiere mergee gagne)."""
+    view = default_view(files=(TWIN_FILE,))
+    twin_stdout = json.dumps({
+        "cross_ref": [
+            {"pair": "sw-5-linked-data", "index": "0012",
+             "verdict": "MULTI-PR"},
+            {"pair": "sw-5-linked-data", "index": "0012",
+             "verdict": "MULTI-PR"},
+        ],
+        "base_ref": "origin/main",
+    })
+    runner = ScriptedRunner(views={123: view}, twin_rc=1,
+                            twin_stdout=twin_stdout)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+
+
+def test_twin_pure_onmain_skips(tmp_path):
+    """Quand au moins une collision est ON-MAIN, l'organe skip dur et
+    nomme la premiere collision ON-MAIN dans le motif."""
+    view = default_view(files=(TWIN_FILE,))
+    twin_stdout = json.dumps({
+        "cross_ref": [
+            {"pair": "sw-5-linked-data", "index": "0012",
+             "verdict": "ON-MAIN"},
+            {"pair": "sw-5-linked-data", "index": "0013",
+             "verdict": "MULTI-PR"},
+        ],
+        "base_ref": "origin/main",
+    })
+    runner = ScriptedRunner(views={123: view}, twin_rc=1,
+                            twin_stdout=twin_stdout)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"].startswith("twin-collision-on-main:sw-5-linked-data/0012")
+
+
 # --- 2ter. approbation du coordinateur (Q67, arbitrage user 2026-09-28) ----------
 
 
@@ -1076,6 +1173,42 @@ def test_commit_de_contenu_apres_l_approbation_perime_la_lecture(tmp_path):
     assert lines[-1]["reason"] == "coordinator-approval-stale"
 
 
+def test_skip_2ter_porte_review_ready_en_disposition(tmp_path):
+    """#17672 point 2 : quand une PR skip a l'etape 2ter (approbation
+    coordinateur), toutes les portes delegables en amont sont vertes
+    (prefiltre, perimetre, dossier precheck). La disposition portee est
+    ``review-ready`` -- le dashboard coordinateur distingue alors « PR qui
+    n'attend que sa relecture » de « PR qui a un autre probleme »."""
+    view = default_view(coordinator=HEAD_MOVED)
+    runner = ScriptedRunner(views={123: view}, **refresh_topology(tree="d1ff"))
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "coordinator-approval-stale"
+    assert lines[-1]["review"] == "review-ready"
+
+
+def test_skip_sans_approbation_porte_review_ready(tmp_path):
+    """#17672 point 2 : variante ``no-coordinator-approval`` (aucune voix
+    approbatrice du coordinateur). La disposition est toujours
+    ``review-ready`` puisque les portes delegables en amont sont vertes."""
+    runner = ScriptedRunner(views={123: default_view(coordinator=None)})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+    assert lines[-1]["review"] == "review-ready"
+
+
+def test_skip_prefiltre_ne_porte_pas_review_ready(tmp_path):
+    """#17672 point 2 : un skip en AMONT de 2ter (ici, brouillon) garde
+    la disposition review brute (``no-approval``), pas ``review-ready`` :
+    les portes delegables ne sont pas toutes vertes, l'etat REVIEW_READY
+    ne s'applique pas."""
+    view = default_view(coordinator=None)
+    view["isDraft"] = True
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "draft"
+    assert lines[-1]["review"] == "no-approval"
+
+
 def test_preuve_illisible_fail_closed(tmp_path):
     view = default_view(coordinator=HEAD_MOVED)
     runner = ScriptedRunner(views={123: view}, commits={})
@@ -1099,3 +1232,348 @@ def test_tete_du_gate_differente_de_la_tete_lue(tmp_path):
     )
     _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
     assert lines[-1]["reason"] == "head-moved"
+
+
+# --- #19002 : defense en profondeur sur la base -----------------------------
+# Le gate refuse deja READY si la base n'est pas `main` (cf test_base_*
+# dans test_check_adjoint_prevalidation.py). Merge_ready verifie
+# independamment : un rc 0 accidente du gate, un gate anterieur a #19002,
+# ou un chemin futur qui court-circuiterait le gate ne doit pas suffire
+# a merger dans une branche morte. Trois tests : temoin positif (base
+# main, chemin nominal inchange), temoin negatif sur une base de feature
+# ouverte (#18985/#18967), temoin negatif sur une base morte (#18819).
+
+
+def test_base_main_does_not_change_merge_ready_outcome(tmp_path):
+    """Temooin positif : avec `view.baseRefName = 'main'`, le merge_ready
+    n'invoque pas la nouvelle raison de skip. Le chemin nominal d'une
+    PR a base main reste inchange."""
+    runner = ScriptedRunner(views={123: default_view()})
+    assert runner.views[123]["baseRefName"] == "main"
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    # Le verdict par defaut d'un ScriptedRunner est would-merge (gate_rc=0
+    # et tous les autres controles passent). Ce qui compte ici : aucune
+    # ligne ne porte le motif `base-not-main:` (le champ reason est None
+    # sur les merges reussis, donc on teste avec get(..., "")).
+    for line in lines:
+        reason = line.get("reason") or ""
+        assert "base-not-main" not in reason, lines
+
+
+def test_base_feature_open_triggers_base_live_not_main_skip(tmp_path):
+    """Temooin negatif (#19014) : PR empilee sur une branche de feature
+    encore ouverte. merge_ready distingue ce cas d'une base morte : le
+    motif `base-live-not-main:<branche>` dit a la lane d'attendre le merge
+    de la PR porteuse (cf. git-workflow.md L898 collision guard). Le gate
+    est simule a rc=0 READY (comme si une version anterieure du gate
+    avait ete deployee) ; seul le check merge_ready arrete la machine.
+    Le ScriptedRunner repond a `gh pr list --search head:<base>` avec une
+    PR OPEN pour signifier que la base est vivante."""
+    view = default_view()
+    view["baseRefName"] = "feature/voltargeting-vol-forecast-sizing"  # #18967
+    base_search_rows = [{"number": 18967, "state": "OPEN"}]
+    runner = ScriptedRunner(
+        views={123: view},
+        base_search={f"head:{view['baseRefName']}": base_search_rows},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0  # l'organe termine, il a juste skip
+    assert lines[-1]["verdict"] == "skipped"
+    # Le motif inclut la branche fautive ET la liveness -- une lane
+    # qui lit `live` sait qu'elle doit attendre la PR porteuse, pas
+    # retargeter.
+    assert (
+        "base-live-not-main:feature/voltargeting-vol-forecast-sizing"
+        in lines[-1]["reason"]
+    ), lines[-1]
+
+
+def test_base_dead_triggers_base_gone_skip(tmp_path):
+    """Temooin negatif (#19014) : PR empilee sur une branche dont la PR
+    porteuse est fermee ou squash-mergee. merge_ready distingue ce cas
+    d'une base vivante : le motif `base-gone:<branche>` dit a la lane
+    de retargeter sur `main` (cf. git-workflow.md L898 collision guard).
+    Le ScriptedRunner repond a `gh pr list --search head:<base>` avec
+    une liste vide (la PR porteuse a disparu, sa tete ne reapparait dans
+    aucune PR ouverte). Verifie sur la branche morte de #18819
+    (squash-mergee le 02/10)."""
+    view = default_view()
+    view["baseRefName"] = "renum/17063-complexity-05b"  # #18819
+    runner = ScriptedRunner(
+        views={123: view},
+        base_search={f"head:{view['baseRefName']}": []},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert (
+        "base-gone:renum/17063-complexity-05b" in lines[-1]["reason"]
+    ), lines[-1]
+
+
+def test_base_not_main_unreadable_fail_closed(tmp_path):
+    """Temooin degrade (#19014) : si `gh pr list --search head:<base>`
+    echoue (rc non nul, reponse non list, ou reseau), merge_ready ne
+    declare pas une liveness qu'il n'a pas mesuree. Il emet
+    `base-not-main-unreadable:<branche>` -- la lane ne recoit pas un
+    message confiant, mais l'organe refuse le merge par defaut. Le gate
+    refusera de toute facon, mais l'echec doit etre visible."""
+    view = default_view()
+    view["baseRefName"] = "feature/inconnu"  # PR qui n'existe pas
+    runner = ScriptedRunner(
+        views={123: view},
+        base_search_rc=1,  # simulateur de crash gh
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0  # l'organe termine
+    assert lines[-1]["verdict"] == "skipped"
+    assert (
+        "base-not-main-unreadable:feature/inconnu" in lines[-1]["reason"]
+    ), lines[-1]
+
+
+# ---------------------------------------------------------------------------
+# 5quater (#19002) : PR empilee sur une parente via convention body
+# (``Depends on #N`` / ``Blocked by #N`` / ``Stacked on #N`` /
+# ``Requires #N`` / ``Stack: #N``) avec baseRefName == main. Cas Origami
+# 2026-10-08 : 6 PRs empilees logiquement, baseRefName = main sur chacune,
+# 5 d'entre elles sans CI complete parce que la racine n'avait pas ete
+# mergee. base_ref_liveness ne s'applique pas (base = main), donc
+# merge_ready doit sonder le body de la PR pour trouver la parente.
+# Trois cas : parent OPEN (skip), parent MERGED (chemin nominal), parent
+# CLOSED (skip, signaler pour que la lane retravaille). Le runner
+# ScriptedRunner dispatche deja ``gh pr view <N>`` sur self.views[N] (l.226)
+# -- les tests reutilisent ce mecanisme en injectant une vue avec
+# state / mergedAt pour la PR parente.
+#
+# Correctif 2026-10-08 (review du coordinateur) : un body peut declarer
+# PLUSIEURS parentes directes -- ``Depends on #A`` puis ``Blocked by #B``.
+# Ne lire que la premiere laisse la seconde invisible, et si #A est MERGED
+# le chemin nominal repart sans avoir examine #B. Les tests ci-dessous
+# couvrent donc aussi : deux parentes dont seule la SECONDE bloque, deux
+# parentes toutes deux MERGED, une parente illisible, et l'auto-reference.
+
+
+def test_stacked_on_main_open_parent_triggers_skip(tmp_path):
+    """Temooin negatif (#19002) : PR empilee sur une parente encore OPEN
+    (la parente n'a pas ete mergee, donc la CI de la PR courante n'a pas
+    couvert le diff de la parente). merge_ready skip avec le motif
+    ``stacked-on-main:<N>:OPEN`` -- la lane doit attendre le merge de la
+    parente. Cas Origami 2026-10-08 : #19815 / #19819 / #19826 / #19836 /
+    #19847 empilees sur #19793 (la racine du pli 1)."""
+    view = default_view()
+    # body avec convention "Depends on #N" -- premiere ligne preservee pour
+    # le prefiltre (GRAIN_MED), le marker d'empilement en bas du body.
+    view["body"] = GRAIN_MED + "\n\nDepends on #19793"
+    parent_view = {
+        "number": 19793,
+        "state": "OPEN",
+        "mergedAt": None,
+    }
+    runner = ScriptedRunner(
+        views={123: view, 19793: parent_view},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert "stacked-on-main:19793:OPEN" in lines[-1]["reason"], lines[-1]
+
+
+def test_stacked_on_main_merged_parent_is_nominal(tmp_path):
+    """Temooin positif (#19002) : parente empilee deja MERGED, le merge
+    peut proceder. Le check empilement est un transit, pas un arret :
+    une fois la parente absorbee dans main, la CI de la PR courante a
+    tourne sur la bonne base. Reutilise le runner ScriptedRunner standard
+    (defaut would-merge)."""
+    view = default_view()
+    view["body"] = GRAIN_MED + "\n\nDepends on #19793"
+    parent_view = {
+        "number": 19793,
+        "state": "MERGED",
+        "mergedAt": "2026-10-08T10:26:41Z",
+    }
+    runner = ScriptedRunner(
+        views={123: view, 19793: parent_view},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    # Le verdict NOMINAL, pas seulement l'absence du motif de refus : une
+    # parente MERGED laisse le merge se faire (review du coordinateur --
+    # « le test parent MERGED affirme seulement l'absence du motif de
+    # refus, ce qui ne prouve pas a lui seul le verdict nominal »).
+    assert lines[-1]["verdict"] == "merged", lines[-1]
+    assert lines[-1]["merged"] is True, lines[-1]
+    assert "stacked-on-main" not in (lines[-1].get("reason") or ""), lines[-1]
+    # Et l'appel attendu a bien eu lieu : la parente declaree a ete
+    # interroge (le runner n'aurait pas ete sollicite sans la lecture du
+    # body), la PR courante aussi, et rien d'autre.
+    pr_view_calls = [c[3] for c in runner.cmds() if c[:3] == ["gh", "pr", "view"]]
+    assert pr_view_calls == ["123", "19793"], pr_view_calls
+
+
+def test_stacked_on_main_closed_parent_triggers_skip(tmp_path):
+    """Temooin negatif (#19002) : parente fermee (CLOSED sans merge). Le
+    motif ``stacked-on-main:<N>:CLOSED`` dit a la lane de rebrancher sur
+    la parente viable ou de reouvrir la parente. Le test distingue
+    explicitement OPEN et CLOSED pour que la lane puisse adapter son
+    geste (attendre vs rebrancher)."""
+    view = default_view()
+    view["body"] = GRAIN_MED + "\n\nBlocked by #19793"
+    parent_view = {
+        "number": 19793,
+        "state": "CLOSED",
+        "mergedAt": None,
+    }
+    runner = ScriptedRunner(
+        views={123: view, 19793: parent_view},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert "stacked-on-main:19793:CLOSED" in lines[-1]["reason"], lines[-1]
+
+
+def test_no_stacked_marker_in_body_keeps_nominal_path(tmp_path):
+    """Temooin positif (#19002) : body sans mention de parente empilee
+    (PR ordinaire sur main). Le check empilement ne fait rien -- pas de
+    round-trip supplementaire vers ``gh pr view <N>``. Le test verifie
+    egalement qu'aucune vue de PR parente n'est appelee : le ScriptedRunner
+    expose ``runner.cmds()`` qui liste les sous-processus spawnes, et on
+    s'attend a n'y voir qu'un appel ``gh pr view 123`` (la PR courante)
+    et aucun ``gh pr view <autre>``."""
+    view = default_view()
+    # body par defaut (GRAIN_MED) -- aucun marker d'empilement.
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    # Aucune mention empilement dans la raison de skip.
+    assert "stacked-on-main" not in (lines[-1].get("reason") or ""), lines[-1]
+    # Verifie qu'aucun appel ``gh pr view <N>`` autre que 123 n'a eu lieu :
+    # le check empilement est absent du chemin nominal.
+    other_pr_view_calls = [
+        cmd for cmd in runner.cmds()
+        if cmd[:3] == ["gh", "pr", "view"]
+        and cmd[3] != "123"
+    ]
+    assert other_pr_view_calls == [], (
+        f"appels inattendus vers gh pr view (autre que 123) : {other_pr_view_calls}"
+    )
+
+
+# --- Parentes MULTIPLES (review du coordinateur, 2026-10-08) -----------------
+
+
+def test_find_stacked_parents_extracts_all_deduped():
+    """Le lecteur rend TOUTES les parentes declarees, dedupliquees.
+
+    Un body qui declare « Depends on #A » puis « Blocked by #B » porte deux
+    dependances **directes** de la meme PR. L'ancien lecteur ne rendait que
+    la premiere, ce qui laissait la seconde invisible des qu'on n'examinait
+    que son retour."""
+    body = (
+        GRAIN_MED
+        + "\n\nDepends on #19793\nBlocked by #19815\n"
+        + "Stacked on #19815\n"          # doublon -> une seule fois
+        + "Requires #19819\n"
+    )
+    assert mr.find_stacked_parents(body) == [19793, 19815, 19819]
+    # Aucun marker : liste vide, pas None.
+    assert mr.find_stacked_parents(GRAIN_MED) == []
+    assert mr.find_stacked_parents(None) == []
+
+
+def test_stacked_on_main_second_dep_open_triggers_skip(tmp_path):
+    """Temooin de la review (#19002) : PREMIERE parente MERGED, SECONDE OPEN.
+
+    C'est le cas que le lecteur precedent laissait passer. La premiere
+    parente etant absorbe in dans `main`, le chemin nominal repartait sans
+    jamais examiner la seconde -- et le merge se faisait sous une dependance
+    encore ouverte. Le refus doit nommer la SECONDE, pas la premiere."""
+    view = default_view()
+    view["body"] = GRAIN_MED + "\n\nDepends on #19793\nBlocked by #19815"
+    runner = ScriptedRunner(
+        views={
+            123: view,
+            19793: {
+                "number": 19793,
+                "state": "MERGED",
+                "mergedAt": "2026-10-08T10:26:41Z",
+            },
+            19815: {"number": 19815, "state": "OPEN", "mergedAt": None},
+        },
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped", lines[-1]
+    assert "stacked-on-main:19815:OPEN" in lines[-1]["reason"], lines[-1]
+    # Les DEUX parentes ont ete interrogees : la seconde n'est pas restee
+    # invisible derriere la premiere.
+    pr_view_calls = [c[3] for c in runner.cmds() if c[:3] == ["gh", "pr", "view"]]
+    assert pr_view_calls == ["123", "19793", "19815"], pr_view_calls
+
+
+def test_stacked_on_main_two_merged_deps_is_nominal(tmp_path):
+    """Temooin positif multi-parente : les deux parentes sont MERGED.
+
+    Le check d'empilement est un transit, pas un arret : deux parentes
+    absorbees dans `main` laissent le merge se faire. Verifie le verdict
+    ET les appels attendus (les deux parentes sont bien sondees)."""
+    view = default_view()
+    view["body"] = GRAIN_MED + "\n\nDepends on #19793\nBlocked by #19815"
+    runner = ScriptedRunner(
+        views={
+            123: view,
+            19793: {
+                "number": 19793,
+                "state": "MERGED",
+                "mergedAt": "2026-10-08T10:26:41Z",
+            },
+            19815: {
+                "number": 19815,
+                "state": "MERGED",
+                "mergedAt": "2026-10-08T11:00:00Z",
+            },
+        },
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged", lines[-1]
+    pr_view_calls = [c[3] for c in runner.cmds() if c[:3] == ["gh", "pr", "view"]]
+    assert pr_view_calls == ["123", "19793", "19815"], pr_view_calls
+
+
+def test_stacked_on_main_unreadable_parent_triggers_skip(tmp_path):
+    """Temooin degrade (#19002) : la parente declaree n'est pas lisible.
+
+    ``stacked_parent_state`` rend ``unreadable`` pour tout etat qu'il ne
+    peut pas classer (ici un etat inconnu), et le check est fail-CLOSED :
+    un refus nomme ``stacked-on-main:<N>:unreadable``, jamais un merge
+    confiant sur une dependance qu'on n'a pas mesuree."""
+    view = default_view()
+    view["body"] = GRAIN_MED + "\n\nDepends on #19793"
+    runner = ScriptedRunner(
+        views={123: view, 19793: {"number": 19793, "state": "GHOST"}},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped", lines[-1]
+    assert "stacked-on-main:19793:unreadable" in lines[-1]["reason"], lines[-1]
+
+
+def test_stacked_on_main_self_reference_is_explicit(tmp_path):
+    """Une PR qui se declare parente d'elle-meme rend un etat EXPLICITE.
+
+    L'ancien code l'ignorait en silence (`parent != pr`) : le body etait
+    mal forme et personne ne l'apprenait. Le motif ``self-reference`` dit a
+    la lane que son body est a corriger, sans interroger le runner pour un
+    numero qu'on a deja sous la main."""
+    view = default_view()
+    view["body"] = GRAIN_MED + "\n\nDepends on #123"
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped", lines[-1]
+    assert "stacked-on-main:123:self-reference" in lines[-1]["reason"], lines[-1]
+    # Aucun appel supplementaire : la PR courante est deja chargee.
+    pr_view_calls = [c[3] for c in runner.cmds() if c[:3] == ["gh", "pr", "view"]]
+    assert pr_view_calls == ["123"], pr_view_calls

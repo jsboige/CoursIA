@@ -708,10 +708,10 @@ docker exec comfyui-qwen ls -la /workspace/ComfyUI/models/diffusion_models/
 
 ### Documentation Technique
 
-1. **Scripts GenAI-Auth** : `scripts/genai-auth/README.md` (376 lignes)
-2. **Architecture Finale** : `ARCHITECTURE-FINALE-COMFYUI-QWEN-20251125.md` (456 lignes)
-3. **Rapport Mission** : `RAPPORT-FINAL-MISSION-COMFYUI-LOGIN-20251125.md` (334 lignes)
-4. **Docker Configurations** : `docker-configurations/README.md` (170 lignes)
+1. **Scripts GenAI-Auth** : `scripts/genai-auth/README.md`
+2. **Architecture Finale** : `ARCHITECTURE-FINALE-COMFYUI-QWEN-20251125.md`
+3. **Rapport Mission** : `RAPPORT-FINAL-MISSION-COMFYUI-LOGIN-20251125.md`
+4. **Docker Configurations** : `docker-configurations/README.md`
 
 ### Scripts Principaux
 

@@ -116,11 +116,11 @@ Nuance de portée (#15568) : « vide » qualifie le worktree mesuré, pas la mac
 
 ## Périmètre de cette PR
 
-- **1 fichier créé** : `docs/lean/junctions-scan-po-2027.md` (~140 lignes).
+- **Fichier créé** : `docs/lean/junctions-scan-po-2027.md`.
 - **Aucun code production modifié** : `scripts/lean/setup_shared_mathlib.ps1` byte-identique à `main`.
 - **Aucun `lake build` exécuté** (pas de checkout à vérifier).
 - **Aucun `grep -c sorry` mesuré** (n/a, pas de Lean code modifié).
-- `git diff --stat` : 1 file, ~140 insertions, 0 deletions.
+- `git diff --stat` : 0 deletions.
 
 ## Hors scope
 

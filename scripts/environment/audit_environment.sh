@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# CI-CHECK:
+#   ^ Read-only audit: no installer, and no file is written without
+#     --export-json, so the CI advisory guard executes it as-is (#10643).
 # =============================================================================
 # AUDIT TECHNIQUE ENVIRONNEMENT NOTEBOOKS - CoursIA (Linux / macOS)
 # =============================================================================

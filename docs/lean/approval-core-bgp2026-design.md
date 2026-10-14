@@ -7,7 +7,7 @@
 ## 1. Contexte et motivation
 
 L'issue #17988 demande de formaliser, dans le sous-projet Lake
-`social_choice_lean_peters/`, la **preuve que le core d'approbation est non-vide**
+`SocialChoice/social_choice_lean_peters/`, la **preuve que le core d'approbation est non-vide**
 pour toute élection de comité par approbation et tout profil de ballots.
 
 Le résultat principal est dû à **Becker, Greger et Peters (2026)**, arXiv
@@ -26,7 +26,7 @@ formel et ferme `#16848` une fois Tranche 3 livrée.
 |---|---|---|
 | Dernier commit upstream `DominikPeters/SocialChoiceLean` | `94a4c650b6` (2026-07-21) | `gh api repos/DominikPeters/SocialChoiceLean/commits` |
 | Présence d'une formalisation « approval core » en amont | absente | `grep -rli 'approval'` sur le dépôt local `_peters/` ne renvoie aucun fichier (limite `SocialChoice/Committees/Approval/` non versionné localement) |
-| Type d'attache au dépôt CoursIA | **dossier versionné ordinaire** (PAS un submodule git) | `git ls-files MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/` ne renvoie que des fichiers plats ; `.gitmodules` ne contient pas ce chemin |
+| Type d'attache au dépôt CoursIA | **dossier versionné ordinaire** (PAS un submodule git) | `git ls-files MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/` ne renvoie que des fichiers plats ; `.gitmodules` ne contient pas ce chemin |
 | Sous-projet Lake | `package «social_choice_peters»` ; `lean_lib PetersTour` avec globs `PetersTour, PetersTour_en` (i18n #4980) | `lakefile.lean` |
 
 Le corps de l'issue #17988 dit « submodule épinglé `94a4c650` » — c'est un
@@ -41,7 +41,7 @@ Trois tranches, chacune livrée en PR séparée et mergeable indépendamment.
 
 ### Tranche 1 — Socle de définitions
 
-Deux fichiers siblings, dans `social_choice_lean_peters/Committees/Approval/` :
+Deux fichiers siblings, dans `SocialChoice/social_choice_lean_peters/Committees/Approval/` :
 
 - `Defs.lean` (FR) — namespace `ApprovalDefs`
 - `Defs_en.lean` (EN) — namespace `ApprovalDefs_en`
@@ -284,5 +284,5 @@ ligne de `Core.lean` en Tranche 2.
 - Convention i18n : [code-style.md §Lean i18n](../../.claude/rules/code-style.md#lean-i18n),
   [docs/lean/i18n-sibling-patterns.md](i18n-sibling-patterns.md)
 - Anti-régression Lean : [anti-regression.md](../../.claude/rules/anti-regression.md)
-- Petersen Tour existant : `social_choice_lean_peters/PetersTour.lean` + `_en.lean`
+- Petersen Tour existant : `SocialChoice/social_choice_lean_peters/PetersTour.lean` + `_en.lean`
 - Submodule upstream : `DominikPeters/SocialChoiceLean` rev `94a4c650b6`

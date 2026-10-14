@@ -69,6 +69,13 @@ def _default_mode() -> str:
 # =============================================================================
 
 _WIN_DRIVE_RE = __import__("re").compile(r"^([A-Za-z]:)[\\/](.*)$")
+# UNC shares to the WSL filesystem: \\wsl.localhost\<distro>\rest (and the
+# legacy \\wsl$\<distro>\rest). Only the rest is kept — the distro named in
+# the share must be the one `wsl -e` targets (the default).
+_WIN_WSL_UNC_RE = __import__("re").compile(
+    r"^[\\/][\\/]wsl(?:\.localhost|\$)[\\/][^\\/]+[\\/](.*)$",
+    __import__("re").IGNORECASE,
+)
 
 
 def win_to_wsl_path(win_path: str) -> str:
@@ -80,15 +87,24 @@ def win_to_wsl_path(win_path: str) -> str:
     ``X:`` drive prefix (``p.drive == ""``), and ``Path.resolve()`` rewrites
     the path to ``/mnt/d/...`` which strips the drive letter entirely. Detect
     the Windows drive prefix with a regex so the conversion is identical on
-    Windows, WSL, and Linux CI (#2871 part 2). A path without a drive prefix
-    is returned unchanged.
+    Windows, WSL, and Linux CI (#2871 part 2).
+
+    A UNC path into the WSL filesystem (``\\\\wsl.localhost\\Ubuntu\\home\\...``
+    or ``\\\\wsl$\\Ubuntu\\home\\...``) is translated to its in-VM form
+    (``/home/...``): without this, `--cwd` on a lake living on the VM's own
+    disk (ext4, not /mnt) passes the share path verbatim to bash, where no
+    lakefile is found. Any other path without a drive prefix is returned
+    unchanged.
     """
     m = _WIN_DRIVE_RE.match(win_path)
-    if not m:
-        return win_path  # no Windows drive prefix — already POSIX, leave as-is
-    drive = m.group(1)[0].lower()
-    rest = m.group(2).replace("\\", "/")
-    return f"/mnt/{drive}/{rest}"
+    if m:
+        drive = m.group(1)[0].lower()
+        rest = m.group(2).replace("\\", "/")
+        return f"/mnt/{drive}/{rest}"
+    m = _WIN_WSL_UNC_RE.match(win_path)
+    if m:
+        return "/" + m.group(1).replace("\\", "/")
+    return win_path  # no Windows prefix — already POSIX, leave as-is
 
 
 def run_wsl(cmd: str, timeout: int = 300) -> tuple[int, str, str]:

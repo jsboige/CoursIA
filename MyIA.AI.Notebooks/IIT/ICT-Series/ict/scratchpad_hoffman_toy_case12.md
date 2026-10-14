@@ -41,7 +41,7 @@
 
 1. **Toy N=8 implémenté** avec 8 paysages, 10 seeds, tests invariants ≥ 14 (analogues à case 11 + bit2/fibre-decomposition).
 2. **Verdict mesuré** : gap α*_truth vs α*_fit par paysage, self+transfer payoffs identiques OU distincts.
-3. **Distillation grade C** : `docs/ict/hoffman-interface-distillation-case12.md` (~150 lignes).
+3. **Distillation grade C** : `docs/ict/hoffman-interface-distillation-case12.md`.
 4. **Ligne matrice dissociations** : update `docs/ict/dissociations-matrix.md` strate 5.
 5. **Pre-enregistrement scellé** AVANT code (pattern case 8/10).
 6. **Bibliographie Prakash et al. 2017 archivée GDrive** (déjà fait case 11).

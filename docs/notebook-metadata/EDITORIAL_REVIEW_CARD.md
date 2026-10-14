@@ -4,7 +4,7 @@
 **Usage** : copié/adapté par chaque reviewer qui ajoute une entrée à [editorial-review-registry.md](editorial-review-registry.md)
 **Référence scope** : [editorial-review-registry.md §3.1](editorial-review-registry.md#3-curation-rules-hard)
 
----
+***
 
 ## Identification du notebook
 
@@ -57,15 +57,15 @@ Liste des findings significatifs (1 ligne chacun) :
 - **Date de revue** : `<YYYY-MM-DD>` (ISO 8601)
 - **Notes** : `<libre, max 200 chars>`
 
----
+***
 
 ## Exemple rempli (issu du pilote Sudoku c.764)
 
-Pour référence, voici à quoi ressemble une carte remplie pour l'entrée `Sudoku-12-Z3-Csharp.ipynb` :
+Pour référence, voici à quoi ressemble une carte remplie pour l'entrée `Sudoku-12-Z3-CSharp.ipynb` :
 
 ```markdown
 ## Identification du notebook
-- Chemin relatif : `MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Csharp.ipynb`
+- Chemin relatif : `MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-CSharp.ipynb`
 - Titre : `Sudoku-12 : Résolution avec Z3 (C#)`
 - Owner logique : `po-2023`
 - Dernière exécution vérifiée : 2026-07-22

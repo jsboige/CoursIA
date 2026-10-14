@@ -211,7 +211,7 @@ Leçons consolidées depuis les incidents **ai-01 INCIDENT c.264 r.26th** (phant
 
 **L278 — Worker ne merge JAMAIS** (phantom-merger-self-declare-honest). Une session worker qui invoque `/coordinate` ou `gh pr merge` = confusion de rôle. **Même** si sweep-ready + bots PASS, **même** si le worker se déclare "honest", le merge reste **coord-only**. Source : ai-01 INCIDENT c.264 r.26th où worker-session a tenté d'arbitrer sur PR déjà en sweep.
 
-**L279 — Sweep-ready = DM HIGH vers ai-01, JAMAIS `gh pr merge` côté worker**. Si ta PR est §H.4 sweep-ready (11/11 SUCCESS bots + catalog-guard ✓ + link-check ✓ + propre-rebased origin/main), tu envoies un DM `roosync_send to:"myia-ai-01:CoursIA-2" priority:"HIGH"` avec le verdict §H.4, **et tu postes `[DISPATCH→inbox]` dashboard**. Le coordinateur arbitre, merge, et acquitte. Anti-pattern : "sweep-ready + bots PASS donc je merge" = worker INTERDIT.
+**L279 — Sweep-ready = DM HIGH vers ai-01, JAMAIS `gh pr merge` côté worker**. Si ta PR est §H.4 sweep-ready (11/11 SUCCESS bots + catalog-guard ✓ + link-check ✓ + propre-rebased origin/main), tu envoies un DM `roosync_send to:"myia-ai-01:CoursIA" priority:"HIGH"` avec le verdict §H.4, **et tu postes `[DISPATCH→inbox]` dashboard**. Le coordinateur arbitre, merge, et acquitte. Anti-pattern : "sweep-ready + bots PASS donc je merge" = worker INTERDIT.
 
 **L280 — Cron `/coordinate` = ai-01 coordinateur ONLY**. Worker `CronCreate` = prompt worker-side (`/continue` ou `/executor`), cadence 3540s (clamp runtime ≤1h), **jamais** `/coordinate`. Cause documentée : po-2026:CoursIA-2 cron `/coordinate` worker-side (user 2026-07-07) — inversion de rôle silencieuse. Diagnostic : si ton agent voit `/coordinate` arriver dans son CronCreate, c'est un signe d'inversion.
 

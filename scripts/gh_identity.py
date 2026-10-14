@@ -17,12 +17,23 @@ Ce module est l'implementation UNIQUE de la resolution :
   muet sur le compte actif reconstituerait exactement le seau unique qu'on
   corrige.
 
-Transition Phase B/C (#17418) : les lanes dont le compte machine n'existe pas
-encore (``myia-po-2024``..``2027``) posent ``COURSIA_GH_PINNING=off`` — le
-helper renonce ALORS en imprimant un avertissement fort sur stderr (jamais en
-silence), et ``detect_shared_login.py`` continue de les nommer comme tournant
-sous le login partage. La Creation des comptes (Phase B) et le provisionnement
-des jetons (Phase C) ferment cette echappatoire.
+Transition Phase B/C (#17418, FERMEE le 2026-09-24) : les lanes dont le compte
+machine n'existe pas (``myia-po-2024``..``2027``) posent
+``COURSIA_GH_PINNING=off`` — le helper renonce ALORS en imprimant un
+avertissement fort sur stderr (jamais en silence), et
+``detect_shared_login.py`` continue de les nommer comme tournant sous le login
+partage. Le plan qui ferme cette echappatoire est desormais #17437 : identites
+GitHub App par lane, jetons forges par ``github_app_token.py`` — le PAT
+machine de la Phase C y est explicitement rejete (60 req/h sans GraphQL).
+
+Identites d'AUTEUR (#17437) : le module porte aussi l'ensemble des logins
+acceptes comme auteurs d'un dossier (``ACCEPTED_DOSSIER_AUTHORS``) — le login
+partage d'aujourd'hui, et les identites GitHub App par lane qui le remplacent.
+Il vit ici plutot que dans chacun des gates parce que DEUX d'entre eux
+comparent l'auteur d'un dossier (``check_adjoint_prevalidation.py``,
+``check_closure_dossier.py``) : deux copies du meme ensemble divergeraient au
+premier changement de lanes, et l'une des deux refuserait alors des dossiers
+legitimes sans que personne ne le voie.
 """
 
 from __future__ import annotations
@@ -49,6 +60,38 @@ HOST_ACCOUNTS = {
     "myia-po-2027": "myia-po-2027",
     "myia-web1": "MyIA-Web1",
 }
+
+# --- Identites d'auteur des dossiers (#17437) -------------------------------
+#
+# Un dossier (prevalidation adjointe, fermeture d'issue) est un acte de
+# verification tierce : le gate qui le lit verifie QUI l'a signe. Aujourd'hui
+# toutes les lanes signent sous ``SHARED_LOGIN``. #17437 provisionne une GitHub
+# App par lane (``coursia-lane-po-2024[bot]``), les comptes machine etant brides
+# au tarif anonyme ; le jour ou une lane poste sous son App, un gate qui compare
+# l'auteur au seul ``SHARED_LOGIN`` refuse un dossier pourtant legitime — et le
+# refuse pour TOUTES les lanes d'un coup, sans message qui designe la cause.
+#
+# Source de verite des noms : ``scripts/secrets/github_app_manifest.py``
+# (``APP_PREFIX`` + ``LANES``), plus le pilote ``coursia-lane-ai-01``. La liste
+# est FIGEE ici plutot que derivee a l'execution : ``github_app_manifest``
+# importe ``webbrowser``/``http.server`` et lit ``.secrets/``, ce qu'un gate
+# appele en CI ne peut pas se permettre. Un login absent de cette table est
+# refuse (echec FERME) : l'ensemble s'elargit par une edition consciente, jamais
+# par une correspondance de forme.
+APP_LOGIN_PREFIX = "coursia-lane-"
+APP_DOSSIER_LANES = (
+    "po-2023",
+    "po-2024",
+    "po-2025",
+    "po-2026",
+    "po-2027",
+    "web1",
+    "ai-01",
+)
+ACCEPTED_DOSSIER_AUTHORS = frozenset(
+    (SHARED_LOGIN,)
+    + tuple(f"{APP_LOGIN_PREFIX}{lane}[bot]" for lane in APP_DOSSIER_LANES)
+)
 
 RATE_LIMIT_RE = re.compile(r"rate limit", re.IGNORECASE)
 
@@ -81,7 +124,7 @@ def machine_account(hostname: str | None = None) -> str:
             f"Comptes mappees : {', '.join(sorted(HOST_ACCOUNTS))}. "
             "Poser COURSIA_GH_ACCOUNT=<compte> si cette machine doit en "
             "utiliser un, ou COURSIA_GH_PINNING=off pendant la transition "
-            "#17418 Phase B/C."
+            "vers les identites App (#17437)."
         ) from None
 
 
@@ -109,9 +152,10 @@ def resolve_gh_token() -> str:
         detail = (proc.stderr or proc.stdout).strip()[:300]
         raise GhIdentityError(
             f"gh auth token --user {account} a echoue (rc={proc.returncode}) : "
-            f"{detail or 'sortie vide'}. Provisionner le jeton machine "
-            f"(#17418 Phase C : master.env + trousseau), ou poser GH_TOKEN "
-            "explicitement."
+            f"{detail or 'sortie vide'}. Forger le jeton de l'identite App de "
+            f"la lane (github_app_token.py, plan #17437 — le PAT machine de la "
+            f"Phase C #17418 est rejete : 60 req/h sans GraphQL), ou poser "
+            f"GH_TOKEN explicitement."
         )
     return proc.stdout.strip()
 
@@ -120,7 +164,7 @@ def pin_gh_token() -> str:
     """Epingle le jeton machine dans ``os.environ`` — idempotent, loud en echec.
 
     Transition : ``COURSIA_GH_PINNING=off`` renonce en preventif avec un
-    avertissement fort (lanes sans compte machine jusqu'a la Phase C).
+    avertissement fort (lanes sans identite App pourvue — plan #17437).
     """
     if os.environ.get("GH_TOKEN"):
         return os.environ["GH_TOKEN"]
@@ -128,7 +172,8 @@ def pin_gh_token() -> str:
         print(
             "GH-IDENTITY (WARN): COURSIA_GH_PINNING=off — appel(s) GitHub sous "
             f"le compte actif (potentiellement le login partage '{SHARED_LOGIN}', "
-            "seau commun). Dettes visibles par detect_shared_login.py. #17418 Phase C.",
+            "seau commun). Dettes visibles par detect_shared_login.py. "
+            "Identites App par lane : plan #17437.",
             file=sys.stderr,
         )
         return ""

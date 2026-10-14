@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -15,6 +16,10 @@ sys.modules["check_adjoint_prevalidation"] = mod
 spec.loader.exec_module(mod)
 
 HEAD = "0123456789abcdef0123456789abcdef01234567"
+
+# Le vrai acces a l'index de pile, capture AVANT que le garde d'hermeticite ne
+# le remplace : le test du cache a besoin du code reel (#20251).
+_REAL_DEFAULT_STACK_INDEX = mod.default_stack_index
 
 
 def _comment(body: str, login: str = "jsboige") -> dict:
@@ -40,7 +45,6 @@ def _base_snapshot() -> dict:
         "comments": [_comment("ordinary earlier comment")],
         "reviews": [{"state": "COMMENTED"}, {"state": "APPROVED"}],
         "threads": [{"isResolved": True}],
-        "statusCheckRollup": [{"name": "PR gate", "conclusion": "SUCCESS"}],
         "checkRuns": [
             {
                 "id": 1,
@@ -78,6 +82,12 @@ def _body(**changes: str) -> str:
         "scope": "pass",
         "domain": "pass",
         "verdict": "READY",
+        # #18933 : un READY est le rendu de l'organe -- provenance par defaut.
+        "organ": "check_adjoint_prevalidation.py",
+        "organ-command": (
+            "python scripts/check_adjoint_prevalidation.py --derive-verdict 123"
+        ),
+        "organ-rc": "0",
     }
     fields.update(changes)
     lines = [mod.START, *(f"{key}: {value}" for key, value in fields.items()), mod.END]
@@ -280,7 +290,57 @@ def test_non_shared_github_author_cannot_satisfy_gate():
     snapshot = _snapshot(None)
     snapshot["comments"].append(_comment(_body(), login="worker-bot"))
     errors = _errors(snapshot)
-    assert any(error.startswith("comment author must") for error in errors)
+    # #17437 -- the message no longer asserts a single login: it names the
+    # observed one and the accepted set (shared login + fleet App identities).
+    # Naming `worker-bot` in the assertion keeps it proving THIS refusal rather
+    # than any refusal that happens to share a prefix.
+    assert any(
+        "is not an accepted dossier author" in error and "worker-bot" in error
+        for error in errors
+    )
+
+
+def test_fleet_app_identity_is_an_accepted_dossier_author():
+    """#17437: a lane signing its dossier under its GitHub App identity passes.
+
+    The migration to per-lane Apps is half done -- the Apps exist and are
+    installed (2026-10-06), the lanes still sign under the shared login. On the
+    day a lane switches, a gate comparing the author to the shared login alone
+    would refuse every dossier it files. The loop walks the whole frozen lane
+    table, so adding a lane to the organ without this gate following is caught
+    here rather than in production.
+    """
+    for lane in mod.gh_identity.APP_DOSSIER_LANES:
+        login = f"{mod.gh_identity.APP_LOGIN_PREFIX}{lane}[bot]"
+        snapshot = _snapshot(None)
+        snapshot["comments"].append(_comment(_body(), login=login))
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, f"{login}: {errors}"
+        assert errors == [], f"{login}: {errors}"
+
+
+def test_app_shaped_login_outside_the_frozen_lanes_is_refused():
+    """The accepted set is CLOSED: a login that only LOOKS like a fleet App is out.
+
+    Accepting by shape (``coursia-lane-*[bot]``) would let any GitHub App whose
+    name merely starts with the prefix sign a dossier -- the check would stop
+    proving anything about who attested. Each entry below is a near-miss that a
+    substring or prefix match would let through.
+    """
+    impostors = (
+        "coursia-lane-po-2099[bot]",   # unknown lane
+        "coursia-lane-web2[bot]",      # plausible, never provisioned
+        "coursia-lane-po-2024",        # right lane, no App suffix
+        "coursia-lane-po-202[bot]",    # prefix of a real lane
+        "coursia-lane-po-2024[bot]x",  # real login plus a trailing character
+    )
+    for login in impostors:
+        snapshot = _snapshot(None)
+        snapshot["comments"].append(_comment(_body(), login=login))
+        errors = _errors(snapshot)
+        assert any(
+            "is not an accepted dossier author" in error for error in errors
+        ), f"{login}: {errors}"
 
 
 # --- #17791 : PR hors flotte (session cloud du mainteneur) -------------------
@@ -609,6 +669,11 @@ def _filled(template: str) -> str:
     verdicts = {
         "complete": "true", "body": "read", "checks": "latest-wins-green",
         "b0": "clear", "scope": "pass", "domain": "pass", "verdict": "READY",
+        "organ": "check_adjoint_prevalidation.py",
+        "organ-command": (
+            "python scripts/check_adjoint_prevalidation.py --derive-verdict 123"
+        ),
+        "organ-rc": "0",
     }
     lines = []
     for line in template.splitlines():
@@ -635,18 +700,11 @@ def test_patched_restamp_can_never_match_but_a_new_comment_does():
     assert ready
 
 
-def test_metadata_identity_ignores_only_check_order():
-    first = {
-        "number": 123,
-        "updatedAt": "2026-09-16T19:00:00Z",
-        "statusCheckRollup": [
-            {"name": "A", "conclusion": "SUCCESS"},
-            {"name": "B", "conclusion": "SUCCESS"},
-        ],
-    }
-    reordered = dict(first)
-    reordered["statusCheckRollup"] = list(reversed(first["statusCheckRollup"]))
-    assert mod._metadata_identity(first) == mod._metadata_identity(reordered)
+def test_metadata_identity_is_exact():
+    """#17315: the rollup is out of the snapshot, so the identity is a plain
+    canonical rendering -- equal dicts match, any field move diverges."""
+    first = {"number": 123, "updatedAt": "2026-09-16T19:00:00Z"}
+    assert mod._metadata_identity(first) == mod._metadata_identity(dict(first))
 
     changed = dict(first)
     changed["updatedAt"] = "2026-09-16T19:00:01Z"
@@ -676,7 +734,7 @@ def _bracket_reads(monkeypatch, first, second=None):
         }
     ]
 
-    def fake_pr_metadata(pr, *, with_rollup):
+    def fake_pr_metadata(pr):
         calls["metadata"] += 1
         factory = first if calls["metadata"] == 1 else (second or first)
         return factory()
@@ -715,23 +773,23 @@ def test_load_snapshot_reads_metadata_twice_and_takes_checks_from_rest(monkeypat
     assert snapshot["threads"] == [{"thread": 1}]
 
 
-def test_load_snapshot_aborts_when_a_check_concludes_during_the_read(monkeypatch):
-    """#17390 acceptance 2: the guard must go red, not absolve.
+def test_load_snapshot_aborts_when_the_head_moves_during_the_read(monkeypatch):
+    """#17390 acceptance 2, re-based on the REST bracket (#17315).
 
-    A check moving from in-progress to a conclusion between the two metadata
-    reads makes the snapshot born of an already-stale state: the gate refuses
-    it (transient UNKNOWN, the caller retries) instead of certifying it.
+    The check-runs are keyed on `headRefOid` and fetched inside the bracket, so
+    a push landing between the two metadata reads must abort: accepting the
+    snapshot would pair the OLD head's check-runs with the NEW head, and the
+    claim verification would then read a state that never existed together.
     """
-    in_progress = _metadata_payload(
-        statusCheckRollup=[{"name": "PR gate", "status": "IN_PROGRESS", "conclusion": None}]
-    )
-    concluded = _metadata_payload(
-        statusCheckRollup=[{"name": "PR gate", "status": "COMPLETED", "conclusion": "SUCCESS"}]
-    )
-    _bracket_reads(monkeypatch, lambda: in_progress, lambda: concluded)
+    first = _metadata_payload(headRefOid=HEAD)
+    pushed = _metadata_payload(headRefOid="f" * 40)
+    calls, _runs = _bracket_reads(monkeypatch, lambda: first, lambda: pushed)
 
     with pytest.raises(RuntimeError, match="changed while prevalidation snapshot was read"):
         mod.load_snapshot(123)
+    # The check-runs were fetched for the head read BEFORE the push -- which is
+    # exactly why the mismatch is refused instead of silently accepted.
+    assert calls["check_runs_head"] == HEAD
 
 
 def test_load_snapshot_aborts_when_any_surface_moves_during_the_read(monkeypatch):
@@ -1140,13 +1198,11 @@ def test_check_completing_green_after_dossier_does_not_expire_it():
     assert verdict == mod.VERDICT_READY, errors
 
 
-def test_green_check_may_also_move_the_rollup_after_the_stamp():
-    """The rollup is neither hashed (new stamps) nor read for the claim: only
-    the per-name latest-wins verdicts of the head's check-runs are."""
+def test_green_check_landing_after_the_stamp_keeps_ready():
+    """Only the per-name latest-wins verdicts of the head's check-runs matter:
+    a green run appearing after the stamp neither expires the dossier nor
+    contradicts its `latest-wins-green` claim."""
     snapshot = _snapshot(_body())
-    snapshot["statusCheckRollup"].append(
-        {"name": "perimeter review guard (#11268)", "conclusion": "SUCCESS"}
-    )
     snapshot["checkRuns"].append(
         {"id": 2, "name": "perimeter review guard (#11268)",
          "status": "completed", "conclusion": "success",
@@ -1228,9 +1284,74 @@ def test_skipped_and_neutral_conclusions_are_not_red():
          "conclusion": "skipped", "started_at": "2026-09-20T10:00:00Z"},
         {"id": 2, "name": "coverage", "status": "completed",
          "conclusion": "neutral", "started_at": "2026-09-20T10:01:00Z"},
+        {"id": 3, "name": "PR gate", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-20T10:02:00Z"},
     ]
     verdict, errors = mod.evaluate(snapshot)
     assert verdict == mod.VERDICT_READY, errors
+
+
+_CODEQL_ONLY = [
+    {"id": i, "name": name, "status": "completed", "conclusion": "success",
+     "started_at": "2026-09-30T04:30:40Z"}
+    for i, name in enumerate(
+        ["Analyze (actions)", "Analyze (csharp)", "Analyze (python)", "CodeQL"],
+        start=1,
+    )
+]
+_ABSENT_PR_GATE = (
+    "checks claim 'latest-wins-green' is contradicted by the absence of "
+    "required check 'PR gate' on the head"
+)
+
+
+def test_head_without_pr_gate_run_is_not_green_by_vacuity():
+    """#18579 founding case (#18527, #18500): the pull_request workflows never
+    fired on the head, only the CodeQL legs ran. Every present check is green,
+    so pre-#18579 nothing contradicted the claim and the dossier read READY."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = list(_CODEQL_ONLY)
+    errors = _errors(snapshot)
+    assert any(_ABSENT_PR_GATE in error for error in errors), errors
+
+
+def test_head_with_no_check_run_at_all_is_not_green():
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = []
+    errors = _errors(snapshot)
+    assert any(_ABSENT_PR_GATE in error for error in errors), errors
+
+
+def test_pr_gate_in_flight_without_completed_run_is_not_green():
+    """In flight has no verdict yet: with no earlier completed run on the head,
+    the required check has said nothing and cannot be claimed green."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = list(_CODEQL_ONLY) + [
+        {"id": 9, "name": "PR gate", "status": "in_progress",
+         "conclusion": None, "started_at": "2026-09-30T10:20:00Z"}
+    ]
+    errors = _errors(snapshot)
+    assert any(_ABSENT_PR_GATE in error for error in errors), errors
+
+
+def test_pr_gate_rerun_in_flight_keeps_the_last_completed_green():
+    """Positive control: a rerun in flight falls back to the last completed
+    run of the same head, which is green -- the presence rule adds nothing."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = list(_CODEQL_ONLY) + [
+        {"id": 8, "name": "PR gate", "status": "completed",
+         "conclusion": "success", "started_at": "2026-09-30T10:00:00Z"},
+        {"id": 9, "name": "PR gate", "status": "in_progress",
+         "conclusion": None, "started_at": "2026-09-30T10:20:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_blocked_dossier_is_not_refused_for_an_absent_pr_gate():
+    """The presence rule refutes a READY claim only: a BLOCKED dossier on a
+    head without CI stays readable (exit 3), it is the reason it is blocked."""
+    assert mod.check_claim_contradictions("BLOCKED", []) == []
 
 
 def test_in_flight_rerun_has_no_verdict_and_hides_nothing():
@@ -1273,41 +1394,32 @@ def test_blocked_dossier_is_not_refuted_by_a_red_check():
     assert verdict == mod.VERDICT_BLOCKED, errors
 
 
-def test_legacy_stamp_still_accepted_while_checks_unchanged():
-    """Backward acceptance: pre-#16957 stamps hashed the rollup as well; both
-    digests are valid certificates of the discussion surfaces."""
-    legacy = mod.legacy_surfaces_fingerprint(_base_snapshot())
-    snapshot = _snapshot(_body(**{"surfaces-sha256": legacy}))
-    verdict, errors = mod.evaluate(snapshot)
-    assert verdict == mod.VERDICT_READY, errors
+def test_retired_legacy_stamp_needs_a_mechanical_restamp():
+    """#17315: the pre-#16957 fingerprint is retired with its last carrier.
 
-
-def test_legacy_stamp_whose_checks_moved_needs_a_mechanical_restamp():
-    """A legacy stamp whose checks moved matches NEITHER digest: the hash
-    embedded data that has since changed, and a SHA-256 over changed data
-    cannot be re-derived. The refusal names the recovery (--template), and the
-    re-stamped dossier can never again be expired by a check conclusion."""
-    snapshot = _snapshot(_body(**{
-        "surfaces-sha256": mod.legacy_surfaces_fingerprint(_base_snapshot())
-    }))
-    snapshot["statusCheckRollup"][0]["conclusion"] = "PENDING"
+    Both carriers merged (#16950/#16891), so a dossier still stamped with it
+    matches neither live digest. The organ fails CLOSED and names the single
+    recovery: a mechanical `--template` re-stamp.
+    """
+    assert not hasattr(mod, "legacy_surfaces_fingerprint")
+    # A stamp matching neither accepted digest is the shape of a retired-legacy
+    # dossier: fail CLOSED, with the one gesture that can recover it named.
+    snapshot = _snapshot(_body(**{"surfaces-sha256": "a" * 64}))
     errors = _errors(snapshot)
     assert any(
-        "discussion surfaces changed" in error
-        and "--template re-stamp" in error
+        "discussion surfaces changed" in error and "--template re-stamp" in error
         for error in errors
     )
 
 
 def test_surfaces_fingerprint_is_insensitive_to_check_state():
-    """The new digest must not move when only checks move -- that is the race
-    being closed. The legacy digest still does, which is why it is legacy."""
+    """The live digest must not move when only checks move -- that is the race
+    being closed. Nothing else in the module hashes check state either."""
     base = _base_snapshot()
     moved = _base_snapshot()
     moved["checkRuns"][0]["conclusion"] = "failure"
-    moved["statusCheckRollup"] = [{"name": "PR gate", "conclusion": "FAILURE"}]
     assert mod.surfaces_fingerprint(base) == mod.surfaces_fingerprint(moved)
-    assert mod.legacy_surfaces_fingerprint(base) != mod.legacy_surfaces_fingerprint(moved)
+    assert mod.pre18637_surfaces_fingerprint(base) == mod.pre18637_surfaces_fingerprint(moved)
 
 
 def test_template_renders_the_emitting_lane_not_a_borrowed_name():
@@ -1573,10 +1685,11 @@ def test_fingerprint_refusal_names_the_live_surface_landscape():
 
 # --- Campagnes gelees par veto user (#17040) ----------------------------------
 
-# Titres reels (2026-09-23/24) : le second repare les degats de la campagne
-# densite et cite le parapluie dans son body -- l'exemption se lit sur le
-# titre seul (module partage frozen_campaigns).
-FROZEN_TITLE = "Densite Lab13-Web-Search-SOTA (#13410)"
+# Titres reels (2026-09-23/24) : le second repare les degats d'une campagne
+# gelee et cite le parapluie dans son body -- l'exemption se lit sur le
+# titre seul (module partage frozen_campaigns). #13410 ROUVERT le 2026-10-07 :
+# le gel se mesure sur #11601, seul parapluie gele en vie.
+FROZEN_TITLE = "enrich(qc,#11601): densite QC-Py-06b"
 REDRESSEMENT_TITLE = (
     "fix(semanticweb,#17066): redressement critique de SW-4-CSharp-SPARQL "
     "-- reference de campagne"
@@ -1633,7 +1746,7 @@ def test_ready_dossier_on_frozen_campaign_returns_rc3(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert out.startswith(
         "FROZEN -- PR #123 belongs to a frozen campaign "
-        "(frozen:#13410(veto #17040)); do not merge, dispatch to the lane author."
+        "(frozen:#11601(veto #17040)); do not merge, dispatch to the lane author."
     )
 
 
@@ -1646,51 +1759,87 @@ def test_ready_dossier_frozen_json_payload(monkeypatch, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["ready"] is False
     assert payload["verdict"] == "FROZEN"
-    assert payload["frozen"] == "frozen:#13410(veto #17040)"
+    assert payload["frozen"] == "frozen:#11601(veto #17040)"
     assert payload["dossier"]["verdict"] == "READY"
 
 
 def test_ready_redressement_citing_the_umbrella_stays_rc0(monkeypatch, capsys):
     """Redressement : le titre exempte du gel, meme quand le body cite
-    #13410 -- sinon la PR qui REPARE les degats ne serait plus mergeable."""
+    #11601 -- sinon la PR qui REPARE les degats ne serait plus mergeable."""
     snapshot = _snapshot_with(
         title=REDRESSEMENT_TITLE,
-        pr_body=_base_snapshot()["body"] + "\n\nSee #13410 (campagne densite).",
+        pr_body=_base_snapshot()["body"] + "\n\nSee #11601 (densite QC).",
     )
     rc = _run_main(monkeypatch, snapshot)
     assert rc == mod.EXIT_READY
     assert capsys.readouterr().out.startswith("READY -- PR #123")
 
 
-def test_ready_dossier_on_wt_vibe_branch_returns_rc3(monkeypatch, capsys):
-    """Relais de campagne : la branche gelee suffit, sans citation aucune --
-    et sans exemption (ce sont des relais, jamais des redressements)."""
+def test_ready_dossier_on_wt_vibe_branch_after_reopening(monkeypatch, capsys):
+    """Reouverture user de #13410 (2026-10-07) : les relais wt/vibe-* ne
+    gelent plus -- un dossier READY sur ces branches redevient READY. Le
+    mecanisme de gel par prefixe reste prouve par test_frozen_campaigns
+    (donnees injectees)."""
     snapshot = _snapshot_with(head_ref="wt/vibe-g77-search-26")
     rc = _run_main(monkeypatch, snapshot)
-    assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
-    assert "frozen:#13410(veto #17040,branch wt/vibe-*)" in capsys.readouterr().out
+    assert rc == mod.EXIT_READY
+    assert capsys.readouterr().out.startswith("READY -- PR #123")
 
 
 def test_blocked_dossier_on_frozen_campaign_keeps_its_own_message(
     monkeypatch, capsys
 ):
     """Le gel ne re-ecrit pas un verdict BLOCKED : deja non mergeable, il
-    garde son message propre (l'exemption READY-only du check)."""
-    snapshot = _snapshot_with(title=FROZEN_TITLE, verdict="BLOCKED", b0="blocked")
+    garde son message propre (l'exemption READY-only du check). Le dossier
+    porte un second motif (checks) : le re-jeu B.0 de #19093 ne l'expire pas,
+    on teste bien le gel sur un BLOCKED intact."""
+    snapshot = _snapshot_with(
+        title=FROZEN_TITLE,
+        verdict="BLOCKED",
+        b0="blocked",
+        checks="BLOCKED:gate rouge",
+    )
     rc = _run_main(monkeypatch, snapshot)
     assert rc == mod.EXIT_BLOCKED_WITH_SUBSTANCE
     assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
 
 
 def test_no_dossier_on_frozen_campaign_keeps_rc1(monkeypatch, capsys):
-    """Sans dossier digne de confiance : rc=1 inchange, le gel n'y ajoute
-    rien (la PR est deja non mergeable par absence de dossier)."""
+    """#19630 (revise c.1428) : sans dossier, le gel doit etre nomine dans
+    la sortie mais le code de retour reste `EXIT_NO_DOSSIER` (rc=1).
+    L'acceptance 1 de #19630 dit « sans changer le code de sortie » : un
+    NO-DOSSIER reste NO-DOSSIER, le gel COMPLETE la sortie stdout et le
+    champ JSON `frozen` sans inverser le verdict fonctionnel. Une PR non
+    gelee sans dossier reste en rc=1 sans mention de gel (voir
+    `test_no_dossier_non_gelee_reste_rc1` plus bas)."""
     snapshot = _base_snapshot()
     snapshot["title"] = FROZEN_TITLE
     snapshot["headRefName"] = "feature/densite-13"
     rc = _run_main(monkeypatch, snapshot)
     assert rc == mod.EXIT_NO_DOSSIER
-    assert capsys.readouterr().out.startswith("NO-DOSSIER")
+    out = capsys.readouterr().out
+    assert out.startswith("NO-DOSSIER")
+    # FROZEN_TITLE cite le parapluie encore gele au monde rouvert
+    # (#11601 depuis la reouverture user de #13410, 2026-10-07) : la
+    # campagne nommee suit le fixture, pas l'historique de la branche.
+    assert "frozen:#11601(veto #17040)" in out
+    assert "do not merge even if a dossier is added later" in out
+
+
+def test_no_dossier_non_gelee_reste_rc1(monkeypatch, capsys):
+    """#19630 temoin negatif : une PR non gelee sans dossier rend toujours
+    `NO-DOSSIER` sans mention de gel -- le nouveau chemin d'evaluation
+    systematique du gel n'ajoute du bruit que quand il y a un gel a
+    nommer."""
+    snapshot = _base_snapshot()
+    # Pas de FROZEN_TITLE ici -- titre anodin.
+    snapshot["headRefName"] = "fix/quiet-pr"
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert out.startswith("NO-DOSSIER")
+    assert "frozen:" not in out
+    assert "frozen campaign" not in out
 
 
 def test_headrefname_does_not_change_the_fingerprint():
@@ -1827,3 +1976,2128 @@ def test_main_exits_ready_when_organ_agrees(monkeypatch, capsys):
     monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
     monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
     assert mod.main() == mod.EXIT_READY
+
+
+# --- #19093 : un dossier BLOCKED dont le seul motif b0 est eteint expire ------
+# Mesure fondatrice (2026-10-04, #19012) : dossier BLOCKED 02:49Z pour une
+# reserve de review, APPROVE coordinateur 06:13Z sur la meme tete, le gate
+# repondait toujours rc=3 a 10:24Z -- la PR a dormi 4 h. La fingerprint
+# neutralise les reviews posterieures du coordinateur (_is_own_later_act),
+# donc sa levee n'expire pas le tampon : c'est le re-jeu de l'organe B.0 qui
+# tranche, symetriquement au re-jeu des claims `b0: clear` (#17698).
+
+
+def _blocked_b0_snapshot(**changes: str):
+    """Dossier BLOCKED dont b0 est le SEUL champ bloquant (acceptance #19093)."""
+    fields = {"verdict": "BLOCKED", "b0": "blocked:reserve vivante"}
+    fields.update(changes)
+    return _snapshot_with(**fields)
+
+
+def test_blocked_b0_only_expired_when_organ_no_longer_blocks(monkeypatch, capsys):
+    """Acceptance 1 : organ rc=0 -> le gate ne rend PAS 3 et nomme le re-tampon."""
+    snapshot = _blocked_b0_snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out
+    assert "no longer blocks PR #123" in out
+    assert "re-stamp" in out and "third-party lane" in out
+
+
+def test_blocked_b0_only_stands_when_organ_still_blocks(monkeypatch, capsys):
+    """Acceptance 2 (temoin negatif) : organ rc=1 -> le gate rend toujours 3."""
+    snapshot = _blocked_b0_snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(
+        mod,
+        "probe_b0",
+        lambda pr: {"blocked": True, "blocking": [{"kind": "nit", "author": "u", "src": "c"}]},
+    )
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_blocked_with_other_motif_not_touched_by_the_recheck(monkeypatch, capsys):
+    """Acceptance 3 : le re-jeu B.0 ne touche QUE la forme `b0` seul.
+
+    Ici `checks` bloque aussi, donc `blocking_fields` rend `['checks', 'b0']` et
+    le dossier tient -- l'organe B.0 ne dit rien du motif `checks`. Ce n'est PAS
+    la regle generale du champ `checks` : un dossier bloque pour `checks` SEUL
+    est re-lu par `recheck_blocked_checks` (#20082), qui l'expire vers un
+    re-tampon quand la tete est toute verte (cf. tests *blocked_checks* plus bas).
+    """
+    snapshot = _blocked_b0_snapshot(checks="BLOCKED:gate rouge")
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_recheck_blocked_b0_never_probes_a_non_blocked_verdict():
+    """Le probe n'est paye que pour un dossier BLOCKED existant : ni READY,
+    ni dossier absent (symetrique de test_b0_probe_not_paid_...)."""
+    probe, calls = _organ(False)
+    verdict, dossier = _ready_dossier()
+    assert mod.recheck_blocked_b0(123, verdict, dossier, probe) == (verdict, [], dossier)
+    assert mod.recheck_blocked_b0(123, "", None, probe) == ("", [], None)
+    assert calls == []
+
+
+# --- `checks` est le SEUL champ bloquant qui bouge sans push (#20082) --------
+
+
+def _blocked_checks_snapshot(**changes: str):
+    """Dossier BLOCKED dont `checks` est le SEUL champ bloquant.
+
+    `b0`/`scope`/`domain` restent aux valeurs READY (defauts de `_body`), donc
+    `blocking_fields` rend exactement `['checks']` -- la seule forme que
+    `recheck_blocked_checks` a le droit d'expirer.
+    """
+    fields = {"verdict": "BLOCKED", "checks": "BLOCKED:gate rouge"}
+    fields.update(changes)
+    return _snapshot_with(**fields)
+
+
+def _red_pr_gate() -> dict:
+    return {
+        "id": 2,
+        "name": "PR gate",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-10-08T09:00:00Z",
+        "output": {"title": "PR gate -- 1 failing check"},
+    }
+
+
+def test_blocked_checks_only_expired_when_the_head_no_longer_blocks(
+    monkeypatch, capsys
+):
+    """Acceptance 1 : tete toute verte -> le gate rend 1 et nomme le re-tampon.
+
+    Mesure fondatrice (#19906) : dossier BLOCKED a 2026-10-08T10:42:32Z pour un
+    `PR gate` encore en vol, conclu `success` a 11:21:46Z sur la MEME tete
+    `4d3eb7f67a3f` -- 95/95 jambes vertes et le gate repondait encore rc=3.
+    """
+    snapshot = _blocked_checks_snapshot()
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out
+    assert "no longer blocks PR #123" in out
+    assert "re-stamp" in out and "third-party lane" in out
+
+
+def test_blocked_checks_only_stands_when_the_head_still_blocks(monkeypatch, capsys):
+    """Acceptance 2 (temoin negatif) : une jambe rouge -> le gate rend toujours 3."""
+    snapshot = _blocked_checks_snapshot()
+    snapshot["checkRuns"] = [*snapshot["checkRuns"], _red_pr_gate()]
+    assert _run_main(monkeypatch, snapshot) == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_blocked_checks_only_stands_when_the_required_check_is_absent(
+    monkeypatch, capsys
+):
+    """Temoin negatif du temoin negatif (#18579) : une tete qui ne porte QUE des
+    jambes CodeQL est verte par vacuite ; l'absence de `PR gate` refute la
+    lecture, donc le dossier tient. Sans ce garde, la re-lecture fabriquerait
+    un re-tampon sur une tete ou les workflows `pull_request` n'ont jamais tire.
+    """
+    snapshot = _blocked_checks_snapshot()
+    snapshot["checkRuns"] = [
+        {
+            "id": 3,
+            "name": "Analyze (python)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-08T09:00:00Z",
+        }
+    ]
+    assert _run_main(monkeypatch, snapshot) == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_blocked_checks_stands_when_the_head_was_never_measured(monkeypatch, capsys):
+    """`checkRuns is None` = non mesure, et un echec de mesure n'est jamais un
+    passe : le dossier tient au lieu d'etre expire sur une absence de donnee."""
+    snapshot = _blocked_checks_snapshot()
+    snapshot["checkRuns"] = None
+    assert _run_main(monkeypatch, snapshot) == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+def test_recheck_blocked_checks_never_fires_on_a_non_blocked_verdict():
+    """Comme `recheck_blocked_b0`, le re-jeu ne touche que BLOCKED + dossier.
+
+    Le cout est nul ici (les check-runs sont deja sur le snapshot), mais la
+    garde reste : un READY ne se re-decompose pas par cette porte.
+    """
+    snapshot = _blocked_checks_snapshot()
+    verdict, dossier = _ready_dossier()
+    assert mod.recheck_blocked_checks(snapshot, verdict, dossier) == (
+        verdict,
+        [],
+        dossier,
+    )
+    assert mod.recheck_blocked_checks(snapshot, "", None) == ("", [], None)
+
+
+def test_blocked_checks_plus_another_motif_is_left_standing(monkeypatch, capsys):
+    """Un dossier bloque pour `checks` ET un autre champ n'est pas expire : la
+    re-lecture des checks ne dit rien du motif restant."""
+    snapshot = _blocked_checks_snapshot(scope="FAIL: 6 fichiers pour 5 annonces")
+    assert _run_main(monkeypatch, snapshot) == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.startswith("BLOCKED-WITH-SUBSTANCE")
+
+
+# --- #18637 : advisories sticky (marqueur en FIN de corps) et resumes de bot --
+
+_STICKY_STALE = (
+    "✅ No unanchored measurement claim detected in the notebooks this PR changed.\n\n"
+    "Scope = notebooks CHANGED in this PR.\n"
+    "<!-- Sticky Pull Request Commentstale-claim-advisory -->"
+)
+
+
+def test_sticky_advisory_pose_does_not_expire_the_dossier():
+    """#18637 acceptance (positive control) : la pose d'un advisory sticky par
+    ``github-actions[bot]`` apres le dossier laisse le verdict lisible. Mesure
+    fondatrice (2026-09-30) : 19 dossiers sur 22 perimes par ces seules poses
+    et reecritures de bot.
+    """
+    for body in (
+        _STICKY_STALE,
+        "⚠️ Factual-mislabel review needed.\n<!-- Sticky Pull Request Commentfactual-mislabel-advisory -->",
+        "<!-- REVIEW-COVERAGE:START -->\nseuil depasse\n<!-- REVIEW-COVERAGE:END -->",
+        "## Golden-Set Execution (H.7 P3)\n\n✅ **3/3** notebooks passed",
+        "## Notebook PR Validation: PASS\n\n| nb | ok |",
+        "## Notebook outputs-required (H.4 schema): **PASS** (every code cell carries an `outputs: list`)",
+    ):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        pose = _comment(body, login="github-actions[bot]")
+        pose["createdAt"] = T1
+        snapshot["comments"].append(pose)
+        verdict, errors = mod.evaluate(snapshot)
+        assert verdict == mod.VERDICT_READY, (body.splitlines()[0], errors)
+
+
+def test_sticky_advisory_rewrite_keeps_the_fingerprint():
+    """#18637 : la reecriture en place d'un advisory sticky ne change pas le hash,
+    sa presence le change toujours."""
+    base = _base_snapshot()
+    v1 = dict(base, comments=[_comment(_STICKY_STALE, "github-actions[bot]")])
+    v2 = dict(base, comments=[_comment(
+        "⚠️ Stale-claim review needed: contenu different.\n"
+        "<!-- Sticky Pull Request Commentstale-claim-advisory -->",
+        "github-actions[bot]")])
+    assert mod.surfaces_fingerprint(v1) == mod.surfaces_fingerprint(v2)
+    assert mod.surfaces_fingerprint(base) != mod.surfaces_fingerprint(v1)
+
+
+def test_sticky_forms_require_the_bot_author_and_a_listed_header():
+    """#18637 (negative controls) : un tiers qui recopie la forme perime le
+    dossier ; un en-tete sticky non liste (non consultatif) aussi ; un marqueur
+    sticky qui n'est pas en fin de corps aussi."""
+    cases = (
+        (_STICKY_STALE, "clusterManager-Myia"),
+        ("## Golden-Set Execution (H.7 P3)\ncopie", "myia-po-2023"),
+        ("## Notebook outputs-required (H.4 schema): **PASS** copie", "myia-po-2023"),
+        ("rapport\n<!-- Sticky Pull Request Commentsome-blocking-guard -->", "github-actions[bot]"),
+        ("<!-- Sticky Pull Request Commentstale-claim-advisory -->\nsuite ajoutee", "github-actions[bot]"),
+    )
+    for body, login in cases:
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        row = _comment(body, login=login)
+        row["createdAt"] = T1
+        snapshot["comments"].append(row)
+        errors = _errors(snapshot)
+        assert any("discussion changed after dossier" in e for e in errors), (login, body[:40])
+
+
+def test_pre18637_stamp_stays_verifiable():
+    """#18637 transition : un dossier tamponne AVANT le correctif (empreinte
+    qui hache le corps entier du sticky) reste accepte tant que les surfaces
+    n'ont pas bouge -- le merge du correctif ne tue pas les dossiers intacts."""
+    base = _base_snapshot()
+    snap = dict(base, comments=[_comment(_STICKY_STALE, "github-actions[bot]")])
+    old = mod.pre18637_surfaces_fingerprint(snap)
+    new = mod.surfaces_fingerprint(snap)
+    assert old != new
+    rewritten = dict(base, comments=[_comment(
+        "⚠️ autre texte\n<!-- Sticky Pull Request Commentstale-claim-advisory -->",
+        "github-actions[bot]")])
+    # l'ancienne empreinte, elle, bouge avec le corps : elle ne protege que
+    # l'etat exact qu'elle a tamponne.
+    assert mod.pre18637_surfaces_fingerprint(rewritten) != old
+
+
+# --- #18933 : un READY est le rendu d'un organe, pas une appreciation --------
+# Invariant B de #17020. Incident fondateur 2026-09-20 : 5 dossiers Haiku
+# READY par defaut. Trois mecanismes : (1) provenance REQUIRED sur READY,
+# (2) derive_verdict = l'organe rederive le verdict des mesures vivantes,
+# (3) render_emitted_dossier = l'emetteur rend un dossier dont le verdict et
+# la provenance viennent de l'organe. Un dossier BLOCKED n'a pas de
+# provenance a porter : les champs restent OPTIONNELS hors READY.
+
+
+def _no_provenance() -> dict:
+    return {"organ": "", "organ-command": "", "organ-rc": ""}
+
+
+def _fill_reading_acts(block: str) -> str:
+    """Le geste de la lane emettrice : remplir les actes de lecture du --emit."""
+    fill = {
+        "complete: REPLACE_WITH_true": "complete: true",
+        "body: REPLACE_WITH_read": "body: read",
+        "checks: REPLACE_WITH_latest-wins-green_OR_BLOCKED": "checks: latest-wins-green",
+        "b0: REPLACE_WITH_clear_OR_blocked": "b0: clear",
+        "scope: REPLACE_WITH_pass_OR_fail": "scope: pass",
+        "domain: REPLACE_WITH_pass_OR_not-applicable_OR_fail": "domain: pass",
+    }
+    for old, new in fill.items():
+        assert old in block, old
+        block = block.replace(old, new, 1)
+    assert "REPLACE_WITH" not in block
+    return block
+
+
+def test_ready_without_provenance_is_refused():
+    """Un READY sans organ/organ-command/organ-rc = une appreciation."""
+    snapshot = _snapshot(_body(**_no_provenance()))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any("organ is required when verdict is READY" in e for e in errors)
+    assert any("organ-command is required when verdict is READY" in e for e in errors)
+    assert any("organ-rc is required when verdict is READY" in e for e in errors)
+
+
+def test_ready_with_wrong_organ_name_is_refused():
+    snapshot = _snapshot(_body(organ="haiku_opinion.py"))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any("organ must be 'check_adjoint_prevalidation.py'" in e for e in errors)
+
+
+def test_ready_with_wrong_organ_command_is_refused():
+    snapshot = _snapshot(
+        _body(**{"organ-command": "python scripts/check_adjoint_prevalidation.py 123"})
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any(
+        "organ-command must invoke 'check_adjoint_prevalidation.py"
+        " --derive-verdict 123'" in e
+        for e in errors
+    )
+
+
+def test_ready_with_wrong_pr_in_command_is_refused():
+    snapshot = _snapshot(
+        _body(**{"organ-command": (
+            "python scripts/check_adjoint_prevalidation.py --derive-verdict 999"
+        )})
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any("--derive-verdict 123" in e for e in errors)
+
+
+def test_ready_with_nonzero_organ_rc_is_refused():
+    snapshot = _snapshot(_body(**{"organ-rc": "3"}))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict != mod.VERDICT_READY
+    assert any("organ-rc must be '0'" in e for e in errors)
+
+
+def test_blocked_dossier_needs_no_provenance():
+    """BLOCKED ne coute rien a prouver : les champs restent optionnels."""
+    changes = {"verdict": "BLOCKED", "b0": "blocked"}
+    changes.update(_no_provenance())
+    snapshot = _snapshot(_body(**changes))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert not any("organ" in e for e in errors)
+
+
+def test_derive_verdict_ready_when_all_green():
+    verdict, reasons = mod.derive_verdict(
+        _base_snapshot(), lambda pr: {"blocked": False, "blocking": []}
+    )
+    assert verdict == mod.VERDICT_READY and reasons == []
+
+
+def test_derive_verdict_names_each_blocking_measurement():
+    """Chaque mesure bloquante est nommee : check rouge, draft, thread, B.0."""
+    snapshot = _base_snapshot()
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    snapshot["isDraft"] = True
+    snapshot["threads"].append({"isResolved": False})
+    probe = lambda pr: {  # noqa: E731
+        "blocked": True,
+        "blocking": [{"kind": "nit", "author": "u", "src": "c"}],
+    }
+    verdict, reasons = mod.derive_verdict(snapshot, probe)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert any("PR gate" in r or "latest-wins" in r for r in reasons), reasons
+    assert any("draft" in r for r in reasons)
+    assert any("unresolved review thread" in r for r in reasons)
+    assert any("unlifted remark" in r for r in reasons)
+
+
+def test_derive_verdict_blocked_when_merged():
+    """#18984 -- une PR MERGED ne peut pas etre READY (constat adjoint 04/10).
+
+    validate_dossier exigeait deja state OPEN ; la derivation l'omettait :
+    sur un snapshot MERGED aux checks verts, derive_verdict rendait READY.
+    """
+    snapshot = _base_snapshot()
+    snapshot["state"] = "MERGED"
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}
+    )
+    assert verdict == mod.VERDICT_BLOCKED
+    assert any("state must be OPEN" in r for r in reasons), reasons
+
+
+def test_derive_verdict_blocked_when_empty_diff():
+    """#18984 -- un diff vide n'a rien a squasher, READY impossible."""
+    snapshot = _base_snapshot()
+    snapshot["changedFiles"] = 0
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}
+    )
+    assert verdict == mod.VERDICT_BLOCKED
+    assert any("non-empty diff" in r for r in reasons), reasons
+
+
+def test_derive_verdict_probes_b0_by_default(monkeypatch):
+    probe, calls = _organ(False)
+    monkeypatch.setattr(mod, "probe_b0", probe)
+    mod.derive_verdict(_base_snapshot())
+    assert calls == [123]
+
+
+def test_refute_ready_verdict_demotes_when_organ_no_longer_derives():
+    """Dossier READY, mais la tete a tourne : check rouge au snapshot."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    verdict, dossier = _ready_dossier()
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        snapshot, verdict, [], dossier,
+        lambda pr: {"blocked": False, "blocking": []},
+    )
+    assert verdict == "" and dossier is None
+    assert len(errors) == 1
+    assert "no longer derived by the organ" in errors[0]
+    assert "check_adjoint_prevalidation.py --derive-verdict" in errors[0]
+
+
+def test_refute_ready_verdict_keeps_ready_when_derived():
+    verdict, dossier = _ready_dossier()
+    out = mod.refute_ready_verdict(
+        _base_snapshot(), verdict, [], dossier,
+        lambda pr: {"blocked": False, "blocking": []},
+    )
+    assert out == (mod.VERDICT_READY, [], dossier)
+
+
+def test_refute_ready_verdict_preserves_b0_errors_and_skips_probe():
+    """Regression #18933 : les erreurs du refute b0 ne sont plus ecrasees,
+    et le probe n'est pas paye quand le verdict n'est plus READY."""
+    probe, calls = _organ(True, [{"kind": "nit", "author": "u", "src": "c"}])
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        _base_snapshot(), "", ["b0 claim 'clear' is contradicted by ..."], None, probe
+    )
+    assert verdict == "" and dossier is None
+    assert errors == ["b0 claim 'clear' is contradicted by ..."]
+    assert calls == []
+
+
+def test_refute_ready_verdict_appends_its_error_after_b0_errors():
+    """b0 leve ET la tete a tourne : les deux raisons survivent ensemble."""
+    snapshot = _base_snapshot()
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    b0_errors = ["b0 claim 'clear' is contradicted by ..."]
+    ready_verdict, ready_dossier = _ready_dossier()
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        snapshot, ready_verdict, b0_errors, ready_dossier,
+        lambda pr: {"blocked": False, "blocking": []},
+    )
+    assert verdict == "" and dossier is None
+    assert errors[0] == b0_errors[0]
+    assert "no longer derived by the organ" in errors[1]
+
+
+def test_render_emitted_dossier_ready_round_trips_through_the_gate():
+    """L'emission verifiable : le dossier rendu par --emit, ses actes de
+    lecture remplis, PASSE le gate (provenance comprise)."""
+    snapshot = _snapshot()  # pre-dossier : c'est l'emetteur qui part du template
+    probe = lambda pr: {"blocked": False, "blocking": []}  # noqa: E731
+    block, verdict, reasons = mod.render_emitted_dossier(snapshot, probe=probe)
+    assert verdict == mod.VERDICT_READY and reasons == []
+    assert "verdict: READY" in block
+    assert block.count("organ:") == 1  # in-place, pas de cle dupliquee
+    assert "organ: check_adjoint_prevalidation.py" in block
+    assert (
+        "organ-command: python scripts/check_adjoint_prevalidation.py"
+        " --derive-verdict 123" in block
+    )
+    assert "organ-rc: 0" in block
+    # round-trip : la lane remplit les actes de lecture, poste, le gate valide.
+    carrying = _snapshot(_body())
+    carrying["comments"][-1]["body"] = _fill_reading_acts(block)
+    verdict, errors = mod.evaluate(carrying)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_render_emitted_dossier_blocked_carries_rc3():
+    snapshot = _base_snapshot()
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    probe = lambda pr: {"blocked": False, "blocking": []}  # noqa: E731
+    block, verdict, reasons = mod.render_emitted_dossier(snapshot, probe=probe)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert any("PR gate" in r or "latest-wins" in r for r in reasons)
+    assert "verdict: BLOCKED" in block
+    assert "organ-rc: 3" in block
+    assert block.count("organ:") == 1
+
+
+def test_main_derive_verdict_mode_is_organ_only(monkeypatch, capsys):
+    """--derive-verdict : l'organe imprime le verdict, rc 0/3, pas de gate."""
+    snapshot = _base_snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(
+        sys, "argv", ["check_adjoint_prevalidation.py", "--derive-verdict", "123"]
+    )
+    assert mod.main() == mod.EXIT_READY
+    assert capsys.readouterr().out.strip() == "READY"
+
+
+def test_main_derive_verdict_mode_blocked_rc3(monkeypatch, capsys):
+    snapshot = _base_snapshot()
+    snapshot["checkRuns"][0]["conclusion"] = "failure"
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(
+        sys, "argv", ["check_adjoint_prevalidation.py", "--derive-verdict", "123"]
+    )
+    assert mod.main() == mod.EXIT_BLOCKED_WITH_SUBSTANCE
+    assert capsys.readouterr().out.strip() == "BLOCKED"
+
+
+def test_main_emit_mode_prints_a_dossier_that_passes(monkeypatch, capsys):
+    snapshot = _snapshot()
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(
+        sys, "argv", ["check_adjoint_prevalidation.py", "--emit", "123"]
+    )
+    assert mod.main() == mod.EXIT_READY
+    block = capsys.readouterr().out
+    assert "verdict: READY" in block and "organ-rc: 0" in block
+    carrying = _snapshot(_body())
+    carrying["comments"][-1]["body"] = _fill_reading_acts(block)
+    assert mod.evaluate(carrying)[0] == mod.VERDICT_READY
+
+
+# --- #18934 : un READY qui recouvre un BLOCKED le refute par son nom ---------
+# Invariant C de #17020. Incident fondateur 2026-09-20 : le masquage d'un
+# dossier valide par un dossier posterieur moins rigoureux etait intra-login
+# -- le defaut vit dans la RELATION entre dossiers successifs, pas dans
+# l'identite de l'emetteur. A tete constante, un READY doit citer l'ancien
+# BLOCKED (supersedes) et nommer ce qu'il refute (supersedes-why).
+
+
+OTHER_HEAD = "f" * 40
+
+
+def _stacked_dossiers(first: dict, second: dict) -> dict:
+    """Snapshot a deux dossiers sur la MEME tete : BLOCKED (index 1) puis
+    second (index 2). Chaque dossier temoigne des commentaires qui le
+    precedent (comments-reviewed == comment_index, surfaces-sha256 sur le
+    prefixe) -- sinon l'evaluation echouerait pour la mauvaise raison.
+    """
+    snapshot = _base_snapshot()
+    first_fields = {"verdict": "BLOCKED", "b0": "blocked", "comments-reviewed": "1"}
+    first_fields.update(first)
+    first_fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 1)
+    snapshot["comments"].append(_comment(_body(**first_fields)))
+
+    second_fields = {"comments-reviewed": "2"}
+    second_fields.update(second)
+    second_fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 2)
+    snapshot["comments"].append(_comment(_body(**second_fields)))
+    return snapshot
+
+
+def test_mute_contradiction_is_refused_and_names_the_covered_dossier():
+    """READY muet sur BLOCKED meme tete : refus rc 1, l'ancien est nomme."""
+    snapshot = _stacked_dossiers({}, {})
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == ""
+    assert len(errors) == 1
+    error = errors[0]
+    assert "mute contradiction (#18934)" in error
+    assert "comment 2 of 3" in error  # l'ancien BLOCKED, pas le READY
+    assert "supersedes: 2" in error
+
+
+def test_ready_with_supersedes_and_why_stands():
+    """La refutation nommee debloque : citation exacte + raison non vide."""
+    snapshot = _stacked_dossiers(
+        {},
+        {"supersedes": "2", "supersedes-why": "B.0 levered: nit lifted in c3"},
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_supersedes_citing_the_wrong_comment_is_refused():
+    snapshot = _stacked_dossiers({}, {"supersedes": "1", "supersedes-why": "x"})
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == ""
+    assert any("supersedes: 2" in e for e in errors)
+
+
+def test_supersedes_without_why_is_refused():
+    snapshot = _stacked_dossiers({}, {"supersedes": "2", "supersedes-why": "  "})
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == ""
+    assert any("supersedes-why is empty" in e for e in errors)
+
+
+def test_changed_head_means_nothing_to_refute():
+    """A tete changee l'ancien est deja perime par exact-head : pas de
+    contradiction, le READY n'a rien a citer."""
+    snapshot = _stacked_dossiers({"head": OTHER_HEAD}, {})
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_blocked_over_ready_needs_no_refutation():
+    """La direction conservatrice serre, elle ne debloque pas : rien a exiger."""
+    snapshot = _stacked_dossiers(
+        {"verdict": "READY", "b0": "clear"},
+        {"verdict": "BLOCKED", "b0": "blocked"},
+    )
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert errors == []
+
+
+def test_stray_supersedes_on_a_lone_ready_is_tolerated():
+    """Champs optionnels hors contradiction : un dossier sans aine sur la
+    meme tete ne peut pas etre refuse pour les porter."""
+    snapshot = _snapshot(_body(supersedes="7", **{"supersedes-why": "nostalgia"}))
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_main_refuses_mute_contradiction_with_rc1(monkeypatch, capsys):
+    snapshot = _stacked_dossiers({}, {})
+    monkeypatch.setattr(mod, "load_snapshot", lambda pr: snapshot)
+    monkeypatch.setattr(mod.gh_identity, "pin_gh_token", lambda: None)
+    monkeypatch.setattr(mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []})
+    monkeypatch.setattr(sys, "argv", ["check_adjoint_prevalidation.py", "123"])
+    assert mod.main() == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert "NO-DOSSIER" in out and "mute contradiction (#18934)" in out
+# --- #19002 : la base doit etre `main` pour READY -------------------------
+# Mesure du 2026-10-03 : 4 PRs a base != main dans le pool ouvert, dont
+# #18819 (base squash-mergee) et #18993 (base fermee sans merge). Avant
+# #19002, le gate rendait rc=0 READY sur ces PRs, et merge_ready fusionnait
+# dans la branche morte. La regle : un dossier READY exige une base
+# `main` ; sinon, refus. Trois tests : un temoin positif (base main, le
+# chemin nominal inchange), un temoin negatif sur une base de feature
+# encore ouverte (#18985/#18967), un temoin negatif sur une base dont la
+# PR porteuse est fermee ou mergee (#18819/#18993).
+
+
+def test_base_main_does_not_change_a_ready_dossier():
+    """Temooin positif : une PR a base main, dossier READY canonique,
+    verdict READY inchange. Le chemin nominal n'est pas casse par #19002."""
+    snapshot = _snapshot(_body())
+    assert snapshot["baseRefName"] == "main"
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+    assert not errors
+
+
+def test_base_feature_open_refuses_ready_and_names_the_base():
+    """Temooin negatif : PR empilee sur une branche de feature encore
+    ouverte (#18985 / #18967). Le gate refuse READY et nomme la base
+    pour que la lane sache ou retargeter."""
+    snapshot = _snapshot(_body())
+    snapshot["baseRefName"] = "docs/qc-book-inventory-reconciliation"
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == "", verdict
+    assert dossier is None, dossier
+    assert any("baseRefName must be 'main'" in e for e in errors), errors
+    # Le message nomme la base fautive -- la lane en a besoin pour le
+    # retarget, et la regle sans le nom forcerait a rouvrir le PR.
+    assert any(
+        "docs/qc-book-inventory-reconciliation" in e for e in errors
+    ), errors
+
+
+def test_base_dead_refuses_ready_and_names_the_base():
+    """Temooin negatif : PR empilee sur une branche dont la PR porteuse
+    est fermee ou squash-mergee (#18819 / #18993). Meme verdict que la
+    base de feature, avec un nom different -- le gate refuse dans les
+    deux cas parce que son contrat ne sait pas dire 'cette base est
+    morte' (et n'a pas besoin de le dire : retarget sur main)."""
+    snapshot = _snapshot(_body())
+    snapshot["baseRefName"] = "renum/17063-complexity-05b"  # #18819
+    verdict, errors, dossier = mod.evaluate_with_dossier(snapshot)
+    assert verdict == "", verdict
+    assert dossier is None, dossier
+    assert any("baseRefName must be 'main'" in e for e in errors), errors
+    assert any("renum/17063-complexity-05b" in e for e in errors), errors
+
+
+# #19869 -- `--emit` doit pre-renseigner `supersedes` / `supersedes-why`
+# quand un dossier BLOCKED anterieur existe a la meme tete, sinon le
+# gate (`mute_contradictions` l.1307) refuse le dossier pose avec
+# NO-DOSSIER. Les tests suivants couvrent la detection
+# (`find_previous_blocked_same_head`) et l'injection dans
+# `render_emitted_dossier`.
+
+
+def test_find_previous_blocked_same_head_returns_blocked_at_same_head():
+    """BLOCKED anterieur a la meme tete : renvoie sa position 1-based."""
+    snapshot = _stacked_dossiers({}, {})
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is not None
+    position, dossier = found
+    # Premier dossier (index 1, l'ordinary earlier) + le BLOCKED (index 2).
+    # Le READY futur (index 3 si pose) aurait position 3 ; mais on cherche
+    # un BLOCKED anterieur = le 2e commentaire pose = position 2.
+    assert position == 2
+    assert dossier.fields.get("verdict") == mod.VERDICT_BLOCKED
+
+
+def test_find_previous_blocked_same_head_returns_none_on_changed_head():
+    """Tete differente : rien a refuter, retour None (exact-head peremption)."""
+    snapshot = _stacked_dossiers({"head": OTHER_HEAD}, {})
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is None
+
+
+def test_find_previous_blocked_same_head_picks_most_recent_blocked():
+    """Quand plusieurs BLOCKED sur la meme tete : le plus recent gagne
+    (celui qu'il faut refuter, pas un anterieur deja recouvert)."""
+    snapshot = _base_snapshot()
+    # Premier BLOCKED (index 1)
+    first = {"verdict": "BLOCKED", "b0": "blocked", "comments-reviewed": "1"}
+    first["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 1)
+    snapshot["comments"].append(_comment(_body(**first)))
+    # Deuxieme BLOCKED a la meme tete (index 2)
+    second = {
+        "verdict": "BLOCKED",
+        "b0": "blocked",
+        "comments-reviewed": "2",
+        "head": HEAD,
+    }
+    second["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 2)
+    snapshot["comments"].append(_comment(_body(**second)))
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is not None
+    position, _dossier = found
+    assert position == 3  # 1 (ordinary) + 2 BLOCKED = 3 commentaires, le dernier est position 3
+
+
+def test_find_previous_blocked_same_head_ignores_ready_predecessors():
+    """Un READY anterieur n'est pas un BLOCKED a recouvrir : None."""
+    snapshot = _stacked_dossiers(
+        {"verdict": "READY", "b0": "clear"},
+        {"verdict": "BLOCKED", "b0": "blocked"},
+    )
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is not None
+    position, dossier = found
+    # Le seul BLOCKED est le 3e (l'ordinary=1, le READY=2, le BLOCKED=3).
+    assert position == 3
+    assert dossier.fields.get("verdict") == mod.VERDICT_BLOCKED
+
+
+def test_emitter_and_gate_name_the_same_covered_dossier():
+    """#19869 -- l'emetteur et le gate designent le MEME dossier couvert.
+
+    C'est le controle causal du defaut : deux recherches independantes
+    derivent, et l'emetteur pre-remplit alors un `supersedes` que le gate
+    refuse. Ici la position rendue par `find_previous_blocked_same_head`
+    (ce que `--emit` ecrit) et celle que le gate cite dans son refus
+    doivent coincider -- sur la meme pile de dossiers.
+    """
+    snapshot = _two_blocked_then_ready()
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found is not None
+    emitted_position, _dossier = found
+    # Deux BLOCKED sur la meme tete : l'ordre compte (le plus recent gagne).
+    # Sans cette discrimination, une recherche divergente passerait inapercue.
+    assert emitted_position == 3
+
+    _verdict, errors = mod.evaluate(snapshot)
+    assert len(errors) == 1
+    # Le gate nomme le dossier couvert en prose : "comment <pos> of <N>".
+    assert f"comment {emitted_position} of" in errors[0]
+    assert f"'supersedes: {emitted_position}'" in errors[0]
+
+
+def _two_blocked_then_ready() -> dict:
+    """Pile : ordinary (1), BLOCKED (2), BLOCKED (3), READY muet (4).
+
+    Deux BLOCKED a la meme tete font que l'ORDRE discrimine : le dossier
+    couvert est le plus recent (position 3), pas le premier. Un READY final
+    est ce qui declenche le refus du gate -- un BLOCKED apres un BLOCKED
+    n'exige rien (direction conservatrice de #18934).
+    """
+    snapshot = _base_snapshot()
+    for index in (1, 2):
+        fields = {
+            "verdict": "BLOCKED",
+            "b0": "blocked",
+            "comments-reviewed": str(index),
+            "head": HEAD,
+        }
+        fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, index)
+        snapshot["comments"].append(_comment(_body(**fields)))
+    ready = {"comments-reviewed": "3"}
+    ready["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 3)
+    snapshot["comments"].append(_comment(_body(**ready)))
+    return snapshot
+
+
+def test_covered_blocked_dossier_is_the_shared_core():
+    """Le cœur unique est appele par les DEUX chemins (#19869).
+
+    Une recherche en dur reintroduite d'un cote seul ferait diverger les
+    organes sans qu'aucun test ne rougisse : ce controle verifie que
+    `mute_contradictions` ET `find_previous_blocked_same_head` passent bien
+    par `covered_blocked_dossier`.
+    """
+    snapshot = _two_blocked_then_ready()
+    dossiers = []
+    for index, comment in enumerate(snapshot["comments"]):
+        dossier, _errors = mod.parse_dossier(
+            comment.get("body") or "",
+            index,
+            comment.get("author", {}).get("login") or "jsboige",
+            comment.get("createdAt") or "",
+        )
+        if dossier is not None:
+            dossiers.append(dossier)
+    expected = mod.covered_blocked_dossier(dossiers, HEAD)
+    assert expected is not None
+    assert expected.fields.get("verdict") == mod.VERDICT_BLOCKED
+
+    found = mod.find_previous_blocked_same_head(snapshot, HEAD)
+    assert found == (expected.comment_index + 1, expected)
+
+
+def test_render_emitted_dossier_autofills_supersedes_for_ready(monkeypatch):
+    """Un READY au-dessus d'un BLOCKED a meme tete : supersedes+why poses
+    automatiquement, dans le bloc, avant END, par --emit."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    snapshot = _stacked_dossiers({}, {})
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_READY
+    assert "supersedes: 2" in block
+    assert "supersedes-why: auto" in block
+    # Positionnement : supersedes-* avant END, dans le bloc.
+    lines = block.split("\n")
+    end_index = next(i for i, line in enumerate(lines) if line.strip() == mod.END)
+    supersedes_index = next(
+        i for i, line in enumerate(lines) if line.startswith("supersedes:")
+    )
+    supersedes_why_index = next(
+        i for i, line in enumerate(lines) if line.startswith("supersedes-why:")
+    )
+    assert supersedes_index < end_index
+    assert supersedes_why_index < end_index
+    assert supersedes_index < supersedes_why_index
+
+
+def test_render_emitted_dossier_omits_supersedes_when_no_blocked(monkeypatch):
+    """Pas de BLOCKED anterieur a meme tete : pas de supersedes, sortie
+    identique au template + provenance."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    snapshot = _snapshot(_body())
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_READY
+    assert "supersedes" not in block
+
+
+def test_render_emitted_dossier_omits_supersedes_for_blocked_verdict(monkeypatch):
+    """Verdict derive BLOCKED : la direction conservatrice serre, elle ne
+    debloque pas. Pas de supersedes meme si un BLOCKED anterieur existe."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    # Construire un snapshot ou le verdict derive sera BLOCKED : un draft.
+    snapshot = _base_snapshot()
+    snapshot["isDraft"] = True
+    # Ajouter un BLOCKED anterieur a la meme tete.
+    blocked = {"verdict": "BLOCKED", "b0": "blocked", "comments-reviewed": "1"}
+    blocked["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 1)
+    snapshot["comments"].append(_comment(_body(**blocked)))
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_BLOCKED
+    assert "supersedes" not in block
+
+
+def test_render_emitted_dossier_omits_supersedes_on_changed_head(monkeypatch):
+    """BLOCKED anterieur sur une AUTRE tete : perime par exact-head, rien
+    a refuter, pas de supersedes dans le rendu."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    snapshot = _stacked_dossiers({"head": OTHER_HEAD}, {})
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_READY
+    assert "supersedes" not in block
+
+
+def test_render_emitted_dossier_blocked_at_same_head_then_changed_head(monkeypatch):
+    """BLOCKED sur tete-1, puis tete changee : le nouveau READY n'a rien
+    a refuter (tete-1 BLOCKED est deja perime par exact-head)."""
+    monkeypatch.setattr(
+        mod, "probe_b0", lambda pr: {"blocked": False, "blocking": []}
+    )
+    snapshot = _base_snapshot()
+    # Premier dossier BLOCKED a tete-1 (index 1)
+    blocked = {
+        "verdict": "BLOCKED",
+        "b0": "blocked",
+        "comments-reviewed": "1",
+        "head": OTHER_HEAD,
+    }
+    blocked["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot, 1)
+    snapshot["comments"].append(_comment(_body(**blocked)))
+    # Snapshot a tete-2 (HEAD)
+    block, verdict, _reasons = mod.render_emitted_dossier(snapshot, mod.ADJOINT_LANE)
+    assert verdict == mod.VERDICT_READY
+    assert "supersedes" not in block
+
+
+# --- #19014 -- vivacite de la base -------------------------------------------
+#
+# Le volet `merge_ready` de #19014 est livre par #19021 (`base_ref_liveness`,
+# motifs `base-gone:` / `base-live-not-main:`). Ces tests couvrent le volet
+# **gate**, qui rendait encore un motif unique ne disant pas a la lane si la
+# branche de base etait morte ou vivante, plus l'acceptance 2 : la lecture
+# REST de `base` par `_pr_metadata`, y compris quand le champ est absent.
+
+
+def _rest_pull(**changes) -> dict:
+    row = {
+        "number": 123,
+        "title": "PR title",
+        "body": "PR body",
+        "state": "open",
+        "merged": False,
+        "draft": False,
+        "base": {"ref": "feature/parent"},
+        "head": {"sha": HEAD, "ref": "feature/bracket"},
+        "updated_at": "2026-09-28T12:00:00Z",
+        "changed_files": 3,
+        "additions": 42,
+        "deletions": 7,
+    }
+    row.update(changes)
+    return row
+
+
+def test_base_liveness_reads_the_open_pr_on_the_base_head(monkeypatch):
+    seen = {}
+
+    def fake_gh_json(args):
+        seen["args"] = args
+        return [{"number": 18985, "state": "OPEN"}]
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    assert mod._base_liveness("feature/parent") == "live"
+    assert "head:feature/parent" in seen["args"]
+
+
+def test_base_liveness_reports_a_gone_base(monkeypatch):
+    for rows in ([{"number": 1, "state": "MERGED"}], [{"number": 1, "state": "CLOSED"}], []):
+        monkeypatch.setattr(mod, "gh_json", lambda args, rows=rows: rows)
+        assert mod._base_liveness("feature/parent") == "gone", rows
+
+
+def test_base_liveness_fails_closed_and_short_circuits_main(monkeypatch):
+    calls = []
+
+    def fake_gh_json(args):
+        calls.append(args)
+        raise RuntimeError("gh exploded")
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    # `main` n'a pas besoin de la mesure : aucun appel.
+    assert mod._base_liveness("main") == "main"
+    assert calls == []
+    # Un `base` absent n'est pas un etat mesure.
+    assert mod._base_liveness(None) == "unreadable"
+    assert mod._base_liveness("") == "unreadable"
+    # Une erreur `gh` ne devient jamais un etat devine.
+    assert mod._base_liveness("feature/parent") == "unreadable"
+    # Une reponse non-liste non plus.
+    monkeypatch.setattr(mod, "gh_json", lambda args: {"not": "a list"})
+    assert mod._base_liveness("feature/parent") == "unreadable"
+
+
+def test_pr_metadata_reads_base_ref_name_from_a_rest_row(monkeypatch):
+    # Deux appels distincts : la ligne REST de la PR, puis la liste des PRs
+    # portant la tete de base. Le faux doit repondre a chacun son type.
+    def fake_gh_json(args):
+        if "list" in args:
+            return [{"number": 18985, "state": "MERGED"}]
+        return _rest_pull()
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    data = mod._pr_metadata(123)
+    assert data["baseRefName"] == "feature/parent"
+    assert data["baseLiveness"] == "gone"
+    assert data["headRefOid"] == HEAD
+
+
+def test_pr_metadata_fails_closed_when_the_rest_row_has_no_base(monkeypatch):
+    monkeypatch.setattr(mod, "gh_json", lambda args: _rest_pull(base={}))
+    data = mod._pr_metadata(123)
+    assert data["baseRefName"] is None
+    assert data["baseLiveness"] == "unreadable"
+
+
+def test_ready_refusal_names_which_of_the_two_cases_applies():
+    for liveness, marker in (("live", "base-live-not-main:"), ("gone", "base-gone:")):
+        snapshot = _snapshot(_body())
+        snapshot["baseRefName"] = "feature/parent"
+        snapshot["baseLiveness"] = liveness
+        errors = _errors(snapshot)
+        assert any(error.startswith(marker) for error in errors), liveness
+
+    # Snapshot anterieur a #19014, qui ne porte pas le champ : le message
+    # generique reste, et le refus n'est pas perdu.
+    snapshot = _snapshot(_body())
+    snapshot["baseRefName"] = "feature/parent"
+    assert any(
+        error.startswith("baseRefName must be") for error in _errors(snapshot)
+    )
+
+
+
+
+# ===========================================================================
+# #16480 -- queue derivation (--queue) and exact-head consumption (--consume)
+# ===========================================================================
+
+QUEUE_NOW = mod.datetime(2026, 10, 8, 20, 0, tzinfo=mod.timezone.utc)
+OTHER_HEAD = "e" * 40
+
+
+def _clear_probe(pr):
+    return {"blocked": False, "blocking": []}
+
+
+def _blocked_probe(pr):
+    return {"blocked": True, "blocking": [
+        {"kind": "review", "author": "hermes", "src": "pr"}]}
+
+
+def _classified(snapshot=None, **kwargs):
+    kwargs.setdefault("now", QUEUE_NOW)
+    kwargs.setdefault("probe", _clear_probe)
+    if snapshot is None:
+        snapshot = _reviewed_snapshot()
+    return mod.classify_snapshot(snapshot, **kwargs)
+
+
+def _review(login="myia-ai-01", state="APPROVED", oid=HEAD,
+            submitted="2026-10-08T10:00:00Z"):
+    return {
+        "state": state,
+        "submittedAt": submitted,
+        "commit": {"oid": oid},
+        "author": {"login": login},
+    }
+
+
+def _queue_snapshot(reviews, base=None, number=123, **dossier_changes):
+    """Snapshot avec les reviews posees AVANT l'empreinte du dossier.
+
+    L'empreinte hache les lignes de review (auteur, submittedAt) et le numero
+    de PR : poser les reviews apres coup ou changer le numero casserait
+    surfaces-sha256 et masquerait le check sous test. Le dossier atteste le
+    compte exact des reviews posees.
+    """
+    snapshot = dict(base) if base is not None else _base_snapshot()
+    snapshot["number"] = number
+    snapshot["reviews"] = reviews
+    fields = {"pr": str(number), "reviews-reviewed": str(len(reviews))}
+    fields.update(dossier_changes)
+    fields["surfaces-sha256"] = mod.surfaces_fingerprint(snapshot)
+    snapshot["comments"] = [*snapshot["comments"], _comment(_body(**fields))]
+    return snapshot
+
+
+def _reviewed_snapshot(**dossier_changes):
+    """Nominal READY fixture: dossier + qualifying review on the exact head."""
+    return _queue_snapshot([_review()], **dossier_changes)
+
+
+def _dwell_run(lift="2026-10-08T21:00:00Z", remaining=60):
+    title = (
+        "tete du 2026-10-08T18:00:00Z -- plancher 120 min, "
+        f"reste {remaining} min ; ecoule a {lift}"
+    )
+    return {
+        "id": 7,
+        "name": "PR gate",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-10-08T18:01:00Z",
+        "output": {"title": title},
+    }
+
+
+# --- no dossier / stale -----------------------------------------------------
+
+
+def test_queue_no_dossier_is_blocked_with_cause():
+    entry = _classified(_snapshot())
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "no dossier" in entry.reject_cause
+    assert entry.dossier_created_at == ""
+    assert entry.grain_tag is not None and entry.grain_tag["lane"] == CARRIER
+
+
+def test_queue_stale_head_is_stale():
+    entry = _classified(_snapshot(_body(head=OTHER_HEAD)))
+    assert entry.verdict == mod.QUEUE_VERDICT_STALE
+    assert "head is stale" in entry.reject_cause
+
+
+def test_queue_comment_after_dossier_is_stale():
+    snapshot = _reviewed_snapshot()
+    snapshot["comments"].append(_comment("late concern"))
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_STALE
+    # Le commentaire humain tardif fait echouer le GATE : la queue relaye le
+    # refus, elle n'a plus de compte brut propre a contredire (c2151).
+    assert "discussion changed after dossier" in entry.reject_cause
+
+
+def test_queue_bot_advisory_after_dossier_is_ready():
+    """#16480-c2151 (controle positif, queue) : la pose consultative d'un bot
+    apres le dossier ne rend PAS la file STALE. Le gate neutralise deja ces
+    poses (#17818 marker-guards, #18637 sticky/resumes) ; la queue comptait
+    le tail en brut et reintroduisait exactement ce que ces correctifs avaient
+    retire. Mesure fondatrice : #20094 et #20372 STALE sur la seule pose
+    PATH-COLLISION de ``github-actions[bot]`` (11/10, 6 PR sur 102 a 18:21Z).
+    """
+    bot_forms = (
+        "<!-- PR-PATH-COLLISION:START -->\n## Path-collision (organ #1)\npaire: X / Y",
+        _STICKY_STALE,
+    )
+    for body in bot_forms:
+        snapshot = _reviewed_snapshot()
+        snapshot["comments"].append(_comment(body, login="github-actions[bot]"))
+        entry = _classified(snapshot)
+        assert entry.verdict == mod.VERDICT_READY, body
+        # Le compte brut survit en information : la ligne reste a relire.
+        assert entry.tail_to_read == 1, body
+
+
+def test_queue_coordinator_late_comment_after_dossier_is_ready():
+    """Voix du coordinateur apres le dossier : neutre pour le gate
+    (``_is_own_later_act``, horodatee apres le dossier), neutre pour la
+    queue -- meme predicat partage (_foreign_tail_rows).
+    """
+    snapshot = _reviewed_snapshot()
+    snapshot["comments"][-1] = {
+        "author": {"login": "jsboige"},
+        "body": snapshot["comments"][-1]["body"],
+        "createdAt": "2026-10-08T18:00:00Z",
+    }
+    snapshot["comments"].append({
+        "author": {"login": "myia-ai-01"},
+        "body": "reserve levee par ecrit sur la tete exacte",
+        "createdAt": "2026-10-08T19:00:00Z",
+    })
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.tail_to_read == 1
+
+
+def test_queue_dossier_older_than_stale_after_is_stale():
+    snapshot = _queue_snapshot([_review(submitted="2026-10-05T10:00:00Z")])
+    # Le dossier porte son createdAt : plus vieux que le defaut 24 h.
+    snapshot["comments"][-1] = {
+        "author": {"login": "jsboige"},
+        "body": snapshot["comments"][-1]["body"],
+        "createdAt": "2026-10-06T10:00:00Z",
+    }
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_STALE
+    assert "min old" in entry.reject_cause
+    assert entry.dossier_age_minutes == 3480
+
+
+def test_queue_dossier_age_below_threshold_is_not_stale():
+    snapshot = _queue_snapshot([_review(submitted="2026-10-05T10:00:00Z")])
+    snapshot["comments"][-1] = {
+        "author": {"login": "jsboige"},
+        "body": snapshot["comments"][-1]["body"],
+        "createdAt": "2026-10-08T19:00:00Z",
+    }
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.dossier_age_minutes == 60
+
+
+# --- READY and the review door ----------------------------------------------
+
+
+def test_queue_ready_nominal():
+    entry = _classified()
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.review_qualifying is True
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.checks == "latest-wins-green"
+    assert entry.domain == "pass"
+    assert entry.last_comment_is_dossier is True
+    assert entry.tail_to_read == 0
+    assert entry.reject_cause == ""
+    assert entry.dwell_until == ""
+
+
+def test_queue_unreviewed_is_review_ready():
+    snapshot = _queue_snapshot([_review(state="COMMENTED")])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
+    assert entry.review_disposition == "reviewed-without-disposition"
+    assert entry.review_qualifying is False
+
+
+def test_queue_approval_not_on_head_is_review_ready():
+    snapshot = _queue_snapshot([_review(oid=OTHER_HEAD)])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
+    assert entry.review_disposition == "approval-not-on-head"
+
+
+def test_queue_non_coordinator_approval_does_not_qualify():
+    snapshot = _queue_snapshot([_review(login="some-worker")])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.review_qualifying is False
+
+
+def test_queue_recent_changes_requested_blocks_dispatch():
+    """Divergence assumee du design #16483 : un CHANGES_REQUESTED recent n'est
+    pas une review manquante, c'est une reserve a lever -- le piege « reserve
+    en prose libre » (#14658) qu'aucun marqueur B.0 ne couvre."""
+    snapshot = _queue_snapshot([
+        _review(submitted="2026-10-08T10:00:00Z"),
+        _review(state="CHANGES_REQUESTED", submitted="2026-10-08T12:00:00Z"),
+    ])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "CHANGES_REQUESTED" in entry.reject_cause
+
+
+# --- DWELL ------------------------------------------------------------------
+
+
+def test_queue_dwell_pending_red_is_dwell_pending():
+    snapshot = _reviewed_snapshot()
+    snapshot["checkRuns"] = [_dwell_run(lift="2026-10-08T21:00:00Z")]
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_DWELL_PENDING
+    assert entry.dwell_until == "2026-10-08T21:00:00Z"
+
+
+def test_queue_dwell_elapsed_is_blocked_with_replay_hint():
+    snapshot = _reviewed_snapshot()
+    snapshot["checkRuns"] = [_dwell_run(lift="2026-10-08T19:00:00Z", remaining=0)]
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "replay the leg" in entry.reject_cause
+
+
+def test_queue_dwell_plus_other_red_is_blocked():
+    snapshot = _reviewed_snapshot()
+    snapshot["checkRuns"] = [
+        _dwell_run(),
+        {
+            "id": 8,
+            "name": "fast-lane",
+            "status": "completed",
+            "conclusion": "failure",
+            "started_at": "2026-10-08T18:02:00Z",
+            "output": {"title": "fast-lane -- red"},
+        },
+    ]
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "no dossier worth trusting" in entry.reject_cause
+    assert "fast-lane" in entry.reject_cause
+
+
+# --- in-flight rollup ---------------------------------------------------------
+
+
+def test_queue_rerun_inflight_over_green_blocks():
+    snapshot = _reviewed_snapshot()
+    snapshot["checkRuns"] = [
+        snapshot["checkRuns"][0],
+        {
+            "id": 9,
+            "name": "PR gate",
+            "status": "in_progress",
+            "started_at": "2026-10-08T19:59:00Z",
+        },
+    ]
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "in-flight" in entry.reject_cause
+    assert entry.checks == "in-flight"
+
+
+def test_queue_inflight_without_completed_blocks():
+    snapshot = _reviewed_snapshot()
+    snapshot["checkRuns"] = [
+        {
+            "id": 10,
+            "name": "PR gate",
+            "status": "queued",
+            "started_at": "2026-10-08T19:59:30Z",
+        }
+    ]
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    # Jambe requise sans conclusion sur la tete : l'absence est nommee.
+    assert "absence of required check" in entry.reject_cause
+
+
+# --- B.0 / frozen / attested BLOCKED ------------------------------------------
+
+
+def test_queue_b0_refuted_blocks():
+    entry = _classified(_reviewed_snapshot(), probe=_blocked_probe)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "b0" in entry.reject_cause or "B.0" in entry.reject_cause
+
+
+def test_queue_frozen_campaign_blocks(monkeypatch):
+    monkeypatch.setattr(
+        mod, "frozen_umbrella_exclusion",
+        lambda *_a, **_k: "veto user #17040",
+    )
+    entry = _classified()
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "frozen" in entry.reject_cause
+
+
+def test_queue_attested_blocked_stands_when_b0_still_blocks():
+    entry = _classified(
+        _reviewed_snapshot(verdict="BLOCKED", b0="blocked"),
+        probe=_blocked_probe,
+    )
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "attests BLOCKED" in entry.reject_cause
+
+
+def test_queue_b0_only_blocked_expires_toward_restamp():
+    entry = _classified(
+        _reviewed_snapshot(verdict="BLOCKED", b0="blocked"),
+        probe=_clear_probe,
+    )
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "re-stamp" in entry.reject_cause or "no longer blocks" in entry.reject_cause
+
+
+# --- stack child ---------------------------------------------------------------
+
+
+def test_queue_stack_child_domain_not_applicable():
+    """Une stack (base != main) ne peut pas porter de dossier READY : le gate
+    la refuse (« retarget the PR »). La queue expose le domaine declare sans
+    jamais retablir le dossier refuse -- c'est le cas not-applicable."""
+    base = _base_snapshot()
+    base["baseRefName"] = "feature/stack-base"
+    snapshot = _queue_snapshot(
+        [_review()], base=base, domain="not-applicable"
+    )
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_BLOCKED
+    assert "baseRefName must be 'main'" in entry.reject_cause
+    assert entry.domain == "not-applicable"
+
+
+# --- build_queue / consume ------------------------------------------------------
+
+
+def test_build_queue_unknown_pr_is_listed_not_fatal():
+    def loader(pr):
+        if pr == 1:
+            raise RuntimeError("gh api exploded")
+        return _reviewed_snapshot()
+
+    result = mod.build_queue(
+        [1, 123], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    assert [row["pr"] for row in result["unknown"]] == [1]
+    assert [item["pr"] for item in result["queue"]] == [123]
+    assert result["metrics"] == {mod.VERDICT_READY: 1}
+
+
+def test_build_queue_sorts_oldest_first_not_by_number():
+    older = _queue_snapshot([_review()], number=8)
+    older["createdAt"] = "2026-10-01T00:00:00Z"
+    newer = _queue_snapshot([_review()], number=9)
+    newer["createdAt"] = "2026-10-02T00:00:00Z"
+    result = mod.build_queue(
+        [9, 8],
+        now=QUEUE_NOW,
+        probe=_clear_probe,
+        loader=lambda pr: older if pr == 9 else newer,
+    )
+    assert [item["pr"] for item in result["queue"]] == [8, 9]
+
+
+def test_build_queue_dedupes_repeated_prs():
+    calls = []
+
+    def loader(pr):
+        calls.append(pr)
+        return {**_reviewed_snapshot(), "number": pr}
+
+    result = mod.build_queue(
+        [5, 5], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    assert calls == [5]
+    assert [item["pr"] for item in result["queue"]] == [5]
+
+
+def test_build_queue_metrics_count_verdicts():
+    stale = _reviewed_snapshot()
+    stale["comments"].append(_comment("late"))
+    review_ready = _queue_snapshot([])
+    loader = {1: _reviewed_snapshot(), 2: review_ready, 3: stale}.__getitem__
+    result = mod.build_queue(
+        [1, 2, 3], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    assert result["metrics"] == {
+        mod.VERDICT_READY: 1,
+        mod.QUEUE_VERDICT_REVIEW_READY: 1,
+        mod.QUEUE_VERDICT_STALE: 1,
+    }
+
+
+def test_consume_refuses_mutation_after_dossier():
+    snapshot = _reviewed_snapshot()
+    snapshot["comments"].append(_comment("posted after dossier"))
+    entry = mod.consume_pr(
+        123, now=QUEUE_NOW, probe=_clear_probe, loader=lambda pr: snapshot
+    )
+    assert entry.verdict == mod.QUEUE_VERDICT_STALE
+
+
+def test_consume_ready_nominal():
+    entry = mod.consume_pr(
+        123, now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: _reviewed_snapshot(),
+    )
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.to_json()["verdict"] == mod.VERDICT_READY
+# --- #17315 : le cout de l'invocation est mesure et publie -------------------
+#
+# Le bucket GraphQL est partage par toute la flotte ; le bucket REST (core) est
+# par machine. L'organe publie les deux pour qu'une lane secretaire puisse
+# agreger le cout d'une campagne sans instrumenter le reseau.
+
+
+def _reset_api_usage() -> None:
+    mod.API_USAGE["rest"] = 0
+    mod.API_USAGE["graphql"] = 0
+
+
+class _Completed:
+    def __init__(self, stdout: str) -> None:
+        self.returncode = 0
+        self.stdout = stdout
+        self.stderr = ""
+
+
+def test_api_usage_counter_separates_the_two_buckets(monkeypatch):
+    """`gh api graphql` paie le bucket partage, tout le reste le bucket core."""
+    monkeypatch.setattr(
+        mod.subprocess, "run", lambda *a, **k: _Completed('{"ok": true}')
+    )
+    _reset_api_usage()
+
+    mod.gh_json(["api", "graphql", "-f", "query={...}"])
+    mod.gh_json(["api", "repos/o/r/pulls/1"])
+    mod.gh_json(["api", "repos/o/r/commits/deadbeef/check-runs"])
+    mod.gh_json(["pr", "view", "1", "--json", "state"])
+
+    assert mod.API_USAGE == {"rest": 3, "graphql": 1}
+
+
+def test_api_usage_is_published_in_json_and_on_stderr(monkeypatch, capsys):
+    """Le cout accompagne le verdict : cle `api_usage` en --json, ligne stderr
+    sinon -- stdout reste le verdict que les appelants parsent."""
+    _reset_api_usage()
+    rc = _run_main(monkeypatch, _snapshot(_body()), "--json")
+    captured = capsys.readouterr()
+
+    assert rc == mod.EXIT_READY
+    payload = json.loads(captured.out)
+    assert payload["api_usage"] == {"rest": 0, "graphql": 0}
+    assert "API usage: 0 REST, 0 GraphQL operation(s)" in captured.err
+
+
+# --- #17315 : les reviewThreads passent en une operation par lot -------------
+
+
+def _bulk_gh_json(calls: list[list[str]], payload_for):
+    def fake(args: list[str]):
+        calls.append(list(args))
+        assert args[0] == "api" and args[1] == "graphql"
+        # Les alias demandes sont les `-F pN=<pr>` de la requete.
+        prs = [int(a.split("=", 1)[1]) for a in args if a.startswith("p") and "=" in a]
+        query = next(a for a in args if a.startswith("query="))
+        requested = sorted(prs) if "repository(owner:$owner" in query else []
+        return payload_for(requested, args)
+
+    return fake
+
+
+def _threads_payload(prs, *, overflow=(), unresolved=0):
+    data = {}
+    for index, pr in enumerate(prs):
+        nodes = [
+            {"id": f"t{pr}-{n}", "isResolved": n >= unresolved, "path": "a.py",
+             "line": n, "comments": {"totalCount": 1, "nodes": [{"id": "c"}]}}
+            for n in range(1, 2 + (1 if pr in overflow else 0))
+        ]
+        data[f"p{index}"] = {
+            "pullRequest": {
+                "reviewThreads": {
+                    "nodes": nodes,
+                    "pageInfo": {"hasNextPage": pr in overflow, "endCursor": "cur"},
+                }
+            }
+        }
+    return {"data": data}
+
+
+def test_review_threads_bulk_collapses_n_prs_into_one_operation(monkeypatch):
+    """Le geste mesure : N PRs = 1 operation GraphQL, pas N."""
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        mod, "gh_json", _bulk_gh_json(calls, lambda prs, args: _threads_payload(prs))
+    )
+
+    result = mod.review_threads_bulk([11, 12, 13, 14])
+
+    assert len(calls) == 1
+    assert sorted(result) == [11, 12, 13, 14]
+    # Chaque PR recoit SES threads, pas ceux de l'alias voisin.
+    assert [t["id"] for t in result[13]] == ["t13-1"]
+
+
+def test_review_threads_bulk_chunks_above_the_batch_size(monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        mod, "gh_json", _bulk_gh_json(calls, lambda prs, args: _threads_payload(prs))
+    )
+
+    result = mod.review_threads_bulk(list(range(1, 10)))
+
+    assert len(calls) == 2, "9 PRs a batch=8 = 2 operations"
+    assert sorted(result) == list(range(1, 10))
+
+
+def test_review_threads_bulk_deduplicates_and_keeps_order(monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        mod, "gh_json", _bulk_gh_json(calls, lambda prs, args: _threads_payload(prs))
+    )
+
+    result = mod.review_threads_bulk([7, 7, 7])
+
+    assert len(calls) == 1
+    assert sorted(result) == [7]
+
+
+def test_review_threads_bulk_falls_back_per_pr_on_overflow(monkeypatch):
+    """Une PR dont les threads debordent la premiere page repart en pagination
+    par PR -- pour ELLE seule ; les autres restent dans l'operation du lot."""
+    calls: list[list[str]] = []
+    pages = {13: 0}
+
+    def fake(args: list[str]):
+        calls.append(list(args))
+        if "query($owner:String!,$repo:String!,$number:Int!" in " ".join(args):
+            pages[13] += 1
+            if pages[13] == 1:
+                return {
+                    "data": {"repository": {"pullRequest": {"reviewThreads": {
+                        "nodes": [{"id": "t13-page1", "isResolved": True,
+                                   "comments": {"totalCount": 1, "nodes": [{}]}}],
+                        "pageInfo": {"hasNextPage": True, "endCursor": "c1"},
+                    }}}}
+                }
+            return {
+                "data": {"repository": {"pullRequest": {"reviewThreads": {
+                    "nodes": [{"id": "t13-page2", "isResolved": True,
+                               "comments": {"totalCount": 1, "nodes": [{}]}}],
+                    "pageInfo": {"hasNextPage": False, "endCursor": None},
+                }}}}
+            }
+        prs = [int(a.split("=", 1)[1]) for a in args if a.startswith("p") and "=" in a]
+        return _threads_payload(prs, overflow={13})
+
+    monkeypatch.setattr(mod, "gh_json", fake)
+
+    result = mod.review_threads_bulk([12, 13])
+
+    assert [t["id"] for t in result[13]] == ["t13-page1", "t13-page2"]
+    assert [t["id"] for t in result[12]] == ["t12-1"]
+    assert len(calls) == 3, "1 lot + 2 pages pour la seule PR 13"
+
+
+def test_review_threads_bulk_preserves_the_inline_pagination_refusal(monkeypatch):
+    """Le garde-fou >100 commentaires inline survit au batching : sans lui une
+    page tronquee se lirait comme un thread complet."""
+
+    def fake(args: list[str]):
+        return {"data": {"p0": {"pullRequest": {"reviewThreads": {
+            "nodes": [{"id": "t", "isResolved": True, "comments": {
+                "totalCount": 120, "nodes": [{"id": "c"}],
+            }}],
+            "pageInfo": {"hasNextPage": False, "endCursor": None},
+        }}}}}
+
+    monkeypatch.setattr(mod, "gh_json", fake)
+
+    with pytest.raises(RuntimeError, match="more than 100 comments"):
+        mod.review_threads_bulk([42])
+
+
+def test_review_threads_single_pr_is_still_one_operation(monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        mod, "gh_json", _bulk_gh_json(calls, lambda prs, args: _threads_payload(prs))
+    )
+
+    threads = mod.review_threads(9)
+
+    assert len(calls) == 1
+    assert [t["id"] for t in threads] == ["t9-1"]
+
+
+def test_grain_lane_re_refuse_le_point_final_de_phrase():
+    """#15864 (mesure #14549) -- la classe de token admet le point (hostnames),
+    donc `lane myia-po-2023:CoursIA-2.` etait capture comme une lane fantome.
+    Un token ne peut plus se TERMINER par un point ; les points internes
+    survivent."""
+    dotted = "Grain: DEEP/genai — lane myia-po-2023:CoursIA-2. Enonce reecrit."
+    assert mod.GRAIN_LANE_RE.findall(dotted) == ["myia-po-2023:CoursIA-2"]
+    clean = "Grain: DEEP/genai — lane myia-po-2023:CoursIA-2"
+    assert mod.GRAIN_LANE_RE.findall(clean) == ["myia-po-2023:CoursIA-2"]
+    host = "Grain: MED/docs — lane foo.bar.baz:CoursIA-2."
+    assert mod.GRAIN_LANE_RE.findall(host) == ["foo.bar.baz:CoursIA-2"]
+    # Aucune lane ne se reduit a un point : machine et workspace requis.
+    assert mod.GRAIN_LANE_RE.findall("Grain: MED/docs — lane :CoursIA-2") == []
+    assert mod.GRAIN_LANE_RE.findall("Grain: MED/docs — lane myia-po-2023:") == []
+
+
+# --- #20251 : porte « pile » -------------------------------------------------
+# L'organe juge UNE PR contre `main`. Il ne voyait pas qu'une AUTRE PR ouverte
+# porte une version plus recente des memes commits : un sommet de pile sortait
+# READY, merger en premier faisait atterrir sur `main` la version anterieure aux
+# corrections. Instance fondatrice : la pile Percolation #19548 -> #19556 ->
+# #19567 le 2026-10-10.
+#
+# Ces tests sont hermetiques : l'index est injecte, et `git` est simule. Le
+# controle positif, lui, se rejoue sur le depot reel avec `--stack-index`.
+
+
+@pytest.fixture(autouse=True)
+def _no_live_stack_index(monkeypatch):
+    """Le harnais de tests ne touche jamais le reseau par la porte « pile ».
+
+    Sans ce garde, toute fonction qui appelle ``derive_verdict`` sans argument
+    ``stack`` declencherait une enumeration des PR ouvertes et un `git fetch`
+    de chaque tete. Les tests qui ont besoin d'un index l'injectent.
+    """
+    monkeypatch.setattr(mod, "default_stack_index", lambda: None)
+
+
+def _synthetic_git(ancestor_pairs=()):
+    """`git` simule : seule la question d'ascendance a une reponse."""
+    pairs = set(ancestor_pairs)
+    calls = []
+
+    def fake(args, check=True):
+        calls.append(list(args))
+        if args[:2] == ["merge-base", "--is-ancestor"]:
+            rc = 0 if (args[2], args[3]) in pairs else 1
+        else:
+            rc = 1
+        return subprocess.CompletedProcess(["git", *args], rc, "", "")
+
+    fake.calls = calls
+    return fake
+
+
+def _stack_entry(pr, subjects):
+    return mod.StackEntry(
+        number=pr,
+        ref=f"{mod.STACK_REF_PREFIX}{pr}",
+        commits=list(subjects),
+        subjects=dict(subjects),
+    )
+
+
+def _patch_ids(mapping):
+    """Fake ``mod._patch_id`` : sha -> id, hors mapping -> None.
+
+    Le repli par sujets corrobore par le patch-id (#20263, controle negatif
+    de l'adjoint c6105057753) : les tests du repli patchent la mesure pour
+    rester hermetiques -- sans cela, la vraie mesure shellerait ``git`` sur
+    des SHA synthetiques et rendrait ``None`` (repli desactive de fait).
+    """
+    def fake(sha):
+        return mapping.get(sha)
+    return fake
+
+
+def _stack_index(*entries):
+    return {e.number: e for e in entries}
+
+
+def test_stack_top_divergent_is_not_ready(monkeypatch):
+    """#20251 (1) -- sommet de pile diverge : #19548 porte la version ancienne.
+
+    #19548 et #19556 partagent des commits, aucune des deux tetes n'est
+    ancetre de l'autre, et #19556 porte un commit absent de #19548 : merger
+    #19548 d'abord ferait atterrir sur `main` la version anterieure.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B", "c": "C"}),
+        _stack_entry(19556, {"a": "A", "b": "B", "c": "C",
+                             "d": "D: correctif absent du bas de pile"}),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+    assert any("D: correctif absent du bas de pile" in r for r in reasons), reasons
+
+
+def test_stack_bottom_linear_stays_ready(monkeypatch):
+    """#20251 (2) -- bas de pile lineaire : merger en premier est l'ordre juste.
+
+    La tete de #19548 est un ancetre de celle de #19556 : la porte ne dit rien.
+    C'est le controle negatif qui distingue la porte d'un simple « deux PRs se
+    ressemblent ».
+    """
+    bottom = mod.STACK_REF_PREFIX + "19548"
+    top = mod.STACK_REF_PREFIX + "19556"
+    monkeypatch.setattr(mod, "_git", _synthetic_git({(bottom, top)}))
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"a": "A", "b": "B", "c": "C"}),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_without_shared_commit_is_unchanged(monkeypatch):
+    """#20251 (3) -- aucune PR ne partage de commit : verdict inchange.
+
+    Deux PRs ouvertes sur des chemins disjoints ne sont pas une pile, meme si
+    le tapis les sert voisines.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"c": "C", "d": "D"}),
+    )
+    verdict, reasons = mod.derive_verdict(
+        _base_snapshot(), lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_noise_subjects_alone_do_not_block(monkeypatch):
+    """#20251 (3bis) -- un commit de re-declenchement n'est pas un diff.
+
+    Sans ce filtre, deux PRs qui ne different que par un vidage de commit
+    seraient vues comme une pile, et la porte refuserait du bruit.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"a": "A", "b": "B",
+                             "c": "Fix: empty commit to retrigger CI"}),
+    )
+    verdict, reasons = mod.derive_verdict(
+        _base_snapshot(), lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+
+
+# #20263 -- un rebase reecrit les SHA : l'intersection vide de SHA ne
+# prouve pas l'independance (trou mesure par l'adjoint, dossier
+# c6098840404). Les temoins suivants couvrent le repli par SUJETS.
+
+
+def test_stack_top_rebased_is_detected(monkeypatch):
+    """#20263 -- sommet REBATI : SHA aucun commun, sujets partages.
+
+    Un rebase reecrit tous les SHA : pre-fix, l'intersection vide
+    ecartait la candidate et la porte rendait READY le bas de pile
+    perime -- exactement le cas que le contrat promet d'attraper
+    (« par sujet, jamais par SHA »). Les patchs, eux, survivent au
+    rebase : la corroboration par patch-id (a<->x, b<->y) tient.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod, "_patch_id", _patch_ids({"a": "pA", "x": "pA", "b": "pB", "y": "pB"})
+    )
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"x": "A", "y": "B",
+                             "z": "D: correctif absent du bas de pile"}),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+    assert any("D: correctif absent du bas de pile" in r for r in reasons), reasons
+
+
+def test_stack_fortuitous_subject_collision_is_not_blocked(monkeypatch):
+    """#20263 (controle negatif de l'adjoint, dossier c6105057753) --
+    collision de titres GENGIN-FORTUITE : pas de pile, pas de blocage.
+
+    Deux branches INDEPENDANTES depuis main, chacune un commit « Fix:
+    validation » de contenu DIFFERENT (patch-ids distincts) et un apport
+    propre : le sujet partage seul ne corrobore rien. Pre-fix, la porte
+    appariait les deux dans CHAQUE sens et derive_verdict rendait BlocAGE
+    mutuel -- reproduit en git reel par le driver de la reserve. Post-fix,
+    le repli exige l'egalite de patch-id : aucune paire, verdict READY des
+    deux cotes.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod, "_patch_id", _patch_ids({"a": "pidA", "x": "pidX"})
+    )
+    index = _stack_index(
+        _stack_entry(19548, {"a": "Fix: validation", "b": "Add: apport A"}),
+        _stack_entry(19556, {"x": "Fix: validation", "y": "Add: apport B"}),
+    )
+    for target in (19548, 19556):
+        snapshot = _base_snapshot()
+        snapshot["number"] = target
+        verdict, reasons = mod.derive_verdict(
+            snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+        )
+        assert verdict == mod.VERDICT_READY, (target, reasons)
+        assert reasons == [], (target, reasons)
+
+
+def test_stack_subject_match_unmeasured_patch_does_not_block(monkeypatch):
+    """#20263 -- mesure de patch-id impossible : jamais de blocage fabrique.
+
+    Sujets partages mais patch-id incalculable des deux cotes (SHA
+    disparus, commits vides) : ``None`` ne corrobore pas -- la porte ne
+    refuse pas sur une mesure impossible.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(mod, "_patch_id", _patch_ids({}))
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"x": "A", "y": "B", "z": "C"}),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+
+
+def test_stack_rebased_linear_base_stays_silent(monkeypatch):
+    """#20263 -- bas de pile rebati LINEAIRE : le silence d'ancetre tient.
+
+    Le repli par sujets ne court-circuite pas le controle d'ancetre :
+    meme rebatie (SHA disjoints), une base dont la tete est ancetre de
+    celle du sommet reste l'ordre de merge correct.
+    """
+    bottom = mod.STACK_REF_PREFIX + "19548"
+    top = mod.STACK_REF_PREFIX + "19556"
+    monkeypatch.setattr(mod, "_git", _synthetic_git({(bottom, top)}))
+    monkeypatch.setattr(
+        mod, "_patch_id", _patch_ids({"a": "pA", "x": "pA", "b": "pB", "y": "pB"})
+    )
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"x": "A", "y": "B", "z": "C"}),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_rebased_without_new_subject_is_not_blocked(monkeypatch):
+    """#20263 -- sujets partages sans APPORT reel : pas de blocage.
+
+    Le repli herite du controle d'apport : une branche rebatie qui ne
+    porte aucun sujet nouveau n'est pas un sommet perime.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod, "_patch_id", _patch_ids({"a": "pA", "x": "pA", "b": "pB", "y": "pB"})
+    )
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"x": "A", "y": "B"}),
+    )
+    verdict, reasons = mod.derive_verdict(
+        _base_snapshot(), lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_rebased_noise_only_shared_is_not_blocked(monkeypatch):
+    """#20263 -- sujets partages = bruit SEUL : le repli ne s'arme pas.
+
+    Deux PRs dont le seul sujet commun est un vidage de re-declenchement
+    ne sont pas une pile, meme rebaties : le filtre de bruit s'applique
+    au repli par sujets comme au chemin SHA.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A",
+                             "b": "Fix: empty commit to retrigger CI"}),
+        _stack_entry(19556, {"x": "C",
+                             "y": "Fix: empty commit to retrigger CI",
+                             "z": "D"}),
+    )
+    verdict, reasons = mod.derive_verdict(
+        _base_snapshot(), lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+
+
+def test_stack_vanished_head_ref_is_ignored(monkeypatch):
+    """#20251 (4) -- ref de tete disparue : ecartee, jamais un incident.
+
+    Un lot de `git fetch` echoue entierement des qu'une ref a disparu : on
+    retire la fautive et on relance. La PR dont la branche n'existe plus n'est
+    pas une candidate de pile -- elle ne doit pas priver l'organe de la porte,
+    ni fabriquer un refus.
+    """
+    state = {"tries": 0}
+
+    def fake(args, check=True):
+        if args[0] == "fetch":
+            state["tries"] += 1
+            if state["tries"] == 1:
+                return subprocess.CompletedProcess(
+                    ["git", *args], 1, "",
+                    "fatal: couldn't find remote ref pull/19548/head",
+                )
+            return subprocess.CompletedProcess(["git", *args], 0, "", "")
+        raise AssertionError(f"appel git inattendu : {args}")
+
+    monkeypatch.setattr(mod, "_git", fake)
+    remaining, incidents = mod._fetch_pr_heads([19548, 19556])
+    assert remaining == [19556], remaining
+    assert incidents == []
+    assert state["tries"] == 2
+
+
+def test_stack_unfetchable_refs_are_an_incident_not_a_refusal(monkeypatch):
+    """#20251 -- mesure impossible : aucun refus fabrique, un incident dit.
+
+    L'echec de mesure prive l'organe d'une porte ; il ne l'autorise pas a
+    refuser. Toute la classe est couverte par ce cas generique (reseau,
+    authentification, depot illisible).
+    """
+    def fake(args, check=True):
+        return subprocess.CompletedProcess(["git", *args], 1, "", "boom reseau")
+
+    monkeypatch.setattr(mod, "_git", fake)
+    remaining, incidents = mod._fetch_pr_heads([19548])
+    assert remaining == []
+    assert incidents and "impossible" in incidents[0]
+
+    def boom(args):
+        raise RuntimeError("gh indisponible")
+
+    monkeypatch.setattr(mod, "gh_lines", boom)
+    index, incidents = mod.build_stack_index()
+    assert index is None
+    assert incidents
+
+
+def test_stack_index_cache_is_built_once(monkeypatch):
+    """#20251 -- la passe est payee une fois par processus, pas par PR.
+
+    `--queue` evalue N candidates : rejouer l'enumeration et le `git fetch` a
+    chaque appel ferait payer N fois une mesure identique.
+    """
+    calls = {"n": 0}
+
+    def fake_build():
+        calls["n"] += 1
+        return {1: _stack_entry(1, {"a": "A"})}, []
+
+    monkeypatch.setattr(mod, "build_stack_index", fake_build)
+    monkeypatch.setattr(mod, "default_stack_index", _REAL_DEFAULT_STACK_INDEX)
+    monkeypatch.setattr(mod, "_STACK_INDEX_CACHE", {"built": False, "index": None})
+    first = mod.default_stack_index()
+    second = mod.default_stack_index()
+    assert first == second and calls["n"] == 1
+
+
+def test_stack_refs_are_pruned_to_the_open_set(monkeypatch):
+    """#20251 -- la passe elague ses propres refs dans le clone de l'appelant.
+
+    Elle en ecrit une par PR ouverte ; sans elagage il en resterait une par PR
+    jamais nettoyee. Une ref hors de l'ensemble courant est un residu d'une
+    passe precedente, pas une mesure.
+    """
+    deleted: list[str] = []
+    now = "refs/remotes/prh/19548 refs/remotes/prh/19556 refs/remotes/prh/99999"
+
+    def fake(args, check=True):
+        if args[0] == "for-each-ref":
+            return subprocess.CompletedProcess(["git", *args], 0, now, "")
+        if args[0] == "update-ref" and args[1] == "-d":
+            deleted.append(args[2])
+            return subprocess.CompletedProcess(["git", *args], 0, "", "")
+        raise AssertionError(f"appel git inattendu : {args}")
+
+    monkeypatch.setattr(mod, "_git", fake)
+    mod._prune_stack_refs([19548, 19556])
+
+    assert deleted == ["refs/remotes/prh/99999"], deleted
+
+
+def test_stack_prune_is_quiet_when_nothing_closed(monkeypatch):
+    """#20251 -- rien a elaguer = aucun appel `update-ref`.
+
+    Le cas nominal de la passe : la totalite des refs correspond a une PR
+    ouverte, donc l'elagage ne coute rien.
+    """
+    calls: list[list[str]] = []
+
+    def fake(args, check=True):
+        calls.append(list(args))
+        if args[0] == "for-each-ref":
+            return subprocess.CompletedProcess(
+                ["git", *args], 0, "refs/remotes/prh/1 refs/remotes/prh/2", "")
+        raise AssertionError(f"appel git inattendu : {args}")
+
+    monkeypatch.setattr(mod, "_git", fake)
+    mod._prune_stack_refs([1, 2])
+
+    assert [c[0] for c in calls] == ["for-each-ref"], calls
+
+
+def test_stack_door_reaches_the_merge_gate_path(monkeypatch):
+    """#20251 -- la porte atteint le chemin que le merge organe emprunte.
+
+    C'est l'assertion d'integration qui compte : `merge_ready.run_gate` lance
+    `check_adjoint_prevalidation.py <PR> --json`, dont le flot passe par
+    `refute_ready_verdict` -> `derive_verdict`. Sans ce maillon, la porte
+    n'aurait protege que la lane emettrice, pas le merge -- or c'est un MERGE
+    de sommet de pile qui a fait atterrir la version anterieure sur `main`.
+    """
+    verdict, dossier = _ready_dossier()
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(mod, "default_stack_index", lambda: _stack_index(
+        _stack_entry(snapshot["number"], {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"a": "A", "b": "B", "c": "C: correctif ulterieur"}),
+    ))
+
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        snapshot, verdict, [], dossier,
+        probe=lambda pr: {"blocked": False, "blocking": []},
+    )
+
+    assert verdict != mod.VERDICT_READY, (verdict, errors)
+    assert dossier is None
+    assert any("stack top" in e and "#19556" in e for e in errors), errors
+
+
+def test_stack_door_is_silent_on_the_merge_path_when_not_a_stack_top(monkeypatch):
+    """#20251 -- controle negatif du meme chemin : rien a signaler, rien ne change.
+
+    Sans lui, `test_stack_door_reaches_the_merge_gate_path` passerait aussi si
+    la porte refusait tout ce qu'elle voit.
+    """
+    verdict, dossier = _ready_dossier()
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(mod, "default_stack_index", lambda: _stack_index(
+        _stack_entry(snapshot["number"], {"a": "A"}),
+        _stack_entry(19556, {"z": "Z"}),
+    ))
+
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        snapshot, verdict, [], dossier,
+        probe=lambda pr: {"blocked": False, "blocking": []},
+    )
+
+    assert verdict == mod.VERDICT_READY, errors
+    assert errors == [] and dossier is not None

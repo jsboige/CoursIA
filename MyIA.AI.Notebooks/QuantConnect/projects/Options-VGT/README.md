@@ -4,7 +4,7 @@ Stratégie d'options (PUTs/CALLs) sur 5 valeurs tech (NVDA, ORCL, CSCO, AMD, QCO
 
 ## Architecture
 - `main.py` - Wheel strategy multi-equity avec seuils OTM personnalisés
-- `essai_pour_voir.ipynb` - Exploration options chains et distributions
+- `quantbook.ipynb` - QuantBook de recherche : stratégie Wheel sur actions tech (exploration des chaînes d'options et distributions)
 
 ## Concepts enseignés
 - Options trading (PUT selling, covered CALL)

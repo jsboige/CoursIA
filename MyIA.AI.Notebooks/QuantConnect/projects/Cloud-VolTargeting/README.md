@@ -33,6 +33,8 @@ Backtest frais via QC Cloud MCP, 2026-08-07 (`VolTargeting-v1-honest-read-2026-0
 
 **Verdict : NO-BEATS.** Le vol targeting sur SPY seul sous-performe le buy-and-hold SPY : CAGR 6,7 % pour un drawdown de 38,2 %, Sharpe 0,207.
 
+Ces métriques précèdent la correction du calendrier de rééquilibrage (#18941). `date_rules.month_start()` sans symbole sautait les mois dont le 1er n'est pas un jour de bourse ; le code actuel rééquilibre à la première séance de chaque mois (`month_start("SPY")`). L'effet du correctif est mesuré sur la variante v2 dans #18921 (expérience 5a-bis) ; la v1 n'a pas été rebacktestée depuis.
+
 ## Lecture honnête (variante v1)
 
 Le v1 ajuste l'allocation SPY en fonction de la volatilité réalisée : `allocation = vol_target / realized_vol`, clampée entre 30 % et 150 %. Les faiblesses observées sur 2018-2025 :

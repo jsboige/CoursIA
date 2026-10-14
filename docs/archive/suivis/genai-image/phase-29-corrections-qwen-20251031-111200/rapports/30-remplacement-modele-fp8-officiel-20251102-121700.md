@@ -237,7 +237,7 @@ Le cache local (`~/.cache/huggingface/hub/`) accélère considérablement les r�
 ## 📊 STATISTIQUES
 **Temps total** : ~37 minutes (incluant diagnostic et corrections)  
 **Données téléchargées** : ~29 GB (cache réutilisé lors réexécutions)  
-**Scripts créés** : 1 (404 lignes Python)  
+**Scripts créés** : 1  
 **Corrections manuelles** : 2 (symlink VAE, copie manuelle VAE)  
 **Documentation consultée** : 8 sources officielles
 ---

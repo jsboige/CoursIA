@@ -185,7 +185,7 @@ def _looks_nav(text: str, target: str, line: str, cell_is_nav: bool) -> bool:
          marqueur et les liens sont sur deux lignes differentes :
 
              ## Navigation
-             | [Sudoku-05-PSO](Sudoku-05-PSO-Csharp.ipynb) | | [Sudoku-07-...](...) |
+             | [Sudoku-05-PSO](Sudoku-05-PSO-CSharp.ipynb) | | [Sudoku-07-...](...) |
 
     Ce qui n'est **pas** une arete, volontairement : une mention en prose (nom de
     fichier entre `backticks`), une liste « voir aussi » titree, un lien de
@@ -349,6 +349,20 @@ def analyse(inbound, outbound, series):
     Une serie sans entree (chaine bouclee) est jugee depuis son depart le plus
     couvrant -- jamais declaree saine par defaut.
 
+    Statut d'entree INTRA-SERIE (#19076, option (a), arbitrage coordinateur du
+    2026-10-11, c.6114582529). Le statut d'entree d'un carnet ne se perd que
+    par un lien entrant venu de SA serie : un lien venu d'une AUTRE serie
+    (ancre externe) ne le lui retire plus. Historique : calcule sur le graphe
+    global, le statut d'entree etait vole par la premiere ancre externe venue
+    (cas fondateur 07-Aspire, #18987, reclasse `unreachable` puis baseline
+    realigne option b, PR #19075 ; troisieme occurrence Lean-12b/12c, #20392)
+    -- un classement par un lien qui n'appartient pas a la convention de
+    navigation de la serie jugee. La reachability reste GLOBALE. La vue
+    `externally_anchored` (carnets sans lien entrant INTRA-serie mais pourvus
+    d'un lien entrant exterieur, avec leurs sources) reste publiee a titre
+    informatif : sous l'option (a), ces carnets sont des entrees de leur
+    serie, et l'ancre externe reste une information de lecture.
+
     Une serie n'est jugee que si elle **exhibe** une convention de navigation,
     c'est-a-dire au moins une arete INTERNE. Sans cela le dossier n'est pas une
     serie navigable (dossier de recherche, de scripts, de brouillons) : le juger
@@ -373,7 +387,16 @@ def analyse(inbound, outbound, series):
             not_judged.append({"series": _rel(directory), "notebooks": len(members),
                                "reason": "no_internal_nav_edge"})
             continue
-        entries = sorted((nb for nb in members if not inbound.get(nb)), key=_rel)
+        # Statut d'entree INTRA-SERIE (option (a) de l'arbitrage #19076,
+        # tranchee par le coordinateur le 2026-10-11, c.6114582529) : un lien
+        # venu d'une AUTRE serie ne retire plus a un carnet son statut
+        # d'entree dans la sienne. Le statut d'entree se perd desormais
+        # seulement par un lien entrant INTRA-serie ; la reachability, elle,
+        # reste calculee sur le graphe GLOBAL (BFS depuis le basis).
+        def _has_intra_inbound(nb):
+            return any(src in member_set for src in inbound.get(nb, ()))
+
+        entries = sorted((nb for nb in members if not _has_intra_inbound(nb)), key=_rel)
         chain_starts = []
         reach_entries = set()
         if entries:
@@ -382,15 +405,15 @@ def analyse(inbound, outbound, series):
             # d'un notebook qu'elles atteignent. Detectees par BFS individuel --
             # le Precedent du 2e vers le 1er est l'exemple type.
             for nb in sorted(members, key=_rel):
-                if not inbound.get(nb):
+                if not _has_intra_inbound(nb):
                     continue
                 if inbound.get(nb) <= _reachable_from([nb], outbound):
                     chain_starts.append(nb)
             basis = list(entries) + chain_starts
             reach = _reachable_from(basis, outbound)
         else:
-            # Aucun notebook n'est sans lien entrant : la chaine **boucle** (le
-            # « suivant » du dernier pointe le premier). C'est une convention de
+            # Aucun notebook n'est sans lien entrant INTRA-serie : la chaine
+            # **boucle** (le « suivant » du dernier pointe le premier). C'est une convention de
             # navigation legitime, pas une serie non jugeable -- la declarer
             # telle laissait 18 series hors du garde. On se juge alors depuis le
             # depart le plus couvrant : si partir de la atteint toute la serie,
@@ -404,6 +427,21 @@ def analyse(inbound, outbound, series):
         unreachable = sorted(
             (nb for nb in members if nb not in entry_set and nb not in reach), key=_rel
         )
+        # Ancres externes (#19076, informative). `externally_anchored` = carnet
+        # sans lien entrant INTRA-serie, pourvu d'au moins un lien entrant
+        # exterieur : sous l'option (a) c'est une ENTREE de sa serie, et
+        # l'ancre externe reste une information de lecture. Les sources sont
+        # publiees -- sans elles la classification serait un constat muet.
+        # N'entre pas dans `findings` et ne bouge aucun verdict.
+        externally_anchored = []
+        for nb in sorted(members, key=_rel):
+            sources = inbound.get(nb)
+            if not sources or any(src in member_set for src in sources):
+                continue
+            externally_anchored.append({
+                "notebook": _rel(nb),
+                "sources": sorted({_rel(src) for src in sources}),
+            })
         # Une seule entree = serie saine par construction : pas de finding.
         if len(entries) > 1:
             for nb in entries:
@@ -431,6 +469,7 @@ def analyse(inbound, outbound, series):
             "chain_starts": len(chain_starts),
             "independent_chains": len(independent_heads),
             "unreachable": [_rel(nb) for nb in unreachable],
+            "externally_anchored": externally_anchored,
         })
     findings.sort(key=lambda f: (f["kind"], f["notebook"]))
     return {"findings": findings, "wrapped": wrapped,
@@ -683,6 +722,20 @@ def main(argv=None):
                   f"(aucune entree ; jugee(s) depuis un depart arbitraire) : "
                   f"{', '.join(s['series'] for s in report['wrapped'][:4])}"
                   f"{' ...' if len(report['wrapped']) > 4 else ''}")
+        anchored = [(s["series"], a) for s in report["series"]
+                    for a in s.get("externally_anchored", ())]
+        if anchored:
+            # Vue intra-serie publiee, JAMAIS comptee comme finding : le carnet
+            # est l'entree de sa serie pour qui la parcourt, et « atteint » pour
+            # le graphe global. L'ecart est la matiere de l'arbitrage #19076.
+            print(f"INFO: {len(anchored)} carnet(s) ENTREE(s) DE LEUR SERIE "
+                  f"ancree(s) depuis une AUTRE serie (informatif, hors findings "
+                  f"-- arbitrage #19076) :")
+            for serie, a in anchored[:4]:
+                print(f"  {a['notebook']}  <- {', '.join(a['sources'])}"
+                      f"  (serie {serie})")
+            if len(anchored) > 4:
+                print(f"  ... et {len(anchored) - 4} autre(s)")
         if not findings:
             print(f"OK: chaque notebook est atteignable dans sa serie "
                   f"({len(report['series'])} serie(s) jugee(s), "

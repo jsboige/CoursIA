@@ -86,13 +86,13 @@ BCRYPT_HASH = "$2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYdGw5BFmcZ52bGfwf5M2"
 | `31-test-generation-image-fp8-officiel-20251102-131900.py` | 553 | 2025-11-02 | Test génération FP8 officiel | ✅ **VALIDÉ** |
 
 **Scripts Validés à Réexécuter** :
-1. ✅ **09-test-generation-image-workflow-officiel** (563 lignes)
+1. ✅ **09-test-generation-image-workflow-officiel**
    - Workflow JSON officiel ComfyUI
    - Adaptation dynamique modèles disponibles
    - Polling statut exécution
    - Copie image vers rapports/
 
-2. ✅ **31-test-generation-image-fp8-officiel** (553 lignes)
+2. ✅ **31-test-generation-image-fp8-officiel**
    - Architecture FP8 (UNET + CLIP + VAE séparés)
    - Génération d'image réussie ([`Rapport 22`](./22-installation-complete-test-final-20251102-160948.md))
 

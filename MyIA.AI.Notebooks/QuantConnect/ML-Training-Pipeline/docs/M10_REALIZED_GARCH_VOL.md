@@ -98,6 +98,6 @@ The M10 proposal expected 5-15% MSE improvement based on Hansen et al. (2012) eq
 
 ## Files
 
-- `scripts/realized_garch.py`: Core M10 model (273 lines)
-- `scripts/train_realized_garch.py`: Walk-forward training pipeline (398 lines)
+- `scripts/realized_garch.py`: Core M10 model
+- `scripts/train_realized_garch.py`: Walk-forward training pipeline
 - `scripts/results/m10_realized_garch_full.json`: Full 84-combo results

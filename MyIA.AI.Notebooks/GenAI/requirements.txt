@@ -27,7 +27,7 @@ pydub>=0.25.0
 scipy>=1.10.0
 
 # Video processing
-moviepy>=1.0.3
+moviepy>=2.0,<3                # Aligne sur requirements-video.txt ; l'API 1.x (`moviepy.editor`, `.subclip()`) est retiree en 2.0, voir #18512
 imageio>=2.31.0
 imageio-ffmpeg>=0.4.9
 opencv-python>=4.8.0
