@@ -502,6 +502,25 @@ def test_run_git_leve_une_erreur_explicite_au_depassement(monkeypatch):
     assert vus["n"] == 1, "un depassement de delai ne doit pas etre retente"
 
 
+def test_parcours_historique_a_sa_propre_borne(monkeypatch):
+    """`rev-list --objects` (`_blob_ancestor_in`) recoit la borne d'historique,
+    plus large que la borne par defaut : sur le runner CI ce seul appel depasse
+    300 s, alors qu'un `show` ou un `ls-tree` garde la borne courte."""
+    vus = []
+
+    def faux_run(args, **kwargs):
+        vus.append((args[1], kwargs.get("timeout")))
+        return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", faux_run)
+
+    assert ctp._GIT_HISTORY_TIMEOUT_S > ctp._GIT_TIMEOUT_S
+    ctp._blob_ancestor_in(Path("."), "a" * 40)
+    ctp._run_git(["git", "show", "HEAD:x.ipynb"])
+    assert vus == [("rev-list", ctp._GIT_HISTORY_TIMEOUT_S),
+                   ("show", ctp._GIT_TIMEOUT_S)]
+
+
 def test_main_timeout_git_rend_rc3_sans_verdict(tmp_path, capsys, monkeypatch):
     """Au depassement, main rend rc 3 + message explicite, sans trace brute et
     sans aucune sortie (ni verdict vert, ni drift, ni JSON partiel)."""

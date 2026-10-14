@@ -130,7 +130,8 @@ Exit codes
          OU un ou plusieurs drift legacy/content/missing en --ci-strict --check
     2 -- erreur (registre illisible, pas un depot git, paire ou famille inconnue
          pour --check / --verify-recorded-sha)
-    3 -- mesure interrompue : un appel git a depasse `_GIT_TIMEOUT_S` (#20197).
+    3 -- mesure interrompue : un appel git a depasse sa borne (`_GIT_TIMEOUT_S`,
+         ou `_GIT_HISTORY_TIMEOUT_S` pour le parcours d'historique) (#20197).
          Aucun verdict n'est rendu : ni vert, ni drift.
 
 Voir aussi
@@ -189,20 +190,30 @@ def _is_fork_pressure(exc: OSError) -> bool:
 # un blocage. 300 s laisse passer cet appel legitime et rend tout de meme un
 # blocage reel visible en rc 3 au lieu d'un silence.
 _GIT_TIMEOUT_S = 300
+# Le parcours d'historique (`rev-list --objects HEAD`) a sa propre borne : sur
+# le runner CI (clone `filter: blob:none`, fetch paresseux), ce seul appel a
+# depasse 300 s, alors que l'etape `--check --verify-recorded-sha` entiere dure
+# 3 min 54 a 6 min sur `main` sans borne (jobs 115585251354 et 115570972974).
+# 1800 s couvre ces mesures avec une marge d'un facteur 5 et reste tres en deca
+# du delai de job GitHub (6 h) : un vrai blocage sort toujours en rc 3.
+_GIT_HISTORY_TIMEOUT_S = 1800
 
 
 class GitTimeoutError(RuntimeError):
-    """Un appel git a depasse `_GIT_TIMEOUT_S` : la mesure est interrompue."""
+    """Un appel git a depasse sa borne de delai : la mesure est interrompue."""
 
 
-def _run_git(args: list[str], *, cwd=None, text: bool = True) -> subprocess.CompletedProcess:
+def _run_git(args: list[str], *, cwd=None, text: bool = True,
+             timeout: float | None = None) -> subprocess.CompletedProcess:
     """`subprocess.run` de git, avec repli borne sur la pression de fork.
 
     Seul `EAGAIN` est retente ; toute autre `OSError` remonte inchangee, pour
     qu'une panne reelle reste visible au lieu d'etre diluee en trois essais.
-    Un appel qui depasse `_GIT_TIMEOUT_S` leve `GitTimeoutError` (jamais avale,
-    jamais retente : un remote lent ne se repare pas en relancant).
+    Un appel qui depasse sa borne (`timeout`, `_GIT_TIMEOUT_S` par defaut) leve
+    `GitTimeoutError` (jamais avale, jamais retente : un remote lent ne se
+    repare pas en relancant).
     """
+    borne = _GIT_TIMEOUT_S if timeout is None else timeout
     last_exc = None
     for attempt in range(_EAGAIN_ATTEMPTS):
         if attempt:
@@ -210,11 +221,11 @@ def _run_git(args: list[str], *, cwd=None, text: bool = True) -> subprocess.Comp
         options = {"encoding": "utf-8", "errors": "replace"} if text else {}
         try:
             return subprocess.run(args, cwd=cwd, capture_output=True, text=text,
-                                  timeout=_GIT_TIMEOUT_S, **options)
+                                  timeout=borne, **options)
         except subprocess.TimeoutExpired as exc:
             raise GitTimeoutError(
                 f"mesure interrompue : `{' '.join(args)}` n'a pas repondu en "
-                f"{_GIT_TIMEOUT_S} s (remote lent ou fetch paresseux bloque). "
+                f"{borne:g} s (remote lent ou fetch paresseux bloque). "
                 f"Aucun verdict n'est rendu pour ce controle."
             ) from exc
         except OSError as exc:
@@ -530,7 +541,8 @@ def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool
     """
     if not blob_sha or len(blob_sha) != 40:
         return False
-    r = _run_git(["git", "rev-list", "--objects", ref], cwd=str(repo_root))
+    r = _run_git(["git", "rev-list", "--objects", ref], cwd=str(repo_root),
+                 timeout=_GIT_HISTORY_TIMEOUT_S)
     if r.returncode != 0:
         return False
     # Chaque ligne de `rev-list --objects` est soit "<commit_sha>" soit
@@ -1667,7 +1679,7 @@ def _paire_inconnue(nom: str, pairs: list) -> None:
 
 
 def main(argv=None) -> int:
-    """Point d'entree CLI. Un appel git qui depasse `_GIT_TIMEOUT_S` interrompt la
+    """Point d'entree CLI. Un appel git qui depasse sa borne de delai interrompt la
     mesure : message explicite sur stderr et rc 3 (distinct de 1 = drift et de
     2 = erreur de registre ou d'usage), jamais une trace brute ni un verdict vide."""
     try:
