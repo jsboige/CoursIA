@@ -266,9 +266,9 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 19 | Analysis-I-Tao-Workflow | ~18 | 3 | 0 | **NOUVEAU** |
 | 20 | PFR-Entropy-Method | ~23 | 3 | 0 | **NOUVEAU** |
 | 20b | PFR-Primitives-Transportables | ~6 | 0 | - | **NOUVEAU** (digestion #12214) |
-| 21 | MIMO-Detection-Flips | ~41 | 4 | 0 | **NOUVEAU** |
-| 21b | MIMO-Converse-Native | ~34 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`) |
-| 21c | Descente-Budget | ~24 | 4 | 0 | **NOUVEAU** (#12219) |
+| MIMO-01 | Descente-Budget | ~24 | 4 | 0 | **NOUVEAU** (#12219) |
+| MIMO-02 | MIMO-Detection-Flips | ~41 | 4 | 0 | **NOUVEAU** |
+| MIMO-03 | MIMO-Converse-Native | ~34 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`) |
 | MIMO-04 | Capstone-Digestion | ~26 | 3 | 0 | **NOUVEAU** (kernel python3, capstone de la sous-série #17545) |
 | 22 | Galois-Probleme-Inverse-M23 | ~25 | 3 | 0 | **NOUVEAU** (exécution Lean + sympy) |
 | 23 | ERC20-Invariant-Companion | ~21 | 3 | 0 | **NOUVEAU** (lecture statique Python du lake) |
@@ -553,7 +553,7 @@ Lean/
 ├── hecke_lean/                     # Opérateurs de Hecke T_p/U_p (port pédagogique de anthropics/fermats-last-theorem, Apache-2.0, toolchain pinée v4.33.0) - 0 sorry, Lake build ; companion du notebook Lean-29
 ├── formal_groups_lean/             # Groupes formels multivariés (port de anthropics/fermats-last-theorem, Apache-2.0) - 0 sorry, Lake build ; companion du notebook Lean-30
 ├── formal_logic_lean/              # Logique formelle : Foundation piné + ProvabilityLogic (CONSUMER_PINNÉ) - 0 sorry, Lake build ; companion des notebooks Lean-3b/34/34b (Epic #15066)
-├── mimo_lean/                      # Détection MIMO et borne converse Hanson-Wright (brique SLT empruntée à YuanheZ/lean-stat-learning-theory) - 0 sorry, Lake build ; companion du notebook Lean-21b
+├── mimo_lean/                      # Détection MIMO et borne converse Hanson-Wright (brique SLT empruntée à YuanheZ/lean-stat-learning-theory) - 0 sorry, Lake build ; companion du notebook MIMO-02
 ├── tegmark_muh_lean/               # Annexe A de Tegmark 2007 (arXiv:0704.0646) : structures finies, encodage, C₃/C₂/NAND, Aut(S), squelette décideur déclaré - **sans dépendance Mathlib**, 0 sorry, Lake build ; companion du notebook Lean-36
 ├── mathlib_examples/               # Smoke test Mathlib (ring/linarith/omega/rw, 4 buts) - 0 sorry, Lake build
 ├── agent_tests/                    # Prover daemon (autonomous Lean proof)
