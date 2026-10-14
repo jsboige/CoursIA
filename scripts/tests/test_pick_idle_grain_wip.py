@@ -30,6 +30,9 @@ import pick_idle_grain as pig  # noqa: E402
 
 LANE = "myia-po-2026:CoursIA"
 OTHER_LANE = "myia-po-2023:CoursIA-2"
+# Plafond exerce par cette suite. Le defaut est 0 (desactive, decision user
+# 2026-10-12) : les tests du garde le reactivent en opt-in par --wip-cap.
+CAP = 15
 
 
 def _pr(n, lane, age_hours, *, draft=False):
@@ -97,7 +100,7 @@ def test_wip_counts_drafts_and_excludes_other_lanes_and_untagged(monkeypatch):
     assert out["wip_count"] == 2
     assert [e["number"] for e in out["wip_prs"]] == [1, 2]  # oldest first
     assert out["wip_prs"][1]["is_draft"] is True
-    assert out["wip_triggered"] is False  # 2 < 15 : le garde ne declenche pas
+    assert out["wip_triggered"] is False  # defaut 0 : le garde est desactive
 
 
 def test_lane_open_prs_sorts_oldest_first():
@@ -144,32 +147,32 @@ def test_at_the_cap_the_lane_gets_its_queue_not_a_draw(monkeypatch, capsys):
     rouge : sortie 0, en-tete FILE DE REPARATION, aucune occurrence du mot
     refus, plafond ET compte mesures nommes, file oldest first.
     """
-    _patch_guard(monkeypatch, _fleet(pig.WIP_CAP_DEFAULT))
-    rc = pig.main(["--lane", LANE])
+    _patch_guard(monkeypatch, _fleet(CAP))
+    rc = pig.main(["--lane", LANE, "--wip-cap", str(CAP)])
     out = capsys.readouterr().out
     assert rc == 0, f"le chemin assignation doit rendre 0, got {rc}"
     head = out.splitlines()[0]
     assert "FILE DE REPARATION" in head
     assert "REFUS" not in head.upper()
-    assert f"plafond de WIP = {pig.WIP_CAP_DEFAULT}" in out, "le plafond doit etre nomme"
-    assert f"porte {pig.WIP_CAP_DEFAULT} PR(s) ouverte(s)" in out, "le compte mesure doit etre nomme"
+    assert f"plafond de WIP = {CAP}" in out, "le plafond doit etre nomme"
+    assert f"porte {CAP} PR(s) ouverte(s)" in out, "le compte mesure doit etre nomme"
     # File oldest first : la plus ancienne (#1, 50 h) est listee en premier.
     listed = [line for line in out.splitlines() if "ouverte depuis" in line]
-    assert len(listed) == pig.WIP_CAP_DEFAULT
+    assert len(listed) == CAP
     assert "#1" in listed[0] and "50 h" in listed[0]
 
 
 def test_at_the_cap_the_json_assignation_carries_the_queue(monkeypatch, capsys):
     """Le consommateur machine lit mode repair + assignment + grain, pas un refus."""
-    _patch_guard(monkeypatch, _fleet(pig.WIP_CAP_DEFAULT))
-    rc = pig.main(["--lane", LANE, "--json"])
+    _patch_guard(monkeypatch, _fleet(CAP))
+    rc = pig.main(["--lane", LANE, "--wip-cap", str(CAP), "--json"])
     payload = json.loads(capsys.readouterr().out)
     assert rc == 0
     assert payload["mode"] == "repair"
     assert payload["assignment"] == "drainer-son-wip"
     assert payload["grain"]["number"] == 1  # la plus ancienne de la file
     assert payload["wip_triggered"] is True
-    assert payload["wip_count"] == pig.WIP_CAP_DEFAULT
+    assert payload["wip_count"] == CAP
     assert "refus" not in payload
 
 
@@ -180,9 +183,9 @@ def test_below_the_cap_the_draw_proceeds(monkeypatch, capsys):
     d'un plafond qui marche : toute lane active serait immobilisee et
     --ignore-wip deviendrait la voie ordinaire.
     """
-    _patch_guard(monkeypatch, _fleet(pig.WIP_CAP_DEFAULT - 1))
+    _patch_guard(monkeypatch, _fleet(CAP - 1))
     _patch_draw(monkeypatch)
-    rc = pig.main(["--lane", LANE])
+    rc = pig.main(["--lane", LANE, "--wip-cap", str(CAP)])
     out = capsys.readouterr().out
     assert rc == 0
     assert "FILE DE REPARATION" not in out
@@ -196,10 +199,10 @@ def test_drafts_count_toward_the_cap(monkeypatch, capsys):
     14 PRs regulieres + 1 brouillon = 15 : convertir la 15e en draft ne
     doit pas echapper au plafond. Le brouillon est liste ET marque.
     """
-    prs = _fleet(pig.WIP_CAP_DEFAULT - 1)
+    prs = _fleet(CAP - 1)
     prs.append(_pr(99, LANE, 1, draft=True))
     _patch_guard(monkeypatch, prs)
-    rc = pig.main(["--lane", LANE])
+    rc = pig.main(["--lane", LANE, "--wip-cap", str(CAP)])
     out = capsys.readouterr().out
     assert rc == 0
     assert "FILE DE REPARATION" in out
@@ -214,11 +217,11 @@ def test_other_lanes_prs_do_not_count_toward_the_cap(monkeypatch, capsys):
     du depot -- sinon toutes les lanes paieraient l'encours de la plus
     chargee.
     """
-    prs = _fleet(pig.WIP_CAP_DEFAULT - 1)
+    prs = _fleet(CAP - 1)
     prs += [_pr(500 + i, OTHER_LANE, 30) for i in range(5)]
     _patch_guard(monkeypatch, prs)
     _patch_draw(monkeypatch)
-    rc = pig.main(["--lane", LANE])
+    rc = pig.main(["--lane", LANE, "--wip-cap", str(CAP)])
     out = capsys.readouterr().out
     assert rc == 0
     assert "FILE DE REPARATION" not in out
@@ -226,17 +229,36 @@ def test_other_lanes_prs_do_not_count_toward_the_cap(monkeypatch, capsys):
 
 def test_untagged_prs_do_not_count_toward_the_cap(monkeypatch, capsys):
     """Controle negatif : une PR sans tag lisible n'est imputable a personne."""
-    prs = _fleet(pig.WIP_CAP_DEFAULT - 1)
+    prs = _fleet(CAP - 1)
     prs += [_pr(600 + i, None, 30) for i in range(3)]
     _patch_guard(monkeypatch, prs)
     _patch_draw(monkeypatch)
-    rc = pig.main(["--lane", LANE])
+    rc = pig.main(["--lane", LANE, "--wip-cap", str(CAP)])
     out = capsys.readouterr().out
     assert rc == 0
     assert "FILE DE REPARATION" not in out
 
 
 # --- reglages et echappatoire -----------------------------------------------
+
+
+def test_default_cap_is_disabled(monkeypatch, capsys):
+    """Decision user 2026-10-12 : sans --wip-cap, aucun plafond ne freine la lane.
+
+    20 PRs ouvertes, aucune rouge : le tirage passe, et le payload rend
+    toujours le compte mesure (le garde est eteint, pas la mesure).
+    """
+    assert pig.WIP_CAP_DEFAULT == 0
+    _patch_guard(monkeypatch, _fleet(20))
+    _patch_draw(monkeypatch)
+    rc = pig.main(["--lane", LANE])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "FILE DE REPARATION" not in out
+    assert "plafond de WIP" not in out
+    out = pig.red_backlog(LANE, 24, count_threshold=3)
+    assert out["wip_count"] == 20
+    assert out["wip_triggered"] is False
 
 
 def test_wip_cap_zero_disables_the_guard(monkeypatch, capsys):
@@ -273,7 +295,7 @@ def test_ignore_wip_without_wip_reason_is_an_error(monkeypatch, capsys):
     pas. argparse ap.error = sortie 2, meme convention que --lane requis.
     """
     with pytest.raises(SystemExit) as excinfo:
-        pig.main(["--lane", LANE, "--ignore-wip"])
+        pig.main(["--lane", LANE, "--wip-cap", str(CAP), "--ignore-wip"])
     assert excinfo.value.code == 2
     assert "--wip-reason" in capsys.readouterr().err
 
@@ -286,14 +308,14 @@ def test_admit_reason_does_not_satisfy_ignore_wip(monkeypatch, capsys):
     la lane n'a demande qu'a passer le plafond.
     """
     with pytest.raises(SystemExit) as excinfo:
-        pig.main(["--lane", LANE, "--ignore-wip", "--admit-reason", "x"])
+        pig.main(["--lane", LANE, "--wip-cap", str(CAP), "--ignore-wip", "--admit-reason", "x"])
     assert excinfo.value.code == 2
     assert "--wip-reason" in capsys.readouterr().err
 
 
 def test_wip_reason_without_ignore_wip_is_an_error(monkeypatch, capsys):
     with pytest.raises(SystemExit) as excinfo:
-        pig.main(["--lane", LANE, "--wip-reason", "x"])
+        pig.main(["--lane", LANE, "--wip-cap", str(CAP), "--wip-reason", "x"])
     assert excinfo.value.code == 2
     assert "--ignore-wip" in capsys.readouterr().err
 
@@ -304,15 +326,15 @@ def test_ignore_wip_with_wip_reason_lets_the_draw_proceed(monkeypatch, capsys):
     Le passage outre ne se prend pas en silence : l'epilogue du tirage
     doit nommer le compte qui reste au-dessus du plafond.
     """
-    _patch_guard(monkeypatch, _fleet(pig.WIP_CAP_DEFAULT))
+    _patch_guard(monkeypatch, _fleet(CAP))
     _patch_draw(monkeypatch)
-    rc = pig.main(["--lane", LANE, "--ignore-wip",
+    rc = pig.main(["--lane", LANE, "--wip-cap", str(CAP), "--ignore-wip",
                    "--wip-reason", "gel coordinateur, file entiere tenue"])
     out = capsys.readouterr().out
     assert rc == 0
     assert "FILE DE REPARATION" not in out
     assert "!! --ignore-wip" in out
-    assert f"plafond {pig.WIP_CAP_DEFAULT}" in out
+    assert f"plafond {CAP}" in out
     assert "gel coordinateur, file entiere tenue" in out
     # le garde d'admission n'est PAS leve par le passage outre du plafond
     assert "!! --admit-reason" not in out
@@ -330,10 +352,10 @@ def test_red_and_wip_are_both_reported(monkeypatch, capsys):
     laisserait la lane croire qu'un seul travail l'attend.
     """
     red = _state_red()
-    prs = _fleet(pig.WIP_CAP_DEFAULT)
+    prs = _fleet(CAP)
     states = {1: red}  # la plus ancienne est aussi la rouge
     _patch_guard(monkeypatch, prs, states)
-    rc = pig.main(["--lane", LANE])
+    rc = pig.main(["--lane", LANE, "--wip-cap", str(CAP)])
     out = capsys.readouterr().out
     assert rc == 0
     head = out.splitlines()[0]
@@ -341,16 +363,16 @@ def test_red_and_wip_are_both_reported(monkeypatch, capsys):
     assert "reparer ses propres PRs" in out      # motif rouge
     assert "drainer son WIP" in out or "PLAFOND DE WIP" in out  # motif WIP
     assert "check requis en echec" in out        # la cause rouge est bien la
-    assert f"plafond de WIP = {pig.WIP_CAP_DEFAULT}" in out or \
-        f"plafond = {pig.WIP_CAP_DEFAULT}" in out
+    assert f"plafond de WIP = {CAP}" in out or \
+        f"plafond = {CAP}" in out
 
 
 def test_red_and_wip_json_composes_the_assignment(monkeypatch, capsys):
     """En sortie machine aussi : assignment compose, grain = premier rouge."""
     red = _state_red()
-    prs = _fleet(pig.WIP_CAP_DEFAULT)
+    prs = _fleet(CAP)
     _patch_guard(monkeypatch, prs, {1: red})
-    rc = pig.main(["--lane", LANE, "--json"])
+    rc = pig.main(["--lane", LANE, "--wip-cap", str(CAP), "--json"])
     payload = json.loads(capsys.readouterr().out)
     assert rc == 0
     assert payload["mode"] == "repair"
@@ -373,7 +395,7 @@ def test_wip_guard_survives_a_fetch_failure(monkeypatch, capsys):
     monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: {})
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
     _patch_draw(monkeypatch)
-    rc = pig.main(["--lane", LANE])
+    rc = pig.main(["--lane", LANE, "--wip-cap", str(CAP)])
     out = capsys.readouterr().out
     assert rc == 0
     assert "FILE DE REPARATION" not in out
