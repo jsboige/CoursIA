@@ -233,7 +233,11 @@ def _make_openrouter_generator(deadline: Optional[float] = None):
                 return "sorry"
             return post_process_output(self.model_name, outs[0])
 
-    return OpenRouterTacticGenerator()
+    # Le joint deadline (mesure adjoint 2026-10-13 sur 4920b146840) : la
+    # factory recevait ``deadline`` mais instanciait le generateur sans le
+    # transmettre -- self.deadline restait None, timeout None, budget_hit
+    # inatteignable depuis le vrai generateur.
+    return OpenRouterTacticGenerator(deadline=deadline)
 
 
 @dataclass

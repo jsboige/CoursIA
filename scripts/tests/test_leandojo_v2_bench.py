@@ -265,3 +265,106 @@ def test_whole_proof_elapsed_over_budget_fails(monkeypatch, bench):
     assert result.termination == "budget_s_timeout"
     assert compiled == []
     assert result.elapsed_s >= 0.05
+
+
+# --- Le joint deadline de la VRAIE factory (mesure adjoint 2026-10-13) -----
+#
+# Recoupement adjoint sur 4920b146840 : la factory recevait ``deadline`` mais
+# instanciait ``OpenRouterTacticGenerator()`` sans le transmettre -- depuis
+# le VRAI generateur, ``self.deadline`` restait None, ``timeout`` None et
+# ``budget_hit`` inatteignable (une requete partait meme budget epuise).
+# Ces tests appellent la VRAIE factory, sans reseau ni wheel : les
+# dependances lourdes (``lean_dojo_v2.*``, ``loguru``) sont injectees en
+# doublons minimaux, seul ``requests.post`` est intercepte.
+
+
+def _inject_factory_deps(monkeypatch):
+    """Doublons minimaux des imports internes de la factory."""
+    import types
+
+    class _HFTacticGenerator:
+        def __init__(self, model_name: str = "") -> None:
+            self.model_name = model_name
+            self.used_tactics = set()
+
+    hf_runner = types.ModuleType(
+        "lean_dojo_v2.external_api.python.external_models.hf_runner")
+    hf_runner.HFTacticGenerator = _HFTacticGenerator
+    parser = types.ModuleType(
+        "lean_dojo_v2.external_api.python.external_models.external_parser")
+    parser.pre_process_input = lambda _model, s: s
+    parser.post_process_output = lambda _model, s: s
+    loguru = types.ModuleType("loguru")
+
+    class _Logger:
+        @staticmethod
+        def error(_msg):
+            pass
+
+        @staticmethod
+        def info(_msg):
+            pass
+
+    loguru.logger = _Logger()
+    for name, mod in {
+        "lean_dojo_v2": types.ModuleType("lean_dojo_v2"),
+        "lean_dojo_v2.external_api":
+            types.ModuleType("lean_dojo_v2.external_api"),
+        "lean_dojo_v2.external_api.python":
+            types.ModuleType("lean_dojo_v2.external_api.python"),
+        "lean_dojo_v2.external_api.python.external_models":
+            types.ModuleType("lean_dojo_v2.external_api.python.external_models"),
+        "lean_dojo_v2.external_api.python.external_models.hf_runner": hf_runner,
+        "lean_dojo_v2.external_api.python.external_models.external_parser":
+            parser,
+        "loguru": loguru,
+    }.items():
+        monkeypatch.setitem(sys.modules, name, mod)
+
+
+def test_factory_transmits_deadline_and_timeout(monkeypatch, bench):
+    # La deadline passee a la factory doit atteindre le generateur : stockee
+    # telle quelle, borne du transport = temps restant (plafonne a 120 s).
+    _inject_factory_deps(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "cle-de-test")
+    deadline = time.monotonic() + 50.0
+    gen = bench._make_openrouter_generator(deadline=deadline)
+    assert gen.deadline == deadline  # le joint defectueux laissait None ici
+
+    class _Resp:
+        @staticmethod
+        def json():
+            return {"choices": [{"message": {"content": "exact"}}]}
+
+    posted = []
+    monkeypatch.setattr(
+        "requests.post", lambda *a, **k: posted.append(k) or _Resp())
+    outs = gen._post("prompt", n=1, max_tokens=8)
+    assert outs == ["exact"]
+    assert len(posted) == 1
+    timeout = posted[0]["timeout"]
+    assert 0 < timeout <= bench.REQUEST_TIMEOUT_CAP_S
+    assert timeout <= 50.0  # le temps restant, pas le seul plafond global
+
+
+def test_factory_expired_deadline_sends_no_request(monkeypatch, bench):
+    # Budget deja epuise a l'entree : la requete ne part pas du tout et la
+    # coupure remonte via budget_hit -- atteignable DEPUIS la vraie factory.
+    _inject_factory_deps(monkeypatch)
+    deadline = time.monotonic() - 1.0
+    gen = bench._make_openrouter_generator(deadline=deadline)
+    assert gen.deadline == deadline
+
+    posted = []
+    monkeypatch.setattr("requests.post", lambda *a, **k: posted.append(k))
+    assert gen._post("prompt", n=1, max_tokens=8) == []
+    assert posted == []
+    assert gen.budget_hit is True
+
+
+def test_factory_without_deadline_keeps_none(monkeypatch, bench):
+    # Sans deadline le transport reste non borne (None) -- comportement
+    # documente, distinct du joint defectueux qui rendait TOUTE deadline None.
+    _inject_factory_deps(monkeypatch)
+    gen = bench._make_openrouter_generator()
+    assert gen.deadline is None
