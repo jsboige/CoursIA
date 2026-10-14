@@ -75,6 +75,16 @@ Trois urnes, parce que le pool n'est pas homogene
                   aveugle -- pour les lanes habilitees uniquement. Une lane
                   worker qui rencontre une candidate-delivered poste [INFO]
                   avec sa preuve et rend la main, sans fermer.
+                  Le marqueur est **relevable** : un commentaire posterieur
+                  dont une ligne commence par `[NOT-DELIVERED]` (ou
+                  `[INFO] candidate-delivered-revoked`) retracte les
+                  marqueurs anterieurs, et une livraison jugee partielle
+                  remet l'issue sur le tapis des lanes worker -- sans quoi
+                  le marqueur etait permanent et l'issue ecartee a vie.
+                  Les deux sondes de commentaire (voie ponderee et tapis)
+                  partagent cet etat ordonne ; le LABEL `candidate-delivered`
+                  ne se retracte pas, lui : il est retire par le sweep, pas
+                  revoque par un commentaire.
 
 Reprendre ses PRs AVANT de piocher (mandats user 2026-08-22 et 2026-08-24)
 --------------------------------------------------------------------------
@@ -143,6 +153,10 @@ motifs sont rendus, aucun ne masque l'autre. `--wip-cap N` ajuste le plafond
 (0 le desactive) ; `--ignore-wip` exige `--wip-reason` ecrite -- une
 justification PROPRE au plafond : reutiliser `--admit-reason` leverait du
 meme geste le garde d'admission (claims, DWELL), qu'on n'a pas demande.
+
+Depuis la decision user du 2026-10-12, le plafond est DESACTIVE par defaut
+(`WIP_CAP_DEFAULT = 0`) : aucun mecanisme ne doit freiner la productivite des
+agents, c'est au debit de merge de suivre. `--wip-cap N` le reactive en opt-in.
 
 Ardoise de lane : la mesure qui rend un faux "rien livre" impossible (L721)
 --------------------------------------------------------------------------
@@ -262,6 +276,28 @@ _DELIVERED_MARKER_RE = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 
+# Retractation du marqueur (mesure du 12/10 : sur 80 issues marquees livrees,
+# 20 l'etaient partiellement). Le marqueur etait PERMANENT par accident
+# d'implementation : des le premier hit, un `any(...)` rendait True a vie, et
+# une verification ulterieure concluant « livraison partielle » ne pouvait
+# plus remettre l'issue sur le tapis -- elle restait ecartee de toutes les
+# lanes worker indefiniment. Deux formes, l'une et l'autre en TETE de ligne
+# (`^\s*` + MULTILINE comme la grammaire de livraison) : une mention en prose
+# (« ...et non [NOT-DELIVERED] dans ce fil ») ne retracte rien.
+# La forme `[INFO] candidate-delivered-revoked` ne se relit PAS comme une
+# livraison : le lookahead `(?![-_\w])` de #20008 ferme `candidate-delivered`
+# devant `-revoked`. Le regex de livraison n'est donc pas elargi, et le sens
+# est porte par l'ORDRE : une retractation defait les marqueurs posterieurs
+# a elle, un marqueur repose apres elle rearme (cf `_delivered_state`).
+_DELIVERED_MARKER_REVOKED_RE = re.compile(
+    r"(?:"
+    r"^\s*\[NOT-DELIVERED\]"
+    r"|"
+    r"^\s*\[INFO\]\s+candidate-delivered-revoked"
+    r")",
+    re.IGNORECASE | re.MULTILINE,
+)
+
 
 def _issue_comment_bodies_rest(issue_number: int) -> list[str] | None:
     """Corps des commentaires lus par REST (`gh api` : bucket de quota distinct).
@@ -296,6 +332,34 @@ def _issue_comment_bodies_rest(issue_number: int) -> list[str] | None:
     return out.splitlines()
 
 
+def _delivered_state(comment_bodies: list[str]) -> bool:
+    """Etat du signal de livraison apres parcours CHRONOLOGIQUE des corps.
+
+    Un `any(...)` rendait le marqueur permanent : une retractation posterieure
+    ne pouvait plus remettre une issue partiellement livree sur le tapis
+    (mesure du 12/10 : 20 des 80 issues marquees livrees etaient partielles).
+    Ici le marqueur est un ETAT, et chaque corps est un evenement -- un
+    marqueur de livraison rearme, une forme de retractation desarme ; c'est
+    l'etat apres le DERNIER evenement qui est rendu. Un corps portant les
+    deux est contradictoire et la retractation l'emporte (c'est le geste
+    delibere, et c'est elle que ce correctif doit rendre effective).
+
+    L'ordre des corps est celui du transport, et il est chronologique :
+    `gh issue view --comments --json comments` rend les commentaires du plus
+    ancien au plus recent (`createdAt` croissant), et
+    `_issue_comment_bodies_rest` conserve cet ordre (la decoupe ligne a ligne
+    ne reordonne rien). Aucun tri n'est donc fait ici -- en ajouter un ferait
+    dependre le sens d'un champ que le transport REST ne porte pas.
+    """
+    delivered = False
+    for body in comment_bodies:
+        if _DELIVERED_MARKER_REVOKED_RE.search(body or ""):
+            delivered = False
+        elif _DELIVERED_MARKER_RE.search(body or ""):
+            delivered = True
+    return delivered
+
+
 def _has_delivered_marker(issue_number: int) -> bool | None:
     """Retourne True si l'issue porte un marqueur [INFO] candidate-delivered.
 
@@ -309,6 +373,10 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
     voie nominale reste donc a exactement une requete, et l'invariant de
     comptage des tests tient ; le repli n'existe que pour les pannes du
     bucket partage.
+
+    Le marqueur est RELEVABLE (cf `_delivered_state`, `_DELIVERED_MARKER_REVOKED_RE`) :
+    les deux transports rendent leurs corps dans l'ordre chronologique, et le
+    verdict est l'etat apres le dernier evenement, pas un `any(...)`.
     """
     try:
         out = subprocess.run(
@@ -322,7 +390,7 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
         bodies = _issue_comment_bodies_rest(issue_number)
         if bodies is None:
             return None
-        return any(_DELIVERED_MARKER_RE.search(b) for b in bodies)
+        return _delivered_state(bodies)
     # Tolérance : la charge utile peut être [] (issue introuvable, ou mock de
     # test ancien), {comments: [...]} (gh standard), voire {data: ...}. Le
     # contrat utile est "iterable de dict avec .body" ; tout le reste = pas
@@ -332,9 +400,8 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
     comments = payload.get("comments") or []
     if not isinstance(comments, list):
         return False
-    return any(_DELIVERED_MARKER_RE.search((c.get("body") or "")
-                                          if isinstance(c, dict) else "")
-               for c in comments)
+    return _delivered_state([(c.get("body") or "") if isinstance(c, dict)
+                             else "" for c in comments])
 
 
 # Saturation par zone d atterrissage (#13420) : l axe partition-proof que
@@ -1310,6 +1377,13 @@ def has_delivered_signal(issue_number: int,
     (`_issue_comment_bodies_rest`), qui ne partage pas le bucket tombe. Le
     tri-etat est preserve -- ``None`` seulement si les DEUX transports
     echouent.
+
+    Le marqueur est RELEVABLE, au meme titre que `_has_delivered_marker` : les
+    deux sondes de commentaire partagent `_delivered_state`, donc une ligne
+    `[NOT-DELIVERED]` / `[INFO] candidate-delivered-revoked` posterieure
+    remet l'issue sur le tapis, et un marqueur repose apres elle rearme. Le
+    chemin LABEL, lui, ne se retracte pas (`delivered_signal_reason` : un
+    label est retire par le sweep, pas revoque par un commentaire).
     """
     try:
         out = subprocess.run(
@@ -1331,17 +1405,16 @@ def has_delivered_signal(issue_number: int,
         bodies = _issue_comment_bodies_rest(issue_number)
         if bodies is None:
             return None
-        return any(_DELIVERED_MARKER_RE.search(b) for b in bodies)
-    for comment in comments:
-        # Grammaire `_DELIVERED_MARKER_RE`, pas la sous-chaine nue (#19390,
-        # controle negatif) : une mention discursive -- « sans [INFO]
-        # candidate-delivered », « [INFO] absent dans ce fil » -- porte la
-        # sous-chaine sans etre un en-tete de marqueur, et retirerait le
-        # candidat sur un faux positif. La voie ponderee et le tapis
-        # partagent cette seule grammaire.
-        if _DELIVERED_MARKER_RE.search(comment.get("body") or ""):
-            return True
-    return False
+        return _delivered_state(bodies)
+    # Grammaire `_DELIVERED_MARKER_RE`, pas la sous-chaine nue (#19390,
+    # controle negatif) : une mention discursive -- « sans [INFO]
+    # candidate-delivered », « [INFO] absent dans ce fil » -- porte la
+    # sous-chaine sans etre un en-tete de marqueur, et retirerait le
+    # candidat sur un faux positif. La voie ponderee et le tapis
+    # partagent cette seule grammaire -- et depuis la retractation, le meme
+    # parcours ordonne que `_has_delivered_marker`.
+    return _delivered_state([(c.get("body") or "") if isinstance(c, dict)
+                             else "" for c in comments])
 
 
 def delivered_probe_inert(issue_number: int, lane: str | None = None) -> bool:
@@ -2676,7 +2749,12 @@ RED_COUNT_DEFAULT = 3
 # l'ENCOURS, et un brouillon est de l'encours). Comptage par TAG de lane
 # (`Grain: ... lane <machine:workspace>`), jamais par auteur (L721 / #9485).
 # 0 desactive le garde (meme convention que --dwell-hours 0).
-WIP_CAP_DEFAULT = 15
+# Decision user 2026-10-12 : aucun mecanisme ne doit freiner la productivite
+# des agents. Le plafond est donc DESACTIVE par defaut : une lane chargee de
+# PRs vertes en attente de merge continue de produire, et c'est au debit de
+# merge de suivre. Le compte WIP reste mesure et rendu (`wip_count`,
+# `wip_prs`) ; `--wip-cap N` reactive le garde en opt-in, sur demande.
+WIP_CAP_DEFAULT = 0
 
 # CANCELLED / SKIPPED / NEUTRAL sont volontairement absents : un run annule
 # par `concurrency` n'est pas un echec, et le confondre avec un rouge est le
