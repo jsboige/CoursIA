@@ -2298,7 +2298,14 @@ training in 1908 s (31.8 min) on a shared 8 GB GPU, VRAM contained around
 the format contract is learned with a diversified dataset (227 pairs) and generalizes
 to reformulations, while the same SFT with 5 examples breaks generation.
 The loss measures memorization, generation reveals generalization.",,,,,,,bd46642ad7f74b37,70ecee890c3a4655,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,cf552bd0,code,fr,c2261ec1b233c654,"import torch
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,cf552bd0,code,fr,760f59620a7c37ef,"# Les warnings tqdm/hf_hub/torch embarquent le chemin absolu du venv dans leur traceback -> supprimes (ratchet MACHINE_PATH)
+import os
+import warnings
+os.environ.setdefault(""HF_HUB_DISABLE_SYMLINKS_WARNING"", ""1"")
+warnings.filterwarnings(""ignore"", message=""IProgress not found"")
+warnings.filterwarnings(""ignore"", message=""huggingface_hub.*symlinks.*"")
+warnings.filterwarnings(""ignore"", message=""torch.utils.checkpoint: the use_reentrant.*"")
+import torch
 import os
 import gc
 import copy
@@ -2312,7 +2319,7 @@ print(f""CUDA : {torch.cuda.is_available()}"")
 if torch.cuda.is_available():
     props = torch.cuda.get_device_properties(0)
     print(f""GPU : {props.name}, {props.total_memory / 1e9:.1f} GB VRAM"")
-    print(f""VRAM libre : {torch.cuda.mem_get_info()[0] / 1e9:.1f} GB"")",,,,,,,,c2261ec1b233c654,,,,,,,,
+    print(f""VRAM libre : {torch.cuda.mem_get_info()[0] / 1e9:.1f} GB"")",,,,,,,,760f59620a7c37ef,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,2bbe17fa,code,fr,a33739e880577f34,"# Charger le modele de base pour demontrer les limites du SFT
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType
@@ -2357,48 +2364,132 @@ for p in test_prompts:
     print(f""Q: {q}"")
     print(f""  Reponse: {resp}"")
     print()",,,,,,,,a33739e880577f34,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,45c88110,code,fr,93686a74c62ab619,"# Dataset de preferences synthetique
-preference_data = [
-    {
-        ""prompt"": ""### Human: Expliquez brievement ce qu'est une API REST.\n### Assistant:"",
-        ""chosen"": ""Une API REST est une interface de programmation qui utilise le protocole HTTP pour echanger des donnees. Elle repose sur les verbes HTTP (GET, POST, PUT, DELETE) et retourne generalement du JSON."",
-        ""rejected"": ""REST est un truc avec HTTP. Tu fais des requetes et ca repond. C'est utilise partout dans le web."",
-    },
-    {
-        ""prompt"": ""### Human: Donnez un conseil pour apprendre Python.\n### Assistant:"",
-        ""chosen"": ""Commencez par les bases : variables, boucles, fonctions. Pratiquez avec de petits projets comme une calculatrice. Utilisez la documentation officielle et des tutoriels interactifs."",
-        ""rejected"": ""Python est facile, juste regarde des videos YouTube et tu verras bien. Pas besoin de livres ou de cours."",
-    },
-    {
-        ""prompt"": ""### Human: Quelle est la difference entre SQL et NoSQL ?\n### Assistant:"",
-        ""chosen"": ""SQL utilise des tables structurees avec des schemas fixes et des relations (MySQL, PostgreSQL). NoSQL utilise des formats flexibles comme des documents (MongoDB) ou des cles-valeurs (Redis)."",
-        ""rejected"": ""SQL c'est mieux que NoSQL. Les bases SQL sont plus rapides et plus utilisees. NoSQL c'est pour les gens qui aiment pas les tables."",
-    },
-    {
-        ""prompt"": ""### Human: Comment fonctionne le machine learning ?\n### Assistant:"",
-        ""chosen"": ""Le ML permet a un algorithme d'apprendre des patterns dans des donnees sans etre explicitement programme. On l'entraine sur un dataset, il ajuste ses parametres pour minimiser une erreur, puis il peut predire sur de nouvelles donnees."",
-        ""rejected"": ""Le machine learning c'est de l'intelligence artificielle. Les ordinateurs pensent tout seuls. C'est magique et ca remplace les humains."",
-    },
-    {
-        ""prompt"": ""### Human: Qu'est-ce que Docker en une phrase ?\n### Assistant:"",
-        ""chosen"": ""Docker est un outil qui permet d'empaqueter une application et ses dependances dans un conteneur isole, assurant qu'elle fonctionne de maniere identique sur tout environnement."",
-        ""rejected"": ""Docker c'est comme une machine virtuelle mais en mieux. Tu mets ton code dedans et ca marche partout c'est tout."",
-    },
-    {
-        ""prompt"": ""### Human: Pourquoi utiliser Git ?\n### Assistant:"",
-        ""chosen"": ""Git est un systeme de controle de version qui permet de suivre chaque modification du code, de collaborer sans conflits via les branches, et de revenir a n'importe quelle version anterieure."",
-        ""rejected"": ""Git c'est pour faire des commits. Tu sauvegardes ton code et c'est bon. Pas besoin d'en savoir plus."",
-    },
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,45c88110,code,fr,04f82794f6a3fe95,"# Dataset de preferences synthetique — builder deterministe (126 paires, 3 familles de degradation)
+# 42 fonds (meme corpus que FT-03 : 20 definitions, 12 comparaisons, 10 pourquois)
+# x 3 reponses rejetees par fond : vague, expeditive, hors-sujet.
+# Le signal DPO n'est pas le FOND (les rejets parlent souvent du bon sujet)
+# mais le STYLE : precis-et-structure contre creux, familier, ou a cote.
+DEFS = {
+    ""la gravite"": ""La gravite est une force fondamentale qui attire deux corps massifs l'un vers l'autre. Sur Terre, elle nous maintient au sol et donne leur poids aux objets. Newton a formule la loi de la gravitation universelle, puis Einstein l'a reformulee comme une deformation de l'espace-temps."",
+    ""l'intelligence artificielle"": ""L'intelligence artificielle (IA) est un domaine de l'informatique qui vise a creer des systemes capables de realiser des taches necessitant normalement l'intelligence humaine : reconnaissance d'images, comprehension du langage, prise de decision. L'apprentissage profond en est la technique la plus performante actuellement."",
+    ""le machine learning"": ""Le machine learning (apprentissage automatique) est une branche de l'IA ou les systemes apprennent a partir de donnees sans etre explicitement programmes. Les trois types principaux sont l'apprentissage supervise (avec labels), non supervise (sans labels) et par renforcement (recompenses)."",
+    ""un neurone artificiel"": ""Un neurone artificiel est l'unite de base d'un reseau de neurones. Il recoit des entrees numeriques, les multiplie par des poids, additionne les resultats, puis applique une fonction d'activation comme ReLU ou sigmoid pour produire une sortie."",
+    ""un reseau de neurones"": ""Un reseau de neurones est un ensemble de neurones artificiels organises en couches. Chaque couche transforme sa sortie vers la suivante ; l'apprentissage ajuste les poids par retropropagation du gradient pour minimiser une fonction de perte."",
+    ""Python"": ""Python est un langage de programmation de haut niveau, cree par Guido van Rossum en 1991. Il est connu pour sa syntaxe lisible et sa polyvalence : science des donnees, intelligence artificielle, developpement web, automatisation."",
+    ""une API"": ""Une API (Application Programming Interface) est un ensemble de definitions qui permet a deux programmes de communiquer. Le client envoie une requete selon un contrat documente, le serveur renvoie une reponse structuree, souvent en JSON via HTTP."",
+    ""un token (NLP)"": ""Un token est l'unite de texte manipulee par un modele de langage : un mot, une partie de mot ou un signe de ponctuation. La tokenisation decoupe le texte brut en ces unites avant de les convertir en identifiants numeriques."",
+    ""une epoch"": ""Une epoch est un passage complet du modele sur l'ensemble du dataset d'entrainement. Plusieurs epochs font voir chaque exemple plusieurs fois, ce qui permet la convergence mais expose au surapprentissage si leur nombre est trop eleve."",
+    ""un checkpoint"": ""Un checkpoint est un instantane des poids d'un modele sauvegarde pendant ou apres l'entrainement. Il permet de reprendre l'entrainement, de comparer des variants, ou de revenir a un meilleur etat."",
+    ""la VRAM"": ""La VRAM (Video Random Access Memory) est la memoire dediee du GPU. Un modele et ses activations y resident pendant l'entrainement ; sa capacite borne la taille du modele, la longueur des sequences et la taille de batch."",
+    ""le fine-tuning"": ""Le fine-tuning consiste a ajuster les poids d'un modele deja entraine sur une nouvelle tache. C'est moins couteux que l'entrainement depuis zero et le modele conserve les connaissances de son pre-entrainement."",
+    ""LoRA"": ""LoRA (Low-Rank Adaptation) fige les poids du modele et entraine de petites matrices de rang faible inserees dans les couches. Le nombre de parametres entrainables chute d'un facteur mille, rendant le fine-tuning de grands modeles abordable."",
+    ""la quantization 4-bit"": ""La quantization 4-bit code chaque poids sur 4 bits au lieu de 16, divisant la memoire des poids par quatre avec une perte de precision limitee. Combinnee a LoRA (QLoRA), elle permet d'entrainer de grands modeles sur un seul GPU."",
+    ""un embedding"": ""Un embedding est la representation vectorielle dense d'un objet (mot, phrase, image) dans un espace ou la distance entre vecteurs traduit une similarite semantique. Les modeles de langage produisent des embeddings en sortie de chaque couche."",
+    ""l'attention"": ""L'attention est le mecanisme qui, pour chaque token, calcule des poids sur tous les autres tokens puis en fait la moyenne ponderee des representations. Chaque mot peut ainsi se lier aux mots qui l'eclairent, quelle que soit leur distance."",
+    ""un prompt"": ""Un prompt est le texte soumis a un modele de langage pour obtenir une reponse. Sa formulation, son contexte et son format influencent fortement la reponse : c'est l'ingenierie de prompt."",
+    ""le surapprentissage"": ""Le surapprentissage (overfitting) survient quand un modele memorise les exemples d'entrainement au lieu d'en extraire des regularites. Il se manifeste par une perte d'entrainement qui descend pendant que la perte d'evaluation remonte."",
+    ""un benchmark"": ""Un benchmark est un jeu d'evaluation standardise qui permet de comparer des modeles sur une tache donnee. Un bon benchmark est public, reproductible et disjoint des donnees d'entrainement."",
+    ""la temperature (generation)"": ""La temperature est le parametre de generation qui regle l'aleatoire de l'echantillonnage. Basse, elle rend les sorties deterministes et conservatrices ; haute, elle les diversifie au prix d'incoherences."",
+}
+
+CONCEPT_PAIRS = [
+    (""CPU et GPU"", ""Le CPU execute des taches complexes en serie avec peu de coeurs puissants ; le GPU execute des taches simples en parallele avec des milliers de coeurs. L'entrainement des reseaux de neurones, massivement parallele, profite au GPU.""),
+    (""apprentissage supervise et non supervise"", ""L'apprentissage supervise apprend depuis des exemples labels (entree vers sortie attendue) : classification, regression. Le non supervise cherche des structures dans des donnees non labels : clustering, reduction de dimension.""),
+    (""une liste et un tuple en Python"", ""Une liste est mutable : on peut ajouter, retirer ou modifier ses elements apres creation. Un tuple est immuable : cree une fois, jamais modifie. La liste sert aux collections qui evoluent, le tuple aux enregistrements fixes et aux cles de dictionnaire.""),
+    (""classification et regression"", ""La classification predit une categorie discrete (spam ou non, chat ou chien) ; la regression predit une valeur continue (un prix, une temperature). Les deux sont supervisees mais leur metrique differe : exactitude ou F1 contre erreur quadratique.""),
+    (""precision et rappel"", ""La precision mesure la part de vrais positifs parmi les positifs predits ; le rappel mesure la part de vrais positifs parmi les positifs reels. Precision haute : peu de fausses alertes. Rappel haut : peu d'oublis. Le F1 en est la moyenne harmonique.""),
+    (""batch training et stochastic gradient descent"", ""Le batch gradient descent calcule le gradient sur tout le dataset avant chaque mise a jour : stable mais couteux. La version stochastique (ou mini-batch) met a jour sur de petits lots : plus bruitee mais plus rapide et meilleure en generalisation.""),
+    (""un modele de base et un modele instruct"", ""Un modele de base complete du texte de maniere plausible mais ignore les conventions de dialogue. Un modele instruct a subi un ajustement par instructions (SFT, RLHF) qui lui apprend a repondre aux requetes : arret, format, refus.""),
+    (""pre-entrainement et fine-tuning"", ""Le pre-entrainement apprend les regularites du langage sur des corpus massifs non labels ; le fine-tuning specialise ensuite le modele sur une tache avec peu de donnees etiquetees. Le second herite des representations du premier.""),
+    (""un parametre et un hyperparametre"", ""Un parametre est appris par le modele pendant l'entrainement (poids, biais). Un hyperparametre est fixe avant l'entrainement par l'ingenieur (taux d'apprentissage, taille de batch, nombre de couches).""),
+    (""dropout et weight decay"", ""Le dropout desactive aleatoirement des neurones pendant l'entrainement pour eviter la co-adaptation ; le weight decay penalise les grands poids en ajoutant leur norme a la perte. Les deux combattent le surapprentissage, l'un sur la structure, l'autre sur l'amplitude.""),
+    (""une fonction d'activation ReLU et sigmoid"", ""ReLU laisse passer les valeurs positives et met les negatives a zero : simple, rapide, sans saturation du cote positif. La sigmoid comprime toute valeur dans (0, 1), utile en sortie binaire mais sujette a l'evanescence du gradient en profondeur.""),
+    (""tokenisation par mot et par sous-mot (BPE)"", ""La tokenisation par mot decoupe sur les espaces : vocabulaire enorme, mots inconnus intraitables. La tokenisation par sous-mot (BPE) decoupe en fragments frequents : vocabulaire borne, les mots rares se recomposent de fragments connus.""),
 ]
 
-print(f""Dataset de preferences : {len(preference_data)} paires"")
-print()
-print(""Exemple :"")
-ex = preference_data[0]
-print(f""  Prompt: {ex['prompt']}"")
+WHY_TOPICS = {
+    ""le deep learning a-t-il connu un essor recent"": ""Trois facteurs convergent : des corpus massifs numerises, des GPU qui mettent le calcul matriciel en parallele, et des architectures (transformers) qui passent a l'echelle. Les idees des annees 80 n'attendaient que ces trois leviers."",
+    ""les modeles de langage utilisent-ils des sous-mots"": ""Parce qu'un vocabulaire de mots entiers laisse les mots rares intraitables, alors qu'un vocabulaire de sous-mots borne la taille tout en recomposant n'importe quel mot. Le BPE construit ce vocabulaire par frequences."",
+    ""faut-il fixer la graine aleatoire en experimentation"": ""Sans graine fixee, deux executions donnent deux resultats et aucune comparaison n'est possible. Fixer la graine rend l'experience reproductible ; c'est le socle de toute mesure de difference entre deux configurations."",
+    ""les GPU dominent-ils l'entrainement"": ""Parce que l'entrainement se reduit a des produits matriciels massivement paralleles, exactement ce pour quoi le GPU est concu. Le CPU excelle en serie complexe, le GPU en parallele simple."",
+    ""mesure-t-on la loss d'evaluation en plus de la loss d'entrainement"": ""Parce que la loss d'entrainement peut descendre par memorisation pure. La loss d'evaluation, calculee sur des donnees jamais vues, est la seule qui temoigne de la generalisation."",
+    ""la VRAM limite-t-elle la taille des modeles entrainables"": ""Parce que poids, gradients, etats d'optimiseur et activations doivent tous resider en memoire simultanement. La quantization et le gradient checkpointing sont les deux leviers pour y loger davantage."",
+    ""peut-on juger un fine-tuning sur ses generations"": ""Sur un petit dataset, une generation plausible peut n'etre que la memorisation d'un exemple. Les pertes train/eval disjointes et les generations sur instructions jamais vues arbitrent mieux qu'une lecture a l'oeil."",
+    ""les modeles instruct refusent-ils certaines requetes"": ""Parce que l'alignement (SFT puis RLHF) leur apprend des conventions de comportement, incluant le refus. Le modele de base n'a pas ce reflexe : il complete du texte, il ne decide pas."",
+    ""faut-il plusieurs epochs de fine-tuning"": ""Une epoch unique peut sous-apprendre ; dix epochs sur un petit dataset memorisent. Le bon point d'arret se lit sur la courbe de perte d'evaluation : on s'arrete quand elle cesse de descendre."",
+    ""un petit modele peut-il battre un grand sur une tache etroite"": ""Oui, apres fine-tuning sur une tache precise : le grand modele dilue sa capacite sur tout, le petit la concentre. C'est l'argument economique du fine-tuning face a l'echelle brute."",
+}
+
+
+# ---- Trois familles de reponses rejetees ----
+# 1. VAGUE : creuse, aucun fait, longueur similaire a une vraie reponse
+VAGUE_TPL = [
+    ""C'est un concept important en informatique. Beaucoup de gens l'utilisent pour des raisons pratiques. Il y a des avantages et des limites, tout depend de ce que vous voulez faire exactement."",
+    ""C'est un sujet assez technique. En gros ca sert a faire des choses utiles dans plusieurs situations. Il existe differentes approches, et le choix depend du contexte de chacun."",
+    ""Beaucoup de gens en parlent et l'utilisent. C'est repandu dans pas mal de domaines. Si le sujet vous interesse vraiment, le mieux est de chercher des informations recentes."",
+]
+# 2. EXPEDITIVE : registre familier, information triviale, aucune structure
+EXPED_TPL = [
+    ""C'est simple : {mot}, c'est ce que tout le monde utilise. Tu t'en sers et ca marche, pas besoin de te compliquer la tete avec les details."",
+    ""Bah {mot}, franchement il n'y a pas grand chose a savoir. Tu fais comme tout le monde et voila, avec un peu de pratique ca vient tout seul."",
+    ""Pour {mot} c'est pareil que pour le reste : tu regardes comment les autres font et tu reproduis. C'est ce que je ferais a ta place, sans plus."",
+]
+# 3. HORS-SUJET : reponse assuree et detaillee... sur un AUTRE sujet (decalage deterministe)
+
+
+def _build_preference_dataset(seed=42):
+    """"""Genere les 126 paires (prompt, chosen, rejected) de facon deterministe.""""""
+    fonds = []
+    for sujet, rep in DEFS.items():
+        fonds.append((f""Qu'est-ce que {sujet} ?"", rep, sujet.split()[1] if sujet.split()[0] in (""le"", ""la"", ""les"", ""l"", ""un"", ""une"") else sujet))
+    for paire, rep in CONCEPT_PAIRS:
+        fonds.append((f""Quelle est la difference entre {paire} ?"", rep, paire.split("" et "")[0].split()[0].capitalize()))
+    for q, rep in WHY_TOPICS.items():
+        fonds.append((f""Pourquoi {q} ?"", rep, ""cette question""))
+
+    data = []
+    n = len(fonds)
+    for i, (question, chosen, mot) in enumerate(fonds):
+        prompt = f""### Human: {question}\n### Assistant:""
+        # degradation 1 : vague (rotation deterministe)
+        data.append({""prompt"": prompt, ""chosen"": chosen, ""rejected"": VAGUE_TPL[i % 3], ""famille"": ""vague"", ""fond"": i})
+        # degradation 2 : expeditive
+        data.append({""prompt"": prompt, ""chosen"": chosen, ""rejected"": EXPED_TPL[(i + 1) % 3].format(mot=mot), ""famille"": ""expeditive"", ""fond"": i})
+        # degradation 3 : hors-sujet = la reponse CHOSEN d'un autre fond (decalage +7)
+        autre = (i + 7) % n
+        data.append({""prompt"": prompt, ""chosen"": chosen, ""rejected"": fonds[autre][1], ""famille"": ""hors_sujet"", ""fond"": i})
+    return data
+
+
+preference_data = _build_preference_dataset(seed=42)
+assert len(preference_data) == 126
+assert preference_data == _build_preference_dataset(seed=42), ""builder non deterministe !""
+assert len({(d[""prompt""], d[""famille""]) for d in preference_data}) == 126, ""doublons !""
+
+# ---- Split PAR FOND (graine 42) : 36 fonds train / 6 fonds eval ----
+# Les 18 paires d'eval portent sur des fonds JAMAIS vus a l'entrainement :
+# ni leur chosen, ni aucun de leurs rejets. L'accuracy eval mesure alors la
+# generalisation du style (precis > degrade) sur des sujets nouveaux.
+import random as _rnd
+_idx_fonds = list(range(42))
+_rnd.Random(42).shuffle(_idx_fonds)
+_eval_fonds = set(_idx_fonds[:6])
+train_prefs = [d for d in preference_data if d[""fond""] not in _eval_fonds]
+eval_prefs = [d for d in preference_data if d[""fond""] in _eval_fonds]
+
+from collections import Counter
+cats = Counter(d[""famille""] for d in preference_data)
+n_fonds_train = 42 - len(_eval_fonds)
+print(f""Dataset de preferences : {len(preference_data)} paires (deterministe, graine 42)"")
+print(f""  par famille de rejet : {dict(cats)}"")
+print(f""Split PAR FOND : {len(train_prefs)} train ({n_fonds_train} fonds) / {len(eval_prefs)} eval ({len(_eval_fonds)} fonds, jamais vus)"")
+
+ex = train_prefs[0]
+print(f""\nExemple (famille {ex['famille']}) :"")
+print(f""  Prompt: {ex['prompt'].split(chr(10))[0]}"")
 print(f""  Chosen:  {ex['chosen'][:80]}..."")
-print(f""  Rejected: {ex['rejected'][:80]}..."")",,,,,,,,93686a74c62ab619,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,cc693e01,code,fr,942092f989ba82c4,"# Utiliser les log-probabilites comme signal de recompense
+print(f""  Rejected: {ex['rejected'][:80]}..."")",,,,,,,,04f82794f6a3fe95,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,cc693e01,code,fr,af6ca2ecf8e9b091,"# Utiliser les log-probabilites comme signal de recompense
 def compute_logprob_reward(model, prompt, response):
     # Calcule la log-probabilite moyenne de la reponse donnee le prompt
     full_text = prompt + "" "" + response
@@ -2412,40 +2503,34 @@ def compute_logprob_reward(model, prompt, response):
     token_log_probs = log_probs.gather(2, labels.unsqueeze(-1)).squeeze(-1)
     return token_log_probs.mean().item()
 
-# Evaluer le modele de base sur les preferences
+# Evaluer le modele de base sur les preferences (resume statistique)
 model_base.eval()
-print(""Log-probabilites du modele de base (recompense proxy) :"")
+print(""Log-probabilites du modele de base sur les 126 paires (recompense proxy) :"")
 print(""-"" * 65)
-correct = 0
-for i, ex in enumerate(preference_data):
+from collections import defaultdict
+stats_famille = defaultdict(lambda: {""correct"": 0, ""total"": 0})
+for ex in preference_data:
     chosen_r = compute_logprob_reward(model_base, ex[""prompt""], ex[""chosen""])
     rejected_r = compute_logprob_reward(model_base, ex[""prompt""], ex[""rejected""])
-    diff = chosen_r - rejected_r
-    status = ""OK"" if diff > 0 else ""INV""
-    if diff > 0:
-        correct += 1
-    print(f""  Pair {i}: chosen={chosen_r:.3f}  rejected={rejected_r:.3f}  ""
-          f""diff={diff:+.3f}  [{status}]"")
+    s = stats_famille[ex[""famille""]]
+    s[""correct""] += int(chosen_r > rejected_r)
+    s[""total""] += 1
 
-print(f""\nTaux de preference correct : {correct}/{len(preference_data)} ""
-      f""({100*correct/len(preference_data):.0f}%)"")
-print()
-print(""Le modele de base a une idee partielle de la qualite, mais il n'est pas fiable."")
-print(""Un Reward Model entraine ameliorerait ce signal, et le DPO le contourne completement."")",,,,,,,,942092f989ba82c4,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,c1a356a8,code,fr,2a2cb7da9c21b3ac,"# Etape 1 : Quick SFT pour avoir un modele instruct de depart
+total_correct = sum(s[""correct""] for s in stats_famille.values())
+total = sum(s[""total""] for s in stats_famille.values())
+print(f""Le modele de base prefere 'chosen' sur {total_correct}/{total} paires ""
+      f""({100*total_correct/total:.0f}%)"")
+for fam in [""vague"", ""expeditive"", ""hors_sujet""]:
+    s = stats_famille[fam]
+    print(f""  vs {fam:12s} : {s['correct']}/{s['total']} ({100*s['correct']/s['total']:.0f}%)"")",,,,,,,,af6ca2ecf8e9b091,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,c1a356a8,code,fr,bc95d81440b3df20,"# Etape 1 : SFT de reference sur les fonds d'entrainement
 from datasets import Dataset
 from transformers import TrainingArguments, Trainer, DataCollatorForLanguageModeling
 
-# Petit dataset SFT (5 exemples pour un entrainement rapide)
-sft_examples = [
-    {""text"": ""### Human: Qu'est-ce que Python ?\n### Assistant: Python est un langage de programmation polyvalent, connu pour sa syntaxe claire et sa large bibliotheque standard.""},
-    {""text"": ""### Human: Expliquez Docker.\n### Assistant: Docker est un outil de conteneurisation qui empaquette une application et ses dependances dans un environnement isole.""},
-    {""text"": ""### Human: C'est quoi Git ?\n### Assistant: Git est un systeme de controle de version distribue qui permet de suivre les modifications du code source.""},
-    {""text"": ""### Human: Qu'est-ce que le machine learning ?\n### Assistant: Le machine learning est un domaine de l'IA ou les algorithmes apprennent des patterns dans les donnees pour faire des predictions.""},
-    {""text"": ""### Human: Expliquez les API REST.\n### Assistant: Une API REST est une interface utilisant HTTP pour echanger des donnees structurees, typiquement en JSON.""},
-]
+# Le SFT de reference s'entraine sur les CHOSEN des paires TRAIN uniquement :
+# les 6 fonds d'eval restent totalement inconnus du modele avant l'evaluation.
+sft_examples = [{""text"": d[""prompt""] + "" "" + d[""chosen""]} for d in train_prefs if d[""famille""] == ""vague""]
 
-# Preparer le modele avec LoRA pour le SFT
 model_base.gradient_checkpointing_enable()
 model_base = prepare_model_for_kbit_training(model_base)
 
@@ -2456,55 +2541,56 @@ lora_config = LoraConfig(
 model_sft = get_peft_model(model_base, lora_config)
 model_sft.print_trainable_parameters()
 
-# Tokenizer le dataset SFT
 sft_dataset = Dataset.from_list(sft_examples)
 def tokenize_fn(examples):
-    return tokenizer(examples[""text""], truncation=True, max_length=128, padding=""max_length"")
+    return tokenizer(examples[""text""], truncation=True, max_length=256, padding=""max_length"")
 
 sft_dataset = sft_dataset.map(tokenize_fn, batched=True)
 sft_dataset.set_format(""torch"", columns=[""input_ids"", ""attention_mask""])
 
-# Quick SFT (2 epochs)
 training_args = TrainingArguments(
     output_dir=""./results_ft04_sft"",
-    num_train_epochs=2, per_device_train_batch_size=1,
-    learning_rate=5e-4, logging_steps=5,
+    num_train_epochs=3, per_device_train_batch_size=2,
+    gradient_accumulation_steps=2,
+    learning_rate=2e-4, logging_steps=10,
     save_strategy=""no"", report_to=""none"",
-    fp16=True, gradient_accumulation_steps=2,
+    fp16=True,
 )
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 trainer = Trainer(
     model=model_sft, args=training_args,
     train_dataset=sft_dataset, data_collator=data_collator,
 )
-print(""Quick SFT (2 epochs sur 5 exemples)..."")
+print(f""SFT de reference : {len(sft_dataset)} exemples (fonds train), 3 epochs..."")
 trainer.train()
-print(""SFT termine."")",,,,,,,,2a2cb7da9c21b3ac,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,8c94c2a6,code,fr,1c585ba174afbf8f,"# Etape 2 : Sauvegarder les poids de reference (SFT) et calculer les log-probs de ref
+print(""SFT termine."")",,,,,,,,bc95d81440b3df20,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,8c94c2a6,code,fr,8f60d41270c6d978,"# Etape 2 : Sauvegarder les poids de reference (SFT) et calculer les log-probs de ref
 import copy
 
 # Sauvegarder l'etat LoRA comme reference
 ref_lora_state = copy.deepcopy(model_sft.state_dict())
 
-# Generer les reponses SFT de base (pour comparaison ulterieure)
-model_sft.eval()
-eval_prompts = [
-    ""### Human: Expliquez brievement ce qu'est une API REST.\n### Assistant:"",
-    ""### Human: Donnez un conseil pour apprendre Python.\n### Assistant:"",
-    ""### Human: Quelle est la difference entre SQL et NoSQL ?\n### Assistant:"",
-]
+# Prompts d'evaluation generative : 2 fonds train + 1 fond EVAL (jamais vu)
+_fond_questions = {
+    d[""fond""]: d[""prompt""] for d in preference_data if d[""famille""] == ""vague""
+}
+_train_sample = [f for f in _idx_fonds if f not in _eval_fonds][:2]
+_qs_train = [_fond_questions[f] for f in _train_sample]
+_qs_eval = [_fond_questions[sorted(_eval_fonds)[0]]]
+eval_prompts = _qs_train + _qs_eval
 
+model_sft.eval()
 sft_baseline = {}
 print(""Reponses SFT de reference :"")
 for p in eval_prompts:
-    q = p.split(""Human: "")[1].split(""\\n"")[0]
+    q = p.split(""Human: "")[1].split(""\n"")[0]
     resp = generate(model_sft, p, max_new_tokens=50)
     sft_baseline[q] = resp
     print(f""  Q: {q}"")
     print(f""  SFT: {resp}"")
     print()
 
-# Calculer les log-probabilites de reference pour chaque paire (chosen, rejected)
+# Log-probabilites de reference pour les paires TRAIN (le DPO n'optimise que sur elles)
 def get_logprobs(model, prompt, response):
     # Calcule log P(response | prompt) avec gradients
     full_text = prompt + "" "" + response
@@ -2518,55 +2604,102 @@ def get_logprobs(model, prompt, response):
     token_lps = log_probs.gather(2, resp_ids.unsqueeze(-1)).squeeze(-1)
     return token_lps.sum()
 
-print(""Calcul des log-probabilites de reference..."")
+print(""Calcul des log-probabilites de reference (paires train)..."")
 ref_logprobs = []
 with torch.no_grad():
-    for ex in preference_data:
+    for ex in train_prefs:
         lp_c = get_logprobs(model_sft, ex[""prompt""], ex[""chosen""]).item()
         lp_r = get_logprobs(model_sft, ex[""prompt""], ex[""rejected""]).item()
         ref_logprobs.append({""chosen"": lp_c, ""rejected"": lp_r})
 
-print(f""  Log-probs reference calculees pour {len(ref_logprobs)} paires"")
-for i, rlp in enumerate(ref_logprobs[:3]):
-    print(f""  Pair {i}: chosen={rlp['chosen']:.2f}, rejected={rlp['rejected']:.2f}"")",,,,,,,,1c585ba174afbf8f,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,b3a7520d,code,fr,c586c3b154fa98a2,"# Etape 3 : DPO Training
+print(f""  Log-probs reference calculees pour {len(ref_logprobs)} paires train"")",,,,,,,,8f60d41270c6d978,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,b3a7520d,code,fr,c3caa7ea3636e19a,"# Etape 3 : DPO Training — batche, avec accuracy train ET eval disjointe par epoch
 beta = 0.1  # Temperature DPO (controle la force de l'alignement)
+BATCH = 4
 
 model_sft.train()
-optimizer = torch.optim.AdamW(model_sft.parameters(), lr=1e-5)
+optimizer = torch.optim.AdamW(
+    [p for p in model_sft.parameters() if p.requires_grad], lr=1e-5
+)
 
-print(f""DPO Training (3 epochs, beta={beta})..."")
-print(""-"" * 50)
-for epoch in range(3):
+def dpo_marge(model, ex, ref_lp):
+    """"""Marge implicite beta*(lp_chosen-lp_ref_c) - beta*(lp_rej-lp_ref_r), sans gradient.""""""
+    with torch.no_grad():
+        pc = get_logprobs(model, ex[""prompt""], ex[""chosen""]).item()
+        pr = get_logprobs(model, ex[""prompt""], ex[""rejected""]).item()
+    rc = beta * (pc - ref_lp[""chosen""])
+    rr = beta * (pr - ref_lp[""rejected""])
+    return rc, rr
+
+def accuracy_jeu(model, prefs, refs=None):
+    """"""Taux de paires ou le modele prefere chosen. refs=None -> reward proxy brut.""""""
+    ok = 0
+    for i, ex in enumerate(prefs):
+        if refs is None:
+            c = compute_logprob_reward(model, ex[""prompt""], ex[""chosen""])
+            r = compute_logprob_reward(model, ex[""prompt""], ex[""rejected""])
+            ok += int(c > r)
+        else:
+            rc, rr = dpo_marge(model, ex, refs[i])
+            ok += int(rc > rr)
+    return ok
+
+step_losses = []
+hist_acc = []
+EPOCHS = 3
+print(f""DPO Training ({EPOCHS} epochs, beta={beta}, batch={BATCH}, lr=1e-5)..."")
+print(""-"" * 60)
+for epoch in range(EPOCHS):
     total_loss = 0
-    n_correct = 0
-    for i, ex in enumerate(preference_data):
-        # Log-probs de la policy (modele courant, avec gradients)
-        policy_chosen_lp = get_logprobs(model_sft, ex[""prompt""], ex[""chosen""])
-        policy_rejected_lp = get_logprobs(model_sft, ex[""prompt""], ex[""rejected""])
-
-        # DPO loss : -log sigmoid(beta * (pi_chosen - ref_chosen - pi_rejected + ref_rejected))
-        chosen_reward = beta * (policy_chosen_lp - ref_logprobs[i][""chosen""])
-        rejected_reward = beta * (policy_rejected_lp - ref_logprobs[i][""rejected""])
-        loss = -F.logsigmoid(chosen_reward - rejected_reward)
-
+    n_batches = 0
+    for start in range(0, len(train_prefs), BATCH):
+        batch = train_prefs[start:start + BATCH]
+        refs = ref_logprobs[start:start + BATCH]
+        loss_batch = 0
+        for ex, ref_lp in zip(batch, refs):
+            policy_chosen_lp = get_logprobs(model_sft, ex[""prompt""], ex[""chosen""])
+            policy_rejected_lp = get_logprobs(model_sft, ex[""prompt""], ex[""rejected""])
+            chosen_reward = beta * (policy_chosen_lp - ref_lp[""chosen""])
+            rejected_reward = beta * (policy_rejected_lp - ref_lp[""rejected""])
+            loss_batch = loss_batch + -F.logsigmoid(chosen_reward - rejected_reward)
         optimizer.zero_grad()
-        loss.backward()
+        (loss_batch / len(batch)).backward()
         optimizer.step()
+        step_losses.append((loss_batch / len(batch)).item())
+        total_loss += (loss_batch / len(batch)).item()
+        n_batches += 1
 
-        total_loss += loss.item()
-        # Verifier si le modele prefere maintenant chosen a rejected
-        with torch.no_grad():
-            if chosen_reward.item() > rejected_reward.item():
-                n_correct += 1
-
-    avg_loss = total_loss / len(preference_data)
-    print(f""  Epoch {epoch+1}/3 | Loss: {avg_loss:.4f} | ""
-          f""Preferences correctes: {n_correct}/{len(preference_data)}"")
+    model_sft.eval()  # desactiver le dropout pour la mesure
+    acc_train = accuracy_jeu(model_sft, train_prefs, ref_logprobs)
+    acc_eval = accuracy_jeu(model_sft, eval_prefs, None)  # proxy brut sur fonds jamais vus
+    model_sft.train()  # retour au mode entrainement (dropout actif)
+    hist_acc.append((epoch + 1, acc_train, acc_eval))
+    print(f""  Epoch {epoch+1}/{EPOCHS} | Loss moy: {total_loss/n_batches:.4f} | ""
+          f""Acc train: {acc_train}/{len(train_prefs)} ({100*acc_train/len(train_prefs):.0f}%) | ""
+          f""Acc EVAL disjoint: {acc_eval}/{len(eval_prefs)} ({100*acc_eval/len(eval_prefs):.0f}%)"")
 
 print()
-print(""DPO termine."")",,,,,,,,c586c3b154fa98a2,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,dfbc120b,code,fr,0ed09f7ee78d867e,"# Generer avec le modele DPO et comparer avec le SFT
+print(""DPO termine."")
+
+# ---- Courbe de perte DPO ----
+import matplotlib
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.plot(range(1, len(step_losses) + 1), step_losses, color=""#1f77b4"", alpha=0.5, label=""perte DPO (par step)"")
+if len(step_losses) > 8:
+    window = 5
+    smoothed = [sum(step_losses[max(0, i - window):i + 1]) / len(step_losses[max(0, i - window):i + 1]) for i in range(len(step_losses))]
+    ax.plot(range(1, len(smoothed) + 1), smoothed, color=""#d62728"", label=f""moyenne mobile ({window})"")
+ax.set_xlabel(""step DPO"")
+ax.set_ylabel(""perte DPO (-log sigma(marge))"")
+ax.set_title(f""DPO OPT-1.3B QLoRA — {len(train_prefs)} paires train, beta={beta}"")
+ax.legend()
+ax.grid(alpha=0.3)
+fig.tight_layout()
+from IPython.display import display
+display(fig)",,,,,,,,c3caa7ea3636e19a,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,dfbc120b,code,fr,14e082aacb9f99cc,"# Generer avec le modele DPO et comparer : SFT vs DPO, train vs EVAL DISJOINT
 model_sft.eval()
 
 print(""="" * 70)
@@ -2574,34 +2707,41 @@ print(""COMPARAISON : SFT (reference) vs DPO (aligne)"")
 print(""="" * 70)
 
 for p in eval_prompts:
-    q = p.split(""Human: "")[1].split(""\\n"")[0]
+    q = p.split(""Human: "")[1].split(""\n"")[0]
     dpo_resp = generate(model_sft, p, max_new_tokens=50)
     sft_resp = sft_baseline.get(q, ""N/A"")
-
     print(f""\nQuestion: {q}"")
     print(f""  SFT: {sft_resp}"")
     print(f""  DPO: {dpo_resp}"")
 
-# Verifier les log-probs post-DPO
+# ---- Le verdict : accuracy sur TRAIN (memoire) vs EVAL disjointe (generalisation) ----
 print()
-print(""-"" * 50)
-print(""Log-probabilites post-DPO :"")
-correct = 0
-with torch.no_grad():
-    for i, ex in enumerate(preference_data):
-        policy_lp_c = get_logprobs(model_sft, ex[""prompt""], ex[""chosen""]).item()
-        policy_lp_r = get_logprobs(model_sft, ex[""prompt""], ex[""rejected""]).item()
-        # DPO implicit reward = beta * (policy_lp - ref_lp)
-        implicit_c = beta * (policy_lp_c - ref_logprobs[i][""chosen""])
-        implicit_r = beta * (policy_lp_r - ref_logprobs[i][""rejected""])
-        ok = ""OK"" if implicit_c > implicit_r else ""INV""
-        if implicit_c > implicit_r:
-            correct += 1
-        print(f""  Pair {i}: reward_chosen={implicit_c:+.4f}  ""
-              f""reward_rejected={implicit_r:+.4f}  [{ok}]"")
+print(""-"" * 60)
+acc_train = accuracy_jeu(model_sft, train_prefs, ref_logprobs)
+acc_eval = accuracy_jeu(model_sft, eval_prefs, None)
+print(f""Accuracy TRAIN ({len(train_prefs)} paires vues 3 fois)      : ""
+      f""{acc_train}/{len(train_prefs)} ({100*acc_train/len(train_prefs):.0f}%)"")
+print(f""Accuracy EVAL disjointe ({len(eval_prefs)} paires jamais vues) : ""
+      f""{acc_eval}/{len(eval_prefs)} ({100*acc_eval/len(eval_prefs):.0f}%)"")
 
-print(f""\nTaux de preference correct (DPO) : {correct}/{len(preference_data)} ""
-      f""({100*correct/len(preference_data):.0f}%)"")",,,,,,,,0ed09f7ee78d867e,,,,,,,,
+# Detail par famille sur l'eval
+from collections import defaultdict
+fam_stats = defaultdict(lambda: [0, 0])
+for ex in eval_prefs:
+    c = compute_logprob_reward(model_sft, ex[""prompt""], ex[""chosen""])
+    r = compute_logprob_reward(model_sft, ex[""prompt""], ex[""rejected""])
+    fam_stats[ex[""famille""]][0] += int(c > r)
+    fam_stats[ex[""famille""]][1] += 1
+for fam, (ok, tot) in fam_stats.items():
+    print(f""  eval vs {fam:12s}: {ok}/{tot}"")
+
+# Marges moyennes sur l'eval
+marges = []
+for ex in eval_prefs:
+    c = compute_logprob_reward(model_sft, ex[""prompt""], ex[""chosen""])
+    r = compute_logprob_reward(model_sft, ex[""prompt""], ex[""rejected""])
+    marges.append(c - r)
+print(f""\nMarge moyenne (chosen - rejected) sur l'eval : {sum(marges)/len(marges):+.4f} log-prob/token"")",,,,,,,,14e082aacb9f99cc,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,69f31ddb,code,fr,3aabcb1a11b9211a,"# Liberation de la memoire GPU
 del model_sft, model_base
 gc.collect()
