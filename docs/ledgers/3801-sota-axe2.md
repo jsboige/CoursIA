@@ -733,7 +733,7 @@ Total .ipynb: 3
 - **Registre varié** : kernel utilisé = `pyphi` (3/3, conda Python 3.9). Vrai outil SOTA : **PyPhi 1.2.0** (Mayner et al., lib canonique IIT 3.0). **Zéro stub** `raise NotImplementedError` / `assert False` / `1/0` (vérification regex pre-commit clean sur 40 cellules code).
 - **Cumulatif** : 7 familles distinctes dans le registre axe-2 SOTA = ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory, Probas/Infer, **IIT/PyPhi**.
 
----
+***
 
 ## Entry #008 — Sudoku (owner po-2025 strict, c.401)
 
@@ -889,51 +889,51 @@ Total .ipynb: 36
 
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | SOTA invoqué | Verdict |
 |----|-------|------|------|-----|-----------|--------|--------------|---------|
-| rl_1_intro_cartpole | 44 | 20 | 20/20 | 0 | 0 | python3 | stable-baselines3 + Gymnasium | **SOTA-OK** |
-| rl_2_wrappers_sauvegarde_callbacks | 24 | 10 | 10/10 | 0 | 0 | python3 | stable-baselines3 + Gymnasium (wrappers/callbacks) | **SOTA-OK** |
+| RL-01-Premiers-Pas-Stable-Baselines3-Python | 44 | 20 | 20/20 | 0 | 0 | python3 | stable-baselines3 + Gymnasium | **SOTA-OK** |
+| RL-02-Wrappers-Sauvegarde-Callbacks-Python | 24 | 10 | 10/10 | 0 | 0 | python3 | stable-baselines3 + Gymnasium (wrappers/callbacks) | **SOTA-OK** |
 | rl_3_experience_replay_dqn | 35 | 13 | 13/13 | 0 | 0 | python3 | stable-baselines3 + Gymnasium (DQN replay) | **SOTA-OK** |
-| rl_4_multi_armed_bandits | 41 | 21 | 21/21 | 0 | 0 | python3 | epsilon-greedy/UCB tabulaire (fondation) | **SOTA-OK** |
-| rl_5_mdp_dp_qlearning | 38 | 18 | 18/18 | 0 | 0 | python3 | Gymnasium (FrozenLake) + DP tabulaire | **SOTA-OK** |
-| rl_6_dqn_policy_gradient | 28 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (DQN/PG from scratch) | **SOTA-OK** |
-| rl_6b_actor_critic | 29 | 9 | 9/9 | 0 | 0 | python3 | Gymnasium + PyTorch (A2C from scratch) | **SOTA-OK** |
-| rl_6c_ppo_from_scratch | 27 | 10 | 10/10 | 0 | 0 | python3 | Gymnasium + PyTorch (PPO clipping) | **SOTA-OK** |
-| rl_6d_sac_from_scratch | 38 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (SAC twin-critic) | **SOTA-OK** |
-| rl_6e_grpo_from_scratch | 23 | 11 | 11/11 | 0 | 0 | python3 | PyTorch (GRPO group-relative) | **SOTA-OK** |
-| rl_7_multi_agent_rl | 30 | 12 | 12/12 | 0 | 0 | python3 | **PettingZoo** (TicTacToe) + matplotlib | **SOTA-OK** |
-| rl_8_model_based_dyna_q | 29 | 11 | 11/11 | 0 | 0 | python3 | Dyna-Q planning tabulaire | **SOTA-OK** |
-| rl_9_offline_rl | 29 | 12 | 12/12 | 0 | 0 | python3 | Behavior Cloning + extrapolation error | **SOTA-OK** |
-| rl_10_reward_shaping | 19 | 8 | 8/8 | 0 | 0 | python3 | reward shaping + curriculum (théorique) | **SOTA-OK** |
-| rl_11_pomdp | 25 | 10 | 10/10 | 0 | 0 | python3 | POMDP belief tracking (théorique) | **SOTA-OK** |
-| rl_12_distributional_rl | 29 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (C51/QR-DQN) | **SOTA-OK** |
-| rl_13_curiosity_exploration | 23 | 10 | 10/10 | 0 | 0 | python3 | PyTorch (ICM curiosity bonus) | **SOTA-OK** |
+| RL-04-Bandits-Manchots-Python | 41 | 21 | 21/21 | 0 | 0 | python3 | epsilon-greedy/UCB tabulaire (fondation) | **SOTA-OK** |
+| RL-05-MDP-Programmation-Dynamique-Q-Learning-Python | 38 | 18 | 18/18 | 0 | 0 | python3 | Gymnasium (FrozenLake) + DP tabulaire | **SOTA-OK** |
+| RL-06-DQN-Policy-Gradient-Python | 28 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (DQN/PG from scratch) | **SOTA-OK** |
+| RL-06b-Actor-Critic-Python | 29 | 9 | 9/9 | 0 | 0 | python3 | Gymnasium + PyTorch (A2C from scratch) | **SOTA-OK** |
+| RL-06c-PPO-Depuis-Zero-Python | 27 | 10 | 10/10 | 0 | 0 | python3 | Gymnasium + PyTorch (PPO clipping) | **SOTA-OK** |
+| RL-06d-SAC-Depuis-Zero-Python | 38 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (SAC twin-critic) | **SOTA-OK** |
+| RL-06e-GRPO-Depuis-Zero-Python | 23 | 11 | 11/11 | 0 | 0 | python3 | PyTorch (GRPO group-relative) | **SOTA-OK** |
+| RL-07-Apprentissage-Multi-Agent-Python | 30 | 12 | 12/12 | 0 | 0 | python3 | **PettingZoo** (TicTacToe) + matplotlib | **SOTA-OK** |
+| RL-08-Dyna-Q-Planification-Python | 29 | 11 | 11/11 | 0 | 0 | python3 | Dyna-Q planning tabulaire | **SOTA-OK** |
+| RL-09-RL-Offline-Behavior-Cloning-Python | 29 | 12 | 12/12 | 0 | 0 | python3 | Behavior Cloning + extrapolation error | **SOTA-OK** |
+| RL-10-Reward-Shaping-Curriculum-Python | 19 | 8 | 8/8 | 0 | 0 | python3 | reward shaping + curriculum (théorique) | **SOTA-OK** |
+| RL-11-POMDP-Croyances-Python | 25 | 10 | 10/10 | 0 | 0 | python3 | POMDP belief tracking (théorique) | **SOTA-OK** |
+| RL-12-Distributional-RL-C51-Python | 29 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (C51/QR-DQN) | **SOTA-OK** |
+| RL-13-Curiosite-RND-Python | 23 | 10 | 10/10 | 0 | 0 | python3 | PyTorch (ICM curiosity bonus) | **SOTA-OK** |
 
 ### Synthèse
 
 - **EXEC_PROVED global** : 17/17 (100%) — tous kernels `python3` exécutés, `execution_count != null` sur 218/218 cellules code, `outputs: [...]` cohérents.
 - **Erreurs runtime** : 0/17.
-- **Violations C.1** : 0/17 (audit script python3 — 0 `raise NotImplementedError`, 0 `assert False` réel ; 2 « hits » initiaux `1/0` dans rl_7 = **faux positif** matchant les récompenses `+1/-1/0` TicTacToe en markdown + commentaire TODO, vérifié G.1 firsthand).
+- **Violations C.1** : 0/17 (audit script python3 — 0 `raise NotImplementedError`, 0 `assert False` réel ; 2 « hits » initiaux `1/0` dans RL-07 = **faux positif** matchant les récompenses `+1/-1/0` TicTacToe en markdown + commentaire TODO, vérifié G.1 firsthand).
 - **Vrais outils SOTA invoqués** :
-  - **stable-baselines3 + Gymnasium** (Farama) — rl_1/2/3 (API industrielle canonique RL).
-  - **Gymnasium + PyTorch from scratch** — rl_5/6/6b/6c/6d/12 (implémentation pédagogique DQN/A2C/PPO/SAC/distributional sur vrais envs Gymnasium, pas réimplémentation jouet d'un env).
-  - **PettingZoo** (Farama multi-agent) — rl_7 (`pettingzoo.classic.tictactoe_v3`) = vrai SOTA multi-agent.
-  - **PyTorch** — rl_6e (GRPO from scratch), rl_13 (ICM curiosity).
-  - **RL tabulaire/théorique** — rl_4 (bandits epsilon-greedy/UCB), rl_8 (Dyna-Q), rl_10 (reward shaping/curriculum), rl_11 (POMDP belief). Ce sont les **fondations** qui précèdent sb3 dans le cursus, pas des workarounds (un notebook sur les bandits/UCB n'a pas besoin de stable-baselines3).
+  - **stable-baselines3 + Gymnasium** (Farama) — RL-01/2/3 (API industrielle canonique RL).
+  - **Gymnasium + PyTorch from scratch** — RL-05/6/6b/6c/6d/12 (implémentation pédagogique DQN/A2C/PPO/SAC/distributional sur vrais envs Gymnasium, pas réimplémentation jouet d'un env).
+  - **PettingZoo** (Farama multi-agent) — RL-07 (`pettingzoo.classic.tictactoe_v3`) = vrai SOTA multi-agent.
+  - **PyTorch** — RL-06e (GRPO from scratch), RL-13 (ICM curiosity).
+  - **RL tabulaire/théorique** — RL-04 (bandits epsilon-greedy/UCB), RL-08 (Dyna-Q), RL-10 (reward shaping/curriculum), RL-11 (POMDP belief). Ce sont les **fondations** qui précèdent sb3 dans le cursus, pas des workarounds (un notebook sur les bandits/UCB n'a pas besoin de stable-baselines3).
 - **Workaround dégradé** : 0/17 (pas d'ASCII à la place de figures, pas de réimplémentation jouet d'env là où Gymnasium est invoqué, pas de stub à la place d'un appel sb3).
 
 ### Prong B — problème non-trivial (sota-not-workaround §B)
 
 La suite RL **monte en complexité**, pas de plateau trivial :
-- rl_1 CartPole = point d'entrée canonique (acceptable comme intro, pas comme seul cas) ;
-- rl_6c/6d = **PPO et SAC from scratch** avec clipping et twin-critic (non-trivial, capacity-exercising) ;
-- rl_6e = **GRPO** (group-relative policy optimization, DeepSeek R1) — frontière research-grade ;
-- rl_7 = multi-agent **non-stationnaire** PettingZoo (TicTacToe) ;
-- rl_12/13 = distributional RL (C51) + curiosity-driven exploration (ICM).
-La paire `rl_6c` (PPO from scratch) + `rl_1` (sb3) illustre **explicitement** l'écart implémentation-pédagogique vs API industrielle — capacité distinctive exercée.
+- RL-01 CartPole = point d'entrée canonique (acceptable comme intro, pas comme seul cas) ;
+- RL-06c/6d = **PPO et SAC from scratch** avec clipping et twin-critic (non-trivial, capacity-exercising) ;
+- RL-06e = **GRPO** (group-relative policy optimization, DeepSeek R1) — frontière research-grade ;
+- RL-07 = multi-agent **non-stationnaire** PettingZoo (TicTacToe) ;
+- RL-12/13 = distributional RL (C51) + curiosity-driven exploration (ICM).
+La paire `RL-06c` (PPO from scratch) + `RL-01` (sb3) illustre **explicitement** l'écart implémentation-pédagogique vs API industrielle — capacité distinctive exercée.
 
 ### Notes de vérification G.1 (L378 durcie)
 
-- **Faux positifs C.1** : 0/17 réel (audit script `raise NotImplementedError` = 0 ; 2 hits `assert False`/`1/0` dans rl_7 = **faux positif** : regex a matché les récompenses TicTacToe `+1/-1/0` en cellule markdown + commentaire `# TODO etudiant`, vérifié G.1 firsthand par lecture directe cell24/cell27 — **pas une division par zéro**, pas un `assert False`).
-- **Faux négatif SOTA (script)** : rl_7 utilisait `pettingzoo.classic.tictactoe_v3` (vrai SOTA multi-agent Farama) non détecté par le premier scan (liste `pettingzoo` absente du regex) — corrigé par re-scan G.1, rl_7 = **SOTA-OK** confirmé.
+- **Faux positifs C.1** : 0/17 réel (audit script `raise NotImplementedError` = 0 ; 2 hits `assert False`/`1/0` dans RL-07 = **faux positif** : regex a matché les récompenses TicTacToe `+1/-1/0` en cellule markdown + commentaire `# TODO etudiant`, vérifié G.1 firsthand par lecture directe cell24/cell27 — **pas une division par zéro**, pas un `assert False`).
+- **Faux négatif SOTA (script)** : RL-07 utilisait `pettingzoo.classic.tictactoe_v3` (vrai SOTA multi-agent Farama) non détecté par le premier scan (liste `pettingzoo` absente du regex) — corrigé par re-scan G.1, RL-07 = **SOTA-OK** confirmé.
 - **Anti-régression** : aucun notebook strippé, aucun output hand-edité (Stop & Repair) ; 218/218 cellules code avec `execution_count != null` + `output_type: error = 0`.
 - **Audit consultatif purement additif** : safe owner-lane (L143 trivial — pas de modification des notebooks RL owner po-2025).
 
@@ -946,7 +946,7 @@ La paire `rl_6c` (PPO from scratch) + `rl_1` (sb3) illustre **explicitement** l'
 - **Substance RL = SOTA-OK 17/17**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. Stable-baselines3/Gymnasium/PettingZoo/PyTorch = moteurs SOTA canoniques RL, invoqués réellement (pas de workaround dégradé).
 - **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
 - **Pivot L335 légitimé** : 9ᵉ famille distincte, owner po-2025 strict, ≠ re-sweep monotone.
-- **L378 durcie** : G.1 firsthand (script python3 + re-lecture rl_7 pour faux-positif C.1 + faux-négatif SOTA PettingZoo) → 0 faux positif résiduel.
+- **L378 durcie** : G.1 firsthand (script python3 + re-lecture RL-07 pour faux-positif C.1 + faux-négatif SOTA PettingZoo) → 0 faux positif résiduel.
 - **Cumulatif** : **9 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, **RL**). Entry #009 RL ajoute **3 moteurs SOTA nouveaux** au registre (stable-baselines3, Gymnasium, PettingZoo) = **25 moteurs SOTA distincts cumulés**.
 
 Part of #3801
@@ -2544,7 +2544,7 @@ Capacités distinctives du moteur QC exercées (QuantBook data pull, QC Framewor
 
 Part of #3801, #1621
 
----
+***
 
 ## Entry #028 — Probas/PyMC (1-15) (owner po-2025 strict, c.411)
 
@@ -2556,6 +2556,8 @@ Part of #3801, #1621
 | Date audit | 2026-07-12 (c.411) |
 | Auditeur | `myia-po-2025:CoursIA` |
 | Verdict agrégé | **SOTA-OK** (14/14 SOTA-OK, 14/14 DISCRIMINATING) |
+
+> **Note 2026-09-30 (post-audit)** : `PyMC-06-Debugging` a été renommé `PyMC-02b-Debugging-Python` (#17808, labellisation #14873, parité de numéro rétablie avec `Infer-2b`) — les noms du tableau ci-dessous sont ceux à la date d'audit (2026-07-12). Résidu de référence découvert par #18622.
 
 ### Synthèse (14 notebooks, 452 cellules, 187 cellules code)
 
@@ -2636,7 +2638,7 @@ La série PyMC **exerce des capacités MCMC distinctives** sans équivalent clos
 
 Part of #3801, #4956
 
----
+***
 
 ## Entry #029 — GenAI/SemanticKernel (01-10b) (owner-floue po-2025 consultatif, c.412)
 
@@ -2787,6 +2789,50 @@ Le do-calculus **est la capacité distinctive** de la causalité — il n'existe
 - **Collision-avoidance** : `gh pr list --state all --search` = 0 PR PyMC-5 SOTA en vol ; entry #030 stacked à la suite de #029.
 - **Cumulatif** : entry #030 = **PyMC-5 standalone** (1 nb) → **famille Probas/PyMC COMPLÈTE 15/15** dans le registre (entry #028 14 + entry #018 PyMC-16..19 + entry #030 PyMC-5 = 19 notebooks PyMC couverts). PyMC/ArviZ déjà comptés ; cette entry clôture le gap PyMC-5.
 
+## Entry #031 — GameTheory/13f-Ataraxos-Patron-Python (owner po-2027, grain A #20408)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/GameTheory/GameTheory-13f-Ataraxos-Patron-Python.ipynb` (1 .ipynb — patron Ataraxos Sokota et al. 2025 sur Kuhn poker, satellite Recherche tier 13f, précédents 13d/13e) |
+| Kernel | `python3` |
+| Owner-lane | **po-2027** (`myia-po-2027:CoursIA` ; création du notebook, pas un audit de série existante) |
+| Date | 2026-10-12 |
+| PR | #20435 |
+| Verdict agrégé | **SOTA-OK (périmètre jouet déclaré)** — copie pédagogique déclarée, organe natif = grain B de #20408 |
+
+### Synthèse
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
+|-----|-------|------|------|-----|-----------|--------|-------------|---------|
+| GameTheory-13f-Ataraxos-Patron-Python | 22 | 9 | 9/9 | 0 | 0 (3 ex.) | python3 | PyTorch (policy-value net + belief net entraînés réels) + évaluation exacte par énumération + pas miroir tabulaire avec projection KL | **SOTA-OK (déclaré)** |
+
+- **EXEC_PROVED** : 9/9 (100%) — `execution_count` 1–9 contigus, 0 erreur, 0 warning.
+- **Violations C.1** : 0 (regex = 0 hit ; 3 stubs `print("Exercice N a completer")` + `return None` conformes).
+
+### Vrais outils SOTA invoqués
+
+- **PyTorch** — réseau politique-valeur (7→64→64, 2 têtes) auto-entraîné (28 rounds × 256 parties, PG + reverse-KL vs table de collecte, amortissement dynamique lr/λ) ; réseau de croyances (7→32→3) supervisé sur 6000 parties d'auto-jeu. Entraînements réels, sorties committées.
+- **Évaluation exacte par énumération** — valeur par donnes × chemins terminaux, meilleure réponse card-aware par induction rétrograde sur les 12 infosets, **self-checks assertés à 1e-9** contre constantes dérivées à la main : valeur uniforme = +1/8, exploitabilité uniforme = 11/24 (les deux passent exactement).
+- **Pas miroir tabulaire** — descente miroir avec projection KL par bissection (budget δ = 0.25), témoin négatif argmax (recherche sans mise à jour).
+
+### Copie pédagogique déclarée (organ-first)
+
+Motif : montrer le patron 3 briques (policy-value self-play / croyances génératives / update equivalence au temps de test) en environ trois cents lignes lisibles sur le plus petit jeu d'information imparfaite non trivial. La sémantique n'existe dans aucune autre série (`git grep -iE "update.equiv|tts_policy|ataraxos" origin/main -- MyIA.AI.Notebooks/` = 0 hit). L'organe officiel du papier (`AtaraxosAI`, entraîné doudizhu à grande échelle) est le **grain B** de #20408, explicitement différé — déclaré dans le body de la PR.
+
+### Prong B — honnêteté mesurée
+
+La discrimination est attestée par le **témoin négatif interne** : exploitabilité base 0.3306 → TTS 0.2653 → témoin argmax 0.1667 — le pas miroir borné recouvre ≈ 40 % du chemin du témoin ; en face-à-face, la TTS en position J2 bat la base (+0.135) et le témoin (+0.131). Le carnet enseigne la lecture renversée (robustesse ≠ force, région de confiance = correction bornée) au lieu du récit attendu — jouet mono-seed assumé dans le texte.
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 | **CONFORME** | 0 hit regex ; 3 stubs `print` + `return None` + `# TODO etudiant` |
+| C.2 | **CONFORME** | 9/9 exec_count réels, sorties mesurées committées (0.3306/0.2653/0.1667, CE 0.7042, KL 0.0008→0.0000) |
+| Stop & Repair | **CONFORME** | 0 hand-edit de sortie ; hooks pre-commit verts (papermill paths scrubbed) |
+| SOTA Prong A | **SOTA-OK (déclaré)** | PyTorch réel entraîné + énumération exacte ; organe natif différé au grain B (déclaré) |
+| SOTA Prong B | **CONFORME** | Témoin négatif mesuré, lecture honnête du renversement, mono-seed assumé |
+
 ## Cumul entries (registre axe-2 SOTA)
 
 Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Toute nouvelle entry doit etre ajoutee ici dans la meme PR (regle #14562).
@@ -2823,5 +2869,6 @@ Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Tout
 | 028 | Probas/PyMC 1-15 (14 nb) | po-2025 strict | 2026-07-12 | SOTA-OK 14/14 | #6286 MERGED |
 | 029 | GenAI/SemanticKernel 01-10b (12 nb) | owner-floue po-2025 consultatif | 2026-07-12 | SOTA-OK 12/12 | #6286 MERGED |
 | 030 | Probas/PyMC-05-Causal-Inference (1 nb) | po-2025 strict | 2026-07-16 | SOTA-OK 1/1 | #6808 MERGED |
+| 031 | GameTheory/13f-Ataraxos-Patron-Python (1 nb) | po-2027 | 2026-10-12 | SOTA-OK 1/1 (copie pédagogique déclarée) | #20435 |
 
-**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **30** (verifie le 2026-09-04). Ce tableau unique remplace les deux tableaux dupliques (8 lignes, entry #005 ; 22 lignes, entry #008) supprimes par #14562.
+**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **31** (verifie le 2026-10-12). Ce tableau unique remplace les deux tableaux dupliques (huit lignes, entry #005 ; vingt-deux lignes, entry #008) supprimes par #14562.

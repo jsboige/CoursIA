@@ -69,7 +69,7 @@ PROVIDERS = {
         # here on a frontier model to steer the local z.ai/Qwen agents when
         # they stall. The reasoning default MUST stay a frontier model
         # (Opus 4.7 / GPT-5.5 / DeepSeek v4 Pro class) — a weak default like
-        # gpt-4o-mini defeats the entire point of the Director escalation.
+        # gpt-5.6-luna defeats the entire point of the Director escalation.
         "base_url": os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
         "api_key": os.getenv("OPENROUTER_API_KEY", ""),
         "models": {
@@ -262,12 +262,12 @@ import Conway.Life.Hashlife
 # decision_theory_lean lives under Probas/ (its own lake), not under
 # GameTheory/ — Gittins is the bandit/optimal-stopping module (#4039).
 _DECISION_THEORY_CANDIDATES = [
-    _workspace_relative("Probas/decision_theory_lean"),
-    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\Probas\decision_theory_lean"),
-    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\Probas\decision_theory_lean"),
-    Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\Probas\decision_theory_lean"),
-    Path(r"D:\CoursIA\MyIA.AI.Notebooks\Probas\decision_theory_lean"),
-    Path(r"d:\CoursIA\MyIA.AI.Notebooks\Probas\decision_theory_lean"),
+    _workspace_relative("Probas/DecisionTheory/decision_theory_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\Probas\DecisionTheory\decision_theory_lean"),
+    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\Probas\DecisionTheory\decision_theory_lean"),
+    Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\Probas\DecisionTheory\decision_theory_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\Probas\DecisionTheory\decision_theory_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\Probas\DecisionTheory\decision_theory_lean"),
 ]
 DECISION_THEORY_DIR = next(
     (p for p in _DECISION_THEORY_CANDIDATES if p.exists()),

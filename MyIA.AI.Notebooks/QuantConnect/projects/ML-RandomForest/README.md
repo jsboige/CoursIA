@@ -63,6 +63,7 @@ Le CAGR de 24.25 % semble élevé, mais **trois caveats §C** l'attenent sévèr
 
 - `main.py` — Stratégie `MLRandomForestAlgorithm` v3.
 - `research.ipynb` — Recherche (sweep H1-H5 sur les hyperparamètres).
+- `quantbook.ipynb` - QuantBook de recherche : classification Random Forest de la direction du marché
 - `assets/readme/*.png` — Figures du sweep (H1 n_estimators, H2 max_depth, H3 threshold, H4 universe, H5 train freq).
 
 ## Concepts enseignés

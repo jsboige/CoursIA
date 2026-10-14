@@ -225,7 +225,7 @@ namespace MyIA.Trading.Backtester.Tests
         [Fact]
         public void CalibrateComplexity_ActuallyExploresAndDoesNotReturnItsSeedValue()
         {
-            var config = new TradingSvmModelConfig();
+            var config = new TradingSvmModelConfig { TrainingTimeout = TimeSpan.FromSeconds(90) };
 
             var complexity = config.CalibrateComplexity(
                 BuildOverlappingXorData(), config.GetKernel(KnownKernel.InverseMultiquadric));
@@ -244,7 +244,7 @@ namespace MyIA.Trading.Backtester.Tests
         [Fact]
         public void CalibratedComplexity_ScoresBetterThanTheSeedComplexity()
         {
-            var config = new TradingSvmModelConfig();
+            var config = new TradingSvmModelConfig { TrainingTimeout = TimeSpan.FromSeconds(90) };
             var data = BuildOverlappingXorData();
             var x = data.Training.GetInputMatrix();
             var y = data.Training.GetOutputClasses();

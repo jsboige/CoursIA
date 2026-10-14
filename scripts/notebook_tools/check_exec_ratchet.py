@@ -21,20 +21,21 @@ Usage:
 
 Head verdicts read the working tree (in CI the checkout IS the head), base
 verdicts read the blob via `git show`. Exit code 1 iff at least one
-CLEAN -> non-CLEAN regression exists.
+CLEAN -> non-CLEAN regression exists. Exit code 2 iff git could not be
+spawned at all (instrument unavailable, #16164) -- never confuse "could not
+measure" with "measured 0".
 """
 
 import argparse
-import errno
 import json
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from check_exec_sequence import code_exec_counts, sequence_verdict
+from fork_retry import run_with_fork_retry
 
 # Same exclusions as notebook-execution-required.yml's detect step plus the
 # checkpoints rule of the tier-1 scanner: archived, papermill-output and
@@ -42,33 +43,35 @@ from check_exec_sequence import code_exec_counts, sequence_verdict
 EXCLUDE_MARKERS = ("/.ipynb_checkpoints/", "/archive/", "/_output/",
                    "/research/")
 
-# EAGAIN au spawn (contention de processus, p.ex. pytest-xdist -n 4 sur le
-# runner) est transitoire : le `except OSError: return None` historique
-# transformait ce pic de charge en "changed notebooks : 0" -> faux vert CI
-# (flake diagnostique sur #16125, tentative 3). On retente borne avant de
-# rendre l'echec.
-_EAGAIN_ERRNOS = (errno.EAGAIN, getattr(errno, "EWOULDBLOCK", errno.EAGAIN))
-_EAGAIN_ATTEMPTS = 3
-_EAGAIN_BACKOFF = (0.05, 0.15)  # avant les 2e et 3e tentatives
 
+class InstrumentUnavailable(RuntimeError):
+    """git n'a pas pu etre lance : le ratchet n'a rien mesure (#16164).
 
-def _est_eagain(exc):
-    return isinstance(exc, OSError) and exc.errno in _EAGAIN_ERRNOS
+    Epuisement des retries EAGAIN, ou OSError non transitoire au spawn
+    (ENOENT, EACCES, ...). Distinct de ``returncode != 0`` (git A repondu :
+    l'instrument a tourne, sa reponse vaut None). Decision #16164 :
+    fail-closed sur instrument indisponible, en convergence avec le canon
+    (check_kernel_suffix_canon.py, dont l'OSError propage) -- un garde ne
+    rend jamais un verdict sur un arbre qu'il n'a pas lu.
+    """
+
+    def __init__(self, exc):
+        super().__init__(
+            f"git spawn failed ({exc.__class__.__name__}: "
+            f"errno={getattr(exc, 'errno', None)} {exc})")
 
 
 def git(*args, cwd=None):
-    """Run a git command, returning stdout (utf-8) or None on failure."""
-    for tentative in range(_EAGAIN_ATTEMPTS):
-        try:
-            out = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
-                                 encoding="utf-8", errors="replace",
-                                 check=False)
-            return out.stdout if out.returncode == 0 else None
-        except OSError as exc:
-            if not _est_eagain(exc) or tentative == _EAGAIN_ATTEMPTS - 1:
-                return None
-            time.sleep(_EAGAIN_BACKOFF[tentative])
-    return None
+    """Run a git command, returning stdout (utf-8), None on git-level
+    failure (returncode != 0), or raising InstrumentUnavailable when the
+    spawn itself failed after bounded fork retries (#16217 primitive)."""
+    try:
+        out = run_with_fork_retry(
+            ["git", *args], cwd=cwd, capture_output=True,
+            encoding="utf-8", errors="replace", check=False)
+    except OSError as exc:
+        raise InstrumentUnavailable(exc) from exc
+    return out.stdout if out.returncode == 0 else None
 
 
 def resolve_base(base, cwd=None):
@@ -123,10 +126,26 @@ def verdict_at_base(base, path, cwd=None):
 
 
 def verdict_at_head(path, cwd=None):
-    """Verdict of the working-tree notebook."""
+    """Verdict of the working-tree notebook.
+
+    MISSING: the file is absent from the working tree. That is a WORKSPACE
+    defect (amputed checkout, persistent runner slot carrying a leftover
+    sparse-checkout pattern), never a content defect (#20174). Naming it
+    apart is the whole point: conflated into PARSE_ERROR, the verdict tells
+    a lane "your notebook is corrupt" and sends it hunting a defect the file
+    does not carry -- measured twice on 2026-10-10 (#20158, #20118), where
+    the notebooks were valid JSON and identical to origin/main.
+
+    PARSE_ERROR: the file is present but its content is not usable JSON."""
     try:
-        ec = code_exec_counts(json.loads(
-            (Path(cwd or ".") / path).read_text(encoding="utf-8")))
+        text = (Path(cwd or ".") / path).read_text(encoding="utf-8")
+    except (FileNotFoundError, NotADirectoryError, IsADirectoryError):
+        return "MISSING", []
+    except OSError:
+        # Permission denied, transient I/O: no readable file either, same class.
+        return "MISSING", []
+    try:
+        ec = code_exec_counts(json.loads(text))
     except Exception:
         return "PARSE_ERROR", []
     return sequence_verdict(ec), ec
@@ -149,6 +168,16 @@ def ratchet(base, cwd=None):
 
 
 def main():
+    # Sibling pattern (#12811, #13191, #14154, #15185, #15668) : l'organe est
+    # consomme en subprocess par la CI et les tests, qui decodent stdout/stderr
+    # en UTF-8 (encoding="utf-8"). Sur Windows ACP 1252, un pipe sans
+    # reconfigure emet l'em-dash des annotations ::error en byte 0x97 cp1252 --
+    # UnicodeDecodeError dans le reader thread, stderr=None, verdict masque
+    # (#17427). Le hasattr couvre Python < 3.7 et les flux captes sans
+    # reconfigure (pytest).
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(
         description="Ratchet gate: PR must not soil a clean sequence "
                     "(issue #11112 tier 2)")
@@ -157,8 +186,20 @@ def main():
                     help="Machine-readable output")
     args = ap.parse_args()
 
-    resolved = resolve_base(args.base)
-    records = ratchet(args.base)
+    try:
+        resolved = resolve_base(args.base)
+        records = ratchet(args.base)
+    except InstrumentUnavailable as exc:
+        # #16164 : "n'a pas pu mesurer" n'est pas "a mesure 0". Le faux vert
+        # historique (changed notebooks : 0 + exit 0) confondait les deux ;
+        # exit 2 est distinct de 1 (regression) pour que CI comme humains
+        # distinguent l'instrument en panne de l'arbre propre.
+        print(f"instrument indisponible : {exc}", file=sys.stderr)
+        print("le ratchet n'a rien mesure -- contention de processus "
+              "(EAGAIN, p.ex. pytest-xdist -n 4) ou git absent du PATH ; "
+              "relancer le job, ne pas lire ceci comme « 0 changements ».",
+              file=sys.stderr)
+        sys.exit(2)
     regressions = [r for r in records if r["regression"]]
 
     if args.as_json:
@@ -179,17 +220,35 @@ def main():
 
     if regressions:
         for r in regressions:
-            print(f"::error file={r['notebook']}::sequence was CLEAN at "
-                  f"{args.base}, is {r['head']} in this PR — re-execute the "
-                  f"notebook end-to-end on a fresh kernel before commit",
+            if r["head"] == "MISSING":
+                # #20174 : un arbre ampute n'est pas un carnet casse. L'annotation
+                # doit le dire, sinon la lane cherche un defaut de contenu que le
+                # fichier ne porte pas.
+                print(f"::error file={r['notebook']}::notebook absent from the "
+                      f"working tree (CLEAN at {args.base}) — incomplete "
+                      f"checkout, NOT a content defect: re-run the job on a "
+                      f"clean workspace", file=sys.stderr)
+            else:
+                print(f"::error file={r['notebook']}::sequence was CLEAN at "
+                      f"{args.base}, is {r['head']} in this PR — re-execute the "
+                      f"notebook end-to-end on a fresh kernel before commit",
+                      file=sys.stderr)
+        if any(r["head"] != "MISSING" for r in regressions):
+            print("If this is an acknowledged single-cell re-exec (RECOVERABLE-"
+                  "MACHINE, gitignored downstream artifact): never hand-edit "
+                  "execution_count — document the degraded sequence in the PR "
+                  "body with the template from docs/reference/regles-validation-"
+                  "detail.md 'Ratchet exec-sequence fail-by-design' (#11577) and "
+                  "get an explicit reviewer ack before merge.",
                   file=sys.stderr)
-        print("If this is an acknowledged single-cell re-exec (RECOVERABLE-"
-              "MACHINE, gitignored downstream artifact): never hand-edit "
-              "execution_count — document the degraded sequence in the PR "
-              "body with the template from docs/reference/regles-validation-"
-              "detail.md 'Ratchet exec-sequence fail-by-design' (#11577) and "
-              "get an explicit reviewer ack before merge.",
-              file=sys.stderr)
+        else:
+            # Servir l'avis « fail-by-design » sur un arbre ampute ferait signer
+            # un accord pour un defaut inexistant -- c'est ainsi qu'un faux rouge
+            # devient un faux accord.
+            print("Every regression above is a MISSING file: the working tree is "
+                  "incomplete. Do not open a fail-by-design ack for a file that "
+                  "is not on disk — repair the workspace (#20174).",
+                  file=sys.stderr)
         sys.exit(1)
     sys.exit(0)
 

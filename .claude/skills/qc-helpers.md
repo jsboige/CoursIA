@@ -182,7 +182,7 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/{ProjectNam
 
 ## Backlog d'optimisation (LIRE EN PREMIER)
 
-**Fichier**: `MyIA.AI.Notebooks/QuantConnect/projects/OPTIMIZATION_BACKLOG.md`
+**Fichier**: `MyIA.AI.Notebooks/QuantConnect/projects/_docs/OPTIMIZATION_BACKLOG.md`
 
 Ce fichier commite contient:
 - Regles universelles confirmees (18 patterns)

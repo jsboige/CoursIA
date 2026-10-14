@@ -30,7 +30,8 @@ Ce script est cet organe.
   total=5  removable=1  refused=4
 
   $ python scripts/ci/prune_merged_worktrees.py --apply
-  # applique les retraits ; exit 1 si au moins un refus non-bloquant
+  # applique les retraits ; les refus restent dans le rapport (exit 0,
+  # cf #3895 : un refus est une decision de l'outil, pas une panne)
 
   $ python scripts/ci/prune_merged_worktrees.py --json
   {"scanned": 4, "removable": 1, "refused": 3, "actions": [...]}
@@ -38,17 +39,27 @@ Ce script est cet organe.
   $ python scripts/ci/prune_merged_worktrees.py --path /c/dev/CoursIA-X
   # ne considere qu'un worktree (test)
 
+  $ python scripts/ci/prune_merged_worktrees.py --warn-threshold 20
+  # emet sur stderr une ligne [WARN][prune-task] prete a poster sur le
+  # dashboard workspace des que refused > 20 (desactive par defaut)
+
 Critères de retrait (cf issue #14195 acceptance) :
 
-1. **Worktree avec commits non poussés** (`git rev-list --count @{u}..HEAD > 0`) :
-   REFUSE, jamais d'exception. Aucune branche n'est mergee alors qu'elle a
-   du travail non publie.
+1. **Worktree avec commits non poussés** (avance vs le ref distant homonyme
+   `refs/remotes/origin/<branche>`, repli `@{u}` hors `*/main` -- #20009) :
+   REFUSE. Exception : si HEAD est un ancêtre de `origin/main`, l'avance est
+   un artefact de bookkeeping (branche soeur en `@{u}`, aucun commit propre)
+   et le flot normal tranche. Aucune branche n'est mergee alors qu'elle a du
+   travail non publie.
 2. **Worktree avec une PR OPEN** : REFUSE. Le retrait casserait l'iteration
    en cours.
 3. **Worktree avec une PR MERGED ou CLOSED (non-merged)** : REMOVE.
 4. **Worktree sans branche (HEAD détaché)** : verdict par contenu. Si
    `git log origin/main --grep "<branch_topic>"` trouve un commit dont le
    sujet correspond (le squash a efface l'ascendance) : REMOVE ; sinon REFUSE.
+   Un HEAD détaché **ancêtre de `origin/main`** n'a aucun commit propre,
+   donc aucune PR : REFUSE (`reason=detached_on_main`, #17684). Seuls les
+   sujets de `origin/main..HEAD` sont lus pour attribuer une PR.
 5. **Worktree avec residu untracked non tolere** : REFUSE, cause nommee
    (`reason=untolerated_untracked:<n>`, #14619 point 2). Pouvoir de refus
    git (#14509) : `git worktree remove` sans `--force` refuse TOUT
@@ -66,11 +77,66 @@ Critères de retrait (cf issue #14195 acceptance) :
    cannot be moved or removed") : le prononcer REFUSE evite un FAILED a
    chaque passe --apply. Les gitignorés **non-cache** (`.env` laissé, ...)
    sont signalés (`ignored=...`) sans bloquer le retrait.
+7. **Fenetre « agent vivant » sur content_on_main (#18494)** : le retrait
+   par contenu deja integre (`HEAD` ancetre de `origin/main`, predicat 5
+   de l'issue #17771) est un critere de CONTENU, pas d'ACTIVITE. Un agent
+   vivant en phase de lecture (worktree propre, branche sans commit propre,
+   avant sa premiere edition) y est indiscernable d'un worktree abandonne.
+   Un marqueur d'activite recent -- mtime de `.lane-owner`, a defaut mtime
+   du dossier -- plus jeune que la fenetre (`--activity-window-h`, defaut
+   6 h) fait REFUSER le retrait (`reason=recent_activity:<age>h`). Des que
+   le marqueur depasse la fenetre, le worktree redevient retirable : le
+   refus protege la phase de travail, il ne conserve rien indefiniment.
+8. **Contenu deja integre par PATCH-ID (#20067)** : la garde de contenu a
+   deux jambes, et elles ne sont pas equivalentes. La jambe **ascendance**
+   (predicat 5) exige que `HEAD` soit ancetre de `origin/main` ; la jambe
+   **patch-id** (`git cherry origin/main HEAD`) compare les patchs et voit
+   le cas que la premiere rate *par construction* : un **squash-merge**
+   dont la **branche distante a ete supprimee**. La tete n'est alors
+   atteignable depuis aucun ref, donc la resolution de PR rend `None` et
+   l'ascendance est fausse -- alors que le contenu, lui, est bien sur
+   `main`. Meme fenetre « agent vivant » qu'au point 7, meme forme
+   fail-closed : `minus > 0` (il y a un commit a comparer) **et**
+   `plus == 0` (aucun patch hors amont -- un seul `+` disqualifie), et une
+   lecture git en echec refuse. Le champ `content_on_main_by`
+   (`"ancestor"` / `"patch_id"` / `"branch_patch_id"`) porte la jambe dans
+   le rapport, pour qu'un squash-merge ne se lise pas comme une ascendance.
+   La jambe patch-id ne voit qu'un squash **d'un seul commit** (le
+   patch-id se calcule sur le diff d'un commit, reserve Hermes 09/10) ;
+   le cas **multi-commit** releve de la jambe elargie
+   `content_delivered_by_branch_patch_id`, qui fabrique le commit que le
+   squash aurait produit (`git commit-tree HEAD^{tree} -p <merge-base>`)
+   et le donne a `git cherry` -- patch-id du patch de branche entiere,
+   calcule par la machinerie git, sans scan `git log -p`. Elle n'est
+   tentee que quand la jambe per-commit ne tranche pas deja.
 
 Ancre PR : `gh pr list --state all --search "head:<branch>"` (autoritative,
 cf matrice a 4 ancres de `.claude/rules/git-workflow.md` §orphan-branch-scan).
 Ni `--is-ancestor` seul ni `commits/<oid>/pulls` ne suffisent : le premier
-rate les squash-merges, le second a des faux negatifs mesures.
+rate les squash-merges, le second a des faux negatifs mesures. C'est
+exactement ce trou que la seconde jambe du point 8 ferme, par le contenu
+plutot que par un ref.
+
+## Observabilite des refus (#3895, roo-extensions)
+
+Mesure fondatrice (3 machines, 27/09/2026) : **86-100 % des worktrees vus
+sont REFUSE** -- les worktrees de cycle naissent HEAD-detaches ou avec des
+modifications non commitees par construction, le predicat « PR MERGED et
+arbre propre » est insatisfaisable pour eux (po-2023 a sature ses deux
+disques dessus). Les refus sont donc un RAPPORT, pas un echec :
+
+- la sortie porte le decompte par classe de refus (`refusals: ...` en
+  texte, `refusal_reasons` en JSON) ;
+- quand un marqueur `.lane-owner` vit a la racine du worktree (une
+  ligne : le nom de la lane proprietaire, posee par le spawn -- convention
+  #3895), les refus sont attribues par lane (`lane=...` en texte,
+  `lane_refusals` en JSON) ;
+- `--warn-threshold N` emet sur stderr une ligne `[WARN][prune-task]`
+  prete pour le dashboard workspace des que `refused > N`. La tache
+  planifiee (`install_prune_task.py`, N=20 par defaut) la journalise
+  chaque nuit ; le RELAIS dashboard reste aux agents de lane -- une
+  tache planifiee n'a pas d'acces MCP (pattern heartbeat_sweep_emit,
+  #12588).
 
 ## Design rules that matter
 
@@ -98,9 +164,14 @@ rate les squash-merges, le second a des faux negatifs mesures.
 4. **Mode `--json` parallele au mode texte.** Mêmes chiffres, même ordre ;
    le recipient downstream (dashboard sweep, DM ai-01) parse le JSON sans
    réinventer le rendu.
-5. **Exit code : 0 si tout OK (dry-run ou apply reussi), 1 si refus
-   non-bloquant observe, 2 si erreur gh/git infra.** Comme `list_orphan_prs`
-   (#13086).
+5. **Exit code : 0 si la passe s'est deroulee sans erreur (dry-run ou
+   apply reussi), 2 si erreur gh/git infra ou echec d'application.** Un
+   REFUS n'est plus un echec : a 86-100 % de refus (mesure #3895 sur 3
+   machines), le « 1 si refus observe » d'avant rendait la tache planifiee
+   rouge (LastResult 0x1) toutes les nuits en reussissant -- un vrai
+   echec gh y etait indissociable du bruit. Depuis #3895, `1` n'est
+   plus emis (reserve, non contractuel) ; le detail des refus vit dans
+   le rapport, pas dans le code de sortie.
 6. **Pas d'auto-retry.** Si `gh` echoue (auth, rate-limit, network), exit 2
    sans fallback silencieux.
 7. **Worktree courant exclu.** On ne tente jamais `git worktree remove` sur
@@ -115,9 +186,10 @@ rate les squash-merges, le second a des faux negatifs mesures.
     python scripts/ci/prune_merged_worktrees.py --path /c/dev/CoursIA-X
 
 Exit codes:
-    0  OK (dry-run propre, ou apply reussi avec 0 erreur)
-    1  Au moins un refus observe (worktree non retire pour cause legitime)
-    2  Erreur gh/git infra (auth, rate-limit, worktree introuvable, etc.)
+    0  OK (passe saine, refus compris -- un refus est une decision, pas un echec)
+    1  Plus jamais emis (avant #3895 : « refus observes » ; rendait la tache
+       planifiee rouge chaque nuit. Reserve, non contractuel)
+    2  Erreur gh/git infra ou echec d'application (auth, rate-limit, etc.)
 
 ## Coupling with #14195 et #8924
 
@@ -150,6 +222,15 @@ Exit codes:
       `--ignored=matching`)
 - [x] Registre `blocking_untracked` (untracked non-ignores NON toleres)
       expose sur chaque verdict pour la decision humaine
+
+## Acceptance criteria (depuis #20067, jambe patch-id du contenu sur main)
+
+- [x] `git cherry` comme second temoin de contenu, fail-closed
+      (`minus > 0` **et** `plus == 0`, lecture en echec -> REFUSE)
+- [x] Meme fenetre « agent vivant » que le predicat d'ascendance (#18494)
+- [x] Jambe exposee dans le rapport (`content_on_main(ancestor|patch_id|branch_patch_id)`)
+- [x] Mesure avant cablage sur ferme reelle : 31 refuses de la classe,
+      6 franchissables, 25 restes refuses (2026-10-09, po-2025)
 """
 from __future__ import annotations
 
@@ -160,8 +241,11 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
+import traceback
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -202,6 +286,10 @@ UNTRACKED_ARTIFACT_TOKENS = (
     # log chacun bloquait le retrait de worktrees mergees).
     "bg_logs",
     ".log.relaunch",
+    # #3895 : marqueur de propriete pose par le spawn (une ligne : nom de
+    # lane). Tolere pour ne pas transformer l'attribution en blocage -- un
+    # worktree refuse pour son propre marqueur ne serait jamais retire.
+    ".lane-owner",
 )
 
 # Extensions/editions source : si du contenu untracked touche un fichier
@@ -235,6 +323,22 @@ class WorktreeStatus:
     # Champ #14195 (additif) : checkout disparu, enregistrement orphelin.
     # Porte la decision REMOVE *et* le passage a `--force` a l'apply.
     dead_registration: bool = False
+    # Champ #17771 (additif) : REMOVE motive par contenu deja integre a
+    # main (tete ancetre de origin/main), sans PR rattachable.
+    content_on_main: bool = False
+    # Champ #20067 (additif) : *quelle jambe* a etabli `content_on_main`.
+    # "ancestor" = le predicat 5 (#17771, ascendance) ; "patch_id" = le
+    # predicat 6 (#20067, `git cherry` per-commit) ; "branch_patch_id" =
+    # la jambe elargie (squash multi-commit, reserve Hermes 09/10). Trois
+    # preuves differentes, et le rapport doit dire laquelle a tire -- un
+    # squash-merge n'est pas une ascendance, et confondre les deux rend
+    # la classe `no_pr_match` indiscernable d'une garde qui n'aurait rien
+    # franchi.
+    content_on_main_by: Optional[str] = None
+    # Champ #3895 (additif) : lane proprietaire lue dans le marqueur
+    # `.lane-owner` a la racine du worktree (None si absent). Attribue les
+    # refus pour le rapport -- jamais une autorite de decision.
+    lane_owner: Optional[str] = None
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
@@ -250,6 +354,101 @@ def run_git(cwd: str, *args: str, check: bool = True) -> subprocess.CompletedPro
         encoding="utf-8",
         errors="replace",
     )
+
+
+def _ancestor_repo_root(start: Path) -> str | None:
+    """Plus proche ancetre de `start` qui ressemble a un depot git.
+
+    Rend None si aucun ancetre ne porte `.gitmodules` ni `.git/` (le
+    repertoire est hors de tout depot). Pur filesystem : aucun appel git,
+    donc utilisable sans cout dans les resolutions chaudes.
+    """
+    p = start.resolve()
+    while p != p.parent:
+        if (p / ".gitmodules").is_file() or (p / ".git").exists():
+            return str(p)
+        p = p.parent
+    return None
+
+
+# Cible explicite posee par main() depuis --path (Maintenance#64, contrat
+# #18219 : le cwd de l'ANALYSE redirige le scan). None = pas de cible.
+_SCAN_ROOT_OVERRIDE: str | None = None
+
+
+def current_repo_root() -> str:
+    """Racine du repo VISE PAR LE SCAN, en trois priorites (Maintenance#64).
+
+    1. `--path` : la cible explicite de l'analyse, posee par main(). C'est
+       le contrat documente de --path depuis #18219 (« le cwd de l'analyse
+       redirige le scan ») -- contrat que la resolution par `__file__` seule
+       ne tenait pas : un wrapper multi-fermes invoquant une seule copie du
+       script scannait N fois sa ferme d'origine.
+    2. le repo contenant le cwd du processus, s'il existe (invocation
+       `cd <ferme> ; python <script>`, l'autre style du wrapper fleet).
+       Non memoise : depend du cwd courant.
+    3. le repo hebergeant ce script (tache planifiee #14473 : cwd System32
+       hors de tout repo ; #17904). Cache au premier appel.
+
+    L'ordre restaure la visée multi-fermes (priorites 1-2) SANS regresser
+    la robustesse schtasks (priorite 3) : un cwd hors repo tombe toujours
+    sur le repo du script.
+    """
+    if _SCAN_ROOT_OVERRIDE is not None:
+        return _SCAN_ROOT_OVERRIDE
+    cwd_root = _ancestor_repo_root(Path.cwd())
+    if cwd_root is not None:
+        return cwd_root
+    cache_attr = "_coursia_root_cache"
+    cached = getattr(current_repo_root, cache_attr, None)
+    if cached is not None:
+        return cached
+    script_root = _ancestor_repo_root(Path(__file__).resolve().parent)
+    root = script_root if script_root is not None else os.getcwd()
+    setattr(current_repo_root, cache_attr, root)
+    return root
+
+
+def _repo_root_for_worktree(wt_path: str) -> str:
+    """Racine du repo hebergeant le worktree `wt_path`.
+
+    `git worktree remove <wt_path>` opere sur le repo qui contient ce
+    worktree -- pas forcement le repo de ce script. Avant ce helper,
+    `apply_removal` passait `current_repo_root()` systematiquement, ce
+    qui marchait pour les worktrees du repo CoursIA (relatifs, sous
+    `..`) mais cassait les tests hermetiques qui creent un repo
+    ephemere dans `/tmp/pytest-...` et y ajoutent un worktree : `git
+    -C <CoursIA-root> worktree remove /tmp/.../wt-feature` repond
+    `is not a working tree` parce que ce chemin n'est pas un worktree
+    du repo CoursIA.
+
+    Resolution : `git rev-parse --path-format=absolute --git-common-dir`
+    sur `wt_path` rend le common-dir (le `.git` du depot HOTE, pas du
+    worktree). Son parent est la racine du depot hebergeur -- invariant
+    qu'aucune marche d'ancetre sur `.git` ne peut garantir (un worktree
+    lie porte lui-meme un fichier `.git`/gitdir-pointeur, premier match
+    dans la marche, et le helper rendait alors le worktree lui-meme :
+    `git -C <wt> worktree remove <wt>` -> Permission denied sur Windows
+    parce que git tente de supprimer le cwd de la sous-commande).
+
+    Repli : si la commande echoue ou si `wt_path` n'est pas un worktree,
+    `current_repo_root()`. Pour les chemins relatifs (cas System32 du
+    cron #14473 ou chemin nu passe par l'appelant), le worktree est
+    forcement sous le repo hebergeur -- `current_repo_root()` suffit.
+    """
+    p = Path(wt_path)
+    if not p.is_absolute():
+        return current_repo_root()
+    p = p.resolve()
+    # Interroger git sur le worktree : --git-common-dir remonte au
+    # `.git` du depot HOTE, distinct du `.git` du worktree (pointeur).
+    proc = run_git(str(p), "rev-parse", "--path-format=absolute",
+                   "--git-common-dir", check=False)
+    if proc.returncode == 0:
+        common = Path(proc.stdout.strip())
+        if common.is_absolute():
+            return str(common.parent)
+    return current_repo_root()
 
 
 def run_gh(*args: str, check: bool = True) -> subprocess.CompletedProcess:
@@ -366,6 +565,61 @@ def is_source_dirty(path: str) -> bool:
     return any(p.endswith(ext) for ext in SOURCE_EXTENSIONS)
 
 
+def read_lane_owner(wt_path: str) -> Optional[str]:
+    """Nom de lane pose par le spawn (#3895), ou None.
+
+    Convention : fichier `.lane-owner` a la racine du worktree, premiere
+    ligne non vide = nom de la lane proprietaire (ex. ``machine:workspace``).
+    Le spawn qui le pose accepte que l'organe le lise ET le nettoie au
+    retrait (token tolere). Absent, vide ou illisible : None, sans erreur --
+    l'attribution est une economie de lecture, jamais une autorite : elle ne
+    change AUCUNE decision, seulement le rapport.
+    """
+    try:
+        text = (Path(wt_path) / ".lane-owner").read_text(
+            encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped:
+            return stripped[:64]
+    return None
+
+
+def recent_activity_age_hours(wt_path: str,
+                              now: Optional[float] = None) -> float:
+    """Age en heures du marqueur d'activite le plus recent du worktree.
+
+    #18494 : un worktree sans commit propre peut etre celui d'un agent
+    VIVANT en phase de lecture (spawn lance, pas encore sa premiere
+    edition). Deux marqueurs, du plus fiable au moins fiable :
+
+    - mtime de `.lane-owner`, pose par le spawn a la creation ;
+    - a defaut, mtime du dossier du worktree lui-meme (les agents
+      ecrivent tot : `.ipynb`, caches -- en phase de lecture seule, seule
+      la creation du worktree marque le dossier).
+
+    Retourne l'age du plus recent des deux. Chemin illisible : +inf (aucune
+    activite prouvable, le worktree n'est pas protege par cette garde).
+    """
+    now = time.time() if now is None else now
+    candidates: list = []
+    lane_owner = Path(wt_path) / ".lane-owner"
+    try:
+        if lane_owner.exists():
+            candidates.append(lane_owner.stat().st_mtime)
+    except OSError:
+        pass
+    try:
+        candidates.append(Path(wt_path).stat().st_mtime)
+    except OSError:
+        pass
+    if not candidates:
+        return float("inf")
+    return (now - max(candidates)) / 3600.0
+
+
 def same_worktree_path(a: str, b: str) -> bool:
     """Deux chemins de worktree designent-ils le meme repertoire ?
 
@@ -455,30 +709,46 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
     branch_raw = branch_proc.stdout.strip()
     branch = None if branch_raw in ("HEAD", "") else branch_raw
 
-    # Ahead count : commits non pousses vs @{u}. Si @{u} n'est pas
-    # configure (branche feature sans `set-upstream-to`, frequente avec
-    # `git worktree add -b`), @{u} retombe sur origin/main ce qui compare
-    # la branche feature a main -- un faux positif massif. On verifie
-    # d'abord la resolution explicite : si l'upstream specifique est la
-    # branche elle-meme, on compte les commits en avance. Sinon (upstream
-    # = main), on considere 0 unpushed et on laisse le verdict PR trancher.
+    # Ahead count : commits non pousses. L'instrument #20009 : quand le ref
+    # distant homonyme refs/remotes/origin/<branche> existe localement, c'est
+    # LUI qui porte le bookkeeping de la branche. @{u} peut pointer une
+    # branche soeur (base d'une pile au moment de la creation du worktree) ;
+    # `@{u}..HEAD` mesure alors l'ecart a une branche tierce, pas du travail
+    # non pousse (mesure po-2024 : 5 worktrees refuses unpushed_commits:210
+    # avec 0 commit propre et SHA identique au ref distant homonyme).
+    # Repli @{u} historique quand le homonyme est absent : si l'upstream
+    # retombe sur origin/main (branche feature sans `set-upstream-to`),
+    # comparer la branche feature a main serait un faux positif massif --
+    # on considere 0 unpushed et on laisse le verdict PR trancher. Un ref
+    # homonyme stale en retard sur-counte (echec vers le refus), jamais
+    # l'inverse.
     ahead_count = 0
     if branch:
-        upstream_proc = run_git(
-            wt_path, "rev-parse", "--abbrev-ref",
-            f"{branch}@{{u}}", check=False,
+        base_ref = None
+        homonym_proc = run_git(
+            wt_path, "rev-parse", "--verify",
+            f"refs/remotes/origin/{branch}", check=False,
         )
-        if upstream_proc.returncode == 0:
-            upstream = upstream_proc.stdout.strip()
-            if upstream and not upstream.endswith("/main"):
-                ahead_proc = run_git(
-                    wt_path, "rev-list", "--count", "@{u}..HEAD", check=False
-                )
-                if ahead_proc.returncode == 0:
-                    try:
-                        ahead_count = int(ahead_proc.stdout.strip())
-                    except ValueError:
-                        ahead_count = 0
+        if homonym_proc.returncode == 0:
+            base_ref = f"refs/remotes/origin/{branch}"
+        else:
+            upstream_proc = run_git(
+                wt_path, "rev-parse", "--abbrev-ref",
+                f"{branch}@{{u}}", check=False,
+            )
+            if upstream_proc.returncode == 0:
+                upstream = upstream_proc.stdout.strip()
+                if upstream and not upstream.endswith("/main"):
+                    base_ref = "@{u}"
+        if base_ref:
+            ahead_proc = run_git(
+                wt_path, "rev-list", "--count", f"{base_ref}..HEAD", check=False
+            )
+            if ahead_proc.returncode == 0:
+                try:
+                    ahead_count = int(ahead_proc.stdout.strip())
+                except ValueError:
+                    ahead_count = 0
 
     # Untracked / gitignores / tracked-modifies : une seule passe, avec
     # --ignored=matching pour signaler les gitignores non-cache (#14509).
@@ -524,6 +794,10 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
     # edite un echoue (a).
     dead_registration = _is_dead_registration(wt_path, parsed)
 
+    # Attribution lane (#3895) : lue dans le marqueur `.lane-owner`, une
+    # lecture de fichier par worktree, sans effet sur les decisions.
+    lane_owner = read_lane_owner(wt_path)
+
     return {
         "branch": branch,
         "ahead_count": ahead_count,
@@ -535,6 +809,7 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
         "has_submodules": has_submodules,
         "is_current": same_worktree_path(wt_path, current_path),
         "dead_registration": dead_registration,
+        "lane_owner": lane_owner,
     }
 
 
@@ -568,7 +843,7 @@ PR_LISTING_WINDOW = 1000
 
 def _pr_cache_path() -> Path:
     """Un fichier de verdicts par depot (cle = sha1 du remote origin)."""
-    proc = run_git(".", "remote", "get-url", "origin", check=False)
+    proc = run_git(current_repo_root(), "remote", "get-url", "origin", check=False)
     url = proc.stdout.strip() if proc.returncode == 0 else "unknown-repo"
     key = hashlib.sha1(url.encode("utf-8")).hexdigest()[:12]
     return Path.home() / ".cache" / "coursia" / "prune_pr_verdicts" / f"{key}.json"
@@ -764,6 +1039,177 @@ def lookup_pr_for_branch(branch: str,
     return get_pr_resolution().resolve(branch, head_sha)
 
 
+# Reference de l'integration : un HEAD detache qui en est ancetre n'a
+# aucun commit propre, donc aucune PR attribuable (#17684).
+MAIN_REF = "origin/main"
+
+
+def head_is_ancestor_of_main(wt_path: str) -> bool:
+    """Vrai si HEAD (attache ou detache) est un ancetre de ``origin/main``.
+
+    Echec git (ref absente, depot sans remote) -> False : la voie de lookup,
+    restreinte a ``origin/main..HEAD``, rend alors None, donc REFUSE.
+    """
+    proc = run_git(
+        wt_path, "merge-base", "--is-ancestor", "HEAD", MAIN_REF, check=False
+    )
+    return proc.returncode == 0
+
+
+def content_delivered_by_patch_id(wt_path: str) -> Optional[tuple]:
+    """Teste le contenu livre par **patch-id**, pas par ascendance (#20067).
+
+    ``git cherry <main> HEAD`` compare chaque commit propre du worktree a
+    l'amont par *patch-id* : ``-`` = le patch est deja en amont, ``+`` = il
+    ne l'est pas. C'est la voie qui voit un **squash-merge d'un seul
+    commit** suivi de la suppression de la branche -- cas ou plus aucun
+    ref distant ne porte la tete, donc ou le predicat d'ascendance
+    (#17771) refuse *par construction*, quelle que soit la realite du
+    contenu. **Limite mesuree (reserve Hermes 09/10)** : le patch-id se
+    calcule sur le diff d'*un* commit, donc un squash de branche a N
+    commits produit un patch qui n'egale celui d'aucun commit d'origine --
+    cette jambe rend alors ``plus == N`` et ne tire pas. Ce cas
+    multi-commit releve de la jambe elargie
+    ``content_delivered_by_branch_patch_id``, tentee juste apres.
+
+    Mesure du 2026-10-09 sur la ferme po-2025 (133 worktrees enregistres,
+    31 refuses en ``no_pr_match``/``detached_no_match``) : **6 franchissent**
+    (``minus>0, plus==0``) et **25 restent refuses** (un seul ``+``
+    disqualifie). La classe est donc franchissable *et* la garde reste
+    fail-closed.
+
+    Retourne ``(minus, plus)``, ou None si git echoue : l'appelant REFUSE
+    alors (echec de lecture = jamais un feu vert).
+    """
+    proc = run_git(wt_path, "cherry", MAIN_REF, "HEAD", check=False)
+    if proc.returncode != 0:
+        return None
+    minus = plus = 0
+    for line in proc.stdout.splitlines():
+        if line.startswith("-"):
+            minus += 1
+        elif line.startswith("+"):
+            plus += 1
+    return minus, plus
+
+
+def content_delivered_by_branch_patch_id(wt_path: str) -> Optional[tuple]:
+    """Voit le squash-merge **multi-commit** (#20067, reserve Hermes 09/10).
+
+    ``content_delivered_by_patch_id`` compare le patch-id d'**un** commit a
+    l'amont. Une branche a N commits squashee sur ``main`` produit un commit
+    dont le patch est la **concatenation** des N diffs, donc un patch-id qui
+    n'egale celui d'aucun commit d'origine : ``git cherry`` rend alors
+    ``plus == N`` et refuse un contenu pourtant livre -- le defaut meme que
+    #20067 vise. Mesure de la reserve (Hermes, 09/10, depots jetables git
+    2.43) : branche a 1 commit -> ``minus=1 plus=0`` (franchit) ; branche a
+    2 commits -> ``minus=0 plus=2`` (refuse). Les 6 franchissements de la
+    mesure du 09/10 sont **tous** ``minus=1 plus=0`` -- aucun multi-commit.
+
+    Plutot que de recalculer a la main le patch-id du diff de branche puis
+    de parcourir les patchs de ``main`` (``git log -p`` sur des centaines de
+    commits, capturee en memoire, pour un resultat identique), on **fabrique
+    le commit que le squash aurait produit** -- arbre de ``HEAD``, parent =
+    merge-base -- et on le donne a la meme machinerie ``git cherry``. Son
+    patch-id est exactement celui du patch de branche, et c'est git qui
+    compare, avec son propre index de patch-ids.
+
+    Le commit synthetique est **detache** (aucun ref ne le porte) : il est
+    collecte par le prochain ``git gc``. Aucune ecriture sur les refs, sur
+    l'index ou sur le worktree.
+
+    Cout : trois commandes triviales (``rev-parse``, ``merge-base``,
+    ``commit-tree``) plus le meme ``git cherry`` que la jambe precedente.
+    L'appelant ne la tente **que** lorsque la jambe per-commit n'a pas
+    tranche, donc ce cout ne s'ajoute pas au chemin ou elle decide deja.
+
+    Retourne ``(minus, plus)``, ou None si git echoue : l'appelant REFUSE
+    alors (echec de lecture = jamais un feu vert).
+    """
+    tree = run_git(wt_path, "rev-parse", "HEAD^{tree}", check=False)
+    if tree.returncode != 0 or not tree.stdout.strip():
+        return None
+    base = run_git(wt_path, "merge-base", MAIN_REF, "HEAD", check=False)
+    if base.returncode != 0 or not base.stdout.strip():
+        return None
+    synth = run_git(
+        wt_path, "commit-tree", tree.stdout.strip(),
+        "-p", base.stdout.strip(), "-m", "squash-probe (#20067)",
+        check=False,
+    )
+    if synth.returncode != 0 or not synth.stdout.strip():
+        return None
+    proc = run_git(wt_path, "cherry", MAIN_REF, synth.stdout.strip(),
+                   check=False)
+    if proc.returncode != 0:
+        return None
+    minus = plus = 0
+    for line in proc.stdout.splitlines():
+        if line.startswith("-"):
+            minus += 1
+        elif line.startswith("+"):
+            plus += 1
+    return minus, plus
+
+
+def detached_head_is_on_main(wt_path: str) -> bool:
+    """Vrai si le HEAD detache est un ancetre de ``origin/main`` (#17684).
+
+    Un tel worktree ne porte aucun commit propre : c'est une extraction de
+    main (demeure d'un organe planifie, lecture de review), pas le travail
+    d'une PR. Les sujets ``(#N)`` de son historique sont ceux de main, et
+    les resoudre attribue au worktree la PR d'un commit ancetre -- mesure :
+    la demeure de la tache ``merge_ready`` classee REMOVE sur une PR MERGED
+    qui n'avait rien a voir avec elle.
+    """
+    return head_is_ancestor_of_main(wt_path)
+
+
+def remote_head_for_head(wt_path: str, branch: str,
+                         head_sha: str) -> Optional[str]:
+    """Nom court de la branche distante qui porte exactement HEAD (#17771).
+
+    Cas mesure : un worktree branche localement sous un nom different de la
+    tete de PR (checkout `pr-123`, renommage local). La resolution par le
+    nom local echoue alors que la PR existe. Deux voies, de la plus precise
+    a la plus large :
+
+    1. l'upstream explicite ``<branche>@{u}`` (hors ``*/main``) : le lien
+       de push est la preuve la plus directe que la branche distante porte
+       la meme histoire ;
+    2. une branche ``origin/*`` dont le TIP est exactement ``head_sha``
+       (scan ``for-each-ref``, ``origin/main`` et ``origin/HEAD`` exclus) :
+       apres un checkout detache re-branche, seul le contenu parle encore.
+
+    Retourne None si aucune voie ne resolve : l'appelant retombe sur la
+    REFUSE conservatrice (ou le predicat content_on_main).
+    """
+    upstream_proc = run_git(
+        wt_path, "rev-parse", "--abbrev-ref", "--symbolic-full-name",
+        f"{branch}@{{u}}", check=False,
+    )
+    if upstream_proc.returncode == 0:
+        upstream = upstream_proc.stdout.strip()
+        if upstream and not upstream.endswith("/main"):
+            return upstream.split("/", 1)[1] if "/" in upstream else upstream
+    refs_proc = run_git(
+        wt_path, "for-each-ref", "refs/remotes/origin",
+        "--format=%(refname:short) %(objectname)", check=False,
+    )
+    if refs_proc.returncode != 0:
+        return None
+    for line in refs_proc.stdout.splitlines():
+        parts = line.split()
+        if len(parts) != 2:
+            continue
+        name, tip = parts
+        if name in ("origin/main", "origin/HEAD"):
+            continue
+        if tip == head_sha:
+            return name.split("/", 1)[1] if "/" in name else name
+    return None
+
+
 def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
     """Verdict par contenu pour HEAD detaché (#14476) : PR exacte, ou rien.
 
@@ -786,9 +1232,17 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
 
     3. **Sinon None** : aucun match = aucun verdict. Le fail-CLOSED est
        deja le bon defaut (REFUSE downstream).
+
+    Les sujets lus sont ceux des commits PROPRES au HEAD
+    (``origin/main..HEAD``), jamais son historique entier : les 20 derniers
+    sujets de ``HEAD`` traversent main des le premier commit partage, et la
+    voie 1 resolvait alors la PR d'un commit ancetre (#17684 -- une branche
+    de revert attribuee a la PR qu'elle revertait, MERGED, donc REMOVE,
+    alors que sa propre PR etait OPEN).
     """
     log_proc = run_git(
-        wt_path, "log", "HEAD", "--format=%s", "-n", "20", check=False
+        wt_path, "log", f"{MAIN_REF}..HEAD", "--format=%s", "-n", "20",
+        check=False,
     )
     if log_proc.returncode != 0:
         return None
@@ -853,12 +1307,16 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
 
 
 def diagnose_worktree(wt_path: str, current_path: str,
-                      head_sha: Optional[str] = None) -> WorktreeStatus:
+                      head_sha: Optional[str] = None,
+                      activity_window_h: float = 6.0) -> WorktreeStatus:
     """Diagnostic complet d'un worktree.
 
     `head_sha` (fourni par `list_worktrees`, porcelain) sert uniquement a
     la garde oid du cache de verdicts MERGED (#15369) : sans lui, l'etage
     cache est saute, jamais consulte a l'aveugle.
+
+    `activity_window_h` : fenetre de la garde « agent vivant » (#18494),
+    appliquee au retrait par contenu deja integre (predicat content_on_main).
     """
     info = get_worktree_info(wt_path, current_path)
 
@@ -879,6 +1337,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
         )
 
     # Branche main : JAMAIS retirer (le worktree de travail principal).
@@ -901,6 +1360,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
         )
 
     # Sous-modules : git interdit le retrait par construction -> REFUSE sans
@@ -918,10 +1378,21 @@ def diagnose_worktree(wt_path: str, current_path: str,
             untracked_paths=info["untracked"],
             decision="REFUSE",
             refusal_reason="contains_submodules",
+            lane_owner=info.get("lane_owner"),
         )
 
-    # Predicat 1 : commits non poussés -> REFUSE inconditionnel
-    if info["branch"] and info["ahead_count"] > 0:
+    # Predicat 1 : commits non poussés -> REFUSE, sauf artefact de
+    # bookkeeping #20009 : HEAD ancetre de origin/main = aucun commit
+    # propre ici, l'« avance » mesure alors l'ecart a un ref tiers
+    # (branche soeur @{u} ou homonyme absent), pas du travail non pousse.
+    # On laisse le flot trancher (verdict PR, puis predicat content_on_main
+    # et sa fenetre d'activite #18494). Fail-CLOSED : ancetre
+    # indeterminable -> refus conserve.
+    if (
+        info["branch"]
+        and info["ahead_count"] > 0
+        and not head_is_ancestor_of_main(wt_path)
+    ):
         return WorktreeStatus(
             path=wt_path,
             branch=info["branch"],
@@ -937,6 +1408,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
         )
 
     # Predicat 1bis : enregistrement mort (#14195). DOIT preceder les
@@ -962,6 +1434,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
             dead_registration=True,
         )
 
@@ -984,6 +1457,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
         )
 
     # Predicat 2b : residu untracked NON tolere -> REFUSE (#14619 point 2).
@@ -1009,13 +1483,42 @@ def diagnose_worktree(wt_path: str, current_path: str,
             untracked_paths=info["untracked"],
             decision="REFUSE",
             refusal_reason=f"untolerated_untracked:{len(untolerated)}",
+            lane_owner=info.get("lane_owner"),
         )
 
     # Resolution PR
     pr = None
     if info["branch"]:
         pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
-    elif not info["branch"]:
+        if pr is None:
+            # #17771 predicat 1 : la branche locale porte un nom different
+            # de la tete de PR. On resout la PR par la branche distante qui
+            # porte exactement HEAD (upstream explicite, puis tip exact
+            # origin/*). Pas de PR de ce cote non plus -> on continue.
+            remote_head = remote_head_for_head(wt_path, info["branch"], head_sha)
+            if remote_head:
+                pr = lookup_pr_for_branch(remote_head, head_sha=head_sha)
+    elif detached_head_is_on_main(wt_path):
+        # Extraction de main (demeure d'organe, lecture de review) : aucune
+        # PR ne la porte, le critere « PR MERGED » ne s'y applique pas.
+        return WorktreeStatus(
+            path=wt_path,
+            branch=info["branch"],
+            is_current=False,
+            pr_state=None,
+            pr_number=None,
+            pr_url=None,
+            ahead_count=info["ahead_count"],
+            has_source_dirty=info["has_source_dirty"],
+            untracked_paths=info["untracked"],
+            decision="REFUSE",
+            refusal_reason="detached_on_main",
+            has_submodules=info["has_submodules"],
+            blocking_untracked=info.get("blocking_untracked", []),
+            ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
+        )
+    else:
         pr = lookup_pr_for_detached_head(wt_path)
 
     pr_state = pr.get("state") if pr else None
@@ -1039,6 +1542,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
         )
 
     # Predicat 4 : PR MERGED ou CLOSED -> REMOVE
@@ -1058,7 +1562,145 @@ def diagnose_worktree(wt_path: str, current_path: str,
             has_submodules=info["has_submodules"],
             blocking_untracked=info.get("blocking_untracked", []),
             ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
         )
+
+    # Predicat 5 (#17771) : contenu deja integre a main. Aucune PR
+    # rattachable (ni par nom local, ni par tete distante), mais HEAD est
+    # un ancetre de origin/main : chaque commit du worktree est deja sur
+    # main. Les gardes en amont garantissent deja les deux autres
+    # conditions de l'issue -- 0 commit propre non publie (le predicat 1,
+    # ou sa garde ancestor-of-main #20009 quand l'avance est un artefact
+    # @{u}) et aucune edition source non
+    # committee ni untracked non tolere (sinon ``uncommitted_source_changes``
+    # / ``untolerated_untracked`` seraient sortis). Le worktree ne porte
+    # plus rien que main ne contienne deja.
+    #
+    # #18494 -- la fenetre « agent vivant ». `content_on_main` est un
+    # critere de CONTENU, pas d'ACTIVITE : un agent vivant traverse
+    # necessairement un etat « worktree propre + branche sans commit
+    # propre » (sa phase de lecture, avant la premiere edition), et un
+    # `--apply` dans cette fenetre detruit son plan de travail en cours.
+    # Un marqueur d'activite recent (`.lane-owner` ou mtime du dossier)
+    # fait donc REFUSER le retrait ; passe la fenetre, plus rien ne le
+    # protege -- le refus couvre la phase de travail, pas la conservation.
+    if info["branch"] and head_is_ancestor_of_main(wt_path):
+        age_h = recent_activity_age_hours(wt_path)
+        if age_h < activity_window_h:
+            return WorktreeStatus(
+                path=wt_path,
+                branch=info["branch"],
+                is_current=False,
+                pr_state=None,
+                pr_number=None,
+                pr_url=None,
+                ahead_count=info["ahead_count"],
+                has_source_dirty=info["has_source_dirty"],
+                untracked_paths=info["untracked"],
+                decision="REFUSE",
+                refusal_reason=f"recent_activity:{age_h:.1f}h",
+                has_submodules=info["has_submodules"],
+                blocking_untracked=info.get("blocking_untracked", []),
+                ignored_extra=info.get("ignored_extra", []),
+                lane_owner=info.get("lane_owner"),
+                content_on_main=True,
+                content_on_main_by="ancestor",
+            )
+        return WorktreeStatus(
+            path=wt_path,
+            branch=info["branch"],
+            is_current=False,
+            pr_state=None,
+            pr_number=None,
+            pr_url=None,
+            ahead_count=info["ahead_count"],
+            has_source_dirty=info["has_source_dirty"],
+            untracked_paths=info["untracked"],
+            decision="REMOVE",
+            refusal_reason=None,
+            has_submodules=info["has_submodules"],
+            blocking_untracked=info.get("blocking_untracked", []),
+            ignored_extra=info.get("ignored_extra", []),
+            lane_owner=info.get("lane_owner"),
+            content_on_main=True,
+            content_on_main_by="ancestor",
+        )
+
+    # Predicat 6 (#20067) : contenu deja integre a main **par patch-id**.
+    # Le predicat 5 teste l'ascendance ; il est structurellement aveugle au
+    # squash-merge suivi de la suppression de la branche -- la tete n'est
+    # alors atteignable depuis aucun ref distant, donc sa jambe
+    # « tete atteignable » est fausse par construction, quelle que soit la
+    # realite du contenu. `git cherry` compare les *patch-id*, ce qui voit
+    # ce cas.
+    #
+    # Fail-CLOSED, et c'est le point : `minus > 0` garantit qu'il y a un
+    # commit a comparer (un worktree vide n'ouvre pas le retrait), et
+    # `plus == 0` exige que **tous** les patchs soient en amont -- un seul
+    # `+` disqualifie. Mesure du 2026-10-09 : 6 franchissent sur 31 refuses
+    # de la classe, 25 restent refuses.
+    #
+    # Meme fenetre « agent vivant » que le predicat 5 (#18494) : le critere
+    # est un critere de CONTENU, pas d'ACTIVITE, et un agent vivant
+    # traverse necessairement l'etat « worktree propre, branche sans commit
+    # propre ». Comme le predicat 5, ce predicat est **branche-only** : un
+    # HEAD detache releve de `detached_head_is_on_main` (#17684).
+    if info["branch"]:
+        leg = None
+        cherry = content_delivered_by_patch_id(wt_path)
+        if cherry is not None and cherry[0] > 0 and cherry[1] == 0:
+            leg = "patch_id"
+        else:
+            # Jambe elargie (#20067, reserve Hermes du 09/10) : la precedente
+            # ne voit qu'un squash a **un seul** commit, et rend `plus == N`
+            # sur une branche a N commits squashee. Elle n'est tentee que
+            # lorsqu'il reste quelque chose a trancher, donc son cout ne
+            # s'ajoute pas au chemin ou la jambe per-commit decide deja.
+            branch_cherry = content_delivered_by_branch_patch_id(wt_path)
+            if (branch_cherry is not None
+                    and branch_cherry[0] > 0 and branch_cherry[1] == 0):
+                leg = "branch_patch_id"
+        if leg is not None:
+            age_h = recent_activity_age_hours(wt_path)
+            if age_h < activity_window_h:
+                return WorktreeStatus(
+                    path=wt_path,
+                    branch=info["branch"],
+                    is_current=False,
+                    pr_state=None,
+                    pr_number=None,
+                    pr_url=None,
+                    ahead_count=info["ahead_count"],
+                    has_source_dirty=info["has_source_dirty"],
+                    untracked_paths=info["untracked"],
+                    decision="REFUSE",
+                    refusal_reason=f"recent_activity:{age_h:.1f}h",
+                    has_submodules=info["has_submodules"],
+                    blocking_untracked=info.get("blocking_untracked", []),
+                    ignored_extra=info.get("ignored_extra", []),
+                    lane_owner=info.get("lane_owner"),
+                    content_on_main=True,
+                    content_on_main_by=leg,
+                )
+            return WorktreeStatus(
+                path=wt_path,
+                branch=info["branch"],
+                is_current=False,
+                pr_state=None,
+                pr_number=None,
+                pr_url=None,
+                ahead_count=info["ahead_count"],
+                has_source_dirty=info["has_source_dirty"],
+                untracked_paths=info["untracked"],
+                decision="REMOVE",
+                refusal_reason=None,
+                has_submodules=info["has_submodules"],
+                blocking_untracked=info.get("blocking_untracked", []),
+                ignored_extra=info.get("ignored_extra", []),
+                lane_owner=info.get("lane_owner"),
+                content_on_main=True,
+                content_on_main_by=leg,
+            )
 
     # Pas de PR trouvee : HEAD detaché sans correspondance, ou branche
     # non pushée qu'on ne peut pas relier. REFUSE conservatrice.
@@ -1077,12 +1719,13 @@ def diagnose_worktree(wt_path: str, current_path: str,
         has_submodules=info["has_submodules"],
         blocking_untracked=info.get("blocking_untracked", []),
         ignored_extra=info.get("ignored_extra", []),
+        lane_owner=info.get("lane_owner"),
     )
 
 
 def list_worktrees() -> list[dict]:
     """Retourne les worktrees sous forme [{path, head_sha}, ...]."""
-    proc = run_git(".", "worktree", "list", "--porcelain", check=False)
+    proc = run_git(current_repo_root(), "worktree", "list", "--porcelain", check=False)
     if proc.returncode != 0:
         raise RuntimeError(f"git worktree list failed: {proc.stderr.strip()}")
     out: list[dict] = []
@@ -1101,6 +1744,42 @@ def list_worktrees() -> list[dict]:
     return out
 
 
+def is_link_like(p: Path) -> bool:
+    """True pour un lien symbolique ET pour une jonction Windows (#20007).
+
+    `Path.is_symlink()` ne reconnaît que les liens de type *name surrogate* :
+    une jonction NTFS (reparse point `IO_REPARSE_TAG_MOUNT_POINT`, le geste
+    courant pour partager un `node_modules` ou un cache entre worktrees) rend
+    **False** sur les trois voies (`is_symlink`, `os.path.islink`,
+    `S_ISLNK(st_mode)`) alors qu'elle porte bien
+    `FILE_ATTRIBUTE_REPARSE_POINT`. Mesuré sur une jonction `mklink /J` :
+    `st_file_attributes == 0x410` (reparse point + directory).
+
+    Conséquence de l'aveuglement : la cible tombait dans la branche
+    `is_dir()`, où `shutil.rmtree` lève « Cannot call rmtree on a symbolic
+    link » — un `OSError` avalé par `ignore_errors=True`. L'artefact n'était
+    donc ni retiré ni listé, et le `git worktree remove` qui suit échouait
+    sur l'untracked restant : le rapport annonçait REMOVE pour un `--apply`
+    qui ne pouvait pas aboutir (#14619, même classe que l'incident jonctions
+    po-2023 c.525).
+
+    `os.unlink` retire une jonction sans suivre sa cible (mesuré : la cible
+    et son contenu survivent), donc le geste de la branche lien convient aux
+    deux formes — seul le prédicat devait changer.
+
+    Le repli `False` couvre les plateformes sans `st_file_attributes`
+    (POSIX) et un `lstat` impossible : on retombe alors sur le comportement
+    d'avant, jamais sur une suppression.
+    """
+    if p.is_symlink():
+        return True
+    try:
+        attrs = os.lstat(p).st_file_attributes
+    except (OSError, AttributeError):
+        return False
+    return bool(attrs & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+
+
 def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
     """Supprime les SEULS artefacts tolérés du worktree, avant retrait.
 
@@ -1114,6 +1793,8 @@ def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
     - seuls les chemins untracked qui matchent la liste tolérée sont visés ;
     - chaque cible doit résoudre DANS le worktree (défense en profondeur
       contre une entrée porcelain inattendue) ;
+    - les liens symboliques ET les jonctions Windows partent par `unlink`,
+      jamais par `rmtree`, qui lève sur les deux (`is_link_like`, #20007) ;
     - jamais de `--force` : le retrait reste `git worktree remove` nu. Si un
       résidu hors liste survient entre le diagnostic et l'apply, git refuse
       et le statut FAILED rend la cause (fail-closed).
@@ -1133,9 +1814,10 @@ def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
                 continue
         except OSError:
             continue
-        if target.is_symlink():
-            # rmtree sur un lien symbolique leve OSError ; unlink est le
-            # geste correct et ne touche pas la cible.
+        if is_link_like(target):
+            # rmtree sur un lien symbolique -- ou sur une jonction Windows --
+            # leve OSError ; unlink est le geste correct et ne touche pas la
+            # cible (cf is_link_like, #20007).
             try:
                 target.unlink()
                 removed.append(rel)
@@ -1168,7 +1850,7 @@ def apply_removal(wt: WorktreeStatus) -> tuple[bool, str]:
     if wt.dead_registration:
         args.append("--force")
     args.append(wt.path)
-    proc = run_git(".", *args, check=False)
+    proc = run_git(_repo_root_for_worktree(wt.path), *args, check=False)
     if proc.returncode == 0:
         return True, ""
     return False, proc.stderr.strip()
@@ -1212,6 +1894,13 @@ def render_text(
                 f"pr=#{s.pr_number}({s.pr_state})"
                 if s.pr_state and s.pr_number else ""
             )
+            if not pr_part and s.content_on_main:
+                # #20067 : dire *quelle jambe* a franchi la garde. Les deux
+                # preuves ne sont pas equivalentes -- une ascendance et un
+                # patch-id sont deux faits distincts, et un lecteur qui les
+                # confond lit un squash-merge comme une ascendance.
+                leg = s.content_on_main_by or "?"
+                pr_part = f"content_on_main({leg})"
             if dry_run:
                 lines.append(
                     f"WOULD REMOVE {s.path}  {branch_part}  {pr_part}"
@@ -1237,9 +1926,11 @@ def render_text(
                     )
                     counts["FAILED"] = counts.get("FAILED", 0) + 1
         elif s.decision == "REFUSE":
+            # Attribution lane (#3895) quand le marqueur .lane-owner existe.
+            lane_part = f"  lane={s.lane_owner}" if s.lane_owner else ""
             lines.append(
                 f"REFUSE      {s.path}  {branch_part}  reason={s.refusal_reason}"
-                f"{ignored_part}"
+                f"{lane_part}{ignored_part}"
             )
         elif s.decision == "SKIP_CURRENT":
             lines.append(f"SKIP        {s.path}  reason=current_worktree")
@@ -1251,7 +1942,81 @@ def render_text(
         f"failed={counts.get('FAILED', 0)}  "
         f"skipped={counts.get('SKIP_CURRENT', 0)}"
     )
+    # Decompte par classe de refus (#3895) : la donnee qui rend un taux de
+    # refus actionnable (quelle classe domine, par lane attribuee).
+    refused_classes = refusal_reason_breakdown(statuses)
+    if refused_classes:
+        lines.append(
+            "refusals: "
+            + "  ".join(f"{cls}={n}" for cls, n in refused_classes.items())
+        )
     return "\n".join(lines)
+
+
+# ----------------------------------------------------------------------------
+# Observabilite des refus (#3895, roo-extensions)
+# ----------------------------------------------------------------------------
+
+def refusal_reason_breakdown(statuses: list) -> dict:
+    """Compte les refus par CLASSE de raison (avant le ':' de detail).
+
+    `unpushed_commits:2` et `untolerated_untracked:3` portent un detail
+    variable par worktree ; seule la classe s'aggregate. Tri : compte
+    decroissant puis cle alphabetique -- rendu texte stable, JSON
+    deterministe (un meme etat rend toujours la meme sortie).
+    """
+    counts: dict = {}
+    for s in statuses:
+        if s.decision != "REFUSE" or not s.refusal_reason:
+            continue
+        cls = s.refusal_reason.split(":", 1)[0]
+        counts[cls] = counts.get(cls, 0) + 1
+    return dict(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
+
+
+def lane_refusal_breakdown(statuses: list) -> dict:
+    """Refus attribues par lane (marqueur .lane-owner, #3895), meme tri.
+
+    Les refus sans marqueur tombent dans ``unattributed`` : distinguer
+    « lane X refuse 40 worktrees » de « 40 worktrees non revendiques » est
+    precisement la question posee par le post-mortem po-2023.
+    """
+    counts: dict = {}
+    for s in statuses:
+        if s.decision != "REFUSE" or not s.refusal_reason:
+            continue
+        key = s.lane_owner or "unattributed"
+        counts[key] = counts.get(key, 0) + 1
+    return dict(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
+
+
+def build_warn_line(statuses: list,
+                    host: Optional[str] = None) -> Optional[str]:
+    """Ligne [WARN] prete pour le dashboard workspace (#3895).
+
+    La saturation par worktrees refuses est le signal qui a fait tomber
+    po-2023 (27/09) : au-dela du seuil, la ligne agrege totals + classes
+    dominantes + attribution lane (quand les marqueurs existent), prete a
+    etre relevee telle quelle. Rend None si aucun refus (rien a signaler).
+
+    Emise sur stderr par l'appelant : stdout reste le rapport (en --json il
+    doit rester pur pour `json.loads`).
+    """
+    refused = sum(1 for s in statuses if s.decision == "REFUSE")
+    if refused <= 0:
+        return None
+    host = host or os.environ.get("COMPUTERNAME") or "unknown-host"
+    classes = refusal_reason_breakdown(statuses)
+    top_classes = " ".join(f"{k}={v}" for k, v in list(classes.items())[:3])
+    parts = [
+        f"[WARN][prune-task] {host} refused={refused}/{len(statuses)}",
+        f"top: {top_classes}",
+    ]
+    lanes = lane_refusal_breakdown(statuses)
+    if lanes:
+        top_lanes = " ".join(f"{k}={v}" for k, v in list(lanes.items())[:3])
+        parts.append(f"lanes: {top_lanes}")
+    return " — ".join(parts)
 
 
 def main() -> int:
@@ -1269,29 +2034,94 @@ def main() -> int:
     p.add_argument(
         "--path",
         default=None,
-        help="Cwd pour `git worktree list`. Default = CWD.",
+        help="Cible de l'analyse : cwd ET racine du scan (`git worktree "
+             "list` + cle de cache). Doit vivre dans un depot git "
+             "(Maintenance#64, multi-fermes). Default = CWD s'il est "
+             "dans un repo, sinon le repo de ce script.",
+    )
+    p.add_argument(
+        "--warn-threshold",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Emet sur stderr une ligne [WARN][prune-task] prete a poster "
+             "sur le dashboard workspace si refused > N (#3895). Desactive "
+             "par defaut ; la tache planifiee passe 20.",
+    )
+    p.add_argument(
+        "--activity-window-h",
+        type=float,
+        default=6.0,
+        metavar="H",
+        help="Fenetre « agent vivant » (#18494) : un worktree sans commit "
+             "propre dont un marqueur d'activite (.lane-owner, a defaut "
+             "mtime du dossier) est plus jeune que H heures est REFUSE "
+             "(reason=recent_activity:<age>h) au lieu d'etre retire par "
+             "content_on_main. Defaut 6.0.",
     )
     args = p.parse_args()
 
     cwd = args.path or "."
+
+    # Resolution du chemin canonique de l'analyse (pour comparaison is_current).
+    # Mesuree AVANT le chdir ci-dessous : un --path relatif se resout contre le
+    # cwd d'appel, pas contre lui-meme.
+    try:
+        current_path = str(Path(cwd).resolve())
+    except OSError:
+        current_path = cwd
+
+    # `--path` est le cwd de l'ANALYSE ET la cible du scan -- contrat porte
+    # par l'en-tete et le help. Les appels `run_git(...)` resolvent leur
+    # cible en PREMIER argument, pas via le cwd reel du processus : depuis
+    # un autre dossier -- le cas de la tache planifiee (#14473), dont le
+    # cwd est System32 -- il fallait que les sites ne s'appuient pas sur
+    # `"."`. Resolution adoptee (Maintenance#64) :
+    #   - `run_git(current_repo_root(), ...)` pour `worktree list` et la
+    #     cle de cache (`remote get-url origin`) : priorite 1 la cible
+    #     explicite du `--path` (posee ci-dessous), priorite 2 le repo du
+    #     cwd, priorite 3 le repo de CE script ;
+    #   - `run_git(_repo_root_for_worktree(wt.path), ...)` pour
+    #     `worktree remove` : le depot HEBERGEUR du worktree, pas forcement
+    #     le meme (les tests hermetiques vivent dans des repo e phemeres
+    #     crees par pytest, distincts de CoursIA).
+    # Le garde `os.chdir(current_path)` est conserve pour les appels
+    # `run_gh` et la comparaison `is_current` (cwd reel vs `--path`).
+    if args.path:
+        try:
+            os.chdir(current_path)
+        except OSError as e:
+            print(f"ERROR: --path inutilisable ({args.path}): {e}", file=sys.stderr)
+            return 2
+        # Maintenance#64 : un --path hors de tout depot git doit echouer
+        # TOUT DE SUITE et bruyamment -- le repli silencieux sur le repo de
+        # ce script faisait scannera le wrapper fleet N fois sa ferme
+        # d'origine en croyant couvrir les autres.
+        path_root = _ancestor_repo_root(Path(current_path))
+        if path_root is None:
+            print(
+                f"ERROR: --path hors de tout depot git ({args.path}) -- "
+                f"la cible du scan serait retombee sur le repo de ce "
+                f"script (Maintenance#64)",
+                file=sys.stderr,
+            )
+            return 2
+        global _SCAN_ROOT_OVERRIDE
+        _SCAN_ROOT_OVERRIDE = path_root
+
     try:
         worktrees = list_worktrees()
     except RuntimeError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 2
 
-    # Resolution du chemin canonique du CWD (pour comparaison is_current)
-    try:
-        current_path = str(Path(cwd).resolve())
-    except OSError:
-        current_path = cwd
-
     statuses: list[WorktreeStatus] = []
     for wt in worktrees:
         try:
             statuses.append(
                 diagnose_worktree(
-                    wt["path"], current_path, head_sha=wt.get("head_sha")
+                    wt["path"], current_path, head_sha=wt.get("head_sha"),
+                    activity_window_h=args.activity_window_h,
                 )
             )
         except RuntimeError as e:
@@ -1338,6 +2168,8 @@ def main() -> int:
             "scanned": len(statuses),
             "removable": sum(1 for s in statuses if s.decision == "REMOVE"),
             "refused": refused_count,
+            "refusal_reasons": refusal_reason_breakdown(statuses),
+            "lane_refusals": lane_refusal_breakdown(statuses),
             "skipped_current": sum(
                 1 for s in statuses if s.decision == "SKIP_CURRENT"
             ),
@@ -1367,13 +2199,62 @@ def main() -> int:
             f" degrade={st['listing_degraded']}"
         )
 
-    # Exit code
+    # Seuil d'alerte (#3895) : stderr, jamais stdout -- en --json le stdout
+    # doit rester pur pour `json.loads` ; la tache planifiee fusionne les
+    # deux flux dans son journal.
+    if (args.warn_threshold is not None
+            and refused_count > args.warn_threshold):
+        warn = build_warn_line(statuses)
+        if warn:
+            print(warn, file=sys.stderr)
+
+    # Exit code (#3895) : un REFUS est une decision de l'outil, pas une
+    # panne. La tache planifiee reste verte (LastResult 0) quand la passe
+    # s'est deroulee ; seuls les echecs d'infrastructure gh/git et les
+    # echecs d'application sortent en 2. Le detail des refus vit dans le
+    # rapport (decompte par classe, lane_refusals, WARN au-dela du seuil).
     if error_count > 0:
         return 2
-    if refused_count > 0:
-        return 1
     return 0
 
 
+def run() -> int:
+    """`main()` avec le contrat d'erreur garanti (#17292, reworded #3895).
+
+    `main()` ne rattrape que `RuntimeError` : toute autre exception
+    s'echappait, et Python rend alors **1** en n'ecrivant rien sur stdout --
+    un code que l'appelant ne pouvait distinguer ni d'une decision de refus
+    (avant #3895), ni d'une panne nommee. Mesure : c'est exactement le couple
+    (`rc ∈ {0,1}`, stdout vide) qui a rougi `Scripts Tests (CPU)` sur des PRs
+    de plusieurs lanes le 2026-09-21, et que l'E2E lisait comme un
+    `JSONDecodeError: Expecting value: line 1 column 1`.
+
+    Ici une panne inattendue sort par le code d'erreur **documente** du script
+    (2), traceback sur stderr. Depuis #3895 (refus = decision, plus un code
+    de sortie), `1` n'est plus emis par l'organe : tout code != 0 est une
+    panne, sans zone grise.
+    """
+    try:
+        return main()
+    except BrokenPipeError:
+        # Le consommateur a ferme le pipe (`| head`, `| jq -e` qui sort tot) :
+        # ce n'est PAS un echec de l'outil, et l'ecrire sur stderr serait un
+        # diagnostic faux. On ferme stdout pour que l'interpreteur ne re-tente
+        # pas d'y ecrire au shutdown, puis on sort sans code d'erreur.
+        try:
+            sys.stdout.close()
+        except OSError:
+            pass
+        return 0
+    except Exception:
+        traceback.print_exc()
+        print(
+            "ERROR: echec inattendu, pas une decision de l'outil "
+            "(voir le traceback ci-dessus)",
+            file=sys.stderr,
+        )
+        return 2
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run())

@@ -1,0 +1,325 @@
+{
+  "issue": "Phase 3 gate (tranche de #17578, EPIC #10355)",
+  "corpus": {
+    "path": "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/teacher/val_fr.jsonl",
+    "sha256": "d7621fffa05dc857b2110fc44299b04fdbce670efbd76c633ec3917e83aef52c"
+  },
+  "level": "branch",
+  "seed": 42,
+  "folds": 5,
+  "structure": {
+    "rows": 280,
+    "labels": 14,
+    "support_min": 18,
+    "support_max": 21,
+    "groups": 25,
+    "group_max_reuse": 17,
+    "node_labels": 280,
+    "node_support_max": 1
+  },
+  "node_level": {
+    "measurable": false,
+    "labels": 280,
+    "support_max": 1,
+    "floor": 2
+  },
+  "folds_identical": 0,
+  "lexicon": {
+    "taxonomies": [
+      "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv",
+      "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_virtues_taxonomy.csv"
+    ],
+    "families": {
+      "Insuffisance": {
+        "nodes": 174,
+        "tokens": 872
+      },
+      "Influence": {
+        "nodes": 420,
+        "tokens": 1816
+      },
+      "Erreur mathématique": {
+        "nodes": 102,
+        "tokens": 553
+      },
+      "Erreur de raisonnement": {
+        "nodes": 102,
+        "tokens": 520
+      },
+      "Abus de langage": {
+        "nodes": 89,
+        "tokens": 521
+      },
+      "Tricherie": {
+        "nodes": 394,
+        "tokens": 1622
+      },
+      "Obstruction": {
+        "nodes": 126,
+        "tokens": 699
+      },
+      "Argument pertinent": {
+        "nodes": 33,
+        "tokens": 239
+      },
+      "Présentation intègre": {
+        "nodes": 25,
+        "tokens": 225
+      },
+      "Sens quantitatif": {
+        "nodes": 20,
+        "tokens": 185
+      },
+      "Inférence maîtrisée": {
+        "nodes": 55,
+        "tokens": 338
+      },
+      "Justesse lexicale": {
+        "nodes": 18,
+        "tokens": 146
+      },
+      "Honnêteté intellectuelle": {
+        "nodes": 27,
+        "tokens": 240
+      },
+      "Échange enrichissant": {
+        "nodes": 44,
+        "tokens": 370
+      }
+    }
+  },
+  "baselines": {
+    "majority_grouped": {
+      "folds": [
+        {
+          "fold": 0,
+          "n_test": 55,
+          "macro_f1": 0.0,
+          "labels_in_test": 13,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Abus de langage",
+            "Argument pertinent",
+            "Erreur de raisonnement"
+          ]
+        },
+        {
+          "fold": 1,
+          "n_test": 53,
+          "macro_f1": 0.0026,
+          "labels_in_test": 14,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Abus de langage",
+            "Argument pertinent",
+            "Erreur de raisonnement"
+          ]
+        },
+        {
+          "fold": 2,
+          "n_test": 58,
+          "macro_f1": 0.0048,
+          "labels_in_test": 14,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Abus de langage",
+            "Argument pertinent",
+            "Erreur de raisonnement"
+          ]
+        },
+        {
+          "fold": 3,
+          "n_test": 58,
+          "macro_f1": 0.0024,
+          "labels_in_test": 14,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Abus de langage",
+            "Argument pertinent",
+            "Erreur de raisonnement"
+          ]
+        },
+        {
+          "fold": 4,
+          "n_test": 56,
+          "macro_f1": 0.0073,
+          "labels_in_test": 14,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Abus de langage",
+            "Erreur de raisonnement",
+            "Erreur mathématique"
+          ]
+        }
+      ],
+      "labels_total": 14,
+      "macro_f1_mean": 0.0034,
+      "macro_f1_std": 0.0028
+    },
+    "lexical_centroid_grouped": {
+      "folds": [
+        {
+          "fold": 0,
+          "n_test": 55,
+          "macro_f1": 0.2072,
+          "labels_in_test": 13,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Abus de langage",
+            "Erreur de raisonnement",
+            "Erreur mathématique"
+          ]
+        },
+        {
+          "fold": 1,
+          "n_test": 53,
+          "macro_f1": 0.2171,
+          "labels_in_test": 14,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Insuffisance",
+            "Justesse lexicale",
+            "Présentation intègre"
+          ]
+        },
+        {
+          "fold": 2,
+          "n_test": 58,
+          "macro_f1": 0.1793,
+          "labels_in_test": 14,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Erreur de raisonnement",
+            "Inférence maîtrisée",
+            "Insuffisance"
+          ]
+        },
+        {
+          "fold": 3,
+          "n_test": 58,
+          "macro_f1": 0.2906,
+          "labels_in_test": 14,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Abus de langage",
+            "Erreur mathématique",
+            "Insuffisance"
+          ]
+        },
+        {
+          "fold": 4,
+          "n_test": 56,
+          "macro_f1": 0.2046,
+          "labels_in_test": 14,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Abus de langage",
+            "Erreur mathématique",
+            "Insuffisance"
+          ]
+        }
+      ],
+      "labels_total": 14,
+      "macro_f1_mean": 0.2198,
+      "macro_f1_std": 0.042
+    },
+    "lexical_centroid_naive": {
+      "folds": [
+        {
+          "fold": 0,
+          "n_test": 58,
+          "macro_f1": 0.198,
+          "labels_in_test": 14,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Erreur mathématique",
+            "Influence",
+            "Sens quantitatif"
+          ]
+        },
+        {
+          "fold": 1,
+          "n_test": 56,
+          "macro_f1": 0.2671,
+          "labels_in_test": 14,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Erreur mathématique",
+            "Insuffisance",
+            "Obstruction"
+          ]
+        },
+        {
+          "fold": 2,
+          "n_test": 56,
+          "macro_f1": 0.2058,
+          "labels_in_test": 14,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Abus de langage",
+            "Inférence maîtrisée",
+            "Insuffisance"
+          ]
+        },
+        {
+          "fold": 3,
+          "n_test": 55,
+          "macro_f1": 0.252,
+          "labels_in_test": 14,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Abus de langage",
+            "Erreur mathématique",
+            "Sens quantitatif"
+          ]
+        },
+        {
+          "fold": 4,
+          "n_test": 55,
+          "macro_f1": 0.2227,
+          "labels_in_test": 14,
+          "labels_unseen_in_train": 0,
+          "worst_labels": [
+            "Abus de langage",
+            "Erreur mathématique",
+            "Insuffisance"
+          ]
+        }
+      ],
+      "labels_total": 14,
+      "macro_f1_mean": 0.2291,
+      "macro_f1_std": 0.0297
+    },
+    "random_grouped": {
+      "draws": 200,
+      "macro_f1_mean": 0.0628,
+      "macro_f1_p2_5": 0.0371,
+      "macro_f1_p97_5": 0.0919
+    },
+    "rules_full": {
+      "n": 280,
+      "macro_f1": 0.0328,
+      "accuracy": 0.075,
+      "labels_never_predicted": [
+        "Argument pertinent",
+        "Erreur mathématique",
+        "Honnêteté intellectuelle",
+        "Inférence maîtrisée",
+        "Justesse lexicale",
+        "Présentation intègre",
+        "Sens quantitatif",
+        "Échange enrichissant"
+      ],
+      "worst_labels": [
+        "Abus de langage",
+        "Argument pertinent",
+        "Erreur de raisonnement"
+      ]
+    }
+  },
+  "leakage": {
+    "grouped_mean": 0.2198,
+    "naive_mean": 0.2291,
+    "gap": 0.0093
+  }
+}

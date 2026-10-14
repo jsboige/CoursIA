@@ -101,9 +101,23 @@ FAKE_GH = textwrap.dedent(
     """
     #!/usr/bin/env bash
     # gh factice : la sous-commande api rend le corps fixe par GH_FAKE_BODY,
-    # ou echoue (exit 1) si GH_FAKE_FAIL=1. Le jq est en $3, l'expression
-    # en $4 : gh api <url> --jq <expr>.
-    if [ "${GH_FAKE_FAIL:-}" = "1" ]; then exit 1; fi
+    # ou echoue si GH_FAKE_FAIL=1. Le jq est en $3, l'expression en $4 :
+    # gh api <url> --jq <expr>.
+    #
+    # FIDELITE AU VRAI `gh` (mesuree 2026-09-21, `gh api` sur HTTP 404) :
+    #   rc=1 ET le DOCUMENT D'ERREUR est ecrit sur STDOUT, `--jq` n'y est
+    #   PAS applique :
+    #     {"message":"Not Found","documentation_url":"...","status":"404"}
+    # La version precedente de ce faux sortait en rc=1 SANS RIEN ecrire --
+    # elle modelisait « echoue => sortie vide », qui n'est pas ce que fait
+    # l'outil. Le repli du workflow etait donc valide par un faux qui ne
+    # reproduisait pas le mode d'echec reel, et le defaut restait vivant
+    # (PR_BODY recevait le document d'erreur, les organes bloquants en
+    # tiraient « Grain tag absent » sur une simple panne de quota).
+    if [ "${GH_FAKE_FAIL:-}" = "1" ]; then
+      printf '%s' "${GH_FAKE_ERRDOC:-{\\"message\\":\\"API rate limit exceeded for installation.\\",\\"status\\":\\"403\\"}}"
+      exit 1
+    fi
     if [ "$1" = "api" ] && [ "$3" = "--jq" ]; then
       printf '%s' "${GH_FAKE_BODY:-}"
       exit 0
@@ -169,6 +183,24 @@ def _run_bootstrap(tmp_path, fake_body, fail=False):
     )
     assert out.returncode == 0, out.stderr
     return out.stdout, envfile.read_text(encoding="utf-8")
+
+
+def test_bootstrap_decides_on_exit_code_not_output_emptiness():
+    """#17197 -- le repli se declenche sur le CODE DE SORTIE.
+
+    ``gh api`` sort en rc=1 EN ECRIVANT le document d'erreur sur stdout
+    (mesure 2026-09-21). Un ``|| true`` avale ce rc et laisse le document
+    dans ``$LIVE`` : le test ``-n "$LIVE"`` le prend pour un corps de PR et
+    le repli -- ecrit precisement pour la panne d'API -- ne se declenche
+    jamais. Ce test epingle la FORME ; le controle d'execution vit dans
+    ``test_bootstrap_falls_back_to_payload_on_api_failure``, qui rougit
+    sous l'ancienne forme.
+    """
+    run = _bootstrap(_steps(_doc()))["run"]
+    assert "|| true)" not in run, (
+        "le rc de `gh api` est avale : le document d'erreur restera dans $LIVE"
+    )
+    assert '|| LIVE=""' in run, "le repli doit vider $LIVE sur rc non nul"
 
 
 def test_bootstrap_writes_live_body(tmp_path):

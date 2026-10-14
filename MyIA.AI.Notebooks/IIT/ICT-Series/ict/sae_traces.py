@@ -49,6 +49,8 @@ __all__ = [
     "assert_bf16_readout",
     "assert_sae_topk_compatible",
     "trace_filename",
+    # Hysteresis multi-passes (limite 1 du pilote ICT-42, #8236)
+    "ramp_alpha",
 ]
 
 
@@ -124,7 +126,7 @@ def load_traces(path: str | Path, *, strict: bool = False) -> dict:
     from .trace_contract import validate_manifest, enforce_instrument
     # ``expected="sae"`` declare au contrat l'intention du chargeur : un
     # manifeste strictement minimal (juste d_sae, k, layer, sans
-    # discriminant declare, Tell c.1050 ★★ fondateur) sera accepte avec
+    # discriminant declare) sera accepte avec
     # UserWarning plutot que REFUSE comme un melange silencieux.
     meta = validate_manifest(meta, strict=strict, expected="sae")
     enforce_instrument(meta, "sae")
@@ -180,10 +182,35 @@ def differential_features(traces: dict, k: int = 64) -> np.ndarray:
     de les ecarter — une donnee polluee devient une corruption de classement
     invisible (#12560 : facteur 3,3 sur ``overlap_diff64`` des traces 8B).
     S'il reste moins de ``k`` colonnes finies, la sortie est tronquee d'autant.
+
+    Avec **moins de 2 jeux de prompts** la variance inter-jeux est
+    *identiquement nulle* : ``argsort`` sur un vecteur de zeros rend alors un
+    panel determine par l'**ordre des indices**, independant des activations —
+    un classement qui ne classe rien, et silencieux. Le cas est **mesure** et
+    signale par ``RuntimeWarning`` (cf. grille critique d'ICT-21, #16750) :
+    ``case3/confab_faux``, un seul jeu, rend le **meme** panel pour des traces
+    dont le nombre de tokens varie de 152 a 179, et trois jeux de donnees
+    **disjoints** -- dont un a activations nulles -- rendent aussi ce meme
+    panel.
+
+    L'ordre exact rendu n'est **pas** un contrat : sur des scores tous nuls, le
+    departage des ex aequo appartient a l'implementation du tri, et deux
+    versions de numpy ne rendent pas la meme queue de liste (mesure 2026-09-21 :
+    ``[511, 510, 509, ...]`` en numpy 2.4.6 contre ``[511, 510, 161, ...]`` en
+    2.2.6). C'est pourquoi le test associe verifie l'**egalite entre jeux de
+    donnees**, jamais une liste litterale.
     """
     means = mean_activation_by_set(traces)
     stack = np.stack(list(means.values()))               # [n_sets, d_sae]
     score = stack.var(axis=0)
+    if stack.shape[0] < 2:
+        warnings.warn(
+            f"differential_features : {stack.shape[0]} seul(s) jeu(x) de prompts "
+            "-- la variance INTER-JEUX est identiquement nulle, donc le panel "
+            "rendu ne depend PAS des donnees (argsort sur des zeros : ordre des "
+            "indices). Il n'est pas un panel differentiel : utiliser >= 2 jeux, "
+            "ou un autre critere de selection.",
+            RuntimeWarning, stacklevel=2)
     finite = np.isfinite(score)
     if not finite.all():
         warnings.warn(
@@ -404,9 +431,67 @@ def assert_sae_topk_compatible(k_sae: int, k_requested: int) -> None:
             f"Realigner --k ou --sae-repo et relancer.")
 
 
+def ramp_alpha(n_tokens: int, cycles: int = 1, peak: float = 1.0) -> np.ndarray:
+    """Profil triangulaire periodique d'intensite alpha(t) — hysteresis
+    multi-passes du pilote ICT-42 (limite 1, #8236).
+
+    Le protocole d'inoculation statique applique un alpha CONSTANT a tout le
+    contexte : il ne peut pas distinguer une representation qui suit
+    instantanement la perturbation d'une representation qui la MEMORISE. La
+    limite 1 du pilote demande l'**insertion contrastive sequentielle** —
+    inoculer, relacher, re-inoculer le meme contexte — c'est-a-dire un alpha
+    dependant du token : montee lineaire 0 -> peak, descente peak -> 0, le
+    tout repete ``cycles`` fois sur les ``n_tokens`` tokens du prompt. A
+    position egale dans le cycle (donc a alpha egal), la divergence de la
+    branche montante vs descendante mesure la memoire du residu : c'est
+    l'hysteresis.
+
+    Numpy pur, sans GPU : le pipeline d'extraction materialise ce profil par
+    prompt (tableau ``{set}__{i}__alpha`` aligne sur les tokens finis) pour
+    que le banc d'analyse GPU-free trace divergence(t) contre alpha(t) sans
+    re-deriver la phase.
+
+    Parameters
+    ----------
+    n_tokens : int
+        Nombre de tokens du prompt (>= 1). Le profil couvre le prompt ENTIER :
+        chaque prompt vit ses propres ``cycles`` complets, quelle que soit sa
+        longueur — la phase est relative au prompt, pas au corpus.
+    cycles : int
+        Nombre de cycles montee+descente (>= 1). ``cycles=2`` realise
+        litteralement « inoculer, relacher, re-inoculer ».
+    peak : float
+        Amplitude maximale dans (0, 1] — meme bornes que ``--clamp-scale`` :
+        1.0 = annulation complete des features du panel au sommet, >1
+        sur-clamperait (signe inverse de la contribution decodee).
+
+    Returns
+    -------
+    numpy.ndarray
+        ``[n_tokens]`` float32, valeurs dans [0, peak]. Le premier token vaut
+        0 et le dernier tend vers 0 (fin de descente du dernier cycle) : le
+        prompt demarre et finit NON inocule, l'etat final mesure le retour
+        (ou le non-retour) a l'etat initial.
+    """
+    if n_tokens < 1:
+        raise ValueError(f"n_tokens >= 1 requis (recu {n_tokens}).")
+    if int(cycles) != cycles or cycles < 1:
+        raise ValueError(f"cycles entier >= 1 requis (recu {cycles}).")
+    if not 0.0 < peak <= 1.0:
+        raise ValueError(f"peak dans (0, 1] requis (recu {peak}) : >1 "
+                         "sur-clampe, signe inverse de la contribution decodee.")
+    t = np.arange(n_tokens, dtype=np.float64)
+    u = np.mod(t * float(cycles) / float(n_tokens), 1.0)   # phase dans le cycle
+    alpha = peak * np.where(u < 0.5, 2.0 * u, 2.0 * (1.0 - u))
+    alpha = np.clip(alpha, 0.0, peak)
+    return alpha.astype(np.float32)
+
+
 def trace_filename(variant: str, layer: int, *, model: str = "",
                    default_model: str = "", n_layers: int | None = None,
-                   n_clamp: int = 0, prefix: str = "ict21_sae") -> str:
+                   n_clamp: int = 0, clamp_scale: float | None = None,
+                   clamp_ramp: tuple[int, float] | None = None,
+                   prefix: str = "ict21_sae") -> str:
     """Nom de fichier de trace **discriminant par echelle**.
 
     Defaut historique conserve a l'octet pour le modele de reference (les
@@ -416,8 +501,26 @@ def trace_filename(variant: str, layer: int, *, model: str = "",
     sans lui, un run 2B et un run 9B a la meme couche 16 ecrivent **le meme
     nom** et le second efface le premier en silence — perte de donnees, pas
     seulement confusion.
+
+    ``clamp_scale`` (experience pilote #8236) : intensite alpha du clamp,
+    h' = h - alpha * delta. Le suffixe ``_s{alpha}`` n'est insere **que si**
+    alpha s'ecarte de 1.0 — a intensite unitaire le nom reste byte-identique
+    au defaut historique, et les traces existantes a clamp plein ne se
+    retrouvent pas dupliquees sous deux noms.
+
+    ``clamp_ramp`` (hysteresis multi-passes, limite 1 du pilote #8236) :
+    ``(cycles, peak)`` du profil triangulaire alpha(t) — cf :func:`ramp_alpha`.
+    Le suffixe ``_ramp{cycles}p{peak}`` est insere apres ``_clamp{n}`` : deux
+    traces de rampes differentes ne doivent JAMAIS partager un nom (le
+    protocole compare les passages entre eux). Mutuellement exclusif du
+    suffixe ``_s`` : la rampe remplace l'intensite constante.
     """
     clamp = f"_clamp{n_clamp}" if n_clamp else ""
+    if clamp_ramp is not None and n_clamp:
+        cycles, peak = int(clamp_ramp[0]), float(clamp_ramp[1])
+        clamp += f"_ramp{cycles}p{peak:g}"
+    elif clamp_scale is not None and n_clamp and abs(clamp_scale - 1.0) > 1e-9:
+        clamp += f"_s{clamp_scale:g}"
     if model and default_model and model != default_model:
         slug = model.rstrip("/").split("/")[-1].lower().replace(".", "")
         depth = f"layer{layer}of{n_layers}" if n_layers else f"layer{layer}"

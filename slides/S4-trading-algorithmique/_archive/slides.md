@@ -10,6 +10,17 @@ mdc: true
 layout: cover
 ---
 
+<!-- Archive header (standard _archive convention, 2026-09-21)
+     - Date archived : 2026-08-06 (LastWriteTime filesystem)
+     - Superseded by : deck-1-fondamentaux.md + deck-2-strategies.md + deck-3-pratique-lean.md
+     - Verdict recorded in : commit cc96a2c88d (kernel drift guard) + split observable dans l'arbre
+     -
+     Per-section disposition :
+     - Sections 1-N (frontmatter unique "S4 Trading Algorithmique") : split en 3 decks specialises
+     - Sections workflows/outils : absorbees dans _tools/ et analysis/
+     - Sections strategie : deck-2-strategies.md reprend et etend
+-->
+
 # Trading Algorithmique
 
 Intelligence Artificielle -- S4
@@ -866,7 +877,7 @@ layout: section
 - **Solution open-core en Python et C#**
   - 3 environnements : QuantConnect Cloud, Lean-cli + VS Code, Lean local
   - Pipeline complet : recherche -> backtest -> paper trading -> live trading
-  - **Utilisee dans ce cours** : 28 notebooks + 57 projets
+  - **Utilisee dans ce cours** : notebooks + 57 projets
 
 <div v-click="1">
 
@@ -2697,7 +2708,7 @@ layout: section
 
 # Pour aller plus loin : Notebooks (1/2)
 
-**28 notebooks progressifs** dans `QuantConnect/Python/`
+**notebooks progressifs** dans `QuantConnect/Python/`
 
 | Bloc | Notebooks | Theme |
 |------|-----------|-------|
@@ -2737,7 +2748,7 @@ layout: section
 <div v-click="2">
 
 - **La pratique avec Lean/QuantConnect**
-  - 28 notebooks progressifs, 57 projets prets a backtester
+  - notebooks progressifs, 57 projets prets a backtester
   - Commencez par `QC-Py-01-Setup.ipynb` puis explorez `projects/EMA-Cross-Stocks`
 </div>
 <div v-click="3">
@@ -2757,5 +2768,5 @@ layout: cover
 Jean-Sylvain Boige
 jsboige@myia.org
 
-> **Notebooks associes:** `QuantConnect/` (28 notebooks)
+> **Notebooks associes:** `QuantConnect/`
 > Strategies de trading, backtesting, optimisation, machine learning

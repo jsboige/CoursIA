@@ -136,7 +136,7 @@ Les bots autonomes (Hermes, NanoClaw) parlent parfois un wire non-Anthropic. Dep
 
 | Option | Quoi faire | Quand |
 |--------|------------|-------|
-| **Remap de nom (recommandée)** | Le bot envoie un **nom de modèle Claude** (ex. `claude-sonnet-4-6`). Claudish le remappe vers le modèle budgeté du tier (`glm-5.3` via `gc@`) selon le profil actif. **1 ligne de config côté bot, aucun patch de wire.** | Le bot sait juste poster un `model` dans sa requête. |
+| **Remap de nom (recommandée)** | Le bot envoie un **nom de modèle Claude** (ex. `claude-sonnet-4-6`). Claudish le remappe vers le modèle budgeté du tier (`glm-5.3` via `gc@`) selon le profil actif. **De la config côté bot, aucun patch de wire.** | Le bot sait juste poster un `model` dans sa requête. |
 | Wire OpenAI direct | Poster sur `/v1/chat/completions` avec la clé proxy (`Authorization: Bearer` accepté, mesuré 2026-09-09). | Le bot est OpenAI-native et vous voulez la route la plus courte. |
 | Patch du wire | Faire parler le bot Anthropic natif (messages/tools au format Anthropic). | Le bot a déjà une intégration Anthropic, ou on contrôle son code. |
 

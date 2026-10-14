@@ -3,7 +3,7 @@ name: Notebook Output Flood Ratchet
 # #147xx / user report 2026-09-06 — a re-execution must not let a notebook's
 # OUTPUT-OBJECT count explode per cell or in totality.
 #
-# Founding incident: Sudoku-15-Infer-Csharp.ipynb grew from 29 665 to 45 434
+# Founding incident: Sudoku-15-Infer-CSharp.ipynb grew from 29 665 to 45 434
 # lines after a re-execution where InferenceEngine.ShowProgress defaulted to
 # true. Every Infer.NET run emitted one dot PER ITERATION, and the .net-csharp
 # kernel turns each Console.Write(".") into a separate stream output object.
@@ -71,6 +71,15 @@ jobs:
       # through.
       - name: Detector self-test (positive + negative control)
         run: python scripts/notebook_tools/check_output_flood.py --self-test
+
+      # `python -m pytest` needs pytest, and `setup-python` does not provide it:
+      # the documented tool-cache seeding (docs/ci/self-hosted-runners.md,
+      # option a2) copies a bare python.org interpreter whose acceptance witness
+      # is `python --version` + `pip --version`, never pytest. Without this step
+      # the guard is green or red according to WHICH runner slot picks the job
+      # up, not according to the PR.
+      - name: Install test dependency
+        run: python -m pip install --quiet pytest
 
       - name: Output-flood axis unit tests
         run: python -m pytest scripts/notebook_tools/tests/test_check_output_flood.py -q

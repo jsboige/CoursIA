@@ -183,7 +183,7 @@ class TestControleAdditifPostHoc:
             assert pic == pytest.approx(out["peak_excess"][0], rel=1e-12)
 
     def test_controle_posthoc_ne_peut_produire_aucun_verdict(self):
-        # Garde structurel (Tell c.850-L4) : la fonction ne rend que des
+        # Garde structurel : la fonction ne rend que des
         # nombres, aucune cle de verdict.
         errs = collect_trace(SelfLoopModel(n_feat=8, seed=1),
                              LoopPolicy(n_feat=8, seed=1001), seed=1)

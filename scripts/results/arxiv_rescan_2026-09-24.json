@@ -1,0 +1,109 @@
+{
+ "date": "2026-09-24",
+ "lane": "myia-po-2023:CoursIA",
+ "epic": "#11168",
+ "methode": "rescan repo-wide via scripts/notebook_tools/scan_arxiv_citations.py, diff contre l union des artefacts 2026-09-03 + 2026-09-21, verdicts par lecture des pages abs arxiv.org (meta tags citation_*) + confrontation a la prose",
+ "transport": {
+  "api_export_arxiv": "HTTP 406 intermittent (2/14 OK) malgre UA descriptif + mailto",
+  "substitut": "pages https://arxiv.org/abs/<ID> (HTTP 200, metadonnees first-party via citation_title/citation_author/citation_date)",
+  "recherches_titre": "web (searxng) + pages abs versionnees (v1/v2) pour les mismatches apparents"
+ },
+ "corpus": {
+  "notebooks_scannes": 1648,
+  "notebooks_citant": 145,
+  "ids_uniques": 165
+ },
+ "reconciliation": {
+  "ids_uniques_cites": 165,
+  "couverts_avant": 152,
+  "delta": 14,
+  "verifiee": true
+ },
+ "delta": {
+  "ids": [
+   "1706.00883",
+   "1710.05060",
+   "1803.03635",
+   "2006.10782",
+   "2202.01691",
+   "2206.06821",
+   "2402.05110",
+   "2402.08787",
+   "2406.11717",
+   "2501.16496",
+   "2509.22908",
+   "2510.18212",
+   "2608.14611",
+   "2609.11912"
+  ],
+  "verdicts": {
+   "ok": 10,
+   "drift_mineur": 3,
+   "mauvaise_attribution": 1,
+   "id_fantome": 0
+  },
+  "detail": {
+   "1706.00883": {
+    "verdict": "DRIFT-MINEUR",
+    "fix": "annee 2018 -> 2017 (v1 2017/06, aucune ref journal sur le record arXiv ; seules annees soutenues par l ID)",
+    "lieu": "ICT-37 cells 7+17"
+   },
+   "1710.05060": {
+    "verdict": "OK",
+    "note": "Yudkowsky & Soares 2017, GT-04f"
+   },
+   "1803.03635": {
+    "verdict": "OK",
+    "note": "annee prose 2019 = journal-ref ICLR 2019 presente sur le record arXiv lui-meme — auto-coherent, aucun edit (precedent Everitt #16389 vise une annee que l ID ne soutient pas ; ici le record la porte)"
+   },
+   "2006.10782": {
+    "verdict": "OK",
+    "note": "Udrescu et al. AI Feynman 2.0, SL-14"
+   },
+   "2202.01691": {
+    "verdict": "OK",
+    "note": "titre cite = titre EXACT de la v1 (2022/01/18), retitre en v2 le meme jour en Solving Dynamic Principal-Agent Problems — prose GT-04f cells 0+62 correcte (auteurs Mu/Zheng/Trott exacts), aucun edit. Caveat methodologique : comparer au titre COURANT de la page abs est structurellement aveugle aux retitrages de version — sur mismatch, verifier la version citee AVANT de corriger"
+   },
+   "2206.06821": {
+    "verdict": "OK",
+    "note": "Blbaum/Gotz/Budhathoki/Mastakouri/Janzing DoWhy-GCM, GT-04f"
+   },
+   "2402.05110": {
+    "verdict": "OK",
+    "note": "Michaud et al. Opening the AI black box, 2.9e"
+   },
+   "2402.08787": {
+    "verdict": "DRIFT-MINEUR",
+    "fix": "initiale 1er auteur Liu, J. -> Liu, S. (Liu, Sijia, mesuree sur page abs)",
+    "lieu": "PT_15 cell 20"
+   },
+   "2406.11717": {
+    "verdict": "DRIFT-MINEUR",
+    "fix": "titre abrege Refusal in LLMs... -> titre exact Refusal in Language Models Is Mediated by a Single Direction",
+    "lieu": "PT_15 cell 20"
+   },
+   "2501.16496": {
+    "verdict": "OK",
+    "note": "Sharkey et al. Open Problems MechInterp, PT_15 + ICT-21"
+   },
+   "2509.22908": {
+    "verdict": "MAUVAISE-ATTRIBUTION",
+    "fix": "titre de prose Vericoding: LLMs for Formally Verified Code Generation et co-auteurs Trimponas/Sato/Nikolic ne correspondent a AUCUN papier mesurable (recherches web seches) ; le vrai papier sous cet ID est A Benchmark for Vericoding: Formally Verified Program Synthesis, Bursuc + 12 co-auteurs (incl. Tegmark). Bursuc reste 1er auteur — garde anti-erreur-miroir #11163 respectee, pas de desattribution. Le contenu du notebook (benchmark 12504 taches, taux 82,2/26,8, CLEVER fig. 8) EST le benchmark — seule la ligne de reference etait fausse",
+    "lieu": "PT_16 cell 24"
+   },
+   "2510.18212": {
+    "verdict": "OK",
+    "note": "Hendrycks/Song et al. Definition of AGI, 22b"
+   },
+   "2608.14611": {
+    "verdict": "OK",
+    "note": "Casper et al. Singapore Consensus, PT_15 + 22b"
+   },
+   "2609.11912": {
+    "verdict": "OK",
+    "note": "Becker/Greger/Peters Core in Approval-Based Committee Elections, 07-Committees-Core"
+   }
+  }
+ },
+ "couverture_apres": 165
+}

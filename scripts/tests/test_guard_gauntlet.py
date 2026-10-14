@@ -707,3 +707,45 @@ def test_sandbox_env_vars_present(tmp_path: Path) -> None:
     out = payload["diagnostics"]["stdout_preview"]
     assert "<none>" not in out, out
     assert "gauntlet-" in out, out
+
+
+def test_check_env_carries_shared_library_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """LD_LIBRARY_PATH survit a l'env minimal du check.
+
+    Le retirer etait auto-defaitiste : la variable ne sert pas au check mais
+    au *loader*, qui s'execute AVANT sa premiere instruction. Un interpreteur
+    qui a besoin de ses libs partagees ne demarre alors pas du tout, et le
+    gauntlet lit exit 127 avec stdout vide — verdict indiscernable de « le
+    garde n'a rien detecte ». Les builds setup-python du tool-cache
+    auto-heberge n'ont pas de rpath, donc le runner exporte la variable :
+    mesure sur les slots po-2026, 8 echecs de ce fichier, verts ailleurs.
+    """
+    target = _write_target(tmp_path, "x")
+    check = _make_check_py(
+        tmp_path,
+        "import os, sys\n"
+        "print(os.environ.get('GAUNTLET_SANDBOX', '<none>'))\n"
+        "print(os.environ.get('LD_LIBRARY_PATH', '<none>'))\n"
+        "sys.exit(0)\n",
+    )
+    check_cmd = f'"{sys.executable}" "{check}" {{path}}'
+    # On ETEND la valeur heritee, on ne la remplace pas : l'ecraser ferait
+    # perdre a l'interpreteur du check (celui de sys.executable, souvent un
+    # build setup-python sans rpath) le chemin de sa propre libpython, et le
+    # test echouerait en 127 sur le runner tout en passant en local -- soit
+    # exactement le defaut qu'il couvre.
+    monkeypatch.setenv(
+        "LD_LIBRARY_PATH",
+        os.environ.get("LD_LIBRARY_PATH", "") + ":/opt/coursia-toolcache/lib",
+    )
+
+    proc = _run_gauntlet(tmp_path, target=target, check_cmd=check_cmd, fault="none")
+    assert proc.returncode == 0, f"stderr={proc.stderr}"
+    payload = _parse_stdout_json(proc)
+    out = payload["diagnostics"]["stdout_preview"]
+    # Les deux coexistent : la variable du loader s'ajoute au marqueur de
+    # sandbox, elle ne le remplace pas.
+    assert "/opt/coursia-toolcache/lib" in out, out
+    assert "gauntlet-" in out, out

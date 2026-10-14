@@ -22,8 +22,9 @@ Run:
 """
 from __future__ import annotations
 
-import shutil
 import subprocess
+
+from ._bash_resolution import resolve_bash
 from pathlib import Path
 
 import pytest
@@ -48,9 +49,10 @@ BLOCKING_HELPERS = [
 # does its own CreateProcess PATH search that can land on
 # `C:\Windows\System32\bash.exe` -- the WSL launcher stub, which mangles the
 # `-c` argument (shell assignments silently vanish, e.g. `A=1` never takes
-# effect). `shutil.which` returns the first PATH hit (Git's bash), which is
-# also the bash the workflow's `/usr/bin/bash` semantics are modeled on.
-BASH = shutil.which("bash") or "bash"
+# effect). `shutil.which` follows PATH order too, which on some machines puts
+# System32 ahead of Git -- so the PATH hit can be the same stub (#17201).
+# `resolve_bash` probes each candidate and falls back to Git-for-Windows.
+BASH = resolve_bash()
 
 
 def _run_bash_e(script: str) -> subprocess.CompletedProcess:
@@ -63,7 +65,7 @@ def _run_bash_e(script: str) -> subprocess.CompletedProcess:
     )
 
 
-@pytest.mark.skipif(shutil.which("bash") is None, reason="bash not available")
+@pytest.mark.skipif(BASH is None, reason="no sane bash available (#17201)")
 def test_semicolon_rc_masks_the_failure_under_errexit():
     """The buggy `cmd ; RC=$?` dies at `cmd`: RC never assigned, the code
     after never runs -- the mute red gate."""
@@ -72,7 +74,7 @@ def test_semicolon_rc_masks_the_failure_under_errexit():
     assert "REACHED" not in r.stdout  # diagnostics after `;` never surface
 
 
-@pytest.mark.skipif(shutil.which("bash") is None, reason="bash not available")
+@pytest.mark.skipif(BASH is None, reason="no sane bash available (#17201)")
 def test_and_or_idiom_captures_rc_on_both_branches():
     """`cmd && RC=0 || RC=$?` assigns RC on success AND failure, and a
     `&&`/`||` list is exempt from errexit -- the step survives the BLOCK
@@ -86,7 +88,7 @@ def test_and_or_idiom_captures_rc_on_both_branches():
     assert "RC=1" in blocked.stdout  # the real exit code is captured
 
 
-@pytest.mark.skipif(shutil.which("bash") is None, reason="bash not available")
+@pytest.mark.skipif(BASH is None, reason="no sane bash available (#17201)")
 def test_naive_or_rc_alone_is_unbound_under_set_u():
     """`cmd || RC=$?` alone short-circuits on success: RC is never assigned,
     and the workflow's `set -u` turns the next `$RC` use into an error.

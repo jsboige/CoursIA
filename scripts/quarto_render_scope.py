@@ -228,16 +228,45 @@ def yml_change_is_render_list_only(base: str, head: str) -> bool:
     return outside_render_block(texts[0]) == outside_render_block(texts[1])
 
 
+def _fetch_deepen() -> None:
+    """Best-effort deepen of the current shallow checkout (see changed_files).
+
+    Fetching by explicit sha would require uploadpack.allowReachableSHA1InWant;
+    deepening whatever refs the checkout already tracks does not, and the
+    pull/N/merge ref actions/checkout fetches carries both PR sides among its
+    ancestors. Failure is swallowed on purpose: a fetch that cannot succeed
+    (local run, detached remote) must not mask the original diff error.
+    """
+    subprocess.run(
+        ["git", "fetch", "--no-tags", "--deepen=400", "origin"],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+
+
 def changed_files(base: str, head: str) -> list[tuple[str, str]]:
     """[(status, path)] between two commits. Status is one of A C D M R."""
     # encoding= is mandatory, not decorative (#12811): the repo carries accented
     # notebook paths, and a cp1252 host decoding git's UTF-8 output would raise
     # mid-diff -- turning a scope decision into a crashed job.
-    out = subprocess.run(
-        ["git", "diff", "--name-status", "--find-renames", base + "..." + head],
-        cwd=REPO_ROOT, capture_output=True, text=True, check=True,
-        encoding="utf-8", errors="replace",
-    ).stdout
+    cmd = ["git", "diff", "--name-status", "--find-renames", base + "..." + head]
+    for attempt in (1, 2):
+        try:
+            out = subprocess.run(
+                cmd, cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+                encoding="utf-8", errors="replace",
+            ).stdout
+            break
+        except subprocess.CalledProcessError:
+            # A shallow PR checkout (actions/checkout default depth=1) lacks
+            # the intermediate commits when the branch absorbed a deep
+            # conflict-free update-branch: git exits 128 with one "Could not
+            # read <sha>" per missing ancestor (#20220: 99 commits). Deepen
+            # once and retry; a second failure is real and must fail the job
+            # loud -- never silently narrow the render scope.
+            if attempt == 2:
+                raise
+            _fetch_deepen()
     rows: list[tuple[str, str]] = []
     for line in out.splitlines():
         if not line.strip():

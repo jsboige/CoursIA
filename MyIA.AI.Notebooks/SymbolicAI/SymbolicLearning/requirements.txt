@@ -18,6 +18,10 @@
 # SL-13: numpy + torch CPU (diagnostic DISCOVER leger -- factorisation TPR par ALS,
 #        reinjection decoder, constituent surgery, white-box vs atomique,
 #        controle capacite/L2,1 -- CPU uniquement)
+# SL-14: conteneur Docker aifeynman:sl14 (regression symbolique AI Feynman 2.0 --
+#        le paquet PyPI aifeynman, fige en 2021, exige Python 3.9 + numpy<2 +
+#        gfortran pour ses extensions Fortran ; construction via
+#        assets/Dockerfile.aifeynman, execution papermill dans le conteneur)
 
 # Scientific computing (SL-3, SL-5, SL-12b)
 numpy>=1.24

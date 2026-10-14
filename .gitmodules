@@ -4,12 +4,14 @@
 [submodule "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq"]
 	path = MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq
 	url = https://github.com/MyIntelligenceAgency/Z3.Linq.git
+	branch = main
 [submodule "MyIA.AI.Notebooks/SymbolicAI/SMT/Automata"]
 	path = MyIA.AI.Notebooks/SymbolicAI/SMT/Automata
 	url = https://github.com/MyIntelligenceAgency/Automata.git
 [submodule "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"]
 	path = MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum
 	url = https://github.com/ArgumentumGames/Argumentum
+	branch = master
 [submodule "MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet"]
 	path = MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet
 	url = https://github.com/MyIntelligenceAgency/semantic-fleet.git

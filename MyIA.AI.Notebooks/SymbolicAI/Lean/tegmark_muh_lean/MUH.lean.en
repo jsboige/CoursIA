@@ -1,0 +1,65 @@
+/-!
+
+# Library on finite mathematical structures (Appendix A, Tegmark R16)
+
+Constructive **Lean 4 library** illustrating the definition of a *finite
+mathematical structure* as given in Appendix A of Tegmark (2007), *The
+Mathematical Universe* ([arXiv:0704.0646](https://arxiv.org/abs/0704.0646)).
+
+This root module is an **import aggregator**. It plays the role of a
+**bilingual entry point** for the i18n convention of EPIC #4980, i.e. it
+carries the documentation of the library in its two reference languages. The
+goal is to facilitate reading by French-speaking and English-speaking
+audiences from a single entry point, without duplicating the tactical
+substance: the scientific modules (`MUH.Structure`, `MUH.Encoding`,
+`MUH.Boolean`, `MUH.Cyclic`, `MUH.Decidable`) stay monolingual.
+
+## Why reintroduce the MUH in Lean?
+
+Tegmark (Appendix A §1) states that **the equivalence of two finite structures
+is decidable by a halting algorithm** — this is the foundation of the **CUH**
+(Computable Universe Hypothesis) in §VII.E. Formalising this decidability
+constructively in Lean 4:
+
+  - **secures** the bridge between "mathematical structure" (concept) and
+    "program that generates it" (artefact),
+  - **isolates** the general definition from its examples (Boolean, C₂, C₃),
+  - **illustrates** the composition of relations (rule (3) of §1) without
+    depending on Mathlib.
+
+This is what this library does. The modules:
+  - `MUH.Structure`: signature of a finite structure (sets + generating
+    relations + arities/types + value table).
+  - `MUH.Encoding`: encoding per Tegmark §c (`# of sets | # of relations |
+    sizes... | rels...`) and complexity `H(s) = Σᵢ log₂(2 + kᵢ)` (§d).
+  - `MUH.Boolean`: 2-element Boolean algebra, **canonical examples** (Sheffer
+    at 1 generator; F/T/NOT/AND at 4 generators — Tegmark eq. (A1)-(A2)). The
+    **equivalence Sheffer ↔ 4 generators** is out of scope of this PR; see
+    #16958 for follow-up.
+  - `MUH.Cyclic`: cyclic groups C₂ and C₃ (Tegmark §2b).
+  - `MUH.Aut`: the group Aut(S) — "Aut(S) is a group (easy to see)"
+    (Appendix A §1 in fine): the five group axioms are proved
+    (`aut_isGroup`), without Mathlib.
+  - `MUH.Examples`: explicit computation of automorphism groups:
+    `Aut(C₃) = {id, x ↦ 2x}` (exhaustivity proved) and `Aut(C₂) = {id}`.
+  - `MUH.Decidable`: decidability (Tegmark §1 in fine) on the restricted
+    class: `decideEq` compares headers (sets, cardinalities, number of
+    relations), and the binary-table decider is **proved correct**
+    (`sameBinaryOperation_eq_iff`).
+  - `MUH.Enumeration`: **effective enumeration** of finite tables (arity 2:
+    `m ^ (m²)` tables; arity 3: `m ^ (m³)` — the arity of the composite),
+    with **proved exhaustivity** and **proved count**; closure under
+    composition is witnessed there by membership
+    (`composeB_mem_allTernaryTables`). The arbitrary-arity tuple form
+    remains open. -/
+
+
+/-- Sub-libraries of MUH, exposed through a single import. -/
+import MUH.Structure
+import MUH.Encoding
+import MUH.Boolean
+import MUH.Cyclic
+import MUH.Aut
+import MUH.Examples
+import MUH.Enumeration
+import MUH.Decidable

@@ -14,7 +14,7 @@ quatre fronts, chacun ancré dans un résultat déjà livré :
    jambe de la triade moyen / fin / enjeu (#5352) : la réversibilisation comme **ressource** (un
    budget $B(t)$ qui s'épuise et se régénère), au-delà du *moyen* (production d'entropie $\sigma$,
    ICT-18) et de l'*enjeu* (batterie $I_\text{stake}$, ICT-19). Module
-   `ict/reversibility_budget.py` + notebook [ICT-18b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget.ipynb) — deux
+   `ict/reversibility_budget.py` + notebook [ICT-18b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) — deux
    définitions comparées ($B_\text{state}$ Monte-Carlo primaire, $B_\text{work}$ témoin) et verdicts
    pré-enregistrés **P1 PASS / P2 DISSOCIATION / P3 PASS** (détail : feuille de route + notebook).
    La triade a désormais sa jambe mesurée.

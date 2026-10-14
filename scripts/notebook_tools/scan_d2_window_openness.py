@@ -121,7 +121,7 @@ Sortie type (--format text)
   Voir issue #10230 (refutation firsthand de la mesure 82 % de #9772).
   ---
   Echantillon D2+ (10 premiers) :
-    MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion.ipynb
+    MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion-Python.ipynb
     MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/c875_hmm_alpha_dm_research.ipynb
     ...
 

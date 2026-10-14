@@ -1,0 +1,41 @@
+{
+  "cell": "chatterbox_mtl_v3",
+  "license": "Apache-2.0",
+  "size": "0.5B",
+  "results": [
+    {
+      "extract": "A",
+      "wer": 0.4179,
+      "n_ref": 67,
+      "n_hyp": 70,
+      "edit_distance": 28,
+      "hyp_first200": " pendant plusieurs jours de suite dès l'embeau d'armée en déroute à fait traverser la ville. Ce n'est des points de la troupe, mais des ordres débendées. Les hommes avaient la barre de longue et salle",
+      "duration_s": 17.4,
+      "g_st_range": 15.47,
+      "g_cv": 0.296,
+      "g_velocity": 33.15,
+      "g_verdict": "EXPRESSIVE",
+      "n_syll": 51,
+      "s_motion": 6.05,
+      "s_flat_pct": 8.0,
+      "s_verdict": "INSUFFICIENT"
+    },
+    {
+      "extract": "B",
+      "wer": 0.25,
+      "n_ref": 76,
+      "n_hyp": 75,
+      "edit_distance": 19,
+      "hyp_first200": " Qu'est-ce que vous voulez ? Le compte pris la parole. Nous désirons partir monsieur. Non, aux règes vous demandez la cause de ce refus parce que je ne veux pas. Je vous ferai respectuellement observe",
+      "duration_s": 21.04,
+      "g_st_range": 15.87,
+      "g_cv": 0.33,
+      "g_velocity": 23.61,
+      "g_verdict": "EXPRESSIVE",
+      "n_syll": 63,
+      "s_motion": 2.94,
+      "s_flat_pct": 33.9,
+      "s_verdict": "EXPRESSIVE"
+    }
+  ]
+}

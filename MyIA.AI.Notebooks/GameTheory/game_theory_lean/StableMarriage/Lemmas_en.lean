@@ -115,7 +115,10 @@ variable (prof : PrefProfile n) {σ : GSState prof}
 /-- The initial state has zero proposals. -/
 lemma initial : proposedCount prof (gsInitial prof) = 0 := by
   classical
-  simp [proposedCount, proposedSet, gsInitial]
+  simp only [proposedCount, proposedSet, Finset.card_eq_zero]
+  ext mw
+  simp only [Finset.mem_filter, Finset.mem_univ]
+  simp [gsInitial]
 
 /-- `StepWith` increases the counter by one for any new proposal. -/
 lemma stepWith (σ : GSState prof) (m w : Fin n) (hnew : ¬ σ.proposed m w) :

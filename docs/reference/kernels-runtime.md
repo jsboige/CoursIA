@@ -14,11 +14,11 @@ Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`
 
 | Prerequis | Version | Verification |
 |-----------|---------|-------------|
-| .NET SDK | 8.0 + 9.0 (10.0 optionnel) | `dotnet --list-sdks` |
-| dotnet-interactive | **1.0.617701** (verifie sur ai-01, cf ci-dessous) | `dotnet interactive --version` |
+| .NET SDK | 8.0 + 9.0 + 10.0 (10.0 requis par `dotnet restore MyIA.CoursIA.sln` : cinq projets `net10.0`) | `dotnet --list-sdks` |
+| dotnet-interactive | **1.0.712001** (canon depuis le 02/10/2026, decision #18766 — historique ci-dessous) | `dotnet interactive --version` |
 | Jupyter kernels `.net-csharp`, `.net-fsharp`, `.net-powershell` | auto-installes | `jupyter kernelspec list` |
 
-Installation : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701` puis `dotnet interactive jupyter install`. **Preciser la version** : une installation sans `--version` prend le dernier build publie, aujourd'hui 1.0.712001, qui a casse `#!import` sur ai-01 (cf tableau ci-dessous ; non reproduit sur po-2024, cf [Divergence po-2024](#divergence-po-2024-du-2026-08-16-11157--le-pin-netait-jamais-installe)).
+Installation : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install`. **Preciser la version** : une installation sans `--version` prend le dernier build publie, qui peut differer du canon et deriver d'une machine a l'autre sans qu'aucun `dotnet interactive --version` de routine ne signale l'ecart — il faut comparer au canon (cf [Divergence po-2024](#divergence-po-2024-du-2026-08-16-11157--le-pin-netait-jamais-installe) : le pin n'y avait jamais ete installe).
 
 **Execution** : `python scripts/notebook_tools/notebook_tools.py execute <notebook>` — qui pilote Papermill avec `--kernel .net-csharp`. Le kernel preserve l'etat entre cellules, `#!import` compris.
 
@@ -43,23 +43,44 @@ Cette borne **n'etablit pas** que le blocage `#r "nuget:"` est faux pour les 103
 grep -c '#r "nuget:' <notebook>     # 0  ->  RECOVERABLE-LOCAL : executer pour de vrai
 ```
 
-### Version : 1.0.617701, pas « >= 1.0.700 »
+### Version : canon 1.0.712001 depuis le 02/10/2026 (decision #18766)
 
 | Version | Etat | Preuve |
 |---------|------|--------|
 | 1.0.522904 | a eviter | bug Roslyn |
 | 1.0.552801 | ancien pin — **ne plus viser** : hote net8.0-only, bloque les notebooks qui referencent des DLL `net9.0` | [`Search/Part4-Metaheuristics/README.md`](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/README.md) (MGS-6 a MGS-9, `MetaGeneticSharp.Extensions`) |
-| **1.0.617701** | **cible** — cellule C# et `#!import` OK | verifie firsthand sur ai-01 le 2026-07-25 : `notebook_tools.py execute` sur un notebook `.net-csharp` (SUCCESS 4,4 s, `execution_count: 1`) et sur une paire `#!import helper.ipynb` + appel de la methode importee (SUCCESS 3,8 s, cellule 2 imprime le resultat) |
-| 1.0.712001 | a eviter | `#!import` casse (`ArgumentNullException`) — bloque la re-execution de `Sudoku-15-Infer-Csharp` (#8485, #8525) et le pivot d'env #8369. **Nuance (2026-08-16)** : non reproduit sur po-2024 — run complet Sudoku-15 0 erreur sous ce build (cf [Divergence po-2024](#divergence-po-2024-du-2026-08-16-11157--le-pin-netait-jamais-installe)) ; le breakage est au minimum contextuel, le verdict « a eviter » reste le standard tant qu'ai-01 n'a pas tranche un eventual depin |
+| 1.0.617701 | ancien canon (jusqu'au 02/10/2026) — cellule C# et `#!import` OK, embarque Roslyn 4.12 (plafond de packages, cf section suivante) | verifie firsthand sur ai-01 le 2026-07-25 : `notebook_tools.py execute` sur un notebook `.net-csharp` (SUCCESS 4,4 s, `execution_count: 1`) et sur une paire `#!import helper.ipynb` + appel de la methode importee (SUCCESS 3,8 s, cellule 2 imprime le resultat) |
+| **1.0.712001** | **canon (depuis le 02/10/2026, decision coordinateur #18766)** — hote net10.0, Roslyn 5.x (plafond leve) | verifie firsthand sur po-2026 le 02/10/2026 (`dotnet tool list -g`) et sur po-2024 le 2026-08-16 (run complet `Sudoku-15-Infer-CSharp` 0 erreur, `#!import` propre, AutoML OK — cf [Divergence po-2024](#divergence-po-2024-du-2026-08-16-11157--le-pin-netait-jamais-installe)). L'incident `#!import` `ArgumentNullException` (#8485, #8525) n'a ete vu que sur ai-01 (juillet 2026), jamais reproduit ailleurs : qualifie **contextuel** par la decision #18766 — si l'erreur reapparait sur ai-01 sous ce build, c'est une reparation locale (regle F), pas un retour du canon |
 
-Une contrainte `>= 1.0.700` figurait ici : elle est **fausse et nuisible** — elle exclut le pin qu'elle citait dans la meme ligne (552801 < 700) et n'admet, aujourd'hui, que la version cassee. Un `#!import` en echec est un **defaut d'environnement reparable en une commande** (regle F), jamais un blocage utilisateur :
+Une contrainte `>= 1.0.700` figurait ici : elle est **fausse et nuisible** — elle exclurait des builds fonctionnels selon la date et n'est pas un critere de validite ; le critere est le canon ci-dessus, pas une borne de version. Un `#!import` en echec est un **defaut d'environnement reparable en une commande** (regle F), jamais un blocage utilisateur :
 
 ```bash
-dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.617701
+dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
 
-### Consequence du pin : plafond Roslyn 4.12.0.0 sur les packages NuGet
+### Conformite flotte au canon : matrice machine x version
+
+Chaque ligne est une **mesure firsthand de la machine**, jamais une deduction d'une autre machine ni la simple constatation que la commande repond : c'est precisement l'erreur qui a produit la [divergence po-2024](#divergence-po-2024-du-2026-08-16-11157--le-pin-netait-jamais-installe), ou le tool store portait un build derive sans qu'aucun `dotnet interactive --version` de routine ne le signale.
+
+| Machine | Version mesuree | Date | Source de la mesure |
+|---------|-----------------|------|---------------------|
+| `myia-po-2023` | **1.0.712001** | 2026-10-02 | `dotnet tool list -g`, apres montee depuis 1.0.707101 (`dotnet tool update -g` + `dotnet interactive jupyter install`, regle F) |
+| `myia-po-2024` | **1.0.712001** | 2026-08-16 | le tool store ne portait que ce build (Roslyn 5.0.25.56712, hote `tools/net10.0/any/`) — la divergence #11157 s'est fermee par **montee du canon**, jamais par downgrade |
+| `myia-po-2025` | **1.0.712001** | 2026-10-02 | `dotnet tool list -g` — conforme, aucune mise a niveau requise |
+| `myia-po-2026` | **1.0.712001** | 2026-10-05 (re-mesure) | `dotnet tool list -g` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` |
+| `myia-ai-01` | **1.0.712001 teste en `--tool-path` isole** ; outil **global** encore `1.0.617701` | 2026-10-02 | install de 1.0.712001 dans un tool-path isole + cellule `#load` reelle : **SUCCES** (`Greet says: Hello from helper.cs`) — le `ArgumentNullException` #8485 **non reproduit** ; la mise a niveau **globale** n'a pas ete faite (commande machine-globale, hors portee d'une lane worker) et reste due au **coordinateur** |
+| `myia-po-2027` | **1.0.712001** | 2026-10-09 | mesure firsthand par sa lane, **avant / apres reparation** — l'outil **global** portait `1.0.617701`, l'ancien canon : une **divergence non signalee de plus**, du meme type que celle de po-2024 avant le de-pin. Reparee par `dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install` (regle F ; les 3 noyaux `.net-csharp`/`.net-fsharp`/`.net-powershell` re-enregistres). Apres reparation, les **deux** mesures concordent : `dotnet tool list -g` = `1.0.712001` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` — **le meme hash de build que po-2026**, sur une autre machine et une autre lane. Cette machine est celle du bug `#r "nuget:"` documente sous l'ancien canon ([`dotnet-restore-rfc-17361.md`](dotnet-restore-rfc-17361.md)) : ce bug n'est **pas** re-teste ici |
+
+**Etat de l'acceptance de #18766** : le canon est **unique** et documente ici — oui ; **5 machines sur 6 sont conformes par mesure** (`po-2023`, `po-2024`, `po-2025`, `po-2026`, `po-2027`). Il reste `ai-01` — canon **installe et teste en isole** (cellule `#load` reelle OK, bug #8485 non reproduit) mais outil **global** encore `1.0.617701`, la mise a niveau globale etant une commande machine-globale due au **coordinateur**. Tant que cette derniere ligne n'est pas mesuree, l'affirmation « toutes les machines conformes » reste **indisponible** : elle s'ecrit quand les mesures existent, pas avant — un canon tenu « par confiance de compte » est exactement le mecanisme qui a laisse la divergence vivre trois semaines.
+
+La mesure de `po-2027` **etaye cet argument plutot que de le contredire** : demandee a sa lane au lieu d'etre deduite, elle a trouve une **deuxieme machine en divergence** (`1.0.617701`, l'ancien canon), que rien n'aurait signalee — `dotnet tool list -g` repondait normalement, et le pin n'etait confronte a rien. C'est la troisieme divergence de la flotte decouverte par mesure directe (#11157 po-2024, #18766 po-2026, celle-ci) : la ligne « non mesuree » de cette matrice n'est pas une case administrative, c'est l'endroit ou les divergences se cachent.
+
+**Canon `language_info.version` : C# 13.0 (#17679, décision coordinateur 2026-09-26).** L'environnement épinglé du dépôt (SDK 10.0.112, dotnet-interactive 1.0.617701) émet **C# 13.0** ; les notebooks encore stampés `12.0` (34 au constat du 2026-09-24, artefacts d'exécutions sous SDK 8) convergent à leur re-exécution. **Note (02/10/2026)** : cette mesure date du canon dni 1.0.617701 ; sous le nouveau canon 1.0.712001 (hote net10.0, Roslyn 5.x), le stamp `language_info.version` sera re-mesuré a la premiere re-execution d'un notebook .NET — si un drift `13.0 -> 14.0` apparait, il suit la meme voie decisionnelle que #17679. La dérive `12.0 -> 13.0` est donc **attendue et couverte par C.4** : le `Kernel drift guard` la tient pour verte via sa table d'acceptation `CANONICAL_LANGUAGE_TRANSITIONS` ([`check_kernel_drift.py`](../../scripts/notebook_tools/check_kernel_drift.py)) — la transition inverse (`13.0 -> 12.0`) et tout changement de `kernelspec.name` restent rouges.
+
+**Bruits de fond assumés du `Kernel drift guard` (décision #19961, 2026-10-08) : signature float à 1 ULP.** La série ICT a rougi sur des re-exécutions *conformes* (#19787 : base stampée `3.13.13` sur une machine de la flotte, re-exéc sous `3.13.3` sur une autre — patch-releases différentes, `repr()` float differents à **1 ULP** près). Un canon au niveau *patch* contredirait la doctrine #17371 (le venv évolue sous l'interpréteur canonique ; le drift de patch n'est pas une régression) et exigerait de geler la flotte sur un patch précis à chaque release amont. La décision retenue étend donc la doctrine #17371 **des métadonnées à la signature float** : le guard compare désormais les signatures numériquement — deux signatures dont les valeurs sont égales à 1 ULP près (marche `nextafter` exacte, sous-normaux compris, complexes partie à partie) ne sont **pas** un drift ; une différence au-delà, un changement de taille, un swap de kernel ou une transition majeure/mineure hors table restent rouges ; une signature qui ne parse pas retombe sur l'égalité textuelle (fail-closed). La contrainte `pyphi==1.2.0` (`requires-python >=3.9,<3.10`) de la strate Φ ICT est inchangée — cette décision ne concerne que la *comparaison des sorties*, pas l'interpréteur d'exécution. Codée dans `_signatures_equivalent` ([`check_kernel_drift.py`](../../scripts/notebook_tools/check_kernel_drift.py), tests [`test_check_kernel_drift.py`](../../scripts/notebook_tools/tests/test_check_kernel_drift.py)).
+
+### Consequence du pin : plafond Roslyn 4.12.0.0 sur les packages NuGet (canon 1.0.617701)
 
 Le pin n'est pas gratuit. `1.0.617701` **embarque Roslyn 4.12.0.0** (`Microsoft.CodeAnalysis.CSharp.dll`, FileVersion `4.1200.24.57207`, mesure firsthand sur ai-01 le 2026-08-16 dans `.dotnet/tools/.store/.../tools/net9.0/any/`). Tout package reference par `#r "nuget: ..."` qui **exige** une version superieure echoue au chargement :
 
@@ -68,7 +89,7 @@ System.IO.FileNotFoundException: Could not load file or assembly
 'Microsoft.CodeAnalysis.CSharp, Version=4.13.0.0, ...'
 ```
 
-**Un `#r "nuget: Microsoft.CodeAnalysis.CSharp, 4.13.0"` ne repare PAS ce cas** : le kernel a deja charge son propre Roslyn dans l'ALC au demarrage, et `#r` ne substitue pas une assembly deja resolue. Le correctif est donc **toujours cote package**, jamais cote kernel — remonter le kernel casserait `#!import` sur tout le depot (tableau ci-dessus).
+**Un `#r "nuget: Microsoft.CodeAnalysis.CSharp, 4.13.0"` ne repare PAS ce cas** : le kernel a deja charge son propre Roslyn dans l'ALC au demarrage, et `#r` ne substitue pas une assembly deja resolue. Le correctif est donc **toujours cote package** (s'aligner sur le Roslyn embarque par le build du kernel en cours).
 
 Instance mesuree (#11104, ML-3 AutoML) :
 
@@ -78,6 +99,8 @@ Instance mesuree (#11104, ML-3 AutoML) :
 | `Microsoft.ML.AutoML` **0.22.3** | `[4.9.2, )` | **OK** — satisfait par 4.12.0.0 |
 
 `0.22.3` prend `Microsoft.ML [4.0.3, )`, borne **ouverte** : le pin `Microsoft.ML, 5.0.0` du notebook reste valide. Mesure de bout en bout apres bascule : **10/10 cellules, 0 erreur, 86,1 s**.
+
+**Ce plafond est leve par le canon 1.0.712001 (02/10/2026, #18766)** : ce build embarque Roslyn 5.x (FileVersion `5.0.25.56712` mesure sur po-2024, hote `net10.0`) — les dependances `[4.13.0, )` (ex. AutoML 0.23.0) passent sous le nouveau canon. Le downgrade `0.23.0 -> 0.22.3` de ML-3 reste valide (bornes ouvertes, pas de raison de rebasculer). La section ci-dessus se lit desormais comme l'historique du canon 1.0.617701.
 
 Verifier la dependance d'un package avant d'incriminer le kernel :
 
@@ -94,7 +117,7 @@ L'ecart « le meme notebook ML-3 AutoML passe sur po-2024 et echoue sur ai-01 »
 
 **Pourquoi le run propre de #11140 a passe AutoML 0.23.0** : ce run (blob `bf38be1766`) portait `#r "nuget: Microsoft.ML.AutoML, 0.23.0"` — dependance Roslyn `[4.13.0, )` — satisfait par le Roslyn **5.0** du kernel derive, la ou le Roslyn 4.12 du pin echoue (section precedente). Le downgrade `0.23.0 -> 0.22.3` a atterri dans `3ac89ed30c` (#11173, 2026-08-16 03:53 +02:00), le meme commit que la migration Plotly-CDN de ML-3 et la section « plafond Roslyn » ci-dessus. Apres lui, ML-3 passe sur les **deux** builds de kernel.
 
-**Mesures sous 1.0.712001 sur po-2024 (2026-08-16)** : paire `#!import` minimale OK ; `Sudoku-15-Infer-Csharp` run **complet 47/47 cellules (19 code), 0 erreur, exec [1..19] sequentiel, `#!import` cell[3] propre** — l'incident `ArgumentNullException` #8485/#8525 ne se reproduit **pas** sur cette machine ce jour ; chemin exact ML-3 AutoML 0.22.3 OK (RSquared 0,972). Le breakage historique est donc au minimum **contextuel** (hote net10.0 vs net9.0, runtime, ou corrige entre builds) — il n'est pas efface ici, il est qualifie.
+**Mesures sous 1.0.712001 sur po-2024 (2026-08-16)** : paire `#!import` minimale OK ; `Sudoku-15-Infer-CSharp` run **complet, 0 erreur, exec [1..19] sequentiel, `#!import` cell[3] propre** — l'incident `ArgumentNullException` #8485/#8525 ne se reproduit **pas** sur cette machine ce jour ; chemin exact ML-3 AutoML 0.22.3 OK (RSquared 0,972). Le breakage historique est donc au minimum **contextuel** (hote net10.0 vs net9.0, runtime, ou corrige entre builds) — il n'est pas efface ici, il est qualifie.
 
 **Reparation executee (regle F, 2026-08-16)** : `dotnet tool update` refusant le downgrade, passer par uninstall + install pinne :
 
@@ -104,7 +127,7 @@ dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701
 dotnet interactive jupyter install
 ```
 
-Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` confirmee, `#!import` minimal OK (`FORTY_TWO=42`), AutoML 0.22.3 OK (RSquared 0,996). Le pin reste le standard fleet ; un eventuel depin vers un build recent (qui embarque Roslyn >= 4.13 et leverait le plafond de packages) est une decision coordinateur, a appuyer sur un essai croise ai-01 x po-2024 reproduisant les deux tableaux ci-dessus.
+Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` confirmee, `#!import` minimal OK (`FORTY_TWO=42`), AutoML 0.22.3 OK (RSquared 0,996). **Epilogue (02/10/2026, #18766)** : le depin a eu lieu — le canon fleet passe a `1.0.712001`, exactement le build sur lequel po-2024 tournait lors de cette divergence. La divergence est fermee par montee du canon (po-2024 etait « en avance »), la reparation historique ci-dessus reste documentee pour la methode (uninstall + install pinne quand `dotnet tool update` refuse le downgrade). Mesures de conformite flotte : matrice tenue a jour dans [Conformite flotte au canon](#conformite-flotte-au-canon--matrice-machine-x-version) (au 2026-10-09 : `po-2023`/`po-2024`/`po-2025`/`po-2026`/`po-2027` conformes par mesure — `po-2027` l'a ete apres reparation, sa mesure ayant d'abord trouve l'ancien canon installe ; `ai-01` canon teste en isole mais outil global encore sur l'ancien pin).
 
 ## Python 3.10+ (notebooks Python)
 
@@ -121,7 +144,72 @@ Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/Sem
 | `epita_symbolic_ai_sherlock` | 3.10+ | `C:\Users\MYIA\.conda\envs\epita_symbolic_ai_sherlock` | Variante Sherlock |
 | `llmcompressor` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\llmcompressor` | LLM quantization tooling |
 | `e2e_test_env` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\e2e_test_env` | E2E tests |
+| **pyphi** | **3.9** | Nom **machine-dépendant** — mesuré `pyphi39` sur po-2026 (`C:\Users\jsboi\miniconda3\envs\pyphi39`) ; chemin ai-01 non mesuré | Cœur Φ série IIT/ICT (PyPhi 1.2.0). Cf. § « Série IIT/ICT » ci-dessous |
 | `base` | 3.10+ | `C:\Users\MYIA\miniconda3` | Conda base — NE PAS modifier |
+
+### Série IIT/ICT — env canonique `pyphi` (PyPhi 1.2.0)
+
+**Exception au « 3.10+ » de ce titre** : la série `MyIA.AI.Notebooks/IIT/ICT-Series/` a besoin d'un env en **Python 3.9**. PyPhi 1.2.0 utilise `collections.Iterable`, retiré en 3.10, et tire `pyemd` dont la sdist se compile contre NumPy 2.x (« numpy.dtype size changed » à l'import).
+
+| Élément | Valeur |
+|---------|--------|
+| Env conda | `pyphi`, Python **3.9** — créé par `MyIA.AI.Notebooks/IIT/scripts/setup_pyphi_env.ps1` (ou `.sh`), `-c conda-forge --override-channels` |
+| Kernelspec | `pyphi` (« Python 3 (PyPhi/IIT) »). **Nom machine-dépendant** : mesuré `pyphi39` sur po-2026, env **et** kernelspec. Résoudre par `jupyter kernelspec list`, jamais par supposition |
+| Artefacts exécutables (source de vérité) | `MyIA.AI.Notebooks/IIT/ICT-Series/pyproject.toml` (`requires-python = ">=3.9,<3.10"`, `pyphi==1.2.0`, `numpy>=1.21,<2.0`) · `MyIA.AI.Notebooks/IIT/requirements.txt` (install manuel complet, dont `pyemd==0.5.1` = wheel cp39 known-good avec numpy 1.26) |
+| Usage | Strates **cœur Φ** (PyPhi). Les strates LLM/SAE (ICT-21+) utilisent `coursia-sae` (py3.12), **pas** cet env |
+
+**Re-exécution : passer le kernel explicitement** — `timeout 600 jupyter nbconvert --execute --inplace --ExecutePreprocessor.kernel_name=pyphi <nb>` (chemin canonique timeout-wrappé, cf. § « MCP jupyter-papermill HANG (bug #835) » plus bas). Le MCP async ignore `kernel_name` et lit le kernelspec **stocké** dans le notebook : sans ce paramètre, la re-exécution tourne sous le kernel du notebook, pas sous `pyphi`.
+
+**Ce que la mesure réfute (2026-09-21, #17185).** Sur 77 notebooks `ICT-Series/`, le kernelspec stocké se répartit ainsi : `python3` **72**, `pyphi` **2**, absent 2, `coursia-ml-training` 1. Le kernelspec stocké **n'est pas** la cause du drift `Kernel drift guard` : les **2 seuls** notebooks qui importent `pyphi` (`ICT-01-PhiTrajectories`, `ICT-05-CausalEmergence`) sont **exactement ceux** qui portent déjà `kernelspec.name = pyphi`. Normaliser les 72 autres n'aurait aucun effet — ils n'importent pas PyPhi.
+
+**Ce que la mesure établit (2026-09-21, #17185) — le corpus n'a pas UN env, il en a neuf.** Le champ `metadata.language_info.version` de chaque notebook enregistre l'interpréteur qui a produit les outputs **committés**. C'est exactement la variable que compare le `Kernel drift guard`, et elle est donc lisible dans le dépôt, notebook par notebook. La table ci-dessous est **reproductible** : `python scripts/notebook_tools/notebook_env_census.py MyIA.AI.Notebooks/IIT/ICT-Series`.
+
+| `language_info.version` | notebooks | kernelspec stocké |
+|---|---:|---|
+| 3.13.3 | 19 | `python3` |
+| 3.13.14 | 18 | `python3` |
+| 3.13.7 | 12 | `python3` |
+| 3.12.13 | 9 | `python3` 8 · `coursia-ml-training` 1 |
+| 3.13.15 | 6 | `python3` |
+| 3.9.25 | 4 | `pyphi` 2 · `python3` 2 |
+| 3.11.15 | 4 | `python3` |
+| 3.11.9 | 2 | `python3` |
+| 3.10.11 | 1 | `python3` |
+| 3.10.19 | 1 | `python3` |
+| (absent) | 1 | `python3` |
+
+Trois conséquences, à ne pas séparer :
+
+1. **L'artefact pinné ne décrit qu'une strate.** `ICT-Series/pyproject.toml` épingle `requires-python = ">=3.9,<3.10"` (l.26) et `numpy>=1.21,<2.0` (l.36), or **4 notebooks sur 77 seulement** portent des outputs venus de Python 3.9. Les 73 autres sont au-dessus (55 en 3.13.x, 9 en 3.12.13) : une re-exécution sous l'env pinné **produira** du drift contre leurs outputs committés, par construction. Ce n'est pas un accident d'exécution, c'est le pin qui ne couvre pas la population.
+2. **« notebook déjà conforme » n'a donc pas de sens absolu** : il n'y a de conformité que *relativement à un env nommé*. Le critère d'acceptation de #17185 — « une re-exécution sous cet env ne produit plus de drift sur les notebooks déjà conformes » — ne se lit donc que restreint à la **strate Φ (3.9)** sous `pyphi`, jamais pour la série entière.
+3. **Corollaire opératoire** : re-exécuter un notebook ICT **change sa provenance**. Une PR qui ré-exécute sous 3.13 un notebook dont les outputs viennent de 3.9 fabrique le drift qu'elle prétend corriger — et l'inverse aussi. C'est la lecture qui rend compte des 6 cellules de #16675.
+
+**Instrument à ne pas surinterpréter.** Le repr NumPy 2 des scalaires (`np.float64(0.1)` au lieu de `0.1`) n'apparaît dans les **outputs** que de 3 notebooks (75 occurrences : 56 sur un notebook à 3.13.14, 19 sur deux à 3.13.7) et **jamais** dans les 19 notebooks à 3.13.3. L'instrument est **unilatéral** : sa *présence* prouve NumPy 2, son *absence* ne prouve rien (aucun contrôle positif — ces notebooks n'impriment simplement pas de repr de scalaire). La génération NumPy des 74 autres **n'est pas établie** par l'inspection des outputs : ne pas conclure « NumPy 1 » d'une absence.
+
+**La seconde moitié de l'acceptance de #17185 est mesurée sur la strate entière (2026-09-21).**
+
+Les **4 notebooks de la strate Φ** — ceux dont les outputs **committés** viennent de Python 3.9.25, donc les seuls *déjà conformes* à l'env pinné — ont été ré-exécutés sous le kernel `pyphi39` de cette machine (Python 3.9.25, NumPy 1.26.4, PyPhi 1.2.0), puis comparés aux outputs committés **dans les unités du garde** (import de `check_kernel_drift.float_signatures` / `diff_signatures` / `kernel_info` / `diff_kernel`, jamais une comparaison réécrite) :
+
+| Notebook (strate Φ) | cellules · tokens float | `diff_signatures` | `diff_kernel` | santé | durée |
+|---|---|---:|---|---|---|
+| `ICT-01-PhiTrajectories-Python` | 10 · 4 → 4 | aucune dérive | aucun | 0 `exec_count` nul, 0 erreur | — |
+| `ICT-05-CausalEmergence-Python` | 10 · 0 → 0 | aucune dérive | aucun | 0 / 0 | 12 s |
+| `ICT-18-ArrowOfTimeReversibilization-Python` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 7 s |
+| `ICT-Synthese-CrossSubstrat` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 55 s |
+
+Et le garde lui-même, sur l'état **commité** : `OK: 0 kernel-drift regression across **4** changed notebooks`.
+
+**Conclusion.** Sous l'env canonique, la ré-exécution des notebooks déjà conformes ne produit **aucun** drift — ni de noyau, ni de signature float. C'est la seconde moitié de l'acceptance de #17185, et elle est vérifiée sur la **population entière** que cette acceptance nomme (4/4), pas par échantillon. Elle ne dit **rien** des 73 notebooks au-dessus de 3.9 (cf. « Reste ouvert »).
+
+**Le contrôle positif est obligatoire, et ce n'est pas une précaution de style.** `nbconvert --inplace` **n'écrit le fichier qu'en cas de succès** : une exécution qui échoue laisse l'artefact **byte-identique** à la version committée, et toute comparaison rend alors « aucune dérive » — **vacuement**, en confrontant le notebook **avec lui-même**. C'est arrivé au premier passage : `ModuleNotFoundError: No module named 'matplotlib'`, artefact intact, verdict vert. Chaque notebook ci-dessus n'entre donc dans la mesure **qu'après** vérification que son empreinte `sha256` a changé (`sha256sum` avant/après) ; sinon la ligne est déclarée vacue et **non comptée**. **Règle : avant d'interpréter une comparaison de drift comme une mesure, prouver que l'artefact a effectivement changé.**
+
+**Et le garde ne voit que le travail COMMITÉ.** `check_kernel_drift.changed_notebooks()` fait `git diff <base> HEAD -- *.ipynb` : sur une ré-exécution encore dans l'arbre de travail, il rend `OK ... across 0 changed notebooks` — il n'a **rien regardé**. Ce `OK` n'est pas une preuve de non-drift, c'est une preuve de non-commit. Les 4 ré-exécutions ont donc été commitées dans un **worktree jetable** (jamais poussé : les notebooks ICT ne sont pas le livrable de cette PR) avant de citer le garde.
+
+**Piège d'outillage, rencontré en commitant ces mesures.** Le hook pré-commit H.3 (`check_null_exec.py`) **crashe** quand le `python` du shell est celui de l'env ICT : `validate_pr_notebooks.py:128` annote `paths: list[str] | None`, une union PEP 604 évaluée à l'import, qui lève `TypeError: unsupported operand type(s) for |` sur Python 3.9. Or c'est **exactement** la situation de la re-exécution ICT — l'env qui exécute le notebook est py3.9 et se retrouve en tête de `PATH`. Le hook sort en échec (fail-closed, donc rien de dangereux) mais **sans rapport avec le notebook** : committer depuis un shell où py3.9 est actif ne dit rien de la validité de la mesure. Committer avec un `python` ≥ 3.10.
+
+**Prérequis d'env, mesuré lui aussi.** `matplotlib` est **indispensable** (les strates trajectoires / heatmaps / EWS l'importent), et la note d'en-tête de `MyIA.AI.Notebooks/IIT/requirements.txt` décrivait la liste du script de setup en l'**omettant** — un env créé en suivant cette note ne peut pas exécuter la série (constaté : `pyphi39` sur po-2026 en était dépourvu ; `matplotlib 3.9.4` installé, `numpy` resté à 1.26.4, pin préservé). La note est corrigée dans la même PR.
+
+**Reste ouvert (#17185).** Trancher la population au-dessus de 3.9 (73 des 77) : un env pinné **par strate**, ou une passe de re-exécution homogénéisante — dans les deux cas c'est une décision sur l'**artefact d'env**, pas un correctif de notebook.
 
 ### Stack ML training (coursia-ml-training, vérifié 2026-05-06)
 
@@ -185,7 +273,7 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 #### .NET
 
 - SDKs : 8.0.x, 9.0.x, 10.0.x
-- dotnet-interactive : **1.0.617701** (installe, verifie 2026-07-25 — cf [tableau des versions](#version--10617701-pas--100700))
+- dotnet-interactive : **1.0.617701** au dernier inventaire (2026-05-23) — canon fleet **1.0.712001** depuis le 02/10/2026 (cf [tableau des versions](#version--canon-10712001-depuis-le-02102026-decision-18766)) ; re-mesure demande sur #18766, mise a niveau si differe
 - Kernels : `.net-csharp`, `.net-fsharp`, `.net-powershell`
 
 #### Jupyter kernels (10 registered)
@@ -201,6 +289,7 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 | lean4-wsl | Lean 4 (v4.11.0 WSL) | `notebook_tools.py execute` (non re-mesure c.10024 ; laisser en l'etat si doute) |
 | python3-wsl | Python (WSL 3.12) | wsl_papermill.py |
 | smartcontracts | Python | Papermill |
+| python3-lean | Python 3.13.x (CPython canonique série Lean, cf #17476) | Papermill |
 
 **Écart de compte non résolu** : l'intitulé annonce « 10 registered », la table en liste **9**. Non re-mesurable en l'état — po-2025 est **CONFIRMÉ non joignable** firsthand (#9976 : `HTTP 000` + 100 % de perte ping, LAN physiquement disjoint). Ni le 10 ni le 9 ne sont corrigés ici : un relevé `jupyter kernelspec list` tranchera au retour de la machine. Ne pas citer l'un des deux comme mesuré.
 

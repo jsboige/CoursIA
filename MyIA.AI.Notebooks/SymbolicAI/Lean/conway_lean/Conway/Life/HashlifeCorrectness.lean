@@ -6366,10 +6366,17 @@ theorem p5_inductive_step (n : Nat) (g : Grid) (h : BoxAssezGrand g n) :
       the recursion because the jump preserves bounding box up to light-cone
       expansion.
 
-    **Status (2026-06-13)**: base case `n = 0` proven above
-    (`hashlife_correct_base_zero`). The inductive step remains open (the
-    `sorry` below). See `hashlife_correct_implies_block_4` /
-    `hashlife_correct_implies_glider_8` for sanity witnesses. -/
+    **Status (2026-08-15, #17570)** : proven via `p5_inductive_step` (closed
+    #5998, 2026-07) under the fixed-frame hypothesis `BoxAssezGrand g n`. But
+    that hypothesis is `unsat` for non-empty grids once `n ≥ jumpSize = 8`
+    (`p5_large_n_hyps_unsat`), so `hashlife_correct` is *vacuously true* on
+    the large-`n` regime where the Hashlife jump actually fires — it does NOT
+    certify a non-vacuous equality between `evolveHashlifeFast` and `evolve`.
+    The **non-vacuous, unconditional** large-`n` correctness statement is
+    `evolveHashlifeFastAtN_correct_uncond` (l. 7202 of this file, on `main`
+    since #11781, 2026-08-15): ICT series consumers should cite that theorem.
+    `hashlife_correct` here stays for historical continuity and is named only
+    to declare its vacuity. See #17570. -/
 theorem hashlife_correct (n : Nat) (g : Grid) (h : BoxAssezGrand g n) :
     evolveHashlifeFast n g = evolve n g := by
   -- P5 TARGET: main theorem, composition of P2-P4

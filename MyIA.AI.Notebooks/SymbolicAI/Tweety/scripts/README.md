@@ -6,7 +6,7 @@ Ce répertoire contient les scripts utilitaires pour la série Tweety (`Tweety-1
 
 ### Téléchargement des dépendances
 
-- [download_tweety_tools.py](download_tweety_tools.py) — Télécharge les JARs TweetyProject depuis Maven Central, les ressources (`*.txt`, `*.aba`, `*.aspic`), Clingo (Windows/Linux), SPASS (Linux), JDK Zulu 17 portable, et les bibliothèques natives SAT (Minisat, Lingeling, Picosat). Mode sélectif via flags `--jars`/`--resources`/`--clingo`/`--jdk`/`--native-sat` ou `--all`.
+- [download_tweety_tools.py](download_tweety_tools.py) — Télécharge les JARs TweetyProject depuis Maven Central, les ressources (`*.txt`, `*.aba`, `*.aspic`), Clingo (Windows/Linux), SPASS (Linux), JDK Zulu 17 portable, et les bibliothèques natives SAT (Minisat, Lingeling, Picosat). Mode sélectif via flags `--jars`/`--resources`/`--clingo`/`--jdk`/`--native-sat` ou `--all`. Avant téléchargement, le dossier `libs/` est débarrassé des JARs Tweety d'une version antérieure (`--keep-old-generations` pour les conserver) : sans ce nettoyage, les deux générations restent sur le classpath et se disputent les mêmes classes.
 
   ```bash
   python scripts/download_tweety_tools.py --all

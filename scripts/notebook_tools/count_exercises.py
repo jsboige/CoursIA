@@ -29,7 +29,7 @@ A markdown "Exemple" header + working code is an EXAMPLE, not counted.
 Usage:
     python count_exercises.py                                  # all pedagogical notebooks
     python count_exercises.py --family IIT                     # single family
-    python count_exercises.py MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb   # single notebook
+    python count_exercises.py MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb   # single notebook
     python count_exercises.py --threshold 3                    # default: flag < 3
     python count_exercises.py --json                           # machine-readable
     python count_exercises.py --check                          # exit 1 if any sub-threshold
@@ -141,12 +141,17 @@ ARTIFACT_STEM_RE = re.compile(
     r"|^research[_-]"
     r"|[_-]research(?:[_-]v?\d+)?$"
     r"|[_-]output(?:[_-]v?\d+)?$"
+    # (#18741 Declarations, ledger #11) `SemanticKernel/Notebook-Generated`
+    # -- a GENERATED artifact (double-counted as standard + template before
+    # this pattern). Exact-stem form: "Generated" alone is a subject word
+    # elsewhere, the full stem names the artifact.
+    r"|^notebook-generated$"
     r"|repro$",
     re.IGNORECASE,
 )
 
 #: Setup / environment notebooks -- rule threshold 0-1.
-#: `Lean-1-Setup`, `Sudoku-00-Environment-Csharp`, `SC-1-Setup-Foundry`,
+#: `Lean-01-Setup-Lean-Python`, `Sudoku-00-Environment-CSharp`, `SC-01-Setup-Foundry-Python`,
 #: `QC-Py-01-Setup`, `Argument_Analysis_Agentic-0-init`, `..-0-init_agent`.
 SETUP_STEM_RE = re.compile(
     r"(?:^|[-_])(?:setup|environment|init)(?:$|[-_])", re.IGNORECASE
@@ -158,8 +163,8 @@ SETUP_STEM_RE = re.compile(
 SETUP_DIR_RE = re.compile(r"environment", re.IGNORECASE)
 
 #: Purely-Lean notebooks -- rule threshold 0-2.
-#: `Lean-3-Propositions-Proofs`, `GameTheory-11b-Lean-BayesianGamesExt`,
-#: `DecInfer-09-Lean-Gittins`.
+#: `Lean-03-Propositions-Proofs-Lean`, `GameTheory-11b-Lean-BayesianGamesExt-Lean`,
+#: `DecInfer-08b-Lean-Gittins`.
 LEAN_STEM_RE = re.compile(r"(?:^|[-_])lean(?:$|[-_])", re.IGNORECASE)
 
 #: Legacy material -- rule "Archive / Legacy" row. Matched on DIRECTORY parts
@@ -176,6 +181,28 @@ LEGACY_RE = re.compile(r"legacy", re.IGNORECASE)
 OUT_OF_CORPUS_KINDS = frozenset(
     {"artifact", "template", "vendored", "archive", "legacy", "tooling", "student"}
 )
+
+#: (#18741 Declarations) Individually declared statuses, transcribed from the
+#: qualification ledger (`docs/ledgers/18741-qualification-14-notebooks.md`)
+#: and the approved 4-part decoupage. These notebooks ARE course material --
+#: they stay in the corpus and in its denominator -- but their exercise budget
+#: is declared, not defaulted: the kind name carries the reason so a fleet
+#: scan shows WHY the notebook is not actionable instead of silently hiding
+#: it. Threshold 0 mirrors the setup/Lean rows of the rule's exception table
+#: (the acceptable count includes zero); it is not an out-of-corpus removal.
+DECLARED_STATUSES: dict[str, tuple[str, int | None]] = {
+    # Ledger #10 -- mono-exercise calibration notebook, intent declared in
+    # the #18741 issue body.
+    "PT_17_laya_proper_rewards_toy": ("declared-mono-exercise", 0),
+    # Ledger #15 (post-scriptum to the table) -- ablation companion of the
+    # LAYA series, 1/3, same declared family as PT_17.
+    "PT_18_laya_ablation_distillation": ("declared-ablation-companion", 0),
+    # Ledger #13 -- no exercise section; the #18741 body asks for a declared
+    # demonstration status OR added tasks. The approved decoupage retains the
+    # declared status (adding tasks is separate content work, not counter
+    # policy).
+    "TV-03-Internalisation-CoT": ("declared-demo", 0),
+}
 
 
 def classify_notebook(path: Path) -> tuple[str, int | None]:
@@ -267,6 +294,11 @@ def _classify(
         return ("setup", KIND_MINIMUM["setup"])
     if LEAN_STEM_RE.search(stem):
         return ("lean", KIND_MINIMUM["lean"])
+    # (#18741 Declarations) consulted LAST among the pattern rules so a
+    # declared status never shadows a structural kind (a declared notebook
+    # moved under an `_archive/` directory is archive first).
+    if stem in DECLARED_STATUSES:
+        return DECLARED_STATUSES[stem]
     return ("standard", standard_threshold)
 
 # \bexercice\b anywhere in the line, case-insensitive, French or English form.
@@ -299,6 +331,22 @@ EXERCISE_SECTION_EN_RE = re.compile(r"\bexercises\b", re.IGNORECASE)
 # false positive (a `---` separator is a `<hr>`, not a header) -- this is what
 # initially mis-paired a `---` cell with the exercise code cell below it.
 MARKDOWN_HEADER_RE = re.compile(r"^\s{0,3}#{1,6}\s+(.*)", re.MULTILINE)
+
+# A BOLD title line opens with a `**...**` span (#18146). Exercise statements
+# do not always use ATX headers: PT_13_dapo_drgrpo_corrections cells 41/43/45
+# open with `**Exercice 1 -- Reintroduire `/std` dans Dr. GRPO.** Reprendre
+# ...` -- bold instance title followed by prose on the SAME line. An ATX-only
+# reader never saw them, so the three stubs below (cells 40/42/44) had no
+# header to pair with and the notebook rendered count=0 while carrying three
+# exercises. The span must be the LEADING content of the line AND its text
+# must BEGIN with the exercise word: a prose lead-in like ``**Pourquoi cet
+# exercice est fondamental** : ...`` (1.2-Manipulation_de_Donnees_avec_NumPy
+# c27) is a sentence with a bold opener, not a title -- without the
+# starts-with-word guard every such sentence doubled the cell's instances
+# (corpus measurement 2026-09-28: 6->12 on that notebook).
+BOLD_TITLE_RE = re.compile(r"^\s{0,3}\*\*(.+?)\*\*", re.MULTILINE)
+#: The bold span's text must START with the exercise word to be a title.
+BOLD_TITLE_WORD_RE = re.compile(r"^(?:exercic|exercise)", re.IGNORECASE)
 
 # The exercise NUMBER a cell references, e.g. ``Exercice 3`` -> ``'3'``,
 # ``Exercice 3b`` -> ``'3b'``, ``Exercise 2`` -> ``'2'``. Used ONLY to gate
@@ -334,11 +382,17 @@ STUB_PATTERNS = [
     # defeats that fallback via the ``_body_computes_result`` gate: the TODOs
     # are "leftover comments above a body that computes" and the cell fell
     # through as a solution. Measured (2026-09-16): exactly 5 notebooks
-    # under-counted by this blind spot (rl_8_model_based_dyna_q Ex2
+    # under-counted by this blind spot (RL-08-Dyna-Q-Planification-Python Ex2
     # prioritized-sweeping skeleton, PT_11a Ex1, Search-03c Ex1, Planners-1
     # Ex2, SL-12 Ex3), each -1 real exercise, 0 false positives.
+    # The ``a completer`` tail accepts the accented francophone spellings
+    # (``à compléter``, ``a compléter``, ``à completer``) exactly like the
+    # comment-marker and sentinel patterns below: the corpus is francophone
+    # and the unaccented-only form under-counted real skeleton cells whose
+    # print was the sole stub marker (#18741 -- PT_09, 3 accented skeletons
+    # read as solutions, 1/3).
     re.compile(
-        r'print\(["\']Exercice[s]?\s*\d*\s*a completer', re.IGNORECASE
+        r'print\(["\']Exercice[s]?\s*\d*\s*[aà][ \t]+compl[eé]ter', re.IGNORECASE
     ),
     re.compile(r"^\s*pass\s*$", re.MULTILINE),
     re.compile(r"\breturn\s+None\b"),
@@ -346,7 +400,7 @@ STUB_PATTERNS = [
     # use `//`. A scaffolded C# exercise (class skeleton + `// TODO etudiant`
     # + multiple code lines) is a student stub, not a solution: without the
     # `//` form it escaped the `<= 1 effective code-line` rule and was
-    # silently under-counted (e.g. Search-11-Metaheuristics-Csharp cells
+    # silently under-counted (e.g. Search-11-Metaheuristics-CSharp cells
     # 24-26, each `// Exercice N` + `// TODO etudiant` + partial skeleton).
     re.compile(r"#\s*TODO", re.IGNORECASE),
     re.compile(r"//\s*TODO", re.IGNORECASE),
@@ -394,8 +448,14 @@ STUB_PATTERNS = [
     # returned literal in mid-cell without a sentinel comment stays a derived
     # return. (OWUI issue #15676 -- ``return -1  # valeur "a completer
     # (placeholder neutre)"`` in cell 11.)
+    # C# form (#18741 PR C): the tail uses ``//`` and the vocabulary is the
+    # student-marker family -- ``return -1; // TODO etudiant`` (Aspire 01
+    # c23, the /health waiter). ``;?`` absorbs the C# statement terminator;
+    # ``TODO`` and ``etudiant`` join the vocabulary exactly as in
+    # ``_STUDENT_MARKER_VOCAB_RE``: a bare-number return annotated with a
+    # student TODO is a sentinel, not a computation.
     re.compile(
-        r"\breturn\s+-?\d+\s*#.*\b(?:a compl[eé]ter|a remplir|placeholder|neutre|stub)\b",
+        r"\breturn\s+-?\d+\s*;?\s*(?://|#|--)\s*(?:TODO\b|[^\n]*\b(?:a compl[eé]ter|a remplir|placeholder|neutre|stub|etudiant)\b)",
         re.IGNORECASE,
     ),
     # Pure-sentinelle string literals: ``return "a determiner"``,
@@ -452,6 +512,33 @@ EMPTY_RETURN_PATTERNS = [
     re.compile(r"\breturn\s+''(?!\w)"),
 ]
 
+# Placeholder VALUE inside a returned dict/list template (#18146). A returned
+# literal whose EVERY value is a placeholder is a skeleton answer key, not a
+# computed result: GameTheory-07 c27 returns ``{'spe_offer': 0, 'j1_payoff':
+# 0, 'j2_payoff': 0, 'j2_accepts': []}`` under ``# TODO etudiant : remplacer
+# par le vrai calcul SPE``, c31 returns ``{'is_spe': False, ...,
+# 'violations': ['TODO etudiant : ...']}``. A `return {`-opened dict passes
+# the literal branch of `_return_is_derived` (operand ``{`` is neither ``[]``
+# nor ``{}``), so the template read as a computed solution. `True` is
+# deliberately NOT a placeholder value: a solution flag (``found: True``) is
+# ordinary output, while the cited templates carry False/0/None holes.
+PLACEHOLDER_VALUE_RE = re.compile(
+    r"""^(?:None|null|False|0|0\.0|0\.0[fF]|\[\]|\{\}|\(\)|""|'')$"""
+    r"""|^(?:["'][^"']*\b(?:TODO|a compl[eé]ter|a remplir)[^"']*["']"""
+    r"""|\[[^]]*\b(?:TODO|a compl[eé]ter|a remplir)[^]]*\])$""",
+    re.IGNORECASE,
+)
+
+#: Line-tail placeholder vocabulary on a ``return`` (#18741 PR B). The tail
+#: comment is stripped before operand analysis, so a return that SELF-DECLARES
+#: its value provisional -- ``return "api"  # placeholder — a affiner`` (OWUI
+#: 05 c17) -- read as a computed string literal. Same vocabulary family as the
+#: ``return <number>  # ...`` stub pattern (#15676).
+_RETURN_TAIL_PLACEHOLDER_RE = re.compile(
+    r"^\s*(?://|#|--).*\b(?:a compl[eé]ter|a remplir|placeholder|neutre|stub)\b",
+    re.IGNORECASE,
+)
+
 # Indices of STUB_PATTERNS that are COMMENT markers (# TODO, # Indice, // TODO,
 # -- TODO). A leftover comment marker in an otherwise COMPLETE body is not itself
 # a stub signal: `# TODO etudiant` above a full implementation is an instructor's
@@ -464,6 +551,75 @@ EMPTY_RETURN_PATTERNS = [
 # a mixed cell (Search-11 cell 43 -- a complete `profit_function` plus a
 # truncated `# A COMPLETER` Problem skeleton), which must stay a stub.
 COMMENT_STUB_PATTERN_IDX = frozenset({3, 4, 5, 6, 7, 8})
+
+#: Indices of the EXECUTABLE placeholder markers (``pass`` [1], ``return
+#: None`` [2]) that stay stubs UNLESS the body otherwise computes a result
+#: (#18741 PR B). Measured incident: PT_11c c7 -- a COMPLETE worked verifier
+#: whose fallback ``except ValueError: pass`` / ``return None`` fired the
+#: unconditional markers, so the Exercice 1 header absorbed it (backward
+#: pairing) and its real stub counted standalone -> 4 hits for 3 exercises.
+#: The gate mirrors the comment-marker one: a canonical stub (signature +
+#: comments + ``return None``) has no derived return, so ``_body_computes_
+#: result`` stays False and the marker keeps firing.
+EXECUTABLE_PLACEHOLDER_PATTERN_IDX = frozenset({1, 2})
+
+#: Student-marker vocabulary that names a write-hole when it sits beside an
+#: executable placeholder marker or a placeholder assignment (#18741 PR B).
+#: ``Exercice`` is included on purpose: the annotated ``pass`` of Wan 02-3
+#: c28/c30 and AnimateDiff 01-5 c24 (``# Exercice: ...`` directly above the
+#: ``pass``) is the write-hole itself, while the INCIDENTAL fallbacks of a
+#: worked body (PT_11c c7 ``except ValueError: pass``) carry no vocabulary
+#: within two lines -- the discriminator measured on both families.
+_STUDENT_MARKER_VOCAB_RE = re.compile(
+    r"\bTODO\b|\bExercice\b|[eé]tudiant|[aà] compl[eé]ter|[aà] vous",
+    re.IGNORECASE,
+)
+
+#: (#18741 PR C) Reading-exercise declaration. Some markdown cell of the
+#: notebook announces that its exercises are READING exercises -- Audio 06-3
+#: c11 ``## 5. Trois exercices de lecture chiffree`` : the answer is prose
+#: written next to the notebook, no code stub exists, so the numbered
+#: headers below can never pair. Measured scope: 8 notebooks in the corpus
+#: carry the phrase; the gate below only fires on headers that are ALSO
+#: unpaired, so paired local exercises in those notebooks are untouched.
+READING_EXERCISE_SECTION_RE = re.compile(r"exercices?\s+de\s+lecture", re.IGNORECASE)
+
+#: (#18741 PR C) External write-space evidence in a numbered exercise
+#: header -- the stub lives OUTSIDE the notebook, in the lab project beside
+#: it. Direct form: a backticked source-file path (Orleans 01 c9 ``Ouvrir
+#: `OrleansAgentLab/Grains.cs` et completer ...``). Indirect form:
+#: ``Completer `Class.Member(...)``` (Orleans 02 c20/22/24) -- the dotted
+#: member belongs to the lab file the exercise section points to; the
+#: ``[^`]*`` tail absorbs argument lists inside the backticks. A header
+#: whose local stub pairs never reaches these gates (pairing is checked
+#: first), so the only headers counted are those with strictly no local
+#: write-space AND positive external evidence in their own text.
+EXTERNAL_CS_PATH_RE = re.compile(r"`[^`]*\.(?:cs|csproj|fs)`")
+EXTERNAL_COMPLETE_MEMBER_RE = re.compile(
+    r"compl[eé]t\w*\s+`[A-Za-z_]\w*\.[A-Za-z_]\w*[^`]*`", re.IGNORECASE
+)
+
+
+def _executable_markers_are_deliberate(
+    pattern: "re.Pattern[str]", source: str
+) -> bool:
+    """True when at least one match of an executable placeholder marker
+    (``pass`` / ``return None``) carries student-marker vocabulary on its own
+    line or within the two lines above it.
+
+    The EXECUTABLE_PLACEHOLDER gate targets the incidental fallback of a
+    worked body; a ``pass`` annotated ``# Exercice: ...`` right above names
+    the student's write-hole and keeps its verdict whatever the surrounding
+    body computes (#18741 PR B -- Wan 02-3 c28/c30, AnimateDiff 01-5 c24
+    vs PT_11c c7, Sudoku-17 c28).
+    """
+    lines = source.split("\n")
+    for m in pattern.finditer(source):
+        line_no = source.count("\n", 0, m.start())
+        window = "\n".join(lines[max(0, line_no - 2):line_no + 1])
+        if _STUDENT_MARKER_VOCAB_RE.search(window):
+            return True
+    return False
 
 # Index of the generic ``<name> = None`` assignment pattern above (the #15688
 # widening of ``result = None``). The COMMENT markers above are stubs UNLESS
@@ -481,12 +637,31 @@ COMMENT_STUB_PATTERN_IDX = frozenset({3, 4, 5, 6, 7, 8})
 NONE_PLACEHOLDER_PATTERN_IDX = frozenset({10})
 
 
+#: Triple-quoted blocks (Python docstrings, C# verbatim strings) removed before
+#: effective-line counting (#18146). A scaffolded stub whose docstring spells
+#: out the Etapes (GameTheory-07 c29: a 10-line docstring + ``# TODO etudiant``
+#: + ``game = ExtensiveFormGame(...)`` + ``return game``) had its PROSE counted
+#: as effective code lines -- the docstring alone carried the cell over the
+#: three-line threshold of ``_body_computes_result``, so the leftover-TODO gate
+#: swallowed the stub. A docstring documents; it does not compute.
+_TRIPLE_QUOTED_BLOCK_RE = re.compile(r"(\"\"\"|''')[\s\S]*?\1")
+
+
+def _strip_docstrings(source: str) -> str:
+    return _TRIPLE_QUOTED_BLOCK_RE.sub("", source)
+
+
 def _effective_code_lines(source: str) -> list[str]:
     """Non-comment, non-import code lines of a cell (mirrors the filtering in
-    ``_is_stub_code``: `#` Python/F#, `//` C#, `--` Lean/Haskell)."""
+    ``_is_stub_code``: `#` Python/F#, `//` C#, `--` Lean/Haskell).
+
+    Triple-quoted blocks are stripped first (#18146): docstring prose is
+    documentation, not computation, and counting it let long-docstring stubs
+    pass the ``_body_computes_result`` threshold.
+    """
     lines = [
         ln.strip()
-        for ln in source.strip().split("\n")
+        for ln in _strip_docstrings(source).strip().split("\n")
         if ln.strip()
         and not ln.strip().startswith("#")
         and not ln.strip().startswith("//")
@@ -521,15 +696,55 @@ def _function_param_names(source: str) -> set[str]:
     return names
 
 
-def _return_is_derived(return_stmt: str, code_lines_before: list[str], params: set[str]) -> bool:
+def _return_literal_is_template(operand: str, code_lines_after: list[str]) -> bool:
+    """True when a returned dict/list literal is a placeholder template.
+
+    ``return {`` opened on its own line continues over ``code_lines_after``
+    until the closing brace (#18146): every VALUE must be a placeholder
+    (:data:`PLACEHOLDER_VALUE_RE`) for the literal to be a template -- one
+    computed value (a variable name, a call, a measured number) makes it a
+    real answer. Measured shapes: GameTheory-07 c27 ``{'spe_offer': 0, ...,
+    'j2_accepts': []}`` and c31 ``{'is_spe': False, ..., 'violations':
+    ['TODO etudiant : ...']}``, both under a ``# TODO etudiant : remplacer``
+    marker that the derived read used to swallow.
+    """
+    entries: list[str] = []
+    if operand in ("{", "["):
+        # Multi-line literal: collect content lines until the closing brace.
+        for ln in code_lines_after:
+            if ln.startswith("}") or ln.startswith("]"):
+                break
+            entries.append(ln.rstrip(","))
+        if not entries:
+            return False
+    else:
+        # Single-line literal: strip the outer braces/brackets.
+        inner = operand[1:-1]
+        entries = [e.strip() for e in inner.split(",") if e.strip()]
+        if not entries:
+            return False
+    for entry in entries:
+        # dict entry ``'key': value`` -- the VALUE carries the computation.
+        value = entry.split(":", 1)[1].strip() if ":" in entry else entry
+        if not PLACEHOLDER_VALUE_RE.match(value):
+            return False
+    return True
+
+
+def _return_is_derived(
+    return_stmt: str,
+    code_lines_before: list[str],
+    params: set[str],
+    code_lines_after: list[str] | None = None,
+) -> bool:
     """True when a ``return`` statement yields a computed value, not a stub shape.
 
     A derived return is an internal variable assigned a **non-None** value in
     the body **before** the return, a call, a subscript, an attribute, a binary
-    expression, or a non-empty literal. None, an empty-typed literal
-    (``[]``/``{}``/``()``/``0``/``""``/``set()``), a pass-through of an
-    unchanged parameter, and ``x = None`` returned as ``return x`` are the stub
-    shapes.
+    expression, or a non-empty literal. None (and C# ``null``), an empty-typed
+    literal (``[]``/``{}``/``()``/``0``/``""``/``set()``), a pass-through of an
+    unchanged parameter, ``x = None`` returned as ``return x``, and a returned
+    dict/list template whose every value is a placeholder are the stub shapes.
 
     The placeholder shape is the C.1 stub idiome (AEV ``resultat = None`` /
     ``return resultat``, Claudish ``response_json = None``): counting its own
@@ -538,17 +753,31 @@ def _return_is_derived(return_stmt: str, code_lines_before: list[str], params: s
     widened in the first place (#15688 reserve, ai-01 arbitrage 2026-09-13).
     Only assignments *preceding* the return count -- a rebinding after the
     return is dead code, not a computation of the returned value.
+
+    Line-tail comments (``// TODO``, ``# a completer``) are stripped before
+    analysis (#18146): the comment slashes used to satisfy the binary-operator
+    regex and mark placeholder returns as computed. One tail is NOT stripped
+    but READ: a tail carrying the placeholder vocabulary declares the returned
+    value provisional (#18741 PR B -- OWUI 05 c17 ``return "api"  # placeholder
+    -- a affiner`` read as a solved string and gated the cell's ``# TODO``
+    marker away).
     """
-    m = re.match(r"^return\b(.*)$", return_stmt.strip())
+    m = re.match(r"^return\b(.*?)(\s(?://|#).*)?$", return_stmt.strip())
     if not m:
         return False
-    operand = m.group(1).strip()
-    if not operand or operand.lower().startswith("none"):
+    if _RETURN_TAIL_PLACEHOLDER_RE.match(m.group(2) or ""):
+        return False
+    operand = m.group(1).strip().rstrip(";").strip()
+    if not operand or re.match(r"^(?:none|null)\b", operand, re.IGNORECASE):
         return False
     if any(p.search(return_stmt) for p in EMPTY_RETURN_PATTERNS):
         return False
     if re.match(r"^[\[{]", operand):  # a list/dict literal -- computed when non-empty
-        return operand not in ("[]", "{}")
+        if operand in ("[]", "{}"):
+            return False
+        if _return_literal_is_template(operand, code_lines_after or []):
+            return False
+        return True
     if re.match(r"""^["']""", operand):  # a returned string is a solved value
         return True
     if re.match(r"^[A-Za-z_]\w*\(", operand):  # call `f(...)`
@@ -564,35 +793,77 @@ def _return_is_derived(return_stmt: str, code_lines_before: list[str], params: s
         assign_re = re.compile(
             rf"^(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(base)}\s*[+\-*/%]?=(?!=)"
         )
-        none_only_re = re.compile(
-            rf"^(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(base)}\s*=\s*None\b"
+        # An assignment of a PLACEHOLDER VALUE is not a computation (#18741
+        # PR B -- Video 02-6 c16: ``trouvees = []`` ... ``return trouvees``
+        # read as derived, gating the ``# Indice`` / ``# TODO etudiant``
+        # markers away). Same empty-typed family the literal branch above
+        # already rejects on the return itself.
+        # NB: second fragment is a plain raw string -- ``\{`` in an f-string
+        # opens a replacement field (the backslash then lands in the
+        # expression part, a hard SyntaxError pre-3.12).
+        placeholder_only_re = re.compile(
+            rf'^(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(base)}\s*=\s*'
+            r'(?:None|null|False|0|0\.0|0\.0[fF]|\[\]|\{\}|\(\)|\x22\x22|\x27\x27|set\(\))\s*$',
+            re.IGNORECASE,
         )
         for ln in code_lines_before:
-            if assign_re.match(ln) and not none_only_re.match(ln):
+            if assign_re.match(ln) and not placeholder_only_re.match(ln):
                 return True  # assigned a computed value before the return
+        # A placeholder-seeded container the body FILLS by mutation computes
+        # its result (#15080 D01 c30 regression of the gate above: ``rows =
+        # []`` then ``rows.append(...)`` in the loop, ``return rows`` -- a
+        # full solution, not a passthrough). Only the never-touched shape
+        # (Video 02-6 c16 ``trouvees = []`` ... ``return trouvees``) is a
+        # placeholder return.
+        mutate_re = re.compile(
+            rf"\b{re.escape(base)}\s*\.\s*(?:append|extend|insert|update|pop"
+            rf"|clear|remove|add|setdefault)\b"
+            rf"|\b{re.escape(base)}\s*\[[^\]]*\]\s*[+\-*/%]?=(?!=)"
+        )
+        if any(mutate_re.search(ln) for ln in code_lines_before):
+            return True
         return False
     if re.search(r"[+\-*/%]|\b(?:and|or|in)\b|\bis\s+not\b", operand):
         return True  # binary expression
     return False
 
 
+#: Non-logic structural lines excluded from the body-logic count (#18146):
+#: signatures (``def``/``class``/C# method heads), ``return`` statements, and
+#: lone braces. What remains is what the body DOES. GameTheory-07 c29
+#: (``def build_three_player_entry_game():`` + docstring + ``game =
+#: ExtensiveFormGame("3-Player Entry Game", num_players=3)`` + ``return
+#: game``) has ONE logic line -- the scaffolding constructor -- while #15080's
+#: complete solutions carry the measurement pipeline (rng, loops, appends).
+#: A returned name assigned by the body's ONLY logic line is scaffolding
+#: passthrough, not a computed result.
+_NON_LOGIC_LINE_RE = re.compile(
+    r"^(?:def\b|class\b|return\b|[{}]$|[\w(][\w\s<>,\[\]()?:]*\([^=]*\)\s*[;:{]?\s*$)"
+)
+
+
 def _body_computes_result(source: str) -> bool:
     """True when a cell's body computes a real result (a solution, not a stub).
 
     Gates the comment-marker override in ``_is_stub_code``. A cell needs at
-    least three effective code lines AND a derived return to be a solution; a
-    one-line ``return grid`` (passthrough), a scaffolded skeleton with no
-    return, or an empty-typed return remains a stub. This keeps the scaffolded
-    C#/Lean exercises (which carry ``// TODO``/``-- TODO`` above a partial
-    skeleton with no computed return) counted as stubs.
+    least three effective code lines, at least two body LOGIC lines (excluding
+    signatures, returns and braces -- the scaffolding-passthrough guard of
+    #18146), AND a derived return to be a solution; a one-line ``return grid``
+    (passthrough), a scaffolded skeleton with no computed return, a template
+    dict return, or an empty-typed return remains a stub. This keeps the
+    scaffolded C#/Lean exercises (which carry ``// TODO``/``-- TODO`` above a
+    partial skeleton with no computed return) counted as stubs.
     """
     code_lines = _effective_code_lines(source)
     if len(code_lines) < 3:
         return False
+    logic_lines = [ln for ln in code_lines if not _NON_LOGIC_LINE_RE.match(ln)]
+    if len(logic_lines) < 2:
+        return False
     params = _function_param_names(source)
     for pos, ln in enumerate(code_lines):
         if re.match(r"^return\b", ln.strip()):
-            if _return_is_derived(ln, code_lines[:pos], params):
+            if _return_is_derived(ln, code_lines[:pos], params, code_lines[pos + 1:]):
                 return True
     return False
 
@@ -651,6 +922,121 @@ def _none_placeholder_passthrough(source: str) -> bool:
                 reassigned = True
                 break
         if not reassigned:
+            return True
+    return False
+
+
+def _name_reassigned_after(
+    lines: list[str], line_no: int, name: str, also_placeholder: bool = False
+) -> bool:
+    """True when ``name`` is reassigned a computed value at same-or-deeper
+    indentation after ``lines[line_no]`` (the scoping rule of
+    :func:`_none_placeholder_passthrough`, factored out for reuse). With
+    ``also_placeholder`` the reassignment itself must be non-placeholder.
+    """
+    indent = len(lines[line_no]) - len(lines[line_no].lstrip(" \t"))
+    tail = "" if also_placeholder else r"(?!\s*(?:None|null)\b)"
+    reassign_re = re.compile(
+        rf"^[ \t]*(?:[A-Za-z_]\w*\s*,\s*)*{re.escape(name)}"
+        rf"\s*[+\-*/%]?=(?!=){tail}",
+        re.IGNORECASE,
+    )
+    for j in range(line_no + 1, len(lines)):
+        if reassign_re.match(lines[j]):
+            j_indent = len(lines[j]) - len(lines[j].lstrip(" \t"))
+            if j_indent >= indent:
+                return True
+    return False
+
+
+#: Cell-level dict/list-literal assignment opener whose values are collected
+#: until the matching closer (#18741 PR B).
+_TEMPLATE_ASSIGN_OPEN_RE = re.compile(r"^([A-Za-z_]\w*)\s*=\s*([\[{])")
+
+#: Scalar placeholder assignment whose tail comment names the student's
+#: write-space (#18741 PR B, differencier-les-assistants c27:
+#: ``ASSISTANT_A_REECRIRE = ""   # A vous : le nom, tel qu'il figure...``).
+#: The vocabulary tail is REQUIRED for scalars -- a bare ``model = None``
+#: initializer or the seeded container of a worked body (D01 c30 ``rows =
+#: []``) must not read as a hole -- and the name must never be reassigned.
+_SCALAR_PLACEHOLDER_ASSIGN_RE = re.compile(
+    r"^([A-Za-z_]\w*)\s*=\s*(?:None|null|False|0|0\.0|0\.0[fF]"
+    r"|\x22\x22|\x27\x27|set\(\))\s*(?:#|//|--)"
+)
+
+
+def _placeholder_template_assignment(source: str) -> bool:
+    """True when a ``name = {``/``[`` literal's every value is a None hole.
+
+    The measured shape (#18741 PR B, Texte 09b c30): the STUDENT part of the
+    cell is ``reponses = {"P1": None, "P2": None, "P3": None}`` -- a template
+    of None holes IS the write-space handed to the student, the assignment
+    twin of the RETURNED template :func:`_return_literal_is_template` already
+    recognizes -- while the instructor's ``verifier_classification`` helper
+    below carries a derived ``return ok`` that made ``_body_computes_result``
+    testify for the whole cell, gating the ``# TODO etudiant`` markers away.
+
+    Deliberately narrower than PLACEHOLDER_VALUE_RE: only ``None``/``null``
+    count as holes here. A cell-level ``{"seed": 0, "epochs": 3}`` config or a
+    ``[False, ...]`` flag list uses 0/False legitimately, and the cost of a
+    false stub (an over-counted exercise) exceeds a missed one. A name later
+    reassigned a computed value in its scope is a pipeline initializer, not a
+    placeholder (Kokoro-01-5 c38 family).
+    """
+    lines = source.split("\n")
+    for i, ln in enumerate(lines):
+        # Scalar twin first: ``X = ""  # A vous : ...`` -- the write-space is
+        # the placeholder assignment itself, the computing helper that shares
+        # the cell is the instructor's (differencier c27). The tail must name
+        # the student (vocab) and the name is never reassigned after.
+        ms = _SCALAR_PLACEHOLDER_ASSIGN_RE.match(ln.strip())
+        if ms:
+            scalar_name = ms.group(1)
+            tail = ln.strip()[ms.end():]
+            if _STUDENT_MARKER_VOCAB_RE.search(tail) and not _name_reassigned_after(
+                lines, i, scalar_name
+            ):
+                return True
+            continue
+        m = _TEMPLATE_ASSIGN_OPEN_RE.match(ln.strip())
+        if not m:
+            continue
+        name, opener = m.group(1), m.group(2)
+        closer = "]" if opener == "[" else "}"
+        first = ln.strip().split("=", 1)[1].lstrip()
+        if first.startswith(opener):
+            first = first[1:]
+        entries: list[str] = []
+        if closer in first:
+            entries.extend(
+                e.strip() for e in first.split(closer, 1)[0].split(",") if e.strip()
+            )
+            terminated = True
+        else:
+            if first.strip():
+                entries.append(first.rstrip(","))
+            terminated = False
+            for j in range(i + 1, min(i + 60, len(lines))):
+                nxt = lines[j].strip()
+                if nxt.startswith(closer):
+                    terminated = True
+                    break
+                entries.append(nxt.rstrip(","))
+            if not terminated:
+                continue  # unterminated literal: not our shape
+        if not entries:
+            continue
+        for entry in entries:
+            value = entry.split(":", 1)[1].strip() if ":" in entry else entry
+            # The TODO vocabulary rides in the tail (``"P1": None,  # TODO
+            # etudiant``): strip it before judging the value. NB: the split
+            # eats the whitespace AHEAD of the comment marker too, so the
+            # leftover is ``"None, "`` -- strip whitespace BEFORE the trailing
+            # comma (a bare rstrip(",") sees a space and keeps the comma).
+            value = re.split(r"\s(?:#|//|--)", value)[0].strip().rstrip(",").strip()
+            if not re.match(r"^(?:None|null)$", value, re.IGNORECASE):
+                return False
+        if not _name_reassigned_after(lines, i, name):
             return True
     return False
 
@@ -735,7 +1121,7 @@ class ExerciseHit:
     cell_index: int
     cell_type: str  # 'markdown' or 'code'
     source: str  # full cell source (joined)
-    detected_by: str  # 'markdown_header' | 'code_cell_comment'
+    detected_by: str  # 'markdown_header' | 'code_cell_comment' | 'reading_header' | 'external_header'
 
     @property
     def preview(self) -> str:
@@ -801,6 +1187,18 @@ def _is_stub_code(source: str) -> bool:
             # a completer" print / raise / assert) stay unconditional.
             if idx in COMMENT_STUB_PATTERN_IDX and _body_computes_result(source):
                 continue
+            # ``pass`` / ``return None`` as an incidental FALLBACK of a body
+            # that computes a real result is not a stub shape (#18741 PR B,
+            # PT_11c c7): the executable markers share the computing-body
+            # gate of the comment markers above -- UNLESS the marker is
+            # annotated with student vocabulary beside it (a ``pass`` under
+            # ``# Exercice: ...`` names the write-hole, Wan 02-3 c28).
+            if (
+                idx in EXECUTABLE_PLACEHOLDER_PATTERN_IDX
+                and _body_computes_result(source)
+                and not _executable_markers_are_deliberate(pat, source)
+            ):
+                continue
             # The generic ``<name> = None`` assignment is a stub marker only
             # in its placeholder shape (#15713 + #15688): the composed gate
             # rejects signature defaults, demo initializers later reassigned,
@@ -811,6 +1209,11 @@ def _is_stub_code(source: str) -> bool:
             ):
                 continue
             return True
+    # A cell-level dict/list template of None holes is the write-space handed
+    # to the student, whatever computed helper shares the cell (#18741 PR B,
+    # Texte 09b c30): judged on shape, before any body-computes testimony.
+    if _placeholder_template_assignment(source):
+        return True
     lines = [
         ln.strip()
         for ln in source.strip().split("\n")
@@ -840,6 +1243,18 @@ def _is_stub_code(source: str) -> bool:
         for pat in EMPTY_RETURN_PATTERNS:
             if pat.search(code_lines[-1]):
                 return True
+    # A PURE import cell (``import re``, ``from typing import Optional``,
+    # ``using System;``) is not a student stub: its only effective lines are
+    # imports -- stripped from code_lines above -- so ``0 <= 1`` read it as a
+    # stub and the backward header pairing (#18146) absorbed it in place of
+    # the real stub below the header. PT_11c: the Exercice 1 header absorbed
+    # the preceding import block, its real stub counted standalone, and
+    # headers 2/3 paired nothing -- 2 hits for 3 exercises, then 4 once the
+    # accented-print fix unmasked the Ex 2/3 stubs (#18741). An import block
+    # carries no write-space for the student. Only the all-imports shape is
+    # guarded: an import line beside real code keeps the historical verdict.
+    if lines and not code_lines:
+        return False
     return len(code_lines) <= 1
 
 
@@ -869,43 +1284,105 @@ def _code_cell_mentions_exercise(source: str) -> bool:
     return bool(EXERCISE_WORD_RE.search(blob) or EXERCISE_WORD_EN_RE.search(blob))
 
 
+def _markdown_title_lines(source: str) -> list[tuple[str, str]]:
+    """Exercise-title candidates: ``(kind, text)`` per line.
+
+    ATX headers (``### Exercice 1``) and bold-leading lines
+    (``**Exercice 1 -- ...** prose``, #18146 / PT_13 cells 41/43/45) are both
+    title forms in the corpus. Each source line yields at most ONE candidate:
+    the ATX match wins when a line is both (``### **Exercice 1**``), so a line
+    never double-counts as two instances.
+    """
+    out: list[tuple[str, str]] = []
+    for line in source.split("\n"):
+        m = MARKDOWN_HEADER_RE.match(line)
+        if m:
+            out.append(("atx", m.group(1)))
+            continue
+        m = BOLD_TITLE_RE.match(line)
+        if m and BOLD_TITLE_WORD_RE.match(m.group(1)):
+            out.append(("bold", m.group(1)))
+    return out
+
+
+def _first_title_is_plural(source: str) -> bool:
+    """True when the cell's FIRST title line is a plural-only section title.
+
+    A cell that OPENS with ``## 10. Exercices ...`` is a section/TOC: its
+    singular sub-mentions restate subjects whose full statements (and stubs)
+    live in nearer cells (PT_10 c19's ``**Exercice A/B/C**`` restatements vs
+    c20/22/24). A singular-first cell (Video 03-2 c16 ``## Exercice :
+    Pipeline Personnalisé``) is itself an exercise statement -- its stub may
+    sit well below the pairing window, which is exactly what the numberless
+    conservative count exists for.
+    """
+    titles = _markdown_title_lines(source)
+    if not titles:
+        return False
+    _kind, text = titles[0]
+    has_plural = bool(
+        EXERCISE_SECTION_RE.search(text) or EXERCISE_SECTION_EN_RE.search(text)
+    )
+    has_singular = bool(
+        EXERCISE_INSTANCE_RE.search(text) or EXERCISE_INSTANCE_EN_RE.search(text)
+    )
+    return has_plural and not has_singular
+
+
 def _markdown_mentions_exercise(source: str) -> bool:
-    """True if any markdown header line contains the exercise word."""
-    for m in MARKDOWN_HEADER_RE.finditer(source):
-        header_text = m.group(1)
-        if EXERCISE_WORD_RE.search(header_text) or EXERCISE_WORD_EN_RE.search(header_text):
+    """True if any markdown title line (ATX or bold) contains the exercise word."""
+    for _kind, text in _markdown_title_lines(source):
+        if EXERCISE_WORD_RE.search(text) or EXERCISE_WORD_EN_RE.search(text):
             return True
     return False
 
 
 def _markdown_instance_header_lines(source: str) -> list[str]:
-    """Markdown header texts that each name a SINGULAR exercise instance.
+    """Markdown title texts that each name a SINGULAR exercise instance.
 
-    Returns one entry per INSTANCE header line, so a single markdown cell that
+    Returns one entry per INSTANCE title line, so a single markdown cell that
     groups several exercise statements under sub-headers (`### Exercice 1`,
     `### Exercice 2`, `### Exercice 3`) yields 3 instances, not 1 (#6051 Bug 1:
     such a grouped cell was under-counted because pass 1 added one hit per CELL).
 
-    PLURAL section headers (`## 9. Exercices`, `## Exercises`) are excluded:
-    a section groups exercises without being one. A header line is an instance
+    PLURAL section titles (`## 9. Exercices`, `## Exercises`) are excluded:
+    a section groups exercises without being one. A title line is an instance
     only when it carries a SINGULAR exercise word. This also prevents a plural
-    section header from acting as a header cell that forward-pairs the next code
+    section title from acting as a header cell that forward-pairs the next code
     cell (Bug 2: the section `## 9. Exercices` stole the real Exercice 1 stub).
 
     A line that contains BOTH a plural and a singular form is treated as an
     instance (the singular reference dominates): e.g. ``## Exercices : Exercice 1
     recapitulatif`` still counts. A line with ONLY the plural is a section.
+
+    Bold-leading lines count as titles since #18146 (PT_13: the three
+    ``**Exercice N -- ...**`` statements open their cell with the title then
+    continue the prose on the same line; an ATX-only reader saw none of them).
     """
     instances: list[str] = []
-    for m in MARKDOWN_HEADER_RE.finditer(source):
-        header_text = m.group(1)
+    for _kind, text in _markdown_title_lines(source):
         has_singular = bool(
-            EXERCISE_INSTANCE_RE.search(header_text)
-            or EXERCISE_INSTANCE_EN_RE.search(header_text)
+            EXERCISE_INSTANCE_RE.search(text)
+            or EXERCISE_INSTANCE_EN_RE.search(text)
         )
         if has_singular:
-            instances.append(header_text)
-    return instances
+            instances.append(text)
+    # Same-number restatement inside one cell is ONE instance (#18146): a
+    # cell may open with `### Exercice 1 : ...` and repeat the subject as a
+    # bold `**Exercice 1 -- ...**` line -- both title forms name the same
+    # exercise, and counting both double-billed it. Numberless mentions are
+    # left untouched (no number to compare).
+    seen_numbers: set[str] = set()
+    deduped: list[str] = []
+    for text in instances:
+        m = EXERCISE_NUMBER_RE.search(text)
+        key = m.group(1).lstrip("+-").lower() if m else None
+        if key is not None:
+            if key in seen_numbers:
+                continue
+            seen_numbers.add(key)
+        deduped.append(text)
+    return deduped
 
 
 def _exercise_number(source: str) -> str | None:
@@ -1001,52 +1478,139 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
     # "n'ajouter le ExerciseHit de titre que si la cellule code appariee est un
     # stub au sens de _is_stub_code" -- single gate, not conjunctive.
     paired_code_indices: set[int] = set()
+    #: #18146 deferred-unpaired bookkeeping: a numbered header whose forward
+    #: window was cut short by a nearer header cell is orphaned only if that
+    #: nearer header (transitively) finds no write-space either. GT-07 c25's
+    #: restated subjects are covered by c26/28/30's stubs (deferred -> 0);
+    #: CSK's three detached headings form a chain ending in a header with no
+    #: code cell at all (deferred -> all count, #15080 D01 acceptance 3).
+    deferred_unpaired: dict[int, int] = {}
+    blocker_of: dict[int, int] = {}
+    unpaired_header_cells: set[int] = set()
+    #: (#18741 PR C) Headers counted by the reading/external gates, by kind.
+    #: The deferred-chain resolution below consults it: in a reading section
+    #: (Audio 06-3), consecutive numbered headers block EACH OTHER (c12
+    #: blocked by c13, c13 by c14), so the upper chain members are deferred
+    #: and only the terminal reaches the gate -- a gated terminal covers its
+    #: chain exactly the way a stub-paired terminal does.
+    gated_kind: dict[int, str] = {}
+    #: (#18741 PR C) Reading-exercise scope: a notebook that declares its
+    #: exercises are reading exercises somewhere in its markdown. Precomputed
+    #: once -- the declaration lives in a SECTION header (Audio 06-3 c11),
+    #: not in each numbered exercise header below it.
+    reading_scope = any(
+        READING_EXERCISE_SECTION_RE.search(
+            "".join(c.get("source", []))
+        )
+        for c in cells
+        if c.get("cell_type") == "markdown"
+    )
     for idx in sorted(header_cell_indices):
         instance_count = header_instance_counts[idx]
         header_source = header_sources[idx]
         header_num = _exercise_number(header_source)
-        # Forward (common): the stub just below the header, within 3 cells.
-        forward_stub: int | None = None
-        forward_has_code_cell = False
-        for j in range(idx + 1, min(idx + 4, len(cells))):
-            jcell = cells[j]
-            if jcell.get("cell_type") != "code":
-                continue
-            forward_has_code_cell = True
-            j_source = "".join(jcell.get("source", []))
-            if _is_stub_code(j_source):
-                forward_stub = j
-                paired_code_indices.add(j)
-                break
-            break
-        # Backward (stub-then-header layout): the nearest preceding code cell,
-        # absorbed only when it is itself a stub. NUMBERED headers additionally
-        # require the stub to reference the SAME exercise number as the header
-        # (so a stub belonging to the *previous* numbered exercise in a
-        # sequential layout is never absorbed). NUMBERLESS headers pair to
-        # any stub (no number check possible); the pair is NOT deduplicated
-        # because the conservative policy on numberless references leaves both
-        # counted (test_stub_preceding_numberless_header_left_unpaired).
-        # Stub gate added in #12305, number-check loosening for numberless
-        # added in c.459 review feedback.
-        backward_stub: int | None = None
+        # ---- Backward candidates (#18146): the NEAREST preceding code cell
+        # within 3 cells, absorbed only when it is itself a stub. NUMBERED
+        # headers split candidates by strength: a stub referencing the SAME
+        # exercise number (the documented stub-then-statement layout, gated
+        # by number since c.459 so a stub of the PREVIOUS exercise is never
+        # absorbed), vs a NUMBERLESS stub that describes no exercise of its
+        # own -- no number AND no exercise word anywhere -- whose only
+        # identity is the header that follows it (PT_13 cells 40-45: ``# TODO
+        # etudiant : re-mesurer le biais 2 ...`` below the bold statement
+        # ``**Exercice 1 -- Reintroduire `/std` dans Dr. GRPO.**``). An
+        # already-paired stub is never re-absorbed. NUMBERLESS headers keep
+        # the pre-#18146 conservative policy: any nearest stub pairs but is
+        # NOT marked paired (pass 2 counts it too; residual double-count
+        # over under-count, test_stub_preceding_numberless_header_left_
+        # unpaired). Stub gate added in #12305.
+        backward_same_num: int | None = None
+        backward_undescribing: int | None = None
+        backward_any: int | None = None
         for j in range(idx - 1, max(idx - 4, -1), -1):
             jcell = cells[j]
             if jcell.get("cell_type") != "code":
                 continue
             j_source = "".join(jcell.get("source", []))
             if _is_stub_code(j_source):
+                j_num = _exercise_number(j_source)
                 if header_num is None:
-                    # Numberless header: any nearest stub qualifies; do NOT
-                    # mark it as paired (pass 2 will count it too -- the
-                    # conservative numberless policy leaves a residual
-                    # double-count rather than under-counting).
-                    backward_stub = j
-                elif _exercise_number(j_source) == header_num:
-                    # Numbered header: number must match; absorb the stub.
-                    backward_stub = j
-                    paired_code_indices.add(j)
+                    backward_any = j
+                elif j in paired_code_indices:
+                    pass  # already claimed by an earlier header
+                elif j_num == header_num:
+                    backward_same_num = j
+                elif j_num is None and not (
+                    _code_cell_mentions_exercise(j_source)
+                    or EXERCISE_WORD_RE.search(j_source)
+                    or EXERCISE_WORD_EN_RE.search(j_source)
+                ):
+                    backward_undescribing = j
             break  # nearest preceding code cell is the only candidate
+        # ---- Forward candidates: the first code cell within 3 cells below.
+        # The scan STOPS at an intervening header cell: when a grouped section
+        # cell lists `### 8.1 Exercice 1..3` AND the notebook repeats each
+        # title in its own cell directly above its stub (GameTheory-07 c25 vs
+        # c26/28/30), both header cells used to claim the same forward stub
+        # and the notebook rendered count=6 for three exercises. The NEARER
+        # header owns the territory down to its stub. Skipped entirely when a
+        # same-number backward candidate already committed (numbered headers)
+        # -- the stub above is this header's own.
+        forward_same_num: int | None = None
+        forward_generic: int | None = None
+        forward_has_code_cell = False
+        forward_blocked_by_header = False
+        if header_num is None or backward_same_num is None:
+            for j in range(idx + 1, min(idx + 4, len(cells))):
+                jcell = cells[j]
+                if jcell.get("cell_type") == "markdown" and j in header_cell_indices:
+                    forward_blocked_by_header = True
+                    blocker_of[idx] = j
+                    break
+                if jcell.get("cell_type") != "code":
+                    continue
+                forward_has_code_cell = True
+                j_source = "".join(jcell.get("source", []))
+                if _is_stub_code(j_source):
+                    if (
+                        header_num is not None
+                        and _exercise_number(j_source) == header_num
+                    ):
+                        forward_same_num = j
+                    if j not in paired_code_indices:
+                        forward_generic = j
+                    break
+                break
+        # ---- Commit by preference (#18146). NUMBERED headers prefer the
+        # candidate that MATCHES the exercise number in either direction
+        # (Lean-29: the Lean stub below carries ``-- Exercice N : ...`` and
+        # must pair its own header, not let a preceding undescribing example
+        # cell steal the pairing and leave the stub double-counted by pass 2),
+        # then the PT_13 undescribing-backward shape -- restricted to the
+        # DIRECTLY adjacent cell (idx-1), because a stub two-plus cells above
+        # is likelier the previous section's example (GT-17b c12 vs the
+        # grouped `### Exercices 4 et 5` header whose own stub sits below) --
+        # then the generic forward stub of the standard layout.
+        backward_stub: int | None = None
+        forward_stub: int | None = None
+        if header_num is None:
+            backward_stub = backward_any  # conservative: no pairing commit
+            if forward_generic is not None:
+                forward_stub = forward_generic
+                paired_code_indices.add(forward_generic)
+        else:
+            if backward_same_num is not None:
+                backward_stub = backward_same_num
+                paired_code_indices.add(backward_same_num)
+            elif forward_same_num is not None:
+                forward_stub = forward_same_num
+                paired_code_indices.add(forward_same_num)
+            elif backward_undescribing == idx - 1:
+                backward_stub = backward_undescribing
+                paired_code_indices.add(backward_undescribing)
+            elif forward_generic is not None:
+                forward_stub = forward_generic
+                paired_code_indices.add(forward_generic)
         # Only push markdown_header ExerciseHits when a stub was found in
         # either direction. Header-but-no-stub is the PR #12246 / GT-20 case:
         # we want the title silently dropped, not counted (and the fix also
@@ -1063,6 +1627,22 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
         # This preserves the pre-fix behavior on numberless cases (c.458-L1)
         # while still dropping the GT-20 numbered-header-with-solution case.
         if forward_stub is None and backward_stub is None:
+            if forward_blocked_by_header and (
+                header_num is not None or _first_title_is_plural(header_source)
+            ):
+                # Blocked by a NEARER header cell (#18146): the nearer header
+                # restates these subjects and owns their pairing. NUMBERED
+                # headers defer (orphaned only if the blocker chain ends with
+                # no write-space); a NUMBERLESS PLURAL-FIRST cell (a section
+                # TOC -- PT_10 c19 ``## 10. Exercices`` whose bold
+                # ``**Exercice A/B/C**`` sub-mentions restate c20/22/24) is
+                # silently dropped. A numberless SINGULAR-first cell keeps
+                # the conservative push: its stub may sit below the window
+                # (Video 03-2 c16 ``## Exercice : Pipeline Personnalisé``,
+                # stub 7 cells down).
+                if header_num is not None:
+                    deferred_unpaired[idx] = instance_count
+                continue
             if header_num is not None:
                 # NUMBERED header without a paired stub: NOT an exercise (a title
                 # whose paired cell is a complete solution or missing is dropped,
@@ -1073,8 +1653,53 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
                 # exercise at all" (R05b demo) and from "solved example" (R05,
                 # whose complete-solution cell follows the header) (#15080 D01,
                 # acceptance 3). The counter alone renders all three as 0.
+                if forward_blocked_by_header:
+                    # Window cut short by a NEARER header cell: defer. The
+                    # nearer header restates these subjects; they are orphaned
+                    # only if that nearer header itself finds no write-space
+                    # (resolved after the loop, blocker chain walk).
+                    deferred_unpaired[idx] = instance_count
+                    continue
+                # (#18741 PR C) Two strictly-evidenced exceptions before the
+                # drop: the exercise is real but its write-space is NOT a local
+                # code cell. A reading exercise (the notebook declares
+                # "exercices de lecture" -- the answer is prose, Audio 06-3) or
+                # an external-file exercise (the header names the lab source to
+                # complete, Orleans 01/02 -- the stub lives in the .csproj
+                # beside the notebook and no local stub can ever pair). Both
+                # gates require positive evidence; the generic drop rule below
+                # is unchanged for headers without it. Counted hits do NOT
+                # inflate unpaired_markdown_instances: their write-space
+                # exists, elsewhere.
+                if reading_scope:
+                    for _ in range(instance_count):
+                        result.exercises.append(
+                            ExerciseHit(
+                                cell_index=idx,
+                                cell_type="markdown",
+                                source=header_source,
+                                detected_by="reading_header",
+                            )
+                        )
+                    gated_kind[idx] = "reading_header"
+                    continue
+                if EXTERNAL_CS_PATH_RE.search(header_source) or (
+                    EXTERNAL_COMPLETE_MEMBER_RE.search(header_source)
+                ):
+                    for _ in range(instance_count):
+                        result.exercises.append(
+                            ExerciseHit(
+                                cell_index=idx,
+                                cell_type="markdown",
+                                source=header_source,
+                                detected_by="external_header",
+                            )
+                        )
+                    gated_kind[idx] = "external_header"
+                    continue
                 if not forward_has_code_cell:
                     result.unpaired_markdown_instances += instance_count
+                    unpaired_header_cells.add(idx)
                 continue
             # NUMBERLESS header without a paired stub: counted (conservative).
         for _ in range(instance_count):
@@ -1087,6 +1712,36 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
                 )
             )
 
+    # Deferred-unpaired resolution (#18146): walk each deferred header's
+    # blocker chain to its terminal header. The chain is orphaned iff the
+    # terminal header itself counted as unpaired (no write-space anywhere
+    # down the chain); a terminal that paired a stub -- or dropped to a
+    # complete-solution code cell -- covers every restatement above it.
+    for idx in sorted(deferred_unpaired):
+        count = deferred_unpaired[idx]
+        terminal = idx
+        seen: set[int] = set()
+        while terminal in deferred_unpaired and terminal not in seen:
+            seen.add(terminal)
+            terminal = blocker_of[terminal]
+        if terminal in unpaired_header_cells:
+            result.unpaired_markdown_instances += count
+            unpaired_header_cells.add(idx)
+        elif terminal in gated_kind:
+            # (#18741 PR C) The chain's terminal was counted by a
+            # reading/external gate: the deferred members above it are
+            # exercises of the same family (Audio 06-3 -- c12/c13 deferred
+            # behind their successors, terminal c14 reading-counted).
+            for _ in range(count):
+                result.exercises.append(
+                    ExerciseHit(
+                        cell_index=idx,
+                        cell_type="markdown",
+                        source=header_sources[idx],
+                        detected_by=gated_kind[terminal],
+                    )
+                )
+
     # Second pass: code-cell exercises with NO preceding markdown header.
     #
     # A stub cell qualifies when it MENTIONS an exercise and IS a stub. The
@@ -1096,7 +1751,7 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
     # exercise reference is NOT in a `#`/`//`/`--` comment -- e.g. a C#
     # `display("Exercice 2 a completer ...")` or Python `print("Exercice ...")
     # stub marker, or a stub whose `# Partie N` / `# Etape` header carries no
-    # "exercice" word at all but the cell prints one (SC-26-Final-Project
+    # "exercice" word at all but the cell prints one (SC-26-Final-Project-Python
     # Parties 2/3/4). Layer (2) is safe because pass-2 still requires
     # `_is_stub_code`, so a complete solution mentioning "exercice" in prose is
     # never counted; and `paired_code_indices` (built in the unchanged

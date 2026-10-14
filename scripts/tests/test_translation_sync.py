@@ -575,3 +575,127 @@ def test_check_csv_fr_contam_lazy_text_load_no_false_positive(tmp_path):
     ])
     anomalies = t2.check_csv(csv, repo)
     assert all(a["verdict"] != "FR_CONTAM" for a in anomalies)
+
+
+# --------------------------------------------------------------------------- #
+#  PIVOT_HASH_MISMATCH (#17677)                                                #
+#                                                                              #
+#  Invariant de construction du pivot (T1) : hash_<src_lang> == src_hash ==    #
+#  cell_hash(text_<src_lang>). Aucun verdict ne couvrait hash_fr (SRC_DRIFT    #
+#  compare src_hash a la source ; la boucle TARGET_LANGS saute le pivot).      #
+#  Cas fondateur #17649 : un resync manuel avait ecrit dans hash_fr le hash    #
+#  du text_en de la meme ligne (colonnes decalees) et passait tous les checks. #
+# --------------------------------------------------------------------------- #
+
+
+def test_pivot_mismatch_shifted_columns_founding_case(tmp_path):
+    """hash_fr porte le hash du text_en (decalage d'un cran, forme #17649).
+
+    src_hash est CORRECT (== hash de la source notebook) -> SRC_DRIFT vert ;
+    seul le champ que personne ne lisait etait faux. C'est exactement la
+    matrice de l'incident fondateur.
+    """
+    repo = tmp_path
+    src_text = "## 1. Exploration des donnees sectorielles"
+    en_text = "## 1. Sector Data Exploration"
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", src_text)])
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", t2.cell_hash(src_text),  # src_hash correct
+             **{"text_fr": src_text,
+                "hash_fr": t2.cell_hash(en_text),  # decale : hash du text_en
+                "text_en": en_text,
+                "hash_en": t2.cell_hash("old english text")})
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    piv = [a for a in anomalies if a["verdict"] == "PIVOT_HASH_MISMATCH"]
+    assert len(piv) == 1
+    assert "hash_fr" in piv[0]["detail"]
+    # La source est in sync : pas de SRC_DRIFT qui viendrait brouiller le signal.
+    assert all(a["verdict"] != "SRC_DRIFT" for a in anomalies)
+
+
+def test_pivot_invariant_respected_no_anomaly(tmp_path):
+    """hash_fr == src_hash == cell_hash(text_fr) -> aucune anomalie pivot."""
+    repo = tmp_path
+    src_text = "Texte pivot coherent"
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", src_text)])
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", t2.cell_hash(src_text),
+             **{"text_fr": src_text, "hash_fr": t2.cell_hash(src_text)})
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    assert all(a["verdict"] != "PIVOT_HASH_MISMATCH" for a in anomalies)
+
+
+def test_pivot_text_incoherent_with_declared_hash(tmp_path):
+    """Les deux hash coincident entre eux mais text_fr ne hash pas vers eux
+    (texte pivot edite sans mise a jour des hashes) -> PIVOT_HASH_MISMATCH."""
+    repo = tmp_path
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", "source actuelle")])
+    stale = "ancien texte pivot jamais reflechi dans les hashes"
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", t2.cell_hash("hash fantome"),
+             **{"text_fr": stale, "hash_fr": t2.cell_hash("hash fantome")})
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    piv = [a for a in anomalies if a["verdict"] == "PIVOT_HASH_MISMATCH"]
+    assert len(piv) == 1
+    assert f"cell_hash(text_fr)" in piv[0]["detail"]
+
+
+def test_pivot_check_is_row_internal_notebook_absent(tmp_path):
+    """La verification pivot ne depend PAS du notebook : une ligne corrompue
+    dont le notebook est absent reste signalee (coexiste avec ORPHAN_ROW)."""
+    repo = tmp_path  # aucun notebook ecrit
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", t2.cell_hash("source"),
+             **{"text_fr": "source", "hash_fr": t2.cell_hash("autre chose")})
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    verdicts = [a["verdict"] for a in anomalies]
+    assert "PIVOT_HASH_MISMATCH" in verdicts
+    assert "ORPHAN_ROW" in verdicts
+
+
+def test_pivot_empty_hash_pre_t3_no_anomaly(tmp_path):
+    """hash_fr vide (etat pre-T1 legacy) -> lenient, pas d'anomalie pivot."""
+    repo = tmp_path
+    src_text = "cellule sans hash depose"
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", src_text)])
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", t2.cell_hash(src_text),
+             **{"text_fr": src_text})  # hash_fr reste vide
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    assert all(a["verdict"] != "PIVOT_HASH_MISMATCH" for a in anomalies)
+
+
+def test_pivot_mismatch_coexists_with_src_drift(tmp_path):
+    """Une ligne peut etre a la fois SRC_DRIFT (source bougee) et pivot-corrompue :
+    les deux verdicts sont complementaires, pas exclusifs."""
+    repo = tmp_path
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", "source nouvelle")])
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", t2.cell_hash("source ancienne"),
+             **{"text_fr": "source ancienne",
+                "hash_fr": t2.cell_hash("decale encore")})  # != src_hash
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    verdicts = [a["verdict"] for a in anomalies]
+    assert "SRC_DRIFT" in verdicts
+    assert "PIVOT_HASH_MISMATCH" in verdicts
+
+
+def test_roundtrip_extract_then_check_pivot_clean(tmp_path):
+    """Un CSV fraichement extrait par T1 ne produit AUCUN PIVOT_HASH_MISMATCH :
+    l'invariant T1 (hash_{src_lang} == src_hash == cell_hash(text)) tient par
+    construction, le nouveau verdict ne doit pas le contredire."""
+    repo = tmp_path
+    nb = _write_notebook(repo / "S" / "Foo.ipynb", [
+        _make_cell("c1", "markdown", "# Titre avec accents éàü"),
+        _make_cell("c2", "code", "print('bonjour')"),
+    ])
+    rows = t1.extract_notebook(nb, repo, src_lang="fr")
+    csv = _write_csv(tmp_path / "drift.csv", rows)
+    anomalies = t2.check_csv(csv, repo)
+    assert all(a["verdict"] != "PIVOT_HASH_MISMATCH" for a in anomalies)

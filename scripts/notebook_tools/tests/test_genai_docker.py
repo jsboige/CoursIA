@@ -36,7 +36,7 @@ _mock_services = {
         "gpu_id": 0,
         "vram_required": "8GB",
         "auth_type": "bearer",
-        "auth_env_var": "COMFYUI_BEARER_TOKEN",
+        "auth_env_var": "COMFYUI_API_TOKEN",
     },
     "tts-api": {
         "container_name": "test-tts",
@@ -55,7 +55,7 @@ _mock_config = types.SimpleNamespace(
     GPU_PROFILES={},
     GROUP_GPU_PROFILE={},
     load_env=lambda: {
-        "COMFYUI_BEARER_TOKEN": "test-token-123",
+        "COMFYUI_API_TOKEN": "test-token-123",
         "BASIC_USER": "admin",
         "BASIC_PASS": "changeme",
     },

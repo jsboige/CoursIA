@@ -25,14 +25,13 @@
       "Lean -- SymbolicAI/Lean (11)",
       "Infer -- Probas/Infer (10)",
       "ICT -- IIT/ICT-Series (9)",
-      "DecPyMC -- Probas/DecisionTheory/PyMC (9)",
+      "DecPyMC -- Probas/DecisionTheory/DecPyMC (9)",
       "Planners -- SymbolicAI/Planners/02-Classical (8)",
       "Planners -- SymbolicAI/Planners/01-Foundation (6)",
       "Planners -- SymbolicAI/Planners/03-Advanced (6)",
       "SC -- SymbolicAI/SmartContracts/02-Solidity-Advanced (5)",
       "SC -- SymbolicAI/SmartContracts/00-Foundations (4)",
       "SC -- SymbolicAI/SmartContracts/01-Solidity-Foundation (4)",
-      "DoWhy -- Probas/DecisionTheory/Causal-Bridges (2)",
       "App -- Search/Applications/Hybrid (2)",
       "RL -- RL (1 -- a UN fichier pres ; de toutes les familles, la plus proche d'une adoption)",
       "Planners -- SymbolicAI/Planners/00-Environment (1)"
@@ -62,7 +61,7 @@
     {
       "series": "PyMC",
       "dir": "MyIA.AI.Notebooks/Probas/PyMC",
-      "note": "9 noms zero-pades, 10 numeros a deux chiffres. A ne pas confondre avec Probas/DecisionTheory/PyMC (DecPyMC), famille distincte."
+      "note": "9 noms zero-pades, 10 numeros a deux chiffres. A ne pas confondre avec Probas/DecisionTheory/DecPyMC (DecPyMC), famille distincte."
     },
     {
       "series": "Search",

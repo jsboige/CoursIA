@@ -376,8 +376,8 @@ def python_twin_candidates(csharp_path: str, known_paths: set[str]) -> list[str]
     Le depot porte TROIS conventions de nommage, et un scan qui n'en teste
     qu'une classe a tort en « C#-only » tout ce qui suit les deux autres :
 
-        Tweety-10-MLN-Csharp.ipynb      <-> Tweety-10-MLN.ipynb          (suffixe retire)
-        Sudoku-07-Norvig-Csharp.ipynb    <-> Sudoku-07-Norvig-Python.ipynb (suffixe substitue)
+        Tweety-10-MLN-CSharp.ipynb      <-> Tweety-10-MLN-Python.ipynb          (suffixe retire)
+        Sudoku-07-Norvig-CSharp.ipynb    <-> Sudoku-07-Norvig-Python.ipynb (suffixe substitue)
         SW-10-CSharp-RDFStar.ipynb      <-> SW-10-Python-RDFStar.ipynb   (position mediale)
 
     Fonction pure : `known_paths` est l'univers des chemins connus (typiquement
@@ -934,6 +934,13 @@ def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
         recorded divergente = MISMATCH (le sha a ete ecrit a la main, pas via
         --update, ou le carnet a bouge sans rebaseline).
 
+    Tolerance metadata-only (#20228) : un blob SHA qui a bouge sans que le
+    contenu (cellules + outputs) ait bouge -- tampon `nb["metadata"]` pose ou
+    retire -- n'est PAS rapporte. `--update` refuse ce cas comme no-op par
+    design (#9399 critere 2), donc le rapporter rendait l'avertissement
+    inextinguible : les deux modes du meme outil se contredisaient. Le side
+    concerne est liste dans `metadata_only_sha` (tracable, non bloquant).
+
     Migration progressive : les paires non encore re-auditees post-volet-(c)
     ont `content_*_sha: None` ; on les SAUTE (pas un mismatch, juste
     « pas encore migre »). Meme politique que les tests rename-aware (#9473).
@@ -964,16 +971,45 @@ def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
     rec_cpy = audit.get("content_python_sha")
     rec_ccs = audit.get("content_csharp_sha")
 
+    # Drift metadata-only (#20228) : le blob SHA a bouge -- un tampon
+    # `nb["metadata"]` (kernelspec, cost, papermill) pose ou retire -- sans que
+    # le contenu pedagogique (cellules + outputs) ait bouge. Le design exige que
+    # ce cas NE fasse PAS rougir le gate (#9399 critere 2 ; cf docstring de
+    # `_content_sha` : « un tampon `metadata.cost` seul ne porte aucune
+    # divergence pedagogique et ne doit PAS faire rougir le gate », faux
+    # positifs Sudoku-08/14 BDD du 2026-08-04). Coherence avec `--update`, qui
+    # le refuse deja comme no-op : sans cette tolerance, les deux modes se
+    # contredisaient -- `verify` disait « incoherent » quand `update` disait
+    # « rien a faire », et AUCUN geste ne pouvait eteindre l'avertissement.
+    #
+    # Un orphelin par squash reste rapporte : son blob n'est plus accessible
+    # depuis HEAD, il n'est donc pas un drift metadata-only et il EST
+    # rebaselinable (#11919).
+    def _metadata_only(rec_content, cur_content, rec_blob):
+        return (rec_content is not None and rec_content == cur_content
+                and rec_blob is not None
+                and _blob_ancestor_in(repo_root, rec_blob))
+
+    py_meta_only = _metadata_only(rec_cpy, cur_cpy, rec_py)
+    cs_meta_only = _metadata_only(rec_ccs, cur_ccs, rec_cs)
+
     mismatches = []
-    # Comparaison sur les blob SHA : compares stricte.
+    metadata_only_sha = []
+    # Comparaison sur les blob SHA : compares stricte, sauf drift metadata-only.
     if rec_py is not None and rec_py != cur_py:
-        mismatches.append(
-            f"python_sha: recorded={rec_py[:12]} calculated={cur_py[:12]}"
-        )
+        if py_meta_only:
+            metadata_only_sha.append("python_sha")
+        else:
+            mismatches.append(
+                f"python_sha: recorded={rec_py[:12]} calculated={cur_py[:12]}"
+            )
     if rec_cs is not None and rec_cs != cur_cs:
-        mismatches.append(
-            f"csharp_sha: recorded={rec_cs[:12]} calculated={cur_cs[:12]}"
-        )
+        if cs_meta_only:
+            metadata_only_sha.append("csharp_sha")
+        else:
+            mismatches.append(
+                f"csharp_sha: recorded={rec_cs[:12]} calculated={cur_cs[:12]}"
+            )
     # Comparaison sur les content_sha : on SKIP si recorded=None (migration
     # progressive post-volet-(c) ; les paires legacy n'ont pas encore ces
     # champs). Une comparaison `None != cur_cpy` serait un faux positif de
@@ -994,6 +1030,7 @@ def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
         "parity_level": pair.get("parity_level", "?"),
         "status": "MISMATCH" if mismatches else "OK",
         "mismatches": mismatches,
+        "metadata_only_sha": metadata_only_sha,
         "current_python_sha": cur_py,
         "current_csharp_sha": cur_cs,
         "current_content_python_sha": cur_cpy,
@@ -1488,12 +1525,26 @@ def _write_audit_file(registry_dir: Path, name: str, audit: dict,
     return path
 
 
+def audit_index(filename: str) -> str:
+    """Cle de tri d'un fichier d'audit : le prefixe ``NNNN`` avant le premier
+    tiret (``0007-2026-09-08-myia-po-2024-CoursIA.yaml`` -> ``0007``).
+
+    C'EST LA GRANDEUR QUE LE GARDE D'INTEGRITE TESTE : `idx = name.split("-",
+    1)[0]`, unicite par paire (`test_twin_registry_integrity.py`,
+    `test_audit_index_unique_and_no_identical_duplicates_per_pair`). Toute
+    lecture qui doit predire ce verdict passe par ICI -- une derivation
+    reecrite ailleurs finit par diverger de la definition testee, et un
+    instrument qui mesure une autre grandeur que le garde rend un vert faux.
+    """
+    return str(filename).split("-", 1)[0]
+
+
 def _next_audit_index(d: Path) -> int:
     """Max des index NNNN existants + 1 -- jamais len()+1 : un trou ou un
     doublon herite ferait re-emettre un index deja pris (l'index est la cle
     de tri du journal, #14911/#15345)."""
-    idxs = [int(f.name.split("-", 1)[0]) for f in d.glob("*.yaml")
-            if f.name.split("-", 1)[0].isdigit()]
+    idxs = [int(audit_index(f.name)) for f in d.glob("*.yaml")
+            if audit_index(f.name).isdigit()]
     return max(idxs, default=0) + 1
 
 

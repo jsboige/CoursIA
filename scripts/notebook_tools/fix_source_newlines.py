@@ -12,8 +12,18 @@ Detected by ``detect_markdown_rendering.py`` rule
 
 2. **Multi-element list, some elements lack trailing '\\n'**. Jupyter joins
    source lists with no separator, so an element without a trailing newline
-   fuses into the next line. The fix ensures every non-last element ends
-   with ``'\\n'``.
+   fuses into the next line. The fix restores ``'\\n'`` at the GENUINELY-glued
+   boundaries only -- those where ``''.join`` fuses two tokens with no
+   separator at all. A boundary that already renders correctly (a space on
+   either side, or a ``'\\n'`` on either side) is left untouched: appending
+   ``'\\n'`` there DOUBLES the break (issue #17550). Same predicate as
+   ``notebook_tools._fix_source_newlines`` (#5094, cause #5005); this script
+   kept the older blanket form until it was propagated here.
+
+   A list whose every non-last element is at most one character is not
+   line-structured at all -- it is a cell deserialised character by character.
+   No boundary predicate repairs it ('\\n' between every character), so it is
+   reported as ``exploded_characters`` and NOT rewritten.
 
 The split for case 1 is heuristic: it looks for the first body marker
 (``' : '``, ``' **'``, ``' - '``, ``' 1. '``, ``' > '``) that follows the
@@ -45,6 +55,48 @@ from pathlib import Path
 # --- detector parity: what triggers a defect ---
 _COLLAPSED_HEADING_START_RE = re.compile(r"^\s{0,3}#{1,6}\s+\S")
 _COLLAPSED_SINGLE_MIN_LEN = 80
+
+_WS = (" ", "\t")
+
+#: En dessous de ce nombre d'elements, une liste de lignes d'un seul caractere
+#: reste plausible ecrite a la main ; au-dessus, c'est une cellule deserialisee
+#: caractere par caractere (mesure repo du 2026-09-23 : 820 elements sur 1384
+#: notebooks balayes, issue #17550).
+EXPLODED_MIN_ELEMENTS = 20
+
+
+def _genuinely_glued(source):
+    """Indices k ou ``''.join`` colle ``source[k]`` et ``source[k+1]`` sans separateur.
+
+    Predicat de ``notebook_tools._fix_source_newlines`` (#5094) : une frontiere
+    n'est fautive que si ``source[k]`` ne finit ni par '\\n' ni par une espace,
+    ET si ``source[k+1]`` ne commence ni par '\\n' ni par une espace. Un '\\n'
+    d'un cote ou une espace de l'autre rend la frontiere correcte a
+    l'affichage : y ajouter '\\n' double le saut (issue #17550).
+
+    Ajout mesure ici : le saut se materialise comme terminateur de la ligne de
+    GAUCHE, donc un element vide n'est jamais un terminateur. Sans cette
+    condition, ``''`` se change en '\\n' et fabrique une ligne blanche qui
+    n'existait pas au rendu (4 cellules du depot, +7 blanches).
+    """
+    return [
+        k for k in range(len(source) - 1)
+        if source[k] and not source[k].endswith("\n") and not source[k].endswith(_WS)
+        and not source[k + 1].startswith("\n") and not source[k + 1].startswith(_WS)
+    ]
+
+
+def is_exploded_character_list(source):
+    """Vrai si la liste n'est PAS structuree en lignes : toutes <= 1 caractere.
+
+    Mesure repo (2026-09-23, 1384 notebooks) : un seul cas, 820 elements
+    ``['#', ' ', 'P', 'a', 'r', ...]``. Y ajouter '\\n' ecrit une ligne par
+    caractere ; le predicat chirurgical en modifie encore 623 des 820. Un tel
+    motif n'est pas reecrit.
+    """
+    if not isinstance(source, list) or len(source) <= EXPLODED_MIN_ELEMENTS:
+        return False
+    return all(len(e.rstrip("\n")) <= 1 for e in source[:-1])
 
 
 # --- body markers used to split a single-element collapsed heading cell ---
@@ -132,23 +184,28 @@ def find_source_newline_defects(nb):
             })
         else:
             # Case 2: multi-element list, some elements lack trailing '\n'
-            nb_breaks = sum(1 for s in src if s.endswith("\n"))
-            nonblank = [s for s in src if s.strip()]
-            if nb_breaks < len(src) - 1 and len("".join(src).strip()) >= 40:
-                # Build after: ensure all non-last elements end with '\n'
-                after = []
-                for s in src[:-1]:
-                    if s.endswith("\n"):
-                        after.append(s)
-                    else:
-                        after.append(s + "\n")
-                after.append(src[-1])
+            if is_exploded_character_list(src):
                 defects.append({
                     "cell_index": i,
-                    "kind": "multi_missing_newlines",
+                    "kind": "exploded_characters",
                     "before": list(src),
-                    "after": after,
+                    "after": None,
                 })
+                continue
+            nb_breaks = sum(1 for s in src if s.endswith("\n"))
+            if nb_breaks < len(src) - 1 and len("".join(src).strip()) >= 40:
+                # Restore '\n' at the GENUINELY-glued boundaries only: appending
+                # it where a separator already renders doubles the break (#17550).
+                after = list(src)
+                for k in _genuinely_glued(src):
+                    after[k] = after[k] + "\n"
+                if after != src:
+                    defects.append({
+                        "cell_index": i,
+                        "kind": "multi_missing_newlines",
+                        "before": list(src),
+                        "after": after,
+                    })
     return defects
 
 
@@ -197,6 +254,9 @@ def _display_defect(d, nb_path):
         return f"{nb_path}:cell[{cell}] single-element list, {before_len} chars -> split ({len(d['after'][0])} + {len(d['after'][1])})"
     if kind == "multi_missing_newlines":
         return f"{nb_path}:cell[{cell}] multi-element list, {len(d['before'])} elements, {sum(1 for s in d['before'] if s.endswith(chr(10)))} end with '\\n' (expected {len(d['before']) - 1})"
+    if kind == "exploded_characters":
+        return (f"{nb_path}:cell[{cell}] NO_AUTO_FIX: {len(d['before'])} elements of at most "
+                f"one character (cell deserialised character by character)")
     return f"{nb_path}:cell[{cell}] {kind}"
 
 

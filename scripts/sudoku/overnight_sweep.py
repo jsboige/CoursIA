@@ -5,6 +5,7 @@ Automated experiments to push accuracy limits.
 
 Phase 1: Architecture sweep on diverse_200k
   - h128/s16, h192/s16, h256/s16, h128/s24, h192/s24, h256/s24
+  - diverse_200k.npz missing -> HF 200k fallback instead of abort (#16795)
 Phase 2: Data experiments with best architecture
   - HF 1M, combined diverse+generated
 Phase 3: Iterative resolution tests on top models
@@ -79,6 +80,64 @@ def split_data(puzzles, solutions, train_frac=0.7, val_frac=0.15, seed=42):
     )
 
 
+def load_experiment_data(data_src):
+    """Resolve a data_source label to (puzzles, solutions, note).
+
+    note is None when the canonical cache/inline data was used, or a short
+    string describing a fallback substitution (recorded in the experiment
+    result so the JSON stays honest about what actually trained).
+    """
+    if data_src == 'diverse_200k':
+        puzzles, solutions = load_npz('diverse_200k.npz')
+        if puzzles is not None:
+            return puzzles, solutions, None
+        # diverse_200k.npz is machine-local (generated offline, gitignored);
+        # on a fresh machine fall back to a HF 200k slice instead of aborting
+        # the whole sweep (#16795 voie 1). load_sudoku_dataset caches it under
+        # its own puzzles_hf_200000.npz -- the local diverse set is never
+        # silently replaced.
+        print("  diverse_200k.npz missing -- falling back to HF 200k slice")
+        puzzles, solutions = load_sudoku_dataset(n_total=200_000)
+        return puzzles, solutions, 'HF 200k fallback (diverse_200k.npz absent)'
+    if data_src == 'hf_1m':
+        puzzles, solutions = load_npz('puzzles_hf_1000000.npz')
+        if puzzles is not None:
+            return puzzles, solutions, None
+        print("  Downloading HF 1M...")
+        puzzles, solutions = load_sudoku_dataset(n_total=1_000_000)
+        return puzzles, solutions, None
+    if data_src == 'combined_500k':
+        puzzles, solutions = load_npz('combined_500k.npz')
+        if puzzles is not None:
+            return puzzles, solutions, None
+        print("  Generating combined dataset...")
+        div_p, div_s = load_npz('diverse_200k.npz')
+        if div_p is None:
+            raise FileNotFoundError("diverse_200k.npz not found for combined")
+        gen_p, gen_s = generate_puzzles(300_000, n_empty_range=(25, 58), seed=12345)
+        puzzles = np.concatenate([div_p, gen_p])
+        solutions = np.concatenate([div_s, gen_s])
+        np.savez_compressed(
+            os.path.join(SAVE_DIR, 'data_cache', 'combined_500k.npz'),
+            puzzles=puzzles, solutions=solutions,
+        )
+        print(f"  Saved combined_500k: {len(puzzles):,} puzzles")
+        return puzzles, solutions, None
+    if data_src == 'generated_500k':
+        puzzles, solutions = load_npz('generated_500k.npz')
+        if puzzles is not None:
+            return puzzles, solutions, None
+        print("  Generating 500K diverse puzzles...")
+        puzzles, solutions = generate_puzzles(500_000, n_empty_range=(20, 58), seed=54321)
+        np.savez_compressed(
+            os.path.join(SAVE_DIR, 'data_cache', 'generated_500k.npz'),
+            puzzles=puzzles, solutions=solutions,
+        )
+        print(f"  Saved generated_500k: {len(puzzles):,} puzzles")
+        return puzzles, solutions, None
+    raise ValueError(f"Unknown data source: {data_src}")
+
+
 def run_experiment(config, results):
     name = config['name']
 
@@ -103,43 +162,9 @@ def run_experiment(config, results):
 
     try:
         # Load data
-        data_src = config['data_source']
-        if data_src == 'diverse_200k':
-            puzzles, solutions = load_npz('diverse_200k.npz')
-            if puzzles is None:
-                raise FileNotFoundError("diverse_200k.npz not found")
-        elif data_src == 'hf_1m':
-            puzzles, solutions = load_npz('puzzles_hf_1000000.npz')
-            if puzzles is None:
-                print("  Downloading HF 1M...")
-                puzzles, solutions = load_sudoku_dataset(n_total=1_000_000)
-        elif data_src == 'combined_500k':
-            puzzles, solutions = load_npz('combined_500k.npz')
-            if puzzles is None:
-                print("  Generating combined dataset...")
-                div_p, div_s = load_npz('diverse_200k.npz')
-                if div_p is None:
-                    raise FileNotFoundError("diverse_200k.npz not found for combined")
-                gen_p, gen_s = generate_puzzles(300_000, n_empty_range=(25, 58), seed=12345)
-                puzzles = np.concatenate([div_p, gen_p])
-                solutions = np.concatenate([div_s, gen_s])
-                np.savez_compressed(
-                    os.path.join(SAVE_DIR, 'data_cache', 'combined_500k.npz'),
-                    puzzles=puzzles, solutions=solutions,
-                )
-                print(f"  Saved combined_500k: {len(puzzles):,} puzzles")
-        elif data_src == 'generated_500k':
-            puzzles, solutions = load_npz('generated_500k.npz')
-            if puzzles is None:
-                print("  Generating 500K diverse puzzles...")
-                puzzles, solutions = generate_puzzles(500_000, n_empty_range=(20, 58), seed=54321)
-                np.savez_compressed(
-                    os.path.join(SAVE_DIR, 'data_cache', 'generated_500k.npz'),
-                    puzzles=puzzles, solutions=solutions,
-                )
-                print(f"  Saved generated_500k: {len(puzzles):,} puzzles")
-        else:
-            raise ValueError(f"Unknown data source: {data_src}")
+        puzzles, solutions, data_note = load_experiment_data(config['data_source'])
+        if data_note:
+            exp_result['config'] = {**config, 'data_note': data_note}
 
         # Split
         train_p, train_s, val_p, val_s, test_p, test_s = split_data(

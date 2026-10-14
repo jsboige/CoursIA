@@ -1,6 +1,6 @@
 # QuantConnect Algorithmic Trading Projects
 
-**112 projets** de trading algorithmique sur QuantConnect Cloud. Chaque stratégie illustre un concept pédagogique ; les performances varient volontairement pour montrer ce qui survive au backtest réaliste.
+**Catalogue de projets** de trading algorithmique sur QuantConnect Cloud. Chaque stratégie illustre un concept pédagogique ; les performances varient volontairement pour montrer ce qui survive au backtest réaliste. Le compte exact et le statut de chaque dossier sont portés par le catalogue régénéré (`CATALOG-STATUS`) et par `STRATEGIES_DETAIL.md`.
 
 > **Visiteur ?** Lire le [Quick Tour](../QUICK_TOUR.md) (2 min) pour comprendre l'ensemble.
 
@@ -57,6 +57,36 @@ Références avancées clonées depuis la QC Cloud Library (avril 2026). Top per
 
 Voir [STRATEGIES_DETAIL.md](STRATEGIES_DETAIL.md#qc-strategy-library-clones-avance) pour le catalogue complet.
 
+### Livrables en attente de classement (présents sur disque, non encore départis par robustesse)
+
+Dossiers de `projects/` livrés par les lanes de recherche mais **sans verdict de backtest classant** à ce jour : ils n'entrent dans aucune des sections « Robuste / Historique / Exploratoire » ci-dessus — qui exigent un Sharpe vérifié — et sont listés ici pour que **chaque dossier du disque soit joignable depuis ce catalogue** (critère d'audit #17526). Les évaluations sous frais et le classement suivent les campagnes de backtest ; la description est celle du dossier lui-même.
+
+**Évaluations de stratégies publiques ou d'articles de recherche** :
+
+- [BTC-ETH-Rotation](BTC-ETH-Rotation/) — rotation crypto BTC/ETH.
+- [BitcoinRegimeGate-QC](BitcoinRegimeGate-QC/) — distillation de l'article QC Research « Bitcoin Regime Signal for Growth Equities » (Derek Melchin, août 2026).
+- [CAPMAlphaRankingDow30-QC](CAPMAlphaRankingDow30-QC/) — classement par alpha CAPM des composantes du Dow Jones.
+- [Crypto-Momentum-TopN](Crypto-Momentum-TopN/) — momentum Top-N sur un panier de 11 cryptomonnaies en USD.
+- [FourSleeve774](FourSleeve774/) — évaluation sous frais de courtier de la stratégie publique 774 « Four-Sleeve ».
+- [IchimokuEnergySector-QC](IchimokuEnergySector-QC/) — portage QC Cloud de l'article de recherche 9031 « Ichimoku Clouds In The Energy Sector ».
+- [Markov-Regime-Detection-Equity-Options](Markov-Regime-Detection-Equity-Options/) — détection de régime markovien, actions US (SPY) et options sur action.
+- [Markov-Regime-Detection-Index-Options](Markov-Regime-Detection-Index-Options/) — détection de régime markovien, indice S&P 500 (SPX) et options sur indice.
+- [MultiHorizonMomentum676](MultiHorizonMomentum676/) — évaluation sous frais de courtier de la stratégie publique 676 « Multi-Horizon ETF Momentum ».
+- [Paradox46VolScaledMomentum](Paradox46VolScaledMomentum/) — momentum vol-scalé sur ETFs US (indices + secteurs, versions levier x3 et équivalents 1x).
+- [SplitEventsLongOnly](SplitEventsLongOnly/) — projet d'évaluation dérivé de [Positive-Negative-Splits-ML](Positive-Negative-Splits-ML/).
+- [Stoploss-Benchmark-FixedPercentage](Stoploss-Benchmark-FixedPercentage/) — benchmark stop-loss pourcentage fixe (KO).
+- [Stoploss-Put-Hedge](Stoploss-Put-Hedge/) — couverture par puts hebdomadaires (actions US KO + options KO).
+- [ThreeZoneSPYDrawdownRotation](ThreeZoneSPYDrawdownRotation/) — évaluation sous frais IBKR de la stratégie publique 781 « Three-Zone SPY Drawdown Rotation ».
+
+**Dossiers d'appui (benchmarks, corrélations, documentation interne)** — compagnons des évaluations ci-dessus, pas des stratégies autonomes :
+
+- [FourSleeve774Benchmarks](FourSleeve774Benchmarks/) — benchmarks de frais pour l'évaluation 774.
+- [Paradox46Benchmarks](Paradox46Benchmarks/) — benchmarks de l'évaluation Paradox46.
+- [Paradox46Correlation](Paradox46Correlation/) — corrélations de l'évaluation Paradox46.
+- [ThreeZone781Benchmarks](ThreeZone781Benchmarks/) — benchmarks de comparaison pour l'évaluation 781.
+- [ThreeZone781Correlation](ThreeZone781Correlation/) — corrélations hebdomadaires entre la stratégie 781 réimplémentée et ses références.
+- [_docs](_docs/) — documentation interne de la zone projets (backlog d'optimisation, audits, analyses de régime).
+
 ---
 
 ## État vérifié sous frais réels (#1630, 2018-2025)
@@ -80,6 +110,8 @@ Voir [STRATEGIES_DETAIL.md](STRATEGIES_DETAIL.md#qc-strategy-library-clones-avan
 | composite-c2-equityfactor | **0.574** | 25.8% | **Constitution la plus robuste** (25 actions factor-diversifiées) ; tient juste au-dessus du seuil |
 
 > **TrendFollowing** (catalogue 1.072) n'est **pas reproductible** depuis le `main.py` du dépôt : le baseline-clone (2015-2024, IBKR) donne un Sharpe bien inférieur (~0.36-0.41, PSR < 9%). Le 1.072 provient d'un état du code cloud antérieur — à citer avec ce caveat (diagnostic finding #18).
+
+> **Framework_Composite_TrendWeather** (catalogue 1.155) se reproduit sur sa fenêtre : QC Cloud rend 1,15 sur 2015-01-01 → 2025-12-31 (#19393). Mais sa liste de 15 titres a été écrite en 2026 et porte une information que l'algorithme ne pouvait pas avoir. Avec les 15 plus grandes capitalisations connues à chaque date, le verdict préinscrit est `NO BEATS` contre SPY et 60/40 : voir [TrendWeatherPointInTime](TrendWeatherPointInTime/).
 
 ### Le discriminateur (leçon durable)
 
@@ -110,7 +142,7 @@ MonProjet/
 
 ### Ce que vous avez appris
 
-Ce catalogue de **112 projets** est un **zoo de stratégies backtestées**, organisé non pas par thème mais par **robustesse** (Robuste / Historique / Exploratoire). La classification elle-même est la leçon :
+Ce catalogue est un **zoo de stratégies backtestées**, organisé non pas par thème mais par **robustesse** (Robuste / Historique / Exploratoire). Le compte exact et la classification à jour sont portés par `STRATEGIES_DETAIL.md` (catalogue complémentaire inclus). La classification elle-même est la leçon :
 
 - **La robustesse prime sur le Sharpe brut** : une stratégie à Sharpe 1.6 qui s'effondre hors-échantillon vaut moins qu'une stratégie à Sharpe 0.6 stable à travers les régimes. Le label *Robuste* (> 0.5 soutenu) est la barre pédagogique, pas le chiffre spectaculaire.
 - **Les contre-exemples sont aussi importants que les succès** : les stratégies *Exploratoire* (Sharpe < 0) et *Historique* (0-0.5) sont conservées **délibérément** pour montrer *ce qui ne marche pas* et pourquoi — PairsTrading sur ETF corrélés, ForexCarry, MeanReversion naïf. On apprend autant d'un edge négatif bien diagnostiqué que d'un edge positif.
@@ -125,7 +157,7 @@ Le fil rouge : **chaque projet est reproductible** — `main.py` (ou `Main.cs`) 
 3. **Consulter le détail** : `STRATEGIES_DETAIL.md` donne le contexte complet de chaque stratégie (catégorie, ML/DL/RL, clones QC Library).
 4. **Reproduire sur QC Cloud** : créer un projet, copier le `main.py`, lancer le backtest, et comparer vos métriques au tableau ci-dessus.
 5. **Étendre un projet Robuste** : choisir une stratégie *Robuste* (ex. `RegimeSwitching`, `SectorMomentum`) et itérer — changer l'univers, ajouter un filtre de risque, tester la sensibilité aux coûts de transaction.
-6. **Voir les leçons transversales** : `docs/qc/quantconnect.md` recense les 20 patterns confirmés et les anti-patterns observés à travers ces 112 projets.
+6. **Voir les leçons transversales** : `docs/qc/quantconnect.md` recense les 20 patterns confirmés et les anti-patterns observés à travers l'ensemble du catalogue (cf. `STRATEGIES_DETAIL.md` pour le détail projet par projet).
 
 > **Rappel honnête** : un Sharpe de backtest, même *Robuste*, n'est pas une garantie live. Les coûts de transaction réels, le slippage et l'impact de marché dégradent systématiquement la performance paper. La barre *Robuste* (> 0.5 soutenu sur la période) est nécessaire mais pas suffisante — le walk-forward et l'out-of-sample strict restent obligatoires avant tout déploiement.
 

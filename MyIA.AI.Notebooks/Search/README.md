@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 150
-breakdown: Applications=57, Part1-Foundations=40, Part4-Metaheuristics=35, Part2-CSP=18
-maturity: BETA=135, ALPHA=10, DRAFT=5
+pedagogical_count: 157
+breakdown: Applications=49, Part1-Foundations=45, Part4-Metaheuristics=35, Part2-CSP=18, Part5-Frontieres=10
+maturity: BETA=142, ALPHA=9, DRAFT=6
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -123,31 +123,31 @@ Problèmes du monde réel adaptés de projets étudiants. Chaque application est
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-14b-ConnectFour](Applications/Search/App-14b-ConnectFour.html) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
+| 1 | [App-14b-ConnectFour](Applications/Search/App-14b-ConnectFour.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
 | 1b | [App-14c-ConnectFour-CSharp](Applications/Search/App-14c-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
 | 2 | [App-14-ConnectFour-Adversarial](Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
-| 2b | [App-14-ConnectFour-Adversarial-CSharp](Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 2b | [App-14-ConnectFour-CSharp](Applications/Search/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
 ### Applications CSP (`Applications/CSP/`)
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-1-NQueens](Applications/CSP/App-1-NQueens.html) | ~30 min | Benchmark classique CSP : backtracking, min-conflicts, OR-Tools | Classique |
-| 2 | [App-2-GraphColoring](Applications/CSP/App-2-GraphColoring.html) | ~45 min | Coloration de cartes : Greedy, DSATUR, CP-SAT, départements français | Projet étudiant |
-| 3 | [App-3-NurseScheduling](Applications/CSP/App-3-NurseScheduling.html) | ~60 min | Planning infirmiers : contraintes hard/soft, OR-Tools CP-SAT | Projet étudiant |
-| 4 | [App-4-JobShopScheduling](Applications/CSP/App-4-JobShopScheduling.html) | ~60 min | Ordonnancement industriel : intervalles, précédences, makespan | Projet étudiant |
-| 5 | [App-5-Timetabling](Applications/CSP/App-5-Timetabling.html) | ~50 min | Emploi du temps universitaire : MiniZinc + OR-Tools | Projet étudiant |
-| 6 | [App-6-Minesweeper](Applications/CSP/App-6-Minesweeper.html) | ~50 min | Démineur CSP : propagation, probabilités, hybride CSP+LLM | Projet étudiant |
-| 7 | [App-7-Wordle](Applications/CSP/App-7-Wordle.html) | ~45 min | Solveur Wordle : filtrage CSP + théorie de l'information | Projet étudiant |
-| 8 | [App-8-MiniZinc](Applications/CSP/App-8-MiniZinc.html) | ~50 min | Modélisation déclarative : syntaxe MiniZinc, contraintes globales | Nouveau |
-| 9 | [App-11-Picross](Applications/CSP/App-11-Picross.html) | ~40 min | Nonogrammes : speedup 27Mx CP-SAT vs naïve | Projet étudiant |
-| 10 | [App-15-SportsScheduling](Applications/CSP/App-15-SportsScheduling.html) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
-| 11 | [App-16-Crossword-CSP](Applications/CSP/App-16-Crossword-CSP.html) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
-| 12 | [App-19-ProceduralGeneration-WFC](Applications/CSP/App-19-ProceduralGeneration-WFC.html) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
-| 12 (C#) | [App-19-ProceduralGeneration-WFC-Csharp](Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
-| 13 | [App-20-SudokuBenchmark-Python](Applications/CSP/App-20-SudokuBenchmark-Python.html) | ~50 min | Benchmark 4 solveurs Sudoku (backtracking naïf → optimisé → contraintes) sur banc Easy/Medium/Hard : dénombrement du travail | Synthèse série |
-| 13 (C#) | [App-20b-SudokuBenchmark-CSharp](Applications/CSP/App-20b-SudokuBenchmark-CSharp.html) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
-| 16 | [App-26-CoveringArrays-Guarantee-Audit](Applications/CSP/App-26-CoveringArrays-Guarantee-Audit.ipynb) | ~55 min | Covering Arrays : oracle constraint-aware, set cover CP-SAT exact, bornes et baselines IPOG/AETG-like — distillation PrCon H4 (Valérian Pichot) | Projet étudiant (PrCon PR #58) |
+| 1 | [App-1-NQueens](Applications/CSP/App-1-NQueens.ipynb) | ~30 min | Benchmark classique CSP : backtracking, min-conflicts, OR-Tools | Classique |
+| 2 | [App-2-GraphColoring](Applications/CSP/App-2-GraphColoring.ipynb) | ~45 min | Coloration de cartes : Greedy, DSATUR, CP-SAT, départements français | Projet étudiant |
+| 3 | [App-3-NurseScheduling](Applications/CSP/App-3-NurseScheduling.ipynb) | ~60 min | Planning infirmiers : contraintes hard/soft, OR-Tools CP-SAT | Projet étudiant |
+| 4 | [App-4-JobShopScheduling](Applications/CSP/App-4-JobShopScheduling.ipynb) | ~60 min | Ordonnancement industriel : intervalles, précédences, makespan | Projet étudiant |
+| 5 | [App-5-Timetabling](Applications/CSP/App-5-Timetabling.ipynb) | ~50 min | Emploi du temps universitaire : MiniZinc + OR-Tools | Projet étudiant |
+| 6 | [App-6-Minesweeper](Applications/CSP/App-6-Minesweeper.ipynb) | ~50 min | Démineur CSP : propagation, probabilités, hybride CSP+LLM | Projet étudiant |
+| 7 | [App-7-Wordle](Applications/CSP/App-7-Wordle.ipynb) | ~45 min | Solveur Wordle : filtrage CSP + théorie de l'information | Projet étudiant |
+| 8 | [App-8-MiniZinc](Applications/CSP/App-8-MiniZinc.ipynb) | ~50 min | Modélisation déclarative : syntaxe MiniZinc, contraintes globales | Nouveau |
+| 9 | [App-11-Picross](Applications/CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : speedup 27Mx CP-SAT vs naïve | Projet étudiant |
+| 10 | [App-15-SportsScheduling](Applications/CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
+| 11 | [App-16-Crossword-CSP](Applications/CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
+| 12 | [App-19-ProceduralGeneration-WFC](Applications/CSP/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
+| 12 (C#) | [App-19-ProceduralGeneration-WFC-CSharp](Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
+| 13 | [App-20-SudokuBenchmark-Python](Applications/CSP/App-20-SudokuBenchmark-Python.ipynb) | ~50 min | Benchmark 4 solveurs Sudoku (backtracking naïf → optimisé → contraintes) sur banc Easy/Medium/Hard : dénombrement du travail | Synthèse série |
+| 13 (C#) | [App-20b-SudokuBenchmark-CSharp](Applications/CSP/App-20b-SudokuBenchmark-CSharp.ipynb) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
+| 16 | [Frontieres-05-CoveringArrays-Guarantee-Audit-Python](Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb) | ~55 min | Covering Arrays : oracle constraint-aware, set cover CP-SAT exact, bornes et baselines IPOG/AETG-like — distillation PrCon H4 (Valérian Pichot) | Projet étudiant (PrCon PR #58) |
 
 Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseScheduling, JobShop, Timetabling, Minesweeper, Wordle, MiniZinc, Picross, SportsScheduling) suivent le même principe : ré-implémentation .NET du notebook Python de référence, solveurs from-scratch ou OR-Tools natif selon le sujet (marathon #4956).
 
@@ -155,18 +155,18 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-9-EdgeDetection](Applications/Hybrid/App-9-EdgeDetection.html) | ~40 min | Détection de bords par GA : PyGAD, filtres de convolution | Existant (refonte) |
-| 2 | [App-9b-EdgeDetection-CSharp](Applications/Hybrid/App-9b-EdgeDetection-CSharp.html) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
-| 3 | [App-10-Portfolio](Applications/Hybrid/App-10-Portfolio.html) | ~40 min | Optimisation de portefeuille : frontière de Pareto, multi-objectif | Existant (refonte) |
-| 4 | [App-10b-Portfolio-CSharp](Applications/Hybrid/App-10b-Portfolio-CSharp.html) | ~30 min | Side track C# : GeneticSharp pour portefeuille | Existant |
+| 1 | [App-9-EdgeDetection](Applications/Hybrid/App-9-EdgeDetection.ipynb) | ~40 min | Détection de bords par GA : PyGAD, filtres de convolution | Existant (refonte) |
+| 2 | [App-9b-EdgeDetection-CSharp](Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
+| 3 | [App-10-Portfolio](Applications/Hybrid/App-10-Portfolio.ipynb) | ~40 min | Optimisation de portefeuille : frontière de Pareto, multi-objectif | Existant (refonte) |
+| 4 | [App-10b-Portfolio-CSharp](Applications/Hybrid/App-10b-Portfolio-CSharp.ipynb) | ~30 min | Side track C# : GeneticSharp pour portefeuille | Existant |
 | 5 | [App-13-TSP-Metaheuristics](Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
 | 6 | [App-13b-TSP-Metaheuristics-CSharp](Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb) | ~45 min | **Jumeau C#** — SA, GA, ACO from-scratch sur le même TSP, parité #4956 | Jumeau .NET |
-| 7 | [App-17-VRP-Logistics](Applications/Hybrid/App-17-VRP-Logistics.html) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
-| 8 | [App-17b-VRP-Logistics-Csharp](Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb) | ~55 min | **Jumeau C#** — VRP métaheuristiques .NET, parité #4956 | Jumeau .NET |
+| 7 | [App-17-VRP-Logistics](Applications/Hybrid/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
+| 8 | [App-17b-VRP-Logistics-CSharp](Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb) | ~55 min | **Jumeau C#** — VRP métaheuristiques .NET, parité #4956 | Jumeau .NET |
 | 8b | [App-17b-VRP-Logistics-Python](Applications/Hybrid/App-17b-VRP-Logistics-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
-| 9 | [App-18-HyperparameterTuning](Applications/Hybrid/App-18-HyperparameterTuning.html) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
-| 10 | [App-18b-HyperparameterTuning-CSharp](Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.html) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
-| 11 | [App-18b-HyperparameterTuning-Python](Applications/Hybrid/App-18b-HyperparameterTuning-Python.html) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
+| 9 | [App-18-HyperparameterTuning](Applications/Hybrid/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
+| 10 | [App-18b-HyperparameterTuning-CSharp](Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
+| 11 | [App-18b-HyperparameterTuning-Python](Applications/Hybrid/App-18b-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
 | 12 | [App-22-AlgorithmSelection-Python](Applications/Hybrid/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux, 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité + Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 
 ---
@@ -209,16 +209,17 @@ CSP-8  Temporal            ───> Temporal Planning, STP
 
 ## Parité .NET ⇄ Python
 
-Cette série est née **Python d'abord** pour son cœur pédagogique (recherche, CSP, applications), avec la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) comme territoire .NET natif (au-dessus de MetaGeneticSharp). Le **marathon parité [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956)** (juin–juillet 2026) a ensuite généralisé le binôme `Python ⇄ C#` à l'ensemble de la série : jumeaux C# des fondements (Part 1), de la programmation par contraintes (Part 2), de la recherche heuristique avancée (Part 3) et des 20 applications. Le tableau ci-dessous fait le point sur la couverture par langage.
+Cette série est née **Python d'abord** pour son cœur pédagogique (recherche, CSP, applications), avec la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) comme territoire .NET natif (au-dessus de MetaGeneticSharp). Le **marathon parité [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956)** (juin–juillet 2026) a ensuite généralisé le binôme `Python ⇄ C#` à l'ensemble du cœur curriculaire : jumeaux C# des fondements (Part 1), de la programmation par contraintes (Part 2), de la recherche heuristique avancée et de 20 cas d'application. Depuis, des compagnons et audits App-21 à App-33 ont enrichi le dossier Applications — la galerie pédagogique (App-21 à App-27) et les audits de garanties devenus la [Partie 5 — frontières](Part5-Frontieres/README.md) ; le tableau distingue donc le cœur en binômes de l'inventaire actuel, dont les volumes sont portés par le catalogue (`CATALOG-STATUS`).
 
 ### Couverture actuelle
 
 | Sous-série | Cœur pédagogique | Langage | Correspondance dans l'autre langage |
 |-----------|-----------|---------|-------------------------------------|
-| [Part1-Foundations](Part1-Foundations/) | 22 (Search-1 à Search-11, Search-2b, Search-2c, Search-03b à Search-03e, Search-09b à Search-09d, Search-11c, Search-11d) | Python (20) + Lean (Search-09d) + C# natif (Search-2c QuikGraph) | **15 jumeaux C#** (Search-1 à 11, 2b, 03b/03c/03d) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
+| [Part1-Foundations](Part1-Foundations/) | 23 (Search-1 à Search-11, Search-2b, Search-2c, Search-03b à Search-03e, Search-09b à Search-09c, Search-11c, Search-11d, Search-12a, Search-13a) | Python (22) + C# natif (Search-2c QuikGraph) | **15 jumeaux C#** (Search-1 à 11, 2b, 03b/03c/03d) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET | **9 binômes complets** — marathon achevé, voir [bilan final](#marathon-epic-4956) |
-| [Part4-Metaheuristics](Part4-Metaheuristics/) | 22 (MGS-1 à MGS-19 + trilogie MGS-7b/7c/7d) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
-| [Applications](Applications/) | 20 cas réels (App-1 à App-20) | Python + .NET | **20 binômes complets** (40 notebooks) + 1 compagnon statistical-validity (App-2 Python) |
+| [Part4-Metaheuristics](Part4-Metaheuristics/) | 35 (25 à la racine + 10 dans `MGS-vs-mealpy/`) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
+| [Applications](Applications/) | 20 cas cœur (App-1 à App-20) + galerie App-21–27 (volumes au catalogue) | Python + .NET | **20 binômes complets** + compagnons App-21 à App-33 |
+| [Part5-Frontieres](Part5-Frontieres/) | Audits de garanties et distillations de preprints (volumes au catalogue) | Python | prolonge Part1/Part2/Part4 et les projets étudiants PrCon |
 | Racine | 0 | — | (aucun — voir [_archive/](_archive/) pour les anciens notebooks racine) |
 
 La série a atteint la **parité `Python ⇄ C#` complète** en juillet 2026 : le marathon [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956) a livré les jumeaux des trois parties curriculaires et des 20 applications, tous mergés sur `main`. Seule la [Partie 4](Part4-Metaheuristics/) reste mono-langage — par conception, puisqu'elle démontre l'ingénierie .NET native au-dessus de GeneticSharp.
@@ -229,7 +230,7 @@ Le levier .NET retenu a dépendu de la dépendance sous-jacente de chaque notebo
 
 | Cible | Dépendance Python | Levier .NET retenu | Remarque |
 |-------|-------------------|-------------|----------------------|
-| CSP-1 à CSP-9 (modélisation par contraintes) | `ortools` (CSP-3 à CSP-8) | **Choco-solver** via **IKVM** (CSP-1/2/3/4/5/7) ; **Google.OrTools** NuGet natif (CSP-6/8) ; from-scratch Yokoo DisCSP (CSP-9) | Précédent fondateur : `Sudoku-11-Choco-Csharp` (Choco via IKVM) et son binôme `Sudoku-11-Choco-Python` |
+| CSP-1 à CSP-9 (modélisation par contraintes) | `ortools` (CSP-3 à CSP-8) | **Choco-solver** via **IKVM** (CSP-1/2/3/4/5/7) ; **Google.OrTools** NuGet natif (CSP-6/8) ; from-scratch Yokoo DisCSP (CSP-9) | Précédent fondateur : `Sudoku-11-Choco-CSharp` (Choco via IKVM) et son binôme `Sudoku-11-Choco-Python` |
 | Search-9 Linear Programming | `pulp` | **Google.OrTools** (NuGet natif, GLOP / PDLP) | Port direct, sans IKVM |
 | Recherche d'états et jeux (Search-1 à Search-8) | aucune dépendance lourde | **.NET Interactive** pur, structures from-scratch | BFS/DFS/A*, Minimax/MCTS, DLX directement portés |
 | Applications (App-1 à App-20) | `ortools`, `pygad`, stdlib | Mix from-scratch / OR-Tools natif / GeneticSharp selon le sujet | 20 binômes complets |
@@ -244,15 +245,15 @@ La parité `.NET ⇄ Python` de la Partie 2 CSP a été portée par un **maratho
 
 | Notebook | PR | Cycle | Solver C# | verdict SOTA | Sortie noteworthy |
 |----------|----|----|-----------|-------------|-------------------|
-| **CSP-1-Fundamentals-Csharp** | [#5270](https://github.com/jsboige/CoursIA/pull/5270) | 14 (2026-07-03) | IKVM 8.15 + [Choco-solver](https://choco-solver.org/) 4.10.17 (DLL 12 MB) | **SOTA-OK** | Coloration de l'Australie 71 ms ; 8-Reines 102 ms |
-| **CSP-2-Consistency-Csharp** | [#5274](https://github.com/jsboige/CoursIA/pull/5274) | 15 (2026-07-04) | IKVM 8.15 + Choco-solver 4.10.17 | **SOTA-OK** | AC-3 custom C# + Choco AC-3 builtin ; audit table Choco ⇔ OR-Tools |
+| **CSP-1-Fundamentals-CSharp** | [#5270](https://github.com/jsboige/CoursIA/pull/5270) | 14 (2026-07-03) | IKVM 8.15 + [Choco-solver](https://choco-solver.org/) 4.10.17 (DLL 12 MB) | **SOTA-OK** | Coloration de l'Australie 71 ms ; 8-Reines 102 ms |
+| **CSP-2-Consistency-CSharp** | [#5274](https://github.com/jsboige/CoursIA/pull/5274) | 15 (2026-07-04) | IKVM 8.15 + Choco-solver 4.10.17 | **SOTA-OK** | AC-3 custom C# + Choco AC-3 builtin ; audit table Choco ⇔ OR-Tools |
 | **CSP-3-Csharp** | PRs antérieurs | antérieur | IKVM 8.15 + Choco 4.10.17 | **MERGED** | (palette reine / équidistance, base historique) |
-| **CSP-4-Scheduling-Csharp** | [#5067](https://github.com/jsboige/CoursIA/pull/5067) | tranche 1 cherry | IKVM 8.15 + Choco 4.10.17 (+ audit croisé OR-Tools) | **SOTA-OK** | Job-Shop / Nurse Scheduling en Choco `IntVar` / `Task` |
-| **CSP-5-Optimization-Csharp** | [#5018](https://github.com/jsboige/CoursIA/pull/5018) → [#5133](https://github.com/jsboige/CoursIA/pull/5133) (rebase) | antérieur | IKVM 8.15 + Choco 4.10.17 | **SOTA-OK** | Bin Packing / Knapsack / cardinalité en Choco |
-| **CSP-6-Hybridization-Csharp** | [#5275](https://github.com/jsboige/CoursIA/pull/5275) | 16 (2026-07-04) | [Google.OrTools](https://developers.google.com/optimization) 9.15.6755 NuGet | **SOTA-OK** | CP + ML 50 instances (98 % faisables) ; Portfolio multi-stratégies |
+| **CSP-4-Scheduling-CSharp** | [#5067](https://github.com/jsboige/CoursIA/pull/5067) | tranche 1 cherry | IKVM 8.15 + Choco 4.10.17 (+ audit croisé OR-Tools) | **SOTA-OK** | Job-Shop / Nurse Scheduling en Choco `IntVar` / `Task` |
+| **CSP-5-Optimization-CSharp** | [#5018](https://github.com/jsboige/CoursIA/pull/5018) → [#5133](https://github.com/jsboige/CoursIA/pull/5133) (rebase) | antérieur | IKVM 8.15 + Choco 4.10.17 | **SOTA-OK** | Bin Packing / Knapsack / cardinalité en Choco |
+| **CSP-6-Hybridization-CSharp** | [#5275](https://github.com/jsboige/CoursIA/pull/5275) | 16 (2026-07-04) | [Google.OrTools](https://developers.google.com/optimization) 9.15.6755 NuGet | **SOTA-OK** | CP + ML 50 instances (98 % faisables) ; Portfolio multi-stratégies |
 | **CSP-7-Csharp** | PRs antérieurs | antérieur | IKVM 8.15 + Choco 4.10.17 | **MERGED** | (global-cardinality, symétrie, base historique) |
-| **CSP-8-Temporal-Csharp** | [#5276](https://github.com/jsboige/CoursIA/pull/5276) | 17 (2026-07-04) | Google.OrTools 9.15.6755 | **SOTA-OK** | Allen 13 relations + STP Floyd-Warshall + TCSP ; CP-SAT optimal 0,0065 s |
-| **CSP-9-Distributed-Csharp** | [#5277](https://github.com/jsboige/CoursIA/pull/5277) | 18 (2026-07-04) | Algo distribué **Yokoo 1992** from-scratch (DisCSP) | **SOTA-OK** | AWC 62,0 msgs vs ABT 159,4 msgs à densité 0,5 (**2,5× plus efficace**) ; -58 % de fuite privacy |
+| **CSP-8-Temporal-CSharp** | [#5276](https://github.com/jsboige/CoursIA/pull/5276) | 17 (2026-07-04) | Google.OrTools 9.15.6755 | **SOTA-OK** | Allen 13 relations + STP Floyd-Warshall + TCSP ; CP-SAT optimal 0,0065 s |
+| **CSP-9-Distributed-CSharp** | [#5277](https://github.com/jsboige/CoursIA/pull/5277) | 18 (2026-07-04) | Algo distribué **Yokoo 1992** from-scratch (DisCSP) | **SOTA-OK** | AWC 62,0 msgs vs ABT 159,4 msgs à densité 0,5 (**2,5× plus efficace**) ; -58 % de fuite privacy |
 
 Les 9 binômes sont **tous mergés sur `main`** (vérifié disque au 2026-07-07 : `Part2-CSP/CSP-1-Csharp` à `CSP-9-Csharp` présents et gît-trackés). Le verdict SOTA-OK est documenté dans les PRs du marathon (règle [EPIC #3801](https://github.com/jsboige/CoursIA/issues/3801) — vrai outil, pas workaround dégradé) ; les 2 PRs les plus anciennes (CSP-3, CSP-7) ont été livrées avant la formalisation de la règle et n'ont pas de verdict écrit. Équilibre solvers final : **6 Choco via IKVM** (CSP-1/2/3/4/5/7), **2 OR-Tools CP-SAT natif .NET** (CSP-6/8), **1 from-scratch** (CSP-9, algorithme distribué Yokoo 1992).
 
@@ -288,9 +289,11 @@ Au-delà de la Partie 2, le même marathon a livré les jumeaux C# de la **Parti
 ### Livres de référence
 
 - [AIMA - Russell & Norvig (4th ed.)](http://aima.cs.berkeley.edu/) - Chapitres 3-6
-- [Constraint Processing - Rina Dechter (2003)](https://www.cambridge.org/core/books/constraint-processing/)
+- [Convex Optimization - Boyd & Vandenberghe (Cambridge UP, 2004)](https://web.stanford.edu/~boyd/cvxbook/) - Cadre unificateur LP/QP/SOCP/SDP ; le LP de Search-9 en est le cas linéaire. Archive : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Search\2004 - Convex Optimisation.pdf`
+- [Heuristic Search: Theory and Applications - Edelkamp & Schrödl (Morgan Kaufmann, 2012)](https://www.elsevier.com/books/heuristic-search-theory-and-applications/edelkamp/978-0-12-372512-7) - Le partage de coûts (cost partitioning) qui sous-tend la PDB additive. Ancre page mesurée sur l'index du PDF archivé : *action cost partitioning* / *pattern database partitioning*, **p. 312** (exemplaire tronqué : seule l'index pp. 826-835 est lisible ; chapitre 8 *Combining Heuristic Functions* cohérent avec la TOC de l'édition, à confirmer sur un exemplaire complet).
+- [Constraint Processing - Rina Dechter (Morgan Kaufmann, 2003)](https://shop.elsevier.com/books/constraint-processing/dechter/978-1-55860-890-0)
 - [Handbook of Constraint Programming (2006)](https://www.elsevier.com/books/handbook-of-constraint-programming/)
-- [The CP-SAT Primer (2023)](https://pganalyze.com/blog/cp-sat-primer) - Guide pratique OR-Tools
+- [The CP-SAT Primer (Krupke & Schmitt, 2023, CC-BY)](https://d-krupke.github.io/cpsat-primer/) - Fonctionnement interne de CP-SAT : presolve, LNS, hints de solution, portfolio de workers (lecture en ligne gratuite)
 
 ### Bibliothèques
 
@@ -320,13 +323,11 @@ Search/
 ├── README.md                              # Ce fichier
 ├── requirements.txt                       # Dependances Python
 ├── search_helpers.py                      # Utilitaires partages
-├── resources/                             # Images et données
-│
-├── Part1-Foundations/                     # Search Fondamental (41 notebooks : 20 Python + 1 Lean + 20 C# — 15 jumeaux directs -Csharp Search-1..11/2b/03b..03d + Search-2c QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets + Search-09b/09c/09d discrépance + Search-03e optimalité A* + Search-11c/11d sélection empirique & descente sous budget)
+├── Part1-Foundations/                     # Search Fondamental — jumeaux directs -Csharp Search-1..11/2b/03b..03d + Search-2c QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets + Search-09b/09c discrépance + Search-03e optimalité A* + Search-11c/11d sélection empirique & descente sous budget + Search-12a Composer-Regards + Search-13a Traverser-Murs-Certifies
 │   ├── Search-01-StateSpace.ipynb
 │   ├── Search-02-Uninformed.ipynb
 │   ├── Search-02b-NetworkX.ipynb
-│   ├── Search-02b-NetworkX-Csharp.ipynb   # Twin C# graphes from-scratch (BFS/DFS, Dijkstra, centralités, Ford-Fulkerson) (See #4956)
+│   ├── Search-02b-NetworkX-CSharp.ipynb   # Twin C# graphes from-scratch (BFS/DFS, Dijkstra, centralités, Ford-Fulkerson) (See #4956)
 │   ├── Search-02c-QuikGraph.ipynb
 │   ├── Search-03-Informed.ipynb
 │   ├── Search-04-LocalSearch.ipynb
@@ -337,11 +338,17 @@ Search/
 │   ├── Search-09-LinearProgramming.ipynb
 │   ├── Search-09b-SpuriousMinima.ipynb
 │   ├── Search-09c-CombinatorialDiscrepancy.ipynb
-│   ├── Search-09d-Lean-Discrepancy-Komlos.ipynb   # Compagnon formel : lake discrepancy_lean via kernel lean4-wsl (#13868)
+│   ├── Search-09d-BeckFiala-Lean-Python.ipynb   # Beck–Fiala : pont Python vers le lake, sans Lean au runtime
+│   ├── Search-09e-Komlos-Lean.ipynb             # Compagnon formel : lake discrepancy_lean via kernel lean4-wsl (#13868)
 │   ├── Search-10-SymbolicAutomata.ipynb
 │   ├── Search-11-Metaheuristics.ipynb
 │   ├── Search-11c-Empirical-Algorithm-Selection.ipynb
-│   └── Search-11d-Descente-Sous-Budget.ipynb   # Descente gloutonne sous plafond d'évaluations : loi Descent.lean (hstrict/hbarrier) exercée, hnostall réfuté (See #12204)
+│   ├── Search-11d-Descente-Sous-Budget.ipynb   # Descente gloutonne sous plafond d'évaluations : loi Descent.lean (hstrict/hbarrier) exercée, hnostall réfuté (See #12204)
+│   ├── Search-03b-PatternDatabases.ipynb
+│   ├── Search-03c-LimitedDiscrepancySearch.ipynb
+│   ├── Search-03d-WeightedAstar.ipynb
+│   ├── Search-12a-Composer-Regards.ipynb       # Composer des regards : play forward x coplay backward, corridor optimal f*=g+d (op 12 #12204)
+│   └── Search-13a-Traverser-Murs-Certifies.ipynb   # Traverser un mur : chemin minimal certifié (potentiels, 0-1 BFS, flot max/coupure min) sur pavage hexagonal (op 13 #12204)
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (18 notebooks : 9 Python + 9 jumeaux C#)
 │   ├── CSP-1-Fundamentals.ipynb
@@ -354,38 +361,34 @@ Search/
 │   ├── CSP-8-Temporal.ipynb
 │   └── CSP-9-Distributed.ipynb
 │
-│   ├── Search-03b-PatternDatabases.ipynb
-│   ├── Search-03c-LimitedDiscrepancySearch.ipynb
-│   └── Search-03d-WeightedAstar.ipynb
-│
 ├── Applications/
 │   ├── Search/                            # Applications Search (4 notebooks)
 │   │   ├── App-14b-ConnectFour.ipynb
 │   │   ├── App-14c-ConnectFour-CSharp.ipynb
 │   │   ├── App-14-ConnectFour-Adversarial.ipynb
-│   │   └── App-14-ConnectFour-Adversarial-CSharp.ipynb
+│   │   └── App-14-ConnectFour-CSharp.ipynb
 │   │
-│   ├── CSP/                               # Applications CSP (26 notebooks : 13 binômes Python ⇄ C#)
+│   ├── CSP/                               # Applications CSP (sélection ci-dessous, Python + jumeaux C#)
 │   │   ├── App-1-NQueens.ipynb
 │   │   ├── App-2-GraphColoring.ipynb
 │   │   ├── App-3-NurseScheduling.ipynb
 │   │   ├── App-4-JobShopScheduling.ipynb
 │   │   ├── App-5-Timetabling.ipynb
 │   │   ├── App-6-Minesweeper.ipynb
-│   │   ├── App-6-Minesweeper-Csharp.ipynb
+│   │   ├── App-6-Minesweeper-CSharp.ipynb
 │   │   ├── App-7-Wordle.ipynb
 │   │   ├── App-8-MiniZinc.ipynb
 │   │   ├── App-11-Picross.ipynb
 │   │   ├── App-15-SportsScheduling.ipynb
 │   │   ├── App-16-Crossword-CSP.ipynb
-│   │   ├── App-16-Crossword-CSP-Csharp.ipynb   # Twin C# backtracking + forward-checking from-scratch (marathon #4956, Prong B)
+│   │   ├── App-16-Crossword-CSP-CSharp.ipynb   # Twin C# backtracking + forward-checking from-scratch (marathon #4956, Prong B)
 │   │   ├── App-19-ProceduralGeneration-WFC.ipynb
-│   │   ├── App-19-ProceduralGeneration-WFC-Csharp.ipynb
+│   │   ├── App-19-ProceduralGeneration-WFC-CSharp.ipynb
 │   │   ├── App-20-SudokuBenchmark-Python.ipynb   # Benchmark 4 solveurs Sudoku, synthèse de la série
 │   │   ├── App-20b-SudokuBenchmark-CSharp.ipynb
-│   │   └── (+ jumeaux C# App-1b/2b/3b/4b/7b/11b/15b et App-5/8-Csharp, marathon #4956)
+│   │   └── (+ autres notebooks et jumeaux C# App-1b/2b/3b/4b/7b/11b/15b et App-5/8-CSharp, marathon #4956)
 │   │
-│   └── Hybrid/                            # Metaheuristiques (10 notebooks : 5 binômes)
+│   └── Hybrid/                            # Métaheuristiques (sélection ci-dessous, Python + jumeaux C#)
 │       ├── App-9-EdgeDetection.ipynb
 │       ├── App-9b-EdgeDetection-CSharp.ipynb
 │       ├── App-10-Portfolio.ipynb
@@ -393,17 +396,20 @@ Search/
 │       ├── App-13-TSP-Metaheuristics.ipynb
 │       ├── App-13b-TSP-Metaheuristics-CSharp.ipynb
 │       ├── App-17-VRP-Logistics.ipynb
-│       ├── App-17b-VRP-Logistics-Csharp.ipynb
+│       ├── App-17b-VRP-Logistics-CSharp.ipynb
 │       ├── App-17b-VRP-Logistics-Python.ipynb      # Twin Python du b — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools
 │       ├── App-18-HyperparameterTuning.ipynb
 │       ├── App-18b-HyperparameterTuning-CSharp.ipynb
 │       ├── App-18b-HyperparameterTuning-Python.ipynb
 │       └── App-22-AlgorithmSelection-Python.ipynb  # Sélection empirique : 3 jeux, 13 familles / 14 étiquettes, Pareto + préférences (PR IS #42)
 │
-├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
-├── Part4-Metaheuristics/                  # Partie 4 (side track C# .NET 9) : README + 22 notebooks MGS-1..19 (+ trilogie MGS-7b/7c/7d projection N-D) (moteur, composition, composés, benchmarks, TSP, projection N-D des paysages, paysages, biais central, synergie d'îles, alignement d'axes, paysages dé-biaisés, synergie conditionnelle, analyse de paysage FDC, sélection d'algorithme No-Free-Lunch, contrôle de paramètres, banc CEC consolidé, démontage du recuit) ; consomment le sous-module
 │
-└── archive/                                # Notebooks racine archivés (C209 tranche 8/8 #5081) — voir archive/README.md
+├── Part5-Frontieres/                     # Partie 5 — frontières : audits de garanties et distillations de preprints (Frontieres-01..10, carte #19253)
+│
+├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
+├── Part4-Metaheuristics/                  # Partie 4 (35 notebooks C# .NET 9 : 25 à la racine + 10 sous MGS-vs-mealpy/) ; consomme le sous-module MetaGeneticSharp
+│
+└── _archive/                               # Notebooks racine archivés (C209 tranche 8/8 #5081) — voir _archive/README.md
     ├── README.md
     ├── CSPs_Intro.ipynb                                  # Remplacé par Part2-CSP/CSP-1-Fundamentals.ipynb
     └── Exploration_non_informée_et_informée_intro.ipynb # Remplacé par Part1-Foundations/Search-{2,3}-...
@@ -483,16 +489,16 @@ Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-fi
 
 | Sous-série | Fichiers `.ipynb` gît-tracked | Langages | Algorithmes représentatifs |
 | --- | --- | --- | --- |
-| **Part 1 — Fondements** (`Part1-Foundations/`) | **41** (**21 notebooks Python + Lean** : Search-1 → Search-11, Search-2b, Search-03b/03c/03d/03e (ex-Partie 3 + optimalité A*), Search-09b, Search-09c, Search-11c, Search-11d + **compagnon Lean Search-09d** (kernel `lean4-wsl`, lake `discrepancy_lean`) + **20 C#** : jumeaux `-Csharp` (Search-1 à 11, 2b et 03b/03c/03d) + Search-2c QuikGraph natif + déclinaison deep-dive **Search-11b Métaheuristiques en 4 volets** C# natif, marathon #4956) | Python + Lean 4 + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph, Pattern Databases, Limited Discrepancy Search, Weighted A*, minima fallacieux SDP (Burer–Monteiro), discrépance combinatoire (Beck–Fiala, Bansal–Jiang 2025) et sa formalisation Lean 4 (conjecture de Komlós), sélection empirique d'algorithme, descente gloutonne sous plafond d'évaluations (loi `Descent.lean`) |
+| **Part 1 — Fondements** (`Part1-Foundations/`) | **43** (**23 notebooks Python + Lean** : Search-1 → Search-11, Search-2b, Search-03b/03c/03d/03e (ex-Partie 3 + optimalité A*), Search-09b, Search-09c, Search-11c, Search-11d, Search-12a (Composer-Regards, op 12 #12204), Search-13a (Traverser-Murs-Certifies, op 13 #12204) + **compagnon Lean Search-09d** (kernel `lean4-wsl`, lake `discrepancy_lean`) + **20 C#** : jumeaux `-Csharp` (Search-1 à 11, 2b et 03b/03c/03d) + Search-2c QuikGraph natif + déclinaison deep-dive **Search-11b Métaheuristiques en 4 volets** C# natif, marathon #4956) | Python + Lean 4 + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph, Pattern Databases, Limited Discrepancy Search, Weighted A*, minima fallacieux SDP (Burer–Monteiro), discrépance combinatoire (Beck–Fiala, Bansal–Jiang 2025) et sa formalisation Lean 4 (conjecture de Komlós), sélection empirique d'algorithme, descente gloutonne sous plafond d'évaluations (loi `Descent.lean`) |
 | **Part 2 — Programmation par Contraintes** (`Part2-CSP/`) | **18** (9 Python : CSP-1 → CSP-9 + **9 jumeaux C#**, marathon #4956 achevé) | Python + .NET (C#) | CSP Fundamentals (backtracking), AC-3/FC/MAC, CSP Advanced (AllDifferent/Cumulative/Circuit), Scheduling (Job-Shop/RCPSP/Nurse), Optimization (Bin Packing/Knapsack), Hybridization (LCG/CP+SAT/CP+ML/LLM+CSP), Soft, Temporal (Allen's Interval Algebra), Distributed (Yokoo 1992) |
 | **Part 4 — Métaheuristiques composables** (`Part4-Metaheuristics/`, C# .NET 9, MetaGeneticSharp) | **35** (MGS-1 → MGS-31 : cœur MGS-1..19, **trilogie MGS-7b/7c/7d** de projection N-D des paysages, MGS-17b sélection empirique, **MGS-21** représentation vs algorithme ; le **volet comparatif vs MEALPY** (10 notebooks MGS-22..31) vit dans la sous-série [`Part4-Metaheuristics/MGS-vs-mealpy/`](Part4-Metaheuristics/MGS-vs-mealpy/README.md) — duels PSO/DE/SA/WOA/EO/FBI/BBPSO/GA/ScatterSearch vs Mealpy + synthèse croisée ; tous C# .NET au-dessus de GeneticSharp vendored) | C# / .NET | Composition, Eukaryote, Islands, Compound Metaheuristics, TSP, projection N-D des paysages, Landscape Explorer, Center Bias, Island Synergy, Axis Alignment, Landscape Debias, Island Synergy Found, Landscape Analysis (FDC), Algorithm Selection (No-Free-Lunch), Parameter Control, CEC Banc, Metropolis Reinsertion, représentation vs algorithme, [campagne comparative MGS vs mealpy](Part4-Metaheuristics/MGS-vs-mealpy/README.md) |
 | **Applications** (`Applications/`) | **57** (37 Python + 20 C# — **20 binômes Python ⇄ C#** App-1 à App-20, plus compagnons statistical-validity, jumeaux Python et notebooks d'audit App-23 à App-31) | 37 Python + 20 C# | N-Queens, Graph Coloring, Nurse/Job-Shop/Timetabling Scheduling, Minesweeper, Wordle, MiniZinc, Picross (27M× speedup), Sports/Crossword/WFC CSP, SudokuBenchmark, Portfolio/TSP/VRP/Hyperparameter Tuning, Edge Detection, ConnectFour (Minimax/MCTS), Covering Arrays, Algorithm Selection |
-| **archive** (`archive/`) | **2** (CSPs_Intro, Exploration_non_informée_et_informée_intro, historiques pré-tranche 8/8 #5081) | Python | Notebooks historiques, remplacés par Part2-CSP/CSP-1-Fundamentals et Part1-Foundations/Search-{2,3} |
-| **Total** | **151** (41 + 18 + 35 + 57 = 151 pédagogiques, Search-09d inclus + 2 archive = 153) | Python + Lean 4 + C# | 4 piliers + archive, voir « Structure des fichiers » pour l'arborescence complète |
+| **_archive** (`_archive/`) | **2** (CSPs_Intro, Exploration_non_informée_et_informée_intro, historiques pré-tranche 8/8 #5081) | Python | Notebooks historiques, remplacés par Part2-CSP/CSP-1-Fundamentals et Part1-Foundations/Search-{2,3} |
+| **Total** | **153** (43 + 18 + 35 + 57 = 153 pédagogiques, Search-09d inclus + 2 archive = 155) | Python + Lean 4 + C# | 4 piliers + archive, voir « Structure des fichiers » pour l'arborescence complète |
 
 **Note de maturité** : la validation end-to-end (Python 3.10+ stdlib + `ortools` + `deap` + `networkx` + `mealpy` + `pygad` ; C# = .NET 9.0 + `Microsoft.dotnet-interactive`) est documentée PR par PR dans l'EPIC #4956 pour les jumeaux C#, et dans les PRs po-2025:CoursIA-2 pour la série landscape-bias MGS-10 → MGS-19 (analyse comparative NFL/WOA encore en cours, cf EPIC #3975).
 
-- **ALPHA=0** : pas d'ALPHA sur cette série (vs Sudoku qui en a 1 = S-16 Neural Network RRN training).
+- **Maturité** : la répartition autoritative est celle du bloc `CATALOG-STATUS` automatisé en tête de fichier ; elle n'est pas dupliquée manuellement ici.
 
 **Compagnon Lean formel** : la série dispose d'un lake phare `search_lean` (#4048) qui démontre la **correction d'A*** (admissibilité de l'heuristique ⟹ optimalité, P1), la consistance (P2) et les bornes (P4/P5) en Lean 4 sur des graphes à coût uniforme puis généralisées au cas pondéré. Voir la section **« Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA »** l. 640+ pour la **cartographie inter-familles focalisée Search** (10+ lakes formels du dépôt) et le Mermaid flowchart simulation ↔ preuve. Cette section ne duplique pas cette cartographie, elle ancre les chiffres ; la cartographie elle-même reste l. 640+.
 
@@ -537,6 +543,10 @@ dotnet --version
 
 ---
 
+## Activités associées
+
+L'activité [Exploration : cannibales et missionnaires](../GenAI/activites/Activites-Vulgarisation.md#1-exploration--cannibales-et-missionnaires) met la modélisation d'états et l'arbre d'exploration de cette série en situation de jeu d'équipe.
+
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
@@ -554,9 +564,9 @@ La thèse est puissante et honnêtement présentée : il n'existe pas d'algorith
 
 - **Approfondir l'IA symbolique** : [SymbolicAI](../SymbolicAI/README.md) (Z3/SMT, planification PDDL/HTN, logique formelle Tweety) est le prolongement naturel de la Partie 2 — les CSP y deviennent du *satisfiability solving* et la modélisation par contraintes se généralise en raisonnement logique. Plusieurs ponts explicites sont tracés (CSP-3 → Z3, CSP-4 → Planners, CSP-6 → LLM+CSP).
 - **Élargir aux jeux et à l'apprentissage par renforcement** : [GameTheory](../GameTheory/README.md) (Minimax, MCTS, choix social) et les notebooks RL (MCTS + DQN, AlphaGo) reprennent la recherche adversariale sous l'angle de l'apprentissage — où la valeur des positions n'est plus calculée mais *apprise*.
-- **Pratiquer sur la couverture exacte** : [Sudoku](../README.md) (DLX, automates symboliques) applique Dancing Links et les techniques de cette série à une famille de puzzles combinatoires concrets.
-- **Construire plutôt qu'utiliser** : la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) (C# .NET 9, MetaGeneticSharp) prolonge [Search-5](Part1-Foundations/Search-05-GeneticAlgorithms.html)/[Search-11](Part1-Foundations/Search-11-Metaheuristics.html) sous l'angle de l'*ingénierie* — au lieu d'importer WOA ou EO, on les *reconstruit* depuis des primitives composables (`Match`, `Container`, grammaire fluente) au-dessus de GeneticSharp, et l'on assemble des configurations qu'aucune bibliothèque monolithique n'offre (sous-populations spécialisées, îles migratoires).
-- Pour la pratique : reprenez [CSP-6-Hybridization](Part2-CSP/CSP-6-Hybridization.html) et expérimentez le pont LLM+CSP — comment un modèle de langage peut-il *amorçer* un solveur par contraintes, et où cette hybridation gagne-t-elle (ou perd-elle) par rapport au CP-SAT pur ?
+- **Pratiquer sur la couverture exacte** : [Sudoku](../Sudoku/README.md) (DLX, automates symboliques) applique Dancing Links et les techniques de cette série à une famille de puzzles combinatoires concrets.
+- **Construire plutôt qu'utiliser** : la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) (C# .NET 9, MetaGeneticSharp) prolonge [Search-5](Part1-Foundations/Search-05-GeneticAlgorithms.ipynb)/[Search-11](Part1-Foundations/Search-11-Metaheuristics.ipynb) sous l'angle de l'*ingénierie* — au lieu d'importer WOA ou EO, on les *reconstruit* depuis des primitives composables (`Match`, `Container`, grammaire fluente) au-dessus de GeneticSharp, et l'on assemble des configurations qu'aucune bibliothèque monolithique n'offre (sous-populations spécialisées, îles migratoires).
+- Pour la pratique : reprenez [CSP-6-Hybridization](Part2-CSP/CSP-6-Hybridization.ipynb) et expérimentez le pont LLM+CSP — comment un modèle de langage peut-il *amorçer* un solveur par contraintes, et où cette hybridation gagne-t-elle (ou perd-elle) par rapport au CP-SAT pur ?
 
 ### Le fil rouge
 
@@ -578,9 +588,9 @@ Le hub Search alignait une riche prose sur la double approche *exploration syst�
 | ML | `learning_theory_lean` (#5054) | Novikoff perceptron 0 sorry #4140 | [`Perceptron.lean`](../ML/learning_theory_lean/Perceptron/Perceptron.lean) (lake, pas notebook pédagogique) |
 | Probas | `decision_theory_lean` (#5053) | Concentration uniforme + Hoeffding (PAC iter-2) | [Infer-3-Factor-Graphs](../Probas/Infer/Infer-3-Factor-Graphs.ipynb) (factor graphs + PAC) |
 | QC | `kelly_lean` (#5047) | Kelly criterion + mean-variance bound | [QC-Py-10-Risk-Portfolio-Management](../QuantConnect/Python/QC-Py-10-Risk-Portfolio-Management.ipynb) (Kelly sizing) |
-| GameTheory | `game_theory_lean/SocialChoice` (lakes standalone `social_choice_lean` #5050 + `cooperative_games_lean` absorbés post-#4365, contenue dans `game_theory_lean/`) | Arrow + Sen voting | [GameTheory-15-CooperativeGames](../GameTheory/GameTheory-15-CooperativeGames.ipynb) |
-| GameTheory | `game_theory_lean/CooperativeGames/Shapley.lean` (lake `cooperative_games_lean` supprimé post-#4365, contenu absorbé) | Bondareva-Shapley 0 sorry #3954 | [GameTheory-13-ImperfectInfo-CFR](../GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb) |
-| SymbolicAI | `argumentation_lean` (#5043 MERGED) | Tweety Preferred extensions + Dung framework | [Tweety-3-Dung-Csharp](../SymbolicAI/Tweety/Tweety-3-Dung-Csharp.ipynb) (Dung Preferred semantics) |
+| GameTheory | `game_theory_lean/SocialChoice` (lakes standalone `social_choice_lean` #5050 + `cooperative_games_lean` absorbés post-#4365, contenue dans `game_theory_lean/`) | Arrow + Sen voting | [GameTheory-15-CooperativeGames-Python](../GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) |
+| GameTheory | `game_theory_lean/CooperativeGames/Shapley.lean` (lake `cooperative_games_lean` supprimé post-#4365, contenu absorbé) | Bondareva-Shapley 0 sorry #3954 | [GameTheory-13-ImperfectInfo-CFR-Python](../GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) |
+| SymbolicAI | `argumentation_lean` (#5043 MERGED) | Tweety Preferred extensions + Dung framework | [Tweety-03-Dung-CSharp](../SymbolicAI/Tweety/Tweety-03-Dung-CSharp.ipynb) (Dung Preferred semantics) |
 
 ```mermaid
 flowchart LR
@@ -614,7 +624,7 @@ La double culture **simulation + preuve formelle** est précisément ce que la [
 
 Sans cette section, le chainage vers ML (perceptron 0 sorry comme borne duale de la convergence A\* sur graphes pondérés), QC (Kelly, borné inférieurement par l'arbitrage risque/rendement), GameTheory (Arrow, posant les conditions sur les procédures de vote), Probas (PAC iter-2, formalisant pourquoi un échantillon suffit) et SymbolicAI (argumentation, formalisant la sémantique preferred) restait invisible depuis Search.
 
-**Note sur les références notebooks** : six références historiques de cette section ont suivi les renumérotations du dépôt (cf issue #5065) : ML-2.3-Perceptron → `Perceptron.lean` (lake, pas de notebook pédagogique correspondant), Infer-3-ProbabilisticReasoning → Infer-3-Factor-Graphs, QC-Py-10 → QC-Py-10-Risk-Portfolio-Management, GT-15 SocialChoice ↔ CooperativeGames et GT-13 CooperativeGames ↔ ImperfectInfo-CFR (inversions), Tweety-3-PreferredSemantics → Tweety-3-Dung-Csharp.
+**Note sur les références notebooks** : six références historiques de cette section ont suivi les renumérotations du dépôt (cf issue #5065) : ML-2.3-Perceptron → `Perceptron.lean` (lake, pas de notebook pédagogique correspondant), Infer-3-ProbabilisticReasoning → Infer-3-Factor-Graphs, QC-Py-10 → QC-Py-10-Risk-Portfolio-Management, GT-15 SocialChoice ↔ CooperativeGames et GT-13 CooperativeGames ↔ ImperfectInfo-CFR (inversions), Tweety-3-PreferredSemantics → Tweety-03-Dung-CSharp.
 
 Liens : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean) · cross-refs hubs [QC](../QuantConnect/README.md) (#5047) · [central P0](../README.md) (#5049) · [GameTheory](../GameTheory/README.md) (#5050) · [Probas](../Probas/README.md) (#5053) · [ML](../ML/README.md) (#5054) · [SymbolicAI Lean](../SymbolicAI/Lean/README.md) (#5043 MERGED).
 

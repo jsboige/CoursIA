@@ -25,6 +25,7 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
 | 4 | [01-4-Forge-SD-XL-Turbo](01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | ComfyUI | Variable |
 | 5 | [01-5-Qwen-Image-Edit](01-5-Qwen-Image-Edit.ipynb) | Introduction Qwen | ComfyUI | ~29GB |
 | 5b | [01-5b-Qwen-Image-Edit-2509](01-5b-Qwen-Image-Edit-2509.ipynb) | Édition avancée Qwen Image Edit 2509 | ComfyUI | ~29GB |
+| 5c | [01-5c-Qwen-Image-21-Workflows](01-5c-Qwen-Image-21-Workflows.ipynb) | Workflows de référence Qwen-Image 2.1 (nomadoor) sur instance hébergée | ComfyUI 0.37.2 (hébergée) | palier INT8 #17266 |
 
 **[01-1](01-1-OpenAI-DALL-E-3.ipynb) — API cloud.** Le point d'entrée le plus immédiat : un prompt, une clé, et gpt-image-1 renvoie un visuel en ~19 s :
 

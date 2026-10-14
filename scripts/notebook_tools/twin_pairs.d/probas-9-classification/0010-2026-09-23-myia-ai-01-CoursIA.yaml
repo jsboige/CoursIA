@@ -1,0 +1,10 @@
+date: '2026-09-23'
+by: myia-ai-01:CoursIA
+reason: 'Rebaseline apres retrait veto #17040 (PR #17463) : PyMC-09 retire les 9 cellules
+  de lecture ajoutees par #16954 et garde ses 3 corrections de cellules existantes. Audit
+  firsthand : code et outputs identiques a l etat pre-#16954 (13 cellules code), seules 3
+  cellules markdown different (accents, lecture reancree). Jumeau C# Infer-9 non touche.'
+python_sha: 649a828ad745c3d7dbd79d0f6ff0cbc31975b04a
+csharp_sha: 750e1ac5e3beded312fbbadca07868d18ec81c43
+content_python_sha: 6f9c17d66b0a6557d3b43fcb1751233cc7ea56e88906ddbe2bed89a98c452ec2
+content_csharp_sha: 04e774d05b152982c2b2cb0b350cd40cbf070be697b30e88427d1410f25d3e33

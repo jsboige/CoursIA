@@ -174,6 +174,116 @@ def test_sans_frontiere_droite_final_mordrait_finalement():
     assert find_written_exception("finalement") is None  # la forme livrée non
 
 
+# --- verdict `empty` (#17359) ------------------------------------------------
+#
+# Les 4 PRs de la campagne réaccent #16638 (#16966/#16975/#16976/#16978) sont
+# mesurées `{"changedFiles":0,"additions":0,"deletions":0}` : chaque branche
+# porte un commit de réaccent substantiel puis des commits REPAIR-N qui
+# l'annulent. Le contrôle qui prouve que le prédicat lit le DIFF et non la
+# campagne est #16956 -- même campagne, même genre, même forme de branche.
+
+BODY_EMPTY_LEAN_CAMPAIGN = (
+    "## Réaccent Lean-16f\n\n"
+    "Grain: MED/lean — lane myia-po-2027:CoursIA-2 — prev: MED/lean #16960\n\n"
+    "Réaccent morphologique du notebook Conway Free Will Theorem.\n\n"
+    "REPAIR-3 : revert des formes visees par la reserve morphologique.\n"
+)
+
+BODY_EMPTY_LIGHT_DOCS = (
+    "## Sweep annulé\n\n"
+    "Grain: LIGHT/docs — lane myia-po-2027:CoursIA-2 — prev: LIGHT/docs #16950\n\n"
+    "Le sweep a été intégralement reverté en attente d'arbitrage.\n"
+)
+
+
+def test_empty_controle_positif_campagne_reaccent():
+    """Contrôle POSITIF (#16975 tete 5eea88bb34, + les 3 autres) : diff nul.
+
+    Les quatre portaient le même genre `lean` -- non-META -- donc la jambe
+    genre du verdict `trivial` ne les voyait pas, et aucun organe ne nommait
+    leur vacuité.
+    """
+    out = assess(BODY_EMPTY_LEAN_CAMPAIGN, 0, 0, 0)
+    assert out["verdict"] == "empty"
+    assert out["signals"]["empty_diff"] is True
+    assert out["changed_files"] == 0
+    # Le genre est REPORTÉ, mais il ne conditionne pas le verdict.
+    assert out["genre"] == "lean"
+    assert out["changed_lines"] == 0
+
+
+def test_empty_est_independant_du_genre_et_du_tag():
+    """Le prédicat est une seule jambe : ni le genre, ni le tag ne le filtrent.
+
+    C'est le cas même des 4 PRs (#17359) : genre light ou non, taggé ou non,
+    un diff nul est nul. Un PR vide sans tag est donc `empty`, pas `unknown`
+    -- le tag manquant est gardé par son propre organe bloquant, et le router
+    vers `unknown` reproduirait exactement le silence que ce verdict perce.
+    """
+    non_meta = assess(BODY_EMPTY_LEAN_CAMPAIGN, 0, 0, 0)
+    meta = assess(BODY_EMPTY_LIGHT_DOCS, 0, 0, 0)
+    sans_tag = assess("pas de tag ici, mais un diff nul", 0, 0, 0)
+
+    assert non_meta["verdict"] == "empty"
+    assert meta["verdict"] == "empty"
+    assert sans_tag["verdict"] == "empty", sans_tag
+
+
+def test_empty_controle_negatif_16956_meme_campagne():
+    """Contrôle NÉGATIF (#16956, tete de branche `feature/16638-deaccent-lean4`,
+    net 38/38) : même campagne, même genre -- le prédicat lit le diff, pas la
+    campagne. Sans ce contrôle, un détecteur qui répondrait
+    `empty` à tout ce qui vient de la campagne passerait au vert."""
+    out = assess(BODY_EMPTY_LEAN_CAMPAIGN, 0, 38, 1)
+    assert out["verdict"] != "empty", out
+    assert out["changed_files"] == 1
+
+
+def test_empty_controle_negatif_fix_2lignes_non_light():
+    """Non-régression du contre-exemple VERBATIM du user (#15740) : une
+    correction de 2 lignes sur un bug critique reste `ok`. Le verdict `empty`
+    ne mesure pas une petitesse, il constate une absence."""
+    out = assess(BODY_BUGFIX_2LINES, 2, 1, 1)
+    assert out["verdict"] == "ok"
+    assert out["verdict"] != "empty"
+
+
+def test_empty_ne_reutilise_pas_l_exception_15719():
+    """L'exception écrite éteint `trivial` (une fournée ramenée à son résidu
+    mesuré), elle ne dit rien du vide : il n'y a pas de résidu à borner, le
+    diff est nul. La phrase ne doit donc PAS transformer `empty` en `ok`."""
+    out = assess(BODY_EMPTY_LEAN_CAMPAIGN + "\nException : residu final mesure, il ne reste que ce fichier.\n", 0, 0, 0)
+    assert out["verdict"] == "empty", out
+
+
+def test_empty_sans_additions_deletions_reste_empty():
+    """Le prédicat est `changed_files == 0` seul : un payload qui omet les
+    additions/deletions mais porte `changedFiles: 0` ne doit pas faire
+    retomber l'organe sur `unknown`."""
+    out = assess(BODY_EMPTY_LEAN_CAMPAIGN, None, None, 0)
+    assert out["verdict"] == "empty"
+    assert out["changed_lines"] is None
+
+
+def test_empty_changed_files_absent_ne_force_pas_unknown():
+    """`changedFiles` absent : la jambe vide est SAUTÉE, pas transformée en
+    `unknown` -- sinon un payload qui omet le champ ferait taire le warning
+    #15740 que l'organe doit déjà, alors que les deux autres verdicts ne
+    lisent jamais ce champ."""
+    out = assess(BODY_TRIVIAL_DOCS, 18, 2, None)
+    assert out["verdict"] == "trivial", out
+
+
+def test_empty_message_nomme_les_deux_sorties():
+    """Le message doit nommer les deux sorties légitimes (restaurer le
+    livrable, ou fermer la PR en l'écrivant) -- sinon le lecteur doit
+    re-dériver quoi faire. Le verdict reste ADVISORY."""
+    reason = assess(BODY_EMPTY_LEAN_CAMPAIGN, 0, 0, 0)["reason"]
+    assert "restaurer le livrable" in reason
+    assert "fermer la PR en l'ecrivant" in reason
+    assert "ADVISORY" in reason
+
+
 # --- états unknown (jamais de verdict sur absence de donnée, #14849) --------
 
 def test_unknown_sans_tag_grain():

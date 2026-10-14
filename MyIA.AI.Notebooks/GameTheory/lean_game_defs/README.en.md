@@ -19,8 +19,8 @@ Shared Lean 4 type definitions used by multiple GameTheory Lean projects. A **se
 - [Nash.lean](Nash.lean) — 139 lines. Best response, pure/mixed Nash equilibrium, strict dominance. Source: `GameTheory-16-Lean-Definitions.ipynb`.
 - [Combinatorial.lean](Combinatorial.lean) — 113 lines. `GameTree`, minimax evaluation, win/loss determination. Source: `GameTheory-18-Lean-CombinatorialGames.ipynb`.
 - [SocialChoice.lean](SocialChoice.lean) — 126 lines. `Preference`, `StrictPref`, Arrow's axioms (statements). Source: `GameTheory-19-Lean-SocialChoice.ipynb`.
-- [Bayesian.lean](Bayesian.lean) — Bayesian games with incomplete information: `BayesianGame`, `TypeStrategy`, `BayesianNashEquilibrium`, `InformationSet`, `SignalingGame`, `FirstPriceAuction`, Kuhn poker definitions. Source: `GameTheory-11-BayesianGames.ipynb`, `GameTheory-13-ImperfectInfo-CFR.ipynb`.
-- [Regret.lean](Regret.lean) — Regret minimization and CFR: `CumulativeRegret`, `regretMatchingStrategy`, `CounterfactualRegret`, `CFRState`, `FictitiousPlayState`. Source: `GameTheory-13-ImperfectInfo-CFR.ipynb`, `GameTheory-17-MultiAgent-RL.ipynb`.
+- [Bayesian.lean](Bayesian.lean) — Bayesian games with incomplete information: `BayesianGame`, `TypeStrategy`, `BayesianNashEquilibrium`, `InformationSet`, `SignalingGame`, `FirstPriceAuction`, Kuhn poker definitions. Source: `GameTheory-11-BayesianGames-Python.ipynb`, `GameTheory-13-ImperfectInfo-CFR-Python.ipynb`.
+- [Regret.lean](Regret.lean) — Regret minimization and CFR: `CumulativeRegret`, `regretMatchingStrategy`, `CounterfactualRegret`, `CFRState`, `FictitiousPlayState`. Source: `GameTheory-13-ImperfectInfo-CFR-Python.ipynb`, `GameTheory-17-MultiAgent-RL-Python.ipynb`.
 
 ## Usage
 
@@ -47,7 +47,7 @@ import Mathlib.SetTheory.Game.Nim
 
 - [game_theory_lean/](../game_theory_lean/) — Multi-module Lake project (StableMarriage = Gale-Shapley formalization, EPIC #4365; CooperativeGames absorbed from `cooperative_games_lean/` rm #6587).
 - [game_theory_lean/SocialChoice/](../game_theory_lean/SocialChoice/) — Module absorbed into `game_theory_lean` (Arrow / Sen / median voter / Voting, EPIC #4365).
-- [social_choice_lean_peters/](../social_choice_lean_peters/) — Independent Lake project referencing Peters at commit `94a4c650` (per `lake-manifest.json`; Gibbard-Satterthwaite, Duggan-Schwartz).
+- [social_choice_lean_peters/](../SocialChoice/social_choice_lean_peters/) — Independent Lake project referencing Peters at commit `94a4c650` (per `lake-manifest.json`; Gibbard-Satterthwaite, Duggan-Schwartz).
 
 These projects do **not** depend on `lean_game_defs/` at build time — they vendor their own definitions tailored to their proof obligations. `lean_game_defs/` is the **introductory** layer used by the teaching notebooks.
 

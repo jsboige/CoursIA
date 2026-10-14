@@ -460,6 +460,305 @@ def test_parse_label_events_feeds_classify_retracted():
     assert verdict == "retracted"
 
 
+# --- #17759 mecanisme B : l'attestation du protocole n'est pas une activite ---
+
+def _comments_with_bodies(*pairs):
+    return [{"created_at": when, "body": body} for when, body in pairs]
+
+
+def test_attestation_info_ne_compte_pas_comme_activite():
+    # Fondateur #15689 : livree le 2026-09-14 par #15858 (le body porte bien
+    # `See #15689`), deux attestations [INFO] candidate-delivered (09-15 et
+    # 09-21) -- et jamais de label, parce que les attestations COMPTAIENT
+    # comme activite post-merge. Arbitrage ai-01 2026-09-25 : le commentaire
+    # que le protocole PRESCRIT ne detruit pas la precondition de silence.
+    issue = _issue(title="slides", number=15689, labels=["bug", "slides"],
+                   created_at="2026-01-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-09-15T00:00:00Z",
+         "[INFO] candidate-delivered - preuve firsthand, la main est rendue"),
+        ("2026-09-21T00:00:00Z",
+         "[INFO] candidate-delivered (2e attestation, autre lane)"),
+    )
+    refs = [{"pr_number": 15858, "merged_at": "2026-09-14T00:00:00Z",
+             "body": "See #15689."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "candidate"
+
+
+def test_commentaire_ordinaire_post_merge_reste_actif():
+    # Controle negatif de l'arbitrage : tout commentaire qui n'est PAS une
+    # attestation (discussion, contradiction) laisse l'issue `active`.
+    issue = _issue(title="slides", number=15689, created_at="2026-01-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-09-20T00:00:00Z", "Le volet deck reste ouvert apres le merge."),
+    )
+    refs = [{"pr_number": 15858, "merged_at": "2026-09-14T00:00:00Z",
+             "body": "See #15689."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "active"
+
+
+def test_marqueur_cite_mais_pas_en_tete_reste_actif():
+    # Seule la forme EN TETE est ignoree : une reponse qui CITE le marqueur
+    # est une discussion de l'attestation, pas une attestation.
+    issue = _issue(title="slides", number=15689, created_at="2026-01-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-09-20T00:00:00Z",
+         "Reponse a [INFO] candidate-delivered : la preuve ne tient pas, "
+         "il manque le volet deck."),
+    )
+    refs = [{"pr_number": 15858, "merged_at": "2026-09-14T00:00:00Z",
+             "body": "See #15689."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "active"
+
+
+def test_commentaire_sans_body_compte_comme_activite():
+    # Fail-safe : un payload sans body (fixtures anciennes, lecture perdue)
+    # n'est PAS suppose etre une attestation -- il compte, direction active.
+    # (Couvert de fait par test_active_when_comment_after_merge ; ce test le
+    # nomme pour le contrat #17759.)
+    issue = _issue(title="x", number=15689, created_at="2026-01-01T00:00:00Z",
+                   comments=["2026-09-20T00:00:00Z"])
+    refs = [{"pr_number": 15858, "merged_at": "2026-09-14T00:00:00Z",
+             "body": "See #15689."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "active"
+
+
+# --- #17759 partie additive : le rapport de la classe titre-seul ---
+
+def test_title_only_refs_ancrage_et_portee():
+    from candidate_delivered import title_only_refs
+    refs = [
+        # La forme canonique du depot : `type(scope,#N):`.
+        {"pr_number": 17147, "merged_at": "2026-09-20T00:00:00Z", "is_pr": True,
+         "title": "fix(#17143): demote markdown asides by BLOCK", "body": ""},
+        # Nombre nu dans le titre : pas d'ancre `#`.
+        {"pr_number": 17150, "merged_at": "2026-09-21T00:00:00Z", "is_pr": True,
+         "title": "fix 17143 a la main", "body": ""},
+        # Ancre d'un numero PLUS GRAND : la borne \b doit l'exclure.
+        {"pr_number": 17160, "merged_at": "2026-09-22T00:00:00Z", "is_pr": True,
+         "title": "autre sujet (#171439)", "body": ""},
+        # Titre porteur mais PR non mergee : hors champ.
+        {"pr_number": 17170, "merged_at": None, "is_pr": True,
+         "title": "fix(#17143): pas encore merge", "body": ""},
+        # Titre absent : aucune conclusion tirable.
+        {"pr_number": 17180, "merged_at": "2026-09-23T00:00:00Z", "is_pr": True,
+         "title": None, "body": ""},
+    ]
+    assert title_only_refs(refs, 17143) == [17147]
+    # Vide quand aucune PR mergee ne porte l'ancre : le rapport se tait.
+    assert title_only_refs(refs[:1], 99999) == []
+
+
+def test_issue_detail_garde_le_body_des_commentaires(monkeypatch):
+    # Le wiring doit transporter le body jusqu'a classify (mecanisme B) :
+    # sans lui, toute attestation lue comme activite.
+    # Le body de l'ISSUE est aussi transporte (#17956) : le predicat container
+    # (task list nommant des sous-issues) ne vit que la.
+    import candidate_delivered as cd
+
+    def fake_gh_json(args):
+        assert args[-1] == "createdAt,comments,body"
+        return {"createdAt": "2026-09-01T00:00:00Z",
+                "body": "- [ ] #101\n- [ ] #102\n",
+                "comments": [{"createdAt": "2026-09-20T00:00:00Z",
+                              "body": "[INFO] candidate-delivered preuve"}]}
+
+    monkeypatch.setattr(cd, "_gh_json", fake_gh_json)
+    d = cd.issue_detail("jsboige/CoursIA", 15689)
+    assert d["comments"][0]["body"].startswith("[INFO] candidate-delivered")
+    assert d["comments"][0]["created_at"] == "2026-09-20T00:00:00Z"
+    assert d["body"] == "- [ ] #101\n- [ ] #102\n"
+
+
+# --- #17956 : exclusion des issues-conteneurs (partition / task list) ---
+
+def test_audit_partition_title_excluded_as_container():
+    # Mesure 2026-09-26 : 7 des 29 READY du crible etaient des partitions
+    # d'audit de serie -- "mergee + silencieuse" est l'etat NORMAL d'une
+    # partition en cours de rollout (une PR par tranche), jamais une preuve
+    # de livraison complete. Le titre porte le signal.
+    issue = _issue(title="[Audit #17073] Serie GameTheory — partition Hermes",
+                   number=17073, comments=["2026-08-10T09:00:00Z"])
+    issue["body"] = "27 notebooks a auditer."
+    refs = [{"pr_number": 17754, "merged_at": "2026-08-11T20:00:20Z",
+             "body": "Grain: DEEP/notebook-python -- See #17073 (tranche 9 defauts)."}]
+    verdict, why = classify(issue, refs)
+    assert verdict == "container"
+    assert "partition" in why
+
+
+def test_subissue_tasklist_body_excluded_as_container():
+    # Le signal task-list ne vit que dans le BODY : une liste de taches qui
+    # NOMME des sous-issues (>= 2 numeros distincts) est un conteneur meme
+    # si le titre est sobre.
+    issue = _issue(title="Fermer la dette de rendu des notebooks",
+                   number=17900, comments=["2026-08-10T09:00:00Z"])
+    issue["body"] = "Tranches:\n\n- [x] #17070 GameTheory\n- [ ] #17071 Lean\n- [ ] #17072 QC\n"
+    refs = [{"pr_number": 17901, "merged_at": "2026-08-11T20:00:20Z",
+             "body": "See #17900."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "container"
+
+
+def test_container_title_signal_fires_without_body_key():
+    # Compat arriere : les appelants qui ne transportent pas le body (tests
+    # existants, tout appel direct de classify) gardent le signal titre --
+    # le predicat recoit body=None et seule la task-list est inertee.
+    issue = _issue(title="Serie Probas — partition par notebooks", number=17074)
+    refs = [{"pr_number": 1, "merged_at": "2026-08-11T20:00:20Z", "body": "See #17074."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "container"
+
+
+def test_acceptance_checkboxes_without_subissues_are_not_container():
+    # Controle negatif mesure (#10466) : les checkboxes d'ACCEPTANCE d'une
+    # feuille (ex #10143, 4 cases) ne nomment pas d'issues -- une feuille
+    # livree ne doit pas devenir container. Ici sans refs mergees la
+    # verdict reste no_delivery, pas container.
+    issue = _issue(title="Corriger le rendu SVG de la cellule 12", number=17902)
+    issue["body"] = ("Acceptance:\n\n- [ ] le SVG s'affiche\n"
+                     "- [ ] pas de banniere outil\n- [x] tests verts\n")
+    refs = []
+    verdict, _ = classify(issue, refs)
+    assert verdict == "no_delivery"
+
+
+def test_epic_verdict_wins_over_container():
+    # Ordre : le verdict epic (preexistant, suivi par le run log et les
+    # incidents) reste rendu pour les EPIC ; container ne couvre que
+    # partition + task-list.
+    issue = _issue(title="EPIC: rollout des guards nav-chain", number=17903)
+    refs = [{"pr_number": 1, "merged_at": "2026-08-11T20:00:20Z", "body": "See #17903."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "epic"
+
+
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+# --- #18102 : la raison du verdict in_flight separe declare vs commentaire ---
+
+def test_in_flight_reason_declared_body_names_next_phase():
+    # Controle negatif de l'acceptance : une PR ouverte qui DECLARE l'issue
+    # dans son body (rollout multi-phases, #10984/#10986) rend in_flight avec
+    # la raison « prochaine phase plausible ».
+    issue = _issue(title="rollout phase 7 of N", comments=[])
+    refs = [
+        {"pr_number": 10995, "merged_at": "2026-08-14T23:18:16Z", "is_pr": True,
+         "state": "closed", "body": "See #1."},
+        {"pr_number": 10986, "merged_at": None, "is_pr": True, "state": "open",
+         "body": "Phase 2 of the rollout: continuing #1.", "title": "rollout p2"},
+    ]
+    verdict, why = classify(issue, refs)
+    assert verdict == "in_flight"
+    assert "#10986" in why
+    assert "declare this issue in body/title" in why
+    assert "next phase" in why
+    assert "comments only" not in why
+
+
+def test_in_flight_reason_declared_title_counts():
+    # Le titre porte la reference canonique `fix(#N):` quand le body est vide :
+    # il informe la RAISON uniquement (#18102 nomme body/titre), jamais une
+    # decision de label (le canal titre reste ferme, arbitrage #17759).
+    issue = _issue(title="x", comments=[])
+    refs = [{"pr_number": 2, "merged_at": None, "is_pr": True, "state": "open",
+             "body": "", "title": "fix(#1): repair the gate"}]
+    verdict, why = classify(issue, refs)
+    assert verdict == "in_flight"
+    assert "#2" in why
+    assert "declare this issue in body/title" in why
+
+
+def test_in_flight_reason_comment_only_flags_contextual():
+    # Controle positif de l'acceptance : #15173 <- #17434 -- un commentaire de
+    # census sur une PR ouverte d'une AUTRE famille pose un cross-referenced
+    # permanent alors que ni son body ni son titre ne citent l'issue. La
+    # raison nomme la PR et son caractere non declare (le masque « travail en
+    # cours » leve).
+    issue = _issue(title="delivered but frozen", comments=[])
+    refs = [
+        {"pr_number": 17434, "merged_at": None, "is_pr": True, "state": "open",
+         "body": "GenAI Image series maintenance notes.", "title": "genai(image): batch 4"},
+        {"pr_number": 15800, "merged_at": "2026-09-10T00:00:00Z", "is_pr": True,
+         "state": "closed", "body": "See #1."},
+    ]
+    verdict, why = classify(issue, refs)
+    assert verdict == "in_flight"
+    assert "#17434" in why
+    assert "comments only" in why
+    assert "undeclared" in why
+    assert "next phase" not in why
+
+
+def test_in_flight_reason_mixed_open_prs_lists_both():
+    # Deux PRs ouvertes, une declarante et une contextuelle : la raison cite
+    # les deux origines, chacune avec son caractere.
+    issue = _issue(title="x", comments=[])
+    refs = [
+        {"pr_number": 10, "merged_at": None, "is_pr": True, "state": "open",
+         "body": "Next: rework #1 benchmarks.", "title": "bench"},
+        {"pr_number": 20, "merged_at": None, "is_pr": True, "state": "open",
+         "body": "Unrelated family.", "title": "other"},
+    ]
+    verdict, why = classify(issue, refs)
+    assert verdict == "in_flight"
+    assert "#10" in why and "#20" in why
+    assert "declare this issue in body/title" in why
+    assert "comments only" in why
+
+
+def test_in_flight_reason_unreadable_body_defaults_undeclared():
+    # Body non transporté (None, shape _parse_cross_ref_events) : unverifiable
+    # => conservateur « undeclared », jamais « prochaine phase plausible »
+    # (fail-safe coherent #15060).
+    issue = _issue(title="x", comments=[])
+    refs = [{"pr_number": 3, "merged_at": None, "is_pr": True, "state": "open"}]
+    verdict, why = classify(issue, refs)
+    assert verdict == "in_flight"
+    assert "comments only" in why and "undeclared" in why
+
+
+def test_with_pr_bodies_fetches_open_prs_too(monkeypatch):
+    # Wiring #18102 : le driver attache body+title des PRs OUVERTES (raison
+    # in_flight), pas seulement des mergees (gate #15060). La PR fermee
+    # non-margee (voie abandonnee) n'est PAS consultee.
+    import candidate_delivered as cd
+
+    fetched = []
+
+    def fake_gh_json(args):
+        assert args[0] == "pr" and args[-1] == "body,title"
+        fetched.append(int(args[2]))
+        bodies = {10: ("Phase 2: continuing #1.", "rollout p2"),
+                  20: ("GenAI census notes.", "genai(image): batch"),
+                  30: ("See #1.", "delivery")}
+        return dict(zip(("body", "title"), bodies[int(args[2])]))
+
+    monkeypatch.setattr(cd, "_gh_json", fake_gh_json)
+    refs = [
+        {"pr_number": 10, "merged_at": None, "is_pr": True, "state": "open", "body": None},
+        {"pr_number": 20, "merged_at": None, "is_pr": True, "state": "open", "body": None},
+        {"pr_number": 30, "merged_at": "2026-09-01T00:00:00Z", "is_pr": True,
+         "state": "closed", "body": None},
+        {"pr_number": 40, "merged_at": None, "is_pr": True, "state": "closed", "body": None},
+    ]
+    out = cd._with_pr_bodies("jsboige/CoursIA", refs, {})
+    assert sorted(fetched) == [10, 20, 30]  # 40 (fermee non-margee) epargnee
+    by_pr = {r["pr_number"]: r for r in out}
+    assert by_pr[10]["body"] == "Phase 2: continuing #1."
+    assert by_pr[20]["title"] == "genai(image): batch"
+    assert by_pr[40].get("body") is None  # non enrichie
+
+    # Et la raison suit : 10 declarante, 20 contextuelle.
+    issue = _issue(title="x", number=1, comments=[])
+    verdict, why = cd.classify(issue, out)
+    assert verdict == "in_flight"
+    assert "#10" in why and "declare this issue in body/title" in why
+    assert "#20" in why and "comments only" in why

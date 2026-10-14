@@ -359,6 +359,7 @@ def workflow_full(notebook_path, config):
 
     result = Task(
         subagent_type="general-purpose",
+        model="sonnet",
         prompt=f"""
         Tu es un agent notebook-iterative-builder.
         Lis .claude/agents/notebook-iterative-builder.md
@@ -406,6 +407,7 @@ Si un notebook est `in_progress` au redemarrage :
 # Via l'agent
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="series-improver: list-sessions",
     description="List active sessions"
 )
@@ -416,6 +418,7 @@ Task(
 ```bash
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="series-improver: cancel --series-id search-part1-foundations",
     description="Cancel session"
 )
@@ -426,6 +429,7 @@ Task(
 ```bash
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="series-improver: resume --series-id search-part1-foundations",
     description="Resume session"
 )
@@ -438,6 +442,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent series-improver.
     Lis .claude/agents/series-improver.md
@@ -466,6 +471,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent series-improver.
     Lis .claude/agents/series-improver.md
@@ -486,6 +492,7 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent series-improver.
     Lis .claude/agents/series-improver.md

@@ -437,6 +437,29 @@ class TestBodyJustification:
         )
         assert "duree estimee 50 minutes" in justified
 
+    def test_marker_title_with_colon_subdetail(self):
+        # Cas fondateur PR #16218 cycle c.615 : le titre de plan dans le notebook
+        # source est `Duree estimée : 45 minutes` (avec sous-detail numerique
+        # separe par `:`). Le marker doit capturer le titre COMPLET
+        # (`duree estimee : 45 minutes`), pas s'arreter au premier `:`.
+        justified = dpl._parse_pr_body_markers(
+            "plan-loss: section assumee -- App-14.ipynb section: Duree estimee : 45 minutes : "
+            "réécrite en filigrane dans la duree totale du parcours",
+            Path("App-14.ipynb"),
+        )
+        assert "duree estimee : 45 minutes" in justified, (
+            f"le titre normalisé doit inclure le sous-détail, got: {justified!r}"
+        )
+
+    def test_marker_title_with_double_colon_subdetail(self):
+        # Variante a deux-points dans le titre ET dans le séparateur raison :
+        # `section: A : B : C raison` doit donner titre=`A : B`, raison=`C raison`.
+        justified = dpl._parse_pr_body_markers(
+            "plan-loss: section assumee -- x.ipynb section: Architecture : pipeline : WFC + CP-SAT",
+            Path("x.ipynb"),
+        )
+        assert "architecture : pipeline" in justified
+
     def test_marker_different_notebook_inert(self):
         # Un marker visant un AUTRE notebook n'affecte pas le verdict du notre.
         justified = dpl._parse_pr_body_markers(

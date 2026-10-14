@@ -4,7 +4,7 @@ Greffe 5 tranche 2/3 (issue #13903), **decouple de ses copies** par la
 tranche 3 de l'issue #14051.
 
 Estimateurs de l'organe natif ``Probas/DecisionTheory/Causal-Bridges/
-Quasi-Experimental.ipynb``, desormais consommes depuis le module canonique
+CausalBridges-07-Quasi-Experimental.ipynb``, desormais consommes depuis le module canonique
 ``causal_organs`` qui vit a cote de ce notebook :
 
 - ``make_panel_did(differential_pretrend=0.0)`` : panel groupe x periode pour
@@ -69,7 +69,7 @@ import numpy as np
 from ict import causal_attribution as ca
 
 # ---------------------------------------------------------------------------
-# Organe natif canonique : le module qui vit a cote de Quasi-Experimental.ipynb
+# Organe natif canonique : le module qui vit a cote de CausalBridges-07-Quasi-Experimental.ipynb
 # ---------------------------------------------------------------------------
 # `causal_organs` n'est pas un package installable -- c'est un module pose a
 # cote de son notebook, pour que le notebook ET les tiers consomment le meme

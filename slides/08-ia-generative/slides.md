@@ -63,21 +63,28 @@ layout: image-overlay
 <!-- Référence PPTX : slide 03. -->
 
 ---
-layout: image-overlay
-class: genai-illustrated genai-system
+layout: default
+class: pilot-teachingstep
 ---
 
 # Un système génératif ne se réduit pas au modèle
 
-<v-clicks at="1">
+<!-- Pilote #15048 (groupe + figure) : le paragraphe et sa figure forment UN
+     groupe TeachingStep -- la figure apparaît avec son texte (même index de
+     clic), sa place est réservée par la grille du composant dès l'état
+     initial, et aucune coordonnée ne vit dans ce fichier. -->
+
+<TeachingStep v-click="1" placement="end" size="md">
 
 - **Au-delà du modèle :** entrées, traitement, stockage, sorties et boucle de retour forment une application générative.
 - **Entrées et stockage :** consignes, documents et conversation alimentent le contexte. Poids appris et mémoire externe restent distincts.
 - **Sortie et retour :** générer, vérifier, corriger. Une conversation ne réentraîne pas les poids ; une réponse plausible ne prouve pas sa fiabilité.
 
-</v-clicks>
+<template #visual>
+<img src="./images/img_001.png" alt="Entrées, traitement, sorties, stockage et retour" />
+</template>
 
-<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_001.png" alt="Entrées, traitement, sorties, stockage et retour" /></div>
+</TeachingStep>
 
 ---
 
@@ -109,10 +116,12 @@ class: genai-illustrated genai-system
 
 ---
 layout: image-overlay
-class: genai-illustrated genai-pyramid
+class: genai-illustrated
 ---
 
 # Pyramide des méthodes d'adaptation
+
+<TeachingStep placement="end" size="lg">
 
 <v-clicks at="1">
 
@@ -122,7 +131,11 @@ class: genai-illustrated genai-pyramid
 
 </v-clicks>
 
-<div v-click="1" class="genai-visual visual-1 of-1"><img src="./images/img_002.png" alt="Pyramide des méthodes d'adaptation" /></div>
+<template #visual>
+<div v-click="1" class="genai-figure"><img src="./images/img_002.png" alt="Pyramide des méthodes d'adaptation" /></div>
+</template>
+
+</TeachingStep>
 
 ---
 layout: image-overlay
@@ -144,23 +157,40 @@ class: genai-illustrated genai-tokens
 <div v-click="2" class="genai-visual visual-2 of-2"><img src="./images/img_007.png" alt="Analogies entre vecteurs de mots" /></div>
 
 ---
-layout: image-overlay
-class: genai-illustrated genai-attention
+layout: default
+class: pilot-teachingstep
 ---
 
 # Réseaux de neurones et attention
 
-<v-clicks at="1">
+<!-- Pilote #15048 (plusieurs groupes illustrés) : deux groupes TeachingStep
+     empilés via ts-stack, chacun porte SA figure -- plus de figures flottant
+     à des hauteurs absolues distinctes (visual-1/visual-2 du style.css). -->
+
+<div class="ts-stack">
+
+<TeachingStep v-click="1" placement="end" size="sm">
 
 - **Réseaux de neurones :** des transformations paramétrées composent plusieurs couches. L’apprentissage ajuste leurs poids.
+
+<template #visual>
+<img src="./images/img_004.png" alt="Réseau de neurones entièrement connecté" />
+</template>
+
+</TeachingStep>
+
+<TeachingStep v-click="2" placement="start" size="lg">
+
 - **Attention :** chaque position combine les informations du contexte. Les poids d’attention ne constituent pas une explication causale complète.
 - **Activité polysémie :** donner deux sens à « avocat », écrire deux phrases, puis dessiner les liens vers les mots qui lèvent l’ambiguïté.
 
-</v-clicks>
+<template #visual>
+<img src="./images/img_005.png" alt="Liens contextuels autour du mot bat" />
+</template>
 
-<div v-click="1" class="genai-visual visual-1 of-2"><img src="./images/img_004.png" alt="Réseau de neurones entièrement connecté" /></div>
+</TeachingStep>
 
-<div v-click="2" class="genai-visual visual-2 of-2"><img src="./images/img_005.png" alt="Liens contextuels autour du mot bat" /></div>
+</div>
 
 ---
 layout: image-overlay
@@ -209,6 +239,8 @@ class: genai-illustrated genai-temperature
 <div v-click="1" class="genai-visual visual-1 of-2"><img src="./images/img_008.png" alt="Distribution de probabilités sur les tokens" /></div>
 
 <div v-click="2" class="genai-visual visual-2 of-2"><img src="./images/img_010.png" alt="Effet de la température sur la distribution" /></div>
+
+<div v-click="2" class="genai-visual visual-3"><img src="./images/img_009.png" alt="Illustration de la génération de texte" /></div>
 
 ---
 layout: default
@@ -586,6 +618,8 @@ class: genai-illustrated genai-ecosystem-models
 
 </v-clicks>
 
+<div v-click="1" class="genai-visual openrouter-figure"><img src="./images/img_023.png" alt="Logo OpenRouter, agrégateur d'accès aux API de modèles" /></div>
+
 <div v-click="2" class="genai-visual hf-figure"><img src="./images/img_024.png" alt="Logo Hugging Face, plateforme de diffusion et d'inférence" /></div>
 
 <p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb">01_OpenAI_Intro.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb">10_LocalLlama.ipynb</a> · modèles : <a href="https://platform.openai.com/docs/models">OpenAI Models API Reference</a>.</p>
@@ -608,7 +642,11 @@ class: genai-illustrated genai-ecosystem-hosting
 
 <div v-click="1" class="genai-visual groq-figure"><img src="./images/img_027.png" alt="Logo Groq, fournisseur d'inférence cloud" /></div>
 
+<div v-click="1" class="genai-visual vastai-figure"><img src="./images/img_026.png" alt="Logo Vast.ai, location de GPU cloud" /></div>
+
 <div v-click="2" class="genai-visual vllm-figure"><img src="./images/img_028.png" alt="Logo vLLM, moteur d'inférence local haute performance" /></div>
+
+<div v-click="2" class="genai-visual ollama-figure"><img src="./images/img_029.png" alt="Logo Ollama, exécution locale de modèles" /></div>
 
 <p v-click="3" class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-2-Docker-Services-Management.ipynb">00-2-Docker-Services-Management.ipynb</a>.</p>
 
@@ -627,6 +665,10 @@ class: genai-illustrated genai-ecosystem-tools
 </v-clicks>
 
 <div v-click="1" class="genai-visual comfyui-figure"><img src="./images/img_032.png" alt="Capture d'écran d'un workflow ComfyUI" /></div>
+
+<div v-click="1" class="genai-visual stability-figure"><img src="./images/img_031.jpg" alt="Logo Stability AI, éditeur de Stable Diffusion" /></div>
+
+<div v-click="2" class="genai-visual openwebui-figure"><img src="./images/img_034.png" alt="Logo Open WebUI, interface conversationnelle self-hosted" /></div>
 
 <div v-click="2" class="genai-visual sillytavern-figure"><img src="./images/img_033.png" alt="Logo SillyTavern, interface conversationnelle self-hosted" /></div>
 

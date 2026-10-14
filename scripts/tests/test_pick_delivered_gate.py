@@ -34,6 +34,7 @@ from pick_idle_grain import (  # noqa: E402
     delivered_urn_allowed,
     draw_unclaimed,
     has_delivered_signal,
+    open_cover_signal,
     print_delivered_signal_report,
 )
 
@@ -42,10 +43,9 @@ DEFAULT_URNS = "grain,umbrella,delivered"
 
 def test_entitled_lanes_are_exactly_the_short_list():
     """Liste explicite et courte, par conception (#15069) : le
-    coordinateur (deux dashboards) et l'adjoint. Rien d'autre."""
+    coordinateur et l'adjoint. Rien d'autre."""
     assert DELIVERED_URN_LANES == frozenset({
         "myia-ai-01:CoursIA",
-        "myia-ai-01:CoursIA-2",
         "myia-po-2025:CoursIA-2",
     })
 
@@ -71,6 +71,7 @@ WORKER_LANES = [
     "myia-po-2023:CoursIA-2",
     "myia-po-2026:CoursIA-2",
     "myia-po-2027:CoursIA-2",
+    "myia-ai-01:CoursIA-2",  # lane worker sur la machine du coordinateur (2026-09-30)
     "myia-po-2025:CoursIA-2-x",  # prefixe de l'adjoint != adjoint
     "myia-po-2026:CoursIA",
     "myia-po-2023:CoursIA",
@@ -439,3 +440,264 @@ def test_has_delivered_signal_est_tri_etat(monkeypatch):
 
     monkeypatch.setattr(pig.subprocess, "run", boom)
     assert has_delivered_signal(1) is None
+
+
+def test_marker_partial_is_not_a_full_delivery(monkeypatch):
+    """#20008 (FP) : `candidate-delivered-partial` ne doit pas etre lu comme
+    une livraison PLEINE. Instance mesuree : #14549 c.5645287892 -- la lane
+    porteuse y documente une livraison PARTIELLE (3.5/4, residu Wan Video
+    ouvert) et a retire le label ; si la voie commentaire dit "livre", le
+    candidat sort de l'urne `grain` sur un faux positif. Le fermeur est un
+    lookahead `(?![-_\\w])` : un `\\b` ne suffit pas, le tiret qui suit
+    `delivered` FORME une frontiere de mot (mesure : la variante `\\b` rend
+    True sur `-partial`)."""
+    class _Proc:
+        def __init__(self, payload):
+            self.stdout = payload
+
+    partial = json.dumps({"comments": [
+        {"body": "[INFO] candidate-delivered-partial -- myia-po-2023:CoursIA-2,"
+                 " c.488 : 3.5/4 livre + parite mesuree. Wan Video reste ouvert"}]})
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(partial))
+    assert has_delivered_signal(1) is False
+
+    # Variante espacee : meme discrimination par le meme lookahead.
+    partial_espace = json.dumps({"comments": [
+        {"body": "[INFO candidate-delivered-partial -- residu explicite]"}]})
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(partial_espace))
+    assert has_delivered_signal(1) is False
+
+
+def test_marker_space_form_with_inner_content_is_recognized(monkeypatch):
+    """#20008 (FN) : la forme espacee a contenu INTERNE
+    (`[INFO candidate-delivered <contenu>]`) est une livraison. Avant le
+    fix, la 2e alternative exigeait le `]` immediatement apres le mot --
+    cette forme n'etait reconnue par aucune des trois, et le candidat
+    restait servi comme grain neuf."""
+    class _Proc:
+        def __init__(self, payload):
+            self.stdout = payload
+
+    body = json.dumps({"comments": [
+        {"body": "[INFO candidate-delivered -- 70/81 creneaux verifies, "
+                 "preuve firsthand sur main]"}]})
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(body))
+    assert has_delivered_signal(1) is True
+
+
+# --- surface 3 : la PR OUVERTE couvrante, meme rang (#16589) ---------------
+
+def _cover_probe(*covered):
+    """Sonde de couverture synthetique : descriptor pour les numeros listes,
+    chaine vide sinon. Retourne le descripteur « PR #<9000+n> » pour rendre
+    l'assertion lisible dans le message de conflit."""
+    covered = set(covered)
+
+    def probe(number):
+        return f"PR #{9000 + number}" if number in covered else ""
+    return probe
+
+
+def test_pr_ouverte_ecarte_le_grain_et_le_remplace(monkeypatch):
+    """Arbitrage #16589 : le candidat couvert par une PR OUVERTE est ecarte
+    ET remplace dans son urne -- au meme rang que candidate-delivered, pas
+    une annotation de plus. C'est le differenciateur du precedent #12504 :
+    le signal existait (annotation recent_delivery), il manquait la
+    sanction."""
+    _patch_draw(monkeypatch, [1, 2])
+    by = _by(grain=[_item(1), _item(2)])
+    picks, _, conflicts = draw_unclaimed(
+        by, _args(grains=1), random.Random(7), None, None, None,
+        cover_probe=_cover_probe(1))
+    assert [p["number"] for p in picks] == [2], (
+        "un remplacant doit etre rendu, pas zero grain")
+    assert len(conflicts) == 1
+    assert conflicts[0][1].startswith("EN COURS")
+    assert "PR #9001" in conflicts[0][1]
+
+
+def test_controle_positif_grain_non_couvert_est_conserve(monkeypatch):
+    """Sans ce cas, un garde qui ecarterait TOUT serait vert sur le negatif."""
+    _patch_draw(monkeypatch, [1])
+    by = _by(grain=[_item(1)])
+    picks, _, conflicts = draw_unclaimed(
+        by, _args(grains=1), random.Random(7), None, None, None,
+        cover_probe=_cover_probe())
+    assert [p["number"] for p in picks] == [1]
+    assert conflicts == []
+
+
+def test_umbrella_pas_filtree_par_la_couverture(monkeypatch):
+    """Meme protection que la surface livraison : l'urne `umbrella` n'est pas
+    filtree par la couverture -- une PR ouverte sur un VOLET d'EPIC n'epuise
+    pas le parapluie (R5 : on y pioche un autre sous-grain, on ne ferme pas
+    l'EPIC sur une livraison partielle)."""
+    _patch_draw(monkeypatch, [200])
+    by = _by(umbrella=[_item(200, klass="umbrella")])
+    picks, _, conflicts = draw_unclaimed(
+        by, _args(grains=0, umbrellas=1), random.Random(7), None, None,
+        None, cover_probe=_cover_probe(200))
+    assert [p["number"] for p in picks] == [200]
+    assert conflicts == []
+
+
+def test_livraison_premiere_le_label_ne_paie_pas_la_couverture(monkeypatch):
+    """Le filtre de livraison reste PREMIER : un candidat labelise part en
+    LIVRAISON sans jamais atteindre la sonde de couverture (un travail deja
+    livre prime sur un travail en cours)."""
+    _patch_draw(monkeypatch, [1, 2])
+    calls = []
+
+    def probe(number):
+        calls.append(number)
+        return "PR #9001" if number == 1 else ""
+
+    by = _by(grain=[_item(1, labels=(DELIVERED_LABEL,)), _item(2)])
+    picks, _, conflicts = draw_unclaimed(
+        by, _args(grains=1), random.Random(7), None, None, None,
+        cover_probe=probe)
+    assert [p["number"] for p in picks] == [2]
+    assert conflicts[0][1].startswith("LIVRAISON")
+    assert calls == [2], (
+        "le candidat labelise ne doit jamais atteindre la sonde de "
+        f"couverture, or appels={calls}")
+
+
+def test_sonde_couverture_en_echec_fail_open_et_dite(monkeypatch, capsys):
+    """Echec de requete != absence de PR couvrante : candidat CONSERVE,
+    echec rapporte (cover_failures), message distinct du NON SONDE."""
+    _patch_draw(monkeypatch, [1])
+    by = _by(grain=[_item(1)])
+
+    def failing(number):
+        return None
+
+    state = {"failures": [], "budget_hit": False}
+    picks, _, _ = draw_unclaimed(
+        by, _args(grains=1), random.Random(7), None, None, None,
+        cover_probe=failing, delivered_state=state)
+    assert [p["number"] for p in picks] == [1], "fail-OPEN : candidat garde"
+    assert state["cover_failures"] == [1]
+    print_delivered_signal_report([], state, False)
+    out = capsys.readouterr().out
+    assert "sonde de couverture NON LUE" in out
+    assert "NON SONDE" not in out
+
+
+def test_plafond_partage_entre_sondes_livraison_et_couverture(monkeypatch):
+    """« Au meme rang » (#16589) = AUSSI au meme cout : les 3 sondes
+    parent le MEME budget de DELIVERED_SIGNAL_MAX_PROBES, pas un plafond
+    double. Avec un plafond de 4 et deux candidats, exactement quatre sondes
+    reelles partent (livraison 1er, merged_pr 1er, couverture 1er,
+    livraison 2e) -- le 2e candidat n'a plus que la livraison, et la
+    couverture n'est pas appelee une 2e fois."""
+    monkeypatch.setattr(pig, "DELIVERED_SIGNAL_MAX_PROBES", 4)
+    _patch_draw(monkeypatch, [1, 2])
+    delivered_calls = []
+    merged_pr_calls = []
+    cover_calls = []
+
+    def counting_delivered(number, lane=None):
+        delivered_calls.append(number)
+        return False
+
+    def counting_merged_pr(number, lane=None):
+        merged_pr_calls.append(number)
+        return False
+
+    def counting_cover(number):
+        cover_calls.append(number)
+        return ""
+
+    state = {"failures": [], "budget_hit": False}
+    by = _by(grain=[_item(1), _item(2)])
+    picks, _, _ = draw_unclaimed(
+        by, _args(grains=2), random.Random(7), None, None, None,
+        delivered_probe=counting_delivered,
+        cover_probe=counting_cover,
+        merged_pr_probe=counting_merged_pr,
+        delivered_state=state)
+    assert delivered_calls == [1, 2], (
+        f"plafond partage : une sonde livraison par candidat survivant, or {delivered_calls}")
+    assert merged_pr_calls == [1], (
+        f"plafond partage : une seule sonde merged_pr (1er candidat), or {merged_pr_calls}")
+    assert cover_calls == [1], (
+        f"plafond partage : une seule sonde couverture (1er candidat), or {cover_calls}")
+    assert state["budget_hit"] is True
+    assert len(picks) == 2, "les non sondes sont CONSERVES (fail-open)"
+
+
+def test_open_cover_signal_est_tri_etat(monkeypatch):
+    """La sonde elle-meme : descriptor / chaine vide / None. Le meme tri-etat
+    que has_delivered_signal -- un echec de requete n'est pas une absence de
+    PR couvrante."""
+    class _Proc:
+        def __init__(self, payload):
+            self.stdout = payload
+
+    opened = json.dumps([
+        {"number": 12530, "state": "OPEN", "isDraft": False,
+         "title": "fix(knot): L576", "body": "See #12504."},
+        {"number": 12519, "state": "OPEN", "isDraft": True,
+         "title": "#12504 patrol", "body": ""},
+        {"number": 12400, "state": "CLOSED", "isDraft": False,
+         "title": " vieux sujet 12504", "body": ""}])
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(opened))
+    assert open_cover_signal(12504) == (
+        "PR #12519 [draft] (+1 autre(s) : #12530)")
+
+    clean = json.dumps([{"number": 12400, "state": "CLOSED",
+                         "isDraft": False}])
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(clean))
+    assert open_cover_signal(12504) == ""
+
+    def boom(*a, **kw):
+        raise OSError("403")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    assert open_cover_signal(12504) is None
+
+
+def test_open_cover_signal_exige_l_ancre_diese(monkeypatch):
+    """#17760 : la recherche GitHub rend un NOMBRE NU en sous-chaine. Une PR
+    ouverte qui ne cite pas `#N` borne par un mot ne couvre PAS -- le
+    candidat est conserve. Controles de l'arbitrage ai-01 : le positif
+    (ancre presente -> descriptor) et le negatif (sous-chaine seule -> vide).
+    """
+    class _Proc:
+        def __init__(self, payload):
+            self.stdout = payload
+
+    # Cas mesure (classe dominante : EPICs au petit numero) : le numero
+    # n'apparait qu'en sous-chaine d'identifiants plus grands, jamais ancre.
+    bare = json.dumps([
+        {"number": 17428, "state": "OPEN", "isDraft": False,
+         "title": "fix(knot): patrol L576 branches orphelines",
+         "body": "mesures c.1170301 et #1170391 citees pour contexte"}])
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: _Proc(bare))
+    assert open_cover_signal(11703) == ""
+
+    # Nombre nu dans le titre : pas plus couvrant que dans le body.
+    title_bare = json.dumps([
+        {"number": 17428, "state": "OPEN", "isDraft": False,
+         "title": "fix 11703 patrol", "body": ""}])
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(title_bare))
+    assert open_cover_signal(11703) == ""
+
+    # Controle positif : l'ancre bornee couvre, et seul le PR ancre compte
+    # dans le descriptor (le voisin sous-chaine est ecarte du compte).
+    anchored = json.dumps([
+        {"number": 17428, "state": "OPEN", "isDraft": False,
+         "title": "fix(knot): patrol L576",
+         "body": "mesure c.1668201 pour contexte"},
+        {"number": 17452, "state": "OPEN", "isDraft": False,
+         "title": "feat(picker)", "body": "See #16682."}])
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _Proc(anchored))
+    assert open_cover_signal(16682) == "PR #17452"

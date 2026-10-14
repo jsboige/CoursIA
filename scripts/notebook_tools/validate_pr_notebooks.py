@@ -13,7 +13,18 @@ Exit codes:
     0 - All modified notebooks pass
     1 - One or more notebooks fail validation
     2 - Setup / runtime error
+
+Importable sous Python 3.9 (cf. #17264) : ce module est importe par le hook
+pre-commit H.3 (`check_null_exec.py`), qui tourne avec le `python` du shell —
+lequel peut etre celui d'un env metier ancien encore en tete de PATH. Un env
+Python 3.9 y est legitime (c'est la contrainte de PyPhi 1.2.0 pour la serie
+ICT), donc les annotations PEP 604 (`list[str] | None`) doivent rester
+paresseuses : d'ou le `from __future__ import annotations` ci-dessous, sans
+lequel l'union est evaluee a l'import et leve
+`TypeError: unsupported operand type(s) for |`.
 """
+
+from __future__ import annotations
 
 import argparse
 import json

@@ -47,34 +47,35 @@ Une série sœur existe en C# : [SymbolicAI/Z3-Linq2Z3/](../Z3-Linq2Z3/README.md
 
 | # | Notebook | Sujet | Durée | Statut |
 |---|----------|-------|------|--------|
-| 01 | [Introduction](Z3-Python-01-Introduction.ipynb) | `Solver`, `Int`/`Bool`/`Real`, sat/unsat, `Optimize` | ~30 min | PRODUCTION |
-| 01ᶜˢ | [Introduction (twin C# .NET)](Z3-Python-01-Introduction-Csharp.ipynb) | Parité .NET : même moteur Z3 via `Microsoft.Z3` (NuGet) | ~30 min | PRODUCTION |
-| 01b | [Du style déclaratif LINQ au solveur Z3](Z3-Python-01b-Style-Declaratif-Linq.ipynb) | Pont C# Z3.Linq ↔ pyz3 : `assert_and_track`, `unsat_core`, coloration de graphe (Australie) | ~30 min | PRODUCTION |
-| 02 | [Sudoku](Z3-Python-02-Sudoku.ipynb) | Sudoku comme CSP, `Distinct`, visualisation matplotlib | ~25 min | PRODUCTION |
-| 02ᶜˢ | [Sudoku (twin C# .NET)](Z3-Python-02-Sudoku-Csharp.ipynb) | Parité .NET : même moteur Z3, visualisation ASCII | ~25 min | PRODUCTION |
-| 03 | [Tactiques et théories](Z3-Python-03-Tactics.ipynb) | `Tactic`, `BitVec`, `Array` | ~35 min | PRODUCTION |
-| 03ᶜˢ | [Tactiques et théories (twin C# .NET)](Z3-Python-03-Tactics-Csharp.ipynb) | Parité .NET : tactiques, `BitVec`, `Array` via `Microsoft.Z3` (NuGet) | ~35 min | PRODUCTION |
-| 04 | [Chaînes et expressions régulières](Z3-Python-04-Strings-Regex.ipynb) | `String`, `Re` (théorie des chaînes Z3) | ~30 min | PRODUCTION |
-| 04ᶜˢ | [Chaînes et expressions régulières (twin C# .NET)](Z3-Python-04-Strings-Regex-Csharp.ipynb) | Parité .NET : théorie des chaînes, regex via `Microsoft.Z3` (NuGet) | ~30 min | PRODUCTION |
-| 05 | [Quantificateurs et preuves](Z3-Python-05-Quantifiers-Proofs.ipynb) | `ForAll`, `Exists`, preuves par réfutation, `unknown` | ~35 min | PRODUCTION |
-| 05ᶜˢ | [Quantificateurs et preuves (twin C# .NET)](Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb) | Parité .NET : `MkForall`, `MkExists`, réfutation, `ReasonUnknown` via `Microsoft.Z3` (NuGet) | ~35 min | PRODUCTION |
-| 06 | [Optimisation avancée](Z3-Python-06-Advanced-Optimization.ipynb) | Pareto, objectifs multiples, `Optimize` hiérarchique, MaxSAT | ~40 min | PRODUCTION |
-| 06ᶜˢ | [Optimisation avancée (twin C# .NET)](Z3-Python-06-Advanced-Optimization-Csharp.ipynb) | Parité .NET : `MkOptimize`, `MkMaximize`/`MkMinimize`, front de Pareto, `AssertSoft` (MaxSAT) via `Microsoft.Z3` (NuGet) | ~40 min | PRODUCTION |
-| 08 | [Ordonnancement (Job-Shop Scheduling)](Z3-Python-08-Ordonnancement.ipynb) | `Optimize.minimize`, contrainte disjonctive `Or(...)`, makespan minimal, diagramme de Gantt | ~35 min | PRODUCTION |
-| 09 | [L'énigme d'Einstein (Zebra puzzle)](Z3-Python-09-Enigme-Einstein.ipynb) | Encodage par position, `Distinct`, adjacences, satisfiabilité vs optimisation, unicité prouvée | ~30 min | PRODUCTION |
-| 10 | [Cryptarithmes (SEND + MORE = MONEY)](Z3-Python-10-Cryptarithmetic.ipynb) | `Int`, `Distinct`, équation positionnelle, propagation vs brute force, retenues déduites | ~25 min | PRODUCTION |
-| 11 | [Coloration de graphe (Petersen)](Z3-Python-11-Graph-Coloring.ipynb) | `Int` par sommet, contraintes d'arêtes `!=`, recherche linéaire du nombre chromatique, `unsat` = preuve d'optimalité | ~30 min | PRODUCTION |
-| 12 | [Arithmétique réelle](Z3-Python-12-Real-Arithmetic.ipynb) | Théorie `Real`, solution rationnelle exacte, irrationnel algébrique (racine de 2 comme `root-obj`), preuve d'absence sur R (`unsat`) | ~25 min | PRODUCTION |
-| 13 | [UNSAT cores](Z3-Python-13-UnsatCores.ipynb) | `assert_and_track`, `unsat_core()`, noyau minimal d'insatisfiabilité, diagnostic des contraintes conflictuelles | ~25 min | PRODUCTION |
-| 14 | [Bit-vectors](Z3-Python-14-BitVectors-Overflow.ipynb) | Théorie `BitVec`, débordement arithmétique (`ULT`/`UGE`), preuve d'inévitabilité/sécurité, extraction de champ bit-à-bit | ~30 min | PRODUCTION |
-| 15 | [Tableaux imbriqués et grilles 2D](Z3-Python-15-Nested-Arrays-2D.ipynb) | Grille 2D déclarative (`Distinct`/`Sum`) vs brute (`Array` de `Array`, `Store`/`Select`), carré latin, Sudoku 4×4, carré magique | ~30 min | PRODUCTION |
-| 16 | [Meal-Planner déclaratif](Z3-Python-16-Meal-Planner.ipynb) | Menu équilibré (index / énumération / booléen), `Optimize.minimize` du coût, plan hebdomadaire matriciel `jours × plats` vs glouton | ~35 min | PRODUCTION |
-| 16b | [Meal-Planner : données réelles](Z3-Python-16b-Meal-Planner-Data-External.ipynb) | Couche de données (compagnon du 16) : corpus Ciqual ANSES 2025 × archive RecipeML, lecture en flux (`iterparse`), appariement lexical flou, agrégation pondérée par la masse | ~40 min | BETA |
-| 16c | [Meal-Planner : capstone patient](Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb) | Capstone (compagnon du 16) : restrictions nutritionnelles (énergie bornée, protéines min, lipides max), menu multi-jours, port du C# `08_Meal_Planner_Patient_Capstone` | ~40 min | BETA |
-| 16d | [Meal-Planner : convergence à l'échelle](Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb) | Convergence (compagnon du 16) : l'encodage décide de la tractabilité — index+disjonction explose, `Array` insoluble (`unknown`), one-hot pseudo-booléen (`PbEq`/`PbLe`/`PbGe`) passe à l'échelle | ~45 min | BETA |
-| 16e | [Meal-Planner : optimisation](Z3-Python-16e-Meal-Planner-Optimize.ipynb) | Optimisation (compagnon du 16) : du SAT à l'OPT — `minimize`/`maximize`, `add_soft` (MaxSAT souple), multi-objectif natif (`pareto`/`box`), glouton vs optimum global | ~45 min | BETA |
-| 17 | [Théorie des tableaux](Z3-Python-17-Array-Theory.ipynb) | `Array` sort, `Select`/`Store`, axiomes de McCarthy (read-over-write) vérifiés comme théorèmes, tableau trié / égalité de tableaux | ~30 min | PRODUCTION |
-| 18 | [Sudoku 4×4 : modes Array vs Constants](Z3-Python-18-Sudoku-Modes.ipynb) | Même Sudoku 4×4 encodé deux fois (variables `Int` par cellule vs `Array(Int, Int)`), comparaison des deux modes d'encodage | ~30 min | PRODUCTION |
+| 01 | [Introduction](Z3-01-Introduction-Python.ipynb) | `Solver`, `Int`/`Bool`/`Real`, sat/unsat, `Optimize` | ~30 min | PRODUCTION |
+| 01ᶜˢ | [Introduction (twin C# .NET)](Z3-01-Introduction-CSharp.ipynb) | Parité .NET : même moteur Z3 via `Microsoft.Z3` (NuGet) | ~30 min | PRODUCTION |
+| 01b | [Du style déclaratif LINQ au solveur Z3](Z3-01b-Style-Declaratif-Linq.ipynb) | Pont C# Z3.Linq ↔ pyz3 : `assert_and_track`, `unsat_core`, coloration de graphe (Australie) | ~30 min | PRODUCTION |
+| 02 | [Sudoku](Z3-02-Sudoku-Python.ipynb) | Sudoku comme CSP, `Distinct`, visualisation matplotlib | ~25 min | PRODUCTION |
+| 02ᶜˢ | [Sudoku (twin C# .NET)](Z3-02-Sudoku-CSharp.ipynb) | Parité .NET : même moteur Z3, visualisation ASCII | ~25 min | PRODUCTION |
+| 03 | [Tactiques et théories](Z3-03-Tactics-Python.ipynb) | `Tactic`, `BitVec`, `Array` | ~35 min | PRODUCTION |
+| 03ᶜˢ | [Tactiques et théories (twin C# .NET)](Z3-03-Tactics-CSharp.ipynb) | Parité .NET : tactiques, `BitVec`, `Array` via `Microsoft.Z3` (NuGet) | ~35 min | PRODUCTION |
+| 04 | [Chaînes et expressions régulières](Z3-04-Strings-Regex-Python.ipynb) | `String`, `Re` (théorie des chaînes Z3) | ~30 min | PRODUCTION |
+| 04ᶜˢ | [Chaînes et expressions régulières (twin C# .NET)](Z3-04-Strings-Regex-CSharp.ipynb) | Parité .NET : théorie des chaînes, regex via `Microsoft.Z3` (NuGet) | ~30 min | PRODUCTION |
+| 05 | [Quantificateurs et preuves](Z3-05-Quantifiers-Proofs-Python.ipynb) | `ForAll`, `Exists`, preuves par réfutation, `unknown` | ~35 min | PRODUCTION |
+| 05ᶜˢ | [Quantificateurs et preuves (twin C# .NET)](Z3-05-Quantifiers-Proofs-CSharp.ipynb) | Parité .NET : `MkForall`, `MkExists`, réfutation, `ReasonUnknown` via `Microsoft.Z3` (NuGet) | ~35 min | PRODUCTION |
+| 06 | [Optimisation avancée](Z3-06-Advanced-Optimization-Python.ipynb) | Pareto, objectifs multiples, `Optimize` hiérarchique, MaxSAT | ~40 min | PRODUCTION |
+| 06ᶜˢ | [Optimisation avancée (twin C# .NET)](Z3-06-Advanced-Optimization-CSharp.ipynb) | Parité .NET : `MkOptimize`, `MkMaximize`/`MkMinimize`, front de Pareto, `AssertSoft` (MaxSAT) via `Microsoft.Z3` (NuGet) | ~40 min | PRODUCTION |
+| 08 | [Ordonnancement (Job-Shop Scheduling)](Z3-08-Ordonnancement-Python.ipynb) | `Optimize.minimize`, contrainte disjonctive `Or(...)`, makespan minimal, diagramme de Gantt | ~35 min | PRODUCTION |
+| 09 | [L'énigme d'Einstein (Zebra puzzle)](Z3-09-Enigme-Einstein-Python.ipynb) | Encodage par position, `Distinct`, adjacences, satisfiabilité vs optimisation, unicité prouvée | ~30 min | PRODUCTION |
+| 10 | [Cryptarithmes (SEND + MORE = MONEY)](Z3-10-Cryptarithmetic-Python.ipynb) | `Int`, `Distinct`, équation positionnelle, propagation vs brute force, retenues déduites | ~25 min | PRODUCTION |
+| 11 | [Coloration de graphe (Petersen)](Z3-11-Graph-Coloring-Python.ipynb) | `Int` par sommet, contraintes d'arêtes `!=`, recherche linéaire du nombre chromatique, `unsat` = preuve d'optimalité | ~30 min | PRODUCTION |
+| 12 | [Arithmétique réelle](Z3-12-Real-Arithmetic-Python.ipynb) | Théorie `Real`, solution rationnelle exacte, irrationnel algébrique (racine de 2 comme `root-obj`), preuve d'absence sur R (`unsat`) | ~25 min | PRODUCTION |
+| 13 | [UNSAT cores](Z3-13-UnsatCores-Python.ipynb) | `assert_and_track`, `unsat_core()`, noyau minimal d'insatisfiabilité, diagnostic des contraintes conflictuelles | ~25 min | PRODUCTION |
+| 13b | [UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) | Compagnon du 13 : core invisible à l'inspection (chaîne de précédences), minimalité non garantie par Z3, MUS (Minimal Unsatisfiable Subset) par algorithme deletion-based, deux preuves du même UNSAT | ~20 min | BETA |
+| 14 | [Bit-vectors](Z3-14-BitVectors-Overflow-Python.ipynb) | Théorie `BitVec`, débordement arithmétique (`ULT`/`UGE`), preuve d'inévitabilité/sécurité, extraction de champ bit-à-bit | ~30 min | PRODUCTION |
+| 15 | [Tableaux imbriqués et grilles 2D](Z3-15-Nested-Arrays-2D-Python.ipynb) | Grille 2D déclarative (`Distinct`/`Sum`) vs brute (`Array` de `Array`, `Store`/`Select`), carré latin, Sudoku 4×4, carré magique | ~30 min | PRODUCTION |
+| 16 | [Meal-Planner déclaratif](Z3-16-Meal-Planner-Python.ipynb) | Menu équilibré (index / énumération / booléen), `Optimize.minimize` du coût, plan hebdomadaire matriciel `jours × plats` vs glouton | ~35 min | PRODUCTION |
+| 16b | [Meal-Planner : données réelles](Z3-16b-Meal-Planner-Data-External-Python.ipynb) | Couche de données (compagnon du 16) : corpus Ciqual ANSES 2025 × archive RecipeML, lecture en flux (`iterparse`), appariement lexical flou, agrégation pondérée par la masse | ~40 min | BETA |
+| 16c | [Meal-Planner : capstone patient](Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) | Capstone (compagnon du 16) : restrictions nutritionnelles (énergie bornée, protéines min, lipides max), menu multi-jours, port du C# `08_Meal_Planner_Patient_Capstone` | ~40 min | BETA |
+| 16d | [Meal-Planner : convergence à l'échelle](Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) | Convergence (compagnon du 16) : l'encodage décide de la tractabilité — index+disjonction explose, `Array` insoluble (`unknown`), one-hot pseudo-booléen (`PbEq`/`PbLe`/`PbGe`) passe à l'échelle | ~45 min | BETA |
+| 16e | [Meal-Planner : optimisation](Z3-16e-Meal-Planner-Optimize-Python.ipynb) | Optimisation (compagnon du 16) : du SAT à l'OPT — `minimize`/`maximize`, `add_soft` (MaxSAT souple), multi-objectif natif (`pareto`/`box`), glouton vs optimum global | ~45 min | BETA |
+| 17 | [Théorie des tableaux](Z3-17-Array-Theory-Python.ipynb) | `Array` sort, `Select`/`Store`, axiomes de McCarthy (read-over-write) vérifiés comme théorèmes, tableau trié / égalité de tableaux | ~30 min | PRODUCTION |
+| 18 | [Sudoku 4×4 : modes Array vs Constants](Z3-18-Sudoku-Modes-Python.ipynb) | Même Sudoku 4×4 encodé deux fois (variables `Int` par cellule vs `Array(Int, Int)`), comparaison des deux modes d'encodage | ~30 min | PRODUCTION |
 
 ### Fil pédagogique
 
@@ -203,11 +204,33 @@ La série manipule un vocabulaire précis (SMT, tactiques, MaxSAT, théories) h�
 | de Moura & Passmore, "The Strategy Challenge in SMT Solving" (2013) | Tactiques et stratégies de résolution (notebook 03) |
 | Morgado, Heras, Liffiton, Planes & Marques-Silva, "Iterative and core-guided MaxSAT solving: A survey and assessment" (Constraints 2013) | MaxSAT, relaxation des contraintes dures en souples (notebook 06) |
 
+## Ouvrages-ancrage
+
+Issue de référence : #19278. Cette série s'ancre principalement sur un livre-ancrage pratique :
+
+- **Yurichev, D., *SAT/SMT by Example* (édition publique, 12 février 2023, 666 pages)** — déposé à `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (identité vérifiée sur page de titre, 2026-10-05). Le compendium pratique de résolution SAT/SMT par l'exemple, centré Z3/PySMT.
+
+**Avertissement — défaut biblio au 2026-10-05** : le PDF Yurichev sur la machine worker po-2026 a une taille disque non-nulle mais une structure interne invalide (`fitz.open()` rend 0 page extractible, idem OR94 et Multiagent 2009 de GameTheory). Le livre est référencé en tant que tel (titre, auteur, année, dépot GDrive vérifié), mais les détails de chapitre ou d'exemple spécifique ne sont pas ancrés firsthand tant qu'une copie lisible n'est pas réacquise. Issue de suivi à ouvrir par le mainteneur (hors périmètre worker — c'est un geste bibliothèque, pas un geste de code).
+
+### Mapping carnet ↔ livre (mapping de l'issue #19278, à confirmer par lecture effective du PDF)
+
+| Thème du livre | Notebook porteur | Vérification |
+|----------------|------------------|--------------|
+| Solver API, theories, modèles | série Z3-API entière | OK (la série entière relève du livre ; pas d'inventaire chapitre-par-chapitre) |
+| Array theory, Nested arrays | `Z3-Linq2Z3/04_Array_Theory`, `05_Nested_Arrays_2D` | à_confirmer (PDF corrompu worker) |
+| Cryptarithmetic | `Z3-Linq2Z3/13_Cryptarithmetic_SMT` | à_confirmer |
+| MaxSAT / Optimize | `Z3-Linq2Z3/14_Optimize_MaxSAT` | à_confirmer |
+| Bit-vectors, overflow | `Z3-Linq2Z3/15_BitVectors_Overflow` | à_confirmer |
+| UNSAT cores | `Z3-Linq2Z3/17_UnsatCores` | à_confirmer |
+| Einstein's riddle & puzzles | `Z3-Linq2Z3/18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | à_confirmer |
+| Real arithmetic | `Z3-Linq2Z3/16_RealArithmetic` | à_confirmer |
+
 ## FAQ / Troubleshooting
 
 | Problème | Solution |
 |----------|----------|
 | **`ModuleNotFoundError: No module named 'z3'`** | Le package pip s'appelle `z3-solver` (et non `z3`). Installer avec `pip install z3-solver`, puis `import z3`. Le notebook 0 le rappelle dans sa cellule de setup. |
+| **Twins C# sous Linux ou macOS Apple Silicon : `libz3` introuvable** | Le package NuGet `Microsoft.Z3` ne livre la bibliothèque native que pour Windows x64 et macOS Intel. La première cellule des twins C# charge alors celle du paquet Python `z3-solver` par [`Z3NativeLoader.cs`](Z3NativeLoader.cs) : installer `z3-solver` dans l'environnement où `python3` le trouve, ou définir `Z3_LIBRARY_PATH` vers le dossier qui contient `libz3.so` (`libz3.dylib` sous macOS). `pip install z3-solver==4.12.2.0`, la version du package NuGet, redonne exactement les sorties committées. |
 | **`check()` renvoie `unknown`** | Le solveur ne peut pas conclure : théorie non décidable, quantificateurs (notebook 5) ou timeout. Simplifier le modèle, changer de tactique (`Then`, `OrElse`, notebook 3) ou augmenter le timeout du solveur. |
 | **`s.model()` échoue ou lève une exception** | `model()` n'a de sens que si `check() == sat`. Sur `unsat`, il n'y a pas de modèle à extraire (consulter `unsat_core()` à la place) ; sur `unknown`, le résultat est incertain. |
 | **`Optimize` ou `Solver` ?** | `Solver` = satisfiabilité seule (le problème a-t-il une solution ?). Dès qu'il y a un objectif à maximiser/minimiser, utiliser `Optimize` (notebook 1 §4, notebook 6). |
@@ -246,9 +269,9 @@ Le diagramme ci-dessus situe les deux postures du solveur — **décider** (`Sol
 
 - **Série sœur Z3 C# (Z3.Linq)** : [Z3-Linq2Z3](../Z3-Linq2Z3/README.md) propose la même idée — décrire des contraintes, laisser le solveur résoudre — mais via le binding LINQ en .NET 9. C'est le miroir de cette série pour les développeurs C# : plus restrictif (pas de tactiques ni de `BitVec` exposés directement) mais plus idiomatique en C#. Comparer les deux fait saisir le compromis entre abstraction déclarative et contrôle de bas niveau.
 - **Comparaison multi-paradigmes** : la [série Sudoku](../../../Sudoku/README.md) compare Z3 à **10 autres approches algorithmiques** (backtracking, DLX, CP-SAT, métaheuristiques, inférence probabiliste, réseaux de neurones) sur un même problème NP-complet — le terrain idéal pour situer Z3 dans le spectre des solveurs.
-- **Regex symbolique à l'échelle** : la théorie des chaînes du notebook 04 (`Re`/`InRe`, génération de témoin) trouve son aboutissement dans [Sudoku-13 — Automates symboliques](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) (Epic **#2978**), qui met en scène la distinction reconnaissance (RE#, temps linéaire) vs résolution (Z3, production de témoin) sur une grille de Sudoku.
+- **Regex symbolique à l'échelle** : la théorie des chaînes du notebook 04 (`Re`/`InRe`, génération de témoin) trouve son aboutissement dans [Sudoku-13 — Automates symboliques](../../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb) (Epic **#2978**), qui met en scène la distinction reconnaissance (RE#, temps linéaire) vs résolution (Z3, production de témoin) sur une grille de Sudoku.
 - **Programmation par contraintes industrielle** : la série [Search](../../../Search/README.md) (Part 2-CSP, OR-Tools CP-SAT) généralise la modélisation par contraintes à une famille plus large de problèmes d'optimisation, avec un solveur (CP-SAT) dont le compromis performance/expressivité diffère de Z3.
-- Pour la pratique : reprenez le [notebook 06 (Advanced Optimization)](Z3-Python-06-Advanced-Optimization.ipynb) et formulez un problème multi-objectifs de votre choix (allocation budgétaire, planning sous préférences contradictoires). 
+- Pour la pratique : reprenez le [notebook 06 (Advanced Optimization)](Z3-06-Advanced-Optimization-Python.ipynb) et formulez un problème multi-objectifs de votre choix (allocation budgétaire, planning sous préférences contradictoires). 
 
 Explorez ensuite la frontière de Pareto : quelles solutions le solveur propose-t-il, et comment MaxSAT permet-il de relâcher les contraintes les moins critiques quand le problème devient irréalisable ? C'est l'exercice le plus formateur pour saisir la différence entre *satisfaire* et *optimiser*.
 

@@ -10,7 +10,8 @@ Covers:
 - ``LANDING_PAGES``: the explicit list is stable (landing pages are listed in
   a fixed order before the auto-generated README list).
 - ``build_render_block`` shape: emits a ``project:`` block with the expected
-  landing pages and a comment line with the README count.
+  landing pages, and **no** count line (counters were removed at ai-01's
+  arbitration on #19901 -- a total in a generated file rots at every merge).
 - ``argparse``: ``--check`` flag exists and prints a count message.
 
 Tests are CPU-only / hermetic: no ``git``, no I/O. ``replace_render_block`` is
@@ -20,6 +21,10 @@ checked-out repo.
 from __future__ import annotations
 
 import argparse
+import os
+import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -226,8 +231,14 @@ class TestBuildRenderBlockShape:
         block = rqr.build_render_block()
         assert '  render:' in block
 
-    def test_readme_count_in_comment(self, monkeypatch):
-        """The build function embeds a comment with the README count (root + N)."""
+    def test_no_count_in_generated_comment(self, monkeypatch):
+        """The build function must NOT embed a count of any of the three lists.
+
+        Removed at ai-01's arbitration on #19901 (review 5469480925). A total
+        written into the generated `_quarto.yml` rots at every merge: two PRs
+        adding notebooks either conflict on the line (#19579) or merge a FALSE
+        total cleanly, leaving `main` stale. The lists themselves stay.
+        """
         fake_readmes = [
             'MyIA.AI.Notebooks/README.md',
             'MyIA.AI.Notebooks/Search/README.md',
@@ -236,8 +247,13 @@ class TestBuildRenderBlockShape:
         monkeypatch.setattr(rqr, 'git_tracked_readmes', lambda: fake_readmes)
         block = rqr.build_render_block()
         block_str = '\n'.join(block)
-        # Comment says "<N+1> READMEs" where N is len of fake list (root + 3 = 4)
-        assert '4 READMEs' in block_str
+        # The counter that used to be emitted here (root + 3 = 4) is gone.
+        assert '4 READMEs' not in block_str
+        # ... and so are the two sibling counters, in whatever form they take.
+        assert not re.search(r'#\s*\d+\s+(?:READMEs|docs/\*\.md|notebooks)\b', block_str)
+        # The README entries themselves are still emitted (the list is not dropped).
+        for p in fake_readmes:
+            assert f'- "{p}"' in block_str
 
 
 # ---------------------------------------------------------------------------
@@ -320,10 +336,11 @@ class TestReadmeLinkTargets:
         base = Path("MyIA.AI.Notebooks/RL")
 
         assert rqr._normalise_readme_target(
-            base, "./rl_1_intro_cartpole.ipynb"
-        ) == "MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb"
+            base, "./RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb"
+        ) == "MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb"
 
-    def test_flags_html_when_source_not_rendered(self, monkeypatch, tmp_path):
+    def test_flags_html_when_target_not_committed(self, monkeypatch, tmp_path):
+        """Un lien `.html` dont la cible n'est pas committee = HTML_404 (#18911)."""
         readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
         source = readme.parent / "Excluded.ipynb"
         readme.parent.mkdir(parents=True)
@@ -340,10 +357,75 @@ class TestReadmeLinkTargets:
         assert rqr.readme_link_violations() == [
             (
                 "MyIA.AI.Notebooks/Search/README.md",
-                "DEAD_RENDER",
+                "HTML_404",
                 "Excluded.html",
             )
         ]
+
+    def test_ipynb_link_to_existing_notebook_is_valid(self, monkeypatch, tmp_path):
+        """Temoin #18911 : un lien `.ipynb` vers un carnet present n'est PAS une violation.
+
+        C'est le renversement de doctrine : la navigation de reference est
+        github.com, ou le lien `.ipynb` ouvre le viewer. Le carnet est rendu
+        (tracked) -- l'ancien predicat `STALE_LINK` le declarait pourtant
+        violation et poussait a convertir en `.html`.
+        """
+        readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
+        nb = readme.parent / "Search-01.ipynb"
+        readme.parent.mkdir(parents=True)
+        readme.write_text("[S](Search-01.ipynb)\n", encoding="utf-8")
+        nb.write_text("{}\n", encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_readmes",
+            lambda: ["MyIA.AI.Notebooks/Search/README.md"],
+        )
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_notebooks",
+            lambda: ["MyIA.AI.Notebooks/Search/Search-01.ipynb"],
+        )
+
+        assert rqr.readme_link_violations() == []
+
+    def test_broken_ipynb_link_is_flagged(self, monkeypatch, tmp_path):
+        """Un lien `.ipynb` vers un carnet absent reste BROKEN."""
+        readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
+        readme.parent.mkdir(parents=True)
+        readme.write_text("[Gone](Gone.ipynb)\n", encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_readmes",
+            lambda: ["MyIA.AI.Notebooks/Search/README.md"],
+        )
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+
+        assert rqr.readme_link_violations() == [
+            (
+                "MyIA.AI.Notebooks/Search/README.md",
+                "BROKEN",
+                "Gone.ipynb",
+            )
+        ]
+
+    def test_committed_html_target_is_not_flagged(self, monkeypatch, tmp_path):
+        """Temoin negatif : un `.html` dont la cible EST committee n'est pas une violation."""
+        readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
+        page = readme.parent / "report.html"
+        readme.parent.mkdir(parents=True)
+        readme.write_text("[R](report.html)\n", encoding="utf-8")
+        page.write_text("<html></html>\n", encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_readmes",
+            lambda: ["MyIA.AI.Notebooks/Search/README.md"],
+        )
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+
+        assert rqr.readme_link_violations() == []
 
 
 # ---------------------------------------------------------------------------
@@ -403,3 +485,689 @@ class TestModuleStructure:
             out = rqr.replace_render_block(yml, new_render_block)
             assert top_key in out, f"top key {top_key} lost"
             assert 'body: x' in out, f"tail content lost after {top_key}"
+
+
+# ---------------------------------------------------------------------------
+# has_hr_separator — garde `---` (#11451), appliquee aux .md comme aux .ipynb
+# ---------------------------------------------------------------------------
+
+class TestHasHrSeparator:
+    """La garde syntaxique `has_hr_separator` determine si un fichier (notebook
+    ou .md) doit etre exclu du rendu Quarto (YAMLException si `---` hr).
+
+    Regles testees (cf. issue #11451, etendu aux docs/*.md par #18422) :
+      - `---` seul en debut de cellule markdown (ou apres ligne vide) -> True
+      - `text\\n---` (soulignement setext H2) -> False (pas un bloc YAML)
+      - `---` a l'interieur d'un bloc de code fence (``` ou ~~~) -> ignore
+      - Fichier illisible (OSError, JSON invalide) -> False (laisse CI trancher)
+      - Fichier non markdown / sans cells -> False
+    """
+
+    def _write_md(self, tmp_path: Path, name: str, body: str) -> str:
+        """Helper: write a markdown file under docs/, return repo-relative POSIX path."""
+        md_path = tmp_path / name
+        md_path.parent.mkdir(parents=True, exist_ok=True)
+        md_path.write_text(body, encoding="utf-8")
+        # Repo-relative POSIX path (tmp_path stands in for REPO_ROOT in the
+        # tests via monkeypatch below).
+        return name
+
+    def test_md_with_hr_separator_returns_true(self, tmp_path, monkeypatch):
+        """Un .md avec `---` precede d'une ligne vide declenche la garde."""
+        rel = self._write_md(tmp_path, "docs/test-hr.md",
+                              "Titre introductif\n\n---\n\nSuite du texte\n")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator(rel) is True
+
+    def test_md_with_hr_at_start_returns_true(self, tmp_path, monkeypatch):
+        """Un .md commencant par `---` (debut de cellule) declenche la garde."""
+        rel = self._write_md(tmp_path, "docs/test-hr-start.md",
+                              "---\ntitle: foo\n---\n")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator(rel) is True
+
+    def test_md_with_setext_heading_returns_false(self, tmp_path, monkeypatch):
+        """Un .md avec `text\\n---` (soulignement setext H2) n'est PAS un hr YAML.
+
+        C'est le cas explicitement distingue par la garde (lignes 187-190 du
+        module) : seul un `---` precede d'une ligne vide ou du debut ouvre
+        un bloc yaml_metadata_block.
+        """
+        rel = self._write_md(tmp_path, "docs/test-setext.md",
+                              "Titre H1\n=========\n\nTitre H2\n---------\n\nSuite\n")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator(rel) is False
+
+    def test_md_with_no_separator_returns_false(self, tmp_path, monkeypatch):
+        """Un .md propre (sans `---`) n'est pas exclu."""
+        rel = self._write_md(tmp_path, "docs/test-clean.md",
+                              "# Titre normal\n\nDu contenu sans hr.\n\nPlus de contenu.\n")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator(rel) is False
+
+    def test_md_with_hr_inside_code_fence_returns_false(self, tmp_path, monkeypatch):
+        """Un `---` a l'interieur d'un bloc ```code``` n'est PAS un hr YAML."""
+        rel = self._write_md(tmp_path, "docs/test-fence.md",
+                              "# Titre\n\n```python\n---\ncode block\n```\n")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator(rel) is False
+
+    def test_md_unreadable_returns_false(self, tmp_path, monkeypatch):
+        """Fichier inexistant ou illisible : on retourne False, la CI tranchera."""
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        # Path qui n'existe pas
+        assert rqr.has_hr_separator("docs/does-not-exist.md") is False
+
+    def test_md_with_inline_text_above_hr_returns_false(self, tmp_path, monkeypatch):
+        """Un .md avec `text\\n---\\n` (texte immediatement avant le hr) -> False.
+
+        Variante du setext : la garde ne declenche QUE si la ligne precedente
+        est vide (separateur horizontal) OU si on est au debut (ligne vide
+        initiale). Une ligne de texte immediatement au-dessus n'ouvre PAS un
+        bloc yaml_metadata_block.
+        """
+        rel = self._write_md(tmp_path, "docs/test-inline-hr.md",
+                              "Une ligne de texte\n---\nPlus de texte\n")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator(rel) is False
+
+    def test_ipynb_with_hr_in_markdown_cell_returns_true(self, tmp_path, monkeypatch):
+        """Un .ipynb avec une cellule markdown portant `---` hr declenche la garde."""
+        nb_content = '''{
+  "cells": [
+    {"cell_type": "markdown", "metadata": {}, "source": ["Titre\\n\\n---\\n\\nSuite"]}
+  ],
+  "metadata": {},
+  "nbformat": 4,
+  "nbformat_minor": 5
+}'''
+        nb_path = tmp_path / "test-hr.ipynb"
+        nb_path.write_text(nb_content, encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator("test-hr.ipynb") is True
+
+    def test_ipynb_clean_returns_false(self, tmp_path, monkeypatch):
+        """Un .ipynb SANS `---` hr dans ses cellules markdown -> False."""
+        nb_content = '''{
+  "cells": [
+    {"cell_type": "markdown", "metadata": {}, "source": ["# Titre propre\\n\\nDu contenu"]}
+  ],
+  "metadata": {},
+  "nbformat": 4,
+  "nbformat_minor": 5
+}'''
+        nb_path = tmp_path / "test-clean.ipynb"
+        nb_path.write_text(nb_content, encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        assert rqr.has_hr_separator("test-clean.ipynb") is False
+
+
+# ---------------------------------------------------------------------------
+# git_tracked_docs_md — exclusion des .md avec `---` hr (cf. #18422)
+# ---------------------------------------------------------------------------
+
+class TestGitTrackedDocsMd:
+    """Valide que la fonction `git_tracked_docs_md` :
+      - filtre les .md avec hr separator (garde #11451)
+      - filtre les README.md (deja comptabilises par git_tracked_readmes)
+      - filtre les fichiers sous EXCLUDE_MARKERS (archive, vendored)
+      - trie la sortie (deterministic diffs)
+    """
+
+    def test_excludes_md_with_hr_separator(self, monkeypatch):
+        """Un .md avec `---` hr doit etre exclu de la liste rendue."""
+        clean_md = "docs/clean.md"
+        hr_md = "docs/hr.md"
+        fake_output = f"{clean_md}\n{hr_md}\n"
+
+        def fake_run(*args, **kwargs):
+            class Result:
+                stdout = fake_output
+                returncode = 0
+            return Result()
+
+        monkeypatch.setattr(rqr.subprocess, "run", fake_run)
+        # Override has_hr_separator pour la fixture
+        monkeypatch.setattr(rqr, "has_hr_separator",
+                            lambda p: p.endswith("hr.md"))
+
+        result = rqr.git_tracked_docs_md()
+        assert clean_md in result
+        assert hr_md not in result
+        assert result == sorted(result, key=lambda s: s.lower())
+
+    def test_excludes_readmes(self, monkeypatch):
+        """Les README.md sous docs/ sont exclus (deja comptabilises par readmes)."""
+        fake_output = "docs/README.md\ndocs/other.md\n"
+
+        def fake_run(*args, **kwargs):
+            class Result:
+                stdout = fake_output
+                returncode = 0
+            return Result()
+
+        monkeypatch.setattr(rqr.subprocess, "run", fake_run)
+        result = rqr.git_tracked_docs_md()
+        assert "docs/README.md" not in result
+        assert "docs/other.md" in result
+
+    def test_excludes_archive_markers(self, monkeypatch):
+        """Les .md sous docs/archive/ sont exclus (EXCLUDE_MARKERS)."""
+        fake_output = "docs/archive/old.md\ndocs/active.md\n"
+
+        def fake_run(*args, **kwargs):
+            class Result:
+                stdout = fake_output
+                returncode = 0
+            return Result()
+
+        monkeypatch.setattr(rqr.subprocess, "run", fake_run)
+        result = rqr.git_tracked_docs_md()
+        assert "docs/archive/old.md" not in result
+        assert "docs/active.md" in result
+
+
+# ---------------------------------------------------------------------------
+# Index non resolu et doublons de render-list (#20055)
+# ---------------------------------------------------------------------------
+#
+# Fait fondateur, mesure sur un depot jouet en merge non resolu (l'index porte
+# alors trois etages pour un meme chemin : 1=base, 2=ours, 3=theirs) :
+#
+#     git ls-files '*README.md'             -> README.md (x3)
+#     git diff --name-only --diff-filter=U  -> README.md (x1)
+#
+# `git ls-files` alimentant toute la render-list, un merge non resolu y ecrit
+# des doublons silencieux. Les gardes ci-dessous ferment ce chemin.
+
+class TestUnmergedPaths:
+    """`unmerged_paths` : detection d'un index non resolu."""
+
+    @staticmethod
+    def _fake_run(stdout: str):
+        def fake_run(*args, **kwargs):
+            class Result:
+                returncode = 0
+            Result.stdout = stdout
+            return Result()
+        return fake_run
+
+    def test_reports_conflicted_path(self, monkeypatch):
+        monkeypatch.setattr(rqr.subprocess, "run", self._fake_run("README.md\n"))
+        assert rqr.unmerged_paths() == ["README.md"]
+
+    def test_empty_when_index_is_clean(self, monkeypatch):
+        monkeypatch.setattr(rqr.subprocess, "run", self._fake_run(""))
+        assert rqr.unmerged_paths() == []
+
+    def test_deduplicates_and_sorts(self, monkeypatch):
+        """Trois etages d'index pour un meme chemin ne rendent qu'une entree."""
+        monkeypatch.setattr(rqr.subprocess, "run",
+                            self._fake_run("b/README.md\na/README.md\nb/README.md\n"))
+        assert rqr.unmerged_paths() == ["a/README.md", "b/README.md"]
+
+    def test_uses_diff_filter_u(self, monkeypatch):
+        """L'instrument est `diff --diff-filter=U`, pas `ls-files` : c'est lui
+        qui nomme le chemin une fois (cf. le fait fondateur ci-dessus)."""
+        seen = {}
+
+        def fake_run(argv, *args, **kwargs):
+            seen["argv"] = list(argv)
+
+            class Result:
+                returncode = 0
+                stdout = ""
+            return Result()
+
+        monkeypatch.setattr(rqr.subprocess, "run", fake_run)
+        rqr.unmerged_paths()
+        assert "diff" in seen["argv"]
+        assert "--diff-filter=U" in seen["argv"]
+
+
+class TestRenderSections:
+    """`render_sections` : enumeration unique, source des deux autres gardes."""
+
+    @pytest.fixture(autouse=True)
+    def _stub_git(self, monkeypatch):
+        monkeypatch.setattr(rqr, "git_tracked_readmes", lambda: ["x/README.md"])
+        monkeypatch.setattr(rqr, "git_tracked_docs_md", lambda: ["docs/a.md"])
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: ["n.ipynb"])
+
+    def test_root_readme_prepended(self):
+        assert rqr.render_sections()["readmes"] == ["README.md", "x/README.md"]
+
+    def test_sections_present(self):
+        s = rqr.render_sections()
+        assert s["landing"] == list(rqr.LANDING_PAGES)
+        assert s["docs"] == ["docs/a.md"]
+        assert s["notebooks"] == ["n.ipynb"]
+
+    def test_clean_sections_have_no_duplicate(self):
+        assert rqr.duplicate_render_entries(rqr.render_sections()) == []
+
+    def test_build_render_block_accepts_explicit_sections(self):
+        text = "\n".join(rqr.build_render_block(rqr.render_sections()))
+        assert '- "README.md"' in text
+        assert '- "x/README.md"' in text
+        # Aucun compteur n'est ecrit (#19901 : un total dans un fichier genere
+        # se perime a chaque merge). La racine sort de `render_sections()`, donc
+        # elle est emise exactement une fois — l'inverse est le doublon #20055.
+        assert text.count('- "README.md"') == 1
+
+
+class TestDuplicateRenderEntries:
+    """`duplicate_render_entries` : doublon intra-section seulement (#20055)."""
+
+    @staticmethod
+    def _sections(**over):
+        base = {"landing": [], "readmes": ["README.md"], "docs": [], "notebooks": []}
+        base.update(over)
+        return base
+
+    def test_intra_section_duplicate_is_reported(self):
+        s = self._sections(readmes=["README.md", "a/README.md", "a/README.md"])
+        assert rqr.duplicate_render_entries(s) == [("readmes", "a/README.md")]
+
+    def test_three_index_stages_report_two_repetitions(self):
+        """Le fait fondateur : trois etages d'index = deux repetitions."""
+        s = self._sections(readmes=["README.md", "a/README.md",
+                                    "a/README.md", "a/README.md"])
+        assert rqr.duplicate_render_entries(s) == [
+            ("readmes", "a/README.md"), ("readmes", "a/README.md")]
+
+    def test_cross_section_same_path_is_legitimate(self):
+        """`docs/reference/branch-cleanup-manifest.README.md` figure sur `main`
+        dans la section READMEs (motif `*README.md`) ET dans docs/*.md : ce
+        n'est pas un doublon, et la garde ne doit pas le refuser."""
+        p = "docs/reference/branch-cleanup-manifest.README.md"
+        s = self._sections(readmes=["README.md", p], docs=[p])
+        assert rqr.duplicate_render_entries(s) == []
+
+    def test_duplicate_in_docs_section_detected(self):
+        s = self._sections(docs=["docs/a.md", "docs/a.md"])
+        assert rqr.duplicate_render_entries(s) == [("docs", "docs/a.md")]
+
+    def test_duplicate_in_notebooks_section_detected(self):
+        s = self._sections(notebooks=["a.ipynb", "b.ipynb", "a.ipynb"])
+        assert rqr.duplicate_render_entries(s) == [("notebooks", "a.ipynb")]
+
+    def test_defaults_to_render_sections(self, monkeypatch):
+        monkeypatch.setattr(rqr, "git_tracked_readmes",
+                            lambda: ["a/README.md", "a/README.md"])
+        monkeypatch.setattr(rqr, "git_tracked_docs_md", lambda: [])
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+        assert rqr.duplicate_render_entries() == [("readmes", "a/README.md")]
+
+
+class TestMainRefusesUnsafeInput:
+    """`main()` : les deux refus sont branches avant toute ecriture."""
+
+    def test_refuses_unresolved_index(self, monkeypatch, capsys):
+        monkeypatch.setattr(rqr, "unmerged_paths", lambda: ["README.md", "docs/a.md"])
+        monkeypatch.setattr(sys, "argv", ["regen_quarto_render.py", "--check"])
+        assert rqr.main() == 1
+        err = capsys.readouterr().err
+        assert "::error::" in err
+        assert "README.md" in err and "docs/a.md" in err
+
+    def test_refuses_duplicate_entry(self, monkeypatch, capsys):
+        monkeypatch.setattr(rqr, "unmerged_paths", lambda: [])
+        monkeypatch.setattr(rqr, "duplicate_render_entries",
+                            lambda sections=None: [("readmes", "a/README.md")])
+        monkeypatch.setattr(sys, "argv", ["regen_quarto_render.py", "--check"])
+        assert rqr.main() == 1
+        err = capsys.readouterr().err
+        assert "::error::" in err
+        assert "a/README.md" in err and "readmes" in err
+
+    def test_refuses_duplicate_before_writing(self, monkeypatch, tmp_path):
+        """Le refus vaut aussi pour le chemin d'ecriture (pas seulement
+        `--check`) : on n'ecrit jamais une render-list dupliquee."""
+        target = tmp_path / "_quarto.yml"
+        target.write_text('project:\n  render:\n    - "old.md"\nsite:\n',
+                          encoding="utf-8")
+        before = target.read_text(encoding="utf-8")
+        monkeypatch.setattr(rqr, "unmerged_paths", lambda: [])
+        monkeypatch.setattr(rqr, "QUARTO_YML", target)
+        monkeypatch.setattr(rqr, "duplicate_render_entries",
+                            lambda sections=None: [("notebooks", "a.ipynb")])
+        monkeypatch.setattr(sys, "argv", ["regen_quarto_render.py"])
+        assert rqr.main() == 1
+        assert target.read_text(encoding="utf-8") == before
+
+
+class TestUnmergedIndexReproduction:
+    """Reproduction du fait fondateur #20055 sur un vrai depot git."""
+
+    @staticmethod
+    def _git(cwd, *args, check=True):
+        return subprocess.run(["git", *args], cwd=str(cwd), check=check,
+                              capture_output=True, text=True,
+                              encoding="utf-8", errors="replace")
+
+    #: Sous-repertoire : `git_tracked_readmes` ecarte le README de racine
+    #: (`p == "README.md"`), il faut donc un chemin non-racine pour traverser
+    #: l'enumeration reelle.
+    REL = "sub/README.md"
+
+    def _conflicted_repo(self, tmp_path):
+        def g(*args):
+            return self._git(tmp_path, *args)
+
+        ident = ("-c", "user.name=t", "-c", "user.email=t@t")
+        target = tmp_path / "sub" / "README.md"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        g("init", "-q")
+        target.write_text("base\n", encoding="utf-8")
+        g(*ident, "add", "sub/README.md")
+        g(*ident, "commit", "-qm", "base")
+        base_branch = g("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+        g("checkout", "-qb", "side")
+        target.write_text("side\n", encoding="utf-8")
+        g(*ident, "commit", "-qam", "side")
+        g("checkout", "-q", base_branch)
+        target.write_text("main\n", encoding="utf-8")
+        g(*ident, "commit", "-qam", "main")
+        # `-c merge.ff=false` : mesure sur le runner CI -- le merge y est REFUSE
+        # (« Diverging branches can't be fast-forwarded », rc=128) sans creer
+        # d'index non fusionne : `ls-files` rend 1 ligne, `--unmerged` rend vide.
+        # Le runner se comporte donc comme si `merge.ff=only` etait pose ; la
+        # reproduction locale sous cette config rend exactement les quatre
+        # signatures observees en CI. Le test prenait ce refus pour un conflit,
+        # et les trois assertions suivantes echouaient sur un index sain. Le
+        # drapeau de ligne de commande prime sur toute config ambiante.
+        # `*ident` : l'identite du committer doit accompagner le merge lui-meme
+        # -- sans elle un merge en conflit sort en « Committer identity
+        # unknown » sur un runner dont la config globale ne porte pas d'identite.
+        merged = self._git(tmp_path, *ident, "-c", "merge.ff=false", "merge",
+                           "side", check=False)
+        # Le controle porte sur l'effet attendu (index non fusionne), pas sur
+        # le code retour : un refus de merge sort aussi en non-zero.
+        unmerged = self._git(tmp_path, "ls-files", "--unmerged").stdout
+        assert unmerged.strip(), (
+            "le merge devait laisser un index non fusionne (3 stages) ; "
+            f"rc={merged.returncode}, sortie={merged.stdout}{merged.stderr}")
+        return tmp_path
+
+    def test_ls_files_yields_path_per_index_stage(self, tmp_path):
+        """L'enumeration brute rend le chemin trois fois -- c'est la cause."""
+        repo = self._conflicted_repo(tmp_path)
+        raw = self._git(repo, "ls-files", "*README.md")
+        assert raw.stdout.split().count(self.REL) == 3
+        assert len(self._git(repo, "ls-files", "--unmerged").stdout.splitlines()) == 3
+
+    def test_enumeration_would_duplicate_the_entry(self, tmp_path, monkeypatch):
+        """Le degat : sans garde, la render-list porte l'entree trois fois."""
+        repo = self._conflicted_repo(tmp_path)
+        monkeypatch.setattr(rqr, "REPO_ROOT", repo)
+        assert rqr.git_tracked_readmes().count(self.REL) == 3
+        assert rqr.duplicate_render_entries(rqr.render_sections()) == [
+            ("readmes", self.REL), ("readmes", self.REL)]
+
+    def test_unmerged_paths_names_it_once(self, tmp_path, monkeypatch):
+        """La garde nomme le chemin une seule fois."""
+        repo = self._conflicted_repo(tmp_path)
+        monkeypatch.setattr(rqr, "REPO_ROOT", repo)
+        assert rqr.unmerged_paths() == [self.REL]
+
+    def test_main_refuses_on_a_conflicted_repo(self, tmp_path, monkeypatch, capsys):
+        """Bout en bout : sur un index non resolu, le script sort en erreur en
+        nommant le chemin, au lieu d'ecrire une render-list dupliquee."""
+        repo = self._conflicted_repo(tmp_path)
+        monkeypatch.setattr(rqr, "REPO_ROOT", repo)
+        monkeypatch.setattr(sys, "argv", ["regen_quarto_render.py", "--check"])
+        assert rqr.main() == 1
+        err = capsys.readouterr().err
+        assert "::error::" in err and self.REL in err
+# uncovered_notebooks — trous de couverture vs carnets hr-bloques (#18423)
+# ---------------------------------------------------------------------------
+
+class TestUncoveredNotebooks:
+    """Le residu de couverture ne doit PAS contenir un carnet que le generateur
+    ecarte par construction : `uncovered_notebooks` et `git_tracked_notebooks`
+    doivent partager le meme predicat d'exclusion. Le 2026-10-10, un carnet
+    hr-bloque (`Lean-12-Sensitivity-Theorem.ipynb`) rapporté ici faisait rougir
+    en permanence la jambe `Smoke test` de `quarto-render-list-freshness.yml`.
+    """
+
+    def _fake_run(self, paths):
+        fake_output = "".join(f"{p}\n" for p in paths)
+
+        def fake_run(*args, **kwargs):
+            class Result:
+                stdout = fake_output
+                returncode = 0
+            return Result()
+
+        return fake_run
+
+    def test_hr_blocked_notebook_is_not_a_coverage_hole(self, monkeypatch):
+        """Un carnet ecarte par la garde `---` sort du residu de couverture."""
+        hr_nb = "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb"
+        monkeypatch.setattr(rqr, "all_tracked_notebooks", lambda: [hr_nb])
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+        monkeypatch.setattr(rqr, "has_hr_separator", lambda p: p == hr_nb)
+
+        assert rqr.uncovered_notebooks() == []
+        assert rqr.hr_blocked_notebooks() == [hr_nb]
+
+    def test_undeclared_notebook_stays_a_coverage_hole(self, monkeypatch):
+        """Un carnet ni rendu ni declare reste signale (temoin negatif)."""
+        orphan = "MyIA.AI.Notebooks/CoursIA-Nouveau/serie-01.ipynb"
+        monkeypatch.setattr(rqr, "all_tracked_notebooks", lambda: [orphan])
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+        monkeypatch.setattr(rqr, "has_hr_separator", lambda p: False)
+
+        assert rqr.uncovered_notebooks() == [orphan]
+        assert rqr.hr_blocked_notebooks() == []
+
+    def test_declared_and_rendered_notebooks_are_excluded(self, monkeypatch):
+        """Ni un carnet rendu ni un carnet declare hors perimetre ne sont signales."""
+        rendered = "MyIA.AI.Notebooks/Search/rendu.ipynb"
+        hors = sorted(rqr.NOTEBOOKS_HORS_PERIMETRE)[0]
+        monkeypatch.setattr(rqr, "all_tracked_notebooks", lambda: [rendered, hors])
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [rendered])
+        monkeypatch.setattr(rqr, "has_hr_separator", lambda p: False)
+
+        assert rqr.uncovered_notebooks() == []
+        assert rqr.hr_blocked_notebooks() == []
+
+    def test_real_repo_has_no_uncovered_notebook(self):
+        """Sur l'arbre courant, le residu de couverture doit etre vide."""
+        assert rqr.uncovered_notebooks() == []
+
+
+# ---------------------------------------------------------------------------
+# Contrat advisory du workflow de fraicheur
+# ---------------------------------------------------------------------------
+
+WORKFLOW_PATH = (
+    Path(__file__).resolve().parents[2]
+    / ".github"
+    / "workflows"
+    / "quarto-render-list-freshness.yml"
+)
+
+CHECK_STEP_NAME = "Check _quarto.yml render list against the PR head tree"
+
+
+def _workflow_lines() -> list:
+    return WORKFLOW_PATH.read_text(encoding="utf-8").splitlines()
+
+
+def _job_display_name() -> str:
+    """Le `name:` du job `check` -- c'est lui que `pr_gate.py` classe."""
+    lines = _workflow_lines()
+    heads = [i for i, line in enumerate(lines) if line.rstrip() == "  check:"]
+    assert len(heads) == 1, f"job check: {len(heads)} occurrences"
+    for line in lines[heads[0] + 1 :]:
+        if line.startswith("    name:"):
+            return line.split("name:", 1)[1].strip()
+    raise AssertionError("pas de name: sur le job check")
+
+
+def _check_step_script() -> str:
+    """Le shell de l'etape de controle, extrait verbatim du YAML -- jamais recopie.
+
+    Extraction stdlib, meme forme que
+    `scripts/notebook_tools/tests/test_readme_links_guard_workflow.py` : aucune
+    dependance PyYAML, et les marqueurs assertes en fin de fonction refusent une
+    extraction fausse -- un bloc vide ou tronque ferait passer les tests pour de
+    mauvaises raisons.
+    """
+    lines = _workflow_lines()
+    heads = [
+        i for i, line in enumerate(lines) if line.strip() == "- name: " + CHECK_STEP_NAME
+    ]
+    assert len(heads) == 1, f"etape de controle: {len(heads)} occurrences"
+    index = heads[0]
+    while not lines[index].strip().startswith("run:"):
+        index += 1
+        assert index < len(lines), "pas de run: dans l'etape de controle"
+    indent = len(lines[index]) - len(lines[index].lstrip())
+    block = []
+    for line in lines[index + 1 :]:
+        if line.strip() == "":
+            block.append("")
+            continue
+        if len(line) - len(line.lstrip()) > indent:
+            block.append(line[indent + 2 :])
+        else:
+            break
+    text = "\n".join(block).strip("\n") + "\n"
+    for marker in ("set -euo pipefail", "PIPESTATUS", "::notice", "exit 0"):
+        assert marker in text, f"marqueur {marker!r} absent du bloc extrait"
+    return text
+
+
+def _bash_executable() -> str:
+    """Le chemin absolu du bash de git, jamais le nom nu.
+
+    Sous Windows, `CreateProcess` cherche dans `System32` **avant** le `PATH` :
+    un `["bash", "-c", ...]` y trouve le lanceur WSL, qui n'est pas le shell du
+    depot (montages `/mnt/d`, `PIPESTATUS` indisponible). Meme resolution que
+    `scripts/notebook_tools/tests/test_readme_links_guard_workflow.py`.
+    """
+    if os.name != "nt":
+        return "bash"
+    git = shutil.which("git")
+    if not git:
+        return "bash"
+    directory = os.path.dirname(os.path.abspath(git))
+    while directory and os.path.dirname(directory) != directory:
+        for sub in ("bin", os.path.join("usr", "bin")):
+            candidate = os.path.join(directory, sub, "bash.exe")
+            if os.path.isfile(candidate):
+                return candidate
+        directory = os.path.dirname(directory)
+    return "bash"
+
+
+def _msys_path(path) -> str:
+    """Forme `/c/...` d'un chemin Windows -- invisible au shell sinon."""
+    text = str(path)
+    if os.name == "nt" and ":" in text:
+        drive, rest = text.split(":", 1)
+        return "/" + drive.lower() + rest.replace("\\", "/")
+    return text
+
+
+def _bash_python(bash_exe: str) -> str | None:
+    """L'interpreteur tel que `bash` le resout lui-meme.
+
+    L'etape du workflow invoque `python`; sous Windows c'est `python.exe` qui
+    est expose, et `bash` ne l'alias pas. On demande donc a `bash` le chemin
+    plutot que de le deduire de `sys.executable` (dont la forme Windows n'est
+    pas execuble directement par le shell).
+    """
+    probe = subprocess.run(
+        [
+            bash_exe,
+            "-c",
+            "command -v python || command -v python.exe || command -v python3 || true",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    return probe.stdout.strip() or None
+
+
+def _run_check_step(tmp_path, scanner_rc: int):
+    """Execute le shell de l'etape contre un generateur boucheonne a `scanner_rc`.
+
+    Un shim `python` est pose en tete de `PATH` **dans le shell** : un `bash -c`
+    non interactif n'herite pas des entrees ajoutees par le profil du shell hote,
+    et sur un hote Windows le nom `python` n'y resout pas. Le test mesure le
+    contrat du workflow -- la branche prise selon `PY_RC` -- pas l'environnement
+    de la machine.
+    """
+    script = _check_step_script()
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "regen_quarto_render.py").write_text(
+        "import sys\n"
+        'print("::error::liste perimee (bouchon)")\n'
+        "sys.exit({})\n".format(scanner_rc),
+        encoding="utf-8",
+    )
+    bash_exe = _bash_executable()
+    prelude = ""
+    interpreter = _bash_python(bash_exe)
+    if interpreter:
+        shim_dir = tmp_path / "shim"
+        shim_dir.mkdir()
+        shim = shim_dir / "python"
+        with open(shim, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write('#!/usr/bin/env bash\nexec "{}" "$@"\n'.format(interpreter))
+        os.chmod(shim, 0o755)
+        prelude = 'export PATH="{}:$PATH"\n'.format(_msys_path(shim_dir))
+    return subprocess.run(
+        [bash_exe, "-c", prelude + script],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=120,
+    )
+
+
+class TestWorkflowAdvisoryContract:
+    """Le garde ne rougit que si le scanner est en panne, jamais sur une liste perimee.
+
+    Reference : seconde relecture ai-01 sur #19901 (review 5475880717) -- un
+    rouge de contenu sur presque toute PR est un faux signal, et prescrire une
+    regeneration dans la branche recree le conflit que l'arbitrage eteint. Le
+    modele designe est `catalog-drift.yml` : notice + `exit 0`.
+    """
+
+    def test_job_name_carries_the_advisory_marker(self):
+        """`pr_gate.py` classe par sous-chaine : sans `advisory`, le job est une porte dure."""
+        assert "advisory" in _job_display_name()
+
+    def test_stale_list_is_success_with_a_notice(self, tmp_path):
+        """PY_RC=1 (liste perimee) : notice informative, aucune action prescrite, exit 0."""
+        result = _run_check_step(tmp_path, scanner_rc=1)
+
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "::notice" in result.stdout
+        assert "NE BLOQUE PAS" in result.stdout
+        assert "catalog-cron.yml" in result.stdout
+        assert "::error::" not in result.stdout
+
+    def test_up_to_date_list_is_success(self, tmp_path):
+        """PY_RC=0 : la liste est a jour, rien a signaler."""
+        result = _run_check_step(tmp_path, scanner_rc=0)
+
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "up to date" in result.stdout
+
+    def test_broken_scanner_is_the_only_red(self, tmp_path):
+        """PY_RC>=2 : seule vraie faute -- le script ne s'est pas execute."""
+        result = _run_check_step(tmp_path, scanner_rc=2)
+
+        assert result.returncode == 1, result.stdout + result.stderr
+        assert "::error::" in result.stdout
+        assert "Scanner en panne" in result.stdout

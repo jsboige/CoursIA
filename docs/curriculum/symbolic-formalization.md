@@ -3,7 +3,7 @@
   catalogue. scripts/notebook_tools/generate_parcours.py n'écrit que les
   5 pages catalogue (genai.md, ia-classique.md, ia-symbolique.md,
   trading.md, recherche.md) ; ce fichier suit la convention des pages
-  manuelles (comme _inventory.md, hors de la liste du générateur et du cron
+  manuelles (comme 2026-09-02-curriculum-inventory.md, hors de la liste du générateur et du cron
   catalog-cron.yml — le nom n'est AUCUN des cinq ids) et n'est jamais
   régénéré. Cf EPIC #13844 Phase 2 (pilote 2) et #15806.
 -->
@@ -12,7 +12,7 @@
 
 Deuxième des trois parcours narratifs pilotes de l'EPIC #13844 (Phase 2). Sa
 matière première est l'inventaire des embryons livré en Phase 0
-([_inventory.md](_inventory.md), entrées #8-14 et #35) ; sa forme généralise
+([2026-09-02-curriculum-inventory.md](../transients/2026-09-02-curriculum-inventory.md), entrées #8-14 et #35) ; sa forme généralise
 les « Parcours alternatifs » de GameTheory
 ([README](../../MyIA.AI.Notebooks/GameTheory/README.md) : durée annoncée,
 liste numérotée, clause de prérequis explicite) et sa rampe Lean reprend le
@@ -81,7 +81,7 @@ chiffre le minimum jouable — le *Natural Number Game* — à **3-4 h** (le par
 débutant complet, lecture seule, est chiffré 18-22 h et reste une extension,
 pas un prérequis). Colonne vertébrale + rampe NNG : **19 h 15 – 20 h 15**,
 d'où la fenêtre **~20 h** du titre. Le rythme « ~6 mois » de l'inventaire
-(_inventory.md:131) est un **espacement**, pas une durée : ~2 étapes par
+(2026-09-02-curriculum-inventory.md:133) est un **espacement**, pas une durée : ~2 étapes par
 semaine en travaillant sérieusement les exercices.
 
 ## Sortie concrète
@@ -114,9 +114,9 @@ est la Phase 3, argumentation).
 |---|---|---|---|
 | 1 | [Tweety-01-Setup-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb) | 45 min | JDK + 42 JARs + solveurs externes auto-installés → rien |
 | 2 | [Tweety-02-Basic-Logics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) | 45 min | PL, SAT (pySAT), FOL → étape 1 |
-| 3 | [Tweety-3-Advanced-Logics](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics.ipynb) | 45 min | logiques de description, modale, QBF → étape 2 |
-| 4 | [Tweety-4-Belief-Revision](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb) | 30 min | MUS, mesure d'incohérence, révision AGM, MaxSAT → étape 2 |
-| 5 | [Tweety-5-Abstract-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb) | 45 min | **cœur** : sémantiques de Dung (grounded, preferred, stable) → étapes 2-4 |
+| 3 | [Tweety-03-Advanced-Logics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb) | 45 min | logiques de description, modale, QBF → étape 2 |
+| 4 | [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) | 30 min | MUS, mesure d'incohérence, révision AGM, MaxSAT → étape 2 |
+| 5 | [Tweety-05-Abstract-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb) | 45 min | **cœur** : sémantiques de Dung (grounded, preferred, stable) → étapes 2-4 |
 | 6 | [Tweety-06-Structured-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) | 30 min | ASPIC+, DeLP, ABA, ASP (Clingo) → étape 5 |
 | 7 | [Tweety-07a-Extended-Frameworks-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07a-Extended-Frameworks-Python.ipynb) | 30 min | ADF, bipolaire, WAF, attaques récursives → étape 5 |
 | 8 | [Tweety-07b-Ranking-Probabilistic-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb) | 30 min | classement et probabilités sur arguments → étape 5 |
@@ -132,14 +132,14 @@ dans un solveur SOTA (Microsoft Research). Sélection dans la série
 
 | # | Notebook | Durée | Apporte → Suppose |
 |---|---|---|---|
-| 11 | [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb) | 30 min | z3-py, premier solve/check → logique PL (étape 2) |
-| 12 | [Z3-Python-02-Sudoku](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb) | 15 min | modélisation contraintes d'un puzzle → étape 11 |
-| 13 | [Z3-Python-03-Tactics](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb) | 30 min | tactiques, simplify, contrôler le solveur → étape 11 |
-| 14 | [Z3-Python-04-Strings-Regex](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb) | 30 min | théorie des chaînes et regex symboliques → étape 11 |
-| 15 | [Z3-Python-05-Quantifiers-Proofs](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) | 30 min | quantificateurs, **preuves** — vers le bloc 4 → étape 2 (FOL) |
-| 16 | [Z3-Python-06-Advanced-Optimization](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb) | 30 min | Optimize, soft constraints → étape 13 |
-| 17 | [Z3-Python-13-UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb) | 30 min | cœurs insatisfaisables — écho des MUS de l'étape 4 → étape 4 |
-| 18 | [Z3-Python-16-Meal-Planner](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb) | 30 min | **capstone** : optimisation sous contraintes réelles → étapes 12+16 |
+| 11 | [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb) | 30 min | z3-py, premier solve/check → logique PL (étape 2) |
+| 12 | [Z3-Python-02-Sudoku](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-Python.ipynb) | 15 min | modélisation contraintes d'un puzzle → étape 11 |
+| 13 | [Z3-Python-03-Tactics](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb) | 30 min | tactiques, simplify, contrôler le solveur → étape 11 |
+| 14 | [Z3-Python-04-Strings-Regex](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb) | 30 min | théorie des chaînes et regex symboliques → étape 11 |
+| 15 | [Z3-Python-05-Quantifiers-Proofs](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb) | 30 min | quantificateurs, **preuves** — vers le bloc 4 → étape 2 (FOL) |
+| 16 | [Z3-Python-06-Advanced-Optimization](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb) | 30 min | Optimize, soft constraints → étape 13 |
+| 17 | [Z3-13-UnsatCores-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) + [13b — le MUS](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb) | 30 min | cœurs insatisfaisables, MUS par deletion-based (13b) — écho des MUS de l'étape 4 → étape 4 |
+| 18 | [Z3-Python-16-Meal-Planner](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16-Meal-Planner-Python.ipynb) | 30 min | **capstone** : optimisation sous contraintes réelles → étapes 12+16 |
 
 ### Bloc 3 — Planification (étapes 19-25, 4 h 45)
 
@@ -167,15 +167,15 @@ d'entrée recommandée est le *Natural Number Game* (3-4 h,
 
 | # | Notebook | Durée | Apporte → Suppose |
 |---|---|---|---|
-| 26 | [Lean-1-Setup](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb) | 30 min | WSL, elan, Mathlib — l'environnement du bloc → WSL2 + elan vérifiés |
-| 27 | [Tweety-5b-Lean-Argumentation](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5b-Lean-Argumentation.ipynb) | 30 min | **Dung prouvé** : le companion 0-sorry de l'étape 5 → rampe NNG + étape 5 |
+| 26 | [Lean-01-Setup-Lean-Python](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) | 30 min | WSL, elan, Mathlib — l'environnement du bloc → WSL2 + elan vérifiés |
+| 27 | [Tweety-05b-Argumentation-Lean](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05b-Argumentation-Lean.ipynb) | 30 min | **Dung prouvé** : le companion 0-sorry de l'étape 5 → rampe NNG + étape 5 |
 | 28 | [Planners-5b-Lean-Relaxation](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb) | 15 min | **h-add formalisé** dans `planning_lean` — companion de l'étape 23 → étape 27 |
-| 29 | [Tweety-5d-Stable-Synthesis](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5d-Stable-Synthesis-Lean.ipynb) | 30 min | **Z3 → Lean** : synthèse certifiée d'extensions stables — la boucle bloc 2 ⇄ bloc 4 → étapes 15+27 |
+| 29 | [Tweety-5d-Stable-Synthesis](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05d-Stable-Synthesis-Lean-Python.ipynb) | 30 min | **Z3 → Lean** : synthèse certifiée d'extensions stables — la boucle bloc 2 ⇄ bloc 4 → étapes 15+27 |
 
 ## Portes de sortie (hors colonne vertébrale, citées)
 
 Le parcours déborde volontairement la colonne vertébrale : chaque famille
-voisine a son embryon recensé dans [_inventory.md](_inventory.md) et se prend
+voisine a son embryon recensé dans [2026-09-02-curriculum-inventory.md](../transients/2026-09-02-curriculum-inventory.md) et se prend
 comme suite naturelle, sans être comptée dans les ~20 h.
 
 - **Web sémantique** (~5 h profil Python) — le
@@ -215,5 +215,5 @@ découpage du bloc 1 vient du README Tweety (phases 1-5) ; l'ordre d'entrée
 et les companions du bloc 4 viennent de LEAN_PREREQUISITES et des fiches des
 séries concernées ; les durées sont les `duree_estimee` du catalogue, la
 fenêtre ~20 h est le compte double colonne vertébrale (16 h 15) + rampe NNG
-(3-4 h). Les mêmes embryons sont recensés dans [_inventory.md](_inventory.md)
+(3-4 h). Les mêmes embryons sont recensés dans [2026-09-02-curriculum-inventory.md](../transients/2026-09-02-curriculum-inventory.md)
 entrées #8-14, #35.

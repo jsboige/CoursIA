@@ -27,6 +27,15 @@
 #                                  # dediee elan+toolchain, .lake chaud par slot, defaut 2)
 #   ./supervise.sh stop          # arret gracieux : pas de nouveau conteneur
 #   ./supervise.sh status        # familles actives + etat des trois bornes
+#   ./supervise.sh pin           # gesture de deploiement #16134 : copie le
+#                                  # contexte de build du checkout vers le
+#                                  # repertoire epingle hors arbre ; le garde
+#                                  # de fraicheur compare l'image a CETTE copie
+#
+#   COURSIA_RUNNER_PINNED_CTX     # repertoire epingle, hors de tout worktree
+#                                  # (defaut: $STATE_DIR/image-context). Un
+#                                  # checkout de branche n'invalide plus le
+#                                  # parc ; seul `pin` deplace la reference.
 #
 # BORNES (#15091) -- toutes declarees par ENVIRONNEMENT.
 #
@@ -34,6 +43,14 @@
 # cette version sans rien declarer ne se voit imposer aucun plafond qu'elle
 # n'a pas demande, et garde exactement son comportement anterieur. C'est le
 # wrapper de chaque machine qui arme ce qu'elle veut (voir persist/README.md).
+#
+# UNE SEULE BORNE DE RESSOURCE FAIT EXCEPTION, ET ELLE LE DIT DESORMAIS :
+# BUDGET_GB. Elle ne PEUT pas etre neutre -- le garde de memoire compare une
+# somme EN VOL a ce budget, donc un defaut a 0 refuserait tous les slots de
+# toutes les machines. Elle garde son defaut fonctionnel (12) mais S'ANNONCE a
+# chaque demarrage quand aucun wrapper ne la declare, au lieu de gouverner en
+# silence : un budget implicite n'est pas auditable, et l'operateur qui lit
+# l'unite ne le voit nulle part.
 #
 # Les deux valeurs qui ne sont PAS inertes -- backoff et rotation -- ne sont
 # pas des plafonds : elles ne refusent rien et ne ralentissent aucun travail
@@ -52,8 +69,17 @@
 #   COURSIA_RUNNER_DEVICE_WRITE_BPS     plafond d'ecriture PAR conteneur, en
 #   COURSIA_RUNNER_DEVICE_READ_BPS      octets/s (ex. 41943040 = 40 Mio/s).
 #   COURSIA_RUNNER_BLKIO_DEVICE         device porteur ; auto-detecte si vide.
-#   COURSIA_RUNNER_CPU_BUDGET           somme MAX de vCPU, toutes familles
-#                                       confondues. 0 = pas de garde.
+#   COURSIA_RUNNER_CPU_BUDGET           somme MAX de vCPU des familles
+#                                       d'EXECUTION (start, lean) -- les
+#                                       waiters, oisifs, en sont EXCLUS
+#                                       (#15574 item 3). 0 = pas de garde.
+#   COURSIA_RUNNER_BUDGET_GB            part de RAM hote que la CI s'autorise,
+#                                       toutes familles confondues. SEULE borne
+#                                       de RESSOURCE non inerte (defaut
+#                                       fonctionnel 12, cf. ci-dessus) : chaque
+#                                       wrapper de machine DOIT l'ecrire, les
+#                                       trois jambes avec le MEME nombre -- le
+#                                       garde somme les familles entre elles.
 #   COURSIA_RUNNER_LOG_MAX_BYTES        rotation des journaux de slot.
 #                                       NON inerte : 32 Mio. 0 = desactive.
 #   COURSIA_RUNNER_BACKOFF_MIN_SEC      backoff exponentiel des boucles de
@@ -90,13 +116,30 @@ STOP_FILE="$STATE_DIR/stop"
 
 # Caps par conteneur. Volontairement conservateurs : l'hote prime sur la CI.
 CPUS="${COURSIA_RUNNER_CPUS:-3}"
-# Cap par slot. Mesure `docker stats` sur des jobs REELS (ai-01, 2026-09-08) :
-# 38 MiB et 160 MiB (ce dernier a 129 % CPU, genuinement occupe) contre un cap
-# de 3072 MiB -- soit 1,2 % et 5,2 % du cap. 1536m reste ~10x le pic mesure, et
-# c'est ce chiffre qui debloque `auto` : a 3072m la demi-part de budget_slots()
-# plafonne le pool de travail a 2 slots (0 des qu'il tourne), a 1536m elle en
-# rend 4 sur un budget vide. L'arithmetique n'avait pas besoin d'etre changee,
-# le cap si.
+# Cap par slot. Le temoin « 38/160 MiB en docker stats » (ai-01, 2026-09-08)
+# mesurait le runner OISEUX entre jobs, jamais un pic de job -- il estait le
+# cap sur une grandeur qui ne le traverse pas. Mesure du 2026-09-18 (#16643) :
+# le head mort cfb377c4b3 (job 105464047113, slot myia-ai-01-wsl-2) rejoue
+# dans un conteneur aux caps exacts du slot (--memory=3g --pids-limit=384
+# --cpus=3, 16 coeurs visibles), deps et commande pytest IDENTIQUES au
+# workflow scripts-tests.yml, echantillonnage 1 Hz + lecture cgroup host :
+#   - pids : MAX 384/384 -- saturation CAPTUREE (docker stats 367-381 en
+#     palier, puis le sampler lui-meme ne peut plus spawner). Un `docker exec`
+#     pendant la suite rend EAGAIN (runc « Resource temporarily unavailable »
+#     au spawn) : la signature exacte du job mort. Un slot REEL porte en plus
+#     l'agent runner (~40-60 taches) AU-DESSUS de ces 384.
+#   - memoire : MAX 3,0 Gio = le cap (memory.peak == memory.max, 7898 events
+#     max, oom_kill 0 -- le swap par defaut de docker, 2x memory, absorbe).
+#     Demande vraie ~3,5 Gio (profil ai-01 : python 1,15 + 4 x 0,6 ; le git
+#     1,09 vit dans la phase checkout, sequentielle, pas cumulee).
+# Pools portant la classe « Scripts Tests (CPU) » : COURSIA_RUNNER_PIDS=512
+# (384 mesures + agent ~60 + marge ~15 %) et COURSIA_RUNNER_MEMORY=4g (pic
+# 3,5 + marge). Les defauts ci-dessous restent pour les pools legers : a
+# 1536m+swap le job SURVIT en thrashant (temoin live myia-po-2024-linux-docker-2
+# du 2026-09-18, max events 5585, oom_kill 0) -- lent, pas mort. Toute
+# modification de l'un de ces nombres refait l'arithmetique budget dans le
+# meme commit : 8 x 4g + 16 waiters x 512m = 40960 Mo, que le defaut 12 ne
+# peut PAS couvrir (cf bloc BUDGET_GB et assert par famille ci-dessous).
 MEMORY="${COURSIA_RUNNER_MEMORY:-1536m}"
 PIDS="${COURSIA_RUNNER_PIDS:-384}"
 
@@ -207,15 +250,21 @@ LEAN_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY_SWAP:-12g}"
 #      monopoliser le disque. Mesure ai-01 2026-09-07 : dd 256 Mio oflag=direct
 #      rend 7,4 GB/s sans cap et 21,2 MB/s sous --device-write-bps 20 Mio/s --
 #      facteur 350, a 1 % de la valeur demandee. Le cap est REEL.
-#   2. AGREGE -- la slice systemd coursia-ci.slice, appliquee par defaut du
-#      daemon (/etc/docker/daemon.json "cgroup-parent"). C'est la seule borne
-#      qui somme les familles ; voir persist/coursia-ci.slice.
+#   2. AGREGE -- la slice systemd coursia-ci.slice. Entree par le drapeau
+#      --cgroup-parent que ce script pose : le defaut de daemon.json ne
+#      couvre que le daemon docker-ce, qui n'heberge AUCUN conteneur de la
+#      flotte -- le daemon reel (Docker Desktop, #15157) n'a pas de defaut.
+#      C'est la seule borne qui somme les familles ; voir
+#      persist/coursia-ci.slice.
 #   3. CPU INTER-FAMILLES -- assert_cpu_budget() ci-dessous, qui ferme le trou
 #      que cmd_lean documente depuis #14337 (« la somme des caps CPU des
 #      familles actives n'est gardee par RIEN »).
 #
-# La borne 2 est daemon-wide et donc independante de l'appelant ; ce script
-# n'a pas a la re-imposer, il a a VERIFIER qu'elle est en vigueur. La
+# La borne 2 ne depend de la memoire de l'appelant que TANT QUE l'appelant
+# passe le drapeau -- supervise.sh le fait ; un conteneur lance a la main y
+# echappe, et report_slice_membership rend cette evasion visible (#15157).
+# Ce script n'a pas a re-imposer la borne, il a a VERIFIER qu'elle est en
+# vigueur. La
 # difference n'est pas cosmetique : re-passer --cgroup-parent sur une machine
 # ou la slice n'existe pas cree un cgroup vide qui a l'air d'un garde et n'en
 # est pas -- exactement la classe de defaut ou un outil manquant rend un garde
@@ -380,7 +429,24 @@ export MSYS2_ARG_CONV_EXCL='*'
 # Part de RAM hote que la CI s'autorise, toutes familles confondues. Alignee
 # sur MemoryHigh de la slice : le budget userspace et le seuil de recuperation
 # du noyau annoncent le meme nombre.
-BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-12}"
+#
+# DECLAREE OU SUPPOSEE -- LA DIFFERENCE SE VOIT. Le defaut 12 est conserve
+# parce qu'un defaut a 0 refuserait tous les slots (le garde compare une somme
+# en vol a ce budget, cf. assert_memory_budget), mais il n'est PAS neutre : il
+# gouverne. Tant qu'aucun wrapper ne l'ecrit, la valeur effective n'existe dans
+# aucun fichier lisible par l'operateur -- c'est ce qui a fait refaire l'enquete
+# sur po-2024 (VM 24 032 Mo, budget 12 288 Mo, ecart entre effectifs declares et
+# budget decouvert a la main). On ne change donc pas la valeur : on refuse
+# seulement qu'elle soit SILENCIEUSE.
+BUDGET_GB_DECLARE="${COURSIA_RUNNER_BUDGET_GB:-}"
+BUDGET_GB="${BUDGET_GB_DECLARE:-12}"
+if [ -z "$BUDGET_GB_DECLARE" ]; then
+  echo "[budget] AVERTISSEMENT : COURSIA_RUNNER_BUDGET_GB n'est declare par aucun" >&2
+  echo "        wrapper de machine -- le garde dimensionne sur le defaut $BUDGET_GB Go." >&2
+  echo "        Un budget non declare n'est pas auditable : l'ecrire dans le wrapper" >&2
+  echo "        de la machine (export COURSIA_RUNNER_BUDGET_GB=$BUDGET_GB), les trois" >&2
+  echo "        jambes avec le meme nombre -- pas dans un defaut de shell." >&2
+fi
 # Le garde d'hote ne lit plus AUCUN compteur de NIVEAU. Il demande « la machine
 # est-elle en train de souffrir ? », pas « reste-t-il N Go ? » -- deux questions
 # differentes, et seule la premiere a une reponse mesurable sous Windows.
@@ -471,10 +537,18 @@ host_probe() {
     fi
     return 0
   fi
-  command -v powershell.exe >/dev/null 2>&1 || return 0
+  # Resolution robuste de powershell.exe : le contexte systemd n'herite pas du
+  # PATH Windows annexe (login WSL uniquement) -- wslpath fournit l'absolu.
+  # wslpath pour le -File : natif WSL ; cygpath : repli Cygwin/Git-Bash. Bash
+  # ne resout pas cygpath.exe sans suffixe sous WSL -- le repli POSIX cassait
+  # la sonde (hote NON MESURABLE) depuis #15123.
+  local psexe
+  psexe="$(command -v powershell.exe 2>/dev/null)"
+  [ -n "$psexe" ] || psexe="$(wslpath 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' 2>/dev/null)"
+  [ -n "$psexe" ] || return 0
   [ -f "$PROBE_PS1" ] || return 0
-  powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass \
-    -File "$(cygpath -w "$PROBE_PS1" 2>/dev/null || echo "$PROBE_PS1")" \
+  "$psexe" -NoProfile -NonInteractive -ExecutionPolicy Bypass \
+    -File "$(wslpath -w "$PROBE_PS1" 2>/dev/null || cygpath -w "$PROBE_PS1" 2>/dev/null || echo "$PROBE_PS1")" \
     2>/dev/null | tr -d '\r' | head -1
 }
 
@@ -597,18 +671,77 @@ host_distress() {
   return "$HOST_VERDICT_RC"
 }
 
-# Somme, en Mo, des caps memoire des conteneurs CI DEJA en vol. On lit la
-# limite REELLEMENT APPLIQUEE par docker (HostConfig.Memory), pas une
+# Points d'acces des demons Docker qui peuvent porter des conteneurs CI sur
+# cette machine. ai-01 en fait tourner deux (Docker Desktop sur le socket par
+# defaut, docker-ce sur /var/run/docker-ce.sock, cf resolve_blkio_device et
+# #15164) : ne sonder que le endpoint de DOCKER_HOST compte une MOITIE de
+# flotte et compare ce demi-total au budget ENTIER -- c'est ainsi que la
+# machine a atteint 20480 Mo nominaux sur un budget declare de 12288 sans
+# qu'aucun garde ne rougisse. `default` designe le endpoint courant
+# (DOCKER_HOST ou socket par defaut) ; les autres entrees sont des chemins de
+# socket unix. La liste se declare sans toucher au code :
+# COURSIA_RUNNER_DOCKER_ENDPOINTS="default /var/run/docker-ce.sock"
+ci_docker_endpoints() {
+  local eps="${COURSIA_RUNNER_DOCKER_ENDPOINTS:-default /var/run/docker-ce.sock}"
+  printf '%s\n' "$eps"
+}
+
+# Somme, en Mo, des caps memoire des conteneurs CI DEJA en vol -- sur TOUS les
+# demons de ci_docker_endpoints, pas seulement celui de DOCKER_HOST (#15164).
+# On lit la limite REELLEMENT APPLIQUEE par docker (HostConfig.Memory), pas une
 # re-derivation des variables de ce script : c'est la seule facon de compter
 # une famille lancee par un AUTRE processus, avec un autre environnement --
 # soit exactement le trou que cmd_lean documente depuis toujours (« la somme
 # des caps des familles actives n'est gardee par RIEN »).
+#
+# FAIL-CLOSED, sur la bonne frontiere. L'existence d'un daemon se sonde par
+# `docker ps` : un daemon qui ne repond pas peut porter des conteneurs, et
+# compter 0 pour lui serait exactement le defaut que ce garde ferme -- on
+# refuse, et la raison part sur stderr : les appelants lisent le nombre par
+# substitution de commande, et une globale posee dans la sous-couche de $( )
+# n'atteint jamais l'appelant -- stderr, lui, traverse. Un chemin de socket
+# ABSENT n'est pas un daemon muet : c'est un daemon non installe, qui ne porte
+# rien sur cette machine -- il sort du perimetre, et le DIT sur stderr.
+#
+# Deduplication par ID de demon, AU MIEUX : DOCKER_HOST peut designer un
+# socket deja liste, et le meme daemon rendu deux fois serait compte deux
+# fois. Si l'ID ne se lit pas (info muet ou vide), on ne refuse PAS -- on
+# enumere sans dedup, ce qui ne peut que surcompter (refus conservateur),
+# jamais sous-compter.
 running_ci_mb() {
-  local ids
-  ids="$(docker ps -q --filter 'label=coursia-ci=1' 2>/dev/null)"
-  if [ -z "$ids" ]; then echo 0; return 0; fi
-  docker inspect --format '{{.HostConfig.Memory}}' $ids 2>/dev/null \
-    | awk '{ s += $1 } END { printf "%d", s/1048576 }'
+  local ep d id ids ins total=0 seen=" "
+  for ep in $(ci_docker_endpoints); do
+    case "$ep" in
+      default) d="docker" ;;
+      unix://*) d="docker -H $ep" ;;
+      *) d="docker -H unix://$ep" ;;
+    esac
+    case "$ep" in
+      default|tcp://*) ;;
+      *)
+        if [ ! -e "${ep#unix://}" ]; then
+          echo "[budget] socket $ep absent -- daemon non installe, hors perimetre" >&2
+          continue
+        fi
+        ;;
+    esac
+    if ! ids="$($d ps -q --filter 'label=coursia-ci=1' 2>/dev/null)"; then
+      echo "demon Docker injoignable sur '$ep' (docker ps en echec) -- le budget n'est PAS mesurable : un daemon muet peut porter des conteneurs. Reparer le daemon, ou retirer '$ep' de COURSIA_RUNNER_DOCKER_ENDPOINTS si ce demon n'existe plus sur cette machine, puis relancer. (#15164)" >&2
+      return 1
+    fi
+    id="$($d info --format '{{.ID}}' 2>/dev/null)" || id=""
+    if [ -n "$id" ]; then
+      case "$seen" in *" $id "*) continue ;; esac
+      seen="$seen $id "
+    fi
+    [ -n "$ids" ] || continue
+    if ! ins="$($d inspect --format '{{.HostConfig.Memory}}' $ids 2>/dev/null)"; then
+      echo "docker inspect muet sur '$ep' alors que le daemon repond -- budget non mesurable. (#15164)" >&2
+      return 1
+    fi
+    total=$(( total + $(printf '%s\n' "$ins" | awk '{ s += $1 } END { printf "%d", (s+0)/1048576 }') ))
+  done
+  echo "$total"
 }
 
 # Refuse le demarrage si la famille demandee ne tient pas dans le budget, ou si
@@ -619,7 +752,9 @@ assert_memory_budget() {
   local per_mb want_mb used_mb budget_mb rc
   per_mb="$(mem_to_mb "$per")"
   want_mb=$(( per_mb * n ))
-  used_mb="$(running_ci_mb)"
+  if ! used_mb="$(running_ci_mb)"; then
+    die "budget CI NON MESURABLE -- REFUS. La ligne ci-dessus nomme le daemon injoignable : tant qu'il ne repond pas, la somme en vol ne peut pas etre etablie, et compter 0 pour lui serait exactement le defaut que ce garde ferme. Reparer le daemon, ou ajuster COURSIA_RUNNER_DOCKER_ENDPOINTS, puis relancer. (#15164)"
+  fi
   budget_mb=$(( BUDGET_GB * 1024 ))
 
   # Un refus qui ne montre pas sa mesure se conteste au juge, puis se contourne.
@@ -668,7 +803,7 @@ Arreter une autre famille, ou demarrer '$famille $max_n'."
 # mot-cle `auto` : le N cesse d'etre un chiffre choisi a la main -- c'est un
 # `8` ecrit a la main qui a sature la machine -- et se DERIVE de la mesure.
 budget_slots() {
-  local per_mb reste_mb part_mb n rc
+  local per_mb reste_mb part_mb n rc used_mb
   per_mb="$(mem_to_mb "$1")"
   # Hote en detresse OU non mesurable : `auto` rend 0. Fail-closed dans LES DEUX
   # cas -- une mesure qui echoue doit couter un refus, sinon la panne de sonde
@@ -677,7 +812,16 @@ budget_slots() {
   host_distress; rc=$?
   [ -n "$HOST_VERDICT_OUT" ] && echo "$HOST_VERDICT_OUT" >&2
   if [ "$rc" -ne 0 ]; then echo 0; return 0; fi
-  reste_mb=$(( BUDGET_GB * 1024 - $(running_ci_mb) ))
+  # Meme fail-closed pour la somme en vol (#15164) : un daemon muet rend la
+  # mesure impossible, et `auto` rend 0 slots plutot que de dimensionner sur
+  # un demi-perimetre. Le refus explique part sur stderr ; c'est start, par
+  # assert_memory_budget, qui tue le demarrage explicite.
+  if ! used_mb="$(running_ci_mb)"; then
+    echo "[budget] auto rend 0 slot : mesure du budget impossible (raison ci-dessus) (#15164)" >&2
+    echo 0
+    return 0
+  fi
+  reste_mb=$(( BUDGET_GB * 1024 - used_mb ))
   # Part maximale qu'UNE famille peut reclamer d'un coup : la moitie du
   # residuel. Les familles coexistent par design (prefixes distincts, gardes
   # PPID aveugles l'un a l'autre) -- laisser la premiere tout prendre revient
@@ -815,10 +959,22 @@ cycle_backoff() {
 }
 SHORT_CYCLES=0
 
-# Contexte de build du runner : le dossier qui porte ce script porte aussi
-# Dockerfile et entrypoint.sh -- le garde de fraicheur compare le sibling du
-# checkout d'ou l'operateur lance le superviseur a ce que porte l'image.
+# Contexte de build du runner. Le dossier qui porte ce script porte aussi
+# Dockerfile et entrypoint.sh, mais depuis #16134 ce n'est plus la reference
+# du garde : c'est la SOURCE du gesture de deploiement (`pin`), rien d'autre.
 RUNNER_CTX="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Contexte EPOINGE, hors de tout worktree (motif persist/, #15214) : c'est
+# lui que le garde compare a l'image, et lui seul. Un checkout de branche, un
+# merge sur main, une edition non commitee ne deplacent plus la reference --
+# seul `pin` la deplace, deliberement. Defaut a cote de STATE_DIR : durable,
+# hors depot, insensible a l'etat du disque au demarrage.
+PINNED_CTX="${COURSIA_RUNNER_PINNED_CTX:-$STATE_DIR/image-context}"
+
+# Payload complet du contexte de build : les DEUX scripts que le garde sonde
+# (#15105) plus tout ce que les Dockerfile COPY -- pinner moins donnerait un
+# contexte dont le rebuild produirait une image differente de la reference.
+PIN_FILES="entrypoint.sh work_cache_health.sh seed_action_cache.py Dockerfile Dockerfile.lean"
 
 # #14801 Garde de fraicheur d'image. Un correctif d'entrypoint.sh merge mais
 # dont l'image n'a pas ete reconstruite est INERTE : #14385 (purge sparse au
@@ -827,23 +983,103 @@ RUNNER_CTX="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # silence a produit les rouges fantomes du sparse-checkout empoisonne. Le
 # demarrage d'un pool est le seul point qui s'execute inconditionnellement
 # (un job annule ne joue aucun step post) : on y compare le sha256 de CHAQUE
-# script embarque de CE checkout (entrypoint.sh, et depuis #15105
-# work_cache_health.sh qu'il source) a celui porte par l'image. La lecture
-# cote image passe par `docker run --entrypoint sha256sum` -- le Dockerfile
-# place les scripts sous /opt/runner/ et MSYS_NO_PATHCONV (exporte plus haut)
+# script embarque de la COPIE EPOINGLEE (entrypoint.sh, et depuis #15105
+# work_cache_health.sh qu'il source) a celui porte par l'image. Avant #16134
+# la comparaison lisait le checkout vivant : n'importe quel etat du disque --
+# reboot de maintenance, checkout de branche, edition non commitee --
+# invalidait le parc ENTIER, sans rien pour distinguer « correctif a
+# reconstruire » de « l'operateur travaille ailleurs » (1 h 15 de flotte
+# morte le 2026-09-14, reprise manuelle des deux images). La lecture cote
+# image passe par `docker run --entrypoint sha256sum` -- le Dockerfile place
+# les scripts sous /opt/runner/ et MSYS_NO_PATHCONV (exporte plus haut)
 # protege l'argument POSIX sous Git Bash.
 assert_image_fresh() {
   local image="$1" build_cmd="$2"
-  local f repo_sha img_sha
+  local f pin_sha img_sha
   for f in entrypoint.sh work_cache_health.sh; do
-    repo_sha="$(sha256sum "$RUNNER_CTX/$f" 2>/dev/null | awk '{print $1}')"
-    [ -n "$repo_sha" ] || die "$f introuvable a cote de supervise.sh ($RUNNER_CTX) -- lancer depuis un checkout du depot"
+    pin_sha="$(sha256sum "$PINNED_CTX/$f" 2>/dev/null | awk '{print $1}')"
+    [ -n "$pin_sha" ] || die "$f absent du contexte epingle ($PINNED_CTX) -- gesture de deploiement manquant :
+    $0 pin
+Le garde ne lit plus le checkout vivant (#16134) : sans epingle, il REFUSE plutot que de comparer un arbre qui ne sera pas celui du build."
     img_sha="$(docker run --rm --entrypoint sha256sum "$image" /opt/runner/$f 2>/dev/null | awk '{print $1}')"
     [ -n "$img_sha" ] || die "lecture de /opt/runner/$f dans $image impossible (docker run --entrypoint sha256sum)"
-    [ "$repo_sha" = "$img_sha" ] || die "image $image PERIMEE : $f du checkout ($repo_sha) != version embarquee ($img_sha).
-Un correctif merge mais non deploye est indiscernable d'un correctif absent (#14801, #14385). Reconstruire :
+    [ "$pin_sha" = "$img_sha" ] || die "image $image PERIMEE : $f epingle ($pin_sha) != version embarquee ($img_sha).
+Un correctif pinne mais non reconstruit reste indiscernable d'un correctif absent (#14801, #14385). Reconstruire depuis l'epingle :
     $build_cmd"
   done
+}
+
+# Gesture de deploiement #16134 tranche (a) : epingle le contexte de build
+# hors de l'arbre vivant, sur le motif persist/. DELIBERE et BRUYANT :
+#  - le diff empreintes pin precedent -> nouveau pin est PUBLIE : c'est la
+#    seule trace visible de « correctif a reconstruire » ;
+#  - un fichier source non commite est signale -- pinner du WIP est le
+#    chemin par lequel la derive redeviendrait silencieuse ;
+#  - le swap passe par un staging FRERE de l'epingle (meme filesystem,
+#    jamais PINNED_CTX lui-meme) : un demarrage concurrent lit l'ancien pin
+#    complet, le nouveau complet, ou une ABSENCE transitoire (fenetre entre
+#    les deux mv : le garde de fraicheur refuse alors fail-closed) -- jamais
+#    un demi-etat.
+cmd_pin() {
+  local f staging parent new_sha i
+  for f in $PIN_FILES; do
+    [ -f "$RUNNER_CTX/$f" ] || die "$f introuvable a cote de supervise.sh ($RUNNER_CTX) -- lancer depuis un checkout du depot"
+  done
+  # Empreintes du pin PRECEDENT relevees AVANT le swap : c'est le diff publie.
+  local -a prev=()
+  for f in $PIN_FILES; do
+    if [ -f "$PINNED_CTX/$f" ]; then
+      prev+=("$(sha256sum "$PINNED_CTX/$f" | awk '{print $1}')")
+    else
+      prev+=("-")
+    fi
+  done
+  parent="$(dirname "$PINNED_CTX")"
+  mkdir -p "$parent" || die "creation de $parent impossible"
+  staging="$PINNED_CTX.staging.$$"
+  rm -rf "$staging"
+  mkdir "$staging" || die "creation de $staging impossible"
+  for f in $PIN_FILES; do
+    cp "$RUNNER_CTX/$f" "$staging/$f" || { rm -rf "$staging"; die "copie de $f vers $staging impossible"; }
+  done
+  # Les appels git passent par `cd` (builtin) et un pathspec RELATIF, jamais
+  # par `git -C <absolu>` : sous Git Bash, MSYS_NO_PATHCONV=1 (exporte plus
+  # haut, necessaire au garde) desactive la conversion POSIX->Windows des
+  # arguments -- un `git -C /c/dev/...` rend 128 et le bloc entier se taisait
+  # (mesure firsthand : rev-parse rc=128 avec, rc=0 sans). Le builtin cd, lui,
+  # concoit le chemin POSIX nativement.
+  if command -v git >/dev/null 2>&1 && (cd "$RUNNER_CTX" && git rev-parse --is-inside-work-tree) >/dev/null 2>&1; then
+    for f in $PIN_FILES; do
+      if ! (cd "$RUNNER_CTX" && git ls-files --error-unmatch "$f") >/dev/null 2>&1; then
+        echo "ATTENTION : $f n'est pas suivi par git -- l'epingle porterait un fichier sans historique"
+      elif ! (cd "$RUNNER_CTX" && git diff --quiet -- "$f") 2>/dev/null \
+           || ! (cd "$RUNNER_CTX" && git diff --cached --quiet -- "$f") 2>/dev/null; then
+        echo "ATTENTION : $f epingle dans un etat NON COMMITTE -- l'epingle ne doit porter que du revisable"
+      fi
+    done
+  fi
+  if [ -d "$PINNED_CTX" ]; then
+    mv "$PINNED_CTX" "$PINNED_CTX.old.$$" || { rm -rf "$staging"; die "archivage du pin precedent impossible ($PINNED_CTX)"; }
+  fi
+  if ! mv "$staging" "$PINNED_CTX"; then
+    die "installation du nouveau pin impossible ($staging -> $PINNED_CTX) -- l'ancien reste sous $PINNED_CTX.old.$$"
+  fi
+  rm -rf "$PINNED_CTX.old.$$"
+  echo "contexte epingle -> $PINNED_CTX"
+  i=0
+  for f in $PIN_FILES; do
+    new_sha="$(sha256sum "$PINNED_CTX/$f" | awk '{print $1}')"
+    if [ "${prev[$i]}" = "$new_sha" ]; then
+      echo "  $f  ${new_sha}  (inchange)"
+    else
+      echo "  $f  ${prev[$i]} -> ${new_sha}  CHANGE"
+    fi
+    i=$((i + 1))
+  done
+  echo "reconstruire depuis l'epingle, puis redemarrer :"
+  echo "  docker build -t $IMAGE $PINNED_CTX"
+  echo "  docker build -t $LEAN_IMAGE -f $PINNED_CTX/Dockerfile.lean $PINNED_CTX"
+  echo "le garde refusera tout demarrage tant que l'image ne porte pas ces empreintes"
 }
 
 # --- Bornes d'I/O : resolution du device et des drapeaux docker -------------
@@ -985,12 +1221,22 @@ family_cpus_of() {
 # Ferme le trou nomme dans cmd_lean depuis #14337 :
 #   « La somme des caps CPU des familles actives n'est gardee par RIEN --
 #     c'est l'operateur qui dimensionne. »
-# Un cap `--cpus` est PAR CONTENEUR : 12 waiters a 1 vCPU sont conformes un a
-# un et prennent 12 coeurs ensemble. Le seul endroit ou la somme existe est
-# ici, avant de lancer la famille suivante.
+# Un cap `--cpus` est PAR CONTENEUR : 8 slots a 3 vCPU et 2 lean a 6 vCPU
+# sont conformes un a un et prennent 36 coeurs ensemble. Le seul endroit ou
+# la somme existe est ici, avant de lancer la famille suivante.
 #
 # Refus, jamais avertissement : depasser le budget est exactement l'etat qui a
 # gele la machine, et un demarrage refuse se repare en une commande.
+#
+# #15574 item 3 (arbitrage coordinateur 2026-10-01) : la famille `waiters`
+# ne compte PAS dans la somme -- ni comme famille deja active, ni comme
+# demande nouvelle. Un waiter existe pour absorber l'attente du PR gate : il
+# est oisif la quasi-totalite du temps, son cap --cpus est un PLAFOND qu'il
+# n'atteint jamais, pas une reservation. Le budget garde la part qui calcule
+# (start, lean), pas la part qui dort ; compter 12 waiters a 1 vCPU y
+# inscrivait 12 vCPU fantomes et affamait les familles d'execution. Le terme
+# reste AFFICHE, marque « exclu » : ce qui sort de la somme doit se lire,
+# pas disparaitre.
 assert_cpu_budget() {
   local new_fam="$1" new_n="$2" new_cpus="$3"
   [ "${CPU_BUDGET:-0}" = "0" ] && return 0
@@ -1000,14 +1246,24 @@ assert_cpu_budget() {
     [ -z "${n:-}" ] && continue
     c="$(family_cpus_of "$pid" "$fam")"
     sub="$(awk -v a="$n" -v b="$c" 'BEGIN{printf "%.2f", a*b}')"
+    if [ "$fam" = "waiters" ]; then
+      detail="$detail
+  deja actif : $fam n=$n cpus=$c -> $sub (exclu du budget : oisif, #15574)"
+      continue
+    fi
     total="$(awk -v a="$total" -v b="$sub" 'BEGIN{printf "%.2f", a+b}')"
     detail="$detail
   deja actif : $fam n=$n cpus=$c -> $sub"
   done < <(supervisor_families)
   sub="$(awk -v a="$new_n" -v b="$new_cpus" 'BEGIN{printf "%.2f", a*b}')"
-  total="$(awk -v a="$total" -v b="$sub" 'BEGIN{printf "%.2f", a+b}')"
-  detail="$detail
+  if [ "$new_fam" = "waiters" ]; then
+    detail="$detail
+  demande    : $new_fam n=$new_n cpus=$new_cpus -> $sub (exclu du budget : oisif, #15574)"
+  else
+    total="$(awk -v a="$total" -v b="$sub" 'BEGIN{printf "%.2f", a+b}')"
+    detail="$detail
   demande    : $new_fam n=$new_n cpus=$new_cpus -> $sub"
+  fi
   if awk -v t="$total" -v b="$CPU_BUDGET" 'BEGIN{exit !(t > b)}'; then
     die "budget CPU inter-familles depasse : $total vCPU demandes pour un plafond de $CPU_BUDGET.$detail
 
@@ -1170,8 +1426,18 @@ any_supervisor_alive() {
   # echappe. Ici la decision est d'EFFACER une sentinelle : rater un superviseur
   # vivant ferait repartir une seconde flotte par-dessus la premiere. On exclut
   # donc seulement soi-meme et ses propres fils.
+  #
+  # #15574 item 3 -- familles d'EXECUTION seules (start, lean). Un superviseur
+  # waiters ne draine jamais de jobs : sa presence ne protege rien qu'un
+  # demarrage violerait. Mesure 2026-10-01 po-2024 : restart des deux jambes
+  # d'execution avec waiters debout -- sentinel perimee (superviseurs tues par
+  # TERM avant leur cleanup, personne pour la retirer) + les PIDs waiters
+  # vivants -> chaque jambe crash-loope sur "un superviseur est vivant" qui ne
+  # liste QUE des waiters. Pool a zero jusqu'a purge manuelle. Meme exclusion
+  # que assert_cpu_budget : la sentinelle protege la part qui calcule, pas la
+  # part qui dort.
   me="$$"
-  out="$(ps -ef 2>/dev/null | grep -E '[s]upervise\.sh (start|waiters|lean)'          | awk -v me="$me" '$2 ~ /^[0-9]+$/ && $2 != me && $3 != me {print $2}')"
+  out="$(ps -ef 2>/dev/null | grep -E '[s]upervise\.sh (start|lean)'          | awk -v me="$me" '$2 ~ /^[0-9]+$/ && $2 != me && $3 != me {print $2}')"
   printf '%s
 ' "$out"
 }
@@ -1217,7 +1483,17 @@ fetch_token() {
   # gh ACTIF -- un `gh auth switch` dans une autre session changeait
   # l'identite des registration tokens en silence (incident 2026-09-02).
   if [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ]; then
-    GH_TOKEN="$(gh auth token --user "$COURSIA_RUNNER_GH_ACCOUNT")" || return 1
+    # #15154 : un compte epingle INTRROUVABLE dans le trousseau gh est une
+    # cause structurelle -- `gh auth token --user` n'aboutira jamais par la
+    # perseverance. Avant ce changement, le `return 1` partait AVANT toute
+    # ecriture du fichier d'etat : code HTTP absent -> transitoire -> la
+    # boucle retentait indefiniment (reserve du preflight du 2026-09-27).
+    # Le marqueur HTTP=AUTH est classe terminal par les boucles, comme un
+    # 4xx, et porte le compte epingle pour le diagnostic.
+    if ! GH_TOKEN="$(gh auth token --user "$COURSIA_RUNNER_GH_ACCOUNT")"; then
+      printf 'HTTP=AUTH\nACCOUNT=%s\n' "$COURSIA_RUNNER_GH_ACCOUNT" > "$FETCH_TOKEN_STATE_FILE"
+      return 1
+    fi
     export GH_TOKEN
   fi
   # Pas de 2>/dev/null (#14259) : l'erreur REELLE de gh (403, token expire,
@@ -1235,12 +1511,25 @@ fetch_token() {
   # absolu ecrit dans l'entete), PAS dans une variable bash. Un appel
   # `token="$(fetch_token)"` execute la fonction dans un subshell -- les
   # asignations de variables y sont locales et perdues au retour. Le fichier
-  # survit au subshell. Format : "HTTP=<code>\nERR=<stderr tronque>".
-  local err="" http_code="" state_tmp=""
+  # survit au subshell. Format : "HTTP=<code>\nACCOUNT=<compte resolu>"
+  # ( ACCOUNT seulement sur les echecs ) "\nERR=<stderr tronque>" ; le code
+  # special AUTH designe un compte epingle introuvable (terminal).
+  local err="" http_code="" account="" state_tmp=""
   err="$(gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>&1 >/dev/null)"
   if [ -n "$err" ]; then
     http_code="$(printf '%s\n' "$err" | grep -oE 'HTTP [0-9]+' | awk '{print $2}' | head -n1)"
-    printf 'HTTP=%s\nERR=%s\n' "${http_code:-0}" "$err" > "$FETCH_TOKEN_STATE_FILE"
+    # #15154 critere 1 : le diagnostic doit nommer le compte RESOLU, pas la
+    # variable qui le designe. Epingle -> sa valeur ; sinon le compte ambiant,
+    # demande a gh uniquement sur ce chemin d'echec (cout nul sur le chemin
+    # nominal). Un compte non resoluble (trousseau casse) reste nomme comme
+    # tel -- inventer une identite serait pire que l'absence.
+    if [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ]; then
+      account="$COURSIA_RUNNER_GH_ACCOUNT"
+    else
+      account="$(gh api user --jq .login 2>/dev/null || true)"
+      [ -z "$account" ] && account="compte ambiant non resoluble"
+    fi
+    printf 'HTTP=%s\nACCOUNT=%s\nERR=%s\n' "${http_code:-0}" "$account" "$err" > "$FETCH_TOKEN_STATE_FILE"
     return 1
   fi
   printf 'HTTP=200\nERR=\n' > "$FETCH_TOKEN_STATE_FILE"
@@ -1275,16 +1564,24 @@ slot_loop() {
       # retry legitime. La discrimination se fait sur le code HTTP que fetch_token
       # a depose dans $FETCH_TOKEN_STATE_FILE (le fichier survit au subshell
       # d'invocation `$(fetch_token)` -- une variable bash n'aurait pas traverse).
-      local http="" terminal=0
+      # #15154 : AUTH = compte epingle introuvable dans le trousseau gh
+      # (marqueur pose par fetch_token AVANT le return) -- meme classe que
+      # 4xx : structurel, la perseverance ne le resout pas.
+      local http="" acct="" terminal=0
       if [ -f "$FETCH_TOKEN_STATE_FILE" ]; then
         http="$(awk -F= '$1=="HTTP"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+        acct="$(awk -F= '$1=="ACCOUNT"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
       fi
       : "${http:=0}"
+      : "${acct:=inconnu}"
+      local cause_diag="compte sans droit admin ?"
+      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh"
       case "$http" in
+        AUTH) terminal=1 ;;
         4??) [ "$http" != "408" ] && terminal=1 ;;
       esac
       if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
-        echo "[slot $slot] ABANDON : $fails echecs consecutifs HTTP $http (compte sans droit admin ?). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin du compte sur le depot (cf #15154 / voie B)." >&2
+        echo "[slot $slot] ABANDON : $fails echecs consecutifs HTTP $http sur le compte '$acct' ($cause_diag). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin de '$acct' sur le depot (cf #15154 / voie B)." >&2
         # #15154 : prevenir les AUTRES slots -- ils reproduiraient la meme
         # erreur. Le sentinel STOP_FILE est observe par leur test de boucle
         # (`while [ ! -f "$STOP_FILE" ]`), donc ils sortent en arret gracieux
@@ -1296,7 +1593,7 @@ slot_loop() {
         die "superviseur arrete -- cause structurelle, voir message precedent"
       fi
       if [ "$terminal" -eq 1 ]; then
-        echo "[slot $slot] token indisponible HTTP $http (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
+        echo "[slot $slot] token indisponible HTTP $http sur le compte '$acct' (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
       else
         echo "[slot $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
       fi
@@ -1373,9 +1670,10 @@ cmd_start() {
   validate_backoff_env
   assert_docker_daemon
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
-    || die "image $IMAGE absente -- construire d'abord :
-    docker build -t $IMAGE scripts/ci/docker/linux-runner/"
-  assert_image_fresh "$IMAGE" "docker build -t $IMAGE scripts/ci/docker/linux-runner/"
+    || die "image $IMAGE absente -- construire d'abord depuis l'epingle :
+    docker build -t $IMAGE $PINNED_CTX
+(apres $0 pin si l'epingle est vide -- le build ne se fait plus depuis le checkout, #16134)"
+  assert_image_fresh "$IMAGE" "docker build -t $IMAGE $PINNED_CTX"
   docker volume create "$TOOLCACHE_VOLUME" >/dev/null \
     || die "volume $TOOLCACHE_VOLUME impossible a creer -- docker volume create"
   # #14259 Defaut 1 : garde d'idempotence. `pgrep` n'existe PAS sous Git
@@ -1589,8 +1887,64 @@ Le mur agrege serait decoratif tout en paraissant actif. Deployer :
     return 0
   fi
   hi="$(slice_read_raw memory.high)"
+  # Pilote systemd (daemon docker-ce de la distro WSL d'ai-01) : --cgroup-parent
+  # y attend un NOM de slice (`coursia-ci.slice`), dont systemd deduit lui-meme
+  # la hierarchie par les tirets. Le chemin relatif du pilote cgroupfs
+  # (`coursia.slice/coursia-ci.slice`) y est refuse par runc -- « invalid slice
+  # name » -- et chaque slot sort en rc=125 au bout d'une seconde (mesure ai-01
+  # 2026-09-23T13:01Z : 10 slots sur 10). Le nom derive du MEME chemin que la
+  # lecture : la source de verite reste unique.
+  if [ -n "$CI_CGROUP_PARENT" ] \
+     && [ "$(docker info --format '{{.CgroupDriver}}' 2>/dev/null | tr -d '\r')" = "systemd" ]; then
+    CI_CGROUP_PARENT="${CI_SLICE_PATH##*/}"
+  fi
   echo "[slice] mur agrege ACTIF : memory.high=$hi memory.max=$mx octets"
   echo "[slice] ($CI_SLICE_PATH ; conteneurs places via --cgroup-parent=$CI_CGROUP_PARENT)"
+}
+
+# Garde d'APPARTENANCE du mur agrege (#15157).
+#
+# assert_ci_slice verifie que le mur A des plafonds ; jusqu'ici rien ne
+# prouvait que les conteneurs Y SONT. Mesure ai-01 2026-09-08 : la flotte
+# tourne sur un daemon (Docker Desktop, pilote cgroupfs) qui ne porte
+# AUCUN cgroup-parent par defaut -- le defaut de daemon.json ne vit que
+# sur le daemon docker-ce, qui heberge zero conteneur. L'entree depend
+# donc entierement du drapeau pose par ce script, et un conteneur lance
+# a la main y echappe -- en silence : hors du mur, il garde ses caps
+# propres et la lecture du mur ne le voit pas.
+#
+# Chaque conteneur place cree un sous-groupe dans la slice : on confronte
+# ce compte au nombre de conteneurs vivants label=coursia-ci=1 sur le
+# daemon vise (le meme binaire docker que slot_loop). Advisory et non
+# bloquant -- un die ici tuerait un pool sain sur un decalage transitoire
+# de creation ; la ligne est le signal, lue depuis cmd_status une fois la
+# flotte en vol (hors course de creation).
+slice_subgroup_count() {
+  local d n=0
+  for d in "$CI_SLICE_PATH"/*/; do
+    [ -d "$d" ] && n=$((n + 1))
+  done
+  echo "$n"
+}
+
+running_ci_count() {
+  docker ps -q --filter 'label=coursia-ci=1' 2>/dev/null | grep -c .
+}
+
+report_slice_membership() {
+  # Sans mur actif, assert_ci_slice a deja parle (et neutralise le
+  # placement) : l'appartenance n'a rien a mesurer.
+  local mx
+  mx="$(slice_read_raw memory.max)"
+  case "$mx" in ""|max) return 0 ;; esac
+  local sub n
+  sub="$(slice_subgroup_count)"
+  n="$(running_ci_count)"
+  if [ "$n" -gt "$sub" ]; then
+    echo "[slice] EVASION : $((n - sub)) conteneur(s) coursia-ci HORS du mur agrege (conteneurs=$n, sous-groupes=$sub) -- un conteneur lance sans --cgroup-parent n'est pas borne par la slice (#15157)"
+  else
+    echo "[slice] appartenance OK : $n conteneur(s) coursia-ci, $sub sous-groupe(s) dans le mur"
+  fi
 }
 
 # Affiche pic / courant / plafonds de la slice, et confronte le pic au budget.
@@ -1687,6 +2041,9 @@ cmd_status() {
     echo "  plafond par conteneur : non declare (COURSIA_RUNNER_DEVICE_WRITE_BPS vide)"
   fi
   echo "  budget CPU inter-familles : ${CPU_BUDGET:-0} vCPU (0 = pas de garde)"
+  echo "== mur agrege (post-demarrage, #15157) =="
+  assert_ci_slice 2>&1 | sed 's/^/  /'
+  report_slice_membership 2>&1 | sed 's/^/  /'
   echo "== conteneurs runner en cours =="
   docker ps --filter "name=$NAME_PREFIX" --format '  {{.Names}}  {{.Status}}  {{.RunningFor}}' 2>/dev/null || true
   echo "== runners enregistres cote GitHub =="
@@ -1739,24 +2096,30 @@ waiter_loop() {
     if [ -z "$token" ]; then
       fails=$(( fails + 1 ))
       wait_s="$(backoff_delay "$fails")"
-      # #15154 : discrimination 4xx-terminal / 5xx-transitoire (cf slot_loop).
-      local http="" terminal=0
+      # #15154 : discrimination 4xx-terminal / 5xx-transitoire (cf slot_loop),
+      # et AUTH-terminal (compte epingle introuvable, cf fetch_token).
+      local http="" acct="" terminal=0
       if [ -f "$FETCH_TOKEN_STATE_FILE" ]; then
         http="$(awk -F= '$1=="HTTP"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+        acct="$(awk -F= '$1=="ACCOUNT"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
       fi
       : "${http:=0}"
+      : "${acct:=inconnu}"
+      local cause_diag="compte sans droit admin ?"
+      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh"
       case "$http" in
+        AUTH) terminal=1 ;;
         4??) [ "$http" != "408" ] && terminal=1 ;;
       esac
       if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
-        echo "[waiter $slot] ABANDON : $fails echecs consecutifs HTTP $http (compte sans droit admin ?). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin du compte sur le depot (cf #15154 / voie B)." >&2
+        echo "[waiter $slot] ABANDON : $fails echecs consecutifs HTTP $http sur le compte '$acct' ($cause_diag). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin de '$acct' sur le depot (cf #15154 / voie B)." >&2
         # #15154 : cf slot_loop -- le sentinel coordonne l'arret de tous
         # les slots et waiters sur la meme cause structurelle.
         touch "$STOP_FILE" 2>/dev/null || true
         die "superviseur waiter arrete -- cause structurelle, voir message precedent"
       fi
       if [ "$terminal" -eq 1 ]; then
-        echo "[waiter $slot] token indisponible HTTP $http (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
+        echo "[waiter $slot] token indisponible HTTP $http sur le compte '$acct' (cause structurelle probable, droit admin gh ?) -- echec consecutif #$fails/${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}, nouvelle tentative dans ${wait_s}s" >&2
       else
         echo "[waiter $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
       fi
@@ -1807,9 +2170,10 @@ cmd_waiters() {
   validate_backoff_env
   assert_docker_daemon
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
-    || die "image $IMAGE absente -- construire d'abord :
-    docker build -t $IMAGE scripts/ci/docker/linux-runner/"
-  assert_image_fresh "$IMAGE" "docker build -t $IMAGE scripts/ci/docker/linux-runner/"
+    || die "image $IMAGE absente -- construire d'abord depuis l'epingle :
+    docker build -t $IMAGE $PINNED_CTX
+(apres $0 pin si l'epingle est vide -- le build ne se fait plus depuis le checkout, #16134)"
+  assert_image_fresh "$IMAGE" "docker build -t $IMAGE $PINNED_CTX"
   stop_sentinel_gate
   # Idempotence propre a la famille waiters : le garde de `start` filtre
   # `supervise.sh start` et ne voit pas `waiters`. Verrou porte par le pid
@@ -1846,11 +2210,12 @@ cmd_lean() {
   validate_backoff_env
   assert_docker_daemon
   docker image inspect "$LEAN_IMAGE" >/dev/null 2>&1 \
-    || die "image $LEAN_IMAGE absente -- construire d'abord :
-    docker build -t $LEAN_IMAGE -f scripts/ci/docker/linux-runner/Dockerfile.lean scripts/ci/docker/linux-runner/"
+    || die "image $LEAN_IMAGE absente -- construire d'abord depuis l'epingle :
+    docker build -t $LEAN_IMAGE -f $PINNED_CTX/Dockerfile.lean $PINNED_CTX
+(apres $0 pin si l'epingle est vide -- le build ne se fait plus depuis le checkout, #16134)"
   # Dockerfile.lean FROM coursia-linux-runner : l'entrypoint est herite de la
   # base -- un ecart pointe soit vers l'image lean, soit vers sa base.
-  assert_image_fresh "$LEAN_IMAGE" "docker build -t $LEAN_IMAGE -f scripts/ci/docker/linux-runner/Dockerfile.lean scripts/ci/docker/linux-runner/"
+  assert_image_fresh "$LEAN_IMAGE" "docker build -t $LEAN_IMAGE -f $PINNED_CTX/Dockerfile.lean $PINNED_CTX"
   stop_sentinel_gate
   # Idempotence calquee sur cmd_waiters : le garde PPID de `start` filtre
   # `supervise.sh start` et ne verrait pas `lean`. Verrou par pid file.
@@ -1913,5 +2278,6 @@ case "${1:-}" in
   stop)    cmd_stop ;;
   status)  cmd_status ;;
   peak)    cmd_peak ;;
-  *) echo "usage: $0 {start [N] [--force]|waiters [N]|lean [N]|stop|status|peak}"; exit 2 ;;
+  pin)     cmd_pin ;;
+  *) echo "usage: $0 {start [N] [--force]|waiters [N]|lean [N]|stop|status|peak|pin}"; exit 2 ;;
 esac

@@ -111,8 +111,10 @@ discrépance au plus `2k - 1`.
 
 C'est la « noix » visée par le palier P1 de l'issue #12823 : preuve par
 *variables flottantes* et coloration partielle, découpée en boutes `b1`–`b4`
-(voir `FORMAL_STATUS.md`). Tant que la preuve n'est pas assemblée, l'énoncé
-vit comme `Prop` nommée ; la boute `b4` le convertira en `theorem`. -/
+(voir `FORMAL_STATUS.md`). **PROUVÉE** : l'assemblage `b4` est livré par
+#13427 — `theorem beck_fiala_classic : BeckFialaClassic` dans
+`Discrepancy/BeckFiala.lean`. La cible reste une `Prop` nommée par
+convention du lake (énoncés en `Prop`, preuves en théorèmes séparés). -/
 def BeckFialaClassic : Prop :=
   ∀ (n k : ℕ) (F : Finset (Finset (Fin n))) (_hk : maxDegree F ≤ k) (_hk1 : 1 ≤ k),
     ∃ c : Fin n → ℤ, IsColoring c ∧ (discrepancy F c : ℤ) ≤ 2 * (k : ℤ) - 1

@@ -48,21 +48,24 @@ Arguments:
 | `notebook_path` | string | Chemin absolu du notebook | `d:/dev/CoursIA/.../notebook.ipynb` |
 | `cell_index` | int/list | Index ou liste d'indices | `5` ou `[5, 7, 9]` |
 | `objective` | string | Critere de succes | `"Output contains 'SUCCESS'"` |
-| `objective_type` | string | Type d'objectif | `contains`, `equals`, `regex`, `no_error`, `custom` |
+| `objective_checker` | function | Fonction `(output, objective) -> bool` ; défaut = recherche de mots-clés succès/erreur (`CellIterator._default_checker`, notebook_helpers.py:631) | `lambda out, obj: 'SUCCESS' in out` |
 | `max_iterations` | int | Max tentatives par cellule | `5` |
 | `kernel_name` | string | Kernel Jupyter | `python3`, `.net-csharp` |
 | `correction_strategy` | string | Strategie de correction | `llm`, `rules`, `manual` |
 | `save_on_success` | bool | Sauvegarder le notebook | `true` |
 
-## Types d'objectifs
+## Formules d'objectif courantes
 
-| Type | Description | Exemple d'objectif |
-|------|-------------|-------------------|
-| `contains` | Sortie contient texte | `"iterations: 12"` |
-| `equals` | Sortie egale exactement | `"PROOF COMPLETE"` |
-| `regex` | Sortie matche pattern | `r"SUCCESS.*in \d+ iterations"` |
-| `no_error` | Pas d'erreur dans sortie | (pas de parametre) |
-| `custom` | Fonction Python custom | `lambda out: int(out) > 10` |
+Formulations du parametre `objective` (l'évaluation réelle passe par
+`objective_checker` ou par le défaut mot-clé de `CellIterator`) :
+
+| Formule | Description | Exemple d'objectif |
+|---------|-------------|-------------------|
+| texte contenu | Sortie contient texte | `"iterations: 12"` |
+| texte exact | Sortie egale exactement | `"PROOF COMPLETE"` |
+| pattern regex | Sortie matche pattern | `r"SUCCESS.*in \d+ iterations"` |
+| absence d'erreur | Pas d'erreur dans sortie | (pas de parametre) |
+| checker custom | Fonction Python custom (objective_checker) | `lambda out, obj: int(out) > 10` |
 
 ## Processus
 
@@ -70,7 +73,7 @@ Arguments:
 
 ```python
 # Charger le notebook via helper
-from scripts.notebook_helpers import NotebookHelper, CellIterator
+from scripts.notebook_tools.notebook_helpers import NotebookHelper, CellIterator
 
 helper = NotebookHelper(notebook_path)
 iterator = CellIterator(
@@ -100,13 +103,11 @@ output = execute_on_kernel(
     cell_index=cell_index
 )
 
-# 3.2 Evaluer l'objectif
-if objective_type == "contains":
-    success = objective in output
-elif objective_type == "no_error":
-    success = "Error" not in output and "Exception" not in output
-elif objective_type == "regex":
-    success = re.search(objective, output) is not None
+# 3.2 Evaluer l'objectif via l'API réelle CellIterator.evaluate
+# (IterationResult.objective_met — notebook_helpers.py:51 ;
+#  pas de parametre objective_type dans CellIterator.__init__)
+result = iterator.evaluate(output)
+success = result.objective_met
 
 # 3.3 Si succes, terminer
 if success:
@@ -277,6 +278,7 @@ Apres enrichissement, valider les cellules modifiees :
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Tu es un agent notebook-cell-iterator.
     Lis .claude/agents/notebook-cell-iterator.md
@@ -298,6 +300,7 @@ Pour corriger automatiquement les erreurs :
 for cell_idx in cells_with_errors:
     Task(
         subagent_type="general-purpose",
+        model="sonnet",
         prompt=f"""
         Tu es un agent notebook-cell-iterator.
         Corrige la cellule {cell_idx} de {notebook_path}
@@ -314,7 +317,7 @@ for cell_idx in cells_with_errors:
 ### Exemple 1: Corriger une demo Lean-9
 
 ```
-/iterate-cell MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-9-SK-Multi-Agents.ipynb
+/iterate-cell MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-09-SK-Multi-Agents-Lean-Python.ipynb
     --cell 39
     --objective "iterations: 4"
     --max-iterations 5
@@ -325,6 +328,7 @@ for cell_idx in cells_with_errors:
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-cell-iterator.
     Notebook: MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb
@@ -342,9 +346,10 @@ Task(
 ```python
 Task(
     subagent_type="general-purpose",
+    model="sonnet",
     prompt="""
     Agent notebook-cell-iterator.
-    Notebook: MyIA.AI.Notebooks/Search/CSPs_Intro.ipynb
+    Notebook: MyIA.AI.Notebooks/Search/_archive/CSPs_Intro.ipynb
     Cell: 15  # min_conflicts avec n=256
     Objective: "Solved in" (doit etre present dans output)
     Max iterations: 5
@@ -360,7 +365,7 @@ Task(
 Le script `scripts/notebook_tools/notebook_helpers.py` fournit :
 
 ```python
-from scripts.notebook_helpers import NotebookHelper, CellIterator
+from scripts.notebook_tools.notebook_helpers import NotebookHelper, CellIterator
 
 # Lecture/ecriture de notebook
 helper = NotebookHelper("path/to/notebook.ipynb")

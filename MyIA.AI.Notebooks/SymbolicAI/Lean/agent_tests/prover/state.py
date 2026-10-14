@@ -139,6 +139,27 @@ class ProofState:
     # sorry_decreased / structural_only / heartbeat_budget_exceeded: a run that
     # lowered sorry or blew a Lean heartbeat first ranks as that outcome.
     reasoning_budget_exceeded: bool = False
+    # C3 (#1453 calibration forensic, 2026-09-19): cumulative count of
+    # freeze-loop guard escalations — each firing forced a Coordinator
+    # handoff to revise the plan (TacticAgent emitted text without any
+    # tool call for `no_tool_call_threshold` consecutive turns). When the
+    # count reaches the workflow hardcap (2x the soft threshold window)
+    # while tactic_history is still EMPTY, the run is structurally stuck —
+    # the model cannot tool-call at all and no plan revision unsticks it —
+    # and the workflow yields early instead of burning iteration_cap.
+    # Founder case (calibration DEMOS 45/41/52 pass 2, qwen2.5:7b via
+    # Ollama): the model emits tool-calls as fenced-JSON prose, the harness
+    # echoes its own text back as [receive]; guards fired 6x over 8
+    # iterations, RESULT_ATTEMPTS 0 on 8/8 — ~45 min burned for nothing.
+    freeze_loop_escalations: int = 0
+    # Latched True at the yield above so run_prover_bg._derive_result_kind
+    # classifies the run freeze_loop (distinct from no_progress): telling a
+    # coordinator to change model/provider (tool-calling capability), NOT
+    # more iterations. Ranked AFTER sorry_decreased / structural_only /
+    # provider_outage: a run that progressed before freezing ranks as that
+    # outcome (it cannot have — tactic_history empty is a yield condition —
+    # but the ranking stays defensive).
+    freeze_loop_terminal: bool = False
 
     # F9 (2026-05-17, C37 forensic): Director consultation gate. The
     # Coordinator MUST call request_director_guidance() at least once

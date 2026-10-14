@@ -232,7 +232,7 @@ class TestCodeCellOnlyExercise:
         ``# Etape`` scaffold whose only "exercice" word lives in a print
         statement. The comment-aware ``_code_cell_mentions_exercise`` misses it;
         the broadened full-source scan in pass-2 must catch it (genuine case:
-        SC-26-Final-Project Parties 2/3/4, reported 0 for 3 real stubs).
+        SC-26-Final-Project-Python Parties 2/3/4, reported 0 for 3 real stubs).
         """
         nb = _write_nb(
             tmp_path / "print_marker.ipynb",
@@ -266,7 +266,7 @@ class TestCodeCellOnlyExercise:
         self, tmp_path
     ):
         """Numbered C.1 print idiom on a scaffolded skeleton whose body
-        computes (the rl_8_model_based_dyna_q Ex2 shape). The skeleton's
+        computes (the RL-08-Dyna-Q-Planification-Python Ex2 shape). The skeleton's
         ``# TODO etudiant`` markers sit above scaffolding with a DERIVED
         return (``return list(steps), Q`` -- a call), so the comment-marker
         gate in ``_is_stub_code`` skips them ("leftover comments above a body
@@ -405,7 +405,7 @@ class TestCodeCellOnlyExercise:
         it as a stub even though it has more than one effective code line (the
         ``<= 1 effective code-line`` rule alone misses it).
 
-        Regression for ``Search-11-Metaheuristics-Csharp`` cells 24-26 (ABC /
+        Regression for ``Search-11-Metaheuristics-CSharp`` cells 24-26 (ABC /
         inertia-schedule / Schwefel): each ``// Exercice N`` + ``// TODO etudiant``
         + partial skeleton was silently under-counted, so the notebook read as
         1 exercise instead of its real 3.
@@ -460,7 +460,7 @@ class TestCodeCellOnlyExercise:
         cell that carries ``display("Exercice ... a completer")`` but neither
         ``// TODO`` nor ``// Indice`` must still be counted.
 
-        Regression for ``GameTheory-05-ZeroSum-Minimax-Csharp`` Ex2, whose stub
+        Regression for ``GameTheory-05-ZeroSum-Minimax-CSharp`` Ex2, whose stub
         marker ``display("Exercice 2 a completer ...")`` was silently
         under-counted (notebook read as 2 exercises instead of its real 3).
         """
@@ -1114,7 +1114,7 @@ class TestGroupedAndPluralHeaders:
     def test_plural_section_does_not_steal_forward_pairing(self, tmp_path):
         """Bug 2 (pairing side): a plural section header must NOT forward-pair
         the code cell below it. The real Exercice 1 stub must be counted in its
-        own right. Mirrors ``GameTheory/GameTheory-05-ZeroSum-Minimax-Csharp.ipynb``
+        own right. Mirrors ``GameTheory/GameTheory-05-ZeroSum-Minimax-CSharp.ipynb``
         where the section `## 9. Exercices` stole cell 21 (Exercice 1).
         """
         nb = _write_nb(
@@ -1247,12 +1247,12 @@ class TestCorpusScope:
         stricter policy than the rule states.
         """
         for stem, expect in [
-            ("Lean-1-Setup", "setup"),
-            ("Sudoku-00-Environment-Csharp", "setup"),
-            ("SC-1-Setup-Foundry", "setup"),
+            ("Lean-01-Setup-Lean-Python", "setup"),
+            ("Sudoku-00-Environment-CSharp", "setup"),
+            ("SC-01-Setup-Foundry-Python", "setup"),
             ("Argument_Analysis_Agentic-0-init_agent", "setup"),
-            ("Lean-3-Propositions-Proofs", "lean"),
-            ("GameTheory-11b-Lean-BayesianGamesExt", "lean"),
+            ("Lean-03-Propositions-Proofs-Lean", "lean"),
+            ("GameTheory-11b-Lean-BayesianGamesExt-Lean", "lean"),
             ("DecInfer-09-Lean-Gittins", "lean"),
         ]:
             kind, threshold = _classify(tmp_path / "Course" / f"{stem}.ipynb", standard_threshold=3, root=tmp_path)
@@ -1271,7 +1271,7 @@ class TestCorpusScope:
 
     def test_raising_threshold_does_not_raise_exempt_kinds(self, tmp_path):
         """`--threshold 5` must not invent an exercise budget for setup/Lean."""
-        assert _classify(tmp_path / "Course" / "Lean-1-Setup.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
+        assert _classify(tmp_path / "Course" / "Lean-01-Setup-Lean-Python.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
         assert _classify(tmp_path / "Course" / "X-Lean-Y.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
         assert _classify(tmp_path / "Course" / "X-Concepts.ipynb", standard_threshold=5, root=tmp_path)[1] == 5
 
@@ -1469,8 +1469,8 @@ class TestPathFormInvariance:
         root = tmp_path / "nb_root"
         family = root / "Sudoku"
         family.mkdir(parents=True)
-        _write_nb(family / "Sudoku-01-Backtracking-Csharp.ipynb", [])
-        _write_nb(family / "Sudoku-00-Environment-Csharp.ipynb", [])
+        _write_nb(family / "Sudoku-01-Backtracking-CSharp.ipynb", [])
+        _write_nb(family / "Sudoku-00-Environment-CSharp.ipynb", [])
         _write_nb(root / "GradeBook.ipynb", [])  # the only TRUE top-of-tree file
         monkeypatch.setattr(count_exercises, "NOTEBOOKS_DIR", root)
 
@@ -1478,11 +1478,11 @@ class TestPathFormInvariance:
         # are NOT top-of-tree (GradeBook is). On buggy code both returned
         # ("tooling", None) and corpus_scope(family) yielded an empty list.
         assert _classify(
-            family / "Sudoku-01-Backtracking-Csharp.ipynb",
+            family / "Sudoku-01-Backtracking-CSharp.ipynb",
             standard_threshold=3, root=family,
         ) == ("standard", 3)
         assert _classify(
-            family / "Sudoku-00-Environment-Csharp.ipynb",
+            family / "Sudoku-00-Environment-CSharp.ipynb",
             standard_threshold=3, root=family,
         ) == ("setup", 0)
         corpus, removed = corpus_scope(family)
@@ -1992,3 +1992,834 @@ class TestD01UnpairedHeaders:
         result = count_exercises_in_notebook(nb)
         assert result.count == 0
         assert result.unpaired_markdown_instances == 0
+
+
+# ---------------------------------------------------------------------------
+# #18146 -- scaffolded stubs swallowed by the "_body_computes_result" gate,
+# bold (non-ATX) exercise titles, and pairing refinements. Each fixture
+# reproduces the measured shape of a cited notebook cell.
+# ---------------------------------------------------------------------------
+
+class TestScaffoldedStubShapes:
+    """Mechanism 1: the leftover-TODO gate must not swallow scaffolded stubs."""
+
+    def test_docstring_stub_with_scaffold_return_is_stub(self):
+        """GameTheory-07 c29: a long docstring + `# TODO etudiant` Etapes +
+        one scaffolding constructor + `return game`. The docstring prose used
+        to carry the cell over the three-effective-line threshold and the
+        single-assignment `return game` read as derived."""
+        src = (
+            'def build_three_player_entry_game():\n'
+            '    """Construit l\'arbre de jeu a 3 firmes sequentielles.\n'
+            "\n"
+            "    Structure :\n"
+            "      - Firme A (joueur 1, racine) decide Entree ou Reste_dehors\n"
+            "      - Firme B (joueur 2) observe A et decide Entree ou Reste_dehors\n"
+            "      - Firme C (joueur 3) observe A et B et decide Entree ou Reste_dehors\n"
+            '    """\n'
+            "    # TODO etudiant : implementer l'arbre complet\n"
+            "    # Etape 1 : creer le jeu avec num_players=3\n"
+            "    # Etape 2 : creer les 8 noeuds terminaux\n"
+            '    game = ExtensiveFormGame("3-Player Entry Game", num_players=3)\n'
+            "    return game\n"
+        )
+        assert _is_stub_code(src) is True, (
+            "A scaffolded stub (docstring + TODO + one constructor + return) "
+            "must stay a stub"
+        )
+
+    def test_template_dict_return_is_stub(self):
+        """GameTheory-07 c27/c31: `return {` over placeholder values (0, [],
+        False, a TODO string) under a `# TODO etudiant : remplacer` marker."""
+        src = (
+            "def solve_ultimatum(offers=None, total=10):\n"
+            "    # TODO etudiant : completer le solveur\n"
+            "    return {\n"
+            "        'spe_offer': 0,\n"
+            "        'j1_payoff': 0,\n"
+            "        'j2_payoff': 0,\n"
+            "        'j2_accepts': [],\n"
+            "    }  # TODO etudiant : remplacer par le vrai calcul SPE\n"
+        )
+        assert _is_stub_code(src) is True, (
+            "A returned dict whose every value is a placeholder is a template"
+        )
+
+    def test_dict_return_with_computed_value_stays_a_solution(self):
+        """Negative control on the template rule: a dict that carries at
+        least one computed value is a real answer, leftover TODO or not."""
+        src = (
+            "def solve(grid):\n"
+            "    # TODO etudiant (residuel de la correction)\n"
+            "    best = max(candidates, key=score)\n"
+            "    return {\n"
+            "        'best': best,\n"
+            "        'score': score(best),\n"
+            "    }\n"
+        )
+        assert _is_stub_code(src) is False
+
+    def test_csharp_return_zero_with_tail_todo_is_stub(self):
+        """GameTheory-13 c22: `return 0.0;   // TODO etudiant` -- the C#
+        line-tail comment slashes used to satisfy the binary-operator regex
+        and mark the return as derived."""
+        src = (
+            "// Exercice 1 : Leduc Poker (2 tours, 6 cartes).\n"
+            "// TODO etudiant : modeliser Leduc + lancer CFR.\n"
+            "static double SolveLeduc()\n"
+            "{\n"
+            "    // Indice : nouvelle classe Leduc avec IsTerminal/GetPayoff.\n"
+            "    return 0.0;   // TODO etudiant\n"
+            "}\n"
+            "\n"
+            '"Exercice a completer".Display();\n'
+        )
+        assert _is_stub_code(src) is True
+
+    def test_csharp_return_null_with_tail_todo_is_stub(self):
+        """Z3-01 c15: `return null;  // TODO etudiant : remplacer par ...` --
+        C# null + tail comment, both formerly read as a computed return."""
+        src = (
+            "// EXERCICE 1 : Trouver un triplet pythagoricien avec Z3.\n"
+            "// Etape 1 : declarer les variables a, b, c\n"
+            "(long A, long B, long C)? TrouverTripletPythagoricien(int borneMax = 20)\n"
+            "{\n"
+            "    // TODO etudiant : implementez la resolution avec un Solver Z3\n"
+            "    return null;  // TODO etudiant : remplacer par le triplet trouve\n"
+            "}\n"
+            "\n"
+            "var triplet = TrouverTripletPythagoricien(20);\n"
+            'Console.WriteLine("Triplet : " + (triplet.HasValue ? triplet.ToString() : "(a completer)"));\n'
+        )
+        assert _is_stub_code(src) is True
+
+
+class TestBoldTitlesAndPairing:
+    """Mechanism 2: bold (non-ATX) exercise statements + pairing refinements."""
+
+    def test_bold_statement_after_stub_counts(self, tmp_path):
+        """PT_13 cells 40-45: stub i, bold `**Exercice N -- ...**` statement
+        at i+1. Bold titles are not ATX headers, so the notebook used to
+        render count=0 while carrying three exercises."""
+        cells = []
+        for n, sujet in ((1, "std"), (2, "token"), (3, "eps")):
+            cells.append(_code(
+                f"# TODO etudiant : mesurer {sujet} sur les 5 seeds.\n"
+                "pass  # (a completer - C.1)\n"
+            ))
+            cells.append(_md(
+                f"**Exercice {n} - Reintroduire {sujet} dans Dr. GRPO.** Reprendre\n"
+                'make_cfg("dr"), re-poser le parametre et comparer la dispersion.\n'
+            ))
+        nb = _write_nb(tmp_path / "pt13_bold.ipynb", cells)
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "A bold `**Exercice N ...**` statement following its stub must "
+            "count (got %d)" % result.count
+        )
+
+    def test_bold_prose_leadin_is_not_a_second_instance(self, tmp_path):
+        """1.2-Manipulation_de_Donnees_avec_NumPy c27: the ATX header
+        `### Exercice 1 : ...` followed by the prose lead-in
+        `**Pourquoi cet exercice est fondamental** : ...`. The bold opener is
+        a sentence, not a title -- without the starts-with-word guard the
+        cell's instances doubled (corpus: 6->12)."""
+        cells = [
+            _md(
+                "### Exercice 1 : vectorisez une boucle\n"
+                "\n"
+                "**Pourquoi cet exercice est fondamental** : la vectorisation est *la*\n"
+                "difference entre un script Python et un script NumPy.\n"
+            ),
+            _code("valeurs = [1, 2, 3]\n# TODO etudiant : vectoriser\ncarres = None  # TODO\n"),
+        ]
+        nb = _write_nb(tmp_path / "numpy_bold_prose.ipynb", cells)
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "A prose bold opener must not double the instance count (got %d)"
+            % result.count
+        )
+
+    def test_correction_header_does_not_steal_next_stub(self, tmp_path):
+        """rl_1c cells 45-56: after each exercise's stub comes the worked
+        correction `### Exemple guide : correction de l'exercice N`, then the
+        next exercise's header. The correction title used to forward-pair the
+        NEXT exercise's stub and double the count (8 for 4 exercises)."""
+        cells = []
+        for n in (1, 2):
+            cells.append(_md(f"### Exercice {n} : DAgger avec le teacher T\n"))
+            cells.append(_code(f"# TODO etudiant : exercice {n}\nresultat = None\n"))
+            cells.append(_md(f"### Exemple guide : correction de l'exercice {n}\n"))
+            cells.append(_code(
+                f"# correction de l'exercice {n} -- solution complete\n"
+                f"moyenne = sum(resultats) / len(resultats)\n"
+                f"print('exercice {n} corrige :', moyenne)\n"
+            ))
+        nb = _write_nb(tmp_path / "rl1c_corrections.ipynb", cells)
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 2, (
+            "A correction title must not steal the next exercise's stub (got %d)"
+            % result.count
+        )
+
+    def test_lean_stub_with_number_pairs_own_header(self, tmp_path):
+        """Lean-29 cells 5-8: an undescribing worked-example code cell, then
+        `### Exercice 1`, then the Lean stub `-- Exercice 1 : ...`. The
+        greedy backward absorb used to pair the header with the EXAMPLE,
+        leaving the stub double-counted by pass 2 (12 for 6)."""
+        cells = [
+            _code(
+                "-- Les briques : la matrice triangulaire et ses valeurs.\n"
+                "-- TODO etudiant (exemple guide residuel)\n"
+                "theorem briques : True := by trivial\n"
+            ),
+            _md("### Lecture : valeurs et determinants\n"),
+            _md("### Exercice 1 - lire la valeur d'un representant\n"),
+            _code(
+                "-- Exercice 1 : la valeur explicite du representant.\n"
+                "-- TODO etudiant : a completer (indice dans la cellule precedente).\n"
+                "example : True := by trivial\n"
+            ),
+        ]
+        nb = _write_nb(tmp_path / "lean29_number_pair.ipynb", cells)
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "A stub that names its exercise number pairs its own header, not "
+            "a preceding example cell (got %d)" % result.count
+        )
+
+    def test_plural_toc_section_restatement_not_double_counted(self, tmp_path):
+        """PT_10 cells 19-24: a `## 10. Exercices` section cell whose bold
+        `**Exercice A/B/C**` sub-mentions restate the subjects of the three
+        individual `## Exercice X : ...` cells below. Both used to push and
+        the notebook rendered 6 for three exercises."""
+        cells = [
+            _md(
+                "## 10. Exercices (3 stubs C.1 - pas d'erreur volontaire)\n"
+                "\n"
+                "**Exercice A** : ajouter un 4e estimateur GAE-AVG.\n"
+                "\n"
+                "**Exercice B** : mesurer l'effet du sweep lambda.\n"
+                "\n"
+                "**Exercice C** : variance inter-seed des avantages.\n"
+            ),
+        ]
+        for lettre, sujet in (("A", "GAE-AVG"), ("B", "sweep lambda"), ("C", "variance")):
+            cells.append(_md(f"## Exercice {lettre} : {sujet} (stub C.1)\n"))
+            cells.append(_code(f"# TODO etudiant : exercice {lettre}\nresultat = None\n"))
+        nb = _write_nb(tmp_path / "pt10_toc.ipynb", cells)
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "A plural-first TOC section must not double-count the exercises "
+            "it restates (got %d)" % result.count
+        )
+
+    def test_numberless_conservative_survives_blocked_window(self, tmp_path):
+        """Video 03-2 cells 16-24: two adjacent numberless exercise
+        statements, stubs far below the pairing window. The numberless
+        conservative count (stub outside the window) must survive a nearer
+        header cell cutting the forward scan."""
+        cells = [
+            _md("## Exercice : Pipeline Personnalise\n\n**Duree :** 40 minutes\n"),
+            _md("## Exercice Avance : Optimisation Batch\n"),
+            _md("### Criteres de succes - Optimisation Batch\n"),
+            _code("# benchmark realise sur 3 configurations\n"
+                  "timings = {'seq': 1.2, 'par': 0.4}\n"
+                  "print(timings)\n"),
+            _code("# TODO: Implementer un pipeline batch optimise\nresultat = None\n"),
+            _md("## Exercice : Gestion d'Erreurs et Recovery\n"),
+            _code("# TODO: Implementer le systeme de checkpointing\nresultat = None\n"),
+        ]
+        nb = _write_nb(tmp_path / "video032_numberless.ipynb", cells)
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "Numberless statements with stubs outside the window keep the "
+            "conservative count (got %d)" % result.count
+        )
+
+
+# ---------------------------------------------------------------------------
+# Accented print marker + pure-import guard (#18741 PR A)
+# ---------------------------------------------------------------------------
+
+class TestAccentedPrintMarkerAndImportGuard:
+    """Two false-negative causes measured on 2026-10-05 (diagnostic on #18741):
+
+    - the print stub pattern required the UNACCENTED spelling ``a completer``
+      while the comment/sentinel patterns accept ``a compl[eé]ter`` / ``à
+      compléter`` -- PT_09 (3 real skeleton cells marked by accented prints)
+      rendered 1/3;
+    - a PURE import cell read as a stub (its imports are stripped from the
+      effective-line count, so ``0 <= 1``), and the backward header pairing
+      (#18146) absorbed it in place of the real stub below the header --
+      PT_11c counted Exercice 1 twice and Exercices 2/3 zero times (2/3).
+    """
+
+    @pytest.mark.parametrize(
+        "marker",
+        [
+            'print("Exercice 2 a completer : ...")',
+            'print("Exercice 2 a compléter : ...")',
+            'print("Exercice 2 à completer : ...")',
+            'print("Exercice 2 à compléter : ...")',
+        ],
+    )
+    def test_accented_print_marker_flags_multi_line_skeleton(self, marker):
+        # Two effective code lines: the line-count rule cannot rescue the cell,
+        # so ONLY the print pattern decides -- the exact PT_09 shape.
+        source = marker + "\ntrajectoire = collecte_rollout(env, policy)\n"
+        assert _is_stub_code(source) is True, (
+            "the print stub marker must accept the accented francophone forms"
+        )
+
+    def test_accented_print_notebook_counts_three(self, tmp_path):
+        """PT_09 layout: three numbered headers, each followed by a 2-line
+        skeleton whose only stub marker is an accented print. Unfixed, all
+        three headers pair with nothing and a numbered header with no stub is
+        silently dropped -> 0."""
+        nb = _write_nb(
+            tmp_path / "accented_prints.ipynb",
+            [
+                _md("# Titre"),
+                _md("### Exercice 1 : boucle de rollout"),
+                _code(
+                    'print("Exercice 1 à compléter : la boucle de rollout")\n'
+                    "trajectoire = collecte_rollout(env, policy)\n"
+                ),
+                _md("### Exercice 2 : calcul des avantages"),
+                _code(
+                    'print("Exercice 2 à compléter : les avantages GAE")\n'
+                    "avantages = calcule_avantages(rewards)\n"
+                ),
+                _md("### Exercice 3 : mise a jour"),
+                _code(
+                    'print("Exercice 3 à compléter : la mise a jour")\n'
+                    "nouvelle_politique = maj_politique(politique)\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "accented print markers must pair their headers (got %d)"
+            % result.count
+        )
+
+    def test_pure_import_cell_is_not_a_stub(self):
+        assert _is_stub_code("import re\nfrom typing import Optional") is False
+        assert _is_stub_code("import numpy as np") is False
+        assert _is_stub_code("using System;\nusing System.Linq;") is False
+
+    def test_import_plus_code_is_untouched_by_the_guard(self):
+        # The guard only covers cells whose effective lines are ALL imports: a
+        # 1-code-line import cell keeps the historical `<= 1` verdict.
+        assert _is_stub_code("import numpy as np\nresultat = None") is True
+
+    def test_header_does_not_absorb_preceding_import_block(self, tmp_path):
+        """PT_11c layout (measured on the real notebook): an import block sits
+        directly above the Exercice 1 header, its real stub uses a plain TODO
+        marker, and the Exercices 2/3 stubs use ACCENTED print markers with a
+        prose cell between each stub and the next header.
+
+        Unfixed: header 1 absorbs the import block (backward undescribing),
+        its real stub counts standalone, and headers 2/3 pair nothing -> 2.
+        Accent fix alone: headers 2/3 pair their stubs but the import
+        absorption keeps the double-count -> 4 (the measured over-count).
+        Both fixes: each header pairs its own stub -> 3."""
+        nb = _write_nb(
+            tmp_path / "import_guard.ipynb",
+            [
+                _md("# Titre"),
+                _code("import re\nfrom typing import Optional"),
+                _md("### Exercice 1 : classement"),
+                _code("# TODO etudiant : classifier\nverdict = None"),
+                _md("On evalue maintenant la recompense."),
+                _md("### Exercice 2 : recompense"),
+                _code(
+                    'print("Exercice 2 à compléter : la fonction de recompense")\n'
+                    "recompense = calcule_recompense(trajectoire)\n"
+                ),
+                _md("Enfin, la penalite."),
+                _md("### Exercice 3 : penalite"),
+                _code(
+                    'print("Exercice 3 à compléter : la penalite")\n'
+                    "penalite = calcule_penalite(ecarts)\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "an import block is not a stub: headers must pair their own "
+            "stubs (got %d)" % result.count
+        )
+
+
+# ---------------------------------------------------------------------------
+# Placeholder body vs computing body (#18741 PR B -- cause 3)
+# ---------------------------------------------------------------------------
+
+class TestBodyPlaceholderVsComputing:
+    """Three under-count shapes + one over-count shape, measured cell by cell
+    on 2026-10-05 (#18741 diagnostic): a cell carries EXPLICIT stub markers
+    (# TODO / # Indice) but ``_body_computes_result`` reads its placeholder
+    body as a computation, gating the markers away; and PT_11c c7 -- the
+    converse -- a complete worked verifier whose fallback ``pass`` /
+    ``return None`` fire the unconditional executable markers.
+    """
+
+    def test_string_return_with_placeholder_tail_is_a_stub(self):
+        """OWUI 05 c17: ``return "api"  # placeholder - a affiner`` -- the
+        returned string self-declares as provisional in its line-tail
+        comment. The string-literal branch read any returned string as a
+        solved value, the # TODO marker was gated away -> under-count."""
+        source = (
+            "def approche_du_scenario(scenario: str) -> str:\n"
+            '    # TODO : renvoyer "api" ou "navigateur" selon le scenario.\n'
+            "    # Indice : donnees/comparer -> api ; rendu/visuel -> navigateur.\n"
+            '    return "api"  # placeholder — a affiner\n'
+            "\n"
+            'for s in ["Verifier l isolation des tenants",\n'
+            '          "Verifier le rendu d un bloc de code"]:\n'
+            '    print(f"  {approche_du_scenario(s):12} : {s}")\n'
+        )
+        assert _is_stub_code(source) is True
+
+    def test_bare_name_return_of_empty_container_is_a_stub(self):
+        """Video 02-6 c16: ``trouvees = []`` ... ``return trouvees`` -- the
+        bare-name branch counted the EMPTY-list assignment as a computed
+        value, so the # Indice / # TODO etudiant markers were gated away."""
+        source = (
+            "def detecte_restriction_territoriale(texte_licence: str) -> list:\n"
+            '    entites_connues = [\n'
+            '        "European Union", "United Kingdom", "France",\n'
+            '    ]\n'
+            "    trouvees = []\n"
+            "    # Indice : chercher l'amorce, puis scanner les N caracteres suivants.\n"
+            "    # TODO etudiant\n"
+            "    return trouvees\n"
+        )
+        assert _is_stub_code(source) is True
+
+    def test_none_dict_with_provided_checker_is_a_stub(self):
+        """Texte 09b c30: the student part is a dict of None (``reponses``);
+        the cell also carries the instructor's ``verifier_classification``
+        helper whose derived ``return ok`` testified for the whole cell, and
+        the TODO markers were gated away."""
+        source = (
+            "# Exercice 2 : classifier les attaques (stub etudiant)\n"
+            "# TODO etudiant : remplir le dictionnaire\n"
+            "\n"
+            "reponses = {\n"
+            '    "P1": None,  # TODO etudiant : "directe" / "indirecte" / "jailbreak"\n'
+            '    "P2": None,  # TODO etudiant\n'
+            '    "P3": None,  # TODO etudiant\n'
+            "}\n"
+            "\n"
+            "def verifier_classification(reponses):\n"
+            '    ok = (reponses.get("P1") == "directe"\n'
+            '          and reponses.get("P2") == "indirecte"\n'
+            '          and reponses.get("P3") == "jailbreak")\n'
+            '    print("Classification correcte :", ok)\n'
+            "    return ok\n"
+            "verifier_classification(reponses)\n"
+        )
+        assert _is_stub_code(source) is True
+
+    def test_computing_body_with_fallback_markers_is_not_a_stub(self):
+        """PT_11c c7 (the converse direction): a COMPLETE worked verifier
+        whose fallback ``pass`` / ``return None`` fired the unconditional
+        executable markers. The header absorbed it and the real stub below
+        counted standalone -> over-count (PT_11c 4/3)."""
+        source = (
+            "import re\n"
+            "from typing import Optional\n"
+            "\n"
+            "def extract_answer_sympy(completion: str) -> Optional[float]:\n"
+            '    """Extrait la derniere valeur numerique d\'une completion."""\n'
+            r'    boxed = re.findall(r"\boxed\{([^}]+)\}", completion)' + "\n"
+            "    if boxed:\n"
+            "        try:\n"
+            "            return float(boxed[-1])\n"
+            "        except ValueError:\n"
+            "            pass\n"
+            "    return None\n"
+            "\n"
+            'tests = [("2+2 ?", 4.0), ("5*3 ?", 15.0)]\n'
+            "for completion, gt in tests:\n"
+            "    r = extract_answer_sympy(completion)\n"
+            '    print(f"  reward({completion!r} vs {gt}) = {r}")\n'
+        )
+        assert _is_stub_code(source) is False
+
+    def test_canonical_return_none_stub_stays_a_stub(self):
+        # The executable-marker gate must not touch the canonical C.1 shape:
+        # no derived return anywhere, the body never computes.
+        assert _is_stub_code("def extraire(texte):\n    # TODO etudiant\n    return None") is True
+        assert _is_stub_code("class Analyseur:\n    def mesure(self, x):\n        pass") is True
+
+    def test_annotated_pass_keeps_stub_verdict_on_computing_body(self):
+        """Wan 02-3 c28 (measured): a computing function whose ``pass`` names
+        the write-hole (``# Exercice: ...`` directly above) keeps its stub
+        verdict -- the gate targets INCIDENTAL fallbacks, not annotated
+        write-holes."""
+        source = (
+            "def test_camera_movements(base_scene, movements):\n"
+            '    templates = {"pan": f"a pan across {base_scene}"}\n'
+            "    results = {}\n"
+            "    for movement in movements:\n"
+            "        prompt = templates.get(movement, base_scene)\n"
+            "        # Exercice: Generer avec le mouvement\n"
+            "        pass\n"
+            "        results[movement] = {\"prompt\": prompt}\n"
+            "    return results\n"
+        )
+        assert _is_stub_code(source) is True
+
+    def test_unannotated_fallback_return_none_stays_gated(self):
+        """Sudoku-17 c28 (measured, trimmed): a worked CoT solver class whose
+        ``parse_assignment`` ends in a ``return None`` fallback. No student
+        vocabulary sits beside the fallback -- gated even though it is a
+        pattern-2 match."""
+        source = (
+            "# Exemple resolu : Solveur LLM avec Chain-of-Thought\n"
+            "class ChainOfThoughtSudokuSolver:\n"
+            "    def build_prompt(self, partial):\n"
+            '        prompt = "You are an expert at solving sudoku.\\n"\n'
+            "        for i in range(len(partial)):\n"
+            "            for j in range(len(partial[0])):\n"
+            '                prompt += f"({i},{j}) = {partial[i][j]}\\n"\n'
+            "        return prompt\n"
+            "\n"
+            "    def parse_assignment(self, llm_response):\n"
+            '        cleaned = llm_response.replace(" ", "")\n'
+            "        match = re.findall(r'([0-8],[0-8]=[1-9])', cleaned)\n"
+            "        if match:\n"
+            "            puzzle_str = match[-1]\n"
+            "            return (int(puzzle_str[1]), int(puzzle_str[3]))\n"
+            "        return None\n"
+        )
+        assert _is_stub_code(source) is False
+
+    def test_scalar_placeholder_with_student_tail_is_a_stub(self):
+        """differencier-les-assistants c27 (measured): the student write-space
+        is a scalar placeholder assignment (``= ""  # A vous : ...``); the
+        computing helper that shares the cell is the instructor's."""
+        source = (
+            'ASSISTANT_A_REECRIRE = ""   # A vous : le nom, tel qu\'il figure dans PERSONAS.\n'
+            "\n"
+            "\n"
+            "def remesurer(nom_assistant, nouveau_prompt):\n"
+            "    if nom_assistant not in PERSONAS or not nouveau_prompt.strip():\n"
+            "        return None\n"
+            "    nouvelles = dict(reponses)\n"
+            "    return sum(1 for _ in nouvelles) / len(nouvelles)\n"
+            "\n"
+            "resultat = remesurer(ASSISTANT_A_REECRIRE, \"\")\n"
+        )
+        assert _is_stub_code(source) is True
+
+    def test_scalar_placeholder_without_student_tail_is_not_a_stub(self):
+        """The vocabulary tail is the discriminator: a bare initializer or a
+        seeded container of a computing body (D01 c30) must not read as a
+        hole."""
+        source = (
+            "def mur(dims):\n"
+            "    rows = []  # accumulateur des mesures\n"
+            "    for n in dims:\n"
+            "        rows.append(n)\n"
+            "    return rows\n"
+        )
+        assert _is_stub_code(source) is False
+
+    def test_pt11c_mini_notebook_counts_three(self, tmp_path):
+        """End-to-end on the PT_11c geometry: import block above the Exercice
+        1 header, worked verifier falsely read as stub, real stubs below each
+        header. Expected: exactly 3 (was 4 with PR A alone)."""
+        nb = _write_nb(
+            tmp_path / "pt11c_mini.ipynb",
+            [
+                _md("# Titre"),
+                _code(
+                    "import re\n"
+                    "from typing import Optional\n"
+                    "\n"
+                    "def extract_answer_sympy(completion: str) -> Optional[float]:\n"
+                    r'    boxed = re.findall(r"\d+", completion)' + "\n"
+                    "    if boxed:\n"
+                    "        return float(boxed[-1])\n"
+                    "    return None\n"
+                ),
+                _md("### Exercice 1 : etendre le parser"),
+                _code(
+                    "def extract_answer_sci(completion: str) -> Optional[float]:\n"
+                    '    """TODO etudiant : notation scientifique."""\n'
+                    "    sci_pattern = None  # TODO etudiant : regex\n"
+                    "    return None  # TODO etudiant : retourner le nombre\n"
+                    '    print("Exercice à compléter : notation scientifique")\n'
+                ),
+                _md("On evalue maintenant la recompense."),
+                _md("### Exercice 2 : recompense"),
+                _code(
+                    'print("Exercice 2 à compléter : la fonction de recompense")\n'
+                    "recompense = calcule_recompense(trajectoire)\n"
+                ),
+                _md("Enfin, la penalite."),
+                _md("### Exercice 3 : penalite"),
+                _code(
+                    'print("Exercice 3 à compléter : la penalite")\n'
+                    "penalite = calcule_penalite(ecarts)\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "the worked verifier must stop reading as a stub so header 1 "
+            "pairs its real stub (got %d)" % result.count
+        )
+
+
+# ---------------------------------------------------------------------------
+# #18741 PR C -- C# sentinel returns, reading exercises, external write-space
+# ---------------------------------------------------------------------------
+
+
+class TestCsharpSentinelReturnTail:
+    """``return -1; // TODO etudiant`` is a sentinel, not a computation.
+
+    Aspire 01 c23 -- the /health waiter. The C# statement terminator and the
+    ``//`` comment marker kept the tail outside the sentinel-return pattern,
+    so the TODO marker was gated by ``_body_computes_result`` and the cell
+    read as a solution (Aspire 01: 2/3).
+    """
+
+    def test_csharp_number_return_todo_tail_is_a_stub(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("## 6. Exercices"),
+                _code(
+                    "// Exercice 2 : attendre la disponibilite d'un service.\n"
+                    "async Task<int> WaitHealthyAsync(string baseUrl, int maxTries = 12) {\n"
+                    "    return -1; // TODO etudiant\n"
+                    "}\n"
+                    "Console.WriteLine(await WaitHealthyAsync($\"http://localhost:{portA}\"));\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "the C# sentinel return with a student TODO tail must count "
+            "(got %d)" % result.count
+        )
+
+    def test_python_number_return_todo_tail_is_a_stub(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("## Exercices"),
+                _code(
+                    "# Exercice 1 : sentinelle\n"
+                    "def attendre(baseUrl):\n"
+                    "    return -1  # TODO etudiant\n"
+                    "print(attendre('x'))\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1
+
+    def test_computed_number_return_without_tail_stays_solution(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("### Exercice 1 : indice le plus proche"),
+                _code(
+                    "def plus_proche(xs, cible):\n"
+                    "    meilleur = xs[0]\n"
+                    "    for x in xs:\n"
+                    "        if abs(x - cible) < abs(meilleur - cible):\n"
+                    "            meilleur = x\n"
+                    "    return -1  # convention : aucun element sous le seuil\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 0, (
+            "a computed return of -1 whose tail carries no placeholder "
+            "vocabulary stays a solution (got %d)" % result.count
+        )
+
+
+class TestReadingExercises:
+    """Audio 06-3 -- ``exercices de lecture`` : prose answers, no code stub.
+
+    The section declares the reading scope; the numbered headers below it can
+    never pair a code stub (there is none), and the deferred-chain resolution
+    must propagate the reading kind to headers blocked by their successors.
+    """
+
+    def test_reading_section_headers_count(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("# Comparatif"),
+                _md(
+                    "## 5. Trois exercices de lecture chiffree\n\n"
+                    "Ils ne demandent pas d'execution mais une lecture des "
+                    "sorties commises."
+                ),
+                _md("### Exercice 1 — lecture du tableau"),
+                _md("### Exercice 2 — comparaison du facteur d'abstraction"),
+                _md("### Exercice 3 — decision operationnelle"),
+                _md("## Format de ce carnet"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "three reading exercises under a declared reading section must "
+            "all count, deferred chain included (got %d)" % result.count
+        )
+        kinds = {h.detected_by for h in result.exercises}
+        assert kinds == {"reading_header"}, kinds
+
+    def test_reading_gate_requires_scope_declaration(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("# Titre"),
+                _md("### Exercice 1 — un sujet"),
+                _md("### Exercice 2 — un autre"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 0, (
+            "unpaired numbered headers WITHOUT the reading declaration stay "
+            "dropped (got %d)" % result.count
+        )
+
+
+class TestExternalWriteSpace:
+    """Orleans 01/02 -- the stub lives in the lab .csproj beside the notebook.
+
+    Orleans 01 headers name the file directly (``Ouvrir `Lab/Grains.cs```),
+    Orleans 02 headers name the member (``Completer `Grain.Method(...)```);
+    the witness code cells between headers are runners, not stubs, so the
+    headers never pair locally.
+    """
+
+    def test_external_cs_path_header_counts(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("# Orleans"),
+                _md(
+                    "### Exercice 1 — estimation du cout\n\n"
+                    "Ouvrir `OrleansAgentLab/Grains.cs` et completer "
+                    "`TokenCounterGrain.EstimateCostAsync`."
+                ),
+                _code(
+                    "// Exercice 1 — temoin attendu tant que la methode est stub.\n"
+                    "var (_, pret) = LabShell.RestartSilo();\n"
+                    "Console.WriteLine(LabShell.RunClient(\"ex1\"));\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "an unpaired numbered header naming an external .cs file is an "
+            "external exercise (got %d)" % result.count
+        )
+        assert result.exercises[0].detected_by == "external_header"
+
+    def test_external_member_header_counts(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("# Orleans"),
+                _md(
+                    "### Exercice 1 — resume d'une conversation\n\n"
+                    "Completer `ConversationGrain.SummaryAsync` : retourner "
+                    "le nombre de tours."
+                ),
+                _code(
+                    "// Exercice 1 — temoin attendu tant que la methode est stub.\n"
+                    "var (_, pret) = LabShell.RestartSilo();\n"
+                    "Console.WriteLine($\"[silo relance] gateway pret : {pret}\");\n"
+                    "Console.WriteLine(LabShell.RunClient(\"ex1\").TrimEnd());\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1
+        assert result.exercises[0].detected_by == "external_header"
+
+    def test_plain_unpaired_header_stays_dropped(self, tmp_path):
+        nb = _write_nb(
+            tmp_path / "a.ipynb",
+            [
+                _md("# Titre"),
+                _md("### Exercice 1 — un sujet sans espace d'ecriture"),
+                _code(
+                    "var resultat = CalculComplet(42);\n"
+                    "Console.WriteLine(resultat);\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 0, (
+            "the generic drop rule is unchanged for headers without "
+            "external evidence (got %d)" % result.count
+        )
+
+
+# ---------------------------------------------------------------------------
+# #18741 Declarations -- declared statuses transcribed from the ledger
+# ---------------------------------------------------------------------------
+
+
+class TestDeclaredStatuses:
+    """Ledger #10/#13/#15 -- individually declared budgets.
+
+    Declared notebooks stay IN the corpus (they are course material) but
+    carry their declared kind and a zero budget, mirroring the setup/Lean
+    exception rows; the generated artifact leaves the corpus entirely.
+    """
+
+    def test_declared_mono_exercise_carries_zero_budget(self):
+        kind, threshold = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb")
+        )
+        assert kind == "declared-mono-exercise"
+        assert threshold == 0
+
+    def test_declared_ablation_companion_carries_zero_budget(self):
+        kind, threshold = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/PostTraining/PT_18_laya_ablation_distillation.ipynb")
+        )
+        assert kind == "declared-ablation-companion"
+        assert threshold == 0
+
+    def test_declared_demo_carries_zero_budget(self):
+        kind, threshold = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-03-Internalisation-CoT.ipynb")
+        )
+        assert kind == "declared-demo"
+        assert threshold == 0
+
+    def test_declared_kinds_stay_in_corpus(self):
+        for kind in ("declared-mono-exercise", "declared-ablation-companion", "declared-demo"):
+            assert kind not in OUT_OF_CORPUS_KINDS
+
+    def test_generated_artifact_notebook_is_out_of_corpus(self):
+        kind, threshold = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/SemanticKernel/Notebook-Generated.ipynb")
+        )
+        assert kind == "artifact"
+        assert threshold is None
+
+    def test_archive_shadows_declared_status(self):
+        # A declared stem moved under an underscore directory is archive
+        # first: structural kinds are consulted before DECLARED_STATUSES.
+        kind, _ = count_exercises.classify_notebook(
+            Path("MyIA.AI.Notebooks/GenAI/_archives/TV-03-Internalisation-CoT.ipynb")
+        )
+        assert kind == "archive"
