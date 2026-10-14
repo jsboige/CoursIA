@@ -500,7 +500,7 @@ Lean/
 ├── Lean-36-Structures-Finies-MUH-Lean.ipynb # Lean4 (WSL) kernel - Annexe A de Tegmark : structures finies, encodage/complexité, C₃/C₂/NAND, Aut(S), frontière du décideur exhibée (lake tegmark_muh_lean, sans Mathlib)
 ├── Lean-37-Capstone-Serre100.ipynb # Python kernel - escalier capstone vers la sous-série Serre 100 : entrée, démos, prérequis de la série distillations
 ├── Lean-38-Capstone-Geometry-Lean-Python.ipynb # Python kernel - escalier capstone vers la sous-série Geometry : le fil rouge (milieu de l'hypoténuse) monté de la figure numérique au noyau du lac geometry_lean
-├── Lean-39-Capstone-MIMO-Python.ipynb # Python kernel - escalier capstone vers la sous-série MIMO : table de routage des quatre carnets (MIMO-01..04), lac mimo_lean (13 .lean, 0 sorry mesuré par l'organe canonique), prérequis d'entrée, surface mesurée, écart 56/57 expliqué
+├── Lean-39-Capstone-MIMO-Python.ipynb # Python kernel - escalier capstone vers la sous-série MIMO : table de routage des quatre carnets (MIMO-01..04), lac mimo_lean (13 .lean, 0 sorry mesuré par l'organe canonique), prérequis d'entrée, surface mesurée, écart 56/57 documenté et ancré sur MIMO-04 (le 57ᵉ est `B_ρ`, `noncomputable def` à ρ en 2ᵉ position dans Lmmse.lean:84)
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
