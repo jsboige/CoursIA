@@ -3350,7 +3350,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,a7b8c
 | **Trade-off** | Merge = 1 model (cheaper) vs Routing = N models (better quality) |
 | **Tools** | Mergekit (production), manual PyTorch implementation (this notebook) |
 
----
+***
 
 **Navigation**: [FT-01](./FT-01-Introduction-FineTuning-Python.ipynb) | [FT-02](./FT-02-QLoRA-Quantization-Python.ipynb) | [FT-03](./FT-03-Supervised-FineTuning-SFT-Python.ipynb) | [FT-04](./FT-04-RLHF-DPO-Python.ipynb) | **FT-05**",,,,,,,8c516df6d85df896,38eb18359981410d,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ift02-gen,markdown,fr,c408efbb42e46d7b,"### Lecture du résultat : la greffe stylistique du fine-tuning
@@ -3509,12 +3509,12 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,
 3. **The shape of the eval curve** — it is still descending at the end of the run: five epochs have not exhausted the dataset, but the slope is slowing; this is the classic trade-off that early stopping (stop when the eval ceases to descend) formalizes.
 
 **Written verdict**: at 205 training examples (31.8 min on an 8 GB GPU, VRAM ~1.45 GB), the disjoint eval loss descending from 1.34 to 0.38 demonstrates a generalization — a real one — of the formulation -> fact mapping. What the old configuration (20 examples) produced — a descending loss + gibberish generations — was not this signal: it was format memorization without substance. The difference comes from the dataset's **formulation diversity**, not from training duration.",,,,,,,15235e01a4685842,16afd8472991e508,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,3fc218c8,markdown,fr,78ee5cf634c4adbb,"# FT-05 : Fusion et Routage de Modèles -- Combiner les Expertises
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,3fc218c8,markdown,fr,92bca6772937db7d,"# FT-05 : Fusion et Routage de Modèles -- Combiner les Expertises
 **Navigation** : [Index](README.md) | [<< 04 — RLHF/DPO](FT-04-RLHF-DPO-Python.ipynb) | [06 — Vision-langage >>](FT-06-Vision-Language-LoRA-Python.ipynb)
 
 **Objectif** : Comprendre comment fusionner plusieurs modèles fine-tunes en un seul modèle plus performant, du merge de poids au routage dynamique.
 
-**Prerequis** : FT-01 (LoRA), FT-02 (QLoRA), FT-03 (SFT), FT-04 (DPO)
+**Prerequis** : FT-01 (panorama du fine-tuning), FT-02 (quantization QLoRA), FT-03 (SFT), FT-04 (DPO)
 
 **Duree estimee** : ~35 min
 
@@ -3553,9 +3553,11 @@ des task vectors est une addition vectorielle homogène (~3.1M params) qui tient
 sur le portatif de la sortie committée — ni serveur ni GPU dédiée.
 ","# FT-05: Model Merging and Routing -- Combining Expertises
 
+**Navigation** : [Index](README.md) | [<< 04 — RLHF/DPO](FT-04-RLHF-DPO-Python.ipynb) | [06 — Vision-Language >>](FT-06-Vision-Language-LoRA-Python.ipynb)
+
 **Objective**: Understand how to merge several fine-tuned models into a single, more capable model, from weight merging to dynamic routing.
 
-**Prerequisites**: FT-01 (LoRA), FT-02 (QLoRA), FT-03 (SFT), FT-04 (DPO)
+**Prerequisites**: FT-01 (fine-tuning overview), FT-02 (QLoRA quantization), FT-03 (SFT), FT-04 (DPO)
 
 **Estimated duration**: ~35 min
 
@@ -3587,10 +3589,13 @@ hyperparameter or implement a variant.
 **GPU**: recommended (CUDA); the notebook degrades on CPU with a smaller
 model (full prerequisites at the top of the notebook).
 
-**Measured cost-benefit**: ~5 min on an RTX 3090 (25.8 GB peak VRAM, 1.3B
-base params × 2 LoRA adapters of 3.1M params). That is the order of
-magnitude to reproduce this notebook's figures locally.",,,,,,,78ee5cf634c4adbb,4c5287b0d0e96e44,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,7975df42,markdown,fr,0c6dffef77087fad,"## 1. Pourquoi fusionner des modèles ?
+**Cost-benefit**: this notebook is committed with outputs produced
+on an **8 GB GPU** (`NVIDIA GeForce RTX 3070 Laptop GPU, 8.6 GB
+VRAM`, cf. cell #1). The real cost sits in fine-tuning the adapters
+(FT-02/03/04); the **merge** of the task vectors is a homogeneous
+vector addition (~3.1M params) that fits on the laptop of the
+committed output — no server or dedicated GPU needed.",,,,,,,92bca6772937db7d,69b9beb0947275cb,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,7975df42,markdown,fr,9c16f6f13ab22790,"## 1. Pourquoi fusionner des modèles ?
 
 Après avoir fine-tune plusieurs adaptateurs LoRA pour différentes tâches (FT-03, FT-04), une question naturelle se pose : **comment combiner ces expertises ?**
 
@@ -3627,7 +3632,7 @@ Trois familles de solutions coexistent dans la pratique moderne :
    l'adaptateur approprié selon l'input. Plus coûteux en VRAM, plus
    flexible.
 3. **Sélection / distillation** — entraîner un méta-modèle qui choisit
-   l'expert. Hors scope ici (cf. série RL, rlpt_5 si elle existe).
+   l'expert. Hors scope ici.
 
 **La fusion est l'option par défaut** : zéro coût additionnel en VRAM
 (1 seul adaptateur), zéro nouvel entraînement, et la qualité est
@@ -3676,7 +3681,7 @@ Three families of solutions coexist in modern practice:
 **Merging is the default option**: zero additional VRAM cost
 (a single adapter), no new training, and the quality is
 sufficient for most uses. **DARE** (section 5) is the 2023-2024
-state of the art.",,,,,,,0c6dffef77087fad,7190d50e7f109e11,,,,,,,
+state of the art.",,,,,,,9c16f6f13ab22790,7190d50e7f109e11,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,6a30a03a,markdown,fr,f55b1b58f7d3ed0a,"Nous allons maintenant créer deux adaptateurs LoRA specialises. Chaque adaptateur sera fine-tune sur un domaine spécifique via un SFT rapide (2 epochs, 5 exemples). Ce processus est le même que celui vu en FT-03, mais execute deux fois pour deux domaines différents.
 Nous créons maintenant **deux adaptateurs LoRA spécialisés** sur le
 même modèle de base (1.3B params) :
@@ -3704,16 +3709,16 @@ Each adapter has **3,145,728 trainable parameters** (0.24 % of the
 base model — the standard ratio for LoRA r=16 on attention layers).
 Both adapters start from the same initialization as the base model
 and then diverge through fine-tuning on their respective corpora.",,,,,,,f55b1b58f7d3ed0a,b63924078405175d,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,822c737d,markdown,fr,a3184338d2cc867b,"Premier adaptateur : fine-tune sur 5 exemples de QA technique (Python, Docker, Git, API REST, Machine Learning).
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,822c737d,markdown,fr,4a9c157c23ea28de,"Premier adaptateur : fine-tune sur 5 exemples de QA technique (Python, Docker, Git, API REST, Machine Learning).
 **Premier adaptateur** : fine-tune sur 5 exemples de QA technique.
-L'entraînement est minimal (5 steps × 1 époque) — c'est une
+L'entraînement est minimal (2 époques sur 5 exemples) — c'est une
 **démonstration de la mécanique**, pas un fine-tuning de production.
 En pratique, on utilise 100-1000 exemples et 3 époques.
 ","First adapter: fine-tuned on 5 technical QA examples (Python, Docker, Git, REST APIs, Machine Learning).
 **First adapter**: fine-tuned on 5 technical QA examples. The
 training is minimal (5 steps × 1 epoch) — it is a **demonstration
 of the mechanics**, not a production fine-tuning. In practice, one
-uses 100-1000 examples and 3 epochs.",,,,,,,a3184338d2cc867b,7976c0516ffb0d69,,,,,,,
+uses 100-1000 examples and 3 epochs.",,,,,,,4a9c157c23ea28de,7976c0516ffb0d69,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,436ea01d,markdown,fr,0f356b0cf6e7fc25,"Deuxieme adaptateur : fine-tune sur 5 exemples de QA cuisine (sauces, cuisson, vinaigrette, beurre, pate brisee).
 **Deuxième adaptateur** : fine-tune sur 5 exemples de QA cuisine. Les
 deux adaptateurs ont rigoureusement la même architecture (3.1M params
@@ -3722,7 +3727,7 @@ chacun) et ne divergent que par les exemples d'entraînement.
 **Second adapter**: fine-tuned on 5 cooking QA examples. The two
 adapters have rigorously the same architecture (3.1M params each)
 and differ only by their training examples.",,,,,,,0f356b0cf6e7fc25,441641bd004a7d7a,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,dfde4294,markdown,fr,7f8bcd03c78bf5c1,"### Interpretation : Deux adaptateurs specialises
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,dfde4294,markdown,fr,8b3f50ee775ed6e9,"### Interpretation : Deux adaptateurs specialises
 
 Nous avons maintenant deux adaptateurs LoRA :
 
@@ -3741,7 +3746,7 @@ l'objet de la section §2 (task vectors) — c'est elle qui quantifie
 
 **Observation empirique** : sur 5 exemples, le delta est très
 petit. Pour des entraînements plus longs (100+ exemples, 3+ époques),
-la norme croît typiquement de 5-10×. C'est cette norme qui pilote la
+la norme croît — ordre de grandeur non mesuré ici. C'est cette norme qui pilote la
 stabilité des fusions (LERP, SLERP, DARE).
 ","### Interpretation: Two specialized adapters
 
@@ -3763,7 +3768,7 @@ adapter moves from the base"".
 **Empirical observation**: on 5 examples, the delta is very small.
 For longer trainings (100+ examples, 3+ epochs), the norm typically
 grows 5-10x. It is this norm that drives the stability of the merges
-(LERP, SLERP, DARE).",,,,,,,7f8bcd03c78bf5c1,c541c7929cc0234e,,,,,,,
+(LERP, SLERP, DARE).",,,,,,,8b3f50ee775ed6e9,c541c7929cc0234e,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,e3f84171,markdown,fr,4feea7e9fcaf4db4,"**Lecture attendue** : chaque adaptateur devrait repondre mieux dans son domaine de specialisation — l'adaptateur A (Tech) sur les sujets techniques, l'adaptateur B (Cuisine) sur les sujets culinaires. À confirmer sur un jeu d'évaluation dédié.
 
 Le problème : si on deploie un chatbot generaliste, il faudrait servir les deux modèles. C'est ici que le **model merging** intervient.
@@ -3846,7 +3851,7 @@ subtraction).
 - `θ_base + τ_A − projection(τ_B, τ_A)` ≈ subtracting the cooking signal (negation).
 
 It is this algebra that underlies sections §3-§5.",,,,,,,9795791ff3f084cf,6f7fc87881b45b60,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,595ecced,markdown,fr,3398093674dc18c9,"### Interpretation : Task Vectors
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,595ecced,markdown,fr,ec644dec66df90f0,"### Interpretation : Task Vectors
 
 **Sortie obtenue** : Les normes et statistiques des poids LoRA pour chaque adaptateur.
 
@@ -3864,19 +3869,21 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,595ec
 C'est cette structure que nous allons maintenant combiner.
 ### Lecture du résultat : Task Vectors
 
-**Sortie obtenue** (cellule #13) : les normes des task vectors
-par couche sont imprimées. **Observation** : les premières couches
-(embedding, layer 0-3) ont des normes quasi nulles — le fine-tuning
-n'a pas modifié les représentations lexicales. Les **couches
-intermédiaires et finales** (layer 8-23) portent les normes les plus
-élevées : c'est là que le modèle apprend les spécificités du
-domaine.
+**Sortie obtenue** (cellule #13) : les normes par couche sont imprimées —
+et elles sont quasi uniformes sur tout le réseau (lora_A ≈ 2.3,
+lora_B ≈ 0.19 d'une couche à l'autre). Avec 5 exemples et 2 époques,
+aucun profil par couche ne se distingue : ce fine-tuning minimal n'a
+pas produit de spécialisation localisable. Le seul écart visible
+sépare les deux matrices LoRA : lora_B (initialisée à zéro, donc
+entièrement apprise) reste petite devant lora_A (initialisée
+aléatoirement).
 
-**Implication pour la fusion** : fusionner des task vectors sur les
-couches intermédiaires est plus « signifiant » que sur les premières
-couches. La technique **TIES** (§5) exploite cette observation pour
-résoudre les conflits entre task vectors qui modifient les mêmes
-poids dans des directions opposées.
+**Implication pour la fusion** : le signal appris est faible et
+homogène — rien ne privilégie une couche plutôt qu'une autre pour la
+fusion. La cosine similarity mesurée (0.0006) montre des task vectors
+quasi orthogonaux : deux compétences indépendantes, condition
+favorable au merge. **TIES** (§5) résout les conflits entre task
+vectors qui modifient les mêmes poids dans des directions opposées.
 ","### Interpretation: Task Vectors
 
 **Output obtained**: The norms and statistics of the LoRA weights for each adapter.
@@ -3900,8 +3907,8 @@ layer are printed. **Observation**: the first layers (embedding,
 layers 0-3) have near-zero norms — fine-tuning did not modify the
 lexical representations. The **intermediate and final layers**
 (layers 8-23) carry the highest norms: that is where the model
-learns the domain's specificities.",,,,,,,3398093674dc18c9,598d28dcc059a848,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,93cfbebe,markdown,fr,9fe391682eb3fe7e,"## 3. Interpolation Lineaire (LERP)
+learns the domain's specificities.",,,,,,,ec644dec66df90f0,598d28dcc059a848,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,93cfbebe,markdown,fr,8047f2f1a85fe702,"## 3. Interpolation Lineaire (LERP)
 
 La méthode la plus simple pour fusionner : la moyenne ponderee des poids.
 
@@ -3926,8 +3933,8 @@ La méthode la plus simple : **moyenne pondérée** des task vectors.
 `α ∈ [0, 1]` contrôle le mélange. `α = 0` = adaptateur B pur ;
 `α = 1` = adaptateur A pur ; `α = 0.5` = moyenne.
 
-**Coût** : 1 addition vectorielle par paramètre (~10 ms pour 3.1M
-params). **Zéro nouvel entraînement**.
+**Coût** : une addition vectorielle par paramètre — négligeable devant
+une passe avant. **Zéro nouvel entraînement**.
 
 **Limite connue** : quand les task vectors sont **fortement
 orthogonaux** (deux domaines très distincts), LERP produit un
@@ -3966,7 +3973,7 @@ params). **Zero new training**.
 orthogonal** (two very distinct domains), LERP produces a model
 ""sitting between two chairs"" — it loses quality on both
 domains. This is the **failure mode of LERP**, and the motivation
-for SLERP and DARE (§4-§5).",,,,,,,9fe391682eb3fe7e,ee0331564b9dab97,,,,,,,
+for SLERP and DARE (§4-§5).",,,,,,,8047f2f1a85fe702,ee0331564b9dab97,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,b1cc4612,markdown,fr,ae90907ac1e5f5df,"### Interpretation : LERP
 
 **Sortie obtenue** : Reponses du modèle fusionne avec interpolation lineaire.
@@ -4025,7 +4032,7 @@ versatility trade-off**.
 towards Tech (`α = 0.7`) or Cooking (`α = 0.3`) if the target use
 is dominated by one domain. Section §7 exercise 1 invites you to
 explore this dimension.",,,,,,,ae90907ac1e5f5df,6ce62bc023a17344,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,5d290593,markdown,fr,45ae24d99839c10d,"## 4. SLERP -- Interpolation Spherique Lineaire
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,5d290593,markdown,fr,1c4fb518d84cfa15,"## 4. SLERP -- Interpolation Spherique Lineaire
 
 Le SLERP (Spherical Linear Interpolation) resout le problème du LERP en interpolant le long d'un **grand cercle** sur la sphere unitaire, plutot que le long d'une ligne droite.
 
@@ -4047,7 +4054,8 @@ dans l'espace vectoriel. Avantage : préserve mieux la **norme** des
 task vectors (donc l'« intensité » du fine-tuning), au prix d'une
 géométrie non linéaire.
 
-> `θ_fusion = θ_base + [sin((1−t)·Ω) · τ̂_A_norm + sin(t·Ω) · τ̂_B_norm] · ‖τ_A‖`
+> `θ_fusion = s0 · θ_A + s1 · θ_B` (par couche), avec `s0 = sin((1−t)·Ω)/sin(Ω)`
+> et `s1 = sin(t·Ω)/sin(Ω)` — les coefficients exacts de la cellule #19.
 
 où `Ω = arccos(τ̂_A · τ̂_B)` est l'angle entre les deux task vectors
 normalisés, et `t ∈ [0, 1]` est le paramètre de mélange.
@@ -4056,9 +4064,10 @@ normalisés, et `t ∈ [0, 1]` est le paramètre de mélange.
 LERP. C'est cohérent : dans ce cas, la pondération linéaire et
 sphérique coïncident.
 
-**Implémentation** : cellule #19 (référence à `merge_slerp` dans la
-lib `lorafusion`). La bibliothèque Python `lorafusion` (Jeremy
-Howard, fast.ai) implémente SLERP prêt à l'emploi.
+**Implémentation** : cellule #19 — `slerp` écrite à la main
+(normalisation, angle, coefficients sinusoïdaux, fallback LERP si
+quasi-colinéaires). En production, `mergekit` automatise les merges
+SLERP/DARE/TIES (note technique ci-dessous).
 ","## 4. SLERP -- Spherical Linear Interpolation
 
 SLERP (Spherical Linear Interpolation) solves LERP's problem by interpolating along a **great circle** on the unit sphere, rather than along a straight line.
@@ -4092,7 +4101,7 @@ weighting coincide.
 
 **Implementation**: cell #19 (reference to `merge_slerp` in the
 `lorafusion` lib). The Python library `lorafusion` (Jeremy Howard,
-fast.ai) implements SLERP ready to use.",,,,,,,45ae24d99839c10d,d4e8ecc56265f354,,,,,,,
+fast.ai) implements SLERP ready to use.",,,,,,,1c4fb518d84cfa15,d4e8ecc56265f354,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,ba2645cd,markdown,fr,bd72bc9fcd14ef99,"### Interpretation : SLERP
 
 **Sortie obtenue** : Reponses du modèle fusionne avec interpolation spherique.
@@ -4450,10 +4459,10 @@ saved for the forward pass).
 **Simplified implementation**: cell #26 uses the base model's mean
 embeddings as features for the classifier. It is a lightweight
 proxy (not a production classifier).",,,,,,,befb6f2add5931b9,cf6e4c0e60f0e943,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,75aa5a19,markdown,fr,208d48606e6ace2d,"### Interpretation : Routeur — et l'arbitrage contre la baseline
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,75aa5a19,markdown,fr,425601cc5a39bfcb,"### Interpretation : Routeur — et l'arbitrage contre la baseline
 
 L'arbitrage leave-one-out parle par lui-même : **routeur appris 13/14 (92,9 %) vs
-centroïde trivial 12/14 (85,7 %)** — le classifieur entraîné apporte **+7,2 points
+centroïde trivial 12/14 (85,7 %)** — le classifieur entraîné apporte **+7,1 points
 hors échantillon** sur la baseline la plus naïve qui existe. Et l'in-sample à
 100 % masquait entièrement ce gain comme sa fragilité : sur 14 points
 linéairement séparables, 13 vs 12 réussites, c'est un pli de différence — l'écart
@@ -4483,8 +4492,8 @@ space and tens to hundreds of queries. Keep this audit reflex for any classifier
 demo: **always demand the trivial baseline and out-of-sample evaluation** — here,
 without it, the notebook displayed 92.9 % (the previous commit's in-sample score
 was 100 %) without any reader being able to tell whether a centroid would have
-sufficed.",,,,,,,208d48606e6ace2d,c931c0892c2aeda0,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,bf51c29a,markdown,fr,782e052678eaa81d,"### Comparaison : Merging vs Routing
+sufficed.",,,,,,,425601cc5a39bfcb,c931c0892c2aeda0,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,bf51c29a,markdown,fr,56bce685daaf101a,"### Comparaison : Merging vs Routing
 
 Maintenant que nous avons implemente toutes les approches, comparons-les systematiquement.
 
@@ -4510,7 +4519,7 @@ Maintenant que nous avons démontré les deux paradigmes, voici leur
 |---|---|---|
 | VRAM | × 1 adaptateur | × N experts chargés |
 | Latence | × 1 forward pass | × 1 forward pass + classification |
-| Qualité par domaine | 95-98 % du spécialiste | 100 % du spécialiste (si bien routé) |
+| Qualité par domaine | 95-98 % du spécialiste (littérature, non mesuré) | 100 % du spécialiste (si bien routé) |
 | Entraînement additionnel | 0 | Classifieur léger (~5 min) |
 | Gestion des inputs hybrides | Mauvaise (perte par moyennage) | Excellente (soft-routing) |
 
@@ -4560,7 +4569,7 @@ Now that we have demonstrated both paradigms, here is their
   **Routing/soft-MoE** is preferable. Preserves per-token quality.
 - For **general multi-task systems** (an LLM that must do
   everything) → **Merging** (DARE) often beats routing through
-  its simplicity.",,,,,,,782e052678eaa81d,e8381b82aa04178c,,,,,,,
+  its simplicity.",,,,,,,56bce685daaf101a,e8381b82aa04178c,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,095833db,markdown,fr,1d242bbaa509b5ee,"### Interpretation : Comparaison finale
 
 **Résultats attendus (hypothèses qualitatives — aucun classement mesuré, cf. Hypothèse à tester ci-dessous)** :
@@ -4634,9 +4643,9 @@ of this pedagogical notebook.
 
 **Practical conclusion**: for a quick deployment, **DARE with
 drop_rate = 0.3** is the no-regret option.",,,,,,,1d242bbaa509b5ee,7e2969c31487cda7,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,7ea0d064,markdown,fr,00a1b5b5b3bd4162,"## 7. Exercices
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,7ea0d064,markdown,fr,db13bf59c4af023b,"## 7. Exercices
 
-Mettez en pratique les concepts de ce notebook. Chaque exercice build sur les concepts précédents.
+Mettez en pratique les concepts de ce notebook.
 ## 7. Exercices
 
 Mettez en pratique les concepts de ce notebook avec 3 exercices
@@ -4675,8 +4684,8 @@ Disjoint Merge).
 system. Extend the classifier to handle 3 classes.
 
 Each exercise is **independent** — you can do them in any
-order.",,,,,,,00a1b5b5b3bd4162,d15955e25b193faf,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,981e8e66,markdown,fr,75004de5026e5902,"
+order.",,,,,,,db13bf59c4af023b,d15955e25b193faf,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,981e8e66,markdown,fr,32a8916be1e6c971,"
 
 
 **Note méthodologique — quand ce notebook est utile (et quand il ne l'est pas)**
@@ -4687,13 +4696,12 @@ spécialisations distinctes (Tech + Cuisine + Code + …) en un seul
 modèle de production ; (3) tester rapidement l'effet d'un merge sur
 un benchmark interne avant de sceller la config ; (4) enseigner la
 mécanique du model merging à des étudiants ; (5) POC avant de scaler
-sur mergekit / Hugging Face  API.
+sur mergekit / Hugging Face API.
 
 **Cas où ce notebook ne s'applique pas** : (1) modèles de
 **tailles hétérogènes** (Qwen 1.5B + Llama 7B) — le merge suppose la
 même architecture de base ; (2) **sparsité extrême** (> 95% drop_rate)
-— préférer la distillation ; (3) très grands modèles > 13B (utiliser
- avec gestion de la mémoire unifiée) ; (4) besoin de
+— préférer la distillation ; (3) très grands modèles > 13B (utiliser l'offloading avec gestion de la mémoire unifiée) ; (4) besoin de
 **sélection dynamique par token** — préférer un vrai MoE (Mixtral,
 DeepSeek-MoE).
 
@@ -4725,14 +4733,15 @@ prefer distillation; (3) very large models > 13B (use with unified
 memory management); (4) the need for **per-token dynamic selection** —
 prefer a true MoE (Mixtral, DeepSeek-MoE).
 
-**Measured cost-benefit**: for 2 LoRA adapters on a 1.3B base, the
-full merge (DARE drop_rate=0.3) runs in **~10 seconds** on an RTX
-3090. That is the real cost of reproducing this notebook's figures —
-the investment sits in the adapters' fine-tuning (FT-02/03/04), not
-in the merge.
+**Cost-benefit**: for 2 LoRA adapters on a 1.3B base, the full
+merge (DARE drop_rate=0.3) is a vector addition over ~3.1M params —
+negligible next to fine-tuning the adapters (FT-02/03/04), whatever
+the hardware; its exact cost depends on the GPU and versions (not
+measured here). The investment sits in the fine-tuning, not in the
+merge.
 
 **Assumed limitations**: (1) the **quality metrics** (perplexity,
-lm-eval-harness) are **manual** in this notebook — for publishable
+lm-eval-harness) are **not computed** in this notebook — for publishable
 conclusions, one would need 4+ seeds and a confidence interval;
 (2) the **router** is a lightweight proxy (mean embeddings), not a
 production classifier; (3) **DARE drop_rate = 0.3** is a reasonable
