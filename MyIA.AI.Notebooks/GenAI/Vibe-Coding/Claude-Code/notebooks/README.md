@@ -170,7 +170,18 @@ env $U CLAUDE_CODE_SAFE_MODE=1 python -m papermill 04-Claude-CLI-Agents.ipynb 04
 
 Un dossier de configuration vide (`CLAUDE_CONFIG_DIR` pointé vers un répertoire neuf) ne convient pas : la CLI s'y considère comme non connectée.
 
-Après l'exécution, cherchez dans les sorties les mots `scratchpad`, `MCP`, `cycle`, `permission` et `session` : chacun peut signaler une fuite de la configuration locale. En revanche, un agent qui annonce que l'environnement bloque l'exécution de commandes sans approbation décrit le comportement normal du mode `-p`, et tout lecteur le verra aussi.
+Après l'exécution, cherchez dans les sorties les mots `scratchpad`, `MCP`, `cycle`, `permission` et `session` : chacun peut signaler une fuite de la configuration locale.
+
+### « Les permissions bloquent l'écriture / l'exécution »
+
+Ce message ne vient pas de votre configuration, et tout lecteur le verrait. En mode `-p`, personne ne peut approuver une action : tout outil qui demanderait une autorisation (écrire un fichier, lancer une commande) est refusé automatiquement. L'agent avait pris l'initiative de vérifier son travail, et il l'annonce non vérifié.
+
+La parade est de donner à chaque agent les outils de son rôle, et eux seuls :
+
+- un agent d'analyse reçoit les seuls outils de lecture : `--tools "Read,Glob,Grep"` ;
+- un agent qui écrit et exécute travaille dans une copie temporaire du projet, avec des droits précis : `--allowedTools Write "Bash(python -m pytest *)"`.
+
+Le carnet [04-Claude-CLI-Agents](04-Claude-CLI-Agents.ipynb) applique ces deux voies (section « Les permissions en mode `claude -p` ») ; le helper les transmet par `run_claude(..., extra_args=[...])`.
 
 ## Ressources
 
