@@ -45,7 +45,8 @@ Procédures d'inspection comparées (le banc les rend exécutables)
 ----------------------------------------------------------------
 * **S1** (structurelle naïve) : « le graphe contient-il un cycle ? » ;
 * **S2** (structurelle informée par le papier) : « cycle **ou** chaîne à
-  poids partagés (≥ 2 nœuds portant l'opération ``shift``) ? » ;
+  poids partagés (une arête directe entre deux nœuds distincts portant
+  l'opération ``shift`` **et** appartenant au même ensemble de poids) ? » ;
 * **C** (causale) : lésion de chaque module candidat → porteur =
   ``argmax_λ Δ_λ`` ; verdict = ``iterative_reuse(porteur)`` (aucun porteur si
   ``max Δ < 0.5``). Modules : ``loop``/``chain`` (report coupé),
@@ -80,6 +81,8 @@ suffiraient) ; **NON_CONCLUSIF_INSTRUMENT** sur porte.
 Calibration sur graines disjointes (11, 22, 33) : vérifie les valeurs
 analytiques (acc lésée ∈ [0.10, 0.35], sham nul, baselines parfaites) — aucun
 paramètre n'est gelé (pas d'apprentissage) ; la valeur 0.234 est calculable.
+Le bloc ``calibration`` de ``run_protocol()`` (donc du JSON committé) porte ce
+run, rejouable depuis les graines seules.
 
 References
 ----------
@@ -106,6 +109,9 @@ BAND_COLLAPSE = 0.50   # Δ ≥ 0.50 = le porteur est identifié
 BAND_INERT = 0.01      # |Δ| ≤ 0.01 = inertie (sham)
 ACC_LESION_LO = 0.10   # fenêtre analytique de l'accuracy lésée (≈ 0.234)
 ACC_LESION_HI = 0.35
+# Valeur théorique de l'accuracy lésée : P(s = T-1) + P(s ≠ T-1) · P(x_s = 0)
+# = 1/8 + 7/8 · 1/8 = 0.234375 (la réponse lésée est correcte ssi s = 7, ou x_s = 0).
+ACC_LESION_THEORETICAL = 1 / K_SYMBOLS + (K_SYMBOLS - 1) / K_SYMBOLS * (1 / K_SYMBOLS)
 
 
 def _shift(m: np.ndarray, x: np.ndarray) -> np.ndarray:
@@ -183,19 +189,21 @@ def forward_puppet(seq: np.ndarray, lesion: str | None = None) -> int:
 
 def _twin_nodes_edges():
     nodes = {"input": "input"}
+    weights = {}   # ensemble de poids par nœud ``shift`` : un seul, partagé
     edges = [("input", "h1")]
     for t in range(1, T_STEPS + 1):
         nodes[f"h{t}"] = "shift"
+        weights[f"h{t}"] = "W_chain"
         if t > 1:
             edges.append((f"h{t - 1}", f"h{t}"))
     nodes["monitor"] = "id"
     nodes["output"] = "output"
     edges.append((f"h{T_STEPS}", "monitor"))
     edges.append((f"h{T_STEPS}", "output"))
-    return nodes, edges
+    return nodes, edges, weights
 
 
-_TWIN_NODES, _TWIN_EDGES = _twin_nodes_edges()
+_TWIN_NODES, _TWIN_EDGES, _TWIN_WEIGHTS = _twin_nodes_edges()
 
 ARCHITECTURES = {
     "real": {
@@ -204,6 +212,7 @@ ARCHITECTURES = {
                   "output": "output"},
         "edges": [("input", "loop"), ("loop", "loop"), ("loop", "monitor"),
                   ("loop", "output")],
+        "weights": {"loop": "W_rec"},
         "modules": {
             "loop": {"iterative_reuse": True},
             "monitor": {"iterative_reuse": False},
@@ -214,6 +223,7 @@ ARCHITECTURES = {
         "forward": forward_twin,
         "nodes": _TWIN_NODES,
         "edges": _TWIN_EDGES,
+        "weights": _TWIN_WEIGHTS,
         "modules": {
             "chain": {"iterative_reuse": True},
             "monitor": {"iterative_reuse": False},
@@ -226,6 +236,7 @@ ARCHITECTURES = {
                   "batch": "input", "selector": "index", "output": "output"},
         "edges": [("input", "loop"), ("loop", "loop"), ("loop", "monitor"),
                   ("batch", "selector"), ("selector", "output")],
+        "weights": {"loop": "W_rec"},
         "modules": {
             "loop": {"iterative_reuse": True},
             "selector": {"iterative_reuse": False},
@@ -258,9 +269,21 @@ def has_cycle(nodes: dict, edges: list) -> bool:
     return any(state[n] == 0 and dfs(n) for n in nodes)
 
 
-def has_shared_weight_chain(nodes: dict, edges: list) -> bool:
-    """S2 (volet partage) — ≥ 2 nœuds distincts portant la même opération."""
-    return sum(1 for op in nodes.values() if op == "shift") >= 2
+def has_shared_weight_chain(nodes: dict, edges: list, weights: dict) -> bool:
+    """S2 (volet partage) — une chaîne à poids partagés : une arête directe
+    entre deux nœuds **distincts** portant l'opération ``shift`` **et**
+    appartenant au même ensemble de poids (``weights`` : nœud -> ensemble).
+
+    Deux nœuds ``shift`` disjoints, ou reliés mais de poids distincts, ne
+    forment pas une chaîne à poids partagés. Une boucle (arête d'un nœud sur
+    lui-même) relève de S1 (``has_cycle``), pas de ce prédicat.
+    """
+    return any(
+        a != b
+        and nodes.get(a) == "shift" and nodes.get(b) == "shift"
+        and weights.get(a) is not None and weights.get(a) == weights.get(b)
+        for a, b in edges
+    )
 
 
 def causal_probe(arch: dict, seqs: np.ndarray, targets: np.ndarray) -> dict:
@@ -281,28 +304,41 @@ def causal_probe(arch: dict, seqs: np.ndarray, targets: np.ndarray) -> dict:
 
 def calibrate() -> dict:
     """Vérifie sur graines disjointes : baselines parfaites, Δ(porteur) dans la
-    bande, accuracy lésée dans la fenêtre analytique, sham nul."""
-    rows = []
+    bande, accuracy lésée dans la fenêtre analytique, sham nul.
+
+    Le dict rendu est le bloc ``calibration`` du JSON committé : il ne contient
+    que des types JSON natifs (listes, pas de tuples) et des valeurs arrondies
+    à 6 décimales, pour qu'une relecture depuis le JSON soit égale à ce run.
+    """
+    by_seed = []
     for s in SEEDS_CALIB:
         seqs, targets = _sample_sequences(s, N_TEST)
         row = {"seed": s}
         for name in ("real", "twin"):
             arch = ARCHITECTURES[name]
             mod = "loop" if name == "real" else "chain"
+            acc_base = _accuracy(arch["forward"], seqs, targets)
             acc_les = _accuracy(arch["forward"], seqs, targets, lesion=mod)
-            row[f"acc_base_{name}"] = _accuracy(arch["forward"], seqs, targets)
-            row[f"acc_lesion_{name}"] = acc_les
-            row[f"delta_{name}"] = row[f"acc_base_{name}"] - acc_les
-        row["delta_sham"] = max(
+            row[f"acc_base_{name}"] = round(acc_base, 6)
+            row[f"acc_lesion_{name}"] = round(acc_les, 6)
+            row[f"delta_{name}"] = round(acc_base - acc_les, 6)
+        row["delta_sham"] = round(max(
             _accuracy(a["forward"], seqs, targets)
             - _accuracy(a["forward"], seqs, targets, lesion="monitor")
-            for a in ARCHITECTURES.values())
-        rows.append(row)
+            for a in ARCHITECTURES.values()), 6)
+        by_seed.append(row)
     ok = all(r["acc_base_real"] == 1.0 and r["acc_base_twin"] == 1.0
              and r["delta_real"] >= BAND_COLLAPSE and r["delta_twin"] >= BAND_COLLAPSE
              and ACC_LESION_LO <= r["acc_lesion_real"] <= ACC_LESION_HI
-             and abs(r["delta_sham"]) <= BAND_INERT for r in rows)
-    return {"rows": rows, "bands_ok": ok}
+             and abs(r["delta_sham"]) <= BAND_INERT for r in by_seed)
+    return {
+        "seeds": list(SEEDS_CALIB),
+        "n_test": N_TEST,
+        "by_seed": by_seed,
+        "acc_lesion_window": [ACC_LESION_LO, ACC_LESION_HI],
+        "acc_lesion_theoretical": round(ACC_LESION_THEORETICAL, 6),
+        "bands_ok": ok,
+    }
 
 
 # --- Run principal ---
@@ -311,7 +347,7 @@ def run_protocol() -> dict:
     """Run principal : graines test, procédures S1/S2/C, prédictions scellées."""
     truth = {name: a["truth"] for name, a in ARCHITECTURES.items()}
     s1 = {name: has_cycle(a["nodes"], a["edges"]) for name, a in ARCHITECTURES.items()}
-    s2 = {name: (s1[name] or has_shared_weight_chain(a["nodes"], a["edges"]))
+    s2 = {name: (s1[name] or has_shared_weight_chain(a["nodes"], a["edges"], a["weights"]))
           for name, a in ARCHITECTURES.items()}
     s1_exact = sum(s1[n] == truth[n] for n in truth)
     s2_exact = sum(s2[n] == truth[n] for n in truth)
@@ -378,6 +414,9 @@ def run_protocol() -> dict:
         "verdict": verdict,
         "bands": {"collapse": BAND_COLLAPSE, "inert": BAND_INERT,
                   "acc_lesion_window": [ACC_LESION_LO, ACC_LESION_HI]},
+        # Ajouté en fin de dict : aucune autre clé ne change
+        # (cf. test_artifact_is_run_protocol_output).
+        "calibration": calibrate(),
     }
 
 
