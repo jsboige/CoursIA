@@ -76,6 +76,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3-Linq2Z3/](../Z3-Linq2Z3/README.md
 | 16e | [Meal-Planner : optimisation](Z3-16e-Meal-Planner-Optimize-Python.ipynb) | Optimisation (compagnon du 16) : du SAT à l'OPT — `minimize`/`maximize`, `add_soft` (MaxSAT souple), multi-objectif natif (`pareto`/`box`), glouton vs optimum global | ~45 min | BETA |
 | 17 | [Théorie des tableaux](Z3-17-Array-Theory-Python.ipynb) | `Array` sort, `Select`/`Store`, axiomes de McCarthy (read-over-write) vérifiés comme théorèmes, tableau trié / égalité de tableaux | ~30 min | PRODUCTION |
 | 18 | [Sudoku 4×4 : modes Array vs Constants](Z3-18-Sudoku-Modes-Python.ipynb) | Même Sudoku 4×4 encodé deux fois (variables `Int` par cellule vs `Array(Int, Int)`), comparaison des deux modes d'encodage | ~30 min | PRODUCTION |
+| 19 | [Optimisation multi-objectif comparative](Z3-19-Optimization-Lexicographic-Python.ipynb) | Les trois modes lexicographique/Pareto/somme pondérée sur un même problème jouet (allocation de budget à 3 projets A/B/C) — approfondit `Optimize()` introduit par Z3-06, explore la non-stabilité du choix entre modes (sélection change entre w=0.5 et w=1.0) | ~30 min | PRODUCTION |
 
 ### Fil pédagogique
 
