@@ -53,6 +53,16 @@ class Guard:
                 statut.
     needs_base  Le garde compare HEAD a la base : le runner lui garantit que
                 `origin/<base_ref>` est joignable.
+    diff_bounded  Le verdict du garde est un DELTA (comparaison base/head, ou
+                lignes ajoutees par la PR) : un rouge corrobore ne peut pas
+                heriter de `main`. Lu par le picker (`_diff_bounded_check_names`,
+                #19645) -- la declaration est EXPLICITE et distincte de
+                `needs_base`, parce que l'information de bornage peut manquer
+                a l'argv absorbe (cas `check-nav-chain`/`check-navlinks`,
+                suite c.1503 du 2026-10-09 : leur workflow d'origine scopait
+                au diff via `git diff $BASE...HEAD`, l'argv absorbe dit
+                seulement `--check`) et que les ~20 gardes `needs_base` ne
+                sont PAS un delta borne au diff par defaut.
     delta_argv  Present => le garde est un DELTA en trois temps : `argv` est
                 execute sur HEAD (sa sortie standard est capturee comme
                 `head.json`), puis sur l'arbre bascule a la base
@@ -76,6 +86,10 @@ class Guard:
     paths: list[str] = field(default_factory=list)
     blocking: bool = True
     needs_base: bool = False
+    # #19645 suite c.1503 : verdict DELTA lu par le picker (voir la docstring
+    # du champ). Declare sur les gardes dont l'argv absorbe a perdu
+    # l'information de bornage -- une heuristique d'argv ne peut pas la voir.
+    diff_bounded: bool = False
     delta_argv: list[str] = field(default_factory=list)
     swap_paths: list[str] = field(default_factory=list)
     iterates_paths: bool = False  # voir `run_iter` dans fast_lane.py
@@ -346,6 +360,16 @@ PILOT: list[Guard] = [
         ],
         argv=["python", "scripts/notebook_tools/check_notebook_navlinks.py",
               "--check"],
+        # #19645 (suite c.1503) : verdict DELTA -- NEW vs baseline committe,
+        # le workflow d'origine scopait au diff (`git diff $BASE...HEAD` ->
+        # `--diff-files`). L'argv absorbe ne porte plus ce drapeau : la borne
+        # se declare ici, lue par le picker (`_diff_bounded_check_names`).
+        # `needs_base` suit l'arbitrage ai-01 du 2026-10-12 (declaration de
+        # coherence : mesure du meme jour, aucun consommateur operationnel ne
+        # lit `needs_base` dans scripts/ ou .github/ ; le canal operant de
+        # l'imputation reste `diff_bounded`).
+        needs_base=True,
+        diff_bounded=True,
         blocking=True,
         absorbed=True,
     ),
@@ -360,6 +384,11 @@ PILOT: list[Guard] = [
         ],
         argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
               "--check"],
+        # Meme classe que `check-navlinks` ci-dessus : verdict DELTA (NEW vs
+        # baseline), workflow d'origine scope au diff, borne perdue par
+        # l'argv absorbe -- declaration explicite (#19645 suite c.1503).
+        needs_base=True,
+        diff_bounded=True,
         blocking=True,
         absorbed=True,
     ),
@@ -408,12 +437,15 @@ PILOT: list[Guard] = [
         ],
         # Le dump imprime le JSON sur stdout ; le moteur fast-lane le
         # capture via payload_of() et l'ecrit dans {name}.head.json (puis
-        # base.json apres bascule phase 2). Le comparator recoit les deux.
+        # base.json apres bascule phase 2). Le comparator recoit les deux,
+        # plus les SHA base/head : l'appariement MOVED exige la preuve de
+        # renommage git (fail-closed sans elle, #20274).
         argv=["python",
               "scripts/notebook_tools/dump_readme_link_violations.py"],
         delta_argv=["python",
                     "scripts/notebook_tools/diff_readme_link_violations.py",
-                    "{base_json}", "{head_json}"],
+                    "{base_json}", "{head_json}",
+                    "--base-sha", "{base_sha}", "--head-sha", "{head_sha}"],
         swap_paths=[
             "MyIA.AI.Notebooks",
             "_quarto.yml",
@@ -1908,6 +1940,122 @@ TRANCHE18: list[Guard] = [
             "--mode", "advisory", "--baseline", "14", "--json",
         ],
         blocking=False,
+        warn_rc=(2,),
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 20 -- fraicheur des cellules LIVE-READ (#20049).
+#
+# Garde NATIF, tranche propre pour la meme raison que TRANCHE11 : il n'absorbe
+# aucun workflow d'origine (le stub `live-read-freshness.yml` est cree par
+# cette PR, dispatch-only, aucun trigger `pull_request` a retirer) et il ferme
+# une CLASSE de defaut. Le ranger dans TRANCHE2 (a cote de ses freres
+# `check_output_collapse.py` / `check_source_collapse.py`) rendrait l'en-tete
+# de TRANCHE2 faux.
+#
+# Defaut ferme : une cellule code peut LIRE un fichier du depot et en
+# committer la sortie (compte de lignes du fichier, declarations, numeros de
+# ligne). Rien ne la relie ensuite a ce fichier. Le jour ou une tranche le
+# reecrit, la sortie committee devient un temoignage du PASSE -- et aucun
+# organe ne le voit. Les ratchets d'absorption comparent une BASE a une TETE ;
+# ceux de structure mesurent un carnet. Aucun ne compare la sortie COMMITTEE
+# d'une cellule a l'etat COURANT du fichier qu'elle lit : c'est un troisieme
+# axe, invisible par construction.
+#
+# Donnee de declaration : `scripts/notebook_tools/live_read_registry.json`.
+# Le carnet declare ses cellules live-read et le fichier lu ; l'organe derive
+# de la sortie elle-meme ses invariants (compte de lignes accole au fichier,
+# citations ``L<n>: <texte>``) et les confronte a la source. Une re-execution
+# fraiche du carnet les satisfait -- c'est le geste de reparation attendu
+# (Stop & Repair), jamais une edition a la main de la sortie.
+#
+# Forme moteur : garde ABSOLU, non-delta (meme raison que TRANCHE18) -- il
+# mesure l'arbre de HEAD, pas une difference base/PR. Le pre-controle
+# `--self-test` epingle le discriminant en fixture (5 cas verts, 4 rouges, dont
+# le reflow nom/compte de la reserve 2 de #20076) et gate le garde comme le
+# ferait un step distinct du workflow d'origine.
+#
+# Controle positif MESURE a la pose : `feature/otca-real-grid` (#20019,
+# ouverte) porte Pillars.lean a 348 lignes quand la cellule `50dcfe8c` de
+# Lean-16b atteste « 246 lignes » et cite L88/L126 ; cette branche ne touche
+# PAS Lean-16b, donc le rouge est authentique, pas fabrique. Sur `main` au
+# meme instant, l'organe est vert (controle negatif). Un organe resterait vert
+# sur le controle positif ne prouverait rien -- c'est la seule chose qui
+# separe un invariant d'un blanc-seing.
+#
+# `absorbed=True` : sans absorption, le job always-on lance `fast_lane.py
+# --shadow`, donc `effective_shadow = args.shadow and not guard.absorbed` reste
+# vrai et le garde emet une conclusion NEUTRE sous `fast-lane (ombre): ` -- un
+# `blocking=True` sans effet. Un garde sans workflow d'origine n'a aucun autre
+# emetteur de son nom de check-run (meme convention que TRANCHE8/9/10/11/14/17/
+# 18/19).
+# ---------------------------------------------------------------------------
+TRANCHE20: list[Guard] = [
+    Guard(
+        name="Live-read freshness (committed output vs current source)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_live_read_freshness.py",
+            "scripts/notebook_tools/live_read_registry.json",
+            "scripts/notebook_tools/tests/test_live_read_freshness.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_live_read_freshness.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_live_read_freshness.py",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
+]
+
+# TRANCHE 21 -- fuite du recit d'activite dans la prose des carnets (Epic
+# #20250, phase 0).
+#
+# Le recit de coordination (corrigenda, identifiants de cycle `c.NNNN`, noms
+# de machine ou de lane, verdicts de review, annonces de tranche) vit dans
+# git et les PR : il n'a rien a faire dans le carnet servi a l'apprenant.
+# Le critere n'est PAS la presence d'un mot -- une mention isolee de
+# provenance reste admise -- mais la PART de prose markdown occupee par des
+# passages a densite de marqueurs elevee, mesuree par carnet.
+#
+# Le mode `--diff` ne juge que les passages AJOUTES : le stock mesure
+# (11 carnets au-dessus de 15 % de part, SC-09 a 48,1 %) reste visible en
+# audit sans rougir aucune PR, et une PR qui ajoute un passage dense rougit.
+#
+# Aucun workflow d'origine -> source FAST_LANE_NATIVE, convention
+# absorbed=True (cf TRANCHE19 et hr-substitution-guard) : sans absorption,
+# `effective_shadow = args.shadow and not guard.absorbed` laisserait le
+# garde sortir en conclusion NEUTRE et `blocking=True` serait une
+# declaration sans effet.
+#
+# `warn_rc=(2,)` : rc=2 est l'incident de mesure (plage de diff illisible,
+# blob de base absent d'un clone partiel), pas une faute de la PR. L'organe
+# distingue une base ABSENTE (fichier ajoute : tous ses paragraphes sont
+# legitimement neufs) d'une base ILLISIBLE (incident) -- les confondre
+# fabriquait un refus fantome sur du contenu preexistant.
+# ---------------------------------------------------------------------------
+TRANCHE21: list[Guard] = [
+    Guard(
+        name="activity-leak",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_activity_leak.py",
+            "scripts/tests/test_check_activity_leak.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_activity_leak.py",
+              "--diff", "{base_ref}...HEAD", "--strict"],
+        blocking=True,           # BLOQUANT sur les AJOUTS seuls
+        needs_base=True,
         warn_rc=(2,),
         absorbed=True,
     ),

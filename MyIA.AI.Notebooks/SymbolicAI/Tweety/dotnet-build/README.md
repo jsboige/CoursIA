@@ -20,7 +20,7 @@ sous runtime 8.15.0 (types exposés et instanciables). Toutes les recettes cible
 | `build-tweety-pl-shade.pom.xml` | POM aggregator Maven shade (produit le fat-jar) | Oui (reproductibilité) |
 | `build-TweetyShade.csproj` | Projet MSBuild `<IkvmReference>` (convertit le fat-jar en DLL) | Oui (reproductibilité) |
 
-## Fichiers — cluster `beliefdynamics` (notebook [`../Tweety-04-Belief-Revision-CSharp.ipynb`](../Tweety-04-Belief-Revision-CSharp.html))
+## Fichiers — cluster `beliefdynamics` (notebook [`../Tweety-04-Belief-Revision-CSharp.ipynb`](../Tweety-04-Belief-Revision-CSharp.ipynb))
 
 | Fichier | Rôle | Committé ? |
 |---------|------|-----------|

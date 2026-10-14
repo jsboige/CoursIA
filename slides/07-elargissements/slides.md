@@ -235,7 +235,7 @@ layout: dense
   - La conscience peut exister dans tout système integrant l'information
   - Reste difficile a tester experimentalement
 - **Activite**: Decouverte de PyPhi
-  - *Notebook : [IIT-01-IntroToPyPhi](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) — calcul exact de Φ sur petits systèmes booléens, les cinq axiomes opérationnels, ce qui distingue un systeme a Phi eleve d'un circuit feed-forward equivalent.*
+  - *Notebook : [IIT-01-IntroToPyPhi-Python](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb) — calcul exact de Φ sur petits systèmes booléens, les cinq axiomes opérationnels, ce qui distingue un systeme a Phi eleve d'un circuit feed-forward equivalent.*
 
 ---
 layout: dense
@@ -258,7 +258,7 @@ layout: dense
 - **Vers une science de la conscience**
   - Au-dela du debat philosophique, la mesure impose une discipline
   - Le depot porte les deux outils (IIT-01, ICT-24) ; les utiliser en parallele montre ce qu'aucun ne montre seul
-  - *Notebooks : [IIT-01-IntroToPyPhi](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) (calcul exact de Φ) · [ICT-24-WorkspaceIgnition-Python](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) (ignition et integration).*
+  - *Notebooks : [IIT-01-IntroToPyPhi-Python](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb) (calcul exact de Φ) · [ICT-24-WorkspaceIgnition-Python](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) (ignition et integration).*
 
 ---
 
@@ -784,7 +784,7 @@ Le depot ancre chaque theme du deck sur un notebook ou une serie mesurable. Sele
 des cibles **directement citees dans les slides ci-dessus** (chemins relatifs au depot) :
 
 - **Conscience et theories de l'esprit**
-  - [IIT-01-IntroToPyPhi](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) — calcul exact de Phi sur systemes booleens
+  - [IIT-01-IntroToPyPhi-Python](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb) — calcul exact de Phi sur systemes booleens
   - [ICT-24-WorkspaceIgnition-Python](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) — ignition du workspace global (GWT)
 - **Argumentation formelle et debat structure**
   - [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb) — semantiques de Dung, value alignment

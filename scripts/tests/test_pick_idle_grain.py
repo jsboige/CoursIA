@@ -1146,6 +1146,51 @@ def test_diff_bounded_none_preserve_comportement_avant_19645(monkeypatch):
     assert "prose-counts-guard" in undecided
 
 
+def test_nav_guards_declares_bornes_au_diff_registre_19645_c1503():
+    """#19645 suite c.1503 : nav-chain/navlinks sortent du registre, sans monkeypatch.
+
+    Leur workflow d'origine scopait au diff (`git diff $BASE...HEAD`), mais
+    l'argv absorbe (`--check`) ne porte plus ce drapeau : aucune heuristique
+    d'argv ne peut les detecter (c'est la mesure c.1503). La declaration
+    explicite `diff_bounded` du registre est le canal -- ce test mesure le
+    cablage REEL de bout en bout (pas un monkeypatch de la fonction), et
+    echoue si la declaration disparait ou si l'import du registre casse.
+    """
+    names = pig._diff_bounded_check_names()
+    assert "check-nav-chain" in names
+    assert "check-navlinks" in names
+
+
+def test_nav_chain_corrobore_absent_de_main_sort_de_base_c1503():
+    """#19645 suite c.1503 : le scenario fondateur, de bout en bout.
+
+    `check-nav-chain` rouge et corrobore par deux PR de lanes differentes
+    (#20044/#20062, notebooks distincts -- aucun rouge partage possible),
+    ABSENT du rollup de `main` (l'agregateur ne tourne que sur
+    `pull_request`). Avant la declaration : `undecided` + repli fail-closed
+    en `base` -> le tapis disait « pas le votre » et la lane ne cherchait
+    pas son `orphan_entry`. Apres : `undecided` SEUL -- la lane garde la
+    main. Controle negatif : un check non declare, meme scenario, reste
+    impute a la base (le filtre est un ensemble clos, il n'elargit pas la
+    classe des acquittes).
+    """
+    diff_bounded = pig._diff_bounded_check_names()
+    assert "check-nav-chain" in diff_bounded, "cablage registre absent"
+    corroborated = {"check-nav-chain": [20044, 20062],
+                    "Scripts Tests (CPU)": [20044, 20062]}
+    names_by_key = {"check-nav-chain": {"check-nav-chain"},
+                    "Scripts Tests (CPU)": {"Scripts Tests (CPU)"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names_by_key, _probe(),  # rollup de main sans les nav
+        diff_bounded=diff_bounded)
+    assert "check-nav-chain" not in base
+    assert "check-nav-chain" in undecided
+    # Controle negatif : non declare -> repli fail-closed inchange.
+    assert "Scripts Tests (CPU)" in base
+    assert "Scripts Tests (CPU)" in undecided
+    assert infra == {}
+
+
 def test_geste_infra_n_invente_pas_d_id_de_run():
     """L'id du check-run n'est pas un id de workflow run : le picker n'en donne aucun.
 
@@ -3608,19 +3653,305 @@ def test_marker_does_not_shortcut_pr_check(monkeypatch):
 
 
 def test_marker_check_failure_treated_as_no_signal(monkeypatch):
-    """Si `gh issue view` timeout/rate-limit, _has_delivered_marker retourne
-    None ; recent_delivery continue sans annoter (best-effort, parite avec
-    la doctrine candidate-delivered : signale sans casser le flux)."""
+    """Les DEUX transports morts -> None ; recent_delivery continue sans
+    annoter (best-effort, parite avec la doctrine candidate-delivered :
+    signale sans casser le flux).
+
+    #17038 : un seul transport mort ne suffit plus a rendre la sonde muette
+    -- depuis le repli REST, c'est la mort des deux (GraphQL puis REST) qui
+    rend None. Les deux sont donc simules ici.
+    """
     def boom(cmd, **kwargs):
-        if cmd[1:3] == ["issue", "view"]:
-            raise pig.subprocess.TimeoutExpired(cmd, 20)
-        return _FakeCompleted("[]")
+        if cmd[1:3] == ["pr", "list"]:
+            return _FakeCompleted("[]")  # pas de PR couvrante
+        raise pig.subprocess.TimeoutExpired(cmd, 20)  # GraphQL ET REST morts
     monkeypatch.setattr(pig.subprocess, "run", boom)
     picks = [_pick(n=14373)]
     notes = pig.recent_delivery(picks)
     # Pas de LIVRE-urn annotation, pas de mutation de klasse.
     assert notes == {}
     assert picks[0]["klass"] == "grain"
+
+
+# --- #17038 : le filet marqueur ne depend pas du transport de la recherche PR
+#
+# Defaut mesure le 2026-10-10 (lane myia-po-2023:CoursIA, cycle c.1461) : la
+# branche d'echec de `gh pr list` faisait `continue` AVANT la sonde marqueur,
+# alors que les deux passent par le MEME bucket GraphQL et tombent ensemble.
+# Resultat : 4 issues deja livrees servies en tete de tapis sous l'urne
+# `grain`. Le fail-open est preserve ; c'est le filet qui etait aveugle.
+# Marqueurs recomptes par le transport REST (ventilation, la somme fait le
+# total -- un total nu ne se verifie pas) : #16372 : 5, #14549 : 1,
+# #16031 : 2, #17464 : 4 = 12.
+
+
+_GRAPHQL_MORT = pig.subprocess.CalledProcessError(
+    1, ["gh"], stderr="GraphQL: API rate limit already exceeded "
+                      "for user ID 3159389")
+
+
+def _patch_gh_transports(monkeypatch, calls, *, pr=None, issue=None, rest=None):
+    """Route les trois transports du picker : `gh pr list` et `gh issue view`
+    (GraphQL) puis `gh api` (REST).
+
+    ``pr`` / ``issue`` recoivent une charge utile JSON ; ``rest`` recoit la
+    sortie BRUTE de `gh api --jq '.[].body'` (un corps de commentaire par
+    ligne) -- c'est ce que le vrai transport imprime. Chacun peut etre une
+    exception : elle est levee, comme le ferait le `gh` en panne.
+    """
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        if cmd[1:3] == ["pr", "list"]:
+            which = pr
+        elif cmd[1:3] == ["issue", "view"]:
+            which = issue
+        elif cmd[1:2] == ["api"]:
+            which = rest
+        else:
+            raise AssertionError(f"transport inattendu : {cmd}")
+        if isinstance(which, BaseException):
+            raise which
+        return _FakeCompleted(which if cmd[1] == "api" else json.dumps(which))
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    return calls
+
+
+def test_sonde_marqueur_bascule_sur_rest_quand_graphql_meurt(monkeypatch):
+    """#17038 : GraphQL mort -> la sonde lit les corps par REST.
+
+    Sans ce repli la sonde rendait None en meme temps que la recherche PR,
+    qui partage le meme bucket : le filet etait aveugle exactement quand il
+    servait. La cible REST est epinglee (`repos/<REPO>/...`) : aucun slug
+    infere du cwd ni du remote `origin`.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, issue=_GRAPHQL_MORT,
+        rest=_delivered_marker_comment()["body"] + "\n")
+    assert pig._has_delivered_marker(14373) is True
+    rest_calls = [c for c in calls if c[1:2] == ["api"]]
+    assert len(rest_calls) == 1
+    assert rest_calls[0][-1] == f"repos/{pig.REPO}/issues/14373/comments"
+
+
+def test_sonde_marqueur_deux_transports_morts_reste_silencieuse(monkeypatch):
+    """Les deux transports morts -> None (fail-OPEN preserve)."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=pig.subprocess.CalledProcessError(1, ["gh"]))
+    assert pig._has_delivered_marker(14373) is None
+
+
+def test_sonde_marqueur_ne_touche_pas_rest_quand_graphql_vit(monkeypatch):
+    """Invariant de cout : la voie nominale reste a UNE requete.
+
+    Le repli ne doit pas doubler le cout par candidat -- il ne s'active que
+    sur echec du premier transport.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, issue={"comments": [_delivered_marker_comment()]})
+    assert pig._has_delivered_marker(14373) is True
+    assert [c for c in calls if c[1:2] == ["api"]] == []
+
+
+# --- Rendre le marqueur RELEVABLE (il etait permanent) -----------------------
+#
+# Mesure du 2026-10-12 : sur 80 issues portant un marqueur de livraison, 20
+# l'etaient PARTIELLEMENT. Un `any(...)` rendait True des le premier marqueur,
+# a vie : la verification ulterieure du coordinateur ne pouvait plus remettre
+# l'issue sur le tapis, et elle restait ecartee de toutes les lanes worker
+# (ecartee par `has_delivered_signal` sur le tapis, annotee LIVRE-urn par
+# `recent_delivery` a la voie ponderee). Le marqueur devient un ETAT : les
+# deux transports rendent leurs corps en ordre chronologique, une forme de
+# retractation defait les marqueurs qui la precedent, un depot posterieur
+# rearme.
+
+
+def _issued_comments(*bodies):
+    """Charge `gh issue view --comments --json comments` : un corps par
+    commentaire, dans l'ordre du transport (`createdAt` croissant)."""
+    return {"comments": [{"body": b, "createdAt": f"2026-10-12T10:{i:02d}:00Z"}
+                         for i, b in enumerate(bodies)]}
+
+
+def test_marqueur_livre_puis_retracte_rend_faux(monkeypatch):
+    """Livraison partielle relevee par un commentaire POSTERIEUR : l'issue
+    n'est plus annotee LIVRE-urn, elle revient dans l'urne `grain`."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _delivered_marker_comment()["body"],
+            "[NOT-DELIVERED] verification first-hand : 2 cellules sur 5."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_retractation_puis_marqueur_repose_rearme(monkeypatch):
+    """Un marqueur poste APRES la retractation rearme : c'est l'ORDRE qui
+    porte le sens, pas la seule presence."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _delivered_marker_comment()["body"],
+            "[NOT-DELIVERED] livraison partielle.",
+            _delivered_marker_comment()["body"]))
+    assert pig._has_delivered_marker(14373) is True
+
+
+def test_retractation_seule_ne_fabrique_pas_de_livraison(monkeypatch):
+    """Controle NEGATIF : la retractation seule ne cree aucun signal."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            "[NOT-DELIVERED] issue jamais livree, remise sur le tapis."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_retractation_citee_en_prose_ne_releve_rien(monkeypatch):
+    """L'ancrage tete de ligne est la garde anti-FP : une mention en milieu
+    de ligne -- ou dans un bloc de citation `>` -- ne retracte pas."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _delivered_marker_comment()["body"],
+            "Je reprends ta remarque : la forme [NOT-DELIVERED] sert a\n"
+            "retracter un marqueur, et je la cite sans la poser.\n"
+            "> [NOT-DELIVERED] exemple de citation\n"))
+    assert pig._has_delivered_marker(14373) is True
+
+
+def test_candidate_delivered_revoked_n_est_pas_un_marqueur(monkeypatch):
+    """La retractation ne se relit pas comme une livraison : le lookahead
+    `(?![-_\\w])` de #20008 ferme `candidate-delivered` devant `-revoked`,
+    sur la forme canonique ET sur la forme annonce."""
+    assert pig._DELIVERED_MARKER_RE.search(
+        "[INFO] candidate-delivered-revoked -- verification partielle") is None
+    assert pig._DELIVERED_MARKER_RE.search(
+        "[INFO] lane myia-ai-01:CoursIA -- candidate-delivered-revoked") is None
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            "[INFO] candidate-delivered-revoked livraison partielle."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_corps_contradictoire_la_retractation_l_emporte(monkeypatch):
+    """Choix documente (`_delivered_state`) : un corps portant les DEUX formes
+    est contradictoire, la retractation l'emporte -- c'est le geste delibere,
+    celui que ce correctif doit rendre effectif."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            "[INFO] candidate-delivered -- verification first-hand 6d0bd02093.\n"
+            "[NOT-DELIVERED] en fait partiel, remis sur le tapis."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_retractation_lue_par_le_repli_rest(monkeypatch):
+    """GraphQL mort : le repli REST rend les corps DANS L'ORDRE -- meme etat
+    que la voie nominale, dans les deux sens (retractation apres marqueur,
+    puis marqueur apres retractation)."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=(_delivered_marker_comment()["body"] + "\n"
+              "[NOT-DELIVERED] livraison partielle.\n"))
+    assert pig._has_delivered_marker(14373) is False
+
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=("[NOT-DELIVERED] releve par le coordinateur.\n"
+              + _delivered_marker_comment()["body"] + "\n"))
+    assert pig._has_delivered_marker(14373) is True
+
+
+# --- #17038 : la sonde du TAPIS (`has_delivered_signal`) porte le meme repli
+#
+# Elle porte le meme defaut, dans une implementation SEPAREE : `gh issue view`
+# + `except: return None`, sans repli. C'est elle qui sert la boucle du tapis,
+# donc c'est elle qui decidait des 33 ecartements ; la corriger du seul cote
+# `_has_delivered_marker` laissait le tapis aveugle sous panne, ce qui est
+# exactement le defaut que la PR annonce reparer.
+
+
+def test_sonde_tapis_bascule_sur_rest_quand_graphql_meurt(monkeypatch):
+    """GraphQL mort -> la sonde du tapis lit les corps par REST.
+
+    Cible REST epinglee (`repos/<REPO>/...`) : aucun slug infere du cwd ni du
+    remote `origin`.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, issue=_GRAPHQL_MORT,
+        rest=_delivered_marker_comment()["body"] + "\n")
+    assert pig.has_delivered_signal(16372) is True
+    rest_calls = [c for c in calls if c[1:2] == ["api"]]
+    assert len(rest_calls) == 1
+    assert rest_calls[0][-1] == f"repos/{pig.REPO}/issues/16372/comments"
+
+
+def test_sonde_tapis_deux_transports_morts_reste_none(monkeypatch):
+    """Les deux transports morts -> None : le tri-etat est preserve.
+
+    Un `False` fabrique ecarterait ou garderait un candidat sur une panne ;
+    `None` dit l'echec de mesure et l'appelant tire quand meme EN LE DISANT.
+    """
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=pig.subprocess.CalledProcessError(1, ["gh"]))
+    assert pig.has_delivered_signal(16372) is None
+
+
+def test_sonde_tapis_ne_touche_pas_rest_quand_graphql_vit(monkeypatch):
+    """Invariant de cout : la voie nominale du tapis reste a UNE requete."""
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, issue={"comments": [_delivered_marker_comment()]})
+    assert pig.has_delivered_signal(16372) is True
+    assert [c for c in calls if c[1:2] == ["api"]] == []
+
+
+def test_sonde_tapis_sans_marqueur_en_repli_rend_faux(monkeypatch):
+    """Controle NEGATIF : le repli ne fabrique pas d'ecartement.
+
+    Sans marqueur dans les corps REST, la sonde rend `False` (mesure aboutie,
+    aucun signal) -- pas `True`, pas `None`.
+    """
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest="Commentaire sans marqueur de livraison.\n")
+    assert pig.has_delivered_signal(16372) is False
+
+
+def test_recherche_pr_morte_le_filet_reclasse_quand_meme(monkeypatch):
+    """#17038, controle positif du defaut mesure : #16372 (une des 4 issues
+    livrees du 2026-10-10) reste reclassee `delivered` malgre la panne.
+
+    `gh pr list` ET `gh issue view` tombent (bucket GraphQL partage) ; le
+    marqueur de livraison est pourtant lisible par REST. Avant le correctif,
+    la branche d'echec faisait `continue` et le candidat deja livre
+    repartait en tete de tapis sous l'urne `grain`.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, pr=_GRAPHQL_MORT, issue=_GRAPHQL_MORT,
+        rest=_delivered_marker_comment()["body"] + "\n")
+    picks = [_pick(n=16372)]
+    notes = pig.recent_delivery(picks)
+    assert picks[0]["klass"] == "delivered"
+    assert "MARQUEUR" in notes[16372]
+    assert "recherche PR indisponible" in notes[16372]
+    assert "CalledProcessError" in notes[16372]
+
+
+def test_recherche_pr_morte_sans_marqueur_laisse_le_candidat(monkeypatch):
+    """Controle NEGATIF du meme chemin : sans marqueur, rien n'est reclasse.
+
+    C'est ce qui separe le filet d'un ecartement aveugle : la panne de
+    transport n'ecarte aucun candidat par elle-meme, seul le marqueur
+    reclasse. La note reste le diagnostic de transport.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, pr=_GRAPHQL_MORT, issue=_GRAPHQL_MORT,
+        rest="Commentaire sans marqueur de livraison.\n")
+    picks = [_pick(n=15794)]
+    notes = pig.recent_delivery(picks)
+    assert picks[0]["klass"] == "grain"
+    assert notes[15794] == "(recherche PR indisponible: CalledProcessError)"
 
 
 def test_marker_regex_matches_both_bracket_forms(monkeypatch):

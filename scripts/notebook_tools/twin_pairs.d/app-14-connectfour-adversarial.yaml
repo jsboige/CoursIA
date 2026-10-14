@@ -1,7 +1,7 @@
 - name: App-14 ConnectFour Adversarial
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Minimax/MCTS Connect-4 from-scratch pedagogique (Puissance 4 adversarial, IA jeux combinatoires) porte par les deux jumeaux sans dependance moteur SOTA (Python stdlib seulement, C# BCL pure 0 NuGet). Les DEUX cotes implementent les MEMES algorithmes adversariaux (minimax/alpha-beta + MCTS Monte Carlo) en from-scratch -- la portabilite cross-lang est dans le pseudo-code specifie par AIMA. Ni Python ni C# n'invoque de moteur SOTA partage, aucune lib bridgeable entre les deux ecosystemes sans quitter le gabarit pedagogique. Verdict SOTA-OK (solver-free by design des deux cotes, asymetrie de couverture de l'enveloppe pedagogique preserve, aucune asymetrie de couverture moteur a corriger)."
