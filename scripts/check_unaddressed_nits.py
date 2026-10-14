@@ -5518,7 +5518,7 @@ def _print_sha_notes(result: dict) -> None:
               f"rembobiné par un push muet ({why}) — preuve conservée, "
               f"non bloquant")
     for v in result.get("voided_lifts") or []:
-        detail = (" — l'arbre DIFFÈRE de la tête : vraie réserve à reposer"
+        detail = (" — l'arbre DIFFÈRE de la tête : blob modifié depuis la levée, fond non vérifié"
                   if v.get("tree_differs")
                   else " — arbre non comparable, refus conservateur")
         print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "
