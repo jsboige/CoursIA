@@ -23,6 +23,7 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 | 13 | [13-jacobi-kronecker-reciprocite-II.ipynb](13-jacobi-kronecker-reciprocite-II.ipynb) | Loi de réciprocité quadratique II — symbole de Jacobi `(d/n)` (n impair) et extension Kronecker `(d/n)` ; algorithme d'Euler-Legendre O(log n) ; conducteur des corps quadratiques de Heegner | Python stdlib (math.isqrt) |
 | 14 | [14-formes-quadratiques-composition-gauss.ipynb](14-formes-quadratiques-composition-gauss.ipynb) | Composition des formes quadratiques binaires (Gauss) — réduction, énumération des formes réduites, calcul de h(D), vérification du théorème de Stark–Heegner sur les 9 corps de Heegner | Python stdlib (math.isqrt) |
 | 15 | [15-quatre-carres-lagrange.ipynb](15-quatre-carres-lagrange.ipynb) | Théorème de Lagrange — tout entier est somme de quatre carrés ; algorithme de Lagrange/Jacobi, formule de Jacobi pour r₄(n), identité de Brahmagupta–Fibonacci (quaternions) | Python stdlib (math.isqrt) |
+| 16 | [16-fonctions-l-dirichlet-progression-premiers.ipynb](16-fonctions-l-dirichlet-progression-premiers.ipynb) | *Cours d'arithmétique* ch. VI — caractères de Dirichlet énumérés, séries L et produits eulériens, sommes de Gauss τ(χ) (réduction aux primitifs), non-annulation L(1,χ) ≠ 0 par formules fermées (π/4, 2log(1+√2)/√8, 2log φ/√5), biais de Tchebychev mesuré | Python stdlib (cmath) + matplotlib |
 
 ## Conventions
 
