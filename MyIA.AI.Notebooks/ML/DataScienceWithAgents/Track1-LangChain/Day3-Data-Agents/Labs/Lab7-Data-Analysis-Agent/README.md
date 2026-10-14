@@ -21,8 +21,7 @@ Ce laboratoire **fusionne les deux mondes** explorés précédemment : la **Data
 
 ## Notebook
 
-- [Lab7-Data-Analysis-Agent.ipynb](Lab7-Data-Analysis-Agent.ipynb) - notebook étudiant
-- `Lab7-Data-Analysis-Agent_output.ipynb` - version exécutée de référence
+- [Lab7-Data-Analysis-Agent.ipynb](Lab7-Data-Analysis-Agent.ipynb) - notebook étudiant, committé avec les sorties de son exécution (version exécutée de référence)
 
 ## Suite et transition
 
