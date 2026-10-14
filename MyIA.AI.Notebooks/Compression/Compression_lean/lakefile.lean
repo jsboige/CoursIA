@@ -45,9 +45,13 @@ contre 16 au code fixe ; `Echange` — le lemme d'échange (pli 5b de
 élémentaire du lemme d'échange (`exchange_le`) — faire monter un poids fort
 contre un poids faible ne augmente jamais le coût, écart exact `b - a` — et la
 descente du carnet 02 : 21 -> 15 -> 14 par deux échanges jusqu'au trie de
-Huffman. -/
+Huffman ; `Appariement` — le coût comme somme pondérée et l'échange général
+(pli 5c de #18706) : produit pondéré des parcours (`dotp`), théorème central
+`cost_dot` — la charge par fusions est la facture feuille à feuille `Σ wᵢ·dᵢ` —
+et l'inégalité de réarrangement sur deux feuilles quelconques (`rearrange_two`),
+d'écart exact le produit des écarts. -/
 @[default_target]
 lean_lib «PrefixCodes» where
   -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`) :
   -- pas de `.submodules`, cf la note `MathUniverse` de `learning_theory_lean`.
-  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange]
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement]
