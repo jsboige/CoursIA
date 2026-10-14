@@ -624,7 +624,7 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-41-SAE-GeometrieFeatures-Python.ipynb
+- notebook_path: GenAI/PostTraining/PT_15b_geometrie_features_sae.ipynb
   confidence: research
   reviewed_code_sha: 84dbbee96c234cd6872de20c3632bf546b9b4acfa8c19ecbe3e0c4646402e8c2
   review_date: "2026-09-21"
