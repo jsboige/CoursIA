@@ -53,6 +53,12 @@ on:
 
 permissions:
   contents: read
+  # `pull-requests: write` : l'etape `Fail if violated` poste le commentaire
+  # structure `<!-- translation-guard-violation -->` (gh pr comment). Sans ce
+  # droit ni GH_TOKEN, le POST echouait en silence (`|| true`) : le contributeur
+  # ne voyait jamais les trois sorties du garde (#20450). Garde same-repo au
+  # niveau job : une PR de fork ne recoit jamais ce jeton.
+  pull-requests: write
 
 concurrency:
   group: translation-guard-${{ github.ref }}
@@ -233,6 +239,9 @@ jobs:
 
       - name: Fail if violated (or unsatisfied override)
         if: steps.check.outputs.violated == 'true' && steps.override.outputs.override_applied != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           REASON=$(python3 -c "import json; print(json.load(open('/tmp/override.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
           echo "::error title=Translation guard FAILED::$REASON"
