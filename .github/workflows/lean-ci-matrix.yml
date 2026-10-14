@@ -148,6 +148,21 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lean-toolchain'
+      # hecke_lean (herite du wrapper lean-hecke.yml supprime, #13751 :
+      # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
+      # fail-on-sorry true par defaut -- parametres reportes au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain'
+      # compression_lean (lake dedie de l'EPIC #18706, decision D4 -- jumeau
+      # formel de la serie Compression : 0 sorry de naissance, axiom
+      # target-modules "*" -- parametres au manifeste)
+      - 'MyIA.AI.Notebooks/Compression/Compression_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
@@ -276,6 +291,21 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lean-toolchain'
+      # hecke_lean (herite du wrapper lean-hecke.yml supprime, #13751 :
+      # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
+      # fail-on-sorry true par defaut -- parametres reportes au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain'
+      # compression_lean (lake dedie de l'EPIC #18706, decision D4 -- jumeau
+      # formel de la serie Compression : 0 sorry de naissance, axiom
+      # target-modules "*" -- parametres au manifeste)
+      - 'MyIA.AI.Notebooks/Compression/Compression_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'

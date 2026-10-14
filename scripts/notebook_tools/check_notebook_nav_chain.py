@@ -349,18 +349,19 @@ def analyse(inbound, outbound, series):
     Une serie sans entree (chaine bouclee) est jugee depuis son depart le plus
     couvrant -- jamais declaree saine par defaut.
 
-    Vue INTRA-SERIE du statut d'entree (#19076). Le statut d'entree est calcule
-    sur le graphe **global** : un lien venu d'une AUTRE serie suffit a retirer a
-    un carnet son statut d'entree dans la sienne, sans qu'aucune chaine de
-    navigation interne ne le rattache pour autant (cas fondateur : 07-Aspire,
-    ancree depuis GenAI/SemanticKernel par #18987, reclassee `unreachable` et
-    baseline realigne sous l'arbitrage coordinateur option b, PR #19075).
-    La divergence entre les deux vues est **RAPPORTEE**, jamais jugee : chaque
-    serie publie `externally_anchored` (carnets sans lien entrant INTRA-serie
-    mais pourvus d'un lien entrant exterieur, avec leurs sources). `findings`
-    et le baseline sont **inchanges** tant que l'arbitrage (a)/(b) de #19076
-    n'est pas rendu -- l'information est la matiere de cet arbitrage, pas sa
-    substitution.
+    Statut d'entree INTRA-SERIE (#19076, option (a), arbitrage coordinateur du
+    2026-10-11, c.6114582529). Le statut d'entree d'un carnet ne se perd que
+    par un lien entrant venu de SA serie : un lien venu d'une AUTRE serie
+    (ancre externe) ne le lui retire plus. Historique : calcule sur le graphe
+    global, le statut d'entree etait vole par la premiere ancre externe venue
+    (cas fondateur 07-Aspire, #18987, reclasse `unreachable` puis baseline
+    realigne option b, PR #19075 ; troisieme occurrence Lean-12b/12c, #20392)
+    -- un classement par un lien qui n'appartient pas a la convention de
+    navigation de la serie jugee. La reachability reste GLOBALE. La vue
+    `externally_anchored` (carnets sans lien entrant INTRA-serie mais pourvus
+    d'un lien entrant exterieur, avec leurs sources) reste publiee a titre
+    informatif : sous l'option (a), ces carnets sont des entrees de leur
+    serie, et l'ancre externe reste une information de lecture.
 
     Une serie n'est jugee que si elle **exhibe** une convention de navigation,
     c'est-a-dire au moins une arete INTERNE. Sans cela le dossier n'est pas une
@@ -386,7 +387,16 @@ def analyse(inbound, outbound, series):
             not_judged.append({"series": _rel(directory), "notebooks": len(members),
                                "reason": "no_internal_nav_edge"})
             continue
-        entries = sorted((nb for nb in members if not inbound.get(nb)), key=_rel)
+        # Statut d'entree INTRA-SERIE (option (a) de l'arbitrage #19076,
+        # tranchee par le coordinateur le 2026-10-11, c.6114582529) : un lien
+        # venu d'une AUTRE serie ne retire plus a un carnet son statut
+        # d'entree dans la sienne. Le statut d'entree se perd desormais
+        # seulement par un lien entrant INTRA-serie ; la reachability, elle,
+        # reste calculee sur le graphe GLOBAL (BFS depuis le basis).
+        def _has_intra_inbound(nb):
+            return any(src in member_set for src in inbound.get(nb, ()))
+
+        entries = sorted((nb for nb in members if not _has_intra_inbound(nb)), key=_rel)
         chain_starts = []
         reach_entries = set()
         if entries:
@@ -395,15 +405,15 @@ def analyse(inbound, outbound, series):
             # d'un notebook qu'elles atteignent. Detectees par BFS individuel --
             # le Precedent du 2e vers le 1er est l'exemple type.
             for nb in sorted(members, key=_rel):
-                if not inbound.get(nb):
+                if not _has_intra_inbound(nb):
                     continue
                 if inbound.get(nb) <= _reachable_from([nb], outbound):
                     chain_starts.append(nb)
             basis = list(entries) + chain_starts
             reach = _reachable_from(basis, outbound)
         else:
-            # Aucun notebook n'est sans lien entrant : la chaine **boucle** (le
-            # « suivant » du dernier pointe le premier). C'est une convention de
+            # Aucun notebook n'est sans lien entrant INTRA-serie : la chaine
+            # **boucle** (le « suivant » du dernier pointe le premier). C'est une convention de
             # navigation legitime, pas une serie non jugeable -- la declarer
             # telle laissait 18 series hors du garde. On se juge alors depuis le
             # depart le plus couvrant : si partir de la atteint toute la serie,
@@ -417,13 +427,12 @@ def analyse(inbound, outbound, series):
         unreachable = sorted(
             (nb for nb in members if nb not in entry_set and nb not in reach), key=_rel
         )
-        # Vue INTRA-SERIE (#19076). `externally_anchored` = carnet sans lien
-        # entrant INTRA-serie, mais pourvu d'au moins un lien entrant exterieur :
-        # il est l'entree legitime de sa serie pour le lecteur qui la parcourt,
-        # et pourtant le graphe global le voit « atteint ». Les sources sont
+        # Ancres externes (#19076, informative). `externally_anchored` = carnet
+        # sans lien entrant INTRA-serie, pourvu d'au moins un lien entrant
+        # exterieur : sous l'option (a) c'est une ENTREE de sa serie, et
+        # l'ancre externe reste une information de lecture. Les sources sont
         # publiees -- sans elles la classification serait un constat muet.
-        # INFORMATIF : n'entre pas dans `findings`, ne bouge aucun verdict et
-        # ne touche pas le baseline (l'arbitrage (a)/(b) de #19076 est ouvert).
+        # N'entre pas dans `findings` et ne bouge aucun verdict.
         externally_anchored = []
         for nb in sorted(members, key=_rel):
             sources = inbound.get(nb)

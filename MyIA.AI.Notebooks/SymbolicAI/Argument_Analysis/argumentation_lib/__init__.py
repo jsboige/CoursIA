@@ -81,6 +81,12 @@ def get_analysis_runner():
     from argumentation_lib._runner import AnalysisRunner
     return AnalysisRunner
 
+
+def get_delegating_selection_strategy():
+    """Lazy import for the delegating selection strategy (#18393)."""
+    from argumentation_lib._delegating_selection import DelegatingSelectionStrategy
+    return DelegatingSelectionStrategy
+
 # -- Taxonomy Sophism Detector (Semantic Kernel heavy dep via InformalAnalysisPlugin) --
 def get_taxonomy_sophism_detector():
     """Lazy import for the TaxonomySophismDetector.
