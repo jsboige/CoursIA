@@ -19,16 +19,16 @@ Le fil conducteur de cette partie est le passage du problème *informel* (« je 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 1 | [Planners-1-Introduction](Planners-1-Introduction.ipynb) | 30 min | Triptyque État-Action-But, hypothèses STRIPS (1971), taxonomie des paradigmes de planification |
-| 1 (C#) | [Planners-1-Introduction-Csharp](Planners-1-Introduction-Csharp.ipynb) | 30 min | Jumeau C# du 1 : la planification automatique from-scratch en .NET 9, triptyque État-Action-But réimplémenté sans lib de planification (See #4956) |
+| 1 (C#) | [Planners-1-Introduction-Csharp](Planners-1-Introduction-Csharp.ipynb) | 30 min | Jumeau C# du 1 : tranche 1 from-scratch en .NET 9 (triptyque État-Action-But, BFS, sans lib de planification) ; tranche 2 « moteur de production » : Fast Downward via l'API Docker, port 8200 (See #4956) |
 | 2 | [Planners-2-PDDL-Basics](Planners-2-PDDL-Basics.ipynb) | 40 min | Syntaxe PDDL : domaines, problèmes, types, prédicats, actions, préconditions, effets |
-| 2 (C#) | [Planners-2-PDDL-Basics-Csharp](Planners-2-PDDL-Basics-Csharp.ipynb) | 40 min | Jumeau C# du 2 : planificateur STRIPS from-scratch (modèle typé, grounding, BFS forward), domaines Logistics + Gripper (See #4956) |
+| 2 (C#) | [Planners-2-PDDL-Basics-Csharp](Planners-2-PDDL-Basics-Csharp.ipynb) | 40 min | Jumeau C# du 2 : tranche 1 from-scratch (planificateur STRIPS : modèle typé, grounding, BFS forward) sur les domaines Logistics + Gripper ; tranche 2 : Fast Downward 24.06.1 via l'API Docker, port 8200, sur les mêmes domaines (See #4956) |
 | 3 | [Planners-3-State-Space](Planners-3-State-Space.ipynb) | 35 min | Recherche dans l'espace d'états, explosion combinatoire $O(2^n)$, nécessité des heuristiques |
-| 3 (C#) | [Planners-3-State-Space-Csharp](Planners-3-State-Space-Csharp.ipynb) | 35 min | Jumeau C# du 3 : BFS/DFS/Greedy/A* from-scratch sur terrain pondéré (See #4956) |
+| 3 (C#) | [Planners-3-State-Space-Csharp](Planners-3-State-Space-Csharp.ipynb) | 35 min | Jumeau C# du 3 : tranche 1 from-scratch (BFS/DFS/Greedy/A*, terrain uniforme et pondéré) ; tranche 2 : QuikGraph 2.5.0 (paquet NuGet) sur la même grille 11x11, puis Fast Downward lancé en processus local via le paquet Python `up_fast_downward`, sans Docker (See #4956) |
 
 ## Prérequis
 
 - **Python 3.9+** : programmation orientée objet, types, dataclasses
-- **.NET 9 (jumeaux C# uniquement)** : les notebooks `-Csharp` s'exécutent sous .NET Interactive, sans prérequis Python
+- **.NET 9 (jumeaux C# uniquement)** : les notebooks `-Csharp` s'exécutent sous .NET Interactive. La tranche 1 de chaque jumeau ne demande ni service ni Python. Les tranches 2 en demandent : le service Docker Fast Downward (port 8200) pour les jumeaux 1 et 2, dont l'appel HTTP n'a pas de garde-fou (sans le service, la cellule échoue) ; pour le jumeau 3, le paquet NuGet `QuikGraph` 2.5.0 et le paquet Python `up_fast_downward` (absent de `requirements.txt`)
 - **Algorithmique de base** : graphes (BFS, DFS), parcours
 - **Logique propositionnelle** : prédicats, connecteurs
 
