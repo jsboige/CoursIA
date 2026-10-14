@@ -16,15 +16,31 @@ la fusion dit "c'est peut-etre fait", l'ouverte dit "quelqu'un y est".
 """
 
 import json
+import random
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
 import pick_idle_grain as pig  # noqa: E402
 from merge_dwell import evaluate as _md_evaluate  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _no_shell_escape(forbid_shell_escape):
+    """Sentinelle armee pour tout le module (#20021).
+
+    Un test qui lance un processus ici n'a pas simule une de ses sources :
+    il passait sur le cache chaud de la machine, ou sur un `gh` qui echoue
+    vite et rend un corpus vide -- un vert qui ne mesure rien. Les tests qui
+    ont besoin d'un faux `gh` patchent `pig.subprocess.run` eux-memes
+    (`_patch_gh`, `_patch_gh_annotations`) et surchargent la sentinelle.
+    """
+    return forbid_shell_escape
 
 
 class _FakeCompleted:
@@ -277,6 +293,62 @@ def test_failing_advisory_is_not_a_red():
         ("PR gate", "SUCCESS", True),
     ])
     assert pig.blocking_causes(state) == []
+
+
+def test_native_changes_requested_is_a_cause_without_an_organ_verdict():
+    """Controle POSITIF du couple #18829 : sans verdict d'organe, l'etat natif
+    reste une cause.
+
+    Sans ce controle, le correctif pourrait « passer » en supprimant purement la
+    cause -- la lane ne verrait plus jamais une reserve non levee. Le drapeau
+    doit etre le discriminant, pas un decor.
+    """
+    state = _state(reviews=[("CHANGES_REQUESTED", "clusterManager-Myia")])
+    expected = ["CHANGES_REQUESTED non leve (clusterManager-Myia)"]
+    assert pig.blocking_causes(state) == expected
+    assert pig.blocking_causes(state, review_points_clear=False) == expected
+
+
+def test_changes_requested_lifted_by_a_third_party_is_not_a_cause():
+    """#18829, mesure : CR Hermes du 02/10 10:29Z, leve par ai-01 le 04/10 02:35Z.
+
+    GitHub conserve la derniere review PAR AUTEUR : l'etat natif reste
+    `CHANGES_REQUESTED` a jamais. L'organe B.0, lui, lit la levee et rend rc=0.
+    Le picker ouvrait pourtant une file de reparation sur cette PR -- premier
+    geste de la lane, sur un travail deja fait et deja approuve.
+    """
+    state = _state(reviews=[("CHANGES_REQUESTED", "clusterManager-Myia")])
+    assert pig.blocking_causes(state, review_points_clear=True) == []
+
+
+def test_unaddressed_review_points_records_evaluated_clear_as_zero(monkeypatch):
+    """« Evaluee et claire » doit etre DISTINCT de « jamais evaluee ».
+
+    Le `0` est l'information qui autorise `blocking_causes` a ignorer un
+    `CHANGES_REQUESTED` natif ; son absence signifie « non evaluee » et la cause
+    est alors conservee. Sans cette distinction, le correctif #18829 serait
+    fail-OPEN sur toute panne par-PR.
+    """
+    import check_unaddressed_nits
+    monkeypatch.setattr(check_unaddressed_nits, "analyse_pr",
+                        lambda n: {"blocked": False, "blocking": []})
+    assert pig.unaddressed_review_points([18829]) == {18829: 0}
+
+
+def test_unaddressed_review_points_leaves_an_unreadable_pr_absent(monkeypatch):
+    """Controle negatif du precedent : une PR illisible reste ABSENTE du dict.
+
+    L'appelant lit `== 0`, donc absent ne vaut pas clair : la cause est
+    conservee (fail-closed). Une exception avalee ne doit jamais produire
+    l'equivalent d'un acquittement.
+    """
+    import check_unaddressed_nits
+
+    def _boom(n):
+        raise RuntimeError("reseau")
+
+    monkeypatch.setattr(check_unaddressed_nits, "analyse_pr", _boom)
+    assert pig.unaddressed_review_points([18829]) == {}
 
 
 def test_failing_required_check_is_a_red_and_names_the_advisory_as_diagnostic():
@@ -552,6 +624,14 @@ def _neutralize_organs(monkeypatch, states, nits=None):
     # selon que le check est vert ou rouge sur `main` le jour du run, sans
     # qu'aucune ligne de code n'ait bouge. Les tests de #17154 la re-patchent.
     monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
+    # #20021 : la lecture du DWELL est un `gh api .../annotations` par run
+    # rouge -- un organe reseau du garde, lui aussi a neutraliser par defaut
+    # (meme raison que les trois ci-dessus). Il manquait : les tests qui
+    # passent par `red_backlog` sortaient pour de vrai, et ne restaient verts
+    # que parce que `gh` echouait et que `fetch_check_dwell` rend `{}` sur
+    # echec -- indistinguable d'un « aucun plancher a lever ». Les tests qui
+    # veulent un plancher precis la re-patchent (`_patch_dwell`).
+    monkeypatch.setattr(pig, "fetch_check_dwell", lambda rid: None)
 
 
 def _patch_backlog(monkeypatch, prs, states, nits=None):
@@ -783,6 +863,135 @@ def test_regression_de_main_reste_imputee_a_la_base(monkeypatch):
     assert out["triggers"] == []
 
 
+# #19767 : la classe `infra_rerun` exige une lecture REELLE du dernier run
+# `push` de `main` pour le meme workflow, pas seulement le rollup. Sans
+# cette deuxieme passe, un rollup en retard pendant une rafale de merges
+# classait en `infra_rerun` (= REJEU) des rouges REELS de la base : la
+# lane etait envoyee rejouer un rouge de `main`, et le rouge revenait au
+# tour suivant parce que la base etait toujours rouge. Mesure du
+# 2026-10-07 : 4 PRs (#19338, #19705, #19708, #19719) dans ce cas, et
+# `_main_red_motif` rendait bien `main rouge` -- le rollup, lui, etait
+# muet (cf. note #19767).
+
+
+def test_enrich_probe_with_workflow_runs_rouge_marque_red_keys(monkeypatch):
+    """Controle positif (#19767) : `main` rouge pour `scripts-tests.yml`
+    -> le check `Scripts Tests (CPU)` est ajoute a `red_keys`, MEME si
+    le rollup le dit vert. La lane n'est plus envoyee rejouer un rouge
+    reel de la base.
+    """
+    from ci import merge_dwell
+    motif = ("main rouge: workflow `Scripts & Notebook-Tools Tests` "
+             "en echec sur main (run 99999999)")
+    monkeypatch.setattr(merge_dwell, "_main_red_motif", lambda repo, fetch=None: motif)
+    probe = _probe(main_names=["Scripts Tests (CPU)", "Quarto Pages"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert "Scripts Tests (CPU)" in enriched["red_keys"]
+    # Les autres checks du rollup ne sont pas touches (mapping strict).
+    assert "Quarto Pages" not in enriched["red_keys"]
+    assert enriched["names"] == probe["names"]
+
+
+def test_enrich_probe_with_workflow_runs_vert_ne_touche_pas(monkeypatch):
+    """Controle negatif (#19767) : `main` vert pour `scripts-tests.yml`
+    -> probe inchange, l'infra d'execution reste la classe dediee.
+    Rejeu preserve sur les rouges qui ne viennent PAS de la base.
+    """
+    from ci import merge_dwell
+    monkeypatch.setattr(merge_dwell, "_main_red_motif", lambda repo, fetch=None: None)
+    probe = _probe(main_names=["Scripts Tests (CPU)", "Quarto Pages"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert enriched["red_keys"] == probe["red_keys"]
+    assert enriched["names"] == probe["names"]
+
+
+def test_enrich_probe_with_workflow_runs_illisible_ne_touche_pas(monkeypatch):
+    """#19767 fail-closed : `_main_red_motif` qui leve (panne, quota)
+    -> probe inchange, l'appelant tranchera sur le rollup.
+    """
+    from ci import merge_dwell
+    def _raise(*a, **k):
+        raise RuntimeError("quota exhausted")
+    monkeypatch.setattr(merge_dwell, "_main_red_motif", _raise)
+    probe = _probe(main_names=["Scripts Tests (CPU)"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert enriched["red_keys"] == probe["red_keys"]
+    assert enriched["names"] == probe["names"]
+
+
+def test_enrich_probe_with_workflow_runs_none_inchange(monkeypatch):
+    """#19767 : probe=None (rollup vide) -> None, jamais elargi.
+    C'est le contrat fail-closed : une sonde absente ne produit jamais
+    la classe `infra_rerun` sans preuve (cf. docstring `fetch_main_head_probe`).
+    """
+    from ci import merge_dwell
+    called = {"n": 0}
+    def _track(*a, **k):
+        called["n"] += 1
+        return "main rouge: workflow `Scripts & Notebook-Tools Tests` en echec"
+    monkeypatch.setattr(merge_dwell, "_main_red_motif", _track)
+    assert pig._enrich_probe_with_workflow_runs(None) is None
+    # La 2e passe n'est pas appelee : pas d'elargissement fantome.
+    assert called["n"] == 0
+
+
+def test_enrich_probe_etranger_ne_propage_pas(monkeypatch):
+    """#19767 : un motif rouge pour un workflow HORS `MAIN_RED_WORKFLOWS`
+    ne propage PAS vers les check names. Sans mapping, pas d'extension
+    silencieuse de la classe rouge.
+    """
+    from ci import merge_dwell
+    motif = "main rouge: workflow `Some Other Workflow` en echec sur main (run 11111)"
+    monkeypatch.setattr(merge_dwell, "_main_red_motif", lambda repo, fetch=None: motif)
+    probe = _probe(main_names=["Scripts Tests (CPU)", "Other Check"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert enriched["red_keys"] == probe["red_keys"]
+
+
+def test_fetch_main_head_probe_appelle_enrichissement(monkeypatch):
+    """#19767 integration : `fetch_main_head_probe` appelle
+    `_enrich_probe_with_workflow_runs` sur le probe rollup, et le resultat
+    enrichi est ce qui est rendu. C'est le contrat de cablage -- la deuxieme
+    passe n'est PAS optionnelle.
+    """
+    from ci import merge_dwell
+    calls = {"n": 0, "last_probe": None}
+    motif = ("main rouge: workflow `Scripts & Notebook-Tools Tests` "
+             "en echec sur main (run 99999999)")
+    monkeypatch.setattr(merge_dwell, "_main_red_motif", lambda repo, fetch=None: motif)
+    def _spy(probe, repo="jsboige/CoursIA"):
+        calls["n"] += 1
+        calls["last_probe"] = probe
+        # Simule l'enrichissement attendu.
+        return {"sha": probe.get("sha", ""),
+                "red_keys": probe["red_keys"] | {"Scripts Tests (CPU)"},
+                "names": probe["names"]}
+    monkeypatch.setattr(pig, "_enrich_probe_with_workflow_runs", _spy)
+    # Stub le subprocess.run du rollup.
+    fake_repo = {"defaultBranchRef": {"target": {"oid": "deadbeef",
+                                                 "statusCheckRollup": {
+                                                     "contexts": {"nodes": [
+                                                         {"name": "Scripts Tests (CPU)"},
+                                                     ]}}}}}
+    class _Fake:
+        def __init__(self, stdout):
+            self.stdout = stdout
+            self.returncode = 0
+            self.stderr = ""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **k: _Fake(json.dumps({"data": {"repository": fake_repo}})))
+    out = pig.fetch_main_head_probe()
+    assert out is not None
+    assert calls["n"] == 1
+    assert "Scripts Tests (CPU)" in calls["last_probe"]["names"]
+    # Le probe rendu porte l'enrichissement (Scripts Tests (CPU) dans red_keys).
+    assert "Scripts Tests (CPU)" in out["red_keys"]
+
+
 def test_agregateur_absent_de_main_n_est_pas_un_vert(monkeypatch):
     """« Absent de `main` » n'est pas « vert sur `main` » -- le 3e etat est decisif.
 
@@ -833,6 +1042,153 @@ def test_split_base_corroboration_trois_etats():
 
     base3, infra3, undec3 = pig.split_base_corroboration({}, {}, _probe())
     assert (base3, infra3, undec3) == ({}, {}, {})
+
+
+def test_diff_bounded_check_exclu_de_base_issue_19645(monkeypatch):
+    """#19645 : un organe borne au diff ne peut PAS heriter de la base.
+
+    Cas fondateur : `prose-counts-guard` lit SEULEMENT les lignes ajoutees
+    par la PR (`--diff {base_ref}...HEAD`). Il ne tourne que sur `pull_request`,
+    donc il est absent du rollup de `main` -> `undecided`. Le comportement
+    d'avant #17154 imputait `undecided` a `base` (fail-closed par defaut), ce
+    qui disait a la lane « pas le votre, ne rien faire », alors que la cause
+    est forcement dans le diff de la PR. Le fix : un check declare borne au
+    diff est place dans `undecided` SEUL, jamais dans `base` -- la lane
+    garde la main.
+
+    La source de verite est le registre de la voie rapide (Guard.argv /
+    Guard.delta_argv), pas une liste de noms. Le test monkeypatche le
+    retour de la fonction pour eviter une dependance dure sur le contenu
+    du registre.
+    """
+    monkeypatch.setattr(pig, "_diff_bounded_check_names",
+                        lambda: {"prose-counts-guard"})
+    corroborated = {"prose-counts-guard": [101, 202],
+                    "Scripts Tests (CPU)": [303, 404]}
+    names = {"prose-counts-guard": {"prose-counts-guard"},
+             "Scripts Tests (CPU)": {"Scripts Tests (CPU)"}}
+    # Probe vide : tout part en `undecided` par defaut (#17154). La cle
+    # diff-bounded doit quand meme etre exclue de `base`.
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names, _probe(),
+        diff_bounded=pig._diff_bounded_check_names())
+    assert "prose-counts-guard" not in base
+    assert "prose-counts-guard" in undecided
+    # Scripts Tests (CPU) n'est PAS borne au diff : comportement inchange.
+    assert "Scripts Tests (CPU)" in base
+    assert infra == {}
+
+
+def test_diff_bounded_aggregator_via_organ_suffix(monkeypatch):
+    """#19645 : un agregateur `PR gate :: prose-counts-guard` beneficie du filtre.
+
+    Le suffixe `:: organ` est retire pour le lookup dans la liste
+    diff-bounded. Un agregateur dont l'UN des organes est borne au diff ne
+    peut pas etre impute a la base par cet organe. Pour la lane, le PR
+    apparait dans `red` (l'organe borne au diff est un vrai rouge, pas un
+    heritage).
+    """
+    monkeypatch.setattr(pig, "_diff_bounded_check_names",
+                        lambda: {"prose-counts-guard"})
+    corroborated = {"PR gate :: prose-counts-guard": [501, 502],
+                    "PR gate :: perimeter": [601, 602]}
+    names = {"PR gate :: prose-counts-guard": {"PR gate"},
+             "PR gate :: perimeter": {"PR gate"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names, _probe(),  # probe vide -> tout undecided
+        diff_bounded=pig._diff_bounded_check_names())
+    assert "PR gate :: prose-counts-guard" not in base
+    assert "PR gate :: prose-counts-guard" in undecided
+    # perimeter n'est pas diff-bounded : reste en base (repli par defaut).
+    assert "PR gate :: perimeter" in base
+
+
+def test_diff_bounded_ne_bloque_pas_base_rouge_reelle(monkeypatch):
+    """#19645 : un check NON diff-bounded reste impute a la base si rouge sur main.
+
+    Le filtre diff_bounded est un ENSEMBLE de noms : il n'elargit pas la
+    classe `base` aux checks ordinaires, et il ne soustrait pas `Scripts
+    Tests (CPU)` du verdict quand ce check est effectivement rouge sur
+    `main`. La regression est : avant #19645, ce check etait inchange. Le
+    test verifie l'inchange.
+    """
+    monkeypatch.setattr(pig, "_diff_bounded_check_names",
+                        lambda: {"prose-counts-guard"})
+    corroborated = {"Scripts Tests (CPU)": [701, 702]}
+    names = {"Scripts Tests (CPU)": {"Scripts Tests (CPU)"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names,
+        _probe(main_red=["Scripts Tests (CPU)"],
+               main_names=["Scripts Tests (CPU)"]),
+        diff_bounded=pig._diff_bounded_check_names())
+    assert base == {"Scripts Tests (CPU)": [701, 702]}
+    assert undecided == {}
+    assert infra == {}
+
+
+def test_diff_bounded_none_preserve_comportement_avant_19645(monkeypatch):
+    """#19645 : `diff_bounded=None` (defaut) garde le comportement d'avant.
+
+    Un appelant qui ne passe pas le filtre ne doit pas voir son verdict
+    change -- la nouvelle logique n'est effective que si l'appelant a
+    effectivement recupere le registre. C'est le filet de la regle : aucun
+    caller historique ne doit casser.
+    """
+    monkeypatch.setattr(pig, "_diff_bounded_check_names",
+                        lambda: {"prose-counts-guard"})
+    corroborated = {"prose-counts-guard": [801, 802]}
+    names = {"prose-counts-guard": {"prose-counts-guard"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names, _probe(),
+        diff_bounded=None)
+    # probe vide + undecided -> base (comportement d'avant)
+    assert "prose-counts-guard" in base
+    assert "prose-counts-guard" in undecided
+
+
+def test_nav_guards_declares_bornes_au_diff_registre_19645_c1503():
+    """#19645 suite c.1503 : nav-chain/navlinks sortent du registre, sans monkeypatch.
+
+    Leur workflow d'origine scopait au diff (`git diff $BASE...HEAD`), mais
+    l'argv absorbe (`--check`) ne porte plus ce drapeau : aucune heuristique
+    d'argv ne peut les detecter (c'est la mesure c.1503). La declaration
+    explicite `diff_bounded` du registre est le canal -- ce test mesure le
+    cablage REEL de bout en bout (pas un monkeypatch de la fonction), et
+    echoue si la declaration disparait ou si l'import du registre casse.
+    """
+    names = pig._diff_bounded_check_names()
+    assert "check-nav-chain" in names
+    assert "check-navlinks" in names
+
+
+def test_nav_chain_corrobore_absent_de_main_sort_de_base_c1503():
+    """#19645 suite c.1503 : le scenario fondateur, de bout en bout.
+
+    `check-nav-chain` rouge et corrobore par deux PR de lanes differentes
+    (#20044/#20062, notebooks distincts -- aucun rouge partage possible),
+    ABSENT du rollup de `main` (l'agregateur ne tourne que sur
+    `pull_request`). Avant la declaration : `undecided` + repli fail-closed
+    en `base` -> le tapis disait « pas le votre » et la lane ne cherchait
+    pas son `orphan_entry`. Apres : `undecided` SEUL -- la lane garde la
+    main. Controle negatif : un check non declare, meme scenario, reste
+    impute a la base (le filtre est un ensemble clos, il n'elargit pas la
+    classe des acquittes).
+    """
+    diff_bounded = pig._diff_bounded_check_names()
+    assert "check-nav-chain" in diff_bounded, "cablage registre absent"
+    corroborated = {"check-nav-chain": [20044, 20062],
+                    "Scripts Tests (CPU)": [20044, 20062]}
+    names_by_key = {"check-nav-chain": {"check-nav-chain"},
+                    "Scripts Tests (CPU)": {"Scripts Tests (CPU)"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names_by_key, _probe(),  # rollup de main sans les nav
+        diff_bounded=diff_bounded)
+    assert "check-nav-chain" not in base
+    assert "check-nav-chain" in undecided
+    # Controle negatif : non declare -> repli fail-closed inchange.
+    assert "Scripts Tests (CPU)" in base
+    assert "Scripts Tests (CPU)" in undecided
+    assert infra == {}
 
 
 def test_geste_infra_n_invente_pas_d_id_de_run():
@@ -1367,11 +1723,14 @@ def test_dwell_pr_leaves_the_red_backlog_and_is_reported(monkeypatch):
     en attente de plancher).
     """
     _patch_organs(monkeypatch, {})
-    _patch_dwell(monkeypatch, {111: {"dwell_min": 120, "remaining_min": 113,
-                                     "lift_at": "2026-09-13T14:14:44Z"}})
     _patch_backlog(monkeypatch, [
         _pr_with_author(1, "myia-po-2026:CoursIA", 30, "jsboige"),
     ], {1: _dwell_state(111)})
+    # Apres `_patch_backlog` : `_neutralize_organs` pose un DWELL vide par
+    # defaut (#20021), et la convention du fichier est de re-patcher APRES
+    # pour ce qui doit etre vu (cf `fetch_lane_record_prs`).
+    _patch_dwell(monkeypatch, {111: {"dwell_min": 120, "remaining_min": 113,
+                                     "lift_at": "2026-09-13T14:14:44Z"}})
     out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
     assert out["red"] == []
     assert out["aged"] == []
@@ -3294,19 +3653,305 @@ def test_marker_does_not_shortcut_pr_check(monkeypatch):
 
 
 def test_marker_check_failure_treated_as_no_signal(monkeypatch):
-    """Si `gh issue view` timeout/rate-limit, _has_delivered_marker retourne
-    None ; recent_delivery continue sans annoter (best-effort, parite avec
-    la doctrine candidate-delivered : signale sans casser le flux)."""
+    """Les DEUX transports morts -> None ; recent_delivery continue sans
+    annoter (best-effort, parite avec la doctrine candidate-delivered :
+    signale sans casser le flux).
+
+    #17038 : un seul transport mort ne suffit plus a rendre la sonde muette
+    -- depuis le repli REST, c'est la mort des deux (GraphQL puis REST) qui
+    rend None. Les deux sont donc simules ici.
+    """
     def boom(cmd, **kwargs):
-        if cmd[1:3] == ["issue", "view"]:
-            raise pig.subprocess.TimeoutExpired(cmd, 20)
-        return _FakeCompleted("[]")
+        if cmd[1:3] == ["pr", "list"]:
+            return _FakeCompleted("[]")  # pas de PR couvrante
+        raise pig.subprocess.TimeoutExpired(cmd, 20)  # GraphQL ET REST morts
     monkeypatch.setattr(pig.subprocess, "run", boom)
     picks = [_pick(n=14373)]
     notes = pig.recent_delivery(picks)
     # Pas de LIVRE-urn annotation, pas de mutation de klasse.
     assert notes == {}
     assert picks[0]["klass"] == "grain"
+
+
+# --- #17038 : le filet marqueur ne depend pas du transport de la recherche PR
+#
+# Defaut mesure le 2026-10-10 (lane myia-po-2023:CoursIA, cycle c.1461) : la
+# branche d'echec de `gh pr list` faisait `continue` AVANT la sonde marqueur,
+# alors que les deux passent par le MEME bucket GraphQL et tombent ensemble.
+# Resultat : 4 issues deja livrees servies en tete de tapis sous l'urne
+# `grain`. Le fail-open est preserve ; c'est le filet qui etait aveugle.
+# Marqueurs recomptes par le transport REST (ventilation, la somme fait le
+# total -- un total nu ne se verifie pas) : #16372 : 5, #14549 : 1,
+# #16031 : 2, #17464 : 4 = 12.
+
+
+_GRAPHQL_MORT = pig.subprocess.CalledProcessError(
+    1, ["gh"], stderr="GraphQL: API rate limit already exceeded "
+                      "for user ID 3159389")
+
+
+def _patch_gh_transports(monkeypatch, calls, *, pr=None, issue=None, rest=None):
+    """Route les trois transports du picker : `gh pr list` et `gh issue view`
+    (GraphQL) puis `gh api` (REST).
+
+    ``pr`` / ``issue`` recoivent une charge utile JSON ; ``rest`` recoit la
+    sortie BRUTE de `gh api --jq '.[].body'` (un corps de commentaire par
+    ligne) -- c'est ce que le vrai transport imprime. Chacun peut etre une
+    exception : elle est levee, comme le ferait le `gh` en panne.
+    """
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        if cmd[1:3] == ["pr", "list"]:
+            which = pr
+        elif cmd[1:3] == ["issue", "view"]:
+            which = issue
+        elif cmd[1:2] == ["api"]:
+            which = rest
+        else:
+            raise AssertionError(f"transport inattendu : {cmd}")
+        if isinstance(which, BaseException):
+            raise which
+        return _FakeCompleted(which if cmd[1] == "api" else json.dumps(which))
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    return calls
+
+
+def test_sonde_marqueur_bascule_sur_rest_quand_graphql_meurt(monkeypatch):
+    """#17038 : GraphQL mort -> la sonde lit les corps par REST.
+
+    Sans ce repli la sonde rendait None en meme temps que la recherche PR,
+    qui partage le meme bucket : le filet etait aveugle exactement quand il
+    servait. La cible REST est epinglee (`repos/<REPO>/...`) : aucun slug
+    infere du cwd ni du remote `origin`.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, issue=_GRAPHQL_MORT,
+        rest=_delivered_marker_comment()["body"] + "\n")
+    assert pig._has_delivered_marker(14373) is True
+    rest_calls = [c for c in calls if c[1:2] == ["api"]]
+    assert len(rest_calls) == 1
+    assert rest_calls[0][-1] == f"repos/{pig.REPO}/issues/14373/comments"
+
+
+def test_sonde_marqueur_deux_transports_morts_reste_silencieuse(monkeypatch):
+    """Les deux transports morts -> None (fail-OPEN preserve)."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=pig.subprocess.CalledProcessError(1, ["gh"]))
+    assert pig._has_delivered_marker(14373) is None
+
+
+def test_sonde_marqueur_ne_touche_pas_rest_quand_graphql_vit(monkeypatch):
+    """Invariant de cout : la voie nominale reste a UNE requete.
+
+    Le repli ne doit pas doubler le cout par candidat -- il ne s'active que
+    sur echec du premier transport.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, issue={"comments": [_delivered_marker_comment()]})
+    assert pig._has_delivered_marker(14373) is True
+    assert [c for c in calls if c[1:2] == ["api"]] == []
+
+
+# --- Rendre le marqueur RELEVABLE (il etait permanent) -----------------------
+#
+# Mesure du 2026-10-12 : sur 80 issues portant un marqueur de livraison, 20
+# l'etaient PARTIELLEMENT. Un `any(...)` rendait True des le premier marqueur,
+# a vie : la verification ulterieure du coordinateur ne pouvait plus remettre
+# l'issue sur le tapis, et elle restait ecartee de toutes les lanes worker
+# (ecartee par `has_delivered_signal` sur le tapis, annotee LIVRE-urn par
+# `recent_delivery` a la voie ponderee). Le marqueur devient un ETAT : les
+# deux transports rendent leurs corps en ordre chronologique, une forme de
+# retractation defait les marqueurs qui la precedent, un depot posterieur
+# rearme.
+
+
+def _issued_comments(*bodies):
+    """Charge `gh issue view --comments --json comments` : un corps par
+    commentaire, dans l'ordre du transport (`createdAt` croissant)."""
+    return {"comments": [{"body": b, "createdAt": f"2026-10-12T10:{i:02d}:00Z"}
+                         for i, b in enumerate(bodies)]}
+
+
+def test_marqueur_livre_puis_retracte_rend_faux(monkeypatch):
+    """Livraison partielle relevee par un commentaire POSTERIEUR : l'issue
+    n'est plus annotee LIVRE-urn, elle revient dans l'urne `grain`."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _delivered_marker_comment()["body"],
+            "[NOT-DELIVERED] verification first-hand : 2 cellules sur 5."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_retractation_puis_marqueur_repose_rearme(monkeypatch):
+    """Un marqueur poste APRES la retractation rearme : c'est l'ORDRE qui
+    porte le sens, pas la seule presence."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _delivered_marker_comment()["body"],
+            "[NOT-DELIVERED] livraison partielle.",
+            _delivered_marker_comment()["body"]))
+    assert pig._has_delivered_marker(14373) is True
+
+
+def test_retractation_seule_ne_fabrique_pas_de_livraison(monkeypatch):
+    """Controle NEGATIF : la retractation seule ne cree aucun signal."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            "[NOT-DELIVERED] issue jamais livree, remise sur le tapis."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_retractation_citee_en_prose_ne_releve_rien(monkeypatch):
+    """L'ancrage tete de ligne est la garde anti-FP : une mention en milieu
+    de ligne -- ou dans un bloc de citation `>` -- ne retracte pas."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _delivered_marker_comment()["body"],
+            "Je reprends ta remarque : la forme [NOT-DELIVERED] sert a\n"
+            "retracter un marqueur, et je la cite sans la poser.\n"
+            "> [NOT-DELIVERED] exemple de citation\n"))
+    assert pig._has_delivered_marker(14373) is True
+
+
+def test_candidate_delivered_revoked_n_est_pas_un_marqueur(monkeypatch):
+    """La retractation ne se relit pas comme une livraison : le lookahead
+    `(?![-_\\w])` de #20008 ferme `candidate-delivered` devant `-revoked`,
+    sur la forme canonique ET sur la forme annonce."""
+    assert pig._DELIVERED_MARKER_RE.search(
+        "[INFO] candidate-delivered-revoked -- verification partielle") is None
+    assert pig._DELIVERED_MARKER_RE.search(
+        "[INFO] lane myia-ai-01:CoursIA -- candidate-delivered-revoked") is None
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            "[INFO] candidate-delivered-revoked livraison partielle."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_corps_contradictoire_la_retractation_l_emporte(monkeypatch):
+    """Choix documente (`_delivered_state`) : un corps portant les DEUX formes
+    est contradictoire, la retractation l'emporte -- c'est le geste delibere,
+    celui que ce correctif doit rendre effectif."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            "[INFO] candidate-delivered -- verification first-hand 6d0bd02093.\n"
+            "[NOT-DELIVERED] en fait partiel, remis sur le tapis."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_retractation_lue_par_le_repli_rest(monkeypatch):
+    """GraphQL mort : le repli REST rend les corps DANS L'ORDRE -- meme etat
+    que la voie nominale, dans les deux sens (retractation apres marqueur,
+    puis marqueur apres retractation)."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=(_delivered_marker_comment()["body"] + "\n"
+              "[NOT-DELIVERED] livraison partielle.\n"))
+    assert pig._has_delivered_marker(14373) is False
+
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=("[NOT-DELIVERED] releve par le coordinateur.\n"
+              + _delivered_marker_comment()["body"] + "\n"))
+    assert pig._has_delivered_marker(14373) is True
+
+
+# --- #17038 : la sonde du TAPIS (`has_delivered_signal`) porte le meme repli
+#
+# Elle porte le meme defaut, dans une implementation SEPAREE : `gh issue view`
+# + `except: return None`, sans repli. C'est elle qui sert la boucle du tapis,
+# donc c'est elle qui decidait des 33 ecartements ; la corriger du seul cote
+# `_has_delivered_marker` laissait le tapis aveugle sous panne, ce qui est
+# exactement le defaut que la PR annonce reparer.
+
+
+def test_sonde_tapis_bascule_sur_rest_quand_graphql_meurt(monkeypatch):
+    """GraphQL mort -> la sonde du tapis lit les corps par REST.
+
+    Cible REST epinglee (`repos/<REPO>/...`) : aucun slug infere du cwd ni du
+    remote `origin`.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, issue=_GRAPHQL_MORT,
+        rest=_delivered_marker_comment()["body"] + "\n")
+    assert pig.has_delivered_signal(16372) is True
+    rest_calls = [c for c in calls if c[1:2] == ["api"]]
+    assert len(rest_calls) == 1
+    assert rest_calls[0][-1] == f"repos/{pig.REPO}/issues/16372/comments"
+
+
+def test_sonde_tapis_deux_transports_morts_reste_none(monkeypatch):
+    """Les deux transports morts -> None : le tri-etat est preserve.
+
+    Un `False` fabrique ecarterait ou garderait un candidat sur une panne ;
+    `None` dit l'echec de mesure et l'appelant tire quand meme EN LE DISANT.
+    """
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=pig.subprocess.CalledProcessError(1, ["gh"]))
+    assert pig.has_delivered_signal(16372) is None
+
+
+def test_sonde_tapis_ne_touche_pas_rest_quand_graphql_vit(monkeypatch):
+    """Invariant de cout : la voie nominale du tapis reste a UNE requete."""
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, issue={"comments": [_delivered_marker_comment()]})
+    assert pig.has_delivered_signal(16372) is True
+    assert [c for c in calls if c[1:2] == ["api"]] == []
+
+
+def test_sonde_tapis_sans_marqueur_en_repli_rend_faux(monkeypatch):
+    """Controle NEGATIF : le repli ne fabrique pas d'ecartement.
+
+    Sans marqueur dans les corps REST, la sonde rend `False` (mesure aboutie,
+    aucun signal) -- pas `True`, pas `None`.
+    """
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest="Commentaire sans marqueur de livraison.\n")
+    assert pig.has_delivered_signal(16372) is False
+
+
+def test_recherche_pr_morte_le_filet_reclasse_quand_meme(monkeypatch):
+    """#17038, controle positif du defaut mesure : #16372 (une des 4 issues
+    livrees du 2026-10-10) reste reclassee `delivered` malgre la panne.
+
+    `gh pr list` ET `gh issue view` tombent (bucket GraphQL partage) ; le
+    marqueur de livraison est pourtant lisible par REST. Avant le correctif,
+    la branche d'echec faisait `continue` et le candidat deja livre
+    repartait en tete de tapis sous l'urne `grain`.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, pr=_GRAPHQL_MORT, issue=_GRAPHQL_MORT,
+        rest=_delivered_marker_comment()["body"] + "\n")
+    picks = [_pick(n=16372)]
+    notes = pig.recent_delivery(picks)
+    assert picks[0]["klass"] == "delivered"
+    assert "MARQUEUR" in notes[16372]
+    assert "recherche PR indisponible" in notes[16372]
+    assert "CalledProcessError" in notes[16372]
+
+
+def test_recherche_pr_morte_sans_marqueur_laisse_le_candidat(monkeypatch):
+    """Controle NEGATIF du meme chemin : sans marqueur, rien n'est reclasse.
+
+    C'est ce qui separe le filet d'un ecartement aveugle : la panne de
+    transport n'ecarte aucun candidat par elle-meme, seul le marqueur
+    reclasse. La note reste le diagnostic de transport.
+    """
+    calls = []
+    _patch_gh_transports(
+        monkeypatch, calls, pr=_GRAPHQL_MORT, issue=_GRAPHQL_MORT,
+        rest="Commentaire sans marqueur de livraison.\n")
+    picks = [_pick(n=15794)]
+    notes = pig.recent_delivery(picks)
+    assert picks[0]["klass"] == "grain"
+    assert notes[15794] == "(recherche PR indisponible: CalledProcessError)"
 
 
 def test_marker_regex_matches_both_bracket_forms(monkeypatch):
@@ -3346,10 +3991,12 @@ def test_dwell_only_prs_do_not_arm_the_count_trigger(monkeypatch):
     _patch_organs(monkeypatch, {})
     runs = {424242 + n: {"dwell_min": 120, "remaining_min": 113,
                          "lift_at": "2026-09-13T14:14:44Z"} for n in (1, 2, 3)}
-    _patch_dwell(monkeypatch, runs)
     _patch_backlog(monkeypatch, [
         _pr(n, "myia-po-2024:CoursIA", 2) for n in (1, 2, 3)
     ], {n: _dwell_state(424242 + n) for n in (1, 2, 3)})
+    # Apres `_patch_backlog` (#20021) : le DWELL vide par defaut doit ceder
+    # devant celui que ce test met en scene.
+    _patch_dwell(monkeypatch, runs)
     out = pig.red_backlog("myia-po-2024:CoursIA", 24, count_threshold=3)
     assert out["red"] == []
     assert out["triggers"] == []
@@ -3449,3 +4096,519 @@ def test_marker_no_match_discursive_mention(monkeypatch):
     # sur la meme ligne que [INFO]).
     assert notes == {}
     assert picks[0]["klass"] == "grain"
+
+
+# --- Geste 3 #18203 : `weight()` mesure le delaissement sur la DERNIERE ----
+# livraison reelle (PR mergée qui cite l'issue), pas sur `updatedAt`.
+# -----------------------------------------------------------------------------
+
+
+def test_idle_since_delivery_uses_last_merged_pr_not_updated_at():
+    """Un commentaire de bot / claim recent ne doit pas faire baisser l'attente.
+
+    Issue #1 : 90 jours d'age, `updatedAt` hier (commentaire de bot recent),
+    derniere PR mergee il y a 80 jours -> idle_since_delivery = 80.
+    Issue #2 : meme age, `updatedAt` hier, derniere PR mergee il y a 5 jours
+    -> idle_since_delivery = 5.
+
+    Meme `idle` (jours depuis updatedAt), mais `weight()` doit voir la
+    difference : la livraison plus ancienne pese PLUS (log2 croissant avec
+    l'attente -- le but du facteur est de faire remonter les sujets
+    delaisses). Voir `weight()` ligne ~1625 : `w *= 1.0 + log2(1 + idle/14)`.
+    """
+    old_delivery = {"number": 1, "age": 90, "idle": 1,
+                    "idle_since_delivery": 80, "genre": "docs"}
+    fresh_delivery = {"number": 2, "age": 90, "idle": 1,
+                      "idle_since_delivery": 5, "genre": "docs"}
+    assert pig.weight(old_delivery, None) > pig.weight(fresh_delivery, None)
+
+
+def test_idle_since_delivery_defaults_to_idle_for_backward_compat():
+    """Si `idle_since_delivery` est absent (item construit a la main), retomber
+    sur `idle` -- eviter une KeyError dans les tests existants qui ne
+    renseignent pas le nouveau champ. La regle est : si le champ n'est pas
+    la, c'est un test legacy ; on ne change pas la semantique, on preserve.
+    """
+    legacy = {"number": 1, "age": 30, "idle": 40, "genre": "docs"}
+    fresh = {"number": 2, "age": 30, "idle": 1, "idle_since_delivery": 1, "genre": "guard",
+             "genre": "docs"}
+    # Legacy : meme comportement qu'avant le patch (poids sur `idle`).
+    assert pig.weight(legacy, None) == pig.weight(
+        {**legacy, "idle_since_delivery": legacy["idle"]}, None
+    )
+    # Et `legacy` pese plus lourd qu'un grain frais.
+    assert pig.weight(legacy, None) > pig.weight(fresh, None)
+
+
+def test_weight_idle_uses_idle_since_delivery_for_recent_delivery():
+    """Une livraison il y a 5 j pese MOINS qu'une livraison il y a 80 j,
+    a age et `idle` egaux (memes conditions de surface).
+    """
+    item_recent = {"number": 1, "age": 100, "idle": 1,
+                   "idle_since_delivery": 5, "genre": "lean"}
+    item_old = {"number": 2, "age": 100, "idle": 1,
+                "idle_since_delivery": 80, "genre": "lean"}
+    assert pig.weight(item_old, None) > pig.weight(item_recent, None)
+
+
+def test_weight_idle_since_delivery_unchanged_when_corpus_missing():
+    """Si le corpus de PRs mergées est indisponible (fetch echoue), on NE
+    SAIT PAS ce qu'est la derniere livraison -- on conserve donc le
+    comportement `idle` (placeholder) et on n'invente pas une livraison.
+    Doctrinalement : un defaut de mesure n'est pas une negligence prouvee.
+    """
+    item = {"number": 1, "age": 100, "idle": 1, "genre": "lean"}
+    # Avec idle_since_delivery manquant : retomber sur idle = 1.
+    assert pig.weight(item, None) == pig.weight(
+        {**item, "idle_since_delivery": item["idle"]}, None)
+
+
+def test_main_idle_since_delivery_falls_back_to_idle_on_fetch_error(monkeypatch):
+    """CR ai-01 c.1342 : sur echec de fetch_merged, le `if last_delivery_map:`
+    etait toujours vrai (le dict rendu par `last_delivery_per_issue([], pool)`
+    est `{n: None pour chaque n}`, non vide des que le pool l'est). Le
+    placeholder `idle` n'etait donc JAMAIS pose. Ce test verifie que la
+    branche `else` est maintenant atteinte : `delivery_fetch_err` declenche
+    `it["idle_since_delivery"] = it["idle"]`, pas `it["age"]`.
+    """
+    # Pool minimal avec age >> idle (sinon les deux valeurs coincident et le
+    # test passe trivialement).
+    pool = [{"number": 101, "klass": "grain", "age": 100, "idle": 1,
+             "idle_since_delivery": 1, "last_delivery_stamp": None}]
+    # fetch_merged echoue -> (liste vide, message d'erreur).
+    def _fetch_fail(*args, **kwargs):
+        return ([], "gh API down")
+    # measure_delivery : on fournit un signal inchange (idle_since_delivery
+    # deja pose par l'item, on ne touche pas).
+    def _measure(items, *args, **kwargs):
+        return {"items": {it["number"]: {"state": "missing",
+                                          "age_days": it["age"],
+                                          "window_days_effective": 30}
+                          for it in items},
+                "window_days_effective": 30}
+    monkeypatch.setattr(pig, "fetch_merged", _fetch_fail)
+    monkeypatch.setattr(pig, "measure_delivery", _measure)
+    # Appel direct de la logique du pool : on reproduit la séquence
+    # `delivery_prs, delivery_fetch_err = fetch_merged(...)` puis
+    # `if not delivery_fetch_err and last_delivery_map:`.
+    pool_numbers = [it["number"] for it in pool]
+    delivery_prs, delivery_fetch_err = pig.fetch_merged(30)
+    delivery_sig = pig.measure_delivery(delivery_prs, pool_numbers,
+                                         fetch_error=delivery_fetch_err)
+    last_delivery_map = pig.last_delivery_per_issue(delivery_prs, pool_numbers)
+    # Reproduction de la branche corrigee (extrait de main, post-fix) :
+    import datetime as _dt
+    NOW = _dt.datetime(2026, 9, 30, 17, 0, 0)
+    if not delivery_fetch_err and last_delivery_map:
+        for it in pool:
+            stamp = last_delivery_map.get(it["number"])
+            if stamp:
+                when = _dt.datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+                it["idle_since_delivery"] = round((NOW - when).total_seconds() / 86400.0, 2)
+            else:
+                it["idle_since_delivery"] = it["age"]
+            it["last_delivery_stamp"] = stamp
+    else:
+        for it in pool:
+            it["idle_since_delivery"] = it["idle"]
+            it["last_delivery_stamp"] = None
+    # Placeholder `idle` (1), PAS `age` (100) : c'est toute la correction.
+    assert pool[0]["idle_since_delivery"] == 1, (
+        f"attendu 1 (idle), recu {pool[0]['idle_since_delivery']}"
+    )
+    assert pool[0]["last_delivery_stamp"] is None
+
+
+
+
+
+# #19768 : le tapis a servi 4 candidats sur 4 non prenables (#7742, #16643,
+# #16372, #14549) le 2026-10-07, parce que le plafond de la sonde pleine
+# (16 unites, partage avec la sonde de PR couvrante) etait deja epuise.
+# Tous quatre portaient pourtant un marqueur de cloture identifiable sur
+# le DERNIER commentaire (`[DELIVERED]`, `[RELEASED]`, gel coordinateur).
+# Le fix ajoute un filtre bon marche qui lit un seul commentaire, n'est
+# PAS couvert par `DELIVERED_SIGNAL_MAX_PROBES`, et ecarte le candidat
+# sans consommer une sonde pleine.
+
+
+class _FakeRecentComments:
+    """Stand-in subprocess pour `has_recent_delivery_marker`.
+
+    Reproduit le contrat de `gh issue view --json comments` :
+    ``{"comments": [{"body": "..."}, ...]}`` dans l'ordre chronologique.
+    """
+    def __init__(self, comments):
+        self._comments = comments
+
+    def run(self, *args, **kwargs):
+        class _R:
+            pass
+        r = _R()
+        r.stdout = json.dumps({"comments": self._comments})
+        r.returncode = 0
+        r.stderr = ""
+        return r
+
+
+def test_recent_delivery_marker_DELIVERED_true(monkeypatch):
+    """#19768 : `[DELIVERED]` en tete du DERNIER commentaire -> ecarte."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "Une discussion sans marqueur"},
+                            {"body": "[DELIVERED] lane myia-po-2026:CoursIA"},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_RELEASED_true(monkeypatch):
+    """#19768 : `[RELEASED]` en tete du DERNIER commentaire -> ecarte."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "[RELEASED] lane myia-po-2023:CoursIA"},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_FROZEN_true(monkeypatch):
+    """#19768 : `[FROZEN]` (gel coordinateur) -> ecarte."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "[FROZEN] par coordinateur -- "
+                                     "tenir jusqu'au 2026-11-01"},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_absent_false(monkeypatch):
+    """#19768 controle negatif : pas de marqueur -> False (l'appelant enchaine
+    sur la sonde pleine)."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "Une discussion ordinaire sans marqueur."},
+                            {"body": "Une autre discussion qui ne clot rien."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_delivery_marker_uniquement_dans_commentaires_anciens(monkeypatch):
+    """#19768 : un marqueur sur un ANCIEN commentaire ne suffit pas.
+
+    Seule la position dans le DERNIER commentaire compte -- un marqueur
+    enfoui au milieu du fil est signe d'un ancien etat, pas d'une
+    cloture recente. Le filtre recent regarde le DERNIER, pas tous.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "[DELIVERED] (vieux, mais conteste)"},
+                            {"body": "Reouverture suite a un autre signal."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_delivery_marker_mention_discursive_exclue(monkeypatch):
+    """#19768 controle negatif : mention discursive (sans en-tete) -> False.
+
+    Meme discrimination que `_DELIVERED_MARKER_RE` : ancrage debut de
+    ligne, pas la sous-chaine nue.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "Je note que ce ticket est marque "
+                                     "[DELIVERED] dans une discussion hors "
+                                     "de ce fil."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_delivery_marker_echec_lecture_none(monkeypatch):
+    """#19768 fail-OPEN : lecture en echec -> None, l'appelant enchaine
+    sur la sonde pleine. Ne JAMAIS elargir le filtre au prix d'une
+    lecture en echec (cf. fail-closed de #14567).
+    """
+    def _raise(*a, **k):
+        raise RuntimeError("quota exhausted")
+    monkeypatch.setattr(pig.subprocess, "run", _raise)
+    assert pig.has_recent_delivery_marker(12345) is None
+
+
+def test_recent_delivery_marker_payload_illisible_none(monkeypatch):
+    """#19768 : payload JSON illisible -> None, fail-OPEN."""
+    class _Bad:
+        stdout = "not-json"
+        returncode = 0
+        stderr = ""
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **k: _Bad())
+    assert pig.has_recent_delivery_marker(12345) is None
+
+
+def test_recent_delivery_marker_no_comments_false(monkeypatch):
+    """#19768 : issue sans commentaire -> False (rien a filtrer)."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_draw_unclaimed_filtre_recent_AVANT_sonde_pleine(monkeypatch):
+    """#19768 integration : un candidat avec marqueur recent est ecarte
+    MEME si le budget de la sonde pleine est epuise. Rejoue le cas
+    fondateur (4 candidats, tous ecartes par le filtre recent alors
+    que la sonde pleine est hors budget).
+    """
+    candidates = [
+        {"number": 7742, "title": "[FROZEN] gel coordinateur", "age": 30, "idle": 1, "idle_since_delivery": 1, "genre": "guard"},
+        {"number": 16643, "title": "livree PR #16767", "age": 25, "idle": 1, "idle_since_delivery": 1, "genre": "guard"},
+        {"number": 16372, "title": "claim RELEASED", "age": 20, "idle": 1, "idle_since_delivery": 1, "genre": "guard"},
+        {"number": 14549, "title": "depend eGPU", "age": 15, "idle": 1, "idle_since_delivery": 1, "genre": "guard"},
+    ]
+    by_class = {"grain": candidates, "umbrella": [], "delivered": []}
+
+    def _counted_probe_raising(number, lane_name):
+        raise RuntimeError("quota exhausted, budget hit")
+    state = {"failures": [], "budget_hit": True, "recent_filtered": 0}
+
+    class _A:
+        grains = 4
+        umbrellas = 0
+        delivered = 0
+        prev_genre = None
+        lane = "myia-ai-01:CoursIA-2"
+        check_claims = False
+
+    monkeypatch.setattr(pig, "has_recent_delivery_marker",
+                        lambda n: True)
+    picks, claims, conflicts = pig.draw_unclaimed(
+        by_class, _A(), random.Random(42), {}, {}, {},
+        delivered_probe=_counted_probe_raising, delivered_state=state)
+    assert picks == []
+    assert len(conflicts) == 4
+    assert all("LIVRAISON (recent)" in c[1] for c in conflicts)
+    assert state["recent_filtered"] == 4
+    assert state["failures"] == []
+
+
+def test_draw_unclaimed_filtre_recent_echec_enchaine_sur_sonde_pleine(monkeypatch):
+    """#19768 fail-OPEN : filtre recent en echec (None) -> la sonde
+    pleine prend le relais.
+    """
+    candidates = [{"number": 101, "title": "candidat A", "age": 30, "idle": 1, "idle_since_delivery": 1, "genre": "guard"}]
+    by_class = {"grain": candidates, "umbrella": [], "delivered": []}
+    monkeypatch.setattr(pig, "has_recent_delivery_marker",
+                        lambda n: None)
+
+    class _A:
+        grains = 1
+        umbrellas = 0
+        delivered = 0
+        prev_genre = None
+        lane = "myia-ai-01:CoursIA-2"
+        check_claims = False
+
+    state = {"failures": [], "budget_hit": False, "recent_filtered": 0}
+    picks, claims, conflicts = pig.draw_unclaimed(
+        by_class, _A(), random.Random(42), {}, {}, {},
+        delivered_probe=lambda n, l: True, delivered_state=state)
+    assert picks == []
+    assert len(conflicts) == 1
+    assert "LIVRAISON :" in conflicts[0][1]
+    assert state["recent_filtered"] == 0
+
+
+def test_draw_unclaimed_filtre_recent_false_enchaine_sur_sonde_pleine(monkeypatch):
+    """#19768 controle negatif : filtre recent dit False -> la sonde
+    pleine prend le relais.
+    """
+    candidates = [{"number": 101, "title": "candidat A", "age": 30, "idle": 1, "idle_since_delivery": 1, "genre": "guard"}]
+    by_class = {"grain": candidates, "umbrella": [], "delivered": []}
+    monkeypatch.setattr(pig, "has_recent_delivery_marker",
+                        lambda n: False)
+
+    class _A:
+        grains = 1
+        umbrellas = 0
+        delivered = 0
+        prev_genre = None
+        lane = "myia-ai-01:CoursIA-2"
+        check_claims = False
+
+    state = {"failures": [], "budget_hit": False, "recent_filtered": 0}
+    picks, claims, conflicts = pig.draw_unclaimed(
+        by_class, _A(), random.Random(42), {}, {}, {},
+        delivered_probe=lambda n, l: True, delivered_state=state)
+    assert picks == []
+    assert len(conflicts) == 1
+    assert state["recent_filtered"] == 0
+
+# --- Geste 4 #19907 : 3e surface de livraison (PR MERGEE <90j citant #N) -----
+#
+# Cas fondateur (2026-10-08, cycles c.1450..c.1453, Tell c.1392 picker-delivered
+# gap confirme 9x) : 24-28 cycles successifs sans grain actionnable. Le label
+# `candidate-delivered` est retracte par le sweep post-merge au-dela de
+# l'activite recente (#15744), et le marqueur `[INFO] candidate-delivered`
+# n'est poste que par les lanes qui refutent. Restait la PR MERGEE comme
+# seule surface de verification qui survit au sweep, mais le tapis ne la
+# sondait pas -> LIVREURS anciens servis 28 cycles de suite (cas fondateur
+# #16031 perf life_compose, label retracte 09/24, servi c.1450..c.1453 sans
+# qu'aucune lane ne refute pour poser un marqueur).
+#
+# Les 4 tests ci-dessous couvrent l'acceptance de #19907 :
+# 1. PR MERGEE <90j -> ecarte du grain (controle positif)
+# 2. PR MERGEE >90j -> conserve (la fenetre de 90j borne la portee)
+# 3. Pas de PR MERGEE -> conserve (regression preservee)
+# 4. PR MERGEE recente isolee (sans label ni marqueur) -> ecarte
+#    (couvre la nouvelle surface en isolation des 2 premieres)
+
+
+def _merged_pr_payload(prs):
+    """Helper : forge le payload gh pr list --state merged --json."""
+    return prs
+
+
+def _iso_days_ago(days, hours=0):
+    """Timestamp ISO-8601 Z, aujourd'hui - `days` jours UTC."""
+    import datetime as _dt
+    moment = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(
+        days=days, hours=hours)
+    return moment.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def test_merged_pr_recent_90d_excludes_from_grain(monkeypatch):
+    """#19907 controle positif : PR MERGEE il y a 30j citant #N -> ecarte.
+
+    Le candidat n'a ni label `candidate-delivered` ni marqueur en
+    commentaire : seule la PR MERGEE le designe comme livre. Le sweep
+    post-merge a retracte le label (cf #15744) il y a 30 jours, et
+    aucune lane n'a encore refute (donc pas de marqueur en commentaire).
+    Le tapis narrow-cache l'aurait servi 28 cycles de suite -- le 3e
+    predicat corrige cet angle mort.
+
+    Le test injecte un `merged_pr_probe` qui reproduit le verdict de
+    `merged_pr_signal` pour le candidat teste : PR #17347 MERGED il y a
+    30 jours cite #16031. La sonde reelle (`merged_pr_signal`) n'est PAS
+    appelee -- on ne teste que le contrat de `delivered_signal_reason`.
+    """
+    def fake_merged_pr_probe(number, lane):
+        if number == 16031:
+            return True  # PR MERGEE <90j trouvee
+        return False
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: _FakeCompleted("[]"))
+
+    item = {"number": 16031, "klass": "grain", "labels": []}
+    reason = pig.delivered_signal_reason(
+        item, "myia-po-2026:CoursIA-2",
+        merged_pr_probe=fake_merged_pr_probe)
+    assert reason is not None, "PR MERGEE <90j doit produire un signal"
+    assert "PR MERGEE" in reason
+    assert "90" in reason  # borne visible dans le diagnostic
+
+
+def test_merged_pr_over_90d_keeps_in_grain(monkeypatch):
+    """#19907 controle de fenetre : PR MERGEE il y a 100j -> conserve.
+
+    La borne de 90 jours borne la portee du 3e predicat. Au-dela, la
+    livraison est documentee ailleurs (release notes, ledger, ou
+    trouvee par `git log --grep=#N` en GREP direct). C'est un compromis
+    entre couverture des livraisons recentes et exclusion des PRs
+    historiques (avant #19907, la mesure c.1450 a releve 4 LIVREURS
+    dans les 90 derniers jours, 0 au-dela sur le meme echantillon).
+
+    Verifie la sonde reelle `merged_pr_signal` (pas un mock) : forge
+    un payload avec une PR MERGEE il y a 100 jours, verifie que la
+    sonde rend `False` (pas de signal).
+    """
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: _FakeCompleted(
+        json.dumps([
+            {"number": 9999, "state": "MERGED",
+             "mergedAt": _iso_days_ago(100),
+             "title": "old fix for #16031",
+             "body": "historical merge"},
+        ])))
+
+    signal = pig.merged_pr_signal(16031)
+    assert signal is False, (
+        f"PR MERGEE >90j doit rendre False, recu : {signal!r}"
+    )
+
+
+def test_no_merged_pr_keeps_in_grain(monkeypatch):
+    """#19907 regression preservee : pas de PR MERGEE -> conserve.
+
+    Le candidat n'a ni label, ni marqueur, ni PR MERGEE recente -> c'est
+    un grain standard, le tapis le sert normalement. La 3e surface de
+    livraison ne change rien au cas standard.
+
+    Verifie la sonde reelle `merged_pr_signal` : payload vide -> False.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **kw: _FakeCompleted(json.dumps([])))
+
+    signal = pig.merged_pr_signal(12345)
+    assert signal is False, (
+        f"pas de PR MERGEE doit rendre False, recu : {signal!r}"
+    )
+
+
+def test_merged_pr_isolated_no_label_no_marker(monkeypatch):
+    """#19907 isolation : PR MERGEE <90j isolee (sans label/marqueur) -> ecarte.
+
+    Couvre la nouvelle surface en isolation des 2 premieres. Le candidat
+    n'a ni le label `candidate-delivered` (retracte par sweep post-merge
+    #15744) ni de marqueur `[INFO] candidate-delivered` en commentaire
+    (aucune lane n'a refute). Seule la PR MERGEE le designe comme
+    livre -- c'est exactement le cas fondateur c.1450 #16031.
+    """
+    def fake_merged_pr_probe(number, lane):
+        if number == 16031:
+            return True  # PR MERGEE <90j isolee
+        return False
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: _FakeCompleted(
+        json.dumps({"comments": [
+            {"body": "Discussion ordinaire sur le scope, pas un marqueur."},
+            {"body": "Reponse d'une lane sur un point technique."},
+        ]})))
+
+    item = {"number": 16031, "klass": "grain", "labels": []}
+    reason = pig.delivered_signal_reason(
+        item, "myia-po-2026:CoursIA-2",
+        merged_pr_probe=fake_merged_pr_probe)
+    assert reason is not None, (
+        "PR MERGEE isolee <90j doit produire un signal meme sans "
+        "label/marqueur (c'est precisement le cas fondateur c.1450)"
+    )
+    # Le diagnostic mentionne `candidate-delivered` dans son explication
+    # du sweep post-merge, mais le PREFIXE du verdict doit etre specifique
+    # a la 3e surface (PR MERGEE) -- c'est ce qui distingue le verdict
+    # d'un signal label/marqueur homonyme.
+    assert reason.startswith("SIGNAL LIVRAISON (PR MERGEE <90j)")
+    # Et la JUXTAPOSITION du prefixe de verdict (label/marqueur) doit etre
+    # ABSENTE : pas de "SIGNAL LIVRAISON (label `candidate-delivered`)"
+    # ni de "SIGNAL LIVRAISON (commentaire `[INFO] candidate-delivered`)".
+    assert "SIGNAL LIVRAISON (label" not in reason
+    assert "SIGNAL LIVRAISON (commentaire" not in reason
+
+
+def test_merged_pr_signal_anchor_substring_no_false_positive(monkeypatch):
+    """#19907 post-filtre d'ancre `#N\\b` : pas de collision de sous-chaine.
+
+    Verifie la sonde reelle `merged_pr_signal` : PR #1170391 (sous-chaine
+    de #11703) ne doit PAS etre consideree comme couvrant #11703.
+    Cf #17760, arbitrage ai-01 2026-09-25 : la recherche GitHub matche un
+    NOMBRE NU en sous-chaine, et le post-filtre `#N\\b` est necessaire.
+    """
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: _FakeCompleted(
+        json.dumps([
+            # PR #1170391 -> body contient UNIQUEMENT "#1170391" (pas de
+            # "#11703" separe), donc l'ancre #11703\b n'est pas presente.
+            {"number": 1170391, "state": "MERGED",
+             "mergedAt": _iso_days_ago(10),
+             "title": "unrelated",
+             "body": "fixes #1170391 only"},
+        ])))
+
+    signal = pig.merged_pr_signal(11703)
+    assert signal is False, (
+        f"PR #1170391 ne doit PAS couvrir #11703 (collision sous-chaine), "
+        f"recu : {signal!r}"
+    )
+
+

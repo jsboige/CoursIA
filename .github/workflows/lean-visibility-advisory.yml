@@ -19,9 +19,12 @@ name: Lean Visibility Advisory
 # Hors scope (student-pr-reviews.md) : les forks (PRs étudiantes) sautent.
 
 on:
+  # Pas de `branches: [main]` : le filtre `paths:` ci-dessous scope deja
+  # le declenchement aux fichiers `*_lean/**/*.lean` (et self-cover).
+  # Conserver `branches: [main]` excluait les PR empilees (base != main,
+  # issue #15652) ; sans, le workflow tourne sur toute PR empilee.
   pull_request:
     types: [opened, synchronize, edited, reopened]
-    branches: [main]
     paths:
       - '**/*_lean/**/*.lean'
       # Self-cover (#8822) : un label-poser filtré par paths doit se lister

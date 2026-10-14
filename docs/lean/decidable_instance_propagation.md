@@ -4,7 +4,7 @@
 **Auteur :** myia-po-2026 (PR #9780, Livrable B #9568)
 **Portée :** cross-lake — tout wrapper `def ... : Prop` autour d'une Prop qui a une instance `Decidable`.
 
----
+***
 
 ## Résumé
 

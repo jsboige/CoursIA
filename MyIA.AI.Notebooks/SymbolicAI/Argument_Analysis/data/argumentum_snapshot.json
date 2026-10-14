@@ -1,12 +1,12 @@
 {
   "_comment": "Genere par la resynchronisation verbatim. Ne pas editer a la main : relancer une resynchronisation depuis l'amont et regenerer ce fichier. Le commit amont est celui de master : une ref de branche de travail ne serait pas retrouvable pour un tiers. Les deux CSV sont inchanges entre a23e9568 et c86b71ff : le commit unique reste coherent. Les ontologies sont renommees a l'import (amont argumentum.owl -> local argumentum_fallacies.owl) ; `upstream_path` conserve la correspondance, sans quoi un tiers ne retrouve pas la source.",
   "upstream_repo": "ArgumentumGames/Argumentum",
-  "upstream_commit": "ae84c91ce8b04a0eaa01f418ed08926fbb6a51bb",
+  "upstream_commit": "6bc573f73220debe3e19dec12ec37a1bfac751f5",
   "upstream_branch": "master",
-  "synced_on": "2026-09-23",
+  "synced_on": "2026-10-04",
   "files": {
     "argumentum_fallacies_taxonomy.csv": {
-      "blob_sha1": "4ac3f12eaf15fbda1de3432abbf5b57b6cb9e728",
+      "blob_sha1": "a761735375883b3ce19876cc0c781dc722ed8815",
       "rows": 1408,
       "columns": 104,
       "required_columns": [
@@ -27,7 +27,7 @@
       ]
     },
     "argumentum_virtues_taxonomy.csv": {
-      "blob_sha1": "9ff35b599e3eb6ba9c2b4563bf3ff52419def1b9",
+      "blob_sha1": "0cce826f64f677b9a777c6a4253745e007689c39",
       "rows": 223,
       "columns": 82,
       "required_columns": [
@@ -62,15 +62,15 @@
   "ontologies": {
     "argumentum_fallacies.owl": {
       "upstream_path": "docs/ontology/argumentum.owl",
-      "blob_sha1": "4b4fc620dc3285a04850f7608fde61bb2dc3eb99",
-      "object_property_assertions": 2122,
-      "annotation_assertions": 18388
+      "blob_sha1": "41b0533230c2e84a024880519c6f8c7ef0f15bb8",
+      "object_property_assertions": 880,
+      "annotation_assertions": 17222
     },
     "argumentum_virtues.owl": {
       "upstream_path": "docs/ontology/argumentum_virtues.owl",
-      "blob_sha1": "c67d08f01c7876b83383bdc113616bd2887745f0",
-      "object_property_assertions": 444,
-      "annotation_assertions": 3305
+      "blob_sha1": "a9f5b7ecea272325589b6124d1025081e271d72c",
+      "object_property_assertions": 364,
+      "annotation_assertions": 3038
     }
   }
 }

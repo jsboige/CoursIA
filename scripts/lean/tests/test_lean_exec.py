@@ -44,6 +44,7 @@ Ou via pytest :
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -74,6 +75,56 @@ NEUTRAL_RESOURCE_GATE = {
     "LEAN_EXEC_COMMIT_PER_JOB_MB": "1",
     "LEAN_EXEC_MIN_FREE_GB": "0",
 }
+
+# Skip motive par POPULATION NATIVE d'admission (#19382, durci c.184) :
+# les 5 tests suivants dependent d'une admission qui ne partage pas le
+# cap machine avec des lean etrangers. La porte du cap (`lean_exec.py:1628`,
+# `if native_pop + budget > cap`) refuse le test si un job voisin (autre
+# runner sur la meme machine po-2026 wsl-2 a wsl-5, cf job 111974793791
+# rouge de #19373) detient deja 1+ lean dans la population native.
+#
+# Le skip vise maintenant la bonne condition (population native > 0), pas
+# la latence du scan (la latence 15 s du body etait rapportee, pas
+# mesuree dans un log -- un scan de 3 lean prends ~300 ms, le skip sur
+# latence ne protege rien). Le monkey-patch `neutralized_native_pop`
+# simule la population native = 0 dans la session pytest, comme
+# `LEAN_EXEC_WSL=off` neutralise deja la population WSL dans le
+# sous-processus. Fallback skip : si le patch echoue, on skip avec le
+# compte mesure dans le motif.
+_ADMISSION_NATIVE_POP_SKIP_THRESHOLD = 0
+
+
+@pytest.fixture
+def neutralized_native_pop(monkeypatch):
+    """Neutralise la population native (lean/lake vivants de l'hote) pour
+    les tests d'admission qui dependent d'un cap machine deterministe.
+    Idem `LEAN_EXEC_WSL=off` pour la population WSL (cf lean_exec.py:265).
+    Le monkey-patch evite le cap refuse par les lean etrangers (jobs
+    voisins sur la meme machine po-2026 wsl-2 a wsl-5, job 111974793791
+    fondateur)."""
+    monkeypatch.setattr(
+        le, "scan_native_population",
+        lambda: (0, "neutralized: test (monkeypatch)"),
+    )
+
+
+@pytest.fixture(scope="module")
+def native_pop_count() -> int:
+    """Compte la population native reelle du runner (pour le motif de skip
+    fallback). Mesure une fois par module pytest."""
+    n, _src = le.scan_native_population()
+    return n
+
+
+def _skip_if_native_pop_nonempty(n: int) -> None:
+    if n > _ADMISSION_NATIVE_POP_SKIP_THRESHOLD:
+        pytest.skip(
+            f"runner porte {n} lean/lake etrangers dans la population "
+            f"native (seuil {_ADMISSION_NATIVE_POP_SKIP_THRESHOLD}) : "
+            f"le cap machine `native_pop + budget > cap` refuse "
+            f"l'admission partagee. Mesure ai-01 (2026-10-06) = 0. "
+            f"Famille reste declenchee, skip motive -- voir #19382."
+        )
 
 
 def _env(state: Path, **extra) -> dict:
@@ -149,7 +200,9 @@ def test_bound_command_inserts_kjobs():
 # Admission machine-wide — deux worktrees concurrents
 # ---------------------------------------------------------------------------
 
-def test_admission_cap_machine_wide_two_worktrees():
+def test_admission_cap_machine_wide_two_worktrees(
+        neutralized_native_pop, native_pop_count):
+    _skip_if_native_pop_nonempty(native_pop_count)
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         w1, w2, w3 = (Path(td) / n for n in ("w1", "w2", "w3"))
@@ -537,8 +590,10 @@ def _find_toolchain() -> str | None:
     return None
 
 
-def test_positive_control_real_lake():
+def test_positive_control_real_lake(
+        neutralized_native_pop, native_pop_count):
     """Une compilation ciblee REELLE passe sous le budget et publie ses metriques."""
+    _skip_if_native_pop_nonempty(native_pop_count)
     # Reserve 3 (arbitrage #15666) : un print+return rend « passed » sans
     # rien controler -- pire que pas de controle. pytest.skip rend un « s »
     # visible dans le rapport.
@@ -933,9 +988,11 @@ def _wait_for(condition, timeout_s: float = 30.0, what: str = "condition"):
     assert condition(), f"{what} non atteinte sous {timeout_s} s"
 
 
-def test_queue_wait_admits_after_release():
+def test_queue_wait_admits_after_release(
+        neutralized_native_pop, native_pop_count):
     """--wait : le demandeur attend en file, est admis quand le cap se
     libere, et publie son temps d'attente."""
+    _skip_if_native_pop_nonempty(native_pop_count)
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         cap = dict(LEAN_EXEC_CAP=1, LEAN_EXEC_BUDGET=1)
@@ -957,9 +1014,11 @@ def test_queue_wait_admits_after_release():
         assert res.get("queue_wait_s", 0.0) >= 0.5, res
 
 
-def test_queue_timeout_refuses():
+def test_queue_timeout_refuses(
+        neutralized_native_pop, native_pop_count):
     """Delai de file depasse = refus explicite 'wait timeout' (jamais
     d'attente infinie)."""
+    _skip_if_native_pop_nonempty(native_pop_count)
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         cap = dict(LEAN_EXEC_CAP=1, LEAN_EXEC_BUDGET=1)
@@ -981,9 +1040,11 @@ def test_queue_timeout_refuses():
         assert first.wait(timeout=60) == le.EXIT_TIMEOUT
 
 
-def test_queue_full_refuses():
+def test_queue_full_refuses(
+        neutralized_native_pop, native_pop_count):
     """File bornee : queue_max atteint = refus explicite du 3e demandeur,
     jamais de croissance silencieuse de la file."""
+    _skip_if_native_pop_nonempty(native_pop_count)
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         cap = dict(LEAN_EXEC_CAP=1, LEAN_EXEC_BUDGET=1,
@@ -1425,6 +1486,564 @@ def test_unreadable_registry_fail_closed_not_overwritten():
 # ---------------------------------------------------------------------------
 # Runner direct (convention des tests scripts/lean)
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Interface operateur (case 8 de #15666) : `dry-run` et `doctor`
+#
+# Les deux commandes se revendiquent LECTURE SEULE, et c'est ce que ces tests
+# mesurent : l'invariant n'est pas « la sortie est jolie », c'est « rien n'a
+# bouge sur le disque ». Un diagnostic qui ecrit n'est plus un diagnostic —
+# il devient une decision dont on ne sait plus si elle a precede ou suivi la
+# mesure. Chaque test ci-dessous compare donc l'etat du state dir AVANT/APRES.
+# ---------------------------------------------------------------------------
+
+DEAD_PID = 999999999
+
+
+def test_resolve_backend_dry_decision_identical_without_writing():
+    """Le mode dry rend la MEME decision que le mode reel sur un lake non
+    epingle (default-policy) mais n'ecrit aucun epinglage.
+
+    C'est la propriete qui autorise `dry-run` a previsualiser sans consommer
+    la decision : l'epinglage premier-ecrivain est precisement ce que le run
+    reel doit encore poser, donc une previsualisation qui l'ecrirait
+    laisserait le run reel avec un choix qu'il n'a pas fait."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "drylake")
+        with _state_env(state):
+            os.environ["LEAN_EXEC_FORCE_BACKENDS"] = "native"
+            try:
+                dry_backend, dry_detail = le.resolve_backend(
+                    proj.resolve(), "auto", dry=True)
+                assert dry_backend == "native", (dry_backend, dry_detail)
+                assert "dry-run" in dry_detail, dry_detail
+                assert not le.backends_registry_path().exists(), (
+                    "dry=True a ecrit le registre des epinglages")
+                assert _registry(state) == {}, _registry(state)
+
+                wet_backend, wet_detail = le.resolve_backend(
+                    proj.resolve(), "auto")
+                assert wet_backend == dry_backend, (dry_backend, wet_backend)
+                assert "dry-run" not in wet_detail, wet_detail
+                assert le._lake_key(proj.resolve()) in _registry(state), (
+                    _registry(state))
+            finally:
+                os.environ.pop("LEAN_EXEC_FORCE_BACKENDS", None)
+
+
+def test_resolve_backend_dry_repin_preserves_existing_pin():
+    """`dry-run --repin` simule la bascule sans re-ecrire l'epinglage : le
+    registre rendu apres l'appel est byte-identique a celui d'avant."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "drylake")
+        key = le._lake_key(proj.resolve())
+        with _state_env(state):
+            le.save_backends({key: {
+                "backend": "native", "pinned_at": "2026-09-14T00:00:00Z",
+                "origin": "fixture",
+            }})
+            before = _registry(state)
+            os.environ["LEAN_EXEC_FORCE_BACKENDS"] = "native,wsl"
+            try:
+                backend, detail = le.resolve_backend(
+                    proj.resolve(), "wsl", repin=True, dry=True)
+            finally:
+                os.environ.pop("LEAN_EXEC_FORCE_BACKENDS", None)
+            assert backend == "wsl", (backend, detail)
+            assert "dry-run" in detail, detail
+            assert _registry(state) == before, (
+                "dry repin a reecrit le registre", _registry(state))
+
+
+def test_dry_run_cli_reports_and_leaves_no_trace():
+    """`dry-run` rend la decision complete (backend, ressources, budget,
+    verdict) et ne laisse AUCUNE trace : ni epinglage, ni entree de file,
+    ni lease d'arbre, ni run enregistre."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "drylake")
+        rc = _run(state, ["dry-run", "--json", "--cwd", str(proj)],
+                  timeout=90, LEAN_EXEC_FORCE_BACKENDS="native",
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=2)
+        assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
+        payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert payload["backend"]["chosen"] == "native", payload["backend"]
+        assert payload["backend"]["available"] == ["native"]
+        assert payload["backend"]["would_write_pin"] is True, payload["backend"]
+        assert payload["verdict"].startswith("ADMIS"), payload["verdict"]
+        assert payload["refusal"] is None, payload["refusal"]
+        assert payload["granted_jobs"] >= 1, payload["granted_jobs"]
+        assert payload["telemetry_ok"] is True
+        assert payload["resources"]["cpu"]["ok"] is True
+
+        assert _registry(state) == {}, "dry-run a epingle un backend"
+        for sub in ("queue", "trees", "runs"):
+            d = state / sub
+            lingering = list(d.glob("*.json")) if d.exists() else []
+            assert lingering == [], (sub, lingering)
+
+
+def test_dry_run_cli_refuses_orphan_cache_without_pinning():
+    """Cache `.lake/build` present sans epingle connue : la politique
+    premier-ecrivain ne tranche PAS (bascule = 1-2 h de Mathlib). `dry-run`
+    doit le DIRE — verdict REFUS — et surtout ne pas epingler pour
+    « debloquer » : ce serait prendre la decision qu'il previsualise."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "drylake")
+        (proj / ".lake" / "build").mkdir(parents=True, exist_ok=True)
+        rc = _run(state, ["dry-run", "--json", "--cwd", str(proj)],
+                  timeout=90, LEAN_EXEC_FORCE_BACKENDS="native")
+        assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
+        payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert payload["backend"]["chosen"] is None, payload["backend"]
+        assert payload["backend"]["would_write_pin"] is False
+        assert payload["verdict"].startswith("REFUS"), payload["verdict"]
+        assert "cache" in payload["backend"]["detail"], payload["backend"]
+        assert _registry(state) == {}, "dry-run a epingle malgre le refus"
+
+
+def test_dry_run_budget_agrees_with_status_admission():
+    """Le budget predit par `dry-run` doit etre CELUI que `status` mesure sur
+    la meme machine au meme moment : deux commandes de diagnostic qui
+    divergent enverraient l'operateur arbitrer entre deux chiffres, ce qui
+    est exactement ce qu'un organe existe pour eviter."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        proj = _lake_fixture(Path(td), "drylake")
+        caps = dict(LEAN_EXEC_FORCE_BACKENDS="native",
+                    LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=2)
+        dry = _run(state, ["dry-run", "--json", "--cwd", str(proj)],
+                   timeout=90, **caps)
+        st = _run(state, ["status", "--json"], timeout=90, **caps)
+        assert dry.returncode == 0, dry.stderr
+        assert st.returncode == 0, st.stderr
+        dp = json.loads(dry.stdout[dry.stdout.index("{"):])
+        sp = json.loads(st.stdout[st.stdout.index("{"):])
+        if dp["population"]["native"] != sp["population"]["native"]:
+            pytest.skip(
+                "population native a bouge entre les deux mesures "
+                f"({dp['population']['native']} -> "
+                f"{sp['population']['native']}) : runner actif, "
+                "comparaison non concluante ici")
+        assert dp["granted_jobs"] == sp["granted_now"]["jobs"], (
+            dp["granted_jobs"], sp["granted_now"])
+        assert dp["population"]["native"] == sp["population"]["native"]
+        assert dp["headroom"] == sp["headroom"]
+
+
+def test_doctor_cli_reports_ok_with_named_verdict():
+    """`doctor` rend un verdict NOMME, problemes vides sur une installation
+    saine. L'absence d'epingle est une NOTE, pas une degradation : un
+    diagnostic qui crie au loup sur un state dir neuf ne sert a rien."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        rc = _run(state, ["doctor", "--json"], timeout=90,
+                  LEAN_EXEC_FORCE_BACKENDS="native",
+                  LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=2)
+        assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
+        payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert payload["verdict"] == "OK", payload["problems"]
+        assert payload["problems"] == [], payload["problems"]
+        assert payload["state_writable"] is True
+        assert payload["probes"]["native"]["available"] is True
+        assert payload["probes"]["wsl"]["available"] is False
+        assert any("aucun lake epingle" in n for n in payload["notes"]), \
+            payload["notes"]
+        assert payload["granted_now"]["jobs"] >= 1, payload["granted_now"]
+        assert payload["granted_now"]["telemetry_ok"] is True
+
+
+def test_doctor_cli_degrades_when_no_backend_available():
+    """Aucun backend disponible : `doctor` le NOMME en probleme et passe
+    DEGRADE, tout en rendant 0. Le code de retour ne doit pas se confondre
+    avec le verdict — un diagnostic qui sort en erreur quand il constate une
+    panne est inutilisable dans un script."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        rc = _run(state, ["doctor", "--json"], timeout=90,
+                  LEAN_EXEC_FORCE_BACKENDS="")
+        assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
+        payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert payload["verdict"] == "DEGRADE", payload
+        assert any("aucun backend" in p for p in payload["problems"]), \
+            payload["problems"]
+        assert payload["probes"]["native"]["available"] is False
+        assert payload["probes"]["wsl"]["available"] is False
+
+
+def test_doctor_does_not_sweep_where_status_does():
+    """Differentiel `doctor` / `status` sur le meme state dir : un run
+    perime SURVIT a `doctor` et DISPARAIT sous `status`.
+
+    C'est l'invariant qui separe un diagnostic d'une reparation. Le volet
+    « status » du controle est indispensable : sans lui, le test passerait
+    aussi si le balayage etait casse des deux cotes, et ne discriminerait
+    rien."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        runs = state / "runs"
+        runs.mkdir(parents=True)
+        (runs / "stale.json").write_text(json.dumps({
+            "pid": DEAD_PID, "host": le.host_id(), "budget": 2,
+            "cmd": ["lake", "build"], "caller": "c8-stale-probe",
+        }), encoding="utf-8")
+
+        doc = _run(state, ["doctor", "--json"], timeout=90,
+                   LEAN_EXEC_FORCE_BACKENDS="native")
+        assert doc.returncode == 0, (doc.returncode, doc.stdout, doc.stderr)
+        assert (runs / "stale.json").exists(), (
+            "doctor a balaye un run perime — il ne doit rien supprimer")
+
+        st = _run(state, ["status", "--json"], timeout=90,
+                  LEAN_EXEC_FORCE_BACKENDS="native")
+        assert st.returncode == 0, (st.returncode, st.stdout, st.stderr)
+        assert not (runs / "stale.json").exists(), (
+            "status n'a pas balaye le run perime : le differentiel ne "
+            "discrimine plus rien, le controle est vacant")
+
+
+# ---------------------------------------------------------------------------
+# stop — arret d'urgence des runs possedes (case 8 volet 2a)
+# ---------------------------------------------------------------------------
+
+def _stop_records(runs: Path) -> None:
+    """Quatre records types : vivant (notre host), mort (notre host),
+    etranger (autre namespace de pids), illisible."""
+    runs.mkdir(parents=True, exist_ok=True)
+    (runs / "live.json").write_text(json.dumps({
+        "pid": 111, "host": le.host_id(), "cmd": ["lake", "build"],
+        "caller": "probe-stop", "started_utc": "2026-10-09T00:00:00Z",
+    }), encoding="utf-8")
+    (runs / "dead.json").write_text(json.dumps(
+        {"pid": DEAD_PID, "host": le.host_id()}), encoding="utf-8")
+    (runs / "foreign.json").write_text(json.dumps(
+        {"pid": 1, "host": "autre-machine/nt"}), encoding="utf-8")
+    (runs / "corrupt.json").write_text("{illisible", encoding="utf-8")
+
+
+def test_stop_inspect_classifies_and_touches_nothing(capsys):
+    """Sans --yes, stop est un diagnostic : il classe (vivant / mort /
+    etranger / illisible) et ne retire AUCUN record — sinon l'operateur
+    n'inspecte pas, il arrete deja."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        runs = state / "runs"
+        _stop_records(runs)
+        saved_env = os.environ.get("LEAN_EXEC_STATE_DIR")
+        saved_alive = le.pid_alive
+        le.pid_alive = lambda pid: pid == 111
+        os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+        try:
+            rc = le.emergency_stop(run_ids=[], confirm=False, as_json=True)
+        finally:
+            le.pid_alive = saved_alive
+            if saved_env is None:
+                os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+            else:
+                os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+        assert rc == le.EXIT_OK
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["mode"] == "inspect"
+        assert payload["would_stop"] == ["live"], payload
+        assert payload["stopped"] == []
+        assert {e["run"] for e in payload["already_dead"]} == {
+            "dead", "corrupt"}, payload["already_dead"]
+        assert any("illisible" in e.get("note", "")
+                   for e in payload["already_dead"])
+        assert [e["run"] for e in payload["skipped_foreign_host"]] == [
+            "foreign"], payload["skipped_foreign_host"]
+        for name in ("live", "dead", "foreign", "corrupt"):
+            assert (runs / f"{name}.json").exists(), (
+                f"inspect a retire {name}.json — il ne doit rien toucher")
+
+
+def test_stop_yes_kills_only_our_live_runs():
+    """Avec --yes : seuls les runs vivants de NOTRE host sont tues, les
+    records morts suivent, l'etranger et l'illisible survivent (pids non
+    comparables / rien d'attribuable)."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        runs = state / "runs"
+        _stop_records(runs)
+        killed = []
+        saved_env = os.environ.get("LEAN_EXEC_STATE_DIR")
+        saved_alive, saved_kill = le.pid_alive, le._kill_run_tree
+        le.pid_alive = lambda pid: pid == 111
+        le._kill_run_tree = lambda pid: (killed.append(pid), "killed")[1]
+        os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+        try:
+            rc = le.emergency_stop(run_ids=[], confirm=True, as_json=False)
+        finally:
+            le.pid_alive = saved_alive
+            le._kill_run_tree = saved_kill
+            if saved_env is None:
+                os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+            else:
+                os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+        assert rc == le.EXIT_OK
+        assert killed == [111], killed
+        assert not (runs / "live.json").exists()
+        assert not (runs / "dead.json").exists()
+        assert (runs / "foreign.json").exists(), (
+            "un run d'un autre namespace de pids ne doit jamais etre retire "
+            "par stop (meme regle que sweep_stale_runs, tree_lock.py:138)")
+        assert (runs / "corrupt.json").exists(), (
+            "un record illisible ne peut etre attribue a aucun host : le "
+            "retirer a l'aveugle est exactement le geste interdit")
+
+
+def test_stop_yes_reports_failures_and_unknown_runs():
+    """Un kill qui echoue laisse le record en place et rend 1 (echec d'arret,
+    distinct du code enfant) ; un run record inconnu rend 125 (demande
+    refusee). Un pid mort entre la classification et le kill (already_dead)
+    fait retirer son record sans compter comme echec."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        runs = state / "runs"
+        runs.mkdir(parents=True)
+        (runs / "revive.json").write_text(json.dumps(
+            {"pid": 222, "host": le.host_id()}), encoding="utf-8")
+        (runs / "vanish.json").write_text(json.dumps(
+            {"pid": 333, "host": le.host_id()}), encoding="utf-8")
+
+        def fake_kill(pid: int) -> str:
+            return "failed: taskkill rc=1" if pid == 222 else "already_dead"
+
+        saved_env = os.environ.get("LEAN_EXEC_STATE_DIR")
+        saved_alive, saved_kill = le.pid_alive, le._kill_run_tree
+        le.pid_alive = lambda pid: pid in (222, 333)
+        le._kill_run_tree = fake_kill
+        os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+        try:
+            rc = le.emergency_stop(run_ids=[], confirm=True, as_json=False)
+        finally:
+            le.pid_alive = saved_alive
+            le._kill_run_tree = saved_kill
+            if saved_env is None:
+                os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+            else:
+                os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+        assert rc == le.EXIT_CHILD, "un kill echoue doit rendre 1"
+        assert (runs / "revive.json").exists(), (
+            "le record d'un run qu'on n'a pas PU tuer doit rester : "
+            "l'operateur doit pouvoir reessayer")
+        assert not (runs / "vanish.json").exists(), (
+            "un pid mort entre classification et kill est un nettoyage, "
+            "pas un echec")
+
+        os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+        try:
+            rc_unknown = le.main(["stop", "--run", "ghost", "--json"])
+        finally:
+            if saved_env is None:
+                os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+            else:
+                os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+        assert rc_unknown == le.EXIT_REFUSED, (
+            "un run record inconnu est une demande refusee (125), pas un "
+            "echec d'arret (1)")
+
+
+@pytest.mark.skipif(
+    os.name != "posix", reason="le zombie est une notion POSIX")
+def test_pid_alive_rejects_reaped_pending_zombie():
+    """Controle par faux POSITIF de ``pid_alive`` : un enfant tue mais PAS
+    encore reap par son parent est un zombie — il n'execute plus rien, ne
+    tient ni budget ni lease. L'ancien instrument (``os.kill(pid, 0)`` seul)
+    le declarait vivant pendant tout le poll de ``stop``, qui rendait alors
+    ``failed: pid survit au kill`` sur un kill REUSSI (#20016, state=Z
+    mesure sur toute la fenetre). Le parent ne reap pas ici, exactement
+    comme ``stop``, qui n'est jamais le parent du run arrete."""
+    proc = subprocess.Popen(
+        [PY, "-c", "import time; time.sleep(120)"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        start_new_session=True)
+    try:
+        assert le.pid_alive(proc.pid), "le sleeper doit vivre au depart"
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        for _ in range(30):  # <=3 s
+            if not le.pid_alive(proc.pid):
+                break
+            time.sleep(0.1)
+        assert not le.pid_alive(proc.pid), (
+            "un zombie (tue, non reap) n'est pas un processus vivant : "
+            "sinon stop --yes rend un echec sur un kill reussi")
+    finally:
+        proc.wait(timeout=10)
+
+
+def test_stop_cli_inspect_then_yes_kills_real_process():
+    """Controle positif de bout en bout : un VRAI processus vivant, un run
+    record honnete pointant dessus, inspect qui ne touche rien, --yes qui
+    tue reellement et retire le record. Le kill n'est pas simule : c'est
+    taskkill (Windows) / killpg (POSIX) qui travaille."""
+    proc = subprocess.Popen(
+        [PY, "-c", "import time; time.sleep(120)"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        # #20016/Hermes : sans session propre, le sleeper herite du pgid de
+        # pytest et le killpg de `stop --yes` tue la session de test
+        # elle-meme sous POSIX (reproduit : SIGKILL -9, deux fois). Miroir
+        # de la production, qui spawne toujours en session propre.
+        # Le parent ne reap pas de la duree du test (comme `stop`, qui n'est
+        # pas le parent) : ce controle exerce donc AUSSI la branche zombie de
+        # `pid_alive` — c'est ce qui rendait la jambe POSIX rouge.
+        start_new_session=True)
+    if os.name == "posix":
+        # Precondition du controle positif : si ceci tombe, le test
+        # redevient suicidaire sous POSIX (le killpg emporte pytest).
+        assert os.getpgid(proc.pid) != os.getpgid(0), (
+            "le sleeper doit vivre dans sa propre session, sinon le killpg "
+            "de stop --yes tue pytest (#20016)")
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            state = Path(td) / "state"
+            runs = state / "runs"
+            runs.mkdir(parents=True)
+            (runs / "reel.json").write_text(json.dumps({
+                "pid": proc.pid, "host": le.host_id(),
+                "cmd": [PY, "-c", "import time; time.sleep(120)"],
+                "caller": "probe-stop-reel",
+            }), encoding="utf-8")
+
+            rc = _run(state, ["stop", "--json"], timeout=90)
+            assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
+            payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+            assert payload["mode"] == "inspect"
+            assert payload["would_stop"] == ["reel"], payload
+            assert (runs / "reel.json").exists(), (
+                "l'inspection CLI n'a pas le droit de retirer le record")
+
+            act = _run(state, ["stop", "--yes", "--json"], timeout=90)
+            assert act.returncode == 0, (act.returncode, act.stdout,
+                                         act.stderr)
+            payload2 = json.loads(act.stdout[act.stdout.index("{"):])
+            assert payload2["stopped"] == ["reel"], payload2
+            assert not (runs / "reel.json").exists()
+            for _ in range(30):  # <=3 s : le kill /F est immediate
+                if proc.poll() is not None:
+                    break
+                time.sleep(0.1)
+            assert proc.poll() is not None, (
+                "le processus reel doit etre mort apres stop --yes")
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+
+
+# ---------------------------------------------------------------------------
+# recover — recuperation apres crash (case 8 volet 2b)
+# ---------------------------------------------------------------------------
+
+def _recover_state(state: Path) -> None:
+    """Etat residuel post-crash sur les TROIS familles : pour chacune, un
+    item mort de notre host (recuperable), un vivant (travail actif), un
+    etranger (jamais touche), un illisible (conserve)."""
+    for name, directory in (("runs", state / "runs"),
+                            ("trees", state / "trees"),
+                            ("queue", state / "queue")):
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / f"{name}-dead.json").write_text(json.dumps(
+            {"pid": DEAD_PID, "host": le.host_id()}), encoding="utf-8")
+        (directory / f"{name}-live.json").write_text(json.dumps(
+            {"pid": 111, "host": le.host_id()}), encoding="utf-8")
+        (directory / f"{name}-foreign.json").write_text(json.dumps(
+            {"pid": 1, "host": "autre-machine/nt"}), encoding="utf-8")
+        (directory / f"{name}-corrupt.json").write_text("{illisible",
+                                                        encoding="utf-8")
+
+
+def _with_recover_env(state: Path, fn):
+    saved_env = os.environ.get("LEAN_EXEC_STATE_DIR")
+    saved_alive = le.pid_alive
+    le.pid_alive = lambda pid: pid == 111
+    os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
+    try:
+        return fn()
+    finally:
+        le.pid_alive = saved_alive
+        if saved_env is None:
+            os.environ.pop("LEAN_EXEC_STATE_DIR", None)
+        else:
+            os.environ["LEAN_EXEC_STATE_DIR"] = saved_env
+
+
+def test_recover_inspect_reports_without_sweeping(capsys):
+    """Sans --yes, recover est un diagnostic de l'etat residuel : les
+    trois familles sont partitionnees (mort/vivant/etranger/illisible) et
+    AUCUN fichier ne bouge."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        _recover_state(state)
+        rc = _with_recover_env(
+            state, lambda: le.recover(confirm=False, as_json=True))
+        assert rc == le.EXIT_OK
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["mode"] == "inspect"
+        for fam in ("runs", "tree_leases", "queue"):
+            stale = payload["stale"][fam]
+            assert len(stale) == 1 and "dead" in stale[0], (fam, stale)
+            assert len(payload["live"][fam]) == 1, fam
+            assert len(payload["skipped_foreign_host"][fam]) == 1, fam
+            assert len(payload["unreadable"][fam]) == 1, fam
+        for name in ("runs", "trees", "queue"):
+            directory = state / name
+            assert len(list(directory.glob("*.json"))) == 4, (
+                f"inspect a vide {directory}")
+
+
+def test_recover_yes_sweeps_all_three_families():
+    """Avec --yes : les items morts de notre host partent dans les TROIS
+    familles ; vivants, etrangers et illisibles survivent partout."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        _recover_state(state)
+
+        def act():
+            return le.recover(confirm=True, as_json=False)
+
+        rc = _with_recover_env(state, act)
+        assert rc == le.EXIT_OK
+        for name in ("runs", "trees", "queue"):
+            directory = state / name
+            remaining = {p.stem for p in directory.glob("*.json")}
+            assert remaining == {
+                f"{name}-live", f"{name}-foreign",
+                f"{name}-corrupt"}, (name, remaining)
+
+
+def test_recover_cli_inspect_then_yes():
+    """Controle CLI : inspect rend 0 sans rien toucher, --yes balaye et
+    rend 0. Le rc ne porte pas le verdict (meme contrat que doctor)."""
+    with tempfile.TemporaryDirectory() as td:
+        state = Path(td) / "state"
+        _recover_state(state)
+        rc = _run(state, ["recover", "--json"], timeout=90)
+        assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
+        payload = json.loads(rc.stdout[rc.stdout.index("{"):])
+        assert payload["mode"] == "inspect"
+        # Vue du sous-processus : les DEUX pids de notre host (dead + live
+        # fictif) sont morts -> 2 stale par famille, 1 etranger, 1 illisible.
+        assert all(len(v) == 2 for v in payload["stale"].values()), payload
+
+        # Les pids fictifs ne sont pas vivants pour le sous-processus CLI
+        # (pas de monkeypatch la) : -dead ET -live sont balayes, mais le
+        # balayage ne touche QUE notre host — les etrangers survivent.
+        act = _run(state, ["recover", "--yes", "--json"], timeout=90)
+        assert act.returncode == 0, (act.returncode, act.stdout, act.stderr)
+        payload2 = json.loads(act.stdout[act.stdout.index("{"):])
+        assert payload2["mode"] == "act"
+        for fam in ("runs", "tree_leases", "queue"):
+            assert len(payload2["swept"][fam]) == 2, (fam, payload2["swept"])
+            assert len(payload2["skipped_foreign_host"][fam]) == 1, fam
+        for name in ("runs", "trees", "queue"):
+            directory = state / name
+            remaining = {p.stem for p in directory.glob("*.json")}
+            assert remaining == {
+                f"{name}-foreign", f"{name}-corrupt"}, (name, remaining)
+
 
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]

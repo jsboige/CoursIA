@@ -11,11 +11,16 @@ counted by hand by the coordinator, who merged a 2nd LIGHT twice in one cycle
 (issue #8964: measured firsthand on the 2026-07-30 wave). This tool makes the
 fact VISIBLE (advisory, exit 0), it does not block.
 
-Input: a JSON array of the day's merged PRs, each `{number, body, mergedAt}`,
-produced by:
+Input: a JSON array of the day's merged PRs, each `{number, body, mergedAt,
+baseRefName, ...}`, produced by:
 
-    gh pr list --state merged --search 'merged:<YYYY-MM-DD>' \
-        --json number,body,mergedAt
+    gh pr list --state merged --search 'merged:<YYYY-MM-DD>' --limit 500 \
+        --json number,body,mergedAt,labels,files,baseRefName
+
+`baseRefName` est **obligatoire** depuis #18940 : sans lui, les PRs empilees
+sur une branche de feature seraient comptées dans le budget G-VAR-2 de la
+lane. Les producteurs anterieurs au fix restent charges tels quels (filtre
+retrocompatible) ; le contrat d'entrée est en `scripts/variation_base_main.py`.
 
 Modes
 -----
@@ -64,6 +69,18 @@ Exit 0 always (advisory).
 from __future__ import annotations
 
 import argparse
+
+# Filtre ``--base main`` partage (#18940) : elimine les PRs empilees sur
+# une branche de feature du comptage G-VAR-2. Voir scripts/variation_base_main.py
+# pour la justification et le controle positif (#18910).
+try:
+    from variation_base_main import filter_base_main as _filter_base_main
+except ImportError:
+    # Fallback : un no-op (la liste est conservee telle quelle). Les anciens
+    # contextes d'execution ou le module n'est pas sur sys.path continuent
+    # de fonctionner -- mais le filet de comptage reste present.
+    def _filter_base_main(merged_prs, *, warn=None):  # type: ignore[no-redef]
+        return list(merged_prs)
 import json
 import re
 import shlex
@@ -1388,6 +1405,10 @@ def _load(path: str) -> list[dict]:
         raise CapInputError(
             f"--replay/--check-pr expects a JSON array, got {type(data).__name__}"
         )
+    # Filtre --base main (#18940) : elimine les PRs empilees du comptage
+    # G-VAR-2. Voir scripts/variation_base_main.py pour le contrat et
+    # le controle positif #18910 (PR empilee sur test/18775-...).
+    data = _filter_base_main(data, warn=lambda m: print(m, file=sys.stderr))
     if len(data) == _GH_DEFAULT_PAGE:
         print(
             f"AVERTISSEMENT: le jeu de comptage fait exactement {_GH_DEFAULT_PAGE} "

@@ -190,6 +190,6 @@ Consistency is local (per arc); by telescoping along the arcs of the path, it re
 
 This is the exact mechanism that makes A* **efficient** under a consistent heuristic: the `f` frontier never retreats, so **no node is ever re-expanded**. To be compared with an admissible (but non-consistent) heuristic, which guarantees optimality (phase 1) but allows re-expansions. The formalization of "no re-expansion" itself (modeling the priority queue) is left to phase 4 (cf #4048) — we prove here the **central mathematical lemma**, which is its exact cause. See Hart, Nilsson & Raphael (1968).
 
-**Proof** (1 line): `g n' + h n' = g n + edge n n' + h n' ≥ g n + h n` by consistency (`h n ≤ edge n n' + h n'`), hence `linarith` after rewriting `g n'`.
+**Proof**: `g n' + h n' = g n + edge n n' + h n' ≥ g n + h n` by consistency (`h n ≤ edge n n' + h n'`), hence `linarith` after rewriting `g n'`.
 
 Abstraction note: `g` is left as a parameter (not computed) — the result holds for any already-traversed cost function satisfying the per-arc advancement relation, independently of the specific path taken to reach it.

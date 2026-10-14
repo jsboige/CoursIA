@@ -45,9 +45,9 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 | [reference/cluster-agents.md](docs/reference/cluster-agents.md) | Machines, GPU topology, agents par spécialisation, dispatch |
 | [reference/kernels-runtime.md](docs/reference/kernels-runtime.md) | .NET / Python / WSL kernels, conda envs, dotnet-interactive PIN |
 | [reference/procedures-recurrentes.md](docs/reference/procedures-recurrentes.md) | Workflow PR, dispatch, validation notebook, audit anti-régression, pre-commit H.3 |
-| [reference/subagents-reference.md](docs/reference/subagents-reference.md) | 21 sous-agents + 17 skills, mapping side-tracks, usage async |
+| [reference/subagents-reference.md](docs/reference/subagents-reference.md) | Roster sous-agents + skills (inventaire faisant foi dans le fichier), mapping side-tracks, usage async |
 | [reference/scripts-reference.md](docs/reference/scripts-reference.md) | Catalogue scripts (notebook CLI, exécution, qualité, maintenance) |
-| [reference/architecture_mcp_roo.md](docs/reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (inventaire des 15 outils roo-state-manager : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
+| [reference/architecture_mcp_roo.md](docs/reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (inventaire des outils roo-state-manager : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
 | [reference/regles-vigilance-detail.md](docs/reference/regles-vigilance-detail.md) · [regles-validation-detail.md](docs/reference/regles-validation-detail.md) | Détail G.1-G.9 et H.1-H.7 + incidents |
 | [reference/_archive-convention.md](docs/reference/_archive-convention.md) | Convention `_archive/` (11 emplacements) — modèle ML-Training-Pipeline généralisé, 4 critères d'éligibilité, header per-function |
 | [reference/notebook-renumbering-detail.md](docs/reference/notebook-renumbering-detail.md) | Corpus des precedents de renumerotation — le geste `renum()`/`reclass()` est porte par `.claude/rules/notebook-accretion-numbering.md` |
@@ -112,6 +112,7 @@ Avant **tout** `gh pr merge`, énumérer les **trois** surfaces et vérifier que
 **Une levée porte un AUTEUR et une HEURE — sans les deux, ce n'est pas une levée.**
 
 - **Qui** : une phrase écrite par **l'auteur de la PR** ne lève pas une réserve posée par **un tiers**. Se lever soi-même une réserve d'autrui n'est pas y répondre, c'est la déclarer répondue.
+- **Sous le login partagé, seul le coordinateur lève par une phrase.** Toutes les lanes écrivent sous `jsboige` : sur une PR `jsboige`, une phrase de levée signée `jsboige` est indiscernable d'une auto-levée, et l'organe la refuse quelle que soit la lane qui l'a écrite (#13316, #13495). La levée par phrase se fait sous `myia-ai-01`, avec `[OVERRIDE] lane myia-ai-01:CoursIA` en tête de ligne, et **elle nomme l'auteur de la réserve par son login** (ou par la persona Hermes). Une lane qui a traité une réserve le dit sur la PR et le signale au coordinateur. Elle garde les voies 2 et 3 ci-dessus.
 - **Quand** : tout ce qui lève doit exister **avant** `gh pr merge`. Un commentaire de merge est un compte-rendu, **jamais une porte**.
 
 **Un commit poussé après la remarque ne la lève PAS à lui seul.** Un push muet est indiscernable d'un push qui répond : ce qui lève une remarque est **une phrase**, pas un SHA.
@@ -244,7 +245,7 @@ docs/                       # Documentation déportée de ce fichier
 
 **Collision** : sous-agents read-only en parallèle OK ; sous-agents **éditeurs = un seul à la fois par notebook/série**.
 
-**Modèle explicite obligatoire** : tout `Agent()` DOIT spécifier `model: "sonnet"` ou `"haiku"`. `"opus"` uniquement sur justification écrite dans le prompt. Sous-agent sans `model` explicite = hérite d'opus = violation. Cf [model-delegation.md](.claude/rules/model-delegation.md).
+**Modèle explicite obligatoire** : tout `Agent()` DOIT spécifier `model: "sonnet"` ou `"haiku"`. `"opus"` **jamais sur les postes po-\***, sauf lane autorisée nommément (cf point 3, `myia-po-2024:CoursIA-3`) (mandat user 2026-10-10) — la tâche qui le justifierait remonte à ai-01 ; sur ai-01, justification écrite dans le prompt. Sous-agent sans `model` explicite = hérite d'opus = violation. Cf [model-delegation.md](.claude/rules/model-delegation.md).
 
 ---
 

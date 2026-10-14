@@ -7,7 +7,11 @@
   - La formule de la valeur de Shapley
   - Le théorème d'unicité
 
-  Référence : L.S. Shapley, « A Value for N-Person Games » (1953)
+  Référence : L.S. Shapley, « A Value for N-Person Games » (1953) ; voir
+  aussi le traité canonique du cluster (Maschler, Solan & Zamir, « Game
+  Theory », Cambridge UP, 2013 — ch. 15 *The Shapley Value* pour la
+  caractérisation axiomatique et l'unicité ; **ancrages à confirmer** sur
+  l'ouvrage, le PDF n'étant pas acquis sur cette machine).
 
   Convention i18n (cycle 39 ratifiée, voir `docs/lean/i18n-inventory-cycle-38.md`) :
   en-têtes, sections, docstrings et commentaires intra-preuve en français ;

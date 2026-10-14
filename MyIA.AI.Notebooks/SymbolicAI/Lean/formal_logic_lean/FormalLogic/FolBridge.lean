@@ -6,7 +6,7 @@ import Mathlib.Tactic.FinCases
 /-!
 # Pont FOL : micro-théorie exécutée ↔ certifiée (Tranche B, EPIC #16877)
 
-Ce module est le versant Lean du notebook `Tweety-02d-FOL-Lab-Lean.ipynb` :
+Ce module est le versant Lean du notebook `Tweety-02d-FOL-Lab-Lean-Python.ipynb` :
 la micro-théorie définie ici est **la même** que celle exécutée par le raisonneur
 Tweety dans le notebook — un langage à quatre prédicats unaires (`Homme`,
 `Mortel`, `Grec`, `Philosophe`) et deux constantes (`socrate`, `platon`),

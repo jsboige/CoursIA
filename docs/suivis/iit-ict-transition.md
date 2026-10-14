@@ -13,7 +13,7 @@ Cette note **trace** les fils qui se sont tissés entre la série IIT historique
 série ICT, et **référence** les ancres existantes. Elle est exécutive : un lecteur
 qui la lit doit savoir où se trouve quoi, et pourquoi la transition a eu lieu.
 
----
+***
 
 ## 1. Pourquoi une transition ?
 
@@ -173,7 +173,7 @@ PR : *Part of [#5081](https://github.com/jsboige/CoursIA/issues/5081)* (plan de 
 - Issue [#5641](https://github.com/jsboige/CoursIA/issues/5641) — module `ict/workspace.py` livré (ICT-24).
 - Issues [#5089](https://github.com/jsboige/CoursIA/issues/5089), [#5090](https://github.com/jsboige/CoursIA/issues/5090), [#5099](https://github.com/jsboige/CoursIA/issues/5099), [#5100](https://github.com/jsboige/CoursIA/issues/5100), [#5101](https://github.com/jsboige/CoursIA/issues/5101), [#5102](https://github.com/jsboige/CoursIA/issues/5102), [#5103](https://github.com/jsboige/CoursIA/issues/5103), [#5104](https://github.com/jsboige/CoursIA/issues/5104), [#5105](https://github.com/jsboige/CoursIA/issues/5105), [#5635](https://github.com/jsboige/CoursIA/issues/5635), [#5352](https://github.com/jsboige/CoursIA/issues/5352) — autres issues ICT.
 
----
+***
 
 *Suivi de cycle c.478, partition native `myia-po-2025:CoursIA-2` (worker ayant
 construit ICT-1/2/3 [#5141](https://github.com/jsboige/CoursIA/issues/5141)/[#5145](https://github.com/jsboige/CoursIA/issues/5145)/[#5235](https://github.com/jsboige/CoursIA/issues/5235) — substance, pas sweep).*

@@ -2353,6 +2353,15 @@ class TacticTools:
         success = result.get("success", False)
         cached = result.get("cached", False)
 
+        # #18432: propagate the wall-clock timeout marker set by
+        # ``LeanVerifier._run_lake_build``. Without this the marker died here:
+        # compile() re-parses ``raw_output`` (empty on timeout) and rebuilds
+        # ``errors`` from it (also empty), so the downstream JSON looked
+        # EXACTLY like a zero-error outcome and every consumer lost the
+        # "no verdict exists" signal.
+        wall_clock_timeout = bool(result.get("wall_clock_timeout", False))
+        timeout_s = result.get("timeout_s")
+
         errors = _parse_lean_errors(raw_output)  # #6790: authoritative parser
 
         # P5a (#7477 forensic): latch a maxHeartbeats exhaustion so the run is
@@ -2529,6 +2538,13 @@ class TacticTools:
             "compile_time_s": round(duration, 1),
             "cached": cached,
             "raw_output_preview": raw_output[:500],
+            # #18432: wall-clock exhaustion is the ABSENCE of a compile
+            # verdict. ``success``/``level_1_build`` stay False, but the
+            # parsed ``error_count`` is 0 — consumers MUST distinguish
+            # "timed out, unknown" from "0 errors, clean" via this marker,
+            # never via error_count alone.
+            "wall_clock_timeout": wall_clock_timeout,
+            "timeout_s": timeout_s,
         }, ensure_ascii=False)
 
     def verify_sorry_replacement(self, tactic: str) -> str:

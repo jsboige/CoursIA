@@ -47,7 +47,7 @@ import Mathlib.SetTheory.Game.Nim
 
 - [game_theory_lean/](../game_theory_lean/) — Projet Lake multi-module (StableMarriage = formalisation Gale-Shapley, EPIC #4365 ; CooperativeGames absorbé depuis `cooperative_games_lean/` rm #6587).
 - [game_theory_lean/SocialChoice/](../game_theory_lean/SocialChoice/) — Module absorbé dans `game_theory_lean` (Arrow / Sen / électeur médian / Voting, EPIC #4365).
-- [social_choice_lean_peters/](../social_choice_lean_peters/) — Projet Lake indépendant référençant Peters au commit `94a4c650` du `lake-manifest.json` (Gibbard-Satterthwaite, Duggan-Schwartz).
+- [social_choice_lean_peters/](../SocialChoice/social_choice_lean_peters/) — Projet Lake indépendant référençant Peters au commit `94a4c650` du `lake-manifest.json` (Gibbard-Satterthwaite, Duggan-Schwartz).
 
 Ces projets ne dépendent **pas** de `lean_game_defs/` à la compilation — ils vendorent leurs propres définitions adaptées à leurs obligations de preuve. `lean_game_defs/` est la couche **introductive** utilisée par les notebooks d'enseignement.
 

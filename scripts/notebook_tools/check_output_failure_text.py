@@ -29,6 +29,24 @@ Two classes, both ratcheted 0 -> N against the merge base:
   MACHINE_PATH   an absolute filesystem path of the executing machine
                  (``D:\\dev\\...``, ``/home/<user>/``, ``/Users/<user>/``).
 
+A third, ADVISORY class (#18916, Lean-10 demo mode):
+
+  DECLARED_FALLBACK  one of the two DEGRADED_HINT soft motifs whose banner is
+                 printed BY THE CELL'S OWN SOURCE -- a demo-mode stub that
+                 says, in its own code, what it will print when the tool is
+                 absent (``print('[SKIP] LeanDojo non disponible')``, or an
+                 f-string stub under a literal ``[SKIP]`` marker). Reported,
+                 never gated: a documented fallback is not an unnoticed
+                 failure. Hard patterns stay unexemptible in every case.
+
+                 The exemption is additionally CONDITIONED ON THE BASE: a
+                 declared banner is not a fallback when the same cell (by
+                 ``id``) carried a substantial output at the merge base. A
+                 render replaced by a banner is a LOSS OF CAPABILITY -- the
+                 damage #3473 / #11685 measured -- so that hit stays a
+                 TOOL_FAILURE and keeps gating. Only a cell that is new, or
+                 that was already in fallback at base, is a DECLARED_FALLBACK.
+
 Only notebooks CHANGED between the merge base and HEAD are judged, and only
 occurrences whose count GREW are reported. A notebook that already carried
 such text keeps it: this is a ratchet, not a repo-wide scold. Pre-existing
@@ -212,6 +230,26 @@ MACHINE_PATH_PATTERNS = (
     re.compile(r"/Users/[A-Za-z0-9_.-]{2,32}/"),
     re.compile(r"/mnt/[a-z]/[A-Za-z0-9_.-]{2,32}/"),
 )
+
+# A web URL is data, not a path of the executing machine. University
+# personal pages live under /home/<user>/ on the SERVER
+# (https://www.ccs.neu.edu/home/<user>/...), and an LLM answer that cites one
+# carries it verbatim: measured on #18567, GenAI/Texte 06, where a web-search
+# summary cited a course PDF and the gate reported a machine path. URLs are
+# removed from a COPY of the text before path matching, as banners are before
+# failure matching. Two forms stay visible on purpose: file:// URLs (they ARE
+# local paths) and URLs of a local server (localhost, 127.0.0.1, 0.0.0.0),
+# whose path can mirror the executing machine's tree.
+_WEB_URL = re.compile(
+    r"https?://(?!(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?:[:/]|$))"
+    r"[^\s\"'<>)\]]+",
+    re.IGNORECASE)
+
+
+def _path_probe(text):
+    """Copy of ``text`` without its web URLs, for MACHINE_PATH matching."""
+    return _WEB_URL.sub(" ", text)
+
 
 _PATH_WITNESSES = (
     "D:" + BS + "dev" + BS + "CoursIA-2-c1301-231-fbpy" + BS + "MyIA.AI.Notebooks",
@@ -444,8 +482,15 @@ def metadata_texts(nb):
                     yield "cell[%d]:%s" % (i, str(k)), v
 
 
-def scan(nb):
+def scan(nb, base_nb=None):
     """{class: [(location, matched_text), ...]} for one notebook.
+
+    ``base_nb`` is the same notebook at the merge base, when one exists. It is
+    consulted only by the DECLARED_FALLBACK exemption (#18916): a declared
+    banner whose base cell carried a substantial output is a capability loss,
+    not a demo fallback. The BASE side is never scanned with a base of its own
+    (see ``compare``), so the ratchet's base counts keep their historical
+    classification and cannot be inflated by the branch under judgement.
 
     ``location`` is a cell index for output hits, or a metadata descriptor
     (``doc:<key>`` / ``cell[<i>]:<key>``) for metadata hits. Only
@@ -453,7 +498,7 @@ def scan(nb):
     carry tool-failure banners, and the machine-path metadata class is what a
     re-execution leaks.
     """
-    found = {"TOOL_FAILURE": [], "MACHINE_PATH": []}
+    found = {"TOOL_FAILURE": [], "MACHINE_PATH": [], "DECLARED_FALLBACK": []}
     if not nb:
         return found
     for idx, text in output_texts(nb):
@@ -462,13 +507,31 @@ def scan(nb):
         probe = text
         for _ban in BENIGN_BANNERS:
             probe = _ban.sub(" ", probe)
+        # A hard pattern fires FIRST and is never exemptible (#18916): a real
+        # tool failure in the same stream as a declared demo banner stays a
+        # TOOL_FAILURE -- including ImportError, which sits AFTER the soft
+        # motifs in the tuple and would otherwise be masked by the exemption.
+        soft_hit = hard_hit = None
         for pat in TOOL_FAILURE_PATTERNS:
             m = pat.search(probe)
-            if m:
-                found["TOOL_FAILURE"].append((idx, m.group(0)[:120]))
+            if not m:
+                continue
+            if pat in DEGRADED_HINT_PATTERNS:
+                if soft_hit is None:
+                    soft_hit = m.group(0)
+            else:
+                hard_hit = m.group(0)
                 break
+        if hard_hit:
+            found["TOOL_FAILURE"].append((idx, hard_hit[:120]))
+        elif soft_hit:
+            if _declared_fallback(nb, idx, text, soft_hit, base_nb):
+                found["DECLARED_FALLBACK"].append((idx, soft_hit[:120]))
+            else:
+                found["TOOL_FAILURE"].append((idx, soft_hit[:120]))
+        path_probe = _path_probe(text)
         for pat in MACHINE_PATH_PATTERNS:
-            for m in pat.finditer(text):
+            for m in pat.finditer(path_probe):
                 found["MACHINE_PATH"].append((idx, m.group(0)[:120]))
     # #14513: a machine path can also sit in document/cell metadata, invisible
     # to the output-only loop above -- the exact hole that let PT_11c's
@@ -476,8 +539,9 @@ def scan(nb):
     # path (#14272 / #13891). Scan string-valued metadata too, so the gate
     # sees the surface the convention (secrets-hygiene rule 6) allows fixing.
     for loc, text in metadata_texts(nb):
+        path_probe = _path_probe(text)
         for pat in MACHINE_PATH_PATTERNS:
-            for m in pat.finditer(text):
+            for m in pat.finditer(path_probe):
                 found["MACHINE_PATH"].append((loc, m.group(0)[:120]))
     return found
 
@@ -489,6 +553,200 @@ def _is_degraded_hint(match_text):
     soft motif as substring, so this is a faithful discriminator. Used by
     the sweep only -- the gate keeps both classes merged by design."""
     return any(p.search(match_text) for p in DEGRADED_HINT_PATTERNS)
+
+
+# Demo-mode stub marker (#18916): Lean-10 prints its deliberate skips under a
+# literal [SKIP] prefix, both from literal banners and from f-strings that
+# interpolate the caught exception -- the form a literal anchor cannot see.
+SKIP_MARK = "[SKIP]"
+
+
+def _base_cell_for(base_nb, cell):
+    """La meme cellule (par ``id``) dans le carnet de base, ou None.
+
+    L'``id`` est la cle stable entre deux revisions d'un carnet ; l'index ne
+    l'est pas (une cellule inseree decale tout ce qui suit). Une cellule sans
+    ``id`` -- ou absente de la base -- rend None : la base n'apporte alors
+    aucune preuve, et l'exemption garde son sens historique.
+    """
+    cid = cell.get("id") if isinstance(cell, dict) else None
+    if not cid or not base_nb:
+        return None
+    for other in base_nb.get("cells", []) or []:
+        if isinstance(other, dict) and other.get("id") == cid:
+            return other
+    return None
+
+
+def _preserves_base_render(base_cell, head_cell, matched):
+    """True si la tete preserve le rendu substantiel de la base (#19640 review).
+
+    Le critere `_substantial_output` ne dit qu'« il y a quelque chose »,
+    pas « le rendu specifique de la base survit a la tete ». Le
+    contre-exemple fondateur : base = SVG + ligne d'info, tete =
+    banniere + ligne d'info. Les deux cellules sont substantielles
+    (l'info passe les deux tests), et l'ancien code classait la tete DF
+    par `_declared_fallback` -- alors que le SVG a ete REMPLACE par la
+    banniere, c'est la classe de degat exacte (#3473 / #11685) que la
+    condition de base existe pour attraper.
+
+    Deux formes de preservation, chacune suffit :
+
+    1. **Types MIME non textuels de la base, tous dans la tete.**
+       ``image/svg+xml``, ``image/png``, ``text/html``, etc. -- un
+       rendu graphique n'a pas toujours de replique ``text/plain``,
+       et l'ignorer rouvrirait le trou. Le test est ensembliste : si
+       la tete a au moins les memes MIMEs non textuels que la base, le
+       rendu n'est pas perdu.
+
+    2. **La banniere matchee figurait deja dans la sortie de la base.**
+       Elle n'est alors pas nouvelle, donc ce n'est pas une
+       substitution -- c'est une decoration stable, portee par les
+       deux cellules. Le predicat est textuel : ``matched in
+       _cell_output_text(base_cell)``.
+
+    Le predicat est OR : l'un OU l'autre suffit, parce que les deux
+    formes disent la meme chose sous des angles differents (mime
+    binaire vs contenu textuel). Une cellule de base SANS MIME non
+    textuel et SANS la banniere n'a aucun critere applicable : c'est
+    un appel a la forme (1) reussie par vacuite, et la forme (2) qui
+    tranche -- et donc la preservation ne tient pas, la tete est
+    suspecte.
+
+    Cas vide (base_cell sans outputs, ou sans MIME/text pertinent) :
+    on rend ``False`` -- la preservation ne peut pas etre affirmee,
+    la prudence l'emporte.
+    """
+    base_mimes: set[str] = set()
+    for out in base_cell.get("outputs", []) or []:
+        for mime in (out.get("data") or {}).keys():
+            if mime != "text/plain":
+                base_mimes.add(mime)
+    if base_mimes:
+        head_mimes: set[str] = set()
+        for out in head_cell.get("outputs", []) or []:
+            for mime in (out.get("data") or {}).keys():
+                if mime != "text/plain":
+                    head_mimes.add(mime)
+        if base_mimes <= head_mimes:
+            return True
+    if matched:
+        base_text = _cell_output_text(base_cell)
+        if matched in base_text:
+            return True
+    return False
+
+
+def _substantial_output(cell):
+    """True si la cellule porte une sortie qui n'est pas qu'une banniere.
+
+    Test employe par la condition de base de ``_declared_fallback``. Deux
+    formes de contenu comptent :
+
+    - du texte dont au moins une LIGNE ne porte aucun des motifs doux -- une
+      banniere ``Graphviz non disponible : rendu du graphe saute`` est donc
+      ecartee **ligne a ligne**, pas par suppression du seul motif (qui
+      laisserait ``Graphviz  : rendu du graphe saute``, non vide) ;
+    - une donnee non textuelle (``image/svg+xml``, ``image/png``, ``text/html``)
+      -- un rendu n'a pas toujours de replique ``text/plain``, et l'ignorer
+      rouvrirait le trou sur les seules figures.
+    """
+    for out in cell.get("outputs", []) or []:
+        data = out.get("data") or {}
+        for mime, value in data.items():
+            if mime == "text/plain":
+                continue
+            if value:
+                return True
+    kept = []
+    for line in _cell_output_text(cell).splitlines():
+        if not line.strip():
+            continue
+        if any(p.search(line) for p in DEGRADED_HINT_PATTERNS):
+            continue
+        kept.append(line)
+    probe = "\n".join(kept)
+    for ban in BENIGN_BANNERS:
+        probe = ban.sub(" ", probe)
+    return bool(probe.strip())
+
+
+def _in_fallback(cell):
+    """True si la cellule porte deja un motif doux en sortie (#19697).
+
+    Une cellule de repli execute son chemin normal AVANT d'echouer : ses
+    lignes d'echo (``Inpainting: '...'``, ``Soumission du workflow...``)
+    rendent sa sortie ``substantial`` au sens du test ci-dessus sans que ce
+    soient des rendus remplaces. La condition de base de ``_declared_fallback``
+    ne peut donc pas se lire seule : repli a la base = exemption conservee.
+    """
+    return any(p.search(_cell_output_text(cell))
+               for p in DEGRADED_HINT_PATTERNS)
+
+
+def _declared_fallback(nb, idx, out_text, matched, base_nb=None):
+    """True si une occurrence DOUCE est un fallback DECLARE par la cellule (#18916).
+
+    Le mode demo de Lean-10 (#18893) stubbe lean_dojo absent : chaque cellule
+    stubbee imprime une banniere 'non disponible' / 'not available' DELIBEREE,
+    et le ratchet la comptait comme TOOL_FAILURE 0 -> N. Le diagnostic C.4 de
+    la PR etait CAUSE_DOCUMENTED_ONLY : la sortie dit exactement ce que la
+    source declare. Deux ancres, chacune suffit :
+
+    (a) la sous-chaine matchee vit en LITTERAL dans la source -- le print de
+        garde du stub l'imprime depuis la source ;
+    (b) la source imprime le marqueur [SKIP] et la sortie le porte -- le cas
+        d'un stub qui interpole l'exception (``print(f"[SKIP] ...: {e}")``),
+        dont la banniere n'est pas un litteral de la source.
+
+    Fail-safe conservateur : toute divergence (chaine absente de la source,
+    marqueur absent d'un cote) laisse le hit en TOOL_FAILURE. Les motifs DURS
+    ne passent jamais ici -- scan() leur donne priorite meme dans un stream
+    stubbe, donc une vraie panne a cote d'une banniere demo reste visible.
+
+    Condition de base (review ai-01 sur #19038, affinee #19697). Les deux
+    ancres ci-dessus ne distinguent pas un mode demo DECLARE d'une degradation
+    SUBIE a la re-execution : toute cellule a ``try/except`` porte sa banniere
+    en litteral dans sa source, les deux tiennent dans la meme ligne. Quand
+    ``base_nb`` est fourni et que la meme cellule (par ``id``) portait une
+    sortie substantielle ET hors repli a la base, le hit reste TOOL_FAILURE :
+    la banniere a REMPLACE un rendu, c'est une perte de capacite (#3473 /
+    #11685), pas un repli documente. Une cellule nouvelle, ou deja en repli
+    a la base, garde l'exemption -- y compris quand la sortie de repli de la
+    base porte des lignes d'echo pre-echec (``Inpainting: '...'``, soumission
+    du workflow) : ce sont la sortie normale du chemin de repli, pas des
+    rendus remplaces (#19697, faux positif mesure sur 01-5b-Qwen-Image-Edit).
+    """
+    cells = nb.get("cells", []) or []
+    if not (0 <= idx < len(cells)):
+        return False
+    cell = cells[idx]
+    src = _cell_source(cell)
+    declared = ((matched and matched in src)
+                or (SKIP_MARK in src and SKIP_MARK in out_text))
+    if not declared:
+        return False
+    base_cell = _base_cell_for(base_nb, cell)
+# Coexistence (#19638 + #19640): si la cellule porte une sortie
+    # substantielle a la fois en base et en head, la banniere est
+    # decoration, pas remplacement -- mais seulement si la cellule
+    # head preserve le rendu de la base (#19640). La simple
+    # substantialite est insuffisante : "try/except: print(banner);
+    # print(info)" est substantial des deux cotes via la ligne info,
+    # mais le SVG derriere display(...) est perdu -- c'est la
+    # substitution que la garde doit attraper. La branche main
+    # utilise _in_fallback pour distinguer decoration d'un fallback
+    # declare.
+    if (base_cell is not None and _substantial_output(base_cell)
+            and not _in_fallback(base_cell)
+            and not _substantial_output(cell)):
+        return False
+    if (base_cell is not None and _substantial_output(base_cell)
+            and _substantial_output(cell)):
+        if _preserves_base_render(base_cell, cell, matched):
+            return True
+        return False
+    return True
 
 
 def _sample_location(loc):
@@ -518,8 +776,11 @@ def compare(base_ref, head_ref, paths, cwd=None):
         # one file -- the over-accusation shape measured on #11528 and #11668.
         # It is reported (advisory) and never gates.
         added = base_nb is None
+        # The base side is scanned without a base of its own: its counts keep
+        # their historical classification, so a branch cannot lower the bar by
+        # reclassifying the reference it is measured against.
         b = scan(base_nb)
-        h = scan(head_nb)
+        h = scan(head_nb, base_nb=base_nb)
         row = {"notebook": path, "added": added, "classes": {}}
         regressed = False
         for cls in ("TOOL_FAILURE", "MACHINE_PATH"):
@@ -531,6 +792,12 @@ def compare(base_ref, head_ref, paths, cwd=None):
                 entry["samples"] = [{"cell": c, "match": t}
                                     for c, t in h[cls][:6]]
             row["classes"][cls] = entry
+        # DECLARED_FALLBACK (#18916): soft motifs whose banner is printed BY
+        # THE CELL'S OWN SOURCE (demo-mode stubs). Advisory only -- never in
+        # the gating loop above, so a branch adding stubs does not regress.
+        df_b, df_h = len(b["DECLARED_FALLBACK"]), len(h["DECLARED_FALLBACK"])
+        row["classes"]["DECLARED_FALLBACK"] = {
+            "base": df_b, "head": df_h, "delta": df_h - df_b}
         # Advisory axis (#14603): needs a base blob, never gates.
         row["capability_downgrades"] = (capability_downgrades(base_nb, head_nb)
                                         if base_nb is not None else [])
@@ -567,6 +834,20 @@ def self_test(cwd=None):
             failures.append("benign text matched " + str(hit) + ": "
                             + repr(benign))
 
+    # URL controls (#18567): a cited web page under /home/<user>/ is silent,
+    # while a local-server URL, a file:// URL and a bare path sitting next to
+    # a web URL still fire.
+    web_cite = ("4. RAG vs Fine-tuning: "
+                "https://www.ccs.neu.edu/home/alina/classes/Fall2024/Lecture11.pdf")
+    if any(p.search(_path_probe(web_cite)) for p in MACHINE_PATH_PATTERNS):
+        failures.append("web URL read as a machine path: " + repr(web_cite))
+    for leak in ("http://localhost:8888/files/home/agent/CoursIA/x.ipynb",
+                 "file:///home/agent/CoursIA/x.ipynb",
+                 "voir https://example.org/a puis /home/agent/CoursIA/y.py"):
+        if not any(p.search(_path_probe(leak)) for p in MACHINE_PATH_PATTERNS):
+            failures.append("machine path hidden by the URL filter: "
+                            + repr(leak))
+
 
     # Benign banner: matched by "not available", neutralised by
     # BENIGN_BANNERS -- and it must NOT mask a real failure in the same
@@ -597,6 +878,116 @@ def self_test(cwd=None):
     if not _one(_sandbox + "\nModuleNotFoundError: No module named 'simanneal'"):
         failures.append("sandbox banner masked a real failure in the same "
                         "stream")
+
+    # Declared fallback (#18916): a demo-mode stub whose banner is printed BY
+    # THE CELL'S OWN SOURCE is a DECLARED_FALLBACK, not a TOOL_FAILURE. Two
+    # anchors (literal substring, [SKIP] marker on both sides), and the
+    # negative direction for each: without the declaration the soft motif
+    # still fires, and a real failure next to a declared banner still fires
+    # -- an exemption that only proves it silences is indistinguishable
+    # from a hole.
+    _stub_src = "print('[SKIP] LeanDojo non disponible')"
+    _stub_interp = ("try:\n    import lean_dojo\n"
+                    "except Exception as e:\n"
+                    "    print(f'[SKIP] LeanRunner indisponible: {e}')")
+
+    def _scan1(source, out_text):
+        return scan({"cells": [{"cell_type": "code", "source": source,
+                                "outputs": [{"output_type": "stream",
+                                             "text": out_text}]}]})
+
+    _lit = _scan1(_stub_src, "[SKIP] LeanDojo non disponible")
+    if _lit["TOOL_FAILURE"] or len(_lit["DECLARED_FALLBACK"]) != 1:
+        failures.append("literal-source demo stub not exempted: "
+                        + repr(_lit))
+    _int = _scan1(_stub_interp,
+                  "[SKIP] LeanRunner indisponible: LeanDojo not available. "
+                  "Install with: pip install lean-dojo")
+    if _int["TOOL_FAILURE"] or len(_int["DECLARED_FALLBACK"]) != 1:
+        failures.append("interpolated [SKIP] demo stub not exempted: "
+                        + repr(_int))
+    _undeclared = _scan1("print(result)", "Graphviz non disponible")
+    if len(_undeclared["TOOL_FAILURE"]) != 1 or _undeclared["DECLARED_FALLBACK"]:
+        failures.append("undeclared soft motif exempted (hole): "
+                        + repr(_undeclared))
+    _mixed = _scan1(_stub_src,
+                    "[SKIP] LeanDojo non disponible\n"
+                    "bash: dot: command not found")
+    if not _mixed["TOOL_FAILURE"]:
+        failures.append("declared stub masked a real failure in the same "
+                        "stream: " + repr(_mixed))
+
+    # Base-conditioned exemption (#19038 review, ai-01). The two anchors above
+    # cannot tell a declared demo stub from a degradation SUFFERED at
+    # re-execution: every try/except cell carries its banner as a literal in
+    # its own source. A banner that REPLACES a real output is a capability
+    # loss and must stay a TOOL_FAILURE.
+    _graphviz_src = ("try:\n"
+                     "    import graphviz\n"
+                     "    g = graphviz.Digraph(); g.edge('a', 'b'); display(g)\n"
+                     "except ImportError:\n"
+                     "    print('Graphviz non disponible : rendu du graphe "
+                     "saute')")
+    _banner = [{"output_type": "stream",
+                "text": "Graphviz non disponible : rendu du graphe saute"}]
+    _render = [{"output_type": "display_data",
+                "data": {"image/svg+xml": "<svg/>",
+                         "text/plain": "<graphviz.Digraph object>"}}]
+
+    def _cid(cid, source, outputs):
+        return {"cell_type": "code", "id": cid, "source": source,
+                "outputs": outputs}
+
+    _base_render = {"cells": [_cid("c-gv", _graphviz_src, _render)]}
+    _head_banner = {"cells": [_cid("c-gv", _graphviz_src, _banner)]}
+
+    _replaced = scan(_head_banner, base_nb=_base_render)
+    if len(_replaced["TOOL_FAILURE"]) != 1 or _replaced["DECLARED_FALLBACK"]:
+        failures.append("a banner replacing a real base render was exempted "
+                        "(hole): " + repr(_replaced))
+    # Direction that must KEEP the exemption: already in fallback at base.
+    _already = scan(_head_banner,
+                    base_nb={"cells": [_cid("c-gv", _graphviz_src, _banner)]})
+    if _already["TOOL_FAILURE"] or len(_already["DECLARED_FALLBACK"]) != 1:
+        failures.append("a cell already in fallback at base lost its "
+                        "exemption: " + repr(_already))
+    # #19697: same direction, but the base fallback run carries pre-failure
+    # echo lines ("Inpainting: '...'", "Soumission du workflow...") that make
+    # it substantial. The echoes are the normal output of the degraded path,
+    # not a replaced render -- the exemption must hold. Measured on
+    # 01-5b-Qwen-Image-Edit-2509 cell-10: byte-identical banner at base and
+    # head, ratchet FAIL 0 -> 1 on a nav-line-only diff.
+    _echo_src = ("try:\n"
+                 "    print(\"Inpainting: 'un ordinateur portable'\")\n"
+                 "    print('Soumission du workflow...')\n"
+                 "    api.post(workflow)\n"
+                 "except Exception:\n"
+                 "    print('API non disponible: Exception')\n"
+                 "    print('Workflow defini - necessite API ComfyUI active')")
+    _echo_banner = [{"output_type": "stream",
+                     "text": "Inpainting: 'un ordinateur portable'\n"
+                             "Soumission du workflow...\n"
+                             "API non disponible: Exception\n"
+                             "Workflow defini - necessite API ComfyUI active"}]
+    _echoed = scan({"cells": [_cid("c-echo", _echo_src, _echo_banner)]},
+                   base_nb={"cells": [_cid("c-echo", _echo_src, _echo_banner)]})
+    if _echoed["TOOL_FAILURE"] or len(_echoed["DECLARED_FALLBACK"]) != 1:
+        failures.append("a fallback-with-echoes base lost its exemption "
+                        "(#19697): " + repr(_echoed))
+    # ... and a cell that is NEW at head (no base carrier).
+    _new = scan({"cells": [_cid("c-new", _graphviz_src, _banner)]},
+                base_nb=_base_render)
+    if _new["TOOL_FAILURE"] or len(_new["DECLARED_FALLBACK"]) != 1:
+        failures.append("a cell new at head lost its exemption: "
+                        + repr(_new))
+    # A base render stored only as a mime (no text/plain repr) still counts.
+    _mime = scan(_head_banner, base_nb={"cells": [
+        _cid("c-gv", _graphviz_src,
+             [{"output_type": "display_data",
+               "data": {"image/svg+xml": "<svg/>"}}])]})
+    if len(_mime["TOOL_FAILURE"]) != 1:
+        failures.append("a base render without a text/plain repr was not "
+                        "seen: " + repr(_mime))
 
     # Capability axis (#14603): witnesses first, then the couple controls.
     # A witness line the patterns do not match is a hole by construction.
@@ -774,10 +1165,13 @@ def main(argv=None):
         rows = []
         for path in all_notebooks():
             found = scan(read_notebook_at(None, path))
-            if found["TOOL_FAILURE"] or found["MACHINE_PATH"]:
+            if (found["TOOL_FAILURE"] or found["MACHINE_PATH"]
+                    or found["DECLARED_FALLBACK"]):
                 # Ventilation (#11692): soft-motif hits leave the
                 # TOOL_FAILURE count and are reported as DEGRADED_HINT --
-                # never summed back.
+                # never summed back. #18916: the soft hits whose banner is
+                # printed by the cell's own source (demo stubs) ventilate
+                # further into DECLARED_FALLBACK.
                 tool = [(c, t) for c, t in found["TOOL_FAILURE"]
                         if not _is_degraded_hint(t)]
                 hint = [(c, t) for c, t in found["TOOL_FAILURE"]
@@ -788,10 +1182,14 @@ def main(argv=None):
                                      for c, t in tool],
                     "DEGRADED_HINT": [{"cell": c, "match": t}
                                       for c, t in hint],
+                    "DECLARED_FALLBACK": [{"cell": c, "match": t}
+                                          for c, t in
+                                          found["DECLARED_FALLBACK"]],
                     "MACHINE_PATH": [{"cell": c, "match": t}
                                      for c, t in found["MACHINE_PATH"]]})
         total_tool = sum(len(r["TOOL_FAILURE"]) for r in rows)
         total_hint = sum(len(r["DEGRADED_HINT"]) for r in rows)
+        total_declared = sum(len(r["DECLARED_FALLBACK"]) for r in rows)
         total_path = sum(len(r["MACHINE_PATH"]) for r in rows)
         if args.as_json:
             print(json.dumps({"mode": "sweep", "provenance": provenance,
@@ -799,6 +1197,7 @@ def main(argv=None):
                               "worktree": dirty, "notebooks": len(rows),
                               "hits": {"TOOL_FAILURE": total_tool,
                                        "DEGRADED_HINT": total_hint,
+                                       "DECLARED_FALLBACK": total_declared,
                                        "MACHINE_PATH": total_path},
                               "rows": rows}, indent=2, ensure_ascii=False))
         else:
@@ -808,13 +1207,18 @@ def main(argv=None):
             # #11692: the sweep names what it measures. TOOL_FAILURE is the
             # substantial backlog; DEGRADED_HINT (deliberate "non disponible"
             # banners) is reported for visibility and NEVER added to it.
+            # #18916: DECLARED_FALLBACK is the subset whose banner the cell
+            # source itself prints (demo stubs) -- documented, not owed.
             print("TOOL_FAILURE " + str(total_tool)
                   + " | DEGRADED_HINT " + str(total_hint)
-                  + " (reported, not summed) | MACHINE_PATH " + str(total_path))
+                  + " (reported, not summed) | DECLARED_FALLBACK "
+                  + str(total_declared) + " | MACHINE_PATH "
+                  + str(total_path))
             for r in rows:
                 print("  " + r["notebook"]
                       + "  tool=" + str(len(r["TOOL_FAILURE"]))
                       + " hint=" + str(len(r["DEGRADED_HINT"]))
+                      + " declared=" + str(len(r["DECLARED_FALLBACK"]))
                       + " path=" + str(len(r["MACHINE_PATH"])))
         return 0
 

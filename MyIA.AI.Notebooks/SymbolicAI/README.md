@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 307
-breakdown: Lean=71, SMT=46, Tweety=39, Argument_Analysis=36, SmartContracts=31, SemanticWeb=28, SymbolicLearning=26, Planners=25, Geometry=4, root=1
-maturity: BETA=296, ALPHA=7, DRAFT=4
+pedagogical_count: 329
+breakdown: Lean=98, SMT=47, Tweety=39, Argument_Analysis=32, SmartContracts=32, SemanticWeb=28, SymbolicLearning=27, Planners=25, root=1
+maturity: BETA=314, ALPHA=9, DRAFT=6
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette famille de séries explore.
@@ -22,6 +22,18 @@ Les séries couvrent ensemble le **cycle complet du raisonnement vérifiable** :
 - **relier** ce pipeline aux LLMs : Argumentation.
 
 Chaque série est autonome. Un fil rouge les traverse pourtant : du formalisme pur à la vérification certifiée, jusqu'au moment où le symbolique et le neuronal cessent d'être deux camps pour devenir deux couches d'un même système fiable.
+
+## Objectifs d'apprentissage
+
+À l'issue d'un parcours sur la famille **SymbolicAI**, le lecteur est capable de :
+
+1. **Représenter** la connaissance sous forme symbolique et la rendre manipulable par une machine — logiques formelles, révision de croyances, argumentation abstraite (Dung, ASPIC+, AGM, Pearl) côté [Tweety](Tweety/README.md) (cell.0 de `Tweety-01-Setup-Python.ipynb`) ; graphes RDF, interrogation SPARQL 1.1, ontologies RDFS/OWL, validation SHACL, JSON-LD et RDF-Star côté [SemanticWeb](SemanticWeb/README.md) (cell.0 de `SW-2b-Python-RDFBasics.ipynb`) ; analyse argumentative outillée (Toulmin, sophismes Walton, sémantiques de Dung) côté [Argument_Analysis](Argument_Analysis/README.md) (cell.0 de `Argumentation-00-Setup-Tweety-Python.ipynb`).
+2. **Prouver** la correction d'un énoncé par assistant de preuve interactif — types dépendants, isomorphisme de Curry-Howard, tactiques Lean, librairie Mathlib4 côté [Lean](Lean/README.md) (cell.0 de `Lean-01-Setup-Lean-Python.ipynb`) ; démonstration automatique en géométrie (vérification probabiliste, bases de Gröbner, méthode de Wu) côté Lean/Geometry (notebook `Geometry-01-From-Figure-To-Equation`).
+3. **Décider** la satisfiabilité et optimiser sous contraintes — encodeur SMT-LIB, preuves par `unsat`, arithmétique linéaire/non-linéaire, optimisation modulo théories côté [SMT](SMT/README.md) (cell.0 de `Z3-API/Z3-01-Introduction-Python.ipynb`) ; planification classique PDDL, recherche dans l'espace d'états, heuristiques, CP-SAT, planification temporelle et hiérarchique côté [Planners](Planners/README.md) (cell.0 de `00-Environment/Planners-0-Setup.ipynb`).
+4. **Exécuter** dans un monde simulé ou sur blockchain — agents autonomes, recherche heuristique et compromis expressivité/temps de recherche côté Planners (notebooks `Planners-1-*`) ; standards de jetons (ERC-20, ERC-721), DeFi, gouvernance on-chain, ZK, conservation de la valeur côté [SmartContracts](SmartContracts/README.md) (cell.0 de `00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb`).
+5. **Apprendre** à partir de connaissances plutôt que de données et **relier** le symbolique au neuronal — version space, explanation-based learning, programmation logique inductive (FOIL), automates, neuro-symbolique côté [SymbolicLearning](SymbolicLearning/README.md) (cell.0 de `SL-1-LogicalLearning.ipynb`) ; orchestration d'agents LLM validés par Tweety, détection de sophismes, prompting structuré côté Argument_Analysis (notebooks `Argumentation-04-*`).
+
+Chaque verbe se construit par accumulation : un lecteur qui ne suit qu'une série atteint un sous-ensemble, et c'est en croisant les huit qu'il couvre la carte complète. Les **flèches pleines** de la [carte de la famille](#carte-de-la-famille) ci-dessous matérialisent les ponts : une compétence acquise dans Tweety devient argument dans Argument_Analysis, un encodage SMT devient prouveur de borne dans Planners, une ontologie OWL devient garde-fou pour un LLM via GraphRAG.
 
 ## Comment lire ce README
 
@@ -113,7 +125,7 @@ Trois séries se prennent **à côté** de ce parcours, selon ce qui vous attire
 |---|---|---|---|---|---|
 | [Argumentation](Argument_Analysis/README.md) | Analyse argumentative outillée : Toulmin, sophismes, sémantiques de Dung, orchestration d'agents LLM validés par Tweety | les bases de Tweety, une clé d'API | [Argumentation-00-Setup-Tweety-Python](Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb) | Licence | Python |
 | [SymbolicLearning](SymbolicLearning/README.md) | Apprentissage à partir de connaissances (AIMA ch. 19) : Version Space, EBL, programmation logique inductive, automates, neuro-symbolique | Python seul | [SL-1-LogicalLearning](SymbolicLearning/SL-1-LogicalLearning.ipynb) | Licence | Python · C# |
-| [Geometry](Geometry/README.md) | Démonstration automatique en géométrie : vérification probabiliste, bases de Gröbner, méthode de Wu | la géométrie du lycée | [Geometry-01-From-Figure-To-Equation](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) | Découverte | Python |
+| [Geometry](Lean/Geometry/README.md) | Démonstration automatique en géométrie : vérification probabiliste, bases de Gröbner, méthode de Wu | la géométrie du lycée | [Geometry-01-From-Figure-To-Equation](Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb) | Découverte | Python |
 
 ## Les séries en bref
 
@@ -180,12 +192,14 @@ Le dossier s'appelle encore `Argument_Analysis/`, mais la série s'appelle Argum
 Un même théorème, le milieu de l'hypoténuse équidistant des trois sommets, traverse des méthodes de plus en plus fortes.
 
 - **Parcours léger** — 01 à 03 :
-  - [01](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) (Découverte) : on vérifie le théorème numériquement (Schwartz–Zippel) ;
-  - [02](Geometry/Geometry-02-From-Equation-To-Proof.ipynb) (Licence) : on le démontre exactement par bases de Gröbner, en traitant les non-dégénérescences par saturation ;
-  - [03](Geometry/Geometry-03-Wu-Method-Python.ipynb) (Licence) : on le redémontre par la méthode de Wu, qui fait apparaître ces conditions explicitement.
-- **Pour approfondir** — [03b](Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb) : le théorème du papillon et la décomposition de Ritt, avec le bord dégénéré où l'énoncé est muet et non faux.
-- **À venir** — le raisonnement du géomètre (DD+AR) et un pont formel vers Lean.
-- [README de la série Geometry](Geometry/README.md) : programme gradué (Epic #17544) et état.
+  - [01](Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb) (Découverte) : on vérifie le théorème numériquement (Schwartz–Zippel) ;
+  - [02](Lean/Geometry/Geometry-02-From-Equation-To-Proof.ipynb) (Licence) : on le démontre exactement par bases de Gröbner, en traitant les non-dégénérescences par saturation ;
+  - [03](Lean/Geometry/Geometry-03-Wu-Method-Python.ipynb) (Licence) : on le redémontre par la méthode de Wu, qui fait apparaître ces conditions explicitement ;
+  - [04](Lean/Geometry/Geometry-04-DD-AR-Python.ipynb) (Licence) : on le prouve par règles (DD) puis par l'algèbre (AR), le duo symbolique d'AlphaGeometry — et un énoncé faux y est réfuté deux fois.
+- **Pour approfondir** — [03b](Lean/Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb) : le théorème du papillon et la décomposition de Ritt, avec le bord dégénéré où l'énoncé est muet et non faux.
+- **Recherche** — [05](Lean/Geometry/Geometry-05-Pont-Formel-Python.ipynb) : le pont formel — le fil rouge prouvé au noyau Lean/Mathlib, confronté au même théorème décidé par Gröbner, et ce que chacune des deux méthodes garantit réellement.
+- **À venir** — 04b, l'accrétion de recherche de la série (Wu associé à DD+AR, proposeur neuronal — Sinha et al. 2024).
+- [README de la série Geometry](Lean/Geometry/README.md) : programme gradué (Epic #17544) et état.
 
 ### Hors série
 
@@ -369,7 +383,7 @@ Nombre de notebooks par série, noyaux et maturité : le bloc `CATALOG-STATUS` e
 - [Search](../Search/README.md) et [Sudoku](../Sudoku/README.md) : résolution par contraintes et SAT.
 - [GameTheory](../GameTheory/README.md) : choix social, théorie des jeux, formalisations Lean.
 - [Probas](../Probas/README.md) : programmation probabiliste avec Infer.NET.
-- La [lecture transversale](../../docs/grothendieckian-lens.md) relie ces séries par une même grille : changement de représentation et niveaux de certification.
+- La [lecture transversale](../../docs/cadrage/grothendieckian-lens.md) relie ces séries par une même grille : changement de représentation et niveaux de certification.
 
 ## Ressources
 

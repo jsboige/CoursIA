@@ -182,10 +182,11 @@ def test_diff_signatures_identical():
 
 
 def test_diff_signatures_float_drift():
-    # NumPy 1.x: [1.0, 1.0, ...]
-    # NumPy 2.x: [1.0, 0.9999999999999999, 1.0, ...]
+    # #19961 : la paire NumPy 1.x/2.x (1.0 vs 0.9999999999999999, 1 ULP)
+    # est du bruit assume (contre-temoin 1-ULP en fin de fichier) ; le
+    # controle positif garde un drift reel a 2 ULP.
     a = (("[1.0, 1.0, 1.0, 1.0, 1.0]",),)
-    b = (("[1.0, 0.9999999999999999, 1.0, 1.0, 1.0]",),)
+    b = (("[1.0, 0.9999999999999998, 1.0, 1.0, 1.0]",),)
     assert ckd.diff_signatures(a, b) == [0]
 
 
@@ -203,7 +204,7 @@ def test_diff_signatures_removed_cell():
 
 def test_diff_signatures_complex_float_with_exponent():
     a = (("[-1.5e+00, 2.5e-01, 3.14159]",),)
-    b = (("[-1.5e+00, 2.5000000000000004e-01, 3.14159]",),)
+    b = (("[-1.5e+00, 0.2500000000000001, 3.14159]",),)
     assert ckd.diff_signatures(a, b) == [0]
 
 
@@ -271,7 +272,7 @@ def test_diff_signatures_added_empty_cell_does_not_mask_a_real_drift():
     """An empty added cell must not mask drift on a common cell."""
     assert _id_aligned_diffs(
         [("c1", "[1.0, 1.0]\n"), ("c2", "[2.0, 2.0]\n")],
-        [("params-new", None), ("c1", "[1.0, 0.9999999999999999]\n"),
+        [("params-new", None), ("c1", "[1.0, 0.9999999999999998]\n"),
          ("c2", "[2.0, 2.0]\n")],
     ) == ["c1"]
 
@@ -317,11 +318,159 @@ def test_canonical_transition_kernelspec_change_refused():
     assert ckd.accepted_canonical_transition(a, b) is False
 
 
-def test_canonical_transition_python_minor_stays_out():
-    # La classe fondatrice (Python 3.11 -> 3.13) reste hors table : la
-    # table est scoped au kernel, pas au couple de numeros.
+# --- #19181 : table d'acceptation canon Python (QC/Python) -----------------
+# Mesure du 2026-10-05 sur la serie QC/Python : 11 versions heterogenes
+# (3.8.10 a 3.13.14) ; 60 carnets ``python3`` + 2 ``conda-torch``.
+# Decision duale coord. (2026-10-05T03:43:46Z, DM
+# msg-20261005T034346-qyldsl) :
+#   - canon des algorithmes deployes sur QC Cloud = Python 3.11
+#     (documented in ``MyIA.AI.Notebooks/QuantConnect/requirements.txt``) ;
+#   - canon de l'execution locale des carnets = Python 3.13 (l'interpreteur
+#     de la flotte qui ecrit ``language_info.version`` a chaque rejeu).
+# Transitions acceptees en direction du canon : 3.10 -> 3.11 (historique
+# QC Cloud), 3.11 -> 3.13 (convergence locale), 3.10 -> 3.13 (cas
+# fondateur de #19181, PR #19163 : 3.10.11 -> 3.13.3), et 3.12 -> 3.13
+# (anticipation de convergence ; ICT-47 sur main est a `py310-gpu`
+# 3.12.13, kernelspec distinct de `python3`, donc hors scope de ce
+# tuple -- l'entree anticipe un futur carnet `python3` a 3.12). La
+# direction inverse reste rouge.
+
+
+def test_canonical_transition_python_311_to_313_accepted():
+    # Positif 1 : la convergence vers Python 3.13 (canon d'execution) est
+    # couverte.
     a = {"language_version": "3.11.16", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is True
+    # la derive brute existe bien -- c'est la table qui l'accepte.
+    assert ckd.diff_kernel(a, b)
+
+
+def test_canonical_transition_python_310_to_311_accepted():
+    # Positif 2 : la migration historique vers le canon QC Cloud 3.11 est
+    # couverte.
+    a = {"language_version": "3.10.19", "kernelspec_name": "python3"}
+    b = {"language_version": "3.11.9", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is True
+
+
+def test_canonical_transition_python_31011_to_3133_accepted():
+    # Positif 3 (cas fondateur #19181, PR #19163) : la convergence directe
+    # 3.10.11 -> 3.13.3 est couverte. La flotte rejette les carnets en
+    # 3.13 (interpreteur local), donc cette transition est le passage
+    # reel ; les transitions via 3.11 sont possibles mais ne se
+    # composent pas (cle tuple exact).
+    a = {"language_version": "3.10.11", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is True
+
+
+def test_canonical_transition_python_38_to_313_refused():
+    # Negatif 5 : 3.8 -> 3.13 reste rouge par construction. Le saut 3.8
+    # n'est pas couvert par la table (serie ICT pinnée <3.10, pyphi==1.2.0,
+    # mesure #19160 ; sans scope par chemin/série, ajouter la transition
+    # ferait passer vert un carnet ICT rejoue par erreur -- reserve Hermes
+    # PRR_kwDOH2Odns8AAAABQnPfEQ, 2026-10-05). Les 2 rescapes 3.8.10/3.9.0
+    # sont traites au cas par cas : QC-Py-16 via la table scoped
+    # (tests ci-dessous), QC-Py-03 verdict INTRINSIC (metadonnee fossile,
+    # aucune cellule executable localement).
+    a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_python_39_to_313_refused():
+    # Negatif 6 : 3.9 -> 3.13 reste rouge (meme raison que 3.8).
+    a = {"language_version": "3.9.0", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_scoped_qcpy16_38_to_313_accepted():
+    # Cas par cas #19181 (decision coordinateur du 11/10) : le seul carnet
+    # nominatif porte sa transition -- QC-Py-16, re-execution selective du
+    # sous-ensemble local (cellules REF QC Cloud non executables
+    # localement) sous le canon d'execution 3.13.
+    a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    path = ("MyIA.AI.Notebooks/QuantConnect/Python/"
+            "QC-Py-16-Alternative-Data.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+
+
+def test_canonical_transition_scoped_does_not_leak_to_other_paths():
+    # La meme transition 3.8 -> 3.13 reste rouge ailleurs : le scope protege
+    # la serie ICT (<3.10) -- c'est la raison d'etre de la table scoped.
+    a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+    assert ckd.accepted_canonical_transition(
+        a, b, nb_path="MyIA.AI.Notebooks/IIT/ICT-47.ipynb") is False
+
+
+def test_canonical_transition_scoped_reverse_still_refused():
+    # Direction inverse : rouge meme sur le chemin scope (le cliquet ne
+    # descend pas).
+    a = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    b = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    path = ("MyIA.AI.Notebooks/QuantConnect/Python/"
+            "QC-Py-16-Alternative-Data.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
+def test_canonical_transition_python_313_to_311_refused():
+    # Negatif 1 : la direction inverse est une regression du canon.
+    a = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    b = {"language_version": "3.11.16", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_python_311_to_310_refused():
+    # Negatif 2 : retombada sur 3.10 apres adoption du canon 3.11.
+    a = {"language_version": "3.11.9", "kernelspec_name": "python3"}
+    b = {"language_version": "3.10.19", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_python_313_to_38_refused():
+    # Negatif 3 : retomber de 3.13 a 3.8 reste rouge, meme si 3.8 -> 3.13
+    # est accepte dans l'autre sens.
+    a = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    b = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_python_31213_to_3133_accepted():
+    # Positif : la transition 3.12 -> 3.13 est couverte. Anticipation :
+    # aucun carnet main n'exerce aujourd'hui le tuple (`python3`, `3.12`,
+    # `3.13`) — le seul carnet a 3.12 mesure est ICT-47
+    # (PainAxisDistillation), dont le kernelspec est `py310-gpu` (distinct
+    # de `python3`), donc hors scope de ce tuple (le cliquet exige le meme
+    # nom de kernel entre base et tete). L'entree est ajoutee pour
+    # preparer la convergence d'un futur carnet `python3` a 3.12.x. Le
+    # temoin effectif du test est le tuple synthetique ci-dessous, pas
+    # ICT-47. Ajout a la demande du coordinateur (commentaire 5988053521,
+    # 2026-10-05T04:22Z), oubli du dispatch initial qui ne listait pas
+    # 3.12 dans les couverts.
+    a = {"language_version": "3.12.13", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is True
+
+
+def test_canonical_transition_python_313_to_312_refused():
+    # Negatif : la direction inverse 3.13 -> 3.12 reste rouge (n'a pas
+    # ete ajoutee a la table ; convention : la table n'accepte que les
+    # convergences vers le canon, pas la descente).
+    a = {"language_version": "3.13.3", "kernelspec_name": "python3"}
+    b = {"language_version": "3.12.13", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_python_kernelspec_change_refused():
+    # Negatif 4 : un changement de kernelspec.name reste rouge, meme avec
+    # des versions couvertes par la table.
+    a = {"language_version": "3.11.9", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.3", "kernelspec_name": "python311"}
     assert ckd.accepted_canonical_transition(a, b) is False
 
 
@@ -362,10 +511,135 @@ def test_run_canonical_transition_does_not_mask_sig_drift(monkeypatch):
     # signature float coexistante reste un finding (elle releve de C.4).
     base_nb = _nb(".net-csharp", "12.0", ["[1.0, 1.0, 1.0]\n"])
     head_nb = _nb(".net-csharp", "13.0",
-                  ["[1.0, 0.9999999999999999, 1.0]\n"])
+                  ["[1.0, 0.9999999999999998, 1.0]\n"])
     result = _patched_run(monkeypatch, base_nb, head_nb)
     assert len(result["findings"]) == 1
     f = result["findings"][0]
     assert f["kernel_diffs"] == []
     assert f["signature_drift_cells"]
     assert f["canonical_transition"] is True
+
+# --- #19961 : tolerance numerique 1 ULP (decision bruit assume) ------------
+# Tests consolides ici (fichier canonique du guard) : le pairage 1-ULP est
+# du bruit, 2 ULP et plus restent du drift. Les fixtures historiques plus
+# haut passent leurs valeurs derivees a 2 ULP pour la meme decision.
+
+from check_kernel_drift import (  # noqa: E402
+    _diff_signatures_ordinal,
+    _signatures_equivalent,
+    _within_ulp,
+    diff_signatures,
+    float_signatures,
+)
+
+ONE_ULP_BELOW_1 = 0.9999999999999999   # 1 nextafter step sous 1.0
+TWO_ULP_BELOW_1 = 0.9999999999999998   # 2 steps
+
+
+def _nb_ulp(*outputs_text, cell_id="c1"):
+    return {
+        "cells": [
+            {
+                "cell_type": "code",
+                "id": cell_id,
+                "outputs": [
+                    {"output_type": "execute_result",
+                     "data": {"text/plain": text}}
+                    for text in outputs_text
+                ],
+            }
+        ]
+    }
+
+
+class TestWithinUlp:
+    def test_exact_equality(self):
+        assert _within_ulp(1.0, 1.0)
+
+    def test_one_ulp_is_noise(self):
+        assert _within_ulp(1.0, ONE_ULP_BELOW_1)
+        assert _within_ulp(ONE_ULP_BELOW_1, 1.0)
+
+    def test_two_ulp_is_drift(self):
+        assert not _within_ulp(1.0, TWO_ULP_BELOW_1)
+
+    def test_nan_nan_accepted(self):
+        assert _within_ulp(float("nan"), float("nan"))
+
+    def test_nan_vs_value_refused(self):
+        assert not _within_ulp(float("nan"), 1.0)
+
+    def test_infinities_require_exact_sign(self):
+        assert _within_ulp(float("inf"), float("inf"))
+        assert not _within_ulp(float("inf"), float("-inf"))
+        assert not _within_ulp(float("inf"), 1e308)
+
+    def test_subnormal_one_step(self):
+        assert _within_ulp(0.0, 5e-324)     # le plus petit sous-normal
+        assert not _within_ulp(0.0, 1e-323)
+
+    def test_complex_partwise(self):
+        assert _within_ulp(complex(1.0, 2.0), complex(ONE_ULP_BELOW_1, 2.0))
+        assert not _within_ulp(complex(1.0, 2.0), complex(1.0, 2.5))
+
+
+class TestSignaturesEquivalent:
+    def test_numpy2_repr_case_is_noise(self):
+        """Le cas fondateur : NumPy 1.x imprime 1.0 la ou 2.x imprime
+        0.9999999999999999 -- meme valeur a 1 ULP pres, pas de drift."""
+        base = ("[1.0, 1.0, 1.0]",)
+        head = (f"[1.0, {ONE_ULP_BELOW_1!r}, 1.0]",)
+        assert base != head                      # byte-text DIFFERENT
+        assert _signatures_equivalent(base, head)
+
+    def test_beyond_one_ulp_stays_drift(self):
+        base = ("[1.0, 1.0]",)
+        head = (f"[{TWO_ULP_BELOW_1!r}, 1.0]",)
+        assert not _signatures_equivalent(base, head)
+
+    def test_different_value_stays_drift(self):
+        assert not _signatures_equivalent(("[1.0, 2.0]",), ("[1.0, 2.1]",))
+
+    def test_element_count_mismatch_stays_drift(self):
+        assert not _signatures_equivalent(("[1.0, 1.0]",), ("[1.0]",))
+
+    def test_array_count_mismatch_stays_drift(self):
+        assert not _signatures_equivalent(("[1.0, 1.0]",), ())
+        assert not _signatures_equivalent(
+            ("[1.0, 1.0]",), ("[1.0, 1.0]", "[2.0, 3.0]"))
+
+    def test_identical_text_short_circuits(self):
+        assert _signatures_equivalent(("[1.0, 1.0]",), ("[1.0, 1.0]",))
+
+    def test_unparseable_falls_back_to_text_fail_closed(self):
+        """Une paire qui ne parse pas retombe sur l'egalite textuelle :
+        jamais d'equivalence fabriquee sur une valeur non mesuree."""
+        assert _signatures_equivalent(("[1.0, a.b]",), ("[1.0, a.b]",))
+        assert not _signatures_equivalent(("[1.0, a.b]",), ("[1.0, c.d]",))
+
+
+class TestDiffSignatures:
+    def test_id_aligned_one_ulp_not_reported(self):
+        base = _nb_ulp("[1.0, 1.0, 1.0]")
+        head = _nb_ulp(f"[1.0, {ONE_ULP_BELOW_1!r}, 1.0]")
+        b_sig, h_sig = float_signatures(base), float_signatures(head)
+        assert b_sig != h_sig
+        assert diff_signatures(b_sig, h_sig, base_nb=base, head_nb=head) == []
+
+    def test_id_aligned_beyond_one_ulp_reported(self):
+        base = _nb_ulp("[1.0, 1.0]")
+        head = _nb_ulp(f"[{TWO_ULP_BELOW_1!r}, 1.0]")
+        b_sig, h_sig = float_signatures(base), float_signatures(head)
+        assert diff_signatures(b_sig, h_sig, base_nb=base, head_nb=head) == ["c1"]
+
+    def test_ordinal_fallback_same_tolerance(self):
+        # Notebooks sans ids : alignement ordinal legacy, meme tolerance.
+        base = _nb_ulp("[1.0, 1.0]")
+        base["cells"][0].pop("id")
+        head = _nb_ulp(f"[1.0, {ONE_ULP_BELOW_1!r}]")
+        head["cells"][0].pop("id")
+        b_sig, h_sig = float_signatures(base), float_signatures(head)
+        assert _diff_signatures_ordinal(b_sig, h_sig) == []
+        head2 = _nb_ulp("[1.0, 2.0]")
+        head2["cells"][0].pop("id")
+        assert _diff_signatures_ordinal(b_sig, float_signatures(head2)) == [0]

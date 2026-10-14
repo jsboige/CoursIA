@@ -15,7 +15,7 @@ Expressive TTS with 15000+ prosodic tags, Dual-AR architecture (Slow 4B + Fast 4
 cp .env.example .env
 # Edit .env with your HuggingFace token
 
-# 2. Download model (~8GB)
+# 2. Download model (~11GB safetensors, official snapshot)
 docker run --rm -v $(pwd)/checkpoints:/app/checkpoints \
   -e HF_TOKEN=your_token \
   fishaudio/fish-speech:latest \
