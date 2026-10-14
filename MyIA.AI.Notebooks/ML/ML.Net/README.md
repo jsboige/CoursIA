@@ -209,6 +209,18 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | AutoML | Optimisation d'hyperparamètres |
 | Intervalles de confiance | Quantification de l'incertitude |
 
+### ML-05b-Series-Temporelles-Classiques-Python
+
+| Section | Contenu |
+|---------|---------|
+| Données | `daily-sales.csv`, la série de ventes quotidiennes de ML-05 (fournie dans le dossier) |
+| Décomposition | `seasonal_decompose` : tendance, saisonnalité, résidu (série synthétique, puis série réelle) |
+| Stationnarité | Test ADF (H0, p-value, conclusion écrite) et différenciation d=1 |
+| ACF / PACF | Lecture des ordres p et q, cas pédagogique d'un AR(2) synthétique |
+| SARIMA | Grille par AIC, diagnostic des résidus (ACF, Ljung-Box), prévision avec intervalle de confiance |
+| Lissage exponentiel | Simple, Holt, Holt-Winters (saisonnalité 7) |
+| Backtest glissant | Naïf, Holt-Winters et SARIMA comparés sur un horizon de 7 jours (walk-forward) |
+
 ### ML-06-ONNX
 
 | Section | Contenu |
@@ -342,6 +354,8 @@ TP-prevision-ventes (application)
 
 ```text
 ML-05-TimeSeries (forecasting)
+    |
+ML-05b-Series-Temporelles-Classiques-Python (socle statistique des séries temporelles)
     |
 ML-06-ONNX (interopérabilité)
     |
