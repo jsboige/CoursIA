@@ -3677,11 +3677,16 @@ def _synthetic_git(ancestor_pairs=()):
 
 
 def _stack_entry(pr, subjects):
+    # #20641 -- `author_ref` est rendu egal a `ref` par defaut : les
+    # tests qui n'ont pas besoin d'exercer le saut content-free
+    # preservent l'ancien comportement sans modifier chaque call site.
+    ref = f"{mod.STACK_REF_PREFIX}{pr}"
     return mod.StackEntry(
         number=pr,
-        ref=f"{mod.STACK_REF_PREFIX}{pr}",
+        ref=ref,
         commits=list(subjects),
         subjects=dict(subjects),
+        author_ref=ref,
     )
 
 
@@ -3735,6 +3740,7 @@ def test_stack_bottom_linear_stays_ready(monkeypatch):
     bottom = mod.STACK_REF_PREFIX + "19548"
     top = mod.STACK_REF_PREFIX + "19556"
     monkeypatch.setattr(mod, "_git", _synthetic_git({(bottom, top)}))
+    monkeypatch.setattr(mod, "_author_ref", lambda ref, base_ref=None: ref)
     index = _stack_index(
         _stack_entry(19548, {"a": "A", "b": "B"}),
         _stack_entry(19556, {"a": "A", "b": "B", "c": "C"}),
@@ -3746,6 +3752,133 @@ def test_stack_bottom_linear_stays_ready(monkeypatch):
     )
     assert verdict == mod.VERDICT_READY, reasons
     assert reasons == []
+
+
+# --- #20641 : rafraichissement content-free de la base d'une pile ----------
+# Un ``gh pr update-branch`` sans conflit prepende une fusion de
+# rafraichissement a la tete de la base : pre-fix, la porte comparait
+# la tete brute et rejetait a tort la base lineaire. Le predicat
+# doit utiliser le SHA d'auteur (au-dela des fusions content-free),
+# pas la tete brute. Les tests suivants verifient les trois cas
+# nommes dans l'acceptance #20641.
+
+
+def test_stack_bottom_content_free_update_stays_silent(monkeypatch):
+    """#20641 (controle positif) -- base rafraichie content-free, bas de pile lineaire.
+
+    ``#20521`` a sa tete = fusion depuis main (``author_ref = b59ae``),
+    et ``#20525`` est construite sur ``b59ae``. La comparaison brute
+    ``entry.ref -> other.ref`` echouait ; la comparaison
+    ``author_ref -> author_ref`` reussit. La porte se tait.
+    """
+    bottom_ref = mod.STACK_REF_PREFIX + "20521"
+    top_ref = mod.STACK_REF_PREFIX + "20525"
+    bottom_author = "b59ae3257b1111111111111111111111111111"
+    top_author = "b59ae3257b1111111111111111111111111111"
+    monkeypatch.setattr(
+        mod, "_git", _synthetic_git({(bottom_author, top_author)})
+    )
+    # L'index n'a que les deux PR de la pile : aucune autre PR ne doit
+    # apparaitre comme "sommet" (ce qui ferait ecraser le verdict).
+    index = _stack_index(
+        _stack_entry(20521, {"a": "A", "b": "B"}),
+        _stack_entry(20525, {"a": "A", "b": "B", "c": "C"}),
+    )
+    index[20521].ref = bottom_ref
+    index[20521].author_ref = bottom_author
+    index[20525].ref = top_ref
+    index[20525].author_ref = top_author
+    snapshot = _base_snapshot()
+    snapshot["number"] = 20521
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_top_rebuilt_is_still_detected(monkeypatch):
+    """#20641 (controle negatif 1, cas fondateur #20251) -- sommet de pile rebati.
+
+    Le sommet REBATI reste un sommet : ``author_ref`` du sommet n'est
+    pas un ancetre de l'``author_ref`` de la base. Le fix #20641 n'a
+    pas regresse le cas fondateur.
+    """
+    bottom_ref = mod.STACK_REF_PREFIX + "19548"
+    top_ref = mod.STACK_REF_PREFIX + "19556"
+    # Bottom = ancetre, top = divergent. La comparaison author_ref->author_ref
+    # doit echouer (top pas ancetre de bottom).
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod,
+        "_author_ref",
+        lambda ref, base_ref=None: {
+            bottom_ref: "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+            top_ref: "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+        }[ref],
+    )
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"a": "A", "b": "B", "c": "C"}),
+    )
+    index[19548].author_ref = "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+    index[19556].author_ref = "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+
+
+def test_stack_bottom_with_conflict_resolution_stays_measured(monkeypatch):
+    """#20641 (controle negatif 2) -- base avec resolution de conflit.
+
+    Quand l'update-branch a exige une resolution manuelle, l'arbre du
+    merge differe de l'auto-merge : ``_author_ref`` ne saute pas la
+    fusion et la compare brute. Le gate reste fail-closed sur ce cas :
+    le test verifie que la mesure de l'ancetre est faite sur le SHA
+    de la fusion (avec resolution), pas sur l'auto-merge.
+    """
+    bottom_ref = mod.STACK_REF_PREFIX + "20521"
+    top_ref = mod.STACK_REF_PREFIX + "20525"
+    # Cas : ``_author_ref`` rend la tete brute (pas de saut content-free
+    # parce que la resolution a change l'arbre). La comparaison
+    # author_ref = entry.ref pour la base, et top author_ref != bas
+    # author_ref. La porte detecte un sommet de pile (correctement --
+    # la base n'est pas un bas lineaire quand sa tete porte un
+    # conflit resolu).
+    bottom_author = "cccccccccccccccccccccccccccccccccccccccc"  # = entry.ref apres resolution
+    top_author = "dddddddddddddddddddddddddddddddddddd"
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod,
+        "_author_ref",
+        lambda ref, base_ref=None: {
+            bottom_ref: bottom_author,
+            top_ref: top_author,
+        }[ref],
+    )
+    index = _stack_index(
+        _stack_entry(20521, {"a": "A", "b": "B"}),
+        _stack_entry(20525, {"a": "A", "b": "B", "c": "C"}),
+    )
+    index[20521].ref = bottom_ref
+    index[20521].author_ref = bottom_author
+    index[20525].ref = top_ref
+    index[20525].author_ref = top_author
+    snapshot = _base_snapshot()
+    snapshot["number"] = 20521
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    # L'ancetre author_ref -> author_ref echoue (top pas ancetre de
+    # bottom), donc la porte rapporte un stack top -- c'est le bon
+    # verdict : la fusion avec resolution a change la base, et le
+    # sommet porte des corrections distinctes.
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#20525" in r for r in reasons), reasons
 
 
 def test_stack_without_shared_commit_is_unchanged(monkeypatch):
