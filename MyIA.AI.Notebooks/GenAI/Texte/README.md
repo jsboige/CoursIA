@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 34
-breakdown: Texte=34
-maturity: BETA=32, ALPHA=1, DRAFT=1
+pedagogical_count: 42
+breakdown: Texte=42
+maturity: BETA=37, DRAFT=3, ALPHA=2
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -38,8 +38,8 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 |---|----------|-------------|-------|
 | 3 | `3_Structured_Outputs.ipynb` | JSON Schema, Pydantic, mode strict, extraction de données | 55 min |
 | 3b | `3b_Typed_Decisions_System1.ipynb` | Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits et tête d'attention fine-tunée (jevlike) contre témoin classique, calibration (NLL, Brier, ECE, température), escalade, banc tiers CC0 hors domaine (v1/v2, chute mesurée) | 55 min |
+| 3c | `3c_Constrained_Decoding_Python.ipynb` | Décodage contraint au niveau du token : automate fini (DFA) codé à la main pour le format date ISO `\d{4}-\d{2}-\d{2}`, dérivation du masque de logits depuis les états de l'automate, génération pas à pas d'une date valide — le complément token-level du 3 (JSON Schema agit au niveau API, le masque agit sur la distribution elle-même) | — |
 | 4 | `4_Function_Calling.ipynb` | Tools API, appels parallèles, boucle agentique | 60 min |
-| 23 | `23_Constrained_Decoding_Python.ipynb` | Décodage contraint au niveau du token : automate fini (DFA) codé à la main pour le format date ISO `\d{4}-\d{2}-\d{2}`, dérivation du masque de logits depuis les états de l'automate, génération pas à pas d'une date valide — le complément token-level du 3 (JSON Schema agit au niveau API, le masque agit sur la distribution elle-même) | — |
 
 ### Tier 3 : Augmentation (Intermédiaire)
 
@@ -114,11 +114,14 @@ Les tiers 1 à 5 exploitent un LLM **tel quel** (prompting, structuration, augme
 
 Le fil rouge est volontairement discriminant : enseigner au modèle un **format balisé arbitraire** (`[T]Terme[/T][D]Définition[/D][E]Exemple[/E]`) que le modèle de base ne produit **jamais** spontanément. On observe d'abord l'échec du base (prose avec deux-points, balises ignorées), puis on quantifie en 4-bit (NF4 + double quantification, calcul en bf16 via `BitsAndBytesConfig`), on greffe les adaptateurs LoRA avec `peft`, et on entraîne avec `trl` sur un petit jeu d'exemples bien formatés. Le vrai outil SOTA est branché bout en bout (`peft`, `bitsandbytes`, `trl`, `datasets`, `transformers`) — aucun substitut. Ce notebook fait pont avec la série [PostTraining](../PostTraining/README.md) et l'EPIC [#10247](https://github.com/jsboige/CoursIA/issues/10247) (fine-tuning/training). **GPU CUDA requis** (environnement `coursia-ml-training`).
 
+Le notebook **22c** ferme la boucle ouverte par le 22 : après avoir *mesuré* les sorties générées, on les *optimise*. Il ne réécrit ni le pipeline RAG de `05_RAG_Modern` ni les métriques du 22 — il les branche sur DSPy et compare, sur un jeu de test que l'optimiseur n'a jamais vu, le prompt écrit à la main et le prompt compilé. La leçon centrale est mesurée, pas affirmée : un gain modeste (+0.05 de fidélité moyenne, dont +0.20 sur une question) obtenu pour un coût de compilation compté en appels, et deux limites démontrées — une métrique qui sature ne peut pas guider l'optimisation, et le choix de la métrique change la sortie.
+
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
 | 21 | `21_LoRA_FineTuning.ipynb` | **QLoRA** (NF4 4-bit + double quant, bf16) sur Qwen2.5-0.5B-Instruct : fil rouge = format balisé `[T]/[D]/[E]` que le base échoue à produire ; adaptateurs LoRA via `peft` + `bitsandbytes` + `trl` + `datasets`, GPU CUDA requis (pont PostTraining / #10247) | 75 min |
 | 22 | `22_Evaluating_Generated_Text.ipynb` | Évaluation des sorties générées : **BLEU** (précision n-gram avec clipping) et **ROUGE** (rappel) construits à la main et mesurés — deux métriques lexicales aveugles au sens — puis **juge LLM** avec protocole anti-biais (paire évaluée dans les deux ordres à T=0, ne tranche que si les deux passes coïncident), 3 exercices C.1 | — |
 | 22b | `22b_Profil_Cognitif_CHC.ipynb` | Approfondit le 22 : on évalue le **générateur** plutôt que sa sortie. **Profil cognitif CHC** (Hendrycks et al., 2025) mesuré par une mini-batterie à correction mécanique sur 8 domaines (mémoire de travail générée, stockage long terme, hallucinations, fluence, vitesse...) sur 4 modèles réels (Qwen3.5-0.8B local + 3 API), avec IC bootstrap ; profil « jagged » vs score agrégé ; **contortions de capacité** mesurées (carnet de mémoire réinjecté, RAG) ; types d'IA stratégiques et cube **A×G×I** du *Singapore Consensus* 2026, 3 exercices C.1 | — |
+| 22c | `22c_DSPy_Prompt_Compile.ipynb` | **Du prompt écrit au prompt compilé** : le pipeline RAG de `05_RAG_Modern` (même document, même chunking) passe du prompt f-string fixe à un **programme DSPy** compilé contre une métrique. Organe natif branché bout en bout (`dspy.Signature`, `dspy.ChainOfThought`, `BootstrapFewShot`) — pas de réimplémentation. Mesure honnête sur un **jeu de test séparé** du jeu d'optimisation : fidélité moyenne 0.95 (manuel) → 1.00 (compilé), coût de compilation compté en appels au modèle ; limites montrées par la mesure (saturation de la métrique sur un jeu réduit, longueurs de réponse qui doublent selon la métrique choisie). Endpoint **Ollama local** par défaut (reproductible sans clé API), 3 exercices C.1 | — |
 
 ### Tier 7 : Analyse linguistique (TAL)
 

@@ -79,12 +79,47 @@ Tout run passe par l'admission sous verrou machine-wide, impose un parallelisme
 borne aux enfants (``LEAN_NUM_THREADS``, ``-Kjobs=N`` pour ``lake build``) et
 publie ses metriques en JSON.
 
+Interface operateur (case 8 de #15666) — diagnostic, arret d'urgence et
+recuperation :
+
+5. **Trois commandes de diagnostic, lecture seule** : ``status`` rapporte la
+   population, le cap, la file, les leases et l'admission courante ; ``doctor``
+   en rend un verdict NOMME (``OK`` / ``DEGRADE``) accompagne de la liste des
+   degradations reelles, et ne balaie RIEN — contrairement a ``status`` il ne
+   supprime jamais un run ni un lease perime, parce qu'un diagnostic qui
+   repare n'est pas un diagnostic (et que ses chiffres ne seraient plus ceux
+   qu'il vient de lire) ; ``dry-run`` repond a « que ferait un run ? » —
+   backend qui serait choisi, ressources mesurees, budget qui serait accorde,
+   verdict d'admission — **sans rien ecrire** : ni epinglage de backend, ni
+   lease d'arbre, ni entree de file, ni verrou d'admission. Seule exception
+   commune aux deux dernieres : la creation idempotente du state dir, que la
+   mesure disque exige pour lire l'espace libre.
+
+6. **``stop`` — arret d'urgence des runs possedes par l'organe** : defaut =
+   INSPECT (lister les runs vivants de CET host, leur pid, leur caller),
+   ``--yes`` seul arrete. Le pid tue ne vient jamais d'un scan de table de
+   processus mais exclusivement du run record — on n'arrete pas un travail
+   non possede — et un run d'un host etranger est liste puis saute, jamais
+   tue (pids non comparables entre namespaces). Les records de runs deja
+   morts ne sont retires qu'en mode action : inspect reste lecture seule.
+
+7. **``recover`` — recuperation apres crash du superviseur** : le
+   confinement fait deja mourir l'arbre avec le superviseur ; ce qui survit
+   a un crash, c'est l'ETAT (run records, leases d'arbre, entrees de file
+   au pid mort). Defaut = inspect ; ``--yes`` balaye les TROIS familles en
+   reutilisant les balayages existants (jamais une seconde semantique de
+   peremption) — items d'un host etranger et records illisibles conserves.
+
 Codes de sortie stables :
-  0    succes (commande terminee, nettoyage prouve)
-  1    echec de la commande enfant (code reel dans le JSON)
+  0    succes (commande terminee, nettoyage prouve ; ``doctor`` et ``dry-run``
+       rendent un diagnostic — leur verdict est dans la sortie, jamais dans le
+       code de retour, y compris quand il predit un refus)
+  1    echec de la commande enfant (code reel dans le JSON) ; ``stop`` :
+       echec de l'arret d'un run vivant
   124  timeout (arbre tue, nettoyage prouve)
   125  admission refusee (cap atteint / environnement non mesurable /
-       backend epingle en conflit avec la demande)
+       backend epingle en conflit avec la demande) ; ``stop`` : run record
+       inconnu
   126  cleanup incomplet : orphelins detectes apres termination
   127  erreur interne a l'organe
   130  interruption (SIGINT) : arbre tue, nettoyage prouve
@@ -179,7 +214,8 @@ def trees_dir() -> Path:
 
 # ---------------------------------------------------------------------------
 # Liveness pid — reprise de tree_lock.py:51-74 (jamais os.kill(pid, 0) sur
-# Windows : CPython y TERMINE le processus cible ; probe ctypes a la place).
+# Windows : CPython y TERMINE le processus cible ; probe ctypes a la place),
+# avec UNE divergence deliberee cote POSIX : le zombie est mort (#20016).
 # ---------------------------------------------------------------------------
 
 _STILL_ACTIVE = 259
@@ -192,8 +228,32 @@ def host_id() -> str:
     return f"{platform.node()}/{os.name}"
 
 
+def _posix_state(pid: int) -> str | None:
+    """Champ 3 (etat) de ``/proc/<pid>/stat``, ou ``None`` si illisible.
+
+    Le nom du processus (champ 2) peut contenir espaces ET parentheses :
+    l'ancre est la DERNIERE parenthese fermante, l'etat suit. ``None``
+    couvre les deux cas ou l'appelant a deja sa reponse (procfs absent —
+    macOS — ou pid disparu entre les deux sondes)."""
+    try:
+        with open(f"/proc/{pid}/stat", "rb") as fh:
+            data = fh.read().decode("utf-8", "replace")
+    except OSError:
+        return None
+    close = data.rfind(")")
+    return data[close + 2] if 0 <= close < len(data) - 2 else None
+
+
 def pid_alive(pid: int) -> bool:
-    """True si ``pid`` est vivant sur CE host (tree_lock.py:51-74)."""
+    """True si ``pid`` est vivant sur CE host (tree_lock.py:51-74).
+
+    Divergence POSIX assumee vs le jumeau : ``os.kill(pid, 0)`` REUSSIT sur
+    un zombie (l'entree de table survit jusqu'au reap par le parent), et un
+    zombie ne vit pas — il n'execute plus rien, ne tient ni budget ni lease.
+    Sans cette lecture, ``stop`` rendait ``failed: pid survit au kill`` sur
+    un kill REUSSI (mesure sous POSIX : state=Z pendant tout le poll) et les
+    sweeps lisaient un run mort comme vivant. Procfs illisible -> on garde
+    le verdict de ``kill(pid, 0)`` (fail-safe vers « vivant »)."""
     if pid <= 0:
         return False
     if os.name == "nt":
@@ -215,7 +275,7 @@ def pid_alive(pid: int) -> bool:
         return False
     except PermissionError:
         return True
-    return True
+    return _posix_state(pid) != "Z"
 
 
 # ---------------------------------------------------------------------------
@@ -646,20 +706,12 @@ def queue_enter(
     run_id: str, cmd: list[str], caller: str, max_entries: int
 ) -> tuple[Path | None, str]:
     """Entre en file si elle n'est pas pleine. Les entrants morts du meme
-    host ne comptent pas (memes regles de peremption que les runs/). A
-    appeler SOUS le verrou d'admission."""
+    host ne comptent pas (memes regles de peremption que les runs/, et
+    UNE seule implementation : `_sweep_stale_queue`, #20016). A appeler
+    SOUS le verrou d'admission."""
     queue_dir().mkdir(parents=True, exist_ok=True)
-    occupied = 0
-    for path, entry in queue_entries():
-        if entry.get("host") == host_id() and not pid_alive(
-            int(entry.get("pid") or -1)
-        ):
-            try:
-                path.unlink()
-            except OSError:
-                pass
-            continue
-        occupied += 1
+    _sweep_stale_queue()
+    occupied = sum(1 for _ in queue_entries())
     if occupied >= max_entries:
         return None, f"{occupied} waiters >= queue_max {max_entries}"
     path = queue_dir() / f"{run_id}.json"
@@ -848,10 +900,17 @@ def resolve_backend(
     requested: str = "auto",
     repin: bool = False,
     available: list[str] | None = None,
+    dry: bool = False,
 ) -> tuple[str | None, str]:
     """Tranche le backend d'un run. Rend (backend, detail) ; backend None =
     refus et detail est la raison ACTIONNABLE. A appeler sous AdmissionLock
     (ecriture du registre premier-ecrivain).
+
+    ``dry=True`` : la decision est rendue SANS etre consommee — aucun
+    epinglage n'est ecrit, le registre n'est jamais sauve. C'est le mode
+    de `dry-run`, qui doit previsualiser le choix de backend sans qu'un
+    diagnostic lecture-seule devienne une decision premier-ecrivain
+    (l'epinglage est precisement ce que le run reel doit encore poser).
 
     - pas de lake englobant -> native, rien a epingler ;
     - pas d'epingle -> premier disponible de DEFAULT_BACKEND_ORDER, epingle
@@ -880,6 +939,16 @@ def resolve_backend(
     pinned = entry.get("backend")
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+    def _record(backend: str, origin: str) -> None:
+        """Unique point d'ecriture de l'epinglage premier-ecrivain. En
+        dry-run il ne fait rien : la decision reste intacte pour le run
+        reel qui suivra la previsualisation."""
+        if dry:
+            return
+        registry[key] = {"backend": backend, "pinned_at": now,
+                         "origin": origin}
+        save_backends(registry)
+
     if requested == "auto":
         if pinned:
             if pinned not in available:
@@ -906,10 +975,10 @@ def resolve_backend(
                 "cache avant l'auto-epinglage"
             )
         backend = available[0]
-        registry[key] = {"backend": backend, "pinned_at": now,
-                         "origin": "default-policy"}
-        save_backends(registry)
-        return backend, f"default-policy -> {backend} (epingle posee)"
+        _record(backend, "default-policy")
+        return backend, (
+            f"default-policy -> {backend} (epingle posee)" if not dry
+            else f"default-policy -> {backend} (dry-run : NON epingle)")
 
     if pinned and pinned != requested:
         if not repin:
@@ -930,20 +999,20 @@ def resolve_backend(
                 ".lake/build existe encore — purgez-le d'abord, l'organe ne "
                 "purge JAMAIS lui-meme"
             )
-        registry[key] = {"backend": requested, "pinned_at": now,
-                         "origin": f"repin {pinned}->{requested} apres purge"}
-        save_backends(registry)
-        return requested, f"repin {pinned}->{requested} (cache purge verifie)"
+        _record(requested, f"repin {pinned}->{requested} apres purge")
+        return requested, (
+            f"repin {pinned}->{requested} (cache purge verifie)" if not dry
+            else f"repin {pinned}->{requested} (dry-run : NON repose)")
 
     if not pinned:
         if requested not in available:
             return None, (
                 f"backend {requested} demande mais indisponible : {available}"
             )
-        registry[key] = {"backend": requested, "pinned_at": now,
-                         "origin": "explicit-first-writer"}
-        save_backends(registry)
-        return requested, "explicit-first-writer (epingle posee)"
+        _record(requested, "explicit-first-writer")
+        return requested, (
+            "explicit-first-writer (epingle posee)" if not dry
+            else "explicit-first-writer (dry-run : NON epingle)")
     return pinned, f"epingle={pinned} (conforme a la demande)"
 
 
@@ -2060,6 +2129,525 @@ def backends_report(as_json: bool = False) -> int:
 
 
 # ---------------------------------------------------------------------------
+# dry-run : « que ferait un run ? » — lecture seule
+# ---------------------------------------------------------------------------
+
+def dry_run(
+    requested: str = "auto",
+    repin: bool = False,
+    budget: int | None = None,
+    cap: int | None = None,
+    cwd: str | None = None,
+    as_json: bool = False,
+) -> int:
+    """Previsualisation d'un run : backend qui serait choisi, ressources
+    mesurees, budget qui serait accorde, verdict d'admission.
+
+    N'ECRIT AUCUNE DECISION : pas d'epinglage de registre (`resolve_backend`
+    est appele avec `dry=True`), pas de lease d'arbre, pas d'entree de file,
+    pas de verrou d'admission. Le seul ecrit est la creation idempotente du
+    repertoire d'etat, que `measure_resources` fait pour lire le disque.
+
+    C'est la question a poser AVANT un run qui peut se faire refuser, ou
+    couter 1-2 h de recompilation Mathlib (bascule de backend). Sur un run
+    qui serait admis le code de sortie reste EXIT_OK : la commande rend un
+    diagnostic, elle ne rejoue pas l'admission — le verdict est dans la
+    sortie (`verdict:`), pas dans le code de retour.
+    """
+    cfg = config()
+    eff_cap = cfg["cap"] if cap is None else cap
+    eff_budget = cfg["budget"] if budget is None else budget
+    start_dir = Path(cwd) if cwd else Path.cwd()
+    root = find_lake_root(start_dir)
+    try:
+        registry = load_backends()
+        registry_error: str | None = None
+    except (OSError, ValueError) as exc:
+        registry, registry_error = {}, str(exc)
+    pinned = (registry.get(_lake_key(root)) or {}).get("backend") if root else None
+    available = preflight_backends(requested, root, pinned)
+    chosen, detail = resolve_backend(
+        root, requested=requested, repin=repin, available=available, dry=True,
+    )
+    would_write_pin = bool(
+        chosen is not None and root is not None
+        and (pinned is None or pinned != chosen)
+    )
+    resources = measure_resources()
+    missing = sorted(k for k, v in resources.items() if not v.get("ok"))
+    native_pop, native_src = scan_native_population()
+    # `granted` est la PARALLELISME accordee (`-Kjobs=N`), `budget` est le
+    # nombre de places prises dans le cap machine — deux grandeurs distinctes
+    # que `run_command` calcule separement (cf `_attempt`). Les confondre
+    # ferait predire a `dry-run` un chiffre que le run reel ne produirait pas.
+    granted, budgets = (0, {})
+    if not missing:
+        granted, budgets = compute_granted(cfg["jobs"], resources, native_pop)
+    registered, _live = live_registered_budgets()
+
+    # Chaine d'admission reproduite dans l'ORDRE de run_command (_attempt) :
+    # le PREMIER refus rencontre est celui que le run reel produirait. Un
+    # ordre different rendrait un verdict plausible et faux.
+    refusal: str | None = None
+    if native_pop < 0:
+        refusal = f"population non mesurable ({native_src})"
+    elif missing:
+        refusal = (f"telemetrie indisponible: {', '.join(missing)} "
+                   f"(fail-closed, spec #15666 §2)")
+    elif granted < 1:
+        refusal = (f"budget insuffisant (binding={budgets.get('binding')}): "
+                   f"cpu={budgets.get('cpu')} ram={budgets.get('ram')} "
+                   f"commit={budgets.get('commit')} "
+                   f"disk_free={budgets.get('disk_free_gb')}GB")
+    elif native_pop + eff_budget > eff_cap:
+        refusal = (f"cap machine-wide {eff_cap}: population native "
+                   f"{native_pop} + budget demande {eff_budget} > cap")
+    elif registered + eff_budget > eff_cap:
+        refusal = (f"cap machine-wide {eff_cap}: budgets vivants enregistres "
+                   f"{registered} + budget demande {eff_budget} > cap")
+    elif chosen is None:
+        refusal = detail
+
+    verdict = (
+        f"ADMIS (parallelisme accorde={granted})" if refusal is None
+        else f"REFUS ({refusal})"
+    )
+
+    payload = {
+        "start_dir": str(start_dir),
+        "lake_root": str(root) if root else None,
+        "backend": {
+            "requested": requested,
+            "repin": repin,
+            "pinned": pinned,
+            "available": available,
+            "chosen": chosen,
+            "detail": detail,
+            "would_write_pin": would_write_pin,
+        },
+        "registry_error": registry_error,
+        "config": cfg,
+        "cap": eff_cap,
+        "budget": eff_budget,
+        "jobs_requested": cfg["jobs"],
+        "population": {"native": native_pop, "native_src": native_src},
+        "live_registered_budgets": registered,
+        "resources": resources,
+        "telemetry_ok": not missing,
+        "missing_sources": missing,
+        "granted_jobs": granted,
+        "granted_budgets": budgets,
+        "headroom": max(0, eff_cap - native_pop),
+        "verdict": verdict,
+        "refusal": refusal,
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print(f"start dir: {payload['start_dir']}")
+        print(f"lake root: {payload['lake_root'] or '(aucun)'}")
+        if registry_error is not None:
+            print(f"registry error: ILLISIBLE ({registry_error})")
+        print(f"backend: demande={requested} epingle={pinned} "
+              f"disponibles={available or '[]'}")
+        print(f"backend choisi: {chosen or 'REFUS'}")
+        print(f"  {detail}")
+        if would_write_pin:
+            print("  (un run reel ecrirait l'epinglage ; dry-run ne l'ecrit pas)")
+        print(f"population: native={native_pop} ({native_src}) "
+              f"cap={eff_cap} budget={eff_budget} headroom={payload['headroom']}")
+        print(f"ressources: {json.dumps(resources)}")
+        print(f"parallelisme: demande={cfg['jobs']} accorde={granted} "
+              f"(binding={budgets.get('binding')})")
+        print(f"verdict: {verdict}")
+    return EXIT_OK
+
+
+# ---------------------------------------------------------------------------
+# doctor : diagnostic de l'organe — lecture seule
+# ---------------------------------------------------------------------------
+
+def doctor(as_json: bool = False) -> int:
+    """Etat de sante de l'organe en une passe : configuration, repertoire
+    d'etat, population, cap, telemetrie, registre de backends, runs vivants,
+    file, leases d'arbre, sondes.
+
+    Lecture seule : contrairement a `status`, `doctor` ne balaie PAS les
+    runs et leases perimes (le balayage supprime des fichiers) — il rapporte
+    l'etat tel qu'il est. Seul ecrit : la creation idempotente du repertoire
+    d'etat par `measure_resources`.
+
+    Rend un verdict NOMME, `OK` ou `DEGRADE` : les `problems` sont des
+    degradations reelles (repertoire d'etat non inscriptible, telemetrie
+    illisible, registre illisible, aucun backend, admission a zero, cap
+    atteint). Un etat simplement incomplet — aucun lake encore epingle —
+    n'est pas une degradation : il va dans `notes`. Un diagnostic qui crie
+    au loup sur une installation neuve ne sert a rien.
+    """
+    cfg = config()
+    problems: list[str] = []
+    notes: list[str] = []
+
+    sd = state_dir()
+    try:
+        sd.mkdir(parents=True, exist_ok=True)
+        state_writable = True
+    except OSError as exc:
+        state_writable = False
+        problems.append(f"repertoire d'etat non inscriptible ({exc})")
+
+    resources = measure_resources()
+    telemetry_ok = all(v.get("ok") for v in resources.values())
+    if not telemetry_ok:
+        illisibles = sorted(k for k, v in resources.items() if not v.get("ok"))
+        problems.append(
+            f"telemetrie illisible ({', '.join(illisibles)}) — l'admission "
+            "est fail-closed, aucun job ne sera accorde")
+
+    native_pop, native_src = scan_native_population()
+    wsl_pop, wsl_src = scan_wsl_population()
+    _registered, live = live_registered_budgets()
+    waiting = [entry for _path, entry in queue_entries()]
+    tree_leases = [entry for _path, entry in _tree_lease_entries()]
+
+    try:
+        registry = load_backends()
+        registry_error: str | None = None
+    except (OSError, ValueError) as exc:
+        registry, registry_error = {}, str(exc)
+        problems.append(
+            f"registre de backends illisible ({exc}) — fail-closed, aucun "
+            "epinglage n'est decide tant qu'il n'est pas repare")
+
+    forced = forced_backends()
+    if forced is not None:
+        probes = {b: (b in forced, "forced (LEAN_EXEC_FORCE_BACKENDS)")
+                  for b in BACKENDS}
+    else:
+        probes = {b: _probe(b) for b in BACKENDS}
+    if not any(ok for ok, _src in probes.values()):
+        problems.append(
+            "aucun backend disponible (native et wsl absents) — tout run "
+            "de lake sera refuse")
+
+    granted, budgets = (0, {})
+    if telemetry_ok:
+        granted, budgets = compute_granted(cfg["jobs"], resources, native_pop)
+        if granted == 0:
+            problems.append(
+                f"admission a 0 job maintenant "
+                f"(binding={budgets.get('binding')})")
+    if native_pop >= cfg["cap"]:
+        problems.append(
+            f"cap machine-wide atteint ({native_pop}/{cfg['cap']}) — les "
+            "runs suivants passeront par la file ou seront refuses")
+    if registry_error is None and not registry:
+        notes.append(
+            "aucun lake epingle : le premier run d'un lake posera "
+            "l'epinglage premier-ecrivain (defaut mesure)")
+    if live:
+        notes.append(f"{len(live)} run(s) vivant(s)")
+
+    verdict = "OK" if not problems else "DEGRADE"
+    payload = {
+        "verdict": verdict,
+        "problems": problems,
+        "notes": notes,
+        "state_dir": str(sd),
+        "state_writable": state_writable,
+        "config": cfg,
+        "population": {
+            "native": native_pop, "native_src": native_src,
+            "wsl": wsl_pop, "wsl_src": wsl_src,
+        },
+        "headroom": max(0, cfg["cap"] - native_pop),
+        "probes": {b: {"available": ok, "source": src}
+                   for b, (ok, src) in probes.items()},
+        "registry_path": str(backends_registry_path()),
+        "pinned_lakes": len(registry) if registry_error is None else None,
+        "registry_error": registry_error,
+        "live_runs": live,
+        "queue": waiting,
+        "tree_leases": tree_leases,
+        "resources": resources,
+        "granted_now": {
+            "jobs": granted, "budgets": budgets, "telemetry_ok": telemetry_ok,
+        },
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print(f"state: {payload['state_dir']} "
+              f"(ecriture: {'ok' if state_writable else 'REFUSEE'})")
+        print(f"config: {json.dumps(cfg)}")
+        print(f"population: native={native_pop} ({native_src}) "
+              f"wsl={wsl_pop} ({wsl_src}) cap={cfg['cap']} "
+              f"headroom={payload['headroom']}")
+        for backend in BACKENDS:
+            ok, src = probes[backend]
+            print(f"probe {backend}: {'OK' if ok else 'ABSENT'} ({src})")
+        print(f"registry: {payload['registry_path']}")
+        if registry_error is not None:
+            print(f"registry error: ILLISIBLE ({registry_error})")
+        else:
+            print(f"pinned lakes: {len(registry)}")
+        print(f"live runs: {len(live)} | queue: {len(waiting)} "
+              f"(max {cfg['queue_max']}) | tree leases: {len(tree_leases)}")
+        print(f"resources: {json.dumps(resources)}")
+        print(f"granted now: {granted} job(s) "
+              f"(binding={budgets.get('binding')})")
+        for note in notes:
+            print(f"note: {note}")
+        for problem in problems:
+            print(f"problem: {problem}")
+        print(f"verdict: {verdict}")
+    return EXIT_OK
+
+
+def _kill_run_tree(pid: int) -> str:
+    """Tue l'arbre du pid enregistre. Retourne 'killed' | 'already_dead' |
+    'failed: <cause>'. Le pid ne vient JAMAIS d'un scan de table de processus :
+    uniquement du run record (spec #15666 case 8 — on n'arrete pas un travail
+    non possede par l'organe)."""
+    if not pid_alive(pid):
+        return "already_dead"
+    try:
+        if os.name == "nt":
+            # /T arbre entier, /F force : l'urgence n'a pas de phase gracieuse.
+            proc = subprocess.run(
+                ["taskkill", "/PID", str(pid), "/T", "/F"],
+                capture_output=True, text=True, timeout=15,
+                encoding="utf-8", errors="replace",
+            )
+            if proc.returncode != 0 and pid_alive(pid):
+                return f"failed: taskkill rc={proc.returncode}"
+        else:
+            try:
+                os.killpg(os.getpgid(pid), signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                os.kill(pid, signal.SIGKILL)
+    except OSError as exc:
+        if pid_alive(pid):
+            return f"failed: {exc}"
+    # Le verdict se mesure sur le pid, pas sur le rc de l'outil de kill :
+    # taskkill rend nonzero pour un processus deja mort entre-temps.
+    for _ in range(20):  # <=2 s : l'urgence n'attend pas la reap lente
+        if not pid_alive(pid):
+            return "killed"
+        time.sleep(0.1)
+    return "failed: pid survit au kill" if pid_alive(pid) else "killed"
+
+
+def _classify_state_dir(directory: Path) -> dict:
+    """Partitionne un state dir (runs/trees/queue) par peremption : vivant
+    (notre host, pid vivant — du travail ACTIF, rien a recuperer), mort
+    (notre host, pid mort — recuperable), etranger (host different, JAMAIS
+    touche), illisible (rien d'attribuable, jamais retire)."""
+    live, dead, foreign, unreadable = [], [], [], []
+    try:
+        paths = sorted(directory.glob("*.json"))
+    except OSError:
+        paths = []
+    for path in paths:
+        record = read_run(path)
+        if not record:
+            unreadable.append(path.stem)
+        elif record.get("host") != host_id():
+            foreign.append(path.stem)
+        elif pid_alive(int(record.get("pid") or -1)):
+            live.append(path.stem)
+        else:
+            dead.append(path.stem)
+    return {"live": live, "dead": dead, "foreign": foreign,
+            "unreadable": unreadable}
+
+
+def _sweep_stale_queue() -> list[str]:
+    """Retire les entrants de file morts sur CE host. Semantique extraite
+    de queue_enter (memes regles de peremption), pour que la recuperation
+    apres crash couvre les TROIS familles d'etat et pas deux."""
+    swept = []
+    for path, entry in queue_entries():
+        if entry.get("host") == host_id() and not pid_alive(
+            int(entry.get("pid") or -1)
+        ):
+            try:
+                path.unlink()
+                swept.append(path.stem)
+            except OSError:
+                pass
+    return swept
+
+
+def recover(confirm: bool, as_json: bool) -> int:
+    """Case 8 volet 2b — recuperation apres crash du superviseur.
+
+    Le confinement fait deja mourir l'arbre avec le superviseur (Job
+    Object kill-on-close sous Windows ; scope/setsid sous POSIX) : ce qui
+    survit a un crash, c'est l'ETAT — run records, leases d'arbre et
+    entrees de file dont le pid est mort. `recover` rend cet etat residuel
+    visible (defaut = inspect), puis le balaie sur --yes en REUTILISANT
+    les balayages existants — la recuperation n'invente pas une seconde
+    semantique de peremption. Un item d'un host etranger n'est jamais
+    touche (pids non comparables entre namespaces). Le code de retour est
+    EXIT_OK dans tous les cas : comme doctor, le verdict vit dans la
+    sortie, pas dans le rc."""
+    families = {
+        "runs": _classify_state_dir(runs_dir()),
+        "tree_leases": _classify_state_dir(trees_dir()),
+        "queue": _classify_state_dir(queue_dir()),
+    }
+    swept: dict[str, list[str]] = {}
+    if confirm:
+        swept = {
+            "runs": sweep_stale_runs(),
+            "tree_leases": sweep_stale_tree_leases(),
+            "queue": _sweep_stale_queue(),
+        }
+    payload = {
+        "action": "recover",
+        "mode": "act" if confirm else "inspect",
+        "host": host_id(),
+        "stale" if not confirm else "swept": {
+            name: (fam["dead"] if not confirm else swept.get(name, []))
+            for name, fam in families.items()
+        },
+        "live": {k: v["live"] for k, v in families.items()},
+        "skipped_foreign_host": {
+            k: v["foreign"] for k, v in families.items()
+        },
+        "unreadable": {k: v["unreadable"] for k, v in families.items()},
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        mode = "BALAYAGE" if confirm else "INSPECTION (ajouter --yes pour agir)"
+        print(f"recover [{mode}] host={host_id()}")
+        for name, fam in families.items():
+            stale = swept.get(name, fam["dead"])
+            print(f"  {name}: {len(fam['live'])} vivant(s), "
+                  f"{len(stale)} "
+                  f"{'balaye(s)' if confirm else 'recuperable(s)'}, "
+                  f"{len(fam['foreign'])} etranger(s) (jamais touches), "
+                  f"{len(fam['unreadable'])} illisible(s)")
+            for sid in stale:
+                print(f"    {'balaie' if confirm else 'stale'} : {sid}")
+            for fid in fam["foreign"]:
+                print(f"    etranger : {fid} -- JAMAIS touche")
+            for uid in fam["unreadable"]:
+                print(f"    illisible : {uid} -- conserve (rien a attribuer)")
+    return EXIT_OK
+
+
+def emergency_stop(run_ids: list[str], confirm: bool, as_json: bool) -> int:
+    """Case 8 volet 2a — arret d'urgence des runs possedes par l'organe.
+
+    Defaut = INSPECT : lister ce qui serait arrete, ne rien tuer. L'action
+    exige --yes. Un run d'un host etranger n'est JAMAIS tue ni retire (pids
+    non comparables entre namespaces, cf sweep_stale_runs) : il est liste et
+    saute. Les records de runs deja morts sont retires seulement en mode
+    action — inspect reste lecture seule comme doctor."""
+    our_host = host_id()
+    paths = sorted(runs_dir().glob("*.json"))
+    if run_ids:
+        wanted = {f"{r}.json" for r in run_ids}
+        unknown = [r for r in run_ids if not (runs_dir() / f"{r}.json").exists()]
+        paths = [p for p in paths if p.name in wanted]
+    else:
+        unknown = []
+
+    to_stop, dead, foreign = [], [], []
+    for path in paths:
+        record = read_run(path)
+        if not record:
+            dead.append({"run": path.stem, "pid": None,
+                         "note": "record illisible"})
+            continue
+        entry = {
+            "run": path.stem,
+            "pid": record.get("pid"),
+            "cmd": record.get("cmd"),
+            "caller": record.get("caller"),
+            "started_utc": record.get("started_utc"),
+        }
+        if record.get("host") != our_host:
+            foreign.append({**entry, "host": record.get("host")})
+        elif pid_alive(record.get("pid") or 0):
+            to_stop.append(entry)
+        else:
+            dead.append(entry)
+
+    stopped, failed = [], []
+    if confirm:
+        for entry in to_stop:
+            outcome = _kill_run_tree(entry["pid"])
+            if outcome == "killed":
+                # Le superviseur vivant retirera lui-meme son record ; le
+                # retirer ici aussi est idempotent et couvre le superviseur
+                # mort (scenario recuperation). Double unlink = sans effet.
+                _remove_run_record(entry["run"])
+                stopped.append(entry)
+            elif outcome == "already_dead":
+                _remove_run_record(entry["run"])
+                dead.append(entry)
+            else:
+                failed.append({**entry, "error": outcome})
+        for entry in dead:
+            # Un record illisible ne se retire pas a l'aveugle : sans pid ni
+            # host lisibles, on ne peut rien lui attribuer — il est rapporte.
+            if "note" not in entry:
+                _remove_run_record(entry["run"])
+
+    payload = {
+        "action": "stop",
+        "mode": "act" if confirm else "inspect",
+        "host": our_host,
+        "would_stop": [e["run"] for e in to_stop] if not confirm else [],
+        "stopped": [e["run"] for e in stopped],
+        "already_dead": [
+            {"run": e["run"], "pid": e.get("pid"),
+             **({"note": e["note"]} if "note" in e else {})}
+            for e in dead
+        ],
+        "skipped_foreign_host": foreign,
+        "failed": failed,
+        "unknown_runs": unknown,
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        mode = "ARRET" if confirm else "INSPECTION (ajouter --yes pour agir)"
+        print(f"stop [{mode}] host={our_host}")
+        for e in to_stop:
+            print(f"  vivant  : {e['run']} pid={e['pid']} "
+                  f"caller={e.get('caller')} cmd={shlex.join(e['cmd'] or [])}")
+        for e in dead:
+            pid = e.get("pid")
+            print(f"  mort    : {e['run']} pid={pid}"
+                  + (" (record illisible)" if pid is None else ""))
+        for e in foreign:
+            print(f"  etranger: {e['run']} pid={e.get('pid')} "
+                  f"host={e.get('host')} -- JAMAIS touche")
+        for e in failed:
+            print(f"  echec   : {e['run']} pid={e.get('pid')} -- {e['error']}")
+        for r in unknown:
+            print(f"  inconnu : {r} (aucun run record de ce nom)")
+        if confirm:
+            print(f"resultat: {len(stopped)} arrete(s), {len(dead)} record(s) "
+                  f"retire(s), {len(failed)} echec(s)")
+        else:
+            print(f"a arreter sous --yes : {len(to_stop)}")
+    if failed:
+        return EXIT_CHILD
+    if unknown:
+        # Un run record inconnu est une demande refusee (operateur), pas un
+        # echec de la commande enfant : le code stable 1 reste reserve a
+        # l'echec d'arret d'un run reel.
+        return EXIT_REFUSED
+    return EXIT_OK
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -2105,12 +2693,72 @@ def main(argv: list[str] | None = None) -> int:
         "backends", help="Registre d'epinglage par lake + sondes")
     p_backends.add_argument("--json", action="store_true")
 
+    p_dry = sub.add_parser(
+        "dry-run",
+        help="« Que ferait un run ? » — backend choisi, ressources mesurees, "
+             "budget qui serait accorde (lecture seule, n'ecrit rien)")
+    p_dry.add_argument("--backend", default="auto",
+                       choices=("auto", "native", "wsl"),
+                       help="Backend a simuler (auto = epingle sinon defaut)")
+    p_dry.add_argument("--repin", action="store_true",
+                       help="Simuler un re-epinglage : le registre n'est "
+                            "JAMAIS ecrit par dry-run")
+    p_dry.add_argument("--budget", type=int, default=None,
+                       help="Budget lean/lake a simuler (defaut: config)")
+    p_dry.add_argument("--cap", type=int, default=None,
+                       help="Cap machine-wide a simuler (defaut: config)")
+    p_dry.add_argument("--cwd", default=None,
+                       help="Repertoire depuis lequel chercher le lakefile")
+    p_dry.add_argument("--json", action="store_true")
+
+    p_doctor = sub.add_parser(
+        "doctor", help="Diagnostic de l'organe (lecture seule, ne balaie pas)")
+    p_doctor.add_argument("--json", action="store_true")
+
+    p_stop = sub.add_parser(
+        "stop",
+        help="Arret d'urgence des runs de CET host — defaut : inspecter "
+             "seulement ; --yes pour arreter. Un run d'un host etranger "
+             "n'est jamais tue")
+    p_stop.add_argument("--run", action="append", default=None,
+                        metavar="ID",
+                        help="Limiter a ce run record (repetable)")
+    p_stop.add_argument("--yes", action="store_true",
+                        help="Agir : tuer les runs vivants listes et retirer "
+                             "les records morts. Sans ce drapeau : inspection.")
+    p_stop.add_argument("--json", action="store_true")
+
+    p_rec = sub.add_parser(
+        "recover",
+        help="Recuperation apres crash du superviseur — etat residuel "
+             "(runs morts, leases perimes, file) : defaut inspecter, "
+             "--yes pour balayer. Un item d'un host etranger n'est "
+             "jamais touche")
+    p_rec.add_argument("--yes", action="store_true",
+                       help="Agir : balayer l'etat residuel de CET host "
+                            "(les balayages existants, pas une seconde "
+                            "semantique).")
+    p_rec.add_argument("--json", action="store_true")
+
     args = parser.parse_args(argv)
     try:
         if args.action == "status":
             return status(as_json=args.json)
         if args.action == "backends":
             return backends_report(as_json=args.json)
+        if args.action == "dry-run":
+            return dry_run(
+                requested=args.backend, repin=args.repin, budget=args.budget,
+                cap=args.cap, cwd=args.cwd, as_json=args.json,
+            )
+        if args.action == "doctor":
+            return doctor(as_json=args.json)
+        if args.action == "stop":
+            return emergency_stop(
+                run_ids=args.run or [], confirm=args.yes, as_json=args.json,
+            )
+        if args.action == "recover":
+            return recover(confirm=args.yes, as_json=args.json)
         if args.action == "run":
             cmd = args.cmd
             if cmd and cmd[0] == "--":

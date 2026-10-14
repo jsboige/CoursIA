@@ -25,3 +25,4 @@ MLPClassifier (not actual LSTM) return prediction. Uses sklearn MLPClassifier wi
 ## Files
 
 - main.py - Strategy (v2.1, MLP forecasting)
+- research.ipynb - Carnet exploratoire (Ex07) : parcours pédagogique du LSTM (portes, propagation avant manuelle, backtest simple sur données téléchargées)

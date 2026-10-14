@@ -91,7 +91,7 @@ class TestLooksNav:
     def test_marker_in_the_CELL_not_the_line(self):
         # Sudoku-06 : le bloc est une TABLE sous un titre, donc marqueur et liens
         # sont sur DEUX lignes. Portee ligne = faux orphelin mesure.
-        assert cnc._looks_nav("Sudoku-05-PSO", "Sudoku-05-PSO-Csharp.ipynb", "table row", True)
+        assert cnc._looks_nav("Sudoku-05-PSO", "Sudoku-05-PSO-CSharp.ipynb", "table row", True)
 
     def test_prose_filename_in_backticks_is_not_an_edge(self):
         # GameTheory-24b : `Suite du banc toy \`GameTheory-18c-Humour-Banc-Python.ipynb\``
@@ -297,6 +297,106 @@ class TestAnalyse:
         inbound, outbound, series = cnc.build_graph(list(p.values()))
         f = cnc.analyse(inbound, outbound, series)["findings"]
         assert f == sorted(f, key=lambda x: (x["kind"], x["notebook"]))
+
+
+# ------------------------------- 4b. vue intra-serie du statut d'entree (#19076)
+
+def _serie(tmp_path, name, ids, links):
+    """Comme `_chain`, mais la serie porte un NOM choisi : indispensable pour
+    poser deux series distinctes dans le meme graphe (le cas fondateur est un
+    lien INTER-series)."""
+    base = tmp_path / "MyIA.AI.Notebooks" / name
+    paths = {}
+    for i in ids:
+        # Une cible nue (`02`) recoit `.ipynb` ; une cible deja nommee
+        # (`../Serie/07.ipynb`) est prise telle quelle -- c'est ce qui permet le
+        # lien INTER-series du cas fondateur.
+        targets = [d if d.endswith(".ipynb") else f"{d}.ipynb"
+                   for d in links.get(i, [])]
+        cells = [("markdown", "\n".join(f"[Suivant]({d})" for d in targets))]
+        paths[i] = _write(base / f"{i}.ipynb", cells)
+    return base, paths
+
+
+class TestExternallyAnchored:
+    """Option (a) de l'arbitrage #19076 (coordinateur, 2026-10-11,
+    c.6114582529) : le statut d'entree se perd seulement par un lien entrant
+    INTRA-serie. Un lien venu d'une AUTRE serie (ancre externe, cas fondateur
+    07-Aspire) ne reclasse PLUS le carnet `unreachable` -- il reste ENTREE de
+    sa serie. La reachability reste globale.
+
+    Ces tests pinent les deux moities du comportement, parce qu'une seule
+    des deux serait un demi-fix :
+      - le VERDICT (option a) : le carnet ancre de l'exterieur reste
+        `orphan_entry` quand sa serie a plusieurs entrees, jamais
+        `unreachable` -- le reclassement de l'option b (PR #19075) est
+        abandonne ;
+      - la DIVERGENCE reste rapportee (`externally_anchored` + ses sources) :
+        l'ancre externe est une information de lecture, pas un classement.
+    """
+
+    SERIE = "MyIA.AI.Notebooks/Serie"
+    AUTRE = "MyIA.AI.Notebooks/Autre"
+
+    def _report(self, tmp_path, external_link):
+        """Serie {01 -> 02, 07} ; `external_link` ajoute Autre/Ext-1 -> Serie/07."""
+        _, p = _serie(tmp_path, "Serie", ["01", "02", "07"], {"01": ["02"]})
+        nodes = list(p.values())
+        if external_link:
+            _, q = _serie(tmp_path, "Autre", ["Ext-1"],
+                          {"Ext-1": ["../Serie/07.ipynb"]})
+            nodes += list(q.values())
+        inbound, outbound, series = cnc.build_graph(nodes)
+        r = cnc.analyse(inbound, outbound, series)
+        return next(s for s in r["series"] if s["series"] == self.SERIE), r["findings"]
+
+    def test_without_external_link_07_is_an_orphan_entry(self, tmp_path):
+        # Etat AVANT : 01 -> 02, et 07 sans aucun lien entrant.
+        rec, findings = self._report(tmp_path, external_link=False)
+        kinds = {(f["kind"], f["notebook"]) for f in findings}
+        assert ("orphan_entry", f"{self.SERIE}/07.ipynb") in kinds
+        assert not any(k == "unreachable" for k, _ in kinds)
+        assert rec["externally_anchored"] == []
+
+    def test_founder_shape_keeps_entry_and_reports_the_anchor(self, tmp_path):
+        # Option (a) (#19076, c.6114582529) : le lien inter-series ne fait
+        # PLUS perdre a 07 son statut d'entree. Il reste `orphan_entry`
+        # (la serie a plusieurs entrees : 01 et 07), jamais `unreachable`.
+        rec, findings = self._report(tmp_path, external_link=True)
+        kinds = {(f["kind"], f["notebook"]) for f in findings}
+        assert not any(k == "unreachable" for k, _ in kinds), (
+            "une ancre externe ne reclasse plus un carnet unreachable "
+            "(option a de l'arbitrage #19076)"
+        )
+        assert ("orphan_entry", f"{self.SERIE}/07.ipynb") in kinds
+        assert ("orphan_entry", f"{self.SERIE}/01.ipynb") in kinds
+        # ...et l'ancre externe reste nommee, avec sa source.
+        assert rec["externally_anchored"] == [{
+            "notebook": f"{self.SERIE}/07.ipynb",
+            "sources": [f"{self.AUTRE}/Ext-1.ipynb"],
+        }]
+
+    def test_intra_series_inbound_disqualifies_from_the_view(self, tmp_path):
+        # 02 recoit un lien INTRA-serie (01) ET un lien externe : il n'est pas
+        # « entree de sa serie privee de ce statut », il est simplement atteint.
+        _, p = _serie(tmp_path, "Serie", ["01", "02", "03"], {"01": ["02"], "02": ["03"]})
+        _, q = _serie(tmp_path, "Autre", ["Ext-1"], {"Ext-1": ["../Serie/02.ipynb"]})
+        inbound, outbound, series = cnc.build_graph(list(p.values()) + list(q.values()))
+        r = cnc.analyse(inbound, outbound, series)
+        rec = next(s for s in r["series"] if s["series"] == self.SERIE)
+        assert rec["externally_anchored"] == []
+
+    def test_the_view_never_reaches_findings_or_baseline_keys(self, tmp_path):
+        # Garde structurelle : si `externally_anchored` fuyait dans `findings`,
+        # le depot entier prendrait d'un coup un NEW finding par carnet ancre
+        # de l'exterieur, et le baseline passerait de « connu » a « a realigner »
+        # a chaque lien INTER-series nouveau. Le champ est un RAPPORT, pas un
+        # verdict : c'est la propriete que ce test tient.
+        rec, findings = self._report(tmp_path, external_link=True)
+        assert rec["externally_anchored"], "controle positif : la vue doit etre non vide ici"
+        assert not any("externally_anchored" in f for f in findings)
+        keys = cnc._finding_keys({"findings": findings})
+        assert not any(k[0] == "externally_anchored" for k in keys)
 
 
 # -------------------------------------------------------------- 5. baseline

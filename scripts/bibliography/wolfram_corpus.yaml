@@ -1,0 +1,36 @@
+# Corpus Wolfram - 17 essais signales slug 404 par le pli 1 (#19766).
+#
+# Format : - [YYYY] Title (Title = titre approximatif connu, l'algorithme
+# matche par sous-sequence normalisee).
+#
+# Source : pli 1 livraison (cid 6046314909 sur #19766), tableau 6 "Non-
+# distillations et reports".
+#
+# Ce fichier est la **source de verite** de la reconciliation. Le
+# fallback code en dur reproduit la meme liste pour permettre un
+# fonctionnement sans depandance (mode degrade documente).
+
+# Pli 1 - livrees (4 textes, deja archives au gisement)
+- [2020] Combinators and the Story of Computation
+- [2021] A Bibliography of Combinators
+- [2022] Twenty Years Later: The Surprising Greater Implications of A New Kind of Science
+- [2023] Computational Foundations for the Second Law of Thermodynamics
+- [2023] Observer Theory
+
+# 17 slug 404 a reconcilier
+- [2017] A New Kind of Science: A 15-Year View
+- [2020] What We've Built Is a Computational Language
+- [2020] A Class of Models with the Potential to Represent Fundamental Physics
+- [2020] A Project to Find the Fundamental Theory of Physics
+- [2021] The Concept of the Ruliad
+- [2022] The Physicalization of Metamathematics
+- [2024] Can AI Solve Science
+- [2024] What's Really Going On in Machine Learning
+- [2024] Why Does Biological Evolution Work
+- [2024] Foundations of Biological Evolution
+- [2025] What's Special about Life
+- [2025] The Ruliology of Lambdas
+- [2026] P vs. NP and the Difficulty of Computation
+- [2026] What Is Ruliology
+- [2026] What Ultimately Is There
+- [2025] What Can We Learn about Engineering and Innovation from Half a Century of the Game of Life

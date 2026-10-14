@@ -864,6 +864,90 @@ class Record:
         return (self.observed_at, self.actor, self.observation_id)
 
 
+#: Verdict constants for check_pending (gpu-reservation).
+#: OK_TO_RUN: a `held` observation by `my_lane`, with now in the run window.
+#: NO_OBS: no record for the entity -- the picker should NOT run a workload there.
+#: HOLD: `held` by a different lane, or `held` by us but outside the run window.
+#: RELEASED: terminal state -- the workload ended; the GPU is free to take.
+#: STALE: `held` past expected_end with no release; needs a follow-up observation.
+GPU_PENDING_VERDICTS: tuple[str, ...] = ("OK_TO_RUN", "NO_OBS", "HOLD", "RELEASED", "STALE")
+
+
+def evaluate_gpu_pending(
+    records: list,
+    entity: dict,
+    now,
+    my_lane,
+):
+    """Return (verdict, reason) for a gpu-reservation entity.
+
+    The verdict is one of GPU_PENDING_VERDICTS; the reason is a one-line
+    human-readable explanation that names the dominant input (e.g. the
+    holder, the expected_end, or the absence of a record).
+
+    The function is pure -- no IO, no clock, no shared state -- so a test
+    or a pre-launch gate can call it with a fixed `now` and a list of
+    records read from the snapshot. Callers that want to walk the
+    fold-from-snapshot first use ``records_from_snapshot``.
+
+    `my_lane` may be None: in that case, a `held` record with a holder is
+    always reported as HOLD (no ownership check), and OK_TO_RUN is never
+    returned. This is the safe default for a caller that is not yet sure
+    it owns the device.
+    """
+    # Filter records to this entity, newest observed_at first.
+    matching = []
+    for record in records:
+        record_entity = record.entity
+        if record_entity.get("machine") != entity.get("machine"):
+            continue
+        if str(record_entity.get("gpu_index")) != str(entity.get("gpu_index")):
+            continue
+        matching.append(record)
+    matching.sort(key=lambda r: r.observed_at, reverse=True)
+
+    if not matching:
+        return ("NO_OBS", f"no record for {entity.get('machine')}#gpu{entity.get('gpu_index')}")
+
+    latest = matching[0]
+    fields = latest.fields
+    state = fields.get("state")
+    holder = fields.get("holder")
+    started_at_raw = fields.get("started_at")
+    expected_end_raw = fields.get("expected_end")
+
+    if state == "released":
+        return ("RELEASED", f"last state=released at {latest.observed_at.isoformat()} by {holder}")
+
+    if state == "stale":
+        return ("STALE", f"last state=stale at {latest.observed_at.isoformat()} by {holder}")
+
+    if state != "held":
+        return ("HOLD", f"unknown state={state!r} at {latest.observed_at.isoformat()}")
+
+    # state == "held" -- check the window and the holder.
+    if my_lane is not None and holder is not None and holder != my_lane:
+        return ("HOLD", f"held by {holder} (not {my_lane}) at {latest.observed_at.isoformat()}")
+
+    if started_at_raw is not None:
+        try:
+            started_at = parse_utc_timestamp(started_at_raw, where="started_at")
+        except ObservationError as exc:
+            return ("HOLD", f"unparseable started_at={started_at_raw!r}: {exc.detail}")
+        if now < started_at:
+            return ("HOLD", f"held by {holder}, window starts at {started_at.isoformat()}")
+
+    if expected_end_raw is not None:
+        try:
+            expected_end = parse_utc_timestamp(expected_end_raw, where="expected_end")
+        except ObservationError as exc:
+            return ("HOLD", f"unparseable expected_end={expected_end_raw!r}: {exc.detail}")
+        if now > expected_end:
+            return ("STALE", f"held by {holder}, expected_end {expected_end.isoformat()} passed")
+
+    return ("OK_TO_RUN", f"held by {holder} (or matching), now={now.isoformat()}")
+
+
 def record_from_observation(observation: dict[str, Any], source: str) -> Record:
     return Record(
         entity=dict(observation["entity"]),
@@ -947,6 +1031,64 @@ def records_from_snapshot(snapshot: dict[str, Any], ledger: str) -> list[Record]
                 if entry.get("observation_id"):
                     record.observation_id = str(entry["observation_id"])
                 records.append(record)
+    return records
+
+
+def record_views_from_snapshot(snapshot: dict[str, Any], ledger: str) -> list[Record]:
+    """One record per row, carrying that row's FULL current field set.
+
+    ``records_from_snapshot`` emits one record per (field, history entry) -- the
+    right grain to re-fold a checkpoint without losing provenance, and the wrong
+    grain for a verdict. ``evaluate_gpu_pending`` reads ``state``, ``holder``,
+    ``started_at`` and ``expected_end`` off ONE record; fed per-field records it
+    sees a single key, so ``holder`` is always ``None``, the ownership branch
+    cannot fire, and the gate answers ``OK_TO_RUN`` to every lane (#20077).
+
+    The row already holds the merged view, so take it whole and date it by the
+    newest provenance entry it carries.
+    """
+    records: list[Record] = []
+    for row in snapshot.get("rows", []):
+        try:
+            entity = _validate_entity(row.get("entity"), ledger)
+        except ObservationError:
+            continue  # a corrupt row is dropped, never allowed to poison a verdict
+        fields = row.get("fields")
+        if not isinstance(fields, dict) or not fields:
+            continue
+        provenance = row.get("provenance") or {}
+        observed_at: str | None = None
+        actor, confidence, evidence = "snapshot", "medium", "snapshot row"
+        for name in fields:
+            entry = provenance.get(name)
+            if not isinstance(entry, dict):
+                continue
+            stamp = entry.get("observed_at")
+            if isinstance(stamp, str) and (observed_at is None or stamp > observed_at):
+                observed_at = stamp
+                actor = str(entry.get("actor") or actor)
+                confidence = str(entry.get("confidence") or confidence)
+                evidence = str(entry.get("evidence") or evidence)
+        if observed_at is None:
+            # The row carries a current state but nothing dates it; an undated
+            # record cannot be ordered against the others, so drop it rather
+            # than invent a stamp that would win or lose the sort by accident.
+            continue
+        raw_observation = {
+            "schema": OBSERVATION_SCHEMA,
+            "ledger": ledger,
+            "actor": actor,
+            "observed_at": observed_at,
+            "confidence": confidence,
+            "evidence": evidence,
+            "entity": dict(entity),
+            "fields": dict(fields),
+        }
+        try:
+            observation = parse_observation(raw_observation, ledger)
+        except ObservationError:
+            continue  # a row that no longer validates is dropped, not merged
+        records.append(record_from_observation(observation, "snapshot"))
     return records
 
 
@@ -2232,6 +2374,116 @@ def _cli_append(args: argparse.Namespace) -> int:
     return 0
 
 
+#: CLI parser for the gpu-reservation entity string ``<machine>#gpu<n>``.
+_GPU_ENTITY_CLI_RE = re.compile(r"^([\w.-]+)#gpu(\d+)$")
+
+
+def _parse_entity_string(raw: str, ledger: str) -> dict:
+    """Parse a CLI entity string into the dict ``_validate_entity`` accepts.
+
+    The CLI form is the same as ``entity_key``: ``owner/repo#N`` for issue-debt,
+    or ``<machine>#gpu<n>`` for gpu-reservation. We translate that into the
+    per-ledger field shape, then run it through ``_validate_entity`` so the
+    validators stay the single source of truth.
+    """
+    if ledger == GPU_RESERVATION:
+        m = _GPU_ENTITY_CLI_RE.match(raw.strip())
+        if not m:
+            raise ValueError(
+                f"entity {raw!r} does not match '<machine>#gpu<n>' (e.g. 'myia-ai-01#gpu2')"
+            )
+        return _validate_entity({"machine": m.group(1), "gpu_index": int(m.group(2))}, ledger)
+    if ledger == ISSUE_DEBT:
+        if "#" not in raw:
+            raise ValueError(f"entity {raw!r} does not match 'owner/repo#N'")
+        repo, _, n = raw.partition("#")
+        return _validate_entity({"repo": repo, "issue": int(n)}, ledger)
+    raise ValueError(f"unknown ledger {ledger!r}")
+
+
+def _cli_check_pending(args: argparse.Namespace) -> int:
+    """Pre-launch gate for a GPU workload.
+
+    Reads the latest snapshot, finds the latest observation for the entity,
+    and returns the verdict the picker needs:
+
+      * NO_OBS    -- no record; the picker skips the GPU-bound grain.
+      * HOLD      -- held by another lane, or by us but outside the window.
+      * OK_TO_RUN -- held by us (or matching) and now is in the run window.
+      * STALE     -- held past expected_end with no release; needs follow-up.
+      * RELEASED  -- terminal; the GPU is free to take.
+
+    Exit code is 0 for OK_TO_RUN, 0 for NO_OBS (we surface a clear verdict
+    and let the caller branch), 0 for RELEASED, 1 for HOLD (the gate refuses),
+    2 for STALE (the caller decides whether to refresh or to hold). All exit
+    codes are documented in gpu-reservation.md -- a wrapper that maps them
+    to skip/hold/escalate lives one layer up.
+    """
+    if args.ledger != GPU_RESERVATION:
+        print(
+            f"ERROR: check_pending only supports ledger={GPU_RESERVATION!r}, got {args.ledger!r}",
+            file=sys.stderr,
+        )
+        return 2
+
+    if not args.entity:
+        print("ERROR: --entity is required (e.g. 'myia-ai-01#gpu2')", file=sys.stderr)
+        return 2
+
+    try:
+        entity = _parse_entity_string(args.entity, args.ledger)
+    except (ValueError, ObservationError) as exc:
+        if isinstance(exc, ObservationError):
+            print(f"ERROR {exc.reason}: {exc.detail}", file=sys.stderr)
+        else:
+            print(f"ERROR entity_mismatch: {exc}", file=sys.stderr)
+        return 2
+
+    state_dir = Path(args.state_dir) if args.state_dir else default_state_dir()
+    base = state_dir / args.ledger
+    snapshot_path = Path(args.snapshot) if args.snapshot else base / "snapshots" / "snapshot.json"
+
+    if not snapshot_path.exists():
+        if args.json_output:
+            print(json.dumps({
+                "verdict": "NO_OBS",
+                "reason": f"no snapshot at {snapshot_path}",
+                "entity": args.entity,
+            }))
+        else:
+            print(f"NO_OBS  {args.entity}  (no snapshot at {snapshot_path})")
+        return 0
+
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    # A verdict needs the CURRENT state of the entity, and reads several fields
+    # off one record -- so it must be fed the merged row, not the per-field
+    # checkpoint records (#20077).
+    records = record_views_from_snapshot(snapshot, args.ledger)
+
+    if args.now is not None:
+        now = parse_utc_timestamp(args.now, where="--now")
+    else:
+        now = utcnow()
+
+    verdict, reason = evaluate_gpu_pending(records, entity, now, args.my_lane)
+
+    if args.json_output:
+        print(json.dumps({
+            "verdict": verdict,
+            "reason": reason,
+            "entity": args.entity,
+            "now": format_utc(now),
+        }))
+    else:
+        print(f"{verdict}  {args.entity}  {reason}")
+
+    if verdict == "HOLD":
+        return 1
+    if verdict == "STALE":
+        return 2
+    return 0
+
+
 def _cli_spool_status(args: argparse.Namespace) -> int:
     if args.out_dir:
         # Explicit --out-dir: the caller named the spool dir, so a missing dir
@@ -2401,6 +2653,30 @@ def build_parser() -> argparse.ArgumentParser:
     reduce_.add_argument("--dry-run", action="store_true")
     reduce_.add_argument("--stdout", action="store_true")
     reduce_.add_argument("--fail-on-rejections", action="store_true")
+    check_pending = sub.add_parser(
+        "check_pending",
+        parents=[common],
+        help="pre-launch gate for a GPU workload (gpu-reservation only)",
+    )
+    check_pending.add_argument(
+        "--ledger", choices=list(LEDGERS), default=GPU_RESERVATION
+    )
+    check_pending.add_argument(
+        "--entity", required=True,
+        help="'<machine>#gpu<n>' for gpu-reservation (e.g. 'myia-ai-01#gpu2')",
+    )
+    check_pending.add_argument(
+        "--my-lane", help="the calling lane ('machine:workspace'); defaults to no ownership check",
+    )
+    check_pending.add_argument(
+        "--snapshot", help="path to a prior snapshot JSON; defaults to the local state dir",
+    )
+    check_pending.add_argument(
+        "--json", dest="json_output", action="store_true",
+        help="emit a JSON object instead of 'VERDICT entity reason'",
+    )
+    check_pending.set_defaults(func=_cli_check_pending)
+
     reduce_.set_defaults(func=_cli_reduce)
     return parser
 

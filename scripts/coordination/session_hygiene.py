@@ -66,6 +66,64 @@ SCHEDULED_ORGANS = [
 # Un journal plus vieux que ce nombre d'intervalles = organe muet.
 SILENT_INTERVALS = 3
 
+# #19131 : le journal d'un organe porte son propre verdict de fin de tir
+# (`=== run end rc=N ===`) et, sur echec de demarrage, la ligne
+# `... : impossible de demarrer -- ...` (merge_ready.py:1158, rc 2). Mesurer
+# l'AGE d'un journal ne dit rien de son CONTENU : du 2026-10-01 12:09Z au
+# 2026-10-04 18:15Z, merge_ready sortait en exit 2 a chaque tir et le controle
+# de #17748 affichait « journal ecrit il y a 16 min ». Un journal qui repete un
+# echec de demarrage est frais.
+_STARTUP_FAILURE = re.compile(r"impossible de demarrer", re.IGNORECASE)
+_RUN_END_RC = re.compile(r"run end rc=(\d+)", re.IGNORECASE)
+# Vocabulaire d'echec, volontairement borne : il ne sert QU'A qualifier la
+# repetition d'une meme ligne de journal d'organe (regime machine, pas prose
+# humaine -- l'elargissement d'un filet a mots de prose reste ecarte, #14682).
+_JOURNAL_FAILURE_WORDS = re.compile(
+    r"impossible|échec|echec|erreur|\berror\b|\bfailed?\b|traceback", re.IGNORECASE)
+# Queue de journal relue (lecture bornee) et nombre de tirs identiques qui alertent.
+_JOURNAL_TAIL_LINES = 8
+_CONSECUTIVE_FAILURES = 2
+
+
+def _journal_tail(path: Path, limit: int = _JOURNAL_TAIL_LINES) -> list[str]:
+    """Dernieres lignes non vides du journal (lecture bornee : 8 Ko suffisent)."""
+    try:
+        with path.open("rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            fh.seek(max(0, fh.tell() - 8192))
+            raw = fh.read().decode("utf-8", errors="replace")
+    except OSError:
+        return []
+    return [ln.strip() for ln in raw.splitlines() if ln.strip()][-limit:]
+
+
+def _journal_verdict(lines: list[str]) -> tuple[str, str, int]:
+    """(niveau, ligne_lue, tirs_identiques) de la queue d'un journal d'organe.
+
+    RED si la derniere ligne porte une signature d'echec -- `impossible de
+    demarrer`, ou un code de sortie non nul que l'organe ecrit lui-meme.
+    AMBER si plusieurs tirs consecutifs rendent la MEME ligne d'echec sans
+    signature reconnue. Un tir nominal (`rc=0`) ou une ligne isolee sans
+    vocabulaire d'echec restent GREEN : la regularite d'un organe sain ne
+    doit pas alerter.
+    """
+    if not lines:
+        return GREEN, "", 0
+    last = lines[-1]
+    same = 1
+    for prev in reversed(lines[:-1]):
+        if prev != last:
+            break
+        same += 1
+    m = _RUN_END_RC.search(last)
+    if m and int(m.group(1)) == 0:
+        return GREEN, last, same
+    if _STARTUP_FAILURE.search(last) or m:
+        return RED, last, same
+    if same >= _CONSECUTIVE_FAILURES and _JOURNAL_FAILURE_WORDS.search(last):
+        return AMBER, last, same
+    return GREEN, last, same
+
 
 @dataclass
 class Check:
@@ -418,19 +476,41 @@ def check_scheduled_organs(local_appdata: Path | None = None, now: float | None 
         if not logs:
             checks.append(Check(label, AMBER, "installe, mais aucun journal : jamais tourne ?", data={"repo": str(repo)}))
             continue
-        age_min = int((now - logs[-1].stat().st_mtime) // 60)
+        last_log = logs[-1]
+        age_min = int((now - last_log.stat().st_mtime) // 60)
+        content_level, last_line, same = _journal_verdict(_journal_tail(last_log))
+        excerpt = (last_line[:160] + "...") if len(last_line) > 160 else last_line
+        data = {"age_min": age_min, "log": str(last_log), "last_line": last_line}
+        query = "schtasks /Query /TN CoursIA\\" + name + " /V /FO LIST  (Last Result, Task To Run)"
         if age_min > SILENT_INTERVALS * interval:
             checks.append(
                 Check(
                     label,
                     RED,
-                    f"journal muet depuis {age_min} min (intervalle nominal {interval} min)",
-                    "schtasks /Query /TN CoursIA\\" + name + " /V /FO LIST  (Last Result, Task To Run)",
-                    {"age_min": age_min, "log": str(logs[-1])},
+                    f"journal muet depuis {age_min} min (intervalle nominal {interval} min)"
+                    + (f" -- derniere ligne : {excerpt}" if excerpt else ""),
+                    query,
+                    data,
                 )
             )
+        elif content_level == RED:
+            repet = f" -- {same} tirs consecutifs identiques" if same >= _CONSECUTIVE_FAILURES else ""
+            checks.append(
+                Check(label, RED, f"journal frais mais le dernier tir a echoue : {excerpt}{repet}", query, data)
+            )
+        elif content_level == AMBER:
+            checks.append(
+                Check(label, AMBER, f"journal frais, meme echec repete {same} fois : {excerpt}", query, data)
+            )
         else:
-            checks.append(Check(label, GREEN, f"journal ecrit il y a {age_min} min", data={"age_min": age_min}))
+            checks.append(
+                Check(
+                    label,
+                    GREEN,
+                    f"journal ecrit il y a {age_min} min" + (f" -- derniere ligne : {excerpt}" if excerpt else ""),
+                    data=data,
+                )
+            )
     return checks
 
 

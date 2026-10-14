@@ -290,19 +290,22 @@
   choix_unique: true
   options:
   - texte: 59/64
-    correcte: false
+    correcte: true
   - texte: 60/64
     correcte: false
   - texte: 61/64
     correcte: false
   - texte: 62/64
-    correcte: true
+    correcte: false
   - texte: 63/64
     correcte: false
   - texte: 57/64
     correcte: false
   - texte: 58/64
     correcte: false
+  explication: 'Correction de la relecture d''octobre 2026 : chaque combinaison de trois symboles a une
+    probabilité de 1/64. Gain espéré = (20 + 16 + 5 + 3)/64 + 2 × 3/64 (CERISE/CERISE/autre) + 1 × 9/64
+    (CERISE/autre/autre) = 59/64.'
 - id: ia4-012
   theme: ia-4-systemes-probabilistes
   type: multichoice
@@ -478,7 +481,7 @@
     correcte: false
   - texte: 267.15€
     correcte: false
-  - texte: 378.92€
+  - texte: 389.47€
     correcte: true
   - texte: 403.84€
     correcte: false
@@ -486,6 +489,10 @@
     correcte: false
   - texte: 632.1€
     correcte: false
+  explication: 'Correction de la relecture d''octobre 2026 : P(test réussi) = 0,8 × 0,7 + 0,35 × 0,3 =
+    0,665, donc P(bon état | réussi) = 0,56/0,665 = 0,8421. Utilité espérée = 0,8421 × (2000 − 1500) +
+    0,1579 × (2000 − 700 − 1500) = 389,47 €. La valeur 378,92 € de la source ne se déduit d''aucun calcul
+    cohérent avec l''énoncé.'
 - id: ia4-019
   theme: ia-4-systemes-probabilistes
   type: multichoice

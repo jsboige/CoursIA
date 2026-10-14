@@ -1,7 +1,7 @@
 - name: "Sudoku-07 Norvig"
   family: Sudoku
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-Csharp.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Bucket 3 de l'EPIC #10382 (from-scratch = la contrepartie, a ecrire comme telle). Verifie firsthand : Python = stdlib pur (pathlib/time/typing, 0 lib tierce, 0 numpy) ; C# = pur System.* (0 NuGet, 0 Assembly ref, BCL pure). Les DEUX cotes portent le MEME algorithme Norvig from-scratch (assign + eliminate + search backtracking avec propagation de contraintes, port direct de https://norvig.com/sudoku.html). Il n'existe PAS de lib SOTA-tier pour le solveur Norvig : la reference EST le code Norvig 2006 lui-meme (les forks PyPI comme sudoku-solver ne sont pas maintained et n'apportent rien de plus que le from-scratch ; aucun package .NET n'implemente Norvig specifiquement). La parite cross-twin est dans l'ALGO specifie par Norvig (les deux jumeaux codent assign/eliminate/search manuellement), pas dans une lib externe -- c'est exactement le cas bucket 3 : pas d'equivalent .NET (ni Python), le from-scratch EST la contrepartie. L'ancien verdict RECOVERABLE-LOCAL contredisait sa propre raison (qui disait deja 'lib SOTA non requise pour cet algo specifie') -- RECOVERABLE-LOCAL signifie 'installable, pas installe', mais il n'y a rien a installer. Flip RECOVERABLE-LOCAL -> SOTA-OK (from-scratch from-scratch assume, bucket 3, parite semantique dans l'algo Norvig)."

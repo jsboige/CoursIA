@@ -171,14 +171,19 @@ repos:
           universal_newlines=True) without encoding= in the same call. On a
           cp1252 host that raises UnicodeDecodeError on UTF-8 payloads — the
           exact class that killed the lane-claim guard in production (#12811).
-          Retroactively-clean-by-design: only files the commit touches are
-          scanned, so the gate is green on main while the historical sweep
-          lands tranche by tranche. No CI workflow counterpart on purpose:
-          #13097 CI famine — the check runs at commit time, zero queue slots.
+          Extended to .ipynb in #19475: the defect class lives almost
+          exclusively in code cells (19 sites fixed under the #15629 sweep —
+          Lean-03b, 12, 14, 15, 16a, 16b, 17c, 21c, 34, ...). Code cells are
+          extracted and scanned with the same predicate, reported as
+          ``path:cell_NN:line``. Retroactively-clean-by-design: only files
+          the commit touches are scanned, so the gate is green on main while
+          the historical sweep lands tranche by tranche. No CI workflow
+          counterpart on purpose: #13097 CI famine — the check runs at commit
+          time, zero queue slots.
         entry: python scripts/check_subprocess_encoding.py
         language: system
         pass_filenames: true
-        files: '\.py$'
+        files: '\.(py|ipynb)$'
 
       - id: cell-source-parses
         name: '#13326 — refuse un-compilable cell source (markdown-typed-code or syntax error)'

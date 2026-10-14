@@ -2,7 +2,7 @@
 
 [← Texte](../README.md) | [↑ ..](../README.md)
 
-**Cette section raconte l'histoire du backend d'inférence** qui héberge les modèles de langage locaux du parcours : un fork de [vLLM](https://docs.vllm.ai) tournant sur 3 cartes RTX 4090, qui expose des endpoints compatibles OpenAI pour les notebooks Texte, les assistants de code, et l'orchestration multi-agents. Seize mois d'évolution — la valse des modèles, les batailles de quantification, une saga de cache KV, un été de pannes silencieuses et de faux coupables, des impasses documentées — condensés en un récit d'ingénierie de production.
+**Cette section raconte l'histoire du backend d'inférence** qui héberge les modèles de langage locaux du parcours : un fork de [vLLM](https://docs.vllm.ai) tournant sur 3 cartes RTX 4090, qui expose des endpoints compatibles OpenAI pour les notebooks Texte, les assistants de code, et l'orchestration multi-agents. Dix-sept mois d'évolution — la valse des modèles, les batailles de quantification, une saga de cache KV, un été de pannes silencieuses et de faux coupables, un automne de déblocages et de reprise de service, des impasses documentées — condensés en un récit d'ingénierie de production.
 
 > **Sources** : [vllm-project/vllm](https://github.com/vllm-project/vllm) (moteur d'inférence amont, Apache 2.0) · [Qwen](https://qwen.ai) (famille de modèles Qwen3.x) · [Sandermage/genesis-vllm-patches](https://github.com/Sandermage/genesis-vllm-patches) (arbre de patches downstream *Genesis* v7.72.x, auteur **Sandermage**, mai 2026 — adopté pour débloquer TurboQuant sur architecture hybride). Confirmation croisée du correctif par l'utilisateur `xyehya` dans [vllm#41726](https://github.com/vllm-project/vllm/issues/41726).
 

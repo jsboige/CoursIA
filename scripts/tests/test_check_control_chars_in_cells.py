@@ -16,6 +16,7 @@ dans la base (stock herite, deplacement inclus) est exemee.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -137,8 +138,19 @@ def test_tranche16_enregistree_avec_contrat():
 
 def test_tranche16_cablee_dans_le_moteur():
     # Un garde enregistre mais pas somme par le moteur ne tourne jamais :
-    # parite textuelle import + somme (le defaut que ce test ferme est
-    # exactement l'oubli de cablage, silencieux par construction).
+    # import + somme, le defaut ferme est exactement l'oubli de cablage,
+    # silencieux par construction.
+    #
+    # La lecture se fait par TOKEN, pas par adjacence litterale : la parite
+    # d'origine (« TRANCHE16, Guard, ») rougissait des qu'une tranche
+    # posterieure s'inserait entre TRANCHE16 et Guard -- or l'objet
+    # surveille est l'omission de cablage, pas l'ordre des tranches
+    # (#19118, TRANCHE17).
     src = (CI_DIR / "fast_lane.py").read_text(encoding="utf-8")
-    assert "TRANCHE16, Guard," in src
-    assert "+ TRANCHE15 + TRANCHE16" in src
+    imported = re.search(r"from fast_lane_registry import \((.*?)\)", src, re.S)
+    assert imported, "bloc d'import de fast_lane_registry introuvable"
+    names = [n.strip() for n in imported.group(1).replace("\n", " ").split(",")]
+    assert "TRANCHE16" in names, "TRANCHE16 importee mais absente : cablage rompu"
+    summed = re.search(r"\bguards = \[(.*?)\]", src, re.S)
+    assert summed, "expression de somme des tranches introuvable"
+    assert re.search(r"\+\s*TRANCHE16\b", summed.group(1)), "TRANCHE16 non sommee par le moteur"

@@ -15,15 +15,16 @@ require «ProvabilityLogic» from git
 
 -- Pilote d'integration ModalLogic (tranche C #15066) : upstream reste en Lean 4.31.0
 -- (origin/main mesure au 2026-09-20, aucune branche/PR de compat), notre lake reste en toolchain 4.33.1.
--- Consomme donc le fork MyIntelligenceAgency/ModalLogic = upstream 9c485ca95e35 + 3 commits de
--- compat 4.33.1 (dsimp->simp sur 2 preuves ; restauration des instances HasSubset Set/Finset
--- retirees de mathlib v4.33.1 ; fermeture de setOf_iff apres deprecation de setOf) — aucun
--- changement semantique, diff public sur le fork.
+-- Consomme le fork MyIntelligenceAgency/ModalLogic, tete main = merge e659872fde (2026-10-04) :
+-- upstream 9c485ca95e35 + PR #2 (correctif Tableau sous 4.33.1) + PR #3 (port complet 4.33.1 :
+-- lean-toolchain v4.33.1, manifest aux pins mathlib v4.33.1, adaptations tactiques sur 6 modules) —
+-- aucun changement semantique, diff public sur le fork. Le pin precedent (71968137b9) pointait une
+-- ligne d'historique abandonnee du fork, hors de l'ascendance de main.
 -- NB : `require mathlib` reste en DERNIER (message de `lake exe cache get`) pour que les revs
 -- transitives (plausible, batteries, Qq, proofwidgets) soient celles de mathlib v4.33.1 et non
 -- celles du manifest 4.31 de ModalLogic.
 require «ModalLogic» from git
-  "https://github.com/MyIntelligenceAgency/ModalLogic.git" @ "71968137b917a708c700047e1e6d3eb6cc4ed078"
+  "https://github.com/MyIntelligenceAgency/ModalLogic.git" @ "e659872fdeaa6c34b57ed601e32f4fb840c60749"
 
 require mathlib from git
   "https://github.com/leanprover-community/mathlib4.git" @ "v4.33.1"

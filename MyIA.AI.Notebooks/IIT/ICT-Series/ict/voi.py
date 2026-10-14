@@ -11,7 +11,7 @@ observer avant d'agir.
 |------------------------------------------------|-----------|-----------------------|
 | ``DecInfer/DecInfer-06-Value-Information.ipynb``| Infer.NET | bayesien deterministe |
 | ``PyMC/DecPyMC-5-Value-Information.ipynb``     | PyMC      | bayesien + MCMC       |
-| ``PyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb`` | PyMC   | bayesien applique     |
+| ``Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb`` | PyMC   | bayesien applique     |
 
 **Tranche 1/3 (cette PR) — interface analytique commune NumPy.** Ce module
 fournit l'implementation analytique close-form EVPI/EVSI en NumPy pur.

@@ -22,7 +22,10 @@ FLT, autonomous, 0 sorry) sans refresh complet des autres lignes. Ajout ponctuel
 FLT/pin Mathlib `db584cd`, même forme CI dispatcher que hecke). Passage ponctuel
 2026-09-14 : ligne `knot_lean` à v4.33.0 (#15829 — déblocage de la synthèse `Decidable`
 de `Knots/Invariant.lean`, troisième lake sur la cible #14773), sans refresh complet
-des autres lignes.
+des autres lignes. Ajout ponctuel 2026-09-30 : ligne `iit_lean` (#18599, premier
+lake de la série IIT — proxy relationnel de décomposition par coupe, Epic #16781
+veine 5 moitié formelle, **sans Mathlib** comme `tegmark_muh_lean`, 0 sorry,
+jumeau EN `#4980`), sans refresh complet des autres lignes.
 
 ## Résumé
 
@@ -39,6 +42,7 @@ des autres lignes.
 | `mathlib_examples` | v4.33.0 | 0 | 4 | 0 | REF | référence |
 | `hecke_lean` | v4.33.0 | 0 | 4 | 0 | PEDA/REF | #14784, #14771 |
 | `formal_groups_lean` | v4.33.0 | 0 | 10 | 0 | PEDA/REF | #14785, #14771 |
+| `iit_lean` | v4.33.0 | 0 | 3 | 0 | REF | #18599, #16781 |
 | **Total** | — | **9** | **263** | — | — | — |
 
 ¹ `conway_lean` : **1 distinct** sorry (cible de prover intentionnelle dans

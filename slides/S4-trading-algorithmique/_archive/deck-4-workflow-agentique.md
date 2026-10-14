@@ -431,7 +431,7 @@ Agent : "Le backtest donne Sharpe 0.45, MaxDD -22%.
 <div v-click="1">
 
 - Chaque projet contient :
-  - `main.py` : l'algorithme complet (50-200 lignes)
+  - `main.py` : l'algorithme complet
   - `research.ipynb` : notebook d'exploration avec yfinance
   - Metriques documentees dans le README du projet
 

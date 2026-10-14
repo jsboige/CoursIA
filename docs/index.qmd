@@ -58,7 +58,7 @@ Setup environnement, validation notebooks, slash commands.
 
 Plans d'apprentissage par école (ECE, ESGF, EPITA, EPF), scope pédagogique.
 
-### [Grothendieckian lens](grothendieckian-lens.md)
+### [Grothendieckian lens](cadrage/grothendieckian-lens.md)
 
 Perspective unificatrice sur les séries du dépôt, à la Grothendieck.
 

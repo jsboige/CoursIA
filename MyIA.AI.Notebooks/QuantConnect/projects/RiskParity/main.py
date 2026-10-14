@@ -56,6 +56,17 @@ class RiskParity(QCAlgorithm):
             self.rebalance,
         )
 
+        # Daily data: every order fills at the close, so a buy is checked before
+        # the sells of the same rebalance free any margin. A refused buy is
+        # re-sent at the next session, once those sells have filled (#20523).
+        self._targets = {}
+        self._refused = {}
+        self.schedule.on(
+            self.date_rules.every_day("SPY"),
+            self.time_rules.after_market_open("SPY", 30),
+            self._resend_refused,
+        )
+
         self.set_warm_up(timedelta(days=self.WARMUP_DAYS))
 
     def rebalance(self):
@@ -114,12 +125,30 @@ class RiskParity(QCAlgorithm):
         )
         self.log(f"Trending ({len(trending)}/{len(self.TICKERS)}): [{trending_str}]")
 
+        self._targets = targets
+        self._refused.clear()
         for ticker in self.all_tickers:
             sym = self.symbols[ticker]
             if ticker in targets:
                 self.set_holdings(sym, targets[ticker])
             elif self.portfolio[sym].invested:
                 self.liquidate(sym)
+
+    def on_order_event(self, order_event: OrderEvent):
+        if order_event.status == OrderStatus.INVALID:
+            self._refused[order_event.symbol] = self.time.date()
+
+    def _resend_refused(self):
+        if self.is_warming_up or not self._refused:
+            return
+        today = self.time.date()
+        for sym, day in list(self._refused.items()):
+            if day >= today:
+                continue
+            del self._refused[sym]
+            weight = self._targets.get(sym.value, 0.0)
+            self.log(f"RETRY {sym.value} target={weight:.1%} refused={day}")
+            self.set_holdings(sym, weight)
 
     def on_data(self, data: Slice):
         pass

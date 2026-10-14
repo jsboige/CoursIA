@@ -32,7 +32,7 @@ garantit la qualité*.
 | Parcours | Angle | Format | État |
 |----------|-------|--------|------|
 | **[Tour de la plateforme](00-Tour-Plateforme/README.md)** | « À quoi sert Open WebUI et comment l'utilise-t-on ? » | Markdown pédagogique + captures d'écran annotées | 🟡 Narratif complet — captures reproductibles par [spec Playwright](00-Tour-Plateforme/capture/tour-captures.spec.ts), partiellement générées (voir [l'état détaillé](00-Tour-Plateforme/README.md)) |
-| **[Série QA Playwright-OWUI](Playwright-OWUI/README.md)** | « Comment teste-t-on une plateforme GenAI de bout en bout ? » | Notebooks + specs Playwright (6 modules) | ✅ Disponible |
+| **[Série QA Playwright-OWUI](Playwright-OWUI/README.md)** | « Comment teste-t-on une plateforme GenAI de bout en bout ? » | Notebooks + specs Playwright | ✅ Disponible |
 
 > **Plateforme voisine.** [AI-Engine (WordPress)](../AI-Engine-WordPress/README.md), présentée comme *presqu'équivalente d'Open WebUI côté site de contenu*, est désormais une **plateforme sœur** au sein de [Plateformes conversationnelles](../README.md) — voir le [`comparatif-owui-vs-ai-engine.md`](../AI-Engine-WordPress/02-Comparatif/comparatif-owui-vs-ai-engine.md) dans sa section Comparatif.
 
@@ -50,7 +50,7 @@ des champs sensibles) une fois le tenant de démonstration en ligne — voir
 
 ### Série QA Playwright-OWUI
 
-Une série de 6 modules qui apprend à écrire des tests end-to-end sur Open WebUI
+Une série qui apprend à écrire des tests end-to-end sur Open WebUI
 avec Playwright : découverte et sélecteurs, navigation & authentification, chat
 & streaming, RAG / outils MCP / canaux, isolation multi-tenant et CI/CD,
 puis les nouveautés v0.10 (mémoire, dossiers d'équipe, raisonnement streamé).

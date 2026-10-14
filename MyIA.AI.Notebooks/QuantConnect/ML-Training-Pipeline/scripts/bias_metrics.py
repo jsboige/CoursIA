@@ -25,6 +25,58 @@ def _mse_decomposition(errors: np.ndarray) -> dict:
     }
 
 
+def joined_pair_errors(
+    a_forecasts,
+    a_targets,
+    b_forecasts,
+    b_targets,
+    *,
+    target_tol: float = 1e-8,
+) -> dict:
+    """Date-join two OOS forecast/target series, validating shared targets.
+
+    Protocol #18190 (M17 cluster revalidation): every DM leg compares the
+    errors of the SAME origin dates, joined by date -- never positionally.
+    On the joined dates both walk-forwards must target the same realised
+    quantity (mean of the next `horizon` log-RV days); a gap beyond
+    `target_tol` means they are not forecasting the same thing and the DM
+    would compare incommensurable losses, so the mismatch raises instead of
+    silently comparing (fail-closed).
+    """
+    import pandas as pd
+
+    def _err(fc, tg):
+        return (fc - tg).dropna()
+
+    joined = (
+        pd.concat(
+            [_err(a_forecasts, a_targets).rename("a"), _err(b_forecasts, b_targets).rename("b")],
+            axis=1,
+            join="inner",
+        ).dropna()
+    )
+    shared_idx = joined.index
+    tg_gap = (
+        (a_targets.loc[shared_idx] - b_targets.loc[shared_idx]).abs().max()
+        if len(shared_idx)
+        else 0.0
+    )
+    tg_gap = float(tg_gap)
+    if not np.isfinite(tg_gap) or tg_gap > target_tol:
+        raise ValueError(
+            f"shared-target mismatch on {len(shared_idx)} joined dates "
+            f"(max gap {tg_gap:.3e} > tol {target_tol:.1e}): the two series "
+            "do not forecast the same realised quantity -- DM refused"
+        )
+    return {
+        "a_errors": joined["a"].to_numpy(),
+        "b_errors": joined["b"].to_numpy(),
+        "n_joined": int(len(joined)),
+        "target_gap_max": tg_gap,
+        "joined_dates": shared_idx,
+    }
+
+
 def _dm_centered_mse(
     errors_a: np.ndarray, errors_b: np.ndarray, horizon: int
 ) -> dict:

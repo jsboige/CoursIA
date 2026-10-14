@@ -74,7 +74,20 @@ STATUS_CONTEXT_RE = re.compile(
     r"(?:^|\b)(?:statut|status|priorit[ée]|priority)\b",
     re.IGNORECASE,
 )
-ACTIVE_OVERRIDE_RE = re.compile(r"\bstatut\s+corrig[ée]\b", re.IGNORECASE)
+# A rectification header that explicitly withdraws the stale stance suppresses
+# the stance signal: the historical prose below it is preserved by design (the
+# #13906 repair pattern), so its dormant wording is no longer a live stance.
+# Markers are the phrases that pattern actually produces, measured on #1210,
+# #11690, #13902 and #13906 (2026-10-01).
+RETRACTION_MARKER_RE = re.compile(
+    r"(?:"
+    r"statut\s+corrig[ée]"  # explicit status correction (#1210)
+    r"|ne\s+d[ée]criv\w+\s+plus\s+(?:leur\s+|son\s+)?[ée]tat"  # #11690 header
+    r"|ne\s+tient\s+plus"  # #13902 measured block
+    r"|faux\s+positif\s+du\s+signal"  # #13906 measured block
+    r")",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -121,13 +134,21 @@ class MergedPullRequest:
 
 @dataclass(frozen=True)
 class EpicStaleness:
-    """Triage signals for one EPIC."""
+    """Triage signals for one EPIC.
+
+    ``citation_breadth`` is the largest number of examined EPICs that any single
+    ``unrecorded_merged`` PR cites. A PR quoting many issue numbers at once (a
+    belt dump, a dispatch list) is attributed to every EPIC it names, so a
+    breadth well above 1 marks a citation-list rather than a delivery: such a
+    finding is a candidate for human review, never for a body rewrite.
+    """
 
     number: int
     title: str
     unrecorded_merged: tuple[int, ...]
     stance_contradicted: bool
     stance_pattern: str | None
+    citation_breadth: int = 0
 
 
 def is_epic(row: dict) -> bool:
@@ -172,7 +193,7 @@ def prose_lines_for_stance(title: str, body: str) -> list[str]:
 
 def dormant_stance(title: str, body: str) -> str | None:
     """Return the first live dormant-stance pattern, if any."""
-    if ACTIVE_OVERRIDE_RE.search(body):
+    if RETRACTION_MARKER_RE.search(body):
         return None
     lines = prose_lines_for_stance(title, body)
     prose = "\n".join(lines)
@@ -202,6 +223,11 @@ def analyze_epics(
         for issue_number in pr.cited_issues() & cited_by_epic.keys():
             cited_by_epic[issue_number].append(pr)
 
+    breadth: dict[int, int] = {}
+    for citing_epic in cited_by_epic.values():
+        for pr in citing_epic:
+            breadth[pr.number] = breadth.get(pr.number, 0) + 1
+
     findings: list[EpicStaleness] = []
     for epic in epics:
         citing = cited_by_epic[epic.number]
@@ -223,6 +249,9 @@ def analyze_epics(
                     unrecorded_merged=unrecorded,
                     stance_contradicted=stance is not None,
                     stance_pattern=stance,
+                    citation_breadth=max(
+                        (breadth[number] for number in unrecorded), default=0
+                    ),
                 )
             )
 

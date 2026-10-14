@@ -127,6 +127,22 @@ jobs:
             Write-Output "python: absent du PATH (non requis par ce job .NET)"
           }
 
+      # Le compte dedie coursia-runner (ACL posees par
+      # manage_self_hosted_runner.py) n'a PAS le droit d'ecrire dans
+      # C:\Program Files\dotnet -- or setup-dotnet@v4 resout '9.0.x' via
+      # son canal et installe dans son repertoire par defaut
+      # (run 37396937471 : premier run REEL du step, "The current user
+      # doesn't have write access to the installation root" ; le 03/09
+      # (33720594511) le step etait skipped -- la sonde python fatale
+      # tuait le job avant lui, le defaut etait latent depuis l'origine).
+      # Remede : DIRIGER les installations vers le tool-cache du runner,
+      # inscriptible par le compte et persistant entre re-enregistrements
+      # ephemeres -- meme motif que le seed Python du tool-cache
+      # (docs/ci/self-hosted-runners.md, provisionnement Python).
+      - name: Route dotnet installs to the runner tool cache
+        shell: pwsh
+        run: 'Add-Content $env:GITHUB_ENV "DOTNET_INSTALL_DIR=$env:RUNNER_TOOL_CACHE\dotnet"'
+
       - name: Set up .NET 9
         uses: actions/setup-dotnet@v4
         with:

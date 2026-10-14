@@ -4,7 +4,7 @@ Détail déporté de [`.claude/rules/submodule-maintenance.md`](../../.claude/ru
 
 Motif du déport (`harness-hygiene`, 3 tiers) : le harnais est auto-chargé à **chaque requête** de **chaque session**, sur les cinq machines. Une table de SHA et de dates de vérification y coûte des tokens en permanence pour une information qui se relit ponctuellement, avant une PR de bump.
 
----
+***
 
 ## 1. Périmètre — pourquoi la liste se lit dans `.gitmodules`
 
@@ -18,7 +18,7 @@ Motif du déport (`harness-hygiene`, 3 tiers) : le harnais est auto-chargé à *
 
 Le critère qui a tranché : un sous-module est un dépôt **qu'on fait vivre**. Une dépendance de build qu'on subit se clone, elle ne se déclare pas — quantité de composants clonent leurs dépendances sans que le dépôt parent s'en encombre.
 
----
+***
 
 ## 2. Faux positif permanent `HEAD` vs branche déclarée (#14872)
 
@@ -38,7 +38,7 @@ Le gitlink est **exactement sur sa branche déclarée**. C'est l'état *nominal*
 
 `refs/heads/` est explicite pour ne jamais résoudre un tag homonyme. Un `ls-remote` muet (ref injoignable, 403 d'org, réseau) s'affiche `INJOIGNABLE`, jamais comme une égalité — même leçon que le `403` de la mesure de gate ci-dessous.
 
----
+***
 
 ## 3. Précondition de jeton pour la mesure de gate (mesurée le 2026-09-05)
 
@@ -54,7 +54,7 @@ Jamais par `gh auth switch`, qui mute un état **global au process `gh`** (cf. r
 
 **Un `403` est une question, pas une absence mesurée** : ne jamais en conclure « 0 workflow ». C'est exactement la ligne fausse que la table ci-dessous existe pour empêcher.
 
----
+***
 
 ## 4. Table de statut de gate par sous-module
 
@@ -86,7 +86,7 @@ Le run post-merge sur `main` reste **FAILURE côté Windows**, sans message d'er
 - Une PR de bump qui cite un **run vert sur la branche par défaut** du submod **satisfait** A2 : la substitution R3 **cesse** de s'appliquer à ce sous-module, et les bumps suivants peuvent omettre les deux vérifications.
 - Le passage d'« aucun workflow » à « workflow acquis » est un **commit sur le submod** (câblage `.github/workflows/dotnet-ci.yml`), suivi d'une **mise à jour de la table ci-dessus** dans une PR sur CoursIA-2.
 
----
+***
 
 ## Voir aussi
 

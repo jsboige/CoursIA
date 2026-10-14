@@ -13,11 +13,11 @@ complémentaires : Bowditch (pouvoir 4), Máthé (pouvoir 2), Kloster
 **fini suffisamment grand** gagne (résumé et introduction : « if J is
 sufficiently large then the angel has a strategy such that the devil
 will never capture her », arXiv:0706.2817 p.1) -- formulation citée
-d'après l'archive `2007 - Gács - The Angel Wins.pdf` du gisement
+d'après l'archive `2007 - Gacs - The Angel Wins.pdf` du gisement
 partagé. Le papier ne donne pas de puissance numérique précise.
 
 Bibliographie archivée dans `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\` :
-- `2007 - Gács - The Angel Wins.pdf` (arXiv:0706.2817v1, vérifié)
+- `2007 - Gacs - The Angel Wins.pdf` (arXiv:0706.2817v1, vérifié)
 - MathOverflow 357433 archivé en HTML dans `Technical Web Docs/`
 Les papiers paywallés (Bowditch/Máthé/Kloster, Cambridge Core +
 Elsevier ScienceDirect) n'ont pas pu être archivés en local faute

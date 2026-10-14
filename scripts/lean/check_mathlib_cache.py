@@ -10,8 +10,13 @@ store partage. Deux outils courants mentent silencieusement dessus :
   `find` ne traverse pas les junctions.
 * `os.path.islink(chemin)` renvoie **False** : rien ne signale que le repertoire
   est un lien, donc le « 0 » passe pour une mesure de repertoire vide.
+* `os.path.exists(chemin)` **suit** le lien : il rend **False** des que la CIBLE a
+  disparu. Teste avant la detection du lien, il classe une jonction **pendante**
+  en « pas de checkout » — et l'affichage la rend `reel`, c'est-a-dire l'exact
+  contraire de la verite. Mesure po-2025 (2026-10-08) : 14 jonctions pendantes
+  lues `absent`/`reel`. Detail : `docs/lean/junctions-scan-po-2024.md` §4 « Seconde occurrence consolidée (po-2025) » (mesure intégrale préservée sur le dashboard RooSync workspace-CoursIA, 08/10).
 
-Ensemble, les deux fabriquent un verdict « cache purge, cold-build 30 min requis »
+Ensemble, les trois fabriquent un verdict « cache purge, cold-build 30 min requis »
 a partir d'un cache parfaitement sain. Cette confusion a immobilise une lane Lean
 pendant 5 cycles (DM `msg-20260729T055956-n3f4ap`).
 
@@ -85,15 +90,31 @@ def analyse_lake(lake: Path, cache: dict[str, int]) -> dict:
     mathlib = lake / ".lake" / "packages" / "mathlib"
     result: dict = {"lake": str(lake), "declares_mathlib": declares_mathlib(lake)}
 
+    # La detection du lien precede le test d'existence : `exists()` SUIT le lien et
+    # rend False des que la CIBLE a disparu. Teste en premier, il classait une
+    # jonction pendante en `absent`, et l'affichage ligne ~158 la rendait `reel` --
+    # l'inverse de la verite (14 jonctions po-2025, cf junctions-scan-po-2024.md §4, seconde occurrence).
+    # `islink()` est False sur une junction Windows : c'est la divergence de chemin
+    # qui la revele, pas l'API dediee (`is_junction()` n'existe qu'a partir de 3.12).
+    real = Path(os.path.realpath(mathlib))
+    result["junction"] = str(real) != str(mathlib.resolve(strict=False)) or real != mathlib
+    if result["junction"]:
+        # Cible du lien, meme morte : elle sert au diagnostic. Cle distincte de
+        # `realpath`, qui designe un cache PHYSIQUE et alimente le dedoublonnage --
+        # une cible disparue n'est pas un cache physique et ne doit pas y entrer.
+        result["junction_target"] = str(real)
+
     if not mathlib.exists():
-        result["status"] = "absent" if result["declares_mathlib"] else "no_mathlib_dep"
+        if result["junction"]:
+            # Le lien existe, sa cible a disparu : etat distinct de « aucun checkout »
+            # et strictement pire que `cold` -- le chemin se presente comme un paquet
+            # installe, mais rien n'est atteignable a travers.
+            result["status"] = "dangling"
+        else:
+            result["status"] = "absent" if result["declares_mathlib"] else "no_mathlib_dep"
         result["oleans"] = 0
         return result
 
-    real = Path(os.path.realpath(mathlib))
-    # `islink()` est False sur une junction Windows : c'est la divergence de
-    # chemin qui la revele, pas l'API dediee.
-    result["junction"] = str(real) != str(mathlib.resolve(strict=False)) or real != mathlib
     result["realpath"] = str(real)
 
     key = str(real)
@@ -162,13 +183,22 @@ def main(argv: list[str] | None = None) -> int:
     partial = [r for r in results if r["status"] == "partial"]
     ok = [r for r in results if r["status"] == "ok"]
     absent = [r for r in results if r["status"] == "absent"]
+    dangling = [r for r in results if r["status"] == "dangling"]
 
     print()
     print(f"Lakes: {len(lakes)} | mathlib ok: {len(ok)} | froid: {len(cold)} | "
           f"partiel: {len(partial)} | non installe: {len(absent)} | "
+          f"jonctions pendantes: {len(dangling)} | "
           f"caches physiques distincts: {len(by_real)}")
 
-    if cold or partial:
+    if dangling:
+        print("\nJonctions PENDANTES -- le lien existe, sa cible a disparu :")
+        print(f"  {len(dangling)} lake(s) portent un chemin `.lake/packages/mathlib`")
+        print("  qui se presente comme un paquet installe, mais rien n'est atteignable")
+        print("  a travers. Distinct de `froid` (cible presente, store vide) et de")
+        print("  `non installe` (aucun lien).")
+
+    if cold or partial or dangling:
         print("\nAvant de conclure 'cache purge', relancer un `lake build` reel :")
         print("  un comptage a 0 via `find` ou `islink` ne prouve rien sur une junction.")
 
@@ -178,7 +208,13 @@ def main(argv: list[str] | None = None) -> int:
         Path(args.json_out).write_text(json.dumps(payload, indent=2), encoding="utf-8")
         print(f"\nJSON: {args.json_out}")
 
-    return 1 if (args.strict and (cold or partial)) else 0
+    # `dangling` est compte par `--strict` alors que `absent` ne l'est pas : un lake
+    # sans checkout est l'etat NORMAL d'un lac jamais construit localement (lake le
+    # recuperera), tandis qu'une jonction pendante se presente comme un paquet
+    # installe et n'atteint rien -- un `lake build` peut tenter de repeupler le
+    # store partage a travers elle (incident fondateur #13962, docstring de
+    # setup_shared_mathlib.ps1).
+    return 1 if (args.strict and (cold or partial or dangling)) else 0
 
 
 if __name__ == "__main__":

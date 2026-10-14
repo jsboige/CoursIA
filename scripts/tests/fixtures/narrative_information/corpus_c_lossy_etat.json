@@ -1,0 +1,27 @@
+{
+  "state": {
+    "fallacies": [
+      {"name": "attaque personnelle", "text": "Attaque sur la personne plutot que sur l'argument"},
+      {"name": "caricature", "text": "Caricature de la position adverse pour la refuter"},
+      {"name": "fausse causalite", "text": "Correlation prise pour causalite directe"}
+    ],
+    "quality": [
+      {"name": "coherence", "score": "forte"},
+      {"name": "pertinence", "score": "forte"}
+    ],
+    "counter_arguments": [
+      {"name": "inversion fardeau", "text": "L'auteur inverse le fardeau de la preuve"},
+      {"name": "deplacement these", "text": "L'auteur deplace la these en cours de route"}
+    ],
+    "formal_pl": [
+      {"name": "syllogisme", "text": "Modus ponens sur les deux premises"},
+      {"name": "modus tollens", "text": "Erreur logique dans la deuxieme moitie"}
+    ],
+    "formal_fol": [
+      {"name": "permutation quantificateurs", "text": "Le passage du forall au existe est illegitime"}
+    ],
+    "dung": [
+      {"name": "extension grounded", "text": "Attaque mutuelle entre Socrate et Platon"}
+    ]
+  }
+}

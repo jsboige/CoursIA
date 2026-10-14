@@ -1,5 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
+# ---
+# Provenance : module derive du notebook Argumentation-Obs-01-Graphes-Dates-Python.ipynb
+# (marqueurs '# In[N]'). Retouches manuelles connues (divergences avec le carnet) :
+# 1. chemin de l'ontologie resolu relativement a __file__ (voir _THIS_DIR ci-dessous),
+#    pour que le module soit appelable depuis n'importe quel cwd — le carnet, lui, resout
+#    par recherche ascendante depuis le cwd (equivalent notebook de __file__) ;
+# 2. docstring raw-string de edit_distance_attaques (meme fix que le carnet, #18873).
+# Une regeneration depuis le carnet doit re-appliquer ces deux retouches.
+# ---
 
 # # Graphes d'argumentation datés — l'instrument $G_t^{arg} \to G_{t+1}^{arg}$
 # 
@@ -683,7 +692,7 @@ print("  la limite explicite que l'hypothese monotone permettait de ne pas poser
 
 
 def edit_distance_attaques(af1, af2):
-    """TODO etudiant : distance d'edition normalisee sur les ensembles d'attaques.
+    r"""TODO etudiant : distance d'edition normalisee sur les ensembles d'attaques.
 
     (|A1 \ A2| + |A2 \ A1|) / max(|A1|, |A2|), et 0.0 si les deux sont vides.
     """

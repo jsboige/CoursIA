@@ -209,6 +209,7 @@ def test_three_shared_payloads_are_reused_without_changing_derivations(
             cache=cache, cache_mode="auto", cache_status=first_status
         ),
     )
+    after_first = len(calls)
     second_status = {}
     second = (
         pig.fetch_pool(
@@ -221,7 +222,24 @@ def test_three_shared_payloads_are_reused_without_changing_derivations(
     )
 
     assert first == second
-    assert len(calls) == 3
+    # L'invariant de ce test est la REUTILISATION, pas un nombre de requetes
+    # fige. Depuis #19209 un payload n'est plus ramene par un `--search` unique
+    # (l'API de recherche plafonne a 1000 et la troncature emporte les plus
+    # ANCIENNES livraisons) mais par des tranches de dates : le premier passage
+    # coute donc N appels par payload, N dependant de la largeur de la fenetre.
+    # Ce qui doit rester vrai, et que ce test epingle, c'est que le SECOND
+    # passage n'ajoute AUCUNE requete.
+    assert len(calls) == after_first, (
+        f"le 2e passage doit etre servi par le cache : "
+        f"{len(calls)} requetes contre {after_first} apres le 1er"
+    )
+    # Les trois payloads ont bien ete ramenes au premier passage : un sans
+    # `files` (les visites, qui ne lisent que le corps et la date) et un avec
+    # (le tapis, dont `family_of` derive la zone d'atterrissage).
+    pr_calls = [c for c in calls if c[1:3] == ["pr", "list"]]
+    assert any("files" in c[c.index("--json") + 1] for c in pr_calls)
+    assert any("files" not in c[c.index("--json") + 1] for c in pr_calls)
+    assert any(c[1:3] == ["issue", "list"] for c in calls)
     assert {entry["status"] for entry in first_status.values()} == {"miss"}
     assert {entry["status"] for entry in second_status.values()} == {"hit"}
     # Un hit SANS sonde n'est pas une mesure : la suite doit pouvoir le dire.
