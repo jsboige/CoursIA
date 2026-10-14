@@ -45,9 +45,9 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 | [reference/cluster-agents.md](docs/reference/cluster-agents.md) | Machines, GPU topology, agents par spécialisation, dispatch |
 | [reference/kernels-runtime.md](docs/reference/kernels-runtime.md) | .NET / Python / WSL kernels, conda envs, dotnet-interactive PIN |
 | [reference/procedures-recurrentes.md](docs/reference/procedures-recurrentes.md) | Workflow PR, dispatch, validation notebook, audit anti-régression, pre-commit H.3 |
-| [reference/subagents-reference.md](docs/reference/subagents-reference.md) | 21 sous-agents + 17 skills, mapping side-tracks, usage async |
+| [reference/subagents-reference.md](docs/reference/subagents-reference.md) | Roster sous-agents + skills (inventaire faisant foi dans le fichier), mapping side-tracks, usage async |
 | [reference/scripts-reference.md](docs/reference/scripts-reference.md) | Catalogue scripts (notebook CLI, exécution, qualité, maintenance) |
-| [reference/architecture_mcp_roo.md](docs/reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (inventaire des 15 outils roo-state-manager : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
+| [reference/architecture_mcp_roo.md](docs/reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (inventaire des outils roo-state-manager : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
 | [reference/regles-vigilance-detail.md](docs/reference/regles-vigilance-detail.md) · [regles-validation-detail.md](docs/reference/regles-validation-detail.md) | Détail G.1-G.9 et H.1-H.7 + incidents |
 | [reference/_archive-convention.md](docs/reference/_archive-convention.md) | Convention `_archive/` (11 emplacements) — modèle ML-Training-Pipeline généralisé, 4 critères d'éligibilité, header per-function |
 | [reference/notebook-renumbering-detail.md](docs/reference/notebook-renumbering-detail.md) | Corpus des precedents de renumerotation — le geste `renum()`/`reclass()` est porte par `.claude/rules/notebook-accretion-numbering.md` |

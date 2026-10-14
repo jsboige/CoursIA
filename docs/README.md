@@ -148,6 +148,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/ab-methodology.md](lean/ab-methodology.md) | Méthodologie d'A/B pour le harnais prover Lean |
 | [lean/i18n-inventory-cycle-38.md](lean/i18n-inventory-cycle-38.md) | Lean i18n — inventaire FR/EN et proposition de convention (cycle 38, See #4980) |
 | [lean/i18n-sibling-patterns.md](lean/i18n-sibling-patterns.md) | Lean i18n — patterns de paires FR/EN et discipline du checker (#4980) |
+| [lean/iit-lean-escalier.md](lean/iit-lean-escalier.md) | Note de conception de l'escalier du lake `iit_lean` — inventaire, escalier 3 marches, capstone, modules non exposés (Epic #16781, sous-grain #20414) |
 | [lean/mimo-converse-cartography.md](lean/mimo-converse-cartography.md) | Cartographie converse MIMO (#11152) — correspondance brique → source, mesurée le 2026-08-16 sur le Mathlib et le SLT du manifest `mimo_lean` courant |
 | [lean/junctions-scan-po-2026.md](lean/junctions-scan-po-2026.md) | Scan des jonctions NTFS Mathlib sur `myia-po-2026` (2026-09-01) — #13962, enfant de #4362 (mutualisation du cluster) |
 | [lean/cluster-junctions-c857.md](lean/cluster-junctions-c857.md) | Scan de mutualisation Mathlib à l'échelle du cluster (c.857, po-2024, 2026-09-02) — pendant du précédent, vue multi-machines |
@@ -348,6 +349,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/15615-gradation-fournee-a.md](ledgers/15615-gradation-fournee-a.md) | Ledger — Issue #15615 (gradation GameTheory, fournée A : blocs 01/04/05) |
 | [ledgers/15615-gradation-fournee-b.md](ledgers/15615-gradation-fournee-b.md) | Ledger — Issue #15615 (gradation GameTheory, fournée B : blocs 06-10) |
 | [ledgers/15615-gradation-fournee-c.md](ledgers/15615-gradation-fournee-c.md) | Ledger — Issue #15615 (gradation GameTheory, fournée C : blocs 11-15) |
+| [ledgers/15615-gradation-fournee-d.md](ledgers/15615-gradation-fournee-d.md) | Ledger — Issue #15615 (gradation GameTheory, fournée D : blocs 16-20) |
 | [ledgers/16473-consolidation-acceptance-2-log.md](ledgers/16473-consolidation-acceptance-2-log.md) | EPIC #16473 acceptance 2 — suivi des rattachements nominatifs des sous-grains des axes A-F, par lot livré (snapshots de compteur réconciliés dans le document) |
 | [ledgers/17375-md-content-loss-justified.md](ledgers/17375-md-content-loss-justified.md) | Ledger #17375 -- md-content-loss justification |
 | [ledgers/18493-counter-scan-classification.md](ledgers/18493-counter-scan-classification.md) | Issue #18493 — Scan des compteurs littéraux dans commentaires code |
