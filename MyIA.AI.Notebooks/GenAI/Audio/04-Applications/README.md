@@ -53,12 +53,13 @@ Pipeline complet pour générer un audiobook à partir d'un texte littéraire, a
 
 ### Famille YuE2 — compréhension et transcription musicales
 
-Trois satellites : la **compréhension** (MERT2, 04-15), la **génération** ([YuE2, 02-7](../02-Advanced/02-7-YuE2-Song-Generation.ipynb)) et la **transcription** (SheetSage2, 04-16).
+Trois satellites : la **compréhension** (MERT2, 04-15), la **génération** ([YuE2, 02-7](../02-Advanced/02-7-YuE2-Song-Generation.ipynb)) et la **transcription** (SheetSage2, 04-16). Un quatrième volet **DSP classique** (MIR-Classique, 04-17) réimplémente à la main les briques beat tracking, détection de tonalité (Krumhansl-Schmuckler) et template matching d'accords — complément pédagogique des approches neuronales.
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
 | 15 | [04-15-MERT2-Music-Understanding](04-15-MERT2-Music-Understanding.ipynb) | Embeddings MERT2 (632 M, self-supervised, poids CC BY-NC 4.0) : corpus contrôlé 3 motifs × 4 timbres × 2 transpositions, similarité cosinus, retrieval contexte long FullSong (medley 120 s), sondes linéaires LOO motif vs timbre sur couches L1/L23/L24 | Local GPU (kernel `mert2-gpu`, pins torch 2.6.0 / transformers 4.53.2) | ~4 GB |
 | 16 | [04-16-SheetSage2-Audio-To-Score](04-16-SheetSage2-Audio-To-Score.ipynb) | Transcription audio vers partition éditable : SheetSage2 (677 M, base MERT-v2-FullSong + adaptateurs), cinq têtes (mélodie, accords, temps forts, tonalité, structure), artefacts ABC/MIDI/événements horodatés, comparaison à vérité-terrain connue par construction, cycle symbolique→audio→symbolique mesuré | Local GPU (kernel `sheetsage2-gpu`) ; poids CC BY-NC 4.0 (usage commercial interdit) | ~8 GB |
+| 17 | [04-17-MIR-Classique](04-17-MIR-Classique.ipynb) | DSP MIR classique (librosa 0.11) : beat tracking (Ellis) sur Brahms, détection de tonalité (Krumhansl-Schmuckler, 24 profils majeurs/mineurs) sur chromagramme moyen, reconnaissance d'accords par template matching sur 24 classes (majeure/mineure) en fenêtrage glissant, mesure d'exactitude sur signal synthétique I-VI-IV-V (tempo 120 BPM, A majeur) à vérité-terrain connue. 3 exercices C.1 (prédiction linéaire des beats, sonde K-S, profil chroma pondéré). Verdict SOTA-OK (librosa = référence MIR). | CPU (librosa, numpy, soundfile) | < 1 GB |
 
 > **Note (consolidation #13741)** : un sibling pédagogique plus minimal (re-voicing CP-SAT + MIDI synthèse, version allégée du canonique) a été archivé sous [`MyIA.AI.Notebooks/GenAI/Audio/_archive/04-14-VoiceLeading-RenduGenAI.ipynb`](../_archive/04-14-VoiceLeading-RenduGenAI.ipynb) pour éliminer le doublon de slot 04-14. Le contenu reste préservé (re-voicing, synthèse MIDI, MusicGen, spectrogrammes, export WAV) ; ce notebook canonique `Rendu-GenAI` (version complète re-exécutée #13398) reste la référence.
 
