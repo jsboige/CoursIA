@@ -602,16 +602,18 @@ RL/
 ├── RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb
 ├── RL-16-Dream-RSI-Python.ipynb
 ├── RL-19-Reward-Tampering-Python.ipynb
-├── RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb
-├── RLPT-00b-Biais-Dataset-Preferences-Python.ipynb
-├── RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb
-├── RLPT-00d-Reward-Trainer-TRL-Python.ipynb
-├── RLPT-00e-DPO-TRL-Python.ipynb
-├── RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb
-├── RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb
-├── RLPT-02-GRPO-Minimal-Python.ipynb
-├── RLPT-03-Reward-Hacking-Python.ipynb
-├── RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb
+├── PostTraining/
+│   ├── RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb
+│   ├── RLPT-00b-Biais-Dataset-Preferences-Python.ipynb
+│   ├── RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb
+│   ├── RLPT-00d-Reward-Trainer-TRL-Python.ipynb
+│   ├── RLPT-00e-DPO-TRL-Python.ipynb
+│   ├── RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb
+│   ├── RLPT-00g-PPO-TRL-Experimental-Python.ipynb
+│   ├── RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb
+│   ├── RLPT-02-GRPO-Minimal-Python.ipynb
+│   ├── RLPT-03-Reward-Hacking-Python.ipynb
+│   └── RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb
 └── README.md
 ```
 
