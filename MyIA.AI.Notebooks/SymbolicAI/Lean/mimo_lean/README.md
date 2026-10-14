@@ -160,7 +160,7 @@ Le compagnon natif est **[MIMO-03-Converse-Native-Lean.ipynb](../MIMO/MIMO-03-Co
 `#print axioms` sur les théorèmes clés. Trois axiomes standards, zéro
 `sorry`, zéro axiome non standard.
 
-Lean-21b **distingue** le prouvé localement (les énoncés de ce lake) de
+MIMO-03 **distingue** le prouvé localement (les énoncés de ce lake) de
 l'emprunté (les deux théorèmes SLT rappelés explicitement) — la lecture
 est self-contained, sans confusion de frontière.
 
