@@ -27,12 +27,31 @@ lake dédié `Compression_lean/`, mathlib seule.
    exactement `1`.
 
 Roadmap (plis suivants de #18706) : théorème de McMillan (réciproque), trie
-de décodage, optimalité de Huffman.
+canonique de Huffman, optimalité de Huffman.
+
+## Module `Decode` (pli 2)
+
+La **machine dynamique** complémentaire de `PrefixCodes` — ce que le carnet
+Python du pli 2 (« tables de décodage ») fait à la main :
+
+1. **`decode1`** — un pas de décodage : suivre les bits depuis la racine
+   (`true` = gauche) jusqu'à la première feuille, rendre le mot consommé et
+   le reste du flux ; `none` si le flux s'épuise en chemin.
+2. **`decode1_sound` / `decode1_complete`** — le pas est exact : il rend
+   `some (w, rest)` si et seulement si le flux commence par le mot de
+   feuille `w` suivi de `rest`.
+3. **`decode`** — décodage complet du flux (termine par `decode1_shorter` :
+   un pas consomme au moins un bit hors racine-feuille ; le flux vide
+   décode en message vide).
+4. **`decode_encode`** — **round-trip** : décoder la concaténation d'une
+   liste de mots de feuilles redonne exactement cette liste, dans l'ordre.
+   Ancres `#eval` : message `a b c` du code `(1, 2, 3, 3)`, flux tronqué
+   (`none`), round-trip intégral de `sf4` et `fixed2`.
 
 ## Build
 
 ```bash
-lake build   # les deux modules (FR + EN), 0 sorry
+lake build   # les trois modules (PrefixCodes FR + EN, Decode), 0 sorry
 ```
 
 ## i18n (convention #4980, pattern A)
