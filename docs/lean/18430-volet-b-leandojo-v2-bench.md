@@ -100,3 +100,14 @@ export GITHUB_ACCESS_TOKEN="$(gh auth token)"             # requis constants.py
 Le montage du mini-lake (lakefile pin v4.29.1, snapshot du sorry au rung) est
 documenté dans le script de montage du scratchpad de session ; le banc
 vérifie à l'exécution que le projet fourni répond (imports du REPL).
+
+## Parametres d'echantillonnage (hypothese declaree)
+
+Le banc code en dur : temperature 0.6, top_p 0.9, n=4 / max_tokens 256
+pour la generation de tactiques, n=1 / max_tokens 1024 pour les preuves
+completes (`leandojo_v2_bench.py`, `_post`). La lecture « comparaison de
+l'organe, pas du moteur » suppose que la reference maison (traces du
+harnais existant) a tourne aux memes parametres : cette parite n'est PAS
+etablie dans le code — les parametres des traces maison ne sont pas
+relisibles depuis ce depot. La comparaison se lit donc sous cette
+hypothese, declaree ici (advisory 4 de la review NanoClaw).

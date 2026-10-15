@@ -429,7 +429,7 @@ def main() -> int:
     parser.add_argument(
         "--project",
         required=True,
-        help="chemin du mini-lake snapshot (toolchain v4.34.1, sorry au rung)",
+        help="chemin du mini-lake snapshot (toolchain v4.29.1, sorry au rung)",
     )
     parser.add_argument("--mode", choices=["step", "proof", "both"], default="both")
     parser.add_argument(
