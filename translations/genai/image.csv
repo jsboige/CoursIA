@@ -1285,9 +1285,6 @@ generate_alt_text = True           # Generer descriptions accessibilite
 educational_level = ""university""   # ""elementary"", ""secondary"", ""university""
 language = ""francais""              # Langue des explications
 include_examples = True            # Inclure exemples pratiques",,,,,,,,67bdbb608fac2cb4,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,17aab9f8,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,yz3v2xhzft,markdown,fr,ac5a1198eb931bae,"## Setup de l'environnement
 
 Chargeons les dependances, configurons l'API OpenRouter pour acceder a GPT-5, et preparons les fonctions utilitaires pour le traitement d'images.","## Environment setup
@@ -1922,19 +1919,16 @@ Les trois modes d'analyse (quick, detailed, educational) couvrent des usages gé
 - Le prompt impose le **format de sortie** (sections numérotées) et la **langue** (`language`) — la réponse devient vérifiable mécaniquement
 - La qualité n'est pas seulement lue, elle est **mesurée par le code** : présence des sections, vocabulaire artistique détecté, nombre de questions guides
 - Une évaluation automatisée transforme une impression (« la réponse est bonne ») en critère reproductible
-","### Exercise 1 : Creating a personalized analysis prompt
+","### Guided example: a personalized analysis prompt for the Art domain
 
-The three analysis modes (quick, detailed, educational) cover general uses, but real cases often require specialized prompts. The goal is to create an optimized prompt for a specific domain.
+*Contribution from a group of EPF students (TP2, PR #20551), integrated as a guided example.*
 
-**Context** : You are a teacher and want to use GPT-5 to analyze images in class. You must create a prompt that produces a structured analysis suited to your discipline.
+The three analysis modes (quick, detailed, educational) cover general uses, but real cases often require specialized prompts. This example builds a prompt optimized for the **Art** domain: an expert role, four mandatory sections (technical description, stylistic analysis, context and meaning, guiding questions), a requirement for specific vocabulary, and a factuality instruction that separates what the model sees from what it infers.
 
-**Steps** :
-1. Choose a domain (History, Science, Geography, Art, or Medicine)
-2. Study the existing prompts in `analyze_image_with_gpt5()` to understand the structure
-3. Create your own prompt that includes: technical description, domain-specific vocabulary, and 3 guiding questions
-4. Test your prompt on the demonstration image and evaluate the quality of the response
-
-**Hint** : A good analysis prompt defines the role (""You are an expert professor in...""), the expected output format (sections, bullets), and the level of detail. Take inspiration from the ""educational"" mode.",,,,,"### Упражнение 1 : Создание персонализированного промпта для анализа
+**Key points**:
+- The prompt imposes the **output format** (numbered sections) and the **language** (`language`) — the answer becomes mechanically checkable
+- Quality is not only read, it is **measured by the code**: presence of the sections, detected art vocabulary, number of guiding questions
+- An automated evaluation turns an impression (""the answer is good"") into a reproducible criterion",,,,,"### Упражнение 1 : Создание персонализированного промпта для анализа
 
 Три режима анализа (quick, detailed, educational) покрывают общие варианты использования, но реальные случаи часто требуют специализированных промптов. Цель — создать промпт, оптимизированный для конкретной области.
 
@@ -1946,7 +1940,7 @@ The three analysis modes (quick, detailed, educational) cover general uses, but 
 3. Создайте собственный промпт, который включает: техническое описание, специфическую для области лексику и 3 направляющих вопроса
 4. Протестируйте ваш промпт на демонстрационном изображении и оцените качество ответа
 
-**Подсказка** : Хороший промпт для анализа определяет роль (""Ты эксперт-преподаватель по...""), ожидаемый формат вывода (разделы, пункты) и уровень детализации. Ориентируйтесь на режим ""educational"".",,5d240f999104a17f,ae49ae1ebbca569b,,,,,92893da34527924a,,
+**Подсказка** : Хороший промпт для анализа определяет роль (""Ты эксперт-преподаватель по...""), ожидаемый формат вывода (разделы, пункты) и уровень детализации. Ориентируйтесь на режим ""educational"".",,5d240f999104a17f,fd0113ca16ddd9ef,,,,,92893da34527924a,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b87e983b,code,fr,0d807edc1de50e29,"# Exemple guide : un prompt d'analyse personnalise pour le domaine Art
 # (contribution d'un groupe d'etudiants EPF, TP2, PR #20551)
 
@@ -2040,7 +2034,7 @@ GPT-5 excels in two concrete use cases:
 
 The previous cell calls `analyze_image_with_gpt5()` with a specialized accessibility prompt that imposes three constraints: (1) output ≤ 125 characters, (2) factual and objective tone, (3) no additional formatting. The output obtained is *Vue aérienne de la Gran Vía à Madrid au coucher du soleil, dôme du Metropolis, immeubles illuminés et circulation.* — **114 characters** (under the 125 threshold), validated by the `print` that follows.
 
-**Why this length matters** : the WCAG 2.1 standard (criterion 1.1.1 *Non-text Content*) recommends short alt texts for informative images. Beyond 125 characters, screen readers truncate and the experience degrades. Below 50, the user loses context. Cell 19 below invites experimenting with three length levels to study this comfort zone — this is one of the uses where native multimodality replaces a separate pipeline (vision model → text model → formatting).",,,,,"### Практические применения: доступность и педагогика
+**Why this length matters** : the WCAG 2.1 standard (criterion 1.1.1 *Non-text Content*) recommends short alt texts for informative images. Beyond 125 characters, screen readers truncate and the experience degrades. Below 50, the user loses context. The guided example in cell 19 below runs the three length levels to study this comfort zone — this is one of the uses where native multimodality replaces a separate pipeline (vision model → text model → formatting).",,,,,"### Практические применения: доступность и педагогика
 
 GPT-5 отлично справляется с двумя конкретными сценариями использования:
 - **Alt text**: автоматическая генерация описаний доступности для веб-изображений
@@ -2050,7 +2044,7 @@ GPT-5 отлично справляется с двумя конкретными
 
 Предыдущая ячейка вызывает `analyze_image_with_gpt5()` со специализированным промптом доступности, налагающим три ограничения: (1) вывод ≤ 125 символов, (2) фактический и объективный тон, (3) без дополнительного форматирования. Полученный вывод — *Vue aérienne de la Gran Vía à Madrid au coucher du soleil, dôme du Metropolis, immeubles illuminés et circulation.* — **114 символов** (ниже порога 125), что подтверждает следующий за ним `print`.
 
-**Почему эта длина имеет значение**: стандарт WCAG 2.1 (критерий 1.1.1 *Non-text Content*) рекомендует короткие alt text для информативных изображений. Свыше 125 символов скринридеры обрезают текст, и опыт деградирует. Ниже 50 пользователь теряет контекст. Ячейка 19 ниже предлагает поэкспериментировать с тремя уровнями длины, чтобы изучить эту зону комфорта, — это одно из применений, где нативная мультимодальность заменяет отдельный пайплайн (модель зрения → текстовая модель → форматирование).",,70759bf374012f49,8985717806995eae,,,,,7bb55f5783c16de6,,
+**Почему эта длина имеет значение**: стандарт WCAG 2.1 (критерий 1.1.1 *Non-text Content*) рекомендует короткие alt text для информативных изображений. Свыше 125 символов скринридеры обрезают текст, и опыт деградирует. Ниже 50 пользователь теряет контекст. Ячейка 19 ниже предлагает поэкспериментировать с тремя уровнями длины, чтобы изучить эту зону комфорта, — это одно из применений, где нативная мультимодальность заменяет отдельный пайплайн (модель зрения → текстовая модель → форматирование).",,70759bf374012f49,46f5e5da4ef3e24c,,,,,7bb55f5783c16de6,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a01bfa80,code,fr,fafb03e3949280b8,"# Génération de descriptions d'accessibilité (Alt text)
 if generate_alt_text and analysis_results:
     print(""\n♿ GÉNÉRATION DE DESCRIPTIONS D'ACCESSIBILITÉ"")
@@ -2099,20 +2093,16 @@ L'accessibilité web exige des textes alternatifs (alt text) adaptés au context
 - Chaque niveau a son **propre prompt** : la longueur maximale et le public sont écrits noir sur blanc dans la consigne
 - La vérification s'appuie sur `len()` des textes réels — la conformité à la limite WCAG est **constatée**, pas supposée
 - Le texte court vise ≤ 125 caractères : au-delà, les lecteurs d'écran tronquent (cf. l'analyse WCAG ci-dessus)
-","### Exercise 2 : Generating multi-level accessibility descriptions
+","### Guided example: multi-level accessibility descriptions
 
-Web accessibility requires alternative texts (alt text) adapted to the context. The same image may require descriptions of different lengths depending on the use: quick navigation (125 characters), detailed description (for screen readers), or a pedagogical summary.
+*Contribution from a group of EPF students (TP2, PR #20551), integrated as a guided example.*
 
-**Objective** : For an image of your choice, generate three levels of accessibility descriptions with GPT-5 and evaluate their quality.
+Web accessibility requires alternative texts (alt text) adapted to the context. The same image may require descriptions of different lengths depending on the use: quick navigation (≤ 125 characters), detailed description for screen readers (200-400 characters), or a pedagogical summary. This example generates the three levels with three distinct prompts — each one explicitly sets the target length and the intended audience — then measures in code the actual length of each text produced.
 
-**Steps** :
-1. Choose an image from the examples or provide your own URL
-2. Generate a short alt text (<= 125 characters) for quick navigation
-3. Generate a detailed description (200-400 characters) for screen readers
-4. Generate a pedagogical summary suited to the ""secondary"" level
-5. Check that each description is factual and objective
-
-**Hint** : Build specific prompts for each description level. Explicitly specify the maximum length and the usage context in the prompt.",,,,,"### Упражнение 2 : Генерация многоуровневых описаний доступности
+**Key points**:
+- Each level has its **own prompt**: the maximum length and the audience are spelled out in the instruction
+- The check relies on `len()` of the actual texts — compliance with the WCAG limit is **observed**, not assumed
+- The short text targets ≤ 125 characters: beyond that, screen readers truncate (see the WCAG analysis above)",,,,,"### Упражнение 2 : Генерация многоуровневых описаний доступности
 
 Веб-доступность требует альтернативных текстов (alt text), адаптированных к контексту. Одно и то же изображение может требовать описаний разной длины в зависимости от использования: быстрая навигация (125 символов), подробное описание (для программ чтения с экрана) или педагогическое резюме.
 
@@ -2125,7 +2115,7 @@ Web accessibility requires alternative texts (alt text) adapted to the context. 
 4. Сгенерируйте педагогическое резюме, адаптированное к уровню ""secondary""
 5. Проверьте, что каждое описание является фактическим и объективным
 
-**Подсказка** : Составьте специальные промпты для каждого уровня описания. Явно укажите максимальную длину и контекст использования в промпте.",,46a561f48fba8e12,f2494f11a9c4ef1f,,,,,12029e1026361450,,
+**Подсказка** : Составьте специальные промпты для каждого уровня описания. Явно укажите максимальную длину и контекст использования в промпте.",,46a561f48fba8e12,1902fe83d7ce19e5,,,,,12029e1026361450,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,01e1a458,code,fr,8c2207deb8e7dae8,"# Exemple guide : descriptions d'accessibilite multi-niveaux
 # (contribution d'un groupe d'etudiants EPF, TP2, PR #20551)
 
@@ -2275,13 +2265,13 @@ L'output ne contient pas de sortie GPT-5 visible — la cellule a uniquement *an
 
 The previous cell catalogs five application domains (History, Science, Geography, Art and Culture, Medicine) with for each a predefined `prompt_template` that can be passed directly to `analyze_image_with_gpt5()`. Each template imposes a disciplinary role, an output format, and a tone suited to the domain — for example, the `Médecine` prompt specifies *Analyse cette image médicale pour des étudiants en médecine. Explique l'anatomie visible et les points d'intérêt clinique.*
 
-The output contains no visible GPT-5 output — the cell only *announced* the use cases, without executing them yet. The actual executions are left to exercise 3 (cell 27), where the student composes their own template by combining the ingredients observed here. This is an interesting pedagogical inversion: cell 24 shows the templates, the exercise asks to recombine them.",,,,,"Интерактивный режим рассмотрен, и следующая ячейка представляет основные прикладные сценарии использования визуального анализа GPT-5 в профессиональном и педагогическом контексте.
+The output contains no visible GPT-5 output — the cell only *announced* the use cases, without executing them yet. The guided example that follows runs one of them for geography, and the exercises at the end of the notebook ask to recombine these ingredients. This is an interesting pedagogical inversion: cell 24 shows the templates, the exercises ask to recombine them.",,,,,"Интерактивный режим рассмотрен, и следующая ячейка представляет основные прикладные сценарии использования визуального анализа GPT-5 в профессиональном и педагогическом контексте.
 
 ### Чтение результата — матрица домен × промпт
 
 Предыдущая ячейка каталогизирует пять доменов применения (История, Науки, География, Искусство и культура, Медицина), каждому из которых соответствует предустановленный `prompt_template`, который можно передать напрямую в `analyze_image_with_gpt5()`. Каждый шаблон задаёт дисциплинарную роль, формат вывода и тон, адаптированный к домену, — например, промпт `Médecine` задаёт *Analyse cette image médicale pour des étudiants en médecine. Explique l'anatomie visible et les points d'intérêt clinique.*
 
-Вывод не содержит видимого результата GPT-5 — ячейка лишь *анонсировала* сценарии использования, не исполняя их. Фактические выполнения оставлены упражнению 3 (ячейка 27), где студент сам составляет свой шаблон, комбинируя наблюдаемые здесь ингредиенты. Это интересная педагогическая инверсия: ячейка 24 показывает шаблоны, упражнение требует их рекомбинировать.",,92fb9089c9f4fc4e,61464771a81f9603,,,,,11d0972728d5abb5,,
+Вывод не содержит видимого результата GPT-5 — ячейка лишь *анонсировала* сценарии использования, не исполняя их. Фактические выполнения оставлены упражнению 3 (ячейка 27), где студент сам составляет свой шаблон, комбинируя наблюдаемые здесь ингредиенты. Это интересная педагогическая инверсия: ячейка 24 показывает шаблоны, упражнение требует их рекомбинировать.",,92fb9089c9f4fc4e,9a360728c63231fa,,,,,11d0972728d5abb5,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,03146442,code,fr,583bd43216b1385e,"# Cas d'usage pédagogiques avec GPT-5
 print(""\n🎓 CAS D'USAGE PÉDAGOGIQUES GPT-5"")
 print(""="" * 45)
@@ -2508,27 +2498,9 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ub
 Les trois exercices suivants prolongent les exemples guidés de ce notebook : sensibilité de l'analyse à la formulation du prompt, adaptation d'un alt text à son contexte de publication, et comparaison de deux images d'un même domaine. Chaque squelette s'exécute sans erreur tel quel — à vous de remplir les `TODO etudiant`.
 ","***
 
-### Exercise 3 : Synthesis — Complete multimodal analysis workflow
+## Exercises to complete
 
-**Estimated duration :** 15-20 minutes
-
-### Objective
-
-Create a personalized image analysis workflow with GPT-5 for a specific pedagogical use case (history, science, geography, art, or medicine).
-
-### Instructions
-
-1. **Choose a domain** among the 5 pedagogical use cases presented in the notebook
-2. **Select an image** relevant to this domain (public URL or local image)
-3. **Create a personalized prompt** suited to the targeted educational level
-4. **Implement an analysis function** that combines the 3 modes (quick, detailed, educational)
-5. **Generate the pedagogical questions** that GPT-5 suggests for students
-
-> **Hints:**
-
-- Hint 1 : Use the `analyze_image_with_gpt5()` function with the `prompt` parameter for your personalized prompt
-- Hint 2 : The ""educational"" mode automatically generates 3 reflection questions for students
-- Hint 3 : Adapt the prompt vocabulary to the level (elementary, secondary, university)",,,,,"### Упражнение 3: Синтез — полный workflow мультимодального анализа
+The following three exercises extend the guided examples of this notebook: sensitivity of the analysis to the wording of the prompt, adapting an alt text to its publication context, and comparing two images from the same domain. Each skeleton runs without error as is — it is up to you to fill in the `TODO etudiant`.",,,,,"### Упражнение 3: Синтез — полный workflow мультимодального анализа
 
 **Оценочная продолжительность:** 15-20 минут
 
@@ -2548,7 +2520,7 @@ Create a personalized image analysis workflow with GPT-5 for a specific pedagogi
 
 - Подсказка 1: Используйте функцию `analyze_image_with_gpt5()` с параметром `prompt` для вашего персонализированного prompt
 - Подсказка 2: Режим ""educational"" автоматически генерирует 3 вопроса для размышления для студентов
-- Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,ff3fc815c4cb740d,96c8a30abed51334,,,,,6b20b97c4063d231,,
+- Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,ff3fc815c4cb740d,4a927ff5835987b2,,,,,6b20b97c4063d231,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,tvhxa6pat2h,code,fr,9a0d91072759ecc9,"# Exercice 3 : Comparateur d'images -- deux images du meme domaine cote a cote
 # TODO etudiant : implementer compare_images() pour deux images d'un meme domaine
 
@@ -2610,23 +2582,23 @@ Pour les étudiants avancés :
 La cellule précédente pose un exercice de synthèse structurant : choisir un domaine parmi les cinq catalogués dans la cellule *Cas d'usage pédagogiques*, sélectionner deux images de ce domaine, imposer un format d'analyse identique, et implémenter `compare_images()` qui croise les résultats. Le squelette fourni se contente de `pass` et renvoie un dictionnaire vide : le carnet s'exécute de bout en bout tant que l'exercice n'est pas complété. Les exercices 1 et 2, plus courts, se préparent avec les exemples guidés du corps du notebook : le premier mesure la sensibilité à la formulation, le second adapte un alt text à son contexte de publication.
 ","### Success criteria
 
-- [ ] The personalized prompt is suited to the domain and the educational level
-- [ ] The 3 analysis modes are implemented (quick, detailed, educational)
-- [ ] The pedagogical questions are generated by the educational mode
-- [ ] The results are structured and clearly presented
-- [ ] The total response time is under 60 seconds for the 3 analyses
+- [ ] Both images belong to the same domain and the analyses use the same format
+- [ ] `compare_images()` returns a dictionary with both analyses and the comparison
+- [ ] The comparison separates common points and differences in a structured way
+- [ ] The results are clearly presented (`pprint` or formatted display)
+- [ ] The total response time stays reasonable (2 analyses + cross-comparison)
 
 ### Extension (optional)
 
 For advanced students:
-- Add a **comparison** function between 2 images of the same domain
 - Implement an **evaluation** of student answers with GPT-5
 - Create an **interactive quiz** based on the generated questions
+- Extend the comparator to **three images** or more (comparison matrix)
 
 
 ### Reading the result — exercise 3 (synthesis)
 
-The previous cell poses a structuring synthesis exercise: choose a domain among the five cataloged in cell 24, select an image, build a personalized prompt, and implement an `analyse_complete()` function that calls the three modes in sequence. The provided skeleton is `pass` — the code is deliberately left unfilled to comply with C.1 (no voluntary error). This is exactly the kind of exercise where the density of the surrounding markdown cells is valuable: the student has before their eyes the signature of `analyze_image_with_gpt5()`, the three documented modes, and the success criteria in cell 28 below, without having to navigate between sections.",,,,,,,68468125c9faf6c6,a330f10c8088f390,,,,,,,
+The previous cell poses a structuring synthesis exercise: choose a domain among the five cataloged in the *Pedagogical use cases* cell, select two images from this domain, impose an identical analysis format, and implement `compare_images()`, which cross-compares the results. The provided skeleton only contains `pass` and returns an empty dictionary: the notebook runs end to end as long as the exercise is not completed. Exercises 1 and 2, which are shorter, build on the guided examples in the body of the notebook: the first measures sensitivity to wording, the second adapts an alt text to its publication context.",,,,,,,68468125c9faf6c6,20e792b9b1b6cb7c,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,c7eec602,markdown,fr,b4d84fb200146d2f,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-2-GPT-5-Image-Generation.ipynb) | [Suivant >>](01-4-Forge-SD-XL-Turbo.ipynb)
 
 # Opérations de Base sur les Images
@@ -21920,7 +21892,15 @@ Synthèse des deux exemples précédents : la fonction `analyse_complete()` ench
 **Points clés** :
 - Un seul appel de fonction produit les **trois niveaux** de description — le résultat est un dictionnaire réutilisable, pas trois affichages séparés
 - Le prompt éducatif est **construit à partir du domaine** : changer `domain` en tête de cellule adapte l'analyse à une autre discipline
-",,,,,,,,b667b1b68a05e661,,,,,,,,
+","### Guided example: three-mode personalized analysis for a domain
+
+*Contribution from a group of EPF students (TP2, PR #20551), integrated as a guided example.*
+
+Synthesis of the two previous examples: the `analyse_complete()` function chains three analyses of the same image — a short factual description, a detailed description for screen readers, a pedagogical summary contextualized by the domain — and returns everything in a dictionary displayed with `pprint`. The domain (`Géographie`), the level (`university`) and the image are set at the top of the cell.
+
+**Key points**:
+- A single function call produces the **three levels** of description — the result is a reusable dictionary, not three separate displays
+- The educational prompt is **built from the domain**: changing `domain` at the top of the cell adapts the analysis to another discipline",,,,,,,b667b1b68a05e661,f3593e8c0a558bc2,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exemple-3modes-code,code,fr,9c488597d8da6e0b,"# Exemple guide : analyse personnalisee a trois modes pour un domaine
 # (contribution d'un groupe d'etudiants EPF, TP2, PR #20551)
 
@@ -21985,7 +21965,18 @@ Une même image analysée par GPT-5 peut produire des réponses très différent
 5. Concluez en une phrase : quelle formulation sert quel usage pédagogique ?
 
 **Indice** : ne changez QUE la consigne d'orientation entre les deux prompts — si le format de sortie diffère aussi, la comparaison ne mesure plus la formulation.
-",,,,,,,,6f2e3887c3ff7ae7,,,,,,,,
+","### Exercise 1 : Neutral prompt vs oriented prompt — measuring the sensitivity to wording
+
+The same image analyzed by GPT-5 can produce very different answers depending on how the prompt is worded. The goal is to **measure** this sensitivity instead of undergoing it: two prompts that differ only in their angle (neutral vs oriented toward a reading frame), same image, same output format.
+
+**Steps**:
+1. Choose an image from `example_images`
+2. Write a `prompt_neutre`: objective description, without theoretical orientation
+3. Write a `prompt_oriente`: same output format, but it orients the analysis toward a frame (historical, aesthetic, technical...)
+4. Run both analyses and compare: elements mentioned, vocabulary, structure
+5. Conclude in one sentence: which wording serves which pedagogical use?
+
+**Hint**: change ONLY the orientation instruction between the two prompts — if the output format also differs, the comparison no longer measures the wording.",,,,,,,6f2e3887c3ff7ae7,71ca99cb1e66f5f8,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo1-code,code,fr,5fb17155d5ea3bc3,"# Exercice 1 : Prompt neutre vs prompt oriente -- mesurer la sensibilite de la formulation
 # TODO etudiant : comparer deux analyses de la MEME image sous deux formulations
 
@@ -22021,7 +22012,17 @@ L'exemple guidé d'accessibilité a généré trois **longueurs** de description
 4. Générez les trois textes et vérifiez : chacun ≤ 125 caractères, et les trois textes sont bien **distincts**
 
 **Indice** : posez-vous la question « que vient faire le lecteur sur cette page ? » — c'est elle qui détermine quoi garder dans les 125 caractères.
-",,,,,,,,00cd7ee3c99af9d4,,,,,,,,
+","### Exercise 2 : Contextual alt text — one image, three contexts
+
+The accessibility guided example generated three description **lengths** for the same image. The next level: the same image published in three different **contexts** calls for three different alt texts, even if the 125-character limit stays the same. A relevant alt text depends on what the reader came looking for.
+
+**Steps**:
+1. Choose an image from `example_images` (or your own URL)
+2. Define three publication contexts: popular-science article, social network, school textbook
+3. Write one prompt per context: same ≤ 125-character limit, but the information angle adapts to the context
+4. Generate the three texts and check: each one is ≤ 125 characters, and the three texts are indeed **distinct**
+
+**Hint**: ask yourself ""what did the reader come to do on this page?"" — that question determines what to keep in the 125 characters.",,,,,,,00cd7ee3c99af9d4,d4133e2e75d3e7d3,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo2-code,code,fr,a82719dd72ed6dd5,"# Exercice 2 : Alt text contextuel -- une image, trois contextes
 # TODO etudiant : produire trois alt texts DIFFERENTS pour la meme image
 
@@ -22062,7 +22063,23 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv
 - Indice 1 : `analyze_image_with_gpt5()` accepte n'importe quelle URL — appelez-la une fois par image
 - Indice 2 : pour croiser, injectez le texte de la première analyse dans le prompt de la seconde — GPT-5 comparera l'image visible au texte fourni
 - Indice 3 : un même format de sortie pour les deux analyses rend la comparaison mécanique
-",,,,,,,,275eaceb6f66a2d9,,,,,,,,
+","### Exercise 3 : Image comparator — two images from the same domain side by side
+
+**Estimated duration :** 15-20 minutes
+
+**Objective**: compare two images from the same category in a single workflow — individual analyses with an identical format, then cross-comparison of the results.
+
+**Instructions**:
+1. **Choose a domain** among the pedagogical use cases presented above
+2. **Select two images** relevant to this domain (public URLs or local images)
+3. **Write an analysis prompt** that imposes an identical structure for both images
+4. **Implement `compare_images()`**: analysis of each image, then cross-comparison — common points, differences, verdict
+5. **Display the result** in a readable way (dictionary + `pprint`)
+
+> **Hints:**
+- Hint 1 : `analyze_image_with_gpt5()` accepts any URL — call it once per image
+- Hint 2 : to cross-compare, inject the text of the first analysis into the prompt of the second — GPT-5 will compare the visible image to the provided text
+- Hint 3 : the same output format for both analyses makes the comparison mechanical",,,,,,,275eaceb6f66a2d9,72a9f5c422432eaf,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,ex1-vignettes-md,markdown,fr,ff695ea94ad6158a,"### Exercice 1 : Vignettes sans déformation
 
 L'exemple guidé 1 force chaque variante dans une vignette de `250 x 188` pixels. Une image dont le rapport largeur / hauteur diffère de celui de la vignette est alors étirée : la rotation de 90° en est le cas extrême. PIL propose trois stratégies qui conservent les proportions, chacune avec son prix :
