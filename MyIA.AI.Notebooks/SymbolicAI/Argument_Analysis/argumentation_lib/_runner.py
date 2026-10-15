@@ -48,6 +48,14 @@ rhétorique, en suivant une séquence stricte.
 4. Exécuter des requêtes logiques (Agent: LogicAgent)
 5. Rédiger la conclusion (Agent: PM, vous-même)
 
+Règle de routage (elle PRIME sur la séquence idéale) : ne passez à
+l'analyse formelle (étapes 3-4) QUE SI l'analyse informelle a déjà détecté
+au moins un sophisme dans l'état, OU si le texte contient une inférence
+conditionnelle à vérifier (« si ... alors ... »). Si aucun de ces deux
+signaux n'est présent, sautez les étapes 3-4 : désignez-vous
+(ProjectManagerAgent) et rédigez directement la conclusion. C'est votre
+décision de routage : elle dépend du contenu, pas d'une séquence figée.
+
 [État Actuel]
 {{$analysis_state}}
 
@@ -58,7 +66,11 @@ Répondez AU FORMAT JSON:
   "task_description": "Description de la tâche",
   "assigned_agent": "InformalAgent|LogicAgent|PM"
 }
-Si toutes les étapes sont complétées, rédigez la conclusion finale.
+Puis APPELEZ la fonction kernel `StateManager-designate_next_agent`
+avec le nom de l'agent choisi (votre propre nom : "ProjectManagerAgent").
+La désignation écrite dans l'état détermine qui parle au prochain tour.
+Si toutes les étapes sont complétées, désignez-vous et rédigez la
+conclusion finale.
 """
 
 PROMPT_INFORMAL_ANALYSIS = """Vous êtes un agent spécialisé dans l'analyse informelle d'argumentation.
@@ -401,6 +413,83 @@ class AnalysisRunner:
 
         _logger.info("Analysis complete.")
         return results
+
+    async def run_conversational(self, max_turns: int = 6) -> Dict[str, Any]:
+        """Orchestration conversationnelle réelle : UN seul AgentGroupChat
+        (PM + Informal + Logic) dont la sélection passe par
+        ``DelegatingSelectionStrategy`` — le PM désigne le prochain agent
+        dans l'état partagé, la stratégie honore cette désignation.
+
+        Contrairement à ``run()`` (3 phases fixes, routage par séquence),
+        la séquence d'agents émerge des désignations du PM : deux textes
+        différents peuvent produire deux séquences différentes (#18393).
+
+        ``max_turns`` bas par design (plafond affiché, coût borné).
+        """
+        from argumentation_lib._delegating_selection import (
+            DelegatingSelectionStrategy,
+        )
+
+        _logger.info("Starting conversational orchestration...")
+        pm = create_pm_agent(self.kernel, self.llm_service_id, self.state)
+        informal = create_informal_agent(
+            self.kernel, self.llm_service_id, self.state
+        )
+        logic = create_logic_agent(self.kernel, self.llm_service_id, self.state)
+        agents = [pm, informal, logic]
+
+        strategy = DelegatingSelectionStrategy(
+            agents=agents,
+            state=self.state,
+            default_agent_name="ProjectManagerAgent",
+        )
+
+        history = ChatHistory()
+        history.add_message(
+            ChatMessageContent(
+                role=AuthorRole.USER,
+                content=(
+                    "Analysez le texte suivant. Le PM orchestre : après chaque "
+                    "tour il désigne le prochain agent via "
+                    "StateManager-designate_next_agent.\n\n"
+                    f"{self.state.raw_text}"
+                ),
+            )
+        )
+
+        group_chat = AgentGroupChat(
+            agents=agents,
+            selection_strategy=strategy,
+            chat_history=history,
+        )
+
+        journal: List[Dict[str, Any]] = []
+        turn_count = 0
+        async for response in group_chat.invoke():
+            turn_count += 1
+            content = str(response.content or "").strip()
+            journal.append(
+                {
+                    "turn": turn_count,
+                    "speaker": response.name,
+                    "excerpt": content[:200],
+                }
+            )
+            _logger.info(
+                f"  Turn {turn_count}/{max_turns}: {response.name} responded"
+            )
+            if turn_count >= max_turns:
+                break
+
+        return {
+            "turns": turn_count,
+            "max_turns": max_turns,
+            "journal": journal,
+            "sequence": [entry["speaker"] for entry in journal],
+            "selection_trace": strategy.selection_trace,
+            "state_snapshot": self.state.get_state_snapshot(summarize=True),
+            "conclusion": self.state.final_conclusion,
+        }
 
     def run_sync(self) -> Dict[str, Any]:
         """Synchronous wrapper for run()."""

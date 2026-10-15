@@ -1,4 +1,4 @@
-# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + EffectiveTheory + MathUniverse + Renaming / Tegmark MUH), Lean 4
+# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant + GradientFlow + EffectiveTheory + MathUniverse + Renaming + Generators + MutualGen / Tegmark MUH), Lean 4
 
 Lake Lean 4 (Mathlib) à la racine de la série **ML**, mutualisant des résultats
 fondamentaux de **théorie de l'apprentissage** sous un même umbrella généraliste
@@ -89,6 +89,27 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    `EffectiveTheory.InfoBits` (`b = log₂(n!/|Aut G|)` est un invariant du
    renommage). Les discriminations sont confirmées par le noyau
    (`decide +kernel`, sans témoin fourni).
+7. **Module `Generators`** — suite de #16753 : le critère « générateurs +
+   composition » que `MathUniverse` laissait en exhibition concrète (sept
+   lemmes ponctuels) est **réifié** — une syntaxe de termes `Term ν` sur un
+   générateur binaire, une évaluation `Term.eval`, un prédicat `Generates`,
+   et l'équation **(A2) comme donnée** : les huit termes `termA2` dont
+   l'évaluation redonne les huit opérations de (A1), avec le pont prouvé vers
+   les tables des deux structures (`relA1_iff_generated`,
+   `relA2_iff_generated`) et le corollaire « les deux définitions se génèrent
+   l'une l'autre » (`relA1_iff_relA2`).
+8. **Module `MutualGen`** — digestion #16741/arc B (issue #16753, tranche 4) : la
+   **génération mutuelle générale** du §A.2 de l'Annexe A — « two structure
+   definitions are equivalent if they generate each other ». Le terme `TermSig`
+   porte une **signature quelconque** `σ : Fin n → ℕ` (`n` symboles d'arités
+   `σ i` — le tuple d'arité quelconque, multi-générateurs), et le théorème
+   `mutual_gen_iff` établit que deux familles de générateurs qui se définissent
+   l'une l'autre engendrent **exactement les mêmes fonctions**, de toute arité —
+   par double substitution de termes (`translate`), le lemme moteur
+   (`eval_subst`, `eval_translate`) étant l'« easy to see » du papier rendu
+   précis. Témoins au noyau (`decide`) : une fonction d'arité 3 engendrée par le
+   seul NAND binaire, et la signature à deux symboles (¬ unaire, ∧ binaire)
+   engendrant ∨ par De Morgan.
 
 C'est le **premier lake Lean de la série ML** (aucun lake Lean en ML auparavant,
 roadmap #4038 Tier 2). La preuve de Novikoff est **géométrique élémentaire** :
@@ -122,10 +143,16 @@ argument ERM dans `ERM`).
   Renaming, les lois d'équivalence (`equivStruct_refl`/`_symm`/`_trans`), les
   invariants (`equivStruct_card_eq`, `equivStruct_rel_card`),
   `equivStruct_iff_perm`, le torseur (`iso_mul_aut`, `iso_symm_mul_aut`,
-  `mem_aut_conj_iff`) et `aut_trivial_of_equiv_bool8` sont 0-sorry.
+  `mem_aut_conj_iff`) et `aut_trivial_of_equiv_bool8` sont 0-sorry. Côté
+  Generators, `termA2_generates`, `relA1_iff_generated`, `relA2_iff_generated`
+  et `relA1_iff_relA2` sont 0-sorry. Côté MutualGen, `eval_subst`,
+  `eval_translate`, `mutual_gen_iff`, `nand_generates_and2`,
+  `nand_generates_and3` et `notAnd_generates_or2` sont 0-sorry (les témoins
+  d'arité quelconque sont clos par `decide` au noyau).
 - **Build** : `lake build Perceptron` / `lake build PacLearning` /
   `lake build GradientFlow` / `lake build EffectiveTheory` /
-  `lake build MathUniverse` / `lake build Renaming` (dépend de Mathlib4)
+  `lake build MathUniverse` / `lake build Renaming` / `lake build Generators` /
+  `lake build MutualGen` (dépend de Mathlib4)
 
 ## Ce qui est formalisé
 
@@ -285,7 +312,7 @@ cours (Lean-36 enseigne précisément ce que le noyau fait seul).
 
 | Fichier | sorry | Contenu |
 |---------|-------|---------|
-| `MathUniverse.lean` | 0 | **Définition** : `FinRelStruct` (entités = type fini `α`, signature `σ : Fin n → ℕ`, relations décidables via le champ `rel_dec` — le « all these functions must be computable » du §A.2). **Aut(S)** : `Preserves` + `aut` (sous-groupe de `Equiv.Perm` : identité, composée, symétrique), pont `mem_aut_iff`, et le témoin **`aut_bool8_trivial`** (préserver la relation « x = F » épingle la constante fausse). **Décidabilité** : `EquivStruct` (isomorphisme relationnel), `equivStruct_iff_functions` (déploiement sur `α → β`, le type énumérable par excellence) et l'instance `EquivStruct.decidable` — énumération exhaustive des tableaux, les deux `letI` locaux exposant les champs `rel_dec` comme instances sans quoi la résolution ne saurait pas remonter de `Decidable (S.rel i t)` au champ qui l'atteste. **Exemples §A.2** : `nand` (symbole de Sheffer), **C₂** (`c2`, table d'addition de Z/2), **C₃** (`c3`, Z/3), **algèbre de Boole (A1)** (`bool8`, les huit relations F, T, ¬, ∧, ∨, ⇒, ⇔, \| ; signatures `c2Sig`/`c3Sig`/`bool8Sig` en `@[reducible]` — la résolution d'instances travaille à transparence `reducible` et ne déplie pas un `def` ordinaire), **génération par NAND seul (A2)** : les sept lemmes de composition `nand_false`/`nand_true`/`nand_not`/`nand_and`/`nand_or`/`nand_implies`/`nand_iff`, la structure `nand8`, l'équivalence `equivStruct_bool8_nand8` (témoin : l'identité) et la confirmation par l'algorithme — `decide (EquivStruct bool8 nand8) = true`, obtenu par `decide +kernel` (transparence complète) et **non** `native_decide`, qui ajouterait l'axiome `Lean.ofReduceBool` (banni par la discipline de preuve du dépôt). **Critère partiel, nommé** : la *génération par composition* n'est pas réifiée en opérateur général — les compositions sont prouvées nommément (les sept `nand_*`), la clôture générale d'une signature sous composition reste à écrire. |
+| `MathUniverse.lean` | 0 | **Définition** : `FinRelStruct` (entités = type fini `α`, signature `σ : Fin n → ℕ`, relations décidables via le champ `rel_dec` — le « all these functions must be computable » du §A.2). **Aut(S)** : `Preserves` + `aut` (sous-groupe de `Equiv.Perm` : identité, composée, symétrique), pont `mem_aut_iff`, et le témoin **`aut_bool8_trivial`** (préserver la relation « x = F » épingle la constante fausse). **Décidabilité** : `EquivStruct` (isomorphisme relationnel), `equivStruct_iff_functions` (déploiement sur `α → β`, le type énumérable par excellence) et l'instance `EquivStruct.decidable` — énumération exhaustive des tableaux, les deux `letI` locaux exposant les champs `rel_dec` comme instances sans quoi la résolution ne saurait pas remonter de `Decidable (S.rel i t)` au champ qui l'atteste. **Exemples §A.2** : `nand` (symbole de Sheffer), **C₂** (`c2`, table d'addition de Z/2), **C₃** (`c3`, Z/3), **algèbre de Boole (A1)** (`bool8`, les huit relations F, T, ¬, ∧, ∨, ⇒, ⇔, \| ; signatures `c2Sig`/`c3Sig`/`bool8Sig` en `@[reducible]` — la résolution d'instances travaille à transparence `reducible` et ne déplie pas un `def` ordinaire), **génération par NAND seul (A2)** : les sept lemmes de composition `nand_false`/`nand_true`/`nand_not`/`nand_and`/`nand_or`/`nand_implies`/`nand_iff`, la structure `nand8`, l'équivalence `equivStruct_bool8_nand8` (témoin : l'identité) et la confirmation par l'algorithme — `decide (EquivStruct bool8 nand8) = true`, obtenu par `decide +kernel` (transparence complète) et **non** `native_decide`, qui ajouterait l'axiome `Lean.ofReduceBool` (banni par la discipline de preuve du dépôt). **Critère partiel, nommé puis couvert** : la *génération par composition* n'est pas réifiée dans ce fichier — les compositions y sont prouvées nommément (les sept `nand_*`) ; la réification (syntaxe de termes + prédicat `Generates` + (A2) comme donnée) vit dans le module frère **`Generators.lean`** ci-dessous. |
 | `MathUniverse_en.lean` | 0 | Sibling anglais (Epic #4980) — code byte-identique, docstrings et commentaires traduits. |
 
 Une difficulté de fond rencontrée (et corrigée, pas contournée) : écrite d'abord
@@ -318,6 +345,41 @@ la part qu'il exclut : elle vit ici, côté Mathlib, où `Equiv.Perm`,
 | `Renaming.lean` | 0 | **§1 Équivalence** : `equivStruct_refl`/`_symm`/`_trans` — `EquivStruct` est réflexive, symétrique, transitive à travers les types porteurs `α`, `β`, `γ`. **§2 Invariants** : `equivStruct_card_eq` (le témoin EST une équipotence — d'où `not_equivStruct_c2_c3` : 2 ≠ 3) ; `relFinset` (le tableau d'une relation comme ensemble fini d'uplets, champ `rel_dec` passé explicitement) et `equivStruct_rel_card` (la taille de chaque tableau est invariante — preuve par double inclusion d'images via `Finset.card_image_of_injOn`), avec les discriminations **C₃ ≇ point3** (structure pointée, 9 triplets contre 1) et **C₂ ≇ diag2** (structure diagonale, 4 contre 2), paires équipotentes de même signature distinguées par la seule taille du tableau. **§3 Permutations** : `equivStruct_iff_perm` — sur un porteur fixé, l'équivalence revient à exister parmi les `m!` permutations et non les `m^m` applications. **§4 Torseur** : `IsoWit` (témoin déplié), `iso_mul_aut` (Aut(S) agit à droite sur les isomorphismes), `iso_symm_mul_aut` (deux isomorphismes diffèrent d'un automorphisme), `mem_aut_conj_iff` (l'appartenance à Aut se transporte par conjugaison), corollaire **`aut_trivial_of_equiv_bool8`** — toute structure équivalente à l'algèbre de Boole à deux éléments a un Aut trivial : le « 1 bit » de `EffectiveTheory.InfoBits` est un invariant du renommage. **§5 Exemples** : les quatre discriminations ci-dessus, toutes confirmées par `decide +kernel` (le noyau, sans témoin fourni). |
 | `Renaming_en.lean` | 0 | Sibling anglais (Epic #4980) — code byte-identique, docstrings et commentaires traduits. |
 
+### Module `Generators` (suite #16753 — réification « générateurs + composition »)
+
+Le quatrième critère de l'Annexe A — une structure se donne aussi par ses
+**générateurs** et ses **règles de composition** — était couvert par
+`MathUniverse` en **exhibition concrète** : sept lemmes `nand_*` prouvant que
+chaque relation de (A1) est composée de NAND. Ce module la **réifie** — la
+composition devient une donnée du langage, pas un artifice de preuve :
+
+| Fichier | sorry | Contenu |
+|---------|-------|---------|
+| `Generators.lean` | 0 | **Syntaxe** : `Term ν` (variable \| générateur binaire sur deux sous-termes) — les formules `R(R(X, Y), R(X, X))` de l'équation (A2) deviennent des arbres. **Sémantique** : `Term.eval` (terme + générateur concret `g : α → α → α` + environnement `ν → α` ↦ valeur) et `Term.funOf` (la fonction `ν → α` définie par un terme). **Prédicat** : `Generates g f` — `f` générée par `g` quand un terme la définit ; c'est le « generated by » de l'Annexe A en un énoncé générique. **(A2) comme donnée** : `termA2 : Fin 8 → Term V` (les huit formules du papier, R₈ étant le générateur lui-même), `opA1` (les huit opérations de (A1) comme fonctions `V → Bool`) et **`termA2_generates`** — chaque opération de (A1) est générée par NAND seul, témoin syntaxique explicite. **Pont vers la structure** : `opGraph` (le graphe d'une opération lu à l'indice `i` de `bool8Sig`, la dernière composante portant le résultat — note 20 du papier), **`relA1_iff_generated`** et **`relA2_iff_generated`** — les relations de `bool8` **et** de `nand8` sont composante par composante les graphes des opérations générées — d'où le corollaire **`relA1_iff_relA2`** : « two structure definitions are equivalent if they generate each other », version réifiée de `equivStruct_bool8_nand8`. |
+| `Generators_en.lean` | 0 | Sibling anglais (Epic #4980) — code byte-identique, docstrings et commentaires traduits. |
+
+La frontière des deux modules est pédagogique : `MathUniverse` prouve que les
+**tables** de (A1) et (A2) coïncident (l'algébriste vérifie), `Generators`
+montre **pourquoi** — un seul opérateur et une syntaxe de composition
+suffisent à écrire les huit (le logicien explique).
+
+### Module `MutualGen` (digestion #16741/arc B — Annexe A de R16, tranche 4)
+
+Le critère partiel nommé dans la table `MathUniverse` (la génération par
+composition non réifiée) trouve ici sa moitié générale : `TermSig` donne le
+**tuple d'arité quelconque** et la génération mutuelle son **théorème général** —
+si chaque générateur de `g₁` se définit par un terme sur `g₂` et réciproquement,
+les deux familles engendrent exactement les mêmes fonctions (`mutual_gen_iff`,
+deux directions par `choose`/`translate`, l'identité des fonctions étant
+transportée par `eval_translate`). Le lemme moteur est la compatibilité de
+l'évaluation avec la substitution (`eval_subst`) : remplacer un symbole par sa
+définition dans un terme ne change pas la fonction calculée.
+
+| Fichier | sorry | Contenu |
+|---------|-------|---------|
+| `MutualGen.lean` | 0 | **Termes sur signature quelconque** : `TermSig` (variable \| symbole `i` appliqué à `σ i` sous-termes), `TermSig.eval` / `TermSig.funOf`, `GeneratesSig` (∃ terme définissant `f` — généralisation multi-symboles, arités quelconques, du `Generates` binaire). **Substitution** : `TermSig.subst` + `TermSig.eval_subst` (l'évaluation commute à la substitution, par induction avec `congrArg`/`funext`), `translate` (chaque symbole remplacé par son terme définitionnel) et `eval_translate` (la traduction préserve l'évaluation — l'« easy to see » du §A.2). **Théorème** : `mutual_gen_iff` — génération mutuelle des générateurs ⟺ mêmes fonctions engendrées, toute arité `ν`. **Exemples** (ancre `nand` de `MathUniverse`) : `nand_generates_and2` (`x ∧ y = R(R(x,y), R(x,y))`), `nand_generates_and3` (arité 3 par composition du binaire seul — le tuple d'arité quelconque), `notAnd_generates_or2` (signature à deux symboles ¬ unaire + ∧ binaire via le filtrage structurel `⟨j+1, _⟩`, ∨ par De Morgan) — chacun clos par `decide` (`Pi.instDecidableEqFintype`), le témoin vivant dans la preuve. |
+| `MutualGen_en.lean` | 0 | Sibling anglais (Epic #4980) — code byte-identique, docstrings et commentaires traduits ; seuls divergent les qualifieurs intrinsèques (import `MathUniverse_en`, référence `MathUniverse_en.Examples.nand`). |
+
 ### i18n FR/EN
 
 Chaque module est doublé d'un **sibling anglais** `Foo_en.lean` (namespace
@@ -325,11 +387,14 @@ Chaque module est doublé d'un **sibling anglais** `Foo_en.lean` (namespace
 `GradientFlow` ↔ `GradientFlow_en`,
 `EffectiveTheory.GrokkingLemmas` ↔ `EffectiveTheory.GrokkingLemmas_en`
 (le reste d'`EffectiveTheory` attend son twin, #17481),
-`MathUniverse` ↔ `MathUniverse_en`, `Renaming` ↔ `Renaming_en`, imports
+`MathUniverse` ↔ `MathUniverse_en`, `MathUniverse.Renaming` ↔
+`MathUniverse.Renaming_en`, `MathUniverse.Generators` ↔
+`MathUniverse.Generators_en` (suffixe sur le dernier segment, comme
+`GrokkingLemmas`), imports
 `_en`-suffixés, **byte-identical hors docstrings/commentaires**) — livré sous
 l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les twins
 `_en` couvrent PacLearning, Perceptron, GradientFlow, `GrokkingLemmas`,
-`MathUniverse` et `Renaming` :
+`MathUniverse`, `Renaming`, `Generators` et `MutualGen` :
 
 `PacLearning_en.lean`, `PacLearning/{Agnostic,BernoulliMGF,Concentration,Data,
 ERM,Hoeffding,MGF,PacFiniteBound,Sample,SampleExpect,UniformConcentration,
@@ -337,7 +402,7 @@ UnionBound}_en.lean`, `Perceptron_en.lean`,
 `Perceptron/{Convergence,Data,Perceptron,Tightness}_en.lean`,
 `GradientFlow_en.lean`, `GradientFlow/{Plain,Residual}_en.lean`,
 `EffectiveTheory/GrokkingLemmas_en.lean`, `MathUniverse_en.lean`,
-`Renaming_en.lean`.
+`Renaming_en.lean`, `Generators_en.lean`, `MutualGen_en.lean`.
 
 **Conséquence** : les futurs raffinements doivent conserver la symétrie FR/EN
 (les deux fichiers évoluent ensemble ou pas du tout). La CI `check_i18n_siblings`
@@ -353,6 +418,8 @@ lake build PacLearning   # cadre PAC (modèle + propriétés élémentaires)
 lake build EffectiveTheory # corpus Tegmark : grokking + conservation + R06/R10
 lake build MathUniverse  # Annexe A de R16 : structure finie, Aut(S), equivalence decidable
 lake build Renaming      # R16 §III : equivalence sous renommage, invariants, torseur Aut(S)
+lake build Generators    # suite #16753 : generation par composition reifiee (Term, Generates, A2)
+lake build MutualGen     # Annexe A de R16 : generation mutuelle generale, arite quelconque
 # Dépend de Mathlib4 — le premier build est lourd, les builds suivants utilisent le cache
 ```
 
@@ -407,6 +474,6 @@ déclaration dans un notebook :
 - **Issue #4293** — renommage `perceptron_lean → learning_theory_lean` + module PacLearning (mutualisation, cf `decision_theory_lean`)
 - **EPIC #13106** — digestion : le module `GradientFlow` en est la tranche « forme formalisation » (grille 10 points dans `GradientFlow.lean`)
 - **Issue #16752 / EPIC #16741** — module `EffectiveTheory` : base `Grokking.lean` (#16794) + module frère `GrokkingLemmas.lean` (recadrage ai-01 2026-09-23 : delta propre du grain R02, arc « ouverte, responsable, prouvable, explicable »)
-- **Issue #16753 / EPIC #16741** — module `MathUniverse` (arc B) : Annexe A de R16 — `FinRelStruct` (signature + relations décidables), `aut` (Aut(S) est un groupe, témoin `aut_bool8_trivial`), `EquivStruct` et son instance `Decidable` (l'algorithme haltant rendu exécutable), exemples §A.2 (C₂, C₃, algèbre de Boole engendrée par NAND seul) ; tranche 2 : module `Renaming` — l'équivalence sous renommage (R16 §III « baggage ») : lois d'équivalence à travers les porteurs, invariants de cardinalité et de taille des tableaux, énumération des permutations, torseur des renommages sous Aut(S)
+- **Issue #16753 / EPIC #16741** — module `MathUniverse` (arc B) : Annexe A de R16 — `FinRelStruct` (signature + relations décidables), `aut` (Aut(S) est un groupe, témoin `aut_bool8_trivial`), `EquivStruct` et son instance `Decidable` (l'algorithme haltant rendu exécutable), exemples §A.2 (C₂, C₃, algèbre de Boole engendrée par NAND seul) ; tranche 2 : module `Renaming` — l'équivalence sous renommage (R16 §III « baggage ») : lois d'équivalence à travers les porteurs, invariants de cardinalité et de taille des tableaux, énumération des permutations, torseur des renommages sous Aut(S) ; module `MutualGen` (tranche 4) : génération mutuelle générale — `TermSig` sur signature quelconque, `mutual_gen_iff` (se générer l'un l'autre ⟺ mêmes fonctions engendrées), témoins `decide` (arité 3 par NAND seul, De Morgan sur ¬/∧)
 - **`ML/`** — série Machine Learning (ML.NET C#, Data Science with Agents Python)
 - **Epic #2651** — prose pédagogique README
