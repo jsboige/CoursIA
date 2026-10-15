@@ -51,6 +51,17 @@ from check_perimeter import PIVOT_LANG, TARGET_LANGS  # noqa: E402
 COLUMNS = ["notebook", "cell_id", "cell_type", "src_lang", "src_hash"]
 COLUMNS += [f"text_{lang}" for lang in [PIVOT_LANG] + TARGET_LANGS]
 COLUMNS += [f"hash_{lang}" for lang in [PIVOT_LANG] + TARGET_LANGS]
+# src_hash_<lang> (#20836) : trace par langue cible du ``src_hash`` sur lequel
+# la traduction a été faite. Posée par T3 (translate_csv.py) au moment de la
+# traduction. Lue par T2 (check_translation_sync.py) pour distinguer
+# ``IN_SYNC`` (traduction à jour) de ``STALE_TRAD`` (traduction cohérente avec
+# son notebook mais datant d'un ancien source — voir verdict STALE_TRAD
+# ajouté dans le module T2).
+# Quand T1 --update change ``src_hash`` (le pivot), ces colonnes sont préservées
+# verbatim — comme ``text_<lang>`` et ``hash_<lang>`` — pour qu'une retraduction
+# future sache qu'elle doit traiter la cible. Pour les lignes nouvelles et les
+# langues cibles non encore traduites, la valeur est vide.
+COLUMNS += [f"src_hash_{lang}" for lang in TARGET_LANGS]
 # translate_policy (#10326): per-row translation policy declared on the source
 # notebook cell (metadata) and carried through the pipeline. Empty = default
 # (translate if target empty or drifted); ``verbatim`` = never translate (the
@@ -229,9 +240,12 @@ def update_existing_csv(
     - Indexation par (notebook, cell_id) -> ligne existante.
     - Pour chaque ligne fraîche du/des notebooks cibles, on update les champs
       pivot (`src_hash`, `text_fr`, `hash_fr`, `cell_type` au cas où il aurait
-      changé). Les autres colonnes (text_en, hash_en, ...) sont **préservées**
-      si la ligne existait déjà — c'est crucial : T3 (moteur Argumentum) aura
-      pu déposer des traductions qu'on ne veut PAS écraser.
+      changé). Les autres colonnes (text_en, hash_en, ..., src_hash_en,
+      src_hash_es, ...) sont **préservées** si la ligne existait déjà — c'est
+      crucial : T3 (moteur Argumentum) aura pu déposer des traductions qu'on
+      ne veut PAS écraser. La trace `src_hash_<lang>` (#20836) doit aussi
+      être préservée pour que `STALE_TRAD` puisse signaler les traductions
+      qui datent d'un source antérieur.
     - Si une cellule fraîche n'a pas de ligne correspondante, on **append** en
       fin (cas légitime : nouvelle cellule ajoutée au notebook depuis la
       dernière extraction).

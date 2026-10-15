@@ -128,6 +128,16 @@ CSV_COLUMNS = [
     "notebook", "cell_id", "cell_type", "src_lang", "src_hash",
     "text_fr", "text_en", "text_es", "text_ar", "text_fa", "text_zh", "text_ru", "text_pt",
     "hash_fr", "hash_en", "hash_es", "hash_ar", "hash_fa", "hash_zh", "hash_ru", "hash_pt",
+    # src_hash_<lang> (#20836) : trace par langue cible du ``src_hash`` sur
+    # lequel la traduction a été faite. Posée ici (T3) au moment de la
+    # traduction, recopiée verbatim par T1 --update. Lue par T2 pour
+    # distinguer ``IN_SYNC`` de ``STALE_TRAD`` (voir check_translation_sync).
+    # Schéma rétro-compatible : load_csv avec DictReader fill missing → les
+    # anciens CSV sans la colonne se lisent comme ``""`` (legacy, jamais
+    # signalés comme ``STALE_TRAD`` car ``src_hash_<lang>`` vide court-circuite
+    # le verdict).
+    "src_hash_en", "src_hash_es", "src_hash_ar", "src_hash_fa",
+    "src_hash_zh", "src_hash_ru", "src_hash_pt",
     # translate_policy (#10326): per-row translation policy. Empty = default
     # (translate if target empty or drifted). ``verbatim`` = never translate,
     # ``text_<lang> := text_fr`` is preserved as-is (no LLM call) -- for cells
@@ -419,9 +429,14 @@ def run_translations(rows, langs, include_code, out_path, smoke, limit=None, dri
     for r in verbatim:
         fr_text = r.get("text_fr", "")
         fr_hash = r.get("hash_fr") or cell_hash(fr_text)
+        # src_hash courant : la copie verbatim est cohérente avec le pivot
+        # actuel, donc on pose src_hash_<lang> = r["src_hash"] (#20836).
+        current_src_hash = r.get("src_hash", "")
         for lang in langs:
             r[f"text_{lang}"] = fr_text
             r[f"hash_{lang}"] = fr_hash
+            if current_src_hash:
+                r[f"src_hash_{lang}"] = current_src_hash
         print(f"[verbatim] {r.get('notebook','').split('/')[-1]} "
               f"{r.get('cell_id','')[:8]} preserved (translate_policy=verbatim, "
               f"text_<lang> := text_fr, no LLM call)", file=sys.stderr)
@@ -436,12 +451,19 @@ def run_translations(rows, langs, include_code, out_path, smoke, limit=None, dri
     done = fails = 0
     for idx, lang in plan:
         fr = rows[idx]["text_fr"]
+        # src_hash courant : la traduction qu'on s'apprete a poser est
+        # coherente avec ce pivot — on le trace dans src_hash_<lang>
+        # (#20836) pour qu'un futur SRC_DRIFT signale STALE_TRAD sur
+        # cette ligne.
+        current_src_hash = rows[idx].get("src_hash", "")
         ok = False
         for attempt, (model, key, base) in enumerate(providers):
             try:
                 out, dt, rt = translate_markdown(fr, lang, model, key, base)
                 rows[idx][f"text_{lang}"] = out.strip()
                 rows[idx][f"hash_{lang}"] = cell_hash(rows[idx][f"text_{lang}"])
+                if current_src_hash:
+                    rows[idx][f"src_hash_{lang}"] = current_src_hash
                 ok = True
                 done += 1
                 nb = rows[idx]["notebook"].split("/")[-1]
