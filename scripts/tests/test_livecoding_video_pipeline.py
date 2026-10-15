@@ -211,6 +211,32 @@ class TestMuxFfmpeg:
         i_a = cmd.index("-c:a")
         assert cmd[i_a + 1] == "aac"
         assert cmd[-1].endswith("out.mp4")
+        # sans trim : ni -ss ni -t (chemin canvas historique)
+        assert "-ss" not in cmd and "-t" not in cmd
+
+    def test_trim_page_entiere_ss_avant_inputs_t_apres(self, tmp_path):
+        """Mode page : record_video filme tout le contexte (chargement,
+        play, warmup, export inclus) — la fenetre utile s'extrait par
+        -ss (fast seek, AVANT les inputs, piste video seule) + -t (duree
+        de sortie, les deux pistes)."""
+        cmd = mux_ffmpeg(
+            tmp_path / "v.webm", tmp_path / "a.wav", tmp_path / "out.mp4",
+            trim_start=12.3456, trim_duration=60.0,
+        )
+        i_ss, i_in = cmd.index("-ss"), cmd.index("-i")
+        assert i_ss < i_in
+        assert cmd[i_ss + 1] == "12.346"  # formate a 3 decimales
+        i_t = cmd.index("-t")
+        assert i_t > i_in and cmd[i_t + 1] == "60.000"
+        assert "-shortest" in cmd
+
+    def test_trim_seul_sans_duree(self, tmp_path):
+        """trim_start sans trim_duration reste legal (fenetre ouverte)."""
+        cmd = mux_ffmpeg(
+            tmp_path / "v.webm", tmp_path / "a.wav", tmp_path / "out.mp4",
+            trim_start=5.0,
+        )
+        assert "-ss" in cmd and "-t" not in cmd
 
 
 # --- Etape 2 : narration poetique timestampee (c.1215) ------------------------
@@ -767,6 +793,42 @@ class TestCLIInvocation:
         assert rc == 2
         err = capsys.readouterr().err
         assert "OPENAI_API_KEY" in err
+
+
+class TestCaptureMode:
+    """Fix critere 5a #15604 : la capture par defaut filme la page
+    ENTIERE (editeur + canvas), le canvas seul reste disponible."""
+
+    def test_capture_mode_defaut_page(self, capsys):
+        """Sans drapeau : 'page' (le fix est le defaut — la demo neuve
+        montre le code sans option supplementaire)."""
+        rc = pipeline_main(
+            ["--style", "trance", "--duration", "120", "--output", "out/x.mp4"]
+        )
+        assert rc == 0
+        assert "'--capture-mode', 'page'" not in capsys.readouterr().out  # silencieux
+
+    def test_capture_mode_choix_refuse(self):
+        """Une valeur hors (page, canvas) est rejetee par argparse."""
+        with pytest.raises(SystemExit):
+            pipeline_main(
+                [
+                    "--style", "trance", "--duration", "120",
+                    "--output", "out/x.mp4",
+                    "--capture-mode", "webm-codec",
+                ]
+            )
+
+    def test_capture_repl_session_rejette_mode_inconnu(self, tmp_path):
+        """La garde en entree de capture_repl_session echoue AVANT
+        d'ouvrir un navigateur (echec explicite, pas de comportement
+        implicite par defaut)."""
+        from scripts.livecoding_video_pipeline import capture_repl_session
+
+        with pytest.raises(ValueError, match="capture_mode inconnu"):
+            capture_repl_session(
+                pattern="s('bd')", output_dir=tmp_path, capture_mode="autre"
+            )
 
 
 # --- Etapes 3 et 6 : TTS expressif + mixage final (#15604) -------------------
