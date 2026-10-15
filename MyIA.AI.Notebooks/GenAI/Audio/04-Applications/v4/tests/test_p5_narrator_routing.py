@@ -342,10 +342,12 @@ def test_strip_brackets_never_glues_neighbouring_words():
 
 def test_customvoice_off_by_default():
     """Phase 2: CustomVoice routing is OFF by default. The user confirmed
-    voice B at 09:10Z on 15/10, but the gateway endpoint (port :8196) is
-    still TBD by ops. The default narrator engine stays Qwen VoiceDesign
-    until ops publishes the endpoint AND the user (or ai-01) flips the
-    flag. No silent engine swap (acceptance #6 of #15002)."""
+    voice B at 09:10Z on 15/10, but the custom-voice route shape on the
+    self-hosted TTS gateway (`tts-api.myia.io/v1`, HTTP 200 on /v1/models
+    as of c.1672 2026-10-15) is still TBD by ops. The default narrator
+    engine stays Qwen VoiceDesign until ops publishes the route AND the
+    user (or ai-01) flips the flag. No silent engine swap (acceptance #6
+    of #15002)."""
     from v4 import p5_tts
 
     assert p5_tts._NARRATOR_CUSTOMVOICE_ROUTING is False

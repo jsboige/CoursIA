@@ -101,16 +101,29 @@ _NARRATOR_ENGINE_REFERENCE_IDS: dict[str, str] = {
 # User confirmed voice B at 09:10Z on 15/10. The CustomVoice 1.7B checkpoint
 # is a 24 GB VRAM model (12 Hz codec), too large for the bakeoff_small lane
 # (8 GB card on po-2027). The render runs on the bakeoff_large side
-# (po-2023, RTX 3090 24 GB) and is exposed via the self-hosted TTS gateway
-# (port :8196) on an endpoint TBD by ops -- the shape parallels the
-# VoiceDesign call already shipped on the same socket. This branch is OFF
-# by default (NARRATOR_CUSTOMVOICE_ROUTING=0) and ships in this PR only
-# as a typed wiring: the flag, the reference_id, the exception, and a
-# skeleton that raises until ops publishes the endpoint. The no-silent-swap
-# contract of #15002 acceptance 6 carries over: any future HTTP call that
-# returns 4xx/5xx, short audio, or an undefined endpoint raises
-# NarratorCustomVoiceUnavailable, and _synthesize_batch re-raises it
-# instead of absorbing it into a survivable status="failed" record.
+# (po-2023, RTX 3090 24 GB) and is exposed via the self-hosted TTS gateway.
+#
+# Status as of c.1672 (2026-10-15): the public endpoint `tts-api.myia.io/v1`
+# is live (HTTP 200 on `/v1/models` verified from po-2027 c.1671) and the
+# TTS API key is integrated locally in `.secrets/master.env` (po-2027 c.1671).
+# What remains for the live integration:
+#   (1) ops to publish the exact TTS synthesis path (the /v1/models probe
+#       shows the gateway is up, but the custom-voice /audio/speech route
+#       shape is still TBD by ops on the bakeoff_large side);
+#   (2) once ops publishes the path, point NARRATOR_CUSTOMVOICE_GATEWAY_URL
+#       at the published URL and replace the second `raise` in
+#       `_synthesize_narrator_customvoice` with the actual HTTP call
+#       (chunked, WAV->MP3, gap-injection -- parallel to the VoiceDesign
+#       call shipped on the same socket).
+#
+# This branch is OFF by default (NARRATOR_CUSTOMVOICE_ROUTING=0) and ships
+# in this PR only as a typed wiring: the flag, the reference_id, the
+# exception, and a skeleton that raises until ops publishes the endpoint.
+# The no-silent-swap contract of #15002 acceptance 6 carries over: any
+# future HTTP call that returns 4xx/5xx, short audio, or an undefined
+# endpoint raises NarratorCustomVoiceUnavailable, and _synthesize_batch
+# re-raises it instead of absorbing it into a survivable status="failed"
+# record.
 _NARRATOR_CUSTOMVOICE_ROUTING: bool = os.getenv("NARRATOR_CUSTOMVOICE_ROUTING", "0") == "1"
 _CUSTOMVOICE_NARRATOR_REFERENCE_ID: str = "qwen3tts-customvoice-narrator-fr-B-v1"
 _CUSTOMVOICE_NARRATOR_SPEAKER: str = os.getenv("NARRATOR_CUSTOMVOICE_SPEAKER", "serena")
@@ -139,26 +152,30 @@ def _synthesize_narrator_customvoice(
 ) -> TTSResult:
     """Synthesize a narrator segment via Qwen3-TTS CustomVoice 1.7B (voice B).
 
-    SKELETON -- the gateway endpoint (NARRATOR_CUSTOMVOICE_GATEWAY_URL) is
-    not yet published by ops. This branch raises NarratorCustomVoiceUnavailable
-    until the endpoint is defined AND the HTTP call returns audio. The
-    skeleton is shipped first so the routing decision, the flag, and the
-    typed exception are testable before the live integration; the actual
-    HTTP call (chunked, with WAV->MP3 conversion, with silence injection
-    between chunks) is added in a follow-up PR once ops has confirmed the
-    endpoint shape -- it parallels the VoiceDesign call already shipped on
-    the same gateway socket.
+    Status as of c.1672 (2026-10-15): the TTS gateway is up at
+    `tts-api.myia.io/v1` (HTTP 200 on /v1/models verified from po-2027,
+    API key integrated in `.secrets/master.env`). The custom-voice route
+    shape and the exact synthesis path are still TBD by ops on the
+    bakeoff_large side. The branch therefore STILL raises until ops
+    publishes the route; the no-silent-swap contract of #15002
+    acceptance 6 carries over: a 4xx/5xx, an undefined endpoint, or a
+    short audio response all surface as NarratorCustomVoiceUnavailable
+    here, and `_synthesize_batch` re-raises instead of absorbing into a
+    survivable status="failed" record.
     """
     endpoint = os.getenv("NARRATOR_CUSTOMVOICE_GATEWAY_URL", "")
     if not endpoint:
         raise NarratorCustomVoiceUnavailable(
             f"seg {seg.seg_index}: NARRATOR_CUSTOMVOICE_GATEWAY_URL is not "
             f"defined; the CustomVoice branch is wired but awaits ops to "
-            f"publish the endpoint on the self-hosted TTS gateway :8196."
+            f"publish the custom-voice route on the self-hosted TTS "
+            f"gateway (tts-api.myia.io/v1, HTTP 200 on /v1/models as of "
+            f"c.1672 2026-10-15)."
         )
     raise NarratorCustomVoiceUnavailable(
         f"seg {seg.seg_index}: CustomVoice branch is wired but the HTTP "
-        f"call is not yet implemented; awaiting endpoint publication."
+        f"call is not yet implemented; awaiting ops to publish the "
+        f"custom-voice route shape."
     )
 
 # VoiceDesign `instructions` prompt — describes the desired voice and delivery
