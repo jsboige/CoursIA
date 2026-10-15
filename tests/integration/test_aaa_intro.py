@@ -2,15 +2,17 @@
 
 Closes the 3-confirmation audit-reassessment from issue #20354:
   1. Cell 0 intro must say 5 ETFs US large-cap (not 10 multi-asset)
-  2. Cell 0 intro must say 2011-2025 period (not 2008-2026)
+  2. Cell 0 intro must state the period printed by the executed cell 5
+     (not the 2008-2026 promise)
   3. Cell 3 code must load 5 tickers (the 5 that dropna() preserves)
   4. Cell 12 must NOT include Top N=6 (degenerate on 5 assets)
   5. Cell 21 conclusions must not say "10 ETFs multi-asset classes"
+  6. Cell 21 conclusions must cite the Sharpe printed by the executed cell 12
 
-The notebook uses QuantBook which can't run locally -- this test only verifies
-the source code is internally consistent (markdown promises match code loads
-and code load sizes). Re-execution is via QuantConnect Cloud (per CLAUDE.md
-QuantConnect section).
+The notebook runs in the LEAN Research container (QuantBook). The tests read
+the committed outputs: the prose must quote the values of the execution that
+is committed with it, so a re-execution that changes them fails here until
+the prose is updated.
 
 Run from repo root:
     python tests/integration/test_aaa_intro.py
@@ -27,6 +29,18 @@ def get_cell_src(nb, idx: int) -> str:
     c = nb['cells'][idx]
     s = c.get('source', [])
     return ''.join(s) if isinstance(s, list) else s
+
+
+def get_cell_text_output(nb, idx: int) -> str:
+    """Concatenate the stream text and text/plain outputs of a code cell."""
+    parts = []
+    for o in nb['cells'][idx].get('outputs', []):
+        if 'text' in o:
+            t = o['text']
+        else:
+            t = o.get('data', {}).get('text/plain', '')
+        parts.append(''.join(t) if isinstance(t, list) else t)
+    return ''.join(parts)
 
 
 # Module-level globals (set by setUpModule)
@@ -60,14 +74,19 @@ class TestIntroCodeAlignment(unittest.TestCase):
         self.assertNotIn('10 ETFs', cell0_src,
                          'Cell 0 intro must NOT say 10 ETFs (contradicts effective data)')
 
-    def test_intro_says_2011_2025_not_2008_2026(self):
-        """Cell 0 must state the effective 2011-2025 period."""
-        self.assertIn('2011', cell0_src,
-                      'Cell 0 must mention 2011 (start of effective period)')
-        self.assertIn('2025', cell0_src,
-                      'Cell 0 must mention 2025 (end of effective period)')
+    def test_intro_period_matches_executed_output(self):
+        """Cell 0 must state the period printed by the executed cell 5."""
+        import re
+        out = get_cell_text_output(nb, 5)
+        m = re.search(r'P\S*riode: (\d{4}-\d\d-\d\d) \S+ (\d{4}-\d\d-\d\d)', out)
+        self.assertIsNotNone(m, 'Cell 5 must carry its executed output (period line)')
+        start, end = m.groups()
+        self.assertIn(start, cell0_src,
+                      f'Cell 0 must state the executed start date {start}')
+        self.assertIn(end, cell0_src,
+                      f'Cell 0 must state the executed end date {end}')
         self.assertNotIn('2008-2026', cell0_src,
-                         'Cell 0 must NOT claim 2008-2026 (period is truncated)')
+                         'Cell 0 must NOT claim 2008-2026 (not the executed period)')
 
     def test_intro_mentions_dropna_or_docker_constraint(self):
         """Cell 0 must explain WHY the universe/period is limited."""
@@ -144,6 +163,15 @@ class TestIntroCodeAlignment(unittest.TestCase):
             any(phrase in cell21_src for phrase in ('5 large-cap', '5 actifs', 'Limites', 'limite')),
             'Cell 21 must acknowledge the 5-asset limit (Limites or Diversification section)'
         )
+
+    def test_conclusions_cite_executed_sharpe(self):
+        """Cell 21 must quote the best Top N Sharpe printed by the executed cell 12."""
+        import re
+        out = get_cell_text_output(nb, 12)
+        m = re.search(r'Meilleur Top N: (\d) \(Sharpe=([0-9.]+)\)', out)
+        self.assertIsNotNone(m, 'Cell 12 must carry its executed output (best Top N line)')
+        self.assertIn(m.group(2), cell21_src,
+                      f'Cell 21 must cite the executed Sharpe {m.group(2)} (Top {m.group(1)})')
 
 
 if __name__ == '__main__':
