@@ -88,11 +88,46 @@ _NARRATOR_COSYVOICE3_ROUTING: bool = os.getenv("NARRATOR_COSYVOICE3_ROUTING", "0
 # points like "route,[short pause] quand" -> "route,quand").
 _CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr-v3"
 
+# Phase 2 of the narrator pivot (#17586): a third candidate engine,
+# Qwen3-TTS CustomVoice (1.7B, Apache-2.0), synthesizes the narrator with a
+# named native speaker + a neutral style instruction. The DEFAULT IS
+# UNCHANGED — flag "0": the engine is opt-in until the user confirms
+# (acceptance #6 of #15002: never a silent swap). Same exclusivity
+# contract as CosyVoice3 above: combining NARRATOR_QWEN_CUSTOMVOICE_ROUTING
+# with another active flag is a configuration error, not a silent
+# precedence.
+_NARRATOR_QWEN_CUSTOMVOICE_ROUTING: bool = (
+    os.getenv("NARRATOR_QWEN_CUSTOMVOICE_ROUTING", "0") == "1"
+)
+# Speaker name + neutral style instruction. Defaults match the
+# A0C-retenu render parameters of the 12/10 phase (speaker + neutral
+# instruction + sentence-level chunking) — overridable via env so the
+# coordinator can pin the exact render if the user later changes the
+# chosen voice. The cache sentinel embeds the speaker name: re-pointing
+# NARRATOR_QWEN_CUSTOMVOICE_SPEAKER also invalidates the cache, by
+# design (a clean env override alone re-renders, no manual bump).
+_QWEN_CUSTOMVOICE_SPEAKER: str = os.getenv(
+    "NARRATOR_QWEN_CUSTOMVOICE_SPEAKER", "aiden"
+)
+_QWEN_CUSTOMVOICE_INSTRUCTIONS: str = os.getenv(
+    "NARRATOR_QWEN_CUSTOMVOICE_INSTRUCTIONS",
+    "Voix masculine francaise, posee, sans emotion particuliere, "
+    "debit modere, ton narratif de roman du XIXe siecle, "
+    "registre audiobook litteraire.",
+)
+_CVOICE_NARRATOR_REFERENCE_ID: str = (
+    f"qwen3tts-customvoice-{_QWEN_CUSTOMVOICE_SPEAKER}-narrateur-fr-v1"
+)
+
 # Engine -> reference_id sentinel. The narrator cache is keyed on it
 # (#19692): an MP3 rendered by one engine is never served for another.
+# The CustomVoice sentinel embeds the speaker name so that re-pointing
+# NARRATOR_QWEN_CUSTOMVOICE_SPEAKER also invalidates the cache without
+# a manual bump (a clean env override alone re-renders, by design).
 _NARRATOR_ENGINE_REFERENCE_IDS: dict[str, str] = {
     "qwen_voicedesign": _QWEN_NARRATOR_REFERENCE_ID,
     "cosyvoice3": _CV3_NARRATOR_REFERENCE_ID,
+    "qwen_customvoice": _CVOICE_NARRATOR_REFERENCE_ID,
 }
 
 # VoiceDesign `instructions` prompt — describes the desired voice and delivery
@@ -909,6 +944,14 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
             seed=seed,
             text_hash=current_hash,
         )
+    if _should_route_narrator_to("qwen_customvoice", seg):
+        return _synthesize_narrator_customvoice(
+            seg=seg,
+            fishaudio_text=fishaudio_text,
+            mp3_path=mp3_path,
+            seed=seed,
+            text_hash=current_hash,
+        )
 
     return _synthesize_fishaudio_path(
         seg=seg,
@@ -1026,6 +1069,7 @@ def _narrator_engine_flags() -> dict[str, bool]:
     return {
         "qwen_voicedesign": _NARRATOR_QWEN_ROUTING,
         "cosyvoice3": _NARRATOR_COSYVOICE3_ROUTING,
+        "qwen_customvoice": _NARRATOR_QWEN_CUSTOMVOICE_ROUTING,
     }
 
 
@@ -1480,6 +1524,89 @@ def _synthesize_narrator_cosyvoice3(
         seed=seed,
         status="generated",
         attempts=attempts,
+        text_hash=text_hash,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 (#17586) — Narrator routing to Qwen3-TTS CustomVoice
+# ---------------------------------------------------------------------------
+# Reuses the same NarratorQwenUnavailable contract: hard failure on gateway
+# unreachable / render error, never a silent fall back to FishAudio (#15002
+# acceptance 6). The default is OFF: the engine is opt-in until the user
+# confirms, and combining it with another active flag is a configuration
+# error caught at flag resolution time (see _selected_narrator_engine).
+
+
+def _synthesize_narrator_customvoice(
+    seg: AnnotatedSegment,
+    fishaudio_text: str,
+    mp3_path: Path,
+    seed: int,
+    text_hash: str,
+) -> TTSResult:
+    """Synthesize a narrator segment via Qwen3-TTS CustomVoice (port :8196).
+
+    Named native speaker + neutral style instruction (defaults overridable
+    via env). Chunked by sentence using the same splitter as VoiceDesign
+    so a long passage renders in pieces under the gateway timeout. Returns
+    a TTSResult with status="generated" on success; raises
+    NarratorQwenUnavailable on any gateway / render failure (no silent
+    fall back to FishAudio — #15002 acceptance 6).
+    """
+    # Imported here (not at module top) so this module remains usable even
+    # if the prosody_lab package is absent in a slim environment.
+    from .prosody_lab.qwen_tts_client import qwen_tts_customvoice_chunked
+
+    plain_text = _strip_brackets_for_qwen(fishaudio_text)
+    if not plain_text:
+        raise NarratorQwenUnavailable(
+            f"seg {seg.seg_index}: empty text after stripping brackets"
+        )
+
+    wav_bytes = qwen_tts_customvoice_chunked(
+        plain_text,
+        voice=_QWEN_CUSTOMVOICE_SPEAKER,
+        instructions=_QWEN_CUSTOMVOICE_INSTRUCTIONS,
+        language="French",
+        speed=1.0,
+        max_chars=_MAX_CHUNK_CHARS,
+        per_chunk_timeout=290,
+        gap_ms=120,
+    )
+    if not wav_bytes:
+        raise NarratorQwenUnavailable(
+            f"seg {seg.seg_index}: Qwen CustomVoice returned None (gateway "
+            f"unreachable, voice={_QWEN_CUSTOMVOICE_SPEAKER} rejected, or "
+            f"render failed)"
+        )
+
+    # CustomVoice returns WAV; downstream pipeline writes MP3 (same naming
+    # convention as VoiceDesign and CosyVoice3 paths). Convert via pydub at
+    # 192 kbps to match.
+    try:
+        from pydub import AudioSegment
+        audio = AudioSegment.from_file(io.BytesIO(wav_bytes), format="wav")
+        buf = io.BytesIO()
+        audio.export(buf, format="mp3", bitrate="192k")
+        mp3_bytes = buf.getvalue()
+    except Exception as exc:  # pragma: no cover — pydub/ffmpeg missing
+        raise NarratorQwenUnavailable(
+            f"seg {seg.seg_index}: WAV->MP3 conversion failed: {exc}"
+        ) from exc
+
+    mp3_path.write_bytes(mp3_bytes)
+    duration = audio_duration_mp3(mp3_bytes)
+
+    return TTSResult(
+        seg_index=seg.seg_index,
+        speaker=seg.speaker,
+        reference_id=_CVOICE_NARRATOR_REFERENCE_ID,
+        mp3_path=str(mp3_path),
+        duration_s=duration,
+        seed=seed,
+        status="generated",
+        attempts=1,
         text_hash=text_hash,
     )
 
