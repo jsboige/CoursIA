@@ -262,13 +262,17 @@ jobs:
     name: Validate Quarto build (PR)
     # Q35 etape 4 (#17397, ai-01 2026-10-15) : setup Quarto par tarball (le
     # binaire est telecharge via curl, pas d'action quarto-actions/setup
-    # qui exigerait sudo apt). Aucun secret, aucun volume, aucun service
-    # local : la garde s'execute aussi bien sur ubuntu-latest, ou la
-    # distribution du temps de rendu est plus favorable (19-24 min contre
-    # 25-31 min sur le pool auto-heberge, mesure #14283 -- le timeout 60
-    # min est commun aux deux jambes, on ne le change pas). La garde
-    # anti-fork est conservee telle quelle -- seul le runner change.
-    # Sortie de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    # qui exigerait sudo apt). Aucun volume, aucun service local : la
+    # garde s'execute aussi bien sur ubuntu-latest, ou la distribution du
+    # temps de rendu est plus favorable (19-24 min contre 25-31 min sur le
+    # pool auto-heberge, mesure #14283 -- le timeout 60 min est commun aux
+    # deux jambes, on ne le change pas). Un secret de depot est lu a
+    # l'etape « Sample runner-park occupation (#14597) » ci-dessous
+    # (`secrets.RUNNERS_READ_PAT`) -- il est sur le secret par defaut du
+    # depot, donc disponible identiquement sur ubuntu-latest et sur le pool
+    # auto-heberge. La garde anti-fork est conservee telle quelle -- seul
+    # le runner change. Sortie de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le
+    # meme commit.
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     # 60 et non 30 depuis #14283 : le meme rendu prend 19-24 min sur
