@@ -92,7 +92,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # dans le meme commit. La justification FORK_REACHABLE qui le gardait
     # sur self-hosted (cout de slot par fork PR, #14285) ne tient plus :
     # le cout est sur GitHub-hosted. Le job reste un pur-Python metadata
-    # scan, 16 organes sur un seul checkout, aucun kernel/GPU/docker.
+    # scan, 17 organes sur un seul checkout, aucun kernel/GPU/docker.
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
