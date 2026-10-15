@@ -54,6 +54,11 @@ ENV_GLOBS = ("*.env.example", "*.env.sample", "*.env.template")
 # Cle dont le nom matche ce motif (partiel) -- PAS de match sur le nom complet.
 SECRET_NAME_RE = re.compile(r"(?i)(PASS|SECRET|TOKEN|KEY|PWD)")
 LINE_RE = re.compile(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$")
+# Exemption inline documentee dans le message d'erreur : ``# OK: <reason>``
+# (cf. issue #21013). On la detecte sur la ligne BRUTE, avant ``_strip_value``,
+# qui sinon l'arracherait avec le commentaire. La raison est ignoree -- elle
+# reste pour l'humain qui relit le diff.
+_OK_INLINE_RE = re.compile(r"(?<!\\)#\s*OK\b", re.IGNORECASE)
 
 
 # Motifs de marqueur (regex compilees, case-insensitive sauf mention contraire).
@@ -206,6 +211,12 @@ def check_file(path: Path) -> list[tuple[int, str, str, str]]:
         if not m:
             continue
         name, raw_value = m.group(1), m.group(2)
+        # Exemption inline ``# OK: <reason>`` : la ligne est exemptee avant
+        # l'evaluation du marqueur. Le commentaire doit etre separe de la
+        # valeur par un blanc (cf. la convention .env). On l'evalue sur la
+        # LIGNE BRUTE pour ne pas etre mange par ``_strip_value``.
+        if _OK_INLINE_RE.search(line):
+            continue
         value = _strip_value(raw_value)
         if not SECRET_NAME_RE.search(name):
             continue

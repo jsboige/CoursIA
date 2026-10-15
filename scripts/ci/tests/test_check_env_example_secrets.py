@@ -136,13 +136,29 @@ def test_strip_value_handle_guillemets_et_quotes_simples():
 
 # ---------- 3. controle negatif sur le repo (32 fichiers) ----------
 
-def test_scan_32_fichiers_principal_pas_de_defaut():
+def test_scan_principal_pas_de_defaut():
     """Le scan des fichiers traces git doit rendre 0 defaut.
 
     C'est le controle negatif exige par l'issue #20919. On court en sous-processus
-    pour eviter que pytest ne pollue la sortie.
+    pour eviter que pytest ne pollue la sortie. Le nombre de fichiers attendus
+    est derive de ``git ls-files`` au moment du test (cf. #21013) : un compte
+    en dur (``>= 30``) tolérait la disparition silencieuse de 2 fichiers.
     """
     repo = Path(__file__).resolve().parents[3]   # scripts/ci/tests/ -> racine
+    # Compter les .env.example/.env.sample/.env.template traces par git au moment du test.
+    listed = subprocess.run(
+        ["git", "ls-files"],
+        cwd=repo, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", check=True,
+    )
+    import re as _re
+    env_re = _re.compile(r"\.(env\.example|env\.sample|env\.template)$")
+    expected_count = sum(1 for line in listed.stdout.splitlines() if env_re.search(line))
+    assert expected_count >= 30, (
+        f"only {expected_count} env example files in repo -- "
+        "garde-t-on la couverture ?"
+    )
+
     out = subprocess.run(
         [sys.executable, str(repo / "scripts" / "ci" / "check_env_example_secrets.py"),
          "--root", str(repo), "--json"],
@@ -153,10 +169,15 @@ def test_scan_32_fichiers_principal_pas_de_defaut():
         raise AssertionError(f"unexpected exit {out.returncode}: {out.stderr}")
     payload = json.loads(out.stdout)
     assert payload["status"] in ("OK", "DEFECT"), payload
-    assert payload["files_scanned"] >= 30, payload   # 32 attendus, 30 = garde
+    assert payload["files_scanned"] == expected_count, (
+        f"organe scanne {payload['files_scanned']} fichiers, "
+        f"mais git en trace {expected_count} (.env.example/.sample/.template). "
+        "Un compte en dur (>= 30) masquait la disparition silencieuse ; "
+        "maintenant l'egalite est stricte."
+    )
     if payload["status"] != "OK":
         raise AssertionError(
-            f"32 env examples should pass after the c.1683 cleanup, "
+            f"{expected_count} env examples should pass after the c.1683 cleanup, "
             f"got {len(payload['defects'])} defect(s):\n"
             + "\n".join(f"  {d['file']}:{d['line']}  {d['name']}={d['raw']!r}"
                         for d in payload["defects"])
@@ -213,3 +234,49 @@ def test_check_file_exemption_commentaire_inline(tmp_path):
     )
     defects = mod.check_file(f)
     assert defects == []
+
+
+def test_check_file_exemption_valeur_non_marquee(tmp_path):
+    """Cas fondateur #21013 : une valeur reelle + ``# OK: <reason>`` est exemptee.
+
+    Avant ce fix, ``_strip_value`` arrachait ``# OK: ...`` avec le commentaire,
+    la valeur redevenait nue, et l'organe rougissait la ligne -- alors que la
+    documentation invitait a utiliser cette voie d'exemption.
+    """
+    f = tmp_path / "sub.env.example"
+    f.write_text(
+        "API_KEY=myrealpassword  # OK: valeur legitime pour la CI\n"
+        "GOOD_KEY=your_key_here\n",
+        encoding="utf-8",
+    )
+    defects = mod.check_file(f)
+    assert defects == [], f"defauts inattendus : {defects!r}"
+
+
+def test_check_file_exemption_casse_insensible(tmp_path):
+    """L'exemption ``# OK:`` est case-insensitive (``# ok:`` / ``# Ok:`` aussi)."""
+    f = tmp_path / "sub.env.example"
+    f.write_text(
+        "API_KEY=secret_value  # ok: lower case\n"
+        "DB_PASSWORD=plainvalue  # Ok: title case\n",
+        encoding="utf-8",
+    )
+    defects = mod.check_file(f)
+    assert defects == [], f"defauts inattendus : {defects!r}"
+
+
+def test_check_file_sans_exemption_rougit(tmp_path):
+    """Sanity check : sans ``# OK:``, la ligne rougit comme avant.
+
+    Ce test garantit que l'exemption n'a pas elimine la detection des vrais
+    defauts -- elle ajoute une voie de sortie, ne la remplace pas.
+    """
+    f = tmp_path / "sub.env.example"
+    f.write_text(
+        "API_KEY=myrealpassword\n"
+        "GOOD_KEY=your_key_here\n",
+        encoding="utf-8",
+    )
+    defects = mod.check_file(f)
+    assert len(defects) == 1
+    assert defects[0][1] == "API_KEY"
