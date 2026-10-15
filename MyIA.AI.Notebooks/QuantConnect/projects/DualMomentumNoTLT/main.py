@@ -46,13 +46,21 @@ class DualMomentumNoTLT(QCAlgorithm):
         # Monthly rebalance
         if self.time.month == self.rebalance_month:
             return
+        # A dividend notice arrives alone in a midnight slice, with no bar (#20264):
+        # it must not consume the month's rebalance.
+        if not any(data.bars.contains_key(s) for s in self.symbols.values()):
+            return
         self.rebalance_month = self.time.month
 
         # Compute 12M momentum for each asset
         scores = {}
         for ticker in self.tickers:
             symbol = self.symbols[ticker]
-            history = self.history(symbol, self.lookback + 5, Resolution.DAILY)
+            # On the 13:00 close slice of a US half-session, a daily history request
+            # by bar count comes back about 21 bars short (measured in #20286). Ask
+            # for twice the bars and keep the most recent ones.
+            history = self.history(symbol, 2 * (self.lookback + 5), Resolution.DAILY)
+            history = history.iloc[-(self.lookback + 5):]
             if len(history) < self.lookback:
                 continue
 

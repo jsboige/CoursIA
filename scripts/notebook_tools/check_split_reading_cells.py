@@ -189,19 +189,34 @@ EXERCISE_TOKENS = ("TODO", "A completer", "à compléter", "Exercice")
 # titre d'exercice** : un en-tete d'interpretation dissimule dans le corps, et
 # la citation d'une sortie -- le vocabulaire de l'interpretation, pas celui de
 # l'enonce.
-EXERCISE_STATEMENT_TITLE_RE = re.compile(r"^#{1,6}\s*exercice\b", re.IGNORECASE)
+# Extension aux jumeaux derives `_en` (#20777) : les carnets traduits portent
+# la meme forme canonique enonce|stub, mais le titre s'ecrit « Exercise ».
+# Sans le `[cs]`, le re-rendu EN d'un carnet FR dont les enonces vivent deja
+# entre les stubs (forme canonique, grandfathered) rougissait EXERCISE_READING
+# sur chaque enonce -- mesure sur 01-2-GPT-5-Image-Generation_en (cellules 31
+# et 33, miroir exact des cellules 31/33 du FR source sur main).
+EXERCISE_STATEMENT_TITLE_RE = re.compile(r"^#{1,6}\s*exerci[cs]e\b", re.IGNORECASE)
 SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
     r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin)\b",
     re.IGNORECASE,
 )
+# Miroir anglais des deux garde-fous du carve-out (#20777) : le titre s'est
+# ouvert a « Exercise » pour les jumeaux `_en`, les gardes suivent -- ouvrir
+# le titre sans ouvrir les gardes rouvrirait le trou que la decision #17777
+# avait ferme (« une interpretation deguisee sous un titre d'exercice reste
+# signalee »). Ces deux regex ne servent QUE dans is_exercise_statement et
+# is_section_intro ; le detecteur principal INTERPRETATION_RE est intact.
 HIDDEN_INTERPRETATION_HEADING_RE = re.compile(
-    r"^#{1,6}\s*(lecture|interpre|interpret|analyse)", re.IGNORECASE
+    r"^#{1,6}\s*(lecture|reading|interpre|interpret|analys[ei])", re.IGNORECASE
 )
 OUTPUT_CITATION_RE = re.compile(
     r"\b(?:l[ae]s?|une?|cette?)\s+(?:sorties?|outputs?|prints?|affichages?)\b"
     r"|\bl\s*['’]\s*(?:sortie|output|affichage)\b"
     r"|\bcomme\s+le\s+montre\s+(?:la|le|l['’])"
-    r"|\b(?:on\s+observe|on\s+voit|on\s+lit)\b",
+    r"|\b(?:on\s+observe|on\s+voit|on\s+lit)\b"
+    r"|\b(?:the|an?|these|those)\s+(?:outputs?|prints?|displays?)\b"
+    r"|\bas\s+(?:shown|demonstrated)\s+by\s+the\b"
+    r"|\bwe\s+(?:observe|see|read)\b",
     re.IGNORECASE,
 )
 
@@ -572,18 +587,46 @@ def _classify_context(cells: list[dict], idx: int) -> tuple[str, str]:
     return role(prev), role(nxt)
 
 
+_PURE_FENCE_RE = re.compile(r"```[^\n]*\n.*?```\Z", re.DOTALL)
+
+
+def _is_pure_fence(cell: dict) -> bool:
+    """Vrai si la cellule markdown est reduite a UN bloc fence, sans prose.
+
+    C'est le gabarit exact d'une conversion code->markdown (pseudo-code fige,
+    #18602) : ouverture ```` ``` ````, corps, fermeture -- rien avant, rien
+    apres. Ce n'est ni une lecture ni de la prose : la cellule represente le
+    code qu'elle etait. La lecture qui la suit commentait SA sortie (disparue
+    avec la conversion), pas celle du code au-dessus -- la remontee s'arrete
+    donc sur elle comme sur un exercice. Une cellule faite uniquement de
+    fences (une ou plusieurs conversions) l'est aussi : chaque fence fige un
+    code dont la sortie a disparu. Seule la cellule qui MELANGE prose et
+    fence n'est pas une pure fence : ses lectures restent rattachees au code
+    au-dessus.
+    """
+    if cell.get("cell_type") != "markdown":
+        return False
+    src = cell_source(cell).strip()
+    if not src.startswith("```"):
+        return False
+    return bool(_PURE_FENCE_RE.match(src))
+
+
 def _output_key_above(cells: list[dict], idx: int) -> str | None:
     """Source de la cellule de code dont ``cells[idx]`` commente la sortie.
 
     La sortie est identifiee par la **source de sa cellule de code** (#17044,
     decision ai-01 c.5836401913). La remontee s'arrete a la premiere cellule de
     code : c'est elle, et elle seule, que la lecture commente. ``None`` s'il n'y
-    a rien a lire -- aucun code au-dessus, code d'exercice, ou code jamais
-    execute.
+    a rien a lire -- aucun code au-dessus, code d'exercice, code jamais
+    execute, ou pure fence de conversion (#18602) -- la lecture sous la fence
+    commentait la sortie du code converti, pas celle du code au-dessus.
     """
     for j in range(idx - 1, -1, -1):
         c = cells[j]
         if c.get("cell_type") != "code":
+            if _is_pure_fence(c):
+                return None
             continue
         if is_exercise_cell(c):
             return None
@@ -599,12 +642,14 @@ def readings_by_output(nb: dict) -> Counter[str]:
     C'est ce compte, et lui seul, que le mode diff compare entre la base et la
     tete (#17044, decision c.5836401913) : une cellule markdown dont la source
     est neuve n'est pas, a elle seule, un ajout -- une fusion, une revision ou
-    un deplacement laissent ce compte inchange.
+    un deplacement laissent ce compte inchange. Une pure fence de conversion
+    code->markdown (#18602) n'est pas une lecture : elle ne gonfle le compte
+    d'aucune sortie.
     """
     cells = nb.get("cells", [])
     counts: Counter[str] = Counter()
     for i, c in enumerate(cells):
-        if not is_reading_or_prose(c):
+        if not is_reading_or_prose(c) or _is_pure_fence(c):
             continue
         key = _output_key_above(cells, i)
         if key is not None:

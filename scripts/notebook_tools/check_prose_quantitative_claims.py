@@ -474,17 +474,33 @@ def _ipynb_output_lines(rel: str) -> set[int]:
     return inside
 
 
+class DiffUnreadable(RuntimeError):
+    """git diff n'a pas produit de diff exploitable (rc != 0, binaire absent, timeout).
+
+    Un organe injoignable n'est pas une ardoise propre (#20194) : jamais de
+    ``[OK]`` sur un diff non mesure.
+    """
+
+
 def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
-    """Ne juge que les lignes AJOUTEES : le stock existant ne fait pas echouer."""
+    """Ne juge que les lignes AJOUTEES : le stock existant ne fait pas echouer.
+
+    Leve :class:`DiffUnreadable` quand git ne resout pas la plage -- l'echec
+    d'infrastructure ne se confond pas avec un diff propre.
+    """
     try:
-        diff = subprocess.run(
+        proc = subprocess.run(
             ["git", "diff", "--unified=0", diff_range],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=180, check=False,
-        ).stdout
+        )
     except (OSError, subprocess.SubprocessError) as exc:
-        print(f"[ERREUR] git diff a echoue : {exc}", file=sys.stderr)
-        return []
+        raise DiffUnreadable(f"git diff a echoue : {exc}") from exc
+    if proc.returncode != 0:
+        detail = (proc.stderr or "").strip().splitlines()
+        hint = detail[-1] if detail else "sortie d'erreur vide"
+        raise DiffUnreadable(f"git diff rc={proc.returncode} : {hint}")
+    diff = proc.stdout
 
     findings: list[tuple[str, str, str]] = []
     generated_cache: dict[str, bool] = {}
@@ -651,7 +667,15 @@ def main() -> int:
     if args.all:
         findings = scan_all(Path(args.root).resolve(), classes)
     else:
-        findings = scan_diff(args.diff, classes)
+        try:
+            findings = scan_diff(args.diff, classes)
+        except DiffUnreadable as exc:
+            # #20194 : le check-run CI doit distinguer « diff propre » (rc=0,
+            # [OK]) de « diff non mesurable » -- jamais le meme verdict.
+            print(f"[NON-MESURABLE] {exc}", file=sys.stderr)
+            print("[NON-MESURABLE] diff non mesurable : aucune conclusion de "
+                  "proprete n'est valable (#20194).")
+            return 2
 
     # Format legacy exact pour la classe artifact seule (contrat CI : --diff sans --class).
     if args.klass == "artifact":

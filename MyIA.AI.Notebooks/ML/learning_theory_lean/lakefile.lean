@@ -86,3 +86,36 @@ lean_lib «MathUniverse» where
   module sans repertoire fait echouer la resolution de la cible bibliotheque
   (`no such file or directory: .../MathUniverse`). -/
   globs := #[`MathUniverse, `MathUniverse_en]
+
+/-- Module `Renaming` — tranche 2 de l'issue #16753 : l'équivalence de
+structures sous renommage (R16 §III « baggage »), suite de `MathUniverse` —
+EquivStruct est une équivalence à travers les types porteurs, invariants de
+cardinalité et de taille des tableaux (`relFinset`), énumération des
+permutations (`m!` vs `m^m`, `equivStruct_iff_perm`), torseur des renommages
+sous Aut(S) et transport par conjugaison — corollaire `aut_trivial_of_equiv_bool8`
+(pont vers `EffectiveTheory.InfoBits`). -/
+@[default_target]
+lean_lib «Renaming» where
+  /- Module plat, meme forme que MathUniverse : pas d'arborescence
+  `Renaming/`. -/
+  globs := #[`Renaming, `Renaming_en]
+/-- Module `Generators` — suite de #16753 : réifie le critère « générateurs
++ composition » que `MathUniverse` laissait en exhibition concrète — syntaxe
+de termes `Term ν` sur un générateur binaire, évaluation `Term.eval`,
+prédicat `Generates`, l'équation (A2) comme DONNÉE (les huit termes
+`termA2`), et le pont prouvé vers les tables de `bool8`/`nand8`
+(`relA1_iff_generated`, `relA2_iff_generated`, `relA1_iff_relA2`). Frère
+cadet de `MathUniverse` dans le lake ML généraliste. -/
+@[default_target]
+lean_lib «Generators» where
+  /- Module plat, même leçon que MathUniverse : pas de `.submodules`. -/
+  globs := #[`Generators, `Generators_en]
+
+/-- Module `MutualGen` — digestion #16741/arc B (issue #16753, tranche 4) :
+génération mutuelle générale de l'Annexe A de R16 — termes sur signature
+quelconque (le tuple d'arité quelconque, multi-générateurs) et le théorème
+« se générer l'un l'autre ⇒ mêmes fonctions engendrées » (`mutual_gen_iff`).
+Frère de `MathUniverse` dans le lake. -/
+@[default_target]
+lean_lib «MutualGen» where
+  globs := #[`MutualGen, `MutualGen_en]
