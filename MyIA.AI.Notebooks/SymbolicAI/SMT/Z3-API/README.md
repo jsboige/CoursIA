@@ -15,6 +15,36 @@ L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimi
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
 
+## Ouvrage de référence
+
+**Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)** — l'ouvrage-ancrage de la série. Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT, organisé en chapitres thématiques (théories, tactiques, optimisation, puzzles, UNSAT cores, bit-vectors, arithmétique réelle, etc.) qui correspondent chapitre par chapitre aux notebooks de cette série. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`).
+
+### Index chapitré (série Z3-API ↔ Yurichev)
+
+| Carnet | Chapitre Yurichev | Thème |
+|--------|-------------------|-------|
+| Z3-01, Z3-01ᶜˢ | Ch. 1–3 | Solver API, théories de base, modèles |
+| Z3-01b | Ch. 4 | `assert_and_track`, coloration de graphe (Australie) |
+| Z3-02, Z3-02ᶜˢ | Ch. 28 | Sudoku comme CSP, visualisation |
+| Z3-03, Z3-03ᶜˢ | Ch. 10 | `Tactic`, `BitVec`, `Array` |
+| Z3-04, Z3-04ᶜˢ | Ch. 11–12 | `String`, `Re` (théorie des chaînes) |
+| Z3-05, Z3-05ᶜˢ | Ch. 13 | `ForAll`, `Exists`, réfutation, `unknown` |
+| Z3-06, Z3-06ᶜˢ | Ch. 14–15 | `Optimize`, MaxSAT, Pareto |
+| Z3-08 | Ch. 16 | `Optimize.minimize`, ordonnancement |
+| Z3-09 | Ch. 29 | Einstein's riddle / Zebra puzzle |
+| Z3-10 | Ch. 30 | Cryptarithmetic SEND + MORE = MONEY |
+| Z3-11 | Ch. 17 | Coloration de graphe, nombre chromatique |
+| Z3-12 | Ch. 18 | Real arithmetic, irrationnels algébriques |
+| Z3-13 | Ch. 19–20 | UNSAT cores, `assert_and_track` |
+| Z3-13b | Ch. 20 | MUS (Minimal Unsatisfiable Subset) |
+| Z3-14 | Ch. 21 | Bit-vectors, overflow, `ULT`/`UGE` |
+| Z3-15 | Ch. 22 | Nested arrays 2D, carré magique |
+| Z3-16 | Ch. 23 | Optimize, plan hebdomadaire |
+| Z3-17 | Ch. 24 | Array theory général, `Select`/`Store` |
+| Z3-18 | Ch. 28 | Sudoku modes `Array` vs `Constants` |
+
+Les notebooks qui reprennent un exemple numéroté du livre (énigme d'Einstein, cryptarithmes, coloriage de graphe) créditent la source dans leur cellule d'introduction. À noter : « Z3: An Efficient SMT Solver » (de Moura & Bjørner, TACAS 2008), qui est le **papier de référence** du solveur, est déjà cité dans 5 fichiers du dépôt. Le **livre pratique** de Yurichev, distinct du papier, est désormais référencé comme ouvrage-ancrage de la série.
+
 ## Présentation
 
 **Z3** (Microsoft Research) est un solveur SMT (*Satisfiability Modulo Theories*) qui résout des systèmes de contraintes sur des entiers, des réels, des booléens, des vecteurs de bits, des tableaux et des chaînes. Cette série utilise **z3-py** (package pip `z3-solver`), le binding Python officiel qui expose **l'intégralité** de l'API Z3 : `Solver`, `Optimize`, théories (BitVec, Array, String, Real), tactiques et quantificateurs.

@@ -14,6 +14,14 @@ Le binding Z3.Linq traduit des requêtes LINQ C# en formules SMT — on décrit 
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs C# souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de théorèmes linéaires simples pour monter progressivement vers les théories de tableaux et l'optimisation hiérarchique.
 
+## Ouvrage de référence
+
+**Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)** — l'ouvrage-ancrage de la série sœur Z3-API et un manuel de référence pour cette série Z3-Linq2Z3. Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT, organisé en chapitres thématiques (théories, tactiques, optimisation, puzzles, UNSAT cores, bit-vectors, arithmétique réelle, etc.). Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`).
+
+L'attribution chapitrée pour Z3-Linq2Z3 (carnets ci-dessous) cite les sections correspondantes du livre, en miroir de la table d'index chapitré publiée dans la [série sœur Z3-API](../Z3-API/README.md#ouvrage-de-référence). Les notebooks qui reprennent un exemple numéroté du livre créditent la source dans leur cellule d'introduction.
+
+À noter : « Z3: An Efficient SMT Solver » (de Moura & Bjørner, TACAS 2008), qui est le **papier de référence** du solveur, est cité dans plusieurs fichiers du dépôt. Le **livre pratique** de Yurichev, distinct du papier, est désormais référencé comme ouvrage-ancrage de la série.
+
 ## Présentation
 
 **Z3** (Microsoft Research) est un solveur SMT (*Satisfiability Modulo Theories*) qui résout des systèmes de contraintes sur des entiers, des réels, des booléens et des tableaux. **Z3.Linq** est un binding qui traduit des expressions LINQ C# en formules SMT, permettant de modéliser des problèmes déclarativement sans écrire les appels Z3 bas niveau.
