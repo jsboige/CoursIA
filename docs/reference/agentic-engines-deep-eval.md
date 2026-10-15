@@ -14,7 +14,8 @@
 | T4 | pt 2 — SK, modes restants (séquentiel, concurrent, group chat, Magentic) exécutés (service LLM réel, temp 0) | livré |
 | T5 | pt 3 — MAF, graphe typé (`WorkflowBuilder`) exécuté (service LLM réel, temp 0), borne de boucle falsifiée | livré |
 | T6 | pt 4 — couverture C# mesurée par les assemblages (SK 1.81.0, MAF 1.24.0, ADK absent), contrôles positif et négatif | livré |
-| — | pt 2 — MS Agent Framework (agents, graphe) | à venir |
+| T7 | pt 2 — MAF, couche agents : `HandoffBuilder` exécuté (service LLM réel, temp 0), contrôle positif des cinq topologies Python | livré |
+| — | pt 2 — MAF, `GroupChatBuilder` (sélection d'orateur) et `MagenticBuilder` exécutés | à venir |
 | — | pt 1 état de l'art | livré hors repo : note datée du 2026-10-05 sur [#19380](https://github.com/jsboige/CoursIA/issues/19380) ; mémo inventaire local du 2026-10-07 (po-2024:CoursIA-2) sur [#14499](https://github.com/jsboige/CoursIA/issues/14499) |
 | — | pts 3-6 (déterminisme, couverture langages, coût, verdict) | à venir |
 
@@ -286,6 +287,40 @@ VERDICT controles : negatif=OK positif=OK
 
 **Deux pièges de méthode, tous deux payés par une erreur réelle.** `Assembly.Load("<nom>")` ne suffit pas : rien ne référence ces assemblages, donc rien ne les charge, et la sonde rend « aucune assembly » sur un projet pourtant correctement restauré — il faut charger **par chemin** depuis le répertoire de sortie. Et un détecteur se valide par ses **faux négatifs**, pas par ses hits : d'où le contrôle négatif ci-dessus. Sans lui, « 0 hit » serait indiscernable de « sonde cassée » — le mode de défaut qui a fait passer pour un « résidu » un lake portant 80 % de la dette formelle du dépôt (règle anti-régression).
 
-### 2.8 À venir
+### 2.8 Pilote MAF — la couche agents (HandoffBuilder)
 
-Reste de #14499 : le pilote identique dans les trois moteurs sur une **vraie charge de distillation** (point 3), et le coût pour le dépôt (point 5). L'emplacement `eval-pilots/` accueille les pilotes Python et la sonde C# ; l'idiome de référence de MAF est l'organe du dépôt (`SymbolicAI/Lean/agent_tests/prover/workflow.py`).
+`VERIFIÉ` — pilote [`eval-pilots/maf_agents_handoff_pilot.py`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/maf_agents_handoff_pilot.py), exécuté sous le **venv projet** (Python 3.13) / `agent-framework-core` **1.21.0** + `agent-framework-orchestrations` **1.3.1** (lignes alignées pour la mesure — l'env portait core 1.15.0 avec orchestrations 1.1.1, incompatible sur le protocole request-info ; règle F), service **réel** `gpt-4o-mini`, température 0, `max_tokens` 200, budget **dur** de 40 appels comptés par un client instrumenté. Même scénario de triage que T2 (§2.3) et T3 (§2.4), même modèle épinglé en constante — les **trois** moteurs sont comparables par construction. Reproduction firsthand depuis l'emplacement livré : exit 0, **deux fois** (le second processus sert de mesure inter-processus du déterminisme).
+
+```text
+MAF versions: agent-framework-core 1.21.0, agent-framework-orchestrations 1.3.1
+sonde OK (1 appel(s))
+TOPOLOGIES PYTHON: Sequential, Concurrent, GroupChat, Magentic, Handoff
+[technique #1] agents=['triage', 'specialiste_technique'] decision: specialiste_technique
+[technique #2] agents=['triage', 'specialiste_technique'] decision: specialiste_technique
+[formation #1] agents=['triage', 'specialiste_formation'] decision: specialiste_formation
+[formation #2] agents=['triage', 'specialiste_formation'] decision: specialiste_formation
+ROUTING CORRECTNESS: OK
+ROUTING DETERMINISM: OK
+LLM CALLS: 9/40
+PILOT OK maf handoff model=gpt-4o-mini
+```
+
+**Déterminisme (pt 3, troisième moteur, troisième datapoint identique)** : à température 0, la décision de routage (quel spécialiste termine) est stable intra-processus et inter-processus ; la prose n'est pas assertée — même doctrine que T2/T3. Profil de coût identique à T2 : **exactement 2 appels LLM par run** (1 triage + 1 spécialiste), la sonde mise à part.
+
+**La couche agents de MAF existe, mais elle vit dans un paquet séparé.** T5 (§2.6) pouvait laisser croire que MAF Python se réduit au graphe typé : c'est un artefact de périmètre, pas de nature. Les cinq topologies mesurées en C# par T6 existent en Python dans `agent-framework-orchestrations` — contrôle positif par import, zéro appel LLM : `SequentialBuilder`, `ConcurrentBuilder`, `GroupChatBuilder`, `MagenticBuilder`, `HandoffBuilder`. La parité C#/Python est donc réelle sur la couche agents (là où SK est Python d'abord, §2.7), et les **deux natures de routage coexistent chez MAF** : graphe écrit dans le cœur (T5), topologies déléguées dans orchestrations (ce pilote) — la conclusion du §2.6 se précise sans être renversée.
+
+Faits d'API mesurés sur core 1.21.0 / orchestrations 1.3.1 :
+
+| Fait | Détail |
+| --- | --- |
+| Drapeau obligatoire | `HandoffBuilder.build()` jette `ValueError` si un participant n'a pas `require_per_service_call_history_persistence=True` (« local history stays consistent with the service across handoff tool-call short-circuits »). |
+| Agent de départ explicite | `with_start_agent(agent)` obligatoire — `build()` jette sinon (« Must call with_start_agent(...) before building the workflow »). |
+| Entrée et lancement | message explicite `Message(role="user", contents=[Content(type="text", …)])` + `workflow.run(msg)` direct. `WorkflowAgent(workflow).run(...)` bute sur le handshake request-info du handoff (`AgentInvalidResponseException: Unexpected content type while awaiting request info responses`) — mesuré sur deux lignes de versions alignées, ce n'est pas un artefact de dérive. |
+| Observable du locuteur | l'identité d'agent ne vit **ni** dans `AgentResponse` ni dans `Message` : c'est l'event qui la porte. Seuls les events `type='output'` (`executor_id` + réponse) marquent un tour de parole réel ; `executor_invoked`/`executor_completed` partent **aussi** pour les rounds du protocole interne (`should_respond=False`, sans appel LLM) — les compter fait lire un mesh bouclant là où la conversation réelle est `triage → spécialiste → fin`. |
+| Terminaison | le workflow est en **posture interactive** : après la réponse du spécialiste il émet une `request_info` (`HandoffAgentUserRequest`) et attend l'utilisateur. Réutiliser le même workflow pour une nouvelle entrée fait avancer l'état mais laisse la requête pendante (warning « fresh message while request_info events are still pending ») — même hygiène que T2 : **reconstruire le workflow par invocation** (agents réutilisables, eux). |
+| Spécialistes puits | un participant sans `add_handoff` déclenche un warning (« your workflow may get stuck ») mais est un **puits légitime** : le run termine sur sa réponse. Le warning se lit « ce agent ne peut pas re-transférer », pas « erreur ». |
+| Comptage de versions | `agent_framework.__version__` (metapaquet) et `agent-framework-core` divergent — leçon déjà inscrite en T5, toujours vraie en 1.21. |
+
+### 2.9 À venir
+
+Reste de #14499 : `GroupChatBuilder` (sélection d'orateur) et `MagenticBuilder` exécutés côté MAF, le pilote identique dans les trois moteurs sur une **vraie charge de distillation** (point 3), et le coût pour le dépôt (point 5). L'emplacement `eval-pilots/` accueille les pilotes Python et la sonde C# ; l'idiome de référence du graphe MAF est l'organe du dépôt (`SymbolicAI/Lean/agent_tests/prover/workflow.py`).

@@ -76,6 +76,42 @@ Le saut **SAT → SMT** : plutôt que d'encoder un problème en variables boolé
 - [Z3 Prover (upstream)](https://github.com/Z3Prover/z3) — le solveur SMT lui-même
 - [Z3.Linq (endjin)](https://github.com/endjin/Z3.Linq) — le binding C# déclaratif
 
+## Fondements bibliographiques
+
+Cette série ne se réduit pas à Z3 : elle s'appuie sur un **arc de recherche autour des automates symboliques** (SFA) et de la résolution de contraintes regex étendues, dont Z3 (via la théorie des chaînes et le SMT-LIB regex) est un point d'application. L'arc est constitué en grande partie par Margus Veanes et collaborateurs (Microsoft Research) entre 2010 et 2025, et alimente deux sous-séries de ce répertoire : [`Automata/`](Automata/) (la **lib vendored en source** par Microsoft Research, point d'arrivée opérationnel de l'arc sur le binding .NET) et [`Resharp/`](Resharp/) (l'arrivée 2025 RE-sharp, en cours d'intégration ; coquille de dépôt en attendant la décision d'accueil — voir ci-dessous).
+
+### Arc de recherche (chemins GDrive, jamais copiés dans le dépôt)
+
+| Année | Papier | Statut lecture worker | Ancre typique dans le dépôt |
+|-------|--------|----------------------|-----------------------------|
+| 2010 | Veanes, Bjørner, de Moura, *Symbolic Automata Constraint Solving* (CAV) | lisible PyMuPDF 2026-10-05, 15 pages | fondement théorique de `Automata/` ; `Search-10` |
+| 2010 | Veanes, de Halleux, Tillmann, *Rex — Symbolic Regular Expression Explorer* (ICST) | **présent en deux versions** : ICST (non extractible localement au 2026-10-09) et *Technical Report* MSR-TR-2009-137, **11 pages, lu le 2026-10-09** | `Search-10` (exploration interactive) |
+| 2013 | Veanes, *Applications of Symbolic Finite Automata* (CIAA) | lisible 2026-10-05, 8 pages | panorama applications, `Sudoku-13` |
+| 2020 | Turonova, Holik, Lengal, Saarikivi, Veanes, Vojnar, *Regex Matching with Counting-Set Automata* (OOPSLA) | non extractible localement au 2026-10-09 (cf. note de lecture) | `Automata/` (Counting-Set automata) |
+| 2021 | D'Antoni, Veanes, *Automata Modulo Theories* (CACM) | non extractible localement au 2026-10-09 (cf. note de lecture) | théorie générale, `Automata/` |
+| 2021 | Stanford, Veanes, Bjørner, *Symbolic Boolean Derivatives for Extended Regex Constraints* (PLDI) | 16 pages au 2026-10-05 ; **non extractible localement au 2026-10-09** (cf. note de lecture) | `Lean-14`, `Lean-14b` (dérivées booléennes) |
+| 2024 | Zhuchko, Veanes, Ebner, *Lean Formalization of Extended Regex Matching with Lookarounds* (CPP) | **lisible 2026-10-09, 14 pages** | pont direct `Lean-14b` / `Automata/` (formalisation Lean) |
+| 2025 | Veanes et al, *RE-sharp — High-Performance Derivative-Based Regex Matching* (POPL) | non extractible localement au 2026-10-09 (cf. note de lecture) | `Resharp/` (point d'arrivée 2025) |
+| 2025 | Veanes, Ball, Ebner, Zhuchko, *Symbolic Automata: ω-Regularity Modulo Theories* (POPL) | lisible 2026-10-05, 32 pages | `Automata/`, perspective ω-régularité |
+
+Socle théorique en amont : Mohri 1997 (*Finite-State Transducers in Language and Speech Processing*) et le collectif Tree Automata 2008 (*TATA*, théorie générale) — non extractibles localement au 2026-10-09 (cf. note de lecture).
+
+**Note de lecture (mesure 2026-10-09)** — la colonne « Statut lecture worker » dit ce que la machine worker po-2026 parvient à **extraire à l'instant de la mesure**, pas une propriété du document. Les fichiers de cet arc **existent tous** sur le disque GDrive : la version du 2026-10-05 annonçait « fichier absent de la biblio » pour Rex 2010, or le rayon `Automata/` porte **deux** fichiers Rex (ICST et *Technical Report* MSR-TR-2009-137). Les mentions « PDF corrompu » de cette même version mesuraient un **cache Drive local non hydraté** : une copie locale d'un fichier non hydraté fait bien la taille annoncée, mais sa queue est **remplie de zéros** (ni `startxref`, ni `%%EOF`), et une lecture directe du disque rend un **préfixe d'environ 256 Ko** quelle que soit la taille du fichier. La preuve que ce statut n'est pas une propriété du document : entre le 2026-10-05 et le 2026-10-09, **sans qu'aucun octet ne change** (mtimes constants), Zhuchko 2024 est passé de « corrompu » à **lisible (14 pages)** et Stanford 2021 de « lisible 16 pages » à **non extractible**. Les deux verdicts sont inversés sur les mêmes fichiers. Les ancres dépendant d'un papier non extractible sont marquées comme telles dans les cellules `## References`, sans que cela remette en cause l'existence du document.
+
+### Cross-références curriculaires
+
+L'arc SFA est mis en œuvre dans le dépôt sous **trois angles complémentaires**, qui se répondent :
+
+- **Exploration** — `Search/Part1-Foundations/Search-10-SymbolicAutomata{-CSharp}.ipynb` : exploration interactive d'un automate symbolique (papier Rex 2010 : *Technical Report* MSR-TR-2009-137, 11 pages, lu le 2026-10-09).
+- **Solve** — `Sudoku/Sudoku-13-SymbolicAutomata-{CSharp,Python}.ipynb` : utilisation d'un SFA pour résoudre un cas pédagogique (Veanes 2013 *Applications*, vérifié).
+- **Witness generation** — `SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb` : génération de témoins à partir d'un automate (lien avec `Automata/`).
+
+Le pont **théorie ↔ exécution certifiée** passe par `SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb` et `Lean-14b-Finiteness-Lean-Companion.ipynb`, qui rejouent les dérivées booléennes de Stanford/Veanes/Bjørner 2021 (PLDI, vérifié) et le pont vers la formalisation Lean 4 de Zhuchko/Veanes/Ebner 2024 (CPP, lu le 2026-10-09).
+
+### Décision sur `Resharp/`
+
+Le dossier `Resharp/` porte un **package compilé** RE-sharp (3 DLLs : `Resharp.dll`, `Resharp.Runtime.dll`, `FSharp.Core.dll`) référencé **hors les DLLs elles-mêmes** par plusieurs fichiers et configurations du dépôt — `git grep -ilE "Resharp"` au 2026-10-05 : `.gitignore`, `Config/{Settings,SkiaUtils,Utils}.cs`, `Sudoku/Sudoku-13-SymbolicAutomata-{CSharp,Python}.ipynb`, `Resharp/README.md`, le présent README, `README.md` racine, `translations/smt/README.md`, `translations/sudoku/sudoku.csv`. RE-sharp (POPL 2025, Veanes et al) est le point d'arrivée opérationnel de l'arc SFA et mérite un notebook d'accueil dédié ; le PDF n'étant pas extractible localement au moment de la rédaction de cette PR (cache Drive non hydraté, cf. note de lecture), la **décision** consignée dans cette PR est : **garder `Resharp/` en place, ajouter un README narratif** (voir [`Resharp/README.md`](Resharp/README.md)) qui documente l'état en attente, l'action à ouvrir par le mainteneur (écriture du notebook d'accueil depuis une copie lisible), et la raison pour laquelle un retrait brutal est impossible (anti-régression §D : les DLLs sont consommées par plusieurs fichiers et configurations du dépôt).
+
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
