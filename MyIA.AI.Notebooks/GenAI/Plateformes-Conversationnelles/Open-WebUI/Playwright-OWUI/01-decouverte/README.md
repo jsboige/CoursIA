@@ -1,6 +1,6 @@
 # Module 01 - Découverte de Playwright & Open WebUI
 
-> **Format** : Ce module utilise des fichiers TypeScript `.spec.ts` (pas des Jupyter Notebooks). Le fichier `01-decouverte.spec.ts` contient les tests commentés qui servent d'exercices pratiques. Ouvrez-le dans VS Code, lisez les commentaires, puis lancez les tests pour les voir s'exécuter.
+> **Format** : Ce module combine deux artefacts. Le fichier `01-decouverte.spec.ts` est le **moteur de test** (TypeScript, exécuté par Playwright) : il contient les tests commentés qui servent d'exercices pratiques. Le notebook `01-Decouverte-QA-OWUI.ipynb` en est la **couche pédagogique** (voir la section ci-dessous). Ouvrez le `.spec.ts` dans VS Code, lisez les commentaires, puis lancez les tests pour les voir s'exécuter.
 
 ## Objectifs pédagogiques
 
@@ -65,6 +65,10 @@ Le fichier `01-decouverte.spec.ts` contient 4 exercices progressifs :
 1. **Modifier un sélecteur** : Remplacez un sélecteur CSS par un `getByRole()` équivalent
 2. **Ajouter un test** : Vérifiez que le bouton "Nouveau Chat" est visible
 3. **Mode debug** : Lancez `npm run test:debug` et utilisez le Playwright Inspector
+
+## Couche pédagogique (notebook)
+
+Le notebook [`01-Decouverte-QA-OWUI.ipynb`](01-Decouverte-QA-OWUI.ipynb) est la première étape de la mission « QA Engineer d'une flotte GenAI multi-tenant ». Le notebook chapeau [`00-Parcours-QA-OWUI.ipynb`](../00-Parcours-QA-OWUI.ipynb) en donne le fil rouge. Il présente l'architecture d'un projet Playwright, explique comment Playwright observe la page (auto-wait, sélecteurs), lit le fichier `01-decouverte.spec.ts` et en dresse l'inventaire. Il appelle `npx playwright test --list` seulement si les dépendances Node sont installées, et ne lance aucun test. Il propose ensuite des exercices en Python : classer un sélecteur, relier un test à son concept, écrire une assertion de titre. Ses cellules tournent sans navigateur ni instance Open WebUI.
 
 ## Commandes
 
