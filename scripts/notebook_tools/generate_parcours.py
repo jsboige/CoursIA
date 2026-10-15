@@ -27,17 +27,29 @@ Parcours definitions:
 """
 
 import argparse
+import hashlib
 import json
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 from urllib.parse import quote
 
-from generate_catalog import truncate_at_word
+from generate_catalog import (
+    EXCLUDE_ALWAYS,
+    EXCLUDE_PEDAGOGICAL,
+    code_source_sha,
+    extract_title,
+    truncate_at_word,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CATALOG_PATH = REPO_ROOT / "COURSE_CATALOG.generated.json"
 PARCOURS_DIR = REPO_ROOT / "docs" / "curriculum"
+
+# Ancre de code d'un carnet sans aucune cellule de code : deux carnets
+# purement markdown partageraient ce digest, il ne prouve aucune identite.
+_EMPTY_CODE_SHA = hashlib.sha256(b"").hexdigest()
 
 # Fail-closed (#15882): docs/curriculum/ mixes generated pages (ids of the
 # PARCOURS dict, rewritten daily by catalog-cron.yml) with manual pages, and
@@ -134,6 +146,81 @@ def load_catalog() -> list[dict]:
         print(f"Error: {CATALOG_PATH} not found. Run generate_catalog.py first.")
         sys.exit(1)
     return json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+
+
+def _code_anchor(entry: dict) -> str:
+    """Ancre de code portee par l'entree du catalogue ('' si absente)."""
+    return (entry.get("scientific_review_detail") or {}).get("code_sha", "") or ""
+
+
+def _is_indexed_candidate(parts: tuple[str, ...], stem: str) -> bool:
+    """Memes exclusions que generate_catalog.scan_all_notebooks.
+
+    Un carnet d'archive ou de recherche ne peut pas devenir la nouvelle cible
+    d'une entree : le catalogue ne l'indexe pas non plus.
+    """
+    if any(part in EXCLUDE_ALWAYS or part.startswith(".") for part in parts):
+        return False
+    if stem.endswith("_executed"):
+        return False
+    inside_series = "/".join(parts[1:])
+    return not any(exc in inside_series for exc in EXCLUDE_PEDAGOGICAL)
+
+
+def resolve_moved_entries(entries: list[dict], root: Path | None = None) -> list[dict]:
+    """Repointe les entrees dont le carnet a ete deplace sur disque.
+
+    Un renommage pose sur `main` laisse l'entree du catalogue en retard : son
+    chemin n'existe plus, et la page degradait le lien en libelle nu avec le
+    titre perime du catalogue (#14880). Le carnet est retrouve a son emplacement
+    reel par son ancre de CODE (`code_source_sha`, l'ancre que le catalogue
+    utilise pour suivre un carnet a travers ses modifications markdown) : un
+    carnet que le catalogue n'indexe pas encore, au code identique, et unique,
+    en est le nouvel emplacement. Le titre est alors celui du carnet lui-meme,
+    comme la regeneration du catalogue l'aurait calcule.
+
+    Pas d'historique git ni de registre : la sortie ne depend ni de la
+    profondeur du clone ni d'un fichier de renommage incomplet. Sans
+    correspondance unique, l'entree reste telle quelle (libelle nu).
+    """
+    root = root if root is not None else REPO_ROOT / "MyIA.AI.Notebooks"
+    moved = [e for e in entries if not (root / e["path"]).exists()]
+    if not moved:
+        return entries
+
+    indexed = {e["path"] for e in entries}
+    by_code: dict[str, list[tuple[str, str]]] = {}
+    for nb_path in sorted(root.rglob("*.ipynb")):
+        rel_parts = nb_path.relative_to(root).parts
+        rel = "/".join(rel_parts)
+        if rel in indexed or not _is_indexed_candidate(rel_parts, nb_path.stem):
+            continue
+        try:
+            notebook = json.loads(nb_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        sha = code_source_sha(notebook)
+        if sha != _EMPTY_CODE_SHA:
+            by_code.setdefault(sha, []).append(
+                (rel, extract_title(notebook) or nb_path.stem)
+            )
+
+    # Deux entrees manquantes au meme code = pas d'attribution fiable : aucune.
+    moved_counts = Counter(_code_anchor(e) for e in moved)
+
+    resolved = []
+    for e in entries:
+        if (root / e["path"]).exists():
+            resolved.append(e)
+            continue
+        anchor = _code_anchor(e)
+        hits = by_code.get(anchor, []) if anchor else []
+        if len(hits) != 1 or moved_counts[anchor] != 1:
+            resolved.append(e)
+            continue
+        new_path, new_title = hits[0]
+        resolved.append({**e, "path": new_path, "title": new_title})
+    return resolved
 
 
 def filter_for_parcours(entries: list[dict], parcours_id: str) -> list[dict]:
@@ -450,8 +537,9 @@ def main():
 
     refused: list[Path] = []
     unresolved: list[str] = []
+    located = resolve_moved_entries(entries)
     for pid in targets:
-        filtered = filter_for_parcours(entries, pid)
+        filtered = filter_for_parcours(located, pid)
         page = generate_parcours_page(pid, filtered, unresolved)
 
         if args.dry_run:
