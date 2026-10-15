@@ -652,27 +652,117 @@ def canonical_env_hint(nb_path, root="."):
     documente (cf `IIT/ICT-Series/pyproject.toml`) ; ce qui manquait est le
     POINTEUR vers lui au moment ou la lane lit le verdict.
 
-    Rend un dict ``{artifact, requires_python?, numpy_pin?}``, ou None quand
-    aucun artefact n'est trouve : l'absence est une information, pas un silence
-    a combler par un chemin suppose.
+    Rend un dict ``{artifact, requires_python?, numpy_pin?}`` (memes champs
+    qu'avant), ``None`` quand aucun artefact n'est trouve dans la remontee,
+    ou un dict ``{"status": "unknown", "artifact": "..."}`` quand
+    l'artefact EXISTE dans l'object store git (tete) et a ete lu, mais les
+    regex de pin (requires-python, numpy_pin) ne trouvent rien -- un
+    edge case qui merite d'etre dit plutot que couvert par un silence
+    (#20868, troisieme mode de #20200).
+
+    Le fallback git couvre les arbres partiels (sparse-checkout, blob:none,
+    worktree d'un autre shard) ou le fichier est bien committe sur la
+    branche parente mais absent du checkout local : sans ce fallback, le
+    verdict pretend que la serie n'epingle rien, fait qui est faux sur le
+    depot et rien ne l'en avertit.
     """
     parents = [p for p in Path(nb_path).parents if p.as_posix() != "."]
     for parent in parents[:_ENV_WALK_LEVELS]:
         for name in _ENV_ARTIFACT_NAMES:
             rel = parent / name
+            disk_path = Path(root) / rel
+            text = None
+            read_from_git = False
             try:
-                text = (Path(root) / rel).read_text(encoding="utf-8",
-                                                    errors="replace")
+                text = disk_path.read_text(encoding="utf-8", errors="replace")
             except OSError:
+                # Pas sur le disque : tenter l'object store git.
+                git_text = _read_env_artifact_from_git(disk_path, rel)
+                if git_text is not None:
+                    text = git_text
+                    read_from_git = True
+                # Si git ne repond pas non plus, on continue la remontee.
+            if text is None:
                 continue
-            hint = {"artifact": rel.as_posix()}
-            requires_python = _REQUIRES_PYTHON_RE.search(text)
-            if requires_python:
-                hint["requires_python"] = requires_python.group(1)
-            numpy_pin = _NUMPY_PIN_RE.search(text)
-            if numpy_pin:
-                hint["numpy_pin"] = f"numpy{numpy_pin.group(1)}"
+            hint = _parse_env_artifact_text(text, rel)
+            if hint is None:
+                # Texte lu mais parsers muets : si l'artefact vient de git
+                # (preuve qu'il EXISTE sur la branche parente), on rend
+                # 'unknown' -- l'absence de pin est une information a
+                # porter ; sur disque, un pin muet est un edge case
+                # inoffensif (le caller en fera un message neutre).
+                if read_from_git:
+                    return {"status": "unknown",
+                            "artifact": rel.as_posix()}
+                hint = {"artifact": rel.as_posix()}
             return hint
+    return None
+
+
+def _read_env_artifact_from_git(disk_path, rel):
+    """Lit l'artefact env depuis l'object store git si absent du disque.
+
+    Retourne le texte (str) ou None si l'artefact n'est ni sur disque ni
+    dans HEAD. Le chemin `disk_path` est l'absolu attendu ; on en extrait
+    la composante relative au worktree git courant pour interroger HEAD.
+    #20868 -- la cle de la remontee est de ne PAS se taire quand l'arbre
+    est partiel : un fichier present sur la branche parente est une
+    information, pas un trou.
+    """
+    try:
+        # git rev-parse --show-toplevel : racine du worktree courant.
+        toplevel_proc = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=str(disk_path.parent),
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=5,
+        )
+        if toplevel_proc.returncode != 0:
+            return None
+        toplevel = Path(toplevel_proc.stdout.strip())
+        try:
+            rel_to_toplevel = disk_path.resolve().relative_to(toplevel)
+        except ValueError:
+            # disk_path n'est pas sous le toplevel declare : on n'invente
+            # rien, on laisse la remontee continuer.
+            return None
+        # git cat-file -e : le blob est-il joignable dans HEAD ?
+        cat_file_e = subprocess.run(
+            ["git", "cat-file", "-e", f"HEAD:{rel_to_toplevel.as_posix()}"],
+            cwd=str(toplevel),
+            capture_output=True, timeout=5,
+        )
+        if cat_file_e.returncode != 0:
+            return None
+        # git show : on lit le contenu via l'object store.
+        show = subprocess.run(
+            ["git", "show", f"HEAD:{rel_to_toplevel.as_posix()}"],
+            cwd=str(toplevel),
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=5,
+        )
+        if show.returncode != 0 or not show.stdout:
+            return None
+        return show.stdout
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+
+
+def _parse_env_artifact_text(text, rel):
+    """Parse le texte d'un artefact env. Rend un dict ou None si parsers muets.
+
+    Separe du I/O pour rester testable et pour distinguer le cas
+    'artefact vide' du cas 'parsers muets sur un artefact present'.
+    """
+    hint = {"artifact": rel.as_posix()}
+    requires_python = _REQUIRES_PYTHON_RE.search(text)
+    if requires_python:
+        hint["requires_python"] = requires_python.group(1)
+    numpy_pin = _NUMPY_PIN_RE.search(text)
+    if numpy_pin:
+        hint["numpy_pin"] = f"numpy{numpy_pin.group(1)}"
+    if "requires_python" in hint or "numpy_pin" in hint:
+        return hint
     return None
 
 
@@ -771,8 +861,21 @@ def _measure(base, args_obj):
                 # serie qui epingle le sien obtient ici le pointeur vers son
                 # artefact, pour que « aligner l'env » ne se lise pas comme une
                 # introspection a faire soi-meme.
+                # #20868 : quand l'arbre est partiel (sparse-checkout /
+                # blob:none / worktree d'un autre shard), le hint peut etre
+                # {"status": "unknown", "artifact": "..."} -- l'env EXISTE sur
+                # la branche parente mais n'est pas materialisable localement.
+                # Le verdict le dit plutot que de se taire.
                 env_hint = canonical_env_hint(nb_path)
-                if env_hint:
+                if env_hint and env_hint.get("status") == "unknown":
+                    causes.append(
+                        f"a canonical environment exists at "
+                        f"`{env_hint['artifact']}` (per the git object store) "
+                        f"but its pins are not parseable; the verdict cannot "
+                        f"name the requires-python or numpy_pin without a full "
+                        f"`git checkout` of the artifact's path"
+                    )
+                elif env_hint:
                     detail = [f"the series pins a canonical environment at "
                               f"`{env_hint['artifact']}`"]
                     if env_hint.get("requires_python"):
