@@ -2865,7 +2865,7 @@ KL(direct ‖ recherchée) par budget, 6 donnes : B=4 → 1,22 nat moyen (renver
 
 ### Témoin négatif (Prong B — honnêteté mesurée)
 
-La divergence n'est **pas monotone en budget** (pic à B=16, chute à B=64 ; une donne sur six anti-converge, la donne 2 : 1,348 → 1,502 nat de B=4 a B=16) : à croyance sous-entraînée (2 iter vs 40 000 papier), chaque rollout hérite du bruit d'amont — le budget de recherche ne compense pas l'entraînement manquant. Le carnet enseigne cette lecture au lieu du récit « plus de budget = mieux ».
+La divergence n'est **pas monotone en budget** (pic à B=16, chute à B=64 ; une donne sur six anti-converge, la donne 2 : 1,348 → 1,502 nat de B=4 a B=64) : à croyance sous-entraînée (2 iter vs 40 000 papier), chaque rollout hérite du bruit d'amont — le budget de recherche ne compense pas l'entraînement manquant. Le carnet enseigne cette lecture au lieu du récit « plus de budget = mieux ».
 
 ### Limite mesurée, non contournée
 
