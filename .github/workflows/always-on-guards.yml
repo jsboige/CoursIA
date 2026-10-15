@@ -89,8 +89,8 @@ concurrency:
 
 jobs:
   always-on-guards:
-    name: "Always-on guards -- 16 organes, 1 checkout"
-    # Q35 etape 4 (#17397, ai-01 2026-10-15) : 16 organes metadata portes
+    name: "Always-on guards -- 17 organes, 1 checkout"
+    # Q35 etape 4 (#17397, ai-01 2026-10-15) : 17 organes metadata portes
     # en un seul job, tout en pur-Python sur PR metadata (body, labels,
     # tags Grain:). Aucun kernel n'est execute (.NET, Lean, Python sont
     # des MOTS dans le diff analyse, pas des runtimes invoques) ; aucun
@@ -1422,6 +1422,22 @@ jobs:
         if: github.event_name == 'pull_request'
         continue-on-error: true
         run: python scripts/ci/check_secret_paths_ignored.py --repo .
+
+      # #20919 -- garde des valeurs reelles dans les fichiers *.env.example /
+      # *.env.sample / *.env.template. gitleaks reconnait les formats de cles
+      # connus (sk-..., ghp_..., AIza...), il ne voit pas une phrase secrete
+      # faite d'un mot ordinaire (cas fondateur 'Propaganda' sur
+      # TEXT_CONFIG_PASSPHRASE dans SymbolicAI/Argument_Analysis/.env.example).
+      # L'organe verifie 32 fichiers traces git : pour chaque cle dont le nom
+      # matche (?i)(PASS|SECRET|TOKEN|KEY|PWD), la valeur doit etre un marqueur
+      # (vide, your_..._here, <...>, hf_..., sk-..., 0x<...>, URL, chemin,
+      # numerique, modele) ou porter une exemption inline. Sortie : 0 OK,
+      # 1 DEFECT, 2 UNREACHABLE. Substitue aux 32 grep manuels par les reviewers.
+      - name: "Valeurs reelles dans les .env.example (gitleaks ne voit pas les mots ordinaires) (#20919)"
+        id: env_example_secrets
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: python scripts/ci/check_env_example_secrets.py --root .
 
       # #18835 -- detecteur OSS signature (Aliyun presigned URL fragments
       # dans JSON / notebook outputs / prose py-cs-md en mode --strict).
