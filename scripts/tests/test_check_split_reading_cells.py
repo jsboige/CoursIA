@@ -1368,6 +1368,49 @@ def test_carveout_enonce_isole_devant_son_stub():
     assert detect_added_readings(head, base) == []
 
 
+def test_carveout_enonce_en_anglais_jumeau_derive_20777():
+    """Jumeau derive `_en` (#20777) : l'enonce traduit « ### Exercise N »
+    adjacent a son stub est la MEME forme canonique du depot que
+    « ### Exercice N » -- le carve-out #17777 doit le voir.
+
+    Mesure fondatrice : re-rendu EN de 01-2-GPT-5-Image-Generation (PR
+    #20777), enonces 2 et 3 rouges EXERCISE_READING (cellules 31/33) alors
+    que le FR source porte la structure identique sur main, couverte par le
+    carve-out (grandfathered pour lui). Le carnet `_en` etant derive, la
+    seule voie honnete est l'organe, pas une retouche du jumeau.
+    """
+    def enonce_en(n):
+        return md(
+            f"### Exercise {n} : contextual alt text\n\n"
+            f"Write one prompt per publication context and check each "
+            f"text stays within the character limit."
+        )
+    base = nb(code("print(1)"))
+    head = nb(
+        code("print(1)"),
+        enonce_en(1), _stub_exercise(),
+        enonce_en(2), _stub_exercise(),
+        enonce_en(3), _stub_exercise(),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_carveout_anglais_interpretation_deguisee_reste_signalee():
+    """Contrepartie du miroir anglais (#20777) : une interpretation deguisee
+    sous un titre « ### Exercise » qui CITE une sortie reste signalee --
+    les garde-fous du carve-out suivent l'ouverture du titre (decision
+    #17777 : le controle negatif est partie du contrat)."""
+    base = nb(_stub_exercise())
+    head = nb(
+        _stub_exercise(),
+        md("### Exercise 2 : reading the result\n\nThe output above shows "
+           "that the value reaches 0.94, confirming the expected trend."),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "EXERCISE_READING"
+
+
 def test_carveout_ne_couvre_pas_un_titre_de_section():
     """Le carve-out ne vise QUE les titres d'exercice : un titre d'organisation
     (`## Conclusion`) ajoute devant un stub reste signale. Sans ce garde-fou,
