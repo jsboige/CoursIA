@@ -178,6 +178,13 @@ GATE_PATH = SCRIPTS_DIR / "check_adjoint_prevalidation.py"
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
 TWIN_REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
+# Issue #20774 : au merge, le slot-reservation-guard doit lire la source
+# `open_prs` (mode en ligne) pour qu'une collision cross-PR rougisse avant
+# le merge. La voie rapide continue de l'appeler en `--offline` (pas de
+# `gh` reseau) -- ici on dispose de `gh`, on en sert.
+SLOT_PATH = SCRIPTS_DIR / "notebook_tools" / "check_slot_reservation.py"
+SLOT_NOTEBOOK_PREFIX = "MyIA.AI.Notebooks/"
+SLOT_RESERVATIONS_PATH = SCRIPTS_DIR / "notebook_tools" / "slot_reservations.json"
 REPO_ROOT = SCRIPTS_DIR.parent
 
 # Parapluies et branches de campagne GELES par un veto user, exemption des
@@ -190,6 +197,9 @@ REPO_ROOT = SCRIPTS_DIR.parent
 GATE_DOCUMENTED_RC = frozenset({0, 1, 2, 3})  # ready / no-dossier / unknown / blocked
 GATE_RC_REASONS = {1: "gate:no-dossier", 2: "gate:unknown", 3: "gate:blocked"}
 NITS_DOCUMENTED_RC = frozenset({0, 1})  # clear / blocked
+# Issue #20774 : 0 = tous les slots libres, 1 = collision, 2 = lecture impossible.
+# Tout autre rc est inattendu -> arret du run, comme les autres organes.
+SLOT_DOCUMENTED_RC = frozenset({0, 1, 2})  # clear / collision / unreadable
 
 # --- disposition de review classsee a la tete evaluee (point 1 de #17672) ------
 # Le dossier HACHE l'oid de chaque review dans son empreinte
@@ -887,6 +897,92 @@ def twin_collision_reason(
     return f"twin-collision-unreadable:rc={res.returncode}"
 
 
+def slot_reservation_reason(
+    runner: Runner, pr: int, head: str, files: list[dict]
+) -> str | None:
+    """Etape 5bis.bis (#20774) : collision de slot contre les PRs ouvertes.
+
+    Le `slot-reservation-guard` (scripts/notebook_tools/check_slot_reservation.py)
+    est appele en voie rapide en `--offline` (pas de `gh` reseau). Au merge on
+    dispose de `gh` : on appelle ici le MEME organe en mode en ligne, et la
+    source `open_prs` devient lisible. Une collision entre la PR courante et
+    une autre PR ouverte sur le meme slot est un skip dur -- sans cette
+    garde, deux PRs distinctes visent le meme slot ICT-48 sous des noms
+    differents et mergent l'une apres l'autre sans que rien ne rouspette
+    (cf. ICT-48 et SL-12b mesures le 14/10 dans #20774).
+
+    Cout nul pour les PRs qui ne touchent pas de carnet (filtre prefixe).
+    Pour les autres, un fetch puis l'organe partage. Sortie : ``None`` si
+    l'organe rend 0 (clear), un motif de skip sinon.
+
+    Filiation avec `twin_collision_reason` (5bis) :
+      - 5bis porte les collisions de twin-pair (registre `twin_pairs.d/`) ;
+      - 5bis.bis porte les collisions de slot de carnet contre la base et
+        les PRs ouvertes. Les deux sont independants et complementaires :
+        un meme slot vise par deux PRs n'est PAS une collision de
+        twin-pair (les chemins different) -- c'est precisement le trou
+        que cette garde bouche, et que `check_pr_path_collisions.py` ne
+        couvre pas par construction (collision de chemins != collision
+        de slot).
+    """
+    touched = any(
+        str((row or {}).get("path") or "").startswith(SLOT_NOTEBOOK_PREFIX)
+        and str((row or {}).get("path") or "").endswith(".ipynb")
+        and not str((row or {}).get("path") or "").endswith("_output.ipynb")
+        for row in files
+    )
+    if not touched:
+        return None
+    # Mode en ligne : sans `--offline`, l'organe lit `gh pr list --json files`
+    # pour la source `open_prs`. La voie rapide ne dispose pas de `gh`, ce
+    # qui l'a forcee a `--offline` ; ici on en sert.
+    res = runner.run(
+        [sys.executable, str(SLOT_PATH),
+         "--base", "origin/main", "--head", head,
+         "--exclude-pr", str(pr),
+         "--json"],
+        env={**os.environ, "GH_TOKEN": _runner_token(runner)},
+    )
+    if res.returncode == 0:
+        return None
+    if res.returncode == 1:
+        # L'organe a detecte une collision : on tente de nommer la premiere
+        # pour le diagnostic. Lecture JSON tolerante (cf. pattern 5bis).
+        try:
+            data = json.loads(res.stdout)
+        except (json.JSONDecodeError, ValueError):
+            return "slot-collision"
+        if not isinstance(data, dict):
+            return "slot-collision"
+        # L'organe rend une liste de `verdict_for(target)` ; la collision est
+        # un etat `conflict` avec un `conflicts[0]["state"]`. On prend la
+        # premiere pour la nommer.
+        conflicts: list[tuple[str, str]] = []
+        for row in (data.get("targets") or []):
+            if isinstance(row, dict) and row.get("verdict") == "conflict":
+                state = str((row.get("conflicts") or [{}])[0].get("state") or "?")
+                target = str(row.get("target") or "?")
+                conflicts.append((target, state))
+        if not conflicts:
+            return "slot-collision"
+        first_target, first_state = conflicts[0]
+        # Motif : on cite la cible et la cause (taken_on_base / reserved_by_open_pr /
+        # declared_reserved / duplicate_within_revision). Le geste est explicite
+        # par la cause : voir la docstring de l'organe.
+        return (
+            f"slot-collision-on-merge:{first_state}:{first_target} -- "
+            f"renumeroter ou retirer la PR concurrente (voir {SLOT_PATH.name})"
+        )
+    if res.returncode == 2:
+        return "slot-collision-unreadable"
+    return f"slot-collision-unreadable:rc={res.returncode}"
+
+
+def _runner_token(runner: Runner) -> str:
+    """Renvoie le token gh resolu par le runner (helpers, ne double pas l'appel)."""
+    return resolve_token(runner)
+
+
 # Conventions retenues pour detecter une PR empilee sur une parente non-encore
 # mergee, dans le body de la PR courante. Le format le plus frequent dans
 # CoursIA est "Depends on #N" (po-2024 Origami pli 2-9 sur pli 1), suivi de
@@ -1110,6 +1206,11 @@ def evaluate_pr(
         return skip("b0-organ-blocked")
     # 5bis. collision d'index twin contre le main du moment.
     reason = twin_collision_reason(runner, pr, gate_head, view.get("files") or [])
+    if reason is not None:
+        return skip(reason)
+    # 5bis.bis. collision de slot contre la base ET les PRs ouvertes (#20774).
+    # Independant de 5bis : 5bis = twin-pair registry, 5bis.bis = slot de carnet.
+    reason = slot_reservation_reason(runner, pr, gate_head, view.get("files") or [])
     if reason is not None:
         return skip(reason)
     # 5ter. defense en profondeur : la base de la PR doit etre `main` (#19002,
