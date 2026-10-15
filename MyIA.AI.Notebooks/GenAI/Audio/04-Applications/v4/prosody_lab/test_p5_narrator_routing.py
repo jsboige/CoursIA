@@ -232,27 +232,29 @@ def test_engine_reference_ids_keys() -> None:
 
 
 def test_default_speaker_is_supported() -> None:
-    """Le speaker par defaut 'aiden' est dans la liste supportee (snake_case)."""
+    """Le speaker par defaut 'aiden' est dans la liste supportee (snake_case).
+
+    Source of truth: ``bakeoff_large/clients/qwen3_tts_customvoice.py:50-62``
+    (verified first-hand c.818 16:42Z). Hermes Finding 2 (review sur
+    69de2cdf) : importer ce client declenche `import torch` au top du
+    module, ce qui fait rougir ce test sur un runner CPU sans torch
+    (cf. test_p5_narrator_routing.py etait non-cable en CI a la livraison,
+    d'ou la decouverte tardive). On duplique la liste de 9 chaines en
+    snake_case/lowercase ici -- si la liste source evolue, ce test sert
+    de signal d'alerte (constant mismatch).
+    """
     p5 = _load_p5_tts()
-    # Imported from the bakeoff client, NOT from qwen_tts_client (different
-    # client, same model family). We load it via the same direct path the
-    # pipeline uses elsewhere: importlib.util under the bakeoff_large path.
-    import importlib.util
-    cv_path = (
-        Path(p5.__file__).parent
-        / "prosody_lab"
-        / "bakeoff_large"
-        / "clients"
-        / "qwen3_tts_customvoice.py"
+    # DOIT miroiter bakeoff_large/clients/qwen3_tts_customvoice.py:50-62
+    # (get_supported_speakers). Liste verify first-hand c.818, snake_case.
+    _SOURCE_OF_TRUTH = (
+        "aiden", "dylan", "eric", "ono_anna",
+        "ryan", "serena", "sohee", "uncle_fu", "vivian",
     )
-    spec = importlib.util.spec_from_file_location("cv_client", cv_path)
-    cv = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(cv)
-    supported = cv.get_supported_speakers()
-    if p5._QWEN_CUSTOMVOICE_SPEAKER not in supported:
+    if p5._QWEN_CUSTOMVOICE_SPEAKER not in _SOURCE_OF_TRUTH:
         fail(
             f"default speaker {p5._QWEN_CUSTOMVOICE_SPEAKER!r} not in supported "
-            f"list: {supported}"
+            f"list (mirror of bakeoff_large/clients/qwen3_tts_customvoice.py:"
+            f"50-62): {_SOURCE_OF_TRUTH}"
         )
 
 
