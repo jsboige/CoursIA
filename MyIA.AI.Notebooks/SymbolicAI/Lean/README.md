@@ -137,6 +137,15 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 17b | [Lean-17b-Knots-Invariants-Companion](KNOTS/KNOTS-02-Invariants-Python.ipynb) | Invariants de nœuds : PD-codes, mouvements de Reidemeister, tricolorabilité de Fox, diagrammes bien formés - companion `knot_lean` (Epic #2874, transfer forward #3000 sorry-free + backward #3124 partiel) | 60 min |
 | 17c | [Lean-17c-Knots-Companion-Formel](KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb) | Companion formel du lake `knot_lean` en kernel python3 (kernel lean4-wsl gelé #11874) : les modules que Lean-17 ne cite pas (Basic, Invariant, Reidemeister) interrogés par leurs déclarations réelles, murs nommés R2/R3, sorries réels (14) vs prose, miroir i18n byte-identique attesté par l'instrument canonique - Epic #2874 / #11703 | 40 min |
 
+### Annexe méthodologique : bornes de concentration et inférence bayésienne (détection MIMO)
+
+| # | Notebook | Contenu | Durée |
+|---|----------|---------|-------|
+| 19 | [Lean-19-Detection-MIMO-Index-Python](Lean-19-Detection-MIMO-Index-Python.ipynb) | Banc d'essai Hoeffding pour la détection MIMO : vérification empirique de la loi de Bernoulli composée (p_hat ≈ p) sur 20 instances BSC, rapport écart/borne Hoeffding 0.016 à 0.698 (5/5 = 100 % des instances sous la borne) — étalon de référence pour la sous-série MIMO (PR #20371) qui consumera Lean-19 comme baseline — kernel `python3`, 3 exercices | 20 min |
+| 19b | [Lean-19b-Borne-Chernoff-Python](Lean-19b-Borne-Chernoff-Python.ipynb) | Borne de Chernoff pour le BSC : dérivation depuis la fonction génératrice des moments exacte de la Bernoulli, puis comparaison des trois bornes (Hoeffding / Chernoff / Bernstein) sur les mêmes 20 instances — Chernoff domine Hoeffding sur la totalité des instances, le gain croissant quand `p` s'éloigne de 1/2 — kernel `python3` | 25 min |
+| 19c | [Lean-19c-Borne-Bernstein-Python](Lean-19c-Borne-Bernstein-Python.ipynb) | Borne de Bernstein pour le BSC : borne en `mu`/`sigma^2` sans fonction génératrice, tableau des ratios par instance et lecture par régime de `p` — les trois bornes y sont calculées et confrontées à la fréquence observée — kernel `python3` | 25 min |
+| 19d | [Lean-19d-Inference-Bayesian-Beta-Binomial-Python](Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb) | Inférence bayésienne Beta-Binomial : posterior conjugué, intervalle de crédibilité HDI, confrontation aux bornes fréquentistes sur les mêmes 20 instances — le HDI reste plus étroit que Hoeffding à tout `N`, l'écart ne se refermant pas avec la taille d'échantillon — kernel `python3` | 25 min |
+
 ### Partie 6 : Recherche pondérée et optimalité (A*)
 
 | # | Notebook | Contenu | Durée |
