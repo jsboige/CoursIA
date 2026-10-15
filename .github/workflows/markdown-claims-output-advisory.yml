@@ -61,13 +61,13 @@ concurrency:
 jobs:
   claims-output-advisory:
     name: "Markdown claims anchored to previous output (#11435 advisory)"
-    # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
-    # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
-    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
-    # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
-    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 4 (#17397, ai-01 2026-10-15) : garde Python pur (checkout,
+    # setup-python, pip ; aucun secret, aucun GPU/CUDA/Lean/.NET, aucun volume
+    # ni service local). Routage #13378/#14283 inverse : la file self-hosted
+    # portait ~3 000 runs pendant que le pool heberge restait inactif. La garde
+    # same-repo est conservee telle quelle -- seul le runner change. Sortie de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v4
