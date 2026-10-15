@@ -45,9 +45,13 @@ concurrency:
 jobs:
   kernel-drift:
     name: Kernel drift guard (base vs PR)
-    # Same routing as notebook-papermill-ratchet.yml (#13378 tranche 1):
-    # Linux auto-hosted runner, no GITHUB_TOKEN, fork PRs skipped.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 4 (#17397, ai-01 2026-10-15) : garde Python pur (checkout,
+    # setup-python, pip ; aucun secret, aucun GPU/CUDA/Lean/.NET, aucun volume
+    # ni service local). Routage #13378/#14283 inverse : la file self-hosted
+    # portait ~3 000 runs pendant que le pool heberge restait inactif. La garde
+    # same-repo est conservee telle quelle -- seul le runner change. Sortie de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 5
     steps:
