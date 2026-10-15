@@ -94,11 +94,15 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "solution-leak-guard.yml",
     "prose-counts-guard.yml",
     "notebook-interp-positioning.yml",
-    "notebook-cell-source-parses.yml",
+    # notebook-cell-source-parses.yml : migre ubuntu-latest par Q35 etape 4 (#17397,
+    # myia-ai-01:CoursIA, 12 gardes Python pures, 2026-10-15). Sorti de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     "cell-order-gate.yml",
     "pip-leak-guard.yml",
     "hooks-parity.yml",
-    "notebook-exec-sequence-ratchet.yml",
+    # notebook-exec-sequence-ratchet.yml : migre ubuntu-latest par Q35 etape 4 (#17397,
+    # myia-ai-01:CoursIA, 12 gardes Python pures, 2026-10-15). Sorti de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     "notebook-navlink-check.yml",
     "notebook-nav-chain-guard.yml",
     "notebook-papermill-ratchet.yml",
@@ -108,7 +112,9 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "markdown-claims-output-advisory.yml",
     "orphaned-delivery-scan.yml",
     "quantconnect-notebook-freshness.yml",
-    "scan-md-hierarchy-drift.yml",
+    # scan-md-hierarchy-drift.yml : migre ubuntu-latest par Q35 etape 4 (#17397,
+    # myia-ai-01:CoursIA, 12 gardes Python pures, 2026-10-15). Sorti de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     "slides-composition-pr-relay.yml",
     "source-output-ratchet.yml",
     "translation-guard.yml",
@@ -121,7 +127,9 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   always-on-guards.yml (trigger pull_request_review = FORK_REACHABLE).
     #   Rollback = revert de la PR de routage.
     "arxiv-attributions-guard.yml",
-    "catalog-drift.yml",
+    # catalog-drift.yml : migre ubuntu-latest par Q35 etape 4 (#17397,
+    # myia-ai-01:CoursIA, 12 gardes Python pures, 2026-10-15). Sorti de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     "consecutive-code-cells-advisory.yml",
     "harness-coauthor-guard.yml",
     "ict-tests.yml",
@@ -144,7 +152,9 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "bios-companion-coverage.yml",
     "lean-social-choice.yml",
-    "notebook-execution-required.yml",
+    # notebook-execution-required.yml : migre ubuntu-latest par Q35 etape 4 (#17397,
+    # myia-ai-01:CoursIA, 12 gardes Python pures, 2026-10-15). Sorti de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     "secret-scan.yml",
     # secret-scan/gitleaks : exclu en 3c pour la socket Docker, LEVE depuis --
     #   le job scanner n'utilise plus `docker run` mais le binaire epingle
@@ -154,7 +164,9 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # always-on-metadata-guards.yml : routable (triggers pull_request +
     #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
-    "always-on-metadata-guards.yml",
+    # always-on-metadata-guards.yml : migre ubuntu-latest par Q35 etape 4 (#17397,
+    # myia-ai-01:CoursIA, 12 gardes Python pures, 2026-10-15). Sorti de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     "twin-parity.yml",
     # tranche 4 (#14283, meme decision, meme owner) : balayages cron pur-Python.
     #   Declencheur `schedule` seul -- pas de contexte pull_request, donc aucune
@@ -206,7 +218,9 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   balayage effectif. Le job est repasse sur `ubuntu-latest`.
     "machine-dep-timing-advisory.yml",
     "machine-dep-timing-inventory.yml",
-    "mermaid-fill-color-advisory.yml",
+    # mermaid-fill-color-advisory.yml : migre ubuntu-latest par Q35 etape 4 (#17397,
+    # myia-ai-01:CoursIA, 12 gardes Python pures, 2026-10-15). Sorti de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     "orphan-branch-scan.yml",
     "outputs-text-fragmentation-advisory.yml",
     "pedagogy-density-advisory.yml",
@@ -296,7 +310,9 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   = revert de la PR (l'entree disparait de l'allowlist).
     "runner-starvation-advisory.yml",
     "markdown-rendering-guard.yml",
-    "markdown-table-guard.yml",
+    # markdown-table-guard.yml : migre ubuntu-latest par Q35 etape 4 (#17397,
+    # myia-ai-01:CoursIA, 12 gardes Python pures, 2026-10-15). Sorti de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     "md-content-loss-gate.yml",
     "ml-tests.yml",
     "notebook-output-failure-ratchet.yml",
@@ -362,7 +378,9 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
     # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
     # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
-    "translation-drift.yml",
+    # translation-drift.yml : migre ubuntu-latest par Q35 etape 4 (#17397,
+    # myia-ai-01:CoursIA, 12 gardes Python pures, 2026-10-15). Sorti de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     "translation-sync.yml",
     "variation-light-genre.yml",
     # tranche 6 (c.903, owner myia-po-2026:CoursIA-2) : garde advisory pur-Python
@@ -431,7 +449,9 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Runner = jambe Linux containerisee (LINUX_RUNNER_LABELS, meme
     #   profil que notebook-latex-control-chars). Rollback = revert de la
     #   PR (l'entree disparait de l'allowlist).
-    "notebook-math-render.yml",
+    # notebook-math-render.yml : migre ubuntu-latest par Q35 etape 4 (#17397,
+    # myia-ai-01:CoursIA, 12 gardes Python pures, 2026-10-15). Sorti de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     # #14532 item 1 (owner myia-po-2026:CoursIA-2) : garde PR pure-Python sur
     #   les disparitions de section au plan des notebooks pedagogiques.
     #   workflow_dispatch-only ce cycle (anti-panic-deploiement, idem
@@ -445,7 +465,9 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   skipper proprement par pr_gate. Runner = jambe Linux containerisee
     #   (LINUX_RUNNER_LABELS, meme profil que md-content-loss-gate tranche 5
     #   #13378). Rollback = revert de la PR (l'entree disparait de l'allowlist).
-    "notebook-plan-loss-gate.yml",
+    # notebook-plan-loss-gate.yml : migre ubuntu-latest par Q35 etape 4 (#17397,
+    # myia-ai-01:CoursIA, 12 gardes Python pures, 2026-10-15). Sorti de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     # #15322 (owner myia-po-2023:CoursIA) : vehicule workflow_dispatch-ONLY
     #   servant de cible d'identite au check-run absorbe par fast-lane
     #   (registre TRANCHE2) et de re-run manuel du self-test sur main.
@@ -510,7 +532,9 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED signale
     #   par Hermes (CONCERNS 19/09) : la PR routait le job self-hosted sans
     #   toucher cette allowlist fail-closed. Rollback = revert de la PR.
-    "organ-duplication-advisory.yml",
+    # organ-duplication-advisory.yml : migre ubuntu-latest par Q35 etape 4 (#17397,
+    # myia-ai-01:CoursIA, 12 gardes Python pures, 2026-10-15). Sorti de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     # #14623 (owner myia-po-2024:CoursIA, PR #18595) : docs-transients
     #   guard -- detecteur de fichiers transients (rapports/coordination)
     #   qui doivent vivre sur le dashboard, pas dans le repo (regle

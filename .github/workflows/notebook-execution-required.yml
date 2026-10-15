@@ -52,11 +52,13 @@ concurrency:
 jobs:
   detect-changes:
     name: Detect notebook changes
-    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
-    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
-    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 4 (#17397, ai-01 2026-10-15) : garde Python pur (checkout,
+    # setup-python, pip ; aucun secret, aucun GPU/CUDA/Lean/.NET, aucun volume
+    # ni service local). Routage #13378/#14283 inverse : la file self-hosted
+    # portait ~3 000 runs pendant que le pool heberge restait inactif. La garde
+    # same-repo est conservee telle quelle -- seul le runner change. Sortie de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     outputs:
       notebooks: ${{ steps.detect.outputs.notebooks }}
@@ -96,11 +98,13 @@ jobs:
 
   validate-static:
     name: Static validation (H.1/H.3/C.1)
-    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
-    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
-    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 4 (#17397, ai-01 2026-10-15) : garde Python pur (checkout,
+    # setup-python, pip ; aucun secret, aucun GPU/CUDA/Lean/.NET, aucun volume
+    # ni service local). Routage #13378/#14283 inverse : la file self-hosted
+    # portait ~3 000 runs pendant que le pool heberge restait inactif. La garde
+    # same-repo est conservee telle quelle -- seul le runner change. Sortie de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
     needs: detect-changes
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.detect-changes.outputs.has_notebooks > 0
 
@@ -229,13 +233,13 @@ jobs:
   # A broken notebook makes this job RED, then GREEN once repaired.
   golden-set-execute:
     name: Golden-set execution (H.7 P3)
-    # Routage #14283 fin de chantier (ai-01 dispatch 2026-09-02, item 1) :
-    # dernier job trivialement migrable — setup-python (toolcache monte) et
-    # github-script (node embarque du runner) sont servis par l'image.
-    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
-    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 4 (#17397, ai-01 2026-10-15) : garde Python pur (checkout,
+    # setup-python, pip ; aucun secret, aucun GPU/CUDA/Lean/.NET, aucun volume
+    # ni service local). Routage #13378/#14283 inverse : la file self-hosted
+    # portait ~3 000 runs pendant que le pool heberge restait inactif. La garde
+    # same-repo est conservee telle quelle -- seul le runner change. Sortie de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Independent of notebook-change detection: the golden-set is a FIXED
     # certified core, re-executed whenever the manifest/lockfile/workflow

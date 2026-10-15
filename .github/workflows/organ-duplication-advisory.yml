@@ -50,11 +50,13 @@ concurrency:
 jobs:
   organ-duplication-advisory:
     name: "Organ-duplication advisory (non-blocking)"
-    # Routage #14283 tranche 3 : jambe Linux auto-hebergee, runs-on STATIQUE
-    # (garde auditable de check_self_hosted_runner_policy.py). Les PRs de
-    # fork sautent le job -- pr_gate.py compte skipped comme OK.
-    # Retour arriere = remettre runs-on: ubuntu-latest + retrait allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 4 (#17397, ai-01 2026-10-15) : garde Python pur (checkout,
+    # setup-python, pip ; aucun secret, aucun GPU/CUDA/Lean/.NET, aucun volume
+    # ni service local). Routage #13378/#14283 inverse : la file self-hosted
+    # portait ~3 000 runs pendant que le pool heberge restait inactif. La garde
+    # same-repo est conservee telle quelle -- seul le runner change. Sortie de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
     # Same-repo PRs only (agents/staff). Fork = etudiants ( benevolent review).
     if: github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 10
