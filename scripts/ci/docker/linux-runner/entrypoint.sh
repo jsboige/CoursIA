@@ -111,10 +111,17 @@ for gitdir in "$ACTIONS_RUNNER_INPUT_WORK"/*/*/.git; do
   _el_refs="$(mktemp -t el-refs.XXXXXX)" && _el_miss="$(mktemp -t el-miss.XXXXXX)" || {
     # mktemp a echoue (saturation /tmp) : on retombe sur l'ancienne boucle pour
     # ne pas empecher le slot de s'enregistrer, et on consigne.
+    # Le test d'existence d'un objet (cat-file -e) declenche le fetch paresseux
+    # en clone partiel (promisor=true, partialclonefilter=blob:none -- slot 3
+    # po-2024 en incidence) ; sans garde, git tente un fetch sans timeout et le
+    # 2>/dev/null masque tout. GIT_NO_LAZY_FETCH=1 (git >= 2.46, no-op avant)
+    # desactive le fetch, timeout 10 borne le pire cas. Le de-masquage de stderr
+    # permet de voir la cause d'un timeout (sinon le bloc est muet, et c'est
+    # exactement la panne slot 3).
     echo "entrypoint: mktemp indisponible -- fallback boucle O(refs*packs)" >&2
     while read -r ref sha; do
-      if ! git -C "$repo" cat-file -e "$sha^{object}" 2>/dev/null; then
-        echo "entrypoint: ref distante dangling $ref -- suppression (objet absent)"
+      if ! GIT_NO_LAZY_FETCH=1 timeout 10 git -C "$repo" cat-file -e "$sha^{object}"; then
+        echo "entrypoint: ref distante dangling $ref -- suppression (objet absent ou timeout cat-file)"
         git -C "$repo" update-ref -d "$ref" 2>/dev/null || true
       fi
     done < <(git -C "$repo" for-each-ref --format='%(refname) %(objectname)' refs/remotes 2>/dev/null)
@@ -122,8 +129,14 @@ for gitdir in "$ACTIONS_RUNNER_INPUT_WORK"/*/*/.git; do
   }
   git -C "$repo" for-each-ref --format='%(refname) %(objectname)' refs/remotes 2>/dev/null > "$_el_refs" || true
   if [ -s "$_el_refs" ]; then
+    # Meme garde que pour le fallback : cat-file --batch-check en clone partiel
+    # declenche un fetch paresseux par objet absent. GIT_NO_LAZY_FETCH=1
+    # (no-op sur git < 2.46) desactive le fetch ; timeout 60 borne le batch
+    # (4 600 refs mesure, batch process unique). Le 2>/dev/null historique
+    # est retire -- un timeout doit etre visible sur stderr (cf. incident slot 3
+    # po-2024 c.327).
     awk '{print $NF}' "$_el_refs" | sort -u \
-      | git -C "$repo" cat-file --batch-check 2>/dev/null \
+      | GIT_NO_LAZY_FETCH=1 timeout 60 git -C "$repo" cat-file --batch-check \
       | awk '$2 == "missing" { print $1 }' > "$_el_miss" || true
     if [ -s "$_el_miss" ]; then
       while read -r sha; do
