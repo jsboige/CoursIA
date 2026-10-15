@@ -954,11 +954,15 @@ def slot_reservation_reason(
             return "slot-collision"
         if not isinstance(data, dict):
             return "slot-collision"
-        # L'organe rend une liste de `verdict_for(target)` ; la collision est
-        # un etat `conflict` avec un `conflicts[0]["state"]`. On prend la
-        # premiere pour la nommer.
+        # L'organe rend une liste sous la cle `verdicts` (cf. emit JSON de
+        # `check_slot_reservation.py` ligne 1001) ; la collision est un etat
+        # `conflict` avec un `conflicts[0]["state"]`. On prend la premiere
+        # pour la nommer. Note : avant #20913-fixes, le parse lisait
+        # `data.get("targets")` (cle inexistante), ce qui rendait la branche
+        # de motif nomme morte (fallback `slot-collision` muet) ; les tests
+        # passaient par des fixtures qui n'alignaient pas sur l'organe reel.
         conflicts: list[tuple[str, str]] = []
-        for row in (data.get("targets") or []):
+        for row in (data.get("verdicts") or []):
             if isinstance(row, dict) and row.get("verdict") == "conflict":
                 state = str((row.get("conflicts") or [{}])[0].get("state") or "?")
                 target = str(row.get("target") or "?")

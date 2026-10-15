@@ -1119,7 +1119,7 @@ def test_slot_collision_reserved_by_open_pr_skips(tmp_path):
     SL-12b mesures le 14/10 dans #20774) : skip dur, motif nomme."""
     view = default_view(files=(SLOT_NOTEBOOK,))
     slot_stdout = json.dumps({
-        "targets": [
+        "verdicts": [
             {"target": SLOT_NOTEBOOK, "verdict": "conflict",
              "conflicts": [{"state": "reserved_by_open_pr",
                             "source": "open_pr", "detail": "#19853"}]},
@@ -1139,7 +1139,7 @@ def test_slot_collision_taken_on_base_skips(tmp_path):
     une fois la premiere PR mergee)."""
     view = default_view(files=(SLOT_OTHER_NOTEBOOK,))
     slot_stdout = json.dumps({
-        "targets": [
+        "verdicts": [
             {"target": SLOT_OTHER_NOTEBOOK, "verdict": "conflict",
              "conflicts": [{"state": "taken_on_base", "source": "base"}]},
         ],
