@@ -491,10 +491,18 @@ S2 passes c1 (under), c3 (over, σ₁), c4 (under); S3 passes c2 (over,
 σ₂⁻¹), c3 (under, σ₁). The 8 edges are the inter-crossing segments, the
 closure gluing the bottom of track k to the top of track k (E1 = S1-head
 ∪ S3-tail, E4 = S1-tail ∪ S2-head, E7 = S2-tail ∪ S3-head, E2 E3 E5 E6
-E8 = proper segments). The retained PD code is the unique reading (up to
-rotation) where each crossing carries its two over-strand edges in
-positions e1/e3 — the orientation coherence that the canonical planar
-encoding does not carry.
+E8 = proper segments). The retained PD code lives in the family of
+coherent readings — every crossing carries its two over-strand edges in
+positions e1/e3 — and it is this coherence that makes the classical unit
+class reachable, not a uniqueness of reading: on the braid incidence
+structure (8 plausible alternating readings per crossing), the
+under-strand orientation is neutral for the designated value, and among
+the 16 over-strand orientations exactly 4 reach the classical unit class
+(the retained one, −t² + 3t − 1, and t³ − 3t² + t); the other 12 fall
+back into the planar-code classes (t³ − 2t² + 2t in particular), and an
+incoherent reading — an over-strand in e2/e4 — recovers the class only
+by coincidence (64 out of 3 840). This is the orientation coherence
+that the canonical planar encoding does not carry.
 -/
 
 /-- PD of the closure of the braid `(σ₁ σ₂⁻¹)²`: crossing c1 =

@@ -492,9 +492,18 @@ S3 passe c2 (dessus, σ₂⁻¹), c3 (dessous, σ₁). Les 8 arêtes sont les
 segments inter-croisements, la fermeture recollant le bas de la piste k au
 haut de la piste k (E1 = S1-tête ∪ S3-queue, E4 = S1-queue ∪ S2-tête,
 E7 = S2-queue ∪ S3-tête, E2 E3 E5 E6 E8 = segments propres). Le code PD
-retenu est l'unique lecture (à rotation près) où chaque croisement porte
-ses deux arêtes de brin-dessus en positions e1/e3 — la cohérence
-d'orientation que l'encodage canonique du planaire ne transporte pas.
+retenu vit dans la famille des lectures cohérentes — chaque croisement y
+porte ses deux arêtes de brin-dessus en positions e1/e3 — et c'est cette
+cohérence qui rend la classe du classique atteignable, pas une unicité de
+lecture : sur la structure d'incidence de la tresse (8 lectures
+alternantes plausibles par croisement), l'orientation du brin-dessous est
+neutre pour la valeur désignée, et parmi les 16 orientations du
+brin-dessus exactement 4 rendent la classe d'unités du classique (celle
+retenue −t² + 3t − 1, et t³ − 3t² + t) ; les 12 autres retombent dans
+les classes du code planaire (t³ − 2t² + 2t notamment), et une lecture
+incohérente — un brin-dessus en e2/e4 — ne retrouve la classe que par
+coïncidence (64 sur 3 840). C'est la cohérence d'orientation que
+l'encodage canonique du planaire ne transporte pas.
 -/
 
 /-- PD de la fermeture de la tresse `(σ₁ σ₂⁻¹)²` : croisement c1 =
