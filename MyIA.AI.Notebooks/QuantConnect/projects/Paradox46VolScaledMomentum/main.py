@@ -25,7 +25,8 @@
 #   UDOW 3x Dow30      -> DIA
 #   TECL 3x Technologie-> XLK
 #   SOXL 3x Semis      -> SMH
-#   USD  3x Financiers -> XLF
+#   USD  2x Semis (ProShares Ultra Semiconductors, et non un 3x financier :
+#        ecart connu, voir le README) -> XLF
 #
 # Choix fixes AVANT tout calcul (protocole #18906, point 5) :
 #   fenetres momentum court/moyen/intermediaire : 21/63/126 jours (base) ;
