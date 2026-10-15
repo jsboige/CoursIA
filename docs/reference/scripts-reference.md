@@ -134,6 +134,11 @@ La migration Plotly-CDN → SVG inline `text/html` (canon ai-01 `svg-6927-canon.
 
 **Workflow PR accents** : générer via `restore_accents_canonical.py` (passe les gates by construction), jamais via un script ad-hoc. Périmètre, défense-in-depth (3 rôles), 4 classes de défauts, bright-lines, méthodologie : cf [accent-cure-defense-in-depth.md](accent-cure-defense-in-depth.md).
 
+### Site Pages / liens README & équivalence
+| Script | Usage |
+|--------|-------|
+| `check_equivalence.py` | **Équivalence page publiée ↔ carnet exécuté** (#19301/#19305) : lignes stream et `text/plain` (hors sources, MIME riche exclu) retrouvées dans la page Pages. Verdicts `EQUIVALENT`/`LOST_OUTPUTS`/`MISSING_PAGE`/`UNKNOWN`/`NOTHING_TO_COMPARE`. Advisory — aucune garde ne le consomme depuis l'abandon de la politique `.html` (arbitrage #18911) ; spot-check qualité site. Contrôles mesurés : cf [readme-links-convention.md](readme-links-convention.md) |
+
 ### Diagnostic / reporting / spécifiques
 | Script | Usage |
 |--------|-------|
