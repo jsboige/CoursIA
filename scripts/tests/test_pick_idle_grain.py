@@ -922,6 +922,129 @@ def test_enrich_probe_with_workflow_runs_illisible_ne_touche_pas(monkeypatch):
     assert enriched["names"] == probe["names"]
 
 
+# #19767, 3e critere ([NOT-DELIVERED] du 12/10) : un motif None de
+# `_main_red_motif` dit « pas de rouge PROUVE », pas « vert prouve ».
+# Les trois tests suivants font tourner le VRAI organ (seul `_gh_json`
+# est remplace -- le wrapper de transport du picker l'observe) et
+# departagent vert lisible / illisible / sans verdict.
+
+
+def test_enrich_probe_run_illisible_marque_undecided_keys(monkeypatch):
+    """#19767 3e critere, controle illisible : l'endpoint des runs du
+    workflow leve (quota, panne) -> l'organ rend None, mais le vert n'est
+    pas prouvable : le check mappe part en `undecided_keys`, PAS en
+    acquittement silencieux du rollup (qui peut etre vert perime).
+    """
+    from ci import merge_dwell
+    from ci.merge_dwell import DwellError
+
+    def _fetch(path):
+        if "workflows/scripts-tests.yml/runs" in path:
+            raise DwellError("gh api a echoue (exit 1)")
+        return {"default_branch": "main"}
+
+    monkeypatch.setattr(merge_dwell, "_gh_json", _fetch)
+    probe = _probe(main_names=["Scripts Tests (CPU)", "Quarto Pages"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert enriched["undecided_keys"] == {"Scripts Tests (CPU)"}
+    # Le rollup n'est ni contredit ni acquitte : red_keys/names inchanges.
+    assert enriched["red_keys"] == probe["red_keys"]
+    assert enriched["names"] == probe["names"]
+
+
+def test_enrich_probe_fenetre_sans_verdict_marque_undecided_keys(monkeypatch):
+    """#19767 3e critere, controle sans verdict : dix runs `cancelled`
+    (fenetre #19069) -> aucun verdict lisible, le vert n'est pas prouvable
+    -> `undecided_keys`, meme si le transport a reussi.
+    """
+    from ci import merge_dwell
+
+    def _fetch(path):
+        if "workflows/scripts-tests.yml/runs" in path:
+            return {"workflow_runs": [
+                {"conclusion": "cancelled"}, {"conclusion": "skipped"}]}
+        return {"default_branch": "main"}
+
+    monkeypatch.setattr(merge_dwell, "_gh_json", _fetch)
+    probe = _probe(main_names=["Scripts Tests (CPU)"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert enriched.get("undecided_keys") == {"Scripts Tests (CPU)"}
+
+
+def test_enrich_probe_vert_lisible_reste_sans_undecided(monkeypatch):
+    """#19767 3e critere, controle negatif : run `push` VERTE lisible ->
+    le None de l'organ vaut vert CORROBORE, le probe est rendu inchange
+    (objet identique) et ne porte PAS de `undecided_keys` : le rejeu
+    (`infra_rerun`) reste justifie pour les rouges d'execution.
+    """
+    from ci import merge_dwell
+
+    def _fetch(path):
+        if "workflows/scripts-tests.yml/runs" in path:
+            return {"workflow_runs": [
+                {"conclusion": "success",
+                 "name": "Scripts & Notebook-Tools Tests"}]}
+        return {"default_branch": "main"}
+
+    monkeypatch.setattr(merge_dwell, "_gh_json", _fetch)
+    probe = _probe(main_names=["Scripts Tests (CPU)"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is probe
+    assert "undecided_keys" not in (enriched or {})
+
+
+def test_enrich_probe_branche_defaut_illisible_marque_undecided(monkeypatch):
+    """#19767 3e critere : la lecture de la branche par defaut echoue
+    AVANT les runs -> aucun workflow n'est lisible -> tous les checks
+    mappes partent en `undecided_keys`.
+    """
+    from ci import merge_dwell
+    from ci.merge_dwell import DwellError
+
+    def _fetch(path):
+        raise DwellError("quota exhausted")
+
+    monkeypatch.setattr(merge_dwell, "_gh_json", _fetch)
+    probe = _probe(main_names=["Scripts Tests (CPU)"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert enriched.get("undecided_keys") == {"Scripts Tests (CPU)"}
+
+
+def test_split_base_undecided_keys_ne_font_pas_infra():
+    """#19767 3e critere : un check vert dans le rollup mais NON PROUVABLE
+    (`undecided_keys` sur la sonde) ne part JAMAIS en `infra` (= rejeu) :
+    undecided + base, fail-closed -- un rollup vert perime ne doit pas
+    envoyer la lane rejouer un rouge possiblement reel de la base.
+    """
+    probe = dict(_probe(main_names=["Scripts Tests (CPU)"]),
+                 undecided_keys={"Scripts Tests (CPU)"})
+    corroborated = {"Scripts Tests (CPU)": [101, 102]}
+    names_by_key = {"Scripts Tests (CPU)": {"Scripts Tests (CPU)"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names_by_key, probe)
+    assert infra == {}
+    assert "Scripts Tests (CPU)" in undecided
+    assert "Scripts Tests (CPU)" in base
+
+
+def test_split_base_vert_prouve_reste_infra():
+    """#19767 3e critere, controle negatif : sans `undecided_keys`, le
+    comportement #17154 est preserve -- present et vert dans le rollup,
+    corroboré inter-lanes -> `infra` (rejeu), PAS de regression.
+    """
+    probe = _probe(main_names=["Scripts Tests (CPU)"])
+    corroborated = {"Scripts Tests (CPU)": [101, 102]}
+    names_by_key = {"Scripts Tests (CPU)": {"Scripts Tests (CPU)"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names_by_key, probe)
+    assert "Scripts Tests (CPU)" in infra
+    assert base == {}
+    assert undecided == {}
+
+
 def test_enrich_probe_with_workflow_runs_none_inchange(monkeypatch):
     """#19767 : probe=None (rollup vide) -> None, jamais elargi.
     C'est le contrat fail-closed : une sonde absente ne produit jamais
