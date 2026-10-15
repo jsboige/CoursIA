@@ -35,13 +35,13 @@ A l'issue de cette série, vous serez capable de :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 29 (SC-0 à SC-27, + SC-2b) |
-| Durée totale | ~23 h 40 |
 | Langage | Python (kernel Jupyter) |
 | Kernels | Python 3 |
 | Outils | Foundry (forge/cast/anvil), web3.py, py-solcx |
 | Cryptographie | pycryptodome, phe, TenSEAL |
 | Niveaux | Débutant à Avancé (Parties 0-6) |
+
+Le décompte des carnets et leur durée cumulée sont tenus par le [catalogue des cours](../../../COURSE_CATALOG.generated.md), régénéré automatiquement.
 
 Le parcours ne suit pas une liste de sujets : il suit le **cycle de vie d'un smart contract**, chaque phase ajoutant une couche de robustesse jusqu'à un contrat *digne de confiance*.
 
@@ -62,64 +62,64 @@ flowchart LR
 
 ## Parcours d'apprentissage
 
-### Phase 1 : Fondations (~2h50)
+### Phase 1 : Fondations
 
 Les notebooks 0-2 posent les bases historiques et techniques. Le notebook 0 explore les primitives cryptographiques qui fondent la blockchain (hash, arbres de Merkle, preuve de travail, signatures, DHT). Le notebook 1 installe Foundry — forge, cast, anvil — l'outil de développement principal. Le notebook 2 configure web3.py + py-solcx pour compiler et déployer des contrats Solidity réellement sur Anvil (blockchain locale). Son compagnon SC-2b retourne ensuite le point de vue : trois acteurs à clé délibèrent par contrat sur un bac à sable rejouable — et l'on voit une institution adopter une exclusion sans violer aucune règle. À l'issue de cette phase, vous avez un environnement fonctionnel, votre premier contrat déployé, et le pattern multi-acteurs qui servira à l'analyse institutionnelle.
 
-### Phase 2 : Solidity Fondements (~2h30)
+### Phase 2 : Solidity Fondements
 
 Les notebooks 3-6 couvrent les bases de Solidity : types et variables (SC-3), fonctions et état (SC-4), héritage et interfaces (SC-5), erreurs et events (SC-6). Chaque notebook inclut un déploiement réel sur Anvil. Cette phase vise la maîtrise du langage de base — pas de code Solidity ne peut être écrit sans ces fondamentaux.
 
-### Phase 3 : Solidity Avancé (~4h30)
+### Phase 3 : Solidity Avancé
 
 Les notebooks 7-11 abordent les standards token (ERC-20, ERC-721, ERC-1155), les primitives DeFi (AMM, lending, oracles), la gouvernance DAO, l'account abstraction (ERC-4337), et l'assistance LLM pour les smart contracts. C'est le cœur technique de la série — chaque concept est illustré par un contrat déployable.
 
-### Phase 4 : Testing et Sécurité (~2h15)
+### Phase 4 : Testing et Sécurité
 
 Les notebooks 12-14 traitent de la sécurité : tests unitaires Foundry (SC-12), fuzz testing et invariants (SC-13), vérification formelle (SC-14). La campagne de fuzzing de SC-13 s'exécute sur le **vrai** Foundry (`forge test --fuzz-runs`) et **trouve un contre-exemple concret** — un overflow arithmétique (`panic 0x11`) sur un calcul de moyenne naïf que les seuls tests unitaires laissaient passer : la démonstration que le fuzzing attrape les bugs qu'on n'avait pas anticipés. Cette phase est cruciale — un smart contract non testé est un contrat non déployable en production. La vérification formelle (SMT solvers, Certora) représente le pont vers la preuve mathématique de correction.
 
-### Phase 5 : Cryptographie et Vie Privée (~3h)
+### Phase 5 : Cryptographie et Vie Privée
 
 Les notebooks 15-17 construisent des primitives cryptographiques from scratch : preuves à connaissance nulle (Schnorr, Fiat-Shamir, sigma protocols), chiffrement homomorphique (Paillier, CKKS/TenSEAL), et un système de vote vérifiable de bout en bout (ElectionGuard). Cette partie est la plus théorique mais la plus puissante — elle montre comment protéger la vie privée sur des blockchains transparentes.
 
-### Phase 6 : Blockchains Alternatives (~4h)
+### Phase 6 : Blockchains Alternatives
 
 Les notebooks 18-22 explorent cinq blockchains non-EVM : Vyper (smart contracts Python-like), XRP Ledger (xrpl-py, trust lines), Bitcoin Script (UTXO model), Move/Sui (modèle objet), et Solana avec le framework Anchor. Chaque notebook est autonome et illustre un paradigme de programmation différent.
 
-### Phase 7 : Déploiement Réel (~3h45)
+### Phase 7 : Déploiement Réel
 
 Les notebooks 23-26 couvrent l'interopérabilité cross-chain, le déploiement sur testnet (Sepolia + XRP testnet), le déploiement mainnet (L2 Base/Polygon), et le projet capstone intégré. C'est la phase de transition vers le monde réel — tout le travail précédent sert à construire, tester et déployer un projet complet.
 
 ## Parcours alternatifs
 
-### Parcours Solidity intensif (~8h)
+### Parcours Solidity intensif
 
 Se concentrer sur les phases 1-3 + phase 4 (testing) : SC-0, SC-1-2, SC-3 à SC-6, SC-7 à SC-11, SC-12-14. Idéal pour développeurs souhaitant maîtriser rapidement le développement Ethereum.
 
-### Parcours Cryptographie (~3h)
+### Parcours Cryptographie
 
 Les notebooks 15-17 : ZKP, chiffrement homomorphique, vote vérifiable. Prérequis : notions de base en algèbre et probabilités. Pas nécessaire de passer par les phases 1-4 (les primitives sont introduites in-context).
 
-### Parcours Blockchains alternatives (~4h)
+### Parcours Blockchains alternatives
 
 Les notebooks 18-22 : Vyper, XRP, Bitcoin, Move, Solana. Chaque notebook est autonome — l'ordre n'est pas critique. Utile pour comprendre les paradigmes non-EVM.
 
-### Parcours Security-first (~7h)
+### Parcours Security-first
 
 Fondations (SC-0-2) + Solidity basique (SC-3-6) + Testing avancé (SC-12-14) + Vérification formelle (SC-14). Pour développeurs souhaitant se spécialiser en smart contract auditing.
 
 ## Quel parcours choisir ?
 
-| Objectif | Parcours recommandé | Durée |
-|----------|-------------------|-------|
-| Découvrir la blockchain | SC-0 → SC-1 → SC-2 → SC-3 | 3h |
-| Devenir développeur Solidity | Parcours Solidity intensif | 8h |
-| Spécialiser en sécurité | Parcours Security-first | 7h |
-| Cryptographie avancée | Parcours Cryptographie | 3h |
-| Explorer les chains non-EVM | Parcours alternatives | 4h |
-| Se déployer en production | Parcours complet + SC-23-26 | 22h |
-| Comprendre DeFi | SC-7-8-9 | 2h30 |
-| Gouvernance DAO | SC-9-10-17 | 2h |
+| Objectif | Parcours recommandé |
+|----------|-------------------|
+| Découvrir la blockchain | SC-0 → SC-1 → SC-2 → SC-3 |
+| Devenir développeur Solidity | Parcours Solidity intensif |
+| Spécialiser en sécurité | Parcours Security-first |
+| Cryptographie avancée | Parcours Cryptographie |
+| Explorer les chains non-EVM | Parcours alternatives |
+| Se déployer en production | Parcours complet + SC-23-26 |
+| Comprendre DeFi | SC-7-8-9 |
+| Gouvernance DAO | SC-9-10-17 |
 
 ## Parcours recommandé
 
@@ -167,13 +167,13 @@ Fondations (SC-0-2) + Solidity basique (SC-3-6) + Testing avancé (SC-12-14) + V
 
 ```text
 SmartContracts/
-├── 00-Foundations/              # Histoire + Setup (4 notebooks, avec SC-2b)
-├── 01-Solidity-Foundation/     # Fondements Solidity (4 notebooks)
-├── 02-Solidity-Advanced/       # Solidity avancé (5 notebooks)
-├── 03-Foundry-Testing/         # Tests et sécurité (3 notebooks)
-├── 04-Privacy-Cryptography/    # ZKP, HE, Vote E2E (3 notebooks)
-├── 05-Alternative-Chains/      # Vyper, XRP, Bitcoin, Move, Solana (5 notebooks)
-├── 06-Real-World/              # Cross-chain, deploy testnet/mainnet + épilogue mesuré (5 notebooks)
+├── 00-Foundations/              # Histoire + Setup
+├── 01-Solidity-Foundation/     # Fondements Solidity
+├── 02-Solidity-Advanced/       # Solidity avancé
+├── 03-Foundry-Testing/         # Tests et sécurité
+├── 04-Privacy-Cryptography/    # ZKP, HE, Vote E2E
+├── 05-Alternative-Chains/      # Vyper, XRP, Bitcoin, Move, Solana
+├── 06-Real-World/              # Cross-chain, deploy testnet/mainnet + épilogue mesuré
 ├── foundry-lib/                # Workspace Foundry + sous-modules (forge-std, OpenZeppelin, ERC-4337)
 ├── erc20_lean/                 # Projet Lake Lean 4 (invariant de conservation ERC-20, 0 sorry, cf #4047) — 1er lake Lean de la série
 ├── mon-premier-projet/         # Projet Foundry de démarrage (squelette scaffold)
@@ -184,7 +184,7 @@ SmartContracts/
 
 ## Progression
 
-### Partie 0 : Fondations et Histoire (~2h50)
+### Partie 0 : Fondations et Histoire
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
@@ -194,7 +194,7 @@ SmartContracts/
 
 **Objectifs** : Comprendre les origines Cypherpunk, installer l'environnement, déployer un premier contrat
 
-### Partie 1 : Solidity Fondements (~2h30)
+### Partie 1 : Solidity Fondements
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
@@ -205,11 +205,13 @@ SmartContracts/
 
 **Objectifs** : Maîtriser les bases de Solidity avec déploiement réel sur anvil
 
-### Partie 2 : Solidity Avancé (~4h30)
+### Partie 2 : Solidity Avancé
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 7 | [SC-07-Token-Standards-Python](02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155 |
+| 7b | [SC-7b-ERC20-Lean-Verification-Companion](02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb) | 25 min | Compagnon Lean de SC-7 : invariant `Σ balances = totalSupply`, observé puis confronté à la preuve |
+| 7c | [SC-07c-ERC20-Lean](02-Solidity-Advanced/SC-07c-ERC20-Lean.ipynb) | non déclarée | Compagnon natif Lean (kernel `lean4-wsl`) : signatures, axiomes et `#eval` du lac `erc20_lean` |
 | 8 | [SC-08-DeFi-Primitives-Python](02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb) | 55 min | AMM, lending, oracles |
 | 8b | [SC-08b-MEV-LP-Python](02-Solidity-Advanced/SC-08b-MEV-LP-Python.ipynb) | 40 min | Compagnon hors chaîne : frais du déposant, perte non-permanente, sandwich, backrun |
 | 9 | [SC-09-DAO-Governance-Python](02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb) | 45 min | Votes, gouvernance on-chain |
@@ -218,7 +220,7 @@ SmartContracts/
 
 **Objectifs** : Protocoles DeFi, gouvernance, ERC-4337, LLM-assisted
 
-### Partie 3 : Testing (~2h15)
+### Partie 3 : Testing
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
@@ -228,7 +230,7 @@ SmartContracts/
 
 **Objectifs** : Tests Solidity, fuzzing, vérification formelle
 
-### Partie 4 : Cryptographie et Vie Privée (~3h)
+### Partie 4 : Cryptographie et Vie Privée
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
@@ -238,7 +240,7 @@ SmartContracts/
 
 **Objectifs** : ZKP from scratch, chiffrement homomorphique, vote E2E vérifiable
 
-### Partie 5 : Blockchains Alternatives (~4h)
+### Partie 5 : Blockchains Alternatives
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
@@ -250,7 +252,7 @@ SmartContracts/
 
 **Objectifs** : Vyper, XRP, Bitcoin scripting, Move, Solana
 
-### Partie 6 : Real-World (~4h30)
+### Partie 6 : Real-World
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
@@ -585,7 +587,7 @@ En parcourant cette série des **cypherpunks aux blockchains modernes**, vous av
 - **Approfondissez la vérification formelle** : SC-14 ouvre la porte de la série **[Lean](../Lean/)** — où les SMT solvers automatiques mais bornés laissent place à la preuve interactive expressive (types dépendants, Curry-Howard). Deux faces d'une même ambition : certifier la correction d'un programme.
 - **Croisez avec la théorie des jeux** : les mécanismes de gouvernance on-chain (SC-9, SC-17) rencontrent leurs limites formelles dans le **[théorème d'Arrow](../../GameTheory/)** (formalisé en Lean dans la série GameTheory, 0 sorry) et la théorie du choix social. Comprendre *pourquoi* un design de vote est fondamentalement imparfait est aussi important que savoir l'implémenter.
 - **Décidez sous incertitude** : la conception de contrats robustes face à des marchés incertains (slippage, garanties, réserves) relève du **[Minimax Regret et de la décision sous incertitude](../../Probas/)** traités dans la série Probas.
-- **Spécialisez-vous en sécurité** : le parcours [Security-first](#parcours-security-first-7h) ci-dessus (Phases 1-2 + Testing + Formal Verification) est la base d'un cheminement vers le smart contract auditing — relisez alors SC-12/13/14 non comme des notebooks, mais comme une checklist d'attaques à anticiper.
+- **Spécialisez-vous en sécurité** : le parcours [Security-first](#parcours-security-first) ci-dessus (Phases 1-2 + Testing + Formal Verification) est la base d'un cheminement vers le smart contract auditing — relisez alors SC-12/13/14 non comme des notebooks, mais comme une checklist d'attaques à anticiper.
 
 ### Le fil rouge
 
@@ -644,7 +646,7 @@ maturity: PRODUCTION=27
 
 Là où Planners est le carrefour **simulation/proof intra-série** (Python ⇄ Lean 4 sur l'admissibilité d'heuristique, cycle 29), SmartContracts est le carrefour **trust/privacy inter-séries** : la **confiance** (vérification formelle Lean + tests Foundry + fuzzing), la **confidentialité** (ZKP + chiffrement homomorphe + vote E2E), et la **décision collective** (Arrow + Voting + DAOs). Cette série est l'une des rares à aligner **trois dimensions critiques de la blockchain** dans un même parcours pédagogique.
 
-Le pipeline 27 notebooks aligne l'évolution paradigmatique de la blockchain (2008 Bitcoin → 2024 L2 + ZK rollups) sur la **frontière de vérification** (tests unitaires → fuzzing → vérification formelle SMT → potentielle preuve Lean). Chaque notebook est un maillon du triptyque *construire → tester → prouver*.
+Le pipeline de notebooks aligne l'évolution paradigmatique de la blockchain (2008 Bitcoin → 2024 L2 + ZK rollups) sur la **frontière de vérification** (tests unitaires → fuzzing → vérification formelle SMT → potentielle preuve Lean). Chaque notebook est un maillon du triptyque *construire → tester → prouver*.
 
 **Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche smartcontracts.
 
