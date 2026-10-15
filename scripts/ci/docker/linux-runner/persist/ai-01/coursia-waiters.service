@@ -8,6 +8,16 @@
 # fichier ne change rien sur la machine tant que la copie vivante n'a pas ete
 # remplacee ; un `git pull` ne deploie pas persist/. Voir persist/README.md.
 #
+# *** DEPRECATED 2026-10-15 -- issue #20835, PR #21015, c.500 ***
+# Le label `coursia-waiter` n'a plus aucun consommateur depuis #17436
+# (la jambe `pull_request` du `pr-gate.yml` route desormais sur
+# `ubuntu-latest`). Le service a ete desactive sur ai-01 (2026-10-15
+# 19:48Z), le fichier et les 3 drop-ins detruits sous /etc/systemd/system/.
+# Ce fichier est conserve pour reference et reactivation (memo UAC Rule 1 :
+# geste reversible). NE PAS LE REDEPLOYER sans avoir verifie qu'un
+# consommateur du label existe a nouveau. Dispatch coordinateur :
+# DM `msg-20261015T192217-jejbmt` 19:22Z.
+#
 # N slots porte par l'argument ExecStart (ai-01 -> 12, l'effectif d'avant la chute).
 #
 # CE QUI DISTINGUE CETTE COPIE DE LA VERSION VIVANTE (#15091, mesure du 2026-09-07)
