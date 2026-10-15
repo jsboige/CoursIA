@@ -1533,6 +1533,7 @@ jobs:
           check results_weight "${{ steps.results_weight.outcome }}"
           check grothendieck_umbrella "${{ steps.grothendieck_umbrella.outcome }}"
           check secret_paths_ignored "${{ steps.secret_paths_ignored.outcome }}"
+          check env_example_secrets "${{ steps.env_example_secrets.outcome }}"
           check oss_signature "${{ steps.oss_signature.outcome }}"
           if [ -n "$FAILED" ]; then
             echo "::error::Organes bloquants en echec :$FAILED (le detail est dans les steps correspondants ci-dessus)."
