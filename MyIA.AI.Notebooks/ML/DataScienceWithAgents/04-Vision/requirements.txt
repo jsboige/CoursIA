@@ -9,15 +9,17 @@
 # commitees, et rendant le fichier NON INSTALLABLE (pip ResolutionImpossible :
 # torchvision 0.23.0 exige torch==2.8.0, contradictoire avec torch==2.14.0).
 # Pins corriges depuis les sorties commitees : torchvision 0.29.0 (sortie du 4.5),
-# ultralytics 8.4.155 (sortie du 4.6) -- paire installable avec torch 2.14.0,
-# identique a l'env kernel python3 du depot (torch 2.14.0+cu126 / torchvision 0.29.0+cu126).
+# ultralytics 8.4.173 (sorties de 4 carnets sur 5 : 4.5b/4.5c/4.6b/4.6c ; le seul 4.6
+# a tourne sous 8.4.155) -- paire installable avec torch 2.14.0 : contrainte PyPI
+# torch>=1.8.0, et la banniere du 4.5b montre torch 2.14.0+cu126 a cote de 8.4.173.
+# Identique a l'env kernel python3 du depot (torch 2.14.0+cu126 / torchvision 0.29.0+cu126).
 
 # torch : 2.14.0 (sorties 4.5/4.5b/4.5c/4.5d/4.6/4.6b/4.6c -- build +cu126 locale, base 2.14.0 sur PyPI)
 torch==2.14.0
 # torchvision : 0.29.0 (sortie du 4.5 ; l'ancien pin 0.23.0 exigeait torch 2.8.0)
 torchvision==0.29.0
-# ultralytics : 8.4.155 (sortie du 4.6)
-ultralytics==8.4.155
+# ultralytics : 8.4.173 (sorties 4.5b/4.5c/4.6b/4.6c ; le 4.6 a tourne sous 8.4.155)
+ultralytics==8.4.173
 # libreyolo : 1.6.0 (sortie du 4.5d)
 libreyolo==1.6.0
 
