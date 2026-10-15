@@ -90,35 +90,18 @@ concurrency:
 jobs:
   always-on-guards:
     name: "Always-on guards -- 16 organes, 1 checkout"
-    # Routage #14283 : premier consommateur GitHub-hosted du depot une fois
-    # secret-scan bascule -- 2650 runs same-repo en 5 jours (2026-08-28 ->
-    # 2026-09-02), timeout 25 min, aucun filtre `paths:`. Le pool Linux
-    # auto-heberge sert sa demande instantanement pendant que 23 runners
-    # restaient IDLE : le defaut etait le ROUTAGE de la file, pas la capacite.
-    #
-    # Garde anti-fork au niveau JOB (pas au niveau step) : un garde
-    # `IS_FORK` dans un `run:` laisse le job DEMARRER et le checkout
-    # s'executer -- du code de fork atteindrait le volume de travail
-    # persistant par slot (#14285). Seul un `if:` de job l'empeche.
-    # runs-on STATIQUE : une expression leverait DYNAMIC_RUNS_ON dans
-    # scripts/ci/check_self_hosted_runner_policy.py (violation bloquante).
-    #
-    # Pas de jambe fork de remplacement, et c'est MESURE, pas suppose :
-    # sur 2651 runs, le seul run de fork (33531051061, jsboigeEpita, PR
-    # interne poussee depuis un fork) est mort AU DEMARRAGE -- `jobs`
-    # total_count = 0, conclusion `startup_failure`. Or `startup_failure`
-    # est dans CONCLUSION_BAD de scripts/pr_gate.py alors que `skipped`
-    # est dans CONCLUSION_OK : la garde de job REMPLACE un rouge par un
-    # vert sur les PRs de fork, elle ne leur retire aucune capacite.
-    # Les 9 organes de substance sortent deja `exit 0` sur un fork
-    # (garde `IS_FORK` interne) ; seuls perimeter et fastlane tournaient,
-    # et le token read-only d'un fork leur refuse `checks: write`.
-    #
-    # Controle positif in-artefact : secret-scan.yml :: positive-controls
-    # fait tourner `actions/setup-python@v5` sur CE pool -- run
-    # 33691615314, runner myia-ai-01-linux-docker-6, success en 34 s.
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retirer le `if:`.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Q35 etape 4 (#17397, ai-01 2026-10-15) : 16 organes metadata portes
+    # en un seul job, tout en pur-Python sur PR metadata (body, labels,
+    # tags Grain:). Aucun kernel n'est execute (.NET, Lean, Python sont
+    # des MOTS dans le diff analyse, pas des runtimes invoques) ; aucun
+    # GPU, aucun docker, aucun volume, aucun service local. Le job
+    # herite de la garde anti-fork au niveau `if:` (les forks sont
+    # skkipes, pr_gate.py compte `skipped` comme OK). La justification
+    # FORK_REACHABLE qui le gardait sur self-hosted etait une question
+    # de cout de slot (mesure #14285) : ce cout est sur GitHub maintenant,
+    # la justification est obsolete. Sortie de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 25
 
