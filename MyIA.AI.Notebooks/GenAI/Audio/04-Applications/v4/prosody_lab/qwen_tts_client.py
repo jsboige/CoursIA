@@ -227,6 +227,60 @@ def qwen_tts_customvoice(
     return _post_speech(payload, timeout)
 
 
+def qwen_tts_customvoice_chunked(
+    text: str,
+    voice: str = "Vivian",
+    instructions: str = "",
+    language: str = "French",
+    speed: float = 1.0,
+    max_chars: int = 160,
+    per_chunk_timeout: int = 290,
+    gap_ms: int = 120,
+) -> bytes | None:
+    """CustomVoice render of long text, chunked to stay under the gateway timeout.
+
+    Mirrors :func:`qwen_tts_voicedesign_chunked`: same sentence-level
+    chunker (max_chars default = 160), same per-chunk timeout / inter-chunk
+    silence, same hard failure on any chunk error. Returns the concatenated
+    WAV bytes, or ``None`` if any chunk fails (no partial passage).
+    """
+    from io import BytesIO
+
+    from pydub import AudioSegment
+
+    chunks = _split_sentences(text, max_chars=max_chars)
+    if not chunks:
+        return None
+    logger.info(
+        "CustomVoice chunked render: %d chunk(s), voice=%s", len(chunks), voice
+    )
+    segments: list[AudioSegment] = []
+    for i, ch in enumerate(chunks, start=1):
+        audio = qwen_tts_customvoice(
+            ch,
+            voice=voice,
+            instructions=instructions,
+            language=language,
+            response_format="wav",
+            speed=speed,
+            timeout=per_chunk_timeout,
+        )
+        if not audio:
+            logger.error(
+                "CustomVoice chunk %d/%d failed (%d chars, voice=%s): %r",
+                i, len(chunks), len(ch), voice, ch[:60],
+            )
+            return None
+        segments.append(AudioSegment.from_file(BytesIO(audio), format="wav"))
+    combined = segments[0]
+    gap = AudioSegment.silent(duration=gap_ms)
+    for seg in segments[1:]:
+        combined = combined + gap + seg
+    buf = BytesIO()
+    combined.export(buf, format="wav")
+    return buf.getvalue()
+
+
 def qwen_tts_clone(
     text: str,
     ref_audio: str,
