@@ -108,7 +108,7 @@ Le **3ᵉ pilier** du post-training moderne, et souvent le **seul utilisé en pr
                   ┌──────────▼───────────┐
                   │  SFT (PT-02)         │
                   │  trl.SFTTrainer      │
-                  │  → Qwen-0.5B-SFT     │
+                  │  → Qwen3.5-0.8B-SFT  │
                   └──────────┬───────────┘
                              │
               ┌──────────────┼──────────────┐
@@ -357,7 +357,7 @@ En pratique : DPO pour l'alignement conversationnel, GRPO+RLVR pour le raisonnem
 Si SFT, DPO ou GRPO ne produisent pas d'amélioration mesurable sur GSM8K ou MMLU :
 
 - Vérifier que le dataset d'évaluation est bien séparé du dataset d'entraînement (`seed=42` pour le split, pas de fuite).
-- S'assurer que le nombre de steps d'entraînement est suffisant (minimum 100 steps pour observer un signal sur 0.5B).
+- S'assurer que le nombre de steps d'entraînement est suffisant (minimum 100 steps pour observer un signal sur Qwen3.5-0.8B).
 - Un seul seed ne suffit pas : les résultats sont bruités. Utiliser au minimum 4 seeds (`{0, 1, 7, 42}`) et vérifier que l'écart est >= 2 sigma (cf règle multi-seed CoursIA).
 - Le notebook PT-06 (`PT_06_eval_comparative.ipynb`) automatise cette comparaison avec verdict BEATS/NO BEATS/INCONCLUSIVE.
 
