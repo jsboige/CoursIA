@@ -391,7 +391,21 @@ Three notebooks in `SymbolicAI/Lean/` carry the transmission, one per level:
 
 **Prerequisites**: none for 17-a; elementary PD-codes for 17-b; basic Lean 4 (tactics, structures) for 17-c.
 
-**Human review — honest state**: to date the lake has been reviewed by bot organs (Hermes, proof-integrity CI) and merged by the coordinator, but **no named human review of the whole lake** has taken place. This is a declared limitation of the present digestion (grid #13106 point 10): the human review remains to be done and should be recorded here when it happens.
+**Human review — honest state**: to date the lake has been reviewed by bot organs (Hermes, proof-integrity CI) and merged by the coordinator, but **no named human review of the whole lake** has taken place. This is a declared limitation of the present digestion (grid **EPIC #13106 criterion 2**): the human review remains to be done and should be recorded here when it happens. To prepare for that review, two cheat sheets follow, to be cross-referenced with the "Structure" table above: who is already covered by the transmission, and under which form a named human-review act will be recorded.
+
+**Coverage by transmission**: the three notebooks listed above cover the lake only partially. This matrix cross-references each module with its coverage and the remaining review gap.
+
+| Module | Covered by | Review gap |
+|--------|------------|------------|
+| `Knots/Basic.lean` (Knot, Link, PD-code, `KnotDiagram.wf`) | KNOTS-01 (visualizations), KNOTS-02 (PD-codes) | Equivalence of representations, `KnotDiagram.wf` |
+| `Knots/Reidemeister.lean` (R1/R2/R3, `ReidemeisterEquiv`) | KNOTS-02 (moves), KNOTS-03 (walls) | Symmetries, formalization of the moves |
+| `Knots/Invariant.lean` (Fox 3-color, transfer R1/R2) | KNOTS-02 (Fox), KNOTS-03 (transfer + marquee) | Marquee `tricolorable_invariant`, named R2 walls |
+| `Knots/Conway.lean` (11n34, mutation, Alexander) | KNOTS-01 (history + Piccirillo) | Formal mutation, Alexander polynomial |
+| `Knots/Slice.lean` (slice, Piccirillo, Freedman) | KNOTS-01 (Piccirillo) | Slice/non-slice proofs, smooth/topological dichotomy |
+| `Knots/Lidman.lean` (11n102, unknotting = 2) | KNOTS-01 (Lidman) | Unknotting-number proofs, `Nat.sInf` |
+| `Knots/MathlibPrerequisites.lean` (prerequisite index) | Not covered by the notebooks | Index only, to be re-read against Mathlib v4.33.0 (`db584cd6`) |
+
+**Human-review act to be signed**: when the human review is carried out, it will take the form `Review by <name, affiliation> — date <YYYY-MM-DD> — scope <whole lake / module> — checks: structure / main proofs / i18n FR-EN — overall verdict` and will be inserted into this README. Grid **#13106 criterion 2** is satisfied by the first signed act; no partial act is recorded silently, and the present section remains honest until the act is written.
 
 ## References
 
