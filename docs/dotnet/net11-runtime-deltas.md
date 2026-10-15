@@ -93,6 +93,46 @@ runtime de −10 % sur les seules cellules de calcul serait invisible ici. Les b
 restent l'instrument de mesure ; les carnets prouvent la **non-régression et la compatibilité**
 de la chaîne notebook complète sous .NET 11 RC (kernel, Roslyn scripting, ML.NET, Infer.NET).
 
+## Complément po-2024 (2026-10-13) — franchir le plafond « carnets 10 vs 11 seulement »
+
+La contrainte ci-dessus (« carnet sous runtime 9 impossible ») tient **du canon kernel
+1.0.712001** (TFM net10.0). Elle est levable avec un instrument **non-canon documenté** :
+dotnet-interactive **1.0.617701**, dernière build mono-TFM **net9.0**, roulant sur les
+trois runtimes par `DOTNET_ROLL_FORWARD=LatestMajor` (`+ DOTNET_ROLL_FORWARD_TO_PRERELEASE=1`
+pour le RC). Build de kernel identique partout — la seule variable est le runtime.
+
+- **Runtimes isolés** user-local sans UAC : `~/.dotnet-r9` (9.0.20), `~/.dotnet-r10` (10.0.12),
+  `~/.dotnet-r11` (11.0.0-rc.1), chacun NETCore + ASP.NET (le host exige les deux).
+  **Prérequis restore** : une install runtime-seule fait échouer toute cellule
+  `#r "nuget: ..."` — dotnet-interactive restaure via le `dotnet` de son `DOTNET_ROOT`, qui
+  sans SDK rend `PackageRestoreResult(succeeded=false, errors=[])` et crashe en
+  `ArgumentException` (erreur avalée, constaté sur les builds 617701 ET 712001). Chaque dir
+  porte donc aussi un SDK (9.0.318 / 10.0.401), purement au service du restore — le runtime
+  hébergé reste fixé par le roll-forward (re-probe post-install : 9.0.20 / 10.0.12 / 11.0.0
+  inchangés).
+- **Preuve du runtime effectif** : carnet témoin une cellule (`System.Environment.Version`)
+  sous chaque kernelspec, avant et après installs SDK — `RUNTIME 9.0.20 / 10.0.12 / 11.0.0`
+  (contrôle canon 712001 @ r10 : `10.0.12`).
+- **Protocole** : wall-clock papermill par run, **médiane de 3 runs alternés** (jamais 3 runs
+  consécutifs du même runtime), chaque run vérifié (0 output `error`, toutes cellules
+  `execution_count` rempli) — 21/21 valides, 2026-10-13, i7-11800H.
+
+| Carnet | .NET 9 | .NET 10 | .NET 11 (rc.1) | Contrôle canon* |
+|---|---:|---:|---:|---:|
+| ML-5-TimeSeries | 11,37 s | 11,65 s (+2,5 %) | 12,48 s (+9,8 %) | 11,14 s |
+| Infer-2-Gaussian-Mixtures | 23,98 s | 25,79 s (+7,6 %) | 26,52 s (+10,6 %) | — |
+
+\* contrôle = canon 1.0.712001 sous .NET 10, contre 11,65 s pour l'instrument 617701 même
+runtime : écart instrument **4,4 %** — même ordre que les deltas inter-runtime. Dispersion
+intra-runtime ±10-15 % (ex. Infer-2 r11 : 24,29-30,66 s).
+
+**Lecture** : aucun delta 9 → 10 → 11 distinguable du bruit au wall-clock carnet —
+convergent avec la lecture po-2026 ci-dessus (kernel + Roslyn dominent), et le levier
+bancs 9 → 10 (−5 à −43 %) **ne se transfère pas au format carnet** : les médianes r9 sont
+égales ou plus courtes que r10/r11 aux bruits près. Ce complément ajoute : la donnée carnet
+.NET 9 (absente du volet po-2026), la médiane alternée n=3 (vs n=1/2 séances), et le bornage
+de l'écart instrument (4,4 %).
+
 ## Verdicts par axe (gain net mesuré vs chiffre attendu du digest)
 
 | Axe | Attendu (digest, baseline .NET 10) | Mesuré 10→11 | Mesuré 9→10 (rattrapage) | Verdict |
