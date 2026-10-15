@@ -127,6 +127,14 @@ Le notebook **22c** ferme la boucle ouverte par le 22 : après avoir *mesuré* l
 
 Les notebooks TAL classiques (23–26 : pipeline spaCy, n-grammes, CRF, PCFG/CYK) ont migré vers leur série dédiée : [`MyIA.AI.Notebooks/NLP/`](../../NLP/README.md) (EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271)). Cette série-ci reste centrée sur l'ingénierie des LLM — prompts, RAG, fine-tuning, scaling — et renvoie à la série NLP pour la tradition symbolique/probabiliste du traitement des langues.
 
+### Tier 8 : Du notebook à l'application
+
+Le notebook **23** franchit le dernier mur : le pipeline qui vivait dans des cellules devient un **service**. Le RAG du `05_RAG_Modern` (même corpus, même chunking, mêmes fonctions — extraction fidèle, chaque cellule citant son origine) est servi par une API **FastAPI** locale sur un port dynamique, testée par des appels `httpx` réels, puis exposé par une UI **Gradio** qui ne connaît que l'URL de l'API — jamais le pipeline. La leçon centrale est mesurée, pas affirmée : le transport pur HTTP coûte ~1 ms (GET `/health`), et sur `/query` le surcout de l'API est noyé dans la variance de génération — parfois négatif. Servir est une décision d'usage (qui peut appeler), pas de performance. Tous les services s'arrêtent proprement en fin de carnet. Le numéro 23 est réutilisé — les TAL historiques qui le portaient ont migré en série NLP (tier 7 ci-dessus).
+
+| # | Notebook | Description | Durée |
+|---|----------|-------------|-------|
+| 23 | `23_Du_Notebook_A_L_Application.ipynb` | **Servir le RAG du 05** : extraction fidèle du pipeline (corpus Lincoln-Douglas, chunking, embeddings, k-NN, génération citée) puis passage au service — API **FastAPI** (`/health`, `/query`) sur port dynamique testée par appels `httpx` réels, UI **Gradio** passant uniquement par l'API (test des sources déterministes : deux canaux, mêmes chunks), mesure du coût par couche (transport pur ~1 ms, surcout `/query` noyé dans la variance de génération), normalisation des scalaires numpy pour le contrat JSON, arrêt propre des services, 3 exercices C.1 | — |
+
 ## Prérequis
 
 ### Configuration API
