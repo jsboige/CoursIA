@@ -57,6 +57,36 @@ Références avancées clonées depuis la QC Cloud Library (avril 2026). Top per
 
 Voir [STRATEGIES_DETAIL.md](STRATEGIES_DETAIL.md#qc-strategy-library-clones-avance) pour le catalogue complet.
 
+### Livrables en attente de classement (présents sur disque, non encore départis par robustesse)
+
+Dossiers de `projects/` livrés par les lanes de recherche mais **sans verdict de backtest classant** à ce jour : ils n'entrent dans aucune des sections « Robuste / Historique / Exploratoire » ci-dessus — qui exigent un Sharpe vérifié — et sont listés ici pour que **chaque dossier du disque soit joignable depuis ce catalogue** (critère d'audit #17526). Les évaluations sous frais et le classement suivent les campagnes de backtest ; la description est celle du dossier lui-même.
+
+**Évaluations de stratégies publiques ou d'articles de recherche** :
+
+- [BTC-ETH-Rotation](BTC-ETH-Rotation/) — rotation crypto BTC/ETH.
+- [BitcoinRegimeGate-QC](BitcoinRegimeGate-QC/) — distillation de l'article QC Research « Bitcoin Regime Signal for Growth Equities » (Derek Melchin, août 2026).
+- [CAPMAlphaRankingDow30-QC](CAPMAlphaRankingDow30-QC/) — classement par alpha CAPM des composantes du Dow Jones.
+- [Crypto-Momentum-TopN](Crypto-Momentum-TopN/) — momentum Top-N sur un panier de 11 cryptomonnaies en USD.
+- [FourSleeve774](FourSleeve774/) — évaluation sous frais de courtier de la stratégie publique 774 « Four-Sleeve ».
+- [IchimokuEnergySector-QC](IchimokuEnergySector-QC/) — portage QC Cloud de l'article de recherche 9031 « Ichimoku Clouds In The Energy Sector ».
+- [Markov-Regime-Detection-Equity-Options](Markov-Regime-Detection-Equity-Options/) — détection de régime markovien, actions US (SPY) et options sur action.
+- [Markov-Regime-Detection-Index-Options](Markov-Regime-Detection-Index-Options/) — détection de régime markovien, indice S&P 500 (SPX) et options sur indice.
+- [MultiHorizonMomentum676](MultiHorizonMomentum676/) — évaluation sous frais de courtier de la stratégie publique 676 « Multi-Horizon ETF Momentum ».
+- [Paradox46VolScaledMomentum](Paradox46VolScaledMomentum/) — momentum vol-scalé sur ETFs US (indices + secteurs, versions levier x3 et équivalents 1x).
+- [SplitEventsLongOnly](SplitEventsLongOnly/) — projet d'évaluation dérivé de [Positive-Negative-Splits-ML](Positive-Negative-Splits-ML/).
+- [Stoploss-Benchmark-FixedPercentage](Stoploss-Benchmark-FixedPercentage/) — benchmark stop-loss pourcentage fixe (KO).
+- [Stoploss-Put-Hedge](Stoploss-Put-Hedge/) — couverture par puts hebdomadaires (actions US KO + options KO).
+- [ThreeZoneSPYDrawdownRotation](ThreeZoneSPYDrawdownRotation/) — évaluation sous frais IBKR de la stratégie publique 781 « Three-Zone SPY Drawdown Rotation ».
+
+**Dossiers d'appui (benchmarks, corrélations, documentation interne)** — compagnons des évaluations ci-dessus, pas des stratégies autonomes :
+
+- [FourSleeve774Benchmarks](FourSleeve774Benchmarks/) — benchmarks de frais pour l'évaluation 774.
+- [Paradox46Benchmarks](Paradox46Benchmarks/) — benchmarks de l'évaluation Paradox46.
+- [Paradox46Correlation](Paradox46Correlation/) — corrélations de l'évaluation Paradox46.
+- [ThreeZone781Benchmarks](ThreeZone781Benchmarks/) — benchmarks de comparaison pour l'évaluation 781.
+- [ThreeZone781Correlation](ThreeZone781Correlation/) — corrélations hebdomadaires entre la stratégie 781 réimplémentée et ses références.
+- [_docs](_docs/) — documentation interne de la zone projets (backlog d'optimisation, audits, analyses de régime).
+
 ---
 
 ## État vérifié sous frais réels (#1630, 2018-2025)
