@@ -685,5 +685,130 @@ class TestAccretionOnRealHistory(unittest.TestCase):
                          "le reclassement 42 -> 41b (#18986) est propre")
 
 
+# ---------------------------------------------------------------- scan-main (#20774)
+
+class ScanMainCollisionTests(unittest.TestCase):
+    """Le balayage main detecte les numeros occupes par 2+ sujets differents
+    dans une meme serie, en excluant les jumeaux (suffixe ou noyau en milieu
+    de nom) et les sorties papermill. Les controles positifs utilisent des
+    collisions documentees ; les controles negatifs verifient que la cle
+    de slot distingue ce que `index_key` confond (3D-01 / 3D-02) et que
+    `_same_item_scan` apparie les formes que `same_item` rate (compose
+    `-Python_en`, kernel en milieu de nom).
+    """
+
+    def test_scan_slot_distinguishes_digit_leading_numbers(self):
+        # 3D-01 et 3D-02 sont DEUX positions distinctes ; `index_key` les
+        # confond sous `3d`, le scan les separe.
+        a = "MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-From-Scratch.ipynb"
+        b = "MyIA.AI.Notebooks/GenAI/3D/3D-02-NeRF-Critic.ipynb"
+        self.assertNotEqual(csr._scan_slot(a), csr._scan_slot(b),
+                            "3D-01 et 3D-02 ne peuvent pas bucketer ensemble")
+
+    def test_scan_slot_handles_series_leading_files(self):
+        # ICT-48 et ICT-49 sont deux positions distinctes ; `index_key`
+        # rendait None sur les deux avant le fix.
+        a = "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-Onset9B-Aggregate-Python.ipynb"
+        b = "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-Other-Topic.ipynb"
+        sa = csr._scan_slot(a)
+        sb = csr._scan_slot(b)
+        self.assertIsNotNone(sa, "ICT-48 doit produire un slot")
+        self.assertIsNotNone(sb, "ICT-49 doit produire un slot")
+        self.assertNotEqual(sa, sb)
+
+    def test_scan_slot_collapses_accented_letter(self):
+        # SL-12b (avec lettre d'accretion 'b') produit un slot qui inclut
+        # la lettre : SL-12b, pas SL-12.
+        a = "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb"
+        slot = csr._scan_slot(a)
+        self.assertEqual(slot, ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning", "SL-12b"))
+
+    def test_same_item_scan_matches_compound_lang_suffix(self):
+        # FT-01-...-Python et FT-01-...-Python_en sont le MEME item ;
+        # `same_item` (canon) rate le compose, `_same_item_scan` le couvre.
+        a = "MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb"
+        b = "MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python_en.ipynb"
+        self.assertFalse(csr.same_item(a, b),
+                         "le canon `same_item` rate le compose `-Python_en` (limitation connue)")
+        self.assertTrue(csr._same_item_scan(a, b),
+                        "_same_item_scan doit reconnaitre le compose")
+
+    def test_same_item_scan_matches_kernel_in_middle(self):
+        # SW-10-CSharp-RDFStar et SW-10-Python-RDFStar : le kernel
+        # (`CSharp` / `Python`) est en milieu de nom, pas en suffixe.
+        a = "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-CSharp-RDFStar.ipynb"
+        b = "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb"
+        self.assertTrue(csr._same_item_scan(a, b),
+                        "le kernel en milieu de nom doit etre neutralise")
+
+    def test_same_item_scan_does_not_match_different_topics(self):
+        # App-14-ConnectFour-Adversarial et App-14-ConnectFour-CSharp :
+        # `Adversarial` n'est PAS un token noyau, le strip ne le touche
+        # pas, et la collision reste un vrai conflit de sujet.
+        a = "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb"
+        b = "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb"
+        self.assertFalse(csr._same_item_scan(a, b),
+                         "deux sujets differents ne sont PAS un jumeau")
+
+    def test_scan_main_finds_known_collision_ict48(self):
+        # ICT-48 est la collision documentee de la tranche 1. Si le
+        # balayage la manque, la garde regresse.
+        try:
+            collisions = csr.scan_main_collisions("origin/main")
+        except RuntimeError:
+            self.skipTest("origin/main indisponible")
+        ict48 = [c for c in collisions
+                 if c["slot"] == "ICT-48"
+                 and c["dir"].endswith("IIT/ICT-Series")]
+        self.assertEqual(len(ict48), 1, "ICT-48 doit remonter comme collision documentee")
+        self.assertGreaterEqual(len(ict48[0]["paths"]), 2)
+
+    def test_scan_main_finds_known_collision_sl12b(self):
+        # SL-12b : PavlovDLS-Reproduction vs SpectralLogicSynthesis.
+        try:
+            collisions = csr.scan_main_collisions("origin/main")
+        except RuntimeError:
+            self.skipTest("origin/main indisponible")
+        sl12b = [c for c in collisions
+                 if c["slot"] == "SL-12b"
+                 and c["dir"].endswith("SymbolicAI/SymbolicLearning")]
+        self.assertEqual(len(sl12b), 1, "SL-12b doit remonter comme collision documentee")
+
+    def test_scan_main_filters_papermill_outputs(self):
+        # Aucune collision ne peut etre uniquement des sorties papermill
+        # (`-output.ipynb` ou `_output.ipynb`) : le filtre du scan les
+        # elimine avant le bucket.
+        try:
+            collisions = csr.scan_main_collisions("origin/main")
+        except RuntimeError:
+            self.skipTest("origin/main indisponible")
+        for c in collisions:
+            output_only = all(
+                p.lower().endswith("-output.ipynb") or p.lower().endswith("_output.ipynb")
+                for p in c["paths"]
+            )
+            self.assertFalse(output_only,
+                             "collision %s ne peut pas etre uniquement des sorties papermill"
+                             % c["slot"])
+
+    def test_scan_main_returns_json_serializable(self):
+        # La sortie machine passe par `json.dumps` ; les structures
+        # doivent etre serialisables sans aide.
+        try:
+            collisions = csr.scan_main_collisions("origin/main")
+        except RuntimeError:
+            self.skipTest("origin/main indisponible")
+        payload = {"ref": "origin/main", "count": len(collisions), "collisions": collisions}
+        encoded = json.dumps(payload, ensure_ascii=False)
+        decoded = json.loads(encoded)
+        self.assertEqual(decoded["count"], len(collisions))
+        for c in decoded["collisions"]:
+            self.assertIn("kind", c)
+            self.assertIn("dir", c)
+            self.assertIn("slot", c)
+            self.assertIn("paths", c)
+            self.assertIn("ref", c)
+
+
 if __name__ == "__main__":
     unittest.main()
