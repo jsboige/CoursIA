@@ -882,9 +882,12 @@ def run_pipeline(
                 duration_src = "wav navigateur (webm sans Cues)"
             if trim_start is not None:
                 # Mode page : la webm brute inclut le preambule (chargement,
-                # play, warmup) — la fenetre utile commence a trim_start.
+                # play, warmup) — la fenetre utile commence a trim_start — ET
+                # la queue d'export (clics menu/export apres l'attente) : la
+                # fenetre se borne a capture_seconds par definition.
                 duration_v = max(0.0, duration_v - float(trim_start))
-                duration_src = f"video (webm page entiere, -ss {float(trim_start):.1f} s)"
+                duration_v = min(duration_v, float(capture_seconds))
+                duration_src = f"video (webm page entiere, -ss {float(trim_start):.1f} s, fenetre {duration_v:.0f} s)"
             audible = [
                 t for t in tts_tracks if float(t["start_s"]) < duration_v - 1.0
             ]
