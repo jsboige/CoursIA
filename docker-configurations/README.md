@@ -1,6 +1,6 @@
 # Docker Configurations - GenAI Services
 
-Configurations Docker pour les 11 services GenAI sur po-2023.
+Configurations Docker pour les services GenAI sur po-2023 (19 dossiers sous `services/`, dont `shared`).
 
 ## Vue d'ensemble
 
