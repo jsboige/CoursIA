@@ -67,7 +67,7 @@ Après le capstone, SC-27 change d'angle : au lieu d'ajouter une brique, il **me
 
 | Notebook | Prérequis | Dépendances |
 |----------|-----------|-------------|
-| SC-23 Cross-Chain | SC-3..SC-8 (Solidity), notions de bridges | Compte testnet Sepolia |
+| SC-23 Cross-Chain | SC-3 à SC-10 (Solidity et account abstraction), notions de bridges | Compte testnet Sepolia |
 | SC-24 Testnet-Deploy | SC-2 (Setup web3.py), SC-3 (Solidity Basics) | `web3 py-solc-x xrpl-py python-dotenv` + clé API Alchemy/Infura |
 | SC-25 Mainnet-Deploy | SC-24 complète | `web3 py-solc-x python-dotenv` + ETH sur Base/Polygon (~$0.01-0.50) |
 | SC-26 Final-Project | SC-0..25 (toute la série), en particulier SC-9/SC-15/SC-16-17/SC-24 | Foundry (forge, anvil), web3, pycryptodome |
