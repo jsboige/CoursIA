@@ -36476,15 +36476,15 @@ L'IIA est l'axiome le plus difficile a satisfaire : Borda et Pluralite accumulen
 - Borda, J.-C. de (1781). Memoire sur les elections au scrutin. Histoire de l'Academie Royale des Sciences, Paris.
 
 ",,,,,,,,6b55b9c739ccca08,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,e412b143,markdown,fr,9bc322d664c7ad4b,"# SocialChoice 02 - Choix Social Formel en Lean 4
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,e412b143,markdown,fr,de2ea714a6792015,"# SocialChoice 01b - Choix Social Formel en Lean 4
 
-**Navigation** : [<< 01-Arrow-Impossibility-Theorem.ipynb](01-Arrow-Impossibility-Theorem.ipynb) | [03-Voting-Methods.ipynb >>](03-Voting-Methods.ipynb) | [Index](../README.md)
+**Navigation** : [<< 01-Arrow-Impossibility-Theorem.ipynb](01-Arrow-Impossibility-Theorem.ipynb) | [02-Stable-Marriage-Gale-Shapley.ipynb >>](02-Stable-Marriage-Gale-Shapley.ipynb) | [Index](../README.md)
 
 **Autres notebooks** : [04-Computational-Aggregation-SAT-Z3.ipynb](04-Computational-Aggregation-SAT-Z3.ipynb)
 
 **Kernel** : Python 3
 
----
+***
 
 ## Introduction
 
@@ -36508,8 +36508,8 @@ Ces theoremes demontrent des limitations fondamentales des systèmes de vote et 
 3. Explorer le theoreme de Sen
 4. Comprendre le theoreme de l'electeur median
 
-### Duree estimee : 80 minutes",,,,,,,,9bc322d664c7ad4b,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,6b49c072,markdown,fr,1afcaf914da3bf3b,"---
+### Duree estimee : 80 minutes",,,,,,,,de2ea714a6792015,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,6b49c072,markdown,fr,032ff3f9ffac5938,"***
 
 ## 1. Definitions de Base
 
@@ -36517,7 +36517,7 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,6b4
 
 Une **préférence** est une relation binaire sur un ensemble d'alternatives qui est :
 - **Complete** : pour tout $x, y$, soit $x \succeq y$ soit $y \succeq x$
-- **Transitive** : si $x \succeq y$ et $y \succeq z$, alors $x \succeq z$",,,,,,,,1afcaf914da3bf3b,,,,,,,,
+- **Transitive** : si $x \succeq y$ et $y \succeq z$, alors $x \succeq z$",,,,,,,,032ff3f9ffac5938,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,2056c1ac,code,fr,e9fff2c874846f31,"-- Definitions de base pour la theorie du choix social
 
 -- Relation de preference faible : x R y signifie ""x est au moins aussi bon que y""
@@ -36599,7 +36599,7 @@ def makeBot {A : Type} [DecidableEq A] (p : Preference A) (a : A) : Preference A
 
 #check @makeTop
 #check @makeBot",,,,,,,,9d04cfbe498cd59e,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,576f7350,markdown,fr,076fa91b1b28b59e,"---
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,576f7350,markdown,fr,af208e6f2268d74b,"***
 
 ## 2. Axiomes d'Arrow
 
@@ -36607,7 +36607,7 @@ Le theoreme d'Arrow repose sur trois axiomes qu'on pourrait considerer comme ""r
 
 ### 2.1 Pareto faible (P)
 
-Si TOUS les individus preferent strictement x a y, alors la societe prefere strictement x a y.",,,,,,,,076fa91b1b28b59e,,,,,,,,
+Si TOUS les individus preferent strictement x a y, alors la societe prefere strictement x a y.",,,,,,,,af208e6f2268d74b,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,c3da2916,code,fr,95209d832ca67401,"-- Axiome de Pareto faible
 def WeakPareto {I A : Type} (swf : SocialWelfareFunction I A) : Prop :=
   ∀ (prefs : Profile I A) (x y : A),
@@ -36640,7 +36640,7 @@ def NonDictatorial {I A : Type} (swf : SocialWelfareFunction I A) : Prop :=
 
 #check @IsDictator
 #check @NonDictatorial",,,,,,,,9b64d2677b4278f0,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,f06da92d,markdown,fr,a74d6d48d7e31460,"---
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,f06da92d,markdown,fr,1c797c2bfd8ed8e5,"***
 
 ## 3. Theoreme d'Arrow
 
@@ -36648,7 +36648,7 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,f06
 
 **Theoreme d'Arrow (1951)** : S'il y a au moins 3 alternatives et au moins 2 individus, alors toute fonction de bien-etre social satisfaisant Pareto faible et IIA est dictatoriale.
 
-$$\text{Pareto} \land \text{IIA} \Rightarrow \neg\text{NonDictatorial}$$",,,,,,,,a74d6d48d7e31460,,,,,,,,
+$$\text{Pareto} \land \text{IIA} \Rightarrow \neg\text{NonDictatorial}$$",,,,,,,,1c797c2bfd8ed8e5,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,601efd19,code,fr,f0004e3f361aab83,"-- Theoreme d'Arrow : toute SWF satisfaisant Pareto et IIA est dictatoriale
 -- Version sketch (preuve complete: game_theory_lean/SocialChoice/Arrow.lean, theorem arrow)
 -- Preuve Geanakoplos 2005: extremal_lemma -> pivot_exists -> pivot_is_dictator_except_b
@@ -36717,7 +36717,7 @@ theorem all_decisive_pred {I A : Type}
   exact h_all i True.intro
 
 #check @all_decisive_pred",,,,,,,,064510efda83c45a,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,751691ce,markdown,fr,e590a052bf9aa986,"---
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,751691ce,markdown,fr,671733fe9722856d,"***
 
 ## 4. Theoreme de Sen
 
@@ -36725,7 +36725,7 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,751
 
 Le **theoreme de Sen** (1970) montre un conflit entre **liberte individuelle** et **efficacite Pareto**.
 
-### 4.2 Liberte minimale",,,,,,,,e590a052bf9aa986,,,,,,,,
+### 4.2 Liberte minimale",,,,,,,,671733fe9722856d,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,e4096d22,code,fr,2a6cc07af4b7b4c5,"-- Liberte minimale (Minimal Liberalism) - version bidirectionnelle (Sen 1970)
 -- Chaque individu est ""decisif"" sur au moins une paire d'alternatives,
 -- dans les DEUX directions : s'il prefere x a y, la societe aussi,
@@ -36767,15 +36767,15 @@ theorem sen_impossibility_sketch
   sorry
 
 #check @sen_impossibility_sketch",,,,,,,,4b5cf0f714d773cd,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,385b2755,markdown,fr,6a7debe5ab177fbf,"L'exemple de **Lady Chatterley** est illustre dans le notebook Python compagnon (20b).
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,385b2755,markdown,fr,845ba3acb86477d1,"L'exemple de **Lady Chatterley** est illustre dans le notebook Python compagnon [`03-Voting-Methods.ipynb`](03-Voting-Methods.ipynb).
 
----
+***
 
 ## 5. Theoreme de l'Electeur Median
 
 ### 5.1 Préférences unimodales (Single-peaked)
 
-Le theoreme d'Arrow montre qu'aucune règle de vote parfaite n'existe en general. Cependant, si on **restreint le domaine** a des préférences unimodales, des résultats positifs emergent.",,,,,,,,6a7debe5ab177fbf,,,,,,,,
+Le theoreme d'Arrow montre qu'aucune règle de vote parfaite n'existe en general. Cependant, si on **restreint le domaine** a des préférences unimodales, des résultats positifs emergent.",,,,,,,,845ba3acb86477d1,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,94198d44,code,fr,494ba9183c18c7f0,"-- Preferences unimodales (single-peaked)
 -- L'espace des alternatives est ordonne (ex: gauche-droite sur [0, 1])
 
@@ -36826,21 +36826,20 @@ theorem median_voter_theorem_sketch
   sorry
 
 #check @median_voter_theorem_sketch",,,,,,,,2411f2e946fed976,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,30928a68,markdown,fr,ec09de3c67ab39be,"---
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,30928a68,markdown,fr,eaec9004d2b2f876,"***
 
 ## 6. Exemples guides
 
 ### Exemple guide 1 : Dictature et axiomes
 
-Montrer qu'une dictature satisfait les axiomes de Pareto faible et IIA.
+Montrez qu'une dictature (ou un individu copie les préférences d'un electeur designe)
+satisfait les axoimes de Pareto faible et IIA.
+Construisez la dictature en Lean et prouvez ces deux proprietes.
 
-### Exemple guide 2 : Deux alternatives
-
-Montrer que le theoreme d'Arrow ne s'applique pas avec seulement 2 alternatives.
-
-### Exemple guide 3 : Preuve de Pareto
-
-Prouver formellement que l'ensemble de tous les individus est decisif.",,,,,,,,ec09de3c67ab39be,,,,,,,,
+**Indice** : Definissez  comme une SWF qui retourne les préférences
+d'un individu fixe . Pour Pareto, utilisez le fait que si tout le monde prefere
+ a , alors  aussi. Pour IIA, montrez que la restriction a une paire ne change
+pas la préférence du dictateur.",,,,,,,,eaec9004d2b2f876,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,2860356c,markdown,fr,322de5b600d92d1d,"---
 
 ## 7. Exemples guides
@@ -36855,7 +36854,7 @@ Construisez la dictature en Lean et prouvez ces deux proprietes.
 d'un individu fixe . Pour Pareto, utilisez le fait que si tout le monde prefere
  a , alors  aussi. Pour IIA, montrez que la restriction a une paire ne change
 pas la préférence du dictateur.",,,,,,,,322de5b600d92d1d,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,2d49266e,code,fr,65a178319f4d1d5c,"-- TODO etudiant : Definir dictatorship (SWF qui copie les preferences de d)
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,2d49266e,code,fr,45230fccafc303db,"-- TODO etudiant : Definir dictatorship (SWF qui copie les preferences de d)
 -- def dictatorship {I A : Type} (d : I) : SocialWelfareFunction I A := ...
 
 -- TODO etudiant : Prouver qu'une dictature satisfait Pareto faible
@@ -36870,21 +36869,22 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,2d4
 -- Indice: pour Pareto, h_all d donne la preference du dictateur
 -- Indice: pour IIA, simp only [dictatorship] puis utiliser h_xy d
 
-pass  -- Remplacer par vos definitions et preuves",,,,,,,,65a178319f4d1d5c,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,67c83579,markdown,fr,077e25745faa42ed,"### Exemple guide 2 : Deux alternatives
+-- pass  -- placeholder etudiant (Lean 4 n'a pas de mot-cle pass ; sera complete par l'etudiant)
+example : True := trivial  -- no-op de stub : une cellule uniquement en commentaires est une erreur de parse Lean",,,,,,,,45230fccafc303db,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,67c83579,markdown,fr,e71788e4b20e104d,"### Exemple guide 2 : Deux alternatives
 
 Expliquez pourquoi, avec exactement 2 alternatives, la règle majoritaire satisfait
 Pareto, IIA et Non-dictature. Quel hypothesis du theoreme d'Arrow est relaxee ?
 
 **Indice** : La condition |A| >= 3 est essentielle. Avec 2 alternatives,
 la règle majoritaire est une SWF valide qui satisfait les trois axiomes.
-Voir le notebook Python compagnon (20b) pour l'illustration.",,,,,,,,077e25745faa42ed,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,0e0f5766,markdown,fr,fc8f22983cc61c16,"---
+Voir [`03-Voting-Methods.ipynb`](03-Voting-Methods.ipynb) pour l'illustration.",,,,,,,,e71788e4b20e104d,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,0e0f5766,markdown,fr,aa884d9f9305ac50,"***
 
-## 8. Exercices supplementaires
+## 7. Exercices supplementaires
 
 Les trois exercices ci-dessous s'appuient sur les definitions formalisees en sections 1-5.
-Ils sont **independants** et les stubs compilent tel quel (C.1).",,,,,,,,fc8f22983cc61c16,,,,,,,,
+Ils sont **independants** et les stubs compilent tel quel (C.1).",,,,,,,,aa884d9f9305ac50,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,a2175d0f,code,fr,3d1dc0349bd1f71e,"-- EXERCICE 4 : Verifier que le Pareto est respecte sur un profil concret
 -- ================================================================
 -- Soit 2 individus (Alice : Fin 2 = 0, Bob : Fin 2 = 1) et 3 alternatives (a, b, c).
@@ -36943,7 +36943,7 @@ def margin_M_vs_D : Nat := 2  -- TODO etudiant : confirmer
 
 #eval (margin_M_vs_A, margin_M_vs_D)
 -- Resultat attendu : (2, 2) => M bat tous => Condorcet",,,,,,,,79763eca1b5ceebe,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,5aaa1cbd,markdown,fr,2c901f75e9746c53,"---
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,5aaa1cbd,markdown,fr,0a3e032e64d9cf26,"***
 
 ## Synthese
 
@@ -36970,20 +36970,20 @@ satisfaisant Pareto + IIA est dictatoriale. Prouve dans
 
 **Theoreme de Sen (1970)** : Pareto + liberalisme minimal sont incompatibles.
 Prouve dans `Sen.lean`. Le paradoxe de Lady Chatterley illustre ce résultat
-dans le notebook Python compagnon `03-Voting-Methods.ipynb`.",,,,,,,,2c901f75e9746c53,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,3f2d58dd,markdown,fr,73944852dc92dfca,"---
+dans le notebook Python compagnon `03-Voting-Methods.ipynb`.",,,,,,,,0a3e032e64d9cf26,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,3f2d58dd,markdown,fr,d8a22cb6a79ecd95,"***
 
 ## Annexe : Tour de SocialChoiceLean (Dominik Peters)
 
 Cette section presente la librairie [SocialChoiceLean](https://github.com/dominikpeters/social-choice-lean) de Dominik Peters,
 qui formalise en Lean 4 (avec Mathlib) de nombreuses règles de vote et theoremes d'impossibilite.
 Elle complete les preuves du port  etendues dans ce notebook.
-",,,,,,,,73944852dc92dfca,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,db2db7fe,markdown,fr,23747e68f5b4f22a,"---
+",,,,,,,,d8a22cb6a79ecd95,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,db2db7fe,markdown,fr,783c1ef578ebba2e,"***
 
 ### 1. Cadre Formel
 
-DominikPeters utilise un cadre base sur les **préférences strictes** (ordres lineaires stricts), ou chaque electeur a un classement sans ex aequo. Ce choix simplifie les definitions des marges et des axiomes par rapport aux préférences faibles.",,,,,,,,23747e68f5b4f22a,,,,,,,,
+DominikPeters utilise un cadre base sur les **préférences strictes** (ordres lineaires stricts), ou chaque electeur a un classement sans ex aequo. Ce choix simplifie les definitions des marges et des axiomes par rapport aux préférences faibles.",,,,,,,,783c1ef578ebba2e,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,4421dcd3,code,fr,865f03172de48376,"-- Simplified framework inspired by DominikPeters/SocialChoiceLean
 -- Full formalization (with Mathlib): social_choice_lean_peters/PetersTour.lean
 
@@ -37019,11 +37019,11 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,f2a
 | Resolutude | `Resolute f` | `IsResolute f` |
 
 Dans Peters, `LinearOrder` fournit `lt` automatiquement. Ici, on le définit explicitement avec `irrefl`, `trans`, et `conn` (totalite pour les éléments distincts).",,,,,,,,ea5a4747470416ac,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,06df6f2c,markdown,fr,bc7324624ce7ad5e,"---
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,06df6f2c,markdown,fr,e036da7e40f88738,"***
 
 ### 2. Marges et Vainqueur de Condorcet
 
-La **marge** d'un candidat sur un autre mesure l'ecart de votes : combien d'electeurs preferent a a b, moins combien preferent b a a. Un **vainqueur de Condorcet** bat tous les autres par marge positive.",,,,,,,,bc7324624ce7ad5e,,,,,,,,
+La **marge** d'un candidat sur un autre mesure l'ecart de votes : combien d'electeurs preferent a a b, moins combien preferent b a a. Un **vainqueur de Condorcet** bat tous les autres par marge positive.",,,,,,,,e036da7e40f88738,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,cd359e3e,code,fr,5455b6046f041678,"-- Margin function: pairwise difference
 -- In Peters: (Finset.univ.filter (fun v => Prefers P v a b)).card
 --   minus the reverse. Here: abstract signature.
@@ -37052,12 +37052,12 @@ La **marge** est l'outil central du framework de Peters. Elle permet de définir
 Le concept de marge est intuitif : si 7 electeurs preferent A a B et 3 preferent B a A, la marge de A sur B est +4. Un Condorcet winner a une marge positive contre chaque adversaire.
 
 > **Note technique** : dans la formalisation complete, la marge utilise `Finset.card` (nombre d'electeurs preferant a a b). Notre version simplifiee prend la marge comme fonction abstraite.",,,,,,,,29c1dd6091288663,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,4ec3c072,markdown,fr,b75a1d72c8203bac,"---
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,4ec3c072,markdown,fr,a7940088686bc9dc,"***
 
 ### 3. Axiomes de Vote
 
-DominikPeters définit et utilise 15+ axiomes pour classifier les règles de vote. Chaque axiome exprime une propriete desirable : equite, robustesse, non-manipulabilite.",,,,,,,,b75a1d72c8203bac,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,446ad96a,code,fr,749d8e4a00e78e42,"-- Pareto Efficiency: if all prefer c to d, d cannot win
+DominikPeters définit et utilise 15+ axiomes pour classifier les règles de vote. Chaque axiome exprime une propriete desirable : equite, robustesse, non-manipulabilite.",,,,,,,,a7940088686bc9dc,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,446ad96a,code,fr,1b56cba3c669dc15,"-- Pareto Efficiency: if all prefer c to d, d cannot win
 def SatisfiesPareto {V A : Type} (f : VotingRule V A) : Prop :=
   ∀ P c d, (∀ v, (P v).lt c d) → ¬ f P d
 
@@ -37067,7 +37067,7 @@ def SatisfiesUnanimity {V A : Type} (f : VotingRule V A) : Prop :=
 
 -- Strategyproof (resolute): no voter can improve outcome by misreporting
 -- The voter's true preferences are P v, but they report 'fake' instead
-def IsStrategyproof {V A : Type} [DecidableEq A] (f : VotingRule V A) : Prop :=
+def IsStrategyproof {V A : Type} [DecidableEq V] [DecidableEq A] (f : VotingRule V A) : Prop :=
   ∀ (P : VotingProfile V A) (v : V) (fake : StrictPref A),
     let P' := fun w : V => if w = v then fake else P w
     ¬ ∃ cr cf : A,
@@ -37075,7 +37075,7 @@ def IsStrategyproof {V A : Type} [DecidableEq A] (f : VotingRule V A) : Prop :=
 
 #check @SatisfiesPareto
 #check @SatisfiesUnanimity
-#check @IsStrategyproof",,,,,,,,749d8e4a00e78e42,,,,,,,,
+#check @IsStrategyproof",,,,,,,,1b56cba3c669dc15,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,37f8a7b1,markdown,fr,ef058ab129607a2f,"#### Interpretation des axiomes
 
 | Axiome | Intuition | Exigence |
@@ -37085,13 +37085,14 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,37f
 | **Non-manipulabilite** | Aucun electeur ne peut ameliorer le résultat en mentant | Equilibre stratégique |
 
 Ces trois axiomes semblent naturels et faibles. Pourtant, le theoreme de Gibbard-Satterthwaite montre qu'ils sont **incompatibles** avec la non-dictature pour >= 3 candidats.",,,,,,,,ef058ab129607a2f,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,2420f738,markdown,fr,cc372bf95aa57cd9,"---
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,2420f738,markdown,fr,faad70bcdb3ef385,"***
 
 ### 4. Theoreme de Gibbard-Satterthwaite
 
-Le résultat central de la théorie du choix social : toute règle de vote resolutive, unanime et non-manipulable (pour >= 3 candidats) doit etre une dictature. Ce theoreme montre que **toute election est manipulable** (sauf dictature).
+Renvoi explicite : la présentation canonique détaillée du théorème — énoncé, témoins de manipulation, exercices sur profils concrets — vit dans le notebook dédié **[`05-Gibbard-Satterthwaite.ipynb`](05-Gibbard-Satterthwaite.ipynb)**. Rappel du résultat : toute règle resolutive, unanime et non-manipulable (pour >= 3 candidats) doit être une dictature — autrement dit, toute élection non dictatoriale est manipulable.
 
-La preuve formelle dans Peters fait 5 fichiers Lean (BaseCase + Common + InductionStepCase1 + InductionStepCase2 + Main), avec une induction forte sur le nombre d'electeurs.",,,,,,,,cc372bf95aa57cd9,,,,,,,,
+Ce tour n'en conserve pas d'esquisse locale : la preuve formelle complète (induction forte sur le nombre d'électeurs) vit dans le lake dédié [`social_choice_lean_peters`](social_choice_lean_peters/PetersTour.lean), qui importe `SocialChoice.Impossibilities.GibbardSatterthwaite.Main`.
+",,,,,,,,faad70bcdb3ef385,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,bc62119b,code,fr,ebf6ca4bcda41de1,"-- Dictatorial (for resolute rules): one voter's preference determines the winner
 def IsDictatorialRule {V A : Type} (f : VotingRule V A) : Prop :=
   ∃ d : V, ∀ P c, f P c → ∀ d' : A, d' ≠ c → (P d).lt c d'
@@ -37131,7 +37132,7 @@ La preuve formelle suit l'approche classique par contraposition :
 3. Par induction sur le nombre d'electeurs, on construit une contradiction
 
 > **Preuve complete** : `SocialChoice.Impossibilities.GibbardSatterthwaite.Main` dans `social_choice_lean_peters/`",,,,,,,,d42dceb4d00f7a66,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,f78bd320,markdown,fr,7e999fafc49dfd6c,"---
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,f78bd320,markdown,fr,201afe69ea123fc6,"***
 
 ### 5. Impossibilites de Condorcet
 
@@ -37140,14 +37141,14 @@ DominikPeters formalise 4 theoremes d'impossibilite lies a Condorcet. Chacun mon
 1. **Condorcet + Participation** => Impossible (Moulin 1988)
 2. **Condorcet + Renforcement** => Impossible (Young 1975)
 3. **Condorcet + Non-manipulabilite** => Impossible
-4. **Anonymat + Neutralite + Resolutude** => Impossible (nombre pair)",,,,,,,,7e999fafc49dfd6c,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,d5dc58ad,code,fr,615862377f260b4a,"-- Condorcet impossibilities: Condorcet consistency + natural axiom => contradiction
+4. **Anonymat + Neutralite + Resolutude** => Impossible (nombre pair)",,,,,,,,201afe69ea123fc6,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,d5dc58ad,code,fr,b20935d1208e3b6a,"-- Condorcet impossibilities: Condorcet consistency + natural axiom => contradiction
 -- All formalized in SocialChoice.Impossibilities.* (Peters project)
 
 -- Key result: if a rule is Condorcet consistent, resolute and strategyproof,
 -- it cannot exist (for >= 3 alternatives)
 theorem condorcet_strategyproof_impossible_sketch
-    {V A : Type} [DecidableEq A]
+    {V A : Type} [DecidableEq V] [DecidableEq A]
     (f : VotingRule V A)
     (margin : VotingProfile V A → MarginFun A)
     (hf_res : IsResolute f)
@@ -37166,7 +37167,7 @@ theorem condorcet_strategyproof_impossible_sketch
 -- Formalized in SocialChoice.Impossibilities.CondorcetReinforcement
 -- (Young 1975)
 
-#check @condorcet_strategyproof_impossible_sketch",,,,,,,,615862377f260b4a,,,,,,,,
+#check @condorcet_strategyproof_impossible_sketch",,,,,,,,b20935d1208e3b6a,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,3b8ca8a2,markdown,fr,c89253cfc0d7eefa,"#### Interpretation des impossibilites de Condorcet
 
 | Impossibilite | Axiomes | Résultat | Reference |
@@ -37179,11 +37180,11 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,3b8
 Le **no-show paradox** (Moulin 1988) est particulierement frappant : ajouter des electeurs qui classent votre candidat en tete peut le faire perdre ! Cela signifie que ne pas voter peut etre une meilleure stratégie que de voter.
 
 Ces résultats montrent que la **coherence de Condorcet** est une condition forte qui exclut de nombreuses proprietes desiderables.",,,,,,,,c89253cfc0d7eefa,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,5afca709,markdown,fr,536f7ff54b3bc28d,"---
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,5afca709,markdown,fr,52012523fab12524,"***
 
 ### 6. Split Cycle (Holliday & Pacuit 2023)
 
-La règle Split Cycle est un cas particulier dans la théorie du choix social : c'est la règle la plus fine qui soit coherente avec Condorcet et acyclique. Elle resout le problème des cycles de Condorcet en ""affaiblissant"" les marges dans les cycles.",,,,,,,,536f7ff54b3bc28d,,,,,,,,
+La règle Split Cycle est un cas particulier dans la théorie du choix social : c'est la règle la plus fine qui soit coherente avec Condorcet et acyclique. Elle resout le problème des cycles de Condorcet en ""affaiblissant"" les marges dans les cycles.",,,,,,,,52012523fab12524,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,214ce2f4,code,fr,2cb06b1d9d6a1a9c,"-- Split Cycle (Holliday & Pacuit 2023)
 -- The finest Condorcet-consistent, acyclic voting rule
 
@@ -37229,7 +37230,7 @@ L'idee cle de Split Cycle est d'**affaiblir les relations de defaite** : on ne r
 | Renversement | Prouve | `SplitCycle/Reversal.lean` |
 
 Split Cycle est unique : c'est la règle la plus fine satisfaisant Condorcet + acyclicite + une autre propriete naturelle (voir Holliday & Pacuit 2023 pour les details).",,,,,,,,bd8750247503bac0,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,2fad1754,markdown,fr,adae4632fc25d78c,"---
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,2fad1754,markdown,fr,6ee099ba9c97ed9e,"***
 
 ### 7. Règles de Vote Formalisees
 
@@ -37252,22 +37253,22 @@ DominikPeters verifie systematiquement les axiomes pour 15+ règles de vote, gra
 | **Top Cycle** | Condorcet, Monotonicity, Smith, MutualMajority |
 | **Uncovered Set** | Condorcet, Monotonicity, Neutrality, Smith, Clones |
 
-**12 règles, 14 axiomes distincts**. Chaque verification est une preuve formelle en Lean 4.",,,,,,,,adae4632fc25d78c,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,8cd1637d,markdown,fr,836e680422522367,"---
+**12 règles, 14 axiomes distincts**. Chaque verification est une preuve formelle en Lean 4.",,,,,,,,6ee099ba9c97ed9e,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,8cd1637d,markdown,fr,6ced26cc11d03648,"***
 
 ### 8. Theoreme de Duggan-Schwartz
 
-Le theoreme de Duggan-Schwartz etend Gibbard-Satterthwaite aux **règles multi-gagnants** (qui peuvent sélectionner plusieurs candidats). Il utilise deux notions de non-manipulabilite : optimiste et pessimiste.",,,,,,,,836e680422522367,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,5cba0be9,code,fr,a6fc5fc66fbec659,"-- Duggan-Schwartz: extension to multi-winner rules
+Le theoreme de Duggan-Schwartz etend Gibbard-Satterthwaite aux **règles multi-gagnants** (qui peuvent sélectionner plusieurs candidats). Il utilise deux notions de non-manipulabilite : optimiste et pessimiste.",,,,,,,,6ced26cc11d03648,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,5cba0be9,code,fr,4d4889bc1e3c7447,"-- Duggan-Schwartz: extension to multi-winner rules
 
 -- Optimist strategyproof: can't improve best possible outcome
-def IsOptimistSP {V A : Type} [DecidableEq A] (f : VotingRule V A) : Prop :=
+def IsOptimistSP {V A : Type} [DecidableEq V] [DecidableEq A] (f : VotingRule V A) : Prop :=
   ∀ (P : VotingProfile V A) (v : V) (fake : StrictPref A),
     let P' := fun w : V => if w = v then fake else P w
     ¬ ∃ y, f P' y ∧ ∀ x, f P x → (P v).lt y x
 
 -- Pessimist strategyproof: can't improve worst possible outcome
-def IsPessimistSP {V A : Type} [DecidableEq A] (f : VotingRule V A) : Prop :=
+def IsPessimistSP {V A : Type} [DecidableEq V] [DecidableEq A] (f : VotingRule V A) : Prop :=
   ∀ (P : VotingProfile V A) (v : V) (fake : StrictPref A),
     let P' := fun w : V => if w = v then fake else P w
     ¬ ∃ x, f P x ∧ ∀ y, f P' y → (P v).lt y x
@@ -37277,7 +37278,7 @@ def IsPessimistSP {V A : Type} [DecidableEq A] (f : VotingRule V A) : Prop :=
     has a ""nominating set"" (coalition of <= 3 voters controlling outcome).
     Full proof: SocialChoice.Impossibilities.DugganSchwartz -/
 theorem duggan_schwartz_sketch
-    {V A : Type} [DecidableEq A] [Inhabited V] [Inhabited A]
+    {V A : Type} [DecidableEq V] [DecidableEq A] [Inhabited V] [Inhabited A]
     (f : VotingRule V A)
     (hf_opt : IsOptimistSP f)
     (hf_pess : IsPessimistSP f)
@@ -37286,7 +37287,7 @@ theorem duggan_schwartz_sketch
 
 #check @IsOptimistSP
 #check @IsPessimistSP
-#check @duggan_schwartz_sketch",,,,,,,,a6fc5fc66fbec659,,,,,,,,
+#check @duggan_schwartz_sketch",,,,,,,,4d4889bc1e3c7447,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,2375c740,markdown,fr,6c66e7f95b3e2ac2,"#### Interpretation de Duggan-Schwartz
 
 Le theoreme de Duggan-Schwartz montre que même les règles multi-gagnants sont vulnerables :
@@ -37296,10 +37297,10 @@ Le theoreme de Duggan-Schwartz montre que même les règles multi-gagnants sont 
 - Si une règle est non-triviale et surjective, elle doit avoir un ""nominating set"" (petite coalition controlant le résultat)
 
 Ce theoreme est plus general que Gibbard-Satterthwaite : il s'applique même aux règles qui peuvent eligir plusieurs candidats.",,,,,,,,6c66e7f95b3e2ac2,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,698b58af,markdown,fr,731d30b680afda40,"---
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,698b58af,markdown,fr,57e405b9ba6e7b42,"***
 
-**Navigation** : [<< 01-Arrow-Impossibility-Theorem.ipynb](01-Arrow-Impossibility-Theorem.ipynb) | [03-Voting-Methods.ipynb >>](03-Voting-Methods.ipynb) | [Index](../README.md)
-",,,,,,,,731d30b680afda40,,,,,,,,
+**Navigation** : [<< 01-Arrow-Impossibility-Theorem.ipynb](01-Arrow-Impossibility-Theorem.ipynb) | [02-Stable-Marriage-Gale-Shapley.ipynb >>](02-Stable-Marriage-Gale-Shapley.ipynb) | [Index](../README.md)
+",,,,,,,,57e405b9ba6e7b42,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb,3a2d8a3c,markdown,fr,91e06864ad238b59,"# SocialChoice 03 : Méthodes de Vote et Paradoxes (twin C# .NET)
 
 > **Twin C# .NET de `GameTheory/SocialChoice/03-Voting-Methods.ipynb`** (marathon parite #4956). Kernel `.net-csharp`. Ce notebook compagnon du **notebook 02 (Lean, preuves formelles)** fournit les **implementations C# from-scratch** des méthodes de vote (Prong B, EPIC #3801). Le twin Python utilise numpy/matplotlib/networkx ; les visualisations sont remplacees par un rendu ASCII autonome.
@@ -46565,3 +46566,20 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb,a6ba
 MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb,4c4a27b1,markdown,fr,aded3fc5da1f4856,"**Lecture ancrée** : La visualisation compare les fonctions de Grundy de quatre jeux de soustraction différents. Malgré des ensembles de coups variés, chaque jeu atteint une périodicité stable, démontrant la puissance de l'analyse par la fonction de Grundy en théorie des jeux combinatoires.
 ",,,,,,,,aded3fc5da1f4856,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb,1f4b6852,markdown,fr,355d32c62f5a7fe8,"**Lecture ancrée** : Parmi les 8 coups légaux depuis (3, 3, 3), un seul — (3, 1, 1) — mène à une P-position ; les 7 autres laissent une N-position à l'adversaire. C'est le coup optimal. La visualisation (carré empoisonné en rouge au coin (0, 0), carrés de chocolat, une figure par position) est portée par la fonction `visualize_chomp` plus bas dans le carnet.",,,,,,,,355d32c62f5a7fe8,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,sc-interp-preference,markdown,fr,e5e594d8c4ef62af,"**Pourquoi la préférence faible comme primitive.** Le `structure Preference` encode une préférence *faible* (R : « au moins aussi bon que ») avec exactement deux champs : complétude (toute paire est comparable) et transitivité. La préférence stricte P est **dérivée** (R ∧ ¬R symétrique), pas axiomatisée séparément — un choix de fondation classique : la version faible est celle qui se compose bien (la clôture transitive d'un ordre strict est un ordre strict, mais l'indifférence n'est pas transitive en général — le paradoxe de la tasse de sucre). En Lean, ce choix a un corollaire pratique : tous les théorèmes d'existence (Arrow, Sen) quantifient sur des `Preference A` et héritent gratuitement la comparabilité totale. Noter aussi la décision d'ingénierie : un `structure` plutôt qu'un `def` à clauses — les champs nommés (`complete`, `trans`) deviennent des projections utilisables comme lemmes, chaque axiome de la structure étant *transporté* par la construction.",,,,,,,,e5e594d8c4ef62af,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,sc-interp-profile,markdown,fr,719fc4ed5fb9ca42,"**Un profil est une fonction, pas une liste.** `Profile I A := I → Preference A` : la société est encodée au niveau des types comme une fonction de l'ensemble des individus vers les préférences. Ce choix silencieux fait tout le travail dans les preuves qui suivent : modifier le profil d'UN individu (construire `Function.update prefs i p'`) est l'opération primitive des arguments de pivot — la preuve d'Arrow fait glisser un électeur à travers toutes ses positions possibles en comparant des profils qui ne diffèrent que sur lui. Si le profil était une liste, chaque théorème devrait gérer l'ordre et les doublons ; comme fonction, l'individualisme méthodologique (chaque agent porte sa préférence, la société les agrège) est littéralement la signature du type.",,,,,,,,719fc4ed5fb9ca42,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,sc-interp-maketop,markdown,fr,763e5d6400a9ca6f,"**`makeTop` : la chirurgie de profil, vérifiée.** L'helper reconstruit une préférence où l'alternative `a` est mise en tête, en préservant l'ordre relatif des autres (les deux `if` imbriqués : `x = a` gagne toujours, `y = a` perd toujours, sinon on consulte l'ancienne relation). La subtilité est dans les preuves de clôture : `complete` et `trans` ne sont PAS gratuits — le `by_cases` imbriqué de la sortie montre la preuve de complétude cas par cas. Ce helper est la brique des preuves d'impossibilité : Sen construit son cycle social en faisant de deux individus des *dictateurs locaux* via des `makeTop` ciblés, et l'Extremal Lemma d'Arrow raisonne sur des profils où une alternative passe du bas vers le haut de tous les classements simultanément — le même helper, itéré. Lire cette cellule comme l'outillage : le théorème viendra, mais il vivra dans ce machinery.",,,,,,,,763e5d6400a9ca6f,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,sc-interp-pareto,markdown,fr,59132a06da686cbc,"**Pareto faible : pourquoi la version minimale suffit.** `WeakPareto` ne demande l'unanimité stricte que pour l'ordre strict social : si **tous** préfèrent strictement x à y, la société aussi. C'est plus faible que le Pareto fort (qui conclut aussi depuis des préférences faibles unanimes) — et c'est un choix *stratégique* de formalisation : plus l'axiome est faible, plus le théorème d'impossibilité est fort. Arrow avec Pareto faible interdit plus de fonctions sociales qu'Arrow avec Pareto fort. Le `#check` confirme le typage : `WeakPareto` est une `Prop` sur une `SocialWelfareFunction` — une *propriété* de l'agrégateur, à ne pas confondre avec une propriété d'un profil particulier (l'exercice 4 fera vérifier Pareto sur UN profil, une instanciation).",,,,,,,,59132a06da686cbc,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,sc-interp-iia,markdown,fr,9e9bfa4aee4eaca3,"**IIA, l'axiome le plus mal compris — lu dans sa quantification.** La définition quantify sur **deux profils** `prefs` et `prefs2` : si les préférences individuelles entre x et y sont identiques (dans les deux sens, d'où les deux `↔`), la préférence SOCIALE entre x et y doit être identique. La formule dit ceci : le verdict social sur une paire ne peut dépendre que des verdicts individuels sur cette paire — jamais des positions d'alternatives tierces z, jamais de l'intensité des préférences. C'est ici que l'information cardinale est interdite : un agrégateur qui lirait « combien » chaque individu préfère x à y (utilités, scores) violerait IIA en changeant son verdict quand les UTILITÉS entre x et y changent alors que l'ORDRE x/y est stable. La leçon de lecture Lean : les deux `↔` (pas des implications) capturent la cohérence bidirectionnelle — le même principe qui fera de l'ensemble des coalitions décisives une structure stable au fil de la preuve d'Arrow.",,,,,,,,9e9bfa4aee4eaca3,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,sc-interp-dictateur,markdown,fr,29338b651af7e1e5,"**Non-dictature : un ∀ sur un ¬∃, proprement niché.** `IsDictator` dit que la préférence stricte de d est TOUJOURS suivie (un ∀ sur profils et paires) ; `NonDictatorship` nie l'existence d'un tel d. La nidification des quantificateurs mérite une lecture lente : « pour tout d, il existe un profil et une paire où la société contredit d ». Le théorème d'Arrow affaiblira jusqu'à : Pareto + IIA ⇒ **il existe un d dictateur** — la conclusion n'est pas qu'un dictateur est *construit*, mais qu'il *existe*, et la preuve l'identifie comme le pivot (l'électeur dont le passage de x fait basculer le verdict social). La formalisation rend un service de précision : « dictatoriale » dans l'énoncé informel pourrait signifier « un individu a beaucoup d'influence » ; la définition Lean est binaire, maximale, et c'est elle qui rend le théorème tranchant.",,,,,,,,29338b651af7e1e5,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,sc-interp-arrow,markdown,fr,874ad980f1fcbe7f,"**Arrow lu comme une chaîne de lemmes, pas un bloc.** La version du notebook est un *sketch* — et l'annonce honnêtement : la preuve complète (0 sorry, via la chaîne Geanakoplos 2005 : `extremal_lemma → pivot_exists → pivot_is_dictator_except_b → partial_dictator_is_full_dictator`) vit dans le lake `game_theory_lean/SocialChoice/Arrow.lean`, et la cellule suivante en exhibit les deux premiers maillons. L'intérêt pédagogique du sketch est la *forme* de la preuve : l'Extremal Lemma (une alternative extrême chez tous est extrême socialement) crée le premier coalitions-phénomène ; le pivot (l'électeur dont le renversement renverse la société) transforme l'existence locale en structure globale ; le dernier maillon convertit « dictateur sauf sur b » en dictateur complet. Chaque maillon est un théorème utilisable séparément — c'est la différence entre une preuve et une vérification monolithique, et le réflexe à emporter : dans un lake, l'énoncé importé cache une architecture.",,,,,,,,874ad980f1fcbe7f,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,sc-interp-decisif,markdown,fr,b97b7217079a8d64,"**Les ensembles décisifs : le moteur caché d'Arrow.** `IsDecisivePred` définit un groupe G décisif pour (x, y) : l'unanimité stricte de G sur la paire entraîne le verdict social. Toute la preuve d'Arrow est une étude de la **famille** des ensembles décisifs : elle est non-vide (Pareto rend l'univers décisif), close par intersection (via IIA — c'est le théorème de field-expansion de Geanakoplos), et l'argument du pivot montre que tout ensemble décisif minimal se réduit à un singleton — le dictateur. La structure profonde (pour les curieux : la famille des ensembles décisifs d'une SWF Pareto + IIA est un *ultrafiltre* sur les individus ; sur un ensemble fini, tout ultrafiltre est principal — d'où le dictateur) n'est pas formalisée ici, mais la définition en est la porte : chaque lemme du lake est un fait sur cette famille.",,,,,,,,b97b7217079a8d64,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,sc-interp-unimodal,markdown,fr,0bdc2c06310b27bf,"**Unimodalité : la restriction de domaine comme issue de secours.** `SinglePeaked` demande un ordre sous-jacent `le` sur les alternatives et un pic `peak` : s'éloigner du pic dans un sens ou l'autre ne fait jamais monter la préférence. Ce que la définition EXCLUT est plus instructif que ce qu'elle impose : les préférences à double creux (aimer les deux extrêmes, détester le centre — le profil du conflit gauche-droite sans centre) sont non-unimodales, et c'est exactement le matériau des cycles de Condorcet. La leçon de design théorique : les théorèmes d'impossibilité d'Arrow et de Sen sont des énoncés **pour tout domaine** ; restreindre le domaine (une hypothèse de plus, mais une hypothèse *sur les profils admis*, pas sur l'agrégateur) peut rouvrir l'existence — c'est le théorème de Black qui suit, et c'est la stratégie générale de toute la théorie du choix social post-Arrow : voter n'est pathologique que sur les domaines pathologiques.",,,,,,,,0bdc2c06310b27bf,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,sc-interp-median,markdown,fr,0fd3bf560c92443c,"**Le théorème médian, annoncé avec sa dette.** La cellule est honnête : la preuve complète n'est **pas encore** dans le lake (il manque `Fintype`, `LinearOrder`, et la cardinalité impaire du nombre d'électeurs), et l'énoncé est donné comme aspiration. C'est une situation normale dans un compagnon natif : le notebook documente l'écart entre le théorème mathématique (Black 1948 : sous unimodalité et cardinalité impaire, le pic de l'électeur médian bat toute alternative en duel) et l'état de la formalisation. L'exercice 6 fait vérifier l'énoncé sur une instance concrète à trois électeurs (pics fixés dans son énoncé) — une vérification d'instance n'est pas une preuve du théorème, mais elle ancre l'intuition : l'électeur médian gagne parce qu'un côté du pic contient au plus la moitié des électeurs, chacun préférant s'approcher du centre. La dette formalisation vs théorème est tracée, pas maquillée.",,,,,,,,0fd3bf560c92443c,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb,sc-attendus,markdown,fr,270864bdabdfbb07,"### Attendus et anti-pièges (exercices du TODO et 4 à 6)
+**TODO (dictature + Pareto).** *Attendu* : `dictatorship d` copie la préférence de d (`swf.f prefs := prefs d`) ; la preuve de Pareto est alors une réécriture — l'unanimité stricte de tous contient celle de d, et le verdict social EST celui de d. *Anti-piège* : définir la dictature sur la préférence *faible* rend le théorème trivial mais la définition non-standard ; la convention du notebook (copie stricte) est celle sous laquelle Arrow est énoncé.
+**Exercice 4 (Pareto sur un profil concret).** *Attendu* : un `example` instancié — Alice et Bob, a > b à l'unanimité stricte, conclure `swf.f prefs |>.strict a b` depuis `WeakPareto`. La démonstration est une application directe du lemme, pas une induction. *Anti-piège* : vérifier le Pareto en regardant seulement le profil SANS appliquer l'axiome (re-dériver la conclusion à la main) — l'exercice évalue le réflexe d'*instancier un théorème*, pas de refaire sa preuve.
+**Exercice 5 (cycle de Condorcet).** *Attendu* : aucun vainqueur de Condorcet — a bat b (électeurs 0 et 2), b bat c (0 et 1), c bat a (1 et 2), le tournoi est un cycle. Le verdict à écrire : `¬ ∃ w, IsCondorcetWinner w` (ou sa version à marges de la section 6). *Anti-piège* : conclure « donc la règle majoritaire est mauvaise » — l'exercice mesure une instance ; la section Peters (impossibilités de Condorcet) montrera que TOUTE règle cohérente-Condorcet résolue perd autre chose, le cycle n'est pas une pathologie de la règle mais du domaine (cf. l'unimodalité du théorème médian : ce profil n'est pas unimodal).
+**Exercice 6 (médian sur pics 0.2/0.5/0.8).** *Attendu* : M (position 0.5) gagne les deux duels — contre A (pics 0.5 et 0.8 le préfèrent), contre D (pics 0.2 et 0.5). Le point pédagogique : le vainqueur est le pic MÉDIAN (0.5), pas le pic moyen (0.5 aussi ici — choisir des exemples où les deux diffèrent serait plus discriminant, un réflexe de concepteur d'exercice). *Anti-piège* : vérifier seulement un duel — un vainqueur de Condorcet doit battre TOUTE alternative, et sur 3 alternatives le second duel est une ligne de plus, pas une option.
+
+**La série d'exercices comme arc.** Les quatre questions se répondent en écho : le TODO (une dictature EST une SWF légitime au sens des axiomes individuels) montre que Pareto seul n'exclut rien ; l'exercice 4 instancie l'axiome sur un profil ; l'exercice 5 exhibe le domaine qui tue l'existence d'un gagnant ; l'exercice 6 exhibe le domaine qui la restaure. Ensemble, ils balayent la thèse du notebook : les théorèmes d'impossibilité ne disent pas « la démocratie est impossible », ils mesurent le prix exact — trois axiomes incompatibles, et la marge de manœuvre se joue sur le domaine des profils admis.",,,,,,,,270864bdabdfbb07,,,,,,,,
