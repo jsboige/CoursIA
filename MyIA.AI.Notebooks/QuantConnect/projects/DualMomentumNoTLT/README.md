@@ -40,7 +40,7 @@ Mesure sur les nœuds QC, frais de courtage inclus, sept prédictions fixées av
 | 2025-01-01 → 2026-07-10 (hors échantillon) | avant | 1.17 | 35.03 % | 16.0 % | 396 | 0 | 4 dans 16 émissions sur 19 | 1.68 au plus | `36c1d64eef77b6a5552ae4616d56e240` |
 | | après | 1.20 | 29.94 % | 13.9 % | 374 | 0 | 2 | 0.998 au plus | `c0081f5801967cd1880997c1c67f5b1e` |
 
-Sharpe calculé par QC, taux sans risque inclus. La ligne « avant » de la fenêtre codée est le backtest de référence de #20264, qui tourne le code du projet 31244186 (ses chiffres diffèrent de l'ancien tableau au deuxième chiffre près). Lignes détenues et exposition brute sont reconstruites à partir des remplissages, juste avant chaque émission ; la trésorerie n'y compte pas les dividendes, si bien que l'exposition est une borne haute.
+Sharpe calculé par QC, taux sans risque inclus. La ligne « avant » de la fenêtre codée est le backtest de référence de #20264, qui tourne le code du projet 31244186 (2225 ordres contre 2238 dans le tableau historique du 6 août ; ces deux exécutions distinctes ne sont pas confondues, et la cause de cet écart n'est pas établie ici). Lignes détenues et exposition brute sont reconstruites à partir des remplissages, juste avant chaque émission ; la trésorerie n'y compte pas les dividendes, si bien que l'exposition est une borne haute.
 
 ### Lecture honnête — le CAGR de 16,9 % venait du levier, pas du signal
 
