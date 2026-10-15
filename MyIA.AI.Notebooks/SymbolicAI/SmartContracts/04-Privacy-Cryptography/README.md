@@ -12,9 +12,9 @@ Cette quatrième sous-série (SC-15 a SC-17) explore la cryptographie avancée a
 |---|----------|-------|---------|
 | 15 | [SC-15-Zero-Knowledge-Proofs-Python](SC-15-Zero-Knowledge-Proofs-Python.ipynb) | 60 min | ZKP, protocole de Schnorr from scratch, Fiat-Shamir, Sigma protocols, Chaum-Pedersen |
 | 16 | [SC-16-Homomorphic-Encryption-Python](SC-16-Homomorphic-Encryption-Python.ipynb) | 50 min | Chiffrement homomorphe (PHE/SHE/FHE), Paillier (`phe`), CKKS (`tenseal`), partage de secrets de Shamir |
-| 17 | [SC-17-E2E-Vérifiable-Voting](SC-17-E2E-Verifiable-Voting-Python.ipynb) | 45 min | Paradoxe du vote électronique, vote a la main (Paillier + ZKP), bulletin board, ElectionGuard |
+| 17 | [SC-17-E2E-Vérifiable-Voting](SC-17-E2E-Verifiable-Voting-Python.ipynb) | 70 min | Paradoxe du vote électronique, vote a la main (Paillier + ZKP), bulletin board, ElectionGuard |
 
-**Total** : 3 notebooks, ~2h35.
+Le décompte des carnets de cette sous-série est tenu par le [catalogue des cours](../../../../COURSE_CATALOG.generated.md), régénéré automatiquement.
 
 SC-17 ne présente pas une primitive de plus : il **assemble** les preuves à divulgation nulle (SC-15) et le chiffrement homomorphe (SC-16) pour résoudre le paradoxe du vote électronique — concilier **anonymat** et **vérifiabilité**. Ce diagramme en fait la synthèse : chaque primitive assure l'une des deux propriétés opposées du paradoxe, et le capstone SC-26 les réutilisera toutes deux.
 
@@ -41,7 +41,7 @@ Les **preuves a divulgation nulle** : prouver la connaissance d'un secret sans l
 
 Le calcul sur données chiffrees : trois variantes (**PHE** partiellement homomorphe, **SHE** partiellement, **FHE** complètement). Schéma de **Paillier** (additivement homomorphe) avec `phe`, schéma **CKKS** pour l'arithmetique approchee avec `tenseal`, et **calcul multipartite sécurisé** (MPC) via le partage de secrets de **Shamir**. Paillier et Shamir sont exécutés réellement ; CKKS/TenSEAL depend d'une installation optionnelle.
 
-### Étape 3 : Vote vérifiable (SC-17, 45 min)
+### Étape 3 : Vote vérifiable (SC-17, 70 min)
 
 Le **paradoxe du vote électronique** : concilier **anonymat** et **vérifiabilité**. Construction d'un système de vote a la main combinant **Paillier + ZKP**, implémentation d'un **bulletin board** publiquement vérifiable, et découverte d'**ElectionGuard** (Microsoft), l'état de l'art en vote E2E vérifiable. Le tally (3+2+2=7) est corroboré dans les outputs ; la partie ElectionGuard est disclosed comme simulation conceptuelle.
 
