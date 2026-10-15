@@ -870,6 +870,7 @@ def run_pipeline(
             # loudnorm + fade-out coordonne) — remplace le mux PoC.
             video_webm = Path(str(capture_result["video_webm"]))
             audio_wav = Path(str(capture_result["audio_wav"]))
+            trim_start = capture_result.get("trim_start")
             try:
                 duration_v = probe_duration_ffprobe(video_webm)
                 duration_src = "video"
@@ -879,6 +880,11 @@ def run_pipeline(
                 # toujours la duree — meme fenetre de capture.
                 duration_v = probe_duration_ffprobe(audio_wav)
                 duration_src = "wav navigateur (webm sans Cues)"
+            if trim_start is not None:
+                # Mode page : la webm brute inclut le preambule (chargement,
+                # play, warmup) — la fenetre utile commence a trim_start.
+                duration_v = max(0.0, duration_v - float(trim_start))
+                duration_src = f"video (webm page entiere, -ss {float(trim_start):.1f} s)"
             audible = [
                 t for t in tts_tracks if float(t["start_s"]) < duration_v - 1.0
             ]
@@ -886,6 +892,7 @@ def run_pipeline(
                 video_webm, audio_wav, audible, Path(output_path),
                 loudnorm_lufs=ffmpeg_loudnorm_lufs,
                 duration_override=duration_v,
+                video_trim_start=float(trim_start) if trim_start is not None else None,
             )
             proc = subprocess.run(
                 mix_cmd, capture_output=True, text=True,
@@ -1202,6 +1209,7 @@ def mix_final_ffmpeg(
     loudnorm_lufs: float = -14.0,
     fade_out_s: float = 3.0,
     duration_override: Optional[float] = None,
+    video_trim_start: Optional[float] = None,
 ) -> List[str]:
     """Etape 6 : commande de mixage final ffmpeg (critere 4 : -14 LUFS
     sans clipping ; fade-out coordonne musique + video).
@@ -1215,6 +1223,12 @@ def mix_final_ffmpeg(
     puis ``afade`` sortant, et fade video synchronise sur ``[0:v]``.
     Retourne la commande complete (testable en unitaire sans
     l'executer).
+
+    ``video_trim_start`` (mode page, fix critere 5a) : la webm
+    ``record_video`` filme TOUT le contexte (chargement + play + warmup
+    + capture + export) — ``-ss`` avant l'input video extrait la fenetre
+    utile, et ``duration`` (donc le fade) se mesure sur la FENETRE, pas
+    sur la webm brute. Le caller retranche trim_start du probe.
     """
     duration = (
         duration_override if duration_override is not None
@@ -1222,8 +1236,10 @@ def mix_final_ffmpeg(
     )
     fade_start = max(0.0, duration - fade_out_s)
 
-    cmd: List[str] = [
-        "ffmpeg", "-y",
+    cmd: List[str] = ["ffmpeg", "-y"]
+    if video_trim_start is not None:
+        cmd += ["-ss", f"{video_trim_start:.3f}"]
+    cmd += [
         "-i", str(video_webm),
         "-i", str(browser_wav),
     ]
@@ -1399,6 +1415,7 @@ def capture_repl_session(
         "mp4_bytes": final_mp4.stat().st_size,
         "cycles": cycles,
         "capture_mode": capture_mode,
+        "trim_start": trim_start,
     }
 
 

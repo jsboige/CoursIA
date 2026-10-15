@@ -1028,6 +1028,34 @@ class TestMixFinalFfmpeg:
         fc = cmd[cmd.index("-filter_complex") + 1]
         assert "st=0.000" in fc  # max(0, 2 - 3) borne a zero
 
+    def test_video_trim_start_ss_avant_input_video(self, monkeypatch):
+        # Mode page : la webm brute inclut le preambule (~5 s de
+        # chargement/play/warmup) ; -ss extrait la fenetre utile AVANT
+        # le premier -i (seek video seul, pas audio), et le fade se
+        # cale sur la duree de la FENETRE pas de la webm brute.
+        import scripts.livecoding_video_pipeline as pl
+        monkeypatch.setattr(pl, "probe_duration_ffprobe", lambda m: 185.2)
+        cmd = mix_final_ffmpeg(
+            Path("video.webm"), Path("browser.wav"), self.TRACKS,
+            Path("o.mp4"), duration_override=180.0, video_trim_start=5.2)
+        assert cmd[cmd.index("-ss") + 1] == "5.200"
+        assert cmd.index("-ss") < cmd.index("-i")
+        # -t = fenetre utile, pas la webm brute
+        assert cmd[cmd.index("-t") + 1] == "180.000"
+        fc = cmd[cmd.index("-filter_complex") + 1]
+        # fade en fin de fenetre utile : 180 - 3, pas 185.2 - 3
+        assert "st=177.000" in fc
+
+    def test_sans_video_trim_start_comportement_historique(self, monkeypatch):
+        # Mode canvas : aucun -ss, duree = probe webm (comportement
+        # historique inchange).
+        import scripts.livecoding_video_pipeline as pl
+        monkeypatch.setattr(pl, "probe_duration_ffprobe", lambda m: 60.0)
+        cmd = mix_final_ffmpeg(
+            Path("v.webm"), Path("b.wav"), self.TRACKS[:1], Path("o.mp4"))
+        assert "-ss" not in cmd
+        assert cmd[cmd.index("-t") + 1] == "60.000"
+
 
 class TestRunPipelineEtape3:
     """Cablage de l'etape 3 dans l'orchestrateur (synthese mockee :
