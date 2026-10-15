@@ -18,6 +18,14 @@ stream) -- l'absence pure d'un nombre relève de l'organe stale-claim
 
 Sortie : rc=0 propre, rc=1 au moins un finding, rc=2 erreur d'usage.
 Advisory par construction (patron #11435) -- jamais bloquant seul.
+
+#20035 : la portee du vocabulaire d'unites a ete etendue pour couvrir
+les substantifs de comptage trouves sur les cotes hors-App-5 (carnet,
+lemme, modele, ...). Le scope par defaut est `extended` ; un audit
+cible peut rejouer en `core` (les 14 unites historiques d'App-5) via
+`--units core`. Le test de regression documente en haut reste vert
+dans les deux scopes (la garde SUBCOUNT_CONTEXT_RE filtre les
+sous-comptes qui produiraient les FP).
 """
 
 from __future__ import annotations
@@ -34,8 +42,61 @@ UNITS = (
     "agents?|variables?|contraintes?|jours?|rooms?|courses?|slots?|teachers?"
 )
 
-MD_COUNT_RE = re.compile(rf"(?i)\b(\d{{1,5}})\s*({UNITS})\b")
-STREAM_COUNT_RE = re.compile(rf"(?i)\b({UNITS})\s*[:=]\s*(\d{{1,5}})\b")
+# #20035 : la liste UNITS est mono-domaine (App-5 / emploi du temps).
+# Le cas fondateur documente en #19918 est "15 carnets dans Serre100/"
+# vs prose "les huit carnets" : le substantif `carnet` n'est pas dans
+# la liste, l'organe est aveugle par construction. La voie "ajouter une
+# unite a la fois" ne tient pas -- chaque instance trouve une autre
+# (carnet, lemme, fichier, modele, ...). La voie choisie est une liste
+# fermee, documentee, et couplee a la garde SUBCOUNT_CONTEXT_RE deja
+# en place (chacun, par, au moins, ...) : les faux positifs mesures
+# sur App-5 (3 FP tues) restent la base de reference. La liste est
+# ajoutee par defaut -- c'est elle qui rend l'organe utile aux cotes
+# hors App-5 -- et un drapeau --units=core la desactive pour les usages
+# qui veulent la portee historique (la portee du test de regression
+# documente en haut du fichier : 0 FP / 30 carnets sur le corpus de
+# reference d'avant #20035).
+UNITS_EXTENDED = (
+    # Carnets / notebooks / pages / sections (Serre100, IIT, ICT, ML,
+    # SymbolicAI) : substantifs que le stream peut enumerer directement
+    # (print d'un listing ou d'un compteur).
+    "carnets?|notebooks?|fichiers?|sections?|pages?|cellules?|"
+    "modules?|bibliotheques?|paquets?|"
+    # Preuves / theoremes / lemmes (Lean) : le stream d'une campagne
+    # `lake envlean` rend `Build OK` (pas de compte) ; le compteur
+    # apparait surtout dans les re-executions `print(N_theorems)`.
+    "theoremes?|lemmes?|preuves?|corollaires?|propositions?|"
+    "definitions?|axiomes?|hypotheses?|"
+    # ML / training : modeles, predictions, echantillons.
+    "modeles?|predictions?|echantillons?|hyperparametres?|"
+    "parametres?|epochs?|iterations?|episodes?|"
+    # Quantbooks : strategies, backtests.
+    "strategies?|backtests?|"
+    # Solveurs / moteurs : problemes, solutions, instances.
+    "problemes?|solutions?|instances?|"
+    # Tests : cas, scenarios, fixtures.
+    "scenarios?|fixtures?|"
+    # Genres d'objets code : classes, fonctions, methodes, lignes.
+    "classes?|fonctions?|methodes?|lignes?|"
+    # Datasets / fichiers de donnees.
+    "datasets?|colonnes?|tableaux?|"
+    # Pluriels courants en prose pedagogique : parties, etapes, chapitres.
+    "parties?|etapes?|chapitres?|paragraphes?"
+)
+
+# Le pattern regex depend du scope d'unites (core vs extended). Compile
+# une seule fois par appel de scan_notebook ; un cache par process
+# suffirait, mais le scan est lui-meme le chemin chaud. Les regex sont
+# par-fonction pour que le test puisse mocker les deux sans toucher au
+# scope par defaut.
+def _build_count_patterns(units: str) -> tuple[re.Pattern, re.Pattern]:
+    """Compile les regexes MD/stream compte pour le scope d'unites."""
+    return (
+        re.compile(rf"(?i)\b(\d{{1,5}})\s*({units})\b"),
+        re.compile(rf"(?i)\b({units})\s*[:=]\s*(\d{{1,5}})\b"),
+    )
+
+
 MD_TUPLE_RE = re.compile(r"\(\s*(\d{1,5})\s*(?:[x×]|\\times\s*)\s*(\d{1,5})\s*\)\s*\^")
 STREAM_TUPLE_RE = re.compile(r"\(\s*(\d{1,5})\s*x\s*(\d{1,5})\s*\)\s*\^")
 
@@ -84,11 +145,27 @@ def _singular(unit: str) -> str:
     return unit.rstrip("s").lower()
 
 
-def scan_notebook(path: Path) -> list[dict]:
+def scan_notebook(path: Path, *, units_scope: str = "extended") -> list[dict]:
+    """Scanne un carnet. ``units_scope`` :
+    - ``"core"`` : UNITS seulement (la portee historique, App-5) ;
+    - ``"extended"`` (defaut) : UNITS + UNITS_EXTENDED. La liste etendue
+      couvre les substantifs de comptage trouves sur les cotes
+      hors-App-5 (carnet, lemme, modele, ...). Le scope etendu est
+      l'opt-in le plus prudent pour la detection reelle, mais reste
+      un argument du scan : un audit cible (ex. App-5 seul) peut
+      rejouer en ``"core"`` pour comparer la portee historique.
+    """
     try:
         nb = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         return [{"file": str(path), "error": f"unreadable notebook: {exc}"}]
+    if units_scope == "core":
+        units = UNITS
+    elif units_scope == "extended":
+        units = UNITS + "|" + UNITS_EXTENDED
+    else:
+        raise ValueError(f"units_scope inconnu: {units_scope!r} (attendu 'core' ou 'extended')")
+    md_count_re, stream_count_re = _build_count_patterns(units)
     findings: list[dict] = []
     for idx, cell in enumerate(nb["cells"]):
         if cell["cell_type"] != "markdown":
@@ -99,10 +176,10 @@ def scan_notebook(path: Path) -> list[dict]:
             continue
         # facette 1 : comptes d'unites contredits
         stream_counts: dict[str, set[int]] = {}
-        for m in STREAM_COUNT_RE.finditer(stream):
+        for m in stream_count_re.finditer(stream):
             stream_counts.setdefault(_singular(m.group(1)), set()).add(int(m.group(2)))
         seen_unit_claims: set[tuple[int, str, str]] = set()
-        for m in MD_COUNT_RE.finditer(src):
+        for m in md_count_re.finditer(src):
             n, unit = int(m.group(1)), _singular(m.group(2))
             key = (idx, unit, str(n))
             if key in seen_unit_claims:
@@ -161,12 +238,20 @@ def scan_notebook(path: Path) -> list[dict]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--units", choices=("core", "extended"), default="extended",
+                    help="#20035 : portee du vocabulaire d'unites. "
+                         "`core` = App-5 (defaut historique, 14 unites), "
+                         "`extended` (defaut depuis #20035) = + substantifs "
+                         "de comptage trouves sur les cotes hors-App-5 "
+                         "(carnet, lemme, modele, ...). Le test de "
+                         "regression historique (0 FP / 30 carnets) reste "
+                         "rejouable via `--units core`.")
     ap.add_argument("notebooks", nargs="+", type=Path)
     args = ap.parse_args(argv)
 
     findings: list[dict] = []
     for p in args.notebooks:
-        findings.extend(scan_notebook(p))
+        findings.extend(scan_notebook(p, units_scope=args.units))
 
     if args.json:
         print(json.dumps({"anomaly_count": len(findings), "findings": findings}, ensure_ascii=False, indent=1))
