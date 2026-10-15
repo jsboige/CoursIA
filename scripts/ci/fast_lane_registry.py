@@ -382,11 +382,16 @@ PILOT: list[Guard] = [
             "scripts/tests/baseline_nb_nav_chain.json",
             ".github/workflows/notebook-nav-chain-guard.yml",
         ],
+        # Portee du workflow d'origine rendue (#20303) : `--diff-base {base_ref}`
+        # fait calculer au checker `git diff base...HEAD`, le meme diff que
+        # `pr_files.txt`. Sans ce jeton, tout NEW du graphe global (entree deja
+        # presente sur main) rougissait toute PR touchant un carnet ou un README
+        # de serie ; avec lui, seul un NEW imputable au diff bloque.
         argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
-              "--check"],
-        # Meme classe que `check-navlinks` ci-dessus : verdict DELTA (NEW vs
-        # baseline), workflow d'origine scope au diff, borne perdue par
-        # l'argv absorbe -- declaration explicite (#19645 suite c.1503).
+              "--check", "--diff-base", "{base_ref}"],
+        # Verdict DELTA (NEW vs baseline), borne au diff par `--diff-base`.
+        # Declaration explicite (#19645 suite c.1503) : elle ne se devine pas
+        # dans l'argv.
         needs_base=True,
         diff_bounded=True,
         blocking=True,
