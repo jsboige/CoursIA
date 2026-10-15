@@ -19,8 +19,6 @@ name: Notebook Nav-Chain Guard
 
 on:
   workflow_dispatch:
-  pull_request:
-    types: [opened, synchronize, reopened, edited, ready_for_review]
 
 permissions:
   contents: read
