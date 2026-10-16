@@ -155,6 +155,7 @@ Preuve mesuree + mecanisme complet (format d'entree, exemple de section, verific
 ## Voir aussi
 
 - [proactive-coordination.md](proactive-coordination.md) — plancher multi-grain, backlog pickup 8 sources, queue profonde
+- [secrets-and-coord-detail.md §2.9](../../docs/reference/secrets-and-coord-detail.md) — « cron armé + production gelée » = tour continu, pas une panne de cron (#14728)
 - [git-workflow.md](git-workflow.md) — branches feature/, no force push
 - [pr-review-discipline.md](pr-review-discipline.md) — Critere CHANGES_REQUESTED
 - CLAUDE.md section A — ai-01 review et merge, agents ne mergent pas
