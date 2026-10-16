@@ -78,6 +78,65 @@ class TestDetectRegimesPrice:
         high = detect_regimes_price(trending_up, uptrend_threshold=0.50, lookback_days=20)
         assert (low == "uptrend").sum() >= (high == "uptrend").sum()
 
+    def test_causal_threshold_uses_past_only(self):
+        """At t, the volatility threshold must be a function of [0, t) only.
+
+        Build two 300-day series that share the first 150 days, then
+        diverge. With causal_threshold=True the regimes produced at any
+        index t < 150 must be identical between the two series — the
+        threshold at t is fully determined by the shared prefix.
+        """
+        rng = np.random.default_rng(0)
+        shared = rng.normal(0.0004, 0.01, 150)
+        future_a = rng.normal(0.0004, 0.01, 150)
+        future_b = rng.normal(0.0004, 0.05, 150)  # much higher vol
+
+        prices_a = pd.Series(100 * np.cumprod(1 + np.concatenate([shared, future_a])))
+        prices_b = pd.Series(100 * np.cumprod(1 + np.concatenate([shared, future_b])))
+
+        lookback = 30
+        regimes_a = detect_regimes_price(prices_a, lookback_days=lookback, causal_threshold=True)
+        regimes_b = detect_regimes_price(prices_b, lookback_days=lookback, causal_threshold=True)
+
+        # Identical regime labels on the shared prefix (post-lookback).
+        np.testing.assert_array_equal(
+            regimes_a.iloc[lookback:150].values,
+            regimes_b.iloc[lookback:150].values,
+        )
+
+    def test_non_causal_threshold_legacy_default(self):
+        """non_causal mode reproduces the pre-#21054 global-quantile path.
+
+        The two modes disagree when the future differs from the past.
+        Here we manufacture a clean regime switch: low-vol first half,
+        high-vol second half. The non-causal threshold (computed over
+        the whole series) will be HIGH, classifying few second-half
+        rows as 'volatility' in a way the causal mode would not.
+        """
+        rng = np.random.default_rng(1)
+        n = 400
+        returns = np.empty(n)
+        returns[:200] = rng.normal(0.0004, 0.005, 200)         # calm
+        returns[200:] = rng.normal(0.0004, 0.04, 200)          # stormy
+        prices = pd.Series(100 * np.cumprod(1 + returns))
+
+        causal = detect_regimes_price(prices, lookback_days=30, causal_threshold=True)
+        legacy = detect_regimes_price(prices, lookback_days=30, causal_threshold=False)
+
+        # Causal threshold on the calm window is much LOWER than the
+        # global quantile (which is dragged up by the stormy window),
+        # so the causal mode must mark at least as many 'volatility'
+        # rows in the stormy second half as the legacy mode.
+        stormy_causal = (causal.iloc[200:] == "volatility").sum()
+        stormy_legacy = (legacy.iloc[200:] == "volatility").sum()
+        assert stormy_causal >= stormy_legacy
+
+    def test_causal_is_default(self, trending_up):
+        """`causal_threshold=True` is the documented default (#21054)."""
+        explicit = detect_regimes_price(trending_up, lookback_days=20, causal_threshold=True)
+        default = detect_regimes_price(trending_up, lookback_days=20)
+        np.testing.assert_array_equal(explicit.values, default.values)
+
 
 # ---------------------------------------------------------------------------
 # Gaussian HMM tests

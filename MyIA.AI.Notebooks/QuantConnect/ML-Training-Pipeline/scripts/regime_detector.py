@@ -36,6 +36,7 @@ def detect_regimes_price(
     volatility_percentile: float = 75,
     black_swan_drawdown: float = -0.20,
     black_swan_window: int = 30,
+    causal_threshold: bool = True,
 ) -> pd.Series:
     """Classify each date into a market regime using price statistics.
 
@@ -57,6 +58,17 @@ def detect_regimes_price(
         Drawdown threshold for black swan (e.g. -0.20 = -20%).
     black_swan_window : int
         Window for drawdown calculation.
+    causal_threshold : bool, default True
+        When True (default, fix #21054), the volatility threshold at
+        index t is the *expanding* quantile of ``rolling_std``
+        computed from indices ``[0, t)`` only — i.e. the threshold at
+        t is known at t-1 and does not leak future observations.
+        NaN where t < ``lookback_days`` (no expansion yet) — those
+        rows are excluded from the volatility regime by construction.
+        When False, the threshold is the *global* non-causal
+        ``rolling_std.quantile(...)`` over the whole series; kept for
+        backtesting/reproducibility against the pre-fix behaviour
+        (#21054) but not for live or walk-forward use.
 
     Returns
     -------
@@ -67,7 +79,16 @@ def detect_regimes_price(
 
     rolling_return = prices.pct_change(lookback_days)
     rolling_std = returns.rolling(lookback_days).std() * np.sqrt(252)
-    vol_threshold = rolling_std.quantile(volatility_percentile / 100)
+    if causal_threshold:
+        # Causal: at index t, only use rolling_std[0:t).
+        vol_threshold = (
+            rolling_std.expanding(min_periods=lookback_days)
+            .quantile(volatility_percentile / 100)
+        )
+    else:
+        # Non-causal (legacy, pre-#21054): global quantile, includes
+        # future observations. Reproducibility / tests only.
+        vol_threshold = rolling_std.quantile(volatility_percentile / 100)
 
     rolling_max = prices.rolling(black_swan_window, min_periods=1).max()
     drawdown = (prices - rolling_max) / rolling_max
