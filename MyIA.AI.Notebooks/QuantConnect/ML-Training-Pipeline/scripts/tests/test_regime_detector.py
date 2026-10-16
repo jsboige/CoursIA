@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import re
+import sys
+import types
+from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
@@ -330,61 +334,106 @@ class TestDetectRegimesPrice:
             f"({val_with_shift}) when rolling_std[2L] is an extreme spike"
         )
 
-    def test_strict_t_minus_1_witness_on_production(self):
-        """#21111 v3: the .shift(1) is operative inside detect_regimes_price (production).
+    def test_strict_t_minus_1_witness_via_source_removal(self):
+        """#21111 v4: removing the .shift(1) from line 114 of the production
+        source must turn this test RED, proving the .shift(1) is operative
+        on the regime path.
 
-        The prior test_strict_t_minus_1_witness_via_extreme_value compared
-        the bare threshold (rolling_std + expanding + quantile), not the
-        production regimes. The reader verified that the bare-threshold
-        witness passes even when the .shift(1) is removed from
-        detect_regimes_price (i.e. the witness does not protect the
-        production code path).
+        The v3 witness (test_strict_t_minus_1_witness_on_production, now
+        removed) used ``unittest.mock.patch.object(pd.Series, "shift", ...)``
+        to neutralize ``.shift`` globally. The adjoint reproduced that this
+        patch also breaks ``prices.pct_change()`` (which uses
+        ``prices - prices.shift(1)`` internally), so the diff observed in
+        v3 was the combined effect of breaking both the production shift
+        AND the returns computation — not a witness of the production
+        shift alone. Re-running v3 with the production ``.shift(1)``
+        literally removed (but ``pct_change`` intact) still passes,
+        confirming v3 is non-discriminative.
 
-        This test exercises the production function detect_regimes_price
-        itself, and uses unittest.mock.patch to neutralize pd.Series.shift
-        (the exact op used in detect_regimes_price line 114). If the
-        .shift(1) is present in the production code, the regimes must
-        change when shift is neutralized. If the .shift(1) is removed
-        from the production code, this test fails (no diff between
-        with-shift and no-shift output of the production call).
+        This v4 witness uses ``exec`` of the production source with
+        ``.shift(1)`` removed, leaving ``pct_change`` and ``rolling``
+        untouched. The exec happens in a fresh module registered in
+        ``sys.modules`` (required by ``@dataclass``), so the original
+        file is never modified. The witness is therefore:
+
+        - Pristine (current source has ``.shift(1)``): production regimes
+          differ from the exec-mutated regimes. ``n_diff > 0``. GREEN.
+        - Mutation (source has no ``.shift(1)``): production regimes
+          equal the exec-mutated regimes. ``n_diff == 0``. RED.
+        - Restoration: implicit — the file is never touched, so pristine
+          == restored by construction.
+
+        Three cycles, in line with the adjoint's spec
+        (``adjoint-21111-mutant30-confirmed-correction-20261016``).
         """
         rng = np.random.default_rng(42)
         L = 30
         n = 100
         returns = np.zeros(n)
-        # Indices 0..59: small returns
+        # Indices 0..59: small returns (the shared prefix that drives
+        # the threshold under causal mode).
         returns[:60] = rng.normal(0.0004, 0.01, 60)
-        # Index 60 = 2L: extreme spike (50% single-day return)
+        # Index 60 = 2L: extreme spike (50% single-day return). The
+        # threshold at 60 differs depending on whether rolling_std[60]
+        # is included (no shift) or excluded (with shift).
         returns[60] = 0.5
         # Indices 61..99: small returns
         returns[61:] = rng.normal(0.0004, 0.01, n - 61)
 
         prices = pd.Series(100 * np.cumprod(1 + returns))
 
-        # Production call with shift (default, causal_threshold=True)
-        regimes_with_shift = detect_regimes_price(prices, lookback_days=L)
+        # Pristine: production call with the current source.
+        regimes_pristine = detect_regimes_price(prices, lookback_days=L)
 
-        # Neutralize .shift on pd.Series: any call to .shift returns self
-        # (no-op). detect_regimes_price line 114 calls .shift(1) on the
-        # quantile Series; with this patch, that call becomes a no-op
-        # and the regime classification falls back to the unshifted
-        # (look-ahead) threshold.
-        def _noop_shift(self, periods=1, freq=None, axis=0, **kwargs):
-            return self
+        # Mutation: exec the source with ``.shift(1)`` removed from
+        # the vol_threshold chain (line 114). Only that line is
+        # affected; ``pct_change`` and ``rolling`` are intact.
+        import regime_detector
+        src_path = Path(regime_detector.__file__)
+        src = src_path.read_text()
+        # Pattern: ``            .shift(1)\n        )\n    else:`` ->
+        # ``        )\n    else:`` (one unique match, the production
+        # vol_threshold chain).
+        src_mutant = re.sub(
+            r"            \.shift\(1\)\n        \)\n    else:",
+            "        )\n    else:",
+            src,
+            count=1,
+        )
+        assert src_mutant != src, (
+            "expected to find the production .shift(1) at line 114 "
+            "of regime_detector.py but the pattern did not match"
+        )
 
-        with patch.object(pd.Series, "shift", _noop_shift):
-            regimes_no_shift = detect_regimes_price(prices, lookback_days=L)
+        mutant_name = "regime_detector_mutant_v4"
+        mutant_mod = types.ModuleType(mutant_name)
+        mutant_mod.__file__ = str(src_path)
+        sys.modules[mutant_name] = mutant_mod
+        exec(compile(src_mutant, str(src_path), "exec"), mutant_mod.__dict__)
+        regimes_mutant = mutant_mod.detect_regimes_price(prices, lookback_days=L)
 
-        # The two regimes must differ somewhere. The witness fires
-        # at the indices where the spike would pull the unshifted
-        # threshold above rolling_std[t] (volatility vs uptrend).
-        n_diff = int((regimes_with_shift != regimes_no_shift).sum())
+        # The witness: pristine and mutant must differ somewhere.
+        n_diff = int((regimes_pristine != regimes_mutant).sum())
         assert n_diff > 0, (
-            f"Mutation of pd.Series.shift produced no regime change "
-            f"in detect_regimes_price: the .shift(1) on line 114 is "
-            f"either absent or non-operative on this path "
-            f"(with_shift[0..9]={list(regimes_with_shift[:10])}, "
-            f"no_shift[0..9]={list(regimes_no_shift[:10])})"
+            f"Removing .shift(1) from line 114 produced no regime "
+            f"change: the production .shift(1) is non-operative on the "
+            f"regime path "
+            f"(pristine[:5]={list(regimes_pristine[:5])}, "
+            f"mutant[:5]={list(regimes_mutant[:5])})"
+        )
+
+        # Belt-and-suspenders: verify the same exec pattern is
+        # idempotent (re-exec'ing the same source on a clean module
+        # gives the same regimes) — guards against test flakiness
+        # from a polluted sys.modules entry.
+        mutant_mod_2 = types.ModuleType(mutant_name + "_bis")
+        mutant_mod_2.__file__ = str(src_path)
+        sys.modules[mutant_name + "_bis"] = mutant_mod_2
+        exec(compile(src_mutant, str(src_path), "exec"), mutant_mod_2.__dict__)
+        regimes_mutant_2 = mutant_mod_2.detect_regimes_price(prices, lookback_days=L)
+        np.testing.assert_array_equal(
+            regimes_mutant.values,
+            regimes_mutant_2.values,
         )
 
 
