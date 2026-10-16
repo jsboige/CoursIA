@@ -23,7 +23,6 @@
       "SW -- SymbolicAI/SemanticWeb (17)",
       "SL -- SymbolicAI/SymbolicLearning (17)",
       "Lean -- SymbolicAI/Lean (11)",
-      "Infer -- Probas/Infer (10)",
       "ICT -- IIT/ICT-Series (9)",
       "DecPyMC -- Probas/DecisionTheory/DecPyMC (9)",
       "Planners -- SymbolicAI/Planners/02-Classical (8)",
@@ -77,6 +76,11 @@
       "series": "Sudoku",
       "dir": "MyIA.AI.Notebooks/Sudoku",
       "note": "19 noms zero-pades, 19 numeros a deux chiffres. Le pendant Python de la serie suit la meme convention."
+    },
+    {
+      "series": "Infer",
+      "dir": "MyIA.AI.Notebooks/Probas/Infer",
+      "note": "11 noms zero-pades (socle 01..09 sans le 6 -- trou symetrique conserve avec la serie Python PyMC --, accretions 01b/02b et extension 08b migrees avec leur numero de socle), 10 numeros a deux chiffres (10..19). Tranche A de l'EPIC #12933 (mapping PARITY-INVENTORY.md 5)."
     }
   ]
 }
