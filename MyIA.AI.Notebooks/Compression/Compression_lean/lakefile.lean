@@ -49,9 +49,14 @@ Huffman ; `Appariement` — le coût comme somme pondérée et l'échange géné
 (pli 5c de #18706) : produit pondéré des parcours (`dotp`), théorème central
 `cost_dot` — la charge par fusions est la facture feuille à feuille `Σ wᵢ·dᵢ` —
 et l'inégalité de réarrangement sur deux feuilles quelconques (`rearrange_two`),
-d'écart exact le produit des écarts. -/
+d'écart exact le produit des écarts ; `Expansion` — le pas inductif de
+l'optimalité (pli 5d de #18706) : développer la feuille de masse `a + b` en
+ses deux constituants (`subst`) facture exactement la masse fusionnée
+(`costW_subst` : `costW (subst t a b) = costW t + (a + b)`), sans bouger le
+poids ni le reste de l'arbre — l'ingrédient montant de l'induction sur le
+nombre de symboles. -/
 @[default_target]
 lean_lib «PrefixCodes» where
   -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`) :
   -- pas de `.submodules`, cf la note `MathUniverse` de `learning_theory_lean`.
-  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement]
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion]

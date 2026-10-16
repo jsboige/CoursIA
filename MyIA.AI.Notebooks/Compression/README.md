@@ -55,6 +55,7 @@ des carnets, un module par pli de l'EPIC :
 | [`Optimalite.lean`](Compression_lean/Optimalite.lean) | le coût d'un code préfixe : deux lectures du même nombre (poids × profondeurs, poids des fusions) unies par `costAt_eq`, ancre 14 vs 16 du carnet 02 (pli 5) |
 | [`Echange.lean`](Compression_lean/Echange.lean) | le lemme d'échange élémentaire : faire monter un poids fort ne augmente jamais le coût (`exchange_le`, écart exact `b - a`), descente 21 → 15 → 14 du carnet 02 (pli 5b) |
 | [`Appariement.lean`](Compression_lean/Appariement.lean) | le coût comme somme pondérée `costW t = Σ wᵢ·dᵢ` (`cost_dot`) et l'échange général par inégalité de réarrangement sur deux feuilles quelconques (pli 5c) |
+| [`Expansion.lean`](Compression_lean/Expansion.lean) | le pas inductif de l'optimalité : développer la feuille de masse `a + b` en ses deux constituants facture exactement la masse fusionnée (`costW_subst`), ancre 12 + 2 = 14 du carnet 02 (pli 5d) |
 
 `lake build` (depuis `Compression_lean/`) est la preuve d'exécution du lake ;
 les carnets Python restent le vecteur pédagogique.
