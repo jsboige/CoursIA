@@ -527,26 +527,23 @@ def create_kernel():
     ))
     return kernel
 ",,,,,,,,f831efcb9bbeae84,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,2adf4585,markdown,fr,ee4e0400a35e856c,"### Lecture du résultat : pourquoi ce choix de mot est pédagogique
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,2adf4585,markdown,fr,c6aca173601faf40,"### Lecture du résultat : pourquoi ce choix de mot est pédagogique
 
-Le mot `""anticonstitutionnellement""` (25 lettres, Grand Robert) cumule plusieurs difficultés : longueur (force des indices progressifs), composition morphologique (`anti-+constitution+nelle+ment` — l'agent peut deviner par décomposition), et rareté (vocabulaire juridique peu courant). Pour un **jeu d'énigmes LLM**, c'est un excellent stress-test : si l'agent devine ce mot en moins de 10 essais, le prompt Père Fouras est bien calibré. L'étudiant peut **mesurer le taux de réussite** sur 100 parties avec `evaluer_partie()` (à compléter, exercice 3) puis comparer avec un mot plus simple (ex. `""kayak""`, 5 lettres) pour isoler l'effet longueur du mot.
+Le mot `""anticonstitutionnellement""` (25 lettres, Grand Robert) cumule plusieurs difficultés : longueur (force des indices progressifs), composition morphologique (`anti-+constitution+nelle+ment` — l'agent peut deviner par décomposition), et rareté (vocabulaire juridique peu courant). Pour un **jeu d'énigmes LLM**, c'est un excellent stress-test : si l'agent devine ce mot en moins de 10 essais, le prompt Père Fouras est bien calibré. L'étudiant peut **mesurer le taux de réussite** sur 100 parties avec `evaluer_partie()` (implémentée dans l'exemple guidé 3) puis comparer avec un mot plus simple (ex. `""kayak""`, 5 lettres) pour isoler l'effet longueur du mot.
 ","### Reading the result: why this word choice is pedagogical
 
 The word `""anticonstitutionnellement""` (25 letters, Grand Robert) combines several difficulties: length (strength of the progressive hints), morphological composition (`anti-+constitution+nelle+ment` — the agent can guess by decomposition), and rarity (an uncommon legal vocabulary). For an **LLM riddle game**, it is an excellent stress test: if the agent guesses this word in fewer than 10 attempts, the Père Fouras prompt is well calibrated. The student can **measure the success rate** over 100 games with `evaluer_partie()` and then compare with a simpler word (e.g. `""kayak""`, 5 letters) to isolate the effect of the word's length.
  The contract must be tested.
  Grand Robert reference.
  Reference.
-",,,,,,,ee4e0400a35e856c,8f5af9edc3274d33,,,,,,,
+",,,,,,,c6aca173601faf40,8f5af9edc3274d33,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,fdc6262b,markdown,fr,e811182b5c647dff,"### Lecture du résultat : kernel Semantic Kernel instancié
 
 La cellule 6 crée le kernel et stocke `MOT_A_DEVINER = ""anticonstitutionnellement""` (25 lettres, l'un des plus longs mots français standards). Cette constante est ce que **l'agent va devoir deviner** au cours du duel via une stratégie d'énigmes posée par le Père Fouras. Le choix du mot est pédagogique : sa longueur force l'agent à mobiliser des **stratégies d'indice indirect** (rime, contexte, longueur) plutôt qu'une description directe. L'étudiant peut substituer un mot plus court pour des parties plus rapides (`""kayak""` pour un palindrome).
 ","### Reading the result: Semantic Kernel kernel instantiated
 
-Cell 4 creates the kernel and stores `MOT_A_DEVINER = ""anticonstitutionnellement""` (25 letters, one of the longest standard French words). This constant is what **the agent will have to guess** during the duel through a riddle strategy set by Père Fouras. The choice of word is pedagogical: its length forces the agent to mobilize **indirect hint strategies** (rhyme, context, length) rather than a direct description. The student can substitute a shorter word for faster games (`""kayak""` for a palindrome).
- Forces progression.
- More.
- Progression.
-",,,,,,,e811182b5c647dff,c9048e7dca7f986a,,,,,,,
+Cell 6 creates the kernel and stores `MOT_A_DEVINER = ""anticonstitutionnellement""` (25 letters, one of the longest standard French words). This constant is what **the agent will have to guess** during the duel through a riddle strategy set by Père Fouras. The choice of word is pedagogical: its length forces the agent to mobilize **indirect hint strategies** (rhyme, context, length) rather than a direct description. The student can substitute a shorter word for faster games (`""kayak""` for a palindrome).
+",,,,,,,e811182b5c647dff,a5cfb088a38ab4c8,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,f0496c5b,markdown,fr,d11675550b6a8613,"## Définition des prompts
 
 Chaque agent conversationnel est piloté par un **prompt système** (ses *instructions*) qui définit son rôle, sa personnalité et les règles qu'il doit respecter. Ces instructions conditionnent tout le comportement de l'agent au fil du dialogue : un même Kernel peut produire deux interlocuteurs radicalement différents selon le prompt qu'on lui donne.
@@ -571,35 +568,25 @@ Tu es Laurent Jalabert.
 Tu dois deviner le mot en posant des questions fermées (Oui/Non).
 Sois perspicace et stratégique dans tes questions.
 """"""",,,,,,,,7f877f1f31e39469,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,3e19b11c,markdown,fr,6959e07349adb018,"### Lecture du résultat : prompts Père Fouras et cycliste configurés
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,3e19b11c,markdown,fr,e147f1f8a80c8b9c,"### Lecture du résultat : prompts Père Fouras et cycliste configurés
 
-La cellule 10 définit `PERE_FOURAS_PROMPT` et `LAURENT_JALABERT_PROMPT` structurés via `f""""""...""""""` — seule la f-string du Père Fouras interpole `MOT_A_DEVINER`. Le prompt du Père Fouras encode la **persona + la mécanique** : pose énigme, attend réponse, valide, propose indice suivant. Le prompt du cycliste encode la **stratégie de devinette** : extraire lettres, longueur, contexte, demander indice. Cette séparation persona/mécanique est cruciale — sans persona explicite, le LLM répondrait en mode Q&A générique sans le **cadre narratif Fort Boyard**. L'exercice 1 invite l'étudiant à remplacer le duo par deux nouveaux personnages — un **Détective** (questions déductives) et un **Témoin** (réponses évasives) — extension classique du **multi-agent cast**.
+La cellule 10 définit `PERE_FOURAS_PROMPT` et `LAURENT_JALABERT_PROMPT` structurés via `f""""""...""""""` — seule la f-string du Père Fouras interpole `MOT_A_DEVINER`. Le prompt du Père Fouras encode la **persona + la mécanique** : pose énigme, attend réponse, valide, propose indice suivant. Le prompt du cycliste encode la **stratégie de devinette** : extraire lettres, longueur, contexte, demander indice. Cette séparation persona/mécanique est cruciale — sans persona explicite, le LLM répondrait en mode Q&A générique sans le **cadre narratif Fort Boyard**. L'exemple guidé 1 (contribution de la PR #21009) remplace le duo par deux nouveaux personnages — un **Détective** (questions déductives) et un **Témoin** (réponses évasives) — extension classique du **multi-agent cast**.
  Le format `f""""""...""""""` permet l'interpolation de variables runtime (mot à deviner, score actuel).
 ","### Reading the result: Père Fouras and cyclist prompts configured
 
-Cell 6 defines two structured `PERE_FOURAS_PROMPT` and `CYCLISTE_PROMPT` via `f""""""...""""""`. The Père Fouras prompt encodes the **persona + the mechanics**: pose a riddle, wait for an answer, validate, offer the next hint. The cyclist prompt encodes the **guessing strategy**: extract letters, length, context, ask for a hint. This persona/mechanics separation is crucial — without an explicit persona, the LLM would answer in generic Q&A mode without the **Fort Boyard narrative frame**. Exercise 1 invites the student to add a 3rd character (Detective, Witness) — a classic extension of the **multi-agent cast**.
+Cell 10 defines `PERE_FOURAS_PROMPT` and `LAURENT_JALABERT_PROMPT` structured via `f""""""...""""""` — only the Père Fouras f-string interpolates `MOT_A_DEVINER`. The Père Fouras prompt encodes the **persona + the mechanics**: pose a riddle, wait for an answer, validate, offer the next hint. The cyclist prompt encodes the **guessing strategy**: extract letters, length, context, ask for a hint. This persona/mechanics separation is crucial — without an explicit persona, the LLM would answer in generic Q&A mode without the **Fort Boyard narrative frame**. Guided example 1 (contribution from PR #21009) replaces the duo with two new characters — a **Detective** (deductive questions) and a **Witness** (evasive answers) — a classic extension of the **multi-agent cast**.
  The `f""""""...""""""` format allows the interpolation of runtime variables (word to guess, current score).
-",,,,,,,6959e07349adb018,396c67a0eed4eb12,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,649ac34e,markdown,fr,f85a9ba7239d19b5,"### Exercice 1 : Personnaliser les personnages du duel
+",,,,,,,e147f1f8a80c8b9c,082c8047eede866a,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,649ac34e,markdown,fr,7562414dd8da085d,"### Exemple guidé 1 : Personnaliser les personnages du duel
 
-Les prompts actuels definissent le Pere Fouras comme enigmatique et Laurent Jalabert comme perspicace. L'objectif est de créer une variante du jeu avec deux personnages différents : un **Detective** (qui pose des questions deductives) et un **Temoin** (qui repond de maniere evasive sans reveler le mot).
+*Contribution du groupe de la PR #21009, intégrée comme exemple guidé.*
 
-**Objectif** : ecrire les instructions système pour ces deux nouveaux personnages et configurer les agents correspondants.
+Les prompts initiaux définissent le Père Fouras comme énigmatique et Laurent Jalabert comme perspicace. Le groupe de la PR #21009 livre la variante demandée : un **Detective** (questions déductives, fermées de préférence, qui ne renonce pas) et un **Témoin** (réponses courtes et évasives, indices indirects, jamais le mot en clair) — puis configure les deux agents `ChatCompletionAgent` sur le même motif que le duo original.
+","### Guided example 1: Customize the duel characters
 
-**Indices** :
-- `# Étape 1` : Rediger le prompt du Temoin (rôle, règles, interdictions)
-- `# Étape 2` : Rediger le prompt du Detective (stratégie de questionnement)
-- `# Indice` : le Temoin ne doit jamais reveler le mot directement, mais peut donner des indices indirects
-","### Exercise 1: Customize the duel characters
+*Contribution from the group of PR #21009, integrated as a guided example.*
 
-The current prompts define Père Fouras as enigmatic and Laurent Jalabert as perceptive. The goal is to create a variant of the game with two different characters: a **Detective** (who asks deductive questions) and a **Witness** (who answers evasively without revealing the word).
-
-**Objective**: write the system instructions for these two new characters and configure the corresponding agents.
-
-**Hints**:
-- `# Step 1`: Write the Witness prompt (role, rules, prohibitions)
-- `# Step 2`: Write the Detective prompt (questioning strategy)
-- `# Hint`: the Witness must never reveal the word directly, but may give indirect clues
+The initial prompts define Père Fouras as enigmatic and Laurent Jalabert as sharp-minded. The group of PR #21009 delivers the requested variant: a **Detective** (deductive questions, closed-ended preferred, never giving up) and a **Witness** (short evasive answers, indirect hints, never the word in clear) — then configures both `ChatCompletionAgent` agents on the same pattern as the original duo.
 ",,,,,"### Упражнение 1: Настроить персонажей дуэли
 
 Текущие промпты определяют Отца Фура как загадочного, а Лорана Жалабера — как проницательного. Цель — создать вариант игры с двумя другими персонажами: **Детективом** (который задаёт дедуктивные вопросы) и **Свидетелем** (который отвечает уклончиво, не раскрывая слово).
@@ -609,18 +596,47 @@ The current prompts define Père Fouras as enigmatic and Laurent Jalabert as per
 **Подсказки**:
 - # Шаг 1: Написать промпт Свидетеля (роль, правила, запреты)
 - # Шаг 2: Написать промпт Детектива (стратегия задавания вопросов)
-- # Подсказка: Свидетель никогда не должен раскрывать слово напрямую, но может давать косвенные намёки",,f85a9ba7239d19b5,862ca468490efd24,,,,,3295a1f8a4a7068b,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ac94f4f0,code,fr,fb5c1ca4effe98b3,"# Exercice 1 : Personnaliser les personnages du duel
-# TODO etudiant : definir les prompts et creer les agents
+- # Подсказка: Свидетель никогда не должен раскрывать слово напрямую, но может давать косвенные намёки",,7562414dd8da085d,af92340e54ce1218,,,,,3295a1f8a4a7068b,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ac94f4f0,code,fr,f1637b412a0513d1,"# EXEMPLE GUIDE 1 : personnaliser les personnages du duel (groupe de la PR #21009)
+TEMoin_PROMPT = f""""""
+Tu es un témoin interrogé par un détective.
+Tu connais le mot secret : '{MOT_A_DEVINER}'.
 
-TEMoin_PROMPT = """"  # Etape 1 : instructions du Temoin (evasif, indices indirects)
-DETECTIVE_PROMPT = """"  # Etape 2 : instructions du Detective (questions deductives)
+Ton rôle est de répondre aux questions du détective.
+Tu dois rester mystérieux et parfois évasif.
+Ne révèle jamais directement le mot secret.
+Tu peux donner des indices indirects pour aider le détective.
+Réponds de manière courte et précise.
+""""""
 
-# Indice : creer les agents avec ChatCompletionAgent(kernel=..., name=..., instructions=...)
-temoin = None    # TODO etudiant : creer l'agent Temoin
-detective = None  # TODO etudiant : creer l'agent Detective
+# Etape 2 : Instructions du Detective
+DETECTIVE_PROMPT = """"""
+Tu es un détective intelligent et perspicace.
+Ton objectif est de découvrir un mot secret.
 
-print(""Exercice a completer : personnages Detective et Temoin"")",,,,,,,,fb5c1ca4effe98b3,,,,,,,,
+Pose des questions logiques et déductives au témoin.
+Privilégie les questions fermées (Oui/Non).
+Analyse les réponses pour progresser dans ton enquête.
+Lorsque tu penses avoir trouvé, propose le mot.
+Ne renonce pas trop rapidement.
+""""""
+
+# Etape 3 : Creation de l'agent Temoin
+temoin = ChatCompletionAgent(
+    kernel=create_kernel(),
+    name=""Temoin"",
+    instructions=TEMoin_PROMPT,
+)
+
+# Etape 4 : Creation de l'agent Detective
+detective = ChatCompletionAgent(
+    kernel=create_kernel(),
+    name=""Detective"",
+    instructions=DETECTIVE_PROMPT,
+)
+
+print(""Les agents Detective et Temoin ont ete crees avec succes !"")
+",,,,,,,,f1637b412a0513d1,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,6a8dbe2b,markdown,fr,8dce0df794c9d197,"## Création des agents avec stratégies personnalisées
 
 Un `ChatCompletionAgent` concrétise l'association entre un Kernel (le moteur), un `name` (son identité dans le dialogue) et des `instructions` (son prompt système). Une fois instanciés, les deux agents peuvent produire des messages, mais ils ne savent pas encore *quand* parler ni *quand* s'arrêter — c'est le groupe de discussion qui le décidera (voir plus bas).
@@ -644,14 +660,13 @@ laurent_jalabert = ChatCompletionAgent(
     name=""Laurent_Jalabert"",
     instructions=LAURENT_JALABERT_PROMPT,
 )",,,,,,,,1884ec56d5922898,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,2bbc1e0f,markdown,fr,7d14ad0a0723503b,"### Lecture du résultat : agents conversationnels créés
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,2bbc1e0f,markdown,fr,c6e805e08460483e,"### Lecture du résultat : agents conversationnels créés
 
-La cellule 15 instancie `pere_fouras` et `laurent_jalabert` via `ChatCompletionAgent(kernel=..., name=..., instructions=...)` — sans paramètre `description` ici. Chaque agent reçoit son propre kernel via `create_kernel()` : les agents utilisent le kernel mais ne le possèdent pas, et chacun porte un prompt différent. Sans sélection explicite, le groupe alterne simplement les agents dans l'ordre de la liste (round-robin) ; le paramètre `description` n'entrerait en jeu qu'avec une `selection_strategy` sémantique, qui choisit le prochain locuteur en comparant les descriptions au contexte du dernier message. La cellule 18 (après les agents) importe `TerminationStrategy` — la base class des stratégies de fin custom.
+La cellule 16 instancie `pere_fouras` et `laurent_jalabert` via `ChatCompletionAgent(kernel=..., name=..., instructions=...)` — sans paramètre `description` ici. Chaque agent reçoit son propre kernel via `create_kernel()` : les agents utilisent le kernel mais ne le possèdent pas, et chacun porte un prompt différent. Sans sélection explicite, le groupe alterne simplement les agents dans l'ordre de la liste (round-robin) ; le paramètre `description` n'entrerait en jeu qu'avec une `selection_strategy` sémantique, qui choisit le prochain locuteur en comparant les descriptions au contexte du dernier message. La cellule 19 (après les agents) importe `TerminationStrategy` — la base class des stratégies de fin custom.
 ","### Reading the result: conversational agents created
 
-Cell 10 instantiates `pere_fouras` and `jalabert` via `ChatCompletionAgent(kernel=..., name=..., instructions=..., description=...)`. The `description` parameter is often underused: it serves the **selection_strategy** to choose the active agent when the chat group must decide who speaks. Without an explicit description, the orchestrator would risk alternating arbitrarily. Cell 12 (after agents) imports `TerminationStrategy` — the base class for custom termination strategies. The student must observe the **difference between agents and the kernel**: agents use the kernel but do not own it, and each agent can have a different prompt.
- It is a parameter.
-",,,,,,,7d14ad0a0723503b,c7367a24ca55d879,,,,,,,
+Cell 16 instantiates `pere_fouras` and `laurent_jalabert` via `ChatCompletionAgent(kernel=..., name=..., instructions=...)` — without a `description` parameter here. Each agent receives its own kernel via `create_kernel()`: agents use the kernel but do not own it, and each carries a different prompt. Without an explicit selection, the group simply alternates the agents in list order (round-robin); the `description` parameter would only come into play with a semantic `selection_strategy`, which chooses the next speaker by comparing descriptions to the context of the last message. Cell 19 (after the agents) imports `TerminationStrategy` — the base class for custom termination strategies.
+",,,,,,,c6e805e08460483e,914497b0e74ff40a,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,4a00c813,markdown,fr,02b7ed50c96b72d7,"## Stratégie de terminaison personnalisée
 
 Dans un dialogue multi-agent, il faut décider **quand s'arrêter**. Semantic Kernel délègue cette décision à une `TerminationStrategy` : après chaque tour, la méthode asynchrone `should_agent_terminate` est invoquée et renvoie un booléen qui détermine si la boucle se clôt.
@@ -681,26 +696,16 @@ class FortBoyardTerminationStrategy(TerminationStrategy):
         
         last_message = str(history[-1].content).lower()
         return MOT_A_DEVINER in last_message",,,,,,,,c41a211f227072d5,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,81de6677,markdown,fr,5636696f2d83887e,"### Exercice 2 : Terminaison avec detection de renoncement
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,81de6677,markdown,fr,1f53a1cd6b269484,"### Exemple guidé 2 : Terminaison avec détection de renoncement
 
-La stratégie actuelle arrete la partie uniquement si le mot est devine. Mais Laurent Jalabert pourrait aussi abandonner. L'objectif est de créer une stratégie hybride qui arrete la partie si le mot est devine **ou** si Laurent exprime un renoncement (""je donne ma langue au chat"", ""j'abandonne"").
+*Contribution du groupe de la PR #21009, intégrée comme exemple guidé.*
 
-**Objectif** : implementer `RenoncementTerminationStrategy` qui combine la detection du mot secret avec la detection de phrases d'abandon.
+La stratégie du notebook arrête la partie uniquement si le mot est deviné. Le groupe de la PR #21009 implémente la variante hybride `RenoncementTerminationStrategy` : la partie s'arrête si le mot est deviné **ou** si Laurent exprime un renoncement (« je donne ma langue au chat », « j'abandonne », …) — puis vérifie sa stratégie sur trois situations témoin.
+","### Guided example 2: Termination with give-up detection
 
-**Indices** :
-- `# Étape 1` : Définir une liste de phrases d'abandon typiques
-- `# Étape 2` : Verifier si le dernier message contient une de ces phrases (en minuscules)
-- `# Indice` : combiner les deux conditions avec `or` dans `should_agent_terminate`
-","### Exercise 2: Termination with giving-up detection
+*Contribution from the group of PR #21009, integrated as a guided example.*
 
-The current strategy stops the game only if the word is guessed. But Laurent Jalabert could also give up. The goal is to create a hybrid strategy that stops the game if the word is guessed **or** if Laurent expresses giving up (""je donne ma langue au chat"", ""j'abandonne"").
-
-**Objective**: implement `RenoncementTerminationStrategy` which combines detection of the secret word with detection of giving-up phrases.
-
-**Hints**:
-- `# Step 1`: Define a list of typical giving-up phrases
-- `# Step 2`: Check whether the last message contains one of these phrases (in lowercase)
-- `# Hint`: combine the two conditions with `or` in `should_agent_terminate`
+The notebook's strategy stops the game only if the word is guessed. The group of PR #21009 implements the hybrid variant `RenoncementTerminationStrategy`: the game stops if the word is guessed **or** if Laurent expresses a give-up (""je donne ma langue au chat"", ""j'abandonne"", …) — then checks the strategy on three witness situations.
 ",,,,,"### Упражнение 2 : Завершение с обнаружением отказа
 
 Текущая стратегия останавливает игру только если слово угадано. Но Лоран Жалабер также может сдаться. Цель — создать гибридную стратегию, которая останавливает игру, если слово угадано **или** если Лоран выражает отказ (""je donne ma langue au chat"", ""j'abandonne"").
@@ -710,20 +715,47 @@ The current strategy stops the game only if the word is guessed. But Laurent Jal
 **Подсказки** :
 - # Шаг 1 : Определить список типичных фраз отказа
 - # Шаг 2 : Проверить, содержит ли последнее сообщение одну из этих фраз (в нижнем регистре)
-- # Подсказка : объединить два условия с помощью `or` в `should_agent_terminate`",,5636696f2d83887e,157448c151147789,,,,,95bd36831fc14824,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,0e96e11d,code,fr,9a91cbf579858a4b,"from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
+- # Подсказка : объединить два условия с помощью `or` в `should_agent_terminate`",,1f53a1cd6b269484,0efec10e398ef93b,,,,,95bd36831fc14824,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,0e96e11d,code,fr,eff1056d8e1a114b,"# EXEMPLE GUIDE 2 : terminaison avec detection de renoncement (groupe de la PR #21009)
+from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
 from semantic_kernel.contents.chat_message_content import ChatMessageContent
 
 class RenoncementTerminationStrategy(TerminationStrategy):
-    # TODO etudiant : implementer la strategie de terminaison hybride
-    PHRASES_ABANDON: list[str] = []  # Etape 1 : phrases de renoncement
-    
-    async def should_agent_terminate(self, agent, history: list[ChatMessageContent], cancellation_token=None) -> bool:
-        # Etape 2 : verifier mot devine OU abandon detecte
-        result = False  # TODO etudiant : remplacer par la logique
-        return result
 
-print(""Exercice a completer : RenoncementTerminationStrategy"")",,,,,,,,9a91cbf579858a4b,,,,,,,,
+    # Etape 1 : Definir les phrases d'abandon
+    PHRASES_ABANDON: list[str] = [
+        ""j'abandonne"",
+        ""je donne ma langue au chat"",
+        ""je renonce"",
+        ""je laisse tomber""
+    ]
+
+    async def should_agent_terminate(
+        self, agent, history: list[ChatMessageContent],
+        cancellation_token=None
+    ) -> bool:
+
+        # Verifier que l'historique n'est pas vide
+        if not history:
+            return False
+
+        # Recuperer le dernier message en minuscules
+        dernier_message = str(history[-1].content or """").lower()
+
+        # Verifier si le mot secret est trouve
+        mot_trouve = MOT_A_DEVINER.lower() in dernier_message
+
+        # Verifier si une phrase d'abandon est presente
+        abandon = any(
+            phrase in dernier_message
+            for phrase in self.PHRASES_ABANDON
+        )
+
+        # Arreter si le mot est trouve OU si le joueur abandonne
+        return mot_trouve or abandon
+
+print(""Strategie de renoncement configuree !"")
+",,,,,,,,eff1056d8e1a114b,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,c61e7f51,markdown,fr,9270af3e7f1c1541,"## Configuration du groupe de discussion
 
 `AgentGroupChat` est l'orchestrateur multi-agent : il fait tourner les agents à tour de rôle selon une **stratégie de sélection** (quel agent parle ensuite) et s'arrête selon une **stratégie de terminaison** (quand arrêter). Par défaut, la sélection alterne simplement les agents dans l'ordre de la liste.
@@ -744,13 +776,13 @@ chat = AgentGroupChat(
     )
 )
 ",,,,,,,,e3c965a025256976,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,cb4bd6c9,markdown,fr,5f91ae23ebeeca27,"### Lecture du résultat : groupe de chat configuré
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,cb4bd6c9,markdown,fr,4401434e76ef9378,"### Lecture du résultat : groupe de chat configuré
 
-La cellule 22 construit `AgentGroupChat(agents=[pere_fouras, laurent_jalabert], termination_strategy=...)` — sans `selection_strategy` explicite. C'est l'**objet central** qui orchestre le duel : à chaque tour, l'agent suivant parle dans l'ordre de la liste (round-robin — la sélection par défaut, visible dans les lignes `Selected agent at index 0` / `at index 1` alternées de la sortie), et le `termination_strategy` détecte la fin — ici, le mot deviné : la sortie montre `should terminate: True` dès que Laurent_Jalabert nomme « anticonstitutionnellement ». Sans ce wrapper, les deux agents parleraient en parallèle. La **spécificité Fort Boyard** est le renoncement : l'exercice 2 (cellules 19-20) demande une stratégie hybride qui laisse aussi l'agent abandonner (« je donne ma langue au chat ») — émulation du stress télévisé.
+La cellule 25 construit `AgentGroupChat(agents=[pere_fouras, laurent_jalabert], termination_strategy=...)` — sans `selection_strategy` explicite. C'est l'**objet central** qui orchestre le duel : à chaque tour, l'agent suivant parle dans l'ordre de la liste (round-robin — la sélection par défaut, visible dans les lignes `Selected agent at index 0` / `at index 1` alternées de la sortie), et le `termination_strategy` détecte la fin — ici, le mot deviné : la sortie évalue `should terminate` après chaque tour de Laurent_Jalabert, et la partie s'arrête sur le premier `True` — ou à l'épuisement des itérations si le mot n'est jamais nommé. Sans ce wrapper, les deux agents parleraient en parallèle. La **spécificité Fort Boyard** est le renoncement : l'exemple guidé 2 montre la stratégie hybride qui laisse aussi l'agent abandonner (« je donne ma langue au chat ») — émulation du stress télévisé.
 ","### Reading the result: chat group configured
 
-Cell 16 builds `AgentGroupChat(agents=[pere_fouras, jalabert], termination_strategy=..., selection_strategy=...)`. This is the **central object** that orchestrates the duel: at each turn, the `selection_strategy` chooses who speaks (round-robin by default), the `termination_strategy` detects the end (give-up or score). Without this wrapper, both agents would speak in parallel. The **Fort Boyard specificity** is that the give-up strategy (cell 14, exercise) must let the agent abandon after N unsuccessful attempts — an emulation of the TV stress.
-",,,,,,,5f91ae23ebeeca27,4c11018e55bbbd8b,,,,,,,
+Cell 25 builds `AgentGroupChat(agents=[pere_fouras, laurent_jalabert], termination_strategy=...)` — without an explicit `selection_strategy`. This is the **central object** that orchestrates the duel: at each turn, the next agent speaks in list order (round-robin — the default selection, visible in the alternating `Selected agent at index 0` / `at index 1` lines of the output), and the `termination_strategy` detects the end — here, the guessed word: the output evaluates `should terminate` after each Laurent_Jalabert turn, and the game stops on the first `True` — or when the iterations run out if the word is never named. Without this wrapper, both agents would speak in parallel. The **Fort Boyard specificity** is the give-up: guided example 2 shows the hybrid strategy that also lets the agent abandon (""je donne ma langue au chat"") — an emulation of the TV stress.
+",,,,,,,4401434e76ef9378,b612effd767f05cf,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ada98689,markdown,fr,9894be02bbc84b15,"## Lancement de la partie !
 
 Le groupe est configuré, on peut lancer la partie. On sème le dialogue avec un **message utilisateur initial** (`add_chat_message`) — sinon les agents n'ont rien à quoi réagir — puis on itère asynchronement sur `chat.invoke()`, qui produit chaque message tour à tour.
@@ -781,40 +813,30 @@ async def jouer_partie():
     logger.info(""Partie terminee !"")
 
 await jouer_partie()",,,,,,,,62bb9d8c5d80b76b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,3aa490d9,markdown,fr,fcc68661a0b4ab5b,"### Lecture du résultat : déroulé du duel Père Fouras vs Jalabert
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,3aa490d9,markdown,fr,1de2992d517e2cc7,"### Lecture du résultat : déroulé du duel Père Fouras vs Jalabert
 
-Le log `""Depart du duel Pere Fouras vs Laurent Jalabert""` marque l'entrée dans la boucle asynchrone. À partir de cette cellule, **l'étudiant observe** : (1) l'alternance Père Fouras (énigme) ↔ Jalabert (réponse), (2) la convergence vers le mot deviné — `should terminate: True` dès que Laurent_Jalabert le nomme, puis `Partie terminee !` ; le renoncement (exercice 2) et l'évaluation par `evaluer_partie()` (exercice 3) restent à compléter par l'étudiant. Le **logging structuré** (timestamp + niveau INFO + préfixe événement) est essentiel dans un chat asynchrone multi-agent : sans lui, l'étudiant ne peut pas distinguer **qui parle** dans la sortie, ni **quand une étape se termine**. C'est ce logging qui rend le notebook pédagogique — rejouable.
+Le log `""Depart du duel Pere Fouras vs Laurent Jalabert""` marque l'entrée dans la boucle asynchrone. À partir de cette cellule, **l'étudiant observe** : (1) l'alternance Père Fouras (énigme) ↔ Jalabert (réponse), (2) la boucle d'arrêt — `should terminate` évalué après chaque tour de Laurent_Jalabert : la partie s'arrête sur le premier `True`, ou à l'épuisement des itérations (ce run : le mot est trouvé en 3 tentatives, la cellule de score affiche 70/100), puis `Partie terminee !` ; la variante renoncement (exemple guidé 2) et l'évaluation par `evaluer_partie()` (exemple guidé 3) prolongent ce socle. Le **logging structuré** (timestamp + niveau INFO + préfixe événement) est essentiel dans un chat asynchrone multi-agent : sans lui, l'étudiant ne peut pas distinguer **qui parle** dans la sortie, ni **quand une étape se termine**. C'est ce logging qui rend le notebook pédagogique — rejouable.
 ","### Reading the result: start of the duel Père Fouras vs Jalabert
 
-The log `""Depart du duel Pere Fouras vs Laurent Jalabert""` marks the entry into the asynchronous loop. From this cell on, **the student observes**: (1) the alternation Père Fouras (riddle) ↔ Jalabert (answer), (2) the convergence toward a guessed word or a give-up, (3) the final evaluation by `evaluer_partie()`. **Structured logging** (timestamp + INFO level + event prefix) is essential in an asynchronous multi-agent chat: without it, the student cannot distinguish **who speaks** in the output, nor **when a step ends**. It is this logging that makes the notebook pedagogical — replayable.
-",,,,,,,fcc68661a0b4ab5b,bc3eb9742b305e6c,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,5306a243,markdown,fr,09666e85a85ccb93,"### Lecture du résultat : qui parle, et quand ?
+The log `""Depart du duel Pere Fouras vs Laurent Jalabert""` marks the entry into the asynchronous loop. From this cell on, **the student observes**: (1) the alternation Père Fouras (riddle) ↔ Jalabert (answer), (2) the stopping loop — `should terminate` evaluated after each Laurent_Jalabert turn: the game stops on the first `True`, or when the iterations run out (this run: the word is found in 3 attempts, the score cell shows 70/100), then `Partie terminee !` (game over); the give-up variant (guided example 2) and the evaluation by `evaluer_partie()` (guided example 3) extend this foundation. **Structured logging** (timestamp + INFO level + event prefix) is essential in an asynchronous multi-agent chat: without it, the student cannot distinguish **who speaks** in the output, nor **when a step ends**. It is this logging that makes the notebook pedagogical — replayable.
+",,,,,,,1de2992d517e2cc7,2e9cb0ee85198483,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,5306a243,markdown,fr,bb70b6d3b0c9fe08,"### Lecture du résultat : qui parle, et quand ?
 
-Dans le run committé, aucun paramètre `description` ni `selection_strategy` n'est passé au groupe : la sélection est celle par défaut, et la sortie le montre — les lignes `Selected agent at index 0` (Pere_Fouras) et `Selected agent at index 1` (Laurent_Jalabert) s'alternent strictement tour après tour. Ce round-robin suffit ici : le duel est à deux voix, et l'ordre des tours est l'essence du jeu. Le raffinement, pour des casts plus larges : donner à chaque agent une `description` et au groupe une `selection_strategy` sémantique, qui choisit le prochain locuteur en comparant les descriptions au contexte du dernier message au lieu d'alterner mécaniquement — le pattern **role-based selection**, utile dès que le cast dépasse deux agents (l'exercice 1, avec son Détective et son Témoin, en est l'occasion).
-","### Reading the result: agent selection by description
+Dans le run committé, aucun paramètre `description` ni `selection_strategy` n'est passé au groupe : la sélection est celle par défaut, et la sortie le montre — les lignes `Selected agent at index 0` (Pere_Fouras) et `Selected agent at index 1` (Laurent_Jalabert) s'alternent strictement tour après tour. Ce round-robin suffit ici : le duel est à deux voix, et l'ordre des tours est l'essence du jeu. Le raffinement, pour des casts plus larges : donner à chaque agent une `description` et au groupe une `selection_strategy` sémantique, qui choisit le prochain locuteur en comparant les descriptions au contexte du dernier message au lieu d'alterner mécaniquement — le pattern **role-based selection**, utile dès que le cast dépasse deux agents (l'exemple guidé 1, avec son Détective et son Témoin, en est l'occasion).
+","### Reading the result: who speaks, and when?
 
-When the `selection_strategy` of `AgentGroupChat` must choose the next speaker, it reads the **description** of each agent (`description=""Le Père Fouras pose des énigmes...""` cell 10) and compares it with the context of the last message. This mechanism decides whether Jalabert asks a question (cyclist turn) or whether Père Fouras validates (game master turn). Without an explicit description, the orchestrator risks falling into a rigid **round-robin pattern** that does not adapt to the conversational flow. The **role-based selection** pattern is an important refinement for credible multi-agent simulations.
-",,,,,,,09666e85a85ccb93,f50748791d4079a7,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,9c2a66c0,markdown,fr,c31399d55a9d3ca0,"### Exercice 3 : Système de score pour la partie
+In the committed run, no `description` parameter nor `selection_strategy` is passed to the group: the selection is the default one, and the output shows it — the `Selected agent at index 0` (Pere_Fouras) and `at index 1` (Laurent_Jalabert) lines alternate strictly turn after turn. This round-robin is enough here: the duel has two voices, and the order of turns is the essence of the game. The refinement, for larger casts: give each agent a `description` and the group a semantic `selection_strategy`, which chooses the next speaker by comparing descriptions to the context of the last message instead of alternating mechanically — the **role-based selection** pattern, useful as soon as the cast exceeds two agents (guided example 1, with its Detective and its Witness, is the occasion).
+",,,,,,,bb70b6d3b0c9fe08,6d22a0ed648506d7,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,9c2a66c0,markdown,fr,6c11a06299c4c744,"### Exemple guidé 3 : Système de score pour la partie
 
-Actuellement, la partie s'arrete simplement quand le mot est devine ou après 20 itérations. L'objectif est d'ajouter un **système de score** qui compte le nombre de questions posees par Laurent Jalabert et affiche un score final.
+*Contribution du groupe de la PR #21009, intégrée comme exemple guidé.*
 
-**Objectif** : ecrire une fonction `evaluer_partie` qui prend l'historique des messages et retourne un dictionnaire contenant le nombre de questions posees, si le mot a ete trouve, et un score (moins de questions = meilleur score).
+La partie s'arrête quand le mot est deviné ou après 20 itérations. Le groupe de la PR #21009 ajoute la mesure : la fonction `evaluer_partie` prend l'historique des messages et retourne le nombre de questions posées par Laurent Jalabert, si le mot a été trouvé, et un score qui décroît avec le nombre d'essais (`max(0, 100 - nb_questions * 10)`).
+","### Guided example 3: Scoring system for the game
 
-**Indices** :
-- `# Étape 1` : Compter les messages ou le rôle est celui de Laurent Jalabert
-- `# Étape 2` : Verifier si le mot secret apparait dans le dernier message
-- `# Indice` : le score peut etre `max(0, 100 - nb_questions * 10)`
-","### Exercise 3: Scoring system for the game
+*Contribution from the group of PR #21009, integrated as a guided example.*
 
-Currently, the game simply stops when the word is guessed or after 20 iterations. The objective is to add a **scoring system** that counts the number of questions asked by Laurent Jalabert and displays a final score.
-
-**Objective**: write a function `evaluer_partie` that takes the message history and returns a dictionary containing the number of questions asked, whether the word was found, and a score (fewer questions = better score).
-
-**Hints**:
-- `# Step 1`: Count the messages where the role is that of Laurent Jalabert
-- `# Step 2`: Check whether the secret word appears in the last message
-- `# Hint`: the score can be `max(0, 100 - nb_questions * 10)`
+The game stops when the word is guessed or after 20 iterations. The group of PR #21009 adds the measurement: the `evaluer_partie` function takes the message history and returns the number of questions asked by Laurent Jalabert, whether the word was found, and a score that decreases with the number of attempts (`max(0, 100 - nb_questions * 10)`).
 ",,,,,"### Упражнение 3 : Система подсчета очков для партии
 
 В настоящее время партия просто останавливается, когда слово угадано или после 20 итераций. Цель — добавить **систему подсчета очков**, которая считает количество вопросов, заданных Laurent Jalabert, и отображает итоговый счет.
@@ -824,24 +846,53 @@ Currently, the game simply stops when the word is guessed or after 20 iterations
 **Подсказки** :
 - # Шаг 1 : Посчитать сообщения, где роль принадлежит Laurent Jalabert
 - # Шаг 2 : Проверить, появляется ли секретное слово в последнем сообщении
-- # Подсказка : счет может быть `max(0, 100 - nb_questions * 10)`",,c31399d55a9d3ca0,1ef25963c540f75d,,,,,f3277f163627f847,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,df0d3126,code,fr,c67bed915c276918,"def evaluer_partie(history_messages: list) -> dict:
-    # TODO etudiant : implementer le systeme de score
-    nb_questions = 0     # Etape 1 : compter les questions de Laurent
-    mot_trouve = False   # Etape 2 : verifier la presence du mot
-    
-    # Indice : parcourir history_messages et compter les messages de Laurent
-    score = None  # TODO etudiant : calculer le score
-    return {""nb_questions"": nb_questions, ""mot_trouve"": mot_trouve, ""score"": score}
+- # Подсказка : счет может быть `max(0, 100 - nb_questions * 10)`",,6c11a06299c4c744,10b4f420dc95f3e7,,,,,f3277f163627f847,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,df0d3126,code,fr,883f3dfb294eb8fe,"
+# EXEMPLE GUIDE 3 : systeme de score (groupe de la PR #21009)
 
-print(""Exercice a completer : systeme de score"")",,,,,,,,c67bed915c276918,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,d2a4bdca,markdown,fr,7a0916a5ece4496c,"### Lecture du résultat : système de score en fin de partie
+def evaluer_partie(history_messages: list) -> dict:
 
-La cellule 29 expose `evaluer_partie(history_messages: list) -> dict` — l'étudiant doit implémenter cette fonction (exercice 3, le dernier du carnet). Le contrat, donné par l'énoncé : compter les questions posées par Laurent Jalabert, vérifier si le mot secret apparaît, et retourner un score qui décroît avec le nombre d'essais (l'indice propose `max(0, 100 - nb_questions * 10)`). Ce **scoring** est ce qui transforme le duel en **jeu avec issue mesurable** — sans score, le notebook serait une simple conversation sans fin. C'est aussi ce qui ouvre la porte à des **expériences reproductibles** : l'étudiant peut comparer deux configurations de prompts en mesurant le score moyen sur 100 parties.
+    # Etape 1 : Recuperer les messages de Laurent Jalabert
+    messages_laurent = [
+        message for message in history_messages
+        if getattr(message, ""name"", None) == ""Laurent_Jalabert""
+    ]
+
+    # Compter le nombre de tentatives
+    nb_questions = len(messages_laurent)
+
+    # Etape 2 : Verifier si le mot a ete trouve
+    mot_trouve = False
+
+    if messages_laurent:
+        dernier_message = str(
+            messages_laurent[-1].content or """"
+        ).lower()
+
+        mot_trouve = MOT_A_DEVINER.lower() in dernier_message
+
+    # Etape 3 : Calculer le score
+    if mot_trouve:
+        score = max(0, 100 - nb_questions * 10)
+    else:
+        score = 0
+
+    # Retourner les resultats
+    return {
+        ""nb_questions"": nb_questions,
+        ""mot_trouve"": mot_trouve,
+        ""score"": score
+    }
+
+print(""Systeme de score configure avec succes !"")
+",,,,,,,,883f3dfb294eb8fe,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,d2a4bdca,markdown,fr,dad3f8c0b183d4ea,"### Lecture du résultat : système de score en fin de partie
+
+La fonction du groupe compte les messages signés `Laurent_Jalabert` dans l'historique réel du groupe de chat, vérifie si le mot secret apparaît dans son **dernier** message, et applique la règle `max(0, 100 - 10 × questions)` : une victoire à la première question vaut 90, chaque question supplémentaire coûte 10 points, et un échec vaut 0 — quelle que soit la longueur de la partie. Si le mot n'est pas trouvé, le score rendu est 0 et le nombre de questions reste affiché pour le diagnostic. Ce scoring transforme le duel en **jeu à issue mesurable** : en rejouant la partie avec deux configurations de prompts, on peut comparer des scores moyens — la porte d'entrée des expériences reproductibles.
 ","### Reading the result: scoring system at the end of the game
 
-Cell 20 exposes `evaluer_partie(history_messages: list) -> dict` — the student must implement this function (exercise 4). The typical contract: count the attempts, assign a score based on the length of the guessed word vs the number of attempts, and return a serializable dict. This **scoring** is what turns the duel into a **game with a measurable outcome** — without a score, the notebook would be a simple endless conversation. It is also what opens the door to **reproducible experiments**: the student can compare two prompt configurations by measuring the average score over 100 games.
-",,,,,,,7a0916a5ece4496c,4c726fbc1bb22b78,,,,,,,
+The group's function counts the messages signed `Laurent_Jalabert` in the chat group's real history, checks whether the secret word appears in his **last** message, and applies the rule `max(0, 100 - 10 × questions)`: a first-question win is worth 90, each additional question costs 10 points, and a failure is worth 0 — regardless of the length of the game. If the word is not found, the returned score is 0 and the number of questions remains displayed for diagnosis. This scoring turns the duel into a **game with a measurable outcome**: by replaying the game with two prompt configurations, one can compare average scores — the gateway to reproducible experiments.
+",,,,,,,dad3f8c0b183d4ea,7b2008242d4c0452,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,068a6d38,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
@@ -892,7 +943,7 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,439206
 Nous importons les briques de Semantic Kernel nécessaires à l'orchestration multi-agent : le `Kernel` (conteneur de services et de plugins), `ChatCompletionAgent` et `AgentGroupChat` (agents et orchestrateur de groupe), `TerminationStrategy` (fin de dialogue), le décorateur `@kernel_function` (pour exposer des fonctions comme outils) et `FunctionChoiceBehavior` (pour l'appel automatique de plugins par le LLM). Le type `Annotated` sert à documenter les paramètres de ces fonctions-plugin.","## Importing libraries
 
 We import the Semantic Kernel building blocks needed for multi-agent orchestration: the `Kernel` (container for services and plugins), `ChatCompletionAgent` and `AgentGroupChat` (agents and group orchestrator), `TerminationStrategy` (end of dialogue), the `@kernel_function` decorator (to expose functions as tools) and `FunctionChoiceBehavior` (for automatic plugin invocation by the LLM). The `Annotated` type documents the parameters of these plugin functions.",,,,,## Импорт библиотек,,7355e403d49d0b9f,f432d5d8634c43f1,,,,,e54f8107a37f8e97,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ba9fcb5d,markdown,fr,58c8d94d528c3536,"Ce cas d'usage met en oeuvre une **conversation multi-agent** dans le domaine medical. Trois agents cooperent : un medecin generaliste, une IA specialisee en diagnostic et un pharmacien. Chaque agent dispose de son propre prompt système et de plugins dedies via des `@kernel_function`.
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ba9fcb5d,markdown,fr,00ac9fd8788f3d00,"Ce cas d'usage met en oeuvre une **conversation multi-agent** dans le domaine medical. Trois agents cooperent : un medecin generaliste, une IA specialisee en diagnostic et un pharmacien. Chaque agent dispose de son propre prompt système ; les plugins `@kernel_function` sont enregistrés sur le kernel partagé.
 
 **Objectifs pedagogiques** :
 - Comprendre l'orchestration multi-agent avec `AgentGroupChat`
@@ -904,7 +955,7 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ba9fcb
 - Understand multi-agent orchestration with `AgentGroupChat`
 - Use `@kernel_function` plugins to equip agents with specific capabilities
 - Implement a `TerminationStrategy` to control the end of the dialogue
-- Configure `FunctionChoiceBehavior.Auto()` for automatic plugin calls",,,,,,,58c8d94d528c3536,840771c4248adf81,,,,,,,
+- Configure `FunctionChoiceBehavior.Auto()` for automatic plugin calls",,,,,,,00ac9fd8788f3d00,840771c4248adf81,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,3749930c,code,fr,ac18de33b3ce29f9,"import os
 import logging
 import asyncio
@@ -941,18 +992,18 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,6ee574
 Le `Kernel` est le conteneur central de Semantic Kernel : il regroupe le service d'IA et les plugins. La fonction `create_kernel()` instancie un kernel vierge puis y enregistre un service `OpenAIChatCompletion` (modèle `gpt-5-mini`, clé API lue depuis l'environnement — jamais codée en dur). Factoriser cette construction dans une fonction permet de créer plusieurs kernels, par exemple un par agent si l'on souhaite les isoler.","## Creating the Semantic Kernel kernel
 
 The `Kernel` is Semantic Kernel's central container: it brings together the AI service and the plugins. The `create_kernel()` function instantiates an empty kernel, then registers an `OpenAIChatCompletion` service on it (model `gpt-5-mini`, API key read from the environment — never hard-coded). Factoring this construction into a function makes it possible to create several kernels, for example one per agent if you want to isolate them.",,,,,,,3359819ae102046e,422895e2df37b1d6,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,560d976c,code,fr,b48a06b332f49d5c,"# Création du kernel Semantic Kernel
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,560d976c,code,fr,afe5c20ad3635016,"# Création du kernel Semantic Kernel
 def create_kernel():
     kernel = Kernel()
     kernel.add_service(OpenAIChatCompletion(
         service_id=""openai"",
-        ai_model_id=""gpt-4o-mini"",  # Modifier si besoin
+        ai_model_id=""gpt-5-mini"",  # Modifier si besoin
         api_key=os.getenv(""OPENAI_API_KEY"")
     ))
     return kernel
 # La cellule ne fait que DEFINIR la factory : aucun Kernel() n'existe encore.
 print(""Fonction create_kernel definie — le kernel sera instancie plus bas (kernel = create_kernel())"")
-",,,,,,,,b48a06b332f49d5c,,,,,,,,
+",,,,,,,,afe5c20ad3635016,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,342dd780,markdown,fr,f273e86e273316ac,"## Plugins medicaux : doter les agents de competences spécifiques
 
 Chaque agent dispose d'un plugin dedie contenant des fonctions annotees avec `@kernel_function`. Ces fonctions agissent comme des outils que le LLM peut invoquer automatiquement lorsqu'il en a besoin :
@@ -966,7 +1017,7 @@ Each agent has a dedicated plugin containing functions annotated with `@kernel_f
 - **DoctorPlugin**: asks follow-up questions based on the mentioned symptom
 - **MedicalAIPlugin**: assesses the severity of a symptom (Mild, Moderate, Severe, Critical)
 - **PharmacistPlugin**: recommends an appropriate medication with dosage and precautions",,,,,,,f273e86e273316ac,4175d1733bf87b35,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,8c1f2580,markdown,fr,3fd4be5e5d3917e5,Le kernel est l'élément central de Semantic Kernel. La fonction `create_kernel()` instancie un kernel et y enregistre un service `OpenAIChatCompletion` qui fournira l'acces au modèle GPT-4o-mini. Chaque agent utilisera ce kernel partage pour generer ses reponses.,"The kernel is the central element of Semantic Kernel. The `create_kernel()` function instantiates a kernel and registers an `OpenAIChatCompletion` service in it, which will provide access to the GPT-4o-mini model. Each agent will use this shared kernel to generate its responses.",,,,,,,3fd4be5e5d3917e5,a710ce23f8307836,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,8c1f2580,markdown,fr,eda08172bbaa1451,Le kernel est l'élément central de Semantic Kernel. La fonction `create_kernel()` instancie un kernel et y enregistre un service `OpenAIChatCompletion` qui fournira l'acces au modèle `gpt-5-mini`. Chaque agent utilisera ce kernel partage pour generer ses reponses.,"The kernel is the central element of Semantic Kernel. The `create_kernel()` function instantiates a kernel and registers an `OpenAIChatCompletion` service in it, which will provide access to the GPT-4o-mini model. Each agent will use this shared kernel to generate its responses.",,,,,,,eda08172bbaa1451,a710ce23f8307836,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,041704aa,code,fr,8e01c92f30814a8b,"class DoctorPlugin:
     """"""Plugin permettant au médecin de poser des questions complémentaires sur les symptômes.""""""
     @kernel_function(description=""Pose des questions supplémentaires pour affiner le diagnostic."")
@@ -1133,11 +1184,11 @@ print(""Agents de conversation créés"")
 print(""Kernel configure avec plugin medical"")
 print(""Agents de conversation crees"")
 ",,,,,,,,3d38699948002bb4,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,f026c6bd,markdown,fr,05fcc10b168eca1c,"## Configuration pour que l'agent médical appelle automatiquement les plugins
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,f026c6bd,markdown,fr,ece4a09dc97196da,"## Configuration pour que l'agent médical appelle automatiquement les plugins
 
-Par défaut, un agent ne s'appuie que sur ses instructions textuelles. Pour qu'il puisse **invoquer les plugins** enregistrés dans le kernel, on active `FunctionChoiceBehavior.Auto()` dans ses `KernelArguments` : le LLM décide alors de lui-même, selon le contexte, d'appeler telle ou telle `@kernel_function` (gravité d'un symptôme, recommandation médicamenteuse…). On applique ce réglage à l'agent `IA_Medicale`, puis on crée le pharmacien sur le même modèle.","## Configuration so that the medical agent automatically calls the plugins
+Par défaut, un agent ne s'appuie que sur ses instructions textuelles. Pour qu'il puisse **invoquer les plugins** enregistrés dans le kernel, on active `FunctionChoiceBehavior.Auto()` dans ses `KernelArguments` : le LLM décide alors de lui-même, selon le contexte, d'appeler telle ou telle `@kernel_function` (gravité d'un symptôme, recommandation médicamenteuse…). On applique ce réglage à l'agent `IA_Medicale` via ses `arguments` ; le pharmacien est créé dans la même cellule, sans ce réglage.","## Configuration so that the medical agent automatically calls the plugins
 
-By default, an agent relies only on its textual instructions. So that it can **invoke the plugins** registered in the kernel, we enable `FunctionChoiceBehavior.Auto()` in its `KernelArguments`: the LLM then decides by itself, depending on the context, to call one `@kernel_function` or another (severity of a symptom, medication recommendation, and so on). We apply this setting to the `IA_Medicale` agent, then create the pharmacist on the same model.",,,,,,,05fcc10b168eca1c,20f69d7b628a3c2f,,,,,,,
+By default, an agent relies only on its textual instructions. So that it can **invoke the plugins** registered in the kernel, we enable `FunctionChoiceBehavior.Auto()` in its `KernelArguments`: the LLM then decides by itself, depending on the context, to call one `@kernel_function` or another (severity of a symptom, medication recommendation, and so on). We apply this setting to the `IA_Medicale` agent, then create the pharmacist on the same model.",,,,,,,ece4a09dc97196da,20f69d7b628a3c2f,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,80cd3f50,code,fr,3a6d162f88e072cf,"settings = kernel.get_prompt_execution_settings_from_service_id(""openai"")
 settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
 ai_medical_agent.arguments = KernelArguments(settings=settings)
@@ -1259,21 +1310,21 @@ try:
 except (EOFError, KeyboardInterrupt) as e:
     print(f""[Session interactive interrompue ({type(e).__name__}) - la consultation n'a pas eu lieu, relancez la cellule.]"")
 ",,,,,,,,e8168f859bef5c86,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ceaae36c,markdown,fr,5c7500827f76bbef,"## Ce que nous avons construit
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ceaae36c,markdown,fr,990b5f81a41d5ab5,"## Ce que nous avons construit
 
 Ce cas d'usage illustre plusieurs concepts avances de Semantic Kernel :
 
 | Concept | Implementation |
 |---------|----------------|
 | **Agents specialises** | Trois rôles distincts (Medecin, IA Medicale, Pharmacien) avec instructions système dediees |
-| **Plugins `@kernel_function`** | Chaque agent dispose d'un plugin avec des fonctions spécifiques (questions de suivi, evaluation de gravite, recommandations medicamenteuses) |
+| **Plugins `@kernel_function`** | Trois plugins enregistrés sur le kernel partagé (questions de suivi, évaluation de gravité, recommandation médicamenteuse), invocables par les agents via l'auto function calling |
 | **`AgentGroupChat`** | Orchestration multi-agent avec passage de baton automatique entre les trois participants |
-| **Stratégie de terminaison** | `MedicalTerminationStrategy` arrete le dialogue après 6 echanges pour eviter les boucles infinies |
-| **`FunctionChoiceBehavior.Auto()`** | L'agent IA Medicale peut appeler automatiquement les plugins du kernel pour enrichir ses reponses |
+| **Stratégie de terminaison** | `MedicalTerminationStrategy` arrête le dialogue dès que l'historique atteint 6 messages (1 patient + 5 agents) pour éviter les boucles infinies |
+| **`FunctionChoiceBehavior.Auto()`** | Active l'appel automatique des plugins enregistrés sur le kernel (réglage assigné à `IA_Medicale`) pour enrichir les réponses |
 
 ### Points cles a retenir
 
-1. **Separation des responsabilites** : chaque agent a un rôle précis, ses propres instructions et ses propres outils. Cette modularite facilite le debug et l'evolution du système.
+1. **Separation des responsabilites** : chaque agent a un rôle précis et ses propres instructions, les outils étant partagés via le kernel. Cette modularite facilite le debug et l'evolution du système.
 
 2. **Plugins comme outils** : les `@kernel_function` exposent des capacites que les agents peuvent invoquer via `FunctionChoiceBehavior.Auto()`. Le LLM decide quand et quel plugin appeler en fonction du contexte.
 
@@ -1309,7 +1360,7 @@ This use case illustrates several advanced Semantic Kernel concepts:
 - Add a simulated **Patient** agent that describes symptoms realistically
 - Implement a persistent consultation history (storage in a database)
 - Use a vector model to search for similar medical cases in a knowledge base
-- Add ethical guardrails (refusal to diagnose certain conditions, systematic referral to a healthcare professional)",,,,,,,5c7500827f76bbef,fd5dfdbd3bbbd6b4,,,,,,,
+- Add ethical guardrails (refusal to diagnose certain conditions, systematic referral to a healthcare professional)",,,,,,,990b5f81a41d5ab5,fd5dfdbd3bbbd6b4,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,7a16c5fb,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
@@ -1924,46 +1975,47 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,943a4bd5,ma
 ","**Reading the PDF deliverable** — the conversation played out the three expected roles: `[InputCollector]` recorded the constraints in the shared state, `[RecipeGenerator]` validated the recipe (`ready_to_generate` flag set), then **`[PDFGenerator]` took its turn** by invoking `generate_pdf` — this is precisely the turn that the original stopping condition (`ready_to_generate`) cut off. The verification cell confirms the file on disk (path + size in bytes), then the next cell displays the success branch with the structured content of the shared state.
 
 **What this example demonstrates**: the termination strategy of an `AgentGroupChat` is not a cosmetic detail — it is what decides which agents **actually exist** in the conversation. A flag set one turn too early makes an agent in the list unreachable with no visible error: the loop ends cleanly, the state remains incomplete, and instinct leads one to blame the external tool. Diagnosing this flaw requires reading the **sequence** of turns (who spoke? who never spoke?), not the exceptions — there are none. The reasoning/execution boundary remains real (the `reportlab` plugin can fail independently of the LLM), but the failure observed before the correction was an **orchestration flaw**, not a rendering flaw.",,,,,,,127d3620e9d477ae,e8e92d513de9960b,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,1969ae56,markdown,fr,27ca5071235eb784,"### Vue d'ensemble : un chatbot médical multi-agent en 3 rôles
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,1969ae56,markdown,fr,e47c11a161713ec7,"### Vue d'ensemble : un chatbot médical multi-agent en 3 rôles
 
-Ce notebook implémente une consultation médicale simulée entre trois agents LLM : un **médecin généraliste** qui pose des questions complémentaires au patient, une **IA médicale d'analyse** qui propose des hypothèses diagnostiques, et un **pharmacien** qui vérifie les interactions médicamenteuses. Le tout orchestré par un `AgentGroupChat` Semantic Kernel avec une **stratégie de terminaison** à limite d'échanges (6 messages) — la détection d'un diagnostic final par mot-clé étant laissée en exercice. Le notebook couvre les patterns : `Kernel` + `plugins` natifs, `ChatCompletionAgent`, `AgentGroupChat`, `TerminationStrategy`, et `auto function calling`. C'est un cas d'usage type pour les **synthetic clinical reasoning** où plusieurs LLM agents simulent une consultation réelle.","### Overview: a 3-role multi-agent medical chatbot
+Ce notebook implémente une consultation médicale simulée entre trois agents LLM : un **médecin généraliste** qui pose des questions complémentaires au patient, une **IA médicale d'analyse** qui propose des hypothèses diagnostiques, et un **pharmacien** qui recommande les traitements et leurs précautions. Le tout orchestré par un `AgentGroupChat` Semantic Kernel avec une **stratégie de terminaison** à limite d'échanges (6 messages) — la détection d'un diagnostic final par mot-clé étant laissée en exercice. Le notebook couvre les patterns : `Kernel` + `plugins` natifs, `ChatCompletionAgent`, `AgentGroupChat`, `TerminationStrategy`, et `auto function calling`. C'est un cas d'usage type pour les **synthetic clinical reasoning** où plusieurs LLM agents simulent une consultation réelle.","### Overview: a 3-role multi-agent medical chatbot
 
-This notebook implements a simulated medical consultation between three LLM agents: a **general practitioner** who asks the patient follow-up questions, a **medical analysis AI** that proposes diagnostic hypotheses, and a **pharmacist** who checks drug interactions. The whole thing is orchestrated by a Semantic Kernel `AgentGroupChat` with an **exchange-limit termination strategy** (6 messages) — detecting a final diagnosis by keyword is left as an exercise. The notebook covers the patterns: `Kernel` + native `plugins`, `ChatCompletionAgent`, `AgentGroupChat`, `TerminationStrategy`, and `auto function calling`. It is a typical use case for **synthetic clinical reasoning** where several LLM agents simulate a real consultation.",,,,,,,27ca5071235eb784,e343123d74c7e3f6,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,593c25da,markdown,fr,f4649179389e60bd,"### Lecture du résultat : imports et configuration initiale
+This notebook implements a simulated medical consultation between three LLM agents: a **general practitioner** who asks the patient follow-up questions, a **medical analysis AI** that proposes diagnostic hypotheses, and a **pharmacist** who checks drug interactions. The whole thing is orchestrated by a Semantic Kernel `AgentGroupChat` with an **exchange-limit termination strategy** (6 messages) — detecting a final diagnosis by keyword is left as an exercise. The notebook covers the patterns: `Kernel` + native `plugins`, `ChatCompletionAgent`, `AgentGroupChat`, `TerminationStrategy`, and `auto function calling`. It is a typical use case for **synthetic clinical reasoning** where several LLM agents simulate a real consultation.",,,,,,,e47c11a161713ec7,e343123d74c7e3f6,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,593c25da,markdown,fr,224d3da891e63e20,"### Lecture du résultat : imports et configuration initiale
 
-L'output `""Imports OK""` valide la chaîne complète `python-dotenv` + `semantic-kernel` + `pydantic` : trois dépendances critiques pour ce cas d'usage, et l'échec d'une seule aurait court-circuité la cellule d'imports ci-dessus (`load_dotenv()`). Le notebook utilise des **imports gardés** (try/except ImportError) dans la cellule d'imports ci-dessus — c'est un pattern défensif qui documente la disponibilité des services externes **avant** de planter en aval. L'étudiant doit reproduire ce réflexe : un import nu de `semantic_kernel` dans un clone frais sans la dépendance installée retournerait un `ModuleNotFoundError` peu explicite.","### Reading the result: imports and initial configuration
+L'output `""Imports OK""` valide la chaîne complète `python-dotenv` + `semantic-kernel` : deux dépendances critiques pour ce cas d'usage, et l'échec d'une seule aurait court-circuité la cellule d'imports ci-dessus (`load_dotenv()`). Le notebook utilise des **imports gardés** (try/except ImportError) dans la cellule d'imports ci-dessus — c'est un pattern défensif qui documente la disponibilité des services externes **avant** de planter en aval. L'étudiant doit reproduire ce réflexe : un import nu de `semantic_kernel` dans un clone frais sans la dépendance installée retournerait un `ModuleNotFoundError` peu explicite.","### Reading the result: imports and initial configuration
 
-The `""Imports OK""` output validates the full `python-dotenv` + `semantic-kernel` + `pydantic` chain: three critical dependencies for this use case, and a failure in any single one would have short-circuited the imports cell above (`load_dotenv()`). The notebook uses **guarded imports** (try/except ImportError) in the imports cell above — a defensive pattern that documents the availability of external services **before** failing downstream. The student should reproduce this reflex: a bare `import semantic_kernel` in a fresh clone without the dependency installed would return an unhelpful `ModuleNotFoundError`.",,,,,,,f4649179389e60bd,ab317da5225b77d2,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,43b69f3c,markdown,fr,45a97a29434ea669,"### Lecture du résultat : variables d'environnement chargées
+The `""Imports OK""` output validates the full `python-dotenv` + `semantic-kernel` + `pydantic` chain: three critical dependencies for this use case, and a failure in any single one would have short-circuited the imports cell above (`load_dotenv()`). The notebook uses **guarded imports** (try/except ImportError) in the imports cell above — a defensive pattern that documents the availability of external services **before** failing downstream. The student should reproduce this reflex: a bare `import semantic_kernel` in a fresh clone without the dependency installed would return an unhelpful `ModuleNotFoundError`.",,,,,,,224d3da891e63e20,ab317da5225b77d2,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,43b69f3c,markdown,fr,5867761bba6f3375,"### Lecture du résultat : variables d'environnement chargées
 
-`load_dotenv()` retourne `True` quand un fichier `.env` est trouvé et parsé. Pour ce notebook, une seule variable compte : `OPENAI_API_KEY` — la clé du modèle `gpt-5-mini` que `create_kernel()` (ci-dessous) passe à `OpenAIChatCompletion`. C'est la seule que le code lit : aucun backend Azure ni ComfyUI/Qwen n'est branché ici. Un `False` — comme sur la sortie ci-dessus — signifie seulement qu'aucun fichier `.env` n'a été trouvé : l'exécution enregistrée a tourné avec la clé exportée dans l'environnement du process (d'où les 5 appels API réussis en fin de notebook). Si `OPENAI_API_KEY` est absente à la fois du `.env` et de l'environnement, la configuration du service ou le premier appel LLM échoue explicitement ; le `try/except` final ne masque pas cet échec.","### Reading the result: environment variables loaded
+`load_dotenv()` retourne `True` quand un fichier `.env` est trouvé et parsé. Pour ce notebook, une seule variable compte : `OPENAI_API_KEY` — la clé du modèle `gpt-5-mini` que `create_kernel()` (ci-dessous) passe à `OpenAIChatCompletion`. C'est la seule que le code lit : aucun backend Azure ni ComfyUI/Qwen n'est branché ici. La sortie ci-dessus montre `True` : un fichier `.env` a été trouvé et parsé. Un `False` signifierait qu'aucun fichier `.env` n'a été trouvé — la clé devrait alors venir de l'environnement du process pour que les appels API de fin de notebook réussissent (7 requêtes HTTP comptées dans la trace de consultation). Si `OPENAI_API_KEY` est absente à la fois du `.env` et de l'environnement, la configuration du service ou le premier appel LLM échoue explicitement ; le `try/except` final ne masque pas cet échec.","### Reading the result: environment variables loaded
 
-`load_dotenv()` returns `True` when a `.env` file is found and parsed. For this notebook, only one variable matters: `OPENAI_API_KEY` — the key for the `gpt-5-mini` model that `create_kernel()` (below) passes to `OpenAIChatCompletion`. It is the only one the code reads: no Azure backend and no ComfyUI/Qwen endpoint is wired in here. A `False` — as in the output above — only means that no `.env` file was found: the recorded run used the key exported into the process environment (hence the 5 successful API calls at the end of the notebook). If `OPENAI_API_KEY` is missing from both the `.env` file and the environment, the service configuration or the first LLM call fails explicitly; the final `try/except` does not mask that failure.",,,,,,,45a97a29434ea669,cbc8b0a27a7e674d,,,,,,,
+`load_dotenv()` returns `True` when a `.env` file is found and parsed. For this notebook, only one variable matters: `OPENAI_API_KEY` — the key for the `gpt-5-mini` model that `create_kernel()` (below) passes to `OpenAIChatCompletion`. It is the only one the code reads: no Azure backend and no ComfyUI/Qwen endpoint is wired in here. A `False` — as in the output above — only means that no `.env` file was found: the recorded run used the key exported into the process environment (hence the 5 successful API calls at the end of the notebook). If `OPENAI_API_KEY` is missing from both the `.env` file and the environment, the service configuration or the first LLM call fails explicitly; the final `try/except` does not mask that failure.",,,,,,,5867761bba6f3375,cbc8b0a27a7e674d,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,fcebb55c,markdown,fr,43265d979d79dbd5,"### Lecture du résultat : logging structuré pour traçabilité multi-agent
 
 `""Configuration des logs OK""` valide le format `%(asctime)s [%(levelname)s] %(message)s` avec niveau `INFO`. C'est ce format que la cellule d'exécution de la consultation (en fin de notebook) affichera en sortie (horodatage + `[INFO] Début de la consultation médicale IA` au lancement de la consultation). Le logging **structuré** n'est pas un caprice pédagogique : sans lui, l'étudiant ne peut pas distinguer **qui parle** dans un chat à 3 agents — médecin, IA médicale ou pharmacien. La distinction ne vient pas du format (qui n'affiche ni le nom du logger ni l'émetteur) mais des appels de log explicites dans `run_medical_chat()` : `logger.info(f""[{message.role}] {message.name}: {message.content}"")` identifie l'émetteur de chaque message, tour par tour. L'étudiant doit noter l'horodatage (la date varie à chaque exécution) et l'ordre des événements : c'est cette trace qui valide ex-post la séquence orchestrale.","### Reading the result: structured logging for multi-agent traceability
 
 `""Configuration des logs OK""` validates the `%(asctime)s [%(levelname)s] %(message)s` format at level `INFO`. This is the format the consultation execution cell (at the end of the notebook) will display as output (timestamp + `[INFO] Début de la consultation médicale IA` when the consultation starts). **Structured** logging is not a pedagogical whim: without it, the student cannot tell **who is speaking** in a 3-agent chat — doctor, medical AI, or pharmacist. The distinction does not come from the format (which displays neither the logger name nor the sender) but from the explicit log calls inside `run_medical_chat()`: `logger.info(f""[{message.role}] {message.name}: {message.content}"")` identifies the sender of each message, turn by turn. The student should note the timestamp (the date changes on every run) and the order of events: this trace is what validates the orchestral sequence after the fact.",,,,,,,43265d979d79dbd5,58b8046ab69b3b9d,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,fd86a9df,markdown,fr,b38fbe151161f8a8,"### Lecture du résultat : kernel Semantic Kernel instancié
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,fd86a9df,markdown,fr,25f7255de33f9698,"### Lecture du résultat : ce que le kernel va agréger
 
-La cellule ci-dessus définit `create_kernel()` — c'est la **factory du conteneur central** de Semantic Kernel. Le kernel agrège services LLM, plugins (médecin/pharmacien/allergies) et filters. Dans ce notebook, chaque agent conversationnel (médecin, IA médicale, pharmacien) **partage le même kernel** mais accède à des plugins différents via `kernel.add_plugin(DoctorPlugin(), plugin_name=""doctor"")`. Cette mutualisation du kernel vs duplication par agent est un choix d'architecture : un seul service LLM, N personas.","### Reading the result: Semantic Kernel kernel instantiated
+La cellule ci-dessus ne fait que **définir** `create_kernel()` — l'instanciation a lieu plus bas (`kernel = create_kernel()`). Le point d'architecture à retenir dès maintenant : le kernel de ce notebook est **unique et partagé**. Les trois plugins (`doctor`, `medical`, `pharmacist`) y seront enregistrés via `kernel.add_plugin(...)`, et les trois agents l'utilisent tous : il n'y a pas un plugin par agent isolé, chaque `ChatCompletionAgent` construit sur ce kernel voit les fonctions `@kernel_function` de tous les plugins enregistrés. Cette mutualisation (un seul service LLM, N personas) est un choix d'architecture, pas une obligation — un kernel par agent resterait possible pour isoler les outils de chacun.
+","### Reading the result: Semantic Kernel kernel instantiated
 
-The cell above defines `create_kernel()` — the **factory of Semantic Kernel's central container**. The kernel aggregates LLM services, plugins (doctor/pharmacist/allergies) and filters. In this notebook, each conversational agent (doctor, medical AI, pharmacist) **shares the same kernel** but accesses different plugins via `kernel.add_plugin(DoctorPlugin(), plugin_name=""doctor"")`. Sharing the kernel instead of duplicating it per agent is an architecture choice: one LLM service, N personas.",,,,,,,b38fbe151161f8a8,eec6675a2d05d3f8,,,,,,,
+The cell above defines `create_kernel()` — the **factory of Semantic Kernel's central container**. The kernel aggregates LLM services, plugins (doctor/pharmacist/allergies) and filters. In this notebook, each conversational agent (doctor, medical AI, pharmacist) **shares the same kernel** but accesses different plugins via `kernel.add_plugin(DoctorPlugin(), plugin_name=""doctor"")`. Sharing the kernel instead of duplicating it per agent is an architecture choice: one LLM service, N personas.",,,,,,,25f7255de33f9698,eec6675a2d05d3f8,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,32073503,markdown,fr,d73179abc1194d34,"### Lecture du résultat : kernel et plugins opérationnels
 
 `""Kernel instancie""` puis `""Kernel configuré avec le plugin médical""` valident la séquence `kernel = create_kernel()` → `kernel.add_plugin(DoctorPlugin(), plugin_name=""doctor"")`. Cette **deuxième étape** est ce qui distingue Semantic Kernel d'un simple wrapper OpenAI : le kernel **enregistre** les plugins comme tools invocables par le LLM via la couche `auto function calling`. Sans `add_plugin`, les `native functions` Python de `DoctorPlugin` seraient inaccessibles aux agents, et le LLM répondrait **sans grounding médical**.","### Reading the result: kernel and plugins operational
 
 `""Kernel instancie""` then `""Kernel configuré avec le plugin médical""` validate the sequence `kernel = create_kernel()` → `kernel.add_plugin(DoctorPlugin(), plugin_name=""doctor"")`. This **second step** is what distinguishes Semantic Kernel from a simple OpenAI wrapper: the kernel **registers** plugins as tools invocable by the LLM via the `auto function calling` layer. Without `add_plugin`, the Python `native functions` of `DoctorPlugin` would be unreachable by the agents, and the LLM would answer **without medical grounding**.",,,,,,,d73179abc1194d34,f2a4dc19b954c65a,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,f685b172,markdown,fr,34cb11f5490b6a1e,"### Lecture du résultat : plugins médicaux définis
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,f685b172,markdown,fr,57593090e62af329,"### Lecture du résultat : plugins médicaux définis
 
-`""Classe DoctorPlugin définie""` valide que `DoctorPlugin` (questions complémentaires au patient), `MedicalAIPlugin` (analyse IA), et `PharmacistPlugin` (vérification interactions médicamenteuses) sont instanciés en mémoire. Chaque plugin expose des **native functions** Python décorées `@kernel.function_description()` que les agents peuvent invoquer via le mécanisme d'**auto function calling** de SK. Le notebook utilise 3 plugins médicaux + 1 plugin d'allergies (exercice, ci-dessous) — l'étudiant doit compléter l'`AllergyPlugin` (voir l'exercice ci-dessous). Les plugins sont l'**équivalent médical des tools en LangChain** : la Skill calling devient `function_call` côté LLM.","### Reading the result: medical plugins defined
+`""Classe DoctorPlugin définie""` valide que `DoctorPlugin` (questions complémentaires au patient), `MedicalAIPlugin` (analyse IA), et `PharmacistPlugin` (recommandation médicamenteuse) sont définies. Chaque plugin expose des **native functions** Python décorées `@kernel_function` que les agents peuvent invoquer via le mécanisme d'**auto function calling** de SK. Le notebook utilise 3 plugins médicaux + 1 plugin d'allergies (exercice, ci-dessous) — l'étudiant doit compléter l'`AllergyPlugin` (voir l'exercice ci-dessous). Les plugins sont l'**équivalent médical des tools en LangChain** : la Skill calling devient `function_call` côté LLM.","### Reading the result: medical plugins defined
 
-`""Classe DoctorPlugin définie""` validates that `DoctorPlugin` (patient follow-up questions), `MedicalAIPlugin` (AI analysis), and `PharmacistPlugin` (drug interaction checks) are instantiated in memory. Each plugin exposes Python **native functions** decorated with `@kernel.function_description()` that agents can invoke via SK's **auto function calling** mechanism. The notebook uses 3 medical plugins + 1 allergy plugin (exercise, below) — the student must complete the `AllergyPlugin` (see the exercise below). Plugins are the **medical equivalent of tools in LangChain**: skill calling becomes `function_call` on the LLM side.",,,,,,,34cb11f5490b6a1e,232ed8c6797ed708,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,518877fb,markdown,fr,17fd288a5ba38f14,"### Lecture du résultat : prompts système configurés
+`""Classe DoctorPlugin définie""` validates that `DoctorPlugin` (patient follow-up questions), `MedicalAIPlugin` (AI analysis), and `PharmacistPlugin` (drug interaction checks) are instantiated in memory. Each plugin exposes Python **native functions** decorated with `@kernel.function_description()` that agents can invoke via SK's **auto function calling** mechanism. The notebook uses 3 medical plugins + 1 allergy plugin (exercise, below) — the student must complete the `AllergyPlugin` (see the exercise below). Plugins are the **medical equivalent of tools in LangChain**: skill calling becomes `function_call` on the LLM side.",,,,,,,57593090e62af329,232ed8c6797ed708,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,518877fb,markdown,fr,88937426c23f2465,"### Lecture du résultat : prompts système configurés
 
-`""Prompts medicaux configures""` couvre les 3 rôles : `DOCTOR_PROMPT` (médecin généraliste, questions complémentaires), `AI_MEDICAL_PROMPT` (assistant IA d'analyse), `PHARMACIST_PROMPT` (vérification interactions). Chaque prompt structure la **persona + comportement attendu** : ton professionnel, refus de prescrire, demande de clarifications. C'est l'application du pattern **role prompting** (cf. [OpenAI Best Practices](https://platform.openai.com/docs/guides/prompt-engineering/tactic-ask-the-model-to-adopt-a-persona)). L'exercice sur les prompts (plus bas) invite l'étudiant à rédiger un prompt pediatric — l'ajout d'un persona spécialisé est un exercice classique de **persona engineering**.","### Reading the result: system prompts configured
+`""Prompts medicaux configures""` couvre les 3 rôles : `DOCTOR_PROMPT` (médecin généraliste, questions complémentaires), `AI_MEDICAL_PROMPT` (assistant IA d'analyse), `PHARMACIST_PROMPT` (recommandation médicamenteuse). Chaque prompt structure la **persona + comportement attendu** : ton professionnel, refus de prescrire, demande de clarifications. C'est l'application du pattern **role prompting** (cf. [OpenAI Best Practices](https://platform.openai.com/docs/guides/prompt-engineering/tactic-ask-the-model-to-adopt-a-persona)). L'exercice sur les prompts (plus bas) invite l'étudiant à rédiger un prompt pediatric — l'ajout d'un persona spécialisé est un exercice classique de **persona engineering**.","### Reading the result: system prompts configured
 
-`""Prompts medicaux configures""` covers the 3 roles: `DOCTOR_PROMPT` (general practitioner, follow-up questions), `AI_MEDICAL_PROMPT` (AI analysis assistant), `PHARMACIST_PROMPT` (interaction checks). Each prompt structures the **persona + expected behavior**: professional tone, refusal to prescribe, asking for clarifications. This is an application of the **role prompting** pattern (cf. [OpenAI Best Practices](https://platform.openai.com/docs/guides/prompt-engineering/tactic-ask-the-model-to-adopt-a-persona)). The prompt exercise (further down) invites the student to write a pediatric prompt — adding a specialized persona is a classic **persona engineering** exercise.",,,,,,,17fd288a5ba38f14,7a36fb10faf9a80b,,,,,,,
+`""Prompts medicaux configures""` covers the 3 roles: `DOCTOR_PROMPT` (general practitioner, follow-up questions), `AI_MEDICAL_PROMPT` (AI analysis assistant), `PHARMACIST_PROMPT` (interaction checks). Each prompt structures the **persona + expected behavior**: professional tone, refusal to prescribe, asking for clarifications. This is an application of the **role prompting** pattern (cf. [OpenAI Best Practices](https://platform.openai.com/docs/guides/prompt-engineering/tactic-ask-the-model-to-adopt-a-persona)). The prompt exercise (further down) invites the student to write a pediatric prompt — adding a specialized persona is a classic **persona engineering** exercise.",,,,,,,88937426c23f2465,7a36fb10faf9a80b,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,5a6279be,markdown,fr,d92b764a58419333,"### Lecture du résultat : passage du squelette à l'exécution
 
 Avec la cellule d'instanciation du kernel ci-dessus (`kernel = create_kernel()`) et la cellule d'ajout des plugins plus bas (`kernel.add_plugin(...)`), le notebook **quitte la phase de définition** pour la phase d'instanciation. Avant : on *définissait* des classes et fonctions. Après : on les *utilise*. Cette démarcation est un signal pédagogique classique en notebook : la deuxième moitié du notebook est **exécutable** (l'étudiant doit voir la consultation se dérouler), tandis que la première moitié est **structurelle** (l'étudiant peut la lire comme du code de production). Le `print(""Kernel instancie"")` qui accompagne l'instanciation est la **trace écrite** de cette transition.","### Reading the result: from skeleton to execution
@@ -1974,37 +2026,38 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,887a3c
 `""Stratégie de terminaison médicale définie""` marque l'instanciation de `MedicalTerminationStrategy` — sous-classe de `TerminationStrategy` qui détecte la fin du chat multi-agent. Dans ce notebook, le critère de terminaison est une **limite d'échanges** : `should_terminate` retourne `True` dès que l'historique atteint 6 messages (`len(history) >= 6`) — soit 1 message patient + 5 réponses d'agents. Sans stratégie explicite, `AgentGroupChat` boucle indéfiniment. La détection d'un diagnostic par mot-clé est précisément l'**exercice** laissé à l'étudiant plus bas (`DiagnosticTerminationStrategy`). L'étudiant doit observer cette **séparation entre orchestration et logique métier** : la stratégie de terminaison est un **plugin comportemental**, pas une règle codée en dur dans le chat.","### Reading the result: medical termination strategy
 
 `""Stratégie de terminaison médicale définie""` marks the instantiation of `MedicalTerminationStrategy` — a subclass of `TerminationStrategy` that detects the end of the multi-agent chat. In this notebook, the termination criterion is an **exchange limit**: `should_terminate` returns `True` as soon as the history reaches 6 messages (`len(history) >= 6`) — i.e. 1 patient message + 5 agent replies. Without an explicit strategy, `AgentGroupChat` loops forever. Detecting a diagnosis by keyword is precisely the **exercise** left to the student further down (`DiagnosticTerminationStrategy`). The student should observe this **separation between orchestration and business logic**: the termination strategy is a **behavioral plugin**, not a rule hard-coded into the chat.",,,,,,,094cd5f3d5d37abf,642cc195e00643fa,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,79574b2a,markdown,fr,9c51f3268b92ee9b,"### Lecture du résultat : agents conversationnels créés
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,79574b2a,markdown,fr,812ca8124ecdf946,"### Lecture du résultat : agents conversationnels créés
 
-`""Agents de conversation créés""` marque l'instanciation de trois `ChatCompletionAgent` (médecin, IA médicale, pharmacien) avec leurs rôles respectifs et le `ServiceId=""openai""` du kernel. C'est ici que le **modèle de groupe** (`AgentGroupChat`, instancié plus bas dans le notebook) prend forme : trois personas, un orchestrateur de chat, une stratégie de terminaison médicale. L'étudiant doit observer la distinction agent/kernel : un agent **utilise** un kernel mais n'en est pas le propriétaire. Pour Scalability, ajouter un 4ᵉ agent (ex. infirmier) ne nécessite pas de réinstancier le kernel — seulement un nouveau `ChatCompletionAgent` partageant le même.","### Reading the result: conversational agents created
+`""Agents de conversation créés""` marque l'instanciation de **deux** `ChatCompletionAgent` (médecin, IA médicale) — le pharmacien est créé plus bas (cellule 41), une fois `FunctionChoiceBehavior.Auto()` configuré. Chaque agent reçoit son `instructions` (le prompt système) et s'appuie sur le kernel partagé et son service `""openai""`. C'est ici que le **modèle de groupe** (`AgentGroupChat`, instancié plus bas dans le notebook) prend forme : trois personas, un orchestrateur de chat, une stratégie de terminaison médicale. L'étudiant doit observer la distinction agent/kernel : un agent **utilise** un kernel mais n'en est pas le propriétaire. Pour Scalability, ajouter un 4ᵉ agent (ex. infirmier) ne nécessite pas de réinstancier le kernel — seulement un nouveau `ChatCompletionAgent` partageant le même.","### Reading the result: conversational agents created
 
-`""Agents de conversation créés""` marks the instantiation of three `ChatCompletionAgent` (doctor, medical AI, pharmacist) with their respective roles and the kernel's `ServiceId=""openai""`. This is where the **group model** (`AgentGroupChat`, instantiated further down in the notebook) takes shape: three personas, one chat orchestrator, one medical termination strategy. The student should observe the agent/kernel distinction: an agent **uses** a kernel but does not own it. For scalability, adding a 4th agent (e.g. a nurse) does not require re-instantiating the kernel — only a new `ChatCompletionAgent` sharing the same one.",,,,,,,9c51f3268b92ee9b,4010fb6bb8013d2b,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,f72d8c8b,markdown,fr,72884a024d9a6fe6,"### Lecture du résultat : paramètres d'exécution LLM
+`""Agents de conversation créés""` marks the instantiation of three `ChatCompletionAgent` (doctor, medical AI, pharmacist) with their respective roles and the kernel's `ServiceId=""openai""`. This is where the **group model** (`AgentGroupChat`, instantiated further down in the notebook) takes shape: three personas, one chat orchestrator, one medical termination strategy. The student should observe the agent/kernel distinction: an agent **uses** a kernel but does not own it. For scalability, adding a 4th agent (e.g. a nurse) does not require re-instantiating the kernel — only a new `ChatCompletionAgent` sharing the same one.",,,,,,,812ca8124ecdf946,4010fb6bb8013d2b,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,f72d8c8b,markdown,fr,ca1cda000be3608d,"### Lecture du résultat : paramètres d'exécution LLM
 
-`""Paramètres d'exécution configurés""` marque `kernel.get_prompt_execution_settings_from_service_id(""openai"")` qui configure la température, le max_tokens, le top_p pour les appels LLM du kernel. Ces paramètres sont **partagés par les 3 agents** via le kernel — pas configurés agent par agent. C'est un choix d'orchestration : pour une consultation médicale, on veut des réponses **reproductibles et conservatives** (température basse, typiquement 0.2-0.5), pas créatives. L'étudiant peut observer l'effet en modifiant `temperature` (de 0.0 = déterministe à 1.0 = exploratoire) et en relançant la cellule `settings` ci-dessus.","### Reading the result: LLM execution settings
+`""Paramètres d'exécution configurés""` marque la configuration de `FunctionChoiceBehavior.Auto()` sur les settings du service `""openai""` — réglage assigné aux `arguments` de `ai_medical_agent`, qui autorise le LLM à décider d'appeler les fonctions `@kernel_function` du kernel selon le contexte. La cellule ne fixe **aucune** température, `max_tokens` ni `top_p` : les valeurs par défaut du service s'appliquent — l'étudiant qui veut des réponses plus reproductibles peut les ajouter sur le même objet `settings` (ex. `settings.temperature = 0.2`) puis relancer la consultation. À noter : le `pharmacist_agent` est créé dans cette même cellule, sans ce réglage d'arguments.
+","### Reading the result: LLM execution settings
 
-`""Paramètres d'exécution configurés""` marks `kernel.get_prompt_execution_settings_from_service_id(""openai"")` which configures the temperature, max_tokens, and top_p for the kernel's LLM calls. These settings are **shared by the 3 agents** through the kernel — not configured agent by agent. It is an orchestration choice: for a medical consultation, we want **reproducible and conservative** answers (low temperature, typically 0.2-0.5), not creative ones. The student can observe the effect by changing `temperature` (from 0.0 = deterministic to 1.0 = exploratory) and re-running the `settings` cell above.",,,,,,,72884a024d9a6fe6,b1fe49df3e1072aa,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,faa01c8b,markdown,fr,b70eda170196f9d2,"### Lecture du résultat : chat de groupe médical configuré
+`""Paramètres d'exécution configurés""` marks `kernel.get_prompt_execution_settings_from_service_id(""openai"")` which configures the temperature, max_tokens, and top_p for the kernel's LLM calls. These settings are **shared by the 3 agents** through the kernel — not configured agent by agent. It is an orchestration choice: for a medical consultation, we want **reproducible and conservative** answers (low temperature, typically 0.2-0.5), not creative ones. The student can observe the effect by changing `temperature` (from 0.0 = deterministic to 1.0 = exploratory) and re-running the `settings` cell above.",,,,,,,ca1cda000be3608d,b1fe49df3e1072aa,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,faa01c8b,markdown,fr,da3b1a03c0292fbe,"### Lecture du résultat : chat de groupe médical configuré
 
-`""Chat de groupe médical configuré""` valide la chaîne `AgentGroupChat(agents=[...], termination_strategy=MedicalTerminationStrategy(), selection_strategy=DefaultSelectionStrategy())`. Le **groupe de chat** orchestre la conversation multi-agent : à chaque tour, le `selection_strategy` choisit l'agent actif (round-robin par défaut, ou basé sur le dernier message), le `termination_strategy` détecte la fin (limite de 6 messages dans l'historique). C'est le **cœur du pattern multi-agent** : sans orchestration explicite, les agents parleraient en parallèle. Ce notebook est un cas d'usage type de **synthetic clinical reasoning** où 3 LLM agents simulent une consultation réelle.","### Reading the result: medical group chat configured
+`""Chat de groupe médical configuré""` valide la chaîne `AgentGroupChat(agents=[doctor_agent, ai_medical_agent, pharmacist_agent], termination_strategy=MedicalTerminationStrategy())` — **sans** `selection_strategy` explicite : la sélection par défaut alterne les agents dans l'ordre de la liste (round-robin, visible dans les logs `Selected agent at index 0/1/2` de la consultation finale), et le `termination_strategy` détecte la fin (limite de 6 messages dans l'historique). C'est le **cœur du pattern multi-agent** : sans orchestration explicite, les agents parleraient en parallèle. Ce notebook est un cas d'usage type de **synthetic clinical reasoning** où 3 LLM agents simulent une consultation réelle.","### Reading the result: medical group chat configured
 
-`""Chat de groupe médical configuré""` validates the chain `AgentGroupChat(agents=[...], termination_strategy=MedicalTerminationStrategy(), selection_strategy=DefaultSelectionStrategy())`. The **group chat** orchestrates the multi-agent conversation: at each turn, the `selection_strategy` picks the active agent (round-robin by default, or based on the last message), the `termination_strategy` detects the end (limit of 6 messages in the history). This is the **heart of the multi-agent pattern**: without explicit orchestration, the agents would speak in parallel. This notebook is a typical use case of **synthetic clinical reasoning** where 3 LLM agents simulate a real consultation.",,,,,,,b70eda170196f9d2,12fccd8f8a40d688,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,8ba2019f,markdown,fr,c18bf492022b3822,"### Lecture du résultat : squelette multi-agent complet, prêt pour l'exécution
+`""Chat de groupe médical configuré""` validates the chain `AgentGroupChat(agents=[...], termination_strategy=MedicalTerminationStrategy(), selection_strategy=DefaultSelectionStrategy())`. The **group chat** orchestrates the multi-agent conversation: at each turn, the `selection_strategy` picks the active agent (round-robin by default, or based on the last message), the `termination_strategy` detects the end (limit of 6 messages in the history). This is the **heart of the multi-agent pattern**: without explicit orchestration, the agents would speak in parallel. This notebook is a typical use case of **synthetic clinical reasoning** where 3 LLM agents simulate a real consultation.",,,,,,,da3b1a03c0292fbe,12fccd8f8a40d688,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,8ba2019f,markdown,fr,69a84b764c525874,"### Lecture du résultat : squelette multi-agent complet, prêt pour l'exécution
 
-À ce stade du notebook, **toute la machinerie multi-agent est en place** : kernel partagé (1), 3 plugins médicaux enregistrés (médecin/IA/pharmacien — le squelette `AllergyPlugin` de l'exercice 1, lui, n'est pas enregistré et reste à compléter), 3 agents conversationnels avec leurs prompts respectifs, 1 stratégie de terminaison médicale, 1 groupe de chat orchestré, 1 fonction `run_medical_chat()` async. Ce qui sépare ce notebook d'un squelette mort, c'est la cellule d'exécution (try/except `await run_medical_chat()`, ci-dessous) : l'appel asynchrone déclenche réellement l'orchestration et l'étudiant voit la conversation se dérouler tour par tour. **Pattern clé** : la complexité d'un système multi-agent est *cachée* dans le setup (tout ce qui précède) et *visible* dans l'exécution (les dernières cellules). L'étudiant doit comprendre ce distinguo pour scripter ses propres use cases.","### Reading the result: complete multi-agent skeleton, ready for execution
+À ce stade du notebook, **toute la machinerie multi-agent est en place** : kernel partagé (1), 3 plugins médicaux enregistrés (médecin/IA/pharmacien — le squelette `AllergyPlugin` de l'exercice 1, lui, n'est pas enregistré et reste à compléter), 3 agents conversationnels avec leurs prompts respectifs, 1 stratégie de terminaison médicale, 1 groupe de chat orchestré — il ne reste qu'à définir la fonction d'exécution `run_medical_chat()` (ci-dessous). Ce qui sépare ce notebook d'un squelette mort, c'est la cellule d'exécution (try/except `await run_medical_chat()`, ci-dessous) : l'appel asynchrone déclenche réellement l'orchestration et l'étudiant voit la conversation se dérouler tour par tour. **Pattern clé** : la complexité d'un système multi-agent est *cachée* dans le setup (tout ce qui précède) et *visible* dans l'exécution (les dernières cellules). L'étudiant doit comprendre ce distinguo pour scripter ses propres use cases.","### Reading the result: complete multi-agent skeleton, ready for execution
 
-At this point in the notebook, **the entire multi-agent machinery is in place**: shared kernel (1), 3 registered medical plugins (doctor/AI/pharmacist — the `AllergyPlugin` skeleton from exercise 1 is not registered and remains to be completed), 3 conversational agents with their respective prompts, 1 medical termination strategy, 1 orchestrated group chat, 1 async `run_medical_chat()` function. What separates this notebook from a dead skeleton is the execution cell (try/except `await run_medical_chat()`, below): the asynchronous call actually triggers the orchestration and the student sees the conversation unfold turn by turn. **Key pattern**: the complexity of a multi-agent system is *hidden* in the setup (everything above) and *visible* in the execution (the last cells). The student must understand this distinction to script their own use cases.",,,,,,,c18bf492022b3822,c61136578bd5f361,,,,,,,
+At this point in the notebook, **the entire multi-agent machinery is in place**: shared kernel (1), 3 registered medical plugins (doctor/AI/pharmacist — the `AllergyPlugin` skeleton from exercise 1 is not registered and remains to be completed), 3 conversational agents with their respective prompts, 1 medical termination strategy, 1 orchestrated group chat, 1 async `run_medical_chat()` function. What separates this notebook from a dead skeleton is the execution cell (try/except `await run_medical_chat()`, below): the asynchronous call actually triggers the orchestration and the student sees the conversation unfold turn by turn. **Key pattern**: the complexity of a multi-agent system is *hidden* in the setup (everything above) and *visible* in the execution (the last cells). The student must understand this distinction to script their own use cases.",,,,,,,69a84b764c525874,c61136578bd5f361,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,a4b715be,markdown,fr,5942cea63b109f29,"### Lecture du résultat : fonction de chat médical prête
 
 `""Fonction de chat médical prête""` marque l'aboutissement du squelette : la fonction async `run_medical_chat()` peut être appelée pour démarrer la consultation simulée. Le `logger.info(""Début de la consultation médicale IA"")` qui ouvre `run_medical_chat()` est le **premier signal d'exécution** quand l'étudiant lance la cellule d'exécution de la consultation (ci-dessous). À ce stade, le notebook a instancié **3 agents**, **1 kernel partagé**, **3 plugins enregistrés**, **1 stratégie de terminaison**, **1 groupe de chat** — toute la machinerie multi-agent est en place. La cellule d'exécution lance `await run_medical_chat()` qui bouclera jusqu'à ce que `MedicalTerminationStrategy.should_terminate()` retourne `True` (limite de 6 messages dans l'historique du groupe).","### Reading the result: medical chat function ready
 
 `""Fonction de chat médical prête""` marks the culmination of the skeleton: the async function `run_medical_chat()` can be called to start the simulated consultation. The `logger.info(""Début de la consultation médicale IA"")` that opens `run_medical_chat()` is the **first execution signal** when the student runs the consultation execution cell (below). At this point, the notebook has instantiated **3 agents**, **1 shared kernel**, **3 registered plugins**, **1 termination strategy**, **1 group chat** — the whole multi-agent machinery is in place. The execution cell launches `await run_medical_chat()` which will loop until `MedicalTerminationStrategy.should_terminate()` returns `True` (limit of 6 messages in the group history).",,,,,,,5942cea63b109f29,22692bcdca96934f,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,3ccfe984,markdown,fr,c8072edda132ec21,"### Lecture du résultat : exécution effective de la consultation simulée
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,3ccfe984,markdown,fr,ea71100f818d60b3,"### Lecture du résultat : exécution effective de la consultation simulée
 
-La sortie ci-dessus est une consultation **réelle** (5 appels `gpt-5-mini` comptés dans les logs HTTP). Le log `Début de la consultation médicale IA` ouvre la trace, puis le cas clinique démo amorce l'historique du groupe. **L'étudiant observe** :
+La sortie ci-dessus est une consultation **réelle** (7 requêtes HTTP comptées dans les logs — pour 5 tours d'agents : le premier tour du médecin consomme 3 requêtes, deux appels d'outils puis la réponse). Le log `Début de la consultation médicale IA` ouvre la trace, puis le cas clinique démo amorce l'historique du groupe. **L'étudiant observe** :
 
 1. **La rotation round-robin des agents** — les logs `Selected agent at index 0/1/2` montrent la `selection_strategy` par défaut passer le bâton : `Docteur_Humain` → `IA_Medicale` → `Pharmacien` → `Docteur_Humain` → `IA_Medicale` (5 tours d'agents).
-2. **L'auto function calling en action** — dès son premier tour, le médecin invoque **2 plugins en parallèle** (`doctor-ask_followup_questions` + `medical-check_symptom_severity`) : `FunctionChoiceBehavior.Auto()` s'exécute réellement, ce n'est pas une description.
+2. **L'auto function calling en action** — dès son premier tour, le médecin invoque **2 fonctions d'outils successives** (`medical-check_symptom_severity` puis `doctor-ask_followup_questions`, chacune dans une réponse API distincte) — la trace `Function ... invoking./succeeded.` montre l'auto function calling **s'exécuter réellement** sur le kernel partagé, pas seulement se décrire.
 3. **La terminaison par limite d'échanges** — 1 message patient + 5 réponses d'agents = 6 messages : `MedicalTerminationStrategy` met fin à la consultation (`Consultation terminée.`). La détection d'un **diagnostic final par mot-clé** n'a pas eu lieu : c'est l'exercice laissé à l'étudiant (`DiagnosticTerminationStrategy`, stub ci-dessus).
 
 Cette trace rejouable est ce qui rend le notebook pédagogique : l'étudiant peut relire la séquence async pour comprendre le mécanisme de sélection d'agent, plutôt que de lire une boîte noire.","### Reading the result: actual execution of the simulated consultation
@@ -2015,7 +2068,7 @@ The output above is a **real** consultation (5 `gpt-5-mini` calls counted in the
 2. **Auto function calling in action** — from its very first turn, the doctor invokes **2 plugins in parallel** (`doctor-ask_followup_questions` + `medical-check_symptom_severity`): `FunctionChoiceBehavior.Auto()` really executes, it is not a description.
 3. **Termination by exchange limit** — 1 patient message + 5 agent replies = 6 messages: `MedicalTerminationStrategy` ends the consultation (`Consultation terminée.`). Detecting a **final diagnosis by keyword** did not happen: that is the exercise left to the student (`DiagnosticTerminationStrategy`, stub above).
 
-This replayable trace is what makes the notebook pedagogical: the student can re-read the async sequence to understand the agent-selection mechanism, instead of reading a black box.",,,,,,,c8072edda132ec21,e726fc1c6e111519,,,,,,,
+This replayable trace is what makes the notebook pedagogical: the student can re-read the async sequence to understand the agent-selection mechanism, instead of reading a black box.",,,,,,,ea71100f818d60b3,e726fc1c6e111519,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,d15058b0,markdown,fr,327129536428a974,"> **Adapté d'une production étudiante EPF** : **Louise et Jeanne Céline**. Universalisation : refactor [#890](https://github.com/jsboige/CoursIA/pull/890).
 ",> **Adapted from an EPF student production**: **Louise and Jeanne Céline**. Universalization: refactor [#890](https://github.com/jsboige/CoursIA/pull/890).,,,,,,,327129536428a974,9bcec5bbd9ed336e,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,b4543216,markdown,fr,81c5592b7acacb47,"### Lecture du résultat : fonction factory create_kernel
@@ -2033,3 +2086,152 @@ BATCH_MODE = True
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,ceeeb248,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,0672c52a,markdown,fr,67d1cdcf62db5170,"### Lecture du résultat : deux nouveaux personnages configurés
+
+Les deux agents du groupe sont créés sans erreur. Deux choix méritent l'œil : le prompt du **Témoin** est une f-string qui interpole `MOT_A_DEVINER` — le témoin « connaît » le mot parce qu'il est injecté dans ses instructions, mais l'interdiction « Ne révèle jamais directement le mot secret » maintient l'écart entre savoir et dire. Le prompt du **Detective** impose des questions fermées (oui/non) : ce format contraint la conversation à converger, comme la sélection round-robin du groupe contraint l'ordre des tours (section suivante). Chaque agent reçoit son propre `create_kernel()` — le même motif que le duo Père Fouras / Laurent Jalabert de la cellule précédente.
+","### Reading the result: two new characters configured
+
+The group's two agents are created without error. Two choices deserve attention: the **Witness** prompt is an f-string that interpolates `MOT_A_DEVINER` — the witness ""knows"" the word because it is injected into its instructions, but the rule ""Ne révèle jamais directement le mot secret"" (never reveal the secret word directly) maintains the gap between knowing and telling. The **Detective** prompt imposes closed-ended (yes/no) questions: this format forces the conversation to converge, just as the group's round-robin selection forces the order of turns (next section). Each agent receives its own `create_kernel()` — the same pattern as the Père Fouras / Laurent Jalabert duo of the previous cell.
+",,,,,,,67d1cdcf62db5170,3ca16b33fe6b815d,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,6b1b975c,code,fr,a2d6d3387925ba62,"
+# Tests de l'exemple guide 2 : trois situations (groupe de la PR #21009)
+
+from semantic_kernel.contents import AuthorRole, ChatMessageContent
+
+strategie = RenoncementTerminationStrategy(
+    agents=[laurent_jalabert],
+    maximum_iterations=20
+)
+
+# Trois situations a tester
+tests = [
+    (""Abandon"", ""J'abandonne"", True),
+    (""Mot trouve"", f""Ma reponse est {MOT_A_DEVINER}"", True),
+    (""Mauvaise reponse"", ""Je pense que c'est un objet"", False)
+]
+
+for nom, reponse, attendu in tests:
+
+    message = ChatMessageContent(
+        role=AuthorRole.ASSISTANT,
+        content=reponse,
+        name=""Laurent_Jalabert""
+    )
+
+    resultat = await strategie.should_agent_terminate(
+        agent=laurent_jalabert,
+        history=[message]
+    )
+
+    print(f""{nom} : {resultat} (attendu : {attendu})"")
+",,,,,,,,a2d6d3387925ba62,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,0ed41dbe,markdown,fr,3abac3ed7dbb0382,"### Lecture du résultat : la stratégie hybride passe ses trois tests
+
+Les trois situations renvoient le verdict attendu : un « J'abandonne » arrête la partie, un message qui contient `MOT_A_DEVINER` aussi, et une réponse neutre laisse le duel continuer. La mécanique tient en deux gestes : tout est comparé en minuscules (le modèle peut écrire « J'ABANDONNE »), et la condition finale est un `or` — il suffit que le mot soit trouvé **ou** qu'une phrase d'abandon apparaisse dans le **dernier** message de l'historique. La stratégie est attachée à `laurent_jalabert` : c'est bien au tour du devineur que la question « continuer ? » se pose.
+","### Reading the result: the hybrid strategy passes its three tests
+
+The three situations return the expected verdict: a ""J'abandonne"" (I give up) stops the game, a message containing `MOT_A_DEVINER` does too, and a neutral answer lets the duel continue. The mechanics boil down to two gestures: everything is compared in lowercase (the model may write ""J'ABANDONNE""), and the final condition is an `or` — it is enough that the word is found **or** that a give-up phrase appears in the **last** message of the history. The strategy is attached to `laurent_jalabert`: it is indeed on the guesser's turn that the question ""continue?"" arises.
+",,,,,,,3abac3ed7dbb0382,8a9e95e2287fcb28,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,2a2f46fe,code,fr,24c9e0be41d45852,"
+# Recuperer l'historique de la partie
+historique = chat.history.messages
+
+# Calculer le score
+resultat = evaluer_partie(historique)
+
+# Afficher les resultats
+print(""===== RESULTATS DE LA PARTIE ====="")
+print(""Nombre de tentatives :"", resultat[""nb_questions""])
+print(""Mot trouve :"", resultat[""mot_trouve""])
+print(""Score final :"", resultat[""score""], ""/ 100"")
+",,,,,,,,24c9e0be41d45852,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ae952339,markdown,fr,ec51388ae7d115a1,"## Exercices
+
+Trois nouveaux défis, un par compétence travaillée dans les exemples guidés ci-dessus : rédiger des prompts qui contraignent un comportement, composer une condition de terminaison, mesurer une partie jouée. Les stubs sont incomplets par conception — le carnet s'exécute de bout en bout sans eux.
+","## Exercises
+
+Three new challenges, one per skill practiced in the guided examples above: writing prompts that constrain a behavior, composing a termination condition, measuring a played game. The stubs are incomplete by design — the notebook runs end to end without them.
+",,,,,,,ec51388ae7d115a1,85897e2c7a0023b6,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,5b19df38,markdown,fr,7a379d68d77f6379,"### Exercice 1 : Un duel au protocole binaire
+
+Les personnages de l'exemple guidé 1 laissent le Témoin répondre par des phrases entières. Variante plus stricte : un **Indicateur** qui ne répond **que** par « oui », « non » ou « peut-être » — jamais une phrase — et un **Enquêteur méthodique** qui annonce son hypothèse d'élimination (« Je cherche un mot de plus de 15 lettres ») avant chaque question.
+
+**Objectif** : rédiger les deux prompts et configurer les deux agents correspondants.
+
+**Indices** :
+- `# Étape 1` : rédiger le prompt de l'Indicateur (rôle + liste fermée des trois réponses autorisées)
+- `# Étape 2` : rédiger le prompt de l'Enquêteur (stratégie d'élimination annoncée avant chaque question)
+- `# Indice` : un prompt peut interdire (« jamais de phrase ») autant qu'il peut prescrire (« réponds uniquement par »)
+","### Exercise 1: A binary-protocol duel
+
+The characters of guided example 1 let the Witness answer with full sentences. A stricter variant: an **Informer** who answers **only** with ""yes"", ""no"" or ""maybe"" — never a sentence — and a **Methodical Investigator** who announces the elimination hypothesis (""I am looking for a word longer than 15 letters"") before each question.
+
+**Objective**: write both prompts and configure the two corresponding agents.
+
+**Hints**:
+- `# Step 1`: write the Informer's prompt (role + closed list of the three allowed answers)
+- `# Step 2`: write the Investigator's prompt (elimination strategy announced before each question)
+- `# Hint`: a prompt can forbid (""never a sentence"") as much as it can prescribe (""answer only with"")
+",,,,,,,7a379d68d77f6379,c05e1b2f9f633ae1,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ec943b8d,code,fr,f45b7e07fede6ace,"# Exercice 1 : un duel au protocole binaire
+# TODO etudiant : definir les prompts et creer les agents
+INDICATEUR_PROMPT = """"  # Etape 1 : instructions de l'Indicateur (oui / non / peut-etre, jamais une phrase)
+ENQUETEUR_PROMPT = """"   # Etape 2 : instructions de l'Enqueteur (hypothese annoncee avant chaque question)
+indicateur = None  # TODO etudiant : ChatCompletionAgent(kernel=create_kernel(), ...)
+enqueteur = None   # TODO etudiant
+print(""Exercice 1 a completer"")
+",,,,,,,,f45b7e07fede6ace,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,08f0cfb2,markdown,fr,c54287f8d4241448,"### Exercice 2 : Terminaison sur question répétée
+
+Un devineur qui répète la même question trois fois de suite ne progresse plus : la partie est perdue. L'objectif est d'implémenter `RepetitionTerminationStrategy`, une variante qui arrête la partie si le mot est deviné **ou** si les trois derniers messages de Laurent Jalabert sont identiques (comparaison en minuscules).
+
+**Indices** :
+- `# Étape 1` : extraire les messages de Laurent de l'historique (s'il y en a moins de trois, la partie continue)
+- `# Étape 2` : comparer les trois derniers en minuscules, et combiner avec la détection du mot par un `or`
+","### Exercise 2: Termination on a repeated question
+
+A guesser who repeats the same question three times in a row is no longer progressing: the game is lost. The objective is to implement `RepetitionTerminationStrategy`, a variant that stops the game if the word is guessed **or** if Laurent Jalabert's last three messages are identical (lowercase comparison).
+
+**Hints**:
+- `# Step 1`: extract Laurent's messages from the history (if there are fewer than three, the game continues)
+- `# Step 2`: compare the last three in lowercase, and combine with word detection using an `or`
+",,,,,,,c54287f8d4241448,d8b4b17808ea4616,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,3610348b,code,fr,cb9ca5e26624dc68,"# Exercice 2 : terminaison sur question repetee
+# TODO etudiant
+from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
+from semantic_kernel.contents.chat_message_content import ChatMessageContent
+
+class RepetitionTerminationStrategy(TerminationStrategy):
+    # TODO etudiant : implementer la strategie de detection de repetition
+    SEUIL_REPETITION: int = 3  # Etape 1 : nombre de questions identiques consecutives
+
+    async def should_agent_terminate(self, agent, history: list[ChatMessageContent], cancellation_token=None) -> bool:
+        result = False  # TODO etudiant : remplacer par la logique (mot trouve OU repetition)
+        return result
+
+print(""Exercice 2 a completer"")
+",,,,,,,,cb9ca5e26624dc68,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,edb7a025,markdown,fr,f4fd10e340a1f368,"### Exercice 3 : Mesurer la concision des indices du Père Fouras
+
+`evaluer_partie` (exemple guidé 3) mesure le devineur. L'autre moitié du duel mérite sa mesure : des indices trop longs facilitent la tâche. **Objectif** : écrire `mesurer_indices` qui prend l'historique des messages et retourne la longueur moyenne des messages du Père Fouras, et un booléen `indices_concis` vrai si cette moyenne reste sous 200 caractères.
+
+**Indices** :
+- `# Étape 1` : filtrer l'historique sur les messages signés `Pere_Fouras` (même filtre que l'exemple guidé 3)
+- `# Étape 2` : moyenner les longueurs (`len(str(message.content))`) et comparer au seuil
+","### Exercise 3: Measuring the concision of Père Fouras's hints
+
+`evaluer_partie` (guided example 3) measures the guesser. The other half of the duel deserves its own measurement: overly long hints make the task easier. **Objective**: write `mesurer_indices` which takes the message history and returns the average length of Père Fouras's messages, and a boolean `indices_concis` true if this average stays under 200 characters.
+
+**Hints**:
+- `# Step 1`: filter the history on messages signed `Pere_Fouras` (same filter as guided example 3)
+- `# Step 2`: average the lengths (`len(str(message.content))`) and compare to the threshold
+",,,,,,,f4fd10e340a1f368,4f277e5e0b156580,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,a85748ad,code,fr,d474392d7bce72b4,"# Exercice 3 : mesurer la concision des indices du Pere Fouras
+# TODO etudiant
+def mesurer_indices(history_messages: list) -> dict:
+    longueur_moyenne = 0.0  # TODO etudiant : moyenne des longueurs des messages du Pere Fouras
+    indices_concis = False  # TODO etudiant : True si longueur_moyenne < 200
+    return {""longueur_moyenne"": longueur_moyenne, ""indices_concis"": indices_concis}
+
+print(""Exercice 3 a completer"")
+",,,,,,,,d474392d7bce72b4,,,,,,,,
