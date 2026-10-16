@@ -181,6 +181,24 @@ def test_iter_notebooks_excludes_output_and_agent(tmp_path):
     assert "gen_agent.ipynb" not in names
 
 
+def test_iter_notebooks_excludes_lang_renders(tmp_path):
+    # Rendus T4 a cote de la source : jamais des sources (c.1495, tranche
+    # Image 01-Foundation -- 67 lignes _en miroir ajoutees au refresh).
+    _write_nb(tmp_path, "src.ipynb", [{"id": "c", "type": "markdown", "source": ["x"]}])
+    _write_nb(tmp_path, "src_en.ipynb", [{"id": "c", "type": "markdown", "source": ["x"]}])
+    _write_nb(tmp_path, "src_ru.ipynb", [{"id": "c", "type": "markdown", "source": ["x"]}])
+    _write_nb(tmp_path, "src_pt.ipynb", [{"id": "c", "type": "markdown", "source": ["x"]}])
+    # Un stem legitime contenant un suffixe de langue sans l'etre reste source.
+    _write_nb(tmp_path, "menu_en_cuisine.ipynb", [{"id": "c", "type": "markdown", "source": ["x"]}])
+    out = e.iter_notebooks([tmp_path])
+    names = {p.name for p in out}
+    assert "src.ipynb" in names
+    assert "src_en.ipynb" not in names
+    assert "src_ru.ipynb" not in names
+    assert "src_pt.ipynb" not in names
+    assert "menu_en_cuisine.ipynb" in names
+
+
 def test_iter_notebooks_dedups_overlapping_inputs(tmp_path):
     p = _write_nb(tmp_path, "a.ipynb", [{"id": "c", "type": "markdown", "source": ["x"]}])
     # Même notebook passé deux fois + le dir qui le contient -> 1 seule fois.

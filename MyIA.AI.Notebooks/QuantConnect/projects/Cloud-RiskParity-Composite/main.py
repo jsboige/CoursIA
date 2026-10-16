@@ -43,6 +43,11 @@ class RiskParityComposite(QCAlgorithm):
         if self.is_warming_up:
             return
 
+        # A dividend notice arrives alone in a midnight slice, with no bar (#20264):
+        # it must not trigger the rebalance.
+        if not any(data.bars.contains_key(s) for s in self.symbols.values()):
+            return
+
         if (self.time - self.last_rebalance).days < self.rebalance_days:
             return
 

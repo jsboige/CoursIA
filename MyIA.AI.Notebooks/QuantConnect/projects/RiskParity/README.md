@@ -14,11 +14,26 @@
 
 > **Note métriques** : la valeur historique « Sharpe 0.399 » rapportée par le README pré-c.454 et la table « Comparaison aux alternatives » provenait d'une mesure pré-revision ; le notebook de recherche `research.ipynb` cell[10]·out[0] documente le verdict effectif **Risk Parity Sharpe 0.544** (MaxDD -20.26 %), confirmé par audit G.1 firsthand lors de la PR c.454 (audit vision fondateur, `assets/readme/MANIFEST.md`).
 
+## Achat refusé et renvoi à la séance suivante
+
+Les chiffres de cette section sont ceux du backtest de `main.py` sur QC Cloud ; le tableau Performance ci-dessus vient du notebook de recherche, un calcul distinct.
+
+En résolution journalière, tous les ordres partent en `MarketOnClose` : soumis à 10:00 New York, remplis à la clôture. Lean contrôle le pouvoir d'achat d'un achat avant qu'aucune vente du même rééquilibrage ne soit remplie, et y impute la marge des achats déjà acceptés ce jour-là. Le 2015-02-02, le portefeuille sort de BND à 100 % : les achats de SPY et de GLD passent, celui de TLT est refusé (statut `Invalid`) à 110 dollars de marge près, et n'était jamais renvoyé. La ligne TLT restait vide jusqu'au rééquilibrage de mars.
+
+`main.py` renvoie désormais un achat refusé à la séance suivante : `on_order_event` note le refus, un événement quotidien renvoie `set_holdings` vers la cible du dernier rééquilibrage, et chaque renvoi écrit une ligne `RETRY` au journal. Mesure avant/après, selon un protocole posé avant les runs (#20523) :
+
+| Fenêtre | Achats refusés | Renvoyés et remplis | Sharpe | Rendement annuel composé | Pire baisse |
+|---|---|---|---|---|---|
+| 2015-01-01 -> 2024-12-31 (codée) | 1 avant, 1 après | 0 avant, 1 après (TLT, 2015-02-03) | 0,373 -> 0,360 | 7,45 % -> 7,29 % | 18,4 % -> 18,4 % |
+| 2025-01-01 -> 2026-07-10 (hors échantillon) | aucun | — | 0,643, identique | 15,08 %, identique | 10,9 %, identique |
+
+Hors échantillon, sans refus, le correctif ne change aucun ordre. Sur la fenêtre codée, l'écart vient du seul mois de février 2015 : il n'a pas de signe à retenir. Ce que le correctif apporte, c'est que le backtest mesure la stratégie décrite.
+
 ## Figures du notebook de recherche
 
-Le notebook [`research.ipynb`](research.html) documente l'analyse complète de la parité de risque : exploration des actifs, inverse-volatility weighting (H1), backtest (H2), impact de TLT en 2020-2023 (H3), sensibilité au lookback de volatilité (H4) et analyse par régime de marché. La stratégie atteint un plafond structurel (Sharpe 0.544) — contre-exemple pédagogique. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+Le notebook [`research.ipynb`](research.ipynb) documente l'analyse complète de la parité de risque : exploration des actifs, inverse-volatility weighting (H1), backtest (H2), impact de TLT en 2020-2023 (H3), sensibilité au lookback de volatilité (H4) et analyse par régime de marché. La stratégie atteint un plafond structurel (Sharpe 0.544) — contre-exemple pédagogique. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
-Le QuantBook [`quantbook.ipynb`](quantbook.html) reproduit cette analyse exploratoire sur les données natives QuantConnect (pondération inverse-volatilité).
+Le QuantBook [`quantbook.ipynb`](quantbook.ipynb) reproduit cette analyse exploratoire sur les données natives QuantConnect (pondération inverse-volatilité).
 
 **Exploration — l'analyse des actifs (§2).** Le **dual-panel** juxtapose la courbe « Rendements cumulés 2015-2026 » sur 6 actifs (SPY/EFA/GLD/DBC/TLT) avec la heatmap de la matrice de corrélation. Les stats annualisées cell[4]·out[1] révèlent **GLD = meilleur Sharpe 0.81** (CAGR 12.02 %) avec **corrélation SPY 0.04** — diversifieur clé du portefeuille, tandis que **DBC sous-performe** (Sharpe 0.20, CAGR 3.45 %). La lecture visuelle confirme que GLD est l'actif qui contribue le plus à la diversification : l'inverse-vol weighting amplifie mécaniquement sa pondération face aux actifs les plus risqués.
 

@@ -77,6 +77,16 @@
       },
       "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
       "fingerprint": "b7d1c0c9e85fb76b"
+    },
+    {
+      "id": "levetf-base",
+      "kind": "qc",
+      "sha": "f1a93779396b77398ed23ad8a02678acd786adfd",
+      "frozen_on": "2026-10-10",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/LeveragedETFMomentum-QC:37796612",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
+      "fingerprint": "29901378fae71c8c"
     }
   ]
 }

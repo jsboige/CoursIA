@@ -704,8 +704,13 @@ def test_belt_loop_default_probes_are_inert(monkeypatch):
     def raise_merged(n, lane=None):
         raise _RealProbeReached(f"merged_pr_signal atteinte pour #{n}")
 
+    def raise_recent(n):
+        raise _RealProbeReached(
+            f"has_recent_delivery_marker atteinte pour #{n}")
+
     monkeypatch.setattr(pig, "has_delivered_signal", raise_delivered)
     monkeypatch.setattr(pig, "merged_pr_signal", raise_merged)
+    monkeypatch.setattr(pig, "has_recent_delivery_marker", raise_recent)
 
     pool = [_make_item(19001, age_days=50, idle=5, last=None),
             _make_item(19002, age_days=49, idle=5, last=None)]
@@ -1152,6 +1157,99 @@ def test_belt_withdraws_delivered_candidates_and_replaces():
     assert not state["budget_hit"] and state["failures"] == []
 
 
+def test_belt_recent_marker_excludes_hors_budget():
+    """#19768 perimetre restant : marqueur de cloture sur le DERNIER
+    commentaire ([DELIVERED] / [RELEASED] / [FROZEN]) -- le tapis ecarte
+    le candidat SANS consommer de sonde de livraison (filtre bon marche,
+    hors budget). La sonde pleine n'est meme pas atteinte pour lui."""
+    marked = _make_item(7742, age_days=90, idle=9, last=None)
+    clean_a = _make_item(19006, age_days=50, idle=5, last=None)
+    clean_b = _make_item(19007, age_days=49, idle=5, last=None)
+    probed = []
+
+    def delivered(n, lane=None):
+        probed.append(n)
+        return False
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean_a, clean_b],
+        _free_claims([marked, clean_a, clean_b]),
+        _belt_args(), probe_budget=8,
+        delivered_probe=delivered,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: n == 7742)
+    assert [p["number"] for p in picks] == [19006, 19007]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert causes[7742].startswith("LIVRAISON (recent)")
+    assert state["recent_filtered"] == 1
+    assert 7742 not in probed, ("le filtre recent devait ecarter #7742 "
+                                "sans atteindre la sonde pleine")
+    assert not state["budget_hit"] and state["failures"] == []
+
+
+def test_belt_recent_marker_survives_budget_exhaustion():
+    """Le cas fondateur du tapis (mesure po-2023 du 10-09 : 5 candidats
+    servis non prenables) : budget de sonde EPUIS -- la sonde pleine rend
+    UNPROBED et un candidat non filtre est servi (fail-OPEN, doctrine
+    inchangee). Le marque, lui, ne passe PLUS : le filtre recent est HORS
+    budget, l'epuisement ne peut plus servir une cloture marquee."""
+    marked = _make_item(7742, age_days=90, idle=9, last=None)
+    clean = _make_item(19008, age_days=40, idle=4, last=None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean], _free_claims([marked, clean]),
+        _belt_args(grains=2), probe_budget=0,
+        delivered_probe=lambda n, lane=None: True,
+        merged_pr_probe=lambda n, lane=None: True,
+        recent_marker_probe=lambda n: n == 7742)
+    # Le clean, non marque, reste servi en fail-OPEN (budget eteint) ;
+    # le marque, lui, est ecarte hors budget.
+    assert [p["number"] for p in picks] == [19008]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert causes[7742].startswith("LIVRAISON (recent)")
+    assert state["recent_filtered"] == 1
+    assert state["budget_hit"] is True
+
+
+@pytest.mark.parametrize("verdict", [None, False])
+def test_belt_recent_marker_unread_or_absent_falls_through(verdict):
+    """Tri-etat du filtre recent : None (lecture en echec) ou False (pas
+    de marqueur) = pas d'exclusion -- la boucle enchaine sur la sonde
+    pleine (fail-OPEN sur None, nominal sur False)."""
+    item = _make_item(19009, age_days=40, idle=4, last=None)
+    probed = []
+
+    def delivered(n, lane=None):
+        probed.append(n)
+        return False
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [item], _free_claims([item]), _belt_args(), probe_budget=8,
+        delivered_probe=delivered,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: verdict)
+    assert probed == [19009], "la sonde pleine doit etre atteinte"
+    assert [p["number"] for p in picks] == [19009]
+    assert withheld == []
+    assert state["recent_filtered"] == 0
+
+
+def test_belt_recent_marker_does_not_touch_umbrellas():
+    """Portee grain seule : une umbrella dont le dernier commentaire porte
+    un marqueur de cloture n'est pas ecartee -- meme garde que la sonde
+    pleine (test_belt_does_not_withdraw_umbrella_on_marker), sur le filtre
+    recent."""
+    umbrella = _make_item(19010, age_days=60, idle=6, klass="umbrella",
+                          last=None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [umbrella], _free_claims([umbrella]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: True)
+    assert [p["number"] for p in picks] == [19010]
+    assert withheld == []
+    assert state["recent_filtered"] == 0
+
+
 def test_belt_keeps_unmarked_candidate_pickable():
     """Controle negatif #19390 : sans marqueur (label absent, sonde
     False), le candidat reste tirable."""
@@ -1194,6 +1292,81 @@ def test_belt_does_not_withdraw_umbrella_on_marker():
         [umbrella], _free_claims([umbrella]), _belt_args(), probe_budget=8)
     assert [p["number"] for p in picks] == [19005]
     assert withheld == []
+
+
+# Retractation du marqueur, cote TAPIS : la sonde que `main` injecte dans
+# cette boucle est `has_delivered_signal`, une implementation SEPAREE de
+# `_has_delivered_marker`. Sans la symetrie, le marqueur restait permanent
+# pour le tapis : l'issue relevee par le coordinateur -- mesure du 12/10, 20
+# des 80 issues marquees livrees l'etaient partiellement -- restait ecartee a
+# chaque cycle. Ces tests injectent la sonde REELLE et stubbent son transport :
+# c'est la seule facon de prouver que c'est la BOUCLE, pas seulement la sonde,
+# qui rend l'issue au tapis.
+
+
+_DELIVERED_BODY = ("[INFO] candidate-delivered — verification first-hand du "
+                   "geste 1 sur origin/main, MERGE 6d0bd02093.")
+_REVOKED_BODY = "[NOT-DELIVERED] verification first-hand : 2 cellules sur 5."
+
+
+def _patch_issue_comments(monkeypatch, bodies_by_issue):
+    """Stub du transport `gh issue view N --json comments`, corps en ordre."""
+    def fake_run(cmd, *args, **kwargs):
+        assert cmd[:3] == ["gh", "issue", "view"], f"transport inattendu : {cmd}"
+        bodies = bodies_by_issue[int(cmd[3])]
+
+        class _R:
+            stdout = json.dumps({"comments": [{"body": b} for b in bodies]})
+
+        return _R()
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+def test_belt_serves_a_candidate_whose_marker_was_revoked(monkeypatch):
+    """Marqueur retracte par un commentaire POSTERIEUR -> le candidat est
+    SERVI, jamais ecarte en LIVRAISON."""
+    item = _make_item(19010, age_days=90, idle=8, last=None)
+    _patch_issue_comments(monkeypatch,
+                          {19010: [_DELIVERED_BODY, _REVOKED_BODY]})
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [item], _free_claims([item]), _belt_args(grains=1), probe_budget=8,
+        delivered_probe=pig.has_delivered_signal,
+        merged_pr_probe=lambda n, lane=None: False)
+    assert [p["number"] for p in picks] == [19010], (
+        "un marqueur retracte ne peut plus ecarter le candidat")
+    assert withheld == []
+    assert state["failures"] == []
+
+
+def test_belt_still_withholds_a_live_delivered_marker(monkeypatch):
+    """Controle positif de la meme boucle : SANS retractation, le marqueur
+    ecarte toujours le candidat (cause LIVRAISON)."""
+    item = _make_item(19012, age_days=90, idle=8, last=None)
+    _patch_issue_comments(monkeypatch, {19012: [_DELIVERED_BODY]})
+    picks, withheld, _ = pig.belt_pick_with_replacements(
+        [item], _free_claims([item]), _belt_args(grains=1), probe_budget=8,
+        delivered_probe=pig.has_delivered_signal,
+        merged_pr_probe=lambda n, lane=None: False)
+    assert picks == []
+    assert [w[0]["number"] for w in withheld] == [19012]
+    assert withheld[0][1].startswith("LIVRAISON")
+
+
+def test_belt_rewithholds_when_a_marker_follows_the_revocation(monkeypatch):
+    """Le sens est porte par l'ORDRE : un marqueur repose APRES la
+    retractation rearme l'ecartement."""
+    item = _make_item(19013, age_days=90, idle=8, last=None)
+    _patch_issue_comments(
+        monkeypatch,
+        {19013: [_DELIVERED_BODY, _REVOKED_BODY, _DELIVERED_BODY]})
+    picks, withheld, _ = pig.belt_pick_with_replacements(
+        [item], _free_claims([item]), _belt_args(grains=1), probe_budget=8,
+        delivered_probe=pig.has_delivered_signal,
+        merged_pr_probe=lambda n, lane=None: False)
+    assert picks == []
+    assert [w[0]["number"] for w in withheld] == [19013]
+    assert withheld[0][1].startswith("LIVRAISON")
 
 
 def test_belt_probe_budget_is_bounded_and_fail_open_when_exhausted():
