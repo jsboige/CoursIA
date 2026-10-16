@@ -48,6 +48,7 @@ import Knots.Conway
 import Knots.Slice
 import Knots.ReidemeisterInvariance
 import Knots.ReidemeisterMoves
+import Knots.ReidemeisterCombinatorial
 import Knots.Jones
 import Knots.FigureEight
 import Knots.Lidman
