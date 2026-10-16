@@ -262,7 +262,7 @@ Marche 1 de l'escalier qui expose le lake [`iit_lean`](../SymbolicAI/Lean/iit_le
 | Systèmes | `State`/`System` comme fonctions (`Fin n → Bool`), état one-hot, système à décalage, déterminisme par composition |
 | Coupe et motifs | `Cut` (non-trivialité `ha`/`hb` close par `rfl`), `projT`/`projF` calculés sur un état concret — marchepied avant `cutIndep` |
 | Verdict | `cutIndep` lu comme produit d'images, `decomposable`/`integrated` par `#print`, force de l'ordre des quantificateurs |
-| Théorème A | `cutIndep_of_sides_independent` → `product_decomposable`, `#print axioms` (aucun axiome), instance `echange_decomposable` prouvée sans énumération |
+| Théorème A | `cutIndep_of_sides_independent` → `product_decomposable`, `#print axioms` (`propext`, `Quot.sound` — les deux axiomes du core, aucun `Classical.choice`), instance `echange_decomposable` prouvée sans énumération |
 | Butée du broadcast | `parity`/`broadcast` sur les 8 états de n=3, table des couples de motifs : (A=vrai, B=faux) réalisable séparément, jamais ensemble — prépare la marche 3 |
 | Grade | le proxy relationnel contre Φ (MIP, perturbation, valeur numérique) — ce que le carnet ne claim pas |
 | Exercices | écrire une coupe (`selPairs`), reconstruire le motif d'un côté (`motifA`), reconstruire la parité (`pariteA4`) |
@@ -479,7 +479,7 @@ les arcs entrants de `X`, brisant les chemins de confusion — de sorte que
 
 | Paradigme | Notebook | Instanciation de `do(·)` | Résultat-signature |
 |-----------|----------|---------------------------|--------------------|
-| **Symbolique** (logique propositionnelle, Java/Tweety) | [Tweety-11-Causal-Python](../SymbolicAI/Tweety/Tweety-11-Causal-Python.html) | `scm.intervene(p, b)` → nouveau SCM dont l'équation de `p` devient une constante | `P(rain\|drops)=True ≠ P(rain\|do(drops))=False` (baromètre) |
+| **Symbolique** (logique propositionnelle, Java/Tweety) | [Tweety-11-Causal-Python](../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) | `scm.intervene(p, b)` → nouveau SCM dont l'équation de `p` devient une constante | `P(rain\|drops)=True ≠ P(rain\|do(drops))=False` (baromètre) |
 | **Bayésien par message passing** (Infer.NET, EP/VMP — Gibbs disponible) | [Infer-5](../Probas/Infer/Infer-5-Causal-Inference.ipynb) | mutilation de graphe `Variable.Bernoulli(1.0)` ; backdoor / front-door | paradoxe de Simpson résolu, identifiabilité par ajustement |
 | **Bayésien MCMC** (PyMC) | [PyMC-5](../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) | opérateur natif `pm.do(model, {X:x})` ; backdoor / front-door | contrefactuel par abduction (postérieur sur les exogènes) |
 | **Théorie de l'information / émergence** (ICT) | [ICT-05-CausalEmergence-Python](ICT-Series/ICT-05-CausalEmergence-Python.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
@@ -496,7 +496,7 @@ L'**émergence** apparaît quand une description **macro** (gros-grain) réalise
 causal que le micro — l'`effectiveness` monte sous coarse-graining.
 
 **Parcours de lecture conseillé** : commencer par le **symbolique qualitatif**
-([Tweety-11](../SymbolicAI/Tweety/Tweety-11-Causal-Python.html)) pour *voir* `observe` vs `do` sans
+([Tweety-11](../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb)) pour *voir* `observe` vs `do` sans
 nombres ; passer au **quantitatif distributionnel** ([Infer-5](../Probas/Infer/Infer-5-Causal-Inference.ipynb)
 message passing, [PyMC-5](../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) MCMC) pour *calculer* les effets
 et lever le paradoxe de Simpson ; finir par l'**information-théorique**
@@ -518,7 +518,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 99
-breakdown: ICT-Series=93, root=6
-maturity: BETA=83, DRAFT=14, ALPHA=2
+pedagogical_count: 98
+breakdown: ICT-Series=92, root=6
+maturity: BETA=81, DRAFT=14, ALPHA=3
 -->
