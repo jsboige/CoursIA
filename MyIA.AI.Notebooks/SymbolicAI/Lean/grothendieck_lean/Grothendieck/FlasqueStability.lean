@@ -43,30 +43,36 @@ version site de la Partie 79 :
     `Subsingleton (H F (n+1))`. Ce theoreme delivre son contenu dans
     l'enonce, pas la preuve (`inferInstance`, l'annulation etant une
     instance Mathlib deja pontee en Partie 20) : il pose la pierre ou
-    Godement met Zorn. Le theoreme complet de Godement (II.5.2-5.3) est
-    *flasque => injectif => Γ-acyclique* ; ici, **le seul maillon manquant
-    est `flasque => injectif`** (II.5.2, demonstration par prolongement
-    inductif via le lemme de Zorn), explicitement documente comme frontiere
-    du lake : la chaine demontrable sans Zorn est enregistree, le maillon
-    Zorn est laisse ouvert.
+    Godement met Zorn. **Correction (Partie 94)** : la glose initiale
+    « flasque => injectif (II.5.2) » est **fausse** — sur un espace discret
+    a deux points, tous les faisceaux sont flasques et le faisceau constant
+    (Z, Z) n'est pas injectif dans Ab x Ab. L'enonce vrai de Godement est
+    *flasque => Γ-acyclique* (II.5.1) : la Partie 94
+    (`Grothendieck.FlasqueAcyclic`) en livre le degre 1 inconditionnel, le
+    decalage, et le capstone conditionnel dont l'unique hypothese est
+    *injectif => flasque* (II.4, `j_!` absent de Mathlib) — frontiere
+    nommee pour la Partie 95.
 
 La lecture conceptuelle : les stabilites enregistrees ici sont celles qui
 ne coutent **aucun choix** — l'isomorphisme transporte une structure
 canoniquement, le produit amalgame composante par composante parce que
 compatibilite et amalgamation se lisent composante par composante. La
 frontiere est exactement la ou un choix (le prolongement maximal de Zorn)
-devient necessaire : *flasque => injectif* n'est pas canonique. Cette
+devient necessaire : *injectif => flasque* n'est pas canonique (il exige
+l'extension par zero `j_!`). Cette
 ligne de partage — ce qui se fait sans choix, ce qui exige le choix — est
 une ligne grothendieckienne par excellence.
 
 References :
   - R. Godement, *Topologie algebrique et theorie des faisceaux* [God58],
-    Chap. II §3 (prop. 2 : stabilite par produits) et §5 (acyclicite des
-    flasques, theoreme 5.2 : flasque => injectif par Zorn).
+    Chap. II §3 (prop. 2 : stabilite par produits), §4 (injectif =>
+    flasque) et §5 (th. 5.1 : acyclicite des flasques).
   - SGA 4, Expose II (sites et cribles).
   - Mathlib, `Mathlib.CategoryTheory.Limits.FunctorCategory` (`piObjIso`).
   - Partie 20 (`Grothendieck.SheafCohomology.Basic`) : la cohomologie Ext.
   - Partie 79 (`Grothendieck.Flasque`) : `IsFlasqueSieves`.
+  - Partie 94 (`Grothendieck.FlasqueAcyclic`) : flasque => Γ-acyclique,
+    degre 1 inconditionnel + decalage + capstone conditionnel.
   - Partie 63 (`Grothendieck.SheafCondition`) : la decomposition
     produit-egaliseur dont la flasquie est la moitie existence.
 
@@ -214,9 +220,11 @@ acyclique** : pour un faisceau abelien `F` flasque au niveau des cribles
 (compose par `forget`) **et** injectif dans la categorie des faisceaux, la
 cohomologie `H^{n+1}` est triviale. L'annulation est l'instance Mathlib
 deja pontee par la Partie 20 ; ce theoreme la consomme dans le cadre
-flasque. La pierre posee ici designe exactement le maillon manquant du
-theoreme de Godement II.5 : *flasque => injectif* (II.5.2, par Zorn) —
-frontiere documentee du lake, consciemment non franchie. -/
+flasque. La pierre posee ici precede l'acyclicite inconditionnelle du
+degre 1 livree par la Partie 94 (`Grothendieck.FlasqueAcyclic`) : le vrai
+theoreme de Godement II.5.1 est *flasque => Γ-acyclique*, dont le seul
+maillon manquant est *injectif => flasque* (II.4) — frontiere documentee
+du lake, consciemment non franchie. -/
 theorem subsingleton_H_succ_of_flasque_of_injective
     (F : Sheaf J AddCommGrpCat.{max v u}) [Injective F]
     [HasSheafify J AddCommGrpCat.{max v u}]
