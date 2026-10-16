@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -326,6 +328,63 @@ class TestDetectRegimesPrice:
         assert val_no_shift > val_with_shift, (
             f"unshifted threshold ({val_no_shift}) must exceed shifted "
             f"({val_with_shift}) when rolling_std[2L] is an extreme spike"
+        )
+
+    def test_strict_t_minus_1_witness_on_production(self):
+        """#21111 v3: the .shift(1) is operative inside detect_regimes_price (production).
+
+        The prior test_strict_t_minus_1_witness_via_extreme_value compared
+        the bare threshold (rolling_std + expanding + quantile), not the
+        production regimes. The reader verified that the bare-threshold
+        witness passes even when the .shift(1) is removed from
+        detect_regimes_price (i.e. the witness does not protect the
+        production code path).
+
+        This test exercises the production function detect_regimes_price
+        itself, and uses unittest.mock.patch to neutralize pd.Series.shift
+        (the exact op used in detect_regimes_price line 114). If the
+        .shift(1) is present in the production code, the regimes must
+        change when shift is neutralized. If the .shift(1) is removed
+        from the production code, this test fails (no diff between
+        with-shift and no-shift output of the production call).
+        """
+        rng = np.random.default_rng(42)
+        L = 30
+        n = 100
+        returns = np.zeros(n)
+        # Indices 0..59: small returns
+        returns[:60] = rng.normal(0.0004, 0.01, 60)
+        # Index 60 = 2L: extreme spike (50% single-day return)
+        returns[60] = 0.5
+        # Indices 61..99: small returns
+        returns[61:] = rng.normal(0.0004, 0.01, n - 61)
+
+        prices = pd.Series(100 * np.cumprod(1 + returns))
+
+        # Production call with shift (default, causal_threshold=True)
+        regimes_with_shift = detect_regimes_price(prices, lookback_days=L)
+
+        # Neutralize .shift on pd.Series: any call to .shift returns self
+        # (no-op). detect_regimes_price line 114 calls .shift(1) on the
+        # quantile Series; with this patch, that call becomes a no-op
+        # and the regime classification falls back to the unshifted
+        # (look-ahead) threshold.
+        def _noop_shift(self, periods=1, freq=None, axis=0, **kwargs):
+            return self
+
+        with patch.object(pd.Series, "shift", _noop_shift):
+            regimes_no_shift = detect_regimes_price(prices, lookback_days=L)
+
+        # The two regimes must differ somewhere. The witness fires
+        # at the indices where the spike would pull the unshifted
+        # threshold above rolling_std[t] (volatility vs uptrend).
+        n_diff = int((regimes_with_shift != regimes_no_shift).sum())
+        assert n_diff > 0, (
+            f"Mutation of pd.Series.shift produced no regime change "
+            f"in detect_regimes_price: the .shift(1) on line 114 is "
+            f"either absent or non-operative on this path "
+            f"(with_shift[0..9]={list(regimes_with_shift[:10])}, "
+            f"no_shift[0..9]={list(regimes_no_shift[:10])})"
         )
 
 
