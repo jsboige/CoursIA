@@ -124,7 +124,7 @@ def _run_args(tmp_path: Path, mem_text: str, extra_args: list) -> dict:
 def test_default_ceiling_oversize(tmp_path: Path) -> None:
     """MEMORY.md > 24 400 o au defaut #4204 => FAIL_OVERSIZE, rc=1."""
     line = "- [alpha](alpha.md)" + NL
-    filler = "# Memoire" + NL + NL + (line * 1200)
+    filler = "# Memoire" + NL + NL + (line * 1300)
     (tmp_path / "MEMORY.md").write_text(filler, encoding="utf-8")
     (tmp_path / "alpha.md").write_text("# alpha", encoding="utf-8")
     out = subprocess.run(
