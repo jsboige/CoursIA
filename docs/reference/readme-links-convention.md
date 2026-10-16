@@ -30,11 +30,11 @@ Contrôles mesurés le 2026-10-15 (issue #19301) :
 
 | Contrôle | Carnet | Verdict | Détail |
 |---|---|---|---|
-| Positif | `Search/Part1-Foundations/Search-03-Informed-CSharp.ipynb` | `EQUIVALENT` | HTTP 200, 135/135 lignes retrouvées |
+| Positif | `Search/Part1-Foundations/Search-03-Informed-CSharp.ipynb` | `EQUIVALENT` | HTTP 200, toutes les lignes retrouvées |
 | Négatif | `MyIA.AI.Notebooks/GradeBook.ipynb` (hors render-list) | `MISSING_PAGE` | HTTP 404 |
-| Nuance | `SymbolicAI/Lean/Serre100/08-serre-dans-mathlib-Lean.ipynb` | `NOTHING_TO_COMPARE` | 14/14 outputs portent `text/html` + `text/plain` : la règle du MIME riche (revue coord c.5994810325) exclut le `text/plain` non rendu — 0 ligne comparable, par construction |
+| Nuance | `SymbolicAI/Lean/Serre100/08-serre-dans-mathlib-Lean.ipynb` | `NOTHING_TO_COMPARE` | tous les outputs portent `text/html` + `text/plain` : la règle du MIME riche (revue coord c.5994810325) exclut le `text/plain` non rendu — aucune ligne comparable, par construction |
 
-La nuance explique pourquoi le contrôle positif de l'acceptance #19301 (« Serre100/08, EQUIVALENT ») a été délivré sur un carnet à sorties stream : pour un carnet dont tous les outputs ont un MIME riche, l'organe ne compare rien — la mesure manuelle 123/123 du 05/10 (pré-règle MIME riche) reste la seule preuve d'équivalence pour ce carnet précis.
+La nuance explique pourquoi le contrôle positif de l'acceptance #19301 (« Serre100/08, EQUIVALENT ») a été délivré sur un carnet à sorties stream : pour un carnet dont tous les outputs ont un MIME riche, l'organe ne compare rien — la mesure manuelle d'équivalence du 05/10 (pré-règle MIME riche) reste la seule preuve pour ce carnet précis.
 
 ## Voir aussi
 
