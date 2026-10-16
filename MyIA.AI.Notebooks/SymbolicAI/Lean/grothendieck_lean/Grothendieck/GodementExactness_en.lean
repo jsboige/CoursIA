@@ -126,4 +126,50 @@ variable {X : TopCat.{u}}
 -- Remaining frontier: the **complete iteration** of the reduction to higher
 -- degrees and the **acyclicity** `H^n(C⁰F) = 0` for `n ≥ 1` ([God58] II.5).
 
+-- **Part 93(a), local ingredients (landed in the FR twin of this module)** :
+-- transporting exactness to stalks requires two local facts, both valid for
+-- **every presheaf** — no sheaf hypothesis:
+--
+-- * `Grothendieck.epi_stalkFunctor_map_of_epi` — the stalk functor preserves
+--   epimorphisms, free by the stalk ⊣ skyscraper adjunction
+--   (`skyscraperPresheafStalkAdjunction`; a left adjoint preserves epis).
+-- * `Grothendieck.stalkEval` and `Grothendieck.toGodement_stalkEval` — the
+--   Godement unit is a **split monomorphism on every stalk**. The retraction
+--   is the evaluation `ev_x₀ : (C⁰F)ₓ₀ ⟶ Fₓ₀`, `σ ↦ σ(x₀)` — well-defined
+--   because a Godement section is a function and restrictions only restrict
+--   it, so the component at `x₀` does not depend on the chosen
+--   neighbourhood. This is the ingredient that **replaces the sheafification
+--   argument**: transporting exactness to stalks does not need `μ` to be
+--   mono at the presheaf level (that would require `F` separated — Part 91),
+--   only each `μₓ₀` to be mono — and the splitting by `ev_x₀` establishes it
+--   unconditionally. Cf. `Grothendieck.mono_stalkFunctor_map_toGodement`
+--   (split ⇒ injective ⇒ mono) and the apply-form
+--   `Grothendieck.stalkEval_stalkFunctor_map_toGodement_apply`.
+--
+-- **Part 93(a), brick (i) — transport of exactness by the stalk functor
+-- (landed in the FR twin of this module)** : the stalk functor of presheaves
+-- of abelian groups preserves exactness — the categorical face of AB5:
+--
+-- * `Grothendieck.stalkFunctor_preservesMono` — a mono of presheaves is
+--   componentwise injective (`NatTrans.mono_iff_mono_app` +
+--   `AddCommGrpCat.mono_iff_injective`), and componentwise injectivity
+--   passes to stalks (`Presheaf.stalkFunctor_map_injective_of_app_injective`)
+--   — the concrete face of AB5.
+-- * `Grothendieck.stalkFunctor_preservesHomology` and
+--   `Grothendieck.stalkFunctor_preservesFiniteLimits` — reading the stalk
+--   functor as the composite `whiskering ⋙ colim` over the opposite of the
+--   lattice of neighbourhoods (`OpenNhds x₀` is a cofiltered lattice, hence
+--   its opposite is filtered), exactness of filtered colimits in
+--   `AddCommGrpCat` (AB5, `Mathlib.Algebra.Category.Grp.AB`) makes the
+--   composite preserve homology, hence finite limits. Formalized by the
+--   same homology pattern Mathlib uses for the sheaf-level composite
+--   (`Topology/Sheaves/Abelian.lean`), lifted here to bare presheaves.
+-- * `Grothendieck.stalkFunctor_map_exact` — the transport itself: a short
+--   exact sequence of presheaves of abelian groups remains exact at every
+--   stalk.
+--
+-- **Named frontier**: bricks (ii) — computation of the stalks of the
+-- cokernels of the canonical differential — and (iii) — the splicing
+-- recurrence closing the induction — the remaining two thirds of Part 93(a).
+
 end Grothendieck_en
