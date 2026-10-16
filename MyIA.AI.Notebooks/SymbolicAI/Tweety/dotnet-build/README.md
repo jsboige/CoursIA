@@ -45,11 +45,11 @@ Prérequis : JDK 17 (`JAVA_HOME`), Maven 3.9+, .NET SDK 8.0+, git. Tout le reste
 [`rebuild-familyA-maven.sh`](rebuild-familyA-maven.sh), qui rejoue la chaîne complète mesurée sur #19673 :
 
 1. **Clone** `TweetyProjectTeam/TweetyProject` tag `v1.30` (repo renommé — l'ancien nom 404) sous `.familyA-clone/`.
-2. **Patchs idempotents Java 8** : parent pom (compiler 2.3.2 → 3.13.0, `<release>8</release>`) + 8 fichiers
-   sources (`Files.readString`/`Path.of`/`isBlank`/`strip`, switch-fléchés → if-else, `var` → types explicites)
+2. **Patchs idempotents Java 8** : parent pom (compiler 2.3.2 → 3.13.0, `<release>8</release>`) + les fichiers
+   sources touchés (`Files.readString`/`Path.of`/`isBlank`/`strip`, switch-fléchés → if-else, `var` → types explicites)
    + suppressions ciblées (exemples `logics-pl`/`beliefdynamics`, `CmdLineSatSolver`, reasoners SAT/`SerialisedExtensionReasoner` — miroir de la stratégie `DUNG_130_EXCLUDE` de `rebuild-5shades.sh`).
-3. **`mvn install -DskipTests`** sur les 4 modules tête (`logics-pl`, `arg-dung`, `arg-aspic`, `beliefdynamics`)
-   avec `-am` : **fermeture mesurée de 13 modules** (commons, math, logics-commons, plugin, logics-fol, agents,
+3. **`mvn install -DskipTests`** sur les modules tête (`logics-pl`, `arg-dung`, `arg-aspic`, `beliefdynamics`)
+   avec `-am` : **fermeture mesurée de la clôture transitive** (commons, math, logics-commons, plugin, logics-fol, agents,
    logics-pl, graphs, arg-dung, arg-deductive, comparator, beliefdynamics, arg-aspic), tous vérifiés bytecode major 52.
 4. **Shade** des 4 poms (`mvn -f build-tweety-*-shade.pom.xml clean package`), copie immédiate du fat-jar —
    les 4 poms partagent `target/`, chaque `clean` efface le précédent.
