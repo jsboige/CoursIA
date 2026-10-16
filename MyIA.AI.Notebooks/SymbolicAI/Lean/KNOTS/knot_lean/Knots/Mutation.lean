@@ -109,6 +109,57 @@ theorem mutateWindow_involutive (cs : List PDCrossing) (i j : Nat) (ρ : KleinRo
     | _+1, 0 => rfl
     | _+1, _+1 => simp only [mutateWindow, ih _ _]
 
+/-! ### Mutation de sphère : rotation du tangle + recollement des points de bord
+
+La fenêtre seule (`mutateWindow`) tourne les positions des étiquettes dans
+chaque croisement intérieur — mesure c130 : insuffisante pour relier les
+codes census Conway/KT. La mutation de sphère complète ajoute la seconde
+moitié du geste géométrique : après le demi-tour du tangle, ses **quatre
+points de bord** se recollent aux quatre arcs extérieurs dans un ordre
+permuté. Au niveau PD : chaque occurrence intérieure d'une étiquette de
+bord est réécrite par une permutation σ des étiquettes de bord (chaque
+étiquette de bord ayant exactement une occurrence intérieure et une
+extérieure, l'image reste un code PD bi-étiqueté dès que σ est injective
+sur son support).
+-/
+
+
+/-- Recollement des points de bord : dans la fenêtre [i, j), chaque
+étiquette est réécrite par σ ; hors de la fenêtre, rien ne bouge. -/
+def reattachWindow : List PDCrossing → Nat → Nat → (Nat → Nat) → List PDCrossing
+  | [], _, _, _ => []
+  | c :: cs', 0, 0, _ => c :: cs'
+  | c :: cs', 0, j+1, σ => ⟨σ c.e1, σ c.e2, σ c.e3, σ c.e4⟩ :: reattachWindow cs' 0 j σ
+  | c :: cs', _+1, 0, _ => c :: cs'
+  | c :: cs', i+1, j+1, σ => c :: reattachWindow cs' i j σ
+
+/-- Le recollement préserve le nombre de croisements. -/
+theorem reattachWindow_length (cs : List PDCrossing) (i j : Nat) (σ : Nat → Nat) :
+    (reattachWindow cs i j σ).length = cs.length := by
+  induction cs generalizing i j with
+  | nil => rfl
+  | cons c cs' ih =>
+    match i, j with
+    | 0, 0 => rfl
+    | 0, _+1 => simp [reattachWindow, ih]
+    | _+1, 0 => rfl
+    | _+1, _+1 => simp [reattachWindow, ih]
+
+/-- **Mutation de sphère de Conway au niveau PD** : rotation de Klein ρ des
+croisements de la fenêtre [i, j) (le tangle intérieur), puis recollement
+des occurrences intérieures des étiquettes de bord par σ. L'extérieur de
+la fenêtre est inchangé. C'est la traduction combinatoire complète du geste
+découper / tourner de 180° / recoller. -/
+def sphereMutate (cs : List PDCrossing) (i j : Nat) (ρ : KleinRot) (σ : Nat → Nat) :
+    List PDCrossing :=
+  reattachWindow (mutateWindow cs i j ρ) i j σ
+
+/-- La mutation de sphère préserve le nombre de croisements. -/
+theorem sphereMutate_length (cs : List PDCrossing) (i j : Nat) (ρ : KleinRot)
+    (σ : Nat → Nat) :
+    (sphereMutate cs i j ρ σ).length = cs.length := by
+  rw [sphereMutate, reattachWindow_length, mutateWindow_length]
+
 /-- Deux diagrammes sont mutants s'il existe une fenêtre et une rotation de
 Klein envoyant la liste de croisements de l'un sur celle de l'autre. -/
 def AreMutantDiagrams (d₁ d₂ : KnotDiagram) : Prop :=

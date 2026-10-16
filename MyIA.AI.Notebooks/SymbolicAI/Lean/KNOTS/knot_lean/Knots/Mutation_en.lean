@@ -114,6 +114,56 @@ theorem mutateWindow_involutive (cs : List PDCrossing) (i j : Nat) (ρ : KleinRo
     | _+1, 0 => rfl
     | _+1, _+1 => simp only [mutateWindow, ih _ _]
 
+/-! ### Sphere mutation: tangle rotation + boundary re-attachment
+
+The bare window (`mutateWindow`) rotates label positions inside each
+interior crossing — c130 measurement: not enough to relate the Conway/KT
+census codes. The full sphere mutation adds the second half of the
+geometric gesture: after the half-turn of the tangle, its **four boundary
+points** re-attach to the four outside arcs in a permuted order. At the PD
+level: every interior occurrence of a boundary label is rewritten by a
+permutation σ of the boundary labels (each boundary label having exactly
+one interior and one exterior occurrence, the image remains a twice-labeled
+PD code as soon as σ is injective on its support).
+-/
+
+
+/-- Boundary re-attachment: inside window [i, j), every label is rewritten
+by σ; outside the window, nothing moves. -/
+def reattachWindow : List PDCrossing → Nat → Nat → (Nat → Nat) → List PDCrossing
+  | [], _, _, _ => []
+  | c :: cs', 0, 0, _ => c :: cs'
+  | c :: cs', 0, j+1, σ => ⟨σ c.e1, σ c.e2, σ c.e3, σ c.e4⟩ :: reattachWindow cs' 0 j σ
+  | c :: cs', _+1, 0, _ => c :: cs'
+  | c :: cs', i+1, j+1, σ => c :: reattachWindow cs' i j σ
+
+/-- Re-attachment preserves the number of crossings. -/
+theorem reattachWindow_length (cs : List PDCrossing) (i j : Nat) (σ : Nat → Nat) :
+    (reattachWindow cs i j σ).length = cs.length := by
+  induction cs generalizing i j with
+  | nil => rfl
+  | cons c cs' ih =>
+    match i, j with
+    | 0, 0 => rfl
+    | 0, _+1 => simp [reattachWindow, ih]
+    | _+1, 0 => rfl
+    | _+1, _+1 => simp [reattachWindow, ih]
+
+/-- **Conway sphere mutation at the PD level**: Klein rotation ρ of the
+crossings in window [i, j) (the interior tangle), then re-attachment of the
+interior occurrences of the boundary labels by σ. Outside the window,
+nothing changes. This is the complete combinatorial translation of the
+cut / half-turn / reglue gesture. -/
+def sphereMutate (cs : List PDCrossing) (i j : Nat) (ρ : KleinRot) (σ : Nat → Nat) :
+    List PDCrossing :=
+  reattachWindow (mutateWindow cs i j ρ) i j σ
+
+/-- Sphere mutation preserves the number of crossings. -/
+theorem sphereMutate_length (cs : List PDCrossing) (i j : Nat) (ρ : KleinRot)
+    (σ : Nat → Nat) :
+    (sphereMutate cs i j ρ σ).length = cs.length := by
+  rw [sphereMutate, reattachWindow_length, mutateWindow_length]
+
 /-- Two diagrams are mutants if there exist a window and a Klein rotation
 mapping the crossing list of one onto the other. -/
 def AreMutantDiagrams (d₁ d₂ : KnotDiagram) : Prop :=
