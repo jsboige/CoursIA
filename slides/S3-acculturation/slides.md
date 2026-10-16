@@ -1329,7 +1329,7 @@ layout: section
 <img src="./images/img_074.png" class="max-h-[120px] w-full object-contain" alt="Surface 3D incurvée f(x,y) dans une boîte avec un point rouge marqué" />
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb">GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb">GameTheory-13-ImperfectInfo-CFR-Python.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb">Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb">GameTheory-13-ImperfectInfo-CFR-Python.ipynb</a>.</p>
 ---
 
 
