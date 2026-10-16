@@ -478,6 +478,28 @@ def test_check_nav_chain_argv_carries_the_pr_diff_scope_issue_20303():
     assert guard.needs_base and guard.diff_bounded
 
 
+def test_check_navlinks_argv_carries_the_pr_diff_scope_issue_21016():
+    """#21016 : la garde absorbee check-navlinks doit garder la portee de son
+    workflow d'origine (symetrique de check-nav-chain, #20303/#20582).
+
+    Le workflow d'origine passait `--diff-files pr_files.txt` (diff base...HEAD).
+    L'argv absorbe n'avait que `--check` : tout NEW du graphe global, meme hors
+    de la PR, rougissait la PR. La portee passe par `{base_ref}` (comme
+    split-reading, prose-counts, md-content-loss, nav-chain) : le checker
+    calcule le diff lui-meme. Un finding NEW hors diff ne bloque pas ; dans
+    le diff, il bloque (controle positif et negatif de bout en bout :
+    test_check_notebook_navlinks.py).
+    """
+    by_name = {g.name: g for g in PILOT}
+    guard = by_name["check-navlinks"]
+    assert "--check" in guard.argv
+    assert "--diff-base" in guard.argv
+    i = guard.argv.index("--diff-base")
+    assert guard.argv[i + 1] == "{base_ref}", "la base vient de la lane, pas en dur"
+    resolved = fast_lane.substitute(guard.argv, {"base_ref": "origin/main"})
+    assert resolved[resolved.index("--diff-base") + 1] == "origin/main"
+    assert guard.needs_base and guard.diff_bounded
+
 def test_self_hosted_policy_guard_is_wired_fail_closed():
     guard = {item.name: item for item in PILOT}["self-hosted-runner-policy"]
     assert guard.source == "fast-lane-shadow.yml"
