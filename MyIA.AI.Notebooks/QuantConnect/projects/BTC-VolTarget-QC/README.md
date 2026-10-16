@@ -25,11 +25,33 @@ Si `sigma_hat ≤ 0` (prix plats), la cible précédente est conservée.
 
 Architecture : IBKR pour les jambes equity des références, BTC en données journalières Bitfinex — la même que BitcoinRegimeGate-QC (#19929). Frais : modèle de courtier par défaut de Lean, mis à l'échelle par `fee_mult` (le mécanisme de #19929, identique sur tous les modes).
 
-## Mesures
+## Mesures et verdict (fenêtre 2016-01-01 → 2026-09-30, QC Cloud projet 37950433)
 
-Pré-enregistrées dans #21143 : fenêtre 2016-01-01 → 2026-09-30, essai court d'instrumentation d'abord, puis `base`, `hold-btc`, `sixty40` (références du verdict) et `spy` (descriptive). Sharpe à taux sans risque nul, CAGR, pire baisse, rotation annuelle, frais annuels, ordres, exposition moyenne `w_bar`. Verdict : bootstrap circulaire par blocs de 21 séances, 10 000 tirages, graine 18921, correction de Holm contre `hold-btc` et `sixty40` — la même règle que #19587. Grille et frais doublés seulement si une p Holm passe sous 0,05.
+Quatre runs à frais du courtier (`fee_mult` = 1), un essai court d'instrumentation d'abord (2016-Q1 : 12 ordres, +6,05 %, pire baisse 8,1 %). Statistiques rapportées par QC :
 
-**État : instrumentation posée, runs non encore lancés.** Le verdict sera consigné ici et dans #21143, puis la série `base` gelée au registre d'ombre (#18923), quel que soit le verdict.
+| Mode | Sharpe | CAGR | Pire baisse | Profit total | Ordres |
+|---|---|---|---|---|---|
+| `base` (candidat) | 1,259 | 37,4 % | 55,3 % | +2 951 % | 736 |
+| `hold-btc` | 1,522 | 63,2 % | 82,9 % | +19 302 % | 1 |
+| `spy` | 0,677 | 21,2 % | 46,1 % | +689 % | 3 |
+| `sixty40` | 0,481 | 9,3 % | 21,3 % | +161 % | 205 |
+
+Sur les séries du contrat d'ombre (une valeur de portefeuille par barre journalière, `significance.py` : bootstrap circulaire **apparié** par blocs de 21 séances, 10 000 tirages, graine 18921, Holm) :
+
+| Référence | Sharpe (série ombre, dates communes) | Δ Sharpe | p brut | p Holm |
+|---|---|---|---|---|
+| `hold-btc` (3 925 barres) | 1,070 vs 1,098 | +0,028 | 0,417 | 0,834 |
+| `sixty40` (3 632 barres) | 1,121 vs 1,145 | +0,024 | 0,488 | 0,834 |
+
+**Verdict : NO BEATS** — aucune p Holm < 0,05, les différences sont positives mais bien en deçà du seuil. Grille et frais doublés non lancés (réservés au cas p < 0,05 par le protocole).
+
+Mesures complémentaires : exposition moyenne réalisée `w_bar` ≈ **0,46** (pente de la régression rendement poche ~ rendement BTC ; ~54 % du temps en liquidités) ; corrélation hebdomadaire au 60/40 : **+0,20** (`hold-btc` : +0,18 — le dimensionnement ne décorrèle pas mieux que la détention simple). Sous-périodes `base` − `hold-btc` : +0,20 (2016-2020), −0,05 (2021-2023), −0,10 (2024 → 2026-09) — l'avantage éventuel se concentre sur la seule première période.
+
+**Lecture honnête** : le vol targeting fait ce qu'il annonce — il **façonne le risque, il ne crée pas de rendement**. Pire baisse ramenée de 83 % à 55 %, au prix de 26 points de CAGR abandonnés et d'un Sharpe inchangé en significativité. Pour un panier qui veut une poche BTC, la question pertinente devient celle du budget de risque alloué, pas celle d'un edge de timing — la détention simple domine ce candidat sur cette fenêtre.
+
+Note d'instrument : le bootstrap de `significance.py` a été corrigé avant tout verdict (départs de blocs uniformes i.i.d. — la version systématique tessellait le cercle quand pgcd(21, n) = 1 et produisait des p dégénérés ∈ {0 ; 0,5 ; 1}). Calibration mesurée sur 15 paires indépendantes de même loi : moyenne 0,458, dispersion (0,04 ; 0,85). Aucune p-valeur du verdict n'a été calculée avec la version défectueuse.
+
+La série `base` est gelée à la date du verdict (2026-10-17) et inscrite au registre d'ombre (#18923) — le hors-échantillon s'accumule sans être choisi après coup.
 
 ## Sources
 
