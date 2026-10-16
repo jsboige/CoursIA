@@ -83,7 +83,7 @@ jobs:
     # debloquer grossit (saturation du 2026-09-22). La garde same-repo
     # ci-dessous est conservee telle quelle -- seul le runner change, aucune
     # semantic de declenchement.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     outputs:
       action: ${{ steps.resolve.outputs.action }}
@@ -130,7 +130,8 @@ jobs:
     needs: resolve
     if: needs.resolve.outputs.action == 'rerun'
     # Q35 etape 2 (#17397) : idem resolve -- agregateur pur, ubuntu-latest.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 10
     steps:
       - name: Re-run the original run
@@ -151,7 +152,8 @@ jobs:
     needs: resolve
     if: needs.resolve.outputs.action == 'aggregate_absent'
     # Q35 etape 2 (#17397) : idem resolve -- agregateur pur, ubuntu-latest.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
     steps:
       # The aggregation script + the delivery canary both read the repo:
