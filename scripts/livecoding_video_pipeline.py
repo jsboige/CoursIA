@@ -1313,10 +1313,13 @@ def capture_repl_session(
     """
     import base64
 
-    from playwright.sync_api import sync_playwright
-
+    # Garde AVANT l'import playwright : le contrat "echec explicite sans
+    # navigateur" doit aussi tenir sur une machine sans playwright installe
+    # (CI) -- sinon la garde meurt en ModuleNotFoundError avant de tirer.
     if capture_mode not in ("page", "canvas"):
         raise ValueError(f"capture_mode inconnu : {capture_mode!r} (page|canvas)")
+
+    from playwright.sync_api import sync_playwright
 
     output_dir.mkdir(parents=True, exist_ok=True)
     video_webm = output_dir / "capture.webm"
