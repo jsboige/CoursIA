@@ -94,20 +94,25 @@ def circular_block_bootstrap(base_ret, ref_ret, per_year, rng):
 
     Les deux strategies vivent sur les memes seances ; resampler chaque jambe
     independamment fabriquerait de la decorrelation artificielle. Un seul jeu
-    d'indices de blocs est tire, applique aux deux.
+    d'indices de blocs est tire, applique aux deux. Chaque depart de bloc est
+    tire INDEPENDAMMENTMENT uniforme dans [0, n) -- des departs systematiquement
+    espaces de BLOCK tessellent le cercle quand pgcd(BLOCK, n) = 1 et ne font
+    que reordonner la serie entiere (Sharpe invariant par permutation : aucune
+    variabilite de tirage, p dans {0, 0.5, 1}), ce n'est pas un bootstrap.
     """
     n = len(base_ret)
     nblocks = -(-n // BLOCK)
     diff_sharpes = []
     for _ in range(DRAWS):
-        start = rng.randrange(n)
-        idx = [(start + i * BLOCK + j) % n for i in range(nblocks) for j in range(BLOCK)]
-        idx = idx[:n]
+        idx = []
+        for _ in range(nblocks):
+            start = rng.randrange(n)
+            idx.extend((start + j) % n for j in range(BLOCK))
+        del idx[n:]
         b = [base_ret[i] for i in idx]
         r = [ref_ret[i] for i in idx]
         diff_sharpes.append(sharpe(b, per_year) - sharpe(r, per_year))
-    observed_diffs = sorted(diff_sharpes)
-    return diff_sharpes, observed_diffs
+    return diff_sharpes
 
 
 def p_value_one_sided(diff_sharpes):
@@ -159,7 +164,7 @@ def main(argv):
         per_year = bars_per_year(common_dates)
         s_base = sharpe(base_ret, per_year)
         s_ref = sharpe(ref_ret, per_year)
-        diff_sharpes, _ = circular_block_bootstrap(base_ret, ref_ret, per_year, rng)
+        diff_sharpes = circular_block_bootstrap(base_ret, ref_ret, per_year, rng)
         p = p_value_one_sided(diff_sharpes)
         pvals.append(p)
         result["references"].append({
