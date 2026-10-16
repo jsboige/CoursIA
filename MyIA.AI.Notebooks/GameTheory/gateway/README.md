@@ -133,11 +133,11 @@ Descripteur OpenAPI servi par le mode `notebook-http` sur
 ## Tests
 
 ```bash
-python test_openspiel_cfr_core.py      # 18 passed in 1.30s
+python test_openspiel_cfr_core.py      # 18 tests
 python -m pytest test_openspiel_cfr_core.py -q
 ```
 
-18 tests, 1,20 s : convergence de Kuhn (`exploitability < 0.05`, `nash_conv`
+18 tests : convergence de Kuhn (`exploitability < 0.05`, `nash_conv`
 = 2 × exploitability), amélioration avec les itérations, somme des
 probabilités par état d'information, déterminisme, RPS via transformation,
 Leduc (plus de 100 états d'information), itérations par défaut, et entrées
