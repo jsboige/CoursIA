@@ -5,8 +5,8 @@ la trace historique, à dessein. Ils décrivent des états passés du dépôt
 (cartographie initiale, plans périmés, catalogues d'erreurs résolues) et ne
 reflètent pas l'état courant.
 
-- **Aucun lien** partant d'un fichier archivé n'est maintenu : ~580 liens cassés
-  y sont attendus et ne se réparent pas (décision de gel, #13748).
+- **Aucun lien** partant d'un fichier archivé n'est maintenu : des liens
+  cassés y sont attendus et ne se réparent pas (décision de gel, #13748).
 - **Aucune réédition** : on ne met pas à jour un fichier archivé ; une mise à
   jour legitime se fait en publiant le document vivant correspondant sous
   `docs/` (hors archive) et en déplaçant l'ancien ici si nécessaire.
