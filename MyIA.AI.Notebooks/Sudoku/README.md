@@ -7,19 +7,15 @@ breakdown: root=38
 maturity: BETA=38
 -->
 
-> **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (37 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 08/08/2026 :
->
-> **17 C# + 19 Python + 1 Lean 4 = 37 notebooks canoniques ✓** (37 fichiers `*.ipynb` canoniques au total dans le dépôt — les artefacts Papermill `_output.ipynb` sont gitignored, locaux à la machine d'exécution et non commités).
+> **Note éditoriale (counts)** : les comptes de notebooks (agrégé, par langage ou par kernel) ne sont pas tenus à la main dans ce README : ils dérivent et relèvent de la régénération du catalogue. Le marqueur `CATALOG-STATUS` ci-dessus et le catalogue généré (`COURSE_CATALOG.generated.md`) sont autoritatifs.
 >
 > Sudoku est un cas de **mixité JUMEAUX C#/Python dominante** (14 paires strictes 1-14 + 1 paradigme-comparable 15 Infer.NET/NumPyro + 1 benchmark 18, soit 16 entrées à 2 langages) avec **1 companion Lean natif intra-hub** (`Sudoku-19-Lean-Propagation-Lean.ipynb`, lake `sudoku_lean` 0-sorry). C'est une **variante L392 #4** : contrairement à QC (#5917) où Lean est isolé dans une sous-série dédiée `kelly_lean/`, et contrairement à ML (#5915) / Probas (#5916) où la mixité kernel est intra-série, ici la mixité jumeaux domine largement et le notebook tiers (Lean) est intra-hub sans sous-série dédiée.
->
-> Les counts obsolètes `16 notebooks Python` (L605) et `16 solveurs` (L770) ont été réconciliés sur la valeur disk-truth de **19 notebooks Python canoniques** dans cette PR.
 >
 > **Régénération du marqueur** : `catalog-cron.yml` (cron quotidien 03:37 UTC sur `main`, commit `[skip ci]` par `github-actions[bot]`) — le bloc ci-dessus est régénéré automatiquement, ne pas le modifier manuellement sur une branche feature (catalog-pr-hygiene R1).
 
 [← Notebooks](../README.md) | [→ Search](../Search/README.md)
 
-Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. La série couvre **16 paires miroir C#/Python** (notebooks 1 à 15 et le benchmark comparatif 18 — mêmes algorithmes dans les deux langages), un notebook C# uniquement (0-Environment, classes de base), des notebooks Python uniquement (16-NeuralNetwork, 17-LLM, 18b-Statistical-Comparison) et un companion Lean natif ([Sudoku-19](Sudoku-19-Lean-Propagation-Lean.ipynb), preuve formelle de la propagation de contraintes). Cette structure laisse à chaque étudiant le choix de son langage sur la quasi-totalité des algorithmes.
+Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. La série couvre **16 paires miroir C#/Python** (notebooks 1 à 15 et le benchmark comparatif 18 — mêmes algorithmes dans les deux langages), des notebooks C# sans jumeau Python (0-Environment, classes de base ; 12b-Linq2Z3, accrétion de 12), des notebooks Python uniquement (16-NeuralNetwork, 17-LLM, 18b-Statistical-Comparison) et un companion Lean natif ([Sudoku-19](Sudoku-19-Lean-Propagation-Lean.ipynb), preuve formelle de la propagation de contraintes). Cette structure laisse à chaque étudiant le choix de son langage sur la quasi-totalité des algorithmes.
 
 **À qui s'adresse cette série** : étudiants en informatique (L2-M2) découvrant les paradigmes algorithmiques, candidats à des entretiens techniques, et enseignants cherchant un fil rouge pédagogique. Les notebooks Python ne nécessitent que Python 3.10+. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en IA : les concepts sont introduits depuis le backtracking.
 
@@ -328,7 +324,7 @@ Les solveurs CP et SMT modernes ne se limitent pas à **trouver une solution fai
 - **[#7589](https://github.com/jsboige/CoursIA/issues/7589) `feat(sudoku,#3801): demonstrate Z3 SMT optimization (Optimize/maximize)` — `Sudoku-12-Z3-Python.ipynb`** : ajoute la contrepartie SMT avec `Optimize()` + `maximize(...)` (MaxSMT). Cohérence cross-moteur vérifiée : la même instance de carré latin 5×5 pondéré donne une récompense optimale identique (178) entre CP-SAT et Z3, ce qui valide la transcription entre paradigmes.
 - **[#7622](https://github.com/jsboige/CoursIA/pull/7622) `feat(sudoku,#7589): Z3 SMT optimization (Optimize/MkMaximize) port to C# twin — `Sudoku-12-Z3-CSharp.ipynb`** : port C# du même exemple côté `Microsoft.Z3` (`Context.MkOptimize()` + `MkMaximize(rewardTotal)`), `SATISFIABLE (optimum)` avec récompense 192 (variante du problème, source C# identique au twin Python modulo API binding). Reviewer structural (`NanoClaw`) : LGTM, cellules toutes exécutées, latin-square vérifié à la main colonne par colonne.
 
-**Pourquoi cette section manquait avant** : EPIC [#3801](https://github.com/jsboige/CoursIA/issues/3801) Prong-B (« problème non-trivial qui met le moteur en valeur ») a diagnostiqué que — **sur l'ensemble de la série (37 notebooks canoniques : 17 C# + 19 Python + 1 Lean, cf CATALOG-STATUS) [G.1 vérifié 2026-08-08]** — les solveurs CP/SMT étaient présentés uniquement en mode satisfaction (`Solver.check()` / `cp_model.Add(...)`), sans jamais exercer leur capacité d'optimisation — alors que c'est précisément ce qui distingue OR-Tools et Z3 d'un simple solveur SAT dans la pratique industrielle (MaxSMT, configuration sous contraintes, allocation). Les trois PRs ci-dessus rééquilibrent ce curseur pour le Sudoku.
+**Pourquoi cette section manquait avant** : EPIC [#3801](https://github.com/jsboige/CoursIA/issues/3801) Prong-B (« problème non-trivial qui met le moteur en valeur ») a diagnostiqué que — **sur l'ensemble de la série (cf CATALOG-STATUS) [G.1 vérifié 2026-08-08]** — les solveurs CP/SMT étaient présentés uniquement en mode satisfaction (`Solver.check()` / `cp_model.Add(...)`), sans jamais exercer leur capacité d'optimisation — alors que c'est précisément ce qui distingue OR-Tools et Z3 d'un simple solveur SAT dans la pratique industrielle (MaxSMT, configuration sous contraintes, allocation). Les trois PRs ci-dessus rééquilibrent ce curseur pour le Sudoku.
 
 **À retenir** :
 - Un solveur CP/SMT qui répond `FEASIBLE` / `SAT` ne donne qu'un point dans l'espace des solutions ; `OPTIMAL` / `SATISFIABLE (optimum)` prouve qu'aucune meilleure solution n'existe pour le critère.
@@ -394,7 +390,7 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 16 | Neural Network | CNN PyTorch : apprentissage de patterns visuels sur grilles |
 | 17 | LLM | LLM Solver : prompt engineering pour résolution logique, limites |
 | 18 | Comparison | Benchmark comparatif : toutes les approches sur Easy/Medium/Hard/Expert |
-| 18b | [Sudoku-18b-Statistical-Comparison](Sudoku-18b-Statistical-Comparison-Python.ipynb) | **Companion statistique** (Python uniquement) : méthodologie formelle pour les benchmarks solveurs — variance inter-puzzles, IC bootstrap 95%, Mann-Whitney U, taille d'effet (rank-biserial), correction de Bonferroni. Ajouté en [#9805](https://github.com/jsboige/CoursIA/pull/9805) pour combler le gap méthodologique de Sudoku-18 (qui utilise « significatif » au sens courant, pas statistique). |
+| 18b | [Sudoku-18b-Statistical-Comparison](Sudoku-18b-Statistical-Comparison-Python.ipynb) | **Companion statistique** (Python uniquement) : méthodologie formelle pour les benchmarks solveurs — variance inter-puzzles, IC bootstrap 95%, test de Wilcoxon apparié, taille d'effet (rank-biserial), correction de Bonferroni. Ajouté en [#9805](https://github.com/jsboige/CoursIA/pull/9805) pour combler le gap méthodologique de Sudoku-18 (qui utilise « significatif » au sens courant, pas statistique). |
 | 19 | [Sudoku-19-Lean-Propagation-Lean](Sudoku-19-Lean-Propagation-Lean.ipynb) | **Companion natif** (kernel Lean) : preuve formelle 0-sorry de la soundness de la propagation (naked/hidden single, clé de voûte `peer_excludes_value`) dans le lake `sudoku_lean`, `#check` + `#print axioms` in-kernel — voir [#4055](https://github.com/jsboige/CoursIA/issues/4055) (création du lake) et `LEAN_INVENTORY.md` du dossier |
 
 ---
@@ -416,12 +412,15 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 10 | OR-Tools | Oui | Oui | **ortools** CP-SAT |
 | 11 | Choco | Oui | Oui | **JPype** + Choco JAR |
 | 12 | Z3 | Oui | Oui | **z3-solver** |
+| 12b | Linq2Z3 (accrétion de 12) | Oui | - | **Z3.Linq** (binding C#, sans jumeau Python) |
 | 13 | Symbolic Automata | Oui | Oui | regex `(?&rec)` + **z3-solver** (parité C# ⇄ Python) |
 | 14 | BDD | Oui | Oui | Hand-rolled (parité C# ⇄ Python) |
 | 15 | Infer (Probabiliste) | Oui | Oui | **NumPyro** + JAX |
 | 16 | Neural Network | - | Oui | **PyTorch** CNN |
 | 17 | LLM | - | Oui | **openai** SDK (compatible ChatCompletion API) |
 | 18 | Comparison | Oui | Oui | Benchmark comparatif |
+| 18b | Statistical-Comparison | - | Oui | numpy (bootstrap), scipy (test de Wilcoxon apparié) |
+| 19 | Lean Propagation | - | - | Lean 4 (lake `sudoku_lean`), companion formel natif |
 
 **Légende** : Oui = disponible, - = non applicable
 
@@ -630,7 +629,7 @@ Sudoku/
 ├── LEAN_INVENTORY.md                      # Inventaire transverse des lakes Lean de la série
 ├── index.qmd                              # Listing Quarto (sous-ensembles C# / Python)
 ├── requirements.txt                       # Dépendances Python (19 notebooks Python canoniques, dont 16 paires miroir C#/Python + 3 only-Python : NN 16 + LLM 17 + Statistical-Comparison 18b)
-├── choco-solver-4.10.17-jar-with-dependencies.jar  # JAR Choco (utilisé par nb-11 Python via JPype)
+├── (JAR Choco : non commité, téléchargé à l'exécution de nb-11 Python via JPype)
 ├── (DLL Choco précompilée : copie partagée dédupliquée, voir `../Search/Part2-CSP/org.chocosolver.solver.dll` — nb-11 C# la référence via chemin relatif, See #13742)
 ├── Sudoku-00-Environment-CSharp.ipynb      # Classes de base C#
 ├── Sudoku-01-Backtracking-CSharp.ipynb     # Backtracking C#
@@ -668,7 +667,7 @@ Sudoku/
 ├── Sudoku-17-LLM-Python.ipynb             # LLM Solver Python
 ├── Sudoku-18-Comparison-CSharp.ipynb      # Benchmark comparatif C#
 ├── Sudoku-18-Comparison-Python.ipynb      # Benchmark comparatif Python
-├── Sudoku-18b-Statistical-Comparison-Python.ipynb  # Companion statistique Python (variance, bootstrap, Mann-Whitney) — méthodologie formelle pour les benchmarks
+├── Sudoku-18b-Statistical-Comparison-Python.ipynb  # Companion statistique Python (variance, bootstrap, Wilcoxon apparié) — méthodologie formelle pour les benchmarks
 ├── Sudoku-19-Lean-Propagation-Lean.ipynb       # Companion Lean natif (preuve de soundness)
 ├── Puzzles/                               # Fichiers de puzzles
 │   ├── Sudoku_Easy51.txt
@@ -676,8 +675,6 @@ Sudoku/
 │   └── Sudoku_top95.txt
 ├── assets/                                # Ressources statiques (regex de validation sudoku)
 │   └── sudoku-unrolled.regex.txt
-├── models/                                # Modèles entraînés (RRN .pt)
-│   └── sudoku_rrn_v4_best.pt
 ├── sudoku_models/                         # Checkpoints d'entraînement comparatif
 │   └── checkpoints/
 ├── sudoku_lean/                           # Lake Lean 4 (preuve de propagation, 3 modules FR + siblings _en #4980, 0 sorry)
@@ -696,15 +693,12 @@ Sudoku/
 ├── scripts/                               # Scripts Python (entraînement thermal-safe)
 │   ├── thermal_safe_train.py
 │   └── checkpoints/
+├── tests/                                 # Tests du script d'entraînement thermal-safe
+│   └── test_thermal_safe_train.py
 ├── CompiledModels/                        # Artefacts C# compilés (Infer.NET)
 │   ├── RobustSudokuModel.cs
 │   └── RobustSudokuModel.dll
-└── GeneratedSource/                       # Code source généré par Infer.NET
-    ├── Model0_EP.cs
-    ├── Model1_EP.cs
-    ├── Model2_EP.cs
-    ├── Model3_EP.cs
-    └── Model_EP.cs
+└── (GeneratedSource/ : code Infer.NET produit à l'exécution du notebook 15 C#, non commité)
 ```
 
 ## Ressources
@@ -800,7 +794,7 @@ Les notebooks C# (suffixe `-Csharp`) utilisent GeneticSharp, OR-Tools .NET, Z3 .
 
 ### Si vous venez du Python / data science
 
-Les notebooks Python (suffixe `-Python`) couvrent 19 solveurs avec PyGAD, OR-Tools Python, Z3 Python, NumPyro et PyTorch. Commencez par **Sudoku-01-Backtracking-Python**, puis montez en complexité. Le notebook **18-Comparison-Python** synthétise les solveurs ; **18b-Statistical-Comparison-Python** ajoute la méthodologie statistique formelle (variance, bootstrap, Mann-Whitney, Bonferroni).
+Les notebooks Python (suffixe `-Python`) couvrent les solveurs PyGAD, OR-Tools Python, Z3 Python, NumPyro et PyTorch. Commencez par **Sudoku-01-Backtracking-Python**, puis montez en complexité. Le notebook **18-Comparison-Python** synthétise les solveurs ; **18b-Statistical-Comparison-Python** ajoute la méthodologie statistique formelle (variance, bootstrap, test de Wilcoxon apparié, Bonferroni).
 
 ## Conclusion / Prochaines étapes
 

@@ -52,10 +52,12 @@ export COURSIA_LEAN_RUNNER_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-myia-
 export COURSIA_RUNNER_STATE_DIR="${COURSIA_RUNNER_STATE_DIR:-/var/lib/coursia-lean}"
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 
-# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 15 Go depuis le
-# 2026-10-08, amendement J+7 (le 42 etait devenu faux deux fois : VM revenue
-# de 40 110 a 24 032 Mo, et son arithmetique comptait « 12x1536 waiters »
-# pour des waiters a 512 Mo -- detail complet en tete de coursia-runner-start.sh).
+# MEME BUDGET QUE LES DEUX AUTRES JAMBES DE CETTE MACHINE -- 21 Go depuis le
+# 2026-10-12, arbitrage c2153 d'ai-01 (le J+7 du 2026-10-08 avait pose 15 pour
+# 4x1536 + 6x512 + 1x6144 = 15 360 Mo de caps ; #20174 du 2026-10-10 a
+# reetiquete 4 slots persist, la composition vive est revenuee a
+# 8x1536 + 6x512 + 1x6144 = 21 504 Mo sans que le budget suive -- detail
+# complet en tete de coursia-runner-start.sh).
 #
 # CETTE JAMBE EST CELLE QUI REND LE BUDGET VISIBLE, et c'est pour ca qu'elle
 # doit le declarer : son slot a 6 Go demande 6 144 Mo a lui seul. Sous
@@ -76,8 +78,10 @@ mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 #
 # Les trois jambes doivent annoncer le meme nombre : assert_memory_budget
 # somme les familles entre elles, une divergence refuserait des slots sans
-# nommer sa cause.
-export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-15}"
+# nommer sa cause. Sous 15 Go avec 4 slots persist revenus (#20174), la somme
+# des caps vivants (21 504 Mo) depassait le budget declare : le garde
+# refusait TOUT demarrage -- la famine CI du 2026-10-12.
+export COURSIA_RUNNER_BUDGET_GB="${COURSIA_RUNNER_BUDGET_GB:-21}"
 
 # AUCUN SWAP POUR LA JAMBE LEAN (2026-10-08) -- memory-swap = memory.
 # Le defaut de supervise.sh est `LEAN_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY_SWAP:-12g}"`,
