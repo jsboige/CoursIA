@@ -9,7 +9,7 @@ maturity: BETA=7
 
 [← GenAI](../README.md) | [↑ ..](../README.md) | [→ Image](../Image/README.md)
 
-Ce module configure l'environnement technique avant toute exploration GenAI. Les notebooks couvrent le setup Python, la gestion des conteneurs Docker (ComfyUI, Whisper, MusicGen), la configuration des endpoints API, et un test complet de validation.
+Ce module configure l'environnement technique avant toute exploration GenAI. Les notebooks couvrent le setup Python, la gestion des conteneurs Docker (ComfyUI, Ollama, Jupyter, Redis, PostgreSQL), la configuration des endpoints API, et un test complet de validation.
 
 ## Objectifs d'apprentissage
 
@@ -25,11 +25,11 @@ Ce module configure l'environnement technique avant toute exploration GenAI. Les
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [00-1-Environment-Setup](00-1-Environment-Setup.ipynb) | Configuration environnement complet | 30 min |
-| 2 | [00-2-Docker-Services-Management](00-2-Docker-Services-Management.ipynb) | Gestion services conteneurisés | 40 min |
-| 3 | [00-3-API-Endpoints-Configuration](00-3-API-Endpoints-Configuration.ipynb) | Configuration endpoints API | 25 min |
-| 4 | [00-4-Environment-Validation](00-4-Environment-Validation.ipynb) | Tests et validation setup | 30 min |
-| 5 | [00-5-ComfyUI-Local-Test](00-5-ComfyUI-Local-Test.ipynb) | Test local des services ComfyUI | 25 min |
+| 1 | [00-1-Environment-Setup](00-1-Environment-Setup.ipynb) | Configuration environnement complet | 15 min |
+| 2 | [00-2-Docker-Services-Management](00-2-Docker-Services-Management.ipynb) | Gestion services conteneurisés | 45 min |
+| 3 | [00-3-API-Endpoints-Configuration](00-3-API-Endpoints-Configuration.ipynb) | Configuration endpoints API | 20 min |
+| 4 | [00-4-Environment-Validation](00-4-Environment-Validation.ipynb) | Tests et validation setup | 20 min |
+| 5 | [00-5-ComfyUI-Local-Test](00-5-ComfyUI-Local-Test.ipynb) | Test local des services ComfyUI | ~2-3 min |
 | 6 | [00-6-Local-Docker-Deployment](00-6-Local-Docker-Deployment.ipynb) | Déploiement Docker local complet | 45 min |
 | 7 | [00-7-Terminal-Long-Runs](00-7-Terminal-Long-Runs.ipynb) | tmux + tunnels SSH pour les jobs longs | 30 min |
 
@@ -98,7 +98,7 @@ Le script `genai.py docker status` montre l'état de chaque conteneur. Les servi
 | Approche | Notebooks | Avantage | Inconvénient |
 |----------|-----------|----------|--------------|
 | **API cloud** (OpenAI, Anthropic) | [00-3](00-3-API-Endpoints-Configuration.ipynb) | Aucun setup local | Coût par appel |
-| **Docker local** (ComfyUI, Whisper) | [00-5](00-5-ComfyUI-Local-Test.ipynb), [00-6](00-6-Local-Docker-Deployment.ipynb) | Gratuit, contrôle total | GPU requise, setup lourd |
+| **Docker local** (ComfyUI, Forge, Z-Image) | [00-5](00-5-ComfyUI-Local-Test.ipynb), [00-6](00-6-Local-Docker-Deployment.ipynb) | Gratuit, contrôle total | GPU requise, setup lourd |
 | **OpenRouter** | [00-3](00-3-API-Endpoints-Configuration.ipynb) | Multi-modèles, une clé | Dépend d'OpenRouter |
 
 Les notebooks GenAI utilisent un mélange : APIs cloud pour les modeaux de langage (GPT, Claude), Docker local pour les modeaux d'image/audio (ComfyUI, Whisper). Le notebook [00-1](00-1-Environment-Setup.ipynb) configure les deux.
