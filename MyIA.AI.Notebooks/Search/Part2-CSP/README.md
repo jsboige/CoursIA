@@ -191,11 +191,11 @@ Couverture par notebook des sources fondatrices de la programmation par contrain
 | CSP-6 (Hybridization) | Ohrimenko, I., Stuckey, P. J., & Codish, M. (2009) — « Propagation via Lazy Clause Generation », *Constraints* 14(3). Origine de la Lazy Clause Generation. |
 | CSP-1, CSP-2, CSP-8 | Dechter, R. (2003) — *Constraint Processing*. Morgan Kaufmann. Socle de la propagation de contraintes et des niveaux de consistance, en amont de la série. |
 | CSP-3 à CSP-8 | Krupke, D. et al. (2023) — *The CP-SAT Primer: Using and Understanding Google OR-Tools' CP-SAT Solver* (CC-BY). Le manuel du solveur CP-SAT, aval de la série. |
-| CSP-3 (Advanced) | Rossi, F., van Beek, P. & Walsh, T. (dir., 2006) — *Handbook of Constraint Programming* (Elsevier), **Ch. 7 *Global Constraints*** (Beldiceanu, Simonis, p. 205) — la presentation canonique d'AllDifferent/Cumulative/Circuit/Table reprise dans le carnet. |
-| CSP-3 (Advanced) | id. **Ch. 4 *Backtracking Search Algorithms*** (Kondrak, van Beek, p. 83) — socle de recherche utilise dans la serie. |
-| CSP-5 (Optimization) | id. **Ch. 15 *Integration of CP and OR Methods*** (Hooker, p. 525) — couplage CP / RO. |
+| CSP-3 (Advanced) | Rossi, F., van Beek, P. & Walsh, T. (dir., 2006) — *Handbook of Constraint Programming* (Elsevier), **Ch. 7 *Global Constraints*** (Willem-Jan van Hoeve, Irit Katriel, p. 205) — la presentation canonique d'AllDifferent/Cumulative/Circuit/Table reprise dans le carnet. |
+| CSP-3 (Advanced) | id. **Ch. 4 *Backtracking Search Algorithms*** (Peter van Beek, p. 83) — socle de recherche utilise dans la serie. |
+| CSP-5 (Optimization) | id. **Ch. 15 *Operations Research Methods in Constraint Programming*** (J.N. Hooker, p. 525) — couplage CP / RO. |
 | CSP-7 (Soft) | id. **Ch. 9 *Soft Constraints*** (Meseguer, Rossi, Schiex, p. 279) — semiring-based CSP, classic/fuzzy/weighted. |
-| CSP-8 (Temporal) | id. **Ch. 19 *Temporal Constraint Satisfaction*** (Krokhin, Jeavons & Jonsson, p. 663) — formalisation des CSP temporels. |
+| CSP-8 (Temporal) | id. **Ch. 19 *Temporal CSPs*** (Manolis Koubarakis, p. 663) — formalisation des CSP temporels. |
 | Toute la série | id. **Ch. 1 *Introduction*** (Rossi, van Beek, Walsh, p. 3) — carte thematique de l'ouvrage alignee sur le decoupage de la serie. |
 | CSP-9 (Distributed) | **Distributed Constraint Processing** (support de cours, 2018) — `2018 - lecture-Distributed Constraint Processing.pdf`, rayon *Constraint Programming* du gisement documentaire (auteur non lisible : PDF non hydraté). Série homonyme en ligne : [G. Picard, Mines Saint-Étienne](https://www.gauthier-picard.info/files/lecture-DCSP-2025.pdf). Passage du CSP centralisé aux formulations distribuées (DisCSP, DCOP). |
 | Toute la série | Bardin, S., Bjørner, N. & Cadar, C. (2019) — *Bringing CP, SAT and SMT together: Next Challenges in Constraint Solving* (Dagstuhl Seminar 19062), Dagstuhl Reports 9(2):27. Le pont CP↔SAT↔SMT. |
