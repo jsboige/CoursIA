@@ -260,12 +260,17 @@ jobs:
     # le push, mais sans deploy : juste le rendu + check output. Si le rendu
     # passe en PR, le push sur main passera aussi.
     name: Validate Quarto build (PR)
-    # Routage #14283 fin de chantier (feu vert ai-01 2026-09-02) : setup par
-    # tarball (voir le job `build`). Garde anti-fork au niveau job + runs-on
-    # STATIQUE — une expression leverait DYNAMIC_RUNS_ON dans
-    # check_self_hosted_runner_policy.py.
+    # Q35 etape 4 (#17397, ai-01 2026-10-15) : setup Quarto par tarball (le
+    # binaire est telecharge via curl, pas d'action quarto-actions/setup
+    # qui exigerait sudo apt). Aucun secret, aucun volume, aucun service
+    # local : la garde s'execute aussi bien sur ubuntu-latest, ou la
+    # distribution du temps de rendu est plus favorable (19-24 min contre
+    # 25-31 min sur le pool auto-heberge, mesure #14283 -- le timeout 60
+    # min est commun aux deux jambes, on ne le change pas). La garde
+    # anti-fork est conservee telle quelle -- seul le runner change.
+    # Sortie de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'pull_request'
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    runs-on: ubuntu-latest
     # 60 et non 30 depuis #14283 : le meme rendu prend 19-24 min sur
     # `ubuntu-latest` et 25-31 min sur le pool auto-heberge. Le plafond de 30
     # etait calibre sur la machine d'avant la bascule ; apres elle, il tombe
