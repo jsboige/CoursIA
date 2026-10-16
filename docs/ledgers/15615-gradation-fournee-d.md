@@ -43,7 +43,7 @@ Identique aux ledgers précédents : prérequis déclarés (section dédiée ou 
 
 ## Addendum (2026-10-14) — le 16g est hors snapshot
 
-[`GameTheory-16g-Populations-Othman-Sandholm-Python.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-16g-Populations-Othman-Sandholm-Python.ipynb) a atterri sur main **après le bornage** : commit `0c665bd5cd` (PR #19888, issue #19883), généralisation en populations du pilote LLM de 16e — même lignée Othman-Sandholm (§4.6 de GT-16). Mesuré sur `origin/main` au 2026-10-14 : **25 carnets** dans les blocs 16-20 (16×9, 17×7, 18×3, 19×1, 20×5) ; le 16g porte 35 cellules dont 12 code.
+[`GameTheory-16g-Populations-Othman-Sandholm-Python.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-16g-Populations-Othman-Sandholm-Python.ipynb) a atterri sur main **après le bornage** : commit `0c665bd5cd` (PR #19888, issue #19883), généralisation en populations du pilote LLM de 16e — même lignée Othman-Sandholm (§4.6 de GT-16). Mesuré sur `origin/main` au 2026-10-14 : **25 carnets** dans les blocs 16-20 (16×9, 17×7, 18×3, 19×1, 20×5).
 
 Conséquences sur les affirmations de clôture :
 
