@@ -657,4 +657,72 @@ theorem mono_stalkFunctor_map_toGodement (F : X.Presheaf AddCommGrpCat.{u})
     stalkEval_stalkFunctor_map_toGodement_apply] at h2
   exact h2
 
+/-! ### Partie 93(a), brique (i) — AB5 : le foncteur tige préserve les limites finies
+
+Face « transport d'exactitude » du re-scopage de la Partie 93. Le foncteur
+tige est un adjoint à gauche (`skyscraperPresheafStalkAdjunction`) : il
+préserve les colimites — épimorphismes (`epi_stalkFunctor_map_of_epi`
+ci-dessus) et conoyaux. La préservation des **limites finies** n'est pas
+gratuite : c'est l'axiome AB5 — les colimites filtrantes de groupes
+abéliens sont exactes. Conceptuellement, `Presheaf.stalkFunctor` est le
+composé `whiskering ⋙ colim` sur la catégorie des voisinages (filtrante :
+`OpenNhds x₀` est un demi-treillis pour l'intersection, donc cofiltrante,
+donc d'opposée filtrante), et `colim` préserve les limites finies dans
+`AddCommGrpCat` (`Mathlib.Algebra.Category.Grp.AB`). La voie empruntée
+suit Mathlib (`TopCat.Sheaf` dans `Mathlib.Topology.Sheaves.Abelian`) : la
+face concrète d'AB5 — un morphisme de préfaisceaux injectif composante par
+composante reste injectif sur les tiges
+(`Presheaf.stalkFunctor_map_injective_of_app_injective`) — donne la
+préservation des monomorphismes, et additif + colimites + monos ⇒
+préservation de l'homologie ⇒ des limites finies. -/
+
+/-- Le foncteur tige préserve les monomorphismes : un mono de préfaisceaux
+de groupes abéliens est injectif composante par composante, et cette
+injectivité passe aux tiges — la face concrète d'AB5. -/
+instance stalkFunctor_preservesMono (x₀ : X) :
+    Functor.PreservesMonomorphisms
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀) := by
+  constructor
+  intro F G f hf
+  refine (AddCommGrpCat.mono_iff_injective _).mpr ?_
+  refine TopCat.Presheaf.stalkFunctor_map_injective_of_app_injective
+    (fun U => ?_) x₀
+  exact (AddCommGrpCat.mono_iff_injective (f.app (op U))).mp
+    ((NatTrans.mono_iff_mono_app f).mp hf (op U))
+
+/-- **AB5 pour les tiges, forme homologie** : le foncteur tige préserve
+l'homologie — un mono de préfaisceaux reste mono sur les tiges (face
+concrète d'AB5), un épi reste épi (adjonction tige ⊣ gratte-ciel), et la
+préservation des conoyaux vient de celle des colimites (adjoint à
+gauche). -/
+noncomputable instance stalkFunctor_preservesHomology (x₀ : X) :
+    (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).PreservesHomology := by
+  simp only [(TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).exact_tfae.out 2 0]
+  intro S hS
+  have hcolim :=
+    ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).preservesFiniteColimits_tfae.out 3 0).mp
+      (inferInstance : Limits.PreservesFiniteColimits _)
+  refine ShortComplex.ShortExact.mk' (hcolim S hS).left ?_ (hcolim S hS).right
+  have := hS.2
+  exact Functor.map_mono (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀) _
+
+/-- **AB5 pour les tiges** : le foncteur tige d'un préfaisceau de groupes
+abéliens préserve les limites finies. -/
+noncomputable instance stalkFunctor_preservesFiniteLimits (x₀ : X) :
+    Limits.PreservesFiniteLimits
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀) :=
+  (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).preservesFiniteLimits_of_preservesHomology
+
+/-- Transport d'exactitude vers les tiges : une suite courte exacte de
+préfaisceaux de groupes abéliens reste exacte en chaque tige. Brique (i)
+du re-scopage de la Partie 93 — combinée aux tiges des conoyaux (brique
+ii) et au splicing (brique iii), elle ferme l'exactitude du complexe
+canonique en chaque point. -/
+theorem stalkFunctor_map_exact {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.Exact) (x₀ : X) :
+    (S.map (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).Exact := by
+  have h :=
+    (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).exact_tfae.out 2 1
+  exact h.mp inferInstance S hS
+
 end Grothendieck

@@ -146,11 +146,30 @@ variable {X : TopCat.{u}}
 --   (split ⇒ injective ⇒ mono) and the apply-form
 --   `Grothendieck.stalkEval_stalkFunctor_map_toGodement_apply`.
 --
--- **Named frontier**: the transport brick itself — the stalk functor, a
--- syntactic composite `whiskering ⋙ colim` over the filtered category of
--- neighbourhoods (`Presheaf.stalkFunctor`), also preserves finite limits by
--- exactness of filtered colimits in `AddCommGrpCat` (AB5,
--- `Mathlib.Algebra.Category.Grp.AB`). Deferred to the next delivery of
--- Part 93(a).
+-- **Part 93(a), brick (i) — transport of exactness by the stalk functor
+-- (landed in the FR twin of this module)** : the stalk functor of presheaves
+-- of abelian groups preserves exactness — the categorical face of AB5:
+--
+-- * `Grothendieck.stalkFunctor_preservesMono` — a mono of presheaves is
+--   componentwise injective (`NatTrans.mono_iff_mono_app` +
+--   `AddCommGrpCat.mono_iff_injective`), and componentwise injectivity
+--   passes to stalks (`Presheaf.stalkFunctor_map_injective_of_app_injective`)
+--   — the concrete face of AB5.
+-- * `Grothendieck.stalkFunctor_preservesHomology` and
+--   `Grothendieck.stalkFunctor_preservesFiniteLimits` — reading the stalk
+--   functor as the composite `whiskering ⋙ colim` over the opposite of the
+--   lattice of neighbourhoods (`OpenNhds x₀` is a cofiltered lattice, hence
+--   its opposite is filtered), exactness of filtered colimits in
+--   `AddCommGrpCat` (AB5, `Mathlib.Algebra.Category.Grp.AB`) makes the
+--   composite preserve homology, hence finite limits. Formalized by the
+--   same homology pattern Mathlib uses for the sheaf-level composite
+--   (`Topology/Sheaves/Abelian.lean`), lifted here to bare presheaves.
+-- * `Grothendieck.stalkFunctor_map_exact` — the transport itself: a short
+--   exact sequence of presheaves of abelian groups remains exact at every
+--   stalk.
+--
+-- **Named frontier**: bricks (ii) — computation of the stalks of the
+-- cokernels of the canonical differential — and (iii) — the splicing
+-- recurrence closing the induction — the remaining two thirds of Part 93(a).
 
 end Grothendieck_en
