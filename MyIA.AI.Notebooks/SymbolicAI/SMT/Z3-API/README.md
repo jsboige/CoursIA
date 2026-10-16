@@ -43,7 +43,7 @@ L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimi
 | Z3-17 | Ch. 24 | Array theory général, `Select`/`Store` |
 | Z3-18 | Ch. 28 | Sudoku modes `Array` vs `Constants` |
 
-Les notebooks qui reprennent un exemple numéroté du livre (énigme d'Einstein, cryptarithmes, coloriage de graphe) créditent la source dans leur cellule d'introduction. À noter : « Z3: An Efficient SMT Solver » (de Moura & Bjørner, TACAS 2008), qui est le **papier de référence** du solveur, est déjà cité dans 5 fichiers du dépôt. Le **livre pratique** de Yurichev, distinct du papier, est désormais référencé comme ouvrage-ancrage de la série.
+Les notebooks qui reprennent un exemple numéroté du livre (énigme d'Einstein, cryptarithmes, coloriage de graphe) créditent la source dans leur cellule d'introduction. À noter : « Z3: An Efficient SMT Solver » (de Moura & Bjørner, TACAS 2008) est le **papier de référence** du solveur, déjà référencé dans le dépôt. Le **livre pratique** de Yurichev, distinct du papier, est désormais référencé comme ouvrage-ancrage de la série.
 
 ## Présentation
 
