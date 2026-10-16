@@ -612,6 +612,16 @@ theorem kinoshitaTerasaka_arcPartition :
        [18, 19], [20, 21], [16, 17]] := by
   decide
 
+/-- Control: arc partition of the sphere mutant — 11 arcs; the boundary
+arcs [13] and [22] are preserved, the census-Conway arc [9, 7, 8] becomes
+[9, 11, 12] (boundary point 9 re-attaches into the 10-11-12 arc), the
+signature of the (8 ↔ 11) (13 ↔ 22) re-attachment. -/
+theorem conwayMutant_arcPartition :
+    arcPartition conwayMutantDiagram =
+      [[13], [22], [3, 4], [1, 2], [5, 6], [9, 11, 12], [20, 21], [10, 7, 8],
+       [18, 19], [14, 15], [16, 17]] := by
+  decide
+
 /-- Entrée de la matrice d'Alexander : ligne du croisement `c`, colonne de
 l'arc `C`. Convention positive (Fox de la relation de Wirtinger) : `+t`
 (arc entrant du dessous), `−1` (arc sortant du dessous), `1−t` (arc du
