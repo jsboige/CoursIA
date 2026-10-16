@@ -153,14 +153,29 @@ def extract_notebook(nb_path: Path, repo_root: Path, src_lang: str) -> list[dict
     return rows
 
 
+# Rendus T4 vivant a cote de la source FR (ex. ``01-1-..._en.ipynb``) : ce ne
+# sont PAS des sources -- les re-extraire pollue le CSV pivot de lignes miroir
+# que chaque refresh re-surcharge (mesure c.1495, tranche Image 01-Foundation :
+# 67 lignes ``_en`` ajoutees au deuxieme refresh). Les langues = colonnes
+# ``text_<lang>`` du schema CSV (#4957 par. 1). Meme garde ``endswith`` que
+# ``_output``/``_agent`` : un stem legitime finissant par ``_en`` n'existe pas
+# dans ce depot (le FR est la source par convention, sans suffixe).
+_RENDER_SUFFIXES = (
+    "_en.ipynb", "_es.ipynb", "_ar.ipynb", "_fa.ipynb",
+    "_zh.ipynb", "_ru.ipynb", "_pt.ipynb",
+)
+
+
 def iter_notebooks(targets: list[Path]) -> list[Path]:
     """Résout une liste de chemins (notebooks .ipynb et/ou répertoires) en
     liste triée et dédupliquée de notebooks.
 
-    Exclut les artefacts `_output.ipynb` (sorties Papermill) et les variantes
-    `_agent.ipynb` (auto-générées, hors périmètre traduction). On utilise
-    `endswith` (et non un substring `in`) pour ne pas exclure par erreur un
-    notebook légitime comme `foo_output.ipynb`.
+    Exclut les artefacts `_output.ipynb` (sorties Papermill), les variantes
+    `_agent.ipynb` (auto-générées, hors périmètre traduction) et les rendus
+    ``_<lang>.ipynb`` (T4, régénérés depuis le CSV -- les extraire comme
+    source créerait des lignes miroir). On utilise `endswith` (et non un
+    substring `in`) pour ne pas exclure par erreur un notebook légitime
+    comme `foo_output.ipynb`.
     """
     seen: set[Path] = set()
     out: list[Path] = []
@@ -174,6 +189,8 @@ def iter_notebooks(targets: list[Path]) -> list[Path]:
                 if p in seen:
                     continue
                 if p.name.endswith("_output.ipynb") or p.name.endswith("_agent.ipynb"):
+                    continue
+                if p.name.endswith(_RENDER_SUFFIXES):
                     continue
                 seen.add(p)
                 out.append(p)
@@ -420,9 +437,18 @@ def main() -> int:
     args = parser.parse_args()
 
     # `input` est une liste (nargs="+"). On accepte des chemins individuels ou
-    # des répertoires (récursif). Les chemins inexistants sont signalés via
-    # iter_notebooks() mais ne font pas échouer le run si au moins un notebook
-    # est trouvé.
+    # des répertoires (récursif). Les chemins inexistants sont écartés du
+    # traitement mais LISTÉS en warning (#21006 : l'écart silencieux a masqué
+    # des invocations aux chemins pollués — seuls les compteurs restaient, et
+    # un traitement partiel se lisait comme un traitement complet). Le run
+    # échoue (exit 2) si AUCUN input n'est valide.
+    dropped_inputs = [p for p in args.input if not p.exists()]
+    if dropped_inputs:
+        print(
+            "WARNING : input(s) inexistant(s), écarté(s) du traitement : "
+            + ", ".join(str(p) for p in dropped_inputs),
+            file=sys.stderr,
+        )
     existing_inputs = [p for p in args.input if p.exists()]
     if not existing_inputs:
         print(f"ERROR : aucun chemin d'input valide (reçus : {args.input}).", file=sys.stderr)

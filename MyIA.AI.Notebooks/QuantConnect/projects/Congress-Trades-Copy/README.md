@@ -26,4 +26,12 @@ Les commentaires de l'article rapportent `self._universe.selected` retournant `N
 
 ## Résultats
 
-(À remplir par les backtests — baseline 2019-2024, OOS 2025-2026H1, sweep de sensibilité. Verdicts honnêtes, cf `research.ipynb`.)
+**Aucun résultat publié : le jeu de données n'est pas licencié.** Le port lit le jeu de données QuantConnect « Quiver US Congress Trading », vendu sous licence. Sans elle, la stratégie ne passe aucun ordre : aucun Sharpe, CAGR ou drawdown ne peut être produit, et aucun résultat n'est reproductible. La baseline 2019-2024, la jambe OOS et le balayage de sensibilité restent donc sans mesure, comme les axes non divulgués listés plus haut. Décision mainteneur du 16/10/2026 : la licence n'est pas acquise.
+
+Mesure de référence, faite le 15/10/2026 dans les deux espaces QC où le dépôt lance ses backtests ([détail sur l'issue #16372](https://github.com/jsboige/CoursIA/issues/16372#issuecomment-6196837722)) :
+
+- la souscription par titre au flux `QuiverCongress` est refusée : « The current user does not have a subscription ... Please license the dataset » ;
+- l'univers `QuiverQuantCongressUniverse` ne lève aucune erreur, mais son sélecteur n'est jamais appelé (sonde avec SPY souscrit, 62 séances) ;
+- `main.py` tourne sur 2023 sans passer un seul ordre.
+
+Le second point est le piège : un univers non licencié reste vide en silence. Si la licence est acquise plus tard, la vérifier d'abord par une souscription par titre ou par le compteur d'appels du sélecteur, avant toute série de backtests.

@@ -1146,6 +1146,51 @@ def test_diff_bounded_none_preserve_comportement_avant_19645(monkeypatch):
     assert "prose-counts-guard" in undecided
 
 
+def test_nav_guards_declares_bornes_au_diff_registre_19645_c1503():
+    """#19645 suite c.1503 : nav-chain/navlinks sortent du registre, sans monkeypatch.
+
+    Leur workflow d'origine scopait au diff (`git diff $BASE...HEAD`), mais
+    l'argv absorbe (`--check`) ne porte plus ce drapeau : aucune heuristique
+    d'argv ne peut les detecter (c'est la mesure c.1503). La declaration
+    explicite `diff_bounded` du registre est le canal -- ce test mesure le
+    cablage REEL de bout en bout (pas un monkeypatch de la fonction), et
+    echoue si la declaration disparait ou si l'import du registre casse.
+    """
+    names = pig._diff_bounded_check_names()
+    assert "check-nav-chain" in names
+    assert "check-navlinks" in names
+
+
+def test_nav_chain_corrobore_absent_de_main_sort_de_base_c1503():
+    """#19645 suite c.1503 : le scenario fondateur, de bout en bout.
+
+    `check-nav-chain` rouge et corrobore par deux PR de lanes differentes
+    (#20044/#20062, notebooks distincts -- aucun rouge partage possible),
+    ABSENT du rollup de `main` (l'agregateur ne tourne que sur
+    `pull_request`). Avant la declaration : `undecided` + repli fail-closed
+    en `base` -> le tapis disait « pas le votre » et la lane ne cherchait
+    pas son `orphan_entry`. Apres : `undecided` SEUL -- la lane garde la
+    main. Controle negatif : un check non declare, meme scenario, reste
+    impute a la base (le filtre est un ensemble clos, il n'elargit pas la
+    classe des acquittes).
+    """
+    diff_bounded = pig._diff_bounded_check_names()
+    assert "check-nav-chain" in diff_bounded, "cablage registre absent"
+    corroborated = {"check-nav-chain": [20044, 20062],
+                    "Scripts Tests (CPU)": [20044, 20062]}
+    names_by_key = {"check-nav-chain": {"check-nav-chain"},
+                    "Scripts Tests (CPU)": {"Scripts Tests (CPU)"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names_by_key, _probe(),  # rollup de main sans les nav
+        diff_bounded=diff_bounded)
+    assert "check-nav-chain" not in base
+    assert "check-nav-chain" in undecided
+    # Controle negatif : non declare -> repli fail-closed inchange.
+    assert "Scripts Tests (CPU)" in base
+    assert "Scripts Tests (CPU)" in undecided
+    assert infra == {}
+
+
 def test_geste_infra_n_invente_pas_d_id_de_run():
     """L'id du check-run n'est pas un id de workflow run : le picker n'en donne aucun.
 
@@ -3708,6 +3753,109 @@ def test_sonde_marqueur_ne_touche_pas_rest_quand_graphql_vit(monkeypatch):
         monkeypatch, calls, issue={"comments": [_delivered_marker_comment()]})
     assert pig._has_delivered_marker(14373) is True
     assert [c for c in calls if c[1:2] == ["api"]] == []
+
+
+# --- Rendre le marqueur RELEVABLE (il etait permanent) -----------------------
+#
+# Mesure du 2026-10-12 : sur 80 issues portant un marqueur de livraison, 20
+# l'etaient PARTIELLEMENT. Un `any(...)` rendait True des le premier marqueur,
+# a vie : la verification ulterieure du coordinateur ne pouvait plus remettre
+# l'issue sur le tapis, et elle restait ecartee de toutes les lanes worker
+# (ecartee par `has_delivered_signal` sur le tapis, annotee LIVRE-urn par
+# `recent_delivery` a la voie ponderee). Le marqueur devient un ETAT : les
+# deux transports rendent leurs corps en ordre chronologique, une forme de
+# retractation defait les marqueurs qui la precedent, un depot posterieur
+# rearme.
+
+
+def _issued_comments(*bodies):
+    """Charge `gh issue view --comments --json comments` : un corps par
+    commentaire, dans l'ordre du transport (`createdAt` croissant)."""
+    return {"comments": [{"body": b, "createdAt": f"2026-10-12T10:{i:02d}:00Z"}
+                         for i, b in enumerate(bodies)]}
+
+
+def test_marqueur_livre_puis_retracte_rend_faux(monkeypatch):
+    """Livraison partielle relevee par un commentaire POSTERIEUR : l'issue
+    n'est plus annotee LIVRE-urn, elle revient dans l'urne `grain`."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _delivered_marker_comment()["body"],
+            "[NOT-DELIVERED] verification first-hand : 2 cellules sur 5."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_retractation_puis_marqueur_repose_rearme(monkeypatch):
+    """Un marqueur poste APRES la retractation rearme : c'est l'ORDRE qui
+    porte le sens, pas la seule presence."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _delivered_marker_comment()["body"],
+            "[NOT-DELIVERED] livraison partielle.",
+            _delivered_marker_comment()["body"]))
+    assert pig._has_delivered_marker(14373) is True
+
+
+def test_retractation_seule_ne_fabrique_pas_de_livraison(monkeypatch):
+    """Controle NEGATIF : la retractation seule ne cree aucun signal."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            "[NOT-DELIVERED] issue jamais livree, remise sur le tapis."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_retractation_citee_en_prose_ne_releve_rien(monkeypatch):
+    """L'ancrage tete de ligne est la garde anti-FP : une mention en milieu
+    de ligne -- ou dans un bloc de citation `>` -- ne retracte pas."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _delivered_marker_comment()["body"],
+            "Je reprends ta remarque : la forme [NOT-DELIVERED] sert a\n"
+            "retracter un marqueur, et je la cite sans la poser.\n"
+            "> [NOT-DELIVERED] exemple de citation\n"))
+    assert pig._has_delivered_marker(14373) is True
+
+
+def test_candidate_delivered_revoked_n_est_pas_un_marqueur(monkeypatch):
+    """La retractation ne se relit pas comme une livraison : le lookahead
+    `(?![-_\\w])` de #20008 ferme `candidate-delivered` devant `-revoked`,
+    sur la forme canonique ET sur la forme annonce."""
+    assert pig._DELIVERED_MARKER_RE.search(
+        "[INFO] candidate-delivered-revoked -- verification partielle") is None
+    assert pig._DELIVERED_MARKER_RE.search(
+        "[INFO] lane myia-ai-01:CoursIA -- candidate-delivered-revoked") is None
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            "[INFO] candidate-delivered-revoked livraison partielle."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_corps_contradictoire_la_retractation_l_emporte(monkeypatch):
+    """Choix documente (`_delivered_state`) : un corps portant les DEUX formes
+    est contradictoire, la retractation l'emporte -- c'est le geste delibere,
+    celui que ce correctif doit rendre effectif."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            "[INFO] candidate-delivered -- verification first-hand 6d0bd02093.\n"
+            "[NOT-DELIVERED] en fait partiel, remis sur le tapis."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_retractation_lue_par_le_repli_rest(monkeypatch):
+    """GraphQL mort : le repli REST rend les corps DANS L'ORDRE -- meme etat
+    que la voie nominale, dans les deux sens (retractation apres marqueur,
+    puis marqueur apres retractation)."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=(_delivered_marker_comment()["body"] + "\n"
+              "[NOT-DELIVERED] livraison partielle.\n"))
+    assert pig._has_delivered_marker(14373) is False
+
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=("[NOT-DELIVERED] releve par le coordinateur.\n"
+              + _delivered_marker_comment()["body"] + "\n"))
+    assert pig._has_delivered_marker(14373) is True
 
 
 # --- #17038 : la sonde du TAPIS (`has_delivered_signal`) porte le meme repli
