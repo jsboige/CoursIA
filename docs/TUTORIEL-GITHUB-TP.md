@@ -80,6 +80,17 @@ Puis :
 3. Vérifiez les cas nominaux et au moins un cas limite pertinent.
 4. Enregistrez : *Fichier > Télécharger > Télécharger le .ipynb* (Colab), ou simple sauvegarde (Jupyter). Le fichier garde le même nom.
 
+### Les clés d'API
+
+Les notebooks GenAI lisent leurs clés dans un fichier `.env`, jamais dans le code. Le modèle est [`MyIA.AI.Notebooks/GenAI/.env.example`](../MyIA.AI.Notebooks/GenAI/.env.example) :
+
+- **en local** (Jupyter, VS Code) : copiez ce modèle sous le nom `.env` dans le dossier où vous ouvrez le notebook (ou un dossier parent), puis remplacez la valeur de la clé par celle fournie par l'enseignant ;
+- **dans Colab** : déposez ce même fichier `.env` dans l'espace *Fichiers* de la session (icône dossier, à gauche) avant d'exécuter.
+
+N'écrivez **jamais** une clé dans une cellule : elle partirait avec le notebook dans votre commit, et le dépôt est public.
+
+La clé fournie pour le cours passe par OpenRouter : elle couvre la génération de **texte**, pas les services OpenAI natifs (images DALL-E, voix TTS, transcription Whisper). Si une cellule échoue faute de clé (`401 Unauthorized`, clé absente), ne restez pas bloqués : exécutez tout ce qui peut l'être, déposez le notebook tel quel et indiquez dans la description de la PR les cellules qui n'ont pas pu tourner. Les mainteneurs ré-exécutent le notebook avec les clés du cours au moment de l'intégration.
+
 **Ne modifiez jamais le contenu du fichier `.ipynb` à la main dans GitHub** (l'éditeur web de GitHub y montrerait du JSON illisible) : passez toujours par Jupyter ou Colab, puis déposez le fichier obtenu à l'étape suivante.
 
 Après validation d'une correction, les mainteneurs transforment la solution en **exemple guidé** crédité et ajoutent un nouvel exercice non résolu à la place — vous n'avez pas à fabriquer vous-même l'exercice de remplacement (détail dans [CONTRIBUTING.md](../CONTRIBUTING.md)).
