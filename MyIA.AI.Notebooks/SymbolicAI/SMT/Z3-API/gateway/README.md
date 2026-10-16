@@ -16,8 +16,8 @@ Jupyter **Kernel Gateway** (mode `notebook-http`).
 - `unsat` : indices contradictoires (par exemple deux 5 sur une même ligne) ;
 - `invalid` : entrée qui n'est pas 81 cases valides (longueur ou caractères).
 
-Les séparateurs (retours ligne, espaces) sont ignorés : une grille collée en
-9 lignes est acceptée.
+Les séparateurs (retours ligne, espaces) sont ignorés : une grille collée sur
+plusieurs lignes est acceptée.
 
 ## Démarrage
 
@@ -44,6 +44,9 @@ Journal de démarrage mesuré (2026-10-16) :
 ```
 
 ## Usage (exemples réellement exécutés le 2026-10-16)
+
+Les `time_ms` viennent d'une exécution sur une machine donnée : ils varient d'une
+machine à l'autre, et le contrat ne porte que sur `status` et `solution`.
 
 Puzzle facile du carnet phare (30 indices) :
 
