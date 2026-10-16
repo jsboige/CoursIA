@@ -54,9 +54,15 @@ l'optimalité (pli 5d de #18706) : développer la feuille de masse `a + b` en
 ses deux constituants (`subst`) facture exactement la masse fusionnée
 (`costW_subst` : `costW (subst t a b) = costW t + (a + b)`), sans bouger le
 poids ni le reste de l'arbre — l'ingrédient montant de l'induction sur le
-nombre de symboles. -/
+nombre de symboles ; `Feuilles` — profondeurs et substitution d'un poids
+(pli 5e de #18706) : profondeur de la première feuille d'un poids donné
+(`depthOf`), hauteur (`maxDepth`), remplacement du poids d'une feuille
+(`swapW`) avec ses invariants (poids, multi-ensemble des feuilles) et sa
+facture — l'écart de poids fois la profondeur de la cible
+(`costW_swapW_eq`), dont le corollaire monotone alléger ne coûte jamais
+plus. -/
 @[default_target]
 lean_lib «PrefixCodes» where
   -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`) :
   -- pas de `.submodules`, cf la note `MathUniverse` de `learning_theory_lean`.
-  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion]
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion, `Feuilles]
