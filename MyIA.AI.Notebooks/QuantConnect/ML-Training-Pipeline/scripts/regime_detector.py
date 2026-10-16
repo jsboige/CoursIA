@@ -59,12 +59,26 @@ def detect_regimes_price(
     black_swan_window : int
         Window for drawdown calculation.
     causal_threshold : bool, default True
-        When True (default, fix #21054), the volatility threshold at
+        When True (default, fix #21054 v2), the volatility threshold at
         index t is the *expanding* quantile of ``rolling_std``
         computed from indices ``[0, t)`` only — i.e. the threshold at
-        t is known at t-1 and does not leak future observations.
-        NaN where t < ``lookback_days`` (no expansion yet) — those
-        rows are excluded from the volatility regime by construction.
+        t is the rolling_std-percentile over the **strict past**, with
+        a ``.shift(1)`` so that the value used to classify t does not
+        depend on rolling_std[t] itself. This is the strict
+        ``known at t-1`` contract required for live and walk-forward
+        use.
+
+        Warmup: ``rolling_std`` (a ``rolling(L).std()``) is NaN for
+        the first ``L - 1`` indices and valid from index ``L - 1``
+        onward. ``expanding(min_periods=L).quantile(...)`` then needs
+        ``L`` valid observations, so the first non-NaN output of the
+        expanding quantile lands at index ``2L - 2`` (e.g. ``L=30`` ->
+        first valid at index 58). The ``.shift(1)`` adds one more
+        index of latency, so the first usable threshold lands at
+        index ``2L - 1`` (e.g. ``L=30`` -> first usable at index 59).
+        Before that, the threshold is NaN and the volatility regime
+        is unreachable by construction (NaN-comparison yields False).
+
         When False, the threshold is the *global* non-causal
         ``rolling_std.quantile(...)`` over the whole series; kept for
         backtesting/reproducibility against the pre-fix behaviour
@@ -80,10 +94,19 @@ def detect_regimes_price(
     rolling_return = prices.pct_change(lookback_days)
     rolling_std = returns.rolling(lookback_days).std() * np.sqrt(252)
     if causal_threshold:
-        # Causal: at index t, only use rolling_std[0:t).
+        # Causal (strict t-1): the threshold at t is the expanding
+        # quantile of rolling_std over [0, t), then .shift(1) so the
+        # value at index t is the quantile of [0, t-1] (true
+        # known-at-t-1 contract). Without the shift, the expanding
+        # quantile at t would include rolling_std[t] itself, which is
+        # a 1-step look-ahead flagged by the adjoint (#21111 v2).
+        # First usable threshold at index 2*lookback_days - 1
+        # (rolling_std first valid at L-1, expanding needs L non-NaN
+        # so first output at 2L-2, shift pushes to 2L-1).
         vol_threshold = (
             rolling_std.expanding(min_periods=lookback_days)
             .quantile(volatility_percentile / 100)
+            .shift(1)
         )
     else:
         # Non-causal (legacy, pre-#21054): global quantile, includes
