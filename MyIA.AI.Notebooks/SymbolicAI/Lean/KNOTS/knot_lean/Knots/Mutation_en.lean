@@ -229,8 +229,13 @@ NOTE (limit of the canonical witness): the designated diagrams
 `conwayKnotDiagram` and `kinoshitaTerasakaDiagram` (corrected census PD
 codes, cf. §2) share their first five crossings and differ at crossings 6
 to 11 — no one-shot map superposes them.
-`AreMutants conwayKnot kinoshitaTerasakaKnot` will require an intermediate
-diagram (Reidemeister isotopy) — later sub-grain.
+NOTE updated (link 5, c165): the intermediate diagram is delivered — the
+sphere mutant of the Conway census (`conwayMutantDiagram`) is a **redraw**
+of the KT census (explicit reordering + renaming, cf. `Knots.Conway_en`
+`conwayMutant_redraws_kinoshitaTerasaka`). The one-shot map remains
+impossible on the designated diagrams; what remains is to formally relate
+the redraw to `ReidemeisterEquiv` to close
+`AreMutants conwayKnot kinoshitaTerasakaKnot` — later sub-grain.
 -/
 
 /-- Negative control: trefoil and unknot are not mutants (mutation preserves

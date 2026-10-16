@@ -119,10 +119,12 @@ lien et le polynôme trivial.
 Mesure préalable (sonde Python fidèle, contrôle sur les valeurs prouvées
 −t⁶/t⁵ de 11n34/11n42) : parmi les 96 mutants non triviaux bien formés de
 la construction (4 rotations × 24 recollements), **exactement un** porte un
-mineur trivial — celui-ci, de valeur désignée t⁵. Le mutant n'est PAS le
-code census de 11n42 (mesuré : aucune combinaison (ρ, perm, σ) ne superpose
-les deux listes) : c'est un second dessin du même type d'isotopie,
-l'égalité d'isotopie restant un écart documenté (la PL-topologie du
+mineur trivial — celui-ci, de valeur désignée t⁵. Le mutant n'est pas le
+code census de 11n42 au sens strict des listes (aucune combinaison
+(ρ, perm, σ-bord) ne les superpose, mesure maillon 4), mais le maillon 5
+(`Knots.Conway`, `conwayMutant_redraws_kinoshitaTerasaka`) établit qu'il en
+est un **redraw** : mêmes croisements, autre ordre de liste et autres noms
+d'étiquettes. L'écart d'isotopie reste documenté (la PL-topologie du
 recollement n'est pas formalisée, cf. `Knots.Mutation`).
 -/
 
