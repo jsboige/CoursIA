@@ -14,11 +14,11 @@ Critères communs : carnet exécutable (C.2), présence d'outputs, taille suffis
 
 ## Sélection
 
-| Type | Carnet | Taille | Cellules code | Justification |
-|---|---|---:|---:|---|
-| GenAI/SK | `GenAI/SemanticKernel/02-SemanticKernel-Advanced.ipynb` | 1 927 lignes | 10 | Await profonds sur OpenAI/Anthropic, parsing JSON, strings. Couvre le profil I/O async. |
-| ML.NET Backtester | `QuantConnect/ML-Training-Pipeline/m12_har_rv_j_research.ipynb` | 704 lignes | 5 | Modèle HAR-RV-J (regressions linéaires, matrices), ML.NET 6 preview. Couvre le profil numérique. |
-| Probas | `Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb` | 1 358 lignes | 11 | Percolation sur grille L×L, allocations de tableaux numpy, boucles de simulation. Couvre le profil allocations/GC. |
+| Type | Carnet | Profil de charge | Justification |
+|---|---|---|---|
+| GenAI/SK | `GenAI/SemanticKernel/02-SemanticKernel-Advanced.ipynb` | I/O async | Await profonds sur OpenAI/Anthropic, parsing JSON, strings. |
+| ML.NET Backtester | `QuantConnect/ML-Training-Pipeline/m12_har_rv_j_research.ipynb` | numérique | Modèle HAR-RV-J (regressions linéaires, matrices), ML.NET 6 preview. |
+| Probas | `Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb` | allocations/GC | Percolation sur grille L×L, allocations de tableaux numpy, boucles de simulation. |
 
 ## Ce que ce livrable n'est pas
 

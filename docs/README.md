@@ -421,6 +421,7 @@ Deltas runtime et digests de performance .NET, mesurés sur les bancs et les car
 |---------|-------------|
 | [dotnet/net11-runtime-deltas.md](dotnet/net11-runtime-deltas.md) | .NET 9 → 10 → 11 — Deltas runtime mesurés sur les bancs et carnets types du dépôt |
 | [dotnet/net11-toub-digest.md](dotnet/net11-toub-digest.md) | .NET 11 — Digest de performance |
+| [dotnet/net11-carnets-types.md](dotnet/net11-carnets-types.md) | .NET 11 — Sélection des 3 carnets types (GenAI/SK, ML.NET, Probas) pour la mesure runtime |
 
 
 ## Rapports transients (docs/transients/)
