@@ -17,6 +17,20 @@ class NetworkError(Exception):
     """Erreur réseau transitoire (connexion reset, timeout) — retryable."""
 
 
+class HTTPStatusError(Exception):
+    """Réponse HTTP en erreur (4xx/5xx) — porte code, url et corps de réponse."""
+
+    def __init__(self, code: int, url: str, reason: str, body: str):
+        super().__init__(f"HTTP {code} Error calling {url}: {reason}\nBody: {body}")
+        self.code = code
+        self.url = url
+        self.body = body
+
+
+class WorkflowExecutionError(Exception):
+    """Le serveur ComfyUI a rejeté ou fait échouer l'exécution du workflow."""
+
+
 class ComfyUIConfig:
     """Configuration pour le client ComfyUI."""
     
@@ -72,7 +86,8 @@ class ComfyUIClient:
             Réponse JSON de l'API
 
         Raises:
-            Exception: Si la requête échoue
+            HTTPStatusError: Si le serveur répond un statut 4xx/5xx
+            NetworkError: Si la requête échoue au niveau réseau (URL Error)
         """
         # S'assurer que server_url ne se termine pas par / et endpoint commence par /
         server_url = self.server_url.rstrip("/")
@@ -105,9 +120,7 @@ class ComfyUIClient:
                 return json.loads(response.read().decode())
         except error.HTTPError as e:
             error_body = e.read().decode() if e.fp else "No error body"
-            raise Exception(
-                f"HTTP {e.code} Error calling {url}: {e.reason}\nBody: {error_body}"
-            )
+            raise HTTPStatusError(e.code, url, str(e.reason), error_body) from e
         except error.URLError as e:
             raise NetworkError(f"URL Error calling {url}: {e.reason}") from e
 
@@ -128,7 +141,7 @@ class ComfyUIClient:
         response = self._make_request("/prompt", method="POST", data=payload)
 
         if "prompt_id" not in response:
-            raise Exception(f"Prompt queue failed: {response}")
+            raise WorkflowExecutionError(f"Prompt queue failed: {response}")
 
         return response["prompt_id"]
 
@@ -216,7 +229,7 @@ class ComfyUIClient:
                 if isinstance(status, dict) and status.get("status_str") == "error":
                     messages = status.get("messages") or []
                     detail = json.dumps(messages, indent=2)[:2000] if messages else "(aucun detail serveur)"
-                    raise Exception(
+                    raise WorkflowExecutionError(
                         f"Workflow execution failed (server reported error): {detail}"
                     )
 
@@ -226,7 +239,7 @@ class ComfyUIClient:
 
                 # Vérifier les erreurs
                 if "errors" in result and result["errors"]:
-                    raise Exception(
+                    raise WorkflowExecutionError(
                         f"Workflow execution failed: {json.dumps(result['errors'], indent=2)}"
                     )
 
@@ -266,9 +279,7 @@ class ComfyUIClient:
                 return response.read()
         except error.HTTPError as e:
             error_body = e.read().decode() if e.fp else "No error body"
-            raise Exception(
-                f"HTTP {e.code} Error calling {url}: {e.reason}\nBody: {error_body}"
-            )
+            raise HTTPStatusError(e.code, url, str(e.reason), error_body) from e
         except error.URLError as e:
             raise NetworkError(f"URL Error calling {url}: {e.reason}") from e
 
