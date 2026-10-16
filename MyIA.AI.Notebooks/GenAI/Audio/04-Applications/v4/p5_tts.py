@@ -127,9 +127,16 @@ _NARRATOR_ENGINE_REFERENCE_IDS: dict[str, str] = {
 _NARRATOR_CUSTOMVOICE_ROUTING: bool = os.getenv("NARRATOR_CUSTOMVOICE_ROUTING", "0") == "1"
 _CUSTOMVOICE_NARRATOR_REFERENCE_ID: str = "qwen3tts-customvoice-narrator-fr-B-v1"
 _CUSTOMVOICE_NARRATOR_SPEAKER: str = os.getenv("NARRATOR_CUSTOMVOICE_SPEAKER", "serena")
-_CUSTOMVOICE_NARRATOR_INSTRUCTIONS: str = (
-    "Voix masculine posee, debit lent, ton narratif litteraire du "
-    "XIXe siecle, intonation expressive mais mesuree, registre audiobook."
+# Consigne de voix par defaut : AUCUNE. Le rendu valide par l'Association
+# Bibliotheques Sonores est CustomVoice NEUTRE (mesure dans
+# `A0C-qwen3tts-customvoice-neutral-metrics.json` sur GDrive) -- `speaker=serena`,
+# `language=French`, `instruct=None`. Pas de consigne 'voix posee, debit lent...'
+# transmise tant que personne ne l'a ecoutee sur ce moteur. Une surcharge
+# ulterieure reste possible via la variable d'environnement
+# NARRATOR_CUSTOMVOICE_INSTRUCTIONS (env var, pas constante en dur).
+# Voir la revue ai-01 sur la tete 2f42b21721 (c.2180, DM ai01-c2180-20925-reserve-20261016).
+_CUSTOMVOICE_NARRATOR_INSTRUCTIONS: str | None = (
+    os.getenv("NARRATOR_CUSTOMVOICE_INSTRUCTIONS") or None
 )
 
 _NARRATOR_ENGINE_REFERENCE_IDS["customvoice"] = _CUSTOMVOICE_NARRATOR_REFERENCE_ID
