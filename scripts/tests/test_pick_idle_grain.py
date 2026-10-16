@@ -612,7 +612,16 @@ def _neutralize_organs(monkeypatch, states, nits=None):
     laissent le VRAI `fetch_open_prs` courir derriere un faux `gh`.
     """
     monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {n: states[n] for n in nums if n in states})
-    monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: dict(nits or {}))
+    # #16926 : red_backlog consomme la variante detaillee. Les appelants
+    # historiques passent des comptes nus ({pr: n}) ; on les translate -- et
+    # un dict detaille passe tel quel, pour les tests qui veulent rendre des
+    # auteurs et un verdict.
+    def _as_detail(raw):
+        return {k: (v if isinstance(v, dict)
+                    else {"count": v, "authors": [], "verdict": None, "verdict_surface": None})
+                for k, v in (raw or {}).items()}
+    monkeypatch.setattr(pig, "unaddressed_review_points_detail",
+                        lambda nums: _as_detail(nits))
     # L721 : l'ardoise de lane ajoute un fetch gh dans main() AVANT le garde
     # rouge -- meme neutralisation par defaut, meme raison (reseau +
     # determinisme). Les tests qui veulent une ardoise la re-patchent apres.
@@ -2849,7 +2858,7 @@ def test_only_the_lane_s_own_prs_are_examined(monkeypatch):
         _pr(3, "myia-po-2026:CoursIA", 3),
     ])
     monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {})
-    monkeypatch.setattr(pig, "unaddressed_review_points",
+    monkeypatch.setattr(pig, "unaddressed_review_points_detail",
                         lambda nums: seen.extend(nums) or {})
     pig.red_backlog("myia-po-2026:CoursIA", 24)
     assert seen == [1, 3]      # les deux PR de la lane
@@ -2868,7 +2877,7 @@ def test_organ_failure_is_said_not_swallowed(monkeypatch):
     monkeypatch.setattr(pig, "fetch_open_prs",
                         lambda: [_pr(1, "myia-po-2026:CoursIA", 30)])
     monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {1: green})
-    monkeypatch.setattr(pig, "unaddressed_review_points", boom)
+    monkeypatch.setattr(pig, "unaddressed_review_points_detail", boom)
     out = pig.red_backlog("myia-po-2026:CoursIA", 24)
     assert out["red"] == []
     assert out["nits_unavailable"] == "RuntimeError"
@@ -3477,6 +3486,116 @@ def test_unaddressed_review_points_pr_illisible_ne_bloque_pas_les_autres(monkeyp
     monkeypatch.setattr(nits, "analyse_pr", flaky_analyse_pr)
     assert pig.unaddressed_review_points([15049, 15081]) == {15081: 1}
     assert calls == [15049, 15081]
+
+
+def test_unaddressed_review_points_detail_carries_authors_and_verdict(monkeypatch):
+    """#16926 : la file de reparation rend QUI tient la reserve et sous
+    quelle voix -- auteurs deduits des entrees blocking (pas de second
+    round-trip nits), verdict latest-wins par l'organe pool_review_verdicts,
+    recherche SEULEMENT sur les PRs a points non leves."""
+    import types
+
+    def fake_entries(n):
+        if n == 20961:
+            return {"blocking": [
+                {"kind": "CONCERNS", "author": "clusterManager-Myia", "channel": "review"},
+                {"kind": "NIT", "author": "jsboige", "channel": "comment"},
+                {"kind": "NIT2", "author": "clusterManager-Myia", "channel": "comment"},
+            ], "blocked": True}
+        if n == 18829:
+            return {"blocking": [], "blocked": False}
+        return None  # PR illisible
+
+    calls = []
+
+    def fake_fetch_prs(repo, numbers):
+        calls.append((repo, list(numbers)))
+        return {20961: {"number": 20961, "verdict": "CONCERNS",
+                        "verdict_surface": "review-body"}}
+
+    monkeypatch.setattr(pig, "_nits_blocking_entries", fake_entries)
+    monkeypatch.setitem(sys.modules, "pool_review_verdicts",
+                        types.SimpleNamespace(fetch_prs=fake_fetch_prs))
+    out = pig.unaddressed_review_points_detail([20961, 18829, 15081])
+    # auteurs dedoublonnes et tries ; verdict de l'organe ; #18829 evaluee
+    # claire garde son count 0 ; 15081 illisible reste ABSENTE.
+    assert out[20961] == {"count": 3,
+                          "authors": ["clusterManager-Myia", "jsboige"],
+                          "verdict": "CONCERNS", "verdict_surface": "review-body"}
+    assert out[18829] == {"count": 0, "authors": [],
+                          "verdict": None, "verdict_surface": None}
+    assert 15081 not in out
+    # la voix n'est cherchee que sur les PRs a points -- pas sur la claire.
+    assert calls == [("jsboige/CoursIA", [20961])]
+
+
+def test_unaddressed_review_points_detail_organ_down_keeps_count_and_authors(monkeypatch):
+    """Panne de l'organe de verdicts : champs verdict omis, le compte et les
+    auteurs restent rendus -- la file ne se bloque jamais sur une surface
+    annexe."""
+    import types
+
+    def boom(repo, numbers):
+        raise RuntimeError("gh down")
+
+    monkeypatch.setattr(pig, "_nits_blocking_entries",
+                        lambda n: {"blocking": [{"author": "clusterManager-Myia"}],
+                                   "blocked": True})
+    monkeypatch.setitem(sys.modules, "pool_review_verdicts",
+                        types.SimpleNamespace(fetch_prs=boom))
+    out = pig.unaddressed_review_points_detail([42])
+    assert out[42]["count"] == 1
+    assert out[42]["authors"] == ["clusterManager-Myia"]
+    assert out[42]["verdict"] is None
+    assert out[42]["verdict_surface"] is None
+
+
+def test_unaddressed_review_points_detail_propage_la_derive_de_contrat(monkeypatch):
+    """#15139 tient pour la variante detaillee : un TypeError de l'organe
+    nits est un bug d'appel, pas une PR illisible -- il remonte jusqu'au
+    nits_unavailable de red_backlog, jamais un dict vide muet."""
+    def drift(n):
+        raise TypeError("analyse_pr() got an unexpected keyword argument")
+
+    monkeypatch.setattr(pig, "_nits_blocking_entries", drift)
+    try:
+        pig.unaddressed_review_points_detail([42])
+    except TypeError:
+        pass
+    else:
+        raise AssertionError("TypeError de contrat devait etre propagee")
+
+
+def test_red_backlog_rend_auteurs_et_verdict_des_reserves(monkeypatch):
+    """Le rendu de la file de reparation porte la ligne detaillee : la lane
+    voit QUI tient la reserve et le dernier verdict, sans rejouer
+    check_unaddressed_nits a la main (#16926)."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    detail = {1: {"count": 2, "authors": ["clusterManager-Myia", "jsboige"],
+                  "verdict": "CONCERNS", "verdict_surface": "review-body"}}
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)],
+                   {1: red}, nits=detail)
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=1)
+    causes = out["red"][0]["causes"]
+    assert causes[0].startswith("2 point(s) de review non leve(s)")
+    assert causes[1] == ("reserve(s) de : clusterManager-Myia, jsboige"
+                         " -- dernier verdict : CONCERNS (review-body)")
+    # et le trigger nits reste pose par le compte, pas par la truthiness du dict
+    assert "nits" in out["triggers"]
+
+
+def test_red_backlog_trigger_nits_pas_sur_une_entree_claire(monkeypatch):
+    """Reverifie le piege de truthiness du #16926 : une entree evaluee claire
+    ({count: 0}, dict truthy) ne doit PAS poser le trigger nits."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    detail = {1: {"count": 0, "authors": [], "verdict": None, "verdict_surface": None}}
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)],
+                   {1: red}, nits=detail)
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=1)
+    # rouge seul, ardoise de review propre : le motif nits ne doit pas exister
+    assert "nits" not in out["triggers"]
+    assert not any("point(s) de review" in c
+                   for c in out["red"][0]["causes"])
 
 
 # --- age de derniere livraison reelle : hook weight (#15491 Phase 1) ---------
