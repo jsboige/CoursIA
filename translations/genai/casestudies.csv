@@ -460,7 +460,7 @@ In this notebook, we will simulate the legendary duel between Father Fouras and 
 **Навигация** : [Указатель](../README.md)
 
 В этом notebook мы смоделируем легендарную дуэль между Пэром Фура и Laurent Jalabert, используя Semantic Kernel с разговорными агентами.",,d90def923e958323,782ff8b8ecd14d79,,,,,095eba477ee483ab,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,34b19aac,code,fr,004a57c48914a35c,"# Import guards - availability flags for external dependencies
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,34b19aac,code,fr,dded437c58383e68,"# Import guards - availability flags for external dependencies
 
 try:
     from dotenv import load_dotenv
@@ -496,15 +496,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger('FortBoyard')
 
-
 # Chargement des variables d'environnement
-load_dotenv("".env"", override=True)
-
-# Verification de la cle API OpenRouter
-print(""Fichier .env trouve :"", os.path.isfile("".env""))
-print(""Cle OpenRouter detectee :"", bool(os.getenv(""OPENROUTER_API_KEY"")))
-
-",,,,,,,,004a57c48914a35c,,,,,,,,
+env_path = os.path.join(os.path.dirname(os.path.abspath(""."")), "".env"")
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+else:
+    load_dotenv()
+",,,,,,,,dded437c58383e68,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,48b0b793,markdown,fr,eaafd847b50fbf9f,"## Configuration des agents
 
 Le **Kernel** est le cœur de Semantic Kernel : un conteneur d'injection de dépendances qui regroupe les services d'IA et les fonctions (plugins) qu'un agent peut invoquer. Avant de créer un agent, il faut donc lui brancher un service de complétion de chat — ici `OpenAIChatCompletion`, paramétré par le modèle et la clé API lus depuis l'environnement (jamais codés en dur, cf. règle secrets-hygiene).
@@ -516,54 +514,19 @@ The **Kernel** is the heart of Semantic Kernel: a dependency-injection container
 
 This cell also sets `MOT_A_DEVINER`, the secret word that Père Fouras will make Laurent Jalabert guess throughout the game.
 ",,,,,## Конфигурация агентов,,eaafd847b50fbf9f,1579cb5e3d8cf6a6,,,,,ad386dd3873b49b3,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,85411416,code,fr,5c01c52eae79f86e,"
-# Bloc 2 - Creation du kernel avec OpenRouter
-
-import os
-from dotenv import load_dotenv
-from openai import AsyncOpenAI
-from semantic_kernel import Kernel
-from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
-
-# Recharger les variables du fichier .env
-load_dotenv("".env"", override=True)
-
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,85411416,code,fr,f831efcb9bbeae84,"# Bloc 2 - Création du kernel
 MOT_A_DEVINER = ""anticonstitutionnellement""
 
 def create_kernel():
     kernel = Kernel()
-
-    # Recuperer la cle API OpenRouter
-    api_key = os.getenv(""OPENROUTER_API_KEY"")
-
-    if not api_key:
-        raise ValueError(""Cle API OpenRouter introuvable"")
-
-    # Choisir le modele gratuit
-    model_id = os.getenv(
-        ""OPENAI_CHAT_MODEL_ID"",
-        ""meta-llama/llama-3.3-70b-instruct""
-    )
-
-    # Configurer la connexion OpenRouter
-    client = AsyncOpenAI(
-        api_key=api_key,
-        base_url=""https://openrouter.ai/api/v1""
-    )
-
-    # Ajouter le service IA au kernel
-    kernel.add_service(
-        OpenAIChatCompletion(
-            service_id=""openai"",
-            ai_model_id=model_id,
-            async_client=client
-        )
-    )
-
+    model_id = os.getenv(""OPENAI_CHAT_MODEL_ID"", ""gpt-5-mini"")
+    kernel.add_service(OpenAIChatCompletion(
+        service_id=""openai"",
+        ai_model_id=model_id,
+        api_key=os.getenv(""OPENAI_API_KEY"")
+    ))
     return kernel
-
-print(""Configuration OpenRouter chargee !"")
-",,,,,,,,5c01c52eae79f86e,,,,,,,,
+",,,,,,,,f831efcb9bbeae84,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,2adf4585,markdown,fr,ee4e0400a35e856c,"### Lecture du résultat : pourquoi ce choix de mot est pédagogique
 
 Le mot `""anticonstitutionnellement""` (25 lettres, Grand Robert) cumule plusieurs difficultés : longueur (force des indices progressifs), composition morphologique (`anti-+constitution+nelle+ment` — l'agent peut deviner par décomposition), et rareté (vocabulaire juridique peu courant). Pour un **jeu d'énigmes LLM**, c'est un excellent stress-test : si l'agent devine ce mot en moins de 10 essais, le prompt Père Fouras est bien calibré. L'étudiant peut **mesurer le taux de réussite** sur 100 parties avec `evaluer_partie()` (à compléter, exercice 3) puis comparer avec un mot plus simple (ex. `""kayak""`, 5 lettres) pour isoler l'effet longueur du mot.
