@@ -148,14 +148,14 @@ class BtcVolTargetAlgorithm(QCAlgorithm):
         if price <= 0:
             return
         cash = float(self.portfolio.cash)
-        held_value = float(self.securities[symbol].holdings_value)
+        held_value = float(self.securities[symbol].holdings.holdings_value)
         missing = target_value - held_value
         if missing <= 0:
             return
         budget = min(missing, cash * 0.995)
         if budget <= 0:
             return
-        qty = floor(budget / price)
+        qty = math.floor(budget / price)
         if qty > 0:
             ticket = self.market_order(symbol, qty)
             self.orders_sent += 1
@@ -167,10 +167,10 @@ class BtcVolTargetAlgorithm(QCAlgorithm):
         price = self.securities[symbol].price
         if price <= 0:
             return
-        excess = float(self.securities[symbol].holdings_value) - target_value
+        excess = float(self.securities[symbol].holdings.holdings_value) - target_value
         if excess <= 0:
             return
-        qty = floor(excess / price)
+        qty = math.floor(excess / price)
         if qty > 0:
             ticket = self.market_order(symbol, -qty)
             self.orders_sent += 1
@@ -193,7 +193,7 @@ class BtcVolTargetAlgorithm(QCAlgorithm):
         tpv = float(self.portfolio.total_portfolio_value)
 
         # Exposition realisee moyenne (tous modes : ce que la poche a reellement tenu).
-        btc_value = float(self.securities[self.btc].holdings_value)
+        btc_value = float(self.securities[self.btc].holdings.holdings_value)
         self.w_bar_num += btc_value / tpv
         self.w_bar_days += 1
 
