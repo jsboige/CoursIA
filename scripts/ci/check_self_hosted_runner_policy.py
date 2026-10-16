@@ -603,6 +603,21 @@ FORK_REACHABLE_TRIGGERS = frozenset({
     "pull_request_review",
     "pull_request_review_comment",
 })
+# Sous-ensemble de FORK_REACHABLE_TRIGGERS ou la garde universelle
+# (`github.event.pull_request.head.repo.full_name == null || ...`) est
+# fiable : le champ `github.event.pull_request` est peuple avec l'objet
+# PR complet, donc `head.repo.full_name` distingue fork de same-repo.
+# Pour ces triggers, un job en forme hybride (_hybrid_runs_on) est
+# acceptable : l'expression elle-meme filtre les forks vers ubuntu-latest
+# via le `||` fallback, le code de fork n'atteint jamais le runner
+# auto-heberge. issue_comment est EXCLU de ce set (le champ PR est dans
+# `github.event.issue.pull_request` -- un objet URL, pas l'objet PR --
+# la garde `== null` y serait vraie y compris pour un commentaire sur
+# une PR fork, ce qui routerait le code fork vers self-hosted).
+HYBRID_SAFE_FORK_REACHABLE_TRIGGERS = frozenset({
+    "pull_request_review",
+    "pull_request_review_comment",
+})
 # Safe triggers for a self-hosted job (#14201, tranche 2). push, schedule and
 # workflow_dispatch only run repository-owned refs, so the `== null` branch of
 # the universal guard is safe there by construction (NanoClaw concern 2,
@@ -1012,6 +1027,18 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                     "self-hosted jobs must not hide inside reusable workflows",
                 ))
             for trigger in sorted(FORK_REACHABLE_TRIGGERS & triggers):
+                # Pour un job en forme hybride (_hybrid_runs_on), la garde
+                # universelle vit dans l'expression runs-on elle-meme : fork
+                # payload -> `||` fallback ubuntu-latest, meme-repo ->
+                # self-hosted. Le code fork n'atteint pas le runner. Mais
+                # la garde n'est fiable que pour les triggers ou
+                # `github.event.pull_request` est peuple (cf.
+                # HYBRID_SAFE_FORK_REACHABLE_TRIGGERS) -- issue_comment y
+                # est exclu : son champ PR est dans `issue.pull_request`
+                # (objet URL, pas l'objet PR), la garde y serait
+                # silencieusement bypasssee pour un commentaire fork.
+                if hybrid_leg and trigger in HYBRID_SAFE_FORK_REACHABLE_TRIGGERS:
+                    continue
                 violations.append(Violation(
                     path.name,
                     str(job_name),

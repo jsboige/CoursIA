@@ -868,6 +868,114 @@ def test_hybrid_runs_on_linux_wrong_fallback_is_rejected(tmp_path):
     assert codes(result) == {"DYNAMIC_RUNS_ON"}
 
 
+# c.518 (dispatch c.2180 amend) : la forme hybride est autorisee pour
+# pull_request_review / pull_request_review_comment des lors que la garde
+# universelle vit dans l'expression runs-on. Le champ
+# `github.event.pull_request` est peuple (objet PR complet), donc
+# `head.repo.full_name` distingue fork de same-repo, et le `||` route
+# fork vers ubuntu-latest. issue_comment reste REJETE : son champ PR
+# est `github.event.issue.pull_request` (objet URL, pas l'objet PR),
+# la garde `== null` y serait vraie y compris pour un commentaire
+# sur une PR fork.
+
+
+def test_hybrid_runs_on_linux_with_pull_request_review_trigger_is_accepted(tmp_path):
+    """c.2180 amend (item 1) : pull_request_review + forme hybride
+    Linux est accepte -- la garde universelle dans l'expression filtre
+    les forks vers ubuntu-latest, le code fork n'atteint pas le runner
+    auto-heberge. Cas reel : perimeter-review-guard.yml, qui re-arme a
+    chaque APPROVE (31 en file au moment du dispatch)."""
+    write_workflow(tmp_path, "always-on-metadata-guards", """
+        name: perimeter-review-guard
+        on:
+          pull_request:
+            types: [opened, synchronize, reopened]
+          pull_request_review:
+            types: [submitted, edited]
+        jobs:
+          guard:
+            runs-on: RUNSON
+            steps:
+              - run: echo hybrid-with-review
+        """)
+    (tmp_path / "always-on-metadata-guards.yml").write_text(
+        (tmp_path / "always-on-metadata-guards.yml").read_text(
+            encoding="utf-8"
+        ).replace("RUNSON", HYBRID_RUNS_ON_LINUX),
+        encoding="utf-8",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert codes(result) == set(), f"violations inattendues : {codes(result)}"
+    assert result.self_hosted_jobs == 1
+
+
+def test_hybrid_runs_on_linux_with_pull_request_review_comment_trigger_is_accepted(tmp_path):
+    """Meme justification que pull_request_review : le champ
+    `github.event.pull_request` est peuple pour review_comment, la
+    garde universelle est fiable, le `||` route les forks."""
+    write_workflow(tmp_path, "always-on-metadata-guards", """
+        name: review-comment-guard
+        on:
+          pull_request:
+            types: [opened, synchronize, reopened]
+          pull_request_review_comment:
+            types: [created, edited]
+        jobs:
+          guard:
+            runs-on: RUNSON
+            steps:
+              - run: echo hybrid-with-review-comment
+        """)
+    (tmp_path / "always-on-metadata-guards.yml").write_text(
+        (tmp_path / "always-on-metadata-guards.yml").read_text(
+            encoding="utf-8"
+        ).replace("RUNSON", HYBRID_RUNS_ON_LINUX),
+        encoding="utf-8",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert codes(result) == set(), f"violations inattendues : {codes(result)}"
+    assert result.self_hosted_jobs == 1
+
+
+def test_hybrid_runs_on_linux_with_issue_comment_trigger_is_still_rejected(tmp_path):
+    """Controle negatif : issue_comment reste REJETE meme avec la
+    forme hybride. Le champ PR n'est pas dans `github.event.pull_request`
+    pour issue_comment (il vit dans `issue.pull_request`, un objet URL
+    et non l'objet PR complet). La garde universelle y serait
+    silencieusement bypasssee pour un commentaire sur une PR fork, ce
+    qui routerait le code fork vers self-hosted. Cas reel :
+    local-path-waiver-guard.yml (76 en file) doit rester sur
+    ubuntu-latest jusqu'a ce qu'une garde field-aware pour issue_comment
+    soit ajoutee (hors scope de ce commit)."""
+    write_workflow(tmp_path, "always-on-metadata-guards", """
+        name: local-path-waiver-guard
+        on:
+          issue_comment:
+            types: [created, edited]
+          pull_request:
+            types: [opened, synchronize, reopened]
+        jobs:
+          guard:
+            runs-on: RUNSON
+            steps:
+              - run: echo hybrid-with-issue-comment
+        """)
+    (tmp_path / "always-on-metadata-guards.yml").write_text(
+        (tmp_path / "always-on-metadata-guards.yml").read_text(
+            encoding="utf-8"
+        ).replace("RUNSON", HYBRID_RUNS_ON_LINUX),
+        encoding="utf-8",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert "FORK_REACHABLE_TRIGGER" in codes(result)
+    fork_reachable = [
+        v for v in result.violations if v.code == "FORK_REACHABLE_TRIGGER"
+    ]
+    assert "issue_comment" in fork_reachable[0].message
+
+
 def test_pull_request_job_without_guard_is_rejected(tmp_path):
     write_workflow(tmp_path, "unguarded", """
         name: unguarded
