@@ -43,7 +43,7 @@ La **Loi IV** (admission) n'est pas une entrée de la table et ne porte pas de c
 Ajouter après la section §4 (grains), avant §4bis, une case :
 
 ```markdown
-- [x] **A8** — *(livré : [`docs/ledgers/12204-ict-chantier-1-a8.md`](../blob/main/docs/ledgers/12204-ict-chantier-1-a8.md), PR #NNNNN — conditions de rétrogradation rétro-équipées sur les 12 entrées TABLE ; aucune non falsifiable ; format d'admission à trois champs désormais requis : deux attestations + condition de sortie)*
+- [x] **A8** — *(livré : [`docs/ledgers/12204-ict-chantier-1-a8.md`](../blob/main/docs/ledgers/12204-ict-chantier-1-a8.md), PR #20814 — conditions de rétrogradation rétro-équipées sur les 12 entrées TABLE ; aucune non falsifiable ; format d'admission à trois champs désormais requis : deux attestations + condition de sortie)*
 ```
 
 Et dans le §1 (critère d'admission), une phrase : « Depuis A8 (2026-10-15), toute promotion écrit aussi sa **condition de rétrogradation** — l'observation qui la renverrait en file. Une entrée sans condition formulable est signalée non falsifiable. »
