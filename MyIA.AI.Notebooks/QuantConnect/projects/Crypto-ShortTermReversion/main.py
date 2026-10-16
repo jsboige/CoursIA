@@ -77,7 +77,7 @@ class CryptoShortTermReversion(QCAlgorithm):
         self.time_stop = int(ts) if ts else 10
         self.position_size = float(self.get_parameter("size") or 0.95)
 
-        self.rsi = self.rsi(self.btc, self.rsi_period, MovingAverageType.WILDER, Resolution.DAILY)
+        self.rsi = self.rsi(self.btc, self.rsi_period, MovingAverageType.WILDERS, Resolution.DAILY)
 
         # Compteurs de mesure
         self.closes = 0
