@@ -245,7 +245,7 @@ https://www.quantconnect.com/organization/<org_id>/assistants
 
 Pattern standardise pour combiner plusieurs strategies dans un même algo QC :
 
-### Structure de fichiers (2 fichiers par composite + module partage)
+### Structure de fichiers (par composite + module partage)
 
 - `main.py` : `QCAlgorithm` avec `set_alpha(CompositeAlphaModel(...))` + `set_portfolio_construction(MultiStrategyPouchesPCM(...))`
 - `alpha_models.py` : une classe par alpha, chaque avec `self.name` et `source_model=self.name`
