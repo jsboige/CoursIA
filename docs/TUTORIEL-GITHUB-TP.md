@@ -80,6 +80,17 @@ Puis :
 3. Vérifiez les cas nominaux et au moins un cas limite pertinent.
 4. Enregistrez : *Fichier > Télécharger > Télécharger le .ipynb* (Colab), ou simple sauvegarde (Jupyter). Le fichier garde le même nom.
 
+### Les clés d'API
+
+Les notebooks GenAI lisent leurs clés dans un fichier `.env`, jamais dans le code. Le modèle est [`MyIA.AI.Notebooks/GenAI/.env.example`](../MyIA.AI.Notebooks/GenAI/.env.example) :
+
+- **en local** (Jupyter, VS Code) : copiez ce modèle sous le nom `.env` dans le dossier où vous ouvrez le notebook (ou un dossier parent), puis remplacez la valeur de la clé par celle fournie par l'enseignant ;
+- **dans Colab** : déposez ce même fichier `.env` dans l'espace *Fichiers* de la session (icône dossier, à gauche) avant d'exécuter.
+
+N'écrivez **jamais** une clé dans une cellule : elle partirait avec le notebook dans votre commit, et le dépôt est public.
+
+La clé fournie pour le cours passe par OpenRouter : elle couvre la génération de **texte**, pas les services OpenAI natifs (images DALL-E, voix TTS, transcription Whisper). Si une cellule échoue faute de clé (`401 Unauthorized`, clé absente), ne restez pas bloqués : exécutez tout ce qui peut l'être, déposez le notebook tel quel et indiquez dans la description de la PR les cellules qui n'ont pas pu tourner. Les mainteneurs ré-exécutent le notebook avec les clés du cours au moment de l'intégration.
+
 **Ne modifiez jamais le contenu du fichier `.ipynb` à la main dans GitHub** (l'éditeur web de GitHub y montrerait du JSON illisible) : passez toujours par Jupyter ou Colab, puis déposez le fichier obtenu à l'étape suivante.
 
 Après validation d'une correction, les mainteneurs transforment la solution en **exemple guidé** crédité et ajoutent un nouvel exercice non résolu à la place — vous n'avez pas à fabriquer vous-même l'exercice de remplacement (détail dans [CONTRIBUTING.md](../CONTRIBUTING.md)).
@@ -158,6 +169,8 @@ Pour éviter l'aller-retour téléchargement/dépôt à chaque review :
 | Le dépôt s'est fait sur **main** au lieu de la branche de travail | Sélecteur de branche non vérifié (étape 7.1) | Ouvrir une issue plutôt que d'improviser |
 | GitHub affiche du JSON illisible | Édition web du `.ipynb` | Ne jamais éditer le JSON : reprendre à l'étape 6 |
 | *This branch has no changes* à l'ouverture de la PR | Dépôt sur une autre branche que celle comparée | Vérifier le sélecteur **compare** à l'étape 8.2 |
+| La PR n'apparaît pas dans `jsboige/CoursIA`, seulement dans l'onglet *Pull requests* de votre fork | **base repository** resté sur `votre-compte/CoursIA` à l'étape 8.2 : la PR vise votre propre copie, personne ne la voit | Fermer cette PR, puis en rouvrir une depuis la même branche avec **base repository** = `jsboige/CoursIA`, base `main` |
+| Le fichier déposé apparaît comme un **nouveau fichier** à côté du notebook (autre nom, ou sans extension `.ipynb`) | Fichier renommé entre le téléchargement et le dépôt | Renommer le fichier exactement comme l'original, le redéposer au même endroit (étape 7.4), puis supprimer le fichier en trop |
 | Conflits signalés | Le dépôt d'origine a bougé sur le même fichier | Ouvrir une issue — ne pas cliquer sur *Resolve conflicts* en aveugle |
 | Deux contributions sur le même exercice | PRs ouvertes non vérifiées | Vérifier les PR ouvertes avant de choisir l'exercice |
 | *Select Kernel* ne propose rien (VS Code) | Interpréteur ou kernel non installé | Installer Python ou le SDK .NET, rouvrir VS Code (variante ci-dessus, point 3) |
