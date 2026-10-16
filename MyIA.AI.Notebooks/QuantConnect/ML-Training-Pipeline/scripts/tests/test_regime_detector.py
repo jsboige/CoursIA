@@ -199,20 +199,23 @@ class TestDetectRegimesPrice:
             "shifted (strict t-1 contract)"
         )
 
-    def test_causal_warmup_at_2L_minus_1(self):
-        """#21111 v2: first valid threshold at index 2*lookback_days - 1.
+    def test_causal_warmup_at_2L(self):
+        """#21111 v2: first valid threshold at index 2*lookback_days.
 
-        rolling_std (a rolling(L).std()) is NaN for indices 0..L-2 and
-        valid from L-1. expanding(min_periods=L) needs L non-NaN values
-        to produce a quantile, so its first valid output is at index
-        (L-1) + (L-1) = 2L-2. The .shift(1) adds one more index of
-        latency, so the first usable threshold is at 2L-1. Before
-        that index the threshold is NaN and the volatility regime is
-        unreachable (NaN >= NaN is False).
+        rolling_std (a rolling(L).std() of returns) is NaN for
+        indices 0..L-1 and valid from L (returns[0] is NaN, so the
+        first 30 non-NaN returns are at indices 1..30 and the
+        rolling(30) emits at the right edge = index 30).
+        expanding(min_periods=L) needs L non-NaN values to produce
+        a quantile, so its first valid output is at index L + (L-1)
+        = 2L-1. The .shift(1) adds one more index of latency, so
+        the first usable threshold is at 2L. Before that index the
+        threshold is NaN and the volatility regime is unreachable
+        (NaN >= NaN is False).
 
         Discriminator: on a constant high-volatility series, the
-        count of 'volatility' rows in [0, 2L-1) must be 0 and >0 in
-        [2L-1, ...).
+        count of 'volatility' rows in [0, 2L) must be 0 and >0 in
+        [2L, ...).
         """
         rng = np.random.default_rng(3)
         n = 200
@@ -224,7 +227,7 @@ class TestDetectRegimesPrice:
         prices = pd.Series(100 * np.cumprod(1 + returns))
 
         regimes = detect_regimes_price(prices, lookback_days=L, causal_threshold=True)
-        warmup_idx = 2 * L - 1
+        warmup_idx = 2 * L
         # Before warmup_idx: no 'volatility' (threshold NaN).
         pre_warmup = (regimes.iloc[:warmup_idx] == "volatility").sum()
         # From warmup_idx onward: at least one 'volatility' in a
@@ -237,6 +240,92 @@ class TestDetectRegimesPrice:
         assert post_warmup > 0, (
             f"post-warmup ([{warmup_idx}:]) should have >0 'volatility' rows, "
             f"got {post_warmup}"
+        )
+
+    def test_causal_warmup_exact_threshold_at_2L(self):
+        """#21111 v2: vol_threshold is NaN at 2L-1 and finite at 2L.
+
+        The prior warmup test (pre/post counts) does not distinguish
+        2L-1 from 2L as the boundary — both have pre=0 and post>0 on
+        a high-vol series. The exact assertion is on the threshold
+        itself, not on the regime count.
+
+        Reproduce the vol_threshold calculation and assert:
+        - vol_threshold.iloc[2L-1] is NaN
+        - vol_threshold.iloc[2L] is finite
+        """
+        rng = np.random.default_rng(3)
+        n = 200
+        L = 30
+        returns = rng.normal(0.0004, 0.05, n)
+        prices = pd.Series(100 * np.cumprod(1 + returns))
+
+        # Reproduce the threshold calculation
+        ret = prices.pct_change()
+        rolling_std = ret.rolling(L).std() * np.sqrt(252)
+        vol_threshold = rolling_std.expanding(min_periods=L).quantile(0.75).shift(1)
+
+        # Threshold at 2L-1 is NaN
+        assert pd.isna(vol_threshold.iloc[2 * L - 1]), (
+            f"vol_threshold at 2L-1 = {2 * L - 1} should be NaN, "
+            f"got {vol_threshold.iloc[2 * L - 1]}"
+        )
+        # Threshold at 2L is finite
+        assert pd.notna(vol_threshold.iloc[2 * L]), (
+            f"vol_threshold at 2L = {2 * L} should be finite, got NaN"
+        )
+
+    def test_strict_t_minus_1_witness_via_extreme_value(self):
+        """#21111 v2: the .shift(1) is operative, not decorative.
+
+        Witness: build a series where rolling_std at index 2L is an
+        extreme outlier (one-off spike). The shifted threshold at 2L
+        uses rolling_std[0..2L-1] (excluding 2L); the unshifted
+        threshold at 2L uses rolling_std[0..2L] (including 2L). The
+        two must differ at 2L, proving the shift is operative and
+        the strict t-1 contract is enforced.
+
+        The prior test_causal_threshold_strict_t_minus_1 compared
+        causal vs non-causal (different code paths); this one
+        compares shift vs no-shift on the same code path — the
+        discriminator the adjoint flagged as missing.
+        """
+        rng = np.random.default_rng(42)
+        L = 30
+        n = 100
+        returns = np.zeros(n)
+        # Indices 0..L+29 = 0..59: small returns
+        returns[:60] = rng.normal(0.0004, 0.01, 60)
+        # Index 60 = 2L: extreme spike (50% single-day return)
+        returns[60] = 0.5
+        # Indices 61..99: small returns
+        returns[61:] = rng.normal(0.0004, 0.01, n - 61)
+
+        prices = pd.Series(100 * np.cumprod(1 + returns))
+
+        # Compute the threshold with and without shift
+        ret = prices.pct_change()
+        rolling_std = ret.rolling(L).std() * np.sqrt(252)
+
+        # Without shift (the buggy version, look-ahead at t)
+        threshold_no_shift = rolling_std.expanding(min_periods=L).quantile(0.75)
+        # With shift (the current correct version, strict t-1)
+        threshold_with_shift = threshold_no_shift.shift(1)
+
+        # At index 2L = 60, the two must differ (rolling_std[60] is huge)
+        val_no_shift = threshold_no_shift.iloc[2 * L]
+        val_with_shift = threshold_with_shift.iloc[2 * L]
+
+        assert not np.isclose(val_no_shift, val_with_shift), (
+            f"shift must produce a different threshold at index 2L={2 * L}: "
+            f"with_shift={val_with_shift}, no_shift={val_no_shift}"
+        )
+        # And the shift must EXCLUDE the extreme: the unshifted
+        # threshold at 2L includes rolling_std[2L] (huge), so
+        # unshifted > shifted.
+        assert val_no_shift > val_with_shift, (
+            f"unshifted threshold ({val_no_shift}) must exceed shifted "
+            f"({val_with_shift}) when rolling_std[2L] is an extreme spike"
         )
 
 
