@@ -29,11 +29,11 @@ Top-4 ETFs par momentum 6 mois avec optimisation de portefeuille à variance min
 Deux défauts de mécanique, corrigés dans `alpha_model.py` :
 
 - **Tranche de minuit.** Un avis de dividende arrive seul, dans une tranche de 00:00 sans barre. L'alpha y consommait l'émission du mois : le moment de la décision dépendait du calendrier des dividendes (minuit avant la première séance dans 110 mois sur 120 entre 2015 et 2024, clôture de la première séance dans les 10 autres). Il attend désormais la première tranche du mois qui porte une barre.
-- **FLAT sans poids.** `InsightWeightingPortfolioConstructionModel` ignore un insight sans poids : un actif sorti de la sélection gardait sa cible UP précédente et n'était jamais vendu. Le portefeuille accumulait jusqu'à 10 lignes, empruntait sur marge (exposition brute jusqu'à 2,06 fois les fonds propres) et voyait 2361 ordres d'achat refusés sur 3874 ordres. Chaque ticker reçoit maintenant un insight à chaque émission : UP avec son poids pour les actifs retenus, FLAT avec un poids nul pour les autres.
+- **FLAT sans poids.** `InsightWeightingPortfolioConstructionModel` ignore un insight sans poids : un actif sorti de la sélection gardait sa cible UP précédente et n'était jamais vendu. Le portefeuille accumulait jusqu'à 10 positions, empruntait sur marge (exposition brute jusqu'à 2,06 fois les fonds propres) et voyait 2361 ordres d'achat refusés sur 3874 ordres. Chaque ticker reçoit maintenant un insight à chaque émission : UP avec son poids pour les actifs retenus, FLAT avec un poids nul pour les autres.
 
 Le correctif reprend aussi la requête d'historique doublée de #20286 (demi-séances) et rend la durée des insights explicite : `insight_bars`, comptée en séances par Lean.
 
-Comme dans `main.py`, l'écrêtage des poids négatifs de la variance minimale peut annuler un actif retenu : la stratégie tient de 1 à 4 lignes.
+Comme dans `main.py`, l'écrêtage des poids négatifs de la variance minimale peut annuler un actif retenu : la stratégie tient de 1 à 4 positions.
 
 ### Mesures
 
