@@ -193,6 +193,15 @@ def test_history_keeps_the_most_recent_bars():
     assert raw == pytest.approx(expected)
 
 
+def test_history_shorter_than_lookback_gives_no_score():
+    # Ligne trop jeune (XLC cote depuis 2018) : meme en demandant le double,
+    # l'historique rendu reste sous `lookback` barres, donc pas de score.
+    short = Algo(datetime(2023, 7, 3), _prices(POSITIVE_DRIFTS, n=LOOKBACK - 1))
+    assert _alpha(short)._momentum_score(short, SYMBOLS["XLK"]) is None
+    exact = Algo(datetime(2023, 7, 3), _prices(POSITIVE_DRIFTS, n=LOOKBACK))
+    assert _alpha(exact)._momentum_score(exact, SYMBOLS["XLK"]) is not None
+
+
 def test_stop_loss_flat_lives_as_long_as_a_monthly_insight():
     algo = Algo(datetime(2023, 7, 3), _prices(POSITIVE_DRIFTS))
     alpha = _alpha(algo)

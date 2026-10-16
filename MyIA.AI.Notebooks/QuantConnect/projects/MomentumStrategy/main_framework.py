@@ -12,7 +12,9 @@ class FrameworkMomentumStrategy(QCAlgorithm):
     stop-loss; InsightWeightingPortfolioConstructionModel turns them into
     targets. Same universe, parameters, warm-up and brokerage model as the
     standalone main.py. Upload this file as main.py next to alpha_model.py.
-    Target: Sharpe within +/-15% of standalone (0.472).
+    Target: Sharpe within +/-15% of the standalone main.py measured on the
+    same 2015-2024 window (0.516, README "Variante Framework"). The 0.472 of
+    the README history table is the archived v4.0 figure, not this reference.
     """
 
     def initialize(self):
