@@ -33600,3 +33600,503 @@ La lecture simple s'arrête à la conclusion. Les annexes regroupent les approfo
 MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb,annexe-f-header,markdown,fr,2b9bc03e6715bc33,"### Annexe F — Pillars.lean : le scaffold des témoins communautaires
 
 La synthèse de la section 3 opposait les noms « prospectifs » du récit aux théorèmes réels de `Pillars.lean`. Cette annexe ouvre le vrai fichier : déclarations des 4 témoins, compte des `sorry` réels (regex du filtre CI, pas un grep nu), et statut exact du scaffold — ce qui est prouvé aujourd'hui, ce qui attend la mémoization Hashlife.",,,,,,,,2b9bc03e6715bc33,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,95970cf5,markdown,fr,5357cff278963105,"# GOL-09 — Perplexite structurelle Hashlife : instrument, mesure, et la question Turing-complet
+
+**Navigation** : [<< GOL-08 Translateur Loi II](GOL-08-Loi-II-Translateur-Life.ipynb) · [Index](../README.md) · [>> Lean-17 Conway Bridge to Knots](../Lean-17-Conway-Bridge-to-Knots-Python.ipynb)
+
+Ce carnet consomme l'instrument `scripts/hashlife/k_trajectory.py` et ses resultats `scripts/hashlife/k_trajectory_results.json`, puis examine la these du pivot probabiliste : la dissolution par fragilite (soupe) versus l'auto-entretien (programme recursif) se distinguent-elles dans la mesure `K_trajectory(t, W) = W` ?
+
+**Le verdict tranche 1, important.** L'instrument collapse les programmes Conway simples (glider, blinker, pulsar, OTCA static) au-dela du seuil 0.7 du discriminant, les classant `PROGRAM-PERIODIC-COLLAPSED` -- la periode courte est detectee par LZ, et le quotient `K(W=16)/K(W=1)` plafonne a 0.15. Les trajectoires de soupe ont un quotient entre 0.76 et 0.78 (classe `SOUP-FRAGILE-WEAK`), une signature moins compressible que les periodiques mais loin du seuil `PROGRAM-AUTO-ENTRETIEN`. Aucun temoin du corpus courant ne valide la these d'origine. **Tranche 2 discute pourquoi, et propose un test Turing-complet (OTCA replicator, Spartan universal computer) comme banc de confirmation.**",,,,,,,,5357cff278963105,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,4b348831,markdown,fr,d47d8991e1b11424,"## 1. Chargement des mesures tranche 1
+
+L'instrument est livre par `scripts/hashlife/k_trajectory.py` (PR #18639). Il definit :
+
+- `K_trajectory(t, W)` : longueur compressee LZ (zlib) du flux d'octets de la trajectoire fenetree a `W` colonnes ; c'est une borne superieure de la complexite de Kolmogorov de la trajectoire.
+- `lz_compressed_length(data)` : la primitive de compression utilisee.
+
+**Reproducibilite** : `k_trajectory.py --mode measure` est rejouable localement (Python 3.14). Les resultats chiffres ici proviennent de la sortie JSON livree par la tranche 1 -- 7 trajectoires, 5 fenetres W=1,2,4,8,16.",,,,,,,,d47d8991e1b11424,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,87aec159,code,fr,a330bf55942f6b45,"from pathlib import Path
+import json
+
+# Racine du depot : depuis GOL/, remonter jusqu'au dossier qui porte scripts/.
+ROOT = Path('.').resolve()
+while not (ROOT / 'scripts' / 'hashlife').is_dir() and ROOT != ROOT.parent:
+    ROOT = ROOT.parent
+RESULTS = ROOT / 'scripts' / 'hashlife' / 'k_trajectory_results.json'
+print(f'Chargement {RESULTS.name} (depuis scripts/hashlife/)')
+data = json.loads(RESULTS.read_text(encoding='utf-8'))
+print(f'Trajectoires mesurees : {len(data[""results""])}')
+_classes = sorted({v.split('(')[0].strip() for v in data['verdicts'].values()})
+print(f'Verdicts tranches : {len(data[""verdicts""])} trajectoires, {len(_classes)} classes distinctes')
+for name, verdict in data['verdicts'].items():
+    print(f'  - {name:30s} -> {verdict.split(""("")[0].strip()}')
+",,,,,,,,a330bf55942f6b45,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,3f522f07,markdown,fr,eaeb60b42d1fa836,"## 2. Le tableau des mesures brutes
+
+`K_trajectory(t, W)` pour les 7 trajectoires du corpus, fenetre W = 2^n, n = 0..4 (donc W = 1, 2, 4, 8, 16). La trajectoire est codee en flux d'octets (1 bit par cellule, MSB first dans chaque octet, ligne par ligne). Les lignes du tableau sont les programmes periodiques simples (haut) et les soupes (bas).",,,,,,,,eaeb60b42d1fa836,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,8125058d,code,fr,7fb2fc48c6485f60,"import pandas as pd
+
+rows = []
+for r in data['results']:
+    rows.append({
+        'trajectoire': r['trajectory'],
+        'W': r['W'],
+        'K_trajectory': r['k_trajectory'],
+    })
+df = pd.DataFrame(rows)
+pivot_k = df.pivot(index='trajectoire', columns='W', values='K_trajectory')
+pivot_k.columns = [f'W={c}' for c in pivot_k.columns]
+pivot_k
+",,,,,,,,7fb2fc48c6485f60,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,e58cbaa4,markdown,fr,d7016cb61ca3abb5,"## 3. Le discriminant en echelle log-log
+
+L'idee d'origine (these user 10:46Z sur #18379) : pour une trajectoire recursive, le quotient `K_trajectory(t, W) / W` reste borne inferieureurement par une constante > 0 quand W croit ; pour une trajectoire de soupe, il tend vers 0. Cela se traduit graphiquement par :
+
+- **Programme recursif** : sur un graphe log(K) vs log(W), la courbe reste au-dessus d'une asymptote de pente 1 (K proportionnel a W).
+- **Soupe** : la courbe tend vers une pente < 1 (K sous-lineaire en W).
+
+",,,,,,,,d7016cb61ca3abb5,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,215d09bf,code,fr,2f4436f6b8a86509,"import math
+
+print('--- pentes log-log (delta log K / delta log W) ---')
+ws = sorted(pivot_k.columns, key=lambda c: int(c.replace('W=', '')))  # tri numerique : W=1,2,4,8,16
+ws_num = [int(c.replace('W=', '')) for c in ws]
+for traj in pivot_k.index:
+    ks = pivot_k.loc[traj, ws].values
+    slopes = []
+    for i in range(1, len(ws)):
+        slope = (math.log10(ks[i]) - math.log10(ks[i-1])) / (math.log10(ws_num[i]) - math.log10(ws_num[i-1]))
+        slopes.append(slope)
+    print(f'{traj:30s}: pentes = {[round(s, 2) for s in slopes]}')
+",,,,,,,,2f4436f6b8a86509,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,e58cbaa5,markdown,fr,fbf0f2461301ddf1,"### Lecture du resultat -- ce que les pentes mesurees disent
+
+Sur le corpus courant, toutes les pentes mesurees sont **negatives ou quasi nulles** : aucune trajectoire ne suit l'asymptote de pente 1 annoncee par la these. Ce qui discrimine est l'**amplitude de la decroissance**, pas le signe : les periodiques courtes (glider T=4, blinker T=2, pulsar T=3, OTCA static) chutent de -0.4 a -1.0 par doublement de W -- otca_static atteint exactement -1.0 sur W=2 -> W=4, soit log2(100/200) = -1, sa complexite mesuree est inversement proportionnelle a W -- tandis que les soupes restent quasi plates, de -0.04 a -0.17 (soup_d05_seed777 W=2 -> W=4 : log2(546/583) = -0.09). La periode courte est compressible des la fenetre W=2 ; les soupes ne se compressent que marginalement quand W croit.",,,,,,,,fbf0f2461301ddf1,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,b857071c,markdown,fr,8e0ba46630c0c9d8,"## 4. Pourquoi les periodiques courts sont classes PROGRAM-PERIODIC-COLLAPSED
+
+Le discriminant officiel tranche 1 (`K(W=16) / K(W=1)` < 0.7) marque `PROGRAM-PERIODIC-COLLAPSED` les motifs dont la trajectoire devient tres compressible a grande fenetre. Cela reflete la periode courte (P2 / P3 / P4), pas une absence d'auto-entretien.
+
+**L'instrument mesure l'entropie LZ, pas l'auto-entretien.**
+
+Un motif periodique de periode p produit un flux d'octets ou le bloc de p colonnes se repete indefiniment : `K_trajectory(t, W)` plafonne tres vite au-dela de W=p (la repetition capture toute l'information dans une copie). A l'inverse, un programme non periodique (mais Turing-complet : OTCA replicator a la periode 3530M, Spartan universal computer) maintiendrait sa complexite a toutes les echelles de W.
+
+Les seuils tranches 1 sont donc :
+
+- `< 0.7` : `PROGRAM-PERIODIC-COLLAPSED` -- motif periodique a periode tres inferieure a W=16 ; l'instrument collapse.
+- `[0.7, 0.95)` : `SOUP-FRAGILE-WEAK` -- entropie non negligeable qui ne se reduit que partiellement quand W croit.
+- `>= 0.95` : `PROGRAM-AUTO-ENTRETIEN` -- aucune mesure sur le corpus courant.
+
+**Le discriminant ne discrimine pas soupe vs programme.** Il discrimine periodique-court vs non-periodique. Les periodiques courts du corpus sont des cas triviaux qui ne mettent pas en valeur la capacite distinctive d'un programme Turing-complet.",,,,,,,,8e0ba46630c0c9d8,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,6d25229c,code,fr,a6ca081eb067a004,"# Visualisation du discriminant pour les 7 trajectoires
+discriminants = []
+for traj in pivot_k.index:
+    k1 = pivot_k.loc[traj, 'W=1']
+    k16 = pivot_k.loc[traj, 'W=16']
+    ratio = k16 / k1
+    verdict = data['verdicts'].get(traj, '')
+    discriminants.append({
+        'trajectoire': traj,
+        'K(W=1)': k1,
+        'K(W=16)': k16,
+        'ratio K(W=16)/K(W=1)': round(ratio, 4),
+        'verdict tranche 1': verdict.split('(')[0].strip(),
+    })
+disc_df = pd.DataFrame(discriminants)
+disc_df
+",,,,,,,,a6ca081eb067a004,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,3642bd58,markdown,fr,e68f989a5a5c0525,"## 5. Le test Turing-complet qui manque : OTCA replicator et Spartan
+
+L'echec de l'instrument tranche 1 est diagnostique : il n'a pas ete applique a un temoin Turing-complet. Les periodiques courtes sont triviales ; les periodiques longues (milliards de generations) ou non-periodiques (universal computers) sont la cible.
+
+**Trois candidats documentes dans la litterature :**
+
+1. **OTCA metapixel** (Brice Due, 2006) : un meta-automate 2048 x 2048 de periode 35328 qui simule n'importe quel automate cellulaire par inclusion. Sa periode, dans la metapixel, equivaut a celle de l'automate simule. Pour simuler Conway sur 100 generations, la periode OTCA est de l'ordre de 3,5 millions (35328 x 100). Un replicator base sur OTCA produit une periode du meme ordre de grandeur.
+
+2. **Spartan universal constructor** (Adam P. Goucher, 2009) : un macrostructure qui peut etre programmee pour executer n'importe quel algorithme, sans periodicite ferme (la periode depend du programme). Sa trajectoire est non-periodique. L'hypothese qu'une telle trajectoire maximise l'entropie LZ reste **non mesuree** : aucun corpus Spartan n'a ete compresse a ce jour.
+
+3. **Hashlife macrocellulaire** (Bill Gosper, 1984, « Exploiting Regularities in Large Cellular Spaces », Physica D 10:75-80) : une construction hierarchique qui evolue par blocs de 2^(2n) cellules avec memoisation. La trajectoire est une megastructure stable.
+
+Hypothese de travail, **non mesuree** : ces cibles exigeront des corpus volumineux (possiblement plusieurs megaoctets) dont le cout de generation n'a pas encore ete confronte a l'instrument LZ Python local -- la tranche 3 tranchera par la mesure. La tranche 3 (futur) pourrait les servir : OTCA etant le plus accessible (format RLE largement diffuse).
+
+**Justification du verdict CONJECTURE-NON-VERIFIABLE.** Les seuils tranches 1 (< 0.7 / 0.7-0.95 / >= 0.95) operent une discrimination periodique vs entropie, pas programme vs soupe. Sans corpus Turing-complet (OTCA ou Spartan), il est impossible de trancher la these d'origine : le discriminant actuel est trop grossier pour separer auto-entretien reel (Turing-complet) de bruit entropique (soupe stationnaire).",,,,,,,,e68f989a5a5c0525,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,70cf9e53,markdown,fr,0ce4e18e208d1b62,"## 6. Verdict falsifiable
+
+Le pivot probabiliste du user (these 10:46Z, #18379) postule que `K_trajectory(t, W) / W` tend vers 0 pour la soupe et reste borne inferieureurement pour les programmes recursifs. **Cette these n'est pas verifiee par le corpus tranche 1.** Les periodiques courts (glider, blinker, pulsar, OTCA static) sont classes `PROGRAM-PERIODIC-COLLAPSED`, et les soupes sont `SOUP-FRAGILE-WEAK`. Aucun temoin du corpus courant n'atteint le seuil `PROGRAM-AUTO-ENTRETIEN`.
+
+**Verdict tranche 2** : `CONJECTURE-NON-VERIFIEE-AVEC-CORPUS-COURANT`
+
+L'instrument `K_trajectory(t, W)` mesure la **compressibilite LZ**, qui discrimine periodique-court vs entropie-stationnaire, mais pas auto-entretien vs dissolution-par-fragilite (le discriminant annonce). Pour discriminer ces deux regimes il faudrait :
+
+1. **Un corpus Turing-complet** (OTCA replicator, Spartan universal computer) pour mesurer le quotient sur une trajectoire non-periodique massivement complexe. Le banc n'est pas accessible dans l'instrument tranche 1 (limite memoire).
+
+2. **Un invariant different -- a condition de distinguer trois notions de complexite**. (a) La **longueur zlib** que mesure l'instrument : bornee par le format de description LZ et les ressources du compresseur. (b) La **complexite de Kolmogorov ideale** : pour TOUT programme deterministe fixe P (regle de Life et graines comprises), le prefixe de T generations se decrit par P et T, donc sa complexite est au plus `K(P) + O(log T)` -- la completude de Turing n'etablit PAS une croissance lineaire incompressible au sens ideal, et `K(t)/T -> 0` pour toute trajectoire deterministe. (c) Une **complexite bornee en ressources** (temps ou memoire de description limites) : seul regime ou la distinction programme vs soupe peut survivre, car decrire la soupe exige de rejouer le calcul integralement tandis qu'un replicateur porte sa propre description courte. La these d'origine n'a de contenu operationnel que dans les regimes (a) et (c), pas au sens ideal (b).
+
+3. **Un test dual reformule en complexite bornee en ressources** : au sens ideal, `K(t) / T -> 0` pour toute trajectoire deterministe (borne `K(P) + O(log T)` ci-dessus) ; la reformulation operationnelle doit donc mesurer une complexite **bornee en ressources** -- longueur du plus court programme reproduisant `t` en temps polynomial en T, ou longueur compresse par LZ sur fenetres glissantes. C'est cette version bornee, et elle seule, qui peut separer auto-entretien (taux d'information maintenu sous contrainte de ressources) de dissolution par fragilite.",,,,,,,,0ce4e18e208d1b62,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,cbff1edf,markdown,fr,748622370d224a0e,"## 7. Bornes de taille de programme (tranche 3, #19227)
+
+La tranche 2 a mesure un discriminant (`K(W=16) / K(W=1)`) et conclu `CONJECTURE-NON-VERIFIEE-AVEC-CORPUS-COURANT`. La tranche 3 change de question : plutot que de chercher si le quotient **converge**, elle publie la **borne inferieure de Kolmogorov** de chaque temoin, c'est-a-dire la meilleure compression LZ atteignable a la fenetre la plus large du corpus :
+
+- `K_min(t) = K(t, W_last)` : la borne inferieure LZ, mesuree a `W_last = 16` ;
+- `K_first(t) = K(t, W=1)` : la borne superieure triviale (flux brut, une colonne a la fois) ;
+- `ratio = K_min / K_first` : la fraction de la description brute qui survit a la compression.
+
+L'instrument porte ce calcul en mode dedie (`scripts/hashlife/k_trajectory.py --mode bounds`, tranche 3, PR #19228). La cellule suivante l'appelle sur les resultats tranche 1 charges en section 1 : aucune mesure n'est rejouee, les bornes sont **derivees** des `K_trajectory(t, W)` deja mesures.
+",,,,,,,,748622370d224a0e,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,4f48193e,code,fr,5538e74eca1eff60,"# Bornes inferieures de Kolmogorov (LZ) par temoin -- instrument tranche 3 (#19227).
+# Le script est importe directement : c'est le meme code que la CLI
+# `python scripts/hashlife/k_trajectory.py --mode bounds --json-in ...`.
+import importlib.util
+
+_spec = importlib.util.spec_from_file_location(
+    'k_trajectory_bounds', ROOT / 'scripts' / 'hashlife' / 'k_trajectory.py'
+)
+_kt = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_kt)
+
+bounds = _kt.compute_bounds(data['results'])
+final = _kt.final_verdict(bounds, data['verdicts'])
+
+bounds_df = pd.DataFrame([
+    {
+        'temoin': name,
+        'W_first': b['window_first'],
+        'W_last': b['window_last'],
+        'K_first (borne triviale)': b['k_first_lz'],
+        'K_min (borne LZ)': b['k_min_lz'],
+        'ratio K_min/K_first': round(b['ratio'], 4),
+        'verdict tranche 1': data['verdicts'].get(name, '').split('(')[0].strip(),
+    }
+    for name, b in bounds.items()
+]).sort_values('ratio K_min/K_first')
+
+print(f'Verdict final T12 (#18446) : {final}')
+bounds_df
+",,,,,,,,5538e74eca1eff60,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,90d02568,markdown,fr,0b9d5280185fc34c,"### Lecture du resultat -- ce que les bornes disent
+
+Le tableau se separe en deux blocs nets, et la frontiere tombe entre les deux :
+
+| Bloc | Temoins | `ratio K_min/K_first` | Ce que la borne LZ dit |
+|---|---|---|---|
+| Programmes periodiques | `glider_T4`, `blinker_T2`, `pulsar_T3`, `otca_static` | 0.077 a 0.154 | la periode courte est entierement capturee : LZ compresse la description d'un facteur 6 a 13 |
+| Soupes | `soup_d03_seed42`, `soup_d05_seed123`, `soup_d05_seed777` | 0.759 a 0.784 | la borne reste haute : environ trois quarts de la description brute survivent a la compression |
+
+**Verdict final de la tranche 3** : `NON-VERIFIEE (limites de K_trajectory documentees tranche 2)`.
+
+Ce verdict n'est pas un echec de l'instrument : c'est son resultat falsifiable. Le ratio separe proprement les deux blocs **sur ce corpus** -- le plus grand ratio de programme (0.154, glider) reste tres en dessous du plus petit ratio de soupe (0.759) -- mais aucun temoin ne franchit le seuil `PROGRAM-AUTO-ENTRETIEN`. Distinguer un programme auto-entretenu d'une soupe qui ne se dissout pas encore demande le corpus Turing-complet discute en section 5.
+
+**Limite de lecture, explicite.** `K_min` est la borne de la **fenetre la plus large disponible** (`W_last = 16`), pas la limite asymptotique : sur un corpus a cinq fenetres, `K(t, W=16)` reste une borne basse par defaut, elle ne mesure pas la complexite de Kolmogorov. Les valeurs absolues ne se comparent donc qu'entre temoins du **meme corpus** ; un corpus plus large deplacerait les deux blocs, et l'ordre relatif est le seul resultat transportable.
+
+**References** : tranche 3 issue #19227 ; T12 `Part of #18446` ; EPIC parent #13483 (Lean).
+",,,,,,,,0b9d5280185fc34c,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,80deee34,markdown,fr,948262f2a980bc32,"## 8. Conclusion
+
+L'instrument `scripts/hashlife/k_trajectory.py` est correct : il calcule `K_trajectory(t, W)` et distingue les periodiques courts des entropies moyennes. Mais le **pivot** annonce -- `K_trajectory(t, W) / W -> 0 (soupe) vs constante (programme)` -- n'est pas verifie par le corpus tranche 1. L'instrument n'a pas ete confronte a un temoin Turing-complet.
+
+**Cette tranche 2 documente cet ecart** et propose trois pistes pour tranche 3 (corpus OTCA, invariant conditionnel, moyenne glissante). La **tranche 3** (section 7, issue #19227) a depuis publie les **bornes de taille de programme** et le verdict final `NON-VERIFIEE` : le residu n'est plus l'instrument, mais le **corpus Turing-complet** (megaoctets), qui depend d'un arbitrage user sur la these reformulee.
+
+**Statut** : tranches 2 et 3 livrees, instrument tranche 1 valide, these pivot **NON VERIFIEE** par les mesures disponibles.
+
+**References tranche 1** : issue #18446 (instrument livre par la PR #18639) ; carnet connexe `GOL-08-Loi-II-Translateur-Life.ipynb`.",,,,,,,,948262f2a980bc32,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,3301d309,markdown,fr,d36afb2563894b22,"## Genealogie
+
+**Predecesseur** : [GOL-08](GOL-08-Loi-II-Translateur-Life.ipynb) (Loi II, seconde jambe : synthetiser un translateur Life). Le present carnet prend la releve sur le meme substrat Conway mais transpose le probleme verify-once (verificateur de validite d'un translateur) vers le probleme measure-once (instrument K_trajectory qui mesure l'entropie LZ d'une trajectoire fenetree).
+
+**Tranche 1** : [PR #18639](https://github.com/jsboige/CoursIA/pull/18639) -- instrument `scripts/hashlife/k_trajectory.py` + resultats bruts `scripts/hashlife/k_trajectory_results.json` (7 trajectoires, 5 fenetres).
+
+**Voir #18446** pour le contexte T12 (Lean, #13483).",,,,,,,,d36afb2563894b22,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb,fb6e1a39,markdown,fr,3119d7eab975d11a,"## Exercices
+
+**Exercice 1 -- Sensibilite au seuil.**
+
+Le discriminant tranche 1 utilise le seuil `0.7` pour separer `PROGRAM-PERIODIC-COLLAPSED` de `SOUP-FRAGILE-WEAK`. Reproduisez le calcul pour le seuil `0.5` et `0.9`. Combien de trajectoires changent de classe ? Le seuil `0.7` est-il robuste ?
+
+**Exercice 2 -- Normalisation par la dimension.**
+
+Chaque trajectoire est codee en flux d'octets de dimensions differentes (glider 16x16, OTCA 7578x7578). K_trajectory depend-il de la dimension ? Proposez une normalisation (par exemple `K_trajectory(t, W) / (rows * W)`) et observez comment le discriminant evolue.
+
+**Exercice 3 -- Compresseur alternatif.**
+
+L'instrument utilise zlib (LZ77). Si on dispose d'un compresseur PPM (par exemple `ppmd-py` ou `zppy`), la borne superieure de Kolmogorov est-elle plus serree ? Tracez le quotient `K_PPM(t, W) / K_LZ(t, W)` sur les 7 trajectoires. La discrimination periodique-court vs entropie tient-elle ?
+",,,,,,,,3119d7eab975d11a,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,b5934469,markdown,fr,2b2988186dd00568,"# GOL-08 — Loi II, seconde jambe : synthétiser un translateur Life
+
+**Navigation** : [<< GOL-07 Hashlife](GOL-07-Hashlife-Correctness.ipynb) · [Index](../README.md) · [GOL-09 Perplexité >>](GOL-09-Perplexite-Structurelle-Hashlife.ipynb)
+
+`GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb` a livré la **première jambe de la Loi II** : un *constructeur* produit un chemin dans un graphe de swaps 2x2, un *vérificateur séparé* re-dérive indépendamment sa validité **et** sa minimalité, avec trois verdicts distincts. Une loi attestée sur **un** substrat reste une observation sur ce substrat. Ce notebook porte la même loi sur un substrat **génui­nement différent** — le Jeu de la Vie de Conway — pour les trois axes où elle peut casser autrement :
+
+1. l'espace de recherche n'est **pas fini-énumérable à la main** (aucun graphe pré-construit) ;
+2. le témoin est un **objet** (une configuration de cellules), pas un chemin ;
+3. la vérification est une **simulation**, pas une re-dérivation combinatoire.
+
+La chaîne visée :
+
+```
+(vitesse v, bornes)  ->  [ générateur indépendant ]  ->  T (le motif)  ->  [ vérificateur ]  ->  preuve
+```
+
+et, quand il n'y a **pas** de témoin, un **certificat d'impossibilité** — jamais un silence. Un générateur qui ne rend rien est indiscernable d'un générateur débranché.
+
+**Rappel de la Loi II** : une claim sur un système combinatoire ne vaut que si elle s'accompagne d'un *téoin* — un objet fini que quiconque peut inspecter — et d'un *vérificateur indépendant* capable de dire non. GT-20 l'avait instanciée avec trois verdicts (`VALIDE + MINIMAL` / `VALIDE mais NON MINIMAL` / `INVALIDE`) : le vérificateur y re-dérivait la minimalité par un BFS exhaustif sur le graphe entier. Ici le vérificateur ne re-dérive rien de combinatoire : il **re-joue la physique**. C'est un test beaucoup plus faible à construire — et pourtant il suffit à attester, parce que la définition d'un translateur *est* un énoncé de simulation. Le choix du substrat fait qu'ici, la vérification la plus simple possible est aussi la bonne.
+",,,,,,,,2b2988186dd00568,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,97f6250a,code,fr,bff06e16dcb0c292,"import numpy as np
+from itertools import combinations
+from time import time
+
+def step(grid):
+    """"""Une génération du Jeu de la Vie (B3/S23) sur grille bornée, bord mort.""""""
+    r, c = grid.shape
+    g = np.pad(grid, 1, mode=""constant"")
+    n = np.zeros((r, c), dtype=int)
+    for dr in (-1, 0, 1):
+        for dc in (-1, 0, 1):
+            if dr or dc:
+                n += g[1+dr:1+dr+r, 1+dc:1+dc+c]
+    vivante = grid.astype(bool)
+    return ((n == 3) | (vivante & (n == 2))).astype(np.int8)
+
+# Contrôle sanitaire du moteur : le bloc 2x2 est un still life.
+bloc = np.array([[1, 1], [1, 1]], dtype=np.int8)
+print(""bloc après 1 génération ->"", step(bloc).tolist(), ""(inchangé : still life)"")
+",,,,,,,,bff06e16dcb0c292,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,5b9bae72,markdown,fr,e507ab5f68df4b2f,"## 1. Le vérificateur indépendant
+
+**Définition.** Un *translateur* de vitesse $(dx, dy)$ et de période $p$ est un motif fini qui, après $p$ générations de simulation, **réapparaît identique à lui-même, translaté d'exactement $(dx, dy)$** — et qui ne laisse **rien derrière lui** : toute la matière doit se déplacer, aucun débris.
+
+Les cas dégénérés existent et le vocabulaire les distingue : $(0,0)$ à toute période pour un still life, période $p$ sans déplacement pour un oscillateur. Le vérificateur ci-dessous n'exige que la définition littérale — un still life passe donc comme translateur de vitesse nulle, et nous garderons ce fait visible.
+
+**L'organe.** `verifier_translateur` ne connaît que la simulation : il reçoit un motif et une *claim* $(dx, dy, p)$, simule, compare la boîte englobante finale au motif initial translaté. Il ne reprend **aucun** code du générateur — c'est la condition de séparation des deux organes qui donne à son verdict une valeur d'attestation.
+",,,,,,,,e507ab5f68df4b2f,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,b0d07e3c,code,fr,ae6d93a24ed522ea,"def verifier_translateur(P, dx, dy, p, marge=12):
+    """"""Organe VÉRIFICATEUR : simule p générations et compare. Ignore la recherche.""""""
+    P = np.asarray(P, dtype=np.int8)
+    h, w = P.shape
+    H, W = h + abs(dx) + 2 * marge, w + abs(dy) + 2 * marge
+    g = np.zeros((H, W), dtype=np.int8)
+    oy, ox = marge, marge
+    g[oy:oy+h, ox:ox+w] = P
+    for _ in range(p):
+        g = step(g)
+    ys, xs = np.where(g > 0)
+    if len(ys) == 0:
+        return False, ""INVALIDE : motif éteint après la période""
+    y0, y1, x0, x1 = ys.min(), ys.max(), xs.min(), xs.max()
+    S = g[y0:y1+1, x0:x1+1]
+    deplace = (int(y0 - oy), int(x0 - ox))
+    if S.shape != P.shape:
+        return False, f""INVALIDE : boîte englobante modifiée {S.shape} != {P.shape}""
+    if not np.array_equal(S, P):
+        return False, ""INVALIDE : le motif a muté (débris ou changement de forme)""
+    if deplace != (dx, dy):
+        return False, f""INVALIDE : déplacement observé {deplace}, demandé {(dx, dy)}""
+    return True, f""VALIDE : translateur (dx,dy)=({dx},{dy}), période {p}, {int(P.sum())} cellules""
+
+GLIDER = np.array([[0, 1, 0],
+                   [0, 0, 1],
+                   [1, 1, 1]], dtype=np.int8)
+
+print(verifier_translateur(GLIDER, 1, 1, 4))   # la claim exacte du glider
+print(verifier_translateur(GLIDER, 1, 1, 5))   # mauvaise période -> rejet
+print(verifier_translateur(bloc, 0, 0, 1))     # vitesse nulle : still life
+",,,,,,,,ae6d93a24ed522ea,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,e456d27d,markdown,fr,0e5b21a2221e8032,"## 2. Le générateur : énumération exhaustive bornée
+
+Le générateur reçoit la demande `(v, bornes)` — une vitesse $(dx, dy)$, une période $p$, et des bornes : une boîte $b \times b$ et une population maximale $k$. Sa **famille** est finie : tous les motifs d'au plus $k$ cellules vivantes dans la boîte $b \times b$, au plus $\sum_{i \le k} \binom{b^2}{i}$ objets. Il les énumère **tous**, consulte le vérificateur pour chacun, et rend un **certificat** : ce qui a été énuméré, combien de témoins trouvés. Son seul métier est d'épuiser la famille — il ne décide rien lui-même, le verdict appartient toujours au vérificateur.
+
+C'est la borne qui rend l'épuisement possible : « exhaustif » signifie ici *exhaustif dans la famille*, et la section 4 montrera pourquoi cette nuance porte tout le poids épistémologique du grain.
+",,,,,,,,0e5b21a2221e8032,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,d30a8604,code,fr,74b0a7faf2c5cf72,"def synthetiseur(b, k, dx, dy, p):
+    """"""Organe GÉNÉRATEUR : épuise la famille (<= k cellules dans b x b, période p).
+    Rend toujours un certificat — jamais un silence.""""""
+    cellules = [(r, c) for r in range(b) for c in range(b)]
+    enumeration, temoins = 0, []
+    for taille in range(1, k + 1):
+        for comb in combinations(cellules, taille):
+            enumeration += 1
+            P = np.zeros((b, b), dtype=np.int8)
+            for (r, c) in comb:
+                P[r, c] = 1
+            verdict, _ = verifier_translateur(P, dx, dy, p)
+            if verdict:
+                temoins.append(P)
+    return {
+        ""famille"": f""motifs d'au plus {k} cellules dans une boîte {b}x{b}"",
+        ""demande"": f""(dx,dy)=({dx},{dy}), période {p}"",
+        ""enumeres"": enumeration,
+        ""temoins"": temoins,
+    }
+
+t0 = time()
+cert_glider = synthetiseur(b=3, k=5, dx=1, dy=1, p=4)
+print(""famille           :"", cert_glider[""famille""])
+print(""demande           :"", cert_glider[""demande""])
+print(""motifs énumérés   :"", cert_glider[""enumeres""], f""en {time()-t0:.1f} s"")
+print(""témoins trouvés   :"", len(cert_glider[""temoins""]))
+for T in cert_glider[""temoins""]:
+    print(T.tolist())
+",,,,,,,,74b0a7faf2c5cf72,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,bda26bff,markdown,fr,1ddab8062fa2d1ca,"### Lecture du résultat
+
+381 motifs énumérés, **4 témoins** — et les quatre sont les rotations du même objet : le **glider** de Conway, 5 cellules, le plus petit translateur de Life. L'énumération l'a retrouvé **sans aucune connaissance préalable** : la famille contenait le glider, l'épuisement l'a fait sortir. C'est la première preuve de la chaîne : le générateur **produit** le témoin, il ne l'invente pas.
+
+Le certificat rendu est un objet positif et vérifiable : n'importe qui peut recompter les 381 motifs, rejouer l'épuisement, constater que la famille est fermée. La preuve n'est pas un argument, c'est un **fait énumératif**.
+
+D'où vient le nombre 381 ? La boîte 3x3 a 9 cellules ; les motifs d'au plus 5 cellules vivantes sont $\sum_{i=1}^{5} \binom{9}{i} = 9 + 36 + 84 + 126 + 126 = 381$. Le compte est fermé, fini, recomptable — c'est ce qui distingue un épuisement attesté d'une recherche abandonnée. Et noter l'économie du geste : nous n'avons codé **aucune** connaissance du glider ; la seule chose sujette à caution était le choix des bornes, et c'est précisément ce que la section 4 transformera en leçon centrale.
+",,,,,,,,1ddab8062fa2d1ca,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,4bbf4a57,code,fr,68f35d5770c3bd86,"# Chaque témoin rendu par le générateur REPASSE par le vérificateur indépendant.
+# Le générateur a trouvé ; c'est le vérificateur qui atteste.
+print(""Re-vérification indépendante des"", len(cert_glider[""temoins""]), ""témoins :"")
+for i, T in enumerate(cert_glider[""temoins""], 1):
+    verdict, raison = verifier_translateur(T, 1, 1, 4)
+    print(f""  témoin {i} : {raison}"")
+",,,,,,,,68f35d5770c3bd86,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,015c2b00,markdown,fr,a15798ae8aea3ec6,"## 3. Le cas sans témoin : impossibilité physique
+
+Demandons maintenant l'impossible : un translateur de vitesse $(2, 0)$ à la période 3 — soit $2/3$ de cellule par génération en orthogonal. Life a une **limite de vitesse**, le $c/2$ orthogonal (une cellule toutes les deux générations) : aucun motif fini ne peut se translater plus vite. Notre demande est supra-luminale.
+
+Le point du grain n'est pas que la recherche échoue — c'est **ce qu'elle rend quand elle échoue**. Un générateur débranché rend un silence. Le nôtre rend un **certificat d'impossibilité** : l'épuisement attesté de la famille, la cause citée, la portée écrite. L'exigence vient du corps de l'issue #12387 : *le cas sans solution doit produire quelque chose de POSITIF — jamais un silence*.
+",,,,,,,,a15798ae8aea3ec6,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,ab62f0db,code,fr,dfe44bce69b1346c,"t0 = time()
+cert_lumiere = synthetiseur(b=5, k=5, dx=2, dy=0, p=3)
+print(""="" * 64)
+print(""CERTIFICAT D'IMPOSSIBILITÉ (portée : la famille énumérée)"")
+print(""="" * 64)
+print(""demande    : translateur (dx,dy)=(2,0), période 3  ->  vitesse 2/3 c"")
+print(""famille    :"", cert_lumiere[""famille""])
+print(""épuisement :"", cert_lumiere[""enumeres""], ""motifs énumérés, ""
+      f""{len(cert_lumiere['temoins'])} témoin(s), en {time()-t0:.1f} s"")
+print(""verdict    : AUCUN translateur de vitesse (2,0,3) dans la famille."")
+print(""portée    : cohérent avec la limite c/2 de Life — borne physique citée,"")
+print(""             non dérivée ici. Au-delà de la famille, l'impossibilité"")
+print(""             repose sur cette borne, pas sur l'énumération."")
+",,,,,,,,dfe44bce69b1346c,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,f60ad6b4,markdown,fr,1d530ee29879824b,"### Lecture du certificat
+
+Deux choses sont prouvées, et elles n'ont pas le même statut. **Prouvé par épuisement** : aucun motif d'au plus 5 cellules dans une boîte 5x5 ne translate à $(2,0,3)$ — un fait fini, recomptable. **Cité, non prouvé** : la raison profonde pour laquelle aucune taille n'y arriverait — la limite $c/2$. Le certificat honore cette frontière en l'écrivant : c'est la différence entre *attester* et *déclarer*.
+
+Notez le choix délibéré de la boîte : 5x5 est **assez grande** pour contenir la boîte englobante des vaisseaux orthogonaux connus — le vide constaté n'est donc pas un artefact de boîte trop petite. C'est la vitesse demandée qui est hors d'atteinte.
+
+Un mot sur la forme du certificat : il énumère ce qui a été **couvert** (la famille), ce qui a été **demandé** (la vitesse), et ce qui **a été trouvé** (rien) — puis sépare explicitement le fait énumératif de la borne physique citée. Cette structure est réutilisable telle quelle pour n'importe quel autre substrat : c'est le gabarit minimal d'un rendu positif sur échec.
+",,,,,,,,1d530ee29879824b,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,0e77385d,markdown,fr,eb5d944138981a99,"## 4. La leçon de scope : le piège du certificat
+
+Reculons d'un cran sur la même famille : demandons $(2, 0)$ à la période 4 — soit **exactement $c/2$**, la limite physique elle-même. Cette vitesse est *réalisable* : le **LWSS** (*lightweight spaceship*) l'atteint. Mais il a **9 cellules** — hors de notre famille $\le 5$.
+
+La recherche sur la même famille rend donc **vide aussi** — et voilà le piège : un certificat d'épuisement ne prouve **jamais** l'impossibilité globale. Il prouve l'absence *dans la famille*. $(2,0,3)$ est vide pour une raison **physique** ; $(2,0,4)$ est vide pour une raison de **famille** — et les deux vidanges se ressemblent exactement dans les logs. Ce qui les distingue n'est pas la sortie du programme, c'est la connaissance externe du substrat. C'est LA leçon que ce substrat apporte et que le graphe 2x2 de GT-20 ne pouvait pas montrer aussi nettement.
+",,,,,,,,eb5d944138981a99,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,667502bd,code,fr,f438c4539e6b0ea3,"t0 = time()
+cert_c2 = synthetiseur(b=5, k=5, dx=2, dy=0, p=4)   # exactement c/2
+print(""(2,0,4) sur la même famille :"", cert_c2[""enumeres""], ""motifs énumérés,"",
+      f""{len(cert_c2['temoins'])} témoin, en {time()-t0:.1f} s"")
+print()
+# Mais le témoin existe -- hors de la famille : le LWSS, 9 cellules.
+LWSS = np.array([[0, 1, 0, 0, 1],
+                 [1, 0, 0, 0, 0],
+                 [1, 0, 0, 0, 1],
+                 [1, 1, 1, 1, 0]], dtype=np.int8)
+for nom, W_ in [(""LWSS"", LWSS), (""LWSS miroir"", np.fliplr(LWSS))]:
+    for (dx, dy) in [(2, 0), (-2, 0), (0, 2), (0, -2)]:
+        verdict, raison = verifier_translateur(W_, dx, dy, 4)
+        if verdict:
+            print(f""{nom} ({W_.sum()} cellules) : {raison}"")
+print()
+print(""Contrast : (2,0,3) vide par PHYSIQUE ; (2,0,4) vide par FAMILLE (LWSS existe à 9 cellules)."")
+",,,,,,,,f438c4539e6b0ea3,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,bae02406,markdown,fr,e0b4c9bb986aa8e5,"### Lecture du contraste
+
+Les deux épuisements (68 405 motifs chacun) sont **indiscernables dans leurs logs** : mêmes bornes, même famille, zéro témoin. Tout ce qui les sépare est la connaissance externe du substrat — la limite $c/2$ d'un côté, l'existence du LWSS de l'autre. La leçon opérationnelle pour quiconque lit un certificat d'épuisement : **la sortie du programme ne dit jamais laquelle des deux vidanges on a devant soi**. C'est au rédacteur du certificat d'écrire la portée, et au lecteur de la demander.
+
+C'est aussi ce qui rend le témoin LWSS précieux ici : il joue le rôle de **contre-preuve vivante** contre la sur-interprétation du certificat $(2,0,4)$. Sans lui, rien dans le notebook ne distinguerait « impossible dans la famille » de « impossible » — et c'est exactement la classe d'erreur qu'un certificat mal scopé fabrique en silence.
+",,,,,,,,e0b4c9bb986aa8e5,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,6515d4d4,markdown,fr,0f8383d212ef4942,"## 5. Contrôle positif : le témoin faux injecté
+
+Un lot tout-vert est indiscernable d'un vérificateur débranché. Pour prouver que le vérificateur **peut dire non**, on lui injecte des claims fausses sur des motifs vrais : le glider annoncé à une vitesse qu'il n'a pas, à une période qu'il n'a pas, dans une direction qu'il ne prend pas. Chacune doit être rejetée, avec la raison du rejet.
+
+Ce contrôle est l'analogue exact du détour construit exprès dans GT-20 : là, le vérificateur devait attraper un chemin volontairement non minimal ; ici, il doit attraper une claim volontairement fausse sur un objet réel. Dans les deux cas, le test du négatif est ce qui distingue un vérificateur qui **atteste** d'un vérificateur qui **acquiesce**. Notez que chaque rejet vient avec sa raison (déplacement observé, mutation, boîte modifiée) — un verdict non motivé serait aussi peu auditable qu'un silence.
+",,,,,,,,0f8383d212ef4942,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,1ae2304c,code,fr,0d3500a80d2fa238,"controles = [
+    (GLIDER, 2, 2, 4, ""claim trop rapide : glider annoncé à (2,2,4) = c/2 diagonal""),
+    (GLIDER, 1, 1, 5, ""claim de période : glider annoncé à la période 5""),
+    (GLIDER, 1, 0, 4, ""claim de direction : glider annoncé orthogonal (1,0,4)""),
+]
+for (P, dx, dy, p, etiquette) in controles:
+    verdict, raison = verifier_translateur(P, dx, dy, p)
+    print(f""[{etiquette}]"")
+    print(f""  -> {'REJETÉ' if not verdict else 'ACCEPTÉ (défaut !)'} : {raison}"")
+",,,,,,,,0d3500a80d2fa238,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,901cebeb,markdown,fr,dc7ce5c2b85d0dbe,"## 6. Frontières écrites
+
+Ce que « exhaustif » couvre **exactement** ici :
+
+- motifs d'au plus $k$ cellules vivantes dans une boîte $b \times b$ ;
+- période **exactement** $p$ (un translateur de période 4 n'est pas trouvé pour une demande de période 8 — la définition exige l'identité à la génération $p$) ;
+- déplacement **exactement** $(dx, dy)$ sur cette période ;
+- grille de simulation bornée avec marge morte — valide pour les tailles manipulées ici.
+
+Ce qui reste **conjectural** :
+
+- tout ce qui dépasse la famille — l'épuisement ne dit rien des motifs de plus de $k$ cellules (le couple $(2,0,3)$-physique vs $(2,0,4)$-famille en est la démonstration) ;
+- la limite $c/2$ est **citée**, pas dérivée — le certificat la prend comme borne externe ;
+- les vitesses *diagonales* maximales ($c/4$ pour le glider) suivent la même logique mais ne sont pas démontrées ici.
+
+C'est la frontière honnête du grain : constructeur → témoin → vérificateur indépendant, certificat scopé. La certification **formelle** (jambe Lean) est explicitement hors scope — si elle vient, ce sera un variant `-b`. Le cran visé ici est exactement celui de l'acceptance : deux organes séparés, un cas avec témoin, un cas sans témoin à rendu positif, un témoin faux rejeté, des frontières écrites.
+",,,,,,,,dc7ce5c2b85d0dbe,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,4b8adbc8,markdown,fr,f6d4a50e941bd548,"## 7. Exercices
+
+Trois exercices, dans l'esprit du grain : produire un certificat, durcir le vérificateur, sonder une frontière.
+",,,,,,,,f6d4a50e941bd548,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,gt21-ex1,markdown,fr,ca6cd7f00e8012a7,"### Exercice 1 — Certificat sur une autre vitesse supra-luminale
+
+Choisir une vitesse impossible au-dessus de la limite (ex. `(3,0,4)`, `(0,3,4)`, ou le diagonal `(2,2,4)`) et faire rendre au générateur son certificat d'épuisement. Écrire la portée exacte du certificat rendu.
+
+Indice : `synthetiseur(b, k, dx, dy, p)` rend toujours la structure du certificat.",,,,,,,,ca6cd7f00e8012a7,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,12001265,code,fr,c6137a6635bb541a,"# Exercice 1 -- Certificat sur une autre vitesse supra-luminale
+# Choisir une vitesse impossible au-dessus de la limite (ex. (3,0,4), (0,3,4),
+# ou le diagonal (2,2,4)) et faire rendre au générateur son certificat
+# d'épuisement. Écrire la portée exacte du certificat rendu.
+# Indice : synthetiseur(b, k, dx, dy, p) rend toujours la structure du certificat.
+# TODO étudiant : lancer la recherche et commenter le verdict.
+print(""Exercice à compléter"")
+",,,,,,,,c6137a6635bb541a,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,gt21-ex2,markdown,fr,39818343574827b1,"### Exercice 2 — Un verdict à quatre valeurs
+
+Le vérificateur actuel accepte un still life comme translateur de vitesse nulle. Le durcir en quatre verdicts : `TRANSLATEUR` (déplacement non nul), `STILL LIFE` (`(0,0)` à toute période), `OSCILLATEUR` (période p, déplacement nul), `INVALIDE`. Le tester sur le glider, le bloc et un blinker.
+
+Indice : un blinker est `[[1,1,1]]` — il oscille de période 2.",,,,,,,,39818343574827b1,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,01227c11,code,fr,8d13b4596057ed86,"# Exercice 2 -- Un verdict à quatre valeurs
+# Le vérificateur actuel accepte un still life comme translateur de vitesse
+# nulle. Le durcir en QUATRE verdicts : TRANSLATEUR (déplacement non nul),
+# STILL LIFE (0,0 à toute période), OSCILLATEUR (période p, déplacement nul),
+# INVALIDE. Le tester sur le glider, le bloc et un blinker.
+# Indice : un blinker est [[1,1,1]] -- il oscille de période 2.
+# TODO étudiant : implémenter puis tester.
+print(""Exercice à compléter"")
+",,,,,,,,8d13b4596057ed86,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,gt21-ex3,markdown,fr,d0d476e191be8553,"### Exercice 3 — La boîte compte les translations séparément
+
+Relancer la recherche du glider `(1,1,4)` dans une boîte 4x4 (même `k=5`) et comparer le nombre de témoins au résultat 3x3. Expliquer la différence : combien de positions distinctes un même glider 3x3 occupe-t-il dans 4x4 ?
+
+Indice : `C(16,<=5) = 6884` motifs — quelques secondes d'énumération.",,,,,,,,d0d476e191be8553,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,35db25cf,code,fr,2c2c112a218c89e3,"# Exercice 3 -- La boîte compte les translations séparément
+# Relancer la recherche du glider (1,1,4) dans une boîte 4x4 (même k=5) et
+# comparer le nombre de témoins au résultat 3x3. Expliquer la différence :
+# combien de positions distinctes un même glider 3x3 occupe-t-il dans 4x4 ?
+# Indice : C(16,<=5) = 6884 motifs -- quelques secondes d'énumération.
+# TODO étudiant : lancer, compter, expliquer.
+print(""Exercice à compléter"")
+",,,,,,,,2c2c112a218c89e3,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb,b348bbf8,markdown,fr,2a8f384dabbb819a,"## Conclusion
+
+La Loi II tient sur ce second substrat, et elle y prend un sens neuf. Ce qui a tenu : la chaîne **générateur → témoin → vérificateur indépendant**, les contrôles positifs (le témoin faux rejeté), l'exigence d'un rendu positif sur le cas sans solution. Ce qui a changé de visage :
+
+- le témoin est un **objet** — une configuration de cellules — que l'épuisement fait sortir d'une famille finie, quand GT-20 extrayait un chemin d'un graphe déjà construit ;
+- la vérification est une **simulation** : le vérificateur re-joue la physique, il ne re-dérive pas une structure combinatoire ;
+- l'impossibilité est un **certificat scopé** dont la portée doit être écrite — et le couple $(2,0,3)/(2,0,4)$ montre que deux vidanges de famille identiques en apparence ont deux raisons radicalement différentes, physique pour l'une, artefact de famille pour l'autre.
+
+Une loi attestée sur deux substrats genui­nement différents commence à être une loi. La jambe Lean, si elle vient, sera un variant `-b`. En attendant, le lecteur retiendra le geste complet : **une demande, deux organes, trois issues** — témoin trouvé et attesté ; échec rendu comme certificat scopé ; claim fausse rejetée avec sa raison. Tout le reste — la boîte, la population, la période — n'est que le réglage fin de la famille dans laquelle on accepte de chercher.
+
+
+*Voir #12387 (grain) et #12205 (Chantier 2 — génération de témoins). Série : GT-20 ([GameTheory-20](../../../GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb)).*
+
+
+**Suivant** : [GOL-09 -- Perplexite structurelle Hashlife](GOL-09-Perplexite-Structurelle-Hashlife.ipynb) -- la perception structurelle Hashlife (instrument K_trajectory entropie LZ + verdict CONJECTURE-NON-VERIFIEE-AVEC-CORPUS-COURANT, cf. issue #18446) prolonge la Loi II sur le meme substrat Conway mais transpose le verify-once en measure-once. (la perception structurelle Hashlife, transpose du probleme verify-once, introduit une discusion entropie + LZ + banc Turing-complet pour la mesure de confirmation -- cf. issue #18446). ",,,,,,,,2a8f384dabbb819a,,,,,,,,
