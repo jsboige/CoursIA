@@ -84,9 +84,19 @@ poids forcent sa multiplicité, et réciproquement `exists_leafPos_ne` désigne
 une seconde occurrence divergente), et le théorème `both_mins_to_bottom` :
 les DEUX plus petits poids vivent ensemble dans la paire de sœurs à la
 profondeur maximale, sans augmenter le coût — la seconde moitié du lemme des
-sœurs, ancre 21 -> 19 -> 16 du carnet 02 (le trie compte deux 1). -/
+sœurs, ancre 21 -> 19 -> 16 du carnet 02 (le trie compte deux 1) ;
+`HuffmanOptimal` — le théorème d'optimalité complet (pli 5i de #18706) :
+la contraction positionnelle (`replaceAtW` : refermer la paire de sœurs en
+une feuille de masse mariée rembourse exactement sa masse), la lecture en
+facture de la construction (`costW_build_charge` — le coût d'un `build` est
+la somme des coûts internes plus la charge des fusions, laquelle ne lit que
+la bande des poids), l'unicité du tri (`sortedLe_perm_eq`), la commutation
+`huffman_expand` (marier d'abord coûte le trie réduit plus la masse), et le
+théorème capital `huffman_optimal` : le trie de Huffman coûte moins que tout
+arbre des mêmes feuilles — ancre 14 du carnet 02, désormais un minimum
+prouvé. -/
 @[default_target]
 lean_lib «PrefixCodes» where
   -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`) :
   -- pas de `.submodules`, cf la note `MathUniverse` de `learning_theory_lean`.
-  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion, `Feuilles, `Soeurs, `Descente, `DeuxMinima]
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion, `Feuilles, `Soeurs, `Descente, `DeuxMinima, `HuffmanOptimal]
