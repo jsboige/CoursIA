@@ -10,7 +10,7 @@ Un système d'IA n'est pas seulement une machine à prédire : c'est un **acteur
 
 - **Pour qui** : étudiant ou praticien qui veut dépasser « le modèle est performant » et interroger ce qu'il fait *aux personnes* ; profil audit/gouvernance autant que recherche.
 - **Prérequis** : socle ML du cours 02 (2.1 Workflow, 2.3 régression logistique) pour les actes 1-2 ; **aucun** prérequis ML pour les actes 3-4 (choix social et argumentation sont autours, pur Python stdlib) ; l'acte 5 suppose le vocabulaire LLM de la série GenAI.
-- **Format** : 14 étapes en 5 actes. Chaque carnet est exécutable et committé avec ses sorties ; les durées ne sont citées que lorsqu'elles sont publiées par la série d'origine.
+- **Format** : 16 étapes en 5 actes. Chaque carnet est exécutable et committé avec ses sorties ; les durées ne sont citées que lorsqu'elles sont publiées par la série d'origine.
 
 ## Acte 1 — Le modèle peut-il être juste ?
 
@@ -77,7 +77,7 @@ Le déploiement n'est pas la fin de la responsabilité. La série [GenAI/Securit
 - [SC-01b : Choix social formel en Lean](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) (80 min) — Arrow, Sen, électeur médian certifiés.
 - [Argumentation-03b : AF à valeurs](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03b-Value-Based-AF-Python.ipynb) et [03c : ranking](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-03c-Ranking-Semantics-Python.ipynb) (35 min chacun) — l'audience et la force changent le verdict.
 - [FallacyDetection 02-05](../../MyIA.AI.Notebooks/GenAI/FallacyDetection/) — paysage des datasets, écart de couverture taxonomique, matrice N×M, construction de dataset équilibré.
-- [Argumentation-05 : Tweety](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb) (45 min) — le solveur réel JVM, mode fail-loud.
+- [Argumentation-05 : vérification formelle avec Tweety](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb) (45 min) — le solveur réel JVM, mode fail-loud.
 
 ## Pourquoi ce parcours existe
 
