@@ -1,28 +1,28 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-10-11**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-10-13**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**1407** notebooks référencés au catalogue.
+**1415** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 1190 | 84.6% |
-| DEMO | 215 | 15.3% |
+| READY | 1195 | 84.5% |
+| DEMO | 218 | 15.4% |
 | BROKEN | 2 | 0.1% |
 
 ## Exigences d'environnement (badges)
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 841 |
-| WSL requis | 133 |
-| GPU requis | 194 |
+| **local** (exécutable sans GPU/cloud/WSL) | 844 |
+| WSL requis | 135 |
+| GPU requis | 195 |
 | Cloud requis (QC / GenAI Docker) | 125 |
-| API key requise | 202 |
+| API key requise | 204 |
 
 ## Distribution par série
 
@@ -32,8 +32,8 @@
 | Complexity | 14 | 0 | 0 | 14 | 100% |
 | Compression | 1 | 0 | 0 | 1 | 100% |
 | GameTheory | 112 | 1 | 0 | 113 | 99% |
-| GenAI | 138 | 129 | 2 | 269 | 51% |
-| IIT | 92 | 7 | 0 | 99 | 93% |
+| GenAI | 141 | 133 | 2 | 276 | 51% |
+| IIT | 92 | 6 | 0 | 98 | 94% |
 | ML | 116 | 21 | 0 | 137 | 85% |
 | NLP | 5 | 0 | 0 | 5 | 100% |
 | Probas | 83 | 0 | 0 | 83 | 100% |
@@ -41,16 +41,16 @@
 | RL | 31 | 4 | 0 | 35 | 89% |
 | Search | 157 | 0 | 0 | 157 | 100% |
 | Sudoku | 37 | 1 | 0 | 38 | 97% |
-| SymbolicAI | 322 | 5 | 0 | 327 | 98% |
+| SymbolicAI | 324 | 5 | 0 | 329 | 98% |
 | cross-series | 2 | 0 | 0 | 2 | 100% |
 
 ## Kernels
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 919 |
+| Python 3 | 925 |
 | .NET (C#) | 268 |
-| Python 3 (ipykernel) | 51 |
+| Python 3 (ipykernel) | 53 |
 | Lean 4 (WSL) | 50 |
 | Python 3 (coursia-ml-training) | 18 |
 | Python (coursia-ml-training) | 18 |
